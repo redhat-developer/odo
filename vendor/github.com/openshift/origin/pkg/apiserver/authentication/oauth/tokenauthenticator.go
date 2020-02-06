@@ -1,6 +1,7 @@
 package oauth
 
 import (
+	"context"
 	"errors"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,7 +31,7 @@ func NewTokenAuthenticator(tokens oauthclient.OAuthAccessTokenInterface, users u
 	}
 }
 
-func (a *tokenAuthenticator) AuthenticateToken(name string) (kuser.Info, bool, error) {
+func (a *tokenAuthenticator) AuthenticateToken(ctx context.Context, name string) (*kauthenticator.Response, bool, error) {
 	token, err := a.tokens.Get(name, metav1.GetOptions{})
 	if err != nil {
 		return nil, false, errLookup // mask the error so we do not leak token data in logs
@@ -49,18 +50,19 @@ func (a *tokenAuthenticator) AuthenticateToken(name string) (kuser.Info, bool, e
 	if err != nil {
 		return nil, false, err
 	}
-	groupNames := make([]string, 0, len(groups)+len(user.Groups))
+	groupNames := make([]string, 0, len(groups))
 	for _, group := range groups {
 		groupNames = append(groupNames, group.Name)
 	}
-	groupNames = append(groupNames, user.Groups...)
 
-	return &kuser.DefaultInfo{
-		Name:   user.Name,
-		UID:    string(user.UID),
-		Groups: groupNames,
-		Extra: map[string][]string{
-			authorizationapi.ScopesKey: token.Scopes,
+	return &kauthenticator.Response{
+		User: &kuser.DefaultInfo{
+			Name:   user.Name,
+			UID:    string(user.UID),
+			Groups: groupNames,
+			Extra: map[string][]string{
+				authorizationapi.ScopesKey: token.Scopes,
+			},
 		},
 	}, true, nil
 }

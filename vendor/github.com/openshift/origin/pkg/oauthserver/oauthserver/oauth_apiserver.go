@@ -12,24 +12,24 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
-	genericapifilters "k8s.io/apiserver/pkg/endpoints/filters"
-	"k8s.io/apiserver/pkg/features"
 	genericapiserver "k8s.io/apiserver/pkg/server"
-	genericfilters "k8s.io/apiserver/pkg/server/filters"
-	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	kclientset "k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 
-	oauthapi "github.com/openshift/api/oauth/v1"
+	oauthv1 "github.com/openshift/api/oauth/v1"
+	osinv1 "github.com/openshift/api/osin/v1"
 	oauthclient "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	routeclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
 	userclient "github.com/openshift/client-go/user/clientset/versioned/typed/user/v1"
-	configapi "github.com/openshift/origin/pkg/cmd/server/apis/config"
 	"github.com/openshift/origin/pkg/cmd/server/apis/config/latest"
 	"github.com/openshift/origin/pkg/oauth/urls"
+	"github.com/openshift/origin/pkg/oauthserver/authenticator/password/bootstrap"
+	"github.com/openshift/origin/pkg/oauthserver/config"
 	"github.com/openshift/origin/pkg/oauthserver/server/crypto"
+	"github.com/openshift/origin/pkg/oauthserver/server/headers"
 	"github.com/openshift/origin/pkg/oauthserver/server/session"
+	"github.com/openshift/origin/pkg/oauthserver/userregistry/identitymapper"
 )
 
 var (
@@ -37,20 +37,33 @@ var (
 	codecs = serializer.NewCodecFactory(scheme)
 )
 
-func NewOAuthServerConfig(oauthConfig configapi.OAuthConfig, userClientConfig *rest.Config) (*OAuthServerConfig, error) {
-	genericConfig := genericapiserver.NewRecommendedConfig(codecs)
-	genericConfig.LoopbackClientConfig = userClientConfig
+func init() {
+	utilruntime.Must(osinv1.Install(scheme))
+}
 
-	var sessionAuth *session.Authenticator
-	if oauthConfig.SessionConfig != nil {
-		// TODO we really need to enforce HTTPS always
-		secure := isHTTPS(oauthConfig.MasterPublicURL)
-		auth, err := buildSessionAuth(secure, oauthConfig.SessionConfig)
+// TODO we need to switch the oauth server to an external type, but that can be done after we get our externally facing flag values fixed
+// TODO remaining bits involve the session file, LDAP util code, validation, ...
+func NewOAuthServerConfig(oauthConfig osinv1.OAuthConfig, userClientConfig *rest.Config, genericConfig *genericapiserver.RecommendedConfig) (*OAuthServerConfig, error) {
+	// TODO: there is probably some better way to do this
+	decoder := codecs.UniversalDecoder(osinv1.GroupVersion)
+	for i, idp := range oauthConfig.IdentityProviders {
+		if idp.Provider.Object != nil {
+			// depending on how you get here, the IDP objects may or may not be filled out
+			break
+		}
+		idpObject, err := runtime.Decode(decoder, idp.Provider.Raw)
 		if err != nil {
 			return nil, err
 		}
-		sessionAuth = auth
+		oauthConfig.IdentityProviders[i].Provider.Object = idpObject
 	}
+
+	// this leaves the embedded OAuth server code path alone
+	if genericConfig == nil {
+		genericConfig = genericapiserver.NewRecommendedConfig(codecs)
+	}
+
+	genericConfig.LoopbackClientConfig = userClientConfig
 
 	userClient, err := userclient.NewForConfig(userClientConfig)
 	if err != nil {
@@ -64,20 +77,79 @@ func NewOAuthServerConfig(oauthConfig configapi.OAuthConfig, userClientConfig *r
 	if err != nil {
 		return nil, err
 	}
+	routeClient, err := routeclient.NewForConfig(userClientConfig)
+	if err != nil {
+		return nil, err
+	}
+	kubeClient, err := kclientset.NewForConfig(userClientConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	bootstrapUserDataGetter := bootstrap.NewBootstrapUserDataGetter(kubeClient.CoreV1(), kubeClient.CoreV1())
+
+	var sessionAuth session.SessionAuthenticator
+	if oauthConfig.SessionConfig != nil {
+		// TODO we really need to enforce HTTPS always
+		secure := isHTTPS(oauthConfig.MasterPublicURL)
+		auth, err := buildSessionAuth(secure, oauthConfig.SessionConfig, bootstrapUserDataGetter)
+		if err != nil {
+			return nil, err
+		}
+		sessionAuth = auth
+
+		// session capability is the only thing required to enable the bootstrap IDP
+		// we dynamically enable or disable its UI based on the backing secret
+		// this must be the first IDP to make sure that it can handle basic auth challenges first
+		// this mostly avoids weird cases with the allow all IDP
+		oauthConfig.IdentityProviders = append(
+			[]osinv1.IdentityProvider{
+				{
+					Name: bootstrap.BootstrapUser, // will never conflict with other IDPs due to the :
+					// don't set it up as challenger if RequestHeaders IdP already is set that way
+					// this would set challenging headers and break RequestHeaders IdP
+					UseAsChallenger: !isRequestHeaderSetAsChallenger(oauthConfig.IdentityProviders),
+					UseAsLogin:      true,
+					MappingMethod:   string(identitymapper.MappingMethodClaim), // irrelevant, but needs to be valid
+					Provider: runtime.RawExtension{
+						Object: &config.BootstrapIdentityProvider{},
+					},
+				},
+			},
+			oauthConfig.IdentityProviders...,
+		)
+	}
+
+	if len(oauthConfig.IdentityProviders) == 0 {
+		oauthConfig.IdentityProviders = []osinv1.IdentityProvider{
+			{
+				Name:            "defaultDenyAll",
+				UseAsChallenger: true,
+				UseAsLogin:      true,
+				MappingMethod:   string(identitymapper.MappingMethodClaim),
+				Provider: runtime.RawExtension{
+					Object: &osinv1.DenyAllPasswordIdentityProvider{},
+				},
+			},
+		}
+	}
 
 	ret := &OAuthServerConfig{
 		GenericConfig: genericConfig,
 		ExtraOAuthConfig: ExtraOAuthConfig{
 			Options:                        oauthConfig,
-			SessionAuth:                    sessionAuth,
+			KubeClient:                     kubeClient,
 			EventsClient:                   eventsClient.Events(""),
-			IdentityClient:                 userClient.Identities(),
+			RouteClient:                    routeClient,
 			UserClient:                     userClient.Users(),
+			IdentityClient:                 userClient.Identities(),
 			UserIdentityMappingClient:      userClient.UserIdentityMappings(),
 			OAuthAccessTokenClient:         oauthClient.OAuthAccessTokens(),
 			OAuthAuthorizeTokenClient:      oauthClient.OAuthAuthorizeTokens(),
 			OAuthClientClient:              oauthClient.OAuthClients(),
 			OAuthClientAuthorizationClient: oauthClient.OAuthClientAuthorizations(),
+			SessionAuth:                    sessionAuth,
+			BootstrapUserDataGetter:        bootstrapUserDataGetter,
 		},
 	}
 	genericConfig.BuildHandlerChainFunc = ret.buildHandlerChainForOAuth
@@ -85,13 +157,14 @@ func NewOAuthServerConfig(oauthConfig configapi.OAuthConfig, userClientConfig *r
 	return ret, nil
 }
 
-func buildSessionAuth(secure bool, config *configapi.SessionConfig) (*session.Authenticator, error) {
+func buildSessionAuth(secure bool, config *osinv1.SessionConfig, getter bootstrap.BootstrapUserDataGetter) (session.SessionAuthenticator, error) {
 	secrets, err := getSessionSecrets(config.SessionSecretsFile)
 	if err != nil {
 		return nil, err
 	}
 	sessionStore := session.NewStore(config.SessionName, secure, secrets...)
-	return session.NewAuthenticator(sessionStore, time.Duration(config.SessionMaxAgeSeconds)*time.Second), nil
+	sessionAuthenticator := session.NewAuthenticator(sessionStore, time.Duration(config.SessionMaxAgeSeconds)*time.Second)
+	return session.NewBootstrapAuthenticator(sessionAuthenticator, getter, sessionStore), nil
 }
 
 func getSessionSecrets(filename string) ([][]byte, error) {
@@ -132,11 +205,17 @@ func isHTTPS(u string) bool {
 	return err == nil && parsedURL.Scheme == "https"
 }
 
-type ExtraOAuthConfig struct {
-	Options configapi.OAuthConfig
+func isRequestHeaderSetAsChallenger(providers []osinv1.IdentityProvider) bool {
+	for _, p := range providers {
+		if _, isRequestHeader := p.Provider.Object.(*osinv1.RequestHeaderIdentityProvider); isRequestHeader && p.UseAsChallenger {
+			return true
+		}
+	}
+	return false
+}
 
-	// AssetPublicAddresses contains valid redirectURI prefixes to direct browsers to the web console
-	AssetPublicAddresses []string
+type ExtraOAuthConfig struct {
+	Options osinv1.OAuthConfig
 
 	// KubeClient is kubeclient with enough permission for the auth API
 	KubeClient kclientset.Interface
@@ -156,7 +235,9 @@ type ExtraOAuthConfig struct {
 	OAuthClientClient              oauthclient.OAuthClientInterface
 	OAuthClientAuthorizationClient oauthclient.OAuthClientAuthorizationInterface
 
-	SessionAuth *session.Authenticator
+	SessionAuth session.SessionAuthenticator
+
+	BootstrapUserDataGetter bootstrap.BootstrapUserDataGetter
 }
 
 type OAuthServerConfig struct {
@@ -207,20 +288,26 @@ func (c completedOAuthConfig) New(delegationTarget genericapiserver.DelegationTa
 }
 
 func (c *OAuthServerConfig) buildHandlerChainForOAuth(startingHandler http.Handler, genericConfig *genericapiserver.Config) http.Handler {
+	// add OAuth handlers on top of the generic API server handlers
 	handler, err := c.WithOAuth(startingHandler)
 	if err != nil {
-		// the existing errors all cause the server to die anyway
+		// the existing errors all cause the OAuth server to die anyway
 		panic(err)
 	}
-	if utilfeature.DefaultFeatureGate.Enabled(features.AdvancedAuditing) {
-		handler = genericapifilters.WithAudit(handler, genericConfig.AuditBackend, genericConfig.AuditPolicyChecker, genericConfig.LongRunningFunc)
-	}
 
-	handler = genericfilters.WithMaxInFlightLimit(handler, genericConfig.MaxRequestsInFlight, genericConfig.MaxMutatingRequestsInFlight, genericConfig.LongRunningFunc)
-	handler = genericfilters.WithCORS(handler, genericConfig.CorsAllowedOriginList, nil, nil, nil, "true")
-	handler = genericfilters.WithTimeoutForNonLongRunningRequests(handler, genericConfig.LongRunningFunc, genericConfig.RequestTimeout)
-	handler = genericapifilters.WithRequestInfo(handler, genericapiserver.NewRequestInfoResolver(genericConfig))
-	handler = genericfilters.WithPanicRecovery(handler)
+	// add back the Authorization header so that WithOAuth can use it even after WithAuthentication deletes it
+	// WithOAuth sees users' passwords and can mint tokens so this is not really an issue
+	handler = headers.WithRestoreAuthorizationHeader(handler)
+
+	// this is the normal kube handler chain
+	handler = genericapiserver.DefaultBuildHandlerChain(handler, genericConfig)
+
+	// store a copy of the Authorization header for later use
+	handler = headers.WithPreserveAuthorizationHeader(handler)
+
+	// protected endpoints should not be cached
+	handler = headers.WithStandardHeaders(handler)
+
 	return handler
 }
 
@@ -230,37 +317,26 @@ func (c *OAuthServerConfig) buildHandlerChainForOAuth(startingHandler http.Handl
 func (c *OAuthServerConfig) StartOAuthClientsBootstrapping(context genericapiserver.PostStartHookContext) error {
 	// the TODO above still applies, but this makes it possible for this poststarthook to do its job with a split kubeapiserver and not run forever
 	go func() {
-		wait.PollUntil(1*time.Second, func() (done bool, err error) {
-			webConsoleClient := oauthapi.OAuthClient{
-				ObjectMeta:            metav1.ObjectMeta{Name: openShiftWebConsoleClientID},
-				Secret:                "",
-				RespondWithChallenges: false,
-				RedirectURIs:          c.ExtraOAuthConfig.AssetPublicAddresses,
-				GrantMethod:           oauthapi.GrantHandlerAuto,
-			}
-			if err := ensureOAuthClient(webConsoleClient, c.ExtraOAuthConfig.OAuthClientClient, true, false); err != nil {
-				utilruntime.HandleError(err)
-				return false, nil
-			}
-
-			browserClient := oauthapi.OAuthClient{
+		// error is guaranteed to be nil
+		_ = wait.PollUntil(1*time.Second, func() (done bool, err error) {
+			browserClient := oauthv1.OAuthClient{
 				ObjectMeta:            metav1.ObjectMeta{Name: openShiftBrowserClientID},
 				Secret:                crypto.Random256BitsString(),
 				RespondWithChallenges: false,
 				RedirectURIs:          []string{urls.OpenShiftOAuthTokenDisplayURL(c.ExtraOAuthConfig.Options.MasterPublicURL)},
-				GrantMethod:           oauthapi.GrantHandlerAuto,
+				GrantMethod:           oauthv1.GrantHandlerAuto,
 			}
 			if err := ensureOAuthClient(browserClient, c.ExtraOAuthConfig.OAuthClientClient, true, true); err != nil {
 				utilruntime.HandleError(err)
 				return false, nil
 			}
 
-			cliClient := oauthapi.OAuthClient{
+			cliClient := oauthv1.OAuthClient{
 				ObjectMeta:            metav1.ObjectMeta{Name: openShiftCLIClientID},
 				Secret:                "",
 				RespondWithChallenges: true,
 				RedirectURIs:          []string{urls.OpenShiftOAuthTokenImplicitURL(c.ExtraOAuthConfig.Options.MasterPublicURL)},
-				GrantMethod:           oauthapi.GrantHandlerAuto,
+				GrantMethod:           oauthv1.GrantHandlerAuto,
 			}
 			if err := ensureOAuthClient(cliClient, c.ExtraOAuthConfig.OAuthClientClient, false, false); err != nil {
 				utilruntime.HandleError(err)

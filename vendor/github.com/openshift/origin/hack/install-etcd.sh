@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 source "$(dirname "${BASH_SOURCE}")/lib/init.sh"
 
 etcd_version=$(go run ${OS_ROOT}/tools/godepversion/godepversion.go ${OS_ROOT}/Godeps/Godeps.json github.com/coreos/etcd/etcdserver)
@@ -25,9 +25,14 @@ fi
 export GOPATH="${PWD}/gopath"
 ./build
 
-echo
-echo Installed coreos/etcd ${etcd_version} into:
-echo export PATH=${PWD}/bin:\$PATH
+if [[ -n ${1:-} && "${1}" == "--export-path" ]]
+then
+    echo "${PWD}/bin"
+else
+    echo
+    echo Installed coreos/etcd ${etcd_version} into:
+    echo export PATH=${PWD}/bin:\$PATH
+fi
 
 popd >/dev/null
 exit 0

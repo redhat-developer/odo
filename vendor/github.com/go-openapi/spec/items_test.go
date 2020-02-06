@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/go-openapi/swag"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -48,7 +49,7 @@ var items = Items{
 	},
 }
 
-var itemsJSON = `{
+const itemsJSON = `{
 	"items": {
 		"$ref": "Cat"
 	},
@@ -78,4 +79,109 @@ func TestIntegrationItems(t *testing.T) {
 	}
 
 	assertParsesJSON(t, itemsJSON, items)
+}
+
+func TestTypeNameItems(t *testing.T) {
+	var nilItems Items
+	assert.Equal(t, "", nilItems.TypeName())
+
+	assert.Equal(t, "date", items.TypeName())
+	assert.Equal(t, "", items.ItemsTypeName())
+
+	nested := Items{
+		SimpleSchema: SimpleSchema{
+			Type: "array",
+			Items: &Items{
+				SimpleSchema: SimpleSchema{
+					Type:   "integer",
+					Format: "int32",
+				},
+			},
+			CollectionFormat: "csv",
+		},
+	}
+
+	assert.Equal(t, "array", nested.TypeName())
+	assert.Equal(t, "int32", nested.ItemsTypeName())
+
+	simple := SimpleSchema{
+		Type:  "string",
+		Items: nil,
+	}
+
+	assert.Equal(t, "string", simple.TypeName())
+	assert.Equal(t, "", simple.ItemsTypeName())
+
+	simple.Items = NewItems()
+	simple.Type = "array"
+	simple.Items.Type = "string"
+
+	assert.Equal(t, "array", simple.TypeName())
+	assert.Equal(t, "string", simple.ItemsTypeName())
+}
+
+func TestItemsBuilder(t *testing.T) {
+	simple := SimpleSchema{
+		Type: "array",
+		Items: NewItems().
+			Typed("string", "uuid").
+			WithDefault([]string{"default-value"}).
+			WithEnum([]string{"abc", "efg"}, []string{"hij"}).
+			WithMaxItems(4).
+			WithMinItems(1).
+			UniqueValues(),
+	}
+
+	assert.Equal(t, SimpleSchema{
+		Type: "array",
+		Items: &Items{
+			SimpleSchema: SimpleSchema{
+				Type:    "string",
+				Format:  "uuid",
+				Default: []string{"default-value"},
+			},
+			CommonValidations: CommonValidations{
+				Enum:        []interface{}{[]string{"abc", "efg"}, []string{"hij"}},
+				MinItems:    swag.Int64(1),
+				MaxItems:    swag.Int64(4),
+				UniqueItems: true,
+			},
+		},
+	}, simple)
+}
+
+func TestJSONLookupItems(t *testing.T) {
+	res, err := items.JSONLookup("$ref")
+	if !assert.NoError(t, err) {
+		t.FailNow()
+		return
+	}
+	if assert.IsType(t, &Ref{}, res) {
+		ref := res.(*Ref)
+		assert.EqualValues(t, MustCreateRef("Dog"), *ref)
+	}
+
+	var max *float64
+	res, err = items.JSONLookup("maximum")
+	if !assert.NoError(t, err) || !assert.NotNil(t, res) || !assert.IsType(t, max, res) {
+		t.FailNow()
+		return
+	}
+	max = res.(*float64)
+	assert.Equal(t, float64(100), *max)
+
+	var f string
+	res, err = items.JSONLookup("collectionFormat")
+	if !assert.NoError(t, err) || !assert.NotNil(t, res) || !assert.IsType(t, f, res) {
+		t.FailNow()
+		return
+	}
+	f = res.(string)
+	assert.Equal(t, "csv", f)
+
+	res, err = items.JSONLookup("unknown")
+	if !assert.Error(t, err) || !assert.Nil(t, res) {
+		t.FailNow()
+		return
+	}
 }

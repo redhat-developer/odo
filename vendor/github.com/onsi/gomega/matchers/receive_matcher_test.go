@@ -56,7 +56,7 @@ var _ = Describe("ReceiveMatcher", func() {
 
 	Context("with a pointer argument", func() {
 		Context("of the correct type", func() {
-			Context("when the channel has an interface type", func() {
+			When("the channel has an interface type", func() {
 				It("should write the value received on the channel to the pointer", func() {
 					channel := make(chan error, 1)
 
@@ -244,7 +244,7 @@ var _ = Describe("ReceiveMatcher", func() {
 		})
 	})
 
-	Context("when acutal is a non-channel", func() {
+	When("acutal is a non-channel", func() {
 		It("should error", func() {
 			var nilChannel chan bool
 
@@ -265,7 +265,7 @@ var _ = Describe("ReceiveMatcher", func() {
 	Describe("when used with eventually and a custom matcher", func() {
 		It("should return the matcher's error when a failing value is received on the channel, instead of the must receive something failure", func() {
 			failures := InterceptGomegaFailures(func() {
-				c := make(chan string, 0)
+				c := make(chan string)
 				Eventually(c, 0.01).Should(Receive(Equal("hello")))
 			})
 			Expect(failures[0]).Should(ContainSubstring("When passed a matcher, ReceiveMatcher's channel *must* receive something."))

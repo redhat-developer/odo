@@ -1,20 +1,22 @@
 package defaults
 
 import (
-	"github.com/golang/glog"
+	"k8s.io/klog"
 	"k8s.io/kubernetes/pkg/api/legacyscheme"
 
 	corev1 "k8s.io/api/core/v1"
 
 	buildv1 "github.com/openshift/api/build/v1"
+	configv1 "github.com/openshift/api/config/v1"
+	openshiftcontrolplanev1 "github.com/openshift/api/openshiftcontrolplane/v1"
 	"github.com/openshift/origin/pkg/build/controller/common"
 	"github.com/openshift/origin/pkg/build/util"
 	buildutil "github.com/openshift/origin/pkg/build/util"
-	configapi "github.com/openshift/origin/pkg/cmd/server/apis/config"
 )
 
 type BuildDefaults struct {
-	Config *configapi.BuildDefaultsConfig
+	Config       *openshiftcontrolplanev1.BuildDefaultsConfig
+	DefaultProxy *configv1.ProxySpec
 }
 
 // ApplyDefaults applies configured build defaults to a build pod
@@ -24,16 +26,17 @@ func (b BuildDefaults) ApplyDefaults(pod *corev1.Pod) error {
 		return nil
 	}
 
-	if b.Config == nil {
-		// even if there's no config for the defaulter, we need to set up the loglevel.
-		return setPodLogLevelFromBuild(pod, build)
+	if b.DefaultProxy != nil {
+		b.applyPodProxyDefaults(pod, build.Spec.Strategy.CustomStrategy != nil)
 	}
 
-	glog.V(4).Infof("Applying defaults to build %s/%s", build.Namespace, build.Name)
-	b.applyBuildDefaults(build)
+	if b.Config != nil {
+		klog.V(4).Infof("Applying defaults to build %s/%s", build.Namespace, build.Name)
+		b.applyBuildDefaults(build)
 
-	glog.V(4).Infof("Applying defaults to pod %s/%s", pod.Namespace, pod.Name)
-	b.applyPodDefaults(pod, build.Spec.Strategy.CustomStrategy != nil)
+		klog.V(4).Infof("Applying defaults to pod %s/%s", pod.Namespace, pod.Name)
+		b.applyPodDefaults(pod, build.Spec.Strategy.CustomStrategy != nil)
+	}
 
 	err = setPodLogLevelFromBuild(pod, build)
 	if err != nil {
@@ -76,6 +79,32 @@ func setPodLogLevelFromBuild(pod *corev1.Pod, build *buildv1.Build) error {
 		pod.Spec.InitContainers[i].Args = append(pod.Spec.InitContainers[i].Args, "--loglevel="+buildLogLevel)
 	}
 	return nil
+}
+
+func (b BuildDefaults) applyPodProxyDefaults(pod *corev1.Pod, isCustomBuild bool) {
+	allContainers := []*corev1.Container{}
+	for i := range pod.Spec.Containers {
+		allContainers = append(allContainers, &pod.Spec.Containers[i])
+	}
+	for i := range pod.Spec.InitContainers {
+		allContainers = append(allContainers, &pod.Spec.InitContainers[i])
+	}
+
+	for _, c := range allContainers {
+		// All env vars are allowed to be set in a custom build pod, the user already has
+		// total control over the env+logic in a custom build pod anyway.
+		externalEnv := make([]corev1.EnvVar, 3)
+		externalEnv = append(externalEnv, corev1.EnvVar{Name: "HTTP_PROXY", Value: b.DefaultProxy.HTTPProxy})
+		externalEnv = append(externalEnv, corev1.EnvVar{Name: "HTTPS_PROXY", Value: b.DefaultProxy.HTTPSProxy})
+		externalEnv = append(externalEnv, corev1.EnvVar{Name: "NO_PROXY", Value: b.DefaultProxy.NoProxy})
+
+		if isCustomBuild {
+			util.MergeEnvWithoutDuplicates(externalEnv, &c.Env, false, []string{})
+		} else {
+			util.MergeTrustedEnvWithoutDuplicates(externalEnv, &c.Env, false)
+		}
+	}
+
 }
 
 func (b BuildDefaults) applyPodDefaults(pod *corev1.Pod, isCustomBuild bool) {
@@ -129,7 +158,7 @@ func (b BuildDefaults) applyPodDefaults(pod *corev1.Pod, isCustomBuild bool) {
 		}
 		for name, value := range defaultResources.Limits {
 			if _, ok := c.Resources.Limits[corev1.ResourceName(name)]; !ok {
-				glog.V(5).Infof("Setting default resource limit %s for pod %s/%s to %v", name, pod.Namespace, pod.Name, value)
+				klog.V(5).Infof("Setting default resource limit %s for pod %s/%s to %v", name, pod.Namespace, pod.Name, value)
 				c.Resources.Limits[corev1.ResourceName(name)] = value
 			}
 		}
@@ -138,7 +167,7 @@ func (b BuildDefaults) applyPodDefaults(pod *corev1.Pod, isCustomBuild bool) {
 		}
 		for name, value := range defaultResources.Requests {
 			if _, ok := c.Resources.Requests[corev1.ResourceName(name)]; !ok {
-				glog.V(5).Infof("Setting default resource request %s for pod %s/%s to %v", name, pod.Namespace, pod.Name, value)
+				klog.V(5).Infof("Setting default resource request %s for pod %s/%s to %v", name, pod.Namespace, pod.Name, value)
 				c.Resources.Requests[corev1.ResourceName(name)] = value
 			}
 		}
@@ -148,7 +177,7 @@ func (b BuildDefaults) applyPodDefaults(pod *corev1.Pod, isCustomBuild bool) {
 func (b BuildDefaults) applyBuildDefaults(build *buildv1.Build) {
 	// Apply default env
 	for _, envVar := range b.Config.Env {
-		glog.V(5).Infof("Adding default environment variable %s=%s to build %s/%s", envVar.Name, envVar.Value, build.Namespace, build.Name)
+		klog.V(5).Infof("Adding default environment variable %s=%s to build %s/%s", envVar.Name, envVar.Value, build.Namespace, build.Name)
 		externalEnv := corev1.EnvVar{}
 		if err := legacyscheme.Scheme.Convert(&envVar, &externalEnv, nil); err != nil {
 			panic(err)
@@ -158,7 +187,7 @@ func (b BuildDefaults) applyBuildDefaults(build *buildv1.Build) {
 
 	// Apply default labels
 	for _, lbl := range b.Config.ImageLabels {
-		glog.V(5).Infof("Adding default image label %s=%s to build %s/%s", lbl.Name, lbl.Value, build.Namespace, build.Name)
+		klog.V(5).Infof("Adding default image label %s=%s to build %s/%s", lbl.Name, lbl.Value, build.Namespace, build.Name)
 		label := buildv1.ImageLabel{
 			Name:  lbl.Name,
 			Value: lbl.Value,
@@ -170,7 +199,7 @@ func (b BuildDefaults) applyBuildDefaults(build *buildv1.Build) {
 	sourceStrategy := build.Spec.Strategy.SourceStrategy
 	if sourceDefaults != nil && sourceDefaults.Incremental != nil && *sourceDefaults.Incremental &&
 		sourceStrategy != nil && sourceStrategy.Incremental == nil {
-		glog.V(5).Infof("Setting source strategy Incremental to true in build %s/%s", build.Namespace, build.Name)
+		klog.V(5).Infof("Setting source strategy Incremental to true in build %s/%s", build.Namespace, build.Name)
 		t := true
 		build.Spec.Strategy.SourceStrategy.Incremental = &t
 	}
@@ -182,7 +211,7 @@ func (b BuildDefaults) applyBuildDefaults(build *buildv1.Build) {
 	if len(b.Config.GitHTTPProxy) != 0 {
 		if build.Spec.Source.Git.HTTPProxy == nil {
 			t := b.Config.GitHTTPProxy
-			glog.V(5).Infof("Setting default Git HTTP proxy of build %s/%s to %s", build.Namespace, build.Name, t)
+			klog.V(5).Infof("Setting default Git HTTP proxy of build %s/%s to %s", build.Namespace, build.Name, t)
 			build.Spec.Source.Git.HTTPProxy = &t
 		}
 	}
@@ -190,7 +219,7 @@ func (b BuildDefaults) applyBuildDefaults(build *buildv1.Build) {
 	if len(b.Config.GitHTTPSProxy) != 0 {
 		if build.Spec.Source.Git.HTTPSProxy == nil {
 			t := b.Config.GitHTTPSProxy
-			glog.V(5).Infof("Setting default Git HTTPS proxy of build %s/%s to %s", build.Namespace, build.Name, t)
+			klog.V(5).Infof("Setting default Git HTTPS proxy of build %s/%s to %s", build.Namespace, build.Name, t)
 			build.Spec.Source.Git.HTTPSProxy = &t
 		}
 	}
@@ -198,7 +227,7 @@ func (b BuildDefaults) applyBuildDefaults(build *buildv1.Build) {
 	if len(b.Config.GitNoProxy) != 0 {
 		if build.Spec.Source.Git.NoProxy == nil {
 			t := b.Config.GitNoProxy
-			glog.V(5).Infof("Setting default Git no proxy of build %s/%s to %s", build.Namespace, build.Name, t)
+			klog.V(5).Infof("Setting default Git no proxy of build %s/%s to %s", build.Namespace, build.Name, t)
 			build.Spec.Source.Git.NoProxy = &t
 		}
 	}
@@ -210,7 +239,7 @@ func (b BuildDefaults) applyBuildDefaults(build *buildv1.Build) {
 	}
 	for name, value := range defaultResources.Limits {
 		if _, ok := build.Spec.Resources.Limits[corev1.ResourceName(name)]; !ok {
-			glog.V(5).Infof("Setting default resource limit %s for build %s/%s to %v", name, build.Namespace, build.Name, value)
+			klog.V(5).Infof("Setting default resource limit %s for build %s/%s to %v", name, build.Namespace, build.Name, value)
 			build.Spec.Resources.Limits[corev1.ResourceName(name)] = value
 		}
 	}
@@ -219,7 +248,7 @@ func (b BuildDefaults) applyBuildDefaults(build *buildv1.Build) {
 	}
 	for name, value := range defaultResources.Requests {
 		if _, ok := build.Spec.Resources.Requests[corev1.ResourceName(name)]; !ok {
-			glog.V(5).Infof("Setting default resource request %s for build %s/%s to %v", name, build.Namespace, build.Name, value)
+			klog.V(5).Infof("Setting default resource request %s for build %s/%s to %v", name, build.Namespace, build.Name, value)
 			build.Spec.Resources.Requests[corev1.ResourceName(name)] = value
 		}
 	}

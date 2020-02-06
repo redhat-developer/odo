@@ -32,12 +32,13 @@ var _ = g.Describe("[Feature:Builds][Slow] builds with a context directory", fun
 	g.Context("", func() {
 
 		g.BeforeEach(func() {
-			exutil.DumpDockerInfo()
+			exutil.PreTestDump()
 		})
 
 		g.AfterEach(func() {
 			if g.CurrentGinkgoTestDescription().Failed {
 				exutil.DumpPodStates(oc)
+				exutil.DumpConfigMapStates(oc)
 				exutil.DumpPodLogsStartingWith("", oc)
 			}
 		})
@@ -45,7 +46,7 @@ var _ = g.Describe("[Feature:Builds][Slow] builds with a context directory", fun
 		g.Describe("s2i context directory build", func() {
 			g.It(fmt.Sprintf("should s2i build an application using a context directory"), func() {
 
-				exutil.CheckOpenShiftNamespaceImageStreams(oc)
+				exutil.WaitForOpenShiftNamespaceImageStreams(oc)
 				g.By(fmt.Sprintf("calling oc create -f %q", appFixture))
 				err := oc.Run("create").Args("-f", appFixture).Execute()
 				o.Expect(err).NotTo(o.HaveOccurred())
@@ -55,7 +56,7 @@ var _ = g.Describe("[Feature:Builds][Slow] builds with a context directory", fun
 				o.Expect(err).NotTo(o.HaveOccurred())
 
 				g.By("waiting for build to finish")
-				err = exutil.WaitForABuild(oc.BuildClient().Build().Builds(oc.Namespace()), s2iBuildName, exutil.CheckBuildSuccess, exutil.CheckBuildFailed, nil)
+				err = exutil.WaitForABuild(oc.BuildClient().BuildV1().Builds(oc.Namespace()), s2iBuildName, exutil.CheckBuildSuccess, exutil.CheckBuildFailed, nil)
 				if err != nil {
 					exutil.DumpBuildLogs("s2icontext", oc)
 				}
@@ -72,7 +73,7 @@ var _ = g.Describe("[Feature:Builds][Slow] builds with a context directory", fun
 				o.Expect(err).NotTo(o.HaveOccurred())
 
 				assertPageContent := func(content string) {
-					_, err := exutil.WaitForPods(oc.KubeClient().Core().Pods(oc.Namespace()), dcLabel, exutil.CheckPodIsRunning, 1, 2*time.Minute)
+					_, err := exutil.WaitForPods(oc.KubeClient().CoreV1().Pods(oc.Namespace()), dcLabel, exutil.CheckPodIsRunning, 1, 4*time.Minute)
 					o.Expect(err).NotTo(o.HaveOccurred())
 
 					result, err := imageeco.CheckPageContains(oc, "frontend", "", content)
@@ -84,7 +85,7 @@ var _ = g.Describe("[Feature:Builds][Slow] builds with a context directory", fun
 				assertPageContent("Hello world!")
 
 				g.By("checking the pod count")
-				pods, err := oc.KubeClient().Core().Pods(oc.Namespace()).List(metav1.ListOptions{LabelSelector: dcLabel.String()})
+				pods, err := oc.KubeClient().CoreV1().Pods(oc.Namespace()).List(metav1.ListOptions{LabelSelector: dcLabel.String()})
 				o.Expect(err).NotTo(o.HaveOccurred())
 				o.Expect(len(pods.Items)).To(o.Equal(1))
 
@@ -105,7 +106,7 @@ var _ = g.Describe("[Feature:Builds][Slow] builds with a context directory", fun
 				err = repo.AddAndCommit("2.3/Dockerfile", "FROM busybox")
 				o.Expect(err).NotTo(o.HaveOccurred())
 
-				exutil.CheckOpenShiftNamespaceImageStreams(oc)
+				exutil.WaitForOpenShiftNamespaceImageStreams(oc)
 				g.By(fmt.Sprintf("calling oc create -f %q", appFixture))
 				err = oc.Run("create").Args("-f", appFixture).Execute()
 				o.Expect(err).NotTo(o.HaveOccurred())
@@ -116,7 +117,7 @@ var _ = g.Describe("[Feature:Builds][Slow] builds with a context directory", fun
 
 				// build will fail if we don't use the right context dir because there won't be a dockerfile present.
 				g.By("waiting for build to finish")
-				err = exutil.WaitForABuild(oc.BuildClient().Build().Builds(oc.Namespace()), dockerBuildName, exutil.CheckBuildSuccess, exutil.CheckBuildFailed, nil)
+				err = exutil.WaitForABuild(oc.BuildClient().BuildV1().Builds(oc.Namespace()), dockerBuildName, exutil.CheckBuildSuccess, exutil.CheckBuildFailed, nil)
 				if err != nil {
 					exutil.DumpBuildLogs("dockercontext", oc)
 				}

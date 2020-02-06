@@ -19,8 +19,8 @@ package proxy
 import (
 	"fmt"
 
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	api "k8s.io/kubernetes/pkg/apis/core"
 	"k8s.io/kubernetes/pkg/proxy/config"
 )
 
@@ -57,7 +57,7 @@ type ServicePort interface {
 	// ExternalIPStrings returns service ExternalIPs as a string array.
 	ExternalIPStrings() []string
 	// GetProtocol returns service protocol.
-	GetProtocol() api.Protocol
+	GetProtocol() v1.Protocol
 	// GetHealthCheckNodePort returns service health check node port if present.  If return 0, it means not present.
 	GetHealthCheckNodePort() int
 	// GetNodePort returns a service Node port if present. If return 0, it means not present.

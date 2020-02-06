@@ -27,14 +27,8 @@ var _ = g.Describe("[image_ecosystem][php][Slow] hot deploy for openshift php im
 	)
 
 	g.Context("", func() {
-		g.BeforeEach(func() {
-			exutil.DumpDockerInfo()
-			g.By("waiting for default service account")
-			err := exutil.WaitForServiceAccount(oc.KubeClient().Core().ServiceAccounts(oc.Namespace()), "default")
-			o.Expect(err).NotTo(o.HaveOccurred())
-			g.By("waiting for builder service account")
-			err = exutil.WaitForServiceAccount(oc.KubeClient().Core().ServiceAccounts(oc.Namespace()), "builder")
-			o.Expect(err).NotTo(o.HaveOccurred())
+		g.JustBeforeEach(func() {
+			exutil.PreTestDump()
 		})
 
 		g.AfterEach(func() {
@@ -47,13 +41,13 @@ var _ = g.Describe("[image_ecosystem][php][Slow] hot deploy for openshift php im
 		g.Describe("CakePHP example", func() {
 			g.It(fmt.Sprintf("should work with hot deploy"), func() {
 
-				exutil.CheckOpenShiftNamespaceImageStreams(oc)
+				exutil.WaitForOpenShiftNamespaceImageStreams(oc)
 				g.By(fmt.Sprintf("calling oc new-app -f %q -p %q", cakephpTemplate, hotDeployParam))
 				err := oc.Run("new-app").Args("-f", cakephpTemplate, "-p", hotDeployParam).Execute()
 				o.Expect(err).NotTo(o.HaveOccurred())
 
 				g.By("waiting for build to finish")
-				err = exutil.WaitForABuild(oc.BuildClient().Build().Builds(oc.Namespace()), dcName, nil, nil, nil)
+				err = exutil.WaitForABuild(oc.BuildClient().BuildV1().Builds(oc.Namespace()), dcName, nil, nil, nil)
 				if err != nil {
 					exutil.DumpBuildLogs("cakephp-mysql-example", oc)
 				}
@@ -67,7 +61,7 @@ var _ = g.Describe("[image_ecosystem][php][Slow] hot deploy for openshift php im
 				o.Expect(err).NotTo(o.HaveOccurred())
 
 				assertPageCountRegexp := func(priorValue string) string {
-					_, err := exutil.WaitForPods(oc.KubeClient().Core().Pods(oc.Namespace()), dcLabel, exutil.CheckPodIsRunning, 1, 4*time.Minute)
+					_, err := exutil.WaitForPods(oc.KubeClient().CoreV1().Pods(oc.Namespace()), dcLabel, exutil.CheckPodIsRunning, 1, 4*time.Minute)
 					o.ExpectWithOffset(1, err).NotTo(o.HaveOccurred())
 
 					result, val, err := CheckPageRegexp(oc, "cakephp-mysql-example", "", pageRegexpCount, 1)
@@ -93,7 +87,7 @@ var _ = g.Describe("[image_ecosystem][php][Slow] hot deploy for openshift php im
 				o.Expect(err).NotTo(o.HaveOccurred())
 
 				assertPageCountIs := func(i int) {
-					_, err := exutil.WaitForPods(oc.KubeClient().Core().Pods(oc.Namespace()), dcLabel, exutil.CheckPodIsRunning, 1, 4*time.Minute)
+					_, err := exutil.WaitForPods(oc.KubeClient().CoreV1().Pods(oc.Namespace()), dcLabel, exutil.CheckPodIsRunning, 1, 4*time.Minute)
 					o.ExpectWithOffset(1, err).NotTo(o.HaveOccurred())
 
 					result, err := CheckPageContains(oc, "cakephp-mysql-example", "", fmt.Sprintf(pageExactCount, i))

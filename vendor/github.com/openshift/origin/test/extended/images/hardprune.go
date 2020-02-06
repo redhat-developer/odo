@@ -43,13 +43,6 @@ var _ = g.Describe("[Feature:ImagePrune][registry][Serial][Suite:openshift/regis
 			})
 		o.Expect(err).NotTo(o.HaveOccurred())
 
-		g.By("waiting for default service account")
-		err = exutil.WaitForServiceAccount(oc.KubeClient().Core().ServiceAccounts(oc.Namespace()), "default")
-		o.Expect(err).NotTo(o.HaveOccurred())
-		g.By("waiting for builder service account")
-		err = exutil.WaitForServiceAccount(oc.KubeClient().Core().ServiceAccounts(oc.Namespace()), "builder")
-		o.Expect(err).NotTo(o.HaveOccurred())
-
 		defer func(ns string) { oc.SetNamespace(ns) }(oc.Namespace())
 		g.By(fmt.Sprintf("give a user %s a right to prune images with %s role", oc.Username(), "system:image-pruner"))
 		err = oc.AsAdmin().WithoutNamespace().Run("adm").Args("policy", "add-cluster-role-to-user", "system:image-pruner", oc.Username()).Execute()
@@ -202,7 +195,7 @@ var _ = g.Describe("[Feature:ImagePrune][registry][Serial][Suite:openshift/regis
 				*/
 				ManifestLinks: RepoLinks{oc.Namespace() + "/c": []string{childImg1}},
 				Blobs: []string{
-					childImg1, // manifest blob
+					childImg1,                              // manifest blob
 					imgs[childImg1].DockerImageMetadata.ID, // manifest config
 					imgs[childImg1].DockerImageLayers[0].Name,
 				},
@@ -218,7 +211,7 @@ var _ = g.Describe("[Feature:ImagePrune][registry][Serial][Suite:openshift/regis
 		expectedDeletions = mergeOrSetExpectedDeletions(expectedDeletions,
 			&RegistryStorageFiles{
 				Blobs: []string{
-					baseImg1, // manifest blob
+					baseImg1,                              // manifest blob
 					imgs[baseImg1].DockerImageMetadata.ID, // manifest config
 					imgs[baseImg1].DockerImageLayers[0].Name,
 					imgs[baseImg1].DockerImageLayers[1].Name,
@@ -242,7 +235,7 @@ var _ = g.Describe("[Feature:ImagePrune][registry][Serial][Suite:openshift/regis
 				*/
 				ManifestLinks: RepoLinks{oc.Namespace() + "/b": []string{childImg2}},
 				Blobs: []string{
-					childImg2, // manifest blob
+					childImg2,                              // manifest blob
 					imgs[childImg2].DockerImageMetadata.ID, // manifest config
 					imgs[childImg2].DockerImageLayers[0].Name,
 				},
@@ -270,7 +263,7 @@ var _ = g.Describe("[Feature:ImagePrune][registry][Serial][Suite:openshift/regis
 				*/
 				Repos: []string{oc.Namespace() + "/b"},
 				Blobs: []string{
-					baseImg2, // manifest blob
+					baseImg2,                              // manifest blob
 					imgs[baseImg2].DockerImageMetadata.ID, // manifest config
 					imgs[baseImg2].DockerImageLayers[0].Name,
 					imgs[baseImg2].DockerImageLayers[1].Name,
@@ -413,7 +406,7 @@ func GetRegistryPod(podsGetter kcoreclient.PodsGetter) (*kapiv1.Pod, error) {
 
 // LogRegistryPod attempts to write registry log to a file in artifacts directory.
 func LogRegistryPod(oc *exutil.CLI) error {
-	pod, err := GetRegistryPod(oc.KubeClient().Core())
+	pod, err := GetRegistryPod(oc.KubeClient().CoreV1())
 	if err != nil {
 		return fmt.Errorf("failed to get registry pod: %v", err)
 	}

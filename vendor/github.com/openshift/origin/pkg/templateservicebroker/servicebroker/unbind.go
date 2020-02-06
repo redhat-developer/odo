@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	authorizationv1 "k8s.io/api/authorization/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -21,7 +21,7 @@ import (
 // Unbind is the reverse of Bind.  Currently it simply removes the binding ID
 // from the BrokerTemplateInstance, if found.
 func (b *Broker) Unbind(u user.Info, instanceID, bindingID string) *api.Response {
-	glog.V(4).Infof("Template service broker: Unbind: instanceID %s, bindingID %s", instanceID, bindingID)
+	klog.V(4).Infof("Template service broker: Unbind: instanceID %s, bindingID %s", instanceID, bindingID)
 
 	brokerTemplateInstance, err := b.templateclient.BrokerTemplateInstances().Get(instanceID, metav1.GetOptions{})
 	if err != nil {
@@ -34,7 +34,7 @@ func (b *Broker) Unbind(u user.Info, instanceID, bindingID string) *api.Response
 
 	namespace := brokerTemplateInstance.Spec.TemplateInstance.Namespace
 
-	if err := util.Authorize(b.kc.Authorization().SubjectAccessReviews(), u, &authorizationv1.ResourceAttributes{
+	if err := util.Authorize(b.kc.AuthorizationV1().SubjectAccessReviews(), u, &authorizationv1.ResourceAttributes{
 		Namespace: namespace,
 		Verb:      "get",
 		Group:     templateapi.GroupName,
@@ -64,7 +64,7 @@ func (b *Broker) Unbind(u user.Info, instanceID, bindingID string) *api.Response
 	// Note that this specific templateinstance object might not actually exist
 	// anymore, but the SAR check is still valid to confirm the user can update
 	// templateinstances in this namespace.
-	if err := util.Authorize(b.kc.Authorization().SubjectAccessReviews(), u, &authorizationv1.ResourceAttributes{
+	if err := util.Authorize(b.kc.AuthorizationV1().SubjectAccessReviews(), u, &authorizationv1.ResourceAttributes{
 		Namespace: namespace,
 		Verb:      "delete",
 		Group:     templateapi.GroupName,

@@ -4,49 +4,51 @@ import (
 	"net/http"
 	"strings"
 
-	"io/ioutil"
+	"k8s.io/klog"
 
-	"github.com/golang/glog"
-	"github.com/openshift/origin/pkg/cmd/openshift-apiserver/openshiftapiserver/configprocessing"
-	configapi "github.com/openshift/origin/pkg/cmd/server/apis/config"
-	"github.com/openshift/origin/pkg/oauth/urls"
 	genericapiserver "k8s.io/apiserver/pkg/server"
-	"k8s.io/client-go/informers"
-	aggregatorapiserver "k8s.io/kube-aggregator/pkg/apiserver"
+
+	kubecontrolplanev1 "github.com/openshift/api/kubecontrolplane/v1"
+	osinv1 "github.com/openshift/api/osin/v1"
+	"github.com/openshift/origin/pkg/cmd/openshift-apiserver/openshiftapiserver/configprocessing"
+	"github.com/openshift/origin/pkg/oauth/urls"
+	"github.com/openshift/origin/pkg/oauth/util"
+	"github.com/openshift/origin/pkg/util/httprequest"
 )
 
 const (
 	openShiftOAuthAPIPrefix      = "/oauth"
 	openShiftLoginPrefix         = "/login"
+	openShiftLogoutPrefix        = "/logout"
 	openShiftOAuthCallbackPrefix = "/oauth2callback"
 )
 
 // TODO switch back to taking a kubeapiserver config.  For now make it obviously safe for 3.11
-func BuildHandlerChain(genericConfig *genericapiserver.Config, kubeInformers informers.SharedInformerFactory, legacyServiceServingCertSignerCABundle string, oauthConfig *configapi.OAuthConfig, userAgentMatchingConfig configapi.UserAgentMatchingConfig) (func(apiHandler http.Handler, kc *genericapiserver.Config) http.Handler, map[string]genericapiserver.PostStartHookFunc, error) {
+func BuildHandlerChain(genericConfig *genericapiserver.Config, oauthConfig *osinv1.OAuthConfig, authConfig kubecontrolplanev1.MasterAuthConfig, userAgentMatchingConfig kubecontrolplanev1.UserAgentMatchingConfig, consolePublicURL string) (func(apiHandler http.Handler, kc *genericapiserver.Config) http.Handler, map[string]genericapiserver.PostStartHookFunc, error) {
+	// ignore oauthConfig if we have a valid OAuth metadata file
+	// this prevents us from running the internal OAuth server when we are honoring an external one
+	if oauthMetadataFile := authConfig.OAuthMetadataFile; len(oauthMetadataFile) > 0 {
+		if _, _, err := util.LoadOAuthMetadataFile(oauthMetadataFile); err == nil {
+			oauthConfig = nil // simplest way to keep existing code paths working
+		}
+	}
+
 	extraPostStartHooks := map[string]genericapiserver.PostStartHookFunc{}
 
-	webconsoleProxyHandler, err := newWebConsoleProxy(kubeInformers, legacyServiceServingCertSignerCABundle)
-	if err != nil {
-		return nil, nil, err
-	}
-	oauthServerHandler, newPostStartHooks, err := NewOAuthServerHandler(genericConfig, oauthConfig)
-	if err != nil {
-		return nil, nil, err
-	}
-	for name, fn := range newPostStartHooks {
-		extraPostStartHooks[name] = fn
+	var oauthServerHandler http.Handler
+	if oauthConfig != nil {
+		var newPostStartHooks map[string]genericapiserver.PostStartHookFunc
+		var err error
+		oauthServerHandler, newPostStartHooks, err = NewOAuthServerHandler(genericConfig, oauthConfig)
+		if err != nil {
+			return nil, nil, err
+		}
+		for name, fn := range newPostStartHooks {
+			extraPostStartHooks[name] = fn
+		}
 	}
 
 	return func(apiHandler http.Handler, genericConfig *genericapiserver.Config) http.Handler {
-			// Machinery that let's use discover the Web Console Public URL
-			accessor := newWebConsolePublicURLAccessor(genericConfig.LoopbackClientConfig)
-			// the webconsole is proxied through the API server.  This starts a small controller that keeps track of where to proxy.
-			// TODO stop proxying the webconsole. Should happen in a future release.
-			extraPostStartHooks["openshift.io-webconsolepublicurl"] = func(context genericapiserver.PostStartHookContext) error {
-				go accessor.Run(context.StopCh)
-				return nil
-			}
-
 			// these are after the kube handler
 			handler := versionSkewFilter(apiHandler, userAgentMatchingConfig)
 
@@ -57,13 +59,14 @@ func BuildHandlerChain(genericConfig *genericapiserver.Config, kubeInformers inf
 			handler = translateLegacyScopeImpersonation(handler)
 			handler = configprocessing.WithCacheControl(handler, "no-store") // protected endpoints should not be cached
 
-			// redirects from / to /console if you're using a browser
-			handler = withAssetServerRedirect(handler, accessor)
+			// redirects from / and /console to consolePublicURL if you're using a browser
+			handler = withConsoleRedirect(handler, consolePublicURL)
 
-			// these handlers are actually separate API servers which have their own handler chains.
-			// our server embeds these
-			handler = withConsoleRedirection(handler, webconsoleProxyHandler, accessor)
-			handler = withOAuthRedirection(oauthConfig, handler, oauthServerHandler)
+			if oauthConfig != nil {
+				// these handlers are actually separate API servers which have their own handler chains.
+				// our server embeds these
+				handler = withOAuthRedirection(oauthConfig, handler, oauthServerHandler)
+			}
 
 			return handler
 		},
@@ -71,25 +74,13 @@ func BuildHandlerChain(genericConfig *genericapiserver.Config, kubeInformers inf
 		nil
 }
 
-func newWebConsoleProxy(kubeInformers informers.SharedInformerFactory, legacyServiceServingCertSignerCABundle string) (http.Handler, error) {
-	caBundle, err := ioutil.ReadFile(legacyServiceServingCertSignerCABundle)
-	if err != nil {
-		return nil, err
-	}
-	proxyHandler, err := newServiceProxyHandler("webconsole", "openshift-web-console", aggregatorapiserver.NewClusterIPServiceResolver(kubeInformers.Core().V1().Services().Lister()), caBundle, "OpenShift web console")
-	if err != nil {
-		return nil, err
-	}
-	return proxyHandler, nil
-}
-
-func withOAuthRedirection(oauthConfig *configapi.OAuthConfig, handler, oauthServerHandler http.Handler) http.Handler {
+func withOAuthRedirection(oauthConfig *osinv1.OAuthConfig, handler, oauthServerHandler http.Handler) http.Handler {
 	if oauthConfig == nil {
 		return handler
 	}
 
-	glog.Infof("Starting OAuth2 API at %s", urls.OpenShiftOAuthAPIPrefix)
-	return WithPatternPrefixHandler(handler, oauthServerHandler, openShiftOAuthAPIPrefix, openShiftLoginPrefix, openShiftOAuthCallbackPrefix)
+	klog.Infof("Starting OAuth2 API at %s", urls.OpenShiftOAuthAPIPrefix)
+	return WithPatternPrefixHandler(handler, oauthServerHandler, openShiftOAuthAPIPrefix, openShiftLoginPrefix, openShiftLogoutPrefix, openShiftOAuthCallbackPrefix)
 }
 
 func WithPatternPrefixHandler(handler http.Handler, patternHandler http.Handler, prefixes ...string) http.Handler {
@@ -100,6 +91,24 @@ func WithPatternPrefixHandler(handler http.Handler, patternHandler http.Handler,
 				return
 			}
 		}
+		handler.ServeHTTP(w, req)
+	})
+}
+
+// If we know the location of the asset server, redirect to it when / is requested
+// and the Accept header supports text/html
+func withConsoleRedirect(handler http.Handler, consolePublicURL string) http.Handler {
+	if len(consolePublicURL) == 0 {
+		return handler
+	}
+
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if strings.HasPrefix(req.URL.Path, "/console") ||
+			(req.URL.Path == "/" && httprequest.PrefersHTML(req)) {
+			http.Redirect(w, req, consolePublicURL, http.StatusFound)
+			return
+		}
+		// Dispatch to the next handler
 		handler.ServeHTTP(w, req)
 	})
 }

@@ -4,91 +4,106 @@ import (
 	"strings"
 	"testing"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utildiff "k8s.io/apimachinery/pkg/util/diff"
 	"k8s.io/apimachinery/pkg/util/sets"
+	corev1listers "k8s.io/client-go/listers/core/v1"
 	clientgotesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/kubernetes/pkg/api/legacyscheme"
-	kapi "k8s.io/kubernetes/pkg/apis/core"
-	kcorelisters "k8s.io/kubernetes/pkg/client/listers/core/internalversion"
 
-	quotaapiv1 "github.com/openshift/api/quota/v1"
-	quotaapi "github.com/openshift/origin/pkg/quota/apis/quota"
+	quotav1 "github.com/openshift/api/quota/v1"
+	fakequotaclient "github.com/openshift/client-go/quota/clientset/versioned/fake"
+	quotalister "github.com/openshift/client-go/quota/listers/quota/v1"
+	quotav1conversions "github.com/openshift/origin/pkg/quota/apis/quota/v1"
 	"github.com/openshift/origin/pkg/quota/controller/clusterquotamapping"
-	fakequotaclient "github.com/openshift/origin/pkg/quota/generated/internalclientset/fake"
-	quotalister "github.com/openshift/origin/pkg/quota/generated/listers/quota/internalversion"
 )
 
 func TestUpdateQuota(t *testing.T) {
 	testCases := []struct {
 		name            string
-		availableQuotas func() []*quotaapi.ClusterResourceQuota
-		quotaToUpdate   *kapi.ResourceQuota
+		availableQuotas func() []*quotav1.ClusterResourceQuota
+		quotaToUpdate   *corev1.ResourceQuota
 
-		expectedQuota func() *quotaapi.ClusterResourceQuota
+		expectedQuota func() *quotav1.ClusterResourceQuota
 		expectedError string
 	}{
 		{
 			name: "update properly",
-			availableQuotas: func() []*quotaapi.ClusterResourceQuota {
+			availableQuotas: func() []*quotav1.ClusterResourceQuota {
 				user1 := defaultQuota()
 				user1.Name = "user-one"
 				user1.Status.Total.Hard = user1.Spec.Quota.Hard
-				user1.Status.Total.Used = kapi.ResourceList{kapi.ResourcePods: resource.MustParse("15")}
-				user1.Status.Namespaces.Insert("foo", kapi.ResourceQuotaStatus{
-					Hard: user1.Spec.Quota.Hard,
-					Used: kapi.ResourceList{kapi.ResourcePods: resource.MustParse("5")},
+				user1.Status.Total.Used = corev1.ResourceList{corev1.ResourcePods: resource.MustParse("15")}
+				quotav1conversions.InsertResourceQuotasStatus(&user1.Status.Namespaces, quotav1.ResourceQuotaStatusByNamespace{
+					Namespace: "foo",
+					Status: corev1.ResourceQuotaStatus{
+						Hard: user1.Spec.Quota.Hard,
+						Used: corev1.ResourceList{corev1.ResourcePods: resource.MustParse("5")},
+					},
 				})
-				user1.Status.Namespaces.Insert("bar", kapi.ResourceQuotaStatus{
-					Hard: user1.Spec.Quota.Hard,
-					Used: kapi.ResourceList{kapi.ResourcePods: resource.MustParse("10")},
+				quotav1conversions.InsertResourceQuotasStatus(&user1.Status.Namespaces, quotav1.ResourceQuotaStatusByNamespace{
+					Namespace: "bar",
+					Status: corev1.ResourceQuotaStatus{
+						Hard: user1.Spec.Quota.Hard,
+						Used: corev1.ResourceList{corev1.ResourcePods: resource.MustParse("10")},
+					},
 				})
 
 				user2 := defaultQuota()
 				user2.Name = "user-two"
 				user2.Status.Total.Hard = user2.Spec.Quota.Hard
-				user2.Status.Total.Used = kapi.ResourceList{kapi.ResourcePods: resource.MustParse("5")}
-				user2.Status.Namespaces.Insert("foo", kapi.ResourceQuotaStatus{
-					Hard: user2.Spec.Quota.Hard,
-					Used: kapi.ResourceList{kapi.ResourcePods: resource.MustParse("5")},
+				user2.Status.Total.Used = corev1.ResourceList{corev1.ResourcePods: resource.MustParse("5")}
+				quotav1conversions.InsertResourceQuotasStatus(&user2.Status.Namespaces, quotav1.ResourceQuotaStatusByNamespace{
+					Namespace: "foo",
+					Status: corev1.ResourceQuotaStatus{
+						Hard: user1.Spec.Quota.Hard,
+						Used: corev1.ResourceList{corev1.ResourcePods: resource.MustParse("5")},
+					},
 				})
 
-				return []*quotaapi.ClusterResourceQuota{user1, user2}
+				return []*quotav1.ClusterResourceQuota{user1, user2}
 			},
-			quotaToUpdate: &kapi.ResourceQuota{
+			quotaToUpdate: &corev1.ResourceQuota{
 				ObjectMeta: metav1.ObjectMeta{Namespace: "foo", Name: "user-one"},
-				Spec: kapi.ResourceQuotaSpec{
-					Hard: kapi.ResourceList{
-						kapi.ResourcePods:    resource.MustParse("10"),
-						kapi.ResourceSecrets: resource.MustParse("5"),
+				Spec: corev1.ResourceQuotaSpec{
+					Hard: corev1.ResourceList{
+						corev1.ResourcePods:    resource.MustParse("10"),
+						corev1.ResourceSecrets: resource.MustParse("5"),
 					},
 				},
-				Status: kapi.ResourceQuotaStatus{
-					Hard: kapi.ResourceList{
-						kapi.ResourcePods:    resource.MustParse("10"),
-						kapi.ResourceSecrets: resource.MustParse("5"),
+				Status: corev1.ResourceQuotaStatus{
+					Hard: corev1.ResourceList{
+						corev1.ResourcePods:    resource.MustParse("10"),
+						corev1.ResourceSecrets: resource.MustParse("5"),
 					},
-					Used: kapi.ResourceList{
-						kapi.ResourcePods: resource.MustParse("20"),
+					Used: corev1.ResourceList{
+						corev1.ResourcePods: resource.MustParse("20"),
 					},
 				}},
 
-			expectedQuota: func() *quotaapi.ClusterResourceQuota {
+			expectedQuota: func() *quotav1.ClusterResourceQuota {
 				user1 := defaultQuota()
 				user1.Name = "user-one"
 				user1.Status.Total.Hard = user1.Spec.Quota.Hard
-				user1.Status.Total.Used = kapi.ResourceList{kapi.ResourcePods: resource.MustParse("20")}
-				user1.Status.Namespaces.Insert("foo", kapi.ResourceQuotaStatus{
-					Hard: user1.Spec.Quota.Hard,
-					Used: kapi.ResourceList{kapi.ResourcePods: resource.MustParse("10")},
+				user1.Status.Total.Used = corev1.ResourceList{corev1.ResourcePods: resource.MustParse("20")}
+				quotav1conversions.InsertResourceQuotasStatus(&user1.Status.Namespaces, quotav1.ResourceQuotaStatusByNamespace{
+					Namespace: "foo",
+					Status: corev1.ResourceQuotaStatus{
+						Hard: user1.Spec.Quota.Hard,
+						Used: corev1.ResourceList{corev1.ResourcePods: resource.MustParse("10")},
+					},
 				})
-				user1.Status.Namespaces.Insert("bar", kapi.ResourceQuotaStatus{
-					Hard: user1.Spec.Quota.Hard,
-					Used: kapi.ResourceList{kapi.ResourcePods: resource.MustParse("10")},
+				quotav1conversions.InsertResourceQuotasStatus(&user1.Status.Namespaces, quotav1.ResourceQuotaStatusByNamespace{
+					Namespace: "bar",
+					Status: corev1.ResourceQuotaStatus{
+						Hard: user1.Spec.Quota.Hard,
+						Used: corev1.ResourceList{corev1.ResourcePods: resource.MustParse("10")},
+					},
 				})
 
 				return user1
@@ -108,7 +123,7 @@ func TestUpdateQuota(t *testing.T) {
 
 		client := fakequotaclient.NewSimpleClientset(objs...)
 
-		accessor := newQuotaAccessor(quotaLister, nil, client.Quota(), nil)
+		accessor := newQuotaAccessor(quotaLister, nil, client.QuotaV1(), nil)
 
 		actualErr := accessor.UpdateQuotaStatus(tc.quotaToUpdate)
 		switch {
@@ -124,44 +139,34 @@ func TestUpdateQuota(t *testing.T) {
 			continue
 		}
 
-		var actualQuota *quotaapi.ClusterResourceQuota
+		var actualQuota *quotav1.ClusterResourceQuota
 		for _, action := range client.Actions() {
 			updateAction, ok := action.(clientgotesting.UpdateActionImpl)
 			if !ok {
 				continue
 			}
 			if updateAction.Matches("update", "clusterresourcequotas") && updateAction.Subresource == "status" {
-				actualQuota = updateAction.GetObject().(*quotaapi.ClusterResourceQuota)
+				actualQuota = updateAction.GetObject().(*quotav1.ClusterResourceQuota)
 				break
 			}
 		}
 
-		expectedV1, err := legacyscheme.Scheme.ConvertToVersion(tc.expectedQuota(), quotaapiv1.SchemeGroupVersion)
-		if err != nil {
-			t.Errorf("%s: unexpected error: %v", tc.name, err)
-			continue
-		}
-		actualV1, err := legacyscheme.Scheme.ConvertToVersion(actualQuota, quotaapiv1.SchemeGroupVersion)
-		if err != nil {
-			t.Errorf("%s: unexpected error: %v", tc.name, err)
-			continue
-		}
-		if !equality.Semantic.DeepEqual(expectedV1, actualV1) {
-			t.Errorf("%s: %v", tc.name, utildiff.ObjectDiff(expectedV1, actualV1))
+		if !equality.Semantic.DeepEqual(tc.expectedQuota(), actualQuota) {
+			t.Errorf("%s: %v", tc.name, utildiff.ObjectDiff(tc.expectedQuota(), actualQuota))
 			continue
 		}
 	}
 
 }
 
-func defaultQuota() *quotaapi.ClusterResourceQuota {
-	return &quotaapi.ClusterResourceQuota{
+func defaultQuota() *quotav1.ClusterResourceQuota {
+	return &quotav1.ClusterResourceQuota{
 		ObjectMeta: metav1.ObjectMeta{Name: "foo"},
-		Spec: quotaapi.ClusterResourceQuotaSpec{
-			Quota: kapi.ResourceQuotaSpec{
-				Hard: kapi.ResourceList{
-					kapi.ResourcePods:    resource.MustParse("10"),
-					kapi.ResourceSecrets: resource.MustParse("5"),
+		Spec: quotav1.ClusterResourceQuotaSpec{
+			Quota: corev1.ResourceQuotaSpec{
+				Hard: corev1.ResourceList{
+					corev1.ResourcePods:    resource.MustParse("10"),
+					corev1.ResourceSecrets: resource.MustParse("5"),
 				},
 			},
 		},
@@ -171,20 +176,20 @@ func defaultQuota() *quotaapi.ClusterResourceQuota {
 func TestGetQuota(t *testing.T) {
 	testCases := []struct {
 		name                string
-		availableQuotas     func() []*quotaapi.ClusterResourceQuota
-		availableNamespaces []*kapi.Namespace
+		availableQuotas     func() []*quotav1.ClusterResourceQuota
+		availableNamespaces []*corev1.Namespace
 		mapperFunc          func() clusterquotamapping.ClusterQuotaMapper
 		requestedNamespace  string
 
-		expectedQuotas func() []*kapi.ResourceQuota
+		expectedQuotas func() []*corev1.ResourceQuota
 		expectedError  string
 	}{
 		{
 			name: "namespace not synced",
-			availableQuotas: func() []*quotaapi.ClusterResourceQuota {
+			availableQuotas: func() []*quotav1.ClusterResourceQuota {
 				return nil
 			},
-			availableNamespaces: []*kapi.Namespace{
+			availableNamespaces: []*corev1.Namespace{
 				{ObjectMeta: metav1.ObjectMeta{Name: "foo", Labels: map[string]string{"one": "alfa"}}},
 			},
 			mapperFunc: func() clusterquotamapping.ClusterQuotaMapper {
@@ -199,10 +204,10 @@ func TestGetQuota(t *testing.T) {
 		},
 		{
 			name: "no hits on namespace",
-			availableQuotas: func() []*quotaapi.ClusterResourceQuota {
+			availableQuotas: func() []*quotav1.ClusterResourceQuota {
 				return nil
 			},
-			availableNamespaces: []*kapi.Namespace{
+			availableNamespaces: []*corev1.Namespace{
 				{ObjectMeta: metav1.ObjectMeta{Name: "foo", Labels: map[string]string{"one": "alfa"}}},
 			},
 			mapperFunc: func() clusterquotamapping.ClusterQuotaMapper {
@@ -215,39 +220,48 @@ func TestGetQuota(t *testing.T) {
 			},
 			requestedNamespace: "foo",
 
-			expectedQuotas: func() []*kapi.ResourceQuota {
-				return []*kapi.ResourceQuota{}
+			expectedQuotas: func() []*corev1.ResourceQuota {
+				return []*corev1.ResourceQuota{}
 			},
 			expectedError: "",
 		},
 		{
 			name: "correct quota and namespaces",
-			availableQuotas: func() []*quotaapi.ClusterResourceQuota {
+			availableQuotas: func() []*quotav1.ClusterResourceQuota {
 				user1 := defaultQuota()
 				user1.Name = "user-one"
 				user1.Status.Total.Hard = user1.Spec.Quota.Hard
-				user1.Status.Total.Used = kapi.ResourceList{kapi.ResourcePods: resource.MustParse("15")}
-				user1.Status.Namespaces.Insert("foo", kapi.ResourceQuotaStatus{
-					Hard: user1.Spec.Quota.Hard,
-					Used: kapi.ResourceList{kapi.ResourcePods: resource.MustParse("5")},
+				user1.Status.Total.Used = corev1.ResourceList{corev1.ResourcePods: resource.MustParse("15")}
+				quotav1conversions.InsertResourceQuotasStatus(&user1.Status.Namespaces, quotav1.ResourceQuotaStatusByNamespace{
+					Namespace: "foo",
+					Status: corev1.ResourceQuotaStatus{
+						Hard: user1.Spec.Quota.Hard,
+						Used: corev1.ResourceList{corev1.ResourcePods: resource.MustParse("5")},
+					},
 				})
-				user1.Status.Namespaces.Insert("bar", kapi.ResourceQuotaStatus{
-					Hard: user1.Spec.Quota.Hard,
-					Used: kapi.ResourceList{kapi.ResourcePods: resource.MustParse("10")},
+				quotav1conversions.InsertResourceQuotasStatus(&user1.Status.Namespaces, quotav1.ResourceQuotaStatusByNamespace{
+					Namespace: "bar",
+					Status: corev1.ResourceQuotaStatus{
+						Hard: user1.Spec.Quota.Hard,
+						Used: corev1.ResourceList{corev1.ResourcePods: resource.MustParse("10")},
+					},
 				})
 
 				user2 := defaultQuota()
 				user2.Name = "user-two"
 				user2.Status.Total.Hard = user2.Spec.Quota.Hard
-				user2.Status.Total.Used = kapi.ResourceList{kapi.ResourcePods: resource.MustParse("5")}
-				user2.Status.Namespaces.Insert("foo", kapi.ResourceQuotaStatus{
-					Hard: user2.Spec.Quota.Hard,
-					Used: kapi.ResourceList{kapi.ResourcePods: resource.MustParse("5")},
+				user2.Status.Total.Used = corev1.ResourceList{corev1.ResourcePods: resource.MustParse("5")}
+				quotav1conversions.InsertResourceQuotasStatus(&user2.Status.Namespaces, quotav1.ResourceQuotaStatusByNamespace{
+					Namespace: "foo",
+					Status: corev1.ResourceQuotaStatus{
+						Hard: user1.Spec.Quota.Hard,
+						Used: corev1.ResourceList{corev1.ResourcePods: resource.MustParse("5")},
+					},
 				})
 
-				return []*quotaapi.ClusterResourceQuota{user1, user2}
+				return []*quotav1.ClusterResourceQuota{user1, user2}
 			},
-			availableNamespaces: []*kapi.Namespace{
+			availableNamespaces: []*corev1.Namespace{
 				{ObjectMeta: metav1.ObjectMeta{Name: "foo", Labels: map[string]string{"one": "alfa"}}},
 			},
 			mapperFunc: func() clusterquotamapping.ClusterQuotaMapper {
@@ -258,23 +272,23 @@ func TestGetQuota(t *testing.T) {
 			},
 			requestedNamespace: "foo",
 
-			expectedQuotas: func() []*kapi.ResourceQuota {
-				return []*kapi.ResourceQuota{
+			expectedQuotas: func() []*corev1.ResourceQuota {
+				return []*corev1.ResourceQuota{
 					{
 						ObjectMeta: metav1.ObjectMeta{Namespace: "foo", Name: "user-one"},
-						Spec: kapi.ResourceQuotaSpec{
-							Hard: kapi.ResourceList{
-								kapi.ResourcePods:    resource.MustParse("10"),
-								kapi.ResourceSecrets: resource.MustParse("5"),
+						Spec: corev1.ResourceQuotaSpec{
+							Hard: corev1.ResourceList{
+								corev1.ResourcePods:    resource.MustParse("10"),
+								corev1.ResourceSecrets: resource.MustParse("5"),
 							},
 						},
-						Status: kapi.ResourceQuotaStatus{
-							Hard: kapi.ResourceList{
-								kapi.ResourcePods:    resource.MustParse("10"),
-								kapi.ResourceSecrets: resource.MustParse("5"),
+						Status: corev1.ResourceQuotaStatus{
+							Hard: corev1.ResourceList{
+								corev1.ResourcePods:    resource.MustParse("10"),
+								corev1.ResourceSecrets: resource.MustParse("5"),
 							},
-							Used: kapi.ResourceList{
-								kapi.ResourcePods: resource.MustParse("15"),
+							Used: corev1.ResourceList{
+								corev1.ResourcePods: resource.MustParse("15"),
 							},
 						},
 					},
@@ -295,11 +309,11 @@ func TestGetQuota(t *testing.T) {
 		for i := range tc.availableNamespaces {
 			namespaceIndexer.Add(tc.availableNamespaces[i])
 		}
-		namespaceLister := kcorelisters.NewNamespaceLister(namespaceIndexer)
+		namespaceLister := corev1listers.NewNamespaceLister(namespaceIndexer)
 
 		client := fakequotaclient.NewSimpleClientset()
 
-		accessor := newQuotaAccessor(quotaLister, namespaceLister, client.Quota(), tc.mapperFunc())
+		accessor := newQuotaAccessor(quotaLister, namespaceLister, client.QuotaV1(), tc.mapperFunc())
 
 		actualQuotas, actualErr := accessor.GetQuotas(tc.requestedNamespace)
 		switch {
@@ -319,7 +333,7 @@ func TestGetQuota(t *testing.T) {
 			continue
 		}
 
-		actualQuotaPointers := []*kapi.ResourceQuota{}
+		actualQuotaPointers := []*corev1.ResourceQuota{}
 		for i := range actualQuotas {
 			actualQuotaPointers = append(actualQuotaPointers, &actualQuotas[i])
 		}
@@ -328,12 +342,12 @@ func TestGetQuota(t *testing.T) {
 		if !equality.Semantic.DeepEqual(expectedQuotas, actualQuotaPointers) {
 			t.Errorf("%s: expectedLen: %v actualLen: %v", tc.name, len(expectedQuotas), len(actualQuotas))
 			for i := range expectedQuotas {
-				expectedV1, err := legacyscheme.Scheme.ConvertToVersion(expectedQuotas[i], quotaapiv1.SchemeGroupVersion)
+				expectedV1, err := legacyscheme.Scheme.ConvertToVersion(expectedQuotas[i], quotav1.SchemeGroupVersion)
 				if err != nil {
 					t.Errorf("%s: unexpected error: %v", tc.name, err)
 					continue
 				}
-				actualV1, err := legacyscheme.Scheme.ConvertToVersion(actualQuotaPointers[i], quotaapiv1.SchemeGroupVersion)
+				actualV1, err := legacyscheme.Scheme.ConvertToVersion(actualQuotaPointers[i], quotav1.SchemeGroupVersion)
 				if err != nil {
 					t.Errorf("%s: unexpected error: %v", tc.name, err)
 					continue
@@ -346,7 +360,7 @@ func TestGetQuota(t *testing.T) {
 }
 
 type fakeClusterQuotaMapper struct {
-	quotaToSelector            map[string]quotaapi.ClusterResourceQuotaSelector
+	quotaToSelector            map[string]quotav1.ClusterResourceQuotaSelector
 	namespaceToSelectionFields map[string]clusterquotamapping.SelectionFields
 
 	quotaToNamespaces map[string]sets.String
@@ -355,7 +369,7 @@ type fakeClusterQuotaMapper struct {
 
 func newFakeClusterQuotaMapper() *fakeClusterQuotaMapper {
 	return &fakeClusterQuotaMapper{
-		quotaToSelector:            map[string]quotaapi.ClusterResourceQuotaSelector{},
+		quotaToSelector:            map[string]quotav1.ClusterResourceQuotaSelector{},
 		namespaceToSelectionFields: map[string]clusterquotamapping.SelectionFields{},
 		quotaToNamespaces:          map[string]sets.String{},
 		namespaceToQuota:           map[string]sets.String{},
@@ -365,7 +379,7 @@ func newFakeClusterQuotaMapper() *fakeClusterQuotaMapper {
 func (m *fakeClusterQuotaMapper) GetClusterQuotasFor(namespaceName string) ([]string, clusterquotamapping.SelectionFields) {
 	return m.namespaceToQuota[namespaceName].List(), m.namespaceToSelectionFields[namespaceName]
 }
-func (m *fakeClusterQuotaMapper) GetNamespacesFor(quotaName string) ([]string, quotaapi.ClusterResourceQuotaSelector) {
+func (m *fakeClusterQuotaMapper) GetNamespacesFor(quotaName string) ([]string, quotav1.ClusterResourceQuotaSelector) {
 	return m.quotaToNamespaces[quotaName].List(), m.quotaToSelector[quotaName]
 }
 func (m *fakeClusterQuotaMapper) AddListener(listener clusterquotamapping.MappingChangeListener) {}

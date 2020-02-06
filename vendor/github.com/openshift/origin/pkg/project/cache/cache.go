@@ -4,20 +4,19 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/runtime"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/cache"
-	kapi "k8s.io/kubernetes/pkg/apis/core"
-	kcoreclient "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/internalversion"
 
 	projectapi "github.com/openshift/origin/pkg/project/apis/project"
-	"github.com/openshift/origin/pkg/util/labelselector"
 )
 
 // NewProjectCache returns a non-initialized ProjectCache. The cache needs to be run to begin functioning
-func NewProjectCache(namespaces cache.SharedIndexInformer, client kcoreclient.NamespaceInterface, defaultNodeSelector string) *ProjectCache {
+func NewProjectCache(namespaces cache.SharedIndexInformer, client corev1client.NamespaceInterface, defaultNodeSelector string) *ProjectCache {
 	if err := namespaces.GetIndexer().AddIndexers(cache.Indexers{
 		"requester": indexNamespaceByRequester,
 	}); err != nil {
@@ -32,14 +31,14 @@ func NewProjectCache(namespaces cache.SharedIndexInformer, client kcoreclient.Na
 }
 
 type ProjectCache struct {
-	Client              kcoreclient.NamespaceInterface
+	Client              corev1client.NamespaceInterface
 	Store               cache.Indexer
 	HasSynced           cache.InformerSynced
 	DefaultNodeSelector string
 }
 
-func (p *ProjectCache) GetNamespace(name string) (*kapi.Namespace, error) {
-	key := &kapi.Namespace{ObjectMeta: metav1.ObjectMeta{Name: name}}
+func (p *ProjectCache) GetNamespace(name string) (*corev1.Namespace, error) {
+	key := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: name}}
 
 	// check for namespace in the cache
 	namespaceObj, exists, err := p.Store.Get(key)
@@ -55,13 +54,13 @@ func (p *ProjectCache) GetNamespace(name string) (*kapi.Namespace, error) {
 			return nil, err
 		}
 		if exists {
-			glog.V(4).Infof("found %s in cache after waiting", name)
+			klog.V(4).Infof("found %s in cache after waiting", name)
 		}
 	}
 
-	var namespace *kapi.Namespace
+	var namespace *corev1.Namespace
 	if exists {
-		namespace = namespaceObj.(*kapi.Namespace)
+		namespace = namespaceObj.(*corev1.Namespace)
 	} else {
 		// Our watch maybe latent, so we make a best effort to get the object, and only fail if not found
 		namespace, err = p.Client.Get(name, metav1.GetOptions{})
@@ -69,33 +68,9 @@ func (p *ProjectCache) GetNamespace(name string) (*kapi.Namespace, error) {
 		if err != nil {
 			return nil, fmt.Errorf("namespace %s does not exist", name)
 		}
-		glog.V(4).Infof("found %s via storage lookup", name)
+		klog.V(4).Infof("found %s via storage lookup", name)
 	}
 	return namespace, nil
-}
-
-func (p *ProjectCache) GetNodeSelector(namespace *kapi.Namespace) string {
-	selector := ""
-	found := false
-	if len(namespace.ObjectMeta.Annotations) > 0 {
-		if ns, ok := namespace.ObjectMeta.Annotations[projectapi.ProjectNodeSelector]; ok {
-			selector = ns
-			found = true
-		}
-	}
-	if !found {
-		selector = p.DefaultNodeSelector
-	}
-	return selector
-}
-
-func (p *ProjectCache) GetNodeSelectorMap(namespace *kapi.Namespace) (map[string]string, error) {
-	selector := p.GetNodeSelector(namespace)
-	labelsMap, err := labelselector.Parse(selector)
-	if err != nil {
-		return map[string]string{}, err
-	}
-	return labelsMap, nil
 }
 
 // Run waits until the cache has synced.
@@ -113,7 +88,7 @@ func (c *ProjectCache) Running() bool {
 }
 
 // NewFake is used for testing purpose only
-func NewFake(c kcoreclient.NamespaceInterface, store cache.Indexer, defaultNodeSelector string) *ProjectCache {
+func NewFake(c corev1client.NamespaceInterface, store cache.Indexer, defaultNodeSelector string) *ProjectCache {
 	return &ProjectCache{
 		Client:              c,
 		Store:               store,
@@ -130,6 +105,6 @@ func NewCacheStore(keyFn cache.KeyFunc) cache.Indexer {
 
 // indexNamespaceByRequester returns the requester for a given namespace object as an index value
 func indexNamespaceByRequester(obj interface{}) ([]string, error) {
-	requester := obj.(*kapi.Namespace).Annotations[projectapi.ProjectRequester]
+	requester := obj.(*corev1.Namespace).Annotations[projectapi.ProjectRequester]
 	return []string{requester}, nil
 }

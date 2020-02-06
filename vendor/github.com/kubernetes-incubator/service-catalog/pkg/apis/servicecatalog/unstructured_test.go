@@ -28,8 +28,8 @@ import (
 	"github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/testapi"
 	sctesting "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/testing"
 
+	"k8s.io/apimachinery/pkg/api/apitesting/fuzzer"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
-	"k8s.io/apimachinery/pkg/api/testing/fuzzer"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/diff"
 	"k8s.io/apimachinery/pkg/util/json"
@@ -64,6 +64,24 @@ func doUnstructuredRoundTrip(t *testing.T, group testapi.TestGroup, kind string)
 			c.FuzzNoCustom(is)
 			is.ExternalID = string(uuid.NewUUID())
 			is.Parameters = nil
+		},
+		func(is *servicecatalog.ServiceInstanceStatus, c fuzz.Continue) {
+			c.FuzzNoCustom(is)
+			is.DefaultProvisionParameters = nil
+		},
+		func(is *servicecatalog.CommonServicePlanSpec, c fuzz.Continue) {
+			c.FuzzNoCustom(is)
+			is.DefaultProvisionParameters = nil
+			is.ExternalMetadata = nil
+			is.ServiceBindingCreateParameterSchema = nil
+			is.ServiceBindingCreateResponseSchema = nil
+			is.InstanceCreateParameterSchema = nil
+			is.InstanceUpdateParameterSchema = nil
+		},
+		func(cs *servicecatalog.CommonServiceClassSpec, c fuzz.Continue) {
+			c.FuzzNoCustom(cs)
+			cs.DefaultProvisionParameters = nil
+			cs.ExternalMetadata = nil
 		},
 		func(bs *servicecatalog.ServiceBindingSpec, c fuzz.Continue) {
 			c.FuzzNoCustom(bs)

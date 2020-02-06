@@ -1,26 +1,36 @@
 package openshift_kube_apiserver
 
 import (
-	"fmt"
-
-	"github.com/golang/glog"
-
-	"k8s.io/apimachinery/pkg/util/sets"
-	utilwait "k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apiserver/pkg/admission"
 	genericapiserver "k8s.io/apiserver/pkg/server"
+	"k8s.io/klog"
+	"k8s.io/kube-aggregator/pkg/apiserver"
 	"k8s.io/kubernetes/cmd/kube-apiserver/app"
 	"k8s.io/kubernetes/pkg/capabilities"
+	"k8s.io/kubernetes/pkg/kubeapiserver/options"
 	kubelettypes "k8s.io/kubernetes/pkg/kubelet/types"
 	"k8s.io/kubernetes/plugin/pkg/auth/authorizer/rbac/bootstrappolicy"
 
+	kubecontrolplanev1 "github.com/openshift/api/kubecontrolplane/v1"
+	"github.com/openshift/origin/pkg/admission/customresourcevalidation/customresourcevalidationregistration"
+	"github.com/openshift/origin/pkg/cmd/openshift-kube-apiserver/kubeadmission"
 	"github.com/openshift/origin/pkg/cmd/openshift-kube-apiserver/openshiftkubeapiserver"
-	configapi "github.com/openshift/origin/pkg/cmd/server/apis/config"
-	originadmission "github.com/openshift/origin/pkg/cmd/server/origin/admission"
-	"k8s.io/kubernetes/pkg/kubeapiserver/options"
+
+	// for metrics
+	_ "k8s.io/kubernetes/pkg/client/metrics/prometheus"
 )
 
-func RunOpenShiftKubeAPIServerServer(kubeAPIServerConfig *configapi.KubeAPIServerConfig) error {
+func RunOpenShiftKubeAPIServerServer(kubeAPIServerConfig *kubecontrolplanev1.KubeAPIServerConfig, stopCh <-chan struct{}) error {
+	// This allows to move crqs, sccs, and rbrs to CRD
+	apiserver.AddAlwaysLocalDelegateForPrefix("/apis/quota.openshift.io/v1/clusterresourcequotas")
+	apiserver.AddAlwaysLocalDelegateForPrefix("/apis/security.openshift.io/v1/securitycontextconstraints")
+	apiserver.AddAlwaysLocalDelegateForPrefix("/apis/authorization.openshift.io/v1/rolebindingrestrictions")
+	apiserver.AddAlwaysLocalDelegateGroupResource(schema.GroupResource{Group: "authorization.openshift.io", Resource: "rolebindingrestrictions"})
+
+	// This allows the CRD registration to avoid fighting with the APIService from the operator
+	apiserver.AddOverlappingGroupVersion(schema.GroupVersion{Group: "authorization.openshift.io", Version: "v1"})
+
 	// Allow privileged containers
 	capabilities.Initialize(capabilities.Capabilities{
 		AllowPrivileged: true,
@@ -34,24 +44,21 @@ func RunOpenShiftKubeAPIServerServer(kubeAPIServerConfig *configapi.KubeAPIServe
 	bootstrappolicy.ClusterRoles = bootstrappolicy.OpenshiftClusterRoles
 	bootstrappolicy.ClusterRoleBindings = bootstrappolicy.OpenshiftClusterRoleBindings
 
-	options.AllOrderedPlugins = originadmission.CombinedAdmissionControlPlugins
+	options.AllOrderedPlugins = kubeadmission.NewOrderedKubeAdmissionPlugins(options.AllOrderedPlugins)
+
 	kubeRegisterAdmission := options.RegisterAllAdmissionPlugins
 	options.RegisterAllAdmissionPlugins = func(plugins *admission.Plugins) {
 		kubeRegisterAdmission(plugins)
-		originadmission.RegisterOpenshiftAdmissionPlugins(plugins)
+		kubeadmission.RegisterOpenshiftKubeAdmissionPlugins(plugins)
+		customresourcevalidationregistration.RegisterCustomResourceValidation(plugins)
 	}
-	kubeDefaultOffAdmission := options.DefaultOffAdmissionPlugins
-	options.DefaultOffAdmissionPlugins = func() sets.String {
-		kubeOff := kubeDefaultOffAdmission()
-		kubeOff.Delete(originadmission.DefaultOnPlugins.List()...)
-		return kubeOff
-	}
+	options.DefaultOffAdmissionPlugins = kubeadmission.NewDefaultOffPluginsFunc(options.DefaultOffAdmissionPlugins())
 
 	configPatchFn, serverPatchContext := openshiftkubeapiserver.NewOpenShiftKubeAPIServerConfigPatch(genericapiserver.NewEmptyDelegate(), kubeAPIServerConfig)
 	app.OpenShiftKubeAPIServerConfigPatch = configPatchFn
 	app.OpenShiftKubeAPIServerServerPatch = serverPatchContext.PatchServer
 
-	cmd := app.NewAPIServerCommand(utilwait.NeverStop)
+	cmd := app.NewAPIServerCommand(stopCh)
 	args, err := openshiftkubeapiserver.ConfigToFlags(kubeAPIServerConfig)
 	if err != nil {
 		return err
@@ -59,10 +66,10 @@ func RunOpenShiftKubeAPIServerServer(kubeAPIServerConfig *configapi.KubeAPIServe
 	if err := cmd.ParseFlags(args); err != nil {
 		return err
 	}
-	glog.Infof("`kube-apiserver %v`", args)
+	klog.Infof("`kube-apiserver %v`", args)
 	if err := cmd.RunE(cmd, nil); err != nil {
 		return err
 	}
 
-	return fmt.Errorf("`kube-apiserver %v` exited", args)
+	return nil
 }

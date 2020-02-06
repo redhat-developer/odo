@@ -4,29 +4,28 @@ import (
 	"errors"
 	"testing"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	api "k8s.io/kubernetes/pkg/apis/core"
-	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/fake"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions/resource"
+	"k8s.io/cli-runtime/pkg/genericclioptions/resource"
+	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/kubernetes/pkg/kubectl/polymorphichelpers"
-	"k8s.io/kubernetes/pkg/kubectl/scheme"
 
 	"github.com/openshift/origin/pkg/oc/originpolymorphichelpers"
 )
 
-func fakePodWithVol() *api.Pod {
-	fakePod := &api.Pod{
+func fakePodWithVol() *corev1.Pod {
+	fakePod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "fakepod",
 		},
-		Spec: api.PodSpec{
-			Containers: []api.Container{
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
 				{
 					Name: "fake-container",
-					VolumeMounts: []api.VolumeMount{
+					VolumeMounts: []corev1.VolumeMount{
 						{
 							Name:      "fake-mount",
 							MountPath: "/var/www/html",
@@ -34,11 +33,11 @@ func fakePodWithVol() *api.Pod {
 					},
 				},
 			},
-			Volumes: []api.Volume{
+			Volumes: []corev1.Volume{
 				{
 					Name: "fake-mount",
-					VolumeSource: api.VolumeSource{
-						HostPath: &api.HostPathVolumeSource{
+					VolumeSource: corev1.VolumeSource{
+						HostPath: &corev1.HostPathVolumeSource{
 							Path: "/var/www/html",
 						},
 					},
@@ -49,17 +48,17 @@ func fakePodWithVol() *api.Pod {
 	return fakePod
 }
 
-func fakePodWithVolumeClaim() *api.Pod {
-	fakePod := &api.Pod{
+func fakePodWithVolumeClaim() *corev1.Pod {
+	fakePod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "fakepod",
 		},
-		Spec: api.PodSpec{
-			Containers: []api.Container{
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
 				{
 					Name: "fake-container",
-					VolumeMounts: []api.VolumeMount{
+					VolumeMounts: []corev1.VolumeMount{
 						{
 							Name:      "fake-mount",
 							MountPath: "/var/www/html",
@@ -67,11 +66,11 @@ func fakePodWithVolumeClaim() *api.Pod {
 					},
 				},
 			},
-			Volumes: []api.Volume{
+			Volumes: []corev1.Volume{
 				{
 					Name: "fake-mount",
-					VolumeSource: api.VolumeSource{
-						PersistentVolumeClaim: &api.PersistentVolumeClaimVolumeSource{
+					VolumeSource: corev1.VolumeSource{
+						PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 							ClaimName: "fake-claim",
 						},
 					},
@@ -82,14 +81,14 @@ func fakePodWithVolumeClaim() *api.Pod {
 	return fakePod
 }
 
-func makeFakePod() *api.Pod {
-	fakePod := &api.Pod{
+func makeFakePod() *corev1.Pod {
+	fakePod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "default",
 			Name:      "fakepod",
 		},
-		Spec: api.PodSpec{
-			Containers: []api.Container{
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
 				{
 					Name: "fake-container",
 				},
@@ -110,10 +109,10 @@ func getFakeMapping() *meta.RESTMapping {
 	return fakeMapping
 }
 
-func getFakeInfo(podInfo *api.Pod) ([]*resource.Info, *VolumeOptions) {
+func getFakeInfo(podInfo *corev1.Pod) ([]*resource.Info, *VolumeOptions) {
 	fakeMapping := getFakeMapping()
 	info := &resource.Info{
-		Client:    fake.NewSimpleClientset().Core().RESTClient(),
+		Client:    fake.NewSimpleClientset().CoreV1().RESTClient(),
 		Mapping:   fakeMapping,
 		Namespace: "default",
 		Name:      "fakepod",
@@ -122,7 +121,6 @@ func getFakeInfo(podInfo *api.Pod) ([]*resource.Info, *VolumeOptions) {
 	infos := []*resource.Info{info}
 	vOptions := &VolumeOptions{}
 	vOptions.Name = "fake-mount"
-	vOptions.Encoder = scheme.DefaultJSONEncoder()
 	vOptions.Containers = "*"
 	// we need to manually set this the way it is set in pkg/oc/cli/shim_kubectl.go
 	vOptions.UpdatePodSpecForObject = originpolymorphichelpers.NewUpdatePodSpecForObjectFn(polymorphichelpers.UpdatePodSpecForObjectFn)
@@ -142,7 +140,7 @@ func TestRemoveVolume(t *testing.T) {
 		t.Errorf("Expected at least 1 patch object")
 	}
 	updatedInfo := patches[0].Info
-	podObject, ok := updatedInfo.Object.(*api.Pod)
+	podObject, ok := updatedInfo.Object.(*corev1.Pod)
 
 	if !ok {
 		t.Errorf("Expected pod info to be updated")
@@ -173,7 +171,7 @@ func TestAddVolume(t *testing.T) {
 		t.Errorf("Expected at least 1 patch object")
 	}
 	updatedInfo := patches[0].Info
-	podObject, ok := updatedInfo.Object.(*api.Pod)
+	podObject, ok := updatedInfo.Object.(*corev1.Pod)
 
 	if !ok {
 		t.Errorf("Expected pod info to be updated")
@@ -211,7 +209,7 @@ func TestAddRemoveVolumeWithExistingClaim(t *testing.T) {
 	}
 
 	updatedInfo := patches[0].Info
-	podObject, ok := updatedInfo.Object.(*api.Pod)
+	podObject, ok := updatedInfo.Object.(*corev1.Pod)
 
 	if !ok {
 		t.Errorf("Expected pod info to be updated")
@@ -244,7 +242,7 @@ func TestAddRemoveVolumeWithExistingClaim(t *testing.T) {
 	}
 
 	updatedInfo2 := removePatches[0].Info
-	podObject2, ok := updatedInfo2.Object.(*api.Pod)
+	podObject2, ok := updatedInfo2.Object.(*corev1.Pod)
 
 	if !ok {
 		t.Errorf("Expected pod info to be updated")
@@ -258,21 +256,59 @@ func TestAddRemoveVolumeWithExistingClaim(t *testing.T) {
 }
 
 func TestCreateClaim(t *testing.T) {
-	addOpts := &AddVolumeOptions{
-		Type:       "persistentVolumeClaim",
-		ClaimClass: "foobar",
-		ClaimName:  "foo-vol",
-		ClaimSize:  "5G",
-		MountPath:  "/sandbox",
+	tests := []struct {
+		name          string
+		addOpts       *AddVolumeOptions
+		expAnnotation string
+	}{
+		{
+			"Create ClaimClass with a value",
+			&AddVolumeOptions{
+				Type:         "persistentVolumeClaim",
+				ClaimClass:   "foobar",
+				ClassChanged: true,
+				ClaimName:    "foo-vol",
+				ClaimSize:    "5G",
+				MountPath:    "/sandbox",
+			},
+			"foobar",
+		},
+		{
+			"Create ClaimClass with an empty value",
+			&AddVolumeOptions{
+				Type:         "persistentVolumeClaim",
+				ClaimClass:   "",
+				ClassChanged: true,
+				ClaimName:    "foo-vol",
+				ClaimSize:    "5G",
+				MountPath:    "/sandbox",
+			},
+			"",
+		},
+		{
+			"Create ClaimClass without a value",
+			&AddVolumeOptions{
+				Type:         "persistentVolumeClaim",
+				ClassChanged: false,
+				ClaimName:    "foo-vol",
+				ClaimSize:    "5G",
+				MountPath:    "/sandbox",
+			},
+			"",
+		},
 	}
 
-	pvc := addOpts.createClaim()
-	if len(pvc.Annotations) == 0 {
-		t.Errorf("Expected storage class annotation")
-	}
+	for _, testCase := range tests {
+		pvc := testCase.addOpts.createClaim()
+		if testCase.addOpts.ClassChanged && len(pvc.Annotations) == 0 {
+			t.Errorf("%s: Expected storage class annotation", testCase.name)
+		} else if !testCase.addOpts.ClassChanged && len(pvc.Annotations) != 0 {
+			t.Errorf("%s: Unexpected storage class annotation", testCase.name)
+		}
 
-	if pvc.Annotations[storageAnnClass] != "foobar" {
-		t.Errorf("Expected storage annotated class to be %s", addOpts.ClaimClass)
+		if pvc.Annotations[storageAnnClass] != testCase.expAnnotation {
+			t.Errorf("%s: Expected storage annotated class to be \"%s\", but had \"%s\"", testCase.name, testCase.addOpts.ClaimClass, pvc.Annotations[storageAnnClass])
+		}
 	}
 }
 

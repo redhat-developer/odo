@@ -21,7 +21,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -38,7 +38,7 @@ import (
 )
 
 const (
-	// Name of admission plug-in
+	// PluginName indicates the name of admission plug-in
 	PluginName = "NamespaceLifecycle"
 	// how long a namespace stays in the force live lookup cache before expiration.
 	forceLiveLookupTTL = 30 * time.Second
@@ -53,7 +53,14 @@ const (
 // Register registers a plugin
 func Register(plugins *admission.Plugins) {
 	plugins.Register(PluginName, func(config io.Reader) (admission.Interface, error) {
-		return NewLifecycle(sets.NewString(metav1.NamespaceDefault, metav1.NamespaceSystem, metav1.NamespacePublic, "openshift", "openshift-infra"))
+		return NewLifecycle(sets.NewString(metav1.NamespaceDefault, metav1.NamespaceSystem, metav1.NamespacePublic,
+			// user specified configuration that cannot be rebuilt
+			"openshift-config",
+			// the CVO which is the root we use to rebuild all the rest
+			"openshift-cluster-version",
+			// contains a namespaced list of all nodes in the cluster (yeah, weird.  they do it for multi-tenant management I think?)
+			"openshift-machine-api",
+		))
 	})
 }
 
@@ -72,6 +79,7 @@ type Lifecycle struct {
 var _ = initializer.WantsExternalKubeInformerFactory(&Lifecycle{})
 var _ = initializer.WantsExternalKubeClientSet(&Lifecycle{})
 
+// Admit makes an admission decision based on the request attributes
 func (l *Lifecycle) Admit(a admission.Attributes) error {
 	// prevent deletion of immortal namespaces
 	if a.GetOperation() == admission.Delete && a.GetKind().GroupKind() == v1.SchemeGroupVersion.WithKind("Namespace").GroupKind() && l.immortalNamespaces.Has(a.GetName()) {
@@ -138,7 +146,7 @@ func (l *Lifecycle) Admit(a admission.Attributes) error {
 			exists = true
 		}
 		if exists {
-			glog.V(4).Infof("found %s in cache after waiting", a.GetNamespace())
+			klog.V(4).Infof("found %s in cache after waiting", a.GetNamespace())
 		}
 	}
 
@@ -159,7 +167,7 @@ func (l *Lifecycle) Admit(a admission.Attributes) error {
 		case err != nil:
 			return errors.NewInternalError(err)
 		}
-		glog.V(4).Infof("found %s via storage lookup", a.GetNamespace())
+		klog.V(4).Infof("found %s via storage lookup", a.GetNamespace())
 	}
 
 	// ensure that we're not trying to create objects in terminating namespaces

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 source "$(dirname "${BASH_SOURCE}")/lib/init.sh"
 
 SCRIPT_ROOT=$(dirname ${BASH_SOURCE})/..
@@ -11,30 +11,27 @@ function codegen::join() { local IFS="$1"; shift; echo "$*"; }
 
 # enumerate group versions
 ALL_FQ_APIS=(
+    github.com/openshift/origin/pkg/autoscaling/admission/apis/clusterresourceoverride
+    github.com/openshift/origin/pkg/autoscaling/admission/apis/clusterresourceoverride/v1
+    github.com/openshift/origin/pkg/autoscaling/admission/apis/runonceduration
+    github.com/openshift/origin/pkg/autoscaling/admission/apis/runonceduration/v1
     github.com/openshift/origin/pkg/cmd/server/apis/config
     github.com/openshift/origin/pkg/cmd/server/apis/config/v1
     github.com/openshift/origin/pkg/cmd/server/apis/config/v1/testing
-    github.com/openshift/origin/pkg/image/apiserver/admission/apis/imagepolicy
     github.com/openshift/origin/pkg/image/apiserver/admission/apis/imagepolicy/v1
-    github.com/openshift/origin/pkg/network/apiserver/admission/apis/ingressadmission
-    github.com/openshift/origin/pkg/network/apiserver/admission/apis/ingressadmission/v1
     github.com/openshift/origin/pkg/project/apiserver/admission/apis/requestlimit
     github.com/openshift/origin/pkg/project/apiserver/admission/apis/requestlimit/v1
-    github.com/openshift/origin/pkg/quota/apiserver/admission/apis/clusterresourceoverride
-    github.com/openshift/origin/pkg/quota/apiserver/admission/apis/clusterresourceoverride/v1
-    github.com/openshift/origin/pkg/quota/apiserver/admission/apis/runonceduration
-    github.com/openshift/origin/pkg/quota/apiserver/admission/apis/runonceduration/v1
-    github.com/openshift/origin/pkg/router/f5/testing
+    github.com/openshift/origin/pkg/route/apiserver/admission/apis/ingressadmission
+    github.com/openshift/origin/pkg/route/apiserver/admission/apis/ingressadmission/v1
     github.com/openshift/origin/pkg/scheduler/admission/apis/podnodeconstraints
     github.com/openshift/origin/pkg/scheduler/admission/apis/podnodeconstraints/v1
-    github.com/openshift/origin/pkg/service/admission/apis/externalipranger
-    github.com/openshift/origin/pkg/service/admission/apis/externalipranger/v1
-    github.com/openshift/origin/pkg/service/admission/apis/restrictedendpoints
-    github.com/openshift/origin/pkg/service/admission/apis/restrictedendpoints/v1
+    github.com/openshift/origin/pkg/network/admission/apis/externalipranger
+    github.com/openshift/origin/pkg/network/admission/apis/externalipranger/v1
+    github.com/openshift/origin/pkg/network/admission/apis/restrictedendpoints
+    github.com/openshift/origin/pkg/network/admission/apis/restrictedendpoints/v1
     github.com/openshift/origin/pkg/template/servicebroker/apis/config
     github.com/openshift/origin/pkg/template/servicebroker/apis/config/v1
     github.com/openshift/origin/pkg/util/testing
-    github.com/openshift/origin/test/integration/testing
     github.com/openshift/origin/pkg/apps/apis/apps
     github.com/openshift/origin/pkg/authorization/apis/authorization
     github.com/openshift/origin/pkg/build/apis/build

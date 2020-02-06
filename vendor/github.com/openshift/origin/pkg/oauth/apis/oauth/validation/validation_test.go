@@ -6,14 +6,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
-	oapi "github.com/openshift/origin/pkg/oauth/apis/oauth"
+	oauthapi "github.com/openshift/origin/pkg/oauth/apis/oauth"
 )
 
 func TestValidateRedirectURI(t *testing.T) {
 	allowed := []string{
-		// Empty allowed
-		"",
-
 		// Non-absolute
 		"server",
 
@@ -30,22 +27,22 @@ func TestValidateRedirectURI(t *testing.T) {
 
 		// With ports
 		"https://server:",
-		"https://server:port",
+		"https://server:8080",
 
 		// With or without paths, with or without trailing slashes
-		"https://server:port/",
-		"https://server:port/path-segment",
-		"https://server:port/path-segment/",
+		"https://server:8080/",
+		"https://server:8080/path-segment",
+		"https://server:8080/path-segment/",
 
 		// Things that are close to disallowed path segments
-		"https://server:port/...",
-		"https://server:port/.../",
-		"https://server:port/path-segment/...",
-		"https://server:port/path-segment/path.",
-		"https://server:port/path-segment/path./",
+		"https://server:8080/...",
+		"https://server:8080/.../",
+		"https://server:8080/path-segment/...",
+		"https://server:8080/path-segment/path.",
+		"https://server:8080/path-segment/path./",
 
 		// Double slashes
-		"https://server:port/path-segment//path",
+		"https://server:8080/path-segment//path",
 
 		// Queries
 		"http://server/path?",
@@ -63,8 +60,11 @@ func TestValidateRedirectURI(t *testing.T) {
 	}
 
 	disallowed := []string{
+		// Empty disallowed
+		"",
+
 		// invalid URL
-		"://server:port/",
+		"://server:8080/",
 
 		// . or .. segments
 		"http://server/.",
@@ -87,52 +87,56 @@ func TestValidateRedirectURI(t *testing.T) {
 }
 
 func TestValidateClientAuthorization(t *testing.T) {
-	errs := ValidateClientAuthorization(&oapi.OAuthClientAuthorization{
+	errs := ValidateClientAuthorization(&oauthapi.OAuthClientAuthorization{
 		ObjectMeta: metav1.ObjectMeta{Name: "myusername:myclientname"},
 		ClientName: "myclientname",
 		UserName:   "myusername",
 		UserUID:    "myuseruid",
+		Scopes:     []string{"user:info"},
 	})
 	if len(errs) != 0 {
 		t.Errorf("expected success: %v", errs)
 	}
 
 	errorCases := map[string]struct {
-		A oapi.OAuthClientAuthorization
+		A oauthapi.OAuthClientAuthorization
 		T field.ErrorType
 		F string
 	}{
 		"zero-length name": {
-			A: oapi.OAuthClientAuthorization{
+			A: oauthapi.OAuthClientAuthorization{
 				ClientName: "myclientname",
 				UserName:   "myusername",
 				UserUID:    "myuseruid",
+				Scopes:     []string{"user:info"},
 			},
 			T: field.ErrorTypeRequired,
 			F: "metadata.name",
 		},
 		"invalid name": {
-			A: oapi.OAuthClientAuthorization{
+			A: oauthapi.OAuthClientAuthorization{
 				ObjectMeta: metav1.ObjectMeta{Name: "anotheruser:anotherclient"},
 				ClientName: "myclientname",
 				UserName:   "myusername",
 				UserUID:    "myuseruid",
+				Scopes:     []string{"user:info"},
 			},
 			T: field.ErrorTypeInvalid,
 			F: "metadata.name",
 		},
 		"disallowed namespace": {
-			A: oapi.OAuthClientAuthorization{
+			A: oauthapi.OAuthClientAuthorization{
 				ObjectMeta: metav1.ObjectMeta{Name: "myusername:myclientname", Namespace: "foo"},
 				ClientName: "myclientname",
 				UserName:   "myusername",
 				UserUID:    "myuseruid",
+				Scopes:     []string{"user:info"},
 			},
 			T: field.ErrorTypeForbidden,
 			F: "metadata.namespace",
 		},
 		"no scope handler": {
-			A: oapi.OAuthClientAuthorization{
+			A: oauthapi.OAuthClientAuthorization{
 				ObjectMeta: metav1.ObjectMeta{Name: "myusername:myclientname"},
 				ClientName: "myclientname",
 				UserName:   "myusername",
@@ -143,7 +147,7 @@ func TestValidateClientAuthorization(t *testing.T) {
 			F: "scopes[0]",
 		},
 		"bad scope": {
-			A: oapi.OAuthClientAuthorization{
+			A: oauthapi.OAuthClientAuthorization{
 				ObjectMeta: metav1.ObjectMeta{Name: "myusername:myclientname"},
 				ClientName: "myclientname",
 				UserName:   "myusername",
@@ -172,8 +176,9 @@ func TestValidateClientAuthorization(t *testing.T) {
 }
 
 func TestValidateClient(t *testing.T) {
-	errs := ValidateClient(&oapi.OAuthClient{
-		ObjectMeta: metav1.ObjectMeta{Name: "client-name"},
+	errs := ValidateClient(&oauthapi.OAuthClient{
+		ObjectMeta:  metav1.ObjectMeta{Name: "client-name"},
+		GrantMethod: "prompt",
 	})
 	if len(errs) != 0 {
 		t.Errorf("expected success: %v", errs)
@@ -183,34 +188,48 @@ func TestValidateClient(t *testing.T) {
 	var negTimeout int32 = -1
 
 	errorCases := map[string]struct {
-		Client oapi.OAuthClient
+		Client oauthapi.OAuthClient
 		T      field.ErrorType
 		F      string
 	}{
 		"zero-length name": {
-			Client: oapi.OAuthClient{},
-			T:      field.ErrorTypeRequired,
-			F:      "metadata.name",
+			Client: oauthapi.OAuthClient{
+				GrantMethod: "prompt",
+			},
+			T: field.ErrorTypeRequired,
+			F: "metadata.name",
+		},
+		"no grant method": {
+			Client: oauthapi.OAuthClient{
+				ObjectMeta: metav1.ObjectMeta{Name: "name"},
+			},
+			T: field.ErrorTypeRequired,
+			F: "grantMethod",
 		},
 		"disallowed namespace": {
-			Client: oapi.OAuthClient{ObjectMeta: metav1.ObjectMeta{Name: "name", Namespace: "foo"}},
-			T:      field.ErrorTypeForbidden,
-			F:      "metadata.namespace",
+			Client: oauthapi.OAuthClient{
+				ObjectMeta:  metav1.ObjectMeta{Name: "name", Namespace: "foo"},
+				GrantMethod: "prompt",
+			},
+			T: field.ErrorTypeForbidden,
+			F: "metadata.namespace",
 		},
 		"literal must have value": {
-			Client: oapi.OAuthClient{
+			Client: oauthapi.OAuthClient{
 				ObjectMeta:        metav1.ObjectMeta{Name: "client-name"},
-				ScopeRestrictions: []oapi.ScopeRestriction{{ExactValues: []string{""}}},
+				GrantMethod:       "auto",
+				ScopeRestrictions: []oauthapi.ScopeRestriction{{ExactValues: []string{""}}},
 			},
 			T: field.ErrorTypeInvalid,
 			F: "scopeRestrictions[0].literals[0]",
 		},
 		"must have role names": {
-			Client: oapi.OAuthClient{
-				ObjectMeta: metav1.ObjectMeta{Name: "client-name"},
-				ScopeRestrictions: []oapi.ScopeRestriction{
+			Client: oauthapi.OAuthClient{
+				ObjectMeta:  metav1.ObjectMeta{Name: "client-name"},
+				GrantMethod: "auto",
+				ScopeRestrictions: []oauthapi.ScopeRestriction{
 					{
-						ClusterRole: &oapi.ClusterRoleScopeRestriction{Namespaces: []string{"b"}},
+						ClusterRole: &oauthapi.ClusterRoleScopeRestriction{Namespaces: []string{"b"}},
 					},
 				},
 			},
@@ -218,11 +237,12 @@ func TestValidateClient(t *testing.T) {
 			F: "scopeRestrictions[0].clusterRole.roleNames",
 		},
 		"must have namespaces": {
-			Client: oapi.OAuthClient{
-				ObjectMeta: metav1.ObjectMeta{Name: "client-name"},
-				ScopeRestrictions: []oapi.ScopeRestriction{
+			Client: oauthapi.OAuthClient{
+				ObjectMeta:  metav1.ObjectMeta{Name: "client-name"},
+				GrantMethod: "prompt",
+				ScopeRestrictions: []oauthapi.ScopeRestriction{
 					{
-						ClusterRole: &oapi.ClusterRoleScopeRestriction{RoleNames: []string{"a"}},
+						ClusterRole: &oauthapi.ClusterRoleScopeRestriction{RoleNames: []string{"a"}},
 					},
 				},
 			},
@@ -230,16 +250,18 @@ func TestValidateClient(t *testing.T) {
 			F: "scopeRestrictions[0].clusterRole.namespaces",
 		},
 		"minimum timeout value": {
-			Client: oapi.OAuthClient{
+			Client: oauthapi.OAuthClient{
 				ObjectMeta:                          metav1.ObjectMeta{Name: "client-name"},
+				GrantMethod:                         "auto",
 				AccessTokenInactivityTimeoutSeconds: &badTimeout,
 			},
 			T: field.ErrorTypeInvalid,
 			F: "accessTokenInactivityTimeoutSeconds",
 		},
 		"negative timeout value": {
-			Client: oapi.OAuthClient{
+			Client: oauthapi.OAuthClient{
 				ObjectMeta:                          metav1.ObjectMeta{Name: "client-name"},
+				GrantMethod:                         "auto",
 				AccessTokenInactivityTimeoutSeconds: &negTimeout,
 			},
 			T: field.ErrorTypeInvalid,
@@ -264,72 +286,117 @@ func TestValidateClient(t *testing.T) {
 }
 
 func TestValidateAccessTokens(t *testing.T) {
-	errs := ValidateAccessToken(&oapi.OAuthAccessToken{
-		ObjectMeta: metav1.ObjectMeta{Name: "accessTokenNameWithMinimumLength"},
-		ClientName: "myclient",
-		UserName:   "myusername",
-		UserUID:    "myuseruid",
+	errs := ValidateAccessToken(&oauthapi.OAuthAccessToken{
+		ObjectMeta:  metav1.ObjectMeta{Name: "accessTokenNameWithMinimumLength"},
+		ClientName:  "myclient",
+		UserName:    "myusername",
+		UserUID:     "myuseruid",
+		Scopes:      []string{"user:full"},
+		RedirectURI: "https://authn.mycluster.com",
 	})
 	if len(errs) != 0 {
 		t.Errorf("expected success: %v", errs)
 	}
 
 	errorCases := map[string]struct {
-		Token oapi.OAuthAccessToken
+		Token oauthapi.OAuthAccessToken
 		T     field.ErrorType
 		F     string
 	}{
 		"zero-length name": {
-			Token: oapi.OAuthAccessToken{
-				ClientName: "myclient",
-				UserName:   "myusername",
-				UserUID:    "myuseruid",
+			Token: oauthapi.OAuthAccessToken{
+				ClientName:  "myclient",
+				UserName:    "myusername",
+				UserUID:     "myuseruid",
+				Scopes:      []string{"user:full"},
+				RedirectURI: "https://authn.mycluster.com",
 			},
 			T: field.ErrorTypeRequired,
 			F: "metadata.name",
 		},
-		"disallowed namespace": {
-			Token: oapi.OAuthAccessToken{
-				ObjectMeta: metav1.ObjectMeta{Name: "accessTokenNameWithMinimumLength", Namespace: "foo"},
+		"empty redirect uri": {
+			Token: oauthapi.OAuthAccessToken{
+				ObjectMeta: metav1.ObjectMeta{Name: "myperfectTokenWithFullScopeAndStuff"},
 				ClientName: "myclient",
 				UserName:   "myusername",
 				UserUID:    "myuseruid",
+				Scopes:     []string{"user:full"},
+			},
+			T: field.ErrorTypeInvalid,
+			F: "redirectURI",
+		},
+		"empty scopes": {
+			Token: oauthapi.OAuthAccessToken{
+				ObjectMeta:  metav1.ObjectMeta{Name: "myperfectTokenWithFullScopeAndStuff"},
+				ClientName:  "myclient",
+				UserName:    "myusername",
+				UserUID:     "myuseruid",
+				RedirectURI: "https://authn.mycluster.com",
+			},
+			T: field.ErrorTypeRequired,
+			F: "scopes",
+		},
+		"disallowed namespace": {
+			Token: oauthapi.OAuthAccessToken{
+				ObjectMeta:  metav1.ObjectMeta{Name: "accessTokenNameWithMinimumLength", Namespace: "foo"},
+				ClientName:  "myclient",
+				UserName:    "myusername",
+				UserUID:     "myuseruid",
+				Scopes:      []string{"user:full"},
+				RedirectURI: "https://authn.mycluster.com",
 			},
 			T: field.ErrorTypeForbidden,
 			F: "metadata.namespace",
 		},
 		"no scope handler": {
-			Token: oapi.OAuthAccessToken{
-				ObjectMeta: metav1.ObjectMeta{Name: "accessTokenNameWithMinimumLength"},
-				ClientName: "myclient",
-				UserName:   "myusername",
-				UserUID:    "myuseruid",
-				Scopes:     []string{"invalid"},
+			Token: oauthapi.OAuthAccessToken{
+				ObjectMeta:  metav1.ObjectMeta{Name: "accessTokenNameWithMinimumLength"},
+				ClientName:  "myclient",
+				UserName:    "myusername",
+				UserUID:     "myuseruid",
+				Scopes:      []string{"invalid"},
+				RedirectURI: "https://authn.mycluster.com",
 			},
 			T: field.ErrorTypeInvalid,
 			F: "scopes[0]",
 		},
 		"bad scope": {
-			Token: oapi.OAuthAccessToken{
-				ObjectMeta: metav1.ObjectMeta{Name: "accessTokenNameWithMinimumLength"},
-				ClientName: "myclient",
-				UserName:   "myusername",
-				UserUID:    "myuseruid",
-				Scopes:     []string{"user:dne"},
+			Token: oauthapi.OAuthAccessToken{
+				ObjectMeta:  metav1.ObjectMeta{Name: "accessTokenNameWithMinimumLength"},
+				ClientName:  "myclient",
+				UserName:    "myusername",
+				UserUID:     "myuseruid",
+				Scopes:      []string{"user:dne"},
+				RedirectURI: "https://authn.mycluster.com",
 			},
 			T: field.ErrorTypeInvalid,
 			F: "scopes[0]",
 		},
 		"negative timeout": {
-			Token: oapi.OAuthAccessToken{
+			Token: oauthapi.OAuthAccessToken{
 				ObjectMeta:               metav1.ObjectMeta{Name: "accessTokenNameWithMinimumLength"},
 				ClientName:               "myclient",
 				UserName:                 "myusername",
 				UserUID:                  "myuseruid",
 				InactivityTimeoutSeconds: -1,
+				Scopes:                   []string{"user:check-access"},
+				RedirectURI:              "https://authn.mycluster.com",
 			},
 			T: field.ErrorTypeInvalid,
 			F: "inactivityTimeoutSeconds",
+		},
+		"negative expiresIn": {
+			Token: oauthapi.OAuthAccessToken{
+				ObjectMeta:  metav1.ObjectMeta{Name: "accessTokenNameWithMinimumLength"},
+				ClientName:  "myclient",
+				UserName:    "myusername",
+				UserUID:     "myuseruid",
+				ExpiresIn:   -1,
+				Scopes:      []string{"user:check-access"},
+				RedirectURI: "https://authn.mycluster.com",
+			},
+			T: field.ErrorTypeInvalid,
+			F: "expiresIn",
 		},
 	}
 	for k, v := range errorCases {
@@ -350,100 +417,172 @@ func TestValidateAccessTokens(t *testing.T) {
 }
 
 func TestValidateAuthorizeTokens(t *testing.T) {
-	errs := ValidateAuthorizeToken(&oapi.OAuthAuthorizeToken{
-		ObjectMeta: metav1.ObjectMeta{Name: "authorizeTokenNameWithMinimumLength"},
-		ClientName: "myclient",
-		UserName:   "myusername",
-		UserUID:    "myuseruid",
-		Scopes:     []string{`user:info`},
+	errs := ValidateAuthorizeToken(&oauthapi.OAuthAuthorizeToken{
+		ObjectMeta:  metav1.ObjectMeta{Name: "authorizeTokenNameWithMinimumLength"},
+		ClientName:  "myclient",
+		ExpiresIn:   86400,
+		UserName:    "myusername",
+		UserUID:     "myuseruid",
+		Scopes:      []string{`user:info`},
+		RedirectURI: "https://authz.mycluster.com",
 	})
 	if len(errs) != 0 {
 		t.Errorf("expected success: %v", errs)
 	}
 
 	errorCases := map[string]struct {
-		Token oapi.OAuthAuthorizeToken
+		Token oauthapi.OAuthAuthorizeToken
 		T     field.ErrorType
 		F     string
 	}{
 		"zero-length name": {
-			Token: oapi.OAuthAuthorizeToken{
-				ClientName: "myclient",
-				UserName:   "myusername",
-				UserUID:    "myuseruid",
+			Token: oauthapi.OAuthAuthorizeToken{
+				ClientName:  "myclient",
+				ExpiresIn:   86400,
+				UserName:    "myusername",
+				UserUID:     "myuseruid",
+				Scopes:      []string{"user:full"},
+				RedirectURI: "https://authz.mycluster.com",
 			},
 			T: field.ErrorTypeRequired,
 			F: "metadata.name",
 		},
 		"zero-length client name": {
-			Token: oapi.OAuthAuthorizeToken{
-				ObjectMeta: metav1.ObjectMeta{Name: "authorizeTokenNameWithMinimumLength"},
-				UserName:   "myusername",
-				UserUID:    "myuseruid",
+			Token: oauthapi.OAuthAuthorizeToken{
+				ObjectMeta:  metav1.ObjectMeta{Name: "authorizeTokenNameWithMinimumLength"},
+				UserName:    "myusername",
+				ExpiresIn:   86400,
+				UserUID:     "myuseruid",
+				Scopes:      []string{"user:full"},
+				RedirectURI: "https://authz.mycluster.com",
 			},
 			T: field.ErrorTypeRequired,
 			F: "clientName",
 		},
 		"zero-length user name": {
-			Token: oapi.OAuthAuthorizeToken{
-				ObjectMeta: metav1.ObjectMeta{Name: "authorizeTokenNameWithMinimumLength"},
-				ClientName: "myclient",
-				UserUID:    "myuseruid",
+			Token: oauthapi.OAuthAuthorizeToken{
+				ObjectMeta:  metav1.ObjectMeta{Name: "authorizeTokenNameWithMinimumLength"},
+				ClientName:  "myclient",
+				ExpiresIn:   86400,
+				UserUID:     "myuseruid",
+				Scopes:      []string{"user:full"},
+				RedirectURI: "https://authz.mycluster.com",
 			},
 			T: field.ErrorTypeRequired,
 			F: "userName",
 		},
 		"zero-length user uid": {
-			Token: oapi.OAuthAuthorizeToken{
-				ObjectMeta: metav1.ObjectMeta{Name: "authorizeTokenNameWithMinimumLength"},
-				ClientName: "myclient",
-				UserName:   "myusername",
+			Token: oauthapi.OAuthAuthorizeToken{
+				ObjectMeta:  metav1.ObjectMeta{Name: "authorizeTokenNameWithMinimumLength"},
+				ClientName:  "myclient",
+				ExpiresIn:   86400,
+				UserName:    "myusername",
+				Scopes:      []string{"user:full"},
+				RedirectURI: "https://authz.mycluster.com",
 			},
 			T: field.ErrorTypeRequired,
 			F: "userUID",
 		},
-		"disallowed namespace": {
-			Token: oapi.OAuthAuthorizeToken{
-				ObjectMeta: metav1.ObjectMeta{Name: "authorizeTokenNameWithMinimumLength", Namespace: "foo"},
+		"empty redirect uri": {
+			Token: oauthapi.OAuthAuthorizeToken{
+				ObjectMeta: metav1.ObjectMeta{Name: "myperfectTokenWithFullScopeAndStuff"},
 				ClientName: "myclient",
+				ExpiresIn:  86400,
 				UserName:   "myusername",
 				UserUID:    "myuseruid",
+				Scopes:     []string{"user:full"},
+			},
+			T: field.ErrorTypeInvalid,
+			F: "redirectURI",
+		},
+		"empty scopes": {
+			Token: oauthapi.OAuthAuthorizeToken{
+				ObjectMeta:  metav1.ObjectMeta{Name: "myperfectTokenWithFullScopeAndStuff"},
+				ClientName:  "myclient",
+				ExpiresIn:   86400,
+				UserName:    "myusername",
+				UserUID:     "myuseruid",
+				RedirectURI: "https://authz.mycluster.com",
+			},
+			T: field.ErrorTypeRequired,
+			F: "scopes",
+		},
+		"disallowed namespace": {
+			Token: oauthapi.OAuthAuthorizeToken{
+				ObjectMeta:  metav1.ObjectMeta{Name: "authorizeTokenNameWithMinimumLength", Namespace: "foo"},
+				ClientName:  "myclient",
+				ExpiresIn:   86400,
+				UserName:    "myusername",
+				UserUID:     "myuseruid",
+				Scopes:      []string{"user:check-access"},
+				RedirectURI: "https://authz.mycluster.com",
 			},
 			T: field.ErrorTypeForbidden,
 			F: "metadata.namespace",
 		},
 		"no scope handler": {
-			Token: oapi.OAuthAuthorizeToken{
-				ObjectMeta: metav1.ObjectMeta{Name: "authorizeTokenNameWithMinimumLength"},
-				ClientName: "myclient",
-				UserName:   "myusername",
-				UserUID:    "myuseruid",
-				Scopes:     []string{"invalid"},
+			Token: oauthapi.OAuthAuthorizeToken{
+				ObjectMeta:  metav1.ObjectMeta{Name: "authorizeTokenNameWithMinimumLength"},
+				ClientName:  "myclient",
+				ExpiresIn:   86400,
+				UserName:    "myusername",
+				UserUID:     "myuseruid",
+				Scopes:      []string{"invalid"},
+				RedirectURI: "https://authz.mycluster.com",
 			},
 			T: field.ErrorTypeInvalid,
 			F: "scopes[0]",
 		},
 		"bad scope": {
-			Token: oapi.OAuthAuthorizeToken{
-				ObjectMeta: metav1.ObjectMeta{Name: "authorizeTokenNameWithMinimumLength"},
-				ClientName: "myclient",
-				UserName:   "myusername",
-				UserUID:    "myuseruid",
-				Scopes:     []string{"user:dne"},
+			Token: oauthapi.OAuthAuthorizeToken{
+				ObjectMeta:  metav1.ObjectMeta{Name: "authorizeTokenNameWithMinimumLength"},
+				ClientName:  "myclient",
+				ExpiresIn:   86400,
+				UserName:    "myusername",
+				UserUID:     "myuseruid",
+				Scopes:      []string{"user:dne"},
+				RedirectURI: "https://authz.mycluster.com",
 			},
 			T: field.ErrorTypeInvalid,
 			F: "scopes[0]",
 		},
 		"illegal character": {
-			Token: oapi.OAuthAuthorizeToken{
-				ObjectMeta: metav1.ObjectMeta{Name: "authorizeTokenNameWithMinimumLength"},
-				ClientName: "myclient",
-				UserName:   "myusername",
-				UserUID:    "myuseruid",
-				Scopes:     []string{`role:asdf":foo`},
+			Token: oauthapi.OAuthAuthorizeToken{
+				ObjectMeta:  metav1.ObjectMeta{Name: "authorizeTokenNameWithMinimumLength"},
+				ClientName:  "myclient",
+				ExpiresIn:   86400,
+				UserName:    "myusername",
+				UserUID:     "myuseruid",
+				Scopes:      []string{`role:asdf":foo`},
+				RedirectURI: "https://authz.mycluster.com",
 			},
 			T: field.ErrorTypeInvalid,
 			F: "scopes[0]",
+		},
+		"zero expiresIn": {
+			Token: oauthapi.OAuthAuthorizeToken{
+				ObjectMeta:  metav1.ObjectMeta{Name: "authorizeTokenNameWithMinimumLength"},
+				ClientName:  "myclient",
+				UserName:    "myusername",
+				UserUID:     "myuseruid",
+				Scopes:      []string{"user:check-access"},
+				RedirectURI: "https://authz.mycluster.com",
+			},
+			T: field.ErrorTypeInvalid,
+			F: "expiresIn",
+		},
+		"negative expiresIn": {
+			Token: oauthapi.OAuthAuthorizeToken{
+				ObjectMeta:  metav1.ObjectMeta{Name: "authorizeTokenNameWithMinimumLength"},
+				ClientName:  "myclient",
+				ExpiresIn:   -1,
+				UserName:    "myusername",
+				UserUID:     "myuseruid",
+				Scopes:      []string{"user:check-access"},
+				RedirectURI: "https://authz.mycluster.com",
+			},
+			T: field.ErrorTypeInvalid,
+			F: "expiresIn",
 		},
 	}
 	for k, v := range errorCases {
@@ -464,14 +603,14 @@ func TestValidateAuthorizeTokens(t *testing.T) {
 }
 
 func TestValidateAccessTokensUpdate(t *testing.T) {
-	valid := &oapi.OAuthAccessToken{
+	valid := &oauthapi.OAuthAccessToken{
 		ObjectMeta:               metav1.ObjectMeta{Name: "accessTokenNameWithMinimumLength", ResourceVersion: "1"},
 		ClientName:               "myclient",
 		UserName:                 "myusername",
 		UserUID:                  "myuseruid",
 		InactivityTimeoutSeconds: 300,
 	}
-	validNoTimeout := &oapi.OAuthAccessToken{
+	validNoTimeout := &oauthapi.OAuthAccessToken{
 		ObjectMeta:               metav1.ObjectMeta{Name: "accessTokenNameWithMinimumLength", ResourceVersion: "1"},
 		ClientName:               "myclient",
 		UserName:                 "myusername",
@@ -488,14 +627,14 @@ func TestValidateAccessTokensUpdate(t *testing.T) {
 	}
 
 	errorCases := map[string]struct {
-		Token  oapi.OAuthAccessToken
-		Change func(*oapi.OAuthAccessToken)
+		Token  oauthapi.OAuthAccessToken
+		Change func(*oauthapi.OAuthAccessToken)
 		T      field.ErrorType
 		F      string
 	}{
 		"change name": {
 			Token: *valid,
-			Change: func(obj *oapi.OAuthAccessToken) {
+			Change: func(obj *oauthapi.OAuthAccessToken) {
 				obj.Name = ""
 			},
 			T: field.ErrorTypeInvalid,
@@ -503,7 +642,7 @@ func TestValidateAccessTokensUpdate(t *testing.T) {
 		},
 		"change userName": {
 			Token: *valid,
-			Change: func(obj *oapi.OAuthAccessToken) {
+			Change: func(obj *oauthapi.OAuthAccessToken) {
 				obj.UserName = ""
 			},
 			T: field.ErrorTypeInvalid,
@@ -511,7 +650,7 @@ func TestValidateAccessTokensUpdate(t *testing.T) {
 		},
 		"change InactivityTimeoutSeconds to smaller value": {
 			Token: *valid,
-			Change: func(obj *oapi.OAuthAccessToken) {
+			Change: func(obj *oauthapi.OAuthAccessToken) {
 				obj.InactivityTimeoutSeconds = 299
 			},
 			T: field.ErrorTypeInvalid,
@@ -519,7 +658,7 @@ func TestValidateAccessTokensUpdate(t *testing.T) {
 		},
 		"change InactivityTimeoutSeconds to negative value": {
 			Token: *valid,
-			Change: func(obj *oapi.OAuthAccessToken) {
+			Change: func(obj *oauthapi.OAuthAccessToken) {
 				obj.InactivityTimeoutSeconds = -1
 			},
 			T: field.ErrorTypeInvalid,
@@ -527,7 +666,7 @@ func TestValidateAccessTokensUpdate(t *testing.T) {
 		},
 		"change InactivityTimeoutSeconds from 0 value": {
 			Token: *validNoTimeout,
-			Change: func(obj *oapi.OAuthAccessToken) {
+			Change: func(obj *oauthapi.OAuthAccessToken) {
 				obj.InactivityTimeoutSeconds = MinimumInactivityTimeoutSeconds
 			},
 			T: field.ErrorTypeInvalid,
@@ -554,7 +693,7 @@ func TestValidateAccessTokensUpdate(t *testing.T) {
 }
 
 func TestValidateAuthorizeTokensUpdate(t *testing.T) {
-	valid := &oapi.OAuthAuthorizeToken{
+	valid := &oauthapi.OAuthAuthorizeToken{
 		ObjectMeta: metav1.ObjectMeta{Name: "authorizeTokenNameWithMinimumLength", ResourceVersion: "1"},
 		ClientName: "myclient",
 		UserName:   "myusername",
@@ -567,14 +706,14 @@ func TestValidateAuthorizeTokensUpdate(t *testing.T) {
 	}
 
 	errorCases := map[string]struct {
-		Token  oapi.OAuthAuthorizeToken
-		Change func(*oapi.OAuthAuthorizeToken)
+		Token  oauthapi.OAuthAuthorizeToken
+		Change func(*oauthapi.OAuthAuthorizeToken)
 		T      field.ErrorType
 		F      string
 	}{
 		"change name": {
 			Token: *valid,
-			Change: func(obj *oapi.OAuthAuthorizeToken) {
+			Change: func(obj *oauthapi.OAuthAuthorizeToken) {
 				obj.Name = ""
 			},
 			T: field.ErrorTypeInvalid,
@@ -582,7 +721,7 @@ func TestValidateAuthorizeTokensUpdate(t *testing.T) {
 		},
 		"change userUID": {
 			Token: *valid,
-			Change: func(obj *oapi.OAuthAuthorizeToken) {
+			Change: func(obj *oauthapi.OAuthAuthorizeToken) {
 				obj.UserUID = ""
 			},
 			T: field.ErrorTypeInvalid,

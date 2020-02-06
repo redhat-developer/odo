@@ -4,8 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/golang/glog"
-	"k8s.io/kubernetes/pkg/api/legacyscheme"
+	"k8s.io/klog"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,11 +15,12 @@ import (
 	apirequest "k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/apiserver/pkg/registry/generic/registry"
 	"k8s.io/apiserver/pkg/registry/rest"
+	"k8s.io/client-go/kubernetes"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/util/retry"
-	kapi "k8s.io/kubernetes/pkg/apis/core"
-	kapihelper "k8s.io/kubernetes/pkg/apis/core/helper"
-	kclientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
-	kcoreclient "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/internalversion"
+	"k8s.io/kubernetes/pkg/api/legacyscheme"
+	"k8s.io/kubernetes/pkg/apis/core"
+	"k8s.io/kubernetes/pkg/apis/core/helper"
 
 	"github.com/openshift/api/apps"
 	appsv1 "github.com/openshift/api/apps/v1"
@@ -33,9 +33,9 @@ import (
 )
 
 // NewREST provides new REST storage for the apps API group.
-func NewREST(store registry.Store, imagesclient imageclientinternal.Interface, kc kclientset.Interface, admission admission.Interface) *REST {
+func NewREST(store registry.Store, imagesclient imageclientinternal.Interface, kc kubernetes.Interface, admission admission.Interface) *REST {
 	store.UpdateStrategy = Strategy
-	return &REST{store: &store, is: imagesclient.Image(), rn: kc.Core(), admit: admission}
+	return &REST{store: &store, is: imagesclient.Image(), rn: kc.CoreV1(), admit: admission}
 }
 
 // REST implements the Creater interface.
@@ -44,7 +44,7 @@ var _ = rest.Creater(&REST{})
 type REST struct {
 	store *registry.Store
 	is    images.ImageStreamsGetter
-	rn    kcoreclient.ReplicationControllersGetter
+	rn    corev1client.ReplicationControllersGetter
 	admit admission.Interface
 }
 
@@ -53,7 +53,7 @@ func (s *REST) New() runtime.Object {
 }
 
 // Create instantiates a deployment config
-func (s *REST) Create(ctx context.Context, obj runtime.Object, createValidation rest.ValidateObjectFunc, _ bool) (runtime.Object, error) {
+func (s *REST) Create(ctx context.Context, obj runtime.Object, createValidation rest.ValidateObjectFunc, options *metav1.CreateOptions) (runtime.Object, error) {
 	req, ok := obj.(*appsapi.DeploymentRequest)
 	if !ok {
 		return nil, errors.NewInternalError(fmt.Errorf("wrong object passed for requesting a new rollout: %#v", obj))
@@ -91,7 +91,7 @@ func (s *REST) Create(ctx context.Context, obj runtime.Object, createValidation 
 			}
 			return nil
 		}
-		glog.V(4).Infof("New deployment for %q caused by %#v", config.Name, causes)
+		klog.V(4).Infof("New deployment for %q caused by %#v", config.Name, causes)
 
 		config.Status.Details = new(appsapi.DeploymentDetails)
 		config.Status.Details.Causes = causes
@@ -106,7 +106,7 @@ func (s *REST) Create(ctx context.Context, obj runtime.Object, createValidation 
 		config.Status.LatestVersion++
 
 		userInfo, _ := apirequest.UserFrom(ctx)
-		attrs := admission.NewAttributesRecord(config, old, apps.Kind("DeploymentConfig").WithVersion(""), config.Namespace, config.Name, apps.Resource("DeploymentConfig").WithVersion(""), "", admission.Update, userInfo)
+		attrs := admission.NewAttributesRecord(config, old, apps.Kind("DeploymentConfig").WithVersion(""), config.Namespace, config.Name, apps.Resource("DeploymentConfig").WithVersion(""), "", admission.Update, false, userInfo)
 		if err := s.admit.(admission.MutationInterface).Admit(attrs); err != nil {
 			return err
 		}
@@ -119,7 +119,10 @@ func (s *REST) Create(ctx context.Context, obj runtime.Object, createValidation 
 			config.Name,
 			rest.DefaultUpdatedObjectInfo(config),
 			rest.AdmissionToValidateObjectFunc(s.admit, attrs),
-			rest.AdmissionToValidateObjectUpdateFunc(s.admit, attrs))
+			rest.AdmissionToValidateObjectUpdateFunc(s.admit, attrs),
+			false,
+			&metav1.UpdateOptions{},
+		)
 		return err
 	})
 
@@ -218,7 +221,7 @@ func containsTriggerType(types []appsapi.DeploymentTriggerType, triggerType apps
 // canTrigger determines if we can trigger a new deployment for config based on the various deployment triggers.
 func canTrigger(
 	config *appsapi.DeploymentConfig,
-	rn kcoreclient.ReplicationControllersGetter,
+	rn corev1client.ReplicationControllersGetter,
 	force bool,
 ) (bool, []appsapi.DeploymentCause, error) {
 
@@ -264,7 +267,7 @@ func canTrigger(
 		causes = append(causes, appsapi.DeploymentCause{
 			Type: appsapi.DeploymentTriggerOnImageChange,
 			ImageTrigger: &appsapi.DeploymentCauseImageTrigger{
-				From: kapi.ObjectReference{
+				From: core.ObjectReference{
 					Name:      t.ImageChangeParams.From.Name,
 					Namespace: t.ImageChangeParams.From.Namespace,
 					Kind:      "ImageStreamTag",
@@ -290,7 +293,7 @@ func canTrigger(
 	if appsutil.HasChangeTrigger(externalConfig) && // Our deployment config has a config change trigger
 		len(causes) == 0 && // and no other trigger has triggered.
 		(config.Status.LatestVersion == 0 || // Either it's the initial deployment
-			!kapihelper.Semantic.DeepEqual(config.Spec.Template, decoded.Spec.Template)) /* or a config change happened so we need to trigger */ {
+			!helper.Semantic.DeepEqual(config.Spec.Template, decoded.Spec.Template)) /* or a config change happened so we need to trigger */ {
 
 		canTriggerByConfigChange = true
 		causes = []appsapi.DeploymentCause{{Type: appsapi.DeploymentTriggerOnConfigChange}}
@@ -302,7 +305,7 @@ func canTrigger(
 // decodeFromLatestDeployment will try to return the decoded version of the current deploymentconfig
 // found in the annotations of its latest deployment. If there is no previous deploymentconfig (ie.
 // latestVersion == 0), the returned deploymentconfig will be the same.
-func decodeFromLatestDeployment(config *appsapi.DeploymentConfig, rn kcoreclient.ReplicationControllersGetter) (*appsapi.DeploymentConfig, error) {
+func decodeFromLatestDeployment(config *appsapi.DeploymentConfig, rn corev1client.ReplicationControllersGetter) (*appsapi.DeploymentConfig, error) {
 	if config.Status.LatestVersion == 0 {
 		return config, nil
 	}
@@ -347,7 +350,7 @@ func hasUpdatedTriggers(current, previous appsapi.DeploymentConfig) bool {
 			}
 		}
 		if !found {
-			glog.V(4).Infof("Deployment config %s/%s current version contains new trigger %#v", current.Namespace, current.Name, ct)
+			klog.V(4).Infof("Deployment config %s/%s current version contains new trigger %#v", current.Namespace, current.Name, ct)
 			return true
 		}
 	}
@@ -369,7 +372,7 @@ func triggeredByDifferentImage(ictParams appsapi.DeploymentTriggerImageChangePar
 		}
 
 		if t.ImageChangeParams.LastTriggeredImage != ictParams.LastTriggeredImage {
-			glog.V(4).Infof("Deployment config %s/%s triggered by different image: %s -> %s", previous.Namespace, previous.Name, t.ImageChangeParams.LastTriggeredImage, ictParams.LastTriggeredImage)
+			klog.V(4).Infof("Deployment config %s/%s triggered by different image: %s -> %s", previous.Namespace, previous.Name, t.ImageChangeParams.LastTriggeredImage, ictParams.LastTriggeredImage)
 			return true
 		}
 		return false

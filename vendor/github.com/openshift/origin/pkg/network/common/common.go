@@ -158,9 +158,12 @@ func (ni *NetworkInfo) CheckClusterObjects(subnets []networkapi.HostSubnet, pods
 }
 
 func GetNetworkInfo(networkClient networkclient.Interface) (*NetworkInfo, error) {
-	cn, err := networkClient.Network().ClusterNetworks().Get(networkapi.ClusterNetworkDefault, v1.GetOptions{})
+	cn, err := networkClient.NetworkV1().ClusterNetworks().Get(networkapi.ClusterNetworkDefault, v1.GetOptions{})
 	if err != nil {
 		return nil, err
+	}
+	if err = ValidateClusterNetwork(cn); err != nil {
+		return nil, fmt.Errorf("ClusterNetwork is invalid (%v)", err)
 	}
 
 	return ParseNetworkInfo(cn.ClusterNetworks, cn.ServiceNetwork, cn.VXLANPort)

@@ -18,14 +18,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericclioptions/printers"
+	"k8s.io/cli-runtime/pkg/genericclioptions/resource"
 	"k8s.io/kubernetes/pkg/api/legacyscheme"
-	"k8s.io/kubernetes/pkg/kubectl"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions/printers"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions/resource"
+	"k8s.io/kubernetes/pkg/kubectl/generate"
 	"k8s.io/kubernetes/pkg/kubectl/scheme"
+	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 
 	octemplateapi "github.com/openshift/api/template"
 	templatev1 "github.com/openshift/api/template/v1"
@@ -33,7 +33,6 @@ import (
 	cmdutil "github.com/openshift/origin/pkg/cmd/util"
 	"github.com/openshift/origin/pkg/oc/lib/describe"
 	"github.com/openshift/origin/pkg/oc/lib/newapp/app"
-	"github.com/openshift/origin/pkg/oc/util/ocscheme"
 	templateapi "github.com/openshift/origin/pkg/template/apis/template"
 	templateapiv1 "github.com/openshift/origin/pkg/template/apis/template/v1"
 	templatevalidation "github.com/openshift/origin/pkg/template/apis/template/validation"
@@ -111,7 +110,7 @@ type ProcessOptions struct {
 }
 
 func NewProcessOptions(streams genericclioptions.IOStreams) *ProcessOptions {
-	printFlags := genericclioptions.NewPrintFlags("processed").WithTypeSetter(ocscheme.PrintingInternalScheme).WithDefaultOutput("json")
+	printFlags := genericclioptions.NewPrintFlags("processed").WithTypeSetter(scheme.Scheme).WithDefaultOutput("json")
 	// disable binding the --template flag so that we can bind our own --template flag with a shorthand (until the shorthand is deprecated)
 	printFlags.TemplatePrinterFlags.TemplateArgument = nil
 
@@ -317,7 +316,7 @@ func (o *ProcessOptions) RunProcess() error {
 		if file == "" {
 			duplicatedKeys.Insert(key)
 		} else {
-			fmt.Fprintf(o.ErrOut, "warning: Template parameter %q already defined, ignoring value from file %q", key, file)
+			fmt.Fprintf(o.ErrOut, "warning: Template parameter %q already defined, ignoring value from file %q\n", key, file)
 		}
 		return nil
 	})
@@ -382,7 +381,7 @@ func (o *ProcessOptions) RunProcess() error {
 		// a parameter that the template wants or when they give a parameter the template doesn't need,
 		// as this may indicate that they have mis-used `oc process`. This is much less complicated when
 		// we process at most one template.
-		fmt.Fprintf(o.Out, "%d input templates found, but only the first will be processed", len(infos))
+		fmt.Fprintf(o.Out, "%d input templates found, but only the first will be processed\n", len(infos))
 	}
 
 	obj, ok := infos[0].Object.(*templatev1.Template)
@@ -406,7 +405,7 @@ func (o *ProcessOptions) RunProcess() error {
 	}
 
 	if label := o.labels; len(label) > 0 {
-		lbl, err := kubectl.ParseLabels(label)
+		lbl, err := generate.ParseLabels(label)
 		if err != nil {
 			return fmt.Errorf("error parsing labels: %v\n", err)
 		}
@@ -438,7 +437,7 @@ func (o *ProcessOptions) RunProcess() error {
 
 	// attempt to convert our resulting object to external
 	var externalResultObj templatev1.Template
-	if err := ocscheme.PrintingInternalScheme.Convert(resultObj, &externalResultObj, nil); err != nil {
+	if err := legacyscheme.Scheme.Convert(resultObj, &externalResultObj, nil); err != nil {
 		return fmt.Errorf("unable to convert template to external template object: %v", err)
 	}
 

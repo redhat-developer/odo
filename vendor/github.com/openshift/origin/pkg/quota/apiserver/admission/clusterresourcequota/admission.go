@@ -7,30 +7,30 @@ import (
 	"sync"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	utilwait "k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apiserver/pkg/admission"
+	"k8s.io/apiserver/pkg/admission/initializer"
 	"k8s.io/apiserver/pkg/admission/plugin/namespace/lifecycle"
-	kapi "k8s.io/kubernetes/pkg/apis/core"
-	kinternalinformers "k8s.io/kubernetes/pkg/client/informers/informers_generated/internalversion"
-	kcorelisters "k8s.io/kubernetes/pkg/client/listers/core/internalversion"
-	kubeapiserveradmission "k8s.io/kubernetes/pkg/kubeapiserver/admission"
-	"k8s.io/kubernetes/pkg/quota"
-	"k8s.io/kubernetes/pkg/quota/install"
+	"k8s.io/client-go/informers"
+	corev1listers "k8s.io/client-go/listers/core/v1"
+	"k8s.io/client-go/rest"
+	quota "k8s.io/kubernetes/pkg/quota/v1"
+	"k8s.io/kubernetes/pkg/quota/v1/install"
 	"k8s.io/kubernetes/plugin/pkg/admission/resourcequota"
 	resourcequotaapi "k8s.io/kubernetes/plugin/pkg/admission/resourcequota/apis/resourcequota"
 
+	quotatypedclient "github.com/openshift/client-go/quota/clientset/versioned/typed/quota/v1"
+	quotainformer "github.com/openshift/client-go/quota/informers/externalversions/quota/v1"
+	quotalister "github.com/openshift/client-go/quota/listers/quota/v1"
 	oadmission "github.com/openshift/origin/pkg/cmd/server/admission"
 	"github.com/openshift/origin/pkg/quota/controller/clusterquotamapping"
-	quotainformer "github.com/openshift/origin/pkg/quota/generated/informers/internalversion/quota/internalversion"
-	quotatypedclient "github.com/openshift/origin/pkg/quota/generated/internalclientset/typed/quota/internalversion"
-	quotalister "github.com/openshift/origin/pkg/quota/generated/listers/quota/internalversion"
-	"k8s.io/client-go/rest"
 )
 
 func Register(plugins *admission.Plugins) {
-	plugins.Register("openshift.io/ClusterResourceQuota",
+	plugins.Register("quota.openshift.io/ClusterResourceQuota",
 		func(config io.Reader) (admission.Interface, error) {
 			return NewClusterResourceQuota()
 		})
@@ -42,7 +42,7 @@ type clusterQuotaAdmission struct {
 
 	// these are used to create the accessor
 	clusterQuotaLister quotalister.ClusterResourceQuotaLister
-	namespaceLister    kcorelisters.NamespaceLister
+	namespaceLister    corev1listers.NamespaceLister
 	clusterQuotaSynced func() bool
 	namespaceSynced    func() bool
 	clusterQuotaClient quotatypedclient.ClusterResourceQuotasGetter
@@ -57,9 +57,10 @@ type clusterQuotaAdmission struct {
 	evaluator resourcequota.Evaluator
 }
 
-var _ kubeapiserveradmission.WantsInternalKubeInformerFactory = &clusterQuotaAdmission{}
+var _ initializer.WantsExternalKubeInformerFactory = &clusterQuotaAdmission{}
 var _ oadmission.WantsRESTClientConfig = &clusterQuotaAdmission{}
 var _ oadmission.WantsClusterQuota = &clusterQuotaAdmission{}
+var _ admission.ValidationInterface = &clusterQuotaAdmission{}
 
 const (
 	timeToWaitForCacheSync = 10 * time.Second
@@ -77,18 +78,13 @@ func NewClusterResourceQuota() (admission.Interface, error) {
 }
 
 // Admit makes admission decisions while enforcing clusterQuota
-func (q *clusterQuotaAdmission) Admit(a admission.Attributes) (err error) {
+func (q *clusterQuotaAdmission) Validate(a admission.Attributes) (err error) {
 	// ignore all operations that correspond to sub-resource actions
 	if len(a.GetSubresource()) != 0 {
 		return nil
 	}
 	// ignore cluster level resources
 	if len(a.GetNamespace()) == 0 {
-		return nil
-	}
-	// skip default namespace until we no longer require SCC in that namespace and we can simply exclude all openshift admission
-	// from that namespace
-	if a.GetNamespace() == "default" {
 		return nil
 	}
 
@@ -104,7 +100,7 @@ func (q *clusterQuotaAdmission) Admit(a admission.Attributes) (err error) {
 	return q.evaluator.Evaluate(a)
 }
 
-func (q *clusterQuotaAdmission) lockAquisition(quotas []kapi.ResourceQuota) func() {
+func (q *clusterQuotaAdmission) lockAquisition(quotas []corev1.ResourceQuota) func() {
 	locks := []sync.Locker{}
 
 	// acquire the locks in alphabetical order because I'm too lazy to think of something clever
@@ -138,14 +134,20 @@ func (q *clusterQuotaAdmission) SetOriginQuotaRegistry(registry quota.Registry) 
 	q.registry = registry
 }
 
-func (q *clusterQuotaAdmission) SetInternalKubeInformerFactory(informers kinternalinformers.SharedInformerFactory) {
-	q.namespaceLister = informers.Core().InternalVersion().Namespaces().Lister()
-	q.namespaceSynced = informers.Core().InternalVersion().Namespaces().Informer().HasSynced
+func (q *clusterQuotaAdmission) SetExternalKubeInformerFactory(informers informers.SharedInformerFactory) {
+	q.namespaceLister = informers.Core().V1().Namespaces().Lister()
+	q.namespaceSynced = informers.Core().V1().Namespaces().Informer().HasSynced
 }
 
 func (q *clusterQuotaAdmission) SetRESTClientConfig(restClientConfig rest.Config) {
 	var err error
-	q.clusterQuotaClient, err = quotatypedclient.NewForConfig(&restClientConfig)
+
+	// ClusterResourceQuota is served using CRD resource any status update must use JSON
+	jsonClientConfig := rest.CopyConfig(&restClientConfig)
+	jsonClientConfig.ContentConfig.AcceptContentTypes = "application/json"
+	jsonClientConfig.ContentConfig.ContentType = "application/json"
+
+	q.clusterQuotaClient, err = quotatypedclient.NewForConfig(jsonClientConfig)
 	if err != nil {
 		utilruntime.HandleError(err)
 		return
@@ -178,7 +180,7 @@ func (q *clusterQuotaAdmission) ValidateInitialization() error {
 	return nil
 }
 
-type ByName []kapi.ResourceQuota
+type ByName []corev1.ResourceQuota
 
 func (v ByName) Len() int           { return len(v) }
 func (v ByName) Swap(i, j int)      { v[i], v[j] = v[j], v[i] }

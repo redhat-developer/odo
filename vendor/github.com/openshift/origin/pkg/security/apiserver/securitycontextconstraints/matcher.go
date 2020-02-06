@@ -2,90 +2,117 @@ package securitycontextconstraints
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/apiserver/pkg/authorization/authorizer"
+	"k8s.io/client-go/kubernetes"
 	kapi "k8s.io/kubernetes/pkg/apis/core"
-	clientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 
 	"github.com/openshift/api/security"
+	securityv1 "github.com/openshift/api/security/v1"
+	securityv1listers "github.com/openshift/client-go/security/listers/security/v1"
 	allocator "github.com/openshift/origin/pkg/security"
 	securityapi "github.com/openshift/origin/pkg/security/apis/security"
-	securitylisters "github.com/openshift/origin/pkg/security/generated/listers/security/internalversion"
+	securityapiv1 "github.com/openshift/origin/pkg/security/apis/security/v1"
+	sccsort "github.com/openshift/origin/pkg/security/securitycontextconstraints/util/sort"
 	"github.com/openshift/origin/pkg/security/uid"
 )
 
 type SCCMatcher interface {
-	FindApplicableSCCs(user user.Info, namespace string) ([]*securityapi.SecurityContextConstraints, error)
+	FindApplicableSCCs(namespace string, user ...user.Info) ([]*securityapi.SecurityContextConstraints, error)
 }
 
 type defaultSCCMatcher struct {
-	cache      securitylisters.SecurityContextConstraintsLister
+	cache      securityv1listers.SecurityContextConstraintsLister
 	authorizer authorizer.Authorizer
 }
 
-func NewDefaultSCCMatcher(c securitylisters.SecurityContextConstraintsLister, authorizer authorizer.Authorizer) SCCMatcher {
+func NewDefaultSCCMatcher(c securityv1listers.SecurityContextConstraintsLister, authorizer authorizer.Authorizer) SCCMatcher {
 	return &defaultSCCMatcher{cache: c, authorizer: authorizer}
 }
 
 // FindApplicableSCCs implements SCCMatcher interface
-func (d *defaultSCCMatcher) FindApplicableSCCs(userInfo user.Info, namespace string) ([]*securityapi.SecurityContextConstraints, error) {
-	var matchedConstraints []*securityapi.SecurityContextConstraints
+// It finds all SCCs that the subjects in the `users` argument may use.
+// The returned SCCs are sorted by priority.
+func (d *defaultSCCMatcher) FindApplicableSCCs(namespace string, users ...user.Info) ([]*securityapi.SecurityContextConstraints, error) {
+	var matchedConstraints []*securityv1.SecurityContextConstraints
 	constraints, err := d.cache.List(labels.Everything())
 	if err != nil {
 		return nil, err
 	}
-	for _, constraint := range constraints {
-		if constraintAppliesTo(constraint, userInfo, namespace, d.authorizer) {
-			matchedConstraints = append(matchedConstraints, constraint)
+
+	// filter out SCCs if we got some users, leave as is if not
+	if len(users) == 0 {
+		matchedConstraints = constraints
+	} else {
+		for _, constraint := range constraints {
+			for _, user := range users {
+				if ConstraintAppliesTo(constraint.Name, constraint.Users, constraint.Groups, user, namespace, d.authorizer) {
+					matchedConstraints = append(matchedConstraints, constraint)
+					break
+				}
+			}
 		}
 	}
-	return matchedConstraints, nil
+
+	sort.Sort(sccsort.ByPriority(matchedConstraints))
+
+	internalMatchedConstraints := []*securityapi.SecurityContextConstraints{}
+	for _, externalConstraint := range matchedConstraints {
+		internalConstraint := &securityapi.SecurityContextConstraints{}
+		if err := securityapiv1.Convert_v1_SecurityContextConstraints_To_security_SecurityContextConstraints(externalConstraint, internalConstraint, nil); err != nil {
+			return nil, err
+		}
+		internalMatchedConstraints = append(internalMatchedConstraints, internalConstraint)
+	}
+
+	return internalMatchedConstraints, nil
 }
 
 // authorizedForSCC returns true if info is authorized to perform the "use" verb on the SCC resource.
-func authorizedForSCC(constraint *securityapi.SecurityContextConstraints, info user.Info, namespace string, a authorizer.Authorizer) bool {
+func authorizedForSCC(sccName string, info user.Info, namespace string, a authorizer.Authorizer) bool {
 	// check against the namespace that the pod is being created in to allow per-namespace SCC grants.
 	attr := authorizer.AttributesRecord{
 		User:            info,
 		Verb:            "use",
 		Namespace:       namespace,
-		Name:            constraint.Name,
+		Name:            sccName,
 		APIGroup:        security.GroupName,
 		Resource:        "securitycontextconstraints",
 		ResourceRequest: true,
 	}
 	decision, reason, err := a.Authorize(attr)
 	if err != nil {
-		glog.V(5).Infof("cannot authorize for SCC: %v %q %v", decision, reason, err)
+		klog.V(5).Infof("cannot authorize for SCC: %v %q %v", decision, reason, err)
 		return false
 	}
 	return decision == authorizer.DecisionAllow
 }
 
-// constraintAppliesTo inspects the constraint's users and groups against the userInfo to determine
+// ConstraintAppliesTo inspects the constraint's users and groups against the userInfo to determine
 // if it is usable by the userInfo.
 // Anything we do here needs to work with a deny authorizer so the choices are limited to SAR / Authorizer
-func constraintAppliesTo(constraint *securityapi.SecurityContextConstraints, userInfo user.Info, namespace string, a authorizer.Authorizer) bool {
-	for _, user := range constraint.Users {
+func ConstraintAppliesTo(sccName string, sccUsers, sccGroups []string, userInfo user.Info, namespace string, a authorizer.Authorizer) bool {
+	for _, user := range sccUsers {
 		if userInfo.GetName() == user {
 			return true
 		}
 	}
 	for _, userGroup := range userInfo.GetGroups() {
-		if constraintSupportsGroup(userGroup, constraint.Groups) {
+		if constraintSupportsGroup(userGroup, sccGroups) {
 			return true
 		}
 	}
 	if a != nil {
-		return authorizedForSCC(constraint, userInfo, namespace, a)
+		return authorizedForSCC(sccName, userInfo, namespace, a)
 	}
 	return false
 }
@@ -142,34 +169,20 @@ func constraintSupportsGroup(group string, constraintGroups []string) bool {
 	return false
 }
 
-// DeduplicateSecurityContextConstraints ensures we have a unique slice of constraints.
-func DeduplicateSecurityContextConstraints(sccs []*securityapi.SecurityContextConstraints) []*securityapi.SecurityContextConstraints {
-	deDuped := []*securityapi.SecurityContextConstraints{}
-	added := sets.NewString()
-
-	for _, s := range sccs {
-		if !added.Has(s.Name) {
-			deDuped = append(deDuped, s)
-			added.Insert(s.Name)
-		}
-	}
-	return deDuped
-}
-
 // getNamespaceByName retrieves a namespace only if ns is nil.
-func getNamespaceByName(name string, ns *kapi.Namespace, client clientset.Interface) (*kapi.Namespace, error) {
+func getNamespaceByName(name string, ns *corev1.Namespace, client kubernetes.Interface) (*corev1.Namespace, error) {
 	if ns != nil && name == ns.Name {
 		return ns, nil
 	}
-	return client.Core().Namespaces().Get(name, metav1.GetOptions{})
+	return client.CoreV1().Namespaces().Get(name, metav1.GetOptions{})
 }
 
 // CreateProvidersFromConstraints creates providers from the constraints supplied, including
 // looking up pre-allocated values if necessary using the pod's namespace.
-func CreateProvidersFromConstraints(ns string, sccs []*securityapi.SecurityContextConstraints, client clientset.Interface) ([]SecurityContextConstraintsProvider, []error) {
+func CreateProvidersFromConstraints(ns string, sccs []*securityapi.SecurityContextConstraints, client kubernetes.Interface) ([]SecurityContextConstraintsProvider, []error) {
 	var (
 		// namespace is declared here for reuse but we will not fetch it unless required by the matched constraints
-		namespace *kapi.Namespace
+		namespace *corev1.Namespace
 		// collected providers
 		providers []SecurityContextConstraintsProvider
 		// collected errors to return
@@ -193,7 +206,7 @@ func CreateProvidersFromConstraints(ns string, sccs []*securityapi.SecurityConte
 }
 
 // CreateProviderFromConstraint creates a SecurityContextConstraintProvider from a SecurityContextConstraint
-func CreateProviderFromConstraint(ns string, namespace *kapi.Namespace, constraint *securityapi.SecurityContextConstraints, client clientset.Interface) (SecurityContextConstraintsProvider, *kapi.Namespace, error) {
+func CreateProviderFromConstraint(ns string, namespace *corev1.Namespace, constraint *securityapi.SecurityContextConstraints, client kubernetes.Interface) (SecurityContextConstraintsProvider, *corev1.Namespace, error) {
 	var err error
 	resolveUIDRange := requiresPreAllocatedUIDRange(constraint)
 	resolveSELinuxLevel := requiresPreAllocatedSELinuxLevel(constraint)
@@ -261,7 +274,7 @@ func CreateProviderFromConstraint(ns string, namespace *kapi.Namespace, constrai
 
 // getPreallocatedUIDRange retrieves the annotated value from the namespace, splits it to make
 // the min/max and formats the data into the necessary types for the strategy options.
-func getPreallocatedUIDRange(ns *kapi.Namespace) (*int64, *int64, error) {
+func getPreallocatedUIDRange(ns *corev1.Namespace) (*int64, *int64, error) {
 	annotationVal, ok := ns.Annotations[allocator.UIDRangeAnnotation]
 	if !ok {
 		return nil, nil, fmt.Errorf("unable to find annotation %s", allocator.UIDRangeAnnotation)
@@ -276,12 +289,12 @@ func getPreallocatedUIDRange(ns *kapi.Namespace) (*int64, *int64, error) {
 
 	var min int64 = int64(uidBlock.Start)
 	var max int64 = int64(uidBlock.End)
-	glog.V(4).Infof("got preallocated values for min: %d, max: %d for uid range in namespace %s", min, max, ns.Name)
+	klog.V(4).Infof("got preallocated values for min: %d, max: %d for uid range in namespace %s", min, max, ns.Name)
 	return &min, &max, nil
 }
 
 // getPreallocatedLevel gets the annotated value from the namespace.
-func getPreallocatedLevel(ns *kapi.Namespace) (string, error) {
+func getPreallocatedLevel(ns *corev1.Namespace) (string, error) {
 	level, ok := ns.Annotations[allocator.MCSAnnotation]
 	if !ok {
 		return "", fmt.Errorf("unable to find annotation %s", allocator.MCSAnnotation)
@@ -289,17 +302,17 @@ func getPreallocatedLevel(ns *kapi.Namespace) (string, error) {
 	if len(level) == 0 {
 		return "", fmt.Errorf("found annotation %s but it was empty", allocator.MCSAnnotation)
 	}
-	glog.V(4).Infof("got preallocated value for level: %s for selinux options in namespace %s", level, ns.Name)
+	klog.V(4).Infof("got preallocated value for level: %s for selinux options in namespace %s", level, ns.Name)
 	return level, nil
 }
 
 // getSupplementalGroupsAnnotation provides a backwards compatible way to get supplemental groups
 // annotations from a namespace by looking for SupplementalGroupsAnnotation and falling back to
 // UIDRangeAnnotation if it is not found.
-func getSupplementalGroupsAnnotation(ns *kapi.Namespace) (string, error) {
+func getSupplementalGroupsAnnotation(ns *corev1.Namespace) (string, error) {
 	groups, ok := ns.Annotations[allocator.SupplementalGroupsAnnotation]
 	if !ok {
-		glog.V(4).Infof("unable to find supplemental group annotation %s falling back to %s", allocator.SupplementalGroupsAnnotation, allocator.UIDRangeAnnotation)
+		klog.V(4).Infof("unable to find supplemental group annotation %s falling back to %s", allocator.SupplementalGroupsAnnotation, allocator.UIDRangeAnnotation)
 
 		groups, ok = ns.Annotations[allocator.UIDRangeAnnotation]
 		if !ok {
@@ -314,12 +327,12 @@ func getSupplementalGroupsAnnotation(ns *kapi.Namespace) (string, error) {
 }
 
 // getPreallocatedFSGroup gets the annotated value from the namespace.
-func getPreallocatedFSGroup(ns *kapi.Namespace) ([]securityapi.IDRange, error) {
+func getPreallocatedFSGroup(ns *corev1.Namespace) ([]securityapi.IDRange, error) {
 	groups, err := getSupplementalGroupsAnnotation(ns)
 	if err != nil {
 		return nil, err
 	}
-	glog.V(4).Infof("got preallocated value for groups: %s in namespace %s", groups, ns.Name)
+	klog.V(4).Infof("got preallocated value for groups: %s in namespace %s", groups, ns.Name)
 
 	blocks, err := parseSupplementalGroupAnnotation(groups)
 	if err != nil {
@@ -334,12 +347,12 @@ func getPreallocatedFSGroup(ns *kapi.Namespace) ([]securityapi.IDRange, error) {
 }
 
 // getPreallocatedSupplementalGroups gets the annotated value from the namespace.
-func getPreallocatedSupplementalGroups(ns *kapi.Namespace) ([]securityapi.IDRange, error) {
+func getPreallocatedSupplementalGroups(ns *corev1.Namespace) ([]securityapi.IDRange, error) {
 	groups, err := getSupplementalGroupsAnnotation(ns)
 	if err != nil {
 		return nil, err
 	}
-	glog.V(4).Infof("got preallocated value for groups: %s in namespace %s", groups, ns.Name)
+	klog.V(4).Infof("got preallocated value for groups: %s in namespace %s", groups, ns.Name)
 
 	blocks, err := parseSupplementalGroupAnnotation(groups)
 	if err != nil {

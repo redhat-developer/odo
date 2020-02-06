@@ -50,7 +50,7 @@ func (ReplicaSetUpgradeTest) Name() string { return "[sig-apps] replicaset-upgra
 func (r *ReplicaSetUpgradeTest) Setup(f *framework.Framework) {
 	c := f.ClientSet
 	ns := f.Namespace.Name
-	nginxImage := imageutils.GetE2EImage(imageutils.NginxSlim)
+	nginxImage := imageutils.GetE2EImage(imageutils.Nginx)
 
 	By(fmt.Sprintf("Creating replicaset %s in namespace %s", rsName, ns))
 	replicaSet := framework.NewReplicaSet(rsName, ns, 1, map[string]string{"test": "upgrade"}, "nginx", nginxImage)
@@ -82,7 +82,13 @@ func (r *ReplicaSetUpgradeTest) Test(f *framework.Framework, done <-chan struct{
 	}
 
 	By(fmt.Sprintf("Waiting for replicaset %s to have all of its replicas ready after upgrade", rsName))
-	framework.ExpectNoError(framework.WaitForReadyReplicaSet(c, ns, rsName))
+
+	err = framework.WaitForReadyReplicaSet(c, ns, rsName)
+	if err != nil {
+		framework.DumpAllNamespaceInfo(f.ClientSet, ns)
+	}
+
+	framework.ExpectNoError(err)
 
 	// Verify the upgraded RS is active by scaling up the RS to scaleNum and ensuring all pods are Ready
 	By(fmt.Sprintf("Scaling up replicaset %s to %d", rsName, scaleNum))

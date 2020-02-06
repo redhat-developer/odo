@@ -130,7 +130,7 @@ func TestParameterSerialization(t *testing.T) {
 		`{"type":"array","items":{"type":"string"},"collectionFormat":"multi","in":"header","required":true}`)
 	schema := &Schema{SchemaProps: SchemaProps{
 		Properties: map[string]Schema{
-			"name": Schema{SchemaProps: SchemaProps{
+			"name": {SchemaProps: SchemaProps{
 				Type: []string{"string"},
 			}},
 		},
@@ -153,4 +153,12 @@ func TestParameterSerialization(t *testing.T) {
 		BodyParam("", ArrayProperty(RefProperty("Cat"))),
 		`{"type":"object","in":"body","schema":{"type":"array","items":{"$ref":"Cat"}}}`)
 
+}
+
+func TestParameterGobEncoding(t *testing.T) {
+	var src, dst Parameter
+	if !assert.NoError(t, json.Unmarshal([]byte(parameterJSON), &src)) {
+		t.FailNow()
+	}
+	doTestAnyGobEncoding(t, &src, &dst)
 }

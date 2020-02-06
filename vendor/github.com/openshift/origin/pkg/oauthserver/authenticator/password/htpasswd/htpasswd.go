@@ -2,17 +2,17 @@ package htpasswd
 
 import (
 	"bufio"
+	"context"
 	"crypto/sha1"
 	"encoding/base64"
 	"errors"
 	"os"
 	"strings"
 
-	"github.com/golang/glog"
 	"golang.org/x/crypto/bcrypt"
+	"k8s.io/klog"
 
 	"k8s.io/apiserver/pkg/authentication/authenticator"
-	"k8s.io/apiserver/pkg/authentication/user"
 
 	authapi "github.com/openshift/origin/pkg/oauthserver/api"
 	"github.com/openshift/origin/pkg/oauthserver/authenticator/identitymapper"
@@ -40,7 +40,7 @@ func New(providerName string, file string, mapper authapi.UserIdentityMapper) (a
 	return auth, nil
 }
 
-func (a *Authenticator) AuthenticatePassword(username, password string) (user.Info, bool, error) {
+func (a *Authenticator) AuthenticatePassword(ctx context.Context, username, password string) (*authenticator.Response, bool, error) {
 	if err := a.loadIfNeeded(); err != nil {
 		return nil, false, err
 	}
@@ -61,7 +61,7 @@ func (a *Authenticator) AuthenticatePassword(username, password string) (user.In
 
 	identity := authapi.NewDefaultUserIdentityInfo(a.providerName, username)
 
-	return identitymapper.UserFor(a.mapper, identity)
+	return identitymapper.ResponseFor(a.mapper, identity)
 }
 
 func (a *Authenticator) load() error {
@@ -83,7 +83,7 @@ func (a *Authenticator) load() error {
 
 		parts := strings.SplitN(line, ":", 2)
 		if len(parts) != 2 {
-			glog.Warningf("Ignoring malformed htpasswd line: %s", line)
+			klog.Warningf("Ignoring malformed htpasswd line: %s", line)
 			continue
 		}
 
@@ -92,7 +92,7 @@ func (a *Authenticator) load() error {
 		if _, duplicate := newusernames[username]; duplicate {
 			if _, warned := warnedusernames[username]; !warned {
 				warnedusernames[username] = true
-				glog.Warningf("%s contains multiple passwords for user '%s'. The last one specified will be used.", a.file, username)
+				klog.Warningf("%s contains multiple passwords for user '%s'. The last one specified will be used.", a.file, username)
 			}
 		}
 		newusernames[username] = password
@@ -109,7 +109,7 @@ func (a *Authenticator) loadIfNeeded() error {
 		return err
 	}
 	if a.fileInfo == nil || a.fileInfo.ModTime() != info.ModTime() {
-		glog.V(4).Infof("Loading htpasswd file %s...", a.file)
+		klog.V(4).Infof("Loading htpasswd file %s...", a.file)
 		loadingErr := a.load()
 		if loadingErr != nil {
 			return err

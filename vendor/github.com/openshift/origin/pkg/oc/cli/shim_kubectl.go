@@ -1,16 +1,19 @@
 package cli
 
 import (
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericclioptions/openshiftpatch"
 	kclientcmd "k8s.io/client-go/tools/clientcmd"
 	kcmdset "k8s.io/kubernetes/pkg/kubectl/cmd/set"
-	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions/openshiftpatch"
+	"k8s.io/kubernetes/pkg/kubectl/cmd/version"
+	describeversioned "k8s.io/kubernetes/pkg/kubectl/describe/versioned"
+	"k8s.io/kubernetes/pkg/kubectl/generate/versioned"
 	"k8s.io/kubernetes/pkg/kubectl/polymorphichelpers"
 
 	"github.com/openshift/origin/pkg/api/legacygroupification"
 	"github.com/openshift/origin/pkg/oc/originpolymorphichelpers"
 	"github.com/openshift/origin/pkg/oc/util/clientcmd"
+	oversion "github.com/openshift/origin/pkg/version"
 )
 
 func shimKubectlForOc() {
@@ -39,6 +42,7 @@ func shimKubectlForOc() {
 	polymorphichelpers.UpdatePodSpecForObjectFn = originpolymorphichelpers.NewUpdatePodSpecForObjectFn(polymorphichelpers.UpdatePodSpecForObjectFn)
 
 	// update some functions we inject
-	kcmdutil.GeneratorFn = originpolymorphichelpers.NewGeneratorsFn(kcmdutil.GeneratorFn)
-	kcmdutil.DescriberFn = originpolymorphichelpers.NewDescriberFn(kcmdutil.DescriberFn)
+	versioned.GeneratorFn = originpolymorphichelpers.NewGeneratorsFn(versioned.GeneratorFn)
+	describeversioned.DescriberFn = originpolymorphichelpers.NewDescriberFn(describeversioned.DescriberFn)
+	version.OverrideGetVersionFn = oversion.Get
 }

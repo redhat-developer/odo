@@ -1,6 +1,7 @@
 package strategy
 
 import (
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -24,7 +25,7 @@ func TestDockerCreateBuildPod(t *testing.T) {
 	}
 
 	build := mockDockerBuild()
-	actual, err := strategy.CreateBuildPod(build)
+	actual, err := strategy.CreateBuildPod(build, nil, testInternalRegistryHost)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
@@ -52,7 +53,24 @@ func TestDockerCreateBuildPod(t *testing.T) {
 	if actual.Spec.RestartPolicy != corev1.RestartPolicyNever {
 		t.Errorf("Expected never, got %#v", actual.Spec.RestartPolicy)
 	}
-	expectedKeys := map[string]string{"BUILD": "", "SOURCE_REPOSITORY": "", "SOURCE_URI": "", "SOURCE_CONTEXT_DIR": "", "SOURCE_REF": "", "BUILD_LOGLEVEL": "", "PUSH_DOCKERCFG_PATH": "", "PULL_DOCKERCFG_PATH": ""}
+	expectedKeys := map[string]string{
+		"BUILD":                       "",
+		"LANG":                        "",
+		"SOURCE_REPOSITORY":           "",
+		"SOURCE_URI":                  "",
+		"SOURCE_CONTEXT_DIR":          "",
+		"SOURCE_REF":                  "",
+		"BUILD_LOGLEVEL":              "",
+		"PUSH_DOCKERCFG_PATH":         "",
+		"PULL_DOCKERCFG_PATH":         "",
+		"BUILD_REGISTRIES_CONF_PATH":  "",
+		"BUILD_REGISTRIES_DIR_PATH":   "",
+		"BUILD_SIGNATURE_POLICY_PATH": "",
+		"BUILD_STORAGE_CONF_PATH":     "",
+		"BUILD_ISOLATION":             "",
+		"BUILD_STORAGE_DRIVER":        "",
+		"BUILD_BLOBCACHE_DIR":         "",
+	}
 	gotKeys := map[string]string{}
 	for _, k := range container.Env {
 		gotKeys[k.Name] = ""
@@ -61,20 +79,42 @@ func TestDockerCreateBuildPod(t *testing.T) {
 		t.Errorf("Expected environment keys:\n%v\ngot keys\n%v", expectedKeys, gotKeys)
 	}
 
-	// the pod has 6 volumes but the git source secret is not mounted into the main container.
-	if len(container.VolumeMounts) != 7 {
-		t.Fatalf("Expected 7 volumes in container, got %d", len(container.VolumeMounts))
+	// expected volumes:
+	// buildworkdir
+	// blobs meta cache
+	// pushsecret
+	// pullsecret
+	// inputsecret
+	// inputconfigmap
+	// build-system-config
+	// certificate authorities
+	// container storage
+	// blobs content cache
+	if len(container.VolumeMounts) != 10 {
+		t.Fatalf("Expected 10 volumes in container, got %d", len(container.VolumeMounts))
 	}
 	if *actual.Spec.ActiveDeadlineSeconds != 60 {
 		t.Errorf("Expected ActiveDeadlineSeconds 60, got %d", *actual.Spec.ActiveDeadlineSeconds)
 	}
-	for i, expected := range []string{buildutil.BuildWorkDirMount, dockerSocketPath, "/var/run/crio/crio.sock", DockerPushSecretMountPath, DockerPullSecretMountPath} {
+	expectedMounts := []string{buildutil.BuildWorkDirMount,
+		buildutil.BuildBlobsMetaCache,
+		DockerPushSecretMountPath,
+		DockerPullSecretMountPath,
+		filepath.Join(SecretBuildSourceBaseMountPath, "super-secret"),
+		filepath.Join(ConfigMapBuildSourceBaseMountPath, "build-config"),
+		ConfigMapBuildSystemConfigsMountPath,
+		ConfigMapCertsMountPath,
+		"/var/lib/containers/storage",
+		buildutil.BuildBlobsContentCache,
+	}
+	for i, expected := range expectedMounts {
 		if container.VolumeMounts[i].MountPath != expected {
 			t.Fatalf("Expected %s in VolumeMount[%d], got %s", expected, i, container.VolumeMounts[i].MountPath)
 		}
 	}
-	if len(actual.Spec.Volumes) != 8 {
-		t.Fatalf("Expected 8 volumes in Build pod, got %d", len(actual.Spec.Volumes))
+	// build pod has an extra volume: the git clone source secret
+	if len(actual.Spec.Volumes) != 11 {
+		t.Fatalf("Expected 11 volumes in Build pod, got %d", len(actual.Spec.Volumes))
 	}
 	if !kapihelper.Semantic.DeepEqual(container.Resources, build.Spec.Resources) {
 		t.Fatalf("Expected actual=expected, %v != %v", container.Resources, build.Spec.Resources)
@@ -99,6 +139,7 @@ func TestDockerCreateBuildPod(t *testing.T) {
 	buildJSON, _ := runtime.Encode(buildJSONCodec, build)
 	errorCases := map[int][]string{
 		0: {"BUILD", string(buildJSON)},
+		1: {"LANG", "en_US.utf8"},
 	}
 	for index, exp := range errorCases {
 		if e := container.Env[index]; e.Name != exp[0] || e.Value != exp[1] {
@@ -115,7 +156,7 @@ func TestDockerBuildLongName(t *testing.T) {
 	}
 	build := mockDockerBuild()
 	build.Name = strings.Repeat("a", validation.DNS1123LabelMaxLength*2)
-	pod, err := strategy.CreateBuildPod(build)
+	pod, err := strategy.CreateBuildPod(build, nil, testInternalRegistryHost)
 	if err != nil {
 		t.Fatalf("unexpected: %v", err)
 	}

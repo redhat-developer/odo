@@ -9,13 +9,13 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apirequest "k8s.io/apiserver/pkg/endpoints/request"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
+	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 
 	imageclient "github.com/openshift/client-go/image/clientset/versioned"
-	imageapi "github.com/openshift/origin/pkg/image/apis/image"
+	"github.com/openshift/library-go/pkg/image/reference"
 	"github.com/openshift/origin/pkg/image/registryclient"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
 
 var (
@@ -31,7 +31,7 @@ var (
 
 	example = templates.Examples(`
 # Display information about the integrated registry
-%[1]s		
+%[1]s
 `)
 )
 
@@ -61,7 +61,7 @@ func NewRegistryInfoCmd(name string, f kcmdutil.Factory, streams genericclioptio
 		Use:     "info ",
 		Short:   "Print info about the integrated registry",
 		Long:    desc,
-		Example: fmt.Sprintf(example, name+" login"),
+		Example: fmt.Sprintf(example, name+" info"),
 		Run: func(c *cobra.Command, args []string) {
 			kcmdutil.CheckErr(o.Complete(f, args))
 			kcmdutil.CheckErr(o.Validate())
@@ -116,7 +116,7 @@ func (i *RegistryInfo) HostPort() (string, bool) {
 
 func findRegistryInfo(client imageclient.Interface, namespaces ...string) (*RegistryInfo, error) {
 	for _, ns := range namespaces {
-		imageStreams, err := client.Image().ImageStreams(ns).List(metav1.ListOptions{})
+		imageStreams, err := client.ImageV1().ImageStreams(ns).List(metav1.ListOptions{})
 		if err != nil || len(imageStreams.Items) == 0 {
 			continue
 		}
@@ -124,14 +124,14 @@ func findRegistryInfo(client imageclient.Interface, namespaces ...string) (*Regi
 
 		info := &RegistryInfo{}
 		if value := is.Status.PublicDockerImageRepository; len(value) > 0 {
-			ref, err := imageapi.ParseDockerImageReference(value)
+			ref, err := reference.Parse(value)
 			if err != nil {
 				return nil, fmt.Errorf("unable to parse public registry info from the server")
 			}
 			info.Public = ref.Registry
 		}
 		if value := is.Status.DockerImageRepository; len(value) > 0 {
-			ref, err := imageapi.ParseDockerImageReference(value)
+			ref, err := reference.Parse(value)
 			if err != nil {
 				return nil, fmt.Errorf("unable to parse internal registry info from the server")
 			}

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # This script holds library functions for setting up the shell environment for OpenShift scripts
 
@@ -139,7 +139,7 @@ function os::util::environment::setup_tmpdir_vars() {
 
     BASEOUTDIR="${OS_OUTPUT_SCRIPTPATH}/${sub_dir}"
     export BASEOUTDIR
-    LOG_DIR="${LOG_DIR:-${BASEOUTDIR}/logs}"
+    LOG_DIR="${ARTIFACT_DIR:-${BASEOUTDIR}}/logs"
     export LOG_DIR
     ARTIFACT_DIR="${ARTIFACT_DIR:-${BASEOUTDIR}/artifacts}"
     export ARTIFACT_DIR
@@ -169,7 +169,7 @@ readonly -f os::util::environment::setup_tmpdir_vars
 function os::util::environment::setup_kubelet_vars() {
     KUBELET_SCHEME="${KUBELET_SCHEME:-https}"
     export KUBELET_SCHEME
-    KUBELET_BIND_HOST="${KUBELET_BIND_HOST:-$(openshift start master --print-ip || echo "127.0.0.1")}"
+    KUBELET_BIND_HOST="${KUBELET_BIND_HOST:-127.0.0.1}"
     export KUBELET_BIND_HOST
     KUBELET_HOST="${KUBELET_HOST:-${KUBELET_BIND_HOST}}"
     export KUBELET_HOST
@@ -232,7 +232,7 @@ function os::util::environment::setup_server_vars() {
     KUBE_CACHE_MUTATION_DETECTOR="${KUBE_CACHE_MUTATION_DETECTOR:-true}"
     export KUBE_CACHE_MUTATION_DETECTOR
 
-    API_BIND_HOST="${API_BIND_HOST:-$(openshift start master --print-ip || echo "127.0.0.1")}"
+    API_BIND_HOST="${API_BIND_HOST:-127.0.0.1}"
     export API_BIND_HOST
     API_HOST="${API_HOST:-${API_BIND_HOST}}"
     export API_HOST
@@ -252,6 +252,13 @@ function os::util::environment::setup_server_vars() {
     export MASTER_CONFIG_DIR
     NODE_CONFIG_DIR="${SERVER_CONFIG_DIR}/node-${KUBELET_HOST}"
     export NODE_CONFIG_DIR
+
+    ETCD_CLIENT_CERT="${MASTER_CONFIG_DIR}/master.etcd-client.crt"
+    export ETCD_CLIENT_CERT
+    ETCD_CLIENT_KEY="${MASTER_CONFIG_DIR}/master.etcd-client.key"
+    export ETCD_CLIENT_KEY
+    ETCD_CA_BUNDLE="${MASTER_CONFIG_DIR}/ca-bundle.crt"
+    export ETCD_CA_BUNDLE
 
     mkdir -p "${SERVER_CONFIG_DIR}" "${MASTER_CONFIG_DIR}" "${NODE_CONFIG_DIR}"
 }

@@ -7,6 +7,7 @@ import (
 
 	rbacv1 "k8s.io/api/rbac/v1"
 	kapierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	kutilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apiserver/pkg/authentication/user"
@@ -42,7 +43,7 @@ func (s *REST) NamespaceScoped() bool {
 }
 
 // Create registers a given new ResourceAccessReview instance to r.registry.
-func (r *REST) Create(ctx context.Context, obj runtime.Object, _ rest.ValidateObjectFunc, _ bool) (runtime.Object, error) {
+func (r *REST) Create(ctx context.Context, obj runtime.Object, _ rest.ValidateObjectFunc, options *metav1.CreateOptions) (runtime.Object, error) {
 	rulesReview, ok := obj.(*authorizationapi.SubjectRulesReview)
 	if !ok {
 		return nil, kapierrors.NewBadRequest(fmt.Sprintf("not a SubjectRulesReview: %#v", obj))
@@ -99,7 +100,7 @@ func GetEffectivePolicyRules(ctx context.Context, ruleResolver rbacregistryvalid
 	if scopes := user.GetExtra()[authorizationapi.ScopesKey]; len(scopes) > 0 {
 		rules, err = filterRulesByScopes(rules, scopes, namespace, clusterRoleGetter)
 		if err != nil {
-			return nil, []error{kapierrors.NewInternalError(err)}
+			errors = append(errors, err)
 		}
 	}
 
@@ -113,9 +114,7 @@ func GetEffectivePolicyRules(ctx context.Context, ruleResolver rbacregistryvalid
 
 func filterRulesByScopes(rules []rbacv1.PolicyRule, scopes []string, namespace string, clusterRoleGetter rbaclisters.ClusterRoleLister) ([]rbacv1.PolicyRule, error) {
 	scopeRules, err := scope.ScopesToRules(scopes, namespace, clusterRoleGetter)
-	if err != nil {
-		return nil, err
-	}
+	// it's ok if there are errors, we'll just bubble them up
 
 	filteredRules := []rbacv1.PolicyRule{}
 	for _, rule := range rules {
@@ -124,5 +123,5 @@ func filterRulesByScopes(rules []rbacv1.PolicyRule, scopes []string, namespace s
 		}
 	}
 
-	return filteredRules, nil
+	return filteredRules, err
 }

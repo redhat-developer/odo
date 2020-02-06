@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 source "$(dirname "${BASH_SOURCE}")/lib/init.sh"
 
 os::build::setup_env
@@ -11,9 +11,7 @@ packages=(
   github.com/openshift/origin/pkg/image/apis/image
   github.com/openshift/origin/pkg/oauth/apis/oauth
   github.com/openshift/origin/pkg/project/apis/project
-  github.com/openshift/origin/pkg/quota/apis/quota
   github.com/openshift/origin/pkg/route/apis/route
-  github.com/openshift/origin/pkg/network/apis/network
   github.com/openshift/origin/pkg/security/apis/security
   github.com/openshift/origin/pkg/template/apis/template
   github.com/openshift/origin/pkg/user/apis/user
@@ -49,13 +47,3 @@ for pkg in "${packages[@]}"; do
   containingPackage=$(dirname "${pkg}")
   generate_clientset_for "${containingPackage}" "internalclientset"  --input=${shortGroup} ${verify} "$@"
 done
-
-SCRIPT_ROOT=$(dirname ${BASH_SOURCE})/..
-CODEGEN_PKG=${CODEGEN_PKG:-$(cd ${SCRIPT_ROOT}; ls -d -1 ./vendor/k8s.io/code-generator 2>/dev/null || echo ../../../k8s.io/code-generator)}
-
-${CODEGEN_PKG}/generate-groups.sh "deepcopy,client,lister,informer" \
-  github.com/openshift/origin/pkg/cmd/openshift-operators/generated \
-  github.com/openshift/origin/pkg/cmd/openshift-operators/apis \
-  "webconsole:v1alpha1" \
-  --go-header-file ${SCRIPT_ROOT}/hack/boilerplate.txt \
-  ${verify}

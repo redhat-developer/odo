@@ -5,19 +5,19 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/openshift/origin/pkg/oc/util/ocscheme"
 	"github.com/spf13/cobra"
 
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	kclientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericclioptions/printers"
+	"k8s.io/cli-runtime/pkg/genericclioptions/resource"
+	"k8s.io/client-go/kubernetes"
 	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions/printers"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions/resource"
+	"k8s.io/kubernetes/pkg/kubectl/scheme"
+	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	appsclient "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
@@ -55,7 +55,7 @@ type RolloutLatestOptions struct {
 	again  bool
 
 	appsClient appsclient.DeploymentConfigsGetter
-	kubeClient kclientset.Interface
+	kubeClient kubernetes.Interface
 
 	Printer printers.ResourcePrinter
 
@@ -65,7 +65,7 @@ type RolloutLatestOptions struct {
 func NewRolloutLatestOptions(streams genericclioptions.IOStreams) *RolloutLatestOptions {
 	return &RolloutLatestOptions{
 		IOStreams:  streams,
-		PrintFlags: genericclioptions.NewPrintFlags("rolled out"),
+		PrintFlags: genericclioptions.NewPrintFlags("rolled out").WithTypeSetter(scheme.Scheme),
 	}
 }
 
@@ -112,7 +112,11 @@ func (o *RolloutLatestOptions) Complete(f kcmdutil.Factory, cmd *cobra.Command, 
 
 	if o.PrintFlags.OutputFormat != nil && *o.PrintFlags.OutputFormat == "revision" {
 		fmt.Fprintln(o.ErrOut, "--output=revision is deprecated. Use `--output=jsonpath={.status.latestVersion}` or `--output=go-template={{.status.latestVersion}}` instead")
-		o.Printer = &revisionPrinter{}
+		o.Printer, err = printers.NewTypeSetter(scheme.Scheme).
+			WrapToPrinter(&revisionPrinter{}, nil)
+		if err != nil {
+			return err
+		}
 	} else {
 		o.Printer, err = o.PrintFlags.ToPrinter()
 		if err != nil {
@@ -120,11 +124,11 @@ func (o *RolloutLatestOptions) Complete(f kcmdutil.Factory, cmd *cobra.Command, 
 		}
 	}
 
-	o.kubeClient, err = f.ClientSet()
+	clientConfig, err := f.ToRESTConfig()
 	if err != nil {
 		return err
 	}
-	clientConfig, err := f.ToRESTConfig()
+	o.kubeClient, err = kubernetes.NewForConfig(clientConfig)
 	if err != nil {
 		return err
 	}
@@ -144,7 +148,7 @@ func (o *RolloutLatestOptions) Complete(f kcmdutil.Factory, cmd *cobra.Command, 
 
 func (o *RolloutLatestOptions) RunRolloutLatest() error {
 	infos, err := o.Builder.
-		WithScheme(ocscheme.ReadingInternalScheme, ocscheme.ReadingInternalScheme.PrioritizedVersionsAllGroups()...).
+		WithScheme(scheme.Scheme, scheme.Scheme.PrioritizedVersionsAllGroups()...).
 		ContinueOnError().
 		NamespaceParam(o.Namespace).
 		ResourceNames("deploymentconfigs", o.Resource).
@@ -171,7 +175,7 @@ func (o *RolloutLatestOptions) RunRolloutLatest() error {
 	}
 
 	deploymentName := appsutil.LatestDeploymentNameForConfigAndVersion(config.Name, config.Status.LatestVersion)
-	deployment, err := o.kubeClient.Core().ReplicationControllers(config.Namespace).Get(deploymentName, metav1.GetOptions{})
+	deployment, err := o.kubeClient.CoreV1().ReplicationControllers(config.Namespace).Get(deploymentName, metav1.GetOptions{})
 	switch {
 	case err == nil:
 		// Reject attempts to start a concurrent deployment.
@@ -207,7 +211,7 @@ func (o *RolloutLatestOptions) RunRolloutLatest() error {
 		info.Refresh(dc, true)
 	}
 
-	return o.Printer.PrintObj(kcmdutil.AsDefaultVersionedOrOriginal(info.Object, info.Mapping), o.Out)
+	return o.Printer.PrintObj(info.Object, o.Out)
 }
 
 type revisionPrinter struct{}

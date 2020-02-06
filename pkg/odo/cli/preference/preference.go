@@ -7,7 +7,7 @@ import (
 	"github.com/openshift/odo/pkg/preference"
 
 	"github.com/spf13/cobra"
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
+	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
 )
 
 // RecommendedCommandName is the recommended preference command name

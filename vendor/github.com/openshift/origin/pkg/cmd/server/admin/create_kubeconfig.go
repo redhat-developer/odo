@@ -7,14 +7,14 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/util/cert"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
+	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 
 	"github.com/openshift/library-go/pkg/crypto"
 	"github.com/openshift/origin/pkg/client/config"
@@ -144,7 +144,7 @@ func (o CreateKubeConfigOptions) Validate(args []string) error {
 }
 
 func (o CreateKubeConfigOptions) CreateKubeConfig() (*clientcmdapi.Config, error) {
-	glog.V(4).Infof("creating a .kubeconfig with: %#v", o)
+	klog.V(4).Infof("creating a .kubeconfig with: %#v", o)
 
 	// read all the referenced filenames
 	caData, err := readFiles(o.APIServerCAFiles, []byte("\n"))
@@ -189,7 +189,7 @@ func (o CreateKubeConfigOptions) CreateKubeConfig() (*clientcmdapi.Config, error
 
 	clusters := make(map[string]*clientcmdapi.Cluster)
 	clusters[clusterNick] = &clientcmdapi.Cluster{
-		Server: o.APIServerURL,
+		Server:                   o.APIServerURL,
 		CertificateAuthorityData: caData,
 	}
 
@@ -205,7 +205,7 @@ func (o CreateKubeConfigOptions) CreateKubeConfig() (*clientcmdapi.Config, error
 		publicContextNick := config.GetContextNickname(o.ContextNamespace, publicClusterNick, userNick)
 
 		clusters[publicClusterNick] = &clientcmdapi.Cluster{
-			Server: o.PublicAPIServerURL,
+			Server:                   o.PublicAPIServerURL,
 			CertificateAuthorityData: caData,
 		}
 		contexts[publicContextNick] = &clientcmdapi.Context{Cluster: publicClusterNick, AuthInfo: userNick, Namespace: o.ContextNamespace}
@@ -218,7 +218,7 @@ func (o CreateKubeConfigOptions) CreateKubeConfig() (*clientcmdapi.Config, error
 		CurrentContext: contextNick,
 	}
 
-	glog.V(3).Infof("Generating '%s' API client config as %s\n", userNick, o.KubeConfigFile)
+	klog.V(3).Infof("Generating '%s' API client config as %s\n", userNick, o.KubeConfigFile)
 	// Ensure the parent dir exists
 	if err := os.MkdirAll(filepath.Dir(o.KubeConfigFile), os.FileMode(0755)); err != nil {
 		return nil, err

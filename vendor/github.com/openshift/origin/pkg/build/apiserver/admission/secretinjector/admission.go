@@ -1,12 +1,14 @@
 package secretinjector
 
 import (
+	"fmt"
 	"io"
 	"net/url"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apiserver/pkg/admission"
 	restclient "k8s.io/client-go/rest"
@@ -19,7 +21,7 @@ import (
 )
 
 func Register(plugins *admission.Plugins) {
-	plugins.Register("openshift.io/BuildConfigSecretInjector",
+	plugins.Register("build.openshift.io/BuildConfigSecretInjector",
 		func(config io.Reader) (admission.Interface, error) {
 			return &secretInjector{
 				Handler: admission.NewHandler(admission.Create),
@@ -33,8 +35,18 @@ type secretInjector struct {
 }
 
 var _ = oadmission.WantsRESTClientConfig(&secretInjector{})
+var _ = admission.MutationInterface(&secretInjector{})
+var _ = admission.ValidationInterface(&secretInjector{})
 
 func (si *secretInjector) Admit(attr admission.Attributes) (err error) {
+	return si.admit(attr, true)
+}
+
+func (si *secretInjector) Validate(attr admission.Attributes) (err error) {
+	return si.admit(attr, false)
+}
+
+func (si *secretInjector) admit(attr admission.Attributes, mutationAllowed bool) (err error) {
 	bc, ok := attr.GetObject().(*buildapi.BuildConfig)
 	if !ok {
 		return nil
@@ -46,7 +58,7 @@ func (si *secretInjector) Admit(attr admission.Attributes) (err error) {
 
 	client, err := authclient.NewImpersonatingKubernetesClientset(attr.GetUserInfo(), si.restClientConfig)
 	if err != nil {
-		glog.V(2).Infof("secretinjector: could not create client: %v", err)
+		klog.V(2).Infof("secretinjector: could not create client: %v", err)
 		return nil
 	}
 
@@ -54,20 +66,20 @@ func (si *secretInjector) Admit(attr admission.Attributes) (err error) {
 
 	url, err := url.Parse(bc.Spec.Source.Git.URI)
 	if err != nil {
-		glog.V(2).Infof(`secretinjector: buildconfig "%s/%s": URI %q parse failed: %v`, namespace, bc.GetName(), bc.Spec.Source.Git.URI, err)
+		klog.V(2).Infof(`secretinjector: buildconfig "%s/%s": URI %q parse failed: %v`, namespace, bc.GetName(), bc.Spec.Source.Git.URI, err)
 		return nil
 	}
 
-	secrets, err := client.Core().Secrets(namespace).List(metav1.ListOptions{})
+	secrets, err := client.CoreV1().Secrets(namespace).List(metav1.ListOptions{})
 	if err != nil {
-		glog.V(2).Infof("secretinjector: failed to list Secrets: %v", err)
+		klog.V(2).Infof("secretinjector: failed to list Secrets: %v", err)
 		return nil
 	}
 
 	patterns := []*urlpattern.URLPattern{}
 	for _, secret := range secrets.Items {
-		if secret.Type == api.SecretTypeBasicAuth && url.Scheme == "ssh" ||
-			secret.Type == api.SecretTypeSSHAuth && url.Scheme != "ssh" {
+		if secret.Type == corev1.SecretTypeBasicAuth && url.Scheme == "ssh" ||
+			secret.Type == corev1.SecretTypeSSHAuth && url.Scheme != "ssh" {
 			continue
 		}
 
@@ -80,7 +92,7 @@ func (si *secretInjector) Admit(attr admission.Attributes) (err error) {
 
 				pattern, err := urlpattern.NewURLPattern(v)
 				if err != nil {
-					glog.V(2).Infof(`secretinjector: buildconfig "%s/%s": unparseable annotation %q: %v`, namespace, bc.GetName(), k, err)
+					klog.V(2).Infof(`secretinjector: buildconfig "%s/%s": unparseable annotation %q: %v`, namespace, bc.GetName(), k, err)
 					continue
 				}
 
@@ -92,8 +104,12 @@ func (si *secretInjector) Admit(attr admission.Attributes) (err error) {
 
 	if match := urlpattern.Match(patterns, url); match != nil {
 		secretName := match.Cookie.(string)
-		glog.V(4).Infof(`secretinjector: matched secret "%s/%s" to buildconfig "%s"`, namespace, secretName, bc.GetName())
-		bc.Spec.Source.SourceSecret = &api.LocalObjectReference{Name: secretName}
+		klog.V(4).Infof(`secretinjector: matched secret "%s/%s" to buildconfig "%s"`, namespace, secretName, bc.GetName())
+		if mutationAllowed {
+			bc.Spec.Source.SourceSecret = &api.LocalObjectReference{Name: secretName}
+		} else {
+			return admission.NewForbidden(attr, fmt.Errorf("mutated spec.source.sourceSecret, expected: %v, got %v", api.LocalObjectReference{Name: secretName}, bc.Spec.Source.SourceSecret))
+		}
 	}
 
 	return nil

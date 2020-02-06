@@ -29,7 +29,7 @@ Once you have the `extended.test` binary installed on your system, run:
 
 ```console
 $ export KUBECONFIG=${KUBECONFIG-$HOME/.kube/config}
-$ ./extended.test --ginko.focus="Mirror cluster"
+$ ./extended.test --ginkgo.focus="Mirror cluster"
 ```
 
 After the command completes there will be a file created in the current
@@ -56,10 +56,10 @@ Once you have the `extended.test` binary installed on your system, run:
 
 ```console
 $ export KUBECONFIG=${KUBECONFIG-$HOME/.kube/config}
-$ ./extended.test --ginko.focus="Load cluster" --viper-config=config/test
+$ ./extended.test --ginkgo.focus="Load cluster" --viper-config=config/test
 ```
 
 After the execution completes the cluster will have deployed the ojects defined
 in the configuration.
 
-[OpenShift.com -- Using Cluster Loader](https://docs.openshift.com/container-platform/3.9/scaling_performance/using_cluster_loader.html)
+[OpenShift.com -- Using Cluster Loader](https://docs.okd.io/latest/scaling_performance/using_cluster_loader.html)

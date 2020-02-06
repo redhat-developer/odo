@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	utilwait "k8s.io/apimachinery/pkg/util/wait"
@@ -22,17 +22,22 @@ type NodeIPTables struct {
 	syncPeriod         time.Duration
 	masqueradeServices bool
 	vxlanPort          uint32
+	masqueradeBitHex   string // the masquerade bit as hex value
 
 	mu sync.Mutex // Protects concurrent access to syncIPTableRules()
+
+	egressIPs map[string]string
 }
 
-func newNodeIPTables(clusterNetworkCIDR []string, syncPeriod time.Duration, masqueradeServices bool, vxlanPort uint32) *NodeIPTables {
+func newNodeIPTables(clusterNetworkCIDR []string, syncPeriod time.Duration, masqueradeServices bool, vxlanPort uint32, masqueradeBit uint32) *NodeIPTables {
 	return &NodeIPTables{
 		ipt:                iptables.New(kexec.New(), utildbus.New(), iptables.ProtocolIpv4),
 		clusterNetworkCIDR: clusterNetworkCIDR,
 		syncPeriod:         syncPeriod,
 		masqueradeServices: masqueradeServices,
 		vxlanPort:          vxlanPort,
+		masqueradeBitHex:   fmt.Sprintf("%#x", 1<<masqueradeBit),
+		egressIPs:          make(map[string]string),
 	}
 }
 
@@ -59,7 +64,7 @@ func (n *NodeIPTables) syncLoop() {
 	defer t.Stop()
 	for {
 		<-t.C
-		glog.V(6).Infof("Periodic openshift iptables sync")
+		klog.V(6).Infof("Periodic openshift iptables sync")
 		err := n.syncIPTableRules()
 		if err != nil {
 			utilruntime.HandleError(fmt.Errorf("Syncing openshift iptables failed: %v", err))
@@ -98,9 +103,9 @@ func (n *NodeIPTables) syncIPTableRules() error {
 
 	start := time.Now()
 	defer func() {
-		glog.V(4).Infof("syncIPTableRules took %v", time.Since(start))
+		klog.V(4).Infof("syncIPTableRules took %v", time.Since(start))
 	}()
-	glog.V(3).Infof("Syncing openshift iptables rules")
+	klog.V(3).Infof("Syncing openshift iptables rules")
 
 	chains := n.getNodeIPTablesChains()
 	for i := len(chains) - 1; i >= 0; i-- {
@@ -140,6 +145,12 @@ func (n *NodeIPTables) syncIPTableRules() error {
 		}
 	}
 
+	for egressIP, mark := range n.egressIPs {
+		if err := n.ensureEgressIPRules(egressIP, mark); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -168,7 +179,12 @@ func (n *NodeIPTables) getNodeIPTablesChains() []Chain {
 		},
 	)
 
-	var masqRules [][]string
+	masqRules := [][]string{
+		// Skip traffic already marked by kube-proxy for masquerading.
+		// This fixes a bug where traffic destined to a service's ExternalIP
+		// but also intended to go be SNAT'd to an EgressIP was dropped.
+		{"-m", "mark", "--mark", n.masqueradeBitHex + "/" + n.masqueradeBitHex, "-j", "RETURN"},
+	}
 	var masq2Rules [][]string
 	var filterRules [][]string
 	for _, cidr := range n.clusterNetworkCIDR {
@@ -210,10 +226,33 @@ func (n *NodeIPTables) getNodeIPTablesChains() []Chain {
 			},
 		)
 	}
+
+	// HACK: block access to MCS until we can secure it properly. Note that we share
+	// the same chain between OUTPUT and FORWARD.
+	chainArray = append(chainArray,
+		Chain{
+			table:    "filter",
+			name:     "OPENSHIFT-BLOCK-OUTPUT",
+			srcChain: "OUTPUT",
+			srcRule:  []string{"-m", "comment", "--comment", "firewall overrides"},
+			rules: [][]string{
+				{"-p", "tcp", "-m", "tcp", "--dport", "22623", "-j", "REJECT"},
+				{"-p", "tcp", "-m", "tcp", "--dport", "22624", "-j", "REJECT"},
+			},
+		},
+		Chain{
+			table:    "filter",
+			name:     "OPENSHIFT-BLOCK-OUTPUT",
+			srcChain: "FORWARD",
+			srcRule:  []string{"-m", "comment", "--comment", "firewall overrides"},
+			rules:    nil,
+		},
+	)
+
 	return chainArray
 }
 
-func (n *NodeIPTables) AddEgressIPRules(egressIP, mark string) error {
+func (n *NodeIPTables) ensureEgressIPRules(egressIP, mark string) error {
 	for _, cidr := range n.clusterNetworkCIDR {
 		_, err := n.ipt.EnsureRule(iptables.Prepend, iptables.TableNAT, iptables.Chain("OPENSHIFT-MASQUERADE"), "-s", cidr, "-m", "mark", "--mark", mark, "-j", "SNAT", "--to-source", egressIP)
 		if err != nil {
@@ -224,7 +263,23 @@ func (n *NodeIPTables) AddEgressIPRules(egressIP, mark string) error {
 	return err
 }
 
+func (n *NodeIPTables) AddEgressIPRules(egressIP, mark string) error {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+
+	if err := n.ensureEgressIPRules(egressIP, mark); err != nil {
+		return err
+	}
+	n.egressIPs[egressIP] = mark
+	return nil
+}
+
 func (n *NodeIPTables) DeleteEgressIPRules(egressIP, mark string) error {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+
+	delete(n.egressIPs, egressIP)
+
 	for _, cidr := range n.clusterNetworkCIDR {
 		err := n.ipt.DeleteRule(iptables.TableNAT, iptables.Chain("OPENSHIFT-MASQUERADE"), "-s", cidr, "-m", "mark", "--mark", mark, "-j", "SNAT", "--to-source", egressIP)
 		if err != nil {

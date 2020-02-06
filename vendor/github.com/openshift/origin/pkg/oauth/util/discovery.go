@@ -6,9 +6,10 @@ import (
 	"io/ioutil"
 	"net/url"
 
-	"github.com/golang/glog"
-
 	"github.com/RangelReale/osin"
+	"k8s.io/klog"
+
+	osinv1 "github.com/openshift/api/osin/v1"
 	"github.com/openshift/origin/pkg/authorization/authorizer/scope"
 	configapi "github.com/openshift/origin/pkg/cmd/server/apis/config"
 	"github.com/openshift/origin/pkg/oauth/apis/oauth/validation"
@@ -79,35 +80,52 @@ func validateURL(urlString string) error {
 func LoadOAuthMetadataFile(metadataFile string) ([]byte, *OauthAuthorizationServerMetadata, error) {
 	data, err := ioutil.ReadFile(metadataFile)
 	if err != nil {
-		return nil, nil, fmt.Errorf("Unable to read External OAuth Metadata file: %v", err)
+		return nil, nil, fmt.Errorf("unable to read External OAuth Metadata file: %v", err)
 	}
 
 	oauthMetadata := &OauthAuthorizationServerMetadata{}
 	if err := json.Unmarshal(data, oauthMetadata); err != nil {
-		return nil, nil, fmt.Errorf("Unable to decode External OAuth Metadata file: %v", err)
+		return nil, nil, fmt.Errorf("unable to decode External OAuth Metadata file: %v", err)
 	}
 
 	if err := validateURL(oauthMetadata.Issuer); err != nil {
-		return nil, nil, fmt.Errorf("Error validating External OAuth Metadata Issuer field: %v", err)
+		return nil, nil, fmt.Errorf("error validating External OAuth Metadata Issuer field: %v", err)
 	}
 
 	if err := validateURL(oauthMetadata.AuthorizationEndpoint); err != nil {
-		return nil, nil, fmt.Errorf("Error validating External OAuth Metadata AuthorizationEndpoint field: %v", err)
+		return nil, nil, fmt.Errorf("error validating External OAuth Metadata AuthorizationEndpoint field: %v", err)
 	}
 
 	if err := validateURL(oauthMetadata.TokenEndpoint); err != nil {
-		return nil, nil, fmt.Errorf("Error validating External OAuth Metadata TokenEndpoint field: %v", err)
+		return nil, nil, fmt.Errorf("error validating External OAuth Metadata TokenEndpoint field: %v", err)
 	}
 
 	return data, oauthMetadata, nil
 }
 
-func PrepOauthMetadata(oauthConfig *configapi.OAuthConfig, oauthMetadataFile string) ([]byte, *OauthAuthorizationServerMetadata, error) {
+func PrepOauthMetadata(oauthConfig *osinv1.OAuthConfig, oauthMetadataFile string) ([]byte, *OauthAuthorizationServerMetadata, error) {
+	if len(oauthMetadataFile) > 0 {
+		return LoadOAuthMetadataFile(oauthMetadataFile)
+	}
+	if oauthConfig != nil && len(oauthConfig.MasterPublicURL) != 0 {
+		metadataStruct := getOauthMetadata(oauthConfig.MasterPublicURL)
+		metadata, err := json.MarshalIndent(metadataStruct, "", "  ")
+		if err != nil {
+			klog.Errorf("Unable to initialize OAuth authorization server metadata route: %v", err)
+			return nil, nil, err
+		}
+		return metadata, &metadataStruct, nil
+	}
+	return nil, nil, nil
+}
+
+// Deprecated
+func DeprecatedPrepOauthMetadata(oauthConfig *configapi.OAuthConfig, oauthMetadataFile string) ([]byte, *OauthAuthorizationServerMetadata, error) {
 	if oauthConfig != nil {
 		metadataStruct := getOauthMetadata(oauthConfig.MasterPublicURL)
 		metadata, err := json.MarshalIndent(metadataStruct, "", "  ")
 		if err != nil {
-			glog.Errorf("Unable to initialize OAuth authorization server metadata route: %v", err)
+			klog.Errorf("Unable to initialize OAuth authorization server metadata route: %v", err)
 			return nil, nil, err
 		}
 		return metadata, &metadataStruct, nil

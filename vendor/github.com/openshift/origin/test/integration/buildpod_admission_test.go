@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	watchapi "k8s.io/apimachinery/pkg/watch"
@@ -120,14 +120,14 @@ func TestBuildDefaultAnnotations(t *testing.T) {
 }
 
 func TestBuildOverrideTolerations(t *testing.T) {
-	tolerations := []kapi.Toleration{
-		{
+	tolerations := map[string]v1.Toleration{
+		"myKey1": {
 			Key:      "mykey1",
 			Value:    "myvalue1",
 			Effect:   "NoSchedule",
 			Operator: "Equal",
 		},
-		{
+		"mykey2": {
 			Key:      "mykey2",
 			Value:    "myvalue2",
 			Effect:   "NoSchedule",
@@ -135,20 +135,30 @@ func TestBuildOverrideTolerations(t *testing.T) {
 		},
 	}
 
+	overrideTolerations := []kapi.Toleration{}
+	for _, v := range tolerations {
+		coreToleration := kapi.Toleration{}
+		err := kapiv1.Convert_v1_Toleration_To_core_Toleration(&v, &coreToleration, nil)
+		if err != nil {
+			t.Errorf("Unable to convert v1.Toleration to core.Toleration: %v", err)
+		} else {
+			overrideTolerations = append(overrideTolerations, coreToleration)
+		}
+	}
+
 	oclient, kclientset, fn := setupBuildOverridesAdmissionTest(t, &configapi.BuildOverridesConfig{
-		Tolerations: tolerations,
+		Tolerations: overrideTolerations,
 	})
 
 	defer fn()
 
 	_, pod := runBuildPodAdmissionTest(t, oclient, kclientset, buildPodAdmissionTestDockerBuild())
-	for i, toleration := range tolerations {
-		tol := v1.Toleration{}
-		if err := kapiv1.Convert_core_Toleration_To_v1_Toleration(&toleration, &tol, nil); err != nil {
-			t.Errorf("Unable to convert core.Toleration to v1.Toleration: %v", err)
-		}
-		if !reflect.DeepEqual(pod.Spec.Tolerations[i], tol) {
-			t.Errorf("Resulting pod did not get expected tolerations, expected: %#v, actual: %#v", toleration, pod.Spec.Tolerations[i])
+	for _, podToleration := range pod.Spec.Tolerations {
+		expectedTol, ok := tolerations[podToleration.Key]
+		if !ok {
+			t.Logf("Toleration %s found on pod, but is not in required list of tolerations", podToleration.Key)
+		} else if !reflect.DeepEqual(expectedTol, podToleration) {
+			t.Errorf("Resulting pod did not get expected tolerations, expected: %#v, actual: %#v", expectedTol, podToleration)
 		}
 	}
 }
@@ -250,7 +260,7 @@ func runBuildPodAdmissionTest(t *testing.T, client buildclient.Interface, kclien
 	*v1.Pod) {
 
 	ns := testutil.Namespace()
-	_, err := client.Build().Builds(ns).Create(build)
+	_, err := client.BuildV1().Builds(ns).Create(build)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -261,7 +271,7 @@ func runBuildPodAdmissionTest(t *testing.T, client buildclient.Interface, kclien
 			buildutil.GetBuildPodName(build),
 		).String(),
 	}
-	podWatch, err := kclientset.Core().Pods(ns).Watch(watchOpt)
+	podWatch, err := kclientset.CoreV1().Pods(ns).Watch(watchOpt)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -319,10 +329,6 @@ func setupBuildPodAdmissionTest(t *testing.T, pluginConfig map[string]*configapi
 	if err != nil {
 		t.Fatal(err)
 	}
-	internalClusterAdminKubeClientset, err := testutil.GetClusterAdminKubeInternalClient(clusterAdminKubeConfig)
-	if err != nil {
-		t.Fatal(err)
-	}
 	clientConfig, err := testutil.GetClusterAdminClientConfig(clusterAdminKubeConfig)
 	if err != nil {
 		t.Fatal(err)
@@ -333,7 +339,7 @@ func setupBuildPodAdmissionTest(t *testing.T, pluginConfig map[string]*configapi
 		t.Fatal(err)
 	}
 
-	_, err = clusterAdminKubeClientset.Core().Namespaces().Create(&v1.Namespace{
+	_, err = clusterAdminKubeClientset.CoreV1().Namespaces().Create(&v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{Name: testutil.Namespace()},
 	})
 	if err != nil {
@@ -341,7 +347,7 @@ func setupBuildPodAdmissionTest(t *testing.T, pluginConfig map[string]*configapi
 	}
 
 	err = testserver.WaitForServiceAccounts(
-		internalClusterAdminKubeClientset,
+		clusterAdminKubeClientset,
 		testutil.Namespace(),
 		[]string{
 			bootstrappolicy.BuilderServiceAccountName,

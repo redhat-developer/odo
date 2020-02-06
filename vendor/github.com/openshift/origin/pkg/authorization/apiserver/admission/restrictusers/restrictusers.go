@@ -5,16 +5,18 @@ import (
 	"fmt"
 	"io"
 
-	"k8s.io/client-go/rest"
-	kclientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
+	"k8s.io/client-go/kubernetes"
 
-	"github.com/golang/glog"
+	"k8s.io/apiserver/pkg/admission/initializer"
+
+	"k8s.io/client-go/rest"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apiserver/pkg/admission"
+	"k8s.io/klog"
 	"k8s.io/kubernetes/pkg/apis/rbac"
-	kadmission "k8s.io/kubernetes/pkg/kubeapiserver/admission"
 
 	userapi "github.com/openshift/api/user/v1"
 	authorizationtypedclient "github.com/openshift/client-go/authorization/clientset/versioned/typed/authorization/v1"
@@ -25,7 +27,7 @@ import (
 )
 
 func Register(plugins *admission.Plugins) {
-	plugins.Register("openshift.io/RestrictSubjectBindings",
+	plugins.Register("authorization.openshift.io/RestrictSubjectBindings",
 		func(config io.Reader) (admission.Interface, error) {
 			return NewRestrictUsersAdmission()
 		})
@@ -35,7 +37,7 @@ type GroupCache interface {
 	GroupsFor(string) ([]*userapi.Group, error)
 }
 
-// restrictUsersAdmission implements admission.Interface and enforces
+// restrictUsersAdmission implements admission.ValidateInterface and enforces
 // restrictions on adding rolebindings in a project to permit only designated
 // subjects.
 type restrictUsersAdmission struct {
@@ -43,13 +45,14 @@ type restrictUsersAdmission struct {
 
 	roleBindingRestrictionsGetter authorizationtypedclient.RoleBindingRestrictionsGetter
 	userClient                    userclient.Interface
-	kclient                       kclientset.Interface
+	kubeClient                    kubernetes.Interface
 	groupCache                    GroupCache
 }
 
 var _ = oadmission.WantsRESTClientConfig(&restrictUsersAdmission{})
 var _ = oadmission.WantsUserInformer(&restrictUsersAdmission{})
-var _ = kadmission.WantsInternalKubeClientSet(&restrictUsersAdmission{})
+var _ = initializer.WantsExternalKubeClientSet(&restrictUsersAdmission{})
+var _ = admission.ValidationInterface(&restrictUsersAdmission{})
 
 // NewRestrictUsersAdmission configures an admission plugin that enforces
 // restrictions on adding role bindings in a project.
@@ -59,17 +62,24 @@ func NewRestrictUsersAdmission() (admission.Interface, error) {
 	}, nil
 }
 
-func (q *restrictUsersAdmission) SetInternalKubeClientSet(c kclientset.Interface) {
-	q.kclient = c
+func (q *restrictUsersAdmission) SetExternalKubeClientSet(c kubernetes.Interface) {
+	q.kubeClient = c
 }
 
 func (q *restrictUsersAdmission) SetRESTClientConfig(restClientConfig rest.Config) {
 	var err error
-	q.roleBindingRestrictionsGetter, err = authorizationtypedclient.NewForConfig(&restClientConfig)
+
+	// RoleBindingRestriction is served using CRD resource any status update must use JSON
+	jsonClientConfig := rest.CopyConfig(&restClientConfig)
+	jsonClientConfig.ContentConfig.AcceptContentTypes = "application/json"
+	jsonClientConfig.ContentConfig.ContentType = "application/json"
+
+	q.roleBindingRestrictionsGetter, err = authorizationtypedclient.NewForConfig(jsonClientConfig)
 	if err != nil {
 		utilruntime.HandleError(err)
 		return
 	}
+
 	q.userClient, err = userclient.NewForConfig(&restClientConfig)
 	if err != nil {
 		utilruntime.HandleError(err)
@@ -106,7 +116,7 @@ func subjectsDelta(elementsToIgnore, elements []rbac.Subject) []rbac.Subject {
 // project-scoped role-bindings.  In order for a role binding to be permitted,
 // each subject in the binding must be matched by some rolebinding restriction
 // in the namespace.
-func (q *restrictUsersAdmission) Admit(a admission.Attributes) (err error) {
+func (q *restrictUsersAdmission) Validate(a admission.Attributes) (err error) {
 
 	// We only care about rolebindings
 	if a.GetResource().GroupResource() != rbac.Resource("rolebindings") {
@@ -135,7 +145,7 @@ func (q *restrictUsersAdmission) Admit(a admission.Attributes) (err error) {
 	}
 
 	if len(rolebinding.Subjects) == 0 {
-		glog.V(4).Infof("No new subjects; admitting")
+		klog.V(4).Infof("No new subjects; admitting")
 		return nil
 	}
 
@@ -148,12 +158,12 @@ func (q *restrictUsersAdmission) Admit(a admission.Attributes) (err error) {
 		oldSubjects = oldrolebinding.Subjects
 	}
 
-	glog.V(4).Infof("Handling rolebinding %s/%s",
+	klog.V(4).Infof("Handling rolebinding %s/%s",
 		rolebinding.Namespace, rolebinding.Name)
 
 	newSubjects := subjectsDelta(oldSubjects, rolebinding.Subjects)
 	if len(newSubjects) == 0 {
-		glog.V(4).Infof("No new subjects; admitting")
+		klog.V(4).Infof("No new subjects; admitting")
 		return nil
 	}
 
@@ -164,7 +174,7 @@ func (q *restrictUsersAdmission) Admit(a admission.Attributes) (err error) {
 		return admission.NewForbidden(a, err)
 	}
 	if len(roleBindingRestrictionList.Items) == 0 {
-		glog.V(4).Infof("No rolebinding restrictions specified; admitting")
+		klog.V(4).Infof("No rolebinding restrictions specified; admitting")
 		return nil
 	}
 
@@ -177,8 +187,8 @@ func (q *restrictUsersAdmission) Admit(a admission.Attributes) (err error) {
 		checkers = append(checkers, checker)
 	}
 
-	roleBindingRestrictionContext, err := NewRoleBindingRestrictionContext(ns,
-		q.kclient, q.userClient.User(), q.groupCache)
+	roleBindingRestrictionContext, err := newRoleBindingRestrictionContext(ns,
+		q.kubeClient, q.userClient.UserV1(), q.groupCache)
 	if err != nil {
 		return admission.NewForbidden(a, err)
 	}
@@ -201,13 +211,13 @@ func (q *restrictUsersAdmission) Admit(a admission.Attributes) (err error) {
 		return admission.NewForbidden(a, kerrors.NewAggregate(errs))
 	}
 
-	glog.V(4).Infof("All new subjects are allowed; admitting")
+	klog.V(4).Infof("All new subjects are allowed; admitting")
 
 	return nil
 }
 
 func (q *restrictUsersAdmission) ValidateInitialization() error {
-	if q.kclient == nil {
+	if q.kubeClient == nil {
 		return errors.New("RestrictUsersAdmission plugin requires a Kubernetes client")
 	}
 	if q.roleBindingRestrictionsGetter == nil {

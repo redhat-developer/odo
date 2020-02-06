@@ -21,46 +21,58 @@ import (
 	"io"
 	"io/ioutil"
 	"strings"
+	"sync"
 	"time"
 
+	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/informers"
+	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
+	v1core "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/flowcontrol"
-	"k8s.io/kubernetes/pkg/cloudprovider"
+	cloudprovider "k8s.io/cloud-provider"
 	"k8s.io/kubernetes/pkg/cloudprovider/providers/azure/auth"
-	"k8s.io/kubernetes/pkg/controller"
+	kubeletapis "k8s.io/kubernetes/pkg/kubelet/apis"
 	"k8s.io/kubernetes/pkg/version"
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
-	"github.com/ghodss/yaml"
-	"github.com/golang/glog"
+	"k8s.io/klog"
+	"sigs.k8s.io/yaml"
 )
 
 const (
 	// CloudProviderName is the value used for the --cloud-provider flag
-	CloudProviderName      = "azure"
-	rateLimitQPSDefault    = 1.0
-	rateLimitBucketDefault = 5
-	backoffRetriesDefault  = 6
-	backoffExponentDefault = 1.5
-	backoffDurationDefault = 5 // in seconds
-	backoffJitterDefault   = 1.0
-	// According to https://docs.microsoft.com/en-us/azure/azure-subscription-service-limits#load-balancer.
-	maximumLoadBalancerRuleCount = 250
+	CloudProviderName            = "azure"
+	rateLimitQPSDefault          = 1.0
+	rateLimitBucketDefault       = 5
+	backoffRetriesDefault        = 6
+	backoffExponentDefault       = 1.5
+	backoffDurationDefault       = 5 // in seconds
+	backoffJitterDefault         = 1.0
+	maximumLoadBalancerRuleCount = 148 // According to Azure LB rule default limit
 
 	vmTypeVMSS     = "vmss"
 	vmTypeStandard = "standard"
 
 	loadBalancerSkuBasic    = "basic"
 	loadBalancerSkuStandard = "standard"
+
+	externalResourceGroupLabel = "kubernetes.azure.com/resource-group"
+	managedByAzureLabel        = "kubernetes.azure.com/managed"
 )
 
 var (
 	// Master nodes are not added to standard load balancer by default.
 	defaultExcludeMasterFromStandardLB = true
-	// Outbound SNAT is enabled by default.
-	defaultDisableOutboundSNAT = false
 )
+
+// Azure implements PVLabeler.
+var _ cloudprovider.PVLabeler = (*Cloud)(nil)
 
 // Config holds the configuration parsed from the --cloud-config flag
 // All fields are required unless otherwise specified
@@ -126,9 +138,6 @@ type Config struct {
 	// ExcludeMasterFromStandardLB excludes master nodes from standard load balancer.
 	// If not set, it will be default to true.
 	ExcludeMasterFromStandardLB *bool `json:"excludeMasterFromStandardLB" yaml:"excludeMasterFromStandardLB"`
-	// DisableOutboundSNAT disables the outbound SNAT for public load balancer rules.
-	// It should only be set when loadBalancerSku is standard. If not set, it will be default to false.
-	DisableOutboundSNAT *bool `json:"disableOutboundSNAT" yaml:"disableOutboundSNAT"`
 
 	// Maximum allowed LoadBalancer Rule Count is the limit enforced by Azure Load balancer
 	MaximumLoadBalancerRuleCount int `json:"maximumLoadBalancerRuleCount" yaml:"maximumLoadBalancerRuleCount"`
@@ -153,9 +162,33 @@ type Cloud struct {
 	metadata                *InstanceMetadataService
 	vmSet                   VMSet
 
+	// Lock for access to node caches, includes nodeZones, nodeResourceGroups, and unmanagedNodes.
+	nodeCachesLock sync.Mutex
+	// nodeZones is a mapping from Zone to a sets.String of Node's names in the Zone
+	// it is updated by the nodeInformer
+	nodeZones map[string]sets.String
+	// nodeResourceGroups holds nodes external resource groups
+	nodeResourceGroups map[string]string
+	// unmanagedNodes holds a list of nodes not managed by Azure cloud provider.
+	unmanagedNodes sets.String
+	// nodeInformerSynced is for determining if the informer has synced.
+	nodeInformerSynced cache.InformerSynced
+
+	// routeCIDRsLock holds lock for routeCIDRs cache.
+	routeCIDRsLock sync.Mutex
+	// routeCIDRs holds cache for route CIDRs.
+	routeCIDRs map[string]string
+
 	// Clients for vmss.
 	VirtualMachineScaleSetsClient   VirtualMachineScaleSetsClient
 	VirtualMachineScaleSetVMsClient VirtualMachineScaleSetVMsClient
+
+	// client for vm sizes list
+	VirtualMachineSizesClient VirtualMachineSizesClient
+
+	kubeClient       clientset.Interface
+	eventBroadcaster record.EventBroadcaster
+	eventRecorder    record.EventRecorder
 
 	vmCache  *timedCache
 	lbCache  *timedCache
@@ -222,29 +255,18 @@ func NewCloud(configReader io.Reader) (cloudprovider.Interface, error) {
 			config.CloudProviderRateLimitQPSWrite,
 			config.CloudProviderRateLimitBucketWrite)
 
-		glog.V(2).Infof("Azure cloudprovider (read ops) using rate limit config: QPS=%g, bucket=%d",
+		klog.V(2).Infof("Azure cloudprovider (read ops) using rate limit config: QPS=%g, bucket=%d",
 			config.CloudProviderRateLimitQPS,
 			config.CloudProviderRateLimitBucket)
 
-		glog.V(2).Infof("Azure cloudprovider (write ops) using rate limit config: QPS=%g, bucket=%d",
+		klog.V(2).Infof("Azure cloudprovider (write ops) using rate limit config: QPS=%g, bucket=%d",
 			config.CloudProviderRateLimitQPSWrite,
 			config.CloudProviderRateLimitBucketWrite)
 	}
 
-	if strings.EqualFold(config.LoadBalancerSku, loadBalancerSkuStandard) {
-		// Do not add master nodes to standard LB by default.
-		if config.ExcludeMasterFromStandardLB == nil {
-			config.ExcludeMasterFromStandardLB = &defaultExcludeMasterFromStandardLB
-		}
-
-		// Enable outbound SNAT by default.
-		if config.DisableOutboundSNAT == nil {
-			config.DisableOutboundSNAT = &defaultDisableOutboundSNAT
-		}
-	} else {
-		if config.DisableOutboundSNAT != nil && *config.DisableOutboundSNAT {
-			return nil, fmt.Errorf("disableOutboundSNAT should only set when loadBalancerSku is standard")
-		}
+	// Do not add master nodes to standard LB by default.
+	if config.ExcludeMasterFromStandardLB == nil {
+		config.ExcludeMasterFromStandardLB = &defaultExcludeMasterFromStandardLB
 	}
 
 	azClientConfig := &azClientConfig{
@@ -255,8 +277,12 @@ func NewCloud(configReader io.Reader) (cloudprovider.Interface, error) {
 		rateLimiterWriter:       operationPollRateLimiterWrite,
 	}
 	az := Cloud{
-		Config:      *config,
-		Environment: *env,
+		Config:             *config,
+		Environment:        *env,
+		nodeZones:          map[string]sets.String{},
+		nodeResourceGroups: map[string]string{},
+		unmanagedNodes:     sets.NewString(),
+		routeCIDRs:         map[string]string{},
 
 		DisksClient:                     newAzDisksClient(azClientConfig),
 		RoutesClient:                    newAzRoutesClient(azClientConfig),
@@ -268,6 +294,7 @@ func NewCloud(configReader io.Reader) (cloudprovider.Interface, error) {
 		StorageAccountClient:            newAzStorageAccountClient(azClientConfig),
 		VirtualMachinesClient:           newAzVirtualMachinesClient(azClientConfig),
 		PublicIPAddressesClient:         newAzPublicIPAddressesClient(azClientConfig),
+		VirtualMachineSizesClient:       newAzVirtualMachineSizesClient(azClientConfig),
 		VirtualMachineScaleSetsClient:   newAzVirtualMachineScaleSetsClient(azClientConfig),
 		VirtualMachineScaleSetVMsClient: newAzVirtualMachineScaleSetVMsClient(azClientConfig),
 		FileClient:                      &azureFileClient{env: *env},
@@ -294,7 +321,7 @@ func NewCloud(configReader io.Reader) (cloudprovider.Interface, error) {
 			Duration: time.Duration(az.CloudProviderBackoffDuration) * time.Second,
 			Jitter:   az.CloudProviderBackoffJitter,
 		}
-		glog.V(2).Infof("Azure cloudprovider using retry backoff: retries=%d, exponent=%f, duration=%d, jitter=%f",
+		klog.V(2).Infof("Azure cloudprovider using try backoff: retries=%d, exponent=%f, duration=%d, jitter=%f",
 			az.CloudProviderBackoffRetries,
 			az.CloudProviderBackoffExponent,
 			az.CloudProviderBackoffDuration,
@@ -366,7 +393,12 @@ func parseConfig(configReader io.Reader) (*Config, error) {
 }
 
 // Initialize passes a Kubernetes clientBuilder interface to the cloud provider
-func (az *Cloud) Initialize(clientBuilder controller.ControllerClientBuilder) {}
+func (az *Cloud) Initialize(clientBuilder cloudprovider.ControllerClientBuilder, stop <-chan struct{}) {
+	az.kubeClient = clientBuilder.ClientOrDie("azure-cloud-provider")
+	az.eventBroadcaster = record.NewBroadcaster()
+	az.eventBroadcaster.StartRecordingToSink(&v1core.EventSinkImpl{Interface: az.kubeClient.CoreV1().Events("")})
+	az.eventRecorder = az.eventBroadcaster.NewRecorder(scheme.Scheme, v1.EventSource{Component: "azure-cloud-provider"})
+}
 
 // LoadBalancer returns a balancer interface. Also returns true if the interface is supported, false otherwise.
 func (az *Cloud) LoadBalancer() (cloudprovider.LoadBalancer, bool) {
@@ -429,4 +461,195 @@ func initDiskControllers(az *Cloud) error {
 	az.controllerCommon = common
 
 	return nil
+}
+
+// SetInformers sets informers for Azure cloud provider.
+func (az *Cloud) SetInformers(informerFactory informers.SharedInformerFactory) {
+	klog.Infof("Setting up informers for Azure cloud provider")
+	nodeInformer := informerFactory.Core().V1().Nodes().Informer()
+	nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			node := obj.(*v1.Node)
+			az.updateNodeCaches(nil, node)
+		},
+		UpdateFunc: func(prev, obj interface{}) {
+			prevNode := prev.(*v1.Node)
+			newNode := obj.(*v1.Node)
+			if newNode.Labels[kubeletapis.LabelZoneFailureDomain] ==
+				prevNode.Labels[kubeletapis.LabelZoneFailureDomain] {
+				return
+			}
+			az.updateNodeCaches(prevNode, newNode)
+		},
+		DeleteFunc: func(obj interface{}) {
+			node, isNode := obj.(*v1.Node)
+			// We can get DeletedFinalStateUnknown instead of *v1.Node here
+			// and we need to handle that correctly.
+			if !isNode {
+				deletedState, ok := obj.(cache.DeletedFinalStateUnknown)
+				if !ok {
+					klog.Errorf("Received unexpected object: %v", obj)
+					return
+				}
+				node, ok = deletedState.Obj.(*v1.Node)
+				if !ok {
+					klog.Errorf("DeletedFinalStateUnknown contained non-Node object: %v", deletedState.Obj)
+					return
+				}
+			}
+			az.updateNodeCaches(node, nil)
+		},
+	})
+	az.nodeInformerSynced = nodeInformer.HasSynced
+}
+
+// updateNodeCaches updates local cache for node's zones and external resource groups.
+func (az *Cloud) updateNodeCaches(prevNode, newNode *v1.Node) {
+	az.nodeCachesLock.Lock()
+	defer az.nodeCachesLock.Unlock()
+
+	if prevNode != nil {
+		// Remove from nodeZones cache.
+		prevZone, ok := prevNode.ObjectMeta.Labels[kubeletapis.LabelZoneFailureDomain]
+		if ok && az.isAvailabilityZone(prevZone) {
+			az.nodeZones[prevZone].Delete(prevNode.ObjectMeta.Name)
+			if az.nodeZones[prevZone].Len() == 0 {
+				az.nodeZones[prevZone] = nil
+			}
+		}
+
+		// Remove from nodeResourceGroups cache.
+		_, ok = prevNode.ObjectMeta.Labels[externalResourceGroupLabel]
+		if ok {
+			delete(az.nodeResourceGroups, prevNode.ObjectMeta.Name)
+		}
+
+		// Remove from unmanagedNodes cache.
+		managed, ok := prevNode.ObjectMeta.Labels[managedByAzureLabel]
+		if ok && managed == "false" {
+			az.unmanagedNodes.Delete(prevNode.ObjectMeta.Name)
+		}
+	}
+
+	if newNode != nil {
+		// Add to nodeZones cache.
+		newZone, ok := newNode.ObjectMeta.Labels[kubeletapis.LabelZoneFailureDomain]
+		if ok && az.isAvailabilityZone(newZone) {
+			if az.nodeZones[newZone] == nil {
+				az.nodeZones[newZone] = sets.NewString()
+			}
+			az.nodeZones[newZone].Insert(newNode.ObjectMeta.Name)
+		}
+
+		// Add to nodeResourceGroups cache.
+		newRG, ok := newNode.ObjectMeta.Labels[externalResourceGroupLabel]
+		if ok && len(newRG) > 0 {
+			az.nodeResourceGroups[newNode.ObjectMeta.Name] = newRG
+		}
+
+		// Add to unmanagedNodes cache.
+		managed, ok := newNode.ObjectMeta.Labels[managedByAzureLabel]
+		if ok && managed == "false" {
+			az.unmanagedNodes.Insert(newNode.ObjectMeta.Name)
+		}
+	}
+}
+
+// GetActiveZones returns all the zones in which k8s nodes are currently running.
+func (az *Cloud) GetActiveZones() (sets.String, error) {
+	if az.nodeInformerSynced == nil {
+		return nil, fmt.Errorf("Azure cloud provider doesn't have informers set")
+	}
+
+	az.nodeCachesLock.Lock()
+	defer az.nodeCachesLock.Unlock()
+	if !az.nodeInformerSynced() {
+		return nil, fmt.Errorf("node informer is not synced when trying to GetActiveZones")
+	}
+
+	zones := sets.NewString()
+	for zone, nodes := range az.nodeZones {
+		if len(nodes) > 0 {
+			zones.Insert(zone)
+		}
+	}
+	return zones, nil
+}
+
+// GetLocation returns the location in which k8s cluster is currently running.
+func (az *Cloud) GetLocation() string {
+	return az.Location
+}
+
+// GetNodeResourceGroup gets resource group for given node.
+func (az *Cloud) GetNodeResourceGroup(nodeName string) (string, error) {
+	// Kubelet won't set az.nodeInformerSynced, always return configured resourceGroup.
+	if az.nodeInformerSynced == nil {
+		return az.ResourceGroup, nil
+	}
+
+	az.nodeCachesLock.Lock()
+	defer az.nodeCachesLock.Unlock()
+	if !az.nodeInformerSynced() {
+		return "", fmt.Errorf("node informer is not synced when trying to GetNodeResourceGroup")
+	}
+
+	// Return external resource group if it has been cached.
+	if cachedRG, ok := az.nodeResourceGroups[nodeName]; ok {
+		return cachedRG, nil
+	}
+
+	// Return resource group from cloud provider options.
+	return az.ResourceGroup, nil
+}
+
+// GetResourceGroups returns a set of resource groups that all nodes are running on.
+func (az *Cloud) GetResourceGroups() (sets.String, error) {
+	// Kubelet won't set az.nodeInformerSynced, always return configured resourceGroup.
+	if az.nodeInformerSynced == nil {
+		return sets.NewString(az.ResourceGroup), nil
+	}
+
+	az.nodeCachesLock.Lock()
+	defer az.nodeCachesLock.Unlock()
+	if !az.nodeInformerSynced() {
+		return nil, fmt.Errorf("node informer is not synced when trying to GetResourceGroups")
+	}
+
+	resourceGroups := sets.NewString(az.ResourceGroup)
+	for _, rg := range az.nodeResourceGroups {
+		resourceGroups.Insert(rg)
+	}
+
+	return resourceGroups, nil
+}
+
+// GetUnmanagedNodes returns a list of nodes not managed by Azure cloud provider (e.g. on-prem nodes).
+func (az *Cloud) GetUnmanagedNodes() (sets.String, error) {
+	// Kubelet won't set az.nodeInformerSynced, always return nil.
+	if az.nodeInformerSynced == nil {
+		return nil, nil
+	}
+
+	az.nodeCachesLock.Lock()
+	defer az.nodeCachesLock.Unlock()
+	if !az.nodeInformerSynced() {
+		return nil, fmt.Errorf("node informer is not synced when trying to GetUnmanagedNodes")
+	}
+
+	return sets.NewString(az.unmanagedNodes.List()...), nil
+}
+
+// ShouldNodeExcludedFromLoadBalancer returns true if node is unmanaged or in external resource group.
+func (az *Cloud) ShouldNodeExcludedFromLoadBalancer(node *v1.Node) bool {
+	labels := node.ObjectMeta.Labels
+	if rg, ok := labels[externalResourceGroupLabel]; ok && rg != az.ResourceGroup {
+		return true
+	}
+
+	if managed, ok := labels[managedByAzureLabel]; ok && managed == "false" {
+		return true
+	}
+
+	return false
 }

@@ -1,20 +1,23 @@
 package integration
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
-	imageapi "github.com/openshift/origin/pkg/image/apis/image"
-	imageclient "github.com/openshift/origin/pkg/image/generated/internalclientset"
-	kapierrors "k8s.io/apimachinery/pkg/api/errors"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilwait "k8s.io/apimachinery/pkg/util/wait"
-	kapi "k8s.io/kubernetes/pkg/apis/core"
-	kcoreclient "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/internalversion"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 
-	quotaapi "github.com/openshift/origin/pkg/quota/apis/quota"
-	quotaclient "github.com/openshift/origin/pkg/quota/generated/internalclientset"
+	quotav1 "github.com/openshift/api/quota/v1"
+	quotaclient "github.com/openshift/client-go/quota/clientset/versioned"
+
+	imageapi "github.com/openshift/origin/pkg/image/apis/image"
+	imageclient "github.com/openshift/origin/pkg/image/generated/internalclientset"
 	testutil "github.com/openshift/origin/test/util"
 	testserver "github.com/openshift/origin/test/util/server"
 )
@@ -26,7 +29,7 @@ func TestClusterQuota(t *testing.T) {
 	}
 	defer testserver.CleanupMasterEtcd(t, masterConfig)
 
-	clusterAdminKubeClient, err := testutil.GetClusterAdminKubeInternalClient(clusterAdminKubeConfig)
+	clusterAdminKubeClient, err := testutil.GetClusterAdminKubeClient(clusterAdminKubeConfig)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -34,24 +37,28 @@ func TestClusterQuota(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	clusterAdminQuotaClient := quotaclient.NewForConfigOrDie(clusterAdminClientConfig)
+	clusterAdminQuotaClient := quotaclient.NewForConfigOrDie(testutil.NonProtobufConfig(clusterAdminClientConfig))
 	clusterAdminImageClient := imageclient.NewForConfigOrDie(clusterAdminClientConfig).Image()
 
-	cq := &quotaapi.ClusterResourceQuota{
+	if err := testutil.WaitForClusterResourceQuotaCRDAvailable(clusterAdminClientConfig); err != nil {
+		t.Fatal(err)
+	}
+
+	cq := &quotav1.ClusterResourceQuota{
 		ObjectMeta: metav1.ObjectMeta{Name: "overall"},
-		Spec: quotaapi.ClusterResourceQuotaSpec{
-			Selector: quotaapi.ClusterResourceQuotaSelector{
+		Spec: quotav1.ClusterResourceQuotaSpec{
+			Selector: quotav1.ClusterResourceQuotaSelector{
 				LabelSelector: &metav1.LabelSelector{MatchLabels: map[string]string{"foo": "bar"}},
 			},
-			Quota: kapi.ResourceQuotaSpec{
-				Hard: kapi.ResourceList{
-					kapi.ResourceConfigMaps:     resource.MustParse("2"),
+			Quota: corev1.ResourceQuotaSpec{
+				Hard: corev1.ResourceList{
+					corev1.ResourceConfigMaps:   resource.MustParse("2"),
 					"openshift.io/imagestreams": resource.MustParse("1"),
 				},
 			},
 		},
 	}
-	if _, err := clusterAdminQuotaClient.Quota().ClusterResourceQuotas().Create(cq); err != nil {
+	if _, err := clusterAdminQuotaClient.QuotaV1().ClusterResourceQuotas().Create(cq); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -62,10 +69,10 @@ func TestClusterQuota(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if err := labelNamespace(clusterAdminKubeClient.Core(), "first"); err != nil {
+	if err := labelNamespace(clusterAdminKubeClient.CoreV1(), "first"); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if err := labelNamespace(clusterAdminKubeClient.Core(), "second"); err != nil {
+	if err := labelNamespace(clusterAdminKubeClient.CoreV1(), "second"); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if err := waitForQuotaLabeling(clusterAdminQuotaClient, "first"); err != nil {
@@ -74,22 +81,54 @@ func TestClusterQuota(t *testing.T) {
 	if err := waitForQuotaLabeling(clusterAdminQuotaClient, "second"); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+	if err := waitForQuotaStatus(clusterAdminQuotaClient, cq.Name, func(quota *quotav1.ClusterResourceQuota) error {
+		if !equality.Semantic.DeepEqual(quota.Spec.Quota.Hard, quota.Status.Total.Hard) {
+			return fmt.Errorf("%#v != %#v", quota.Spec.Quota.Hard, quota.Status.Total.Hard)
+		}
+		return nil
+	}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
-	configmap := &kapi.ConfigMap{}
+	configmap := &corev1.ConfigMap{}
 	configmap.GenerateName = "test"
-	if _, err := clusterAdminKubeClient.Core().ConfigMaps("first").Create(configmap); err != nil {
+	if _, err := clusterAdminKubeClient.CoreV1().ConfigMaps("first").Create(configmap); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if _, err := clusterAdminKubeClient.Core().ConfigMaps("second").Create(configmap); err != nil {
+	if err := waitForQuotaStatus(clusterAdminQuotaClient, cq.Name, func(quota *quotav1.ClusterResourceQuota) error {
+		q := quota.Status.Total.Used[corev1.ResourceConfigMaps]
+		if i, ok := q.AsInt64(); ok {
+			if i == 1 {
+				return nil
+			}
+			return fmt.Errorf("%d != 1", i)
+		}
+		return fmt.Errorf("quota=%+v AsInt64() failed", q)
+	}); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if _, err := clusterAdminKubeClient.Core().ConfigMaps("second").Create(configmap); !kapierrors.IsForbidden(err) {
-		list, err := clusterAdminQuotaClient.Quota().AppliedClusterResourceQuotas("second").List(metav1.ListOptions{})
+	if _, err := clusterAdminKubeClient.CoreV1().ConfigMaps("second").Create(configmap); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if err := waitForQuotaStatus(clusterAdminQuotaClient, cq.Name, func(quota *quotav1.ClusterResourceQuota) error {
+		q := quota.Status.Total.Used[corev1.ResourceConfigMaps]
+		if i, ok := q.AsInt64(); ok {
+			if i == 2 {
+				return nil
+			}
+			return fmt.Errorf("%d != 1", i)
+		}
+		return fmt.Errorf("quota=%+v AsInt64() failed", q)
+	}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, err := clusterAdminKubeClient.CoreV1().ConfigMaps("second").Create(configmap); !apierrors.IsForbidden(err) {
+		list, err := clusterAdminQuotaClient.QuotaV1().AppliedClusterResourceQuotas("second").List(metav1.ListOptions{})
 		if err == nil {
 			t.Errorf("quota is %#v", list)
 		}
 
-		list2, err := clusterAdminKubeClient.Core().ConfigMaps("").List(metav1.ListOptions{})
+		list2, err := clusterAdminKubeClient.CoreV1().ConfigMaps("").List(metav1.ListOptions{})
 		if err == nil {
 			t.Errorf("ConfigMaps is %#v", list2)
 		}
@@ -102,8 +141,21 @@ func TestClusterQuota(t *testing.T) {
 	if _, err := clusterAdminImageClient.ImageStreams("first").Create(imagestream); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if _, err := clusterAdminImageClient.ImageStreams("second").Create(imagestream); !kapierrors.IsForbidden(err) {
-		list, err := clusterAdminQuotaClient.Quota().AppliedClusterResourceQuotas("second").List(metav1.ListOptions{})
+	if err := waitForQuotaStatus(clusterAdminQuotaClient, cq.Name, func(quota *quotav1.ClusterResourceQuota) error {
+		q := quota.Status.Total.Used["openshift.io/imagestreams"]
+		if i, ok := q.AsInt64(); ok {
+			if i == 1 {
+				return nil
+			}
+			return fmt.Errorf("%d != 1", i)
+		}
+		return fmt.Errorf("quota=%+v AsInt64() failed", q)
+	}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if _, err := clusterAdminImageClient.ImageStreams("second").Create(imagestream); !apierrors.IsForbidden(err) {
+		list, err := clusterAdminQuotaClient.QuotaV1().AppliedClusterResourceQuotas("second").List(metav1.ListOptions{})
 		if err == nil {
 			t.Errorf("quota is %#v", list)
 		}
@@ -115,12 +167,11 @@ func TestClusterQuota(t *testing.T) {
 
 		t.Fatalf("unexpected error: %v", err)
 	}
-
 }
 
 func waitForQuotaLabeling(clusterAdminClient quotaclient.Interface, namespaceName string) error {
 	return utilwait.PollImmediate(100*time.Millisecond, 10*time.Second, func() (done bool, err error) {
-		list, err := clusterAdminClient.Quota().AppliedClusterResourceQuotas(namespaceName).List(metav1.ListOptions{})
+		list, err := clusterAdminClient.QuotaV1().AppliedClusterResourceQuotas(namespaceName).List(metav1.ListOptions{})
 		if err != nil {
 			return false, nil
 		}
@@ -131,7 +182,7 @@ func waitForQuotaLabeling(clusterAdminClient quotaclient.Interface, namespaceNam
 	})
 }
 
-func labelNamespace(clusterAdminKubeClient kcoreclient.NamespacesGetter, namespaceName string) error {
+func labelNamespace(clusterAdminKubeClient corev1client.NamespacesGetter, namespaceName string) error {
 	ns1, err := clusterAdminKubeClient.Namespaces().Get(namespaceName, metav1.GetOptions{})
 	if err != nil {
 		return err
@@ -144,4 +195,30 @@ func labelNamespace(clusterAdminKubeClient kcoreclient.NamespacesGetter, namespa
 		return err
 	}
 	return nil
+}
+
+func waitForQuotaStatus(clusterAdminClient quotaclient.Interface, name string, conditionFn func(*quotav1.ClusterResourceQuota) error) error {
+	var pollErr error
+	err := utilwait.PollImmediate(100*time.Millisecond, 30*time.Second, func() (done bool, err error) {
+		quota, err := clusterAdminClient.QuotaV1().ClusterResourceQuotas().Get(name, metav1.GetOptions{})
+		if err != nil {
+			pollErr = err
+			return false, nil
+		}
+		err = conditionFn(quota)
+		if err == nil {
+			return true, nil
+		}
+		pollErr = err
+		return false, nil
+	})
+	if err == nil {
+		// since now we run each process separately we need to wait for the informers
+		// to catch up on the update and only then continue
+		time.Sleep(3 * time.Second)
+	}
+	if err != nil {
+		err = fmt.Errorf("%s: %s", err, pollErr)
+	}
+	return err
 }

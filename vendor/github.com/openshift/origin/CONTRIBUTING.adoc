@@ -32,7 +32,6 @@ never installed Docker before and you're not on RHEL/CentOS/Fedora).
 The tar file for each platform contains a single binary `openshift` which is
 the all-in-one OpenShift installation.
 
-* Use `oc cluster up` to launch the server.
 * Use `oc login <server> ...` to connect to an OpenShift server
 * Use `openshift help` to see more about the commands in the binary
 
@@ -53,7 +52,7 @@ the local host.
 Currently, OpenShift is built with `go` 1.9 and uses Docker 1.13 on Fedora/CentOS/RHEL.
 MacOS supports builds with `go` 1.9 and Docker CE 17.09.1 - newer versions of go and Docker are not supported.
 The exact requirement for Docker is documented
-https://docs.openshift.org/latest/install_config/install/prerequisites.html#installing-docker[here].
+https://docs.okd.io/latest/install_config/install/prerequisites.html#installing-docker[here].
 
 ==== Installing Prerequisites
 
@@ -157,25 +156,6 @@ $ export PATH="$( source hack/lib/init.sh; echo "${OS_OUTPUT_BINPATH}/$( os::bui
 
 See more information in https://github.com/openshift/origin/blob/master/HACKING.md#building-on-non-linux-systems[`HACKING.md`]
 for a more in-depth approach to building releases and incremental artifacts.
-
-==== Running the OpenShift Server
-Next, follow the set-up steps in https://github.com/openshift/origin/blob/master/docs/cluster_up_down.md[`cluster_up_down.md`]
-to start a cluster with `oc cluster up`. When starting the cluster, you will
-need to use container images. Images built locally with the `make release` and
-`hack/build-images.sh` scripts are tagged with the `git` commit you're working
-off of as well as `:latest`. If you have not built all of the images locally,
-ask `oc cluster up` for the `:latest` version and any missing images will be
-pulled down:
-----
-$ oc cluster up --tag=latest
-----
-If you have built a full suite of images and want to ensure that only the images
-you just built are going to be used, ask `oc cluster up` for the version that
-corresponds to your `git` commit:
-----
-$ oc cluster up --tag="$(git log -1 --pretty=%h )"
-----
-NOTE: The `--tag` flag can be used only for development purposes. It is not meant for running a cluster of a different version than `oc` binary.
 
 === Develop and test using a docker-in-docker cluster
 
@@ -311,7 +291,7 @@ Right now you can see what's happening with OpenShift development at:
 https://github.com/openshift/origin[github.com/openshift/origin]
 
 Ready to play with some code? Hop down and read up on our link:#the-roadmap[roadmap] for ideas on where you can contribute.
-You can also try to take a stab at any issue tagged with the https://github.com/openshift/origin/issues?q=is%3Aissue+is%3Aopen+label%3Ahelp-wanted[help-wanted] label.
+You can also try to take a stab at any issue tagged with the https://github.com/openshift/origin/issues?q=is%3Aissue+is%3Aopen+label%3A"help+wanted"[help wanted] label.
 
 *If you are interested in contributing to Kubernetes directly:* +
 https://github.com/kubernetes/kubernetes#community-discussion-and-support[Join the Kubernetes community] and check out the https://github.com/kubernetes/kubernetes/blob/master/CONTRIBUTING.md[contributing guide].

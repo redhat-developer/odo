@@ -19,7 +19,6 @@ package class
 import (
 	"github.com/kubernetes-incubator/service-catalog/cmd/svcat/command"
 	"github.com/kubernetes-incubator/service-catalog/cmd/svcat/output"
-	"github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	"github.com/kubernetes-incubator/service-catalog/pkg/svcat/service-catalog"
 	"github.com/spf13/cobra"
 )
@@ -28,9 +27,9 @@ type getCmd struct {
 	*command.Namespaced
 	*command.Scoped
 	*command.Formatted
-	lookupByUUID bool
-	uuid         string
-	name         string
+	lookupByKubeName bool
+	kubeName         string
+	name             string
 }
 
 // NewGetCmd builds a "svcat get classes" command
@@ -49,17 +48,17 @@ func NewGetCmd(cxt *command.Context) *cobra.Command {
   svcat get classes --scope cluster
   svcat get classes --scope namespace --namespace dev
   svcat get class mysqldb
-  svcat get class --uuid 997b8372-8dac-40ac-ae65-758b4a5075a5
+  svcat get class --kube-name 997b8372-8dac-40ac-ae65-758b4a5075a5
 `),
 		PreRunE: command.PreRunE(getCmd),
 		RunE:    command.RunE(getCmd),
 	}
 	cmd.Flags().BoolVarP(
-		&getCmd.lookupByUUID,
-		"uuid",
-		"u",
+		&getCmd.lookupByKubeName,
+		"kube-name",
+		"k",
 		false,
-		"Whether or not to get the class by UUID (the default is by name)",
+		"Whether or not to get the class by its Kubernetes name (the default is by external name)",
 	)
 	getCmd.AddOutputFlags(cmd.Flags())
 	getCmd.AddNamespaceFlags(cmd.Flags(), true)
@@ -69,8 +68,8 @@ func NewGetCmd(cxt *command.Context) *cobra.Command {
 
 func (c *getCmd) Validate(args []string) error {
 	if len(args) > 0 {
-		if c.lookupByUUID {
-			c.uuid = args[0]
+		if c.lookupByKubeName {
+			c.kubeName = args[0]
 		} else {
 			c.name = args[0]
 		}
@@ -80,7 +79,7 @@ func (c *getCmd) Validate(args []string) error {
 }
 
 func (c *getCmd) Run() error {
-	if c.uuid == "" && c.name == "" {
+	if c.kubeName == "" && c.name == "" {
 		return c.getAll()
 	}
 
@@ -102,18 +101,18 @@ func (c *getCmd) getAll() error {
 }
 
 func (c *getCmd) get() error {
-	var class *v1beta1.ClusterServiceClass
+	var class servicecatalog.Class
 	var err error
 
-	if c.lookupByUUID {
-		class, err = c.App.RetrieveClassByID(c.uuid)
+	if c.lookupByKubeName {
+		class, err = c.App.RetrieveClassByID(c.kubeName)
 	} else if c.name != "" {
-		class, err = c.App.RetrieveClassByName(c.name)
+		class, err = c.App.RetrieveClassByName(c.name, servicecatalog.ScopeOptions{Scope: c.Scope, Namespace: c.Namespace})
 	}
 	if err != nil {
 		return err
 	}
 
-	output.WriteClass(c.Output, c.OutputFormat, *class)
+	output.WriteClass(c.Output, c.OutputFormat, class)
 	return nil
 }

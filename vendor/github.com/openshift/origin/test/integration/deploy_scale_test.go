@@ -50,33 +50,11 @@ func TestDeployScale(t *testing.T) {
 	config.Spec.Triggers = []appsv1.DeploymentTriggerPolicy{}
 	config.Spec.Replicas = 1
 
-	dc, err := adminAppsClient.Apps().DeploymentConfigs(namespace).Create(config)
+	dc, err := adminAppsClient.AppsV1().DeploymentConfigs(namespace).Create(config)
 	if err != nil {
 		t.Fatalf("Couldn't create DeploymentConfig: %v %#v", err, config)
 	}
 	generation := dc.Generation
-
-	{
-		// Get scale subresource
-		legacyPath := fmt.Sprintf("/oapi/v1/namespaces/%s/deploymentconfigs/%s/scale", dc.Namespace, dc.Name)
-		legacyScale := &unstructured.Unstructured{}
-		if err := adminAppsClient.RESTClient().Get().AbsPath(legacyPath).Do().Into(legacyScale); err != nil {
-			t.Fatal(err)
-		}
-		// Ensure correct type
-		if legacyScale.GetAPIVersion() != "extensions/v1beta1" {
-			t.Fatalf("Expected extensions/v1beta1, got %v", legacyScale.GetAPIVersion())
-		}
-		scaleBytes, err := legacyScale.MarshalJSON()
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		// Ensure we can submit the same type back
-		if err := adminAppsClient.RESTClient().Put().AbsPath(legacyPath).Body(scaleBytes).Do().Error(); err != nil {
-			t.Fatal(err)
-		}
-	}
 
 	{
 		// Get scale subresource
@@ -101,7 +79,7 @@ func TestDeployScale(t *testing.T) {
 	}
 
 	condition := func() (bool, error) {
-		config, err := adminAppsClient.Apps().DeploymentConfigs(namespace).Get(dc.Name, metav1.GetOptions{})
+		config, err := adminAppsClient.AppsV1().DeploymentConfigs(namespace).Get(dc.Name, metav1.GetOptions{})
 		if err != nil {
 			return false, nil
 		}

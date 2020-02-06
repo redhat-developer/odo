@@ -23,9 +23,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
-	"k8s.io/api/core/v1"
-	"k8s.io/kubernetes/pkg/cloudprovider"
+	v1 "k8s.io/api/core/v1"
+	cloudprovider "k8s.io/cloud-provider"
+	"k8s.io/klog"
 	"k8s.io/kubernetes/pkg/cloudprovider/providers/vsphere"
 	"k8s.io/kubernetes/pkg/cloudprovider/providers/vsphere/vclib"
 	"k8s.io/kubernetes/pkg/volume"
@@ -92,11 +92,12 @@ func (util *VsphereDiskUtil) CreateVolume(v *vsphereVolumeProvisioner) (volSpec 
 
 	capacity := v.options.PVC.Spec.Resources.Requests[v1.ResourceName(v1.ResourceStorage)]
 	volSizeBytes := capacity.Value()
-	// vSphere works with kilobytes, convert to KiB with rounding up
-	volSizeKiB, err := volumeutil.RoundUpSizeInt(volSizeBytes, 1024)
+	// vSphere works with KiB, but its minimum allocation unit is 1 MiB
+	volSizeMiB, err := volumeutil.RoundUpSizeInt(volSizeBytes, 1024*1024)
 	if err != nil {
 		return nil, err
 	}
+	volSizeKiB := volSizeMiB * 1024
 	name := volumeutil.GenerateVolumeName(v.options.ClusterName, v.options.PVName, 255)
 	volumeOptions := &vclib.VolumeOptions{
 		CapacityKB: volSizeKiB,
@@ -114,10 +115,10 @@ func (util *VsphereDiskUtil) CreateVolume(v *vsphereVolumeProvisioner) (volSpec 
 			volumeOptions.Datastore = value
 		case volume.VolumeParameterFSType:
 			fstype = value
-			glog.V(4).Infof("Setting fstype as %q", fstype)
+			klog.V(4).Infof("Setting fstype as %q", fstype)
 		case StoragePolicyName:
 			volumeOptions.StoragePolicyName = value
-			glog.V(4).Infof("Setting StoragePolicyName as %q", volumeOptions.StoragePolicyName)
+			klog.V(4).Infof("Setting StoragePolicyName as %q", volumeOptions.StoragePolicyName)
 		case HostFailuresToTolerateCapability, ForceProvisioningCapability,
 			CacheReservationCapability, DiskStripesCapability,
 			ObjectSpaceReservationCapability, IopsLimitCapability:
@@ -137,7 +138,7 @@ func (util *VsphereDiskUtil) CreateVolume(v *vsphereVolumeProvisioner) (volSpec 
 		}
 		volumeOptions.VSANStorageProfileData = "(" + volumeOptions.VSANStorageProfileData + ")"
 	}
-	glog.V(4).Infof("VSANStorageProfileData in vsphere volume %q", volumeOptions.VSANStorageProfileData)
+	klog.V(4).Infof("VSANStorageProfileData in vsphere volume %q", volumeOptions.VSANStorageProfileData)
 	// TODO: implement PVC.Selector parsing
 	if v.options.PVC.Spec.Selector != nil {
 		return nil, fmt.Errorf("claim.Spec.Selector is not supported for dynamic provisioning on vSphere")
@@ -154,7 +155,7 @@ func (util *VsphereDiskUtil) CreateVolume(v *vsphereVolumeProvisioner) (volSpec 
 		StoragePolicyName: volumeOptions.StoragePolicyName,
 		StoragePolicyID:   volumeOptions.StoragePolicyID,
 	}
-	glog.V(2).Infof("Successfully created vsphere volume %s", name)
+	klog.V(2).Infof("Successfully created vsphere volume %s", name)
 	return volSpec, nil
 }
 
@@ -166,10 +167,10 @@ func (util *VsphereDiskUtil) DeleteVolume(vd *vsphereVolumeDeleter) error {
 	}
 
 	if err = cloud.DeleteVolume(vd.volPath); err != nil {
-		glog.V(2).Infof("Error deleting vsphere volume %s: %v", vd.volPath, err)
+		klog.V(2).Infof("Error deleting vsphere volume %s: %v", vd.volPath, err)
 		return err
 	}
-	glog.V(2).Infof("Successfully deleted vsphere volume %s", vd.volPath)
+	klog.V(2).Infof("Successfully deleted vsphere volume %s", vd.volPath)
 	return nil
 }
 
@@ -184,12 +185,12 @@ func getVolPathfromVolumeName(deviceMountPath string) string {
 
 func getCloudProvider(cloud cloudprovider.Interface) (*vsphere.VSphere, error) {
 	if cloud == nil {
-		glog.Errorf("Cloud provider not initialized properly")
+		klog.Errorf("Cloud provider not initialized properly")
 		return nil, errors.New("Cloud provider not initialized properly")
 	}
 
-	vs := cloud.(*vsphere.VSphere)
-	if vs == nil {
+	vs, ok := cloud.(*vsphere.VSphere)
+	if !ok || vs == nil {
 		return nil, errors.New("Invalid cloud provider: expected vSphere")
 	}
 	return vs, nil

@@ -34,6 +34,7 @@ import (
 
 func TestNewWithDelegate(t *testing.T) {
 	delegateConfig := NewConfig(codecs)
+	delegateConfig.ExternalAddress = "192.168.10.4:443"
 	delegateConfig.PublicAddress = net.ParseIP("192.168.10.4")
 	delegateConfig.LegacyAPIGroupPrefixes = sets.NewString("/api")
 	delegateConfig.LoopbackClientConfig = &rest.Config{}
@@ -56,7 +57,9 @@ func TestNewWithDelegate(t *testing.T) {
 		w.WriteHeader(http.StatusForbidden)
 	})
 
+	delegatePostStartHookChan := make(chan struct{})
 	delegateServer.AddPostStartHook("delegate-post-start-hook", func(context PostStartHookContext) error {
+		defer close(delegatePostStartHookChan)
 		return nil
 	})
 
@@ -64,6 +67,7 @@ func TestNewWithDelegate(t *testing.T) {
 	delegateServer.PrepareRun()
 
 	wrappingConfig := NewConfig(codecs)
+	wrappingConfig.ExternalAddress = "192.168.10.4:443"
 	wrappingConfig.PublicAddress = net.ParseIP("192.168.10.4")
 	wrappingConfig.LegacyAPIGroupPrefixes = sets.NewString("/api")
 	wrappingConfig.LoopbackClientConfig = &rest.Config{}
@@ -82,7 +86,9 @@ func TestNewWithDelegate(t *testing.T) {
 		w.WriteHeader(http.StatusUnauthorized)
 	})
 
+	wrappingPostStartHookChan := make(chan struct{})
 	wrappingServer.AddPostStartHook("wrapping-post-start-hook", func(context PostStartHookContext) error {
+		defer close(wrappingPostStartHookChan)
 		return nil
 	})
 
@@ -93,6 +99,10 @@ func TestNewWithDelegate(t *testing.T) {
 
 	server := httptest.NewServer(wrappingServer.Handler)
 	defer server.Close()
+
+	// Wait for the hooks to finish before checking the response
+	<-delegatePostStartHookChan
+	<-wrappingPostStartHookChan
 
 	checkPath(server.URL, http.StatusOK, `{
   "paths": [

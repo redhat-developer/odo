@@ -4,23 +4,21 @@ import (
 	"bytes"
 	"testing"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apiserver/pkg/admission"
 	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/apiserver/pkg/storage/names"
+	corev1listers "k8s.io/client-go/listers/core/v1"
 	clientgotesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
-	kapi "k8s.io/kubernetes/pkg/apis/core"
-	"k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/fake"
 
 	"github.com/openshift/api/project"
 	userapi "github.com/openshift/api/user/v1"
 	fakeuserclient "github.com/openshift/client-go/user/clientset/versioned/fake"
-	oadmission "github.com/openshift/origin/pkg/cmd/server/admission"
 	projectapi "github.com/openshift/origin/pkg/project/apis/project"
 	requestlimitapi "github.com/openshift/origin/pkg/project/apiserver/admission/apis/requestlimit"
-	projectcache "github.com/openshift/origin/pkg/project/cache"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	// install all APIs
@@ -36,7 +34,7 @@ func TestReadConfig(t *testing.T) {
 	}{
 		{
 			// multiple selectors
-			config: `apiVersion: v1
+			config: `apiVersion: project.openshift.io/v1
 kind: ProjectRequestLimitConfig
 limits:
 - selector:
@@ -84,7 +82,7 @@ limits:
 		},
 		{
 			// single selector
-			config: `apiVersion: v1
+			config: `apiVersion: project.openshift.io/v1
 kind: ProjectRequestLimitConfig
 limits:
 - maxProjects: 1
@@ -100,7 +98,7 @@ limits:
 		},
 		{
 			// no selectors
-			config: `apiVersion: v1
+			config: `apiVersion: project.openshift.io/v1
 kind: ProjectRequestLimitConfig
 `,
 			expected: requestlimitapi.ProjectRequestLimitConfig{},
@@ -179,13 +177,14 @@ func TestMaxProjectByRequester(t *testing.T) {
 }
 
 func TestProjectCountByRequester(t *testing.T) {
-	pCache := fakeProjectCache(map[string]projectCount{
+	nsLister := fakeNamespaceLister(map[string]projectCount{
 		"user1": {1, 5}, // total 6, expect 4
 		"user2": {5, 1}, // total 6, expect 5
 		"user3": {1, 0}, // total 1, expect 1
 	})
 	reqLimit := &projectRequestLimit{
-		cache: pCache,
+		nsLister:       nsLister,
+		nsListerSynced: func() bool { return true },
 	}
 	tests := []struct {
 		user   string
@@ -261,7 +260,7 @@ func TestAdmit(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		pCache := fakeProjectCache(map[string]projectCount{
+		nsLister := fakeNamespaceLister(map[string]projectCount{
 			"user1": {0, 1},
 			"user2": {2, 2},
 			"user3": {5, 3},
@@ -279,11 +278,12 @@ func TestAdmit(t *testing.T) {
 			t.Fatalf("Unexpected error: %v", err)
 		}
 		reqLimit.(*projectRequestLimit).userClient = client.UserV1()
-		reqLimit.(oadmission.WantsProjectCache).SetProjectCache(pCache)
+		reqLimit.(*projectRequestLimit).nsLister = nsLister
+		reqLimit.(*projectRequestLimit).nsListerSynced = func() bool { return true }
 		if err = reqLimit.(admission.InitializationValidator).ValidateInitialization(); err != nil {
 			t.Fatalf("validation error: %v", err)
 		}
-		err = reqLimit.(admission.MutationInterface).Admit(admission.NewAttributesRecord(
+		err = reqLimit.(admission.ValidationInterface).Validate(admission.NewAttributesRecord(
 			&projectapi.ProjectRequest{},
 			nil,
 			project.Kind("ProjectRequest").WithVersion("version"),
@@ -292,6 +292,7 @@ func TestAdmit(t *testing.T) {
 			project.Resource("projectrequests").WithVersion("version"),
 			"",
 			"CREATE",
+			false,
 			&user.DefaultInfo{Name: tc.user}))
 		if err != nil && !tc.expectForbidden {
 			t.Errorf("Got unexpected error for user %s: %v", tc.user, err)
@@ -341,14 +342,14 @@ func configEquals(a, b *requestlimitapi.ProjectRequestLimitConfig) bool {
 	return true
 }
 
-func fakeNs(name string, terminating bool) *kapi.Namespace {
-	ns := &kapi.Namespace{}
+func fakeNs(name string, terminating bool) *corev1.Namespace {
+	ns := &corev1.Namespace{}
 	ns.Name = names.SimpleNameGenerator.GenerateName("testns")
 	ns.Annotations = map[string]string{
 		"openshift.io/requester": name,
 	}
 	if terminating {
-		ns.Status.Phase = kapi.NamespaceTerminating
+		ns.Status.Phase = corev1.NamespaceTerminating
 	}
 	return ns
 }
@@ -365,18 +366,17 @@ type projectCount struct {
 	terminating int
 }
 
-func fakeProjectCache(requesters map[string]projectCount) *projectcache.ProjectCache {
-	kclientset := &fake.Clientset{}
-	pCache := projectcache.NewFake(kclientset.Core().Namespaces(), projectcache.NewCacheStore(cache.MetaNamespaceKeyFunc), "")
+func fakeNamespaceLister(requesters map[string]projectCount) corev1listers.NamespaceLister {
+	indexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{})
 	for requester, count := range requesters {
 		for i := 0; i < count.active; i++ {
-			pCache.Store.Add(fakeNs(requester, false))
+			indexer.Add(fakeNs(requester, false))
 		}
 		for i := 0; i < count.terminating; i++ {
-			pCache.Store.Add(fakeNs(requester, true))
+			indexer.Add(fakeNs(requester, true))
 		}
 	}
-	return pCache
+	return corev1listers.NewNamespaceLister(indexer)
 }
 
 func userFn(usersAndLabels map[string]labels.Set) clientgotesting.ReactionFunc {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	kapierrors "k8s.io/apimachinery/pkg/api/errors"
 	metainternal "k8s.io/apimachinery/pkg/apis/meta/internalversion"
@@ -132,7 +132,7 @@ func (r *REST) Get(ctx context.Context, id string, options *metav1.GetOptions) (
 	return newISTag(tag, imageStream, image, false)
 }
 
-func (r *REST) Create(ctx context.Context, obj runtime.Object, createValidation rest.ValidateObjectFunc, _ bool) (runtime.Object, error) {
+func (r *REST) Create(ctx context.Context, obj runtime.Object, createValidation rest.ValidateObjectFunc, options *metav1.CreateOptions) (runtime.Object, error) {
 	istag, ok := obj.(*imageapi.ImageStreamTag)
 	if !ok {
 		return nil, kapierrors.NewBadRequest(fmt.Sprintf("obj is not an ImageStreamTag: %#v", obj))
@@ -185,9 +185,9 @@ func (r *REST) Create(ctx context.Context, obj runtime.Object, createValidation 
 		// Check the stream creation timestamp and make sure we will not
 		// create a new image stream while deleting.
 		if target.CreationTimestamp.IsZero() {
-			target, err = r.imageStreamRegistry.CreateImageStream(ctx, target)
+			target, err = r.imageStreamRegistry.CreateImageStream(ctx, target, &metav1.CreateOptions{})
 		} else {
-			target, err = r.imageStreamRegistry.UpdateImageStream(ctx, target)
+			target, err = r.imageStreamRegistry.UpdateImageStream(ctx, target, false, &metav1.UpdateOptions{})
 		}
 		if kapierrors.IsAlreadyExists(err) || kapierrors.IsConflict(err) {
 			continue
@@ -203,7 +203,7 @@ func (r *REST) Create(ctx context.Context, obj runtime.Object, createValidation 
 	return nil, kapierrors.NewServerTimeout(imagegroup.Resource("imagestreamtags"), "create", 2)
 }
 
-func (r *REST) Update(ctx context.Context, tagName string, objInfo rest.UpdatedObjectInfo, createValidation rest.ValidateObjectFunc, updateValidation rest.ValidateObjectUpdateFunc) (runtime.Object, bool, error) {
+func (r *REST) Update(ctx context.Context, tagName string, objInfo rest.UpdatedObjectInfo, createValidation rest.ValidateObjectFunc, updateValidation rest.ValidateObjectUpdateFunc, forceAllowCreate bool, options *metav1.UpdateOptions) (runtime.Object, bool, error) {
 	name, tag, err := nameAndTag(tagName)
 	if err != nil {
 		return nil, false, err
@@ -301,9 +301,9 @@ func (r *REST) Update(ctx context.Context, tagName string, objInfo rest.UpdatedO
 	// mutate the image stream
 	var newImageStream *imageapi.ImageStream
 	if create {
-		newImageStream, err = r.imageStreamRegistry.CreateImageStream(ctx, imageStream)
+		newImageStream, err = r.imageStreamRegistry.CreateImageStream(ctx, imageStream, &metav1.CreateOptions{})
 	} else {
-		newImageStream, err = r.imageStreamRegistry.UpdateImageStream(ctx, imageStream)
+		newImageStream, err = r.imageStreamRegistry.UpdateImageStream(ctx, imageStream, false, &metav1.UpdateOptions{})
 	}
 	if err != nil {
 		return nil, false, err
@@ -360,7 +360,7 @@ func (r *REST) Delete(ctx context.Context, id string, options *metav1.DeleteOpti
 			return nil, false, kapierrors.NewNotFound(imagegroup.Resource("imagestreamtags"), id)
 		}
 
-		_, err = r.imageStreamRegistry.UpdateImageStream(ctx, stream)
+		_, err = r.imageStreamRegistry.UpdateImageStream(ctx, stream, false, &metav1.UpdateOptions{})
 		if kapierrors.IsConflict(err) {
 			continue
 		}
@@ -392,7 +392,7 @@ func newISTag(tag string, imageStream *imageapi.ImageStream, image *imageapi.Ima
 	event := imageapi.LatestTaggedImage(imageStream, tag)
 	if event == nil || len(event.Image) == 0 {
 		if !allowEmptyEvent {
-			glog.V(4).Infof("did not find tag %s in image stream status tags: %#v", tag, imageStream.Status.Tags)
+			klog.V(4).Infof("did not find tag %s in image stream status tags: %#v", tag, imageStream.Status.Tags)
 			return nil, kapierrors.NewNotFound(imagegroup.Resource("imagestreamtags"), istagName)
 		}
 		event = &imageapi.TagEvent{

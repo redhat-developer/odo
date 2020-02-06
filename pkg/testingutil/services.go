@@ -50,10 +50,10 @@ func FakeClusterServicePlan(name string, planNumber int) v1beta1.ClusterServiceP
 				Name: "1dda1477cace09730bd8ed7a6505607e",
 			},
 			CommonServicePlanSpec: v1beta1.CommonServicePlanSpec{
-				ExternalName:                         name,
-				Description:                          fmt.Sprintf("this is a example description %d", planNumber),
-				ExternalMetadata:                     SingleValuedRawExtension("displayName", fmt.Sprintf("plan-name-%d", planNumber)),
-				ServiceInstanceCreateParameterSchema: &runtime.RawExtension{Raw: FakePlanServiceInstanceCreateParameterSchemasRaw()[(planNumber-1)%2]},
+				ExternalName:                  name,
+				Description:                   fmt.Sprintf("this is a example description %d", planNumber),
+				ExternalMetadata:              SingleValuedRawExtension("displayName", fmt.Sprintf("plan-name-%d", planNumber)),
+				InstanceCreateParameterSchema: &runtime.RawExtension{Raw: FakePlanInstanceCreateParameterSchemasRaw()[(planNumber-1)%2]},
 			},
 		},
 	}
@@ -70,11 +70,11 @@ func SingleValuedRawExtension(name, value string) *runtime.RawExtension {
 	return &runtime.RawExtension{Raw: serialized}
 }
 
-// FakePlanServiceInstanceCreateParameterSchemasRaw creates 2 create parameter schemas for testing purposes
-func FakePlanServiceInstanceCreateParameterSchemasRaw() [][]byte {
-	planServiceInstanceCreateParameterSchema1 := make(M)
-	planServiceInstanceCreateParameterSchema1["required"] = []string{"PLAN_DATABASE_URI", "PLAN_DATABASE_USERNAME", "PLAN_DATABASE_PASSWORD"}
-	planServiceInstanceCreateParameterSchema1["properties"] = map[string]M{
+// FakePlanInstanceCreateParameterSchemasRaw creates 2 create parameter schemas for testing purposes
+func FakePlanInstanceCreateParameterSchemasRaw() [][]byte {
+	planInstanceCreateParameterSchema1 := make(M)
+	planInstanceCreateParameterSchema1["required"] = []string{"PLAN_DATABASE_URI", "PLAN_DATABASE_USERNAME", "PLAN_DATABASE_PASSWORD"}
+	planInstanceCreateParameterSchema1["properties"] = map[string]M{
 		"PLAN_DATABASE_URI": {
 			"default": "someuri",
 			"type":    "string",
@@ -92,9 +92,9 @@ func FakePlanServiceInstanceCreateParameterSchemasRaw() [][]byte {
 		},
 	}
 
-	planServiceInstanceCreateParameterSchema2 := make(M)
-	planServiceInstanceCreateParameterSchema2["required"] = []string{"PLAN_DATABASE_USERNAME_2", "PLAN_DATABASE_PASSWORD"}
-	planServiceInstanceCreateParameterSchema2["properties"] = map[string]M{
+	planInstanceCreateParameterSchema2 := make(M)
+	planInstanceCreateParameterSchema2["required"] = []string{"PLAN_DATABASE_USERNAME_2", "PLAN_DATABASE_PASSWORD"}
+	planInstanceCreateParameterSchema2["properties"] = map[string]M{
 		"PLAN_DATABASE_USERNAME_2": {
 			"default": "user2",
 			"type":    "string",
@@ -104,14 +104,14 @@ func FakePlanServiceInstanceCreateParameterSchemasRaw() [][]byte {
 		},
 	}
 
-	planServiceInstanceCreateParameterSchemaRaw1, err := json.Marshal(planServiceInstanceCreateParameterSchema1)
+	planInstanceCreateParameterSchemaRaw1, err := json.Marshal(planInstanceCreateParameterSchema1)
 	if err != nil {
 		if err != nil {
 			panic(err)
 		}
 	}
 
-	planServiceInstanceCreateParameterSchemaRaw2, err := json.Marshal(planServiceInstanceCreateParameterSchema2)
+	planInstanceCreateParameterSchemaRaw2, err := json.Marshal(planInstanceCreateParameterSchema2)
 	if err != nil {
 		if err != nil {
 			panic(err)
@@ -119,8 +119,8 @@ func FakePlanServiceInstanceCreateParameterSchemasRaw() [][]byte {
 	}
 
 	var data [][]byte
-	data = append(data, planServiceInstanceCreateParameterSchemaRaw1)
-	data = append(data, planServiceInstanceCreateParameterSchemaRaw2)
+	data = append(data, planInstanceCreateParameterSchemaRaw1)
+	data = append(data, planInstanceCreateParameterSchemaRaw2)
 
 	return data
 }

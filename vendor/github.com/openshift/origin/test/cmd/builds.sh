@@ -16,10 +16,10 @@ project="$(oc project -q)"
 os::test::junit::declare_suite_start "cmd/builds"
 # This test validates builds and build related commands
 
-os::cmd::expect_success 'oc new-build centos/ruby-22-centos7 https://github.com/openshift/ruby-hello-world.git'
+os::cmd::expect_success 'oc new-build centos/ruby-25-centos7 https://github.com/openshift/ruby-hello-world.git'
 os::cmd::expect_success 'oc get bc/ruby-hello-world'
 
-os::cmd::expect_success "cat '${OS_ROOT}/images/cli/Dockerfile' | oc new-build -D - --name=test"
+os::cmd::expect_success "cat '${OS_ROOT}/examples/hello-openshift/Dockerfile' | oc new-build -D - --name=test"
 os::cmd::expect_success 'oc get bc/test'
 
 template='{{with .spec.output.to}}{{.kind}} {{.name}}{{end}}'
@@ -59,8 +59,8 @@ os::cmd::expect_success 'oc delete is/origin'
 os::cmd::expect_success "oc new-build -D \$'FROM openshift/origin:v1.1\nENV ok=1' --to origin-name-test --name origin-test2"
 os::cmd::expect_success_and_text "oc get bc/origin-test2 --template '${template}'" '^ImageStreamTag origin-name-test:latest$'
 
-os::cmd::try_until_text 'oc get is ruby-22-centos7' 'latest'
-os::cmd::expect_failure_and_text 'oc new-build ruby-22-centos7~https://github.com/sclorg/ruby-ex ruby-22-centos7~https://github.com/sclorg/ruby-ex --to invalid/argument' 'error: only one component with source can be used when specifying an output image reference'
+os::cmd::try_until_text 'oc get is ruby-25-centos7' 'latest'
+os::cmd::expect_failure_and_text 'oc new-build ruby-25-centos7~https://github.com/sclorg/ruby-ex ruby-25-centos7~https://github.com/sclorg/ruby-ex --to invalid/argument' 'error: only one component with source can be used when specifying an output image reference'
 
 os::cmd::expect_success 'oc delete all --all'
 
@@ -77,7 +77,7 @@ os::cmd::expect_success 'oc get bc'
 os::cmd::expect_success 'oc get builds'
 
 # make sure the imagestream has the latest tag before trying to test it or start a build with it
-os::cmd::try_until_text 'oc get is ruby-22-centos7' 'latest'
+os::cmd::try_until_success 'oc get istag ruby-25-centos7:latest'
 
 os::test::junit::declare_suite_start "cmd/builds/patch-anon-fields"
 REAL_OUTPUT_TO=$(oc get bc/ruby-sample-build --template='{{ .spec.output.to.name }}')
@@ -92,9 +92,13 @@ os::cmd::expect_success_and_text 'oc describe buildConfigs ruby-sample-build' "$
 os::cmd::expect_success_and_text 'oc describe buildConfigs ruby-sample-build' "Webhook GitHub"
 os::cmd::expect_success_and_text 'oc describe buildConfigs ruby-sample-build' "${url}/apis/build.openshift.io/v1/namespaces/${project}/buildconfigs/ruby-sample-build/webhooks/<secret>/generic"
 os::cmd::expect_success_and_text 'oc describe buildConfigs ruby-sample-build' "Webhook Generic"
+os::cmd::expect_success_and_text 'oc set triggers bc/ruby-sample-build --from-gitlab' "triggers updated"
+os::cmd::expect_success_and_text 'oc set triggers bc/ruby-sample-build --from-bitbucket' "triggers updated"
 os::cmd::expect_success 'oc start-build --list-webhooks=all ruby-sample-build'
 os::cmd::expect_success_and_text 'oc start-build --list-webhooks=all bc/ruby-sample-build' 'generic'
 os::cmd::expect_success_and_text 'oc start-build --list-webhooks=all ruby-sample-build' 'github'
+os::cmd::expect_success_and_text 'oc start-build --list-webhooks=all ruby-sample-build' 'gitlab'
+os::cmd::expect_success_and_text 'oc start-build --list-webhooks=all ruby-sample-build' 'bitbucket'
 os::cmd::expect_success_and_text 'oc start-build --list-webhooks=github ruby-sample-build' '<secret>'
 os::cmd::expect_failure 'oc start-build --list-webhooks=blah'
 hook=$(oc start-build --list-webhooks='generic' ruby-sample-build | head -n 1)
@@ -120,12 +124,12 @@ os::cmd::expect_success 'oc create -f test/integration/testdata/test-buildcli.js
 # the build should use the image field as defined in the buildconfig
 # Use basename to transform "build/build-name" into "build-name"
 started="$(basename $(oc start-build -o=name ruby-sample-build-invalidtag))"
-os::cmd::expect_success_and_text "oc describe build ${started}" 'centos/ruby-22-centos7$'
+os::cmd::expect_success_and_text "oc describe build ${started}" 'centos/ruby-25-centos7$'
 frombuild="$(basename $(oc start-build -o=name --from-build="${started}"))"
-os::cmd::expect_success_and_text "oc describe build ${frombuild}" 'centos/ruby-22-centos7$'
-os::cmd::expect_failure_and_text "oc start-build ruby-sample-build-invalid-tag --from-dir=. --from-build=${started}" "Cannot use '--from-build' flag with binary builds"
-os::cmd::expect_failure_and_text "oc start-build ruby-sample-build-invalid-tag --from-file=. --from-build=${started}" "Cannot use '--from-build' flag with binary builds"
-os::cmd::expect_failure_and_text "oc start-build ruby-sample-build-invalid-tag --from-repo=. --from-build=${started}" "Cannot use '--from-build' flag with binary builds"
+os::cmd::expect_success_and_text "oc describe build ${frombuild}" 'centos/ruby-25-centos7$'
+os::cmd::expect_failure_and_text "oc start-build ruby-sample-build-invalid-tag --from-dir=. --from-build=${started}" "cannot use '--from-build' flag with binary builds"
+os::cmd::expect_failure_and_text "oc start-build ruby-sample-build-invalid-tag --from-file=. --from-build=${started}" "cannot use '--from-build' flag with binary builds"
+os::cmd::expect_failure_and_text "oc start-build ruby-sample-build-invalid-tag --from-repo=. --from-build=${started}" "cannot use '--from-build' flag with binary builds"
 # --incremental flag should override Spec.Strategy.SourceStrategy.Incremental
 os::cmd::expect_success 'oc create -f test/extended/testdata/builds/test-s2i-build.json'
 build_name="$(oc start-build -o=name test)"

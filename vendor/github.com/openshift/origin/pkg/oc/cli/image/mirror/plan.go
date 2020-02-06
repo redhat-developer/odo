@@ -8,6 +8,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/docker/distribution"
+	"k8s.io/klog"
 
 	units "github.com/docker/go-units"
 	godigest "github.com/opencontainers/go-digest"
@@ -47,6 +48,7 @@ type phase struct {
 
 	lock   sync.Mutex
 	failed bool
+	errs   []error
 }
 
 func (p *phase) Failed() {
@@ -55,10 +57,23 @@ func (p *phase) Failed() {
 	p.failed = true
 }
 
+func (p *phase) ExecutionFailure(err ...error) {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	p.failed = true
+	p.errs = append(p.errs, err...)
+}
+
 func (p *phase) IsFailed() bool {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 	return p.failed
+}
+
+func (p *phase) ExecutionFailures() []error {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	return p.errs
 }
 
 func (p *phase) calculateStats(existingBlobs map[string]sets.String) {
@@ -145,6 +160,8 @@ func (p *plan) RegistryPlan(name string) *registryPlan {
 		parent:      p,
 		name:        name,
 		blobsByRepo: make(map[godigest.Digest]string),
+
+		manifestConversions: make(map[godigest.Digest]godigest.Digest),
 	}
 	p.registries[name] = plan
 	return plan
@@ -290,6 +307,8 @@ type registryPlan struct {
 	repositories map[string]*repositoryPlan
 	blobsByRepo  map[godigest.Digest]string
 
+	manifestConversions map[godigest.Digest]godigest.Digest
+
 	stats struct {
 		uniqueSize  int64
 		sharedSize  int64
@@ -303,6 +322,16 @@ func (p *registryPlan) AssociateBlob(digest godigest.Digest, repo string) {
 	defer p.lock.Unlock()
 
 	p.blobsByRepo[digest] = repo
+}
+
+func (p *registryPlan) SavedManifest(srcDigest, dstDigest godigest.Digest) {
+	if srcDigest == dstDigest {
+		return
+	}
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	klog.V(4).Infof("Associated digest %s with converted digest %s", srcDigest, dstDigest)
+	p.manifestConversions[srcDigest] = dstDigest
 }
 
 func (p *registryPlan) MountFrom(digest godigest.Digest) (string, bool) {

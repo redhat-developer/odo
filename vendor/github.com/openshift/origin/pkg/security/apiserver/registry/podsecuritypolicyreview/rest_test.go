@@ -4,19 +4,21 @@ import (
 	"reflect"
 	"testing"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apiserver/pkg/authorization/authorizer"
 	apirequest "k8s.io/apiserver/pkg/endpoints/request"
 	"k8s.io/apiserver/pkg/registry/rest"
+	"k8s.io/client-go/kubernetes/fake"
+	corev1listers "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
-	kapi "k8s.io/kubernetes/pkg/apis/core"
-	clientsetfake "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/fake"
-	"k8s.io/kubernetes/pkg/client/listers/core/internalversion"
+	coreapi "k8s.io/kubernetes/pkg/apis/core"
 
+	securityv1 "github.com/openshift/api/security/v1"
+	securityv1listers "github.com/openshift/client-go/security/listers/security/v1"
 	securityapi "github.com/openshift/origin/pkg/security/apis/security"
 	admissionttesting "github.com/openshift/origin/pkg/security/apiserver/admission/testing"
 	scc "github.com/openshift/origin/pkg/security/apiserver/securitycontextconstraints"
-	securitylisters "github.com/openshift/origin/pkg/security/generated/listers/security/internalversion"
 
 	_ "github.com/openshift/origin/pkg/api/install"
 )
@@ -25,48 +27,48 @@ func TestNoErrors(t *testing.T) {
 	var uid int64 = 999
 	testcases := map[string]struct {
 		request    *securityapi.PodSecurityPolicyReview
-		sccs       []*securityapi.SecurityContextConstraints
+		sccs       []*securityv1.SecurityContextConstraints
 		allowedSAs []string
 	}{
 		"default in pod": {
 			request: &securityapi.PodSecurityPolicyReview{
 				Spec: securityapi.PodSecurityPolicyReviewSpec{
-					Template: kapi.PodTemplateSpec{
-						Spec: kapi.PodSpec{
-							Containers: []kapi.Container{
+					Template: coreapi.PodTemplateSpec{
+						Spec: coreapi.PodSpec{
+							Containers: []coreapi.Container{
 								{
 									Name:                     "ctr",
 									Image:                    "image",
 									ImagePullPolicy:          "IfNotPresent",
-									TerminationMessagePolicy: kapi.TerminationMessageReadFile,
+									TerminationMessagePolicy: coreapi.TerminationMessageReadFile,
 								},
 							},
-							RestartPolicy:      kapi.RestartPolicyAlways,
-							SecurityContext:    &kapi.PodSecurityContext{},
-							DNSPolicy:          kapi.DNSClusterFirst,
+							RestartPolicy:      coreapi.RestartPolicyAlways,
+							SecurityContext:    &coreapi.PodSecurityContext{},
+							DNSPolicy:          coreapi.DNSClusterFirst,
 							ServiceAccountName: "default",
-							SchedulerName:      kapi.DefaultSchedulerName,
+							SchedulerName:      coreapi.DefaultSchedulerName,
 						},
 					},
 				},
 			},
-			sccs: []*securityapi.SecurityContextConstraints{
+			sccs: []*securityv1.SecurityContextConstraints{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						SelfLink: "/api/version/securitycontextconstraints/scc-sa",
 						Name:     "scc-sa",
 					},
-					RunAsUser: securityapi.RunAsUserStrategyOptions{
-						Type: securityapi.RunAsUserStrategyMustRunAsRange,
+					RunAsUser: securityv1.RunAsUserStrategyOptions{
+						Type: securityv1.RunAsUserStrategyMustRunAsRange,
 					},
-					SELinuxContext: securityapi.SELinuxContextStrategyOptions{
-						Type: securityapi.SELinuxStrategyMustRunAs,
+					SELinuxContext: securityv1.SELinuxContextStrategyOptions{
+						Type: securityv1.SELinuxStrategyMustRunAs,
 					},
-					FSGroup: securityapi.FSGroupStrategyOptions{
-						Type: securityapi.FSGroupStrategyMustRunAs,
+					FSGroup: securityv1.FSGroupStrategyOptions{
+						Type: securityv1.FSGroupStrategyMustRunAs,
 					},
-					SupplementalGroups: securityapi.SupplementalGroupsStrategyOptions{
-						Type: securityapi.SupplementalGroupsStrategyMustRunAs,
+					SupplementalGroups: securityv1.SupplementalGroupsStrategyOptions{
+						Type: securityv1.SupplementalGroupsStrategyMustRunAs,
 					},
 					Groups: []string{"system:serviceaccounts"},
 				},
@@ -76,55 +78,55 @@ func TestNoErrors(t *testing.T) {
 		"failure creating provider": {
 			request: &securityapi.PodSecurityPolicyReview{
 				Spec: securityapi.PodSecurityPolicyReviewSpec{
-					Template: kapi.PodTemplateSpec{
-						Spec: kapi.PodSpec{
-							Containers: []kapi.Container{
+					Template: coreapi.PodTemplateSpec{
+						Spec: coreapi.PodSpec{
+							Containers: []coreapi.Container{
 								{
 									Name:            "ctr",
 									Image:           "image",
 									ImagePullPolicy: "IfNotPresent",
-									SecurityContext: &kapi.SecurityContext{
-										Capabilities: &kapi.Capabilities{
-											Add: []kapi.Capability{"foo"},
+									SecurityContext: &coreapi.SecurityContext{
+										Capabilities: &coreapi.Capabilities{
+											Add: []coreapi.Capability{"foo"},
 										},
 									},
-									TerminationMessagePolicy: kapi.TerminationMessageReadFile,
+									TerminationMessagePolicy: coreapi.TerminationMessageReadFile,
 								},
 							},
-							RestartPolicy:      kapi.RestartPolicyAlways,
-							SecurityContext:    &kapi.PodSecurityContext{},
-							DNSPolicy:          kapi.DNSClusterFirst,
+							RestartPolicy:      coreapi.RestartPolicyAlways,
+							SecurityContext:    &coreapi.PodSecurityContext{},
+							DNSPolicy:          coreapi.DNSClusterFirst,
 							ServiceAccountName: "default",
-							SchedulerName:      kapi.DefaultSchedulerName,
+							SchedulerName:      coreapi.DefaultSchedulerName,
 						},
 					},
 				},
 			},
-			sccs: []*securityapi.SecurityContextConstraints{
+			sccs: []*securityv1.SecurityContextConstraints{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						SelfLink: "/api/version/securitycontextconstraints/restrictive",
 						Name:     "restrictive",
 					},
-					RunAsUser: securityapi.RunAsUserStrategyOptions{
-						Type: securityapi.RunAsUserStrategyMustRunAs,
+					RunAsUser: securityv1.RunAsUserStrategyOptions{
+						Type: securityv1.RunAsUserStrategyMustRunAs,
 						UID:  &uid,
 					},
-					SELinuxContext: securityapi.SELinuxContextStrategyOptions{
-						Type: securityapi.SELinuxStrategyMustRunAs,
-						SELinuxOptions: &kapi.SELinuxOptions{
+					SELinuxContext: securityv1.SELinuxContextStrategyOptions{
+						Type: securityv1.SELinuxStrategyMustRunAs,
+						SELinuxOptions: &corev1.SELinuxOptions{
 							Level: "s9:z0,z1",
 						},
 					},
-					FSGroup: securityapi.FSGroupStrategyOptions{
-						Type: securityapi.FSGroupStrategyMustRunAs,
-						Ranges: []securityapi.IDRange{
+					FSGroup: securityv1.FSGroupStrategyOptions{
+						Type: securityv1.FSGroupStrategyMustRunAs,
+						Ranges: []securityv1.IDRange{
 							{Min: 999, Max: 999},
 						},
 					},
-					SupplementalGroups: securityapi.SupplementalGroupsStrategyOptions{
-						Type: securityapi.SupplementalGroupsStrategyMustRunAs,
-						Ranges: []securityapi.IDRange{
+					SupplementalGroups: securityv1.SupplementalGroupsStrategyOptions{
+						Type: securityv1.SupplementalGroupsStrategyMustRunAs,
+						Ranges: []securityv1.IDRange{
 							{Min: 999, Max: 999},
 						},
 					},
@@ -137,22 +139,22 @@ func TestNoErrors(t *testing.T) {
 
 	for testName, testcase := range testcases {
 		sccIndexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
-		sccCache := securitylisters.NewSecurityContextConstraintsLister(sccIndexer)
+		sccCache := securityv1listers.NewSecurityContextConstraintsLister(sccIndexer)
 		for _, scc := range testcase.sccs {
 			if err := sccIndexer.Add(scc); err != nil {
 				t.Fatalf("error adding sccs to store: %v", err)
 			}
 		}
 		saIndexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
-		saCache := internalversion.NewServiceAccountLister(saIndexer)
+		saCache := corev1listers.NewServiceAccountLister(saIndexer)
 		namespace := admissionttesting.CreateNamespaceForTest()
 		serviceAccount := admissionttesting.CreateSAForTest()
 		serviceAccount.Namespace = namespace.Name
 		saIndexer.Add(serviceAccount)
-		csf := clientsetfake.NewSimpleClientset(namespace)
+		csf := fake.NewSimpleClientset(namespace)
 		storage := REST{scc.NewDefaultSCCMatcher(sccCache, &noopTestAuthorizer{}), saCache, csf}
 		ctx := apirequest.WithNamespace(apirequest.NewContext(), namespace.Name)
-		obj, err := storage.Create(ctx, testcase.request, rest.ValidateAllObjectFunc, false)
+		obj, err := storage.Create(ctx, testcase.request, rest.ValidateAllObjectFunc, &metav1.CreateOptions{})
 		if err != nil {
 			t.Errorf("%s - Unexpected error: %v", testName, err)
 			continue
@@ -175,28 +177,28 @@ func TestNoErrors(t *testing.T) {
 func TestErrors(t *testing.T) {
 	testcases := map[string]struct {
 		request        *securityapi.PodSecurityPolicyReview
-		sccs           []*securityapi.SecurityContextConstraints
-		serviceAccount *kapi.ServiceAccount
+		sccs           []*securityv1.SecurityContextConstraints
+		serviceAccount *corev1.ServiceAccount
 		errorMessage   string
 	}{
 		"invalid PSPR": {
 			request: &securityapi.PodSecurityPolicyReview{
 				Spec: securityapi.PodSecurityPolicyReviewSpec{
-					Template: kapi.PodTemplateSpec{
-						Spec: kapi.PodSpec{
-							Containers: []kapi.Container{
+					Template: coreapi.PodTemplateSpec{
+						Spec: coreapi.PodSpec{
+							Containers: []coreapi.Container{
 								{
 									Name:                     "ctr",
 									Image:                    "image",
 									ImagePullPolicy:          "IfNotPresent",
-									TerminationMessagePolicy: kapi.TerminationMessageReadFile,
+									TerminationMessagePolicy: coreapi.TerminationMessageReadFile,
 								},
 							},
-							RestartPolicy:      kapi.RestartPolicyAlways,
-							SecurityContext:    &kapi.PodSecurityContext{},
-							DNSPolicy:          kapi.DNSClusterFirst,
+							RestartPolicy:      coreapi.RestartPolicyAlways,
+							SecurityContext:    &coreapi.PodSecurityContext{},
+							DNSPolicy:          coreapi.DNSClusterFirst,
 							ServiceAccountName: "A.B.C.D.E",
-							SchedulerName:      kapi.DefaultSchedulerName,
+							SchedulerName:      coreapi.DefaultSchedulerName,
 						},
 					},
 				},
@@ -207,21 +209,21 @@ func TestErrors(t *testing.T) {
 		"no SA": {
 			request: &securityapi.PodSecurityPolicyReview{
 				Spec: securityapi.PodSecurityPolicyReviewSpec{
-					Template: kapi.PodTemplateSpec{
-						Spec: kapi.PodSpec{
-							Containers: []kapi.Container{
+					Template: coreapi.PodTemplateSpec{
+						Spec: coreapi.PodSpec{
+							Containers: []coreapi.Container{
 								{
 									Name:                     "ctr",
 									Image:                    "image",
 									ImagePullPolicy:          "IfNotPresent",
-									TerminationMessagePolicy: kapi.TerminationMessageReadFile,
+									TerminationMessagePolicy: coreapi.TerminationMessageReadFile,
 								},
 							},
-							RestartPolicy:      kapi.RestartPolicyAlways,
-							SecurityContext:    &kapi.PodSecurityContext{},
-							DNSPolicy:          kapi.DNSClusterFirst,
+							RestartPolicy:      coreapi.RestartPolicyAlways,
+							SecurityContext:    &coreapi.PodSecurityContext{},
+							DNSPolicy:          coreapi.DNSClusterFirst,
 							ServiceAccountName: "default",
-							SchedulerName:      kapi.DefaultSchedulerName,
+							SchedulerName:      coreapi.DefaultSchedulerName,
 						},
 					},
 				},
@@ -231,25 +233,25 @@ func TestErrors(t *testing.T) {
 	}
 	for testName, testcase := range testcases {
 		sccIndexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
-		sccCache := securitylisters.NewSecurityContextConstraintsLister(sccIndexer)
+		sccCache := securityv1listers.NewSecurityContextConstraintsLister(sccIndexer)
 		for _, scc := range testcase.sccs {
 			if err := sccIndexer.Add(scc); err != nil {
 				t.Fatalf("error adding sccs to store: %v", err)
 			}
 		}
 		saIndexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
-		saCache := internalversion.NewServiceAccountLister(saIndexer)
+		saCache := corev1listers.NewServiceAccountLister(saIndexer)
 		namespace := admissionttesting.CreateNamespaceForTest()
 		serviceAccount := admissionttesting.CreateSAForTest()
 		if testcase.serviceAccount != nil {
 			serviceAccount.Namespace = namespace.Name
 			saIndexer.Add(serviceAccount)
 		}
-		csf := clientsetfake.NewSimpleClientset(namespace)
+		csf := fake.NewSimpleClientset(namespace)
 
 		storage := REST{scc.NewDefaultSCCMatcher(sccCache, &noopTestAuthorizer{}), saCache, csf}
 		ctx := apirequest.WithNamespace(apirequest.NewContext(), namespace.Name)
-		_, err := storage.Create(ctx, testcase.request, rest.ValidateAllObjectFunc, false)
+		_, err := storage.Create(ctx, testcase.request, rest.ValidateAllObjectFunc, &metav1.CreateOptions{})
 		if err == nil {
 			t.Errorf("%s - Expected error", testName)
 			continue
@@ -263,55 +265,55 @@ func TestErrors(t *testing.T) {
 func TestSpecificSAs(t *testing.T) {
 	testcases := map[string]struct {
 		request         *securityapi.PodSecurityPolicyReview
-		sccs            []*securityapi.SecurityContextConstraints
+		sccs            []*securityv1.SecurityContextConstraints
 		errorMessage    string
-		serviceAccounts []*kapi.ServiceAccount
+		serviceAccounts []*corev1.ServiceAccount
 	}{
 		"SAs in PSPR": {
 			request: &securityapi.PodSecurityPolicyReview{
 				Spec: securityapi.PodSecurityPolicyReviewSpec{
-					Template: kapi.PodTemplateSpec{
-						Spec: kapi.PodSpec{
-							Containers: []kapi.Container{
+					Template: coreapi.PodTemplateSpec{
+						Spec: coreapi.PodSpec{
+							Containers: []coreapi.Container{
 								{
 									Name:                     "ctr",
 									Image:                    "image",
 									ImagePullPolicy:          "IfNotPresent",
-									TerminationMessagePolicy: kapi.TerminationMessageReadFile,
+									TerminationMessagePolicy: coreapi.TerminationMessageReadFile,
 								},
 							},
-							RestartPolicy:      kapi.RestartPolicyAlways,
-							SecurityContext:    &kapi.PodSecurityContext{},
-							DNSPolicy:          kapi.DNSClusterFirst,
+							RestartPolicy:      coreapi.RestartPolicyAlways,
+							SecurityContext:    &coreapi.PodSecurityContext{},
+							DNSPolicy:          coreapi.DNSClusterFirst,
 							ServiceAccountName: "default",
-							SchedulerName:      kapi.DefaultSchedulerName,
+							SchedulerName:      coreapi.DefaultSchedulerName,
 						},
 					},
 					ServiceAccountNames: []string{"my-sa", "yours-sa"},
 				},
 			},
-			sccs: []*securityapi.SecurityContextConstraints{
+			sccs: []*securityv1.SecurityContextConstraints{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						SelfLink: "/api/version/securitycontextconstraints/myscc",
 						Name:     "myscc",
 					},
-					RunAsUser: securityapi.RunAsUserStrategyOptions{
-						Type: securityapi.RunAsUserStrategyMustRunAsRange,
+					RunAsUser: securityv1.RunAsUserStrategyOptions{
+						Type: securityv1.RunAsUserStrategyMustRunAsRange,
 					},
-					SELinuxContext: securityapi.SELinuxContextStrategyOptions{
-						Type: securityapi.SELinuxStrategyMustRunAs,
+					SELinuxContext: securityv1.SELinuxContextStrategyOptions{
+						Type: securityv1.SELinuxStrategyMustRunAs,
 					},
-					FSGroup: securityapi.FSGroupStrategyOptions{
-						Type: securityapi.FSGroupStrategyMustRunAs,
+					FSGroup: securityv1.FSGroupStrategyOptions{
+						Type: securityv1.FSGroupStrategyMustRunAs,
 					},
-					SupplementalGroups: securityapi.SupplementalGroupsStrategyOptions{
-						Type: securityapi.SupplementalGroupsStrategyMustRunAs,
+					SupplementalGroups: securityv1.SupplementalGroupsStrategyOptions{
+						Type: securityv1.SupplementalGroupsStrategyMustRunAs,
 					},
 					Groups: []string{"system:serviceaccounts"},
 				},
 			},
-			serviceAccounts: []*kapi.ServiceAccount{
+			serviceAccounts: []*corev1.ServiceAccount{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "my-sa",
@@ -336,48 +338,48 @@ func TestSpecificSAs(t *testing.T) {
 		"bad SAs in PSPR": {
 			request: &securityapi.PodSecurityPolicyReview{
 				Spec: securityapi.PodSecurityPolicyReviewSpec{
-					Template: kapi.PodTemplateSpec{
-						Spec: kapi.PodSpec{
-							Containers: []kapi.Container{
+					Template: coreapi.PodTemplateSpec{
+						Spec: coreapi.PodSpec{
+							Containers: []coreapi.Container{
 								{
 									Name:                     "ctr",
 									Image:                    "image",
 									ImagePullPolicy:          "IfNotPresent",
-									TerminationMessagePolicy: kapi.TerminationMessageReadFile,
+									TerminationMessagePolicy: coreapi.TerminationMessageReadFile,
 								},
 							},
-							RestartPolicy:      kapi.RestartPolicyAlways,
-							SecurityContext:    &kapi.PodSecurityContext{},
-							DNSPolicy:          kapi.DNSClusterFirst,
+							RestartPolicy:      coreapi.RestartPolicyAlways,
+							SecurityContext:    &coreapi.PodSecurityContext{},
+							DNSPolicy:          coreapi.DNSClusterFirst,
 							ServiceAccountName: "default",
-							SchedulerName:      kapi.DefaultSchedulerName,
+							SchedulerName:      coreapi.DefaultSchedulerName,
 						},
 					},
 					ServiceAccountNames: []string{"bad-sa"},
 				},
 			},
-			sccs: []*securityapi.SecurityContextConstraints{
+			sccs: []*securityv1.SecurityContextConstraints{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						SelfLink: "/api/version/securitycontextconstraints/myscc",
 						Name:     "myscc",
 					},
-					RunAsUser: securityapi.RunAsUserStrategyOptions{
-						Type: securityapi.RunAsUserStrategyMustRunAsRange,
+					RunAsUser: securityv1.RunAsUserStrategyOptions{
+						Type: securityv1.RunAsUserStrategyMustRunAsRange,
 					},
-					SELinuxContext: securityapi.SELinuxContextStrategyOptions{
-						Type: securityapi.SELinuxStrategyMustRunAs,
+					SELinuxContext: securityv1.SELinuxContextStrategyOptions{
+						Type: securityv1.SELinuxStrategyMustRunAs,
 					},
-					FSGroup: securityapi.FSGroupStrategyOptions{
-						Type: securityapi.FSGroupStrategyMustRunAs,
+					FSGroup: securityv1.FSGroupStrategyOptions{
+						Type: securityv1.FSGroupStrategyMustRunAs,
 					},
-					SupplementalGroups: securityapi.SupplementalGroupsStrategyOptions{
-						Type: securityapi.SupplementalGroupsStrategyMustRunAs,
+					SupplementalGroups: securityv1.SupplementalGroupsStrategyOptions{
+						Type: securityv1.SupplementalGroupsStrategyMustRunAs,
 					},
 					Groups: []string{"system:serviceaccounts"},
 				},
 			},
-			serviceAccounts: []*kapi.ServiceAccount{
+			serviceAccounts: []*corev1.ServiceAccount{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "my-sa",
@@ -391,7 +393,7 @@ func TestSpecificSAs(t *testing.T) {
 
 	for testName, testcase := range testcases {
 		sccIndexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
-		sccCache := securitylisters.NewSecurityContextConstraintsLister(sccIndexer)
+		sccCache := securityv1listers.NewSecurityContextConstraintsLister(sccIndexer)
 		for _, scc := range testcase.sccs {
 			if err := sccIndexer.Add(scc); err != nil {
 				t.Fatalf("error adding sccs to store: %v", err)
@@ -399,14 +401,14 @@ func TestSpecificSAs(t *testing.T) {
 		}
 		namespace := admissionttesting.CreateNamespaceForTest()
 		saIndexer := cache.NewIndexer(cache.MetaNamespaceKeyFunc, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
-		saCache := internalversion.NewServiceAccountLister(saIndexer)
+		saCache := corev1listers.NewServiceAccountLister(saIndexer)
 		for i := range testcase.serviceAccounts {
 			saIndexer.Add(testcase.serviceAccounts[i])
 		}
-		csf := clientsetfake.NewSimpleClientset(namespace)
+		csf := fake.NewSimpleClientset(namespace)
 		storage := REST{scc.NewDefaultSCCMatcher(sccCache, &noopTestAuthorizer{}), saCache, csf}
 		ctx := apirequest.WithNamespace(apirequest.NewContext(), namespace.Name)
-		_, err := storage.Create(ctx, testcase.request, rest.ValidateAllObjectFunc, false)
+		_, err := storage.Create(ctx, testcase.request, rest.ValidateAllObjectFunc, &metav1.CreateOptions{})
 		switch {
 		case err == nil && len(testcase.errorMessage) == 0:
 			continue

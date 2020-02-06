@@ -10,9 +10,10 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apiserver/pkg/authentication/authenticator"
 	"k8s.io/apiserver/pkg/authentication/user"
 
-	oapi "github.com/openshift/api/oauth/v1"
+	oauthv1 "github.com/openshift/api/oauth/v1"
 	oauthfake "github.com/openshift/client-go/oauth/clientset/versioned/fake"
 	"github.com/openshift/origin/pkg/oauthserver/api"
 	"github.com/openshift/origin/pkg/oauthserver/oauth/handlers"
@@ -63,8 +64,8 @@ func (h *testHandlers) AuthenticationError(err error, w http.ResponseWriter, req
 	return true, nil
 }
 
-func (h *testHandlers) AuthenticateRequest(req *http.Request) (user.Info, bool, error) {
-	return h.User, h.Authenticate, h.Err
+func (h *testHandlers) AuthenticateRequest(req *http.Request) (*authenticator.Response, bool, error) {
+	return &authenticator.Response{User: h.User}, h.Authenticate, h.Err
 }
 
 func (h *testHandlers) GrantNeeded(user user.Info, grant *api.Grant, w http.ResponseWriter, req *http.Request) (bool, bool, error) {
@@ -87,24 +88,24 @@ func TestRegistryAndServer(t *testing.T) {
 		ch <- req
 	}))
 
-	validClient := &oapi.OAuthClient{
+	validClient := &oauthv1.OAuthClient{
 		ObjectMeta:   metav1.ObjectMeta{Name: "test"},
 		Secret:       "secret",
 		RedirectURIs: []string{assertServer.URL + "/assert"},
 	}
 
-	restrictedClient := &oapi.OAuthClient{
+	restrictedClient := &oauthv1.OAuthClient{
 		ObjectMeta:   metav1.ObjectMeta{Name: "test"},
 		Secret:       "secret",
 		RedirectURIs: []string{assertServer.URL + "/assert"},
-		ScopeRestrictions: []oapi.ScopeRestriction{
+		ScopeRestrictions: []oauthv1.ScopeRestriction{
 			{ExactValues: []string{"user:info"}},
 		},
 	}
 
 	testCases := map[string]struct {
-		Client      *oapi.OAuthClient
-		ClientAuth  *oapi.OAuthClientAuthorization
+		Client      *oauthv1.OAuthClient
+		ClientAuth  *oauthv1.OAuthClientAuthorization
 		AuthSuccess bool
 		AuthUser    user.Info
 		Scope       string
@@ -164,7 +165,7 @@ func TestRegistryAndServer(t *testing.T) {
 				Name: "user",
 				UID:  "1",
 			},
-			ClientAuth: &oapi.OAuthClientAuthorization{
+			ClientAuth: &oauthv1.OAuthClientAuthorization{
 				ObjectMeta: metav1.ObjectMeta{Name: "user:test"},
 				UserName:   "user",
 				UserUID:    "1",
@@ -185,7 +186,7 @@ func TestRegistryAndServer(t *testing.T) {
 				Name: "user",
 				UID:  "1",
 			},
-			ClientAuth: &oapi.OAuthClientAuthorization{
+			ClientAuth: &oauthv1.OAuthClientAuthorization{
 				ObjectMeta: metav1.ObjectMeta{Name: "user:test"},
 				UserName:   "user",
 				UserUID:    "1",
@@ -206,7 +207,7 @@ func TestRegistryAndServer(t *testing.T) {
 				Name: "user",
 				UID:  "1",
 			},
-			ClientAuth: &oapi.OAuthClientAuthorization{
+			ClientAuth: &oauthv1.OAuthClientAuthorization{
 				ObjectMeta: metav1.ObjectMeta{Name: "user:test"},
 				UserName:   "user",
 				UserUID:    "1",
@@ -233,7 +234,7 @@ func TestRegistryAndServer(t *testing.T) {
 			AuthUser: &user.DefaultInfo{
 				Name: "user",
 			},
-			ClientAuth: &oapi.OAuthClientAuthorization{
+			ClientAuth: &oauthv1.OAuthClientAuthorization{
 				ObjectMeta: metav1.ObjectMeta{Name: "user:test"},
 				UserName:   "user",
 				UserUID:    "2",
@@ -253,7 +254,7 @@ func TestRegistryAndServer(t *testing.T) {
 				Name: "user",
 				UID:  "1",
 			},
-			ClientAuth: &oapi.OAuthClientAuthorization{
+			ClientAuth: &oauthv1.OAuthClientAuthorization{
 				ObjectMeta: metav1.ObjectMeta{Name: "user:test"},
 				UserName:   "user",
 				UserUID:    "2",
@@ -280,7 +281,7 @@ func TestRegistryAndServer(t *testing.T) {
 			objs = append(objs, testCase.ClientAuth)
 		}
 		fakeOAuthClient := oauthfake.NewSimpleClientset(objs...)
-		storage := registrystorage.New(fakeOAuthClient.Oauth().OAuthAccessTokens(), fakeOAuthClient.Oauth().OAuthAuthorizeTokens(), fakeOAuthClient.Oauth().OAuthClients(), 0)
+		storage := registrystorage.New(fakeOAuthClient.OauthV1().OAuthAccessTokens(), fakeOAuthClient.OauthV1().OAuthAuthorizeTokens(), fakeOAuthClient.OauthV1().OAuthClients(), 0)
 		config := osinserver.NewDefaultServerConfig()
 
 		h.AuthorizeHandler = osinserver.AuthorizeHandlers{
@@ -290,7 +291,7 @@ func TestRegistryAndServer(t *testing.T) {
 				h,
 			),
 			handlers.NewGrantCheck(
-				NewClientAuthorizationGrantChecker(fakeOAuthClient.Oauth().OAuthClientAuthorizations()),
+				NewClientAuthorizationGrantChecker(fakeOAuthClient.OauthV1().OAuthClientAuthorizations()),
 				h,
 				h,
 			),

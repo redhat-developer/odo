@@ -20,7 +20,7 @@ func TestResolveJenkinsfileAndDockerfile(t *testing.T) {
 	resolvers := Resolvers{}
 	componentrefs, err := AddMissingComponentsToRefBuilder(&app.ReferenceBuilder{}, repositories, resolvers.DockerfileResolver(), resolvers.SourceResolver(), resolvers.PipelineResolver(), &GenerationInputs{})
 
-	checkResolveResult(t, componentrefs, err, generate.StrategyPipeline)
+	checkResolveResult(t, componentrefs, err, newapp.StrategyPipeline)
 }
 
 // TestResolveJenkinsfileAndSource ensures that if a repo has a Jenkinsfile and
@@ -35,7 +35,7 @@ func TestResolveJenkinsfileAndSource(t *testing.T) {
 	resolvers := Resolvers{}
 	componentrefs, err := AddMissingComponentsToRefBuilder(&app.ReferenceBuilder{}, repositories, resolvers.DockerfileResolver(), resolvers.SourceResolver(), resolvers.PipelineResolver(), &GenerationInputs{})
 
-	checkResolveResult(t, componentrefs, err, generate.StrategyPipeline)
+	checkResolveResult(t, componentrefs, err, newapp.StrategyPipeline)
 }
 
 // TestResolveDockerfileAndSource ensures that if a repo has a Dockerfile and
@@ -51,10 +51,40 @@ func TestResolveDockerfileAndSource(t *testing.T) {
 	resolvers := Resolvers{}
 	componentrefs, err := AddMissingComponentsToRefBuilder(&app.ReferenceBuilder{}, repositories, resolvers.DockerfileResolver(), resolvers.SourceResolver(), resolvers.PipelineResolver(), &GenerationInputs{})
 
-	checkResolveResult(t, componentrefs, err, generate.StrategyDocker)
+	checkResolveResult(t, componentrefs, err, newapp.StrategyDocker)
 }
 
-func checkResolveResult(t *testing.T, componentrefs app.ComponentReferences, err error, strategy generate.Strategy) {
+func TestBinaryContentFlagGeneratesDummySource(t *testing.T) {
+	component := app.ComponentInput{
+		Value:    "foo",
+		From:     "--binary",
+		Argument: "--binary",
+	}
+
+	refs := app.ComponentReferences{
+		&component,
+	}
+
+	input := GenerationInputs{
+		BinaryBuild:   true,
+		ExpectToBuild: true,
+	}
+
+	err := EnsureHasSource(refs, nil, &input)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if component.Uses == nil {
+		t.Fatal("expected source repository to be created")
+	}
+
+	if !component.Uses.InUse() {
+		t.Fatal("expected source repository to be in use")
+	}
+}
+
+func checkResolveResult(t *testing.T, componentrefs app.ComponentReferences, err error, strategy newapp.Strategy) {
 	if err != nil {
 		t.Fatal(err)
 	}

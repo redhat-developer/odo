@@ -46,10 +46,10 @@ var schema = Schema{
 		MinProperties:    int64Ptr(1),
 		Required:         []string{"id", "name"},
 		Items:            &SchemaOrArray{Schema: &Schema{SchemaProps: SchemaProps{Type: []string{"string"}}}},
-		AllOf:            []Schema{Schema{SchemaProps: SchemaProps{Type: []string{"string"}}}},
+		AllOf:            []Schema{{SchemaProps: SchemaProps{Type: []string{"string"}}}},
 		Properties: map[string]Schema{
-			"id":   Schema{SchemaProps: SchemaProps{Type: []string{"integer"}, Format: "int64"}},
-			"name": Schema{SchemaProps: SchemaProps{Type: []string{"string"}}},
+			"id":   {SchemaProps: SchemaProps{Type: []string{"integer"}, Format: "int64"}},
+			"name": {SchemaProps: SchemaProps{Type: []string{"string"}}},
 		},
 		AdditionalProperties: &SchemaOrBool{Allows: true, Schema: &Schema{SchemaProps: SchemaProps{
 			Type:   []string{"integer"},
@@ -59,7 +59,7 @@ var schema = Schema{
 	SwaggerSchemaProps: SwaggerSchemaProps{
 		Discriminator: "not this",
 		ReadOnly:      true,
-		XML:           &XMLObject{"sch", "io", "sw", true, true},
+		XML:           &XMLObject{Name: "sch", Namespace: "io", Prefix: "sw", Attribute: true, Wrapped: true},
 		ExternalDocs: &ExternalDocumentation{
 			Description: "the documentation etc",
 			URL:         "http://readthedocs.org/swagger",
@@ -150,11 +150,11 @@ var schemaJSON = `{
 func TestSchema(t *testing.T) {
 
 	expected := map[string]interface{}{}
-	json.Unmarshal([]byte(schemaJSON), &expected)
+	_ = json.Unmarshal([]byte(schemaJSON), &expected)
 	b, err := json.Marshal(schema)
 	if assert.NoError(t, err) {
 		var actual map[string]interface{}
-		json.Unmarshal(b, &actual)
+		_ = json.Unmarshal(b, &actual)
 		assert.Equal(t, expected, actual)
 	}
 
@@ -207,6 +207,6 @@ func TestSchema(t *testing.T) {
 func BenchmarkSchemaUnmarshal(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		sch := &Schema{}
-		sch.UnmarshalJSON([]byte(schemaJSON))
+		_ = sch.UnmarshalJSON([]byte(schemaJSON))
 	}
 }

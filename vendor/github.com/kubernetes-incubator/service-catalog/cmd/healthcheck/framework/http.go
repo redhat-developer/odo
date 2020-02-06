@@ -22,19 +22,19 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/golang/glog"
 	"k8s.io/apiserver/pkg/server/healthz"
+	"k8s.io/klog"
 )
 
 // ServeHTTP starts a new Http Server thread for /metrics and health probing
 func ServeHTTP(healthcheckOptions *HealthCheckServer) error {
 
-	// Initialize SSL/TLS configuration.  Creats a self signed certificate and key if necessary
+	// Initialize SSL/TLS configuration.  Creates a self signed certificate and key if necessary
 	if err := healthcheckOptions.SecureServingOptions.MaybeDefaultWithSelfSignedCerts("" /*AdvertiseAddress*/, nil /*alternateDNS*/, []net.IP{net.ParseIP("127.0.0.1")}); err != nil {
 		return fmt.Errorf("failed to establish SecureServingOptions %v", err)
 	}
 
-	glog.V(3).Infof("Starting http server and mux on port %v", healthcheckOptions.SecureServingOptions.BindPort)
+	klog.V(3).Infof("Starting http server and mux on port %v", healthcheckOptions.SecureServingOptions.BindPort)
 
 	go func() {
 		mux := http.NewServeMux()
@@ -47,7 +47,7 @@ func ServeHTTP(healthcheckOptions *HealthCheckServer) error {
 				strconv.Itoa(healthcheckOptions.SecureServingOptions.BindPort)),
 			Handler: mux,
 		}
-		glog.Fatal(server.ListenAndServeTLS(healthcheckOptions.SecureServingOptions.ServerCert.CertKey.CertFile,
+		klog.Fatal(server.ListenAndServeTLS(healthcheckOptions.SecureServingOptions.ServerCert.CertKey.CertFile,
 			healthcheckOptions.SecureServingOptions.ServerCert.CertKey.KeyFile))
 	}()
 	return nil

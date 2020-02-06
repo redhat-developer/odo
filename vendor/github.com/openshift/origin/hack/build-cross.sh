@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Build all cross compile targets and the base binaries
 STARTTIME=$(date +%s)
@@ -41,7 +41,7 @@ fi
 if [[ -n "${OS_ONLY_BUILD_PLATFORMS-}" ]]; then
   filtered=( )
   for platform in ${platforms[@]}; do
-    if [[ "${platform}" =~ "${OS_ONLY_BUILD_PLATFORMS}" ]]; then
+    if [[ "${platform}" =~ ${OS_ONLY_BUILD_PLATFORMS} ]]; then
       filtered+=("${platform}")
     fi
   done
@@ -49,7 +49,7 @@ if [[ -n "${OS_ONLY_BUILD_PLATFORMS-}" ]]; then
 
   filtered=( )
   for platform in ${image_platforms[@]}; do
-    if [[ "${platform}" =~ "${OS_ONLY_BUILD_PLATFORMS}" ]]; then
+    if [[ "${platform}" =~ ${OS_ONLY_BUILD_PLATFORMS} ]]; then
       filtered+=("${platform}")
     fi
   done
@@ -57,7 +57,7 @@ if [[ -n "${OS_ONLY_BUILD_PLATFORMS-}" ]]; then
 
   filtered=( )
   for platform in ${test_platforms[@]}; do
-    if [[ "${platform}" =~ "${OS_ONLY_BUILD_PLATFORMS}" ]]; then
+    if [[ "${platform}" =~ ${OS_ONLY_BUILD_PLATFORMS} ]]; then
       filtered+=("${platform}")
     fi
   done
@@ -74,10 +74,6 @@ os::build::build_binaries "${OS_IMAGE_COMPILE_TARGETS_LINUX[@]-}"
 # Build the primary client/server for all platforms
 OS_BUILD_PLATFORMS=("${platforms[@]+"${platforms[@]}"}")
 os::build::build_binaries "${OS_CROSS_COMPILE_TARGETS[@]}"
-
-# Build the test binaries for the host platform
-OS_BUILD_PLATFORMS=("${test_platforms[@]+"${test_platforms[@]}"}")
-os::build::build_binaries "${OS_TEST_TARGETS[@]}"
 
 if [[ "${OS_BUILD_RELEASE_ARCHIVES-}" != "n" ]]; then
   # Make the primary client/server release.

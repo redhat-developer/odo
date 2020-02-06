@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"k8s.io/apimachinery/pkg/api/validation"
+	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	kapi "k8s.io/kubernetes/pkg/apis/core"
 	kapivalidation "k8s.io/kubernetes/pkg/apis/core/validation"
@@ -17,7 +18,7 @@ import (
 // security context constraint name is valid.
 // Prefix indicates this name will be used as part of generation, in which case
 // trailing dashes are allowed.
-var ValidateSecurityContextConstraintsName = validation.NameIsDNSSubdomain
+var ValidateSecurityContextConstraintsName = apimachineryvalidation.NameIsDNSSubdomain
 
 func ValidateSecurityContextConstraints(scc *securityapi.SecurityContextConstraints) field.ErrorList {
 	allErrs := validation.ValidateObjectMeta(&scc.ObjectMeta, false, ValidateSecurityContextConstraintsName, field.NewPath("metadata"))
@@ -280,9 +281,13 @@ func ValidatePodSecurityPolicySubjectReview(podSecurityPolicySubjectReview *secu
 	return allErrs
 }
 
-func validatePodSecurityPolicySubjectReviewSpec(podSecurityPolicySubjectReviewSpec *securityapi.PodSecurityPolicySubjectReviewSpec, fldPath *field.Path) field.ErrorList {
+func validatePodSecurityPolicySubjectReviewSpec(spec *securityapi.PodSecurityPolicySubjectReviewSpec, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
-	allErrs = append(allErrs, kapivalidation.ValidatePodSpec(&podSecurityPolicySubjectReviewSpec.Template.Spec, fldPath.Child("template", "spec"))...)
+	allErrs = append(allErrs, kapivalidation.ValidatePodSpec(&spec.Template.Spec, fldPath.Child("template", "spec"))...)
+	// make sure we never pass an empty user list to FindApplicableSCCs as it will consider that as matching all SCCs
+	if len(spec.User) == 0 && len(spec.Groups) == 0 && len(spec.Template.Spec.ServiceAccountName) == 0 {
+		allErrs = append(allErrs, field.Required(fldPath.Child("user"), "at least one of user, groups or serviceAccountName must be specified"))
+	}
 	return allErrs
 }
 

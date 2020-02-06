@@ -10,7 +10,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/util/completion"
 
 	"github.com/openshift/odo/pkg/odo/util"
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
+	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
 
 	"github.com/spf13/cobra"
 )

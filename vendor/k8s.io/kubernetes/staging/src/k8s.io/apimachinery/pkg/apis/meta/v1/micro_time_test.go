@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ghodss/yaml"
+	"sigs.k8s.io/yaml"
 )
 
 type MicroTimeHolder struct {
@@ -42,12 +42,11 @@ func TestMicroTimeMarshalYAML(t *testing.T) {
 	for _, c := range cases {
 		input := MicroTimeHolder{c.input}
 		result, err := yaml.Marshal(&input)
-
 		if err != nil {
 			t.Errorf("Failed to marshal input: '%v': %v", input, err)
 		}
 		if string(result) != c.result {
-			t.Errorf("Failed to marshal input: '%v': expected %+v, got %v", input, c.result, string(result))
+			t.Errorf("Failed to marshal input: '%v': expected %+v, got %q", input, c.result, string(result))
 		}
 	}
 }

@@ -85,6 +85,10 @@ func (r *mockedRouter) ResolveEndpoint(namespace, name string) (*url.URL, error)
 	return &url.URL{Scheme: "https", Host: r.destinationHost}, r.err
 }
 
+func emptyCert() []byte {
+	return []byte{}
+}
+
 func TestProxyHandler(t *testing.T) {
 	target := &targetHTTPHandler{}
 	targetServer := httptest.NewUnstartedServer(target)
@@ -272,6 +276,8 @@ func TestProxyHandler(t *testing.T) {
 				localDelegate:   http.NewServeMux(),
 				serviceResolver: serviceResolver,
 				proxyTransport:  &http.Transport{},
+				proxyClientCert: emptyCert,
+				proxyClientKey:  emptyCert,
 			}
 			server := httptest.NewServer(contextHandler(handler, tc.user))
 			defer server.Close()
@@ -344,9 +350,9 @@ func TestProxyUpgrade(t *testing.T) {
 			APIService: &apiregistration.APIService{
 				Spec: apiregistration.APIServiceSpec{
 					InsecureSkipTLSVerify: true,
-					Group:   "mygroup",
-					Version: "v1",
-					Service: &apiregistration.ServiceReference{Name: "invalid-service", Namespace: "invalid-ns"},
+					Group:                 "mygroup",
+					Version:               "v1",
+					Service:               &apiregistration.ServiceReference{Name: "invalid-service", Namespace: "invalid-ns"},
 				},
 				Status: apiregistration.APIServiceStatus{
 					Conditions: []apiregistration.APIServiceCondition{
@@ -411,6 +417,8 @@ func TestProxyUpgrade(t *testing.T) {
 			proxyHandler := &proxyHandler{
 				serviceResolver: &mockedRouter{destinationHost: serverURL.Host},
 				proxyTransport:  &http.Transport{},
+				proxyClientCert: emptyCert,
+				proxyClientKey:  emptyCert,
 			}
 			proxyHandler.updateAPIService(tc.APIService)
 			aggregator := httptest.NewServer(contextHandler(proxyHandler, &user.DefaultInfo{Name: "username"}))

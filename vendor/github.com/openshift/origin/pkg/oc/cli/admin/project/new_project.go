@@ -11,20 +11,20 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	errorsutil "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericclioptions/printers"
 	rbacv1client "k8s.io/client-go/kubernetes/typed/rbac/v1"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
+	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 
+	authorizationv1 "github.com/openshift/api/authorization/v1"
+	projectv1 "github.com/openshift/api/project/v1"
+	authorizationv1typedclient "github.com/openshift/client-go/authorization/clientset/versioned/typed/authorization/v1"
+	projectv1typedclient "github.com/openshift/client-go/project/clientset/versioned/typed/project/v1"
 	oapi "github.com/openshift/origin/pkg/api"
-	authorizationapi "github.com/openshift/origin/pkg/authorization/apis/authorization"
-	authorizationclientinternal "github.com/openshift/origin/pkg/authorization/generated/internalclientset"
-	authorizationtypedclient "github.com/openshift/origin/pkg/authorization/generated/internalclientset/typed/authorization/internalversion"
 	"github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
 	"github.com/openshift/origin/pkg/oc/cli/admin/policy"
 	projectapi "github.com/openshift/origin/pkg/project/apis/project"
-	projectclientinternal "github.com/openshift/origin/pkg/project/generated/internalclientset"
-	projectclient "github.com/openshift/origin/pkg/project/generated/internalclientset/typed/project/internalversion"
 )
 
 const NewProjectRecommendedName = "new-project"
@@ -36,9 +36,9 @@ type NewProjectOptions struct {
 	NodeSelector string
 
 	UseNodeSelector bool
-	ProjectClient   projectclient.ProjectInterface
+	ProjectClient   projectv1typedclient.ProjectV1Interface
 	RbacClient      rbacv1client.RbacV1Interface
-	SARClient       authorizationtypedclient.SubjectAccessReviewInterface
+	SARClient       authorizationv1typedclient.SubjectAccessReviewInterface
 
 	AdminRole string
 	AdminUser string
@@ -68,7 +68,7 @@ func NewCmdNewProject(name, fullName string, f kcmdutil.Factory, streams generic
 		Short: "Create a new project",
 		Long:  newProjectLong,
 		Run: func(cmd *cobra.Command, args []string) {
-			kcmdutil.CheckErr(o.complete(f, cmd, args))
+			kcmdutil.CheckErr(o.Complete(f, cmd, args))
 			kcmdutil.CheckErr(o.Run())
 		},
 	}
@@ -82,7 +82,7 @@ func NewCmdNewProject(name, fullName string, f kcmdutil.Factory, streams generic
 	return cmd
 }
 
-func (o *NewProjectOptions) complete(f kcmdutil.Factory, cmd *cobra.Command, args []string) error {
+func (o *NewProjectOptions) Complete(f kcmdutil.Factory, cmd *cobra.Command, args []string) error {
 	if len(args) != 1 {
 		return errors.New("you must specify one argument: project name")
 	}
@@ -97,21 +97,19 @@ func (o *NewProjectOptions) complete(f kcmdutil.Factory, cmd *cobra.Command, arg
 	if err != nil {
 		return err
 	}
-	projectClient, err := projectclientinternal.NewForConfig(clientConfig)
+	o.ProjectClient, err = projectv1typedclient.NewForConfig(clientConfig)
 	if err != nil {
 		return err
 	}
-	o.ProjectClient = projectClient.Project()
 	o.RbacClient, err = rbacv1client.NewForConfig(clientConfig)
 	if err != nil {
 		return err
 	}
-	authorizationClient, err := authorizationclientinternal.NewForConfig(clientConfig)
+	authorizationClient, err := authorizationv1typedclient.NewForConfig(clientConfig)
 	if err != nil {
 		return err
 	}
-	authorizationInterface := authorizationClient.Authorization()
-	o.SARClient = authorizationInterface.SubjectAccessReviews()
+	o.SARClient = authorizationClient.SubjectAccessReviews()
 
 	return nil
 }
@@ -125,7 +123,7 @@ func (o *NewProjectOptions) Run() error {
 		return fmt.Errorf("project %v already exists", o.ProjectName)
 	}
 
-	project := &projectapi.Project{}
+	project := &projectv1.Project{}
 	project.Name = o.ProjectName
 	project.Annotations = make(map[string]string)
 	project.Annotations[oapi.OpenShiftDescription] = o.Description
@@ -142,21 +140,21 @@ func (o *NewProjectOptions) Run() error {
 
 	errs := []error{}
 	if len(o.AdminUser) != 0 {
-		adduser := &policy.RoleModificationOptions{
-			RoleName:             o.AdminRole,
-			RoleKind:             "ClusterRole",
-			RoleBindingNamespace: project.Name,
-			RbacClient:           o.RbacClient,
-			Users:                []string{o.AdminUser},
-		}
+		adduser := policy.NewRoleModificationOptions(o.IOStreams)
+		adduser.RoleName = o.AdminRole
+		adduser.RoleKind = "ClusterRole"
+		adduser.RoleBindingNamespace = project.Name
+		adduser.RbacClient = o.RbacClient
+		adduser.Users = []string{o.AdminUser}
+		adduser.ToPrinter = noopPrinter
 
 		if err := adduser.AddRole(); err != nil {
 			fmt.Fprintf(o.Out, "%v could not be added to the %v role: %v\n", o.AdminUser, o.AdminRole, err)
 			errs = append(errs, err)
 		} else {
 			if err := wait.PollImmediate(time.Second, time.Minute, func() (bool, error) {
-				resp, err := o.SARClient.Create(&authorizationapi.SubjectAccessReview{
-					Action: authorizationapi.Action{
+				resp, err := o.SARClient.Create(&authorizationv1.SubjectAccessReview{
+					Action: authorizationv1.Action{
 						Namespace: o.ProjectName,
 						Verb:      "get",
 						Resource:  "projects",
@@ -178,13 +176,13 @@ func (o *NewProjectOptions) Run() error {
 	}
 
 	for _, binding := range bootstrappolicy.GetBootstrapServiceAccountProjectRoleBindings(o.ProjectName) {
-		addRole := &policy.RoleModificationOptions{
-			RoleName:             binding.RoleRef.Name,
-			RoleKind:             binding.RoleRef.Kind,
-			RoleBindingNamespace: o.ProjectName,
-			RbacClient:           o.RbacClient,
-			Subjects:             binding.Subjects,
-		}
+		addRole := policy.NewRoleModificationOptions(o.IOStreams)
+		addRole.RoleName = binding.RoleRef.Name
+		addRole.RoleKind = binding.RoleRef.Kind
+		addRole.RoleBindingNamespace = o.ProjectName
+		addRole.RbacClient = o.RbacClient
+		addRole.Subjects = binding.Subjects
+		addRole.ToPrinter = noopPrinter
 		if err := addRole.AddRole(); err != nil {
 			fmt.Fprintf(o.Out, "Could not add service accounts to the %v role: %v\n", binding.RoleRef.Name, err)
 			errs = append(errs, err)
@@ -192,4 +190,8 @@ func (o *NewProjectOptions) Run() error {
 	}
 
 	return errorsutil.NewAggregate(errs)
+}
+
+func noopPrinter(operation string) (printers.ResourcePrinter, error) {
+	return printers.NewDiscardingPrinter(), nil
 }

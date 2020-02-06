@@ -34,7 +34,7 @@ var response = Response{
 	},
 }
 
-var responseJSON = `{
+const responseJSON = `{
 	"$ref": "Dog",
 	"x-go-name": "PutDogExists",
 	"description": "Dog exists",
@@ -50,4 +50,64 @@ func TestIntegrationResponse(t *testing.T) {
 	}
 
 	assertParsesJSON(t, responseJSON, response)
+}
+
+func TestJSONLookupResponse(t *testing.T) {
+	res, err := response.JSONLookup("$ref")
+	if !assert.NoError(t, err) {
+		t.FailNow()
+		return
+	}
+	if assert.IsType(t, &Ref{}, res) {
+		ref := res.(*Ref)
+		assert.EqualValues(t, MustCreateRef("Dog"), *ref)
+	}
+
+	var def string
+	res, err = response.JSONLookup("description")
+	if !assert.NoError(t, err) || !assert.NotNil(t, res) || !assert.IsType(t, def, res) {
+		t.FailNow()
+		return
+	}
+	def = res.(string)
+	assert.Equal(t, "Dog exists", def)
+
+	var x *interface{}
+	res, err = response.JSONLookup("x-go-name")
+	if !assert.NoError(t, err) || !assert.NotNil(t, res) || !assert.IsType(t, x, res) {
+		t.FailNow()
+		return
+	}
+
+	x = res.(*interface{})
+	assert.EqualValues(t, "PutDogExists", *x)
+
+	res, err = response.JSONLookup("unknown")
+	if !assert.Error(t, err) || !assert.Nil(t, res) {
+		t.FailNow()
+		return
+	}
+}
+
+func TestResponseBuild(t *testing.T) {
+	resp := NewResponse().
+		WithDescription("some response").
+		WithSchema(new(Schema).Typed("object", "")).
+		AddHeader("x-header", ResponseHeader().Typed("string", "")).
+		AddExample("application/json", `{"key":"value"}`)
+	jazon, _ := json.MarshalIndent(resp, "", " ")
+	assert.JSONEq(t, `{
+         "description": "some response",
+         "schema": {
+          "type": "object"
+         },
+         "headers": {
+          "x-header": {
+           "type": "string"
+          }
+         },
+         "examples": {
+          "application/json": "{\"key\":\"value\"}"
+         }
+			 }`, string(jazon))
 }

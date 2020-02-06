@@ -1,10 +1,10 @@
-package generate
+package newapp
 
 import (
 	"fmt"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 )
 
 type Tester interface {
@@ -31,7 +31,7 @@ func (s Strategy) String() string {
 	case StrategyPipeline:
 		return "pipeline"
 	}
-	glog.Error("unknown strategy")
+	klog.Error("unknown strategy")
 	return ""
 }
 

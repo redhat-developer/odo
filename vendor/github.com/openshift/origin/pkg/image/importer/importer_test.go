@@ -11,10 +11,9 @@ import (
 	"testing"
 	"time"
 
-	gocontext "golang.org/x/net/context"
+	"golang.org/x/net/context"
 
 	"github.com/docker/distribution"
-	"github.com/docker/distribution/context"
 	"github.com/docker/distribution/manifest/schema1"
 	"github.com/docker/distribution/manifest/schema2"
 	"github.com/docker/distribution/reference"
@@ -34,7 +33,7 @@ type mockRetriever struct {
 	err      error
 }
 
-func (r *mockRetriever) Repository(ctx gocontext.Context, registry *url.URL, repoName string, insecure bool) (distribution.Repository, error) {
+func (r *mockRetriever) Repository(ctx context.Context, registry *url.URL, repoName string, insecure bool) (distribution.Repository, error) {
 	r.insecure = insecure
 	return r.repo, r.err
 }
@@ -154,11 +153,11 @@ func TestSchema1ToImage(t *testing.T) {
 	if err := json.Unmarshal([]byte(etcdManifest), m); err != nil {
 		t.Fatal(err)
 	}
-	image, err := schema1ToImage(m, godigest.Digest("sha256:test"))
+	image, err := schema1ToImage(m, godigest.Digest("sha256:958608f8ecc1dc62c93b6c610f3a834dae4220c9642e6e8b4e0f2b3ad7cbd238"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if image.DockerImageMetadata.ID != "sha256:test" {
+	if image.DockerImageMetadata.ID != "sha256:958608f8ecc1dc62c93b6c610f3a834dae4220c9642e6e8b4e0f2b3ad7cbd238" {
 		t.Errorf("unexpected image: %#v", image.DockerImageMetadata.ID)
 	}
 }
@@ -189,7 +188,7 @@ func TestDockerV1Fallback(t *testing.T) {
 	}))
 
 	client := dockerregistry.NewClient(10*time.Second, false)
-	ctx := gocontext.WithValue(gocontext.Background(), ContextKeyV1RegistryClient, client)
+	ctx := context.WithValue(context.Background(), ContextKeyV1RegistryClient, client)
 
 	uri, _ = url.Parse(server.URL)
 	isi := &imageapi.ImageStreamImport{

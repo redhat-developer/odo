@@ -4,16 +4,16 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	restclient "k8s.io/client-go/rest"
 	kclientcmd "k8s.io/client-go/tools/clientcmd"
 	kclientcmdapi "k8s.io/client-go/tools/clientcmd/api"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
+	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 
 	oauthv1client "github.com/openshift/client-go/oauth/clientset/versioned/typed/oauth/v1"
 	kubeconfiglib "github.com/openshift/origin/pkg/oc/lib/kubeconfig"
@@ -121,12 +121,12 @@ func (o LogoutOptions) RunLogout() error {
 	}
 
 	if err := client.OAuthAccessTokens().Delete(token, &metav1.DeleteOptions{}); err != nil {
-		glog.V(1).Infof("%v", err)
+		klog.V(1).Infof("%v", err)
 	}
 
 	configErr := deleteTokenFromConfig(*o.StartingKubeConfig, o.PathOptions, token)
 	if configErr == nil {
-		glog.V(1).Infof("Removed token from your local configuration.")
+		klog.V(1).Infof("Removed token from your local configuration.")
 
 		// only return error instead of successful message if removing token from client
 		// config fails. Any error that occurs deleting token using api is logged above.

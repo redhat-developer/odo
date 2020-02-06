@@ -6,14 +6,16 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/golang/glog"
+	"k8s.io/kubernetes/pkg/apis/core/v1/helper"
 
+	"k8s.io/klog"
+
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	kapi "k8s.io/kubernetes/pkg/apis/core"
-	kapihelper "k8s.io/kubernetes/pkg/apis/core/helper"
+	"k8s.io/apimachinery/pkg/util/sets"
 
-	networkapi "github.com/openshift/api/network/v1"
+	networkv1 "github.com/openshift/api/network/v1"
 	"github.com/openshift/origin/pkg/network"
 )
 
@@ -22,13 +24,11 @@ type multiTenantPlugin struct {
 	vnids *nodeVNIDMap
 
 	vnidInUseLock sync.Mutex
-	vnidInUse     map[uint32]bool
+	vnidInUse     sets.Int
 }
 
 func NewMultiTenantPlugin() osdnPolicy {
-	return &multiTenantPlugin{
-		vnidInUse: make(map[uint32]bool),
-	}
+	return &multiTenantPlugin{}
 }
 
 func (mp *multiTenantPlugin) Name() string {
@@ -41,6 +41,8 @@ func (mp *multiTenantPlugin) SupportsVNIDs() bool {
 
 func (mp *multiTenantPlugin) Start(node *OsdnNode) error {
 	mp.node = node
+	mp.vnidInUse = node.oc.FindPolicyVNIDs()
+
 	mp.vnids = newNodeVNIDMap(mp, node.networkClient)
 	if err := mp.vnids.Start(node.networkInformers); err != nil {
 		return err
@@ -61,14 +63,14 @@ func (mp *multiTenantPlugin) updatePodNetwork(namespace string, oldNetID, netID 
 	// VNID before the service and firewall rules are updated to match. We need
 	// to do the updates as a single transaction (ovs-ofctl --bundle).
 
-	pods, err := mp.node.GetLocalPods(namespace)
+	pods, err := mp.node.GetRunningPods(namespace)
 	if err != nil {
 		utilruntime.HandleError(fmt.Errorf("Could not get list of local pods in namespace %q: %v", namespace, err))
 	}
-	services, err := mp.node.kClient.Core().Services(namespace).List(metav1.ListOptions{})
+	services, err := mp.node.kClient.CoreV1().Services(namespace).List(metav1.ListOptions{})
 	if err != nil {
 		utilruntime.HandleError(fmt.Errorf("Could not get list of services in namespace %q: %v", namespace, err))
-		services = &kapi.ServiceList{}
+		services = &corev1.ServiceList{}
 	}
 
 	if oldNetID != netID {
@@ -82,7 +84,7 @@ func (mp *multiTenantPlugin) updatePodNetwork(namespace string, oldNetID, netID 
 
 		// Update OF rules for the old services in the namespace
 		for _, svc := range services.Items {
-			if !kapihelper.IsServiceIPSet(&svc) {
+			if !helper.IsServiceIPSet(&svc) {
 				continue
 			}
 
@@ -101,15 +103,15 @@ func (mp *multiTenantPlugin) updatePodNetwork(namespace string, oldNetID, netID 
 	mp.node.podManager.UpdateLocalMulticastRules(netID)
 }
 
-func (mp *multiTenantPlugin) AddNetNamespace(netns *networkapi.NetNamespace) {
+func (mp *multiTenantPlugin) AddNetNamespace(netns *networkv1.NetNamespace) {
 	mp.updatePodNetwork(netns.Name, 0, netns.NetID)
 }
 
-func (mp *multiTenantPlugin) UpdateNetNamespace(netns *networkapi.NetNamespace, oldNetID uint32) {
+func (mp *multiTenantPlugin) UpdateNetNamespace(netns *networkv1.NetNamespace, oldNetID uint32) {
 	mp.updatePodNetwork(netns.Name, oldNetID, netns.NetID)
 }
 
-func (mp *multiTenantPlugin) DeleteNetNamespace(netns *networkapi.NetNamespace) {
+func (mp *multiTenantPlugin) DeleteNetNamespace(netns *networkv1.NetNamespace) {
 	mp.updatePodNetwork(netns.Name, netns.NetID, 0)
 }
 
@@ -132,12 +134,12 @@ func (mp *multiTenantPlugin) EnsureVNIDRules(vnid uint32) {
 
 	mp.vnidInUseLock.Lock()
 	defer mp.vnidInUseLock.Unlock()
-	if mp.vnidInUse[vnid] {
+	if mp.vnidInUse.Has(int(vnid)) {
 		return
 	}
-	mp.vnidInUse[vnid] = true
+	mp.vnidInUse.Insert(int(vnid))
 
-	glog.V(5).Infof("EnsureVNIDRules %d - adding rules", vnid)
+	klog.V(5).Infof("EnsureVNIDRules %d - adding rules", vnid)
 
 	otx := mp.node.oc.NewTransaction()
 	otx.AddFlow("table=80, priority=100, reg0=%d, reg1=%d, actions=output:NXM_NX_REG2[]", vnid, vnid)
@@ -151,11 +153,11 @@ func (mp *multiTenantPlugin) SyncVNIDRules() {
 	defer mp.vnidInUseLock.Unlock()
 
 	unused := mp.node.oc.FindUnusedVNIDs()
-	glog.Infof("SyncVNIDRules: %d unused VNIDs", len(unused))
+	klog.Infof("SyncVNIDRules: %d unused VNIDs", len(unused))
 
 	otx := mp.node.oc.NewTransaction()
 	for _, vnid := range unused {
-		mp.vnidInUse[uint32(vnid)] = false
+		mp.vnidInUse.Delete(int(vnid))
 		otx.DeleteFlows("table=80, reg1=%d", vnid)
 	}
 	if err := otx.Commit(); err != nil {

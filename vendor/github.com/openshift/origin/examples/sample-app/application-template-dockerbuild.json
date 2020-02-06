@@ -83,13 +83,18 @@
       "kind": "ImageStream",
       "apiVersion": "v1",
       "metadata": {
-        "name": "ruby-22-centos7"
+        "name": "ruby-25-centos7"
       },
       "spec": {
-        "dockerImageRepository": "centos/ruby-22-centos7"
-      },
-      "status": {
-        "dockerImageRepository": ""
+        "tags": [
+          {
+            "from": {
+              "kind": "DockerImage",
+              "name": "docker.io/centos/ruby-25-centos7:latest"
+            },
+            "name": "latest"
+          }
+        ]
       }
     },
     {
@@ -138,7 +143,7 @@
           "dockerStrategy": {
             "from": {
               "kind": "ImageStreamTag",
-              "name": "ruby-22-centos7:latest"
+              "name": "ruby-25-centos7:latest"
             },
             "env": [
               {
@@ -155,7 +160,7 @@
           }
         },
         "postCommit": {
-          "args": ["bundle", "exec", "rake", "test"]
+          "script": "bundle exec rake test"
         },
         "resources": {}
       },

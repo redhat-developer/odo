@@ -5,22 +5,21 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/golang/glog"
-	"k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
-	kapi "k8s.io/kubernetes/pkg/apis/core"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions/resource"
+	"k8s.io/cli-runtime/pkg/genericclioptions/resource"
+	"k8s.io/klog"
+	"k8s.io/kubernetes/pkg/kubectl/scheme"
 
-	"github.com/openshift/origin/pkg/oc/util/ocscheme"
-	templateapi "github.com/openshift/origin/pkg/template/apis/template"
-	templateclient "github.com/openshift/origin/pkg/template/generated/internalclientset/typed/template/internalversion"
+	templatev1 "github.com/openshift/api/template/v1"
+	templatev1typedclient "github.com/openshift/client-go/template/clientset/versioned/typed/template/v1"
 )
 
 // TemplateSearcher resolves stored template arguments into template objects
 type TemplateSearcher struct {
-	Client           templateclient.TemplatesGetter
+	Client           templatev1typedclient.TemplatesGetter
 	Namespaces       []string
 	StopOnExactMatch bool
 }
@@ -36,7 +35,7 @@ func (r TemplateSearcher) Search(precise bool, terms ...string) (ComponentMatche
 	for _, term := range terms {
 		ref, err := parseTemplateReference(term)
 		if err != nil {
-			glog.V(2).Infof("template references must be of the form [<namespace>/]<name>, term %q did not qualify", term)
+			klog.V(2).Infof("template references must be of the form [<namespace>/]<name>, term %q did not qualify", term)
 			continue
 		}
 		if term == "__template_fail" {
@@ -68,12 +67,12 @@ func (r TemplateSearcher) Search(precise bool, terms ...string) (ComponentMatche
 			exact := false
 			for i := range templates.Items {
 				template := &templates.Items[i]
-				glog.V(4).Infof("checking namespace %s for template %s", namespace, ref.Name)
+				klog.V(4).Infof("checking namespace %s for template %s", namespace, ref.Name)
 				if score, scored := templateScorer(*template, ref.Name); scored {
 					if score == 0.0 {
 						exact = true
 					}
-					glog.V(4).Infof("Adding template %q in project %q with score %f", template.Name, template.Namespace, score)
+					klog.V(4).Infof("Adding template %q in project %q with score %f", template.Name, template.Namespace, score)
 					fullName := fmt.Sprintf("%s/%s", template.Namespace, template.Name)
 					matches = append(matches, &ComponentMatch{
 						Value:       term,
@@ -124,7 +123,7 @@ func (r *TemplateFileSearcher) Search(precise bool, terms ...string) (ComponentM
 
 		var isSingleItemImplied bool
 		obj, err := r.Builder.
-			WithScheme(ocscheme.ReadingInternalScheme).
+			WithScheme(scheme.Scheme, scheme.Scheme.PrioritizedVersionsAllGroups()...).
 			NamespaceParam(r.Namespace).RequireNamespace().
 			FilenameParam(false, &resource.FilenameOptions{Recursive: false, Filenames: terms}).
 			Do().
@@ -146,13 +145,7 @@ func (r *TemplateFileSearcher) Search(precise bool, terms ...string) (ComponentM
 			}
 		}
 
-		if list, isList := obj.(*kapi.List); isList && !isSingleItemImplied {
-			if len(list.Items) == 1 {
-				obj = list.Items[0]
-				isSingleItemImplied = true
-			}
-		}
-		if list, isList := obj.(*v1.List); isList && !isSingleItemImplied {
+		if list, isList := obj.(*corev1.List); isList && !isSingleItemImplied {
 			if len(list.Items) == 1 {
 				obj = list.Items[0].Object
 				isSingleItemImplied = true
@@ -164,7 +157,7 @@ func (r *TemplateFileSearcher) Search(precise bool, terms ...string) (ComponentM
 			continue
 		}
 
-		template, ok := obj.(*templateapi.Template)
+		template, ok := obj.(*templatev1.Template)
 		if !ok {
 			errs = append(errs, fmt.Errorf("object in %q is not a template", term))
 			continue

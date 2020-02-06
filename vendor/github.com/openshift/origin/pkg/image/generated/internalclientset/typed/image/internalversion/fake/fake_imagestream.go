@@ -4,7 +4,7 @@ package fake
 
 import (
 	image "github.com/openshift/origin/pkg/image/apis/image"
-	core_v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -116,7 +116,7 @@ func (c *FakeImageStreams) DeleteCollection(options *v1.DeleteOptions, listOptio
 // Patch applies the patch and returns the patched imageStream.
 func (c *FakeImageStreams) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *image.ImageStream, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(imagestreamsResource, c.ns, name, data, subresources...), &image.ImageStream{})
+		Invokes(testing.NewPatchSubresourceAction(imagestreamsResource, c.ns, name, pt, data, subresources...), &image.ImageStream{})
 
 	if obj == nil {
 		return nil, err
@@ -125,12 +125,12 @@ func (c *FakeImageStreams) Patch(name string, pt types.PatchType, data []byte, s
 }
 
 // Secrets takes name of the imageStream, and returns the corresponding secretList object, and an error if there is any.
-func (c *FakeImageStreams) Secrets(imageStreamName string, options v1.GetOptions) (result *core_v1.SecretList, err error) {
+func (c *FakeImageStreams) Secrets(imageStreamName string, options v1.GetOptions) (result *corev1.SecretList, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewGetSubresourceAction(imagestreamsResource, c.ns, "secrets", imageStreamName), &core_v1.SecretList{})
+		Invokes(testing.NewGetSubresourceAction(imagestreamsResource, c.ns, "secrets", imageStreamName), &corev1.SecretList{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*core_v1.SecretList), err
+	return obj.(*corev1.SecretList), err
 }

@@ -5,20 +5,22 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"golang.org/x/time/rate"
+	"k8s.io/klog"
 
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericclioptions/resource"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/flowcontrol"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions/resource"
+	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 
 	"github.com/openshift/origin/pkg/oc/cli/admin/migrate"
 )
@@ -91,12 +93,10 @@ func NewMigrateAPIStorageOptions(streams genericclioptions.IOStreams) *MigrateAP
 
 		bandwidth: 10,
 
-		ResourceOptions: migrate.ResourceOptions{
-			IOStreams: streams,
-
-			Unstructured: true,
-			Include:      []string{"*"},
-			DefaultExcludes: []schema.GroupResource{
+		ResourceOptions: *migrate.NewResourceOptions(streams).
+			WithIncludes([]string{"*"}).
+			WithUnstructured().
+			WithExcludes([]schema.GroupResource{
 				// openshift resources:
 				{Resource: "appliedclusterresourcequotas"},
 				{Resource: "imagestreamimages"}, {Resource: "imagestreamtags"}, {Resource: "imagestreammappings"}, {Resource: "imagestreamimports"},
@@ -116,9 +116,8 @@ func NewMigrateAPIStorageOptions(streams genericclioptions.IOStreams) *MigrateAP
 				{Resource: "replicationcontrollerdummies.extensions"},
 				{Resource: "podtemplates"},
 				{Resource: "selfsubjectaccessreviews", Group: "authorization.k8s.io"}, {Resource: "localsubjectaccessreviews", Group: "authorization.k8s.io"},
-			},
-			// Resources known to share the same storage
-			OverlappingResources: []sets.String{
+			}).
+			WithOverlappingResources([]sets.String{
 				// openshift resources:
 				sets.NewString("deploymentconfigs.apps.openshift.io", "deploymentconfigs"),
 
@@ -182,8 +181,7 @@ func NewMigrateAPIStorageOptions(streams genericclioptions.IOStreams) *MigrateAP
 				// kubernetes resources:
 				sets.NewString("horizontalpodautoscalers.autoscaling", "horizontalpodautoscalers.extensions"),
 				sets.NewString("jobs.batch", "jobs.extensions"),
-			},
-		},
+			}),
 	}
 }
 
@@ -267,12 +265,10 @@ func (o *MigrateAPIStorageOptions) Complete(f kcmdutil.Factory, c *cobra.Command
 	clientConfigCopy.Burst = 99999
 	clientConfigCopy.QPS = 99999
 
-	client, err := dynamic.NewForConfig(clientConfigCopy)
+	o.client, err = dynamic.NewForConfig(clientConfigCopy)
 	if err != nil {
 		return err
 	}
-
-	o.client = client
 
 	return nil
 }
@@ -307,7 +303,14 @@ func (o *MigrateAPIStorageOptions) save(info *resource.Info, reporter migrate.Re
 		newObject, err := o.client.
 			Resource(info.Mapping.Resource).
 			Namespace(info.Namespace).
-			Update(oldObject)
+			Update(oldObject, metav1.UpdateOptions{})
+		// storage migration is special in that all it needs to do is a no-op update to cause
+		// the api server to migrate the object to the preferred version.  thus if we encounter
+		// a conflict, we know that something updated the object and we no longer need to do
+		// anything - if the object needed migration, the api server has already migrated it.
+		if errors.IsConflict(err) {
+			return migrate.ErrUnchanged
+		}
 		if err != nil {
 			return migrate.DefaultRetriable(info, err)
 		}
@@ -327,7 +330,7 @@ func (o *MigrateAPIStorageOptions) rateLimit(oldObject *unstructured.Unstructure
 	var dataLen int
 	if data, err := oldObject.MarshalJSON(); err != nil {
 		// this should never happen
-		glog.Errorf("failed to marshall %#v: %v", oldObject, err)
+		klog.Errorf("failed to marshall %#v: %v", oldObject, err)
 		// but in case it somehow does happen, assume the object was
 		// larger than most objects so we still rate limit "enough"
 		dataLen = 8192
@@ -345,7 +348,7 @@ func (o *MigrateAPIStorageOptions) rateLimit(oldObject *unstructured.Unstructure
 	latency := o.limiter.take(2 * dataLen)
 	// mimic rest.Request.tryThrottle logging logic
 	if latency > longThrottleLatency {
-		glog.V(4).Infof("Throttling request took %v, request: %s:%s", latency, "PUT", oldObject.GetSelfLink())
+		klog.V(4).Infof("Throttling request took %v, request: %s:%s", latency, "PUT", oldObject.GetSelfLink())
 	}
 }
 
@@ -378,7 +381,7 @@ func (t *tokenLimiter) getDuration(n int) time.Duration {
 	reservation := t.rateLimiter.ReserveN(now, n)
 	if !reservation.OK() {
 		// this should never happen but we do not want to hang a worker forever
-		glog.Errorf("unable to get rate limited reservation, burst=%d n=%d", t.burst, n)
+		klog.Errorf("unable to get rate limited reservation, burst=%d n=%d", t.burst, n)
 		return time.Minute
 	}
 	return reservation.DelayFrom(now)

@@ -29,28 +29,20 @@ USER 1001
 	g.Context("", func() {
 
 		g.BeforeEach(func() {
-			exutil.DumpDockerInfo()
-		})
-
-		g.JustBeforeEach(func() {
-			g.By("waiting for default service account")
-			err := exutil.WaitForServiceAccount(oc.KubeClient().Core().ServiceAccounts(oc.Namespace()), "default")
-			o.Expect(err).NotTo(o.HaveOccurred())
-			g.By("waiting for builder service account")
-			err = exutil.WaitForServiceAccount(oc.KubeClient().Core().ServiceAccounts(oc.Namespace()), "builder")
-			o.Expect(err).NotTo(o.HaveOccurred())
+			exutil.PreTestDump()
 		})
 
 		g.AfterEach(func() {
 			if g.CurrentGinkgoTestDescription().Failed {
 				exutil.DumpPodStates(oc)
+				exutil.DumpConfigMapStates(oc)
 				exutil.DumpPodLogsStartingWith("", oc)
 			}
 		})
 
 		g.It("should succeed [Conformance]", func() {
 			g.By("creating a build directly")
-			build, err := oc.AdminBuildClient().Build().Builds(oc.Namespace()).Create(&buildv1.Build{
+			build, err := oc.AdminBuildClient().BuildV1().Builds(oc.Namespace()).Create(&buildv1.Build{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "optimized",
 				},
@@ -70,7 +62,7 @@ USER 1001
 			o.Expect(err).NotTo(o.HaveOccurred())
 			o.Expect(build.Spec.Strategy.DockerStrategy.ImageOptimizationPolicy).ToNot(o.BeNil())
 			result := exutil.NewBuildResult(oc, build)
-			err = exutil.WaitForBuildResult(oc.AdminBuildClient().Build().Builds(oc.Namespace()), result)
+			err = exutil.WaitForBuildResult(oc.AdminBuildClient().BuildV1().Builds(oc.Namespace()), result)
 			o.Expect(err).NotTo(o.HaveOccurred())
 			o.Expect(result.BuildSuccess).To(o.BeTrue(), "Build did not succeed: %v", result)
 
@@ -82,9 +74,8 @@ USER 1001
 
 			s, err := result.Logs()
 			o.Expect(err).NotTo(o.HaveOccurred())
-			o.Expect(s).To(o.ContainSubstring("--> RUN yum list installed"))
+			o.Expect(s).To(o.ContainSubstring("Installed Packages"))
 			o.Expect(s).To(o.ContainSubstring(fmt.Sprintf("\"OPENSHIFT_BUILD_NAMESPACE\"=\"%s\"", oc.Namespace())))
-			o.Expect(s).To(o.ContainSubstring("--> Committing changes to "))
 			o.Expect(s).To(o.ContainSubstring("Build complete, no image push requested"))
 			e2e.Logf("Build logs:\n%s", result)
 		})

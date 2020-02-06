@@ -10,16 +10,16 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	networkapi "github.com/openshift/api/network/v1"
 	"github.com/openshift/origin/pkg/network/common"
 	"github.com/openshift/origin/pkg/util/ovs"
 
+	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
-	kapi "k8s.io/kubernetes/pkg/apis/core"
 )
 
 type ovsController struct {
@@ -75,7 +75,7 @@ func (oc *ovsController) SetupOVS(clusterNetworkCIDR []string, serviceNetworkCID
 	if err != nil {
 		return err
 	}
-	err = oc.ovs.AddBridge("fail-mode=secure", "protocols=OpenFlow13")
+	err = oc.ovs.AddBridge("fail_mode=secure", "protocols=OpenFlow13")
 	if err != nil {
 		return err
 	}
@@ -160,6 +160,9 @@ func (oc *ovsController) SetupOVS(clusterNetworkCIDR []string, serviceNetworkCID
 		otx.AddFlow("table=30, priority=100, ip, nw_dst=%s, actions=goto_table:90", clusterCIDR)
 	}
 
+	// Link-local traffic
+	otx.AddFlow("table=30, priority=75, ip, nw_dst=169.254.0.0/16, actions=drop")
+
 	// Multicast coming from the VXLAN
 	otx.AddFlow("table=30, priority=50, in_port=1, ip, nw_dst=224.0.0.0/4, actions=goto_table:120")
 	// Multicast coming from local pods
@@ -200,6 +203,7 @@ func (oc *ovsController) SetupOVS(clusterNetworkCIDR []string, serviceNetworkCID
 	otx.AddFlow("table=90, priority=0, actions=drop")
 
 	// Table 100: egress routing; edited by SetNamespaceEgress*()
+	otx.AddFlow("table=100, priority=300,udp,udp_dst=%d,actions=drop", vxlanPort)
 	otx.AddFlow("table=100, priority=200,tcp,tcp_dst=53,nw_dst=%s,actions=output:2", oc.localIP)
 	otx.AddFlow("table=100, priority=200,udp,udp_dst=53,nw_dst=%s,actions=output:2", oc.localIP)
 	// eg, "table=100, priority=100, reg0=${tenant_id}, ip, actions=set_field:${tun0_mac}->eth_dst,set_field:${egress_mark}->pkt_mark,goto_table:101"
@@ -227,13 +231,63 @@ func (oc *ovsController) SetupOVS(clusterNetworkCIDR []string, serviceNetworkCID
 	return otx.Commit()
 }
 
+type podNetworkInfo struct {
+	vethName string
+	ip       string
+	ofport   int
+}
+
+// GetPodNetworkInfo returns network interface information about all currently-attached pods.
+func (oc *ovsController) GetPodNetworkInfo() (map[string]podNetworkInfo, error) {
+	rows, err := oc.ovs.Find("interface", []string{"name", "external_ids", "ofport"}, "external_ids:sandbox!=\"\"")
+	if err != nil {
+		return nil, err
+	}
+
+	results := make(map[string]podNetworkInfo)
+	for _, row := range rows {
+		if row["name"] == "" || row["external_ids"] == "" || row["ofport"] == "" {
+			utilruntime.HandleError(fmt.Errorf("ovs-vsctl output missing one or more fields: %v", row))
+			continue
+		}
+
+		ids, err := ovs.ParseExternalIDs(row["external_ids"])
+		if err != nil {
+			utilruntime.HandleError(fmt.Errorf("Could not parse external_ids %q: %v", row["external_ids"], err))
+			continue
+		}
+		if ids["ip"] == "" || ids["sandbox"] == "" {
+			utilruntime.HandleError(fmt.Errorf("ovs-vsctl output missing one or more external_ids: %v", ids))
+			continue
+		}
+		if net.ParseIP(ids["ip"]) == nil {
+			utilruntime.HandleError(fmt.Errorf("Could not parse IP %q for sandbox %q", ids["ip"], ids["sandbox"]))
+			continue
+		}
+
+		ofport, err := strconv.Atoi(row["ofport"])
+		if err != nil {
+			utilruntime.HandleError(fmt.Errorf("Could not parse ofport %q: %v", row["ofport"], err))
+			continue
+		}
+
+		results[ids["sandbox"]] = podNetworkInfo{
+			vethName: row["name"],
+			ip:       ids["ip"],
+			ofport:   ofport,
+		}
+	}
+
+	return results, nil
+}
+
 func (oc *ovsController) NewTransaction() ovs.Transaction {
 	return oc.ovs.NewTransaction()
 }
 
 func (oc *ovsController) ensureOvsPort(hostVeth, sandboxID, podIP string) (int, error) {
 	ofport, err := oc.ovs.AddPort(hostVeth, -1,
-		fmt.Sprintf(`external-ids=sandbox="%s",ip="%s"`, sandboxID, podIP),
+		fmt.Sprintf(`external_ids=sandbox="%s",ip="%s"`, sandboxID, podIP),
 	)
 	if err != nil {
 		// If hostVeth doesn't exist, ovs-vsctl will return an error, but will
@@ -287,7 +341,7 @@ func (oc *ovsController) SetUpPod(sandboxID, hostVeth string, podIP net.IP, vnid
 
 // Returned list can also be used for port names
 func (oc *ovsController) getInterfacesForSandbox(sandboxID string) ([]string, error) {
-	return oc.ovs.Find("interface", "name", "external-ids:sandbox="+sandboxID)
+	return oc.ovs.FindOne("interface", "name", "external_ids:sandbox="+sandboxID)
 }
 
 func (oc *ovsController) ClearPodBandwidth(portList []string, sandboxID string) error {
@@ -299,7 +353,7 @@ func (oc *ovsController) ClearPodBandwidth(portList []string, sandboxID string) 
 	}
 
 	// Now that the QoS is unused remove it
-	qosList, err := oc.ovs.Find("qos", "_uuid", "external-ids:sandbox="+sandboxID)
+	qosList, err := oc.ovs.FindOne("qos", "_uuid", "external_ids:sandbox="+sandboxID)
 	if err != nil {
 		return err
 	}
@@ -325,7 +379,7 @@ func (oc *ovsController) SetPodBandwidth(hostVeth, sandboxID string, ingressBPS,
 	}
 
 	if ingressBPS > 0 {
-		qos, err := oc.ovs.Create("qos", "type=linux-htb", fmt.Sprintf("other-config:max-rate=%d", ingressBPS), "external-ids=sandbox="+sandboxID)
+		qos, err := oc.ovs.Create("qos", "type=linux-htb", fmt.Sprintf("other_config:max-rate=%d", ingressBPS), "external_ids=sandbox="+sandboxID)
 		if err != nil {
 			return err
 		}
@@ -346,31 +400,27 @@ func (oc *ovsController) SetPodBandwidth(hostVeth, sandboxID string, ingressBPS,
 }
 
 func (oc *ovsController) getPodDetailsBySandboxID(sandboxID string) (int, net.IP, error) {
-	strports, err := oc.ovs.Find("interface", "ofport", "external-ids:sandbox="+sandboxID)
-	if err != nil {
-		return 0, nil, err
-	}
-	strIDs, err := oc.ovs.Find("interface", "external-ids", "external-ids:sandbox="+sandboxID)
+	rows, err := oc.ovs.Find("interface", []string{"ofport", "external_ids"}, "external_ids:sandbox="+sandboxID)
 	if err != nil {
 		return 0, nil, err
 	}
 
-	if len(strports) == 0 || len(strIDs) == 0 {
-		return 0, nil, fmt.Errorf("failed to find pod details from OVS flows")
-	} else if len(strports) > 1 || len(strIDs) > 1 {
-		return 0, nil, fmt.Errorf("found multiple pods for sandbox ID %q: %#v / %#v", sandboxID, strports, strIDs)
+	if len(rows) == 0 {
+		return 0, nil, fmt.Errorf("failed to find pod details in OVS database")
+	} else if len(rows) > 1 {
+		return 0, nil, fmt.Errorf("found multiple pods for sandbox ID %q: %#v", sandboxID, rows)
 	}
 
-	ofport, err := strconv.Atoi(strports[0])
+	ofport, err := strconv.Atoi(rows[0]["ofport"])
 	if err != nil {
-		return 0, nil, fmt.Errorf("could not parse ofport %q: %v", strports[0], err)
+		return 0, nil, fmt.Errorf("could not parse ofport %q: %v", rows[0]["ofport"], err)
 	}
 
-	ids, err := ovs.ParseExternalIDs(strIDs[0])
+	ids, err := ovs.ParseExternalIDs(rows[0]["external_ids"])
 	if err != nil {
-		return 0, nil, fmt.Errorf("could not parse external-ids %q: %v", strIDs[0], err)
+		return 0, nil, fmt.Errorf("could not parse external_ids %q: %v", rows[0]["external_ids"], err)
 	} else if ids["ip"] == "" {
-		return 0, nil, fmt.Errorf("external-ids %q does not contain IP", strIDs[0])
+		return 0, nil, fmt.Errorf("external_ids %#v does not contain IP", ids)
 	}
 	podIP := net.ParseIP(ids["ip"])
 	if podIP == nil {
@@ -481,7 +531,7 @@ func (oc *ovsController) UpdateEgressNetworkPolicyRules(policies []networkapi.Eg
 				if selector == "0.0.0.0/0" {
 					dst = ""
 				} else if selector == "0.0.0.0/32" {
-					glog.Warningf("Correcting CIDRSelector '0.0.0.0/32' to '0.0.0.0/0' in EgressNetworkPolicy %s:%s", policies[0].Namespace, policies[0].Name)
+					klog.Warningf("Correcting CIDRSelector '0.0.0.0/32' to '0.0.0.0/0' in EgressNetworkPolicy %s:%s", policies[0].Namespace, policies[0].Name)
 					dst = ""
 				} else {
 					dst = fmt.Sprintf(", nw_dst=%s", selector)
@@ -530,7 +580,7 @@ func (oc *ovsController) DeleteHostSubnetRules(subnet *networkapi.HostSubnet) er
 	return otx.Commit()
 }
 
-func (oc *ovsController) AddServiceRules(service *kapi.Service, netID uint32) error {
+func (oc *ovsController) AddServiceRules(service *corev1.Service, netID uint32) error {
 	otx := oc.ovs.NewTransaction()
 
 	action := fmt.Sprintf(", priority=100, actions=load:%d->NXM_NX_REG1[], load:2->NXM_NX_REG2[], goto_table:80", netID)
@@ -549,7 +599,7 @@ func (oc *ovsController) AddServiceRules(service *kapi.Service, netID uint32) er
 	return otx.Commit()
 }
 
-func (oc *ovsController) DeleteServiceRules(service *kapi.Service) error {
+func (oc *ovsController) DeleteServiceRules(service *corev1.Service) error {
 	otx := oc.ovs.NewTransaction()
 	otx.DeleteFlows(generateBaseServiceRule(service.Spec.ClusterIP))
 	return otx.Commit()
@@ -559,11 +609,11 @@ func generateBaseServiceRule(IP string) string {
 	return fmt.Sprintf("table=60, ip, nw_dst=%s", IP)
 }
 
-func generateBaseAddServiceRule(IP string, protocol kapi.Protocol, port int) (string, error) {
+func generateBaseAddServiceRule(IP string, protocol corev1.Protocol, port int) (string, error) {
 	var dst string
-	if protocol == kapi.ProtocolUDP {
+	if protocol == corev1.ProtocolUDP {
 		dst = fmt.Sprintf(", udp, udp_dst=%d", port)
-	} else if protocol == kapi.ProtocolTCP {
+	} else if protocol == corev1.ProtocolTCP {
 		dst = fmt.Sprintf(", tcp, tcp_dst=%d", port)
 	} else {
 		return "", fmt.Errorf("unhandled protocol %v", protocol)
@@ -612,28 +662,39 @@ func (oc *ovsController) UpdateVXLANMulticastFlows(remoteIPs []string) error {
 	return otx.Commit()
 }
 
-// FindUnusedVNIDs returns a list of VNIDs for which there are table 80 "check" rules,
+// FindPolicyVNIDs returns the set of VNIDs for which there are currently "policy" rules
+// in OVS. (This is used to reinitialize the osdnPolicy after a restart.)
+func (oc *ovsController) FindPolicyVNIDs() sets.Int {
+	_, policyVNIDs := oc.findInUseAndPolicyVNIDs()
+	return policyVNIDs
+}
+
+// FindUnusedVNIDs returns a list of VNIDs for which there are table 80 "policy" rules,
 // but no table 60/70 "load" rules (meaning that there are no longer any pods or services
 // on this node with that VNID). There is no locking with respect to other ovsController
 // actions, but as long the "add a pod" and "add a service" codepaths add the
 // pod/service-specific rules before they call policy.EnsureVNIDRules(), then there is no
 // race condition.
 func (oc *ovsController) FindUnusedVNIDs() []int {
+	inUseVNIDs, policyVNIDs := oc.findInUseAndPolicyVNIDs()
+	return policyVNIDs.Difference(inUseVNIDs).UnsortedList()
+}
+
+func (oc *ovsController) findInUseAndPolicyVNIDs() (sets.Int, sets.Int) {
+	// VNID 0 is always in use, even if there aren't any explicit flows for it
+	inUseVNIDs := sets.NewInt(0)
+	policyVNIDs := sets.NewInt()
+
 	flows, err := oc.ovs.DumpFlows("")
 	if err != nil {
-		utilruntime.HandleError(fmt.Errorf("FindUnusedVNIDs: could not DumpFlows: %v", err))
-		return nil
+		utilruntime.HandleError(fmt.Errorf("findInUseAndPolicyVNIDs: could not DumpFlows: %v", err))
+		return inUseVNIDs, policyVNIDs
 	}
 
-	// inUseVNIDs is the set of VNIDs in use by pods or services on this node.
-	// policyVNIDs is the set of VNIDs that we have rules for delivering to.
-	// VNID 0 is always assumed to be in both sets.
-	inUseVNIDs := sets.NewInt(0)
-	policyVNIDs := sets.NewInt(0)
 	for _, flow := range flows {
 		parsed, err := ovs.ParseFlow(ovs.ParseForDump, flow)
 		if err != nil {
-			glog.Warningf("FindUnusedVNIDs: could not parse flow %q: %v", flow, err)
+			klog.Warningf("findInUseAndPolicyVNIDs: could not parse flow %q: %v", flow, err)
 			continue
 		}
 
@@ -651,7 +712,7 @@ func (oc *ovsController) FindUnusedVNIDs() []int {
 				}
 				vnid, err := strconv.ParseInt(action.Value[:vnidEnd], 0, 32)
 				if err != nil {
-					glog.Warningf("FindUnusedVNIDs: could not parse VNID in 'load:%s': %v", action.Value, err)
+					klog.Warningf("findInUseAndPolicyVNIDs: could not parse VNID in 'load:%s': %v", action.Value, err)
 					continue
 				}
 				inUseVNIDs.Insert(int(vnid))
@@ -664,7 +725,7 @@ func (oc *ovsController) FindUnusedVNIDs() []int {
 			if field, exists := parsed.FindField("reg1"); exists {
 				vnid, err := strconv.ParseInt(field.Value, 0, 32)
 				if err != nil {
-					glog.Warningf("FindUnusedVNIDs: could not parse VNID in 'reg1=%s': %v", field.Value, err)
+					klog.Warningf("findInUseAndPolicyVNIDs: could not parse VNID in 'reg1=%s': %v", field.Value, err)
 					continue
 				}
 				policyVNIDs.Insert(int(vnid))
@@ -672,7 +733,7 @@ func (oc *ovsController) FindUnusedVNIDs() []int {
 		}
 	}
 
-	return policyVNIDs.Difference(inUseVNIDs).UnsortedList()
+	return inUseVNIDs, policyVNIDs
 }
 
 func (oc *ovsController) ensureTunMAC() error {
@@ -715,7 +776,11 @@ func (oc *ovsController) SetNamespaceEgressViaEgressIP(vnid uint32, nodeIP, mark
 		}
 		otx.AddFlow("table=100, priority=100, reg0=%d, ip, actions=set_field:%s->eth_dst,set_field:%s->pkt_mark,goto_table:101", vnid, oc.tunMAC, mark)
 	} else {
-		otx.AddFlow("table=100, priority=100, reg0=%d, ip, actions=move:NXM_NX_REG0[]->NXM_NX_TUN_ID[0..31],set_field:%s->tun_dst,output:1", vnid, nodeIP)
+		commit := ""
+		if oc.useConnTrack {
+			commit = "ct(commit),"
+		}
+		otx.AddFlow("table=100, priority=100, reg0=%d, ip, actions=%smove:NXM_NX_REG0[]->NXM_NX_TUN_ID[0..31],set_field:%s->tun_dst,output:1", vnid, commit, nodeIP)
 	}
 	return otx.Commit()
 }

@@ -4,14 +4,14 @@
 		{
 			"REBASE TODO": "git describe --long --tags --abbrev=7",
 			"ImportPath": "github.com/coreos/etcd/etcdserver",
-			"Comment": "v3.2.16-0-g121edf0",
-			"Rev": "121edf0467052d55876a817b89875fb39a99bf78"
+			"Comment": "v3.3.10",
+			"Rev": "27fc7e2296f506182f58ce846e48f36b34fe6842"
 		},
 		{
 			"REBASE TODO": "git describe --long --tags --abbrev=7",
 			"ImportPath": "k8s.io/kubernetes/pkg/api",
-			"Comment": "v1.11.0-62-gd4cacc0",
-			"Rev": "d4cacc043ac762235e16cb7361d527cb4189393c"
+			"Comment": "v1.13.4-138-g41dc99c",
+			"Rev": "41dc99c06e1cf9b9074b00a69902363cefb0538c"
 		}
 	]
 }

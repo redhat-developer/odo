@@ -4,14 +4,14 @@ import (
 	"reflect"
 	"testing"
 
-	"k8s.io/apimachinery/pkg/api/testing"
+	"k8s.io/apimachinery/pkg/api/apitesting"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/diff"
 )
 
 func roundTrip(t *testing.T, obj runtime.Object) runtime.Object {
-	scheme, codecs := apitesting.SchemeForOrDie(InstallLegacy)
-	data, err := runtime.Encode(codecs.LegacyCodec(SchemeGroupVersion), obj)
+	scheme, codecs := apitesting.SchemeForOrDie(Install)
+	data, err := runtime.Encode(codecs.LegacyCodec(GroupVersion), obj)
 	if err != nil {
 		t.Errorf("%v\n %#v", err, obj)
 		return nil

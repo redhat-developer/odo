@@ -11,8 +11,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
-	k8sgenclioptions "k8s.io/kubernetes/pkg/kubectl/genericclioptions"
+	k8sgenclioptions "k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 )
 
 // PortForwardOptions contains all the options for running the port-forward cli command.

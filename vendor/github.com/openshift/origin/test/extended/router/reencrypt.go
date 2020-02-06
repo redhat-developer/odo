@@ -7,7 +7,6 @@ import (
 	g "github.com/onsi/ginkgo"
 	o "github.com/onsi/gomega"
 
-	kapierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 
@@ -28,7 +27,7 @@ var _ = g.Describe("[Conformance][Area:Networking][Feature:Router]", func() {
 	// hook
 	g.AfterEach(func() {
 		if g.CurrentGinkgoTestDescription().Failed {
-			client := routeclientset.NewForConfigOrDie(oc.AdminConfig()).Route().Routes(ns)
+			client := routeclientset.NewForConfigOrDie(oc.AdminConfig()).RouteV1().Routes(ns)
 			if routes, _ := client.List(metav1.ListOptions{}); routes != nil {
 				outputIngress(routes.Items...)
 			}
@@ -41,10 +40,6 @@ var _ = g.Describe("[Conformance][Area:Networking][Feature:Router]", func() {
 	g.BeforeEach(func() {
 		var err error
 		ip, err = waitForRouterServiceIP(oc)
-		if kapierrs.IsNotFound(err) {
-			g.Skip("no router installed on the cluster")
-			return
-		}
 		o.Expect(err).NotTo(o.HaveOccurred())
 
 		ns = oc.KubeFramework().Namespace.Name
@@ -54,8 +49,8 @@ var _ = g.Describe("[Conformance][Area:Networking][Feature:Router]", func() {
 		g.It("should support reencrypt to services backed by a serving certificate automatically", func() {
 			routerURL := fmt.Sprintf("https://%s", ip)
 
-			execPodName := exutil.CreateExecPodOrFail(oc.AdminKubeClient().Core(), ns, "execpod")
-			defer func() { oc.AdminKubeClient().Core().Pods(ns).Delete(execPodName, metav1.NewDeleteOptions(1)) }()
+			execPodName := exutil.CreateExecPodOrFail(oc.AdminKubeClient().CoreV1(), ns, "execpod")
+			defer func() { oc.AdminKubeClient().CoreV1().Pods(ns).Delete(execPodName, metav1.NewDeleteOptions(1)) }()
 			g.By(fmt.Sprintf("deploying a service using a reencrypt route without a destinationCACertificate"))
 			err := oc.Run("create").Args("-f", configPath).Execute()
 			o.Expect(err).NotTo(o.HaveOccurred())
@@ -80,23 +75,3 @@ var _ = g.Describe("[Conformance][Area:Networking][Feature:Router]", func() {
 		})
 	})
 })
-
-func waitForRouterServiceIP(oc *exutil.CLI) (string, error) {
-	_, ns, err := exutil.GetRouterPodTemplate(oc)
-	if err != nil {
-		return "", err
-	}
-
-	// wait for the service to show up
-	var host string
-	err = wait.PollImmediate(2*time.Second, 60*time.Second, func() (bool, error) {
-		svc, err := oc.AdminKubeClient().CoreV1().Services(ns).Get("router", metav1.GetOptions{})
-		if kapierrs.IsNotFound(err) {
-			return false, nil
-		}
-		o.Expect(err).NotTo(o.HaveOccurred())
-		host = svc.Spec.ClusterIP
-		return true, nil
-	})
-	return host, err
-}

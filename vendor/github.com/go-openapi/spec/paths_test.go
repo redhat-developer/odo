@@ -24,13 +24,13 @@ import (
 var paths = Paths{
 	VendorExtensible: VendorExtensible{Extensions: map[string]interface{}{"x-framework": "go-swagger"}},
 	Paths: map[string]PathItem{
-		"/": PathItem{
+		"/": {
 			Refable: Refable{Ref: MustCreateRef("cats")},
 		},
 	},
 }
 
-var pathsJSON = `{"x-framework":"go-swagger","/":{"$ref":"cats"}}`
+const pathsJSON = `{"x-framework":"go-swagger","/":{"$ref":"cats"}}`
 
 func TestIntegrationPaths(t *testing.T) {
 	var actual Paths

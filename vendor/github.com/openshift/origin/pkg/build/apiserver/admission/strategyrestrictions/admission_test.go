@@ -211,8 +211,8 @@ func TestBuildAdmission(t *testing.T) {
 				c := NewBuildByStrategy()
 				c.(*buildByStrategy).sarClient = fakeKubeClient.AuthorizationV1().SubjectAccessReviews()
 				c.(*buildByStrategy).buildClient = fakeBuildClient
-				attrs := admission.NewAttributesRecord(test.object, test.oldObject, test.kind.WithVersion("version"), "foo", "test-build", test.resource.WithVersion("version"), test.subResource, op, fakeUser())
-				err := c.(admission.MutationInterface).Admit(attrs)
+				attrs := admission.NewAttributesRecord(test.object, test.oldObject, test.kind.WithVersion("version"), "foo", "test-build", test.resource.WithVersion("version"), test.subResource, op, false, fakeUser())
+				err := c.(admission.ValidationInterface).Validate(attrs)
 				if err != nil && test.expectAccept {
 					t.Errorf("unexpected error: %v", err)
 				}

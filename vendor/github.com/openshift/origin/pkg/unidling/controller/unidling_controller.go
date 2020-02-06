@@ -6,30 +6,28 @@ import (
 	"sync"
 	"time"
 
-	unidlingapi "github.com/openshift/origin/pkg/unidling/api"
-	unidlingutil "github.com/openshift/origin/pkg/unidling/util"
+	"k8s.io/klog"
 
-	appstypedclient "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
-
+	autoscalingv1 "k8s.io/api/autoscaling/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/kubernetes/pkg/api/legacyscheme"
-	kapi "k8s.io/kubernetes/pkg/apis/core"
-
-	kextapi "k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	kextclient "k8s.io/client-go/kubernetes/typed/extensions/v1beta1"
-	"k8s.io/client-go/tools/cache"
-	kcoreclient "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/internalversion"
-
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/scale"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/kubernetes/pkg/api/legacyscheme"
 
-	"github.com/golang/glog"
+	appstypedclient "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
+	unidlingapi "github.com/openshift/origin/pkg/unidling/api"
+	unidlingutil "github.com/openshift/origin/pkg/unidling/util"
 )
 
 const MaxRetries = 5
@@ -67,18 +65,19 @@ func (c *lastFiredCache) AddIfNewer(info types.NamespacedName, newLastFired time
 
 type UnidlingController struct {
 	controller          cache.Controller
-	scaleNamespacer     kextclient.ScalesGetter
-	endpointsNamespacer kcoreclient.EndpointsGetter
+	scaleNamespacer     scale.ScalesGetter
+	mapper              meta.RESTMapper
+	endpointsNamespacer corev1client.EndpointsGetter
 	queue               workqueue.RateLimitingInterface
 	lastFiredCache      *lastFiredCache
 
 	// TODO: remove these once we get the scale-source functionality in the scale endpoints
 	dcNamespacer appstypedclient.DeploymentConfigsGetter
-	rcNamespacer kcoreclient.ReplicationControllersGetter
+	rcNamespacer corev1client.ReplicationControllersGetter
 }
 
-func NewUnidlingController(scaleNS kextclient.ScalesGetter, endptsNS kcoreclient.EndpointsGetter, evtNS kcoreclient.EventsGetter,
-	dcNamespacer appstypedclient.DeploymentConfigsGetter, rcNamespacer kcoreclient.ReplicationControllersGetter,
+func NewUnidlingController(scaleNS scale.ScalesGetter, mapper meta.RESTMapper, endptsNS corev1client.EndpointsGetter, evtNS corev1client.EventsGetter,
+	dcNamespacer appstypedclient.DeploymentConfigsGetter, rcNamespacer corev1client.ReplicationControllersGetter,
 	resyncPeriod time.Duration) *UnidlingController {
 	fieldSet := fields.Set{}
 	fieldSet["reason"] = unidlingapi.NeedPodsReason
@@ -86,6 +85,7 @@ func NewUnidlingController(scaleNS kextclient.ScalesGetter, endptsNS kcoreclient
 
 	unidlingController := &UnidlingController{
 		scaleNamespacer:     scaleNS,
+		mapper:              mapper,
 		endpointsNamespacer: endptsNS,
 		queue:               workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		lastFiredCache: &lastFiredCache{
@@ -108,7 +108,7 @@ func NewUnidlingController(scaleNS kextclient.ScalesGetter, endptsNS kcoreclient
 				return evtNS.Events(metav1.NamespaceAll).Watch(options)
 			},
 		},
-		&kapi.Event{},
+		&corev1.Event{},
 		resyncPeriod,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc:    unidlingController.addEvent,
@@ -124,7 +124,7 @@ func NewUnidlingController(scaleNS kextclient.ScalesGetter, endptsNS kcoreclient
 }
 
 func (c *UnidlingController) addEvent(obj interface{}) {
-	evt, ok := obj.(*kapi.Event)
+	evt, ok := obj.(*corev1.Event)
 	if !ok {
 		utilruntime.HandleError(fmt.Errorf("got non-Event object in event action: %v", obj))
 		return
@@ -134,7 +134,7 @@ func (c *UnidlingController) addEvent(obj interface{}) {
 }
 
 func (c *UnidlingController) updateEvent(oldObj, newObj interface{}) {
-	evt, ok := newObj.(*kapi.Event)
+	evt, ok := newObj.(*corev1.Event)
 	if !ok {
 		utilruntime.HandleError(fmt.Errorf("got non-Event object in event action: %v", newObj))
 		return
@@ -144,7 +144,7 @@ func (c *UnidlingController) updateEvent(oldObj, newObj interface{}) {
 }
 
 func (c *UnidlingController) checkAndClearFromCache(obj interface{}) {
-	evt, objIsEvent := obj.(*kapi.Event)
+	evt, objIsEvent := obj.(*corev1.Event)
 	if !objIsEvent {
 		tombstone, objIsTombstone := obj.(cache.DeletedFinalStateUnknown)
 		if !objIsTombstone {
@@ -152,7 +152,7 @@ func (c *UnidlingController) checkAndClearFromCache(obj interface{}) {
 			return
 		}
 
-		evt, objIsEvent = tombstone.Obj.(*kapi.Event)
+		evt, objIsEvent = tombstone.Obj.(*corev1.Event)
 		if !objIsEvent {
 			utilruntime.HandleError(fmt.Errorf("tombstone contained object that is not an Event in event action: %v", obj))
 			return
@@ -163,7 +163,7 @@ func (c *UnidlingController) checkAndClearFromCache(obj interface{}) {
 }
 
 // clearEventFromCache removes the entry for the given event from the lastFiredCache.
-func (c *UnidlingController) clearEventFromCache(event *kapi.Event) {
+func (c *UnidlingController) clearEventFromCache(event *corev1.Event) {
 	if event.Reason != unidlingapi.NeedPodsReason {
 		return
 	}
@@ -178,7 +178,7 @@ func (c *UnidlingController) clearEventFromCache(event *kapi.Event) {
 // equeueEvent checks if the given event is relevant (i.e. if it's a NeedPods event),
 // and, if so, extracts relevant information, and enqueues that information in the
 // processing queue.
-func (c *UnidlingController) enqueueEvent(event *kapi.Event) {
+func (c *UnidlingController) enqueueEvent(event *corev1.Event) {
 	if event.Reason != unidlingapi.NeedPodsReason {
 		return
 	}
@@ -250,7 +250,7 @@ func (c *UnidlingController) awaitRequest() bool {
 		return true
 	}
 
-	glog.V(4).Infof("Unable to fully process unidling request for %s/%s (at %s), will retry: %v", info.Namespace, info.Name, lastFired, err)
+	klog.V(4).Infof("Unable to fully process unidling request for %s/%s (at %s), will retry: %v", info.Namespace, info.Name, lastFired, err)
 	c.queue.AddRateLimited(infoRaw)
 	return true
 }
@@ -271,7 +271,7 @@ func (c *UnidlingController) handleRequest(info types.NamespacedName, lastFired 
 	// make sure we actually were idled...
 	idledTimeRaw, wasIdled := targetEndpoints.Annotations[unidlingapi.IdledAtAnnotation]
 	if !wasIdled {
-		glog.V(5).Infof("UnidlingController received a NeedPods event for a service that was not idled, ignoring")
+		klog.V(5).Infof("UnidlingController received a NeedPods event for a service that was not idled, ignoring")
 		return false, nil
 	}
 
@@ -282,7 +282,7 @@ func (c *UnidlingController) handleRequest(info types.NamespacedName, lastFired 
 		return false, fmt.Errorf("unable to check idled-at time: %v", err)
 	}
 	if lastFired.Before(idledTime) {
-		glog.V(5).Infof("UnidlingController received an out-of-date NeedPods event, ignoring")
+		klog.V(5).Infof("UnidlingController received an out-of-date NeedPods event, ignoring")
 		return false, nil
 	}
 
@@ -294,7 +294,7 @@ func (c *UnidlingController) handleRequest(info types.NamespacedName, lastFired 
 			return false, fmt.Errorf("unable to unmarshal target scalable references: %v", err)
 		}
 	} else {
-		glog.V(4).Infof("Service %s/%s had no scalables to unidle", info.Namespace, info.Name)
+		klog.V(4).Infof("Service %s/%s had no scalables to unidle", info.Namespace, info.Name)
 		targetScalables = []unidlingapi.RecordedScaleReference{}
 	}
 
@@ -308,10 +308,10 @@ func (c *UnidlingController) handleRequest(info types.NamespacedName, lastFired 
 		delete(annotations, unidlingapi.PreviousScaleAnnotation)
 	}
 
-	scaleAnnotater := unidlingutil.NewScaleAnnotater(c.scaleNamespacer, c.dcNamespacer, c.rcNamespacer, deleteIdlingAnnotations)
+	scaleAnnotater := unidlingutil.NewScaleAnnotater(c.scaleNamespacer, c.mapper, c.dcNamespacer, c.rcNamespacer, deleteIdlingAnnotations)
 
 	for _, scalableRef := range targetScalables {
-		var scale *kextapi.Scale
+		var scale *autoscalingv1.Scale
 		var obj runtime.Object
 
 		obj, scale, err = scaleAnnotater.GetObjectWithScale(info.Namespace, scalableRef.CrossGroupObjectReference)
@@ -326,7 +326,7 @@ func (c *UnidlingController) handleRequest(info types.NamespacedName, lastFired 
 		}
 
 		if scale.Spec.Replicas > 0 {
-			glog.V(4).Infof("%s %q is not idle, skipping while unidling service %s/%s", scalableRef.Kind, scalableRef.Name, info.Namespace, info.Name)
+			klog.V(4).Infof("%s %q is not idle, skipping while unidling service %s/%s", scalableRef.Kind, scalableRef.Name, info.Namespace, info.Name)
 			continue
 		}
 
@@ -342,7 +342,7 @@ func (c *UnidlingController) handleRequest(info types.NamespacedName, lastFired 
 			}
 			continue
 		} else {
-			glog.V(4).Infof("Scaled up %s %q while unidling service %s/%s", scalableRef.Kind, scalableRef.Name, info.Namespace, info.Name)
+			klog.V(4).Infof("Scaled up %s %q while unidling service %s/%s", scalableRef.Kind, scalableRef.Name, info.Namespace, info.Name)
 		}
 
 		delete(targetScalablesSet, scalableRef)

@@ -13,9 +13,10 @@ import (
 	"time"
 
 	"github.com/docker/distribution/registry/api/errcode"
-	"github.com/golang/glog"
 	gocontext "golang.org/x/net/context"
+	"k8s.io/klog"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kerrors "k8s.io/apimachinery/pkg/util/errors"
@@ -418,7 +419,7 @@ func TestImageStreamImportAuthenticated(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	defer testserver.CleanupMasterEtcd(t, masterConfig)
-	kc, err := testutil.GetClusterAdminKubeInternalClient(clusterAdminKubeConfig)
+	kc, err := testutil.GetClusterAdminKubeClient(clusterAdminKubeConfig)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -480,11 +481,11 @@ func TestImageStreamImportAuthenticated(t *testing.T) {
 		t.Logf("testing %s host", host)
 
 		// add secrets for subsequent checks
-		_, err = kc.Core().Secrets(testutil.Namespace()).Create(&kapi.Secret{
+		_, err = kc.CoreV1().Secrets(testutil.Namespace()).Create(&corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{Name: fmt.Sprintf("secret-%d", i+1)},
-			Type:       kapi.SecretTypeDockerConfigJson,
+			Type:       corev1.SecretTypeDockerConfigJson,
 			Data: map[string][]byte{
-				kapi.DockerConfigJsonKey: []byte(`{"auths":{"` + host + `/test/image/":{"auth":"` + base64.StdEncoding.EncodeToString([]byte("user:password")) + `"}}}`),
+				corev1.DockerConfigJsonKey: []byte(`{"auths":{"` + host + `/test/image/":{"auth":"` + base64.StdEncoding.EncodeToString([]byte("user:password")) + `"}}}`),
 			},
 		})
 		if err != nil {
@@ -668,7 +669,7 @@ func TestImageStreamImportScheduled(t *testing.T) {
 		case "/v2/test/image/manifests/latest", "/v2/test/image/manifests/" + etcdDigest, "/v2/test/image/manifests/" + phpDigest:
 			count++
 			t.Logf("serving %d", count)
-			glog.Infof("serving request %d for %s", count, r.URL.Path)
+			klog.Infof("serving request %d for %s", count, r.URL.Path)
 			var manifest, digest string
 			switch count {
 			case 1, 2:

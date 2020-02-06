@@ -51,14 +51,14 @@ var pathItem = PathItem{
 			OperationProps: OperationProps{Description: "patch operation description"},
 		},
 		Parameters: []Parameter{
-			Parameter{
+			{
 				ParamProps: ParamProps{In: "path"},
 			},
 		},
 	},
 }
 
-var pathItemJSON = `{
+const pathItemJSON = `{
 	"$ref": "Dog",
 	"x-framework": "go-swagger",
 	"get": { "description": "get operation description" },

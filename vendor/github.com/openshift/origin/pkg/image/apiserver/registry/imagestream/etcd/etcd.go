@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,6 +13,7 @@ import (
 	"k8s.io/apiserver/pkg/registry/generic/registry"
 	"k8s.io/apiserver/pkg/registry/rest"
 	"k8s.io/apiserver/pkg/storage"
+	corev1informers "k8s.io/client-go/informers/core/v1"
 	authorizationclient "k8s.io/client-go/kubernetes/typed/authorization/v1"
 	"k8s.io/kubernetes/pkg/printers"
 	printerstorage "k8s.io/kubernetes/pkg/printers/storage"
@@ -45,8 +46,26 @@ func (r *REST) ShortNames() []string {
 	return []string{"is"}
 }
 
-// NewREST returns a new REST.
 func NewREST(
+	optsGetter generic.RESTOptionsGetter,
+	registryHostname registryhostname.RegistryHostnameRetriever,
+	subjectAccessReviewRegistry authorizationclient.SubjectAccessReviewInterface,
+	limitRangeInformer corev1informers.LimitRangeInformer,
+	registryWhitelister whitelist.RegistryWhitelister,
+	imageLayerIndex ImageLayerIndex,
+) (*REST, *LayersREST, *StatusREST, *InternalREST, error) {
+	return NewRESTWithLimitVerifier(
+		optsGetter,
+		registryHostname,
+		subjectAccessReviewRegistry,
+		ImageLimitVerifier(limitRangeInformer),
+		registryWhitelister,
+		imageLayerIndex,
+	)
+}
+
+// NewRESTWithLimitVerifier is exposed for unfortunate cross package unit tests
+func NewRESTWithLimitVerifier(
 	optsGetter generic.RESTOptionsGetter,
 	registryHostname registryhostname.RegistryHostnameRetriever,
 	subjectAccessReviewRegistry authorizationclient.SubjectAccessReviewInterface,
@@ -121,8 +140,8 @@ func (r *StatusREST) Get(ctx context.Context, name string, options *metav1.GetOp
 }
 
 // Update alters the status subset of an object.
-func (r *StatusREST) Update(ctx context.Context, name string, objInfo rest.UpdatedObjectInfo, createValidation rest.ValidateObjectFunc, updateValidation rest.ValidateObjectUpdateFunc) (runtime.Object, bool, error) {
-	return r.store.Update(ctx, name, objInfo, createValidation, updateValidation)
+func (r *StatusREST) Update(ctx context.Context, name string, objInfo rest.UpdatedObjectInfo, createValidation rest.ValidateObjectFunc, updateValidation rest.ValidateObjectUpdateFunc, forceAllowCreate bool, options *metav1.UpdateOptions) (runtime.Object, bool, error) {
+	return r.store.Update(ctx, name, objInfo, createValidation, updateValidation, forceAllowCreate, options)
 }
 
 // InternalREST implements the REST endpoint for changing both the spec and status of an image stream.
@@ -138,13 +157,13 @@ func (r *InternalREST) New() runtime.Object {
 }
 
 // Create alters both the spec and status of the object.
-func (r *InternalREST) Create(ctx context.Context, obj runtime.Object, createValidation rest.ValidateObjectFunc, _ bool) (runtime.Object, error) {
-	return r.store.Create(ctx, obj, createValidation, false)
+func (r *InternalREST) Create(ctx context.Context, obj runtime.Object, createValidation rest.ValidateObjectFunc, options *metav1.CreateOptions) (runtime.Object, error) {
+	return r.store.Create(ctx, obj, createValidation, options)
 }
 
 // Update alters both the spec and status of the object.
-func (r *InternalREST) Update(ctx context.Context, name string, objInfo rest.UpdatedObjectInfo, createValidation rest.ValidateObjectFunc, updateValidation rest.ValidateObjectUpdateFunc) (runtime.Object, bool, error) {
-	return r.store.Update(ctx, name, objInfo, createValidation, updateValidation)
+func (r *InternalREST) Update(ctx context.Context, name string, objInfo rest.UpdatedObjectInfo, createValidation rest.ValidateObjectFunc, updateValidation rest.ValidateObjectUpdateFunc, forceAllowCreate bool, options *metav1.UpdateOptions) (runtime.Object, bool, error) {
+	return r.store.Update(ctx, name, objInfo, createValidation, updateValidation, forceAllowCreate, options)
 }
 
 // LayersREST implements the REST endpoint for changing both the spec and status of an image stream.
@@ -184,7 +203,7 @@ func (r *LayersREST) Get(ctx context.Context, name string, options *metav1.GetOp
 		missing = addImageStreamLayersFromCache(isl, is, r.index)
 		if len(missing) > 0 {
 			// TODO: return this in the API object as well
-			glog.V(2).Infof("Image stream %s/%s references %d images that could not be found: %v", is.Namespace, is.Name, len(missing), missing)
+			klog.V(2).Infof("Image stream %s/%s references %d images that could not be found: %v", is.Namespace, is.Name, len(missing), missing)
 		}
 	}
 

@@ -17,17 +17,19 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta/testrestmapper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	restclient "k8s.io/client-go/rest"
 	restfake "k8s.io/client-go/rest/fake"
 	kclientcmd "k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/kubernetes/pkg/api/legacyscheme"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
+	"k8s.io/kubernetes/pkg/kubectl/scheme"
 
 	buildv1 "github.com/openshift/api/build/v1"
 	buildapi "github.com/openshift/origin/pkg/build/apis/build"
 	buildclientmanual "github.com/openshift/origin/pkg/build/client/v1"
-	"github.com/openshift/origin/pkg/oauth/generated/internalclientset/scheme"
+
+	_ "github.com/openshift/origin/pkg/build/apis/build/install"
 )
 
 type FakeClientConfig struct {
@@ -70,7 +72,7 @@ func TestStartBuildWebHook(t *testing.T) {
 		IOStreams:    genericclioptions.NewTestIOStreamsDiscard(),
 		ClientConfig: cfg.Client,
 		FromWebhook:  server.URL + "/webhook",
-		Mapper:       testrestmapper.TestOnlyStaticRESTMapper(legacyscheme.Scheme),
+		Mapper:       testrestmapper.TestOnlyStaticRESTMapper(scheme.Scheme),
 	}
 	if err := o.Run(); err != nil {
 		t.Fatalf("unable to start hook: %v", err)
@@ -115,7 +117,7 @@ func TestStartBuildHookPostReceive(t *testing.T) {
 		ClientConfig:   cfg.Client,
 		FromWebhook:    server.URL + "/webhook",
 		GitPostReceive: f.Name(),
-		Mapper:         testrestmapper.TestOnlyStaticRESTMapper(legacyscheme.Scheme),
+		Mapper:         testrestmapper.TestOnlyStaticRESTMapper(scheme.Scheme),
 	}
 	if err := o.Run(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -329,58 +331,60 @@ func TestStreamBuildLogs(t *testing.T) {
 		},
 	}
 
-	for _, tc := range cases {
-		out := &bytes.Buffer{}
-		build := &buildv1.Build{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-build",
-				Namespace: "test-namespace",
-			},
-		}
-		// Set up dummy RESTClient to handle requests
-		fakeREST := &restfake.RESTClient{
-			NegotiatedSerializer: scheme.Codecs,
-			GroupVersion:         schema.GroupVersion{Group: "build.openshift.io", Version: "v1"},
-			Client: restfake.CreateHTTPClient(func(*http.Request) (*http.Response, error) {
-				if tc.RequestErr != nil {
-					return nil, tc.RequestErr
-				}
-				var body io.Reader
-				if tc.IOErr != nil {
-					body = &failReader{
-						Err: tc.IOErr,
+	for i, tc := range cases {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			out := &bytes.Buffer{}
+			build := &buildv1.Build{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-build",
+					Namespace: "test-namespace",
+				},
+			}
+			// Set up dummy RESTClient to handle requests
+			fakeREST := &restfake.RESTClient{
+				NegotiatedSerializer: legacyscheme.Codecs,
+				GroupVersion:         schema.GroupVersion{Group: "build.openshift.io", Version: "v1"},
+				Client: restfake.CreateHTTPClient(func(*http.Request) (*http.Response, error) {
+					if tc.RequestErr != nil {
+						return nil, tc.RequestErr
 					}
-				} else {
-					body = bytes.NewBufferString(tc.ExpectedLogMsg)
+					var body io.Reader
+					if tc.IOErr != nil {
+						body = &failReader{
+							Err: tc.IOErr,
+						}
+					} else {
+						body = bytes.NewBufferString(tc.ExpectedLogMsg)
+					}
+					return &http.Response{
+						StatusCode: http.StatusOK,
+						Body:       ioutil.NopCloser(body),
+					}, nil
+				}),
+			}
+
+			ioStreams, _, out, _ := genericclioptions.NewTestIOStreams()
+
+			o := &StartBuildOptions{
+				IOStreams:      ioStreams,
+				BuildLogClient: buildclientmanual.NewBuildLogClient(fakeREST, build.Namespace),
+			}
+
+			err := o.streamBuildLogs(build)
+			if tc.RequestErr == nil && tc.IOErr == nil {
+				if err != nil {
+					t.Errorf("received unexpected error streaming build logs: %v", err)
 				}
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Body:       ioutil.NopCloser(body),
-				}, nil
-			}),
-		}
-
-		ioStreams, _, out, _ := genericclioptions.NewTestIOStreams()
-
-		o := &StartBuildOptions{
-			IOStreams:      ioStreams,
-			BuildLogClient: buildclientmanual.NewBuildLogClient(fakeREST, build.Namespace),
-		}
-
-		err := o.streamBuildLogs(build)
-		if tc.RequestErr == nil && tc.IOErr == nil {
-			if err != nil {
-				t.Errorf("received unexpected error streaming build logs: %v", err)
+				if out.String() != tc.ExpectedLogMsg {
+					t.Errorf("expected log \"%s\", got \"%s\"", tc.ExpectedLogMsg, out.String())
+				}
+			} else {
+				if err == nil {
+					t.Errorf("no error was received, expected error message: %s", tc.ExpectedErrMsg)
+				} else if !strings.Contains(err.Error(), tc.ExpectedErrMsg) {
+					t.Errorf("expected error message \"%s\", got \"%s\"", tc.ExpectedErrMsg, err)
+				}
 			}
-			if out.String() != tc.ExpectedLogMsg {
-				t.Errorf("expected log \"%s\", got \"%s\"", tc.ExpectedLogMsg, out.String())
-			}
-		} else {
-			if err == nil {
-				t.Errorf("no error was received, expected error message: %s", tc.ExpectedErrMsg)
-			} else if !strings.Contains(err.Error(), tc.ExpectedErrMsg) {
-				t.Errorf("expected error message \"%s\", got \"%s\"", tc.ExpectedErrMsg, err)
-			}
-		}
+		})
 	}
 }

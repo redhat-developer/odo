@@ -18,6 +18,7 @@ package util
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
 	"reflect"
 	"sort"
@@ -150,6 +151,7 @@ func randomUID() types.UID {
 func generateDeployment(image string) apps.Deployment {
 	podLabels := map[string]string{"name": image}
 	terminationSec := int64(30)
+	enableServiceLinks := v1.DefaultEnableServiceLinks
 	return apps.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        image,
@@ -175,6 +177,7 @@ func generateDeployment(image string) apps.Deployment {
 					TerminationGracePeriodSeconds: &terminationSec,
 					RestartPolicy:                 v1.RestartPolicyAlways,
 					SecurityContext:               &v1.PodSecurityContext{},
+					EnableServiceLinks:            &enableServiceLinks,
 				},
 			},
 		},
@@ -503,7 +506,6 @@ func TestFindOldReplicaSets(t *testing.T) {
 		Name            string
 		deployment      apps.Deployment
 		rsList          []*apps.ReplicaSet
-		podList         *v1.PodList
 		expected        []*apps.ReplicaSet
 		expectedRequire []*apps.ReplicaSet
 	}{
@@ -1103,8 +1105,9 @@ func TestDeploymentProgressing(t *testing.T) {
 
 func TestDeploymentTimedOut(t *testing.T) {
 	var (
-		null *int32
-		ten  = int32(10)
+		null     *int32
+		ten      = int32(10)
+		infinite = int32(math.MaxInt32)
 	)
 
 	timeFn := func(min, sec int) time.Time {
@@ -1137,9 +1140,16 @@ func TestDeploymentTimedOut(t *testing.T) {
 		expected bool
 	}{
 		{
-			name: "no progressDeadlineSeconds specified - no timeout",
+			name: "nil progressDeadlineSeconds specified - no timeout",
 
 			d:        deployment(apps.DeploymentProgressing, v1.ConditionTrue, "", null, timeFn(1, 9)),
+			nowFn:    func() time.Time { return timeFn(1, 20) },
+			expected: false,
+		},
+		{
+			name: "infinite progressDeadlineSeconds specified - no timeout",
+
+			d:        deployment(apps.DeploymentProgressing, v1.ConditionTrue, "", &infinite, timeFn(1, 9)),
 			nowFn:    func() time.Time { return timeFn(1, 20) },
 			expected: false,
 		},

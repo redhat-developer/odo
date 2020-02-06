@@ -7,6 +7,10 @@
 // test/extended/testdata/aggregator/sample-apiserver-rc.yaml
 // test/extended/testdata/aggregator/sample-apiserver-sa.yaml
 // test/extended/testdata/aggregator/sample-apiserver-service.yaml
+// test/extended/testdata/builds/application-template-custombuild.json
+// test/extended/testdata/builds/build-postcommit/docker.yaml
+// test/extended/testdata/builds/build-postcommit/imagestreams.yaml
+// test/extended/testdata/builds/build-postcommit/sti.yaml
 // test/extended/testdata/builds/build-pruning/default-group-build-config.yaml
 // test/extended/testdata/builds/build-pruning/default-legacy-build-config.yaml
 // test/extended/testdata/builds/build-pruning/errored-build-config.yaml
@@ -37,6 +41,9 @@
 // test/extended/testdata/builds/build-timing/test-docker-build.json
 // test/extended/testdata/builds/build-timing/test-is.json
 // test/extended/testdata/builds/build-timing/test-s2i-build.json
+// test/extended/testdata/builds/cluster-config/registry-blacklist.yaml
+// test/extended/testdata/builds/cluster-config/registry-whitelist.yaml
+// test/extended/testdata/builds/cluster-config.yaml
 // test/extended/testdata/builds/gradle-pipeline.yaml
 // test/extended/testdata/builds/incremental-auth-build.json
 // test/extended/testdata/builds/s2i-environment-build-app/.s2i/environment
@@ -58,7 +65,6 @@
 // test/extended/testdata/builds/test-build-app/Gemfile
 // test/extended/testdata/builds/test-build-app/config.ru
 // test/extended/testdata/builds/test-build-podsvc.json
-// test/extended/testdata/builds/test-build-postcommit.json
 // test/extended/testdata/builds/test-build-proxy.yaml
 // test/extended/testdata/builds/test-build-revision.json
 // test/extended/testdata/builds/test-build.yaml
@@ -66,9 +72,8 @@
 // test/extended/testdata/builds/test-cds-dockerbuild.json
 // test/extended/testdata/builds/test-cds-sourcebuild.json
 // test/extended/testdata/builds/test-context-build.json
+// test/extended/testdata/builds/test-docker-app/Dockerfile
 // test/extended/testdata/builds/test-docker-build-pullsecret.json
-// test/extended/testdata/builds/test-docker-build-quota-optimized.json
-// test/extended/testdata/builds/test-docker-build-quota.json
 // test/extended/testdata/builds/test-docker-build.json
 // test/extended/testdata/builds/test-docker-no-outputname.json
 // test/extended/testdata/builds/test-env-build.json
@@ -185,9 +190,13 @@
 // test/extended/testdata/roles/empty-role.yaml
 // test/extended/testdata/roles/policy-clusterroles.yaml
 // test/extended/testdata/roles/policy-roles.yaml
+// test/extended/testdata/router-common.yaml
 // test/extended/testdata/router-config-manager.yaml
 // test/extended/testdata/router-http-echo-server.yaml
 // test/extended/testdata/router-metrics.yaml
+// test/extended/testdata/router-override-domains.yaml
+// test/extended/testdata/router-override.yaml
+// test/extended/testdata/router-scoped.yaml
 // test/extended/testdata/run_policy/parallel-bc.yaml
 // test/extended/testdata/run_policy/serial-bc.yaml
 // test/extended/testdata/run_policy/serial-latest-only-bc.yaml
@@ -197,14 +206,14 @@
 // test/extended/testdata/s2i-dropcaps/rootable-ruby/assemble
 // test/extended/testdata/sample-image-stream.json
 // test/extended/testdata/samplepipeline-withenvs.yaml
-// test/extended/testdata/scoped-router.yaml
 // test/extended/testdata/service-serving-cert/nginx-serving-cert.conf
 // test/extended/testdata/signer-buildconfig.yaml
+// test/extended/testdata/templates/templateinstance_badobject.yaml
 // test/extended/testdata/templates/templateinstance_objectkinds.yaml
+// test/extended/testdata/templates/templateinstance_readiness.yaml
 // test/extended/testdata/templates/templateservicebroker_bind.yaml
 // test/extended/testdata/test-cli-debug.yaml
 // test/extended/testdata/test-env-pod.json
-// test/extended/testdata/test-gitserver-tokenauth.yaml
 // test/extended/testdata/test-gitserver.yaml
 // test/extended/testdata/test-secret.json
 // test/extended/testdata/weighted-router.yaml
@@ -232,13 +241,11 @@
 // examples/db-templates/redis-persistent-template.json
 // examples/image-streams/image-streams-centos7.json
 // examples/image-streams/image-streams-rhel7.json
-// examples/sample-app/application-template-custombuild.json
 // examples/sample-app/application-template-dockerbuild.json
 // examples/sample-app/application-template-pullspecbuild.json
 // examples/sample-app/application-template-stibuild.json
 // examples/sample-app/cleanup.sh
 // examples/sample-app/github-webhook-example.json
-// examples/sample-app/pullimages.sh
 // examples/quickstarts/cakephp-mysql-persistent.json
 // examples/quickstarts/cakephp-mysql.json
 // examples/quickstarts/dancer-mysql-persistent.json
@@ -261,33 +268,12 @@
 // examples/jenkins/jenkins-ephemeral-template.json
 // examples/jenkins/jenkins-persistent-template.json
 // examples/jenkins/pipeline/bluegreen-pipeline.yaml
-// examples/jenkins/pipeline/mapsapp-pipeline.yaml
 // examples/jenkins/pipeline/maven-pipeline.yaml
 // examples/jenkins/pipeline/nodejs-sample-pipeline.yaml
 // examples/jenkins/pipeline/openshift-client-plugin-pipeline.yaml
 // examples/jenkins/pipeline/samplepipeline.yaml
 // examples/quickstarts/cakephp-mysql.json
-// install/automationservicebroker/install-rbac.yaml
-// install/automationservicebroker/install.yaml
 // install/etcd/etcd.yaml
-// install/kube-apiserver/apiserver.yaml
-// install/kube-controller-manager/kube-controller-manager.yaml
-// install/kube-dns/install.yaml
-// install/kube-proxy/install.yaml
-// install/kube-scheduler/kube-scheduler.yaml
-// install/openshift-apiserver/install.yaml
-// install/openshift-controller-manager/install-rbac.yaml
-// install/openshift-controller-manager/install.yaml
-// install/openshift-service-cert-signer-operator/install-rbac.yaml
-// install/openshift-service-cert-signer-operator/install.yaml
-// install/openshift-web-console-operator/install-rbac.yaml
-// install/openshift-web-console-operator/install.yaml
-// install/origin-web-console/console-config.yaml
-// install/origin-web-console/console-template.yaml
-// install/service-catalog-broker-resources/template-service-broker-registration.yaml
-// install/templateservicebroker/apiserver-config.yaml
-// install/templateservicebroker/apiserver-template.yaml
-// install/templateservicebroker/rbac-template.yaml
 // DO NOT EDIT!
 
 package testdata
@@ -544,6 +530,712 @@ func testExtendedTestdataAggregatorSampleApiserverServiceYaml() (*asset, error) 
 	return a, nil
 }
 
+var _testExtendedTestdataBuildsApplicationTemplateCustombuildJson = []byte(`{
+  "kind": "Template",
+  "apiVersion": "v1",
+  "metadata": {
+    "name": "ruby-helloworld-sample",
+    "annotations": {
+      "description": "This example shows how to create a simple ruby application in openshift origin v3",
+      "iconClass": "icon-ruby",
+      "tags": "instant-app,ruby,mysql"
+    }
+  },
+  "objects": [
+    {
+      "kind": "Secret",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "dbsecret"
+      },
+      "stringData" : {
+        "mysql-user" : "${MYSQL_USER}",
+        "mysql-password" : "${MYSQL_PASSWORD}"
+      }
+    },
+    {
+      "kind": "Service",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "frontend"
+      },
+      "spec": {
+        "ports": [
+          {
+            "name": "web",
+            "protocol": "TCP",
+            "port": 5432,
+            "targetPort": 8080,
+            "nodePort": 0
+          }
+        ],
+        "selector": {
+          "name": "frontend"
+        },
+        "type": "ClusterIP",
+        "sessionAffinity": "None"
+      },
+      "status": {
+        "loadBalancer": {}
+      }
+    },
+    {
+      "kind": "Route",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "route-edge",
+        "annotations": {
+          "template.openshift.io/expose-uri": "http://{.spec.host}{.spec.path}"
+        }
+      },
+      "spec": {
+        "host": "www.example.com",
+        "to": {
+          "kind": "Service",
+          "name": "frontend"
+        },
+        "tls": {
+          "termination": "edge"
+        }
+      },
+      "status": {}
+    },
+    {
+      "kind": "ImageStream",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "origin-ruby-sample"
+      },
+      "spec": {},
+      "status": {
+        "dockerImageRepository": ""
+      }
+    },
+    {
+      "kind": "ImageStream",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "origin-custom-docker-builder"
+      },
+      "spec": {
+        "dockerImageRepository": "openshift/origin-custom-docker-builder"
+      },
+      "status": {
+        "dockerImageRepository": ""
+      }
+    },
+    {
+      "kind": "BuildConfig",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "ruby-sample-build",
+        "labels": {
+          "name": "ruby-sample-build"
+        },
+        "annotations": {
+          "template.alpha.openshift.io/wait-for-ready": "true"
+        }
+      },
+      "spec": {
+        "triggers": [
+          {
+            "type": "GitHub",
+            "github": {
+              "secret": "secret101"
+            }
+          },
+          {
+            "type": "Generic",
+            "generic": {
+              "secret": "secret101",
+              "allowEnv": true
+            }
+          },
+          {
+            "type": "ImageChange",
+            "imageChange": {}
+          },
+          {
+            "type": "ConfigChange"
+          }
+        ],
+        "source": {
+          "type": "Git",
+          "git": {
+            "uri": "https://github.com/openshift/ruby-hello-world.git"
+          }
+        },
+        "strategy": {
+          "type": "Custom",
+          "customStrategy": {
+            "from": {
+              "kind": "ImageStreamTag",
+              "name": "origin-custom-docker-builder:latest"
+            },
+            "env": [
+              {
+                "name": "OPENSHIFT_CUSTOM_BUILD_BASE_IMAGE",
+                "value": "openshift/origin-custom-docker-builder"
+              }
+            ],
+            "exposeDockerSocket": true
+          }
+        },
+        "output": {
+          "to": {
+            "kind": "ImageStreamTag",
+            "name": "origin-ruby-sample:latest"
+          }
+        },
+        "postCommit": {
+          "script": "bundle exec rake test"
+        },
+        "resources": {}
+      },
+      "status": {
+        "lastVersion": 0
+      }
+    },
+    {
+      "kind": "DeploymentConfig",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "frontend",
+        "annotations": {
+          "template.alpha.openshift.io/wait-for-ready": "true"
+        }
+      },
+      "spec": {
+        "strategy": {
+          "type": "Rolling",
+          "rollingParams": {
+            "updatePeriodSeconds": 1,
+            "intervalSeconds": 1,
+            "timeoutSeconds": 120,
+            "pre": {
+              "failurePolicy": "Abort",
+              "execNewPod": {
+                "command": [
+                  "/bin/true"
+                ],
+                "env": [
+                  {
+                    "name": "CUSTOM_VAR1",
+                    "value": "custom_value1"
+                  }
+                ],
+                "containerName": "ruby-helloworld"
+              }
+            },
+            "post": {
+              "failurePolicy": "Ignore",
+              "execNewPod": {
+                "command": [
+                  "/bin/true"
+                ],
+                "env": [
+                  {
+                    "name": "CUSTOM_VAR2",
+                    "value": "custom_value2"
+                  }
+                ],
+                "containerName": "ruby-helloworld"
+              }
+            }
+          },
+          "resources": {}
+        },
+        "triggers": [
+          {
+            "type": "ImageChange",
+            "imageChangeParams": {
+              "automatic": true,
+              "containerNames": [
+                "ruby-helloworld"
+              ],
+              "from": {
+                "kind": "ImageStreamTag",
+                "name": "origin-ruby-sample:latest"
+              }
+            }
+          },
+          {
+            "type": "ConfigChange"
+          }
+        ],
+        "replicas": 2,
+        "selector": {
+          "name": "frontend"
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "name": "frontend"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "ruby-helloworld",
+                "image": "origin-ruby-sample",
+                "ports": [
+                  {
+                    "containerPort": 8080,
+                    "protocol": "TCP"
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "MYSQL_USER",
+                    "valueFrom": {
+                      "secretKeyRef" : {
+                        "name" : "dbsecret",
+                        "key" : "mysql-user"
+                      }
+                    }
+                  },
+                  {
+                    "name": "MYSQL_PASSWORD",
+                    "valueFrom": {
+                      "secretKeyRef" : {
+                        "name" : "dbsecret",
+                        "key" : "mysql-password"
+                      }
+                    }
+                  },
+                  {
+                    "name": "MYSQL_DATABASE",
+                    "value": "${MYSQL_DATABASE}"
+                  }
+                ],
+                "resources": {},
+                "terminationMessagePath": "/dev/termination-log",
+                "imagePullPolicy": "IfNotPresent",
+                "securityContext": {
+                  "capabilities": {},
+                  "privileged": false
+                }
+              }
+            ],
+            "restartPolicy": "Always",
+            "dnsPolicy": "ClusterFirst"
+          }
+        }
+      },
+      "status": {}
+    },
+    {
+      "kind": "Service",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "database"
+      },
+      "spec": {
+        "ports": [
+          {
+            "name": "db",
+            "protocol": "TCP",
+            "port": 5434,
+            "targetPort": 3306,
+            "nodePort": 0
+          }
+        ],
+        "selector": {
+          "name": "database"
+        },
+        "type": "ClusterIP",
+        "sessionAffinity": "None"
+      },
+      "status": {
+        "loadBalancer": {}
+      }
+    },
+    {
+      "kind": "DeploymentConfig",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "database",
+        "annotations": {
+          "template.alpha.openshift.io/wait-for-ready": "true"
+        }
+      },
+      "spec": {
+        "strategy": {
+          "type": "Recreate",
+          "recreateParams": {
+            "pre": {
+              "failurePolicy": "Abort",
+              "execNewPod": {
+                "command": [
+                  "/bin/true"
+                ],
+                "env": [
+                  {
+                    "name": "CUSTOM_VAR1",
+                    "value": "custom_value1"
+                  }
+                ],
+                "containerName": "ruby-helloworld-database",
+                "volumes": ["ruby-helloworld-data"]
+              }
+            },
+            "mid": {
+              "failurePolicy": "Abort",
+              "execNewPod": {
+                "command": [
+                  "/bin/true"
+                ],
+                "env": [
+                  {
+                    "name": "CUSTOM_VAR2",
+                    "value": "custom_value2"
+                  }
+                ],
+                "containerName": "ruby-helloworld-database",
+                "volumes": ["ruby-helloworld-data"]
+              }
+            },
+            "post": {
+              "failurePolicy": "Ignore",
+              "execNewPod": {
+                "command": [
+                  "/bin/true"
+                ],
+                "env": [
+                  {
+                    "name": "CUSTOM_VAR2",
+                    "value": "custom_value2"
+                  }
+                ],
+                "containerName": "ruby-helloworld-database",
+                "volumes": ["ruby-helloworld-data"]
+              }
+            }
+          },
+          "resources": {}
+        },
+        "triggers": [
+          {
+            "type": "ConfigChange"
+          }
+        ],
+        "replicas": 1,
+        "selector": {
+          "name": "database"
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "name": "database"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "ruby-helloworld-database",
+                "image": "centos/mysql-57-centos7:latest",
+                "ports": [
+                  {
+                    "containerPort": 3306,
+                    "protocol": "TCP"
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "MYSQL_USER",
+                    "valueFrom": {
+                      "secretKeyRef" : {
+                        "name" : "dbsecret",
+                        "key" : "mysql-user"
+                      }
+                    }
+                  },
+                  {
+                    "name": "MYSQL_PASSWORD",
+                    "valueFrom": {
+                      "secretKeyRef" : {
+                        "name" : "dbsecret",
+                        "key" : "mysql-password"
+                      }
+                    }
+                  },
+                  {
+                    "name": "MYSQL_DATABASE",
+                    "value": "${MYSQL_DATABASE}"
+                  }
+                ],
+                "resources": {},
+                "volumeMounts": [
+                  {
+                    "name": "ruby-helloworld-data",
+                    "mountPath": "/var/lib/mysql/data"
+                  }
+                ],
+                "terminationMessagePath": "/dev/termination-log",
+                "imagePullPolicy": "Always",
+                "securityContext": {
+                  "capabilities": {},
+                  "privileged": false
+                }
+              }
+            ],
+            "volumes": [
+              {
+                "name": "ruby-helloworld-data",
+                "emptyDir": {
+                  "medium": ""
+                }
+              }
+            ],
+            "restartPolicy": "Always",
+            "dnsPolicy": "ClusterFirst"
+          }
+        }
+      },
+      "status": {}
+    }
+  ],
+  "parameters": [
+    {
+      "name": "MYSQL_USER",
+      "description": "database username",
+      "generate": "expression",
+      "from": "user[A-Z0-9]{3}",
+      "required": true
+    },
+    {
+      "name": "MYSQL_PASSWORD",
+      "description": "database password",
+      "generate": "expression",
+      "from": "[a-zA-Z0-9]{8}",
+      "required": true
+    },
+    {
+      "name": "MYSQL_DATABASE",
+      "description": "database name",
+      "value": "root",
+      "required": true
+    }
+  ],
+  "labels": {
+    "template": "application-template-custombuild"
+  }
+}
+`)
+
+func testExtendedTestdataBuildsApplicationTemplateCustombuildJsonBytes() ([]byte, error) {
+	return _testExtendedTestdataBuildsApplicationTemplateCustombuildJson, nil
+}
+
+func testExtendedTestdataBuildsApplicationTemplateCustombuildJson() (*asset, error) {
+	bytes, err := testExtendedTestdataBuildsApplicationTemplateCustombuildJsonBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/builds/application-template-custombuild.json", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataBuildsBuildPostcommitDockerYaml = []byte(`apiVersion: v1
+kind: List
+metadata: {}
+items:
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    name: mydockertest
+    labels:
+      name: test
+  spec:
+    triggers: []
+    runPolicy: Serial
+    source:
+      dockerfile: |
+        FROM busybox:latest
+    strategy:
+      type: Docker
+      dockerStrategy:
+        env:
+          - name: BUILD_LOGLEVEL
+            value: "5"
+    resources: {}
+    postCommit:
+      command: ["touch"]
+      args: ["/tmp/postCommit"]
+    nodeSelector: null
+  status:
+    lastVersion: 0
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    name: mydockertest
+  spec:
+    replicas: 1
+    selector:
+      app: mydockertest
+      deploymentconfig: mydockertest
+    strategy:
+      type: Rolling
+    template:
+      metadata:
+        labels:
+          app: mydockertest
+          deploymentconfig: mydockertest
+      spec:
+        containers:
+        - image:
+          imagePullPolicy: Always
+          readinessProbe:
+            httpGet:
+              port: 8080
+          name: mydockertest
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          - containerPort: 8888
+            protocol: TCP
+          terminationMessagePath: /dev/termination-log
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        securityContext: {}
+    triggers:
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - mydockertest
+        from:
+          kind: ImageStreamTag
+          name: mydockertest:latest
+      type: ImageChange
+    - type: ConfigChange
+`)
+
+func testExtendedTestdataBuildsBuildPostcommitDockerYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataBuildsBuildPostcommitDockerYaml, nil
+}
+
+func testExtendedTestdataBuildsBuildPostcommitDockerYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataBuildsBuildPostcommitDockerYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/builds/build-postcommit/docker.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataBuildsBuildPostcommitImagestreamsYaml = []byte(`apiVersion: v1
+kind: List
+metadata: {}
+items:
+- kind: ImageStream
+  apiVersion: v1
+  metadata:
+    name: mydockertest
+- kind: ImageStream
+  apiVersion: v1
+  metadata:
+    name: mys2itest
+`)
+
+func testExtendedTestdataBuildsBuildPostcommitImagestreamsYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataBuildsBuildPostcommitImagestreamsYaml, nil
+}
+
+func testExtendedTestdataBuildsBuildPostcommitImagestreamsYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataBuildsBuildPostcommitImagestreamsYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/builds/build-postcommit/imagestreams.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataBuildsBuildPostcommitStiYaml = []byte(`apiVersion: v1
+kind: List
+metadata: {}
+items:
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    name: mys2itest
+    labels:
+      name: test
+  spec:
+    triggers: []
+    runPolicy: Serial
+    source:
+      type: Git
+      git:
+        uri: 'https://github.com/sclorg/nodejs-ex'
+    strategy:
+      type: Source
+      sourceStrategy:
+        from:
+          kind: DockerImage
+          name: docker.io/openshift/test-build-simples2i:latest
+    resources: {}
+    postCommit: {}
+    nodeSelector: null
+  status:
+    lastVersion: 0
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    name: mys2itest
+  spec:
+    replicas: 1
+    selector:
+      app: mys2itest
+      deploymentconfig: mys2itest
+    strategy:
+      type: Rolling
+    template:
+      metadata:
+        labels:
+          app: mys2itest
+          deploymentconfig: mys2itest
+      spec:
+        containers:
+        - image:
+          imagePullPolicy: Always
+          name: mys2itest
+          terminationMessagePath: /dev/termination-log
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        securityContext: {}
+    triggers:
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - mys2itest
+        from:
+          kind: ImageStreamTag
+          name: mys2itest:latest
+      type: ImageChange
+    - type: ConfigChange
+`)
+
+func testExtendedTestdataBuildsBuildPostcommitStiYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataBuildsBuildPostcommitStiYaml, nil
+}
+
+func testExtendedTestdataBuildsBuildPostcommitStiYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataBuildsBuildPostcommitStiYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/builds/build-postcommit/sti.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 var _testExtendedTestdataBuildsBuildPruningDefaultGroupBuildConfigYaml = []byte(`apiVersion: build.openshift.io/v1
 kind: BuildConfig
 metadata:
@@ -758,17 +1450,11 @@ metadata:
 spec:
   successfulBuildsHistoryLimit: 2
   source:
-    type: Git
-    git:
-      uri: 'https://github.com/sclorg/cakephp-ex.git'
+    dockerfile: |
+      FROM busybox
+      RUN touch /php-file
   strategy:
-    type: Source
-    sourceStrategy:
-      from:
-        kind: ImageStreamTag
-        namespace: openshift
-        name: 'php:7.0'
-`)
+    dockerStrategy: {}`)
 
 func testExtendedTestdataBuildsBuildPruningSuccessfulBuildConfigYamlBytes() ([]byte, error) {
 	return _testExtendedTestdataBuildsBuildPruningSuccessfulBuildConfigYaml, nil
@@ -817,7 +1503,10 @@ func testExtendedTestdataBuildsBuildPruningSuccessfulPipelineYaml() (*asset, err
 
 var _testExtendedTestdataBuildsBuildQuotaS2iBinAssemble = []byte(`#!/bin/sh
 
-
+# Seeing issues w/ buildah log output being intermingled with the container
+# output, so adding a sleep in an attempt to let the buildah log output
+# stop before the container output starts
+sleep 10
 echo -n MEMORY= && cat /sys/fs/cgroup/memory/memory.limit_in_bytes
 echo -n MEMORYSWAP= && cat /sys/fs/cgroup/memory/memory.memsw.limit_in_bytes
 
@@ -881,7 +1570,7 @@ func testExtendedTestdataBuildsBuildQuotaDockerfile() (*asset, error) {
 	return a, nil
 }
 
-var _testExtendedTestdataBuildsBuildSecretsDockerfile = []byte(`FROM centos/ruby-22-centos7
+var _testExtendedTestdataBuildsBuildSecretsDockerfile = []byte(`FROM docker.io/busybox
 
 USER root
 ADD ./secret-dir /secrets
@@ -981,13 +1670,8 @@ configMaps=(foo this red)
 function checkSecret() {
     dir=$1
     file=$2
-    if [[ -a "${dir}/${file}" ]]; then
-        if [[ -s "${dir}/${file}" ]]; then
-            echo "Found secret file which should have been truncated: ${dir}/${file}"
-            exit 1
-        fi
-    else
-        echo "Secret file ${file} is missing from ${dir}."
+    if [[ -e "${dir}/${file}" ]]; then
+        echo "Found secret file which should have been deleted: ${dir}/${file}"
         exit 1
     fi
 }
@@ -1180,7 +1864,7 @@ var _testExtendedTestdataBuildsBuildSecretsTestDockerBuildJson = []byte(`{
       "dockerStrategy": {
         "from": {
           "kind": "DockerImage",
-          "name": "centos/ruby-22-centos7"
+          "name": "docker.io/busybox:latest"
         },
         "env": [
           {
@@ -1285,7 +1969,7 @@ var _testExtendedTestdataBuildsBuildSecretsTestS2iBuildJson = []byte(`{
       "sourceStrategy": {
         "from": {
           "kind": "DockerImage",
-          "name": "centos/ruby-22-centos7"
+          "name": "docker.io/centos/ruby-25-centos7"
         },
         "env": [
           {
@@ -1381,7 +2065,7 @@ func testExtendedTestdataBuildsBuildSecretsTestSecretJson() (*asset, error) {
 	return a, nil
 }
 
-var _testExtendedTestdataBuildsBuildTimingDockerfile = []byte(`FROM centos/ruby-22-centos7
+var _testExtendedTestdataBuildsBuildTimingDockerfile = []byte(`FROM centos/ruby-25-centos7
 
 USER root
 `)
@@ -1401,7 +2085,7 @@ func testExtendedTestdataBuildsBuildTimingDockerfile() (*asset, error) {
 	return a, nil
 }
 
-var _testExtendedTestdataBuildsBuildTimingS2iBinaryDirS2iBinAssemble = []byte(`#!/bin/bash
+var _testExtendedTestdataBuildsBuildTimingS2iBinaryDirS2iBinAssemble = []byte(`#!/bin/sh
 
 `)
 
@@ -1420,7 +2104,7 @@ func testExtendedTestdataBuildsBuildTimingS2iBinaryDirS2iBinAssemble() (*asset, 
 	return a, nil
 }
 
-var _testExtendedTestdataBuildsBuildTimingS2iBinaryDirS2iBinRun = []byte(`#!/bin/bash
+var _testExtendedTestdataBuildsBuildTimingS2iBinaryDirS2iBinRun = []byte(`#!/bin/sh
 
 `)
 
@@ -1498,7 +2182,7 @@ var _testExtendedTestdataBuildsBuildTimingTestDockerBuildJson = []byte(`{
         "forcePull": true,
         "from": {
           "kind": "DockerImage",
-          "name": "centos/ruby-22-centos7"
+          "name": "docker.io/busybox:latest"
         },
         "env": [
           {
@@ -1577,7 +2261,7 @@ var _testExtendedTestdataBuildsBuildTimingTestS2iBuildJson = []byte(`{
       "sourceStrategy": {
         "from": {
           "kind": "DockerImage",
-          "name": "centos/ruby-22-centos7"
+          "name": "docker.io/openshift/test-build-simples2i:latest"
         },
         "env": [
           {
@@ -1608,6 +2292,79 @@ func testExtendedTestdataBuildsBuildTimingTestS2iBuildJson() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/builds/build-timing/test-s2i-build.json", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataBuildsClusterConfigRegistryBlacklistYaml = []byte(`kind: Image
+apiVersion: config.openshift.io/v1
+metadata:
+  name: cluster
+spec:
+  registrySources:
+      blockedRegistries:
+      - docker.io
+      - quay.io
+`)
+
+func testExtendedTestdataBuildsClusterConfigRegistryBlacklistYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataBuildsClusterConfigRegistryBlacklistYaml, nil
+}
+
+func testExtendedTestdataBuildsClusterConfigRegistryBlacklistYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataBuildsClusterConfigRegistryBlacklistYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/builds/cluster-config/registry-blacklist.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataBuildsClusterConfigRegistryWhitelistYaml = []byte(`kind: Image
+apiVersion: config.openshift.io/v1
+metadata:
+  name: cluster
+spec:
+  registrySources:
+      allowedRegistries:
+      - quay.io
+`)
+
+func testExtendedTestdataBuildsClusterConfigRegistryWhitelistYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataBuildsClusterConfigRegistryWhitelistYaml, nil
+}
+
+func testExtendedTestdataBuildsClusterConfigRegistryWhitelistYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataBuildsClusterConfigRegistryWhitelistYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/builds/cluster-config/registry-whitelist.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataBuildsClusterConfigYaml = []byte(`kind: Image
+apiVersion: config.openshift.io/v1
+metadata:
+  name: cluster
+spec: {}
+`)
+
+func testExtendedTestdataBuildsClusterConfigYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataBuildsClusterConfigYaml, nil
+}
+
+func testExtendedTestdataBuildsClusterConfigYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataBuildsClusterConfigYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/builds/cluster-config.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -1661,7 +2418,7 @@ var _testExtendedTestdataBuildsIncrementalAuthBuildJson = []byte(`{
       "kind": "ImageStream",
       "apiVersion": "v1",
       "metadata": {
-        "name": "internal-image",
+        "name": "incremental-image",
         "creationTimestamp": null
       },
       "spec": {}
@@ -1670,10 +2427,10 @@ var _testExtendedTestdataBuildsIncrementalAuthBuildJson = []byte(`{
       "kind": "BuildConfig",
       "apiVersion": "v1",
       "metadata": {
-        "name": "initial-build",
+        "name": "incremental-build",
         "creationTimestamp": null,
         "labels": {
-          "name": "initial-build"
+          "name": "incremental-build"
         }
       },
       "spec": {
@@ -1694,51 +2451,7 @@ var _testExtendedTestdataBuildsIncrementalAuthBuildJson = []byte(`{
             ],
             "from": {
               "kind": "DockerImage",
-              "name": "centos/ruby-22-centos7:latest"
-            }
-          }
-        },
-        "output": {
-          "to": {
-            "kind": "ImageStreamTag",
-            "name": "internal-image:latest"
-          }
-        },
-        "resources": {}
-      },
-      "status": {
-        "lastVersion": 0
-      }
-    },
-    {
-      "kind": "BuildConfig",
-      "apiVersion": "v1",
-      "metadata": {
-        "name": "internal-build",
-        "creationTimestamp": null,
-        "labels": {
-          "name": "internal-build"
-        }
-      },
-      "spec": {
-        "source": {
-          "type": "Git",
-          "git": {
-            "uri": "https://github.com/openshift/incremental-app.git"
-          }
-        },
-        "strategy": {
-          "type": "Source",
-          "sourceStrategy": {
-            "env": [
-              {
-                "name": "BUILD_LOGLEVEL",
-                "value": "5"
-              }
-            ],
-            "from": {
-              "kind": "ImageStreamTag",
-              "name": "internal-image:latest"
+              "name": "centos/ruby-25-centos7:latest"
             },
             "incremental": true
           }
@@ -1746,7 +2459,7 @@ var _testExtendedTestdataBuildsIncrementalAuthBuildJson = []byte(`{
         "output": {
           "to": {
             "kind": "ImageStreamTag",
-            "name": "internal-image:latest"
+            "name": "incremental-image:latest"
           }
         }
       }
@@ -1893,7 +2606,7 @@ spec:
     sourceStrategy:
       from:
         kind: DockerImage
-        name: centos/ruby-23-centos7:latest
+        name: docker.io/openshift/test-build-simples2i:latest
 `)
 
 func testExtendedTestdataBuildsStatusfailFailedassembleYamlBytes() ([]byte, error) {
@@ -2046,7 +2759,7 @@ metadata:
 spec:
   resources:
     limits:
-      memory: 10Mi
+      memory: 50Mi
   source:
     git:
       uri: "https://github.com/openshift/ruby-hello-world"
@@ -2056,6 +2769,7 @@ spec:
       from:
         kind: DockerImage
         name: centos/ruby-23-centos7:latest
+      forcePull: true
 `)
 
 func testExtendedTestdataBuildsStatusfailOomkilledYamlBytes() ([]byte, error) {
@@ -2088,7 +2802,7 @@ spec:
     sourceStrategy:
       from:
         kind: DockerImage
-        name: centos/ruby-23-centos7:latest
+        name: docker.io/openshift/test-build-simples2i:latest
     type: Source
 `)
 
@@ -2123,7 +2837,7 @@ spec:
     sourceStrategy:
       from:
         kind: DockerImage
-        name: centos/ruby-23-centos7:latest
+        name: docker.io/openshift/test-build-simples2i:latest
     type: Source
 `)
 
@@ -2175,9 +2889,8 @@ objects:
         - name: BUILD_LOGLEVEL
           value: "5"
         from:
-          kind: ImageStreamTag
-          name: ruby:latest
-          namespace: openshift
+          kind: DockerImage
+          name: docker.io/openshift/test-build-simples2i:latest
       type: Source
     # this test specifically does a push, to help exercise the code that sets
     # environment variables on build pods (i.e., by having a source secret and
@@ -2274,14 +2987,14 @@ func testExtendedTestdataBuildsTestBcWithPrRefYaml() (*asset, error) {
 	return a, nil
 }
 
-var _testExtendedTestdataBuildsTestBuildAppDockerfile = []byte(`FROM centos/ruby-22-centos7
+var _testExtendedTestdataBuildsTestBuildAppDockerfile = []byte(`FROM centos/ruby-25-centos7
 USER default
 EXPOSE 8080
 ENV RACK_ENV production
 ENV RAILS_ENV production
 COPY . /opt/app-root/src/
-RUN scl enable rh-ruby22 "bundle install"
-CMD ["scl", "enable", "rh-ruby22", "./run.sh"]
+RUN scl enable rh-ruby25 "bundle install"
+CMD ["scl", "enable", "rh-ruby25", "./run.sh"]
 
 USER default
 `)
@@ -2412,84 +3125,6 @@ func testExtendedTestdataBuildsTestBuildPodsvcJson() (*asset, error) {
 	return a, nil
 }
 
-var _testExtendedTestdataBuildsTestBuildPostcommitJson = []byte(`{
-    "kind": "List",
-    "apiVersion": "v1",
-    "metadata": {},
-    "items": [
-        {
-            "kind": "ImageStream",
-            "apiVersion": "v1",
-            "metadata": {
-                "name": "busybox",
-                "creationTimestamp": null,
-                "labels": {
-                    "build": "busybox"
-                }
-            },
-            "spec": {
-                "tags": [
-                    {
-                        "name": "1",
-                        "annotations": {
-                            "openshift.io/imported-from": "busybox:1"
-                        },
-                        "from": {
-                            "kind": "DockerImage",
-                            "name": "busybox:1"
-                        },
-                        "importPolicy": {}
-                    }
-                ]
-            }
-        },
-        {
-            "kind": "BuildConfig",
-            "apiVersion": "v1",
-            "metadata": {
-                "name": "busybox",
-                "creationTimestamp": null,
-                "labels": {
-                    "build": "busybox"
-                }
-            },
-            "spec": {
-                "source": {
-                    "type": "Dockerfile",
-                    "dockerfile": "FROM busybox:1"
-                },
-                "strategy": {
-                    "type": "Docker",
-                    "dockerStrategy": {
-                        "from": {
-                            "kind": "ImageStreamTag",
-                            "name": "busybox:1"
-                        }
-                    }
-                }, 
-                "resources": {},
-                "postCommit": {}
-            }
-        }
-    ]
-}
-`)
-
-func testExtendedTestdataBuildsTestBuildPostcommitJsonBytes() ([]byte, error) {
-	return _testExtendedTestdataBuildsTestBuildPostcommitJson, nil
-}
-
-func testExtendedTestdataBuildsTestBuildPostcommitJson() (*asset, error) {
-	bytes, err := testExtendedTestdataBuildsTestBuildPostcommitJsonBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/builds/test-build-postcommit.json", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataBuildsTestBuildProxyYaml = []byte(`kind: List
 apiVersion: v1
 metadata: {}
@@ -2527,7 +3162,7 @@ items:
           value: 127.0.0.1:3128
         from:
           kind: DockerImage
-          name: centos/ruby-22-centos7
+          name: docker.io/openshift/test-build-simples2i:latest
 - kind: BuildConfig
   apiVersion: v1
   metadata:
@@ -2549,7 +3184,7 @@ items:
       sourceStrategy:
         from:
           kind: DockerImage
-          name: centos/ruby-22-centos7
+          name: docker.io/openshift/test-build-simples2i:latest
         env:
         - name: SOME_HTTP_PROXY
           value: https://envuser:password@proxy3.com
@@ -2575,8 +3210,9 @@ items:
       type: Docker
       dockerStrategy:
         from:
+          # TODO: use ruby 2.5 image
           kind: DockerImage
-          name: centos/ruby-22-centos7
+          name: docker.io/centos/ruby-25-centos7
         env:
         - name: SOME_HTTP_PROXY
           value: https://envuser:password@proxy3.com
@@ -2623,7 +3259,7 @@ var _testExtendedTestdataBuildsTestBuildRevisionJson = []byte(`{
           "sourceStrategy": {
             "from": {
               "kind": "DockerImage",
-              "name": "centos/ruby-22-centos7"
+              "name": "docker.io/openshift/test-build-simples2i:latest"
             }
           }
         },
@@ -2702,7 +3338,7 @@ items:
           value: '5'
         from:
           kind: DockerImage
-          name: centos/ruby-22-centos7
+          name: centos/ruby-25-centos7
     resources: {}
   status:
     lastVersion: 0
@@ -2731,7 +3367,7 @@ items:
           value: '5'
         from:
           kind: DockerImage
-          name: centos/ruby-22-centos7
+          name: centos/ruby-25-centos7
     resources: {}
   status:
     lastVersion: 0
@@ -2759,7 +3395,7 @@ items:
           value: '5'
         from:
           kind: DockerImage
-          name: centos/ruby-22-centos7
+          name: centos/ruby-25-centos7
     resources: {}
   status:
     lastVersion: 0
@@ -2788,7 +3424,7 @@ items:
           value: '5'
         from:
           kind: DockerImage
-          name: centos/ruby-22-centos7
+          name: centos/ruby-25-centos7
     resources: {}
   status:
     lastVersion: 0
@@ -2816,7 +3452,7 @@ items:
           value: '5'
         from:
           kind: DockerImage
-          name: centos/ruby-22-centos7
+          name: centos/ruby-25-centos7
     resources: {}
     nodeSelector:
       nodelabelkey: nodelabelvalue
@@ -2834,7 +3470,7 @@ items:
     source:
       type: Dockerfile
       dockerfile: |-
-        FROM centos/ruby-22-centos7
+        FROM centos/ruby-25-centos7
         ARG foo
         RUN echo $foo
     strategy:
@@ -2842,7 +3478,7 @@ items:
       dockerStrategy:
         from:
           kind: DockerImage
-          name: centos/ruby-22-centos7
+          name: docker.io/busybox:latest
     resources: {}
     postCommit: {}
     nodeSelector: 
@@ -2860,7 +3496,7 @@ items:
     source:
       type: Dockerfile
       dockerfile: |-
-        FROM centos/ruby-22-centos7
+        FROM centos/ruby-25-centos7
         ARG foo
         RUN echo $foo
     strategy:
@@ -2868,7 +3504,7 @@ items:
       dockerStrategy:
         from:
           kind: DockerImage
-          name: centos/ruby-22-centos7
+          name: docker.io/busybox:latest
         buildArgs:
         - name: foo
           value: default
@@ -3012,14 +3648,14 @@ var _testExtendedTestdataBuildsTestCdsDockerbuildJson = []byte(`{
     "triggers":[],
     "source":{
       "type":"Dockerfile",
-      "dockerfile":"FROM centos:7\nRUN sleep 10m"
+      "dockerfile":"FROM docker.io/busybox:latest\nRUN sleep 10m"
     },
     "strategy":{
       "type":"Docker",
       "dockerStrategy":{
         "from":{
           "kind":"DockerImage",
-          "name":"centos/ruby-22-centos7"
+          "name":"docker.io/busybox:latest"
         }
       }
     }
@@ -3076,7 +3712,7 @@ var _testExtendedTestdataBuildsTestCdsSourcebuildJson = []byte(`{
           "sourceStrategy": {
             "from": {
               "kind": "DockerImage",
-              "name": "centos/ruby-22-centos7"
+              "name": "docker.io/busybox:latest"
             }
           }
         }
@@ -3271,6 +3907,24 @@ func testExtendedTestdataBuildsTestContextBuildJson() (*asset, error) {
 	return a, nil
 }
 
+var _testExtendedTestdataBuildsTestDockerAppDockerfile = []byte(`FROM image-registry.openshift-image-registry.svc:5000/openshift/nodejs
+RUN touch /tmp/foo`)
+
+func testExtendedTestdataBuildsTestDockerAppDockerfileBytes() ([]byte, error) {
+	return _testExtendedTestdataBuildsTestDockerAppDockerfile, nil
+}
+
+func testExtendedTestdataBuildsTestDockerAppDockerfile() (*asset, error) {
+	bytes, err := testExtendedTestdataBuildsTestDockerAppDockerfileBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/builds/test-docker-app/Dockerfile", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 var _testExtendedTestdataBuildsTestDockerBuildPullsecretJson = []byte(`{
   "kind": "List",
   "apiVersion": "v1",
@@ -3298,14 +3952,14 @@ var _testExtendedTestdataBuildsTestDockerBuildPullsecretJson = []byte(`{
     },
     "spec": {
       "source": {
-        "dockerfile": "FROM centos:7"
+        "dockerfile": "FROM docker.io/busybox:latest"
       },
       "strategy": {
         "type": "Docker",
         "dockerStrategy": {
           "from": {
             "kind": "DockerImage",
-            "name": "centos:7"
+            "name": "docker.io/busybox:latest"
           }
         }
       },
@@ -3328,7 +3982,7 @@ var _testExtendedTestdataBuildsTestDockerBuildPullsecretJson = []byte(`{
     },
     "spec": {
       "source": {
-        "dockerfile": "FROM centos:7"
+        "dockerfile": "FROM docker.io/busybox:latest"
       },
       "strategy": {
         "type": "Docker",
@@ -3360,107 +4014,6 @@ func testExtendedTestdataBuildsTestDockerBuildPullsecretJson() (*asset, error) {
 	return a, nil
 }
 
-var _testExtendedTestdataBuildsTestDockerBuildQuotaOptimizedJson = []byte(`{
-  "kind": "BuildConfig",
-  "apiVersion": "v1",
-  "metadata": {
-    "name": "docker-build-quota",
-    "creationTimestamp": null,
-    "labels": {
-      "name": "docker-build-quota"
-    }
-  },
-  "spec": {
-    "resources": {
-      "limits": {
-        "memory": "200Mi"
-      }
-    },
-    "source": {
-      "binary": {
-        "asFile": ""
-      }          
-    },
-    "strategy": {
-      "type": "Docker",
-      "dockerStrategy": {
-        "from": {
-          "kind": "DockerImage",
-          "name": "centos:7"
-        },
-        "noCache": true,
-        "imageOptimizationPolicy": "SkipLayers"
-      }
-    }
-  }
-}
-    `)
-
-func testExtendedTestdataBuildsTestDockerBuildQuotaOptimizedJsonBytes() ([]byte, error) {
-	return _testExtendedTestdataBuildsTestDockerBuildQuotaOptimizedJson, nil
-}
-
-func testExtendedTestdataBuildsTestDockerBuildQuotaOptimizedJson() (*asset, error) {
-	bytes, err := testExtendedTestdataBuildsTestDockerBuildQuotaOptimizedJsonBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/builds/test-docker-build-quota-optimized.json", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _testExtendedTestdataBuildsTestDockerBuildQuotaJson = []byte(`{
-  "kind": "BuildConfig",
-  "apiVersion": "v1",
-  "metadata": {
-    "name": "docker-build-quota",
-    "creationTimestamp": null,
-    "labels": {
-      "name": "docker-build-quota"
-    }
-  },
-  "spec": {
-    "resources": {
-      "limits": {
-        "memory": "200Mi"
-      }
-    },
-    "source": {
-      "binary": {
-        "asFile": ""
-      }          
-    },
-    "strategy": {
-      "type": "Docker",
-      "dockerStrategy": {
-        "from": {
-          "kind": "DockerImage",
-          "name": "centos:7"
-        },
-        "noCache": true
-      }
-    }
-  }
-}
-    `)
-
-func testExtendedTestdataBuildsTestDockerBuildQuotaJsonBytes() ([]byte, error) {
-	return _testExtendedTestdataBuildsTestDockerBuildQuotaJson, nil
-}
-
-func testExtendedTestdataBuildsTestDockerBuildQuotaJson() (*asset, error) {
-	bytes, err := testExtendedTestdataBuildsTestDockerBuildQuotaJsonBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/builds/test-docker-build-quota.json", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataBuildsTestDockerBuildJson = []byte(`{
   "kind":"BuildConfig",
   "apiVersion":"v1",
@@ -3473,18 +4026,17 @@ var _testExtendedTestdataBuildsTestDockerBuildJson = []byte(`{
   "spec":{
     "triggers":[],
     "source":{
-      "type":"Git",
-      "git":{
-        "uri":"https://github.com/sclorg/s2i-ruby-container"
+      "git": {
+        "uri":"https://github.com/sclorg/nodejs-ex"        
       },
-      "contextDir":"2.3"
+      "dockerfile": "FROM docker.io/busybox:latest"
     },
     "strategy":{
       "type":"Docker",
       "dockerStrategy":{
         "from":{
           "kind":"DockerImage",
-          "name":"centos/s2i-base-centos7"
+          "name":"docker.io/busybox:latest"
         }
       }
     },
@@ -3540,9 +4092,7 @@ var _testExtendedTestdataBuildsTestDockerNoOutputnameJson = []byte(`{
     "triggers": [],
     "source": {
       "type": "Git",
-      "git": {
-        "uri": "https://github.com/openshift/ruby-hello-world"
-      }
+      "dockerfile": "FROM docker.io/busybox:latest"
     },
     "strategy": {
       "type": "Docker",
@@ -3555,7 +4105,7 @@ var _testExtendedTestdataBuildsTestDockerNoOutputnameJson = []byte(`{
         ],
         "from": {
           "kind": "DockerImage",
-          "name": "centos/ruby-22-centos7"
+          "name": "docker.io/busybox:latest"
         }
       }
     }
@@ -3596,7 +4146,7 @@ var _testExtendedTestdataBuildsTestEnvBuildJson = []byte(`{
       "sourceStrategy":{
         "from":{
           "kind":"DockerImage",
-          "name":"centos/ruby-22-centos7"
+          "name":"centos/ruby-25-centos7"
         }
       }
     },
@@ -3756,7 +4306,7 @@ items:
           name: inputimage:latest
         paths:
         - destinationDir: injected/dir
-          sourcePath: /opt/rh/rh-ruby22/root/usr/bin/ruby
+          sourcePath: /opt/rh/rh-ruby25/root/usr/bin/ruby
     strategy:
       customStrategy:
         from:
@@ -3803,7 +4353,7 @@ items:
           name: inputimage:latest
         paths:
         - destinationDir: injected/dir
-          sourcePath: /opt/rh/rh-ruby22/root/usr/bin/ruby
+          sourcePath: /opt/rh/rh-ruby25/root/usr/bin/ruby
     strategy:
       dockerStrategy:
         from:
@@ -3850,7 +4400,7 @@ items:
           name: inputimage:latest
         paths:
         - destinationDir: injected/dir
-          sourcePath: /opt/rh/rh-ruby22/root/usr/bin/ruby
+          sourcePath: /opt/rh/rh-ruby25/root/usr/bin/ruby
     strategy:
       sourceStrategy:
         from:
@@ -3889,12 +4439,16 @@ items:
         kind: ImageStreamTag
         name: inputimage:latest
     source:
-      dockerfile: "FROM foo"
+      dockerfile: |-
+        # Bug 1694859: ensure symlinks are followed
+        FROM ruby
+        RUN mkdir -p /opt/app-root/test-links && \
+            ln -s ../../rh/rh-ruby25/root/usr/bin /opt/app-root/test-links/bin
     strategy:
       dockerStrategy:
         from: 
           kind: ImageStreamTag
-          name: ruby:2.2
+          name: ruby:2.5
           namespace: openshift
 - apiVersion: v1
   kind: BuildConfig
@@ -3915,11 +4469,13 @@ items:
           kind: ImageStreamTag
           name: inputimage:latest
         paths:
-        - destinationDir: injected/dir
-          sourcePath: /opt/rh/rh-ruby22/root/usr/bin/ruby
+        # Bug 1698152: ensure image source copy behavior is correct
+        - destinationDir: injected/opt/app-root/test-links
+          sourcePath: /opt/app-root/test-links/.
+        - destinationDir: injected/opt/rh/rh-ruby-25/root/usr/bin
+          sourcePath: /opt/rh/rh-ruby25/root/usr/bin/ruby
     strategy:
       sourceStrategy:
-        forcePull: true
         from:
           kind: ImageStreamTag
           name: ruby:latest
@@ -3943,11 +4499,13 @@ items:
           kind: ImageStreamTag
           name: inputimage:latest
         paths:
-        - destinationDir: injected/dir
-          sourcePath: /opt/rh/rh-ruby22/root/usr/bin/ruby
+        # Bug 1698152: ensure image source copy behavior is correct
+        - destinationDir: injected/opt/app-root/test-links
+          sourcePath: /opt/app-root/test-links/.
+        - destinationDir: injected/opt/rh/rh-ruby-25/root/usr/bin
+          sourcePath: /opt/rh/rh-ruby25/root/usr/bin/ruby
     strategy:
-      dockerStrategy:
-        forcePull: true
+      dockerStrategy: {}
 
 - apiVersion: v1
   kind: ImageStream
@@ -4103,7 +4661,7 @@ var _testExtendedTestdataBuildsTestNosrcBuildJson = []byte(`{
           "sourceStrategy": {
             "from": {
               "kind": "DockerImage",
-              "name": "centos/ruby-22-centos7"
+              "name": "docker.io/openshift/test-build-simples2i:latest"
             }
           }
         }
@@ -4155,8 +4713,14 @@ var _testExtendedTestdataBuildsTestS2iBuildQuotaJson = []byte(`{
       "sourceStrategy": {
         "from": {
           "kind":"DockerImage",
-          "name":"centos/ruby-22-centos7"
-        }
+          "name":"docker.io/openshift/test-build-simples2i:latest"
+        },
+        "env": [
+          {
+            "name": "BUILD_LOGLEVEL",
+            "value": "6"
+          }
+        ]
       }
     }
   }
@@ -4192,9 +4756,8 @@ var _testExtendedTestdataBuildsTestS2iBuildJson = []byte(`{
     "source": {
       "type": "Git",
       "git": {
-        "uri":"https://github.com/sclorg/s2i-ruby-container"
-      },
-      "contextDir": "2.3/test/puma-test-app"
+        "uri":"https://github.com/sclorg/nodejs-ex"        
+      }
     },
     "strategy": {
       "type": "Source",
@@ -4207,7 +4770,7 @@ var _testExtendedTestdataBuildsTestS2iBuildJson = []byte(`{
         ],
         "from": {
           "kind": "DockerImage",
-          "name": "centos/ruby-23-centos7"
+          "name": "docker.io/openshift/test-build-simples2i:latest"
         }
       }
     },
@@ -4278,7 +4841,7 @@ var _testExtendedTestdataBuildsTestS2iNoOutputnameJson = []byte(`{
         ],
         "from": {
           "kind": "DockerImage",
-          "name": "centos/ruby-22-centos7"
+          "name": "docker.io/openshift/test-build-simples2i:latest"
         }
       }
     }
@@ -4418,14 +4981,13 @@ spec:
   source:
     type: Git
     git:
-      uri: 'https://github.com/sclorg/s2i-php-container'
-    contextDir: 7.0/test/test-app
+      uri: 'https://github.com/sclorg/nodejs-ex'
   strategy:
     type: Source
     sourceStrategy:
       from:
         kind: DockerImage
-        name: centos/php-70-centos7
+        name: docker.io/openshift/test-build-simples2i:latest
       env:
         - name: BUILD_LOGLEVEL
           value: "5"
@@ -4555,14 +5117,13 @@ spec:
   source:
     type: Git
     git:
-      uri: 'https://github.com/sclorg/s2i-php-container'
-    contextDir: 7.0/test/test-app
+      uri: 'https://github.com/sclorg/nodejs-ex'
   strategy:
     type: Source
     sourceStrategy:
       from:
         kind: DockerImage
-        name: centos/php-70-centos7
+        name: docker.io/openshift/test-build-simples2i:latest
       env:
         - name: BUILD_LOGLEVEL
           value: "5"
@@ -4695,6 +5256,7 @@ ClusterLoader:
   projects:
     - num: 1
       basename: clusterloader-cakephp-mysql
+      ifexists: delete
       tuning: default
       templates:
         - num: 1
@@ -4702,6 +5264,7 @@ ClusterLoader:
   
     - num: 1
       basename: clusterloader-dancer-mysql
+      ifexists: delete
       tuning: default
       templates:
         - num: 1
@@ -4709,6 +5272,7 @@ ClusterLoader:
   
     - num: 1
       basename: clusterloader-django-postgresql
+      ifexists: delete
       tuning: default
       templates:
         - num: 1
@@ -4716,6 +5280,7 @@ ClusterLoader:
   
     - num: 1
       basename: clusterloader-nodejs-mongodb
+      ifexists: delete
       tuning: default
       templates:
         - num: 1
@@ -4723,6 +5288,7 @@ ClusterLoader:
   
     - num: 1
       basename: clusterloader-rails-postgresql
+      ifexists: delete
       tuning: default
       templates:
         - num: 1
@@ -4871,7 +5437,7 @@ run Proc.new { |env|
 EOF
 
 cat > Dockerfile <<- EOF
-FROM centos/ruby-22-centos7
+FROM centos/ruby-25-centos7
 ENV SECRET_FILE /opt/openshift/src/dockercfg
 COPY dockercfg ./
 COPY config.ru ./
@@ -4933,12 +5499,12 @@ spec:
     spec:
       terminationGracePeriodSeconds: 0
       containers:
-      - image: "docker.io/centos:centos7"
+      - image: "registry.access.redhat.com/ubi8/ubi-minimal:latest"
         imagePullPolicy: IfNotPresent
         name: myapp
         command:
         - /bin/sleep
-        - "10"
+        - "infinity"
   triggers:
   - type: ConfigChange
 `)
@@ -5040,12 +5606,12 @@ spec:
         name: history-limit
     spec:
       containers:
-      - image: "docker.io/centos:centos7"
+      - image: "registry.access.redhat.com/ubi8/ubi-minimal:latest"
         imagePullPolicy: IfNotPresent
         name: myapp
         command:
         - /bin/sleep
-        - "100"
+        - "infinity"
   triggers:
   - type: ConfigChange
   revisionHistoryLimit: 3
@@ -5083,12 +5649,12 @@ spec:
     spec:
       terminationGracePeriodSeconds: 0
       containers:
-      - image: "docker.io/centos:centos7"
+      - image: "registry.access.redhat.com/ubi8/ubi-minimal:latest"
         imagePullPolicy: IfNotPresent
         name: myapp
         command:
         - /bin/sleep
-        - "10000"
+        - "infinity"
 `)
 
 func testExtendedTestdataDeploymentsDeploymentIgnoresDeployerYamlBytes() ([]byte, error) {
@@ -5115,15 +5681,16 @@ spec:
   - name: pullthrough
     from:
       kind: DockerImage
-      name: docker.io/centos:centos7
+      name: "registry.access.redhat.com/ubi8/ubi-minimal:latest"
     referencePolicy:
       type: Local
   - name: direct
     from:
       kind: DockerImage
-      name: docker.io/centos:centos7
+      name: "registry.access.redhat.com/ubi8/ubi-minimal:latest"
     referencePolicy:
-     type: Source`)
+     type: Source
+`)
 
 func testExtendedTestdataDeploymentsDeploymentImageResolutionIsYamlBytes() ([]byte, error) {
 	return _testExtendedTestdataDeploymentsDeploymentImageResolutionIsYaml, nil
@@ -5218,12 +5785,12 @@ spec:
     spec:
       terminationGracePeriodSeconds: 0
       containers:
-      - image: "docker.io/centos:centos7"
+      - image: "registry.access.redhat.com/ubi8/ubi-minimal:latest"
         imagePullPolicy: IfNotPresent
         name: myapp
         command:
         - /bin/sleep
-        - "10000"
+        - "infinity"
 `)
 
 func testExtendedTestdataDeploymentsDeploymentMinReadySecondsYamlBytes() ([]byte, error) {
@@ -5258,7 +5825,7 @@ spec:
         name: deployment-simple
     spec:
       containers:
-      - image: "docker.io/centos:centos7"
+      - image: "registry.access.redhat.com/ubi8/ubi-minimal:latest"
         imagePullPolicy: IfNotPresent
         command:
           - /bin/sleep
@@ -5267,7 +5834,7 @@ spec:
         readinessProbe:
           exec:
             command:
-            - uptime
+            - "true"
   triggers:
   - type: ConfigChange
 `)
@@ -5305,7 +5872,7 @@ spec:
         name: test
         command:
         - /bin/sleep
-        - "100"
+        - "infinity"
   test: false
   triggers:
   - imageChangeParams:
@@ -5362,7 +5929,7 @@ spec:
         name: deployment-simple
     spec:
       containers:
-      - image: "openshift/origin-base:latest"
+      - image: "registry.access.redhat.com/ubi8/ubi-minimal:latest"
         command: [ "/bin/bash", "-c", "sleep infinity" ]
         imagePullPolicy: IfNotPresent
         name: myapp
@@ -5408,7 +5975,7 @@ spec:
         name: hook
     spec:
       containers:
-      - image: "docker.io/centos:centos7"
+      - image: "registry.access.redhat.com/ubi8/ubi-minimal:latest"
         command:
           - /bin/sleep
           - infinity
@@ -5456,12 +6023,12 @@ spec:
         name: generation-test
     spec:
       containers:
-      - image: "docker.io/centos:centos7"
+      - image: "registry.access.redhat.com/ubi8/ubi-minimal:latest"
         imagePullPolicy: IfNotPresent
         name: myapp
         command:
         - /bin/sleep
-        - "100"
+        - "infinity"
   triggers:
   - type: ConfigChange
 `)
@@ -5554,12 +6121,12 @@ spec:
         name: paused
     spec:
       containers:
-      - image: "docker.io/centos:centos7"
+      - image: "registry.access.redhat.com/ubi8/ubi-minimal:latest"
         imagePullPolicy: IfNotPresent
         name: myapp
         command:
         - /bin/sleep
-        - "100"
+        - "infinity"
 `)
 
 func testExtendedTestdataDeploymentsPausedDeploymentYamlBytes() ([]byte, error) {
@@ -5595,8 +6162,8 @@ spec:
       containers:
       - command:
         - /bin/sleep
-        - "10000"
-        image: docker.io/centos:centos7
+        - "infinity"
+        image: "registry.access.redhat.com/ubi8/ubi-minimal:latest"
         imagePullPolicy: IfNotPresent
         name: never-ready
         readinessProbe:
@@ -5697,12 +6264,12 @@ spec:
         name: brokendeployment
     spec:
       containers:
-      - image: "docker.io/centos:centos7"
+      - image: "registry.access.redhat.com/ubi8/ubi-minimal:latest"
         imagePullPolicy: IfNotPresent
         name: myapp
         command:
         - /bin/sleep
-        - "100"
+        - "infinity"
   triggers:
   - type: ConfigChange
 `)
@@ -5750,12 +6317,12 @@ spec:
     spec:
       terminationGracePeriodSeconds: 0
       containers:
-      - image: "docker.io/centos:centos7"
+      - image: "registry.access.redhat.com/ubi8/ubi-minimal:latest"
         imagePullPolicy: IfNotPresent
         name: myapp
         command:
         - /bin/sleep
-        - "100"
+        - "infinity"
   test: true
   triggers:
   - type: ConfigChange
@@ -5847,7 +6414,7 @@ var _testExtendedTestdataForcepullTestJson = []byte(`{
 						"from": {
 							"kind": "ImageStreamTag",
 						        "namespace": "openshift",
-							"name": "ruby:2.2"
+							"name": "ruby:latest"
 						},
 						"env": [
 							{
@@ -8709,7 +9276,7 @@ var _testExtendedTestdataJenkinsPluginMultitagTemplateJson = []byte(`{
             "name": "orig",
             "from": {
               "kind": "DockerImage",
-              "name": "centos/ruby-22-centos7"
+              "name": "centos/ruby-25-centos7"
             }
           }
         ]
@@ -8727,7 +9294,7 @@ var _testExtendedTestdataJenkinsPluginMultitagTemplateJson = []byte(`{
             "name": "orig",
             "from": {
               "kind": "DockerImage",
-              "name": "centos/ruby-22-centos7"
+              "name": "centos/ruby-25-centos7"
             }
           }
         ]
@@ -8745,7 +9312,7 @@ var _testExtendedTestdataJenkinsPluginMultitagTemplateJson = []byte(`{
             "name": "orig",
             "from": {
               "kind": "DockerImage",
-              "name": "centos/ruby-22-centos7"
+              "name": "centos/ruby-25-centos7"
             }
           }
         ]
@@ -9451,7 +10018,7 @@ func testExtendedTestdataLdapLdapserverServiceJson() (*asset, error) {
 	return a, nil
 }
 
-var _testExtendedTestdataLong_namesDockerfile = []byte(`FROM centos/ruby-22-centos7
+var _testExtendedTestdataLong_namesDockerfile = []byte(`FROM centos/ruby-25-centos7
 
 CMD ["/bin/sh", "-c", "echo", "hello"]
 `)
@@ -9499,7 +10066,7 @@ var _testExtendedTestdataLong_namesFixtureJson = []byte(`{
                     "sourceStrategy": {
                         "from": {
                             "kind": "DockerImage",
-                            "name": "centos/ruby-22-centos7"
+                            "name": "centos/ruby-25-centos7"
                         }
                     }
                 }
@@ -9528,7 +10095,7 @@ var _testExtendedTestdataLong_namesFixtureJson = []byte(`{
                     "sourceStrategy": {
                         "from": {
                             "kind": "DockerImage",
-                            "name": "centos/ruby-22-centos7"
+                            "name": "centos/ruby-25-centos7"
                         }
                     }
                 }
@@ -10303,6 +10870,131 @@ func testExtendedTestdataRolesPolicyRolesYaml() (*asset, error) {
 	return a, nil
 }
 
+var _testExtendedTestdataRouterCommonYaml = []byte(`apiVersion: v1
+kind: Template
+parameters:
+objects:
+
+# ensure the router can access routes and endpoints
+- apiVersion: v1
+  kind: RoleBinding
+  metadata:
+    name: system-router
+  subjects:
+  - kind: ServiceAccount
+    name: default
+  roleRef:
+    name: system:router
+
+# two routes that differ only by their labels and names
+- apiVersion: v1
+  kind: Route
+  metadata:
+    name: route-1
+    labels:
+      test: router
+      select: first
+  spec:
+    host: first.example.com
+    path: /Letter
+    to:
+      name: endpoints
+    ports:
+    - targetPort: 8080
+- apiVersion: v1
+  kind: Route
+  metadata:
+    name: route-2
+    labels:
+      test: router
+      select: second
+  spec:
+    host: second.example.com
+    path: /Letter
+    to:
+      name: endpoints
+    ports:
+    - targetPort: http
+
+# routes that contain overridden domains
+- apiVersion: v1
+  kind: Route
+  metadata:
+    name: route-override-domain-1
+    labels:
+      test: router
+      select: override-domains
+  spec:
+    host: y.a.null.ptr
+    path: /Letter
+    to:
+      name: endpoints
+    ports:
+    - targetPort: 8080
+- apiVersion: v1
+  kind: Route
+  metadata:
+    name: route-override-domain-2
+    labels:
+      test: router
+      select: override-domains
+  spec:
+    host: main.void.str
+    path: /Letter
+    to:
+      name: endpoints
+    ports:
+    - targetPort: 8080
+
+# a service to be routed to
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: endpoints
+    labels:
+      test: router
+  spec:
+    selector:
+      test: router
+      endpoints: router
+    ports:
+    - port: 8080
+# a pod that serves a response
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    name: endpoint-1
+    labels:
+      test: router
+      endpoints: router
+  spec:
+    terminationGracePeriodSeconds: 1
+    containers:
+    - name: test
+      image: openshift/hello-openshift
+      # image: openshift/deployment-example:v1
+      ports:
+      - containerPort: 8080
+        name: http
+      - containerPort: 100
+        protocol: UDP
+`)
+
+func testExtendedTestdataRouterCommonYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataRouterCommonYaml, nil
+}
+
+func testExtendedTestdataRouterCommonYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataRouterCommonYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/router-common.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 var _testExtendedTestdataRouterConfigManagerYaml = []byte(`apiVersion: v1
 kind: Template
 parameters:
@@ -10789,6 +11481,179 @@ func testExtendedTestdataRouterMetricsYaml() (*asset, error) {
 	return a, nil
 }
 
+var _testExtendedTestdataRouterOverrideDomainsYaml = []byte(`apiVersion: v1
+kind: Template
+parameters:
+- name: IMAGE
+  value: openshift/origin-haproxy-router:latest
+- name: SCOPE
+  value: '["--name=test-scoped", "--namespace=$(POD_NAMESPACE)", "--loglevel=4", "--labels=select=first"]'
+objects:
+
+# a router that overrides domains
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    name: router-override-domains
+    labels:
+      test: router-override-domains
+  spec:
+    terminationGracePeriodSeconds: 1
+    containers:
+    - name: router
+      image: ${IMAGE}
+      imagePullPolicy: IfNotPresent
+      env:
+      - name: POD_NAMESPACE
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.namespace
+      args: ["--name=test-override-domains", "--namespace=$(POD_NAMESPACE)", "--loglevel=4", "--override-domains=null.ptr,void.str", "--hostname-template=${name}-${namespace}.apps.veto.test"]
+      hostNetwork: false
+      ports:
+      - containerPort: 80
+      - containerPort: 443
+      - containerPort: 1936
+        name: stats
+        protocol: TCP
+      readinessProbe:
+        initialDelaySeconds: 10
+        httpGet:
+          path: /healthz/ready
+          port: 1936
+    serviceAccountName: default
+`)
+
+func testExtendedTestdataRouterOverrideDomainsYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataRouterOverrideDomainsYaml, nil
+}
+
+func testExtendedTestdataRouterOverrideDomainsYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataRouterOverrideDomainsYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/router-override-domains.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataRouterOverrideYaml = []byte(`apiVersion: v1
+kind: Template
+parameters:
+- name: IMAGE
+  value: openshift/origin-haproxy-router:latest
+- name: SCOPE
+  value: '["--name=test-scoped", "--namespace=$(POD_NAMESPACE)", "--loglevel=4", "--labels=select=first"]'
+objects:
+
+# a router that overrides host
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    name: router-override
+    labels:
+      test: router-override
+  spec:
+    terminationGracePeriodSeconds: 1
+    containers:
+    - name: router
+      image: ${IMAGE}
+      imagePullPolicy: IfNotPresent
+      env:
+      - name: POD_NAMESPACE
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.namespace
+      args: ["--name=test-override", "--namespace=$(POD_NAMESPACE)", "--loglevel=4", "--override-hostname", "--hostname-template=${name}-${namespace}.myapps.mycompany.com"]
+      hostNetwork: false
+      ports:
+      - containerPort: 80
+      - containerPort: 443
+      - containerPort: 1936
+        name: stats
+        protocol: TCP
+      readinessProbe:
+        initialDelaySeconds: 10
+        httpGet:
+          path: /healthz/ready
+          port: 1936
+    serviceAccountName: default
+`)
+
+func testExtendedTestdataRouterOverrideYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataRouterOverrideYaml, nil
+}
+
+func testExtendedTestdataRouterOverrideYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataRouterOverrideYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/router-override.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataRouterScopedYaml = []byte(`apiVersion: v1
+kind: Template
+parameters:
+- name: IMAGE
+  value: openshift/origin-haproxy-router:latest
+- name: SCOPE
+  value: '["--name=test-scoped", "--namespace=$(POD_NAMESPACE)", "--loglevel=4", "--labels=select=first"]'
+objects:
+# a scoped router
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    name: router-scoped
+    labels:
+      test: router-scoped
+  spec:
+    terminationGracePeriodSeconds: 1
+    containers:
+    - name: router
+      image: ${IMAGE}
+      imagePullPolicy: IfNotPresent
+      env:
+      - name: POD_NAMESPACE
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.namespace
+      args: "${{SCOPE}}"
+      hostNetwork: false
+      ports:
+      - containerPort: 80
+      - containerPort: 443
+      - containerPort: 1936
+        name: stats
+        protocol: TCP
+      readinessProbe:
+        initialDelaySeconds: 10
+        httpGet:
+          path: /healthz/ready
+          port: 1936
+    serviceAccountName: default
+`)
+
+func testExtendedTestdataRouterScopedYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataRouterScopedYaml, nil
+}
+
+func testExtendedTestdataRouterScopedYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataRouterScopedYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/router-scoped.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 var _testExtendedTestdataRun_policyParallelBcYaml = []byte(`---
   kind: "List"
   apiVersion: "v1"
@@ -10823,7 +11688,7 @@ var _testExtendedTestdataRun_policyParallelBcYaml = []byte(`---
           sourceStrategy: 
             from: 
               kind: "DockerImage"
-              name: "centos/ruby-22-centos7"
+              name: "centos/ruby-25-centos7"
         resources: {}
       status: 
         lastVersion: 0
@@ -10870,7 +11735,7 @@ var _testExtendedTestdataRun_policySerialBcYaml = []byte(`---
           sourceStrategy: 
             from: 
               kind: "DockerImage"
-              name: "centos/ruby-22-centos7"
+              name: "centos/ruby-25-centos7"
     - 
       kind: "BuildConfig"
       apiVersion: "v1"
@@ -10891,7 +11756,7 @@ var _testExtendedTestdataRun_policySerialBcYaml = []byte(`---
           sourceStrategy: 
             from: 
               kind: "DockerImage"
-              name: "centos/ruby-22-centos7"
+              name: "centos/ruby-25-centos7"
 `)
 
 func testExtendedTestdataRun_policySerialBcYamlBytes() ([]byte, error) {
@@ -10934,7 +11799,7 @@ var _testExtendedTestdataRun_policySerialLatestOnlyBcYaml = []byte(`---
           sourceStrategy: 
             from: 
               kind: "DockerImage"
-              name: "centos/ruby-22-centos7"
+              name: "centos/ruby-25-centos7"
         resources: {}
       status: 
         lastVersion: 0
@@ -11009,7 +11874,7 @@ func testExtendedTestdataS2iDropcapsRootAccessBuildYaml() (*asset, error) {
 	return a, nil
 }
 
-var _testExtendedTestdataS2iDropcapsRootableRubyDockerfile = []byte(`FROM centos/ruby-22-centos7:latest
+var _testExtendedTestdataS2iDropcapsRootableRubyDockerfile = []byte(`FROM centos/ruby-25-centos7:latest
 USER root
 RUN yum -y install expect
 RUN echo "root:redhat" | chpasswd
@@ -11162,219 +12027,6 @@ func testExtendedTestdataSamplepipelineWithenvsYaml() (*asset, error) {
 	return a, nil
 }
 
-var _testExtendedTestdataScopedRouterYaml = []byte(`apiVersion: v1
-kind: Template
-parameters:
-- name: IMAGE
-  value: openshift/origin-haproxy-router:latest
-- name: SCOPE
-  value: '["--name=test-scoped", "--namespace=$(POD_NAMESPACE)", "--loglevel=4", "--labels=select=first"]'
-objects:
-# a scoped router
-- apiVersion: v1
-  kind: Pod
-  metadata:
-    name: router-scoped
-    labels:
-      test: router-scoped
-  spec:
-    terminationGracePeriodSeconds: 1
-    containers:
-    - name: router
-      image: ${IMAGE}
-      imagePullPolicy: IfNotPresent
-      env:
-      - name: POD_NAMESPACE
-        valueFrom:
-          fieldRef:
-            fieldPath: metadata.namespace
-      args: "${{SCOPE}}"
-      hostNetwork: false
-      ports:
-      - containerPort: 80
-      - containerPort: 443
-      - containerPort: 1936
-        name: stats
-        protocol: TCP
-    serviceAccountName: default
-
-# a router that overrides host
-- apiVersion: v1
-  kind: Pod
-  metadata:
-    name: router-override
-    labels:
-      test: router-override
-  spec:
-    terminationGracePeriodSeconds: 1
-    containers:
-    - name: router
-      image: ${IMAGE}
-      imagePullPolicy: IfNotPresent
-      env:
-      - name: POD_NAMESPACE
-        valueFrom:
-          fieldRef:
-            fieldPath: metadata.namespace
-      args: ["--name=test-override", "--namespace=$(POD_NAMESPACE)", "--loglevel=4", "--override-hostname", "--hostname-template=${name}-${namespace}.myapps.mycompany.com"]
-      hostNetwork: false
-      ports:
-      - containerPort: 80
-      - containerPort: 443
-      - containerPort: 1936
-        name: stats
-        protocol: TCP
-    serviceAccountName: default
-
-# a router that overrides domains
-- apiVersion: v1
-  kind: Pod
-  metadata:
-    name: router-override-domains
-    labels:
-      test: router-override-domains
-  spec:
-    terminationGracePeriodSeconds: 1
-    containers:
-    - name: router
-      image: ${IMAGE}
-      imagePullPolicy: IfNotPresent
-      env:
-      - name: POD_NAMESPACE
-        valueFrom:
-          fieldRef:
-            fieldPath: metadata.namespace
-      args: ["--name=test-override-domains", "--namespace=$(POD_NAMESPACE)", "--loglevel=4", "--override-domains=null.ptr,void.str", "--hostname-template=${name}-${namespace}.apps.veto.test"]
-      hostNetwork: false
-      ports:
-      - containerPort: 80
-      - containerPort: 443
-      - containerPort: 1936
-        name: stats
-        protocol: TCP
-    serviceAccountName: default
-
-
-# ensure the router can access routes and endpoints
-- apiVersion: v1
-  kind: RoleBinding
-  metadata:
-    name: system-router
-  subjects:
-  - kind: ServiceAccount
-    name: default
-  roleRef:
-    name: system:router
-
-# two routes that differ only by their labels and names
-- apiVersion: v1
-  kind: Route
-  metadata:
-    name: route-1
-    labels:
-      test: router
-      select: first
-  spec:
-    host: first.example.com
-    path: /Letter
-    to:
-      name: endpoints
-    ports:
-    - targetPort: 8080
-- apiVersion: v1
-  kind: Route
-  metadata:
-    name: route-2
-    labels:
-      test: router
-      select: second
-  spec:
-    host: second.example.com
-    path: /Letter
-    to:
-      name: endpoints
-    ports:
-    - targetPort: http
-
-# routes that contain overridden domains
-- apiVersion: v1
-  kind: Route
-  metadata:
-    name: route-override-domain-1
-    labels:
-      test: router
-      select: override-domains
-  spec:
-    host: y.a.null.ptr
-    path: /Letter
-    to:
-      name: endpoints
-    ports:
-    - targetPort: 8080
-- apiVersion: v1
-  kind: Route
-  metadata:
-    name: route-override-domain-2
-    labels:
-      test: router
-      select: override-domains
-  spec:
-    host: main.void.str
-    path: /Letter
-    to:
-      name: endpoints
-    ports:
-    - targetPort: 8080
-
-# a service to be routed to
-- apiVersion: v1
-  kind: Service
-  metadata:
-    name: endpoints
-    labels:
-      test: router
-  spec:
-    selector:
-      test: router
-      endpoints: router
-    ports:
-    - port: 8080
-# a pod that serves a response
-- apiVersion: v1
-  kind: Pod
-  metadata:
-    name: endpoint-1
-    labels:
-      test: router
-      endpoints: router
-  spec:
-    terminationGracePeriodSeconds: 1
-    containers:
-    - name: test
-      image: openshift/hello-openshift
-      # image: openshift/deployment-example:v1
-      ports:
-      - containerPort: 8080
-        name: http
-      - containerPort: 100
-        protocol: UDP
-`)
-
-func testExtendedTestdataScopedRouterYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataScopedRouterYaml, nil
-}
-
-func testExtendedTestdataScopedRouterYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataScopedRouterYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/scoped-router.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataServiceServingCertNginxServingCertConf = []byte(`server {
     listen   443;
 
@@ -11501,6 +12153,54 @@ func testExtendedTestdataSignerBuildconfigYaml() (*asset, error) {
 	return a, nil
 }
 
+var _testExtendedTestdataTemplatesTemplateinstance_badobjectYaml = []byte(`kind: List
+apiVersion: v1
+items:
+- kind: TemplateInstance
+  apiVersion: template.openshift.io/v1
+  metadata:
+    name: invalidtemplateinstance
+  spec:
+    template:
+      kind: Template
+      apiVersion: v1
+      metadata:
+        name: template
+      objects:
+      - kind: Deployment
+        apiVersion: apps/v1
+        metadata:
+          name: "invalidname!@#$%^&*"
+        spec:
+          replicas: 0
+          selector:
+            matchLabels:
+              key: value
+          template:
+            metadata:
+              labels:
+                key: value
+            spec:
+              containers:
+              - name: hello-openshift
+                image: openshift/hello-openshift
+`)
+
+func testExtendedTestdataTemplatesTemplateinstance_badobjectYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataTemplatesTemplateinstance_badobjectYaml, nil
+}
+
+func testExtendedTestdataTemplatesTemplateinstance_badobjectYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataTemplatesTemplateinstance_badobjectYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/templates/templateinstance_badobject.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 var _testExtendedTestdataTemplatesTemplateinstance_objectkindsYaml = []byte(`kind: List
 apiVersion: v1
 items:
@@ -11576,6 +12276,130 @@ func testExtendedTestdataTemplatesTemplateinstance_objectkindsYaml() (*asset, er
 	}
 
 	info := bindataFileInfo{name: "test/extended/testdata/templates/templateinstance_objectkinds.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var _testExtendedTestdataTemplatesTemplateinstance_readinessYaml = []byte(`kind: Template
+apiVersion: v1
+metadata:
+  name: simple-example
+  annotations:
+objects:
+- kind: Service
+  apiVersion: v1
+  metadata:
+    name: "${NAME}"
+    annotations:
+      description: Exposes and load balances the application pods
+  spec:
+    ports:
+    - name: web
+      port: 8080
+      targetPort: 8080
+    selector:
+      name: "${NAME}"
+- kind: Route
+  apiVersion: v1
+  metadata:
+    name: "${NAME}"
+  spec:
+    host: "${APPLICATION_DOMAIN}"
+    to:
+      kind: Service
+      name: "${NAME}"
+- kind: ImageStream
+  apiVersion: v1
+  metadata:
+    name: "${NAME}"
+    annotations:
+      description: Keeps track of changes in the application image
+- kind: BuildConfig
+  apiVersion: v1
+  metadata:
+    name: "${NAME}"
+    annotations:
+      description: Defines how to build the application
+      template.alpha.openshift.io/wait-for-ready: 'true'
+  spec:
+    source:
+      type: Git
+      git:
+        uri: ${SOURCE_REPOSITORY_URL}
+    strategy:
+      type: Source
+      sourceStrategy:
+        from:
+          kind: DockerImage
+          name: docker.io/openshift/test-build-simples2i:latest
+    output:
+      to:
+        kind: ImageStreamTag
+        name: "${NAME}:latest"
+    triggers:
+    - type: ConfigChange
+- kind: DeploymentConfig
+  apiVersion: v1
+  metadata:
+    name: "${NAME}"
+    annotations:
+      description: Defines how to deploy the application server
+      template.alpha.openshift.io/wait-for-ready: 'true'
+  spec:
+    strategy:
+      type: Rolling
+    triggers:
+    - type: ImageChange
+      imageChangeParams:
+        automatic: true
+        containerNames:
+        - simple-example
+        from:
+          kind: ImageStreamTag
+          name: "${NAME}:latest"
+    - type: ConfigChange
+    replicas: 1
+    selector:
+      name: "${NAME}"
+    template:
+      metadata:
+        name: "${NAME}"
+        labels:
+          name: "${NAME}"
+      spec:
+        containers:
+        - name: simple-example
+          image: " "
+          ports:
+          - containerPort: 8080
+parameters:
+- name: NAME
+  displayName: Name
+  description: The name assigned to all of the frontend objects defined in this template.
+  required: true
+  value: simple-example
+- name: SOURCE_REPOSITORY_URL
+  displayName: sourceurl
+  required: true
+  value: https://github.com/sclorg/nodejs-ex
+- name: APPLICATION_DOMAIN
+  displayName: Application Hostname
+  description: The exposed hostname that will route to the Node.js service, if left
+    blank a value will be defaulted.
+  value: ''
+`)
+
+func testExtendedTestdataTemplatesTemplateinstance_readinessYamlBytes() ([]byte, error) {
+	return _testExtendedTestdataTemplatesTemplateinstance_readinessYaml, nil
+}
+
+func testExtendedTestdataTemplatesTemplateinstance_readinessYaml() (*asset, error) {
+	bytes, err := testExtendedTestdataTemplatesTemplateinstance_readinessYamlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "test/extended/testdata/templates/templateinstance_readiness.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -11885,214 +12709,12 @@ func testExtendedTestdataTestEnvPodJson() (*asset, error) {
 	return a, nil
 }
 
-var _testExtendedTestdataTestGitserverTokenauthYaml = []byte(`apiVersion: v1
-kind: Template
-labels:
-  template: gitserver
-metadata:
-  name: gitserver
-parameters:
-- name: ROUTE_SUFFIX
-  required: true
-objects:
-# The gitserver is deployed as a singleton pod and uses a very small amount
-# of resources. It can host or transiently serve Git repositories, as well
-# as automatically integrate with builds in a namespace.
-- apiVersion: v1
-  kind: DeploymentConfig
-  metadata:
-    name: gitserver
-    labels:
-      app: gitserver
-  spec:
-    replicas: 1 # the gitserver is not HA and should not be scaled past 1
-    selector:
-      run-container: gitserver
-    template:
-      metadata:
-        labels:
-          run-container: gitserver
-      spec:
-        containers:
-        - name: gitserver
-          image: openshift/origin-gitserver
-          readinessProbe:
-            tcpSocket:
-              port: 8080
-          ports:
-          - containerPort: 8080
-
-          env:
-          # Each environment variable matching GIT_INITIAL_CLONE_* will
-          # be cloned when the process starts; failures will be logged.
-          # <name> must be [A-Z0-9_\-\.], the cloned directory name will
-          # be lowercased. If the name is invalid the pod will halt. If
-          # the repository already exists on disk, it will be updated
-          # from the remote.
-          #
-          - name: GIT_INITIAL_CLONE_1
-            value: https://github.com/openshift/ruby-hello-world.git;ruby-hello-world
-
-
-          # The namespace of the pod is required for implicit config
-          # (passing '-' to AUTOLINK_KUBECONFIG or REQUIRE_SERVER_AUTH)
-          # and can also be used to target a specific namespace.
-          - name: POD_NAMESPACE
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.namespace
-
-          # The URL that builds must use to access the Git repositories
-          # stored in this app.
-          # TODO: support HTTPS
-          - name: PUBLIC_URL
-            value: http://gitserver-tokenauth.$(POD_NAMESPACE).svc.cluster.local:8080
-          # The directory to store Git repositories in. If not backed
-          # by a persistent volume, repositories will be lost when
-          # deployments occur. Use INITIAL_GIT_CLONE and AUTOLINK_*
-          # to remove the need to use a persistent volume.
-          - name: GIT_HOME
-            value: /var/lib/git
-          # The directory to use as the default hook directory for any
-          # cloned or autolinked directories.
-          - name: HOOK_PATH
-            value: /var/lib/git-hooks
-
-          # Authentication and authorization
-
-          # If 'yes', clients may push to the server with git push.
-          - name: ALLOW_GIT_PUSH
-            value: "yes"
-          # If 'yes', clients may set hooks via the API. However, unless
-          # the Git home is backed by a persistent volume, any deployment
-          # will result in the hooks being lost.
-          - name: ALLOW_GIT_HOOKS
-            value: "yes"
-          # If 'yes', clients can create new git repositories on demand
-          # by pushing. If the data on disk is not backed by a persistent
-          # volume, the Git repo will be deleted if the deployment is
-          # updated.
-          - name: ALLOW_LAZY_CREATE
-            value: "yes"
-          # If 'yes', clients can pull without being authenticated.
-          - name: ALLOW_ANON_GIT_PULL
-
-          # Provides the path to a kubeconfig file in the image that
-          # should be used to authorize against the server. The value
-          # '-' will use the pod's service account.
-          # May not be used in combination with REQUIRE_GIT_AUTH
-          - name: REQUIRE_SERVER_AUTH
-            value: "-"
-          
-          # The namespace to check authorization against when
-          # REQUIRE_SERVICE_AUTH is used. Users must have 'get' on
-          # 'pods' to pull and 'create' on 'pods' to push.
-          - name: AUTH_NAMESPACE
-            value: $(POD_NAMESPACE)
-          # Require BASIC authentication with a username and password
-          # to push or pull.
-          # May not be used in combination with REQUIRE_SERVER_AUTH
-          #- name: REQUIRE_GIT_AUTH
-          #  value: gituser:gituserpassword
-
-          # Autolinking:
-          #
-          # The gitserver can automatically clone Git repositories
-          # associated with a build config and replace the URL with
-          # a link to the repo on PUBLIC_URL. The default post-receive
-          # hook on the cloned repo will then trigger a build. You
-          # may customize the hook with AUTOLINK_HOOK (path to hook).
-          # To autolink, the account the pod runs under must have 'edit'
-          # on the AUTOLINK_NAMESPACE:
-          #
-          #    oc policy add-role-to-user \
-          #      system:serviceaccount:${namespace}:gitserver edit
-          #
-          # Links are checked every time the pod starts.
-
-          # The location to read auth configuration from for autolinking.
-          # If '-', use the service account token to link. The account
-          # represented by this config must have the edit role on the
-          # namespace.
-          #- name: AUTOLINK_KUBECONFIG
-          #  value: "-"
-
-          # The namespace to autolink
-          #- name: AUTOLINK_NAMESPACE
-          #  value: $(POD_NAMESPACE)
-
-          # The path to a script in the image to use as the default
-          # post-receive hook - only set during link, so has no effect
-          # on cloned repositories. See the "hooks" directory in the
-          # image for examples.
-          #- name: AUTOLINK_HOOK
-
-          # The master service host is not signed with the service IP
-          # so we override with the consistent DNS name. Required for
-          # connections to the server.
-          - name: KUBERNETES_SERVICE_HOST
-            value: kubernetes.default
-
-          volumeMounts:
-          - mountPath: /var/lib/git/
-            name: git
-        volumes:
-        - name: git
-    triggers:
-    - type: ConfigChange
-
-# The gitserver service is required for DNS resolution
-- apiVersion: v1
-  kind: Service
-  metadata:
-    name: gitserver-tokenauth
-    labels:
-      app: gitserver
-  spec:
-    ports:
-    - port: 8080
-      targetPort: 8080
-    selector:
-      run-container: gitserver
-- apiVersion: v1
-  kind: Route
-  metadata:
-    name: gitserver-tokenauth
-    labels:
-      app: gitserver
-  spec:
-    host: gitserver-tokenauth.${ROUTE_SUFFIX}
-    tls:
-      termination: edge
-    to:
-      kind: Service
-      name: gitserver-tokenauth
-`)
-
-func testExtendedTestdataTestGitserverTokenauthYamlBytes() ([]byte, error) {
-	return _testExtendedTestdataTestGitserverTokenauthYaml, nil
-}
-
-func testExtendedTestdataTestGitserverTokenauthYaml() (*asset, error) {
-	bytes, err := testExtendedTestdataTestGitserverTokenauthYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "test/extended/testdata/test-gitserver-tokenauth.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _testExtendedTestdataTestGitserverYaml = []byte(`apiVersion: v1
 kind: Template
 labels:
   template: gitserver
 metadata:
   name: gitserver
-parameters:
-- name: ROUTE_SUFFIX
-  required: true
 objects:
 # The gitserver is deployed as a singleton pod and uses a very small amount
 # of resources. It can host or transiently serve Git repositories, as well
@@ -12260,7 +12882,6 @@ objects:
     labels:
       app: gitserver
   spec:
-    host: gitserver.${ROUTE_SUFFIX}
     tls:
       termination: edge
     to:
@@ -12763,7 +13384,7 @@ var _testIntegrationTestdataTestBuildcliJson = []byte(`{
         "creationTimestamp": null
       },
       "spec": {
-        "dockerImageRepository": "centos/ruby-22-centos7",
+        "dockerImageRepository": "centos/ruby-25-centos7",
         "tags": [
           {
             "name": "valid"
@@ -12799,7 +13420,7 @@ var _testIntegrationTestdataTestBuildcliJson = []byte(`{
           "sourceStrategy": {
             "from": {
               "kind": "DockerImage",
-              "name": "centos/ruby-22-centos7"
+              "name": "centos/ruby-25-centos7"
             },
             "incremental": true
           }
@@ -12841,7 +13462,7 @@ var _testIntegrationTestdataTestBuildcliJson = []byte(`{
           "sourceStrategy": {
             "from": {
               "kind": "DockerImage",
-              "name": "centos/ruby-22-centos7"
+              "name": "centos/ruby-25-centos7"
             },
             "incremental": true
           }
@@ -13509,7 +14130,7 @@ var _examplesDbTemplatesMariadbEphemeralTemplateJson = []byte(`{
             "value": "sampledb"
         },
         {
-            "description": "Version of MariaDB image to be used (10.1, 10.2 or latest).",
+            "description": "Version of MariaDB image to be used (10.2 or latest).",
             "displayName": "Version of MariaDB Image",
             "name": "MARIADB_VERSION",
             "required": true,
@@ -13800,7 +14421,7 @@ var _examplesDbTemplatesMariadbPersistentTemplateJson = []byte(`{
             "value": "sampledb"
         },
         {
-            "description": "Version of MariaDB image to be used (10.1, 10.2 or latest).",
+            "description": "Version of MariaDB image to be used (10.2 or latest).",
             "displayName": "Version of MariaDB Image",
             "name": "MARIADB_VERSION",
             "required": true,
@@ -13843,7 +14464,7 @@ var _examplesDbTemplatesMongodbEphemeralTemplateJson = []byte(`{
             "description": "MongoDB database service, without persistent storage. For more information about using this template, including OpenShift considerations, see https://github.com/sclorg/mongodb-container/blob/master/3.2/README.md.\n\nWARNING: Any data stored will be lost upon pod destruction. Only use this template for testing",
             "iconClass": "icon-mongodb",
             "openshift.io/display-name": "MongoDB (Ephemeral)",
-            "openshift.io/documentation-url": "https://docs.openshift.org/latest/using_images/db_images/mongodb.html",
+            "openshift.io/documentation-url": "https://docs.okd.io/latest/using_images/db_images/mongodb.html",
             "openshift.io/long-description": "This template provides a standalone MongoDB server with a database created.  The database is not stored on persistent storage, so any restart of the service will result in all data being lost.  The database name, username, and password are chosen via parameters when provisioning this service.",
             "openshift.io/provider-display-name": "Red Hat, Inc.",
             "openshift.io/support-url": "https://access.redhat.com",
@@ -14100,11 +14721,11 @@ var _examplesDbTemplatesMongodbEphemeralTemplateJson = []byte(`{
             "required": true
         },
         {
-            "description": "Version of MongoDB image to be used (2.4, 2.6, 3.2 or latest).",
+            "description": "Version of MongoDB image to be used (3.6 or latest).",
             "displayName": "Version of MongoDB Image",
             "name": "MONGODB_VERSION",
             "required": true,
-            "value": "3.2"
+            "value": "3.6"
         }
     ]
 }`)
@@ -14136,7 +14757,7 @@ var _examplesDbTemplatesMongodbPersistentTemplateJson = []byte(`{
             "description": "MongoDB database service, with persistent storage. For more information about using this template, including OpenShift considerations, see https://github.com/sclorg/mongodb-container/blob/master/3.2/README.md.\n\nNOTE: Scaling to more than one replica is not supported. You must have persistent volumes available in your cluster to use this template.",
             "iconClass": "icon-mongodb",
             "openshift.io/display-name": "MongoDB",
-            "openshift.io/documentation-url": "https://docs.openshift.org/latest/using_images/db_images/mongodb.html",
+            "openshift.io/documentation-url": "https://docs.okd.io/latest/using_images/db_images/mongodb.html",
             "openshift.io/long-description": "This template provides a standalone MongoDB server with a database created.  The database is stored on persistent storage.  The database name, username, and password are chosen via parameters when provisioning this service.",
             "openshift.io/provider-display-name": "Red Hat, Inc.",
             "openshift.io/support-url": "https://access.redhat.com",
@@ -14417,11 +15038,11 @@ var _examplesDbTemplatesMongodbPersistentTemplateJson = []byte(`{
             "value": "1Gi"
         },
         {
-            "description": "Version of MongoDB image to be used (2.4, 2.6, 3.2 or latest).",
+            "description": "Version of MongoDB image to be used (3.6 or latest).",
             "displayName": "Version of MongoDB Image",
             "name": "MONGODB_VERSION",
             "required": true,
-            "value": "3.2"
+            "value": "3.6"
         }
     ]
 }`)
@@ -14453,7 +15074,7 @@ var _examplesDbTemplatesMysqlEphemeralTemplateJson = []byte(`{
             "description": "MySQL database service, without persistent storage. For more information about using this template, including OpenShift considerations, see https://github.com/sclorg/mysql-container/blob/master/5.7/root/usr/share/container-scripts/mysql/README.md.\n\nWARNING: Any data stored will be lost upon pod destruction. Only use this template for testing",
             "iconClass": "icon-mysql-database",
             "openshift.io/display-name": "MySQL (Ephemeral)",
-            "openshift.io/documentation-url": "https://docs.openshift.org/latest/using_images/db_images/mysql.html",
+            "openshift.io/documentation-url": "https://docs.okd.io/latest/using_images/db_images/mysql.html",
             "openshift.io/long-description": "This template provides a standalone MySQL server with a database created.  The database is not stored on persistent storage, so any restart of the service will result in all data being lost.  The database name, username, and password are chosen via parameters when provisioning this service.",
             "openshift.io/provider-display-name": "Red Hat, Inc.",
             "openshift.io/support-url": "https://access.redhat.com",
@@ -14746,7 +15367,7 @@ var _examplesDbTemplatesMysqlPersistentTemplateJson = []byte(`{
             "description": "MySQL database service, with persistent storage. For more information about using this template, including OpenShift considerations, see https://github.com/sclorg/mysql-container/blob/master/5.7/root/usr/share/container-scripts/mysql/README.md.\n\nNOTE: Scaling to more than one replica is not supported. You must have persistent volumes available in your cluster to use this template.",
             "iconClass": "icon-mysql-database",
             "openshift.io/display-name": "MySQL",
-            "openshift.io/documentation-url": "https://docs.openshift.org/latest/using_images/db_images/mysql.html",
+            "openshift.io/documentation-url": "https://docs.okd.io/latest/using_images/db_images/mysql.html",
             "openshift.io/long-description": "This template provides a standalone MySQL server with a database created.  The database is stored on persistent storage.  The database name, username, and password are chosen via parameters when provisioning this service.",
             "openshift.io/provider-display-name": "Red Hat, Inc.",
             "openshift.io/support-url": "https://access.redhat.com",
@@ -15044,7 +15665,7 @@ var _examplesDbTemplatesPostgresqlEphemeralTemplateJson = []byte(`{
             "description": "PostgreSQL database service, without persistent storage. For more information about using this template, including OpenShift considerations, see https://github.com/sclorg/postgresql-container/.\n\nWARNING: Any data stored will be lost upon pod destruction. Only use this template for testing",
             "iconClass": "icon-postgresql",
             "openshift.io/display-name": "PostgreSQL (Ephemeral)",
-            "openshift.io/documentation-url": "https://docs.openshift.org/latest/using_images/db_images/postgresql.html",
+            "openshift.io/documentation-url": "https://docs.okd.io/latest/using_images/db_images/postgresql.html",
             "openshift.io/long-description": "This template provides a standalone PostgreSQL server with a database created.  The database is not stored on persistent storage, so any restart of the service will result in all data being lost.  The database name, username, and password are chosen via parameters when provisioning this service.",
             "openshift.io/provider-display-name": "Red Hat, Inc.",
             "openshift.io/support-url": "https://access.redhat.com",
@@ -15282,11 +15903,11 @@ var _examplesDbTemplatesPostgresqlEphemeralTemplateJson = []byte(`{
             "value": "sampledb"
         },
         {
-            "description": "Version of PostgreSQL image to be used (9.4, 9.5, 9.6 or latest).",
+            "description": "Version of PostgreSQL image to be used (10 or latest).",
             "displayName": "Version of PostgreSQL Image",
             "name": "POSTGRESQL_VERSION",
             "required": true,
-            "value": "9.6"
+            "value": "10"
         }
     ]
 }`)
@@ -15318,7 +15939,7 @@ var _examplesDbTemplatesPostgresqlPersistentTemplateJson = []byte(`{
             "description": "PostgreSQL database service, with persistent storage. For more information about using this template, including OpenShift considerations, see https://github.com/sclorg/postgresql-container/.\n\nNOTE: Scaling to more than one replica is not supported. You must have persistent volumes available in your cluster to use this template.",
             "iconClass": "icon-postgresql",
             "openshift.io/display-name": "PostgreSQL",
-            "openshift.io/documentation-url": "https://docs.openshift.org/latest/using_images/db_images/postgresql.html",
+            "openshift.io/documentation-url": "https://docs.okd.io/latest/using_images/db_images/postgresql.html",
             "openshift.io/long-description": "This template provides a standalone PostgreSQL server with a database created.  The database is stored on persistent storage.  The database name, username, and password are chosen via parameters when provisioning this service.",
             "openshift.io/provider-display-name": "Red Hat, Inc.",
             "openshift.io/support-url": "https://access.redhat.com",
@@ -15580,11 +16201,11 @@ var _examplesDbTemplatesPostgresqlPersistentTemplateJson = []byte(`{
             "value": "1Gi"
         },
         {
-            "description": "Version of PostgreSQL image to be used (9.4, 9.5, 9.6 or latest).",
+            "description": "Version of PostgreSQL image to be used (10 or latest).",
             "displayName": "Version of PostgreSQL Image",
             "name": "POSTGRESQL_VERSION",
             "required": true,
-            "value": "9.6"
+            "value": "10"
         }
     ]
 }`)
@@ -16119,31 +16740,49 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
         "tags": [
           {
             "annotations": {
-              "description": "Build and run .NET Core applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/redhat-developer/s2i-dotnetcore/tree/master/2.0/build/README.md.\n\nWARNING: By selecting this tag, your application will automatically update to use the latest version of .NET Core available on OpenShift, including major versions updates.",
+              "description": "Build and run .NET Core applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/redhat-developer/s2i-dotnetcore/tree/master/2.1/build/README.md.\n\nWARNING: By selecting this tag, your application will automatically update to use the latest version of .NET Core available on OpenShift, including major versions updates.",
               "iconClass": "icon-dotnet",
               "openshift.io/display-name": ".NET Core (Latest)",
               "sampleContextDir": "app",
-              "sampleRef": "dotnetcore-2.0",
+              "sampleRef": "dotnetcore-2.1",
               "sampleRepo": "https://github.com/redhat-developer/s2i-dotnetcore-ex.git",
               "supports": "dotnet",
               "tags": "builder,.net,dotnet,dotnetcore"
             },
             "from": {
               "kind": "ImageStreamTag",
-              "name": "2.0"
+              "name": "2.1"
             },
             "name": "latest"
           },
           {
             "annotations": {
-              "description": "Build and run .NET Core 2.0 applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/redhat-developer/s2i-dotnetcore/tree/master/2.0/build/README.md.",
+              "description": "Build and run .NET Core 2.1 applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/redhat-developer/s2i-dotnetcore/tree/master/2.0/build/README.md.",
+              "iconClass": "icon-dotnet",
+              "openshift.io/display-name": ".NET Core 2.1",
+              "sampleContextDir": "app",
+              "sampleRef": "dotnetcore-2.1",
+              "sampleRepo": "https://github.com/redhat-developer/s2i-dotnetcore-ex.git",
+              "supports": "dotnet:2.1,dotnet",
+              "tags": "builder,.net,dotnet,dotnetcore,rh-dotnet21",
+              "version": "2.1"
+            },
+            "from": {
+              "kind": "DockerImage",
+              "name": "registry.centos.org/dotnet/dotnet-21-centos7:latest"
+            },
+            "name": "2.1"
+          },
+          {
+            "annotations": {
+              "description": "RETIRED: Build and run .NET Core 2.0 applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/redhat-developer/s2i-dotnetcore/tree/master/2.0/build/README.md.",
               "iconClass": "icon-dotnet",
               "openshift.io/display-name": ".NET Core 2.0",
               "sampleContextDir": "app",
               "sampleRef": "dotnetcore-2.0",
               "sampleRepo": "https://github.com/redhat-developer/s2i-dotnetcore-ex.git",
               "supports": "dotnet:2.0,dotnet",
-              "tags": "builder,.net,dotnet,dotnetcore,rh-dotnet20",
+              "tags": "hidden,builder,.net,dotnet,dotnetcore,rh-dotnet20",
               "version": "2.0"
             },
             "from": {
@@ -16172,7 +16811,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
               "iconClass": "icon-apache",
               "openshift.io/display-name": "Apache HTTP Server (Latest)",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/httpd-ex.git",
+              "sampleRepo": "https://github.com/sclorg/httpd-ex.git",
               "supports": "httpd",
               "tags": "builder,httpd"
             },
@@ -16191,7 +16830,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
               "iconClass": "icon-apache",
               "openshift.io/display-name": "Apache HTTP Server 2.4",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/httpd-ex.git",
+              "sampleRepo": "https://github.com/sclorg/httpd-ex.git",
               "supports": "httpd",
               "tags": "builder,httpd",
               "version": "2.4"
@@ -16238,24 +16877,6 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
           },
           {
             "annotations": {
-              "description": "Provides a Jenkins 1.X server on CentOS 7. For more information about using this container image, including OpenShift considerations, see https://github.com/openshift/jenkins/blob/master/README.md.",
-              "iconClass": "icon-jenkins",
-              "openshift.io/display-name": "Jenkins 1.X",
-              "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "tags": "hidden,jenkins",
-              "version": "1.x"
-            },
-            "from": {
-              "kind": "DockerImage",
-              "name": "docker.io/openshift/jenkins-1-centos7:latest"
-            },
-            "name": "1",
-            "referencePolicy": {
-              "type": "Local"
-            }
-          },
-          {
-            "annotations": {
               "description": "Provides a Jenkins v2.x server on CentOS 7. For more information about using this container image, including OpenShift considerations, see https://github.com/openshift/jenkins/blob/master/README.md.",
               "iconClass": "icon-jenkins",
               "openshift.io/display-name": "Jenkins 2.X",
@@ -16265,7 +16886,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
             },
             "from": {
               "kind": "DockerImage",
-              "name": "docker.io/openshift/jenkins-2-centos7:v3.11"
+              "name": "quay.io/openshift/origin-jenkins:v4.0"
             },
             "name": "2",
             "referencePolicy": {
@@ -16476,7 +17097,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
         "tags": [
           {
             "annotations": {
-              "description": "Provides a MySQL database on CentOS 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/mysql-container/tree/master/5.6/README.md.\n\nWARNING: By selecting this tag, your application will automatically update to use the latest version of MySQL available on OpenShift, including major versions updates.",
+              "description": "Provides a MySQL database on CentOS 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/mysql-container/blob/master/README.md.\n\nWARNING: By selecting this tag, your application will automatically update to use the latest version of MySQL available on OpenShift, including major versions updates.",
               "iconClass": "icon-mysql-database",
               "openshift.io/display-name": "MySQL (Latest)",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
@@ -16493,7 +17114,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
           },
           {
             "annotations": {
-              "description": "Provides a MySQL 5.5 database on CentOS 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/mysql-container/tree/master/5.5/README.md.",
+              "description": "Provides a MySQL 5.5 database on CentOS 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/mysql-container/blob/master/README.md.",
               "iconClass": "icon-mysql-database",
               "openshift.io/display-name": "MySQL 5.5",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
@@ -16511,7 +17132,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
           },
           {
             "annotations": {
-              "description": "Provides a MySQL 5.6 database on CentOS 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/mysql-container/tree/master/5.6/README.md.",
+              "description": "Provides a MySQL 5.6 database on CentOS 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/mysql-container/blob/master/README.md.",
               "iconClass": "icon-mysql-database",
               "openshift.io/display-name": "MySQL 5.6",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
@@ -16529,7 +17150,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
           },
           {
             "annotations": {
-              "description": "Provides a MySQL 5.7 database on CentOS 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/mysql-container/tree/master/5.7/README.md.",
+              "description": "Provides a MySQL 5.7 database on CentOS 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/mysql-container/blob/master/README.md.",
               "iconClass": "icon-mysql-database",
               "openshift.io/display-name": "MySQL 5.7",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
@@ -16654,17 +17275,17 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
         "tags": [
           {
             "annotations": {
-              "description": "Build and run Node.js applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/bucharest-gold/centos7-s2i-nodejs.\n\nWARNING: By selecting this tag, your application will automatically update to use the latest version of Node.js available on OpenShift, including major versions updates.",
+              "description": "Build and run Node.js applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/nodeshift/centos7-s2i-nodejs.\n\nWARNING: By selecting this tag, your application will automatically update to use the latest version of Node.js available on OpenShift, including major versions updates.",
               "iconClass": "icon-nodejs",
               "openshift.io/display-name": "Node.js (Latest)",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/nodejs-ex.git",
+              "sampleRepo": "https://github.com/sclorg/nodejs-ex.git",
               "supports": "nodejs",
               "tags": "builder,nodejs"
             },
             "from": {
               "kind": "ImageStreamTag",
-              "name": "10"
+              "name": "11"
             },
             "name": "latest",
             "referencePolicy": {
@@ -16677,7 +17298,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
               "iconClass": "icon-nodejs",
               "openshift.io/display-name": "Node.js 0.10",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/nodejs-ex.git",
+              "sampleRepo": "https://github.com/sclorg/nodejs-ex.git",
               "supports": "nodejs:0.10,nodejs:0.1,nodejs",
               "tags": "hidden,nodejs",
               "version": "0.10"
@@ -16697,7 +17318,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
               "iconClass": "icon-nodejs",
               "openshift.io/display-name": "Node.js 4",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/nodejs-ex.git",
+              "sampleRepo": "https://github.com/sclorg/nodejs-ex.git",
               "supports": "nodejs:4,nodejs",
               "tags": "hidden,builder,nodejs",
               "version": "4"
@@ -16717,7 +17338,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
               "iconClass": "icon-nodejs",
               "openshift.io/display-name": "Node.js 6",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/nodejs-ex.git",
+              "sampleRepo": "https://github.com/sclorg/nodejs-ex.git",
               "supports": "nodejs:6,nodejs",
               "tags": "builder,nodejs",
               "version": "6"
@@ -16737,7 +17358,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
               "iconClass": "icon-nodejs",
               "openshift.io/display-name": "Node.js 8",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/nodejs-ex.git",
+              "sampleRepo": "https://github.com/sclorg/nodejs-ex.git",
               "tags": "builder,nodejs",
               "version": "8"
             },
@@ -16752,17 +17373,17 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
           },
           {
             "annotations": {
-              "description": "Build and run Node.js 8 applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/bucharest-gold/centos7-s2i-nodejs.",
+              "description": "Build and run Node.js 8 applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/nodeshift/centos7-s2i-nodejs.",
               "iconClass": "icon-nodejs",
               "openshift.io/display-name": "Node.js 8 (RHOAR)",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/nodejs-ex.git",
+              "sampleRepo": "https://github.com/sclorg/nodejs-ex.git",
               "tags": "builder,nodejs",
               "version": "8"
             },
             "from": {
               "kind": "DockerImage",
-              "name": "docker.io/bucharestgold/centos7-s2i-nodejs:8.x"
+              "name": "docker.io/nodeshift/centos7-s2i-nodejs:8.x"
             },
             "name": "8-RHOAR",
             "referencePolicy": {
@@ -16771,19 +17392,38 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
           },
           {
             "annotations": {
-              "description": "Build and run Node.js 10 applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/bucharest-gold/centos7-s2i-nodejs.",
+              "description": "Build and run Node.js 10 applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/nodeshift/centos7-s2i-nodejs.",
               "iconClass": "icon-nodejs",
               "openshift.io/display-name": "Node.js 10",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/nodejs-ex.git",
+              "sampleRepo": "https://github.com/sclorg/nodejs-ex.git",
               "tags": "builder,nodejs",
               "version": "10"
             },
             "from": {
               "kind": "DockerImage",
-              "name": "docker.io/bucharestgold/centos7-s2i-nodejs:10.x"
+              "name": "docker.io/nodeshift/centos7-s2i-nodejs:10.x"
             },
             "name": "10",
+            "referencePolicy": {
+              "type": "Local"
+            }
+          },
+          {
+            "annotations": {
+              "description": "Build and run Node.js 11 applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/nodeshift/centos7-s2i-nodejs.",
+              "iconClass": "icon-nodejs",
+              "openshift.io/display-name": "Node.js 11",
+              "openshift.io/provider-display-name": "Red Hat, Inc.",
+              "sampleRepo": "https://github.com/sclorg/nodejs-ex.git",
+              "tags": "builder,nodejs",
+              "version": "11"
+            },
+            "from": {
+              "kind": "DockerImage",
+              "name": "docker.io/nodeshift/centos7-s2i-nodejs:11.x"
+            },
+            "name": "11",
             "referencePolicy": {
               "type": "Local"
             }
@@ -16808,7 +17448,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
               "iconClass": "icon-perl",
               "openshift.io/display-name": "Perl (Latest)",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/dancer-ex.git",
+              "sampleRepo": "https://github.com/sclorg/dancer-ex.git",
               "supports": "perl",
               "tags": "builder,perl"
             },
@@ -16827,7 +17467,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
               "iconClass": "icon-perl",
               "openshift.io/display-name": "Perl 5.16",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/dancer-ex.git",
+              "sampleRepo": "https://github.com/sclorg/dancer-ex.git",
               "supports": "perl:5.16,perl",
               "tags": "hidden,builder,perl",
               "version": "5.16"
@@ -16847,7 +17487,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
               "iconClass": "icon-perl",
               "openshift.io/display-name": "Perl 5.20",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/dancer-ex.git",
+              "sampleRepo": "https://github.com/sclorg/dancer-ex.git",
               "supports": "perl:5.20,perl",
               "tags": "hidden,builder,perl",
               "version": "5.20"
@@ -16867,7 +17507,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
               "iconClass": "icon-perl",
               "openshift.io/display-name": "Perl 5.24",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/dancer-ex.git",
+              "sampleRepo": "https://github.com/sclorg/dancer-ex.git",
               "supports": "perl:5.24,perl",
               "tags": "builder,perl",
               "version": "5.24"
@@ -16887,7 +17527,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
               "iconClass": "icon-perl",
               "openshift.io/display-name": "Perl 5.26",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/dancer-ex.git",
+              "sampleRepo": "https://github.com/sclorg/dancer-ex.git",
               "supports": "perl:5.26,perl",
               "tags": "builder,perl",
               "version": "5.26"
@@ -16921,7 +17561,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
               "iconClass": "icon-php",
               "openshift.io/display-name": "PHP (Latest)",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/cakephp-ex.git",
+              "sampleRepo": "https://github.com/sclorg/cakephp-ex.git",
               "supports": "php",
               "tags": "builder,php"
             },
@@ -16940,7 +17580,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
               "iconClass": "icon-php",
               "openshift.io/display-name": "PHP 5.5",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/cakephp-ex.git",
+              "sampleRepo": "https://github.com/sclorg/cakephp-ex.git",
               "supports": "php:5.5,php",
               "tags": "hidden,builder,php",
               "version": "5.5"
@@ -16960,7 +17600,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
               "iconClass": "icon-php",
               "openshift.io/display-name": "PHP 5.6",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/cakephp-ex.git",
+              "sampleRepo": "https://github.com/sclorg/cakephp-ex.git",
               "supports": "php:5.6,php",
               "tags": "hidden,builder,php",
               "version": "5.6"
@@ -16980,7 +17620,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
               "iconClass": "icon-php",
               "openshift.io/display-name": "PHP 7.0",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/cakephp-ex.git",
+              "sampleRepo": "https://github.com/sclorg/cakephp-ex.git",
               "supports": "php:7.0,php",
               "tags": "builder,php",
               "version": "7.0"
@@ -17000,7 +17640,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
               "iconClass": "icon-php",
               "openshift.io/display-name": "PHP 7.1",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/cakephp-ex.git",
+              "sampleRepo": "https://github.com/sclorg/cakephp-ex.git",
               "supports": "php:7.1,php",
               "tags": "builder,php",
               "version": "7.1"
@@ -17030,7 +17670,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
         "tags": [
           {
             "annotations": {
-              "description": "Provides a PostgreSQL database on CentOS 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/postgresql-container/blob/generated/10/root/usr/share/container-scripts/postgresql/README.md.\n\nWARNING: By selecting this tag, your application will automatically update to use the latest version of PostgreSQL available on OpenShift, including major versions updates.",
+              "description": "Provides a PostgreSQL database on CentOS 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/postgresql-container/blob/master/README.md.\n\nWARNING: By selecting this tag, your application will automatically update to use the latest version of PostgreSQL available on OpenShift, including major versions updates.",
               "iconClass": "icon-postgresql",
               "openshift.io/display-name": "PostgreSQL (Latest)",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
@@ -17047,7 +17687,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
           },
           {
             "annotations": {
-              "description": "Provides a PostgreSQL 9.2 database on CentOS 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/postgresql-container/tree/master/9.2/README.md.",
+              "description": "Provides a PostgreSQL 9.2 database on CentOS 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/postgresql-container/blob/master/README.md.",
               "iconClass": "icon-postgresql",
               "openshift.io/display-name": "PostgreSQL 9.2",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
@@ -17065,7 +17705,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
           },
           {
             "annotations": {
-              "description": "Provides a PostgreSQL 9.4 database on CentOS 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/postgresql-container/tree/master/9.4/README.md.",
+              "description": "Provides a PostgreSQL 9.4 database on CentOS 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/postgresql-container/blob/master/README.md.",
               "iconClass": "icon-postgresql",
               "openshift.io/display-name": "PostgreSQL 9.4",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
@@ -17083,7 +17723,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
           },
           {
             "annotations": {
-              "description": "Provides a PostgreSQL 9.5 database on CentOS 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/postgresql-container/blob/generated/9.5/root/usr/share/container-scripts/postgresql/README.md.",
+              "description": "Provides a PostgreSQL 9.5 database on CentOS 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/postgresql-container/blob/master/README.md.",
               "iconClass": "icon-postgresql",
               "openshift.io/display-name": "PostgreSQL 9.5",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
@@ -17101,7 +17741,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
           },
           {
             "annotations": {
-              "description": "Provides a PostgreSQL 9.6 database on CentOS 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/postgresql-container/blob/generated/9.6/root/usr/share/container-scripts/postgresql/README.md.",
+              "description": "Provides a PostgreSQL 9.6 database on CentOS 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/postgresql-container/blob/master/README.md.",
               "iconClass": "icon-postgresql",
               "openshift.io/display-name": "PostgreSQL 9.6",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
@@ -17119,7 +17759,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
           },
           {
             "annotations": {
-              "description": "Provides a PostgreSQL 10 database on CentOS 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/postgresql-container/blob/generated/10/root/usr/share/container-scripts/postgresql/README.md.",
+              "description": "Provides a PostgreSQL 10 database on CentOS 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/postgresql-container/blob/master/README.md.",
               "iconClass": "icon-postgresql",
               "openshift.io/display-name": "PostgreSQL 10",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
@@ -17155,7 +17795,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
               "iconClass": "icon-python",
               "openshift.io/display-name": "Python (Latest)",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/django-ex.git",
+              "sampleRepo": "https://github.com/sclorg/django-ex.git",
               "supports": "python",
               "tags": "builder,python"
             },
@@ -17174,7 +17814,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
               "iconClass": "icon-python",
               "openshift.io/display-name": "Python 3.3",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/django-ex.git",
+              "sampleRepo": "https://github.com/sclorg/django-ex.git",
               "supports": "python:3.3,python",
               "tags": "hidden,builder,python",
               "version": "3.3"
@@ -17194,7 +17834,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
               "iconClass": "icon-python",
               "openshift.io/display-name": "Python 2.7",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/django-ex.git",
+              "sampleRepo": "https://github.com/sclorg/django-ex.git",
               "supports": "python:2.7,python",
               "tags": "builder,python",
               "version": "2.7"
@@ -17214,7 +17854,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
               "iconClass": "icon-python",
               "openshift.io/display-name": "Python 3.4",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/django-ex.git",
+              "sampleRepo": "https://github.com/sclorg/django-ex.git",
               "supports": "python:3.4,python",
               "tags": "hidden,builder,python",
               "version": "3.4"
@@ -17234,7 +17874,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
               "iconClass": "icon-python",
               "openshift.io/display-name": "Python 3.5",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/django-ex.git",
+              "sampleRepo": "https://github.com/sclorg/django-ex.git",
               "supports": "python:3.5,python",
               "tags": "builder,python",
               "version": "3.5"
@@ -17254,7 +17894,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
               "iconClass": "icon-python",
               "openshift.io/display-name": "Python 3.6",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/django-ex.git",
+              "sampleRepo": "https://github.com/sclorg/django-ex.git",
               "supports": "python:3.6,python",
               "tags": "builder,python",
               "version": "3.6"
@@ -17337,7 +17977,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
               "iconClass": "icon-ruby",
               "openshift.io/display-name": "Ruby (Latest)",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/ruby-ex.git",
+              "sampleRepo": "https://github.com/sclorg/ruby-ex.git",
               "supports": "ruby",
               "tags": "builder,ruby"
             },
@@ -17346,86 +17986,6 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
               "name": "2.5"
             },
             "name": "latest",
-            "referencePolicy": {
-              "type": "Local"
-            }
-          },
-          {
-            "annotations": {
-              "description": "Build and run Ruby 2.0 applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/sclorg/s2i-ruby-container/tree/master/2.0/README.md.",
-              "iconClass": "icon-ruby",
-              "openshift.io/display-name": "Ruby 2.0",
-              "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/ruby-ex.git",
-              "supports": "ruby:2.0,ruby",
-              "tags": "hidden,builder,ruby",
-              "version": "2.0"
-            },
-            "from": {
-              "kind": "DockerImage",
-              "name": "docker.io/openshift/ruby-20-centos7:latest"
-            },
-            "name": "2.0",
-            "referencePolicy": {
-              "type": "Local"
-            }
-          },
-          {
-            "annotations": {
-              "description": "Build and run Ruby 2.2 applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/sclorg/s2i-ruby-container/tree/master/2.2/README.md.",
-              "iconClass": "icon-ruby",
-              "openshift.io/display-name": "Ruby 2.2",
-              "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/ruby-ex.git",
-              "supports": "ruby:2.2,ruby",
-              "tags": "hidden,builder,ruby",
-              "version": "2.2"
-            },
-            "from": {
-              "kind": "DockerImage",
-              "name": "docker.io/centos/ruby-22-centos7:latest"
-            },
-            "name": "2.2",
-            "referencePolicy": {
-              "type": "Local"
-            }
-          },
-          {
-            "annotations": {
-              "description": "Build and run Ruby 2.3 applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/sclorg/s2i-ruby-container/blob/master/2.3/README.md.",
-              "iconClass": "icon-ruby",
-              "openshift.io/display-name": "Ruby 2.3",
-              "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/ruby-ex.git",
-              "supports": "ruby:2.3,ruby",
-              "tags": "builder,ruby",
-              "version": "2.3"
-            },
-            "from": {
-              "kind": "DockerImage",
-              "name": "docker.io/centos/ruby-23-centos7:latest"
-            },
-            "name": "2.3",
-            "referencePolicy": {
-              "type": "Local"
-            }
-          },
-          {
-            "annotations": {
-              "description": "Build and run Ruby 2.4 applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/sclorg/s2i-ruby-container/blob/master/2.4/README.md.",
-              "iconClass": "icon-ruby",
-              "openshift.io/display-name": "Ruby 2.4",
-              "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/ruby-ex.git",
-              "supports": "ruby:2.4,ruby",
-              "tags": "builder,ruby",
-              "version": "2.4"
-            },
-            "from": {
-              "kind": "DockerImage",
-              "name": "docker.io/centos/ruby-24-centos7:latest"
-            },
-            "name": "2.4",
             "referencePolicy": {
               "type": "Local"
             }
@@ -17476,7 +18036,7 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
             },
             "from": {
               "kind": "ImageStreamTag",
-              "name": "13.0"
+              "name": "15.0"
             },
             "name": "latest",
             "referencePolicy": {
@@ -17622,6 +18182,46 @@ var _examplesImageStreamsImageStreamsCentos7Json = []byte(`{
             "referencePolicy": {
               "type": "Local"
             }
+          },
+          {
+            "annotations": {
+              "description": "Build and run WildFly 14 applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/openshift-s2i/s2i-wildfly/blob/master/README.md.",
+              "iconClass": "icon-wildfly",
+              "openshift.io/display-name": "WildFly 14",
+              "openshift.io/provider-display-name": "Red Hat, Inc.",
+              "sampleRepo": "https://github.com/openshift/openshift-jee-sample.git",
+              "supports": "wildfly:14,jee,java",
+              "tags": "builder,wildfly,java",
+              "version": "14.0"
+            },
+            "from": {
+              "kind": "DockerImage",
+              "name": "docker.io/openshift/wildfly-140-centos7:latest"
+            },
+            "name": "14.0",
+            "referencePolicy": {
+              "type": "Local"
+            }
+          },
+          {
+            "annotations": {
+              "description": "Build and run WildFly 15 applications on CentOS 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/openshift-s2i/s2i-wildfly/blob/master/README.md.",
+              "iconClass": "icon-wildfly",
+              "openshift.io/display-name": "WildFly 15",
+              "openshift.io/provider-display-name": "Red Hat, Inc.",
+              "sampleRepo": "https://github.com/openshift/openshift-jee-sample.git",
+              "supports": "wildfly:15,jee,java",
+              "tags": "builder,wildfly,java",
+              "version": "15.0"
+            },
+            "from": {
+              "kind": "DockerImage",
+              "name": "docker.io/openshift/wildfly-150-centos7:latest"
+            },
+            "name": "15.0",
+            "referencePolicy": {
+              "type": "Local"
+            }
           }
         ]
       }
@@ -17654,6 +18254,145 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
       "kind": "ImageStream",
       "metadata": {
         "annotations": {
+          "openshift.io/display-name": ".NET Core"
+        },
+        "name": "dotnet"
+      },
+      "spec": {
+        "tags": [
+          {
+            "annotations": {
+              "description": "Build and run .NET Core applications on RHEL 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/redhat-developer/s2i-dotnetcore/tree/master/2.2/build/README.md.\n\nWARNING: By selecting this tag, your application will automatically update to use the latest version of .NET Core available on OpenShift, including major versions updates.",
+              "iconClass": "icon-dotnet",
+              "openshift.io/display-name": ".NET Core (Latest)",
+              "sampleContextDir": "app",
+              "sampleRef": "dotnetcore-2.2",
+              "sampleRepo": "https://github.com/redhat-developer/s2i-dotnetcore-ex.git",
+              "supports": "dotnet",
+              "tags": "builder,.net,dotnet,dotnetcore"
+            },
+            "from": {
+              "kind": "ImageStreamTag",
+              "name": "2.2"
+            },
+            "name": "latest",
+            "referencePolicy": {
+              "type": "Local"
+            }
+          },
+          {
+            "annotations": {
+              "description": "Build and run .NET Core 2.2 applications on RHEL 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/redhat-developer/s2i-dotnetcore/tree/master/2.2/build/README.md.",
+              "iconClass": "icon-dotnet",
+              "openshift.io/display-name": ".NET Core 2.2",
+              "sampleContextDir": "app",
+              "sampleRef": "dotnetcore-2.2",
+              "sampleRepo": "https://github.com/redhat-developer/s2i-dotnetcore-ex.git",
+              "supports": "dotnet:2.2,dotnet",
+              "tags": "builder,.net,dotnet,dotnetcore,rh-dotnet22",
+              "version": "2.2"
+            },
+            "from": {
+              "kind": "DockerImage",
+              "name": "registry.redhat.io/dotnet/dotnet-22-rhel7:2.2"
+            },
+            "name": "2.2",
+            "referencePolicy": {
+              "type": "Local"
+            }
+          },
+          {
+            "annotations": {
+              "description": "Build and run .NET Core 2.1 applications on RHEL 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/redhat-developer/s2i-dotnetcore/tree/master/2.1/build/README.md.",
+              "iconClass": "icon-dotnet",
+              "openshift.io/display-name": ".NET Core 2.1",
+              "sampleContextDir": "app",
+              "sampleRef": "dotnetcore-2.1",
+              "sampleRepo": "https://github.com/redhat-developer/s2i-dotnetcore-ex.git",
+              "supports": "dotnet:2.1,dotnet",
+              "tags": "builder,.net,dotnet,dotnetcore,rh-dotnet21",
+              "version": "2.1"
+            },
+            "from": {
+              "kind": "DockerImage",
+              "name": "registry.redhat.io/dotnet/dotnet-21-rhel7:2.1"
+            },
+            "name": "2.1",
+            "referencePolicy": {
+              "type": "Local"
+            }
+          },
+          {
+            "annotations": {
+              "description": "RETIRED: Build and run .NET Core 2.0 applications on RHEL 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/redhat-developer/s2i-dotnetcore/tree/master/2.0/build/README.md.",
+              "iconClass": "icon-dotnet",
+              "openshift.io/display-name": ".NET Core 2.0",
+              "sampleContextDir": "app",
+              "sampleRef": "dotnetcore-2.0",
+              "sampleRepo": "https://github.com/redhat-developer/s2i-dotnetcore-ex.git",
+              "supports": "dotnet:2.0,dotnet",
+              "tags": "hidden,builder,.net,dotnet,dotnetcore,rh-dotnet20",
+              "version": "2.0"
+            },
+            "from": {
+              "kind": "DockerImage",
+              "name": "registry.redhat.io/dotnet/dotnet-20-rhel7:2.0"
+            },
+            "name": "2.0",
+            "referencePolicy": {
+              "type": "Local"
+            }
+          },
+          {
+            "annotations": {
+              "description": "Build and run .NET Core 1.1 applications on RHEL 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/redhat-developer/s2i-dotnetcore/tree/master/1.1/README.md.",
+              "iconClass": "icon-dotnet",
+              "openshift.io/display-name": ".NET Core 1.1",
+              "sampleContextDir": "app",
+              "sampleRef": "dotnetcore-1.1",
+              "sampleRepo": "https://github.com/redhat-developer/s2i-dotnetcore-ex.git",
+              "supports": "dotnet:1.1,dotnet",
+              "tags": "builder,.net,dotnet,dotnetcore,rh-dotnetcore11",
+              "version": "1.1"
+            },
+            "from": {
+              "kind": "DockerImage",
+              "name": "registry.redhat.io/dotnet/dotnetcore-11-rhel7:1.1"
+            },
+            "name": "1.1",
+            "referencePolicy": {
+              "type": "Local"
+            }
+          },
+          {
+            "annotations": {
+              "description": "Build and run .NET Core 1.0 applications on RHEL 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/redhat-developer/s2i-dotnetcore/tree/master/1.0/README.md.",
+              "iconClass": "icon-dotnet",
+              "openshift.io/display-name": ".NET Core 1.0",
+              "sampleContextDir": "app",
+              "sampleRef": "dotnetcore-1.0",
+              "sampleRepo": "https://github.com/redhat-developer/s2i-dotnetcore-ex.git",
+              "supports": "dotnet:1.0,dotnet",
+              "tags": "builder,.net,dotnet,dotnetcore,rh-dotnetcore10",
+              "version": "1.0"
+            },
+            "from": {
+              "kind": "DockerImage",
+              "name": "registry.redhat.io/dotnet/dotnetcore-10-rhel7:1.0"
+            },
+            "name": "1.0",
+            "referencePolicy": {
+              "type": "Local"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ImageStream",
+      "metadata": {
+        "annotations": {
           "openshift.io/display-name": "Apache HTTP Server (httpd)"
         },
         "name": "httpd"
@@ -17666,7 +18405,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
               "iconClass": "icon-apache",
               "openshift.io/display-name": "Apache HTTP Server (Latest)",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/httpd-ex.git",
+              "sampleRepo": "https://github.com/sclorg/httpd-ex.git",
               "supports": "httpd",
               "tags": "builder,httpd"
             },
@@ -17685,7 +18424,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
               "iconClass": "icon-apache",
               "openshift.io/display-name": "Apache HTTP Server 2.4",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/httpd-ex.git",
+              "sampleRepo": "https://github.com/sclorg/httpd-ex.git",
               "supports": "httpd",
               "tags": "builder,httpd",
               "version": "2.4"
@@ -17732,24 +18471,6 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
           },
           {
             "annotations": {
-              "description": "Provides a Jenkins 1.X server on RHEL 7. For more information about using this container image, including OpenShift considerations, see https://github.com/openshift/jenkins/blob/master/README.md.",
-              "iconClass": "icon-jenkins",
-              "openshift.io/display-name": "Jenkins 1.X",
-              "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "tags": "hidden,jenkins",
-              "version": "1.x"
-            },
-            "from": {
-              "kind": "DockerImage",
-              "name": "registry.redhat.io/openshift3/jenkins-1-rhel7:latest"
-            },
-            "name": "1",
-            "referencePolicy": {
-              "type": "Local"
-            }
-          },
-          {
-            "annotations": {
               "description": "Provides a Jenkins 2.X server on RHEL 7. For more information about using this container image, including OpenShift considerations, see https://github.com/openshift/jenkins/blob/master/README.md.",
               "iconClass": "icon-jenkins",
               "openshift.io/display-name": "Jenkins 2.X",
@@ -17759,7 +18480,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
             },
             "from": {
               "kind": "DockerImage",
-              "name": "registry.redhat.io/openshift3/jenkins-2-rhel7:v3.11"
+              "name": "registry.redhat.io/openshift/jenkins-2-rhel7:v4.0"
             },
             "name": "2",
             "referencePolicy": {
@@ -17970,7 +18691,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
         "tags": [
           {
             "annotations": {
-              "description": "Provides a MySQL database on RHEL 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/mysql-container/tree/master/5.6/README.md.\n\nWARNING: By selecting this tag, your application will automatically update to use the latest version of MySQL available on OpenShift, including major versions updates.",
+              "description": "Provides a MySQL database on RHEL 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/mysql-container/blob/master/README.md.\n\nWARNING: By selecting this tag, your application will automatically update to use the latest version of MySQL available on OpenShift, including major versions updates.",
               "iconClass": "icon-mysql-database",
               "openshift.io/display-name": "MySQL (Latest)",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
@@ -17987,7 +18708,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
           },
           {
             "annotations": {
-              "description": "Provides a MySQL 5.5 database on RHEL 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/mysql-container/tree/master/5.5/README.md.",
+              "description": "Provides a MySQL 5.5 database on RHEL 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/mysql-container/blob/master/README.md.",
               "iconClass": "icon-mysql-database",
               "openshift.io/display-name": "MySQL 5.5",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
@@ -18005,7 +18726,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
           },
           {
             "annotations": {
-              "description": "Provides a MySQL 5.6 database on RHEL 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/mysql-container/tree/master/5.6/README.md.",
+              "description": "Provides a MySQL 5.6 database on RHEL 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/mysql-container/blob/master/README.md.",
               "iconClass": "icon-mysql-database",
               "openshift.io/display-name": "MySQL 5.6",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
@@ -18023,7 +18744,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
           },
           {
             "annotations": {
-              "description": "Provides a MySQL 5.7 database on RHEL 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/mysql-container/tree/master/5.7/README.md.",
+              "description": "Provides a MySQL 5.7 database on RHEL 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/mysql-container/blob/master/README.md.",
               "iconClass": "icon-mysql-database",
               "openshift.io/display-name": "MySQL 5.7",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
@@ -18148,11 +18869,11 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
         "tags": [
           {
             "annotations": {
-              "description": "Build and run Node.js 10 applications on RHEL 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/bucharest-gold/centos7-s2i-nodejs.\n\nWARNING: By selecting this tag, your application will automatically update to use the latest version of Node.js available on OpenShift, including major versions updates.",
+              "description": "Build and run Node.js 10 applications on RHEL 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/nodeshift/centos7-s2i-nodejs.\n\nWARNING: By selecting this tag, your application will automatically update to use the latest version of Node.js available on OpenShift, including major versions updates.",
               "iconClass": "icon-nodejs",
               "openshift.io/display-name": "Node.js (Latest)",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/nodejs-ex.git",
+              "sampleRepo": "https://github.com/sclorg/nodejs-ex.git",
               "supports": "nodejs",
               "tags": "builder,nodejs"
             },
@@ -18171,7 +18892,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
               "iconClass": "icon-nodejs",
               "openshift.io/display-name": "Node.js 0.10",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/nodejs-ex.git",
+              "sampleRepo": "https://github.com/sclorg/nodejs-ex.git",
               "supports": "nodejs:0.10,nodejs:0.1,nodejs",
               "tags": "hidden,nodejs",
               "version": "0.10"
@@ -18191,7 +18912,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
               "iconClass": "icon-nodejs",
               "openshift.io/display-name": "Node.js 4",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/nodejs-ex.git",
+              "sampleRepo": "https://github.com/sclorg/nodejs-ex.git",
               "supports": "nodejs:4,nodejs",
               "tags": "hidden,builder,nodejs",
               "version": "4"
@@ -18211,7 +18932,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
               "iconClass": "icon-nodejs",
               "openshift.io/display-name": "Node.js 6",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/nodejs-ex.git",
+              "sampleRepo": "https://github.com/sclorg/nodejs-ex.git",
               "supports": "nodejs:6,nodejs",
               "tags": "builder,nodejs",
               "version": "6"
@@ -18231,7 +18952,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
               "iconClass": "icon-nodejs",
               "openshift.io/display-name": "Node.js 8",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/nodejs-ex.git",
+              "sampleRepo": "https://github.com/sclorg/nodejs-ex.git",
               "tags": "builder,nodejs",
               "version": "8"
             },
@@ -18246,11 +18967,11 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
           },
           {
             "annotations": {
-              "description": "Build and run Node.js 8 applications on RHEL 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/bucharest-gold/centos7-s2i-nodejs.",
+              "description": "Build and run Node.js 8 applications on RHEL 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/nodeshift/centos7-s2i-nodejs.",
               "iconClass": "icon-nodejs",
               "openshift.io/display-name": "OpenShift Application Runtimes Node.js 8",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/nodejs-ex.git",
+              "sampleRepo": "https://github.com/sclorg/nodejs-ex.git",
               "tags": "builder,nodejs",
               "version": "8"
             },
@@ -18265,11 +18986,11 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
           },
           {
             "annotations": {
-              "description": "Build and run Node.js 10 applications on RHEL 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/bucharest-gold/centos7-s2i-nodejs.",
+              "description": "Build and run Node.js 10 applications on RHEL 7. For more information about using this builder image, including OpenShift considerations, see https://github.com/nodeshift/centos7-s2i-nodejs.",
               "iconClass": "icon-nodejs",
               "openshift.io/display-name": "OpenShift Application Runtimes Node.js 10",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/nodejs-ex.git",
+              "sampleRepo": "https://github.com/sclorg/nodejs-ex.git",
               "tags": "builder,nodejs",
               "version": "10"
             },
@@ -18302,7 +19023,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
               "iconClass": "icon-perl",
               "openshift.io/display-name": "Perl (Latest)",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/dancer-ex.git",
+              "sampleRepo": "https://github.com/sclorg/dancer-ex.git",
               "supports": "perl",
               "tags": "builder,perl"
             },
@@ -18321,7 +19042,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
               "iconClass": "icon-perl",
               "openshift.io/display-name": "Perl 5.16",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/dancer-ex.git",
+              "sampleRepo": "https://github.com/sclorg/dancer-ex.git",
               "supports": "perl:5.16,perl",
               "tags": "hidden,builder,perl",
               "version": "5.16"
@@ -18341,7 +19062,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
               "iconClass": "icon-perl",
               "openshift.io/display-name": "Perl 5.20",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/dancer-ex.git",
+              "sampleRepo": "https://github.com/sclorg/dancer-ex.git",
               "supports": "perl:5.20,perl",
               "tags": "hidden,builder,perl",
               "version": "5.20"
@@ -18361,7 +19082,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
               "iconClass": "icon-perl",
               "openshift.io/display-name": "Perl 5.24",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/dancer-ex.git",
+              "sampleRepo": "https://github.com/sclorg/dancer-ex.git",
               "supports": "perl:5.24,perl",
               "tags": "builder,perl",
               "version": "5.24"
@@ -18381,7 +19102,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
               "iconClass": "icon-perl",
               "openshift.io/display-name": "Perl 5.26",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/dancer-ex.git",
+              "sampleRepo": "https://github.com/sclorg/dancer-ex.git",
               "supports": "perl:5.26,perl",
               "tags": "builder,perl",
               "version": "5.26"
@@ -18415,7 +19136,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
               "iconClass": "icon-php",
               "openshift.io/display-name": "PHP (Latest)",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/cakephp-ex.git",
+              "sampleRepo": "https://github.com/sclorg/cakephp-ex.git",
               "supports": "php",
               "tags": "builder,php"
             },
@@ -18434,7 +19155,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
               "iconClass": "icon-php",
               "openshift.io/display-name": "PHP 5.5",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/cakephp-ex.git",
+              "sampleRepo": "https://github.com/sclorg/cakephp-ex.git",
               "supports": "php:5.5,php",
               "tags": "hidden,builder,php",
               "version": "5.5"
@@ -18454,7 +19175,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
               "iconClass": "icon-php",
               "openshift.io/display-name": "PHP 5.6",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/cakephp-ex.git",
+              "sampleRepo": "https://github.com/sclorg/cakephp-ex.git",
               "supports": "php:5.6,php",
               "tags": "hidden,builder,php",
               "version": "5.6"
@@ -18474,7 +19195,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
               "iconClass": "icon-php",
               "openshift.io/display-name": "PHP 7.0",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/cakephp-ex.git",
+              "sampleRepo": "https://github.com/sclorg/cakephp-ex.git",
               "supports": "php:7.0,php",
               "tags": "builder,php",
               "version": "7.0"
@@ -18494,7 +19215,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
               "iconClass": "icon-php",
               "openshift.io/display-name": "PHP 7.1",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/cakephp-ex.git",
+              "sampleRepo": "https://github.com/sclorg/cakephp-ex.git",
               "supports": "php:7.1,php",
               "tags": "builder,php",
               "version": "7.1"
@@ -18524,7 +19245,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
         "tags": [
           {
             "annotations": {
-              "description": "Provides a PostgreSQL database on RHEL 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/postgresql-container/blob/generated/10/root/usr/share/container-scripts/postgresql/README.md.\n\nWARNING: By selecting this tag, your application will automatically update to use the latest version of PostgreSQL available on OpenShift, including major versions updates.",
+              "description": "Provides a PostgreSQL database on RHEL 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/postgresql-container/blob/master/README.md.\n\nWARNING: By selecting this tag, your application will automatically update to use the latest version of PostgreSQL available on OpenShift, including major versions updates.",
               "iconClass": "icon-postgresql",
               "openshift.io/display-name": "PostgreSQL (Latest)",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
@@ -18541,7 +19262,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
           },
           {
             "annotations": {
-              "description": "Provides a PostgreSQL 9.2 database on RHEL 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/postgresql-container/tree/master/9.2/README.md.",
+              "description": "Provides a PostgreSQL 9.2 database on RHEL 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/postgresql-container/blob/master/README.md.",
               "iconClass": "icon-postgresql",
               "openshift.io/display-name": "PostgreSQL 9.2",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
@@ -18559,7 +19280,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
           },
           {
             "annotations": {
-              "description": "Provides a PostgreSQL 9.4 database on RHEL 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/postgresql-container/tree/master/9.4/README.md.",
+              "description": "Provides a PostgreSQL 9.4 database on RHEL 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/postgresql-container/blob/master/README.md.",
               "iconClass": "icon-postgresql",
               "openshift.io/display-name": "PostgreSQL 9.4",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
@@ -18577,7 +19298,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
           },
           {
             "annotations": {
-              "description": "Provides a PostgreSQL 9.5 database on RHEL 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/postgresql-container/blob/generated/9.5/root/usr/share/container-scripts/postgresql/README.md.",
+              "description": "Provides a PostgreSQL 9.5 database on RHEL 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/postgresql-container/blob/master/README.md.",
               "iconClass": "icon-postgresql",
               "openshift.io/display-name": "PostgreSQL 9.5",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
@@ -18595,7 +19316,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
           },
           {
             "annotations": {
-              "description": "Provides a PostgreSQL 9.6 database on RHEL 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/postgresql-container/blob/generated/9.6/root/usr/share/container-scripts/postgresql/README.md.",
+              "description": "Provides a PostgreSQL 9.6 database on RHEL 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/postgresql-container/blob/master/README.md.",
               "iconClass": "icon-postgresql",
               "openshift.io/display-name": "PostgreSQL (Ephemeral) 9.6",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
@@ -18613,7 +19334,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
           },
           {
             "annotations": {
-              "description": "Provides a PostgreSQL 10 database on RHEL 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/postgresql-container/blob/generated/10/root/usr/share/container-scripts/postgresql/README.md.",
+              "description": "Provides a PostgreSQL 10 database on RHEL 7. For more information about using this database image, including OpenShift considerations, see https://github.com/sclorg/postgresql-container/blob/master/README.md.",
               "iconClass": "icon-postgresql",
               "openshift.io/display-name": "PostgreSQL (Ephemeral) 10",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
@@ -18649,7 +19370,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
               "iconClass": "icon-python",
               "openshift.io/display-name": "Python (Latest)",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/django-ex.git",
+              "sampleRepo": "https://github.com/sclorg/django-ex.git",
               "supports": "python",
               "tags": "builder,python"
             },
@@ -18668,7 +19389,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
               "iconClass": "icon-python",
               "openshift.io/display-name": "Python 3.3",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/django-ex.git",
+              "sampleRepo": "https://github.com/sclorg/django-ex.git",
               "supports": "python:3.3,python",
               "tags": "hidden,builder,python",
               "version": "3.3"
@@ -18688,7 +19409,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
               "iconClass": "icon-python",
               "openshift.io/display-name": "Python 2.7",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/django-ex.git",
+              "sampleRepo": "https://github.com/sclorg/django-ex.git",
               "supports": "python:2.7,python",
               "tags": "builder,python",
               "version": "2.7"
@@ -18708,7 +19429,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
               "iconClass": "icon-python",
               "openshift.io/display-name": "Python 3.4",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/django-ex.git",
+              "sampleRepo": "https://github.com/sclorg/django-ex.git",
               "supports": "python:3.4,python",
               "tags": "hidden,builder,python",
               "version": "3.4"
@@ -18728,7 +19449,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
               "iconClass": "icon-python",
               "openshift.io/display-name": "Python 3.5",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/django-ex.git",
+              "sampleRepo": "https://github.com/sclorg/django-ex.git",
               "supports": "python:3.5,python",
               "tags": "builder,python",
               "version": "3.5"
@@ -18748,7 +19469,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
               "iconClass": "icon-python",
               "openshift.io/display-name": "Python 3.6",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/django-ex.git",
+              "sampleRepo": "https://github.com/sclorg/django-ex.git",
               "supports": "python:3.6,python",
               "tags": "builder,python",
               "version": "3.6"
@@ -18831,7 +19552,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
               "iconClass": "icon-ruby",
               "openshift.io/display-name": "Ruby (Latest)",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/ruby-ex.git",
+              "sampleRepo": "https://github.com/sclorg/ruby-ex.git",
               "supports": "ruby",
               "tags": "builder,ruby"
             },
@@ -18850,7 +19571,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
               "iconClass": "icon-ruby",
               "openshift.io/display-name": "Ruby 2.0",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/ruby-ex.git",
+              "sampleRepo": "https://github.com/sclorg/ruby-ex.git",
               "supports": "ruby:2.0,ruby",
               "tags": "hidden,builder,ruby",
               "version": "2.0"
@@ -18870,7 +19591,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
               "iconClass": "icon-ruby",
               "openshift.io/display-name": "Ruby 2.2",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/ruby-ex.git",
+              "sampleRepo": "https://github.com/sclorg/ruby-ex.git",
               "supports": "ruby:2.2,ruby",
               "tags": "hidden,builder,ruby",
               "version": "2.2"
@@ -18890,7 +19611,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
               "iconClass": "icon-ruby",
               "openshift.io/display-name": "Ruby 2.3",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/ruby-ex.git",
+              "sampleRepo": "https://github.com/sclorg/ruby-ex.git",
               "supports": "ruby:2.3,ruby",
               "tags": "builder,ruby",
               "version": "2.3"
@@ -18910,7 +19631,7 @@ var _examplesImageStreamsImageStreamsRhel7Json = []byte(`{
               "iconClass": "icon-ruby",
               "openshift.io/display-name": "Ruby 2.4",
               "openshift.io/provider-display-name": "Red Hat, Inc.",
-              "sampleRepo": "https://github.com/openshift/ruby-ex.git",
+              "sampleRepo": "https://github.com/sclorg/ruby-ex.git",
               "supports": "ruby:2.4,ruby",
               "tags": "builder,ruby",
               "version": "2.4"
@@ -18962,514 +19683,6 @@ func examplesImageStreamsImageStreamsRhel7Json() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "examples/image-streams/image-streams-rhel7.json", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _examplesSampleAppApplicationTemplateCustombuildJson = []byte(`{
-  "kind": "Template",
-  "apiVersion": "v1",
-  "metadata": {
-    "name": "ruby-helloworld-sample",
-    "annotations": {
-      "description": "This example shows how to create a simple ruby application in openshift origin v3",
-      "iconClass": "icon-ruby",
-      "tags": "instant-app,ruby,mysql"
-    }
-  },
-  "objects": [
-    {
-      "kind": "Secret",
-      "apiVersion": "v1",
-      "metadata": {
-        "name": "dbsecret"
-      },
-      "stringData" : {
-        "mysql-user" : "${MYSQL_USER}",
-        "mysql-password" : "${MYSQL_PASSWORD}"
-      }
-    },
-    {
-      "kind": "Service",
-      "apiVersion": "v1",
-      "metadata": {
-        "name": "frontend"
-      },
-      "spec": {
-        "ports": [
-          {
-            "name": "web",
-            "protocol": "TCP",
-            "port": 5432,
-            "targetPort": 8080,
-            "nodePort": 0
-          }
-        ],
-        "selector": {
-          "name": "frontend"
-        },
-        "type": "ClusterIP",
-        "sessionAffinity": "None"
-      },
-      "status": {
-        "loadBalancer": {}
-      }
-    },
-    {
-      "kind": "Route",
-      "apiVersion": "v1",
-      "metadata": {
-        "name": "route-edge",
-        "annotations": {
-          "template.openshift.io/expose-uri": "http://{.spec.host}{.spec.path}"
-        }
-      },
-      "spec": {
-        "host": "www.example.com",
-        "to": {
-          "kind": "Service",
-          "name": "frontend"
-        },
-        "tls": {
-          "termination": "edge"
-        }
-      },
-      "status": {}
-    },
-    {
-      "kind": "ImageStream",
-      "apiVersion": "v1",
-      "metadata": {
-        "name": "origin-ruby-sample"
-      },
-      "spec": {},
-      "status": {
-        "dockerImageRepository": ""
-      }
-    },
-    {
-      "kind": "ImageStream",
-      "apiVersion": "v1",
-      "metadata": {
-        "name": "origin-custom-docker-builder"
-      },
-      "spec": {
-        "dockerImageRepository": "openshift/origin-custom-docker-builder"
-      },
-      "status": {
-        "dockerImageRepository": ""
-      }
-    },
-    {
-      "kind": "BuildConfig",
-      "apiVersion": "v1",
-      "metadata": {
-        "name": "ruby-sample-build",
-        "labels": {
-          "name": "ruby-sample-build"
-        },
-        "annotations": {
-          "template.alpha.openshift.io/wait-for-ready": "true"
-        }
-      },
-      "spec": {
-        "triggers": [
-          {
-            "type": "GitHub",
-            "github": {
-              "secret": "secret101"
-            }
-          },
-          {
-            "type": "Generic",
-            "generic": {
-              "secret": "secret101",
-              "allowEnv": true
-            }
-          },
-          {
-            "type": "ImageChange",
-            "imageChange": {}
-          },
-          {
-            "type": "ConfigChange"
-          }
-        ],
-        "source": {
-          "type": "Git",
-          "git": {
-            "uri": "https://github.com/openshift/ruby-hello-world.git"
-          }
-        },
-        "strategy": {
-          "type": "Custom",
-          "customStrategy": {
-            "from": {
-              "kind": "ImageStreamTag",
-              "name": "origin-custom-docker-builder:latest"
-            },
-            "env": [
-              {
-                "name": "OPENSHIFT_CUSTOM_BUILD_BASE_IMAGE",
-                "value": "openshift/origin-custom-docker-builder"
-              }
-            ],
-            "exposeDockerSocket": true
-          }
-        },
-        "output": {
-          "to": {
-            "kind": "ImageStreamTag",
-            "name": "origin-ruby-sample:latest"
-          }
-        },
-        "postCommit": {
-          "args": ["bundle", "exec", "rake", "test"]
-        },
-        "resources": {}
-      },
-      "status": {
-        "lastVersion": 0
-      }
-    },
-    {
-      "kind": "DeploymentConfig",
-      "apiVersion": "v1",
-      "metadata": {
-        "name": "frontend",
-        "annotations": {
-          "template.alpha.openshift.io/wait-for-ready": "true"
-        }
-      },
-      "spec": {
-        "strategy": {
-          "type": "Rolling",
-          "rollingParams": {
-            "updatePeriodSeconds": 1,
-            "intervalSeconds": 1,
-            "timeoutSeconds": 120,
-            "pre": {
-              "failurePolicy": "Abort",
-              "execNewPod": {
-                "command": [
-                  "/bin/true"
-                ],
-                "env": [
-                  {
-                    "name": "CUSTOM_VAR1",
-                    "value": "custom_value1"
-                  }
-                ],
-                "containerName": "ruby-helloworld"
-              }
-            },
-            "post": {
-              "failurePolicy": "Ignore",
-              "execNewPod": {
-                "command": [
-                  "/bin/true"
-                ],
-                "env": [
-                  {
-                    "name": "CUSTOM_VAR2",
-                    "value": "custom_value2"
-                  }
-                ],
-                "containerName": "ruby-helloworld"
-              }
-            }
-          },
-          "resources": {}
-        },
-        "triggers": [
-          {
-            "type": "ImageChange",
-            "imageChangeParams": {
-              "automatic": true,
-              "containerNames": [
-                "ruby-helloworld"
-              ],
-              "from": {
-                "kind": "ImageStreamTag",
-                "name": "origin-ruby-sample:latest"
-              }
-            }
-          },
-          {
-            "type": "ConfigChange"
-          }
-        ],
-        "replicas": 2,
-        "selector": {
-          "name": "frontend"
-        },
-        "template": {
-          "metadata": {
-            "labels": {
-              "name": "frontend"
-            }
-          },
-          "spec": {
-            "containers": [
-              {
-                "name": "ruby-helloworld",
-                "image": "origin-ruby-sample",
-                "ports": [
-                  {
-                    "containerPort": 8080,
-                    "protocol": "TCP"
-                  }
-                ],
-                "env": [
-                  {
-                    "name": "MYSQL_USER",
-                    "valueFrom": {
-                      "secretKeyRef" : {
-                        "name" : "dbsecret",
-                        "key" : "mysql-user"
-                      }
-                    }
-                  },
-                  {
-                    "name": "MYSQL_PASSWORD",
-                    "valueFrom": {
-                      "secretKeyRef" : {
-                        "name" : "dbsecret",
-                        "key" : "mysql-password"
-                      }
-                    }
-                  },
-                  {
-                    "name": "MYSQL_DATABASE",
-                    "value": "${MYSQL_DATABASE}"
-                  }
-                ],
-                "resources": {},
-                "terminationMessagePath": "/dev/termination-log",
-                "imagePullPolicy": "IfNotPresent",
-                "securityContext": {
-                  "capabilities": {},
-                  "privileged": false
-                }
-              }
-            ],
-            "restartPolicy": "Always",
-            "dnsPolicy": "ClusterFirst"
-          }
-        }
-      },
-      "status": {}
-    },
-    {
-      "kind": "Service",
-      "apiVersion": "v1",
-      "metadata": {
-        "name": "database"
-      },
-      "spec": {
-        "ports": [
-          {
-            "name": "db",
-            "protocol": "TCP",
-            "port": 5434,
-            "targetPort": 3306,
-            "nodePort": 0
-          }
-        ],
-        "selector": {
-          "name": "database"
-        },
-        "type": "ClusterIP",
-        "sessionAffinity": "None"
-      },
-      "status": {
-        "loadBalancer": {}
-      }
-    },
-    {
-      "kind": "DeploymentConfig",
-      "apiVersion": "v1",
-      "metadata": {
-        "name": "database",
-        "annotations": {
-          "template.alpha.openshift.io/wait-for-ready": "true"
-        }
-      },
-      "spec": {
-        "strategy": {
-          "type": "Recreate",
-          "recreateParams": {
-            "pre": {
-              "failurePolicy": "Abort",
-              "execNewPod": {
-                "command": [
-                  "/bin/true"
-                ],
-                "env": [
-                  {
-                    "name": "CUSTOM_VAR1",
-                    "value": "custom_value1"
-                  }
-                ],
-                "containerName": "ruby-helloworld-database",
-                "volumes": ["ruby-helloworld-data"]
-              }
-            },
-            "mid": {
-              "failurePolicy": "Abort",
-              "execNewPod": {
-                "command": [
-                  "/bin/true"
-                ],
-                "env": [
-                  {
-                    "name": "CUSTOM_VAR2",
-                    "value": "custom_value2"
-                  }
-                ],
-                "containerName": "ruby-helloworld-database",
-                "volumes": ["ruby-helloworld-data"]
-              }
-            },
-            "post": {
-              "failurePolicy": "Ignore",
-              "execNewPod": {
-                "command": [
-                  "/bin/true"
-                ],
-                "env": [
-                  {
-                    "name": "CUSTOM_VAR2",
-                    "value": "custom_value2"
-                  }
-                ],
-                "containerName": "ruby-helloworld-database",
-                "volumes": ["ruby-helloworld-data"]
-              }
-            }
-          },
-          "resources": {}
-        },
-        "triggers": [
-          {
-            "type": "ConfigChange"
-          }
-        ],
-        "replicas": 1,
-        "selector": {
-          "name": "database"
-        },
-        "template": {
-          "metadata": {
-            "labels": {
-              "name": "database"
-            }
-          },
-          "spec": {
-            "containers": [
-              {
-                "name": "ruby-helloworld-database",
-                "image": "centos/mysql-57-centos7:latest",
-                "ports": [
-                  {
-                    "containerPort": 3306,
-                    "protocol": "TCP"
-                  }
-                ],
-                "env": [
-                  {
-                    "name": "MYSQL_USER",
-                    "valueFrom": {
-                      "secretKeyRef" : {
-                        "name" : "dbsecret",
-                        "key" : "mysql-user"
-                      }
-                    }
-                  },
-                  {
-                    "name": "MYSQL_PASSWORD",
-                    "valueFrom": {
-                      "secretKeyRef" : {
-                        "name" : "dbsecret",
-                        "key" : "mysql-password"
-                      }
-                    }
-                  },
-                  {
-                    "name": "MYSQL_DATABASE",
-                    "value": "${MYSQL_DATABASE}"
-                  }
-                ],
-                "resources": {},
-                "volumeMounts": [
-                  {
-                    "name": "ruby-helloworld-data",
-                    "mountPath": "/var/lib/mysql/data"
-                  }
-                ],
-                "terminationMessagePath": "/dev/termination-log",
-                "imagePullPolicy": "Always",
-                "securityContext": {
-                  "capabilities": {},
-                  "privileged": false
-                }
-              }
-            ],
-            "volumes": [
-              {
-                "name": "ruby-helloworld-data",
-                "emptyDir": {
-                  "medium": ""
-                }
-              }
-            ],
-            "restartPolicy": "Always",
-            "dnsPolicy": "ClusterFirst"
-          }
-        }
-      },
-      "status": {}
-    }
-  ],
-  "parameters": [
-    {
-      "name": "MYSQL_USER",
-      "description": "database username",
-      "generate": "expression",
-      "from": "user[A-Z0-9]{3}",
-      "required": true
-    },
-    {
-      "name": "MYSQL_PASSWORD",
-      "description": "database password",
-      "generate": "expression",
-      "from": "[a-zA-Z0-9]{8}",
-      "required": true
-    },
-    {
-      "name": "MYSQL_DATABASE",
-      "description": "database name",
-      "value": "root",
-      "required": true
-    }
-  ],
-  "labels": {
-    "template": "application-template-custombuild"
-  }
-}
-`)
-
-func examplesSampleAppApplicationTemplateCustombuildJsonBytes() ([]byte, error) {
-	return _examplesSampleAppApplicationTemplateCustombuildJson, nil
-}
-
-func examplesSampleAppApplicationTemplateCustombuildJson() (*asset, error) {
-	bytes, err := examplesSampleAppApplicationTemplateCustombuildJsonBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "examples/sample-app/application-template-custombuild.json", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -19559,13 +19772,18 @@ var _examplesSampleAppApplicationTemplateDockerbuildJson = []byte(`{
       "kind": "ImageStream",
       "apiVersion": "v1",
       "metadata": {
-        "name": "ruby-22-centos7"
+        "name": "ruby-25-centos7"
       },
       "spec": {
-        "dockerImageRepository": "centos/ruby-22-centos7"
-      },
-      "status": {
-        "dockerImageRepository": ""
+        "tags": [
+          {
+            "from": {
+              "kind": "DockerImage",
+              "name": "docker.io/centos/ruby-25-centos7:latest"
+            },
+            "name": "latest"
+          }
+        ]
       }
     },
     {
@@ -19614,7 +19832,7 @@ var _examplesSampleAppApplicationTemplateDockerbuildJson = []byte(`{
           "dockerStrategy": {
             "from": {
               "kind": "ImageStreamTag",
-              "name": "ruby-22-centos7:latest"
+              "name": "ruby-25-centos7:latest"
             },
             "env": [
               {
@@ -19631,7 +19849,7 @@ var _examplesSampleAppApplicationTemplateDockerbuildJson = []byte(`{
           }
         },
         "postCommit": {
-          "args": ["bundle", "exec", "rake", "test"]
+          "script": "bundle exec rake test"
         },
         "resources": {}
       },
@@ -20016,10 +20234,10 @@ var _examplesSampleAppApplicationTemplatePullspecbuildJson = []byte(`{
       "kind": "ImageStream",
       "apiVersion": "v1",
       "metadata": {
-        "name": "ruby-22-centos7"
+        "name": "ruby-25-centos7"
       },
       "spec": {
-        "dockerImageRepository": "centos/ruby-22-centos7"
+        "dockerImageRepository": "centos/ruby-25-centos7"
       },
       "status": {
         "dockerImageRepository": ""
@@ -20067,7 +20285,7 @@ var _examplesSampleAppApplicationTemplatePullspecbuildJson = []byte(`{
           "sourceStrategy": {
             "from": {
               "kind": "DockerImage",
-              "name": "centos/ruby-22-centos7:latest"
+              "name": "centos/ruby-25-centos7:latest"
             }
           }
         },
@@ -20078,7 +20296,7 @@ var _examplesSampleAppApplicationTemplatePullspecbuildJson = []byte(`{
           }
         },
         "postCommit": {
-          "args": ["bundle", "exec", "rake", "test"]
+          "script": "bundle exec rake test"
         },
         "resources": {}
       },
@@ -20513,10 +20731,10 @@ var _examplesSampleAppApplicationTemplateStibuildJson = []byte(`{
       "kind": "ImageStream",
       "apiVersion": "v1",
       "metadata": {
-        "name": "ruby-22-centos7"
+        "name": "ruby-25-centos7"
       },
       "spec": {
-        "dockerImageRepository": "centos/ruby-22-centos7"
+        "dockerImageRepository": "centos/ruby-25-centos7"
       },
       "status": {
         "dockerImageRepository": ""
@@ -20568,7 +20786,7 @@ var _examplesSampleAppApplicationTemplateStibuildJson = []byte(`{
           "sourceStrategy": {
             "from": {
               "kind": "ImageStreamTag",
-              "name": "ruby-22-centos7:latest"
+              "name": "ruby-25-centos7:latest"
             },
             "env": [
               {
@@ -20585,7 +20803,7 @@ var _examplesSampleAppApplicationTemplateStibuildJson = []byte(`{
           }
         },
         "postCommit": {
-          "args": ["bundle", "exec", "rake", "test"]
+          "script": "bundle exec rake test"
         },
         "resources": {}
       },
@@ -21112,29 +21330,6 @@ func examplesSampleAppGithubWebhookExampleJson() (*asset, error) {
 	return a, nil
 }
 
-var _examplesSampleAppPullimagesSh = []byte(`#!/bin/sh
-docker pull openshift/origin-docker-registry
-#docker pull openshift/origin-docker-builder
-docker pull openshift/origin-sti-builder
-docker pull openshift/origin-deployer
-docker pull openshift/origin-pod
-`)
-
-func examplesSampleAppPullimagesShBytes() ([]byte, error) {
-	return _examplesSampleAppPullimagesSh, nil
-}
-
-func examplesSampleAppPullimagesSh() (*asset, error) {
-	bytes, err := examplesSampleAppPullimagesShBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "examples/sample-app/pullimages.sh", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _examplesQuickstartsCakephpMysqlPersistentJson = []byte(`{
     "apiVersion": "v1",
     "kind": "Template",
@@ -21142,7 +21337,7 @@ var _examplesQuickstartsCakephpMysqlPersistentJson = []byte(`{
         "app": "cakephp-mysql-persistent",
         "template": "cakephp-mysql-persistent"
     },
-    "message": "The following service(s) have been created in your project: ${NAME}, ${DATABASE_SERVICE_NAME}.\n\nFor more information about using this template, including OpenShift considerations, see https://github.com/openshift/cake-ex/blob/master/README.md.",
+    "message": "The following service(s) have been created in your project: ${NAME}, ${DATABASE_SERVICE_NAME}.\n\nFor more information about using this template, including OpenShift considerations, see https://github.com/sclorg/cakephp-ex/blob/master/README.md.",
     "metadata": {
         "annotations": {
             "description": "An example CakePHP application with a MySQL database. For more information about using this template, including OpenShift considerations, see https://github.com/sclorg/cakephp-ex/blob/master/README.md.",
@@ -21603,7 +21798,7 @@ var _examplesQuickstartsCakephpMysqlPersistentJson = []byte(`{
             "value": "openshift"
         },
         {
-            "description": "Version of PHP image to be used (5.6, 7.0, 7.1 or latest).",
+            "description": "Version of PHP image to be used (7.1 or latest).",
             "displayName": "PHP Version",
             "name": "PHP_VERSION",
             "required": true,
@@ -21742,7 +21937,7 @@ var _examplesQuickstartsCakephpMysqlJson = []byte(`{
         "app": "cakephp-mysql-example",
         "template": "cakephp-mysql-example"
     },
-    "message": "The following service(s) have been created in your project: ${NAME}, ${DATABASE_SERVICE_NAME}.\n\nFor more information about using this template, including OpenShift considerations, see https://github.com/openshift/cake-ex/blob/master/README.md.",
+    "message": "The following service(s) have been created in your project: ${NAME}, ${DATABASE_SERVICE_NAME}.\n\nFor more information about using this template, including OpenShift considerations, see https://github.com/sclorg/cakephp-ex/blob/master/README.md.",
     "metadata": {
         "annotations": {
             "description": "An example CakePHP application with a MySQL database. For more information about using this template, including OpenShift considerations, see https://github.com/sclorg/cakephp-ex/blob/master/README.md.\n\nWARNING: Any data stored will be lost upon pod destruction. Only use this template for testing.",
@@ -22184,7 +22379,7 @@ var _examplesQuickstartsCakephpMysqlJson = []byte(`{
             "value": "openshift"
         },
         {
-            "description": "Version of PHP image to be used (5.6, 7.0, 7.1 or latest).",
+            "description": "Version of PHP image to be used (7.1 or latest).",
             "displayName": "PHP Version",
             "name": "PHP_VERSION",
             "required": true,
@@ -22316,13 +22511,13 @@ var _examplesQuickstartsDancerMysqlPersistentJson = []byte(`{
         "app": "dancer-mysql-persistent",
         "template": "dancer-mysql-persistent"
     },
-    "message": "The following service(s) have been created in your project: ${NAME}, ${DATABASE_SERVICE_NAME}.\n\nFor more information about using this template, including OpenShift considerations, see https://github.com/openshift/dancer-ex/blob/master/README.md.",
+    "message": "The following service(s) have been created in your project: ${NAME}, ${DATABASE_SERVICE_NAME}.\n\nFor more information about using this template, including OpenShift considerations, see https://github.com/sclorg/dancer-ex/blob/master/README.md.",
     "metadata": {
         "annotations": {
-            "description": "An example Dancer application with a MySQL database. For more information about using this template, including OpenShift considerations, see https://github.com/openshift/dancer-ex/blob/master/README.md.",
+            "description": "An example Dancer application with a MySQL database. For more information about using this template, including OpenShift considerations, see https://github.com/sclorg/dancer-ex/blob/master/README.md.",
             "iconClass": "icon-perl",
             "openshift.io/display-name": "Dancer + MySQL",
-            "openshift.io/documentation-url": "https://github.com/openshift/dancer-ex",
+            "openshift.io/documentation-url": "https://github.com/sclorg/dancer-ex",
             "openshift.io/long-description": "This template defines resources needed to develop a Dancer based application, including a build configuration, application deployment configuration, and database deployment configuration.",
             "openshift.io/provider-display-name": "Red Hat, Inc.",
             "openshift.io/support-url": "https://access.redhat.com",
@@ -22429,7 +22624,7 @@ var _examplesQuickstartsDancerMysqlPersistentJson = []byte(`{
                         ],
                         "from": {
                             "kind": "ImageStreamTag",
-                            "name": "perl:5.24",
+                            "name": "perl:5.26",
                             "namespace": "${NAMESPACE}"
                         }
                     },
@@ -22775,7 +22970,7 @@ var _examplesQuickstartsDancerMysqlPersistentJson = []byte(`{
             "displayName": "Git Repository URL",
             "name": "SOURCE_REPOSITORY_URL",
             "required": true,
-            "value": "https://github.com/openshift/dancer-ex.git"
+            "value": "https://github.com/sclorg/dancer-ex.git"
         },
         {
             "description": "Set this to a branch name, tag or other ref of your repository if you are not using the default branch.",
@@ -22868,13 +23063,13 @@ var _examplesQuickstartsDancerMysqlJson = []byte(`{
         "app": "dancer-mysql-example",
         "template": "dancer-mysql-example"
     },
-    "message": "The following service(s) have been created in your project: ${NAME}, ${DATABASE_SERVICE_NAME}.\n\nFor more information about using this template, including OpenShift considerations, see https://github.com/openshift/dancer-ex/blob/master/README.md.",
+    "message": "The following service(s) have been created in your project: ${NAME}, ${DATABASE_SERVICE_NAME}.\n\nFor more information about using this template, including OpenShift considerations, see https://github.com/sclorg/dancer-ex/blob/master/README.md.",
     "metadata": {
         "annotations": {
-            "description": "An example Dancer application with a MySQL database. For more information about using this template, including OpenShift considerations, see https://github.com/openshift/dancer-ex/blob/master/README.md.\n\nWARNING: Any data stored will be lost upon pod destruction. Only use this template for testing.",
+            "description": "An example Dancer application with a MySQL database. For more information about using this template, including OpenShift considerations, see https://github.com/sclorg/dancer-ex/blob/master/README.md.\n\nWARNING: Any data stored will be lost upon pod destruction. Only use this template for testing.",
             "iconClass": "icon-perl",
             "openshift.io/display-name": "Dancer + MySQL (Ephemeral)",
-            "openshift.io/documentation-url": "https://github.com/openshift/dancer-ex",
+            "openshift.io/documentation-url": "https://github.com/sclorg/dancer-ex",
             "openshift.io/long-description": "This template defines resources needed to develop a Dancer based application, including a build configuration, application deployment configuration, and database deployment configuration.  The database is stored in non-persistent storage, so this configuration should be used for experimental purposes only.",
             "openshift.io/provider-display-name": "Red Hat, Inc.",
             "openshift.io/support-url": "https://access.redhat.com",
@@ -22981,7 +23176,7 @@ var _examplesQuickstartsDancerMysqlJson = []byte(`{
                         ],
                         "from": {
                             "kind": "ImageStreamTag",
-                            "name": "perl:5.24",
+                            "name": "perl:5.26",
                             "namespace": "${NAMESPACE}"
                         }
                     },
@@ -23301,7 +23496,7 @@ var _examplesQuickstartsDancerMysqlJson = []byte(`{
             "displayName": "Git Repository URL",
             "name": "SOURCE_REPOSITORY_URL",
             "required": true,
-            "value": "https://github.com/openshift/dancer-ex.git"
+            "value": "https://github.com/sclorg/dancer-ex.git"
         },
         {
             "description": "Set this to a branch name, tag or other ref of your repository if you are not using the default branch.",
@@ -23832,18 +24027,18 @@ var _examplesQuickstartsDjangoPostgresqlPersistentJson = []byte(`{
             "value": "openshift"
         },
         {
-            "description": "Version of Python image to be used (3.4, 3.5, 3.6 or latest).",
+            "description": "Version of Python image to be used (3.6 or latest).",
             "displayName": "Version of Python Image",
             "name": "PYTHON_VERSION",
             "required": true,
             "value": "3.6"
         },
         {
-            "description": "Version of PostgreSQL image to be used (9.4, 9.5, 9.6 or latest).",
+            "description": "Version of PostgreSQL image to be used (10 or latest).",
             "displayName": "Version of PostgreSQL Image",
             "name": "POSTGRESQL_VERSION",
             "required": true,
-            "value": "9.6"
+            "value": "10"
         },
         {
             "description": "Maximum amount of memory the Django container can use.",
@@ -24389,18 +24584,18 @@ var _examplesQuickstartsDjangoPostgresqlJson = []byte(`{
             "value": "openshift"
         },
         {
-            "description": "Version of Python image to be used (3.4, 3.5, 3.6 or latest).",
+            "description": "Version of Python image to be used (3.6 or latest).",
             "displayName": "Version of Python Image",
             "name": "PYTHON_VERSION",
             "required": true,
             "value": "3.6"
         },
         {
-            "description": "Version of PostgreSQL image to be used (9.4, 9.5, 9.6 or latest).",
+            "description": "Version of PostgreSQL image to be used (10 or latest).",
             "displayName": "Version of PostgreSQL Image",
             "name": "POSTGRESQL_VERSION",
             "required": true,
-            "value": "9.6"
+            "value": "10"
         },
         {
             "description": "Maximum amount of memory the Django container can use.",
@@ -24883,18 +25078,6 @@ var _examplesQuickstartsDotnetPgsqlPersistentJson = []byte(`{
                                         "containerPort": 5432
                                     }
                                 ],
-                                "readinessProbe": {
-                                    "exec": {
-                                        "command": [
-                                            "/bin/sh",
-                                            "-i",
-                                            "-c",
-                                            "psql -h 127.0.0.1 -U ${POSTGRESQL_USER} -q -d ${POSTGRESQL_DATABASE} -c 'SELECT 1'"
-                                        ]
-                                    },
-                                    "initialDelaySeconds": 5,
-                                    "timeoutSeconds": 1
-                                },
                                 "resources": {
                                     "limits": {
                                         "memory": "${MEMORY_POSTGRESQL_LIMIT}"
@@ -25364,7 +25547,7 @@ var _examplesQuickstartsDotnetJson = []byte(`{
             "displayName": ".NET builder",
             "name": "DOTNET_IMAGE_STREAM_TAG",
             "required": true,
-            "value": "dotnet:2.1"
+            "value": "dotnet:2.2"
         },
         {
             "description": "The OpenShift Namespace where the ImageStream resides.",
@@ -25384,7 +25567,7 @@ var _examplesQuickstartsDotnetJson = []byte(`{
             "description": "Set this to a branch name, tag or other ref of your repository if you are not using the default branch.",
             "displayName": "Git Reference",
             "name": "SOURCE_REPOSITORY_REF",
-            "value": "dotnetcore-2.1"
+            "value": "dotnetcore-2.2"
         },
         {
             "description": "Set this to use a subdirectory of the source code repository",
@@ -25479,13 +25662,13 @@ var _examplesQuickstartsHttpdJson = []byte(`{
         "app": "httpd-example",
         "template": "httpd-example"
     },
-    "message": "The following service(s) have been created in your project: ${NAME}.\n\nFor more information about using this template, including OpenShift considerations, see https://github.com/openshift/httpd-ex/blob/master/README.md.",
+    "message": "The following service(s) have been created in your project: ${NAME}.\n\nFor more information about using this template, including OpenShift considerations, see https://github.com/sclorg/httpd-ex/blob/master/README.md.",
     "metadata": {
         "annotations": {
-            "description": "An example Apache HTTP Server (httpd) application that serves static content. For more information about using this template, including OpenShift considerations, see https://github.com/openshift/httpd-ex/blob/master/README.md.",
+            "description": "An example Apache HTTP Server (httpd) application that serves static content. For more information about using this template, including OpenShift considerations, see https://github.com/sclorg/httpd-ex/blob/master/README.md.",
             "iconClass": "icon-apache",
             "openshift.io/display-name": "Apache HTTP Server",
-            "openshift.io/documentation-url": "https://github.com/openshift/httpd-ex",
+            "openshift.io/documentation-url": "https://github.com/sclorg/httpd-ex",
             "openshift.io/long-description": "This template defines resources needed to develop a static application served by Apache HTTP Server (httpd), including a build configuration and application deployment configuration.",
             "openshift.io/provider-display-name": "Red Hat, Inc.",
             "openshift.io/support-url": "https://access.redhat.com",
@@ -25707,7 +25890,7 @@ var _examplesQuickstartsHttpdJson = []byte(`{
             "displayName": "Git Repository URL",
             "name": "SOURCE_REPOSITORY_URL",
             "required": true,
-            "value": "https://github.com/openshift/httpd-ex.git"
+            "value": "https://github.com/sclorg/httpd-ex.git"
         },
         {
             "description": "Set this to a branch name, tag or other ref of your repository if you are not using the default branch.",
@@ -26508,11 +26691,11 @@ var _examplesQuickstartsNodejsMongodbPersistentJson = []byte(`{
             "value": "8"
         },
         {
-            "description": "Version of MongoDB image to be used (3.2, 3.4, or latest).",
+            "description": "Version of MongoDB image to be used (3.6 or latest).",
             "displayName": "Version of MongoDB Image",
             "name": "MONGODB_VERSION",
             "required": true,
-            "value": "3.4"
+            "value": "3.6"
         },
         {
             "description": "Maximum amount of memory the Node.js container can use.",
@@ -27071,11 +27254,11 @@ var _examplesQuickstartsNodejsMongodbJson = []byte(`{
             "value": "8"
         },
         {
-            "description": "Version of MongoDB image to be used (3.2, 3.4, or latest).",
+            "description": "Version of MongoDB image to be used (3.6 or latest).",
             "displayName": "Version of MongoDB Image",
             "name": "MONGODB_VERSION",
             "required": true,
-            "value": "3.4"
+            "value": "3.6"
         },
         {
             "description": "Maximum amount of memory the Node.js container can use.",
@@ -27192,13 +27375,13 @@ var _examplesQuickstartsRailsPostgresqlPersistentJson = []byte(`{
         "app": "rails-pgsql-persistent",
         "template": "rails-pgsql-persistent"
     },
-    "message": "The following service(s) have been created in your project: ${NAME}, ${DATABASE_SERVICE_NAME}.\n\nFor more information about using this template, including OpenShift considerations, see https://github.com/openshift/rails-ex/blob/master/README.md.",
+    "message": "The following service(s) have been created in your project: ${NAME}, ${DATABASE_SERVICE_NAME}.\n\nFor more information about using this template, including OpenShift considerations, see https://github.com/sclorg/rails-ex/blob/master/README.md.",
     "metadata": {
         "annotations": {
-            "description": "An example Rails application with a PostgreSQL database. For more information about using this template, including OpenShift considerations, see https://github.com/openshift/rails-ex/blob/master/README.md.",
+            "description": "An example Rails application with a PostgreSQL database. For more information about using this template, including OpenShift considerations, see https://github.com/sclorg/rails-ex/blob/master/README.md.",
             "iconClass": "icon-ruby",
             "openshift.io/display-name": "Rails + PostgreSQL",
-            "openshift.io/documentation-url": "https://github.com/openshift/rails-ex",
+            "openshift.io/documentation-url": "https://github.com/sclorg/rails-ex",
             "openshift.io/long-description": "This template defines resources needed to develop a Rails application, including a build configuration, application deployment configuration, and database deployment configuration.",
             "openshift.io/provider-display-name": "Red Hat, Inc.",
             "openshift.io/support-url": "https://access.redhat.com",
@@ -27307,7 +27490,7 @@ var _examplesQuickstartsRailsPostgresqlPersistentJson = []byte(`{
                         ],
                         "from": {
                             "kind": "ImageStreamTag",
-                            "name": "ruby:2.3",
+                            "name": "ruby:2.5",
                             "namespace": "${NAMESPACE}"
                         }
                     },
@@ -27648,7 +27831,7 @@ var _examplesQuickstartsRailsPostgresqlPersistentJson = []byte(`{
                             ],
                             "from": {
                                 "kind": "ImageStreamTag",
-                                "name": "postgresql:9.5",
+                                "name": "postgresql:10",
                                 "namespace": "${NAMESPACE}"
                             }
                         },
@@ -27702,7 +27885,7 @@ var _examplesQuickstartsRailsPostgresqlPersistentJson = []byte(`{
             "displayName": "Git Repository URL",
             "name": "SOURCE_REPOSITORY_URL",
             "required": true,
-            "value": "https://github.com/openshift/rails-ex.git"
+            "value": "https://github.com/sclorg/rails-ex.git"
         },
         {
             "description": "Set this to a branch name, tag or other ref of your repository if you are not using the default branch.",
@@ -27820,13 +28003,13 @@ var _examplesQuickstartsRailsPostgresqlJson = []byte(`{
         "app": "rails-postgresql-example",
         "template": "rails-postgresql-example"
     },
-    "message": "The following service(s) have been created in your project: ${NAME}, ${DATABASE_SERVICE_NAME}.\n\nFor more information about using this template, including OpenShift considerations, see https://github.com/openshift/rails-ex/blob/master/README.md.",
+    "message": "The following service(s) have been created in your project: ${NAME}, ${DATABASE_SERVICE_NAME}.\n\nFor more information about using this template, including OpenShift considerations, see https://github.com/sclorg/rails-ex/blob/master/README.md.",
     "metadata": {
         "annotations": {
-            "description": "An example Rails application with a PostgreSQL database. For more information about using this template, including OpenShift considerations, see https://github.com/openshift/rails-ex/blob/master/README.md.\n\nWARNING: Any data stored will be lost upon pod destruction. Only use this template for testing.",
+            "description": "An example Rails application with a PostgreSQL database. For more information about using this template, including OpenShift considerations, see https://github.com/sclorg/rails-ex/blob/master/README.md.\n\nWARNING: Any data stored will be lost upon pod destruction. Only use this template for testing.",
             "iconClass": "icon-ruby",
             "openshift.io/display-name": "Rails + PostgreSQL (Ephemeral)",
-            "openshift.io/documentation-url": "https://github.com/openshift/rails-ex",
+            "openshift.io/documentation-url": "https://github.com/sclorg/rails-ex",
             "openshift.io/long-description": "This template defines resources needed to develop a Rails application, including a build configuration, application deployment configuration, and database deployment configuration.  The database is stored in non-persistent storage, so this configuration should be used for experimental purposes only.",
             "openshift.io/provider-display-name": "Red Hat, Inc.",
             "openshift.io/support-url": "https://access.redhat.com",
@@ -27935,7 +28118,7 @@ var _examplesQuickstartsRailsPostgresqlJson = []byte(`{
                         ],
                         "from": {
                             "kind": "ImageStreamTag",
-                            "name": "ruby:2.3",
+                            "name": "ruby:2.5",
                             "namespace": "${NAMESPACE}"
                         }
                     },
@@ -28257,7 +28440,7 @@ var _examplesQuickstartsRailsPostgresqlJson = []byte(`{
                             ],
                             "from": {
                                 "kind": "ImageStreamTag",
-                                "name": "postgresql:9.5",
+                                "name": "postgresql:10",
                                 "namespace": "${NAMESPACE}"
                             }
                         },
@@ -28304,7 +28487,7 @@ var _examplesQuickstartsRailsPostgresqlJson = []byte(`{
             "displayName": "Git Repository URL",
             "name": "SOURCE_REPOSITORY_URL",
             "required": true,
-            "value": "https://github.com/openshift/rails-ex.git"
+            "value": "https://github.com/sclorg/rails-ex.git"
         },
         {
             "description": "Set this to a branch name, tag or other ref of your repository if you are not using the default branch.",
@@ -29680,7 +29863,7 @@ var _examplesJenkinsJenkinsEphemeralTemplateJson = []byte(`{
             "description": "Jenkins service, without persistent storage.\n\nWARNING: Any data stored will be lost upon pod destruction. Only use this template for testing.",
             "iconClass": "icon-jenkins",
             "openshift.io/display-name": "Jenkins (Ephemeral)",
-            "openshift.io/documentation-url": "https://docs.openshift.org/latest/using_images/other_images/jenkins.html",
+            "openshift.io/documentation-url": "https://docs.okd.io/latest/using_images/other_images/jenkins.html",
             "openshift.io/long-description": "This template deploys a Jenkins server capable of managing OpenShift Pipeline builds and supporting OpenShift-based oauth login.  The Jenkins configuration is stored in non-persistent storage, so this configuration should be used for experimental purposes only.",
             "openshift.io/provider-display-name": "Red Hat, Inc.",
             "openshift.io/support-url": "https://access.redhat.com",
@@ -29993,7 +30176,7 @@ var _examplesJenkinsJenkinsPersistentTemplateJson = []byte(`{
             "description": "Jenkins service, with persistent storage.\n\nNOTE: You must have persistent volumes available in your cluster to use this template.",
             "iconClass": "icon-jenkins",
             "openshift.io/display-name": "Jenkins",
-            "openshift.io/documentation-url": "https://docs.openshift.org/latest/using_images/other_images/jenkins.html",
+            "openshift.io/documentation-url": "https://docs.okd.io/latest/using_images/other_images/jenkins.html",
             "openshift.io/long-description": "This template deploys a Jenkins server capable of managing OpenShift Pipeline builds and supporting OpenShift-based oauth login.",
             "openshift.io/provider-display-name": "Red Hat, Inc.",
             "openshift.io/support-url": "https://access.redhat.com",
@@ -30331,7 +30514,7 @@ var _examplesJenkinsPipelineBluegreenPipelineYaml = []byte(`apiVersion: v1
 kind: Template
 labels:
   template: bluegreen-pipeline
-message: A Jenkins server will be automatically instantiated in this project to manage
+message: A Jenkins server must be instantiated in this project to manage
   the Pipeline BuildConfig created by this template.  You will be able to log in to
   it using your OpenShift user credentials.
 metadata:
@@ -30376,22 +30559,32 @@ objects:
                     routeHost = readFile('routehost').trim()
                   }
         
-                  stage("Build") {
-                    echo "building tag ${tag}"
-                    openshiftBuild buildConfig: appName, showBuildLogs: "true", verbose: verbose
-                  }
-        
-                  stage("Deploy Test") {
-                    openshiftTag srcStream: appName, srcTag: 'latest', destinationStream: appName, destinationTag: tag, verbose: verbose
-                    openshiftVerifyDeployment deploymentConfig: "${appName}-${tag}", verbose: verbose
-                  }
-        
-                  stage("Test") {
-                    input message: "Test deployment: http://${routeHost}. Approve?", id: "approval"
-                  }
-        
-                  stage("Go Live") {
-                    sh "oc set -n ${project} route-backends ${appName} ${appName}-${tag}=100 ${appName}-${altTag}=0 --loglevel=4"
+                  openshift.withCluster() {
+                    openshift.withProject() {
+                      stage("Build") {
+                        echo "building tag ${tag}"
+                        def bld = openshift.startBuild("${appName}")
+                        bld.untilEach {
+                          return it.object().status.phase == "Running"
+                        }
+                        bld.logs('-f')                        
+                      }
+            
+                      stage("Deploy Test") {
+                        openshift.tag("${appName}:latest", "${appName}:${tag}")
+                        def dc = openshift.selector('dc', "${appName}-${tag}")
+                        dc.rollout().status()
+                      }
+            
+                      stage("Test") {
+                        input message: "Test deployment: http://${routeHost}. Approve?", id: "approval"
+                      }
+            
+                      stage("Go Live") {
+                        sh "oc set -n ${project} route-backends ${appName} ${appName}-${tag}=100 ${appName}-${altTag}=0 --loglevel=4"
+                      }
+
+                    }
                   }
                 }
              }
@@ -30801,146 +30994,6 @@ func examplesJenkinsPipelineBluegreenPipelineYaml() (*asset, error) {
 	return a, nil
 }
 
-var _examplesJenkinsPipelineMapsappPipelineYaml = []byte(`apiVersion: v1
-kind: Template
-labels:
-  application: mapsapp-pipeline
-metadata:
-  name: mapsapp-pipeline
-parameters:
-- description: NationalParks application source URI
-  displayName: NationalParks Source URI
-  name: NATIONALPARKS_GIT_URI
-  required: true
-  value: https://github.com/openshift-roadshow/nationalparks.git
-- description: NationalParks application source reference
-  displayName: NationalParks Source Ref
-  name: NATIONALPARKS_GIT_REF
-  required: true
-  value: master
-- description: MLBParks application source URI
-  displayName: MLBParks Source URI
-  name: MLBPARKS_GIT_URI
-  required: true
-  value: https://github.com/openshift-roadshow/mlbparks.git
-- description: MLBParks application source reference
-  displayName: MLBParks Source Ref
-  name: MLBPARKS_GIT_REF
-  required: true
-  value: master
-- description: ParksMap application source URI
-  displayName: ParksMap Source URI
-  name: PARKSMAP_GIT_URI
-  required: true
-  value: https://github.com/openshift-roadshow/parksmap-web.git
-- description: ParksMap application source reference
-  displayName: ParksMap Source Ref
-  name: PARKSMAP_GIT_REF
-  required: true
-  value: master
-- name: GITHUB_WEBHOOK_SECRET
-  displayName: GitHub Webhook Secret
-  description: Github trigger secret.  A difficult to guess string encoded as part of the webhook URL.  Not encrypted.
-  generate: expression
-  from: "[a-zA-Z0-9]{40}"
-- name: GENERIC_WEBHOOK_SECRET
-  displayName: Generic Webhook Secret,
-  description: A secret string used to configure the Generic webhook.
-  generate: expression
-  from: "[a-zA-Z0-9]{40}"
-objects:
-- apiVersion: v1
-  kind: BuildConfig
-  metadata:
-    labels:
-      build: mapsapp-pipeline
-    name: mapsapp-pipeline
-  spec:
-    runPolicy: Serial
-    source: {}
-    strategy:
-      type: JenkinsPipeline
-      jenkinsPipelineStrategy:
-        jenkinsfile: |-
-          try {
-             timeout(time: 20, unit: 'MINUTES') {
-                def project = ""
-                node {
-                  project = "${env.PROJECT_NAME}"
-        
-                  stage('Create NationalParks back-end') {
-                    def nationalParksURL = "${NATIONALPARKS_GIT_URI}"
-                    def nationalParksBranch = "${NATIONALPARKS_GIT_REF}"
-                    checkout([$class: "GitSCM", branches: [[name: "*/${nationalParksBranch}"]], doGenerateSubmoduleConfigurations: false, extensions: [[$class: "RelativeTargetDirectory", relativeTargetDir: "nationalparks"]], submoduleCfg: [], userRemoteConfigs: [[url: "${nationalParksURL}"]]])
-                    sh "oc new-app -f nationalparks/ose3/pipeline-buildconfig-template.json -p GIT_URI=${nationalParksURL} -p GIT_REF=${nationalParksBranch} -n ${project} --dry-run -o yaml | oc apply -f - -n ${project}"
-                  }
-        
-                  stage('Create MLBParks back-end') {
-                    def mlbParksURL = "${MLBPARKS_GIT_URI}"
-                    def mlbParksBranch = "${MLBPARKS_GIT_REF}"
-                    checkout([$class: "GitSCM", branches: [[name: "*/${mlbParksBranch}"]], doGenerateSubmoduleConfigurations: false, extensions: [[$class: "RelativeTargetDirectory", relativeTargetDir: "mlbparks"]], submoduleCfg: [], userRemoteConfigs: [[url: "${mlbParksURL}"]]])
-                    sh "oc new-app -f mlbparks/ose3/pipeline-buildconfig-template.json -p GIT_URI=${mlbParksURL} -p GIT_REF=${mlbParksBranch} -n ${project} --dry-run -o yaml | oc apply -f - -n ${project}"
-                  }
-        
-                  stage('Create ParksMap front-end') {
-                    def parksMapURL = "${PARKSMAP_GIT_URI}"
-                    def parksMapBranch = "${PARKSMAP_GIT_REF}"
-                    checkout([$class: "GitSCM", branches: [[name: "*/${parksMapBranch}"]], doGenerateSubmoduleConfigurations: false, extensions: [[$class: "RelativeTargetDirectory", relativeTargetDir: "parksmap"]], submoduleCfg: [], userRemoteConfigs: [[url: "${parksMapURL}"]]])
-                    sh "oc new-app -f parksmap/ose3/pipeline-buildconfig-template.json -p GIT_URI=${parksMapURL} -p GIT_REF=${parksMapBranch} -n ${project} --dry-run -o yaml | oc apply -f - -n ${project}"
-                  }
-                }
-        
-                stage('Build Back-ends') {
-                  parallel (
-                    "nationalparks": {
-                      node {
-                        openshiftBuild buildConfig: "nationalparks-pipeline", namespace: project
-                      }
-                    },
-                    "mlbparks": {
-                      node {
-                        openshiftBuild buildConfig: "mlbparks-pipeline", namespace: project
-                      }
-                    }
-                  )
-                }
-        
-                node {
-                  stage('Build Front-end') {
-                    openshiftBuild buildConfig: "parksmap-pipeline", namespace: project
-                  }
-                }
-             }
-          } catch (err) {
-             echo "in catch block"
-             echo "Caught: ${err}"
-             currentBuild.result = 'FAILURE'
-             throw err
-          }          
-    triggers:
-    - github:
-        secret: ${GITHUB_TRIGGER_SECRET}
-      type: GitHub
-    - generic:
-        secret: ${GENERIC_TRIGGER_SECRET}
-      type: Generic
-`)
-
-func examplesJenkinsPipelineMapsappPipelineYamlBytes() ([]byte, error) {
-	return _examplesJenkinsPipelineMapsappPipelineYaml, nil
-}
-
-func examplesJenkinsPipelineMapsappPipelineYaml() (*asset, error) {
-	bytes, err := examplesJenkinsPipelineMapsappPipelineYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "examples/jenkins/pipeline/mapsapp-pipeline.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _examplesJenkinsPipelineMavenPipelineYaml = []byte(`apiVersion: v1
 kind: Template
 metadata:
@@ -31042,10 +31095,26 @@ objects:
                   stage("Build Image") {
                     unstash name:"war"
                     sh "oc start-build ${appName}-docker --from-file=target/ROOT.war -n ${project}"
-                    openshiftVerifyBuild bldCfg: "${appName}-docker", namespace: project, waitTime: '20', waitUnit: 'min'
+                    timeout(time: 20, unit: 'MINUTES') {
+                      openshift.withCluster() {
+                        openshift.withProject() {
+                          def bc = openshift.selector('bc', "${appName}-docker")
+                          echo "Found 1 ${bc.count()} buildconfig"
+                          def blds = bc.related('builds')
+                          blds.untilEach {
+                            return it.object().status.phase == "Complete"
+                          }
+                        }
+                      }  
+                    }
                   }
                   stage("Deploy") {
-                    openshiftDeploy deploymentConfig: appName, namespace: project
+                    openshift.withCluster() {
+                      openshift.withProject() {
+                        def dc = openshift.selector('dc', "${appName}")
+                        dc.rollout().status()
+                      }
+                    }
                   }
                 }
              }
@@ -31380,7 +31449,7 @@ kind: Template
 labels:
   template: application-template-sample-pipeline
 message: |-
-  A Jenkins server will be automatically instantiated in this project to manage
+  A Jenkins server must be instantiated in this project to manage
   the Pipeline BuildConfig created by this template.  You will be able to log in to
   it using your OpenShift user credentials.
 metadata:
@@ -31487,10 +31556,23 @@ objects:
              timeout(time: 20, unit: 'MINUTES') {
                 node('nodejs') {
                     stage('build') {
-                      openshiftBuild(buildConfig: '${NAME}', showBuildLogs: 'true')
+                      openshift.withCluster() {
+                         openshift.withProject() {
+                            def bld = openshift.startBuild('${NAME}')
+                            bld.untilEach {
+                              return it.object().status.phase == "Running"
+                            }
+                            bld.logs('-f')
+                         }  
+                      }
                     }
                     stage('deploy') {
-                      openshiftDeploy(deploymentConfig: '${NAME}')
+                      openshift.withCluster() {
+                        openshift.withProject() {
+                          def dc = openshift.selector('dc', '${NAME}')
+                          dc.rollout().latest()
+                        }
+                      }
                     }
                   }
              }
@@ -31736,7 +31818,7 @@ var _examplesQuickstartsCakephpMysqlJsonCakephpMysqlJson = []byte(`{
         "app": "cakephp-mysql-example",
         "template": "cakephp-mysql-example"
     },
-    "message": "The following service(s) have been created in your project: ${NAME}, ${DATABASE_SERVICE_NAME}.\n\nFor more information about using this template, including OpenShift considerations, see https://github.com/openshift/cake-ex/blob/master/README.md.",
+    "message": "The following service(s) have been created in your project: ${NAME}, ${DATABASE_SERVICE_NAME}.\n\nFor more information about using this template, including OpenShift considerations, see https://github.com/sclorg/cakephp-ex/blob/master/README.md.",
     "metadata": {
         "annotations": {
             "description": "An example CakePHP application with a MySQL database. For more information about using this template, including OpenShift considerations, see https://github.com/sclorg/cakephp-ex/blob/master/README.md.\n\nWARNING: Any data stored will be lost upon pod destruction. Only use this template for testing.",
@@ -32178,7 +32260,7 @@ var _examplesQuickstartsCakephpMysqlJsonCakephpMysqlJson = []byte(`{
             "value": "openshift"
         },
         {
-            "description": "Version of PHP image to be used (5.6, 7.0, 7.1 or latest).",
+            "description": "Version of PHP image to be used (7.1 or latest).",
             "displayName": "PHP Version",
             "name": "PHP_VERSION",
             "required": true,
@@ -32303,106 +32385,10 @@ func examplesQuickstartsCakephpMysqlJsonCakephpMysqlJson() (*asset, error) {
 	return a, nil
 }
 
-var _installAutomationservicebrokerInstallRbacYaml = []byte(`apiVersion: v1
-kind: Template
-metadata:
-  name: automation-broker-apb-rbac
-objects:
-- apiVersion: rbac.authorization.k8s.io/v1
-  kind: ClusterRoleBinding
-  metadata:
-    name: automation-broker-apb
-  roleRef:
-    name: cluster-admin
-    kind: ClusterRole
-    apiGroup: rbac.authorization.k8s.io
-  subjects:
-  - kind: ServiceAccount
-    name: automation-broker-apb
-    namespace: "${NAMESPACE}"
-
-parameters:
-- description: Namespace of the project that is being deploy
-  displayname: broker client cert key
-  name: NAMESPACE
-  value: "openshift-automation-service-broker"
-`)
-
-func installAutomationservicebrokerInstallRbacYamlBytes() ([]byte, error) {
-	return _installAutomationservicebrokerInstallRbacYaml, nil
-}
-
-func installAutomationservicebrokerInstallRbacYaml() (*asset, error) {
-	bytes, err := installAutomationservicebrokerInstallRbacYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "install/automationservicebroker/install-rbac.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _installAutomationservicebrokerInstallYaml = []byte(`apiVersion: v1
-kind: Template
-metadata:
-  name: automation-broker-apb
-objects:
-- apiVersion: v1
-  kind: ServiceAccount
-  metadata:
-    name: automation-broker-apb
-    namespace: "${NAMESPACE}"
-
-- apiVersion: batch/v1
-  kind: Job
-  metadata:
-    name: automation-broker-apb
-    namespace: "${NAMESPACE}"
-  spec:
-    backoffLimit: 5
-    activeDeadlineSeconds: 300
-    template:
-      spec:
-        restartPolicy: OnFailure
-        serviceAccount: automation-broker-apb
-        containers:
-        - image: docker.io/automationbroker/automation-broker-apb:${TAG}
-          name: automation-broker-apb
-          args: [ 'provision', '--extra-vars', '{ "broker_name": "${NAMESPACE}" }' ]
-
-
-parameters:
-- description: Namespace of the project that is being deploy
-  displayname: Namespace
-  name: NAMESPACE
-  value: "openshift-automation-service-broker"
-
-- description: Image Tag to deploy
-  displayname: Image Tag
-  name: TAG
-  value: "latest"
-`)
-
-func installAutomationservicebrokerInstallYamlBytes() ([]byte, error) {
-	return _installAutomationservicebrokerInstallYaml, nil
-}
-
-func installAutomationservicebrokerInstallYaml() (*asset, error) {
-	bytes, err := installAutomationservicebrokerInstallYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "install/automationservicebroker/install.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
 var _installEtcdEtcdYaml = []byte(`kind: Pod
 apiVersion: v1
 metadata:
-  name: master-etcd
+  name: etcd
   namespace: kube-system
   labels:
     openshift.io/control-plane: "true"
@@ -32412,30 +32398,35 @@ spec:
   hostNetwork: true
   containers:
   - name: etcd
-    image: IMAGE
-    imagePullPolicy: OPENSHIFT_PULL_POLICY
-    workingDir: /var/lib/etcd
-    command: ["/bin/bash", "-c"]
-    args:
-    - |
-      #!/bin/sh
-      set -o allexport
-      exec openshift start etcd --config=/etc/origin/master/master-config.yaml
+    image: {{ .Image }}
+    imagePullPolicy: {{ .ImagePullPolicy }}
     securityContext:
+      runAsNonRoot: false
       privileged: true
+    workingDir: /var/run/etcd/data
+    command: ["/usr/local/bin/etcd"]
+    args:
+    - --ca-file=/var/run/etcd/tls/root-ca.crt
+    - --trusted-ca-file=/var/run/etcd/tls/etcd-client-ca.crt
+    - --client-cert-auth
+    - --cert-file=/var/run/etcd/tls/etcd-server.crt
+    - --key-file=/var/run/etcd/tls/etcd-server.key
+    - --listen-client-urls=https://0.0.0.0:2379
+    - --advertise-client-urls=https://0.0.0.0:2379
+    - --data-dir=/var/run/etcd/data
     volumeMounts:
-     - mountPath: /etc/origin/master/
-       name: master-config
-       readOnly: true
-     - mountPath: /var/lib/etcd/
-       name: master-data
+    - mountPath: /var/run/etcd/tls
+      name: tls
+      readOnly: true
+    - mountPath: /var/run/etcd/data
+      name: data
   volumes:
-  - name: master-config
+  - name: tls
     hostPath:
-      path: /path/to/master/config-dir
-  - name: master-data
-    ETCD_VOLUME
-`)
+      path: {{ .TlsDir }}
+  - name: data
+    hostPath:
+      path: {{ .EtcdDataDir }}`)
 
 func installEtcdEtcdYamlBytes() ([]byte, error) {
 	return _installEtcdEtcdYaml, nil
@@ -32448,1767 +32439,6 @@ func installEtcdEtcdYaml() (*asset, error) {
 	}
 
 	info := bindataFileInfo{name: "install/etcd/etcd.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _installKubeApiserverApiserverYaml = []byte(`kind: Pod
-apiVersion: v1
-metadata:
-  name: master-api
-  namespace: kube-system
-  labels:
-    openshift.io/control-plane: "true"
-    openshift.io/component: api
-spec:
-  restartPolicy: Always
-  hostNetwork: true
-  containers:
-  - name: api
-    image: IMAGE
-    imagePullPolicy: OPENSHIFT_PULL_POLICY
-    command: ["/bin/bash", "-c"]
-    args:
-    - |
-      #!/bin/bash
-      set -euo pipefail
-      if [[ -f /etc/origin/master/master.env ]]; then
-        set -o allexport
-        source /etc/origin/master/master.env
-      fi
-      exec hypershift openshift-kube-apiserver --config=/etc/origin/master/master-config.yaml
-    securityContext:
-      privileged: true
-    volumeMounts:
-     - mountPath: /etc/origin/master/
-       name: master-config
-     - mountPath: /etc/origin/cloudprovider/
-       name: master-cloud-provider
-     - mountPath: /var/lib/origin/
-       name: master-data
-    livenessProbe:
-      httpGet:
-        scheme: HTTPS
-        port: 8443
-        path: healthz
-  volumes:
-  - name: master-config
-    hostPath:
-      path: /path/to/master/config-dir
-  - name: master-cloud-provider
-    hostPath:
-      path: /etc/origin/cloudprovider
-  - name: master-data
-    hostPath:
-      path: /var/lib/origin
-`)
-
-func installKubeApiserverApiserverYamlBytes() ([]byte, error) {
-	return _installKubeApiserverApiserverYaml, nil
-}
-
-func installKubeApiserverApiserverYaml() (*asset, error) {
-	bytes, err := installKubeApiserverApiserverYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "install/kube-apiserver/apiserver.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _installKubeControllerManagerKubeControllerManagerYaml = []byte(`kind: Pod
-apiVersion: v1
-metadata:
-  name: kube-controller-manager
-  namespace: kube-system
-  labels:
-    openshift.io/control-plane: "true"
-    openshift.io/component: controllers
-spec:
-  restartPolicy: Always
-  hostNetwork: true
-  containers:
-  - name: controllers
-    image: IMAGE
-    imagePullPolicy: OPENSHIFT_PULL_POLICY
-    command: ["hyperkube", "kube-controller-manager"]
-    args:
-    - "--enable-dynamic-provisioning=true"
-    - "--use-service-account-credentials=true"
-    - "--leader-elect-retry-period=3s"
-    - "--leader-elect-resource-lock=configmaps"
-    - "--controllers=*"
-    - "--controllers=-ttl"
-    - "--controllers=-bootstrapsigner"
-    - "--controllers=-tokencleaner"
-    - "--controllers=-horizontalpodautoscaling"
-    - "--pod-eviction-timeout=5m"
-    - "--cluster-signing-key-file="
-    - "--cluster-signing-cert-file="
-    - "--experimental-cluster-signing-duration=720h"
-    - "--root-ca-file=/etc/origin/master/ca-bundle.crt"
-    - "--port=10252"
-    - "--service-account-private-key-file=/etc/origin/master/serviceaccounts.private.key"
-    - "--kubeconfig=/etc/origin/master/openshift-master.kubeconfig"
-    - "--openshift-config=/etc/origin/master/master-config.yaml"
-    securityContext:
-      privileged: true
-    volumeMounts:
-     - mountPath: /etc/origin/master/
-       name: master-config
-     - mountPath: /etc/origin/cloudprovider/
-       name: master-cloud-provider
-    livenessProbe:
-      httpGet:
-        scheme: HTTP
-        port: 10252
-        path: healthz
-  volumes:
-  - name: master-config
-    hostPath:
-      path: /path/to/master/config-dir
-  - name: master-cloud-provider
-    hostPath:
-      path: /etc/origin/cloudprovider
-`)
-
-func installKubeControllerManagerKubeControllerManagerYamlBytes() ([]byte, error) {
-	return _installKubeControllerManagerKubeControllerManagerYaml, nil
-}
-
-func installKubeControllerManagerKubeControllerManagerYaml() (*asset, error) {
-	bytes, err := installKubeControllerManagerKubeControllerManagerYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "install/kube-controller-manager/kube-controller-manager.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _installKubeDnsInstallYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: kube-dns
-parameters:
-- name: NAMESPACE
-  value: kube-dns
-- name: IMAGE
-  value: openshift/origin-control-plane:latest
-- name: OPENSHIFT_PULL_POLICY
-  value: Always
-- name: LOGLEVEL
-  value: "0"
-- name: KUBEDNS_CONFIG_HOST_PATH
-- name: NODE_SELECTOR
-  value: "{}"
-objects:
-
-# ok follow the crazy.  For cluster up to work, I need a resolv.conf for my kubelet
-# You can't set a port in a resolv.conf
-# cluster up probably can't bind to the actual 53 on the local system
-# that means creating a pod that DOES NOT RUN ON THE HOST NETWORK and binding 53 there
-# then we create service pointing there
-# but the openshift-controller-manager needs kube-dns
-# so we have to run it as an upstream workload, daemonset sounds good so I can use
-# the same masterconfig
-- apiVersion: extensions/v1beta1
-  kind: DaemonSet
-  metadata:
-    labels:
-      k8s-app: kube-dns
-    name: kube-dns
-    namespace: ${NAMESPACE}
-  spec:
-    selector:
-      matchLabels:
-        k8s-app: kube-dns
-    template:
-      metadata:
-        labels:
-          k8s-app: kube-dns
-      spec:
-        serviceAccountName: kube-dns
-        containers:
-        - name: kube-dns
-          image: ${IMAGE}
-          imagePullPolicy: ${OPENSHIFT_PULL_POLICY}
-          command: ["openshift", "start", "network"]
-          args:
-          - "--enable=dns"
-          - "--config=/etc/origin/node/node-config.yaml"
-          securityContext:
-            privileged: true
-            runAsUser: 0
-          volumeMounts:
-           - mountPath: /etc/origin/node/
-             name: node-config
-             readOnly: true
-        volumes:
-        - name: node-config
-          hostPath:
-            path: ${KUBEDNS_CONFIG_HOST_PATH}
-
-- apiVersion: v1
-  kind: ServiceAccount
-  metadata:
-    name: kube-dns
-    namespace: ${NAMESPACE}
-
-- apiVersion: v1
-  kind: Service
-  metadata:
-    name: kube-dns
-    namespace: ${NAMESPACE}
-  spec:
-    clusterIP: 172.30.0.2
-    selector:
-      k8s-app: kube-dns
-    ports:
-    - name: dns-udp
-      port: 53
-      protocol: UDP
-    - name: dns-tcp
-      port: 53
-      protocol: TCP
-`)
-
-func installKubeDnsInstallYamlBytes() ([]byte, error) {
-	return _installKubeDnsInstallYaml, nil
-}
-
-func installKubeDnsInstallYaml() (*asset, error) {
-	bytes, err := installKubeDnsInstallYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "install/kube-dns/install.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _installKubeProxyInstallYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: kube-proxy
-parameters:
-- name: IMAGE
-  value: openshift/origin-control-plane
-- name: OPENSHIFT_PULL_POLICY
-  value: Always
-- name: NAMESPACE
-  value: kube-proxy
-- name: LOGLEVEL
-  value: "0"
-- name: NODE_CONFIG_HOST_PATH
-- name: NODE_SELECTOR
-  value: "{}"
-objects:
-
-- apiVersion: v1
-  kind: ServiceAccount
-  metadata:
-    name: kube-proxy
-    namespace: ${NAMESPACE}
-
-- kind: ClusterRoleBinding
-  apiVersion: rbac.authorization.k8s.io/v1
-  metadata:
-    name: system:kube-proxy
-  subjects:
-    - kind: ServiceAccount
-      name: kube-proxy
-      namespace: ${NAMESPACE}
-    - kind: Group
-      name: system:nodes
-  roleRef:
-    kind: ClusterRole
-    name: system:node-proxier
-    apiGroup: rbac.authorization.k8s.io
-
-- apiVersion: extensions/v1beta1
-  kind: DaemonSet
-  metadata:
-    labels:
-      k8s-app: kube-proxy
-    name: kube-proxy
-    namespace: ${NAMESPACE}
-  spec:
-    selector:
-      matchLabels:
-        k8s-app: kube-proxy
-    template:
-      metadata:
-        labels:
-          k8s-app: kube-proxy
-      spec:
-        serviceAccountName: kube-proxy
-        hostNetwork: true
-        containers:
-        - name: kube-proxy
-          image: ${IMAGE}
-          imagePullPolicy: ${OPENSHIFT_PULL_POLICY}
-          command: ["openshift", "start", "network"]
-          args:
-          - "--enable=proxy"
-          - "--listen=https://0.0.0.0:8444"
-          - "--config=/etc/origin/node/node-config.yaml"
-          securityContext:
-            privileged: true
-            runAsUser: 0
-          volumeMounts:
-           - mountPath: /etc/origin/node/
-             name: node-config
-             readOnly: true
-        volumes:
-        - name: node-config
-          hostPath:
-            path: ${NODE_CONFIG_HOST_PATH}
-`)
-
-func installKubeProxyInstallYamlBytes() ([]byte, error) {
-	return _installKubeProxyInstallYaml, nil
-}
-
-func installKubeProxyInstallYaml() (*asset, error) {
-	bytes, err := installKubeProxyInstallYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "install/kube-proxy/install.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _installKubeSchedulerKubeSchedulerYaml = []byte(`kind: Pod
-apiVersion: v1
-metadata:
-  name: kube-scheduler
-  namespace: kube-system
-  labels:
-    openshift.io/control-plane: "true"
-    openshift.io/component: scheduler
-spec:
-  restartPolicy: Always
-  hostNetwork: true
-  containers:
-  - name: scheduler
-    image: IMAGE
-    imagePullPolicy: OPENSHIFT_PULL_POLICY
-    command: ["hyperkube", "kube-scheduler"]
-    args:
-    - "--leader-elect=true"
-    - "--leader-elect-resource-lock=configmaps"
-    - "--port=10251"
-    - "--kubeconfig=/etc/origin/master/openshift-master.kubeconfig"
-    - "--policy-config-file="
-    securityContext:
-      privileged: true
-    volumeMounts:
-     - mountPath: /etc/origin/master/
-       name: master-config
-     - mountPath: /etc/origin/cloudprovider/
-       name: master-cloud-provider
-    livenessProbe:
-      httpGet:
-        scheme: HTTP
-        port: 10251
-        path: healthz
-  volumes:
-  - name: master-config
-    hostPath:
-      path: /path/to/master/config-dir
-  - name: master-cloud-provider
-    hostPath:
-      path: /etc/origin/cloudprovider`)
-
-func installKubeSchedulerKubeSchedulerYamlBytes() ([]byte, error) {
-	return _installKubeSchedulerKubeSchedulerYaml, nil
-}
-
-func installKubeSchedulerKubeSchedulerYaml() (*asset, error) {
-	bytes, err := installKubeSchedulerKubeSchedulerYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "install/kube-scheduler/kube-scheduler.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _installOpenshiftApiserverInstallYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: openshift-apiserver
-parameters:
-- name: IMAGE
-  value: openshift/origin-control-plane:latest
-- name: OPENSHIFT_PULL_POLICY
-  value: Always
-- name: NAMESPACE
-  value: openshift-apiserver
-- name: LOGLEVEL
-  value: "0"
-- name: OPENSHIFT_APISERVER_CONFIG_HOST_PATH
-- name: NODE_SELECTOR
-  value: "{}"
-objects:
-
-- apiVersion: apps/v1
-  kind: DaemonSet
-  metadata:
-    namespace: ${NAMESPACE}
-    name: openshift-apiserver
-    labels:
-      openshift.io/control-plane: "true"
-      openshift.io/component: api
-  spec:
-    selector:
-      matchLabels:
-        openshift.io/control-plane: "true"
-        openshift.io/component: api
-    template:
-      metadata:
-        name: openshift-apiserver
-        labels:
-          openshift.io/control-plane: "true"
-          openshift.io/component: api
-      spec:
-        serviceAccountName: openshift-apiserver
-        restartPolicy: Always
-        hostNetwork: true
-        containers:
-        - name: apiserver
-          image: ${IMAGE}
-          imagePullPolicy: ${OPENSHIFT_PULL_POLICY}
-          env:
-          - name: ADDITIONAL_ALLOWED_REGISTRIES
-            value: registry.centos.org
-          command: ["hypershift", "openshift-apiserver"]
-          args:
-          - "--config=/etc/origin/master/master-config.yaml"
-          - "-v=${LOGLEVEL}"
-          ports:
-          - containerPort: 8445
-          securityContext:
-            privileged: true
-            runAsUser: 0
-          volumeMounts:
-          - mountPath: /var/serving-cert
-            name: serving-cert
-          - mountPath: /etc/origin/master/
-            name: master-config
-          - mountPath: /etc/origin/cloudprovider/
-            name: master-cloud-provider
-          readinessProbe:
-            httpGet:
-              path: /healthz
-              port: 8445
-              scheme: HTTPS
-        # sensitive files still sit on disk for now
-        volumes:
-        - name: master-config
-          hostPath:
-            path: ${OPENSHIFT_APISERVER_CONFIG_HOST_PATH}
-        - name: master-cloud-provider
-          hostPath:
-            path: /etc/origin/cloudprovider
-        - name: serving-cert
-          secret:
-            secretName: serving-cert
-
-
-# to be able to assign powers to the process
-- apiVersion: v1
-  kind: ServiceAccount
-  metadata:
-    namespace: ${NAMESPACE}
-    name: openshift-apiserver
-
-- apiVersion: v1
-  kind: Service
-  metadata:
-    namespace: ${NAMESPACE}
-    name: api
-    annotations:
-      service.alpha.openshift.io/serving-cert-secret-name: serving-cert
-  spec:
-    selector:
-      openshift.io/component: api
-    ports:
-    - name: https
-      port: 443
-      targetPort: 8445
-
-- apiVersion: apiregistration.k8s.io/v1beta1
-  kind: APIService
-  metadata:
-    name: v1.apps.openshift.io
-    annotations:
-      service.alpha.openshift.io/inject-cabundle: "true"
-  spec:
-    group: apps.openshift.io
-    version: v1
-    service:
-      namespace: openshift-apiserver
-      name: api
-    groupPriorityMinimum: 9900
-    versionPriority: 15
-
-- apiVersion: apiregistration.k8s.io/v1beta1
-  kind: APIService
-  metadata:
-    name: v1.authorization.openshift.io
-    annotations:
-      service.alpha.openshift.io/inject-cabundle: "true"
-  spec:
-    group: authorization.openshift.io
-    version: v1
-    service:
-      namespace: openshift-apiserver
-      name: api
-    groupPriorityMinimum: 9900
-    versionPriority: 15
-
-- apiVersion: apiregistration.k8s.io/v1beta1
-  kind: APIService
-  metadata:
-    name: v1.build.openshift.io
-    annotations:
-      service.alpha.openshift.io/inject-cabundle: "true"
-  spec:
-    group: build.openshift.io
-    version: v1
-    service:
-      namespace: openshift-apiserver
-      name: api
-    groupPriorityMinimum: 9900
-    versionPriority: 15
-
-- apiVersion: apiregistration.k8s.io/v1beta1
-  kind: APIService
-  metadata:
-    name: v1.image.openshift.io
-    annotations:
-      service.alpha.openshift.io/inject-cabundle: "true"
-  spec:
-    group: image.openshift.io
-    version: v1
-    service:
-      namespace: openshift-apiserver
-      name: api
-    groupPriorityMinimum: 9900
-    versionPriority: 15
-
-- apiVersion: apiregistration.k8s.io/v1beta1
-  kind: APIService
-  metadata:
-    name: v1.network.openshift.io
-    annotations:
-      service.alpha.openshift.io/inject-cabundle: "true"
-  spec:
-    group: network.openshift.io
-    version: v1
-    service:
-      namespace: openshift-apiserver
-      name: api
-    groupPriorityMinimum: 9900
-    versionPriority: 15
-
-- apiVersion: apiregistration.k8s.io/v1beta1
-  kind: APIService
-  metadata:
-    name: v1.oauth.openshift.io
-    annotations:
-      service.alpha.openshift.io/inject-cabundle: "true"
-  spec:
-    group: oauth.openshift.io
-    version: v1
-    service:
-      namespace: openshift-apiserver
-      name: api
-    groupPriorityMinimum: 9900
-    versionPriority: 15
-
-- apiVersion: apiregistration.k8s.io/v1beta1
-  kind: APIService
-  metadata:
-    name: v1.project.openshift.io
-    annotations:
-      service.alpha.openshift.io/inject-cabundle: "true"
-  spec:
-    group: project.openshift.io
-    version: v1
-    service:
-      namespace: openshift-apiserver
-      name: api
-    groupPriorityMinimum: 9900
-    versionPriority: 15
-
-- apiVersion: apiregistration.k8s.io/v1beta1
-  kind: APIService
-  metadata:
-    name: v1.quota.openshift.io
-    annotations:
-      service.alpha.openshift.io/inject-cabundle: "true"
-  spec:
-    group: quota.openshift.io
-    version: v1
-    service:
-      namespace: openshift-apiserver
-      name: api
-    groupPriorityMinimum: 9900
-    versionPriority: 15
-
-- apiVersion: apiregistration.k8s.io/v1beta1
-  kind: APIService
-  metadata:
-    name: v1.route.openshift.io
-    annotations:
-      service.alpha.openshift.io/inject-cabundle: "true"
-  spec:
-    group: route.openshift.io
-    version: v1
-    service:
-      namespace: openshift-apiserver
-      name: api
-    groupPriorityMinimum: 9900
-    versionPriority: 15
-
-- apiVersion: apiregistration.k8s.io/v1beta1
-  kind: APIService
-  metadata:
-    name: v1.security.openshift.io
-    annotations:
-      service.alpha.openshift.io/inject-cabundle: "true"
-  spec:
-    group: security.openshift.io
-    version: v1
-    service:
-      namespace: openshift-apiserver
-      name: api
-    groupPriorityMinimum: 9900
-    versionPriority: 15
-
-- apiVersion: apiregistration.k8s.io/v1beta1
-  kind: APIService
-  metadata:
-    name: v1.template.openshift.io
-    annotations:
-      service.alpha.openshift.io/inject-cabundle: "true"
-  spec:
-    group: template.openshift.io
-    version: v1
-    service:
-      namespace: openshift-apiserver
-      name: api
-    groupPriorityMinimum: 9900
-    versionPriority: 15
-
-- apiVersion: apiregistration.k8s.io/v1beta1
-  kind: APIService
-  metadata:
-    name: v1.user.openshift.io
-    annotations:
-      service.alpha.openshift.io/inject-cabundle: "true"
-  spec:
-    group: user.openshift.io
-    version: v1
-    service:
-      namespace: openshift-apiserver
-      name: api
-    groupPriorityMinimum: 9900
-    versionPriority: 15
-`)
-
-func installOpenshiftApiserverInstallYamlBytes() ([]byte, error) {
-	return _installOpenshiftApiserverInstallYaml, nil
-}
-
-func installOpenshiftApiserverInstallYaml() (*asset, error) {
-	bytes, err := installOpenshiftApiserverInstallYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "install/openshift-apiserver/install.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _installOpenshiftControllerManagerInstallRbacYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-parameters:
-- name: NAMESPACE
-  value: openshift-controller-manager
-- name: KUBE_SYSTEM
-  value: kube-system
-- name: OPENSHIFT_INFRA
-  value: openshift-infra
-objects:
-
-- apiVersion: rbac.authorization.k8s.io/v1
-  kind: ClusterRole
-  metadata:
-    name: system:openshift:openshift-controller-manager
-  rules:
-  # we run cluster resource quota, so we have to be able to see all resources
-  - apiGroups:
-    - "*"
-    resources:
-    - "*"
-    verbs:
-    - get
-    - list
-    - watch
-  - apiGroups:
-    - ""
-    - events.k8s.io
-    resources:
-    - events
-    verbs:
-    - create
-    - patch
-    - update
-
-- apiVersion: rbac.authorization.k8s.io/v1
-  kind: ClusterRoleBinding
-  metadata:
-    name: system:openshift:openshift-controller-manager
-  roleRef:
-    kind: ClusterRole
-    name: system:openshift:openshift-controller-manager
-  subjects:
-  - kind: ServiceAccount
-    namespace: openshift-controller-manager
-    name: openshift-controller-manager
-
-# needed to get the legacy lock that we used to use
-- apiVersion: rbac.authorization.k8s.io/v1
-  kind: Role
-  metadata:
-    name: system:openshift:leader-locking-openshift-controller-manager
-    namespace: ${KUBE_SYSTEM}
-  rules:
-  - apiGroups:
-    - ""
-    resources:
-    - configmaps
-    verbs:
-    - create
-  - apiGroups:
-    - ""
-    resourceNames:
-    - openshift-master-controllers
-    resources:
-    - configmaps
-    verbs:
-    - get
-    - create
-    - update
-    - patch
-- apiVersion: rbac.authorization.k8s.io/v1
-  kind: RoleBinding
-  metadata:
-    namespace: ${KUBE_SYSTEM}
-    name: system:openshift:leader-locking-openshift-controller-manager
-  roleRef:
-    kind: Role
-    name: system:openshift:leader-locking-openshift-controller-manager
-  subjects:
-  - kind: ServiceAccount
-    namespace: ${NAMESPACE}
-    name: openshift-controller-manager
-
-# needed to support the "use separate service accounts" feature.
-- apiVersion: rbac.authorization.k8s.io/v1
-  kind: Role
-  metadata:
-    name: system:openshift:sa-creating-openshift-controller-manager
-    namespace: ${OPENSHIFT_INFRA}
-  rules:
-  - apiGroups:
-    - ""
-    resources:
-    - serviceaccounts
-    verbs:
-    - get
-    - create
-    - update
-  - apiGroups:
-    - ""
-    resources:
-    - secrets
-    verbs:
-    - get
-    - list
-    - create
-- apiVersion: rbac.authorization.k8s.io/v1
-  kind: RoleBinding
-  metadata:
-    namespace: ${OPENSHIFT_INFRA}
-    name: system:openshift:sa-creating-openshift-controller-manager
-  roleRef:
-    kind: Role
-    name: system:openshift:sa-creating-openshift-controller-manager
-  subjects:
-  - kind: ServiceAccount
-    namespace: ${NAMESPACE}
-    name: openshift-controller-manager
-`)
-
-func installOpenshiftControllerManagerInstallRbacYamlBytes() ([]byte, error) {
-	return _installOpenshiftControllerManagerInstallRbacYaml, nil
-}
-
-func installOpenshiftControllerManagerInstallRbacYaml() (*asset, error) {
-	bytes, err := installOpenshiftControllerManagerInstallRbacYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "install/openshift-controller-manager/install-rbac.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _installOpenshiftControllerManagerInstallYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: openshift-controller-manager
-parameters:
-- name: IMAGE
-  value: openshift/origin-control-plane:latest
-- name: OPENSHIFT_PULL_POLICY
-  value: Always
-- name: NAMESPACE
-  value: openshift-controller-manager
-- name: LOGLEVEL
-  value: "0"
-- name: OPENSHIFT_CONTROLLER_MANAGER_CONFIG_HOST_PATH
-- name: NODE_SELECTOR
-  value: "{}"
-objects:
-
-# to create the tsb server
-- apiVersion: apps/v1
-  kind: DaemonSet
-  metadata:
-    namespace: ${NAMESPACE}
-    name: openshift-controller-manager
-    labels:
-      openshift.io/control-plane: "true"
-      openshift.io/component: controllers
-  spec:
-    selector:
-      matchLabels:
-        openshift.io/control-plane: "true"
-        openshift.io/component: controllers
-    template:
-      metadata:
-        name: openshift-controller-manager
-        labels:
-          openshift.io/control-plane: "true"
-          openshift.io/component: controllers
-      spec:
-        serviceAccountName: openshift-controller-manager
-        restartPolicy: Always
-        hostNetwork: true
-        containers:
-        - name: c
-          image: ${IMAGE}
-          imagePullPolicy: ${OPENSHIFT_PULL_POLICY}
-          command: ["hypershift", "openshift-controller-manager"]
-          args:
-          - "--config=/etc/origin/master/master-config.yaml"
-          - "--v=${LOGLEVEL}"
-          ports:
-          - containerPort: 8444
-          securityContext:
-            privileged: true
-            runAsUser: 0
-          volumeMounts:
-           - mountPath: /etc/origin/master/
-             name: master-config
-           - mountPath: /etc/origin/cloudprovider/
-             name: master-cloud-provider
-          readinessProbe:
-            httpGet:
-              path: /healthz
-              port: 8444
-              scheme: HTTPS
-        # sensitive files still sit on disk for now
-        volumes:
-        - name: master-config
-          hostPath:
-            path: ${OPENSHIFT_CONTROLLER_MANAGER_CONFIG_HOST_PATH}
-        - name: master-cloud-provider
-          hostPath:
-            path: /etc/origin/cloudprovider
-
-
-# to be able to assign powers to the process
-- apiVersion: v1
-  kind: ServiceAccount
-  metadata:
-    namespace: ${NAMESPACE}
-    name: openshift-controller-manager
-
-`)
-
-func installOpenshiftControllerManagerInstallYamlBytes() ([]byte, error) {
-	return _installOpenshiftControllerManagerInstallYaml, nil
-}
-
-func installOpenshiftControllerManagerInstallYaml() (*asset, error) {
-	bytes, err := installOpenshiftControllerManagerInstallYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "install/openshift-controller-manager/install.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _installOpenshiftServiceCertSignerOperatorInstallRbacYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-parameters:
-- name: IMAGE
-  value: openshift/origin-control-plane:latest
-- name: OPENSHIFT_PULL_POLICY
-  value: Always
-- name: NAMESPACE
-  value: openshift-core-operators
-- name: LOGLEVEL
-  value: "0"
-
-objects:
-
-# When we have an orchestrating operator, it will do this
-- apiVersion: rbac.authorization.k8s.io/v1
-  kind: ClusterRoleBinding
-  metadata:
-    name: system:openshift:operator:service-cert-signer
-  roleRef:
-    kind: ClusterRole
-    name: cluster-admin
-  subjects:
-  - kind: ServiceAccount
-    namespace: ${NAMESPACE}
-    name: openshift-service-cert-signer-operator
-`)
-
-func installOpenshiftServiceCertSignerOperatorInstallRbacYamlBytes() ([]byte, error) {
-	return _installOpenshiftServiceCertSignerOperatorInstallRbacYaml, nil
-}
-
-func installOpenshiftServiceCertSignerOperatorInstallRbacYaml() (*asset, error) {
-	bytes, err := installOpenshiftServiceCertSignerOperatorInstallRbacYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "install/openshift-service-cert-signer-operator/install-rbac.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _installOpenshiftServiceCertSignerOperatorInstallYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-parameters:
-- name: IMAGE
-  value: openshift/origin-service-serving-cert-signer:latest
-- name: OPENSHIFT_PULL_POLICY
-  value: Always
-- name: NAMESPACE
-  value: openshift-core-operators
-- name: LOGLEVEL
-  value: "0"
-
-objects:
-- apiVersion: v1
-  kind: Namespace
-  metadata:
-    labels:
-      openshift.io/run-level: "1"
-    name: openshift-core-operators
-
-- apiVersion: apiextensions.k8s.io/v1beta1
-  kind: CustomResourceDefinition
-  metadata:
-    name: servicecertsigneroperatorconfigs.servicecertsigner.config.openshift.io
-  spec:
-    scope: Cluster
-    group: servicecertsigner.config.openshift.io
-    version: v1alpha1
-    names:
-      kind: ServiceCertSignerOperatorConfig
-      plural: servicecertsigneroperatorconfigs
-      singular: servicecertsigneroperatorconfig
-    subresources:
-      status: {}
-
-- apiVersion: v1
-  kind: ConfigMap
-  metadata:
-    namespace: ${NAMESPACE}
-    name: openshift-service-cert-signer-operator-config
-  data:
-    operator-config.yaml: |
-      apiVersion: operator.openshift.io/v1alpha1
-      kind: GenericOperatorConfig
-
-- apiVersion: apps/v1
-  kind: Deployment
-  metadata:
-    namespace: ${NAMESPACE}
-    name: openshift-service-cert-signer-operator
-    labels:
-      app: openshift-service-cert-signer-operator
-  spec:
-    replicas: 1
-    selector:
-      matchLabels:
-        app: openshift-service-cert-signer-operator
-    template:
-      metadata:
-        name: openshift-service-cert-signer-operator
-        labels:
-          app: openshift-service-cert-signer-operator
-      spec:
-        serviceAccountName: openshift-service-cert-signer-operator
-        containers:
-        - name: operator
-          image: openshift/origin-service-serving-cert-signer:v3.11
-          imagePullPolicy: ${OPENSHIFT_PULL_POLICY}
-          command: ["service-serving-cert-signer", "operator"]
-          args:
-          - "--config=/var/run/configmaps/config/operator-config.yaml"
-          - "-v=4"
-          volumeMounts:
-          - mountPath: /var/run/configmaps/config
-            name: config
-        volumes:
-        - name: serving-cert
-          secret:
-            defaultMode: 400
-            secretName: openshift-service-cert-signer-operator-serving-cert
-            optional: true
-        - name: config
-          configMap:
-            defaultMode: 440
-            name: openshift-service-cert-signer-operator-config
-
-- apiVersion: v1
-  kind: ServiceAccount
-  metadata:
-    namespace: ${NAMESPACE}
-    name: openshift-service-cert-signer-operator
-    labels:
-      app: openshift-service-cert-signer-operator
-
-- apiVersion: servicecertsigner.config.openshift.io/v1alpha1
-  kind: ServiceCertSignerOperatorConfig
-  metadata:
-    name: instance
-  spec:
-    managementState: Managed
-    imagePullSpec: openshift/origin-service-serving-cert-signer:v3.11
-    version: 3.10.0
-    logging:
-      level: 4
-    replicas: 1
-`)
-
-func installOpenshiftServiceCertSignerOperatorInstallYamlBytes() ([]byte, error) {
-	return _installOpenshiftServiceCertSignerOperatorInstallYaml, nil
-}
-
-func installOpenshiftServiceCertSignerOperatorInstallYaml() (*asset, error) {
-	bytes, err := installOpenshiftServiceCertSignerOperatorInstallYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "install/openshift-service-cert-signer-operator/install.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _installOpenshiftWebConsoleOperatorInstallRbacYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-parameters:
-- name: NAMESPACE
-  value: openshift-core-operators
-objects:
-
-# When we have an orchestrating operator
-- apiVersion: rbac.authorization.k8s.io/v1
-  kind: ClusterRoleBinding
-  metadata:
-    name: system:openshift:operator:web-console
-  roleRef:
-    kind: ClusterRole
-    name: cluster-admin
-  subjects:
-  - kind: ServiceAccount
-    namespace: ${NAMESPACE}
-    name: openshift-web-console-operator
-`)
-
-func installOpenshiftWebConsoleOperatorInstallRbacYamlBytes() ([]byte, error) {
-	return _installOpenshiftWebConsoleOperatorInstallRbacYaml, nil
-}
-
-func installOpenshiftWebConsoleOperatorInstallRbacYaml() (*asset, error) {
-	bytes, err := installOpenshiftWebConsoleOperatorInstallRbacYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "install/openshift-web-console-operator/install-rbac.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _installOpenshiftWebConsoleOperatorInstallYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-parameters:
-- name: IMAGE
-  value: openshift/origin-hypershift:latest
-- name: OPENSHIFT_PULL_POLICY
-  value: Always
-- name: NAMESPACE
-  # This namespace must not be changed.
-  value: openshift-core-operators
-- name: LOGLEVEL
-  value: "0"
-- name: COMPONENT_LOGLEVEL
-  value: "0"
-- name: COMPONENT_IMAGE
-  value: openshift/origin-web-console:latest
-- name: NODE_SELECTOR
-  value: "{}"
-objects:
-
-- apiVersion: apiextensions.k8s.io/v1beta1
-  kind: CustomResourceDefinition
-  metadata:
-    name: openshiftwebconsoleconfigs.webconsole.operator.openshift.io
-  spec:
-    scope: Cluster
-    group: webconsole.operator.openshift.io
-    version: v1alpha1
-    names:
-      kind: OpenShiftWebConsoleConfig
-      plural: openshiftwebconsoleconfigs
-      singular: openshiftwebconsoleconfig
-    subresources:
-      status: {}
-
-- apiVersion: v1
-  kind: ConfigMap
-  metadata:
-    namespace: openshift-core-operators
-    name: openshift-web-console-operator-config
-  data:
-    operator-config.yaml: |
-      apiVersion: operator.openshift.io/v1alpha1
-      kind: GenericOperatorConfig
-
-- apiVersion: apps/v1
-  kind: Deployment
-  metadata:
-    namespace: ${NAMESPACE}
-    name: openshift-web-console-operator
-    labels:
-      app: openshift-web-console-operator
-  spec:
-    replicas: 1
-    selector:
-      matchLabels:
-        app: openshift-web-console-operator
-    template:
-      metadata:
-        name: openshift-web-console-operator
-        labels:
-          app: openshift-web-console-operator
-      spec:
-        serviceAccountName: openshift-web-console-operator
-        containers:
-        - name: operator
-          image: ${IMAGE}
-          imagePullPolicy: ${OPENSHIFT_PULL_POLICY}
-          command: ["hypershift", "experimental", "openshift-webconsole-operator"]
-          args:
-          - "--config=/var/run/configmaps/config/operator-config.yaml"
-          - "-v=${LOGLEVEL}"
-          volumeMounts:
-          - mountPath: /var/run/configmaps/config
-            name: config
-        nodeSelector: "${{NODE_SELECTOR}}"
-        volumes:
-        - name: serving-cert
-          secret:
-            defaultMode: 400
-            secretName: openshift-web-console-operator-serving-cert
-            optional: true
-        - name: config
-          configMap:
-            defaultMode: 440
-            name: openshift-web-console-operator-config
-
-- apiVersion: v1
-  kind: ServiceAccount
-  metadata:
-    namespace: ${NAMESPACE}
-    name: openshift-web-console-operator
-    labels:
-      app: openshift-web-console-operator
-
-- apiVersion: webconsole.operator.openshift.io/v1alpha1
-  kind: OpenShiftWebConsoleConfig
-  metadata:
-    name: instance
-  spec:
-    managementState: Managed
-    imagePullSpec: ${COMPONENT_IMAGE}
-    version: 3.10.0
-    logging:
-      level: ${{COMPONENT_LOGLEVEL}}
-    replicas: 1
-`)
-
-func installOpenshiftWebConsoleOperatorInstallYamlBytes() ([]byte, error) {
-	return _installOpenshiftWebConsoleOperatorInstallYaml, nil
-}
-
-func installOpenshiftWebConsoleOperatorInstallYaml() (*asset, error) {
-	bytes, err := installOpenshiftWebConsoleOperatorInstallYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "install/openshift-web-console-operator/install.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _installOriginWebConsoleConsoleConfigYaml = []byte(`apiVersion: webconsole.config.openshift.io/v1
-kind: WebConsoleConfiguration
-clusterInfo:
-  consolePublicURL: https://127.0.0.1:8443/console/
-  loggingPublicURL: ""
-  logoutPublicURL: ""
-  masterPublicURL: https://127.0.0.1:8443
-  metricsPublicURL: ""
-extensions:
-  scriptURLs: []
-  stylesheetURLs: []
-  properties: null
-features:
-  inactivityTimeoutMinutes: 0
-  clusterResourceOverridesEnabled: false
-servingInfo:
-  bindAddress: 0.0.0.0:8443
-  bindNetwork: tcp4
-  certFile: /var/serving-cert/tls.crt
-  clientCA: ""
-  keyFile: /var/serving-cert/tls.key
-  maxRequestsInFlight: 0
-  namedCertificates: null
-  requestTimeoutSeconds: 0
-`)
-
-func installOriginWebConsoleConsoleConfigYamlBytes() ([]byte, error) {
-	return _installOriginWebConsoleConsoleConfigYaml, nil
-}
-
-func installOriginWebConsoleConsoleConfigYaml() (*asset, error) {
-	bytes, err := installOriginWebConsoleConsoleConfigYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "install/origin-web-console/console-config.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _installOriginWebConsoleConsoleTemplateYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: openshift-web-console
-  annotations:
-    openshift.io/display-name: OpenShift Web Console
-    description: The server for the OpenShift web console.
-    iconClass: icon-openshift
-    tags: openshift,infra
-    openshift.io/documentation-url: https://github.com/openshift/origin-web-console-server
-    openshift.io/support-url: https://access.redhat.com
-    openshift.io/provider-display-name: Red Hat, Inc.
-parameters:
-- name: IMAGE
-  value: openshift/origin-web-console:latest
-- name: OPENSHIFT_PULL_POLICY
-  value: Always
-- name: NAMESPACE
-  # This namespace cannot be changed. Only `+"`"+`openshift-web-console`+"`"+` is supported.
-  value: openshift-web-console
-- name: LOGLEVEL
-  value: "0"
-- name: API_SERVER_CONFIG
-- name: NODE_SELECTOR
-  value: "{}"
-- name: REPLICA_COUNT
-  value: "1"
-objects:
-
-# to create the web console server
-- apiVersion: apps/v1beta1
-  kind: Deployment
-  metadata:
-    namespace: ${NAMESPACE}
-    name: webconsole
-    labels:
-      app: openshift-web-console
-      webconsole: "true"
-  spec:
-    replicas: "${{REPLICA_COUNT}}"
-    strategy:
-      type: Recreate
-    template:
-      metadata:
-        name: webconsole
-        labels:
-          app: openshift-web-console
-          webconsole: "true"
-      spec:
-        serviceAccountName: webconsole
-        containers:
-        - name: webconsole
-          image: ${IMAGE}
-          imagePullPolicy: ${OPENSHIFT_PULL_POLICY}
-          command:
-          - "/usr/bin/origin-web-console"
-          - "--audit-log-path=-"
-          - "-v=${LOGLEVEL}"
-          - "--config=/var/webconsole-config/webconsole-config.yaml"
-          ports:
-          - containerPort: 8443
-          volumeMounts:
-          - mountPath: /var/serving-cert
-            name: serving-cert
-          - mountPath: /var/webconsole-config
-            name: webconsole-config
-          readinessProbe:
-            httpGet:
-              path: /healthz
-              port: 8443
-              scheme: HTTPS
-          livenessProbe:
-            exec:
-              command:
-                - /bin/sh
-                - -c
-                - |-
-                  if [[ ! -f /tmp/webconsole-config.hash ]]; then \
-                    md5sum /var/webconsole-config/webconsole-config.yaml > /tmp/webconsole-config.hash; \
-                  elif [[ $(md5sum /var/webconsole-config/webconsole-config.yaml) != $(cat /tmp/webconsole-config.hash) ]]; then \
-                    echo 'webconsole-config.yaml has changed.'; \
-                    exit 1; \
-                  fi && curl -k -f https://0.0.0.0:8443/console/
-          resources:
-            requests:
-              cpu: 100m
-              memory: 100Mi
-        nodeSelector: "${{NODE_SELECTOR}}"
-        volumes:
-        - name: serving-cert
-          secret:
-            defaultMode: 400
-            secretName: webconsole-serving-cert
-        - name: webconsole-config
-          configMap:
-            defaultMode: 440
-            name: webconsole-config
-
-# to create the config for the web console
-- apiVersion: v1
-  kind: ConfigMap
-  metadata:
-    namespace: ${NAMESPACE}
-    name: webconsole-config
-    labels:
-      app: openshift-web-console
-  data:
-    webconsole-config.yaml: ${API_SERVER_CONFIG}
-
-# to be able to assign powers to the process
-- apiVersion: v1
-  kind: ServiceAccount
-  metadata:
-    namespace: ${NAMESPACE}
-    name: webconsole
-    labels:
-      app: openshift-web-console
-
-# to be able to expose web console inside the cluster
-- apiVersion: v1
-  kind: Service
-  metadata:
-    namespace: ${NAMESPACE}
-    name: webconsole
-    labels:
-      app: openshift-web-console
-    annotations:
-      service.alpha.openshift.io/serving-cert-secret-name: webconsole-serving-cert
-      prometheus.io/scrape: "true"
-      prometheus.io/scheme: https
-  spec:
-    selector:
-      webconsole: "true"
-    ports:
-    - name: https
-      port: 443
-      targetPort: 8443
-`)
-
-func installOriginWebConsoleConsoleTemplateYamlBytes() ([]byte, error) {
-	return _installOriginWebConsoleConsoleTemplateYaml, nil
-}
-
-func installOriginWebConsoleConsoleTemplateYaml() (*asset, error) {
-	bytes, err := installOriginWebConsoleConsoleTemplateYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "install/origin-web-console/console-template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _installServiceCatalogBrokerResourcesTemplateServiceBrokerRegistrationYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: template-service-broker-registration
-parameters:
-- name: TSB_NAMESPACE
-  value: openshift-template-service-broker
-- name: CA_BUNDLE
-  required: true
-objects:
-# register the tsb with the service catalog
-- apiVersion: servicecatalog.k8s.io/v1beta1
-  kind: ClusterServiceBroker
-  metadata:
-    name: template-service-broker
-  spec:
-    url: https://apiserver.${TSB_NAMESPACE}.svc:443/brokers/template.openshift.io
-    insecureSkipTLSVerify: false
-    caBundle: ${CA_BUNDLE}
-    authInfo: 
-      bearer: 
-        secretRef:
-          kind:      Secret
-          name:      templateservicebroker-client
-          namespace: ${TSB_NAMESPACE}
-`)
-
-func installServiceCatalogBrokerResourcesTemplateServiceBrokerRegistrationYamlBytes() ([]byte, error) {
-	return _installServiceCatalogBrokerResourcesTemplateServiceBrokerRegistrationYaml, nil
-}
-
-func installServiceCatalogBrokerResourcesTemplateServiceBrokerRegistrationYaml() (*asset, error) {
-	bytes, err := installServiceCatalogBrokerResourcesTemplateServiceBrokerRegistrationYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "install/service-catalog-broker-resources/template-service-broker-registration.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _installTemplateservicebrokerApiserverConfigYaml = []byte(`kind: TemplateServiceBrokerConfig
-apiVersion: config.templateservicebroker.openshift.io/v1
-templateNamespaces:
-- openshift
-`)
-
-func installTemplateservicebrokerApiserverConfigYamlBytes() ([]byte, error) {
-	return _installTemplateservicebrokerApiserverConfigYaml, nil
-}
-
-func installTemplateservicebrokerApiserverConfigYaml() (*asset, error) {
-	bytes, err := installTemplateservicebrokerApiserverConfigYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "install/templateservicebroker/apiserver-config.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _installTemplateservicebrokerApiserverTemplateYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: template-service-broker-apiserver
-parameters:
-- name: IMAGE
-  value: openshift/origin-template-service-broker:latest
-- name: OPENSHIFT_PULL_POLICY
-  value: Always
-- name: NAMESPACE
-  value: openshift-template-service-broker
-- name: LOGLEVEL
-  value: "0"
-- name: API_SERVER_CONFIG
-  value: |
-   kind: TemplateServiceBrokerConfig
-   apiVersion: config.templateservicebroker.openshift.io/v1
-   templateNamespaces:
-   - openshift
-- name: NODE_SELECTOR
-  value: "{}"
-objects:
-
-# to create the tsb server
-- apiVersion: extensions/v1beta1
-  kind: DaemonSet
-  metadata:
-    namespace: ${NAMESPACE}
-    name: apiserver
-    labels:
-      apiserver: "true"
-  spec:
-    template:
-      metadata:
-        name: apiserver
-        labels:
-          apiserver: "true"
-      spec:
-        serviceAccountName: apiserver
-        containers:
-        - name: c
-          image: ${IMAGE}
-          imagePullPolicy: ${OPENSHIFT_PULL_POLICY}
-          command:
-          - "/usr/bin/template-service-broker"
-          - "start"
-          - "template-service-broker"
-          - "--secure-port=8443"
-          - "--audit-log-path=-"
-          - "--tls-cert-file=/var/serving-cert/tls.crt"
-          - "--tls-private-key-file=/var/serving-cert/tls.key"
-          - "-v=${LOGLEVEL}"
-          - "--config=/var/apiserver-config/apiserver-config.yaml"
-          ports:
-          - containerPort: 8443
-          volumeMounts:
-          - mountPath: /var/serving-cert
-            name: serving-cert
-          - mountPath: /var/apiserver-config
-            name: apiserver-config
-          readinessProbe:
-            httpGet:
-              path: /healthz
-              port: 8443
-              scheme: HTTPS
-        nodeSelector: "${{NODE_SELECTOR}}"
-        volumes:
-        - name: serving-cert
-          secret:
-            defaultMode: 420
-            secretName: apiserver-serving-cert
-        - name: apiserver-config
-          configMap:
-            defaultMode: 420
-            name: apiserver-config
-
-# to create the config for the TSB
-- apiVersion: v1
-  kind: ConfigMap
-  metadata:
-    namespace: ${NAMESPACE}
-    name: apiserver-config
-  data:
-    apiserver-config.yaml: ${API_SERVER_CONFIG}
-
-# to be able to assign powers to the process
-- apiVersion: v1
-  kind: ServiceAccount
-  metadata:
-    namespace: ${NAMESPACE}
-    name: apiserver
-
-# to be able to expose TSB inside the cluster
-- apiVersion: v1
-  kind: Service
-  metadata:
-    namespace: ${NAMESPACE}
-    name: apiserver
-    annotations:
-      service.alpha.openshift.io/serving-cert-secret-name: apiserver-serving-cert
-  spec:
-    selector:
-      apiserver: "true"
-    ports:
-    - name: https
-      port: 443
-      targetPort: 8443
-
-# This service account will be granted permission to call the TSB.
-# The token for this SA will be provided to the service catalog for
-# use when calling the TSB.
-- apiVersion: v1
-  kind: ServiceAccount
-  metadata:
-    namespace: ${NAMESPACE}
-    name: templateservicebroker-client
-
-# This secret will be populated with a copy of the templateservicebroker-client SA's
-# auth token.  Since this secret has a static name, it can be referenced more
-# easily than the auto-generated secret for the service account.
-- apiVersion: v1
-  kind: Secret
-  metadata:
-    namespace: ${NAMESPACE}
-    name: templateservicebroker-client
-    annotations:
-      kubernetes.io/service-account.name: templateservicebroker-client
-  type: kubernetes.io/service-account-token
-`)
-
-func installTemplateservicebrokerApiserverTemplateYamlBytes() ([]byte, error) {
-	return _installTemplateservicebrokerApiserverTemplateYaml, nil
-}
-
-func installTemplateservicebrokerApiserverTemplateYaml() (*asset, error) {
-	bytes, err := installTemplateservicebrokerApiserverTemplateYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "install/templateservicebroker/apiserver-template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
-	a := &asset{bytes: bytes, info: info}
-	return a, nil
-}
-
-var _installTemplateservicebrokerRbacTemplateYaml = []byte(`apiVersion: template.openshift.io/v1
-kind: Template
-metadata:
-  name: template-service-broker-rbac
-parameters:
-- name: NAMESPACE
-  value: openshift-template-service-broker
-- name: KUBE_SYSTEM
-  value: kube-system
-objects:
-
-# Grant the service account permission to call the TSB
-- apiVersion: rbac.authorization.k8s.io/v1
-  kind: ClusterRoleBinding
-  metadata:
-    name: templateservicebroker-client
-  roleRef:
-    kind: ClusterRole
-    name: system:openshift:templateservicebroker-client
-  subjects:
-  - kind: ServiceAccount
-    namespace: ${NAMESPACE}
-    name: templateservicebroker-client
-
-# to delegate authentication and authorization
-- apiVersion: rbac.authorization.k8s.io/v1
-  kind: ClusterRoleBinding
-  metadata:
-    name: auth-delegator-${NAMESPACE}
-  roleRef:
-    kind: ClusterRole
-    name: system:auth-delegator
-  subjects:
-  - kind: ServiceAccount
-    namespace: ${NAMESPACE}
-    name: apiserver
-
-# to have the template service broker powers
-- apiVersion: rbac.authorization.k8s.io/v1
-  kind: ClusterRoleBinding
-  metadata:
-    name: tsb-${NAMESPACE}
-  roleRef:
-    kind: ClusterRole
-    name: system:openshift:controller:template-service-broker
-  subjects:
-  - kind: ServiceAccount
-    namespace: ${NAMESPACE}
-    name: apiserver
-
-# to read the config for terminating authentication
-- apiVersion: rbac.authorization.k8s.io/v1
-  kind: RoleBinding
-  metadata:
-    namespace: ${KUBE_SYSTEM}
-    name: extension-apiserver-authentication-reader-${NAMESPACE}
-  roleRef:
-    kind: Role
-    name: extension-apiserver-authentication-reader
-  subjects:
-  - kind: ServiceAccount
-    namespace: ${NAMESPACE}
-    name: apiserver
-
-# allow the kube service catalog's SA to read the static secret defined
-# above, which will contain the token for the SA that can call the TSB.
-- apiVersion: rbac.authorization.k8s.io/v1
-  kind: Role
-  metadata:
-    name: templateservicebroker-auth-reader
-    namespace: ${NAMESPACE}
-  rules:
-  - apiGroups:
-    - ""
-    resourceNames:
-    - templateservicebroker-client
-    resources:
-    - secrets
-    verbs:
-    - get
-- apiVersion: rbac.authorization.k8s.io/v1
-  kind: RoleBinding
-  metadata:
-    namespace: ${NAMESPACE}
-    name: templateservicebroker-auth-reader
-  roleRef:
-    kind: Role
-    name: templateservicebroker-auth-reader
-  subjects:
-  - kind: ServiceAccount
-    namespace: kube-service-catalog
-    name: service-catalog-controller
-`)
-
-func installTemplateservicebrokerRbacTemplateYamlBytes() ([]byte, error) {
-	return _installTemplateservicebrokerRbacTemplateYaml, nil
-}
-
-func installTemplateservicebrokerRbacTemplateYaml() (*asset, error) {
-	bytes, err := installTemplateservicebrokerRbacTemplateYamlBytes()
-	if err != nil {
-		return nil, err
-	}
-
-	info := bindataFileInfo{name: "install/templateservicebroker/rbac-template.yaml", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -34272,6 +32502,10 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/aggregator/sample-apiserver-rc.yaml": testExtendedTestdataAggregatorSampleApiserverRcYaml,
 	"test/extended/testdata/aggregator/sample-apiserver-sa.yaml": testExtendedTestdataAggregatorSampleApiserverSaYaml,
 	"test/extended/testdata/aggregator/sample-apiserver-service.yaml": testExtendedTestdataAggregatorSampleApiserverServiceYaml,
+	"test/extended/testdata/builds/application-template-custombuild.json": testExtendedTestdataBuildsApplicationTemplateCustombuildJson,
+	"test/extended/testdata/builds/build-postcommit/docker.yaml": testExtendedTestdataBuildsBuildPostcommitDockerYaml,
+	"test/extended/testdata/builds/build-postcommit/imagestreams.yaml": testExtendedTestdataBuildsBuildPostcommitImagestreamsYaml,
+	"test/extended/testdata/builds/build-postcommit/sti.yaml": testExtendedTestdataBuildsBuildPostcommitStiYaml,
 	"test/extended/testdata/builds/build-pruning/default-group-build-config.yaml": testExtendedTestdataBuildsBuildPruningDefaultGroupBuildConfigYaml,
 	"test/extended/testdata/builds/build-pruning/default-legacy-build-config.yaml": testExtendedTestdataBuildsBuildPruningDefaultLegacyBuildConfigYaml,
 	"test/extended/testdata/builds/build-pruning/errored-build-config.yaml": testExtendedTestdataBuildsBuildPruningErroredBuildConfigYaml,
@@ -34302,6 +32536,9 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/builds/build-timing/test-docker-build.json": testExtendedTestdataBuildsBuildTimingTestDockerBuildJson,
 	"test/extended/testdata/builds/build-timing/test-is.json": testExtendedTestdataBuildsBuildTimingTestIsJson,
 	"test/extended/testdata/builds/build-timing/test-s2i-build.json": testExtendedTestdataBuildsBuildTimingTestS2iBuildJson,
+	"test/extended/testdata/builds/cluster-config/registry-blacklist.yaml": testExtendedTestdataBuildsClusterConfigRegistryBlacklistYaml,
+	"test/extended/testdata/builds/cluster-config/registry-whitelist.yaml": testExtendedTestdataBuildsClusterConfigRegistryWhitelistYaml,
+	"test/extended/testdata/builds/cluster-config.yaml": testExtendedTestdataBuildsClusterConfigYaml,
 	"test/extended/testdata/builds/gradle-pipeline.yaml": testExtendedTestdataBuildsGradlePipelineYaml,
 	"test/extended/testdata/builds/incremental-auth-build.json": testExtendedTestdataBuildsIncrementalAuthBuildJson,
 	"test/extended/testdata/builds/s2i-environment-build-app/.s2i/environment": testExtendedTestdataBuildsS2iEnvironmentBuildAppS2iEnvironment,
@@ -34323,7 +32560,6 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/builds/test-build-app/Gemfile": testExtendedTestdataBuildsTestBuildAppGemfile,
 	"test/extended/testdata/builds/test-build-app/config.ru": testExtendedTestdataBuildsTestBuildAppConfigRu,
 	"test/extended/testdata/builds/test-build-podsvc.json": testExtendedTestdataBuildsTestBuildPodsvcJson,
-	"test/extended/testdata/builds/test-build-postcommit.json": testExtendedTestdataBuildsTestBuildPostcommitJson,
 	"test/extended/testdata/builds/test-build-proxy.yaml": testExtendedTestdataBuildsTestBuildProxyYaml,
 	"test/extended/testdata/builds/test-build-revision.json": testExtendedTestdataBuildsTestBuildRevisionJson,
 	"test/extended/testdata/builds/test-build.yaml": testExtendedTestdataBuildsTestBuildYaml,
@@ -34331,9 +32567,8 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/builds/test-cds-dockerbuild.json": testExtendedTestdataBuildsTestCdsDockerbuildJson,
 	"test/extended/testdata/builds/test-cds-sourcebuild.json": testExtendedTestdataBuildsTestCdsSourcebuildJson,
 	"test/extended/testdata/builds/test-context-build.json": testExtendedTestdataBuildsTestContextBuildJson,
+	"test/extended/testdata/builds/test-docker-app/Dockerfile": testExtendedTestdataBuildsTestDockerAppDockerfile,
 	"test/extended/testdata/builds/test-docker-build-pullsecret.json": testExtendedTestdataBuildsTestDockerBuildPullsecretJson,
-	"test/extended/testdata/builds/test-docker-build-quota-optimized.json": testExtendedTestdataBuildsTestDockerBuildQuotaOptimizedJson,
-	"test/extended/testdata/builds/test-docker-build-quota.json": testExtendedTestdataBuildsTestDockerBuildQuotaJson,
 	"test/extended/testdata/builds/test-docker-build.json": testExtendedTestdataBuildsTestDockerBuildJson,
 	"test/extended/testdata/builds/test-docker-no-outputname.json": testExtendedTestdataBuildsTestDockerNoOutputnameJson,
 	"test/extended/testdata/builds/test-env-build.json": testExtendedTestdataBuildsTestEnvBuildJson,
@@ -34450,9 +32685,13 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/roles/empty-role.yaml": testExtendedTestdataRolesEmptyRoleYaml,
 	"test/extended/testdata/roles/policy-clusterroles.yaml": testExtendedTestdataRolesPolicyClusterrolesYaml,
 	"test/extended/testdata/roles/policy-roles.yaml": testExtendedTestdataRolesPolicyRolesYaml,
+	"test/extended/testdata/router-common.yaml": testExtendedTestdataRouterCommonYaml,
 	"test/extended/testdata/router-config-manager.yaml": testExtendedTestdataRouterConfigManagerYaml,
 	"test/extended/testdata/router-http-echo-server.yaml": testExtendedTestdataRouterHttpEchoServerYaml,
 	"test/extended/testdata/router-metrics.yaml": testExtendedTestdataRouterMetricsYaml,
+	"test/extended/testdata/router-override-domains.yaml": testExtendedTestdataRouterOverrideDomainsYaml,
+	"test/extended/testdata/router-override.yaml": testExtendedTestdataRouterOverrideYaml,
+	"test/extended/testdata/router-scoped.yaml": testExtendedTestdataRouterScopedYaml,
 	"test/extended/testdata/run_policy/parallel-bc.yaml": testExtendedTestdataRun_policyParallelBcYaml,
 	"test/extended/testdata/run_policy/serial-bc.yaml": testExtendedTestdataRun_policySerialBcYaml,
 	"test/extended/testdata/run_policy/serial-latest-only-bc.yaml": testExtendedTestdataRun_policySerialLatestOnlyBcYaml,
@@ -34462,14 +32701,14 @@ var _bindata = map[string]func() (*asset, error){
 	"test/extended/testdata/s2i-dropcaps/rootable-ruby/assemble": testExtendedTestdataS2iDropcapsRootableRubyAssemble,
 	"test/extended/testdata/sample-image-stream.json": testExtendedTestdataSampleImageStreamJson,
 	"test/extended/testdata/samplepipeline-withenvs.yaml": testExtendedTestdataSamplepipelineWithenvsYaml,
-	"test/extended/testdata/scoped-router.yaml": testExtendedTestdataScopedRouterYaml,
 	"test/extended/testdata/service-serving-cert/nginx-serving-cert.conf": testExtendedTestdataServiceServingCertNginxServingCertConf,
 	"test/extended/testdata/signer-buildconfig.yaml": testExtendedTestdataSignerBuildconfigYaml,
+	"test/extended/testdata/templates/templateinstance_badobject.yaml": testExtendedTestdataTemplatesTemplateinstance_badobjectYaml,
 	"test/extended/testdata/templates/templateinstance_objectkinds.yaml": testExtendedTestdataTemplatesTemplateinstance_objectkindsYaml,
+	"test/extended/testdata/templates/templateinstance_readiness.yaml": testExtendedTestdataTemplatesTemplateinstance_readinessYaml,
 	"test/extended/testdata/templates/templateservicebroker_bind.yaml": testExtendedTestdataTemplatesTemplateservicebroker_bindYaml,
 	"test/extended/testdata/test-cli-debug.yaml": testExtendedTestdataTestCliDebugYaml,
 	"test/extended/testdata/test-env-pod.json": testExtendedTestdataTestEnvPodJson,
-	"test/extended/testdata/test-gitserver-tokenauth.yaml": testExtendedTestdataTestGitserverTokenauthYaml,
 	"test/extended/testdata/test-gitserver.yaml": testExtendedTestdataTestGitserverYaml,
 	"test/extended/testdata/test-secret.json": testExtendedTestdataTestSecretJson,
 	"test/extended/testdata/weighted-router.yaml": testExtendedTestdataWeightedRouterYaml,
@@ -34497,13 +32736,11 @@ var _bindata = map[string]func() (*asset, error){
 	"examples/db-templates/redis-persistent-template.json": examplesDbTemplatesRedisPersistentTemplateJson,
 	"examples/image-streams/image-streams-centos7.json": examplesImageStreamsImageStreamsCentos7Json,
 	"examples/image-streams/image-streams-rhel7.json": examplesImageStreamsImageStreamsRhel7Json,
-	"examples/sample-app/application-template-custombuild.json": examplesSampleAppApplicationTemplateCustombuildJson,
 	"examples/sample-app/application-template-dockerbuild.json": examplesSampleAppApplicationTemplateDockerbuildJson,
 	"examples/sample-app/application-template-pullspecbuild.json": examplesSampleAppApplicationTemplatePullspecbuildJson,
 	"examples/sample-app/application-template-stibuild.json": examplesSampleAppApplicationTemplateStibuildJson,
 	"examples/sample-app/cleanup.sh": examplesSampleAppCleanupSh,
 	"examples/sample-app/github-webhook-example.json": examplesSampleAppGithubWebhookExampleJson,
-	"examples/sample-app/pullimages.sh": examplesSampleAppPullimagesSh,
 	"examples/quickstarts/cakephp-mysql-persistent.json": examplesQuickstartsCakephpMysqlPersistentJson,
 	"examples/quickstarts/cakephp-mysql.json": examplesQuickstartsCakephpMysqlJson,
 	"examples/quickstarts/dancer-mysql-persistent.json": examplesQuickstartsDancerMysqlPersistentJson,
@@ -34526,33 +32763,12 @@ var _bindata = map[string]func() (*asset, error){
 	"examples/jenkins/jenkins-ephemeral-template.json": examplesJenkinsJenkinsEphemeralTemplateJson,
 	"examples/jenkins/jenkins-persistent-template.json": examplesJenkinsJenkinsPersistentTemplateJson,
 	"examples/jenkins/pipeline/bluegreen-pipeline.yaml": examplesJenkinsPipelineBluegreenPipelineYaml,
-	"examples/jenkins/pipeline/mapsapp-pipeline.yaml": examplesJenkinsPipelineMapsappPipelineYaml,
 	"examples/jenkins/pipeline/maven-pipeline.yaml": examplesJenkinsPipelineMavenPipelineYaml,
 	"examples/jenkins/pipeline/nodejs-sample-pipeline.yaml": examplesJenkinsPipelineNodejsSamplePipelineYaml,
 	"examples/jenkins/pipeline/openshift-client-plugin-pipeline.yaml": examplesJenkinsPipelineOpenshiftClientPluginPipelineYaml,
 	"examples/jenkins/pipeline/samplepipeline.yaml": examplesJenkinsPipelineSamplepipelineYaml,
 	"examples/quickstarts/cakephp-mysql.json/cakephp-mysql.json": examplesQuickstartsCakephpMysqlJsonCakephpMysqlJson,
-	"install/automationservicebroker/install-rbac.yaml": installAutomationservicebrokerInstallRbacYaml,
-	"install/automationservicebroker/install.yaml": installAutomationservicebrokerInstallYaml,
 	"install/etcd/etcd.yaml": installEtcdEtcdYaml,
-	"install/kube-apiserver/apiserver.yaml": installKubeApiserverApiserverYaml,
-	"install/kube-controller-manager/kube-controller-manager.yaml": installKubeControllerManagerKubeControllerManagerYaml,
-	"install/kube-dns/install.yaml": installKubeDnsInstallYaml,
-	"install/kube-proxy/install.yaml": installKubeProxyInstallYaml,
-	"install/kube-scheduler/kube-scheduler.yaml": installKubeSchedulerKubeSchedulerYaml,
-	"install/openshift-apiserver/install.yaml": installOpenshiftApiserverInstallYaml,
-	"install/openshift-controller-manager/install-rbac.yaml": installOpenshiftControllerManagerInstallRbacYaml,
-	"install/openshift-controller-manager/install.yaml": installOpenshiftControllerManagerInstallYaml,
-	"install/openshift-service-cert-signer-operator/install-rbac.yaml": installOpenshiftServiceCertSignerOperatorInstallRbacYaml,
-	"install/openshift-service-cert-signer-operator/install.yaml": installOpenshiftServiceCertSignerOperatorInstallYaml,
-	"install/openshift-web-console-operator/install-rbac.yaml": installOpenshiftWebConsoleOperatorInstallRbacYaml,
-	"install/openshift-web-console-operator/install.yaml": installOpenshiftWebConsoleOperatorInstallYaml,
-	"install/origin-web-console/console-config.yaml": installOriginWebConsoleConsoleConfigYaml,
-	"install/origin-web-console/console-template.yaml": installOriginWebConsoleConsoleTemplateYaml,
-	"install/service-catalog-broker-resources/template-service-broker-registration.yaml": installServiceCatalogBrokerResourcesTemplateServiceBrokerRegistrationYaml,
-	"install/templateservicebroker/apiserver-config.yaml": installTemplateservicebrokerApiserverConfigYaml,
-	"install/templateservicebroker/apiserver-template.yaml": installTemplateservicebrokerApiserverTemplateYaml,
-	"install/templateservicebroker/rbac-template.yaml": installTemplateservicebrokerRbacTemplateYaml,
 }
 
 // AssetDir returns the file names below a certain
@@ -34623,7 +32839,6 @@ var _bintree = &bintree{nil, map[string]*bintree{
 			"jenkins-persistent-template.json": &bintree{examplesJenkinsJenkinsPersistentTemplateJson, map[string]*bintree{}},
 			"pipeline": &bintree{nil, map[string]*bintree{
 				"bluegreen-pipeline.yaml": &bintree{examplesJenkinsPipelineBluegreenPipelineYaml, map[string]*bintree{}},
-				"mapsapp-pipeline.yaml": &bintree{examplesJenkinsPipelineMapsappPipelineYaml, map[string]*bintree{}},
 				"maven-pipeline.yaml": &bintree{examplesJenkinsPipelineMavenPipelineYaml, map[string]*bintree{}},
 				"nodejs-sample-pipeline.yaml": &bintree{examplesJenkinsPipelineNodejsSamplePipelineYaml, map[string]*bintree{}},
 				"openshift-client-plugin-pipeline.yaml": &bintree{examplesJenkinsPipelineOpenshiftClientPluginPipelineYaml, map[string]*bintree{}},
@@ -34652,64 +32867,16 @@ var _bintree = &bintree{nil, map[string]*bintree{
 			"rails-postgresql.json": &bintree{examplesQuickstartsRailsPostgresqlJson, map[string]*bintree{}},
 		}},
 		"sample-app": &bintree{nil, map[string]*bintree{
-			"application-template-custombuild.json": &bintree{examplesSampleAppApplicationTemplateCustombuildJson, map[string]*bintree{}},
 			"application-template-dockerbuild.json": &bintree{examplesSampleAppApplicationTemplateDockerbuildJson, map[string]*bintree{}},
 			"application-template-pullspecbuild.json": &bintree{examplesSampleAppApplicationTemplatePullspecbuildJson, map[string]*bintree{}},
 			"application-template-stibuild.json": &bintree{examplesSampleAppApplicationTemplateStibuildJson, map[string]*bintree{}},
 			"cleanup.sh": &bintree{examplesSampleAppCleanupSh, map[string]*bintree{}},
 			"github-webhook-example.json": &bintree{examplesSampleAppGithubWebhookExampleJson, map[string]*bintree{}},
-			"pullimages.sh": &bintree{examplesSampleAppPullimagesSh, map[string]*bintree{}},
 		}},
 	}},
 	"install": &bintree{nil, map[string]*bintree{
-		"automationservicebroker": &bintree{nil, map[string]*bintree{
-			"install-rbac.yaml": &bintree{installAutomationservicebrokerInstallRbacYaml, map[string]*bintree{}},
-			"install.yaml": &bintree{installAutomationservicebrokerInstallYaml, map[string]*bintree{}},
-		}},
 		"etcd": &bintree{nil, map[string]*bintree{
 			"etcd.yaml": &bintree{installEtcdEtcdYaml, map[string]*bintree{}},
-		}},
-		"kube-apiserver": &bintree{nil, map[string]*bintree{
-			"apiserver.yaml": &bintree{installKubeApiserverApiserverYaml, map[string]*bintree{}},
-		}},
-		"kube-controller-manager": &bintree{nil, map[string]*bintree{
-			"kube-controller-manager.yaml": &bintree{installKubeControllerManagerKubeControllerManagerYaml, map[string]*bintree{}},
-		}},
-		"kube-dns": &bintree{nil, map[string]*bintree{
-			"install.yaml": &bintree{installKubeDnsInstallYaml, map[string]*bintree{}},
-		}},
-		"kube-proxy": &bintree{nil, map[string]*bintree{
-			"install.yaml": &bintree{installKubeProxyInstallYaml, map[string]*bintree{}},
-		}},
-		"kube-scheduler": &bintree{nil, map[string]*bintree{
-			"kube-scheduler.yaml": &bintree{installKubeSchedulerKubeSchedulerYaml, map[string]*bintree{}},
-		}},
-		"openshift-apiserver": &bintree{nil, map[string]*bintree{
-			"install.yaml": &bintree{installOpenshiftApiserverInstallYaml, map[string]*bintree{}},
-		}},
-		"openshift-controller-manager": &bintree{nil, map[string]*bintree{
-			"install-rbac.yaml": &bintree{installOpenshiftControllerManagerInstallRbacYaml, map[string]*bintree{}},
-			"install.yaml": &bintree{installOpenshiftControllerManagerInstallYaml, map[string]*bintree{}},
-		}},
-		"openshift-service-cert-signer-operator": &bintree{nil, map[string]*bintree{
-			"install-rbac.yaml": &bintree{installOpenshiftServiceCertSignerOperatorInstallRbacYaml, map[string]*bintree{}},
-			"install.yaml": &bintree{installOpenshiftServiceCertSignerOperatorInstallYaml, map[string]*bintree{}},
-		}},
-		"openshift-web-console-operator": &bintree{nil, map[string]*bintree{
-			"install-rbac.yaml": &bintree{installOpenshiftWebConsoleOperatorInstallRbacYaml, map[string]*bintree{}},
-			"install.yaml": &bintree{installOpenshiftWebConsoleOperatorInstallYaml, map[string]*bintree{}},
-		}},
-		"origin-web-console": &bintree{nil, map[string]*bintree{
-			"console-config.yaml": &bintree{installOriginWebConsoleConsoleConfigYaml, map[string]*bintree{}},
-			"console-template.yaml": &bintree{installOriginWebConsoleConsoleTemplateYaml, map[string]*bintree{}},
-		}},
-		"service-catalog-broker-resources": &bintree{nil, map[string]*bintree{
-			"template-service-broker-registration.yaml": &bintree{installServiceCatalogBrokerResourcesTemplateServiceBrokerRegistrationYaml, map[string]*bintree{}},
-		}},
-		"templateservicebroker": &bintree{nil, map[string]*bintree{
-			"apiserver-config.yaml": &bintree{installTemplateservicebrokerApiserverConfigYaml, map[string]*bintree{}},
-			"apiserver-template.yaml": &bintree{installTemplateservicebrokerApiserverTemplateYaml, map[string]*bintree{}},
-			"rbac-template.yaml": &bintree{installTemplateservicebrokerRbacTemplateYaml, map[string]*bintree{}},
 		}},
 	}},
 	"test": &bintree{nil, map[string]*bintree{
@@ -34725,6 +32892,12 @@ var _bintree = &bintree{nil, map[string]*bintree{
 					"sample-apiserver-service.yaml": &bintree{testExtendedTestdataAggregatorSampleApiserverServiceYaml, map[string]*bintree{}},
 				}},
 				"builds": &bintree{nil, map[string]*bintree{
+					"application-template-custombuild.json": &bintree{testExtendedTestdataBuildsApplicationTemplateCustombuildJson, map[string]*bintree{}},
+					"build-postcommit": &bintree{nil, map[string]*bintree{
+						"docker.yaml": &bintree{testExtendedTestdataBuildsBuildPostcommitDockerYaml, map[string]*bintree{}},
+						"imagestreams.yaml": &bintree{testExtendedTestdataBuildsBuildPostcommitImagestreamsYaml, map[string]*bintree{}},
+						"sti.yaml": &bintree{testExtendedTestdataBuildsBuildPostcommitStiYaml, map[string]*bintree{}},
+					}},
 					"build-pruning": &bintree{nil, map[string]*bintree{
 						"default-group-build-config.yaml": &bintree{testExtendedTestdataBuildsBuildPruningDefaultGroupBuildConfigYaml, map[string]*bintree{}},
 						"default-legacy-build-config.yaml": &bintree{testExtendedTestdataBuildsBuildPruningDefaultLegacyBuildConfigYaml, map[string]*bintree{}},
@@ -34779,6 +32952,11 @@ var _bintree = &bintree{nil, map[string]*bintree{
 						"test-is.json": &bintree{testExtendedTestdataBuildsBuildTimingTestIsJson, map[string]*bintree{}},
 						"test-s2i-build.json": &bintree{testExtendedTestdataBuildsBuildTimingTestS2iBuildJson, map[string]*bintree{}},
 					}},
+					"cluster-config": &bintree{nil, map[string]*bintree{
+						"registry-blacklist.yaml": &bintree{testExtendedTestdataBuildsClusterConfigRegistryBlacklistYaml, map[string]*bintree{}},
+						"registry-whitelist.yaml": &bintree{testExtendedTestdataBuildsClusterConfigRegistryWhitelistYaml, map[string]*bintree{}},
+					}},
+					"cluster-config.yaml": &bintree{testExtendedTestdataBuildsClusterConfigYaml, map[string]*bintree{}},
 					"gradle-pipeline.yaml": &bintree{testExtendedTestdataBuildsGradlePipelineYaml, map[string]*bintree{}},
 					"incremental-auth-build.json": &bintree{testExtendedTestdataBuildsIncrementalAuthBuildJson, map[string]*bintree{}},
 					"s2i-environment-build-app": &bintree{nil, map[string]*bintree{
@@ -34812,7 +32990,6 @@ var _bintree = &bintree{nil, map[string]*bintree{
 						"config.ru": &bintree{testExtendedTestdataBuildsTestBuildAppConfigRu, map[string]*bintree{}},
 					}},
 					"test-build-podsvc.json": &bintree{testExtendedTestdataBuildsTestBuildPodsvcJson, map[string]*bintree{}},
-					"test-build-postcommit.json": &bintree{testExtendedTestdataBuildsTestBuildPostcommitJson, map[string]*bintree{}},
 					"test-build-proxy.yaml": &bintree{testExtendedTestdataBuildsTestBuildProxyYaml, map[string]*bintree{}},
 					"test-build-revision.json": &bintree{testExtendedTestdataBuildsTestBuildRevisionJson, map[string]*bintree{}},
 					"test-build.yaml": &bintree{testExtendedTestdataBuildsTestBuildYaml, map[string]*bintree{}},
@@ -34820,9 +32997,10 @@ var _bintree = &bintree{nil, map[string]*bintree{
 					"test-cds-dockerbuild.json": &bintree{testExtendedTestdataBuildsTestCdsDockerbuildJson, map[string]*bintree{}},
 					"test-cds-sourcebuild.json": &bintree{testExtendedTestdataBuildsTestCdsSourcebuildJson, map[string]*bintree{}},
 					"test-context-build.json": &bintree{testExtendedTestdataBuildsTestContextBuildJson, map[string]*bintree{}},
+					"test-docker-app": &bintree{nil, map[string]*bintree{
+						"Dockerfile": &bintree{testExtendedTestdataBuildsTestDockerAppDockerfile, map[string]*bintree{}},
+					}},
 					"test-docker-build-pullsecret.json": &bintree{testExtendedTestdataBuildsTestDockerBuildPullsecretJson, map[string]*bintree{}},
-					"test-docker-build-quota-optimized.json": &bintree{testExtendedTestdataBuildsTestDockerBuildQuotaOptimizedJson, map[string]*bintree{}},
-					"test-docker-build-quota.json": &bintree{testExtendedTestdataBuildsTestDockerBuildQuotaJson, map[string]*bintree{}},
 					"test-docker-build.json": &bintree{testExtendedTestdataBuildsTestDockerBuildJson, map[string]*bintree{}},
 					"test-docker-no-outputname.json": &bintree{testExtendedTestdataBuildsTestDockerNoOutputnameJson, map[string]*bintree{}},
 					"test-env-build.json": &bintree{testExtendedTestdataBuildsTestEnvBuildJson, map[string]*bintree{}},
@@ -35006,9 +33184,13 @@ var _bintree = &bintree{nil, map[string]*bintree{
 					"policy-clusterroles.yaml": &bintree{testExtendedTestdataRolesPolicyClusterrolesYaml, map[string]*bintree{}},
 					"policy-roles.yaml": &bintree{testExtendedTestdataRolesPolicyRolesYaml, map[string]*bintree{}},
 				}},
+				"router-common.yaml": &bintree{testExtendedTestdataRouterCommonYaml, map[string]*bintree{}},
 				"router-config-manager.yaml": &bintree{testExtendedTestdataRouterConfigManagerYaml, map[string]*bintree{}},
 				"router-http-echo-server.yaml": &bintree{testExtendedTestdataRouterHttpEchoServerYaml, map[string]*bintree{}},
 				"router-metrics.yaml": &bintree{testExtendedTestdataRouterMetricsYaml, map[string]*bintree{}},
+				"router-override-domains.yaml": &bintree{testExtendedTestdataRouterOverrideDomainsYaml, map[string]*bintree{}},
+				"router-override.yaml": &bintree{testExtendedTestdataRouterOverrideYaml, map[string]*bintree{}},
+				"router-scoped.yaml": &bintree{testExtendedTestdataRouterScopedYaml, map[string]*bintree{}},
 				"run_policy": &bintree{nil, map[string]*bintree{
 					"parallel-bc.yaml": &bintree{testExtendedTestdataRun_policyParallelBcYaml, map[string]*bintree{}},
 					"serial-bc.yaml": &bintree{testExtendedTestdataRun_policySerialBcYaml, map[string]*bintree{}},
@@ -35024,18 +33206,18 @@ var _bintree = &bintree{nil, map[string]*bintree{
 				}},
 				"sample-image-stream.json": &bintree{testExtendedTestdataSampleImageStreamJson, map[string]*bintree{}},
 				"samplepipeline-withenvs.yaml": &bintree{testExtendedTestdataSamplepipelineWithenvsYaml, map[string]*bintree{}},
-				"scoped-router.yaml": &bintree{testExtendedTestdataScopedRouterYaml, map[string]*bintree{}},
 				"service-serving-cert": &bintree{nil, map[string]*bintree{
 					"nginx-serving-cert.conf": &bintree{testExtendedTestdataServiceServingCertNginxServingCertConf, map[string]*bintree{}},
 				}},
 				"signer-buildconfig.yaml": &bintree{testExtendedTestdataSignerBuildconfigYaml, map[string]*bintree{}},
 				"templates": &bintree{nil, map[string]*bintree{
+					"templateinstance_badobject.yaml": &bintree{testExtendedTestdataTemplatesTemplateinstance_badobjectYaml, map[string]*bintree{}},
 					"templateinstance_objectkinds.yaml": &bintree{testExtendedTestdataTemplatesTemplateinstance_objectkindsYaml, map[string]*bintree{}},
+					"templateinstance_readiness.yaml": &bintree{testExtendedTestdataTemplatesTemplateinstance_readinessYaml, map[string]*bintree{}},
 					"templateservicebroker_bind.yaml": &bintree{testExtendedTestdataTemplatesTemplateservicebroker_bindYaml, map[string]*bintree{}},
 				}},
 				"test-cli-debug.yaml": &bintree{testExtendedTestdataTestCliDebugYaml, map[string]*bintree{}},
 				"test-env-pod.json": &bintree{testExtendedTestdataTestEnvPodJson, map[string]*bintree{}},
-				"test-gitserver-tokenauth.yaml": &bintree{testExtendedTestdataTestGitserverTokenauthYaml, map[string]*bintree{}},
 				"test-gitserver.yaml": &bintree{testExtendedTestdataTestGitserverYaml, map[string]*bintree{}},
 				"test-secret.json": &bintree{testExtendedTestdataTestSecretJson, map[string]*bintree{}},
 				"weighted-router.yaml": &bintree{testExtendedTestdataWeightedRouterYaml, map[string]*bintree{}},

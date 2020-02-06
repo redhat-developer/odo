@@ -21,7 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/kubernetes/pkg/controller"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 
 	extensions "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -58,11 +58,15 @@ func (t *DaemonSetUpgradeTest) Setup(f *framework.Framework) {
 					Labels: labelSet,
 				},
 				Spec: v1.PodSpec{
+					Tolerations: []v1.Toleration{
+						{Operator: v1.TolerationOpExists},
+					},
 					Containers: []v1.Container{
 						{
-							Name:  daemonSetName,
-							Image: image,
-							Ports: []v1.ContainerPort{{ContainerPort: 9376}},
+							Name:            daemonSetName,
+							Image:           image,
+							Ports:           []v1.ContainerPort{{ContainerPort: 9376}},
+							SecurityContext: &v1.SecurityContext{},
 						},
 					},
 				},
@@ -126,11 +130,11 @@ func checkRunningOnAllNodes(f *framework.Framework, namespace string, selector m
 
 	nodeNames := make([]string, 0)
 	for _, node := range nodeList.Items {
-		if len(node.Spec.Taints) == 0 {
-			nodeNames = append(nodeNames, node.Name)
-		} else {
-			framework.Logf("Node %v not expected to have DaemonSet pod, has taints %v", node.Name, node.Spec.Taints)
+		if len(node.Spec.Taints) != 0 {
+			framework.Logf("Ignore taints %v on Node %v for DaemonSet Pod.", node.Spec.Taints, node.Name)
 		}
+		// DaemonSet Pods are expected to run on all the nodes in e2e.
+		nodeNames = append(nodeNames, node.Name)
 	}
 
 	return checkDaemonPodOnNodes(f, namespace, selector, nodeNames)

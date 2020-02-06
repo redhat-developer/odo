@@ -10,17 +10,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/docker/builder/dockerfile/parser"
-	"github.com/golang/glog"
+	"github.com/moby/buildkit/frontend/dockerfile/parser"
+	"k8s.io/klog"
 
 	s2iapi "github.com/openshift/source-to-image/pkg/api"
 	s2igit "github.com/openshift/source-to-image/pkg/scm/git"
 
-	kapi "k8s.io/kubernetes/pkg/apis/core"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/kubernetes/pkg/apis/core/validation"
 
+	buildv1 "github.com/openshift/api/build/v1"
 	"github.com/openshift/library-go/pkg/git"
-	buildapi "github.com/openshift/origin/pkg/build/apis/build"
 	"github.com/openshift/origin/pkg/oc/lib/newapp"
 	"github.com/openshift/origin/pkg/oc/lib/newapp/source"
 )
@@ -69,11 +69,11 @@ func (d dockerfileContents) Contents() string {
 func IsRemoteRepository(s string) (bool, error) {
 	url, err := s2igit.Parse(s)
 	if err != nil {
-		glog.V(5).Infof("%s is not a valid url: %v", s, err)
+		klog.V(5).Infof("%s is not a valid url: %v", s, err)
 		return false, err
 	}
 	if url.IsLocal() {
-		glog.V(5).Infof("%s is not a valid remote git clone spec", s)
+		klog.V(5).Infof("%s is not a valid remote git clone spec", s)
 		return false, nil
 	}
 	gitRepo := git.NewRepository()
@@ -86,10 +86,10 @@ func IsRemoteRepository(s string) (bool, error) {
 		}
 	}
 	if err != nil {
-		glog.V(5).Infof("could not list git remotes for %s: %v", s, err)
+		klog.V(5).Infof("could not list git remotes for %s: %v", s, err)
 		return false, err
 	}
-	glog.V(5).Infof("%s is a valid remote git repository", s)
+	klog.V(5).Infof("%s is a valid remote git repository", s)
 	return true, nil
 }
 
@@ -100,15 +100,15 @@ type SourceRepository struct {
 	localDir        string
 	remoteURL       *s2igit.URL
 	contextDir      string
-	secrets         []buildapi.SecretBuildSource
-	configMaps      []buildapi.ConfigMapBuildSource
+	secrets         []buildv1.SecretBuildSource
+	configMaps      []buildv1.ConfigMapBuildSource
 	info            *SourceRepositoryInfo
 	sourceImage     ComponentReference
 	sourceImageFrom string
 	sourceImageTo   string
 
 	usedBy           []ComponentReference
-	strategy         generate.Strategy
+	strategy         newapp.Strategy
 	ignoreRepository bool
 	binary           bool
 
@@ -119,7 +119,7 @@ type SourceRepository struct {
 
 // NewSourceRepository creates a reference to a local or remote source code repository from
 // a URL or path.
-func NewSourceRepository(s string, strategy generate.Strategy) (*SourceRepository, error) {
+func NewSourceRepository(s string, strategy newapp.Strategy) (*SourceRepository, error) {
 	location, err := s2igit.Parse(s)
 	if err != nil {
 		return nil, err
@@ -135,7 +135,7 @@ func NewSourceRepository(s string, strategy generate.Strategy) (*SourceRepositor
 // NewSourceRepositoryWithDockerfile creates a reference to a local source code repository with
 // the provided relative Dockerfile path (defaults to "Dockerfile").
 func NewSourceRepositoryWithDockerfile(s, dockerfilePath string) (*SourceRepository, error) {
-	r, err := NewSourceRepository(s, generate.StrategyDocker)
+	r, err := NewSourceRepository(s, newapp.StrategyDocker)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +158,7 @@ func NewSourceRepositoryWithDockerfile(s, dockerfilePath string) (*SourceReposit
 func NewSourceRepositoryForDockerfile(contents string) (*SourceRepository, error) {
 	s := &SourceRepository{
 		ignoreRepository: true,
-		strategy:         generate.StrategyDocker,
+		strategy:         newapp.StrategyDocker,
 	}
 	err := s.AddDockerfile(contents)
 	return s, err
@@ -166,7 +166,7 @@ func NewSourceRepositoryForDockerfile(contents string) (*SourceRepository, error
 
 // NewBinarySourceRepository creates a source repository that is configured for binary
 // input.
-func NewBinarySourceRepository(strategy generate.Strategy) *SourceRepository {
+func NewBinarySourceRepository(strategy newapp.Strategy) *SourceRepository {
 	return &SourceRepository{
 		binary:           true,
 		ignoreRepository: true,
@@ -183,7 +183,7 @@ func NewImageSourceRepository(compRef ComponentReference, from, to string) *Sour
 		sourceImageTo:    to,
 		ignoreRepository: true,
 		location:         compRef.Input().From,
-		strategy:         generate.StrategySource,
+		strategy:         newapp.StrategySource,
 	}
 }
 
@@ -203,12 +203,12 @@ func (r *SourceRepository) InUse() bool {
 }
 
 // SetStrategy sets the source repository strategy
-func (r *SourceRepository) SetStrategy(strategy generate.Strategy) {
+func (r *SourceRepository) SetStrategy(strategy newapp.Strategy) {
 	r.strategy = strategy
 }
 
 // GetStrategy returns the source repository strategy
-func (r *SourceRepository) GetStrategy() generate.Strategy {
+func (r *SourceRepository) GetStrategy() newapp.Strategy {
 	return r.strategy
 }
 
@@ -311,7 +311,7 @@ func (r *SourceRepository) DetectAuth() error {
 	}
 
 	gitRepo := git.NewRepositoryWithEnv(env)
-	glog.V(4).Infof("Checking if %v requires authentication", url.StringNoFragment())
+	klog.V(4).Infof("Checking if %v requires authentication", url.StringNoFragment())
 	_, _, err = gitRepo.TimedListRemote(10*time.Second, url.StringNoFragment(), "--heads")
 	if err != nil {
 		r.requiresAuth = true
@@ -359,12 +359,12 @@ func (r *SourceRepository) ContextDir() string {
 }
 
 // ConfigMaps returns the configMap build sources
-func (r *SourceRepository) ConfigMaps() []buildapi.ConfigMapBuildSource {
+func (r *SourceRepository) ConfigMaps() []buildv1.ConfigMapBuildSource {
 	return r.configMaps
 }
 
 // Secrets returns the secret build sources
-func (r *SourceRepository) Secrets() []buildapi.SecretBuildSource {
+func (r *SourceRepository) Secrets() []buildv1.SecretBuildSource {
 	return r.secrets
 }
 
@@ -391,7 +391,7 @@ func (r *SourceRepository) AddDockerfile(contents string) error {
 		r.info = &SourceRepositoryInfo{}
 	}
 	r.info.Dockerfile = dockerfile
-	r.SetStrategy(generate.StrategyDocker)
+	r.SetStrategy(newapp.StrategyDocker)
 	r.forceAddDockerfile = true
 	return nil
 }
@@ -401,7 +401,7 @@ func (r *SourceRepository) AddDockerfile(contents string) error {
 // optional and when not specified the default is the current working directory.
 func (r *SourceRepository) AddBuildConfigMaps(configMaps []string) error {
 	injections := s2iapi.VolumeList{}
-	r.configMaps = []buildapi.ConfigMapBuildSource{}
+	r.configMaps = []buildv1.ConfigMapBuildSource{}
 	for _, in := range configMaps {
 		if err := injections.Set(in); err != nil {
 			return err
@@ -416,7 +416,7 @@ func (r *SourceRepository) AddBuildConfigMaps(configMaps []string) error {
 		return false
 	}
 	for _, in := range injections {
-		if r.GetStrategy() == generate.StrategyDocker && filepath.IsAbs(in.Destination) {
+		if r.GetStrategy() == newapp.StrategyDocker && filepath.IsAbs(in.Destination) {
 			return fmt.Errorf("for the docker strategy, the configMap destination directory %q must be a relative path", in.Destination)
 		}
 		if len(validation.ValidateConfigMapName(in.Source, false)) != 0 {
@@ -425,8 +425,8 @@ func (r *SourceRepository) AddBuildConfigMaps(configMaps []string) error {
 		if configMapExists(in.Source) {
 			return fmt.Errorf("the %q configMap can be used just once", in.Source)
 		}
-		r.configMaps = append(r.configMaps, buildapi.ConfigMapBuildSource{
-			ConfigMap:      kapi.LocalObjectReference{Name: in.Source},
+		r.configMaps = append(r.configMaps, buildv1.ConfigMapBuildSource{
+			ConfigMap:      corev1.LocalObjectReference{Name: in.Source},
 			DestinationDir: in.Destination,
 		})
 	}
@@ -438,7 +438,7 @@ func (r *SourceRepository) AddBuildConfigMaps(configMaps []string) error {
 // optional and when not specified the default is the current working directory.
 func (r *SourceRepository) AddBuildSecrets(secrets []string) error {
 	injections := s2iapi.VolumeList{}
-	r.secrets = []buildapi.SecretBuildSource{}
+	r.secrets = []buildv1.SecretBuildSource{}
 	for _, in := range secrets {
 		if err := injections.Set(in); err != nil {
 			return err
@@ -453,7 +453,7 @@ func (r *SourceRepository) AddBuildSecrets(secrets []string) error {
 		return false
 	}
 	for _, in := range injections {
-		if r.GetStrategy() == generate.StrategyDocker && filepath.IsAbs(in.Destination) {
+		if r.GetStrategy() == newapp.StrategyDocker && filepath.IsAbs(in.Destination) {
 			return fmt.Errorf("for the docker strategy, the secret destination directory %q must be a relative path", in.Destination)
 		}
 		if len(validation.ValidateSecretName(in.Source, false)) != 0 {
@@ -462,8 +462,8 @@ func (r *SourceRepository) AddBuildSecrets(secrets []string) error {
 		if secretExists(in.Source) {
 			return fmt.Errorf("the %q secret can be used just once", in.Source)
 		}
-		r.secrets = append(r.secrets, buildapi.SecretBuildSource{
-			Secret:         kapi.LocalObjectReference{Name: in.Source},
+		r.secrets = append(r.secrets, buildv1.SecretBuildSource{
+			Secret:         corev1.LocalObjectReference{Name: in.Source},
 			DestinationDir: in.Destination,
 		})
 	}
@@ -535,8 +535,8 @@ type Detector interface {
 // SourceRepositoryEnumerator implements the Detector interface
 type SourceRepositoryEnumerator struct {
 	Detectors         source.Detectors
-	DockerfileTester  generate.Tester
-	JenkinsfileTester generate.Tester
+	DockerfileTester  newapp.Tester
+	JenkinsfileTester newapp.Tester
 }
 
 // Detect extracts source code information about the provided source repository
@@ -623,12 +623,12 @@ func StrategyAndSourceForRepository(repo *SourceRepository, image *ImageRef) (*B
 // the context directory if specified.
 func CloneAndCheckoutSources(repo git.Repository, remote, ref, localDir, contextDir string) (string, error) {
 	if len(ref) == 0 {
-		glog.V(5).Infof("No source ref specified, using shallow git clone")
+		klog.V(5).Infof("No source ref specified, using shallow git clone")
 		if err := repo.CloneWithOptions(localDir, remote, git.Shallow, "--recursive"); err != nil {
 			return "", fmt.Errorf("shallow cloning repository %q to %q failed: %v", remote, localDir, err)
 		}
 	} else {
-		glog.V(5).Infof("Requested ref %q, performing full git clone and git checkout", ref)
+		klog.V(5).Infof("Requested ref %q, performing full git clone and git checkout", ref)
 		if err := repo.Clone(localDir, remote); err != nil {
 			return "", fmt.Errorf("cloning repository %q to %q failed: %v", remote, localDir, err)
 		}
@@ -642,7 +642,7 @@ func CloneAndCheckoutSources(repo git.Repository, remote, ref, localDir, context
 		}
 	}
 	if len(contextDir) > 0 {
-		glog.V(5).Infof("Using context directory %q. The full source path is %q", contextDir, filepath.Join(localDir, contextDir))
+		klog.V(5).Infof("Using context directory %q. The full source path is %q", contextDir, filepath.Join(localDir, contextDir))
 	}
 	return filepath.Join(localDir, contextDir), nil
 }

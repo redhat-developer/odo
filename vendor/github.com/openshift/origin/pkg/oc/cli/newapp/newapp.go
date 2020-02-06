@@ -9,10 +9,12 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/kubernetes/pkg/kubectl/cmd/logs"
+
 	"github.com/MakeNowJust/heredoc"
 	docker "github.com/fsouza/go-dockerclient"
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 
 	corev1 "k8s.io/api/core/v1"
 	kapierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -23,37 +25,36 @@ import (
 	"k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericclioptions/printers"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
+	corev1typedclient "k8s.io/client-go/kubernetes/typed/core/v1"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/kubernetes/pkg/api/legacyscheme"
-	kapi "k8s.io/kubernetes/pkg/apis/core"
-	kcoreclient "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset/typed/core/internalversion"
-	ctl "k8s.io/kubernetes/pkg/kubectl"
-	kcmd "k8s.io/kubernetes/pkg/kubectl/cmd"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions/printers"
+	"k8s.io/kubernetes/pkg/kubectl/generate"
 	"k8s.io/kubernetes/pkg/kubectl/polymorphichelpers"
+	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 
 	"github.com/openshift/api/build"
 	buildv1 "github.com/openshift/api/build/v1"
 	imagev1 "github.com/openshift/api/image/v1"
 	routev1 "github.com/openshift/api/route/v1"
+	imagev1typedclient "github.com/openshift/client-go/image/clientset/versioned/typed/image/v1"
+	routev1typedclient "github.com/openshift/client-go/route/clientset/versioned/typed/route/v1"
+	templatev1typedclient "github.com/openshift/client-go/template/clientset/versioned/typed/template/v1"
 	"github.com/openshift/library-go/pkg/git"
 	buildapi "github.com/openshift/origin/pkg/build/apis/build"
 	"github.com/openshift/origin/pkg/bulk"
 	cmdutil "github.com/openshift/origin/pkg/cmd/util"
-	"github.com/openshift/origin/pkg/cmd/util/print"
 	imageapi "github.com/openshift/origin/pkg/image/apis/image"
-	imageclientinternal "github.com/openshift/origin/pkg/image/generated/internalclientset"
+	imageutil "github.com/openshift/origin/pkg/image/util"
 	"github.com/openshift/origin/pkg/oc/lib/newapp"
-	newapp "github.com/openshift/origin/pkg/oc/lib/newapp/app"
+	newappapp "github.com/openshift/origin/pkg/oc/lib/newapp/app"
 	newcmd "github.com/openshift/origin/pkg/oc/lib/newapp/cmd"
 	dockerutil "github.com/openshift/origin/pkg/oc/lib/newapp/docker"
 	routeapi "github.com/openshift/origin/pkg/route/apis/route"
-	routeclientinternal "github.com/openshift/origin/pkg/route/generated/internalclientset"
-	templateclientinternal "github.com/openshift/origin/pkg/template/generated/internalclientset"
 	"github.com/openshift/origin/pkg/util"
 )
 
@@ -91,9 +92,11 @@ var (
 	  # List all local templates and image streams that can be used to create an app
 	  %[1]s %[2]s --list
 
-	  # Create an application based on the source code in the current git repository (with a public remote)
-	  # and a Docker image
+	  # Create an application based on the source code in the current git repository (with a public remote) and a Docker image
 	  %[1]s %[2]s . --docker-image=repo/langimage
+
+	  # Create an application myapp with Docker based build strategy expecting binary input 
+	  %[1]s %[2]s  --strategy=docker --binary --name myapp 
 
 	  # Create a Ruby application based on the provided [image]~[source code] combination
 	  %[1]s %[2]s centos/ruby-25-centos7~https://github.com/sclorg/ruby-ex.git
@@ -168,19 +171,6 @@ type AppOptions struct {
 	genericclioptions.IOStreams
 }
 
-type versionedPrintObj struct {
-	printer printers.ResourcePrinter
-	cmd     *cobra.Command
-}
-
-func (p *versionedPrintObj) PrintObj(obj runtime.Object, out io.Writer) error {
-	printFn := print.VersionedPrintObject(func(cmd *cobra.Command, obj runtime.Object, out io.Writer) error {
-		return p.printer.PrintObj(obj, out)
-	}, p.cmd, out)
-
-	return printFn(obj)
-}
-
 //Complete sets all common default options for commands (new-app and new-build)
 func (o *ObjectGeneratorOptions) Complete(baseName, commandName string, f kcmdutil.Factory, c *cobra.Command, args []string) error {
 	cmdutil.WarnAboutCommaSeparation(o.ErrOut, o.Config.Environment, "--env")
@@ -227,11 +217,10 @@ func (o *ObjectGeneratorOptions) Complete(baseName, commandName string, f kcmdut
 	o.CommandName = commandName
 
 	o.LogsForObject = polymorphichelpers.LogsForObjectFn
-	printer, err := o.PrintFlags.ToPrinter()
+	o.Printer, err = o.PrintFlags.ToPrinter()
 	if err != nil {
 		return err
 	}
-	o.Printer = &versionedPrintObj{printer, c}
 
 	if err := CompleteAppConfig(o.Config, f, c, args); err != nil {
 		return err
@@ -312,6 +301,7 @@ func NewCmdNewApplication(name, baseName string, f kcmdutil.Factory, streams gen
 	cmd.Flags().BoolVar(&o.Config.AllowSecretUse, "grant-install-rights", o.Config.AllowSecretUse, "If true, a component that requires access to your account may use your token to install software into your project. Only grant images you trust the right to run with your token.")
 	cmd.Flags().StringVar(&o.Config.SourceSecret, "source-secret", o.Config.SourceSecret, "The name of an existing secret that should be used for cloning a private git repository.")
 	cmd.Flags().BoolVar(&o.Config.SkipGeneration, "no-install", o.Config.SkipGeneration, "Do not attempt to run images that describe themselves as being installable")
+	cmd.Flags().BoolVar(&o.Config.BinaryBuild, "binary", o.Config.BinaryBuild, "Instead of expecting a source URL, set the build to expect binary contents. Will disable triggers.")
 
 	o.Action.BindForOutput(cmd.Flags(), "output", "template")
 	cmd.Flags().String("output-version", "", "The preferred API versions of the output objects")
@@ -344,7 +334,22 @@ func (o *AppOptions) RunNewApp() error {
 		}
 
 		if o.Action.ShouldPrint() {
-			return o.Printer.PrintObj(result.List, o.Out)
+			list := &unstructured.UnstructuredList{
+				Object: map[string]interface{}{
+					"kind":       "List",
+					"apiVersion": "v1",
+					"metadata":   map[string]interface{}{},
+				},
+			}
+			for _, item := range result.List.Items {
+				unstructuredItem, err := runtime.DefaultUnstructuredConverter.ToUnstructured(item)
+				if err != nil {
+					return err
+				}
+				list.Items = append(list.Items, unstructured.Unstructured{Object: unstructuredItem})
+			}
+
+			return o.Printer.PrintObj(list, o.Out)
 		}
 
 		return printHumanReadableQueryResult(result, out, o.BaseName, o.CommandName)
@@ -381,7 +386,17 @@ func (o *AppOptions) RunNewApp() error {
 	}
 
 	if o.Action.ShouldPrint() {
-		return o.Printer.PrintObj(result.List, o.Out)
+		// TODO(juanvallejo): this needs to be fixed by updating QueryResult.List to be of type corev1.List
+		printableList := &corev1.List{
+			// this is ok because we know exactly how we want to be serialized
+			TypeMeta: metav1.TypeMeta{APIVersion: corev1.SchemeGroupVersion.String(), Kind: "List"},
+		}
+		for _, obj := range result.List.Items {
+			printableList.Items = append(printableList.Items, runtime.RawExtension{
+				Object: obj,
+			})
+		}
+		return o.Printer.PrintObj(printableList, o.Out)
 	}
 
 	if result.GeneratedJobs {
@@ -455,7 +470,7 @@ func (o *AppOptions) RunNewApp() error {
 		case *routev1.Route:
 			containsRoute = true
 			if len(t.Spec.Host) > 0 {
-				var route *routeapi.Route
+				var route *routev1.Route
 				//check if route processing was completed and host field is prepopulated by router
 				err := wait.PollImmediate(500*time.Millisecond, RoutePollTimeout, func() (bool, error) {
 					route, err = config.RouteClient.Routes(t.Namespace).Get(t.Name, metav1.GetOptions{})
@@ -468,7 +483,7 @@ func (o *AppOptions) RunNewApp() error {
 					return false, nil
 				})
 				if err != nil {
-					glog.V(4).Infof("Failed to poll route %s host field: %s", t.Name, err)
+					klog.V(4).Infof("Failed to poll route %s host field: %s", t.Name, err)
 				} else {
 					fmt.Fprintf(out, "%sAccess your application via route '%s' \n", indent, route.Spec.Host)
 				}
@@ -506,11 +521,11 @@ func getServices(items []runtime.Object) []*corev1.Service {
 		unstructuredObj := i.(*unstructured.Unstructured)
 		obj, err := legacyscheme.Scheme.New(unstructuredObj.GroupVersionKind())
 		if err != nil {
-			glog.V(1).Info(err)
+			klog.V(1).Info(err)
 			continue
 		}
 		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(unstructuredObj.Object, obj); err != nil {
-			glog.V(1).Info(err)
+			klog.V(1).Info(err)
 			continue
 		}
 
@@ -527,12 +542,12 @@ func followInstallation(config *newcmd.AppConfig, clientGetter genericclioptions
 
 	// we cannot retrieve logs until the pod is out of pending
 	// TODO: move this to the server side
-	podClient := config.KubeClient.Core().Pods(pod.Namespace)
-	if err := wait.PollImmediate(500*time.Millisecond, 60*time.Second, installationStarted(podClient, pod.Name, config.KubeClient.Core().Secrets(pod.Namespace))); err != nil {
+	podClient := config.KubeClient.CoreV1().Pods(pod.Namespace)
+	if err := wait.PollImmediate(500*time.Millisecond, 60*time.Second, installationStarted(podClient, pod.Name, config.KubeClient.CoreV1().Secrets(pod.Namespace))); err != nil {
 		return err
 	}
 
-	opts := &kcmd.LogsOptions{
+	opts := &logs.LogsOptions{
 		Namespace:   pod.Namespace,
 		ResourceArg: pod.Name,
 		Options: &corev1.PodLogOptions{
@@ -540,7 +555,7 @@ func followInstallation(config *newcmd.AppConfig, clientGetter genericclioptions
 			Container: pod.Spec.Containers[0].Name,
 		},
 		RESTClientGetter: clientGetter,
-		ConsumeRequestFn: kcmd.DefaultConsumeRequestFn,
+		ConsumeRequestFn: logs.DefaultConsumeRequest,
 		LogsForObject:    logsForObjectFn,
 		IOStreams:        genericclioptions.IOStreams{Out: config.Out},
 	}
@@ -562,13 +577,13 @@ func followInstallation(config *newcmd.AppConfig, clientGetter genericclioptions
 	return nil
 }
 
-func installationStarted(c kcoreclient.PodInterface, name string, s kcoreclient.SecretInterface) wait.ConditionFunc {
+func installationStarted(c corev1typedclient.PodInterface, name string, s corev1typedclient.SecretInterface) wait.ConditionFunc {
 	return func() (bool, error) {
 		pod, err := c.Get(name, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
-		if pod.Status.Phase == kapi.PodPending {
+		if pod.Status.Phase == corev1.PodPending {
 			return false, nil
 		}
 		// delete a secret named the same as the pod if it exists
@@ -576,7 +591,7 @@ func installationStarted(c kcoreclient.PodInterface, name string, s kcoreclient.
 			if secret.Annotations[newcmd.GeneratedForJob] == "true" &&
 				secret.Annotations[newcmd.GeneratedForJobFor] == pod.Annotations[newcmd.GeneratedForJobFor] {
 				if err := s.Delete(name, nil); err != nil {
-					glog.V(4).Infof("Failed to delete install secret %s: %v", name, err)
+					klog.V(4).Infof("Failed to delete install secret %s: %v", name, err)
 				}
 			}
 		}
@@ -584,7 +599,7 @@ func installationStarted(c kcoreclient.PodInterface, name string, s kcoreclient.
 	}
 }
 
-func installationComplete(c kcoreclient.PodInterface, name string, out io.Writer) wait.ConditionFunc {
+func installationComplete(c corev1typedclient.PodInterface, name string, out io.Writer) wait.ConditionFunc {
 	return func() (bool, error) {
 		pod, err := c.Get(name, metav1.GetOptions{})
 		if err != nil {
@@ -594,13 +609,13 @@ func installationComplete(c kcoreclient.PodInterface, name string, out io.Writer
 			return false, nil
 		}
 		switch pod.Status.Phase {
-		case kapi.PodSucceeded:
+		case corev1.PodSucceeded:
 			fmt.Fprintf(out, "--> Success\n")
 			if err := c.Delete(name, nil); err != nil {
-				glog.V(4).Infof("Failed to delete install pod %s: %v", name, err)
+				klog.V(4).Infof("Failed to delete install pod %s: %v", name, err)
 			}
 			return true, nil
-		case kapi.PodFailed:
+		case corev1.PodFailed:
 			return true, fmt.Errorf("installation of %q did not complete successfully", name)
 		default:
 			return false, nil
@@ -612,7 +627,7 @@ func setAppConfigLabels(c *cobra.Command, config *newcmd.AppConfig) error {
 	labelStr := kcmdutil.GetFlagString(c, "labels")
 	if len(labelStr) != 0 {
 		var err error
-		config.Labels, err = ctl.ParseLabels(labelStr)
+		config.Labels, err = generate.ParseLabels(labelStr)
 		if err != nil {
 			return err
 		}
@@ -627,12 +642,12 @@ func getDockerClient() (*docker.Client, error) {
 	dockerClient, _, err := dockerutil.NewHelper().GetClient()
 	if err == nil {
 		if err = dockerClient.Ping(); err != nil {
-			glog.V(4).Infof("Docker client did not respond to a ping: %v", err)
+			klog.V(4).Infof("Docker client did not respond to a ping: %v", err)
 			return nil, err
 		}
 		return dockerClient, nil
 	}
-	glog.V(2).Infof("No local Docker daemon detected: %v", err)
+	klog.V(2).Infof("No local Docker daemon detected: %v", err)
 	return nil, err
 }
 
@@ -656,30 +671,28 @@ func CompleteAppConfig(config *newcmd.AppConfig, f kcmdutil.Factory, c *cobra.Co
 		return err
 	}
 
-	kclient, err := f.ClientSet()
-	if err != nil {
-		return err
-	}
-	config.KubeClient = kclient
-	dockerClient, _ := getDockerClient()
-
 	clientConfig, err := f.ToRESTConfig()
 	if err != nil {
 		return err
 	}
-	imageClient, err := imageclientinternal.NewForConfig(clientConfig)
+
+	config.KubeClient, err = kubernetes.NewForConfig(clientConfig)
+
+	dockerClient, _ := getDockerClient()
+
+	imageClient, err := imagev1typedclient.NewForConfig(clientConfig)
 	if err != nil {
 		return err
 	}
-	templateClient, err := templateclientinternal.NewForConfig(clientConfig)
+	templateClient, err := templatev1typedclient.NewForConfig(clientConfig)
 	if err != nil {
 		return err
 	}
-	routeClient, err := routeclientinternal.NewForConfig(clientConfig)
+	routeClient, err := routev1typedclient.NewForConfig(clientConfig)
 	if err != nil {
 		return err
 	}
-	config.SetOpenShiftClient(imageClient.Image(), templateClient.Template(), routeClient.Route(), namespace, dockerClient)
+	config.SetOpenShiftClient(imageClient, templateClient, routeClient, namespace, dockerClient)
 
 	if config.AllowSecretUse {
 		cfg, err := f.ToRESTConfig()
@@ -727,11 +740,11 @@ func CompleteAppConfig(config *newcmd.AppConfig, f kcmdutil.Factory, c *cobra.Co
 		return kcmdutil.UsageErrorf(c, "--source-image must be specified when --source-image-path is specified.")
 	}
 
-	if config.BinaryBuild && config.Strategy == generate.StrategyPipeline {
+	if config.BinaryBuild && config.Strategy == newapp.StrategyPipeline {
 		return kcmdutil.UsageErrorf(c, "specifying binary builds and the pipeline strategy at the same time is not allowed.")
 	}
 
-	if len(config.BuildArgs) > 0 && config.Strategy != generate.StrategyUnspecified && config.Strategy != generate.StrategyDocker {
+	if len(config.BuildArgs) > 0 && config.Strategy != newapp.StrategyUnspecified && config.Strategy != newapp.StrategyDocker {
 		return kcmdutil.UsageErrorf(c, "Cannot use '--build-arg' without a Docker build")
 	}
 	return nil
@@ -896,7 +909,7 @@ func TransformRunError(err error, baseName, commandName, commandPath string, gro
 			)
 		}
 		return
-	case newapp.ErrNoMatch:
+	case newappapp.ErrNoMatch:
 		classification, _ := config.ClassificationWinners[t.Value]
 		if classification.IncludeGitErrors {
 			notGitRepo, ok := config.SourceClassificationErrors[t.Value]
@@ -924,7 +937,7 @@ func TransformRunError(err error, baseName, commandName, commandPath string, gro
 			t.Errs...,
 		)
 		return
-	case newapp.ErrMultipleMatches:
+	case newappapp.ErrMultipleMatches:
 		classification, _ := config.ClassificationWinners[t.Value]
 		buf := &bytes.Buffer{}
 		for i, match := range t.Matches {
@@ -963,7 +976,7 @@ func TransformRunError(err error, baseName, commandName, commandPath string, gro
 			t.Errs...,
 		)
 		return
-	case newapp.ErrPartialMatch:
+	case newappapp.ErrPartialMatch:
 		classification, _ := config.ClassificationWinners[t.Value]
 		buf := &bytes.Buffer{}
 		fmt.Fprintf(buf, "* %s\n", t.Match.Description)
@@ -981,7 +994,7 @@ func TransformRunError(err error, baseName, commandName, commandPath string, gro
 			t.Errs...,
 		)
 		return
-	case newapp.ErrNoTagsFound:
+	case newappapp.ErrNoTagsFound:
 		classification, _ := config.ClassificationWinners[t.Value]
 		buf := &bytes.Buffer{}
 		fmt.Fprintf(buf, "  Use --allow-missing-imagestream-tags to use this image stream\n\n")
@@ -1006,7 +1019,11 @@ func TransformRunError(err error, baseName, commandName, commandPath string, gro
 		// TODO: suggest things to the user
 		groups.Add("", "", "", UsageError(commandPath, newAppNoInput, baseName, commandName))
 	default:
-		groups.Add("", "", "", err)
+		if runtime.IsNotRegisteredError(err) {
+			groups.Add("", "", "", fmt.Errorf(fmt.Sprintf("The template contained an object type unknown to `oc new-app`.  Use `oc process -f <template> | oc create -f -` instead.  Error details: %v", err)))
+		} else {
+			groups.Add("", "", "", err)
+		}
 	}
 	return
 }
@@ -1021,9 +1038,9 @@ func printHumanReadableQueryResult(r *newcmd.QueryResult, out io.Writer, baseNam
 		return fmt.Errorf("no matches found")
 	}
 
-	templates := newapp.ComponentMatches{}
-	imageStreams := newapp.ComponentMatches{}
-	dockerImages := newapp.ComponentMatches{}
+	templates := newappapp.ComponentMatches{}
+	imageStreams := newappapp.ComponentMatches{}
+	dockerImages := newappapp.ComponentMatches{}
 
 	for _, match := range r.Matches {
 		switch {
@@ -1031,14 +1048,14 @@ func printHumanReadableQueryResult(r *newcmd.QueryResult, out io.Writer, baseNam
 			templates = append(templates, match)
 		case match.IsImage() && match.ImageStream != nil:
 			imageStreams = append(imageStreams, match)
-		case match.IsImage() && match.Image != nil:
+		case match.IsImage() && match.DockerImage != nil:
 			dockerImages = append(dockerImages, match)
 		}
 	}
 
-	sort.Sort(newapp.ScoredComponentMatches(templates))
-	sort.Sort(newapp.ScoredComponentMatches(imageStreams))
-	sort.Sort(newapp.ScoredComponentMatches(dockerImages))
+	sort.Sort(newappapp.ScoredComponentMatches(templates))
+	sort.Sort(newappapp.ScoredComponentMatches(imageStreams))
+	sort.Sort(newappapp.ScoredComponentMatches(dockerImages))
 
 	if len(templates) > 0 {
 		fmt.Fprintf(out, "Templates (%s %s --template=<template>)\n", baseName, commandName)
@@ -1065,9 +1082,13 @@ func printHumanReadableQueryResult(r *newcmd.QueryResult, out io.Writer, baseNam
 			tags := "<none>"
 			if len(imageStream.Status.Tags) > 0 {
 				set := sets.NewString()
-				for tag := range imageStream.Status.Tags {
-					if !imageStream.Spec.Tags[tag].HasAnnotationTag(imageapi.TagReferenceAnnotationTagHidden) {
-						set.Insert(tag)
+				for _, tag := range imageStream.Status.Tags {
+					if refTag, ok := imageutil.SpecHasTag(imageStream, tag.Tag); ok {
+						if !imageutil.HasAnnotationTag(&refTag, imageapi.TagReferenceAnnotationTagHidden) {
+							set.Insert(tag.Tag)
+						}
+					} else {
+						set.Insert(tag.Tag)
 					}
 				}
 				tags = strings.Join(set.List(), ", ")
@@ -1090,7 +1111,7 @@ func printHumanReadableQueryResult(r *newcmd.QueryResult, out io.Writer, baseNam
 		fmt.Fprintf(out, "Docker images (%s %s --docker-image=<docker-image> [--code=<source>])\n", baseName, commandName)
 		fmt.Fprintln(out, "-----")
 		for _, match := range dockerImages {
-			image := match.Image
+			image := match.DockerImage
 
 			name, tag, ok := imageapi.SplitImageStreamTag(match.Name)
 			if !ok {
@@ -1116,7 +1137,7 @@ type configSecretRetriever struct {
 	config *restclient.Config
 }
 
-func newConfigSecretRetriever(config *restclient.Config) newapp.SecretAccessor {
+func newConfigSecretRetriever(config *restclient.Config) newappapp.SecretAccessor {
 	return &configSecretRetriever{config}
 }
 

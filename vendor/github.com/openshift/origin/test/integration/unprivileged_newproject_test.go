@@ -6,8 +6,9 @@ import (
 
 	kapierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kclientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	projectv1client "github.com/openshift/client-go/project/clientset/versioned/typed/project/v1"
 	authorizationapi "github.com/openshift/origin/pkg/authorization/apis/authorization"
@@ -36,14 +37,11 @@ import (
 	_ "github.com/openshift/client-go/user/clientset/versioned"
 	_ "github.com/openshift/origin/pkg/authorization/generated/internalclientset"
 	_ "github.com/openshift/origin/pkg/image/generated/internalclientset"
-	_ "github.com/openshift/origin/pkg/network/generated/internalclientset"
 	_ "github.com/openshift/origin/pkg/oauth/generated/internalclientset"
 	_ "github.com/openshift/origin/pkg/project/generated/internalclientset"
-	_ "github.com/openshift/origin/pkg/quota/generated/internalclientset"
 	_ "github.com/openshift/origin/pkg/route/generated/internalclientset"
 	_ "github.com/openshift/origin/pkg/template/generated/internalclientset"
 	_ "github.com/openshift/origin/pkg/user/generated/internalclientset"
-	"k8s.io/client-go/rest"
 )
 
 func TestUnprivilegedNewProject(t *testing.T) {
@@ -234,9 +232,9 @@ func TestUnprivilegedNewProjectDenied(t *testing.T) {
 	valerieClientConfig.BearerToken = accessToken
 
 	valerieProjectClient := projectclient.NewForConfigOrDie(valerieClientConfig)
-	valerieKubeClient := kclientset.NewForConfigOrDie(valerieClientConfig)
+	valerieKubeClient := kubernetes.NewForConfigOrDie(valerieClientConfig)
 
-	if err := testutil.WaitForClusterPolicyUpdate(valerieKubeClient.Authorization(), "create", project.Resource("projectrequests"), false); err != nil {
+	if err := testutil.WaitForClusterPolicyUpdate(valerieKubeClient.AuthorizationV1(), "create", project.Resource("projectrequests"), false); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 

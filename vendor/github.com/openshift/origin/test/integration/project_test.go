@@ -2,30 +2,24 @@ package integration
 
 import (
 	"fmt"
-	"path"
 	"testing"
 	"time"
 
-	etcd "github.com/coreos/etcd/client"
-	"golang.org/x/net/context"
-
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	kapierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericclioptions/printers"
 	rbacv1client "k8s.io/client-go/kubernetes/typed/rbac/v1"
 	kapi "k8s.io/kubernetes/pkg/apis/core"
 
-	buildv1 "github.com/openshift/api/build/v1"
-	buildv1client "github.com/openshift/client-go/build/clientset/versioned"
 	oapi "github.com/openshift/origin/pkg/api"
 	authorizationapi "github.com/openshift/origin/pkg/authorization/apis/authorization"
 	"github.com/openshift/origin/pkg/authorization/authorizer/scope"
 	authorizationclient "github.com/openshift/origin/pkg/authorization/generated/internalclientset"
-	buildutil "github.com/openshift/origin/pkg/build/util"
 	"github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
 	"github.com/openshift/origin/pkg/oc/cli/admin/policy"
 	projectapi "github.com/openshift/origin/pkg/project/apis/project"
@@ -48,16 +42,16 @@ func TestProjectIsNamespace(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	clusterAdminProjectClient := projectclient.NewForConfigOrDie(clusterAdminClientConfig).Project()
-	kubeClientset, err := testutil.GetClusterAdminKubeInternalClient(clusterAdminKubeConfig)
+	kubeClientset, err := testutil.GetClusterAdminKubeClient(clusterAdminKubeConfig)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
 	// create a namespace
-	namespace := &kapi.Namespace{
+	namespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{Name: "integration-test"},
 	}
-	namespaceResult, err := kubeClientset.Core().Namespaces().Create(namespace)
+	namespaceResult, err := kubeClientset.CoreV1().Namespaces().Create(namespace)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -87,7 +81,7 @@ func TestProjectIsNamespace(t *testing.T) {
 	}
 
 	// now get the namespace for that project
-	namespace, err = kubeClientset.Core().Namespaces().Get(projectResult.Name, metav1.GetOptions{})
+	namespace, err = kubeClientset.CoreV1().Namespaces().Get(projectResult.Name, metav1.GetOptions{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -99,125 +93,6 @@ func TestProjectIsNamespace(t *testing.T) {
 	}
 	if project.Annotations["openshift.io/node-selector"] != namespace.Annotations["openshift.io/node-selector"] {
 		t.Fatalf("Project node selector did not match namespace node selector, project %v, namespace %v", project.Annotations["openshift.io/node-selector"], namespace.Annotations["openshift.io/node-selector"])
-	}
-}
-
-// TestProjectLifecycle verifies that content cannot be added in a project that does not exist
-// and that openshift content is cleaned up when a project is deleted.
-func TestProjectLifecycle(t *testing.T) {
-	masterConfig, clusterAdminKubeConfig, err := testserver.StartTestMaster()
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	defer testserver.CleanupMasterEtcd(t, masterConfig)
-	etcd3, err := testserver.MasterEtcdClients(masterConfig)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	clusterAdminClientConfig, err := testutil.GetClusterAdminClientConfig(clusterAdminKubeConfig)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	clusterAdminBuildClient := buildv1client.NewForConfigOrDie(clusterAdminClientConfig).Build()
-
-	clusterAdminKubeClientset, err := testutil.GetClusterAdminKubeInternalClient(clusterAdminKubeConfig)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	pod := &kapi.Pod{
-		ObjectMeta: metav1.ObjectMeta{Name: "pod"},
-		Spec: kapi.PodSpec{
-			Containers:    []kapi.Container{{Name: "ctr", Image: "image", ImagePullPolicy: "IfNotPresent"}},
-			RestartPolicy: kapi.RestartPolicyAlways,
-			DNSPolicy:     kapi.DNSClusterFirst,
-		},
-	}
-
-	_, err = clusterAdminKubeClientset.Core().Pods("test").Create(pod)
-	if err == nil {
-		t.Errorf("Expected an error on creation of a Kubernetes resource because namespace does not exist")
-	}
-
-	build := &buildv1.Build{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "buildid",
-			Namespace: "test",
-			Labels: map[string]string{
-				buildutil.BuildConfigLabel:    "mock-build-config",
-				buildutil.BuildRunPolicyLabel: string(buildv1.BuildRunPolicyParallel),
-			},
-		},
-		Spec: buildv1.BuildSpec{
-			CommonSpec: buildv1.CommonSpec{
-				Source: buildv1.BuildSource{
-					Git: &buildv1.GitBuildSource{
-						URI: "http://github.com/my/repository",
-					},
-					ContextDir: "context",
-				},
-				Strategy: buildv1.BuildStrategy{
-					DockerStrategy: &buildv1.DockerBuildStrategy{},
-				},
-				Output: buildv1.BuildOutput{
-					To: &corev1.ObjectReference{
-						Kind: "DockerImage",
-						Name: "repository/data",
-					},
-				},
-			},
-		},
-		Status: buildv1.BuildStatus{
-			Phase: buildv1.BuildPhaseNew,
-		},
-	}
-
-	_, err = clusterAdminBuildClient.Builds("test").Create(build)
-	if err == nil {
-		t.Errorf("Expected an error on creation of a Origin resource because namespace does not exist")
-	}
-
-	_, err = clusterAdminKubeClientset.Core().Namespaces().Create(&kapi.Namespace{
-		ObjectMeta: metav1.ObjectMeta{Name: "test"},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = clusterAdminBuildClient.Builds("test").Create(build)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// confirm that we see the build in etcd
-	buildEtcdKey := path.Join("/", masterConfig.EtcdStorageConfig.OpenShiftStoragePrefix, "builds", "test", "buildid")
-	if _, err := etcd3.KV.Get(context.TODO(), buildEtcdKey); err != nil {
-		t.Fatal(err)
-	}
-
-	// delete the project, which should finalize our stuff
-	if err := clusterAdminKubeClientset.Core().Namespaces().Delete("test", nil); err != nil {
-		t.Fatal(err)
-	}
-	err = wait.PollImmediate(30*time.Millisecond, 30*time.Second, func() (bool, error) {
-		var err error
-		_, err = clusterAdminKubeClientset.Core().Namespaces().Get("test", metav1.GetOptions{})
-		if kapierrors.IsNotFound(err) {
-			return true, nil
-		}
-		if err != nil {
-			return false, err
-		}
-		return false, nil
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// confirm the build is gone in etcd
-	resp, err := etcd3.KV.Get(context.TODO(), buildEtcdKey)
-	if !(etcd.IsKeyNotFound(err) || (resp != nil && len(resp.Kvs) == 0)) {
-		t.Fatalf("didn't delete the build: %v %#v", err, resp.Kvs)
 	}
 }
 
@@ -258,6 +133,8 @@ func TestProjectWatch(t *testing.T) {
 		RoleKind:             "ClusterRole",
 		RbacClient:           rbacv1client.NewForConfigOrDie(joeConfig),
 		Users:                []string{"bob"},
+		PrintFlags:           genericclioptions.NewPrintFlags(""),
+		ToPrinter:            func(string) (printers.ResourcePrinter, error) { return printers.NewDiscardingPrinter(), nil },
 	}
 	if err := addBob.AddRole(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -300,6 +177,92 @@ func TestProjectWatch(t *testing.T) {
 	}
 }
 
+func TestProjectWatchWithSelectionPredicate(t *testing.T) {
+	masterConfig, clusterAdminKubeConfig, err := testserver.StartTestMaster()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer testserver.CleanupMasterEtcd(t, masterConfig)
+
+	clusterAdminClientConfig, err := testutil.GetClusterAdminClientConfig(clusterAdminKubeConfig)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	_, bobConfig, err := testutil.GetClientForUser(clusterAdminClientConfig, "bob")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	bobProjectClient := projectclient.NewForConfigOrDie(bobConfig).Project()
+	w, err := bobProjectClient.Projects().Watch(metav1.ListOptions{
+		FieldSelector: "metadata.name=ns-01",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if _, _, err := testserver.CreateNewProject(clusterAdminClientConfig, "ns-01", "bob"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// we should be seeing an "ADD" watch event being emitted, since we are specifically watching this project via a field selector
+	waitForAdd("ns-01", w, t)
+
+	if _, _, err := testserver.CreateNewProject(clusterAdminClientConfig, "ns-03", "bob"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// we are only watching ns-01, we should not receive events for other projects
+	waitForNoEvent(w, "ns-01", t)
+
+	if err := bobProjectClient.Projects().Delete("ns-03", nil); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// we are only watching ns-01, we should not receive events for other projects
+	waitForNoEvent(w, "ns-01", t)
+
+	// test the "start from beginning watch"
+	beginningWatch, err := bobProjectClient.Projects().Watch(metav1.ListOptions{
+		ResourceVersion: "0",
+		FieldSelector:   "metadata.name=ns-01",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// we should be seeing an "ADD" watch event being emitted, since we are specifically watching this project via a field selector
+	waitForAdd("ns-01", beginningWatch, t)
+
+	fromNowWatch, err := bobProjectClient.Projects().Watch(metav1.ListOptions{
+		FieldSelector: "metadata.name=ns-01",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// since we are only watching for events from "ns-01", and no projects are being modified, we should not receive any events here
+	waitForNoEvent(fromNowWatch, "ns-01", t)
+}
+
+// waitForNoEvent ensures no stray events come in.  skipProject allows modify events only for the named project
+func waitForNoEvent(w watch.Interface, skipProject string, t *testing.T) {
+	for {
+		select {
+		case event := <-w.ResultChan():
+			if event.Type != watch.Modified {
+				t.Fatalf("unexpected event %v with object %#v", event, event.Object)
+			}
+			project, ok := event.Object.(*projectapi.Project)
+			if !ok {
+				t.Fatalf("unexpected event %v with object %#v", event, event.Object)
+			}
+			t.Logf("got %#v %#v", event, project)
+			if project.Name != skipProject {
+				t.Fatalf("unexpected event %v with object %#v", event, event.Object)
+			}
+
+			continue
+		case <-time.After(3 * time.Second):
+			return
+		}
+	}
+}
+
 func waitForDelete(projectName string, w watch.Interface, t *testing.T) {
 	for {
 		select {
@@ -330,6 +293,7 @@ func waitForAdd(projectName string, w watch.Interface, t *testing.T) {
 		}
 	}
 }
+
 func waitForOnlyAdd(projectName string, w watch.Interface, t *testing.T) {
 	for {
 		select {
@@ -549,6 +513,8 @@ func TestInvalidRoleRefs(t *testing.T) {
 		RoleKind:   "ClusterRole",
 		RbacClient: clusterAdminRbacClient,
 		Users:      []string{"someuser"},
+		PrintFlags: genericclioptions.NewPrintFlags(""),
+		ToPrinter:  func(string) (printers.ResourcePrinter, error) { return printers.NewDiscardingPrinter(), nil },
 	}
 	// mess up rolebindings in "foo"
 	modifyRole.RoleBindingNamespace = "foo"

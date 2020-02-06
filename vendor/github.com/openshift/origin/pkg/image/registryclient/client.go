@@ -2,6 +2,8 @@ package registryclient
 
 import (
 	"fmt"
+	"hash"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -10,24 +12,27 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
-	gocontext "golang.org/x/net/context"
+	"golang.org/x/time/rate"
+
+	"github.com/docker/distribution/manifest/schema1"
+
+	"golang.org/x/net/context"
+	"k8s.io/klog"
 
 	"github.com/docker/distribution"
-	"github.com/docker/distribution/context"
 	"github.com/docker/distribution/reference"
 	registryclient "github.com/docker/distribution/registry/client"
 	"github.com/docker/distribution/registry/client/auth"
 	"github.com/docker/distribution/registry/client/auth/challenge"
 	"github.com/docker/distribution/registry/client/transport"
-	godigest "github.com/opencontainers/go-digest"
+	digest "github.com/opencontainers/go-digest"
 )
 
 // RepositoryRetriever fetches a Docker distribution.Repository.
 type RepositoryRetriever interface {
 	// Repository returns a properly authenticated distribution.Repository for the given registry, repository
 	// name, and insecure toleration behavior.
-	Repository(ctx gocontext.Context, registry *url.URL, repoName string, insecure bool) (distribution.Repository, error)
+	Repository(ctx context.Context, registry *url.URL, repoName string, insecure bool) (distribution.Repository, error)
 }
 
 // ErrNotV2Registry is returned when the server does not report itself as a V2 Docker registry
@@ -70,6 +75,9 @@ type Context struct {
 	Actions           []string
 	Retries           int
 	Credentials       auth.CredentialStore
+	Limiter           *rate.Limiter
+
+	DisableDigestVerification bool
 
 	lock             sync.Mutex
 	pings            map[url.URL]error
@@ -88,6 +96,9 @@ func (c *Context) Copy() *Context {
 		Actions:           c.Actions,
 		Retries:           c.Retries,
 		Credentials:       c.Credentials,
+		Limiter:           c.Limiter,
+
+		DisableDigestVerification: c.DisableDigestVerification,
 
 		pings:    make(map[url.URL]error),
 		redirect: make(map[url.URL]*url.URL),
@@ -96,6 +107,11 @@ func (c *Context) Copy() *Context {
 		copied.redirect[k] = v
 	}
 	return copied
+}
+
+func (c *Context) WithRateLimiter(limiter *rate.Limiter) *Context {
+	c.Limiter = limiter
+	return c
 }
 
 func (c *Context) WithScopes(scopes ...auth.Scope) *Context {
@@ -140,7 +156,7 @@ func (c *Context) cachedPing(src url.URL) (*url.URL, error) {
 }
 
 // Ping contacts a registry and returns the transport and URL of the registry or an error.
-func (c *Context) Ping(ctx gocontext.Context, registry *url.URL, insecure bool) (http.RoundTripper, *url.URL, error) {
+func (c *Context) Ping(ctx context.Context, registry *url.URL, insecure bool) (http.RoundTripper, *url.URL, error) {
 	t := c.Transport
 	if insecure && c.InsecureTransport != nil {
 		t = c.InsecureTransport
@@ -175,7 +191,7 @@ func (c *Context) Ping(ctx gocontext.Context, registry *url.URL, insecure bool) 
 	return t, &src, nil
 }
 
-func (c *Context) Repository(ctx gocontext.Context, registry *url.URL, repoName string, insecure bool) (distribution.Repository, error) {
+func (c *Context) Repository(ctx context.Context, registry *url.URL, repoName string, insecure bool) (distribution.Repository, error) {
 	named, err := reference.WithName(repoName)
 	if err != nil {
 		return nil, err
@@ -188,14 +204,18 @@ func (c *Context) Repository(ctx gocontext.Context, registry *url.URL, repoName 
 
 	rt = c.repositoryTransport(rt, src, repoName)
 
-	repo, err := registryclient.NewRepository(context.Context(ctx), named, src.String(), rt)
+	repo, err := registryclient.NewRepository(named, src.String(), rt)
 	if err != nil {
 		return nil, err
 	}
-	if c.Retries > 0 {
-		return NewRetryRepository(repo, c.Retries, 3/2*time.Second), nil
+	if !c.DisableDigestVerification {
+		repo = repositoryVerifier{Repository: repo}
 	}
-	return repo, nil
+	limiter := c.Limiter
+	if limiter == nil {
+		limiter = rate.NewLimiter(rate.Limit(5), 5)
+	}
+	return NewLimitedRetryRepository(repo, c.Retries, limiter), nil
 }
 
 func (c *Context) ping(registry url.URL, insecure bool, transport http.RoundTripper) (*url.URL, error) {
@@ -212,7 +232,7 @@ func (c *Context) ping(registry url.URL, insecure bool, transport http.RoundTrip
 	resp, err := pingClient.Do(req)
 	if err != nil {
 		if insecure && registry.Scheme == "https" {
-			glog.V(5).Infof("Falling back to an HTTP check for an insecure registry %s: %v", registry.String(), err)
+			klog.V(5).Infof("Falling back to an HTTP check for an insecure registry %s: %v", registry.String(), err)
 			registry.Scheme = "http"
 			_, nErr := c.ping(registry, true, transport)
 			if nErr != nil {
@@ -226,7 +246,7 @@ func (c *Context) ping(registry url.URL, insecure bool, transport http.RoundTrip
 
 	versions := auth.APIVersions(resp, "Docker-Distribution-API-Version")
 	if len(versions) == 0 {
-		glog.V(5).Infof("Registry responded to v2 Docker endpoint, but has no header for Docker Distribution %s: %d, %#v", req.URL, resp.StatusCode, resp.Header)
+		klog.V(5).Infof("Registry responded to v2 Docker endpoint, but has no header for Docker Distribution %s: %d, %#v", req.URL, resp.StatusCode, resp.Header)
 		switch {
 		case resp.StatusCode >= 200 && resp.StatusCode < 300:
 			// v2
@@ -325,33 +345,37 @@ var nowFn = time.Now
 type retryRepository struct {
 	distribution.Repository
 
+	limiter *rate.Limiter
 	retries int
-	wait    time.Duration
+	sleepFn func(time.Duration)
 }
 
-// NewRetryRepository wraps a distribution.Repository with helpers that will retry authentication failures
-// over a limited time window and duration. This primarily avoids a DockerHub issue where public images
-// unexpectedly return a 401 error due to the JWT token created by the hub being created at the same second,
-// but another server being in the previous second.
-func NewRetryRepository(repo distribution.Repository, retries int, interval time.Duration) distribution.Repository {
-	var wait time.Duration
-	if retries > 1 {
-		wait = interval / time.Duration(retries-1)
-	}
+// NewLimitedRetryRepository wraps a distribution.Repository with helpers that will retry temporary failures
+// over a limited time window and duration, and also obeys a rate limit.
+func NewLimitedRetryRepository(repo distribution.Repository, retries int, limiter *rate.Limiter) distribution.Repository {
 	return &retryRepository{
 		Repository: repo,
 
+		limiter: limiter,
 		retries: retries,
-		wait:    wait,
+		sleepFn: time.Sleep,
 	}
 }
 
 // isTemporaryHTTPError returns true if the error indicates a temporary or partial HTTP failure
-func isTemporaryHTTPError(err error) bool {
-	if e, ok := err.(net.Error); ok && e != nil {
-		return e.Temporary() || e.Timeout()
+func isTemporaryHTTPError(err error) (time.Duration, bool) {
+	if err == nil {
+		return 0, false
 	}
-	return false
+	switch t := err.(type) {
+	case net.Error:
+		return time.Second, t.Temporary() || t.Timeout()
+	case *registryclient.UnexpectedHTTPResponseError:
+		if t.StatusCode == http.StatusTooManyRequests {
+			return 2 * time.Second, true
+		}
+	}
+	return 0, false
 }
 
 // shouldRetry returns true if the error was temporary and count is less than retries.
@@ -359,15 +383,15 @@ func (c *retryRepository) shouldRetry(count int, err error) bool {
 	if err == nil {
 		return false
 	}
-	if !isTemporaryHTTPError(err) {
+	retryAfter, ok := isTemporaryHTTPError(err)
+	if !ok {
 		return false
 	}
 	if count >= c.retries {
 		return false
 	}
-	// don't hot loop
-	time.Sleep(c.wait)
-	glog.V(4).Infof("Retrying request to Docker registry after encountering error (%d attempts remaining): %v", count, err)
+	c.sleepFn(retryAfter)
+	klog.V(4).Infof("Retrying request to Docker registry after encountering error (%d attempts remaining): %v", count, err)
 	return true
 }
 
@@ -397,8 +421,11 @@ type retryManifest struct {
 }
 
 // Exists returns true if the manifest exists.
-func (c retryManifest) Exists(ctx context.Context, dgst godigest.Digest) (bool, error) {
+func (c retryManifest) Exists(ctx context.Context, dgst digest.Digest) (bool, error) {
 	for i := 0; ; i++ {
+		if err := c.repo.limiter.Wait(ctx); err != nil {
+			return false, err
+		}
 		exists, err := c.ManifestService.Exists(ctx, dgst)
 		if c.repo.shouldRetry(i, err) {
 			continue
@@ -408,8 +435,11 @@ func (c retryManifest) Exists(ctx context.Context, dgst godigest.Digest) (bool, 
 }
 
 // Get retrieves the manifest identified by the digest, if it exists.
-func (c retryManifest) Get(ctx context.Context, dgst godigest.Digest, options ...distribution.ManifestServiceOption) (distribution.Manifest, error) {
+func (c retryManifest) Get(ctx context.Context, dgst digest.Digest, options ...distribution.ManifestServiceOption) (distribution.Manifest, error) {
 	for i := 0; ; i++ {
+		if err := c.repo.limiter.Wait(ctx); err != nil {
+			return nil, err
+		}
 		m, err := c.ManifestService.Get(ctx, dgst, options...)
 		if c.repo.shouldRetry(i, err) {
 			continue
@@ -424,8 +454,11 @@ type retryBlobStore struct {
 	repo *retryRepository
 }
 
-func (c retryBlobStore) Stat(ctx context.Context, dgst godigest.Digest) (distribution.Descriptor, error) {
+func (c retryBlobStore) Stat(ctx context.Context, dgst digest.Digest) (distribution.Descriptor, error) {
 	for i := 0; ; i++ {
+		if err := c.repo.limiter.Wait(ctx); err != nil {
+			return distribution.Descriptor{}, err
+		}
 		d, err := c.BlobStore.Stat(ctx, dgst)
 		if c.repo.shouldRetry(i, err) {
 			continue
@@ -434,8 +467,11 @@ func (c retryBlobStore) Stat(ctx context.Context, dgst godigest.Digest) (distrib
 	}
 }
 
-func (c retryBlobStore) ServeBlob(ctx context.Context, w http.ResponseWriter, req *http.Request, dgst godigest.Digest) error {
+func (c retryBlobStore) ServeBlob(ctx context.Context, w http.ResponseWriter, req *http.Request, dgst digest.Digest) error {
 	for i := 0; ; i++ {
+		if err := c.repo.limiter.Wait(ctx); err != nil {
+			return err
+		}
 		err := c.BlobStore.ServeBlob(ctx, w, req, dgst)
 		if c.repo.shouldRetry(i, err) {
 			continue
@@ -444,8 +480,11 @@ func (c retryBlobStore) ServeBlob(ctx context.Context, w http.ResponseWriter, re
 	}
 }
 
-func (c retryBlobStore) Open(ctx context.Context, dgst godigest.Digest) (distribution.ReadSeekCloser, error) {
+func (c retryBlobStore) Open(ctx context.Context, dgst digest.Digest) (distribution.ReadSeekCloser, error) {
 	for i := 0; ; i++ {
+		if err := c.repo.limiter.Wait(ctx); err != nil {
+			return nil, err
+		}
 		rsc, err := c.BlobStore.Open(ctx, dgst)
 		if c.repo.shouldRetry(i, err) {
 			continue
@@ -461,6 +500,9 @@ type retryTags struct {
 
 func (c *retryTags) Get(ctx context.Context, tag string) (distribution.Descriptor, error) {
 	for i := 0; ; i++ {
+		if err := c.repo.limiter.Wait(ctx); err != nil {
+			return distribution.Descriptor{}, err
+		}
 		t, err := c.TagService.Get(ctx, tag)
 		if c.repo.shouldRetry(i, err) {
 			continue
@@ -471,6 +513,9 @@ func (c *retryTags) Get(ctx context.Context, tag string) (distribution.Descripto
 
 func (c *retryTags) All(ctx context.Context) ([]string, error) {
 	for i := 0; ; i++ {
+		if err := c.repo.limiter.Wait(ctx); err != nil {
+			return nil, err
+		}
 		t, err := c.TagService.All(ctx)
 		if c.repo.shouldRetry(i, err) {
 			continue
@@ -481,10 +526,159 @@ func (c *retryTags) All(ctx context.Context) ([]string, error) {
 
 func (c *retryTags) Lookup(ctx context.Context, digest distribution.Descriptor) ([]string, error) {
 	for i := 0; ; i++ {
+		if err := c.repo.limiter.Wait(ctx); err != nil {
+			return nil, err
+		}
 		t, err := c.TagService.Lookup(ctx, digest)
 		if c.repo.shouldRetry(i, err) {
 			continue
 		}
 		return t, err
 	}
+}
+
+// repositoryVerifier ensures that manifests are verified when they are retrieved via digest
+type repositoryVerifier struct {
+	distribution.Repository
+}
+
+// Manifests returns a ManifestService that checks whether manifests match their digest.
+func (r repositoryVerifier) Manifests(ctx context.Context, options ...distribution.ManifestServiceOption) (distribution.ManifestService, error) {
+	ms, err := r.Repository.Manifests(ctx, options...)
+	if err != nil {
+		return nil, err
+	}
+	return manifestServiceVerifier{ManifestService: ms}, nil
+}
+
+// Blobs returns a BlobStore that checks whether blob content returned from the server matches the expected digest.
+func (r repositoryVerifier) Blobs(ctx context.Context) distribution.BlobStore {
+	return blobStoreVerifier{BlobStore: r.Repository.Blobs(ctx)}
+}
+
+// manifestServiceVerifier wraps the manifest service and ensures that content retrieved by digest matches that digest.
+type manifestServiceVerifier struct {
+	distribution.ManifestService
+}
+
+// Get retrieves the manifest identified by the digest and guarantees it matches the content it is retrieved by.
+func (m manifestServiceVerifier) Get(ctx context.Context, dgst digest.Digest, options ...distribution.ManifestServiceOption) (distribution.Manifest, error) {
+	manifest, err := m.ManifestService.Get(ctx, dgst, options...)
+	if err != nil {
+		return nil, err
+	}
+	if len(dgst) > 0 {
+		if err := VerifyManifestIntegrity(manifest, dgst); err != nil {
+			return nil, err
+		}
+	}
+	return manifest, nil
+}
+
+// VerifyManifestIntegrity checks the provided manifest against the specified digest and returns an error
+// if the manifest does not match that digest.
+func VerifyManifestIntegrity(manifest distribution.Manifest, dgst digest.Digest) error {
+	contentDigest, err := ContentDigestForManifest(manifest, dgst.Algorithm())
+	if err != nil {
+		return err
+	}
+	if contentDigest != dgst {
+		if klog.V(4) {
+			_, payload, _ := manifest.Payload()
+			klog.Infof("Mismatched content: %s\n%s", contentDigest, string(payload))
+		}
+		return fmt.Errorf("content integrity error: the manifest retrieved with digest %s does not match the digest calculated from the content %s", dgst, contentDigest)
+	}
+	return nil
+}
+
+// ContentDigestForManifest returns the digest in the provided algorithm of the supplied manifest's contents.
+func ContentDigestForManifest(manifest distribution.Manifest, algo digest.Algorithm) (digest.Digest, error) {
+	switch t := manifest.(type) {
+	case *schema1.SignedManifest:
+		// schema1 manifest digests are calculated from the payload
+		if len(t.Canonical) == 0 {
+			return "", fmt.Errorf("the schema1 manifest does not have a canonical representation")
+		}
+		return algo.FromBytes(t.Canonical), nil
+	default:
+		_, payload, err := manifest.Payload()
+		if err != nil {
+			return "", err
+		}
+		return algo.FromBytes(payload), nil
+	}
+}
+
+// blobStoreVerifier wraps the blobs service and ensures that content retrieved by digest matches that digest.
+type blobStoreVerifier struct {
+	distribution.BlobStore
+}
+
+// Get retrieves the blob identified by the digest and guarantees it matches the content it is retrieved by.
+func (b blobStoreVerifier) Get(ctx context.Context, dgst digest.Digest) ([]byte, error) {
+	data, err := b.BlobStore.Get(ctx, dgst)
+	if err != nil {
+		return nil, err
+	}
+	if len(dgst) > 0 {
+		dataDgst := dgst.Algorithm().FromBytes(data)
+		if dataDgst != dgst {
+			return nil, fmt.Errorf("content integrity error: the blob retrieved with digest %s does not match the digest calculated from the content %s", dgst, dataDgst)
+		}
+	}
+	return data, nil
+}
+
+// Open streams the blob identified by the digest and guarantees it matches the content it is retrieved by.
+func (b blobStoreVerifier) Open(ctx context.Context, dgst digest.Digest) (distribution.ReadSeekCloser, error) {
+	rsc, err := b.BlobStore.Open(ctx, dgst)
+	if err != nil {
+		return nil, err
+	}
+	if len(dgst) > 0 {
+		return &readSeekCloserVerifier{
+			rsc:    rsc,
+			hash:   dgst.Algorithm().Hash(),
+			expect: dgst,
+		}, nil
+	}
+	return rsc, nil
+}
+
+// readSeekCloserVerifier performs validation over the stream returned by a distribution.ReadSeekCloser returned
+// by blobService.Open.
+type readSeekCloserVerifier struct {
+	rsc    distribution.ReadSeekCloser
+	hash   hash.Hash
+	expect digest.Digest
+}
+
+// Read verifies the bytes in the underlying stream match the expected digest or returns an error.
+func (r *readSeekCloserVerifier) Read(p []byte) (n int, err error) {
+	n, err = r.rsc.Read(p)
+	if r.hash != nil {
+		if n > 0 {
+			r.hash.Write(p[:n])
+		}
+		if err == io.EOF {
+			actual := digest.NewDigest(r.expect.Algorithm(), r.hash)
+			if actual != r.expect {
+				return n, fmt.Errorf("content integrity error: the blob streamed from digest %s does not match the digest calculated from the content %s", r.expect, actual)
+			}
+		}
+	}
+	return n, err
+}
+
+// Seek moves the underlying stream and also cancels any streaming hash. Verification is not possible
+// with a seek.
+func (r *readSeekCloserVerifier) Seek(offset int64, whence int) (int64, error) {
+	r.hash = nil
+	return r.rsc.Seek(offset, whence)
+}
+
+// Close closes the underlying stream.
+func (r *readSeekCloserVerifier) Close() error {
+	return r.rsc.Close()
 }

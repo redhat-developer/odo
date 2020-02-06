@@ -3,7 +3,7 @@ package servicebroker
 import (
 	"net/http"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	authorizationv1 "k8s.io/api/authorization/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -20,7 +20,7 @@ import (
 // collector is responsible for the removal of the objects provisioned by the
 // Template(Instance) itself.
 func (b *Broker) Deprovision(u user.Info, instanceID string) *api.Response {
-	glog.V(4).Infof("Template service broker: Deprovision: instanceID %s", instanceID)
+	klog.V(4).Infof("Template service broker: Deprovision: instanceID %s", instanceID)
 
 	brokerTemplateInstance, err := b.templateclient.BrokerTemplateInstances().Get(instanceID, metav1.GetOptions{})
 	if err != nil {
@@ -35,7 +35,7 @@ func (b *Broker) Deprovision(u user.Info, instanceID string) *api.Response {
 	// end users are not expected to have access to BrokerTemplateInstance
 	// objects; SAR on the TemplateInstance instead.
 
-	if err := util.Authorize(b.kc.Authorization().SubjectAccessReviews(), u, &authorizationv1.ResourceAttributes{
+	if err := util.Authorize(b.kc.AuthorizationV1().SubjectAccessReviews(), u, &authorizationv1.ResourceAttributes{
 		Namespace: namespace,
 		Verb:      "get",
 		Group:     templateapi.GroupName,
@@ -45,7 +45,7 @@ func (b *Broker) Deprovision(u user.Info, instanceID string) *api.Response {
 		return api.Forbidden(err)
 	}
 
-	if err := util.Authorize(b.kc.Authorization().SubjectAccessReviews(), u, &authorizationv1.ResourceAttributes{
+	if err := util.Authorize(b.kc.AuthorizationV1().SubjectAccessReviews(), u, &authorizationv1.ResourceAttributes{
 		Namespace: namespace,
 		Verb:      "delete",
 		Group:     templateapi.GroupName,

@@ -18,23 +18,32 @@ package apiserver
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
+	"github.com/golang/glog"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apimachinery/pkg/util/wait"
 	genericapiserver "k8s.io/apiserver/pkg/server"
+	"k8s.io/apiserver/pkg/server/certs"
 	serverstorage "k8s.io/apiserver/pkg/server/storage"
 	"k8s.io/client-go/pkg/version"
 
 	"k8s.io/kube-aggregator/pkg/apis/apiregistration"
-	"k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
+	apiregistrationapi "k8s.io/kube-aggregator/pkg/apis/apiregistration"
+	v1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	"k8s.io/kube-aggregator/pkg/apis/apiregistration/v1beta1"
 	aggregatorscheme "k8s.io/kube-aggregator/pkg/apiserver/scheme"
 	"k8s.io/kube-aggregator/pkg/client/clientset_generated/internalclientset"
 	informers "k8s.io/kube-aggregator/pkg/client/informers/internalversion"
 	listers "k8s.io/kube-aggregator/pkg/client/listers/apiregistration/internalversion"
 	openapicontroller "k8s.io/kube-aggregator/pkg/controllers/openapi"
+	openapiaggregator "k8s.io/kube-aggregator/pkg/controllers/openapi/aggregator"
 	statuscontrollers "k8s.io/kube-aggregator/pkg/controllers/status"
 	apiservicerest "k8s.io/kube-aggregator/pkg/registry/apiservice/rest"
 )
@@ -59,8 +68,8 @@ const legacyAPIServiceName = "v1."
 type ExtraConfig struct {
 	// ProxyClientCert/Key are the client cert used to identify this proxy. Backing APIServices use
 	// this to confirm the proxy's identity
-	ProxyClientCert []byte
-	ProxyClientKey  []byte
+	ProxyClientCert string
+	ProxyClientKey  string
 
 	// If present, the Dial method will be used for dialing out to delegate
 	// apiservers.
@@ -93,14 +102,17 @@ type APIAggregator struct {
 
 	// proxyClientCert/Key are the client cert used to identify this proxy. Backing APIServices use
 	// this to confirm the proxy's identity
-	proxyClientCert []byte
-	proxyClientKey  []byte
+	proxyClientCert certFunc
+	proxyClientKey  certFunc
 	proxyTransport  *http.Transport
 
 	// proxyHandlers are the proxy handlers that are currently registered, keyed by apiservice.name
 	proxyHandlers map[string]*proxyHandler
 	// handledGroups are the groups that already have routes
 	handledGroups sets.String
+
+	// handledAlwaysLocalDelegatePaths are the URL paths that already have routes registered
+	handledAlwaysLocalDelegatePaths sets.String
 
 	// lister is used to add group handling for /apis/<group> aggregator lookups based on
 	// controller state
@@ -153,16 +165,15 @@ func (c completedConfig) NewWithDelegate(delegationTarget genericapiserver.Deleg
 	)
 
 	s := &APIAggregator{
-		GenericAPIServer: genericServer,
-		delegateHandler:  delegationTarget.UnprotectedHandler(),
-		proxyClientCert:  c.ExtraConfig.ProxyClientCert,
-		proxyClientKey:   c.ExtraConfig.ProxyClientKey,
-		proxyTransport:   c.ExtraConfig.ProxyTransport,
-		proxyHandlers:    map[string]*proxyHandler{},
-		handledGroups:    sets.String{},
-		lister:           informerFactory.Apiregistration().InternalVersion().APIServices().Lister(),
-		APIRegistrationInformers: informerFactory,
-		serviceResolver:          c.ExtraConfig.ServiceResolver,
+		GenericAPIServer:                genericServer,
+		delegateHandler:                 delegationTarget.UnprotectedHandler(),
+		proxyTransport:                  c.ExtraConfig.ProxyTransport,
+		proxyHandlers:                   map[string]*proxyHandler{},
+		handledGroups:                   sets.String{},
+		handledAlwaysLocalDelegatePaths: sets.String{},
+		lister:                          informerFactory.Apiregistration().InternalVersion().APIServices().Lister(),
+		APIRegistrationInformers:        informerFactory,
+		serviceResolver:                 c.ExtraConfig.ServiceResolver,
 	}
 
 	apiGroupInfo := apiservicerest.NewRESTStorage(c.GenericConfig.MergedResourceConfig, c.GenericConfig.RESTOptionsGetter)
@@ -178,15 +189,31 @@ func (c completedConfig) NewWithDelegate(delegationTarget genericapiserver.Deleg
 	s.GenericAPIServer.Handler.NonGoRestfulMux.UnlistedHandle("/apis/", apisHandler)
 
 	apiserviceRegistrationController := NewAPIServiceRegistrationController(informerFactory.Apiregistration().InternalVersion().APIServices(), s)
-	availableController := statuscontrollers.NewAvailableConditionController(
+	aggregatorProxyCerts := certs.NewDynamicCertKeyPairLoader(c.ExtraConfig.ProxyClientCert, c.ExtraConfig.ProxyClientKey, apiserviceRegistrationController.resyncAll)
+	if err := aggregatorProxyCerts.CheckCerts(); err != nil {
+		return nil, err
+	}
+	s.proxyClientCert = aggregatorProxyCerts.GetRawCert
+	s.proxyClientKey = aggregatorProxyCerts.GetRawKey
+
+	availableController, err := statuscontrollers.NewAvailableConditionController(
 		informerFactory.Apiregistration().InternalVersion().APIServices(),
 		c.GenericConfig.SharedInformerFactory.Core().V1().Services(),
 		c.GenericConfig.SharedInformerFactory.Core().V1().Endpoints(),
 		apiregistrationClient.Apiregistration(),
 		c.ExtraConfig.ProxyTransport,
+		aggregatorProxyCerts.GetRawCert,
+		aggregatorProxyCerts.GetRawKey,
 		s.serviceResolver,
 	)
+	if err != nil {
+		return nil, err
+	}
 
+	s.GenericAPIServer.AddPostStartHookOrDie("aggregator-reload-proxy-client-cert", func(context genericapiserver.PostStartHookContext) error {
+		go aggregatorProxyCerts.Run(context.StopCh)
+		return nil
+	})
 	s.GenericAPIServer.AddPostStartHook("start-kube-aggregator-informers", func(context genericapiserver.PostStartHookContext) error {
 		informerFactory.Start(context.StopCh)
 		c.GenericConfig.SharedInformerFactory.Start(context.StopCh)
@@ -201,10 +228,37 @@ func (c completedConfig) NewWithDelegate(delegationTarget genericapiserver.Deleg
 		go availableController.Run(5, context.StopCh)
 		return nil
 	})
+	s.GenericAPIServer.AddPostStartHook("apiservice-wait-for-first-sync", func(context genericapiserver.PostStartHookContext) error {
+		// when the aggregator first starts, it should make sure that it has proxy handlers for all the known good API services at this time
+		// we only need to do this once.
+		err := wait.PollImmediateUntil(100*time.Millisecond, func() (bool, error) {
+			// fix race
+			handledAPIServices := sets.StringKeySet(s.proxyHandlers)
+			apiservices, err := s.lister.List(labels.Everything())
+			if err != nil {
+				return false, err
+			}
+			expectedAPIServices := sets.NewString()
+			for _, apiservice := range apiservices {
+				if apiregistrationapi.IsAPIServiceConditionTrue(apiservice, apiregistrationapi.Available) {
+					expectedAPIServices.Insert(apiservice.Name)
+				}
+			}
+
+			notYetHandledAPIServices := expectedAPIServices.Difference(handledAPIServices)
+			if len(notYetHandledAPIServices) == 0 {
+				return true, nil
+			}
+			glog.Infof("still waiting on handling APIServices: %v", strings.Join(notYetHandledAPIServices.List(), ","))
+
+			return false, nil
+		}, context.StopCh)
+		return err
+	})
 
 	if openApiConfig != nil {
-		specDownloader := openapicontroller.NewDownloader()
-		openAPIAggregator, err := openapicontroller.BuildAndRegisterAggregator(
+		specDownloader := openapiaggregator.NewDownloader()
+		openAPIAggregator, err := openapiaggregator.BuildAndRegisterAggregator(
 			&specDownloader,
 			delegationTarget,
 			s.GenericAPIServer.Handler.GoRestfulContainer.RegisteredWebServices(),
@@ -253,17 +307,18 @@ func (s *APIAggregator) AddAPIService(apiService *apiregistration.APIService) er
 	}
 	proxyHandler.updateAPIService(apiService)
 	if s.openAPIAggregationController != nil {
-		s.openAPIAggregationController.AddAPIService(proxyHandler, apiService)
+		// this is calling a controller.  It should already handle being async.
+		go func() {
+			defer utilruntime.HandleCrash()
+			s.openAPIAggregationController.AddAPIService(proxyHandler, apiService)
+		}()
 	}
-	s.proxyHandlers[apiService.Name] = proxyHandler
+	// we want to update the registration bit last after all the pieces are wired together
+	defer func() {
+		s.proxyHandlers[apiService.Name] = proxyHandler
+	}()
 	s.GenericAPIServer.Handler.NonGoRestfulMux.Handle(proxyPath, proxyHandler)
 	s.GenericAPIServer.Handler.NonGoRestfulMux.UnlistedHandlePrefix(proxyPath+"/", proxyHandler)
-
-	// this exists to proxy /oapi
-	if apiService.Spec.Group == "apps.openshift.io" {
-		s.GenericAPIServer.Handler.NonGoRestfulMux.Handle("/oapi", proxyHandler)
-		s.GenericAPIServer.Handler.NonGoRestfulMux.UnlistedHandlePrefix("/oapi/", proxyHandler)
-	}
 
 	// if we're dealing with the legacy group, we're done here
 	if apiService.Name == legacyAPIServiceName {
@@ -273,6 +328,18 @@ func (s *APIAggregator) AddAPIService(apiService *apiregistration.APIService) er
 	// if we've already registered the path with the handler, we don't want to do it again.
 	if s.handledGroups.Has(apiService.Spec.Group) {
 		return nil
+	}
+
+	// For some resources we always want to delegate to local API server.
+	// These resources have to exists as CRD to be served locally.
+	for _, alwaysLocalDelegatePath := range alwaysLocalDelegatePathPrefixes.List() {
+		if s.handledAlwaysLocalDelegatePaths.Has(alwaysLocalDelegatePath) {
+			continue
+		}
+		s.GenericAPIServer.Handler.NonGoRestfulMux.Handle(alwaysLocalDelegatePath, proxyHandler.localDelegate)
+		// Always use local delegate for this prefix
+		s.GenericAPIServer.Handler.NonGoRestfulMux.UnlistedHandlePrefix(alwaysLocalDelegatePath+"/", proxyHandler.localDelegate)
+		s.handledAlwaysLocalDelegatePaths.Insert(alwaysLocalDelegatePath)
 	}
 
 	// it's time to register the group aggregation endpoint

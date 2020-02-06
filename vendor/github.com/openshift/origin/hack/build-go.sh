@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # This script sets up a go workspace locally and builds all go components.
 source "$(dirname "${BASH_SOURCE}")/lib/init.sh"
@@ -14,10 +14,10 @@ platform="$(os::build::host_platform)"
 
 build_targets=("$@")
 if [[ -z "$@" ]]; then
-	build_targets=("${OS_CROSS_COMPILE_TARGETS[@]}")
-  # Also build SDN components on Linux by default
   if [[ "${platform}" == linux/* ]]; then
-    build_targets=("${build_targets[@]}" "${OS_SDN_COMPILE_TARGETS_LINUX[@]}")
+    build_targets=("${OS_CROSS_COMPILE_TARGETS[@]}" vendor/k8s.io/kubernetes/cmd/hyperkube cmd/openshift-sdn )
+  else
+    build_targets=("${OS_CROSS_COMPILE_TARGETS[@]}" vendor/k8s.io/kubernetes/cmd/hyperkube)
   fi
 fi
 

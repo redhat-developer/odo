@@ -17,17 +17,16 @@ limitations under the License.
 package headerrequest
 
 import (
-	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apiserver/pkg/authentication/authenticator"
 	x509request "k8s.io/apiserver/pkg/authentication/request/x509"
 	"k8s.io/apiserver/pkg/authentication/user"
-	utilcert "k8s.io/client-go/util/cert"
+	"k8s.io/apiserver/pkg/server/certs"
 )
 
 type requestHeaderAuthRequestHandler struct {
@@ -76,35 +75,28 @@ func trimHeaders(headerNames ...string) ([]string, error) {
 	return ret, nil
 }
 
-func NewSecure(clientCA string, proxyClientNames []string, nameHeaders []string, groupHeaders []string, extraHeaderPrefixes []string) (authenticator.Request, error) {
+type DynamicReloadFunc func(stopCh <-chan struct{})
+
+func NewSecure(clientCA string, proxyClientNames []string, nameHeaders []string, groupHeaders []string, extraHeaderPrefixes []string) (authenticator.Request, DynamicReloadFunc, error) {
 	headerAuthenticator, err := New(nameHeaders, groupHeaders, extraHeaderPrefixes)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if len(clientCA) == 0 {
-		return nil, fmt.Errorf("missing clientCA file")
+		return nil, nil, fmt.Errorf("missing clientCA file")
 	}
 
 	// Wrap with an x509 verifier
-	caData, err := ioutil.ReadFile(clientCA)
-	if err != nil {
-		return nil, fmt.Errorf("error reading %s: %v", clientCA, err)
-	}
-	opts := x509request.DefaultVerifyOptions()
-	opts.Roots = x509.NewCertPool()
-	certs, err := utilcert.ParseCertsPEM(caData)
-	if err != nil {
-		return nil, fmt.Errorf("error loading certs from  %s: %v", clientCA, err)
-	}
-	for _, cert := range certs {
-		opts.Roots.AddCert(cert)
+	dynamicVerifier := certs.NewDynamicCA(clientCA)
+	if err := dynamicVerifier.CheckCerts(); err != nil {
+		return nil, nil, fmt.Errorf("error reading %s: %v", clientCA, err)
 	}
 
-	return x509request.NewVerifier(opts, headerAuthenticator, sets.NewString(proxyClientNames...)), nil
+	return x509request.NewDynamicVerifier(dynamicVerifier.GetVerifier, headerAuthenticator, sets.NewString(proxyClientNames...)), dynamicVerifier.Run, nil
 }
 
-func (a *requestHeaderAuthRequestHandler) AuthenticateRequest(req *http.Request) (user.Info, bool, error) {
+func (a *requestHeaderAuthRequestHandler) AuthenticateRequest(req *http.Request) (*authenticator.Response, bool, error) {
 	name := headerValue(req.Header, a.nameHeaders)
 	if len(name) == 0 {
 		return nil, false, nil
@@ -125,10 +117,12 @@ func (a *requestHeaderAuthRequestHandler) AuthenticateRequest(req *http.Request)
 		}
 	}
 
-	return &user.DefaultInfo{
-		Name:   name,
-		Groups: groups,
-		Extra:  extra,
+	return &authenticator.Response{
+		User: &user.DefaultInfo{
+			Name:   name,
+			Groups: groups,
+			Extra:  extra,
+		},
 	}, true, nil
 }
 
@@ -160,6 +154,14 @@ func allHeaderValues(h http.Header, headerNames []string) []string {
 	return ret
 }
 
+func unescapeExtraKey(encodedKey string) string {
+	key, err := url.PathUnescape(encodedKey) // Decode %-encoded bytes.
+	if err != nil {
+		return encodedKey // Always record extra strings, even if malformed/unencoded.
+	}
+	return key
+}
+
 func newExtra(h http.Header, headerPrefixes []string) map[string][]string {
 	ret := map[string][]string{}
 
@@ -170,7 +172,7 @@ func newExtra(h http.Header, headerPrefixes []string) map[string][]string {
 				continue
 			}
 
-			extraKey := strings.ToLower(headerName[len(prefix):])
+			extraKey := unescapeExtraKey(strings.ToLower(headerName[len(prefix):]))
 			ret[extraKey] = append(ret[extraKey], vv...)
 		}
 	}

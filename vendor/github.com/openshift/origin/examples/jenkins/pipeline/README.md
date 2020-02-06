@@ -1,4 +1,4 @@
-# Using Jenkins Pipelines with OpenShift
+# Using Jenkins Pipelines with OKD
 
 This set of files will allow you to deploy a Jenkins server that is capable of executing Jenkins pipelines and
 utilize pods run on OpenShift as Jenkins slaves.
@@ -7,14 +7,18 @@ utilize pods run on OpenShift as Jenkins slaves.
 
 To walk through the example:
 
-0. If using `oc cluster up`, be sure to grab the [latest oc command](https://github.com/openshift/origin/releases/latest)
+1. Refer to the OKD [getting started guide](https://github.com/openshift/origin#getting-started) for standing up a cluster.
 
-1. Stand up an openshift cluster from origin master, installing the standard imagestreams to the openshift namespace:
+1. Login as a normal user (any user name is fine)
 
-        $ oc cluster up
+        $ oc login
 
-    If you do not use oc cluster up, ensure the imagestreams are registered in the openshift namespace, as well as the
-jenkins template represented by jenkinstemplate.json by running these commands as a cluster admin:
+1. Confirm that the example imagestreams and templates are present in the openshift namespace:
+
+        $ oc get is -n openshift
+        $ oc get templates -n openshift
+
+    If they are not present, you can create them  by running these commands as a cluster admin:
 
         $ oc create -f https://raw.githubusercontent.com/openshift/origin/master/examples/image-streams/image-streams-centos7.json -n openshift
         $ oc create -f https://raw.githubusercontent.com/openshift/origin/master/examples/jenkins/jenkins-ephemeral-template.json -n openshift
@@ -23,32 +27,22 @@ jenkins template represented by jenkinstemplate.json by running these commands a
 
         $ oc create -f https://raw.githubusercontent.com/openshift/origin/master/examples/jenkins/jenkins-persistent-template.json -n openshift
 
-2. Login as a normal user (any user name is fine)
-
-        $ oc login
-
-3. Create a project for your user named "pipelineproject"
+1. Create a project for your user named "pipelineproject"
 
         $ oc new-project pipelineproject
 
-4. Run this command to instantiate the template which will create a pipeline buildconfig and some other resources in your project:
-
-    If you used cluster up:
-
-        $ oc new-app jenkins-pipeline-example
-
-    Otherwise:
+1. Run this command to instantiate the template which will create a pipeline buildconfig and some other resources in your project:
 
         $ oc new-app -f https://raw.githubusercontent.com/openshift/origin/master/examples/jenkins/pipeline/samplepipeline.yaml
 
     At this point if you run `oc get pods` you should see a jenkins pod, or at least a jenkins-deploy pod. (along with other items in your project)  This pod was created as a result of the new pipeline buildconfig being defined by the sample-pipeline template.
 
-5. View/Manage Jenkins (optional)
+1. View/Manage Jenkins (optional)
 
     You should not need to access the jenkins console for anything, but if you want to configure settings or watch the execution,
     here are the steps to do so:
 
-    If you have a router running (`oc cluster up` provides one), run:
+    If you have a router running, run:
 
         $ oc get route
 
@@ -63,7 +57,7 @@ jenkins template represented by jenkinstemplate.json by running these commands a
 
     Login with the user name used to create the "pipelineproject" and any non-empty password.
 
-6. Launch a new build
+1. Launch a new build
 
         $ oc start-build sample-pipeline
 
@@ -96,35 +90,6 @@ To run this example:
 
 On the first pipeline run, there will be a delay as Jenkins is instantiated for the project. 
 When the pipeline completes, the openshift-jee-sample application should be deployed and running.
-
-## Orchestration Pipeline Example
-
-The `mapsapp-pipeline.yaml` template contains a pipeline that instantiates other pipelines and runs them.
-It shows how more than one pipeline can be launched in parallel and how a single Jenkins pipeline
-can work with multiple source code repositories.
-
-To run this example:
-
-1. Ensure that you have a running OpenShift environment as described in the basic example
-2. Create a new project for your pipeline on the OpenShift web console:
-   1. Login 
-   2. Click on *New Project*
-   3. Enter a project name
-   4. Click *Create*
-3. In the *Add to Project* page, click on *Import YAML/JSON*
-4. In a separate browser tab, navigate to [mapsapp-pipeline.yaml](https://raw.githubusercontent.com/openshift/origin/master/examples/jenkins/pipeline/mapsapp-pipeline.yaml) and copy its content.
-5. Paste the YAML text in the text box of the *Import YAML/JSON* tab.
-6. Click on *Create*
-7. Leave *Process the template* checked and click on *Continue*
-8. Modify the URLs and References of the sample repositories if you have created your own forks.
-9. Click on *Create*
-10. Navigate to *Builds* -> *Pipelines*
-11. Click on *Start Pipeline* next to *mapsapp-pipeline*
-
-On the first pipeline run, there will be a delay as Jenkins is instantiated for the project. The pipeline will instantiate 
-other pipelines and those will in turn instantiate OpenShift objects. Once the pipeline has completed, a maps frontend 
-should be running with 2 backends: nationalparks and mlbparks.
-
 
 ## Blue Green Deployment Example
 

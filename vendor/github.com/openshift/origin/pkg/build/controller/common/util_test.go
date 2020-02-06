@@ -47,7 +47,7 @@ func mockBuild(name string, phase buildv1.BuildPhase, stamp *metav1.Time) buildv
 			Namespace:         "namespace",
 			CreationTimestamp: *stamp,
 			Labels: map[string]string{
-				"app": appName[0],
+				"app":                      appName[0],
 				buildutil.BuildConfigLabel: fmt.Sprintf("%v-build", appName[0]),
 				"buildconfig":              fmt.Sprintf("%v-build", appName[0]),
 			},
@@ -99,13 +99,13 @@ func TestHandleBuildPruning(t *testing.T) {
 
 	buildClient := buildfake.NewSimpleClientset(objects...)
 
-	build, err := buildClient.Build().Builds("namespace").Get("myapp-0", metav1.GetOptions{})
+	build, err := buildClient.BuildV1().Builds("namespace").Get("myapp-0", metav1.GetOptions{})
 	if err != nil {
 		t.Errorf("%v", err)
 	}
 
-	buildLister := buildclient.NewClientBuildLister(buildClient.Build())
-	buildConfigGetter := buildclient.NewClientBuildConfigLister(buildClient.Build())
+	buildLister := buildclient.NewClientBuildLister(buildClient.BuildV1())
+	buildConfigGetter := buildclient.NewClientBuildConfigLister(buildClient.BuildV1())
 	buildDeleter := buildclient.NewClientBuildClient(buildClient)
 
 	bcName := buildutil.ConfigNameForBuild(build)

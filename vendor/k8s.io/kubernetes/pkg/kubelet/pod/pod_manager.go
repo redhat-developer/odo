@@ -19,7 +19,7 @@ package pod
 import (
 	"sync"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -163,7 +163,7 @@ func (pm *basicManager) UpdatePod(pod *v1.Pod) {
 	pm.updatePodsInternal(pod)
 	if pm.checkpointManager != nil {
 		if err := checkpoint.WritePod(pm.checkpointManager, pod); err != nil {
-			glog.Errorf("Error writing checkpoint for pod: %v", pod.GetName())
+			klog.Errorf("Error writing checkpoint for pod: %v", pod.GetName())
 		}
 	}
 }
@@ -226,7 +226,7 @@ func (pm *basicManager) DeletePod(pod *v1.Pod) {
 	}
 	if pm.checkpointManager != nil {
 		if err := checkpoint.DeletePod(pm.checkpointManager, pod); err != nil {
-			glog.Errorf("Error deleting checkpoint for pod: %v", pod.GetName())
+			klog.Errorf("Error deleting checkpoint for pod: %v", pod.GetName())
 		}
 	}
 }
@@ -287,7 +287,7 @@ func (pm *basicManager) GetUIDTranslations() (podToMirror map[kubetypes.Resolved
 	mirrorToPod = make(map[kubetypes.MirrorPodUID]kubetypes.ResolvedPodUID, len(pm.translationByUID))
 	// Insert empty translation mapping for all static pods.
 	for uid, pod := range pm.podByUID {
-		if !IsStaticPod(pod) {
+		if !kubetypes.IsStaticPod(pod) {
 			continue
 		}
 		podToMirror[uid] = ""
@@ -318,7 +318,7 @@ func (pm *basicManager) getOrphanedMirrorPodNames() []string {
 func (pm *basicManager) DeleteOrphanedMirrorPods() {
 	podFullNames := pm.getOrphanedMirrorPodNames()
 	for _, podFullName := range podFullNames {
-		pm.MirrorClient.DeleteMirrorPod(podFullName)
+		pm.MirrorClient.DeleteMirrorPod(podFullName, nil)
 	}
 }
 

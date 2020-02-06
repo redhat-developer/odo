@@ -492,7 +492,7 @@ type usageDataPerContainer struct {
 }
 
 func GetKubeletHeapStats(c clientset.Interface, nodeName string) (string, error) {
-	client, err := NodeProxyRequest(c, nodeName, "debug/pprof/heap")
+	client, err := NodeProxyRequest(c, nodeName, "debug/pprof/heap", ports.KubeletPort)
 	if err != nil {
 		return "", err
 	}
@@ -590,9 +590,6 @@ func (r *resourceCollector) collectStats(oldStatsMap map[string]*stats.Container
 		}
 
 		if oldStats, ok := oldStatsMap[name]; ok {
-			if oldStats.CPU == nil || cStats.CPU == nil || oldStats.Memory == nil || cStats.Memory == nil {
-				continue
-			}
 			if oldStats.CPU.Time.Equal(&cStats.CPU.Time) {
 				// No change -> skip this stat.
 				continue

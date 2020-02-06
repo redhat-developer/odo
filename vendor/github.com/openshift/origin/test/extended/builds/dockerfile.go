@@ -30,21 +30,13 @@ USER 1001
 	g.Context("", func() {
 
 		g.BeforeEach(func() {
-			exutil.DumpDockerInfo()
-		})
-
-		g.JustBeforeEach(func() {
-			g.By("waiting for default service account")
-			err := exutil.WaitForServiceAccount(oc.KubeClient().Core().ServiceAccounts(oc.Namespace()), "default")
-			o.Expect(err).NotTo(o.HaveOccurred())
-			g.By("waiting for builder service account")
-			err = exutil.WaitForServiceAccount(oc.KubeClient().Core().ServiceAccounts(oc.Namespace()), "builder")
-			o.Expect(err).NotTo(o.HaveOccurred())
+			exutil.PreTestDump()
 		})
 
 		g.AfterEach(func() {
 			if g.CurrentGinkgoTestDescription().Failed {
 				exutil.DumpPodStates(oc)
+				exutil.DumpConfigMapStates(oc)
 				exutil.DumpPodLogsStartingWith("", oc)
 			}
 		})
@@ -55,15 +47,15 @@ USER 1001
 				err := oc.Run("new-build").Args("-D", "-", "--to", "busybox:custom").InputString(testDockerfile).Execute()
 				o.Expect(err).NotTo(o.HaveOccurred())
 
-				g.By("starting a test build")
-				bc, err := oc.BuildClient().Build().BuildConfigs(oc.Namespace()).Get("busybox", metav1.GetOptions{})
+				g.By("checking the buildconfig content")
+				bc, err := oc.BuildClient().BuildV1().BuildConfigs(oc.Namespace()).Get("busybox", metav1.GetOptions{})
 				o.Expect(err).NotTo(o.HaveOccurred())
 				o.Expect(bc.Spec.Source.Git).To(o.BeNil())
 				o.Expect(*bc.Spec.Source.Dockerfile).To(o.Equal(testDockerfile))
 
 				buildName := "busybox-1"
 				g.By("expecting the Dockerfile build is in Complete phase")
-				err = exutil.WaitForABuild(oc.BuildClient().Build().Builds(oc.Namespace()), buildName, nil, nil, nil)
+				err = exutil.WaitForABuild(oc.BuildClient().BuildV1().Builds(oc.Namespace()), buildName, nil, nil, nil)
 				//debug for failures
 				if err != nil {
 					exutil.DumpBuildLogs("busybox", oc)
@@ -81,8 +73,8 @@ USER 1001
 				err := oc.Run("new-build").Args("-D", "-").InputString(testDockerfile2).Execute()
 				o.Expect(err).NotTo(o.HaveOccurred())
 
-				g.By("starting a test build")
-				bc, err := oc.BuildClient().Build().BuildConfigs(oc.Namespace()).Get("centos", metav1.GetOptions{})
+				g.By("checking the buildconfig content")
+				bc, err := oc.BuildClient().BuildV1().BuildConfigs(oc.Namespace()).Get("centos", metav1.GetOptions{})
 				o.Expect(err).NotTo(o.HaveOccurred())
 				o.Expect(bc.Spec.Source.Git).To(o.BeNil())
 				o.Expect(*bc.Spec.Source.Dockerfile).To(o.Equal(testDockerfile2))
@@ -91,7 +83,7 @@ USER 1001
 
 				buildName := "centos-1"
 				g.By("expecting the Dockerfile build is in Complete phase")
-				err = exutil.WaitForABuild(oc.BuildClient().Build().Builds(oc.Namespace()), buildName, nil, nil, nil)
+				err = exutil.WaitForABuild(oc.BuildClient().BuildV1().Builds(oc.Namespace()), buildName, nil, nil, nil)
 				//debug for failures
 				if err != nil {
 					exutil.DumpBuildLogs("centos", oc)
@@ -113,14 +105,14 @@ USER 1001
 				err := oc.Run("new-build").Args("-D", "-").InputString(testDockerfile3).Execute()
 				o.Expect(err).NotTo(o.HaveOccurred())
 
-				g.By("starting a test build")
-				bc, err := oc.BuildClient().Build().BuildConfigs(oc.Namespace()).Get("scratch", metav1.GetOptions{})
+				g.By("checking the buildconfig content")
+				bc, err := oc.BuildClient().BuildV1().BuildConfigs(oc.Namespace()).Get("scratch", metav1.GetOptions{})
 				o.Expect(err).NotTo(o.HaveOccurred())
 				o.Expect(*bc.Spec.Source.Dockerfile).To(o.Equal(testDockerfile3))
 
 				buildName := "scratch-1"
 				g.By("expecting the Dockerfile build is in Complete phase")
-				err = exutil.WaitForABuild(oc.BuildClient().Build().Builds(oc.Namespace()), buildName, nil, nil, nil)
+				err = exutil.WaitForABuild(oc.BuildClient().BuildV1().Builds(oc.Namespace()), buildName, nil, nil, nil)
 				//debug for failures
 				if err != nil {
 					exutil.DumpBuildLogs("scratch", oc)

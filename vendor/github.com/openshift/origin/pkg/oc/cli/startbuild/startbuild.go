@@ -16,8 +16,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 
 	"github.com/openshift/source-to-image/pkg/tar"
 	s2ifs "github.com/openshift/source-to-image/pkg/util/fs"
@@ -29,13 +29,12 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/third_party/forked/golang/netutil"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericclioptions/printers"
 	restclient "k8s.io/client-go/rest"
-	kapi "k8s.io/kubernetes/pkg/apis/core"
-	kapiv1 "k8s.io/kubernetes/pkg/apis/core/v1"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions/printers"
+	"k8s.io/kubernetes/pkg/kubectl/scheme"
+	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 
 	"github.com/openshift/api/build"
 	buildv1 "github.com/openshift/api/build/v1"
@@ -46,7 +45,6 @@ import (
 	cmdutil "github.com/openshift/origin/pkg/cmd/util"
 	ocerrors "github.com/openshift/origin/pkg/oc/lib/errors"
 	utilenv "github.com/openshift/origin/pkg/oc/util/env"
-	"github.com/openshift/origin/pkg/oc/util/ocscheme"
 )
 
 var (
@@ -137,7 +135,7 @@ type StartBuildOptions struct {
 
 func NewStartBuildOptions(streams genericclioptions.IOStreams) *StartBuildOptions {
 	return &StartBuildOptions{
-		PrintFlags: genericclioptions.NewPrintFlags("started").WithTypeSetter(ocscheme.PrintingInternalScheme),
+		PrintFlags: genericclioptions.NewPrintFlags("started").WithTypeSetter(scheme.Scheme),
 		IOStreams:  streams,
 	}
 }
@@ -317,45 +315,19 @@ func (o *StartBuildOptions) Complete(f kcmdutil.Factory, cmd *cobra.Command, cmd
 		return err
 	}
 
-	// convert internal envvars returned from the helper to external versions
-	externalEnvVars, err := convertInternalEnvVarsToExternal(env)
-	if err != nil {
-		return err
-	}
-
 	if len(buildLogLevel) > 0 {
-		externalEnvVars = append(externalEnvVars, corev1.EnvVar{Name: "BUILD_LOGLEVEL", Value: buildLogLevel})
+		env = append(env, corev1.EnvVar{Name: "BUILD_LOGLEVEL", Value: buildLogLevel})
 	}
-	o.EnvVar = externalEnvVars
+	o.EnvVar = env
 
 	// Handle Docker build arguments. In order to leverage existing logic, we
 	// first create an EnvVar array, then convert it to []docker.BuildArg
-	buildArgs, err := utilenv.ParseBuildArg(o.Args, o.In)
+	o.BuildArgs, err = utilenv.ParseBuildArg(o.Args, o.In)
 	if err != nil {
 		return err
 	}
-
-	// convert internal buildargs returned from the helper to external versions
-	externalBuildArgs, err := convertInternalEnvVarsToExternal(buildArgs)
-	if err != nil {
-		return err
-	}
-	o.BuildArgs = externalBuildArgs
 
 	return nil
-}
-
-// convertInternalEnvVarsToExternal attempts to convert a list of EnvVars to external versions
-func convertInternalEnvVarsToExternal(buildArgs []kapi.EnvVar) ([]corev1.EnvVar, error) {
-	externalBuildArgs := []corev1.EnvVar{}
-	for _, internal := range buildArgs {
-		external := &corev1.EnvVar{}
-		if err := kapiv1.Convert_core_EnvVar_To_v1_EnvVar(&internal, external, nil); err != nil {
-			return nil, err
-		}
-		externalBuildArgs = append(externalBuildArgs, *external)
-	}
-	return externalBuildArgs, nil
 }
 
 // Validate returns validation errors regarding start-build
@@ -375,11 +347,22 @@ func (o *StartBuildOptions) Validate() error {
 	if len(o.FromBuild) != 0 && o.AsBinary {
 		// TODO: we should support this, it should be possible to clone a build to run again with new uploaded artifacts.
 		// Doing so requires introducing a new clonebinary endpoint.
-		return fmt.Errorf("Cannot use '--from-build' flag with binary builds")
+		return fmt.Errorf("cannot use '--from-build' flag with binary builds")
 	}
 
 	if len(o.Name) == 0 && len(o.FromWebhook) == 0 && len(o.FromBuild) == 0 {
 		return fmt.Errorf("a resource name is required either as an argument or by using --from-build")
+	}
+
+	if len(o.ListWebhooks) > 0 {
+		switch o.ListWebhooks {
+		case "all":
+		case "generic":
+		case "github":
+			// do nothing
+		default:
+			return fmt.Errorf("--list-webhooks must be 'all', 'generic', or 'github'")
+		}
 	}
 
 	return nil
@@ -457,7 +440,7 @@ func (o *StartBuildOptions) Run() error {
 	case len(o.FromBuild) > 0:
 		if newBuild, err = o.BuildClient.Builds(o.Namespace).Clone(request.Name, request); err != nil {
 			if isInvalidSourceInputsError(err) {
-				return fmt.Errorf("Build %s/%s has no valid source inputs and '--from-build' cannot be used for binary builds", o.Namespace, o.Name)
+				return fmt.Errorf("build %s/%s has no valid source inputs and '--from-build' cannot be used for binary builds", o.Namespace, o.Name)
 			}
 			if kerrors.IsAlreadyExists(err) {
 				return transformIsAlreadyExistsError(err, o.Name)
@@ -467,7 +450,7 @@ func (o *StartBuildOptions) Run() error {
 	default:
 		if newBuild, err = o.BuildClient.BuildConfigs(o.Namespace).Instantiate(request.Name, request); err != nil {
 			if isInvalidSourceInputsError(err) {
-				return fmt.Errorf("Build configuration %s/%s has no valid source inputs, if this is a binary build you must specify one of '--from-dir', '--from-repo', or '--from-file'", o.Namespace, o.Name)
+				return fmt.Errorf("build configuration %s/%s has no valid source inputs, if this is a binary build you must specify one of '--from-dir', '--from-repo', or '--from-file'", o.Namespace, o.Name)
 			}
 			if kerrors.IsAlreadyExists(err) {
 				return transformIsAlreadyExistsError(err, o.Name)
@@ -477,7 +460,7 @@ func (o *StartBuildOptions) Run() error {
 	}
 
 	if err := o.Printer.PrintObj(newBuild, o.Out); err != nil {
-		fmt.Fprintf(o.ErrOut, "error: %v\n", err)
+		fmt.Fprintf(o.ErrOut, "%v\n", err)
 	}
 
 	// Stream the logs from the build
@@ -505,7 +488,7 @@ func (o *StartBuildOptions) streamBuildLogs(build *buildv1.Build) error {
 		rd, logErr := o.BuildLogClient.Logs(build.Name, opts).Stream()
 		if logErr != nil {
 			err = ocerrors.NewError("unable to stream the build logs").WithCause(logErr)
-			glog.V(4).Infof("Error: %v", err)
+			klog.V(4).Infof("Error: %v", err)
 			if o.WaitForComplete {
 				continue
 			}
@@ -514,7 +497,7 @@ func (o *StartBuildOptions) streamBuildLogs(build *buildv1.Build) error {
 		defer rd.Close()
 		if _, streamErr := io.Copy(o.Out, rd); streamErr != nil {
 			err = ocerrors.NewError("unable to stream the build logs").WithCause(streamErr)
-			glog.V(4).Infof("Error: %v", err)
+			klog.V(4).Infof("Error: %v", err)
 		}
 		break
 	}
@@ -523,20 +506,6 @@ func (o *StartBuildOptions) streamBuildLogs(build *buildv1.Build) error {
 
 // RunListBuildWebHooks prints the webhooks for the provided build config.
 func (o *StartBuildOptions) RunListBuildWebHooks() error {
-	generic, github := false, false
-	prefix := false
-	switch o.ListWebhooks {
-	case "all":
-		generic, github = true, true
-		prefix = true
-	case "generic":
-		generic = true
-	case "github":
-		github = true
-	default:
-		return fmt.Errorf("--list-webhooks must be 'all', 'generic', or 'github'")
-	}
-
 	config, err := o.BuildClient.BuildConfigs(o.Namespace).Get(o.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
@@ -544,17 +513,10 @@ func (o *StartBuildOptions) RunListBuildWebHooks() error {
 
 	webhookClient := buildclientmanual.NewWebhookURLClient(o.BuildClient.RESTClient(), o.Namespace)
 	for _, t := range config.Spec.Triggers {
-		hookType := ""
-		switch {
-		case t.GenericWebHook != nil && generic:
-			if prefix {
-				hookType = "generic "
-			}
-		case t.GitHubWebHook != nil && github:
-			if prefix {
-				hookType = "github "
-			}
-		default:
+		if t.Type == buildv1.ImageChangeBuildTriggerType {
+			continue
+		}
+		if o.ListWebhooks != "all" && o.ListWebhooks != strings.ToLower(string(t.Type)) {
 			continue
 		}
 		u, err := webhookClient.WebHookURL(o.Name, &t)
@@ -564,8 +526,11 @@ func (o *StartBuildOptions) RunListBuildWebHooks() error {
 			}
 			continue
 		}
+		if o.ListWebhooks == "all" {
+			fmt.Fprintf(o.Out, "%s ", t.Type)
+		}
 		urlStr, _ := url.PathUnescape(u.String())
-		fmt.Fprintf(o.Out, "%s%s\n", hookType, urlStr)
+		fmt.Fprintf(o.Out, "%s\n", urlStr)
 	}
 	return nil
 }
@@ -646,7 +611,7 @@ func streamPathToBuild(repo git.Repository, in io.Reader, out io.Writer, client 
 				options.CommitterName = info.GitSourceRevision.Committer.Name
 				options.CommitterEmail = info.GitSourceRevision.Committer.Email
 			} else {
-				glog.V(6).Infof("Unable to read Git info from %q: %v", clean, gitErr)
+				klog.V(6).Infof("Unable to read Git info from %q: %v", clean, gitErr)
 			}
 
 			// NOTE: It's important that this stays false unless we change the
@@ -681,7 +646,7 @@ func streamPathToBuild(repo git.Repository, in io.Reader, out io.Writer, client 
 				// We only want to grab the contents of the specified commit, with
 				// submodules included
 				cloneOptions := []string{"--recursive"}
-				if verbose := glog.V(3); !verbose {
+				if verbose := klog.V(3); !verbose {
 					cloneOptions = append(cloneOptions, "--quiet")
 				}
 
@@ -849,7 +814,7 @@ func (o *StartBuildOptions) RunStartBuildWebHook() error {
 			}
 		}
 	}
-	glog.V(4).Infof("Triggering hook %s\n%s", hook, string(data))
+	klog.V(4).Infof("Triggering hook %s\n%s", hook, string(data))
 	resp, err := httpClient.Post(hook.String(), "application/json", bytes.NewBuffer(data))
 	if err != nil {
 		return err
@@ -916,7 +881,7 @@ func hookEventFromPostReceive(repo git.Repository, path, postReceivePath string)
 		}
 		info, err := gitRefInfo(repo, path, ref.New)
 		if err != nil {
-			glog.V(4).Infof("Could not retrieve info for %s:%s: %v", ref.Ref, ref.New, err)
+			klog.V(4).Infof("Could not retrieve info for %s:%s: %v", ref.Ref, ref.New, err)
 		}
 		info.Ref = ref.Ref
 		info.Commit = ref.New
@@ -993,7 +958,7 @@ func WaitForBuildComplete(c buildv1client.BuildInterface, name string) error {
 					return nil
 				}
 				if name != e.Name || isFailed(e) {
-					return fmt.Errorf("The build %s/%s status is %q", e.Namespace, name, e.Status.Phase)
+					return fmt.Errorf("the build %s/%s status is %q", e.Namespace, name, e.Status.Phase)
 				}
 			}
 		}
@@ -1025,7 +990,7 @@ func httpFileName(resp *http.Response) (filename string) {
 		if err == nil {
 			filename = params["filename"]
 		} else {
-			glog.V(6).Infof("Unable to determine filename from Content-Disposition header: %v", err)
+			klog.V(6).Infof("Unable to determine filename from Content-Disposition header: %v", err)
 		}
 	}
 

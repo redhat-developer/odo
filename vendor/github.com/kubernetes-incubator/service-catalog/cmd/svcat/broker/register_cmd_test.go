@@ -143,22 +143,37 @@ var _ = Describe("Register Command", func() {
 		})
 	})
 	Describe("Run", func() {
-		It("Calls the pkg/svcat libs Register method with the passed in variables and prints output to the user", func() {
-			brokerName := "foobarbroker"
-			brokerURL := "http://foobar.com"
-			basicSecret := "foobarsecret"
-			certFile := "register_cmd_test.go"
+		var (
+			basicSecret         string
+			brokerName          string
+			brokerURL           string
+			certFile            string
+			classRestrictions   []string
+			brokerToReturn      *v1beta1.ClusterServiceBroker
+			namespace           string
+			metaRelistDuration  *metav1.Duration
+			planRestrictions    []string
+			relistBehavior      string
+			relistBehaviorConst v1beta1.ServiceBrokerRelistBehavior
+			relistDuration      time.Duration
+			skipTLS             bool
+		)
+		BeforeEach(func() {
+			brokerName = "foobarbroker"
+			brokerURL = "http://foobar.com"
+			basicSecret = "foobarsecret"
+			certFile = "register_cmd_test.go"
 			certFileContents := []byte("foobarCA")
-			classRestrictions := []string{"foobarclassa", "foobarclassb"}
-			namespace := "foobarnamespace"
-			planRestrictions := []string{"foobarplana", "foobarplanb"}
-			skipTLS := true
-			relistBehavior := "duration"
-			relistBehaviorConst := v1beta1.ServiceBrokerRelistBehaviorDuration
-			relistDuration := 10 * time.Minute
-			metaRelistDuration := &metav1.Duration{Duration: relistDuration}
+			classRestrictions = []string{"foobarclassa", "foobarclassb"}
+			namespace = "foobarnamespace"
+			planRestrictions = []string{"foobarplana", "foobarplanb"}
+			skipTLS = true
+			relistBehavior = "duration"
+			relistBehaviorConst = v1beta1.ServiceBrokerRelistBehaviorDuration
+			relistDuration = 10 * time.Minute
+			metaRelistDuration = &metav1.Duration{Duration: relistDuration}
 
-			brokerToReturn := &v1beta1.ClusterServiceBroker{
+			brokerToReturn = &v1beta1.ClusterServiceBroker{
 				ObjectMeta: v1.ObjectMeta{
 					Name: brokerName,
 				},
@@ -184,7 +199,9 @@ var _ = Describe("Register Command", func() {
 					},
 				},
 			}
+		})
 
+		It("Calls the pkg/svcat libs Register method with the passed in variables and prints output to the user", func() {
 			outputBuffer := &bytes.Buffer{}
 
 			fakeApp, _ := svcat.NewApp(nil, nil, namespace)
@@ -193,7 +210,6 @@ var _ = Describe("Register Command", func() {
 			fakeApp.SvcatClient = fakeSDK
 			cxt := svcattest.NewContext(outputBuffer, fakeApp)
 			cmd := RegisterCmd{
-				Context:           cxt,
 				BasicSecret:       basicSecret,
 				BrokerName:        brokerName,
 				CAFile:            certFile,
@@ -202,15 +218,19 @@ var _ = Describe("Register Command", func() {
 				PlanRestrictions:  planRestrictions,
 				RelistBehavior:    relistBehavior,
 				RelistDuration:    relistDuration,
+				Scoped:            command.NewScoped(),
 				SkipTLS:           skipTLS,
 				URL:               brokerURL,
+				Waitable:          command.NewWaitable(),
 			}
 			cmd.Namespaced.ApplyNamespaceFlags(&pflag.FlagSet{})
+			cmd.Scope = servicecatalog.NamespaceScope
+			cmd.Waitable.ApplyWaitFlags()
 			err := cmd.Run()
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeSDK.RegisterCallCount()).To(Equal(1))
-			returnedName, returnedURL, returnedOpts := fakeSDK.RegisterArgsForCall(0)
+			returnedName, returnedURL, returnedOpts, returnedScopeOpts := fakeSDK.RegisterArgsForCall(0)
 			Expect(returnedName).To(Equal(brokerName))
 			Expect(returnedURL).To(Equal(brokerURL))
 			opts := servicecatalog.RegisterOptions{
@@ -224,32 +244,18 @@ var _ = Describe("Register Command", func() {
 				SkipTLS:           skipTLS,
 			}
 			Expect(*returnedOpts).To(Equal(opts))
-
+			Expect(returnedScopeOpts.Namespace).To(Equal(namespace))
+			Expect(returnedScopeOpts.Scope.Matches(servicecatalog.NamespaceScope)).To(BeTrue())
 			output := outputBuffer.String()
 			Expect(output).To(ContainSubstring(brokerName))
 			Expect(output).To(ContainSubstring(brokerURL))
 		})
 		It("Passes in the bearer secret", func() {
-			brokerName := "foobarbroker"
-			brokerURL := "http://foobar.com"
 			bearerSecret := "foobarsecret"
-			namespace := "foobarnamespace"
-
-			brokerToReturn := &v1beta1.ClusterServiceBroker{
-				ObjectMeta: v1.ObjectMeta{
-					Name: brokerName,
-				},
-				Spec: v1beta1.ClusterServiceBrokerSpec{
-					CommonServiceBrokerSpec: v1beta1.CommonServiceBrokerSpec{
-						URL: brokerURL,
-					},
-					AuthInfo: &v1beta1.ClusterServiceBrokerAuthInfo{
-						Basic: &v1beta1.ClusterBasicAuthConfig{
-							SecretRef: &v1beta1.ObjectReference{
-								Name: bearerSecret,
-							},
-						},
-					},
+			brokerToReturn.Spec.AuthInfo.Basic = nil
+			brokerToReturn.Spec.AuthInfo.Bearer = &v1beta1.ClusterBearerTokenAuthConfig{
+				SecretRef: &v1beta1.ObjectReference{
+					Name: bearerSecret,
 				},
 			}
 
@@ -261,18 +267,20 @@ var _ = Describe("Register Command", func() {
 			fakeApp.SvcatClient = fakeSDK
 			cxt := svcattest.NewContext(outputBuffer, fakeApp)
 			cmd := RegisterCmd{
-				Context:      cxt,
 				BearerSecret: bearerSecret,
 				BrokerName:   brokerName,
 				Namespaced:   command.NewNamespaced(cxt),
+				Scoped:       command.NewScoped(),
+				Waitable:     command.NewWaitable(),
 				URL:          brokerURL,
 			}
 			cmd.Namespaced.ApplyNamespaceFlags(&pflag.FlagSet{})
+			cmd.Waitable.ApplyWaitFlags()
 			err := cmd.Run()
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeSDK.RegisterCallCount()).To(Equal(1))
-			returnedName, returnedURL, returnedOpts := fakeSDK.RegisterArgsForCall(0)
+			returnedName, returnedURL, returnedOpts, _ := fakeSDK.RegisterArgsForCall(0)
 			Expect(returnedName).To(Equal(brokerName))
 			Expect(returnedURL).To(Equal(brokerURL))
 			opts := servicecatalog.RegisterOptions{
@@ -280,6 +288,53 @@ var _ = Describe("Register Command", func() {
 				BearerSecret: bearerSecret,
 			}
 			Expect(*returnedOpts).To(Equal(opts))
+
+			output := outputBuffer.String()
+			Expect(output).To(ContainSubstring(brokerName))
+			Expect(output).To(ContainSubstring(brokerURL))
+		})
+		It("Calls the SDK's WaitForBroker method with the passed in interval and timeout when Wait==true", func() {
+			interval := 1 * time.Second
+			timeout := 1 * time.Minute
+
+			outputBuffer := &bytes.Buffer{}
+
+			fakeApp, _ := svcat.NewApp(nil, nil, namespace)
+			fakeSDK := new(servicecatalogfakes.FakeSvcatClient)
+			fakeSDK.RegisterReturns(brokerToReturn, nil)
+			fakeSDK.WaitForBrokerReturns(brokerToReturn, nil)
+			fakeApp.SvcatClient = fakeSDK
+			cxt := svcattest.NewContext(outputBuffer, fakeApp)
+			cmd := RegisterCmd{
+				BrokerName: brokerName,
+				Namespaced: command.NewNamespaced(cxt),
+				Scoped:     command.NewScoped(),
+				Waitable:   command.NewWaitable(),
+				URL:        brokerURL,
+			}
+			cmd.Wait = true
+			cmd.Namespaced.ApplyNamespaceFlags(&pflag.FlagSet{})
+			cmd.Waitable.ApplyWaitFlags()
+			cmd.Interval = interval
+			cmd.Timeout = &timeout
+
+			err := cmd.Run()
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(fakeSDK.RegisterCallCount()).To(Equal(1))
+			returnedName, returnedURL, returnedOpts, _ := fakeSDK.RegisterArgsForCall(0)
+			Expect(returnedName).To(Equal(brokerName))
+			Expect(returnedURL).To(Equal(brokerURL))
+			opts := servicecatalog.RegisterOptions{
+				Namespace: namespace,
+			}
+			Expect(*returnedOpts).To(Equal(opts))
+
+			Expect(fakeSDK.WaitForBrokerCallCount()).To(Equal(1))
+			waitName, waitInterval, waitTimeout := fakeSDK.WaitForBrokerArgsForCall(0)
+			Expect(waitName).To(Equal(brokerName))
+			Expect(waitInterval).To(Equal(interval))
+			Expect(*waitTimeout).To(Equal(timeout))
 
 			output := outputBuffer.String()
 			Expect(output).To(ContainSubstring(brokerName))

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/golang/glog"
 	kutilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/klog"
 
 	"github.com/openshift/library-go/pkg/git"
 	"github.com/openshift/origin/pkg/oc/lib/newapp"
@@ -127,21 +127,21 @@ func Resolve(appConfig *AppConfig) (*ResolvedComponents, error) {
 
 	// if the --context-dir flag was passed, set the context directory on all repositories
 	if len(g.ContextDir) > 0 && len(repositories) > 0 {
-		glog.V(5).Infof("Setting contextDir on all repositories to %v", g.ContextDir)
+		klog.V(5).Infof("Setting contextDir on all repositories to %v", g.ContextDir)
 		for _, repo := range repositories {
 			repo.SetContextDir(g.ContextDir)
 		}
 	}
 
 	// if the --strategy flag was passed, set the build strategy on all repositories
-	if g.Strategy != generate.StrategyUnspecified && len(repositories) > 0 {
-		glog.V(5).Infof("Setting build strategy on all repositories to %v", g.Strategy)
+	if g.Strategy != newapp.StrategyUnspecified && len(repositories) > 0 {
+		klog.V(5).Infof("Setting build strategy on all repositories to %v", g.Strategy)
 		for _, repo := range repositories {
 			repo.SetStrategy(g.Strategy)
 		}
 	}
 
-	if g.Strategy != generate.StrategyUnspecified && len(repositories) == 0 && !g.BinaryBuild {
+	if g.Strategy != newapp.StrategyUnspecified && len(repositories) == 0 && !g.BinaryBuild {
 		return nil, errors.New("--strategy is specified and none of the arguments provided could be classified as a source code location")
 	}
 
@@ -187,8 +187,8 @@ func Resolve(appConfig *AppConfig) (*ResolvedComponents, error) {
 	}
 	components = append(components, sourceComponents...)
 
-	glog.V(4).Infof("Code [%v]", repositories)
-	glog.V(4).Infof("Components [%v]", components)
+	klog.V(4).Infof("Code [%v]", repositories)
+	klog.V(4).Infof("Components [%v]", components)
 
 	return &ResolvedComponents{
 		Components:   components,
@@ -200,8 +200,8 @@ func Resolve(appConfig *AppConfig) (*ResolvedComponents, error) {
 // should be built using Docker, and then returns the full list of source repositories.
 func AddSourceRepositoriesToRefBuilder(b *app.ReferenceBuilder, c *ComponentInputs, g *GenerationInputs, s, i *[]string) (app.SourceRepositories, error) {
 	strategy := g.Strategy
-	if strategy == generate.StrategyUnspecified {
-		strategy = generate.StrategySource
+	if strategy == newapp.StrategyUnspecified {
+		strategy = newapp.StrategySource
 	}
 	// when git is installed we keep default logic. sourcelookup.go will do sorting of images, repos
 	if git.IsGitInstalled() || len(c.SourceRepositories) > 0 {
@@ -220,7 +220,7 @@ func AddSourceRepositoriesToRefBuilder(b *app.ReferenceBuilder, c *ComponentInpu
 		}
 	}
 	if len(g.Dockerfile) > 0 {
-		if g.Strategy != generate.StrategyUnspecified && g.Strategy != generate.StrategyDocker {
+		if g.Strategy != newapp.StrategyUnspecified && g.Strategy != newapp.StrategyDocker {
 			return nil, errors.New("when directly referencing a Dockerfile, the strategy must must be 'docker'")
 		}
 		if err := AddDockerfileToSourceRepositories(b, g.Dockerfile); err != nil {
@@ -264,17 +264,17 @@ func AddDockerfileToSourceRepositories(b *app.ReferenceBuilder, dockerfile strin
 func DetectSource(repositories []*app.SourceRepository, d app.Detector, g *GenerationInputs) error {
 	errs := []error{}
 	for _, repo := range repositories {
-		err := repo.Detect(d, g.Strategy == generate.StrategyDocker || g.Strategy == generate.StrategyPipeline)
+		err := repo.Detect(d, g.Strategy == newapp.StrategyDocker || g.Strategy == newapp.StrategyPipeline)
 		if err != nil {
 			errs = append(errs, err)
 			continue
 		}
 		switch g.Strategy {
-		case generate.StrategyDocker:
+		case newapp.StrategyDocker:
 			if repo.Info().Dockerfile == nil {
 				errs = append(errs, errors.New("No Dockerfile was found in the repository and the requested build strategy is 'docker'"))
 			}
-		case generate.StrategyPipeline:
+		case newapp.StrategyPipeline:
 			if !repo.Info().Jenkinsfile {
 				errs = append(errs, errors.New("No Jenkinsfile was found in the repository and the requested build strategy is 'pipeline'"))
 			}
@@ -430,12 +430,12 @@ func InferBuildTypes(components app.ComponentReferences, g *GenerationInputs) (a
 
 		// if the strategy is set explicitly, apply it to all repos.
 		// for example, this affects repos specified in the form image~source.
-		if g.Strategy != generate.StrategyUnspecified && input.Uses != nil {
+		if g.Strategy != newapp.StrategyUnspecified && input.Uses != nil {
 			input.Uses.SetStrategy(g.Strategy)
 		}
 
 		// if we are expecting build inputs, or get a build input when strategy is not docker, expect to build
-		if g.ExpectToBuild || (input.ResolvedMatch.Builder && g.Strategy != generate.StrategyDocker) {
+		if g.ExpectToBuild || (input.ResolvedMatch.Builder && g.Strategy != newapp.StrategyDocker) {
 			input.ExpectToBuild = true
 		}
 
@@ -446,7 +446,7 @@ func InferBuildTypes(components app.ComponentReferences, g *GenerationInputs) (a
 			continue
 		}
 	}
-	if len(components) == 0 && g.BinaryBuild && g.Strategy == generate.StrategySource {
+	if len(components) == 0 && g.BinaryBuild && g.Strategy == newapp.StrategySource {
 		return nil, errors.New("you must provide a builder image when using the source strategy with a binary build")
 	}
 	if len(components) == 0 && g.BinaryBuild {
@@ -489,28 +489,28 @@ func EnsureHasSource(components app.ComponentReferences, repositories app.Source
 			" and the following repositories are not used: %s\nUse '[image]~[repo]' to declare which code goes with which image", components, repositories)
 
 	case len(repositories) == 1:
-		glog.V(2).Infof("Using %q as the source for build", repositories[0])
+		klog.V(2).Infof("Using %q as the source for build", repositories[0])
 		for _, component := range components {
-			glog.V(2).Infof("Pairing with component %v", component)
+			klog.V(2).Infof("Pairing with component %v", component)
 			component.Input().Use(repositories[0])
 			repositories[0].UsedBy(component)
 		}
 
 	default:
 		switch {
-		case g.BinaryBuild && g.ExpectToBuild:
+		case g.BinaryBuild:
 			// create new "fake" binary repos for any component that doesn't already have a repo
 			// TODO: source repository should possibly be refactored to be an interface or a type that better reflects
-			//   the different types of inputs
+			// the different types of inputs
 			for _, component := range components {
 				input := component.Input()
 				if input.Uses != nil {
 					continue
 				}
-				strategy := generate.StrategySource
+				strategy := newapp.StrategySource
 				isBuilder := input.ResolvedMatch != nil && input.ResolvedMatch.Builder
-				if g.Strategy == generate.StrategyDocker || (g.Strategy == generate.StrategyUnspecified && !isBuilder) {
-					strategy = generate.StrategyDocker
+				if g.Strategy == newapp.StrategyDocker || (g.Strategy == newapp.StrategyUnspecified && !isBuilder) {
+					strategy = newapp.StrategyDocker
 				}
 				repo := app.NewBinarySourceRepository(strategy)
 				input.Use(repo)
@@ -544,18 +544,18 @@ func AddMissingComponentsToRefBuilder(
 			errs = append(errs, fmt.Errorf("source not detected for repository %q", repo))
 			continue
 
-		case info.Jenkinsfile && (g.Strategy == generate.StrategyUnspecified || g.Strategy == generate.StrategyPipeline):
+		case info.Jenkinsfile && (g.Strategy == newapp.StrategyUnspecified || g.Strategy == newapp.StrategyPipeline):
 			refs := b.AddComponents([]string{"pipeline"}, func(input *app.ComponentInput) app.ComponentReference {
 				input.Resolver = pipelineResolver
 				input.Use(repo)
 				input.ExpectToBuild = true
 				repo.UsedBy(input)
-				repo.SetStrategy(generate.StrategyPipeline)
+				repo.SetStrategy(newapp.StrategyPipeline)
 				return input
 			})
 			result = append(result, refs...)
 
-		case info.Dockerfile != nil && (g.Strategy == generate.StrategyUnspecified || g.Strategy == generate.StrategyDocker):
+		case info.Dockerfile != nil && (g.Strategy == newapp.StrategyUnspecified || g.Strategy == newapp.StrategyDocker):
 			node := info.Dockerfile.AST()
 			baseImage := dockerfileutil.LastBaseImage(node)
 			if baseImage == "" {
@@ -567,7 +567,7 @@ func AddMissingComponentsToRefBuilder(
 				input.Use(repo)
 				input.ExpectToBuild = true
 				repo.UsedBy(input)
-				repo.SetStrategy(generate.StrategyDocker)
+				repo.SetStrategy(newapp.StrategyDocker)
 				return input
 			})
 			result = append(result, refs...)

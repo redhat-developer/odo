@@ -9,28 +9,25 @@ import (
 	"k8s.io/apiserver/pkg/authorization/authorizer"
 	"k8s.io/apiserver/pkg/registry/rest"
 	genericapiserver "k8s.io/apiserver/pkg/server"
+	"k8s.io/client-go/informers"
+	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
-	kclientsetinternal "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
-	kinternalinformers "k8s.io/kubernetes/pkg/client/informers/informers_generated/internalversion"
 
 	securityapiv1 "github.com/openshift/api/security/v1"
+	securityv1informer "github.com/openshift/client-go/security/informers/externalversions"
 	"github.com/openshift/origin/pkg/security/apiserver/registry/podsecuritypolicyreview"
 	"github.com/openshift/origin/pkg/security/apiserver/registry/podsecuritypolicyselfsubjectreview"
 	"github.com/openshift/origin/pkg/security/apiserver/registry/podsecuritypolicysubjectreview"
 	"github.com/openshift/origin/pkg/security/apiserver/registry/rangeallocations"
 	sccstorage "github.com/openshift/origin/pkg/security/apiserver/registry/securitycontextconstraints/etcd"
 	oscc "github.com/openshift/origin/pkg/security/apiserver/securitycontextconstraints"
-	securityinformer "github.com/openshift/origin/pkg/security/generated/informers/internalversion"
 )
 
 type ExtraConfig struct {
 	KubeAPIServerClientConfig *restclient.Config
-	// SCCStorage is actually created with a kubernetes restmapper options to have the correct prefix,
-	// so we have to have it special cased here to point to the right spot.
-	SCCStorage            *sccstorage.REST
-	SecurityInformers     securityinformer.SharedInformerFactory
-	KubeInternalInformers kinternalinformers.SharedInformerFactory
-	Authorizer            authorizer.Authorizer
+	SecurityInformers         securityv1informer.SharedInformerFactory
+	KubeInformers             informers.SharedInformerFactory
+	Authorizer                authorizer.Authorizer
 
 	// TODO these should all become local eventually
 	Scheme *runtime.Scheme
@@ -104,29 +101,25 @@ func (c *completedConfig) V1RESTStorage() (map[string]rest.Storage, error) {
 }
 
 func (c *completedConfig) newV1RESTStorage() (map[string]rest.Storage, error) {
-	kubeInternalClient, err := kclientsetinternal.NewForConfig(c.ExtraConfig.KubeAPIServerClientConfig)
+	kubeClient, err := kubernetes.NewForConfig(c.ExtraConfig.KubeAPIServerClientConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	sccStorage := c.ExtraConfig.SCCStorage
-	// TODO allow this when we're sure that its storing correctly and we want to allow starting up without embedding kube
-	if false && sccStorage == nil {
-		sccStorage = sccstorage.NewREST(c.GenericConfig.RESTOptionsGetter)
-	}
-	sccMatcher := oscc.NewDefaultSCCMatcher(c.ExtraConfig.SecurityInformers.Security().InternalVersion().SecurityContextConstraints().Lister(), c.ExtraConfig.Authorizer)
+	sccStorage := sccstorage.NewREST()
+	sccMatcher := oscc.NewDefaultSCCMatcher(c.ExtraConfig.SecurityInformers.Security().V1().SecurityContextConstraints().Lister(), c.ExtraConfig.Authorizer)
 	podSecurityPolicyReviewStorage := podsecuritypolicyreview.NewREST(
 		sccMatcher,
-		c.ExtraConfig.KubeInternalInformers.Core().InternalVersion().ServiceAccounts().Lister(),
-		kubeInternalClient,
+		c.ExtraConfig.KubeInformers.Core().V1().ServiceAccounts().Lister(),
+		kubeClient,
 	)
 	podSecurityPolicySubjectStorage := podsecuritypolicysubjectreview.NewREST(
 		sccMatcher,
-		kubeInternalClient,
+		kubeClient,
 	)
 	podSecurityPolicySelfSubjectReviewStorage := podsecuritypolicyselfsubjectreview.NewREST(
 		sccMatcher,
-		kubeInternalClient,
+		kubeClient,
 	)
 	uidRangeStorage := rangeallocations.NewREST(c.GenericConfig.RESTOptionsGetter)
 

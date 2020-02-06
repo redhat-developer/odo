@@ -15,7 +15,7 @@ import (
 	kapi "k8s.io/kubernetes/pkg/apis/core"
 	kprinters "k8s.io/kubernetes/pkg/printers"
 
-	"github.com/openshift/origin/pkg/api/legacy"
+	"github.com/openshift/origin/pkg/api/install"
 	appsapi "github.com/openshift/origin/pkg/apps/apis/apps"
 	authorizationapi "github.com/openshift/origin/pkg/authorization/apis/authorization"
 	buildapi "github.com/openshift/origin/pkg/build/apis/build"
@@ -25,6 +25,10 @@ import (
 	securityapi "github.com/openshift/origin/pkg/security/apis/security"
 	templateapi "github.com/openshift/origin/pkg/template/apis/template"
 )
+
+func init() {
+	install.InstallInternalOpenShift(legacyscheme.Scheme)
+}
 
 // PrinterCoverageExceptions is the list of API types that do NOT have corresponding printers
 // If you add something to this list, explain why it doesn't need printing.  waaaa is not a valid
@@ -64,6 +68,7 @@ var PrinterCoverageExceptions = []reflect.Type{
 var MissingPrinterCoverageExceptions = []reflect.Type{
 	reflect.TypeOf(&appsapi.DeploymentConfigRollback{}),
 	reflect.TypeOf(&imageapi.ImageStreamMapping{}),
+	reflect.TypeOf(&imageapi.ImageStreamLayers{}),
 	reflect.TypeOf(&projectapi.ProjectRequest{}),
 }
 
@@ -72,7 +77,11 @@ func TestPrinterCoverage(t *testing.T) {
 	AddHandlers(printer)
 
 main:
-	for _, apiType := range legacyscheme.Scheme.KnownTypes(legacy.InternalGroupVersion) {
+	for gvk, apiType := range legacyscheme.Scheme.AllKnownTypes() {
+		if gvk.Version != runtime.APIVersionInternal {
+			continue
+		}
+
 		if !strings.Contains(apiType.PkgPath(), "github.com/openshift/origin") || strings.Contains(apiType.PkgPath(), "github.com/openshift/origin/vendor/") {
 			continue
 		}
@@ -184,7 +193,7 @@ func TestPrintImageStream(t *testing.T) {
 		{
 			name:        "more than three tags",
 			stream:      streams[2],
-			expectedOut: "another,third,latest + 1 more...",
+			expectedOut: "another,third,latest,other",
 		},
 	}
 
@@ -300,7 +309,7 @@ func mockStreams() []*imageapi.ImageStream {
 						Items: []imageapi.TagEvent{
 							{
 								DockerImageReference: "another-ref",
-								Created:              metav1.Date(2015, 9, 4, 13, 55, 0, 0, time.UTC),
+								Created:              metav1.Date(2015, 9, 4, 13, 54, 0, 0, time.UTC),
 								Image:                "another-image",
 							},
 						},
@@ -395,5 +404,34 @@ func TestPrintTemplate(t *testing.T) {
 			t.Errorf("[%d] expected %q, got %q", i, test.want, got)
 			continue
 		}
+	}
+}
+
+func Test_printTagsUpToWidth(t *testing.T) {
+	type args struct {
+		statusTags     map[string]imageapi.TagEventList
+		preferredWidth int
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{name: "empty"},
+		{name: "1", want: "very-long-name", args: args{statusTags: map[string]imageapi.TagEventList{"very-long-name": {}}}},
+		{name: "2", want: "1234567890", args: args{preferredWidth: 10, statusTags: map[string]imageapi.TagEventList{"1234567890": {}}}},
+		{name: "3", want: "123456789012", args: args{preferredWidth: 10, statusTags: map[string]imageapi.TagEventList{"123456789012": {}}}},
+		{name: "4", want: "1234567890 + 1 more...", args: args{preferredWidth: 10, statusTags: map[string]imageapi.TagEventList{"2": {}, "1234567890": {}}}},
+		{name: "if more than 75% full, don't add a tag", want: "1234567890 + 1 more...", args: args{preferredWidth: 12, statusTags: map[string]imageapi.TagEventList{"2": {}, "1234567890": {}}}},
+		{name: "if less than 75% full, add a tag that fits", want: "123456789,2", args: args{preferredWidth: 12, statusTags: map[string]imageapi.TagEventList{"2": {}, "123456789": {}}}},
+		{name: "if less than 75% full, include a large tag", want: "2,3,4234567890", args: args{preferredWidth: 12, statusTags: map[string]imageapi.TagEventList{"2": {}, "3": {}, "4234567890": {}}}},
+		{name: "if less than 75% full, don't include a very large tag", want: "2,3 + 1 more...", args: args{preferredWidth: 12, statusTags: map[string]imageapi.TagEventList{"2": {}, "3": {}, "42345678901": {}}}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := printTagsUpToWidth(tt.args.statusTags, tt.args.preferredWidth); got != tt.want {
+				t.Errorf("printTagsUpToWidth() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

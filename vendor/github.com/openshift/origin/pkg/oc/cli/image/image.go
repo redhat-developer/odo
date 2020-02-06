@@ -5,13 +5,14 @@ import (
 
 	"github.com/spf13/cobra"
 
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
+	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
 
 	"github.com/openshift/origin/pkg/cmd/templates"
 	"github.com/openshift/origin/pkg/oc/cli/image/append"
 	"github.com/openshift/origin/pkg/oc/cli/image/extract"
+	"github.com/openshift/origin/pkg/oc/cli/image/info"
 	"github.com/openshift/origin/pkg/oc/cli/image/mirror"
 )
 
@@ -38,6 +39,7 @@ func NewCmdImage(fullName string, f kcmdutil.Factory, streams genericclioptions.
 			Message: "Advanced commands:",
 			Commands: []*cobra.Command{
 				append.NewCmdAppendImage(name, streams),
+				info.NewInfo(name, streams),
 				extract.New(name, streams),
 				mirror.NewCmdMirrorImage(name, streams),
 			},

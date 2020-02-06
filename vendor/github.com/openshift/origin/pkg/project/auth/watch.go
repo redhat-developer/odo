@@ -4,16 +4,18 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/apiserver/pkg/authentication/user"
 	kstorage "k8s.io/apiserver/pkg/storage"
-	kapi "k8s.io/kubernetes/pkg/apis/core"
 
+	projectapi "github.com/openshift/origin/pkg/project/apis/project"
 	projectcache "github.com/openshift/origin/pkg/project/cache"
 	projectutil "github.com/openshift/origin/pkg/project/util"
 )
@@ -28,7 +30,7 @@ type WatchableCache interface {
 	// RemoveWatcher removes a watcher
 	RemoveWatcher(CacheWatcher)
 	// List returns the set of namespace names the user has access to view
-	List(userInfo user.Info) (*kapi.NamespaceList, error)
+	List(userInfo user.Info, selector labels.Selector) (*corev1.NamespaceList, error)
 }
 
 // userProjectWatcher converts a native etcd watch to a watch.Interface.
@@ -59,7 +61,7 @@ type userProjectWatcher struct {
 	projectCache *projectcache.ProjectCache
 	authCache    WatchableCache
 
-	initialProjects []kapi.Namespace
+	initialProjects []corev1.Namespace
 	// knownProjects maps name to resourceVersion
 	knownProjects map[string]string
 }
@@ -70,15 +72,15 @@ var (
 	watchChannelHWM kstorage.HighWaterMark
 )
 
-func NewUserProjectWatcher(user user.Info, visibleNamespaces sets.String, projectCache *projectcache.ProjectCache, authCache WatchableCache, includeAllExistingProjects bool) *userProjectWatcher {
-	namespaces, _ := authCache.List(user)
+func NewUserProjectWatcher(user user.Info, visibleNamespaces sets.String, projectCache *projectcache.ProjectCache, authCache WatchableCache, includeAllExistingProjects bool, predicate kstorage.SelectionPredicate) *userProjectWatcher {
+	namespaces, _ := authCache.List(user, labels.Everything())
 	knownProjects := map[string]string{}
 	for _, namespace := range namespaces.Items {
 		knownProjects[namespace.Name] = namespace.ResourceVersion
 	}
 
 	// this is optional.  If they don't request it, don't include it.
-	initialProjects := []kapi.Namespace{}
+	initialProjects := []corev1.Namespace{}
 	if includeAllExistingProjects {
 		initialProjects = append(initialProjects, namespaces.Items...)
 	}
@@ -98,6 +100,14 @@ func NewUserProjectWatcher(user user.Info, visibleNamespaces sets.String, projec
 		knownProjects:   knownProjects,
 	}
 	w.emit = func(e watch.Event) {
+		// if dealing with project events, ensure that we only emit events for projects
+		// that match the field or label selector specified by a consumer
+		if project, ok := e.Object.(*projectapi.Project); ok {
+			if matches, err := predicate.Matches(project); err != nil || !matches {
+				return
+			}
+		}
+
 		select {
 		case w.outgoing <- e:
 		case <-w.userStop:
@@ -123,7 +133,7 @@ func (w *userProjectWatcher) GroupMembershipChanged(namespaceName string, users,
 		select {
 		case w.cacheIncoming <- watch.Event{
 			Type:   watch.Deleted,
-			Object: projectutil.ConvertNamespace(&kapi.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespaceName}}),
+			Object: projectutil.ConvertNamespaceFromExternal(&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespaceName}}),
 		}:
 		default:
 			// remove the watcher so that we wont' be notified again and block
@@ -140,7 +150,7 @@ func (w *userProjectWatcher) GroupMembershipChanged(namespaceName string, users,
 
 		event := watch.Event{
 			Type:   watch.Added,
-			Object: projectutil.ConvertNamespace(namespace),
+			Object: projectutil.ConvertNamespaceFromExternal(namespace),
 		}
 
 		// if we already have this in our list, then we're getting notified because the object changed
@@ -188,7 +198,7 @@ func (w *userProjectWatcher) Watch() {
 
 		w.emit(watch.Event{
 			Type:   watch.Added,
-			Object: projectutil.ConvertNamespace(&w.initialProjects[i]),
+			Object: projectutil.ConvertNamespaceFromExternal(&w.initialProjects[i]),
 		})
 	}
 
@@ -204,7 +214,7 @@ func (w *userProjectWatcher) Watch() {
 		case event := <-w.cacheIncoming:
 			if curLen := int64(len(w.cacheIncoming)); watchChannelHWM.Update(curLen) {
 				// Monitor if this gets backed up, and how much.
-				glog.V(2).Infof("watch: %v objects queued in project cache watching channel.", curLen)
+				klog.V(2).Infof("watch: %v objects queued in project cache watching channel.", curLen)
 			}
 
 			w.emit(event)

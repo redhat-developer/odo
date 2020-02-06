@@ -3,14 +3,13 @@ package deployments
 import (
 	"time"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	appsv1 "github.com/openshift/api/apps/v1"
-	appsutil "github.com/openshift/origin/pkg/apps/util"
 )
 
 type Pruner interface {
@@ -51,7 +50,7 @@ type PrunerOptions struct {
 // NewPruner returns a Pruner over specified data using specified options.
 // deploymentConfigs, deployments, opts.KeepYoungerThan, opts.Orphans, opts.KeepComplete, opts.KeepFailed, deploymentPruneFunc
 func NewPruner(options PrunerOptions) Pruner {
-	glog.V(1).Infof("Creating deployment pruner with keepYoungerThan=%v, orphans=%v, keepComplete=%v, keepFailed=%v",
+	klog.V(1).Infof("Creating deployment pruner with keepYoungerThan=%v, orphans=%v, keepComplete=%v, keepFailed=%v",
 		options.KeepYoungerThan, options.Orphans, options.KeepComplete, options.KeepFailed)
 
 	filter := &andFilter{
@@ -96,34 +95,19 @@ func (p *pruner) Prune(deleter DeploymentDeleter) error {
 // deploymentDeleter removes a deployment from OpenShift.
 type deploymentDeleter struct {
 	deployments corev1client.ReplicationControllersGetter
-	pods        corev1client.PodsGetter
 }
 
 var _ DeploymentDeleter = &deploymentDeleter{}
 
 // NewDeploymentDeleter creates a new deploymentDeleter.
-func NewDeploymentDeleter(deployments corev1client.ReplicationControllersGetter, pods corev1client.PodsGetter) DeploymentDeleter {
+func NewDeploymentDeleter(deployments corev1client.ReplicationControllersGetter) DeploymentDeleter {
 	return &deploymentDeleter{
 		deployments: deployments,
-		pods:        pods,
 	}
 }
 
 func (p *deploymentDeleter) DeleteDeployment(deployment *corev1.ReplicationController) error {
-	glog.V(4).Infof("Deleting deployment %q", deployment.Name)
-	// If the deployment is failed we need to remove its deployer pods, too.
-	if appsutil.IsFailedDeployment(deployment) {
-		dpSelector := appsutil.DeployerPodSelector(deployment.Name)
-		deployers, err := p.pods.Pods(deployment.Namespace).List(metav1.ListOptions{LabelSelector: dpSelector.String()})
-		if err != nil {
-			glog.Warningf("Cannot list deployer pods for %q: %v\n", deployment.Name, err)
-		} else {
-			for _, pod := range deployers.Items {
-				if err := p.pods.Pods(pod.Namespace).Delete(pod.Name, nil); err != nil {
-					glog.Warningf("Cannot remove deployer pod %q: %v\n", pod.Name, err)
-				}
-			}
-		}
-	}
-	return p.deployments.ReplicationControllers(deployment.Namespace).Delete(deployment.Name, nil)
+	klog.V(4).Infof("Deleting deployment %q", deployment.Name)
+	policy := metav1.DeletePropagationBackground
+	return p.deployments.ReplicationControllers(deployment.Namespace).Delete(deployment.Name, &metav1.DeleteOptions{PropagationPolicy: &policy})
 }

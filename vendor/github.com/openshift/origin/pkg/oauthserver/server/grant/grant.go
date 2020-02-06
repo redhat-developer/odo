@@ -5,9 +5,8 @@ import (
 	"net/http"
 	"net/url"
 	"path"
-	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -22,7 +21,6 @@ import (
 	"github.com/openshift/origin/pkg/oauthserver"
 	"github.com/openshift/origin/pkg/oauthserver/api"
 	"github.com/openshift/origin/pkg/oauthserver/server/csrf"
-	"github.com/openshift/origin/pkg/oauthserver/server/headers"
 	"github.com/openshift/origin/pkg/oauthserver/server/redirect"
 )
 
@@ -99,28 +97,21 @@ func NewGrant(csrf csrf.CSRF, auth authenticator.Request, render FormRenderer, c
 	}
 }
 
-// Install registers the grant handler into a mux. It is expected that the
-// provided prefix will serve all operations. Path MUST NOT end in a slash.
-func (l *Grant) Install(mux oauthserver.Mux, paths ...string) {
-	for _, path := range paths {
-		path = strings.TrimRight(path, "/")
-		mux.HandleFunc(path, l.ServeHTTP)
-	}
+func (l *Grant) Install(mux oauthserver.Mux, prefix string) {
+	mux.Handle(prefix, l)
 }
 
 func (l *Grant) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	headers.SetStandardHeaders(w)
-
-	user, ok, err := l.auth.AuthenticateRequest(req)
+	authResponse, ok, err := l.auth.AuthenticateRequest(req)
 	if err != nil || !ok {
 		l.redirect("You must reauthenticate before continuing", w, req)
 		return
 	}
 	switch req.Method {
 	case "GET":
-		l.handleForm(user, w, req)
+		l.handleForm(authResponse.User, w, req)
 	case "POST":
-		l.handleGrant(user, w, req)
+		l.handleGrant(authResponse.User, w, req)
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
@@ -198,7 +189,7 @@ func (l *Grant) handleForm(user user.Info, w http.ResponseWriter, req *http.Requ
 
 func (l *Grant) handleGrant(user user.Info, w http.ResponseWriter, req *http.Request) {
 	if ok := l.csrf.Check(req, req.PostFormValue(csrfParam)); !ok {
-		glog.V(4).Infof("Invalid CSRF token: %s", req.PostFormValue(csrfParam))
+		klog.V(4).Infof("Invalid CSRF token: %s", req.PostFormValue(csrfParam))
 		l.failed("Invalid CSRF token", w, req)
 		return
 	}
@@ -209,7 +200,7 @@ func (l *Grant) handleGrant(user user.Info, w http.ResponseWriter, req *http.Req
 	username := req.PostFormValue(userNameParam)
 
 	if username != user.GetName() {
-		glog.Errorf("User (%v) did not match authenticated user (%v)", username, user.GetName())
+		klog.Errorf("User (%v) did not match authenticated user (%v)", username, user.GetName())
 		l.failed("User did not match", w, req)
 		return
 	}
@@ -248,7 +239,7 @@ func (l *Grant) handleGrant(user user.Info, w http.ResponseWriter, req *http.Req
 		// Add new scopes and update
 		clientAuth.Scopes = scope.Add(clientAuth.Scopes, scope.Split(scopes))
 		if _, err = l.authregistry.Update(clientAuth); err != nil {
-			glog.Errorf("Unable to update authorization: %v", err)
+			klog.Errorf("Unable to update authorization: %v", err)
 			l.failed("Could not update client authorization", w, req)
 			return
 		}
@@ -263,7 +254,7 @@ func (l *Grant) handleGrant(user user.Info, w http.ResponseWriter, req *http.Req
 		clientAuth.Name = clientAuthID
 
 		if _, err = l.authregistry.Create(clientAuth); err != nil {
-			glog.Errorf("Unable to create authorization: %v", err)
+			klog.Errorf("Unable to create authorization: %v", err)
 			l.failed("Could not create client authorization", w, req)
 			return
 		}

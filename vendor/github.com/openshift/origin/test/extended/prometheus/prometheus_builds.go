@@ -3,6 +3,7 @@ package prometheus
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"time"
 
 	g "github.com/onsi/ginkgo"
@@ -17,22 +18,25 @@ import (
 	exutil "github.com/openshift/origin/test/extended/util"
 )
 
-var (
-	execPodName, ns, url, bearerToken string
-)
-
 var _ = g.Describe("[Feature:Prometheus][Feature:Builds] Prometheus", func() {
 	defer g.GinkgoRecover()
 	var (
-		oc = exutil.NewCLI("prometheus", exutil.KubeConfigPath())
-	)
+		oc = exutil.NewCLIWithoutNamespace("prometheus")
 
+		url, bearerToken string
+	)
 	g.BeforeEach(func() {
-		ns = oc.KubeFramework().Namespace.Name
 		var ok bool
 		url, bearerToken, ok = locatePrometheus(oc)
 		if !ok {
 			e2e.Skipf("Prometheus could not be located on this cluster, skipping prometheus test")
+		}
+	})
+
+	g.AfterEach(func() {
+		if g.CurrentGinkgoTestDescription().Failed {
+			exutil.DumpPodStatesInNamespace("openshift-monitoring", oc)
+			exutil.DumpPodLogsStartingWithInNamespace("prometheus-k8s", "openshift-monitoring", oc)
 		}
 	})
 
@@ -41,13 +45,12 @@ var _ = g.Describe("[Feature:Prometheus][Feature:Builds] Prometheus", func() {
 			const (
 				buildCountQuery = "openshift_build_total"
 			)
+			oc.SetupProject()
+			ns := oc.Namespace()
+			appTemplate := exutil.FixturePath("testdata", "builds", "build-pruning", "successful-build-config.yaml")
 
-			appTemplate := exutil.FixturePath("..", "..", "examples", "jenkins", "application-template.json")
-
-			execPodName = e2e.CreateExecPodOrFail(oc.AdminKubeClient(), ns, "execpod", func(pod *corev1.Pod) {
-				pod.Spec.Containers[0].Image = "centos:7"
-			})
-			defer func() { oc.AdminKubeClient().Core().Pods(ns).Delete(execPodName, metav1.NewDeleteOptions(1)) }()
+			execPodName := e2e.CreateExecPodOrFail(oc.AdminKubeClient(), ns, "execpod", func(pod *corev1.Pod) { pod.Spec.Containers[0].Image = "centos:7" })
+			defer func() { oc.AdminKubeClient().CoreV1().Pods(ns).Delete(execPodName, metav1.NewDeleteOptions(1)) }()
 
 			g.By("verifying the oauth-proxy reports a 403 on the root URL")
 			// allow for some retry, a la prometheus.go and its initial hitting of the metrics endpoint after
@@ -83,7 +86,7 @@ var _ = g.Describe("[Feature:Prometheus][Feature:Builds] Prometheus", func() {
 					},
 				},
 			}
-			runQueries(terminalTests, oc)
+			runQueries(terminalTests, oc, ns, execPodName, url, bearerToken)
 
 			// NOTE:  in manual testing on a laptop, starting several serial builds in succession was sufficient for catching
 			// at least a few builds in new/pending state with the default prometheus query interval;  but that has not
@@ -114,7 +117,7 @@ type metricTest struct {
 	success          bool
 }
 
-func runQueries(metricTests map[string][]metricTest, oc *exutil.CLI) {
+func runQueries(metricTests map[string][]metricTest, oc *exutil.CLI, ns, execPodName, baseURL, bearerToken string) {
 	// expect all correct metrics within a reasonable time period
 	errsMap := map[string]error{}
 	for i := 0; i < waitForPrometheusStartSeconds; i++ {
@@ -123,7 +126,7 @@ func runQueries(metricTests map[string][]metricTest, oc *exutil.CLI) {
 			// and introduced at https://github.com/prometheus/client_golang/blob/master/api/prometheus/v1/api.go are vendored into
 			// openshift/origin, look to replace this homegrown http request / query param with that API
 			g.By("perform prometheus metric query " + query)
-			contents, err := getBearerTokenURLViaPod(ns, execPodName, fmt.Sprintf("%s/api/v1/query?query=%s", url, query), bearerToken)
+			contents, err := getBearerTokenURLViaPod(ns, execPodName, fmt.Sprintf("%s/api/v1/query?%s", baseURL, (url.Values{"query": []string{query}}).Encode()), bearerToken)
 			o.Expect(err).NotTo(o.HaveOccurred())
 			result := prometheusResponse{}
 			json.Unmarshal([]byte(contents), &result)
@@ -165,25 +168,11 @@ func runQueries(metricTests map[string][]metricTest, oc *exutil.CLI) {
 }
 
 func startOpenShiftBuild(oc *exutil.CLI, appTemplate string) *exutil.BuildResult {
-	g.By("waiting for default service account")
-	err := exutil.WaitForServiceAccount(oc.KubeClient().Core().ServiceAccounts(oc.Namespace()), "default")
+	g.By(fmt.Sprintf("calling oc create -f %s ", appTemplate))
+	err := oc.Run("create").Args("-f", appTemplate).Execute()
 	o.Expect(err).NotTo(o.HaveOccurred())
-	g.By("waiting for builder service account")
-	err = exutil.WaitForServiceAccount(oc.KubeClient().Core().ServiceAccounts(oc.Namespace()), "builder")
-	o.Expect(err).NotTo(o.HaveOccurred())
-
-	g.By(fmt.Sprintf("calling oc new-app  %s ", appTemplate))
-	err = oc.Run("new-app").Args(appTemplate).Execute()
-	o.Expect(err).NotTo(o.HaveOccurred())
-	g.By("wait on imagestreams used by build")
-	err = exutil.WaitForOpenShiftNamespaceImageStreams(oc)
-	o.Expect(err).NotTo(o.HaveOccurred())
-	g.By("explicitly set up image stream tag, avoid timing window")
-	err = oc.AsAdmin().Run("tag").Args("openshift/nodejs:latest", oc.Namespace()+"/nodejs-010-centos7:latest").Execute()
-	o.Expect(err).NotTo(o.HaveOccurred())
-
 	g.By("start build")
-	br, err := exutil.StartBuildResult(oc, "frontend")
+	br, err := exutil.StartBuildResult(oc, "myphp")
 	o.Expect(err).NotTo(o.HaveOccurred())
 	return br
 }

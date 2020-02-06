@@ -4,23 +4,24 @@ import (
 	"errors"
 	"fmt"
 
+	"k8s.io/kubernetes/pkg/kubectl/cmd/logs"
+
 	"github.com/spf13/cobra"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	kcmd "k8s.io/kubernetes/pkg/kubectl/cmd"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericclioptions/resource"
 	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions/resource"
 	"k8s.io/kubernetes/pkg/kubectl/scheme"
+	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	buildv1 "github.com/openshift/api/build/v1"
 	buildv1client "github.com/openshift/client-go/build/clientset/versioned/typed/build/v1"
 	buildapi "github.com/openshift/origin/pkg/build/apis/build"
-	buildutil "github.com/openshift/origin/pkg/build/util"
+	ocbuildapihelpers "github.com/openshift/origin/pkg/oc/lib/buildapihelpers"
 )
 
 // LogsRecommendedCommandName is the recommended command name
@@ -64,7 +65,7 @@ type LogsOptions struct {
 	Options runtime.Object
 	// KubeLogOptions contains all the necessary options for
 	// running the upstream logs command.
-	KubeLogOptions *kcmd.LogsOptions
+	KubeLogOptions *logs.LogsOptions
 	// Client enables access to the Build object when processing
 	// build logs for Jenkins Pipeline Strategy builds
 	Client buildv1client.BuildV1Interface
@@ -82,7 +83,7 @@ type LogsOptions struct {
 
 func NewLogsOptions(streams genericclioptions.IOStreams) *LogsOptions {
 	return &LogsOptions{
-		KubeLogOptions: kcmd.NewLogsOptions(streams, false),
+		KubeLogOptions: logs.NewLogsOptions(streams, false),
 		IOStreams:      streams,
 	}
 }
@@ -90,7 +91,7 @@ func NewLogsOptions(streams genericclioptions.IOStreams) *LogsOptions {
 // NewCmdLogs creates a new logs command that supports OpenShift resources.
 func NewCmdLogs(name, baseName string, f kcmdutil.Factory, streams genericclioptions.IOStreams) *cobra.Command {
 	o := NewLogsOptions(streams)
-	cmd := kcmd.NewCmdLogs(f, streams)
+	cmd := logs.NewCmdLogs(f, streams)
 	cmd.Short = "Print the logs for a resource"
 	cmd.Long = logsLong
 	cmd.Example = fmt.Sprintf(logsExample, baseName, name)
@@ -261,7 +262,7 @@ func (o *LogsOptions) runLogPipeline() error {
 
 	switch {
 	case isBC:
-		buildName := buildutil.BuildNameForConfigVersion(bc.ObjectMeta.Name, int(bc.Status.LastVersion))
+		buildName := ocbuildapihelpers.BuildNameForConfigVersion(bc.ObjectMeta.Name, int(bc.Status.LastVersion))
 		build, _ = o.Client.Builds(o.Namespace).Get(buildName, metav1.GetOptions{})
 		if build == nil {
 			return fmt.Errorf("the build %s for build config %s was not found", buildName, bc.Name)

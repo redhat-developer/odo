@@ -15,22 +15,24 @@ import:
 - package: github.com/fatih/color
   version: v1.6.0
 - package: github.com/openshift/client-go
-  version: release-3.11
+  version: release-4.1
+- package: github.com/openshift/api
+  version: release-4.1
 - package: k8s.io/client-go
-  version: origin-3.11-kubernetes-1.11.1
+  version: origin-4.1-kubernetes-1.13.4
   repo: https://github.com/openshift/kubernetes-client-go.git
 - package: k8s.io/apimachinery
-  version: origin-3.11-kubernetes-1.11.1
+  version: origin-4.1-kubernetes-1.13.4
   repo: https://github.com/openshift/kubernetes-apimachinery.git
 - package: k8s.io/api
-  version: origin-3.11-kubernetes-1.11.1
+  version: origin-4.1-kubernetes-1.13.4
   repo: https://github.com/openshift/kubernetes-api.git
 - package: github.com/onsi/gomega
-  version: v1.5.0
+  version: v1.9.0
 - package: github.com/onsi/ginkgo
-  version: v1.8.0
+  version: v1.12.0
 - package: github.com/kubernetes-incubator/service-catalog
-  version: v0.1.31
+  version: v0.1.42
 - package: github.com/satori/go.uuid
   version: v1.1.0
 - package: github.com/fsnotify/fsnotify
@@ -50,7 +52,7 @@ import:
 - package: github.com/gobwas/glob
   version: e7a84e9525fe90abcda167b604e483cc959ad4aa
 - package: github.com/openshift/origin
-  version: v3.11.0
+  version: release-4.1
   subpackages:
   - pkg/oc/cli/login
 - package: github.com/mattn/go-colorable

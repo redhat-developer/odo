@@ -1,0 +1,3 @@
+    NAME      NAMESPACE         DESCRIPTION        
++-----------+-----------+-------------------------+
+  new-class               A user provided service  

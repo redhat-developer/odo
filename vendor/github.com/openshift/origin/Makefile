@@ -9,13 +9,9 @@
 #   clean: Clean up.
 
 OUT_DIR = _output
-OS_OUTPUT_GOPATH ?= 1
 
 export GOFLAGS
 export TESTFLAGS
-# If set to 1, create an isolated GOPATH inside _output using symlinks to avoid
-# other packages being accidentally included. Defaults to on.
-export OS_OUTPUT_GOPATH
 # May be used to set additional arguments passed to the image build commands for
 # mounting secrets specific to a build environment.
 export OS_BUILD_IMAGE_ARGS
@@ -43,24 +39,32 @@ all build:
 	hack/build-go.sh $(WHAT) $(GOFLAGS)
 .PHONY: all build
 
+# Build all binaries.
+#
+# Example:
+#   make build-all
+build-all:
+	hack/build-go.sh cmd/hypershift vendor/k8s.io/kubernetes/cmd/hyperkube cmd/oc cmd/openshift-sdn cmd/openshift-tests
+.PHONY: build-all
+
 # Build the test binaries.
 #
 # Example:
 #   make build-tests
-build-tests: build-extended-test build-integration-test build-router-e2e-test
+build-tests: build-extended-test build-integration-test
 .PHONY: build-tests
 
+build-network:
+	hack/build-go.sh cmd/openshift-sdn cmd/sdn-cni-plugin vendor/github.com/containernetworking/plugins/plugins/ipam/host-local vendor/github.com/containernetworking/plugins/plugins/main/loopback
+.PHONY: build-network
+
 build-extended-test:
-	hack/build-go.sh test/extended/extended.test
+	hack/build-go.sh cmd/openshift-tests
 .PHONY: build-extended-test
 
-build-integration-test: build-router-e2e-test
+build-integration-test:
 	hack/build-go.sh test/integration/integration.test
 .PHONY: build-integration-test
-
-build-router-e2e-test:
-	hack/build-go.sh test/end-to-end/end-to-end.test
-.PHONY: build-router-e2e-test
 
 build-docs:
 	hack/generate-docs.sh
@@ -85,6 +89,7 @@ check: | build verify
 verify: build
 	# build-tests task has been disabled until we can determine why memory usage is so high
 	{ \
+	hack/verify-generated-versions.sh ||r=1;\
 	hack/verify-gofmt.sh ||r=1;\
 	hack/verify-govet.sh ||r=1;\
 	hack/verify-imports.sh ||r=1;\
@@ -93,11 +98,8 @@ verify: build
 	hack/verify-generated-clientsets.sh ||r=1;\
 	hack/verify-generated-deep-copies.sh ||r=1;\
 	hack/verify-generated-defaulters.sh ||r=1;\
-	hack/verify-generated-listers.sh ||r=1;\
-	hack/verify-generated-informers.sh ||r=1;\
 	hack/verify-generated-openapi.sh ||r=1;\
 	hack/verify-generated-completions.sh ||r=1;\
-	hack/verify-generated-docs.sh ||r=1;\
 	hack/verify-cli-conventions.sh ||r=1;\
 	hack/verify-generated-json-codecs.sh ||r=1; \
 	hack/verify-generated-swagger-spec.sh ||r=1;\
@@ -119,17 +121,15 @@ verify-commits:
 # Example:
 #   make update
 update:
+	hack/update-generated-versions.sh
 	hack/update-generated-bindata.sh
 	hack/update-generated-conversions.sh
 	hack/update-generated-clientsets.sh
 	hack/update-generated-deep-copies.sh
 	hack/update-generated-defaulters.sh
-	hack/update-generated-listers.sh
-	hack/update-generated-informers.sh
 	hack/update-generated-openapi.sh
 	$(MAKE) build
 	hack/update-generated-completions.sh
-	hack/update-generated-docs.sh
 .PHONY: update
 
 # Update all generated artifacts for the API
@@ -241,16 +241,6 @@ SUITE ?= conformance
 test-extended:
 	test/extended/$(SUITE).sh
 .PHONY: test-extended
-
-# Run All-in-one OpenShift server.
-#
-# Example:
-#   make run
-run: export OS_OUTPUT_BINPATH=$(shell bash -c 'source hack/lib/init.sh; echo $${OS_OUTPUT_BINPATH}')
-run: export PLATFORM=$(shell bash -c 'source hack/lib/init.sh; os::build::host_platform')
-run: build
-	$(OS_OUTPUT_BINPATH)/$(PLATFORM)/openshift start
-.PHONY: run
 
 # Remove all build artifacts.
 #

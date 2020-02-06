@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package transport provides a round tripper capable of caching HTTP responses.
 package discovery
 
 import (
@@ -22,10 +21,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/golang/glog"
 	"github.com/gregjones/httpcache"
 	"github.com/gregjones/httpcache/diskcache"
 	"github.com/peterbourgon/diskv"
+	"k8s.io/klog"
 )
 
 type cacheRoundTripper struct {
@@ -59,7 +58,7 @@ func (rt *cacheRoundTripper) CancelRequest(req *http.Request) {
 	if cr, ok := rt.rt.Transport.(canceler); ok {
 		cr.CancelRequest(req)
 	} else {
-		glog.Errorf("CancelRequest not implemented by %T", rt.rt.Transport)
+		klog.Errorf("CancelRequest not implemented by %T", rt.rt.Transport)
 	}
 }
 

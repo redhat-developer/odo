@@ -2,9 +2,12 @@ package dockercredentials
 
 import (
 	"net/url"
+	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	"github.com/docker/distribution/registry/client/auth"
 
@@ -17,11 +20,31 @@ var (
 	emptyKeyring = &credentialprovider.BasicDockerKeyring{}
 )
 
+// NewLocal creates a new credential store that uses the default
+// local configuration to find a valid authentication for registry
+// targets.
 func NewLocal() auth.CredentialStore {
+	keyring := &credentialprovider.BasicDockerKeyring{}
+	keyring.Add(defaultClientDockerConfig())
 	return &keyringCredentialStore{
-		DockerKeyring:     credentialprovider.NewDockerKeyring(),
+		DockerKeyring:     keyring,
 		RefreshTokenStore: registryclient.NewRefreshTokenStore(),
 	}
+}
+
+// NewFromFile creates a new credential store for the provided Docker config.json
+// authentication file.
+func NewFromFile(path string) (auth.CredentialStore, error) {
+	cfg, err := credentialprovider.ReadSpecificDockerConfigJsonFile(path)
+	if err != nil {
+		return nil, err
+	}
+	keyring := &credentialprovider.BasicDockerKeyring{}
+	keyring.Add(cfg)
+	return &keyringCredentialStore{
+		DockerKeyring:     keyring,
+		RefreshTokenStore: registryclient.NewRefreshTokenStore(),
+	}, nil
 }
 
 type keyringCredentialStore struct {
@@ -62,12 +85,12 @@ func BasicFromKeyring(keyring credentialprovider.DockerKeyring, target *url.URL)
 	if !found || len(configs) == 0 {
 		// do a special case check for docker.io to match historical lookups when we respond to a challenge
 		if value == "auth.docker.io/token" {
-			glog.V(5).Infof("Being asked for %s (%s), trying %s for legacy behavior", target, value, "index.docker.io/v1")
+			klog.V(5).Infof("Being asked for %s (%s), trying %s for legacy behavior", target, value, "index.docker.io/v1")
 			return BasicFromKeyring(keyring, &url.URL{Host: "index.docker.io", Path: "/v1"})
 		}
 		// docker 1.9 saves 'docker.io' in config in f23, see https://bugzilla.redhat.com/show_bug.cgi?id=1309739
 		if value == "index.docker.io" {
-			glog.V(5).Infof("Being asked for %s (%s), trying %s for legacy behavior", target, value, "docker.io")
+			klog.V(5).Infof("Being asked for %s (%s), trying %s for legacy behavior", target, value, "docker.io")
 			return BasicFromKeyring(keyring, &url.URL{Host: "docker.io"})
 		}
 
@@ -75,14 +98,46 @@ func BasicFromKeyring(keyring credentialprovider.DockerKeyring, target *url.URL)
 		if (strings.HasSuffix(target.Host, ":443") && target.Scheme == "https") ||
 			(strings.HasSuffix(target.Host, ":80") && target.Scheme == "http") {
 			host := strings.SplitN(target.Host, ":", 2)[0]
-			glog.V(5).Infof("Being asked for %s (%s), trying %s without port", target, value, host)
+			klog.V(5).Infof("Being asked for %s (%s), trying %s without port", target, value, host)
 
 			return BasicFromKeyring(keyring, &url.URL{Scheme: target.Scheme, Host: host, Path: target.Path})
 		}
 
-		glog.V(5).Infof("Unable to find a secret to match %s (%s)", target, value)
+		klog.V(5).Infof("Unable to find a secret to match %s (%s)", target, value)
 		return "", ""
 	}
-	glog.V(5).Infof("Found secret to match %s (%s): %s", target, value, configs[0].ServerAddress)
+	klog.V(5).Infof("Found secret to match %s (%s): %s", target, value, configs[0].ServerAddress)
 	return configs[0].Username, configs[0].Password
+}
+
+// defaultClientDockerConfig returns the credentials that the docker command line client would
+// return.
+func defaultClientDockerConfig() credentialprovider.DockerConfig {
+	// support the modern config file $HOME/.docker/config.json
+	if cfg, err := credentialprovider.ReadDockerConfigJSONFile(defaultPathsForCredentials()); err == nil {
+		return cfg
+	}
+	// support the legacy config file $HOME/.dockercfg
+	if cfg, err := credentialprovider.ReadDockercfgFile(defaultPathsForLegacyCredentials()); err == nil {
+		return cfg
+	}
+	return credentialprovider.DockerConfig{}
+}
+
+// defaultPathsForCredentials returns the correct search directories for a docker config
+//  file
+func defaultPathsForCredentials() []string {
+	if runtime.GOOS == "windows" { // Windows
+		return []string{filepath.Join(os.Getenv("USERPROFILE"), ".docker")}
+	}
+	return []string{filepath.Join(os.Getenv("HOME"), ".docker")}
+}
+
+// defaultPathsForCredentials returns the correct search directories for a docker config
+//  file
+func defaultPathsForLegacyCredentials() []string {
+	if runtime.GOOS == "windows" { // Windows
+		return []string{os.Getenv("USERPROFILE")}
+	}
+	return []string{os.Getenv("HOME")}
 }

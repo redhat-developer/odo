@@ -3,9 +3,6 @@ package etcd
 import (
 	"testing"
 
-	imageapi "github.com/openshift/origin/pkg/image/apis/image"
-	"github.com/openshift/origin/pkg/image/apis/image/validation/fake"
-	admfake "github.com/openshift/origin/pkg/image/apiserver/admission/fake"
 	authorizationapi "k8s.io/api/authorization/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,9 +16,12 @@ import (
 	"k8s.io/kubernetes/pkg/api/legacyscheme"
 	kapihelper "k8s.io/kubernetes/pkg/apis/core/helper"
 
+	imageapi "github.com/openshift/origin/pkg/image/apis/image"
+	"github.com/openshift/origin/pkg/image/apis/image/validation/fake"
+	admfake "github.com/openshift/origin/pkg/image/apiserver/admission/fake"
+	"github.com/openshift/origin/pkg/image/apiserver/registryhostname"
 	// install all APIs
 	_ "github.com/openshift/origin/pkg/api/install"
-	"github.com/openshift/origin/pkg/image/apiserver/registryhostname"
 )
 
 const (
@@ -55,7 +55,7 @@ func newStorage(t *testing.T) (*REST, *StatusREST, *InternalREST, *etcdtesting.E
 	etcdStorage.Codec = legacyscheme.Codecs.LegacyCodec(schema.GroupVersion{Group: "image.openshift.io", Version: "v1"})
 	imagestreamRESTOptions := generic.RESTOptions{StorageConfig: etcdStorage, Decorator: generic.UndecoratedStorage, DeleteCollectionWorkers: 1, ResourcePrefix: "imagestreams"}
 	registry := registryhostname.TestingRegistryHostnameRetriever(noDefaultRegistry, "", "")
-	imageStorage, _, statusStorage, internalStorage, err := NewREST(
+	imageStorage, _, statusStorage, internalStorage, err := NewRESTWithLimitVerifier(
 		imagestreamRESTOptions,
 		registry,
 		&fakeSubjectAccessReviewRegistry{},
@@ -79,7 +79,7 @@ func validImageStream() *imageapi.ImageStream {
 
 func create(t *testing.T, storage *REST, obj *imageapi.ImageStream) *imageapi.ImageStream {
 	ctx := apirequest.WithUser(apirequest.NewDefaultContext(), &fakeUser{})
-	newObj, err := storage.Create(ctx, obj, rest.ValidateAllObjectFunc, false)
+	newObj, err := storage.Create(ctx, obj, rest.ValidateAllObjectFunc, &metav1.CreateOptions{})
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}

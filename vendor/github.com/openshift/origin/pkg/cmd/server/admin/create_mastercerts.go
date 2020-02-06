@@ -8,15 +8,15 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/util/cert"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
+	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 
 	"github.com/openshift/library-go/pkg/crypto"
 	"github.com/openshift/origin/pkg/util/parallel"
@@ -101,9 +101,8 @@ func NewCreateMasterCertsOptions(streams genericclioptions.IOStreams) *CreateMas
 func NewCommandCreateMasterCerts(commandName string, fullName string, streams genericclioptions.IOStreams) *cobra.Command {
 	o := NewCreateMasterCertsOptions(streams)
 	cmd := &cobra.Command{
-		Use:   commandName,
-		Short: "Create certificates and keys for a master",
-		Long:  fmt.Sprintf(masterCertLong, fullName),
+		Use:  commandName,
+		Long: fmt.Sprintf(masterCertLong, fullName),
 		Run: func(cmd *cobra.Command, args []string) {
 			kcmdutil.CheckErr(o.Validate(args))
 			kcmdutil.CheckErr(o.CreateMasterCerts())
@@ -177,7 +176,7 @@ func (o CreateMasterCertsOptions) Validate(args []string) error {
 }
 
 func (o CreateMasterCertsOptions) CreateMasterCerts() error {
-	glog.V(4).Infof("Creating all certs with: %#v", o)
+	klog.V(4).Infof("Creating all certs with: %#v", o)
 
 	getSignerCertOptions, err := o.createNewSigner(CAFilePrefix)
 	if err != nil {

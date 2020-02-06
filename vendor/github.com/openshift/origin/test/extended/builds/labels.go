@@ -2,6 +2,7 @@ package builds
 
 import (
 	"fmt"
+	"path/filepath"
 
 	g "github.com/onsi/ginkgo"
 	o "github.com/onsi/gomega"
@@ -10,7 +11,7 @@ import (
 	exutil "github.com/openshift/origin/test/extended/util"
 )
 
-var _ = g.Describe("[Feature:Builds][Slow][Smoke] result image should have proper labels set", func() {
+var _ = g.Describe("[Feature:Builds] result image should have proper labels set", func() {
 	defer g.GinkgoRecover()
 	var (
 		imageStreamFixture = exutil.FixturePath("..", "integration", "testdata", "test-image-stream.json")
@@ -22,27 +23,19 @@ var _ = g.Describe("[Feature:Builds][Slow][Smoke] result image should have prope
 	g.Context("", func() {
 
 		g.BeforeEach(func() {
-			exutil.DumpDockerInfo()
-		})
-
-		g.JustBeforeEach(func() {
-			g.By("waiting for default service account")
-			err := exutil.WaitForServiceAccount(oc.KubeClient().Core().ServiceAccounts(oc.Namespace()), "default")
-			o.Expect(err).NotTo(o.HaveOccurred())
-			g.By("waiting for builder service account")
-			err = exutil.WaitForServiceAccount(oc.KubeClient().Core().ServiceAccounts(oc.Namespace()), "builder")
-			o.Expect(err).NotTo(o.HaveOccurred())
+			exutil.PreTestDump()
 		})
 
 		g.AfterEach(func() {
 			if g.CurrentGinkgoTestDescription().Failed {
 				exutil.DumpPodStates(oc)
+				exutil.DumpConfigMapStates(oc)
 				exutil.DumpPodLogsStartingWith("", oc)
 			}
 		})
 
 		g.Describe("S2I build from a template", func() {
-			g.It(fmt.Sprintf("should create a image from %q template with proper Docker labels", stiBuildFixture), func() {
+			g.It(fmt.Sprintf("should create a image from %q template with proper Docker labels", filepath.Base(stiBuildFixture)), func() {
 
 				g.By(fmt.Sprintf("calling oc create -f %q", imageStreamFixture))
 				err := oc.Run("create").Args("-f", imageStreamFixture).Execute()
@@ -70,7 +63,7 @@ var _ = g.Describe("[Feature:Builds][Slow][Smoke] result image should have prope
 		})
 
 		g.Describe("Docker build from a template", func() {
-			g.It(fmt.Sprintf("should create a image from %q template with proper Docker labels", dockerBuildFixture), func() {
+			g.It(fmt.Sprintf("should create a image from %q template with proper Docker labels", filepath.Base(dockerBuildFixture)), func() {
 
 				g.By(fmt.Sprintf("calling oc create -f %q", imageStreamFixture))
 				err := oc.Run("create").Args("-f", imageStreamFixture).Execute()
@@ -109,7 +102,6 @@ func ExpectOpenShiftLabels(labels map[string]string) error {
 		"io.openshift.build.commit.ref",
 		"io.openshift.build.commit.message",
 		"io.openshift.build.source-location",
-		"io.openshift.build.source-context-dir",
 		"user-specified-label",
 	}
 

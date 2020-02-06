@@ -10,13 +10,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	kapierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	kclientcmd "k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
 	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
+	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 
 	projectv1 "github.com/openshift/api/project/v1"
 	projectv1client "github.com/openshift/client-go/project/clientset/versioned/typed/project/v1"
@@ -115,13 +115,13 @@ func (o *ProjectOptions) Complete(f genericclioptions.RESTClientGetter, args []s
 
 		// if the argument for o.ProjectName passed by the user is a context name,
 		// prevent local context-switching from failing due to an unreachable
-		// server or an unfetchable RESTConfig.
+		// server or an unfetchable KubeControlPlaneRESTConfig.
 		o.Config.CurrentContext = o.ProjectName
 		if err := kclientcmd.ModifyConfig(o.PathOptions, o.Config, true); err != nil {
 			return err
 		}
 
-		// since we failed to retrieve RESTConfig for the current server,
+		// since we failed to retrieve KubeControlPlaneRESTConfig for the current server,
 		// fetch local OpenShift client config
 		o.RESTConfig, err = f.ToRESTConfig()
 		if err != nil {

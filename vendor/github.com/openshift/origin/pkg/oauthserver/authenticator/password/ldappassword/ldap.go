@@ -1,16 +1,16 @@
 package ldappassword
 
 import (
+	"context"
 	"fmt"
 	"runtime/debug"
 
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apiserver/pkg/authentication/authenticator"
-	"k8s.io/apiserver/pkg/authentication/user"
 
-	"github.com/golang/glog"
 	"gopkg.in/ldap.v2"
+	"k8s.io/klog"
 
 	authapi "github.com/openshift/origin/pkg/oauthserver/api"
 	"github.com/openshift/origin/pkg/oauthserver/authenticator/identitymapper"
@@ -55,7 +55,7 @@ func New(providerName string, options Options, mapper authapi.UserIdentityMapper
 }
 
 // AuthenticatePassword validates the given username and password against an LDAP server
-func (a *Authenticator) AuthenticatePassword(username, password string) (user.Info, bool, error) {
+func (a *Authenticator) AuthenticatePassword(ctx context.Context, username, password string) (*authenticator.Response, bool, error) {
 	identity, ok, err := a.getIdentity(username, password)
 	if err != nil {
 		return nil, false, err
@@ -64,7 +64,7 @@ func (a *Authenticator) AuthenticatePassword(username, password string) (user.In
 		return nil, false, nil
 	}
 
-	return identitymapper.UserFor(a.mapper, identity)
+	return identitymapper.ResponseFor(a.mapper, identity)
 }
 
 // getIdentity looks up a username in an LDAP server, and attempts to bind to the user's DN using the provided password
@@ -111,15 +111,15 @@ func (a *Authenticator) getIdentity(username, password string) (authapi.UserIden
 		a.options.URL.BaseDN,     // base dn
 		int(a.options.URL.Scope), // scope
 		ldap.NeverDerefAliases,   // deref
-		2,            // size limit, we want to know if this is not unique, but don't want the entire tree
-		0,            // no client-specified time limit, determined by LDAP server. TODO: make configurable?
-		false,        // not types only
-		filter,       // filter
-		attrs.List(), // attributes to retrieve
-		nil,          // controls
+		2,                        // size limit, we want to know if this is not unique, but don't want the entire tree
+		0,                        // no client-specified time limit, determined by LDAP server. TODO: make configurable?
+		false,                    // not types only
+		filter,                   // filter
+		attrs.List(),             // attributes to retrieve
+		nil,                      // controls
 	)
 
-	glog.V(4).Infof("searching for %s", filter)
+	klog.V(4).Infof("searching for %s", filter)
 	results, err := l.Search(searchRequest)
 	if err != nil {
 		return nil, false, err
@@ -127,7 +127,7 @@ func (a *Authenticator) getIdentity(username, password string) (authapi.UserIden
 
 	if len(results.Entries) == 0 {
 		// 0 results means a missing username, not an error
-		glog.V(4).Infof("no entries matching %s", filter)
+		klog.V(4).Infof("no entries matching %s", filter)
 		return nil, false, nil
 	}
 	if len(results.Entries) > 1 {
@@ -136,11 +136,11 @@ func (a *Authenticator) getIdentity(username, password string) (authapi.UserIden
 	}
 
 	entry := results.Entries[0]
-	glog.V(4).Infof("found dn=%q for %s", entry.DN, filter)
+	klog.V(4).Infof("found dn=%q for %s", entry.DN, filter)
 
 	// Bind with given username and password to attempt to authenticate
 	if err := l.Bind(entry.DN, password); err != nil {
-		glog.V(4).Infof("error binding password for %q: %v", entry.DN, err)
+		klog.V(4).Infof("error binding password for %q: %v", entry.DN, err)
 		if err, ok := err.(*ldap.Error); ok {
 			switch err.ResultCode {
 			case ldap.LDAPResultInappropriateAuthentication:

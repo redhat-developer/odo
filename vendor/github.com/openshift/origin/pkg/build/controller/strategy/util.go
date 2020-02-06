@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 	"k8s.io/kubernetes/pkg/apis/policy"
 
 	corev1 "k8s.io/api/core/v1"
@@ -26,11 +27,13 @@ const (
 	dockerSocketPath      = "/var/run/docker.sock"
 	sourceSecretMountPath = "/var/run/secrets/openshift.io/source"
 
-	DockerPushSecretMountPath         = "/var/run/secrets/openshift.io/push"
-	DockerPullSecretMountPath         = "/var/run/secrets/openshift.io/pull"
-	ConfigMapBuildSourceBaseMountPath = "/var/run/configs/openshift.io/build"
-	SecretBuildSourceBaseMountPath    = "/var/run/secrets/openshift.io/build"
-	SourceImagePullSecretMountPath    = "/var/run/secrets/openshift.io/source-image"
+	DockerPushSecretMountPath            = "/var/run/secrets/openshift.io/push"
+	DockerPullSecretMountPath            = "/var/run/secrets/openshift.io/pull"
+	ConfigMapBuildSourceBaseMountPath    = "/var/run/configs/openshift.io/build"
+	ConfigMapBuildSystemConfigsMountPath = "/var/run/configs/openshift.io/build-system"
+	ConfigMapCertsMountPath              = "/var/run/configs/openshift.io/certs"
+	SecretBuildSourceBaseMountPath       = "/var/run/secrets/openshift.io/build"
+	SourceImagePullSecretMountPath       = "/var/run/secrets/openshift.io/source-image"
 
 	// ExtractImageContentContainer is the name of the container that will
 	// pull down input images and extract their content for input to the build.
@@ -54,6 +57,9 @@ var (
 	// This is used in the ownerRef of builder pods.
 	BuildControllerRefKind = buildv1.GroupVersion.WithKind("Build")
 )
+
+// hostPortRegex matches the final "..[port]" in ConfigMap keys
+var hostPortRegex = regexp.MustCompile("\\.\\.(\\d+)$")
 
 // FatalError is an error which can't be retried.
 type FatalError struct {
@@ -99,29 +105,6 @@ func setupDockerSocket(pod *corev1.Pod) {
 			break
 		}
 	}
-}
-
-// setupCrioSocket configures the pod to support the host's Crio socket
-func setupCrioSocket(pod *corev1.Pod) {
-	crioSocketVolume := corev1.Volume{
-		Name: "crio-socket",
-		VolumeSource: corev1.VolumeSource{
-			HostPath: &corev1.HostPathVolumeSource{
-				Path: "/var/run/crio/crio.sock",
-			},
-		},
-	}
-
-	crioSocketVolumeMount := corev1.VolumeMount{
-		Name:      "crio-socket",
-		MountPath: "/var/run/crio/crio.sock",
-	}
-
-	pod.Spec.Volumes = append(pod.Spec.Volumes,
-		crioSocketVolume)
-	pod.Spec.Containers[0].VolumeMounts =
-		append(pod.Spec.Containers[0].VolumeMounts,
-			crioSocketVolumeMount)
 }
 
 // mountConfigMapVolume is a helper method responsible for actual mounting configMap
@@ -191,7 +174,7 @@ func makeVolume(volumeName, refName string, mode int32, fsType policy.FSType) co
 			DefaultMode: &mode,
 		}
 	default:
-		glog.V(3).Infof("File system %s is not supported for volumes. Using empty directory instead.", fsType)
+		klog.V(3).Infof("File system %s is not supported for volumes. Using empty directory instead.", fsType)
 		vol.VolumeSource.EmptyDir = &corev1.EmptyDirVolumeSource{}
 	}
 
@@ -206,7 +189,7 @@ func setupDockerSecrets(pod *corev1.Pod, container *corev1.Container, pushSecret
 		container.Env = append(container.Env, []corev1.EnvVar{
 			{Name: "PUSH_DOCKERCFG_PATH", Value: DockerPushSecretMountPath},
 		}...)
-		glog.V(3).Infof("%s will be used for docker push in %s", DockerPushSecretMountPath, pod.Name)
+		klog.V(3).Infof("%s will be used for docker push in %s", DockerPushSecretMountPath, pod.Name)
 	}
 
 	if pullSecret != nil {
@@ -214,7 +197,7 @@ func setupDockerSecrets(pod *corev1.Pod, container *corev1.Container, pushSecret
 		container.Env = append(container.Env, []corev1.EnvVar{
 			{Name: "PULL_DOCKERCFG_PATH", Value: DockerPullSecretMountPath},
 		}...)
-		glog.V(3).Infof("%s will be used for docker pull in %s", DockerPullSecretMountPath, pod.Name)
+		klog.V(3).Infof("%s will be used for docker pull in %s", DockerPullSecretMountPath, pod.Name)
 	}
 
 	for i, imageSource := range imageSources {
@@ -226,7 +209,7 @@ func setupDockerSecrets(pod *corev1.Pod, container *corev1.Container, pushSecret
 		container.Env = append(container.Env, []corev1.EnvVar{
 			{Name: fmt.Sprintf("%s%d", "PULL_SOURCE_DOCKERCFG_PATH_", i), Value: mountPath},
 		}...)
-		glog.V(3).Infof("%s will be used for docker pull in %s", mountPath, pod.Name)
+		klog.V(3).Infof("%s will be used for docker pull in %s", mountPath, pod.Name)
 	}
 }
 
@@ -238,7 +221,7 @@ func setupSourceSecrets(pod *corev1.Pod, container *corev1.Container, sourceSecr
 	}
 
 	mountSecretVolume(pod, container, sourceSecret.Name, sourceSecretMountPath, "source")
-	glog.V(3).Infof("Installed source secrets in %s, in Pod %s/%s", sourceSecretMountPath, pod.Namespace, pod.Name)
+	klog.V(3).Infof("Installed source secrets in %s, in Pod %s/%s", sourceSecretMountPath, pod.Namespace, pod.Name)
 	container.Env = append(container.Env, []corev1.EnvVar{
 		{Name: "SOURCE_SECRET_PATH", Value: sourceSecretMountPath},
 	}...)
@@ -249,7 +232,7 @@ func setupSourceSecrets(pod *corev1.Pod, container *corev1.Container, sourceSecr
 func setupInputConfigMaps(pod *corev1.Pod, container *corev1.Container, configs []buildv1.ConfigMapBuildSource) {
 	for _, c := range configs {
 		mountConfigMapVolume(pod, container, c.ConfigMap.Name, filepath.Join(ConfigMapBuildSourceBaseMountPath, c.ConfigMap.Name), "build")
-		glog.V(3).Infof("%s will be used as a build config in %s", c.ConfigMap.Name, ConfigMapBuildSourceBaseMountPath)
+		klog.V(3).Infof("%s will be used as a build config in %s", c.ConfigMap.Name, ConfigMapBuildSourceBaseMountPath)
 	}
 }
 
@@ -258,7 +241,7 @@ func setupInputConfigMaps(pod *corev1.Pod, container *corev1.Container, configs 
 func setupInputSecrets(pod *corev1.Pod, container *corev1.Container, secrets []buildv1.SecretBuildSource) {
 	for _, s := range secrets {
 		mountSecretVolume(pod, container, s.Secret.Name, filepath.Join(SecretBuildSourceBaseMountPath, s.Secret.Name), "build")
-		glog.V(3).Infof("%s will be used as a build secret in %s", s.Secret.Name, SecretBuildSourceBaseMountPath)
+		klog.V(3).Infof("%s will be used as a build secret in %s", s.Secret.Name, SecretBuildSourceBaseMountPath)
 	}
 }
 
@@ -311,7 +294,7 @@ func addOutputEnvVars(buildOutput *corev1.ObjectReference, output *[]corev1.EnvV
 func setupAdditionalSecrets(pod *corev1.Pod, container *corev1.Container, secrets []buildv1.SecretSpec) {
 	for _, secretSpec := range secrets {
 		mountSecretVolume(pod, container, secretSpec.SecretSource.Name, secretSpec.MountPath, "secret")
-		glog.V(3).Infof("Installed additional secret in %s, in Pod %s/%s", secretSpec.MountPath, pod.Namespace, pod.Name)
+		klog.V(3).Infof("Installed additional secret in %s, in Pod %s/%s", secretSpec.MountPath, pod.Namespace, pod.Name)
 	}
 }
 
@@ -354,4 +337,254 @@ func copyEnvVarSlice(in []corev1.EnvVar) []corev1.EnvVar {
 	out := make([]corev1.EnvVar, len(in))
 	copy(out, in)
 	return out
+}
+
+// setupContainersConfigs sets up volumes for mounting the node's configuration which governs which
+// registries it knows about, whether or not they should be accessed with TLS, and signature policies.
+func setupContainersConfigs(build *buildv1.Build, pod *corev1.Pod) {
+	const volumeName = "build-system-configs"
+	const configDir = ConfigMapBuildSystemConfigsMountPath
+	exists := false
+	for _, v := range pod.Spec.Volumes {
+		if v.Name == volumeName {
+			exists = true
+			break
+		}
+	}
+	if !exists {
+		cmSource := &corev1.ConfigMapVolumeSource{
+			LocalObjectReference: corev1.LocalObjectReference{
+				Name: buildapihelpers.GetBuildSystemConfigMapName(build),
+			},
+		}
+		pod.Spec.Volumes = append(pod.Spec.Volumes,
+			corev1.Volume{
+				Name: volumeName,
+				VolumeSource: corev1.VolumeSource{
+					ConfigMap: cmSource,
+				},
+			},
+		)
+		containers := make([]corev1.Container, len(pod.Spec.Containers))
+		for i, c := range pod.Spec.Containers {
+			containers[i] = updateConfigsForContainer(c, volumeName, configDir)
+		}
+		pod.Spec.Containers = containers
+		if len(pod.Spec.InitContainers) > 0 {
+			initContainers := make([]corev1.Container, len(pod.Spec.InitContainers))
+			for i, c := range pod.Spec.InitContainers {
+				initContainers[i] = updateConfigsForContainer(c, volumeName, configDir)
+			}
+			pod.Spec.InitContainers = initContainers
+		}
+	}
+}
+
+func updateConfigsForContainer(c corev1.Container, volumeName string, configDir string) corev1.Container {
+	c.VolumeMounts = append(c.VolumeMounts,
+		corev1.VolumeMount{
+			Name:      volumeName,
+			MountPath: configDir,
+			ReadOnly:  true,
+		},
+	)
+	// registries.conf is the primary registry config file mounted in by OpenShift
+	registriesConfPath := filepath.Join(configDir, buildutil.RegistryConfKey)
+
+	// policy.json sets image policies for buildah (allowed repositories for image pull/push, etc.)
+	signaturePolicyPath := filepath.Join(configDir, buildutil.SignaturePolicyKey)
+
+	// registries.d is a directory used by buildah to support multiple registries.conf files
+	// currently not created/managed by OpenShift
+	registriesDirPath := filepath.Join(configDir, "registries.d")
+
+	// storage.conf configures storage policies for buildah
+	// currently not created/managed by OpenShift
+	storageConfPath := filepath.Join(configDir, "storage.conf")
+
+	// Setup environment variables for buildah
+	// If these paths do not exist in the build container, buildah falls back to sane defaults.
+	c.Env = append(c.Env, corev1.EnvVar{Name: "BUILD_REGISTRIES_CONF_PATH", Value: registriesConfPath})
+	c.Env = append(c.Env, corev1.EnvVar{Name: "BUILD_REGISTRIES_DIR_PATH", Value: registriesDirPath})
+	c.Env = append(c.Env, corev1.EnvVar{Name: "BUILD_SIGNATURE_POLICY_PATH", Value: signaturePolicyPath})
+	c.Env = append(c.Env, corev1.EnvVar{Name: "BUILD_STORAGE_CONF_PATH", Value: storageConfPath})
+	return c
+}
+
+// setupContainersStorage creates a volume that we'll use for holding images and working
+// root filesystems for building images.
+func setupContainersStorage(pod *corev1.Pod, container *corev1.Container) {
+	exists := false
+	for _, v := range pod.Spec.Volumes {
+		if v.Name == "container-storage-root" {
+			exists = true
+			break
+		}
+	}
+	if !exists {
+		pod.Spec.Volumes = append(pod.Spec.Volumes,
+			corev1.Volume{
+				Name: "container-storage-root",
+				VolumeSource: corev1.VolumeSource{
+					EmptyDir: &corev1.EmptyDirVolumeSource{},
+				},
+			},
+		)
+	}
+	container.VolumeMounts = append(container.VolumeMounts,
+		corev1.VolumeMount{
+			Name:      "container-storage-root",
+			MountPath: "/var/lib/containers/storage",
+		},
+	)
+	container.Env = append(container.Env, corev1.EnvVar{Name: "BUILD_STORAGE_DRIVER", Value: "overlay"})
+	container.Env = append(container.Env, corev1.EnvVar{Name: "BUILD_ISOLATION", Value: "chroot"})
+}
+
+// setupContainersNodeStorage borrows the appropriate storage directories from the node so
+// that we can share layers that we're using with the node
+func setupContainersNodeStorage(pod *corev1.Pod, container *corev1.Container) {
+	exists := false
+	for _, v := range pod.Spec.Volumes {
+		if v.Name == "node-storage-root" {
+			exists = true
+			break
+		}
+	}
+	if !exists {
+		pod.Spec.Volumes = append(pod.Spec.Volumes,
+			// TODO: run unprivileged https://github.com/openshift/origin/issues/662
+			corev1.Volume{
+				Name: "node-storage-root",
+				VolumeSource: corev1.VolumeSource{
+					HostPath: &corev1.HostPathVolumeSource{
+						Path: "/var/lib/containers/storage",
+					},
+				},
+			},
+		)
+	}
+	container.VolumeMounts = append(container.VolumeMounts,
+		// TODO: run unprivileged https://github.com/openshift/origin/issues/662
+		corev1.VolumeMount{
+			Name:      "node-storage-root",
+			MountPath: "/var/lib/containers/storage",
+		},
+	)
+	container.Env = append(container.Env, corev1.EnvVar{Name: "BUILD_STORAGE_DRIVER", Value: "overlay"})
+	container.Env = append(container.Env, corev1.EnvVar{Name: "BUILD_ISOLATION", Value: "chroot"})
+}
+
+func addVolumeMountToContainers(conts []corev1.Container, mount corev1.VolumeMount) []corev1.Container {
+	containers := make([]corev1.Container, len(conts))
+	for i, c := range conts {
+		c.VolumeMounts = append(c.VolumeMounts, mount)
+		containers[i] = c
+	}
+	return containers
+}
+
+// setupBuildCAs mounts certificate authorities for the build from a predetermined ConfigMap.
+func setupBuildCAs(build *buildv1.Build, pod *corev1.Pod, additionalCAs map[string]string, internalRegistryHost string) {
+	casExist := false
+	for _, v := range pod.Spec.Volumes {
+		if v.Name == "build-ca-bundles" {
+			casExist = true
+			break
+		}
+	}
+
+	if !casExist {
+		// Mount the service signing CA key for the internal registry.
+		// This will be injected into the referenced ConfigMap via the openshift/service-ca-operator, and block
+		// creation of the build pod until it exists.
+		//
+		// See https://github.com/openshift/service-serving-cert-signer
+		cmSource := &corev1.ConfigMapVolumeSource{
+			LocalObjectReference: corev1.LocalObjectReference{
+				Name: buildapihelpers.GetBuildCAConfigMapName(build),
+			},
+			Items: []corev1.KeyToPath{
+				{
+					Key:  buildutil.ServiceCAKey,
+					Path: fmt.Sprintf("certs.d/%s/ca.crt", internalRegistryHost),
+				},
+			},
+		}
+
+		// Mount any additional trusted certificates via their keys.
+		// Each key should be the hostname that the CA certificate applies to
+		// This will be mounted to certs.d/<domain>/ca.crt so that it can be copied
+		// to /etc/docker/certs.d
+		for key := range additionalCAs {
+			// Replace "..[port]" with ":[port]" due to limiations with ConfigMap key names
+			mountDir := hostPortRegex.ReplaceAllString(key, ":$1")
+			cmSource.Items = append(cmSource.Items, corev1.KeyToPath{
+				Key:  key,
+				Path: fmt.Sprintf("certs.d/%s/ca.crt", mountDir),
+			})
+		}
+		pod.Spec.Volumes = append(pod.Spec.Volumes,
+			corev1.Volume{
+				Name: "build-ca-bundles",
+				VolumeSource: corev1.VolumeSource{
+					ConfigMap: cmSource,
+				},
+			},
+		)
+		mount := corev1.VolumeMount{
+			Name:      "build-ca-bundles",
+			MountPath: ConfigMapCertsMountPath,
+		}
+		pod.Spec.Containers = addVolumeMountToContainers(pod.Spec.Containers, mount)
+		pod.Spec.InitContainers = addVolumeMountToContainers(pod.Spec.InitContainers, mount)
+	}
+}
+
+// setupBlobCache configures a shared volume for caching image blobs across the build pod containers.
+func setupBlobCache(pod *corev1.Pod) {
+	const volume = "build-blob-cache"
+	const mountPath = buildutil.BuildBlobsContentCache
+	exists := false
+	for _, v := range pod.Spec.Volumes {
+		if v.Name == volume {
+			exists = true
+			break
+		}
+	}
+	if !exists {
+		pod.Spec.Volumes = append(pod.Spec.Volumes, corev1.Volume{
+			Name: volume,
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{},
+			},
+		})
+		containers := make([]corev1.Container, len(pod.Spec.Containers))
+		for i, c := range pod.Spec.Containers {
+			c.VolumeMounts = append(c.VolumeMounts, corev1.VolumeMount{
+				Name:      volume,
+				MountPath: mountPath,
+			})
+			c.Env = append(c.Env, corev1.EnvVar{
+				Name:  "BUILD_BLOBCACHE_DIR",
+				Value: mountPath,
+			})
+			containers[i] = c
+		}
+		pod.Spec.Containers = containers
+
+		initContainers := make([]corev1.Container, len(pod.Spec.InitContainers))
+		for i, ic := range pod.Spec.InitContainers {
+			ic.VolumeMounts = append(ic.VolumeMounts, corev1.VolumeMount{
+				Name:      volume,
+				MountPath: mountPath,
+			})
+			ic.Env = append(ic.Env, corev1.EnvVar{
+				Name:  "BUILD_BLOBCACHE_DIR",
+				Value: mountPath,
+			})
+			initContainers[i] = ic
+		}
+		pod.Spec.InitContainers = initContainers
+	}
 }

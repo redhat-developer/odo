@@ -20,10 +20,7 @@ var _ = g.Describe("[image_ecosystem][mongodb] openshift mongodb image", func() 
 
 	g.Context("", func() {
 		g.BeforeEach(func() {
-			exutil.DumpDockerInfo()
-			g.By("waiting for default service account")
-			err := exutil.WaitForServiceAccount(oc.KubeClient().Core().ServiceAccounts(oc.Namespace()), "default")
-			o.Expect(err).NotTo(o.HaveOccurred())
+			exutil.PreTestDump()
 		})
 
 		g.AfterEach(func() {
@@ -36,7 +33,7 @@ var _ = g.Describe("[image_ecosystem][mongodb] openshift mongodb image", func() 
 		g.Describe("creating from a template", func() {
 			g.It(fmt.Sprintf("should instantiate the template"), func() {
 
-				exutil.CheckOpenShiftNamespaceImageStreams(oc)
+				exutil.WaitForOpenShiftNamespaceImageStreams(oc)
 				g.By("creating a new app")
 				o.Expect(oc.Run("new-app").Args("-f", templatePath).Execute()).Should(o.Succeed())
 
@@ -46,7 +43,7 @@ var _ = g.Describe("[image_ecosystem][mongodb] openshift mongodb image", func() 
 
 				g.By("expecting the mongodb pod is running")
 				podNames, err := exutil.WaitForPods(
-					oc.KubeClient().Core().Pods(oc.Namespace()),
+					oc.KubeClient().CoreV1().Pods(oc.Namespace()),
 					exutil.ParseLabelsOrDie("name=mongodb"),
 					exutil.CheckPodIsRunning,
 					1,

@@ -5,9 +5,10 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apiserver/pkg/registry/rest"
@@ -45,7 +46,7 @@ func (s *REST) NamespaceScoped() bool {
 }
 
 // Create processes a Template and creates a new list of objects
-func (s *REST) Create(ctx context.Context, obj runtime.Object, _ rest.ValidateObjectFunc, _ bool) (runtime.Object, error) {
+func (s *REST) Create(ctx context.Context, obj runtime.Object, _ rest.ValidateObjectFunc, options *metav1.CreateOptions) (runtime.Object, error) {
 	tpl, ok := obj.(*templateapi.Template)
 	if !ok {
 		return nil, errors.NewBadRequest("not a template")
@@ -59,7 +60,7 @@ func (s *REST) Create(ctx context.Context, obj runtime.Object, _ rest.ValidateOb
 	}
 	processor := templateprocessing.NewProcessor(generators)
 	if errs := processor.Process(tpl); len(errs) > 0 {
-		glog.V(1).Infof(errs.ToAggregate().Error())
+		klog.V(1).Infof(errs.ToAggregate().Error())
 		return nil, errors.NewInvalid(template.Kind("Template"), tpl.Name, errs)
 	}
 

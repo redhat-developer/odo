@@ -3,7 +3,7 @@ package workqueue
 import (
 	"sync"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 )
 
 type Work interface {
@@ -36,9 +36,12 @@ func New(workers int, stopCh <-chan struct{}) Interface {
 }
 
 func (q *workQueue) run(workers int, stopCh <-chan struct{}) {
+	if workers <= 0 {
+		workers = 1
+	}
 	for i := 0; i < workers; i++ {
 		go func(i int) {
-			defer glog.V(4).Infof("worker %d stopping", i)
+			defer klog.V(4).Infof("worker %d stopping", i)
 			for {
 				select {
 				case work, ok := <-q.ch:
@@ -54,6 +57,7 @@ func (q *workQueue) run(workers int, stopCh <-chan struct{}) {
 		}(i)
 	}
 	<-stopCh
+	klog.V(4).Infof("work queue exiting")
 }
 
 func (q *workQueue) Batch(fn func(Work)) {
@@ -69,9 +73,13 @@ func (q *workQueue) Try(fn func(Try)) error {
 	w := &worker{
 		wg:  &sync.WaitGroup{},
 		ch:  q.ch,
-		err: make(chan error),
+		err: make(chan error, 1),
 	}
-	fn(w)
+	w.wg.Add(1)
+	go func() {
+		fn(w)
+		w.wg.Done()
+	}()
 	return w.FirstError()
 }
 
@@ -129,9 +137,10 @@ func (w *worker) Try(fn func() error) {
 			err := fn()
 			if w.err == nil {
 				// TODO: have the work queue accumulate errors and release them with Done()
-				glog.Errorf("Worker error: %v", err)
+				klog.Errorf("Worker error: %v", err)
 				return
 			}
+			klog.V(4).Infof("about to send work queue error: %v", err)
 			w.err <- err
 		},
 	}

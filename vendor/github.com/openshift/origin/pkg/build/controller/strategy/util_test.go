@@ -1,6 +1,8 @@
 package strategy
 
 import (
+	"fmt"
+	"path/filepath"
 	"reflect"
 	"testing"
 	"unsafe"
@@ -8,6 +10,16 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	buildv1 "github.com/openshift/api/build/v1"
+	"github.com/openshift/origin/pkg/build/util"
+)
+
+const (
+	dummyCA = `
+	---- BEGIN CERTIFICATE ----
+	VEhJUyBJUyBBIEJBRCBDRVJUSUZJQ0FURQo=
+	---- END CERTIFICATE ----
+	`
+	testInternalRegistryHost = "registry.svc.localhost:5000"
 )
 
 func TestSetupDockerSocketHostSocket(t *testing.T) {
@@ -171,7 +183,6 @@ func checkAliasing(t *testing.T, pod *corev1.Pod) {
 	}
 }
 
-// TODO: Add tests for mounting secrets and configMaps
 func TestMountConfigsAndSecrets(t *testing.T) {
 	pod := emptyPod()
 	configs := []buildv1.ConfigMapBuildSource{
@@ -235,6 +246,210 @@ func TestMountConfigsAndSecrets(t *testing.T) {
 		}
 		if !seenMount[vol] {
 			t.Errorf("volumemount %s was not seen", vol)
+		}
+	}
+}
+
+func checkContainersMounts(containers []corev1.Container, t *testing.T) {
+	for _, c := range containers {
+		foundCA := false
+		for _, v := range c.VolumeMounts {
+			if v.Name == "build-ca-bundles" {
+				foundCA = true
+				if v.MountPath != ConfigMapCertsMountPath {
+					t.Errorf("ca bundle %s was not mounted to %s", v.Name, ConfigMapCertsMountPath)
+				}
+				if v.ReadOnly {
+					t.Errorf("ca bundle volume %s should be writeable, but was mounted read-only.", v.Name)
+				}
+				break
+			}
+		}
+		if !foundCA {
+			t.Errorf("build CA bundle was not mounted into container %s", c.Name)
+		}
+	}
+}
+
+func TestSetupBuildCAs(t *testing.T) {
+	tests := []struct {
+		name           string
+		certs          map[string]string
+		expectedMounts map[string]string
+	}{
+		{
+			name: "no certs",
+		},
+		{
+			name: "additional certs",
+			certs: map[string]string{
+				"first":                        dummyCA,
+				"second.domain.com":            dummyCA,
+				"internal.svc.localhost..5000": dummyCA,
+				"myregistry.foo...2345":        dummyCA,
+			},
+			expectedMounts: map[string]string{
+				"first":                        "first",
+				"second.domain.com":            "second.domain.com",
+				"internal.svc.localhost..5000": "internal.svc.localhost:5000",
+				"myregistry.foo...2345":        "myregistry.foo.:2345",
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			build := mockDockerBuild()
+			podSpec := &corev1.Pod{
+				Spec: corev1.PodSpec{
+					InitContainers: []corev1.Container{
+						{
+							Name:  "initfirst",
+							Image: "busybox",
+						},
+						{
+							Name:  "initsecond",
+							Image: "busybox",
+						},
+					},
+					Containers: []corev1.Container{
+						{
+							Name:  "first",
+							Image: "busybox",
+						},
+						{
+							Name:  "second",
+							Image: "busybox",
+						},
+					},
+				},
+			}
+			setupBuildCAs(build, podSpec, tc.certs, testInternalRegistryHost)
+			if len(podSpec.Spec.Volumes) != 1 {
+				t.Fatalf("expected pod to have 1 volume, got %d", len(podSpec.Spec.Volumes))
+			}
+			volume := podSpec.Spec.Volumes[0]
+			if volume.Name != "build-ca-bundles" {
+				t.Errorf("build volume should have name %s, got %s", "build-ca-bundles", volume.Name)
+			}
+			if volume.ConfigMap == nil {
+				t.Fatal("expected volume to use a ConfigMap volume source")
+			}
+			// The service-ca.crt is always mounted
+			expectedItems := len(tc.certs) + 1
+			if len(volume.ConfigMap.Items) != expectedItems {
+				t.Errorf("expected volume to have %d items, got %d", expectedItems, len(volume.ConfigMap.Items))
+
+			}
+
+			resultItems := make(map[string]corev1.KeyToPath)
+			for _, result := range volume.ConfigMap.Items {
+				resultItems[result.Key] = result
+			}
+
+			for expected := range tc.certs {
+				foundItem, ok := resultItems[expected]
+				if !ok {
+					t.Errorf("could not find %s as a referenced key in volume source", expected)
+					continue
+				}
+
+				expectedPath := fmt.Sprintf("certs.d/%s/ca.crt", tc.expectedMounts[expected])
+				if foundItem.Path != expectedPath {
+					t.Errorf("expected mount path to be %s; got %s", expectedPath, foundItem.Path)
+				}
+			}
+
+			foundItem, ok := resultItems[util.ServiceCAKey]
+			if !ok {
+				t.Errorf("could not find %s as a referenced key in volume source", util.ServiceCAKey)
+			}
+			expectedPath := fmt.Sprintf("certs.d/%s/ca.crt", testInternalRegistryHost)
+			if foundItem.Path != expectedPath {
+				t.Errorf("expected %s to be mounted at %s, got %s", util.ServiceCAKey, expectedPath, foundItem.Path)
+			}
+
+			checkContainersMounts(podSpec.Spec.Containers, t)
+			checkContainersMounts(podSpec.Spec.InitContainers, t)
+		})
+	}
+}
+
+func TestSetupBuildSystem(t *testing.T) {
+	const registryMount = "build-system-configs"
+	build := mockDockerBuild()
+	podSpec := &corev1.Pod{
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{
+					Name:  "first",
+					Image: "busybox",
+				},
+				{
+					Name:  "second",
+					Image: "busybox",
+				},
+			},
+			InitContainers: []corev1.Container{
+				{
+					Name:  "init",
+					Image: "busybox",
+				},
+			},
+		},
+	}
+	setupContainersConfigs(build, podSpec)
+	if len(podSpec.Spec.Volumes) != 1 {
+		t.Fatalf("expected pod to have 1 volume, got %d", len(podSpec.Spec.Volumes))
+	}
+	volume := podSpec.Spec.Volumes[0]
+	if volume.Name != registryMount {
+		t.Errorf("build volume should have name %s, got %s", registryMount, volume.Name)
+	}
+	if volume.ConfigMap == nil {
+		t.Fatal("expected volume to use a ConfigMap volume source")
+	}
+	containers := podSpec.Spec.Containers
+	containers = append(containers, podSpec.Spec.InitContainers...)
+	for _, c := range containers {
+		foundMount := false
+		for _, v := range c.VolumeMounts {
+			if v.Name == registryMount {
+				foundMount = true
+				if v.MountPath != ConfigMapBuildSystemConfigsMountPath {
+					t.Errorf("registry config %s was not mounted to %s in container %s", v.Name, ConfigMapBuildSystemConfigsMountPath, c.Name)
+				}
+				if !v.ReadOnly {
+					t.Errorf("registry config volume %s in container %s should be read-only, but was mounted writeable.", v.Name, c.Name)
+				}
+				break
+			}
+		}
+		if !foundMount {
+			t.Errorf("registry config was not mounted into container %s", c.Name)
+		}
+		foundRegistriesConf := false
+		foundSignaturePolicy := false
+		for _, env := range c.Env {
+			if env.Name == "BUILD_REGISTRIES_CONF_PATH" {
+				foundRegistriesConf = true
+				expectedMountPath := filepath.Join(ConfigMapBuildSystemConfigsMountPath, util.RegistryConfKey)
+				if env.Value != expectedMountPath {
+					t.Errorf("expected BUILD_REGISTRIES_CONF_PATH %s, got %s", expectedMountPath, env.Value)
+				}
+			}
+			if env.Name == "BUILD_SIGNATURE_POLICY_PATH" {
+				foundSignaturePolicy = true
+				expectedMountMapth := filepath.Join(ConfigMapBuildSystemConfigsMountPath, util.SignaturePolicyKey)
+				if env.Value != expectedMountMapth {
+					t.Errorf("expected BUILD_SIGNATURE_POLICY_PATH %s, got %s", expectedMountMapth, env.Value)
+				}
+			}
+		}
+		if !foundRegistriesConf {
+			t.Errorf("env var %s was not present in container %s", "BUILD_REGISTRIES_CONF_PATH", c.Name)
+		}
+		if !foundSignaturePolicy {
+			t.Errorf("env var %s was not present in container %s", "BUILD_SIGNATURE_POLICY_PATH", c.Name)
 		}
 	}
 }

@@ -21,48 +21,40 @@ import (
 	"net/http"
 
 	"github.com/kubernetes-incubator/service-catalog/pkg/api"
+	"k8s.io/apiserver/pkg/server/healthz"
 	genericapiserverstorage "k8s.io/apiserver/pkg/server/storage"
 	"k8s.io/apiserver/pkg/storage/etcd3/preflight"
 
-	"github.com/golang/glog"
 	"github.com/kubernetes-incubator/service-catalog/pkg/apiserver"
 	"github.com/kubernetes-incubator/service-catalog/pkg/apiserver/options"
-	registryserver "github.com/kubernetes-incubator/service-catalog/pkg/registry/servicecatalog/server"
+	"k8s.io/klog"
 )
 
 // RunServer runs an API server with configuration according to opts
 func RunServer(opts *ServiceCatalogServerOptions, stopCh <-chan struct{}) error {
-	storageType, err := opts.StorageType()
-	if err != nil {
-		return err
-	}
 	if stopCh == nil {
 		/* the caller of RunServer should generate the stop channel
 		if there is a need to stop the API server */
 		stopCh = make(chan struct{})
 	}
 
-	err = opts.Validate()
+	err := opts.Validate()
 	if nil != err {
 		return err
 	}
 
-	if storageType == registryserver.StorageTypeEtcd {
-		return runEtcdServer(opts, stopCh)
-	}
-	// This should never happen, catch for potential bugs
-	panic("Unexpected storage type: " + storageType)
+	return runEtcdServer(opts, stopCh)
 }
 
 func runEtcdServer(opts *ServiceCatalogServerOptions, stopCh <-chan struct{}) error {
 	etcdOpts := opts.EtcdOptions
-	glog.V(4).Infoln("Preparing to run API server")
+	klog.V(4).Infoln("Preparing to run API server")
 	genericConfig, scConfig, err := buildGenericConfig(opts)
 	if err != nil {
 		return err
 	}
 
-	glog.V(4).Infoln("Creating storage factory")
+	klog.V(4).Infoln("Creating storage factory")
 
 	// The API server stores objects using a particular API version for each
 	// group, regardless of API version of the object when it was created.
@@ -89,7 +81,7 @@ func runEtcdServer(opts *ServiceCatalogServerOptions, stopCh <-chan struct{}) er
 		nil, /* resource config overrides */
 	)
 	if err != nil {
-		glog.Errorf("error creating storage factory: %v", err)
+		klog.Errorf("error creating storage factory: %v", err)
 		return err
 	}
 
@@ -100,7 +92,7 @@ func runEtcdServer(opts *ServiceCatalogServerOptions, stopCh <-chan struct{}) er
 	completed := config.Complete()
 
 	// make the server
-	glog.V(4).Infoln("Completing API server configuration")
+	klog.V(4).Infoln("Completing API server configuration")
 	server, err := completed.NewServer(stopCh)
 	if err != nil {
 		return fmt.Errorf("error completing API server configuration: %v", err)
@@ -111,12 +103,18 @@ func runEtcdServer(opts *ServiceCatalogServerOptions, stopCh <-chan struct{}) er
 	etcdChecker := checkEtcdConnectable{
 		ServerList: etcdOpts.StorageConfig.ServerList,
 	}
-	// PingHealtz is installed by the default config, so it will
-	// run in addition the checkers being installed here.
-	server.GenericAPIServer.AddHealthzChecks(etcdChecker)
+
+	// The liveness probe is registered at /healthz for us by the k8s genericapiserver and indicates
+	// if the container is responding to http requests (we don't need to register it, it is done
+	// for us).
+
+	// The readiness probe will be registered at /healthz/ready and indicates if traffic should
+	// be routed to this container.  Add the etcdChecker as we only want to handle requests
+	// if we have connectivity with etcd
+	healthz.InstallPathHandler(server.GenericAPIServer.Handler.NonGoRestfulMux, "/healthz/ready", etcdChecker)
 
 	// do we need to do any post api installation setup? We should have set up the api already?
-	glog.Infoln("Running the API server")
+	klog.Infoln("Running the API server")
 	server.PrepareRun().Run(stopCh)
 
 	return nil
@@ -133,16 +131,16 @@ func (c checkEtcdConnectable) Name() string {
 }
 
 func (c checkEtcdConnectable) Check(_ *http.Request) error {
-	glog.Info("etcd checker called")
+	klog.Info("etcd checker called")
 	serverReachable, err := preflight.EtcdConnection{ServerList: c.ServerList}.CheckEtcdServers()
 
 	if err != nil {
-		glog.Errorf("etcd checker failed with err: %v", err)
+		klog.Errorf("etcd checker failed with err: %v", err)
 		return err
 	}
 	if !serverReachable {
 		msg := "etcd failed to reach any server"
-		glog.Error(msg)
+		klog.Error(msg)
 		return fmt.Errorf(msg)
 	}
 	return nil

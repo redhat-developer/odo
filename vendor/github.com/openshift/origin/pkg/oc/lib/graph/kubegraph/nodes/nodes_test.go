@@ -3,6 +3,7 @@ package nodes
 import (
 	"testing"
 
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 
 	osgraph "github.com/openshift/origin/pkg/oc/lib/graph/genericgraph"
@@ -86,5 +87,57 @@ func TestReplicationControllerSpecNode(t *testing.T) {
 	if !g.EdgeKinds(ptSpecEdges[0]).Has(osgraph.ContainsEdgeKind) {
 		t.Errorf("expected %v, got %v", osgraph.ContainsEdgeKind, ptSpecEdges[0])
 	}
+}
 
+func TestJobSpecNode(t *testing.T) {
+	g := osgraph.New()
+
+	job := &batchv1.Job{}
+	job.Namespace = "ns"
+	job.Name = "foo"
+	job.Spec.Template = corev1.PodTemplateSpec{}
+
+	jobNode := EnsureJobNode(g, job)
+
+	if len(g.Nodes()) != 4 {
+		t.Errorf("expected 4 nodes, got %v", g.Nodes())
+	}
+
+	if len(g.Edges()) != 3 {
+		t.Errorf("expected 3 edge, got %v", g.Edges())
+	}
+
+	jobEdges := g.OutboundEdges(jobNode)
+	if len(jobEdges) != 1 {
+		t.Fatalf("expected 1 edge, got %v for \n%v", jobEdges, g)
+	}
+	if !g.EdgeKinds(jobEdges[0]).Has(osgraph.ContainsEdgeKind) {
+		t.Errorf("expected %v, got %v", osgraph.ContainsEdgeKind, jobEdges[0])
+	}
+
+	uncastJobSpec := jobEdges[0].To()
+	jobSpec, ok := uncastJobSpec.(*JobSpecNode)
+	if !ok {
+		t.Fatalf("expected jobSpec, got %v", uncastJobSpec)
+	}
+	jobSpecEdges := g.OutboundEdges(jobSpec)
+	if len(jobSpecEdges) != 1 {
+		t.Fatalf("expected 1 edge, got %v", jobSpecEdges)
+	}
+	if !g.EdgeKinds(jobSpecEdges[0]).Has(osgraph.ContainsEdgeKind) {
+		t.Errorf("expected %v, got %v", osgraph.ContainsEdgeKind, jobSpecEdges[0])
+	}
+
+	uncastPTSpec := jobSpecEdges[0].To()
+	ptSpec, ok := uncastPTSpec.(*PodTemplateSpecNode)
+	if !ok {
+		t.Fatalf("expected ptspec, got %v", uncastPTSpec)
+	}
+	ptSpecEdges := g.OutboundEdges(ptSpec)
+	if len(ptSpecEdges) != 1 {
+		t.Fatalf("expected 1 edge, got %v", ptSpecEdges)
+	}
+	if !g.EdgeKinds(ptSpecEdges[0]).Has(osgraph.ContainsEdgeKind) {
+		t.Errorf("expected %v, got %v", osgraph.ContainsEdgeKind, ptSpecEdges[0])
+	}
 }

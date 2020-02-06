@@ -3,6 +3,7 @@ package util
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -15,27 +16,35 @@ import (
 
 	g "github.com/onsi/ginkgo"
 	o "github.com/onsi/gomega"
-	"k8s.io/apimachinery/pkg/api/meta"
 
 	authorizationapiv1 "k8s.io/api/authorization/v1"
 	kapiv1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/apiserver/pkg/storage/names"
 	"k8s.io/client-go/discovery/cached"
 	kclientset "k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
+	watchtools "k8s.io/client-go/tools/watch"
 	kinternalclientset "k8s.io/kubernetes/pkg/client/clientset_generated/internalclientset"
 	e2e "k8s.io/kubernetes/test/e2e/framework"
 
 	appsv1client "github.com/openshift/client-go/apps/clientset/versioned"
 	buildv1client "github.com/openshift/client-go/build/clientset/versioned"
+	configv1client "github.com/openshift/client-go/config/clientset/versioned"
 	imagev1client "github.com/openshift/client-go/image/clientset/versioned"
+	operatorv1client "github.com/openshift/client-go/operator/clientset/versioned"
 	templateclient "github.com/openshift/client-go/template/clientset/versioned"
 	_ "github.com/openshift/origin/pkg/api/install"
 	authorizationclientset "github.com/openshift/origin/pkg/authorization/generated/internalclientset"
 	configapi "github.com/openshift/origin/pkg/cmd/server/apis/config"
+	"github.com/openshift/origin/pkg/cmd/server/bootstrappolicy"
 	imageclientset "github.com/openshift/origin/pkg/image/generated/internalclientset"
 	"github.com/openshift/origin/pkg/oc/lib/kubeconfig"
 	projectapi "github.com/openshift/origin/pkg/project/apis/project"
@@ -90,26 +99,21 @@ func NewCLI(project, adminConfigPath string) *CLI {
 	return client
 }
 
-// ProwGCPSetup makes sure certain required env vars are available in the case
-// that extended tests are invoked directly via calls to ginkgo/extended.test
-func ProwGCPSetup(oc *CLI) {
-	tn := os.Getenv("OS_TEST_NAMESPACE")
-	ad := os.Getenv("ARTIFACT_DIR")
-	btd := os.Getenv("BASETMPDIR")
-	e2e.Logf("OS_TEST_NAMESPACE env setting %s, ARTIFACT_DIR env setting %s BASETMPDIR %s", tn, ad, btd)
-	if len(strings.TrimSpace(tn)) == 0 {
-		os.Setenv("OS_TEST_NAMESPACE", oc.Namespace())
-		e2e.Logf("OS_TEST_NAMESPACE env setting now %s", os.Getenv("OS_TEST_NAMESPACE"))
-	}
-	if len(strings.TrimSpace(ad)) == 0 {
-		os.Setenv("ARTIFACT_DIR", "/tmp/artifacts")
-		e2e.Logf("ARTIFACT_DIR env setting now %s", os.Getenv("ARTIFACT_DIR"))
-	}
-	if len(strings.TrimSpace(btd)) == 0 {
-		os.Setenv("BASETMPDIR", "/tmp/shared")
-		e2e.Logf("BASETMPDIR setting is now %s", os.Getenv("BASETMPDIR"))
-	}
+// NewCLIWithoutNamespace initialize the upstream E2E framework without adding a
+// namespace. You may call SetupProject() to create one.
+func NewCLIWithoutNamespace(project string) *CLI {
+	client := &CLI{}
 
+	// must be registered before the e2e framework aftereach
+	g.AfterEach(client.TeardownProject)
+
+	client.kubeFramework = e2e.NewDefaultFramework(project)
+	client.kubeFramework.SkipNamespaceCreation = true
+	client.username = "admin"
+	client.execPath = "oc"
+	client.adminConfigPath = KubeConfigPath()
+
+	return client
 }
 
 // KubeFramework returns Kubernetes framework which contains helper functions
@@ -184,7 +188,6 @@ func (c *CLI) SetupProject() {
 	newNamespace := names.SimpleNameGenerator.GenerateName(fmt.Sprintf("e2e-test-%s-", c.kubeFramework.BaseName))
 	c.SetNamespace(newNamespace).ChangeUser(fmt.Sprintf("%s-user", newNamespace))
 	e2e.Logf("The user is now %q", c.Username())
-	ProwGCPSetup(c)
 
 	e2e.Logf("Creating project %q", newNamespace)
 	_, err := c.ProjectClient().Project().ProjectRequests().Create(&projectapi.ProjectRequest{
@@ -205,6 +208,61 @@ func (c *CLI) SetupProject() {
 		},
 	})
 	o.Expect(err).NotTo(o.HaveOccurred())
+
+	// Wait for SAs and default dockercfg Secret to be injected
+	// TODO: it would be nice to have a shared list but it is defined in at least 3 place,
+	// TODO: some of them not even using the constants
+	DefaultServiceAccounts := []string{
+		bootstrappolicy.DefaultServiceAccountName,
+		bootstrappolicy.DeployerServiceAccountName,
+		bootstrappolicy.BuilderServiceAccountName,
+	}
+	for _, sa := range DefaultServiceAccounts {
+		e2e.Logf("Waiting for ServiceAccount %q to be provisioned...", sa)
+		err = WaitForServiceAccount(c.KubeClient().CoreV1().ServiceAccounts(newNamespace), sa)
+		o.Expect(err).NotTo(o.HaveOccurred())
+	}
+
+	var ctx context.Context
+	cancel := func() {}
+	defer cancel()
+	// Wait for default role bindings for those SAs
+	defaultRoleBindings := bootstrappolicy.GetBootstrapServiceAccountProjectRoleBindings(newNamespace)
+	for _, rb := range defaultRoleBindings {
+		o.Expect(rb.Namespace).To(o.BeEquivalentTo(newNamespace))
+
+		e2e.Logf("Waiting for RoleBinding %q to be provisioned...", rb)
+
+		ctx, cancel = watchtools.ContextWithOptionalTimeout(context.Background(), 3*time.Minute)
+
+		fieldSelector := fields.OneTermEqualSelector("metadata.name", rb.Name).String()
+		lw := &cache.ListWatch{
+			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+				options.FieldSelector = fieldSelector
+				return c.KubeClient().RbacV1().RoleBindings(rb.Namespace).List(options)
+			},
+			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+				options.FieldSelector = fieldSelector
+				return c.KubeClient().RbacV1().RoleBindings(rb.Namespace).Watch(options)
+			},
+		}
+
+		_, err := watchtools.UntilWithSync(ctx, lw, &rb, nil, func(event watch.Event) (b bool, e error) {
+			switch t := event.Type; t {
+			case watch.Added, watch.Modified:
+				return true, nil
+
+			case watch.Deleted:
+				return true, fmt.Errorf("object has been deleted")
+
+			default:
+				return true, fmt.Errorf("internal error: unexpected event %#v", e)
+			}
+		})
+		o.Expect(err).NotTo(o.HaveOccurred())
+	}
+
+	e2e.Logf("Project %q has been fully provisioned.", newNamespace)
 }
 
 // SetupProject creates a new project and assign a random user to the project.
@@ -235,7 +293,7 @@ func (c *CLI) CreateProject() string {
 
 // TeardownProject removes projects created by this test.
 func (c *CLI) TeardownProject() {
-	if g.CurrentGinkgoTestDescription().Failed && e2e.TestContext.DumpLogsOnFailure {
+	if len(c.Namespace()) > 0 && g.CurrentGinkgoTestDescription().Failed && e2e.TestContext.DumpLogsOnFailure {
 		e2e.DumpAllNamespaceInfo(c.kubeFramework.ClientSet, c.Namespace())
 	}
 
@@ -364,8 +422,24 @@ func (c *CLI) AdminBuildClient() buildv1client.Interface {
 	return client
 }
 
+func (c *CLI) AdminConfigClient() configv1client.Interface {
+	client, err := configv1client.NewForConfig(c.AdminConfig())
+	if err != nil {
+		FatalErr(err)
+	}
+	return client
+}
+
 func (c *CLI) AdminImageClient() imagev1client.Interface {
 	client, err := imagev1client.NewForConfig(c.AdminConfig())
+	if err != nil {
+		FatalErr(err)
+	}
+	return client
+}
+
+func (c *CLI) AdminOperatorClient() operatorv1client.Interface {
+	client, err := operatorv1client.NewForConfig(c.AdminConfig())
 	if err != nil {
 		FatalErr(err)
 	}

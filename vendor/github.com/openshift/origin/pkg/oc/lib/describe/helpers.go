@@ -19,6 +19,7 @@ import (
 	api "k8s.io/kubernetes/pkg/apis/core"
 
 	buildv1 "github.com/openshift/api/build/v1"
+	"github.com/openshift/library-go/pkg/image/reference"
 	authorizationapi "github.com/openshift/origin/pkg/authorization/apis/authorization"
 	buildmanualclient "github.com/openshift/origin/pkg/build/client/v1"
 	imageapi "github.com/openshift/origin/pkg/image/apis/image"
@@ -74,7 +75,7 @@ func formatString(out *tabwriter.Writer, label string, v interface{}) {
 
 	fmt.Fprintf(out, fmt.Sprintf("%s:", label))
 	for _, lval := range labelVals {
-		fmt.Fprintf(out, fmt.Sprintf("\t%s\n", lval))
+		fmt.Fprintln(out, fmt.Sprintf("\t%s", lval))
 	}
 }
 
@@ -415,7 +416,7 @@ func formatImageStreamTags(out *tabwriter.Writer, stream *imageapi.ImageStream) 
 				fmt.Fprintf(out, "    %s\n", event.DockerImageReference)
 			}
 
-			ref, err := imageapi.ParseDockerImageReference(event.DockerImageReference)
+			ref, err := reference.Parse(event.DockerImageReference)
 			id := event.Image
 			if len(id) > 0 && err == nil && ref.ID != id {
 				fmt.Fprintf(out, "      %s ago\t%s\n", units.HumanDuration(d), id)

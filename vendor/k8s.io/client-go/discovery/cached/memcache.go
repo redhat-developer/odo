@@ -44,6 +44,7 @@ type memCacheClient struct {
 	cacheValid             bool
 }
 
+// Error Constants
 var (
 	ErrCacheEmpty    = errors.New("the cache has not been filled yet")
 	ErrCacheNotFound = errors.New("not found")
@@ -66,21 +67,14 @@ func (d *memCacheClient) ServerResourcesForGroupVersion(groupVersion string) (*m
 }
 
 // ServerResources returns the supported resources for all groups and versions.
+// Deprecated: use ServerGroupsAndResources instead.
 func (d *memCacheClient) ServerResources() ([]*metav1.APIResourceList, error) {
-	apiGroups, err := d.ServerGroups()
-	if err != nil {
-		return nil, err
-	}
-	groupVersions := metav1.ExtractGroupVersions(apiGroups)
-	result := []*metav1.APIResourceList{}
-	for _, groupVersion := range groupVersions {
-		resources, err := d.ServerResourcesForGroupVersion(groupVersion)
-		if err != nil {
-			return nil, err
-		}
-		result = append(result, resources)
-	}
-	return result, nil
+	return discovery.ServerResources(d)
+}
+
+// ServerGroupsAndResources returns the groups and supported resources for all groups and versions.
+func (d *memCacheClient) ServerGroupsAndResources() ([]*metav1.APIGroup, []*metav1.APIResourceList, error) {
+	return discovery.ServerGroupsAndResources(d)
 }
 
 func (d *memCacheClient) ServerGroups() (*metav1.APIGroupList, error) {

@@ -2,6 +2,7 @@ package builds
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	g "github.com/onsi/ginkgo"
@@ -28,42 +29,34 @@ var _ = g.Describe("[Feature:Builds][Slow] incremental s2i build", func() {
 
 	g.Context("", func() {
 		g.BeforeEach(func() {
-			exutil.DumpDockerInfo()
-		})
-
-		g.JustBeforeEach(func() {
-			g.By("waiting for default service account")
-			err := exutil.WaitForServiceAccount(oc.KubeClient().Core().ServiceAccounts(oc.Namespace()), "default")
-			o.Expect(err).NotTo(o.HaveOccurred())
-			g.By("waiting for builder service account")
-			err = exutil.WaitForServiceAccount(oc.KubeClient().Core().ServiceAccounts(oc.Namespace()), "builder")
-			o.Expect(err).NotTo(o.HaveOccurred())
+			exutil.PreTestDump()
 		})
 
 		g.AfterEach(func() {
 			if g.CurrentGinkgoTestDescription().Failed {
 				exutil.DumpPodStates(oc)
+				exutil.DumpConfigMapStates(oc)
 				exutil.DumpPodLogsStartingWith("", oc)
 			}
 		})
 
 		g.Describe("Building from a template", func() {
-			g.It(fmt.Sprintf("should create a build from %q template and run it", templateFixture), func() {
+			g.It(fmt.Sprintf("should create a build from %q template and run it", filepath.Base(templateFixture)), func() {
 
 				g.By(fmt.Sprintf("calling oc new-app -f %q", templateFixture))
 				err := oc.Run("new-app").Args("-f", templateFixture).Execute()
 				o.Expect(err).NotTo(o.HaveOccurred())
 
 				g.By("starting a test build")
-				br, _ := exutil.StartBuildAndWait(oc, "initial-build")
+				br, _ := exutil.StartBuildAndWait(oc, "incremental-build")
 				br.AssertSuccess()
 
 				g.By("starting a test build using the image produced by the last build")
-				br2, _ := exutil.StartBuildAndWait(oc, "internal-build")
+				br2, _ := exutil.StartBuildAndWait(oc, "incremental-build")
 				br2.AssertSuccess()
 
 				g.By("getting the Docker image reference from ImageStream")
-				imageName, err := exutil.GetDockerImageReference(oc.ImageClient().Image().ImageStreams(oc.Namespace()), "internal-image", "latest")
+				imageName, err := exutil.GetDockerImageReference(oc.ImageClient().Image().ImageStreams(oc.Namespace()), "incremental-image", "latest")
 				o.Expect(err).NotTo(o.HaveOccurred())
 
 				g.By("instantiating a pod and service with the new image")

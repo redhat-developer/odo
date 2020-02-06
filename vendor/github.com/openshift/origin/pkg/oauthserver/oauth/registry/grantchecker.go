@@ -13,7 +13,7 @@ import (
 	"github.com/openshift/origin/pkg/oauth/scope"
 	"github.com/openshift/origin/pkg/oauthserver/api"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 )
 
 var errEmptyUID = stderrors.New("user from request has empty UID and thus cannot perform a grant flow")
@@ -34,6 +34,7 @@ func (c *ClientAuthorizationGrantChecker) HasAuthorizedClient(user kuser.Info, g
 		return false, errEmptyUID
 	}
 
+	// this is not as easy to break apart in the face of the bootstrap user
 	id := user.GetName() + ":" + grant.Client.GetId()
 	var authorization *oauth.OAuthClientAuthorization
 
@@ -71,7 +72,7 @@ func (c *ClientAuthorizationGrantChecker) getClientAuthorization(name string, us
 	// check to see if we have a stale authorization
 	// user.GetUID() and authorization.UserUID are both guaranteed to be non-empty
 	if user.GetUID() != authorization.UserUID {
-		glog.Infof("%#v does not match stored client authorization %#v, attempting to delete stale authorization", user, authorization)
+		klog.Infof("%#v does not match stored client authorization %#v, attempting to delete stale authorization", user, authorization)
 		if err := c.client.Delete(name, metav1.NewPreconditionDeleteOptions(string(authorization.UID))); err != nil && !errors.IsNotFound(err) {
 			// ignore not found since that could be caused by multiple grant flows occurring at once (the other flow deleted the authorization before we did)
 			// this could be a conflict error, which will cause this whole function to be retried

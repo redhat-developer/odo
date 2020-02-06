@@ -240,7 +240,7 @@ func TestInstantiateGenerateBuildError(t *testing.T) {
 		fakeSecrets = append(fakeSecrets, s)
 	}
 	generator := BuildGenerator{
-		Secrets:         fake.NewSimpleClientset(fakeSecrets...).Core(),
+		Secrets:         fake.NewSimpleClientset(fakeSecrets...).CoreV1(),
 		ServiceAccounts: mocks.MockBuilderServiceAccount(mocks.MockBuilderSecrets()),
 		Client: TestingClient{
 			GetBuildConfigFunc: func(ctx context.Context, name string, options *metav1.GetOptions) (*buildv1.BuildConfig, error) {
@@ -1027,7 +1027,7 @@ func TestGenerateBuildWithImageTagForSourceStrategyImageRepository(t *testing.T)
 	}
 	is := mocks.MockImageStream("", originalImage, map[string]string{tagName: newTag})
 	generator := BuildGenerator{
-		Secrets:         fake.NewSimpleClientset(fakeSecrets...).Core(),
+		Secrets:         fake.NewSimpleClientset(fakeSecrets...).CoreV1(),
 		ServiceAccounts: mocks.MockBuilderServiceAccount(mocks.MockBuilderSecrets()),
 		Client: TestingClient{
 			GetImageStreamFunc: func(ctx context.Context, name string, options *metav1.GetOptions) (*imagev1.ImageStream, error) {
@@ -1035,7 +1035,7 @@ func TestGenerateBuildWithImageTagForSourceStrategyImageRepository(t *testing.T)
 					ObjectMeta: metav1.ObjectMeta{Name: imageRepoName},
 					Status: imagev1.ImageStreamStatus{
 						DockerImageRepository: originalImage,
-						Tags: is.Status.Tags,
+						Tags:                  is.Status.Tags,
 					},
 				}, nil
 			},
@@ -1098,7 +1098,7 @@ func TestGenerateBuildWithImageTagForDockerStrategyImageRepository(t *testing.T)
 	}
 	is := mocks.MockImageStream("", originalImage, map[string]string{tagName: newTag})
 	generator := BuildGenerator{
-		Secrets:         fake.NewSimpleClientset(fakeSecrets...).Core(),
+		Secrets:         fake.NewSimpleClientset(fakeSecrets...).CoreV1(),
 		ServiceAccounts: mocks.MockBuilderServiceAccount(mocks.MockBuilderSecrets()),
 		Client: TestingClient{
 			GetImageStreamFunc: func(ctx context.Context, name string, options *metav1.GetOptions) (*imagev1.ImageStream, error) {
@@ -1106,7 +1106,7 @@ func TestGenerateBuildWithImageTagForDockerStrategyImageRepository(t *testing.T)
 					ObjectMeta: metav1.ObjectMeta{Name: imageRepoName},
 					Status: imagev1.ImageStreamStatus{
 						DockerImageRepository: originalImage,
-						Tags: is.Status.Tags,
+						Tags:                  is.Status.Tags,
 					},
 				}, nil
 			},
@@ -1168,7 +1168,7 @@ func TestGenerateBuildWithImageTagForCustomStrategyImageRepository(t *testing.T)
 	}
 	is := mocks.MockImageStream("", originalImage, map[string]string{tagName: newTag})
 	generator := BuildGenerator{
-		Secrets:         fake.NewSimpleClientset(fakeSecrets...).Core(),
+		Secrets:         fake.NewSimpleClientset(fakeSecrets...).CoreV1(),
 		ServiceAccounts: mocks.MockBuilderServiceAccount(mocks.MockBuilderSecrets()),
 		Client: TestingClient{
 			GetImageStreamFunc: func(ctx context.Context, name string, options *metav1.GetOptions) (*imagev1.ImageStream, error) {
@@ -1176,7 +1176,7 @@ func TestGenerateBuildWithImageTagForCustomStrategyImageRepository(t *testing.T)
 					ObjectMeta: metav1.ObjectMeta{Name: imageRepoName},
 					Status: imagev1.ImageStreamStatus{
 						DockerImageRepository: originalImage,
-						Tags: is.Status.Tags,
+						Tags:                  is.Status.Tags,
 					},
 				}, nil
 			},
@@ -1805,7 +1805,7 @@ func mockBuildGenerator(buildConfigFunc func(ctx context.Context, name string, o
 	}
 	b := buildv1.Build{}
 	return &BuildGenerator{
-		Secrets:         fake.NewSimpleClientset(fakeSecrets...).Core(),
+		Secrets:         fake.NewSimpleClientset(fakeSecrets...).CoreV1(),
 		ServiceAccounts: mocks.MockBuilderServiceAccount(mocks.MockBuilderSecrets()),
 		Client: TestingClient{
 			GetBuildConfigFunc:      getBuildConfigFunc(buildConfigFunc),

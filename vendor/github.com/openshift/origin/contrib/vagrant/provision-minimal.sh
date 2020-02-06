@@ -1,4 +1,10 @@
 #!/bin/bash
+
+# contrib/vagrant/provision-minimal.sh is referenced by the origin Vagrantfile,
+# which in turn is used by the source-to-image Jenkins jobs on ci.openshift.redhat.com
+#
+# TODO: Remove this once source-to-image uses ci-operator
+
 set -euo pipefail
 IFS=$'\n\t'
 

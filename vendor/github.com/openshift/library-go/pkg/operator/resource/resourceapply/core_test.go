@@ -9,9 +9,10 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/diff"
 	"k8s.io/client-go/kubernetes/fake"
 	clienttesting "k8s.io/client-go/testing"
+
+	"github.com/openshift/library-go/pkg/operator/events"
 )
 
 func TestApplyConfigMap(t *testing.T) {
@@ -45,7 +46,7 @@ func TestApplyConfigMap(t *testing.T) {
 				}
 				actual := actions[1].(clienttesting.CreateAction).GetObject().(*corev1.ConfigMap)
 				if !equality.Semantic.DeepEqual(expected, actual) {
-					t.Error(diff.ObjectDiff(expected, actual))
+					t.Error(JSONPatch(expected, actual))
 				}
 			},
 		},
@@ -97,7 +98,7 @@ func TestApplyConfigMap(t *testing.T) {
 				}
 				actual := actions[1].(clienttesting.UpdateAction).GetObject().(*corev1.ConfigMap)
 				if !equality.Semantic.DeepEqual(expected, actual) {
-					t.Error(diff.ObjectDiff(expected, actual))
+					t.Error(JSONPatch(expected, actual))
 				}
 			},
 		},
@@ -134,7 +135,7 @@ func TestApplyConfigMap(t *testing.T) {
 				}
 				actual := actions[1].(clienttesting.UpdateAction).GetObject().(*corev1.ConfigMap)
 				if !equality.Semantic.DeepEqual(expected, actual) {
-					t.Error(diff.ObjectDiff(expected, actual))
+					t.Error(JSONPatch(expected, actual))
 				}
 			},
 		},
@@ -143,7 +144,7 @@ func TestApplyConfigMap(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			client := fake.NewSimpleClientset(test.existing...)
-			_, actualModified, err := ApplyConfigMap(client.CoreV1(), test.input)
+			_, actualModified, err := ApplyConfigMap(client.CoreV1(), events.NewInMemoryRecorder("test"), test.input)
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -29,14 +29,10 @@ os_git_regex="$( escape_regex "${OS_GIT_VERSION%%-*}" )"
 kube_git_regex="$( escape_regex "${KUBE_GIT_VERSION%%-*}" )"
 etcd_version="$(echo "${ETCD_GIT_VERSION}" | sed -E "s/\-.*//g" | sed -E "s/v//")"
 etcd_git_regex="$( escape_regex "${etcd_version%%-*}" )"
-os::cmd::expect_success_and_text 'oc version' "oc ${os_git_regex}"
-os::cmd::expect_success_and_text 'oc version' "kubernetes ${kube_git_regex}"
-os::cmd::expect_success_and_text 'oc version' "features: Basic-Auth"
-os::cmd::expect_success_and_text 'openshift version' "openshift ${os_git_regex}"
+os::cmd::expect_success_and_text 'oc version' "Client Version: .*GitVersion:\"${os_git_regex}"
+os::cmd::expect_success_and_text 'oc version' "Server Version: .*GitVersion:\"${kube_git_regex}"
 os::cmd::expect_success_and_text "curl -k '${API_SCHEME}://${API_HOST}:${API_PORT}/version'" "${kube_git_regex}"
-os::cmd::expect_success_and_text "curl -k '${API_SCHEME}://${API_HOST}:${API_PORT}/version/openshift'" "${os_git_regex}"
-os::cmd::expect_success_and_not_text "curl -k '${API_SCHEME}://${API_HOST}:${API_PORT}/version'" "${OS_GIT_COMMIT}"
-os::cmd::expect_success_and_not_text "curl -k '${API_SCHEME}://${API_HOST}:${API_PORT}/version/openshift'" "${KUBE_GIT_COMMIT}"
+os::cmd::expect_success_and_text "curl -k '${API_SCHEME}://${API_HOST}:${API_PORT}/version'" "${OS_GIT_COMMIT}"
 
 # variants I know I have to worry about
 # 1. oc (kube and openshift resources)
@@ -58,7 +54,6 @@ echo "status help output: ok"
 os::test::junit::declare_suite_end
 
 os::test::junit::declare_suite_start "cmd/basicresources/explain"
-os::cmd::expect_failure_and_text 'oc types' 'Deployment Configuration'
 os::cmd::expect_failure_and_text 'oc get' 'oc api-resources'
 os::cmd::expect_success_and_text 'oc get all --loglevel=6' 'buildconfigs'
 os::cmd::expect_success_and_text 'oc explain pods' 'Pod is a collection of containers that can run on a host'
@@ -174,14 +169,11 @@ os::cmd::expect_success_and_text "oc set probe ${arg} --local -o yaml --liveness
 os::cmd::expect_success_and_text "oc set probe ${arg} --local -o yaml --liveness -- echo test" "\- test"
 os::cmd::expect_success_and_text "oc set probe ${arg} --local -o yaml --liveness --open-tcp=3306" "tcpSocket:"
 os::cmd::expect_success_and_text "oc set probe ${arg} --local -o yaml --liveness --open-tcp=3306" "port: 3306"
-os::cmd::expect_success_and_text "oc set probe ${arg} --local -o yaml --liveness --open-tcp=port" "port: port"
-os::cmd::expect_success_and_text "oc set probe ${arg} --local -o yaml --liveness --get-url=https://127.0.0.1:port/path" "port: port"
 os::cmd::expect_success_and_text "oc set probe ${arg} --local -o yaml --liveness --get-url=https://127.0.0.1:8080/path" "port: 8080"
-os::cmd::expect_success_and_text "oc set probe ${arg} --local -o yaml --liveness --get-url=https://127.0.0.1:port/path" "path: /path"
-os::cmd::expect_success_and_text "oc set probe ${arg} --local -o yaml --liveness --get-url=https://127.0.0.1:port/path" "scheme: HTTPS"
-os::cmd::expect_success_and_text "oc set probe ${arg} --local -o yaml --liveness --get-url=http://127.0.0.1:port/path" "scheme: HTTP"
-os::cmd::expect_success_and_text "oc set probe ${arg} --local -o yaml --liveness --get-url=https://127.0.0.1:port/path" "host: 127.0.0.1"
-os::cmd::expect_success_and_text "oc set probe ${arg} --local -o yaml --liveness --get-url=https://127.0.0.1:port/path" "port: port"
+os::cmd::expect_success_and_text "oc set probe ${arg} --local -o yaml --liveness --get-url=https://127.0.0.1:8080/path" "path: /path"
+os::cmd::expect_success_and_text "oc set probe ${arg} --local -o yaml --liveness --get-url=https://127.0.0.1:8080/path" "scheme: HTTPS"
+os::cmd::expect_success_and_text "oc set probe ${arg} --local -o yaml --liveness --get-url=http://127.0.0.1:8080/path" "scheme: HTTP"
+os::cmd::expect_success_and_text "oc set probe ${arg} --local -o yaml --liveness --get-url=https://127.0.0.1:8080/path" "host: 127.0.0.1"
 os::cmd::expect_success "oc create -f test/integration/testdata/test-deployment-config.yaml"
 os::cmd::expect_failure_and_text "oc set probe dc/test-deployment-config --liveness" "Required value: must specify a handler type"
 os::cmd::expect_success_and_text "oc set probe dc test-deployment-config --liveness --open-tcp=8080" "updated"
@@ -235,7 +227,7 @@ project=$(oc project -q)
 os::cmd::expect_success 'oc policy add-role-to-user view view-user'
 os::cmd::expect_success 'oc login -u view-user -p anything'
 os::cmd::try_until_success 'oc project ${project}'
-os::cmd::expect_failure_and_text "oc set env dc/test-deployment-config --list --resolve" "cannot get secrets in the namespace"
+os::cmd::expect_failure_and_text "oc set env dc/test-deployment-config --list --resolve" 'cannot get resource "secrets" in API group "" in the namespace'
 oc login -u system:admin
 # clean up
 os::cmd::expect_success "oc delete dc/test-deployment-config"
@@ -326,7 +318,7 @@ os::cmd::expect_success          "oc patch group patch-group -p 'users: [\"myuse
 os::cmd::expect_success_and_text 'oc get group patch-group -o yaml' 'myuser'
 os::cmd::expect_success          "oc patch group patch-group -p 'users: []' --loglevel=8"
 # applying the same patch twice results in exit code 0, and "not patched" text
-os::cmd::expect_success_and_text "oc patch group patch-group -p 'users: []'" "not patched"
+os::cmd::expect_success_and_text "oc patch group patch-group -p 'users: []'" "patched \(no change\)"
 # applying an invalid patch results in exit code 1 and an error
 os::cmd::expect_failure_and_text "oc patch group patch-group -p 'users: \"\"'" "cannot restore slice from string"
 os::cmd::expect_success_and_text 'oc get group patch-group -o yaml' 'users: \[\]'

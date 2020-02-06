@@ -52,8 +52,7 @@ os::test::junit::declare_suite_start "end-to-end/core"
 os::log::info "openshift version: `openshift version`"
 os::log::info "oc version:        `oc version`"
 
-# Ensure that the master service responds to DNS requests. At this point 'oc cluster up' has verified
-# that the service is up
+# Ensure that the master service responds to DNS requests.
 MASTER_SERVICE_IP="172.30.0.1"
 DNS_SERVICE_IP="172.30.0.2"
 # find the IP of the master service again by asking the IP of the master service, to verify port 53 tcp/udp is routed by the service
@@ -76,9 +75,9 @@ os::cmd::expect_success "oc adm new-project cache --description='This is an exam
 echo "The console should be available at ${API_SCHEME}://${PUBLIC_MASTER_HOST}:${API_PORT}/console."
 echo "Log in as 'e2e-user' to see the 'test' project."
 
-os::log::info "Pre-pulling and pushing ruby-22-centos7"
-os::cmd::expect_success 'docker pull centos/ruby-22-centos7:latest'
-os::log::info "Pulled ruby-22-centos7"
+os::log::info "Pre-pulling and pushing ruby-25-centos7"
+os::cmd::expect_success 'docker pull centos/ruby-25-centos7:latest'
+os::log::info "Pulled ruby-25-centos7"
 
 os::cmd::expect_success "oc adm policy add-scc-to-user privileged -z ipfailover"
 os::cmd::expect_success "oc adm ipfailover --images='${USE_IMAGES}' --virtual-ips='1.2.3.4' --service-account=ipfailover"
@@ -158,16 +157,16 @@ os::log::info "Docker login as e2e-user to ${DOCKER_REGISTRY}"
 os::cmd::expect_success "docker login -u e2e-user -p ${e2e_user_token} ${DOCKER_REGISTRY}"
 os::log::info "Docker login successful"
 
-os::log::info "Tagging and pushing ruby-22-centos7 to ${DOCKER_REGISTRY}/cache/ruby-22-centos7:latest"
-os::cmd::expect_success "docker tag centos/ruby-22-centos7:latest ${DOCKER_REGISTRY}/cache/ruby-22-centos7:latest"
-os::cmd::expect_success "docker push ${DOCKER_REGISTRY}/cache/ruby-22-centos7:latest"
-os::log::info "Pushed ruby-22-centos7"
+os::log::info "Tagging and pushing ruby-25-centos7 to ${DOCKER_REGISTRY}/cache/ruby-25-centos7:latest"
+os::cmd::expect_success "docker tag centos/ruby-25-centos7:latest ${DOCKER_REGISTRY}/cache/ruby-25-centos7:latest"
+os::cmd::expect_success "docker push ${DOCKER_REGISTRY}/cache/ruby-25-centos7:latest"
+os::log::info "Pushed ruby-25-centos7"
 
 # get image's digest
-rubyimagedigest="$(oc get -o jsonpath='{.status.tags[?(@.tag=="latest")].items[0].image}' is/ruby-22-centos7)"
+rubyimagedigest="$(oc get -o jsonpath='{.status.tags[?(@.tag=="latest")].items[0].image}' is/ruby-25-centos7)"
 os::log::info "Ruby image digest: ${rubyimagedigest}"
 # get a random, non-empty blob
-rubyimageblob="$(oc get isimage -o go-template='{{range .image.dockerImageLayers}}{{if gt .size 1024.}}{{.name}},{{end}}{{end}}' "ruby-22-centos7@${rubyimagedigest}" | cut -d , -f 1)"
+rubyimageblob="$(oc get isimage -o go-template='{{range .image.dockerImageLayers}}{{if gt .size 1024.}}{{.name}},{{end}}{{end}}' "ruby-25-centos7@${rubyimagedigest}" | cut -d , -f 1)"
 os::log::info "Ruby's testing blob digest: ${rubyimageblob}"
 
 # verify remote images can be pulled directly from the local registry
@@ -188,14 +187,14 @@ os::cmd::expect_success "curl \
     --header 'Content-Type: application/vnd.docker.distribution.manifest.v1+json'   \
     --user 'e2e_user:${e2e_user_token}'                                             \
     --output '${ARTIFACT_DIR}/rubyimagemanifest.json'                               \
-    'http://${DOCKER_REGISTRY}/v2/cache/ruby-22-centos7/manifests/latest'"
+    'http://${DOCKER_REGISTRY}/v2/cache/ruby-25-centos7/manifests/latest'"
 os::cmd::expect_success "curl --head                                                \
     --silent                                                                        \
     --request PUT                                                                   \
     --header 'Content-Type: application/vnd.docker.distribution.manifest.v1+json'   \
     --user 'e2e_user:${e2e_user_token}'                                             \
     --upload-file '${ARTIFACT_DIR}/rubyimagemanifest.json'                          \
-    'http://${DOCKER_REGISTRY}/v2/verify-manifest/ruby-22-centos7/manifests/latest' \
+    'http://${DOCKER_REGISTRY}/v2/verify-manifest/ruby-25-centos7/manifests/latest' \
     >'${ARTIFACT_DIR}/curl-ruby-manifest-put.txt'"
 os::cmd::expect_success_and_text "cat '${ARTIFACT_DIR}/curl-ruby-manifest-put.txt'" '400 Bad Request'
 os::cmd::expect_success_and_text "cat '${ARTIFACT_DIR}/curl-ruby-manifest-put.txt'" '"errors":.*MANIFEST_BLOB_UNKNOWN'
@@ -342,26 +341,26 @@ os::cmd::expect_success "oc create imagestream repo"
 os::log::info "Back to 'default' project with 'admin' user..."
 os::cmd::expect_success "oc project ${CLUSTER_ADMIN_CONTEXT}"
 os::cmd::expect_success_and_text 'oc whoami' 'system:admin'
-os::cmd::expect_success "oc tag --source docker centos/ruby-22-centos7:latest -n custom ruby-22-centos7:latest"
+os::cmd::expect_success "oc tag --source docker centos/ruby-25-centos7:latest -n custom ruby-25-centos7:latest"
 os::cmd::expect_success 'oc policy add-role-to-user registry-viewer pusher -n custom'
 os::cmd::expect_success 'oc policy add-role-to-user system:image-pusher pusher -n crossmount'
 
 os::log::info "Docker cross-repo mount"
-os::cmd::expect_success_and_text "curl -I -X HEAD -u 'pusher:${pusher_token}' '${DOCKER_REGISTRY}/v2/cache/ruby-22-centos7/blobs/$rubyimageblob'" "200 OK"
-os::cmd::try_until_text "oc get -n custom is/ruby-22-centos7 -o 'jsonpath={.status.tags[*].tag}'" "latest" $((20*TIME_SEC))
+os::cmd::expect_success_and_text "curl -I -X HEAD -u 'pusher:${pusher_token}' '${DOCKER_REGISTRY}/v2/cache/ruby-25-centos7/blobs/$rubyimageblob'" "200 OK"
+os::cmd::try_until_text "oc get -n custom is/ruby-25-centos7 -o 'jsonpath={.status.tags[*].tag}'" "latest" $((20*TIME_SEC))
 os::cmd::try_until_text "oc policy can-i update imagestreams/layers -n crossmount '--token=${pusher_token}'" "yes"
 os::cmd::expect_success_and_text "curl -I -X HEAD -u 'pusher:${pusher_token}' '${DOCKER_REGISTRY}/v2/crossmount/repo/blobs/$rubyimageblob'" "404 Not Found"
 # 202 means that cross-repo mount has failed (in this case because of blob doesn't exist in the source repository), client needs to reupload the blob
 os::cmd::expect_success_and_text "curl -I -X POST -u 'pusher:${pusher_token}' '${DOCKER_REGISTRY}/v2/crossmount/repo/blobs/uploads/?mount=$rubyimageblob&from=cache/hello-world'" "202 Accepted"
 # 201 means that blob has been cross mounted from given repository
-os::cmd::expect_success_and_text "curl -I -X POST -u 'pusher:${pusher_token}' '${DOCKER_REGISTRY}/v2/crossmount/repo/blobs/uploads/?mount=$rubyimageblob&from=cache/ruby-22-centos7'" "201 Created"
+os::cmd::expect_success_and_text "curl -I -X POST -u 'pusher:${pusher_token}' '${DOCKER_REGISTRY}/v2/crossmount/repo/blobs/uploads/?mount=$rubyimageblob&from=cache/ruby-25-centos7'" "201 Created"
 # check that the blob is linked now
 os::cmd::expect_success_and_text "curl -I -X HEAD -u 'pusher:${pusher_token}' '${DOCKER_REGISTRY}/v2/crossmount/repo/blobs/$rubyimageblob'" "200 OK"
 # remove pusher's permissions to read from the source repository
 os::cmd::expect_success "oc policy remove-role-from-user system:image-pusher pusher -n cache"
 os::cmd::try_until_text "oc policy can-i get imagestreams/layers -n cache '--token=${pusher_token}'" "no"
 # cross-repo mount failed because of access denied
-os::cmd::expect_success_and_text "curl -I -X POST -u 'pusher:${pusher_token}' '${DOCKER_REGISTRY}/v2/crossmount/repo/blobs/uploads/?mount=$rubyimageblob&from=cache/ruby-22-centos7'" "202 Accepted"
+os::cmd::expect_success_and_text "curl -I -X POST -u 'pusher:${pusher_token}' '${DOCKER_REGISTRY}/v2/crossmount/repo/blobs/uploads/?mount=$rubyimageblob&from=cache/ruby-25-centos7'" "202 Accepted"
 os::log::info "Docker cross-repo mount successful"
 
 # The build requires a dockercfg secret in the builder service account in order
@@ -376,7 +375,7 @@ DOCKER_CONFIG_FILE="${ARTIFACT_DIR}/dockerAppConfig.json"
 CUSTOM_CONFIG_FILE="${ARTIFACT_DIR}/customAppConfig.json"
 os::cmd::expect_success "oc process -n test -f examples/sample-app/application-template-stibuild.json > '${STI_CONFIG_FILE}'"
 os::cmd::expect_success "oc process -n docker -f examples/sample-app/application-template-dockerbuild.json > '${DOCKER_CONFIG_FILE}'"
-os::cmd::expect_success "oc process -n custom -f examples/sample-app/application-template-custombuild.json > '${CUSTOM_CONFIG_FILE}'"
+os::cmd::expect_success "oc process -n custom -f test/extended/testdata/builds/application-template-custombuild.json > '${CUSTOM_CONFIG_FILE}'"
 
 os::log::info "Back to 'test' context with 'e2e-user' user"
 os::cmd::expect_success 'oc login -u e2e-user'
@@ -430,13 +429,6 @@ os::cmd::expect_success_and_text 'oc logs dc/failing-dc-mid' 'test mid hook exec
 os::cmd::expect_success "oc patch dc/failing-dc-mid -p '{\"status\":{\"latestVersion\":2}}'"
 os::cmd::expect_success_and_text 'oc logs --version=1 dc/failing-dc-mid' 'test mid hook executed'
 os::cmd::expect_success_and_text 'oc logs --previous dc/failing-dc-mid'  'test mid hook executed'
-
-os::log::info "Run pod diagnostics"
-# Requires a node to run the origin-deployer pod; expects registry deployed, deployer image pulled
-# TODO: Find out why this would flake expecting PodCheckDns to run
-# https://github.com/openshift/origin/issues/9888
-#os::cmd::expect_success_and_text 'oc adm diagnostics DiagnosticPod --images='"'""${USE_IMAGES}""'" 'Running diagnostic: PodCheckDns'
-os::cmd::expect_success_and_not_text "oc adm diagnostics DiagnosticPod --images='${USE_IMAGES}'" ERROR
 
 os::log::info "Applying STI application config"
 os::cmd::expect_success "oc create -f ${STI_CONFIG_FILE}"

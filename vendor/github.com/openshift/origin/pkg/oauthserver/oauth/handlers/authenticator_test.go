@@ -1,16 +1,12 @@
 package handlers
 
 import (
+	"context"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/RangelReale/osin"
-	"github.com/openshift/origin/pkg/oauthserver/osinserver"
 )
-
-func TestAuthorizeAuthenticator(t *testing.T) {
-	_ = osinserver.AuthorizeHandler(&AuthorizeAuthenticator{})
-}
 
 func TestAuthenticator(t *testing.T) {
 	testCases := map[osin.AccessRequestType]struct {
@@ -26,10 +22,9 @@ func TestAuthenticator(t *testing.T) {
 	}
 
 	for requestType, testCase := range testCases {
-		deny := osinserver.AccessHandler(NewAccessAuthenticator(Deny, Deny, Deny))
 		req := &osin.AccessRequest{Type: requestType}
 		w := httptest.NewRecorder()
-		err := deny.HandleAccess(req, w)
+		err := NewDenyAccessAuthenticator().HandleAccess(req, w)
 		if testCase.ExpectedError && err == nil {
 			t.Fatalf("%s: Expected error, got success", requestType)
 		}
@@ -43,7 +38,7 @@ func TestAuthenticator(t *testing.T) {
 }
 
 func TestDenyPassword(t *testing.T) {
-	user, ok, err := Deny.AuthenticatePassword("", "")
+	user, ok, err := deny.AuthenticatePassword(context.TODO(), "", "")
 	if err != nil {
 		t.Fatalf("Unexpected error: %s", err)
 	}
@@ -56,7 +51,7 @@ func TestDenyPassword(t *testing.T) {
 }
 
 func TestDenyAssertion(t *testing.T) {
-	user, ok, err := Deny.AuthenticateAssertion("", "")
+	user, ok, err := deny.AuthenticateAssertion("", "")
 	if err != nil {
 		t.Fatalf("Unexpected error: %s", err)
 	}
@@ -69,51 +64,12 @@ func TestDenyAssertion(t *testing.T) {
 }
 
 func TestDenyClient(t *testing.T) {
-	user, ok, err := Deny.AuthenticateClient(nil)
+	user, ok, err := deny.AuthenticateClient(nil)
 	if err != nil {
 		t.Fatalf("Unexpected error: %s", err)
 	}
 	if ok {
 		t.Fatalf("Unexpected success")
-	}
-	if user != nil {
-		t.Fatalf("Unexpected user info: %v", user)
-	}
-}
-
-func TestAllowPassword(t *testing.T) {
-	user, ok, err := Allow.AuthenticatePassword("", "")
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
-	if !ok {
-		t.Fatalf("Unexpected failure")
-	}
-	if user != nil {
-		t.Fatalf("Unexpected user info: %v", user)
-	}
-}
-
-func TestAllowAssertion(t *testing.T) {
-	user, ok, err := Allow.AuthenticateAssertion("", "")
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
-	if !ok {
-		t.Fatalf("Unexpected failure")
-	}
-	if user != nil {
-		t.Fatalf("Unexpected user info: %v", user)
-	}
-}
-
-func TestAllowClient(t *testing.T) {
-	user, ok, err := Allow.AuthenticateClient(nil)
-	if err != nil {
-		t.Fatalf("Unexpected error: %s", err)
-	}
-	if !ok {
-		t.Fatalf("Unexpected failure")
 	}
 	if user != nil {
 		t.Fatalf("Unexpected user info: %v", user)

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 source "$(dirname "${BASH_SOURCE}")/lib/init.sh"
 
 SCRIPT_ROOT=$(dirname ${BASH_SOURCE})/..
@@ -13,6 +13,7 @@ ALL_FQ_APIS=(
     github.com/openshift/origin/pkg/apps/apis/apps/v1
     github.com/openshift/origin/pkg/authorization/apis/authorization/v1
     github.com/openshift/origin/pkg/build/apis/build/v1
+    github.com/openshift/origin/pkg/cmd/server/apis/config/v1
     github.com/openshift/origin/pkg/image/apis/image/v1
     github.com/openshift/origin/pkg/network/apis/network/v1
     github.com/openshift/origin/pkg/oauth/apis/oauth/v1
@@ -21,6 +22,7 @@ ALL_FQ_APIS=(
     github.com/openshift/origin/pkg/route/apis/route/v1
     github.com/openshift/origin/pkg/security/apis/security/v1
     github.com/openshift/origin/pkg/template/apis/template/v1
+    github.com/openshift/origin/pkg/template/servicebroker/apis/config/v1
     github.com/openshift/origin/pkg/user/apis/user/v1
 )
 

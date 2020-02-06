@@ -1,40 +1,43 @@
 package debug
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"reflect"
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 
 	kappsv1 "k8s.io/api/apps/v1"
 	kappsv1beta1 "k8s.io/api/apps/v1beta1"
 	kappsv1beta2 "k8s.io/api/apps/v1beta2"
 	batchv1 "k8s.io/api/batch/v1"
+	batchv1beta1 "k8s.io/api/batch/v1beta1"
+	batchv2alpha1 "k8s.io/api/batch/v2alpha1"
 	corev1 "k8s.io/api/core/v1"
 	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
 	kapierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/cli-runtime/pkg/genericclioptions/printers"
+	"k8s.io/cli-runtime/pkg/genericclioptions/resource"
 	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
+	watchtools "k8s.io/client-go/tools/watch"
 	"k8s.io/kubernetes/pkg/api/legacyscheme"
 	kapi "k8s.io/kubernetes/pkg/apis/core"
-	kapiv1 "k8s.io/kubernetes/pkg/apis/core/v1"
 	"k8s.io/kubernetes/pkg/kubectl"
-	kcmd "k8s.io/kubernetes/pkg/kubectl/cmd"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/templates"
+	"k8s.io/kubernetes/pkg/kubectl/cmd/attach"
+	"k8s.io/kubernetes/pkg/kubectl/cmd/logs"
 	kcmdutil "k8s.io/kubernetes/pkg/kubectl/cmd/util"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions/printers"
-	"k8s.io/kubernetes/pkg/kubectl/genericclioptions/resource"
 	"k8s.io/kubernetes/pkg/kubectl/polymorphichelpers"
 	"k8s.io/kubernetes/pkg/kubectl/scheme"
+	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 	"k8s.io/kubernetes/pkg/kubectl/util/term"
 	"k8s.io/kubernetes/pkg/util/interrupt"
 
@@ -43,6 +46,7 @@ import (
 	imagev1 "github.com/openshift/api/image/v1"
 	appsv1client "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	imagev1client "github.com/openshift/client-go/image/clientset/versioned/typed/image/v1"
+	"github.com/openshift/library-go/pkg/image/reference"
 	appsutil "github.com/openshift/origin/pkg/apps/util"
 	imageapi "github.com/openshift/origin/pkg/image/apis/image"
 	imageutil "github.com/openshift/origin/pkg/image/util"
@@ -96,7 +100,7 @@ var (
 type DebugOptions struct {
 	PrintFlags *genericclioptions.PrintFlags
 
-	Attach kcmd.AttachOptions
+	Attach attach.AttachOptions
 
 	CoreClient  corev1client.CoreV1Interface
 	AppsClient  appsv1client.AppsV1Interface
@@ -131,13 +135,17 @@ type DebugOptions struct {
 	ExplicitNamespace  bool
 	DryRun             bool
 	FullCmdName        string
+	Image              string
+
+	// IsNode is set after we see the object we're debugging.  We use it to be able to print pertinent advice.
+	IsNode bool
 
 	resource.FilenameOptions
 	genericclioptions.IOStreams
 }
 
 func NewDebugOptions(streams genericclioptions.IOStreams) *DebugOptions {
-	attachOpts := kcmd.NewAttachOptions(streams)
+	attachOpts := attach.NewAttachOptions(streams)
 	attachOpts.TTY = true
 	attachOpts.Stdin = true
 	return &DebugOptions{
@@ -190,6 +198,7 @@ func NewCmdDebug(fullName string, f kcmdutil.Factory, streams genericclioptions.
 	cmd.Flags().StringVar(&o.NodeName, "node-name", o.NodeName, "Set a specific node to run on - by default the pod will run on any valid node")
 	cmd.Flags().BoolVar(&o.AsRoot, "as-root", o.AsRoot, "If true, try to run the container as the root user")
 	cmd.Flags().Int64Var(&o.AsUser, "as-user", o.AsUser, "Try to run the container as a specific user UID (note: admins may limit your ability to use this flag)")
+	cmd.Flags().StringVar(&o.Image, "image", o.Image, "Override the image used by the targeted container.")
 
 	o.PrintFlags.AddFlags(cmd)
 	kcmdutil.AddDryRunFlag(cmd)
@@ -227,7 +236,7 @@ func (o *DebugOptions) Complete(cmd *cobra.Command, f kcmdutil.Factory, args []s
 		o.Attach.Stdin = false
 	default:
 		o.Attach.TTY = term.IsTerminal(o.In)
-		glog.V(4).Infof("Defaulting TTY to %t", o.Attach.TTY)
+		klog.V(4).Infof("Defaulting TTY to %t", o.Attach.TTY)
 	}
 	if o.NoStdin {
 		o.Attach.TTY = false
@@ -250,22 +259,10 @@ func (o *DebugOptions) Complete(cmd *cobra.Command, f kcmdutil.Factory, args []s
 
 	o.Builder = f.NewBuilder
 
-	internalAddEnv, removeEnv, err := utilenv.ParseEnv(envArgs, nil)
+	o.AddEnv, o.RemoveEnv, err = utilenv.ParseEnv(envArgs, nil)
 	if err != nil {
 		return err
 	}
-
-	// convert EnvVars that we should add, from internal to external
-	for _, internal := range internalAddEnv {
-		external := corev1.EnvVar{}
-		if err := kapiv1.Convert_core_EnvVar_To_v1_EnvVar(&internal, &external, nil); err != nil {
-			return err
-		}
-
-		o.AddEnv = append(o.AddEnv, external)
-	}
-
-	o.RemoveEnv = removeEnv
 
 	cmdParent := cmd.Parent()
 	if cmdParent != nil && len(cmdParent.CommandPath()) > 0 && kcmdutil.IsSiblingCommandExists(cmd, "describe") {
@@ -346,7 +343,7 @@ func (o *DebugOptions) RunDebug() error {
 		return fmt.Errorf("cannot debug %s: %v", infos[0].Name, err)
 	}
 	if err != nil {
-		glog.V(4).Infof("Unable to get exact template, but continuing with fallback: %v", err)
+		klog.V(4).Infof("Unable to get exact template, but continuing with fallback: %v", err)
 	}
 	template := &corev1.PodTemplateSpec{}
 	if err := legacyscheme.Scheme.Convert(templateV1, template, nil); err != nil {
@@ -356,17 +353,21 @@ func (o *DebugOptions) RunDebug() error {
 		ObjectMeta: template.ObjectMeta,
 		Spec:       template.Spec,
 	}
-	pod.Name, pod.Namespace = fmt.Sprintf("%s-debug", generateapp.MakeSimpleName(infos[0].Name)), infos[0].Namespace
+	ns := infos[0].Namespace
+	if len(ns) == 0 {
+		ns = o.Namespace
+	}
+	pod.Name, pod.Namespace = fmt.Sprintf("%s-debug", generateapp.MakeSimpleName(infos[0].Name)), ns
 	o.Attach.Pod = pod
 
 	if len(o.Attach.ContainerName) == 0 && len(pod.Spec.Containers) > 0 {
-		if len(o.FullCmdName) > 0 {
+		if len(pod.Spec.Containers) > 1 && len(o.FullCmdName) > 0 {
 			fmt.Fprintf(o.ErrOut, "Defaulting container name to %s.\n", pod.Spec.Containers[0].Name)
 			fmt.Fprintf(o.ErrOut, "Use '%s describe pod/%s -n %s' to see all of the containers in this pod.\n", o.FullCmdName, pod.Name, pod.Namespace)
 			fmt.Fprintf(o.ErrOut, "\n")
 		}
 
-		glog.V(4).Infof("Defaulting container name to %s", pod.Spec.Containers[0].Name)
+		klog.V(4).Infof("Defaulting container name to %s", pod.Spec.Containers[0].Name)
 		o.Attach.ContainerName = pod.Spec.Containers[0].Name
 	}
 
@@ -390,15 +391,14 @@ func (o *DebugOptions) RunDebug() error {
 	case len(originalCommand) > 0:
 		commandString = strings.Join(originalCommand, " ")
 	default:
-		commandString = "<image entrypoint>"
+		commandString = ""
 	}
 
 	if o.Printer != nil {
 		return o.Printer.PrintObj(pod, o.Out)
 	}
 
-	glog.V(5).Infof("Creating pod: %#v", pod)
-	fmt.Fprintf(o.ErrOut, "Debugging with pod/%s, original command: %s\n", pod.Name, commandString)
+	klog.V(5).Infof("Creating pod: %#v", pod)
 	pod, err = o.createPod(pod)
 	if err != nil {
 		return err
@@ -421,15 +421,24 @@ func (o *DebugOptions) RunDebug() error {
 		},
 	)
 
-	glog.V(5).Infof("Created attach arguments: %#v", o.Attach)
+	klog.V(5).Infof("Created attach arguments: %#v", o.Attach)
 	return o.Attach.InterruptParent.Run(func() error {
 		w, err := o.CoreClient.Pods(pod.Namespace).Watch(metav1.SingleObject(pod.ObjectMeta))
 		if err != nil {
 			return err
 		}
-		fmt.Fprintf(o.ErrOut, "Waiting for pod to start ...\n")
+		if len(commandString) > 0 {
+			fmt.Fprintf(o.ErrOut, "Starting pod/%s, command was: %s\n", pod.Name, commandString)
+		} else {
+			fmt.Fprintf(o.ErrOut, "Starting pod/%s ...\n", pod.Name)
+		}
+		if o.IsNode {
+			fmt.Fprintf(o.ErrOut, "To use host binaries, run `chroot /host`\n")
+		}
 
-		switch containerRunningEvent, err := watch.Until(o.Timeout, w, conditions.PodContainerRunning(o.Attach.ContainerName)); {
+		ctx, cancel := context.WithTimeout(context.Background(), o.Timeout)
+		defer cancel()
+		switch containerRunningEvent, err := watchtools.UntilWithoutRetry(ctx, w, conditions.PodContainerRunning(o.Attach.ContainerName)); {
 		// api didn't error right away but the pod wasn't even created
 		case kapierrors.IsNotFound(err):
 			msg := fmt.Sprintf("unable to create the debug pod %q", pod.Name)
@@ -438,15 +447,15 @@ func (o *DebugOptions) RunDebug() error {
 			}
 			return fmt.Errorf(msg)
 			// switch to logging output
-		case err == kubectl.ErrPodCompleted, err == kubectl.ErrContainerTerminated, !o.Attach.Stdin:
-			return kcmd.LogsOptions{
+		case err == kubectl.ErrPodCompleted, err == conditions.ErrContainerTerminated, !o.Attach.Stdin:
+			return logs.LogsOptions{
 				Object: pod,
 				Options: &corev1.PodLogOptions{
 					Container: o.Attach.ContainerName,
 					Follow:    true,
 				},
 				RESTClientGetter: o.RESTClientGetter,
-				ConsumeRequestFn: kcmd.DefaultConsumeRequestFn,
+				ConsumeRequestFn: logs.DefaultConsumeRequest,
 				IOStreams:        o.IOStreams,
 				LogsForObject:    o.LogsForObject,
 			}.RunLogs()
@@ -471,7 +480,7 @@ func (o *DebugOptions) RunDebug() error {
 // find the ImageStream from which the DeploymentConfig is deploying, then tries
 // to find a match for the Container's image in the ImageStream's Images.
 func (o *DebugOptions) getContainerImageViaDeploymentConfig(pod *corev1.Pod, container *corev1.Container) (*imagev1.Image, error) {
-	ref, err := imageapi.ParseDockerImageReference(container.Image)
+	ref, err := reference.Parse(container.Image)
 	if err != nil {
 		return nil, err
 	}
@@ -596,6 +605,10 @@ func (o *DebugOptions) transformPodForDebug(annotations map[string]string) (*cor
 		originalCommand = append(originalCommand, container.Args...)
 	}
 
+	if len(o.Image) > 0 {
+		container.Image = o.Image
+	}
+
 	container.Command = o.Command
 	container.Args = nil
 	container.TTY = o.Attach.Stdin && o.Attach.TTY
@@ -627,9 +640,7 @@ func (o *DebugOptions) transformPodForDebug(annotations map[string]string) (*cor
 	} else {
 		newEnv = container.Env
 	}
-	for _, env := range o.AddEnv {
-		newEnv = append(newEnv, env)
-	}
+	newEnv = append(newEnv, o.AddEnv...)
 	container.Env = newEnv
 
 	if container.SecurityContext == nil {
@@ -666,8 +677,6 @@ func (o *DebugOptions) transformPodForDebug(annotations map[string]string) (*cor
 	} else {
 		pod.Labels = map[string]string{}
 	}
-	// always clear the NodeName
-	pod.Spec.NodeName = o.NodeName
 
 	pod.ResourceVersion = ""
 	pod.Spec.RestartPolicy = corev1.RestartPolicyNever
@@ -734,42 +743,99 @@ func containerNames(pod *corev1.Pod) []string {
 
 func (o *DebugOptions) approximatePodTemplateForObject(object runtime.Object) (*corev1.PodTemplateSpec, error) {
 	switch t := object.(type) {
+	case *corev1.Node:
+		o.IsNode = true
+		if len(o.NodeName) > 0 {
+			return nil, fmt.Errorf("you may not set --node-name when debugging a node")
+		}
+		if o.AsNonRoot || o.AsUser > 0 {
+			// TODO: allow --as-root=false to skip all the namespaces except network
+			return nil, fmt.Errorf("can't debug nodes without running as the root user")
+		}
+		image := o.Image
+		if len(o.Image) == 0 {
+			istag, err := o.ImageClient.ImageStreamTags("openshift").Get("tools:latest", metav1.GetOptions{})
+			if err == nil && len(istag.Image.DockerImageReference) > 0 {
+				image = istag.Image.DockerImageReference
+			}
+		}
+		if len(o.Image) == 0 {
+			image = "registry.redhat.io/rhel7/support-tools"
+		}
+		zero := int64(0)
+		isTrue := true
+		hostPathType := corev1.HostPathDirectory
+		return &corev1.PodTemplateSpec{
+			Spec: corev1.PodSpec{
+				NodeName:    t.Name,
+				HostNetwork: true,
+				HostPID:     true,
+				Volumes: []corev1.Volume{
+					{
+						Name: "host",
+						VolumeSource: corev1.VolumeSource{
+							HostPath: &corev1.HostPathVolumeSource{
+								Path: "/",
+								Type: &hostPathType,
+							},
+						},
+					},
+				},
+				RestartPolicy: corev1.RestartPolicyNever,
+				Containers: []corev1.Container{
+					{
+						Name:  "container-00",
+						Image: image,
+						SecurityContext: &corev1.SecurityContext{
+							Privileged: &isTrue,
+							RunAsUser:  &zero,
+						},
+						VolumeMounts: []corev1.VolumeMount{
+							{
+								Name:      "host",
+								MountPath: "/host",
+							},
+						},
+					},
+				},
+			},
+		}, nil
 	case *imagev1.ImageStreamTag:
 		// create a minimal pod spec that uses the image referenced by the istag without any introspection
 		// it possible that we could someday do a better job introspecting it
-		return &corev1.PodTemplateSpec{
+		return setNodeName(&corev1.PodTemplateSpec{
 			Spec: corev1.PodSpec{
 				RestartPolicy: corev1.RestartPolicyNever,
 				Containers: []corev1.Container{
 					{Name: "container-00", Image: t.Image.DockerImageReference},
 				},
 			},
-		}, nil
+		}, o.NodeName), nil
 	case *imagev1.ImageStreamImage:
 		// create a minimal pod spec that uses the image referenced by the istag without any introspection
 		// it possible that we could someday do a better job introspecting it
-		return &corev1.PodTemplateSpec{
+		return setNodeName(&corev1.PodTemplateSpec{
 			Spec: corev1.PodSpec{
 				RestartPolicy: corev1.RestartPolicyNever,
 				Containers: []corev1.Container{
 					{Name: "container-00", Image: t.Image.DockerImageReference},
 				},
 			},
-		}, nil
+		}, o.NodeName), nil
 	case *appsv1.DeploymentConfig:
 		fallback := t.Spec.Template
 
 		latestDeploymentName := appsutil.LatestDeploymentNameForConfig(t)
 		deployment, err := o.CoreClient.ReplicationControllers(t.Namespace).Get(latestDeploymentName, metav1.GetOptions{})
 		if err != nil {
-			return fallback, err
+			return setNodeName(fallback, o.NodeName), err
 		}
 
 		fallback = deployment.Spec.Template
 
 		pods, err := o.CoreClient.Pods(deployment.Namespace).List(metav1.ListOptions{LabelSelector: labels.SelectorFromSet(deployment.Spec.Selector).String()})
 		if err != nil {
-			return fallback, err
+			return setNodeName(fallback, o.NodeName), err
 		}
 
 		// If we have any pods available, find the newest
@@ -785,48 +851,67 @@ func (o *DebugOptions) approximatePodTemplateForObject(object runtime.Object) (*
 				}
 			}
 		}
-		return fallback, nil
+		return setNodeName(fallback, o.NodeName), nil
 
 	case *corev1.Pod:
-		return &corev1.PodTemplateSpec{
+		return setNodeName(&corev1.PodTemplateSpec{
 			ObjectMeta: t.ObjectMeta,
 			Spec:       t.Spec,
-		}, nil
+		}, o.NodeName), nil
 
 	// ReplicationController
 	case *corev1.ReplicationController:
-		return t.Spec.Template, nil
+		return setNodeName(t.Spec.Template, o.NodeName), nil
 
 	// ReplicaSet
 	case *extensionsv1beta1.ReplicaSet:
-		return &t.Spec.Template, nil
+		return setNodeName(&t.Spec.Template, o.NodeName), nil
 	case *kappsv1beta2.ReplicaSet:
-		return &t.Spec.Template, nil
+		return setNodeName(&t.Spec.Template, o.NodeName), nil
 	case *kappsv1.ReplicaSet:
-		return &t.Spec.Template, nil
+		return setNodeName(&t.Spec.Template, o.NodeName), nil
 
 	// Deployment
 	case *extensionsv1beta1.Deployment:
-		return &t.Spec.Template, nil
+		return setNodeName(&t.Spec.Template, o.NodeName), nil
 	case *kappsv1beta1.Deployment:
-		return &t.Spec.Template, nil
+		return setNodeName(&t.Spec.Template, o.NodeName), nil
 	case *kappsv1beta2.Deployment:
-		return &t.Spec.Template, nil
+		return setNodeName(&t.Spec.Template, o.NodeName), nil
 	case *kappsv1.Deployment:
-		return &t.Spec.Template, nil
+		return setNodeName(&t.Spec.Template, o.NodeName), nil
+
+	// StatefulSet
+	case *kappsv1.StatefulSet:
+		return setNodeName(&t.Spec.Template, o.NodeName), nil
+	case *kappsv1beta2.StatefulSet:
+		return setNodeName(&t.Spec.Template, o.NodeName), nil
+	case *kappsv1beta1.StatefulSet:
+		return setNodeName(&t.Spec.Template, o.NodeName), nil
 
 	// DaemonSet
 	case *extensionsv1beta1.DaemonSet:
-		return &t.Spec.Template, nil
+		return setNodeName(&t.Spec.Template, o.NodeName), nil
 	case *kappsv1beta2.DaemonSet:
-		return &t.Spec.Template, nil
+		return setNodeName(&t.Spec.Template, o.NodeName), nil
 	case *kappsv1.DaemonSet:
-		return &t.Spec.Template, nil
+		return setNodeName(&t.Spec.Template, o.NodeName), nil
 
 	// Job
 	case *batchv1.Job:
-		return &t.Spec.Template, nil
+		return setNodeName(&t.Spec.Template, o.NodeName), nil
+
+	// CronJob
+	case *batchv1beta1.CronJob:
+		return setNodeName(&t.Spec.JobTemplate.Spec.Template, o.NodeName), nil
+	case *batchv2alpha1.CronJob:
+		return setNodeName(&t.Spec.JobTemplate.Spec.Template, o.NodeName), nil
 	}
 
 	return nil, fmt.Errorf("unable to extract pod template from type %v", reflect.TypeOf(object))
+}
+
+func setNodeName(template *corev1.PodTemplateSpec, nodeName string) *corev1.PodTemplateSpec {
+	template.Spec.NodeName = nodeName
+	return template
 }

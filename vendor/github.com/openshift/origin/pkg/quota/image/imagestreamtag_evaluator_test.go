@@ -5,7 +5,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kquota "k8s.io/kubernetes/pkg/quota"
+	kquota "k8s.io/kubernetes/pkg/quota/v1"
 
 	imagev1 "github.com/openshift/api/image/v1"
 	fakeimagev1client "github.com/openshift/client-go/image/clientset/versioned/fake"
@@ -208,7 +208,7 @@ func TestImageStreamTagEvaluatorUsage(t *testing.T) {
 		for _, is := range tc.iss {
 			isInformer.Informer().GetIndexer().Add(&is)
 		}
-		evaluator := NewImageStreamTagEvaluator(isInformer.Lister(), fakeClient.Image())
+		evaluator := NewImageStreamTagEvaluator(isInformer.Lister(), fakeClient.ImageV1())
 
 		usage, err := evaluator.Usage(&tc.ist)
 		if err != nil {

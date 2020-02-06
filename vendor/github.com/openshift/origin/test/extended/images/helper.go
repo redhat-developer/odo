@@ -17,7 +17,6 @@ import (
 
 	dockerclient "github.com/fsouza/go-dockerclient"
 	g "github.com/onsi/ginkgo"
-
 	godigest "github.com/opencontainers/go-digest"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,7 +34,6 @@ import (
 
 const (
 	// There are coefficients used to multiply layer data size to get a rough size of uploaded blob.
-	layerSizeMultiplierForDocker18     = 2.0
 	layerSizeMultiplierForLatestDocker = 0.8
 	defaultLayerSize                   = 1024
 	digestSHA256GzippedEmptyTar        = godigest.Digest("sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4")
@@ -131,6 +129,8 @@ var (
 		`failed to push image: denied`,
 		// docker daemon output >= 1.10
 		`^denied$`,
+		// buildah
+		`Error uploading manifest.*to.*: denied`,
 	}
 	// reExpectedDeniedError matches the output from `docker push` command when the push is denied. The output
 	// differs based on Docker version.
@@ -168,13 +168,13 @@ func BuildAndPushImageOfSizeWithBuilder(
 		istName += ":" + tag
 	}
 
-	bc, err := oc.BuildClient().Build().BuildConfigs(namespace).Get(name, metav1.GetOptions{})
+	bc, err := oc.BuildClient().BuildV1().BuildConfigs(namespace).Get(name, metav1.GetOptions{})
 	if err == nil {
 		if bc.Spec.CommonSpec.Output.To.Kind != "ImageStreamTag" {
 			return fmt.Errorf("Unexpected kind of buildspec's output (%s != %s)", bc.Spec.CommonSpec.Output.To.Kind, "ImageStreamTag")
 		}
 		bc.Spec.CommonSpec.Output.To.Name = istName
-		if _, err = oc.BuildClient().Build().BuildConfigs(namespace).Update(bc); err != nil {
+		if _, err = oc.BuildClient().BuildV1().BuildConfigs(namespace).Update(bc); err != nil {
 			return err
 		}
 	} else {
@@ -212,8 +212,10 @@ func BuildAndPushImageOfSizeWithBuilder(
 	}
 	buildLog, logsErr := br.Logs()
 
-	if match := reSuccessfulBuild.FindStringSubmatch(buildLog); len(match) > 1 {
-		defer dClient.RemoveImageExtended(match[1], dockerclient.RemoveImageOptions{Force: true})
+	if dClient != nil {
+		if match := reSuccessfulBuild.FindStringSubmatch(buildLog); len(match) > 1 {
+			defer dClient.RemoveImageExtended(match[1], dockerclient.RemoveImageOptions{Force: true})
+		}
 	}
 
 	if !shouldSucceed {
@@ -610,7 +612,7 @@ func IsBlobStoredInRegistry(
 // assumed to be in a read-only mode and using filesystem as a storage driver. It returns lists of deleted
 // files.
 func RunHardPrune(oc *exutil.CLI, dryRun bool) (*RegistryStorageFiles, error) {
-	pod, err := GetRegistryPod(oc.AsAdmin().KubeClient().Core())
+	pod, err := GetRegistryPod(oc.AsAdmin().KubeClient().CoreV1())
 	if err != nil {
 		return nil, err
 	}
