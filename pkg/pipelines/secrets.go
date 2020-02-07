@@ -9,23 +9,43 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// CreateOpaqueSecret creates a Kubernetes v1/Secret with the provided name and
+// body, and type Opaque.
 func CreateOpaqueSecret(name string, in io.Reader) (*corev1.Secret, error) {
+	return createSecret(name, "token", corev1.SecretTypeOpaque, in)
+}
+
+// CreateDockerConfigSecret creates a Kubernetes v1/Secret with the provided name and
+// body, and type DockerConfigJson.
+func CreateDockerConfigSecret(name string, in io.Reader) (*corev1.Secret, error) {
+	return createSecret(name, ".dockerconfigjson", corev1.SecretTypeDockerConfigJson, in)
+}
+
+func createSecret(name, key string, st corev1.SecretType, in io.Reader) (*corev1.Secret, error) {
 	data, err := ioutil.ReadAll(in)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read secret data: %w", err)
 	}
 	secret := &corev1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Secret",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "github-auth",
-		},
-		Type: corev1.SecretTypeOpaque,
+		TypeMeta:   createTypeMeta("Secret", "v1"),
+		ObjectMeta: createObjectMeta(name),
+		Type:       st,
 		Data: map[string][]byte{
-			"token": data,
+			key: data,
 		},
 	}
 	return secret, nil
+}
+
+func createTypeMeta(kind, apiVersion string) metav1.TypeMeta {
+	return metav1.TypeMeta{
+		Kind:       kind,
+		APIVersion: apiVersion,
+	}
+}
+
+func createObjectMeta(name string) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Name: name,
+	}
 }

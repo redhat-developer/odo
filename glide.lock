@@ -1,5 +1,5 @@
-hash: b8ed36a9c2b2f2caf0623e4c908ca0f5ff3bb17e6f030455eb82da468de37c81
-updated: 2020-02-06T12:13:51.399963+01:00
+hash: 6627303d1f977429bd15b9c8bdc32137922bf54ac048fcc4b0bbb28fb4791158
+updated: 2020-02-10T10:26:08.263153828Z
 imports:
 - name: github.com/alexbrainman/sspi
   version: e580b900e9f5657daa5473021296289be6da2661
@@ -92,6 +92,14 @@ imports:
   - ptypes/timestamp
 - name: github.com/google/btree
   version: 479b5e81b0a93ec038d201b0b33d17db599531d3
+- name: github.com/google/go-cmp
+  version: 5a6f75716e1203a923a78c9efb94089d857df0f6
+  subpackages:
+  - cmp
+  - cmp/internal/diff
+  - cmp/internal/flags
+  - cmp/internal/function
+  - cmp/internal/value
 - name: github.com/google/gofuzz
   version: 225701601be54702d114845d7a272fba34aac808
 - name: github.com/google/uuid
@@ -173,6 +181,8 @@ imports:
   - pbutil
 - name: github.com/mgutz/ansi
   version: 9520e82c474b0a04dd04f8a40959027271bab992
+- name: github.com/mitchellh/go-homedir
+  version: af06845cf3004701891bf4fdb884bfe4920b3727
 - name: github.com/mitchellh/go-wordwrap
   version: ad45545899c7b13c020ea92b2072220eefad42b8
 - name: github.com/modern-go/concurrent
