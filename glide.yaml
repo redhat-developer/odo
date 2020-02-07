@@ -98,3 +98,7 @@ import:
   # use older version due to https://github.com/hashicorp/go-multierror/issues/36
 - package: github.com/hashicorp/go-multierror
   version: v1.0.0
+- package: github.com/google/go-cmp
+  version: v0.4.0
+- package: github.com/mitchellh/go-homedir
+  version: v1.1.0
