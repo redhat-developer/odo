@@ -139,9 +139,9 @@ imports:
   - ptypes/duration
   - ptypes/timestamp
 - name: github.com/google/btree
-  version: 4030bb1f1f0c35b30ca7009e9ebd06849dd45306
+  version: 479b5e81b0a93ec038d201b0b33d17db599531d3
 - name: github.com/google/go-cmp
-  version: 6f77996f0c42f7b84e5a2b252227263f93432e9b
+  version: 5a6f75716e1203a923a78c9efb94089d857df0f6
   subpackages:
   - cmp
   - cmp/internal/diff
@@ -253,6 +253,8 @@ imports:
   version: 3fe6c526287328ec859e2c1258458b685198f204
   subpackages:
   - pkg/guid
+- name: github.com/mitchellh/go-homedir
+  version: af06845cf3004701891bf4fdb884bfe4920b3727
 - name: github.com/mitchellh/go-wordwrap
   version: 9e67c67572bc5dd02aef930e2b0ae3c02a4b5a5c
 - name: github.com/modern-go/concurrent
