@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/openshift/odo/pkg/pipelines"
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/cmd/templates"
+	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
 )
 
 const (
