@@ -11,15 +11,15 @@ import (
 )
 
 // GenerateContainer creates a container spec that can be used when creating a pod
-func GenerateContainer(name, image string, isPrivileged bool, command, args []string, envVars []corev1.EnvVar) *corev1.Container {
+func GenerateContainer(name, image string, isPrivileged bool, command, args []string, envVars []corev1.EnvVar, resourceReqs corev1.ResourceRequirements) *corev1.Container {
 	container := &corev1.Container{
 		Name:            name,
 		Image:           image,
 		ImagePullPolicy: corev1.PullAlways,
-
-		Command: command,
-		Args:    args,
-		Env:     envVars,
+		Resources:       resourceReqs,
+		Command:         command,
+		Args:            args,
+		Env:             envVars,
 	}
 
 	if isPrivileged {
@@ -36,8 +36,7 @@ func GeneratePodTemplateSpec(objectMeta metav1.ObjectMeta, serviceAccountName st
 	podTemplateSpec := &corev1.PodTemplateSpec{
 		ObjectMeta: objectMeta,
 		Spec: corev1.PodSpec{
-			ServiceAccountName: serviceAccountName,
-			Containers:         containers,
+			Containers: containers,
 		},
 	}
 

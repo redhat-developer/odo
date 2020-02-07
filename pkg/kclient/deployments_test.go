@@ -14,7 +14,7 @@ import (
 
 func TestCreateDeployment(t *testing.T) {
 
-	container := GenerateContainer("container1", "image1", true, []string{"tail"}, []string{"-f", "/dev/null"}, []corev1.EnvVar{})
+	container := GenerateContainer("container1", "image1", true, []string{"tail"}, []string{"-f", "/dev/null"}, []corev1.EnvVar{}, corev1.ResourceRequirements{})
 
 	labels := map[string]string{
 		"app":       "app",

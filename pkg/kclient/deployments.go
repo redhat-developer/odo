@@ -12,6 +12,12 @@ const (
 	DeploymentAPIVersion = "apps/v1"
 )
 
+// GetDeploymentByName gets a deployment by querying by name
+func (c *Client) GetDeploymentByName(name string) (*appsv1.Deployment, error) {
+	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Get(name, metav1.GetOptions{})
+	return deployment, err
+}
+
 // CreateDeployment creates a deployment based on the given deployment spec
 func (c *Client) CreateDeployment(deploymentSpec appsv1.DeploymentSpec) (*appsv1.Deployment, error) {
 	// inherit ObjectMeta from deployment spec so that namespace, labels, owner references etc will be the same
