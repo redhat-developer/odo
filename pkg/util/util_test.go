@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"runtime"
 	"sort"
 	"strconv"
 	"testing"
@@ -806,6 +807,11 @@ func TestGetAbsGlobExps(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
 			resultExps := GetAbsGlobExps(tt.directoryName, tt.inputRelativeGlobExps)
+			if runtime.GOOS == "windows" {
+				for index, element := range resultExps {
+					resultExps[index] = filepath.ToSlash(element)
+				}
+			}
 
 			if !reflect.DeepEqual(resultExps, tt.expectedGlobExps) {
 				t.Errorf("expected %v, got %v", tt.expectedGlobExps, resultExps)
@@ -1115,6 +1121,11 @@ func TestRemoveRelativePathFromFiles(t *testing.T) {
 
 			// Run function RemoveRelativePathFromFiles
 			output, err := RemoveRelativePathFromFiles(tt.args.input, tt.args.path)
+			if runtime.GOOS == "windows" {
+				for index, element := range output {
+					output[index] = filepath.ToSlash(element)
+				}
+			}
 
 			// Check for error
 			if !tt.wantErr == (err != nil) {
