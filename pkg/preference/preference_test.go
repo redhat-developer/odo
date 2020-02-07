@@ -18,7 +18,7 @@ func TestNew(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer tempConfigFile.Close()
-	os.Setenv(globalConfigEnvName, tempConfigFile.Name())
+	os.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
 
 	tests := []struct {
 		name    string
@@ -62,7 +62,7 @@ func TestGetPushTimeout(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer tempConfigFile.Close()
-	os.Setenv(globalConfigEnvName, tempConfigFile.Name())
+	os.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
 	zeroValue := 0
 	nonzeroValue := 5
 	tests := []struct {
@@ -118,7 +118,7 @@ func TestGetTimeout(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer tempConfigFile.Close()
-	os.Setenv(globalConfigEnvName, tempConfigFile.Name())
+	os.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
 	zeroValue := 0
 	nonzeroValue := 5
 	tests := []struct {
@@ -175,7 +175,7 @@ func TestSetConfiguration(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer tempConfigFile.Close()
-	os.Setenv(globalConfigEnvName, tempConfigFile.Name())
+	os.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
 	trueValue := true
 	falseValue := false
 	zeroValue := 0
@@ -345,7 +345,7 @@ func TestGetupdateNotification(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer tempConfigFile.Close()
-	os.Setenv(globalConfigEnvName, tempConfigFile.Name())
+	os.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
 	trueValue := true
 	falseValue := false
 

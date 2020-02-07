@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	globalConfigEnvName  = "GLOBALODOCONFIG"
+	GlobalConfigEnvName  = "GLOBALODOCONFIG"
 	configFileName       = "preference.yaml"
 	preferenceKind       = "Preference"
 	preferenceAPIVersion = "odo.openshift.io/v1alpha1"
@@ -110,7 +110,7 @@ type Preference struct {
 }
 
 func getPreferenceFile() (string, error) {
-	if env, ok := os.LookupEnv(globalConfigEnvName); ok {
+	if env, ok := os.LookupEnv(GlobalConfigEnvName); ok {
 		return env, nil
 	}
 
