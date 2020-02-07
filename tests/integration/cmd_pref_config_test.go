@@ -306,4 +306,38 @@ var _ = Describe("odo preference and config command tests", func() {
 			os.Setenv("KUBECONFIG", kubeconfigOld)
 		})
 	})
+
+	Context("when using --now with config command", func() {
+		JustBeforeEach(func() {
+			context = helper.CreateNewContext()
+			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "preference.yaml"))
+			project = helper.CreateRandProject()
+		})
+		JustAfterEach(func() {
+			helper.DeleteDir(context)
+			helper.DeleteProject(project)
+			os.Unsetenv("GLOBALODOCONFIG")
+		})
+
+		It("should successfully set and unset variables", func() {
+			//set env var
+			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--project", project, "--context", context)
+			helper.CmdShouldPass("odo", "config", "set", "--now", "--env", "hello=world", "--context", context)
+			//*Check config
+			configValue1 := helper.CmdShouldPass("odo", "config", "view", "--context", context)
+			helper.MatchAllInOutput(configValue1, []string{"hello", "world"})
+			//*Check dc
+			envs := oc.GetEnvs("nodejs", "app", project)
+			val, ok := envs["hello"]
+			Expect(ok).To(BeTrue())
+			Expect(val).To(ContainSubstring("world"))
+			// unset a valid env var
+			helper.CmdShouldPass("odo", "config", "unset", "--now", "--env", "hello", "--context", context)
+			configValue2 := helper.CmdShouldPass("odo", "config", "view", "--context", context)
+			helper.DontMatchAllInOutput(configValue2, []string{"hello", "world"})
+			envs = oc.GetEnvs("nodejs", "app", project)
+			_, ok = envs["hello"]
+			Expect(ok).To(BeFalse())
+		})
+	})
 })

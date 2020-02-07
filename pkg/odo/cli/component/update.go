@@ -58,7 +58,7 @@ func NewUpdateOptions() *UpdateOptions {
 // Complete completes update args
 func (uo *UpdateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	uo.Context = genericclioptions.NewContext(cmd)
-	uo.localConfigInfo, err = config.NewLocalConfigInfo(uo.componentContext)
+	uo.LocalConfigInfo, err = config.NewLocalConfigInfo(uo.componentContext)
 	if err != nil {
 		return errors.Wrapf(err, "failed to update component")
 	}
@@ -69,9 +69,9 @@ func (uo *UpdateOptions) Complete(name string, cmd *cobra.Command, args []string
 // Validate validates the update parameters
 func (uo *UpdateOptions) Validate() (err error) {
 
-	uo.doesComponentExist, err = component.Exists(uo.Context.Client, uo.localConfigInfo.GetName(), uo.localConfigInfo.GetApplication())
+	uo.doesComponentExist, err = component.Exists(uo.Context.Client, uo.LocalConfigInfo.GetName(), uo.LocalConfigInfo.GetApplication())
 	if err != nil {
-		return errors.Wrapf(err, "failed to check if component of name %s exists in application %s", uo.localConfigInfo.GetName(), uo.localConfigInfo.GetApplication())
+		return errors.Wrapf(err, "failed to check if component of name %s exists in application %s", uo.LocalConfigInfo.GetName(), uo.LocalConfigInfo.GetApplication())
 	}
 
 	checkFlag := 0
@@ -137,14 +137,14 @@ func (uo *UpdateOptions) Validate() (err error) {
 // Run has the logic to perform the required actions as part of command
 func (uo *UpdateOptions) Run() (err error) {
 
-	compSettings := uo.localConfigInfo.GetComponentSettings()
+	compSettings := uo.LocalConfigInfo.GetComponentSettings()
 	compSettings.SourceLocation = &uo.sourcePath
 	compSettings.SourceType = &uo.sourceType
 	if len(uo.ref) != 0 {
 		compSettings.Ref = &uo.ref
 	}
 
-	err = uo.localConfigInfo.SetComponentSettings(compSettings)
+	err = uo.LocalConfigInfo.SetComponentSettings(compSettings)
 	if err != nil {
 		return err
 	}
@@ -153,7 +153,7 @@ func (uo *UpdateOptions) Run() (err error) {
 		return errors.Wrap(err, "error while updating")
 	}
 
-	cmpName := uo.localConfigInfo.GetName()
+	cmpName := uo.LocalConfigInfo.GetName()
 	log.Successf("The component %s was updated successfully", cmpName)
 	return
 }

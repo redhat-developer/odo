@@ -401,6 +401,7 @@ func (oc *OcRunner) GetEnvs(componentName string, appName string, projectName st
 		"-o", "jsonpath='{range .spec.template.spec.containers[0].env[*]}{.name}:{.value}{\"\\n\"}{end}'")
 
 	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimPrefix(line, "'")
 		splits := strings.Split(line, ":")
 		name := splits[0]
 		value := strings.Join(splits[1:], ":")

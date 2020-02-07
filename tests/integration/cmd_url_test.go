@@ -94,4 +94,23 @@ var _ = Describe("odo url command tests", func() {
 			Expect(desiredURLListJSON).Should(MatchJSON(actualURLListJSON))
 		})
 	})
+
+	Context("when using --now flag with url create / delete", func() {
+		It("should create and delete url on cluster successfully with now flag", func() {
+			url1 := helper.RandString(5)
+			componentName := helper.RandString(6)
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--project", project, componentName, "--ref", "master", "--git", "https://github.com/openshift/nodejs-ex", "--port", "8080,8000")
+			helper.CmdShouldPass("odo", "url", "create", url1, "--context", context, "--port", "8080", "--now")
+			out1 := helper.CmdShouldPass("odo", "url", "list", "--context", context)
+			helper.MatchAllInOutput(out1, []string{url1, "Pushed", url1})
+			helper.DontMatchAllInOutput(out1, []string{"odo push"})
+			routeURL := helper.DetermineRouteURL(context)
+			// Ping said URL
+			helper.HttpWaitFor(routeURL, "Node.js", 30, 1)
+			helper.CmdShouldPass("odo", "url", "delete", url1, "--context", context, "--now", "-f")
+			out2 := helper.CmdShouldFail("odo", "url", "list", "--context", context)
+			Expect(out2).To(ContainSubstring("no URLs found"))
+		})
+	})
 })
