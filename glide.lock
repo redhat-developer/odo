@@ -359,6 +359,8 @@ imports:
   - pkg/user/apis/user
   - pkg/user/apis/user/v1
   - pkg/user/apis/user/validation
+- name: github.com/operator-framework/operator-lifecycle-manager
+  version: 23f5c0292434c41743676abdd2da88f6a26990f5
 - name: github.com/pborman/uuid
   version: 8b1b92947f46224e3b97bb1a3a5b0382be00d31e
 - name: github.com/peterbourgon/diskv
@@ -763,7 +765,7 @@ imports:
   - util/jsonpath
   - util/retry
 - name: k8s.io/klog
-  version: 8139d8cb77af419532b33dfa7dd09fbc5f1d344f
+  version: 8e90cee79f823779174776412c13478955131846
 - name: k8s.io/kube-openapi
   version: 1fddd894a3d3e4eb9f4a20d5849e44102f30a419
   repo: https://github.com/openshift/kube-openapi.git
