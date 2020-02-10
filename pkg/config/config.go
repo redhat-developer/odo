@@ -32,9 +32,6 @@ const (
 const (
 	// Local config
 	localConfigEnvName = "LOCALODOCONFIG"
-
-	// Setting this env to true will expose experimental features to the user
-	OdoExperimentalEnv = "ODO_EXPERIMENTAL"
 )
 
 type ComponentStorageSettings struct {

@@ -3,9 +3,14 @@ package experimental
 import (
 	"os"
 
-	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/preference"
+)
+
+// env variables
+const (
+	// Setting this env to true will expose experimental features to the user
+	OdoExperimentalEnv = "ODO_EXPERIMENTAL"
 )
 
 // IsExperimentalModeEnabled checks if the experimental mode has been enabled
@@ -31,7 +36,7 @@ func IsExperimentalModeEnabled() bool {
 	}
 
 	// Check "ODO_EXPERIMENTAL" env variable
-	experimentalEnvStr, _ := os.LookupEnv(config.OdoExperimentalEnv)
+	experimentalEnvStr, _ := os.LookupEnv(OdoExperimentalEnv)
 	if experimentalEnvStr == "true" {
 		experimentalEnv = true
 	}
