@@ -5,7 +5,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/preference"
 )
 
@@ -58,11 +57,11 @@ func TestIsExperimentalModeEnabled(t *testing.T) {
 
 			// set env if setEnv is true
 			if tt.setEnv {
-				err := os.Setenv(config.OdoExperimentalEnv, "true")
+				err := os.Setenv(OdoExperimentalEnv, "true")
 				if err != nil {
-					t.Errorf("failed to set env %s. err: '%v'", config.OdoExperimentalEnv, err)
+					t.Errorf("failed to set env %s. err: '%v'", OdoExperimentalEnv, err)
 				}
-				defer os.Unsetenv(config.OdoExperimentalEnv)
+				defer os.Unsetenv(OdoExperimentalEnv)
 			}
 
 			// create new preference file
