@@ -58,7 +58,7 @@ var _ = Describe("odo storage command tests", func() {
 			// --app string         Application, defaults to active application
 			// --component string   Component, defaults to active component.
 			// --project string     Project, defaults to active project
-			storAdd := helper.CmdShouldPass("odo", "storage", "create", "pv1", "--path", "/mnt/pv1", "--size", "5Gi", "--context", context)
+			storAdd := helper.CmdShouldPass("odo", "storage", "create", "pv1", "--path", "/mnt/pv1", "--size", "1Gi", "--context", context)
 			Expect(storAdd).To(ContainSubstring("nodejs"))
 			helper.CmdShouldPass("odo", "push", "--context", context)
 
@@ -77,6 +77,7 @@ var _ = Describe("odo storage command tests", func() {
 
 			// delete the storage
 			helper.CmdShouldPass("odo", "storage", "delete", "pv1", "--context", context, "-f")
+			helper.CmdShouldPass("odo", "push", "--context", context)
 
 			storeList = helper.CmdShouldPass("odo", "storage", "list", "--context", context)
 			Expect(storeList).NotTo(ContainSubstring("pv1"))
@@ -92,7 +93,7 @@ var _ = Describe("odo storage command tests", func() {
 			helper.CopyExample(filepath.Join("source", "python"), context)
 			helper.CmdShouldPass("odo", "component", "create", "python", "python", "--app", "pyapp", "--project", project, "--context", context)
 			helper.CmdShouldPass("odo", "push", "--context", context)
-			storAdd := helper.CmdShouldPass("odo", "storage", "create", "pv1", "--path", "/mnt/pv1", "--size", "5Gi", "--context", context)
+			storAdd := helper.CmdShouldPass("odo", "storage", "create", "pv1", "--path", "/mnt/pv1", "--size", "1Gi", "--context", context)
 			Expect(storAdd).To(ContainSubstring("python"))
 			helper.CmdShouldPass("odo", "push", "--context", context)
 
@@ -111,8 +112,10 @@ var _ = Describe("odo storage command tests", func() {
 
 			// delete the storage
 			helper.CmdShouldPass("odo", "storage", "delete", "pv1", "--context", context, "-f")
+			helper.CmdShouldPass("odo", "push", "--context", context)
 
 			storeList = helper.CmdShouldPass("odo", "storage", "list", "--context", context)
+
 			Expect(storeList).NotTo(ContainSubstring("pv1"))
 
 			helper.CmdShouldPass("odo", "push", "--context", context)
@@ -129,9 +132,9 @@ var _ = Describe("odo storage command tests", func() {
 			desiredJSONStorage := `{"kind":"storage","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"mystorage","creationTimestamp":null},"spec":{"size":"1Gi"},"status":{"path":"/opt/app-root/src/storage/"}}`
 			Expect(desiredJSONStorage).Should(MatchJSON(actualJSONStorage))
 
-			actualSrorageList := helper.CmdShouldPass("odo", "storage", "list", "--context", context, "-o", "json")
-			desiredSrorageList := `{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"storage","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"mystorage","creationTimestamp":null},"spec":{"size":"1Gi"},"status":{"path":"/opt/app-root/src/storage/"}}]}`
-			Expect(desiredSrorageList).Should(MatchJSON(actualSrorageList))
+			actualStorageList := helper.CmdShouldPass("odo", "storage", "list", "--context", context, "-o", "json")
+			desiredStorageList := `{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"storage","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"mystorage","creationTimestamp":null},"spec":{"size":"1Gi"},"status":{"path":"/opt/app-root/src/storage/"}, "state":"Not Pushed"}]}`
+			Expect(desiredStorageList).Should(MatchJSON(actualStorageList))
 
 			helper.CmdShouldPass("odo", "storage", "delete", "mystorage", "--context", context, "-f")
 		})
