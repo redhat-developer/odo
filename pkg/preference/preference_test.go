@@ -295,6 +295,46 @@ func TestSetConfiguration(t *testing.T) {
 			want:           99,
 			wantErr:        false,
 		},
+		// experimental setting
+		{
+			name:           fmt.Sprintf("Case 13: %s set nil to true", ExperimentalSetting),
+			parameter:      ExperimentalSetting,
+			value:          "true",
+			existingConfig: Preference{},
+			want:           true,
+			wantErr:        false,
+		},
+		{
+			name:      fmt.Sprintf("Case 14: %s set true to false", ExperimentalSetting),
+			parameter: ExperimentalSetting,
+			value:     "false",
+			existingConfig: Preference{
+				OdoSettings: OdoSettings{
+					Experimental: &trueValue,
+				},
+			},
+			want:    false,
+			wantErr: false,
+		},
+		{
+			name:      fmt.Sprintf("Case 15: %s set false to true", ExperimentalSetting),
+			parameter: ExperimentalSetting,
+			value:     "true",
+			existingConfig: Preference{
+				OdoSettings: OdoSettings{
+					Experimental: &falseValue,
+				},
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name:           fmt.Sprintf("Case 16: %s invalid value", ExperimentalSetting),
+			parameter:      ExperimentalSetting,
+			value:          "invalid_value",
+			existingConfig: Preference{},
+			wantErr:        true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -318,11 +358,16 @@ func TestSetConfiguration(t *testing.T) {
 					if *cfg.OdoSettings.Timeout != tt.want {
 						t.Errorf("unexpeced value after execution of SetConfiguration \ngot: %v \nexpected: %d\n", cfg.OdoSettings.Timeout, tt.want)
 					}
+				case "experimental":
+					if *cfg.OdoSettings.Experimental != tt.want {
+						t.Errorf("unexpeced value after execution of SetConfiguration \ngot: %v \nexpected: %d\n", cfg.OdoSettings.Experimental, tt.want)
+					}
 				}
 			} else if tt.wantErr && err != nil {
 				// negative cases
 				switch tt.parameter {
 				case "updatenotification":
+				case "experimental":
 				case "timeout":
 					typedval, err := strconv.Atoi(tt.value)
 					// if err is found in cases other than value <0 or !ok
@@ -388,6 +433,62 @@ func TestGetupdateNotification(t *testing.T) {
 
 			if output != tt.want {
 				t.Errorf("GetUpdateNotification returned unexpeced value expected \ngot: %t \nexpected: %t\n", output, tt.want)
+			}
+
+		})
+	}
+}
+
+func TestGetExperimental(t *testing.T) {
+
+	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tempConfigFile.Close()
+	os.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
+	trueValue := true
+	falseValue := false
+
+	tests := []struct {
+		name           string
+		existingConfig Preference
+		want           bool
+	}{
+		{
+			name:           fmt.Sprintf("Case 1: %s nil", ExperimentalSetting),
+			existingConfig: Preference{},
+			want:           false,
+		},
+		{
+			name: fmt.Sprintf("Case 2: %s true", ExperimentalSetting),
+			existingConfig: Preference{
+				OdoSettings: OdoSettings{
+					Experimental: &trueValue,
+				},
+			},
+			want: true,
+		},
+		{
+			name: fmt.Sprintf("Case 3: %s false", ExperimentalSetting),
+			existingConfig: Preference{
+				OdoSettings: OdoSettings{
+					Experimental: &falseValue,
+				},
+			},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := PreferenceInfo{
+				Preference: tt.existingConfig,
+			}
+			output := cfg.GetExperimental()
+
+			if output != tt.want {
+				t.Errorf("GetExperimental returned unexpeced value expected \ngot: %t \nexpected: %t\n", output, tt.want)
 			}
 
 		})
