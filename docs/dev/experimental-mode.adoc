@@ -1,0 +1,92 @@
+# Experimental mode in `odo`
+---
+By default, the features in `odo` which are under development or under experiment are not exposed to the user. The `odo` commands/subcommands/flags associated with these features are hidden in `odo` help as well. 
+
+It is understood that the features in experimental mode (hidden by default) are under development and the behavior of these features is subject to change till the feature is not removed from experimental mode and available for use.
+
+#### Enabling Experimental mode:
+Experimental mode can be enabled by:
+- Setting an enviroment variable
+- Setting odo preference
+##### Setting environment variable `ODO_EXPERIMENTAL`:
+Experimental mode can be enabled by setting the enviroment variable `ODO_EXPERIMENTAL=true`
+```sh
+export ODO_EXPERIMENTAL=true
+```
+##### Setting odo preference:
+Experimental mode can be enabled by setting odo preferences as well.
+```sh
+odo preference set experimental true
+```
+#### Working with experimental mode:
+Consider that the support for `odo push` using `--devfile` flag is under development.
+If the experimental mode is enabled, the `odo help push` will show the `--devfile` flag in `odo help push`
+```sh
+$ odo push -h
+Push source code to a component.
+
+Usage:
+  odo push [component name] [flags]
+
+Examples:
+  # Push source code to the current component
+  odo push
+  
+  # Push data to the current component from the original source.
+  odo push
+  
+  # Push source code in ~/mycode to component called my-component
+  odo push my-component --context ~/mycode
+
+Flags:
+      --config               Use config flag to only apply config on to cluster
+      --context string       Use given context directory as a source for component settings
+      --devfile string       Path to a devfile.yaml (default "./devfile.yaml")              <---- seen in help
+  -f, --force-build          Use force-build flag to force building the component
+  -h, --help                 Help for push
+      --ignore stringSlice   Files or folders to be ignored via glob expressions.
+      --show-log             If enabled, logs will be shown when built
+      --source               Use source flag to only push latest source on to cluster
+
+Additional Flags:
+  -v, --v Level              Log level for V logs. Level varies from 0 to 9 (default 0).
+      --vmodule moduleSpec   Comma-separated list of pattern=N settings for file-filtered logging
+```
+
+If experimental mode is not enabled, `--devfile` flag is not seen in the `odo help push`
+```sh
+$ odo push -h
+Push source code to a component.
+
+Usage:
+  odo push [component name] [flags]
+
+Examples:
+  # Push source code to the current component
+  odo push
+  
+  # Push data to the current component from the original source.
+  odo push
+  
+  # Push source code in ~/mycode to component called my-component
+  odo push my-component --context ~/mycode
+
+Flags:
+      --config               Use config flag to only apply config on to cluster
+      --context string       Use given context directory as a source for component settings
+  -f, --force-build          Use force-build flag to force building the component
+  -h, --help                 Help for push
+      --ignore stringSlice   Files or folders to be ignored via glob expressions.
+      --show-log             If enabled, logs will be shown when built
+      --source               Use source flag to only push latest source on to cluster
+
+Additional Flags:
+  -v, --v Level              Log level for V logs. Level varies from 0 to 9 (default 0).
+      --vmodule moduleSpec   Comma-separated list of pattern=N settings for file-filtered logging
+```
+
+If the experimental mode is disabled and the hidden flag is used, it will throw an unknown flag error.
+```sh
+$ odo push --devfile ./devfile.yaml  
+Error: unknown flag: --devfile
+```
