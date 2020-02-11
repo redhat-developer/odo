@@ -24,7 +24,7 @@ func Bootstrap(quayUsername, baseRepo, prefix string) error {
 	}
 	defer f.Close()
 
-	githubAuth, err := CreateOpaqueSecret("github-auth", f)
+	githubAuth, err := createOpaqueSecret("github-auth", f)
 	if err != nil {
 		return err
 	}
@@ -41,7 +41,7 @@ func Bootstrap(quayUsername, baseRepo, prefix string) error {
 	}
 	defer f.Close()
 
-	dockerSecret, err := CreateDockerConfigSecret("regcred", f)
+	dockerSecret, err := createDockerConfigSecret("regcred", f)
 	if err != nil {
 		return err
 	}

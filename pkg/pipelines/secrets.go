@@ -9,15 +9,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// CreateOpaqueSecret creates a Kubernetes v1/Secret with the provided name and
+// createOpaqueSecret creates a Kubernetes v1/Secret with the provided name and
 // body, and type Opaque.
-func CreateOpaqueSecret(name string, in io.Reader) (*corev1.Secret, error) {
+func createOpaqueSecret(name string, in io.Reader) (*corev1.Secret, error) {
 	return createSecret(name, "token", corev1.SecretTypeOpaque, in)
 }
 
-// CreateDockerConfigSecret creates a Kubernetes v1/Secret with the provided name and
+// createDockerConfigSecret creates a Kubernetes v1/Secret with the provided name and
 // body, and type DockerConfigJson.
-func CreateDockerConfigSecret(name string, in io.Reader) (*corev1.Secret, error) {
+func createDockerConfigSecret(name string, in io.Reader) (*corev1.Secret, error) {
 	return createSecret(name, ".dockerconfigjson", corev1.SecretTypeDockerConfigJson, in)
 }
 
