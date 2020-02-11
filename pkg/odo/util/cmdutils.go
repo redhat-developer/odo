@@ -49,7 +49,8 @@ func LogErrorAndExit(err error, context string, a ...interface{}) {
 			if context == "" {
 				log.Error(errors.Cause(err))
 			} else {
-				log.Errorf(strings.Title(context), a...)
+				printstring := fmt.Sprintf("%s%s", strings.Title(context), "\nError: %v")
+				log.Errorf(printstring, err)
 			}
 		}
 
