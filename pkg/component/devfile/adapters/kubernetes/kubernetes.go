@@ -32,11 +32,10 @@ func (k Adapter) Start() error {
 	}
 
 	var containers []corev1.Container
-	for _, comp := range k.Devfile.Data.GetComponents() {
-		// Only components with aliases are considered because without an alias commands cannot reference them
-		if comp.Type == devfileCommon.DevfileComponentTypeDockerimage && comp.Alias != nil {
-			glog.V(3).Info("Found component: %v\n", comp.Type)
-			glog.V(3).Info("Component alias: %v\n", *comp.Alias)
+	// Only components with aliases are considered because without an alias commands cannot reference them
+	for _, comp := range k.Devfile.Data.GetAliasedComponents() {
+		if comp.Type == devfileCommon.DevfileComponentTypeDockerimage {
+			glog.V(3).Infof("Found component %v with alias %v\n", comp.Type, *comp.Alias)
 			envVars := convertEnvs(comp.Env)
 			resourceReqs := getResourceReqs(comp)
 			container := kclient.GenerateContainer(*comp.Alias, *comp.Image, false, comp.Command, comp.Args, envVars, resourceReqs)
@@ -51,9 +50,9 @@ func (k Adapter) Start() error {
 	podTemplateSpec := kclient.GeneratePodTemplateSpec(componentName, k.Client.Namespace, labels, containers)
 	deploymentSpec := kclient.GenerateDeploymentSpec(*podTemplateSpec)
 
-	glog.V(3).Info("Successfully created component %v", componentName)
-	glog.V(3).Info("Creating deployment\n", deploymentSpec.Template.GetName())
-	glog.V(3).Info("The component name is %v\n", componentName)
+	glog.V(3).Infof("Successfully created component %v", componentName)
+	glog.V(3).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
+	glog.V(3).Infof("The component name is %v", componentName)
 
 	_, err = k.Client.CreateDeployment(componentName, *deploymentSpec)
 	if err != nil {
