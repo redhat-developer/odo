@@ -10,7 +10,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/cli/config"
 	"github.com/openshift/odo/pkg/odo/cli/debug"
-	"github.com/openshift/odo/pkg/odo/cli/experimental"
 	"github.com/openshift/odo/pkg/odo/cli/login"
 	"github.com/openshift/odo/pkg/odo/cli/logout"
 	"github.com/openshift/odo/pkg/odo/cli/preference"
@@ -22,6 +21,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/version"
 	"github.com/openshift/odo/pkg/odo/util"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
+	"github.com/openshift/odo/pkg/odo/util/experimental"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
