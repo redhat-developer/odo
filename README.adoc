@@ -108,16 +108,37 @@ https://asciinema.org/a/wVkVgUrO7PGR5CYBFbHB5fFDn[image:https://asciinema.org/a/
 [[contributing]]
 == Community, discussion, contribution, and support
 
-*Chat:* Join us on link:https://join.slack.com/t/openshiftdo/shared_invite/enQtODUwMjIzMzE2MjYyLWM3YjlkNTViOGNjZGQ5YjFlMzc2N2RhZjVmMDQ5NWY5ZDQ3NzMzZjYxMTE1MjY5OTVmZjgxZWMyMGRmOTc4Y2I[Slack].
 
-*Discussions:* For any developmental discussions with `odo`, use our link:https://groups.google.com/forum/\#!forum/odo-dev[odo-dev Google group], for general help and inquiries, join our link:https://groups.google.com/forum/\#!forum/odo-users[odo-users Google group].
+=== Communication channels
+
+*Discussions:*
+
+* For general help and inquiries, join our link:https://groups.google.com/forum/\#!forum/odo-users[odo-users Google group].
+* For any developmental discussion, use our link:https://groups.google.com/forum/\#!forum/odo-dev[odo-dev Google group]
+
+*Chat:* Join us on link:https://join.slack.com/t/openshiftdo/shared_invite/enQtODUwMjIzMzE2MjYyLWM3YjlkNTViOGNjZGQ5YjFlMzc2N2RhZjVmMDQ5NWY5ZDQ3NzMzZjYxMTE1MjY5OTVmZjgxZWMyMGRmOTc4Y2I[Slack].
 
 *Issues:* If you have an issue with `odo`, please link:https://github.com/openshift/odo/issues[file it].
 
 *Documentation Issues*: If you have any documentation issues related to the link:https://docs.openshift.com[docs.openshift.com] site, file an issue in link:https://bugzilla.redhat.com/[Bugzilla]. Choose the OpenShift Container Platform product type and the Documentation component type.
 
-*Contributing:* Want to become a contributor and submit your own code?
+=== Contributing
+Want to become a contributor and submit your own code?
 Have a look at our link:https://github.com/openshift/odo/blob/master/docs/dev/development.adoc[Development Guide].
+
+We work in 3 week cycles sprints. On a week when sprint starts we have 2 planning calls:
+
+* "Sprint Planning Preparation and Issue Triage" - on Monday
+* "Sprint Planning" - on Wednesday
+
+On top of sprint planning calls we have regular "odo contributors call" (on Tuesdays every 2 weeks). This is where we discuss technical challenges and anything that is related to odo development.
+
+All our calls are open. You are welcome to join any of our calls.
+
+You can find exact dates of all scheduled odo calls together with sprint dates in link:https://calendar.google.com/calendar/embed?src=gi0s0v5ukfqkjpnn26p6va3jfc%40group.calendar.google.com[odo calendar] (link:https://calendar.google.com/calendar/ical/gi0s0v5ukfqkjpnn26p6va3jfc%40group.calendar.google.com/public/basic.ics[iCal format]).
+
+In order to participate in calls, please join  link:https://groups.google.com/forum/\#!forum/odo-dev[odo-dev Google group]. When you join the group you should automatically get invites to all odo related calls and get permissions to all necessary documents.
+
 
 [[projects-using-odo]]
 == Projects using odo
