@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/util"
@@ -851,5 +852,104 @@ func TestPush(t *testing.T) {
 			}
 		})
 
+	}
+}
+
+func TestListStorageWithState(t *testing.T) {
+	componentName := "nodejs"
+	appName := "app"
+
+	pvc1 := testingutil.FakePVC(generatePVCNameFromStorageName("storage-1-app"), "100Mi", getStorageLabels("storage-1", componentName, appName))
+
+	pvc3 := testingutil.FakePVC(generatePVCNameFromStorageName("storage-3-app"), "100Mi", getStorageLabels("storage-3", componentName, appName))
+
+	storage1 := GetMachineReadableFormat("storage-1", "100Mi", "/tmp1")
+	storage1.State = StateTypePushed
+
+	storage2 := GetMachineReadableFormat("storage-2", "100Mi", "/tmp2")
+	storage2.State = StateTypeNotPushed
+
+	storage3 := GetMachineReadableFormat("storage-3", "100Mi", "/tmp3")
+	storage3.State = StateTypeLocallyDeleted
+
+	tests := []struct {
+		name              string
+		localConfig       config.LocalConfigInfo
+		returnedPVCs      corev1.PersistentVolumeClaimList
+		mountedMap        map[string]*corev1.PersistentVolumeClaim
+		wantedStorageList StorageList
+		wantErr           bool
+	}{
+		{
+			name:        "case 1: Storage is Pushed",
+			localConfig: config.GetOneExistingConfigInfoStorage(componentName, appName, "test", "storage-1", "100Mi", "/tmp1"),
+			returnedPVCs: corev1.PersistentVolumeClaimList{
+				Items: []corev1.PersistentVolumeClaim{
+					*pvc1,
+				},
+			},
+			mountedMap: map[string]*corev1.PersistentVolumeClaim{
+				"/tmp1": pvc1,
+			},
+			wantedStorageList: GetMachineReadableFormatForList([]Storage{storage1}),
+			wantErr:           false,
+		},
+		{
+			name: "case 1: Storage is Not Pushed",
+			// Storage present in local conf
+			localConfig: config.GetOneExistingConfigInfoStorage(componentName, appName, "test", "storage-2", "100Mi", "/tmp2"),
+			// Return PVC's from cluster
+			returnedPVCs: corev1.PersistentVolumeClaimList{
+				Items: []corev1.PersistentVolumeClaim{},
+			},
+			mountedMap:        map[string]*corev1.PersistentVolumeClaim{},
+			wantedStorageList: GetMachineReadableFormatForList([]Storage{storage2}),
+			wantErr:           false,
+		},
+
+		{
+
+			name: "case 3: Storage is Locally Deleted",
+			// storage-1 present in local conf
+			localConfig: config.GetOneExistingConfigInfoStorage(componentName, appName, "test", "storage-1", "100Mi", "/tmp1"),
+			// pvc1, pvc3 present in cluster
+			returnedPVCs: corev1.PersistentVolumeClaimList{
+				Items: []corev1.PersistentVolumeClaim{*pvc1, *pvc3},
+			},
+			mountedMap:        map[string]*corev1.PersistentVolumeClaim{"/tmp1": pvc1, "/tmp3": pvc3},
+			wantedStorageList: GetMachineReadableFormatForList([]Storage{storage1, storage3}),
+			wantErr:           false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeClient, fakeClientSet := occlient.FakeNew()
+
+			dcTesting := testingutil.OneFakeDeploymentConfigWithMounts(componentName, "", appName, tt.mountedMap)
+
+			fakeClientSet.AppsClientset.PrependReactor("list", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, &v1.DeploymentConfigList{
+					Items: []v1.DeploymentConfig{
+						*dcTesting,
+					},
+				}, nil
+			})
+
+			fakeClientSet.Kubernetes.PrependReactor("list", "persistentvolumeclaims", func(action ktesting.Action) (bool, runtime.Object, error) {
+				return true, &tt.returnedPVCs, nil
+			})
+
+			storageList, err := ListStorageWithState(fakeClient, &tt.localConfig, componentName, appName)
+			if err == nil && !tt.wantErr {
+				if !reflect.DeepEqual(storageList, tt.wantedStorageList) {
+					t.Errorf("storageList not equal, expected: %v, got: %v", tt.wantedStorageList, storageList.Items)
+				}
+			} else if err == nil && tt.wantErr {
+				t.Error("test failed, expected: false, got true")
+			} else if err != nil && !tt.wantErr {
+				t.Errorf("test failed, expected: no error, got error: %s", err.Error())
+			}
+		})
 	}
 }

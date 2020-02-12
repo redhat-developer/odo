@@ -140,4 +140,29 @@ var _ = Describe("odo storage command tests", func() {
 		})
 	})
 
+	Context("when running storage list command to check state", func() {
+		It("should list storage with correct state", func() {
+
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CmdShouldPass("odo", "component", "create", "nodejs", "nodejs", "--app", "nodeapp", "--project", project, "--context", context)
+			helper.CmdShouldPass("odo", "push", "--context", context)
+
+			// create storage, list storage should have state "Not Pushed"
+			helper.CmdShouldPass("odo", "storage", "create", "pv1", "--path=/tmp1", "--size=1Gi", "--context", context)
+			StorageList := helper.CmdShouldPass("odo", "storage", "list", "--context", context)
+			Expect(StorageList).To(ContainSubstring("Not Pushed"))
+
+			// Push storage, list storage should have state "Pushed"
+			helper.CmdShouldPass("odo", "push", "--context", context)
+			StorageList = helper.CmdShouldPass("odo", "storage", "list", "--context", context)
+			Expect(StorageList).To(ContainSubstring("Pushed"))
+
+			// Delete storage, list storage should have state "Locally Deleted"
+			helper.CmdShouldPass("odo", "storage", "delete", "pv1", "-f", "--context", context)
+			StorageList = helper.CmdShouldPass("odo", "storage", "list", "--context", context)
+			Expect(StorageList).To(ContainSubstring("Locally Deleted"))
+
+		})
+	})
+
 })
