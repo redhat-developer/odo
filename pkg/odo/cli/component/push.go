@@ -8,6 +8,7 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
+	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -32,6 +33,9 @@ const PushRecommendedCommandName = "push"
 // PushOptions encapsulates options that push command uses
 type PushOptions struct {
 	*CommonPushOptions
+
+	// devfile path
+	devfilePath string
 }
 
 // NewPushOptions returns new instance of PushOptions
@@ -44,6 +48,11 @@ func NewPushOptions() *PushOptions {
 
 // Complete completes push args
 func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+
+	if experimental.IsExperimentalModeEnabled() {
+		return nil
+	}
+
 	conf, err := config.NewLocalConfigInfo(po.componentContext)
 	if err != nil {
 		return errors.Wrap(err, "unable to retrieve configuration information")
@@ -75,6 +84,10 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 // Validate validates the push parameters
 func (po *PushOptions) Validate() (err error) {
 
+	if experimental.IsExperimentalModeEnabled() {
+		return nil
+	}
+
 	log.Info("Validation")
 
 	// First off, we check to see if the component exists. This is ran each time we do `odo push`
@@ -102,7 +115,14 @@ func (po *PushOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (po *PushOptions) Run() (err error) {
-	return po.Push()
+	// if experimental mode is enabled, use devfile push
+	if experimental.IsExperimentalModeEnabled() {
+		// devfile push
+		return po.DevfilePush()
+	} else {
+		// Legacy odo push
+		return po.Push()
+	}
 }
 
 // NewCmdPush implements the push odo command
@@ -126,6 +146,11 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 	pushCmd.Flags().BoolVar(&po.pushConfig, "config", false, "Use config flag to only apply config on to cluster")
 	pushCmd.Flags().BoolVar(&po.pushSource, "source", false, "Use source flag to only push latest source on to cluster")
 	pushCmd.Flags().BoolVarP(&po.forceBuild, "force-build", "f", false, "Use force-build flag to force building the component")
+
+	// enable devfile flag if experimental mode is enabled
+	if experimental.IsExperimentalModeEnabled() {
+		pushCmd.Flags().StringVar(&po.devfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
+	}
 
 	pushCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(pushCmd, completion.ComponentNameCompletionHandler)
