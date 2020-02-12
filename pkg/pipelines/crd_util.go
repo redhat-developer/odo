@@ -9,8 +9,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-// IsTektonPipelineInstalled returns true if Tekton Pipeline CRD is installed.   Otherwiise, it returns false.
-func IsTektonPipelineInstalled() (bool, error) {
+// IsTektonPipelinesInstalled returns true if Tekton Pipeline CRD is installed.   Otherwiise, it returns false.
+func IsTektonPipelinesInstalled() (bool, error) {
 
 	// obtain kubeconfig
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
