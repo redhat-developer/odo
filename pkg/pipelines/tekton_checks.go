@@ -10,6 +10,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+// These CRDs names are checked to confirm that Tekton Pipelines/Triggers has been installed.
 var requiredCRDNames = []string{
 	"pipelineresources.tekton.dev", "pipelineresources.tekton.dev",
 	"pipelineruns.tekton.dev", "triggerbindings.tekton.dev", "triggertemplates.tekton.dev",
@@ -57,7 +58,7 @@ func isCRDFound(crdInterface v1beta1.CustomResourceDefinitionInterface, crdName 
 
 // areCRDsInstalled returns true if all given CRDs are fouund.   Otherwise, it returns false.
 // If crdNames is empty, it returns false.
-func areCRDsInstalled(crdNames ...string) (bool, error) {
+func areCRDsInstalled(crdNames []string) (bool, error) {
 	// If crdNames is empty, it returns false.
 	if len(crdNames) == 0 {
 		return false, nil
@@ -92,6 +93,5 @@ func areCRDsInstalled(crdNames ...string) (bool, error) {
 
 // isTektonPipelinesInstalled returns true if Tekton Pipeline CRD is installed.   Otherwiise, it returns false.
 func isTektonPipelinesInstalled() (bool, error) {
-	return areCRDsInstalled(requiredCRDNames...)
-
+	return areCRDsInstalled(requiredCRDNames)
 }
