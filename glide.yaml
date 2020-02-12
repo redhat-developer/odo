@@ -70,3 +70,4 @@ import:
   version: v1.2.0
 - package: github.com/operator-framework/operator-lifecycle-manager
   version: release-4.1
+- package: github.com/golang/groupcache
