@@ -3,6 +3,7 @@ package helper
 import (
 	"bufio"
 	"fmt"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -272,6 +273,13 @@ func (oc *OcRunner) checkForImageStream(name string, tag string) bool {
 		return true
 	}
 	return false
+}
+
+// ImportImageFromRegistry import the required image of the respective component type from the specified registry
+func (oc *OcRunner) ImportImageFromRegistry(registry, image, cmpType, project string) {
+	CmdShouldPass(oc.path, "--request-timeout", "5m", "import-image", cmpType, "--namespace="+project, "--from="+filepath.Join(registry, image), "--confirm")
+	CmdShouldPass(oc.path, "annotate", filepath.Join("istag", cmpType), "--namespace="+project, "tags=builder", "--overwrite")
+
 }
 
 // ImportJavaIS import the openjdk image which is used for jars
