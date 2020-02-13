@@ -28,10 +28,8 @@ var pushCmdExample = ktemplates.Examples(`  # Push source code to the current co
 %[1]s my-component --context ~/mycode
   `)
 
-const (
-	// PushRecommendedCommandName is the recommended push command name
-	PushRecommendedCommandName = "push"
-)
+// PushRecommendedCommandName is the recommended push command name
+const PushRecommendedCommandName = "push"
 
 // PushOptions encapsulates options that push command uses
 type PushOptions struct {
