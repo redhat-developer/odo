@@ -76,11 +76,7 @@ func (o *ListServicesOptions) Validate() (err error) {
 // Run contains the logic for the command associated with ListServicesOptions
 func (o *ListServicesOptions) Run() (err error) {
 	if log.IsJSON() {
-		services, err := catalog.ListServices(o.Client)
-		if err != nil {
-			return fmt.Errorf("unable to list services because Service Catalog is not enabled in your cluster: %v", err)
-		}
-		machineoutput.OutputSuccess(services)
+		machineoutput.OutputSuccess(o.services)
 	} else {
 		if len(o.csvs.Items) > 0 {
 			util.DisplayClusterServiceVersions(o.csvs)
