@@ -9,6 +9,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -30,9 +31,6 @@ var pushCmdExample = ktemplates.Examples(`  # Push source code to the current co
 const (
 	// PushRecommendedCommandName is the recommended push command name
 	PushRecommendedCommandName = "push"
-
-	// devfile flag name
-	devfileFlagName = "devfile"
 )
 
 // PushOptions encapsulates options that push command uses
@@ -41,9 +39,6 @@ type PushOptions struct {
 
 	// devfile path
 	devfilePath string
-
-	// indicates if --devfile flag has been explicitly set on cli
-	devfileFlag bool
 }
 
 // NewPushOptions returns new instance of PushOptions
@@ -57,13 +52,8 @@ func NewPushOptions() *PushOptions {
 // Complete completes push args
 func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 
-	// if experimental mode is enabled, check if --devfile flag is explicitly set
-	if experimental.IsExperimentalModeEnabled() {
-		if cmd.Flags().Changed(devfileFlagName) {
-			po.devfileFlag = true
-		} else {
-			po.devfileFlag = false
-		}
+	// if experimental mode is enabled and devfile is present
+	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.devfilePath) {
 		return nil
 	}
 
@@ -98,7 +88,8 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 // Validate validates the push parameters
 func (po *PushOptions) Validate() (err error) {
 
-	if experimental.IsExperimentalModeEnabled() {
+	// if experimental flag is set and devfile is present
+	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.devfilePath) {
 		return nil
 	}
 
@@ -130,7 +121,7 @@ func (po *PushOptions) Validate() (err error) {
 // Run has the logic to perform the required actions as part of command
 func (po *PushOptions) Run() (err error) {
 	// if experimental mode is enabled, use devfile push
-	if experimental.IsExperimentalModeEnabled() && po.devfileFlag && po.devfilePath != "" {
+	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.devfilePath) {
 		// devfile push
 		return po.DevfilePush()
 	} else {
@@ -163,7 +154,7 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 
 	// enable devfile flag if experimental mode is enabled
 	if experimental.IsExperimentalModeEnabled() {
-		pushCmd.Flags().StringVar(&po.devfilePath, devfileFlagName, "", "Path to a devfile.yaml")
+		pushCmd.Flags().StringVar(&po.devfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
 	}
 
 	pushCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
