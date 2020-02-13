@@ -21,12 +21,17 @@ TEST_EXEC_NODES ?= 2
 # Slow spec threshold for ginkgo tests. After this time (in second), ginkgo marks test as slow
 SLOW_SPEC_THRESHOLD := 120
 
-# Env variable GINKGO_VERBOSE_MODE is used to get control over enabling ginkgo
-# verbose mode against each test target run. By default ginkgo verbosity is not enabled.
-# To enable verbosity export or set env GINKGO_VERBOSE_MODE like "GINKGO_VERBOSE_MODE=-v"
-GINKGO_VERBOSE_MODE ?=
+# Env variable GINKGO_TEST_ARGS is used to get control over enabling ginkgo test flags against each test target run.
+# For example:
+# To enable verbosity export or set env GINKGO_TEST_ARGS like "GINKGO_TEST_ARGS=-v"
+GINKGO_TEST_ARGS ?=
 
-GINKGO_FLAGS_ALL = $(GINKGO_VERBOSE_MODE) -randomizeAllSpecs -slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -timeout $(TIMEOUT)
+# Env variable UNIT_TEST_ARGS is used to get control over enabling test flags along with go test.
+# For example:
+# To enable verbosity export or set env GINKGO_TEST_ARGS like "GINKGO_TEST_ARGS=-v"
+UNIT_TEST_ARGS ?=
+
+GINKGO_FLAGS_ALL = $(GINKGO_TEST_ARGS) -randomizeAllSpecs -slowSpecThreshold=$(SLOW_SPEC_THRESHOLD) -timeout $(TIMEOUT)
 
 # Flags for tests that must not be run in parallel.
 GINKGO_FLAGS_SERIAL = $(GINKGO_FLAGS_ALL) -nodes=1
@@ -130,7 +135,7 @@ configure-installer-tests-cluster:
 
 .PHONY: test
 test:
-	go test -race $(PKGS)
+	go test $(UNIT_TEST_ARGS) -race $(PKGS)
 
 # Run generic integration tests
 .PHONY: test-generic
