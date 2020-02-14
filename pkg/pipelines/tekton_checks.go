@@ -2,6 +2,7 @@ package pipelines
 
 import (
 	"errors"
+	"fmt"
 
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
@@ -41,13 +42,13 @@ func newTektonChecker() (*tektonChecker, error) {
 	// obtain client config
 	clientConfig, err := getClientConfig()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get client config due to %w", err)
 	}
 
 	// get client set from client config
 	cs, err := clientset.NewForConfig(clientConfig)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get APIs client due to %w", err)
 	}
 
 	return &tektonChecker{
@@ -74,7 +75,7 @@ func (s *checkStrategy) isCRDFound(crdName string) (bool, error) {
 		if errs.IsNotFound(err) {
 			return false, nil
 		}
-		return false, err
+		return false, fmt.Errorf("failed to get CRD for '%s' due to %w", crdName, err)
 	}
 
 	return crd != nil, nil
