@@ -6,6 +6,8 @@ import (
 	"path"
 
 	"github.com/mitchellh/go-homedir"
+	"github.com/openshift/odo/pkg/pipelines/eventlisteners"
+	"github.com/openshift/odo/pkg/pipelines/routes"
 	"sigs.k8s.io/yaml"
 )
 
@@ -56,6 +58,12 @@ func Bootstrap(quayUsername, baseRepo, prefix string) error {
 		return err
 	}
 	outputs = append(outputs, dockerSecret)
+
+	eventListener := eventlisteners.GenerateEventListener()
+	outputs = append(outputs, eventListener)
+
+	route := routes.GenerateRoute()
+	outputs = append(outputs, route)
 
 	for _, r := range outputs {
 		data, err := yaml.Marshal(r)
