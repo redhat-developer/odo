@@ -19,10 +19,8 @@ const (
 )
 
 // GenerateEventListener will create the required eventlisteners
-func GenerateEventListener(baseRepo string) triggersv1.EventListener {
-	githubRepo := baseRepo
-	githubStageRepo := baseRepo + "-stage-config"
-
+func GenerateEventListener(githubRepo string) triggersv1.EventListener {
+	githubStageRepo := githubRepo + "-stage-config"
 	return triggersv1.EventListener{
 		TypeMeta:   createListenerTypeMeta(),
 		ObjectMeta: createListenerObjectMeta("cicd-event-listener"),
