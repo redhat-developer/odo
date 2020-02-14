@@ -1,9 +1,11 @@
 package pipelines
 
 import (
+	"errors"
+
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	errs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/client-go/rest"
@@ -17,8 +19,8 @@ var requiredCRDNames = []string{
 	"clustertasks.tekton.dev", "taskruns.tekton.dev", "tasks.tekton.dev",
 }
 
-// checkInterface contains a method to return whether Tekton is installed
-type checkInterface interface {
+// installedCRDChecker contains a method to return whether Tekton is installed
+type installedCRDChecker interface {
 	checkInstall() (bool, error)
 }
 
@@ -26,7 +28,7 @@ type checkInterface interface {
 type checkStrategy struct {
 	client       v1beta1.CustomResourceDefinitionInterface
 	requiredCRDs []string
-	check        checkInterface
+	check        installedCRDChecker
 }
 
 // tektonChecker object that knows how to perform Tekton installation checks
@@ -69,7 +71,7 @@ func (s *checkStrategy) isCRDFound(crdName string) (bool, error) {
 	crd, err := s.client.Get(crdName, metav1.GetOptions{})
 	if err != nil {
 		// return false if CRD is not found
-		if errors.IsNotFound(err) {
+		if errs.IsNotFound(err) {
 			return false, nil
 		}
 		return false, err
@@ -79,11 +81,10 @@ func (s *checkStrategy) isCRDFound(crdName string) (bool, error) {
 }
 
 // checkInstall returns true if all given CRDs are fouund.   Otherwise, it returns false.
-// If crdNames is empty, it returns false.
 func (s *checkStrategy) checkInstall() (bool, error) {
-	// If crdNames is empty, it returns false.
+	// If s.requiredCRDs is empty, we throw an error.
 	if len(s.requiredCRDs) == 0 {
-		return false, nil
+		return false, errors.New("no CRD names provided")
 	}
 
 	// check each CRD name
@@ -91,7 +92,7 @@ func (s *checkStrategy) checkInstall() (bool, error) {
 		found, err := s.isCRDFound(name)
 		if err != nil {
 			// return false if CRD is not found
-			if errors.IsNotFound(err) {
+			if errs.IsNotFound(err) {
 				return false, nil
 			}
 			return false, err
@@ -107,7 +108,7 @@ func (s *checkStrategy) checkInstall() (bool, error) {
 	return true, nil
 }
 
-// checkInstall returns true if Tekton Pipeline CRD is installed.   Otherwiise, it returns false.
+// checkInstall returns true if Tekton Pipeline CRD is installed.   Otherwise, it returns false.
 func (t *tektonChecker) checkInstall() (bool, error) {
 	return t.strategy.checkInstall()
 }

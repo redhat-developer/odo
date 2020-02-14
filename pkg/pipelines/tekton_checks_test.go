@@ -13,7 +13,7 @@ import (
 
 func TestTektonChecker(t *testing.T) {
 	var tests = []struct {
-		desscription       string
+		description        string
 		existingCRDs       []runtime.Object
 		wantedResult       bool
 		wantedErrorMessage string
@@ -93,7 +93,7 @@ func TestTektonChecker(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.desscription, func(t *testing.T) {
+		t.Run(test.description, func(t *testing.T) {
 
 			tektonChecker, err := newFakeChecker(test.existingCRDs)
 			if err != nil {
@@ -101,7 +101,7 @@ func TestTektonChecker(t *testing.T) {
 			}
 			result, err := tektonChecker.checkInstall()
 			if result != test.wantedResult {
-				t.Fatalf("Want check result '%v', but got '%v'", test.wantedResult, result)
+				t.Errorf("Want check result '%v', but got '%v'", test.wantedResult, result)
 			}
 			var errMessage string = ""
 			if err != nil {
@@ -109,7 +109,7 @@ func TestTektonChecker(t *testing.T) {
 			}
 
 			if diff := cmp.Diff(test.wantedErrorMessage, errMessage); diff != "" {
-				t.Fatalf("Unexpected error \n%s", diff)
+				t.Errorf("Unexpected error \n%s", diff)
 			}
 		})
 	}
