@@ -12,21 +12,30 @@ import (
 
 // These CRDs names are checked to confirm that Tekton Pipelines/Triggers has been installed.
 var requiredCRDNames = []string{
-	"pipelineresources.tekton.dev", "pipelineresources.tekton.dev",
-	"pipelineruns.tekton.dev", "triggerbindings.tekton.dev", "triggertemplates.tekton.dev",
+	"pipelines.tekton.dev", "pipelineresources.tekton.dev", "pipelineruns.tekton.dev",
+	"triggerbindings.tekton.dev", "triggertemplates.tekton.dev",
 	"clustertasks.tekton.dev", "taskruns.tekton.dev", "tasks.tekton.dev",
 }
 
-// getClientConfig returns client config to be used to create client
-func getClientConfig() (*rest.Config, error) {
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	configOverrides := &clientcmd.ConfigOverrides{}
-	kubeconfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
-	return kubeconfig.ClientConfig()
+// checkInterface contains a method to return whether Tekton is installed
+type checkInterface interface {
+	checkInstall() (bool, error)
 }
 
-// getCRDInterface returns CustomResourceDefinitionInterface
-func getCRDInterface() (v1beta1.CustomResourceDefinitionInterface, error) {
+// Strategy to check Tekton install which is checking the existence of CRDs
+type checkStrategy struct {
+	client       v1beta1.CustomResourceDefinitionInterface
+	requiredCRDs []string
+	check        checkInterface
+}
+
+// tektonChecker object that knows how to perform Tekton installation checks
+type tektonChecker struct {
+	strategy *checkStrategy
+}
+
+// newTektonChecker constructs a tektonChecker that is backed by a client configured with user's kubeconfig
+func newTektonChecker() (*tektonChecker, error) {
 	// obtain client config
 	clientConfig, err := getClientConfig()
 	if err != nil {
@@ -39,12 +48,25 @@ func getCRDInterface() (v1beta1.CustomResourceDefinitionInterface, error) {
 		return nil, err
 	}
 
-	return cs.ApiextensionsV1beta1().CustomResourceDefinitions(), nil
+	return &tektonChecker{
+		strategy: &checkStrategy{
+			requiredCRDs: requiredCRDNames,
+			client:       cs.ApiextensionsV1beta1().CustomResourceDefinitions(),
+		},
+	}, nil
+}
+
+// getClientConfig returns client config to be used to create client
+func getClientConfig() (*rest.Config, error) {
+	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+	configOverrides := &clientcmd.ConfigOverrides{}
+	kubeconfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+	return kubeconfig.ClientConfig()
 }
 
 // isCRDFound retuns true if crdName is found.  Otherwise, it returns false.
-func isCRDFound(crdInterface v1beta1.CustomResourceDefinitionInterface, crdName string) (bool, error) {
-	crd, err := crdInterface.Get(crdName, metav1.GetOptions{})
+func (s *checkStrategy) isCRDFound(crdName string) (bool, error) {
+	crd, err := s.client.Get(crdName, metav1.GetOptions{})
 	if err != nil {
 		// return false if CRD is not found
 		if errors.IsNotFound(err) {
@@ -56,23 +78,17 @@ func isCRDFound(crdInterface v1beta1.CustomResourceDefinitionInterface, crdName 
 	return crd != nil, nil
 }
 
-// areCRDsInstalled returns true if all given CRDs are fouund.   Otherwise, it returns false.
+// checkInstall returns true if all given CRDs are fouund.   Otherwise, it returns false.
 // If crdNames is empty, it returns false.
-func areCRDsInstalled(crdNames []string) (bool, error) {
+func (s *checkStrategy) checkInstall() (bool, error) {
 	// If crdNames is empty, it returns false.
-	if len(crdNames) == 0 {
+	if len(s.requiredCRDs) == 0 {
 		return false, nil
 	}
 
-	// get CRD interface
-	crdInterface, err := getCRDInterface()
-	if err != nil {
-		return false, err
-	}
-
 	// check each CRD name
-	for _, name := range crdNames {
-		found, err := isCRDFound(crdInterface, name)
+	for _, name := range s.requiredCRDs {
+		found, err := s.isCRDFound(name)
 		if err != nil {
 			// return false if CRD is not found
 			if errors.IsNotFound(err) {
@@ -91,7 +107,7 @@ func areCRDsInstalled(crdNames []string) (bool, error) {
 	return true, nil
 }
 
-// isTektonPipelinesInstalled returns true if Tekton Pipeline CRD is installed.   Otherwiise, it returns false.
-func isTektonPipelinesInstalled() (bool, error) {
-	return areCRDsInstalled(requiredCRDNames)
+// checkInstall returns true if Tekton Pipeline CRD is installed.   Otherwiise, it returns false.
+func (t *tektonChecker) checkInstall() (bool, error) {
+	return t.strategy.checkInstall()
 }
