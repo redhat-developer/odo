@@ -1,0 +1,14 @@
+run:
+  build-tags:
+  - e2e
+  skip-dirs:
+  - vendor
+  - pkg/client/clientset/(.*)/fake
+linters:
+  enable:
+  - errcheck
+  - gofmt
+  - goimports
+  - gosec
+  - gocritic
+  - golint

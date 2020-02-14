@@ -1,0 +1,120 @@
+apiVersion: tekton.dev/v1alpha1
+kind: Task
+metadata:
+  name: create-ingress
+spec:
+  volumes:
+  - name: work
+    emptyDir: {}
+
+  inputs:
+    params:
+    - name: CreateCertificate
+      description: "Enables/disables the creation of a self-signed certificate for $(inputs.params.ExternalDomain)"
+      default: "true"
+    - name: CertificateKeyPassphrase
+      description: "Phrase that protects private key. This must be provided when the self-signed certificate is created"
+    - name: CertificateSecretName
+      description: "Secret name for Ingress certificate. The Secret should not exist if the self-signed certificate creation is enabled"
+    - name: ExternalDomain
+      description: "The external domain for the EventListener e.g. `$(inputs.params.EventListenerName).PROXYIP.nip.io`"
+    - name: Service
+      description: "The name of the Service used in the Ingress. This will also be the name of the Ingress."
+    - name: ServicePort
+      description: "The service port that the ingress is being created on"
+    - name: ServiceUID
+      description: "The uid of the service. If set, this creates an owner reference on the service"
+      default: ""
+
+  steps:
+  - name: generate-certificate
+    image: frapsoft/openssl
+    volumeMounts:
+    - name: work
+      mountPath: /var/tmp/work
+    command:
+    - sh
+    args:
+    - -ce
+    - |
+      set -e
+      cat <<EOF | sh
+      #!/bin/sh
+      if [ $(inputs.params.CreateCertificate) = "false" ];then
+        exit 0
+      fi
+      mkdir /var/tmp/work/ingress
+      openssl genrsa -des3 -out /var/tmp/work/ingress/key.pem -passout pass:$(inputs.params.CertificateKeyPassphrase) 2048
+      openssl req -x509 -new -nodes -key /var/tmp/work/ingress/key.pem -sha256 -days 1825 -out /var/tmp/work/ingress/certificate.pem -passin pass:$(inputs.params.CertificateKeyPassphrase) -subj /CN=$(inputs.params.ExternalDomain)
+      openssl rsa -in /var/tmp/work/ingress/key.pem -out /var/tmp/work/ingress/key.pem -passin pass:$(inputs.params.CertificateKeyPassphrase)
+      EOF
+  - name: create-certificate-secret
+    image: lachlanevenson/k8s-kubectl:latest
+    volumeMounts:
+    - name: work
+      mountPath: /var/tmp/work
+    command:
+    - sh
+    args:
+    - -ce
+    - |
+      set -e
+      cat <<EOF | sh
+      #!/bin/sh
+      if [ $(inputs.params.CreateCertificate) = "false" ];then
+        exit 0
+      fi
+      kubectl create secret tls $(inputs.params.CertificateSecretName) --cert=/var/tmp/work/ingress/certificate.pem --key=/var/tmp/work/ingress/key.pem || true
+      EOF
+  - name: create-ingress
+    image: lachlanevenson/k8s-kubectl:latest
+    command:
+    - sh
+    args:
+    - -ce
+    - |
+      set -e
+      if [ -n "$(inputs.params.ServiceUID)" ];then
+        cat <<EOF | kubectl create -f - || true
+        apiVersion: extensions/v1beta1
+        kind: Ingress
+        metadata:
+          name: $(inputs.params.Service)
+          ownerReferences:
+          - name: $(inputs.params.Service)
+            apiVersion: v1
+            kind: Service
+            uid: $(inputs.params.ServiceUID)
+        spec:
+          tls:
+          - secretName: $(inputs.params.CertificateSecretName)
+            hosts:
+            - $(inputs.params.ExternalDomain)
+          rules:
+          - host: $(inputs.params.ExternalDomain)
+            http:
+              paths:
+              - backend:
+                  serviceName: $(inputs.params.Service)
+                  servicePort: $(inputs.params.ServicePort)
+      EOF
+      else
+        cat <<EOF | kubectl create -f - || true
+        apiVersion: extensions/v1beta1
+        kind: Ingress
+        metadata:
+          name: $(inputs.params.Service)
+        spec:
+          tls:
+          - secretName: $(inputs.params.CertificateSecretName)
+            hosts:
+            - $(inputs.params.ExternalDomain)
+          rules:
+          - host: $(inputs.params.ExternalDomain)
+            http:
+              paths:
+              - backend:
+                  serviceName: $(inputs.params.Service)
+                  servicePort: $(inputs.params.ServicePort)
+      EOF
+      fi

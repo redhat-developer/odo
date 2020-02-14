@@ -1,5 +1,5 @@
-hash: 6627303d1f977429bd15b9c8bdc32137922bf54ac048fcc4b0bbb28fb4791158
-updated: 2020-02-10T10:26:08.263153828Z
+hash: 2890ebafdfa82906e890bf6bda8d4a002eef006050c0e383442f344fe45a1e78
+updated: 2020-02-14T14:48:04.844370863+05:30
 imports:
 - name: github.com/alexbrainman/sspi
   version: e580b900e9f5657daa5473021296289be6da2661
@@ -412,6 +412,25 @@ imports:
   subpackages:
   - assert
   - require
+- name: github.com/tektoncd/pipeline
+  version: 34d823820ce564920394a783e0892d25868a4d8f
+  subpackages:
+  - pkg/apis/config
+  - pkg/apis/pipeline
+  - pkg/apis/pipeline/pod
+  - pkg/apis/pipeline/v1alpha1
+  - pkg/apis/pipeline/v1alpha2
+  - pkg/apis/resource/v1alpha1
+  - pkg/apis/validate
+  - pkg/contexts
+  - pkg/list
+  - pkg/names
+  - pkg/reconciler/pipeline/dag
+  - pkg/substitution
+- name: github.com/tektoncd/triggers
+  version: 6fd954437e30a23124d869e0fc24673aad042af7
+  subpackages:
+  - pkg/apis/triggers/v1alpha1
 - name: github.com/xeipuuv/gojsonpointer
   version: 02993c407bfbf5f6dae44c4f4b1cf6a39b5fc5bb
 - name: github.com/xeipuuv/gojsonreference
@@ -477,6 +496,10 @@ imports:
   version: 9bdfabe68543c54f90421aeb9a60ef8061b5b544
   subpackages:
   - internal
+- name: gomodules.xyz/jsonpatch
+  version: e8422f09d27ee2c8cfb2c7f8089eb9eeb0764849
+  subpackages:
+  - v2
 - name: google.golang.org/appengine
   version: 12d5545dc1cfa6047a286d5e853841b6471f4c19
   subpackages:
@@ -628,6 +651,52 @@ imports:
   - discovery
   - discovery/fake
   - dynamic
+  - informers
+  - informers/admissionregistration
+  - informers/admissionregistration/v1alpha1
+  - informers/admissionregistration/v1beta1
+  - informers/apps
+  - informers/apps/v1
+  - informers/apps/v1beta1
+  - informers/apps/v1beta2
+  - informers/auditregistration
+  - informers/auditregistration/v1alpha1
+  - informers/autoscaling
+  - informers/autoscaling/v1
+  - informers/autoscaling/v2beta1
+  - informers/autoscaling/v2beta2
+  - informers/batch
+  - informers/batch/v1
+  - informers/batch/v1beta1
+  - informers/batch/v2alpha1
+  - informers/certificates
+  - informers/certificates/v1beta1
+  - informers/coordination
+  - informers/coordination/v1beta1
+  - informers/core
+  - informers/core/v1
+  - informers/events
+  - informers/events/v1beta1
+  - informers/extensions
+  - informers/extensions/v1beta1
+  - informers/internalinterfaces
+  - informers/networking
+  - informers/networking/v1
+  - informers/policy
+  - informers/policy/v1beta1
+  - informers/rbac
+  - informers/rbac/v1
+  - informers/rbac/v1alpha1
+  - informers/rbac/v1beta1
+  - informers/scheduling
+  - informers/scheduling/v1alpha1
+  - informers/scheduling/v1beta1
+  - informers/settings
+  - informers/settings/v1alpha1
+  - informers/storage
+  - informers/storage/v1
+  - informers/storage/v1alpha1
+  - informers/storage/v1beta1
   - kubernetes
   - kubernetes/fake
   - kubernetes/scheme
@@ -695,7 +764,34 @@ imports:
   - kubernetes/typed/storage/v1alpha1/fake
   - kubernetes/typed/storage/v1beta1
   - kubernetes/typed/storage/v1beta1/fake
+  - listers/admissionregistration/v1alpha1
+  - listers/admissionregistration/v1beta1
+  - listers/apps/v1
+  - listers/apps/v1beta1
+  - listers/apps/v1beta2
+  - listers/auditregistration/v1alpha1
+  - listers/autoscaling/v1
+  - listers/autoscaling/v2beta1
+  - listers/autoscaling/v2beta2
+  - listers/batch/v1
+  - listers/batch/v1beta1
+  - listers/batch/v2alpha1
+  - listers/certificates/v1beta1
+  - listers/coordination/v1beta1
+  - listers/core/v1
+  - listers/events/v1beta1
+  - listers/extensions/v1beta1
+  - listers/networking/v1
+  - listers/policy/v1beta1
   - listers/rbac/v1
+  - listers/rbac/v1alpha1
+  - listers/rbac/v1beta1
+  - listers/scheduling/v1alpha1
+  - listers/scheduling/v1beta1
+  - listers/settings/v1alpha1
+  - listers/storage/v1
+  - listers/storage/v1alpha1
+  - listers/storage/v1beta1
   - pkg/apis/clientauthentication
   - pkg/apis/clientauthentication/v1alpha1
   - pkg/apis/clientauthentication/v1beta1
@@ -807,6 +903,18 @@ imports:
   subpackages:
   - exec
   - pointer
+- name: knative.dev/pkg
+  version: d8b36f3593257b2b39ab9bb6fbd8ad6828983755
+  subpackages:
+  - apis
+  - apis/duck
+  - apis/duck/v1
+  - apis/duck/v1alpha1
+  - apis/duck/v1beta1
+  - configmap
+  - kmeta
+  - kmp
+  - tracker
 - name: sigs.k8s.io/yaml
   version: 199c9c29c4e4f08dc72163605467ab691a004022
 testImports: []

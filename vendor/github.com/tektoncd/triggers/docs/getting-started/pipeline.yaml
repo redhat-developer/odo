@@ -1,0 +1,152 @@
+---
+# The getting-started Pipeline will run through several tasks:
+# - source is pulled from git
+# - conditions say go test must pass before moving on
+# - source is built into an image by img
+# - image output is pushed to ECR
+# - cloudevent emitted
+apiVersion: tekton.dev/v1alpha1
+kind: Pipeline
+metadata:
+  name: getting-started-pipeline
+  namespace: getting-started
+spec:
+  resources:
+    - name: source-repo
+      type: git
+    - name: image-source
+      type: image
+    - name: event-to-sink
+      type: cloudEvent
+  tasks:
+    - name: build-docker-image
+      taskRef:
+        name: build-docker-image
+      conditions:
+      - conditionRef: "go-test"
+        resources:
+          - name: source-repo
+            resource: source-repo
+      params:
+        - name: pathToContext
+          value: /workspace/source-repo
+      resources:
+        inputs:
+          - name: source-repo
+            resource: source-repo
+        outputs:
+          - name: builtImage
+            resource: image-source
+    - name: deploy-locally
+      taskRef:
+        name: deploy-locally
+      resources:
+        inputs:
+          - name: image-source
+            resource: image-source
+            from:
+              - build-docker-image
+        outputs:
+          - name: event-to-sink
+            resource: event-to-sink
+---
+apiVersion: tekton.dev/v1alpha1
+kind: Task
+metadata:
+  name: deploy-locally
+  namespace: getting-started
+spec:
+  inputs:
+    resources:
+      - name: image-source
+        type: image
+  outputs:
+    resources:
+    - name: event-to-sink
+      type: cloudEvent
+  steps:
+    - name: run-kubectl
+      image: lachlanevenson/k8s-kubectl
+      command: ["kubectl"]
+      args:
+        - "run"
+        - "tekton-triggers-built-me"
+        - "--image"
+        - "${inputs.resources.image-source.url}"
+        - "--env=PORT=8080"
+---
+apiVersion: tekton.dev/v1alpha1
+kind: Task
+metadata:
+  name: build-docker-image
+  namespace: getting-started
+spec:
+  inputs:
+    resources:
+      - name: source-repo
+        type: git
+    params:
+      - name: pathToContext
+        description:
+          The build directory used by img
+        default: /workspace/source-repo
+  outputs:
+    resources:
+      - name: builtImage
+        type: image
+  steps:
+    - name: build-and-push
+      image: r.j3ss.co/img
+      command:
+        - /usr/bin/img
+      args:
+        - build
+        - -t
+        - "${outputs.resources.builtImage.url}"
+        - --no-cache
+        - "${inputs.params.pathToContext}"
+---
+apiVersion: tekton.dev/v1alpha1
+kind: Condition
+metadata:
+  name: go-test
+  namespace: getting-started
+spec:
+  resources:
+    - name: source-repo
+      type: git
+  check:
+    image: golang
+    command: ["go"]
+    args: ['test', "$(inputs.resources.source-repo.path)/..."]
+---
+# Finally, we need something to receive our cloudevent announcing success!
+# That is this services only purpose
+apiVersion: v1
+kind: Service
+metadata:
+  name: event-display
+  namespace: getting-started
+  labels:
+    app: event-display
+spec:
+  type: ClusterIP
+  ports:
+    - name: listener
+      port: 8080
+      protocol: TCP
+  selector:
+    app: event-display
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: event-display
+  namespace: getting-started
+  labels:
+    app: event-display
+spec:
+  hostname: event-display
+  containers:
+  - image: gcr.io/knative-releases/github.com/knative/eventing-sources/cmd/event_display
+    name: web

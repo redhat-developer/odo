@@ -1,0 +1,55 @@
+apiVersion: tekton.dev/v1alpha1
+kind: PipelineResource
+metadata:
+  name: tekton-triggers-git
+spec:
+  type: git
+  params:
+  - name: url
+    value: https://github.com/tektoncd/triggers
+  - name: revision
+    value:  master # REPLACE with the commit you want to release
+---
+apiVersion: tekton.dev/v1alpha1
+kind: PipelineResource
+metadata:
+  name: tekton-bucket
+spec:
+  type: storage
+  params:
+   - name: type
+     value: gcs
+   - name: location
+     value: gs://tekton-releases
+   - name: dir
+     value: "y"
+---
+apiVersion: tekton.dev/v1alpha1
+kind: PipelineResource
+metadata:
+  name: triggers-controller-image
+spec:
+  type: image
+  params:
+   - name: url
+     value: cmd/controller # Registry is provided via parameter, this is a hack see #569
+---
+apiVersion: tekton.dev/v1alpha1
+kind: PipelineResource
+metadata:
+  name: triggers-webhook-image
+spec:
+  type: image
+  params:
+   - name: url
+     value: cmd/webhook # Registry is provided via parameter, this is a hack see #569
+---
+apiVersion: tekton.dev/v1alpha1
+kind: PipelineResource
+metadata:
+  name: event-listener-sink-image
+spec:
+  type: image
+  params:
+   - name: url
+     value: cmd/eventlistenersink # Registry is provided via parameter, this is a hack see #569

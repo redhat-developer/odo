@@ -1,0 +1,8 @@
+apiVersion: tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: message-binding
+spec:
+  params:
+  - name: message
+    value: Hello from the Triggers EventListener!
