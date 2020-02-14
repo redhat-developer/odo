@@ -25,7 +25,7 @@ func TestGenerateEventListener(t *testing.T) {
 					Interceptors: []*triggersv1.EventInterceptor{
 						&triggersv1.EventInterceptor{
 							CEL: &triggersv1.CELInterceptor{
-								Filter: "(header.match('X-GitHub-Event', 'pull_request') && body.action == 'opened' || body.action == 'synchronize') && body.pull_request.head.repo.full_name == 'GITHUB_REPO'",
+								Filter: "(header.match('X-GitHub-Event', 'pull_request') && body.action == 'opened' || body.action == 'synchronize') && body.pull_request.head.repo.full_name == 'sample'",
 							},
 						},
 					},
@@ -43,7 +43,7 @@ func TestGenerateEventListener(t *testing.T) {
 					Interceptors: []*triggersv1.EventInterceptor{
 						&triggersv1.EventInterceptor{
 							CEL: &triggersv1.CELInterceptor{
-								Filter: "(header.match('X-GitHub-Event', 'push') && body.repository.full_name == 'GITHUB_REPO') && body.ref.startsWith('refs/heads/master')",
+								Filter: "(header.match('X-GitHub-Event', 'push') && body.repository.full_name == 'sample') && body.ref.startsWith('refs/heads/master')",
 							},
 						},
 					},
@@ -61,7 +61,7 @@ func TestGenerateEventListener(t *testing.T) {
 					Interceptors: []*triggersv1.EventInterceptor{
 						&triggersv1.EventInterceptor{
 							CEL: &triggersv1.CELInterceptor{
-								Filter: "(header.match('X-GitHub-Event', 'pull_request') && body.action == 'opened' || body.action == 'synchronize') && body.pull_request.head.repo.full_name == 'GITHUB_STAGE_REPO'",
+								Filter: "(header.match('X-GitHub-Event', 'pull_request') && body.action == 'opened' || body.action == 'synchronize') && body.pull_request.head.repo.full_name == 'sample-stage-config'",
 							},
 						},
 					},
@@ -79,7 +79,7 @@ func TestGenerateEventListener(t *testing.T) {
 					Interceptors: []*triggersv1.EventInterceptor{
 						&triggersv1.EventInterceptor{
 							CEL: &triggersv1.CELInterceptor{
-								Filter: "(header.match('X-GitHub-Event', 'push') && body.repository.full_name == 'GITHUB_STAGE_REPO') && body.ref.startsWith('refs/heads/master')",
+								Filter: "(header.match('X-GitHub-Event', 'push') && body.repository.full_name == 'sample-stage-config') && body.ref.startsWith('refs/heads/master')",
 							},
 						},
 					},
@@ -96,7 +96,7 @@ func TestGenerateEventListener(t *testing.T) {
 		},
 	}
 
-	eventListener := GenerateEventListener()
+	eventListener := GenerateEventListener("sample")
 	if diff := cmp.Diff(validEventListener, eventListener); diff != "" {
 		t.Fatalf("GenerateEventListener() failed:\n%s", diff)
 	}
@@ -138,7 +138,7 @@ func TestCreateListenerTrigger(t *testing.T) {
 		Interceptors: []*triggersv1.EventInterceptor{
 			&triggersv1.EventInterceptor{
 				CEL: &triggersv1.CELInterceptor{
-					Filter: "sampleFilter",
+					Filter: "sampleFilter sample",
 				},
 			},
 		},
@@ -151,7 +151,7 @@ func TestCreateListenerTrigger(t *testing.T) {
 			Name: "sampleTemplateName",
 		},
 	}
-	listenerTrigger := createListenerTrigger("sampleName", "sampleFilter", "sampleBindingName", "sampleTemplateName")
+	listenerTrigger := createListenerTrigger("sampleName", "sampleFilter %s", "sample", "sampleBindingName", "sampleTemplateName")
 	if diff := cmp.Diff(validListenerTrigger, listenerTrigger); diff != "" {
 		t.Fatalf("createListenerTrigger() failed:\n%s", diff)
 	}
@@ -160,10 +160,10 @@ func TestCreateListenerTrigger(t *testing.T) {
 func TestCreateEventInterceptor(t *testing.T) {
 	validEventInterceptor := triggersv1.EventInterceptor{
 		CEL: &triggersv1.CELInterceptor{
-			Filter: "sampleFilter",
+			Filter: "sampleFilter sample",
 		},
 	}
-	eventInterceptor := createEventInterceptor("sampleFilter")
+	eventInterceptor := createEventInterceptor("sampleFilter %s", "sample")
 	if diff := cmp.Diff(validEventInterceptor, *eventInterceptor); diff != "" {
 		t.Fatalf("createEventInterceptor() failed:\n%s", diff)
 	}

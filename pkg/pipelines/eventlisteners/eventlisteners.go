@@ -1,23 +1,28 @@
 package eventlisteners
 
 import (
+	"fmt"
+
 	triggersv1 "github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Filters for interceptors
 const (
-	devCIBuildFilters = "(header.match('X-GitHub-Event', 'pull_request') && body.action == 'opened' || body.action == 'synchronize') && body.pull_request.head.repo.full_name == 'GITHUB_REPO'"
+	devCIBuildFilters = "(header.match('X-GitHub-Event', 'pull_request') && body.action == 'opened' || body.action == 'synchronize') && body.pull_request.head.repo.full_name == '%s'"
 
-	decCDDeployFilters = "(header.match('X-GitHub-Event', 'push') && body.repository.full_name == 'GITHUB_REPO') && body.ref.startsWith('refs/heads/master')"
+	devCDDeployFilters = "(header.match('X-GitHub-Event', 'push') && body.repository.full_name == '%s') && body.ref.startsWith('refs/heads/master')"
 
-	stageCIDryRunFilters = "(header.match('X-GitHub-Event', 'pull_request') && body.action == 'opened' || body.action == 'synchronize') && body.pull_request.head.repo.full_name == 'GITHUB_STAGE_REPO'"
+	stageCIDryRunFilters = "(header.match('X-GitHub-Event', 'pull_request') && body.action == 'opened' || body.action == 'synchronize') && body.pull_request.head.repo.full_name == '%s'"
 
-	stageCDDeployFilters = "(header.match('X-GitHub-Event', 'push') && body.repository.full_name == 'GITHUB_STAGE_REPO') && body.ref.startsWith('refs/heads/master')"
+	stageCDDeployFilters = "(header.match('X-GitHub-Event', 'push') && body.repository.full_name == '%s') && body.ref.startsWith('refs/heads/master')"
 )
 
 // GenerateEventListener will create the required eventlisteners
-func GenerateEventListener() triggersv1.EventListener {
+func GenerateEventListener(baseRepo string) triggersv1.EventListener {
+	githubRepo := baseRepo
+	githubStageRepo := baseRepo + "-stage-config"
+
 	return triggersv1.EventListener{
 		TypeMeta:   createListenerTypeMeta(),
 		ObjectMeta: createListenerObjectMeta("cicd-event-listener"),
@@ -27,24 +32,28 @@ func GenerateEventListener() triggersv1.EventListener {
 				createListenerTrigger(
 					"dev-ci-build-from-pr",
 					devCIBuildFilters,
+					githubRepo,
 					"dev-ci-build-from-pr-binding",
 					"dev-ci-build-from-pr-template",
 				),
 				createListenerTrigger(
 					"dev-cd-deploy-from-master",
-					decCDDeployFilters,
+					devCDDeployFilters,
+					githubRepo,
 					"dev-cd-deploy-from-master-binding",
 					"dev-cd-deploy-from-master-template",
 				),
 				createListenerTrigger(
 					"stage-ci-dryrun-from-pr",
 					stageCIDryRunFilters,
+					githubStageRepo,
 					"stage-ci-dryrun-from-pr-binding",
 					"stage-ci-dryrun-from-pr-template",
 				),
 				createListenerTrigger(
 					"stage-cd-deploy-from-push",
 					stageCDDeployFilters,
+					githubStageRepo,
 					"stage-cd-deploy-from-push-binding",
 					"stage-cd-deploy-from-push-template",
 				),
@@ -53,19 +62,19 @@ func GenerateEventListener() triggersv1.EventListener {
 	}
 }
 
-func createEventInterceptor(filter string) *triggersv1.EventInterceptor {
+func createEventInterceptor(filter string, repoName string) *triggersv1.EventInterceptor {
 	return &triggersv1.EventInterceptor{
 		CEL: &triggersv1.CELInterceptor{
-			Filter: filter,
+			Filter: fmt.Sprintf(filter, repoName),
 		},
 	}
 }
 
-func createListenerTrigger(name string, filter string, binding string, template string) triggersv1.EventListenerTrigger {
+func createListenerTrigger(name string, filter string, repoName string, binding string, template string) triggersv1.EventListenerTrigger {
 	return triggersv1.EventListenerTrigger{
 		Name: name,
 		Interceptors: []*triggersv1.EventInterceptor{
-			createEventInterceptor(filter),
+			createEventInterceptor(filter, repoName),
 		},
 		Bindings: []*triggersv1.EventListenerBinding{
 			createListenerBinding(binding),
