@@ -1,4 +1,4 @@
-package kubernetes
+package component
 
 import (
 	devfileCommon "github.com/openshift/odo/pkg/devfile/versions/common"

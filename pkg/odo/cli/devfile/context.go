@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/openshift/odo/pkg/component/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/spf13/cobra"
 )
 
@@ -17,17 +17,17 @@ func NewDevfileContext(command *cobra.Command) (*Context, error) {
 	}
 	componentName := strings.ToLower(filepath.Base(workingDir))
 
-	devfileComponent := common.DevfileComponent{
+	odoComponent := common.OdoComponent{
 		Name: componentName,
 	}
 
 	context := &Context{
-		DevfileComponent: devfileComponent,
+		OdoComponent: odoComponent,
 	}
 	return context, nil
 }
 
 // Context contains contextual information for Devfile commands
 type Context struct {
-	common.DevfileComponent
+	common.OdoComponent
 }
