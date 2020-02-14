@@ -13,6 +13,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/openshift/odo/pkg/util"
 )
 
 func TestCreatePVC(t *testing.T) {
@@ -156,16 +158,6 @@ func TestAddPVCToPodTemplateSpec(t *testing.T) {
 
 func TestAddVolumeMountToPodTemplateSpec(t *testing.T) {
 
-	container := &corev1.Container{
-		Name:            "container1",
-		Image:           "image1",
-		ImagePullPolicy: corev1.PullAlways,
-
-		Command: []string{"tail"},
-		Args:    []string{"-f", "/dev/null"},
-		Env:     []corev1.EnvVar{},
-	}
-
 	tests := []struct {
 		podName                string
 		namespace              string
@@ -173,7 +165,9 @@ func TestAddVolumeMountToPodTemplateSpec(t *testing.T) {
 		pvc                    string
 		volumeName             string
 		containerMountPathsMap map[string][]string
+		container              corev1.Container
 		labels                 map[string]string
+		wantErr                bool
 	}{
 		{
 			podName:        "podSpecTest",
@@ -182,12 +176,38 @@ func TestAddVolumeMountToPodTemplateSpec(t *testing.T) {
 			pvc:            "mypvc",
 			volumeName:     "myvolume",
 			containerMountPathsMap: map[string][]string{
-				container.Name: {"/tmp/path1", "/tmp/path2"},
+				"container1": {"/tmp/path1", "/tmp/path2"},
+			},
+			container: corev1.Container{
+				Name:            "container1",
+				Image:           "image1",
+				ImagePullPolicy: corev1.PullAlways,
+
+				Command: []string{"tail"},
+				Args:    []string{"-f", "/dev/null"},
+				Env:     []corev1.EnvVar{},
 			},
 			labels: map[string]string{
 				"app":       "app",
 				"component": "frontend",
 			},
+			wantErr: false,
+		},
+		{
+			podName:        "podSpecTest",
+			namespace:      "default",
+			serviceAccount: "default",
+			pvc:            "mypvc",
+			volumeName:     "myvolume",
+			containerMountPathsMap: map[string][]string{
+				"container1": {"/tmp/path1", "/tmp/path2"},
+			},
+			container: corev1.Container{},
+			labels: map[string]string{
+				"app":       "app",
+				"component": "frontend",
+			},
+			wantErr: true,
 		},
 	}
 
@@ -196,16 +216,19 @@ func TestAddVolumeMountToPodTemplateSpec(t *testing.T) {
 
 			objectMeta := CreateObjectMeta(tt.podName, tt.namespace, tt.labels, nil)
 
-			podTemplateSpec := GeneratePodTemplateSpec(objectMeta, tt.serviceAccount, []corev1.Container{*container})
+			podTemplateSpec := GeneratePodTemplateSpec(objectMeta, tt.serviceAccount, []corev1.Container{tt.container})
 
-			_ = AddVolumeMountToPodTemplateSpec(podTemplateSpec, tt.volumeName, tt.pvc, tt.containerMountPathsMap)
-			t.Logf("podTemplateSpec is %v", podTemplateSpec)
+			err := AddVolumeMountToPodTemplateSpec(podTemplateSpec, tt.volumeName, tt.pvc, tt.containerMountPathsMap)
+			if !tt.wantErr && err != nil {
+				t.Errorf("TestAddVolumeMountToPodTemplateSpec.AddVolumeMountToPodTemplateSpec() unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+
 			mountPathCount := 0
 			for _, podTempSpecContainer := range podTemplateSpec.Spec.Containers {
-				if podTempSpecContainer.Name == container.Name {
+				if podTempSpecContainer.Name == tt.container.Name {
 					for _, volumeMount := range podTempSpecContainer.VolumeMounts {
 						if volumeMount.Name == tt.volumeName {
-							for _, mountPath := range tt.containerMountPathsMap[container.Name] {
+							for _, mountPath := range tt.containerMountPathsMap[tt.container.Name] {
 								if volumeMount.MountPath == mountPath {
 									mountPathCount++
 								}
@@ -215,7 +238,7 @@ func TestAddVolumeMountToPodTemplateSpec(t *testing.T) {
 				}
 			}
 
-			if mountPathCount != len(tt.containerMountPathsMap[container.Name]) {
+			if mountPathCount != len(tt.containerMountPathsMap[tt.container.Name]) {
 				t.Errorf("Volume Mounts for %s have not been properly mounted to the podTemplateSpec", tt.volumeName)
 			}
 		})
@@ -242,6 +265,17 @@ func TestGetPVCsFromSelector(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name:      "Case: Wrong Label Selector",
+			pvcName:   "mypvc",
+			size:      "1Gi",
+			namespace: "default",
+			labels: map[string]string{
+				"mylabel1": "testpvc1",
+				"mylabel2": "testpvc2",
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -250,43 +284,7 @@ func TestGetPVCsFromSelector(t *testing.T) {
 			fkclient, fkclientset := FakeNew()
 			fkclient.Namespace = tt.namespace
 
-			quantity, err := resource.ParseQuantity(tt.size)
-			if err != nil {
-				t.Errorf("resource.ParseQuantity unexpected error %v", err)
-			}
-			pvcSpec := GeneratePVCSpec(quantity)
-			objectMeta := metav1.ObjectMeta{
-				Name:        tt.pvcName,
-				Namespace:   tt.namespace,
-				Labels:      tt.labels,
-				Annotations: nil,
-			}
-
-			fkclientset.Kubernetes.PrependReactor("create", "persistentvolumeclaims", func(action ktesting.Action) (bool, runtime.Object, error) {
-				pvc := corev1.PersistentVolumeClaim{
-					TypeMeta: metav1.TypeMeta{
-						Kind:       PersistentVolumeClaimKind,
-						APIVersion: PersistentVolumeClaimAPIVersion,
-					},
-					ObjectMeta: metav1.ObjectMeta{
-						Name: tt.pvcName,
-					},
-				}
-				return true, &pvc, nil
-			})
-
-			_, err = fkclient.CreatePVC(objectMeta, *pvcSpec)
-			if err != nil {
-				t.Errorf("TestGetPVCsFromSelector: Error creating PVC %s", tt.pvcName)
-			}
-
-			var selector string
-			for labelkey, labelvalue := range tt.labels {
-				if selector != "" {
-					selector = selector + ","
-				}
-				selector = selector + labelkey + "=" + labelvalue
-			}
+			selector := util.ConvertLabelsToSelector(tt.labels)
 
 			listOfPVC := corev1.PersistentVolumeClaimList{
 				Items: []corev1.PersistentVolumeClaim{
@@ -300,19 +298,21 @@ func TestGetPVCsFromSelector(t *testing.T) {
 			}
 
 			fkclientset.Kubernetes.PrependReactor("list", "persistentvolumeclaims", func(action ktesting.Action) (bool, runtime.Object, error) {
-				if !reflect.DeepEqual(action.(ktesting.ListAction).GetListRestrictions().Labels.String(), selector) {
-					return true, nil, fmt.Errorf("TestGetPVCsFromSelector: Labels do not match with expected values, expected:%s, got:%s", selector, action.(ktesting.ListAction).GetListRestrictions())
+				if tt.name == "Case: Wrong Label Selector" {
+					return true, nil, fmt.Errorf("TestGetPVCsFromSelector: Labels do not match with expected values, expected:%s, got:%s", selector, selector+",garbage=true")
 				}
 				return true, &listOfPVC, nil
 			})
 
 			PVCs, err := fkclient.GetPVCsFromSelector(selector)
-			if err != nil {
-				t.Errorf("TestGetPVCsFromSelector: Error listing PVCs with selector %s", selector)
+			if !tt.wantErr && err != nil {
+				t.Errorf("TestGetPVCsFromSelector: Error listing PVCs with selector: %v", err)
 			}
 
 			if len(PVCs) == 0 || len(PVCs) > 1 {
-				t.Errorf("TestGetPVCsFromSelector: Incorrect amount of PVC found with selector %s", selector)
+				if !tt.wantErr {
+					t.Errorf("TestGetPVCsFromSelector: Incorrect amount of PVC found with selector %s", selector)
+				}
 			} else {
 				for _, PVC := range PVCs {
 					if PVC.Name != tt.pvcName {
