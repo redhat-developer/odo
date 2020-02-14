@@ -1,0 +1,14 @@
+---
+apiVersion: tekton.dev/v1alpha1
+kind: EventListener
+metadata:
+  name: listener
+spec:
+  serviceAccountName: tekton-triggers-example-sa
+  triggers:
+    - name: foo-trig
+      bindings:
+        - name: pipeline-binding
+        - name: message-binding
+      template:
+        name: pipeline-template

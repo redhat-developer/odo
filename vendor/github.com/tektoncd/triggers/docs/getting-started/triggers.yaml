@@ -1,0 +1,72 @@
+apiVersion: tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: getting-started-triggertemplate
+  namespace: getting-started
+spec:
+  params:
+    - name: gitrevision
+      description: The git revision
+      default: master
+    - name: gitrepositoryurl
+      description: The git repository url
+    - name: namespace
+      description: The namespace to create the resources
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1alpha1
+      kind: PipelineRun
+      metadata:
+        name: getting-started-pipeline-run-$(uid)
+        namespace: $(params.namespace)
+      spec:
+        serviceAccountName: tekton-triggers-admin
+        pipelineRef:
+          name: getting-started-pipeline
+        resources:
+          - name: source-repo
+            resourceSpec:
+              type: git
+              params:
+              - name: revision
+                value: $(params.gitrevision)
+              - name: url
+                value: $(params.gitrepositoryurl)
+          - name: image-source
+            resourceSpec:
+              type: image
+              params:
+                - name: url
+                  value: DOCKERREPO-REPLACEME # docker-repo-location.com/repo:getting-started
+          - name: event-to-sink
+            resourceSpec:
+              type: cloudEvent
+              params:
+                - name: targetURI
+                  value: http://event-display.getting-started.svc.cluster.local
+---
+apiVersion: tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: getting-started-pipelinebinding
+  namespace: getting-started
+spec:
+  params:
+    - name: gitrevision
+      value: $(body.head_commit.id)
+    - name: namespace
+      value: getting-started
+    - name: gitrepositoryurl
+      value: "https://github.com/$(body.repository.full_name)"
+---
+apiVersion: tekton.dev/v1alpha1
+kind: EventListener
+metadata:
+  name: getting-started-listener
+  namespace: getting-started
+spec:
+  serviceAccountName: tekton-triggers-admin
+  triggers:
+    - bindings:
+      - name: getting-started-pipelinebinding
+      template:
+        name: getting-started-triggertemplate

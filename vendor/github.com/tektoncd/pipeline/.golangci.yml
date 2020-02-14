@@ -1,0 +1,18 @@
+run:
+  build-tags:
+  - e2e
+  skip-dirs:
+  - vendor
+  - pkg/client
+  timeout: 5m
+linters-settings:
+  errcheck:
+    exclude: .errcheck.txt
+linters:
+  enable:
+  - errcheck
+  - gofmt
+  - goimports
+  - gosec
+  - gocritic
+  - golint

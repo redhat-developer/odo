@@ -1,0 +1,26 @@
+apiVersion: tekton.dev/v1alpha1
+kind: TaskRun
+metadata:
+  name: create-webhook-run
+  namespace: getting-started
+spec:
+  taskRef:
+    name: create-webhook
+  inputs:
+    params:
+    - name: GitHubOrg
+      value: "iancoffey"
+    - name: GitHubUser
+      value: "iancoffey"
+    - name: GitHubRepo
+      value: "ulmaceae"
+    - name: GitHubSecretName
+      value: webhook-secret
+    - name: GitHubAccessTokenKey
+      value: token
+    - name: GitHubSecretStringKey
+      value: secret
+    - name: ExternalDomain
+      value: demo.iancoffey.com
+  timeout: 1000s
+  serviceAccountName: tekton-triggers-createwebhook

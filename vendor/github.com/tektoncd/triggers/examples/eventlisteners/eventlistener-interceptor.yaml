@@ -1,0 +1,27 @@
+---
+apiVersion: tekton.dev/v1alpha1
+kind: EventListener
+metadata:
+  name: listener-interceptor
+spec:
+  serviceAccountName: tekton-triggers-example-sa
+  triggers:
+    - name: foo-trig
+      interceptors:
+        - webhook:
+            header:
+              - name: Foo-Trig-Header1
+                value: string-value
+              - name: Foo-Trig-Header2
+                value:
+                  - array-val1
+                  - array-val2
+            objectRef:
+              kind: Service
+              name: gh-validate
+              apiVersion: v1
+              namespace: default
+      bindings:
+        - name: pipeline-binding
+      template:
+        name: pipeline-template

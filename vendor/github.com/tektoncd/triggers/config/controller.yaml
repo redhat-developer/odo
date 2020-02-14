@@ -1,0 +1,62 @@
+# Copyright 2019 The Tekton Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tekton-triggers-controller
+  namespace: tekton-pipelines
+  labels:
+    app.kubernetes.io/name: tekton-triggers
+    app.kubernetes.io/component: controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tekton-triggers-controller
+  template:
+    metadata:
+      annotations:
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
+      labels:
+        app: tekton-triggers-controller
+    spec:
+      serviceAccountName: tekton-triggers-controller
+      containers:
+      - name: tekton-triggers-controller
+        image: github.com/tektoncd/triggers/cmd/controller
+        args: [
+          "-logtostderr",
+          "-stderrthreshold", "INFO",
+          "-el-image", "github.com/tektoncd/triggers/cmd/eventlistenersink",
+          "-el-port", "8080"
+        ]
+        volumeMounts:
+        - name: config-logging
+          mountPath: /etc/config-logging
+        env:
+        - name: SYSTEM_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: CONFIG_LOGGING_NAME
+          value: config-logging-triggers
+        - name: CONFIG_OBSERVABILITY_NAME
+          value: config-observability-triggers
+        - name: METRICS_DOMAIN
+          value: tekton.dev/triggers
+      volumes:
+        - name: config-logging
+          configMap:
+            name: config-logging-triggers

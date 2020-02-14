@@ -1,0 +1,93 @@
+# Copyright 2019 The Tekton Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tekton-pipelines-controller
+  namespace: tekton-pipelines
+  labels:
+    app.kubernetes.io/name: tekton-pipelines
+    app.kubernetes.io/component: controller
+    pipeline.tekton.dev/release: "devel"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tekton-pipelines-controller
+  template:
+    metadata:
+      annotations:
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
+      labels:
+        app: tekton-pipelines-controller
+        app.kubernetes.io/name: tekton-pipelines
+        app.kubernetes.io/component: controller
+        # tekton.dev/release value replaced with inputs.params.versionTag in pipeline/tekton/publish.yaml
+        pipeline.tekton.dev/release: "devel"
+    spec:
+      serviceAccountName: tekton-pipelines-controller
+      containers:
+      - name: tekton-pipelines-controller
+        image: github.com/tektoncd/pipeline/cmd/controller
+        args: [
+          "-kubeconfig-writer-image", "github.com/tektoncd/pipeline/cmd/kubeconfigwriter",
+          "-creds-image", "github.com/tektoncd/pipeline/cmd/creds-init",
+          "-git-image", "github.com/tektoncd/pipeline/cmd/git-init",
+          "-nop-image", "tianon/true",
+          "-shell-image", "busybox",
+          "-gsutil-image", "google/cloud-sdk",
+          "-entrypoint-image", "github.com/tektoncd/pipeline/cmd/entrypoint",
+          "-imagedigest-exporter-image", "github.com/tektoncd/pipeline/cmd/imagedigestexporter",
+          "-pr-image", "github.com/tektoncd/pipeline/cmd/pullrequest-init",
+          "-build-gcs-fetcher-image", "github.com/tektoncd/pipeline/vendor/github.com/GoogleCloudPlatform/cloud-builders/gcs-fetcher/cmd/gcs-fetcher",
+        ]
+        volumeMounts:
+        - name: config-logging
+          mountPath: /etc/config-logging
+        env:
+        - name: SYSTEM_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: CONFIG_LOGGING_NAME
+          value: config-logging
+        - name: CONFIG_OBSERVABILITY_NAME
+          value: config-observability
+        - name: CONFIG_ARTIFACT_BUCKET_NAME
+          value: config-artifact-bucket
+        - name: CONFIG_ARTIFACT_PVC_NAME
+          value: config-artifact-pvc
+        - name: METRICS_DOMAIN
+          value: tekton.dev/pipeline
+      volumes:
+        - name: config-logging
+          configMap:
+            name: config-logging
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: tekton-pipelines-controller
+    pipeline.tekton.dev/release: "devel"
+  name: tekton-pipelines-controller
+  namespace: tekton-pipelines
+spec:
+  ports:
+  - name: http-metrics
+    port: 9090
+    protocol: TCP
+    targetPort: 9090
+  selector:
+    app: tekton-pipelines-controller
