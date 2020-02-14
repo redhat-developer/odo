@@ -1,6 +1,7 @@
 package pipelines
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -21,7 +22,7 @@ func Bootstrap(quayUsername, baseRepo, prefix string) error {
 		return fmt.Errorf("failed to run Tekton Pipelines installation check: %w", err)
 	}
 	if !installed {
-		return fmt.Errorf("failed due to Tekton Pipelines or Triggers are not installed")
+		return errors.New("failed due to Tekton Pipelines or Triggers are not installed")
 	}
 
 	outputs := make([]interface{}, 0)
@@ -80,7 +81,7 @@ func pathToDownloadedFile(fname string) (string, error) {
 	return homedir.Expand(path.Join("~/Downloads/", fname))
 }
 
-// create and invoke a Tetton Checker
+// create and invoke a Tekton Checker
 func checkTektonInstall() (bool, error) {
 	tektonChecker, err := newTektonChecker()
 	if err != nil {
