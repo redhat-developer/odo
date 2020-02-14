@@ -13,11 +13,12 @@ import (
 // configured with a basic configuration.
 func Bootstrap(quayUsername, baseRepo, prefix string) error {
 
-	isTektonInstalled, err := isTektonPipelinesInstalled()
+	// First, check for Tekton.  We proceed only if Tekton is installed
+	installed, err := checkTektonInstall()
 	if err != nil {
-		return fmt.Errorf("failed to detect Tekton Pipelines installation: %w", err)
+		return fmt.Errorf("failed to run Tekton Pipelines installation check: %w", err)
 	}
-	if !isTektonInstalled {
+	if !installed {
 		return fmt.Errorf("failed due to Tekton Pipelines or Triggers are not installed")
 	}
 
@@ -39,12 +40,12 @@ func Bootstrap(quayUsername, baseRepo, prefix string) error {
 	}
 	outputs = append(outputs, githubAuth)
 
-	authJsonPath, err := pathToDownloadedFile(quayUsername + "-auth.json")
+	authJSONPath, err := pathToDownloadedFile(quayUsername + "-auth.json")
 	if err != nil {
 		return fmt.Errorf("failed to generate path to file: %w", err)
 	}
 
-	f, err = os.Open(authJsonPath)
+	f, err = os.Open(authJSONPath)
 	if err != nil {
 		return err
 	}
@@ -69,4 +70,13 @@ func Bootstrap(quayUsername, baseRepo, prefix string) error {
 
 func pathToDownloadedFile(fname string) (string, error) {
 	return homedir.Expand(path.Join("~/Downloads/", fname))
+}
+
+// create and invoke a Tetton Checker
+func checkTektonInstall() (bool, error) {
+	tektonChecker, err := newTektonChecker()
+	if err != nil {
+		return false, err
+	}
+	return tektonChecker.checkInstall()
 }
