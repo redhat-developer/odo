@@ -15,6 +15,7 @@ Debug allows you to remotely debug your application`
 func NewCmdDebug(name, fullName string) *cobra.Command {
 
 	portforwardCmd := NewCmdPortForward(portforwardCommandName, util.GetFullName(fullName, portforwardCommandName))
+	infoCmd := NewCmdInfo(infoCommandName, util.GetFullName(fullName, infoCommandName))
 
 	debugCmd := &cobra.Command{
 		Use:     name,
@@ -25,6 +26,7 @@ func NewCmdDebug(name, fullName string) *cobra.Command {
 
 	debugCmd.SetUsageTemplate(util.CmdUsageTemplate)
 	debugCmd.AddCommand(portforwardCmd)
+	debugCmd.AddCommand(infoCmd)
 	debugCmd.Annotations = map[string]string{"command": "main"}
 
 	return debugCmd

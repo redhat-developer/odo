@@ -2,6 +2,7 @@ package testingutil
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/testingutil/filesystem"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -129,4 +130,20 @@ func SimulateFileModifications(basePath string, fileModification FileProperties)
 		return "", fmt.Errorf("Unsupported file operation %s", fileModification.ModificationType)
 	}
 	return "", nil
+}
+
+func MkFileWithContent(path, content string, fs filesystem.Filesystem) (string, error) {
+	path = filepath.FromSlash(path)
+	f, err := fs.Create(path)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to create file in path %s", path)
+	}
+	_, err = f.WriteString(content)
+	if err != nil {
+		return "", err
+	}
+	if err := f.Close(); err != nil {
+		return "", err
+	}
+	return f.Name(), nil
 }
