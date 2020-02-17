@@ -1,5 +1,5 @@
-hash: 2890ebafdfa82906e890bf6bda8d4a002eef006050c0e383442f344fe45a1e78
-updated: 2020-02-14T14:48:04.844370863+05:30
+hash: 9c4bbc892d9fb869e6f12585b22f43f5a8e6fd038ce8fc991397232e6e92ed64
+updated: 2020-02-15T18:07:26.139236624+05:30
 imports:
 - name: github.com/alexbrainman/sspi
   version: e580b900e9f5657daa5473021296289be6da2661
@@ -565,6 +565,13 @@ imports:
   version: 1495f70252dcec3e2289bcabc488290dc1cf1258
   repo: https://github.com/openshift/kubernetes-apiextensions-apiserver.git
   subpackages:
+  - pkg/apis/apiextensions
+  - pkg/apis/apiextensions/v1beta1
+  - pkg/client/clientset/clientset
+  - pkg/client/clientset/clientset/fake
+  - pkg/client/clientset/clientset/scheme
+  - pkg/client/clientset/clientset/typed/apiextensions/v1beta1
+  - pkg/client/clientset/clientset/typed/apiextensions/v1beta1/fake
   - pkg/features
 - name: k8s.io/apimachinery
   version: 65406164345bdb2b7dd33b63bcec210d5014c737
