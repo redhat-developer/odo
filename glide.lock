@@ -623,6 +623,18 @@ imports:
   - storage/v1
   - storage/v1alpha1
   - storage/v1beta1
+- name: k8s.io/apiextensions-apiserver
+  version: 1495f70252dcec3e2289bcabc488290dc1cf1258
+  repo: https://github.com/openshift/kubernetes-apiextensions-apiserver.git
+  subpackages:
+  - pkg/apis/apiextensions
+  - pkg/apis/apiextensions/v1beta1
+  - pkg/client/clientset/clientset
+  - pkg/client/clientset/clientset/fake
+  - pkg/client/clientset/clientset/scheme
+  - pkg/client/clientset/clientset/typed/apiextensions/v1beta1
+  - pkg/client/clientset/clientset/typed/apiextensions/v1beta1/fake
+  - pkg/features
 - name: k8s.io/apimachinery
   version: 79c2a76c473a20cdc4ce59cae4b72529b5d9d16b
   repo: https://github.com/openshift/kubernetes-apimachinery.git

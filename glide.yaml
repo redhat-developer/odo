@@ -27,6 +27,8 @@ import:
 - package: k8s.io/apimachinery
   version: origin-4.4-kubernetes-1.17.1
   repo: https://github.com/openshift/kubernetes-apimachinery.git
+  subpackages:
+  - pkg/apis/meta/v1
 - package: k8s.io/api
   version: origin-4.4-kubernetes-1.17.1
   repo: https://github.com/openshift/kubernetes-api.git
