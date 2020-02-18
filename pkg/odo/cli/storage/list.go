@@ -69,7 +69,6 @@ func (o *StorageListOptions) Run() (err error) {
 	}
 
 	return
-
 }
 
 func printStorage(storageList storage.StorageList, compName string) {
@@ -93,7 +92,6 @@ func printStorage(storageList storage.StorageList, compName string) {
 	}
 
 	fmt.Println("")
-
 }
 
 // NewCmdStorageList implements the odo storage list command.

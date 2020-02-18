@@ -473,7 +473,7 @@ func ListStorageWithState(client *occlient.Client, localConfig *config.LocalConf
 
 	storageCluster, err := List(client, componentName, applicationName)
 	if err != nil {
-		glog.V(4).Infof("Storage List from Cluster Error: %v", err)
+		glog.V(4).Infof("Storage list from cluster error: %v", err)
 	}
 
 	var storageList []Storage
@@ -484,7 +484,6 @@ func ListStorageWithState(client *occlient.Client, localConfig *config.LocalConf
 		if isPushed(storeLocal.Name, storageCluster) {
 			storeLocal.State = StateTypePushed
 		}
-
 		storageList = append(storageList, storeLocal)
 	}
 
@@ -493,13 +492,10 @@ func ListStorageWithState(client *occlient.Client, localConfig *config.LocalConf
 		if isLocallyDeleted(storeCluster.Name, storageListConfig) {
 			storeCluster.State = StateTypeLocallyDeleted
 			storageList = append(storageList, storeCluster)
-
 		}
-
 	}
 
 	return GetMachineReadableFormatForList(storageList), nil
-
 }
 
 func isLocallyDeleted(storageName string, storageLocal StorageList) bool {
@@ -507,19 +503,18 @@ func isLocallyDeleted(storageName string, storageLocal StorageList) bool {
 		if storageName == storage.Name {
 			return false
 		}
-
 	}
-	return true
 
+	return true
 }
 
 func isPushed(storageName string, storageCluster StorageList) bool {
-
 	for _, storage := range storageCluster.Items {
 		if storageName == storage.Name {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -534,5 +529,4 @@ func convertListLocalToMachine(storageListConfig []config.ComponentStorageSettin
 	}
 
 	return GetMachineReadableFormatForList(storageListLocal)
-
 }
