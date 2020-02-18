@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 
+	corev1 "k8s.io/api/core/v1"
 	v1rbac "k8s.io/api/rbac/v1"
 
 	"github.com/mitchellh/go-homedir"
@@ -51,40 +52,15 @@ func Bootstrap(quayUsername, baseRepo, prefix string) error {
 
 	outputs := make([]interface{}, 0)
 
-	//
 	//  Create GitHub Secret
-	//
-	tokenPath, err := pathToDownloadedFile("token")
-	if err != nil {
-		return fmt.Errorf("failed to generate path to file: %w", err)
-	}
-	f, err := os.Open(tokenPath)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	githubAuth, err := createOpaqueSecret("github-auth", f)
+	githubAuth, err := createGithubSecret()
 	if err != nil {
 		return err
 	}
 	outputs = append(outputs, githubAuth)
 
-	authJSONPath, err := pathToDownloadedFile(quayUsername + "-auth.json")
-	if err != nil {
-		return fmt.Errorf("failed to generate path to file: %w", err)
-	}
-
-	f, err = os.Open(authJSONPath)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	//
-	//  Create Docker Secret
-	//
-	dockerSecret, err := createDockerConfigSecret(dockerSecretName, f)
+	// Create Docker Secret
+	dockerSecret, err := createDockerSecret(quayUsername)
 	if err != nil {
 		return err
 	}
@@ -101,17 +77,13 @@ func Bootstrap(quayUsername, baseRepo, prefix string) error {
 	route := routes.Generate()
 	outputs = append(outputs, route)
 
-	//
 	//  Create Service Account, Role, Role Bindings, and ClusterRole Bindings
-	//
 	outputs = append(outputs, createServiceAccount(saName, dockerSecretName))
 	outputs = append(outputs, createRole(roleName, rules))
 	outputs = append(outputs, createRoleBinding(roleBindingName, saName, "Role", roleName))
 	outputs = append(outputs, createRoleBinding("edit-clusterrole-binding", saName, "ClusterRole", "edit"))
 
-	//
-	// Marshall outputs to yamls
-	//
+	// Marshall
 	for _, r := range outputs {
 		data, err := yaml.Marshal(r)
 		if err != nil {
@@ -123,6 +95,47 @@ func Bootstrap(quayUsername, baseRepo, prefix string) error {
 	return nil
 }
 
+// createGithubSecret creates Github secret
+func createGithubSecret() (*corev1.Secret, error) {
+	tokenPath, err := pathToDownloadedFile("token")
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate path to file: %w", err)
+	}
+	f, err := os.Open(tokenPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read token file %s due to %w", tokenPath, err)
+	}
+	defer f.Close()
+
+	githubAuth, err := createOpaqueSecret("github-auth", f)
+	if err != nil {
+		return nil, err
+	}
+
+	return githubAuth, nil
+}
+
+// createDockerSecret creates Docker secret
+func createDockerSecret(quayUsername string) (*corev1.Secret, error) {
+	authJSONPath, err := pathToDownloadedFile(quayUsername + "-auth.json")
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate path to file: %w", err)
+	}
+
+	f, err := os.Open(authJSONPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read docker file '%s' due to %w", authJSONPath, err)
+	}
+	defer f.Close()
+
+	dockerSecret, err := createDockerConfigSecret(dockerSecretName, f)
+	if err != nil {
+		return nil, err
+	}
+
+	return dockerSecret, nil
+
+}
 func pathToDownloadedFile(fname string) (string, error) {
 	return homedir.Expand(path.Join("~/Downloads/", fname))
 }
