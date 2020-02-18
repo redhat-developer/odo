@@ -35,11 +35,11 @@ func createRoleBinding(bindingName, saName, roleName string) v1rbac.RoleBinding 
 	}
 }
 
-// createRole creates a Role given a roleName and rules
-func createRole(roleName string, rules []v1rbac.PolicyRule) v1rbac.Role {
+// createRole creates a Role given a roleName and policyRules
+func createRole(roleName string, policyRules []v1rbac.PolicyRule) v1rbac.Role {
 	return v1rbac.Role{
 		TypeMeta:   createTypeMeta("Role", "rbac.authorization.k8s.io/v1"),
 		ObjectMeta: createObjectMeta(roleName),
-		Rules:      rules,
+		Rules:      policyRules,
 	}
 }
