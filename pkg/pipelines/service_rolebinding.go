@@ -16,8 +16,8 @@ func createServiceAccount(saName, secretName string) corev1.ServiceAccount {
 	}
 }
 
-// createRoleBinding creates a RoleBinding given bindingName, saName, and roleName
-func createRoleBinding(bindingName, saName, roleName string) v1rbac.RoleBinding {
+// createRoleBinding creates a RoleBinding given bindingName, saName, roleKind, and roleName
+func createRoleBinding(bindingName, saName, roleKind, roleName string) v1rbac.RoleBinding {
 	return v1rbac.RoleBinding{
 		TypeMeta:   createTypeMeta("RoleBinding", "rbac.authorization.k8s.io/v1"),
 		ObjectMeta: createObjectMeta(bindingName),
@@ -29,7 +29,7 @@ func createRoleBinding(bindingName, saName, roleName string) v1rbac.RoleBinding 
 		},
 		RoleRef: v1rbac.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
-			Kind:     "Role",
+			Kind:     roleKind,
 			Name:     roleName,
 		},
 	}
