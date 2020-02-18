@@ -30,7 +30,7 @@ func TestRoleBinding(t *testing.T) {
 			Name:     "tekton-triggers-openshift-demo",
 		},
 	}
-	roleBindingTask := generateRoleBinding()
+	roleBindingTask := createRoleBinding("tekton-triggers-openshift-binding", "demo-sa", "tekton-triggers-openshift-demo")
 	if diff := cmp.Diff(roleBinding, roleBindingTask); diff != "" {
 		t.Errorf("GenerateGithubStatusTask() failed:\n%s", diff)
 	}
@@ -59,7 +59,7 @@ func TestRole(t *testing.T) {
 			},
 		},
 	}
-	roleTask := GenerateRole()
+	roleTask := createRole("tekton-triggers-openshift-demo", rules)
 	if diff := cmp.Diff(role, roleTask); diff != "" {
 		t.Errorf("GenerateGithubStatusTask() failed:\n%s", diff)
 	}
@@ -82,7 +82,7 @@ func ServiceAccountTest(t *testing.T) {
 			},
 		},
 	}
-	servicetask := GenerateServiceAccount()
+	servicetask := createServiceAccount("demo-sa", "regcred")
 	if diff := cmp.Diff(servicetask, serviceAccount); diff != "" {
 		t.Errorf("GenerateGithubStatusTask() failed:\n%s", diff)
 	}

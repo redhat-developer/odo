@@ -6,11 +6,34 @@ import (
 	"os"
 	"path"
 
+	v1rbac "k8s.io/api/rbac/v1"
+
 	"github.com/mitchellh/go-homedir"
 	"github.com/openshift/odo/pkg/pipelines/eventlisteners"
 	"github.com/openshift/odo/pkg/pipelines/routes"
 	"github.com/openshift/odo/pkg/pipelines/tasks"
 	"sigs.k8s.io/yaml"
+)
+
+var (
+	dockerSecretName = "regcred"
+	saName           = "demo-sa"
+	roleName         = "tekton-triggers-openshift-demo"
+	roleBindingName  = "tekton-triggers-openshift-binding"
+
+	// PolicyRules to be bound to service account
+	rules = []v1rbac.PolicyRule{
+		v1rbac.PolicyRule{
+			APIGroups: []string{"tekton.dev"},
+			Resources: []string{"eventlisteners", "triggerbindings", "triggertemplates", "tasks", "taskruns"},
+			Verbs:     []string{"get"},
+		},
+		v1rbac.PolicyRule{
+			APIGroups: []string{"tekton.dev"},
+			Resources: []string{"pipelineruns", "pipelineresources", "taskruns"},
+			Verbs:     []string{"create"},
+		},
+	}
 )
 
 // Bootstrap is the main driver for getting OpenShift pipelines for GitOps
@@ -28,6 +51,9 @@ func Bootstrap(quayUsername, baseRepo, prefix string) error {
 
 	outputs := make([]interface{}, 0)
 
+	//
+	//  Create GitHub Secret
+	//
 	tokenPath, err := pathToDownloadedFile("token")
 	if err != nil {
 		return fmt.Errorf("failed to generate path to file: %w", err)
@@ -55,7 +81,10 @@ func Bootstrap(quayUsername, baseRepo, prefix string) error {
 	}
 	defer f.Close()
 
-	dockerSecret, err := createDockerConfigSecret("regcred", f)
+	//
+	//  Create Docker Secret
+	//
+	dockerSecret, err := createDockerConfigSecret(dockerSecretName, f)
 	if err != nil {
 		return err
 	}
@@ -72,6 +101,16 @@ func Bootstrap(quayUsername, baseRepo, prefix string) error {
 	route := routes.GenerateRoute()
 	outputs = append(outputs, route)
 
+	//
+	//  Create Service Account, Role, and Role Bindings
+	//
+	outputs = append(outputs, createServiceAccount(saName, dockerSecretName))
+	outputs = append(outputs, createRole(roleName, rules))
+	outputs = append(outputs, createRoleBinding(roleBindingName, saName, roleName))
+
+	//
+	// Marshall outputs to yamls
+	//
 	for _, r := range outputs {
 		data, err := yaml.Marshal(r)
 		if err != nil {
