@@ -26,7 +26,7 @@ func New(commonAdapter adapterCommon.AdapterMetadata, client kclient.Client) Ada
 
 // Start reuses the component if an matching component exists or creates one if it doesn't exist and then starts it
 func (a Adapter) Start() (err error) {
-	componentName := a.Adapter.OdoComp.Name
+	componentName := a.Adapter.Name
 
 	var containers []corev1.Container
 	// Only components with aliases are considered because without an alias commands cannot reference them

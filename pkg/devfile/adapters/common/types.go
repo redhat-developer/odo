@@ -6,11 +6,6 @@ import (
 
 // AdapterMetadata is a construct that is common to all adapters
 type AdapterMetadata struct {
+	Name    string
 	Devfile devfile.DevfileObj
-	OdoComp OdoComponent
-}
-
-// OdoComponent contains properties of the specific odo component based on the associated Devfile
-type OdoComponent struct {
-	Name string
 }
