@@ -38,3 +38,25 @@ func (c *Client) CreateDeployment(deploymentSpec appsv1.DeploymentSpec) (*appsv1
 	}
 	return deploy, nil
 }
+
+// UpdateDeployment updates a deployment based on the given deployment spec
+func (c *Client) UpdateDeployment(name string, deploymentSpec appsv1.DeploymentSpec) (*appsv1.Deployment, error) {
+	// inherit ObjectMeta from deployment spec so that namespace, labels, owner references etc will be the same
+	objectMeta := deploymentSpec.Template.ObjectMeta
+	objectMeta.Name = name
+
+	deployment := appsv1.Deployment{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       DeploymentKind,
+			APIVersion: DeploymentAPIVersion,
+		},
+		ObjectMeta: objectMeta,
+		Spec:       deploymentSpec,
+	}
+
+	deploy, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Update(&deployment)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to update Deployment %s", name)
+	}
+	return deploy, nil
+}

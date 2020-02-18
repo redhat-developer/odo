@@ -28,11 +28,6 @@ func New(commonAdapter adapterCommon.AdapterMetadata, client kclient.Client) Ada
 func (a Adapter) Start() (err error) {
 	componentName := a.Adapter.OdoComp.Name
 
-	if componentExists(a.Client, componentName) {
-		log.Info("The component already exists")
-		return nil
-	}
-
 	var containers []corev1.Container
 	// Only components with aliases are considered because without an alias commands cannot reference them
 	for _, comp := range a.Adapter.Devfile.Data.GetAliasedComponents() {
@@ -56,11 +51,21 @@ func (a Adapter) Start() (err error) {
 	glog.V(3).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
 	glog.V(3).Infof("The component name is %v", componentName)
 
-	_, err = a.Client.CreateDeployment(componentName, *deploymentSpec)
-	if err != nil {
-		return err
+	if componentExists(a.Client, componentName) {
+		glog.V(3).Info("The component already exists, attempting to update it")
+		_, err = a.Client.UpdateDeployment(componentName, *deploymentSpec)
+		if err != nil {
+			return err
+		}
+		log.Infof("Successfully updated component %v", componentName)
+	} else {
+		_, err = a.Client.CreateDeployment(componentName, *deploymentSpec)
+		if err != nil {
+			return err
+		}
+		log.Infof("Successfully created component %v", componentName)
 	}
-	log.Infof("Successfully created component %v", componentName)
+
 	return nil
 }
 
