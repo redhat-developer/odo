@@ -41,12 +41,12 @@ func newSCC() (*scc, error) {
 }
 
 // addSCCToUser adds the a given namespace/saName to SecurityContextContaints named by sscName
-func (s *scc) addSCCToUser(sccName, namespace, saName string) error {
+func (s *scc) addSCCToUser(name, namespace, saName string) error {
 
 	// get scc object by calling APIs
-	sccObj, err := s.client.Get(sccName, metav1.GetOptions{})
+	sccObj, err := s.client.Get(name, metav1.GetOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to get SCC '%s' : %w", sccName, err)
+		return fmt.Errorf("failed to get SCC '%s' : %w", name, err)
 	}
 
 	// add use to sccObj if it is not in there already
@@ -56,7 +56,7 @@ func (s *scc) addSCCToUser(sccName, namespace, saName string) error {
 		sccObj.Users = newUsers
 		_, err = s.client.Update(sccObj)
 		if err != nil {
-			return fmt.Errorf("failed to add SA '%s/%s' to '%s' : %w", namespace, saName, sccName, err)
+			return fmt.Errorf("failed to add SA '%s/%s' to '%s' : %w", namespace, saName, name, err)
 		}
 	}
 
