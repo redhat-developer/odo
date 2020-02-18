@@ -37,7 +37,7 @@ func TestRoleBinding(t *testing.T) {
 
 }
 
-func TestRole(t *testing.T) {
+func TestCreateRole(t *testing.T) {
 	role := v1rbac.Role{
 		TypeMeta: v1.TypeMeta{
 			Kind:       "Role",

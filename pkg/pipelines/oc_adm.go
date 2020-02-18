@@ -8,17 +8,18 @@ import (
 	"k8s.io/apiserver/pkg/authentication/serviceaccount"
 )
 
-// interface to invoke methods on SCC
+// interface to invoke methods on a SCC (SecurityContextConstraints) object
 type sccAccessor interface {
 	addSCCToUser(sccName, namespace, saName string) error
 }
 
+// scc represents an OpenShift SecurityContextConstraints object with accessor interface that we need for our operations
 type scc struct {
 	client   securityv1typedclient.SecurityContextConstraintsInterface
 	accessor sccAccessor
 }
 
-// newSCC creates a sccOperations
+// newSCC creates a SCC object
 func newSCC() (*scc, error) {
 
 	// obtain client config
@@ -45,7 +46,7 @@ func (s *scc) addSCCToUser(sccName, namespace, saName string) error {
 	// get scc object by calling APIs
 	sccObj, err := s.client.Get(sccName, metav1.GetOptions{})
 	if err != nil {
-		return fmt.Errorf("failed to get SCC '%s' due to %w", sccName, err)
+		return fmt.Errorf("failed to get SCC '%s' : %w", sccName, err)
 	}
 
 	// add use to sccObj if it is not in there already
@@ -55,7 +56,7 @@ func (s *scc) addSCCToUser(sccName, namespace, saName string) error {
 		sccObj.Users = newUsers
 		_, err = s.client.Update(sccObj)
 		if err != nil {
-			return fmt.Errorf("failed to add SA '%s/%s' to '%s' due to %w", namespace, saName, sccName, err)
+			return fmt.Errorf("failed to add SA '%s/%s' to '%s' : %w", namespace, saName, sccName, err)
 		}
 	}
 
