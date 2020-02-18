@@ -8,10 +8,17 @@ import (
 	"k8s.io/apiserver/pkg/authentication/serviceaccount"
 )
 
-type scc struct {
-	client securityv1typedclient.SecurityContextConstraintsInterface
+// interface to invoke methods on SCC
+type sccAccessor interface {
+	addSCCToUser(sccName, namespace, saName string) error
 }
 
+type scc struct {
+	client   securityv1typedclient.SecurityContextConstraintsInterface
+	accessor sccAccessor
+}
+
+// newSCC creates a sccOperations
 func newSCC() (*scc, error) {
 
 	// obtain client config
@@ -20,9 +27,10 @@ func newSCC() (*scc, error) {
 		return nil, fmt.Errorf("failed to get client config due to %w", err)
 	}
 
+	// obtain security client
 	securityClient, err := securityv1typedclient.NewForConfig(clientConfig)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to obtain Security Client due to %w", err)
 	}
 
 	return &scc{
@@ -31,29 +39,34 @@ func newSCC() (*scc, error) {
 
 }
 
+// addSCCToUser adds the a given namespace/saName to SecurityContextContaints named by sscName
 func (s *scc) addSCCToUser(sccName, namespace, saName string) error {
 
-	scc, err := s.client.Get(sccName, metav1.GetOptions{})
+	// get scc object by calling APIs
+	sccObj, err := s.client.Get(sccName, metav1.GetOptions{})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get SCC '%s' due to %w", sccName, err)
 	}
 
-	added, newUsers := appendIfMissing(scc.Users, serviceaccount.MakeUsername(namespace, saName))
-	if !added {
-		return nil
+	// add use to sccObj if it is not in there already
+	added, newUsers := appendIfMissing(sccObj.Users, serviceaccount.MakeUsername(namespace, saName))
+	if added {
+		// update sccObj
+		sccObj.Users = newUsers
+		_, err = s.client.Update(sccObj)
+		if err != nil {
+			return fmt.Errorf("failed to add SA '%s/%s' to '%s' due to %w", namespace, saName, sccName, err)
+		}
 	}
 
-	scc.Users = newUsers
-	_, err = s.client.Update(scc)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
+// appendIfMissing appends "s" to "slice" if "s" is not in "slice."  It returns slice and true
+// if "s" has been added.   Otherwise, it returns slice and false
 func appendIfMissing(slice []string, s string) (bool, []string) {
-	for _, ele := range slice {
-		if ele == s {
+	for _, elem := range slice {
+		if elem == s {
 			return false, slice
 		}
 	}
