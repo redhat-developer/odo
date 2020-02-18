@@ -544,6 +544,7 @@ func TestCreateRoute(t *testing.T) {
 		labels     map[string]string
 		wantErr    bool
 		existingDC appsv1.DeploymentConfig
+		secureURL  bool
 	}{
 		{
 			name:       "Case : mailserver",
@@ -572,6 +573,21 @@ func TestCreateRoute(t *testing.T) {
 			wantErr:    false,
 			existingDC: *fakeDeploymentConfig("blog", "", nil, nil, t),
 		},
+
+		{
+			name:       "Case : secure url",
+			urlName:    "example",
+			service:    "blog",
+			portNumber: intstr.FromInt(9100),
+			labels: map[string]string{
+				"SLA":                        "High",
+				"app.kubernetes.io/instance": "backend",
+				"app.kubernetes.io/name":     "golang",
+			},
+			wantErr:    false,
+			existingDC: *fakeDeploymentConfig("blog", "", nil, nil, t),
+			secureURL:  true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -584,7 +600,21 @@ func TestCreateRoute(t *testing.T) {
 				return true, dc, nil
 			})
 
-			_, err := fkclient.CreateRoute(tt.urlName, tt.service, tt.portNumber, tt.labels)
+			createdRoute, err := fkclient.CreateRoute(tt.urlName, tt.service, tt.portNumber, tt.labels, tt.secureURL)
+
+			if tt.secureURL {
+				wantedTLSConfig := &routev1.TLSConfig{
+					Termination:                   routev1.TLSTerminationEdge,
+					InsecureEdgeTerminationPolicy: routev1.InsecureEdgeTerminationPolicyRedirect,
+				}
+				if !reflect.DeepEqual(createdRoute.Spec.TLS, wantedTLSConfig) {
+					t.Errorf("tls config is different, wanted %v, got %v", wantedTLSConfig, createdRoute.Spec.TLS)
+				}
+			} else {
+				if createdRoute.Spec.TLS != nil {
+					t.Errorf("tls config is set for a non secure url")
+				}
+			}
 
 			// Checks for error in positive cases
 			if !tt.wantErr == (err != nil) {

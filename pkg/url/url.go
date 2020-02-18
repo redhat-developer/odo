@@ -44,7 +44,7 @@ func Delete(client *occlient.Client, urlName string, applicationName string) err
 
 // Create creates a URL and returns url string and error if any
 // portNumber is the target port number for the route and is -1 in case no port number is specified in which case it is automatically detected for components which expose only one service port)
-func Create(client *occlient.Client, urlName string, portNumber int, componentName, applicationName string) (string, error) {
+func Create(client *occlient.Client, urlName string, portNumber int, secureURL bool, componentName, applicationName string) (string, error) {
 	labels := urlLabels.GetLabels(urlName, componentName, applicationName, true)
 
 	serviceName, err := util.NamespaceOpenShiftObject(componentName, applicationName)
@@ -58,7 +58,7 @@ func Create(client *occlient.Client, urlName string, portNumber int, componentNa
 	}
 
 	// Pass in the namespace name, link to the service (componentName) and labels to create a route
-	route, err := client.CreateRoute(urlName, serviceName, intstr.FromInt(portNumber), labels)
+	route, err := client.CreateRoute(urlName, serviceName, intstr.FromInt(portNumber), labels, secureURL)
 	if err != nil {
 		return "", errors.Wrap(err, "unable to create route")
 	}

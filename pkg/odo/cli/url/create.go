@@ -41,6 +41,7 @@ type URLCreateOptions struct {
 	*clicomponent.CommonPushOptions
 	urlName       string
 	urlPort       int
+	secureURL     bool
 	componentPort int
 	now           bool
 }
@@ -113,7 +114,7 @@ func (o *URLCreateOptions) Validate() (err error) {
 
 // Run contains the logic for the odo url create command
 func (o *URLCreateOptions) Run() (err error) {
-	err = o.LocalConfigInfo.SetConfiguration("url", config.ConfigURL{Name: o.urlName, Port: o.componentPort})
+	err = o.LocalConfigInfo.SetConfiguration("url", config.ConfigURL{Name: o.urlName, Port: o.componentPort, Secure: o.secureURL})
 	if err != nil {
 		return errors.Wrapf(err, "failed to persist the component settings to config file")
 	}
@@ -146,6 +147,7 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 	urlCreateCmd.Flags().IntVarP(&o.urlPort, "port", "", -1, "port number for the url of the component, required in case of components which expose more than one service port")
 	o.AddContextFlag(urlCreateCmd)
 	genericclioptions.AddNowFlag(urlCreateCmd, &o.now)
+	urlCreateCmd.Flags().BoolVarP(&o.secureURL, "secure", "", false, "creates a secure https url")
 	completion.RegisterCommandFlagHandler(urlCreateCmd, "context", completion.FileCompletionHandler)
 	return urlCreateCmd
 }

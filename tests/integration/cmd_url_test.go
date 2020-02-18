@@ -70,6 +70,22 @@ var _ = Describe("odo url command tests", func() {
 			helper.MatchAllInOutput(stdout, []string{url2, "Pushed"})
 			helper.DontMatchAllInOutput(stdout, []string{url1, "Not Pushed", "odo push"})
 		})
+
+		It("should create a secure URL", func() {
+			url1 := helper.RandString(5)
+			componentName := helper.RandString(6)
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--project", project, componentName)
+
+			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "8080", "--context", context, "--secure")
+			helper.CmdShouldPass("odo", "push", "--context", context)
+
+			secureURL := helper.DetermineRouteURL(context)
+			Expect(secureURL).To(ContainSubstring("https:"))
+			helper.HttpWaitFor(secureURL, "Hello world from node.js!", 20, 1)
+
+			helper.CmdShouldPass("odo", "delete", "-f", "--context", context)
+		})
 	})
 
 	Context("when listing urls using -o json flag", func() {

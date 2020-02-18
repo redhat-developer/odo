@@ -66,7 +66,7 @@ func routeURL(context string) string {
 	} else {
 		stdOut = CmdShouldPass("odo", "url", "list")
 	}
-	reURL := regexp.MustCompile(`\s+http://.\S+`)
+	reURL := regexp.MustCompile(`\s+http(s?)://.\S+`)
 	odoURL := reURL.FindString(stdOut)
 	return strings.TrimSpace(odoURL)
 }
