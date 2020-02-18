@@ -10,7 +10,20 @@ type Storage struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Spec              StorageSpec   `json:"spec,omitempty"`
 	Status            StorageStatus `json:"status,omitempty"`
+	State             StorageState  `json:"state,omitempty"`
 }
+
+// StorageState
+type StorageState string
+
+const (
+	// StateTypePushed means that Storage is present both locally and on cluster
+	StateTypePushed StorageState = "Pushed"
+	// StateTypeNotPushed means that Storage is only in local config, but not on the cluster
+	StateTypeNotPushed = "Not Pushed"
+	// StateTypeLocallyDeleted means that Storage was deleted from the local config, but it is still present on the cluster
+	StateTypeLocallyDeleted = "Locally Deleted"
+)
 
 // StorageSpec indicates size and path of storage
 type StorageSpec struct {

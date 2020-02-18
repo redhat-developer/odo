@@ -2,6 +2,8 @@ package storage
 
 import (
 	"fmt"
+
+	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
 
 	applabels "github.com/openshift/odo/pkg/application/labels"
@@ -458,4 +460,73 @@ func GetMachineReadableFormat(storageName, storageSize, storagePath string) Stor
 			Path: storagePath,
 		},
 	}
+}
+
+func ListStorageWithState(client *occlient.Client, localConfig *config.LocalConfigInfo, componentName string, applicationName string) (StorageList, error) {
+
+	storageConfig, err := localConfig.StorageList()
+	if err != nil {
+		return StorageList{}, err
+	}
+
+	storageListConfig := convertListLocalToMachine(storageConfig)
+
+	storageCluster, err := List(client, componentName, applicationName)
+	if err != nil {
+		glog.V(4).Infof("Storage list from cluster error: %v", err)
+	}
+
+	var storageList []Storage
+
+	// Iterate over local storage list, to add State PUSHED/NOT PUSHED
+	for _, storeLocal := range storageListConfig.Items {
+		storeLocal.State = StateTypeNotPushed
+		if isPushed(storeLocal.Name, storageCluster) {
+			storeLocal.State = StateTypePushed
+		}
+		storageList = append(storageList, storeLocal)
+	}
+
+	// Iterate over cluster storage list, to add State Locally Deleted
+	for _, storeCluster := range storageCluster.Items {
+		if isLocallyDeleted(storeCluster.Name, storageListConfig) {
+			storeCluster.State = StateTypeLocallyDeleted
+			storageList = append(storageList, storeCluster)
+		}
+	}
+
+	return GetMachineReadableFormatForList(storageList), nil
+}
+
+func isLocallyDeleted(storageName string, storageLocal StorageList) bool {
+	for _, storage := range storageLocal.Items {
+		if storageName == storage.Name {
+			return false
+		}
+	}
+
+	return true
+}
+
+func isPushed(storageName string, storageCluster StorageList) bool {
+	for _, storage := range storageCluster.Items {
+		if storageName == storage.Name {
+			return true
+		}
+	}
+
+	return false
+}
+
+// It converts storage config list to StorageList type
+func convertListLocalToMachine(storageListConfig []config.ComponentStorageSettings) StorageList {
+
+	var storageListLocal []Storage
+
+	for _, storeLocal := range storageListConfig {
+		s := GetMachineReadableFormat(storeLocal.Name, storeLocal.Size, storeLocal.Path)
+		storageListLocal = append(storageListLocal, s)
+	}
+
+	return GetMachineReadableFormatForList(storageListLocal)
 }

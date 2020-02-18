@@ -3,15 +3,14 @@ package storage
 import (
 	"fmt"
 	"os"
+	"text/tabwriter"
 
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/storage"
 
-	"text/tabwriter"
-
-	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
 
@@ -56,43 +55,43 @@ func (o *StorageListOptions) Validate() (err error) {
 	return nil
 }
 
-// Run contains the logic for the odo storage list command
 func (o *StorageListOptions) Run() (err error) {
-	storageListConfig, err := o.localConfig.StorageList()
+
+	storageList, err := storage.ListStorageWithState(o.Client, o.localConfig, o.Component(), o.Application)
 	if err != nil {
 		return err
 	}
 
-	storageListMachineReadable := []storage.Storage{}
-
-	for _, storageConfig := range storageListConfig {
-		storageListMachineReadable = append(storageListMachineReadable, storage.GetMachineReadableFormat(storageConfig.Name, storageConfig.Size, storageConfig.Path))
-	}
-	storageListResultMachineReadable := storage.GetMachineReadableFormatForList(storageListMachineReadable)
-
 	if log.IsJSON() {
-		machineoutput.OutputSuccess(storageListResultMachineReadable)
+		machineoutput.OutputSuccess(storageList)
 	} else {
-		// defining the column structure of the table
+		printStorage(storageList, o.localConfig.GetName())
+	}
+
+	return
+}
+
+func printStorage(storageList storage.StorageList, compName string) {
+
+	if len(storageList.Items) > 0 {
+
 		tabWriterMounted := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 
 		// create headers of mounted storage table
-		fmt.Fprintln(tabWriterMounted, "NAME", "\t", "SIZE", "\t", "PATH")
+		fmt.Fprintln(tabWriterMounted, "NAME", "\t", "SIZE", "\t", "PATH", "\t", "STATE")
 		// iterating over all mounted storage and put in the mount storage table
-		if len(storageListConfig) > 0 {
-			for _, mStorage := range storageListConfig {
-				fmt.Fprintln(tabWriterMounted, mStorage.Name, "\t", mStorage.Size, "\t", mStorage.Path)
-			}
-
-			// print all mounted storage of the given component
-			log.Infof("The component '%v' has the following storage attached:", o.localConfig.GetName())
-			tabWriterMounted.Flush()
-		} else {
-			log.Infof("The component '%v' has no storage attached", o.localConfig.GetName())
+		for _, mStorage := range storageList.Items {
+			fmt.Fprintln(tabWriterMounted, mStorage.Name, "\t", mStorage.Spec.Size, "\t", mStorage.Status.Path, "\t", mStorage.State)
 		}
-		fmt.Println("")
+
+		// print all mounted storage of the given component
+		log.Infof("The component '%v' has the following storage attached:", compName)
+		tabWriterMounted.Flush()
+	} else {
+		log.Infof("The component '%v' has no storage attached", compName)
 	}
-	return
+
+	fmt.Println("")
 }
 
 // NewCmdStorageList implements the odo storage list command.

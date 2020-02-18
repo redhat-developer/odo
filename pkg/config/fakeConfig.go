@@ -50,6 +50,36 @@ func GetOneExistingConfigInfo(componentName, applicationName, projectName string
 	}
 }
 
+func GetOneExistingConfigInfoStorage(componentName, applicationName, projectName, storeName, storeSize, storePath string) LocalConfigInfo {
+	componentType := "nodejs"
+	sourceLocation := "./"
+
+	storageValue := []ComponentStorageSettings{
+		{
+			Name: storeName,
+			Size: storeSize,
+			Path: storePath,
+		},
+	}
+
+	localVar := LOCAL
+
+	return LocalConfigInfo{
+		configFileExists: true,
+		LocalConfig: LocalConfig{
+			componentSettings: ComponentSettings{
+				Name:           &componentName,
+				Application:    &applicationName,
+				Type:           &componentType,
+				SourceLocation: &sourceLocation,
+				Storage:        &storageValue,
+				Project:        &projectName,
+				SourceType:     &localVar,
+			},
+		},
+	}
+}
+
 func GetOneGitExistingConfigInfo(componentName, applicationName, projectName string) LocalConfigInfo {
 	localConfigInfo := GetOneExistingConfigInfo(componentName, applicationName, projectName)
 	git := GIT
