@@ -5,7 +5,6 @@ import (
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha2"
 )
 
-// generateDeployFromSourceTask will return a github-status-task
 func generateDeployFromSourceTask() pipelinev1.Task {
 	task := pipelinev1.Task{
 		TypeMeta:   createTaskTypeMeta(),

@@ -6,7 +6,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// GenerateGithubStatusTask will return a github-status-task
 func generateGithubStatusTask() pipelinev1.Task {
 	task := pipelinev1.Task{
 		TypeMeta:   createTaskTypeMeta(),
@@ -21,22 +20,20 @@ func generateGithubStatusTask() pipelinev1.Task {
 	return task
 }
 
-func argsForStartStatusStep() []string {
-	return []string{
-		"create-status",
-		"--repo",
-		"$(inputs.params.REPO)",
-		"--sha",
-		"$(inputs.params.COMMIT_SHA)",
-		"--state",
-		"$(inputs.params.STATE)",
-		"--target-url",
-		"$(inputs.params.TARGET_URL)",
-		"--description",
-		"$(inputs.params.DESCRIPTION)",
-		"--context",
-		"$(inputs.params.CONTEXT)",
-	}
+var argsForStartStatusStep = []string{
+	"create-status",
+	"--repo",
+	"$(inputs.params.REPO)",
+	"--sha",
+	"$(inputs.params.COMMIT_SHA)",
+	"--state",
+	"$(inputs.params.STATE)",
+	"--target-url",
+	"$(inputs.params.TARGET_URL)",
+	"--description",
+	"$(inputs.params.DESCRIPTION)",
+	"--context",
+	"$(inputs.params.CONTEXT)",
 }
 
 func createInputsForGithubStatusTask() *pipelinev1.Inputs {
@@ -88,7 +85,7 @@ func createStepsForGithubStatusTask() []pipelinev1.Step {
 					createEnvFromSecret("GITHUB_TOKEN", "github-auth", "token"),
 				},
 				Command: []string{"github-tools"},
-				Args:    argsForStartStatusStep(),
+				Args:    argsForStartStatusStep,
 			},
 		},
 	}

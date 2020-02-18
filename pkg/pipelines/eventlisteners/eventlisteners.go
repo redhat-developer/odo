@@ -18,8 +18,8 @@ const (
 	stageCDDeployFilters = "(header.match('X-GitHub-Event', 'push') && body.repository.full_name == '%s') && body.ref.startsWith('refs/heads/master')"
 )
 
-// GenerateEventListener will create the required eventlisteners
-func GenerateEventListener(githubRepo string) triggersv1.EventListener {
+// Generate will create the required eventlisteners
+func Generate(githubRepo string) triggersv1.EventListener {
 	githubStageRepo := githubRepo + "-stage-config"
 	return triggersv1.EventListener{
 		TypeMeta:   createListenerTypeMeta(),

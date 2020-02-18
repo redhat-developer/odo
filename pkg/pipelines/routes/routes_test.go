@@ -39,9 +39,9 @@ func TestGenerateRoute(t *testing.T) {
 			WildcardPolicy: routev1.WildcardPolicyNone,
 		},
 	}
-	route := GenerateRoute()
+	route := Generate()
 	if diff := cmp.Diff(validRoute, route); diff != "" {
-		t.Fatalf("GenerateRoute() failed:\n%s", diff)
+		t.Fatalf("Generate() failed:\n%s", diff)
 	}
 }
 

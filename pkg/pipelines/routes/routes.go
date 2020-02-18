@@ -6,8 +6,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-// GenerateRoute creates a route for event listener
-func GenerateRoute() routev1.Route {
+// Generate creates a route for event listener
+func Generate() routev1.Route {
 	return routev1.Route{
 		TypeMeta:   createRouteTypeMeta(),
 		ObjectMeta: createRouteObjectMeta("github-webhook-event-listener"),

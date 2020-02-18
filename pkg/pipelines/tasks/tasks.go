@@ -6,8 +6,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// GenerateTasks will return a slice of tasks
-func GenerateTasks() []pipelinev1.Task {
+// Generate will return a slice of tasks
+func Generate() []pipelinev1.Task {
 	return []pipelinev1.Task{
 		generateGithubStatusTask(),
 		generateDeployFromSourceTask(),

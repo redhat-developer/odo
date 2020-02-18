@@ -90,15 +90,15 @@ func Bootstrap(quayUsername, baseRepo, prefix string) error {
 	}
 	outputs = append(outputs, dockerSecret)
 
-	tasks := tasks.GenerateTasks()
+	tasks := tasks.Generate()
 	for _, task := range tasks {
 		outputs = append(outputs, task)
 	}
 
-	eventListener := eventlisteners.GenerateEventListener(baseRepo)
+	eventListener := eventlisteners.Generate(baseRepo)
 	outputs = append(outputs, eventListener)
 
-	route := routes.GenerateRoute()
+	route := routes.Generate()
 	outputs = append(outputs, route)
 
 	//
