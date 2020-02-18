@@ -96,9 +96,9 @@ func TestGenerateEventListener(t *testing.T) {
 		},
 	}
 
-	eventListener := GenerateEventListener("sample")
+	eventListener := Generate("sample")
 	if diff := cmp.Diff(validEventListener, eventListener); diff != "" {
-		t.Fatalf("GenerateEventListener() failed:\n%s", diff)
+		t.Fatalf("Generate() failed:\n%s", diff)
 	}
 }
 

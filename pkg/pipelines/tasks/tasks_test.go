@@ -20,44 +20,7 @@ func TestGithubStatusTask(t *testing.T) {
 			Name: "create-github-status-task",
 		},
 		Spec: pipelinev1.TaskSpec{
-			Inputs: &pipelinev1.Inputs{
-				Params: []pipelinev1.ParamSpec{
-					pipelinev1.ParamSpec{
-						Name:        "REPO",
-						Type:        pipelinev1.ParamTypeString,
-						Description: "The repo to publish the status update for e.g. tektoncd/triggers",
-					},
-					pipelinev1.ParamSpec{
-						Name:        "COMMIT_SHA",
-						Type:        pipelinev1.ParamTypeString,
-						Description: "The specific commit to report a status for.",
-					},
-					pipelinev1.ParamSpec{
-						Name:        "STATE",
-						Type:        pipelinev1.ParamTypeString,
-						Description: "The state to report error, failure, pending, or success.",
-					},
-					pipelinev1.ParamSpec{
-						Name:        "TARGET_URL",
-						Type:        pipelinev1.ParamTypeString,
-						Description: "The target URL to associate with this status.",
-						Default: &pipelinev1.ArrayOrString{
-							StringVal: "",
-							Type:      "string",
-						},
-					},
-					pipelinev1.ParamSpec{
-						Name:        "DESCRIPTION",
-						Type:        pipelinev1.ParamTypeString,
-						Description: "A short description of the status.",
-					},
-					pipelinev1.ParamSpec{
-						Name:        "CONTEXT",
-						Type:        pipelinev1.ParamTypeString,
-						Description: "A string label to differentiate this status from the status of other systems.",
-					},
-				},
-			},
+			Inputs: createInputsForGithubStatusTask(),
 			TaskSpec: v1alpha2.TaskSpec{
 				Steps: []pipelinev1.Step{
 					pipelinev1.Step{
@@ -66,34 +29,10 @@ func TestGithubStatusTask(t *testing.T) {
 							Image:      "quay.io/kmcdermo/github-tool:latest",
 							WorkingDir: "/workspace/source",
 							Env: []corev1.EnvVar{
-								corev1.EnvVar{
-									Name: "GITHUB_TOKEN",
-									ValueFrom: &corev1.EnvVarSource{
-										SecretKeyRef: &corev1.SecretKeySelector{
-											LocalObjectReference: corev1.LocalObjectReference{
-												Name: "github-auth",
-											},
-											Key: "token",
-										},
-									},
-								},
+								createEnvFromSecret("GITHUB_TOKEN", "github-auth", "token"),
 							},
 							Command: []string{"github-tools"},
-							Args: []string{
-								"create-status",
-								"--repo",
-								"$(inputs.params.REPO)",
-								"--sha",
-								"$(inputs.params.COMMIT_SHA)",
-								"--state",
-								"$(inputs.params.STATE)",
-								"--target-url",
-								"$(inputs.params.TARGET_URL)",
-								"--description",
-								"$(inputs.params.DESCRIPTION)",
-								"--context",
-								"$(inputs.params.CONTEXT)",
-							},
+							Args:    argsForStartStatusStep,
 						},
 					},
 				},
@@ -117,41 +56,7 @@ func TestDeployFromSourceTask(t *testing.T) {
 			Name: "deploy-from-source-task",
 		},
 		Spec: pipelinev1.TaskSpec{
-			Inputs: &pipelinev1.Inputs{
-				Resources: []pipelinev1.TaskResource{
-					pipelinev1.TaskResource{
-						ResourceDeclaration: pipelinev1.ResourceDeclaration{
-							Name: "source",
-							Type: "git",
-						},
-					},
-				},
-				Params: []pipelinev1.ParamSpec{
-					pipelinev1.ParamSpec{
-						Name:        "PATHTODEPLOYMENT",
-						Description: "Path to the manifest to apply",
-						Type:        pipelinev1.ParamTypeString,
-						Default: &pipelinev1.ArrayOrString{
-							StringVal: "deploy",
-							Type:      "string",
-						},
-					},
-					pipelinev1.ParamSpec{
-						Name:        "NAMESPACE",
-						Type:        pipelinev1.ParamTypeString,
-						Description: "Namespace to deploy into",
-					},
-					pipelinev1.ParamSpec{
-						Name:        "DRYRUN",
-						Type:        pipelinev1.ParamTypeString,
-						Description: "If true run a server-side dryrun.",
-						Default: &pipelinev1.ArrayOrString{
-							StringVal: "false",
-							Type:      "string",
-						},
-					},
-				},
-			},
+			Inputs: createInputsForDeployFromSourceTask(),
 			TaskSpec: v1alpha2.TaskSpec{
 				Steps: []pipelinev1.Step{
 					pipelinev1.Step{
@@ -160,14 +65,7 @@ func TestDeployFromSourceTask(t *testing.T) {
 							Image:      "quay.io/kmcdermo/k8s-kubectl:latest",
 							WorkingDir: "/workspace/source",
 							Command:    []string{"kubectl"},
-							Args: []string{
-								"apply",
-								"--dry-run=$(inputs.params.DRYRUN)",
-								"-n",
-								"$(inputs.params.NAMESPACE)",
-								"-k",
-								"$(inputs.params.PATHTODEPLOYMENT)",
-							},
+							Args:       argsForRunKubectlStep,
 						},
 					},
 				},
@@ -190,52 +88,7 @@ func TestDeployUsingKubectlTask(t *testing.T) {
 			Name: "deploy-using-kubectl-task",
 		},
 		Spec: pipelinev1.TaskSpec{
-			Inputs: &pipelinev1.Inputs{
-				Resources: []pipelinev1.TaskResource{
-					pipelinev1.TaskResource{
-						ResourceDeclaration: pipelinev1.ResourceDeclaration{
-							Name: "source",
-							Type: "git",
-						},
-					},
-					pipelinev1.TaskResource{
-						ResourceDeclaration: pipelinev1.ResourceDeclaration{
-							Name: "image",
-							Type: "image",
-						},
-					},
-				},
-				Params: []pipelinev1.ParamSpec{
-					pipelinev1.ParamSpec{
-						Name:        "PATHTODEPLOYMENT",
-						Type:        "string",
-						Description: "Path to the manifest to apply",
-						Default: &pipelinev1.ArrayOrString{
-							StringVal: "deploy",
-							Type:      "string",
-						},
-					},
-					pipelinev1.ParamSpec{
-						Name:        "NAMESPACE",
-						Type:        "string",
-						Description: "Namespace to deploy into",
-					},
-					pipelinev1.ParamSpec{
-						Name:        "DRYRUN",
-						Type:        "string",
-						Description: "If true run a server-side dryrun.",
-						Default: &pipelinev1.ArrayOrString{
-							StringVal: "false",
-							Type:      "string",
-						},
-					},
-					pipelinev1.ParamSpec{
-						Name:        "YAMLPATHTOIMAGE",
-						Type:        "string",
-						Description: "The path to the image to replace in the yaml manifest (arg to yq)",
-					},
-				},
-			},
+			Inputs: createInputsForDeployKubectlTask(),
 			TaskSpec: v1alpha2.TaskSpec{
 				Steps: []pipelinev1.Step{
 					pipelinev1.Step{
@@ -244,13 +97,7 @@ func TestDeployUsingKubectlTask(t *testing.T) {
 							Image:      "mikefarah/yq",
 							WorkingDir: "/workspace/source",
 							Command:    []string{"yq"},
-							Args: []string{
-								"w",
-								"-i",
-								"$(inputs.params.PATHTODEPLOYMENT)/deployment.yaml",
-								"$(inputs.params.YAMLPATHTOIMAGE)",
-								"$(inputs.resources.image.url)",
-							},
+							Args:       argsForReplaceImageStep,
 						},
 					},
 					pipelinev1.Step{
@@ -261,13 +108,7 @@ func TestDeployUsingKubectlTask(t *testing.T) {
 							Command: []string{
 								"kubectl",
 							},
-							Args: []string{
-								"apply",
-								"-n",
-								"$(inputs.params.NAMESPACE)",
-								"-k",
-								"$(inputs.params.PATHTODEPLOYMENT)",
-							},
+							Args: argsForKubectlStep,
 						},
 					},
 				},
