@@ -53,7 +53,6 @@ spec:
   name: mongodb-enterprise
   source: certified-operators
   sourceNamespace: openshift-marketplace
-  startingCSV: mongodb-enterprise.v1.2.4
 EOF
 ## Create a new namesapce which will be used for OperatorHub checks
 oc new-project $CI_OPERATOR_HUB_PROJECT
@@ -84,16 +83,7 @@ spec:
   name: etcd
   source: community-operators
   sourceNamespace: openshift-marketplace
-  startingCSV: etcdoperator.v0.9.4
 EOF
-## Wait for etcd CSV to be installed
-for i in $(seq 1 10); do
-    state="$(oc -n $OPERATOR_HUB_PROJECT get csv/etcdoperator.v0.9.4 -o jsonpath="{.status.phase}")"
-    if [ "$state" = "Succeeded" ]; then
-        break
-    fi
-    sleep 2
-done
 # OperatorHub setup complete
 
 # Remove existing htpasswd file, if any
