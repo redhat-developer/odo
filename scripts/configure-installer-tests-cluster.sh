@@ -11,6 +11,7 @@ KUBEADMIN_USER=${KUBEADMIN_USER:-"kubeadmin"}
 KUBEADMIN_PASSWORD_FILE=${KUBEADMIN_PASSWORD_FILE:-"${DEFAULT_INSTALLER_ASSETS_DIR}/auth/kubeadmin-password"}
 # Default values
 OC_STABLE_LOGIN="false"
+CI_OPERATOR_HUB_PROJECT="ci-operator-hub-project"
 # Exported to current env
 export KUBECONFIG=${KUBECONFIG:-"${DEFAULT_INSTALLER_ASSETS_DIR}/auth/kubeconfig"}
 
@@ -36,6 +37,64 @@ if [ -z $CI ]; then
     # Login as admin user
     oc login -u $KUBEADMIN_USER -p $KUBEADMIN_PASSWORD
 fi
+
+# Setup the cluster for Operator tests
+## First, enable a cluster-wide operator
+oc create -f - <<EOF
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  generation: 1
+  name: mongodb-enterprise
+  namespace: openshift-operators
+spec:
+  channel: stable
+  installPlanApproval: Automatic
+  name: mongodb-enterprise
+  source: certified-operators
+  sourceNamespace: openshift-marketplace
+  startingCSV: mongodb-enterprise.v1.2.4
+EOF
+## Create a new namesapce which will be used for OperatorHub checks
+oc new-project $CI_OPERATOR_HUB_PROJECT
+## Let developer user have access to the project
+oc adm policy add-role-to-user edit developer
+## Create OperatorGroup
+oc create -f - <<EOF
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  generateName: ${CI_OPERATOR_HUB_PROJECT}-
+  generation: 1
+  namespace: ${CI_OPERATOR_HUB_PROJECT}
+spec:
+  targetNamespaces:
+  - ${CI_OPERATOR_HUB_PROJECT}
+EOF
+## Create subscription
+oc create -f - <<EOF
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: etcd
+  namespace: ${OPERATOR_HUB_PROJECT}
+spec:
+  channel: singlenamespace-alpha
+  installPlanApproval: Automatic
+  name: etcd
+  source: community-operators
+  sourceNamespace: openshift-marketplace
+  startingCSV: etcdoperator.v0.9.4
+EOF
+## Wait for etcd CSV to be installed
+for i in $(seq 1 10); do
+    state="$(oc -n $OPERATOR_HUB_PROJECT get csv/etcdoperator.v0.9.4 -o jsonpath="{.status.phase}")"
+    if [ "$state" = "Succeeded" ]; then
+        break
+    fi
+    sleep 2
+done
+# OperatorHub setup complete
 
 # Remove existing htpasswd file, if any
 if [ -f $HTPASSWD_FILE ]; then
