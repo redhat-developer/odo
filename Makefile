@@ -162,6 +162,7 @@ test-cmd-link-unlink:
 .PHONY: test-cmd-service
 test-cmd-service:
 	ginkgo $(GINKGO_FLAGS) -focus="odo service command tests" tests/integration/servicecatalog/
+	ginkgo $(GINKGO_FLAGS) -focus="odo service command tests" tests/integration/operatorhub/
 
 # Run odo project command tests
 .PHONY: test-cmd-project
