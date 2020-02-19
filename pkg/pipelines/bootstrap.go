@@ -66,7 +66,7 @@ func Bootstrap(quayUsername, baseRepo, prefix string) error {
 	}
 	outputs = append(outputs, dockerSecret)
 
-	tasks := tasks.Generate()
+	tasks := tasks.Generate(githubAuth.GetName())
 	for _, task := range tasks {
 		outputs = append(outputs, task)
 	}
