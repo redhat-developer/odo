@@ -1,6 +1,8 @@
 package component
 
 import (
+	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/golang/glog"
@@ -24,9 +26,9 @@ func New(commonAdapter adapterCommon.AdapterMetadata, client kclient.Client) Ada
 	}
 }
 
-// Start reuses the component if an matching component exists or creates one if it doesn't exist and then starts it
+// Start updates the component if a matching component exists or creates one if it doesn't exist
 func (a Adapter) Start() (err error) {
-	componentName := a.Adapter.Name
+	componentName := a.Adapter.ComponentName
 
 	var containers []corev1.Container
 	// Only components with aliases are considered because without an alias commands cannot reference them
@@ -42,6 +44,10 @@ func (a Adapter) Start() (err error) {
 
 	labels := map[string]string{
 		"component": componentName,
+	}
+
+	if len(containers) == 0 {
+		return fmt.Errorf("No valid components found in the devfile")
 	}
 
 	podTemplateSpec := kclient.GeneratePodTemplateSpec(componentName, a.Client.Namespace, labels, containers)

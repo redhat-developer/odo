@@ -53,7 +53,7 @@ feature progresses.
 func (po *PushOptions) DevfilePush() (err error) {
 
 	// Parse devfile
-	devObj, err := devfile.Parse(po.devfilePath)
+	_, err = devfile.Parse(po.devfilePath)
 	if err != nil {
 		return err
 	}

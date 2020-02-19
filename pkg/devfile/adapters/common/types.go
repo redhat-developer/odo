@@ -6,6 +6,6 @@ import (
 
 // AdapterMetadata is a construct that is common to all adapters
 type AdapterMetadata struct {
-	Name    string
-	Devfile devfile.DevfileObj
+	ComponentName string             // ComponentName is the odo component name, it is NOT related to any devfile components
+	Devfile       devfile.DevfileObj // Devfile is the object returned by the Devfile parser
 }

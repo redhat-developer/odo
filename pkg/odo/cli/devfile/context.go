@@ -23,7 +23,7 @@ func NewDevfileContext(command *cobra.Command, devfilePath string) (*Context, er
 	}
 
 	adapterMetadata := common.AdapterMetadata{
-		Name: componentName,
+		ComponentName: componentName,
 	}
 
 	// Parse devfile and add it to the context

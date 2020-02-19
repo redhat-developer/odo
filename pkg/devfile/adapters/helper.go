@@ -8,6 +8,8 @@ import (
 
 // NewPlatformAdapter returns a Devfile adapter for the targeted platform
 func NewPlatformAdapter(adapterMetadata common.AdapterMetadata) (PlatformAdapter, error) {
+	// Only the kubernetes adapter is implemented at the moment
+	// When there are others this function should be updated to retrieve the correct adapter for the desired platform target
 	return newKubernetesAdapter(adapterMetadata)
 }
 
