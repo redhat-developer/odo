@@ -6,14 +6,14 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func generateGithubStatusTask() pipelinev1.Task {
+func generateGithubStatusTask(secretName string) pipelinev1.Task {
 	task := pipelinev1.Task{
 		TypeMeta:   createTaskTypeMeta(),
 		ObjectMeta: createTaskObjectMeta("create-github-status-task"),
 		Spec: pipelinev1.TaskSpec{
 			Inputs: createInputsForGithubStatusTask(),
 			TaskSpec: v1alpha2.TaskSpec{
-				Steps: createStepsForGithubStatusTask(),
+				Steps: createStepsForGithubStatusTask(secretName),
 			},
 		},
 	}
@@ -74,7 +74,7 @@ func createInputsForGithubStatusTask() *pipelinev1.Inputs {
 	}
 }
 
-func createStepsForGithubStatusTask() []pipelinev1.Step {
+func createStepsForGithubStatusTask(secretName string) []pipelinev1.Step {
 	return []pipelinev1.Step{
 		pipelinev1.Step{
 			Container: corev1.Container{
@@ -82,7 +82,7 @@ func createStepsForGithubStatusTask() []pipelinev1.Step {
 				Image:      "quay.io/kmcdermo/github-tool:latest",
 				WorkingDir: "/workspace/source",
 				Env: []corev1.EnvVar{
-					createEnvFromSecret("GITHUB_TOKEN", "github-auth", "token"),
+					createEnvFromSecret("GITHUB_TOKEN", secretName, "token"),
 				},
 				Command: []string{"github-tools"},
 				Args:    argsForStartStatusStep,

@@ -40,7 +40,7 @@ func TestGithubStatusTask(t *testing.T) {
 		},
 	}
 
-	githubStatusTask := generateGithubStatusTask()
+	githubStatusTask := generateGithubStatusTask("github-auth")
 	if diff := cmp.Diff(wantedTask, githubStatusTask); diff != "" {
 		t.Fatalf("GenerateGithubStatusTask() failed:\n%s", diff)
 	}
