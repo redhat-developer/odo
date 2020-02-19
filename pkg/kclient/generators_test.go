@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
+
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 func TestGenerateContainer(t *testing.T) {
@@ -97,7 +99,7 @@ func TestGenerateContainer(t *testing.T) {
 	}
 }
 
-func TestGeneratePodSpec(t *testing.T) {
+func TestGeneratePodTemplateSpec(t *testing.T) {
 
 	container := &corev1.Container{
 		Name:            "container1",
@@ -129,26 +131,69 @@ func TestGeneratePodSpec(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.podName, func(t *testing.T) {
 
-			podSpec := GeneratePodTemplateSpec(tt.podName, tt.namespace, tt.serviceAccount, tt.labels, []corev1.Container{*container})
+			objectMeta := CreateObjectMeta(tt.podName, tt.namespace, tt.labels, nil)
 
-			if podSpec.Name != tt.podName {
-				t.Errorf("expected %s, actual %s", tt.podName, podSpec.Name)
+			podTemplateSpec := GeneratePodTemplateSpec(objectMeta, tt.serviceAccount, []corev1.Container{*container})
+
+			if podTemplateSpec.Name != tt.podName {
+				t.Errorf("expected %s, actual %s", tt.podName, podTemplateSpec.Name)
 			}
 
-			if podSpec.Namespace != tt.namespace {
-				t.Errorf("expected %s, actual %s", tt.namespace, podSpec.Namespace)
+			if podTemplateSpec.Namespace != tt.namespace {
+				t.Errorf("expected %s, actual %s", tt.namespace, podTemplateSpec.Namespace)
 			}
 
-			if len(podSpec.Labels) != len(tt.labels) {
-				t.Errorf("expected %d, actual %d", len(tt.labels), len(podSpec.Labels))
+			if len(podTemplateSpec.Labels) != len(tt.labels) {
+				t.Errorf("expected %d, actual %d", len(tt.labels), len(podTemplateSpec.Labels))
 			} else {
-				for i := range podSpec.Labels {
-					if podSpec.Labels[i] != tt.labels[i] {
-						t.Errorf("expected %s, actual %s", tt.labels[i], podSpec.Labels[i])
+				for i := range podTemplateSpec.Labels {
+					if podTemplateSpec.Labels[i] != tt.labels[i] {
+						t.Errorf("expected %s, actual %s", tt.labels[i], podTemplateSpec.Labels[i])
 					}
 				}
 			}
 
+		})
+	}
+}
+
+func TestGeneratePVCSpec(t *testing.T) {
+
+	tests := []struct {
+		name    string
+		size    string
+		wantErr bool
+	}{
+		{
+			name:    "1",
+			size:    "1Gi",
+			wantErr: false,
+		},
+		{
+			name:    "2",
+			size:    "",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			quantity, err := resource.ParseQuantity(tt.size)
+			// Checks for unexpected error cases
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("resource.ParseQuantity unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+
+			pvcSpec := GeneratePVCSpec(quantity)
+			if pvcSpec.AccessModes[0] != corev1.ReadWriteOnce {
+				t.Errorf("AccessMode Error: expected %s, actual %s", corev1.ReadWriteMany, pvcSpec.AccessModes[0])
+			}
+
+			pvcSpecQuantity := pvcSpec.Resources.Requests["storage"]
+			if pvcSpecQuantity.String() != quantity.String() {
+				t.Errorf("pvcSpec.Resources.Requests Error: expected %v, actual %v", pvcSpecQuantity.String(), quantity.String())
+			}
 		})
 	}
 }

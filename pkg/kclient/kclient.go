@@ -3,6 +3,7 @@ package kclient
 import (
 	"github.com/pkg/errors"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -48,4 +49,17 @@ func New() (*Client, error) {
 	}
 
 	return &client, nil
+}
+
+// CreateObjectMeta creates a common object meta
+func CreateObjectMeta(name, namespace string, labels, annotations map[string]string) metav1.ObjectMeta {
+
+	objectMeta := metav1.ObjectMeta{
+		Name:        name,
+		Namespace:   namespace,
+		Labels:      labels,
+		Annotations: annotations,
+	}
+
+	return objectMeta
 }

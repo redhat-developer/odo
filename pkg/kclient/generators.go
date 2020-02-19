@@ -6,6 +6,8 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 // GenerateContainer creates a container spec that can be used when creating a pod
@@ -30,13 +32,9 @@ func GenerateContainer(name, image string, isPrivileged bool, command, args []st
 }
 
 // GeneratePodTemplateSpec creates a pod template spec that can be used to create a deployment spec
-func GeneratePodTemplateSpec(podName, namespace, serviceAccountName string, labels map[string]string, containers []corev1.Container) *corev1.PodTemplateSpec {
+func GeneratePodTemplateSpec(objectMeta metav1.ObjectMeta, serviceAccountName string, containers []corev1.Container) *corev1.PodTemplateSpec {
 	podTemplateSpec := &corev1.PodTemplateSpec{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      podName,
-			Namespace: namespace,
-			Labels:    labels,
-		},
+		ObjectMeta: objectMeta,
 		Spec: corev1.PodSpec{
 			ServiceAccountName: serviceAccountName,
 			Containers:         containers,
@@ -57,4 +55,21 @@ func GenerateDeploymentSpec(podTemplateSpec corev1.PodTemplateSpec) *appsv1.Depl
 	}
 
 	return deploymentSpec
+}
+
+// GeneratePVCSpec creates a pvc spec
+func GeneratePVCSpec(quantity resource.Quantity) *corev1.PersistentVolumeClaimSpec {
+
+	pvcSpec := &corev1.PersistentVolumeClaimSpec{
+		Resources: corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{
+				corev1.ResourceStorage: quantity,
+			},
+		},
+		AccessModes: []corev1.PersistentVolumeAccessMode{
+			corev1.ReadWriteOnce,
+		},
+	}
+
+	return pvcSpec
 }

@@ -21,8 +21,6 @@ func TestCreateDeployment(t *testing.T) {
 		"component": "frontend",
 	}
 
-	podSpec := GeneratePodTemplateSpec("", "defualt", "default", labels, []corev1.Container{*container})
-
 	tests := []struct {
 		name           string
 		deploymentName string
@@ -45,6 +43,10 @@ func TestCreateDeployment(t *testing.T) {
 			fkclient, fkclientset := FakeNew()
 			fkclient.Namespace = "default"
 
+			objectMeta := CreateObjectMeta(tt.deploymentName, "default", labels, nil)
+
+			podTemplateSpec := GeneratePodTemplateSpec(objectMeta, "default", []corev1.Container{*container})
+
 			fkclientset.Kubernetes.PrependReactor("create", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if tt.deploymentName == "" {
 					return true, nil, errors.Errorf("deployment name is empty")
@@ -61,8 +63,8 @@ func TestCreateDeployment(t *testing.T) {
 				return true, &deployment, nil
 			})
 
-			deploymentSpec := GenerateDeploymentSpec(*podSpec)
-			createdDeployment, err := fkclient.CreateDeployment(tt.deploymentName, *deploymentSpec)
+			deploymentSpec := GenerateDeploymentSpec(*podTemplateSpec)
+			createdDeployment, err := fkclient.CreateDeployment(*deploymentSpec)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
