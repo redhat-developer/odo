@@ -1,13 +1,16 @@
+// +build !windows
+
 package testingutil
 
 import (
 	"bytes"
+	"testing"
+
 	"github.com/Netflix/go-expect"
 	"github.com/hinshun/vt10x"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/AlecAivazis/survey.v1"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
-	"testing"
 )
 
 // This whole file copies the testing infrastructure from survey lib since it cannot be imported. This mixes elements from:
