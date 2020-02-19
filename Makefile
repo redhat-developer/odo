@@ -26,6 +26,9 @@ SLOW_SPEC_THRESHOLD := 120
 # To enable verbosity export or set env GINKGO_TEST_ARGS like "GINKGO_TEST_ARGS=-v"
 GINKGO_TEST_ARGS ?=
 
+# ODO_LOG_LEVEL sets the verbose log level for the make tests
+export ODO_LOG_LEVEL ?= 4
+
 # Env variable UNIT_TEST_ARGS is used to get control over enabling test flags along with go test.
 # For example:
 # To enable verbosity export or set env GINKGO_TEST_ARGS like "GINKGO_TEST_ARGS=-v"

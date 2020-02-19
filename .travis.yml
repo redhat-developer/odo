@@ -32,7 +32,7 @@ jobs:
     - &osx-test
       stage: Test
       name: "Unit test on OSX"
-      os: 
+      os:
         - osx
       go_import_path: github.com/openshift/odo
       go: "1.13.1"

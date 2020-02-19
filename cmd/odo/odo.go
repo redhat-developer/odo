@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"os"
+	"strings"
 
 	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/log"
@@ -46,7 +47,9 @@ func main() {
 	// Override the logging level by the value (if set) by the ODO_LOG_LEVEL env
 	// The "-v" flag set on command line will take precedence over ODO_LOG_LEVEL env
 	v := flag.CommandLine.Lookup("v").Value.String()
-	if level, ok := os.LookupEnv("ODO_LOG_LEVEL"); ok && v == "0" {
+	// if the json flag is passed and is valid, we don't turn on ODO_LOG_LEVEL
+	jsonFlagValue := flag.CommandLine.Lookup("o").Value.String()
+	if level, ok := os.LookupEnv("ODO_LOG_LEVEL"); ok && v == "0" && strings.ToLower(jsonFlagValue) != "json" {
 		_ = flag.CommandLine.Set("v", level)
 	}
 
