@@ -78,10 +78,11 @@ func Bootstrap(quayUsername, baseRepo, prefix string) error {
 	outputs = append(outputs, route)
 
 	//  Create Service Account, Role, Role Bindings, and ClusterRole Bindings
-	outputs = append(outputs, createServiceAccount(saName, dockerSecretName))
+	sa := createServiceAccount(saName, dockerSecretName)
+	outputs = append(outputs, sa)
 	outputs = append(outputs, createRole(roleName, rules))
-	outputs = append(outputs, createRoleBinding(roleBindingName, saName, "Role", roleName))
-	outputs = append(outputs, createRoleBinding("edit-clusterrole-binding", saName, "ClusterRole", "edit"))
+	outputs = append(outputs, createRoleBinding(roleBindingName, &sa, "Role", roleName))
+	outputs = append(outputs, createRoleBinding("edit-clusterrole-binding", &sa, "ClusterRole", "edit"))
 
 	// Marshall
 	for _, r := range outputs {

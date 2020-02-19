@@ -30,7 +30,11 @@ func TestRoleBinding(t *testing.T) {
 			Name:     "tekton-triggers-openshift-demo",
 		},
 	}
-	roleBindingTask := createRoleBinding("tekton-triggers-openshift-binding", "demo-sa", "Role", "tekton-triggers-openshift-demo")
+	sa := &corev1.ServiceAccount{
+		TypeMeta:   createTypeMeta("ServiceAccount", "v1"),
+		ObjectMeta: createObjectMeta("demo-sa"),
+	}
+	roleBindingTask := createRoleBinding("tekton-triggers-openshift-binding", sa, "Role", "tekton-triggers-openshift-demo")
 	if diff := cmp.Diff(roleBinding, roleBindingTask); diff != "" {
 		t.Errorf("GenerateGithubStatusTask() failed:\n%s", diff)
 	}
