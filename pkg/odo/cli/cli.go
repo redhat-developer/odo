@@ -21,7 +21,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/version"
 	"github.com/openshift/odo/pkg/odo/util"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -174,13 +173,6 @@ func NewCmdOdo(name, fullName string) *cobra.Command {
 		preference.NewCmdPreference(preference.RecommendedCommandName, util.GetFullName(fullName, preference.RecommendedCommandName)),
 		debug.NewCmdDebug(debug.RecommendedCommandName, util.GetFullName(fullName, debug.RecommendedCommandName)),
 	)
-
-	// Expose commands in experimental mode, if experimental mode is enabled.
-	if experimental.IsExperimentalModeEnabled() {
-		rootCmd.AddCommand(
-			component.NewCmdPushDevfile(component.PushDevfileRecommendedCommandName, util.GetFullName(fullName, component.PushDevfileRecommendedCommandName)),
-		)
-	}
 
 	odoutil.VisitCommands(rootCmd, reconfigureCmdWithSubcmd)
 
