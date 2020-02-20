@@ -1,17 +1,17 @@
 package component
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/openshift/odo/pkg/devfile"
-	// "fmt"
-	// "os"
-	// componentDevfile "github.com/openshift/odo/pkg/component/devfile"
-	// "github.com/openshift/odo/pkg/devfile"
-	// "github.com/openshift/odo/pkg/log"
-	// cli "github.com/openshift/odo/pkg/odo/cli/devfile"
-	// "github.com/openshift/odo/pkg/odo/cli/project"
-	// "github.com/openshift/odo/pkg/odo/genericclioptions"
-	// "github.com/spf13/cobra"
-	// ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
+
+	"github.com/openshift/odo/pkg/devfile/adapters"
+	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/util"
+	"github.com/pkg/errors"
 )
 
 /*
@@ -27,56 +27,55 @@ flag is exposed only if the experimental mode in odo is enabled.
 The behaviour of this feature is subject to change as development for this
 feature progresses.
 */
-// PushDevfileOptions encapsulates odo component push-devfile  options
-// type PushDevfileOptions struct {
-// 	devfilePath string
-// 	*cli.Context
-// }
 
-// // NewPushDevfileOptions returns new instance of PushDevfileOptions
-// func NewPushDevfileOptions() *PushDevfileOptions {
-// 	return &PushDevfileOptions{}
-// }
-
-// // Complete completes  args
-// func (pdo *PushDevfileOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-// 	pdo.Context, err = cli.NewDevfileContext(cmd)
-// 	return err
-// }
-
-// // Validate validates the  parameters
-// func (pdo *PushDevfileOptions) Validate() (err error) {
-// 	return nil
-// }
-
-// Run has the logic to perform the required actions as part of command
+// DevfilePush has the logic to perform the required actions for a given devfile
 func (po *PushOptions) DevfilePush() (err error) {
 
 	// Parse devfile
-	_, err = devfile.Parse(po.devfilePath)
+	devObj, err := devfile.Parse(po.devfilePath)
 	if err != nil {
 		return err
 	}
 
-	// componentName := pdo.Context.DevfileComponent.Name
-	// spinner := log.Spinnerf("Push devfile component %s")
-	// defer spinner.End(false)
+	componentName, err := getComponentName()
+	if err != nil {
+		return err
+	}
 
-	// devfileHandler, err := componentDevfile.NewPlatformAdapter(devObj, pdo.Context.DevfileComponent)
-	// if err != nil {
-	// 	return err
-	// }
+	spinner := log.Spinnerf("Push devfile component %s", componentName)
+	defer spinner.End(false)
 
-	// err = devfileHandler.Start()
-	// if err != nil {
-	// 	log.Errorf(
-	// 		"Failed to start component with name %s.\nError: %v",
-	// 		componentName,
-	// 		err,
-	// 	)
-	// 	os.Exit(1)
-	// }
+	adapterMetadata := adaptersCommon.AdapterMetadata{
+		ComponentName: componentName,
+		Devfile:       devObj,
+	}
 
-	// spinner.End(true)
+	devfileHandler, err := adapters.NewPlatformAdapter(adapterMetadata)
+	if err != nil {
+		return err
+	}
+
+	err = devfileHandler.Start()
+	if err != nil {
+		log.Errorf(
+			"Failed to start component with name %s.\nError: %v",
+			componentName,
+			err,
+		)
+		os.Exit(1)
+	}
+
+	spinner.End(true)
 	return
+}
+
+func getComponentName() (string, error) {
+	retVal := ""
+	currDir, err := os.Getwd()
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to get component because getting current directory failed")
+	}
+	retVal = filepath.Base(currDir)
+	retVal = strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(retVal)))
+	return retVal, nil
 }
