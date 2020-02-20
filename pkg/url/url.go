@@ -9,6 +9,7 @@ import (
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/occlient"
 	urlLabels "github.com/openshift/odo/pkg/url/labels"
 	"github.com/openshift/odo/pkg/util"
@@ -238,6 +239,29 @@ func GetValidPortNumber(componentName string, portNumber int, portList []string)
 	}
 
 	return portNumber, fmt.Errorf("given port %d is not exposed on given component, available ports are: %s", portNumber, strings.Trim(strings.Replace(fmt.Sprint(componentPorts), " ", ",", -1), "[]"))
+}
+
+// GetComponentServicePortNumbers returns the port numbers exposed by the service of the component
+// componentName is the name of the component
+// applicationName is the name of the application
+func GetComponentServicePortNumbers(client *kclient.Client, componentName string, applicationName string) ([]int, error) {
+	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
+	componentSelector := util.ConvertLabelsToSelector(componentLabels)
+
+	services, err := client.GetServicesFromSelector(componentSelector)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to get the service")
+	}
+
+	var ports []int
+
+	for _, service := range services {
+		for _, port := range service.Spec.Ports {
+			ports = append(ports, int(port.Port))
+		}
+	}
+
+	return ports, nil
 }
 
 // getMachineReadableFormat gives machine readable URL definition
