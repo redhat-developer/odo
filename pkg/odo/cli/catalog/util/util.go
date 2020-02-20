@@ -77,7 +77,7 @@ func DisplayClusterServiceVersions(csvs *olmv1alpha1.ClusterServiceVersionList) 
 func csvOperators(crds olmv1alpha1.CustomResourceDefinitions) string {
 	var crdsSlice []string
 	for _, crd := range crds.Owned {
-		crdsSlice = append(crdsSlice, crd.DisplayName)
+		crdsSlice = append(crdsSlice, crd.Kind)
 	}
 	return strings.Join(crdsSlice, ", ")
 }
