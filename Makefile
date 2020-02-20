@@ -162,7 +162,6 @@ test-cmd-link-unlink:
 .PHONY: test-cmd-service
 test-cmd-service:
 	ginkgo $(GINKGO_FLAGS) -focus="odo service command tests" tests/integration/servicecatalog/
-	ginkgo $(GINKGO_FLAGS) -focus="odo service command tests" tests/integration/operatorhub/
 
 # Run odo project command tests
 .PHONY: test-cmd-project
@@ -276,3 +275,8 @@ vendor-update:
 .PHONY: openshiftci-presubmit-unittests
 openshiftci-presubmit-unittests:
 	./scripts/openshiftci-presubmit-unittests.sh
+
+# Run OperatorHub tests
+.PHONY: test-operator-hub
+test-operator-hub:
+	ginkgo $(GINKGO_FLAGS) -focus="odo service command tests" tests/integration/operatorhub/
