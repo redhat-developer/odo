@@ -8,6 +8,11 @@ import (
 	versionsCommon "github.com/openshift/odo/pkg/devfile/versions/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/testingutil"
+
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
+	ktesting "k8s.io/client-go/testing"
 )
 
 func TestStart(t *testing.T) {
@@ -44,9 +49,27 @@ func TestStart(t *testing.T) {
 				Devfile:       devObj,
 			}
 
-			client, _ := kclient.FakeNew()
-			componentAdapter := New(adapterCtx, *client)
+			fkclient, fkclientset := kclient.FakeNew()
+			fkWatch := watch.NewFake()
 
+			// Change the status
+			go func() {
+				podStatus := &corev1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: tt.componentName,
+					},
+					Status: corev1.PodStatus{
+						Phase: corev1.PodRunning,
+					},
+				}
+				fkWatch.Modify(podStatus)
+			}()
+
+			fkclientset.Kubernetes.PrependWatchReactor("pods", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
+				return true, fkWatch, nil
+			})
+
+			componentAdapter := New(adapterCtx, *fkclient)
 			err := componentAdapter.Start()
 
 			// Checks for unexpected error cases
