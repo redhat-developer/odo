@@ -11,17 +11,17 @@ import (
 type Adapter struct {
 	componentAdapter common.ComponentAdapter
 	Client           kclient.Client
-	common.AdapterMetadata
+	common.AdapterContext
 }
 
 // New instantiates a kubernetes adapter
-func New(adapterMetadata common.AdapterMetadata, client kclient.Client) Adapter {
+func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
 
-	compAdapter := component.New(adapterMetadata, client)
+	compAdapter := component.New(adapterContext, client)
 
 	return Adapter{
 		componentAdapter: compAdapter,
-		AdapterMetadata:  adapterMetadata,
+		AdapterContext:   adapterContext,
 		Client:           client,
 	}
 }

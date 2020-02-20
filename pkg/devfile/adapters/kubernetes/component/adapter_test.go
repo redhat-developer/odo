@@ -39,13 +39,13 @@ func TestStart(t *testing.T) {
 				},
 			}
 
-			adapterMeta := adaptersCommon.AdapterMetadata{
+			adapterCtx := adaptersCommon.AdapterContext{
 				ComponentName: tt.componentName,
 				Devfile:       devObj,
 			}
 
 			client, _ := kclient.FakeNew()
-			componentAdapter := New(adapterMeta, *client)
+			componentAdapter := New(adapterCtx, *client)
 
 			err := componentAdapter.Start()
 

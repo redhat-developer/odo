@@ -13,27 +13,25 @@ import (
 	"github.com/openshift/odo/pkg/kclient"
 )
 
-// Adapter is a component adapter implementation for Kubernetes
-type Adapter struct {
-	Client  kclient.Client
-	Adapter adapterCommon.AdapterMetadata
-}
-
 // New instantiantes a component adapter
-func New(commonAdapter adapterCommon.AdapterMetadata, client kclient.Client) Adapter {
+func New(commonAdapter adapterCommon.AdapterContext, client kclient.Client) Adapter {
 	return Adapter{
-		Client:  client,
-		Adapter: commonAdapter,
+		Client:         client,
+		AdapterContext: commonAdapter,
 	}
 }
 
-// Start updates the component if a matching component exists or creates one if it doesn't exist
-func (a Adapter) Start() (err error) {
-	componentName := a.Adapter.ComponentName
+// Adapter is a component adapter implementation for Kubernetes
+type Adapter struct {
+	Client kclient.Client
+	adapterCommon.AdapterContext
+}
 
+// GetContainers iterates through the components in the devfile and returns a slice of the corresponding containers
+func (a *Adapter) GetContainers() []corev1.Container {
 	var containers []corev1.Container
 	// Only components with aliases are considered because without an alias commands cannot reference them
-	for _, comp := range a.Adapter.Devfile.Data.GetAliasedComponents() {
+	for _, comp := range a.Devfile.Data.GetAliasedComponents() {
 		if comp.Type == common.DevfileComponentTypeDockerimage {
 			glog.V(3).Infof("Found component %v with alias %v\n", comp.Type, *comp.Alias)
 			envVars := convertEnvs(comp.Env)
@@ -42,11 +40,18 @@ func (a Adapter) Start() (err error) {
 			containers = append(containers, *container)
 		}
 	}
+	return containers
+}
+
+// Start updates the component if a matching component exists or creates one if it doesn't exist
+func (a Adapter) Start() (err error) {
+	componentName := a.ComponentName
 
 	labels := map[string]string{
 		"component": componentName,
 	}
 
+	containers := a.GetContainers()
 	if len(containers) == 0 {
 		return fmt.Errorf("No valid components found in the devfile")
 	}
@@ -80,9 +85,4 @@ func (a Adapter) Start() (err error) {
 
 	_, err = a.Client.WaitAndGetPod(watchOptions, corev1.PodRunning, "Waiting for component to start")
 	return err
-}
-
-func componentExists(client kclient.Client, name string) bool {
-	_, err := client.GetDeploymentByName(name)
-	return err == nil
 }

@@ -2,6 +2,8 @@ package component
 
 import (
 	devfileCommon "github.com/openshift/odo/pkg/devfile/versions/common"
+	"github.com/openshift/odo/pkg/kclient"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -28,4 +30,9 @@ func getResourceReqs(comp devfileCommon.DevfileComponent) corev1.ResourceRequire
 		reqs.Limits = limits
 	}
 	return reqs
+}
+
+func componentExists(client kclient.Client, name string) bool {
+	_, err := client.GetDeploymentByName(name)
+	return err == nil
 }

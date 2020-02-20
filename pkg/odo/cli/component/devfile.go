@@ -9,7 +9,6 @@ import (
 	"github.com/openshift/odo/pkg/devfile"
 
 	"github.com/openshift/odo/pkg/devfile/adapters"
-	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
@@ -46,12 +45,7 @@ func (po *PushOptions) DevfilePush() (err error) {
 	spinner := log.SpinnerNoSpin(fmt.Sprintf("Push devfile component %s", componentName))
 	defer spinner.End(false)
 
-	adapterMetadata := adaptersCommon.AdapterMetadata{
-		ComponentName: componentName,
-		Devfile:       devObj,
-	}
-
-	devfileHandler, err := adapters.NewPlatformAdapter(adapterMetadata)
+	devfileHandler, err := adapters.NewPlatformAdapter(componentName, devObj)
 	if err != nil {
 		return err
 	}

@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/openshift/odo/pkg/devfile"
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/testingutil"
 
 	versionsCommon "github.com/openshift/odo/pkg/devfile/versions/common"
@@ -29,16 +28,13 @@ func TestNewPlatformAdapter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run("get platform adapter", func(t *testing.T) {
-			adapterMeta := common.AdapterMetadata{
-				ComponentName: tt.componentName,
-				Devfile: devfile.DevfileObj{
-					Data: testingutil.TestDevfileData{
-						ComponentType: tt.componentType,
-					},
+			devObj := devfile.DevfileObj{
+				Data: testingutil.TestDevfileData{
+					ComponentType: tt.componentType,
 				},
 			}
 
-			adapter, err := NewPlatformAdapter(adapterMeta)
+			adapter, err := NewPlatformAdapter(tt.componentName, devObj)
 			if err != nil {
 				t.Errorf("unexpected error: '%v'", err)
 			}
