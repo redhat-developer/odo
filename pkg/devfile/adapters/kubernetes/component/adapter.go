@@ -50,7 +50,8 @@ func (a Adapter) Start() (err error) {
 		return fmt.Errorf("No valid components found in the devfile")
 	}
 
-	podTemplateSpec := kclient.GeneratePodTemplateSpec(componentName, a.Client.Namespace, labels, containers)
+	objectMeta := kclient.CreateObjectMeta(componentName, a.Client.Namespace, labels, nil)
+	podTemplateSpec := kclient.GeneratePodTemplateSpec(objectMeta, a.Client.Namespace, containers)
 	deploymentSpec := kclient.GenerateDeploymentSpec(*podTemplateSpec)
 
 	glog.V(3).Infof("Successfully created component %v", componentName)
@@ -65,7 +66,7 @@ func (a Adapter) Start() (err error) {
 		}
 		log.Infof("Successfully updated component %v", componentName)
 	} else {
-		_, err = a.Client.CreateDeployment(componentName, *deploymentSpec)
+		_, err = a.Client.CreateDeployment(*deploymentSpec)
 		if err != nil {
 			return err
 		}

@@ -120,13 +120,15 @@ func TestGeneratePodTemplateSpec(t *testing.T) {
 	}
 
 	tests := []struct {
-		podName   string
-		namespace string
-		labels    map[string]string
+		podName        string
+		namespace      string
+		serviceAccount string
+		labels         map[string]string
 	}{
 		{
-			podName:   "podSpecTest",
-			namespace: "default",
+			podName:        "podSpecTest",
+			namespace:      "default",
+			serviceAccount: "default",
 			labels: map[string]string{
 				"app":       "app",
 				"component": "frontend",
