@@ -4,12 +4,13 @@ import (
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/golang/glog"
+
 	adapterCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/versions/common"
 	"github.com/openshift/odo/pkg/kclient"
-	"github.com/openshift/odo/pkg/log"
 )
 
 // Adapter is a component adapter implementation for Kubernetes
@@ -54,7 +55,6 @@ func (a Adapter) Start() (err error) {
 	podTemplateSpec := kclient.GeneratePodTemplateSpec(objectMeta, a.Client.Namespace, containers)
 	deploymentSpec := kclient.GenerateDeploymentSpec(*podTemplateSpec)
 
-	glog.V(3).Infof("Successfully created component %v", componentName)
 	glog.V(3).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
 	glog.V(3).Infof("The component name is %v", componentName)
 
@@ -64,16 +64,22 @@ func (a Adapter) Start() (err error) {
 		if err != nil {
 			return err
 		}
-		log.Infof("Successfully updated component %v", componentName)
+		glog.V(3).Infof("Successfully updated component %v", componentName)
 	} else {
 		_, err = a.Client.CreateDeployment(*deploymentSpec)
 		if err != nil {
 			return err
 		}
-		log.Infof("Successfully created component %v", componentName)
+		glog.V(3).Infof("Successfully created component %v", componentName)
 	}
 
-	return nil
+	podSelector := fmt.Sprintf("component=%s", componentName)
+	watchOptions := metav1.ListOptions{
+		LabelSelector: podSelector,
+	}
+
+	_, err = a.Client.WaitAndGetPod(watchOptions, corev1.PodRunning, "Waiting for component to start")
+	return err
 }
 
 func componentExists(client kclient.Client, name string) bool {

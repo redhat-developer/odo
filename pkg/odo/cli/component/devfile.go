@@ -1,6 +1,7 @@
 package component
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -42,7 +43,7 @@ func (po *PushOptions) DevfilePush() (err error) {
 		return err
 	}
 
-	spinner := log.Spinnerf("Push devfile component %s", componentName)
+	spinner := log.SpinnerNoSpin(fmt.Sprintf("Push devfile component %s", componentName))
 	defer spinner.End(false)
 
 	adapterMetadata := adaptersCommon.AdapterMetadata{
