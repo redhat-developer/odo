@@ -3,8 +3,8 @@ package pipelines
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
-	"path"
 
 	corev1 "k8s.io/api/core/v1"
 	v1rbac "k8s.io/api/rbac/v1"
@@ -37,10 +37,18 @@ var (
 	}
 )
 
+// BootstrapOptions is a struct that provides the optional flags
+type BootstrapOptions struct {
+	GithubToken      string
+	GitRepo          string
+	Prefix           string
+	QuayAuthFileName string
+	QuayUserName     string
+}
+
 // Bootstrap is the main driver for getting OpenShift pipelines for GitOps
 // configured with a basic configuration.
-func Bootstrap(quayUsername, baseRepo, prefix string) error {
-
+func Bootstrap(o *BootstrapOptions) error {
 	// First, check for Tekton.  We proceed only if Tekton is installed
 	installed, err := checkTektonInstall()
 	if err != nil {
@@ -52,28 +60,30 @@ func Bootstrap(quayUsername, baseRepo, prefix string) error {
 
 	outputs := make([]interface{}, 0)
 
-	//  Create GitHub Secret
-	githubAuth, err := createGithubSecret()
+	githubAuth, err := createOpaqueSecret("github-auth", o.GithubToken)
 	if err != nil {
 		return err
 	}
 	outputs = append(outputs, githubAuth)
 
 	// Create Docker Secret
-	dockerSecret, err := createDockerSecret(quayUsername)
+	dockerSecret, err := createDockerSecret(o.QuayAuthFileName)
 	if err != nil {
 		return err
 	}
 	outputs = append(outputs, dockerSecret)
 
+	// Create Tasks
 	tasks := tasks.Generate(githubAuth.GetName())
 	for _, task := range tasks {
 		outputs = append(outputs, task)
 	}
 
-	eventListener := eventlisteners.Generate(baseRepo)
+	// Create Event Listener
+	eventListener := eventlisteners.Generate(o.GitRepo)
 	outputs = append(outputs, eventListener)
 
+	// Create route
 	route := routes.Generate()
 	outputs = append(outputs, route)
 
@@ -85,48 +95,20 @@ func Bootstrap(quayUsername, baseRepo, prefix string) error {
 	outputs = append(outputs, createRoleBinding(roleBindingName, &sa, role.Kind, role.Name))
 	outputs = append(outputs, createRoleBinding("edit-clusterrole-binding", &sa, "ClusterRole", "edit"))
 
-	// Marshall
-	for _, r := range outputs {
-		data, err := yaml.Marshal(r)
-		if err != nil {
-			return err
-		}
-		fmt.Printf("%s---\n", data)
-	}
-
-	return nil
-}
-
-// createGithubSecret creates Github secret
-func createGithubSecret() (*corev1.Secret, error) {
-	tokenPath, err := pathToDownloadedFile("token")
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate path to file: %w", err)
-	}
-	f, err := os.Open(tokenPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read token file %s due to %w", tokenPath, err)
-	}
-	defer f.Close()
-
-	githubAuth, err := createOpaqueSecret("github-auth", f)
-	if err != nil {
-		return nil, err
-	}
-
-	return githubAuth, nil
+	return marshalOutputs(os.Stdout, outputs)
 }
 
 // createDockerSecret creates Docker secret
-func createDockerSecret(quayUsername string) (*corev1.Secret, error) {
-	authJSONPath, err := pathToDownloadedFile(quayUsername + "-auth.json")
+func createDockerSecret(quayIOAuthFilename string) (*corev1.Secret, error) {
+
+	authJSONPath, err := homedir.Expand(quayIOAuthFilename)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate path to file: %w", err)
 	}
 
 	f, err := os.Open(authJSONPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read docker file '%s' due to %w", authJSONPath, err)
+		return nil, fmt.Errorf("failed to read docker file '%s' : %w", authJSONPath, err)
 	}
 	defer f.Close()
 
@@ -138,9 +120,6 @@ func createDockerSecret(quayUsername string) (*corev1.Secret, error) {
 	return dockerSecret, nil
 
 }
-func pathToDownloadedFile(fname string) (string, error) {
-	return homedir.Expand(path.Join("~/Downloads/", fname))
-}
 
 // create and invoke a Tekton Checker
 func checkTektonInstall() (bool, error) {
@@ -149,4 +128,19 @@ func checkTektonInstall() (bool, error) {
 		return false, err
 	}
 	return tektonChecker.checkInstall()
+}
+
+// marshalOutputs marshal outputs to given writer
+func marshalOutputs(out io.Writer, outputs []interface{}) error {
+	for _, r := range outputs {
+		data, err := yaml.Marshal(r)
+		if err != nil {
+			return fmt.Errorf("failed to marshal data: %w", err)
+		}
+		_, err = fmt.Fprintf(out, "%s---\n", data)
+		if err != nil {
+			return fmt.Errorf("failed to write data: %w", err)
+		}
+	}
+	return nil
 }
