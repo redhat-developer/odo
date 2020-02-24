@@ -5,10 +5,10 @@ import (
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha2"
 )
 
-func generateDeployFromSourceTask() pipelinev1.Task {
+func generateDeployFromSourceTask(ns string) pipelinev1.Task {
 	task := pipelinev1.Task{
 		TypeMeta:   createTaskTypeMeta(),
-		ObjectMeta: createTaskObjectMeta("deploy-from-source-task"),
+		ObjectMeta: createTaskObjectMeta("deploy-from-source-task", ns),
 		Spec: pipelinev1.TaskSpec{
 			Inputs: createInputsForDeployFromSourceTask(),
 			TaskSpec: v1alpha2.TaskSpec{

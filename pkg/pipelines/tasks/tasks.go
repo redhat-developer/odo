@@ -7,11 +7,11 @@ import (
 )
 
 // Generate will return a slice of tasks
-func Generate(secretName string) []pipelinev1.Task {
+func Generate(secretName, ns string) []pipelinev1.Task {
 	return []pipelinev1.Task{
-		generateGithubStatusTask(secretName),
-		generateDeployFromSourceTask(),
-		generateDeployUsingKubectlTask(),
+		generateGithubStatusTask(secretName, ns),
+		generateDeployFromSourceTask(ns),
+		generateDeployUsingKubectlTask(ns),
 	}
 }
 
@@ -22,9 +22,10 @@ func createTaskTypeMeta() metav1.TypeMeta {
 	}
 }
 
-func createTaskObjectMeta(name string) metav1.ObjectMeta {
+func createTaskObjectMeta(name, ns string) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
-		Name: name,
+		Name:      name,
+		Namespace: ns,
 	}
 }
 
