@@ -198,3 +198,50 @@ func TestCreateEnvFromSecret(t *testing.T) {
 		t.Fatalf("createEnvFromSecret() failed:\n%s", diff)
 	}
 }
+
+func TestGenerateBuildahTask(t *testing.T) {
+	validTask := pipelinev1.Task{
+		TypeMeta: v1.TypeMeta{
+			Kind:       "Task",
+			APIVersion: "tekton.dev/v1alpha1",
+		},
+		ObjectMeta: v1.ObjectMeta{
+			Name: "buildah-task",
+		},
+		Spec: pipelinev1.TaskSpec{
+			Inputs:  createInputsForBuildah(),
+			Outputs: createOutputsForBuildah(),
+			TaskSpec: v1alpha2.TaskSpec{
+				Steps:   createStepsForBuildah(),
+				Volumes: createVolumes("varlibcontainers"),
+			},
+		},
+	}
+	buildahTask := generateBuildahTask("")
+	if diff := cmp.Diff(validTask, buildahTask); diff != "" {
+		t.Fatalf("generateBuildahTask() failed:\n%s", diff)
+	}
+}
+
+func TestCreateVolumes(t *testing.T) {
+	validVolume := []corev1.Volume{
+		corev1.Volume{
+			Name: "sample",
+		},
+	}
+	volume := createVolumes("sample")
+	if diff := cmp.Diff(validVolume, volume); diff != "" {
+		t.Fatalf("createVolumes() failed:\n%s", diff)
+	}
+}
+
+func TestCreateSecurityContext(t *testing.T) {
+	samplePrivilege := true
+	validSecuirtyContext := &corev1.SecurityContext{
+		Privileged: &samplePrivilege,
+	}
+	privilege := createSecurityContext(true)
+	if diff := cmp.Diff(validSecuirtyContext, privilege); diff != "" {
+		t.Fatalf("createSecurityContext() failed:\n%s", diff)
+	}
+}

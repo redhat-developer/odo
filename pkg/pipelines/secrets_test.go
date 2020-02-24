@@ -7,13 +7,14 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/openshift/odo/pkg/pipelines/meta"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestCreateOpaqueSecret(t *testing.T) {
 	data := "abcdefghijklmnop"
-	secret, err := createOpaqueSecret(namespacedName("cicd", "github-auth"), data)
+	secret, err := createOpaqueSecret(meta.NamespacedName("cicd", "github-auth"), data)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,7 +41,7 @@ func TestCreateOpaqueSecret(t *testing.T) {
 
 func TestCreateDockerConfigSecretWithErrorReading(t *testing.T) {
 	testErr := errors.New("test failure")
-	_, err := createDockerConfigSecret(namespacedName("cici", "github-auth"), errorReader{testErr})
+	_, err := createDockerConfigSecret(meta.NamespacedName("cici", "github-auth"), errorReader{testErr})
 	if !matchError(t, "failed to read .* test failure", err) {
 		t.Fatalf("got an unexpected error: %#v", err)
 	}
@@ -48,7 +49,7 @@ func TestCreateDockerConfigSecretWithErrorReading(t *testing.T) {
 
 func TestCreateDockerConfigSecret(t *testing.T) {
 	data := []byte(`abcdefghijklmnop`)
-	secret, err := createDockerConfigSecret(namespacedName("cicd", "regcred"), bytes.NewReader(data))
+	secret, err := createDockerConfigSecret(meta.NamespacedName("cicd", "regcred"), bytes.NewReader(data))
 	if err != nil {
 		t.Fatal(err)
 	}
