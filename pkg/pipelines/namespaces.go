@@ -3,6 +3,7 @@ package pipelines
 import (
 	"fmt"
 
+	"github.com/openshift/odo/pkg/pipelines/meta"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -31,7 +32,7 @@ func namespaceNames(prefix string) map[string]string {
 
 func createNamespace(name string) *corev1.Namespace {
 	ns := &corev1.Namespace{
-		TypeMeta: typeMeta("Namespace", "v1"),
+		TypeMeta: meta.TypeMeta("Namespace", "v1"),
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},

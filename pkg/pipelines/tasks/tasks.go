@@ -9,6 +9,7 @@ import (
 // Generate will return a slice of tasks
 func Generate(secretName, ns string) []pipelinev1.Task {
 	return []pipelinev1.Task{
+		generateBuildahTask(ns),
 		generateGithubStatusTask(secretName, ns),
 		generateDeployFromSourceTask(ns),
 		generateDeployUsingKubectlTask(ns),
@@ -19,13 +20,6 @@ func createTaskTypeMeta() metav1.TypeMeta {
 	return metav1.TypeMeta{
 		Kind:       "Task",
 		APIVersion: "tekton.dev/v1alpha1",
-	}
-}
-
-func createTaskObjectMeta(name, ns string) metav1.ObjectMeta {
-	return metav1.ObjectMeta{
-		Name:      name,
-		Namespace: ns,
 	}
 }
 
