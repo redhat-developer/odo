@@ -69,10 +69,10 @@ func TestBootstrapCommandWithMissingParams(t *testing.T) {
 		flags   []keyValuePair
 		wantErr string
 	}{
-		{[]keyValuePair{flag("quay-username", "example"), flag("github-token", "abc123"), flag("dockerconfigjson", "~/")}, `Required flag(s) "git-repository" have/has not been set`},
-		{[]keyValuePair{flag("quay-username", "example"), flag("github-token", "abc123"), flag("git-repository", "example/repo")}, `Required flag(s) "dockerconfigjson" have/has not been set`},
-		{[]keyValuePair{flag("quay-username", "example"), flag("dockerconfigjson", "~/"), flag("git-repository", "example/repo")}, `Required flag(s) "github-token" have/has not been set`},
-		{[]keyValuePair{flag("github-token", "abc123"), flag("dockerconfigjson", "~/"), flag("git-repository", "example/repo")}, `Required flag(s) "quay-username" have/has not been set`},
+		{[]keyValuePair{flag("quay-username", "example"), flag("github-token", "abc123"), flag("dockerconfigjson", "~/")}, `Required flag(s) "git-repo" have/has not been set`},
+		{[]keyValuePair{flag("quay-username", "example"), flag("github-token", "abc123"), flag("git-repo", "example/repo")}, `Required flag(s) "dockerconfigjson" have/has not been set`},
+		{[]keyValuePair{flag("quay-username", "example"), flag("dockerconfigjson", "~/"), flag("git-repo", "example/repo")}, `Required flag(s) "github-token" have/has not been set`},
+		{[]keyValuePair{flag("github-token", "abc123"), flag("dockerconfigjson", "~/"), flag("git-repo", "example/repo")}, `Required flag(s) "quay-username" have/has not been set`},
 	}
 	for _, tt := range cmdTests {
 		_, _, err := executeCommand(NewCmdBootstrap("bootstrap", "odo pipelines bootstrap"), tt.flags...)
