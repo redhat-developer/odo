@@ -1,3 +1,0 @@
-          NAME            NAMESPACE         DESCRIPTION        
-+-----------------------+-----------+-------------------------+
-  user-provided-service               A user provided service  

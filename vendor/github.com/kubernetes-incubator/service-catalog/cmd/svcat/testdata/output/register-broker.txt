@@ -1,3 +1,0 @@
-  Name:     ups-broker            
-  URL:      http://upsbroker.com  
-  Status:                         
