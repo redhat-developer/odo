@@ -16,6 +16,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/service/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
+	"github.com/openshift/odo/pkg/odo/util/experimental"
 	svc "github.com/openshift/odo/pkg/service"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
@@ -35,6 +36,10 @@ var (
 	createExample = ktemplates.Examples(`
     # Create new postgresql service from service catalog using dev plan and name my-postgresql-db.
     %[1]s dh-postgresql-apb my-postgresql-db --plan dev -p postgresql_user=luke -p postgresql_password=secret`)
+
+	createOperatorExample = ktemplates.Examples(`
+	# Create new EtcdCluster service from etcdoperator.v0.9.4 operator.
+	%[1]s etcdoperator.v0.9.4 --crd EtcdCluster`)
 
 	createShortDesc = `Create a new service from service catalog using the plan defined and deploy it on OpenShift.`
 
@@ -70,6 +75,8 @@ type ServiceCreateOptions struct {
 	*genericclioptions.Context
 	// Context to use when creating service. This will use app and project values from the context
 	componentContext string
+	// CRD to use when creating an operator backed service
+	Crd string
 }
 
 // NewServiceCreateOptions creates a new ServiceCreateOptions instance
@@ -272,7 +279,16 @@ func NewCmdServiceCreate(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
+
+	if experimental.IsExperimentalModeEnabled() {
+		serviceCreateCmd.Use += fmt.Sprintf(" [flags]\n  %s <operator_type> --crd <crd_name> [service_name] [flags]", o.CmdFullName)
+		serviceCreateCmd.Example += fmt.Sprintf("\n\n") + fmt.Sprintf(createOperatorExample, fullName)
+	}
+
 	serviceCreateCmd.Flags().StringVar(&o.Plan, "plan", "", "The name of the plan of the service to be created")
+	if experimental.IsExperimentalModeEnabled() {
+		serviceCreateCmd.Flags().StringVar(&o.Crd, "crd", "", "The name of the CRD of the operator to be used to create the service")
+	}
 	serviceCreateCmd.Flags().StringArrayVarP(&o.parameters, "parameters", "p", []string{}, "Parameters of the plan where a parameter is expressed as <key>=<value")
 	serviceCreateCmd.Flags().BoolVarP(&o.wait, "wait", "w", false, "Wait until the service is ready")
 	genericclioptions.AddContextFlag(serviceCreateCmd, &o.componentContext)
