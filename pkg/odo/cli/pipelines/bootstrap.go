@@ -18,10 +18,10 @@ const (
 var (
 	bootstrapExample = ktemplates.Examples(`
 	# Bootstrap OpenShift pipelines in a cluster
-	%[1]s username org/repo
+	%[1]s 
 	`)
 
-	bootstrapLongDesc  = ktemplates.LongDesc(`Bootstrap GitOps pipelines`)
+	bootstrapLongDesc  = ktemplates.LongDesc(`Bootstrap GitOps CI/CD Pipelines`)
 	bootstrapShortDesc = `Bootstrap pipelines`
 )
 
@@ -89,13 +89,13 @@ func NewCmdBootstrap(name, fullName string) *cobra.Command {
 	}
 
 	bootstrapCmd.Flags().StringVarP(&o.prefix, "prefix", "p", "", "add a prefix to the environment names")
-	bootstrapCmd.Flags().StringVar(&o.quayUsername, "quay-username", "", "Image registry username")
+	bootstrapCmd.Flags().StringVar(&o.quayUsername, "quay-username", "", "image registry username")
 	bootstrapCmd.MarkFlagRequired("quay-username")
 	bootstrapCmd.Flags().StringVar(&o.githubToken, "github-token", "", "provide the Github token")
 	bootstrapCmd.MarkFlagRequired("github-token")
 	bootstrapCmd.Flags().StringVar(&o.quayIOAuthFilename, "dockerconfigjson", "", "Docker configuration json filename")
 	bootstrapCmd.MarkFlagRequired("dockerconfigjson")
-	bootstrapCmd.Flags().StringVar(&o.gitRepo, "git-repository", "", "provide the base repository")
-	bootstrapCmd.MarkFlagRequired("git-repository")
+	bootstrapCmd.Flags().StringVar(&o.gitRepo, "git-repo", "", "git repository in this form <username>/<repository>")
+	bootstrapCmd.MarkFlagRequired("git-repo")
 	return bootstrapCmd
 }
