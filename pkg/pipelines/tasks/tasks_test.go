@@ -10,6 +10,8 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const testNS = "testing-ns"
+
 func TestGithubStatusTask(t *testing.T) {
 	wantedTask := pipelinev1.Task{
 		TypeMeta: v1.TypeMeta{
@@ -17,7 +19,8 @@ func TestGithubStatusTask(t *testing.T) {
 			APIVersion: "tekton.dev/v1alpha1",
 		},
 		ObjectMeta: v1.ObjectMeta{
-			Name: "create-github-status-task",
+			Name:      "create-github-status-task",
+			Namespace: testNS,
 		},
 		Spec: pipelinev1.TaskSpec{
 			Inputs: createInputsForGithubStatusTask(),
@@ -40,7 +43,7 @@ func TestGithubStatusTask(t *testing.T) {
 		},
 	}
 
-	githubStatusTask := generateGithubStatusTask("github-auth")
+	githubStatusTask := generateGithubStatusTask("github-auth", testNS)
 	if diff := cmp.Diff(wantedTask, githubStatusTask); diff != "" {
 		t.Fatalf("GenerateGithubStatusTask() failed:\n%s", diff)
 	}
@@ -53,7 +56,8 @@ func TestDeployFromSourceTask(t *testing.T) {
 			APIVersion: "tekton.dev/v1alpha1",
 		},
 		ObjectMeta: v1.ObjectMeta{
-			Name: "deploy-from-source-task",
+			Name:      "deploy-from-source-task",
+			Namespace: testNS,
 		},
 		Spec: pipelinev1.TaskSpec{
 			Inputs: createInputsForDeployFromSourceTask(),
@@ -72,7 +76,7 @@ func TestDeployFromSourceTask(t *testing.T) {
 			},
 		},
 	}
-	deployFromSourceTask := generateDeployFromSourceTask()
+	deployFromSourceTask := generateDeployFromSourceTask(testNS)
 	if diff := cmp.Diff(wantedTask, deployFromSourceTask); diff != "" {
 		t.Fatalf("GenerateDeployFromSourceTask() failed \n%s", diff)
 	}
@@ -85,7 +89,8 @@ func TestDeployUsingKubectlTask(t *testing.T) {
 			APIVersion: "tekton.dev/v1alpha1",
 		},
 		ObjectMeta: v1.ObjectMeta{
-			Name: "deploy-using-kubectl-task",
+			Name:      "deploy-using-kubectl-task",
+			Namespace: testNS,
 		},
 		Spec: pipelinev1.TaskSpec{
 			Inputs: createInputsForDeployKubectlTask(),
@@ -115,7 +120,7 @@ func TestDeployUsingKubectlTask(t *testing.T) {
 			},
 		},
 	}
-	task := generateDeployUsingKubectlTask()
+	task := generateDeployUsingKubectlTask(testNS)
 	if diff := cmp.Diff(validTask, task); diff != "" {
 		t.Fatalf("GenerateDeployUsingKubectlTask() failed:\n%s", diff)
 	}

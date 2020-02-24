@@ -57,30 +57,33 @@ func Bootstrap(o *BootstrapOptions) error {
 	if !installed {
 		return errors.New("failed due to Tekton Pipelines or Triggers are not installed")
 	}
-
 	outputs := make([]interface{}, 0)
+	names := namespaceNames(o.Prefix)
+	for _, n := range createNamespaces(values(names)) {
+		outputs = append(outputs, n)
+	}
 
-	githubAuth, err := createOpaqueSecret("github-auth", o.GithubToken)
+	githubAuth, err := createOpaqueSecret(namespacedName(names["cicd"], "github-auth"), o.GithubToken)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to generate path to file: %w", err)
 	}
 	outputs = append(outputs, githubAuth)
 
 	// Create Docker Secret
-	dockerSecret, err := createDockerSecret(o.QuayAuthFileName)
+	dockerSecret, err := createDockerSecret(o.QuayAuthFileName, names["cicd"])
 	if err != nil {
 		return err
 	}
 	outputs = append(outputs, dockerSecret)
 
 	// Create Tasks
-	tasks := tasks.Generate(githubAuth.GetName())
+	tasks := tasks.Generate(githubAuth.GetName(), names["cicd"])
 	for _, task := range tasks {
 		outputs = append(outputs, task)
 	}
 
 	// Create Event Listener
-	eventListener := eventlisteners.Generate(o.GitRepo)
+	eventListener := eventlisteners.Generate(o.GitRepo, names["cicd"])
 	outputs = append(outputs, eventListener)
 
 	// Create route
@@ -88,18 +91,18 @@ func Bootstrap(o *BootstrapOptions) error {
 	outputs = append(outputs, route)
 
 	//  Create Service Account, Role, Role Bindings, and ClusterRole Bindings
-	sa := createServiceAccount(saName, dockerSecretName)
+	sa := createServiceAccount(namespacedName(names["cicd"], saName), dockerSecretName)
 	outputs = append(outputs, sa)
-	role := createRole(roleName, rules)
+	role := createRole(namespacedName(names["cicd"], roleName), rules)
 	outputs = append(outputs, role)
-	outputs = append(outputs, createRoleBinding(roleBindingName, &sa, role.Kind, role.Name))
-	outputs = append(outputs, createRoleBinding("edit-clusterrole-binding", &sa, "ClusterRole", "edit"))
+	outputs = append(outputs, createRoleBinding(namespacedName(roleBindingName, names["ci-cd"]), sa, role.Kind, role.Name))
+	outputs = append(outputs, createRoleBinding(namespacedName("edit-clusterrole-binding", ""), sa, "ClusterRole", "edit"))
 
 	return marshalOutputs(os.Stdout, outputs)
 }
 
 // createDockerSecret creates Docker secret
-func createDockerSecret(quayIOAuthFilename string) (*corev1.Secret, error) {
+func createDockerSecret(quayIOAuthFilename, ns string) (*corev1.Secret, error) {
 
 	authJSONPath, err := homedir.Expand(quayIOAuthFilename)
 	if err != nil {
@@ -112,7 +115,7 @@ func createDockerSecret(quayIOAuthFilename string) (*corev1.Secret, error) {
 	}
 	defer f.Close()
 
-	dockerSecret, err := createDockerConfigSecret(dockerSecretName, f)
+	dockerSecret, err := createDockerConfigSecret(namespacedName(dockerSecretName, ns), f)
 	if err != nil {
 		return nil, err
 	}
@@ -128,6 +131,15 @@ func checkTektonInstall() (bool, error) {
 		return false, err
 	}
 	return tektonChecker.checkInstall()
+}
+
+func values(m map[string]string) []string {
+	values := []string{}
+	for _, v := range m {
+		values = append(values, v)
+
+	}
+	return values
 }
 
 // marshalOutputs marshal outputs to given writer

@@ -15,7 +15,8 @@ func TestGenerateEventListener(t *testing.T) {
 			APIVersion: "tekton.dev/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "cicd-event-listener",
+			Name:      "cicd-event-listener",
+			Namespace: "testing",
 		},
 		Spec: triggersv1.EventListenerSpec{
 			ServiceAccountName: "demo-sa",
@@ -96,7 +97,7 @@ func TestGenerateEventListener(t *testing.T) {
 		},
 	}
 
-	eventListener := Generate("sample")
+	eventListener := Generate("sample", "testing")
 	if diff := cmp.Diff(validEventListener, eventListener); diff != "" {
 		t.Fatalf("Generate() failed:\n%s", diff)
 	}
@@ -104,9 +105,10 @@ func TestGenerateEventListener(t *testing.T) {
 
 func TestCreateListenerObjectMeta(t *testing.T) {
 	validObjectMeta := metav1.ObjectMeta{
-		Name: "sample",
+		Name:      "sample",
+		Namespace: "testing",
 	}
-	objectMeta := createListenerObjectMeta("sample")
+	objectMeta := createListenerObjectMeta("sample", "testing")
 	if diff := cmp.Diff(validObjectMeta, objectMeta); diff != "" {
 		t.Fatalf("createListenerObjectMeta() failed:\n%s", diff)
 	}

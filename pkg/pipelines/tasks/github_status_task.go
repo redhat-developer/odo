@@ -6,10 +6,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func generateGithubStatusTask(secretName string) pipelinev1.Task {
+func generateGithubStatusTask(secretName, ns string) pipelinev1.Task {
 	task := pipelinev1.Task{
 		TypeMeta:   createTaskTypeMeta(),
-		ObjectMeta: createTaskObjectMeta("create-github-status-task"),
+		ObjectMeta: createTaskObjectMeta("create-github-status-task", ns),
 		Spec: pipelinev1.TaskSpec{
 			Inputs: createInputsForGithubStatusTask(),
 			TaskSpec: v1alpha2.TaskSpec{
