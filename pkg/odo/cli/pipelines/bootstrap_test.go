@@ -8,6 +8,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type keyValuePair struct {
+	key   string
+	value string
+}
+
 func TestCompleteBootstrapOptions(t *testing.T) {
 	completeTests := []struct {
 		name       string
@@ -61,28 +66,28 @@ func TestValidateBootstrapOptions(t *testing.T) {
 }
 func TestBootstrapCommandWithMissingParams(t *testing.T) {
 	cmdTests := []struct {
-		args    []string
+		flags   []keyValuePair
 		wantErr string
 	}{
-		{[]string{"quay-username", "example", "github-token", "abc123", "dockerconfigjson", "~/"}, `Required flag(s) "git-repository" have/has not been set`},
-		{[]string{"quay-username", "example", "github-token", "abc123", "git-repository", "example/repo"}, `Required flag(s) "dockerconfigjson" have/has not been set`},
-		{[]string{"quay-username", "example", "dockerconfigjson", "~/", "git-repository", "example/repo"}, `Required flag(s) "github-token" have/has not been set`},
-		{[]string{"github-token", "abc123", "dockerconfigjson", "~/", "git-repository", "example/repo"}, `Required flag(s) "quay-username" have/has not been set`},
+		{[]keyValuePair{flag("quay-username", "example"), flag("github-token", "abc123"), flag("dockerconfigjson", "~/")}, `Required flag(s) "git-repository" have/has not been set`},
+		{[]keyValuePair{flag("quay-username", "example"), flag("github-token", "abc123"), flag("git-repository", "example/repo")}, `Required flag(s) "dockerconfigjson" have/has not been set`},
+		{[]keyValuePair{flag("quay-username", "example"), flag("dockerconfigjson", "~/"), flag("git-repository", "example/repo")}, `Required flag(s) "github-token" have/has not been set`},
+		{[]keyValuePair{flag("github-token", "abc123"), flag("dockerconfigjson", "~/"), flag("git-repository", "example/repo")}, `Required flag(s) "quay-username" have/has not been set`},
 	}
 	for _, tt := range cmdTests {
-		_, _, err := executeCommand(NewCmdBootstrap("bootstrap", "odo pipelines bootstrap"), tt.args...)
+		_, _, err := executeCommand(NewCmdBootstrap("bootstrap", "odo pipelines bootstrap"), tt.flags...)
 		if err.Error() != tt.wantErr {
 			t.Errorf("got %s, want %s", err, tt.wantErr)
 		}
 	}
 }
 
-func executeCommand(cmd *cobra.Command, args ...string) (c *cobra.Command, output string, err error) {
+func executeCommand(cmd *cobra.Command, flags ...keyValuePair) (c *cobra.Command, output string, err error) {
 	buf := new(bytes.Buffer)
 	cmd.SetOutput(buf)
-	cmd.Flags().Set(args[0], args[1])
-	cmd.Flags().Set(args[2], args[3])
-	cmd.Flags().Set(args[4], args[5])
+	for _, flag := range flags {
+		cmd.Flags().Set(flag.key, flag.value)
+	}
 	c, err = cmd.ExecuteC()
 	return c, buf.String(), err
 }
@@ -100,4 +105,11 @@ func matchError(t *testing.T, s string, e error) bool {
 		t.Fatal(err)
 	}
 	return match
+}
+
+func flag(k, v string) keyValuePair {
+	return keyValuePair{
+		key:   k,
+		value: v,
+	}
 }
