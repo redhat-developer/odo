@@ -141,7 +141,7 @@ func TestGeneratePodTemplateSpec(t *testing.T) {
 
 			objectMeta := CreateObjectMeta(tt.podName, tt.namespace, tt.labels, nil)
 
-			podTemplateSpec := GeneratePodTemplateSpec(objectMeta, tt.serviceAccount, []corev1.Container{*container})
+			podTemplateSpec := GeneratePodTemplateSpec(objectMeta, []corev1.Container{*container})
 
 			if podTemplateSpec.Name != tt.podName {
 				t.Errorf("expected %s, actual %s", tt.podName, podTemplateSpec.Name)

@@ -14,10 +14,10 @@ import (
 )
 
 // New instantiantes a component adapter
-func New(commonAdapter adapterCommon.AdapterContext, client kclient.Client) Adapter {
+func New(adapterContext adapterCommon.AdapterContext, client kclient.Client) Adapter {
 	return Adapter{
 		Client:         client,
-		AdapterContext: commonAdapter,
+		AdapterContext: adapterContext,
 	}
 }
 
@@ -57,7 +57,7 @@ func (a Adapter) Start() (err error) {
 	}
 
 	objectMeta := kclient.CreateObjectMeta(componentName, a.Client.Namespace, labels, nil)
-	podTemplateSpec := kclient.GeneratePodTemplateSpec(objectMeta, a.Client.Namespace, containers)
+	podTemplateSpec := kclient.GeneratePodTemplateSpec(objectMeta, containers)
 	deploymentSpec := kclient.GenerateDeploymentSpec(*podTemplateSpec)
 
 	glog.V(3).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
@@ -65,7 +65,7 @@ func (a Adapter) Start() (err error) {
 
 	if componentExists(a.Client, componentName) {
 		glog.V(3).Info("The component already exists, attempting to update it")
-		_, err = a.Client.UpdateDeployment(componentName, *deploymentSpec)
+		_, err = a.Client.UpdateDeployment(*deploymentSpec)
 		if err != nil {
 			return err
 		}

@@ -45,7 +45,7 @@ func TestCreateDeployment(t *testing.T) {
 
 			objectMeta := CreateObjectMeta(tt.deploymentName, "default", labels, nil)
 
-			podTemplateSpec := GeneratePodTemplateSpec(objectMeta, "default", []corev1.Container{*container})
+			podTemplateSpec := GeneratePodTemplateSpec(objectMeta, []corev1.Container{*container})
 
 			fkclientset.Kubernetes.PrependReactor("create", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if tt.deploymentName == "" {
@@ -120,7 +120,7 @@ func TestUpdateDeployment(t *testing.T) {
 
 			objectMeta := CreateObjectMeta(tt.deploymentName, "default", labels, nil)
 
-			podTemplateSpec := GeneratePodTemplateSpec(objectMeta, "default", []corev1.Container{*container})
+			podTemplateSpec := GeneratePodTemplateSpec(objectMeta, []corev1.Container{*container})
 
 			fkclientset.Kubernetes.PrependReactor("update", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if tt.deploymentName == "" {
@@ -139,7 +139,7 @@ func TestUpdateDeployment(t *testing.T) {
 			})
 
 			deploymentSpec := GenerateDeploymentSpec(*podTemplateSpec)
-			updatedDeployment, err := fkclient.UpdateDeployment(tt.deploymentName, *deploymentSpec)
+			updatedDeployment, err := fkclient.UpdateDeployment(*deploymentSpec)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
