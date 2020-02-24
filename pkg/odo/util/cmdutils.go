@@ -47,10 +47,10 @@ func LogErrorAndExit(err error, context string, a ...interface{}) {
 		} else {
 			glog.V(4).Infof("Error:\n%v", err)
 			if context == "" {
-				log.Error(errors.Cause(err))
+				log.OutputError(errors.Cause(err))
 			} else {
 				printstring := fmt.Sprintf("%s%s", strings.Title(context), "\nError: %v")
-				log.Errorf(printstring, err)
+				log.OutputError(printstring, err)
 			}
 		}
 

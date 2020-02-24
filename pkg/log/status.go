@@ -28,6 +28,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"unicode"
 
 	"github.com/fatih/color"
 	"github.com/mattn/go-colorable"
@@ -204,6 +205,14 @@ func Warning(a ...interface{}) {
 	yellow := color.New(color.FgYellow).SprintFunc()
 	if !IsJSON() {
 		fmt.Fprintf(GetStderr(), "%s%s%s%s", prefixSpacing, yellow(getWarningString()), suffixSpacing, fmt.Sprintln(a...))
+	}
+}
+
+// OutputError will output an error message meant to notify the user of what's happening.
+func OutputError(a ...interface{}) {
+	red := color.New(color.FgRed).SprintFunc()
+	if !IsJSON() {
+		fmt.Fprintf(GetStderr(), "%s%s", red("\nERROR:\n"), red(fmt.Sprintln(a...)))
 	}
 }
 
@@ -384,4 +393,14 @@ func getSpacingString() string {
 		return "-"
 	}
 	return "•"
+}
+
+// capitalize a sentence / string
+func capitalize(str string) string {
+	if len(str) == 0 {
+		return ""
+	}
+	tmp := []rune(str)
+	tmp[0] = unicode.ToUpper(tmp[0])
+	return string(tmp)
 }
