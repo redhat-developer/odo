@@ -14,6 +14,7 @@ import (
 	"github.com/openshift/odo/pkg/pipelines/meta"
 	"github.com/openshift/odo/pkg/pipelines/routes"
 	"github.com/openshift/odo/pkg/pipelines/tasks"
+	"github.com/openshift/odo/pkg/pipelines/triggers"
 	"sigs.k8s.io/yaml"
 )
 
@@ -82,6 +83,18 @@ func Bootstrap(o *BootstrapOptions) error {
 	tasks := tasks.Generate(githubAuth.GetName(), namespaces["cicd"])
 	for _, task := range tasks {
 		outputs = append(outputs, task)
+	}
+
+	// Create trigger templates
+	templates := triggers.GenerateTemplates(namespaces["cicd"])
+	for _, template := range templates {
+		outputs = append(outputs, template)
+	}
+
+	// Create trigger bindings
+	bindings := triggers.GenerateBindings(namespaces["cicd"])
+	for _, binding := range bindings {
+		outputs = append(outputs, binding)
 	}
 
 	// Create Pipelines
