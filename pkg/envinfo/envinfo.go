@@ -12,15 +12,11 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/openshift/odo/pkg/util"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
-	envInfoEnvName    = "ENVINFO"
-	envInfoFileName   = "envinfo.yaml"
-	envInfoKind       = "EnvInfo"
-	envInfoAPIVersion = "odo.openshift.io/v1alpha1"
+	envInfoEnvName  = "ENVINFO"
+	envInfoFileName = "env.yaml"
 )
 
 // ComponentSettings holds all component related information
@@ -30,6 +26,10 @@ type ComponentSettings struct {
 
 // ConfigURL holds URL related information
 type ConfigURL struct {
+	// Name of the URL
+	Name string `yaml:"Name,omitempty"`
+	// Port number for the url of the component, required in case of components which expose more than one service port
+	Port int `yaml:"Port,omitempty"`
 	// Indicates if the URL should be a secure https one
 	Secure bool `yaml:"Secure,omitempty"`
 	// Clutser host
@@ -40,14 +40,12 @@ type ConfigURL struct {
 
 // EnvInfo holds all the env specific infomation relavent to a specific Component.
 type EnvInfo struct {
-	typeMeta          metav1.TypeMeta   `yaml:",inline"`
 	componentSettings ComponentSettings `yaml:"ComponentSettings,omitempty"`
 }
 
 // proxyEnvInfo holds all the parameter that envinfo does but exposes all
 // of it, used for serialization.
 type proxyEnvInfo struct {
-	metav1.TypeMeta   `yaml:",inline"`
 	ComponentSettings ComponentSettings `yaml:"ComponentSettings,omitempty"`
 }
 
@@ -119,27 +117,18 @@ func getFromFile(envinfo *EnvInfo, filename string) error {
 	if err != nil {
 		return err
 	}
-	envinfo.typeMeta = pei.TypeMeta
 	envinfo.componentSettings = pei.ComponentSettings
 	return nil
 }
 
 // NewEnvInfo creates an empty LocalConfig struct with typeMeta populated
 func NewEnvInfo() EnvInfo {
-	return EnvInfo{
-		typeMeta: metav1.TypeMeta{
-			Kind:       envInfoKind,
-			APIVersion: envInfoAPIVersion,
-		},
-	}
+	return EnvInfo{}
 }
 
 // newProxyEnvInfo creates an empty ProxyEnvInfo struct with typeMeta populated
 func newProxyEnvInfo() proxyEnvInfo {
-	ei := NewEnvInfo()
-	return proxyEnvInfo{
-		TypeMeta: ei.typeMeta,
-	}
+	return proxyEnvInfo{}
 }
 
 // SetConfiguration sets the environment specific info like cluster host etc.
@@ -245,7 +234,6 @@ func (esi *EnvSpecificInfo) SetComponentSettings(cs ComponentSettings) error {
 
 func (esi *EnvSpecificInfo) writeToFile() error {
 	pei := newProxyEnvInfo()
-	pei.TypeMeta = esi.typeMeta
 	pei.ComponentSettings = esi.componentSettings
 
 	return util.WriteToFile(&pei, esi.Filename)

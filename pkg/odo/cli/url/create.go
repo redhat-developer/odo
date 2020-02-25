@@ -24,12 +24,10 @@ const createRecommendedCommandName = "create"
 var (
 	urlCreateShortDesc = `Create a URL for a component`
 	urlCreateLongDesc  = ktemplates.LongDesc(`Create a URL for a component.
-
 	The created URL can be used to access the specified component from outside the OpenShift cluster.
 	`)
 	urlCreateExample = ktemplates.Examples(`  # Create a URL with a specific name by automatically detecting the port used by the component
 	%[1]s example
-
 	# Create a URL for the current component with a specific port
 	%[1]s --port 8080
   
@@ -40,7 +38,7 @@ var (
 
 // URLCreateOptions encapsulates the options for the odo url create command
 type URLCreateOptions struct {
-	*clicomponent.CommonPushOptions
+	*clicomponent.PushOptions
 	urlName       string
 	urlPort       int
 	secureURL     bool
@@ -52,7 +50,7 @@ type URLCreateOptions struct {
 
 // NewURLCreateOptions creates a new URLCreateOptions instance
 func NewURLCreateOptions() *URLCreateOptions {
-	return &URLCreateOptions{CommonPushOptions: clicomponent.NewCommonPushOptions()}
+	return &URLCreateOptions{PushOptions: clicomponent.NewPushOptions()}
 }
 
 // Complete completes URLCreateOptions after they've been Created
@@ -63,8 +61,13 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 		o.Context = genericclioptions.NewContext(cmd)
 	}
 	if experimental.IsExperimentalModeEnabled() {
-		o.clusterHost = args[0]
+		if len(args) == 0 {
+			o.urlName = url.GetURLName(o.Component(), o.urlPort)
+		} else {
+			o.urlName = args[0]
+		}
 		err = o.InitEnvInfoFromContext()
+
 	} else {
 		err = o.InitConfigFromContext()
 		if err != nil {
@@ -96,11 +99,19 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 func (o *URLCreateOptions) Validate() (err error) {
 	// Check if exist
 	if experimental.IsExperimentalModeEnabled() {
+		// if experimental mode is enabled
+		// check if valid clusterHost is provided
+		if len(o.clusterHost) <= 0 {
+			return fmt.Errorf("cluster host must be provided in order to create ingress")
+		}
 		for _, localURL := range o.EnvSpecificInfo.GetURL() {
-			if o.clusterHost == localURL.ClusterHost {
-				return fmt.Errorf("the cluster host: %s already exists in the application: %s", o.clusterHost, o.Application)
+			curIngressDomain := fmt.Sprintf("%v.%v", o.urlName, o.clusterHost)
+			ingressDomainEnv := fmt.Sprintf("%v.%v", localURL.Name, localURL.ClusterHost)
+			if curIngressDomain == ingressDomainEnv {
+				return fmt.Errorf("the url %s already exists in the application: %s", curIngressDomain, o.Application)
 			}
 		}
+
 	} else {
 		for _, localURL := range o.LocalConfigInfo.GetURL() {
 			if o.urlName == localURL.Name {
@@ -129,7 +140,7 @@ func (o *URLCreateOptions) Validate() (err error) {
 // Run contains the logic for the odo url create command
 func (o *URLCreateOptions) Run() (err error) {
 	if experimental.IsExperimentalModeEnabled() {
-		err = o.EnvSpecificInfo.SetConfiguration("url", envinfo.ConfigURL{ClusterHost: o.clusterHost, Secure: o.secureURL, TLSSecret: o.tlsSecret})
+		err = o.EnvSpecificInfo.SetConfiguration("url", envinfo.ConfigURL{Name: o.urlName, Port: o.urlPort, ClusterHost: o.clusterHost, Secure: o.secureURL, TLSSecret: o.tlsSecret})
 	} else {
 		err = o.LocalConfigInfo.SetConfiguration("url", config.ConfigURL{Name: o.urlName, Port: o.componentPort, Secure: o.secureURL})
 	}
@@ -167,16 +178,14 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 		},
 	}
 	urlCreateCmd.Flags().IntVarP(&o.urlPort, "port", "", -1, "port number for the url of the component, required in case of components which expose more than one service port")
-	// create ingress, if experimental mode is enabled.
-	// cluster host is a required argument
 	urlCreateCmd.Flags().BoolVarP(&o.secureURL, "secure", "", false, "creates a secure https url")
+	// if experimental mode is enabled, add more flags to support ingress creation
 	if experimental.IsExperimentalModeEnabled() {
-		urlCreateCmd.Use = name + " [cluster host]"
-		urlCreateCmd.Args = cobra.RangeArgs(1, 1)
-		urlCreateCmd.Flags().StringVarP(&o.tlsSecret, "tlsSecret", "", "", "tls secret name for the url of the component if the user bring his own tls secret")
+		urlCreateCmd.Flags().StringVar(&o.tlsSecret, "tlsSecret", "", "tls secret name for the url of the component if the user bring his own tls secret")
+		urlCreateCmd.Flags().StringVar(&o.clusterHost, "clusterHost", "", "Cluster host for this URL")
 	}
-	o.AddContextFlag(urlCreateCmd)
 	genericclioptions.AddNowFlag(urlCreateCmd, &o.now)
+	o.AddContextFlag(urlCreateCmd)
 	completion.RegisterCommandFlagHandler(urlCreateCmd, "context", completion.FileCompletionHandler)
 
 	return urlCreateCmd

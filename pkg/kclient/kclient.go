@@ -220,15 +220,3 @@ func (c *Client) ListSecrets(labelSelector string) ([]corev1.Secret, error) {
 
 	return secretList.Items, nil
 }
-
-// GetServicesFromSelector returns an array of Service resources which match the
-// given selector
-func (c *Client) GetServicesFromSelector(selector string) ([]corev1.Service, error) {
-	serviceList, err := c.KubeClient.CoreV1().Services(c.Namespace).List(metav1.ListOptions{
-		LabelSelector: selector,
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to list Services")
-	}
-	return serviceList.Items, nil
-}

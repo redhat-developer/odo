@@ -60,7 +60,6 @@ func (cpo *CommonPushOptions) InitConfigFromContext() error {
 //InitEnvInfoFromContext initializes envinfo from the context
 func (cpo *CommonPushOptions) InitEnvInfoFromContext() error {
 	var err error
-	fmt.Println("cpo.componentContext is " + cpo.componentContext)
 	cpo.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(cpo.componentContext)
 	if err != nil {
 		return err
