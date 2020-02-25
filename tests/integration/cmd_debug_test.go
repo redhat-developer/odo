@@ -36,10 +36,10 @@ var _ = Describe("odo debug command tests", func() {
 		os.Unsetenv("GLOBALODOCONFIG")
 	})
 
-	Context("odo debug on a nodejs:8 component", func() {
+	Context("odo debug on a nodejs:latest component", func() {
 		It("should expect a ws connection when tried to connect on different debug port locally and remotely", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "component", "create", "nodejs:8", "--project", project, "--context", context)
+			helper.CmdShouldPass("odo", "component", "create", "nodejs:latest", "--project", project, "--context", context)
 			helper.CmdShouldPass("odo", "config", "set", "--force", "DebugPort", "9292", "--context", context)
 			dbgPort := helper.GetConfigValueWithContext("DebugPort", context)
 			Expect(dbgPort).To(Equal("9292"))
@@ -55,7 +55,7 @@ var _ = Describe("odo debug command tests", func() {
 
 		It("should expect a ws connection when tried to connect on default debug port locally", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "component", "create", "nodejs:8", "--project", project, "--context", context)
+			helper.CmdShouldPass("odo", "component", "create", "nodejs:latest", "--project", project, "--context", context)
 			helper.CmdShouldPass("odo", "push", "--context", context)
 			go func() {
 				helper.CmdShouldRunWithTimeout(60*time.Second, "odo", "debug", "port-forward", "--context", context)
@@ -71,7 +71,7 @@ var _ = Describe("odo debug command tests", func() {
 	Context("odo debug info should work on a odo component", func() {
 		It("should start a debug session and run debug info on a running debug session", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "component", "create", "nodejs:8", "nodejs-cmp-"+project, "--project", project, "--context", context)
+			helper.CmdShouldPass("odo", "component", "create", "nodejs:latest", "nodejs-cmp-"+project, "--project", project, "--context", context)
 			helper.CmdShouldPass("odo", "push", "--context", context)
 
 			freePort := strconv.Itoa(helper.HttpGetFreePort())
@@ -92,7 +92,7 @@ var _ = Describe("odo debug command tests", func() {
 
 		It("should start a debug session and run debug info on a closed debug session", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "component", "create", "nodejs:8", "nodejs-cmp-"+project, "--project", project, "--context", context)
+			helper.CmdShouldPass("odo", "component", "create", "nodejs:latest", "nodejs-cmp-"+project, "--project", project, "--context", context)
 			helper.CmdShouldPass("odo", "push", "--context", context)
 
 			freePort := strconv.Itoa(helper.HttpGetFreePort())
