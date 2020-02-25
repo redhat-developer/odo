@@ -3,6 +3,8 @@ package component
 import (
 	"fmt"
 
+	"github.com/openshift/odo/pkg/envinfo"
+
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
@@ -52,6 +54,12 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 	// if experimental mode is enabled and devfile is present
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.DevfilePath) {
+		envinfo, err := envinfo.NewEnvSpecificInfo(po.componentContext)
+		if err != nil {
+			return errors.Wrap(err, "unable to retrieve configuration information")
+		}
+		po.EnvSpecificInfo = envinfo
+		po.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 		return nil
 	}
 
@@ -118,6 +126,9 @@ func (po *PushOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (po *PushOptions) Run() (err error) {
+	if po.Context == nil {
+		fmt.Println("Context is nil!!!!!")
+	}
 	// if experimental mode is enabled, use devfile push
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.DevfilePath) {
 		// devfile push

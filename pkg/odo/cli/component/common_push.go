@@ -126,9 +126,8 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 			os.Exit(1)
 		}
 	}
-
 	// Apply config
-	err := component.ApplyConfig(cpo.Context.Client, cpo.Context.KClient, *cpo.LocalConfigInfo, *cpo.EnvSpecificInfo, stdout, cpo.doesComponentExist)
+	err := component.ApplyConfig(cpo.Context.Client, nil, *cpo.LocalConfigInfo, envinfo.EnvSpecificInfo{}, stdout, cpo.doesComponentExist)
 	if err != nil {
 		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed.")
 	}
@@ -185,6 +184,12 @@ func (cpo *CommonPushOptions) Push() (err error) {
 
 	cmpName := cpo.LocalConfigInfo.GetName()
 	appName := cpo.LocalConfigInfo.GetApplication()
+
+	if cpo.Context == nil {
+		fmt.Println("normal push Context is nil!!!!!")
+	} else {
+		fmt.Println("hihihihi    " + cpo.Context.Client.Namespace)
+	}
 
 	if cpo.componentContext == "" {
 		cpo.componentContext = strings.TrimSuffix(filepath.Dir(cpo.LocalConfigInfo.Filename), ".odo")

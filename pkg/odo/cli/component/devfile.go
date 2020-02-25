@@ -1,10 +1,9 @@
 package component
 
 import (
-	"fmt"
-
 	"github.com/fatih/color"
 	"github.com/openshift/odo/pkg/component"
+	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 )
@@ -37,10 +36,7 @@ func (po *PushOptions) DevfilePush() (err error) {
 	if err != nil {
 		return err
 	}
-	if po.Context == nil {
-		fmt.Println("Context is nil!!!!!")
-	}
-	err = component.ApplyConfig(po.Context.Client, po.Context.KClient, *po.LocalConfigInfo, *po.EnvSpecificInfo, color.Output, po.doesComponentExist)
+	err = component.ApplyConfig(nil, po.Context.KClient, config.LocalConfigInfo{}, *po.EnvSpecificInfo, color.Output, po.doesComponentExist)
 	if err != nil {
 		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed.")
 	}
