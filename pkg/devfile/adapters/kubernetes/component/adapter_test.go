@@ -17,21 +17,20 @@ import (
 
 func TestStart(t *testing.T) {
 
+	testComponentName := "test"
+
 	tests := []struct {
 		name          string
-		componentName string
 		componentType versionsCommon.DevfileComponentType
 		wantErr       bool
 	}{
 		{
 			name:          "Case: Invalid devfile",
-			componentName: "",
 			componentType: "",
 			wantErr:       true,
 		},
 		{
 			name:          "Case: Valid devfile",
-			componentName: "test",
 			componentType: versionsCommon.DevfileComponentTypeDockerimage,
 			wantErr:       false,
 		},
@@ -45,7 +44,7 @@ func TestStart(t *testing.T) {
 			}
 
 			adapterCtx := adaptersCommon.AdapterContext{
-				ComponentName: tt.componentName,
+				ComponentName: testComponentName,
 				Devfile:       devObj,
 			}
 
@@ -56,7 +55,7 @@ func TestStart(t *testing.T) {
 			go func() {
 				podStatus := &corev1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: tt.componentName,
+						Name: testComponentName,
 					},
 					Status: corev1.PodStatus{
 						Phase: corev1.PodRunning,
@@ -64,7 +63,6 @@ func TestStart(t *testing.T) {
 				}
 				fkWatch.Modify(podStatus)
 			}()
-
 			fkclientset.Kubernetes.PrependWatchReactor("pods", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
 				return true, fkWatch, nil
 			})
