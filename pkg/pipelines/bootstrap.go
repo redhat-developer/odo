@@ -98,10 +98,7 @@ func Bootstrap(o *BootstrapOptions) error {
 	}
 
 	// Create Pipelines
-	outputs = append(outputs, createDevCIPipeline(meta.NamespacedName(namespaces["cicd"], "dev-ci-pipeline")))
-	outputs = append(outputs, createStageCIPipeline(meta.NamespacedName(namespaces["cicd"], "stage-ci-pipeline"), namespaces["stage"]))
-	outputs = append(outputs, createDevCDPipeline(meta.NamespacedName(namespaces["cicd"], "dev-cd-pipeline"), o.DeploymentPath, namespaces["dev"]))
-	outputs = append(outputs, createStageCDPipeline(meta.NamespacedName(namespaces["cicd"], "stage-cd-pipeline"), namespaces["stage"]))
+	outputs = append(outputs, createPipelines(namespaces, o.DeploymentPath))
 
 	// Create Event Listener
 	eventListener := eventlisteners.Generate(o.GitRepo, namespaces["cicd"])
@@ -112,14 +109,30 @@ func Bootstrap(o *BootstrapOptions) error {
 	outputs = append(outputs, route)
 
 	//  Create Service Account, Role, Role Bindings, and ClusterRole Bindings
-	sa := createServiceAccount(meta.NamespacedName(namespaces["cicd"], saName), dockerSecretName)
-	outputs = append(outputs, sa)
-	role := createRole(meta.NamespacedName(namespaces["cicd"], roleName), rules)
-	outputs = append(outputs, role)
-	outputs = append(outputs, createRoleBinding(meta.NamespacedName(roleBindingName, namespaces["cicd"]), sa, role.Kind, role.Name))
-	outputs = append(outputs, createRoleBinding(meta.NamespacedName("edit-clusterrole-binding", ""), sa, "ClusterRole", "edit"))
+	outputs = append(outputs, createRoleBindings(namespaces))
 
 	return marshalOutputs(os.Stdout, outputs)
+}
+
+func createRoleBindings(ns map[string]string) []interface{} {
+	out := make([]interface{}, 0)
+	sa := createServiceAccount(meta.NamespacedName(ns["cicd"], saName), dockerSecretName)
+	out = append(out, sa)
+	role := createRole(meta.NamespacedName(ns["cicd"], roleName), rules)
+	out = append(out, role)
+	out = append(out, createRoleBinding(meta.NamespacedName(roleBindingName, ns["cicd"]), sa, role.Kind, role.Name))
+	out = append(out, createRoleBinding(meta.NamespacedName("edit-clusterrole-binding", ""), sa, "ClusterRole", "edit"))
+	return out
+}
+
+func createPipelines(ns map[string]string, deploymentPath string) []interface{} {
+	out := make([]interface{}, 0)
+	out = append(out, createDevCIPipeline(meta.NamespacedName(ns["cicd"], "dev-ci-pipeline")))
+	out = append(out, createStageCIPipeline(meta.NamespacedName(ns["cicd"], "stage-ci-pipeline"), ns["stage"]))
+	out = append(out, createDevCDPipeline(meta.NamespacedName(ns["cicd"], "dev-cd-pipeline"), deploymentPath, ns["dev"]))
+	out = append(out, createStageCDPipeline(meta.NamespacedName(ns["cicd"], "stage-cd-pipeline"), ns["stage"]))
+	return out
+
 }
 
 // createDockerSecret creates Docker secret
@@ -136,7 +149,7 @@ func createDockerSecret(quayIOAuthFilename, ns string) (*corev1.Secret, error) {
 	}
 	defer f.Close()
 
-	dockerSecret, err := createDockerConfigSecret(meta.NamespacedName(dockerSecretName, ns), f)
+	dockerSecret, err := createDockerConfigSecret(meta.NamespacedName(ns, dockerSecretName), f)
 	if err != nil {
 		return nil, err
 	}
