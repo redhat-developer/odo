@@ -1,17 +1,113 @@
 package catalog
 
 import (
+	"encoding/json"
 	"fmt"
+	// "io/ioutil"
+	// "net/http"
 	"sort"
 	"strings"
+	// "time"
 
 	"github.com/golang/glog"
 	imagev1 "github.com/openshift/api/image/v1"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+// CheDevfileRegistry is Che devfile registry reposotiry
+const CheDevfileRegistry = "https://che-devfile-registry.openshift.io/"
+
+// DevfileIndexLink is the index.json link of Che devfile registry
+const DevfileIndexLink = CheDevfileRegistry + "/devfiles/index.json"
+
+// ListDevfileComponents lists all the available devfile components
+func ListDevfileComponents() (DevfileComponentTypeList, error) {
+
+	var devfileIndex []DevfileIndexEntry
+	var catalogDevfileList DevfileComponentTypeList
+	catalogDevfileList.DevfileRegistry = CheDevfileRegistry
+
+	jsonBytes, err := util.HTTPGetRequest(DevfileIndexLink)
+	if err != nil {
+		return DevfileComponentTypeList{}, fmt.Errorf("Unable to download devfile index.json from %s", DevfileIndexLink)
+	}
+
+	err = json.Unmarshal(jsonBytes, &devfileIndex)
+
+	for _, devfileIndexEntry := range devfileIndex {
+		devfileIndexEntryName := devfileIndexEntry.DisplayName
+		devfileIndexEntryDescription := devfileIndexEntry.Description
+		devfileIndexEntryLink := devfileIndexEntry.Links.Link
+
+		var yamlBytes []byte
+		
+		devfileLink := CheDevfileRegistry + devfileIndexEntryLink
+		yamlBytes, err = util.HTTPGetRequest(devfileLink)
+		if err != nil {
+			return DevfileComponentTypeList{}, fmt.Errorf("Unable to download devfile from %s", devfileLink)
+		}
+		
+		var devfile Devfile
+		hasDockerImage := false
+		hasAlias := false
+		hasRunCommand := false
+		hasBuildCommand := false
+		support := false
+		err := yaml.Unmarshal(yamlBytes, &devfile)
+		if err != nil {
+			return DevfileComponentTypeList{}, fmt.Errorf("Unable to unmarshal the devfile %s", devfileIndexEntryName)
+		}
+
+		for _, component := range devfile.Components {
+			if hasDockerImage && hasAlias {
+				break
+			}
+
+			if !hasDockerImage {
+				hasDockerImage = strings.Contains(component.Type, "dockerimage")
+			}
+
+			if !hasAlias {
+				hasAlias = len(component.Alias) > 0
+			}
+		}
+
+		for _, command := range devfile.Commands {
+			if hasRunCommand && hasBuildCommand {
+				break
+			}
+
+			if !hasRunCommand {
+				hasRunCommand = strings.Contains(command.Name, "run")
+			}
+
+			if !hasBuildCommand {
+				hasBuildCommand = strings.Contains(command.Name, "build")
+			}
+		}
+
+		if hasDockerImage && hasAlias && hasBuildCommand && hasRunCommand {
+			support = true
+		}
+
+		var catalogDevfile DevfileComponentType
+		catalogDevfile.Name = strings.TrimSuffix(devfile.MetaData.GenerateName, "-")
+		catalogDevfile.DisplayName = devfileIndexEntryName
+		catalogDevfile.Description = devfileIndexEntryDescription
+		catalogDevfile.Link = devfileIndexEntryLink
+		catalogDevfile.HasDockerImage = hasDockerImage
+		catalogDevfile.HasBuildCommand = hasBuildCommand
+		catalogDevfile.HasRunCommand = hasRunCommand
+		catalogDevfile.Support = support
+		catalogDevfileList.Items = append(catalogDevfileList.Items, catalogDevfile)
+	}
+
+	return catalogDevfileList, err
+}
 
 // ListComponents lists all the available component types
 func ListComponents(client *occlient.Client) (ComponentTypeList, error) {

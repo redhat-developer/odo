@@ -4,9 +4,11 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"math/rand"
 	"net"
 	"net/url"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/user"
@@ -625,4 +627,21 @@ func DeletePath(path string) error {
 		return os.Remove(path)
 	}
 	return nil
+}
+
+// HTTPGetRequest uses url to get file contents
+func HTTPGetRequest(url string) ([]byte, error) {
+	var httpClient = &http.Client{Timeout: 10 * time.Second}
+	resp, err := httpClient.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	bytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return bytes, err
 }
