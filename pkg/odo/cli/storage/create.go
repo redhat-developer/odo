@@ -3,7 +3,6 @@ package storage
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -40,11 +39,6 @@ func NewStorageCreateOptions() *StorageCreateOptions {
 
 // Complete completes StorageCreateOptions after they've been created
 func (o *StorageCreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context = genericclioptions.NewContext(cmd)
-	o.LocalConfigInfo, err = config.NewLocalConfigInfo(o.componentContext)
-	if err != nil {
-		return err
-	}
 	o.Context = genericclioptions.NewContext(cmd)
 	if len(args) != 0 {
 		o.storageName = args[0]
