@@ -1,9 +1,19 @@
 package url
 
 import (
+	"bytes"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
 	"fmt"
+	"math/big"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/openshift/odo/pkg/envinfo"
 
 	routev1 "github.com/openshift/api/route/v1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
@@ -11,11 +21,13 @@ import (
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/odo/util/experimental"
 	urlLabels "github.com/openshift/odo/pkg/url/labels"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 
 	"github.com/golang/glog"
+	iextensionsv1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
@@ -45,26 +57,91 @@ func Delete(client *occlient.Client, urlName string, applicationName string) err
 
 // Create creates a URL and returns url string and error if any
 // portNumber is the target port number for the route and is -1 in case no port number is specified in which case it is automatically detected for components which expose only one service port)
-func Create(client *occlient.Client, urlName string, portNumber int, secureURL bool, componentName, applicationName string) (string, error) {
+func Create(client *occlient.Client, kClient *kclient.Client, urlName string, portNumber int, secureURL bool, componentName, applicationName string, clusterHost string, secretName string) (string, error) {
 	labels := urlLabels.GetLabels(urlName, componentName, applicationName, true)
 
-	serviceName, err := util.NamespaceOpenShiftObject(componentName, applicationName)
+	var serviceName string
+	urlName, err := util.NamespaceOpenShiftObject(urlName, applicationName)
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to create namespaced name")
 	}
+	if experimental.IsExperimentalModeEnabled() {
+		// TODO: Need deployment & service to get the service name
+		// serviceName := fmt.Sprintf("%v-%v", componentName, portNumber)
+		serviceName := "spring-springtest1-gldv-app"
+		if err != nil {
+			return "", errors.Wrapf(err, "unable to create namespaced name")
+		}
+		secretName := ""
+		ingressDomain := fmt.Sprintf("%v.%v", urlName, clusterHost)
+		if secureURL == true {
+			// generate SSl certificate
+			fmt.Printf("Https is true, creating SSL certificate.")
+			privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+			if err != nil {
+				fmt.Printf("unale to generate rsa key ")
+				fmt.Println(errors.Cause(err))
+				return "", errors.Wrap(err, "unable to generate rsa key")
+			}
+			template := x509.Certificate{
+				SerialNumber: big.NewInt(2),
+				Subject: pkix.Name{
+					CommonName:   "Udo self-signed certificate",
+					Organization: []string{"Udo"},
+				},
+				NotBefore:             time.Now(),
+				NotAfter:              time.Now().Add(time.Hour * 24 * 365),
+				KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+				BasicConstraintsValid: true,
+				DNSNames:              []string{"*." + clusterHost},
+			}
 
-	urlName, err = util.NamespaceOpenShiftObject(urlName, applicationName)
-	if err != nil {
-		return "", errors.Wrapf(err, "unable to create namespaced name")
+			certificateDerEncoding, err := x509.CreateCertificate(rand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
+			if err != nil {
+				fmt.Printf("unable to create certificate ")
+				fmt.Println(errors.Cause(err))
+				return "", errors.Wrap(err, "unable to create certificate")
+			}
+			out := &bytes.Buffer{}
+			pem.Encode(out, &pem.Block{Type: "CERTIFICATE", Bytes: certificateDerEncoding})
+			certPemEncode := out.String()
+			certPemByteArr := []byte(certPemEncode)
+
+			tlsPrivKeyEncoding := x509.MarshalPKCS1PrivateKey(privateKey)
+			pem.Encode(out, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: tlsPrivKeyEncoding})
+			keyPemEncode := out.String()
+			keyPemByteArr := []byte(keyPemEncode)
+
+			// create tls secret
+			secret, err := kClient.CreateTLSSecret(certPemByteArr, keyPemByteArr, componentName, applicationName, portNumber)
+			if err != nil {
+				fmt.Printf("unable to create tls secret ")
+				fmt.Println(errors.Cause(err))
+				return "", errors.Wrap(err, "unable to create tls secret: "+secret.Name)
+			}
+			secretName = secret.Name
+
+		}
+		ingressParam := kclient.IngressParamater{Name: urlName, ServiceName: serviceName, IngressDomain: ingressDomain, PortNumber: intstr.FromInt(portNumber), TLSSecretName: secretName}
+		// Pass in the namespace name, link to the service (componentName) and labels to create a ingress
+		ingress, err := kClient.CreateIngress(ingressParam, labels)
+		if err != nil {
+			return "", errors.Wrap(err, "unable to create ingress")
+		}
+		return GetURLString(GetProtocol(routev1.Route{}, *ingress), "", ingressDomain), nil
+	} else {
+		serviceName, err = util.NamespaceOpenShiftObject(componentName, applicationName)
+		if err != nil {
+			return "", errors.Wrapf(err, "unable to create namespaced name")
+		}
+		// Pass in the namespace name, link to the service (componentName) and labels to create a route
+		route, err := client.CreateRoute(urlName, serviceName, intstr.FromInt(portNumber), labels, secureURL)
+		if err != nil {
+			return "", errors.Wrap(err, "unable to create route")
+		}
+		return GetURLString(GetProtocol(*route, iextensionsv1.Ingress{}), route.Spec.Host, ""), nil
 	}
 
-	// Pass in the namespace name, link to the service (componentName) and labels to create a route
-	route, err := client.CreateRoute(urlName, serviceName, intstr.FromInt(portNumber), labels, secureURL)
-	if err != nil {
-		return "", errors.Wrap(err, "unable to create route")
-	}
-
-	return GetURLString(getProtocol(*route), route.Spec.Host), nil
 }
 
 // ListPushed lists the URLs in an application that are in cluster. The results can further be narrowed
@@ -91,6 +168,30 @@ func ListPushed(client *occlient.Client, componentName string, applicationName s
 	}
 
 	urlList := getMachineReadableFormatForList(urls)
+	return urlList, nil
+
+}
+
+// ListIngress lists the ingress URLs in an application. The results can further be narrowed
+// down if a component name is provided, which will only list URLs for the
+// given component
+func ListPushedIngress(client *kclient.Client, componentName string) (iextensionsv1.IngressList, error) {
+	labelSelector := fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, componentName)
+	// TODO: select url name
+	//labelSelector := fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, componentName)
+	glog.V(4).Infof("Listing ingresses with label selector: %v", labelSelector)
+	ingresses, err := client.ListIngresses(labelSelector)
+	if err != nil {
+		return iextensionsv1.IngressList{}, errors.Wrap(err, "unable to list ingress names")
+	}
+
+	var urls []iextensionsv1.Ingress
+	for _, i := range ingresses {
+		a := getMachineReadableFormatIngress(i)
+		urls = append(urls, a)
+	}
+
+	urlList := getMachineReadableFormatForIngressList(urls)
 	return urlList, nil
 }
 
@@ -153,11 +254,50 @@ func List(client *occlient.Client, localConfig *config.LocalConfigInfo, componen
 	return urlList, nil
 }
 
-func getProtocol(route routev1.Route) string {
-	if route.Spec.TLS != nil {
-		return "https"
+// List returns all Ingress URLs for given component.
+// If componentName is empty string, it lists all url in a given application.
+func ListIngress(client *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, componentName string) (iextensionsv1.IngressList, error) {
+
+	labelSelector := fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, componentName)
+	// TODO: select url name
+	ingresses, err := client.ListIngresses(labelSelector)
+	if err != nil {
+		return iextensionsv1.IngressList{}, errors.Wrap(err, "unable to list ingress names")
 	}
-	return "http"
+
+	// envinfoURLs := envSpecificInfo.GetURL()
+
+	var urls []iextensionsv1.Ingress
+
+	for _, i := range ingresses {
+		clusterURL := getMachineReadableFormatIngress(i)
+		urls = append(urls, clusterURL)
+		// var found bool = false
+		// for _, envinfoURL := range envinfoURLs {
+		// 	if envinfoURL.Name == clusterURL.Name {
+		// 		// URL is in both local config and cluster
+		// 		urls = append(urls, clusterURL)
+		// 		found = true
+		// 	}
+		// }
+	}
+
+	urlList := getMachineReadableFormatForIngressList(urls)
+	return urlList, nil
+}
+
+func GetProtocol(route routev1.Route, ingress iextensionsv1.Ingress) string {
+	if experimental.IsExperimentalModeEnabled() {
+		if ingress.Spec.TLS != nil {
+			return "https"
+		}
+		return "http"
+	} else {
+		if route.Spec.TLS != nil {
+			return "https"
+		}
+		return "http"
+	}
 
 }
 
@@ -178,7 +318,10 @@ func ConvertConfigURL(configURL config.ConfigURL) URL {
 }
 
 // GetURLString returns a string representation of given url
-func GetURLString(protocol, URL string) string {
+func GetURLString(protocol, URL string, ingressDomain string) string {
+	if experimental.IsExperimentalModeEnabled() {
+		return protocol + "://" + ingressDomain
+	}
 	return protocol + "://" + URL
 }
 
@@ -186,17 +329,31 @@ func GetURLString(protocol, URL string) string {
 // urlName is the name of the url for checking
 // componentName is the name of the component to which the url's existence is checked
 // applicationName is the name of the application to which the url's existence is checked
-func Exists(client *occlient.Client, urlName string, componentName string, applicationName string) (bool, error) {
-	urls, err := ListPushed(client, componentName, applicationName)
-	if err != nil {
-		return false, errors.Wrap(err, "unable to list the urls")
-	}
+func Exists(client *occlient.Client, kClient *kclient.Client, urlName string, componentName string, applicationName string) (bool, error) {
+	if experimental.IsExperimentalModeEnabled() {
+		urls, err := ListPushedIngress(kClient, componentName)
+		if err != nil {
+			return false, errors.Wrap(err, "unable to list the urls")
+		}
 
-	for _, url := range urls.Items {
-		if url.Name == urlName {
-			return true, nil
+		for _, url := range urls.Items {
+			if url.Name == urlName {
+				return true, nil
+			}
+		}
+	} else {
+		urls, err := ListPushed(client, componentName, applicationName)
+		if err != nil {
+			return false, errors.Wrap(err, "unable to list the urls")
+		}
+
+		for _, url := range urls.Items {
+			if url.Name == urlName {
+				return true, nil
+			}
 		}
 	}
+
 	return false, nil
 }
 
@@ -269,7 +426,7 @@ func getMachineReadableFormat(r routev1.Route) URL {
 	return URL{
 		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.openshift.io/v1alpha1"},
 		ObjectMeta: metav1.ObjectMeta{Name: r.Labels[urlLabels.URLLabel]},
-		Spec:       URLSpec{Host: r.Spec.Host, Port: r.Spec.Port.TargetPort.IntValue(), Protocol: getProtocol(r)},
+		Spec:       URLSpec{Host: r.Spec.Host, Port: r.Spec.Port.TargetPort.IntValue(), Protocol: GetProtocol(r, iextensionsv1.Ingress{})},
 	}
 
 }
@@ -282,5 +439,25 @@ func getMachineReadableFormatForList(urls []URL) URLList {
 		},
 		ListMeta: metav1.ListMeta{},
 		Items:    urls,
+	}
+}
+
+func getMachineReadableFormatIngress(i iextensionsv1.Ingress) iextensionsv1.Ingress {
+	return iextensionsv1.Ingress{
+		TypeMeta:   metav1.TypeMeta{Kind: "Ingress", APIVersion: "extensions/v1beta1"},
+		ObjectMeta: metav1.ObjectMeta{Name: i.Labels[urlLabels.URLLabel]},
+		Spec:       iextensionsv1.IngressSpec{TLS: i.Spec.TLS, Rules: i.Spec.Rules},
+	}
+
+}
+
+func getMachineReadableFormatForIngressList(ingresses []iextensionsv1.Ingress) iextensionsv1.IngressList {
+	return iextensionsv1.IngressList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "List",
+			APIVersion: "udo.udo.io/v1alpha1",
+		},
+		ListMeta: metav1.ListMeta{},
+		Items:    ingresses,
 	}
 }

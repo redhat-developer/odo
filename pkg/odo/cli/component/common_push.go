@@ -60,7 +60,6 @@ func (cpo *CommonPushOptions) InitConfigFromContext() error {
 //InitEnvInfoFromContext initializes envinfo from the context
 func (cpo *CommonPushOptions) InitEnvInfoFromContext() error {
 	var err error
-	fmt.Println("cpo.componentContext is " + cpo.componentContext)
 	cpo.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(cpo.componentContext)
 	if err != nil {
 		return err
@@ -129,7 +128,7 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 	}
 
 	// Apply config
-	err := component.ApplyConfig(cpo.Context.Client, *cpo.LocalConfigInfo, stdout, cpo.doesComponentExist)
+	err := component.ApplyConfig(cpo.Context.Client, cpo.Context.KClient, *cpo.LocalConfigInfo, *cpo.EnvSpecificInfo, stdout, cpo.doesComponentExist)
 	if err != nil {
 		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed.")
 	}

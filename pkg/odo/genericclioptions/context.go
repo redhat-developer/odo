@@ -9,9 +9,12 @@ import (
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util"
+	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/project"
 	pkgUtil "github.com/openshift/odo/pkg/util"
 )
@@ -55,6 +58,14 @@ func client(command *cobra.Command) *occlient.Client {
 	return client
 }
 
+// kClient creates an kclient based on the command flags
+func kClient(command *cobra.Command) *kclient.Client {
+	kClient, err := kclient.New()
+	util.LogErrorAndExit(err, "")
+
+	return kClient
+}
+
 // checkProjectCreateOrDeleteOnlyOnInvalidNamespace errors out if user is trying to create or delete something other than project
 // errFormatforCommand must contain one %s
 func checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command *cobra.Command, errFormatForCommand string) {
@@ -85,6 +96,25 @@ func getFirstChildOfCommand(command *cobra.Command) *cobra.Command {
 	return nil
 }
 
+func getValidEnvinfo(command *cobra.Command) (*envinfo.EnvSpecificInfo, error) {
+	// Get details from the local config file
+	componentContext := FlagValueIfSet(command, ContextFlagName)
+
+	// Grab the absolute path of the configuration
+	if componentContext != "" {
+		fAbs, err := pkgUtil.GetAbsPath(componentContext)
+		util.LogErrorAndExit(err, "")
+		componentContext = fAbs
+	}
+
+	// Access the local configuration
+	envInfo, err := envinfo.NewEnvSpecificInfo(componentContext)
+	if err != nil {
+		return nil, err
+	}
+	return envInfo, nil
+}
+
 func getValidConfig(command *cobra.Command, ignoreMissingConfiguration bool) (*config.LocalConfigInfo, error) {
 
 	// Get details from the local config file
@@ -96,7 +126,6 @@ func getValidConfig(command *cobra.Command, ignoreMissingConfiguration bool) (*c
 		util.LogErrorAndExit(err, "")
 		configFileName = fAbs
 	}
-
 	// Access the local configuration
 	localConfiguration, err := config.NewLocalConfigInfo(configFileName)
 	if err != nil {
@@ -279,7 +308,15 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 		command:         command,
 		LocalConfigInfo: *localConfiguration,
 	}
-
+	if experimental.IsExperimentalModeEnabled() {
+		kClient := kClient(command)
+		internalCxt.KClient = kClient
+		envInfo, err := getValidEnvinfo(command)
+		if err != nil {
+			util.LogErrorAndExit(err, "")
+		}
+		internalCxt.EnvSpecificInfo = *envInfo
+	}
 	// create a context from the internal representation
 	context := &Context{
 		internalCxt: internalCxt,
@@ -312,6 +349,8 @@ type internalCxt struct {
 	cmp             string
 	OutputFlag      string
 	LocalConfigInfo config.LocalConfigInfo
+	KClient         *kclient.Client
+	EnvSpecificInfo envinfo.EnvSpecificInfo
 }
 
 // Component retrieves the optionally specified component or the current one if it is set. If no component is set, exit with

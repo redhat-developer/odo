@@ -9,6 +9,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/openshift/odo/pkg/kclient"
+
+	"github.com/openshift/odo/pkg/envinfo"
+
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 
@@ -18,6 +22,7 @@ import (
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/validation"
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/storage"
@@ -532,16 +537,17 @@ func ValidateComponentCreateRequest(client *occlient.Client, componentSettings c
 //  	cmpExist: true if components exists in the cluster
 // Returns:
 //	err: Errors if any else nil
-func ApplyConfig(client *occlient.Client, componentConfig config.LocalConfigInfo, stdout io.Writer, cmpExist bool) (err error) {
-
-	// if component exist then only call the update function
-	if cmpExist {
-		if err = Update(client, componentConfig, componentConfig.GetSourceLocation(), stdout); err != nil {
-			return err
+func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo, stdout io.Writer, cmpExist bool) (err error) {
+	if !experimental.IsExperimentalModeEnabled() {
+		// if component exist then only call the update function
+		if cmpExist {
+			if err = Update(client, componentConfig, componentConfig.GetSourceLocation(), stdout); err != nil {
+				return err
+			}
 		}
 	}
 
-	showChanges, err := checkIfURLChangesWillBeMade(client, componentConfig)
+	showChanges, err := checkIfURLChangesWillBeMade(client, kClient, componentConfig, envSpecificInfo)
 	if err != nil {
 		return err
 	}
@@ -549,7 +555,7 @@ func ApplyConfig(client *occlient.Client, componentConfig config.LocalConfigInfo
 	if showChanges {
 		log.Info("\nApplying URL changes")
 		// Create any URLs that have been added to the component
-		err = ApplyConfigCreateURL(client, componentConfig)
+		err = ApplyConfigCreateURL(client, kClient, componentConfig, envSpecificInfo)
 		if err != nil {
 			return err
 		}
@@ -594,22 +600,44 @@ func checkIfURLPresentInConfig(localURL []config.ConfigURL, url string) bool {
 }
 
 // ApplyConfigCreateURL applies url config onto component
-func ApplyConfigCreateURL(client *occlient.Client, componentConfig config.LocalConfigInfo) error {
-
-	urls := componentConfig.GetURL()
-	for _, urlo := range urls {
-		exist, err := urlpkg.Exists(client, urlo.Name, componentConfig.GetName(), componentConfig.GetApplication())
+func ApplyConfigCreateURL(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo) error {
+	if experimental.IsExperimentalModeEnabled() {
+		urls := envSpecificInfo.GetURL()
+		componentName, err := GetComponentName()
 		if err != nil {
-			return errors.Wrapf(err, "unable to check url")
+			return errors.Wrapf(err, "unable to get componentName")
 		}
-		if exist {
-			log.Successf("URL %s already exists", urlo.Name)
-		} else {
-			host, err := urlpkg.Create(client, urlo.Name, urlo.Port, urlo.Secure, componentConfig.GetName(), componentConfig.GetApplication())
+		for _, urlo := range urls {
+			exist, err := urlpkg.Exists(client, kClient, urlo.Name, componentName, "")
 			if err != nil {
-				return errors.Wrapf(err, "unable to create url")
+				return errors.Wrapf(err, "unable to check url")
 			}
-			log.Successf("URL %s: %s created", urlo.Name, host)
+			if exist {
+				log.Successf("URL %s already exists", urlo.Name)
+			} else {
+				host, err := urlpkg.Create(client, kClient, urlo.Name, urlo.Port, urlo.Secure, componentName, "", urlo.ClusterHost, urlo.TLSSecret)
+				if err != nil {
+					return errors.Wrapf(err, "unable to create url")
+				}
+				log.Successf("URL %s: %s created", urlo.Name, host)
+			}
+		}
+	} else {
+		urls := componentConfig.GetURL()
+		for _, urlo := range urls {
+			exist, err := urlpkg.Exists(client, kClient, urlo.Name, componentConfig.GetName(), componentConfig.GetApplication())
+			if err != nil {
+				return errors.Wrapf(err, "unable to check url")
+			}
+			if exist {
+				log.Successf("URL %s already exists", urlo.Name)
+			} else {
+				host, err := urlpkg.Create(client, kClient, urlo.Name, urlo.Port, urlo.Secure, componentConfig.GetName(), componentConfig.GetApplication(), "", "")
+				if err != nil {
+					return errors.Wrapf(err, "unable to create url")
+				}
+				log.Successf("URL %s: %s created", urlo.Name, host)
+			}
 		}
 	}
 
@@ -1480,19 +1508,47 @@ func getStorageFromConfig(localConfig *config.LocalConfigInfo) storage.StorageLi
 	return storageList
 }
 
+// GetComponentName gets the component name from current directory name
+func GetComponentName() (string, error) {
+	retVal := ""
+	currDir, err := os.Getwd()
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to get component because getting current directory failed")
+	}
+	retVal = filepath.Base(currDir)
+	retVal = strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(retVal)))
+	return retVal, nil
+}
+
 // checkIfURLChangesWillBeMade checks to see if there are going to be any changes
 // to the URLs when deploying and returns a true / false
-func checkIfURLChangesWillBeMade(client *occlient.Client, componentConfig config.LocalConfigInfo) (bool, error) {
+func checkIfURLChangesWillBeMade(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo) (bool, error) {
+	if experimental.IsExperimentalModeEnabled() {
+		componentName, err := GetComponentName()
+		if err != nil {
+			return false, err
+		}
+		urlList, err := urlpkg.ListPushedIngress(kClient, componentName)
+		if err != nil {
+			return false, err
+		}
 
-	urlList, err := urlpkg.ListPushed(client, componentConfig.GetName(), componentConfig.GetApplication())
-	if err != nil {
-		return false, err
-	}
+		// If config has URL(s) (since we check) or if the cluster has URL's but
+		// componentConfig does not (deleting)
+		if len(envSpecificInfo.GetURL()) > 0 || len(envSpecificInfo.GetURL()) == 0 && (len(urlList.Items) > 0) {
+			return true, nil
+		}
+	} else {
+		urlList, err := urlpkg.ListPushed(client, componentConfig.GetName(), componentConfig.GetApplication())
+		if err != nil {
+			return false, err
+		}
 
-	// If config has URL(s) (since we check) or if the cluster has URL's but
-	// componentConfig does not (deleting)
-	if len(componentConfig.GetURL()) > 0 || len(componentConfig.GetURL()) == 0 && (len(urlList.Items) > 0) {
-		return true, nil
+		// If config has URL(s) (since we check) or if the cluster has URL's but
+		// componentConfig does not (deleting)
+		if len(componentConfig.GetURL()) > 0 || len(componentConfig.GetURL()) == 0 && (len(urlList.Items) > 0) {
+			return true, nil
+		}
 	}
 
 	return false, nil

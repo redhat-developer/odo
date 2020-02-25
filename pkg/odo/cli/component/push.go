@@ -36,7 +36,7 @@ type PushOptions struct {
 	*CommonPushOptions
 
 	// devfile path
-	devfilePath string
+	DevfilePath string
 }
 
 // NewPushOptions returns new instance of PushOptions
@@ -51,7 +51,7 @@ func NewPushOptions() *PushOptions {
 func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 
 	// if experimental mode is enabled and devfile is present
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.devfilePath) {
+	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.DevfilePath) {
 		return nil
 	}
 
@@ -87,7 +87,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 func (po *PushOptions) Validate() (err error) {
 
 	// if experimental flag is set and devfile is present
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.devfilePath) {
+	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.DevfilePath) {
 		return nil
 	}
 
@@ -119,7 +119,7 @@ func (po *PushOptions) Validate() (err error) {
 // Run has the logic to perform the required actions as part of command
 func (po *PushOptions) Run() (err error) {
 	// if experimental mode is enabled, use devfile push
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.devfilePath) {
+	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.DevfilePath) {
 		// devfile push
 		return po.DevfilePush()
 	} else {
@@ -152,7 +152,7 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 
 	// enable devfile flag if experimental mode is enabled
 	if experimental.IsExperimentalModeEnabled() {
-		pushCmd.Flags().StringVar(&po.devfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
+		pushCmd.Flags().StringVar(&po.DevfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
 	}
 
 	pushCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
