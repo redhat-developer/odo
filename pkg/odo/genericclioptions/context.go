@@ -30,6 +30,26 @@ func NewContextCreatingAppIfNeeded(command *cobra.Command) *Context {
 	return newContext(command, true, false)
 }
 
+// NewConfigContext is a special kind of context which only contains local configuration, other information is not retrived
+//  from the cluster. This is useful for commands which don't want to connect to cluster.
+func NewConfigContext(command *cobra.Command) *Context {
+
+	// Check for valid config
+	localConfiguration, err := getValidConfig(command, false)
+	if err != nil {
+		util.LogErrorAndExit(err, "")
+	}
+	outputFlag := FlagValueIfSet(command, OutputFlagName)
+
+	ctx := &Context{
+		internalCxt{
+			LocalConfigInfo: localConfiguration,
+			OutputFlag:      outputFlag,
+		},
+	}
+	return ctx
+}
+
 // NewContextCompletion disables checking for a local configuration since when we use autocompletion on the command line, we
 // couldn't care less if there was a configuriation. We only need to check the parameters.
 func NewContextCompletion(command *cobra.Command) *Context {
@@ -253,6 +273,7 @@ func UpdatedContext(context *Context) (*Context, *config.LocalConfigInfo, error)
 
 // newContext creates a new context based on the command flags, creating missing app when requested
 func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingConfiguration bool) *Context {
+
 	client := client(command)
 
 	// Check for valid config
