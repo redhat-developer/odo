@@ -28,6 +28,7 @@ var (
 // BootstrapOptions encapsulates the options for the odo pipelines bootstrap
 // command.
 type BootstrapOptions struct {
+	deploymentPath     string
 	quayUsername       string
 	gitRepo            string // e.g. tekton/triggers
 	prefix             string // used to generate the environments in a shared cluster
@@ -65,6 +66,7 @@ func (bo *BootstrapOptions) Validate() error {
 // Run runs the project bootstrap command.
 func (bo *BootstrapOptions) Run() error {
 	options := pipelines.BootstrapOptions{
+		DeploymentPath:   bo.deploymentPath,
 		GithubToken:      bo.githubToken,
 		GitRepo:          bo.gitRepo,
 		Prefix:           bo.prefix,
@@ -97,5 +99,7 @@ func NewCmdBootstrap(name, fullName string) *cobra.Command {
 	bootstrapCmd.MarkFlagRequired("dockerconfigjson")
 	bootstrapCmd.Flags().StringVar(&o.gitRepo, "git-repo", "", "git repository in this form <username>/<repository>")
 	bootstrapCmd.MarkFlagRequired("git-repo")
+	bootstrapCmd.Flags().StringVar(&o.deploymentPath, "deployment-path", "", "deployment folder path name")
+	bootstrapCmd.MarkFlagRequired("deployment-path")
 	return bootstrapCmd
 }
