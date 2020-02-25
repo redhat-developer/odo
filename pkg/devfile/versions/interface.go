@@ -7,5 +7,4 @@ import (
 type DevfileData interface {
 	GetComponents() []common.DevfileComponent
 	GetAliasedComponents() []common.DevfileComponent
-	Validate() error
 }
