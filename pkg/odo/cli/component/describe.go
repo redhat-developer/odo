@@ -3,7 +3,6 @@ package component
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -28,7 +27,6 @@ var describeExample = ktemplates.Examples(`  # Describe nodejs component
 
 // DescribeOptions is a dummy container to attach complete, validate and run pattern
 type DescribeOptions struct {
-	localConfigInfo  *config.LocalConfigInfo
 	componentContext string
 	isPushed         bool
 	*ComponentOptions
@@ -36,7 +34,7 @@ type DescribeOptions struct {
 
 // NewDescribeOptions returns new instance of ListOptions
 func NewDescribeOptions() *DescribeOptions {
-	return &DescribeOptions{nil, "", false, &ComponentOptions{}}
+	return &DescribeOptions{"", false, &ComponentOptions{}}
 }
 
 // Complete completes describe args
@@ -45,8 +43,7 @@ func (do *DescribeOptions) Complete(name string, cmd *cobra.Command, args []stri
 	if err != nil {
 		return err
 	}
-	do.localConfigInfo, err = config.NewLocalConfigInfo(do.componentContext)
-	return err
+	return nil
 }
 
 // Validate validates the describe parameters
@@ -82,7 +79,7 @@ func (do *DescribeOptions) Run() (err error) {
 	}
 
 	if log.IsJSON() {
-		componentDesc.Spec.Ports = do.localConfigInfo.GetPorts()
+		componentDesc.Spec.Ports = do.LocalConfigInfo.GetPorts()
 		machineoutput.OutputSuccess(componentDesc)
 	} else {
 

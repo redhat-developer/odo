@@ -91,7 +91,7 @@ func (lo *ListOptions) Run() (err error) {
 		var componentList []component.Component
 
 		if len(apps) == 0 && lo.LocalConfigInfo.ConfigFileExists() {
-			comps, err := component.List(lo.Client, lo.LocalConfigInfo.GetApplication(), &lo.LocalConfigInfo)
+			comps, err := component.List(lo.Client, lo.LocalConfigInfo.GetApplication(), lo.LocalConfigInfo)
 			if err != nil {
 				return err
 			}
@@ -100,7 +100,7 @@ func (lo *ListOptions) Run() (err error) {
 
 		// interating over list of application and get list of all components
 		for _, app := range apps {
-			comps, err := component.List(lo.Client, app, &lo.LocalConfigInfo)
+			comps, err := component.List(lo.Client, app, lo.LocalConfigInfo)
 			if err != nil {
 				return err
 			}
@@ -110,7 +110,7 @@ func (lo *ListOptions) Run() (err error) {
 		components = component.GetMachineReadableFormatForList(componentList)
 	} else {
 
-		components, err = component.List(lo.Client, lo.Application, &lo.LocalConfigInfo)
+		components, err = component.List(lo.Client, lo.Application, lo.LocalConfigInfo)
 		if err != nil {
 			return errors.Wrapf(err, "failed to fetch components list")
 		}

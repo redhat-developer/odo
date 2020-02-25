@@ -277,7 +277,7 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 		Application:     app,
 		OutputFlag:      outputFlag,
 		command:         command,
-		LocalConfigInfo: *localConfiguration,
+		LocalConfigInfo: localConfiguration,
 	}
 
 	// create a context from the internal representation
@@ -311,7 +311,7 @@ type internalCxt struct {
 	Application     string
 	cmp             string
 	OutputFlag      string
-	LocalConfigInfo config.LocalConfigInfo
+	LocalConfigInfo *config.LocalConfigInfo
 }
 
 // Component retrieves the optionally specified component or the current one if it is set. If no component is set, exit with

@@ -30,7 +30,6 @@ type StorageCreateOptions struct {
 	storageSize      string
 	storagePath      string
 	componentContext string
-	localConfig      *config.LocalConfigInfo
 	*genericclioptions.Context
 }
 
@@ -42,7 +41,7 @@ func NewStorageCreateOptions() *StorageCreateOptions {
 // Complete completes StorageCreateOptions after they've been created
 func (o *StorageCreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.Context = genericclioptions.NewContext(cmd)
-	o.localConfig, err = config.NewLocalConfigInfo(o.componentContext)
+	o.LocalConfigInfo, err = config.NewLocalConfigInfo(o.componentContext)
 	if err != nil {
 		return err
 	}
@@ -58,12 +57,12 @@ func (o *StorageCreateOptions) Complete(name string, cmd *cobra.Command, args []
 // Validate validates the StorageCreateOptions based on completed values
 func (o *StorageCreateOptions) Validate() (err error) {
 	// validate storage path
-	return o.localConfig.ValidateStorage(o.storageName, o.storagePath)
+	return o.LocalConfigInfo.ValidateStorage(o.storageName, o.storagePath)
 }
 
 // Run contains the logic for the odo storage create command
 func (o *StorageCreateOptions) Run() (err error) {
-	storageResult, err := o.localConfig.StorageCreate(o.storageName, o.storageSize, o.storagePath)
+	storageResult, err := o.LocalConfigInfo.StorageCreate(o.storageName, o.storageSize, o.storagePath)
 	if err != nil {
 		return err
 	}
@@ -73,7 +72,7 @@ func (o *StorageCreateOptions) Run() (err error) {
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(storageResultMachineReadable)
 	} else {
-		log.Successf("Added storage %v to %v", o.storageName, o.localConfig.GetName())
+		log.Successf("Added storage %v to %v", o.storageName, o.LocalConfigInfo.GetName())
 		log.Italic("\nPlease use `odo push` command to make the storage accessible to the component")
 	}
 	return
