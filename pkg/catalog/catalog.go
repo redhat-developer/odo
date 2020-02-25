@@ -260,7 +260,17 @@ func createImageTagMap(tagRefs []imagev1.TagReference) map[string]string {
 		imageName := tagRef.From.Name
 		if tagRef.From.Kind == "DockerImage" {
 			// we get the image name from the repo url e.g. registry.redhat.com/openshift/nodejs:10 will give openshift/nodejs:10
-			urlImageName := strings.SplitN(imageName, "/", 2)[1]
+			imageNameParts := strings.SplitN(imageName, "/", 2)
+
+			var urlImageName string
+			// this means the docker image url might just be something like nodejs:10, no namespace or registry info
+			if len(imageNameParts) == 1 {
+				urlImageName = imageNameParts[0]
+				// else block executes when there is a registry information attached in the docker image url
+			} else {
+				// we dont want the registry url portion
+				urlImageName = imageNameParts[1]
+			}
 			// here we remove the tag and digest
 			ns, img, tag, _, _ := occlient.ParseImageName(urlImageName)
 			imageName = ns + "/" + img + ":" + tag
