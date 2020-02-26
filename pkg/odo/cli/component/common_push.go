@@ -142,7 +142,6 @@ func (cpo *CommonPushOptions) ResolveProject(prjName string) (err error) {
 			)
 		}
 	}
-	fmt.Println("HI" + prjName)
 	cpo.Context.Client.KClient.Namespace = prjName
 	return
 }

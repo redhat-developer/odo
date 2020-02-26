@@ -1,15 +1,12 @@
 package kclient
 
 import (
-	"fmt"
-
 	"github.com/pkg/errors"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
 // SetCurrentNamespace sets the given namespace to current namespace
 func (c *Client) SetCurrentNamespace(namespace string) error {
-	fmt.Println(namespace)
 	rawConfig, err := c.KubeConfig.RawConfig()
 	if err != nil {
 		return errors.Wrapf(err, "unable to switch to %s namespace", namespace)
