@@ -19,13 +19,13 @@ const (
 )
 
 // Generate will create the required eventlisteners.
-func Generate(githubRepo string, ns string) triggersv1.EventListener {
+func Generate(githubRepo, ns, saName string) triggersv1.EventListener {
 	githubStageRepo := githubRepo + "-stage-config"
 	return triggersv1.EventListener{
 		TypeMeta:   createListenerTypeMeta(),
 		ObjectMeta: createListenerObjectMeta("cicd-event-listener", ns),
 		Spec: triggersv1.EventListenerSpec{
-			ServiceAccountName: "demo-sa",
+			ServiceAccountName: saName,
 			Triggers: []triggersv1.EventListenerTrigger{
 				createListenerTrigger(
 					"dev-ci-build-from-pr",
