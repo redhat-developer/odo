@@ -76,7 +76,7 @@ func printStorage(storageList storage.StorageList, compName string) {
 		fmt.Fprintln(tabWriterMounted, "NAME", "\t", "SIZE", "\t", "PATH", "\t", "STATE")
 		// iterating over all mounted storage and put in the mount storage table
 		for _, mStorage := range storageList.Items {
-			fmt.Fprintln(tabWriterMounted, mStorage.Name, "\t", mStorage.Spec.Size, "\t", mStorage.Status.Path, "\t", mStorage.State)
+			fmt.Fprintln(tabWriterMounted, mStorage.Name, "\t", mStorage.Spec.Size, "\t", mStorage.Spec.Path, "\t", mStorage.Status)
 		}
 
 		// print all mounted storage of the given component

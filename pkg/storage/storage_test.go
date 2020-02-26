@@ -92,8 +92,6 @@ func TestGetMachineReadableFormat(t *testing.T) {
 				TypeMeta: metav1.TypeMeta{Kind: "storage", APIVersion: "odo.openshift.io/v1alpha1"},
 				Spec: StorageSpec{
 					Size: "100Mi",
-				},
-				Status: StorageStatus{
 					Path: "data",
 				},
 			},
@@ -111,8 +109,6 @@ func TestGetMachineReadableFormat(t *testing.T) {
 				TypeMeta: metav1.TypeMeta{Kind: "storage", APIVersion: "odo.openshift.io/v1alpha1"},
 				Spec: StorageSpec{
 					Size: "500Mi",
-				},
-				Status: StorageStatus{
 					Path: "",
 				},
 			},
@@ -148,8 +144,6 @@ func TestGetMachineReadableFormatForList(t *testing.T) {
 					},
 					Spec: StorageSpec{
 						Size: "100Mi",
-					},
-					Status: StorageStatus{
 						Path: "data",
 					},
 				},
@@ -171,8 +165,6 @@ func TestGetMachineReadableFormatForList(t *testing.T) {
 						},
 						Spec: StorageSpec{
 							Size: "100Mi",
-						},
-						Status: StorageStatus{
 							Path: "data",
 						},
 					},
@@ -192,8 +184,6 @@ func TestGetMachineReadableFormatForList(t *testing.T) {
 					},
 					Spec: StorageSpec{
 						Size: "100Mi",
-					},
-					Status: StorageStatus{
 						Path: "data",
 					},
 				},
@@ -207,8 +197,6 @@ func TestGetMachineReadableFormatForList(t *testing.T) {
 					},
 					Spec: StorageSpec{
 						Size: "500Mi",
-					},
-					Status: StorageStatus{
 						Path: "backend",
 					},
 				},
@@ -230,8 +218,6 @@ func TestGetMachineReadableFormatForList(t *testing.T) {
 						},
 						Spec: StorageSpec{
 							Size: "100Mi",
-						},
-						Status: StorageStatus{
 							Path: "data",
 						},
 					},
@@ -245,8 +231,6 @@ func TestGetMachineReadableFormatForList(t *testing.T) {
 						},
 						Spec: StorageSpec{
 							Size: "500Mi",
-						},
-						Status: StorageStatus{
 							Path: "backend",
 						},
 					},
@@ -864,13 +848,13 @@ func TestListStorageWithState(t *testing.T) {
 	pvc3 := testingutil.FakePVC(generatePVCNameFromStorageName("storage-3-app"), "100Mi", getStorageLabels("storage-3", componentName, appName))
 
 	storage1 := GetMachineReadableFormat("storage-1", "100Mi", "/tmp1")
-	storage1.State = StateTypePushed
+	storage1.Status = StateTypePushed
 
 	storage2 := GetMachineReadableFormat("storage-2", "100Mi", "/tmp2")
-	storage2.State = StateTypeNotPushed
+	storage2.Status = StateTypeNotPushed
 
 	storage3 := GetMachineReadableFormat("storage-3", "100Mi", "/tmp3")
-	storage3.State = StateTypeLocallyDeleted
+	storage3.Status = StateTypeLocallyDeleted
 
 	tests := []struct {
 		name              string

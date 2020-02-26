@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+
 	"github.com/openshift/odo/pkg/occlient"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/storage"
@@ -52,7 +53,7 @@ func validateStoragePath(client *occlient.Client, storagePath, componentName, ap
 		return err
 	}
 	for _, store := range storeList.Items {
-		if store.Status.Path == storagePath {
+		if store.Spec.Path == storagePath {
 			return errors.Errorf("there already is a storage mounted at %s", storagePath)
 		}
 	}
