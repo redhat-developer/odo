@@ -8,13 +8,13 @@ import (
 
 	"github.com/golang/glog"
 
-	adapterCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/devfile/versions/common"
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
 	"github.com/openshift/odo/pkg/kclient"
 )
 
 // New instantiantes a component adapter
-func New(adapterContext adapterCommon.AdapterContext, client kclient.Client) Adapter {
+func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
 	return Adapter{
 		Client:         client,
 		AdapterContext: adapterContext,
@@ -24,23 +24,7 @@ func New(adapterContext adapterCommon.AdapterContext, client kclient.Client) Ada
 // Adapter is a component adapter implementation for Kubernetes
 type Adapter struct {
 	Client kclient.Client
-	adapterCommon.AdapterContext
-}
-
-// GetContainers iterates through the components in the devfile and returns a slice of the corresponding containers
-func (a *Adapter) GetContainers() []corev1.Container {
-	var containers []corev1.Container
-	// Only components with aliases are considered because without an alias commands cannot reference them
-	for _, comp := range a.Devfile.Data.GetAliasedComponents() {
-		if comp.Type == common.DevfileComponentTypeDockerimage {
-			glog.V(3).Infof("Found component %v with alias %v\n", comp.Type, *comp.Alias)
-			envVars := convertEnvs(comp.Env)
-			resourceReqs := getResourceReqs(comp)
-			container := kclient.GenerateContainer(*comp.Alias, *comp.Image, false, comp.Command, comp.Args, envVars, resourceReqs)
-			containers = append(containers, *container)
-		}
-	}
-	return containers
+	common.AdapterContext
 }
 
 // Start updates the component if a matching component exists or creates one if it doesn't exist
@@ -51,7 +35,7 @@ func (a Adapter) Start() (err error) {
 		"component": componentName,
 	}
 
-	containers := a.GetContainers()
+	containers := utils.GetContainers(a.Devfile)
 	if len(containers) == 0 {
 		return fmt.Errorf("No valid components found in the devfile")
 	}
@@ -63,7 +47,7 @@ func (a Adapter) Start() (err error) {
 	glog.V(3).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
 	glog.V(3).Infof("The component name is %v", componentName)
 
-	if componentExists(a.Client, componentName) {
+	if utils.ComponentExists(a.Client, componentName) {
 		glog.V(3).Info("The component already exists, attempting to update it")
 		_, err = a.Client.UpdateDeployment(*deploymentSpec)
 		if err != nil {

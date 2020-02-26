@@ -17,17 +17,20 @@ func NewPlatformAdapter(componentName string, devObj devfile.DevfileObj) (Platfo
 
 	// Only the kubernetes adapter is implemented at the moment
 	// When there are others this function should be updated to retrieve the correct adapter for the desired platform target
-	return newKubernetesAdapter(adapterContext)
+	return createKubernetesAdapter(adapterContext)
 }
 
-func newKubernetesAdapter(adapterContext common.AdapterContext) (PlatformAdapter, error) {
+func createKubernetesAdapter(adapterContext common.AdapterContext) (PlatformAdapter, error) {
 	client, err := kclient.New()
 	if err != nil {
 		return nil, err
 	}
+	return newKubernetesAdapter(adapterContext, *client)
+}
 
+func newKubernetesAdapter(adapterContext common.AdapterContext, client kclient.Client) (PlatformAdapter, error) {
 	// Feed the common metadata to the platform-specific adapter
-	kubernetesAdapter := kubernetes.New(adapterContext, *client)
+	kubernetesAdapter := kubernetes.New(adapterContext, client)
 
 	return kubernetesAdapter, nil
 }

@@ -10,8 +10,6 @@ import (
 // Adapter maps Devfiles to Kubernetes resources and actions
 type Adapter struct {
 	componentAdapter common.ComponentAdapter
-	Client           kclient.Client
-	common.AdapterContext
 }
 
 // New instantiates a kubernetes adapter
@@ -21,8 +19,6 @@ func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
 
 	return Adapter{
 		componentAdapter: compAdapter,
-		AdapterContext:   adapterContext,
-		Client:           client,
 	}
 }
 
