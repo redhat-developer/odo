@@ -30,8 +30,9 @@ func FakeNew() (*Client, *FakeClientset) {
 	var client Client
 	var fkclientset FakeClientset
 
-	fkclientset.Kubernetes = fakeKubeClientset.NewSimpleClientset()
-	client.KClient, _ = kclient.FakeNew()
+	kc, fcs := kclient.FakeNew()
+	fkclientset.Kubernetes = fcs.Kubernetes
+	client.KClient = kc
 
 	fkclientset.AppsClientset = fakeAppsClientset.NewSimpleClientset()
 	client.appsClient = fkclientset.AppsClientset.Apps()
