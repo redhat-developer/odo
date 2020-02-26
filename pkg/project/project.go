@@ -18,7 +18,7 @@ func GetCurrent(client *occlient.Client) string {
 
 // SetCurrent sets the projectName as current project
 func SetCurrent(client *occlient.Client, projectName string) error {
-	err := client.KClient.SetCurrentNamespace(projectName)
+	err := client.SetCurrentProject(projectName)
 	if err != nil {
 		return errors.Wrap(err, "unable to set current project to"+projectName)
 	}
