@@ -86,6 +86,32 @@ func TestBootstrapCommandWithMissingParams(t *testing.T) {
 	}
 }
 
+func TestBypassChecks(t *testing.T) {
+	tests := []struct {
+		description        string
+		skipChecks         bool
+		wantedBypassChecks bool
+	}{
+		{"bypass tekton installation checks", true, true},
+		{"don't bypass tekton installation checks", false, false},
+	}
+
+	for _, test := range tests {
+		o := BootstrapOptions{skipChecks: test.skipChecks}
+
+		err := o.Complete("test", &cobra.Command{}, []string{"test", "test/repo"})
+
+		if err != nil {
+			t.Errorf("Complete() %#v failed: ", err)
+		}
+
+		if o.skipChecks != test.wantedBypassChecks {
+			t.Errorf("Complete() %#v bypassChecks flag: got %v, want %v", test.description, o.skipChecks, test.wantedBypassChecks)
+		}
+	}
+
+}
+
 func executeCommand(cmd *cobra.Command, flags ...keyValuePair) (c *cobra.Command, output string, err error) {
 	buf := new(bytes.Buffer)
 	cmd.SetOutput(buf)
