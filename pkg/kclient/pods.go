@@ -1,6 +1,7 @@
 package kclient
 
 import (
+	"fmt"
 	"io"
 	"time"
 
@@ -77,21 +78,27 @@ func (c *Client) WaitAndGetPod(watchOptions metav1.ListOptions, desiredPhase cor
 
 // ExecCMDInContainer execute command in the container of a pod, pass an empty string for containerName to execute in the first container of the pod
 func (c *Client) ExecCMDInContainer(podName, containerName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+	podExecOptions := corev1.PodExecOptions{
+		Command: cmd,
+		Stdin:   stdin != nil,
+		Stdout:  stdout != nil,
+		Stderr:  stderr != nil,
+		TTY:     tty,
+	}
 
+	// If a container name was passed in, set it in the exec options, otherwise leave it blank
+	if containerName != "" {
+		podExecOptions.Container = containerName
+	}
+
+	fmt.Println("*** " + c.Namespace)
 	req := c.KubeClient.CoreV1().RESTClient().
 		Post().
 		Namespace(c.Namespace).
 		Resource("pods").
 		Name(podName).
 		SubResource("exec").
-		VersionedParams(&corev1.PodExecOptions{
-			Command:   cmd,
-			Container: containerName,
-			Stdin:     stdin != nil,
-			Stdout:    stdout != nil,
-			Stderr:    stderr != nil,
-			TTY:       tty,
-		}, scheme.ParameterCodec)
+		VersionedParams(&podExecOptions, scheme.ParameterCodec)
 
 	config, err := c.KubeConfig.ClientConfig()
 	if err != nil {

@@ -40,7 +40,7 @@ func NewDefaultPortForwarder(componentName, appName string, client *occlient.Cli
 // stop Chan is used to stop port forwarding
 // ready Chan is used to signal failure to the channel receiver
 func (f *DefaultPortForwarder) ForwardPorts(portPair string, stopChan, readyChan chan struct{}) error {
-	conf, err := f.client.KubeConfig.ClientConfig()
+	conf, err := f.client.KClient.KubeConfig.ClientConfig()
 	if err != nil {
 		return err
 	}

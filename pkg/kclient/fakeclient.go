@@ -2,6 +2,7 @@ package kclient
 
 import (
 	fakeKubeClientset "k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/tools/clientcmd"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,6 +20,11 @@ type FakeClientset struct {
 func FakeNew() (*Client, *FakeClientset) {
 	var client Client
 	var fkclientset FakeClientset
+
+	// initialize client-go clients
+	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+	configOverrides := &clientcmd.ConfigOverrides{}
+	client.KubeConfig = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 
 	fkclientset.Kubernetes = fakeKubeClientset.NewSimpleClientset()
 	client.KubeClient = fkclientset.Kubernetes

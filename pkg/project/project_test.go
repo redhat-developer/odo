@@ -58,7 +58,7 @@ func TestCreate(t *testing.T) {
 
 			loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 			configOverrides := &clientcmd.ConfigOverrides{}
-			client.KubeConfig = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+			client.KClient.KubeConfig = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 			fkWatch := watch.NewFake()
 
 			fakeClientSet.ProjClientset.PrependReactor("create", "projectrequests", func(action ktesting.Action) (bool, runtime.Object, error) {
@@ -132,9 +132,9 @@ func TestDelete(t *testing.T) {
 
 			loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 			configOverrides := &clientcmd.ConfigOverrides{}
-			client.KubeConfig = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+			client.KClient.KubeConfig = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 
-			client.Namespace = "testing"
+			client.KClient.Namespace = "testing"
 			fkWatch := watch.NewFake()
 
 			fakeClientSet.ProjClientset.PrependReactor("list", "projects", func(action ktesting.Action) (bool, runtime.Object, error) {
@@ -235,7 +235,7 @@ func TestList(t *testing.T) {
 
 			loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 			configOverrides := &clientcmd.ConfigOverrides{}
-			client.KubeConfig = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+			client.KClient.KubeConfig = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 
 			fakeClientSet.ProjClientset.PrependReactor("list", "projects", func(action ktesting.Action) (bool, runtime.Object, error) {
 				return true, tt.returnedProjects, nil

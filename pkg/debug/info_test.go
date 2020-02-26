@@ -2,10 +2,6 @@ package debug
 
 import (
 	"encoding/json"
-	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/testingutil"
-	"github.com/openshift/odo/pkg/testingutil/filesystem"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -14,6 +10,11 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/testingutil"
+	"github.com/openshift/odo/pkg/testingutil/filesystem"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // fakeOdoDebugFileString creates a json string of a fake OdoDebugFile
@@ -132,7 +133,7 @@ func Test_createDebugInfoFile(t *testing.T) {
 
 			// Fake the client with the appropriate arguments
 			client, _ := occlient.FakeNew()
-			client.Namespace = "testing-1"
+			client.KClient.Namespace = "testing-1"
 			tt.args.defaultPortForwarder.client = client
 
 			debugFilePath := GetDebugInfoFilePath(client, tt.args.defaultPortForwarder.componentName, tt.args.defaultPortForwarder.appName)
@@ -296,7 +297,7 @@ func Test_getDebugInfo(t *testing.T) {
 
 			// Fake the client with the appropriate arguments
 			client, _ := occlient.FakeNew()
-			client.Namespace = "testing-1"
+			client.KClient.Namespace = "testing-1"
 			tt.args.defaultPortForwarder.client = client
 
 			odoDebugFilePath := GetDebugInfoFilePath(tt.args.defaultPortForwarder.client, tt.args.defaultPortForwarder.componentName, tt.args.defaultPortForwarder.appName)

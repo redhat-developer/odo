@@ -3,10 +3,6 @@ package debug
 import (
 	"encoding/json"
 	"errors"
-	"github.com/golang/glog"
-	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/testingutil/filesystem"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net"
 	"os"
 	"path/filepath"
@@ -14,6 +10,11 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+
+	"github.com/golang/glog"
+	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/testingutil/filesystem"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type OdoDebugFile struct {
@@ -30,7 +31,7 @@ type OdoDebugFile struct {
 func GetDebugInfoFilePath(client *occlient.Client, componentName, appName string) string {
 	tempDir := os.TempDir()
 	debugFileSuffix := "odo-debug.json"
-	s := []string{client.Namespace, appName, componentName, debugFileSuffix}
+	s := []string{client.KClient.Namespace, appName, componentName, debugFileSuffix}
 	debugFileName := strings.Join(s, "-")
 	return filepath.Join(tempDir, debugFileName)
 }
@@ -61,7 +62,7 @@ func createDebugInfoFile(f *DefaultPortForwarder, portPair string, fs filesystem
 			APIVersion: "v1",
 		},
 		DebugProcessId: os.Getpid(),
-		ProjectName:    f.client.Namespace,
+		ProjectName:    f.client.KClient.Namespace,
 		AppName:        f.appName,
 		ComponentName:  f.componentName,
 		RemotePort:     remotePort,

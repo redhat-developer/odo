@@ -209,7 +209,7 @@ func resolveProject(command *cobra.Command, client *occlient.Client, localConfig
 			checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
 		}
 	}
-	client.Namespace = namespace
+	client.KClient.Namespace = namespace
 	return namespace
 }
 

@@ -7,6 +7,7 @@ import (
 	fakeImageClientset "github.com/openshift/client-go/image/clientset/versioned/fake"
 	fakeProjClientset "github.com/openshift/client-go/project/clientset/versioned/fake"
 	fakeRouteClientset "github.com/openshift/client-go/route/clientset/versioned/fake"
+	"github.com/openshift/odo/pkg/kclient"
 	fakeKubeClientset "k8s.io/client-go/kubernetes/fake"
 )
 
@@ -30,7 +31,7 @@ func FakeNew() (*Client, *FakeClientset) {
 	var fkclientset FakeClientset
 
 	fkclientset.Kubernetes = fakeKubeClientset.NewSimpleClientset()
-	client.kubeClient = fkclientset.Kubernetes
+	client.KClient, _ = kclient.FakeNew()
 
 	fkclientset.AppsClientset = fakeAppsClientset.NewSimpleClientset()
 	client.appsClient = fkclientset.AppsClientset.Apps()
