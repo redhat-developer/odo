@@ -9,6 +9,10 @@ import (
 	triggersv1 "github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
 )
 
+var (
+	serviceAccName = "pipeline"
+)
+
 func TestCreateDevCDDeployTemplate(t *testing.T) {
 	validDevCDTemplate := triggersv1.TriggerTemplate{
 		TypeMeta:   triggerTemplateTypeMeta,
@@ -31,13 +35,13 @@ func TestCreateDevCDDeployTemplate(t *testing.T) {
 
 			ResourceTemplates: []triggersv1.TriggerResourceTemplate{
 				triggersv1.TriggerResourceTemplate{
-					RawMessage: createDevCDResourcetemplate(),
+					RawMessage: createDevCDResourcetemplate(serviceAccName),
 				},
 			},
 		},
 	}
 
-	template := createDevCDDeployTemplate("testns")
+	template := createDevCDDeployTemplate("testns", serviceAccName)
 	if diff := cmp.Diff(validDevCDTemplate, template); diff != "" {
 		t.Fatalf("CreateDevCDDeployTemplate failed:\n%s", diff)
 	}
@@ -70,12 +74,12 @@ func TestCreatedevCIBuildPRTemplate(t *testing.T) {
 			},
 			ResourceTemplates: []triggersv1.TriggerResourceTemplate{
 				triggersv1.TriggerResourceTemplate{
-					RawMessage: createDevCIResourceTemplate(),
+					RawMessage: createDevCIResourceTemplate(serviceAccName),
 				},
 			},
 		},
 	}
-	template := createDevCIBuildPRTemplate("testns")
+	template := createDevCIBuildPRTemplate("testns", serviceAccName)
 	if diff := cmp.Diff(validdevCIPRTemplate, template); diff != "" {
 		t.Fatalf("CreatedevCIBuildPRTemplate failed:\n%s", diff)
 	}
@@ -102,12 +106,12 @@ func TestCreateStageCDPushTemplate(t *testing.T) {
 			},
 			ResourceTemplates: []triggersv1.TriggerResourceTemplate{
 				triggersv1.TriggerResourceTemplate{
-					RawMessage: createStageCDResourceTemplate(),
+					RawMessage: createStageCDResourceTemplate(serviceAccName),
 				},
 			},
 		},
 	}
-	template := createStageCDPushTemplate("testns")
+	template := createStageCDPushTemplate("testns", serviceAccName)
 	if diff := cmp.Diff(ValidStageCDPushTemplate, template); diff != "" {
 		t.Fatalf("createStageCDPushTemplate failed:\n%s", diff)
 	}
@@ -135,12 +139,12 @@ func TestCreateStageCIdryrunptemplate(t *testing.T) {
 			},
 			ResourceTemplates: []triggersv1.TriggerResourceTemplate{
 				triggersv1.TriggerResourceTemplate{
-					RawMessage: createStageCIResourceTemplate(),
+					RawMessage: createStageCIResourceTemplate(serviceAccName),
 				},
 			},
 		},
 	}
-	template := createStageCIdryrunptemplate("testns")
+	template := createStageCIdryrunptemplate("testns", serviceAccName)
 	if diff := cmp.Diff(validStageCIdryrunTemplate, template); diff != "" {
 		t.Fatalf("createStageCIdryrunptemplate failed:\n%s", diff)
 	}

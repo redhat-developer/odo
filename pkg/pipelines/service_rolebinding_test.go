@@ -22,7 +22,7 @@ func TestRoleBinding(t *testing.T) {
 		Subjects: []v1rbac.Subject{
 			v1rbac.Subject{
 				Kind: "ServiceAccount",
-				Name: "demo-sa",
+				Name: "pipeline",
 			},
 		},
 		RoleRef: v1rbac.RoleRef{
@@ -33,7 +33,7 @@ func TestRoleBinding(t *testing.T) {
 	}
 	sa := &corev1.ServiceAccount{
 		TypeMeta:   meta.TypeMeta("ServiceAccount", "v1"),
-		ObjectMeta: meta.CreateObjectMeta("testing", "demo-sa"),
+		ObjectMeta: meta.CreateObjectMeta("testing", "pipeline"),
 	}
 	roleBindingTask := createRoleBinding(
 		meta.NamespacedName("", "tekton-triggers-openshift-binding"),
@@ -79,7 +79,7 @@ func TestServiceAccount(t *testing.T) {
 			APIVersion: "v1",
 		},
 		ObjectMeta: v1.ObjectMeta{
-			Name: "demo-sa",
+			Name: "pipeline",
 		},
 		Secrets: []corev1.ObjectReference{
 			corev1.ObjectReference{
@@ -87,7 +87,7 @@ func TestServiceAccount(t *testing.T) {
 			},
 		},
 	}
-	servicetask := createServiceAccount(meta.NamespacedName("", "demo-sa"), "regcred")
+	servicetask := createServiceAccount(meta.NamespacedName("", "pipeline"), "regcred")
 	if diff := cmp.Diff(servicetask, want); diff != "" {
 		t.Errorf("TestServiceAccount() failed:\n%s", diff)
 	}
