@@ -55,7 +55,7 @@ const (
 	PushTargetSetting = "PushTarget"
 
 	// PushTargetDescription is human-readable description for the pushtarget setting
-	PushTargetDescription = "Set this value to docker to tell odo to push to docker containers running locally."
+	PushTargetDescription = "Set this value to 'kube' or 'docker' to tell odo where to push applications to. (Default: kube)"
 )
 
 // TimeoutSettingDescription is human-readable description for the timeout setting
@@ -223,7 +223,7 @@ func (c *PreferenceInfo) SetConfiguration(parameter string, value string) error 
 		case "pushtarget":
 			val := strings.ToLower(value)
 			if val != "docker" && val != "kube" {
-				return errors.Errorf("Only valid values for pushtarget are 'docker' or 'kube'")
+				return errors.Errorf("cannot set pushtarget to values other than 'docker' or 'kube'")
 			}
 			c.OdoSettings.PushTarget = &val
 		}
