@@ -8,6 +8,7 @@ set -x
 export ARTIFACTS_DIR="/tmp/artifacts"
 export CUSTOM_HOMEDIR=$ARTIFACTS_DIR
 
+make validate
 make test
 
 # crosscompile and publish artifacts
