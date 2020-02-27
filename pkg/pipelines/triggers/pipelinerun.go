@@ -19,7 +19,7 @@ func createDevCDPipelineRun(saName string) pipelinev1.PipelineRun {
 		Spec: pipelinev1.PipelineRunSpec{
 			ServiceAccountName: saName,
 			PipelineRef:        createPipelineRef("dev-cd-pipeline"),
-			Resources:          createDevResource(),
+			Resources:          createDevResource("REPLACE_IMAGE:$(params.gitref)"),
 		},
 	}
 
@@ -31,7 +31,11 @@ func createDevCIPipelineRun(saName string) pipelinev1.PipelineRun {
 		Spec: pipelinev1.PipelineRunSpec{
 			ServiceAccountName: saName,
 			PipelineRef:        createPipelineRef("dev-ci-pipeline"),
-			Resources:          createDevResource(),
+			Params: []pipelinev1.Param{
+				createBindingParam("REPO", "$(params.fullname)"),
+				createBindingParam("COMMIT_SHA", "$(params.gitsha)"),
+			},
+			Resources: createDevResource("REPLACE_IMAGE:$(params.gitref)-$(params.gitsha)"),
 		},
 	}
 
@@ -43,7 +47,7 @@ func createStageCDPipelineRun(saName string) pipelinev1.PipelineRun {
 		ObjectMeta: createObjectMeta("stage-cd-pipeline-run-$(uid)"),
 		Spec: pipelinev1.PipelineRunSpec{
 			ServiceAccountName: saName,
-			PipelineRef:        createPipelineRef("stage-ci-pipeline"),
+			PipelineRef:        createPipelineRef("stage-cd-pipeline"),
 			Resources:          createStageResources(),
 		},
 	}
@@ -62,7 +66,7 @@ func createStageCIPipelineRun(saName string) pipelinev1.PipelineRun {
 
 }
 
-func createDevResource() []pipelinev1.PipelineResourceBinding {
+func createDevResource(imageRepo string) []pipelinev1.PipelineResourceBinding {
 	return []pipelinev1.PipelineResourceBinding{
 		pipelinev1.PipelineResourceBinding{
 			Name: "source-repo",
@@ -79,7 +83,7 @@ func createDevResource() []pipelinev1.PipelineResourceBinding {
 			ResourceSpec: &pipelinev1.PipelineResourceSpec{
 				Type: "image",
 				Params: []pipelinev1.ResourceParam{
-					createResourceParams("url", "REPLACE_IMAGE:$(params.gitref)"),
+					createResourceParams("url", imageRepo),
 				},
 			},
 		},
