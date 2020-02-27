@@ -29,7 +29,7 @@ func GenerateTemplates(ns, saName string) []triggersv1.TriggerTemplate {
 func createDevCDDeployTemplate(ns, saName string) triggersv1.TriggerTemplate {
 	return triggersv1.TriggerTemplate{
 		TypeMeta:   triggerTemplateTypeMeta,
-		ObjectMeta: meta.CreateObjectMeta(ns, "dev-cd-deploy-from-master-Template"),
+		ObjectMeta: meta.CreateObjectMeta(ns, "dev-cd-deploy-from-master-template"),
 		Spec: triggersv1.TriggerTemplateSpec{
 			Params: []pipelinev1.ParamSpec{
 				createTemplateParamSpecDefault("gitref", "The git revision", "master"),
