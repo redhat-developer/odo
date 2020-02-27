@@ -27,8 +27,8 @@ type Adapter struct {
 	common.AdapterContext
 }
 
-// Start updates the component if a matching component exists or creates one if it doesn't exist
-func (a Adapter) Start() (err error) {
+// Initialize initializes the component from the devfile
+func (a Adapter) Initialize() (*corev1.PodTemplateSpec, error) {
 	componentName := a.ComponentName
 
 	labels := map[string]string{
@@ -37,11 +37,18 @@ func (a Adapter) Start() (err error) {
 
 	containers := utils.GetContainers(a.Devfile)
 	if len(containers) == 0 {
-		return fmt.Errorf("No valid components found in the devfile")
+		return nil, fmt.Errorf("No valid components found in the devfile")
 	}
 
 	objectMeta := kclient.CreateObjectMeta(componentName, a.Client.Namespace, labels, nil)
 	podTemplateSpec := kclient.GeneratePodTemplateSpec(objectMeta, containers)
+	return podTemplateSpec, nil
+}
+
+// Start updates the component if a matching component exists or creates one if it doesn't exist
+func (a Adapter) Start(podTemplateSpec *corev1.PodTemplateSpec) (err error) {
+	componentName := a.ComponentName
+
 	deploymentSpec := kclient.GenerateDeploymentSpec(*podTemplateSpec)
 
 	glog.V(3).Infof("Creating deployment %v", deploymentSpec.Template.GetName())

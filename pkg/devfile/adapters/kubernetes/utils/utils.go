@@ -44,6 +44,23 @@ func GetContainers(devfileObj devfile.DevfileObj) []corev1.Container {
 	return containers
 }
 
+// GetVolumes iterates through the components in the devfile and returns a slice of the corresponding containers
+func GetVolumes(devfileObj devfile.DevfileObj) map[string][]common.DockerimageVolume {
+	// componentAliasToVolumes is a map of the Devfile Component Alias to the Devfile Component Volumes
+	componentAliasToVolumes := make(map[string][]common.DockerimageVolume)
+	// Only components with aliases are considered because without an alias commands cannot reference them
+	for _, comp := range devfileObj.Data.GetAliasedComponents() {
+		if comp.Type == common.DevfileComponentTypeDockerimage {
+			if comp.Volumes != nil {
+				for _, volume := range comp.Volumes {
+					componentAliasToVolumes[*comp.Alias] = append(componentAliasToVolumes[*comp.Alias], volume)
+				}
+			}
+		}
+	}
+	return componentAliasToVolumes
+}
+
 // GetResourceReqs creates a kubernetes ResourceRequirements object based on resource requirements set in the devfile
 func GetResourceReqs(comp common.DevfileComponent) corev1.ResourceRequirements {
 	reqs := corev1.ResourceRequirements{}
