@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"github.com/openshift/odo/pkg/util"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -44,26 +45,32 @@ var _ = Describe("odo debug command tests", func() {
 			dbgPort := helper.GetConfigValueWithContext("DebugPort", context)
 			Expect(dbgPort).To(Equal("9292"))
 			helper.CmdShouldPass("odo", "push", "--context", context)
+
+			stopChannel := make(chan bool)
 			go func() {
-				helper.CmdShouldRunWithTimeout(60*time.Second, "odo", "debug", "port-forward", "--local-port", "5050", "--context", context)
+				helper.CmdShouldRunAndTerminate(60*time.Second, stopChannel, "odo", "debug", "port-forward", "--local-port", "5050", "--context", context)
 			}()
 
 			// 400 response expected because the endpoint expects a websocket request and we are doing a HTTP GET
 			// We are just using this to validate if nodejs agent is listening on the other side
 			helper.HttpWaitForWithStatus("http://localhost:5050", "WebSockets request was expected", 12, 5, 400)
+			stopChannel <- true
 		})
 
 		It("should expect a ws connection when tried to connect on default debug port locally", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 			helper.CmdShouldPass("odo", "component", "create", "nodejs:latest", "--project", project, "--context", context)
 			helper.CmdShouldPass("odo", "push", "--context", context)
+
+			stopChannel := make(chan bool)
 			go func() {
-				helper.CmdShouldRunWithTimeout(60*time.Second, "odo", "debug", "port-forward", "--context", context)
+				helper.CmdShouldRunAndTerminate(60*time.Second, stopChannel, "odo", "debug", "port-forward", "--context", context)
 			}()
 
 			// 400 response expected because the endpoint expects a websocket request and we are doing a HTTP GET
 			// We are just using this to validate if nodejs agent is listening on the other side
 			helper.HttpWaitForWithStatus("http://localhost:5858", "WebSockets request was expected", 12, 5, 400)
+			stopChannel <- true
 		})
 
 	})
@@ -74,9 +81,11 @@ var _ = Describe("odo debug command tests", func() {
 			helper.CmdShouldPass("odo", "component", "create", "nodejs:latest", "nodejs-cmp-"+project, "--project", project, "--context", context)
 			helper.CmdShouldPass("odo", "push", "--context", context)
 
-			freePort := strconv.Itoa(helper.HttpGetFreePort())
+			httpPort, err := util.HttpGetFreePort()
+			Expect(err).NotTo(HaveOccurred())
+			freePort := strconv.Itoa(httpPort)
 
-			stopChannel := make(chan int)
+			stopChannel := make(chan bool)
 			go func() {
 				helper.CmdShouldRunAndTerminate(60*time.Second, stopChannel, "odo", "debug", "port-forward", "--local-port", freePort, "--context", context)
 			}()
@@ -87,7 +96,7 @@ var _ = Describe("odo debug command tests", func() {
 			runningString := helper.CmdShouldPass("odo", "debug", "info", "--context", context)
 			Expect(runningString).To(ContainSubstring(freePort))
 			Expect(helper.ListFilesInDir(os.TempDir())).To(ContainElement(project + "-app" + "-nodejs-cmp-" + project + "-odo-debug.json"))
-			stopChannel <- 0
+			stopChannel <- true
 		})
 
 		It("should start a debug session and run debug info on a closed debug session", func() {
@@ -95,9 +104,11 @@ var _ = Describe("odo debug command tests", func() {
 			helper.CmdShouldPass("odo", "component", "create", "nodejs:latest", "nodejs-cmp-"+project, "--project", project, "--context", context)
 			helper.CmdShouldPass("odo", "push", "--context", context)
 
-			freePort := strconv.Itoa(helper.HttpGetFreePort())
+			httpPort, err := util.HttpGetFreePort()
+			Expect(err).NotTo(HaveOccurred())
+			freePort := strconv.Itoa(httpPort)
 
-			stopChannel := make(chan int)
+			stopChannel := make(chan bool)
 			go func() {
 				helper.CmdShouldRunAndTerminate(60*time.Second, stopChannel, "odo", "debug", "port-forward", "--local-port", freePort, "--context", context)
 			}()
@@ -107,7 +118,7 @@ var _ = Describe("odo debug command tests", func() {
 			helper.HttpWaitForWithStatus("http://localhost:"+freePort, "WebSockets request was expected", 12, 5, 400)
 			runningString := helper.CmdShouldPass("odo", "debug", "info", "--context", context)
 			Expect(runningString).To(ContainSubstring(freePort))
-			stopChannel <- 0
+			stopChannel <- true
 			failString := helper.CmdShouldPass("odo", "debug", "info", "--context", context)
 			Expect(failString).To(ContainSubstring("not running"))
 

@@ -6,14 +6,9 @@ import (
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"net"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"reflect"
-	"strconv"
 	"testing"
-	"time"
 )
 
 // fakeOdoDebugFileString creates a json string of a fake OdoDebugFile
@@ -33,30 +28,6 @@ func fakeOdoDebugFileString(typeMeta v1.TypeMeta, processId int, projectName, ap
 		return "", err
 	}
 	return string(data), nil
-}
-
-// fakeDebugPortListener starts a fake test server and listens on the given localPort
-func fakeDebugPortListener(t *testing.T, started chan<- int, stopChan <-chan int, localPort int) {
-	testServer := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		t.Log(w, "running")
-	}))
-
-	listener, err := net.Listen("tcp", "localhost:"+strconv.Itoa(localPort))
-	if err != nil {
-		t.Errorf("error occured while starting fake listener, cause :%v", err)
-	}
-	testServer.Listener = listener
-	testServer.Start()
-	started <- 0
-	timeout := time.After(10 * time.Second)
-
-	select {
-	case <-stopChan:
-		testServer.Close()
-	case <-timeout:
-		testServer.Close()
-		t.Errorf("timeout waiting for stop signal for fake server")
-	}
 }
 
 func Test_createDebugInfoFile(t *testing.T) {
@@ -319,12 +290,22 @@ func Test_getDebugInfo(t *testing.T) {
 				}
 			}
 
-			stopChan := make(chan int)
+			stopListenerChan := make(chan bool)
+			listenerStarted := false
 			if tt.debugPortListening {
-				started := make(chan int)
-				go fakeDebugPortListener(t, started, stopChan, tt.readDebugFile.LocalPort)
+				startListenerChan := make(chan bool)
+				go func() {
+					err := testingutil.FakePortListener(startListenerChan, stopListenerChan, tt.readDebugFile.LocalPort)
+					if err != nil {
+						// the fake listener failed, show error and close the channel
+						t.Errorf("error while starting fake port listerner, cause: %v", err)
+						close(startListenerChan)
+					}
+				}()
 				// wait for the test server to start listening
-				<-started
+				if <-startListenerChan {
+					listenerStarted = true
+				}
 			}
 
 			got, resultRunning := getDebugInfo(tt.args.defaultPortForwarder, tt.args.fs)
@@ -340,9 +321,10 @@ func Test_getDebugInfo(t *testing.T) {
 			_ = fs.RemoveAll(odoDebugFilePath)
 
 			// close the listener
-			if tt.debugPortListening {
-				stopChan <- 0
+			if listenerStarted == true {
+				stopListenerChan <- true
 			}
+			close(stopListenerChan)
 		})
 	}
 }
