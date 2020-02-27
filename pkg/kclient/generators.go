@@ -11,15 +11,15 @@ import (
 )
 
 // GenerateContainer creates a container spec that can be used when creating a pod
-func GenerateContainer(name, image string, isPrivileged bool, command, args []string, envVars []corev1.EnvVar) *corev1.Container {
+func GenerateContainer(name, image string, isPrivileged bool, command, args []string, envVars []corev1.EnvVar, resourceReqs corev1.ResourceRequirements) *corev1.Container {
 	container := &corev1.Container{
 		Name:            name,
 		Image:           image,
 		ImagePullPolicy: corev1.PullAlways,
-
-		Command: command,
-		Args:    args,
-		Env:     envVars,
+		Resources:       resourceReqs,
+		Command:         command,
+		Args:            args,
+		Env:             envVars,
 	}
 
 	if isPrivileged {
@@ -32,12 +32,11 @@ func GenerateContainer(name, image string, isPrivileged bool, command, args []st
 }
 
 // GeneratePodTemplateSpec creates a pod template spec that can be used to create a deployment spec
-func GeneratePodTemplateSpec(objectMeta metav1.ObjectMeta, serviceAccountName string, containers []corev1.Container) *corev1.PodTemplateSpec {
+func GeneratePodTemplateSpec(objectMeta metav1.ObjectMeta, containers []corev1.Container) *corev1.PodTemplateSpec {
 	podTemplateSpec := &corev1.PodTemplateSpec{
 		ObjectMeta: objectMeta,
 		Spec: corev1.PodSpec{
-			ServiceAccountName: serviceAccountName,
-			Containers:         containers,
+			Containers: containers,
 		},
 	}
 
@@ -48,6 +47,9 @@ func GeneratePodTemplateSpec(objectMeta metav1.ObjectMeta, serviceAccountName st
 func GenerateDeploymentSpec(podTemplateSpec corev1.PodTemplateSpec) *appsv1.DeploymentSpec {
 	labels := podTemplateSpec.ObjectMeta.Labels
 	deploymentSpec := &appsv1.DeploymentSpec{
+		Strategy: appsv1.DeploymentStrategy{
+			Type: appsv1.RecreateDeploymentStrategyType,
+		},
 		Selector: &metav1.LabelSelector{
 			MatchLabels: labels,
 		},
