@@ -8,6 +8,8 @@ set -x
 export ARTIFACTS_DIR="/tmp/artifacts"
 export CUSTOM_HOMEDIR=$ARTIFACTS_DIR
 
+
+make goget-tools
 make validate
 make test
 
