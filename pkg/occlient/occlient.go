@@ -12,7 +12,10 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/olekukonko/tablewriter"
 
 	"github.com/fatih/color"
 	"github.com/golang/glog"
@@ -67,6 +70,10 @@ var (
 	DEPLOYMENT_CONFIG_NOT_FOUND           error  = fmt.Errorf("Requested deployment config does not exist")
 )
 
+// We use a mutex here in order to make 100% sure that functions such as CollectEvents
+// so that there are no race conditions
+var mu sync.Mutex
+
 // CreateArgs is a container of attributes of component create action
 type CreateArgs struct {
 	Name            string
@@ -86,6 +93,7 @@ type CreateArgs struct {
 }
 
 const (
+	failedEventCount   = 5
 	OcUpdateTimeout    = 5 * time.Minute
 	OcBuildTimeout     = 5 * time.Minute
 	OpenShiftNameSpace = "openshift"
@@ -1785,6 +1793,54 @@ func (c *Client) WaitAndGetDC(name string, desiredRevision int64, timeout time.D
 	}
 }
 
+// CollectEvents collects events in a Goroutine by manipulating a spinner.
+// We don't care about the error (it's usually ran in a go routine), so erroring out is not needed.
+func (c *Client) CollectEvents(selector string, events map[string]corev1.Event, spinner *log.Status, quit <-chan int) {
+
+	// Secondly, we will start a go routine for watching for events related to the pod and update our pod status accordingly.
+	eventWatcher, err := c.kubeClient.CoreV1().Events(c.Namespace).Watch(metav1.ListOptions{})
+	if err != nil {
+		log.Warningf("Unable to watch for events: %s", err)
+		return
+	}
+	defer eventWatcher.Stop()
+
+	// Create an endless loop for collecting
+	for {
+		select {
+		case <-quit:
+			glog.V(4).Info("Quitting collect events")
+			return
+		case val, ok := <-eventWatcher.ResultChan():
+			mu.Lock()
+			if !ok {
+				log.Warning("Watch channel was closed")
+				return
+			}
+			if e, ok := val.Object.(*corev1.Event); ok {
+
+				// If there are many warning events happening during deployment, let's log them.
+				if e.Type == "Warning" {
+
+					if e.Count >= failedEventCount {
+						newEvent := e
+						(events)[e.Name] = *newEvent
+						glog.V(4).Infof("Warning Event: Count: %d, Reason: %s, Message: %s", e.Count, e.Reason, e.Message)
+						// Change the spinner message to show the warning
+						spinner.WarningStatus(fmt.Sprintf("WARNING x%d: %s, use `-v` for more information.", e.Count, e.Reason))
+					}
+
+				}
+
+			} else {
+				log.Warning("Unable to convert object to event")
+				return
+			}
+			mu.Unlock()
+		}
+	}
+}
+
 // WaitAndGetPod block and waits until pod matching selector is in in Running state
 // desiredPhase cannot be PodFailed or PodUnknown
 func (c *Client) WaitAndGetPod(selector string, desiredPhase corev1.PodPhase, waitMessage string) (*corev1.Pod, error) {
@@ -1799,8 +1855,8 @@ func (c *Client) WaitAndGetPod(selector string, desiredPhase corev1.PodPhase, wa
 	}
 
 	glog.V(4).Infof("Waiting for %s pod", selector)
-	s := log.Spinner(waitMessage)
-	defer s.End(false)
+	spinner := log.Spinner(waitMessage)
+	defer spinner.End(false)
 
 	w, err := c.kubeClient.CoreV1().Pods(c.Namespace).Watch(metav1.ListOptions{
 		LabelSelector: selector,
@@ -1810,10 +1866,10 @@ func (c *Client) WaitAndGetPod(selector string, desiredPhase corev1.PodPhase, wa
 	}
 	defer w.Stop()
 
+	// Here we are going to start a loop watching for the pod status
 	podChannel := make(chan *corev1.Pod)
 	watchErrorChannel := make(chan error)
-
-	go func() {
+	go func(spinny *log.Status) {
 	loop:
 		for {
 			val, ok := <-w.ResultChan()
@@ -1825,7 +1881,6 @@ func (c *Client) WaitAndGetPod(selector string, desiredPhase corev1.PodPhase, wa
 				glog.V(4).Infof("Status of %s pod is %s", e.Name, e.Status.Phase)
 				switch e.Status.Phase {
 				case desiredPhase:
-					s.End(true)
 					glog.V(4).Infof("Pod %s is %v", e.Name, desiredPhase)
 					podChannel <- e
 					break loop
@@ -1840,15 +1895,51 @@ func (c *Client) WaitAndGetPod(selector string, desiredPhase corev1.PodPhase, wa
 		}
 		close(podChannel)
 		close(watchErrorChannel)
-	}()
+	}(spinner)
+
+	// Collect all the events in a separate go routine
+	failedEvents := make(map[string]corev1.Event)
+	quit := make(chan int)
+	go c.CollectEvents(selector, failedEvents, spinner, quit)
+	defer close(quit)
 
 	select {
 	case val := <-podChannel:
+		spinner.End(true)
 		return val, nil
-	case err := <-watchErrorChannel:
-		return nil, err
 	case <-time.After(pushTimeout):
-		return nil, errors.Errorf("waited %s but couldn't find running pod matching selector: '%s'", pushTimeout, selector)
+
+		// Create a useful error if there are any failed events
+		errorMessage := fmt.Sprintf(`waited %s but couldn't find running pod matching selector: '%s'`, pushTimeout, selector)
+
+		if len(failedEvents) != 0 {
+
+			// Create an output table
+			tableString := &strings.Builder{}
+			table := tablewriter.NewWriter(tableString)
+			table.SetAlignment(tablewriter.ALIGN_LEFT)
+			table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
+			table.SetCenterSeparator("")
+			table.SetColumnSeparator("")
+			table.SetRowSeparator("")
+
+			// Header
+			table.SetHeader([]string{"Name", "Count", "Reason", "Message"})
+
+			// List of events
+			for name, event := range failedEvents {
+				table.Append([]string{name, strconv.Itoa(int(event.Count)), event.Reason, event.Message})
+			}
+
+			// Here we render the table as well as a helpful error message
+			table.Render()
+			errorMessage = fmt.Sprintf(`waited %s but was unable to find a running pod matching selector: '%s'
+For more information to help determine the cause of the error, re-run with '-v'.
+See below for a list of failed events that occured more than %d times during deployment:
+%s`, pushTimeout, selector, failedEventCount, tableString)
+		}
+
+		return nil, errors.Errorf(errorMessage)
 	}
 }
 
