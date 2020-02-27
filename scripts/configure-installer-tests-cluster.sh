@@ -39,8 +39,100 @@ if [ -z $CI ]; then
 fi
 
 # Setup the cluster for Operator tests
-## First, enable a cluster-wide operator
-oc create -f - <<EOF
+
+## Create a new namesapce which will be used for OperatorHub checks
+oc new-project $CI_OPERATOR_HUB_PROJECT
+## Let developer user have access to the project
+oc adm policy add-role-to-user edit developer
+
+CI_SERVER_VERSION=$(oc version | awk '/Server/ {print $3}')
+
+## If we're running on 4.1, perform relevant steps
+
+if [ $CI_SERVER_VERSION == 4.1.0 ]; then
+    ### First, install cluster-wide operator
+    ### CatalogSourceConfig for mongodb
+    oc create -f -<<EOF
+apiVersion: operators.coreos.com/v1
+kind: CatalogSourceConfig
+metadata:
+  name: mongo-csc
+  namespace: openshift-marketplace
+spec:
+  csDisplayName: Certified Operators
+  csPublisher: Certified
+  packages: mongodb-enterprise
+  targetNamespace: openshift-operators
+EOF
+    ### Subscription for mongo
+    oc create -f -<<EOF
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  labels:
+    csc-owner-name: mongo-csc
+    csc-owner-namespace: openshift-marketplace
+  name: mongodb-enterprise
+  namespace: openshift-operators
+spec:
+  channel: stable
+  installPlanApproval: Automatic
+  name: mongodb-enterprise
+  source: mongo-csc
+  sourceNamespace: openshift-operators
+EOF
+    ### Now onto namespace bound operator
+    ### Create OperatorGroup
+    oc create -f -<<EOF
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  generateName: ${CI_OPERATOR_HUB_PROJECT}-
+  generation: 2
+  namespace: ${CI_OPERATOR_HUB_PROJECT}
+spec:
+  serviceAccount:
+    metadata:
+      creationTimestamp: null
+  targetNamespaces:
+  - ${CI_OPERATOR_HUB_PROJECT}
+EOF
+    ### Crete a CatalogSourceConfig for etcd operator
+    oc create -f -<<EOF
+apiVersion: operators.coreos.com/v1
+kind: CatalogSourceConfig
+metadata:
+  finalizers:
+  - finalizer.catalogsourceconfigs.operators.coreos.com
+  generation: 3
+  name: etcd-csc
+  namespace: openshift-marketplace
+spec:
+  csDisplayName: Community Operators
+  csPublisher: Community
+  packages: etcd
+  targetNamespace: ${CI_OPERATOR_HUB_PROJECT}
+EOF
+    ### Next, create a subscription
+    oc create -f -<<EOF
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  labels:
+    csc-owner-name: etcd-csc
+    csc-owner-namespace: openshift-marketplace
+  name: etcd
+  namespace: ${CI_OPERATOR_HUB_PROJECT}
+spec:
+  channel: singlenamespace-alpha
+  installPlanApproval: Automatic
+  name: etcd
+  source: etcd-csc
+  sourceNamespace: ${CI_OPERATOR_HUB_PROJECT}
+EOF
+else
+    ### First, enable a cluster-wide mongo operator
+    oc create -f - <<EOF
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
@@ -54,12 +146,9 @@ spec:
   source: certified-operators
   sourceNamespace: openshift-marketplace
 EOF
-## Create a new namesapce which will be used for OperatorHub checks
-oc new-project $CI_OPERATOR_HUB_PROJECT
-## Let developer user have access to the project
-oc adm policy add-role-to-user edit developer
-## Create OperatorGroup
-oc create -f - <<EOF
+    ### Now onto namespace bound operator
+    ### Create OperatorGroup
+    oc create -f - <<EOF
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
@@ -70,8 +159,8 @@ spec:
   targetNamespaces:
   - ${CI_OPERATOR_HUB_PROJECT}
 EOF
-## Create subscription
-oc create -f - <<EOF
+    ### Create subscription
+    oc create -f - <<EOF
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
@@ -84,6 +173,7 @@ spec:
   source: community-operators
   sourceNamespace: openshift-marketplace
 EOF
+fi
 # OperatorHub setup complete
 
 # Remove existing htpasswd file, if any
