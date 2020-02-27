@@ -178,6 +178,8 @@ func TestSetConfiguration(t *testing.T) {
 	os.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
 	trueValue := true
 	falseValue := false
+	dockerValue := "docker"
+	kubeValue := "kube"
 	zeroValue := 0
 
 	tests := []struct {
@@ -335,6 +337,46 @@ func TestSetConfiguration(t *testing.T) {
 			existingConfig: Preference{},
 			wantErr:        true,
 		},
+		// pushtarget setting
+		{
+			name:           fmt.Sprintf("Case 17: %s set nil to docker", PushTargetSetting),
+			parameter:      PushTargetSetting,
+			value:          dockerValue,
+			existingConfig: Preference{},
+			want:           dockerValue,
+			wantErr:        false,
+		},
+		{
+			name:      fmt.Sprintf("Case 18: %s set kube to docker", PushTargetSetting),
+			parameter: PushTargetSetting,
+			value:     dockerValue,
+			existingConfig: Preference{
+				OdoSettings: OdoSettings{
+					PushTarget: &kubeValue,
+				},
+			},
+			want:    dockerValue,
+			wantErr: false,
+		},
+		{
+			name:      fmt.Sprintf("Case 19: %s set docker to kube", PushTargetSetting),
+			parameter: PushTargetSetting,
+			value:     kubeValue,
+			existingConfig: Preference{
+				OdoSettings: OdoSettings{
+					PushTarget: &dockerValue,
+				},
+			},
+			want:    kubeValue,
+			wantErr: false,
+		},
+		{
+			name:           fmt.Sprintf("Case 20: %s invalid value", PushTargetSetting),
+			parameter:      PushTargetSetting,
+			value:          "invalid_value",
+			existingConfig: Preference{},
+			wantErr:        true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -361,6 +403,10 @@ func TestSetConfiguration(t *testing.T) {
 				case "experimental":
 					if *cfg.OdoSettings.Experimental != tt.want {
 						t.Errorf("unexpeced value after execution of SetConfiguration \ngot: %v \nexpected: %d\n", cfg.OdoSettings.Experimental, tt.want)
+					}
+				case "pushtarget":
+					if *cfg.OdoSettings.PushTarget != tt.want {
+						t.Errorf("unexpeced value after execution of SetConfiguration \ngot: %v \nexpected: %d\n", cfg.OdoSettings.PushTarget, tt.want)
 					}
 				}
 			} else if tt.wantErr && err != nil {
@@ -495,9 +541,66 @@ func TestGetExperimental(t *testing.T) {
 	}
 }
 
+func TestGetPushTarget(t *testing.T) {
+
+	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tempConfigFile.Close()
+	os.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
+	dockerValue := "docker"
+	kubeValue := "kube"
+
+	tests := []struct {
+		name           string
+		existingConfig Preference
+		want           string
+	}{
+		{
+			name:           fmt.Sprintf("Case 1: %s nil", PushTargetSetting),
+			existingConfig: Preference{},
+			want:           "kube",
+		},
+		{
+			name: fmt.Sprintf("Case 2: %s docker", PushTargetSetting),
+			existingConfig: Preference{
+				OdoSettings: OdoSettings{
+					PushTarget: &dockerValue,
+				},
+			},
+			want: "docker",
+		},
+		{
+			name: fmt.Sprintf("Case 3: %s kube", PushTargetSetting),
+			existingConfig: Preference{
+				OdoSettings: OdoSettings{
+					PushTarget: &kubeValue,
+				},
+			},
+			want: "kube",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := PreferenceInfo{
+				Preference: tt.existingConfig,
+			}
+			output := cfg.GetPushTarget()
+
+			if output != tt.want {
+				t.Errorf("GetExperimental returned unexpeced value expected \ngot: %s \nexpected: %s\n", output, tt.want)
+			}
+
+		})
+	}
+}
+
 func TestFormatSupportedParameters(t *testing.T) {
 	expected := `
 Available Parameters:
+%s - %s
 %s - %s
 %s - %s
 %s - %s
@@ -507,6 +610,7 @@ Available Parameters:
 	expected = fmt.Sprintf(expected,
 		ExperimentalSetting, ExperimentalDescription,
 		NamePrefixSetting, NamePrefixSettingDescription,
+		PushTargetSetting, PushTargetDescription,
 		PushTimeoutSetting, PushTimeoutSettingDescription,
 		TimeoutSetting, TimeoutSettingDescription,
 		UpdateNotificationSetting, UpdateNotificationSettingDescription)
@@ -517,7 +621,7 @@ Available Parameters:
 }
 
 func TestLowerCaseParameters(t *testing.T) {
-	expected := map[string]bool{"nameprefix": true, "pushtimeout": true, "timeout": true, "updatenotification": true, "experimental": true}
+	expected := map[string]bool{"nameprefix": true, "pushtimeout": true, "timeout": true, "updatenotification": true, "experimental": true, "pushtarget": true}
 	actual := util.GetLowerCaseParameters(GetSupportedParameters())
 	if !reflect.DeepEqual(expected, actual) {
 		t.Errorf("expected '%v', got '%v'", expected, actual)
