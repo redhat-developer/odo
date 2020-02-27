@@ -11,7 +11,7 @@ import (
 func TestIsDockerPushTargetEnabled(t *testing.T) {
 
 	const (
-		pushTagetSetting string = "PushTarget"
+		pushTargetSetting string = "PushTarget"
 	)
 
 	// temp config file
@@ -97,7 +97,7 @@ func TestIsDockerPushTargetEnabled(t *testing.T) {
 			// set config if setConfig is a non-empty string
 			if tt.setConfig != "" {
 				// set experimental preference to true
-				err = cfg.SetConfiguration(pushTagetSetting, tt.setConfig)
+				err = cfg.SetConfiguration(pushTargetSetting, tt.setConfig)
 				if err != nil {
 					t.Errorf("failed to set config. err: '%v'", err)
 				}

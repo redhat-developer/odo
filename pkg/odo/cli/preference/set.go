@@ -92,7 +92,7 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(fmt.Sprint("\n", setExample), fullName,
 			preference.UpdateNotificationSetting, preference.NamePrefixSetting,
 			preference.TimeoutSetting, preference.PushTimeoutSetting,
-			preference.ExperimentalSetting, preference.PushTargetSetting),
+			preference.ExperimentalSetting),
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 2 {
 				return fmt.Errorf("please provide a parameter name and value")
