@@ -11,6 +11,7 @@ export PATH=$PATH:$GOPATH/bin
 
 make goget-tools
 make validate
+make golint
 make test
 
 # crosscompile and publish artifacts
