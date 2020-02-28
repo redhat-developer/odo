@@ -12,8 +12,8 @@ import (
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/cli/catalog/util"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/spf13/cobra"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
+	"github.com/spf13/cobra"
 )
 
 const componentsRecommendedCommandName = "components"
@@ -43,14 +43,14 @@ func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args [
 	if err != nil {
 		return err
 	}
-	
+
 	if experimental.IsExperimentalModeEnabled() {
 		o.catalogDevfileList, err = catalog.ListDevfileComponents()
 		if err != nil {
 			return err
 		}
 	}
-	
+
 	o.catalogList.Items = util.FilterHiddenComponents(o.catalogList.Items)
 
 	return
@@ -122,7 +122,7 @@ func (o *ListComponentsOptions) Run() (err error) {
 			fmt.Fprintln(w, "Odo Unsupported Devfile Components:")
 			o.printDevfileCatalogList(w, unsupDevfileCatalogList)
 		}
-		
+
 		w.Flush()
 	}
 	return
