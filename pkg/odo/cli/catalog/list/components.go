@@ -168,9 +168,9 @@ func (o *ListComponentsOptions) printCatalogList(w io.Writer, catalogList []cata
 }
 
 func (o *ListComponentsOptions) printDevfileCatalogList(w io.Writer, catalogDevfileList []catalog.DevfileComponentType) {
-	fmt.Fprintln(w, "NAME", "\t", "PROJECT", "\t", "TAGS")
+	fmt.Fprintln(w, "NAME", "\t", "DESCRIPTION")
 
 	for _, devfileComponent := range catalogDevfileList {
-		fmt.Fprintln(w, devfileComponent.Name, "\t", "N/A", "\t", "N/A")
+		fmt.Fprintln(w, devfileComponent.Name, "\t", devfileComponent.Description)
 	}
 }

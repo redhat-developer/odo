@@ -14,15 +14,11 @@ type ComponentType struct {
 
 // DevfileComponentType is the main struct for devfile catalog components
 type DevfileComponentType struct {
-	Name            string
-	DisplayName     string
-	Description     string
-	Link            string
-	HasDockerImage  bool
-	HasAlias 		bool
-	HasBuildCommand bool
-	HasRunCommand   bool
-	Support 		bool
+	Name        string
+	DisplayName string
+	Description string
+	Link        string
+	Support     bool
 }
 
 // DevfileIndexEntry is the main struct of index.json from devfile registry
@@ -48,7 +44,7 @@ type Devfile struct {
 		Alias string `yaml:"alias"`
 	} `yaml:"components"`
 	Commands []struct {
-		Name    string `yaml:"name"`
+		Name string `yaml:"name"`
 	} `yaml:"commands"`
 }
 
@@ -70,7 +66,7 @@ type ComponentTypeList struct {
 // DevfileComponentTypeList lists all the DevfileComponentType's
 type DevfileComponentTypeList struct {
 	DevfileRegistry string
-	Items []DevfileComponentType
+	Items           []DevfileComponentType
 }
 
 // ServiceType is the main struct for catalog services
