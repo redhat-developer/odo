@@ -26,7 +26,7 @@ func IsPushTargetDocker() bool {
 		pushTargetEnv string
 	)
 
-	// Check "ODO_PUSHTARGET" env variable.
+	// Check "ODO_PUSH_TARGET" env variable.
 	pushTargetEnv, _ = os.LookupEnv(OdoPushTarget)
 	if pushTargetEnv == "docker" || pushTargetEnv == "kube" {
 		return pushTargetEnv == "docker"
