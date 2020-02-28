@@ -48,13 +48,13 @@ func TestCreateDevCIPipelineRun(t *testing.T) {
 	}
 }
 
-func TestCreateStageCDPipelineRUn(t *testing.T) {
+func TestCreateStageCDPipelineRun(t *testing.T) {
 	validStageCDPipeline := pipelinev1.PipelineRun{
 		TypeMeta:   pipelineRunTypeMeta,
 		ObjectMeta: createObjectMeta("stage-cd-pipeline-run-$(uid)"),
 		Spec: pipelinev1.PipelineRunSpec{
 			ServiceAccountName: sName,
-			PipelineRef:        createPipelineRef("stage-ci-pipeline"),
+			PipelineRef:        createPipelineRef("stage-cd-pipeline"),
 			Resources:          createStageResources(),
 		},
 	}
