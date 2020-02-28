@@ -198,7 +198,6 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 		config.NewCmdConfiguration(config.RecommendedCommandName, util.GetFullName(fullName, config.RecommendedCommandName)),
 		preference.NewCmdPreference(preference.RecommendedCommandName, util.GetFullName(fullName, preference.RecommendedCommandName)),
 		debug.NewCmdDebug(debug.RecommendedCommandName, util.GetFullName(fullName, debug.RecommendedCommandName)),
-		component.NewCmdPushDevfile(component.PushDevfileRecommendedCommandName, util.GetFullName(fullName, component.PushDevfileRecommendedCommandName)),
 		pipelines.NewCmdComponent(pipelines.RecommendedCommandName, util.GetFullName(fullName, pipelines.RecommendedCommandName)),
 		pipelines.NewCmdBootstrap(pipelines.BootstrapRecommendedCommandName, util.GetFullName(fullName, pipelines.BootstrapRecommendedCommandName)),
 	)
