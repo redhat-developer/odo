@@ -199,7 +199,7 @@ func (c *PreferenceInfo) SetConfiguration(parameter string, value string) error 
 				return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
 			}
 			if typedval < 0 {
-
+				return errors.Errorf("cannot set timeout to less than 0")
 			}
 			c.OdoSettings.PushTimeout = &typedval
 
@@ -282,7 +282,7 @@ func (c *PreferenceInfo) GetPushTimeout() int {
 	return *c.OdoSettings.PushTimeout
 }
 
-// GetUpdateNotification returns the value of UpdateNotification from config
+// GetUpdateNotification returns the value of UpdateNotification from preferences
 // and if absent then returns default
 func (c *PreferenceInfo) GetUpdateNotification() bool {
 	if c.OdoSettings.UpdateNotification == nil {
@@ -291,7 +291,7 @@ func (c *PreferenceInfo) GetUpdateNotification() bool {
 	return *c.OdoSettings.UpdateNotification
 }
 
-// GetNamePrefix returns the value of Prefix from config
+// GetNamePrefix returns the value of Prefix from preferences
 // and if absent then returns default
 func (c *PreferenceInfo) GetNamePrefix() string {
 	if c.OdoSettings.NamePrefix == nil {
@@ -300,7 +300,7 @@ func (c *PreferenceInfo) GetNamePrefix() string {
 	return *c.OdoSettings.NamePrefix
 }
 
-// GetExperimental returns the value of Experimental from config
+// GetExperimental returns the value of Experimental from preferences
 // and if absent then returns default
 // default value: false, experimental mode is disabled by default
 func (c *PreferenceInfo) GetExperimental() bool {
@@ -310,7 +310,7 @@ func (c *PreferenceInfo) GetExperimental() bool {
 	return *c.OdoSettings.Experimental
 }
 
-// GetPushTarget returns the value of PushTarget from config
+// GetPushTarget returns the value of PushTarget from preferences
 // and if absent then returns defualt
 // default value: kube, docker push target needs to be manually enabled
 func (c *PreferenceInfo) GetPushTarget() string {

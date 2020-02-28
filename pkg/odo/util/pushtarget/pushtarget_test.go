@@ -8,7 +8,7 @@ import (
 	"github.com/openshift/odo/pkg/preference"
 )
 
-func TestIsDockerPushTargetEnabled(t *testing.T) {
+func TestPushTargetDocker(t *testing.T) {
 
 	const (
 		pushTargetSetting string = "PushTarget"
@@ -32,45 +32,51 @@ func TestIsDockerPushTargetEnabled(t *testing.T) {
 		want      bool
 	}{
 		{
-			name:      "no pushtarget setting set",
+			name:      "case 1: no pushtarget setting set",
 			setEnv:    "",
 			setConfig: "",
 			want:      false,
 		},
 		{
-			name:      "set pushtarget to docker in config",
+			name:      "case 2: set pushtarget to docker in config",
 			setEnv:    "",
 			setConfig: "docker",
 			want:      true,
 		},
 		{
-			name:      "set pushtarget to kube in config",
+			name:      "case 3: set pushtarget to kube in config",
 			setEnv:    "",
 			setConfig: "kube",
 			want:      false,
 		},
 		{
-			name:      "enable docker pushtarget in env",
+			name:      "case 4: enable docker pushtarget in env",
 			setEnv:    "docker",
 			setConfig: "",
 			want:      true,
 		},
 		{
-			name:      "set pushtarget to kube in env",
+			name:      "case 5: set pushtarget to kube in env",
 			setEnv:    "kube",
 			setConfig: "",
 			want:      false,
 		},
 		{
-			name:      "override pushtarget prefrence with docker pushtarget env",
+			name:      "case 6: override pushtarget prefrence with docker pushtarget env",
 			setEnv:    "docker",
 			setConfig: "kube",
 			want:      true,
 		},
 		{
-			name:      "override pushtarget prefrence with kube pushtarget env",
+			name:      "case 7: override pushtarget prefrence with kube pushtarget env",
 			setEnv:    "kube",
 			setConfig: "docker",
+			want:      false,
+		},
+		{
+			name:      "case 8: invalid env var",
+			setEnv:    "foo",
+			setConfig: "",
 			want:      false,
 		},
 	}
