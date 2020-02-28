@@ -44,7 +44,7 @@ func GetContainers(devfileObj devfile.DevfileObj) []corev1.Container {
 	return containers
 }
 
-// GetVolumes iterates through the components in the devfile and returns a slice of the corresponding containers
+// GetVolumes iterates through the components in the devfile and returns a map of component alias to the devfile volumes
 func GetVolumes(devfileObj devfile.DevfileObj) map[string][]common.DockerimageVolume {
 	// componentAliasToVolumes is a map of the Devfile Component Alias to the Devfile Component Volumes
 	componentAliasToVolumes := make(map[string][]common.DockerimageVolume)

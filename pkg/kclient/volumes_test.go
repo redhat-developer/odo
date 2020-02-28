@@ -139,7 +139,7 @@ func TestAddPVCToPodTemplateSpec(t *testing.T) {
 
 			podTemplateSpec := GeneratePodTemplateSpec(objectMeta, []corev1.Container{*container})
 
-			AddPVCToPodTemplateSpec(podTemplateSpec, tt.pvc, tt.volumeName)
+			AddPVCToPodTemplateSpec(podTemplateSpec, tt.volumeName, tt.pvc)
 
 			pvcMatched := false
 			for _, volume := range podTemplateSpec.Spec.Volumes {
