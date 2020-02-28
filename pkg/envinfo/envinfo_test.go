@@ -14,20 +14,22 @@ import (
 )
 
 func TestSetEnvInfo(t *testing.T) {
-
-	tempEnvFile, err := ioutil.TempFile("", "odoenvinfo")
+	fs := filesystem.NewFakeFs()
+	tempEnvFile, err := fs.TempFile("", "odoenvinfo")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer tempEnvFile.Close()
 	os.Setenv(envInfoEnvName, tempEnvFile.Name())
 	testURL := ConfigURL{Name: "testURL", ClusterHost: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
+	invalidParam := "invalidParameter"
 
 	tests := []struct {
 		name            string
 		parameter       string
 		value           interface{}
 		existingEnvInfo EnvInfo
+		expectError     bool
 	}{
 		{
 			name:      fmt.Sprintf("Case 1: %s to test", URL),
@@ -36,6 +38,16 @@ func TestSetEnvInfo(t *testing.T) {
 			existingEnvInfo: EnvInfo{
 				componentSettings: ComponentSettings{},
 			},
+			expectError: false,
+		},
+		{
+			name:      fmt.Sprintf("Case 2: %s to test", invalidParam),
+			parameter: invalidParam,
+			value:     testURL,
+			existingEnvInfo: EnvInfo{
+				componentSettings: ComponentSettings{},
+			},
+			expectError: true,
 		},
 	}
 	for _, tt := range tests {
@@ -46,44 +58,64 @@ func TestSetEnvInfo(t *testing.T) {
 			}
 			esi.EnvInfo = tt.existingEnvInfo
 			err = esi.SetConfiguration(tt.parameter, tt.value)
-			if err != nil {
-				t.Error(err)
-			}
+			if err == nil && tt.expectError {
+				t.Errorf("expected error for SetConfiguration with %s", tt.parameter)
+			} else if !tt.expectError {
+				if err != nil {
+					t.Error(err)
+				}
 
-			isSet := esi.IsSet(tt.parameter)
+				isSet := esi.IsSet(tt.parameter)
 
-			if !isSet {
-				t.Errorf("the '%v' is not set", tt.parameter)
+				if !isSet {
+					t.Errorf("the '%v' is not set", tt.parameter)
+				}
+
 			}
 
 		})
 	}
 }
 
-func TestLocalUnsetConfiguration(t *testing.T) {
-	tempEnvFile, err := ioutil.TempFile("", "odoenvinfo")
+func TestUnsetEnvInfo(t *testing.T) {
+	fs := filesystem.NewFakeFs()
+	tempEnvFile, err := fs.TempFile("", "odoenvinfo")
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer tempEnvFile.Close()
 	os.Setenv(envInfoEnvName, tempEnvFile.Name())
 	testURL := ConfigURL{Name: "testURL", ClusterHost: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
+	invalidParam := "invalidParameter"
 
 	tests := []struct {
 		name            string
 		parameter       string
-		value           interface{}
 		existingEnvInfo EnvInfo
+		expectError     bool
 	}{
 		{
 			name:      fmt.Sprintf("Case 1: unset %s", URL),
 			parameter: URL,
-			value:     testURL,
 			existingEnvInfo: EnvInfo{
 				componentSettings: ComponentSettings{
 					URL: &[]ConfigURL{testURL},
 				},
 			},
+			expectError: false,
+		},
+		{
+			name:      fmt.Sprintf("Case 2: unset %s", invalidParam),
+			parameter: invalidParam,
+			existingEnvInfo: EnvInfo{
+				componentSettings: ComponentSettings{
+					URL: &[]ConfigURL{testURL},
+				},
+			},
+			expectError: true,
 		},
 	}
 	for _, tt := range tests {
@@ -93,28 +125,56 @@ func TestLocalUnsetConfiguration(t *testing.T) {
 				t.Error(err)
 			}
 			esi.EnvInfo = tt.existingEnvInfo
-
-			err = esi.SetConfiguration(tt.parameter, tt.value)
-			if err != nil {
-				t.Error(err)
-			}
-			isSet := esi.IsSet(tt.parameter)
-			if !isSet {
-				t.Errorf("the '%v' was not set", tt.parameter)
-			}
-
-			err = esi.DeleteEnvSpecificInfo(tt.parameter)
-
-			if err != nil {
-				t.Error(err)
-			}
-			isSet = esi.IsSet(tt.parameter)
-			if isSet {
-				t.Errorf("the '%v' is not set to nil", tt.parameter)
+			err = esi.DeleteConfiguration(tt.parameter)
+			if err == nil && tt.expectError {
+				t.Errorf("expected error for DeleteConfiguration with %s", tt.parameter)
+			} else if !tt.expectError {
+				if err != nil {
+					t.Error(err)
+				}
+				isSet := esi.IsSet(tt.parameter)
+				if isSet {
+					t.Errorf("the '%v' is not set to nil", tt.parameter)
+				}
 			}
 
 		})
 	}
+}
+
+func TestDeleteURLFromMultipleURLs(t *testing.T) {
+	tempEnvFile, err := ioutil.TempFile("", "odoenvinfo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tempEnvFile.Close()
+	os.Setenv(envInfoEnvName, tempEnvFile.Name())
+	deleteParam := "testURL1"
+	testURL1 := ConfigURL{Name: deleteParam, ClusterHost: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
+	testURL2 := ConfigURL{Name: "testURL2", ClusterHost: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
+	testURLArray := &[]ConfigURL{testURL1, testURL2}
+
+	existingEnvInfo := EnvInfo{
+		componentSettings: ComponentSettings{
+			URL: testURLArray,
+		},
+	}
+
+	esi, err := NewEnvSpecificInfo("")
+	if err != nil {
+		t.Error(err)
+	}
+	esi.EnvInfo = existingEnvInfo
+	oldURLLength := len(esi.GetURL())
+	err = esi.DeleteURL(deleteParam)
+	if err != nil {
+		t.Error(err)
+	}
+	newURLLength := len(esi.GetURL())
+	if newURLLength+1 != oldURLLength {
+		t.Errorf("DeleteURL is expected to delete element %s from the URL array.", deleteParam)
+	}
+
 }
 
 func TestLowerCaseParameterForLocalParameters(t *testing.T) {
@@ -125,7 +185,7 @@ func TestLowerCaseParameterForLocalParameters(t *testing.T) {
 	}
 }
 
-func TestLocalConfigInitDoesntCreateLocalOdoFolder(t *testing.T) {
+func TestEnvSpecificInfonitDoesntCreateLocalOdoFolder(t *testing.T) {
 	// cleaning up old odo files if any
 	filename, err := getEnvInfoFile("")
 	if err != nil {
@@ -142,7 +202,7 @@ func TestLocalConfigInitDoesntCreateLocalOdoFolder(t *testing.T) {
 	}
 }
 
-func TestDeleteConfigDirIfEmpty(t *testing.T) {
+func TestDeleteEnvDirIfEmpty(t *testing.T) {
 	// create a fake fs in memory
 	fs := filesystem.NewFakeFs()
 	// create a odo config directory on fake fs
@@ -199,7 +259,7 @@ func TestDeleteConfigDirIfEmpty(t *testing.T) {
 		if !tt.wantOdoDir && !os.IsNotExist(err) {
 			// we don't want odo dir but odo dir exists
 			fmt.Println(file.Size())
-			t.Error("odo config directory exists even after deleting it")
+			t.Error("odo env directory exists even after deleting it")
 			t.Errorf("Error in test %q", tt.name)
 		} else if tt.wantOdoDir && os.IsNotExist(err) {
 			// we want odo dir to exist after odo delete --all but it does not exist

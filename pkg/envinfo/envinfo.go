@@ -97,7 +97,7 @@ func newEnvSpecificInfo(envDir string, fs filesystem.Filesystem) (*EnvSpecificIn
 		fs:                fs,
 	}
 
-	// if the config file doesn't exist then we dont worry about it and return
+	// if the env.yaml file doesn't exist then we dont worry about it and return
 	if _, err = e.fs.Stat(envInfoFile); os.IsNotExist(err) {
 		e.envinfoFileExists = false
 		return &e, nil
@@ -111,17 +111,17 @@ func newEnvSpecificInfo(envDir string, fs filesystem.Filesystem) (*EnvSpecificIn
 }
 
 func getFromFile(envinfo *EnvInfo, filename string) error {
-	pei := newProxyEnvInfo()
+	proxyei := newProxyEnvInfo()
 
-	err := util.GetFromFile(&pei, filename)
+	err := util.GetFromFile(&proxyei, filename)
 	if err != nil {
 		return err
 	}
-	envinfo.componentSettings = pei.ComponentSettings
+	envinfo.componentSettings = proxyei.ComponentSettings
 	return nil
 }
 
-// NewEnvInfo creates an empty LocalConfig struct with typeMeta populated
+// NewEnvInfo creates an empty EnvSpecificInfo struct with typeMeta populated
 func NewEnvInfo() EnvInfo {
 	return EnvInfo{}
 }
@@ -146,7 +146,7 @@ func (esi *EnvSpecificInfo) SetConfiguration(parameter string, value interface{}
 
 		return esi.writeToFile()
 	}
-	return errors.Errorf("unknown parameter :'%s' is not a parameter in local odo config", parameter)
+	return errors.Errorf("unknown parameter :'%s' is not a parameter in envinfo", parameter)
 
 }
 
@@ -193,8 +193,8 @@ func (esi *EnvSpecificInfo) EnvInfoFileExists() bool {
 	return esi.envinfoFileExists
 }
 
-// DeleteEnvSpecificInfo is used to delete environment specific info from local odo envinfo
-func (esi *EnvSpecificInfo) DeleteEnvSpecificInfo(parameter string) error {
+// DeleteConfiguration is used to delete environment specific info from local odo envinfo
+func (esi *EnvSpecificInfo) DeleteConfiguration(parameter string) error {
 	if parameter, ok := asLocallySupportedParameter(parameter); ok {
 
 		switch parameter {
@@ -205,14 +205,14 @@ func (esi *EnvSpecificInfo) DeleteEnvSpecificInfo(parameter string) error {
 		}
 		return esi.writeToFile()
 	}
-	return errors.Errorf("unknown parameter :'%s' is not a parameter in local odo config", parameter)
+	return errors.Errorf("unknown parameter :'%s' is not a parameter in envinfo", parameter)
 
 }
 
-// DeleteURL is used to delete environment specific info for url from local odo envinfo
+// DeleteURL is used to delete environment specific info for url from envinfo
 func (esi *EnvSpecificInfo) DeleteURL(parameter string) error {
 	for i, url := range *esi.componentSettings.URL {
-		if url.ClusterHost == parameter {
+		if url.Name == parameter {
 			s := *esi.componentSettings.URL
 			s = append(s[:i], s[i+1:]...)
 			esi.componentSettings.URL = &s
@@ -226,17 +226,17 @@ func (esi *EnvSpecificInfo) GetComponentSettings() ComponentSettings {
 	return esi.componentSettings
 }
 
-// SetComponentSettings sets the componentSettings from to the local config and writes to the file
+// SetComponentSettings sets the componentSettings from to the envinfo and writes to the file
 func (esi *EnvSpecificInfo) SetComponentSettings(cs ComponentSettings) error {
 	esi.componentSettings = cs
 	return esi.writeToFile()
 }
 
 func (esi *EnvSpecificInfo) writeToFile() error {
-	pei := newProxyEnvInfo()
-	pei.ComponentSettings = esi.componentSettings
+	proxyei := newProxyEnvInfo()
+	proxyei.ComponentSettings = esi.componentSettings
 
-	return util.WriteToFile(&pei, esi.Filename)
+	return util.WriteToFile(&proxyei, esi.Filename)
 }
 
 // GetURL returns the ConfigURL, returns default if nil
