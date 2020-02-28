@@ -16,7 +16,7 @@ var (
 func TestCreateDevCDDeployTemplate(t *testing.T) {
 	validDevCDTemplate := triggersv1.TriggerTemplate{
 		TypeMeta:   triggerTemplateTypeMeta,
-		ObjectMeta: meta.CreateObjectMeta("testns", "dev-cd-deploy-from-master-Template"),
+		ObjectMeta: meta.CreateObjectMeta("testns", "dev-cd-deploy-from-master-template"),
 		Spec: triggersv1.TriggerTemplateSpec{
 			Params: []pipelinev1.ParamSpec{
 				pipelinev1.ParamSpec{
