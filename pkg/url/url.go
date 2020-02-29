@@ -44,15 +44,18 @@ func (urls URLList) Get(urlName string) URL {
 }
 
 // Delete deletes a URL
-func Delete(client *occlient.Client, urlName string, applicationName string) error {
+func Delete(client *occlient.Client, kClient *kclient.Client, urlName string, applicationName string) error {
 
 	// Namespace the URL name
 	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(urlName, applicationName)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create namespaced name")
 	}
-
-	return client.DeleteRoute(namespacedOpenShiftObject)
+	if experimental.IsExperimentalModeEnabled() {
+		return kClient.DeleteIngress(namespacedOpenShiftObject)
+	} else {
+		return client.DeleteRoute(namespacedOpenShiftObject)
+	}
 }
 
 // Create creates a URL and returns url string and error if any
@@ -61,17 +64,13 @@ func Create(client *occlient.Client, kClient *kclient.Client, urlName string, po
 	labels := urlLabels.GetLabels(urlName, componentName, applicationName, true)
 
 	var serviceName string
-	urlName, err := util.NamespaceOpenShiftObject(urlName, applicationName)
-	if err != nil {
-		return "", errors.Wrapf(err, "unable to create namespaced name")
-	}
 	if experimental.IsExperimentalModeEnabled() {
 		// TODO: Need deployment & service to get the service name
 		// serviceName := fmt.Sprintf("%v-%v", componentName, portNumber)
 		serviceName := "spring-springtest1-gldv-app"
-		if err != nil {
-			return "", errors.Wrapf(err, "unable to create namespaced name")
-		}
+		// if err != nil {
+		// 	return "", errors.Wrapf(err, "unable to create namespaced name")
+		// }
 		secretName := ""
 		ingressDomain := fmt.Sprintf("%v.%v", urlName, clusterHost)
 		if secureURL == true {
@@ -130,6 +129,10 @@ func Create(client *occlient.Client, kClient *kclient.Client, urlName string, po
 		}
 		return GetURLString(GetProtocol(routev1.Route{}, *ingress), "", ingressDomain), nil
 	} else {
+		urlName, err := util.NamespaceOpenShiftObject(urlName, applicationName)
+		if err != nil {
+			return "", errors.Wrapf(err, "unable to create namespaced name")
+		}
 		serviceName, err = util.NamespaceOpenShiftObject(componentName, applicationName)
 		if err != nil {
 			return "", errors.Wrapf(err, "unable to create namespaced name")

@@ -531,10 +531,12 @@ func ValidateComponentCreateRequest(client *occlient.Client, componentSettings c
 // ApplyConfig applies the component config onto component dc
 // Parameters:
 //	client: occlient instance
+//	kClient: kclient instance
 //	appName: Name of application of which the component is a part
 //	componentName: Name of the component which is being patched with config
 //	componentConfig: Component configuration
-//  	cmpExist: true if components exists in the cluster
+//	envSpecificInfo: Component environment specific information, available if uses devfile
+//  cmpExist: true if components exists in the cluster
 // Returns:
 //	err: Errors if any else nil
 func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo, stdout io.Writer, cmpExist bool) (err error) {
@@ -561,7 +563,7 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 		}
 
 		// Delete any URLs
-		err = applyConfigDeleteURL(client, componentConfig)
+		err = applyConfigDeleteURL(client, kClient, componentConfig, envSpecificInfo)
 		if err != nil {
 			return err
 		}
@@ -571,32 +573,69 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 }
 
 // ApplyConfigDeleteURL applies url config deletion onto component
-func applyConfigDeleteURL(client *occlient.Client, componentConfig config.LocalConfigInfo) (err error) {
-
-	urlList, err := urlpkg.ListPushed(client, componentConfig.GetName(), componentConfig.GetApplication())
-	if err != nil {
-		return err
-	}
-	localURLList := componentConfig.GetURL()
-	for _, u := range urlList.Items {
-		if !checkIfURLPresentInConfig(localURLList, u.Name) {
-			err = urlpkg.Delete(client, u.Name, componentConfig.GetApplication())
-			if err != nil {
-				return err
-			}
-			log.Successf("URL %s successfully deleted", u.Name)
+func applyConfigDeleteURL(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo) (err error) {
+	if experimental.IsExperimentalModeEnabled() {
+		// TODO: use envSpecificInfo.GetName()
+		componentName, err := GetComponentName()
+		if err != nil {
+			return err
 		}
+		ingressList, err := urlpkg.ListPushedIngress(kClient, componentName)
+		if err != nil {
+			return err
+		}
+		localURLList := envSpecificInfo.GetURL()
+		for _, i := range ingressList.Items {
+			if !checkIfURLPresentInConfig(checkIfURLPresentInConfigParam{envinfoURL: localURLList, url: i.Name}) {
+				err = urlpkg.Delete(client, kClient, i.Name, componentConfig.GetApplication())
+				if err != nil {
+					return err
+				}
+				log.Successf("URL %s successfully deleted", i.Name)
+			}
+		}
+		return nil
+	} else {
+		urlList, err := urlpkg.ListPushed(client, componentConfig.GetName(), componentConfig.GetApplication())
+		if err != nil {
+			return err
+		}
+		localURLList := componentConfig.GetURL()
+		for _, u := range urlList.Items {
+			if !checkIfURLPresentInConfig(checkIfURLPresentInConfigParam{localURL: localURLList, url: u.Name}) {
+				err = urlpkg.Delete(client, kClient, u.Name, componentConfig.GetApplication())
+				if err != nil {
+					return err
+				}
+				log.Successf("URL %s successfully deleted", u.Name)
+			}
+		}
+		return nil
 	}
-	return nil
 }
 
-func checkIfURLPresentInConfig(localURL []config.ConfigURL, url string) bool {
-	for _, u := range localURL {
-		if u.Name == url {
-			return true
+func checkIfURLPresentInConfig(checkIfURLPresentInConfigParam checkIfURLPresentInConfigParam) bool {
+	if experimental.IsExperimentalModeEnabled() {
+		for _, u := range checkIfURLPresentInConfigParam.envinfoURL {
+			if u.Name == checkIfURLPresentInConfigParam.url {
+				return true
+			}
+		}
+	} else {
+		for _, u := range checkIfURLPresentInConfigParam.localURL {
+			if u.Name == checkIfURLPresentInConfigParam.url {
+				return true
+			}
 		}
 	}
+
 	return false
+}
+
+type checkIfURLPresentInConfigParam struct {
+	localURL   []config.ConfigURL
+	envinfoURL []envinfo.ConfigURL
+	url        string
 }
 
 // ApplyConfigCreateURL applies url config onto component

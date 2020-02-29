@@ -71,8 +71,6 @@ func CreateObjectMeta(name, namespace string, labels, annotations map[string]str
 }
 
 func (c *Client) CreateTLSSecret(tlsCertificate []byte, tlsPrivKey []byte, componentName string, applicationName string, portNumber int) (*corev1.Secret, error) {
-	// TypeMeta:   metav1.TypeMeta{Kind: "Ingress", APIVersion: "extensions/v1beta1"},
-	// ObjectMeta: metav1.ObjectMeta{Name: i.Labels[urlLabels.URLLabel]},
 	labels := componentlabels.GetLabels(componentName, applicationName, true)
 	portAsString := fmt.Sprintf("%v", portNumber)
 	tlsSecretName := componentName + "-" + portAsString + "-tlssecret"
