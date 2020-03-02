@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// fakeDebugPortListener starts a fake test server and listens on the given localPort
+// FakePortListener starts a fake test server and listens on the given localPort
 func FakePortListener(startedChan chan<- bool, stopChan <-chan bool, localPort int) error {
 	testServer := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("running")
