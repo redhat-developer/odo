@@ -437,7 +437,7 @@ func GetIgnoreRulesFromDirectory(directory string) ([]string, error) {
 		return nil, err
 	}
 
-	defer file.Close()
+	defer file.Close() // #nosec G307
 
 	scanner := bufio.NewReader(file)
 	for {
