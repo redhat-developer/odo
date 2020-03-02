@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/url"
 	"os"
 	"os/user"
@@ -10,6 +11,7 @@ import (
 	"reflect"
 	"regexp"
 	"sort"
+	"strconv"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -1124,6 +1126,34 @@ func TestRemoveRelativePathFromFiles(t *testing.T) {
 				t.Errorf("expected %v, got %v", tt.args.output, output)
 			}
 
+		})
+	}
+}
+
+func TestHttpGetFreePort(t *testing.T) {
+	tests := []struct {
+		name    string
+		wantErr bool
+	}{
+		{
+			name:    "case 1: get a valid free port",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := HttpGetFreePort()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("HttpGetFreePort() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			addressLook := "localhost:" + strconv.Itoa(got)
+			listener, err := net.Listen("tcp", addressLook)
+			if err != nil {
+				t.Errorf("expected a free port, but listening failed cause: %v", err)
+			} else {
+				_ = listener.Close()
+			}
 		})
 	}
 }

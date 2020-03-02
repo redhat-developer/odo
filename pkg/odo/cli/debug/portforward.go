@@ -4,9 +4,13 @@ import (
 	"fmt"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/debug"
+	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/pkg/util"
+	"net"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
 	"github.com/spf13/cobra"
@@ -63,9 +67,36 @@ func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []st
 
 	o.Context = genericclioptions.NewContext(cmd)
 	cfg, err := config.NewLocalConfigInfo(o.contextDir)
+	if err != nil {
+		return err
+	}
 	o.localConfigInfo = cfg
 
 	remotePort := cfg.GetDebugPort()
+
+	// try to listen on the given local port and check if the port is free or not
+	addressLook := "localhost:" + strconv.Itoa(o.localPort)
+	listener, err := net.Listen("tcp", addressLook)
+	if err != nil {
+		// if the local-port flag is set by the user, return the error and stop execution
+		flag := cmd.Flags().Lookup("local-port")
+		if flag != nil && flag.Changed {
+			return err
+		}
+		// else display a error message and auto select a new free port
+		log.Errorf("the local debug port %v is not free, cause: %v", o.localPort, err)
+		o.localPort, err = util.HttpGetFreePort()
+		if err != nil {
+			return err
+		}
+		log.Infof("The local port %v is auto selected", o.localPort)
+	} else {
+		err = listener.Close()
+		if err != nil {
+			return err
+		}
+	}
+
 	o.PortPair = fmt.Sprintf("%d:%d", o.localPort, remotePort)
 
 	// Using Discard streams because nothing important is logged

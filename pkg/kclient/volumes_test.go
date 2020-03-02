@@ -137,7 +137,7 @@ func TestAddPVCToPodTemplateSpec(t *testing.T) {
 
 			objectMeta := CreateObjectMeta(tt.podName, tt.namespace, tt.labels, nil)
 
-			podTemplateSpec := GeneratePodTemplateSpec(objectMeta, tt.serviceAccount, []corev1.Container{*container})
+			podTemplateSpec := GeneratePodTemplateSpec(objectMeta, []corev1.Container{*container})
 
 			AddPVCToPodTemplateSpec(podTemplateSpec, tt.pvc, tt.volumeName)
 
@@ -216,7 +216,7 @@ func TestAddVolumeMountToPodTemplateSpec(t *testing.T) {
 
 			objectMeta := CreateObjectMeta(tt.podName, tt.namespace, tt.labels, nil)
 
-			podTemplateSpec := GeneratePodTemplateSpec(objectMeta, tt.serviceAccount, []corev1.Container{tt.container})
+			podTemplateSpec := GeneratePodTemplateSpec(objectMeta, []corev1.Container{tt.container})
 
 			err := AddVolumeMountToPodTemplateSpec(podTemplateSpec, tt.volumeName, tt.pvc, tt.containerMountPathsMap)
 			if !tt.wantErr && err != nil {
