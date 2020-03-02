@@ -629,6 +629,20 @@ func DeletePath(path string) error {
 	return nil
 }
 
+// HttpGetFreePort gets a free port from the system
+func HttpGetFreePort() (int, error) {
+	listener, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		return -1, err
+	}
+	freePort := listener.Addr().(*net.TCPAddr).Port
+	err = listener.Close()
+	if err != nil {
+		return -1, err
+	}
+	return freePort, nil
+}
+
 // HTTPGetRequest uses url to get file contents
 func HTTPGetRequest(url string) ([]byte, error) {
 	var httpClient = &http.Client{Timeout: 10 * time.Second}

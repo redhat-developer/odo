@@ -39,12 +39,6 @@ func Parse(path string) (d DevfileObj, err error) {
 		return d, errors.Wrapf(err, "failed to decode devfile content")
 	}
 
-	// Validate devfile data
-	err = d.Data.Validate()
-	if err != nil {
-		return d, err
-	}
-
 	// Successful
 	return d, nil
 }
