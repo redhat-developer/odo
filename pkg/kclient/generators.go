@@ -5,7 +5,9 @@ import (
 	// api resource types
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	extensionsv1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -72,4 +74,53 @@ func GeneratePVCSpec(quantity resource.Quantity) *corev1.PersistentVolumeClaimSp
 	}
 
 	return pvcSpec
+}
+
+// IngressParamater struct for function createIngress
+// serviceName is the name of the service for the target reference
+// ingressDomain is the ingress domain to use for the ingress
+// portNumber is the target port of the ingress
+// TLSSecretName is the target TLS Secret name of the ingress
+type IngressParamater struct {
+	ServiceName   string
+	IngressDomain string
+	PortNumber    intstr.IntOrString
+	TLSSecretName string
+}
+
+// GenerateIngressSpec creates an ingress spec
+func (c *Client) GenerateIngressSpec(ingressParam IngressParamater, labels map[string]string) *extensionsv1.IngressSpec {
+	ingressSpec := &extensionsv1.IngressSpec{
+		Rules: []extensionsv1.IngressRule{
+			{
+				Host: ingressParam.IngressDomain,
+				IngressRuleValue: extensionsv1.IngressRuleValue{
+					HTTP: &extensionsv1.HTTPIngressRuleValue{
+						Paths: []extensionsv1.HTTPIngressPath{
+							{
+								Path: "/",
+								Backend: extensionsv1.IngressBackend{
+									ServiceName: ingressParam.ServiceName,
+									ServicePort: ingressParam.PortNumber,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	secretNameLength := len(ingressParam.TLSSecretName)
+	if secretNameLength != 0 {
+		ingressSpec.TLS = []extensionsv1.IngressTLS{
+			{
+				Hosts: []string{
+					ingressParam.IngressDomain,
+				},
+				SecretName: ingressParam.TLSSecretName,
+			},
+		}
+	}
+
+	return ingressSpec
 }

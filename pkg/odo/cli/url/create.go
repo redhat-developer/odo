@@ -67,6 +67,9 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 			o.urlName = args[0]
 		}
 		err = o.InitEnvInfoFromContext()
+		if err != nil {
+			return err
+		}
 
 	} else {
 		err = o.InitConfigFromContext()
