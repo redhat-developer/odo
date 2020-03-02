@@ -76,12 +76,12 @@ func GeneratePVCSpec(quantity resource.Quantity) *corev1.PersistentVolumeClaimSp
 	return pvcSpec
 }
 
-// IngressParamater struct for function createIngress
+// IngressParameter struct for function createIngress
 // serviceName is the name of the service for the target reference
 // ingressDomain is the ingress domain to use for the ingress
 // portNumber is the target port of the ingress
 // TLSSecretName is the target TLS Secret name of the ingress
-type IngressParamater struct {
+type IngressParameter struct {
 	ServiceName   string
 	IngressDomain string
 	PortNumber    intstr.IntOrString
@@ -89,7 +89,7 @@ type IngressParamater struct {
 }
 
 // GenerateIngressSpec creates an ingress spec
-func (c *Client) GenerateIngressSpec(ingressParam IngressParamater, labels map[string]string) *extensionsv1.IngressSpec {
+func GenerateIngressSpec(ingressParam IngressParameter) *extensionsv1.IngressSpec {
 	ingressSpec := &extensionsv1.IngressSpec{
 		Rules: []extensionsv1.IngressRule{
 			{

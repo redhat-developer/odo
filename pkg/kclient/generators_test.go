@@ -3,6 +3,8 @@ package kclient
 import (
 	"testing"
 
+	"k8s.io/apimachinery/pkg/util/intstr"
+
 	corev1 "k8s.io/api/core/v1"
 
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -194,6 +196,50 @@ func TestGeneratePVCSpec(t *testing.T) {
 			if pvcSpecQuantity.String() != quantity.String() {
 				t.Errorf("pvcSpec.Resources.Requests Error: expected %v, actual %v", pvcSpecQuantity.String(), quantity.String())
 			}
+		})
+	}
+}
+
+func TestGenerateIngressSpec(t *testing.T) {
+
+	tests := []struct {
+		name      string
+		parameter IngressParameter
+	}{
+		{
+			name: "1",
+			parameter: IngressParameter{
+				ServiceName:   "service1",
+				IngressDomain: "test.1.2.3.4.nip.io",
+				PortNumber: intstr.IntOrString{
+					IntVal: 8080,
+				},
+				TLSSecretName: "testTLSSecret",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			ingressSpec := GenerateIngressSpec(tt.parameter)
+
+			if ingressSpec.Rules[0].Host != tt.parameter.IngressDomain {
+				t.Errorf("expected %s, actual %s", tt.parameter.IngressDomain, ingressSpec.Rules[0].Host)
+			}
+
+			if ingressSpec.Rules[0].HTTP.Paths[0].Backend.ServicePort != tt.parameter.PortNumber {
+				t.Errorf("expected %v, actual %v", tt.parameter.PortNumber, ingressSpec.Rules[0].HTTP.Paths[0].Backend.ServicePort)
+			}
+
+			if ingressSpec.Rules[0].HTTP.Paths[0].Backend.ServiceName != tt.parameter.ServiceName {
+				t.Errorf("expected %s, actual %s", tt.parameter.ServiceName, ingressSpec.Rules[0].HTTP.Paths[0].Backend.ServiceName)
+			}
+
+			if ingressSpec.TLS[0].SecretName != tt.parameter.TLSSecretName {
+				t.Errorf("expected %s, actual %s", tt.parameter.TLSSecretName, ingressSpec.TLS[0].SecretName)
+			}
+
 		})
 	}
 }
