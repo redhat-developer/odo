@@ -2871,8 +2871,6 @@ func recursiveTar(srcBase, srcFile, destBase, destFile string, tw *taro.Writer, 
 			if _, err := io.Copy(tw, f); err != nil {
 				return err
 			}
-
-			return f.Close()
 		}
 	}
 	return nil
