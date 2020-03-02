@@ -140,7 +140,7 @@ func (o *URLCreateOptions) Validate() (err error) {
 // Run contains the logic for the odo url create command
 func (o *URLCreateOptions) Run() (err error) {
 	if experimental.IsExperimentalModeEnabled() {
-		err = o.EnvSpecificInfo.SetConfiguration("url", envinfo.ConfigURL{Name: o.urlName, Port: o.urlPort, ClusterHost: o.clusterHost, Secure: o.secureURL, TLSSecret: o.tlsSecret})
+		err = o.EnvSpecificInfo.SetConfiguration("url", envinfo.EnvInfoURL{Name: o.urlName, Port: o.urlPort, ClusterHost: o.clusterHost, Secure: o.secureURL, TLSSecret: o.tlsSecret})
 	} else {
 		err = o.LocalConfigInfo.SetConfiguration("url", config.ConfigURL{Name: o.urlName, Port: o.componentPort, Secure: o.secureURL})
 	}

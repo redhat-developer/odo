@@ -21,11 +21,11 @@ const (
 
 // ComponentSettings holds all component related information
 type ComponentSettings struct {
-	URL *[]ConfigURL `yaml:"Url,omitempty"`
+	URL *[]EnvInfoURL `yaml:"Url,omitempty"`
 }
 
-// ConfigURL holds URL related information
-type ConfigURL struct {
+// EnvInfoURL holds URL related information
+type EnvInfoURL struct {
 	// Name of the URL
 	Name string `yaml:"Name,omitempty"`
 	// Port number for the url of the component, required in case of components which expose more than one service port
@@ -136,11 +136,11 @@ func (esi *EnvSpecificInfo) SetConfiguration(parameter string, value interface{}
 	if parameter, ok := asLocallySupportedParameter(parameter); ok {
 		switch parameter {
 		case "url":
-			urlValue := value.(ConfigURL)
+			urlValue := value.(EnvInfoURL)
 			if esi.componentSettings.URL != nil {
 				*esi.componentSettings.URL = append(*esi.componentSettings.URL, urlValue)
 			} else {
-				esi.componentSettings.URL = &[]ConfigURL{urlValue}
+				esi.componentSettings.URL = &[]EnvInfoURL{urlValue}
 			}
 		}
 
@@ -239,10 +239,10 @@ func (esi *EnvSpecificInfo) writeToFile() error {
 	return util.WriteToFile(&proxyei, esi.Filename)
 }
 
-// GetURL returns the ConfigURL, returns default if nil
-func (ei *EnvInfo) GetURL() []ConfigURL {
+// GetURL returns the EnvInfoURL, returns default if nil
+func (ei *EnvInfo) GetURL() []EnvInfoURL {
 	if ei.componentSettings.URL == nil {
-		return []ConfigURL{}
+		return []EnvInfoURL{}
 	}
 	return *ei.componentSettings.URL
 }

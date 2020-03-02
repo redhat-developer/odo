@@ -21,7 +21,7 @@ func TestSetEnvInfo(t *testing.T) {
 	}
 	defer tempEnvFile.Close()
 	os.Setenv(envInfoEnvName, tempEnvFile.Name())
-	testURL := ConfigURL{Name: "testURL", ClusterHost: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
+	testURL := EnvInfoURL{Name: "testURL", ClusterHost: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
 	invalidParam := "invalidParameter"
 
 	tests := []struct {
@@ -88,7 +88,7 @@ func TestUnsetEnvInfo(t *testing.T) {
 	}
 	defer tempEnvFile.Close()
 	os.Setenv(envInfoEnvName, tempEnvFile.Name())
-	testURL := ConfigURL{Name: "testURL", ClusterHost: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
+	testURL := EnvInfoURL{Name: "testURL", ClusterHost: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
 	invalidParam := "invalidParameter"
 
 	tests := []struct {
@@ -102,7 +102,7 @@ func TestUnsetEnvInfo(t *testing.T) {
 			parameter: URL,
 			existingEnvInfo: EnvInfo{
 				componentSettings: ComponentSettings{
-					URL: &[]ConfigURL{testURL},
+					URL: &[]EnvInfoURL{testURL},
 				},
 			},
 			expectError: false,
@@ -112,7 +112,7 @@ func TestUnsetEnvInfo(t *testing.T) {
 			parameter: invalidParam,
 			existingEnvInfo: EnvInfo{
 				componentSettings: ComponentSettings{
-					URL: &[]ConfigURL{testURL},
+					URL: &[]EnvInfoURL{testURL},
 				},
 			},
 			expectError: true,
@@ -149,30 +149,65 @@ func TestDeleteURLFromMultipleURLs(t *testing.T) {
 	}
 	defer tempEnvFile.Close()
 	os.Setenv(envInfoEnvName, tempEnvFile.Name())
-	deleteParam := "testURL1"
-	testURL1 := ConfigURL{Name: deleteParam, ClusterHost: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
-	testURL2 := ConfigURL{Name: "testURL2", ClusterHost: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
-	testURLArray := &[]ConfigURL{testURL1, testURL2}
+	testURL1 := EnvInfoURL{Name: "testURL1", ClusterHost: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
+	testURL2 := EnvInfoURL{Name: "testURL2", ClusterHost: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
 
-	existingEnvInfo := EnvInfo{
-		componentSettings: ComponentSettings{
-			URL: testURLArray,
+	tests := []struct {
+		name            string
+		existingEnvInfo EnvInfo
+		deleteParam     string
+		remainingParam  string
+		singleURL       bool
+	}{
+		{
+			name: fmt.Sprintf("Case 1: delete %s from multiple URLs", testURL1.Name),
+			existingEnvInfo: EnvInfo{
+				componentSettings: ComponentSettings{
+					URL: &[]EnvInfoURL{testURL1, testURL2},
+				},
+			},
+			deleteParam:    testURL1.Name,
+			remainingParam: testURL2.Name,
+			singleURL:      false,
+		},
+		{
+			name: fmt.Sprintf("Case 2: delete %s fro URL array with single element", testURL1.Name),
+			existingEnvInfo: EnvInfo{
+				componentSettings: ComponentSettings{
+					URL: &[]EnvInfoURL{testURL1},
+				},
+			},
+			deleteParam: testURL1.Name,
+			singleURL:   true,
 		},
 	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			esi, err := NewEnvSpecificInfo("")
+			if err != nil {
+				t.Error(err)
+			}
+			esi.EnvInfo = tt.existingEnvInfo
+			oldURLLength := len(esi.GetURL())
+			err = esi.DeleteURL(tt.deleteParam)
+			if err != nil {
+				t.Error(err)
+			}
+			newURLLength := len(esi.GetURL())
+			if newURLLength+1 != oldURLLength {
+				t.Errorf("DeleteURL is expected to delete element %s from the URL array.", tt.deleteParam)
+			}
+			if tt.singleURL {
+				if newURLLength != 0 {
+					t.Errorf("Expect to have empty URL array if delete URL from URL array with only 1 element")
+				}
+			} else {
+				if esi.GetURL()[0].Name != tt.remainingParam {
+					t.Errorf("Expect to have element %s in the URL array", tt.remainingParam)
+				}
+			}
 
-	esi, err := NewEnvSpecificInfo("")
-	if err != nil {
-		t.Error(err)
-	}
-	esi.EnvInfo = existingEnvInfo
-	oldURLLength := len(esi.GetURL())
-	err = esi.DeleteURL(deleteParam)
-	if err != nil {
-		t.Error(err)
-	}
-	newURLLength := len(esi.GetURL())
-	if newURLLength+1 != oldURLLength {
-		t.Errorf("DeleteURL is expected to delete element %s from the URL array.", deleteParam)
+		})
 	}
 
 }
