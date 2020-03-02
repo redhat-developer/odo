@@ -52,9 +52,7 @@ func GetVolumes(devfileObj devfile.DevfileObj) map[string][]common.DockerimageVo
 	for _, comp := range devfileObj.Data.GetAliasedComponents() {
 		if comp.Type == common.DevfileComponentTypeDockerimage {
 			if comp.Volumes != nil {
-				for _, volume := range comp.Volumes {
-					componentAliasToVolumes[*comp.Alias] = append(componentAliasToVolumes[*comp.Alias], volume)
-				}
+				componentAliasToVolumes[*comp.Alias] = append(componentAliasToVolumes[*comp.Alias], comp.Volumes...)
 			}
 		}
 	}
