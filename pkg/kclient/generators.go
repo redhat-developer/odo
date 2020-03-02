@@ -3,9 +3,11 @@ package kclient
 import (
 
 	// api resource types
+
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -75,4 +77,27 @@ func GeneratePVCSpec(quantity resource.Quantity) *corev1.PersistentVolumeClaimSp
 	}
 
 	return pvcSpec
+}
+
+// GenerateServiceSpec creates a service spec
+func GenerateServiceSpec(deploymentconfigName string, containerPorts []corev1.ContainerPort) *corev1.ServiceSpec {
+	// generate Service Spec
+	var svcPorts []corev1.ServicePort
+	for _, containerPort := range containerPorts {
+		svcPort := corev1.ServicePort{
+
+			Name:       containerPort.Name,
+			Port:       containerPort.ContainerPort,
+			TargetPort: intstr.FromInt(int(containerPort.ContainerPort)),
+		}
+		svcPorts = append(svcPorts, svcPort)
+	}
+	svcSpec := &corev1.ServiceSpec{
+		Ports: svcPorts,
+		Selector: map[string]string{
+			"deploymentconfig": deploymentconfigName,
+		},
+	}
+
+	return svcSpec
 }
