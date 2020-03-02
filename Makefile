@@ -208,6 +208,7 @@ test-cmd-watch:
 # Run odo debug command tests
 test-cmd-debug:
 	ginkgo $(GINKGO_FLAGS) -focus="odo debug command tests" tests/integration/
+	ginkgo $(GINKGO_FLAGS_SERIAL) -focus="odo debug command serial tests" tests/integration/debug/
 
 # Run command's integration tests irrespective of service catalog status in the cluster.
 # Service, link and login/logout command tests are not the part of this test run
