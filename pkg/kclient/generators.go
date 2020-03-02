@@ -11,7 +11,7 @@ import (
 )
 
 // GenerateContainer creates a container spec that can be used when creating a pod
-func GenerateContainer(name, image string, isPrivileged bool, command, args []string, envVars []corev1.EnvVar, resourceReqs corev1.ResourceRequirements) *corev1.Container {
+func GenerateContainer(name, image string, isPrivileged bool, command, args []string, envVars []corev1.EnvVar, resourceReqs corev1.ResourceRequirements, ports []corev1.ContainerPort) *corev1.Container {
 	container := &corev1.Container{
 		Name:            name,
 		Image:           image,
@@ -20,6 +20,7 @@ func GenerateContainer(name, image string, isPrivileged bool, command, args []st
 		Command:         command,
 		Args:            args,
 		Env:             envVars,
+		Ports:           ports,
 	}
 
 	if isPrivileged {

@@ -43,7 +43,6 @@ func (a Adapter) Start() (err error) {
 	objectMeta := kclient.CreateObjectMeta(componentName, a.Client.Namespace, labels, nil)
 	podTemplateSpec := kclient.GeneratePodTemplateSpec(objectMeta, containers)
 	deploymentSpec := kclient.GenerateDeploymentSpec(*podTemplateSpec)
-
 	glog.V(3).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
 	glog.V(3).Infof("The component name is %v", componentName)
 
@@ -54,12 +53,25 @@ func (a Adapter) Start() (err error) {
 			return err
 		}
 		glog.V(3).Infof("Successfully updated component %v", componentName)
+
+		_, err = a.Client.UpdateService(objectMeta, deploymentSpec.Template.Spec.Containers[0].Ports)
+		if err != nil {
+			return err
+		}
+		glog.V(3).Infof("Successfully update Service for component %s", componentName)
 	} else {
 		_, err = a.Client.CreateDeployment(*deploymentSpec)
 		if err != nil {
 			return err
 		}
 		glog.V(3).Infof("Successfully created component %v", componentName)
+
+		_, err = a.Client.CreateService(objectMeta, deploymentSpec.Template.Spec.Containers[0].Ports)
+		if err != nil {
+			return err
+		}
+		glog.V(3).Infof("Successfully created Service for component %s", componentName)
+
 	}
 
 	podSelector := fmt.Sprintf("component=%s", componentName)
