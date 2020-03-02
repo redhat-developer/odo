@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/odo/util/validation"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -57,6 +58,15 @@ func CreateService(client *occlient.Client, serviceName string, serviceType stri
 	if err != nil {
 		return errors.Wrap(err, "unable to create service instance")
 
+	}
+	return nil
+}
+
+// CreateOperatorService creates new service (actually a Deployment) from OperatorHub
+func CreateOperatorService(client *kclient.Client, serviceName string, serviceType string, crd string, parameters map[string]string, applicationName, group, version, resource string, exampleCR map[string]interface{}) error {
+	err := client.CreateDynamicDeployment(exampleCR, group, version, resource)
+	if err != nil {
+		return errors.Wrap(err, "Unable to create operator backed service")
 	}
 	return nil
 }
