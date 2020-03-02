@@ -117,8 +117,6 @@ func ListDevfileComponents() (DevfileComponentTypeList, error) {
 	// 2. Populate devfile components with devfile data
 	// 3. Form devfile component list
 	for _, devfileIndexEntry := range devfileIndex {
-		devfileIndexEntryName := devfileIndexEntry.DisplayName
-		devfileIndexEntryDescription := devfileIndexEntry.Description
 		devfileIndexEntryLink := devfileIndexEntry.Links.Link
 
 		// Load the devfile
@@ -133,12 +131,14 @@ func ListDevfileComponents() (DevfileComponentTypeList, error) {
 		}
 
 		// Populate devfile component with devfile data and form devfile component list
-		var catalogDevfile DevfileComponentType
-		catalogDevfile.Name = strings.TrimSuffix(devfile.MetaData.GenerateName, "-")
-		catalogDevfile.DisplayName = devfileIndexEntryName
-		catalogDevfile.Description = devfileIndexEntryDescription
-		catalogDevfile.Link = devfileIndexEntryLink
-		catalogDevfile.Support = IsDevfileComponentSupported(devfile)
+		catalogDevfile := DevfileComponentType{
+			Name:        strings.TrimSuffix(devfile.MetaData.GenerateName, "-"),
+			DisplayName: devfileIndexEntry.DisplayName,
+			Description: devfileIndexEntry.Description,
+			Link:        devfileIndexEntryLink,
+			Support:     IsDevfileComponentSupported(devfile),
+		}
+
 		catalogDevfileList.Items = append(catalogDevfileList.Items, catalogDevfile)
 	}
 
