@@ -15,11 +15,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// DevfileRegistry is the devfile registry link
-const DevfileRegistry = "https://che-devfile-registry.openshift.io/"
-
-// DevfileIndexLink is the devfile registry index.json link
-const DevfileIndexLink = DevfileRegistry + "/devfiles/index.json"
+// DevfileRegistries contains the links of all devfile registries
+var DevfileRegistries = []string{
+	"https://raw.githubusercontent.com/elsony/devfile-registry/master",
+	"https://che-devfile-registry.openshift.io/",
+}
 
 // GetDevfileIndex loads the devfile registry index.json
 func GetDevfileIndex(devfileIndexLink string) ([]DevfileIndexEntry, error) {
@@ -87,11 +87,11 @@ func IsDevfileComponentSupported(devfile Devfile) bool {
 		}
 
 		if !hasRunCommand {
-			hasRunCommand = strings.Contains(command.Name, "run")
+			hasRunCommand = strings.Contains(command.Name, "devRun")
 		}
 
 		if !hasBuildCommand {
-			hasBuildCommand = strings.Contains(command.Name, "build")
+			hasBuildCommand = strings.Contains(command.Name, "devBuild")
 		}
 	}
 
@@ -105,41 +105,44 @@ func IsDevfileComponentSupported(devfile Devfile) bool {
 // ListDevfileComponents lists all the available devfile components
 func ListDevfileComponents() (DevfileComponentTypeList, error) {
 	var catalogDevfileList DevfileComponentTypeList
-	catalogDevfileList.DevfileRegistry = DevfileRegistry
+	catalogDevfileList.DevfileRegistries = DevfileRegistries
 
-	// Load the devfile registry index.json
-	devfileIndex, err := GetDevfileIndex(DevfileIndexLink)
-	if err != nil {
-		return DevfileComponentTypeList{}, err
-	}
-
-	// 1. Load devfiles that indexed in devfile registry index.json
-	// 2. Populate devfile components with devfile data
-	// 3. Form devfile component list
-	for _, devfileIndexEntry := range devfileIndex {
-		devfileIndexEntryLink := devfileIndexEntry.Links.Link
-
-		// Load the devfile
-		devfileLink := DevfileRegistry + devfileIndexEntryLink
-		// TODO: We send http get resquest in this function mutiple times
-		// since devfile registry uses different links to host different devfiles,
-		// this can reduce the performance especially when we load devfiles from
-		// big registry. We may need to rethink and optimize this in the future
-		devfile, err := GetDevfile(devfileLink)
+	for _, devfileRegistry := range DevfileRegistries {
+		// Load the devfile registry index.json
+		devfileIndexLink := devfileRegistry + "/devfiles/index.json"
+		devfileIndex, err := GetDevfileIndex(devfileIndexLink)
 		if err != nil {
 			return DevfileComponentTypeList{}, err
 		}
 
-		// Populate devfile component with devfile data and form devfile component list
-		catalogDevfile := DevfileComponentType{
-			Name:        strings.TrimSuffix(devfile.MetaData.GenerateName, "-"),
-			DisplayName: devfileIndexEntry.DisplayName,
-			Description: devfileIndexEntry.Description,
-			Link:        devfileIndexEntryLink,
-			Support:     IsDevfileComponentSupported(devfile),
-		}
+		// 1. Load devfiles that indexed in devfile registry index.json
+		// 2. Populate devfile components with devfile data
+		// 3. Form devfile component list
+		for _, devfileIndexEntry := range devfileIndex {
+			devfileIndexEntryLink := devfileIndexEntry.Links.Link
 
-		catalogDevfileList.Items = append(catalogDevfileList.Items, catalogDevfile)
+			// Load the devfile
+			devfileLink := devfileRegistry + devfileIndexEntryLink
+			// TODO: We send http get resquest in this function mutiple times
+			// since devfile registry uses different links to host different devfiles,
+			// this can reduce the performance especially when we load devfiles from
+			// big registry. We may need to rethink and optimize this in the future
+			devfile, err := GetDevfile(devfileLink)
+			if err != nil {
+				return DevfileComponentTypeList{}, err
+			}
+
+			// Populate devfile component with devfile data and form devfile component list
+			catalogDevfile := DevfileComponentType{
+				Name:        strings.TrimSuffix(devfile.MetaData.GenerateName, "-"),
+				DisplayName: devfileIndexEntry.DisplayName,
+				Description: devfileIndexEntry.Description,
+				Link:        devfileIndexEntryLink,
+				Support:     IsDevfileComponentSupported(devfile),
+			}
+
+			catalogDevfileList.Items = append(catalogDevfileList.Items, catalogDevfile)
+		}
 	}
 
 	return catalogDevfileList, nil

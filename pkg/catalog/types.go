@@ -65,8 +65,8 @@ type ComponentTypeList struct {
 
 // DevfileComponentTypeList lists all the DevfileComponentType's
 type DevfileComponentTypeList struct {
-	DevfileRegistry string
-	Items           []DevfileComponentType
+	DevfileRegistries []string
+	Items             []DevfileComponentType
 }
 
 // ServiceType is the main struct for catalog services
