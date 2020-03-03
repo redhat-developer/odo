@@ -45,7 +45,7 @@ jobs:
       script:
         - export PATH="$PATH:$GOPATH/bin"
         - make bin
-        - netsh winsock reset
+        - rm -r /tmp/*
         - make test
       after_success: skip
 
