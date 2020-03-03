@@ -437,7 +437,7 @@ func GetIgnoreRulesFromDirectory(directory string) ([]string, error) {
 		return nil, err
 	}
 
-	defer file.Close()
+	defer file.Close() // #nosec G307
 
 	scanner := bufio.NewReader(file)
 	for {
@@ -625,4 +625,18 @@ func DeletePath(path string) error {
 		return os.Remove(path)
 	}
 	return nil
+}
+
+// HttpGetFreePort gets a free port from the system
+func HttpGetFreePort() (int, error) {
+	listener, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		return -1, err
+	}
+	freePort := listener.Addr().(*net.TCPAddr).Port
+	err = listener.Close()
+	if err != nil {
+		return -1, err
+	}
+	return freePort, nil
 }

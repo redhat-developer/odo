@@ -1463,7 +1463,7 @@ func isEmpty(name string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	defer f.Close()
+	defer f.Close() // #nosec G307
 
 	_, err = f.Readdirnames(1) // Or f.Readdir(1)
 	if err == io.EOF {
