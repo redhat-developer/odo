@@ -181,6 +181,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 						// So, its better to log the error rather than feeding it to error handler via `watchError = errors.Wrap(err, "unable to watch changes")`,
 						// which will terminate the watch
 						glog.Errorf("Failed getting details of the changed file %s. Ignoring the change", event.Name)
+						fmt.Println("windows failed err", err)
 					}
 					// Some of the editors generate temporary buffer files during update to the file and deletes it soon after exiting from the editor
 					// So, its better to log the error rather than feeding it to error handler via `watchError = errors.Wrap(err, "unable to watch changes")`,
@@ -188,6 +189,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 					if stat == nil {
 						glog.Errorf("Ignoring event for file %s as details about the file couldn't be fetched", event.Name)
 						isIgnoreEvent = true
+						fmt.Println("windows ignore stat err", err)
 					}
 
 					// In windows, every new file created under a sub-directory of the watched directory, raises 2 events:
