@@ -87,7 +87,7 @@ func ReplaceString(filename string, oldString string, newString string) {
 
 	newContent := strings.Replace(string(f), oldString, newString, 1)
 
-	err = ioutil.WriteFile(filename, []byte(newContent), 0644)
+	err = ioutil.WriteFile(filename, []byte(newContent), 0600)
 	Expect(err).NotTo(HaveOccurred())
 }
 
@@ -119,13 +119,13 @@ func copyDir(src string, dst string, info os.FileInfo) error {
 	if err != nil {
 		return err
 	}
-	defer dFile.Close()
+	defer dFile.Close() // #nosec G307
 
 	sFile, err := os.Open(src)
 	if err != nil {
 		return err
 	}
-	defer sFile.Close()
+	defer sFile.Close() // #nosec G307
 
 	if err = os.Chmod(dFile.Name(), info.Mode()); err != nil {
 		return err
@@ -144,7 +144,7 @@ func CreateFileWithContent(path string, fileContent string) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer file.Close() // #nosec G307
 	// write to file
 	_, err = file.WriteString(fileContent)
 	if err != nil {

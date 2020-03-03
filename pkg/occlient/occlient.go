@@ -2866,13 +2866,11 @@ func recursiveTar(srcBase, srcFile, destBase, destFile string, tw *taro.Writer, 
 			if err != nil {
 				return err
 			}
-			defer f.Close()
+			defer f.Close() // #nosec G307
 
 			if _, err := io.Copy(tw, f); err != nil {
 				return err
 			}
-
-			return f.Close()
 		}
 	}
 	return nil

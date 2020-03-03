@@ -273,6 +273,6 @@ func write(filePath string, fi *FileIndex) error {
 	if err != nil {
 		return err
 	}
-	// 0666 is the mask used when a file is created using os.Create hence defaulting
-	return ioutil.WriteFile(filePath, jsonData, 0666)
+	// 0600 is the mask used when a file is created using os.Create hence defaulting
+	return ioutil.WriteFile(filePath, jsonData, 0600)
 }
