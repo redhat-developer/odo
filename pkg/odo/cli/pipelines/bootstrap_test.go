@@ -13,7 +13,7 @@ type keyValuePair struct {
 	value string
 }
 
-func TestCompleteBootstrapOptions(t *testing.T) {
+func TestCompleteBootstrapParameters(t *testing.T) {
 	completeTests := []struct {
 		name       string
 		prefix     string
@@ -25,7 +25,7 @@ func TestCompleteBootstrapOptions(t *testing.T) {
 	}
 
 	for _, tt := range completeTests {
-		o := BootstrapOptions{prefix: tt.prefix}
+		o := BootstrapParameters{prefix: tt.prefix}
 
 		err := o.Complete("test", &cobra.Command{}, []string{"test", "test/repo"})
 
@@ -39,7 +39,7 @@ func TestCompleteBootstrapOptions(t *testing.T) {
 	}
 }
 
-func TestValidateBootstrapOptions(t *testing.T) {
+func TestValidateBootstrapParameters(t *testing.T) {
 	optionTests := []struct {
 		name    string
 		gitRepo string
@@ -50,7 +50,7 @@ func TestValidateBootstrapOptions(t *testing.T) {
 	}
 
 	for _, tt := range optionTests {
-		o := BootstrapOptions{quayUsername: "testing", gitRepo: tt.gitRepo, prefix: "test"}
+		o := BootstrapParameters{gitRepo: tt.gitRepo, prefix: "test"}
 
 		err := o.Validate()
 
@@ -64,25 +64,33 @@ func TestValidateBootstrapOptions(t *testing.T) {
 		}
 	}
 }
+
 func TestBootstrapCommandWithMissingParams(t *testing.T) {
 	cmdTests := []struct {
+		desc    string
 		flags   []keyValuePair
 		wantErr string
 	}{
-		{[]keyValuePair{flag("quay-username", "example"), flag("github-token", "abc123"), flag("dockerconfigjson", "~/"),
-			flag("deployment-path", "foo")}, `Required flag(s) "git-repo" have/has not been set`},
-		{[]keyValuePair{flag("quay-username", "example"), flag("github-token", "abc123"), flag("git-repo", "example/repo"),
-			flag("deployment-path", "foo")}, `Required flag(s) "dockerconfigjson" have/has not been set`},
-		{[]keyValuePair{flag("quay-username", "example"), flag("dockerconfigjson", "~/"), flag("git-repo", "example/repo"),
-			flag("deployment-path", "foo")}, `Required flag(s) "github-token" have/has not been set`},
-		{[]keyValuePair{flag("github-token", "abc123"), flag("dockerconfigjson", "~/"), flag("git-repo", "example/repo"),
-			flag("deployment-path", "foo")}, `Required flag(s) "quay-username" have/has not been set`},
+		{"Missing git-repo flag",
+			[]keyValuePair{flag("github-token", "abc123"),
+				flag("dockerconfigjson", "~/"), flag("image-repo", "foo/bar/bar"), flag("deployment-path", "foo")},
+			`Required flag(s) "git-repo" have/has not been set`},
+		{"Missing github-token flag",
+			[]keyValuePair{flag("dockerconfigjson", "~/"),
+				flag("git-repo", "example/repo"), flag("image-repo", "foo/bar/bar"), flag("deployment-path", "foo")},
+			`Required flag(s) "github-token" have/has not been set`},
+		{"Missing image-repo",
+			[]keyValuePair{flag("github-token", "abc123"),
+				flag("dockerconfigjson", "~/"), flag("git-repo", "example/repo"), flag("deployment-path", "foo")},
+			`Required flag(s) "image-repo" have/has not been set`},
 	}
 	for _, tt := range cmdTests {
-		_, _, err := executeCommand(NewCmdBootstrap("bootstrap", "odo pipelines bootstrap"), tt.flags...)
-		if err.Error() != tt.wantErr {
-			t.Errorf("got %s, want %s", err, tt.wantErr)
-		}
+		t.Run(tt.desc, func(t *testing.T) {
+			_, _, err := executeCommand(NewCmdBootstrap("bootstrap", "odo pipelines bootstrap"), tt.flags...)
+			if err.Error() != tt.wantErr {
+				t.Errorf("got %s, want %s", err, tt.wantErr)
+			}
+		})
 	}
 }
 
@@ -97,17 +105,19 @@ func TestBypassChecks(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		o := BootstrapOptions{skipChecks: test.skipChecks}
+		t.Run(test.description, func(t *testing.T) {
+			o := BootstrapParameters{skipChecks: test.skipChecks}
 
-		err := o.Complete("test", &cobra.Command{}, []string{"test", "test/repo"})
+			err := o.Complete("test", &cobra.Command{}, []string{"test", "test/repo"})
 
-		if err != nil {
-			t.Errorf("Complete() %#v failed: ", err)
-		}
+			if err != nil {
+				t.Errorf("Complete() %#v failed: ", err)
+			}
 
-		if o.skipChecks != test.wantedBypassChecks {
-			t.Errorf("Complete() %#v bypassChecks flag: got %v, want %v", test.description, o.skipChecks, test.wantedBypassChecks)
-		}
+			if o.skipChecks != test.wantedBypassChecks {
+				t.Errorf("Complete() %#v bypassChecks flag: got %v, want %v", test.description, o.skipChecks, test.wantedBypassChecks)
+			}
+		})
 	}
 
 }

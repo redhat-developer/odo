@@ -12,19 +12,19 @@ var (
 	}
 )
 
-func createDevCDPipelineRun(saName string) pipelinev1.PipelineRun {
+func createDevCDPipelineRun(saName, imageRepo string) pipelinev1.PipelineRun {
 	return pipelinev1.PipelineRun{
 		TypeMeta:   pipelineRunTypeMeta,
 		ObjectMeta: createObjectMeta("dev-cd-pipeline-run-$(uid)"),
 		Spec: pipelinev1.PipelineRunSpec{
 			ServiceAccountName: saName,
 			PipelineRef:        createPipelineRef("dev-cd-pipeline"),
-			Resources:          createDevResource("REPLACE_IMAGE:$(params.gitref)"),
+			Resources:          createDevResource(imageRepo + ":$(params.gitref)"),
 		},
 	}
-
 }
-func createDevCIPipelineRun(saName string) pipelinev1.PipelineRun {
+
+func createDevCIPipelineRun(saName, imageRepo string) pipelinev1.PipelineRun {
 	return pipelinev1.PipelineRun{
 		TypeMeta:   pipelineRunTypeMeta,
 		ObjectMeta: createObjectMeta("dev-ci-pipeline-run-$(uid)"),
@@ -35,7 +35,7 @@ func createDevCIPipelineRun(saName string) pipelinev1.PipelineRun {
 				createBindingParam("REPO", "$(params.fullname)"),
 				createBindingParam("COMMIT_SHA", "$(params.gitsha)"),
 			},
-			Resources: createDevResource("REPLACE_IMAGE:$(params.gitref)-$(params.gitsha)"),
+			Resources: createDevResource(imageRepo + ":$(params.gitref)-$(params.gitsha)"),
 		},
 	}
 

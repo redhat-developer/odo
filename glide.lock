@@ -419,7 +419,6 @@ imports:
   - pkg/apis/pipeline
   - pkg/apis/pipeline/pod
   - pkg/apis/pipeline/v1alpha1
-  - pkg/apis/pipeline/v1alpha2
   - pkg/apis/resource/v1alpha1
   - pkg/apis/validate
   - pkg/contexts

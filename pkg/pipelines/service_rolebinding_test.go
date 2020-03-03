@@ -87,8 +87,30 @@ func TestServiceAccount(t *testing.T) {
 			},
 		},
 	}
-	servicetask := createServiceAccount(meta.NamespacedName("", "pipeline"), "regcred")
+	servicetask := createServiceAccount(meta.NamespacedName("", "pipeline"))
+	servicetask = addSecretToSA(servicetask, "regcred")
 	if diff := cmp.Diff(servicetask, want); diff != "" {
 		t.Errorf("TestServiceAccount() failed:\n%s", diff)
+	}
+}
+
+func TestAddSecretToSA(t *testing.T) {
+	validSA := &corev1.ServiceAccount{
+		TypeMeta: v1.TypeMeta{
+			Kind:       "ServiceAccount",
+			APIVersion: "v1",
+		},
+		ObjectMeta: v1.ObjectMeta{
+			Name: "pipeline",
+		},
+	}
+	validSecrets := []corev1.ObjectReference{
+		corev1.ObjectReference{
+			Name: "regcred",
+		},
+	}
+	sa := addSecretToSA(validSA, "regcred")
+	if diff := cmp.Diff(sa.Secrets, validSecrets); diff != "" {
+		t.Errorf("addSecretToSA() failed:\n%s", diff)
 	}
 }

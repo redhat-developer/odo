@@ -12,43 +12,6 @@ import (
 
 const testNS = "testing-ns"
 
-func TestGithubStatusTask(t *testing.T) {
-	wantedTask := pipelinev1.Task{
-		TypeMeta: v1.TypeMeta{
-			Kind:       "Task",
-			APIVersion: "tekton.dev/v1alpha1",
-		},
-		ObjectMeta: v1.ObjectMeta{
-			Name:      "create-github-status-task",
-			Namespace: testNS,
-		},
-		Spec: pipelinev1.TaskSpec{
-			Inputs: createInputsForGithubStatusTask(),
-			TaskSpec: v1alpha2.TaskSpec{
-				Steps: []pipelinev1.Step{
-					pipelinev1.Step{
-						Container: corev1.Container{
-							Name:       "start-status",
-							Image:      "quay.io/kmcdermo/github-tool:latest",
-							WorkingDir: "/workspace/source",
-							Env: []corev1.EnvVar{
-								createEnvFromSecret("GITHUB_TOKEN", "github-auth", "token"),
-							},
-							Command: []string{"github-tools"},
-							Args:    argsForStartStatusStep,
-						},
-					},
-				},
-			},
-		},
-	}
-
-	githubStatusTask := generateGithubStatusTask("github-auth", testNS)
-	if diff := cmp.Diff(wantedTask, githubStatusTask); diff != "" {
-		t.Fatalf("GenerateGithubStatusTask() failed:\n%s", diff)
-	}
-}
-
 func TestDeployFromSourceTask(t *testing.T) {
 	wantedTask := pipelinev1.Task{
 		TypeMeta: v1.TypeMeta{
@@ -209,7 +172,7 @@ func TestGenerateBuildahTask(t *testing.T) {
 			Name: "buildah-task",
 		},
 		Spec: pipelinev1.TaskSpec{
-			Inputs:  createInputsForBuildah(),
+			Inputs:  createInputsForBuildah(false),
 			Outputs: createOutputsForBuildah(),
 			TaskSpec: v1alpha2.TaskSpec{
 				Steps:   createStepsForBuildah(),
@@ -217,7 +180,7 @@ func TestGenerateBuildahTask(t *testing.T) {
 			},
 		},
 	}
-	buildahTask := generateBuildahTask("")
+	buildahTask := generateBuildahTask("", false)
 	if diff := cmp.Diff(validTask, buildahTask); diff != "" {
 		t.Fatalf("generateBuildahTask() failed:\n%s", diff)
 	}

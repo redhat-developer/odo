@@ -18,10 +18,10 @@ func TestCreateDevCDPipelineRun(t *testing.T) {
 		Spec: pipelinev1.PipelineRunSpec{
 			ServiceAccountName: sName,
 			PipelineRef:        createPipelineRef("dev-cd-pipeline"),
-			Resources:          createDevResource("REPLACE_IMAGE:$(params.gitref)"),
+			Resources:          createDevResource("example.com:5000/testing/testing:$(params.gitref)"),
 		},
 	}
-	template := createDevCDPipelineRun(sName)
+	template := createDevCDPipelineRun(sName, "example.com:5000/testing/testing")
 	if diff := cmp.Diff(validDevCDPipeline, template); diff != "" {
 		t.Fatalf("createDevCDPipelineRun failed:\n%s", diff)
 	}
@@ -39,10 +39,10 @@ func TestCreateDevCIPipelineRun(t *testing.T) {
 				createBindingParam("REPO", "$(params.fullname)"),
 				createBindingParam("COMMIT_SHA", "$(params.gitsha)"),
 			},
-			Resources: createDevResource("REPLACE_IMAGE:$(params.gitref)-$(params.gitsha)"),
+			Resources: createDevResource("example.com:5000/testing/testing:$(params.gitref)-$(params.gitsha)"),
 		},
 	}
-	template := createDevCIPipelineRun(sName)
+	template := createDevCIPipelineRun(sName, "example.com:5000/testing/testing")
 	if diff := cmp.Diff(validDevCIPipelineRun, template); diff != "" {
 		t.Fatalf("createDevCIPipelineRun failed:\n%s", diff)
 	}
