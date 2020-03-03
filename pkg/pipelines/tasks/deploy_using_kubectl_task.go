@@ -3,7 +3,6 @@ package tasks
 import (
 	"github.com/openshift/odo/pkg/pipelines/meta"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha2"
 )
 
 func generateDeployUsingKubectlTask(ns string) pipelinev1.Task {
@@ -12,9 +11,7 @@ func generateDeployUsingKubectlTask(ns string) pipelinev1.Task {
 		ObjectMeta: meta.CreateObjectMeta(ns, "deploy-using-kubectl-task"),
 		Spec: pipelinev1.TaskSpec{
 			Inputs: createInputsForDeployKubectlTask(),
-			TaskSpec: v1alpha2.TaskSpec{
-				Steps: createStepsForDeployKubectlTask(),
-			},
+			Steps:  createStepsForDeployKubectlTask(),
 		},
 	}
 }

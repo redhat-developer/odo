@@ -1267,7 +1267,7 @@ func TestReconcileOnCompletedTaskRun(t *testing.T) {
 		t.Fatalf("Expected completed TaskRun %s to exist but instead got error when getting it: %v", taskRun.Name, err)
 	}
 	if d := cmp.Diff(taskSt, newTr.Status.GetCondition(apis.ConditionSucceeded), ignoreLastTransitionTime); d != "" {
-		t.Fatalf("Did not get expected condition (-want, +got): %v", d)
+		t.Fatalf("Did not get expected conditon (-want, +got): %v", d)
 	}
 }
 
@@ -1643,15 +1643,14 @@ func TestUpdateTaskRunResourceResult(t *testing.T) {
 			ContainerStatuses: []corev1.ContainerStatus{{
 				State: corev1.ContainerState{
 					Terminated: &corev1.ContainerStateTerminated{
-						Message: `[{"key":"digest","value":"sha256:1234","resourceRef":{"name":"source-image"}}]`,
+						Message: `[{"name":"source-image","digest":"sha256:1234"}]`,
 					},
 				},
 			}},
 		},
 		want: []v1alpha1.PipelineResourceResult{{
-			Key:         "digest",
-			Value:       "sha256:1234",
-			ResourceRef: v1alpha1.PipelineResourceRef{Name: "source-image"},
+			Name:   "source-image",
+			Digest: "sha256:1234",
 		}},
 	}} {
 		t.Run(c.desc, func(t *testing.T) {
@@ -1671,180 +1670,6 @@ func TestUpdateTaskRunResourceResult(t *testing.T) {
 	}
 }
 
-func TestUpdateTaskRunResult(t *testing.T) {
-	for _, c := range []struct {
-		desc          string
-		podStatus     corev1.PodStatus
-		taskRunStatus *v1alpha1.TaskRunStatus
-		wantResults   []v1alpha1.TaskRunResult
-		want          []v1alpha1.PipelineResourceResult
-	}{{
-		desc: "test result with pipeline result",
-		podStatus: corev1.PodStatus{
-			ContainerStatuses: []corev1.ContainerStatus{{
-				State: corev1.ContainerState{
-					Terminated: &corev1.ContainerStateTerminated{
-						Message: `[{"key":"resultName","value":"resultValue", "type": "TaskRunResult"}, {"key":"digest","value":"sha256:1234","resourceRef":{"name":"source-image"}, "type": "PipelineResourceResult"}]`,
-					},
-				},
-			}},
-		},
-		wantResults: []v1alpha1.TaskRunResult{{
-			Name:  "resultName",
-			Value: "resultValue",
-		}},
-		want: []v1alpha1.PipelineResourceResult{{
-			Key:         "digest",
-			Value:       "sha256:1234",
-			ResourceRef: v1alpha1.PipelineResourceRef{Name: "source-image"},
-			ResultType:  "PipelineResourceResult",
-		}},
-	}} {
-		t.Run(c.desc, func(t *testing.T) {
-			names.TestingSeed()
-			tr := &v1alpha1.TaskRun{}
-			tr.Status.SetCondition(&apis.Condition{
-				Type:   apis.ConditionSucceeded,
-				Status: corev1.ConditionTrue,
-			})
-			if err := updateTaskRunResourceResult(tr, c.podStatus); err != nil {
-				t.Errorf("updateTaskRunResourceResult: %s", err)
-			}
-			if d := cmp.Diff(c.wantResults, tr.Status.TaskRunResults); d != "" {
-				t.Errorf("updateTaskRunResourceResult TaskRunResults (-want, +got): %s", d)
-			}
-			if d := cmp.Diff(c.want, tr.Status.ResourcesResult); d != "" {
-				t.Errorf("updateTaskRunResourceResult ResourcesResult (-want, +got): %s", d)
-			}
-		})
-	}
-}
-func TestUpdateTaskRunResult2(t *testing.T) {
-	for _, c := range []struct {
-		desc          string
-		podStatus     corev1.PodStatus
-		taskRunStatus *v1alpha1.TaskRunStatus
-		wantResults   []v1alpha1.TaskRunResult
-		want          []v1alpha1.PipelineResourceResult
-	}{{
-		desc: "test result with pipeline result - no result type",
-		podStatus: corev1.PodStatus{
-			ContainerStatuses: []corev1.ContainerStatus{{
-				State: corev1.ContainerState{
-					Terminated: &corev1.ContainerStateTerminated{
-						Message: `[{"key":"resultName","value":"resultValue", "type": "TaskRunResult"}, {"key":"digest","value":"sha256:1234","resourceRef":{"name":"source-image"}}]`,
-					},
-				},
-			}},
-		},
-		wantResults: []v1alpha1.TaskRunResult{{
-			Name:  "resultName",
-			Value: "resultValue",
-		}},
-		want: []v1alpha1.PipelineResourceResult{{
-			Key:         "digest",
-			Value:       "sha256:1234",
-			ResourceRef: v1alpha1.PipelineResourceRef{Name: "source-image"},
-		}},
-	}} {
-		t.Run(c.desc, func(t *testing.T) {
-			names.TestingSeed()
-			tr := &v1alpha1.TaskRun{}
-			tr.Status.SetCondition(&apis.Condition{
-				Type:   apis.ConditionSucceeded,
-				Status: corev1.ConditionTrue,
-			})
-			if err := updateTaskRunResourceResult(tr, c.podStatus); err != nil {
-				t.Errorf("updateTaskRunResourceResult: %s", err)
-			}
-			if d := cmp.Diff(c.wantResults, tr.Status.TaskRunResults); d != "" {
-				t.Errorf("updateTaskRunResourceResult (-want, +got): %s", d)
-			}
-			if d := cmp.Diff(c.want, tr.Status.ResourcesResult); d != "" {
-				t.Errorf("updateTaskRunResourceResult (-want, +got): %s", d)
-			}
-		})
-	}
-}
-func TestUpdateTaskRunResultTwoResults(t *testing.T) {
-	for _, c := range []struct {
-		desc          string
-		podStatus     corev1.PodStatus
-		taskRunStatus *v1alpha1.TaskRunStatus
-		want          []v1alpha1.TaskRunResult
-	}{{
-		desc: "two test results",
-		podStatus: corev1.PodStatus{
-			ContainerStatuses: []corev1.ContainerStatus{{
-				State: corev1.ContainerState{
-					Terminated: &corev1.ContainerStateTerminated{
-						Message: `[{"key":"resultNameOne","value":"resultValueOne", "type": "TaskRunResult"},{"key":"resultNameTwo","value":"resultValueTwo", "type": "TaskRunResult"}]`,
-					},
-				},
-			}},
-		},
-		want: []v1alpha1.TaskRunResult{{
-			Name:  "resultNameOne",
-			Value: "resultValueOne",
-		}, {
-			Name:  "resultNameTwo",
-			Value: "resultValueTwo",
-		}},
-	}} {
-		t.Run(c.desc, func(t *testing.T) {
-			names.TestingSeed()
-			tr := &v1alpha1.TaskRun{}
-			tr.Status.SetCondition(&apis.Condition{
-				Type:   apis.ConditionSucceeded,
-				Status: corev1.ConditionTrue,
-			})
-			if err := updateTaskRunResourceResult(tr, c.podStatus); err != nil {
-				t.Errorf("updateTaskRunResourceResult: %s", err)
-			}
-			if d := cmp.Diff(c.want, tr.Status.TaskRunResults); d != "" {
-				t.Errorf("updateTaskRunResourceResult (-want, +got): %s", d)
-			}
-		})
-	}
-}
-func TestUpdateTaskRunResultWhenTaskFailed(t *testing.T) {
-	for _, c := range []struct {
-		desc          string
-		podStatus     corev1.PodStatus
-		taskRunStatus *v1alpha1.TaskRunStatus
-		wantResults   []v1alpha1.TaskRunResult
-		want          []v1alpha1.PipelineResourceResult
-	}{{
-		desc: "update task results when task fails",
-		podStatus: corev1.PodStatus{
-			ContainerStatuses: []corev1.ContainerStatus{{
-				State: corev1.ContainerState{
-					Terminated: &corev1.ContainerStateTerminated{
-						Message: `[{"key":"resultName","value":"resultValue", "type": "TaskRunResult"}, {"name":"source-image","digest":"sha256:1234"}]`,
-					},
-				},
-			}},
-		},
-		taskRunStatus: &v1alpha1.TaskRunStatus{
-			Status: duckv1beta1.Status{Conditions: []apis.Condition{{
-				Type:   apis.ConditionSucceeded,
-				Status: corev1.ConditionFalse,
-			}}},
-		},
-		wantResults: nil,
-		want:        nil,
-	}} {
-		t.Run(c.desc, func(t *testing.T) {
-			names.TestingSeed()
-			if d := cmp.Diff(c.want, c.taskRunStatus.ResourcesResult); d != "" {
-				t.Errorf("updateTaskRunResourceResult resources (-want, +got): %s", d)
-			}
-			if d := cmp.Diff(c.wantResults, c.taskRunStatus.TaskRunResults); d != "" {
-				t.Errorf("updateTaskRunResourceResult results (-want, +got): %s", d)
-			}
-		})
-	}
-}
 func TestUpdateTaskRunResourceResult_Errors(t *testing.T) {
 	for _, c := range []struct {
 		desc          string

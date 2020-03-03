@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	knativetest "knative.dev/pkg/test"
@@ -43,7 +42,7 @@ func TestStartTime(t *testing.T) {
 			Namespace:    namespace,
 		},
 		Spec: v1alpha1.TaskRunSpec{
-			TaskSpec: &v1alpha1.TaskSpec{TaskSpec: v1alpha2.TaskSpec{
+			TaskSpec: &v1alpha1.TaskSpec{
 				Steps: []v1alpha1.Step{{
 					Container: corev1.Container{Image: "ubuntu"},
 					Script:    "sleep 10",
@@ -60,7 +59,7 @@ func TestStartTime(t *testing.T) {
 					Container: corev1.Container{Image: "ubuntu"},
 					Script:    "sleep 10",
 				}},
-			}},
+			},
 		},
 	})
 	if err != nil {

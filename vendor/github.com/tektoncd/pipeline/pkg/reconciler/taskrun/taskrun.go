@@ -330,22 +330,7 @@ func (c *Reconciler) reconcile(ctx context.Context, tr *v1alpha1.TaskRun) error 
 			c.Logger.Errorf("Error getting pod %q: %v", tr.Status.PodName, err)
 			return err
 		}
-	} else {
-		pos, err := c.KubeClientSet.CoreV1().Pods(tr.Namespace).List(metav1.ListOptions{
-			LabelSelector: getLabelSelector(tr),
-		})
-		if err != nil {
-			c.Logger.Errorf("Error listing pods: %v", err)
-			return err
-		}
-		for index := range pos.Items {
-			po := pos.Items[index]
-			if metav1.IsControlledBy(&po, tr) && !podconvert.DidTaskRunFail(&po) {
-				pod = &po
-			}
-		}
 	}
-
 	if pod == nil {
 		pod, err = c.createPod(tr, rtr)
 		if err != nil {
@@ -425,33 +410,11 @@ func updateTaskRunResourceResult(taskRun *v1alpha1.TaskRun, podStatus corev1.Pod
 				if err != nil {
 					return fmt.Errorf("parsing message for container status %d: %v", idx, err)
 				}
-				taskResults, pipelineResults := getResults(r)
-				taskRun.Status.TaskRunResults = append(taskRun.Status.TaskRunResults, taskResults...)
-				taskRun.Status.ResourcesResult = append(taskRun.Status.ResourcesResult, pipelineResults...)
+				taskRun.Status.ResourcesResult = append(taskRun.Status.ResourcesResult, r...)
 			}
 		}
 	}
 	return nil
-}
-
-func getResults(results []v1alpha1.PipelineResourceResult) ([]v1alpha1.TaskRunResult, []v1alpha1.PipelineResourceResult) {
-	var taskResults []v1alpha1.TaskRunResult
-	var pipelineResourceResults []v1alpha1.PipelineResourceResult
-	for _, r := range results {
-		switch r.ResultType {
-		case v1alpha1.TaskRunResultType:
-			taskRunResult := v1alpha1.TaskRunResult{
-				Name:  r.Key,
-				Value: r.Value,
-			}
-			taskResults = append(taskResults, taskRunResult)
-		case v1alpha1.PipelineResourceResultType:
-			fallthrough
-		default:
-			pipelineResourceResults = append(pipelineResourceResults, r)
-		}
-	}
-	return taskResults, pipelineResourceResults
 }
 
 func (c *Reconciler) updateStatus(taskrun *v1alpha1.TaskRun) (*v1alpha1.TaskRun, error) {
@@ -528,9 +491,6 @@ func (c *Reconciler) createPod(tr *v1alpha1.TaskRun, rtr *resources.ResolvedTask
 	// Apply workspace resource substitution
 	ts = resources.ApplyWorkspaces(ts, ts.Workspaces, tr.Spec.Workspaces)
 
-	// Apply task result substitution
-	ts = resources.ApplyTaskResults(ts)
-
 	ts, err = workspace.Apply(*ts, tr.Spec.Workspaces)
 	if err != nil {
 		c.Logger.Errorf("Failed to create a pod for taskrun: %s due to workspace error %v", tr.Name, err)
@@ -587,14 +547,4 @@ func resourceImplBinding(resources map[string]*v1alpha1.PipelineResource, images
 		p[rName] = i
 	}
 	return p, nil
-}
-
-// getLabelSelector get label of centain taskrun
-func getLabelSelector(tr *v1alpha1.TaskRun) string {
-	labels := []string{}
-	labelsMap := podconvert.MakeLabels(tr)
-	for key, value := range labelsMap {
-		labels = append(labels, fmt.Sprintf("%s=%s", key, value))
-	}
-	return strings.Join(labels, ",")
 }

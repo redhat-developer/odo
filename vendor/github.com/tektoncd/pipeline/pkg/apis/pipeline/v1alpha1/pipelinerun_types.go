@@ -1,5 +1,5 @@
 /*
-Copyright 2019-2020 The Tekton Authors
+Copyright 2019 The Tekton Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,11 +22,11 @@ import (
 
 	"github.com/tektoncd/pipeline/pkg/apis/config"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"knative.dev/pkg/apis"
+	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 )
 
 var (
@@ -36,27 +36,6 @@ var (
 		Kind:    pipeline.PipelineRunControllerName,
 	}
 )
-
-// +genclient
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// PipelineRun represents a single execution of a Pipeline. PipelineRuns are how
-// the graph of Tasks declared in a Pipeline are executed; they specify inputs
-// to Pipelines such as parameter values and capture operational aspects of the
-// Tasks execution such as service account and tolerations. Creating a
-// PipelineRun creates TaskRuns for Tasks in the referenced Pipeline.
-//
-// +k8s:openapi-gen=true
-type PipelineRun struct {
-	metav1.TypeMeta `json:",inline"`
-	// +optional
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	// +optional
-	Spec PipelineRunSpec `json:"spec,omitempty"`
-	// +optional
-	Status PipelineRunStatus `json:"status,omitempty"`
-}
 
 // PipelineRunSpec defines the desired state of PipelineRun
 type PipelineRunSpec struct {
@@ -87,46 +66,135 @@ type PipelineRunSpec struct {
 	// with those declared in the pipeline.
 	// +optional
 	Workspaces []WorkspaceBinding `json:"workspaces,omitempty"`
-	// Used to specify name of LimitRange that exists in namespace
-	// where PipelineRun will run so that the LimitRange's minimum for
-	// container requests can be used by containers of TaskRuns associated
-	// with PipelineRun
-	// +optional
-	LimitRangeName string `json:"limitRangeName"`
 }
 
 // PipelineRunSpecStatus defines the pipelinerun spec status the user can provide
-type PipelineRunSpecStatus = v1alpha2.PipelineRunSpecStatus
+type PipelineRunSpecStatus string
 
 const (
 	// PipelineRunSpecStatusCancelled indicates that the user wants to cancel the task,
 	// if not already cancelled or terminated
-	PipelineRunSpecStatusCancelled = v1alpha2.PipelineRunSpecStatusCancelled
+	PipelineRunSpecStatusCancelled = "PipelineRunCancelled"
 )
 
 // PipelineResourceRef can be used to refer to a specific instance of a Resource
-type PipelineResourceRef = v1alpha2.PipelineResourceRef
+type PipelineResourceRef struct {
+	// Name of the referent; More info: http://kubernetes.io/docs/user-guide/identifiers#names
+	Name string `json:"name,omitempty"`
+	// API version of the referent
+	// +optional
+	APIVersion string `json:"apiVersion,omitempty"`
+}
 
 // PipelineRef can be used to refer to a specific instance of a Pipeline.
 // Copied from CrossVersionObjectReference: https://github.com/kubernetes/kubernetes/blob/169df7434155cbbc22f1532cba8e0a9588e29ad8/pkg/apis/autoscaling/types.go#L64
-type PipelineRef = v1alpha2.PipelineRef
+type PipelineRef struct {
+	// Name of the referent; More info: http://kubernetes.io/docs/user-guide/identifiers#names
+	Name string `json:"name,omitempty"`
+	// API version of the referent
+	// +optional
+	APIVersion string `json:"apiVersion,omitempty"`
+}
 
 // PipelineRunStatus defines the observed state of PipelineRun
-type PipelineRunStatus = v1alpha2.PipelineRunStatus
+type PipelineRunStatus struct {
+	duckv1beta1.Status `json:",inline"`
+
+	// PipelineRunStatusFields inlines the status fields.
+	PipelineRunStatusFields `json:",inline"`
+}
 
 // PipelineRunStatusFields holds the fields of PipelineRunStatus' status.
 // This is defined separately and inlined so that other types can readily
 // consume these fields via duck typing.
-type PipelineRunStatusFields = v1alpha2.PipelineRunStatusFields
+type PipelineRunStatusFields struct {
+	// StartTime is the time the PipelineRun is actually started.
+	// +optional
+	StartTime *metav1.Time `json:"startTime,omitempty"`
+
+	// CompletionTime is the time the PipelineRun completed.
+	// +optional
+	CompletionTime *metav1.Time `json:"completionTime,omitempty"`
+
+	// map of PipelineRunTaskRunStatus with the taskRun name as the key
+	// +optional
+	TaskRuns map[string]*PipelineRunTaskRunStatus `json:"taskRuns,omitempty"`
+}
 
 // PipelineRunTaskRunStatus contains the name of the PipelineTask for this TaskRun and the TaskRun's Status
-type PipelineRunTaskRunStatus = v1alpha2.PipelineRunTaskRunStatus
+type PipelineRunTaskRunStatus struct {
+	// PipelineTaskName is the name of the PipelineTask.
+	PipelineTaskName string `json:"pipelineTaskName,omitempty"`
+	// Status is the TaskRunStatus for the corresponding TaskRun
+	// +optional
+	Status *TaskRunStatus `json:"status,omitempty"`
+	// ConditionChecks maps the name of a condition check to its Status
+	// +optional
+	ConditionChecks map[string]*PipelineRunConditionCheckStatus `json:"conditionChecks,omitempty"`
+}
 
-type PipelineRunConditionCheckStatus = v1alpha2.PipelineRunConditionCheckStatus
+type PipelineRunConditionCheckStatus struct {
+	// ConditionName is the name of the Condition
+	ConditionName string `json:"conditionName,omitempty"`
+	// Status is the ConditionCheckStatus for the corresponding ConditionCheck
+	// +optional
+	Status *ConditionCheckStatus `json:"status,omitempty"`
+}
+
+var pipelineRunCondSet = apis.NewBatchConditionSet()
+
+// GetCondition returns the Condition matching the given type.
+func (pr *PipelineRunStatus) GetCondition(t apis.ConditionType) *apis.Condition {
+	return pipelineRunCondSet.Manage(pr).GetCondition(t)
+}
+
+// InitializeConditions will set all conditions in pipelineRunCondSet to unknown for the PipelineRun
+// and set the started time to the current time
+func (pr *PipelineRunStatus) InitializeConditions() {
+	if pr.TaskRuns == nil {
+		pr.TaskRuns = make(map[string]*PipelineRunTaskRunStatus)
+	}
+	if pr.StartTime.IsZero() {
+		pr.StartTime = &metav1.Time{Time: time.Now()}
+	}
+	pipelineRunCondSet.Manage(pr).InitializeConditions()
+}
 
 // PipelineRunSpecServiceAccountName can be used to configure specific
 // ServiceAccountName for a concrete Task
-type PipelineRunSpecServiceAccountName = v1alpha2.PipelineRunSpecServiceAccountName
+type PipelineRunSpecServiceAccountName struct {
+	TaskName           string `json:"taskName,omitempty"`
+	ServiceAccountName string `json:"serviceAccountName,omitempty"`
+}
+
+// SetCondition sets the condition, unsetting previous conditions with the same
+// type as necessary.
+func (pr *PipelineRunStatus) SetCondition(newCond *apis.Condition) {
+	if newCond != nil {
+		pipelineRunCondSet.Manage(pr).SetCondition(*newCond)
+	}
+}
+
+// +genclient
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// PipelineRun represents a single execution of a Pipeline. PipelineRuns are how
+// the graph of Tasks declared in a Pipeline are executed; they specify inputs
+// to Pipelines such as parameter values and capture operational aspects of the
+// Tasks execution such as service account and tolerations. Creating a
+// PipelineRun creates TaskRuns for Tasks in the referenced Pipeline.
+//
+// +k8s:openapi-gen=true
+type PipelineRun struct {
+	metav1.TypeMeta `json:",inline"`
+	// +optional
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	// +optional
+	Spec PipelineRunSpec `json:"spec,omitempty"`
+	// +optional
+	Status PipelineRunStatus `json:"status,omitempty"`
+}
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
@@ -141,7 +209,9 @@ type PipelineRunList struct {
 // PipelineTaskRun reports the results of running a step in the Task. Each
 // task has the potential to succeed or fail (based on the exit code)
 // and produces logs.
-type PipelineTaskRun = v1alpha2.PipelineTaskRun
+type PipelineTaskRun struct {
+	Name string `json:"name,omitempty"`
+}
 
 // GetTaskRunRef for pipelinerun
 func (pr *PipelineRun) GetTaskRunRef() corev1.ObjectReference {

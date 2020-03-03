@@ -101,13 +101,33 @@ func ApplyTaskModifier(ts *TaskSpec, tm TaskModifier) error {
 
 // PipelineResourceBinding connects a reference to an instance of a PipelineResource
 // with a PipelineResource dependency that the Pipeline has declared
-type PipelineResourceBinding = v1alpha2.PipelineResourceBinding
+type PipelineResourceBinding struct {
+	// Name is the name of the PipelineResource in the Pipeline's declaration
+	Name string `json:"name,omitempty"`
+	// ResourceRef is a reference to the instance of the actual PipelineResource
+	// that should be used
+	// +optional
+	ResourceRef *PipelineResourceRef `json:"resourceRef,omitempty"`
+	// ResourceSpec is specification of a resource that should be created and
+	// consumed by the task
+	// +optional
+	ResourceSpec *PipelineResourceSpec `json:"resourceSpec,omitempty"`
+}
 
 // PipelineResourceResult used to export the image name and digest as json
-type PipelineResourceResult = v1alpha2.PipelineResourceResult
+type PipelineResourceResult struct {
+	// Name and Digest are deprecated.
+	Name   string `json:"name"`
+	Digest string `json:"digest"`
+	// These will replace Name and Digest (https://github.com/tektoncd/pipeline/issues/1392)
+	Key         string              `json:"key"`
+	Value       string              `json:"value"`
+	ResourceRef PipelineResourceRef `json:"resourceRef,omitempty"`
+	ResultType  ResultType          `json:"type,omitempty"`
+}
 
 // ResultType used to find out whether a PipelineResourceResult is from a task result or not
-type ResultType = v1alpha2.ResultType
+type ResultType string
 
 // ResourceFromType returns an instance of the correct PipelineResource object type which can be
 // used to add input and output containers as well as volumes to a TaskRun's pod in order to realize

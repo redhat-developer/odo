@@ -36,6 +36,19 @@ type Pipeline struct {
 	// Spec holds the desired state of the Pipeline from the client
 	// +optional
 	Spec PipelineSpec `json:"spec"`
+
+	// Status is deprecated.
+	// It usually is used to communicate the observed state of the Pipeline from
+	// the controller, but was unused as there is no controller for Pipeline.
+	// +optional
+	Status *PipelineStatus `json:"status,omitempty"`
+}
+
+// PipelineStatus does not contain anything because Pipelines on their own
+// do not have a status, they just hold data which is later used by a
+// PipelineRun.
+// Deprecated
+type PipelineStatus struct {
 }
 
 func (p *Pipeline) PipelineMetadata() metav1.ObjectMeta {
@@ -60,10 +73,6 @@ type PipelineSpec struct {
 	// Params declares a list of input parameters that must be supplied when
 	// this Pipeline is run.
 	Params []ParamSpec `json:"params,omitempty"`
-	// Workspaces declares a set of named workspaces that are expected to be
-	// provided by a PipelineRun.
-	// +optional
-	Workspaces []WorkspacePipelineDeclaration `json:"workspaces,omitempty"`
 }
 
 // PipelineTask defines a task in a Pipeline, passing inputs from both
@@ -102,11 +111,6 @@ type PipelineTask struct {
 	// Parameters declares parameters passed to this task.
 	// +optional
 	Params []Param `json:"params,omitempty"`
-
-	// Workspaces maps workspaces from the pipeline spec to the workspaces
-	// declared in the Task.
-	// +optional
-	Workspaces []WorkspacePipelineTaskBinding `json:"workspaces,omitempty"`
 }
 
 func (pt PipelineTask) HashKey() string {
@@ -171,10 +175,6 @@ type PipelineDeclaredResource struct {
 	Name string `json:"name"`
 	// Type is the type of the PipelineResource.
 	Type PipelineResourceType `json:"type"`
-	// Optional declares the resource as optional.
-	// optional: true - the resource is considered optional
-	// optional: false - the resource is considered required (default/equivalent of not specifying it)
-	Optional bool `json:"optional,omitempty"`
 }
 
 // PipelineTaskResources allows a Pipeline to declare how its DeclaredPipelineResources

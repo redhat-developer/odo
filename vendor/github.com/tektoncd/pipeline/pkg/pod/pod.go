@@ -38,7 +38,7 @@ const (
 
 // These are effectively const, but Go doesn't have such an annotation.
 var (
-	ReleaseAnnotation      = "pipeline.tekton.dev/release"
+	ReleaseAnnotation      = "tekton.dev/release"
 	ReleaseAnnotationValue = version.PipelineVersion
 
 	groupVersionKind = schema.GroupVersionKind{
@@ -93,7 +93,7 @@ func MakePod(images pipeline.Images, taskRun *v1alpha1.TaskRun, taskSpec v1alpha
 
 	// Convert any steps with Script to command+args.
 	// If any are found, append an init container to initialize scripts.
-	scriptsInit, stepContainers, sidecarContainers := convertScripts(images.ShellImage, steps, taskSpec.Sidecars)
+	scriptsInit, stepContainers := convertScripts(images.ShellImage, steps)
 	if scriptsInit != nil {
 		initContainers = append(initContainers, *scriptsInit)
 		volumes = append(volumes, scriptsVolume)
@@ -119,18 +119,8 @@ func MakePod(images pipeline.Images, taskRun *v1alpha1.TaskRun, taskSpec v1alpha
 	initContainers = append(initContainers, entrypointInit)
 	volumes = append(volumes, toolsVolume, downwardVolume)
 
-	// If present on TaskRunSpec, use LimitRangeName to get LimitRange
-	// so it can be used in resolveResourceRequests
-	var limitRange *corev1.LimitRange
-	if taskRun.Spec.LimitRangeName != "" {
-		limitRange, err = kubeclient.CoreV1().LimitRanges(taskRun.Namespace).Get(taskRun.Spec.LimitRangeName, metav1.GetOptions{})
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	// Zero out non-max resource requests.
-	stepContainers = resolveResourceRequests(stepContainers, limitRange)
+	stepContainers = resolveResourceRequests(stepContainers)
 
 	// Add implicit env vars.
 	// They're prepended to the list, so that if the user specified any
@@ -188,10 +178,9 @@ func MakePod(images pipeline.Images, taskRun *v1alpha1.TaskRun, taskSpec v1alpha
 		return nil, err
 	}
 
-	mergedPodContainers := stepContainers
-
 	// Merge sidecar containers with step containers.
-	for _, sc := range sidecarContainers {
+	mergedPodContainers := stepContainers
+	for _, sc := range taskSpec.Sidecars {
 		sc.Name = names.SimpleNameGenerator.RestrictLength(fmt.Sprintf("%v%v", sidecarPrefix, sc.Name))
 		mergedPodContainers = append(mergedPodContainers, sc)
 	}
@@ -224,7 +213,7 @@ func MakePod(images pipeline.Images, taskRun *v1alpha1.TaskRun, taskSpec v1alpha
 				*metav1.NewControllerRef(taskRun, groupVersionKind),
 			},
 			Annotations: podAnnotations,
-			Labels:      MakeLabels(taskRun),
+			Labels:      makeLabels(taskRun),
 		},
 		Spec: corev1.PodSpec{
 			RestartPolicy:                corev1.RestartPolicyNever,
@@ -247,7 +236,7 @@ func MakePod(images pipeline.Images, taskRun *v1alpha1.TaskRun, taskSpec v1alpha
 }
 
 // makeLabels constructs the labels we will propagate from TaskRuns to Pods.
-func MakeLabels(s *v1alpha1.TaskRun) map[string]string {
+func makeLabels(s *v1alpha1.TaskRun) map[string]string {
 	labels := make(map[string]string, len(s.ObjectMeta.Labels)+1)
 	// NB: Set this *before* passing through TaskRun labels. If the TaskRun
 	// has a managed-by label, it should override this default.

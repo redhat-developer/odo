@@ -229,7 +229,7 @@ resourcesResult:
 
 ### Optional Resources
 
-By default, a resource is declared as mandatory unless `optional` is set to `true`
+By default, a resource is declared as mandatory unless `optional` is set `true`
 for that resource. Resources declared as `optional` in a `Task` does not have be
 specified in `TaskRun`.
 
@@ -246,31 +246,12 @@ spec:
         optional: true
 ```
 
-Similarly, resources declared as `optional` in a `Pipeline` does not have to be
-specified in `PipelineRun`.
-
-```yaml
-apiVersion: tekton.dev/v1alpha1
-kind: Pipeline
-metadata:
-  name: pipeline-build-image
-spec:
-  resources:
-    - name: workspace
-      type: git
-      optional: true
-  tasks:
-    - name: check-workspace
-...
-```
-
 You can refer to different examples demonstrating usage of optional resources in
-`Task`, `Condition`, and `Pipeline`:
+`Task` and `Condition`:
 
 -   [Task](../examples/taskruns/optional-resources.yaml)
 -   [Cluster Task](../examples/taskruns/optional-resources-with-clustertask.yaml)
 -   [Condition](../examples/pipelineruns/conditional-pipelinerun-with-optional-resources.yaml)
--   [Pipeline](../examples/pipelineruns/demo-optional-resources.yaml)
 
 ## Resource Types
 
@@ -478,7 +459,7 @@ URLs should be of the form: https://github.com/tektoncd/pipeline/pull/1
 
 The PullRequest resource works with self hosted or enterprise GitHub/GitLab
 instances. Simply provide the pull request URL and set the `provider` parameter.
-If you need to skip certificate validation set the `insecure-skip-tls-verify`
+If you need to skip certificate validation set the `insecure-skip-tls-verify` 
 parameter to `"true"`.
 
 ```yaml
@@ -574,10 +555,8 @@ for example:
 status:
     ...
     resourcesResult:
-    - key: "digest"
-      value: "sha256:eed29cd0b6feeb1a92bc3c4f977fd203c63b376a638731c88cacefe3adb1c660"
-      resourceRef:
-        name: skaffold-image-leeroy-web
+    - digest: sha256:eed29cd0b6feeb1a92bc3c4f977fd203c63b376a638731c88cacefe3adb1c660
+      name: skaffold-image-leeroy-web
     ...
 ```
 

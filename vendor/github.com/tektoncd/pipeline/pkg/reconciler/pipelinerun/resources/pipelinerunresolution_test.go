@@ -24,7 +24,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha2"
 	"github.com/tektoncd/pipeline/pkg/reconciler/pipeline/dag"
 	"github.com/tektoncd/pipeline/pkg/reconciler/taskrun/resources"
 	tb "github.com/tektoncd/pipeline/test/builder"
@@ -92,22 +91,22 @@ var task = &v1alpha1.Task{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: "task",
 	},
-	Spec: v1alpha1.TaskSpec{TaskSpec: v1alpha2.TaskSpec{
+	Spec: v1alpha1.TaskSpec{
 		Steps: []v1alpha1.Step{{Container: corev1.Container{
 			Name: "step1",
 		}}},
-	}},
+	},
 }
 
 var clustertask = &v1alpha1.ClusterTask{
 	ObjectMeta: metav1.ObjectMeta{
 		Name: "clustertask",
 	},
-	Spec: v1alpha1.TaskSpec{TaskSpec: v1alpha2.TaskSpec{
+	Spec: v1alpha1.TaskSpec{
 		Steps: []v1alpha1.Step{{Container: corev1.Container{
 			Name: "step1",
 		}}},
-	}},
+	},
 }
 
 var trs = []v1alpha1.TaskRun{{
@@ -452,40 +451,6 @@ var taskCancelled = PipelineRunState{{
 		TaskSpec: &task.Spec,
 	},
 }}
-
-var taskWithOptionalResources = &v1alpha1.Task{
-	ObjectMeta: metav1.ObjectMeta{
-		Name: "task",
-	},
-	Spec: v1alpha1.TaskSpec{
-		TaskSpec: v1alpha2.TaskSpec{
-			Steps: []v1alpha1.Step{{Container: corev1.Container{
-				Name: "step1",
-			}}},
-		},
-		Inputs: &v1alpha1.Inputs{
-			Resources: []v1alpha1.TaskResource{{ResourceDeclaration: v1alpha1.ResourceDeclaration{
-				Name:     "optional-input",
-				Type:     "git",
-				Optional: true,
-			}}, {ResourceDeclaration: v1alpha1.ResourceDeclaration{
-				Name:     "required-input",
-				Type:     "git",
-				Optional: false,
-			}}}},
-		Outputs: &v1alpha1.Outputs{
-			Resources: []v1alpha1.TaskResource{{ResourceDeclaration: v1alpha1.ResourceDeclaration{
-				Name:     "optional-output",
-				Type:     "git",
-				Optional: true,
-			}}, {ResourceDeclaration: v1alpha1.ResourceDeclaration{
-				Name:     "required-output",
-				Type:     "git",
-				Optional: false,
-			}}},
-		},
-	},
-}
 
 func DagFromState(state PipelineRunState) (*dag.Graph, error) {
 	pts := []v1alpha1.PipelineTask{}
@@ -1154,11 +1119,11 @@ func TestResolvePipelineRun(t *testing.T) {
 			tb.PipelineTaskOutputResource("output1", "git-resource"),
 		),
 		tb.PipelineTask("mytask4", "",
-			tb.PipelineTaskSpec(&v1alpha1.TaskSpec{TaskSpec: v1alpha2.TaskSpec{
+			tb.PipelineTaskSpec(&v1alpha1.TaskSpec{
 				Steps: []v1alpha1.Step{{Container: corev1.Container{
 					Name: "step1",
 				}}},
-			}})),
+			})),
 	))
 
 	r := &v1alpha1.PipelineResource{
@@ -1424,61 +1389,6 @@ func TestResolvePipelineRun_withExistingTaskRuns(t *testing.T) {
 
 	if d := cmp.Diff(pipelineState, expectedState, cmpopts.IgnoreUnexported(v1alpha1.TaskRunSpec{})); d != "" {
 		t.Fatalf("Expected to get current pipeline state %v, but actual differed: %s", expectedState, d)
-	}
-}
-
-func TestResolvedPipelineRun_PipelineTaskHasOptionalResources(t *testing.T) {
-	names.TestingSeed()
-	p := tb.Pipeline("pipelines", "namespace", tb.PipelineSpec(
-		tb.PipelineDeclaredResource("git-resource", "git"),
-		tb.PipelineTask("mytask1", "task",
-			tb.PipelineTaskInputResource("required-input", "git-resource"),
-			tb.PipelineTaskOutputResource("required-output", "git-resource"),
-		),
-	))
-
-	r := &v1alpha1.PipelineResource{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "someresource",
-		},
-		Spec: v1alpha1.PipelineResourceSpec{
-			Type: v1alpha1.PipelineResourceTypeGit,
-		},
-	}
-	providedResources := map[string]*v1alpha1.PipelineResource{"git-resource": r}
-	pr := v1alpha1.PipelineRun{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "pipelinerun",
-		},
-	}
-
-	getTask := func(name string) (v1alpha1.TaskInterface, error) { return taskWithOptionalResources, nil }
-	getTaskRun := func(name string) (*v1alpha1.TaskRun, error) { return nil, nil }
-	getClusterTask := func(name string) (v1alpha1.TaskInterface, error) { return nil, nil }
-	getCondition := func(name string) (*v1alpha1.Condition, error) { return nil, nil }
-
-	pipelineState, err := ResolvePipelineRun(pr, getTask, getTaskRun, getClusterTask, getCondition, p.Spec.Tasks, providedResources)
-	if err != nil {
-		t.Fatalf("Error getting tasks for fake pipeline %s: %s", p.ObjectMeta.Name, err)
-	}
-	expectedState := PipelineRunState{{
-		PipelineTask: &p.Spec.Tasks[0],
-		TaskRunName:  "pipelinerun-mytask1-9l9zj",
-		TaskRun:      nil,
-		ResolvedTaskResources: &resources.ResolvedTaskResources{
-			TaskName: taskWithOptionalResources.Name,
-			TaskSpec: &taskWithOptionalResources.Spec,
-			Inputs: map[string]*v1alpha1.PipelineResource{
-				"required-input": r,
-			},
-			Outputs: map[string]*v1alpha1.PipelineResource{
-				"required-output": r,
-			},
-		},
-	}}
-
-	if d := cmp.Diff(expectedState, pipelineState, cmpopts.IgnoreUnexported(v1alpha1.TaskRunSpec{})); d != "" {
-		t.Errorf("Expected to get current pipeline state %v, but actual differed (-want, +got): %s", expectedState, d)
 	}
 }
 

@@ -45,12 +45,12 @@ func NewFakeClient(behaviour *FakeClientBehaviour) client.Client {
 }
 
 // Send fakes the Send method from kncloudevents.NewDefaultClient
-func (c FakeClient) Send(ctx context.Context, event cloudevents.Event) (context.Context, *cloudevents.Event, error) {
+func (c FakeClient) Send(ctx context.Context, event cloudevents.Event) (*cloudevents.Event, error) {
 	c.event = event
 	if c.behaviour.SendSuccessfully {
-		return ctx, &event, nil
+		return &event, nil
 	}
-	return ctx, nil, fmt.Errorf("%s had to fail", event.Context.GetID())
+	return nil, fmt.Errorf("%s had to fail", event.Context.GetID())
 }
 
 // StartReceiver fakes the StartReceiver method from kncloudevents.NewDefaultClient

@@ -22,7 +22,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha2"
 	tb "github.com/tektoncd/pipeline/test/builder"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -196,12 +195,10 @@ func TestResolvedConditionCheck_ConditionToTaskSpec(t *testing.T) {
 			tb.ConditionSpecCheck("foo", "ubuntu"),
 		)),
 		want: v1alpha1.TaskSpec{
-			TaskSpec: v1alpha2.TaskSpec{
-				Steps: []v1alpha1.Step{{Container: corev1.Container{
-					Name:  "foo",
-					Image: "ubuntu",
-				}}},
-			},
+			Steps: []v1alpha1.Step{{Container: corev1.Container{
+				Name:  "foo",
+				Image: "ubuntu",
+			}}},
 			Inputs: &v1alpha1.Inputs{},
 		},
 	}, {
@@ -210,12 +207,10 @@ func TestResolvedConditionCheck_ConditionToTaskSpec(t *testing.T) {
 			tb.ConditionSpecCheck("", "ubuntu"),
 		)),
 		want: v1alpha1.TaskSpec{
-			TaskSpec: v1alpha2.TaskSpec{
-				Steps: []v1alpha1.Step{{Container: corev1.Container{
-					Name:  "condition-check-bar",
-					Image: "ubuntu",
-				}}},
-			},
+			Steps: []v1alpha1.Step{{Container: corev1.Container{
+				Name:  "condition-check-bar",
+				Image: "ubuntu",
+			}}},
 			Inputs: &v1alpha1.Inputs{},
 		},
 	}, {
@@ -227,13 +222,6 @@ func TestResolvedConditionCheck_ConditionToTaskSpec(t *testing.T) {
 			tb.ConditionParamSpec("img", v1alpha1.ParamTypeString),
 		)),
 		want: v1alpha1.TaskSpec{
-			TaskSpec: v1alpha2.TaskSpec{
-				Steps: []v1alpha1.Step{{Container: corev1.Container{
-					Name:       "$(inputs.params.name)",
-					Image:      "$(inputs.params.img)",
-					WorkingDir: "$(params.not.replaced)",
-				}}},
-			},
 			Inputs: &v1alpha1.Inputs{
 				Params: []v1alpha1.ParamSpec{{
 					Name: "name",
@@ -243,6 +231,11 @@ func TestResolvedConditionCheck_ConditionToTaskSpec(t *testing.T) {
 					Type: "string",
 				}},
 			},
+			Steps: []v1alpha1.Step{{Container: corev1.Container{
+				Name:       "$(inputs.params.name)",
+				Image:      "$(inputs.params.img)",
+				WorkingDir: "$(params.not.replaced)",
+			}}},
 		},
 	}, {
 		name: "with-resources",
@@ -258,13 +251,6 @@ func TestResolvedConditionCheck_ConditionToTaskSpec(t *testing.T) {
 				)),
 		},
 		want: v1alpha1.TaskSpec{
-			TaskSpec: v1alpha2.TaskSpec{
-				Steps: []v1alpha1.Step{{Container: corev1.Container{
-					Name:  "name",
-					Image: "ubuntu",
-					Args:  []string{"master"},
-				}}},
-			},
 			Inputs: &v1alpha1.Inputs{
 				Resources: []v1alpha1.TaskResource{{
 					ResourceDeclaration: v1alpha1.ResourceDeclaration{
@@ -272,6 +258,11 @@ func TestResolvedConditionCheck_ConditionToTaskSpec(t *testing.T) {
 						Type: "git",
 					}}},
 			},
+			Steps: []v1alpha1.Step{{Container: corev1.Container{
+				Name:  "name",
+				Image: "ubuntu",
+				Args:  []string{"master"},
+			}}},
 		},
 	}}
 

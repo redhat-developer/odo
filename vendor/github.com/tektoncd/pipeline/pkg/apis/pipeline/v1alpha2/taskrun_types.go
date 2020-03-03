@@ -48,16 +48,13 @@ type TaskRunSpec struct {
 	// Refer Go's ParseDuration documentation for expected format: https://golang.org/pkg/time/#ParseDuration
 	// +optional
 	Timeout *metav1.Duration `json:"timeout,omitempty"`
+
 	// PodTemplate holds pod specific configuration
-	PodTemplate *PodTemplate `json:"podTemplate,omitempty"`
+	PodTemplate PodTemplate `json:"podTemplate,omitempty"`
+
 	// Workspaces is a list of WorkspaceBindings from volumes to workspaces.
 	// +optional
 	Workspaces []WorkspaceBinding `json:"workspaces,omitempty"`
-	// Used to specify name of LimitRange that exists in namespace
-	// where TaskRun will run so that the LimitRange's minimum for
-	// container requests can be used by containers of TaskRun
-	// +optional
-	LimitRangeName string `json:"limitRangeName"`
 }
 
 // TaskRunSpecStatus defines the taskrun spec status the user can provide
@@ -100,14 +97,6 @@ var taskRunCondSet = apis.NewBatchConditionSet()
 type TaskRunStatus struct {
 	duckv1beta1.Status `json:",inline"`
 
-	// TaskRunStatusFields inlines the status fields.
-	TaskRunStatusFields `json:",inline"`
-}
-
-// TaskRunStatusFields holds the fields of TaskRun's status.  This is defined
-// separately and inlined so that other types can readily consume these fields
-// via duck typing.
-type TaskRunStatusFields struct {
 	// PodName is the name of the pod responsible for executing this task's steps.
 	PodName string `json:"podName"`
 
@@ -132,28 +121,14 @@ type TaskRunStatusFields struct {
 	// All TaskRunStatus stored in RetriesStatus will have no date within the RetriesStatus as is redundant.
 	// +optional
 	RetriesStatus []TaskRunStatus `json:"retriesStatus,omitempty"`
-
 	// Results from Resources built during the taskRun. currently includes
 	// the digest of build container images
-	// +optional
+	// optional
 	ResourcesResult []PipelineResourceResult `json:"resourcesResult,omitempty"`
-
-	// TaskRunResults are the list of results written out by the task's containers
-	// +optional
-	TaskRunResults []TaskRunResult `json:"taskResults,omitempty"`
 
 	// The list has one entry per sidecar in the manifest. Each entry is
 	// represents the imageid of the corresponding sidecar.
 	Sidecars []SidecarState `json:"sidecars,omitempty"`
-}
-
-// TaskRunResult used to describe the results of a task
-type TaskRunResult struct {
-	// Name the given name
-	Name string `json:"name"`
-
-	// Value the given value of the result
-	Value string `json:"value"`
 }
 
 // GetCondition returns the Condition matching the given type.
