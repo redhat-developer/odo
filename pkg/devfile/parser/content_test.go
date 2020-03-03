@@ -1,9 +1,10 @@
 package parser
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
+
+	"github.com/openshift/odo/pkg/testingutil/filesystem"
 )
 
 func TestSetDevfileContent(t *testing.T) {
@@ -15,12 +16,12 @@ func TestSetDevfileContent(t *testing.T) {
 	)
 
 	// createTempDevfile helper creates temp devfile
-	createTempDevfile := func(t *testing.T, content []byte) (f *os.File) {
+	createTempDevfile := func(t *testing.T, content []byte, fakeFs filesystem.Filesystem) (f filesystem.File) {
 
 		t.Helper()
 
 		// Create tempfile
-		f, err := ioutil.TempFile(os.TempDir(), TempJsonDevfilePrefix)
+		f, err := fakeFs.TempFile(os.TempDir(), TempJsonDevfilePrefix)
 		if err != nil {
 			t.Errorf("failed to create temp devfile, %v", err)
 			return f
@@ -39,8 +40,12 @@ func TestSetDevfileContent(t *testing.T) {
 	t.Run("valid file", func(t *testing.T) {
 
 		var (
-			tempDevfile = createTempDevfile(t, validJsonRawContent100())
-			d           = DevfileCtx{absPath: tempDevfile.Name()}
+			fakeFs      = filesystem.NewFakeFs()
+			tempDevfile = createTempDevfile(t, validJsonRawContent100(), fakeFs)
+			d           = DevfileCtx{
+				absPath: tempDevfile.Name(),
+				Fs:      fakeFs,
+			}
 		)
 		defer os.Remove(tempDevfile.Name())
 
@@ -58,8 +63,12 @@ func TestSetDevfileContent(t *testing.T) {
 	t.Run("invalid content", func(t *testing.T) {
 
 		var (
-			tempDevfile = createTempDevfile(t, []byte(InvalidDevfileContent))
-			d           = DevfileCtx{absPath: tempDevfile.Name()}
+			fakeFs      = filesystem.NewFakeFs()
+			tempDevfile = createTempDevfile(t, []byte(InvalidDevfileContent), fakeFs)
+			d           = DevfileCtx{
+				absPath: tempDevfile.Name(),
+				Fs:      fakeFs,
+			}
 		)
 		defer os.Remove(tempDevfile.Name())
 
@@ -77,7 +86,11 @@ func TestSetDevfileContent(t *testing.T) {
 	t.Run("invalid filepath", func(t *testing.T) {
 
 		var (
-			d = DevfileCtx{absPath: InvalidDevfilePath}
+			fakeFs = filesystem.NewFakeFs()
+			d      = DevfileCtx{
+				absPath: InvalidDevfilePath,
+				Fs:      fakeFs,
+			}
 		)
 
 		err := d.SetDevfileContent()
