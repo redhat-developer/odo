@@ -6,6 +6,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	testclient "k8s.io/client-go/kubernetes/fake"
 )
 
 func TestCreateNamespace(t *testing.T) {
@@ -50,5 +51,34 @@ func TestCreateNamespaces(t *testing.T) {
 	}
 	if diff := cmp.Diff(want, ns); diff != "" {
 		t.Fatalf("createNamespaces() failed got\n%s", diff)
+	}
+}
+
+func TestCheckNamespace(t *testing.T) {
+	tests := []struct {
+		desc      string
+		namespace string
+		valid     bool
+	}{
+		{
+			"Namespace sample already exists",
+			"sample",
+			true,
+		},
+		{
+			"Namespace test doesn't exist",
+			"test",
+			false,
+		},
+	}
+	validNamespace := createNamespace("sample")
+	for _, test := range tests {
+		t.Run(test.desc, func(t *testing.T) {
+			cs := testclient.NewSimpleClientset(validNamespace)
+			namespaceExists, _ := checkNamespace(cs, test.namespace)
+			if diff := cmp.Diff(namespaceExists, test.valid); diff != "" {
+				t.Fatalf("checkNamespace() failed:\n%v", diff)
+			}
+		})
 	}
 }

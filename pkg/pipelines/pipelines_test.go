@@ -42,26 +42,12 @@ func TestCreateDevCIPipeline(t *testing.T) {
 				},
 			},
 			Tasks: []pipelinev1.PipelineTask{
-				pipelinev1.PipelineTask{
-					Name: "create-pending-status",
-					TaskRef: &pipelinev1.TaskRef{
-						Name: "create-github-status-task",
-					},
-					Params: []pipelinev1.Param{
-						{Name: "REPO", Value: pipelinev1.ArrayOrString{Type: "string", StringVal: "$(params.REPO)"}},
-						{Name: "COMMIT_SHA", Value: pipelinev1.ArrayOrString{Type: "string", StringVal: "$(params.COMMIT_SHA)"}},
-						{Name: "STATE", Value: pipelinev1.ArrayOrString{Type: "string", StringVal: "pending"}},
-						{Name: "DESCRIPTION", Value: pipelinev1.ArrayOrString{Type: "string", StringVal: "Starting dev-ci-pipeline"}},
-						{Name: "CONTEXT", Value: pipelinev1.ArrayOrString{Type: "string", StringVal: "dev-ci-pipeline"}},
-					},
-				},
 
 				pipelinev1.PipelineTask{
 					Name: "build-image",
 					TaskRef: &pipelinev1.TaskRef{
 						Name: "buildah-task",
 					},
-					RunAfter: []string{"create-pending-status"},
 					Resources: &pipelinev1.PipelineTaskResources{
 						Inputs: []pipelinev1.PipelineTaskInputResource{
 							{Name: "source",
@@ -71,21 +57,6 @@ func TestCreateDevCIPipeline(t *testing.T) {
 							{Name: "image",
 								Resource: "runtime-image"},
 						},
-					},
-				},
-
-				pipelinev1.PipelineTask{
-					Name: "create-success-status",
-					TaskRef: &pipelinev1.TaskRef{
-						Name: "create-github-status-task",
-					},
-					RunAfter: []string{"build-image"},
-					Params: []pipelinev1.Param{
-						{Name: "REPO", Value: pipelinev1.ArrayOrString{Type: "string", StringVal: "$(params.REPO)"}},
-						{Name: "COMMIT_SHA", Value: pipelinev1.ArrayOrString{Type: "string", StringVal: "$(params.COMMIT_SHA)"}},
-						{Name: "STATE", Value: pipelinev1.ArrayOrString{Type: "string", StringVal: "success"}},
-						{Name: "DESCRIPTION", Value: pipelinev1.ArrayOrString{Type: "string", StringVal: "Completed dev-ci-pipeline"}},
-						{Name: "CONTEXT", Value: pipelinev1.ArrayOrString{Type: "string", StringVal: "dev-ci-pipeline"}},
 					},
 				},
 			},

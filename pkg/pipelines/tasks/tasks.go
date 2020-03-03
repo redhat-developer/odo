@@ -7,10 +7,9 @@ import (
 )
 
 // Generate will return a slice of tasks
-func Generate(secretName, ns string) []pipelinev1.Task {
+func Generate(secretName, ns string, usingInternalRegistry bool) []pipelinev1.Task {
 	return []pipelinev1.Task{
-		generateBuildahTask(ns),
-		generateGithubStatusTask(secretName, ns),
+		generateBuildahTask(ns, usingInternalRegistry),
 		generateDeployFromSourceTask(ns),
 		generateDeployUsingKubectlTask(ns),
 	}

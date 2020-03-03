@@ -6,6 +6,7 @@ import (
 	"github.com/openshift/odo/pkg/pipelines/meta"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 var namespaceBaseNames = map[string]string{
@@ -38,4 +39,24 @@ func createNamespace(name string) *corev1.Namespace {
 		},
 	}
 	return ns
+}
+
+func getClientSet() (*kubernetes.Clientset, error) {
+	clientConfig, err := getClientConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get client config due to %w", err)
+	}
+	clientSet, err := kubernetes.NewForConfig(clientConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get APIs client due to %w", err)
+	}
+	return clientSet, nil
+}
+
+func checkNamespace(clientSet kubernetes.Interface, name string) (bool, error) {
+	_, err := clientSet.CoreV1().Namespaces().Get(name, metav1.GetOptions{})
+	if err != nil {
+		return false, nil
+	}
+	return true, nil
 }

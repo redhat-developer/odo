@@ -17,16 +17,16 @@ var (
 )
 
 // GenerateTemplates will return a slice of trigger templates
-func GenerateTemplates(ns, saName string) []triggersv1.TriggerTemplate {
+func GenerateTemplates(ns, saName, imageRepo string) []triggersv1.TriggerTemplate {
 	return []triggersv1.TriggerTemplate{
-		createDevCDDeployTemplate(ns, saName),
-		createDevCIBuildPRTemplate(ns, saName),
+		createDevCDDeployTemplate(ns, saName, imageRepo),
+		createDevCIBuildPRTemplate(ns, saName, imageRepo),
 		createStageCDPushTemplate(ns, saName),
 		createStageCIdryrunptemplate(ns, saName),
 	}
 }
 
-func createDevCDDeployTemplate(ns, saName string) triggersv1.TriggerTemplate {
+func createDevCDDeployTemplate(ns, saName, imageRepo string) triggersv1.TriggerTemplate {
 	return triggersv1.TriggerTemplate{
 		TypeMeta:   triggerTemplateTypeMeta,
 		ObjectMeta: meta.CreateObjectMeta(ns, "dev-cd-deploy-from-master-template"),
@@ -37,14 +37,14 @@ func createDevCDDeployTemplate(ns, saName string) triggersv1.TriggerTemplate {
 			},
 			ResourceTemplates: []triggersv1.TriggerResourceTemplate{
 				triggersv1.TriggerResourceTemplate{
-					RawMessage: createDevCDResourcetemplate(saName),
+					RawMessage: createDevCDResourcetemplate(saName, imageRepo),
 				},
 			},
 		},
 	}
 }
 
-func createDevCIBuildPRTemplate(ns, saName string) triggersv1.TriggerTemplate {
+func createDevCIBuildPRTemplate(ns, saName, imageRepo string) triggersv1.TriggerTemplate {
 	return triggersv1.TriggerTemplate{
 		TypeMeta:   triggerTemplateTypeMeta,
 		ObjectMeta: meta.CreateObjectMeta(ns, "dev-ci-build-from-pr-template"),
@@ -58,7 +58,7 @@ func createDevCIBuildPRTemplate(ns, saName string) triggersv1.TriggerTemplate {
 			},
 			ResourceTemplates: []triggersv1.TriggerResourceTemplate{
 				triggersv1.TriggerResourceTemplate{
-					RawMessage: createDevCIResourceTemplate(saName),
+					RawMessage: createDevCIResourceTemplate(saName, imageRepo),
 				},
 			},
 		},
@@ -123,13 +123,13 @@ func createTemplateParamSpec(name string, description string) pipelinev1.ParamSp
 
 }
 
-func createDevCDResourcetemplate(saName string) []byte {
-	byteTemplate, _ := json.Marshal(createDevCDPipelineRun(saName))
+func createDevCDResourcetemplate(saName, imageRepo string) []byte {
+	byteTemplate, _ := json.Marshal(createDevCDPipelineRun(saName, imageRepo))
 	return []byte(string(byteTemplate))
 }
 
-func createDevCIResourceTemplate(saName string) []byte {
-	byteTemplateCI, _ := json.Marshal(createDevCIPipelineRun(saName))
+func createDevCIResourceTemplate(saName, imageRepo string) []byte {
+	byteTemplateCI, _ := json.Marshal(createDevCIPipelineRun(saName, imageRepo))
 	return []byte(string(byteTemplateCI))
 }
 
