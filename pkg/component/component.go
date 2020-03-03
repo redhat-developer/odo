@@ -21,6 +21,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/util/validation"
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/storage"
+	"github.com/openshift/odo/pkg/sync"
 	urlpkg "github.com/openshift/odo/pkg/url"
 	"github.com/openshift/odo/pkg/util"
 
@@ -699,7 +700,7 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 
 	if isForcePush || len(files) > 0 {
 		glog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
-		err = client.CopyFile(path, pod.Name, targetPath, files, globExps)
+		err = sync.CopyFile(client, path, pod.Name, "", targetPath, files, globExps)
 		if err != nil {
 			s.End(false)
 			return errors.Wrap(err, "unable push files to pod")
@@ -736,6 +737,7 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	}()
 
 	err = client.ExecCMDInContainer(pod.Name,
+		"",
 		// We will use the assemble-and-restart script located within the supervisord container we've created
 		[]string{"/opt/odo/bin/assemble-and-restart"},
 		pipeWriter, pipeWriter, nil, false)
