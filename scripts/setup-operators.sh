@@ -1,5 +1,7 @@
 #!/bin/bash
+set -x
 
+CI_OPERATOR_HUB_PROJECT=ci-operator-hub-project
 # First, enable a cluster-wide mongo operator
 oc create -f - <<EOF
 apiVersion: operators.coreos.com/v1alpha1

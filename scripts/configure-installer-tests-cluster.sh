@@ -5,8 +5,8 @@ set -x
 HTPASSWD_FILE="./htpass"
 USERPASS="developer"
 HTPASSWD_SECRET="htpasswd-secret"
-SETUP_OPERATORS_41="./setup-operators-41.sh"
-SETUP_OPERATORS="./setup-operators.sh"
+SETUP_OPERATORS_41="./scripts/setup-operators-41.sh"
+SETUP_OPERATORS="./scripts/setup-operators.sh"
 # Overrideable information
 DEFAULT_INSTALLER_ASSETS_DIR=${DEFAULT_INSTALLER_ASSETS_DIR:-$(pwd)}
 KUBEADMIN_USER=${KUBEADMIN_USER:-"kubeadmin"}
@@ -52,7 +52,7 @@ CI_K8S_VERSION=$(oc version -o yaml | tail | awk '/gitVersion/')
 
 ## If we're running on 4.1, perform relevant steps
 
-if [ $CI_K8S_VERSION =~ 1.13 ]; then
+if [[ $CI_K8S_VERSION =~ 1.13 ]]; then
     sh $SETUP_OPERATORS_41
 else
     sh $SETUP_OPERATORS

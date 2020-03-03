@@ -1,5 +1,7 @@
 #!/bin/bash
+set -x
 
+CI_OPERATOR_HUB_PROJECT=ci-operator-hub-project
 # First, install cluster-wide operator
 # CatalogSourceConfig for mongodb
 oc create -f -<<EOF
