@@ -413,7 +413,7 @@ imports:
   - assert
   - require
 - name: github.com/tektoncd/pipeline
-  version: 34d823820ce564920394a783e0892d25868a4d8f
+  version: 9d40d325b27a98ec496e9d0bc4d6f28ed078d0fc
   subpackages:
   - pkg/apis/config
   - pkg/apis/pipeline

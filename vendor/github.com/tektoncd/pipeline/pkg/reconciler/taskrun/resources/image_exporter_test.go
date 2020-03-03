@@ -21,7 +21,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha2"
 	"github.com/tektoncd/pipeline/test/names"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -41,11 +40,6 @@ func TestAddOutputImageDigestExporter(t *testing.T) {
 				Namespace: "marshmallow",
 			},
 			Spec: v1alpha1.TaskSpec{
-				TaskSpec: v1alpha2.TaskSpec{
-					Steps: []v1alpha1.Step{{Container: corev1.Container{
-						Name: "step1",
-					}}},
-				},
 				Inputs: &v1alpha1.Inputs{
 					Resources: []v1alpha1.TaskResource{{
 						ResourceDeclaration: v1alpha1.ResourceDeclaration{
@@ -61,6 +55,9 @@ func TestAddOutputImageDigestExporter(t *testing.T) {
 						},
 					}},
 				},
+				Steps: []v1alpha1.Step{{Container: corev1.Container{
+					Name: "step1",
+				}}},
 			},
 		},
 		taskRun: &v1alpha1.TaskRun{
@@ -108,13 +105,6 @@ func TestAddOutputImageDigestExporter(t *testing.T) {
 				Namespace: "marshmallow",
 			},
 			Spec: v1alpha1.TaskSpec{
-				TaskSpec: v1alpha2.TaskSpec{
-					Steps: []v1alpha1.Step{{Container: corev1.Container{
-						Name: "step1",
-					}}, {Container: corev1.Container{
-						Name: "step2",
-					}}},
-				},
 				Inputs: &v1alpha1.Inputs{
 					Resources: []v1alpha1.TaskResource{{
 						ResourceDeclaration: v1alpha1.ResourceDeclaration{
@@ -130,6 +120,11 @@ func TestAddOutputImageDigestExporter(t *testing.T) {
 						},
 					}},
 				},
+				Steps: []v1alpha1.Step{{Container: corev1.Container{
+					Name: "step1",
+				}}, {Container: corev1.Container{
+					Name: "step2",
+				}}},
 			},
 		},
 		taskRun: &v1alpha1.TaskRun{

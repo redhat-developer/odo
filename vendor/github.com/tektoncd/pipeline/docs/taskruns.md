@@ -21,12 +21,10 @@ A `TaskRun` runs until all `steps` have completed or until a failure occurs.
   - [Workspaces](#workspaces)
 - [Status](#status)
   - [Steps](#steps)
-  - [Task Results](#results)
 - [Cancelling a TaskRun](#cancelling-a-taskrun)
 - [Examples](#examples)
 - [Sidecars](#sidecars)
 - [Logs](logs.md)
-- [LimitRange Name](#limitrange-name)
 
 ---
 
@@ -61,9 +59,6 @@ following fields:
   - [`podTemplate`](#pod-template) - Specifies a [pod template](./podtemplates.md) that will be used as the basis for the `Task` pod.
   - [`workspaces`](#workspaces) - Specify the actual volumes to use for the
     [workspaces](tasks.md#workspaces) declared by a `Task`
-  - [`limitRangeName`](#limitrange-name) - Specifies the name of a LimitRange that exists in the namespace of the `TaskRun`. This LimitRange's minimum 
-    for container resource requests will be used as part of requesting the appropriate amount of CPU, memory, and ephemeral storage for containers that are 
-    part of a `TaskRun`. This property only needs to be specified if the `TaskRun` is happening in a namespace with a LimitRange minimum specified for container resource requests.
 
 [kubernetes-overview]:
   https://kubernetes.io/docs/concepts/overview/working-with-objects/kubernetes-objects/#required-fields
@@ -234,10 +229,10 @@ at runtime you need to map the `workspaces` to actual physical volumes with
 `workspaces`. Values in `workspaces` are
 [`Volumes`](https://kubernetes.io/docs/tasks/configure-pod-container/configure-volume-storage/), however currently we only support a subset of `VolumeSources`:
 
-- [`emptyDir`](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir)
-- [`persistentVolumeClaim`](https://kubernetes.io/docs/concepts/storage/volumes/#persistentvolumeclaim)
-- [`configMap`](https://kubernetes.io/docs/concepts/storage/volumes/#configmap)
-- [`secret`](https://kubernetes.io/docs/concepts/storage/volumes/#secret)
+* [`emptyDir`](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir)
+* [`persistentVolumeClaim`](https://kubernetes.io/docs/concepts/storage/volumes/#persistentvolumeclaim)
+* [`configMap`](https://kubernetes.io/docs/concepts/storage/volumes/#configmap)
+* [`secret`](https://kubernetes.io/docs/concepts/storage/volumes/#secret)
 
 _If you need support for a `VolumeSource` not listed here
 [please open an issue](https://github.com/tektoncd/pipeline/issues) or feel free to
@@ -347,28 +342,6 @@ If multiple `steps` are defined in the `Task` invoked by the `TaskRun`, we will 
 `status.steps` of the `TaskRun` displayed in the same order as they are defined in
 `spec.steps` of the `Task`, when the `TaskRun` is accessed by the `get` command, e.g.
 `kubectl get taskrun <name> -o yaml`. Replace \<name\> with the name of the `TaskRun`.
-
-### Results
-
-If one or more `results` are defined in the `Task` invoked by the `TaskRun`, we will get a new entry
-`Task Results` added to the status.
-Here is an example:
-
-```yaml
-Status:
-  # […]
-  Steps:
-  # […]
-  Task Results:
-    Name:   current-date-human-readable
-    Value:  Thu Jan 23 16:29:06 UTC 2020
-
-    Name:   current-date-unix-timestamp
-    Value:  1579796946
-
-```
-
-Results will be printed verbatim; any new lines or other whitespace returned as part of the result will be included in the output.
 
 ## Cancelling a TaskRun
 
@@ -694,7 +667,7 @@ Note: There are some known issues with the existing implementation of sidecars:
 - The configured "nop" image must not provide the command that the
 sidecar is expected to run. If it does provide the command then it will
 not exit. This will result in the sidecar running forever and the Task
-eventually timing out. [This bug is being tracked in issue 1347](https://github.com/tektoncd/pipeline/issues/1347)
+eventually timing out. https://github.com/tektoncd/pipeline/issues/1347
 is the issue where this bug is being tracked.
 
 - `kubectl get pods` will show a TaskRun's Pod as "Completed" if a sidecar
@@ -703,42 +676,6 @@ of how the step containers inside that pod exited. This issue only manifests
 with the `get pods` command. The Pod description will instead show a Status of
 Failed and the individual container statuses will correctly reflect how and why
 they exited.
-
-## LimitRange Name
-
-In order to request the minimum amount of resources needed to support the containers 
-for `steps` that are part of a `TaskRun`, Tekton only requests the maximum values for CPU, 
-memory, and ephemeral storage from the `steps` that are part of a TaskRun. Only the max 
-resource request values are needed since `steps` only execute one at a time in `TaskRun` pod. 
-All requests that are not the max values are set to zero as a result. 
-
-When a [LimitRange](https://kubernetes.io/docs/concepts/policy/limit-range/) is present in a namespace 
-with a minimum set for container resource requests (i.e. CPU, memory, and ephemeral storage) where `TaskRuns` 
-are attempting to run, the `limitRangeName` property must be specified to appropriately apply the LimitRange's 
-minimum values to `steps` that are part of a `TaskRun`. This property helps prevent failures of `TaskRuns` not 
-meeting the minimum requirements specified by a LimitRange for containers.
-
-In the example below, the LimitRange `limit-mem-cpu-per-container` will be applied to all `steps` associated with 
-a `TaskRun` in namespace `default`:
-
-```yaml
-apiVersion: tekton.dev/v1alpha1
-kind: TaskRun
-metadata:
-  creationTimestamp: null
-  generateName: echo-hello-world-run-
-  namespace: default
-spec:
-  inputs: {}
-  outputs: {}
-  serviceAccountName: ""
-  taskRef:
-    name: echo-hello-world
-  timeout: 1h0m0s
-  limitRangeName: "limit-mem-cpu-per-container"
-```
-
-An example `TaskRun` using `limitRangeName` is available [here](../examples/taskruns/no-ci/limitrange.yaml).
 
 ---
 

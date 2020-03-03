@@ -20,10 +20,10 @@ import (
 	"testing"
 
 	"github.com/tektoncd/pipeline/pkg/apis/resource/v1alpha1"
-	"knative.dev/pkg/webhook/resourcesemantics"
+	"knative.dev/pkg/webhook"
 )
 
 func TestTypes(t *testing.T) {
 	// Assert that types satisfy webhook interface.
-	var _ resourcesemantics.GenericCRD = (*v1alpha1.PipelineResource)(nil)
+	var _ webhook.GenericCRD = (*v1alpha1.PipelineResource)(nil)
 }

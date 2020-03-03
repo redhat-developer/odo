@@ -25,8 +25,8 @@ import (
 
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	"github.com/tektoncd/pipeline/pkg/logging"
 	"github.com/tektoncd/pipeline/pkg/termination"
-	"go.uber.org/zap"
 )
 
 // Entrypointer holds fields for running commands with redirected
@@ -80,8 +80,7 @@ type PostWriter interface {
 // Go optionally waits for a file, runs the command, and writes a
 // post file.
 func (e Entrypointer) Go() error {
-	prod, _ := zap.NewProduction()
-	logger := prod.Sugar()
+	logger, _ := logging.NewLogger("", "entrypoint")
 	defer func() {
 		_ = logger.Sync()
 	}()

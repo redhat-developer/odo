@@ -18,11 +18,9 @@ package resources
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/tektoncd/pipeline/pkg/workspace"
 
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	"github.com/tektoncd/pipeline/pkg/substitution"
 )
@@ -98,17 +96,6 @@ func ApplyWorkspaces(spec *v1alpha1.TaskSpec, w []v1alpha1.WorkspaceDeclaration,
 	return ApplyReplacements(spec, stringReplacements, map[string][]string{})
 }
 
-// ApplyTaskResults applies the substitution from values in results which are referenced in spec as subitems
-// of the replacementStr.
-func ApplyTaskResults(spec *v1alpha1.TaskSpec) *v1alpha1.TaskSpec {
-	stringReplacements := map[string]string{}
-
-	for _, result := range spec.Results {
-		stringReplacements[fmt.Sprintf("results.%s.path", result.Name)] = filepath.Join(pipeline.DefaultResultPath, result.Name)
-	}
-	return ApplyReplacements(spec, stringReplacements, map[string][]string{})
-}
-
 // ApplyReplacements replaces placeholders for declared parameters with the specified replacements.
 func ApplyReplacements(spec *v1alpha1.TaskSpec, stringReplacements map[string]string, arrayReplacements map[string][]string) *v1alpha1.TaskSpec {
 	spec = spec.DeepCopy()
@@ -141,7 +128,7 @@ func ApplyReplacements(spec *v1alpha1.TaskSpec, stringReplacements map[string]st
 	// Apply variable substitution to the sidecar definitions
 	sidecars := spec.Sidecars
 	for i := range sidecars {
-		v1alpha1.ApplyContainerReplacements(&sidecars[i].Container, stringReplacements, arrayReplacements)
+		v1alpha1.ApplyContainerReplacements(&sidecars[i], stringReplacements, arrayReplacements)
 	}
 
 	return spec

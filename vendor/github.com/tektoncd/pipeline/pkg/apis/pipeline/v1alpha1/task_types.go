@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha2"
@@ -25,10 +26,6 @@ import (
 const (
 	// TaskRunResultType default task run result value
 	TaskRunResultType ResultType = "TaskRunResult"
-	// PipelineResourceResultType default pipeline result value
-	PipelineResourceResultType ResultType = "PipelineResourceResult"
-	// UnknownResultType default unknown result type value
-	UnknownResultType ResultType = ""
 )
 
 func (t *Task) TaskSpec() TaskSpec {
@@ -45,8 +42,6 @@ func (t *Task) Copy() TaskInterface {
 
 // TaskSpec defines the desired state of Task.
 type TaskSpec struct {
-	v1alpha2.TaskSpec `json:",inline"`
-
 	// Inputs is an optional set of parameters and resources which must be
 	// supplied by the user when a Task is executed by a TaskRun.
 	// +optional
@@ -55,16 +50,43 @@ type TaskSpec struct {
 	// Task is run.
 	// +optional
 	Outputs *Outputs `json:"outputs,omitempty"`
+
+	// Steps are the steps of the build; each step is run sequentially with the
+	// source mounted into /workspace.
+	Steps []Step `json:"steps,omitempty"`
+
+	// Volumes is a collection of volumes that are available to mount into the
+	// steps of the build.
+	Volumes []corev1.Volume `json:"volumes,omitempty"`
+
+	// StepTemplate can be used as the basis for all step containers within the
+	// Task, so that the steps inherit settings on the base container.
+	StepTemplate *corev1.Container `json:"stepTemplate,omitempty"`
+
+	// Sidecars are run alongside the Task's step containers. They begin before
+	// the steps start and end after the steps complete.
+	Sidecars []corev1.Container `json:"sidecars,omitempty"`
+
+	// Workspaces are the volumes that this Task requires.
+	Workspaces []WorkspaceDeclaration `json:"workspaces,omitempty"`
+
+	// Results are values that this Task can output
+	Results []TaskResult `json:"results,omitempty"`
 }
 
 // TaskResult used to describe the results of a task
-type TaskResult = v1alpha2.TaskResult
+type TaskResult struct {
+	// Name the given name
+	Name string `json:"name"`
+
+	// Description is a human-readable description of the result
+	// +optional
+	Description string `json:"description"`
+}
 
 // Step embeds the Container type, which allows it to include fields not
 // provided by Container.
 type Step = v1alpha2.Step
-
-type Sidecar = v1alpha2.Sidecar
 
 // +genclient
 // +genclient:noStatus

@@ -60,7 +60,7 @@ func (in *PipelineResource) DeepCopyObject() runtime.Object {
 func (in *PipelineResourceList) DeepCopyInto(out *PipelineResourceList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	in.ListMeta.DeepCopyInto(&out.ListMeta)
+	out.ListMeta = in.ListMeta
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]PipelineResource, len(*in))

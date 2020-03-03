@@ -1,5 +1,5 @@
 /*
-Copyright 2019-2020 The Tekton Authors
+Copyright 2019 The Tekton Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,9 +17,10 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha2"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
+	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 )
 
 // +genclient
@@ -40,12 +41,32 @@ type Condition struct {
 }
 
 // ConditionCheckStatus defines the observed state of ConditionCheck
-type ConditionCheckStatus = v1alpha2.ConditionCheckStatus
+type ConditionCheckStatus struct {
+	duckv1beta1.Status `json:",inline"`
+
+	// ConditionCheckStatusFields inlines the status fields.
+	ConditionCheckStatusFields `json:",inline"`
+}
 
 // ConditionCheckStatusFields holds the fields of ConfigurationCheck's status.
 // This is defined separately and inlined so that other types can readily
 // consume these fields via duck typing.
-type ConditionCheckStatusFields = v1alpha2.ConditionCheckStatusFields
+type ConditionCheckStatusFields struct {
+	// PodName is the name of the pod responsible for executing this condition check.
+	PodName string `json:"podName"`
+
+	// StartTime is the time the check is actually started.
+	// +optional
+	StartTime *metav1.Time `json:"startTime,omitempty"`
+
+	// CompletionTime is the time the check pod completed.
+	// +optional
+	CompletionTime *metav1.Time `json:"completionTime,omitempty"`
+
+	// Check describes the state of the check container.
+	// +optional
+	Check corev1.ContainerState `json:"check,omitempty"`
+}
 
 // ConditionSpec defines the desired state of the Condition
 type ConditionSpec struct {

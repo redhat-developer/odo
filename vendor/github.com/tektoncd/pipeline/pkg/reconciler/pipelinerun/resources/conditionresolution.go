@@ -22,7 +22,6 @@ import (
 
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha2"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -97,9 +96,7 @@ func (rcc *ResolvedConditionCheck) ConditionToTaskSpec() (*v1alpha1.TaskSpec, er
 	}
 
 	t := &v1alpha1.TaskSpec{
-		TaskSpec: v1alpha2.TaskSpec{
-			Steps: []v1alpha1.Step{rcc.Condition.Spec.Check},
-		},
+		Steps: []v1alpha1.Step{rcc.Condition.Spec.Check},
 	}
 
 	t.Inputs = &v1alpha1.Inputs{

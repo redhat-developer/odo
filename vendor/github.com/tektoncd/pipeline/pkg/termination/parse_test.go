@@ -28,10 +28,9 @@ func TestParseMessage(t *testing.T) {
 		want      []v1alpha1.PipelineResourceResult
 	}{{
 		desc: "valid message",
-		msg:  `[{"key": "digest","value":"hereisthedigest"},{"key":"foo","value":"bar"}]`,
+		msg:  `[{"digest":"foo"},{"key":"foo","value":"bar"}]`,
 		want: []v1alpha1.PipelineResourceResult{{
-			Key:   "digest",
-			Value: "hereisthedigest",
+			Digest: "foo",
 		}, {
 			Key:   "foo",
 			Value: "bar",

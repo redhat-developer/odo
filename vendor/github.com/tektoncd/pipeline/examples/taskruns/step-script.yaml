@@ -72,11 +72,11 @@ spec:
       image: python
       script: |
         #!/usr/bin/env python3
-        v = '$(inputs.params.PARAM)'
+        v = '$(input.params.PARAM)'
         if v != 'param-value':
           print('Param values not applied')
           print('Got: ', v)
-          exit(1)
+          quit()
 
     # Test that args are allowed and passed to the script as expected.
     - name: args-allowed

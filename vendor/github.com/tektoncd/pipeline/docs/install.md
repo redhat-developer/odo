@@ -57,14 +57,6 @@ To add the Tekton Pipelines component to an existing cluster:
    _(Previous versions will be available at `previous/$VERSION_NUMBER`, e.g.
    https://storage.googleapis.com/tekton-releases/pipeline/previous/v0.2.0/release.yaml.)_
 
-   If the container runtime your kubernetes system is does not support
-   `image-reference:tag@digest` (like `cri-o`, used in OpenShift 4.x),
-   you can use the `release.notags.yaml` instead.
-
-   ```bash
-   kubectl apply --filename https://storage.googleapis.com/tekton-releases/pipeline/latest/release.notags.yaml
-   ```
-
 1. Run the
    [`kubectl get`](https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#get)
    command to monitor the Tekton Pipelines components until all of the
@@ -197,10 +189,8 @@ default pod template applied to `TaskRun` and `PipelineRun`.
 The example below overrides the following :
 - the default service account (`default`) to `tekton`
 - the default timeout (60 minutes) to 20 minutes
-- the default pod template to include a node selector to control the node where the pod will be scheduled by default
+- the default pod template to include an annotation preventing clusterautoscaler to evict a running task pod
 (see [here](./taskruns.md#pod-template) or [here](./pipelineruns.md#pod-template) for more infos on pod templates)
-- the default `app.kuberrnetes.io/managed-by` label applied to all Pods created
-  to execute `TaskRun`s.
 
 ```yaml
 apiVersion: v1
@@ -211,9 +201,8 @@ data:
   default-service-account: "tekton"
   default-timeout-minutes: "20"
   default-pod-template: |
-    nodeSelector:
-      kops.k8s.io/instancegroup: build-instance-group
-  default-managed-by-label-value: "my-tekton-installation"
+    annotations:
+      cluster-autoscaler.kubernetes.io/safe-to-evict: 'false'
 ```
 
 *NOTE:* The `_example` key in the provided [config-defaults.yaml](./../config/config-defaults.yaml)
