@@ -17,7 +17,7 @@ func TestRoleBinding(t *testing.T) {
 			APIVersion: "rbac.authorization.k8s.io/v1",
 		},
 		ObjectMeta: v1.ObjectMeta{
-			Name: "tekton-triggers-openshift-binding",
+			Name: roleBindingName,
 		},
 		Subjects: []v1rbac.Subject{
 			v1rbac.Subject{
@@ -28,7 +28,7 @@ func TestRoleBinding(t *testing.T) {
 		RoleRef: v1rbac.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
 			Kind:     "Role",
-			Name:     "tekton-triggers-openshift-demo",
+			Name:     roleName,
 		},
 	}
 	sa := &corev1.ServiceAccount{
@@ -36,8 +36,8 @@ func TestRoleBinding(t *testing.T) {
 		ObjectMeta: meta.CreateObjectMeta("testing", "pipeline"),
 	}
 	roleBindingTask := createRoleBinding(
-		meta.NamespacedName("", "tekton-triggers-openshift-binding"),
-		sa, "Role", "tekton-triggers-openshift-demo")
+		meta.NamespacedName("", roleBindingName),
+		sa, "Role", roleName)
 	if diff := cmp.Diff(want, roleBindingTask); diff != "" {
 		t.Errorf("TestRoleBinding() failed:\n%s", diff)
 	}
@@ -51,7 +51,7 @@ func TestCreateRole(t *testing.T) {
 			APIVersion: "rbac.authorization.k8s.io/v1",
 		},
 		ObjectMeta: v1.ObjectMeta{
-			Name: "tekton-triggers-openshift-demo",
+			Name: roleName,
 		},
 		Rules: []v1rbac.PolicyRule{
 			v1rbac.PolicyRule{
@@ -66,7 +66,7 @@ func TestCreateRole(t *testing.T) {
 			},
 		},
 	}
-	roleTask := createRole(meta.NamespacedName("", "tekton-triggers-openshift-demo"), rules)
+	roleTask := createRole(meta.NamespacedName("", roleName), rules)
 	if diff := cmp.Diff(roleTask, want); diff != "" {
 		t.Errorf("TestCreateRole() failed:\n%s", diff)
 	}

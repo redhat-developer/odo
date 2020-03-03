@@ -19,14 +19,17 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-var (
+const (
 	dockerSecretName     = "regcred"
 	saName               = "pipeline"
-	roleName             = "tekton-triggers-openshift-demo"
-	roleBindingName      = "tekton-triggers-openshift-binding"
-	devRoleBindingName   = "pipeline-admin-dev"
-	stageRoleBindingName = "pipeline-admin-stage"
+	roleName             = "pipelines-service-role"
+	roleBindingName      = "pipelines-service-role-binding"
+	devRoleBindingName   = "pipeline-edit-dev"
+	stageRoleBindingName = "pipeline-edit-stage"
 	// PolicyRules to be bound to service account
+)
+
+var (
 	rules = []v1rbac.PolicyRule{
 		v1rbac.PolicyRule{
 			APIGroups: []string{"tekton.dev"},
