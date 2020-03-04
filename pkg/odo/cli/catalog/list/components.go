@@ -23,6 +23,8 @@ var componentsExample = `  # Get the supported components
 
 // ListComponentsOptions encapsulates the options for the odo catalog list components command
 type ListComponentsOptions struct {
+	// display both supported and unsupported devfile components
+	listAllDevfileComponnets bool
 	// list of known images
 	catalogList catalog.ComponentTypeList
 	// list of known devfiles
@@ -118,7 +120,7 @@ func (o *ListComponentsOptions) Run() (err error) {
 			fmt.Fprintln(w)
 		}
 
-		if len(unsupDevfileCatalogList) != 0 {
+		if o.listAllDevfileComponnets && len(unsupDevfileCatalogList) != 0 {
 			fmt.Fprintln(w, "Odo Unsupported Devfile Components:")
 			o.printDevfileCatalogList(w, unsupDevfileCatalogList)
 		}
@@ -132,7 +134,7 @@ func (o *ListComponentsOptions) Run() (err error) {
 func NewCmdCatalogListComponents(name, fullName string) *cobra.Command {
 	o := NewListComponentsOptions()
 
-	return &cobra.Command{
+	var componentListCmd = &cobra.Command{
 		Use:         name,
 		Short:       "List all components",
 		Long:        "List all available component types from OpenShift's Image Builder",
@@ -143,6 +145,9 @@ func NewCmdCatalogListComponents(name, fullName string) *cobra.Command {
 		},
 	}
 
+	componentListCmd.Flags().BoolVarP(&o.listAllDevfileComponnets, "all", "a", false, "List both supported and unsupported devfile components.")
+
+	return componentListCmd
 }
 
 func (o *ListComponentsOptions) printCatalogList(w io.Writer, catalogList []catalog.ComponentType) {
