@@ -7,6 +7,7 @@ import (
 	"github.com/openshift/odo/pkg/pipelines/meta"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	triggersv1 "github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
@@ -47,11 +48,11 @@ func TestCreateDevCDDeployTemplate(t *testing.T) {
 	}
 }
 
-func TestCreatedevCIBuildPRTemplate(t *testing.T) {
+func TestCreateDevCIBuildPRTemplate(t *testing.T) {
 	validdevCIPRTemplate := triggersv1.TriggerTemplate{
-		TypeMeta:   triggerTemplateTypeMeta,
-		ObjectMeta: meta.CreateObjectMeta("testns", "dev-ci-build-from-pr-template"),
-
+		TypeMeta: triggerTemplateTypeMeta,
+		ObjectMeta: meta.CreateObjectMeta("testns", "dev-ci-build-from-pr-template",
+			commitStatusTrackerAnnotations("dev-ci-build-from-pr", "Dev CI Build")),
 		Spec: triggersv1.TriggerTemplateSpec{
 			Params: []pipelinev1.ParamSpec{
 				pipelinev1.ParamSpec{
@@ -117,10 +118,11 @@ func TestCreateStageCDPushTemplate(t *testing.T) {
 	}
 }
 
-func TestCreateStageCIdryrunptemplate(t *testing.T) {
-	validStageCIdryrunTemplate := triggersv1.TriggerTemplate{
-		TypeMeta:   triggerTemplateTypeMeta,
-		ObjectMeta: meta.CreateObjectMeta("testns", "stage-ci-dryrun-from-pr-template"),
+func TestCreateStageCIDryRunTemplate(t *testing.T) {
+	validStageCIDryRunTemplate := triggersv1.TriggerTemplate{
+		TypeMeta: triggerTemplateTypeMeta,
+		ObjectMeta: meta.CreateObjectMeta("testns", "stage-ci-dryrun-from-pr-template",
+			commitStatusTrackerAnnotations("stage-ci-dryrun-from-pr", "Stage CI Dry Run")),
 
 		Spec: triggersv1.TriggerTemplateSpec{
 			Params: []pipelinev1.ParamSpec{
@@ -144,9 +146,28 @@ func TestCreateStageCIdryrunptemplate(t *testing.T) {
 			},
 		},
 	}
-	template := createStageCIdryrunptemplate("testns", serviceAccName)
-	if diff := cmp.Diff(validStageCIdryrunTemplate, template); diff != "" {
+	template := createStageCIDryRunTemplate("testns", serviceAccName)
+	if diff := cmp.Diff(validStageCIDryRunTemplate, template); diff != "" {
 		t.Fatalf("createStageCIdryrunptemplate failed:\n%s", diff)
 	}
 
+}
+
+func TestCommitStatusTrackerAnnotations(t *testing.T) {
+	om := meta.CreateObjectMeta("test-ns", "name")
+	commitStatusTrackerAnnotations("my-pipeline", "description")(&om)
+
+	want := v1.ObjectMeta{
+		Name:      "name",
+		Namespace: "test-ns",
+		Annotations: map[string]string{
+			"tekton.dev/git-status":         "true",
+			"tekton.dev/status-context":     "my-pipeline",
+			"tekton.dev/status-description": "description",
+		},
+	}
+
+	if diff := cmp.Diff(want, om); diff != "" {
+		t.Fatalf("commitStatusTrackerAnnotations failed:\n%s", diff)
+	}
 }

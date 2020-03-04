@@ -21,12 +21,18 @@ func ObjectMeta(n types.NamespacedName) v1.ObjectMeta {
 	}
 }
 
+type objectMetaFunc func(om *v1.ObjectMeta)
+
 // CreateObjectMeta creates v1.ObjectMeta from ns and name
-func CreateObjectMeta(ns, name string) v1.ObjectMeta {
-	return v1.ObjectMeta{
-		Namespace: ns,
+func CreateObjectMeta(ns, name string, opts ...objectMetaFunc) v1.ObjectMeta {
+	om := v1.ObjectMeta{
 		Name:      name,
+		Namespace: ns,
 	}
+	for _, o := range opts {
+		o(&om)
+	}
+	return om
 }
 
 // NamespacedName creates types.NamespacedName
