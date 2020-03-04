@@ -1157,3 +1157,45 @@ func TestHttpGetFreePort(t *testing.T) {
 		})
 	}
 }
+
+func TestGetRemoteFilesMarkedForDeletion(t *testing.T) {
+	tests := []struct {
+		name       string
+		files      []string
+		remotePath string
+		want       []string
+	}{
+		{
+			name:       "case 1: no files",
+			files:      []string{},
+			remotePath: "/projects",
+			want:       nil,
+		},
+		{
+			name:       "case 2: one file",
+			files:      []string{"abc.txt"},
+			remotePath: "/projects",
+			want:       []string{"/projects/abc.txt"},
+		},
+		{
+			name:       "case 3: multiple files",
+			files:      []string{"abc.txt", "def.txt", "hello.txt"},
+			remotePath: "/projects",
+			want:       []string{"/projects/abc.txt", "/projects/def.txt", "/projects/hello.txt"},
+		},
+		{
+			name:       "case 4: remote path multiple folders",
+			files:      []string{"abc.txt", "def.txt", "hello.txt"},
+			remotePath: "/test/folder",
+			want:       []string{"/test/folder/abc.txt", "/test/folder/def.txt", "/test/folder/hello.txt"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			remoteFiles := GetRemoteFilesMarkedForDeletion(tt.files, tt.remotePath)
+			if !reflect.DeepEqual(tt.want, remoteFiles) {
+				t.Errorf("Expected %s, got %s", tt.want, remoteFiles)
+			}
+		})
+	}
+}
