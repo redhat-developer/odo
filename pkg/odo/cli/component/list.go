@@ -33,7 +33,7 @@ var listExample = ktemplates.Examples(`  # List all components in the applicatio
 // ListOptions is a dummy container to attach complete, validate and run pattern
 type ListOptions struct {
 	pathFlag         string
-	allFlag          bool
+	allAppsFlag      bool
 	componentContext string
 	*genericclioptions.Context
 }
@@ -51,7 +51,7 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 // Validate validates the list parameters
 func (lo *ListOptions) Validate() (err error) {
-	if !lo.allFlag && lo.pathFlag == "" && (lo.Context.Project == "" || lo.Application == "") {
+	if !lo.allAppsFlag && lo.pathFlag == "" && (lo.Context.Project == "" || lo.Application == "") {
 		return odoutil.ThrowContextError()
 	}
 
@@ -81,7 +81,7 @@ func (lo *ListOptions) Run() (err error) {
 	}
 	var components component.ComponentList
 
-	if lo.allFlag {
+	if lo.allAppsFlag {
 		// retrieve list of application
 		apps, err := application.List(lo.Client)
 		if err != nil {
@@ -151,7 +151,7 @@ func NewCmdList(name, fullName string) *cobra.Command {
 	}
 	genericclioptions.AddContextFlag(componentListCmd, &o.componentContext)
 	componentListCmd.Flags().StringVar(&o.pathFlag, "path", "", "path of the directory to scan for odo component directories")
-	componentListCmd.Flags().BoolVar(&o.allFlag, "all", false, "lists all components")
+	componentListCmd.Flags().BoolVar(&o.allAppsFlag, "all-apps", false, "list all components from all applications for the current set project")
 	componentListCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	//Adding `--project` flag
