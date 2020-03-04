@@ -27,8 +27,9 @@ func createRoleBinding(name types.NamespacedName, sa *corev1.ServiceAccount, rol
 		ObjectMeta: meta.ObjectMeta(name),
 		Subjects: []v1rbac.Subject{
 			v1rbac.Subject{
-				Kind: sa.Kind,
-				Name: sa.Name,
+				Kind:      sa.Kind,
+				Name:      sa.Name,
+				Namespace: sa.Namespace,
 			},
 		},
 		RoleRef: v1rbac.RoleRef{
