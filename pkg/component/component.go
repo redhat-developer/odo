@@ -1020,7 +1020,7 @@ func GetComponentSource(client *occlient.Client, componentName string, applicati
 	}
 
 	var sourcePath string
-	if sourceType == "git" {
+	if sourceType == string(config.GIT) {
 		sourcePath = deploymentConfig.ObjectMeta.Annotations[componentSourceURLAnnotation]
 	}
 
@@ -1073,7 +1073,7 @@ func Update(client *occlient.Client, componentConfig config.LocalConfigInfo, new
 
 	// Create annotations
 	annotations := make(map[string]string)
-	if newSourceType == "git" {
+	if newSourceType == config.GIT {
 		annotations[componentSourceURLAnnotation] = newSource
 	}
 	annotations[ComponentSourceTypeAnnotation] = string(newSourceType)
