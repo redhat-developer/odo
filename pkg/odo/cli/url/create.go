@@ -24,12 +24,10 @@ const createRecommendedCommandName = "create"
 var (
 	urlCreateShortDesc = `Create a URL for a component`
 	urlCreateLongDesc  = ktemplates.LongDesc(`Create a URL for a component.
-
 	The created URL can be used to access the specified component from outside the OpenShift cluster.
 	`)
 	urlCreateExample = ktemplates.Examples(`  # Create a URL with a specific name by automatically detecting the port used by the component
 	%[1]s example
-
 	# Create a URL for the current component with a specific port
 	%[1]s --port 8080
   
@@ -71,6 +69,9 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 			o.urlName = args[0]
 		}
 		err = o.InitEnvInfoFromContext()
+		if err != nil {
+			return err
+		}
 
 	} else {
 		err = o.InitConfigFromContext()
@@ -149,7 +150,7 @@ func (o *URLCreateOptions) Validate() (err error) {
 // Run contains the logic for the odo url create command
 func (o *URLCreateOptions) Run() (err error) {
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
-		err = o.EnvSpecificInfo.SetConfiguration("url", envinfo.ConfigURL{Name: o.urlName, Port: o.urlPort, ClusterHost: o.clusterHost, Secure: o.secureURL, TLSSecret: o.tlsSecret})
+		err = o.EnvSpecificInfo.SetConfiguration("url", envinfo.EnvInfoURL{Name: o.urlName, Port: o.urlPort, ClusterHost: o.clusterHost, Secure: o.secureURL, TLSSecret: o.tlsSecret})
 	} else {
 		err = o.LocalConfigInfo.SetConfiguration("url", config.ConfigURL{Name: o.urlName, Port: o.componentPort, Secure: o.secureURL})
 	}

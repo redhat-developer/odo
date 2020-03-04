@@ -28,7 +28,7 @@ func CreateIfNotExists(configFile string) error {
 		if err != nil {
 			return errors.Wrap(err, "unable to create config file")
 		}
-		defer file.Close()
+		defer file.Close() // #nosec G307
 	}
 
 	return nil
