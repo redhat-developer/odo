@@ -4,13 +4,11 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 // HttpWaitForWithStatus periodically (every interval) calls GET to given url
@@ -54,14 +52,4 @@ func HttpWaitForWithStatus(url string, match string, maxRetry int, interval int,
 // ends when a 200 HTTP result response contains match string, or after the maxRetry
 func HttpWaitFor(url string, match string, maxRetry int, interval int) {
 	HttpWaitForWithStatus(url, match, maxRetry, interval, 200)
-}
-
-// HttpGetFreePort gets a free port from the system
-func HttpGetFreePort() int {
-	listener, err := net.Listen("tcp", "localhost:0")
-	Expect(err).NotTo(HaveOccurred())
-	freePort := listener.Addr().(*net.TCPAddr).Port
-	err = listener.Close()
-	Expect(err).NotTo(HaveOccurred())
-	return freePort
 }

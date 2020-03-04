@@ -469,7 +469,7 @@ func ListStorageWithState(client *occlient.Client, localConfig *config.LocalConf
 		return StorageList{}, err
 	}
 
-	storageListConfig := convertListLocalToMachine(storageConfig)
+	storageListConfig := ConvertListLocalToMachine(storageConfig)
 
 	storageCluster, err := List(client, componentName, applicationName)
 	if err != nil {
@@ -519,7 +519,7 @@ func isPushed(storageName string, storageCluster StorageList) bool {
 }
 
 // It converts storage config list to StorageList type
-func convertListLocalToMachine(storageListConfig []config.ComponentStorageSettings) StorageList {
+func ConvertListLocalToMachine(storageListConfig []config.ComponentStorageSettings) StorageList {
 
 	var storageListLocal []Storage
 

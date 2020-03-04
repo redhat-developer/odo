@@ -3,6 +3,8 @@ package kclient
 import (
 	"testing"
 
+	"k8s.io/apimachinery/pkg/util/intstr"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -23,6 +25,7 @@ func TestGenerateContainer(t *testing.T) {
 		args         []string
 		envVars      []corev1.EnvVar
 		resourceReqs corev1.ResourceRequirements
+		ports        []corev1.ContainerPort
 	}{
 		{
 			name:         "",
@@ -32,6 +35,7 @@ func TestGenerateContainer(t *testing.T) {
 			args:         []string{},
 			envVars:      []corev1.EnvVar{},
 			resourceReqs: corev1.ResourceRequirements{},
+			ports:        []corev1.ContainerPort{},
 		},
 		{
 			name:         "container1",
@@ -46,13 +50,19 @@ func TestGenerateContainer(t *testing.T) {
 				},
 			},
 			resourceReqs: fakeResources,
+			ports: []corev1.ContainerPort{
+				{
+					Name:          "port-9090",
+					ContainerPort: 9090,
+				},
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			container := GenerateContainer(tt.name, tt.image, tt.isPrivileged, tt.command, tt.args, tt.envVars, tt.resourceReqs)
+			container := GenerateContainer(tt.name, tt.image, tt.isPrivileged, tt.command, tt.args, tt.envVars, tt.resourceReqs, tt.ports)
 
 			if container.Name != tt.name {
 				t.Errorf("expected %s, actual %s", tt.name, container.Name)
@@ -99,6 +109,19 @@ func TestGenerateContainer(t *testing.T) {
 					}
 					if container.Env[i].Value != tt.envVars[i].Value {
 						t.Errorf("expected value %s, actual value %s", tt.envVars[i].Value, container.Env[i].Value)
+					}
+				}
+			}
+
+			if len(container.Ports) != len(tt.ports) {
+				t.Errorf("expected %d, actual %d", len(tt.ports), len(container.Ports))
+			} else {
+				for i := range container.Ports {
+					if container.Ports[i].Name != tt.ports[i].Name {
+						t.Errorf("expected name %s, actual name %s", tt.ports[i].Name, container.Ports[i].Name)
+					}
+					if container.Ports[i].ContainerPort != tt.ports[i].ContainerPort {
+						t.Errorf("expected port number is %v, actual %v", tt.ports[i].ContainerPort, container.Ports[i].ContainerPort)
 					}
 				}
 			}
@@ -202,6 +225,96 @@ func TestGeneratePVCSpec(t *testing.T) {
 			if pvcSpecQuantity.String() != quantity.String() {
 				t.Errorf("pvcSpec.Resources.Requests Error: expected %v, actual %v", pvcSpecQuantity.String(), quantity.String())
 			}
+		})
+	}
+}
+
+func TestGenerateIngressSpec(t *testing.T) {
+
+	tests := []struct {
+		name      string
+		parameter IngressParameter
+	}{
+		{
+			name: "1",
+			parameter: IngressParameter{
+				ServiceName:   "service1",
+				IngressDomain: "test.1.2.3.4.nip.io",
+				PortNumber: intstr.IntOrString{
+					IntVal: 8080,
+				},
+				TLSSecretName: "testTLSSecret",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			ingressSpec := GenerateIngressSpec(tt.parameter)
+
+			if ingressSpec.Rules[0].Host != tt.parameter.IngressDomain {
+				t.Errorf("expected %s, actual %s", tt.parameter.IngressDomain, ingressSpec.Rules[0].Host)
+			}
+
+			if ingressSpec.Rules[0].HTTP.Paths[0].Backend.ServicePort != tt.parameter.PortNumber {
+				t.Errorf("expected %v, actual %v", tt.parameter.PortNumber, ingressSpec.Rules[0].HTTP.Paths[0].Backend.ServicePort)
+			}
+
+			if ingressSpec.Rules[0].HTTP.Paths[0].Backend.ServiceName != tt.parameter.ServiceName {
+				t.Errorf("expected %s, actual %s", tt.parameter.ServiceName, ingressSpec.Rules[0].HTTP.Paths[0].Backend.ServiceName)
+			}
+
+			if ingressSpec.TLS[0].SecretName != tt.parameter.TLSSecretName {
+				t.Errorf("expected %s, actual %s", tt.parameter.TLSSecretName, ingressSpec.TLS[0].SecretName)
+			}
+
+		})
+	}
+}
+
+func TestGenerateServiceSpec(t *testing.T) {
+	port1 := corev1.ContainerPort{
+		Name:          "port-9090",
+		ContainerPort: 9090,
+	}
+	port2 := corev1.ContainerPort{
+		Name:          "port-8080",
+		ContainerPort: 8080,
+	}
+
+	tests := []struct {
+		name  string
+		ports []corev1.ContainerPort
+	}{
+		{
+			name:  "singlePort",
+			ports: []corev1.ContainerPort{port1},
+		},
+		{
+			name:  "multiplePorts",
+			ports: []corev1.ContainerPort{port1, port2},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			serviceSpec := GenerateServiceSpec(tt.name, tt.ports)
+
+			if len(serviceSpec.Ports) != len(tt.ports) {
+				t.Errorf("expected service ports length is %v, actual %v", len(tt.ports), len(serviceSpec.Ports))
+			} else {
+				for i := range serviceSpec.Ports {
+					if serviceSpec.Ports[i].Name != tt.ports[i].Name {
+						t.Errorf("expected name %s, actual name %s", tt.ports[i].Name, serviceSpec.Ports[i].Name)
+					}
+					if serviceSpec.Ports[i].Port != tt.ports[i].ContainerPort {
+						t.Errorf("expected port number is %v, actual %v", tt.ports[i].ContainerPort, serviceSpec.Ports[i].Port)
+					}
+				}
+			}
+
 		})
 	}
 }

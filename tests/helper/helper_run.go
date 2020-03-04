@@ -44,7 +44,7 @@ func CmdShouldRunWithTimeout(timeout time.Duration, program string, args ...stri
 }
 
 // CmdShouldRunAndTerminate waits and returns stdout after a closed signal is passed on the closed channel
-func CmdShouldRunAndTerminate(timeoutAfter time.Duration, stopChan chan int, program string, args ...string) string {
+func CmdShouldRunAndTerminate(timeoutAfter time.Duration, stopChan <-chan bool, program string, args ...string) string {
 	session := CmdRunner(program, args...)
 	timeout := time.After(timeoutAfter)
 	select {

@@ -6,6 +6,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	extensionsv1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
@@ -80,7 +81,7 @@ func GeneratePVCSpec(quantity resource.Quantity) *corev1.PersistentVolumeClaimSp
 }
 
 // GenerateServiceSpec creates a service spec
-func GenerateServiceSpec(deploymentconfigName string, containerPorts []corev1.ContainerPort) *corev1.ServiceSpec {
+func GenerateServiceSpec(componentName string, containerPorts []corev1.ContainerPort) *corev1.ServiceSpec {
 	// generate Service Spec
 	var svcPorts []corev1.ServicePort
 	for _, containerPort := range containerPorts {
@@ -95,9 +96,58 @@ func GenerateServiceSpec(deploymentconfigName string, containerPorts []corev1.Co
 	svcSpec := &corev1.ServiceSpec{
 		Ports: svcPorts,
 		Selector: map[string]string{
-			"deploymentconfig": deploymentconfigName,
+			"component": componentName,
 		},
 	}
 
 	return svcSpec
+}
+
+// IngressParameter struct for function createIngress
+// serviceName is the name of the service for the target reference
+// ingressDomain is the ingress domain to use for the ingress
+// portNumber is the target port of the ingress
+// TLSSecretName is the target TLS Secret name of the ingress
+type IngressParameter struct {
+	ServiceName   string
+	IngressDomain string
+	PortNumber    intstr.IntOrString
+	TLSSecretName string
+}
+
+// GenerateIngressSpec creates an ingress spec
+func GenerateIngressSpec(ingressParam IngressParameter) *extensionsv1.IngressSpec {
+	ingressSpec := &extensionsv1.IngressSpec{
+		Rules: []extensionsv1.IngressRule{
+			{
+				Host: ingressParam.IngressDomain,
+				IngressRuleValue: extensionsv1.IngressRuleValue{
+					HTTP: &extensionsv1.HTTPIngressRuleValue{
+						Paths: []extensionsv1.HTTPIngressPath{
+							{
+								Path: "/",
+								Backend: extensionsv1.IngressBackend{
+									ServiceName: ingressParam.ServiceName,
+									ServicePort: ingressParam.PortNumber,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	secretNameLength := len(ingressParam.TLSSecretName)
+	if secretNameLength != 0 {
+		ingressSpec.TLS = []extensionsv1.IngressTLS{
+			{
+				Hosts: []string{
+					ingressParam.IngressDomain,
+				},
+				SecretName: ingressParam.TLSSecretName,
+			},
+		}
+	}
+
+	return ingressSpec
 }

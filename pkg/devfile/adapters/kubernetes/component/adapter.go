@@ -43,7 +43,15 @@ func (a Adapter) Start() (err error) {
 	objectMeta := kclient.CreateObjectMeta(componentName, a.Client.Namespace, labels, nil)
 	podTemplateSpec := kclient.GeneratePodTemplateSpec(objectMeta, containers)
 	deploymentSpec := kclient.GenerateDeploymentSpec(*podTemplateSpec)
-	serviceSpec := kclient.GenerateServiceSpec(objectMeta.Name, deploymentSpec.Template.Spec.Containers[0].Ports)
+	var containerPorts []corev1.ContainerPort
+	for _, c := range deploymentSpec.Template.Spec.Containers {
+		if len(containerPorts) == 0 {
+			containerPorts = c.Ports
+		} else {
+			containerPorts = append(containerPorts, c.Ports...)
+		}
+	}
+	serviceSpec := kclient.GenerateServiceSpec(objectMeta.Name, containerPorts)
 	glog.V(3).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
 	glog.V(3).Infof("The component name is %v", componentName)
 
@@ -54,8 +62,15 @@ func (a Adapter) Start() (err error) {
 			return err
 		}
 		glog.V(3).Infof("Successfully updated component %v", componentName)
+		oldSvc, err := a.Client.KubeClient.CoreV1().Services(a.Client.Namespace).Get(componentName, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		serviceSpec.ClusterIP = oldSvc.Spec.ClusterIP
+		objectMetaTemp := objectMeta
+		objectMetaTemp.ResourceVersion = oldSvc.GetResourceVersion()
 
-		_, err = a.Client.UpdateService(objectMeta, *serviceSpec)
+		_, err = a.Client.UpdateService(objectMetaTemp, *serviceSpec)
 		if err != nil {
 			return err
 		}
@@ -66,7 +81,6 @@ func (a Adapter) Start() (err error) {
 			return err
 		}
 		glog.V(3).Infof("Successfully created component %v", componentName)
-
 		_, err = a.Client.CreateService(objectMeta, *serviceSpec)
 		if err != nil {
 			return err

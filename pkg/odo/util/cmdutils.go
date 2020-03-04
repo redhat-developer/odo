@@ -7,6 +7,7 @@ import (
 	"unicode"
 
 	"github.com/openshift/odo/pkg/component"
+	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/occlient"
@@ -102,14 +103,27 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 	// Storage
 	if len(componentDesc.Spec.Storage) > 0 {
 
-		// Retrieve the storage list
-		storages, err := storage.List(client, currentComponentName, applicationName)
-		LogErrorAndExit(err, "")
+		var storages storage.StorageList
+		var err error
+
+		if componentDesc.Status.State == "Pushed" {
+			// Retrieve the storage list
+			storages, err = storage.List(client, currentComponentName, applicationName)
+			LogErrorAndExit(err, "")
+
+		} else {
+			localConfig, err := config.New()
+			LogErrorAndExit(err, "")
+			storageLocal, err := localConfig.StorageList()
+			LogErrorAndExit(err, "")
+			storages = storage.ConvertListLocalToMachine(storageLocal)
+
+		}
 
 		// Gather the output
 		var output string
 		for _, store := range storages.Items {
-			output += fmt.Sprintf(" · %v of size %v mounted to %v\n", store.Name, store.Spec.Size, store.Status)
+			output += fmt.Sprintf(" · %v of size %v mounted to %v\n", store.Name, store.Spec.Size, store.Status.Path)
 		}
 
 		// Cut off the last newline and output
