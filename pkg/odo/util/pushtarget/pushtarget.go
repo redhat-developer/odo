@@ -28,8 +28,8 @@ func IsPushTargetDocker() bool {
 
 	// Check "ODO_PUSH_TARGET" env variable.
 	pushTargetEnv, _ = os.LookupEnv(OdoPushTarget)
-	if pushTargetEnv == "docker" || pushTargetEnv == "kube" {
-		return pushTargetEnv == "docker"
+	if pushTargetEnv == preference.DockerPushTarget || pushTargetEnv == preference.KubePushTarget {
+		return pushTargetEnv == preference.DockerPushTarget
 	} else if pushTargetEnv != "" {
 		// Log an error and return false if an invalid value was passed in to env var and return false
 		glog.Error("Invalid value passed in to ")
@@ -43,5 +43,5 @@ func IsPushTargetDocker() bool {
 		return false
 	}
 
-	return cfg.GetPushTarget() == "docker"
+	return cfg.GetPushTarget() == preference.DockerPushTarget
 }

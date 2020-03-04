@@ -178,8 +178,8 @@ func TestSetConfiguration(t *testing.T) {
 	os.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
 	trueValue := true
 	falseValue := false
-	dockerValue := "docker"
-	kubeValue := "kube"
+	dockerValue := DockerPushTarget
+	kubeValue := KubePushTarget
 	zeroValue := 0
 
 	tests := []struct {

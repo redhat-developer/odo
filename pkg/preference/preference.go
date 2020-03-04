@@ -56,6 +56,14 @@ const (
 
 	// PushTargetDescription is human-readable description for the pushtarget setting
 	PushTargetDescription = "Set this value to 'kube' or 'docker' to tell odo where to push applications to. (Default: kube)"
+
+	// Constants for PushTarget values
+
+	// DockerPushTarget represents the value of the push target when it's set to Docker
+	DockerPushTarget = "docker"
+
+	// KubePushTarget represents the value of the push target when it's set to Kube
+	KubePushTarget = "kube"
 )
 
 // TimeoutSettingDescription is human-readable description for the timeout setting
@@ -222,8 +230,8 @@ func (c *PreferenceInfo) SetConfiguration(parameter string, value string) error 
 
 		case "pushtarget":
 			val := strings.ToLower(value)
-			if val != "docker" && val != "kube" {
-				return errors.Errorf("cannot set pushtarget to values other than 'docker' or 'kube'")
+			if val != DockerPushTarget && val != KubePushTarget {
+				return errors.Errorf("cannot set pushtarget to values other than '%s' or '%s'", DockerPushTarget, KubePushTarget)
 			}
 			c.OdoSettings.PushTarget = &val
 		}
@@ -315,7 +323,7 @@ func (c *PreferenceInfo) GetExperimental() bool {
 // default value: kube, docker push target needs to be manually enabled
 func (c *PreferenceInfo) GetPushTarget() string {
 	if c.OdoSettings.PushTarget == nil {
-		return "kube"
+		return KubePushTarget
 	}
 	return *c.OdoSettings.PushTarget
 }
