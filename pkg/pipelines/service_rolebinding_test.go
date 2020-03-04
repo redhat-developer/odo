@@ -34,7 +34,7 @@ func TestRoleBinding(t *testing.T) {
 	}
 	sa := &corev1.ServiceAccount{
 		TypeMeta:   meta.TypeMeta("ServiceAccount", "v1"),
-		ObjectMeta: meta.CreateObjectMeta("testing", "pipeline"),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName("testing", "pipeline")),
 	}
 	roleBindingTask := createRoleBinding(
 		meta.NamespacedName("", roleBindingName),

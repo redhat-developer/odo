@@ -27,7 +27,7 @@ func GenerateBindings(ns string) []triggersv1.TriggerBinding {
 func createDevCDDeployBinding(ns string) triggersv1.TriggerBinding {
 	return triggersv1.TriggerBinding{
 		TypeMeta:   triggerBindingTypeMeta,
-		ObjectMeta: meta.CreateObjectMeta(ns, "dev-cd-deploy-from-master-binding"),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, "dev-cd-deploy-from-master-binding")),
 		Spec: triggersv1.TriggerBindingSpec{
 			Params: []pipelinev1.Param{
 				createBindingParam("gitref", "$(body.head_commit.id)"),
@@ -40,7 +40,7 @@ func createDevCDDeployBinding(ns string) triggersv1.TriggerBinding {
 func createDevCIBuildBinding(ns string) triggersv1.TriggerBinding {
 	return triggersv1.TriggerBinding{
 		TypeMeta:   triggerBindingTypeMeta,
-		ObjectMeta: meta.CreateObjectMeta(ns, "dev-ci-build-from-pr-binding"),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, "dev-ci-build-from-pr-binding")),
 		Spec: triggersv1.TriggerBindingSpec{
 			Params: []pipelinev1.Param{
 				createBindingParam("gitref", "$(body.pull_request.head.ref)"),
@@ -55,7 +55,7 @@ func createDevCIBuildBinding(ns string) triggersv1.TriggerBinding {
 func createStageCDDeployBinding(ns string) triggersv1.TriggerBinding {
 	return triggersv1.TriggerBinding{
 		TypeMeta:   triggerBindingTypeMeta,
-		ObjectMeta: meta.CreateObjectMeta(ns, "stage-cd-deploy-from-push-binding"),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, "stage-cd-deploy-from-push-binding")),
 		Spec: triggersv1.TriggerBindingSpec{
 			Params: []pipelinev1.Param{
 				createBindingParam("gitref", "$(body.ref)"),
@@ -69,7 +69,7 @@ func createStageCDDeployBinding(ns string) triggersv1.TriggerBinding {
 func createStageCIDryRunBinding(ns string) triggersv1.TriggerBinding {
 	return triggersv1.TriggerBinding{
 		TypeMeta:   triggerBindingTypeMeta,
-		ObjectMeta: meta.CreateObjectMeta(ns, "stage-ci-dryrun-from-pr-binding"),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, "stage-ci-dryrun-from-pr-binding")),
 		Spec: triggersv1.TriggerBindingSpec{
 			Params: []pipelinev1.Param{
 				createBindingParam("gitref", "$(body.pull_request.head.ref)"),

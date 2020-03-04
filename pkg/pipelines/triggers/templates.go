@@ -29,7 +29,7 @@ func GenerateTemplates(ns, saName, imageRepo string) []triggersv1.TriggerTemplat
 func createDevCDDeployTemplate(ns, saName, imageRepo string) triggersv1.TriggerTemplate {
 	return triggersv1.TriggerTemplate{
 		TypeMeta:   triggerTemplateTypeMeta,
-		ObjectMeta: meta.CreateObjectMeta(ns, "dev-cd-deploy-from-master-template"),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, "dev-cd-deploy-from-master-template")),
 		Spec: triggersv1.TriggerTemplateSpec{
 			Params: []pipelinev1.ParamSpec{
 				createTemplateParamSpecDefault("gitref", "The git revision", "master"),
@@ -47,7 +47,7 @@ func createDevCDDeployTemplate(ns, saName, imageRepo string) triggersv1.TriggerT
 func createDevCIBuildPRTemplate(ns, saName, imageRepo string) triggersv1.TriggerTemplate {
 	return triggersv1.TriggerTemplate{
 		TypeMeta:   triggerTemplateTypeMeta,
-		ObjectMeta: meta.CreateObjectMeta(ns, "dev-ci-build-from-pr-template"),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, "dev-ci-build-from-pr-template")),
 		Spec: triggersv1.TriggerTemplateSpec{
 			Params: []pipelinev1.ParamSpec{
 
@@ -69,7 +69,7 @@ func createDevCIBuildPRTemplate(ns, saName, imageRepo string) triggersv1.Trigger
 func createStageCDPushTemplate(ns, saName string) triggersv1.TriggerTemplate {
 	return triggersv1.TriggerTemplate{
 		TypeMeta:   triggerTemplateTypeMeta,
-		ObjectMeta: meta.CreateObjectMeta(ns, "stage-cd-deploy-from-push-template"),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, "stage-cd-deploy-from-push-template")),
 		Spec: triggersv1.TriggerTemplateSpec{
 			Params: []pipelinev1.ParamSpec{
 
@@ -88,7 +88,7 @@ func createStageCDPushTemplate(ns, saName string) triggersv1.TriggerTemplate {
 func createStageCIdryrunptemplate(ns, saName string) triggersv1.TriggerTemplate {
 	return triggersv1.TriggerTemplate{
 		TypeMeta:   triggerTemplateTypeMeta,
-		ObjectMeta: meta.CreateObjectMeta(ns, "stage-ci-dryrun-from-pr-template"),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, "stage-ci-dryrun-from-pr-template")),
 		Spec: triggersv1.TriggerTemplateSpec{
 			Params: []pipelinev1.ParamSpec{
 
