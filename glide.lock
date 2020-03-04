@@ -1,5 +1,5 @@
-hash: b8ed36a9c2b2f2caf0623e4c908ca0f5ff3bb17e6f030455eb82da468de37c81
-updated: 2020-03-02T16:22:38.371386+01:00
+hash: fddec1c90e5dc60f67e98912159bb5cc6e4dcfc25fd2019752cfcbf176fa23ad
+updated: 2020-03-04T18:10:10.206875746+05:30
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -779,7 +779,9 @@ imports:
   - util/jsonpath
   - util/retry
 - name: k8s.io/klog
-  version: 8e90cee79f823779174776412c13478955131846
+  version: 8139d8cb77af419532b33dfa7dd09fbc5f1d344f
+  subpackages:
+  - glog
 - name: k8s.io/kube-openapi
   version: 1fddd894a3d3e4eb9f4a20d5849e44102f30a419
   repo: https://github.com/openshift/kube-openapi.git
