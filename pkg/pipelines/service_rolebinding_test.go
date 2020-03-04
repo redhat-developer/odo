@@ -21,8 +21,9 @@ func TestRoleBinding(t *testing.T) {
 		},
 		Subjects: []v1rbac.Subject{
 			v1rbac.Subject{
-				Kind: "ServiceAccount",
-				Name: "pipeline",
+				Kind:      "ServiceAccount",
+				Name:      "pipeline",
+				Namespace: "testing",
 			},
 		},
 		RoleRef: v1rbac.RoleRef{
