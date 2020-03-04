@@ -26,9 +26,9 @@ const (
 	roleBindingName      = "pipelines-service-role-binding"
 	devRoleBindingName   = "pipeline-edit-dev"
 	stageRoleBindingName = "pipeline-edit-stage"
-	// PolicyRules to be bound to service account
 )
 
+// PolicyRules to be bound to service account
 var (
 	rules = []v1rbac.PolicyRule{
 		v1rbac.PolicyRule{

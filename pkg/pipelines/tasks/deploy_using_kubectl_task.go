@@ -8,7 +8,7 @@ import (
 func generateDeployUsingKubectlTask(ns string) pipelinev1.Task {
 	return pipelinev1.Task{
 		TypeMeta:   createTaskTypeMeta(),
-		ObjectMeta: meta.CreateObjectMeta(ns, "deploy-using-kubectl-task"),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, "deploy-using-kubectl-task")),
 		Spec: pipelinev1.TaskSpec{
 			Inputs: createInputsForDeployKubectlTask(),
 			Steps:  createStepsForDeployKubectlTask(),

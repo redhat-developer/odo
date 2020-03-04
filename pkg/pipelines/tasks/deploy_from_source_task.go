@@ -8,7 +8,7 @@ import (
 func generateDeployFromSourceTask(ns string) pipelinev1.Task {
 	task := pipelinev1.Task{
 		TypeMeta:   createTaskTypeMeta(),
-		ObjectMeta: meta.CreateObjectMeta(ns, "deploy-from-source-task"),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, "deploy-from-source-task")),
 		Spec: pipelinev1.TaskSpec{
 			Inputs: createInputsForDeployFromSourceTask(),
 			Steps:  createStepsForDeployFromSourceTask(),

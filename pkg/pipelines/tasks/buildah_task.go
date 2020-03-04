@@ -18,7 +18,7 @@ var (
 func generateBuildahTask(ns string, usingInternalRegistry bool) pipelinev1.Task {
 	return pipelinev1.Task{
 		TypeMeta:   createTaskTypeMeta(),
-		ObjectMeta: meta.CreateObjectMeta(ns, "buildah-task"),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, "buildah-task")),
 		Spec: pipelinev1.TaskSpec{
 			Inputs:  createInputsForBuildah(usingInternalRegistry),
 			Outputs: createOutputsForBuildah(),

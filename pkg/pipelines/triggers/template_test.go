@@ -16,7 +16,7 @@ var (
 func TestCreateDevCDDeployTemplate(t *testing.T) {
 	validDevCDTemplate := triggersv1.TriggerTemplate{
 		TypeMeta:   triggerTemplateTypeMeta,
-		ObjectMeta: meta.CreateObjectMeta("testns", "dev-cd-deploy-from-master-template"),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName("testns", "dev-cd-deploy-from-master-template")),
 		Spec: triggersv1.TriggerTemplateSpec{
 			Params: []pipelinev1.ParamSpec{
 				pipelinev1.ParamSpec{
@@ -50,7 +50,7 @@ func TestCreateDevCDDeployTemplate(t *testing.T) {
 func TestCreatedevCIBuildPRTemplate(t *testing.T) {
 	validdevCIPRTemplate := triggersv1.TriggerTemplate{
 		TypeMeta:   triggerTemplateTypeMeta,
-		ObjectMeta: meta.CreateObjectMeta("testns", "dev-ci-build-from-pr-template"),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName("testns", "dev-ci-build-from-pr-template")),
 
 		Spec: triggersv1.TriggerTemplateSpec{
 			Params: []pipelinev1.ParamSpec{
@@ -88,7 +88,7 @@ func TestCreatedevCIBuildPRTemplate(t *testing.T) {
 func TestCreateStageCDPushTemplate(t *testing.T) {
 	ValidStageCDPushTemplate := triggersv1.TriggerTemplate{
 		TypeMeta:   triggerTemplateTypeMeta,
-		ObjectMeta: meta.CreateObjectMeta("testns", "stage-cd-deploy-from-push-template"),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName("testns", "stage-cd-deploy-from-push-template")),
 		Spec: triggersv1.TriggerTemplateSpec{
 			Params: []pipelinev1.ParamSpec{
 				pipelinev1.ParamSpec{
@@ -120,7 +120,7 @@ func TestCreateStageCDPushTemplate(t *testing.T) {
 func TestCreateStageCIdryrunptemplate(t *testing.T) {
 	validStageCIdryrunTemplate := triggersv1.TriggerTemplate{
 		TypeMeta:   triggerTemplateTypeMeta,
-		ObjectMeta: meta.CreateObjectMeta("testns", "stage-ci-dryrun-from-pr-template"),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName("testns", "stage-ci-dryrun-from-pr-template")),
 
 		Spec: triggersv1.TriggerTemplateSpec{
 			Params: []pipelinev1.ParamSpec{
