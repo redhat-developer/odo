@@ -1,9 +1,12 @@
 package utils
 
 import (
+	"strings"
+
 	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/versions/common"
 	"github.com/openshift/odo/pkg/kclient"
+	"github.com/openshift/odo/pkg/util"
 
 	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
@@ -32,8 +35,9 @@ func ConvertEnvs(vars []common.DockerimageEnv) []corev1.EnvVar {
 func ConvertPorts(endpoints []common.DockerimageEndpoint) []corev1.ContainerPort {
 	containerPorts := []corev1.ContainerPort{}
 	for _, endpoint := range endpoints {
+		name := strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(*endpoint.Name)))
 		containerPorts = append(containerPorts, corev1.ContainerPort{
-			Name:          *endpoint.Name,
+			Name:          name,
 			ContainerPort: *endpoint.Port,
 		})
 	}
