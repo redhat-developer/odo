@@ -5,7 +5,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha2"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -24,16 +23,14 @@ func TestDeployFromSourceTask(t *testing.T) {
 		},
 		Spec: pipelinev1.TaskSpec{
 			Inputs: createInputsForDeployFromSourceTask(),
-			TaskSpec: v1alpha2.TaskSpec{
-				Steps: []pipelinev1.Step{
-					pipelinev1.Step{
-						Container: corev1.Container{
-							Name:       "run-kubectl",
-							Image:      "quay.io/kmcdermo/k8s-kubectl:latest",
-							WorkingDir: "/workspace/source",
-							Command:    []string{"kubectl"},
-							Args:       argsForRunKubectlStep,
-						},
+			Steps: []pipelinev1.Step{
+				pipelinev1.Step{
+					Container: corev1.Container{
+						Name:       "run-kubectl",
+						Image:      "quay.io/kmcdermo/k8s-kubectl:latest",
+						WorkingDir: "/workspace/source",
+						Command:    []string{"kubectl"},
+						Args:       argsForRunKubectlStep,
 					},
 				},
 			},
@@ -57,27 +54,25 @@ func TestDeployUsingKubectlTask(t *testing.T) {
 		},
 		Spec: pipelinev1.TaskSpec{
 			Inputs: createInputsForDeployKubectlTask(),
-			TaskSpec: v1alpha2.TaskSpec{
-				Steps: []pipelinev1.Step{
-					pipelinev1.Step{
-						Container: corev1.Container{
-							Name:       "replace-image",
-							Image:      "mikefarah/yq",
-							WorkingDir: "/workspace/source",
-							Command:    []string{"yq"},
-							Args:       argsForReplaceImageStep,
-						},
+			Steps: []pipelinev1.Step{
+				pipelinev1.Step{
+					Container: corev1.Container{
+						Name:       "replace-image",
+						Image:      "mikefarah/yq",
+						WorkingDir: "/workspace/source",
+						Command:    []string{"yq"},
+						Args:       argsForReplaceImageStep,
 					},
-					pipelinev1.Step{
-						Container: corev1.Container{
-							Name:       "run-kubectl",
-							Image:      "quay.io/kmcdermo/k8s-kubectl:latest",
-							WorkingDir: "/workspace/source",
-							Command: []string{
-								"kubectl",
-							},
-							Args: argsForKubectlStep,
+				},
+				pipelinev1.Step{
+					Container: corev1.Container{
+						Name:       "run-kubectl",
+						Image:      "quay.io/kmcdermo/k8s-kubectl:latest",
+						WorkingDir: "/workspace/source",
+						Command: []string{
+							"kubectl",
 						},
+						Args: argsForKubectlStep,
 					},
 				},
 			},
@@ -174,10 +169,8 @@ func TestGenerateBuildahTask(t *testing.T) {
 		Spec: pipelinev1.TaskSpec{
 			Inputs:  createInputsForBuildah(false),
 			Outputs: createOutputsForBuildah(),
-			TaskSpec: v1alpha2.TaskSpec{
-				Steps:   createStepsForBuildah(),
-				Volumes: createVolumes("varlibcontainers"),
-			},
+			Steps:   createStepsForBuildah(),
+			Volumes: createVolumes("varlibcontainers"),
 		},
 	}
 	buildahTask := generateBuildahTask("", false)
