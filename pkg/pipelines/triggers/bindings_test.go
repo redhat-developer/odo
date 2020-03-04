@@ -115,7 +115,7 @@ func TestCreateStageCDDeployBinding(t *testing.T) {
 				pipelinev1.Param{
 					Name: "gitsha",
 					Value: pipelinev1.ArrayOrString{
-						StringVal: "$(body.commits.0.id)",
+						StringVal: "$(body.commits[0].id)",
 						Type:      pipelinev1.ParamTypeString,
 					},
 				},

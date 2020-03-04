@@ -59,7 +59,7 @@ func createStageCDDeployBinding(ns string) triggersv1.TriggerBinding {
 		Spec: triggersv1.TriggerBindingSpec{
 			Params: []pipelinev1.Param{
 				createBindingParam("gitref", "$(body.ref)"),
-				createBindingParam("gitsha", "$(body.commits.0.id)"),
+				createBindingParam("gitsha", "$(body.commits[0].id)"),
 				createBindingParam("gitrepositoryurl", "$(body.repository.clone_url)"),
 			},
 		},
