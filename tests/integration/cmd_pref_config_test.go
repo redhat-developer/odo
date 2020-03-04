@@ -85,9 +85,9 @@ var _ = Describe("odo preference and config command tests", func() {
 			os.RemoveAll(filepath.Join(globalConfPath, ".odo"))
 		})
 		It("should unsuccessfully update", func() {
-			helper.CmdShouldFail("odo", "preference", "set", "pushtarget", "invalid-value")
-			helper.CmdShouldFail("odo", "preference", "set", "experimental", "invalid-value")
-			helper.CmdShouldFail("odo", "preference", "set", "updatenotification", "invalid-value")
+			helper.CmdShouldFail("odo", "preference", "set", "-f", "pushtarget", "invalid-value")
+			helper.CmdShouldFail("odo", "preference", "set", "-f", "experimental", "invalid-value")
+			helper.CmdShouldFail("odo", "preference", "set", "-f", "updatenotification", "invalid-value")
 		})
 	})
 
