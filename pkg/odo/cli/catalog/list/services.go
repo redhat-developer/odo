@@ -9,7 +9,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/catalog/util"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
-	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/spf13/cobra"
 )
 
@@ -23,7 +23,7 @@ type ListServicesOptions struct {
 	// list of known services
 	services catalog.ServiceTypeList
 	// list of clusterserviceversions (installed by Operators)
-	csvs *olmv1alpha1.ClusterServiceVersionList
+	csvs *olm.ClusterServiceVersionList
 	// generic context options common to all commands
 	*genericclioptions.Context
 }

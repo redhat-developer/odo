@@ -8,7 +8,7 @@ import (
 
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/log"
-	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 )
 
 // DisplayServices displays the specified services
@@ -64,7 +64,7 @@ func FilterHiddenComponents(input []catalog.ComponentType) []catalog.ComponentTy
 }
 
 // DisplayClusterServiceVersions displays installed Operators in a human friendly manner
-func DisplayClusterServiceVersions(csvs *olmv1alpha1.ClusterServiceVersionList) {
+func DisplayClusterServiceVersions(csvs *olm.ClusterServiceVersionList) {
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 	log.Info("Operators available through Operator Hub")
 	fmt.Fprintln(w, "NAME", "\t", "CRDs")
@@ -74,7 +74,7 @@ func DisplayClusterServiceVersions(csvs *olmv1alpha1.ClusterServiceVersionList) 
 	w.Flush()
 }
 
-func csvOperators(crds olmv1alpha1.CustomResourceDefinitions) string {
+func csvOperators(crds olm.CustomResourceDefinitions) string {
 	var crdsSlice []string
 	for _, crd := range crds.Owned {
 		crdsSlice = append(crdsSlice, crd.Kind)
