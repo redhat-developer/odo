@@ -11,6 +11,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
@@ -29,6 +30,7 @@ type CommonPushOptions struct {
 	sourcePath       string
 	componentContext string
 	LocalConfigInfo  *config.LocalConfigInfo
+	EnvSpecificInfo  *envinfo.EnvSpecificInfo
 
 	pushConfig         bool
 	pushSource         bool
@@ -49,6 +51,15 @@ func NewCommonPushOptions() *CommonPushOptions {
 func (cpo *CommonPushOptions) InitConfigFromContext() error {
 	var err error
 	cpo.LocalConfigInfo, err = config.NewLocalConfigInfo(cpo.componentContext)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+//InitEnvInfoFromContext initializes envinfo from the context
+func (cpo *CommonPushOptions) InitEnvInfoFromContext() (err error) {
+	cpo.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(cpo.componentContext)
 	if err != nil {
 		return err
 	}
