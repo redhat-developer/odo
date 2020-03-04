@@ -636,7 +636,7 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	glog.V(4).Infof("PushLocal: componentName: %s, applicationName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", componentName, applicationName, path, files, delFiles, isForcePush)
 
 	// Edge case: check to see that the path is NOT empty.
-	emptyDir, err := isEmpty(path)
+	emptyDir, err := util.IsEmpty(path)
 	if err != nil {
 		return errors.Wrapf(err, "Unable to check directory: %s", path)
 	} else if emptyDir {

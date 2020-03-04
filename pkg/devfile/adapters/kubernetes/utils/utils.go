@@ -38,6 +38,15 @@ func GetContainers(devfileObj devfile.DevfileObj) []corev1.Container {
 			envVars := ConvertEnvs(comp.Env)
 			resourceReqs := GetResourceReqs(comp)
 			container := kclient.GenerateContainer(*comp.Alias, *comp.Image, false, comp.Command, comp.Args, envVars, resourceReqs)
+
+			// If `mountSources: true` was set, add an empty dir volume to the container to sync the source to
+			if comp.MountSources {
+				container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
+					Name:      "odo-projects",
+					MountPath: "/projects",
+				})
+			}
+
 			containers = append(containers, *container)
 		}
 	}

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/devfile"
 
 	"github.com/openshift/odo/pkg/devfile/adapters"
@@ -31,11 +32,19 @@ feature progresses.
 // DevfilePush has the logic to perform the required actions for a given devfile
 func (po *PushOptions) DevfilePush() (err error) {
 
+	deletedFiles := []string{}
+	changedFiles := []string{}
+	isForcePush := false
+
 	// Parse devfile
 	devObj, err := devfile.Parse(po.devfilePath)
 	if err != nil {
 		return err
 	}
+
+	// Get the path of the project source code. Since the devfile needs to be at the root of the repository
+	// We can get the source dir by getting the parent dir for the devfile
+	po.sourcePath = filepath.Dir(po.devfilePath)
 
 	componentName, err := getComponentName()
 	if err != nil {
@@ -50,6 +59,9 @@ func (po *PushOptions) DevfilePush() (err error) {
 		return err
 	}
 
+	po.doesComponentExist = devfileHandler.DoesComponentExist(componentName)
+
+	// Start or update the component
 	err = devfileHandler.Start()
 	if err != nil {
 		log.Errorf(
@@ -60,7 +72,81 @@ func (po *PushOptions) DevfilePush() (err error) {
 		os.Exit(1)
 	}
 
+	// If force build wasn't set, sync only the files that changed
+	if !po.forceBuild {
+		absIgnoreRules := util.GetAbsGlobExps(po.sourcePath, po.ignores)
+
+		spinner := log.NewStatus(log.GetStdout())
+		defer spinner.End(true)
+		if po.doesComponentExist {
+			spinner.Start("Checking file changes for pushing", false)
+		} else {
+			// if the component doesn't exist, we don't check for changes in the files
+			// thus we show a different message
+			spinner.Start("Checking files for pushing", false)
+		}
+
+		// Before running the indexer, make sure the .odo folder exists (or else the index file will not get created)
+		odoFolder := filepath.Join(po.sourcePath, ".odo")
+		if _, err := os.Stat(odoFolder); os.IsNotExist(err) {
+			os.Mkdir(odoFolder, 0750)
+		}
+
+		// run the indexer and find the modified/added/deleted/renamed files
+		filesChanged, filesDeleted, err := util.RunIndexer(po.sourcePath, absIgnoreRules)
+		spinner.End(true)
+
+		if err != nil {
+			return errors.Wrap(err, "unable to run indexer")
+		}
+
+		if po.doesComponentExist {
+			// apply the glob rules from the .gitignore/.odo file
+			// and ignore the files on which the rules apply and filter them out
+			filesChangedFiltered, filesDeletedFiltered := filterIgnores(filesChanged, filesDeleted, absIgnoreRules)
+
+			// Remove the relative file directory from the list of deleted files
+			// in order to make the changes correctly within the Kubernetes pod
+			deletedFiles, err = util.RemoveRelativePathFromFiles(filesDeletedFiltered, po.sourcePath)
+			if err != nil {
+				return errors.Wrap(err, "unable to remove relative path from list of changed/deleted files")
+			}
+			glog.V(4).Infof("List of files to be deleted: +%v", deletedFiles)
+			changedFiles = filesChangedFiltered
+
+			if len(filesChangedFiltered) == 0 && len(filesDeletedFiltered) == 0 {
+				// no file was modified/added/deleted/renamed, thus return without building
+				log.Success("No file changes detected, skipping build. Use the '-f' flag to force the build.")
+				return nil
+			}
+		}
+	}
+
+	if po.forceBuild || !po.doesComponentExist {
+		isForcePush = true
+	}
+
+	// Sync the local source code to the component
+	err = devfileHandler.Push(po.sourcePath,
+		os.Stdout,
+		changedFiles,
+		deletedFiles,
+		isForcePush,
+		util.GetAbsGlobExps(po.sourcePath, po.ignores),
+		po.show,
+	)
+
+	if err != nil {
+		log.Errorf(
+			"Failed to sync to component with name %s.\nError: %v",
+			componentName,
+			err,
+		)
+	}
+
 	spinner.End(true)
+
+	log.Success("Changes successfully pushed to component")
 	return
 }
 

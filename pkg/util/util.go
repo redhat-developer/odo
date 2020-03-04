@@ -640,3 +640,31 @@ func HttpGetFreePort() (int, error) {
 	}
 	return freePort, nil
 }
+
+// IsEmpty checks to see if a directory is empty
+// shamelessly taken from: https://stackoverflow.com/questions/30697324/how-to-check-if-directory-on-path-is-empty
+// this helps detect any edge cases where an empty directory is copied over
+func IsEmpty(name string) (bool, error) {
+	f, err := os.Open(name)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close() // #nosec G307
+
+	_, err = f.Readdirnames(1) // Or f.Readdir(1)
+	if err == io.EOF {
+		return true, nil
+	}
+	return false, err // Either not empty or error, suits both cases
+}
+
+// GetRemoteFilesMarkedForDeletion returns the list of remote files marked for deletion
+func GetRemoteFilesMarkedForDeletion(delSrcRelPaths []string, remoteFolder string) []string {
+	var rmPaths []string
+	for _, delRelPath := range delSrcRelPaths {
+		// since the paths inside the container are linux oriented
+		// so we convert the paths accordingly
+		rmPaths = append(rmPaths, filepath.ToSlash(filepath.Join(remoteFolder, delRelPath)))
+	}
+	return rmPaths
+}

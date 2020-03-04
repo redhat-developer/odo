@@ -1,6 +1,8 @@
 package kubernetes
 
 import (
+	"io"
+
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/component"
 	"github.com/openshift/odo/pkg/kclient"
@@ -31,4 +33,17 @@ func (k Adapter) Start() error {
 	}
 
 	return nil
+}
+
+func (k Adapter) Push(path string, out io.Writer, files []string, delFiles []string, isForcePush bool, globExps []string, show bool) error {
+	err := k.componentAdapter.Push(path, out, files, delFiles, isForcePush, globExps, show)
+	if err != nil {
+		return errors.Wrap(err, "Failed to push to the component")
+	}
+
+	return nil
+}
+
+func (k Adapter) DoesComponentExist(cmpName string) bool {
+	return k.componentAdapter.DoesComponentExist(cmpName)
 }
