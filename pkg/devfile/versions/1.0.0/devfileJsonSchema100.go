@@ -113,7 +113,7 @@ const JsonSchema100 = `{
                             },
                             "location": {
                                 "type": "string",
-                                "description": "Project's source location address. Should be URL for git and github located projects, or file:// for zip.",
+                                "description": "Project's source location address. Should be URL for git and github located projects",
                                 "examples": [
                                     "git@github.com:spring-projects/spring-petclinic.git"
                                 ]

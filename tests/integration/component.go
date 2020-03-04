@@ -592,13 +592,7 @@ func componentTests(args ...string) {
 
 			// check the source location and type in the deployment config
 			getSourceLocation := oc.SourceLocationDC("cmp-git", "testing", project)
-			var sourcePath string
-			if runtime.GOOS == "windows" {
-				sourcePath = "file:///./"
-			} else {
-				sourcePath = "file://./"
-			}
-			Expect(getSourceLocation).To(ContainSubstring(sourcePath))
+			Expect(getSourceLocation).To(ContainSubstring(""))
 			getSourceType := oc.SourceTypeDC("cmp-git", "testing", project)
 			Expect(getSourceType).To(ContainSubstring("local"))
 		})
@@ -633,11 +627,7 @@ func componentTests(args ...string) {
 
 			Expect(cmpDescribe).To(ContainSubstring(cmpName))
 			Expect(cmpDescribe).To(ContainSubstring("nodejs"))
-			if runtime.GOOS == "windows" {
-				Expect(cmpDescribe).To(ContainSubstring("file:///./"))
-			} else {
-				Expect(cmpDescribe).To(ContainSubstring("file://./"))
-			}
+
 			url := helper.DetermineRouteURL(context)
 			Expect(cmpDescribe).To(ContainSubstring(url))
 
@@ -667,13 +657,8 @@ func componentTests(args ...string) {
 			Expect(cmpListOutput).To(ContainSubstring(cmpName))
 
 			actualDesCompJSON := helper.CmdShouldPass("odo", append(args, "describe", cmpName, "--app", appName, "--project", project, "-o", "json")...)
-			var sourcePath string
-			if runtime.GOOS == "windows" {
-				sourcePath = "file:///./"
-			} else {
-				sourcePath = "file://./"
-			}
-			desiredDesCompJSON := fmt.Sprintf(`{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","namespace":"%s","creationTimestamp":null},"spec":{"app":"app","type":"nodejs","source":"%s","env":[{"name":"DEBUG_PORT","value":"5858"}]},"status":{"state":"Pushed"}}`, project, sourcePath)
+
+			desiredDesCompJSON := fmt.Sprintf(`{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","namespace":"%s","creationTimestamp":null},"spec":{"app":"app","type":"nodejs","env":[{"name":"DEBUG_PORT","value":"5858"}]},"status":{"state":"Pushed"}}`, project)
 			Expect(desiredDesCompJSON).Should(MatchJSON(actualDesCompJSON))
 
 			helper.CmdShouldPass("odo", append(args, "delete", cmpName, "--app", appName, "--project", project, "-f")...)

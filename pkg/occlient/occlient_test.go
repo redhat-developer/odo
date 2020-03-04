@@ -44,7 +44,7 @@ func fakeDeploymentConfig(name string, image string, envVars []corev1.EnvVar, en
 	labels[applabels.ApplicationLabel] = name
 
 	// save source path as annotation
-	annotations := map[string]string{"app.openshift.io/vcs-uri": "./",
+	annotations := map[string]string{
 		"app.kubernetes.io/component-source-type": "local",
 	}
 
@@ -811,7 +811,6 @@ func TestUpdateDCAnnotations(t *testing.T) {
 			name:   "existing dc",
 			dcName: "nodejs",
 			annotations: map[string]string{
-				"app.openshift.io/vcs-uri":                "file:///temp/nodejs-ex",
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			existingDc: appsv1.DeploymentConfig{
@@ -828,7 +827,6 @@ func TestUpdateDCAnnotations(t *testing.T) {
 			name:   "non existing dc",
 			dcName: "nodejs",
 			annotations: map[string]string{
-				"app.openshift.io/vcs-uri":                "file:///temp/nodejs-ex",
 				"app.kubernetes.io/component-source-type": "local",
 			},
 			existingDc: appsv1.DeploymentConfig{
