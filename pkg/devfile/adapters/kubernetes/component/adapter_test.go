@@ -115,18 +115,6 @@ func TestDoesComponentExist(t *testing.T) {
 			fkclient, fkclientset := kclient.FakeNew()
 			fkWatch := watch.NewFake()
 
-			// Change the status
-			go func() {
-				podStatus := &corev1.Pod{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: tt.componentName,
-					},
-					Status: corev1.PodStatus{
-						Phase: corev1.PodRunning,
-					},
-				}
-				fkWatch.Modify(podStatus)
-			}()
 			fkclientset.Kubernetes.PrependWatchReactor("pods", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
 				return true, fkWatch, nil
 			})
