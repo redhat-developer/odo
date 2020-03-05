@@ -20,8 +20,12 @@ import (
 const DefaultAppName = "app"
 
 // NewContext creates a new Context struct populated with the current state based on flags specified for the provided command
-func NewContext(command *cobra.Command) *Context {
-	return newContext(command, false, false)
+func NewContext(command *cobra.Command, ignoreMissingConfiguration ...bool) *Context {
+	ignoreMissingConfig := false
+	if len(ignoreMissingConfiguration) == 1 {
+		ignoreMissingConfig = ignoreMissingConfiguration[0]
+	}
+	return newContext(command, false, ignoreMissingConfig)
 }
 
 // NewContextCreatingAppIfNeeded creates a new Context struct populated with the current state based on flags specified for the
