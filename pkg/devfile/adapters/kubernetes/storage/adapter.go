@@ -27,10 +27,9 @@ func (a *Adapter) GetVolumeNameToPVCName() map[string]string {
 
 // Create creates the component pvc storage if it does not exist and adds them to the storage adapter struct
 func (a *Adapter) Create(volumes []common.Volume) (err error) {
-	componentName := a.ComponentName
 
 	// createComponentStorage creates PVC from the unique Devfile volumes if it does not exist and returns a map of volume name to the PVC created
-	a.VolumeNameToPVCName, err = CreateComponentStorage(&a.Client, volumes, componentName)
+	a.VolumeNameToPVCName, err = CreateComponentStorage(&a.Client, volumes, a.ComponentName)
 	if err != nil {
 		return err
 	}
