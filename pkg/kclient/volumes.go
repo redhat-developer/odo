@@ -3,6 +3,7 @@ package kclient
 import (
 	"fmt"
 
+	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
@@ -33,13 +34,13 @@ func (c *Client) CreatePVC(objectMeta metav1.ObjectMeta, pvcSpec corev1.Persiste
 }
 
 // AddPVCToPodTemplateSpec adds the given PVC to the podTemplateSpec
-func AddPVCToPodTemplateSpec(podTemplateSpec *corev1.PodTemplateSpec, volumeName, pvc string) {
+func AddPVCToPodTemplateSpec(podTemplateSpec *corev1.PodTemplateSpec, volumeName, pvcName string) {
 
 	podTemplateSpec.Spec.Volumes = append(podTemplateSpec.Spec.Volumes, corev1.Volume{
 		Name: volumeName,
 		VolumeSource: corev1.VolumeSource{
 			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-				ClaimName: pvc,
+				ClaimName: pvcName,
 			},
 		},
 	})
@@ -115,4 +116,31 @@ func (c *Client) GetPVCsFromSelector(selector string) ([]corev1.PersistentVolume
 // of the given PVC
 func generateVolumeNameFromPVC(pvc string) string {
 	return fmt.Sprintf("%v-%v-volume", pvc, util.GenerateRandomString(nameLength))
+}
+
+// UpdateStorageOwnerReference updates the given storages with the given owner references
+func (c *Client) UpdateStorageOwnerReference(volumeNameToPVCName map[string]string, ownerReference ...metav1.OwnerReference) error {
+
+	if len(ownerReference) <= 0 {
+		return errors.New("owner references are empty")
+	}
+
+	for _, pvcName := range volumeNameToPVCName {
+		// get the PVC from the PVC name
+		pvc, err := c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Get(pvcName, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+
+		glog.V(3).Infof("Updating owner references for pvc %v", pvcName)
+		for _, owRf := range ownerReference {
+			pvc.SetOwnerReferences(append(pvc.GetOwnerReferences(), owRf))
+		}
+
+		_, err = c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Update(pvc)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

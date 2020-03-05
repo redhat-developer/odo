@@ -3,6 +3,7 @@ package component
 import (
 	"fmt"
 
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -76,19 +77,29 @@ func (a Adapter) Create() (err error) {
 	glog.V(3).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
 	glog.V(3).Infof("The component name is %v", componentName)
 
+	var deployment *appsv1.Deployment
 	if utils.ComponentExists(a.Client, componentName) {
 		glog.V(3).Info("The component already exists, attempting to update it")
-		_, err = a.Client.UpdateDeployment(*deploymentSpec)
+		deployment, err = a.Client.UpdateDeployment(*deploymentSpec)
 		if err != nil {
 			return err
 		}
 		glog.V(3).Infof("Successfully updated component %v", componentName)
 	} else {
-		_, err = a.Client.CreateDeployment(*deploymentSpec)
+		deployment, err = a.Client.CreateDeployment(*deploymentSpec)
 		if err != nil {
 			return err
 		}
 		glog.V(3).Infof("Successfully created component %v", componentName)
+	}
+
+	// Get owner reference of the deployment
+	ownerReference := kclient.GenerateOwnerReference(deployment)
+
+	// Update component pvcs with the owner references
+	err = a.Client.UpdateStorageOwnerReference(volumeNameToPVCName, ownerReference)
+	if err != nil {
+		return err
 	}
 
 	podSelector := fmt.Sprintf("component=%s", componentName)
