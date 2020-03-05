@@ -56,6 +56,7 @@ func (o *ViewOptions) Run() (err error) {
 	fmt.Fprintln(w, "Timeout", "\t", showBlankIfNil(cfg.OdoSettings.Timeout))
 	fmt.Fprintln(w, "PushTimeout", "\t", showBlankIfNil(cfg.OdoSettings.PushTimeout))
 	fmt.Fprintln(w, "Experimental", "\t", showBlankIfNil(cfg.OdoSettings.Experimental))
+	fmt.Fprintln(w, "PushTarget", "\t", showBlankIfNil(cfg.OdoSettings.PushTarget))
 	w.Flush()
 	return
 }
