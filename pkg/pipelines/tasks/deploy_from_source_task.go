@@ -22,7 +22,7 @@ func createStepsForDeployFromSourceTask() []pipelinev1.Step {
 		pipelinev1.Step{
 			Container: createContainer(
 				"run-kubectl",
-				"quay.io/kmcdermo/k8s-kubectl:latest",
+				"quay.io/redhat-developer/k8s-kubectl",
 				"/workspace/source",
 				[]string{"kubectl"},
 				argsForRunKubectlStep,

@@ -27,7 +27,7 @@ func TestDeployFromSourceTask(t *testing.T) {
 				pipelinev1.Step{
 					Container: corev1.Container{
 						Name:       "run-kubectl",
-						Image:      "quay.io/kmcdermo/k8s-kubectl:latest",
+						Image:      "quay.io/redhat-developer/k8s-kubectl",
 						WorkingDir: "/workspace/source",
 						Command:    []string{"kubectl"},
 						Args:       argsForRunKubectlStep,
@@ -58,7 +58,7 @@ func TestDeployUsingKubectlTask(t *testing.T) {
 				pipelinev1.Step{
 					Container: corev1.Container{
 						Name:       "replace-image",
-						Image:      "mikefarah/yq",
+						Image:      "quay.io/redhat-developer/yq",
 						WorkingDir: "/workspace/source",
 						Command:    []string{"yq"},
 						Args:       argsForReplaceImageStep,
@@ -67,7 +67,7 @@ func TestDeployUsingKubectlTask(t *testing.T) {
 				pipelinev1.Step{
 					Container: corev1.Container{
 						Name:       "run-kubectl",
-						Image:      "quay.io/kmcdermo/k8s-kubectl:latest",
+						Image:      "quay.io/redhat-developer/k8s-kubectl",
 						WorkingDir: "/workspace/source",
 						Command: []string{
 							"kubectl",
