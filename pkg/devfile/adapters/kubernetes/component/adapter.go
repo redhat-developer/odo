@@ -9,12 +9,13 @@ import (
 	"github.com/golang/glog"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
 	"github.com/openshift/odo/pkg/kclient"
 )
 
 // New instantiantes a component adapter
-func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
+func New(adapterContext common.AdapterContext, client kclient.Client) common.ComponentAdapter {
 	return Adapter{
 		Client:         client,
 		AdapterContext: adapterContext,
@@ -27,8 +28,9 @@ type Adapter struct {
 	common.AdapterContext
 }
 
-// Initialize initializes the component from the devfile
-func (a Adapter) Initialize() (*corev1.PodTemplateSpec, error) {
+// Create generates the Kubernetes resources, adds the devfile storage and
+// updates the component if a matching component exists or creates one if it doesn't exist
+func (a Adapter) Create() (err error) {
 	componentName := a.ComponentName
 
 	labels := map[string]string{
@@ -37,17 +39,37 @@ func (a Adapter) Initialize() (*corev1.PodTemplateSpec, error) {
 
 	containers := utils.GetContainers(a.Devfile)
 	if len(containers) == 0 {
-		return nil, fmt.Errorf("No valid components found in the devfile")
+		return fmt.Errorf("No valid components found in the devfile")
 	}
 
 	objectMeta := kclient.CreateObjectMeta(componentName, a.Client.Namespace, labels, nil)
 	podTemplateSpec := kclient.GeneratePodTemplateSpec(objectMeta, containers)
-	return podTemplateSpec, nil
-}
 
-// Start updates the component if a matching component exists or creates one if it doesn't exist
-func (a Adapter) Start(podTemplateSpec *corev1.PodTemplateSpec) (err error) {
-	componentName := a.ComponentName
+	// Get a list of all the unique volume names
+	componentAliasToVolumes := utils.GetVolumes(a.Devfile)
+	var uniqueVolumes []common.Volume
+	processedVolumes := make(map[string]bool)
+	for _, volumes := range componentAliasToVolumes {
+		for _, vol := range volumes {
+			if _, ok := processedVolumes[*vol.Name]; !ok {
+				processedVolumes[*vol.Name] = true
+				uniqueVolumes = append(uniqueVolumes, vol)
+			}
+		}
+	}
+
+	// Get the storage adapter and create the volumes if it does not exist
+	stoAdapter := storage.New(a.AdapterContext, a.Client)
+	err = stoAdapter.Create(uniqueVolumes)
+	if err != nil {
+		return err
+	}
+	volumeNameToPVCName := stoAdapter.(storage.HelperAdapter).GetVolumeNameToPVCName()
+	// Add PVC and Volume Mounts to the podTemplateSpec
+	err = kclient.AddPVCAndVolumeMount(podTemplateSpec, volumeNameToPVCName, componentAliasToVolumes)
+	if err != nil {
+		return err
+	}
 
 	deploymentSpec := kclient.GenerateDeploymentSpec(*podTemplateSpec)
 

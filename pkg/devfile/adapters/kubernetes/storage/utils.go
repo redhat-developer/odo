@@ -6,6 +6,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/util"
 
@@ -13,32 +14,31 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-const (
-	size = "1Gi"
-)
-
 // CreateComponentStorage creates PVCs with the given list of volume names if it does not exist, else it uses the existing PVC
-func CreateComponentStorage(Client *kclient.Client, volumes []string, componentName string) (map[string]*corev1.PersistentVolumeClaim, error) {
-	volumeNameToPVC := make(map[string]*corev1.PersistentVolumeClaim)
+func CreateComponentStorage(Client *kclient.Client, volumes []common.Volume, componentName string) (map[string]string, error) {
+	volumeNameToPVCName := make(map[string]string)
 
 	for _, vol := range volumes {
-		label := "component=" + componentName + ",storage-name=" + vol
-		glog.V(3).Infof("Checking for PVC with name %v and label %v\n", vol, label)
+		volumeName := *vol.Name
+		volumeSize := *vol.Size
+		label := "component=" + componentName + ",storage-name=" + volumeName
+
+		glog.V(3).Infof("Checking for PVC with name %v and label %v\n", volumeName, label)
 		PVCs, err := Client.GetPVCsFromSelector(label)
 		if err != nil {
 			err = errors.New("Unable to get PVC with selectors " + label + ": " + err.Error())
 			return nil, err
 		}
 		if len(PVCs) == 1 {
-			glog.V(3).Infof("Found an existing PVC with name %v and label %v\n", vol, label)
+			glog.V(3).Infof("Found an existing PVC with name %v and label %v\n", volumeName, label)
 			existingPVC := &PVCs[0]
-			volumeNameToPVC[vol] = existingPVC
+			volumeNameToPVCName[volumeName] = existingPVC.Name
 		} else if len(PVCs) == 0 {
-			glog.V(3).Infof("Creating a PVC with name %v and label %v\n", vol, label)
-			createdPVC, err := Create(Client, vol, componentName)
-			volumeNameToPVC[vol] = createdPVC
+			glog.V(3).Infof("Creating a PVC with name %v and label %v\n", volumeName, label)
+			createdPVC, err := Create(Client, volumeName, volumeSize, componentName)
+			volumeNameToPVCName[volumeName] = createdPVC.Name
 			if err != nil {
-				err = errors.New("Error creating PVC " + vol + ": " + err.Error())
+				err = errors.New("Error creating PVC " + volumeName + ": " + err.Error())
 				return nil, err
 			}
 		} else {
@@ -47,11 +47,11 @@ func CreateComponentStorage(Client *kclient.Client, volumes []string, componentN
 		}
 	}
 
-	return volumeNameToPVC, nil
+	return volumeNameToPVCName, nil
 }
 
 // Create creates the pvc for the given pvc name and component name
-func Create(Client *kclient.Client, name, componentName string) (*corev1.PersistentVolumeClaim, error) {
+func Create(Client *kclient.Client, name, size, componentName string) (*corev1.PersistentVolumeClaim, error) {
 
 	labels := map[string]string{
 		"component":    componentName,

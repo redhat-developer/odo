@@ -9,11 +9,16 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-// errorMsg is the message for user when invalid configuration error occurs
-const errorMsg = `
+const (
+	// errorMsg is the message for user when invalid configuration error occurs
+	errorMsg = `
 Please ensure you have an active kubernetes context to your cluster. 
 Consult your Kubernetes distribution's documentation for more details
 `
+
+	// The length of the string to be generated for names of resources
+	nameLength = 5
+)
 
 // Client is a collection of fields used for client configuration and interaction
 type Client struct {

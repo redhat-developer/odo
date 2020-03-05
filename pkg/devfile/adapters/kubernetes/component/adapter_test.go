@@ -50,17 +50,6 @@ func TestComponentAdapter(t *testing.T) {
 			fkclient, fkclientset := kclient.FakeNew()
 			fkWatch := watch.NewFake()
 
-			componentAdapter := New(adapterCtx, *fkclient)
-			podTemplateSpec, err := componentAdapter.Initialize()
-
-			// Checks for unexpected error cases
-			if !tt.wantErr == (err != nil) {
-				t.Errorf("component adapter initialize unexpected error %v, wantErr %v", err, tt.wantErr)
-			} else if tt.wantErr && (err != nil) {
-				// if we want an error, return since the remaining test is not valid
-				return
-			}
-
 			// Change the status
 			go func() {
 				fkWatch.Modify(kclient.FakePodStatus(corev1.PodRunning, testComponentName))
@@ -69,11 +58,12 @@ func TestComponentAdapter(t *testing.T) {
 				return true, fkWatch, nil
 			})
 
-			err = componentAdapter.Start(podTemplateSpec)
+			componentAdapter := New(adapterCtx, *fkclient)
+			err := componentAdapter.Create()
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
-				t.Errorf("component adapter start unexpected error %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("component adapter create unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

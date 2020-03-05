@@ -3,7 +3,7 @@ package kclient
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/devfile/versions/common"
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 
@@ -15,9 +15,6 @@ import (
 const (
 	PersistentVolumeClaimKind       = "PersistentVolumeClaim"
 	PersistentVolumeClaimAPIVersion = "v1"
-
-	// The length of the string to be generated for names of resources
-	nameLength = 5
 )
 
 // CreatePVC creates a PVC resource in the cluster with the given name, size and labels
@@ -50,7 +47,7 @@ func AddPVCToPodTemplateSpec(podTemplateSpec *corev1.PodTemplateSpec, volumeName
 
 // AddVolumeMountToPodTemplateSpec adds the Volume Mounts in componentAliasToMountPaths to the podTemplateSpec containers for a given pvc and volumeName
 // componentAliasToMountPaths is a map of a container alias to an array of its Mount Paths
-func AddVolumeMountToPodTemplateSpec(podTemplateSpec *corev1.PodTemplateSpec, volumeName, pvc string, componentAliasToMountPaths map[string][]string) error {
+func AddVolumeMountToPodTemplateSpec(podTemplateSpec *corev1.PodTemplateSpec, volumeName string, componentAliasToMountPaths map[string][]string) error {
 
 	// Validating podTemplateSpec.Spec.Containers[] is present before dereferencing
 	if len(podTemplateSpec.Spec.Containers) == 0 {
@@ -77,11 +74,10 @@ func AddVolumeMountToPodTemplateSpec(podTemplateSpec *corev1.PodTemplateSpec, vo
 }
 
 // AddPVCAndVolumeMount adds PVC and volume mount to the pod template spec
-// volumeNameToPVC is a map of volume name to the PVC created
+// volumeNameToPVCName is a map of volume name to the PVC created
 // componentAliasToVolumes is a map of the Devfile component alias to the Devfile Volumes
-func AddPVCAndVolumeMount(podTemplateSpec *corev1.PodTemplateSpec, volumeNameToPVC map[string]*corev1.PersistentVolumeClaim, componentAliasToVolumes map[string][]common.DockerimageVolume) error {
-	for vol, pvc := range volumeNameToPVC {
-		pvcName := pvc.Name
+func AddPVCAndVolumeMount(podTemplateSpec *corev1.PodTemplateSpec, volumeNameToPVCName map[string]string, componentAliasToVolumes map[string][]common.Volume) error {
+	for volName, pvcName := range volumeNameToPVCName {
 		generatedVolumeName := generateVolumeNameFromPVC(pvcName)
 		AddPVCToPodTemplateSpec(podTemplateSpec, generatedVolumeName, pvcName)
 
@@ -89,13 +85,13 @@ func AddPVCAndVolumeMount(podTemplateSpec *corev1.PodTemplateSpec, volumeNameToP
 		componentAliasToMountPaths := make(map[string][]string)
 		for containerName, volumes := range componentAliasToVolumes {
 			for _, volume := range volumes {
-				if vol == *volume.Name {
+				if volName == *volume.Name {
 					componentAliasToMountPaths[containerName] = append(componentAliasToMountPaths[containerName], *volume.ContainerPath)
 				}
 			}
 		}
 
-		err := AddVolumeMountToPodTemplateSpec(podTemplateSpec, generatedVolumeName, pvcName, componentAliasToMountPaths)
+		err := AddVolumeMountToPodTemplateSpec(podTemplateSpec, generatedVolumeName, componentAliasToMountPaths)
 		if err != nil {
 			return errors.New("Unable to add volumes mounts to the pod: " + err.Error())
 		}

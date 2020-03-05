@@ -9,3 +9,10 @@ type AdapterContext struct {
 	ComponentName string             // ComponentName is the odo component name, it is NOT related to any devfile components
 	Devfile       devfile.DevfileObj // Devfile is the object returned by the Devfile parser
 }
+
+// Volume is a struct that is common to all the adapters
+type Volume struct {
+	Name          *string
+	ContainerPath *string
+	Size          *string
+}
