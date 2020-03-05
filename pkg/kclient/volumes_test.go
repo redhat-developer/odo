@@ -16,6 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/util"
 )
 
@@ -484,6 +485,72 @@ func TestAddPVCAndVolumeMount(t *testing.T) {
 					}
 				}
 			}
+		})
+	}
+}
+
+func TestUpdateStorageOwnerReference(t *testing.T) {
+
+	labels := map[string]string{
+		"app":       "app",
+		"component": "frontend",
+	}
+
+	volumeNameToPVCName := map[string]string{
+		"volume1": "pvc1",
+		"volume2": "pvc2",
+	}
+
+	// initialising the fakeclient
+	fkclient, fkclientset := FakeNew()
+
+	// create a fake deployment
+	createdDeployment, err := createFakeDeployment(fkclient, fkclientset, "mypod", labels)
+	if err != nil {
+		t.Errorf("TestUpdateStorageOwnerReference: Failed creating the fake deployment")
+		return
+	}
+
+	tests := []struct {
+		name           string
+		pvc            *corev1.PersistentVolumeClaim
+		ownerReference []metav1.OwnerReference
+		wantErr        bool
+	}{
+		{
+			name: "Case 1: valid owner reference for pvc",
+			pvc:  testingutil.FakePVC("pvc-1", "1Gi", map[string]string{}),
+			ownerReference: []metav1.OwnerReference{
+				GenerateOwnerReference(createdDeployment),
+			},
+			wantErr: false,
+		},
+		{
+			name:           "Case 2: empty owner reference for pvc",
+			pvc:            testingutil.FakePVC("pvc-1", "1Gi", map[string]string{}),
+			ownerReference: []metav1.OwnerReference{},
+			wantErr:        true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			fkclientset.Kubernetes.PrependReactor("get", "persistentvolumeclaims", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+				return true, tt.pvc, nil
+			})
+
+			fkclientset.Kubernetes.PrependReactor("update", "persistentvolumeclaims", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+				pvc := action.(ktesting.UpdateAction).GetObject().(*corev1.PersistentVolumeClaim)
+				if pvc.OwnerReferences[0].Name != createdDeployment.Name {
+					t.Errorf("owner reference not set for deployment %s", tt.pvc.Name)
+				}
+				return true, pvc, nil
+			})
+
+			if err := fkclient.UpdateStorageOwnerReference(volumeNameToPVCName, tt.ownerReference...); (err != nil) != tt.wantErr {
+				t.Errorf("UpdateStorageOwnerReference() error = %v, wantErr %v", err, tt.wantErr)
+			}
+
 		})
 	}
 }
