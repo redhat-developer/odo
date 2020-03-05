@@ -91,7 +91,10 @@ func (po *PushOptions) DevfilePush() (err error) {
 		// Before running the indexer, make sure the .odo folder exists (or else the index file will not get created)
 		odoFolder := filepath.Join(po.sourcePath, ".odo")
 		if _, err := os.Stat(odoFolder); os.IsNotExist(err) {
-			os.Mkdir(odoFolder, 0750)
+			err = os.Mkdir(odoFolder, 0750)
+			if err != nil {
+				return errors.Wrap(err, "unable to create directory")
+			}
 		}
 
 		// run the indexer and find the modified/added/deleted/renamed files
@@ -168,17 +171,4 @@ func getComponentName() (string, error) {
 	// Kubernetes resources require a name that satisfies DNS-1123
 	retVal = strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(retVal)))
 	return retVal, nil
-}
-
-// getSourcePath retrieves the source path to use for odo push. First, it'll check a context was passed in via
-// the `--context` flag and use that. If the context is not set, it'll use the current working directory
-func getSourcePath(context string) (string, error) {
-	if context != "" {
-		return context, nil
-	}
-	currDir, err := os.Getwd()
-	if err != nil {
-		return "", errors.Wrapf(err, "unable to get source path because getting current directory failed")
-	}
-	return currDir, nil
 }
