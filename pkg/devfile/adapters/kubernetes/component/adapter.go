@@ -123,11 +123,21 @@ func (a Adapter) Push(path string, out io.Writer, files []string, delFiles []str
 		}
 	}
 
-	glog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
-	err = sync.CopyFile(&a.Client, path, pod.GetName(), containerName, "/projects", files, globExps)
-	if err != nil {
-		s.End(false)
-		return errors.Wrap(err, "unable push files to pod")
+	if !isForcePush {
+		if len(files) == 0 && len(delFiles) == 0 {
+			// nothing to push
+			s.End(true)
+			return nil
+		}
+	}
+
+	if isForcePush || len(files) > 0 {
+		glog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
+		err = sync.CopyFile(&a.Client, path, pod.GetName(), containerName, kclient.OdoSourceVolumeMount, files, globExps)
+		if err != nil {
+			s.End(false)
+			return errors.Wrap(err, "unable push files to pod")
+		}
 	}
 	s.End(true)
 
