@@ -42,7 +42,6 @@ type WatchOptions struct {
 	sourcePath       string
 	componentContext string
 	client           *occlient.Client
-	localConfig      *config.LocalConfigInfo
 
 	*genericclioptions.Context
 }
@@ -54,16 +53,13 @@ func NewWatchOptions() *WatchOptions {
 
 // Complete completes watch args
 func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	// Set the correct context
+	wo.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+
 	wo.client = genericclioptions.Client(cmd)
 
-	// Retrieve configuration
-	conf, err := config.NewLocalConfigInfo(wo.componentContext)
-	if err != nil {
-		return errors.Wrap(err, "unable to retrieve configuration information")
-	}
-
 	// Set the necessary values within WatchOptions
-	wo.localConfig = conf
+	conf := wo.Context.LocalConfigInfo
 	wo.sourceType = conf.LocalConfig.GetSourceType()
 
 	// Get SourceLocation here...
@@ -78,8 +74,6 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 		return errors.Wrap(err, "unable to apply ignore information")
 	}
 
-	// Set the correct context
-	wo.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 	return
 }
 
@@ -89,7 +83,7 @@ func (wo *WatchOptions) Validate() (err error) {
 	// Validate source of component is either local source or binary path until git watch is supported
 	if wo.sourceType != "binary" && wo.sourceType != "local" {
 		return fmt.Errorf("Watch is supported by binary and local components only and source type of component %s is %s",
-			wo.localConfig.GetName(),
+			wo.LocalConfigInfo.GetName(),
 			wo.sourceType)
 	}
 
@@ -107,8 +101,8 @@ func (wo *WatchOptions) Validate() (err error) {
 		glog.V(4).Infof("delay=0 means changes will be pushed as soon as they are detected which can cause performance issues")
 	}
 
-	cmpName := wo.localConfig.GetName()
-	appName := wo.localConfig.GetApplication()
+	cmpName := wo.LocalConfigInfo.GetName()
+	appName := wo.LocalConfigInfo.GetApplication()
 	exists, err := component.Exists(wo.Client, cmpName, appName)
 	if err != nil {
 		return
@@ -125,7 +119,7 @@ func (wo *WatchOptions) Run() (err error) {
 		wo.Context.Client,
 		os.Stdout,
 		component.WatchParameters{
-			ComponentName:   wo.localConfig.GetName(),
+			ComponentName:   wo.LocalConfigInfo.GetName(),
 			ApplicationName: wo.Context.Application,
 			Path:            wo.sourcePath,
 			FileIgnores:     util.GetAbsGlobExps(wo.sourcePath, wo.ignores),

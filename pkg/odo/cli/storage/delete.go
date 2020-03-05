@@ -3,7 +3,6 @@ package storage
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -27,7 +26,6 @@ type StorageDeleteOptions struct {
 	storageName            string
 	storageForceDeleteFlag bool
 	componentContext       string
-	localConfig            *config.LocalConfigInfo
 	*genericclioptions.Context
 }
 
@@ -38,11 +36,7 @@ func NewStorageDeleteOptions() *StorageDeleteOptions {
 
 // Complete completes StorageDeleteOptions after they've been created
 func (o *StorageDeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context = genericclioptions.NewContext(cmd)
-	o.localConfig, err = config.NewLocalConfigInfo(o.componentContext)
-	if err != nil {
-		return err
-	}
+	// this initializes the LocalConfigInfo as well
 	o.Context = genericclioptions.NewContext(cmd)
 	o.storageName = args[0]
 	return
@@ -50,7 +44,7 @@ func (o *StorageDeleteOptions) Complete(name string, cmd *cobra.Command, args []
 
 // Validate validates the StorageDeleteOptions based on completed values
 func (o *StorageDeleteOptions) Validate() (err error) {
-	exists := o.localConfig.StorageExists(o.storageName)
+	exists := o.LocalConfigInfo.StorageExists(o.storageName)
 	if !exists {
 		return fmt.Errorf("the storage %v does not exists in the application %v, cause %v", o.storageName, o.Application, err)
 	}
@@ -62,17 +56,17 @@ func (o *StorageDeleteOptions) Validate() (err error) {
 func (o *StorageDeleteOptions) Run() (err error) {
 	var deleteMsg string
 
-	mPath := o.localConfig.GetMountPath(o.storageName)
+	mPath := o.LocalConfigInfo.GetMountPath(o.storageName)
 
-	deleteMsg = fmt.Sprintf("Are you sure you want to delete the storage %v mounted to %v in %v component", o.storageName, mPath, o.localConfig.GetName())
+	deleteMsg = fmt.Sprintf("Are you sure you want to delete the storage %v mounted to %v in %v component", o.storageName, mPath, o.LocalConfigInfo.GetName())
 
 	if o.storageForceDeleteFlag || ui.Proceed(deleteMsg) {
-		err = o.localConfig.StorageDelete(o.storageName)
+		err = o.LocalConfigInfo.StorageDelete(o.storageName)
 		if err != nil {
 			return fmt.Errorf("failed to delete storage, cause %v", err)
 		}
 
-		log.Infof("Deleted storage %v from %v", o.storageName, o.localConfig.GetName())
+		log.Infof("Deleted storage %v from %v", o.storageName, o.LocalConfigInfo.GetName())
 		log.Italic("\nPlease use `odo push` command to delete the storage from the cluster")
 	} else {
 		return fmt.Errorf("aborting deletion of storage: %v", o.storageName)

@@ -15,8 +15,7 @@ type InfoOptions struct {
 	Namespace     string
 	PortForwarder *debug.DefaultPortForwarder
 	*genericclioptions.Context
-	localConfigInfo *config.LocalConfigInfo
-	contextDir      string
+	contextDir string
 }
 
 var (
@@ -43,7 +42,7 @@ func NewInfoOptions() *InfoOptions {
 func (o *InfoOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.Context = genericclioptions.NewContext(cmd)
 	cfg, err := config.NewLocalConfigInfo(o.contextDir)
-	o.localConfigInfo = cfg
+	o.LocalConfigInfo = cfg
 
 	// Using Discard streams because nothing important is logged
 	o.PortForwarder = debug.NewDefaultPortForwarder(cfg.GetName(), cfg.GetApplication(), o.Client, k8sgenclioptions.NewTestIOStreamsDiscard())
@@ -61,7 +60,7 @@ func (o InfoOptions) Run() error {
 	if debugFileInfo, debugging := debug.GetDebugInfo(o.PortForwarder); debugging {
 		log.Infof("Debug is running for the component on the local port : %v\n", debugFileInfo.LocalPort)
 	} else {
-		log.Infof("Debug is not running for the component %v\n", o.localConfigInfo.GetName())
+		log.Infof("Debug is not running for the component %v\n", o.LocalConfigInfo.GetName())
 	}
 	return nil
 }
