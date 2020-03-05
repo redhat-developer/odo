@@ -68,13 +68,7 @@ func (a Adapter) Start() (err error) {
 		glog.V(3).Infof("Successfully created component %v", componentName)
 	}
 
-	podSelector := fmt.Sprintf("component=%s", componentName)
-	watchOptions := metav1.ListOptions{
-		LabelSelector: podSelector,
-	}
-
-	_, err = a.Client.WaitAndGetPod(watchOptions, corev1.PodRunning, "Waiting for component to start")
-	return err
+	return nil
 }
 
 // Push syncs source code from the user's disk to the component
