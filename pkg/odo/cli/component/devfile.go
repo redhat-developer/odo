@@ -42,13 +42,15 @@ func (po *PushOptions) DevfilePush() (err error) {
 		return err
 	}
 
-	// Get the path of the project source code. Since the devfile needs to be at the root of the repository
-	// We can get the source dir by getting the parent dir for the devfile
-	po.sourcePath = filepath.Dir(po.devfilePath)
-
 	componentName, err := getComponentName()
 	if err != nil {
 		return err
+	}
+
+	// Set the source path to either the context or current working directory (if context not set)
+	po.sourcePath, err = util.GetAbsPath(filepath.Dir(po.componentContext))
+	if err != nil {
+		return errors.Wrap(err, "unable to get source path")
 	}
 
 	spinner := log.SpinnerNoSpin(fmt.Sprintf("Push devfile component %s", componentName))
@@ -72,7 +74,7 @@ func (po *PushOptions) DevfilePush() (err error) {
 		os.Exit(1)
 	}
 
-	// If force build wasn't set, sync only the files that changed
+	// Sync source code to the component
 	if !po.forceBuild {
 		absIgnoreRules := util.GetAbsGlobExps(po.sourcePath, po.ignores)
 
@@ -100,6 +102,7 @@ func (po *PushOptions) DevfilePush() (err error) {
 			return errors.Wrap(err, "unable to run indexer")
 		}
 
+		// If the component already exists, sync only the files that changed
 		if po.doesComponentExist {
 			// apply the glob rules from the .gitignore/.odo file
 			// and ignore the files on which the rules apply and filter them out
@@ -165,4 +168,17 @@ func getComponentName() (string, error) {
 	// Kubernetes resources require a name that satisfies DNS-1123
 	retVal = strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(retVal)))
 	return retVal, nil
+}
+
+// getSourcePath retrieves the source path to use for odo push. First, it'll check a context was passed in via
+// the `--context` flag and use that. If the context is not set, it'll use the current working directory
+func getSourcePath(context string) (string, error) {
+	if context != "" {
+		return context, nil
+	}
+	currDir, err := os.Getwd()
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to get source path because getting current directory failed")
+	}
+	return currDir, nil
 }
