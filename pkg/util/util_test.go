@@ -1164,7 +1164,10 @@ func TestHTTPGetRequest(t *testing.T) {
 	// Start a local HTTP server
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		// Send response to be tested
-		rw.Write([]byte("OK"))
+		_, err := rw.Write([]byte("OK"))
+		if err != nil {
+			t.Error(err)
+		}
 	}))
 	// Close the server when test finishes
 	defer server.Close()

@@ -172,7 +172,7 @@ func TestGetDevfileIndex(t *testing.T) {
 	// Start a local HTTP server
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		// Send response to be tested
-		rw.Write([]byte(
+		_, err := rw.Write([]byte(
 			`
 			[
 				{
@@ -192,6 +192,9 @@ func TestGetDevfileIndex(t *testing.T) {
 			]
 			`,
 		))
+		if err != nil {
+			t.Error(err)
+		}
 	}))
 	// Close the server when test finishes
 	defer server.Close()
@@ -243,7 +246,7 @@ func TestGetDevfile(t *testing.T) {
 		// Send response to be tested
 		// Note: Yaml file uses indentation to represent relationships between data layers,
 		// so we need to use the following Yaml format to obey the rule
-		rw.Write([]byte(
+		_, err := rw.Write([]byte(
 			`apiVersion: 1.0.0
 metadata:
   generateName: angular-
@@ -295,6 +298,9 @@ commands:
         command: yarn run lint
         workdir: ${CHE_PROJECTS_ROOT}/angular-realworld-example-app`,
 		))
+		if err != nil {
+			t.Error(err)
+		}
 	}))
 	// Close the server when test finishes
 	defer server.Close()
