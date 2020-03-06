@@ -1,6 +1,8 @@
 package catalog
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"reflect"
 	"testing"
 
@@ -163,6 +165,289 @@ func TestSliceSupportedTags(t *testing.T) {
 	if !reflect.DeepEqual(supTags, []string{"10", "8", "latest"}) ||
 		!reflect.DeepEqual(unSupTags, []string{"6"}) {
 		t.Fatal("supported or unsupported tags are not as expected")
+	}
+}
+
+func TestGetDevfileIndex(t *testing.T) {
+	// Start a local HTTP server
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		// Send response to be tested
+		rw.Write([]byte(
+			`
+			[
+				{
+					"displayName": "NodeJS Angular Web Application",
+					"description": "Stack for developing NodeJS Angular Web Application",
+					"tags": [
+						"NodeJS",
+						"Angular",
+						"Alpine"
+					],
+					"icon": "/images/angular.svg",
+					"globalMemoryLimit": "2686Mi",
+					"links": {
+						"self": "/devfiles/angular/devfile.yaml"
+					}
+				}
+			]
+			`,
+		))
+	}))
+	// Close the server when test finishes
+	defer server.Close()
+
+	tests := []struct {
+		name             string
+		devfileIndexLink string
+		want             []DevfileIndexEntry
+	}{
+		{
+			name:             "Test NodeJS devfile index",
+			devfileIndexLink: server.URL,
+			want: []DevfileIndexEntry{
+				{
+					DisplayName: "NodeJS Angular Web Application",
+					Description: "Stack for developing NodeJS Angular Web Application",
+					Tags: []string{
+						"NodeJS",
+						"Angular",
+						"Alpine",
+					},
+					Icon:              "/images/angular.svg",
+					GlobalMemoryLimit: "2686Mi",
+					Links: struct {
+						Link string `json:"self"`
+					}{
+						Link: "/devfiles/angular/devfile.yaml",
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetDevfileIndex(tt.devfileIndexLink)
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Got: %v, want: %v", got, tt.want)
+				t.Logf("Error message is: %v", err)
+			}
+		})
+	}
+}
+
+func TestGetDevfile(t *testing.T) {
+	// Start a local HTTP server
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		// Send response to be tested
+		// Note: Yaml file uses indentation to represent relationships between data layers,
+		// so we need to use the following Yaml format to obey the rule
+		rw.Write([]byte(
+			`apiVersion: 1.0.0
+metadata:
+  generateName: angular-
+  projects:
+  -
+    name: angular-realworld-example-app
+    source:
+      type: git
+      location: "https://github.com/gothinkster/angular-realworld-example-app"
+components:
+  -
+    type: chePlugin
+    id: che-incubator/typescript/latest
+  -
+    type: dockerimage
+    alias: nodejs
+    image: quay.io/eclipse/che-nodejs10-community:nightly
+    memoryLimit: 1Gi
+    endpoints:
+      - name: 'angular'
+        port: 4200
+    mountSources: true
+commands:
+  - name: yarn install
+    actions:
+      - type: exec
+        component: nodejs
+        command: yarn install
+        workdir: ${CHE_PROJECTS_ROOT}/angular-realworld-example-app
+  -
+    name: build
+    actions:
+      - type: exec
+        component: nodejs
+        command: yarn run build
+        workdir: ${CHE_PROJECTS_ROOT}/angular-realworld-example-app
+  -
+    name: start
+    actions:
+      - type: exec
+        component: nodejs
+        command: yarn run start --host 0.0.0.0 --disableHostCheck true
+        workdir: ${CHE_PROJECTS_ROOT}/angular-realworld-example-app
+  -
+    name: lint
+    actions:
+      - type: exec
+        component: nodejs
+        command: yarn run lint
+        workdir: ${CHE_PROJECTS_ROOT}/angular-realworld-example-app`,
+		))
+	}))
+	// Close the server when test finishes
+	defer server.Close()
+
+	tests := []struct {
+		name        string
+		devfileLink string
+		want        Devfile
+	}{
+		{
+			name:        "Test NodeJS devfile",
+			devfileLink: server.URL,
+			want: Devfile{
+				APIVersion: "1.0.0",
+				MetaData: struct {
+					GenerateName string `yaml:"generateName"`
+				}{
+					GenerateName: "angular-",
+				},
+				Components: []struct {
+					Type  string `yaml:"type"`
+					Alias string `yaml:"alias"`
+				}{
+					{
+						Type: "chePlugin",
+					},
+					{
+						Type:  "dockerimage",
+						Alias: "nodejs",
+					},
+				},
+				Commands: []struct {
+					Name string `yaml:"name"`
+				}{
+					{
+						Name: "yarn install",
+					},
+					{
+						Name: "build",
+					},
+					{
+						Name: "start",
+					},
+					{
+						Name: "lint",
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetDevfile(tt.devfileLink)
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Got: %v, want: %v", got, tt.want)
+				t.Logf("Error message is: %v", err)
+			}
+		})
+	}
+}
+
+func TestIsDevfileComponentSupported(t *testing.T) {
+	tests := []struct {
+		name    string
+		devfile Devfile
+		want    bool
+	}{
+		{
+			name: "Case 1: Test unsupported devfile",
+			devfile: Devfile{
+				APIVersion: "1.0.0",
+				MetaData: struct {
+					GenerateName string `yaml:"generateName"`
+				}{
+					GenerateName: "angular-",
+				},
+				Components: []struct {
+					Type  string `yaml:"type"`
+					Alias string `yaml:"alias"`
+				}{
+					{
+						Type: "chePlugin",
+					},
+					{
+						Type:  "dockerimage",
+						Alias: "nodejs",
+					},
+				},
+				Commands: []struct {
+					Name string `yaml:"name"`
+				}{
+					{
+						Name: "yarn install",
+					},
+					{
+						Name: "build",
+					},
+					{
+						Name: "start",
+					},
+					{
+						Name: "lint",
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "Case 2: Test supported devfile",
+			devfile: Devfile{
+				APIVersion: "1.0.0",
+				MetaData: struct {
+					GenerateName string `yaml:"generateName"`
+				}{
+					GenerateName: "openLiberty",
+				},
+				Components: []struct {
+					Type  string `yaml:"type"`
+					Alias string `yaml:"alias"`
+				}{
+					{
+						Type: "chePlugin",
+					},
+					{
+						Type:  "dockerimage",
+						Alias: "runtime",
+					},
+				},
+				Commands: []struct {
+					Name string `yaml:"name"`
+				}{
+					{
+						Name: "devBuild",
+					},
+					{
+						Name: "devRun",
+					},
+				},
+			},
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := IsDevfileComponentSupported(tt.devfile)
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Got: %v, want: %v", got, tt.want)
+			}
+		})
 	}
 }
 

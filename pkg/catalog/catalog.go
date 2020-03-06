@@ -97,9 +97,9 @@ func IsDevfileComponentSupported(devfile Devfile) bool {
 
 	if hasDockerImage && hasAlias && hasBuildCommand && hasRunCommand {
 		return true
-	} else {
-		return false
 	}
+
+	return false
 }
 
 // ListDevfileComponents lists all the available devfile components
