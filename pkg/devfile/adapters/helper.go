@@ -17,13 +17,31 @@ func NewPlatformAdapter(componentName string, devObj devfile.DevfileObj) (Platfo
 
 	// Only the kubernetes adapter is implemented at the moment
 	// When there are others this function should be updated to retrieve the correct adapter for the desired platform target
-	return createKubernetesAdapter(adapterContext)
+	return createKubernetesAdapter(adapterContext, "")
 }
 
-func createKubernetesAdapter(adapterContext common.AdapterContext) (PlatformAdapter, error) {
+// NewPlatformAdapter returns a Devfile adapter for the targeted platform
+func NewPlatformAdapterWithNamespace(componentName string, devObj devfile.DevfileObj, namespace string) (PlatformAdapter, error) {
+
+	adapterContext := common.AdapterContext{
+		ComponentName: componentName,
+		Devfile:       devObj,
+	}
+
+	// Only the kubernetes adapter is implemented at the moment
+	// When there are others this function should be updated to retrieve the correct adapter for the desired platform target
+	return createKubernetesAdapter(adapterContext, namespace)
+}
+
+func createKubernetesAdapter(adapterContext common.AdapterContext, namespace string) (PlatformAdapter, error) {
 	client, err := kclient.New()
 	if err != nil {
 		return nil, err
+	}
+
+	// If a namespace was passed in
+	if namespace != "" {
+		client.Namespace = namespace
 	}
 	return newKubernetesAdapter(adapterContext, *client)
 }

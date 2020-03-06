@@ -190,6 +190,11 @@ test-cmd-pref-config:
 test-cmd-push:
 	ginkgo $(GINKGO_FLAGS) -focus="odo push command tests" tests/integration/
 
+# Run odo push command tests
+.PHONY: test-cmd-devfile-push
+test-cmd-devfile-push:
+	ginkgo $(GINKGO_FLAGS) -focus="odo devfile push command tests" tests/integration/
+
 # Run odo storage command tests
 .PHONY: test-cmd-storage
 test-cmd-storage:
