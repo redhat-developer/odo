@@ -1,5 +1,4 @@
-// +build !windows
-// +build !osx
+// +build !windows,!osx
 
 package component
 
