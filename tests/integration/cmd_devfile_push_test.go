@@ -28,29 +28,28 @@ var _ = Describe("odo devfile push command tests", func() {
 		context = helper.CreateNewContext()
 		currentWorkingDirectory = helper.Getwd()
 		helper.Chdir(context)
-		os.Setenv("ODO_EXPERIMENTAL", "true")
+		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 	})
 
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
 		helper.DeleteProject(project)
-		helper.DeleteDir(context)
 		helper.Chdir(currentWorkingDirectory)
-		os.Unsetenv("ODO_EXPERIMENTAL")
+		helper.DeleteDir(context)
+		os.Unsetenv("GLOBALODOCONFIG")
 	})
 
 	Context("Verify devfile push works", func() {
 
 		It("Check that odo push works with a devfile", func() {
-			project = helper.CreateRandProject()
+			// Devfile push requires experimental mode to be set
+			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
 
 			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", project)
-			Expect(output).To(ContainSubstring("✓  Waiting for component to start"))
-			Expect(output).To(ContainSubstring("✓  Push devfile component"))
-			Expect(output).To(ContainSubstring("✓  Changes successfully pushed to component"))
+			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 		})
 
 	})
@@ -58,6 +57,12 @@ var _ = Describe("odo devfile push command tests", func() {
 	Context("when devfile push command is executed", func() {
 
 		It("should not build when no changes are detected in the directory and build when a file change is detected", func() {
+			// Devfile push requires experimental mode to be set
+			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+
+			// Devfile push requires experimental mode to be set
+			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
 
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", project)
@@ -66,10 +71,16 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 			helper.ReplaceString(filepath.Join(context, "server.js"), "node listening on", "UPDATED!")
 
-			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex", "--namespace", project)
+			helper.CmdShouldPass("odo", "push", "--context", filepath.Join(context, "nodejs-ex"), "--namespace", project)
 		})
 
 		It("should be able to create a file, push, delete, then push again propagating the deletions", func() {
+			// Devfile push requires experimental mode to be set
+			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+
+			// Devfile push requires experimental mode to be set
+			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+
 			// Create a new file that we plan on deleting later...
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
 
@@ -107,6 +118,12 @@ var _ = Describe("odo devfile push command tests", func() {
 		})
 
 		It("should delete the files from the container if its removed locally", func() {
+			// Devfile push requires experimental mode to be set
+			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+
+			// Devfile push requires experimental mode to be set
+			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs-multicontainer"), context)
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", project)
 
@@ -144,6 +161,9 @@ var _ = Describe("odo devfile push command tests", func() {
 		})
 
 		It("should build when no changes are detected in the directory and force flag is enabled", func() {
+			// Devfile push requires experimental mode to be set
+			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs-multicontainer"), context)
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", project)
 

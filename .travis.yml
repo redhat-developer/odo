@@ -87,7 +87,7 @@ jobs:
 
     - <<: *base-test
       stage: test
-      name: "watch, storage, app, project and push command integration tests"
+      name: "watch, storage, app, project, push, and devfile push command integration tests"
       script:
         - ./scripts/oc-cluster.sh
         - make bin
