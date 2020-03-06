@@ -56,7 +56,14 @@ func (po *PushOptions) DevfilePush() (err error) {
 	spinner := log.SpinnerNoSpin(fmt.Sprintf("Push devfile component %s", componentName))
 	defer spinner.End(false)
 
-	devfileHandler, err := adapters.NewPlatformAdapter(componentName, devObj)
+	// If a namespace was passed in (with the --namespace flag), intiailize the adapter with a namespace
+	var devfileHandler adapters.PlatformAdapter
+	if po.namespace != "" {
+		devfileHandler, err = adapters.NewPlatformAdapterWithNamespace(componentName, devObj, po.namespace)
+	} else {
+		devfileHandler, err = adapters.NewPlatformAdapter(componentName, devObj)
+	}
+
 	if err != nil {
 		return err
 	}

@@ -37,6 +37,8 @@ type PushOptions struct {
 
 	// devfile path
 	devfilePath string
+
+	namespace string
 }
 
 // NewPushOptions returns new instance of PushOptions
@@ -153,6 +155,7 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 	// enable devfile flag if experimental mode is enabled
 	if experimental.IsExperimentalModeEnabled() {
 		pushCmd.Flags().StringVar(&po.devfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
+		pushCmd.Flags().StringVar(&po.namespace, "namespace", "", "Namespace to push the component to")
 	}
 
 	pushCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
