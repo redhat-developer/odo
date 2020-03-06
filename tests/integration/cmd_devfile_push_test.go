@@ -60,9 +60,6 @@ var _ = Describe("odo devfile push command tests", func() {
 			// Devfile push requires experimental mode to be set
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 
-			// Devfile push requires experimental mode to be set
-			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
-
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
 
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", project)
@@ -75,9 +72,6 @@ var _ = Describe("odo devfile push command tests", func() {
 		})
 
 		It("should be able to create a file, push, delete, then push again propagating the deletions", func() {
-			// Devfile push requires experimental mode to be set
-			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
-
 			// Devfile push requires experimental mode to be set
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 
@@ -118,9 +112,6 @@ var _ = Describe("odo devfile push command tests", func() {
 		})
 
 		It("should delete the files from the container if its removed locally", func() {
-			// Devfile push requires experimental mode to be set
-			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
-
 			// Devfile push requires experimental mode to be set
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 
