@@ -88,7 +88,7 @@ func Bootstrap(o *BootstrapParameters) error {
 	outputs = append(outputs, githubAuth)
 
 	// Create Tasks
-	tasks := tasks.Generate(githubAuth.GetName(), namespaces["cicd"], isInternalRegistry)
+	tasks := tasks.Generate(githubAuth.GetName(), namespaces["cicd"])
 	for _, task := range tasks {
 		outputs = append(outputs, task)
 	}
@@ -106,7 +106,7 @@ func Bootstrap(o *BootstrapParameters) error {
 	}
 
 	// Create Pipelines
-	outputs = append(outputs, createPipelines(namespaces, o.DeploymentPath)...)
+	outputs = append(outputs, createPipelines(namespaces, isInternalRegistry, o.DeploymentPath)...)
 
 	// Create Event Listener
 	eventListener := eventlisteners.Generate(o.GitRepo, namespaces["cicd"], saName)
@@ -116,8 +116,9 @@ func Bootstrap(o *BootstrapParameters) error {
 	route := routes.Generate(namespaces["cicd"])
 	outputs = append(outputs, route)
 
-	// Create secret, role binding, namespaces for using image repo
+	// Don't add this service account to outputs as this is the default service account created by Pipeline Operator
 	sa := createServiceAccount(meta.NamespacedName(namespaces["cicd"], saName))
+
 	manifests, err := createManifestsForImageRepo(sa, isInternalRegistry, imageRepo, o, namespaces)
 	if err != nil {
 		return err
@@ -136,7 +137,6 @@ func createRoleBindings(ns map[string]string, sa *corev1.ServiceAccount) []inter
 	role := createRole(meta.NamespacedName(ns["cicd"], roleName), rules)
 	out = append(out, role)
 	out = append(out, createRoleBinding(meta.NamespacedName(ns["cicd"], roleBindingName), sa, role.Kind, role.Name))
-	out = append(out, createRoleBinding(meta.NamespacedName(ns["cicd"], "edit-clusterrole-binding"), sa, "ClusterRole", "edit"))
 	out = append(out, createRoleBinding(meta.NamespacedName(ns["dev"], devRoleBindingName), sa, "ClusterRole", "edit"))
 	out = append(out, createRoleBinding(meta.NamespacedName(ns["stage"], stageRoleBindingName), sa, "ClusterRole", "edit"))
 
@@ -148,8 +148,6 @@ func createManifestsForImageRepo(sa *corev1.ServiceAccount, isInternalRegistry b
 	out := make([]interface{}, 0)
 
 	if isInternalRegistry {
-		// add sa to outputs
-		out = append(out, sa)
 		// Provide access to service account for using internal registry
 		internalRegistryNamespace := strings.Split(imageRepo, "/")[1]
 
@@ -165,6 +163,7 @@ func createManifestsForImageRepo(sa *corev1.ServiceAccount, isInternalRegistry b
 			out = append(out, createNamespace(internalRegistryNamespace))
 		}
 
+		// pipelines sa should have access to internal registry
 		out = append(out, createRoleBinding(meta.NamespacedName(internalRegistryNamespace, "internal-registry-binding"), sa, "ClusterRole", "edit"))
 	} else {
 		// Add secret to service account if external registry is used
@@ -180,11 +179,11 @@ func createManifestsForImageRepo(sa *corev1.ServiceAccount, isInternalRegistry b
 	return out, nil
 }
 
-func createPipelines(ns map[string]string, deploymentPath string) []interface{} {
+func createPipelines(ns map[string]string, isInternalRegistry bool, deploymentPath string) []interface{} {
 	out := make([]interface{}, 0)
-	out = append(out, createDevCIPipeline(meta.NamespacedName(ns["cicd"], "dev-ci-pipeline")))
+	out = append(out, createDevCIPipeline(meta.NamespacedName(ns["cicd"], "dev-ci-pipeline"), isInternalRegistry))
 	out = append(out, createStageCIPipeline(meta.NamespacedName(ns["cicd"], "stage-ci-pipeline"), ns["stage"]))
-	out = append(out, createDevCDPipeline(meta.NamespacedName(ns["cicd"], "dev-cd-pipeline"), deploymentPath, ns["dev"]))
+	out = append(out, createDevCDPipeline(meta.NamespacedName(ns["cicd"], "dev-cd-pipeline"), deploymentPath, ns["dev"], isInternalRegistry))
 	out = append(out, createStageCDPipeline(meta.NamespacedName(ns["cicd"], "stage-cd-pipeline"), ns["stage"]))
 	return out
 
