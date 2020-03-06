@@ -12,7 +12,7 @@ import (
 
 func TestCreateDevCIPipeline(t *testing.T) {
 
-	DevCIpipeline := createDevCIPipeline(meta.NamespacedName("cicd-environment", "dev-ci-pipeline"))
+	DevCIpipeline := createDevCIPipeline(meta.NamespacedName("cicd-environment", "dev-ci-pipeline"), false)
 
 	want := &pipelinev1.Pipeline{
 		TypeMeta: PipelineTypeMeta,
@@ -46,7 +46,11 @@ func TestCreateDevCIPipeline(t *testing.T) {
 				pipelinev1.PipelineTask{
 					Name: "build-image",
 					TaskRef: &pipelinev1.TaskRef{
-						Name: "buildah-task",
+						Name: "buildah",
+						Kind: pipelinev1.ClusterTaskKind,
+					},
+					Params: []pipelinev1.Param{
+						createTaskParam("TLSVERIFY", getTLSVerify(false)),
 					},
 					Resources: &pipelinev1.PipelineTaskResources{
 						Inputs: []pipelinev1.PipelineTaskInputResource{
@@ -91,6 +95,7 @@ func TestCreateStageCIPipeline(t *testing.T) {
 					Name: "apply-source",
 					TaskRef: &pipelinev1.TaskRef{
 						Name: "deploy-from-source-task",
+						Kind: pipelinev1.NamespacedTaskKind,
 					},
 					Resources: &pipelinev1.PipelineTaskResources{
 						Inputs: []pipelinev1.PipelineTaskInputResource{
@@ -114,7 +119,7 @@ func TestCreateStageCIPipeline(t *testing.T) {
 }
 
 func TestCreateDevCDPipeline(t *testing.T) {
-	DevCDpipeline := createDevCDPipeline(meta.NamespacedName("cicd-environment", "dev-cd-pipeline"), "usr/path/", "dev-environment")
+	DevCDpipeline := createDevCDPipeline(meta.NamespacedName("cicd-environment", "dev-cd-pipeline"), "usr/path/", "dev-environment", false)
 	want := &pipelinev1.Pipeline{
 		TypeMeta: PipelineTypeMeta,
 		ObjectMeta: metav1.ObjectMeta{
@@ -138,9 +143,12 @@ func TestCreateDevCDPipeline(t *testing.T) {
 				pipelinev1.PipelineTask{
 					Name: "build-image",
 					TaskRef: &pipelinev1.TaskRef{
-						Name: "buildah-task",
+						Name: "buildah",
+						Kind: pipelinev1.ClusterTaskKind,
 					},
-
+					Params: []pipelinev1.Param{
+						createTaskParam("TLSVERIFY", getTLSVerify(false)),
+					},
 					Resources: &pipelinev1.PipelineTaskResources{
 						Inputs: []pipelinev1.PipelineTaskInputResource{
 							{Name: "source",
@@ -157,6 +165,7 @@ func TestCreateDevCDPipeline(t *testing.T) {
 					Name: "deploy-image",
 					TaskRef: &pipelinev1.TaskRef{
 						Name: "deploy-using-kubectl-task",
+						Kind: pipelinev1.NamespacedTaskKind,
 					},
 					RunAfter: []string{"build-image"},
 					Resources: &pipelinev1.PipelineTaskResources{
@@ -201,6 +210,7 @@ func TestCreateStageCDPipeline(t *testing.T) {
 					Name: "apply-source",
 					TaskRef: &pipelinev1.TaskRef{
 						Name: "deploy-from-source-task",
+						Kind: pipelinev1.NamespacedTaskKind,
 					},
 					Resources: &pipelinev1.PipelineTaskResources{
 						Inputs: []pipelinev1.PipelineTaskInputResource{

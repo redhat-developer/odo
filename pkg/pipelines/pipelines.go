@@ -16,7 +16,7 @@ var (
 )
 
 // createCIPipeline creates the dev-ci-pipeline.
-func createDevCIPipeline(name types.NamespacedName) *pipelinev1.Pipeline {
+func createDevCIPipeline(name types.NamespacedName, isInternalRegistry bool) *pipelinev1.Pipeline {
 	return &pipelinev1.Pipeline{
 		TypeMeta:   PipelineTypeMeta,
 		ObjectMeta: meta.ObjectMeta(name),
@@ -31,7 +31,7 @@ func createDevCIPipeline(name types.NamespacedName) *pipelinev1.Pipeline {
 			},
 
 			Tasks: []pipelinev1.PipelineTask{
-				createBuildImageTask("build-image"),
+				createBuildImageTask("build-image", isInternalRegistry),
 			},
 		},
 	}
@@ -56,7 +56,7 @@ func createStageCIPipeline(name types.NamespacedName, stageNamespace string) *pi
 }
 
 // createDevCDPipeline creates the dev-cd-pipeline
-func createDevCDPipeline(name types.NamespacedName, deploymentPath, devNamespace string) *pipelinev1.Pipeline {
+func createDevCDPipeline(name types.NamespacedName, deploymentPath, devNamespace string, isInternalRegistry bool) *pipelinev1.Pipeline {
 	return &pipelinev1.Pipeline{
 		TypeMeta:   PipelineTypeMeta,
 		ObjectMeta: meta.ObjectMeta(name),
@@ -66,7 +66,7 @@ func createDevCDPipeline(name types.NamespacedName, deploymentPath, devNamespace
 				createPipelineDeclaredResource("runtime-image", "image"),
 			},
 			Tasks: []pipelinev1.PipelineTask{
-				createDevCDBuildImageTask("build-image"),
+				createDevCDBuildImageTask("build-image", isInternalRegistry),
 				createDevCDDeployImageTask("deploy-image", devNamespace, deploymentPath),
 			},
 		},
@@ -97,25 +97,40 @@ func createPipelineDeclaredResource(name string, resourceType string) pipelinev1
 	return pipelinev1.PipelineDeclaredResource{Name: name, Type: resourceType}
 }
 
-func createBuildImageTask(name string) pipelinev1.PipelineTask {
+// Returns string value for TLSVERIFY parameter based on usingInternalRegistry boolean
+// If internal registry is used, we need to disable TLS verification
+func getTLSVerify(usingInternalRegistry bool) string {
+	if usingInternalRegistry {
+		return "false"
+	}
+	return "true"
+}
+
+func createBuildImageTask(name string, isInternalRegistry bool) pipelinev1.PipelineTask {
 	return pipelinev1.PipelineTask{
 		Name:    name,
-		TaskRef: createTaskRef("buildah-task"),
+		TaskRef: createTaskRef("buildah", pipelinev1.ClusterTaskKind),
 		Resources: &pipelinev1.PipelineTaskResources{
 			Inputs:  []pipelinev1.PipelineTaskInputResource{createInputTaskResource("source", "source-repo")},
 			Outputs: []pipelinev1.PipelineTaskOutputResource{createOutputTaskResource("image", "runtime-image")},
+		},
+		Params: []pipelinev1.Param{
+			createTaskParam("TLSVERIFY", getTLSVerify(isInternalRegistry)),
 		},
 	}
 
 }
 
-func createDevCDBuildImageTask(name string) pipelinev1.PipelineTask {
+func createDevCDBuildImageTask(name string, isInternalRegistry bool) pipelinev1.PipelineTask {
 	return pipelinev1.PipelineTask{
 		Name:    name,
-		TaskRef: createTaskRef("buildah-task"),
+		TaskRef: createTaskRef("buildah", pipelinev1.ClusterTaskKind),
 		Resources: &pipelinev1.PipelineTaskResources{
 			Inputs:  []pipelinev1.PipelineTaskInputResource{createInputTaskResource("source", "source-repo")},
 			Outputs: []pipelinev1.PipelineTaskOutputResource{createOutputTaskResource("image", "runtime-image")},
+		},
+		Params: []pipelinev1.Param{
+			createTaskParam("TLSVERIFY", getTLSVerify(isInternalRegistry)),
 		},
 	}
 }
@@ -123,7 +138,7 @@ func createDevCDBuildImageTask(name string) pipelinev1.PipelineTask {
 func createDevCDDeployImageTask(name, devNamespace, deploymentPath string) pipelinev1.PipelineTask {
 	return pipelinev1.PipelineTask{
 		Name:     name,
-		TaskRef:  createTaskRef("deploy-using-kubectl-task"),
+		TaskRef:  createTaskRef("deploy-using-kubectl-task", pipelinev1.NamespacedTaskKind),
 		RunAfter: []string{"build-image"},
 		Resources: &pipelinev1.PipelineTaskResources{
 			Inputs: []pipelinev1.PipelineTaskInputResource{
@@ -142,7 +157,7 @@ func createDevCDDeployImageTask(name, devNamespace, deploymentPath string) pipel
 func createStageCIPipelineTask(taskName, stageNamespace string) pipelinev1.PipelineTask {
 	return pipelinev1.PipelineTask{
 		Name:    taskName,
-		TaskRef: createTaskRef("deploy-from-source-task"),
+		TaskRef: createTaskRef("deploy-from-source-task", pipelinev1.NamespacedTaskKind),
 		Resources: &pipelinev1.PipelineTaskResources{
 			Inputs: []pipelinev1.PipelineTaskInputResource{createInputTaskResource("source", "source-repo")},
 		},
@@ -156,7 +171,7 @@ func createStageCIPipelineTask(taskName, stageNamespace string) pipelinev1.Pipel
 func createStageCDPipelineTask(taskName, stageNamespace string) pipelinev1.PipelineTask {
 	return pipelinev1.PipelineTask{
 		Name:    taskName,
-		TaskRef: createTaskRef("deploy-from-source-task"),
+		TaskRef: createTaskRef("deploy-from-source-task", pipelinev1.NamespacedTaskKind),
 		Resources: &pipelinev1.PipelineTaskResources{
 			Inputs: []pipelinev1.PipelineTaskInputResource{createInputTaskResource("source", "source-repo")},
 		},
@@ -177,9 +192,10 @@ func createTaskParam(name, value string) pipelinev1.Param {
 	}
 }
 
-func createTaskRef(name string) *pipelinev1.TaskRef {
+func createTaskRef(name string, kind pipelinev1.TaskKind) *pipelinev1.TaskRef {
 	return &pipelinev1.TaskRef{
 		Name: name,
+		Kind: kind,
 	}
 }
 
