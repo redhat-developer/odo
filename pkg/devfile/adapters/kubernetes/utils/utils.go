@@ -1,9 +1,12 @@
 package utils
 
 import (
+	"strings"
+
 	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/versions/common"
 	"github.com/openshift/odo/pkg/kclient"
+	"github.com/openshift/odo/pkg/util"
 
 	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
@@ -28,6 +31,19 @@ func ConvertEnvs(vars []common.DockerimageEnv) []corev1.EnvVar {
 	return kVars
 }
 
+// ConvertPorts converts endpoint variables from the devfile structure to kubernetes ContainerPort
+func ConvertPorts(endpoints []common.DockerimageEndpoint) []corev1.ContainerPort {
+	containerPorts := []corev1.ContainerPort{}
+	for _, endpoint := range endpoints {
+		name := strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(*endpoint.Name)))
+		containerPorts = append(containerPorts, corev1.ContainerPort{
+			Name:          name,
+			ContainerPort: *endpoint.Port,
+		})
+	}
+	return containerPorts
+}
+
 // GetContainers iterates through the components in the devfile and returns a slice of the corresponding containers
 func GetContainers(devfileObj devfile.DevfileObj) []corev1.Container {
 	var containers []corev1.Container
@@ -37,7 +53,8 @@ func GetContainers(devfileObj devfile.DevfileObj) []corev1.Container {
 			glog.V(3).Infof("Found component %v with alias %v\n", comp.Type, *comp.Alias)
 			envVars := ConvertEnvs(comp.Env)
 			resourceReqs := GetResourceReqs(comp)
-			container := kclient.GenerateContainer(*comp.Alias, *comp.Image, false, comp.Command, comp.Args, envVars, resourceReqs)
+			ports := ConvertPorts(comp.Endpoints)
+			container := kclient.GenerateContainer(*comp.Alias, *comp.Image, false, comp.Command, comp.Args, envVars, resourceReqs, ports)
 			containers = append(containers, *container)
 		}
 	}
