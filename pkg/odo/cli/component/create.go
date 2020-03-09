@@ -674,7 +674,7 @@ func (co *CreateOptions) Run() (err error) {
 				return err
 			}
 		} else {
-			componentDesc, err = component.GetComponentFromConfig(*co.LocalConfigInfo)
+			componentDesc, err = component.GetComponentFromConfig(co.LocalConfigInfo)
 			if err != nil {
 				return err
 			}
