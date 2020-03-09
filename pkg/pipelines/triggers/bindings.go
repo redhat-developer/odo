@@ -17,30 +17,15 @@ var (
 // GenerateBindings returns a slice of trigger bindings
 func GenerateBindings(ns string) []triggersv1.TriggerBinding {
 	return []triggersv1.TriggerBinding{
-		createDevCDDeployBinding(ns),
-		createDevCIBuildBinding(ns),
-		createStageCDDeployBinding(ns),
-		createStageCIDryRunBinding(ns),
+		createPRBinding(ns),
+		createPushBinding(ns),
 	}
 }
 
-func createDevCDDeployBinding(ns string) triggersv1.TriggerBinding {
+func createPRBinding(ns string) triggersv1.TriggerBinding {
 	return triggersv1.TriggerBinding{
 		TypeMeta:   triggerBindingTypeMeta,
-		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, "dev-cd-deploy-from-master-binding")),
-		Spec: triggersv1.TriggerBindingSpec{
-			Params: []pipelinev1.Param{
-				createBindingParam("gitref", "$(body.head_commit.id)"),
-				createBindingParam("gitrepositoryurl", "$(body.repository.clone_url)"),
-			},
-		},
-	}
-}
-
-func createDevCIBuildBinding(ns string) triggersv1.TriggerBinding {
-	return triggersv1.TriggerBinding{
-		TypeMeta:   triggerBindingTypeMeta,
-		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, "dev-ci-build-from-pr-binding")),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, "github-pr-binding")),
 		Spec: triggersv1.TriggerBindingSpec{
 			Params: []pipelinev1.Param{
 				createBindingParam("gitref", "$(body.pull_request.head.ref)"),
@@ -52,27 +37,14 @@ func createDevCIBuildBinding(ns string) triggersv1.TriggerBinding {
 	}
 }
 
-func createStageCDDeployBinding(ns string) triggersv1.TriggerBinding {
+func createPushBinding(ns string) triggersv1.TriggerBinding {
 	return triggersv1.TriggerBinding{
 		TypeMeta:   triggerBindingTypeMeta,
-		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, "stage-cd-deploy-from-push-binding")),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, "github-push-binding")),
 		Spec: triggersv1.TriggerBindingSpec{
 			Params: []pipelinev1.Param{
 				createBindingParam("gitref", "$(body.ref)"),
-				createBindingParam("gitsha", "$(body.commits[0].id)"),
-				createBindingParam("gitrepositoryurl", "$(body.repository.clone_url)"),
-			},
-		},
-	}
-}
-
-func createStageCIDryRunBinding(ns string) triggersv1.TriggerBinding {
-	return triggersv1.TriggerBinding{
-		TypeMeta:   triggerBindingTypeMeta,
-		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, "stage-ci-dryrun-from-pr-binding")),
-		Spec: triggersv1.TriggerBindingSpec{
-			Params: []pipelinev1.Param{
-				createBindingParam("gitref", "$(body.pull_request.head.ref)"),
+				createBindingParam("gitsha", "$(body.head_commit.id)"),
 				createBindingParam("gitrepositoryurl", "$(body.repository.clone_url)"),
 			},
 		},

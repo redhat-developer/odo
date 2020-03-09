@@ -19,7 +19,7 @@ func createDevCDPipelineRun(saName, imageRepo string) pipelinev1.PipelineRun {
 		Spec: pipelinev1.PipelineRunSpec{
 			ServiceAccountName: saName,
 			PipelineRef:        createPipelineRef("dev-cd-pipeline"),
-			Resources:          createDevResource(imageRepo + ":$(params.gitref)"),
+			Resources:          createDevResource(imageRepo+":$(params.gitsha)", "$(params.gitsha)"),
 		},
 	}
 }
@@ -35,7 +35,7 @@ func createDevCIPipelineRun(saName, imageRepo string) pipelinev1.PipelineRun {
 				createBindingParam("REPO", "$(params.fullname)"),
 				createBindingParam("COMMIT_SHA", "$(params.gitsha)"),
 			},
-			Resources: createDevResource(imageRepo + ":$(params.gitref)-$(params.gitsha)"),
+			Resources: createDevResource(imageRepo+":$(params.gitref)-$(params.gitsha)", "$(params.gitref)"),
 		},
 	}
 
@@ -66,14 +66,14 @@ func createStageCIPipelineRun(saName string) pipelinev1.PipelineRun {
 
 }
 
-func createDevResource(imageRepo string) []pipelinev1.PipelineResourceBinding {
+func createDevResource(imageRepo string, param string) []pipelinev1.PipelineResourceBinding {
 	return []pipelinev1.PipelineResourceBinding{
 		pipelinev1.PipelineResourceBinding{
 			Name: "source-repo",
 			ResourceSpec: &pipelinev1.PipelineResourceSpec{
 				Type: "git",
 				Params: []pipelinev1.ResourceParam{
-					createResourceParams("revision", "$(params.gitref)"),
+					createResourceParams("revision", param),
 					createResourceParams("url", "$(params.gitrepositoryurl)"),
 				},
 			},

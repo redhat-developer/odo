@@ -32,7 +32,7 @@ func createDevCDDeployTemplate(ns, saName, imageRepo string) triggersv1.TriggerT
 		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, "dev-cd-deploy-from-master-template")),
 		Spec: triggersv1.TriggerTemplateSpec{
 			Params: []pipelinev1.ParamSpec{
-				createTemplateParamSpecDefault("gitref", "The git revision", "master"),
+				createTemplateParamSpec("gitsha", "The specific commit SHA."),
 				createTemplateParamSpec("gitrepositoryurl", "The git repository url"),
 			},
 			ResourceTemplates: []triggersv1.TriggerResourceTemplate{

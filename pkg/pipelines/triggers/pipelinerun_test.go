@@ -18,7 +18,7 @@ func TestCreateDevCDPipelineRun(t *testing.T) {
 		Spec: pipelinev1.PipelineRunSpec{
 			ServiceAccountName: sName,
 			PipelineRef:        createPipelineRef("dev-cd-pipeline"),
-			Resources:          createDevResource("example.com:5000/testing/testing:$(params.gitref)"),
+			Resources:          createDevResource("example.com:5000/testing/testing:$(params.gitsha)", "$(params.gitsha)"),
 		},
 	}
 	template := createDevCDPipelineRun(sName, "example.com:5000/testing/testing")
@@ -39,7 +39,7 @@ func TestCreateDevCIPipelineRun(t *testing.T) {
 				createBindingParam("REPO", "$(params.fullname)"),
 				createBindingParam("COMMIT_SHA", "$(params.gitsha)"),
 			},
-			Resources: createDevResource("example.com:5000/testing/testing:$(params.gitref)-$(params.gitsha)"),
+			Resources: createDevResource("example.com:5000/testing/testing:$(params.gitref)-$(params.gitsha)", "$(params.gitref)"),
 		},
 	}
 	template := createDevCIPipelineRun(sName, "example.com:5000/testing/testing")
