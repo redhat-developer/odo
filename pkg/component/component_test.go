@@ -20,8 +20,10 @@ import (
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	ktesting "k8s.io/client-go/testing"
 
 	. "github.com/openshift/odo/pkg/config"
@@ -248,6 +250,7 @@ func TestGetComponentLinkedSecretNames(t *testing.T) {
 func TestList(t *testing.T) {
 	mockConfig := GetOneExistingConfigInfo("comp", "app", "test")
 	componentConfig, err := GetComponentFromConfig(&mockConfig)
+	componentConfig.Status.State = StateTypeNotPushed
 	if err != nil {
 		t.Errorf("error occured while calling GetComponentFromConfig, error: %v", err)
 	}
@@ -366,7 +369,7 @@ func TestList(t *testing.T) {
 							App:  "app",
 						},
 						Status: ComponentStatus{
-							State:            "Pushed",
+							State:            StateTypePushed,
 							LinkedServices:   []string{},
 							LinkedComponents: map[string][]string{},
 						},
@@ -385,7 +388,7 @@ func TestList(t *testing.T) {
 							App:  "app",
 						},
 						Status: ComponentStatus{
-							State:            "Pushed",
+							State:            StateTypePushed,
 							LinkedServices:   []string{},
 							LinkedComponents: map[string][]string{},
 						},
@@ -510,7 +513,7 @@ func TestList(t *testing.T) {
 							App:  "app",
 						},
 						Status: ComponentStatus{
-							State:            "Pushed",
+							State:            StateTypePushed,
 							LinkedServices:   []string{},
 							LinkedComponents: map[string][]string{},
 						},
@@ -529,7 +532,7 @@ func TestList(t *testing.T) {
 							App:  "app",
 						},
 						Status: ComponentStatus{
-							State:            "Pushed",
+							State:            StateTypePushed,
 							LinkedServices:   []string{},
 							LinkedComponents: map[string][]string{},
 						},
@@ -557,11 +560,26 @@ func TestList(t *testing.T) {
 				return true, &tt.dcList, nil
 			})
 
-			for i := range tt.dcList.Items {
-				fakeClientSet.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
-					return true, &tt.dcList.Items[i], nil
-				})
-			}
+			// Prepend reactor returns the last matched reactor added
+			// to return conditional reactor as per calling count
+			count := 0
+			fakeClientSet.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				switch count {
+				case 0, 1:
+					count++
+					return true, &tt.dcList.Items[0], nil
+				case 2, 3:
+					count++
+					return true, &tt.dcList.Items[1], nil
+				case 4:
+					count++
+					return true, nil, errors.NewNotFound(schema.GroupResource{Resource: "deploymentconfigs"}, "")
+				}
+				count++
+				return true, &tt.dcList.Items[0], nil
+			})
+
+			//ret 	comp-app, errorNotfound
 
 			results, err := List(client, "app", tt.existingLocalConfigInfo)
 
@@ -858,11 +876,10 @@ func TestGetComponentFromConfig(t *testing.T) {
 	localGitExistingConfigInfoValue := config.GetOneGitExistingConfigInfo("comp", "app", "project")
 
 	tests := []struct {
-		name            string
-		isConfigExists  bool
-		existingConfig  LocalConfigInfo
-		wantSpec        Component
-		wantPushedState string
+		name           string
+		isConfigExists bool
+		existingConfig LocalConfigInfo
+		wantSpec       Component
 	}{
 		{
 			name:           "case 1: config file exists",
@@ -892,7 +909,6 @@ func TestGetComponentFromConfig(t *testing.T) {
 					Ports: localExistingConfigInfoValue.LocalConfig.GetPorts(),
 				},
 			},
-			wantPushedState: "Not Pushed",
 		},
 		{
 			name:           "case 2: config file doesn't exists",
@@ -928,7 +944,6 @@ func TestGetComponentFromConfig(t *testing.T) {
 					Ports: localGitExistingConfigInfoValue.LocalConfig.GetPorts(),
 				},
 			},
-			wantPushedState: "Not Pushed",
 		},
 	}
 
@@ -944,10 +959,6 @@ func TestGetComponentFromConfig(t *testing.T) {
 
 			if !reflect.DeepEqual(got.Spec, tt.wantSpec.Spec) {
 				t.Errorf("the component spec is different, want: %v,\n got: %v", tt.wantSpec.Spec, got.Spec)
-			}
-
-			if !reflect.DeepEqual(got.Status.State, tt.wantPushedState) {
-				t.Errorf("the component status is different, want: %v,\n got: %v", tt.wantSpec.Status.State, got.Status.State)
 			}
 
 		})
@@ -1033,7 +1044,7 @@ func fakeComponent(cmpType string) Component {
 			App:  "app",
 		},
 		Status: ComponentStatus{
-			State:            "Pushed",
+			State:            StateTypePushed,
 			LinkedServices:   []string{},
 			LinkedComponents: map[string][]string{},
 		},

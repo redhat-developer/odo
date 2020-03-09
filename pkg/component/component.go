@@ -30,6 +30,7 @@ import (
 	"github.com/openshift/odo/pkg/sync"
 	urlpkg "github.com/openshift/odo/pkg/url"
 	"github.com/openshift/odo/pkg/util"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -894,7 +895,6 @@ func List(client *occlient.Client, applicationName string, localConfigInfo *conf
 			if err != nil {
 				return ComponentList{}, errors.Wrap(err, "Unable to get component")
 			}
-			component.Status.State = "Pushed"
 			components = append(components, component)
 			componentNamesMap[component.Name] = true
 		}
@@ -907,6 +907,7 @@ func List(client *occlient.Client, applicationName string, localConfigInfo *conf
 		}
 		_, ok := componentNamesMap[component.Name]
 		if component.Name != "" && !ok && component.Spec.App == applicationName && component.Namespace == client.Namespace {
+			component.Status.State = GetComponentState(client, component.Name, component.Spec.App)
 			components = append(components, component)
 		}
 
@@ -935,10 +936,6 @@ func GetComponentFromConfig(localConfig *config.LocalConfigInfo) (Component, err
 
 		if localConfig.GetSourceType() == "local" || localConfig.GetSourceType() == "binary" {
 			component.Spec.Source = util.GenFileURL(localConfig.GetSourceLocation())
-		}
-
-		component.Status = ComponentStatus{
-			State: "Not Pushed",
 		}
 
 		for _, localURL := range localConfig.GetURL() {
@@ -976,21 +973,14 @@ func ListIfPathGiven(client *occlient.Client, paths []string) (ComponentList, er
 
 				// since the config file maybe belong to a component of a different project
 				client.Namespace = data.GetProject()
-				exist, err := Exists(client, data.GetName(), data.GetApplication())
-				if err != nil {
-					return err
-				}
+
 				con, _ := filepath.Abs(filepath.Dir(path))
 				a := getMachineReadableFormat(data.GetName(), data.GetType())
 				a.Namespace = data.GetProject()
 				a.Spec.App = data.GetApplication()
 				a.Spec.Ports = data.GetPorts()
 				a.Status.Context = con
-				state := "Not Pushed"
-				if exist {
-					state = "Pushed"
-				}
-				a.Status.State = state
+				a.Status.State = GetComponentState(client, data.GetName(), data.GetApplication())
 				components = append(components, a)
 			}
 			return nil
@@ -1320,6 +1310,22 @@ func Exists(client *occlient.Client, componentName, applicationName string) (boo
 	return false, nil
 }
 
+func GetComponentState(client *occlient.Client, componentName, applicationName string) State {
+	deploymentName, err := util.NamespaceOpenShiftObject(componentName, applicationName)
+	if err != nil {
+		return StateTypeUnknown
+	}
+	_, err = client.GetDeploymentConfigFromName(deploymentName)
+
+	if kerrors.IsNotFound(err) {
+		return StateTypeNotPushed
+	} else if err != nil {
+		return StateTypeUnknown
+	}
+
+	return StateTypePushed
+}
+
 // GetComponent provides component definition
 func GetComponent(client *occlient.Client, componentName string, applicationName string, projectName string) (component Component, err error) {
 	// Component Type
@@ -1401,7 +1407,7 @@ func GetComponent(client *occlient.Client, componentName string, applicationName
 	component.Spec.Env = filteredEnv
 	component.Status.LinkedComponents = linkedComponents
 	component.Status.LinkedServices = linkedServices
-	component.Status.State = "Pushed"
+	component.Status.State = StateTypePushed
 
 	return component, nil
 }
