@@ -20,12 +20,8 @@ func TestCreateDevCDDeployTemplate(t *testing.T) {
 		Spec: triggersv1.TriggerTemplateSpec{
 			Params: []pipelinev1.ParamSpec{
 				pipelinev1.ParamSpec{
-					Name:        "gitref",
-					Description: "The git revision",
-					Default: &pipelinev1.ArrayOrString{
-						StringVal: "master",
-						Type:      pipelinev1.ParamTypeString,
-					},
+					Name:        "gitsha",
+					Description: "The specific commit SHA.",
 				},
 				pipelinev1.ParamSpec{
 					Name:        "gitrepositoryurl",
