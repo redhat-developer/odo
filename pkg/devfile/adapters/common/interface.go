@@ -7,5 +7,5 @@ type ComponentAdapter interface {
 
 // StorageAdapter defines the storage functions that platform-specific adapters must implement
 type StorageAdapter interface {
-	Create([]Volume) error
+	Create([]Storage) error
 }

@@ -126,3 +126,18 @@ func GenerateIngressSpec(ingressParam IngressParameter) *extensionsv1.IngressSpe
 
 	return ingressSpec
 }
+
+// GenerateOwnerReference genertes an ownerReference  from the deployment which can then be set as
+// owner for various Kubernetes objects and ensure that when the owner object is deleted from the
+// cluster, all other objects are automatically removed by Kubernetes garbage collector
+func GenerateOwnerReference(deployment *appsv1.Deployment) metav1.OwnerReference {
+
+	ownerReference := metav1.OwnerReference{
+		APIVersion: DeploymentAPIVersion,
+		Kind:       DeploymentKind,
+		Name:       deployment.Name,
+		UID:        deployment.UID,
+	}
+
+	return ownerReference
+}

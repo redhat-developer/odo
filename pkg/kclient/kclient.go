@@ -3,7 +3,6 @@ package kclient
 import (
 	"github.com/pkg/errors"
 
-	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -16,9 +15,6 @@ const (
 Please ensure you have an active kubernetes context to your cluster. 
 Consult your Kubernetes distribution's documentation for more details
 `
-
-	// The length of the string to be generated for names of resources
-	nameLength = 5
 )
 
 // Client is a collection of fields used for client configuration and interaction
@@ -68,19 +64,4 @@ func CreateObjectMeta(name, namespace string, labels, annotations map[string]str
 	}
 
 	return objectMeta
-}
-
-// GenerateOwnerReference genertes an ownerReference  from the deployment which can then be set as
-// owner for various Kubernetes objects and ensure that when the owner object is deleted from the
-// cluster, all other objects are automatically removed by Kubernetes garbage collector
-func GenerateOwnerReference(deployment *appsv1.Deployment) metav1.OwnerReference {
-
-	ownerReference := metav1.OwnerReference{
-		APIVersion: "extensions/v1beta1",
-		Kind:       "Deployment",
-		Name:       deployment.Name,
-		UID:        deployment.UID,
-	}
-
-	return ownerReference
 }

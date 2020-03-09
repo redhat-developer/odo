@@ -3,7 +3,6 @@ package kclient
 import (
 	"fmt"
 
-	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
@@ -77,9 +76,12 @@ func AddVolumeMountToPodTemplateSpec(podTemplateSpec *corev1.PodTemplateSpec, vo
 // AddPVCAndVolumeMount adds PVC and volume mount to the pod template spec
 // volumeNameToPVCName is a map of volume name to the PVC created
 // componentAliasToVolumes is a map of the Devfile component alias to the Devfile Volumes
-func AddPVCAndVolumeMount(podTemplateSpec *corev1.PodTemplateSpec, volumeNameToPVCName map[string]string, componentAliasToVolumes map[string][]common.Volume) error {
+func AddPVCAndVolumeMount(podTemplateSpec *corev1.PodTemplateSpec, volumeNameToPVCName map[string]string, componentAliasToVolumes map[string][]common.DevfileVolume) error {
 	for volName, pvcName := range volumeNameToPVCName {
-		generatedVolumeName := generateVolumeNameFromPVC(pvcName)
+		generatedVolumeName, err := generateVolumeNameFromPVC(pvcName)
+		if err != nil {
+			return errors.Wrapf(err, "Unable to generate volume name from pvc name")
+		}
 		AddPVCToPodTemplateSpec(podTemplateSpec, generatedVolumeName, pvcName)
 
 		// componentAliasToMountPaths is a map of the Devfile container alias to their Devfile Volume Mount Paths for a given Volume Name
@@ -92,9 +94,9 @@ func AddPVCAndVolumeMount(podTemplateSpec *corev1.PodTemplateSpec, volumeNameToP
 			}
 		}
 
-		err := AddVolumeMountToPodTemplateSpec(podTemplateSpec, generatedVolumeName, componentAliasToMountPaths)
+		err = AddVolumeMountToPodTemplateSpec(podTemplateSpec, generatedVolumeName, componentAliasToMountPaths)
 		if err != nil {
-			return errors.New("Unable to add volumes mounts to the pod: " + err.Error())
+			return errors.Wrapf(err, "Unable to add volumes mounts to the pod")
 		}
 	}
 	return nil
@@ -112,35 +114,11 @@ func (c *Client) GetPVCsFromSelector(selector string) ([]corev1.PersistentVolume
 	return pvcList.Items, nil
 }
 
-// generateVolumeNameFromPVC generates a random volume name based on the name
-// of the given PVC
-func generateVolumeNameFromPVC(pvc string) string {
-	return fmt.Sprintf("%v-%v-volume", pvc, util.GenerateRandomString(nameLength))
-}
-
-// UpdateStorageOwnerReference updates the given storages with the given owner references
-func (c *Client) UpdateStorageOwnerReference(volumeNameToPVCName map[string]string, ownerReference ...metav1.OwnerReference) error {
-
-	if len(ownerReference) <= 0 {
-		return errors.New("owner references are empty")
+// generateVolumeNameFromPVC generates a volume name based on the pvc name
+func generateVolumeNameFromPVC(pvc string) (volumeName string, err error) {
+	volumeName, err = util.NamespaceOpenShiftObject(pvc, "vol")
+	if err != nil {
+		return "", err
 	}
-
-	for _, pvcName := range volumeNameToPVCName {
-		// get the PVC from the PVC name
-		pvc, err := c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Get(pvcName, metav1.GetOptions{})
-		if err != nil {
-			return err
-		}
-
-		glog.V(3).Infof("Updating owner references for pvc %v", pvcName)
-		for _, owRf := range ownerReference {
-			pvc.SetOwnerReferences(append(pvc.GetOwnerReferences(), owRf))
-		}
-
-		_, err = c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Update(pvc)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return
 }

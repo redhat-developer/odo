@@ -3,7 +3,6 @@ package component
 import (
 	"fmt"
 
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -46,26 +45,45 @@ func (a Adapter) Create() (err error) {
 	objectMeta := kclient.CreateObjectMeta(componentName, a.Client.Namespace, labels, nil)
 	podTemplateSpec := kclient.GeneratePodTemplateSpec(objectMeta, containers)
 
-	// Get a list of all the unique volume names
 	componentAliasToVolumes := utils.GetVolumes(a.Devfile)
-	var uniqueVolumes []common.Volume
+
+	var uniqueStorages []common.Storage
+	volumeNameToPVCName := make(map[string]string)
 	processedVolumes := make(map[string]bool)
+
+	// Get a list of all the unique volume names and generate their PVC names
 	for _, volumes := range componentAliasToVolumes {
 		for _, vol := range volumes {
 			if _, ok := processedVolumes[*vol.Name]; !ok {
 				processedVolumes[*vol.Name] = true
-				uniqueVolumes = append(uniqueVolumes, vol)
+
+				// Generate the PVC Names
+				glog.V(3).Infof("Generating PVC name for %v", *vol.Name)
+				generatedPVCName, err := storage.GeneratePVCNameFromDevfileVol(*vol.Name, componentName)
+				if err != nil {
+					return err
+				}
+
+				// Check if we have an existing PVC with the labels, overwrite the generated name with the existing name if present
+				existingPVCName, err := storage.GetExistingPVC(&a.Client, *vol.Name, componentName)
+				if err != nil {
+					return err
+				}
+				if len(existingPVCName) > 0 {
+					glog.V(3).Infof("Found an existing PVC for %v, PVC %v will be re-used", *vol.Name, existingPVCName)
+					generatedPVCName = existingPVCName
+				}
+
+				pvc := common.Storage{
+					Name:   generatedPVCName,
+					Volume: vol,
+				}
+				uniqueStorages = append(uniqueStorages, pvc)
+				volumeNameToPVCName[*vol.Name] = generatedPVCName
 			}
 		}
 	}
 
-	// Get the storage adapter and create the volumes if it does not exist
-	stoAdapter := storage.New(a.AdapterContext, a.Client)
-	err = stoAdapter.Create(uniqueVolumes)
-	if err != nil {
-		return err
-	}
-	volumeNameToPVCName := stoAdapter.(storage.HelperAdapter).GetVolumeNameToPVCName()
 	// Add PVC and Volume Mounts to the podTemplateSpec
 	err = kclient.AddPVCAndVolumeMount(podTemplateSpec, volumeNameToPVCName, componentAliasToVolumes)
 	if err != nil {
@@ -77,27 +95,24 @@ func (a Adapter) Create() (err error) {
 	glog.V(3).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
 	glog.V(3).Infof("The component name is %v", componentName)
 
-	var deployment *appsv1.Deployment
 	if utils.ComponentExists(a.Client, componentName) {
 		glog.V(3).Info("The component already exists, attempting to update it")
-		deployment, err = a.Client.UpdateDeployment(*deploymentSpec)
+		_, err = a.Client.UpdateDeployment(*deploymentSpec)
 		if err != nil {
 			return err
 		}
 		glog.V(3).Infof("Successfully updated component %v", componentName)
 	} else {
-		deployment, err = a.Client.CreateDeployment(*deploymentSpec)
+		_, err = a.Client.CreateDeployment(*deploymentSpec)
 		if err != nil {
 			return err
 		}
 		glog.V(3).Infof("Successfully created component %v", componentName)
 	}
 
-	// Get owner reference of the deployment
-	ownerReference := kclient.GenerateOwnerReference(deployment)
-
-	// Update component pvcs with the owner references
-	err = a.Client.UpdateStorageOwnerReference(volumeNameToPVCName, ownerReference)
+	// Get the storage adapter and create the volumes if it does not exist
+	stoAdapter := storage.New(a.AdapterContext, a.Client)
+	err = stoAdapter.Create(uniqueStorages)
 	if err != nil {
 		return err
 	}

@@ -10,9 +10,15 @@ type AdapterContext struct {
 	Devfile       devfile.DevfileObj // Devfile is the object returned by the Devfile parser
 }
 
-// Volume is a struct that is common to all the adapters
-type Volume struct {
+// DevfileVolume is a struct for Devfile volume that is common to all the adapters
+type DevfileVolume struct {
 	Name          *string
 	ContainerPath *string
 	Size          *string
+}
+
+// Storage is a struct that is common to all the adapters
+type Storage struct {
+	Name   string
+	Volume DevfileVolume
 }

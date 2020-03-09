@@ -45,14 +45,14 @@ func GetContainers(devfileObj devfile.DevfileObj) []corev1.Container {
 }
 
 // GetVolumes iterates through the components in the devfile and returns a map of component alias to the devfile volumes
-func GetVolumes(devfileObj devfile.DevfileObj) map[string][]adaptersCommon.Volume {
+func GetVolumes(devfileObj devfile.DevfileObj) map[string][]adaptersCommon.DevfileVolume {
 	// componentAliasToVolumes is a map of the Devfile Component Alias to the Devfile Component Volumes
-	componentAliasToVolumes := make(map[string][]adaptersCommon.Volume)
+	componentAliasToVolumes := make(map[string][]adaptersCommon.DevfileVolume)
 	size := volumeSize
 	for _, comp := range adaptersCommon.GetSupportedComponents(devfileObj.Data) {
 		if comp.Volumes != nil {
 			for _, volume := range comp.Volumes {
-				vol := adaptersCommon.Volume{
+				vol := adaptersCommon.DevfileVolume{
 					Name:          volume.Name,
 					ContainerPath: volume.ContainerPath,
 					Size:          &size,
