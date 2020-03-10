@@ -2,13 +2,14 @@ package debug
 
 import (
 	"encoding/json"
+	"os"
+	"reflect"
+	"testing"
+
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"os"
-	"reflect"
-	"testing"
 )
 
 // fakeOdoDebugFileString creates a json string of a fake OdoDebugFile
