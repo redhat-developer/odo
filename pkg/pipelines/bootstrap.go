@@ -165,6 +165,13 @@ func createManifestsForImageRepo(sa *corev1.ServiceAccount, isInternalRegistry b
 
 		// pipelines sa should have access to internal registry
 		out = append(out, createRoleBinding(meta.NamespacedName(internalRegistryNamespace, "internal-registry-binding"), sa, "ClusterRole", "edit"))
+
+		// add image puller role to allow pulling app images across namespaces from dev and stage envirnments
+		out = append(out, createRoleBindingForSubjects(meta.NamespacedName(internalRegistryNamespace, "image-puller-binding"), "ClusterRole", "system:image-puller",
+			[]v1rbac.Subject{v1rbac.Subject{Kind: "ServiceAccount", Name: "default", Namespace: namespaces["dev"]},
+				v1rbac.Subject{Kind: "ServiceAccount", Name: "default", Namespace: namespaces["stage"]},
+			}))
+
 	} else {
 		// Add secret to service account if external registry is used
 		dockerSecret, err := createDockerSecret(o.DockerConfigJSONFileName, namespaces["cicd"])

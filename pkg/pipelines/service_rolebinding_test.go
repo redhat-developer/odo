@@ -45,6 +45,46 @@ func TestRoleBinding(t *testing.T) {
 
 }
 
+func TestRoleBindingForSubjects(t *testing.T) {
+	want := &v1rbac.RoleBinding{
+		TypeMeta: v1.TypeMeta{
+			Kind:       "RoleBinding",
+			APIVersion: "rbac.authorization.k8s.io/v1",
+		},
+		ObjectMeta: v1.ObjectMeta{
+			Name:      roleBindingName,
+			Namespace: "testns",
+		},
+		Subjects: []v1rbac.Subject{
+			v1rbac.Subject{
+				Kind:      "ServiceAccount",
+				Name:      "pipeline",
+				Namespace: "testing",
+			},
+			v1rbac.Subject{
+				Kind:      "ServiceAccount",
+				Name:      "pipeline",
+				Namespace: "testing2",
+			},
+		},
+		RoleRef: v1rbac.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "Role",
+			Name:     roleName,
+		},
+	}
+
+	roleBinding := createRoleBindingForSubjects(meta.NamespacedName("testns", roleBindingName), "Role", roleName,
+		[]v1rbac.Subject{v1rbac.Subject{Kind: "ServiceAccount", Name: "pipeline", Namespace: "testing"},
+			v1rbac.Subject{Kind: "ServiceAccount", Name: "pipeline", Namespace: "testing2"},
+		})
+
+	if diff := cmp.Diff(want, roleBinding); diff != "" {
+		t.Errorf("TestRoleBindingForSubjects() failed:\n%s", diff)
+	}
+
+}
+
 func TestCreateRole(t *testing.T) {
 	want := &v1rbac.Role{
 		TypeMeta: v1.TypeMeta{
