@@ -14,6 +14,10 @@ type Adapter struct {
 	componentAdapter common.ComponentAdapter
 }
 
+type KubernetesContext struct {
+	Namespace string
+}
+
 // New instantiates a kubernetes adapter
 func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
 
@@ -25,25 +29,12 @@ func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
 }
 
 // Start creates Kubernetes resources that correspond to the devfile if they don't already exist
-func (k Adapter) Start() error {
+func (k Adapter) Start(path string, out io.Writer, ignoredFiles []string, forceBuild bool, globExps []string, show bool) error {
 
-	err := k.componentAdapter.Start()
+	err := k.componentAdapter.Start(path, out, ignoredFiles, forceBuild, globExps, show)
 	if err != nil {
 		return errors.Wrap(err, "Failed to start the component")
 	}
 
 	return nil
-}
-
-func (k Adapter) Push(path string, out io.Writer, files []string, delFiles []string, isForcePush bool, globExps []string, show bool) error {
-	err := k.componentAdapter.Push(path, out, files, delFiles, isForcePush, globExps, show)
-	if err != nil {
-		return errors.Wrap(err, "Failed to push to the component")
-	}
-
-	return nil
-}
-
-func (k Adapter) DoesComponentExist(cmpName string) bool {
-	return k.componentAdapter.DoesComponentExist(cmpName)
 }

@@ -1244,3 +1244,61 @@ func TestHTTPGetRequest(t *testing.T) {
 		})
 	}
 }
+
+func TestFilterIgnores(t *testing.T) {
+	tests := []struct {
+		name             string
+		changedFiles     []string
+		deletedFiles     []string
+		ignoredFiles     []string
+		wantChangedFiles []string
+		wantDeletedFiles []string
+	}{
+		{
+			name:             "Case 1: No ignored files",
+			changedFiles:     []string{"hello.txt", "test.abc"},
+			deletedFiles:     []string{"one.txt", "two.txt"},
+			ignoredFiles:     []string{},
+			wantChangedFiles: []string{"hello.txt", "test.abc"},
+			wantDeletedFiles: []string{"one.txt", "two.txt"},
+		},
+		{
+			name:             "Case 2: One ignored file",
+			changedFiles:     []string{"hello.txt", "test.abc"},
+			deletedFiles:     []string{"one.txt", "two.txt"},
+			ignoredFiles:     []string{"hello.txt"},
+			wantChangedFiles: []string{"test.abc"},
+			wantDeletedFiles: []string{"one.txt", "two.txt"},
+		},
+		{
+			name:             "Case 3: Multiple ignored file",
+			changedFiles:     []string{"hello.txt", "test.abc"},
+			deletedFiles:     []string{"one.txt", "two.txt"},
+			ignoredFiles:     []string{"hello.txt", "two.txt"},
+			wantChangedFiles: []string{"test.abc"},
+			wantDeletedFiles: []string{"one.txt"},
+		},
+		{
+			name:             "Case 4: No changed or deleted files",
+			changedFiles:     []string{""},
+			deletedFiles:     []string{""},
+			ignoredFiles:     []string{"hello.txt", "two.txt"},
+			wantChangedFiles: []string{""},
+			wantDeletedFiles: []string{""},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			filterChanged, filterDeleted := FilterIgnores(tt.changedFiles, tt.deletedFiles, tt.ignoredFiles)
+
+			if !reflect.DeepEqual(tt.wantChangedFiles, filterChanged) {
+				t.Errorf("Expected %s, got %s", tt.wantChangedFiles, filterChanged)
+			}
+
+			if !reflect.DeepEqual(tt.wantDeletedFiles, filterDeleted) {
+				t.Errorf("Expected %s, got %s", tt.wantDeletedFiles, filterDeleted)
+			}
+		})
+	}
+}

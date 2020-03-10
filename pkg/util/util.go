@@ -690,3 +690,28 @@ func HTTPGetRequest(url string) ([]byte, error) {
 
 	return bytes, err
 }
+
+// filterIgnores applies the glob rules on the filesChanged and filesDeleted and filters them
+// returns the filtered results which match any of the glob rules
+func FilterIgnores(filesChanged, filesDeleted, absIgnoreRules []string) (filesChangedFiltered, filesDeletedFiltered []string) {
+	for _, file := range filesChanged {
+		match, err := IsGlobExpMatch(file, absIgnoreRules)
+		if err != nil {
+			continue
+		}
+		if !match {
+			filesChangedFiltered = append(filesChangedFiltered, file)
+		}
+	}
+
+	for _, file := range filesDeleted {
+		match, err := IsGlobExpMatch(file, absIgnoreRules)
+		if err != nil {
+			continue
+		}
+		if !match {
+			filesDeletedFiltered = append(filesDeletedFiltered, file)
+		}
+	}
+	return filesChangedFiltered, filesDeletedFiltered
+}

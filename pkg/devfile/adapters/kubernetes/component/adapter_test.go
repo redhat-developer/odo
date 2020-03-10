@@ -15,23 +15,38 @@ import (
 	ktesting "k8s.io/client-go/testing"
 )
 
-func TestStart(t *testing.T) {
+func TestCreateOrUpdateComponent(t *testing.T) {
 
 	testComponentName := "test"
 
 	tests := []struct {
 		name          string
 		componentType versionsCommon.DevfileComponentType
+		running       bool
 		wantErr       bool
 	}{
 		{
 			name:          "Case: Invalid devfile",
 			componentType: "",
+			running:       false,
 			wantErr:       true,
 		},
 		{
 			name:          "Case: Valid devfile",
 			componentType: versionsCommon.DevfileComponentTypeDockerimage,
+			running:       false,
+			wantErr:       false,
+		},
+		{
+			name:          "Case: Invalid devfile, already running component",
+			componentType: "",
+			running:       true,
+			wantErr:       true,
+		},
+		{
+			name:          "Case: Valid devfile, already running component",
+			componentType: versionsCommon.DevfileComponentTypeDockerimage,
+			running:       true,
 			wantErr:       false,
 		},
 	}
@@ -68,78 +83,12 @@ func TestStart(t *testing.T) {
 			})
 
 			componentAdapter := New(adapterCtx, *fkclient)
-			err := componentAdapter.Start()
+			err := componentAdapter.createOrUpdateComponent(false)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("component adapter start unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
-		})
-	}
-
-}
-
-func TestDoesComponentExist(t *testing.T) {
-
-	fakeComponentName := "fake-component"
-
-	tests := []struct {
-		name          string
-		componentType versionsCommon.DevfileComponentType
-		componentName string
-	}{
-		{
-			name:          "Case: Valid devfile",
-			componentType: versionsCommon.DevfileComponentTypeDockerimage,
-			componentName: "test-name",
-		},
-		{
-			name:          "Case: Valid devfile, empty component name",
-			componentType: versionsCommon.DevfileComponentTypeDockerimage,
-			componentName: "",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			devObj := devfile.DevfileObj{
-				Data: testingutil.TestDevfileData{
-					ComponentType: tt.componentType,
-				},
-			}
-
-			adapterCtx := adaptersCommon.AdapterContext{
-				ComponentName: tt.componentName,
-				Devfile:       devObj,
-			}
-
-			fkclient, fkclientset := kclient.FakeNew()
-			fkWatch := watch.NewFake()
-
-			fkclientset.Kubernetes.PrependWatchReactor("pods", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
-				return true, fkWatch, nil
-			})
-
-			// DoesComponentExist requires an already started component, so start it.
-			componentAdapter := New(adapterCtx, *fkclient)
-			err := componentAdapter.Start()
-
-			// Checks for unexpected error cases
-			if err != nil {
-				t.Errorf("component adapter start unexpected error %v", err)
-			}
-
-			// Verify that a comopnent with the specified name exists
-			componentExists := componentAdapter.DoesComponentExist(tt.componentName)
-			if !componentExists {
-				t.Errorf("unable to find component with name %s", tt.componentName)
-			}
-
-			// Verify that a component with some fake name doesn't exist
-			componentExists = componentAdapter.DoesComponentExist(fakeComponentName)
-			if componentExists {
-				t.Errorf("found non-existent component with name %s", fakeComponentName)
-			}
-
 		})
 	}
 

@@ -3,6 +3,8 @@ package component
 import (
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
@@ -34,7 +36,100 @@ type Adapter struct {
 }
 
 // Start updates the component if a matching component exists or creates one if it doesn't exist
-func (a Adapter) Start() (err error) {
+// Once the component has started, it will sync the source code to it.
+func (a Adapter) Start(path string, out io.Writer, ignoredFiles []string, forceBuild bool, globExps []string, show bool) (err error) {
+	componentExists := utils.ComponentExists(a.Client, a.ComponentName)
+
+	deletedFiles := []string{}
+	changedFiles := []string{}
+	isForcePush := false
+
+	err = a.createOrUpdateComponent(componentExists)
+	if err != nil {
+		return errors.Wrap(err, "unable to create or update component")
+	}
+
+	// Sync source code to the component
+	// If syncing for the first time, sync the entire source directory
+	// If syncing to an already running component, sync the deltas
+	if !forceBuild {
+		absIgnoreRules := util.GetAbsGlobExps(path, ignoredFiles)
+
+		spinner := log.NewStatus(log.GetStdout())
+		defer spinner.End(true)
+		if componentExists {
+			spinner.Start("Checking file changes for pushing", false)
+		} else {
+			// if the component doesn't exist, we don't check for changes in the files
+			// thus we show a different message
+			spinner.Start("Checking files for pushing", false)
+		}
+
+		// Before running the indexer, make sure the .odo folder exists (or else the index file will not get created)
+		odoFolder := filepath.Join(path, ".odo")
+		if _, err := os.Stat(odoFolder); os.IsNotExist(err) {
+			err = os.Mkdir(odoFolder, 0750)
+			if err != nil {
+				return errors.Wrap(err, "unable to create directory")
+			}
+		}
+
+		// run the indexer and find the modified/added/deleted/renamed files
+		filesChanged, filesDeleted, err := util.RunIndexer(path, absIgnoreRules)
+		spinner.End(true)
+
+		if err != nil {
+			return errors.Wrap(err, "unable to run indexer")
+		}
+
+		// If the component already exists, sync only the files that changed
+		if componentExists {
+			// apply the glob rules from the .gitignore/.odo file
+			// and ignore the files on which the rules apply and filter them out
+			filesChangedFiltered, filesDeletedFiltered := util.FilterIgnores(filesChanged, filesDeleted, absIgnoreRules)
+
+			// Remove the relative file directory from the list of deleted files
+			// in order to make the changes correctly within the Kubernetes pod
+			deletedFiles, err = util.RemoveRelativePathFromFiles(filesDeletedFiltered, path)
+			if err != nil {
+				return errors.Wrap(err, "unable to remove relative path from list of changed/deleted files")
+			}
+			glog.V(4).Infof("List of files to be deleted: +%v", deletedFiles)
+			changedFiles = filesChangedFiltered
+
+			if len(filesChangedFiltered) == 0 && len(filesDeletedFiltered) == 0 {
+				// no file was modified/added/deleted/renamed, thus return without building
+				log.Success("No file changes detected, skipping build. Use the '-f' flag to force the build.")
+				return nil
+			}
+		}
+	}
+
+	if forceBuild || !componentExists {
+		isForcePush = true
+	}
+
+	// Sync the local source code to the component
+	err = a.pushLocal(path,
+		out,
+		changedFiles,
+		deletedFiles,
+		isForcePush,
+		globExps,
+		show,
+	)
+
+	if err != nil {
+		log.Errorf(
+			"Failed to sync to component with name %s.\nError: %v",
+			a.ComponentName,
+			err,
+		)
+	}
+	return nil
+}
+
+func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 	componentName := a.ComponentName
 
 	labels := map[string]string{
@@ -67,12 +162,11 @@ func (a Adapter) Start() (err error) {
 		}
 		glog.V(3).Infof("Successfully created component %v", componentName)
 	}
-
 	return nil
 }
 
 // Push syncs source code from the user's disk to the component
-func (a Adapter) Push(path string, out io.Writer, files []string, delFiles []string, isForcePush bool, globExps []string, show bool) error {
+func (a Adapter) pushLocal(path string, out io.Writer, files []string, delFiles []string, isForcePush bool, globExps []string, show bool) error {
 	glog.V(4).Infof("Push: componentName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", a.ComponentName, path, files, delFiles, isForcePush)
 
 	// Edge case: check to see that the path is NOT empty.
@@ -138,11 +232,6 @@ func (a Adapter) Push(path string, out io.Writer, files []string, delFiles []str
 	return nil
 }
 
-// DoesComponentExist returns true if a component with the specified name exists, false otherwise
-func (a Adapter) DoesComponentExist(cmpName string) bool {
-	return utils.ComponentExists(a.Client, cmpName)
-}
-
 // getFirstContainerWithSourceVolume returns the first container that set mountSources: true
 // Because the source volume is shared across all components that need it, we only need to sync once,
 // so we only need to find one container. If no container was found, that means there's no
@@ -156,5 +245,5 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, e
 		}
 	}
 
-	return "", fmt.Errorf("No containers specified mountSources: true")
+	return "", fmt.Errorf("In order to sync files, odo requires at least one component in a devfile to set 'mountSources: true'")
 }
