@@ -1202,3 +1202,62 @@ func TestHTTPGetRequest(t *testing.T) {
 		})
 	}
 }
+
+func TestDownloadFile(t *testing.T) {
+	// Start a local HTTP server
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		// Send response to be tested
+		_, err := rw.Write([]byte("OK"))
+		if err != nil {
+			t.Error(err)
+		}
+	}))
+	// Close the server when test finishes
+	defer server.Close()
+
+	tests := []struct {
+		name     string
+		url      string
+		filepath string
+		want     []byte
+	}{
+		{
+			name:     "Case 1: Input url is valid",
+			url:      server.URL,
+			filepath: "./test.yaml",
+			// Want(Expected) result is "OK"
+			// According to Unicode table: O == 79, K == 75
+			want: []byte{79, 75},
+		},
+		{
+			name:     "Case 2: Input url is invalid",
+			url:      "invalid",
+			filepath: "invalid",
+			want:     []byte{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := DownloadFile(tt.url, tt.filepath)
+			if tt.url != "invalid" && err != nil {
+				t.Errorf("Failed to download file with error %s", err)
+			}
+
+			got, err := ioutil.ReadFile(tt.filepath)
+			if tt.url != "invalid" && err != nil {
+				t.Errorf("Failed to read file with error %s", err)
+			}
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Got: %v, want: %v", got, tt.want)
+			}
+
+			// Clean up the file that downloaded in this test case
+			err = os.Remove(tt.filepath)
+			if err != nil {
+				t.Errorf("Failed to delete file with error %s", err)
+			}
+		})
+	}
+}
