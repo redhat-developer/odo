@@ -32,20 +32,3 @@ func (c *Client) CreateTLSSecret(tlsCertificate []byte, tlsPrivKey []byte, compo
 	}
 	return secret, nil
 }
-
-// ListSecrets lists all the secrets based on the given label selector
-func (c *Client) ListSecrets(labelSelector string) ([]corev1.Secret, error) {
-	listOptions := metav1.ListOptions{}
-	if len(labelSelector) > 0 {
-		listOptions = metav1.ListOptions{
-			LabelSelector: labelSelector,
-		}
-	}
-
-	secretList, err := c.KubeClient.CoreV1().Secrets(c.Namespace).List(listOptions)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get secret list")
-	}
-
-	return secretList.Items, nil
-}
