@@ -79,7 +79,7 @@ func (o *URLListOptions) Run() (err error) {
 
 			log.Infof("Found the following URLs for component %v in application %v:", o.Component(), o.Application)
 			tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-			fmt.Fprintln(tabWriterURL, "NAME", "\t", "STATE", "\t", "URL", "\t", "PORT")
+			fmt.Fprintln(tabWriterURL, "NAME", "\t", "URL", "\t", "PORT")
 
 			// are there changes between local and cluster states?
 			outOfSync := false
@@ -87,7 +87,7 @@ func (o *URLListOptions) Run() (err error) {
 				var present bool
 				for _, u := range urls.Items {
 					if i.Name == u.Name {
-						fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, u), u.Spec.Rules[0].Host, ""))
+						fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, u), "", u.Spec.Rules[0].Host), "\t", u.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Backend.ServicePort.IntVal)
 						present = true
 					}
 				}
