@@ -29,7 +29,6 @@ var (
 
 // URLListOptions encapsulates the options for the odo url list command
 type URLListOptions struct {
-	localConfigInfo  *config.LocalConfigInfo
 	componentContext string
 	*genericclioptions.Context
 }
@@ -42,7 +41,7 @@ func NewURLListOptions() *URLListOptions {
 // Complete completes URLListOptions after they've been Listed
 func (o *URLListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.Context = genericclioptions.NewContext(cmd)
-	o.localConfigInfo, err = config.NewLocalConfigInfo(o.componentContext)
+	o.LocalConfigInfo, err = config.NewLocalConfigInfo(o.componentContext)
 	if err != nil {
 		return errors.Wrap(err, "failed intiating local config")
 	}
@@ -57,7 +56,7 @@ func (o *URLListOptions) Validate() (err error) {
 // Run contains the logic for the odo url list command
 func (o *URLListOptions) Run() (err error) {
 
-	urls, err := url.List(o.Client, o.localConfigInfo, o.Component(), o.Application)
+	urls, err := url.List(o.Client, o.LocalConfigInfo, o.Component(), o.Application)
 	if err != nil {
 		return err
 	}

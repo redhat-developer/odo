@@ -246,7 +246,8 @@ func TestGetComponentLinkedSecretNames(t *testing.T) {
 }
 
 func TestList(t *testing.T) {
-	componentConfig, err := GetComponentFromConfig(GetOneExistingConfigInfo("comp", "app", "test"))
+	mockConfig := GetOneExistingConfigInfo("comp", "app", "test")
+	componentConfig, err := GetComponentFromConfig(&mockConfig)
 	if err != nil {
 		t.Errorf("error occured while calling GetComponentFromConfig, error: %v", err)
 	}
@@ -939,7 +940,7 @@ func TestGetComponentFromConfig(t *testing.T) {
 			}
 			cfg := &tt.existingConfig
 
-			got, _ := GetComponentFromConfig(*cfg)
+			got, _ := GetComponentFromConfig(cfg)
 
 			if !reflect.DeepEqual(got.Spec, tt.wantSpec.Spec) {
 				t.Errorf("the component spec is different, want: %v,\n got: %v", tt.wantSpec.Spec, got.Spec)

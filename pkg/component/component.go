@@ -898,7 +898,7 @@ func List(client *occlient.Client, applicationName string, localConfigInfo *conf
 	}
 
 	if localConfigInfo != nil {
-		component, err := GetComponentFromConfig(*localConfigInfo)
+		component, err := GetComponentFromConfig(localConfigInfo)
 		if err != nil {
 			return GetMachineReadableFormatForList(components), err
 		}
@@ -917,7 +917,7 @@ func List(client *occlient.Client, applicationName string, localConfigInfo *conf
 }
 
 // GetComponentFromConfig returns the component on the config if it exists
-func GetComponentFromConfig(localConfig config.LocalConfigInfo) (Component, error) {
+func GetComponentFromConfig(localConfig *config.LocalConfigInfo) (Component, error) {
 	if localConfig.ConfigFileExists() {
 		component := getMachineReadableFormat(localConfig.GetName(), localConfig.GetType())
 

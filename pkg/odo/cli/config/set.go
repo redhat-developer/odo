@@ -61,10 +61,7 @@ func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (e
 		o.paramName = args[0]
 		o.paramValue = args[1]
 	}
-	err = o.InitConfigFromContext()
-	if err != nil {
-		return err
-	}
+	// we initialize the context irrespective of --now flag being provided
 	if o.now {
 		o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 		prjName := o.LocalConfigInfo.GetProject()
@@ -73,6 +70,8 @@ func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (e
 		if err != nil {
 			return err
 		}
+	} else {
+		o.Context = genericclioptions.NewConfigContext(cmd)
 	}
 	return
 }

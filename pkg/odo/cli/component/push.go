@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
@@ -57,13 +56,9 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		return nil
 	}
 
-	conf, err := config.NewLocalConfigInfo(po.componentContext)
-	if err != nil {
-		return errors.Wrap(err, "unable to retrieve configuration information")
-	}
+	// Set the correct context, which also sets the LocalConfigInfo
+	po.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 
-	// Set the necessary values within WatchOptions
-	po.LocalConfigInfo = conf
 	err = po.SetSourceInfo()
 	if err != nil {
 		return errors.Wrap(err, "unable to set source information")
@@ -74,8 +69,6 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		return errors.Wrap(err, "unable to apply ignore information")
 	}
 
-	// Set the correct context
-	po.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 	prjName := po.LocalConfigInfo.GetProject()
 	po.ResolveSrcAndConfigFlags()
 	err = po.ResolveProject(prjName)

@@ -144,7 +144,9 @@ func (a Adapter) DoesComponentExist(cmpName string) bool {
 }
 
 // getFirstContainerWithSourceVolume returns the first container that set mountSources: true
-// If no container was found, that means there's no container to sync to, so return an error
+// Because the source volume is shared across all components that need it, we only need to sync once,
+// so we only need to find one container. If no container was found, that means there's no
+// container to sync to, so return an error
 func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, error) {
 	for _, c := range containers {
 		for _, vol := range c.VolumeMounts {

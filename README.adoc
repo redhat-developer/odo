@@ -113,8 +113,8 @@ https://asciinema.org/a/wVkVgUrO7PGR5CYBFbHB5fFDn[image:https://asciinema.org/a/
 
 *Discussions:*
 
-* For general help and inquiries, join our link:https://groups.google.com/forum/\#!forum/odo-users[odo-users Google group].
-* For any developmental discussion, use our link:https://groups.google.com/forum/\#!forum/odo-dev[odo-dev Google group].
+* For general help and inquiries, join our link:https://groups.google.com/forum/#!forum/odo-users[odo-users Google group].
+* For any developmental discussion, use our link:https://groups.google.com/forum/#!forum/odo-dev[odo-dev Google group].
 
 *Chat:* Join us on link:https://join.slack.com/t/openshiftdo/shared_invite/enQtODUwMjIzMzE2MjYyLWM3YjlkNTViOGNjZGQ5YjFlMzc2N2RhZjVmMDQ5NWY5ZDQ3NzMzZjYxMTE1MjY5OTVmZjgxZWMyMGRmOTc4Y2I[Slack].
 
@@ -137,7 +137,7 @@ All our calls are open to public. You are welcome to join any of our calls.
 
 You can find the exact dates of all scheduled odo calls together with sprint dates in the link:https://calendar.google.com/calendar/embed?src=gi0s0v5ukfqkjpnn26p6va3jfc%40group.calendar.google.com[odo calendar] (link:https://calendar.google.com/calendar/ical/gi0s0v5ukfqkjpnn26p6va3jfc%40group.calendar.google.com/public/basic.ics[iCal format]).
 
-To participate in the calls, please join link:https://groups.google.com/forum/\#!forum/odo-dev[odo-dev Google group]. When you join the group, you will automatically get invites to all odo related calls and get permissions to all necessary documents.
+To participate in the calls, please join link:https://groups.google.com/forum/#!forum/odo-dev[odo-dev Google group]. When you join the group, you will automatically get invites to all odo related calls and get permissions to all necessary documents.
 
 
 [[projects-using-odo]]

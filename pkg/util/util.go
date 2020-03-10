@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"math/rand"
 	"net"
+	"net/http"
 	"net/url"
 	"os"
 	"os/exec"
@@ -24,6 +26,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
+
+// HTTPRequestTimeout configures timeout of all HTTP requests
+const HTTPRequestTimeout = 10 * time.Second
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
 
@@ -667,4 +672,21 @@ func GetRemoteFilesMarkedForDeletion(delSrcRelPaths []string, remoteFolder strin
 		rmPaths = append(rmPaths, filepath.ToSlash(filepath.Join(remoteFolder, delRelPath)))
 	}
 	return rmPaths
+}
+
+// HTTPGetRequest uses url to get file contents
+func HTTPGetRequest(url string) ([]byte, error) {
+	var httpClient = &http.Client{Timeout: HTTPRequestTimeout}
+	resp, err := httpClient.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	bytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return bytes, err
 }
