@@ -2,8 +2,11 @@ package url
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/devfile"
+	adapterutils "github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/log"
 	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
@@ -61,16 +64,44 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 		o.Context = genericclioptions.NewContext(cmd)
 	}
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
-		// o.clusterHost = args[0]
-		fmt.Println("the component name is " + o.Component())
+		err = o.InitEnvInfoFromContext()
+		if err != nil {
+			return err
+		}
+
+		devObj, err := devfile.Parse(o.DevfilePath)
+		if err != nil {
+			return fmt.Errorf("fail to parse the devfile %s, with error: %s", o.DevfilePath, err)
+		}
+		containers := adapterutils.GetContainers(devObj)
+		if len(containers) == 0 {
+			return fmt.Errorf("No valid components found in the devfile")
+		}
+		compWithEndpoint := 0
+		var postList []string
+		for _, c := range containers {
+			if len(c.Ports) != 0 {
+				compWithEndpoint++
+				for _, port := range c.Ports {
+					postList = append(postList, strconv.FormatInt(int64(port.ContainerPort), 10))
+				}
+			}
+			if compWithEndpoint > 1 {
+				return fmt.Errorf("Devfile should only have 1 component contains endpoint")
+			}
+		}
+		if compWithEndpoint == 0 {
+			return fmt.Errorf("No valid component with endpoint found in the devfile")
+		}
+		o.componentPort, err = url.GetValidPortNumber(o.Component(), o.urlPort, postList)
+		if err != nil {
+			return err
+		}
+
 		if len(args) == 0 {
 			o.urlName = url.GetURLName(o.Component(), o.componentPort)
 		} else {
 			o.urlName = args[0]
-		}
-		err = o.InitEnvInfoFromContext()
-		if err != nil {
-			return err
 		}
 
 	} else {
@@ -116,11 +147,6 @@ func (o *URLCreateOptions) Validate() (err error) {
 				return fmt.Errorf("the url %s already exists in the application: %s", curIngressDomain, o.Application)
 			}
 		}
-		// TODO: parse the devobj and get the port
-		// devObj, err := devfile.Parse(o.DevfilePath)
-		// if err != nil {
-		// 	return fmt.Errorf("fail to parse the devfile %s, with error: %s", o.DevfilePath, err)
-		// }
 
 	} else {
 		for _, localURL := range o.LocalConfigInfo.GetURL() {
@@ -150,7 +176,7 @@ func (o *URLCreateOptions) Validate() (err error) {
 // Run contains the logic for the odo url create command
 func (o *URLCreateOptions) Run() (err error) {
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
-		err = o.EnvSpecificInfo.SetConfiguration("url", envinfo.EnvInfoURL{Name: o.urlName, Port: o.urlPort, ClusterHost: o.clusterHost, Secure: o.secureURL, TLSSecret: o.tlsSecret})
+		err = o.EnvSpecificInfo.SetConfiguration("url", envinfo.EnvInfoURL{Name: o.urlName, Port: o.componentPort, ClusterHost: o.clusterHost, Secure: o.secureURL, TLSSecret: o.tlsSecret})
 	} else {
 		err = o.LocalConfigInfo.SetConfiguration("url", config.ConfigURL{Name: o.urlName, Port: o.componentPort, Secure: o.secureURL})
 	}

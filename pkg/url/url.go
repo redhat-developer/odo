@@ -1,17 +1,9 @@
 package url
 
 import (
-	"bytes"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/pem"
 	"fmt"
-	"math/big"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/openshift/odo/pkg/envinfo"
 
@@ -65,53 +57,35 @@ func Create(client *occlient.Client, kClient *kclient.Client, urlName string, po
 
 	var serviceName string
 	if experimental.IsExperimentalModeEnabled() {
-		// TODO: Need deployment & service to get the service name
-		// serviceName := fmt.Sprintf("%v-%v", componentName, portNumber)
-		serviceName := "spring-springtest1-gldv-app"
-		// if err != nil {
-		// 	return "", errors.Wrapf(err, "unable to create namespaced name")
-		// }
-		secretName := ""
+		serviceName := componentName
 		ingressDomain := fmt.Sprintf("%v.%v", urlName, clusterHost)
 		if secureURL == true {
-			// generate SSl certificate
-			privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
-			if err != nil {
-				return "", errors.Wrap(err, "unable to generate rsa key")
+			if len(secretName) != 0 {
+				_, err := kClient.KubeClient.CoreV1().Secrets(kClient.Namespace).Get(secretName, metav1.GetOptions{})
+				if err != nil {
+					return "", errors.Wrap(err, "unable to get the provided secret: "+secretName)
+				}
 			}
-			template := x509.Certificate{
-				SerialNumber: big.NewInt(2),
-				Subject: pkix.Name{
-					CommonName:   "Udo self-signed certificate",
-					Organization: []string{"Udo"},
-				},
-				NotBefore:             time.Now(),
-				NotAfter:              time.Now().Add(time.Hour * 24 * 365),
-				KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
-				BasicConstraintsValid: true,
-				DNSNames:              []string{"*." + clusterHost},
-			}
+			if len(secretName) == 0 {
+				defaultTLSSecretName := componentName + "-tlssecret"
+				_, err := kClient.KubeClient.CoreV1().Secrets(kClient.Namespace).Get(defaultTLSSecretName, metav1.GetOptions{})
+				if err != nil {
+					selfsignedcert, err := kclient.GenerateSelfSignedCertificate(clusterHost)
+					if err != nil {
+						return "", errors.Wrap(err, "unable to generate self-signed certificate for clutser: "+clusterHost)
+					}
+					// create tls secret
+					secret, err := kClient.CreateTLSSecret(selfsignedcert.CertPem, selfsignedcert.KeyPem, componentName, applicationName, portNumber)
+					if err != nil {
+						return "", errors.Wrap(err, "unable to create tls secret: "+secret.Name)
+					}
+					secretName = secret.Name
+				} else {
+					// tls secret found for this component
+					secretName = defaultTLSSecretName
+				}
 
-			certificateDerEncoding, err := x509.CreateCertificate(rand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
-			if err != nil {
-				return "", errors.Wrap(err, "unable to create certificate")
 			}
-			out := &bytes.Buffer{}
-			pem.Encode(out, &pem.Block{Type: "CERTIFICATE", Bytes: certificateDerEncoding})
-			certPemEncode := out.String()
-			certPemByteArr := []byte(certPemEncode)
-
-			tlsPrivKeyEncoding := x509.MarshalPKCS1PrivateKey(privateKey)
-			pem.Encode(out, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: tlsPrivKeyEncoding})
-			keyPemEncode := out.String()
-			keyPemByteArr := []byte(keyPemEncode)
-
-			// create tls secret
-			secret, err := kClient.CreateTLSSecret(certPemByteArr, keyPemByteArr, componentName, applicationName, portNumber)
-			if err != nil {
-				return "", errors.Wrap(err, "unable to create tls secret: "+secret.Name)
-			}
-			secretName = secret.Name
 
 		}
 

@@ -1,8 +1,6 @@
 package kclient
 
 import (
-	"fmt"
-
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -15,8 +13,7 @@ import (
 // portNumber is the target port of the ingress
 func (c *Client) CreateTLSSecret(tlsCertificate []byte, tlsPrivKey []byte, componentName string, applicationName string, portNumber int) (*corev1.Secret, error) {
 	labels := componentlabels.GetLabels(componentName, applicationName, true)
-	portAsString := fmt.Sprintf("%v", portNumber)
-	tlsSecretName := componentName + "-" + portAsString + "-tlssecret"
+	tlsSecretName := componentName + "-tlssecret"
 	data := make(map[string][]byte)
 	data["tls.crt"] = tlsCertificate
 	data["tls.key"] = tlsPrivKey
