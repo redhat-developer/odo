@@ -83,7 +83,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 			})
 
 			componentAdapter := New(adapterCtx, *fkclient)
-			err := componentAdapter.createOrUpdateComponent(false)
+			err := componentAdapter.createOrUpdateComponent(tt.running)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
