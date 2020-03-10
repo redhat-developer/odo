@@ -22,16 +22,15 @@ func addSecretToSA(sa *corev1.ServiceAccount, secretName string) *corev1.Service
 
 // createRoleBinding creates a RoleBinding given name, sa, roleKind, and roleName
 func createRoleBinding(name types.NamespacedName, sa *corev1.ServiceAccount, roleKind, roleName string) *v1rbac.RoleBinding {
+	return createRoleBindingForSubjects(name, roleKind, roleName, []v1rbac.Subject{v1rbac.Subject{Kind: sa.Kind, Name: sa.Name, Namespace: sa.Namespace}})
+}
+
+// createRoleBindingForSubjects create a RoleBinding with multiple subjects
+func createRoleBindingForSubjects(name types.NamespacedName, roleKind, roleName string, subjects []v1rbac.Subject) *v1rbac.RoleBinding {
 	return &v1rbac.RoleBinding{
 		TypeMeta:   meta.TypeMeta("RoleBinding", "rbac.authorization.k8s.io/v1"),
 		ObjectMeta: meta.ObjectMeta(name),
-		Subjects: []v1rbac.Subject{
-			v1rbac.Subject{
-				Kind:      sa.Kind,
-				Name:      sa.Name,
-				Namespace: sa.Namespace,
-			},
-		},
+		Subjects:   subjects,
 		RoleRef: v1rbac.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
 			Kind:     roleKind,
