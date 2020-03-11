@@ -7,7 +7,7 @@ import (
 )
 
 // Generate will return a slice of tasks
-func Generate(secretName, ns string) []pipelinev1.Task {
+func Generate(ns string) []pipelinev1.Task {
 	return []pipelinev1.Task{
 		generateDeployFromSourceTask(ns),
 		generateDeployUsingKubectlTask(ns),

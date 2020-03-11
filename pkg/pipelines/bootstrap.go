@@ -81,14 +81,17 @@ func Bootstrap(o *BootstrapParameters) error {
 		outputs = append(outputs, n)
 	}
 
-	githubAuth, err := createOpaqueSecret(meta.NamespacedName(namespaces["cicd"], "github-auth"), o.GithubToken)
-	if err != nil {
-		return fmt.Errorf("failed to generate path to file: %w", err)
+	if o.GithubToken != "" {
+		githubAuth, err := createOpaqueSecret(meta.NamespacedName(namespaces["cicd"], "github-auth"), o.GithubToken)
+		if err != nil {
+			return fmt.Errorf("failed to generate path to file: %w", err)
+		}
+
+		outputs = append(outputs, githubAuth)
 	}
-	outputs = append(outputs, githubAuth)
 
 	// Create Tasks
-	tasks := tasks.Generate(githubAuth.GetName(), namespaces["cicd"])
+	tasks := tasks.Generate(namespaces["cicd"])
 	for _, task := range tasks {
 		outputs = append(outputs, task)
 	}
