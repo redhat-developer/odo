@@ -9,6 +9,7 @@ import (
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util"
@@ -277,8 +278,14 @@ func UpdatedContext(context *Context) (*Context, *config.LocalConfigInfo, error)
 
 // newContext creates a new context based on the command flags, creating missing app when requested
 func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingConfiguration bool) *Context {
-
+	// create a new occlient
 	client := client(command)
+
+	// create a new kclient
+	KClient, err := kclient.New()
+	if err != nil {
+		util.LogErrorAndExit(err, "")
+	}
 
 	// Check for valid config
 	localConfiguration, err := getValidConfig(command, ignoreMissingConfiguration)
@@ -303,6 +310,7 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 		OutputFlag:      outputFlag,
 		command:         command,
 		LocalConfigInfo: localConfiguration,
+		KClient:         KClient,
 	}
 
 	// create a context from the internal representation
@@ -337,6 +345,7 @@ type internalCxt struct {
 	cmp             string
 	OutputFlag      string
 	LocalConfigInfo *config.LocalConfigInfo
+	KClient         *kclient.Client // to work with Kubernetes clusters, we need kclient
 }
 
 // Component retrieves the optionally specified component or the current one if it is set. If no component is set, exit with

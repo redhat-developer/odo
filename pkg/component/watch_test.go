@@ -1,3 +1,5 @@
+// +build !windows,!osx
+
 package component
 
 import (

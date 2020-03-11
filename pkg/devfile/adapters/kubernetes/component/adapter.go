@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
@@ -35,9 +36,9 @@ type Adapter struct {
 	common.AdapterContext
 }
 
-// Start updates the component if a matching component exists or creates one if it doesn't exist
+// Push updates the component if a matching component exists or creates one if it doesn't exist
 // Once the component has started, it will sync the source code to it.
-func (a Adapter) Start(path string, out io.Writer, ignoredFiles []string, forceBuild bool, globExps []string, show bool) (err error) {
+func (a Adapter) Push(path string, ignoredFiles []string, forceBuild bool, globExps []string) (err error) {
 	componentExists := utils.ComponentExists(a.Client, a.ComponentName)
 
 	deletedFiles := []string{}
@@ -111,12 +112,10 @@ func (a Adapter) Start(path string, out io.Writer, ignoredFiles []string, forceB
 
 	// Sync the local source code to the component
 	err = a.pushLocal(path,
-		out,
 		changedFiles,
 		deletedFiles,
 		isForcePush,
 		globExps,
-		show,
 	)
 
 	if err != nil {
@@ -143,6 +142,52 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 
 	objectMeta := kclient.CreateObjectMeta(componentName, a.Client.Namespace, labels, nil)
 	podTemplateSpec := kclient.GeneratePodTemplateSpec(objectMeta, containers)
+
+	componentAliasToVolumes := utils.GetVolumes(a.Devfile)
+
+	var uniqueStorages []common.Storage
+	volumeNameToPVCName := make(map[string]string)
+	processedVolumes := make(map[string]bool)
+
+	// Get a list of all the unique volume names and generate their PVC names
+	for _, volumes := range componentAliasToVolumes {
+		for _, vol := range volumes {
+			if _, ok := processedVolumes[*vol.Name]; !ok {
+				processedVolumes[*vol.Name] = true
+
+				// Generate the PVC Names
+				glog.V(3).Infof("Generating PVC name for %v", *vol.Name)
+				generatedPVCName, err := storage.GeneratePVCNameFromDevfileVol(*vol.Name, componentName)
+				if err != nil {
+					return err
+				}
+
+				// Check if we have an existing PVC with the labels, overwrite the generated name with the existing name if present
+				existingPVCName, err := storage.GetExistingPVC(&a.Client, *vol.Name, componentName)
+				if err != nil {
+					return err
+				}
+				if len(existingPVCName) > 0 {
+					glog.V(3).Infof("Found an existing PVC for %v, PVC %v will be re-used", *vol.Name, existingPVCName)
+					generatedPVCName = existingPVCName
+				}
+
+				pvc := common.Storage{
+					Name:   generatedPVCName,
+					Volume: vol,
+				}
+				uniqueStorages = append(uniqueStorages, pvc)
+				volumeNameToPVCName[*vol.Name] = generatedPVCName
+			}
+		}
+	}
+
+	// Add PVC and Volume Mounts to the podTemplateSpec
+	err = kclient.AddPVCAndVolumeMount(podTemplateSpec, volumeNameToPVCName, componentAliasToVolumes)
+	if err != nil {
+		return err
+	}
+
 	deploymentSpec := kclient.GenerateDeploymentSpec(*podTemplateSpec)
 
 	glog.V(3).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
@@ -166,7 +211,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 }
 
 // Push syncs source code from the user's disk to the component
-func (a Adapter) pushLocal(path string, out io.Writer, files []string, delFiles []string, isForcePush bool, globExps []string, show bool) error {
+func (a Adapter) pushLocal(path string, files []string, delFiles []string, isForcePush bool, globExps []string) error {
 	glog.V(4).Infof("Push: componentName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", a.ComponentName, path, files, delFiles, isForcePush)
 
 	// Edge case: check to see that the path is NOT empty.

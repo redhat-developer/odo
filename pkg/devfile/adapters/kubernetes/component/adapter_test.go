@@ -10,7 +10,6 @@ import (
 	"github.com/openshift/odo/pkg/testingutil"
 
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	ktesting "k8s.io/client-go/testing"
 )
@@ -68,15 +67,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 
 			// Change the status
 			go func() {
-				podStatus := &corev1.Pod{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: testComponentName,
-					},
-					Status: corev1.PodStatus{
-						Phase: corev1.PodRunning,
-					},
-				}
-				fkWatch.Modify(podStatus)
+				fkWatch.Modify(kclient.FakePodStatus(corev1.PodRunning, testComponentName))
 			}()
 			fkclientset.Kubernetes.PrependWatchReactor("pods", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
 				return true, fkWatch, nil
@@ -87,7 +78,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
-				t.Errorf("component adapter start unexpected error %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("component adapter create unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

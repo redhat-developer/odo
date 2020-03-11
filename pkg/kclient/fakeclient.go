@@ -26,7 +26,8 @@ func FakeNew() (*Client, *FakeClientset) {
 	return &client, &fkclientset
 }
 
-func fakePodStatus(status corev1.PodPhase, podName string) *corev1.Pod {
+//FakePodStatus returns a pod with the status
+func FakePodStatus(status corev1.PodPhase, podName string) *corev1.Pod {
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: podName,

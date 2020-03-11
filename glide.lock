@@ -1,5 +1,5 @@
-hash: b8ed36a9c2b2f2caf0623e4c908ca0f5ff3bb17e6f030455eb82da468de37c81
-updated: 2020-03-02T16:22:38.371386+01:00
+hash: fddec1c90e5dc60f67e98912159bb5cc6e4dcfc25fd2019752cfcbf176fa23ad
+updated: 2020-03-04T18:10:10.206875746+05:30
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -98,6 +98,10 @@ imports:
   - sortkeys
 - name: github.com/golang/glog
   version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
+- name: github.com/golang/groupcache
+  version: 02826c3e79038b59d737d3b1c0a1d937f71a4433
+  subpackages:
+  - lru
 - name: github.com/golang/protobuf
   version: b4deda0973fb4c70b50d226b1af49f3da59f5265
   subpackages:
@@ -359,6 +363,14 @@ imports:
   - pkg/user/apis/user
   - pkg/user/apis/user/v1
   - pkg/user/apis/user/validation
+- name: github.com/operator-framework/operator-lifecycle-manager
+  version: 23f5c0292434c41743676abdd2da88f6a26990f5
+  subpackages:
+  - pkg/api/apis/operators/v1
+  - pkg/api/apis/operators/v1alpha1
+  - pkg/api/client/clientset/versioned/scheme
+  - pkg/api/client/clientset/versioned/typed/operators/v1alpha1
+  - pkg/lib/version
 - name: github.com/pborman/uuid
   version: 8b1b92947f46224e3b97bb1a3a5b0382be00d31e
 - name: github.com/peterbourgon/diskv
@@ -563,6 +575,9 @@ imports:
   version: 1495f70252dcec3e2289bcabc488290dc1cf1258
   repo: https://github.com/openshift/kubernetes-apiextensions-apiserver.git
   subpackages:
+  - pkg/apis/apiextensions
+  - pkg/apis/apiextensions/v1beta1
+  - pkg/client/clientset/clientset/scheme
   - pkg/features
 - name: k8s.io/apimachinery
   version: 65406164345bdb2b7dd33b63bcec210d5014c737
@@ -749,6 +764,7 @@ imports:
   - tools/metrics
   - tools/pager
   - tools/portforward
+  - tools/record
   - tools/reference
   - tools/remotecommand
   - transport
@@ -764,6 +780,8 @@ imports:
   - util/retry
 - name: k8s.io/klog
   version: 8139d8cb77af419532b33dfa7dd09fbc5f1d344f
+  subpackages:
+  - glog
 - name: k8s.io/kube-openapi
   version: 1fddd894a3d3e4eb9f4a20d5849e44102f30a419
   repo: https://github.com/openshift/kube-openapi.git

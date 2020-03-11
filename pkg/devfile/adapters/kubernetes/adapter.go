@@ -1,8 +1,6 @@
 package kubernetes
 
 import (
-	"io"
-
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/component"
 	"github.com/openshift/odo/pkg/kclient"
@@ -28,12 +26,12 @@ func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
 	}
 }
 
-// Start creates Kubernetes resources that correspond to the devfile if they don't already exist
-func (k Adapter) Start(path string, out io.Writer, ignoredFiles []string, forceBuild bool, globExps []string, show bool) error {
+// Push creates Kubernetes resources that correspond to the devfile if they don't already exist
+func (k Adapter) Push(path string, ignoredFiles []string, forceBuild bool, globExps []string) error {
 
-	err := k.componentAdapter.Start(path, out, ignoredFiles, forceBuild, globExps, show)
+	err := k.componentAdapter.Push(path, ignoredFiles, forceBuild, globExps)
 	if err != nil {
-		return errors.Wrap(err, "Failed to start the component")
+		return errors.Wrap(err, "Failed to create the component")
 	}
 
 	return nil

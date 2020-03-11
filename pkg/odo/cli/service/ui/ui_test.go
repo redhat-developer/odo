@@ -1,6 +1,11 @@
+// +build !windows
+
 package ui
 
 import (
+	"reflect"
+	"testing"
+
 	"github.com/Netflix/go-expect"
 	beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	"github.com/openshift/odo/pkg/service"
@@ -8,8 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"gopkg.in/AlecAivazis/survey.v1/core"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
-	"reflect"
-	"testing"
 )
 
 func init() {

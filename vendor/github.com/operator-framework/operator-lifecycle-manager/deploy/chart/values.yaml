@@ -1,0 +1,40 @@
+installType: upstream
+rbacApiVersion: rbac.authorization.k8s.io
+namespace: operator-lifecycle-manager
+catalog_namespace: operator-lifecycle-manager
+operator_namespace: operators
+minKubeVersion: 1.11.0
+writeStatusName: '""'
+imagestream: false
+debug: false
+installType: upstream
+olm:
+  replicaCount: 1
+  image:
+    ref: quay.io/operator-framework/olm:master
+    pullPolicy: Always
+  service:
+    internalPort: 8080
+  nodeSelector:
+    beta.kubernetes.io/os: linux
+
+catalog:
+  replicaCount: 1
+  commandArgs: -configmapServerImage=quay.io/operator-framework/configmap-operator-registry:latest
+  image:
+    ref: quay.io/operator-framework/olm:master
+    pullPolicy: Always
+  service:
+    internalPort: 8080
+  nodeSelector:
+    beta.kubernetes.io/os: linux
+
+package:
+  replicaCount: 2
+  image:
+    ref: quay.io/operator-framework/olm:master
+    pullPolicy: Always
+  service:
+    internalPort: 5443
+  nodeSelector:
+    beta.kubernetes.io/os: linux

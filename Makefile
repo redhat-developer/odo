@@ -58,7 +58,7 @@ install:
 
 # run all validation tests
 .PHONY: validate
-validate: gofmt check-fit check-vendor vet validate-vendor-licenses sec #lint
+validate: gofmt check-fit check-vendor vet validate-vendor-licenses sec golint
 
 .PHONY: gofmt
 gofmt:
@@ -105,6 +105,9 @@ goget-tools:
 	go get -u github.com/frapposelli/wwhrd
 	go get -u github.com/onsi/ginkgo/ginkgo
 	go get -u github.com/securego/gosec/cmd/gosec
+	# It is not recomended to go get golangci-lint https://github.com/golangci/golangci-lint#go
+	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.23.6
+
 
 # Run unit tests and collect coverage
 .PHONY: test-coverage
@@ -277,3 +280,8 @@ vendor-update:
 .PHONY: openshiftci-presubmit-unittests
 openshiftci-presubmit-unittests:
 	./scripts/openshiftci-presubmit-unittests.sh
+
+# Run OperatorHub tests
+.PHONY: test-operator-hub
+test-operator-hub:
+	ginkgo $(GINKGO_FLAGS) -focus="odo service command tests" tests/integration/operatorhub/
