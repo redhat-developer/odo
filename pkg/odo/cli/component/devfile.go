@@ -28,6 +28,8 @@ The behaviour of this feature is subject to change as development for this
 feature progresses.
 */
 
+const componentNameMaxLen = 45
+
 // DevfilePush has the logic to perform the required actions for a given devfile
 func (po *PushOptions) DevfilePush() (err error) {
 
@@ -78,5 +80,7 @@ func getComponentName() (string, error) {
 	retVal = filepath.Base(currDir)
 	// Kubernetes resources require a name that satisfies DNS-1123
 	retVal = strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(retVal)))
+	// Kubernetes resources have a characters limit, truncate and give sufficient space for other resources
+	retVal = util.TruncateString(retVal, componentNameMaxLen)
 	return retVal, nil
 }

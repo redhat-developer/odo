@@ -13,11 +13,13 @@ import (
 	operatorsclientset "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1alpha1"
 )
 
-// errorMsg is the message for user when invalid configuration error occurs
-const errorMsg = `
+const (
+	// errorMsg is the message for user when invalid configuration error occurs
+	errorMsg = `
 Please ensure you have an active kubernetes context to your cluster. 
 Consult your Kubernetes distribution's documentation for more details
 `
+)
 
 // Client is a collection of fields used for client configuration and interaction
 type Client struct {
