@@ -18,6 +18,7 @@ export CUSTOM_HOMEDIR=$ARTIFACTS_DIR
 make test-integration
 make test-cmd-login-logout
 make test-cmd-project
+make test-operator-hub
 
 # E2e tests
 make test-e2e-all
