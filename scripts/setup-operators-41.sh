@@ -49,7 +49,7 @@ spec:
   targetNamespaces:
   - ${CI_OPERATOR_HUB_PROJECT}
 EOF
-### Crete a CatalogSourceConfig for etcd operator
+### Create a CatalogSourceConfig for etcd operator
 oc create -f -<<EOF
 apiVersion: operators.coreos.com/v1
 kind: CatalogSourceConfig
