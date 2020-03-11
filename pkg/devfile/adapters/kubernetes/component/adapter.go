@@ -119,11 +119,7 @@ func (a Adapter) Push(path string, ignoredFiles []string, forceBuild bool, globE
 	)
 
 	if err != nil {
-		log.Errorf(
-			"Failed to sync to component with name %s.\nError: %v",
-			a.ComponentName,
-			err,
-		)
+		return errors.Wrapf(err, "Failed to sync to component with name %s", a.ComponentName)
 	}
 	return nil
 }
