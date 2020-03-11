@@ -235,7 +235,7 @@ func TestDeleteURLFromMultipleURLs(t *testing.T) {
 }
 
 func TestLowerCaseParameterForLocalParameters(t *testing.T) {
-	expected := map[string]bool{"url": true}
+	expected := map[string]bool{"create": true, "url": true}
 	actual := util.GetLowerCaseParameters(GetLocallySupportedParameters())
 	if !reflect.DeepEqual(expected, actual) {
 		t.Errorf("expected '%v', got '%v'", expected, actual)
