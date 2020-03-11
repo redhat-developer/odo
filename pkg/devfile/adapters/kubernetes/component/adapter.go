@@ -207,6 +207,14 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 		}
 		glog.V(3).Infof("Successfully created component %v", componentName)
 	}
+
+	// Get the storage adapter and create the volumes if it does not exist
+	stoAdapter := storage.New(a.AdapterContext, a.Client)
+	err = stoAdapter.Create(uniqueStorages)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
