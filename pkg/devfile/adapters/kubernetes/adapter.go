@@ -25,9 +25,9 @@ func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
 // Start creates Kubernetes resources that correspond to the devfile if they don't already exist
 func (k Adapter) Start() error {
 
-	err := k.componentAdapter.Start()
+	err := k.componentAdapter.Create()
 	if err != nil {
-		return errors.Wrap(err, "Failed to start the component")
+		return errors.Wrap(err, "Failed to create the component")
 	}
 
 	return nil

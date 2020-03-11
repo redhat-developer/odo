@@ -242,8 +242,6 @@ This document outlines all the machine readable output options and examples.
   },
   "spec": {
     "size": "1Gi"
-  },
-  "status": {
     "path": "/opt/foobar"
   }
 }
@@ -267,8 +265,6 @@ This document outlines all the machine readable output options and examples.
       },
       "spec": {
         "size": "1Gi"
-      },
-      "status": {
         "path": "/opt/foobar"
       }
     }

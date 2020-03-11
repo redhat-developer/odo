@@ -3055,7 +3055,8 @@ func isSubDir(baseDir, otherDir string) bool {
 	if cleanedBaseDir == cleanedOtherDir {
 		return true
 	}
-	matches, _ := filepath.Match(fmt.Sprintf("%s/*", cleanedBaseDir), cleanedOtherDir)
+	//matches, _ := filepath.Match(fmt.Sprintf("%s/*", cleanedBaseDir), cleanedOtherDir)
+	matches, _ := filepath.Match(filepath.Join(cleanedBaseDir, "*"), cleanedOtherDir)
 	return matches
 }
 

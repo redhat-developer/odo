@@ -9,6 +9,7 @@ import (
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util"
@@ -20,14 +21,38 @@ import (
 const DefaultAppName = "app"
 
 // NewContext creates a new Context struct populated with the current state based on flags specified for the provided command
-func NewContext(command *cobra.Command) *Context {
-	return newContext(command, false, false)
+func NewContext(command *cobra.Command, ignoreMissingConfiguration ...bool) *Context {
+	ignoreMissingConfig := false
+	if len(ignoreMissingConfiguration) == 1 {
+		ignoreMissingConfig = ignoreMissingConfiguration[0]
+	}
+	return newContext(command, false, ignoreMissingConfig)
 }
 
 // NewContextCreatingAppIfNeeded creates a new Context struct populated with the current state based on flags specified for the
 // provided command, creating the application if none already exists
 func NewContextCreatingAppIfNeeded(command *cobra.Command) *Context {
 	return newContext(command, true, false)
+}
+
+// NewConfigContext is a special kind of context which only contains local configuration, other information is not retrived
+//  from the cluster. This is useful for commands which don't want to connect to cluster.
+func NewConfigContext(command *cobra.Command) *Context {
+
+	// Check for valid config
+	localConfiguration, err := getValidConfig(command, false)
+	if err != nil {
+		util.LogErrorAndExit(err, "")
+	}
+	outputFlag := FlagValueIfSet(command, OutputFlagName)
+
+	ctx := &Context{
+		internalCxt{
+			LocalConfigInfo: localConfiguration,
+			OutputFlag:      outputFlag,
+		},
+	}
+	return ctx
 }
 
 // NewContextCompletion disables checking for a local configuration since when we use autocompletion on the command line, we
@@ -253,7 +278,14 @@ func UpdatedContext(context *Context) (*Context, *config.LocalConfigInfo, error)
 
 // newContext creates a new context based on the command flags, creating missing app when requested
 func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingConfiguration bool) *Context {
+	// create a new occlient
 	client := client(command)
+
+	// create a new kclient
+	KClient, err := kclient.New()
+	if err != nil {
+		util.LogErrorAndExit(err, "")
+	}
 
 	// Check for valid config
 	localConfiguration, err := getValidConfig(command, ignoreMissingConfiguration)
@@ -277,7 +309,8 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 		Application:     app,
 		OutputFlag:      outputFlag,
 		command:         command,
-		LocalConfigInfo: *localConfiguration,
+		LocalConfigInfo: localConfiguration,
+		KClient:         KClient,
 	}
 
 	// create a context from the internal representation
@@ -311,7 +344,8 @@ type internalCxt struct {
 	Application     string
 	cmp             string
 	OutputFlag      string
-	LocalConfigInfo config.LocalConfigInfo
+	LocalConfigInfo *config.LocalConfigInfo
+	KClient         *kclient.Client // to work with Kubernetes clusters, we need kclient
 }
 
 // Component retrieves the optionally specified component or the current one if it is set. If no component is set, exit with

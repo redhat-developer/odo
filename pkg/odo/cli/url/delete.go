@@ -44,7 +44,6 @@ func (o *URLDeleteOptions) Complete(name string, cmd *cobra.Command, args []stri
 		o.Context = genericclioptions.NewContext(cmd)
 	}
 	o.urlName = args[0]
-	err = o.InitConfigFromContext()
 	if err != nil {
 		return err
 	}

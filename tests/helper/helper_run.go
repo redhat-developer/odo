@@ -79,3 +79,23 @@ func CmdShouldFail(program string, args ...string) string {
 	Consistently(session).ShouldNot(gexec.Exit(0), runningCmd(session.Command))
 	return string(session.Wait().Err.Contents())
 }
+
+// CmdShouldFailWithRetry runs a command and checks if it fails, if it doesn't then it retries
+func CmdShouldFailWithRetry(maxRetry, intervalSeconds int, program string, args ...string) string {
+	for i := 0; i < maxRetry; i++ {
+		fmt.Fprintf(GinkgoWriter, "try %d of %d\n", i, maxRetry)
+
+		session := CmdRunner(program, args...)
+		session.Wait()
+		// if exit code is 0 which means the program succeeded and hence we retry
+		if session.ExitCode() == 0 {
+			time.Sleep(time.Duration(intervalSeconds) * time.Second)
+		} else {
+			Consistently(session).ShouldNot(gexec.Exit(0), runningCmd(session.Command))
+			return string(session.Err.Contents())
+		}
+	}
+	Fail(fmt.Sprintf("Failed after %d retries", maxRetry))
+	return ""
+
+}

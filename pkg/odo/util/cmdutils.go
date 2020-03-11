@@ -123,7 +123,7 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 		// Gather the output
 		var output string
 		for _, store := range storages.Items {
-			output += fmt.Sprintf(" · %v of size %v mounted to %v\n", store.Name, store.Spec.Size, store.Status.Path)
+			output += fmt.Sprintf(" · %v of size %v mounted to %v\n", store.Name, store.Spec.Size, store.Spec.Path)
 		}
 
 		// Cut off the last newline and output

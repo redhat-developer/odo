@@ -5,15 +5,21 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	_ "k8s.io/client-go/plugin/pkg/client/auth" // Required for Kube clusters which use auth plugins
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+
+	// api clientsets
+	operatorsclientset "github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned/typed/operators/v1alpha1"
 )
 
-// errorMsg is the message for user when invalid configuration error occurs
-const errorMsg = `
+const (
+	// errorMsg is the message for user when invalid configuration error occurs
+	errorMsg = `
 Please ensure you have an active kubernetes context to your cluster. 
 Consult your Kubernetes distribution's documentation for more details
 `
+)
 
 // Client is a collection of fields used for client configuration and interaction
 type Client struct {
@@ -21,6 +27,7 @@ type Client struct {
 	KubeConfig       clientcmd.ClientConfig
 	KubeClientConfig *rest.Config
 	Namespace        string
+	OperatorClient   *operatorsclientset.OperatorsV1alpha1Client
 }
 
 // New creates a new client
@@ -44,6 +51,11 @@ func New() (*Client, error) {
 	}
 
 	client.Namespace, _, err = client.KubeConfig.Namespace()
+	if err != nil {
+		return nil, err
+	}
+
+	client.OperatorClient, err = operatorsclientset.NewForConfig(client.KubeClientConfig)
 	if err != nil {
 		return nil, err
 	}

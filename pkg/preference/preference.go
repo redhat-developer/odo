@@ -50,6 +50,20 @@ const (
 
 	// ExperimentalDescription is human-readable description for the experimental setting
 	ExperimentalDescription = "Set this value to true to expose features in development/experimental mode"
+
+	// PushTargetSetting is the name of the setting confrolling the push target for odo (docker or kube)
+	PushTargetSetting = "PushTarget"
+
+	// PushTargetDescription is human-readable description for the pushtarget setting
+	PushTargetDescription = "Set this value to 'kube' or 'docker' to tell odo where to push applications to. (Default: kube)"
+
+	// Constants for PushTarget values
+
+	// DockerPushTarget represents the value of the push target when it's set to Docker
+	DockerPushTarget = "docker"
+
+	// KubePushTarget represents the value of the push target when it's set to Kube
+	KubePushTarget = "kube"
 )
 
 // TimeoutSettingDescription is human-readable description for the timeout setting
@@ -70,6 +84,7 @@ var (
 		TimeoutSetting:            TimeoutSettingDescription,
 		PushTimeoutSetting:        PushTimeoutSettingDescription,
 		ExperimentalSetting:       ExperimentalDescription,
+		PushTargetSetting:         PushTargetDescription,
 	}
 
 	// set-like map to quickly check if a parameter is supported
@@ -99,6 +114,9 @@ type OdoSettings struct {
 
 	// Experimental for exposing features in development/experimental mode
 	Experimental *bool `yaml:"Experimental,omitempty"`
+
+	// PushTarget for telling odo which platform to push to (either kube or docker)
+	PushTarget *string `yaml:"PushTarget,omitempty"`
 }
 
 // Preference stores all the preferences related to odo
@@ -210,6 +228,12 @@ func (c *PreferenceInfo) SetConfiguration(parameter string, value string) error 
 			}
 			c.OdoSettings.Experimental = &val
 
+		case "pushtarget":
+			val := strings.ToLower(value)
+			if val != DockerPushTarget && val != KubePushTarget {
+				return errors.Errorf("cannot set pushtarget to values other than '%s' or '%s'", DockerPushTarget, KubePushTarget)
+			}
+			c.OdoSettings.PushTarget = &val
 		}
 	} else {
 		return errors.Errorf("unknown parameter :'%s' is not a parameter in odo preference", parameter)
@@ -266,7 +290,7 @@ func (c *PreferenceInfo) GetPushTimeout() int {
 	return *c.OdoSettings.PushTimeout
 }
 
-// GetUpdateNotification returns the value of UpdateNotification from config
+// GetUpdateNotification returns the value of UpdateNotification from preferences
 // and if absent then returns default
 func (c *PreferenceInfo) GetUpdateNotification() bool {
 	if c.OdoSettings.UpdateNotification == nil {
@@ -275,7 +299,7 @@ func (c *PreferenceInfo) GetUpdateNotification() bool {
 	return *c.OdoSettings.UpdateNotification
 }
 
-// GetNamePrefix returns the value of Prefix from config
+// GetNamePrefix returns the value of Prefix from preferences
 // and if absent then returns default
 func (c *PreferenceInfo) GetNamePrefix() string {
 	if c.OdoSettings.NamePrefix == nil {
@@ -284,7 +308,7 @@ func (c *PreferenceInfo) GetNamePrefix() string {
 	return *c.OdoSettings.NamePrefix
 }
 
-// GetExperimental returns the value of Experimental from config
+// GetExperimental returns the value of Experimental from preferences
 // and if absent then returns default
 // default value: false, experimental mode is disabled by default
 func (c *PreferenceInfo) GetExperimental() bool {
@@ -292,6 +316,16 @@ func (c *PreferenceInfo) GetExperimental() bool {
 		return false
 	}
 	return *c.OdoSettings.Experimental
+}
+
+// GetPushTarget returns the value of PushTarget from preferences
+// and if absent then returns defualt
+// default value: kube, docker push target needs to be manually enabled
+func (c *PreferenceInfo) GetPushTarget() string {
+	if c.OdoSettings.PushTarget == nil {
+		return KubePushTarget
+	}
+	return *c.OdoSettings.PushTarget
 }
 
 // FormatSupportedParameters outputs supported parameters and their description

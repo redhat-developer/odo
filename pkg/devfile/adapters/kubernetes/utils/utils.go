@@ -4,13 +4,18 @@ import (
 	"strings"
 
 	"github.com/openshift/odo/pkg/devfile"
+	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/versions/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/util"
 
-	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/klog/glog"
+)
+
+const (
+	volumeSize = "5Gi"
 )
 
 // ComponentExists checks whether a deployment by the given name exists
@@ -59,6 +64,26 @@ func GetContainers(devfileObj devfile.DevfileObj) []corev1.Container {
 		}
 	}
 	return containers
+}
+
+// GetVolumes iterates through the components in the devfile and returns a map of component alias to the devfile volumes
+func GetVolumes(devfileObj devfile.DevfileObj) map[string][]adaptersCommon.DevfileVolume {
+	// componentAliasToVolumes is a map of the Devfile Component Alias to the Devfile Component Volumes
+	componentAliasToVolumes := make(map[string][]adaptersCommon.DevfileVolume)
+	size := volumeSize
+	for _, comp := range adaptersCommon.GetSupportedComponents(devfileObj.Data) {
+		if comp.Volumes != nil {
+			for _, volume := range comp.Volumes {
+				vol := adaptersCommon.DevfileVolume{
+					Name:          volume.Name,
+					ContainerPath: volume.ContainerPath,
+					Size:          &size,
+				}
+				componentAliasToVolumes[*comp.Alias] = append(componentAliasToVolumes[*comp.Alias], vol)
+			}
+		}
+	}
+	return componentAliasToVolumes
 }
 
 // GetResourceReqs creates a kubernetes ResourceRequirements object based on resource requirements set in the devfile

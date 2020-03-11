@@ -29,8 +29,8 @@ type CommonPushOptions struct {
 	sourceType       config.SrcType
 	sourcePath       string
 	componentContext string
-	LocalConfigInfo  *config.LocalConfigInfo
-	EnvSpecificInfo  *envinfo.EnvSpecificInfo
+
+	EnvSpecificInfo *envinfo.EnvSpecificInfo
 
 	pushConfig         bool
 	pushSource         bool
