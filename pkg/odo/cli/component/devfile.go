@@ -63,7 +63,7 @@ func (po *PushOptions) DevfilePush() (err error) {
 	}
 
 	// Start or update the component
-	err = devfileHandler.Start(po.sourcePath, os.Stdout, po.ignores, po.forceBuild, util.GetAbsGlobExps(po.sourcePath, po.ignores), po.show)
+	err = devfileHandler.Push(po.sourcePath, po.ignores, po.forceBuild, util.GetAbsGlobExps(po.sourcePath, po.ignores))
 	if err != nil {
 		log.Errorf(
 			"Failed to start component with name %s.\nError: %v",
