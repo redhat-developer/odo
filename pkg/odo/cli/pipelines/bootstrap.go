@@ -96,7 +96,7 @@ func NewCmdBootstrap(name, fullName string) *cobra.Command {
 	}
 
 	bootstrapCmd.Flags().StringVarP(&o.prefix, "prefix", "p", "", "add a prefix to the environment names")
-	bootstrapCmd.Flags().StringVarP(&o.githubToken, "commit-tracker-token", "", "", "provide the Github token")
+	bootstrapCmd.Flags().StringVarP(&o.githubToken, "status-tracker-token", "", "", "provide the Github token")
 	bootstrapCmd.Flags().StringVar(&o.dockerConfigJSONFileName, "dockerconfigjson", "", "Docker configuration json filename")
 	bootstrapCmd.Flags().StringVar(&o.gitRepo, "git-repo", "", "git repository in this form <username>/<repository>")
 	bootstrapCmd.MarkFlagRequired("git-repo")
