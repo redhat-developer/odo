@@ -218,6 +218,8 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 func (a Adapter) pushLocal(path string, files []string, delFiles []string, isForcePush bool, globExps []string) error {
 	glog.V(4).Infof("Push: componentName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", a.ComponentName, path, files, delFiles, isForcePush)
 
+	syncFolder := kclient.OdoSourceVolumeMount
+
 	// Edge case: check to see that the path is NOT empty.
 	emptyDir, err := util.IsEmpty(path)
 	if err != nil {
@@ -246,6 +248,22 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	s := log.Spinner("Syncing files to the component")
 	defer s.End(false)
 
+	// If there's only one project defined in the devfile, sync to `/projects/project-name`, otherwise sync to /projects
+	projects := a.Devfile.Data.GetProjects()
+	fmt.Println(len(projects))
+	if len(projects) == 1 {
+		syncFolder = filepath.Join(kclient.OdoSourceVolumeMount, projects[0].Name)
+
+		// Need to make sure the folder already exists on the component or else sync will fail
+		reader, writer := io.Pipe()
+		glog.V(4).Infof("Creating %s on the remote container if it doesn't already exist", syncFolder)
+		cmdArr := []string{"mkdir", "-p", syncFolder}
+
+		err := a.Client.ExecCMDInContainer(pod.Name, containerName, cmdArr, writer, writer, reader, false)
+		if err != nil {
+			return err
+		}
+	}
 	// If there were any files deleted locally, delete them remotely too.
 	if len(delFiles) > 0 {
 		reader, writer := io.Pipe()
@@ -270,7 +288,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 
 	if isForcePush || len(files) > 0 {
 		glog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
-		err = sync.CopyFile(&a.Client, path, pod.GetName(), containerName, kclient.OdoSourceVolumeMount, files, globExps)
+		err = sync.CopyFile(&a.Client, path, pod.GetName(), containerName, syncFolder, files, globExps)
 		if err != nil {
 			s.End(false)
 			return errors.Wrap(err, "unable push files to pod")
