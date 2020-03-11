@@ -979,7 +979,6 @@ func ListIfPathGiven(client *occlient.Client, paths []string) (ComponentList, er
 				a := getMachineReadableFormat(data.GetName(), data.GetType())
 				a.Namespace = data.GetProject()
 				a.Spec.App = data.GetApplication()
-				a.Spec.Source = data.GetSourceLocation()
 				a.Spec.Ports = data.GetPorts()
 				a.Status.Context = con
 				state := "Not Pushed"
