@@ -250,7 +250,6 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 
 	// If there's only one project defined in the devfile, sync to `/projects/project-name`, otherwise sync to /projects
 	projects := a.Devfile.Data.GetProjects()
-	fmt.Println(len(projects))
 	if len(projects) == 1 {
 		syncFolder = filepath.Join(kclient.OdoSourceVolumeMount, projects[0].Name)
 
