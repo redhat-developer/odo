@@ -72,15 +72,11 @@ func TestBootstrapCommandWithMissingParams(t *testing.T) {
 		wantErr string
 	}{
 		{"Missing git-repo flag",
-			[]keyValuePair{flag("github-token", "abc123"),
+			[]keyValuePair{flag("commit-tracker-token", "abc123"),
 				flag("dockerconfigjson", "~/"), flag("image-repo", "foo/bar/bar"), flag("deployment-path", "foo")},
 			`Required flag(s) "git-repo" have/has not been set`},
-		{"Missing github-token flag",
-			[]keyValuePair{flag("dockerconfigjson", "~/"),
-				flag("git-repo", "example/repo"), flag("image-repo", "foo/bar/bar"), flag("deployment-path", "foo")},
-			`Required flag(s) "github-token" have/has not been set`},
 		{"Missing image-repo",
-			[]keyValuePair{flag("github-token", "abc123"),
+			[]keyValuePair{flag("commit-tracker-token", "abc123"),
 				flag("dockerconfigjson", "~/"), flag("git-repo", "example/repo"), flag("deployment-path", "foo")},
 			`Required flag(s) "image-repo" have/has not been set`},
 	}
