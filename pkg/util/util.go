@@ -670,7 +670,7 @@ func DownloadFile(url string, filepath string) error {
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	defer out.Close() // #nosec G307
 
 	// Get the data
 	var httpClient = &http.Client{Timeout: HTTPRequestTimeout}
