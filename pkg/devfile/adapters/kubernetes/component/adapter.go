@@ -16,6 +16,7 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
+	versionsCommon "github.com/openshift/odo/pkg/devfile/versions/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/sync"
@@ -218,8 +219,6 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 func (a Adapter) pushLocal(path string, files []string, delFiles []string, isForcePush bool, globExps []string) error {
 	glog.V(4).Infof("Push: componentName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", a.ComponentName, path, files, delFiles, isForcePush)
 
-	syncFolder := kclient.OdoSourceVolumeMount
-
 	// Edge case: check to see that the path is NOT empty.
 	emptyDir, err := util.IsEmpty(path)
 	if err != nil {
@@ -249,14 +248,12 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	defer s.End(false)
 
 	// If there's only one project defined in the devfile, sync to `/projects/project-name`, otherwise sync to /projects
-	projects := a.Devfile.Data.GetProjects()
-	if len(projects) == 1 {
-		syncFolder = filepath.Join(kclient.OdoSourceVolumeMount, projects[0].Name)
-
+	syncFolder := getSyncFolder(a.Devfile.Data.GetProjects())
+	if syncFolder != kclient.OdoSourceVolumeMount {
 		// Need to make sure the folder already exists on the component or else sync will fail
-		reader, writer := io.Pipe()
 		glog.V(4).Infof("Creating %s on the remote container if it doesn't already exist", syncFolder)
-		cmdArr := []string{"mkdir", "-p", syncFolder}
+		cmdArr := getCmdToCreateSyncFolder(syncFolder)
+		reader, writer := io.Pipe()
 
 		err := a.Client.ExecCMDInContainer(pod.Name, containerName, cmdArr, writer, writer, reader, false)
 		if err != nil {
@@ -265,11 +262,8 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	}
 	// If there were any files deleted locally, delete them remotely too.
 	if len(delFiles) > 0 {
+		cmdArr := getCmdToDeleteFiles(delFiles, syncFolder)
 		reader, writer := io.Pipe()
-		rmPaths := util.GetRemoteFilesMarkedForDeletion(delFiles, kclient.OdoSourceVolumeMount)
-		glog.V(4).Infof("remote files marked for deletion are %+v", rmPaths)
-		cmdArr := []string{"rm", "-rf"}
-		cmdArr = append(cmdArr, rmPaths...)
 
 		err := a.Client.ExecCMDInContainer(pod.Name, containerName, cmdArr, writer, writer, reader, false)
 		if err != nil {
@@ -312,4 +306,27 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, e
 	}
 
 	return "", fmt.Errorf("In order to sync files, odo requires at least one component in a devfile to set 'mountSources: true'")
+}
+
+// getSyncFolder returns the folder that we need to sync the source files to
+// If there's exactly one project defined in the devfile, return `/projects/<projectName`
+// Otherwise (zero projects or many), return `/projects`
+func getSyncFolder(projects []versionsCommon.DevfileProject) string {
+	if len(projects) == 1 {
+		return filepath.ToSlash(filepath.Join(kclient.OdoSourceVolumeMount, projects[0].Name))
+	}
+	return kclient.OdoSourceVolumeMount
+
+}
+
+// Returns the command used
+func getCmdToCreateSyncFolder(syncFolder string) []string {
+	return []string{"mkdir", "-p", syncFolder}
+}
+
+func getCmdToDeleteFiles(delFiles []string, syncFolder string) []string {
+	rmPaths := util.GetRemoteFilesMarkedForDeletion(delFiles, syncFolder)
+	glog.V(4).Infof("remote files marked for deletion are %+v", rmPaths)
+	cmdArr := []string{"rm", "-rf"}
+	return append(cmdArr, rmPaths...)
 }
