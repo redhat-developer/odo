@@ -1,8 +1,8 @@
 package common
 
-// ComponentAdapter defines the component functions that platform-specific adapters must implement
+// ComponentAdapter defines the functions that platform-specific adapters must implement
 type ComponentAdapter interface {
-	Create() error
+	Push(path string, ignoredFiles []string, forceBuild bool, globExps []string) error
 }
 
 // StorageAdapter defines the storage functions that platform-specific adapters must implement

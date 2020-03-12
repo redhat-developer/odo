@@ -135,6 +135,17 @@ func (oc *OcRunner) CheckCmdOpInRemoteCmpPod(cmpName string, appName string, prj
 	return checkOp(stdOut, nil)
 }
 
+// CheckCmdOpInRemoteDevfilePod runs the provided command on remote component pod and returns the return value of command output handler function passed to it
+func (oc *OcRunner) CheckCmdOpInRemoteDevfilePod(podName string, prjName string, cmd []string, checkOp func(cmdOp string, err error) bool) bool {
+	session := CmdRunner(oc.path, append([]string{"exec", podName, "--namespace", prjName, "--"}, cmd...)...)
+	stdOut := string(session.Wait().Out.Contents())
+	stdErr := string(session.Wait().Err.Contents())
+	if stdErr != "" {
+		return checkOp(stdOut, fmt.Errorf("cmd %s failed with error %s on pod %s", cmd, stdErr, podName))
+	}
+	return checkOp(stdOut, nil)
+}
+
 // VerifyCmpExists verifies if component was created successfully
 func (oc *OcRunner) VerifyCmpExists(cmpName string, appName string, prjName string) {
 	cmpDCName := fmt.Sprintf("%s-%s", cmpName, appName)
@@ -335,6 +346,15 @@ func (oc *OcRunner) EnvVarTest(resourceName string, sourceType string, envString
 func (oc *OcRunner) GetRunningPodNameOfComp(compName string, namespace string) string {
 	stdOut := CmdShouldPass(oc.path, "get", "pods", "--namespace", namespace, "--show-labels")
 	re := regexp.MustCompile(`(` + compName + `-\S+)\s+\S+\s+Running.*deploymentconfig=` + compName)
+	podName := re.FindStringSubmatch(stdOut)[1]
+	return strings.TrimSpace(podName)
+}
+
+// GetRunningPodNameByComponent executes oc command and returns the running pod name of a delopyed
+// devfile component by passing component name as a argument
+func (oc *OcRunner) GetRunningPodNameByComponent(compName string, namespace string) string {
+	stdOut := CmdShouldPass(oc.path, "get", "pods", "--namespace", namespace, "--show-labels")
+	re := regexp.MustCompile(`(` + compName + `-\S+)\s+\S+\s+Running.*component=` + compName)
 	podName := re.FindStringSubmatch(stdOut)[1]
 	return strings.TrimSpace(podName)
 }

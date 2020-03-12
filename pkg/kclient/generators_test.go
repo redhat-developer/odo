@@ -153,6 +153,9 @@ func TestGeneratePodTemplateSpec(t *testing.T) {
 				t.Errorf("expected %s, actual %s", tt.namespace, podTemplateSpec.Namespace)
 			}
 
+			if !hasVolumeWithName(OdoSourceVolume, podTemplateSpec.Spec.Volumes) {
+				t.Errorf("volume with name: %s not found", OdoSourceVolume)
+			}
 			if len(podTemplateSpec.Labels) != len(tt.labels) {
 				t.Errorf("expected %d, actual %d", len(tt.labels), len(podTemplateSpec.Labels))
 			} else {
@@ -266,4 +269,13 @@ func fakeResourceRequirements() *corev1.ResourceRequirements {
 	resReq.Requests = requests
 
 	return &resReq
+}
+
+func hasVolumeWithName(name string, volMounts []corev1.Volume) bool {
+	for _, vm := range volMounts {
+		if vm.Name == name {
+			return true
+		}
+	}
+	return false
 }

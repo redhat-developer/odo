@@ -448,13 +448,16 @@ func TestAddPVCAndVolumeMount(t *testing.T) {
 				return
 			}
 
+			// The total number of expected volumes is equal to the number of volumes defined in the defile plus one (emptyDir source volume)
+			expectedNumVolumes := len(tt.volumeNameToPVCName) + 1
+
 			// check the number of containers and volumes in the pod template spec
 			if len(podTemplateSpec.Spec.Containers) != len(tt.containers) {
 				t.Errorf("Incorrect number of Containers found in the pod template spec, expected: %v found: %v", len(tt.containers), len(podTemplateSpec.Spec.Containers))
 				return
 			}
-			if len(podTemplateSpec.Spec.Volumes) != len(tt.volumeNameToPVCName) {
-				t.Errorf("TestAddPVCAndVolumeMount incorrect amount of pvc volumes in pod template spec expected %v, actual %v", len(tt.volumeNameToPVCName), len(podTemplateSpec.Spec.Volumes))
+			if len(podTemplateSpec.Spec.Volumes) != expectedNumVolumes {
+				t.Errorf("TestAddPVCAndVolumeMount incorrect amount of pvc volumes in pod template spec expected %v, actual %v", expectedNumVolumes, len(podTemplateSpec.Spec.Volumes))
 				return
 			}
 
