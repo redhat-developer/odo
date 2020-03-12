@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/openshift/odo/pkg/pipelines/meta"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 )
 
@@ -14,7 +15,7 @@ var (
 func TestCreateDevCDPipelineRun(t *testing.T) {
 	validDevCDPipeline := pipelinev1.PipelineRun{
 		TypeMeta:   pipelineRunTypeMeta,
-		ObjectMeta: createObjectMeta("dev-cd-pipeline-run-$(uid)"),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName("", "dev-cd-pipeline-run-$(uid)")),
 		Spec: pipelinev1.PipelineRunSpec{
 			ServiceAccountName: sName,
 			PipelineRef:        createPipelineRef("dev-cd-pipeline"),
@@ -31,7 +32,7 @@ func TestCreateDevCDPipelineRun(t *testing.T) {
 func TestCreateDevCIPipelineRun(t *testing.T) {
 	validDevCIPipelineRun := pipelinev1.PipelineRun{
 		TypeMeta:   pipelineRunTypeMeta,
-		ObjectMeta: createObjectMeta("dev-ci-pipeline-run-$(uid)"),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName("", "dev-ci-pipeline-run-$(uid)")),
 		Spec: pipelinev1.PipelineRunSpec{
 			ServiceAccountName: sName,
 			PipelineRef:        createPipelineRef("dev-ci-pipeline"),
@@ -51,7 +52,7 @@ func TestCreateDevCIPipelineRun(t *testing.T) {
 func TestCreateStageCDPipelineRun(t *testing.T) {
 	validStageCDPipeline := pipelinev1.PipelineRun{
 		TypeMeta:   pipelineRunTypeMeta,
-		ObjectMeta: createObjectMeta("stage-cd-pipeline-run-$(uid)"),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName("", "stage-cd-pipeline-run-$(uid)")),
 		Spec: pipelinev1.PipelineRunSpec{
 			ServiceAccountName: sName,
 			PipelineRef:        createPipelineRef("stage-cd-pipeline"),
@@ -67,7 +68,7 @@ func TestCreateStageCDPipelineRun(t *testing.T) {
 func TestCreateStageCIPipelineRun(t *testing.T) {
 	validStageCIPipeline := pipelinev1.PipelineRun{
 		TypeMeta:   pipelineRunTypeMeta,
-		ObjectMeta: createObjectMeta("stage-ci-pipeline-run-$(uid)"),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName("", "stage-ci-pipeline-run-$(uid)")),
 		Spec: pipelinev1.PipelineRunSpec{
 			ServiceAccountName: sName,
 			PipelineRef:        createPipelineRef("stage-ci-pipeline"),

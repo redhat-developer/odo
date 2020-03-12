@@ -1,6 +1,7 @@
 package triggers
 
 import (
+	"github.com/openshift/odo/pkg/pipelines/meta"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -15,7 +16,7 @@ var (
 func createDevCDPipelineRun(saName, imageRepo string) pipelinev1.PipelineRun {
 	return pipelinev1.PipelineRun{
 		TypeMeta:   pipelineRunTypeMeta,
-		ObjectMeta: createObjectMeta("dev-cd-pipeline-run-$(uid)"),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName("", "dev-cd-pipeline-run-$(uid)")),
 		Spec: pipelinev1.PipelineRunSpec{
 			ServiceAccountName: saName,
 			PipelineRef:        createPipelineRef("dev-cd-pipeline"),
@@ -27,7 +28,7 @@ func createDevCDPipelineRun(saName, imageRepo string) pipelinev1.PipelineRun {
 func createDevCIPipelineRun(saName, imageRepo string) pipelinev1.PipelineRun {
 	return pipelinev1.PipelineRun{
 		TypeMeta:   pipelineRunTypeMeta,
-		ObjectMeta: createObjectMeta("dev-ci-pipeline-run-$(uid)"),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName("", "dev-ci-pipeline-run-$(uid)")),
 		Spec: pipelinev1.PipelineRunSpec{
 			ServiceAccountName: saName,
 			PipelineRef:        createPipelineRef("dev-ci-pipeline"),
@@ -44,7 +45,7 @@ func createDevCIPipelineRun(saName, imageRepo string) pipelinev1.PipelineRun {
 func createStageCDPipelineRun(saName string) pipelinev1.PipelineRun {
 	return pipelinev1.PipelineRun{
 		TypeMeta:   pipelineRunTypeMeta,
-		ObjectMeta: createObjectMeta("stage-cd-pipeline-run-$(uid)"),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName("", "stage-cd-pipeline-run-$(uid)")),
 		Spec: pipelinev1.PipelineRunSpec{
 			ServiceAccountName: saName,
 			PipelineRef:        createPipelineRef("stage-cd-pipeline"),
@@ -56,7 +57,7 @@ func createStageCDPipelineRun(saName string) pipelinev1.PipelineRun {
 func createStageCIPipelineRun(saName string) pipelinev1.PipelineRun {
 	return pipelinev1.PipelineRun{
 		TypeMeta:   pipelineRunTypeMeta,
-		ObjectMeta: createObjectMeta("stage-ci-pipeline-run-$(uid)"),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName("", "stage-ci-pipeline-run-$(uid)")),
 		Spec: pipelinev1.PipelineRunSpec{
 			ServiceAccountName: saName,
 			PipelineRef:        createPipelineRef("stage-ci-pipeline"),

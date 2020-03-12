@@ -51,11 +51,6 @@ func createPushBinding(ns string) triggersv1.TriggerBinding {
 	}
 }
 
-func createObjectMeta(name string) v1.ObjectMeta {
-	return v1.ObjectMeta{
-		Name: name,
-	}
-}
 func createBindingParam(name string, value string) pipelinev1.Param {
 	return pipelinev1.Param{
 		Name: name,

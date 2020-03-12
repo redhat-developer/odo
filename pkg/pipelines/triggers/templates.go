@@ -22,7 +22,7 @@ func GenerateTemplates(ns, saName, imageRepo string) []triggersv1.TriggerTemplat
 		createDevCDDeployTemplate(ns, saName, imageRepo),
 		createDevCIBuildPRTemplate(ns, saName, imageRepo),
 		createStageCDPushTemplate(ns, saName),
-		createStageCIdryrunptemplate(ns, saName),
+		createStageCIDryRunTemplate(ns, saName),
 	}
 }
 
@@ -46,11 +46,12 @@ func createDevCDDeployTemplate(ns, saName, imageRepo string) triggersv1.TriggerT
 
 func createDevCIBuildPRTemplate(ns, saName, imageRepo string) triggersv1.TriggerTemplate {
 	return triggersv1.TriggerTemplate{
-		TypeMeta:   triggerTemplateTypeMeta,
-		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, "dev-ci-build-from-pr-template")),
+		TypeMeta: triggerTemplateTypeMeta,
+		ObjectMeta: meta.ObjectMeta(
+			meta.NamespacedName(ns, "dev-ci-build-from-pr-template"),
+			statusTrackerAnnotations("dev-ci-build-from-pr", "Dev CI Build")),
 		Spec: triggersv1.TriggerTemplateSpec{
 			Params: []pipelinev1.ParamSpec{
-
 				createTemplateParamSpec("gitref", "The git branch for this PR"),
 				createTemplateParamSpec("gitsha", "the specific commit SHA."),
 				createTemplateParamSpec("gitrepositoryurl", "The git repository url"),
@@ -85,10 +86,11 @@ func createStageCDPushTemplate(ns, saName string) triggersv1.TriggerTemplate {
 	}
 }
 
-func createStageCIdryrunptemplate(ns, saName string) triggersv1.TriggerTemplate {
+func createStageCIDryRunTemplate(ns, saName string) triggersv1.TriggerTemplate {
 	return triggersv1.TriggerTemplate{
-		TypeMeta:   triggerTemplateTypeMeta,
-		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, "stage-ci-dryrun-from-pr-template")),
+		TypeMeta: triggerTemplateTypeMeta,
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, "stage-ci-dryrun-from-pr-template"),
+			statusTrackerAnnotations("stage-ci-dryrun-from-pr", "Stage CI Dry Run")),
 		Spec: triggersv1.TriggerTemplateSpec{
 			Params: []pipelinev1.ParamSpec{
 
@@ -141,4 +143,20 @@ func createStageCDResourceTemplate(saName string) []byte {
 func createStageCIResourceTemplate(saName string) []byte {
 	byteStageCI, _ := json.Marshal(createStageCIPipelineRun(saName))
 	return []byte(string(byteStageCI))
+}
+
+func statusTrackerAnnotations(pipeline, description string) func(*v1.ObjectMeta) {
+	return func(om *v1.ObjectMeta) {
+		annotations := map[string]string{
+			"tekton.dev/git-status":         "true",
+			"tekton.dev/status-context":     pipeline,
+			"tekton.dev/status-description": description,
+		}
+		if om.Annotations == nil {
+			om.Annotations = map[string]string{}
+		}
+		for k, v := range annotations {
+			om.Annotations[k] = v
+		}
+	}
 }
