@@ -1,5 +1,6 @@
 **What type of PR is this?**
-> Uncomment only one ` /kind <>` line, hit enter to put that in a new line, and remove leading whitespace from that line:
+> Uncomment only one ` /kind` line, and delete the rest.
+> For example, `> /kind bug` would simply become: `/kind bug`
 
 > /kind api-change
 > /kind bug
