@@ -231,7 +231,7 @@ func TestGetSyncFolder(t *testing.T) {
 					},
 				},
 			},
-			want: filepath.Join(kclient.OdoSourceVolumeMount, projectNames[0]),
+			want: filepath.ToSlash(filepath.Join(kclient.OdoSourceVolumeMount, projectNames[0])),
 		},
 		{
 			name: "Case 3: Multiple projects",
