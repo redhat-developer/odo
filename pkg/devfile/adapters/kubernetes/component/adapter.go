@@ -105,7 +105,7 @@ func (a Adapter) Create() (err error) {
 
 	if utils.ComponentExists(a.Client, componentName) {
 		glog.V(3).Info("The component already exists, attempting to update it")
-		_, err = a.Client.UpdateDeployment(*deploymentSpec)
+		deployment, err := a.Client.UpdateDeployment(*deploymentSpec)
 		if err != nil {
 			return err
 		}
@@ -117,19 +117,23 @@ func (a Adapter) Create() (err error) {
 		serviceSpec.ClusterIP = oldSvc.Spec.ClusterIP
 		objectMetaTemp := objectMeta
 		objectMetaTemp.ResourceVersion = oldSvc.GetResourceVersion()
-
+		ownerReference := kclient.GenerateOwnerReference(deployment)
+		objectMetaTemp.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
 		_, err = a.Client.UpdateService(objectMetaTemp, *serviceSpec)
 		if err != nil {
 			return err
 		}
 		glog.V(3).Infof("Successfully update Service for component %s", componentName)
 	} else {
-		_, err = a.Client.CreateDeployment(*deploymentSpec)
+		deployment, err := a.Client.CreateDeployment(*deploymentSpec)
 		if err != nil {
 			return err
 		}
 		glog.V(3).Infof("Successfully created component %v", componentName)
-		_, err = a.Client.CreateService(objectMeta, *serviceSpec)
+		ownerReference := kclient.GenerateOwnerReference(deployment)
+		objectMetaTemp := objectMeta
+		objectMetaTemp.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
+		_, err = a.Client.CreateService(objectMetaTemp, *serviceSpec)
 		if err != nil {
 			return err
 		}
