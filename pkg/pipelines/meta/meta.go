@@ -14,12 +14,19 @@ func TypeMeta(kind, apiVersion string) v1.TypeMeta {
 }
 
 // ObjectMeta creates v1.ObjectMeta
-func ObjectMeta(n types.NamespacedName) v1.ObjectMeta {
-	return v1.ObjectMeta{
+func ObjectMeta(n types.NamespacedName, opts ...objectMetaFunc) v1.ObjectMeta {
+	om := v1.ObjectMeta{
 		Namespace: n.Namespace,
 		Name:      n.Name,
 	}
+	for _, o := range opts {
+		o(&om)
+	}
+	return om
+
 }
+
+type objectMetaFunc func(om *v1.ObjectMeta)
 
 // NamespacedName creates types.NamespacedName
 func NamespacedName(ns, name string) types.NamespacedName {
