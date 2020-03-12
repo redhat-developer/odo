@@ -319,11 +319,12 @@ func getSyncFolder(projects []versionsCommon.DevfileProject) string {
 
 }
 
-// Returns the command used
+// getCmdToCreateSyncFolder returns the command used to create the remote sync folder on the running container
 func getCmdToCreateSyncFolder(syncFolder string) []string {
 	return []string{"mkdir", "-p", syncFolder}
 }
 
+// getCmdToDeleteFiles returns the command used to delete the remote files on the container that are marked for deletion
 func getCmdToDeleteFiles(delFiles []string, syncFolder string) []string {
 	rmPaths := util.GetRemoteFilesMarkedForDeletion(delFiles, syncFolder)
 	glog.V(4).Infof("remote files marked for deletion are %+v", rmPaths)
