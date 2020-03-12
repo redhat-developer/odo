@@ -11,7 +11,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/klog/glog"
 )
 
 const (
@@ -41,6 +40,9 @@ func ConvertPorts(endpoints []common.DockerimageEndpoint) []corev1.ContainerPort
 	containerPorts := []corev1.ContainerPort{}
 	for _, endpoint := range endpoints {
 		name := strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(*endpoint.Name)))
+		if len(name) > 15 {
+			name = name[:15]
+		}
 		containerPorts = append(containerPorts, corev1.ContainerPort{
 			Name:          name,
 			ContainerPort: *endpoint.Port,
@@ -53,15 +55,12 @@ func ConvertPorts(endpoints []common.DockerimageEndpoint) []corev1.ContainerPort
 func GetContainers(devfileObj devfile.DevfileObj) []corev1.Container {
 	var containers []corev1.Container
 	// Only components with aliases are considered because without an alias commands cannot reference them
-	for _, comp := range devfileObj.Data.GetAliasedComponents() {
-		if comp.Type == common.DevfileComponentTypeDockerimage {
-			glog.V(3).Infof("Found component %v with alias %v\n", comp.Type, *comp.Alias)
-			envVars := ConvertEnvs(comp.Env)
-			resourceReqs := GetResourceReqs(comp)
-			ports := ConvertPorts(comp.Endpoints)
-			container := kclient.GenerateContainer(*comp.Alias, *comp.Image, false, comp.Command, comp.Args, envVars, resourceReqs, ports)
-			containers = append(containers, *container)
-		}
+	for _, comp := range adaptersCommon.GetSupportedComponents(devfileObj.Data) {
+		envVars := ConvertEnvs(comp.Env)
+		resourceReqs := GetResourceReqs(comp)
+		ports := ConvertPorts(comp.Endpoints)
+		container := kclient.GenerateContainer(*comp.Alias, *comp.Image, false, comp.Command, comp.Args, envVars, resourceReqs, ports)
+		containers = append(containers, *container)
 	}
 	return containers
 }
