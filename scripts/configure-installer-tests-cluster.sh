@@ -25,7 +25,7 @@ export KUBECONFIG=${KUBECONFIG:-"${DEFAULT_INSTALLER_ASSETS_DIR}/auth/kubeconfig
 # Mount path of odo secret directory
 oc get secret -n odo
 cd /tmp/secret | oc extract secret/odo-secret
-ls -la /tmp/
+ls -la /tmp/secret
 # Environment variable path for registry.redhat.io
 ENV_VAR_UN_FILE=${ENV_VAR_UN_FILE:-"/tmp/secret/username.txt"}
 ENV_VAR_PASS_FILE=${ENV_VAR_PASS_FILE:-"/tmp/secret/password.txt"}
