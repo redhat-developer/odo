@@ -1,10 +1,173 @@
-# Machine Readable Output
+= Machine readable output
 
 This document outlines all the machine readable output options and examples.
 
-`odo app describe -o json | jq`
- 
-```json
+See the below table for a list of all possible machine readable output commands:
+
+|===
+| Command | Subcommand | Implemented?
+
+| application
+| delete
+| N
+
+|
+| <<application-describe,describe>>
+| Y
+
+|
+| <<application-list,list>>
+| Y
+
+| catalog
+| describe
+| N
+
+|
+| search
+| N
+
+|
+| <<catalog-list-components,list components>>
+| Y
+
+|
+| <<catalog-list-services,list services>>
+| Y
+
+| component
+| <<component-create,create>>
+| Y
+
+|
+| delete
+| N
+
+|
+| describe
+| N
+
+|
+| link
+| N
+
+|
+| list
+| N
+
+|
+| log
+| N
+
+|
+| push
+| N
+
+|
+| unlink
+| N
+
+|
+| update
+| N
+
+|
+| watch
+| N
+
+| config
+| set
+| N
+
+|
+| unset
+| N
+
+|
+| view
+| N
+
+| debug
+| info
+| N
+
+|
+| port-forward
+| N
+
+| preference
+| set
+| N
+
+|
+| unset
+| N
+
+|
+| view
+| N
+
+| project
+| <<project-create,create>>
+| Y
+
+|
+| <<project-delete,delete>>
+| Y
+
+|
+| get
+| N
+
+|
+| <<project-list,list>>
+| Y
+
+|
+| set
+| N
+
+| service
+| <<service-create,create>>
+| Y
+
+|
+| delete
+| N
+
+|
+| <<service-list,list>>
+| Y
+
+| storage
+| <<storage-create,create>>
+| Y
+
+|
+| delete
+| N
+
+|
+| <<storage-list,list>>
+| Y
+
+| url
+| create
+| N
+
+|
+| delete
+| N
+
+|
+| <<url-list,list>>
+| Y
+|===
+
+== application describe
+
+[source,json]
+----
 {
   "kind": "Application",
   "apiVersion": "odo.openshift.io/v1alpha1",
@@ -18,12 +181,12 @@ This document outlines all the machine readable output options and examples.
     "active": false
   }
 }
-```
+----
 
+== application list
 
-`odo app list -o json | jq`
- 
-```json
+[source,json]
+----
 {
   "kind": "List",
   "apiVersion": "odo.openshift.io/v1alpha1",
@@ -48,40 +211,12 @@ This document outlines all the machine readable output options and examples.
     }
   ]
 }
-```
+----
 
+== component describe
 
-`odo app list --project myproject -o json | jq`
- 
-```json
-{
-  "kind": "List",
-  "apiVersion": "odo.openshift.io/v1alpha1",
-  "metadata": {},
-  "items": [
-    {
-      "kind": "app",
-      "apiVersion": "odo.openshift.io/v1alpha1",
-      "metadata": {
-        "name": "app",
-        "namespace": "myproject",
-        "creationTimestamp": null
-      },
-      "spec": {
-        "components": [
-          "app-nodejs-komz"
-        ]
-      }
-    }
-  ]
-}
-
-```
-
-
-`odo component describe -o json | jq`
- 
-```json
+[source,json]
+----
 {
   "kind": "Component",
   "apiVersion": "odo.openshift.io/v1alpha1",
@@ -105,69 +240,12 @@ This document outlines all the machine readable output options and examples.
     "state": "Pushed"
   }
 }
-```
+----
 
+== component list
 
-`odo component list --output json | jq`
- 
-```json
-{
-  "kind": "List",
-  "apiVersion": "odo.openshift.io/v1alpha1",
-  "metadata": {},
-  "items": [
-    {
-      "kind": "Component",
-      "apiVersion": "odo.openshift.io/v1alpha1",
-      "metadata": {
-        "name": "nodejs-vzae",
-        "creationTimestamp": null
-      },
-      "spec": {
-        "type": "nodejs",
-        "source": "file://./"
-      },
-      "status": {
-        "state": "Pushed"
-      }
-    }
-  ]
-}
-```
-
-
-`odo describe -o json | jq`
- 
-```json
-{
-  "kind": "Component",
-  "apiVersion": "odo.openshift.io/v1alpha1",
-  "metadata": {
-    "name": "nodejs-nvnh",
-    "creationTimestamp": null
-  },
-  "spec": {
-    "type": "nodejs",
-    "source": "file://./",
-    "url": [
-      "example",
-      "json",
-      "nodejs-nvnh-8080"
-    ],
-    "storage": [
-      "mystorage"
-    ]
-  },
-  "status": {
-    "state": "Pushed"
-  }
-}
-```
-
-
-`odo list -o json | jq`
- 
-```json
+[source,json]
+----
 {
   "kind": "List",
   "apiVersion": "odo.openshift.io/v1alpha1",
@@ -198,12 +276,12 @@ This document outlines all the machine readable output options and examples.
     }
   ]
 }
-```
+----
 
+== project list
 
-`odo project list -o json | jq`
- 
-```json
+[source,json]
+----
 {
   "kind": "List",
   "apiVersion": "odo.openshift.io/v1alpha1",
@@ -227,12 +305,12 @@ This document outlines all the machine readable output options and examples.
     }
   ]
 }
-```
+----
 
+== storage create
 
-`$ odo storage create mystorage --path /opt/foobar --size=1Gi -o json | jq`
-
-```json
+[source,json]
+----
 {
   "kind": "storage",
   "apiVersion": "odo.openshift.io/v1alpha1",
@@ -243,14 +321,14 @@ This document outlines all the machine readable output options and examples.
   "spec": {
     "size": "1Gi"
     "path": "/opt/foobar"
-  }
+  },
 }
-```
+----
 
+== storage list
 
-`$ odo storage list -o json | jq`
-
-```json
+[source,json]
+----
 {
   "kind": "List",
   "apiVersion": "odo.openshift.io/v1aplha1",
@@ -266,16 +344,16 @@ This document outlines all the machine readable output options and examples.
       "spec": {
         "size": "1Gi"
         "path": "/opt/foobar"
-      }
+      },
     }
   ]
 }
-```
+----
 
+== url create
 
-`$ odo url create -o json | jq`
-
-```json
+[source,json]
+----
 {
   "kind": "url",
   "apiVersion": "odo.openshift.io/v1alpha1",
@@ -289,12 +367,12 @@ This document outlines all the machine readable output options and examples.
     "port": 8080
   }
 }
-```
+----
 
+== url list
 
-`$ odo url list -o json | jq`
-
-```json
+[source,json]
+----
 {
   "kind": "List",
   "apiVersion": "odo.openshift.io/v1alpha1",
@@ -315,4 +393,4 @@ This document outlines all the machine readable output options and examples.
     }
   ]
 }
-```
+----
