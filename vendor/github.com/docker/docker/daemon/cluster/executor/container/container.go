@@ -6,7 +6,6 @@ import (
 	"net"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -31,10 +30,6 @@ import (
 )
 
 const (
-	// Explicitly use the kernel's default setting for CPU quota of 100ms.
-	// https://www.kernel.org/doc/Documentation/scheduler/sched-bwc.txt
-	cpuQuotaPeriod = 100 * time.Millisecond
-
 	// systemLabelPrefix represents the reserved namespace for system labels.
 	systemLabelPrefix = "com.docker.swarm"
 )
@@ -285,6 +280,8 @@ func convertMount(m api.Mount) enginemount.Mount {
 		mount.Type = enginemount.TypeVolume
 	case api.MountTypeTmpfs:
 		mount.Type = enginemount.TypeTmpfs
+	case api.MountTypeNamedPipe:
+		mount.Type = enginemount.TypeNamedPipe
 	}
 
 	if m.BindOptions != nil {
@@ -364,6 +361,7 @@ func (c *containerConfig) hostConfig() *enginecontainer.HostConfig {
 		ReadonlyRootfs: c.spec().ReadOnly,
 		Isolation:      c.isolation(),
 		Init:           c.init(),
+		Sysctls:        c.spec().Sysctls,
 	}
 
 	if c.spec().DNSConfig != nil {
@@ -448,9 +446,7 @@ func (c *containerConfig) resources() enginecontainer.Resources {
 	}
 
 	if r.Limits.NanoCPUs > 0 {
-		// CPU Period must be set in microseconds.
-		resources.CPUPeriod = int64(cpuQuotaPeriod / time.Microsecond)
-		resources.CPUQuota = r.Limits.NanoCPUs * resources.CPUPeriod / 1e9
+		resources.NanoCPUs = r.Limits.NanoCPUs
 	}
 
 	return resources
@@ -648,6 +644,8 @@ func (c *containerConfig) applyPrivileges(hc *enginecontainer.HostConfig) {
 			hc.SecurityOpt = append(hc.SecurityOpt, "credentialspec=file://"+credentials.GetFile())
 		case *api.Privileges_CredentialSpec_Registry:
 			hc.SecurityOpt = append(hc.SecurityOpt, "credentialspec=registry://"+credentials.GetRegistry())
+		case *api.Privileges_CredentialSpec_Config:
+			hc.SecurityOpt = append(hc.SecurityOpt, "credentialspec=config://"+credentials.GetConfig())
 		}
 	}
 

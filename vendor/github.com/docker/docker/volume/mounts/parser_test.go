@@ -1,6 +1,7 @@
 package mounts // import "github.com/docker/docker/volume/mounts"
 
 import (
+	"errors"
 	"io/ioutil"
 	"os"
 	"runtime"
@@ -8,6 +9,8 @@ import (
 	"testing"
 
 	"github.com/docker/docker/api/types/mount"
+	"gotest.tools/assert"
+	"gotest.tools/assert/cmp"
 )
 
 type parseMountRawTestSet struct {
@@ -120,7 +123,7 @@ func TestParseMountRaw(t *testing.T) {
 			`c:\:d:\:xyzzy`:                    "invalid volume specification: ",
 			`c:`:                               "cannot be `c:`",
 			`c:\`:                              "cannot be `c:`",
-			`c:\notexist:d:`:                   `bind mount source path does not exist: c:\notexist`,
+			`c:\notexist:d:`:                   `source path does not exist: c:\notexist`,
 			`c:\windows\system32\ntdll.dll:d:`: `source path must be a directory`,
 			`name<:d:`:                         `invalid volume specification`,
 			`name>:d:`:                         `invalid volume specification`,
@@ -189,7 +192,7 @@ func TestParseMountRaw(t *testing.T) {
 			`c:\:/foo:xyzzy`:                     "invalid volume specification: ",
 			`/`:                                  "destination can't be '/'",
 			`/..`:                                "destination can't be '/'",
-			`c:\notexist:/foo`:                   `bind mount source path does not exist: c:\notexist`,
+			`c:\notexist:/foo`:                   `source path does not exist: c:\notexist`,
 			`c:\windows\system32\ntdll.dll:/foo`: `source path must be a directory`,
 			`name<:/foo`:                         `invalid volume specification`,
 			`name>:/foo`:                         `invalid volume specification`,
@@ -477,4 +480,51 @@ func TestParseMountSpec(t *testing.T) {
 			t.Errorf("Expected mount copy data to match. Expected: '%v', Actual: '%v'", c.expected.CopyData, mp.CopyData)
 		}
 	}
+
+}
+
+// always returns the configured error
+// this is used to test error handling
+type mockFiProviderWithError struct{ err error }
+
+func (m mockFiProviderWithError) fileInfo(path string) (bool, bool, error) {
+	return false, false, m.err
+}
+
+// TestParseMountSpecBindWithFileinfoError makes sure that the parser returns
+// the error produced by the fileinfo provider.
+//
+// Some extra context for the future in case of changes and possible wtf are we
+// testing this for:
+//
+// Currently this "fileInfoProvider" returns (bool, bool, error)
+// The 1st bool is "does this path exist"
+// The 2nd bool is "is this path a dir"
+// Then of course the error is an error.
+//
+// The issue is the parser was ignoring the error and only looking at the
+// "does this path exist" boolean, which is always false if there is an error.
+// Then the error returned to the caller was a (slightly, maybe) friendlier
+// error string than what comes from `os.Stat`
+// So ...the caller was always getting an error saying the path doesn't exist
+// even if it does exist but got some other error (like a permission error).
+// This is confusing to users.
+func TestParseMountSpecBindWithFileinfoError(t *testing.T) {
+	previousProvider := currentFileInfoProvider
+	defer func() { currentFileInfoProvider = previousProvider }()
+
+	testErr := errors.New("some crazy error")
+	currentFileInfoProvider = &mockFiProviderWithError{err: testErr}
+
+	p := "/bananas"
+	if runtime.GOOS == "windows" {
+		p = `c:\bananas`
+	}
+	m := mount.Mount{Type: mount.TypeBind, Source: p, Target: p}
+
+	parser := NewParser(runtime.GOOS)
+
+	_, err := parser.ParseMountSpec(m)
+	assert.Assert(t, err != nil)
+	assert.Assert(t, cmp.Contains(err.Error(), "some crazy error"))
 }

@@ -17,8 +17,8 @@ import (
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/docker/docker/pkg/stringid"
-	"github.com/gotestyourself/gotestyourself/assert"
-	is "github.com/gotestyourself/gotestyourself/assert/cmp"
+	"gotest.tools/assert"
+	is "gotest.tools/assert/cmp"
 )
 
 var (
@@ -731,7 +731,7 @@ func BenchmarkConcurrentAccess(b *testing.B) {
 	// create a bunch of ids
 	var ids []string
 	for i := 0; i < numConcurrent; i++ {
-		ids = append(ids, stringid.GenerateNonCryptoID())
+		ids = append(ids, stringid.GenerateRandomID())
 	}
 
 	if err := d.Create(ids[0], "", nil); err != nil {

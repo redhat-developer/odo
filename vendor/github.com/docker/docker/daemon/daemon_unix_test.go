@@ -6,11 +6,17 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 
+	"github.com/docker/docker/api/types/blkiodev"
 	containertypes "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/container"
 	"github.com/docker/docker/daemon/config"
+	"github.com/docker/docker/pkg/sysinfo"
+	"golang.org/x/sys/unix"
+	"gotest.tools/assert"
+	is "gotest.tools/assert/cmp"
 )
 
 type fakeContainerGetter struct {
@@ -265,4 +271,169 @@ func TestNetworkOptions(t *testing.T) {
 	if _, err := daemon.networkOptions(dconfigWrong, nil, nil); err == nil {
 		t.Fatal("Expected networkOptions error, got nil")
 	}
+}
+
+func TestVerifyPlatformContainerResources(t *testing.T) {
+	t.Parallel()
+	var (
+		no  = false
+		yes = true
+	)
+
+	withMemoryLimit := func(si *sysinfo.SysInfo) {
+		si.MemoryLimit = true
+	}
+	withSwapLimit := func(si *sysinfo.SysInfo) {
+		si.SwapLimit = true
+	}
+	withOomKillDisable := func(si *sysinfo.SysInfo) {
+		si.OomKillDisable = true
+	}
+
+	tests := []struct {
+		name             string
+		resources        containertypes.Resources
+		sysInfo          sysinfo.SysInfo
+		update           bool
+		expectedWarnings []string
+	}{
+		{
+			name:             "no-oom-kill-disable",
+			resources:        containertypes.Resources{},
+			sysInfo:          sysInfo(t, withMemoryLimit),
+			expectedWarnings: []string{},
+		},
+		{
+			name: "oom-kill-disable-disabled",
+			resources: containertypes.Resources{
+				OomKillDisable: &no,
+			},
+			sysInfo:          sysInfo(t, withMemoryLimit),
+			expectedWarnings: []string{},
+		},
+		{
+			name: "oom-kill-disable-not-supported",
+			resources: containertypes.Resources{
+				OomKillDisable: &yes,
+			},
+			sysInfo: sysInfo(t, withMemoryLimit),
+			expectedWarnings: []string{
+				"Your kernel does not support OomKillDisable. OomKillDisable discarded.",
+			},
+		},
+		{
+			name: "oom-kill-disable-without-memory-constraints",
+			resources: containertypes.Resources{
+				OomKillDisable: &yes,
+				Memory:         0,
+			},
+			sysInfo: sysInfo(t, withMemoryLimit, withOomKillDisable, withSwapLimit),
+			expectedWarnings: []string{
+				"OOM killer is disabled for the container, but no memory limit is set, this can result in the system running out of resources.",
+			},
+		},
+		{
+			name: "oom-kill-disable-with-memory-constraints-but-no-memory-limit-support",
+			resources: containertypes.Resources{
+				OomKillDisable: &yes,
+				Memory:         linuxMinMemory,
+			},
+			sysInfo: sysInfo(t, withOomKillDisable),
+			expectedWarnings: []string{
+				"Your kernel does not support memory limit capabilities or the cgroup is not mounted. Limitation discarded.",
+				"OOM killer is disabled for the container, but no memory limit is set, this can result in the system running out of resources.",
+			},
+		},
+		{
+			name: "oom-kill-disable-with-memory-constraints",
+			resources: containertypes.Resources{
+				OomKillDisable: &yes,
+				Memory:         linuxMinMemory,
+			},
+			sysInfo:          sysInfo(t, withMemoryLimit, withOomKillDisable, withSwapLimit),
+			expectedWarnings: []string{},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			warnings, err := verifyPlatformContainerResources(&tc.resources, &tc.sysInfo, tc.update)
+			assert.NilError(t, err)
+			for _, w := range tc.expectedWarnings {
+				assert.Assert(t, is.Contains(warnings, w))
+			}
+		})
+	}
+}
+
+func sysInfo(t *testing.T, opts ...func(*sysinfo.SysInfo)) sysinfo.SysInfo {
+	t.Helper()
+	si := sysinfo.SysInfo{}
+
+	for _, opt := range opts {
+		opt(&si)
+	}
+
+	if si.OomKillDisable {
+		t.Log(t.Name(), "OOM disable supported")
+	}
+	return si
+}
+
+const (
+	// prepare major 0x1FD(509 in decimal) and minor 0x130(304)
+	DEVNO  = 0x11FD30
+	MAJOR  = 509
+	MINOR  = 304
+	WEIGHT = 1024
+)
+
+func deviceTypeMock(t *testing.T, testAndCheck func(string)) {
+	if os.Getuid() != 0 {
+		t.Skip("root required") // for mknod
+	}
+
+	t.Parallel()
+
+	tempDir, err := ioutil.TempDir("", "tempDevDir"+t.Name())
+	assert.NilError(t, err, "create temp file")
+	tempFile := filepath.Join(tempDir, "dev")
+
+	defer os.RemoveAll(tempDir)
+
+	if err = unix.Mknod(tempFile, unix.S_IFCHR, DEVNO); err != nil {
+		t.Fatalf("mknod error %s(%x): %v", tempFile, DEVNO, err)
+	}
+
+	testAndCheck(tempFile)
+}
+
+func TestGetBlkioWeightDevices(t *testing.T) {
+	deviceTypeMock(t, func(tempFile string) {
+		mockResource := containertypes.Resources{
+			BlkioWeightDevice: []*blkiodev.WeightDevice{{Path: tempFile, Weight: WEIGHT}},
+		}
+
+		weightDevs, err := getBlkioWeightDevices(mockResource)
+
+		assert.NilError(t, err, "getBlkioWeightDevices")
+		assert.Check(t, is.Len(weightDevs, 1), "getBlkioWeightDevices")
+		assert.Check(t, weightDevs[0].Major == MAJOR, "get major device type")
+		assert.Check(t, weightDevs[0].Minor == MINOR, "get minor device type")
+		assert.Check(t, *weightDevs[0].Weight == WEIGHT, "get device weight")
+	})
+}
+
+func TestGetBlkioThrottleDevices(t *testing.T) {
+	deviceTypeMock(t, func(tempFile string) {
+		mockDevs := []*blkiodev.ThrottleDevice{{Path: tempFile, Rate: WEIGHT}}
+
+		retDevs, err := getBlkioThrottleDevices(mockDevs)
+
+		assert.NilError(t, err, "getBlkioThrottleDevices")
+		assert.Check(t, is.Len(retDevs, 1), "getBlkioThrottleDevices")
+		assert.Check(t, retDevs[0].Major == MAJOR, "get major device type")
+		assert.Check(t, retDevs[0].Minor == MINOR, "get minor device type")
+		assert.Check(t, retDevs[0].Rate == WEIGHT, "get device rate")
+	})
 }

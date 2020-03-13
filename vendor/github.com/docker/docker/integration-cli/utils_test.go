@@ -6,11 +6,11 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"testing"
 
 	"github.com/docker/docker/internal/testutil"
-	"github.com/go-check/check"
-	"github.com/gotestyourself/gotestyourself/icmd"
 	"github.com/pkg/errors"
+	"gotest.tools/icmd"
 )
 
 func getPrefixAndSlashFromDaemonPlatform() (prefix, slash string) {
@@ -21,7 +21,7 @@ func getPrefixAndSlashFromDaemonPlatform() (prefix, slash string) {
 }
 
 // TODO: update code to call cmd.RunCmd directly, and remove this function
-// Deprecated: use gotestyourself/gotestyourself/icmd
+// Deprecated: use gotest.tools/icmd
 func runCommandWithOutput(execCmd *exec.Cmd) (string, int, error) {
 	result := icmd.RunCmd(transformCmd(execCmd))
 	return result.Combined(), result.ExitCode, result.Error
@@ -118,7 +118,7 @@ type elementListOptions struct {
 	element, format string
 }
 
-func existingElements(c *check.C, opts elementListOptions) []string {
+func existingElements(c *testing.T, opts elementListOptions) []string {
 	var args []string
 	switch opts.element {
 	case "container":
@@ -146,12 +146,12 @@ func existingElements(c *check.C, opts elementListOptions) []string {
 }
 
 // ExistingContainerIDs returns a list of currently existing container IDs.
-func ExistingContainerIDs(c *check.C) []string {
+func ExistingContainerIDs(c *testing.T) []string {
 	return existingElements(c, elementListOptions{element: "container", format: "{{.ID}}"})
 }
 
 // ExistingContainerNames returns a list of existing container names.
-func ExistingContainerNames(c *check.C) []string {
+func ExistingContainerNames(c *testing.T) []string {
 	return existingElements(c, elementListOptions{element: "container", format: "{{.Names}}"})
 }
 

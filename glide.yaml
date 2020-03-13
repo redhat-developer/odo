@@ -71,3 +71,5 @@ import:
 - package: github.com/operator-framework/operator-lifecycle-manager
   version: release-4.1
 - package: github.com/golang/groupcache
+- package: github.com/docker/docker
+  version: v19.03.8

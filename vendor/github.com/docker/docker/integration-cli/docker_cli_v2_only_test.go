@@ -5,9 +5,10 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"testing"
 
 	"github.com/docker/docker/internal/test/registry"
-	"github.com/go-check/check"
+	"gotest.tools/assert"
 )
 
 func makefile(path string, contents string) (string, error) {
@@ -24,10 +25,10 @@ func makefile(path string, contents string) (string, error) {
 
 // TestV2Only ensures that a daemon does not
 // attempt to contact any v1 registry endpoints.
-func (s *DockerRegistrySuite) TestV2Only(c *check.C) {
+func (s *DockerRegistrySuite) TestV2Only(c *testing.T) {
 	reg, err := registry.NewMock(c)
 	defer reg.Close()
-	c.Assert(err, check.IsNil)
+	assert.NilError(c, err)
 
 	reg.RegisterHandler("/v2/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(404)
@@ -42,11 +43,11 @@ func (s *DockerRegistrySuite) TestV2Only(c *check.C) {
 	s.d.Start(c, "--insecure-registry", reg.URL())
 
 	tmp, err := ioutil.TempDir("", "integration-cli-")
-	c.Assert(err, check.IsNil)
+	assert.NilError(c, err)
 	defer os.RemoveAll(tmp)
 
 	dockerfileName, err := makefile(tmp, fmt.Sprintf("FROM %s/busybox", reg.URL()))
-	c.Assert(err, check.IsNil, check.Commentf("Unable to create test dockerfile"))
+	assert.NilError(c, err, "Unable to create test dockerfile")
 
 	s.d.Cmd("build", "--file", dockerfileName, tmp)
 
