@@ -459,7 +459,7 @@ $ git push upstream v0.0.1
 . Update the release description (changelog) on GitHub. To make things easier, a script was created to automatically generate a CHANGELOG and output to stdout.
 +
 ----
-$ ./scripts/generate-changelog.sh ${PREVIOUS_VERSION} ${NEW_VERSION}
+$ ./scripts/changelog-script.sh ${PREVIOUS_VERSION} ${NEW_VERSION}
 ----
 . Verify that packages have been uploaded to the `rpm` and `deb` repositories.
 . Update the Homebrew package:
