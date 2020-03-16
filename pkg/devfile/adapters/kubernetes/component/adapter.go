@@ -37,7 +37,10 @@ func (a Adapter) Create() (err error) {
 		"component": componentName,
 	}
 
-	containers := utils.GetContainers(a.Devfile)
+	containers, err := utils.GetContainers(a.Devfile)
+	if err != nil {
+		return err
+	}
 	if len(containers) == 0 {
 		return fmt.Errorf("No valid components found in the devfile")
 	}

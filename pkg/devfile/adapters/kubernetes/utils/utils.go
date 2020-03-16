@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/openshift/odo/pkg/devfile"
@@ -36,33 +37,47 @@ func ConvertEnvs(vars []common.DockerimageEnv) []corev1.EnvVar {
 }
 
 // ConvertPorts converts endpoint variables from the devfile structure to kubernetes ContainerPort
-func ConvertPorts(endpoints []common.DockerimageEndpoint) []corev1.ContainerPort {
+func ConvertPorts(endpoints []common.DockerimageEndpoint) ([]corev1.ContainerPort, error) {
 	containerPorts := []corev1.ContainerPort{}
 	for _, endpoint := range endpoints {
 		name := strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(*endpoint.Name)))
-		if len(name) > 15 {
-			name = name[:15]
+		name = util.TruncateString(name, 15)
+		for _, c := range containerPorts {
+			if c.ContainerPort == *endpoint.Port {
+				return nil, fmt.Errorf("Devfile contains multiple identical ports: %v", *endpoint.Port)
+			}
 		}
 		containerPorts = append(containerPorts, corev1.ContainerPort{
 			Name:          name,
 			ContainerPort: *endpoint.Port,
 		})
 	}
-	return containerPorts
+	return containerPorts, nil
 }
 
 // GetContainers iterates through the components in the devfile and returns a slice of the corresponding containers
-func GetContainers(devfileObj devfile.DevfileObj) []corev1.Container {
+func GetContainers(devfileObj devfile.DevfileObj) ([]corev1.Container, error) {
 	var containers []corev1.Container
-	// Only components with aliases are considered because without an alias commands cannot reference them
 	for _, comp := range adaptersCommon.GetSupportedComponents(devfileObj.Data) {
 		envVars := ConvertEnvs(comp.Env)
 		resourceReqs := GetResourceReqs(comp)
-		ports := ConvertPorts(comp.Endpoints)
+		ports, err := ConvertPorts(comp.Endpoints)
+		if err != nil {
+			return nil, err
+		}
 		container := kclient.GenerateContainer(*comp.Alias, *comp.Image, false, comp.Command, comp.Args, envVars, resourceReqs, ports)
+		for _, c := range containers {
+			for _, containerPort := range c.Ports {
+				for _, curPort := range container.Ports {
+					if curPort.ContainerPort == containerPort.ContainerPort {
+						return nil, fmt.Errorf("Devfile contains multiple identical ports: %v", containerPort.ContainerPort)
+					}
+				}
+			}
+		}
 		containers = append(containers, *container)
 	}
-	return containers
+	return containers, nil
 }
 
 // GetVolumes iterates through the components in the devfile and returns a map of component alias to the devfile volumes
