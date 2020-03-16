@@ -21,7 +21,10 @@ func (dc *Client) PullImage(image string) error {
 
 	defer codewindOut.Close()
 	if glog.V(4) {
-		io.Copy(os.Stdout, codewindOut)
+		_, err := io.Copy(os.Stdout, codewindOut)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
