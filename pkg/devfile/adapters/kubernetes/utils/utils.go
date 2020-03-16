@@ -75,6 +75,14 @@ func GetContainers(devfileObj devfile.DevfileObj) ([]corev1.Container, error) {
 				}
 			}
 		}
+
+		// If `mountSources: true` was set, add an empty dir volume to the container to sync the source to
+		if comp.MountSources {
+			container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
+				Name:      kclient.OdoSourceVolume,
+				MountPath: kclient.OdoSourceVolumeMount,
+			})
+		}
 		containers = append(containers, *container)
 	}
 	return containers, nil

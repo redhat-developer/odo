@@ -76,7 +76,7 @@ func (c *Client) WaitAndGetPod(watchOptions metav1.ListOptions, desiredPhase cor
 }
 
 // ExecCMDInContainer execute command in the container of a pod, pass an empty string for containerName to execute in the first container of the pod
-func (c *Client) ExecCMDInContainer(podName, containerName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+func (c *Client) ExecCMDInContainer(podName string, containerName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
 	podExecOptions := corev1.PodExecOptions{
 		Command: cmd,
 		Stdin:   stdin != nil,

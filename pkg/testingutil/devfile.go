@@ -63,6 +63,31 @@ func (d TestDevfileData) GetAliasedComponents() []versionsCommon.DevfileComponen
 	}
 }
 
+// GetProjects is a mock function to get the components that have an alias from a devfile
+func (d TestDevfileData) GetProjects() []versionsCommon.DevfileProject {
+	projectName := [...]string{"test-project", "anotherproject"}
+	clonePath := [...]string{"/test-project", "/anotherproject"}
+	sourceLocation := [...]string{"https://github.com/someproject/test-project.git", "https://github.com/another/project.git"}
+	return []versionsCommon.DevfileProject{
+		{
+			ClonePath: &clonePath[0],
+			Name:      projectName[0],
+			Source: versionsCommon.DevfileProjectSource{
+				Type:     versionsCommon.DevfileProjectTypeGit,
+				Location: sourceLocation[0],
+			},
+		},
+		{
+			ClonePath: &clonePath[1],
+			Name:      projectName[1],
+			Source: versionsCommon.DevfileProjectSource{
+				Type:     versionsCommon.DevfileProjectTypeGit,
+				Location: sourceLocation[1],
+			},
+		},
+	}
+}
+
 // Validate is a mock validation that always validates without error
 func (d TestDevfileData) Validate() error {
 	return nil

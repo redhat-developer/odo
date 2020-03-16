@@ -1,4 +1,4 @@
-// +build !windows,!osx
+// +build !osx
 
 package component
 
@@ -57,6 +57,7 @@ func setUpF8AnalyticsComponentSrc(componentName string, requiredFilePaths []test
 			// Preserve the new paths for further reference
 			fileProperties.FilePath = filepath.Base(realPath)
 			fileProperties.FileParent, _ = filepath.Rel(srcPath, filepath.Dir(realPath))
+			fileProperties.FileParent = filepath.FromSlash(fileProperties.FileParent)
 		}
 
 		// Perform mock operation as requested by the parameter
@@ -124,7 +125,7 @@ func mockPushLocal(client *occlient.Client, componentName string, applicationNam
 		// Verify every file in expected file changes to be actually observed to be changed
 		// If found exactly same or different, return from PushLocal and signal exit for watch so that the watch terminates gracefully
 		for _, gotChangedFile := range files {
-			wantedFileDetail := CompDirStructure[expChangedFile]
+			wantedFileDetail := CompDirStructure[filepath.FromSlash(expChangedFile)]
 			if filepath.Join(wantedFileDetail.FileParent, wantedFileDetail.FilePath) == gotChangedFile {
 				found = true
 			}
@@ -141,7 +142,7 @@ func mockPushLocal(client *occlient.Client, componentName string, applicationNam
 		// Verify every file in expected deleted file changes to be actually observed to be changed
 		// If found exactly same or different, return from PushLocal and signal exit for watch so that the watch terminates gracefully
 		for _, gotChangedFile := range delFiles {
-			wantedFileDetail := CompDirStructure[deletedFile]
+			wantedFileDetail := CompDirStructure[filepath.FromSlash(deletedFile)]
 			if filepath.Join(wantedFileDetail.FileParent, wantedFileDetail.FilePath) == filepath.Join(wantedFileDetail.FileParent, filepath.Base(gotChangedFile)) {
 				found = true
 			}

@@ -646,6 +646,34 @@ func HttpGetFreePort() (int, error) {
 	return freePort, nil
 }
 
+// IsEmpty checks to see if a directory is empty
+// shamelessly taken from: https://stackoverflow.com/questions/30697324/how-to-check-if-directory-on-path-is-empty
+// this helps detect any edge cases where an empty directory is copied over
+func IsEmpty(name string) (bool, error) {
+	f, err := os.Open(name)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close() // #nosec G307
+
+	_, err = f.Readdirnames(1) // Or f.Readdir(1)
+	if err == io.EOF {
+		return true, nil
+	}
+	return false, err // Either not empty or error, suits both cases
+}
+
+// GetRemoteFilesMarkedForDeletion returns the list of remote files marked for deletion
+func GetRemoteFilesMarkedForDeletion(delSrcRelPaths []string, remoteFolder string) []string {
+	var rmPaths []string
+	for _, delRelPath := range delSrcRelPaths {
+		// since the paths inside the container are linux oriented
+		// so we convert the paths accordingly
+		rmPaths = append(rmPaths, filepath.ToSlash(filepath.Join(remoteFolder, delRelPath)))
+	}
+	return rmPaths
+}
+
 // HTTPGetRequest uses url to get file contents
 func HTTPGetRequest(url string) ([]byte, error) {
 	var httpClient = &http.Client{Timeout: HTTPRequestTimeout}
@@ -661,4 +689,29 @@ func HTTPGetRequest(url string) ([]byte, error) {
 	}
 
 	return bytes, err
+}
+
+// filterIgnores applies the glob rules on the filesChanged and filesDeleted and filters them
+// returns the filtered results which match any of the glob rules
+func FilterIgnores(filesChanged, filesDeleted, absIgnoreRules []string) (filesChangedFiltered, filesDeletedFiltered []string) {
+	for _, file := range filesChanged {
+		match, err := IsGlobExpMatch(file, absIgnoreRules)
+		if err != nil {
+			continue
+		}
+		if !match {
+			filesChangedFiltered = append(filesChangedFiltered, file)
+		}
+	}
+
+	for _, file := range filesDeleted {
+		match, err := IsGlobExpMatch(file, absIgnoreRules)
+		if err != nil {
+			continue
+		}
+		if !match {
+			filesDeletedFiltered = append(filesDeletedFiltered, file)
+		}
+	}
+	return filesChangedFiltered, filesDeletedFiltered
 }
