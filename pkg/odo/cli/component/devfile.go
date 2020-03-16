@@ -33,7 +33,6 @@ const componentNameMaxLen = 45
 
 // DevfilePush has the logic to perform the required actions for a given devfile
 func (po *PushOptions) DevfilePush() (err error) {
-
 	// Parse devfile
 	devObj, err := devfile.Parse(po.devfilePath)
 	if err != nil {
