@@ -7,9 +7,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-// GetContainersByComponentName returns the list of Docker containers that matches the specified label
+// GetContainersByComponent returns the list of Docker containers that matches the specified component label
 // If no container with that name exists, it returns an error
-func (dc *Client) GetContainersByComponentName(componentName string) ([]types.Container, error) {
+func (dc *Client) GetContainersByComponent(componentName string) ([]types.Container, error) {
 	var containerList []types.Container
 
 	containers, err := dc.Client.ContainerList(dc.Context, types.ContainerListOptions{})
@@ -29,6 +29,7 @@ func (dc *Client) GetContainersByComponentName(componentName string) ([]types.Co
 // hostConfig - configurations related to the host (volume mounts, exposed ports, etc) (if needed)
 // networkingConfig - endpoints to expose (if needed)
 // containerName - name to give to the container
+// Returns the ID of the started container and an error (if applicable)
 func (dc *Client) StartContainer(containerConfig *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig, containerName string) error {
 	resp, err := dc.Client.ContainerCreate(dc.Context, containerConfig, hostConfig, networkingConfig, containerName)
 	if err != nil {

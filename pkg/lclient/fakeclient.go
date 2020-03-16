@@ -66,6 +66,10 @@ var mockContainerList = []types.Container{
 	},
 }
 
+var mockContainerCreatedBody = container.ContainerCreateCreatedBody{
+	ID: "golang",
+}
+
 // FakeNew returns a fake local client instance that can be used in unit tests
 func FakeNew() *Client {
 	dockerClient := &mockDockerClient{}
@@ -85,7 +89,7 @@ func (m *mockDockerClient) ImageList(ctx context.Context, imageListOptions types
 }
 
 func (m *mockDockerClient) ContainerCreate(ctx context.Context, config *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig, containerName string) (container.ContainerCreateCreatedBody, error) {
-	return container.ContainerCreateCreatedBody{}, nil
+	return mockContainerCreatedBody, nil
 }
 
 func (m *mockDockerClient) ContainerStart(ctx context.Context, containerID string, options types.ContainerStartOptions) error {

@@ -7,11 +7,9 @@ import (
 	"strings"
 
 	"github.com/openshift/odo/pkg/devfile"
-	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 
 	"github.com/openshift/odo/pkg/devfile/adapters"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
-	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
@@ -35,20 +33,6 @@ const componentNameMaxLen = 45
 
 // DevfilePush has the logic to perform the required actions for a given devfile
 func (po *PushOptions) DevfilePush() (err error) {
-	// If Docker push target is enabled, need to deploy container locally via Docker
-	if pushtarget.IsPushTargetDocker() {
-		// Create a new Docker client
-		dc, err := lclient.New()
-		if err != nil {
-			return err
-		}
-		container, err := dc.GetContainerByComponentName("nodejs")
-		if err != nil {
-			return err
-		}
-		fmt.Println(container.Names)
-		return nil
-	}
 
 	// Parse devfile
 	devObj, err := devfile.Parse(po.devfilePath)
