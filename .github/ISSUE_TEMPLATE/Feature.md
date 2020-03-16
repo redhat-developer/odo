@@ -2,7 +2,8 @@
 name: Feature request
 about: Suggest a new feature for odo
 ---
-[kind/Feature]
+
+/kind feature
 
 <!--
 
