@@ -5,6 +5,9 @@ components:
   - type: dockerimage
     image: node:stretch
     command: ["tail", "-f", "/dev/null"]
+    endpoints:
+      - name: '9090/tcp'
+        port: 9090
     alias: runtime
     memoryLimit: 1024Mi
     mountSources: true

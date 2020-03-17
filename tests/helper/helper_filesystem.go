@@ -15,7 +15,7 @@ import (
 
 // CreateNewContext create new empty temporary directory
 func CreateNewContext() string {
-	directory, err := ioutil.TempDir("", "")
+	directory, err := ioutil.TempDir("", "prefix")
 	Expect(err).NotTo(HaveOccurred())
 	fmt.Fprintf(GinkgoWriter, "Created dir: %s\n", directory)
 	return directory
