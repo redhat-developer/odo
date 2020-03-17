@@ -3,8 +3,8 @@ package common
 import (
 	"testing"
 
-	"github.com/openshift/odo/pkg/devfile"
-	versionsCommon "github.com/openshift/odo/pkg/devfile/versions/common"
+	"github.com/openshift/odo/pkg/devfile/parser"
+	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/util"
 )
@@ -55,7 +55,7 @@ func TestGetSupportedComponents(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			devObj := devfile.DevfileObj{
+			devObj := parser.DevfileObj{
 				Data: testingutil.TestDevfileData{
 					ComponentType: tt.componentType,
 				},

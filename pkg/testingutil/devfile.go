@@ -1,7 +1,7 @@
 package testingutil
 
 import (
-	versionsCommon "github.com/openshift/odo/pkg/devfile/versions/common"
+	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 )
 
 // TestDevfileData is a convenience data type used to mock up a devfile configuration

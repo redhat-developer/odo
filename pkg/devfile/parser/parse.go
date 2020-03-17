@@ -3,8 +3,8 @@ package devfile
 import (
 	"encoding/json"
 
-	"github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/versions"
+	devfileCtx "github.com/openshift/odo/pkg/devfile/parser/context"
+	"github.com/openshift/odo/pkg/devfile/parser/data"
 	"github.com/pkg/errors"
 )
 
@@ -13,7 +13,7 @@ import (
 func Parse(path string) (d DevfileObj, err error) {
 
 	// NewDevfileCtx
-	d.Ctx = parser.NewDevfileCtx(path)
+	d.Ctx = devfileCtx.NewDevfileCtx(path)
 
 	// Fill the fields of DevfileCtx struct
 	err = d.Ctx.Populate()
@@ -28,7 +28,7 @@ func Parse(path string) (d DevfileObj, err error) {
 	}
 
 	// Create a new devfile data object
-	d.Data, err = versions.NewDevfileData(d.Ctx.GetApiVersion())
+	d.Data, err = data.NewDevfileData(d.Ctx.GetApiVersion())
 	if err != nil {
 		return d, err
 	}

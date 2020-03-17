@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/openshift/odo/pkg/devfile"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/devfile/versions/common"
+	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/util"
 
@@ -60,7 +60,7 @@ func ConvertPorts(endpoints []common.DockerimageEndpoint) ([]corev1.ContainerPor
 }
 
 // GetContainers iterates through the components in the devfile and returns a slice of the corresponding containers
-func GetContainers(devfileObj devfile.DevfileObj) ([]corev1.Container, error) {
+func GetContainers(devfileObj devfileParser.DevfileObj) ([]corev1.Container, error) {
 	var containers []corev1.Container
 	for _, comp := range adaptersCommon.GetSupportedComponents(devfileObj.Data) {
 		envVars := ConvertEnvs(comp.Env)
@@ -116,7 +116,7 @@ func isEnvPresent(EnvVars []corev1.EnvVar, envVarName string) bool {
 
 // UpdateContainersWithSupervisord updates the run components entrypoint and volume mount
 // with supervisord if no entrypoint has been specified for the component in the devfile
-func UpdateContainersWithSupervisord(devfileObj devfile.DevfileObj, containers []corev1.Container, devfileRunCmd string) ([]corev1.Container, error) {
+func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, containers []corev1.Container, devfileRunCmd string) ([]corev1.Container, error) {
 
 	runCommand, err := adaptersCommon.GetRunCommand(devfileObj.Data, devfileRunCmd)
 	if err != nil {
@@ -173,7 +173,7 @@ func UpdateContainersWithSupervisord(devfileObj devfile.DevfileObj, containers [
 }
 
 // GetVolumes iterates through the components in the devfile and returns a map of component alias to the devfile volumes
-func GetVolumes(devfileObj devfile.DevfileObj) map[string][]adaptersCommon.DevfileVolume {
+func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]adaptersCommon.DevfileVolume {
 	// componentAliasToVolumes is a map of the Devfile Component Alias to the Devfile Component Volumes
 	componentAliasToVolumes := make(map[string][]adaptersCommon.DevfileVolume)
 	size := volumeSize

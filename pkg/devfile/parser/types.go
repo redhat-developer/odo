@@ -1,8 +1,8 @@
 package devfile
 
 import (
-	"github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/versions"
+	devfileCtx "github.com/openshift/odo/pkg/devfile/parser/context"
+	"github.com/openshift/odo/pkg/devfile/parser/data"
 )
 
 // Default filenames for create devfile
@@ -15,8 +15,8 @@ const (
 type DevfileObj struct {
 
 	// Ctx has devfile context info
-	Ctx parser.DevfileCtx
+	Ctx devfileCtx.DevfileCtx
 
 	// Data has the devfile data
-	Data versions.DevfileData
+	Data data.DevfileData
 }

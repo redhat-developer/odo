@@ -1,9 +1,9 @@
-package versions
+package data
 
 import (
 	"reflect"
 
-	v100 "github.com/openshift/odo/pkg/devfile/versions/1.0.0"
+	v100 "github.com/openshift/odo/pkg/devfile/parser/data/1.0.0"
 )
 
 // SupportedApiVersions stores the supported devfile API versions

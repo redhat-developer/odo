@@ -1,7 +1,7 @@
-package versions
+package data
 
 import (
-	"github.com/openshift/odo/pkg/devfile/versions/common"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 )
 
 // DevfileData is an interface that defines functions for Devfile data operations

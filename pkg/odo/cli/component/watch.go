@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 
 	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/adapters"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
+	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/occlient"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
@@ -85,7 +85,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 		}
 
 		// Parse devfile
-		devObj, err := devfile.Parse(wo.devfilePath)
+		devObj, err := devfileParser.Parse(wo.devfilePath)
 		if err != nil {
 			return err
 		}
