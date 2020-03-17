@@ -22,6 +22,7 @@ import (
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -202,6 +203,18 @@ func fakeBuildStatus(status buildv1.BuildPhase, buildName string) *buildv1.Build
 		Status: buildv1.BuildStatus{
 			Phase: status,
 		},
+	}
+}
+
+func fakeEventStatus(podName string, eventWarningMessage string, count int32) *corev1.Event {
+	return &corev1.Event{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: podName,
+		},
+		Type:    "Warning",
+		Count:   count,
+		Reason:  eventWarningMessage,
+		Message: "Foobar",
 	}
 }
 
@@ -2192,61 +2205,127 @@ func TestWaitForBuildToFinish(t *testing.T) {
 
 }
 
-func TestWaitAndGetPod(t *testing.T) {
-
+func TestCollectEvents(t *testing.T) {
 	tests := []struct {
-		name    string
-		podName string
-		status  corev1.PodPhase
-		wantErr bool
+		name                string
+		podName             string
+		eventWarningMessage string
 	}{
 		{
-			name:    "phase: running",
-			podName: "ruby",
-			status:  corev1.PodRunning,
-			wantErr: false,
-		},
-
-		{
-			name:    "phase: failed",
-			podName: "ruby",
-			status:  corev1.PodFailed,
-			wantErr: true,
-		},
-
-		{
-			name: "phase:	unknown",
-			podName: "ruby",
-			status:  corev1.PodUnknown,
-			wantErr: true,
+			name:                "Case 1: Collect an arbitrary amount of events",
+			podName:             "ruby",
+			eventWarningMessage: "Fake event warning message",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			fkclient, fkclientset := FakeNew()
-			fkWatch := watch.NewFake()
+			// Create a fake client
+			fakeClient, fakeClientSet := FakeNew()
+			fakeEventWatch := watch.NewRaceFreeFake()
+			podSelector := fmt.Sprintf("deploymentconfig=%s", tt.podName)
 
-			// Change the status
-			go func() {
-				fkWatch.Modify(fakePodStatus(tt.status, tt.podName))
-			}()
+			// Create a fake event status / watch reactor for faking the events we are collecting
+			fakeEvent := fakeEventStatus(tt.podName, tt.eventWarningMessage, 10)
+			go func(event *corev1.Event) {
+				fakeEventWatch.Add(event)
+			}(fakeEvent)
 
-			fkclientset.Kubernetes.PrependWatchReactor("pods", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
-				return true, fkWatch, nil
+			fakeClientSet.Kubernetes.PrependWatchReactor("events", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
+				return true, fakeEventWatch, nil
+			})
+
+			// Create a test spinner / variables / quit variable for the go channel
+			spinner := log.Spinner("Test spinner")
+			events := make(map[string]corev1.Event)
+			quit := make(chan int)
+			go fakeClient.CollectEvents(podSelector, events, spinner, quit)
+
+			// Sleep in order to make sure we actually collect some events
+			time.Sleep(2 * time.Second)
+			close(quit)
+
+			// We make sure to lock in order to prevent race conditions when retrieving the events (since they are a pointer
+			// by default since we pass in a map)
+			mu.Lock()
+			if len(events) == 0 {
+				t.Errorf("Expected events, got none")
+			}
+			mu.Unlock()
+
+			// Collect the first event in the map
+			var firstEvent corev1.Event
+			for _, val := range events {
+				firstEvent = val
+			}
+
+			if !strings.Contains(firstEvent.Reason, tt.eventWarningMessage) {
+				t.Errorf("expected warning message: '%s' in event message: '%+v'", tt.eventWarningMessage, firstEvent.Reason)
+			}
+
+		})
+	}
+}
+
+// NOTE: We do *not* collection the amount of actions taken in this function as there could be any number of fake
+// 'event' actions that are happening in the background.
+func TestWaitAndGetPod(t *testing.T) {
+	tests := []struct {
+		name                string
+		podName             string
+		status              corev1.PodPhase
+		wantEventWarning    bool
+		wantErr             bool
+		eventWarningMessage string
+	}{
+		{
+			name:             "Case 1: Pod running",
+			podName:          "ruby",
+			status:           corev1.PodRunning,
+			wantEventWarning: false,
+			wantErr:          false,
+		},
+		{
+			name:             "Case 2: Pod failed",
+			podName:          "ruby",
+			status:           corev1.PodFailed,
+			wantEventWarning: false,
+			wantErr:          true,
+		},
+		{
+			name:             "Case 3: Pod unknown",
+			podName:          "ruby",
+			status:           corev1.PodUnknown,
+			wantEventWarning: false,
+			wantErr:          true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			fakeClient, fakeClientSet := FakeNew()
+			fakePodWatch := watch.NewRaceFreeFake()
+
+			// Watch for Pods
+			fakePod := fakePodStatus(tt.status, tt.podName)
+			go func(pod *corev1.Pod) {
+				fakePodWatch.Modify(pod)
+			}(fakePod)
+
+			// Prepend watch reactor (beginning of the chain)
+			fakeClientSet.Kubernetes.PrependWatchReactor("pods", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
+				return true, fakePodWatch, nil
 			})
 
 			podSelector := fmt.Sprintf("deploymentconfig=%s", tt.podName)
-			pod, err := fkclient.WaitAndGetPod(podSelector, corev1.PodRunning, "Waiting for component to start")
+
+			pod, err := fakeClient.WaitAndGetPod(podSelector, corev1.PodRunning, "Waiting for component to start")
 
 			if !tt.wantErr == (err != nil) {
-				t.Errorf(" client.WaitAndGetPod(string) unexpected error %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("client.WaitAndGetPod(string) unexpected error %v, wantErr %v", err, tt.wantErr)
 				return
-			}
-
-			if len(fkclientset.Kubernetes.Actions()) != 1 {
-				t.Errorf("expected 1 action in WaitAndGetPod got: %v", fkclientset.Kubernetes.Actions())
 			}
 
 			if err == nil {
