@@ -9,6 +9,7 @@ import (
 	"github.com/openshift/odo/pkg/devfile"
 
 	"github.com/openshift/odo/pkg/devfile/adapters"
+	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
@@ -28,9 +29,10 @@ The behaviour of this feature is subject to change as development for this
 feature progresses.
 */
 
+const componentNameMaxLen = 45
+
 // DevfilePush has the logic to perform the required actions for a given devfile
 func (po *PushOptions) DevfilePush() (err error) {
-
 	// Parse devfile
 	devObj, err := devfile.Parse(po.devfilePath)
 	if err != nil {
@@ -42,15 +44,26 @@ func (po *PushOptions) DevfilePush() (err error) {
 		return err
 	}
 
+	// Set the source path to either the context or current working directory (if context not set)
+	po.sourcePath, err = util.GetAbsPath(filepath.Dir(po.componentContext))
+	if err != nil {
+		return errors.Wrap(err, "unable to get source path")
+	}
+
 	spinner := log.SpinnerNoSpin(fmt.Sprintf("Push devfile component %s", componentName))
 	defer spinner.End(false)
 
-	devfileHandler, err := adapters.NewPlatformAdapter(componentName, devObj)
+	kc := kubernetes.KubernetesContext{
+		Namespace: po.namespace,
+	}
+	devfileHandler, err := adapters.NewPlatformAdapter(componentName, devObj, kc)
+
 	if err != nil {
 		return err
 	}
 
-	err = devfileHandler.Start()
+	// Start or update the component
+	err = devfileHandler.Push(po.sourcePath, po.ignores, po.forceBuild, util.GetAbsGlobExps(po.sourcePath, po.ignores))
 	if err != nil {
 		log.Errorf(
 			"Failed to start component with name %s.\nError: %v",
@@ -61,6 +74,8 @@ func (po *PushOptions) DevfilePush() (err error) {
 	}
 
 	spinner.End(true)
+
+	log.Success("Changes successfully pushed to component")
 	return
 }
 
@@ -78,5 +93,7 @@ func getComponentName() (string, error) {
 	retVal = filepath.Base(currDir)
 	// Kubernetes resources require a name that satisfies DNS-1123
 	retVal = strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(retVal)))
+	// Kubernetes resources have a characters limit, truncate and give sufficient space for other resources
+	retVal = util.TruncateString(retVal, componentNameMaxLen)
 	return retVal, nil
 }

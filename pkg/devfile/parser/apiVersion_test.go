@@ -1,6 +1,10 @@
 package parser
 
-import "testing"
+import (
+	"fmt"
+	"reflect"
+	"testing"
+)
 
 func TestSetDevfileAPIVersion(t *testing.T) {
 
@@ -8,53 +12,55 @@ func TestSetDevfileAPIVersion(t *testing.T) {
 		apiVersion          = "1.0.0"
 		validJson           = `{"apiVersion": "1.0.0"}`
 		emptyJson           = "{}"
-		emptyApiVersionJson = `{"apiVersion":}`
+		emptyApiVersionJson = `{"apiVersion": ""}`
 	)
 
-	t.Run("valid apiVersion", func(t *testing.T) {
+	// test table
+	tests := []struct {
+		name    string
+		rawJson []byte
+		want    string
+		wantErr error
+	}{
+		{
+			name:    "valid apiVersion",
+			rawJson: []byte(validJson),
+			want:    apiVersion,
+			wantErr: nil,
+		},
+		{
+			name:    "apiVersion not present",
+			rawJson: []byte(emptyJson),
+			want:    "",
+			wantErr: fmt.Errorf("apiVersion not present in devfile"),
+		},
+		{
+			name:    "apiVersion empty",
+			rawJson: []byte(emptyApiVersionJson),
+			want:    "",
+			wantErr: fmt.Errorf("apiVersion in devfile cannot be empty"),
+		},
+	}
 
-		var (
-			rawJson = []byte(validJson)
-			d       = DevfileCtx{rawContent: rawJson}
-			err     = d.SetDevfileAPIVersion()
-			got     = d.apiVersion
-			want    = apiVersion
-		)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 
-		if err != nil {
-			t.Errorf("unexpected error: '%v'", err)
-		}
+			// new devfile context object
+			d := DevfileCtx{rawContent: tt.rawJson}
 
-		if got != want {
-			t.Errorf("want: '%v', got: '%v'", want, got)
-		}
-	})
+			// SetDevfileAPIVersion
+			gotErr := d.SetDevfileAPIVersion()
+			got := d.apiVersion
 
-	t.Run("apiVersion not present", func(t *testing.T) {
+			if !reflect.DeepEqual(gotErr, tt.wantErr) {
+				t.Errorf("unexpected error: '%v', wantErr: '%v'", gotErr, tt.wantErr)
+			}
 
-		var (
-			rawJson = []byte(emptyJson)
-			d       = DevfileCtx{rawContent: rawJson}
-			err     = d.SetDevfileAPIVersion()
-		)
-
-		if err == nil {
-			t.Errorf("expected error, didn't get one")
-		}
-	})
-
-	t.Run("apiVersion empty", func(t *testing.T) {
-
-		var (
-			rawJson = []byte(emptyApiVersionJson)
-			d       = DevfileCtx{rawContent: rawJson}
-			err     = d.SetDevfileAPIVersion()
-		)
-
-		if err == nil {
-			t.Errorf("expected error, didn't get one")
-		}
-	})
+			if got != tt.want {
+				t.Errorf("want: '%v', got: '%v'", tt.want, got)
+			}
+		})
+	}
 }
 
 func TestGetApiVersion(t *testing.T) {

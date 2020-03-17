@@ -42,7 +42,6 @@ func CopyFile(client SyncClient, localPath string, targetPodName string, targetC
 		}
 
 	}()
-
 	// cmdArr will run inside container
 	cmdArr := []string{"tar", "xf", "-", "-C", targetPath, "--strip", "1"}
 	var stdout bytes.Buffer

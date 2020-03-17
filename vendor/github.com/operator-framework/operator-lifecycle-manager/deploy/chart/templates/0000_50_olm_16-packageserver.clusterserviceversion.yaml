@@ -1,0 +1,3 @@
+{{ if and .Values.installType (eq .Values.installType "ocp") }}
+{{- include "packageserver.clusterserviceversion" . }}
+{{- end }}

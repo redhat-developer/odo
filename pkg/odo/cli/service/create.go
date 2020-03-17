@@ -25,6 +25,8 @@ const (
 	createRecommendedCommandName = "create"
 	equivalentTemplate           = "{{.CmdFullName}} {{.ServiceType}}" +
 		"{{if .ServiceName}} {{.ServiceName}}{{end}}" +
+		" --app {{.Application}}" +
+		" --project {{.Project}}" +
 		"{{if .Plan}} --plan {{.Plan}}{{end}}" +
 		"{{range $key, $value := .ParametersMap}} -p {{$key}}={{$value}}{{end}}"
 )

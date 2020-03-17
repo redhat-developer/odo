@@ -1,5 +1,5 @@
 package adapters
 
 type PlatformAdapter interface {
-	Start() error
+	Push(path string, ignoredFiles []string, forceBuild bool, globExps []string) error
 }

@@ -25,7 +25,7 @@ echo -e "# Installation of $2
 
 To install odo, follow our installation guide at [docs.openshift.com]($INSTALLATION_GUIDE)
 
-After each release, binaries synced on [mirror.openshift.com]($MIRROR)" > /tmp/base
+After each release, binaries are synced to [mirror.openshift.com]($MIRROR)" > /tmp/base
 
 github_changelog_generator \
 --user openshift \
@@ -43,9 +43,9 @@ github_changelog_generator \
 --bugs-label "**Bugs:**" \
 --bug-labels "kind/bug" \
 --removed-label "**Tests:**" \
---removed-labels "kind/flake,kind/test" \
---security-label "**Documentation:**" \
---security-labels "kind/docs,kind/documentation"
+--removed-labels "kind/flake,kind/test,kind/failing-test" \
+--security-label "**Documentation & Discussions:**" \
+--security-labels "kind/docs,kind/documentation,kind/design,kind/discussion,kind/epic"
 
 echo ""
 echo "The changelog is located at: /tmp/changelog"

@@ -34,6 +34,7 @@ type Fuzzer struct {
 	nilChance        float64
 	minElements      int
 	maxElements      int
+	maxDepth         int
 }
 
 // New returns a new Fuzzer. Customize your Fuzzer further by calling Funcs,
@@ -134,6 +135,14 @@ func (f *Fuzzer) genElementCount() int {
 
 func (f *Fuzzer) genShouldFill() bool {
 	return f.r.Float64() > f.nilChance
+}
+
+// MaxDepth sets the maximum number of recursive fuzz calls that will be made
+// before stopping.  This includes struct members, pointers, and map and slice
+// elements.
+func (f *Fuzzer) MaxDepth(d int) *Fuzzer {
+	f.maxDepth = d
+	return f
 }
 
 // Fuzz recursively fills all of obj's fields with something random.  First

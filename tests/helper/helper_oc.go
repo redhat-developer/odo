@@ -135,6 +135,17 @@ func (oc *OcRunner) CheckCmdOpInRemoteCmpPod(cmpName string, appName string, prj
 	return checkOp(stdOut, nil)
 }
 
+// CheckCmdOpInRemoteDevfilePod runs the provided command on remote component pod and returns the return value of command output handler function passed to it
+func (oc *OcRunner) CheckCmdOpInRemoteDevfilePod(podName string, prjName string, cmd []string, checkOp func(cmdOp string, err error) bool) bool {
+	session := CmdRunner(oc.path, append([]string{"exec", podName, "--namespace", prjName, "--"}, cmd...)...)
+	stdOut := string(session.Wait().Out.Contents())
+	stdErr := string(session.Wait().Err.Contents())
+	if stdErr != "" {
+		return checkOp(stdOut, fmt.Errorf("cmd %s failed with error %s on pod %s", cmd, stdErr, podName))
+	}
+	return checkOp(stdOut, nil)
+}
+
 // VerifyCmpExists verifies if component was created successfully
 func (oc *OcRunner) VerifyCmpExists(cmpName string, appName string, prjName string) {
 	cmpDCName := fmt.Sprintf("%s-%s", cmpName, appName)
@@ -339,6 +350,15 @@ func (oc *OcRunner) GetRunningPodNameOfComp(compName string, namespace string) s
 	return strings.TrimSpace(podName)
 }
 
+// GetRunningPodNameByComponent executes oc command and returns the running pod name of a delopyed
+// devfile component by passing component name as a argument
+func (oc *OcRunner) GetRunningPodNameByComponent(compName string, namespace string) string {
+	stdOut := CmdShouldPass(oc.path, "get", "pods", "--namespace", namespace, "--show-labels")
+	re := regexp.MustCompile(`(` + compName + `-\S+)\s+\S+\s+Running.*component=` + compName)
+	podName := re.FindStringSubmatch(stdOut)[1]
+	return strings.TrimSpace(podName)
+}
+
 // GetRoute returns route URL
 func (oc *OcRunner) GetRoute(urlName string, appName string) string {
 	session := CmdRunner(oc.path, "get", "routes", urlName+"-"+appName,
@@ -430,9 +450,9 @@ func (oc *OcRunner) WaitForDCRollout(dcName string, project string, timeout time
 	session.Wait(timeout)
 }
 
-// CheckForExistence checks if the given resource exists on the cluster
-func (oc *OcRunner) CheckForExistence(resourceName, namespace string) {
-	session := CmdRunner(oc.path, "get", "routes", "--namespace", namespace)
+// CheckForExistence checks if the given resource type exists on the cluster
+func (oc *OcRunner) CheckForExistence(resourceType, namespace string) {
+	session := CmdRunner(oc.path, "get", resourceType, "--namespace", namespace)
 	Eventually(session).Should(gexec.Exit(0))
 	output := string(session.Wait().Out.Contents())
 	Expect(output).To(ContainSubstring(""))

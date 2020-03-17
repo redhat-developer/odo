@@ -636,7 +636,7 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	glog.V(4).Infof("PushLocal: componentName: %s, applicationName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", componentName, applicationName, path, files, delFiles, isForcePush)
 
 	// Edge case: check to see that the path is NOT empty.
-	emptyDir, err := isEmpty(path)
+	emptyDir, err := util.IsEmpty(path)
 	if err != nil {
 		return errors.Wrapf(err, "Unable to check directory: %s", path)
 	} else if emptyDir {
@@ -1453,23 +1453,6 @@ func GetMachineReadableFormatForList(components []Component) ComponentList {
 		Items:    components,
 	}
 
-}
-
-// isEmpty checks to see if a directory is empty
-// shamelessly taken from: https://stackoverflow.com/questions/30697324/how-to-check-if-directory-on-path-is-empty
-// this helps detect any edge cases where an empty directory is copied over
-func isEmpty(name string) (bool, error) {
-	f, err := os.Open(name)
-	if err != nil {
-		return false, err
-	}
-	defer f.Close() // #nosec G307
-
-	_, err = f.Readdirnames(1) // Or f.Readdir(1)
-	if err == io.EOF {
-		return true, nil
-	}
-	return false, err // Either not empty or error, suits both cases
 }
 
 // getStorageFromConfig gets all the storage from the config

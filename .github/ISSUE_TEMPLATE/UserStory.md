@@ -3,6 +3,7 @@ name: User Story
 about: New User Story
 ---
 
+/kind user-story
 
 ## User Story
 As a ... I want to ... So that ...

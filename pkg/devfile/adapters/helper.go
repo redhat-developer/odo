@@ -1,6 +1,8 @@
 package adapters
 
 import (
+	"fmt"
+
 	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
@@ -8,7 +10,7 @@ import (
 )
 
 // NewPlatformAdapter returns a Devfile adapter for the targeted platform
-func NewPlatformAdapter(componentName string, devObj devfile.DevfileObj) (PlatformAdapter, error) {
+func NewPlatformAdapter(componentName string, devObj devfile.DevfileObj, platformContext interface{}) (PlatformAdapter, error) {
 
 	adapterContext := common.AdapterContext{
 		ComponentName: componentName,
@@ -17,13 +19,22 @@ func NewPlatformAdapter(componentName string, devObj devfile.DevfileObj) (Platfo
 
 	// Only the kubernetes adapter is implemented at the moment
 	// When there are others this function should be updated to retrieve the correct adapter for the desired platform target
-	return createKubernetesAdapter(adapterContext)
+	kc, ok := platformContext.(kubernetes.KubernetesContext)
+	if !ok {
+		return nil, fmt.Errorf("Error retrieving context for Kubernetes")
+	}
+	return createKubernetesAdapter(adapterContext, kc.Namespace)
 }
 
-func createKubernetesAdapter(adapterContext common.AdapterContext) (PlatformAdapter, error) {
+func createKubernetesAdapter(adapterContext common.AdapterContext, namespace string) (PlatformAdapter, error) {
 	client, err := kclient.New()
 	if err != nil {
 		return nil, err
+	}
+
+	// If a namespace was passed in
+	if namespace != "" {
+		client.Namespace = namespace
 	}
 	return newKubernetesAdapter(adapterContext, *client)
 }
