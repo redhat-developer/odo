@@ -5,6 +5,7 @@ import (
 
 	devfileCtx "github.com/openshift/odo/pkg/devfile/parser/context"
 	"github.com/openshift/odo/pkg/devfile/parser/data"
+	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/pkg/errors"
 )
 
@@ -37,6 +38,12 @@ func Parse(path string) (d DevfileObj, err error) {
 	err = json.Unmarshal(d.Ctx.GetDevfileContent(), &d.Data)
 	if err != nil {
 		return d, errors.Wrapf(err, "failed to decode devfile content")
+	}
+
+	// Validate devfile data
+	err = validate.ValidateDevfileData(d.Data)
+	if err != nil {
+		return d, err
 	}
 
 	// Successful
