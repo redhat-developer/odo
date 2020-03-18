@@ -53,7 +53,7 @@ func (a Adapter) Push(path string, ignoredFiles []string, forceBuild bool, globE
 
 	_, err = a.Client.WaitForDeploymetRollout(a.ComponentName)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "error while waiting for deployment rollout")
 	}
 
 	// Sync source code to the component
