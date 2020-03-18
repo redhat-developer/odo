@@ -270,14 +270,14 @@ func CreateFromPath(client *occlient.Client, params occlient.CreateArgs) error {
 }
 
 // Delete whole component
-func Delete(client *occlient.Client, componentName string, applicationName string) error {
+func Delete(client *occlient.Client, wait bool, componentName, applicationName string) error {
 
 	// Loading spinner
 	s := log.Spinnerf("Deleting component %s", componentName)
 	defer s.End(false)
 
 	labels := componentlabels.GetLabels(componentName, applicationName, false)
-	err := client.Delete(labels)
+	err := client.Delete(labels, wait)
 	if err != nil {
 		return errors.Wrapf(err, "error deleting component %s", componentName)
 	}

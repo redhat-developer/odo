@@ -2089,17 +2089,56 @@ func (c *Client) DisplayDeploymentConfigLog(deploymentConfigName string, followL
 }
 
 // Delete takes labels as a input and based on it, deletes respective resource
-func (c *Client) Delete(labels map[string]string) error {
+func (c *Client) Delete(labels map[string]string, wait bool) error {
+
 	// convert labels to selector
 	selector := util.ConvertLabelsToSelector(labels)
 	glog.V(4).Infof("Selectors used for deletion: %s", selector)
 
 	var errorList []string
+	var deletionPolicy = metav1.DeletePropagationBackground
+
+	// for --wait flag, it deletes component dependents first and then delete component
+	if wait {
+		deletionPolicy = metav1.DeletePropagationForeground
+	}
 	// Delete DeploymentConfig
 	glog.V(4).Info("Deleting DeploymentConfigs")
-	err := c.appsClient.DeploymentConfigs(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
+	err := c.appsClient.DeploymentConfigs(c.Namespace).DeleteCollection(&metav1.DeleteOptions{PropagationPolicy: &deletionPolicy}, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		errorList = append(errorList, "unable to delete deploymentconfig")
+	}
+
+	// watch the component to recieve deleted event.
+	if wait {
+		// check later about selector.
+		fmt.Println("In watch")
+		watcher, err := c.appsClient.DeploymentConfigs(c.Namespace).Watch(metav1.ListOptions{LabelSelector: selector})
+		if err != nil {
+			errorList = append(errorList, "unable to Watch deploymentconfig")
+		}
+		defer watcher.Stop()
+		eventCh := watcher.ResultChan()
+
+	Loop:
+		for event := range eventCh {
+			fmt.Println("In for loop")
+			_, ok := event.Object.(*appsv1.DeploymentConfig)
+			if !ok {
+				errorList = append(errorList, "Unexpected type unable to Watch deploymentconfig")
+			}
+			switch event.Type {
+			case watch.Deleted:
+				fmt.Println("in case deleted")
+				break Loop
+			case watch.Error:
+				errorList = append(errorList, "unable to Watch deploymentconfig")
+				fmt.Println("in case error")
+				break Loop
+
+			}
+
+		}
 	}
 	// Delete BuildConfig
 	glog.V(4).Info("Deleting BuildConfigs")
@@ -3193,11 +3232,14 @@ func isSubDir(baseDir, otherDir string) bool {
 // OpenShift garbage collector
 func generateOwnerReference(dc *appsv1.DeploymentConfig) metav1.OwnerReference {
 
+	blockOwnerDeletion := true
+
 	ownerReference := metav1.OwnerReference{
-		APIVersion: "apps.openshift.io/v1",
-		Kind:       "DeploymentConfig",
-		Name:       dc.Name,
-		UID:        dc.UID,
+		APIVersion:         "apps.openshift.io/v1",
+		Kind:               "DeploymentConfig",
+		Name:               dc.Name,
+		UID:                dc.UID,
+		BlockOwnerDeletion: &blockOwnerDeletion,
 	}
 
 	return ownerReference
