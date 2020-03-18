@@ -14,6 +14,7 @@ import (
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	catalogutil "github.com/openshift/odo/pkg/odo/cli/catalog/util"
@@ -282,31 +283,88 @@ func (co *CreateOptions) setResourceLimits() error {
 	return nil
 }
 
-// Validate if devfile component already exists
-func validateDevfileComponentCreateRequest() error {
-	if util.CheckPathExists(DevfilePath) {
-		return errors.New("Devfile.yaml already exists")
-	}
-
-	if util.CheckPathExists(EnvFilePath) {
-		return errors.New("env.yaml already exists")
-	}
-
-	return nil
-}
-
 // Complete completes create args
 func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	if experimental.IsExperimentalModeEnabled() {
-		co.devfileMetadata.componentType = args[0]
-		if len(args) == 2 {
-			co.devfileMetadata.componentName = args[1]
+		if len(args) == 0 {
+			co.interactive = true
 		}
+
+		// Get current active namespace
+		client, err := kclient.New()
+		if err != nil {
+			return err
+		}
+		defaultComponentNamespace := client.Namespace
 
 		catalogDevfileList, err := catalog.ListDevfileComponents()
 		if err != nil {
 			return err
 		}
+
+		var componentType string
+		var componentName string
+		var componentNamespace string
+
+		if co.interactive {
+			// Interactive mode
+
+			// Get component type, name and namespace from user's choice via interactive mode
+			// Component type: We provide supported devfile component list then let you choose
+			// Component name: User needs to specify the componet name, by default it is component type that user chooses
+			// Component namespace: User needs to specify component namespace, by default it is the current active namespace
+			var supDevfileCatalogList []catalog.DevfileComponentType
+			for _, devfileComponent := range catalogDevfileList.Items {
+				if devfileComponent.Support {
+					supDevfileCatalogList = append(supDevfileCatalogList, devfileComponent)
+				}
+			}
+			componentType = ui.SelectDevfileComponentType(supDevfileCatalogList)
+
+			componentName = ui.EnterDevfileComponentName(componentType)
+
+			if cmd.Flags().Changed("project") {
+				componentNamespace, err = cmd.Flags().GetString("project")
+				if err != nil {
+					return err
+				}
+			} else {
+				componentNamespace = ui.EnterDevfileComponentNamespace(defaultComponentNamespace)
+			}
+		} else {
+			// Direct mode (User enters the full command)
+
+			// Get component type, name and namespace from user's full command
+			// Component type: Get from full command's first argument (mandatory)
+			// Component name: Get from full command's second argument (optional), by default it is component type from first argument
+			// Component namespace: Get from --project flag, by default it is the current active namespace
+			componentType = args[0]
+
+			if len(args) == 2 {
+				componentName = args[1]
+			} else {
+				componentName = args[0]
+			}
+
+			if cmd.Flags().Changed("project") {
+				componentNamespace, err = cmd.Flags().GetString("project")
+				if err != nil {
+					return err
+				}
+			} else {
+				componentNamespace = defaultComponentNamespace
+			}
+		}
+
+		// Set devfileMetadata struct
+		co.devfileMetadata.componentType = componentType
+		co.devfileMetadata.componentName = componentName
+		co.devfileMetadata.componentNamespace = componentNamespace
+
+		// Since we need to support both devfile and s2i, so we have to check if the component type is
+		// supported by devfile, if it is supported we return, but if it is not supported we still need to
+		// run all codes related with s2i
+		spinner := log.Spinner("Checking if the specified component type is supported devfile component type")
 
 		for _, devfileComponent := range catalogDevfileList.Items {
 			if co.devfileMetadata.componentType == devfileComponent.Name && devfileComponent.Support {
@@ -316,14 +374,18 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			}
 		}
 
-		err = co.InitEnvInfoFromContext()
-		if err != nil {
-			return err
-		}
-
 		if co.devfileMetadata.devfileSupport {
+			err = co.InitEnvInfoFromContext()
+			if err != nil {
+				return err
+			}
+
+			spinner.End(true)
 			return nil
 		}
+
+		spinner.End(false)
+		log.Italic("\nPlease run 'odo catalog list components' for a list of supported devfile component types")
 	}
 
 	if len(args) == 0 || !cmd.HasFlags() {
@@ -519,13 +581,20 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 func (co *CreateOptions) Validate() (err error) {
 	if experimental.IsExperimentalModeEnabled() {
 		if co.devfileMetadata.devfileSupport {
-			s := log.Spinner("Validating component")
-			defer s.End(true)
+			// Validate if the devfile component that user wants to create already exists
+			spinner := log.Spinner("Validating component")
+			defer spinner.End(false)
 
-			err := validateDevfileComponentCreateRequest()
-			if err != nil {
-				return errors.Wrap(err, "Failed to validate devfile component creation")
+			if util.CheckPathExists(DevfilePath) || util.CheckPathExists(EnvFilePath) {
+				return errors.New("Devfile.yaml or env.yaml already exists")
 			}
+
+			err = util.ValidateK8sResourceName("component name", co.devfileMetadata.componentName)
+			if err != nil {
+				return err
+			}
+
+			spinner.End(true)
 
 			return nil
 		}
@@ -553,8 +622,9 @@ func (co *CreateOptions) Validate() (err error) {
 // Run has the logic to perform the required actions as part of command
 func (co *CreateOptions) Run() (err error) {
 	if experimental.IsExperimentalModeEnabled() {
+		// Download devfile.yaml file and create env.yaml file
 		if co.devfileMetadata.devfileSupport {
-			err := co.EnvSpecificInfo.SetConfiguration("create", envinfo.ComponentSettings{Type: co.devfileMetadata.componentType, Name: co.devfileMetadata.componentName, Namespace: co.devfileMetadata.componentNamespace})
+			err := co.EnvSpecificInfo.SetConfiguration("create", envinfo.ComponentSettings{Name: co.devfileMetadata.componentName, Namespace: co.devfileMetadata.componentNamespace})
 			if err != nil {
 				return errors.Wrap(err, "Failed to create env.yaml for devfile component")
 			}

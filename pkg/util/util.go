@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	kvalidation "k8s.io/apimachinery/pkg/util/validation"
 )
 
 // HTTPRequestTimeout configures timeout of all HTTP requests
@@ -737,6 +738,30 @@ func DownloadFile(url string, filepath string) error {
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+// ValidateK8sResourceName sanitizes kubernetes resource name with the following requirements:
+// - Contain at most 63 characters
+// - Contain only lowercase alphanumeric characters or ‘-’
+// - Start with an alphanumeric character
+// - End with an alphanumeric character
+// - Must not contain all numeric values
+func ValidateK8sResourceName(key string, value string) error {
+	requirements := `
+- Contain at most 63 characters
+- Contain only lowercase alphanumeric characters or ‘-’
+- Start with an alphanumeric character
+- End with an alphanumeric character
+- Must not contain all numeric values
+	`
+	err1 := kvalidation.IsDNS1123Label(value)
+	_, err2 := strconv.ParseFloat(value, 64)
+
+	if err1 != nil || err2 == nil {
+		return errors.Errorf("%s is not valid, %s should conform the following requirements: %s", key, key, requirements)
 	}
 
 	return nil

@@ -1372,3 +1372,41 @@ func TestDownloadFile(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateK8sResourceName(t *testing.T) {
+	tests := []struct {
+		name  string
+		key   string
+		value string
+		want  bool
+	}{
+		{
+			name:  "Case 1: Resource name is valid",
+			key:   "component name",
+			value: "good-name",
+			want:  true,
+		},
+		{
+			name:  "Case 2: Resource name contains unsupported character",
+			key:   "component name",
+			value: "BAD@name",
+			want:  false,
+		},
+		{
+			name:  "Case 3: Resource name contains all numeric values",
+			key:   "component name",
+			value: "12345",
+			want:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateK8sResourceName(tt.key, tt.value)
+			got := err == nil
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Got %t, want %t", got, tt.want)
+			}
+		})
+	}
+}

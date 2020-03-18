@@ -21,7 +21,6 @@ const (
 
 // ComponentSettings holds all component related information
 type ComponentSettings struct {
-	Type      string        `yaml:"Type,omitempty"`
 	Name      string        `yaml:"Name,omitempty"`
 	Namespace string        `yaml:"Namespace,omitempty"`
 	URL       *[]EnvInfoURL `yaml:"Url,omitempty"`
@@ -140,7 +139,6 @@ func (esi *EnvSpecificInfo) SetConfiguration(parameter string, value interface{}
 		switch parameter {
 		case "create":
 			createValue := value.(ComponentSettings)
-			esi.componentSettings.Type = createValue.Type
 			esi.componentSettings.Name = createValue.Name
 			esi.componentSettings.Namespace = createValue.Namespace
 		case "url":
@@ -253,6 +251,22 @@ func (ei *EnvInfo) GetURL() []EnvInfoURL {
 		return []EnvInfoURL{}
 	}
 	return *ei.componentSettings.URL
+}
+
+// GetName returns the component name
+func (ei *EnvInfo) GetName() string {
+	if ei.componentSettings.Name == "" {
+		return ""
+	}
+	return ei.componentSettings.Name
+}
+
+// GetNamespace returns component namespace
+func (ei *EnvInfo) GetNamespace() string {
+	if ei.componentSettings.Namespace == "" {
+		return ""
+	}
+	return ei.componentSettings.Namespace
 }
 
 const (
