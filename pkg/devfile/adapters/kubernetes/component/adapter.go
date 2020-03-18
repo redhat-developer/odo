@@ -51,6 +51,11 @@ func (a Adapter) Push(path string, ignoredFiles []string, forceBuild bool, globE
 		return errors.Wrap(err, "unable to create or update component")
 	}
 
+	_, err = a.Client.WaitForDeploymetRollout(a.ComponentName)
+	if err != nil {
+		return err
+	}
+
 	// Sync source code to the component
 	// If syncing for the first time, sync the entire source directory
 	// If syncing to an already running component, sync the deltas
