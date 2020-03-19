@@ -51,7 +51,7 @@ func (a Adapter) Push(path string, ignoredFiles []string, forceBuild bool, globE
 		return errors.Wrap(err, "unable to create or update component")
 	}
 
-	_, err = a.Client.WaitForDeploymetRollout(a.ComponentName)
+	_, err = a.Client.WaitForDeploymentRollout(a.ComponentName)
 	if err != nil {
 		return errors.Wrap(err, "error while waiting for deployment rollout")
 	}

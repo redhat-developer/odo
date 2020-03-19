@@ -34,8 +34,8 @@ func getDeploymentCondition(status appsv1.DeploymentStatus, condType appsv1.Depl
 	return nil
 }
 
-// WaitForRolllout waits for deployment to finish rollout. Returns the state of the deployment after rollout.
-func (c *Client) WaitForDeploymetRollout(deploymentName string) (*appsv1.Deployment, error) {
+// WaitForDeploymentRollout waits for deployment to finish rollout. Returns the state of the deployment after rollout.
+func (c *Client) WaitForDeploymentRollout(deploymentName string) (*appsv1.Deployment, error) {
 	glog.V(4).Infof("Waiting for %s deployment roll out", deploymentName)
 
 	w, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + deploymentName})
