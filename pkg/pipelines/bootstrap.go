@@ -47,6 +47,7 @@ var (
 // BootstrapParameters is a struct that provides the optional flags
 type BootstrapParameters struct {
 	DeploymentPath           string
+	GithubHookSecret         string
 	GithubToken              string
 	GitRepo                  string
 	InternalRegistryHostname string
@@ -82,12 +83,21 @@ func Bootstrap(o *BootstrapParameters) error {
 	}
 
 	if o.GithubToken != "" {
-		githubAuth, err := createOpaqueSecret(meta.NamespacedName(namespaces["cicd"], "github-auth"), o.GithubToken)
+		githubAuth, err := createOpaqueSecret(meta.NamespacedName(namespaces["cicd"], "github-auth"), o.GithubToken, "token")
 		if err != nil {
-			return fmt.Errorf("failed to generate path to file: %w", err)
+			return fmt.Errorf("failed to generate Status Tracker Secret: %w", err)
 		}
 
 		outputs = append(outputs, githubAuth)
+	}
+
+	if o.GithubHookSecret != "" {
+		githubSecret, err := createOpaqueSecret(meta.NamespacedName(namespaces["cicd"], eventlisteners.GithubWebHookSecret), o.GithubHookSecret, eventlisteners.WebhookSecretKey)
+		if err != nil {
+			return fmt.Errorf("failed to generate GitHub Webhook Secret: %w", err)
+		}
+
+		outputs = append(outputs, githubSecret)
 	}
 
 	// Create Tasks

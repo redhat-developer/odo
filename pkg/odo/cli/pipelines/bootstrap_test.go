@@ -73,11 +73,13 @@ func TestBootstrapCommandWithMissingParams(t *testing.T) {
 	}{
 		{"Missing git-repo flag",
 			[]keyValuePair{flag("status-tracker-token", "abc123"),
-				flag("dockerconfigjson", "~/"), flag("image-repo", "foo/bar/bar"), flag("deployment-path", "foo")},
+				flag("dockerconfigjson", "~/"), flag("image-repo", "foo/bar/bar"), flag("deployment-path", "foo"),
+				flag("github-webhook-secret", "secret")},
 			`Required flag(s) "git-repo" have/has not been set`},
 		{"Missing image-repo",
 			[]keyValuePair{flag("status-tracker-token", "abc123"),
-				flag("dockerconfigjson", "~/"), flag("git-repo", "example/repo"), flag("deployment-path", "foo")},
+				flag("dockerconfigjson", "~/"), flag("git-repo", "example/repo"), flag("deployment-path", "foo"),
+				flag("github-webhook-secret", "secret")},
 			`Required flag(s) "image-repo" have/has not been set`},
 	}
 	for _, tt := range cmdTests {
