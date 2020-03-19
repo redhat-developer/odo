@@ -33,6 +33,17 @@ func TestGenerateEventListener(t *testing.T) {
 								Filter: "(header.match('X-GitHub-Event', 'pull_request') && body.action == 'opened' || body.action == 'synchronize') && body.pull_request.head.repo.full_name == 'sample'",
 							},
 						},
+						&triggersv1.EventInterceptor{
+							GitHub: &triggersv1.GitHubInterceptor{
+								SecretRef: &triggersv1.SecretRef{
+									SecretName: GithubWebHookSecret,
+									SecretKey:  WebhookSecretKey,
+								},
+								EventTypes: []string{
+									"pull_request",
+								},
+							},
+						},
 					},
 					Bindings: []*triggersv1.EventListenerBinding{
 						&triggersv1.EventListenerBinding{
@@ -49,6 +60,17 @@ func TestGenerateEventListener(t *testing.T) {
 						&triggersv1.EventInterceptor{
 							CEL: &triggersv1.CELInterceptor{
 								Filter: "(header.match('X-GitHub-Event', 'push') && body.repository.full_name == 'sample') && body.ref.startsWith('refs/heads/master')",
+							},
+						},
+						&triggersv1.EventInterceptor{
+							GitHub: &triggersv1.GitHubInterceptor{
+								SecretRef: &triggersv1.SecretRef{
+									SecretName: GithubWebHookSecret,
+									SecretKey:  WebhookSecretKey,
+								},
+								EventTypes: []string{
+									"push",
+								},
 							},
 						},
 					},
@@ -69,6 +91,17 @@ func TestGenerateEventListener(t *testing.T) {
 								Filter: "(header.match('X-GitHub-Event', 'pull_request') && body.action == 'opened' || body.action == 'synchronize') && body.pull_request.head.repo.full_name == 'sample-stage-config'",
 							},
 						},
+						&triggersv1.EventInterceptor{
+							GitHub: &triggersv1.GitHubInterceptor{
+								SecretRef: &triggersv1.SecretRef{
+									SecretName: GithubWebHookSecret,
+									SecretKey:  WebhookSecretKey,
+								},
+								EventTypes: []string{
+									"pull_request",
+								},
+							},
+						},
 					},
 					Bindings: []*triggersv1.EventListenerBinding{
 						&triggersv1.EventListenerBinding{
@@ -85,6 +118,17 @@ func TestGenerateEventListener(t *testing.T) {
 						&triggersv1.EventInterceptor{
 							CEL: &triggersv1.CELInterceptor{
 								Filter: "(header.match('X-GitHub-Event', 'push') && body.repository.full_name == 'sample-stage-config') && body.ref.startsWith('refs/heads/master')",
+							},
+						},
+						&triggersv1.EventInterceptor{
+							GitHub: &triggersv1.GitHubInterceptor{
+								SecretRef: &triggersv1.SecretRef{
+									SecretName: GithubWebHookSecret,
+									SecretKey:  WebhookSecretKey,
+								},
+								EventTypes: []string{
+									"push",
+								},
 							},
 						},
 					},
@@ -147,6 +191,17 @@ func TestCreateListenerTrigger(t *testing.T) {
 					Filter: "sampleFilter sample",
 				},
 			},
+			&triggersv1.EventInterceptor{
+				GitHub: &triggersv1.GitHubInterceptor{
+					SecretRef: &triggersv1.SecretRef{
+						SecretName: GithubWebHookSecret,
+						SecretKey:  WebhookSecretKey,
+					},
+					EventTypes: []string{
+						"pull_request",
+					},
+				},
+			},
 		},
 		Bindings: []*triggersv1.EventListenerBinding{
 			&triggersv1.EventListenerBinding{
@@ -157,7 +212,7 @@ func TestCreateListenerTrigger(t *testing.T) {
 			Name: "sampleTemplateName",
 		},
 	}
-	listenerTrigger := createListenerTrigger("sampleName", "sampleFilter %s", "sample", "sampleBindingName", "sampleTemplateName")
+	listenerTrigger := createListenerTrigger("sampleName", "sampleFilter %s", "sample", "sampleBindingName", "sampleTemplateName", "pull_request")
 	if diff := cmp.Diff(validListenerTrigger, listenerTrigger); diff != "" {
 		t.Fatalf("createListenerTrigger() failed:\n%s", diff)
 	}
@@ -171,6 +226,24 @@ func TestCreateEventInterceptor(t *testing.T) {
 	}
 	eventInterceptor := createEventInterceptor("sampleFilter %s", "sample")
 	if diff := cmp.Diff(validEventInterceptor, *eventInterceptor); diff != "" {
+		t.Fatalf("createEventInterceptor() failed:\n%s", diff)
+	}
+}
+
+func TestCreateGithubInterceptor(t *testing.T) {
+	validGithubInterceptor := triggersv1.EventInterceptor{
+		GitHub: &triggersv1.GitHubInterceptor{
+			SecretRef: &triggersv1.SecretRef{
+				SecretName: GithubWebHookSecret,
+				SecretKey:  WebhookSecretKey,
+			},
+			EventTypes: []string{
+				"pull_request",
+			},
+		},
+	}
+	githubInterceptor := createGithubInterceptor("pull_request")
+	if diff := cmp.Diff(validGithubInterceptor, *githubInterceptor); diff != "" {
 		t.Fatalf("createEventInterceptor() failed:\n%s", diff)
 	}
 }

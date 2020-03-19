@@ -14,7 +14,7 @@ import (
 
 func TestCreateOpaqueSecret(t *testing.T) {
 	data := "abcdefghijklmnop"
-	secret, err := createOpaqueSecret(meta.NamespacedName("cicd", "github-auth"), data)
+	secret, err := createOpaqueSecret(meta.NamespacedName("cicd", "github-auth"), data, "token")
 	if err != nil {
 		t.Fatal(err)
 	}

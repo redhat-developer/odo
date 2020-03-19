@@ -13,10 +13,10 @@ import (
 
 // createOpaqueSecret creates a Kubernetes v1/Secret with the provided name and
 // body, and type Opaque.
-func createOpaqueSecret(name types.NamespacedName, data string) (*corev1.Secret, error) {
+func createOpaqueSecret(name types.NamespacedName, data, secretKey string) (*corev1.Secret, error) {
 	r := strings.NewReader(data)
 
-	return createSecret(name, "token", corev1.SecretTypeOpaque, r)
+	return createSecret(name, secretKey, corev1.SecretTypeOpaque, r)
 }
 
 // createDockerConfigSecret creates a Kubernetes v1/Secret with the provided name and
