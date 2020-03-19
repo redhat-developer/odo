@@ -93,10 +93,11 @@ type CreateArgs struct {
 }
 
 const (
-	failedEventCount   = 5
-	OcUpdateTimeout    = 5 * time.Minute
-	OcBuildTimeout     = 5 * time.Minute
-	OpenShiftNameSpace = "openshift"
+	failedEventCount                = 5
+	OcUpdateTimeout                 = 5 * time.Minute
+	OcBuildTimeout                  = 5 * time.Minute
+	OpenShiftNameSpace              = "openshift"
+	waitForComponentDeletionTimeout = 120 * time.Second
 
 	// timeout for getting the default service account
 	getDefaultServiceAccTimeout = 1 * time.Minute
@@ -2108,38 +2109,6 @@ func (c *Client) Delete(labels map[string]string, wait bool) error {
 	if err != nil {
 		errorList = append(errorList, "unable to delete deploymentconfig")
 	}
-
-	// watch the component to recieve deleted event.
-	if wait {
-		// check later about selector.
-		fmt.Println("In watch")
-		watcher, err := c.appsClient.DeploymentConfigs(c.Namespace).Watch(metav1.ListOptions{LabelSelector: selector})
-		if err != nil {
-			errorList = append(errorList, "unable to Watch deploymentconfig")
-		}
-		defer watcher.Stop()
-		eventCh := watcher.ResultChan()
-
-	Loop:
-		for event := range eventCh {
-			fmt.Println("In for loop")
-			_, ok := event.Object.(*appsv1.DeploymentConfig)
-			if !ok {
-				errorList = append(errorList, "Unexpected type unable to Watch deploymentconfig")
-			}
-			switch event.Type {
-			case watch.Deleted:
-				fmt.Println("in case deleted")
-				break Loop
-			case watch.Error:
-				errorList = append(errorList, "unable to Watch deploymentconfig")
-				fmt.Println("in case error")
-				break Loop
-
-			}
-
-		}
-	}
 	// Delete BuildConfig
 	glog.V(4).Info("Deleting BuildConfigs")
 	err = c.buildClient.BuildConfigs(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
@@ -2153,6 +2122,16 @@ func (c *Client) Delete(labels map[string]string, wait bool) error {
 		errorList = append(errorList, "unable to delete imagestream")
 	}
 
+	// for --wait it waits for component to be deleted
+	// TODO: Need to modify for `odo app delete`, currently wait flag is added only in `odo component delete`
+	//       so only one component gets passed in selector
+	if wait {
+		err = c.WaitForComponentDeletion(selector)
+		if err != nil {
+			errorList = append(errorList, err.Error())
+		}
+	}
+
 	// Error string
 	errString := strings.Join(errorList, ",")
 	if len(errString) != 0 {
@@ -2160,6 +2139,39 @@ func (c *Client) Delete(labels map[string]string, wait bool) error {
 	}
 	return nil
 
+}
+
+// WaitForComponentDeletion waits for component to be deleted
+func (c *Client) WaitForComponentDeletion(selector string) error {
+
+	glog.V(4).Infof("Waiting for component to get deleted")
+
+	watcher, err := c.appsClient.DeploymentConfigs(c.Namespace).Watch(metav1.ListOptions{LabelSelector: selector})
+	if err != nil {
+		return err
+	}
+	defer watcher.Stop()
+	eventCh := watcher.ResultChan()
+
+	for {
+		select {
+		case event, ok := <-eventCh:
+			_, typeOk := event.Object.(*appsv1.DeploymentConfig)
+			if !ok || !typeOk {
+				return errors.New("Unable to watch deployment config")
+			}
+			if event.Type == watch.Deleted {
+				glog.V(4).Infof("WaitForComponentDeletion, Event Recieved:Deleted")
+				return nil
+			} else if event.Type == watch.Error {
+				glog.V(4).Infof("WaitForComponentDeletion, Event Recieved:Deleted ")
+				return errors.New("Unable to watch deployment config")
+			}
+		case <-time.After(waitForComponentDeletionTimeout):
+			glog.V(4).Infof("WaitForComponentDeletion, Timeout")
+			return errors.New("Time out waiting for component to get deleted")
+		}
+	}
 }
 
 // DeleteServiceInstance takes labels as a input and based on it, deletes respective service instance
@@ -3232,14 +3244,11 @@ func isSubDir(baseDir, otherDir string) bool {
 // OpenShift garbage collector
 func generateOwnerReference(dc *appsv1.DeploymentConfig) metav1.OwnerReference {
 
-	blockOwnerDeletion := true
-
 	ownerReference := metav1.OwnerReference{
-		APIVersion:         "apps.openshift.io/v1",
-		Kind:               "DeploymentConfig",
-		Name:               dc.Name,
-		UID:                dc.UID,
-		BlockOwnerDeletion: &blockOwnerDeletion,
+		APIVersion: "apps.openshift.io/v1",
+		Kind:       "DeploymentConfig",
+		Name:       dc.Name,
+		UID:        dc.UID,
 	}
 
 	return ownerReference

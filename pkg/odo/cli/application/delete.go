@@ -2,6 +2,7 @@ package application
 
 import (
 	"fmt"
+
 	odoUtil "github.com/openshift/odo/pkg/odo/util"
 
 	"github.com/openshift/odo/pkg/application"
