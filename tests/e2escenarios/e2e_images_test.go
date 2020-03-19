@@ -170,9 +170,12 @@ var _ = Describe("odo supported images e2e tests", func() {
 			verifySupportedImage(filepath.Join("bucharestgold", "centos7-s2i-nodejs:10.x"), "nodejs", "nodejs:latest", project, appName, context)
 		})
 
+<<<<<<< HEAD
 		It("Should be able to verify the nodejs-8-centos7 image", func() {
 			oc.ImportImageFromRegistry("docker.io", filepath.Join("centos", "nodejs-8-centos7:latest"), "nodejs:latest", project)
 			verifySupportedImage(filepath.Join("centos", "nodejs-8-centos7:latest"), "nodejs", "nodejs:latest", project, appName, context)
 		})
+=======
+>>>>>>> removed unsupported nodejs-8 and 10 images
 	})
 })
