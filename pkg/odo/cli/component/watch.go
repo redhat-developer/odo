@@ -18,6 +18,7 @@ import (
 	"github.com/openshift/odo/pkg/component"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/pkg/watch"
 	"github.com/spf13/cobra"
 )
 
@@ -115,10 +116,10 @@ func (wo *WatchOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (wo *WatchOptions) Run() (err error) {
-	err = component.WatchAndPush(
+	err = watch.WatchAndPush(
 		wo.Context.Client,
 		os.Stdout,
-		component.WatchParameters{
+		watch.WatchParameters{
 			ComponentName:   wo.LocalConfigInfo.GetName(),
 			ApplicationName: wo.Context.Application,
 			Path:            wo.sourcePath,

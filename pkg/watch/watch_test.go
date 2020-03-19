@@ -1,6 +1,6 @@
 // +build !osx
 
-package component
+package watch
 
 import (
 	"bytes"

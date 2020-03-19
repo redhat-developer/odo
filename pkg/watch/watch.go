@@ -1,4 +1,4 @@
-package component
+package watch
 
 import (
 	"fmt"
@@ -29,6 +29,8 @@ type WatchParameters struct {
 	FileIgnores []string
 	// Custom function that can be used to push detected changes to remote pod. For more info about what each of the parameters to this function, please refer, pkg/component/component.go#PushLocal
 	WatchHandler func(*occlient.Client, string, string, string, io.Writer, []string, []string, bool, []string, bool) error
+	// Custom function that can be used to push detected changes to remote devfile pod. For more info about what each of the parameters to this function, please refer, pkg/component/component.go#PushLocal
+	DevfileWatchHandler func(string, []string, []string, bool, []string) error
 	// This is a channel added to signal readiness of the watch command to the external channel listeners
 	StartChan chan bool
 	// This is a channel added to terminate the watch command gracefully without passing SIGINT. "Stop" message on this channel terminates WatchAndPush function
@@ -39,13 +41,13 @@ type WatchParameters struct {
 	Show bool
 }
 
-// addRecursiveWatch handles adding watches recursively for the path provided
+// AddRecursiveWatch handles adding watches recursively for the path provided
 // and its subdirectories.  If a non-directory is specified, this call is a no-op.
 // Files matching glob pattern defined in ignores will be ignored.
 // Taken from https://github.com/openshift/origin/blob/85eb37b34f0657631592356d020cef5a58470f8e/pkg/util/fsnotification/fsnotification.go
 // path is the path of the file or the directory
 // ignores contains the glob rules for matching
-func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string) error {
+func AddRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string) error {
 
 	file, err := os.Stat(path)
 	if err != nil {
@@ -245,7 +247,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 						deletedPaths = append(deletedPaths, relPath)
 					}
 				} else {
-					if e := addRecursiveWatch(watcher, event.Name, parameters.FileIgnores); e != nil && watchError == nil {
+					if e := AddRecursiveWatch(watcher, event.Name, parameters.FileIgnores); e != nil && watchError == nil {
 						watchError = e
 					}
 				}
@@ -259,7 +261,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 	}()
 	// adding watch on the root folder and the sub folders recursively
 	// so directory and the path in addRecursiveWatch() are the same
-	err = addRecursiveWatch(watcher, parameters.Path, parameters.FileIgnores)
+	err = AddRecursiveWatch(watcher, parameters.Path, parameters.FileIgnores)
 	if err != nil {
 		return fmt.Errorf("error watching source path %s: %v", parameters.Path, err)
 	}
