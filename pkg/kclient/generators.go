@@ -53,6 +53,14 @@ func GeneratePodTemplateSpec(objectMeta metav1.ObjectMeta, containers []corev1.C
 				{
 					Name: OdoSourceVolume,
 				},
+				{
+					// Create a volume that will be shared betwen InitContainer and the applicationContainer
+					// in order to pass over the SupervisorD binary
+					Name: GetSupervisordVolumeName(),
+					VolumeSource: corev1.VolumeSource{
+						EmptyDir: &corev1.EmptyDirVolumeSource{},
+					},
+				},
 			},
 		},
 	}

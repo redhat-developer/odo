@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/openshift/odo/pkg/devfile"
@@ -10,6 +11,7 @@ import (
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/util"
 
+	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -86,6 +88,40 @@ func GetContainers(devfileObj devfile.DevfileObj) ([]corev1.Container, error) {
 		containers = append(containers, *container)
 	}
 	return containers, nil
+}
+
+// UpdateContainersWithSupervisordIfReqd updates the run components entrypoint and volume mount
+// with supervisord if no entrypoint has been specified for the component in the devfile
+func UpdateContainersWithSupervisordIfReqd(devfileObj devfile.DevfileObj, containers []corev1.Container, devfileRunCmd string) []corev1.Container {
+	// mountSupervisordVolume := false
+	runCommandComponents := adaptersCommon.GetRunCommandComponents(devfileObj.Data, devfileRunCmd)
+	glog.V(3).Infof("mjf run cmd components %v", runCommandComponents)
+
+	for i, container := range containers {
+		for _, runCommandComponent := range runCommandComponents {
+			// Check if the container belongs to a run command component
+			if reflect.DeepEqual(container.Name, runCommandComponent) {
+				// If the run component container has no entrypoint and arguments, override the entrypoint with supervisord
+				if len(container.Command) == 0 && len(container.Args) == 0 {
+					glog.V(3).Infof("mjf updating container %v", container.Name)
+					container.Command = append(container.Command, "/opt/odo/bin/supervisord")
+					container.Args = append(container.Args, "-c", "/opt/odo/conf/devfile-supervisor.conf")
+				}
+
+				// Always mount the supervisord volume in the run component container
+				container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
+					Name:      kclient.GetSupervisordVolumeName(),
+					MountPath: "/opt/odo/",
+				})
+
+				// Update the containers array since the array is not a pointer to the container
+				containers[i] = container
+			}
+		}
+	}
+	glog.V(3).Infof("mjf container before check %v", containers)
+	return containers
+
 }
 
 // GetVolumes iterates through the components in the devfile and returns a map of component alias to the devfile volumes

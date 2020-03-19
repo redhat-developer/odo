@@ -37,7 +37,18 @@ type PushOptions struct {
 	// devfile path
 	devfilePath string
 
+	// devfile commands
+	devfileBuildCmd string
+	devfileRunCmd   string
+
 	namespace string
+}
+
+// DevfileCommand encapsulates the build and run command
+// which can be explicitly provided during odo push
+type DevfileCommand struct {
+	build string
+	run   string
 }
 
 // NewPushOptions returns new instance of PushOptions
@@ -149,6 +160,8 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 	if experimental.IsExperimentalModeEnabled() {
 		pushCmd.Flags().StringVar(&po.devfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
 		pushCmd.Flags().StringVar(&po.namespace, "namespace", "", "Namespace to push the component to")
+		pushCmd.Flags().StringVar(&po.devfileBuildCmd, "build-command", "", "Devfile Build Command to execute")
+		pushCmd.Flags().StringVar(&po.devfileRunCmd, "run-command", "", "Devfile Run Command to execute")
 	}
 
 	pushCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)

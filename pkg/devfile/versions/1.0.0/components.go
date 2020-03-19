@@ -24,3 +24,8 @@ func (d *Devfile100) GetAliasedComponents() []common.DevfileComponent {
 func (d *Devfile100) GetProjects() []common.DevfileProject {
 	return d.Projects
 }
+
+// GetCommands returns the slice of DevfileCommand objects parsed from the Devfile
+func (d *Devfile100) GetCommands() []common.DevfileCommand {
+	return d.Commands
+}
