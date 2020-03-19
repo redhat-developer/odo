@@ -50,6 +50,9 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	a.devfileBuildCmd = parameters.DevfileBuildCmd
 	a.devfileRunCmd = parameters.DevfileRunCmd
 
+	a.devfileBuildCmd = devfileBuildCmd
+	a.devfileRunCmd = devfileRunCmd
+
 	deletedFiles := []string{}
 	changedFiles := []string{}
 	isForcePush := false

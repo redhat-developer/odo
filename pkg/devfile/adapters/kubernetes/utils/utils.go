@@ -144,7 +144,6 @@ func UpdateContainersWithSupervisord(devfileObj devfile.DevfileObj, containers [
 			}
 		}
 	}
-
 	return containers
 
 }
