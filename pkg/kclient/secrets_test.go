@@ -17,21 +17,21 @@ func TestCreateTLSSecret(t *testing.T) {
 		name          string
 		secretName    string
 		componentName string
-		clusterHost   string
+		host   string
 		wantErr       bool
 	}{
 		{
 			name:          "Case: Valid secret name",
 			componentName: "testComponent",
 			secretName:    "testComponent-tlssecret",
-			clusterHost:   "1.2.3.4.nip.io",
+			host:   "1.2.3.4.nip.io",
 			wantErr:       false,
 		},
 		{
 			name:          "Case: Invalid secret name",
 			secretName:    "",
 			componentName: "testComponent",
-			clusterHost:   "1.2.3.4.nip.io",
+			host:   "1.2.3.4.nip.io",
 			wantErr:       true,
 		},
 	}
@@ -52,7 +52,7 @@ func TestCreateTLSSecret(t *testing.T) {
 				}
 				return true, &secret, nil
 			})
-			selfsignedcert, err := GenerateSelfSignedCertificate(tt.clusterHost)
+			selfsignedcert, err := GenerateSelfSignedCertificate(tt.host)
 			if err != nil {
 				t.Errorf("fkclient.GenerateSelfSignedCertificate unexpected error %v", err)
 			}

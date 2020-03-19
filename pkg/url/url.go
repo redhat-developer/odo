@@ -52,13 +52,13 @@ func Delete(client *occlient.Client, kClient *kclient.Client, urlName string, ap
 
 // Create creates a URL and returns url string and error if any
 // portNumber is the target port number for the route and is -1 in case no port number is specified in which case it is automatically detected for components which expose only one service port)
-func Create(client *occlient.Client, kClient *kclient.Client, urlName string, portNumber int, secureURL bool, componentName, applicationName string, clusterHost string, secretName string) (string, error) {
+func Create(client *occlient.Client, kClient *kclient.Client, urlName string, portNumber int, secureURL bool, componentName, applicationName string, host string, secretName string) (string, error) {
 	labels := urlLabels.GetLabels(urlName, componentName, applicationName, true)
 
 	var serviceName string
 	if experimental.IsExperimentalModeEnabled() {
 		serviceName := componentName
-		ingressDomain := fmt.Sprintf("%v.%v", urlName, clusterHost)
+		ingressDomain := fmt.Sprintf("%v.%v", urlName, host)
 		if secureURL == true {
 			if len(secretName) != 0 {
 				_, err := kClient.KubeClient.CoreV1().Secrets(kClient.Namespace).Get(secretName, metav1.GetOptions{})
@@ -70,9 +70,9 @@ func Create(client *occlient.Client, kClient *kclient.Client, urlName string, po
 				defaultTLSSecretName := componentName + "-tlssecret"
 				_, err := kClient.KubeClient.CoreV1().Secrets(kClient.Namespace).Get(defaultTLSSecretName, metav1.GetOptions{})
 				if err != nil {
-					selfsignedcert, err := kclient.GenerateSelfSignedCertificate(clusterHost)
+					selfsignedcert, err := kclient.GenerateSelfSignedCertificate(host)
 					if err != nil {
-						return "", errors.Wrap(err, "unable to generate self-signed certificate for clutser: "+clusterHost)
+						return "", errors.Wrap(err, "unable to generate self-signed certificate for clutser: "+host)
 					}
 					// create tls secret
 					secret, err := kClient.CreateTLSSecret(selfsignedcert.CertPem, selfsignedcert.KeyPem, componentName, applicationName, portNumber)
@@ -92,6 +92,7 @@ func Create(client *occlient.Client, kClient *kclient.Client, urlName string, po
 		ingressParam := kclient.IngressParameter{ServiceName: serviceName, IngressDomain: ingressDomain, PortNumber: intstr.FromInt(portNumber), TLSSecretName: secretName}
 		ingressSpec := kclient.GenerateIngressSpec(ingressParam)
 		objectMeta := kclient.CreateObjectMeta(componentName, kClient.Namespace, labels, nil)
+		objectMeta.Name = urlName
 		// Pass in the namespace name, link to the service (componentName) and labels to create a ingress
 		ingress, err := kClient.CreateIngress(objectMeta, *ingressSpec)
 		if err != nil {

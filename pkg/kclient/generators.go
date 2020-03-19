@@ -171,7 +171,7 @@ type SelfSignedCertificate struct {
 }
 
 // GenerateSelfSignedCertificate creates a self-signed SSl certificate
-func GenerateSelfSignedCertificate(clusterHost string) (SelfSignedCertificate, error) {
+func GenerateSelfSignedCertificate(host string) (SelfSignedCertificate, error) {
 
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -187,7 +187,7 @@ func GenerateSelfSignedCertificate(clusterHost string) (SelfSignedCertificate, e
 		NotAfter:              time.Now().Add(time.Hour * 24 * 365 * 10),
 		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		BasicConstraintsValid: true,
-		DNSNames:              []string{"*." + clusterHost},
+		DNSNames:              []string{"*." + host},
 	}
 
 	certificateDerEncoding, err := x509.CreateCertificate(rand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
