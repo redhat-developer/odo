@@ -40,6 +40,9 @@ func (po *PushOptions) DevfilePush() (err error) {
 	}
 
 	componentName, err := getComponentName()
+	if err != nil {
+		return err
+	}
 
 	// Set the source path to either the context or current working directory (if context not set)
 	po.sourcePath, err = util.GetAbsPath(filepath.Dir(po.componentContext))
