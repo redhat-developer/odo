@@ -23,7 +23,7 @@ func TestSetEnvInfo(t *testing.T) {
 	os.Setenv(envInfoEnvName, tempEnvFile.Name())
 	testURL := EnvInfoURL{Name: "testURL", ClusterHost: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
 	invalidParam := "invalidParameter"
-	testCreate := ComponentSettings{Type: "componentType", Name: "componentName", Namespace: "namespace"}
+	testCreate := ComponentSettings{Name: "componentName", Namespace: "namespace"}
 
 	tests := []struct {
 		name            string
@@ -78,7 +78,7 @@ func TestSetEnvInfo(t *testing.T) {
 				isSet := false
 
 				if tt.parameter == Create {
-					parameters := []string{"Type", "Name", "Namespace"}
+					parameters := []string{"Name", "Namespace"}
 					for _, parameter := range parameters {
 						isSet = esi.IsSet(parameter)
 						if !isSet {

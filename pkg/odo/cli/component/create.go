@@ -358,7 +358,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		// Set devfileMetadata struct
 		co.devfileMetadata.componentType = componentType
-		co.devfileMetadata.componentName = componentName
+		co.devfileMetadata.componentName = strings.ToLower(componentName)
 		co.devfileMetadata.componentNamespace = componentNamespace
 
 		// Since we need to support both devfile and s2i, so we have to check if the component type is
