@@ -191,6 +191,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 	glog.V(3).Infof("The component name is %v", componentName)
 
 	if utils.ComponentExists(a.Client, componentName) {
+		// If the component already exists, get the resource version of the deploy before updating
 		glog.V(3).Info("The component already exists, attempting to update it")
 		_, err = a.Client.UpdateDeployment(*deploymentSpec)
 		if err != nil {

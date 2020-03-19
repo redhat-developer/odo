@@ -3,12 +3,17 @@ package component
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/pkg/devfile/adapters"
+	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/openshift/odo/pkg/occlient"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/util/completion"
+	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/pkg/errors"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
 
@@ -44,6 +49,8 @@ type WatchOptions struct {
 	componentContext string
 	client           *occlient.Client
 
+	devfilePath string
+	namespace   string
 	*genericclioptions.Context
 }
 
@@ -54,6 +61,16 @@ func NewWatchOptions() *WatchOptions {
 
 // Complete completes watch args
 func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	// if experimental mode is enabled and devfile is present
+	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(wo.devfilePath) {
+		// Set the source path to either the context or current working directory (if context not set)
+		wo.sourcePath, err = util.GetAbsPath(filepath.Dir(wo.componentContext))
+		if err != nil {
+			return errors.Wrap(err, "unable to get source path")
+		}
+		return nil
+	}
+
 	// Set the correct context
 	wo.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 
@@ -80,6 +97,10 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 
 // Validate validates the watch parameters
 func (wo *WatchOptions) Validate() (err error) {
+	// if experimental mode is enabled and devfile is present
+	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(wo.devfilePath) {
+		return nil
+	}
 
 	// Validate source of component is either local source or binary path until git watch is supported
 	if wo.sourceType != "binary" && wo.sourceType != "local" {
@@ -116,6 +137,43 @@ func (wo *WatchOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (wo *WatchOptions) Run() (err error) {
+	// if experimental mode is enabled and devfile is present
+	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(wo.devfilePath) {
+		// Parse devfile
+		devObj, err := devfile.Parse(wo.devfilePath)
+		if err != nil {
+			return err
+		}
+
+		componentName, err := getComponentName()
+		if err != nil {
+			return err
+		}
+
+		kc := kubernetes.KubernetesContext{
+			Namespace: wo.namespace,
+		}
+		devfileHandler, err := adapters.NewPlatformAdapter(componentName, devObj, kc)
+
+		err = watch.DevfileWatchAndPush(
+			os.Stdout,
+			watch.WatchParameters{
+				ComponentName:       componentName,
+				Path:                wo.sourcePath,
+				FileIgnores:         util.GetAbsGlobExps(wo.sourcePath, wo.ignores),
+				PushDiffDelay:       wo.delay,
+				StartChan:           nil,
+				ExtChan:             make(chan bool),
+				DevfileWatchHandler: devfileHandler.Push,
+				Show:                wo.show,
+			},
+		)
+		if err != nil {
+			return errors.Wrapf(err, "Error while trying to watch %s", wo.sourcePath)
+		}
+		return err
+	}
+
 	err = watch.WatchAndPush(
 		wo.Context.Client,
 		os.Stdout,
@@ -158,6 +216,13 @@ func NewCmdWatch(name, fullName string) *cobra.Command {
 	watchCmd.Flags().IntVar(&wo.delay, "delay", 1, "Time in seconds between a detection of code change and push.delay=0 means changes will be pushed as soon as they are detected which can cause performance issues")
 
 	watchCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
+
+	// enable devfile flag if experimental mode is enabled
+	if experimental.IsExperimentalModeEnabled() {
+		watchCmd.Flags().StringVar(&wo.devfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
+		watchCmd.Flags().StringVar(&wo.namespace, "namespace", "", "Namespace to push the component to")
+	}
+
 	// Adding context flag
 	genericclioptions.AddContextFlag(watchCmd, &wo.componentContext)
 
