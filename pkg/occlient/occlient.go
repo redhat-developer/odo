@@ -98,6 +98,9 @@ const (
 	OcBuildTimeout     = 5 * time.Minute
 	OpenShiftNameSpace = "openshift"
 
+	// timeout for getting the default service account
+	getDefaultServiceAccTimeout = 1 * time.Minute
+
 	// The length of the string to be generated for names of resources
 	nameLength = 5
 
@@ -540,13 +543,56 @@ func (c *Client) CreateNewProject(projectName string, wait bool) error {
 			if !ok {
 				break
 			}
-			if e, ok := val.Object.(*projectv1.Project); ok {
-				glog.V(4).Infof("Project %s now exists", e.Name)
-				return nil
+			if prj, ok := val.Object.(*projectv1.Project); ok {
+				glog.V(4).Infof("Status of creation of project %s is %s", prj.Name, prj.Status.Phase)
+				switch prj.Status.Phase {
+				//prj.Status.Phase can only be "Terminating" or "Active" or ""
+				case corev1.NamespaceActive:
+					if val.Type == watch.Added {
+						glog.V(4).Infof("Project %s now exists", prj.Name)
+						return nil
+					}
+					if val.Type == watch.Error {
+						return fmt.Errorf("failed watching the deletion of project %s", prj.Name)
+					}
+				}
 			}
 		}
 	}
 
+	return nil
+}
+
+// WaitForServiceAccountInNamespace waits for the given service account to be ready
+func (c *Client) WaitForServiceAccountInNamespace(namespace, serviceAccountName string) error {
+	if namespace == "" || serviceAccountName == "" {
+		return errors.New("namespace and serviceAccountName cannot be empty")
+	}
+	watcher, err := c.kubeClient.CoreV1().ServiceAccounts(namespace).Watch(metav1.SingleObject(metav1.ObjectMeta{Name: serviceAccountName}))
+	if err != nil {
+		return err
+	}
+
+	timeout := time.After(getDefaultServiceAccTimeout)
+	if watcher != nil {
+		defer watcher.Stop()
+		for {
+			select {
+			case val, ok := <-watcher.ResultChan():
+				if !ok {
+					break
+				}
+				if serviceAccount, ok := val.Object.(*corev1.ServiceAccount); ok {
+					if serviceAccount.Name == serviceAccountName {
+						glog.V(4).Infof("Status of creation of service account %s is ready", serviceAccount)
+						return nil
+					}
+				}
+			case <-timeout:
+				return errors.New("Timed out waiting for service to be ready")
+			}
+		}
+	}
 	return nil
 }
 
