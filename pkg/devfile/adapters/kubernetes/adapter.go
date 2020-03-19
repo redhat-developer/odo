@@ -27,9 +27,9 @@ func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
 }
 
 // Push creates Kubernetes resources that correspond to the devfile if they don't already exist
-func (k Adapter) Push(path string, ignoredFiles []string, forceBuild bool, globExps []string) error {
+func (k Adapter) Push(parameters common.PushParameters) error {
 
-	err := k.componentAdapter.Push(path, ignoredFiles, forceBuild, globExps)
+	err := k.componentAdapter.Push(parameters)
 	if err != nil {
 		return errors.Wrap(err, "Failed to create the component")
 	}

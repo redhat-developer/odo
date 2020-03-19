@@ -22,3 +22,12 @@ type Storage struct {
 	Name   string
 	Volume DevfileVolume
 }
+
+// PushParameters is a struct containing the parameters to be used when pushing to a devfile component
+type PushParameters struct {
+	Path         string   // Path refers to the parent folder containing the source code to push up to a component
+	Files        []string // Files is the list of changed files to push up to a component. If empty, odo will look at the index-json file under. odo
+	IgnoredFiles []string // IgnoredFiles is the list of files to not push up to a component
+	ForceBuild   bool     // ForceBuild determines whether or not to push all of the files up to a component or just some.
+	GlobExps     []string
+}

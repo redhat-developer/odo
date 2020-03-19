@@ -39,7 +39,7 @@ type Adapter struct {
 
 // Push updates the component if a matching component exists or creates one if it doesn't exist
 // Once the component has started, it will sync the source code to it.
-func (a Adapter) Push(path string, ignoredFiles []string, forceBuild bool, globExps []string) (err error) {
+func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	componentExists := utils.ComponentExists(a.Client, a.ComponentName)
 
 	deletedFiles := []string{}
@@ -54,8 +54,8 @@ func (a Adapter) Push(path string, ignoredFiles []string, forceBuild bool, globE
 	// Sync source code to the component
 	// If syncing for the first time, sync the entire source directory
 	// If syncing to an already running component, sync the deltas
-	if !forceBuild {
-		absIgnoreRules := util.GetAbsGlobExps(path, ignoredFiles)
+	if !parameters.ForceBuild {
+		absIgnoreRules := util.GetAbsGlobExps(parameters.Path, parameters.IgnoredFiles)
 
 		spinner := log.NewStatus(log.GetStdout())
 		defer spinner.End(true)
@@ -68,7 +68,7 @@ func (a Adapter) Push(path string, ignoredFiles []string, forceBuild bool, globE
 		}
 
 		// Before running the indexer, make sure the .odo folder exists (or else the index file will not get created)
-		odoFolder := filepath.Join(path, ".odo")
+		odoFolder := filepath.Join(parameters.Path, ".odo")
 		if _, err := os.Stat(odoFolder); os.IsNotExist(err) {
 			err = os.Mkdir(odoFolder, 0750)
 			if err != nil {
@@ -77,7 +77,7 @@ func (a Adapter) Push(path string, ignoredFiles []string, forceBuild bool, globE
 		}
 
 		// run the indexer and find the modified/added/deleted/renamed files
-		filesChanged, filesDeleted, err := util.RunIndexer(path, absIgnoreRules)
+		filesChanged, filesDeleted, err := util.RunIndexer(parameters.Path, absIgnoreRules)
 		spinner.End(true)
 
 		if err != nil {
@@ -92,7 +92,7 @@ func (a Adapter) Push(path string, ignoredFiles []string, forceBuild bool, globE
 
 			// Remove the relative file directory from the list of deleted files
 			// in order to make the changes correctly within the Kubernetes pod
-			deletedFiles, err = util.RemoveRelativePathFromFiles(filesDeletedFiltered, path)
+			deletedFiles, err = util.RemoveRelativePathFromFiles(filesDeletedFiltered, parameters.Path)
 			if err != nil {
 				return errors.Wrap(err, "unable to remove relative path from list of changed/deleted files")
 			}
@@ -107,16 +107,16 @@ func (a Adapter) Push(path string, ignoredFiles []string, forceBuild bool, globE
 		}
 	}
 
-	if forceBuild || !componentExists {
+	if parameters.ForceBuild || !componentExists {
 		isForcePush = true
 	}
 
 	// Sync the local source code to the component
-	err = a.pushLocal(path,
+	err = a.pushLocal(parameters.Path,
 		changedFiles,
 		deletedFiles,
 		isForcePush,
-		globExps,
+		parameters.GlobExps,
 	)
 
 	if err != nil {

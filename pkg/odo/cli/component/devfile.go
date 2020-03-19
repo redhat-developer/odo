@@ -9,6 +9,7 @@ import (
 	"github.com/openshift/odo/pkg/devfile"
 
 	"github.com/openshift/odo/pkg/devfile/adapters"
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/util"
@@ -62,8 +63,15 @@ func (po *PushOptions) DevfilePush() (err error) {
 		return err
 	}
 
+	pushParams := common.PushParameters{
+		Path:         po.sourcePath,
+		IgnoredFiles: po.ignores,
+		ForceBuild:   po.forceBuild,
+		GlobExps:     util.GetAbsGlobExps(po.sourcePath, po.ignores),
+	}
+
 	// Start or update the component
-	err = devfileHandler.Push(po.sourcePath, po.ignores, po.forceBuild, util.GetAbsGlobExps(po.sourcePath, po.ignores))
+	err = devfileHandler.Push(pushParams)
 	if err != nil {
 		log.Errorf(
 			"Failed to start component with name %s.\nError: %v",
