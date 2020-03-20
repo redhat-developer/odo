@@ -54,6 +54,9 @@ type DefaultHandler struct {
 // Lookup implements PluginHandler, using
 // https://golang.org/pkg/os/exec/#LookPath to search for the command.
 func (h *DefaultHandler) Lookup(command string) string {
+	if runtime.GOOS == "windows" {
+		command = command + ".exe"
+	}
 	path, err := exec.LookPath(fmt.Sprintf("%s-%s", h.Prefix, command))
 	if err == nil && len(path) != 0 {
 		return path

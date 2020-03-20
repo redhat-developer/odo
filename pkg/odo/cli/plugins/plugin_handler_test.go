@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"runtime"
 	"testing"
 )
 
@@ -22,7 +23,11 @@ func TestDefaultHandlerLookup(t *testing.T) {
 		os.Setenv("PATH", origPath)
 	}()
 	os.Setenv("PATH", fmt.Sprintf("%s:%s", origPath, tempDir))
-	scriptName := path.Join(tempDir, "tst-script")
+	var baseScriptName = "tst-script"
+	if runtime.GOOS == "windows" {
+		baseScriptName = baseScriptName + ".exe"
+	}
+	scriptName := path.Join(tempDir, baseScriptName)
 	err := ioutil.WriteFile(scriptName, sampleScript, 0755)
 	if err != nil {
 		t.Fatal(err)
@@ -41,7 +46,7 @@ func TestDefaultHandlerLookup(t *testing.T) {
 			h := NewDefaultHandler(tt.prefix)
 			found := h.Lookup("script")
 			if tt.want != found {
-				rt.Errorf("found script name got %s, want %s", tt.want, found)
+				rt.Errorf("found script name got %s, want %s", found, tt.want)
 			}
 		})
 	}
