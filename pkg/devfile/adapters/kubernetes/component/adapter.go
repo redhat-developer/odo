@@ -132,7 +132,10 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 		"component": componentName,
 	}
 
-	containers := utils.GetContainers(a.Devfile)
+	containers, err := utils.GetContainers(a.Devfile)
+	if err != nil {
+		return err
+	}
 	if len(containers) == 0 {
 		return fmt.Errorf("No valid components found in the devfile")
 	}
@@ -186,23 +189,54 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 	}
 
 	deploymentSpec := kclient.GenerateDeploymentSpec(*podTemplateSpec)
-
+	var containerPorts []corev1.ContainerPort
+	for _, c := range deploymentSpec.Template.Spec.Containers {
+		if len(containerPorts) == 0 {
+			containerPorts = c.Ports
+		} else {
+			containerPorts = append(containerPorts, c.Ports...)
+		}
+	}
+	serviceSpec := kclient.GenerateServiceSpec(objectMeta.Name, containerPorts)
 	glog.V(3).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
 	glog.V(3).Infof("The component name is %v", componentName)
 
 	if utils.ComponentExists(a.Client, componentName) {
 		glog.V(3).Info("The component already exists, attempting to update it")
-		_, err = a.Client.UpdateDeployment(*deploymentSpec)
+		deployment, err := a.Client.UpdateDeployment(*deploymentSpec)
 		if err != nil {
 			return err
 		}
 		glog.V(3).Infof("Successfully updated component %v", componentName)
+		oldSvc, err := a.Client.KubeClient.CoreV1().Services(a.Client.Namespace).Get(componentName, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		serviceSpec.ClusterIP = oldSvc.Spec.ClusterIP
+		objectMetaTemp := objectMeta
+		objectMetaTemp.ResourceVersion = oldSvc.GetResourceVersion()
+		ownerReference := kclient.GenerateOwnerReference(deployment)
+		objectMetaTemp.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
+		_, err = a.Client.UpdateService(objectMetaTemp, *serviceSpec)
+		if err != nil {
+			return err
+		}
+		glog.V(3).Infof("Successfully update Service for component %s", componentName)
 	} else {
-		_, err = a.Client.CreateDeployment(*deploymentSpec)
+		deployment, err := a.Client.CreateDeployment(*deploymentSpec)
 		if err != nil {
 			return err
 		}
 		glog.V(3).Infof("Successfully created component %v", componentName)
+		ownerReference := kclient.GenerateOwnerReference(deployment)
+		objectMetaTemp := objectMeta
+		objectMetaTemp.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
+		_, err = a.Client.CreateService(objectMetaTemp, *serviceSpec)
+		if err != nil {
+			return err
+		}
+		glog.V(3).Infof("Successfully created Service for component %s", componentName)
+
 	}
 
 	// Get the storage adapter and create the volumes if it does not exist
