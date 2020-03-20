@@ -34,19 +34,14 @@ var _ = Describe("odo devfile catalog command tests", func() {
 	Context("When executing catalog list components", func() {
 		It("should list all supported devfile components", func() {
 			output := helper.CmdShouldPass("odo", "catalog", "list", "components")
-			Expect(output).To(ContainSubstring("Odo Devfile Components"))
-			Expect(output).To(ContainSubstring("java-spring-boot"))
-			Expect(output).To(ContainSubstring("openLiberty"))
+			helper.MatchAllInOutput(output, []string{"Odo Devfile Components", "java-spring-boot", "openLiberty"})
 		})
 	})
 
 	Context("When executing catalog list components with -a flag", func() {
 		It("should list all supported and unsupported devfile components", func() {
 			output := helper.CmdShouldPass("odo", "catalog", "list", "components", "-a")
-			Expect(output).To(ContainSubstring("Odo Devfile Components"))
-			Expect(output).To(ContainSubstring("java-spring-boot"))
-			Expect(output).To(ContainSubstring("java-maven"))
-			Expect(output).To(ContainSubstring("php-mysql"))
+			helper.MatchAllInOutput(output, []string{"Odo Devfile Components", "java-spring-boot", "java-maven", "php-mysql"})
 		})
 	})
 })
