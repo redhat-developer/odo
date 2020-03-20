@@ -14,6 +14,10 @@ import (
 const (
 	DeploymentKind       = "Deployment"
 	DeploymentAPIVersion = "apps/v1"
+
+	// TimedOutReason is added in a deployment when its newest replica set fails to show any progress
+	// within the given deadline (progressDeadlineSeconds).
+	timedOutReason = "ProgressDeadlineExceeded"
 )
 
 // GetDeploymentByName gets a deployment by querying by name
@@ -61,7 +65,7 @@ func (c *Client) WaitForDeploymentRollout(deploymentName string) (*appsv1.Deploy
 			if deployment, ok := val.Object.(*appsv1.Deployment); ok {
 				if deployment.Generation <= deployment.Status.ObservedGeneration {
 					cond := getDeploymentCondition(deployment.Status, appsv1.DeploymentProgressing)
-					if cond != nil && cond.Reason == "ProgressDeadlineExceeded" {
+					if cond != nil && cond.Reason == timedOutReason {
 						failure <- fmt.Errorf("deployment %q exceeded its progress deadline", deployment.Name)
 					} else if deployment.Spec.Replicas != nil && deployment.Status.UpdatedReplicas < *deployment.Spec.Replicas {
 						glog.V(4).Infof("Waiting for deployment %q rollout to finish: %d out of %d new replicas have been updated...\n", deployment.Name, deployment.Status.UpdatedReplicas, *deployment.Spec.Replicas)
@@ -88,7 +92,7 @@ func (c *Client) WaitForDeploymentRollout(deploymentName string) (*appsv1.Deploy
 	case err := <-failure:
 		return nil, err
 	case <-time.After(5 * time.Minute):
-		return nil, errors.Errorf("timeout while waiting for %s deployment roll out b", deploymentName)
+		return nil, errors.Errorf("timeout while waiting for %s deployment roll out", deploymentName)
 	}
 }
 
