@@ -8,20 +8,25 @@ import (
 )
 
 // GetContainersByComponent returns the list of Docker containers that matches the specified component label
-// If no container with that name exists, it returns an error
-func (dc *Client) GetContainersByComponent(componentName string) ([]types.Container, error) {
+// If no container with that component exists, it returns an empty list
+func (dc *Client) GetContainersByComponent(componentName string, containers []types.Container) []types.Container {
 	var containerList []types.Container
 
-	containers, err := dc.Client.ContainerList(dc.Context, types.ContainerListOptions{})
-	if err != nil {
-		return nil, errors.Wrapf(err, "Unable to retrieve Docker containers")
-	}
 	for _, container := range containers {
 		if container.Labels["component"] == componentName {
 			containerList = append(containerList, container)
 		}
 	}
-	return containerList, nil
+	return containerList
+}
+
+// GetContainerList returns a list of all of the running containers on the user's system
+func (dc *Client) GetContainerList() ([]types.Container, error) {
+	containers, err := dc.Client.ContainerList(dc.Context, types.ContainerListOptions{})
+	if err != nil {
+		return nil, errors.Wrapf(err, "Unable to retrieve Docker containers")
+	}
+	return containers, nil
 }
 
 // StartContainer takes in a Docker container object and starts it.
@@ -29,7 +34,7 @@ func (dc *Client) GetContainersByComponent(componentName string) ([]types.Contai
 // hostConfig - configurations related to the host (volume mounts, exposed ports, etc) (if needed)
 // networkingConfig - endpoints to expose (if needed)
 // containerName - name to give to the container
-// Returns the ID of the started container and an error (if applicable)
+// Returns an error if the container couldn't be started.
 func (dc *Client) StartContainer(containerConfig *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig, containerName string) error {
 	resp, err := dc.Client.ContainerCreate(dc.Context, containerConfig, hostConfig, networkingConfig, containerName)
 	if err != nil {

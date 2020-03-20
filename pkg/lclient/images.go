@@ -13,15 +13,15 @@ import (
 // it returns an error.
 func (dc *Client) PullImage(image string) error {
 
-	codewindOut, err := dc.Client.ImagePull(dc.Context, image, types.ImagePullOptions{})
+	out, err := dc.Client.ImagePull(dc.Context, image, types.ImagePullOptions{})
 
 	if err != nil {
-		return errors.Wrapf(err, "Unable to pull docker image")
+		return errors.Wrapf(err, "Unable to pull image")
 	}
 
-	defer codewindOut.Close()
+	defer out.Close()
 	if glog.V(4) {
-		_, err := io.Copy(os.Stdout, codewindOut)
+		_, err := io.Copy(os.Stdout, out)
 		if err != nil {
 			return err
 		}

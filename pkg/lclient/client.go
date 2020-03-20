@@ -49,7 +49,7 @@ func New() (*Client, error) {
 	ctx := context.Background()
 
 	// Create a new Docker client instance
-	tempClient, err := client.NewClientWithOpts(client.WithVersion(MinDockerAPIVersion))
+	client, err := client.NewClientWithOpts(client.WithVersion(MinDockerAPIVersion))
 	if err != nil {
 		// Unable to create a Docker client likely means that Docker isn't running on the user's system.
 		return nil, errors.Wrapf(err, errorMsg)
@@ -57,7 +57,7 @@ func New() (*Client, error) {
 
 	dockerClient := Client{
 		Context: ctx,
-		Client:  tempClient,
+		Client:  client,
 	}
 
 	return &dockerClient, nil
