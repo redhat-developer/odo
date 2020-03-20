@@ -455,5 +455,5 @@ func (oc *OcRunner) CheckForExistence(resourceType, namespace string) {
 	session := CmdRunner(oc.path, "get", resourceType, "--namespace", namespace)
 	Eventually(session).Should(gexec.Exit(0))
 	output := string(session.Wait().Out.Contents())
-	Expect(output).To(ContainSubstring(""))
+	Expect(strings.ToLower(output)).To(ContainSubstring(""))
 }
