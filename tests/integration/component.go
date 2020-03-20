@@ -816,19 +816,15 @@ func componentTests(args ...string) {
 	})
 
 	Context("odo component delete should clean owned resources", func() {
-		appName := "app"
-		cmpName := "nodejs"
-		var oc helper.OcRunner
+		appName := helper.RandString(5)
+		cmpName := helper.RandString(5)
 
 		JustBeforeEach(func() {
 			project = helper.CreateRandProject()
-			originalDir = helper.Getwd()
-			oc = helper.NewOcRunner("oc")
 		})
 
 		JustAfterEach(func() {
 			helper.DeleteProject(project)
-			helper.Chdir(originalDir)
 		})
 
 		It("should delete the component and the owned resources", func() {
