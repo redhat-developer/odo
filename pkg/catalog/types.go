@@ -17,7 +17,7 @@ type ComponentSpec struct {
 	AllTags        []string            `json:"allTags"`
 	NonHiddenTags  []string            `json:"nonHiddenTags"`
 	SupportedTags  []string            `json:"supportedTags"`
-	ImageStreamRef imagev1.ImageStream `json:"-"`
+	ImageStreamRef imagev1.ImageStream `json:"imageStreamRef"`
 }
 
 // ComponentTypeList lists all the ComponentType's
