@@ -1,4 +1,4 @@
-package integration
+package devfile
 
 import (
 	"fmt"
@@ -19,7 +19,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 	var sourcePath = "/projects"
 
-	oc = helper.NewOcRunner("oc")
+	oc := helper.NewOcRunner("oc")
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
