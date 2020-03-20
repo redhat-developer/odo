@@ -1,6 +1,11 @@
-hash: b8ed36a9c2b2f2caf0623e4c908ca0f5ff3bb17e6f030455eb82da468de37c81
-updated: 2020-02-06T12:13:51.399963+01:00
+hash: fddec1c90e5dc60f67e98912159bb5cc6e4dcfc25fd2019752cfcbf176fa23ad
+updated: 2020-03-04T18:10:10.206875746+05:30
 imports:
+- name: cloud.google.com/go
+  version: 3b1ae45394a234c385be014e9a488f2bb6eef821
+  subpackages:
+  - compute/metadata
+  - internal
 - name: github.com/alexbrainman/sspi
   version: e580b900e9f5657daa5473021296289be6da2661
   subpackages:
@@ -12,6 +17,15 @@ imports:
   version: d6e3b3328b783f23731bc4d058875b0371ff8109
   subpackages:
   - winterm
+- name: github.com/Azure/go-autorest
+  version: ea233b6412b0421a65dc6160e16c893364664a95
+  subpackages:
+  - autorest
+  - autorest/adal
+  - autorest/azure
+  - autorest/date
+  - logger
+  - version
 - name: github.com/Benjamintf1/unmarshalledmatchers
   version: bb1c1f34eaeac620307d94a2371c514fbaf6ec7f
 - name: github.com/beorn7/perks
@@ -28,6 +42,8 @@ imports:
   version: d8f796af33cc11cb798c1aaeb27a4ebc5099927d
   subpackages:
   - spew
+- name: github.com/dgrijalva/jwt-go
+  version: 01aeca54ebda6e0fbfafd0a524d234159c05ec20
 - name: github.com/docker/distribution
   version: d4c35485a70df4dce2179bc227b1393a69edb809
   repo: https://github.com/openshift/docker-distribution.git
@@ -76,12 +92,16 @@ imports:
   - util/runes
   - util/strings
 - name: github.com/gogo/protobuf
-  version: 342cbe0a04158f6dcb03ca0079991a51a4248c02
+  version: c0656edd0d9eab7c66d1eb0c568f9039345796f7
   subpackages:
   - proto
   - sortkeys
 - name: github.com/golang/glog
   version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
+- name: github.com/golang/groupcache
+  version: 02826c3e79038b59d737d3b1c0a1d937f71a4433
+  subpackages:
+  - lru
 - name: github.com/golang/protobuf
   version: b4deda0973fb4c70b50d226b1af49f3da59f5265
   subpackages:
@@ -93,7 +113,7 @@ imports:
 - name: github.com/google/btree
   version: 479b5e81b0a93ec038d201b0b33d17db599531d3
 - name: github.com/google/gofuzz
-  version: 225701601be54702d114845d7a272fba34aac808
+  version: 44d81051d367757e1c7c6a5a86423ece9afcf63c
 - name: github.com/google/uuid
   version: 8c31c18f31ede9fc8eae72290a7e7a8064e9b3e3
 - name: github.com/googleapis/gnostic
@@ -102,6 +122,15 @@ imports:
   - OpenAPIv2
   - compiler
   - extensions
+- name: github.com/gophercloud/gophercloud
+  version: 781450b3c4fcb4f5182bcc5133adb4b2e4a09d1d
+  subpackages:
+  - openstack
+  - openstack/identity/v2/tenants
+  - openstack/identity/v2/tokens
+  - openstack/identity/v3/tokens
+  - openstack/utils
+  - pagination
 - name: github.com/gregjones/httpcache
   version: 787624de3eb7bd915c329cba748687a3b22666a6
   subpackages:
@@ -117,7 +146,7 @@ imports:
 - name: github.com/hinshun/vt10x
   version: d55458df857cfff952e4bf72ce1b567c5a4e141c
 - name: github.com/hpcloud/tail
-  version: a1dbeea552b7c8df4b542c66073e393de198a800
+  version: a30252cb686a21eb2d0b98132633053ec2f7f1e5
   subpackages:
   - ratelimiter
   - util
@@ -334,6 +363,14 @@ imports:
   - pkg/user/apis/user
   - pkg/user/apis/user/v1
   - pkg/user/apis/user/validation
+- name: github.com/operator-framework/operator-lifecycle-manager
+  version: 23f5c0292434c41743676abdd2da88f6a26990f5
+  subpackages:
+  - pkg/api/apis/operators/v1
+  - pkg/api/apis/operators/v1alpha1
+  - pkg/api/client/clientset/versioned/scheme
+  - pkg/api/client/clientset/versioned/typed/operators/v1alpha1
+  - pkg/lib/version
 - name: github.com/pborman/uuid
   version: 8b1b92947f46224e3b97bb1a3a5b0382be00d31e
 - name: github.com/peterbourgon/diskv
@@ -418,6 +455,7 @@ imports:
   version: 0ed95abb35c445290478a5348a7b38bb154135fd
   subpackages:
   - context
+  - context/ctxhttp
   - html
   - html/atom
   - html/charset
@@ -428,7 +466,10 @@ imports:
 - name: golang.org/x/oauth2
   version: a6bd8cefa1811bd24b86f8902872e4e8225f74c4
   subpackages:
+  - google
   - internal
+  - jws
+  - jwt
 - name: golang.org/x/sys
   version: 95c6576299259db960f6c5b9b69ea52422860fce
   subpackages:
@@ -471,9 +512,11 @@ imports:
   version: 12d5545dc1cfa6047a286d5e853841b6471f4c19
   subpackages:
   - internal
+  - internal/app_identity
   - internal/base
   - internal/datastore
   - internal/log
+  - internal/modules
   - internal/remote_api
   - internal/urlfetch
   - urlfetch
@@ -482,10 +525,10 @@ imports:
   subpackages:
   - core
   - terminal
-- name: gopkg.in/fsnotify/fsnotify.v1
-  version: c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9
+- name: gopkg.in/fsnotify.v1
+  version: 7be54206639f256967dd82fa767397ba5f8f48f5
 - name: gopkg.in/inf.v0
-  version: d2d2541c53f18d2a059457998ce2876cc8e67cbf
+  version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
 - name: gopkg.in/tomb.v1
   version: c131134a1947e9afd9cecfe11f4c6dff0732ae58
 - name: gopkg.in/yaml.v2
@@ -532,6 +575,9 @@ imports:
   version: 1495f70252dcec3e2289bcabc488290dc1cf1258
   repo: https://github.com/openshift/kubernetes-apiextensions-apiserver.git
   subpackages:
+  - pkg/apis/apiextensions
+  - pkg/apis/apiextensions/v1beta1
+  - pkg/client/clientset/clientset/scheme
   - pkg/features
 - name: k8s.io/apimachinery
   version: 65406164345bdb2b7dd33b63bcec210d5014c737
@@ -690,7 +736,12 @@ imports:
   - pkg/apis/clientauthentication/v1alpha1
   - pkg/apis/clientauthentication/v1beta1
   - pkg/version
+  - plugin/pkg/client/auth
+  - plugin/pkg/client/auth/azure
   - plugin/pkg/client/auth/exec
+  - plugin/pkg/client/auth/gcp
+  - plugin/pkg/client/auth/oidc
+  - plugin/pkg/client/auth/openstack
   - rest
   - rest/watch
   - restmapper
@@ -713,6 +764,7 @@ imports:
   - tools/metrics
   - tools/pager
   - tools/portforward
+  - tools/record
   - tools/reference
   - tools/remotecommand
   - transport
@@ -728,6 +780,8 @@ imports:
   - util/retry
 - name: k8s.io/klog
   version: 8139d8cb77af419532b33dfa7dd09fbc5f1d344f
+  subpackages:
+  - glog
 - name: k8s.io/kube-openapi
   version: 1fddd894a3d3e4eb9f4a20d5849e44102f30a419
   repo: https://github.com/openshift/kube-openapi.git

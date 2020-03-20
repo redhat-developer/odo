@@ -3,6 +3,8 @@ package kclient
 import (
 	"fmt"
 
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 
 	corev1 "k8s.io/api/core/v1"
@@ -31,28 +33,28 @@ func (c *Client) CreatePVC(objectMeta metav1.ObjectMeta, pvcSpec corev1.Persiste
 }
 
 // AddPVCToPodTemplateSpec adds the given PVC to the podTemplateSpec
-func AddPVCToPodTemplateSpec(podTemplateSpec *corev1.PodTemplateSpec, pvc, volumeName string) {
+func AddPVCToPodTemplateSpec(podTemplateSpec *corev1.PodTemplateSpec, volumeName, pvcName string) {
 
 	podTemplateSpec.Spec.Volumes = append(podTemplateSpec.Spec.Volumes, corev1.Volume{
 		Name: volumeName,
 		VolumeSource: corev1.VolumeSource{
 			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-				ClaimName: pvc,
+				ClaimName: pvcName,
 			},
 		},
 	})
 }
 
-// AddVolumeMountToPodTemplateSpec adds the Volume Mounts in containerMountPathsMap to the podTemplateSpec containers for a given PVC pvc and volume volumeName
-// containerMountPathsMap is a map of a container name/alias to an array of Mount Paths
-func AddVolumeMountToPodTemplateSpec(podTemplateSpec *corev1.PodTemplateSpec, volumeName, pvc string, containerMountPathsMap map[string][]string) error {
+// AddVolumeMountToPodTemplateSpec adds the Volume Mounts in componentAliasToMountPaths to the podTemplateSpec containers for a given pvc and volumeName
+// componentAliasToMountPaths is a map of a container alias to an array of its Mount Paths
+func AddVolumeMountToPodTemplateSpec(podTemplateSpec *corev1.PodTemplateSpec, volumeName string, componentAliasToMountPaths map[string][]string) error {
 
 	// Validating podTemplateSpec.Spec.Containers[] is present before dereferencing
 	if len(podTemplateSpec.Spec.Containers) == 0 {
 		return fmt.Errorf("podTemplateSpec %s doesn't have any Containers defined", podTemplateSpec.ObjectMeta.Name)
 	}
 
-	for containerName, mountPaths := range containerMountPathsMap {
+	for containerName, mountPaths := range componentAliasToMountPaths {
 		for i, container := range podTemplateSpec.Spec.Containers {
 			if container.Name == containerName {
 				for _, mountPath := range mountPaths {
@@ -71,6 +73,35 @@ func AddVolumeMountToPodTemplateSpec(podTemplateSpec *corev1.PodTemplateSpec, vo
 	return nil
 }
 
+// AddPVCAndVolumeMount adds PVC and volume mount to the pod template spec
+// volumeNameToPVCName is a map of volume name to the PVC created
+// componentAliasToVolumes is a map of the Devfile component alias to the Devfile Volumes
+func AddPVCAndVolumeMount(podTemplateSpec *corev1.PodTemplateSpec, volumeNameToPVCName map[string]string, componentAliasToVolumes map[string][]common.DevfileVolume) error {
+	for volName, pvcName := range volumeNameToPVCName {
+		generatedVolumeName, err := generateVolumeNameFromPVC(pvcName)
+		if err != nil {
+			return errors.Wrapf(err, "Unable to generate volume name from pvc name")
+		}
+		AddPVCToPodTemplateSpec(podTemplateSpec, generatedVolumeName, pvcName)
+
+		// componentAliasToMountPaths is a map of the Devfile container alias to their Devfile Volume Mount Paths for a given Volume Name
+		componentAliasToMountPaths := make(map[string][]string)
+		for containerName, volumes := range componentAliasToVolumes {
+			for _, volume := range volumes {
+				if volName == *volume.Name {
+					componentAliasToMountPaths[containerName] = append(componentAliasToMountPaths[containerName], *volume.ContainerPath)
+				}
+			}
+		}
+
+		err = AddVolumeMountToPodTemplateSpec(podTemplateSpec, generatedVolumeName, componentAliasToMountPaths)
+		if err != nil {
+			return errors.Wrapf(err, "Unable to add volumes mounts to the pod")
+		}
+	}
+	return nil
+}
+
 // GetPVCsFromSelector returns the PVCs based on the given selector
 func (c *Client) GetPVCsFromSelector(selector string) ([]corev1.PersistentVolumeClaim, error) {
 	pvcList, err := c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).List(metav1.ListOptions{
@@ -81,4 +112,13 @@ func (c *Client) GetPVCsFromSelector(selector string) ([]corev1.PersistentVolume
 	}
 
 	return pvcList.Items, nil
+}
+
+// generateVolumeNameFromPVC generates a volume name based on the pvc name
+func generateVolumeNameFromPVC(pvc string) (volumeName string, err error) {
+	volumeName, err = util.NamespaceOpenShiftObject(pvc, "vol")
+	if err != nil {
+		return "", err
+	}
+	return
 }

@@ -34,7 +34,6 @@ type PortForwardOptions struct {
 	// ReadChannel is used to receive status of port forwarding ( ready or not ready )
 	ReadyChannel chan struct{}
 	*genericclioptions.Context
-	localConfigInfo *config.LocalConfigInfo
 }
 
 var (
@@ -65,13 +64,11 @@ func NewPortForwardOptions() *PortForwardOptions {
 // Complete completes all the required options for port-forward cmd.
 func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 
+	// this populates the LocalConfigInfo
 	o.Context = genericclioptions.NewContext(cmd)
-	cfg, err := config.NewLocalConfigInfo(o.contextDir)
-	if err != nil {
-		return err
-	}
-	o.localConfigInfo = cfg
 
+	// a small shortcut
+	cfg := o.Context.LocalConfigInfo
 	remotePort := cfg.GetDebugPort()
 
 	// try to listen on the given local port and check if the port is free or not
@@ -126,7 +123,7 @@ func (o PortForwardOptions) Run() error {
 		syscall.SIGTERM,
 		syscall.SIGQUIT)
 	defer signal.Stop(signals)
-	defer os.RemoveAll(debug.GetDebugInfoFilePath(o.Client, o.localConfigInfo.GetName(), o.localConfigInfo.GetApplication()))
+	defer os.RemoveAll(debug.GetDebugInfoFilePath(o.Client, o.LocalConfigInfo.GetName(), o.LocalConfigInfo.GetApplication()))
 
 	go func() {
 		<-signals

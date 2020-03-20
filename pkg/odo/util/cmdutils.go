@@ -15,7 +15,6 @@ import (
 	"github.com/openshift/odo/pkg/storage"
 	urlPkg "github.com/openshift/odo/pkg/url"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -47,7 +46,6 @@ func LogErrorAndExit(err error, context string, a ...interface{}) {
 			machineoutput.OutputError(machineOutput)
 
 		} else {
-			glog.V(4).Infof("Error:\n%v", err)
 			if context == "" {
 				log.Error(errors.Cause(err))
 			} else {
@@ -124,7 +122,7 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 		// Gather the output
 		var output string
 		for _, store := range storages.Items {
-			output += fmt.Sprintf(" · %v of size %v mounted to %v\n", store.Name, store.Spec.Size, store.Status.Path)
+			output += fmt.Sprintf(" · %v of size %v mounted to %v\n", store.Name, store.Spec.Size, store.Spec.Path)
 		}
 
 		// Cut off the last newline and output

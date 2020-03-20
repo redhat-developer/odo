@@ -4,12 +4,15 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
+	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"os"
 	"os/user"
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"runtime"
 	"sort"
 	"strconv"
 	"testing"
@@ -806,6 +809,11 @@ func TestGetAbsGlobExps(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
 			resultExps := GetAbsGlobExps(tt.directoryName, tt.inputRelativeGlobExps)
+			if runtime.GOOS == "windows" {
+				for index, element := range resultExps {
+					resultExps[index] = filepath.ToSlash(element)
+				}
+			}
 
 			if !reflect.DeepEqual(resultExps, tt.expectedGlobExps) {
 				t.Errorf("expected %v, got %v", tt.expectedGlobExps, resultExps)
@@ -1115,6 +1123,11 @@ func TestRemoveRelativePathFromFiles(t *testing.T) {
 
 			// Run function RemoveRelativePathFromFiles
 			output, err := RemoveRelativePathFromFiles(tt.args.input, tt.args.path)
+			if runtime.GOOS == "windows" {
+				for index, element := range output {
+					output[index] = filepath.ToSlash(element)
+				}
+			}
 
 			// Check for error
 			if !tt.wantErr == (err != nil) {
@@ -1153,6 +1166,149 @@ func TestHttpGetFreePort(t *testing.T) {
 				t.Errorf("expected a free port, but listening failed cause: %v", err)
 			} else {
 				_ = listener.Close()
+			}
+		})
+	}
+}
+
+func TestGetRemoteFilesMarkedForDeletion(t *testing.T) {
+	tests := []struct {
+		name       string
+		files      []string
+		remotePath string
+		want       []string
+	}{
+		{
+			name:       "case 1: no files",
+			files:      []string{},
+			remotePath: "/projects",
+			want:       nil,
+		},
+		{
+			name:       "case 2: one file",
+			files:      []string{"abc.txt"},
+			remotePath: "/projects",
+			want:       []string{"/projects/abc.txt"},
+		},
+		{
+			name:       "case 3: multiple files",
+			files:      []string{"abc.txt", "def.txt", "hello.txt"},
+			remotePath: "/projects",
+			want:       []string{"/projects/abc.txt", "/projects/def.txt", "/projects/hello.txt"},
+		},
+		{
+			name:       "case 4: remote path multiple folders",
+			files:      []string{"abc.txt", "def.txt", "hello.txt"},
+			remotePath: "/test/folder",
+			want:       []string{"/test/folder/abc.txt", "/test/folder/def.txt", "/test/folder/hello.txt"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			remoteFiles := GetRemoteFilesMarkedForDeletion(tt.files, tt.remotePath)
+			if !reflect.DeepEqual(tt.want, remoteFiles) {
+				t.Errorf("Expected %s, got %s", tt.want, remoteFiles)
+			}
+		})
+	}
+}
+
+func TestHTTPGetRequest(t *testing.T) {
+	// Start a local HTTP server
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		// Send response to be tested
+		_, err := rw.Write([]byte("OK"))
+		if err != nil {
+			t.Error(err)
+		}
+	}))
+	// Close the server when test finishes
+	defer server.Close()
+
+	tests := []struct {
+		name string
+		url  string
+		want []byte
+	}{
+		{
+			name: "Case 1: Input url is valid",
+			url:  server.URL,
+			// Want(Expected) result is "OK"
+			// According to Unicode table: O == 79, K == 75
+			want: []byte{79, 75},
+		},
+		{
+			name: "Case 2: Input url is invalid",
+			url:  "invalid",
+			want: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := HTTPGetRequest(tt.url)
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Got: %v, want: %v", got, tt.want)
+				t.Logf("Error message is: %v", err)
+			}
+		})
+	}
+}
+
+func TestFilterIgnores(t *testing.T) {
+	tests := []struct {
+		name             string
+		changedFiles     []string
+		deletedFiles     []string
+		ignoredFiles     []string
+		wantChangedFiles []string
+		wantDeletedFiles []string
+	}{
+		{
+			name:             "Case 1: No ignored files",
+			changedFiles:     []string{"hello.txt", "test.abc"},
+			deletedFiles:     []string{"one.txt", "two.txt"},
+			ignoredFiles:     []string{},
+			wantChangedFiles: []string{"hello.txt", "test.abc"},
+			wantDeletedFiles: []string{"one.txt", "two.txt"},
+		},
+		{
+			name:             "Case 2: One ignored file",
+			changedFiles:     []string{"hello.txt", "test.abc"},
+			deletedFiles:     []string{"one.txt", "two.txt"},
+			ignoredFiles:     []string{"hello.txt"},
+			wantChangedFiles: []string{"test.abc"},
+			wantDeletedFiles: []string{"one.txt", "two.txt"},
+		},
+		{
+			name:             "Case 3: Multiple ignored file",
+			changedFiles:     []string{"hello.txt", "test.abc"},
+			deletedFiles:     []string{"one.txt", "two.txt"},
+			ignoredFiles:     []string{"hello.txt", "two.txt"},
+			wantChangedFiles: []string{"test.abc"},
+			wantDeletedFiles: []string{"one.txt"},
+		},
+		{
+			name:             "Case 4: No changed or deleted files",
+			changedFiles:     []string{""},
+			deletedFiles:     []string{""},
+			ignoredFiles:     []string{"hello.txt", "two.txt"},
+			wantChangedFiles: []string{""},
+			wantDeletedFiles: []string{""},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			filterChanged, filterDeleted := FilterIgnores(tt.changedFiles, tt.deletedFiles, tt.ignoredFiles)
+
+			if !reflect.DeepEqual(tt.wantChangedFiles, filterChanged) {
+				t.Errorf("Expected %s, got %s", tt.wantChangedFiles, filterChanged)
+			}
+
+			if !reflect.DeepEqual(tt.wantDeletedFiles, filterDeleted) {
+				t.Errorf("Expected %s, got %s", tt.wantDeletedFiles, filterDeleted)
 			}
 		})
 	}

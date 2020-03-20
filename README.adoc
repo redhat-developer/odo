@@ -35,16 +35,40 @@ Existing tools such as `oc` are more operations-focused and require a deep-under
 === Officially supported languages and corresponding container images
 
 .Supported container images
-[options="header"]
-|====
-|Node.js|Java
-|`centos/nodejs-8-centos7`|`redhat-openjdk-18/openjdk18-openshift`
-|`rhoar-nodejs/nodejs-8`|`openjdk/openjdk-11-rhel8`
-|`rhoar-nodejs/nodejs-10`|`openjdk/openjdk-11-rhel7`
-|`bucharestgold/centos7-s2i-nodejs`|
-|`rhscl/nodejs-8-rhel7`|
-|`rhscl/nodejs-10-rhel7`|
-|====
+[cols=",,",options="header",]
+|===
+|Language |Container Image |Supported Package Manager
+|*Node.js*
+|https://github.com/sclorg/s2i-nodejs-container[centos/nodejs-8-centos7]
+|NPM
+
+| |https://access.redhat.com/articles/3376841[rhoar-nodejs/nodejs-8]
+|NPM
+
+|
+|https://www.github.com/bucharest-gold/centos7-s2i-nodejs[bucharestgold/centos7-s2i-nodejs]
+|NPM
+
+|
+|https://access.redhat.com/containers/#/registry.access.redhat.com/rhscl/nodejs-8-rhel7[rhscl/nodejs-8-rhel7]
+|NPM
+
+|
+|https://access.redhat.com/containers/#/registry.access.redhat.com/rhscl/nodejs-10-rhel7[rhscl/nodejs-10-rhel7]
+|NPM
+
+|*Java*
+|https://access.redhat.com/containers/#/registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift[redhat-openjdk-18/openjdk18-openshift]
+|Maven, Gradle
+
+|
+|https://access.redhat.com/containers/#/registry.access.redhat.com/openjdk/openjdk-11-rhel8[openjdk/openjdk-11-rhel8]
+|Maven, Gradle
+
+|
+|https://access.redhat.com/containers/#/registry.access.redhat.com/openjdk/openjdk-11-rhel7[openjdk/openjdk-11-rhel7]
+|Maven, Gradle
+|===
 
 [id="odo-listing-available-images"]
 ==== Listing available container images
@@ -113,8 +137,8 @@ https://asciinema.org/a/wVkVgUrO7PGR5CYBFbHB5fFDn[image:https://asciinema.org/a/
 
 *Discussions:*
 
-* For general help and inquiries, join our link:https://groups.google.com/forum/\#!forum/odo-users[odo-users Google group].
-* For any developmental discussion, use our link:https://groups.google.com/forum/\#!forum/odo-dev[odo-dev Google group].
+* For general help and inquiries, join our link:https://groups.google.com/forum/#!forum/odo-users[odo-users Google group].
+* For any developmental discussion, use our link:https://groups.google.com/forum/#!forum/odo-dev[odo-dev Google group].
 
 *Chat:* Join us on link:https://join.slack.com/t/openshiftdo/shared_invite/enQtODUwMjIzMzE2MjYyLWM3YjlkNTViOGNjZGQ5YjFlMzc2N2RhZjVmMDQ5NWY5ZDQ3NzMzZjYxMTE1MjY5OTVmZjgxZWMyMGRmOTc4Y2I[Slack].
 
@@ -137,7 +161,7 @@ All our calls are open to public. You are welcome to join any of our calls.
 
 You can find the exact dates of all scheduled odo calls together with sprint dates in the link:https://calendar.google.com/calendar/embed?src=gi0s0v5ukfqkjpnn26p6va3jfc%40group.calendar.google.com[odo calendar] (link:https://calendar.google.com/calendar/ical/gi0s0v5ukfqkjpnn26p6va3jfc%40group.calendar.google.com/public/basic.ics[iCal format]).
 
-To participate in the calls, please join link:https://groups.google.com/forum/\#!forum/odo-dev[odo-dev Google group]. When you join the group, you will automatically get invites to all odo related calls and get permissions to all necessary documents.
+To participate in the calls, please join link:https://groups.google.com/forum/#!forum/odo-dev[odo-dev Google group]. When you join the group, you will automatically get invites to all odo related calls and get permissions to all necessary documents.
 
 
 [[projects-using-odo]]

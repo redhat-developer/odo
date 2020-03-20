@@ -26,7 +26,7 @@ func (d *DevfileCtx) SetDevfileAPIVersion() error {
 	}
 
 	// apiVersion cannot be empty
-	if apiVersion == nil {
+	if apiVersion.(string) == "" {
 		return fmt.Errorf("apiVersion in devfile cannot be empty")
 	}
 

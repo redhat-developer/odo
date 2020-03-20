@@ -5,12 +5,15 @@ set -x
 HTPASSWD_FILE="./htpass"
 USERPASS="developer"
 HTPASSWD_SECRET="htpasswd-secret"
+SETUP_OPERATORS_41="./scripts/setup-operators-41.sh"
+SETUP_OPERATORS="./scripts/setup-operators.sh"
 # Overrideable information
 DEFAULT_INSTALLER_ASSETS_DIR=${DEFAULT_INSTALLER_ASSETS_DIR:-$(pwd)}
 KUBEADMIN_USER=${KUBEADMIN_USER:-"kubeadmin"}
 KUBEADMIN_PASSWORD_FILE=${KUBEADMIN_PASSWORD_FILE:-"${DEFAULT_INSTALLER_ASSETS_DIR}/auth/kubeadmin-password"}
 # Default values
 OC_STABLE_LOGIN="false"
+CI_OPERATOR_HUB_PROJECT="ci-operator-hub-project"
 # Exported to current env
 export KUBECONFIG=${KUBECONFIG:-"${DEFAULT_INSTALLER_ASSETS_DIR}/auth/kubeconfig"}
 
@@ -36,6 +39,25 @@ if [ -z $CI ]; then
     # Login as admin user
     oc login -u $KUBEADMIN_USER -p $KUBEADMIN_PASSWORD
 fi
+
+# Setup the cluster for Operator tests
+
+## Create a new namesapce which will be used for OperatorHub checks
+oc new-project $CI_OPERATOR_HUB_PROJECT
+## Let developer user have access to the project
+oc adm policy add-role-to-user edit developer
+
+## Store value of `gitVersion` for Server into a variable
+CI_K8S_VERSION=$(oc version -o yaml | tail | awk '/gitVersion/')
+
+## If we're running on 4.1, perform relevant steps
+
+if [[ $CI_K8S_VERSION =~ 1.13 ]]; then
+    sh $SETUP_OPERATORS_41
+else
+    sh $SETUP_OPERATORS
+fi
+# OperatorHub setup complete
 
 # Remove existing htpasswd file, if any
 if [ -f $HTPASSWD_FILE ]; then

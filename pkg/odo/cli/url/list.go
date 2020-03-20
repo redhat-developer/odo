@@ -33,7 +33,6 @@ var (
 
 // URLListOptions encapsulates the options for the odo url list command
 type URLListOptions struct {
-	localConfigInfo  *config.LocalConfigInfo
 	componentContext string
 	*genericclioptions.Context
 }
@@ -46,7 +45,7 @@ func NewURLListOptions() *URLListOptions {
 // Complete completes URLListOptions after they've been Listed
 func (o *URLListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.Context = genericclioptions.NewContext(cmd)
-	o.localConfigInfo, err = config.NewLocalConfigInfo(o.componentContext)
+	o.LocalConfigInfo, err = config.NewLocalConfigInfo(o.componentContext)
 	if err != nil {
 		return errors.Wrap(err, "failed intiating local config")
 	}
@@ -65,7 +64,7 @@ func (o *URLListOptions) Run() (err error) {
 		if err != nil {
 			return err
 		}
-		urls, err := url.ListIngress(o.KClient, &o.EnvSpecificInfo, componentName)
+		urls, err := url.ListIngress(o.KClient, o.EnvSpecificInfo, componentName)
 		if err != nil {
 			return err
 		}
@@ -102,7 +101,7 @@ func (o *URLListOptions) Run() (err error) {
 			}
 		}
 	} else {
-		urls, err := url.List(o.Client, o.localConfigInfo, o.Component(), o.Application)
+		urls, err := url.List(o.Client, o.LocalConfigInfo, o.Component(), o.Application)
 		if err != nil {
 			return err
 		}

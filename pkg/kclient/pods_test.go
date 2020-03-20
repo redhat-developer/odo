@@ -50,7 +50,7 @@ func TestWaitAndGetPod(t *testing.T) {
 
 			// Change the status
 			go func() {
-				fkWatch.Modify(fakePodStatus(tt.status, tt.podName))
+				fkWatch.Modify(FakePodStatus(tt.status, tt.podName))
 			}()
 
 			fkclientset.Kubernetes.PrependWatchReactor("pods", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {

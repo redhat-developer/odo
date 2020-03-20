@@ -191,7 +191,7 @@ func ListMounted(client *occlient.Client, componentName string, applicationName 
 	}
 	var storageListMounted []Storage
 	for _, storage := range storageList.Items {
-		if storage.Status.Path != "" {
+		if storage.Spec.Path != "" {
 			storageListMounted = append(storageListMounted, storage)
 		}
 	}
@@ -304,7 +304,7 @@ func IsMounted(client *occlient.Client, storageName string, componentName string
 	}
 	for _, storage := range storageList.Items {
 		if storage.Name == storageName {
-			if storage.Status.Path != "" {
+			if storage.Spec.Path != "" {
 				return true, nil
 			}
 		}
@@ -360,7 +360,7 @@ func GetStorageNameFromMountPath(client *occlient.Client, path string, component
 		return "", errors.Wrapf(err, "unable to list storage for component %v", componentName)
 	}
 	for _, storage := range storageList.Items {
-		if storage.Status.Path == path {
+		if storage.Spec.Path == path {
 			return storage.Name, nil
 		}
 	}
@@ -410,10 +410,10 @@ func Push(client *occlient.Client, storageList StorageList, componentName, appli
 				return nil, nil, err
 			}
 			log.Successf("Deleted storage %v from %v", storage.Name, componentName)
-			storageToBeUnMounted[storage.Status.Path] = storage.Name
+			storageToBeUnMounted[storage.Spec.Path] = storage.Name
 			continue
 		} else if storage.Name == val.Name {
-			if val.Spec.Size != storage.Spec.Size || val.Status.Path != storage.Status.Path {
+			if val.Spec.Size != storage.Spec.Size || val.Spec.Path != storage.Spec.Path {
 				return nil, nil, errors.Errorf("config mismatch for storage with the same name %s", storage.Name)
 			}
 		}
@@ -428,7 +428,7 @@ func Push(client *occlient.Client, storageList StorageList, componentName, appli
 				return nil, nil, err
 			}
 			log.Successf("Added storage %v to %v", storage.Name, componentName)
-			storageToBeMounted[storage.Status.Path] = createdPVC
+			storageToBeMounted[storage.Spec.Path] = createdPVC
 		}
 	}
 
@@ -455,8 +455,6 @@ func GetMachineReadableFormat(storageName, storageSize, storagePath string) Stor
 		ObjectMeta: metav1.ObjectMeta{Name: storageName},
 		Spec: StorageSpec{
 			Size: storageSize,
-		},
-		Status: StorageStatus{
 			Path: storagePath,
 		},
 	}
@@ -480,9 +478,9 @@ func ListStorageWithState(client *occlient.Client, localConfig *config.LocalConf
 
 	// Iterate over local storage list, to add State PUSHED/NOT PUSHED
 	for _, storeLocal := range storageListConfig.Items {
-		storeLocal.State = StateTypeNotPushed
+		storeLocal.Status = StateTypeNotPushed
 		if isPushed(storeLocal.Name, storageCluster) {
-			storeLocal.State = StateTypePushed
+			storeLocal.Status = StateTypePushed
 		}
 		storageList = append(storageList, storeLocal)
 	}
@@ -490,7 +488,7 @@ func ListStorageWithState(client *occlient.Client, localConfig *config.LocalConf
 	// Iterate over cluster storage list, to add State Locally Deleted
 	for _, storeCluster := range storageCluster.Items {
 		if isLocallyDeleted(storeCluster.Name, storageListConfig) {
-			storeCluster.State = StateTypeLocallyDeleted
+			storeCluster.Status = StateTypeLocallyDeleted
 			storageList = append(storageList, storeCluster)
 		}
 	}

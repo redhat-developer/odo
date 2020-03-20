@@ -2,13 +2,15 @@ package debug
 
 import (
 	"encoding/json"
+	"github.com/openshift/odo/pkg/util"
+	"os"
+	"reflect"
+	"testing"
+
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"os"
-	"reflect"
-	"testing"
 )
 
 // fakeOdoDebugFileString creates a json string of a fake OdoDebugFile
@@ -176,7 +178,6 @@ func Test_getDebugInfo(t *testing.T) {
 				AppName:        "app",
 				ComponentName:  "nodejs-ex",
 				RemotePort:     5858,
-				LocalPort:      9001,
 			},
 			readDebugFile: OdoDebugFile{
 				TypeMeta: v1.TypeMeta{
@@ -188,7 +189,6 @@ func Test_getDebugInfo(t *testing.T) {
 				AppName:        "app",
 				ComponentName:  "nodejs-ex",
 				RemotePort:     5858,
-				LocalPort:      9001,
 			},
 			debugPortListening: true,
 			fileExists:         true,
@@ -230,7 +230,6 @@ func Test_getDebugInfo(t *testing.T) {
 				AppName:        "app",
 				ComponentName:  "nodejs-ex",
 				RemotePort:     5858,
-				LocalPort:      9001,
 			},
 			fileExists:   true,
 			debugRunning: false,
@@ -256,7 +255,6 @@ func Test_getDebugInfo(t *testing.T) {
 				AppName:        "app",
 				ComponentName:  "nodejs-ex",
 				RemotePort:     5858,
-				LocalPort:      9001,
 			},
 			fileExists:   true,
 			debugRunning: false,
@@ -269,6 +267,19 @@ func Test_getDebugInfo(t *testing.T) {
 			client, _ := occlient.FakeNew()
 			client.Namespace = "testing-1"
 			tt.args.defaultPortForwarder.client = client
+
+			freePort, err := util.HttpGetFreePort()
+			if err != nil {
+				t.Errorf("error occured while getting a free port, cause: %v", err)
+			}
+
+			if (OdoDebugFile{}) != tt.readDebugFile {
+				tt.readDebugFile.LocalPort = freePort
+			}
+
+			if (OdoDebugFile{}) != tt.wantDebugFile {
+				tt.wantDebugFile.LocalPort = freePort
+			}
 
 			odoDebugFilePath := GetDebugInfoFilePath(tt.args.defaultPortForwarder.client, tt.args.defaultPortForwarder.componentName, tt.args.defaultPortForwarder.appName)
 			if tt.fileExists {

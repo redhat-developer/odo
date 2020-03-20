@@ -60,10 +60,7 @@ func (o *UnsetOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	if o.envArray == nil {
 		o.paramName = args[0]
 	}
-	err = o.InitConfigFromContext()
-	if err != nil {
-		return err
-	}
+
 	if o.now {
 		o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 		prjName := o.LocalConfigInfo.GetProject()
@@ -72,6 +69,8 @@ func (o *UnsetOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		if err != nil {
 			return err
 		}
+	} else {
+		o.Context = genericclioptions.NewConfigContext(cmd)
 	}
 	return
 }

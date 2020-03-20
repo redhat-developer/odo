@@ -2,7 +2,6 @@ package parser
 
 import (
 	"bytes"
-	"io/ioutil"
 	"unicode"
 
 	"github.com/ghodss/yaml"
@@ -50,7 +49,8 @@ func hasPrefix(buf []byte, prefix []byte) bool {
 func (d *DevfileCtx) SetDevfileContent() error {
 
 	// Read devfile
-	data, err := ioutil.ReadFile(d.absPath)
+	fs := d.GetFs()
+	data, err := fs.ReadFile(d.absPath)
 	if err != nil {
 		return errors.Wrapf(err, "failed to read devfile from path '%s'", d.absPath)
 	}

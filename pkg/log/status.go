@@ -28,6 +28,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/fatih/color"
 	"github.com/mattn/go-colorable"
@@ -40,12 +41,15 @@ import (
 const suffixSpacing = "  "
 const prefixSpacing = " "
 
+var mu sync.Mutex
+
 // Status is used to track ongoing status in a CLI, with a nice loading spinner
 // when attached to a terminal
 type Status struct {
-	spinner *fidget.Spinner
-	status  string
-	writer  io.Writer
+	spinner       *fidget.Spinner
+	status        string
+	warningStatus string
+	writer        io.Writer
 }
 
 // NewStatus creates a new default Status
@@ -56,43 +60,6 @@ func NewStatus(w io.Writer) *Status {
 		writer:  w,
 	}
 	return s
-}
-
-// StatusFriendlyWriter is used to wrap another Writer to make it toggle the
-// status spinner before and after writes so that they do not collide
-type StatusFriendlyWriter struct {
-	status *Status
-	inner  io.Writer
-}
-
-var _ io.Writer = &StatusFriendlyWriter{}
-
-func (ww *StatusFriendlyWriter) Write(p []byte) (n int, err error) {
-	ww.status.spinner.Stop()
-	_, err = ww.inner.Write([]byte("\r"))
-	if err != nil {
-		return n, err
-	}
-	n, err = ww.inner.Write(p)
-	ww.status.spinner.Start()
-	return n, err
-}
-
-// WrapWriter returns a StatusFriendlyWriter for w
-func (s *Status) WrapWriter(w io.Writer) io.Writer {
-	return &StatusFriendlyWriter{
-		status: s,
-		inner:  w,
-	}
-}
-
-// MaybeWrapWriter returns a StatusFriendlyWriter for w IFF w and spinner's
-// output are a terminal, otherwise it returns w
-func (s *Status) MaybeWrapWriter(w io.Writer) io.Writer {
-	if IsTerminal(s.writer) && IsTerminal(w) {
-		return s.WrapWriter(w)
-	}
-	return w
 }
 
 // IsTerminal returns true if the writer w is a terminal
@@ -106,6 +73,25 @@ func IsTerminal(w io.Writer) bool {
 		return terminal.IsTerminal(int(v.Fd()))
 	}
 	return false
+}
+
+// WarningStatus puts a warning status within the spinner and then updates the current status
+func (s *Status) WarningStatus(status string) {
+	s.warningStatus = status
+	s.updateStatus()
+}
+
+// Updates the status and makes sure that if the previous status was longer, it
+// "clears" the rest of the message.
+func (s *Status) updateStatus() {
+	mu.Lock()
+	if s.warningStatus != "" {
+		yellow := color.New(color.FgYellow).SprintFunc()
+		s.spinner.SetSuffix(fmt.Sprintf(suffixSpacing+"%s [%s %s]", s.status, yellow(getWarningString()), yellow(s.warningStatus)))
+	} else {
+		s.spinner.SetSuffix(fmt.Sprintf(suffixSpacing+"%s", s.status))
+	}
+	mu.Unlock()
 }
 
 // Start starts a new phase of the status, if attached to a terminal
@@ -149,11 +135,17 @@ func (s *Status) End(success bool) {
 
 	if !IsJSON() {
 		if success {
+			// Clear the warning (uneeded now)
+			s.WarningStatus("")
 			green := color.New(color.FgGreen).SprintFunc()
 			fmt.Fprintf(s.writer, prefixSpacing+"%s"+suffixSpacing+"%s [%s]\n", green(getSuccessString()), s.status, s.spinner.TimeSpent())
 		} else {
 			red := color.New(color.FgRed).SprintFunc()
-			fmt.Fprintf(s.writer, prefixSpacing+"%s"+suffixSpacing+"%s [%s]\n", red(getErrString()), s.status, s.spinner.TimeSpent())
+			if s.warningStatus != "" {
+				fmt.Fprintf(s.writer, prefixSpacing+"%s"+suffixSpacing+"%s [%s] [%s]\n", red(getErrString()), s.status, s.spinner.TimeSpent(), s.warningStatus)
+			} else {
+				fmt.Fprintf(s.writer, prefixSpacing+"%s"+suffixSpacing+"%s [%s]\n", red(getErrString()), s.status, s.spinner.TimeSpent())
+			}
 		}
 	}
 
@@ -191,12 +183,18 @@ func Successf(format string, a ...interface{}) {
 	}
 }
 
-// Warningf will output in an appropriate "progress" manner
+// Warningf will output in an appropriate "warning" manner
 func Warningf(format string, a ...interface{}) {
 	yellow := color.New(color.FgYellow).SprintFunc()
 	if !IsJSON() {
 		fmt.Fprintf(GetStderr(), " %s%s%s\n", yellow(getWarningString()), suffixSpacing, fmt.Sprintf(format, a...))
 	}
+}
+
+// Swarningf (like Sprintf) will return a string in the "warning" manner
+func Swarningf(format string, a ...interface{}) string {
+	yellow := color.New(color.FgYellow).SprintFunc()
+	return fmt.Sprintf(" %s%s%s", yellow(getWarningString()), suffixSpacing, fmt.Sprintf(format, a...))
 }
 
 // Warning will output in an appropriate "progress" manner

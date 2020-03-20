@@ -7,11 +7,14 @@ import (
 	"text/tabwriter"
 
 	"github.com/openshift/odo/pkg/catalog"
+	"github.com/openshift/odo/pkg/log"
+	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 )
 
 // DisplayServices displays the specified services
 func DisplayServices(services catalog.ServiceTypeList) {
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+	log.Info("Services available through Service Catalog")
 	fmt.Fprintln(w, "NAME", "\t", "PLANS")
 	for _, service := range services.Items {
 		fmt.Fprintln(w, service.ObjectMeta.Name, "\t", strings.Join(service.Spec.PlanList, ","))
@@ -58,4 +61,23 @@ func FilterHiddenComponents(input []catalog.ComponentType) []catalog.ComponentTy
 		}
 	}
 	return filteredComponents
+}
+
+// DisplayClusterServiceVersions displays installed Operators in a human friendly manner
+func DisplayClusterServiceVersions(csvs *olm.ClusterServiceVersionList) {
+	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+	log.Info("Operators available through Operator Hub")
+	fmt.Fprintln(w, "NAME", "\t", "CRDs")
+	for _, csv := range csvs.Items {
+		fmt.Fprintln(w, csv.ObjectMeta.Name, "\t", csvOperators(csv.Spec.CustomResourceDefinitions))
+	}
+	w.Flush()
+}
+
+func csvOperators(crds olm.CustomResourceDefinitions) string {
+	var crdsSlice []string
+	for _, crd := range crds.Owned {
+		crdsSlice = append(crdsSlice, crd.Kind)
+	}
+	return strings.Join(crdsSlice, ", ")
 }

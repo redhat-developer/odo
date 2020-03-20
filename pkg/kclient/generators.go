@@ -23,6 +23,14 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
+const (
+	// OdoSourceVolume is the constant containing the name of the emptyDir volume containing the project source
+	OdoSourceVolume = "odo-projects"
+
+	// OdoSourceVolumeMount is the directory to mount the volume in the container
+	OdoSourceVolumeMount = "/projects"
+)
+
 // GenerateContainer creates a container spec that can be used when creating a pod
 func GenerateContainer(name, image string, isPrivileged bool, command, args []string, envVars []corev1.EnvVar, resourceReqs corev1.ResourceRequirements, ports []corev1.ContainerPort) *corev1.Container {
 	container := &corev1.Container{
@@ -51,6 +59,11 @@ func GeneratePodTemplateSpec(objectMeta metav1.ObjectMeta, containers []corev1.C
 		ObjectMeta: objectMeta,
 		Spec: corev1.PodSpec{
 			Containers: containers,
+			Volumes: []corev1.Volume{
+				{
+					Name: OdoSourceVolume,
+				},
+			},
 		},
 	}
 
@@ -205,4 +218,19 @@ func GenerateSelfSignedCertificate(host string) (SelfSignedCertificate, error) {
 	keyPemByteArr := []byte(keyPemEncode)
 
 	return SelfSignedCertificate{CertPem: certPemByteArr, KeyPem: keyPemByteArr}, nil
+}
+
+// GenerateOwnerReference genertes an ownerReference  from the deployment which can then be set as
+// owner for various Kubernetes objects and ensure that when the owner object is deleted from the
+// cluster, all other objects are automatically removed by Kubernetes garbage collector
+func GenerateOwnerReference(deployment *appsv1.Deployment) metav1.OwnerReference {
+
+	ownerReference := metav1.OwnerReference{
+		APIVersion: DeploymentAPIVersion,
+		Kind:       DeploymentKind,
+		Name:       deployment.Name,
+		UID:        deployment.UID,
+	}
+
+	return ownerReference
 }

@@ -5,7 +5,6 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/util/completion"
@@ -31,7 +30,6 @@ var (
 
 type StorageListOptions struct {
 	componentContext string
-	localConfig      *config.LocalConfigInfo
 	*genericclioptions.Context
 }
 
@@ -42,11 +40,8 @@ func NewStorageListOptions() *StorageListOptions {
 
 // Complete completes StorageListOptions after they've been created
 func (o *StorageListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	// this also initializes the context as well
 	o.Context = genericclioptions.NewContext(cmd)
-	o.localConfig, err = config.NewLocalConfigInfo(o.componentContext)
-	if err != nil {
-		return err
-	}
 	return
 }
 
@@ -57,7 +52,7 @@ func (o *StorageListOptions) Validate() (err error) {
 
 func (o *StorageListOptions) Run() (err error) {
 
-	storageList, err := storage.ListStorageWithState(o.Client, o.localConfig, o.Component(), o.Application)
+	storageList, err := storage.ListStorageWithState(o.Client, o.LocalConfigInfo, o.Component(), o.Application)
 	if err != nil {
 		return err
 	}
@@ -65,7 +60,7 @@ func (o *StorageListOptions) Run() (err error) {
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(storageList)
 	} else {
-		printStorage(storageList, o.localConfig.GetName())
+		printStorage(storageList, o.LocalConfigInfo.GetName())
 	}
 
 	return
@@ -81,7 +76,7 @@ func printStorage(storageList storage.StorageList, compName string) {
 		fmt.Fprintln(tabWriterMounted, "NAME", "\t", "SIZE", "\t", "PATH", "\t", "STATE")
 		// iterating over all mounted storage and put in the mount storage table
 		for _, mStorage := range storageList.Items {
-			fmt.Fprintln(tabWriterMounted, mStorage.Name, "\t", mStorage.Spec.Size, "\t", mStorage.Status.Path, "\t", mStorage.State)
+			fmt.Fprintln(tabWriterMounted, mStorage.Name, "\t", mStorage.Spec.Size, "\t", mStorage.Spec.Path, "\t", mStorage.Status)
 		}
 
 		// print all mounted storage of the given component

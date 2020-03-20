@@ -73,7 +73,10 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 		if err != nil {
 			return fmt.Errorf("fail to parse the devfile %s, with error: %s", o.DevfilePath, err)
 		}
-		containers := adapterutils.GetContainers(devObj)
+		containers, err := adapterutils.GetContainers(devObj)
+		if err != nil {
+			return err
+		}
 		if len(containers) == 0 {
 			return fmt.Errorf("No valid components found in the devfile")
 		}

@@ -2,10 +2,15 @@ package service
 
 import (
 	"testing"
+
+	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/odo/genericclioptions"
 )
 
 func TestOutputNonInteractiveEquivalent(t *testing.T) {
 	t.Parallel()
+
+	client, _ := occlient.FakeNew()
 
 	tests := []struct {
 		name     string
@@ -15,6 +20,8 @@ func TestOutputNonInteractiveEquivalent(t *testing.T) {
 		{
 			name: "when output is not requested, should return empty string",
 			options: ServiceCreateOptions{
+				Context: genericclioptions.NewFakeContext("testproject", "app", "", client),
+
 				CmdFullName: RecommendedCommandName,
 				outputCLI:   false,
 				ServiceType: "foo",
@@ -24,66 +31,76 @@ func TestOutputNonInteractiveEquivalent(t *testing.T) {
 		{
 			name: "just service class",
 			options: ServiceCreateOptions{
+				Context: genericclioptions.NewFakeContext("testproject", "app", "", client),
+
 				CmdFullName: RecommendedCommandName,
 				outputCLI:   true,
 				ServiceType: "foo",
 			},
-			expected: RecommendedCommandName + " foo",
+			expected: RecommendedCommandName + " foo --app app --project testproject",
 		},
 		{
 			name: "just service class and name",
 			options: ServiceCreateOptions{
+				Context: genericclioptions.NewFakeContext("testproject", "app", "", client),
+
 				CmdFullName: RecommendedCommandName,
 				outputCLI:   true,
 				ServiceType: "foo",
 				ServiceName: "myservice",
 			},
-			expected: RecommendedCommandName + " foo myservice",
+			expected: RecommendedCommandName + " foo myservice --app app --project testproject",
 		},
 		{
 			name: "service class, name and plan",
 			options: ServiceCreateOptions{
+				Context: genericclioptions.NewFakeContext("testproject", "app", "", client),
+
 				CmdFullName: RecommendedCommandName,
 				outputCLI:   true,
 				ServiceType: "foo",
 				ServiceName: "myservice",
 				Plan:        "dev",
 			},
-			expected: RecommendedCommandName + " foo myservice --plan dev",
+			expected: RecommendedCommandName + " foo myservice --app app --project testproject --plan dev",
 		},
 		{
 			name: "service class and plan",
 			options: ServiceCreateOptions{
+				Context:     genericclioptions.NewFakeContext("testproject", "app", "", client),
 				CmdFullName: RecommendedCommandName,
 				outputCLI:   true,
 				ServiceType: "foo",
 				Plan:        "dev",
 			},
-			expected: RecommendedCommandName + " foo --plan dev",
+			expected: RecommendedCommandName + " foo --app app --project testproject --plan dev",
 		},
 		{
 			name: "service class and empty params",
 			options: ServiceCreateOptions{
+				Context:       genericclioptions.NewFakeContext("testproject", "app", "", client),
 				CmdFullName:   RecommendedCommandName,
 				outputCLI:     true,
 				ServiceType:   "foo",
 				ParametersMap: map[string]string{},
 			},
-			expected: RecommendedCommandName + " foo",
+			expected: RecommendedCommandName + " foo --app app --project testproject",
 		},
 		{
 			name: "service class and params",
 			options: ServiceCreateOptions{
+				Context:       genericclioptions.NewFakeContext("testproject", "app", "", client),
 				CmdFullName:   RecommendedCommandName,
 				outputCLI:     true,
 				ServiceType:   "foo",
 				ParametersMap: map[string]string{"param1": "value1", "param2": "value2"},
 			},
-			expected: RecommendedCommandName + " foo -p param1=value1 -p param2=value2",
+			expected: RecommendedCommandName + " foo --app app --project testproject -p param1=value1 -p param2=value2",
 		},
 		{
 			name: "all",
 			options: ServiceCreateOptions{
+				Context:       genericclioptions.NewFakeContext("testproject", "app", "", client),
 				CmdFullName:   RecommendedCommandName,
 				outputCLI:     true,
 				ServiceType:   "foo",
@@ -91,7 +108,7 @@ func TestOutputNonInteractiveEquivalent(t *testing.T) {
 				Plan:          "plan",
 				ParametersMap: map[string]string{"param1": "value1", "param2": "value2"},
 			},
-			expected: RecommendedCommandName + " foo name --plan plan -p param1=value1 -p param2=value2",
+			expected: RecommendedCommandName + " foo name --app app --project testproject --plan plan -p param1=value1 -p param2=value2",
 		},
 	}
 

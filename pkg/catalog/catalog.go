@@ -1,6 +1,7 @@
 package catalog
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -10,8 +11,142 @@ import (
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+// DevfileRegistries contains the links of all devfile registries
+var DevfileRegistries = []string{
+	"https://raw.githubusercontent.com/elsony/devfile-registry/master",
+	"https://che-devfile-registry.openshift.io/",
+}
+
+// GetDevfileIndex loads the devfile registry index.json
+func GetDevfileIndex(devfileIndexLink string) ([]DevfileIndexEntry, error) {
+	var devfileIndex []DevfileIndexEntry
+
+	jsonBytes, err := util.HTTPGetRequest(devfileIndexLink)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Unable to download the devfile index.json from %s", devfileIndexLink)
+	}
+
+	err = json.Unmarshal(jsonBytes, &devfileIndex)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Unable to unmarshal the devfile index.json from %s", devfileIndexLink)
+	}
+
+	return devfileIndex, nil
+}
+
+// GetDevfile loads the devfile
+func GetDevfile(devfileLink string) (Devfile, error) {
+	var devfile Devfile
+
+	yamlBytes, err := util.HTTPGetRequest(devfileLink)
+	if err != nil {
+		return Devfile{}, errors.Wrapf(err, "Unable to download the devfile from %s", devfileLink)
+	}
+
+	err = yaml.Unmarshal(yamlBytes, &devfile)
+	if err != nil {
+		return Devfile{}, errors.Wrapf(err, "Unable to unmarshal the devfile from %s", devfileLink)
+	}
+
+	return devfile, nil
+}
+
+// IsDevfileComponentSupported checks if the devfile is supported
+// The supported devfile should satisfy the following conditions:
+// 1. Devfile has dockerimage as component type
+// 2. Devfile has alias
+// 3. Devfile has run command
+// 4. Devfile has build command
+func IsDevfileComponentSupported(devfile Devfile) bool {
+	hasDockerImage := false
+	hasAlias := false
+	hasRunCommand := false
+	hasBuildCommand := false
+
+	for _, component := range devfile.Components {
+		if hasDockerImage && hasAlias {
+			break
+		}
+
+		if !hasDockerImage {
+			hasDockerImage = strings.Contains(component.Type, "dockerimage")
+		}
+
+		if !hasAlias {
+			hasAlias = len(component.Alias) > 0
+		}
+	}
+
+	for _, command := range devfile.Commands {
+		if hasRunCommand && hasBuildCommand {
+			break
+		}
+
+		if !hasRunCommand {
+			hasRunCommand = strings.Contains(command.Name, "devRun")
+		}
+
+		if !hasBuildCommand {
+			hasBuildCommand = strings.Contains(command.Name, "devBuild")
+		}
+	}
+
+	if hasDockerImage && hasAlias && hasBuildCommand && hasRunCommand {
+		return true
+	}
+
+	return false
+}
+
+// ListDevfileComponents lists all the available devfile components
+func ListDevfileComponents() (DevfileComponentTypeList, error) {
+	var catalogDevfileList DevfileComponentTypeList
+	catalogDevfileList.DevfileRegistries = DevfileRegistries
+
+	for _, devfileRegistry := range DevfileRegistries {
+		// Load the devfile registry index.json
+		devfileIndexLink := devfileRegistry + "/devfiles/index.json"
+		devfileIndex, err := GetDevfileIndex(devfileIndexLink)
+		if err != nil {
+			return DevfileComponentTypeList{}, err
+		}
+
+		// 1. Load devfiles that indexed in devfile registry index.json
+		// 2. Populate devfile components with devfile data
+		// 3. Form devfile component list
+		for _, devfileIndexEntry := range devfileIndex {
+			devfileIndexEntryLink := devfileIndexEntry.Links.Link
+
+			// Load the devfile
+			devfileLink := devfileRegistry + devfileIndexEntryLink
+			// TODO: We send http get resquest in this function mutiple times
+			// since devfile registry uses different links to host different devfiles,
+			// this can reduce the performance especially when we load devfiles from
+			// big registry. We may need to rethink and optimize this in the future
+			devfile, err := GetDevfile(devfileLink)
+			if err != nil {
+				return DevfileComponentTypeList{}, err
+			}
+
+			// Populate devfile component with devfile data and form devfile component list
+			catalogDevfile := DevfileComponentType{
+				Name:        strings.TrimSuffix(devfile.MetaData.GenerateName, "-"),
+				DisplayName: devfileIndexEntry.DisplayName,
+				Description: devfileIndexEntry.Description,
+				Link:        devfileIndexEntryLink,
+				Support:     IsDevfileComponentSupported(devfile),
+			}
+
+			catalogDevfileList.Items = append(catalogDevfileList.Items, catalogDevfile)
+		}
+	}
+
+	return catalogDevfileList, nil
+}
 
 // ListComponents lists all the available component types
 func ListComponents(client *occlient.Client) (ComponentTypeList, error) {
