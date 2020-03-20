@@ -14,7 +14,6 @@ import (
 	"github.com/openshift/odo/pkg/storage"
 	urlPkg "github.com/openshift/odo/pkg/url"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -46,7 +45,6 @@ func LogErrorAndExit(err error, context string, a ...interface{}) {
 			machineoutput.OutputError(machineOutput)
 
 		} else {
-			glog.V(4).Infof("Error:\n%v", err)
 			if context == "" {
 				log.Error(errors.Cause(err))
 			} else {

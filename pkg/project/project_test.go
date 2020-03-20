@@ -1,6 +1,7 @@
 package project
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 	"reflect"
 	"testing"
@@ -66,10 +67,23 @@ func TestCreate(t *testing.T) {
 			})
 
 			go func() {
-				fkWatch.Add(testingutil.FakeProjectStatus(corev1.NamespacePhase(""), tt.projectName))
+				fkWatch.Add(testingutil.FakeProjectStatus(corev1.NamespacePhase("Active"), tt.projectName))
 			}()
 			fakeClientSet.ProjClientset.PrependWatchReactor("projects", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
 				return true, fkWatch, nil
+			})
+
+			fkWatch2 := watch.NewFake()
+			go func() {
+				fkWatch2.Add(&corev1.ServiceAccount{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "default",
+					},
+				})
+			}()
+
+			fakeClientSet.Kubernetes.PrependWatchReactor("serviceaccounts", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
+				return true, fkWatch2, nil
 			})
 
 			// The function we are testing
