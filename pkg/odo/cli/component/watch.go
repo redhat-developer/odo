@@ -89,7 +89,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 		}
 		wo.devfileHandler, err = adapters.NewPlatformAdapter(wo.componentName, devObj, kc)
 
-		return nil
+		return err
 	}
 
 	// Set the correct context
