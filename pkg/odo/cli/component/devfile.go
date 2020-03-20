@@ -67,7 +67,6 @@ func (po *PushOptions) DevfilePush() (err error) {
 		Path:         po.sourcePath,
 		IgnoredFiles: po.ignores,
 		ForceBuild:   po.forceBuild,
-		GlobExps:     util.GetAbsGlobExps(po.sourcePath, po.ignores),
 	}
 
 	// Start or update the component

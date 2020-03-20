@@ -46,7 +46,19 @@ var _ = Describe("odo watch command tests", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 			helper.CmdShouldPass("odo", "component", "create", "nodejs", "--project", project, "--context", context)
 			output := helper.CmdShouldFail("odo", "watch", "--context", context)
-			Expect(output).To(ContainSubstring("component does not exist. Please use `odo push` to create you component"))
+			Expect(output).To(ContainSubstring("component does not exist. Please use `odo push` to create your component"))
+		})
+	})
+
+	Context("when executing watch without pushing a devfile component", func() {
+		It("should fail", func() {
+			// Devfile push requires experimental mode to be set
+			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
+
+			output := helper.CmdShouldFail("odo", "watch", "--devfile", filepath.Join(context, "devfile.yaml"))
+			Expect(output).To(ContainSubstring("component does not exist. Please use `odo push` to create your component"))
 		})
 	})
 

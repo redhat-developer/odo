@@ -41,6 +41,7 @@ type Adapter struct {
 // Once the component has started, it will sync the source code to it.
 func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	componentExists := utils.ComponentExists(a.Client, a.ComponentName)
+	globExps := util.GetAbsGlobExps(parameters.Path, parameters.IgnoredFiles)
 
 	deletedFiles := []string{}
 	changedFiles := []string{}
@@ -54,7 +55,8 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// Sync source code to the component
 	// If syncing for the first time, sync the entire source directory
 	// If syncing to an already running component, sync the deltas
-	if !parameters.ForceBuild {
+	// If syncing from an odo watch process, skip this step, as we already have the list of changed and deleted files.
+	if !parameters.ForceBuild && len(parameters.WatchFiles) == 0 && len(parameters.WatchDeletedFiles) == 0 {
 		absIgnoreRules := util.GetAbsGlobExps(parameters.Path, parameters.IgnoredFiles)
 
 		spinner := log.NewStatus(log.GetStdout())
@@ -105,6 +107,9 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 				return nil
 			}
 		}
+	} else if len(parameters.WatchFiles) > 0 || len(parameters.WatchDeletedFiles) > 0 {
+		changedFiles = parameters.WatchFiles
+		deletedFiles = parameters.WatchDeletedFiles
 	}
 
 	if parameters.ForceBuild || !componentExists {
@@ -116,13 +121,18 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		changedFiles,
 		deletedFiles,
 		isForcePush,
-		parameters.GlobExps,
+		globExps,
 	)
 
 	if err != nil {
 		return errors.Wrapf(err, "Failed to sync to component with name %s", a.ComponentName)
 	}
 	return nil
+}
+
+// DoesComponentExist returns true if a component with the specified name exists, false otherwise
+func (a Adapter) DoesComponentExist(cmpName string) bool {
+	return utils.ComponentExists(a.Client, cmpName)
 }
 
 func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {

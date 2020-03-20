@@ -36,3 +36,8 @@ func (k Adapter) Push(parameters common.PushParameters) error {
 
 	return nil
 }
+
+// DoesComponentExist returns true if a component with the specified name exists
+func (k Adapter) DoesComponentExist(cmpName string) bool {
+	return k.componentAdapter.DoesComponentExist(cmpName)
+}

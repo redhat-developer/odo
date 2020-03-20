@@ -49,8 +49,11 @@ type WatchOptions struct {
 	componentContext string
 	client           *occlient.Client
 
-	devfilePath string
-	namespace   string
+	componentName  string
+	devfilePath    string
+	namespace      string
+	devfileHandler adapters.PlatformAdapter
+
 	*genericclioptions.Context
 }
 
@@ -68,6 +71,24 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 		if err != nil {
 			return errors.Wrap(err, "unable to get source path")
 		}
+
+		// Get the component name
+		wo.componentName, err = getComponentName()
+		if err != nil {
+			return err
+		}
+
+		// Parse devfile
+		devObj, err := devfile.Parse(wo.devfilePath)
+		if err != nil {
+			return err
+		}
+
+		kc := kubernetes.KubernetesContext{
+			Namespace: wo.namespace,
+		}
+		wo.devfileHandler, err = adapters.NewPlatformAdapter(wo.componentName, devObj, kc)
+
 		return nil
 	}
 
@@ -97,8 +118,22 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 
 // Validate validates the watch parameters
 func (wo *WatchOptions) Validate() (err error) {
-	// if experimental mode is enabled and devfile is present
+
+	// Delay interval cannot be -ve
+	if wo.delay < 0 {
+		return fmt.Errorf("Delay cannot be lesser than 0 and delay=0 means changes will be pushed as soon as they are detected which can cause performance issues")
+	}
+	// Print a debug message warning user if delay is set to 0
+	if wo.delay == 0 {
+		glog.V(4).Infof("delay=0 means changes will be pushed as soon as they are detected which can cause performance issues")
+	}
+
+	// if experimental mode is enabled and devfile is present, return. The rest of the validation is for non-devfile components
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(wo.devfilePath) {
+		exists := wo.devfileHandler.DoesComponentExist(wo.componentName)
+		if !exists {
+			return fmt.Errorf("component does not exist. Please use `odo push` to create your component")
+		}
 		return nil
 	}
 
@@ -114,15 +149,6 @@ func (wo *WatchOptions) Validate() (err error) {
 		return errors.Wrapf(err, "Cannot watch %s", wo.sourcePath)
 	}
 
-	// Delay interval cannot be -ve
-	if wo.delay < 0 {
-		return fmt.Errorf("Delay cannot be lesser than 0 and delay=0 means changes will be pushed as soon as they are detected which can cause performance issues")
-	}
-	// Print a debug message warning user if delay is set to 0
-	if wo.delay == 0 {
-		glog.V(4).Infof("delay=0 means changes will be pushed as soon as they are detected which can cause performance issues")
-	}
-
 	cmpName := wo.LocalConfigInfo.GetName()
 	appName := wo.LocalConfigInfo.GetApplication()
 	exists, err := component.Exists(wo.Client, cmpName, appName)
@@ -130,7 +156,7 @@ func (wo *WatchOptions) Validate() (err error) {
 		return
 	}
 	if !exists {
-		return fmt.Errorf("component does not exist. Please use `odo push` to create you component")
+		return fmt.Errorf("component does not exist. Please use `odo push` to create your component")
 	}
 	return
 }
@@ -139,32 +165,17 @@ func (wo *WatchOptions) Validate() (err error) {
 func (wo *WatchOptions) Run() (err error) {
 	// if experimental mode is enabled and devfile is present
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(wo.devfilePath) {
-		// Parse devfile
-		devObj, err := devfile.Parse(wo.devfilePath)
-		if err != nil {
-			return err
-		}
-
-		componentName, err := getComponentName()
-		if err != nil {
-			return err
-		}
-
-		kc := kubernetes.KubernetesContext{
-			Namespace: wo.namespace,
-		}
-		devfileHandler, err := adapters.NewPlatformAdapter(componentName, devObj, kc)
 
 		err = watch.DevfileWatchAndPush(
 			os.Stdout,
 			watch.WatchParameters{
-				ComponentName:       componentName,
+				ComponentName:       wo.componentName,
 				Path:                wo.sourcePath,
 				FileIgnores:         util.GetAbsGlobExps(wo.sourcePath, wo.ignores),
 				PushDiffDelay:       wo.delay,
 				StartChan:           nil,
 				ExtChan:             make(chan bool),
-				DevfileWatchHandler: devfileHandler.Push,
+				DevfileWatchHandler: wo.devfileHandler.Push,
 				Show:                wo.show,
 			},
 		)

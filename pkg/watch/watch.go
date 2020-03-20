@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/util"
 
 	"github.com/openshift/odo/pkg/occlient"
@@ -303,14 +302,14 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 				}
 				if fileInfo.IsDir() {
 					glog.V(4).Infof("Copying files %s to pod", changedFiles)
-					if experimental.IsExperimentalModeEnabled() {
+					if parameters.DevfileWatchHandler != nil {
 						pushParams := common.PushParameters{
-							Path:         parameters.Path,
-							Files:        changedFiles,
-							IgnoredFiles: parameters.FileIgnores,
-							ForceBuild:   false,
+							Path:              parameters.Path,
+							WatchFiles:        changedFiles,
+							WatchDeletedFiles: deletedPaths,
+							IgnoredFiles:      parameters.FileIgnores,
+							ForceBuild:        false,
 						}
-						pushParams.GlobExps = util.GetAbsGlobExps(pushParams.Path, pushParams.IgnoredFiles)
 
 						err = parameters.DevfileWatchHandler(pushParams)
 					} else {
@@ -320,14 +319,14 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 				} else {
 					pathDir := filepath.Dir(parameters.Path)
 					glog.V(4).Infof("Copying file %s to pod", parameters.Path)
-					if experimental.IsExperimentalModeEnabled() {
+					if parameters.DevfileWatchHandler != nil {
 						pushParams := common.PushParameters{
-							Path:         pathDir,
-							Files:        changedFiles,
-							IgnoredFiles: parameters.FileIgnores,
-							ForceBuild:   false,
+							Path:              pathDir,
+							WatchFiles:        changedFiles,
+							WatchDeletedFiles: deletedPaths,
+							IgnoredFiles:      parameters.FileIgnores,
+							ForceBuild:        false,
 						}
-						pushParams.GlobExps = util.GetAbsGlobExps(pushParams.Path, pushParams.IgnoredFiles)
 
 						err = parameters.DevfileWatchHandler(pushParams)
 					} else {
