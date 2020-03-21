@@ -7,9 +7,15 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
+var (
+	roleTypeMeta           = meta.TypeMeta("Role", "rbac.authorization.k8s.io/v1")
+	roleBindingTypeMeta    = meta.TypeMeta("RoleBinding", "rbac.authorization.k8s.io/v1")
+	serviceAccountTypeMeta = meta.TypeMeta("ServiceAccount", "v1")
+)
+
 func createServiceAccount(name types.NamespacedName) *corev1.ServiceAccount {
 	return &corev1.ServiceAccount{
-		TypeMeta:   meta.TypeMeta("ServiceAccount", "v1"),
+		TypeMeta:   serviceAccountTypeMeta,
 		ObjectMeta: meta.ObjectMeta(name),
 		Secrets:    []corev1.ObjectReference{},
 	}
@@ -28,7 +34,7 @@ func createRoleBinding(name types.NamespacedName, sa *corev1.ServiceAccount, rol
 // createRoleBindingForSubjects create a RoleBinding with multiple subjects
 func createRoleBindingForSubjects(name types.NamespacedName, roleKind, roleName string, subjects []v1rbac.Subject) *v1rbac.RoleBinding {
 	return &v1rbac.RoleBinding{
-		TypeMeta:   meta.TypeMeta("RoleBinding", "rbac.authorization.k8s.io/v1"),
+		TypeMeta:   roleBindingTypeMeta,
 		ObjectMeta: meta.ObjectMeta(name),
 		Subjects:   subjects,
 		RoleRef: v1rbac.RoleRef{
@@ -42,7 +48,7 @@ func createRoleBindingForSubjects(name types.NamespacedName, roleKind, roleName 
 // createRole creates a Role given a name and policyRules
 func createRole(name types.NamespacedName, policyRules []v1rbac.PolicyRule) *v1rbac.Role {
 	return &v1rbac.Role{
-		TypeMeta:   meta.TypeMeta("Role", "rbac.authorization.k8s.io/v1"),
+		TypeMeta:   roleTypeMeta,
 		ObjectMeta: meta.ObjectMeta(name),
 		Rules:      policyRules,
 	}

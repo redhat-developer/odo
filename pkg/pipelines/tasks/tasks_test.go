@@ -13,10 +13,7 @@ const testNS = "testing-ns"
 
 func TestDeployFromSourceTask(t *testing.T) {
 	wantedTask := pipelinev1.Task{
-		TypeMeta: v1.TypeMeta{
-			Kind:       "Task",
-			APIVersion: "tekton.dev/v1alpha1",
-		},
+		TypeMeta: taskTypeMeta,
 		ObjectMeta: v1.ObjectMeta{
 			Name:      "deploy-from-source-task",
 			Namespace: testNS,
@@ -44,10 +41,7 @@ func TestDeployFromSourceTask(t *testing.T) {
 
 func TestDeployUsingKubectlTask(t *testing.T) {
 	validTask := pipelinev1.Task{
-		TypeMeta: v1.TypeMeta{
-			Kind:       "Task",
-			APIVersion: "tekton.dev/v1alpha1",
-		},
+		TypeMeta: taskTypeMeta,
 		ObjectMeta: v1.ObjectMeta{
 			Name:      "deploy-using-kubectl-task",
 			Namespace: testNS,

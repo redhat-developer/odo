@@ -12,10 +12,7 @@ import (
 func TestCreateNamespace(t *testing.T) {
 	ns := createNamespace("test-environment")
 	want := &corev1.Namespace{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Namespace",
-			APIVersion: "v1",
-		},
+		TypeMeta: namespaceTypeMeta,
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-environment",
 		},
