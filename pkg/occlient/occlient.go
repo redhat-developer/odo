@@ -2617,6 +2617,12 @@ func (c *Client) ListRoutes(labelSelector string) ([]routev1.Route, error) {
 	return routeList.Items, nil
 }
 
+func (c *Client) GetRoute(name string) (*routev1.Route, error) {
+	route, err := c.routeClient.Routes(c.Namespace).Get(name, metav1.GetOptions{})
+	return route, err
+
+}
+
 // ListRouteNames lists all the names of the routes based on the given label
 // selector
 func (c *Client) ListRouteNames(labelSelector string) ([]string, error) {
