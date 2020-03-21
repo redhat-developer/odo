@@ -3,6 +3,7 @@ package eventlisteners
 import (
 	"fmt"
 
+	"github.com/openshift/odo/pkg/pipelines/meta"
 	triggersv1 "github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -22,11 +23,15 @@ const (
 	WebhookSecretKey = "webhook-secret-key"
 )
 
+var (
+	eventListenerTypeMeta = meta.TypeMeta("EventListener", "tekton.dev/v1alpha1")
+)
+
 // Generate will create the required eventlisteners.
 func Generate(githubRepo, ns, saName string) triggersv1.EventListener {
 	githubStageRepo := githubRepo + "-stage-config"
 	return triggersv1.EventListener{
-		TypeMeta:   createListenerTypeMeta(),
+		TypeMeta:   eventListenerTypeMeta,
 		ObjectMeta: createListenerObjectMeta("cicd-event-listener", ns),
 		Spec: triggersv1.EventListenerSpec{
 			ServiceAccountName: saName,
@@ -113,13 +118,6 @@ func createListenerTemplate(name string) triggersv1.EventListenerTemplate {
 func createListenerBinding(name string) *triggersv1.EventListenerBinding {
 	return &triggersv1.EventListenerBinding{
 		Name: name,
-	}
-}
-
-func createListenerTypeMeta() metav1.TypeMeta {
-	return metav1.TypeMeta{
-		Kind:       "EventListener",
-		APIVersion: "tekton.dev/v1alpha1",
 	}
 }
 

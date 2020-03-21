@@ -15,7 +15,7 @@ func TestCreateDevCIPipeline(t *testing.T) {
 	DevCIpipeline := createDevCIPipeline(meta.NamespacedName("cicd-environment", "dev-ci-pipeline"), false)
 
 	want := &pipelinev1.Pipeline{
-		TypeMeta: PipelineTypeMeta,
+		TypeMeta: pipelineTypeMeta,
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "dev-ci-pipeline",
 			Namespace: "cicd-environment",
@@ -77,7 +77,7 @@ func TestCreateStageCIPipeline(t *testing.T) {
 	stageCIpipeline := createStageCIPipeline(meta.NamespacedName("cicd-environment", "stage-ci-pipeline"), "stage-environment")
 
 	want := &pipelinev1.Pipeline{
-		TypeMeta: PipelineTypeMeta,
+		TypeMeta: pipelineTypeMeta,
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "stage-ci-pipeline",
 			Namespace: "cicd-environment",
@@ -121,7 +121,7 @@ func TestCreateStageCIPipeline(t *testing.T) {
 func TestCreateDevCDPipeline(t *testing.T) {
 	DevCDpipeline := createDevCDPipeline(meta.NamespacedName("cicd-environment", "dev-cd-pipeline"), "usr/path/", "dev-environment", false)
 	want := &pipelinev1.Pipeline{
-		TypeMeta: PipelineTypeMeta,
+		TypeMeta: pipelineTypeMeta,
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "dev-cd-pipeline",
 			Namespace: "cicd-environment",
@@ -192,7 +192,7 @@ func TestCreateDevCDPipeline(t *testing.T) {
 func TestCreateStageCDPipeline(t *testing.T) {
 	stageCDpipeline := createStageCDPipeline(meta.NamespacedName("cicd-environment", "stage-cd-pipeline"), "stage-environment")
 	want := &pipelinev1.Pipeline{
-		TypeMeta: PipelineTypeMeta,
+		TypeMeta: pipelineTypeMeta,
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "stage-cd-pipeline",
 			Namespace: "cicd-environment",

@@ -14,10 +14,7 @@ var (
 
 func TestGenerateEventListener(t *testing.T) {
 	validEventListener := triggersv1.EventListener{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "EventListener",
-			APIVersion: "tekton.dev/v1alpha1",
-		},
+		TypeMeta: eventListenerTypeMeta,
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "cicd-event-listener",
 			Namespace: "testing",

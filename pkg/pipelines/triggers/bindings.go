@@ -4,14 +4,10 @@ import (
 	"github.com/openshift/odo/pkg/pipelines/meta"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	triggersv1 "github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
-	triggerBindingTypeMeta = v1.TypeMeta{
-		Kind:       "TriggerBinding",
-		APIVersion: "tekton.dev/v1alpha1",
-	}
+	triggerBindingTypeMeta = meta.TypeMeta("TriggerBinding", "tekton.dev/v1alpha1")
 )
 
 // GenerateBindings returns a slice of trigger bindings

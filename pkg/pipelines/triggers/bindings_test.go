@@ -11,10 +11,7 @@ import (
 
 func TestCreatePRBinding(t *testing.T) {
 	validPRBinding := triggersv1.TriggerBinding{
-		TypeMeta: v1.TypeMeta{
-			Kind:       "TriggerBinding",
-			APIVersion: "tekton.dev/v1alpha1",
-		},
+		TypeMeta: triggerBindingTypeMeta,
 		ObjectMeta: v1.ObjectMeta{
 			Name:      "github-pr-binding",
 			Namespace: "testns",
@@ -60,10 +57,7 @@ func TestCreatePRBinding(t *testing.T) {
 
 func TestCreatePushBinding(t *testing.T) {
 	validPushBinding := triggersv1.TriggerBinding{
-		TypeMeta: v1.TypeMeta{
-			Kind:       "TriggerBinding",
-			APIVersion: "tekton.dev/v1alpha1",
-		},
+		TypeMeta: triggerBindingTypeMeta,
 		ObjectMeta: v1.ObjectMeta{
 			Name:      "github-push-binding",
 			Namespace: "testns",

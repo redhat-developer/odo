@@ -3,14 +3,10 @@ package triggers
 import (
 	"github.com/openshift/odo/pkg/pipelines/meta"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
-	pipelineRunTypeMeta = v1.TypeMeta{
-		Kind:       "PipelineRun",
-		APIVersion: "tekton.dev/v1alpha1",
-	}
+	pipelineRunTypeMeta = meta.TypeMeta("PipelineRun", "tekton.dev/v1alpha1")
 )
 
 func createDevCDPipelineRun(saName, imageRepo string) pipelinev1.PipelineRun {

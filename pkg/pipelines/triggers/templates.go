@@ -10,10 +10,7 @@ import (
 )
 
 var (
-	triggerTemplateTypeMeta = v1.TypeMeta{
-		Kind:       "TriggerTemplate",
-		APIVersion: "tekton.dev/v1alpha1",
-	}
+	triggerTemplateTypeMeta = meta.TypeMeta("TriggerTemplate", "tekton.dev/v1alpha1")
 )
 
 // GenerateTemplates will return a slice of trigger templates

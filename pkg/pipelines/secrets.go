@@ -11,6 +11,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
+var (
+	secretTypeMeta = meta.TypeMeta("Secret", "v1")
+)
+
 // createOpaqueSecret creates a Kubernetes v1/Secret with the provided name and
 // body, and type Opaque.
 func createOpaqueSecret(name types.NamespacedName, data, secretKey string) (*corev1.Secret, error) {
@@ -31,7 +35,7 @@ func createSecret(name types.NamespacedName, key string, st corev1.SecretType, i
 		return nil, fmt.Errorf("failed to read secret data: %w", err)
 	}
 	secret := &corev1.Secret{
-		TypeMeta:   meta.TypeMeta("Secret", "v1"),
+		TypeMeta:   secretTypeMeta,
 		ObjectMeta: meta.ObjectMeta(name),
 		Type:       st,
 		Data: map[string][]byte{

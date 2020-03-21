@@ -9,11 +9,15 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-var namespaceBaseNames = map[string]string{
-	"dev":   "dev-environment",
-	"stage": "stage-environment",
-	"cicd":  "cicd-environment",
-}
+var (
+	namespaceBaseNames = map[string]string{
+		"dev":   "dev-environment",
+		"stage": "stage-environment",
+		"cicd":  "cicd-environment",
+	}
+
+	namespaceTypeMeta = meta.TypeMeta("Namespace", "v1")
+)
 
 func createNamespaces(names []string) []*corev1.Namespace {
 	ns := []*corev1.Namespace{}
@@ -33,7 +37,7 @@ func namespaceNames(prefix string) map[string]string {
 
 func createNamespace(name string) *corev1.Namespace {
 	ns := &corev1.Namespace{
-		TypeMeta: meta.TypeMeta("Namespace", "v1"),
+		TypeMeta: namespaceTypeMeta,
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
