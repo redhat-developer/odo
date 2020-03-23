@@ -343,10 +343,16 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, e
 }
 
 // getSyncFolder returns the folder that we need to sync the source files to
-// If there's exactly one project defined in the devfile, return `/projects/<projectName`
+// If there's exactly one project defined in the devfile, return `/projects/<projectName>`
 // Otherwise (zero projects or many), return `/projects`
 func getSyncFolder(projects []versionsCommon.DevfileProject) string {
 	if len(projects) == 1 {
+		project := projects[0]
+		// If the clonepath is set to a value, set it to be the sync folder
+		// As some devfiles rely on the code being synced to the folder in the clonepath
+		if project.ClonePath != nil {
+			return filepath.ToSlash(filepath.Join(kclient.OdoSourceVolumeMount, *project.ClonePath))
+		}
 		return filepath.ToSlash(filepath.Join(kclient.OdoSourceVolumeMount, projects[0].Name))
 	}
 	return kclient.OdoSourceVolumeMount

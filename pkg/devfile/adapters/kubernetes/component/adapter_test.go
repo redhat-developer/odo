@@ -205,9 +205,9 @@ func TestGetFirstContainerWithSourceVolume(t *testing.T) {
 }
 
 func TestGetSyncFolder(t *testing.T) {
-	projectPaths := []string{"/some/path", "/another/path"}
 	projectNames := []string{"some-name", "another-name"}
 	projectRepos := []string{"https://github.com/some/repo.git", "https://github.com/another/repo.git"}
+	projectClonePath := "src/github.com/golang/example/"
 
 	tests := []struct {
 		name     string
@@ -223,8 +223,7 @@ func TestGetSyncFolder(t *testing.T) {
 			name: "Case 2: One project",
 			projects: []versionsCommon.DevfileProject{
 				{
-					ClonePath: &projectPaths[0],
-					Name:      projectNames[0],
+					Name: projectNames[0],
 					Source: versionsCommon.DevfileProjectSource{
 						Type:     versionsCommon.DevfileProjectTypeGit,
 						Location: projectRepos[0],
@@ -237,16 +236,14 @@ func TestGetSyncFolder(t *testing.T) {
 			name: "Case 3: Multiple projects",
 			projects: []versionsCommon.DevfileProject{
 				{
-					ClonePath: &projectPaths[0],
-					Name:      projectNames[0],
+					Name: projectNames[0],
 					Source: versionsCommon.DevfileProjectSource{
 						Type:     versionsCommon.DevfileProjectTypeGit,
 						Location: projectRepos[0],
 					},
 				},
 				{
-					ClonePath: &projectPaths[1],
-					Name:      projectNames[1],
+					Name: projectNames[1],
 					Source: versionsCommon.DevfileProjectSource{
 						Type:     versionsCommon.DevfileProjectTypeGit,
 						Location: projectRepos[1],
@@ -254,6 +251,20 @@ func TestGetSyncFolder(t *testing.T) {
 				},
 			},
 			want: kclient.OdoSourceVolumeMount,
+		},
+		{
+			name: "Case 4: Clone path set",
+			projects: []versionsCommon.DevfileProject{
+				{
+					ClonePath: &projectClonePath,
+					Name:      projectNames[0],
+					Source: versionsCommon.DevfileProjectSource{
+						Type:     versionsCommon.DevfileProjectTypeGit,
+						Location: projectRepos[0],
+					},
+				},
+			},
+			want: filepath.ToSlash(filepath.Join(kclient.OdoSourceVolumeMount, projectClonePath)),
 		},
 	}
 	for _, tt := range tests {
