@@ -70,9 +70,9 @@ func (lo *ListOptions) Run() (err error) {
 			machineoutput.OutputSuccess(components)
 		} else {
 			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-			fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "SOURCE", "\t", "STATE", "\t", "CONTEXT")
+			fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "STATE", "\t", "CONTEXT")
 			for _, file := range components.Items {
-				fmt.Fprintln(w, file.Spec.App, "\t", file.Name, "\t", file.Namespace, "\t", file.Spec.Type, "\t", file.Spec.Source, "\t", file.Status.State, "\t", file.Status.Context)
+				fmt.Fprintln(w, file.Spec.App, "\t", file.Name, "\t", file.Namespace, "\t", file.Spec.Type, "\t", file.Status.State, "\t", file.Status.Context)
 
 			}
 			w.Flush()
@@ -125,9 +125,9 @@ func (lo *ListOptions) Run() (err error) {
 			return
 		}
 		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-		fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "SOURCE", "\t", "STATE")
+		fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "STATE")
 		for _, comp := range components.Items {
-			fmt.Fprintln(w, comp.Spec.App, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Spec.Type, "\t", comp.Spec.Source, "\t", comp.Status.State)
+			fmt.Fprintln(w, comp.Spec.App, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Spec.Type, "\t", comp.Status.State)
 		}
 		w.Flush()
 	}
