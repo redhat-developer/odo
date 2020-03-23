@@ -29,6 +29,7 @@ var _ = Describe("odo devfile catalog command tests", func() {
 		helper.DeleteProject(project)
 		helper.Chdir(originalDir)
 		helper.DeleteDir(context)
+		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "false")
 	})
 
 	Context("When executing catalog list components", func() {
