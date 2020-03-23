@@ -343,7 +343,8 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, e
 }
 
 // getSyncFolder returns the folder that we need to sync the source files to
-// If there's exactly one project defined in the devfile, return `/projects/<projectName>`
+// If there's exactly one project defined in the devfile, and clonePath isn't set return `/projects/<projectName>`
+// If there's exactly one project, and clonePath is set, return `/projects/<clonePath>`
 // Otherwise (zero projects or many), return `/projects`
 func getSyncFolder(projects []versionsCommon.DevfileProject) string {
 	if len(projects) == 1 {
