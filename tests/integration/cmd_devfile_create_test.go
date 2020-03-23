@@ -52,23 +52,26 @@ var _ = Describe("odo devfile create command tests", func() {
 	})
 
 	Context("When executing odo create with devfile component name that contains unsupported character", func() {
-		It("", func() {
+		It("should failed with component name is not valid and prompt supported character", func() {
 			componentName := "BAD@123"
-			helper.CmdShouldFail("odo", "create", "openLiberty", componentName)
+			output := helper.CmdShouldFail("odo", "create", "openLiberty", componentName)
+			helper.MatchAllInOutput(output, []string{"Contain only lowercase alphanumeric characters or ‘-’"})
 		})
 	})
 
 	Context("When executing odo create with devfile component name that contains all numeric values", func() {
-		It("", func() {
+		It("should failed with component name is not valid and prompt container name must not contain all numeric values", func() {
 			componentName := "123456"
-			helper.CmdShouldFail("odo", "create", "openLiberty", componentName)
+			output := helper.CmdShouldFail("odo", "create", "openLiberty", componentName)
+			helper.MatchAllInOutput(output, []string{"Must not contain all numeric values"})
 		})
 	})
 
 	Context("When executing odo create with devfile component name that contains more than 63 characters ", func() {
-		It("", func() {
+		It("should failed with component name is not valid and prompt container name contains at most 63 characters", func() {
 			componentName := helper.RandString(64)
-			helper.CmdShouldFail("odo", "create", "openLiberty", componentName)
+			output := helper.CmdShouldFail("odo", "create", "openLiberty", componentName)
+			helper.MatchAllInOutput(output, []string{"Contain at most 63 characters"})
 		})
 	})
 })
