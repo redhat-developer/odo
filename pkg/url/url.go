@@ -24,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-// Get returns URL defination for given URL name
+// Get returns URL definition for given URL name
 func (urls URLList) Get(urlName string) URL {
 	for _, url := range urls.Items {
 		if url.Name == urlName {
@@ -33,6 +33,45 @@ func (urls URLList) Get(urlName string) URL {
 	}
 	return URL{}
 
+}
+
+// Get returns URL definition for given URL name
+func Get(client *occlient.Client, localConfig *config.LocalConfigInfo, urlName string, applicationName string) (URL, error) {
+	remoteUrlName, err := util.NamespaceOpenShiftObject(urlName, applicationName)
+	if err != nil {
+		return URL{}, errors.Wrapf(err, "unable to create namespaced name")
+	}
+
+	// Check whether remote already created the route
+	remoteExist := true
+	route, err := client.GetRoute(remoteUrlName)
+	if err != nil {
+		remoteExist = false
+	}
+
+	localConfigURLs := localConfig.GetURL()
+	for _, configURL := range localConfigURLs {
+		localURL := ConvertConfigURL(configURL)
+		// search local URL, if it exist in local, update state with remote status
+		if localURL.Name == urlName {
+			if remoteExist {
+				localURL.Status.State = StateTypePushed
+			} else {
+				localURL.Status.State = StateTypeNotPushed
+			}
+			return localURL, nil
+		}
+	}
+
+	if err == nil && remoteExist {
+		// Remote exist, but not in local, so it's deleted status
+		clusterURL := getMachineReadableFormat(*route)
+		clusterURL.Status.State = StateTypeLocallyDeleted
+		return clusterURL, nil
+	}
+
+	// can't find the URL in local and remote
+	return URL{}, errors.New(fmt.Sprintf("the url %v does not exist", urlName))
 }
 
 // Delete deletes a URL
