@@ -2,7 +2,6 @@ package kclient
 
 import corev1 "k8s.io/api/core/v1"
 
-<<<<<<< HEAD
 const (
 	// The init container name for supervisord
 	supervisordInitContainerName = "copy-supervisord"
@@ -46,8 +45,6 @@ func GetSupervisordConfFilePath() string {
 	return supervisordConfFile
 }
 
-=======
->>>>>>> First pass of devfile exec
 // AddBootstrapSupervisordInitContainer creates an init container that will copy over
 // supervisord to the application image during the start-up procress.
 func AddBootstrapSupervisordInitContainer(podTemplateSpec *corev1.PodTemplateSpec) {
@@ -59,11 +56,7 @@ func AddBootstrapSupervisordInitContainer(podTemplateSpec *corev1.PodTemplateSpe
 			VolumeMounts: []corev1.VolumeMount{
 				{
 					Name:      GetSupervisordVolumeName(),
-<<<<<<< HEAD
 					MountPath: supervisordMountPath,
-=======
-					MountPath: "/opt/odo/",
->>>>>>> First pass of devfile exec
 				},
 			},
 			Command: []string{
@@ -71,13 +64,8 @@ func AddBootstrapSupervisordInitContainer(podTemplateSpec *corev1.PodTemplateSpe
 			},
 			Args: []string{
 				"-r",
-<<<<<<< HEAD
 				odoInitImageContents,
 				supervisordMountPath,
-=======
-				"/opt/odo-init/.",
-				"/opt/odo/",
->>>>>>> First pass of devfile exec
 			},
 		})
 }

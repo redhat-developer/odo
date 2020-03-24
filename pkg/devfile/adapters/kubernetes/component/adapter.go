@@ -494,6 +494,12 @@ func (a Adapter) InitRunContainerSupervisord(containerName string) (err error) {
 			command := []string{kclient.GetSupervisordBinaryPath(), "-c", kclient.GetSupervisordConfFilePath(), "-d"}
 			err = exec.ExecuteCommand(&a.Client, a.pod.Name, containerName, command, true)
 		}
+	}()
+
+	err = a.Client.ExecCMDInContainer(podName, containerName, command, writer, writer, nil, false)
+	if err != nil {
+		log.Errorf("\nUnable to exec command %v: \n%v", command, cmdOutput)
+		return err
 	}
 
 	return

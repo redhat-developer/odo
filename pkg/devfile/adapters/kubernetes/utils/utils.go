@@ -10,9 +10,9 @@ import (
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/util"
 
-	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/klog/glog"
 )
 
 const (
