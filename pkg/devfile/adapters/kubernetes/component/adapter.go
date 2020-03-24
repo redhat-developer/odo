@@ -209,19 +209,27 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 		}
 		glog.V(3).Infof("Successfully updated component %v", componentName)
 		oldSvc, err := a.Client.KubeClient.CoreV1().Services(a.Client.Namespace).Get(componentName, metav1.GetOptions{})
-		if err != nil {
-			return err
-		}
-		serviceSpec.ClusterIP = oldSvc.Spec.ClusterIP
 		objectMetaTemp := objectMeta
-		objectMetaTemp.ResourceVersion = oldSvc.GetResourceVersion()
 		ownerReference := kclient.GenerateOwnerReference(deployment)
 		objectMetaTemp.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
-		_, err = a.Client.UpdateService(objectMetaTemp, *serviceSpec)
 		if err != nil {
-			return err
+			// no old service was found, create a new one
+			if len(serviceSpec.Ports) > 0 {
+				_, err = a.Client.CreateService(objectMetaTemp, *serviceSpec)
+				if err != nil {
+					return err
+				}
+				glog.V(3).Infof("Successfully created Service for component %s", componentName)
+			}
+		} else {
+			serviceSpec.ClusterIP = oldSvc.Spec.ClusterIP
+			objectMetaTemp.ResourceVersion = oldSvc.GetResourceVersion()
+			_, err = a.Client.UpdateService(objectMetaTemp, *serviceSpec)
+			if err != nil {
+				return err
+			}
+			glog.V(3).Infof("Successfully update Service for component %s", componentName)
 		}
-		glog.V(3).Infof("Successfully update Service for component %s", componentName)
 	} else {
 		deployment, err := a.Client.CreateDeployment(*deploymentSpec)
 		if err != nil {
@@ -231,11 +239,13 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 		ownerReference := kclient.GenerateOwnerReference(deployment)
 		objectMetaTemp := objectMeta
 		objectMetaTemp.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
-		_, err = a.Client.CreateService(objectMetaTemp, *serviceSpec)
-		if err != nil {
-			return err
+		if len(serviceSpec.Ports) > 0 {
+			_, err = a.Client.CreateService(objectMetaTemp, *serviceSpec)
+			if err != nil {
+				return err
+			}
+			glog.V(3).Infof("Successfully created Service for component %s", componentName)
 		}
-		glog.V(3).Infof("Successfully created Service for component %s", componentName)
 
 	}
 
