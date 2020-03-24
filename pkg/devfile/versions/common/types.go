@@ -63,7 +63,7 @@ type DevfileProject struct {
 type DevfileProjectSource struct {
 	Type DevfileProjectType `yaml:"type" json:"type"`
 
-	// Project's source location address. Should be URL for git and github located projects, or file:// for zip."
+	// Project's source location address. Should be URL for git and github located projects"
 	Location string `yaml:"location" json:"location"`
 
 	// The name of the of the branch to check out after obtaining the source from the location.
