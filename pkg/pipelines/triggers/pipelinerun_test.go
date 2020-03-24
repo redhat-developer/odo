@@ -49,34 +49,34 @@ func TestCreateDevCIPipelineRun(t *testing.T) {
 	}
 }
 
-func TestCreateStageCDPipelineRun(t *testing.T) {
+func TestCreateCDPipelineRun(t *testing.T) {
 	validStageCDPipeline := pipelinev1.PipelineRun{
 		TypeMeta:   pipelineRunTypeMeta,
-		ObjectMeta: meta.ObjectMeta(meta.NamespacedName("", "stage-cd-pipeline-run-$(uid)")),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName("", "cd-deploy-from-push-pipeline-$(uid)")),
 		Spec: pipelinev1.PipelineRunSpec{
 			ServiceAccountName: sName,
-			PipelineRef:        createPipelineRef("stage-cd-pipeline"),
-			Resources:          createStageResources(),
+			PipelineRef:        createPipelineRef("cd-deploy-from-push-pipeline"),
+			Resources:          createResources(),
 		},
 	}
-	template := createStageCDPipelineRun(sName)
+	template := createCDPipelineRun(sName)
 	if diff := cmp.Diff(validStageCDPipeline, template); diff != "" {
-		t.Fatalf("createStageCDPipelineRun failed:\n%s", diff)
+		t.Fatalf("createCDPipelineRun failed:\n%s", diff)
 	}
 }
 
 func TestCreateStageCIPipelineRun(t *testing.T) {
 	validStageCIPipeline := pipelinev1.PipelineRun{
 		TypeMeta:   pipelineRunTypeMeta,
-		ObjectMeta: meta.ObjectMeta(meta.NamespacedName("", "stage-ci-pipeline-run-$(uid)")),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName("", "ci-dryrun-from-pr-pipeline-$(uid)")),
 		Spec: pipelinev1.PipelineRunSpec{
 			ServiceAccountName: sName,
-			PipelineRef:        createPipelineRef("stage-ci-pipeline"),
-			Resources:          createStageResources(),
+			PipelineRef:        createPipelineRef("ci-dryrun-from-pr-pipeline"),
+			Resources:          createResources(),
 		},
 	}
-	template := createStageCIPipelineRun(sName)
+	template := createCIPipelineRun(sName)
 	if diff := cmp.Diff(validStageCIPipeline, template); diff != "" {
-		t.Fatalf("createStageCIPipelineRun failed:\n%s", diff)
+		t.Fatalf("createCIPipelineRun failed:\n%s", diff)
 	}
 }

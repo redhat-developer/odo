@@ -293,7 +293,7 @@ func TestValidateMatchGenericWebHookSecret(t *testing.T) {
 	}
 }
 
-func TestValidateMatchGitHubWebHookSecret(t *testing.T) {
+func TestValidateMatchGitOpsWebhookSecret(t *testing.T) {
 	secret := "secret201"
 	buildConfig := newBuildConfig()
 	p := &github.WebHookPlugin{}

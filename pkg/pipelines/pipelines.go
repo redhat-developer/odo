@@ -32,8 +32,7 @@ func createDevCIPipeline(name types.NamespacedName, isInternalRegistry bool) *pi
 	}
 }
 
-// createStageCIPipeline creates the stage-ci-pipeline
-func createStageCIPipeline(name types.NamespacedName, stageNamespace string) *pipelinev1.Pipeline {
+func createCIPipeline(name types.NamespacedName, stageNamespace string) *pipelinev1.Pipeline {
 	return &pipelinev1.Pipeline{
 		TypeMeta:   pipelineTypeMeta,
 		ObjectMeta: meta.ObjectMeta(name),
@@ -44,13 +43,12 @@ func createStageCIPipeline(name types.NamespacedName, stageNamespace string) *pi
 			},
 
 			Tasks: []pipelinev1.PipelineTask{
-				createStageCIPipelineTask("apply-source", stageNamespace),
+				createCIPipelineTask("apply-source", stageNamespace),
 			},
 		},
 	}
 }
 
-// createDevCDPipeline creates the dev-cd-pipeline
 func createDevCDPipeline(name types.NamespacedName, deploymentPath, devNamespace string, isInternalRegistry bool) *pipelinev1.Pipeline {
 	return &pipelinev1.Pipeline{
 		TypeMeta:   pipelineTypeMeta,
@@ -68,8 +66,7 @@ func createDevCDPipeline(name types.NamespacedName, deploymentPath, devNamespace
 	}
 }
 
-// createStageCDPipeline creates the stage-cd-pipeline
-func createStageCDPipeline(name types.NamespacedName, stageNamespace string) *pipelinev1.Pipeline {
+func createCDPipeline(name types.NamespacedName, stageNamespace string) *pipelinev1.Pipeline {
 	return &pipelinev1.Pipeline{
 		TypeMeta:   pipelineTypeMeta,
 		ObjectMeta: meta.ObjectMeta(name),
@@ -78,7 +75,7 @@ func createStageCDPipeline(name types.NamespacedName, stageNamespace string) *pi
 				createPipelineDeclaredResource("source-repo", "git"),
 			},
 			Tasks: []pipelinev1.PipelineTask{
-				createStageCDPipelineTask("apply-source", stageNamespace),
+				createCDPipelineTask("apply-source", stageNamespace),
 			},
 		},
 	}
@@ -149,7 +146,7 @@ func createDevCDDeployImageTask(name, devNamespace, deploymentPath string) pipel
 	}
 }
 
-func createStageCIPipelineTask(taskName, stageNamespace string) pipelinev1.PipelineTask {
+func createCIPipelineTask(taskName, stageNamespace string) pipelinev1.PipelineTask {
 	return pipelinev1.PipelineTask{
 		Name:    taskName,
 		TaskRef: createTaskRef("deploy-from-source-task", pipelinev1.NamespacedTaskKind),
@@ -163,7 +160,7 @@ func createStageCIPipelineTask(taskName, stageNamespace string) pipelinev1.Pipel
 	}
 }
 
-func createStageCDPipelineTask(taskName, stageNamespace string) pipelinev1.PipelineTask {
+func createCDPipelineTask(taskName, stageNamespace string) pipelinev1.PipelineTask {
 	return pipelinev1.PipelineTask{
 		Name:    taskName,
 		TaskRef: createTaskRef("deploy-from-source-task", pipelinev1.NamespacedTaskKind),

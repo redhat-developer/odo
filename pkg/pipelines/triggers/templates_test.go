@@ -82,10 +82,10 @@ func TestCreateDevCIBuildPRTemplate(t *testing.T) {
 	}
 }
 
-func TestCreateStageCDPushTemplate(t *testing.T) {
+func TestCreateCDPushTemplate(t *testing.T) {
 	ValidStageCDPushTemplate := triggersv1.TriggerTemplate{
 		TypeMeta:   triggerTemplateTypeMeta,
-		ObjectMeta: meta.ObjectMeta(meta.NamespacedName("testns", "stage-cd-deploy-from-push-template")),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName("testns", "cd-deploy-from-push-template")),
 		Spec: triggersv1.TriggerTemplateSpec{
 			Params: []pipelinev1.ParamSpec{
 				pipelinev1.ParamSpec{
@@ -103,22 +103,22 @@ func TestCreateStageCDPushTemplate(t *testing.T) {
 			},
 			ResourceTemplates: []triggersv1.TriggerResourceTemplate{
 				triggersv1.TriggerResourceTemplate{
-					RawMessage: createStageCDResourceTemplate(serviceAccName),
+					RawMessage: createCDResourceTemplate(serviceAccName),
 				},
 			},
 		},
 	}
-	template := createStageCDPushTemplate("testns", serviceAccName)
+	template := CreateCDPushTemplate("testns", serviceAccName)
 	if diff := cmp.Diff(ValidStageCDPushTemplate, template); diff != "" {
-		t.Fatalf("createStageCDPushTemplate failed:\n%s", diff)
+		t.Fatalf("createCDPushTemplate failed:\n%s", diff)
 	}
 }
 
-func TestCreateStageCIDryRunTemplate(t *testing.T) {
+func TestCreateCIDryRunTemplate(t *testing.T) {
 	validStageCIDryRunTemplate := triggersv1.TriggerTemplate{
 		TypeMeta: triggerTemplateTypeMeta,
-		ObjectMeta: meta.ObjectMeta(meta.NamespacedName("testns", "stage-ci-dryrun-from-pr-template"),
-			statusTrackerAnnotations("stage-ci-dryrun-from-pr", "Stage CI Dry Run")),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName("testns", "ci-dryrun-from-pr-template"),
+			statusTrackerAnnotations("ci-dryrun-from-pr-pipeline", "Stage CI Dry Run")),
 
 		Spec: triggersv1.TriggerTemplateSpec{
 			Params: []pipelinev1.ParamSpec{
@@ -137,14 +137,14 @@ func TestCreateStageCIDryRunTemplate(t *testing.T) {
 			},
 			ResourceTemplates: []triggersv1.TriggerResourceTemplate{
 				triggersv1.TriggerResourceTemplate{
-					RawMessage: createStageCIResourceTemplate(serviceAccName),
+					RawMessage: createCIResourceTemplate(serviceAccName),
 				},
 			},
 		},
 	}
-	template := createStageCIDryRunTemplate("testns", serviceAccName)
+	template := CreateCIDryRunTemplate("testns", serviceAccName)
 	if diff := cmp.Diff(validStageCIDryRunTemplate, template); diff != "" {
-		t.Fatalf("createStageCIdryrunptemplate failed:\n%s", diff)
+		t.Fatalf("createCIdryrunptemplate failed:\n%s", diff)
 	}
 
 }

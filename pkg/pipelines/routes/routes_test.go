@@ -10,12 +10,11 @@ import (
 )
 
 func TestGenerateRoute(t *testing.T) {
-	var weight int32
-	weight = 100
+	weight := int32(100)
 	validRoute := routev1.Route{
 		TypeMeta: routeTypeMeta,
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "github-webhook-event-listener",
+			Name:      "gitops-webhook-event-listener",
 			Namespace: "cicd-environment",
 			Labels: map[string]string{
 				"app.kubernetes.io/managed-by": "EventListener",
@@ -36,6 +35,7 @@ func TestGenerateRoute(t *testing.T) {
 			},
 			WildcardPolicy: routev1.WildcardPolicyNone,
 		},
+		Status: createRouteStatus(),
 	}
 	route := Generate("cicd-environment")
 	if diff := cmp.Diff(validRoute, route); diff != "" {
@@ -56,8 +56,7 @@ func TestCreateRoutePort(t *testing.T) {
 }
 
 func TestCreatRouteTargetReference(t *testing.T) {
-	var weight int32
-	weight = 100
+	weight := int32(100)
 	validRouteTargetReference := routev1.RouteTargetReference{
 		Kind:   "Service",
 		Name:   "el-cicd-event-listener",

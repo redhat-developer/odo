@@ -20,16 +20,10 @@ var requiredCRDNames = []string{
 	"clustertasks.tekton.dev", "taskruns.tekton.dev", "tasks.tekton.dev",
 }
 
-// installedCRDChecker contains a method to return whether Tekton is installed
-type installedCRDChecker interface {
-	checkInstall() (bool, error)
-}
-
 // Strategy to check Tekton install which is checking the existence of CRDs
 type checkStrategy struct {
 	client       v1beta1.CustomResourceDefinitionInterface
 	requiredCRDs []string
-	check        installedCRDChecker
 }
 
 // tektonChecker object that knows how to perform Tekton installation checks

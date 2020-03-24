@@ -19,7 +19,7 @@ func TestDeployFromSourceTask(t *testing.T) {
 			Namespace: testNS,
 		},
 		Spec: pipelinev1.TaskSpec{
-			Inputs: createInputsForDeployFromSourceTask(),
+			Inputs: createInputsForDeployFromSourceTask("test"),
 			Steps: []pipelinev1.Step{
 				pipelinev1.Step{
 					Container: corev1.Container{
@@ -33,9 +33,9 @@ func TestDeployFromSourceTask(t *testing.T) {
 			},
 		},
 	}
-	deployFromSourceTask := generateDeployFromSourceTask(testNS)
+	deployFromSourceTask := CreateDeployFromSourceTask(testNS, "test")
 	if diff := cmp.Diff(wantedTask, deployFromSourceTask); diff != "" {
-		t.Fatalf("GenerateDeployFromSourceTask() failed \n%s", diff)
+		t.Fatalf("CreateDeployFromSourceTask() failed \n%s", diff)
 	}
 }
 
