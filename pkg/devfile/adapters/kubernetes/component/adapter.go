@@ -60,7 +60,6 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	if err != nil {
 		return err
 	}
-	glog.V(3).Infof("mjf Validated the Devfile Commands")
 
 	err = a.createOrUpdateComponent(componentExists)
 	if err != nil {
@@ -182,15 +181,12 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 	if err != nil {
 		return err
 	}
-	// runCmdComponents := common.GetRunCommandComponents(a.Devfile.Data, a.devfileRunCmd)
-	// glog.V(3).Infof("mjf run cmd components %v", runCmdComponents)
 
 	if len(containers) == 0 {
 		return fmt.Errorf("No valid components found in the devfile")
 	}
 
-	containers = utils.UpdateContainersWithSupervisordIfReqd(a.Devfile, containers, a.devfileRunCmd)
-	glog.V(3).Infof("mjf container check %v", containers)
+	containers = utils.UpdateContainersWithSupervisord(a.Devfile, containers, a.devfileRunCmd)
 
 	objectMeta := kclient.CreateObjectMeta(componentName, a.Client.Namespace, labels, nil)
 	podTemplateSpec := kclient.GeneratePodTemplateSpec(objectMeta, containers)
@@ -353,9 +349,8 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 		// Need to make sure the folder already exists on the component or else sync will fail
 		glog.V(4).Infof("Creating %s on the remote container if it doesn't already exist", syncFolder)
 		cmdArr := getCmdToCreateSyncFolder(syncFolder)
-		reader, writer := io.Pipe()
 
-		err := a.Client.ExecCMDInContainer(a.pod.Name, containerName, cmdArr, writer, writer, reader, false)
+		err = a.executeCommand(a.pod.Name, containerName, cmdArr, false)
 		if err != nil {
 			return err
 		}
@@ -363,9 +358,8 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	// If there were any files deleted locally, delete them remotely too.
 	if len(delFiles) > 0 {
 		cmdArr := getCmdToDeleteFiles(delFiles, syncFolder)
-		reader, writer := io.Pipe()
 
-		err := a.Client.ExecCMDInContainer(a.pod.Name, containerName, cmdArr, writer, writer, reader, false)
+		err = a.executeCommand(a.pod.Name, containerName, cmdArr, false)
 		if err != nil {
 			return err
 		}
@@ -393,26 +387,28 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 }
 
 // Push syncs source code from the user's disk to the component
-func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand, componentExists, show bool) error {
-	reader, writer := io.Pipe()
-	buildComponent := true
+func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand, componentExists, show bool) (err error) {
+	var buildRequired bool
 	var s *log.Status
 
-	glog.V(3).Infof("mjf  execDevfile pushDevfileCommands %v", pushDevfileCommands)
+	if a.devfileBuildCmd == "" && !common.IsDefaultCommandPresent(a.Devfile.Data, common.DefaultDevfileBuildCommand) {
+		// if there is no build command, there is no need to build
+		buildRequired = false
+	} else {
+		// if there is a build command, set buildRequired to true
+		buildRequired = true
+	}
 
 	for i := 0; i < len(pushDevfileCommands); i++ {
 		command := pushDevfileCommands[i]
 
-		// Exec the devBuild command if buildComponent is true
-		if (reflect.DeepEqual(command.Name, common.DefaultDevfileBuildCommand) || reflect.DeepEqual(command.Name, a.devfileBuildCmd)) && buildComponent {
-			glog.V(3).Infof("mjf executing command %v", command.Name)
-			var cmdOutput string
+		// Exec the devBuild command if buildRequired is true
+		if (reflect.DeepEqual(command.Name, common.DefaultDevfileBuildCommand) || reflect.DeepEqual(command.Name, a.devfileBuildCmd)) && buildRequired {
+			glog.V(3).Infof("Executing devfile command %v", command.Name)
 
 			for _, action := range command.Actions {
 				// Change to the workdir and execute the command
 				cmdArr := []string{"/bin/sh", "-c", "cd " + *action.Workdir + " && " + *action.Command}
-				// cmdArr := []string{"/bin/sh", "-c", "/projects/springbootproject/build-container-full.sh"}
-				glog.V(3).Infof("mjf exec cmd %v in pod %v container %v", cmdArr, a.pod.Name, *action.Component)
 
 				if show {
 					s = log.SpinnerNoSpin("Executing " + command.Name + " command " + *action.Command)
@@ -420,32 +416,11 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 					s = log.Spinner("Executing " + command.Name + " command " + *action.Command)
 				}
 
-				// s := log.Spinner("Executing command " + *action.Command)
 				defer s.End(false)
 
-				// This Go routine will automatically pipe the output from ExecCMDInContainer to
-				// our logger.
-				go func() {
-					scanner := bufio.NewScanner(reader)
-					for scanner.Scan() {
-						line := scanner.Text()
-
-						if log.IsDebug() || show {
-							_, err := fmt.Fprintln(os.Stdout, line)
-							if err != nil {
-								log.Errorf("Unable to print to stdout: %v", err)
-							}
-						}
-
-						cmdOutput += fmt.Sprintln(line)
-					}
-				}()
-
-				err := a.Client.ExecCMDInContainer(a.pod.Name, *action.Component, cmdArr, writer, writer, nil, false)
+				err = a.executeCommand(a.pod.Name, *action.Component, cmdArr, show)
 				if err != nil {
-					log.Errorf("\nUnable to build files\n%v", cmdOutput)
 					s.End(false)
-					glog.V(3).Infof("mjf  here error %v", err.Error())
 					return err
 				}
 				s.End(true)
@@ -453,29 +428,27 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 
 			// Reset the for loop counter and iterate through all the devfile commands again for others
 			i = -1
-			// Set the buildComponent to false since we already executed the build command
-			buildComponent = false
-		} else if (reflect.DeepEqual(command.Name, common.DefaultDevfileRunCommand) || reflect.DeepEqual(command.Name, a.devfileRunCmd)) && !buildComponent {
-			// Always check for buildComponent is false, since the command may be iterated out of order and we always want to execute devBuild first if buildComponent is true. If buildComponent is false, then we don't need to build and we can execute the devRun command
-			glog.V(3).Infof("mjf executing hehe command %v", command.Name)
-			var cmdOutput string
+			// Set the buildRequired to false since we already executed the build command
+			buildRequired = false
+		} else if (reflect.DeepEqual(command.Name, common.DefaultDevfileRunCommand) || reflect.DeepEqual(command.Name, a.devfileRunCmd)) && !buildRequired {
+			// Always check for buildRequired is false, since the command may be iterated out of order and we always want to execute devBuild first if buildRequired is true. If buildRequired is false, then we don't need to build and we can execute the devRun command
+			glog.V(3).Infof("Executing devfile command %v", command.Name)
 
 			for _, action := range command.Actions {
 
 				// Check if the devfile run component containers have supervisord as the entrypoint.
-				// Otherwise, start the supervisord if the odo component does not exist
+				// Start the supervisord if the odo component does not exist
 				if !componentExists {
-					err := a.InitRunContainerSupervisord(action.Component)
+					err = a.InitRunContainerSupervisord(*action.Component)
 					if err != nil {
-						return err
+						return
 					}
 				}
 
-				// Exec the supervisord ctl start for the devrun program
+				// Exec the supervisord ctl stop and start for the devrun program
 				type devRunExecutable struct {
 					command []string
 				}
-
 				devRunExecs := []devRunExecutable{
 					{
 						command: []string{"/opt/odo/bin/supervisord", "ctl", "stop", "all"},
@@ -489,32 +462,11 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 				defer s.End(false)
 
 				for _, devRunExec := range devRunExecs {
-					glog.V(3).Infof("mjf exec cmd %v in pod %v container %v", devRunExec.command, a.pod.Name, *action.Component)
 
-					// This Go routine will automatically pipe the output from ExecCMDInContainer to
-					// our logger.
-					go func() {
-						scanner := bufio.NewScanner(reader)
-						for scanner.Scan() {
-							line := scanner.Text()
-
-							if log.IsDebug() || show {
-								_, err := fmt.Fprintln(os.Stdout, line)
-								if err != nil {
-									log.Errorf("Unable to print to stdout: %v", err)
-								}
-							}
-
-							cmdOutput += fmt.Sprintln(line)
-						}
-					}()
-
-					err := a.Client.ExecCMDInContainer(a.pod.Name, *action.Component, devRunExec.command, writer, writer, nil, false)
+					err = a.executeCommand(a.pod.Name, *action.Component, devRunExec.command, show)
 					if err != nil {
-						log.Errorf("\nUnable to exec devrun \n%v", cmdOutput)
 						s.End(false)
-						glog.V(3).Infof("mjf  here error %v", err.Error())
-						return err
+						return
 					}
 				}
 				s.End(true)
@@ -522,55 +474,54 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 		}
 	}
 
-	glog.V(3).Infof("mjf  end of exec ")
-
-	return nil
+	return
 }
 
 // InitRunContainerSupervisord initializes the supervisord in the container if
 // the container has entrypoint that is not supervisord
-func (a Adapter) InitRunContainerSupervisord(containerName *string) error {
-	// reader, writer := io.Pipe()
-	// var cmdOutput string
+func (a Adapter) InitRunContainerSupervisord(containerName string) (err error) {
 	for _, container := range a.pod.Spec.Containers {
-		glog.V(3).Infof("mjf container.Name %v", container.Name)
-		glog.V(3).Infof("mjf *containerName %v", *containerName)
-		glog.V(3).Infof("mjf reflect.DeepEqual(container.Name, *containerName) %v", reflect.DeepEqual(container.Name, *containerName))
-		glog.V(3).Infof("mjf container.Command %v", container.Command)
-		glog.V(3).Infof("mjf !reflect.DeepEqual(container.Command, /opt/odo/bin/supervisord) %v", !reflect.DeepEqual(container.Command, "/opt/odo/bin/supervisord"))
-		glog.V(3).Infof("mjf ----------")
-
-		if reflect.DeepEqual(container.Name, *containerName) && !reflect.DeepEqual(container.Command, []string{"/opt/odo/bin/supervisord"}) {
-			command := []string{"/opt/odo/bin/supervisord", "-c", "/opt/odo/conf/devfile-supervisor.conf"}
-
-			glog.V(3).Infof("mjf hollllllllaaaaaa exec cmd %v in pod %v container %v", command, a.pod.Name, *containerName)
-
-			// This Go routine will automatically pipe the output from ExecCMDInContainer to
-			// our logger.
-			// go func() {
-			// 	scanner := bufio.NewScanner(reader)
-			// 	for scanner.Scan() {
-			// 		line := scanner.Text()
-
-			// 		_, err := fmt.Fprintln(os.Stdout, line)
-			// 		if err != nil {
-			// 			log.Errorf("Unable to print to stdout: %v", err)
-			// 		}
-
-			// 		cmdOutput += fmt.Sprintln(line)
-			// 	}
-			// }()
-
-			err := a.Client.ExecCMDInContainer(a.pod.Name, *containerName, command, nil, nil, nil, false)
-			if err != nil {
-				// log.Errorf("\nUnable to exec init \n%v", cmdOutput)
-				glog.V(3).Infof("mjf  here error %v", err.Error())
-				return err
-			}
+		if reflect.DeepEqual(container.Name, containerName) && !reflect.DeepEqual(container.Command, []string{"/opt/odo/bin/supervisord"}) {
+			command := []string{"/opt/odo/bin/supervisord", "-c", "/opt/odo/conf/devfile-supervisor.conf", "-d"}
+			err = a.executeCommand(a.pod.Name, containerName, command, true)
 		}
 	}
 
-	return nil
+	return
+}
+
+// executeCommand executes the given command in the pod's container
+func (a Adapter) executeCommand(podName, containerName string, command []string, show bool) (err error) {
+	reader, writer := io.Pipe()
+	var cmdOutput string
+
+	glog.V(3).Infof("Executing command %v for pod: %v in container: %v", command, podName, containerName)
+
+	// This Go routine will automatically pipe the output from ExecCMDInContainer to
+	// our logger.
+	go func() {
+		scanner := bufio.NewScanner(reader)
+		for scanner.Scan() {
+			line := scanner.Text()
+
+			if log.IsDebug() || show {
+				_, err := fmt.Fprintln(os.Stdout, line)
+				if err != nil {
+					log.Errorf("Unable to print to stdout: %v", err)
+				}
+			}
+
+			cmdOutput += fmt.Sprintln(line)
+		}
+	}()
+
+	err = a.Client.ExecCMDInContainer(podName, containerName, command, writer, writer, nil, false)
+	if err != nil {
+		log.Errorf("\nUnable to exec command %v: \n%v", command, cmdOutput)
+		return err
+	}
+
+	return
 }
 
 // getFirstContainerWithSourceVolume returns the first container that set mountSources: true

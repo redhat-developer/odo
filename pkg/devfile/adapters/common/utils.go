@@ -3,7 +3,6 @@ package common
 import (
 	"fmt"
 	"reflect"
-	"strings"
 
 	"github.com/golang/glog"
 
@@ -33,9 +32,7 @@ func GetSupportedComponents(data versions.DevfileData) []common.DevfileComponent
 }
 
 // GetCommand iterates through the devfile commands and returns the associated devfile command
-func GetCommand(data versions.DevfileData, commandName string) (command common.DevfileCommand) {
-	var supportedCommand common.DevfileCommand
-
+func GetCommand(data versions.DevfileData, commandName string) (supportedCommand common.DevfileCommand) {
 	for _, command := range data.GetCommands() {
 		if command.Name == commandName {
 
@@ -55,9 +52,9 @@ func GetCommand(data versions.DevfileData, commandName string) (command common.D
 	return
 }
 
-// GetSupportedCommands iterates through the devfile commands in the devfile and returns
+// GetDefaultSupportedCommands iterates through the devfile commands in the devfile and returns
 // commands with 1. odo supported command name 2. odo supported command actions
-func GetSupportedCommands(data versions.DevfileData) []common.DevfileCommand {
+func GetDefaultSupportedCommands(data versions.DevfileData) []common.DevfileCommand {
 	var supportedCommands []common.DevfileCommand
 
 	for _, command := range data.GetCommands() {
@@ -82,12 +79,12 @@ func GetSupportedCommands(data versions.DevfileData) []common.DevfileCommand {
 }
 
 // getSupportedCommandActions returns the supported command action
-// 1. action has to be of type exec 2. component should be present
 func getSupportedCommandActions(command common.DevfileCommand) (supportedCommandActions []common.DevfileCommandAction) {
+	glog.V(3).Infof("Validating command's action for %v ", command.Name)
 	for _, action := range command.Actions {
 		// Check if the command action is of type exec
-		if *action.Type == common.DevfileCommandTypeExec && *action.Component != "" {
-			glog.V(3).Infof("Found command %v for component %v and type %v", command.Name, *action.Component, *action.Type)
+		if validateAction(action) {
+			glog.V(3).Infof("Found command %v for component %v", command.Name, *action.Component)
 			supportedCommandActions = append(supportedCommandActions, action)
 		}
 	}
@@ -95,71 +92,97 @@ func getSupportedCommandActions(command common.DevfileCommand) (supportedCommand
 	return
 }
 
-// GetRunCommandComponents iterates through the components in the devfile and returns a slice of the corresponding containers
-func GetRunCommandComponents(data versions.DevfileData, devfileRunCmd string) []string {
-	var components []string
-	var emptyCommand common.DevfileCommand
+// validateAction validates the given action
+// 1. action has to be of type exec 2. component should be present
+// 3. command should be present 4. workdir should be present
+func validateAction(action common.DevfileCommandAction) bool {
+	if *action.Type != common.DevfileCommandTypeExec {
+		return false
+	}
 
-	if devfileRunCmd != "" {
-		command := GetCommand(data, devfileRunCmd)
-		if !reflect.DeepEqual(emptyCommand, command) {
-			for _, action := range command.Actions {
-				components = append(components, *action.Component)
-			}
-		}
+	if action.Component == nil || *action.Component == "" {
+		return false
+	}
+
+	if action.Command == nil || *action.Command == "" {
+		return false
+	}
+
+	if action.Workdir == nil || *action.Workdir == "" {
+		return false
+	}
+
+	return true
+}
+
+// GetBuildCommand iterates through the components in the devfile and returns the build command
+func GetBuildCommand(data versions.DevfileData, devfileBuildCmd string) (buildCommand common.DevfileCommand) {
+	if devfileBuildCmd != "" {
+		buildCommand = GetCommand(data, devfileBuildCmd)
 	} else {
-		for _, command := range GetSupportedCommands(data) {
-			if strings.Contains(command.Name, DefaultDevfileRunCommand) {
-				for _, action := range command.Actions {
-					components = append(components, *action.Component)
-				}
-			}
+		buildCommand = GetCommand(data, DefaultDevfileBuildCommand)
+	}
+
+	return
+}
+
+// GetRunCommand iterates through the components in the devfile and returns the run command
+func GetRunCommand(data versions.DevfileData, devfileRunCmd string) (runCommand common.DevfileCommand) {
+	if devfileRunCmd != "" {
+		runCommand = GetCommand(data, devfileRunCmd)
+	} else {
+		runCommand = GetCommand(data, DefaultDevfileRunCommand)
+	}
+
+	return
+}
+
+// IsDefaultCommandPresent Present iterates through the default supported commands and
+// checks if the given default command is present
+func IsDefaultCommandPresent(data versions.DevfileData, commandName string) bool {
+	defaultSupportedCommands := GetDefaultSupportedCommands(data)
+	isPresent := false
+
+	glog.V(3).Infof("Checking if command %v is present in the devfile", commandName)
+
+	for _, command := range defaultSupportedCommands {
+		if command.Name == commandName {
+			isPresent = true
+			break
 		}
 	}
 
-	return components
+	glog.V(3).Infof("Is command %v present in the devfile: %v", commandName, isPresent)
+
+	return isPresent
 }
 
-// ValidateAndGetPushDevfileCommands returns a build and run command. It checks if a build
-// or a run command has been explicitly provided during odo push, otherwise it
-// iterates through the devfile commands and returns the default supported command. If neither
-// a build command nor a run command is found, it throws an error
+// ValidateAndGetPushDevfileCommands validates the build and the run command,
+// if provided through odo push or else checks the devfile for devBuild and devRun.
+// It returns the build and run commands if its validated successfully, error otherwise.
 func ValidateAndGetPushDevfileCommands(data versions.DevfileData, devfileBuildCmd, devfileRunCmd string) ([]common.DevfileCommand, error) {
 	var pushDevfileCommands []common.DevfileCommand
 	var emptyCommand common.DevfileCommand
-	validateBuildCommand := false
-	validateRunCommand := false
+	validateBuildCommand, validateRunCommand := false, false
 
-	devfileSupportedCommands := GetSupportedCommands(data)
-
-	// Validate the build command if it was provided during odo push
-	if devfileBuildCmd != "" {
-		devfileCommand := GetCommand(data, devfileBuildCmd)
-		if !reflect.DeepEqual(emptyCommand, devfileCommand) {
-			pushDevfileCommands = append(pushDevfileCommands, devfileCommand)
-			validateBuildCommand = true
-		}
+	buildCommand := GetBuildCommand(data, devfileBuildCmd)
+	if devfileBuildCmd == "" && !IsDefaultCommandPresent(data, DefaultDevfileBuildCommand) {
+		// If there is no build command either in the devfile or through odo push, default validate to true since build command is optional
+		validateBuildCommand = true
+		glog.V(3).Infof("No Build command was provided")
+	} else if !reflect.DeepEqual(emptyCommand, buildCommand) && IsCommandValid(data, buildCommand) {
+		// If the build command is present, validate it
+		pushDevfileCommands = append(pushDevfileCommands, buildCommand)
+		validateBuildCommand = true
+		glog.V(3).Infof("Build command %v validated", buildCommand.Name)
 	}
 
-	// Validate the run command if it was provided during odo push
-	if devfileRunCmd != "" {
-		devfileCommand := GetCommand(data, devfileRunCmd)
-		if !reflect.DeepEqual(emptyCommand, devfileCommand) {
-			pushDevfileCommands = append(pushDevfileCommands, devfileCommand)
-			validateRunCommand = true
-		}
-	}
-
-	// If neither is validated, iterate the devfile commands to see for a list of supported commands
-	for _, supportedCommand := range devfileSupportedCommands {
-		if reflect.DeepEqual(supportedCommand.Name, DefaultDevfileBuildCommand) && !validateBuildCommand {
-			pushDevfileCommands = append(pushDevfileCommands, supportedCommand)
-			validateBuildCommand = true
-		}
-		if reflect.DeepEqual(supportedCommand.Name, DefaultDevfileRunCommand) && !validateRunCommand {
-			pushDevfileCommands = append(pushDevfileCommands, supportedCommand)
-			validateRunCommand = true
-		}
+	runCommand := GetRunCommand(data, devfileRunCmd)
+	if !reflect.DeepEqual(emptyCommand, runCommand) && IsCommandValid(data, runCommand) {
+		// If the run command is present, validate it
+		pushDevfileCommands = append(pushDevfileCommands, runCommand)
+		validateRunCommand = true
+		glog.V(3).Infof("Run command %v validated", runCommand.Name)
 	}
 
 	if !validateBuildCommand || !validateRunCommand {
@@ -167,6 +190,38 @@ func ValidateAndGetPushDevfileCommands(data versions.DevfileData, devfileBuildCm
 	}
 
 	return pushDevfileCommands, nil
+}
+
+// IsCommandValid checks if a command is valid. It checks
+// 1. if the command references a component that is present
+// 2. if the referenced component is of type dockerimage
+func IsCommandValid(data versions.DevfileData, command common.DevfileCommand) bool {
+
+	var isCommandValid bool
+	var isCommandActionValid []bool
+	isCommandActionValid = make([]bool, len(command.Actions))
+
+	// GetSupportedComponents gets components of type dockerimage
+	components := GetSupportedComponents(data)
+
+	for i, action := range command.Actions {
+		isCommandActionValid[i] = false
+		for _, component := range components {
+			if *action.Component == *component.Alias {
+				isCommandActionValid[i] = true
+			}
+		}
+	}
+
+	// if any of the command action is invalid, the command is invalid
+	for _, isActionValid := range isCommandActionValid {
+		isCommandValid = isActionValid
+		if !isActionValid {
+			break
+		}
+	}
+
+	return isCommandValid
 }
 
 // IsDevfileCommandSupported checks if a devfile command is supported by default

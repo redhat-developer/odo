@@ -11,9 +11,9 @@ import (
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/util"
 
-	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/klog/glog"
 )
 
 const (
@@ -84,42 +84,61 @@ func GetContainers(devfileObj devfile.DevfileObj) ([]corev1.Container, error) {
 				Name:      kclient.OdoSourceVolume,
 				MountPath: kclient.OdoSourceVolumeMount,
 			})
+
+			container.Env = append(container.Env,
+				corev1.EnvVar{
+					Name:  "CHE_PROJECTS_ROOT",
+					Value: kclient.OdoSourceVolumeMount,
+				})
 		}
 		containers = append(containers, *container)
 	}
 	return containers, nil
 }
 
-// UpdateContainersWithSupervisordIfReqd updates the run components entrypoint and volume mount
+// UpdateContainersWithSupervisord updates the run components entrypoint and volume mount
 // with supervisord if no entrypoint has been specified for the component in the devfile
-func UpdateContainersWithSupervisordIfReqd(devfileObj devfile.DevfileObj, containers []corev1.Container, devfileRunCmd string) []corev1.Container {
-	// mountSupervisordVolume := false
-	runCommandComponents := adaptersCommon.GetRunCommandComponents(devfileObj.Data, devfileRunCmd)
-	glog.V(3).Infof("mjf run cmd components %v", runCommandComponents)
+func UpdateContainersWithSupervisord(devfileObj devfile.DevfileObj, containers []corev1.Container, devfileRunCmd string) []corev1.Container {
+
+	runCommand := adaptersCommon.GetRunCommand(devfileObj.Data, devfileRunCmd)
 
 	for i, container := range containers {
-		for _, runCommandComponent := range runCommandComponents {
+		for _, action := range runCommand.Actions {
 			// Check if the container belongs to a run command component
-			if reflect.DeepEqual(container.Name, runCommandComponent) {
+			if reflect.DeepEqual(container.Name, *action.Component) {
 				// If the run component container has no entrypoint and arguments, override the entrypoint with supervisord
 				if len(container.Command) == 0 && len(container.Args) == 0 {
-					glog.V(3).Infof("mjf updating container %v", container.Name)
+					glog.V(3).Infof("Updating container %v entrypoint with supervisord", container.Name)
 					container.Command = append(container.Command, "/opt/odo/bin/supervisord")
 					container.Args = append(container.Args, "-c", "/opt/odo/conf/devfile-supervisor.conf")
 				}
 
 				// Always mount the supervisord volume in the run component container
+				glog.V(3).Infof("Updating container %v with supervisord volume mounts", container.Name)
 				container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
 					Name:      kclient.GetSupervisordVolumeName(),
 					MountPath: "/opt/odo/",
 				})
+
+				// Update the run container's ENV for work dir and command
+				// so supervisord can use it in it's program
+				glog.V(3).Infof("Updating container %v env with run command and workdir", container.Name)
+				container.Env = append(container.Env,
+					corev1.EnvVar{
+						Name:  "ODO_COMMAND_RUN_WORKING_DIR",
+						Value: *action.Workdir,
+					},
+					corev1.EnvVar{
+						Name:  "ODO_COMMAND_RUN",
+						Value: *action.Command,
+					})
 
 				// Update the containers array since the array is not a pointer to the container
 				containers[i] = container
 			}
 		}
 	}
-	glog.V(3).Infof("mjf container before check %v", containers)
+
 	return containers
 
 }
