@@ -11,6 +11,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gexec"
 )
 
 func init() {
@@ -36,7 +37,7 @@ func RandString(n int) string {
 // check (function with output check logic)
 // It times out if the command doesn't fetch the
 // expected output  within the timeout period.
-func WaitForCmdOut(program string, args []string, timeout int, errOnFail bool, check func(output string) bool) bool {
+func WaitForCmdOut(program string, args []string, timeout int, errOnFail bool, check func(output string) bool, includeStdErr ...bool) bool {
 	pingTimeout := time.After(time.Duration(timeout) * time.Minute)
 	// this is a test package so time.Tick() is acceptable
 	// nolint
@@ -47,8 +48,16 @@ func WaitForCmdOut(program string, args []string, timeout int, errOnFail bool, c
 			Fail(fmt.Sprintf("Timeout out after %v minutes", timeout))
 
 		case <-tick:
-			stdOut := CmdShouldPass(program, args...)
-			if check(strings.TrimSpace(string(stdOut))) {
+			session := CmdRunner(program, args...)
+			Eventually(session).Should(gexec.Exit(0), runningCmd(session.Command))
+			session.Wait()
+			output := string(session.Out.Contents())
+
+			if len(includeStdErr) > 0 && includeStdErr[0] {
+				output += "\n"
+				output += string(session.Err.Contents())
+			}
+			if check(strings.TrimSpace(string(output))) {
 				return true
 			}
 		}
