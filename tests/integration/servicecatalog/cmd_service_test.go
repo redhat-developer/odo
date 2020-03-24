@@ -454,8 +454,8 @@ var _ = Describe("odo service command tests", func() {
 
 			ocArgs = []string{"get", "serviceinstances"}
 			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
-				return strings.Contains(output, "Deprovisioning")
-			})
+				return strings.Contains(output, "No resources found")
+			}, true)
 		})
 	})
 })
