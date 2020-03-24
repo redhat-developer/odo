@@ -199,7 +199,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 		preference.NewCmdPreference(preference.RecommendedCommandName, util.GetFullName(fullName, preference.RecommendedCommandName)),
 		debug.NewCmdDebug(debug.RecommendedCommandName, util.GetFullName(fullName, debug.RecommendedCommandName)),
 		pipelines.NewCmdComponent(pipelines.RecommendedCommandName, util.GetFullName(fullName, pipelines.RecommendedCommandName)),
-		pipelines.NewCmdBootstrap(pipelines.BootstrapRecommendedCommandName, util.GetFullName(fullName, pipelines.BootstrapRecommendedCommandName)),
+		pipelines.NewCmdInit(pipelines.InitRecommendedCommandName, util.GetFullName(fullName, pipelines.InitRecommendedCommandName)),
 	)
 
 	if experimental.IsExperimentalModeEnabled() {

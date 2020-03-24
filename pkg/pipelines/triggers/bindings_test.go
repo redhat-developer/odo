@@ -49,7 +49,7 @@ func TestCreatePRBinding(t *testing.T) {
 			},
 		},
 	}
-	binding := createPRBinding("testns")
+	binding := CreatePRBinding("testns")
 	if diff := cmp.Diff(validPRBinding, binding); diff != "" {
 		t.Fatalf("createPRBinding() failed:\n%s", diff)
 	}
@@ -88,7 +88,7 @@ func TestCreatePushBinding(t *testing.T) {
 			},
 		},
 	}
-	binding := createPushBinding("testns")
+	binding := CreatePushBinding("testns")
 	if diff := cmp.Diff(validPushBinding, binding); diff != "" {
 		t.Fatalf("createPushBinding() failed:\n%s", diff)
 	}

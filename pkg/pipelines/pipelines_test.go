@@ -72,9 +72,9 @@ func TestCreateDevCIPipeline(t *testing.T) {
 	}
 }
 
-func TestCreateStageCIPipeline(t *testing.T) {
+func TestCreateCIPipeline(t *testing.T) {
 
-	stageCIpipeline := createStageCIPipeline(meta.NamespacedName("cicd-environment", "stage-ci-pipeline"), "stage-environment")
+	ciPipeline := createCIPipeline(meta.NamespacedName("cicd-environment", "stage-ci-pipeline"), "stage-environment")
 
 	want := &pipelinev1.Pipeline{
 		TypeMeta: pipelineTypeMeta,
@@ -112,8 +112,8 @@ func TestCreateStageCIPipeline(t *testing.T) {
 		},
 	}
 
-	if diff := cmp.Diff(want, stageCIpipeline); diff != "" {
-		t.Fatalf("TestcreateStageCIPipeline() failed got\n%s", diff)
+	if diff := cmp.Diff(want, ciPipeline); diff != "" {
+		t.Fatalf("TestcreateCIPipeline() failed got\n%s", diff)
 	}
 
 }
@@ -189,8 +189,8 @@ func TestCreateDevCDPipeline(t *testing.T) {
 	}
 }
 
-func TestCreateStageCDPipeline(t *testing.T) {
-	stageCDpipeline := createStageCDPipeline(meta.NamespacedName("cicd-environment", "stage-cd-pipeline"), "stage-environment")
+func TestCreateCDPipeline(t *testing.T) {
+	cdPipeline := createCDPipeline(meta.NamespacedName("cicd-environment", "stage-cd-pipeline"), "stage-environment")
 	want := &pipelinev1.Pipeline{
 		TypeMeta: pipelineTypeMeta,
 		ObjectMeta: metav1.ObjectMeta{
@@ -226,8 +226,8 @@ func TestCreateStageCDPipeline(t *testing.T) {
 		},
 	}
 
-	if diff := cmp.Diff(want, stageCDpipeline); diff != "" {
-		t.Fatalf("TestcreateStageCSPipeline() failed got\n%s", diff)
+	if diff := cmp.Diff(want, cdPipeline); diff != "" {
+		t.Fatalf("createCDPipeline() failed got\n%s", diff)
 	}
 
 }

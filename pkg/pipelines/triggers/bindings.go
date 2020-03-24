@@ -13,12 +13,12 @@ var (
 // GenerateBindings returns a slice of trigger bindings
 func GenerateBindings(ns string) []triggersv1.TriggerBinding {
 	return []triggersv1.TriggerBinding{
-		createPRBinding(ns),
-		createPushBinding(ns),
+		CreatePRBinding(ns),
+		CreatePushBinding(ns),
 	}
 }
 
-func createPRBinding(ns string) triggersv1.TriggerBinding {
+func CreatePRBinding(ns string) triggersv1.TriggerBinding {
 	return triggersv1.TriggerBinding{
 		TypeMeta:   triggerBindingTypeMeta,
 		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, "github-pr-binding")),
@@ -33,7 +33,7 @@ func createPRBinding(ns string) triggersv1.TriggerBinding {
 	}
 }
 
-func createPushBinding(ns string) triggersv1.TriggerBinding {
+func CreatePushBinding(ns string) triggersv1.TriggerBinding {
 	return triggersv1.TriggerBinding{
 		TypeMeta:   triggerBindingTypeMeta,
 		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, "github-push-binding")),

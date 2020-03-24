@@ -28,22 +28,6 @@ const (
 	stageRoleBindingName = "pipeline-edit-stage"
 )
 
-// PolicyRules to be bound to service account
-var (
-	rules = []v1rbac.PolicyRule{
-		v1rbac.PolicyRule{
-			APIGroups: []string{"tekton.dev"},
-			Resources: []string{"eventlisteners", "triggerbindings", "triggertemplates", "tasks", "taskruns"},
-			Verbs:     []string{"get"},
-		},
-		v1rbac.PolicyRule{
-			APIGroups: []string{"tekton.dev"},
-			Resources: []string{"pipelineruns", "pipelineresources", "taskruns"},
-			Verbs:     []string{"create"},
-		},
-	}
-)
-
 // BootstrapParameters is a struct that provides the optional flags
 type BootstrapParameters struct {
 	DeploymentPath           string
@@ -92,7 +76,7 @@ func Bootstrap(o *BootstrapParameters) error {
 	}
 
 	if o.GithubHookSecret != "" {
-		githubSecret, err := createOpaqueSecret(meta.NamespacedName(namespaces["cicd"], eventlisteners.GithubWebHookSecret), o.GithubHookSecret, eventlisteners.WebhookSecretKey)
+		githubSecret, err := createOpaqueSecret(meta.NamespacedName(namespaces["cicd"], eventlisteners.GitOpsWebhookSecret), o.GithubHookSecret, eventlisteners.WebhookSecretKey)
 		if err != nil {
 			return fmt.Errorf("failed to generate GitHub Webhook Secret: %w", err)
 		}
@@ -202,9 +186,9 @@ func createManifestsForImageRepo(sa *corev1.ServiceAccount, isInternalRegistry b
 func createPipelines(ns map[string]string, isInternalRegistry bool, deploymentPath string) []interface{} {
 	out := make([]interface{}, 0)
 	out = append(out, createDevCIPipeline(meta.NamespacedName(ns["cicd"], "dev-ci-pipeline"), isInternalRegistry))
-	out = append(out, createStageCIPipeline(meta.NamespacedName(ns["cicd"], "stage-ci-pipeline"), ns["stage"]))
+	out = append(out, createCIPipeline(meta.NamespacedName(ns["cicd"], "stage-ci-pipeline"), ns["stage"]))
 	out = append(out, createDevCDPipeline(meta.NamespacedName(ns["cicd"], "dev-cd-pipeline"), deploymentPath, ns["dev"], isInternalRegistry))
-	out = append(out, createStageCDPipeline(meta.NamespacedName(ns["cicd"], "stage-cd-pipeline"), ns["stage"]))
+	out = append(out, createCDPipeline(meta.NamespacedName(ns["cicd"], "stage-cd-pipeline"), ns["stage"]))
 	return out
 
 }
@@ -233,15 +217,6 @@ func createDockerSecret(dockerConfigJSONFileName, ns string) (*corev1.Secret, er
 
 	return dockerSecret, nil
 
-}
-
-// create and invoke a Tekton Checker
-func checkTektonInstall() (bool, error) {
-	tektonChecker, err := newTektonChecker()
-	if err != nil {
-		return false, err
-	}
-	return tektonChecker.checkInstall()
 }
 
 func values(m map[string]string) []string {

@@ -7,10 +7,16 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
+const (
+	clusterRoleName = "pipelines-clusterrole"
+)
+
 var (
 	roleTypeMeta           = meta.TypeMeta("Role", "rbac.authorization.k8s.io/v1")
 	roleBindingTypeMeta    = meta.TypeMeta("RoleBinding", "rbac.authorization.k8s.io/v1")
 	serviceAccountTypeMeta = meta.TypeMeta("ServiceAccount", "v1")
+
+	clusterRoleTypeMeta = meta.TypeMeta("ClusterRole", "rbac.authorization.k8s.io/v1")
 )
 
 func createServiceAccount(name types.NamespacedName) *corev1.ServiceAccount {
@@ -49,6 +55,14 @@ func createRoleBindingForSubjects(name types.NamespacedName, roleKind, roleName 
 func createRole(name types.NamespacedName, policyRules []v1rbac.PolicyRule) *v1rbac.Role {
 	return &v1rbac.Role{
 		TypeMeta:   roleTypeMeta,
+		ObjectMeta: meta.ObjectMeta(name),
+		Rules:      policyRules,
+	}
+}
+
+func createClusterRole(name types.NamespacedName, policyRules []v1rbac.PolicyRule) *v1rbac.ClusterRole {
+	return &v1rbac.ClusterRole{
+		TypeMeta:   clusterRoleTypeMeta,
 		ObjectMeta: meta.ObjectMeta(name),
 		Rules:      policyRules,
 	}
