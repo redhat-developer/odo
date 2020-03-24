@@ -74,6 +74,27 @@ func Get(client *occlient.Client, localConfig *config.LocalConfigInfo, urlName s
 	return URL{}, errors.New(fmt.Sprintf("the url %v does not exist", urlName))
 }
 
+// GetIngress returns ingress spec for given URL name
+func GetIngress(kClient *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, urlName string) (iextensionsv1.Ingress, error) {
+
+	// Check whether remote already created the ingress
+	ingress, err := kClient.GetIngress(urlName)
+	if err == nil {
+		return *ingress, nil
+	}
+
+	ingresses := envSpecificInfo.GetURL()
+	for _, envIngress := range ingresses {
+		// search local URL check if it exist in local envinfo
+		if envIngress.Name == urlName {
+			return iextensionsv1.Ingress{}, errors.New(fmt.Sprintf("the url %v is not created, but exists in local envinfo file. Please run 'odo push'.", urlName))
+		}
+	}
+
+	// can't find the URL in local and remote
+	return iextensionsv1.Ingress{}, errors.New(fmt.Sprintf("the url %v does not exist", urlName))
+}
+
 // Delete deletes a URL
 func Delete(client *occlient.Client, kClient *kclient.Client, urlName string, applicationName string) error {
 
@@ -185,13 +206,9 @@ func ListPushed(client *occlient.Client, componentName string, applicationName s
 
 }
 
-// ListIngress lists the ingress URLs in an application. The results can further be narrowed
-// down if a component name is provided, which will only list URLs for the
-// given component
+// ListIngress lists the ingress URLs for the given component
 func ListPushedIngress(client *kclient.Client, componentName string) (iextensionsv1.IngressList, error) {
 	labelSelector := fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, componentName)
-	// TODO: select url name
-	//labelSelector := fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, componentName)
 	glog.V(4).Infof("Listing ingresses with label selector: %v", labelSelector)
 	ingresses, err := client.ListIngresses(labelSelector)
 	if err != nil {
@@ -267,8 +284,7 @@ func List(client *occlient.Client, localConfig *config.LocalConfigInfo, componen
 	return urlList, nil
 }
 
-// List returns all Ingress URLs for given component.
-// If componentName is empty string, it lists all url in a given application.
+// ListIngress returns all Ingress URLs for given component.
 func ListIngress(client *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, componentName string) (iextensionsv1.IngressList, error) {
 
 	labelSelector := fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, componentName)
@@ -278,27 +294,18 @@ func ListIngress(client *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInf
 		return iextensionsv1.IngressList{}, errors.Wrap(err, "unable to list ingress names")
 	}
 
-	// envinfoURLs := envSpecificInfo.GetURL()
-
 	var urls []iextensionsv1.Ingress
 
 	for _, i := range ingresses {
 		clusterURL := getMachineReadableFormatIngress(i)
 		urls = append(urls, clusterURL)
-		// var found bool = false
-		// for _, envinfoURL := range envinfoURLs {
-		// 	if envinfoURL.Name == clusterURL.Name {
-		// 		// URL is in both local config and cluster
-		// 		urls = append(urls, clusterURL)
-		// 		found = true
-		// 	}
-		// }
 	}
 
 	urlList := getMachineReadableFormatForIngressList(urls)
 	return urlList, nil
 }
 
+// GetProtocol returns the protocol string
 func GetProtocol(route routev1.Route, ingress iextensionsv1.Ingress) string {
 	if experimental.IsExperimentalModeEnabled() {
 		if ingress.Spec.TLS != nil {

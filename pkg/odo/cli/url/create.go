@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile"
 	adapterutils "github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
@@ -96,13 +97,14 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 		if compWithEndpoint == 0 {
 			return fmt.Errorf("No valid component with endpoint found in the devfile")
 		}
-		o.componentPort, err = url.GetValidPortNumber(o.Component(), o.urlPort, postList)
+		componentName, _ := component.GetComponentName()
+		o.componentPort, err = url.GetValidPortNumber(componentName, o.urlPort, postList)
 		if err != nil {
 			return err
 		}
 
 		if len(args) == 0 {
-			o.urlName = url.GetURLName(o.Component(), o.componentPort)
+			o.urlName = url.GetURLName(componentName, o.componentPort)
 		} else {
 			o.urlName = args[0]
 		}
@@ -141,7 +143,7 @@ func (o *URLCreateOptions) Validate() (err error) {
 		// if experimental mode is enabled, and devfile is provided.
 		// check if valid host is provided
 		if len(o.host) <= 0 {
-			return fmt.Errorf("cluster host must be provided in order to create ingress")
+			return fmt.Errorf("host must be provided in order to create ingress")
 		}
 		for _, localURL := range o.EnvSpecificInfo.GetURL() {
 			curIngressDomain := fmt.Sprintf("%v.%v", o.urlName, o.host)
@@ -187,7 +189,8 @@ func (o *URLCreateOptions) Run() (err error) {
 		return errors.Wrapf(err, "failed to persist the component settings to config file")
 	}
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
-		log.Successf("URL created for component: %v, cluster host: %v", o.Component(), o.host)
+		componentName, _ := component.GetComponentName()
+		log.Successf("URL created for component: %v, cluster host: %v", componentName, o.host)
 	} else {
 		log.Successf("URL %s created for component: %v", o.urlName, o.Component())
 	}

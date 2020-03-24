@@ -177,3 +177,60 @@ func TestDeleteIngress(t *testing.T) {
 	}
 
 }
+
+func TestGetIngresses(t *testing.T) {
+	tests := []struct {
+		name        string
+		ingressName string
+		wantErr     bool
+	}{
+		{
+			name:        "Case: Valid ingress name",
+			ingressName: "testIngress",
+			wantErr:     false,
+		},
+		{
+			name:        "Case: Invalid ingress name",
+			ingressName: "",
+			wantErr:     true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// initialising the fakeclient
+			fkclient, fkclientset := FakeNew()
+			fkclient.Namespace = "default"
+
+			fkclientset.Kubernetes.PrependReactor("get", "ingresses", func(action ktesting.Action) (bool, runtime.Object, error) {
+				if tt.ingressName == "" {
+					return true, nil, errors.Errorf("ingress name is empty")
+				}
+				ingress := extensionsv1.Ingress{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: tt.ingressName,
+					},
+				}
+				return true, &ingress, nil
+			})
+
+			ingress, err := fkclient.GetIngress("")
+
+			// Checks for unexpected error cases
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("fkclient.GetIngress unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+
+			if err == nil {
+				if len(fkclientset.Kubernetes.Actions()) != 1 {
+					t.Errorf("expected 1 action, got: %v", fkclientset.Kubernetes.Actions())
+				} else {
+					if ingress.Name != tt.ingressName {
+						t.Errorf("ingress name does not match the expected name, expected: %s, got %s", tt.ingressName, ingress.Name)
+					}
+				}
+			}
+
+		})
+	}
+
+}

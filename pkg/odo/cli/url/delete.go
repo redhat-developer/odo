@@ -3,6 +3,7 @@ package url
 import (
 	"fmt"
 
+	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/log"
 	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
@@ -72,17 +73,17 @@ func (o *URLDeleteOptions) Complete(name string, cmd *cobra.Command, args []stri
 
 // Validate validates the URLDeleteOptions based on completed values
 func (o *URLDeleteOptions) Validate() (err error) {
-	//exists, err := url.Exists(o.Client, o.localConfigInfo, o.urlName, o.Component(), o.Application)
-	//if err != nil {
-	//	return err
-	//}
 	var exists bool
 	if experimental.IsExperimentalModeEnabled() {
 		urls := o.EnvSpecificInfo.GetURL()
+		componentName, _ := component.GetComponentName()
 		for _, url := range urls {
 			if url.Name == o.urlName {
 				exists = true
 			}
+		}
+		if !exists {
+			return fmt.Errorf("the URL %s does not exist within the component %s", o.urlName, componentName)
 		}
 	} else {
 		urls := o.LocalConfigInfo.GetURL()
@@ -98,9 +99,9 @@ func (o *URLDeleteOptions) Validate() (err error) {
 				return err
 			}
 		}
-	}
-	if !exists {
-		return fmt.Errorf("the URL %s does not exist within the component %s", o.urlName, o.Component())
+		if !exists {
+			return fmt.Errorf("the URL %s does not exist within the component %s", o.urlName, o.Component())
+		}
 	}
 
 	return

@@ -41,3 +41,9 @@ func (c *Client) ListIngresses(labelSelector string) ([]extensionsv1.Ingress, er
 
 	return ingressList.Items, nil
 }
+
+// GetIngress gets an ingress based on the given name
+func (c *Client) GetIngress(name string) (*extensionsv1.Ingress, error) {
+	ingress, err := c.KubeClient.ExtensionsV1beta1().Ingresses(c.Namespace).Get(name, metav1.GetOptions{})
+	return ingress, err
+}
