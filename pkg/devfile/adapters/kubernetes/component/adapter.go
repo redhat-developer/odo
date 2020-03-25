@@ -1,9 +1,7 @@
 package component
 
 import (
-	"bufio"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -19,6 +17,7 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/versions/common"
+	"github.com/openshift/odo/pkg/exec"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/sync"
@@ -48,8 +47,8 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	componentExists := utils.ComponentExists(a.Client, a.ComponentName)
 	globExps := util.GetAbsGlobExps(parameters.Path, parameters.IgnoredFiles)
 
-	a.devfileBuildCmd = devfileBuildCmd
-	a.devfileRunCmd = devfileRunCmd
+	a.devfileBuildCmd = parameters.DevfileBuildCmd
+	a.devfileRunCmd = parameters.DevfileRunCmd
 
 	deletedFiles := []string{}
 	changedFiles := []string{}
@@ -58,7 +57,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// Validate the devfile build and run commands
 	pushDevfileCommands, err := common.ValidateAndGetPushDevfileCommands(a.Devfile.Data, a.devfileBuildCmd, a.devfileRunCmd)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to validate devfile build and run commands")
 	}
 
 	err = a.createOrUpdateComponent(componentExists)
@@ -157,7 +156,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return errors.Wrapf(err, "Failed to sync to component with name %s", a.ComponentName)
 	}
 
-	err = a.execDevfile(pushDevfileCommands, componentExists, show)
+	err = a.execDevfile(pushDevfileCommands, componentExists, parameters.Show)
 	if err != nil {
 		return err
 	}
@@ -350,7 +349,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 		glog.V(4).Infof("Creating %s on the remote container if it doesn't already exist", syncFolder)
 		cmdArr := getCmdToCreateSyncFolder(syncFolder)
 
-		err = a.executeCommand(a.pod.Name, containerName, cmdArr, false)
+		err = exec.ExecuteCommand(&a.Client, a.pod.Name, containerName, cmdArr, false)
 		if err != nil {
 			return err
 		}
@@ -359,7 +358,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	if len(delFiles) > 0 {
 		cmdArr := getCmdToDeleteFiles(delFiles, syncFolder)
 
-		err = a.executeCommand(a.pod.Name, containerName, cmdArr, false)
+		err = exec.ExecuteCommand(&a.Client, a.pod.Name, containerName, cmdArr, false)
 		if err != nil {
 			return err
 		}
@@ -391,7 +390,7 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 	var buildRequired bool
 	var s *log.Status
 
-	if a.devfileBuildCmd == "" && !common.IsDefaultCommandPresent(a.Devfile.Data, common.DefaultDevfileBuildCommand) {
+	if a.devfileBuildCmd == "" && !common.IsDefaultCommandPresent(a.Devfile.Data, string(common.DefaultDevfileBuildCommand)) {
 		// if there is no build command, there is no need to build
 		buildRequired = false
 	} else {
@@ -403,12 +402,17 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 		command := pushDevfileCommands[i]
 
 		// Exec the devBuild command if buildRequired is true
-		if (reflect.DeepEqual(command.Name, common.DefaultDevfileBuildCommand) || reflect.DeepEqual(command.Name, a.devfileBuildCmd)) && buildRequired {
+		if (command.Name == string(common.DefaultDevfileBuildCommand) || command.Name == a.devfileBuildCmd) && buildRequired {
 			glog.V(3).Infof("Executing devfile command %v", command.Name)
 
 			for _, action := range command.Actions {
 				// Change to the workdir and execute the command
-				cmdArr := []string{"/bin/sh", "-c", "cd " + *action.Workdir + " && " + *action.Command}
+				var cmdArr []string
+				if action.Workdir != nil {
+					cmdArr = []string{"/bin/sh", "-c", "cd " + *action.Workdir + " && " + *action.Command}
+				} else {
+					cmdArr = []string{"/bin/sh", "-c", *action.Command}
+				}
 
 				if show {
 					s = log.SpinnerNoSpin("Executing " + command.Name + " command " + *action.Command)
@@ -418,7 +422,7 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 
 				defer s.End(false)
 
-				err = a.executeCommand(a.pod.Name, *action.Component, cmdArr, show)
+				err = exec.ExecuteCommand(&a.Client, a.pod.Name, *action.Component, cmdArr, show)
 				if err != nil {
 					s.End(false)
 					return err
@@ -430,7 +434,7 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 			i = -1
 			// Set the buildRequired to false since we already executed the build command
 			buildRequired = false
-		} else if (reflect.DeepEqual(command.Name, common.DefaultDevfileRunCommand) || reflect.DeepEqual(command.Name, a.devfileRunCmd)) && !buildRequired {
+		} else if (command.Name == string(common.DefaultDevfileRunCommand) || command.Name == a.devfileRunCmd) && !buildRequired {
 			// Always check for buildRequired is false, since the command may be iterated out of order and we always want to execute devBuild first if buildRequired is true. If buildRequired is false, then we don't need to build and we can execute the devRun command
 			glog.V(3).Infof("Executing devfile command %v", command.Name)
 
@@ -451,10 +455,10 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 				}
 				devRunExecs := []devRunExecutable{
 					{
-						command: []string{"/opt/odo/bin/supervisord", "ctl", "stop", "all"},
+						command: []string{kclient.GetSupervisordBinaryPath(), "ctl", "stop", "all"},
 					},
 					{
-						command: []string{"/opt/odo/bin/supervisord", "ctl", "start", strings.ToLower(common.DefaultDevfileRunCommand)},
+						command: []string{kclient.GetSupervisordBinaryPath(), "ctl", "start", string(common.DefaultDevfileRunCommand)},
 					},
 				}
 
@@ -463,7 +467,7 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 
 				for _, devRunExec := range devRunExecs {
 
-					err = a.executeCommand(a.pod.Name, *action.Component, devRunExec.command, show)
+					err = exec.ExecuteCommand(&a.Client, a.pod.Name, *action.Component, devRunExec.command, show)
 					if err != nil {
 						s.End(false)
 						return
@@ -481,44 +485,10 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 // the container has entrypoint that is not supervisord
 func (a Adapter) InitRunContainerSupervisord(containerName string) (err error) {
 	for _, container := range a.pod.Spec.Containers {
-		if reflect.DeepEqual(container.Name, containerName) && !reflect.DeepEqual(container.Command, []string{"/opt/odo/bin/supervisord"}) {
-			command := []string{"/opt/odo/bin/supervisord", "-c", "/opt/odo/conf/devfile-supervisor.conf", "-d"}
-			err = a.executeCommand(a.pod.Name, containerName, command, true)
+		if container.Name == containerName && !reflect.DeepEqual(container.Command, []string{kclient.GetSupervisordBinaryPath()}) {
+			command := []string{kclient.GetSupervisordBinaryPath(), "-c", kclient.GetSupervisordConfFilePath(), "-d"}
+			err = exec.ExecuteCommand(&a.Client, a.pod.Name, containerName, command, true)
 		}
-	}
-
-	return
-}
-
-// executeCommand executes the given command in the pod's container
-func (a Adapter) executeCommand(podName, containerName string, command []string, show bool) (err error) {
-	reader, writer := io.Pipe()
-	var cmdOutput string
-
-	glog.V(3).Infof("Executing command %v for pod: %v in container: %v", command, podName, containerName)
-
-	// This Go routine will automatically pipe the output from ExecCMDInContainer to
-	// our logger.
-	go func() {
-		scanner := bufio.NewScanner(reader)
-		for scanner.Scan() {
-			line := scanner.Text()
-
-			if log.IsDebug() || show {
-				_, err := fmt.Fprintln(os.Stdout, line)
-				if err != nil {
-					log.Errorf("Unable to print to stdout: %v", err)
-				}
-			}
-
-			cmdOutput += fmt.Sprintln(line)
-		}
-	}()
-
-	err = a.Client.ExecCMDInContainer(podName, containerName, command, writer, writer, nil, false)
-	if err != nil {
-		log.Errorf("\nUnable to exec command %v: \n%v", command, cmdOutput)
-		return err
 	}
 
 	return

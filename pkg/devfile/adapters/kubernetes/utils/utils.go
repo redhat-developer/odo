@@ -2,7 +2,6 @@ package utils
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/openshift/odo/pkg/devfile"
@@ -17,7 +16,10 @@ import (
 )
 
 const (
-	volumeSize = "5Gi"
+	volumeSize                 = "5Gi"
+	envCheProjectsRoot         = "CHE_PROJECTS_ROOT"
+	envOdoCommandRunWorkingDir = "ODO_COMMAND_RUN_WORKING_DIR"
+	envOdoCommandRun           = "ODO_COMMAND_RUN"
 )
 
 // ComponentExists checks whether a deployment by the given name exists
@@ -87,7 +89,7 @@ func GetContainers(devfileObj devfile.DevfileObj) ([]corev1.Container, error) {
 
 			container.Env = append(container.Env,
 				corev1.EnvVar{
-					Name:  "CHE_PROJECTS_ROOT",
+					Name:  envCheProjectsRoot,
 					Value: kclient.OdoSourceVolumeMount,
 				})
 		}
@@ -105,19 +107,19 @@ func UpdateContainersWithSupervisord(devfileObj devfile.DevfileObj, containers [
 	for i, container := range containers {
 		for _, action := range runCommand.Actions {
 			// Check if the container belongs to a run command component
-			if reflect.DeepEqual(container.Name, *action.Component) {
+			if container.Name == *action.Component {
 				// If the run component container has no entrypoint and arguments, override the entrypoint with supervisord
 				if len(container.Command) == 0 && len(container.Args) == 0 {
 					glog.V(3).Infof("Updating container %v entrypoint with supervisord", container.Name)
-					container.Command = append(container.Command, "/opt/odo/bin/supervisord")
-					container.Args = append(container.Args, "-c", "/opt/odo/conf/devfile-supervisor.conf")
+					container.Command = append(container.Command, kclient.GetSupervisordBinaryPath())
+					container.Args = append(container.Args, "-c", kclient.GetSupervisordConfFilePath())
 				}
 
 				// Always mount the supervisord volume in the run component container
 				glog.V(3).Infof("Updating container %v with supervisord volume mounts", container.Name)
 				container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
 					Name:      kclient.GetSupervisordVolumeName(),
-					MountPath: "/opt/odo/",
+					MountPath: kclient.GetSupervisordMountPath(),
 				})
 
 				// Update the run container's ENV for work dir and command
@@ -125,13 +127,17 @@ func UpdateContainersWithSupervisord(devfileObj devfile.DevfileObj, containers [
 				glog.V(3).Infof("Updating container %v env with run command and workdir", container.Name)
 				container.Env = append(container.Env,
 					corev1.EnvVar{
-						Name:  "ODO_COMMAND_RUN_WORKING_DIR",
-						Value: *action.Workdir,
-					},
-					corev1.EnvVar{
-						Name:  "ODO_COMMAND_RUN",
+						Name:  envOdoCommandRun,
 						Value: *action.Command,
 					})
+
+				if action.Workdir != nil {
+					container.Env = append(container.Env,
+						corev1.EnvVar{
+							Name:  envOdoCommandRunWorkingDir,
+							Value: *action.Workdir,
+						})
+				}
 
 				// Update the containers array since the array is not a pointer to the container
 				containers[i] = container

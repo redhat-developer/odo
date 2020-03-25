@@ -1,6 +1,8 @@
 package version100
 
 import (
+	"strings"
+
 	"github.com/openshift/odo/pkg/devfile/versions/common"
 )
 
@@ -27,5 +29,12 @@ func (d *Devfile100) GetProjects() []common.DevfileProject {
 
 // GetCommands returns the slice of DevfileCommand objects parsed from the Devfile
 func (d *Devfile100) GetCommands() []common.DevfileCommand {
-	return d.Commands
+	var commands []common.DevfileCommand
+
+	for _, command := range d.Commands {
+		command.Name = strings.ToLower(command.Name)
+		commands = append(commands, command)
+	}
+
+	return commands
 }

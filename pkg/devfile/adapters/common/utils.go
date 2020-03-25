@@ -10,11 +10,11 @@ import (
 	"github.com/openshift/odo/pkg/devfile/versions/common"
 )
 
+type PredefinedDevfileCommands string
+
 const (
-	DefaultDevfileBuildCommand = "devBuild"
-	DefaultDevfileRunCommand   = "devRun"
-	DefaultDevfileDebugCommand = "devDebug"
-	DefaultDevfileTestCommand  = "devTest"
+	DefaultDevfileBuildCommand PredefinedDevfileCommands = "devbuild"
+	DefaultDevfileRunCommand   PredefinedDevfileCommands = "devrun"
 )
 
 // GetSupportedComponents iterates through the components in the devfile and returns a list of odo supported components
@@ -94,7 +94,7 @@ func getSupportedCommandActions(command common.DevfileCommand) (supportedCommand
 
 // validateAction validates the given action
 // 1. action has to be of type exec 2. component should be present
-// 3. command should be present 4. workdir should be present
+// 3. command should be present
 func validateAction(action common.DevfileCommandAction) bool {
 	if *action.Type != common.DevfileCommandTypeExec {
 		return false
@@ -108,10 +108,6 @@ func validateAction(action common.DevfileCommandAction) bool {
 		return false
 	}
 
-	if action.Workdir == nil || *action.Workdir == "" {
-		return false
-	}
-
 	return true
 }
 
@@ -120,7 +116,7 @@ func GetBuildCommand(data versions.DevfileData, devfileBuildCmd string) (buildCo
 	if devfileBuildCmd != "" {
 		buildCommand = GetCommand(data, devfileBuildCmd)
 	} else {
-		buildCommand = GetCommand(data, DefaultDevfileBuildCommand)
+		buildCommand = GetCommand(data, string(DefaultDevfileBuildCommand))
 	}
 
 	return
@@ -131,7 +127,7 @@ func GetRunCommand(data versions.DevfileData, devfileRunCmd string) (runCommand 
 	if devfileRunCmd != "" {
 		runCommand = GetCommand(data, devfileRunCmd)
 	} else {
-		runCommand = GetCommand(data, DefaultDevfileRunCommand)
+		runCommand = GetCommand(data, string(DefaultDevfileRunCommand))
 	}
 
 	return
@@ -166,7 +162,7 @@ func ValidateAndGetPushDevfileCommands(data versions.DevfileData, devfileBuildCm
 	validateBuildCommand, validateRunCommand := false, false
 
 	buildCommand := GetBuildCommand(data, devfileBuildCmd)
-	if devfileBuildCmd == "" && !IsDefaultCommandPresent(data, DefaultDevfileBuildCommand) {
+	if devfileBuildCmd == "" && !IsDefaultCommandPresent(data, string(DefaultDevfileBuildCommand)) {
 		// If there is no build command either in the devfile or through odo push, default validate to true since build command is optional
 		validateBuildCommand = true
 		glog.V(3).Infof("No Build command was provided")
@@ -229,13 +225,9 @@ func IsDevfileCommandSupported(commandName string) bool {
 	isSupported := false
 
 	switch commandName {
-	case DefaultDevfileBuildCommand:
+	case string(DefaultDevfileBuildCommand):
 		fallthrough
-	case DefaultDevfileRunCommand:
-		fallthrough
-	case DefaultDevfileDebugCommand:
-		fallthrough
-	case DefaultDevfileTestCommand:
+	case string(DefaultDevfileRunCommand):
 		isSupported = true
 	default:
 		isSupported = false
