@@ -21,12 +21,27 @@ func CreateNewContext() string {
 	return directory
 }
 
+// CreateNewDevfileContext create new empty temporary directory
+func CreateNewDevfileContext() string {
+	directory, err := ioutil.TempDir("", "prefix")
+	Expect(err).NotTo(HaveOccurred())
+	fmt.Fprintf(GinkgoWriter, "Created dir: %s\n", directory)
+	return directory
+}
+
 // DeleteDir delete directory
 func DeleteDir(dir string) {
 	fmt.Fprintf(GinkgoWriter, "Deleting dir: %s\n", dir)
 	err := os.RemoveAll(dir)
 	Expect(err).NotTo(HaveOccurred())
 
+}
+
+// DeleteFile deletes file
+func DeleteFile(filepath string) {
+	fmt.Fprintf(GinkgoWriter, "Deleting file: %s\n", filepath)
+	err := os.Remove(filepath)
+	Expect(err).NotTo(HaveOccurred())
 }
 
 // RenameFile renames a file from oldFileName to newFileName

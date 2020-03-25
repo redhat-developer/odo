@@ -12,7 +12,10 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/olekukonko/tablewriter"
 
 	"github.com/fatih/color"
 	"github.com/golang/glog"
@@ -67,6 +70,10 @@ var (
 	DEPLOYMENT_CONFIG_NOT_FOUND           error  = fmt.Errorf("Requested deployment config does not exist")
 )
 
+// We use a mutex here in order to make 100% sure that functions such as CollectEvents
+// so that there are no race conditions
+var mu sync.Mutex
+
 // CreateArgs is a container of attributes of component create action
 type CreateArgs struct {
 	Name            string
@@ -86,9 +93,13 @@ type CreateArgs struct {
 }
 
 const (
+	failedEventCount   = 5
 	OcUpdateTimeout    = 5 * time.Minute
 	OcBuildTimeout     = 5 * time.Minute
 	OpenShiftNameSpace = "openshift"
+
+	// timeout for getting the default service account
+	getDefaultServiceAccTimeout = 1 * time.Minute
 
 	// The length of the string to be generated for names of resources
 	nameLength = 5
@@ -532,13 +543,56 @@ func (c *Client) CreateNewProject(projectName string, wait bool) error {
 			if !ok {
 				break
 			}
-			if e, ok := val.Object.(*projectv1.Project); ok {
-				glog.V(4).Infof("Project %s now exists", e.Name)
-				return nil
+			if prj, ok := val.Object.(*projectv1.Project); ok {
+				glog.V(4).Infof("Status of creation of project %s is %s", prj.Name, prj.Status.Phase)
+				switch prj.Status.Phase {
+				//prj.Status.Phase can only be "Terminating" or "Active" or ""
+				case corev1.NamespaceActive:
+					if val.Type == watch.Added {
+						glog.V(4).Infof("Project %s now exists", prj.Name)
+						return nil
+					}
+					if val.Type == watch.Error {
+						return fmt.Errorf("failed watching the deletion of project %s", prj.Name)
+					}
+				}
 			}
 		}
 	}
 
+	return nil
+}
+
+// WaitForServiceAccountInNamespace waits for the given service account to be ready
+func (c *Client) WaitForServiceAccountInNamespace(namespace, serviceAccountName string) error {
+	if namespace == "" || serviceAccountName == "" {
+		return errors.New("namespace and serviceAccountName cannot be empty")
+	}
+	watcher, err := c.kubeClient.CoreV1().ServiceAccounts(namespace).Watch(metav1.SingleObject(metav1.ObjectMeta{Name: serviceAccountName}))
+	if err != nil {
+		return err
+	}
+
+	timeout := time.After(getDefaultServiceAccTimeout)
+	if watcher != nil {
+		defer watcher.Stop()
+		for {
+			select {
+			case val, ok := <-watcher.ResultChan():
+				if !ok {
+					break
+				}
+				if serviceAccount, ok := val.Object.(*corev1.ServiceAccount); ok {
+					if serviceAccount.Name == serviceAccountName {
+						glog.V(4).Infof("Status of creation of service account %s is ready", serviceAccount)
+						return nil
+					}
+				}
+			case <-timeout:
+				return errors.New("Timed out waiting for service to be ready")
+			}
+		}
+	}
 	return nil
 }
 
@@ -1785,6 +1839,54 @@ func (c *Client) WaitAndGetDC(name string, desiredRevision int64, timeout time.D
 	}
 }
 
+// CollectEvents collects events in a Goroutine by manipulating a spinner.
+// We don't care about the error (it's usually ran in a go routine), so erroring out is not needed.
+func (c *Client) CollectEvents(selector string, events map[string]corev1.Event, spinner *log.Status, quit <-chan int) {
+
+	// Secondly, we will start a go routine for watching for events related to the pod and update our pod status accordingly.
+	eventWatcher, err := c.kubeClient.CoreV1().Events(c.Namespace).Watch(metav1.ListOptions{})
+	if err != nil {
+		log.Warningf("Unable to watch for events: %s", err)
+		return
+	}
+	defer eventWatcher.Stop()
+
+	// Create an endless loop for collecting
+	for {
+		select {
+		case <-quit:
+			glog.V(4).Info("Quitting collect events")
+			return
+		case val, ok := <-eventWatcher.ResultChan():
+			mu.Lock()
+			if !ok {
+				log.Warning("Watch channel was closed")
+				return
+			}
+			if e, ok := val.Object.(*corev1.Event); ok {
+
+				// If there are many warning events happening during deployment, let's log them.
+				if e.Type == "Warning" {
+
+					if e.Count >= failedEventCount {
+						newEvent := e
+						(events)[e.Name] = *newEvent
+						glog.V(4).Infof("Warning Event: Count: %d, Reason: %s, Message: %s", e.Count, e.Reason, e.Message)
+						// Change the spinner message to show the warning
+						spinner.WarningStatus(fmt.Sprintf("WARNING x%d: %s, use `-v` for more information.", e.Count, e.Reason))
+					}
+
+				}
+
+			} else {
+				log.Warning("Unable to convert object to event")
+				return
+			}
+			mu.Unlock()
+		}
+	}
+}
+
 // WaitAndGetPod block and waits until pod matching selector is in in Running state
 // desiredPhase cannot be PodFailed or PodUnknown
 func (c *Client) WaitAndGetPod(selector string, desiredPhase corev1.PodPhase, waitMessage string) (*corev1.Pod, error) {
@@ -1799,8 +1901,8 @@ func (c *Client) WaitAndGetPod(selector string, desiredPhase corev1.PodPhase, wa
 	}
 
 	glog.V(4).Infof("Waiting for %s pod", selector)
-	s := log.Spinner(waitMessage)
-	defer s.End(false)
+	spinner := log.Spinner(waitMessage)
+	defer spinner.End(false)
 
 	w, err := c.kubeClient.CoreV1().Pods(c.Namespace).Watch(metav1.ListOptions{
 		LabelSelector: selector,
@@ -1810,10 +1912,10 @@ func (c *Client) WaitAndGetPod(selector string, desiredPhase corev1.PodPhase, wa
 	}
 	defer w.Stop()
 
+	// Here we are going to start a loop watching for the pod status
 	podChannel := make(chan *corev1.Pod)
 	watchErrorChannel := make(chan error)
-
-	go func() {
+	go func(spinny *log.Status) {
 	loop:
 		for {
 			val, ok := <-w.ResultChan()
@@ -1825,7 +1927,6 @@ func (c *Client) WaitAndGetPod(selector string, desiredPhase corev1.PodPhase, wa
 				glog.V(4).Infof("Status of %s pod is %s", e.Name, e.Status.Phase)
 				switch e.Status.Phase {
 				case desiredPhase:
-					s.End(true)
 					glog.V(4).Infof("Pod %s is %v", e.Name, desiredPhase)
 					podChannel <- e
 					break loop
@@ -1840,15 +1941,51 @@ func (c *Client) WaitAndGetPod(selector string, desiredPhase corev1.PodPhase, wa
 		}
 		close(podChannel)
 		close(watchErrorChannel)
-	}()
+	}(spinner)
+
+	// Collect all the events in a separate go routine
+	failedEvents := make(map[string]corev1.Event)
+	quit := make(chan int)
+	go c.CollectEvents(selector, failedEvents, spinner, quit)
+	defer close(quit)
 
 	select {
 	case val := <-podChannel:
+		spinner.End(true)
 		return val, nil
-	case err := <-watchErrorChannel:
-		return nil, err
 	case <-time.After(pushTimeout):
-		return nil, errors.Errorf("waited %s but couldn't find running pod matching selector: '%s'", pushTimeout, selector)
+
+		// Create a useful error if there are any failed events
+		errorMessage := fmt.Sprintf(`waited %s but couldn't find running pod matching selector: '%s'`, pushTimeout, selector)
+
+		if len(failedEvents) != 0 {
+
+			// Create an output table
+			tableString := &strings.Builder{}
+			table := tablewriter.NewWriter(tableString)
+			table.SetAlignment(tablewriter.ALIGN_LEFT)
+			table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
+			table.SetCenterSeparator("")
+			table.SetColumnSeparator("")
+			table.SetRowSeparator("")
+
+			// Header
+			table.SetHeader([]string{"Name", "Count", "Reason", "Message"})
+
+			// List of events
+			for name, event := range failedEvents {
+				table.Append([]string{name, strconv.Itoa(int(event.Count)), event.Reason, event.Message})
+			}
+
+			// Here we render the table as well as a helpful error message
+			table.Render()
+			errorMessage = fmt.Sprintf(`waited %s but was unable to find a running pod matching selector: '%s'
+For more information to help determine the cause of the error, re-run with '-v'.
+See below for a list of failed events that occured more than %d times during deployment:
+%s`, pushTimeout, selector, failedEventCount, tableString)
+		}
+
+		return nil, errors.Errorf(errorMessage)
 	}
 }
 
@@ -2242,7 +2379,7 @@ func (c *Client) CreateServiceInstance(serviceName string, serviceType string, s
 	}
 
 	// Create the secret containing the parameters of the plan selected.
-	err = c.CreateServiceBinding(serviceName, c.Namespace)
+	err = c.CreateServiceBinding(serviceName, c.Namespace, labels)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create the secret %s for the service instance", serviceName)
 	}
@@ -2252,16 +2389,15 @@ func (c *Client) CreateServiceInstance(serviceName string, serviceType string, s
 
 // CreateServiceBinding creates a ServiceBinding (essentially a secret) within the namespace of the
 // service instance created using the service's parameters.
-func (c *Client) CreateServiceBinding(bindingName string, namespace string) error {
+func (c *Client) CreateServiceBinding(bindingName string, namespace string, labels map[string]string) error {
 	_, err := c.serviceCatalogClient.ServiceBindings(namespace).Create(
 		&scv1beta1.ServiceBinding{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      bindingName,
 				Namespace: namespace,
+				Labels:    labels,
 			},
 			Spec: scv1beta1.ServiceBindingSpec{
-				//ExternalID: UUID,
-
 				InstanceRef: scv1beta1.LocalObjectReference{
 					Name: bindingName,
 				},
@@ -2478,6 +2614,12 @@ func (c *Client) ListRoutes(labelSelector string) ([]routev1.Route, error) {
 	}
 
 	return routeList.Items, nil
+}
+
+func (c *Client) GetRoute(name string) (*routev1.Route, error) {
+	route, err := c.routeClient.Routes(c.Namespace).Get(name, metav1.GetOptions{})
+	return route, err
+
 }
 
 // ListRouteNames lists all the names of the routes based on the given label

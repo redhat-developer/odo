@@ -3,6 +3,7 @@ package project
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -49,16 +50,21 @@ var _ = Describe("odo project command tests", func() {
 
 	Context("when running project command app parameter in directory that doesn't contain .odo config directory", func() {
 		It("should successfully execute list along with machine readable output", func() {
-			time.Sleep(1 * time.Second)
-			listOutput := helper.CmdShouldPass("odo", "project", "list")
-			Expect(listOutput).To(ContainSubstring(project))
 
-			// project deletion doesn't happen immediately, so we test subset of the string
-			listOutputJSON, err := helper.Unindented(helper.CmdShouldPass("odo", "project", "list", "-o", "json"))
-			Expect(err).Should(BeNil())
+			helper.WaitForCmdOut("odo", []string{"project", "list"}, 1, true, func(output string) bool {
+				return strings.Contains(output, project)
+			})
+
+			// project deletion doesn't happen immediately and older projects still might exist
+			// so we test subset of the string
 			expected, err := helper.Unindented(`{"kind":"Project","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"` + project + `","namespace":"` + project + `","creationTimestamp":null},"spec":{},"status":{"active":true}}`)
 			Expect(err).Should(BeNil())
-			Expect(listOutputJSON).To(ContainSubstring(expected))
+
+			helper.WaitForCmdOut("odo", []string{"project", "list", "-o", "json"}, 1, true, func(output string) bool {
+				listOutputJSON, err := helper.Unindented(output)
+				Expect(err).Should(BeNil())
+				return strings.Contains(listOutputJSON, expected)
+			})
 		})
 	})
 })

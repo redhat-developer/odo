@@ -4,16 +4,15 @@ package main
 
 import (
 	"net/http"
+	"testing"
 
-	"github.com/docker/docker/integration-cli/checker"
 	"github.com/docker/docker/internal/test/fakecontext"
 	"github.com/docker/docker/internal/test/request"
-	"github.com/go-check/check"
-	"github.com/gotestyourself/gotestyourself/assert"
-	is "github.com/gotestyourself/gotestyourself/assert/cmp"
+	"gotest.tools/assert"
+	is "gotest.tools/assert/cmp"
 )
 
-func (s *DockerSuite) TestBuildWithRecycleBin(c *check.C) {
+func (s *DockerSuite) TestBuildWithRecycleBin(c *testing.T) {
 	testRequires(c, DaemonIsWindows)
 
 	dockerfile := "" +
@@ -30,8 +29,8 @@ func (s *DockerSuite) TestBuildWithRecycleBin(c *check.C) {
 		request.RawContent(ctx.AsTarReader(c)),
 		request.ContentType("application/x-tar"))
 
-	c.Assert(err, checker.IsNil)
-	c.Assert(res.StatusCode, checker.Equals, http.StatusOK)
+	assert.NilError(c, err)
+	assert.Equal(c, res.StatusCode, http.StatusOK)
 
 	out, err := request.ReadBody(body)
 	assert.NilError(c, err)

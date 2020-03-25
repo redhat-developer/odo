@@ -8,8 +8,10 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/docker/docker/daemon/config"
 	"github.com/docker/docker/pkg/fileutils"
 	"github.com/docker/docker/pkg/mount"
+	"github.com/docker/libnetwork/resolvconf"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -130,4 +132,16 @@ func shouldUnmountRoot(root string, info *mount.Info) bool {
 		return false
 	}
 	return hasMountinfoOption(info.Optional, sharedPropagationOption)
+}
+
+// setupResolvConf sets the appropriate resolv.conf file if not specified
+// When systemd-resolved is running the default /etc/resolv.conf points to
+// localhost. In this case fetch the alternative config file that is in a
+// different path so that containers can use it
+// In all the other cases fallback to the default one
+func setupResolvConf(config *config.Config) {
+	if config.ResolvConf != "" {
+		return
+	}
+	config.ResolvConf = resolvconf.Path()
 }

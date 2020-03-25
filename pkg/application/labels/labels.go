@@ -22,7 +22,7 @@ const OdoVersion = "app.kubernetes.io/managed-by-version"
 // GetLabels return labels that identifies given application
 // additional labels are used only when creating object
 // if you are creating something use additional=true
-// if you need labels to filter component than use additional=false
+// if you need labels to filter component then use additional=false
 func GetLabels(application string, additional bool) map[string]string {
 	labels := map[string]string{
 		ApplicationLabel: application,

@@ -8,18 +8,18 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"strings"
+	"testing"
 
 	winio "github.com/Microsoft/go-winio"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
-	"github.com/go-check/check"
-	"github.com/gotestyourself/gotestyourself/assert"
-	is "github.com/gotestyourself/gotestyourself/assert/cmp"
+	"gotest.tools/assert"
+	is "gotest.tools/assert/cmp"
 )
 
-func (s *DockerSuite) TestContainersAPICreateMountsBindNamedPipe(c *check.C) {
-	testRequires(c, SameHostDaemon, DaemonIsWindowsAtLeastBuild(16299)) // Named pipe support was added in RS3
+func (s *DockerSuite) TestContainersAPICreateMountsBindNamedPipe(c *testing.T) {
+	testRequires(c, testEnv.IsLocalDaemon, DaemonIsWindowsAtLeastBuild(16299)) // Named pipe support was added in RS3
 
 	// Create a host pipe to map into the container
 	hostPipeName := fmt.Sprintf(`\\.\pipe\docker-cli-test-pipe-%x`, rand.Uint64())

@@ -91,7 +91,16 @@ func (s *Spinner) SetPrefix(prefix string) {
 // SetSuffix sets the suffix to print after the spinner
 func (s *Spinner) SetSuffix(suffix string) {
 	s.mu.Lock()
+
+	// Awful hack to "clear" the line if the line is better than the previous one...
+	if len(suffix) < len(s.suffix) {
+		spacingLength := len(s.prefix) + len(s.suffix)
+		fmt.Fprintf(s.writer, "\r%*s", spacingLength, "")
+	}
 	s.suffix = suffix
+
+	// Make sure we go back to the original line...
+	fmt.Print("\r")
 	s.mu.Unlock()
 }
 

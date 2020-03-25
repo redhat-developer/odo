@@ -1,4 +1,4 @@
-// +build linux
+// +build linux,!exclude_disk_quota
 
 //
 // projectquota.go - implements XFS project quota controls
@@ -52,29 +52,16 @@ const int Q_XGETQSTAT_PRJQUOTA = QCMD(Q_XGETQSTAT, PRJQUOTA);
 */
 import "C"
 import (
-	"fmt"
 	"io/ioutil"
 	"path"
 	"path/filepath"
 	"unsafe"
 
 	rsystem "github.com/opencontainers/runc/libcontainer/system"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/unix"
 )
-
-// Quota limit params - currently we only control blocks hard limit
-type Quota struct {
-	Size uint64
-}
-
-// Control - Context to be used by storage driver (e.g. overlay)
-// who wants to apply project quotas to container dirs
-type Control struct {
-	backingFsBlockDev string
-	nextProjectID     uint32
-	quotas            map[string]uint32
-}
 
 // NewControl - initialize project quota support.
 // Test to make sure that quota can be set on a test dir and find
@@ -166,9 +153,11 @@ func NewControl(basePath string) (*Control, error) {
 // SetQuota - assign a unique project id to directory and set the quota limits
 // for that project id
 func (q *Control) SetQuota(targetPath string, quota Quota) error {
-
+	q.RLock()
 	projectID, ok := q.quotas[targetPath]
+	q.RUnlock()
 	if !ok {
+		q.Lock()
 		projectID = q.nextProjectID
 
 		//
@@ -176,11 +165,12 @@ func (q *Control) SetQuota(targetPath string, quota Quota) error {
 		//
 		err := setProjectID(targetPath, projectID)
 		if err != nil {
+			q.Unlock()
 			return err
 		}
-
 		q.quotas[targetPath] = projectID
 		q.nextProjectID++
+		q.Unlock()
 	}
 
 	//
@@ -208,8 +198,8 @@ func setProjectQuota(backingFsBlockDev string, projectID uint32, quota Quota) er
 		uintptr(unsafe.Pointer(cs)), uintptr(d.d_id),
 		uintptr(unsafe.Pointer(&d)), 0, 0)
 	if errno != 0 {
-		return fmt.Errorf("Failed to set quota limit for projid %d on %s: %v",
-			projectID, backingFsBlockDev, errno.Error())
+		return errors.Wrapf(errno, "failed to set quota limit for projid %d on %s",
+			projectID, backingFsBlockDev)
 	}
 
 	return nil
@@ -217,10 +207,11 @@ func setProjectQuota(backingFsBlockDev string, projectID uint32, quota Quota) er
 
 // GetQuota - get the quota limits of a directory that was configured with SetQuota
 func (q *Control) GetQuota(targetPath string, quota *Quota) error {
-
+	q.RLock()
 	projectID, ok := q.quotas[targetPath]
+	q.RUnlock()
 	if !ok {
-		return fmt.Errorf("quota not found for path : %s", targetPath)
+		return errors.Errorf("quota not found for path: %s", targetPath)
 	}
 
 	//
@@ -235,8 +226,8 @@ func (q *Control) GetQuota(targetPath string, quota *Quota) error {
 		uintptr(unsafe.Pointer(cs)), uintptr(C.__u32(projectID)),
 		uintptr(unsafe.Pointer(&d)), 0, 0)
 	if errno != 0 {
-		return fmt.Errorf("Failed to get quota limit for projid %d on %s: %v",
-			projectID, q.backingFsBlockDev, errno.Error())
+		return errors.Wrapf(errno, "Failed to get quota limit for projid %d on %s",
+			projectID, q.backingFsBlockDev)
 	}
 	quota.Size = uint64(d.d_blk_hardlimit) * 512
 
@@ -255,7 +246,7 @@ func getProjectID(targetPath string) (uint32, error) {
 	_, _, errno := unix.Syscall(unix.SYS_IOCTL, getDirFd(dir), C.FS_IOC_FSGETXATTR,
 		uintptr(unsafe.Pointer(&fsx)))
 	if errno != 0 {
-		return 0, fmt.Errorf("Failed to get projid for %s: %v", targetPath, errno.Error())
+		return 0, errors.Wrapf(errno, "failed to get projid for %s", targetPath)
 	}
 
 	return uint32(fsx.fsx_projid), nil
@@ -273,14 +264,14 @@ func setProjectID(targetPath string, projectID uint32) error {
 	_, _, errno := unix.Syscall(unix.SYS_IOCTL, getDirFd(dir), C.FS_IOC_FSGETXATTR,
 		uintptr(unsafe.Pointer(&fsx)))
 	if errno != 0 {
-		return fmt.Errorf("Failed to get projid for %s: %v", targetPath, errno.Error())
+		return errors.Wrapf(errno, "failed to get projid for %s", targetPath)
 	}
 	fsx.fsx_projid = C.__u32(projectID)
 	fsx.fsx_xflags |= C.FS_XFLAG_PROJINHERIT
 	_, _, errno = unix.Syscall(unix.SYS_IOCTL, getDirFd(dir), C.FS_IOC_FSSETXATTR,
 		uintptr(unsafe.Pointer(&fsx)))
 	if errno != 0 {
-		return fmt.Errorf("Failed to set projid for %s: %v", targetPath, errno.Error())
+		return errors.Wrapf(errno, "failed to set projid for %s", targetPath)
 	}
 
 	return nil
@@ -289,9 +280,11 @@ func setProjectID(targetPath string, projectID uint32) error {
 // findNextProjectID - find the next project id to be used for containers
 // by scanning driver home directory to find used project ids
 func (q *Control) findNextProjectID(home string) error {
+	q.Lock()
+	defer q.Unlock()
 	files, err := ioutil.ReadDir(home)
 	if err != nil {
-		return fmt.Errorf("read directory failed : %s", home)
+		return errors.Errorf("read directory failed: %s", home)
 	}
 	for _, file := range files {
 		if !file.IsDir() {
@@ -323,7 +316,7 @@ func openDir(path string) (*C.DIR, error) {
 
 	dir := C.opendir(Cpath)
 	if dir == nil {
-		return nil, fmt.Errorf("Can't open dir")
+		return nil, errors.Errorf("failed to open dir: %s", path)
 	}
 	return dir, nil
 }
@@ -355,11 +348,11 @@ func makeBackingFsDev(home string) (string, error) {
 	case nil:
 		return backingFsBlockDev, nil
 
-	case unix.ENOSYS:
+	case unix.ENOSYS, unix.EPERM:
 		return "", ErrQuotaNotSupported
 
 	default:
-		return "", fmt.Errorf("Failed to mknod %s: %v", backingFsBlockDev, err)
+		return "", errors.Wrapf(err, "failed to mknod %s", backingFsBlockDev)
 	}
 }
 
