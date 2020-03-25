@@ -19,14 +19,6 @@ const (
 Please ensure you have an active kubernetes context to your cluster. 
 Consult your Kubernetes distribution's documentation for more details
 `
-	// The init container name for supervisord
-	supervisordInitContainerName = "copy-supervisord"
-
-	// The default image for odo init bootstrapper container
-	defaultBootstrapperImage = "jeevandroid/odo-init-image"
-
-	// Create a custom name and (hope) that users don't use the *exact* same name in their deployment (occlient.go)
-	supervisordVolumeName = "odo-supervisord-shared-data"
 )
 
 // Client is a collection of fields used for client configuration and interaction
@@ -82,9 +74,4 @@ func CreateObjectMeta(name, namespace string, labels, annotations map[string]str
 	}
 
 	return objectMeta
-}
-
-// GetSupervisordVolumeName returns the supervisord Volume Name
-func GetSupervisordVolumeName() string {
-	return supervisordVolumeName
 }

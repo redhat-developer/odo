@@ -71,25 +71,6 @@ func (po *PushOptions) DevfilePush() (err error) {
 	}
 
 	pushParams := common.PushParameters{
-<<<<<<< HEAD
-		Path:         po.sourcePath,
-		IgnoredFiles: po.ignores,
-		ForceBuild:   po.forceBuild,
-	}
-
-	// Start or update the component
-<<<<<<< HEAD
-	err = devfileHandler.Push(pushParams)
-=======
-	err = devfileHandler.Push(po.sourcePath,
-		po.ignores,
-		po.forceBuild,
-		po.show,
-		util.GetAbsGlobExps(po.sourcePath, po.ignores),
-		po.devfileBuildCmd,
-		po.devfileRunCmd)
->>>>>>> First pass of devfile exec
-=======
 		Path:            po.sourcePath,
 		IgnoredFiles:    po.ignores,
 		ForceBuild:      po.forceBuild,
@@ -99,18 +80,7 @@ func (po *PushOptions) DevfilePush() (err error) {
 	}
 
 	// Start or update the component
-<<<<<<< HEAD
 	err = devfileHandler.Push(pushParams)
->>>>>>> Devfile exec - PR Feedback 1
-=======
-	err = devfileHandler.Push(po.sourcePath,
-		po.ignores,
-		po.forceBuild,
-		po.show,
-		util.GetAbsGlobExps(po.sourcePath, po.ignores),
-		po.devfileBuildCmd,
-		po.devfileRunCmd)
->>>>>>> First pass of devfile exec
 	if err != nil {
 		log.Errorf(
 			"Failed to start component with name %s.\nError: %v",
