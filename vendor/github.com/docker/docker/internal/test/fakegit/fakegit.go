@@ -12,7 +12,7 @@ import (
 	"github.com/docker/docker/internal/test"
 	"github.com/docker/docker/internal/test/fakecontext"
 	"github.com/docker/docker/internal/test/fakestorage"
-	"github.com/gotestyourself/gotestyourself/assert"
+	"gotest.tools/assert"
 )
 
 type testingT interface {
@@ -28,7 +28,7 @@ type logT interface {
 }
 
 type skipT interface {
-	Skip(reason string)
+	Skip(...interface{})
 }
 
 type gitServer interface {

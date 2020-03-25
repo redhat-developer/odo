@@ -148,12 +148,12 @@ You can use the `TESTDIRS` environment variable to run unit tests for
 a single package.
 
 ```bash
-$ TESTDIRS='opts' make test-unit
+$ TESTDIRS='github.com/docker/docker/opts' make test-unit
 ```
 
 You can also use the `TESTFLAGS` environment variable to run a single test. The
 flag's value is passed as arguments to the `go test` command. For example, from
-your local host you can run the `TestBuild` test with this command:
+your local host you can run the `TestValidateIPAddress` test with this command:
 
 ```bash
 $ TESTFLAGS='-test.run ^TestValidateIPAddress$' make test-unit
@@ -163,7 +163,7 @@ On unit tests, it's better to use `TESTFLAGS` in combination with
 `TESTDIRS` to make it quicker to run a specific test.
 
 ```bash
-$ TESTDIRS='opts' TESTFLAGS='-test.run ^TestValidateIPAddress$' make test-unit
+$ TESTDIRS='github.com/docker/docker/opts' TESTFLAGS='-test.run ^TestValidateIPAddress$' make test-unit
 ```
 
 ## Run integration tests
@@ -174,13 +174,13 @@ flag's value is passed as arguments to the `go test` command. For example, from
 your local host you can run the `TestBuild` test with this command:
 
 ```bash
-$ TESTFLAGS='-check.f DockerSuite.TestBuild*' make test-integration
+$ TESTFLAGS='-test.run TestDockerSuite/TestBuild*' make test-integration
 ```
 
 To run the same test inside your Docker development container, you do this:
 
 ```bash
-# TESTFLAGS='-check.f TestBuild*' hack/make.sh binary test-integration
+# TESTFLAGS='-test.run TestDockerSuite/TestBuild*' hack/make.sh binary test-integration
 ```
 
 ## Test the Windows binary against a Linux daemon
@@ -228,11 +228,11 @@ run a Bash terminal on Windows.
     ```
 
     Should you wish to run a single test such as one with the name
-    'TestExample', you can pass in `TESTFLAGS='-check.f TestExample'`. For
+    'TestExample', you can pass in `TESTFLAGS='-test.run /TestExample'`. For
     example
 
     ```bash
-    $ TESTFLAGS='-check.f TestExample' hack/make.sh binary test-integration
+    $ TESTFLAGS='-test.run /TestExample' hack/make.sh binary test-integration
     ```
 
 You can now choose to make changes to the Moby source or the tests. If you

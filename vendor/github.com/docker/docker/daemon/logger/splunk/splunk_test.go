@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/docker/docker/daemon/logger"
-	"github.com/gotestyourself/gotestyourself/assert"
-	"github.com/gotestyourself/gotestyourself/env"
+	"gotest.tools/assert"
+	"gotest.tools/env"
 )
 
 // Validate options
@@ -30,10 +30,10 @@ func TestValidateLogOpt(t *testing.T) {
 		splunkVerifyConnectionKey:     "true",
 		splunkGzipCompressionKey:      "true",
 		splunkGzipCompressionLevelKey: "1",
-		envKey:      "a",
-		envRegexKey: "^foo",
-		labelsKey:   "b",
-		tagKey:      "c",
+		envKey:                        "a",
+		envRegexKey:                   "^foo",
+		labelsKey:                     "b",
+		tagKey:                        "c",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -251,9 +251,9 @@ func TestInlineFormatWithNonDefaultOptions(t *testing.T) {
 			splunkIndexKey:           "myindex",
 			splunkFormatKey:          splunkFormatInline,
 			splunkGzipCompressionKey: "true",
-			tagKey:      "{{.ImageName}}/{{.Name}}",
-			labelsKey:   "a",
-			envRegexKey: "^foo",
+			tagKey:                   "{{.ImageName}}/{{.Name}}",
+			labelsKey:                "a",
+			envRegexKey:              "^foo",
 		},
 		ContainerID:        "containeriid",
 		ContainerName:      "/container_name",
@@ -925,7 +925,12 @@ func TestFrequency(t *testing.T) {
 
 	// 1 to verify connection and 10 to verify that we have sent messages with required frequency,
 	// but because frequency is too small (to keep test quick), instead of 11, use 9 if context switches will be slow
-	if hec.numOfRequests < 9 {
+	expectedRequests := 9
+	if runtime.GOOS == "windows" {
+		// sometimes in Windows, this test fails with number of requests showing 8. So be more conservative.
+		expectedRequests = 7
+	}
+	if hec.numOfRequests < expectedRequests {
 		t.Fatalf("Unexpected number of requests %d", hec.numOfRequests)
 	}
 

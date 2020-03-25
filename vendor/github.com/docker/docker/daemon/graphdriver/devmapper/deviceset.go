@@ -268,7 +268,7 @@ func (devices *DeviceSet) ensureImage(name string, size int64) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if err := idtools.MkdirAllAndChown(dirname, 0700, idtools.IDPair{UID: uid, GID: gid}); err != nil {
+	if err := idtools.MkdirAllAndChown(dirname, 0700, idtools.Identity{UID: uid, GID: gid}); err != nil {
 		return "", err
 	}
 
@@ -540,8 +540,14 @@ func xfsSupported() error {
 		return err // error text is descriptive enough
 	}
 
-	// Check if kernel supports xfs filesystem or not.
-	exec.Command("modprobe", "xfs").Run()
+	mountTarget, err := ioutil.TempDir("", "supportsXFS")
+	if err != nil {
+		return errors.Wrapf(err, "error checking for xfs support")
+	}
+
+	/* The mounting will fail--after the module has been loaded.*/
+	defer os.RemoveAll(mountTarget)
+	unix.Mount("none", mountTarget, "xfs", 0, "")
 
 	f, err := os.Open("/proc/filesystems")
 	if err != nil {
@@ -1200,7 +1206,7 @@ func (devices *DeviceSet) growFS(info *devInfo) error {
 	options = joinMountOptions(options, devices.mountOptions)
 
 	if err := mount.Mount(info.DevName(), fsMountPoint, devices.BaseDeviceFilesystem, options); err != nil {
-		return fmt.Errorf("Error mounting '%s' on '%s' (fstype='%s' options='%s'): %s\n%v", info.DevName(), fsMountPoint, devices.BaseDeviceFilesystem, options, err, string(dmesg.Dmesg(256)))
+		return errors.Wrapf(err, "Failed to mount; dmesg: %s", string(dmesg.Dmesg(256)))
 	}
 
 	defer unix.Unmount(fsMountPoint, unix.MNT_DETACH)
@@ -1527,7 +1533,8 @@ func getDeviceMajorMinor(file *os.File) (uint64, uint64, error) {
 		return 0, 0, err
 	}
 
-	dev := stat.Rdev
+	// the type is 32bit on mips
+	dev := uint64(stat.Rdev) // nolint: unconvert
 	majorNum := major(dev)
 	minorNum := minor(dev)
 
@@ -1691,7 +1698,7 @@ func (devices *DeviceSet) initDevmapper(doInit bool) (retErr error) {
 	if err != nil {
 		return err
 	}
-	if err := idtools.MkdirAndChown(devices.root, 0700, idtools.IDPair{UID: uid, GID: gid}); err != nil {
+	if err := idtools.MkdirAndChown(devices.root, 0700, idtools.Identity{UID: uid, GID: gid}); err != nil {
 		return err
 	}
 	if err := os.MkdirAll(devices.metadataDir(), 0700); err != nil {
@@ -1738,7 +1745,8 @@ func (devices *DeviceSet) initDevmapper(doInit bool) (retErr error) {
 	//	- Managed by docker
 	//	- The target of this device is at major <maj> and minor <min>
 	//	- If <inode> is defined, use that file inside the device as a loopback image. Otherwise use the device itself.
-	devices.devicePrefix = fmt.Sprintf("docker-%d:%d-%d", major(st.Dev), minor(st.Dev), st.Ino)
+	// The type Dev in Stat_t is 32bit on mips.
+	devices.devicePrefix = fmt.Sprintf("docker-%d:%d-%d", major(uint64(st.Dev)), minor(uint64(st.Dev)), st.Ino) // nolint: unconvert
 	logger.Debugf("Generated prefix: %s", devices.devicePrefix)
 
 	// Check for the existence of the thin-pool device
@@ -2381,7 +2389,7 @@ func (devices *DeviceSet) MountDevice(hash, path, mountLabel string) error {
 	options = joinMountOptions(options, label.FormatMountLabel("", mountLabel))
 
 	if err := mount.Mount(info.DevName(), path, fstype, options); err != nil {
-		return fmt.Errorf("devmapper: Error mounting '%s' on '%s' (fstype='%s' options='%s'): %s\n%v", info.DevName(), path, fstype, options, err, string(dmesg.Dmesg(256)))
+		return errors.Wrapf(err, "Failed to mount; dmesg: %s", string(dmesg.Dmesg(256)))
 	}
 
 	if fstype == "xfs" && devices.xfsNospaceRetries != "" {
