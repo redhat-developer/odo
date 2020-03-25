@@ -2379,7 +2379,7 @@ func (c *Client) CreateServiceInstance(serviceName string, serviceType string, s
 	}
 
 	// Create the secret containing the parameters of the plan selected.
-	err = c.CreateServiceBinding(serviceName, c.Namespace)
+	err = c.CreateServiceBinding(serviceName, c.Namespace, labels)
 	if err != nil {
 		return errors.Wrapf(err, "unable to create the secret %s for the service instance", serviceName)
 	}
@@ -2389,16 +2389,15 @@ func (c *Client) CreateServiceInstance(serviceName string, serviceType string, s
 
 // CreateServiceBinding creates a ServiceBinding (essentially a secret) within the namespace of the
 // service instance created using the service's parameters.
-func (c *Client) CreateServiceBinding(bindingName string, namespace string) error {
+func (c *Client) CreateServiceBinding(bindingName string, namespace string, labels map[string]string) error {
 	_, err := c.serviceCatalogClient.ServiceBindings(namespace).Create(
 		&scv1beta1.ServiceBinding{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      bindingName,
 				Namespace: namespace,
+				Labels:    labels,
 			},
 			Spec: scv1beta1.ServiceBindingSpec{
-				//ExternalID: UUID,
-
 				InstanceRef: scv1beta1.LocalObjectReference{
 					Name: bindingName,
 				},
@@ -2615,6 +2614,12 @@ func (c *Client) ListRoutes(labelSelector string) ([]routev1.Route, error) {
 	}
 
 	return routeList.Items, nil
+}
+
+func (c *Client) GetRoute(name string) (*routev1.Route, error) {
+	route, err := c.routeClient.Routes(c.Namespace).Get(name, metav1.GetOptions{})
+	return route, err
+
 }
 
 // ListRouteNames lists all the names of the routes based on the given label

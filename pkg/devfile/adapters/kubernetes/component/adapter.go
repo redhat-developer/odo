@@ -52,6 +52,11 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return errors.Wrap(err, "unable to create or update component")
 	}
 
+	_, err = a.Client.WaitForDeploymentRollout(a.ComponentName)
+	if err != nil {
+		return errors.Wrap(err, "error while waiting for deployment rollout")
+	}
+
 	// Sync source code to the component
 	// If syncing for the first time, sync the entire source directory
 	// If syncing to an already running component, sync the deltas

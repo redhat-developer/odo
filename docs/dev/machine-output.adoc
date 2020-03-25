@@ -226,7 +226,6 @@ See the below table for a list of all possible machine readable output commands:
   },
   "spec": {
     "type": "nodejs",
-    "source": "file://./",
     "url": [
       "example",
       "json",
@@ -260,7 +259,6 @@ See the below table for a list of all possible machine readable output commands:
       },
       "spec": {
         "type": "nodejs",
-        "source": "file://./",
         "url": [
           "example",
           "json",

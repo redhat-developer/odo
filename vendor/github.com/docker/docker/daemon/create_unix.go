@@ -25,7 +25,7 @@ func (daemon *Daemon) createContainerOSSpecificSettings(container *container.Con
 	}
 	defer daemon.Unmount(container)
 
-	rootIDs := daemon.idMappings.RootPair()
+	rootIDs := daemon.idMapping.RootPair()
 	if err := container.SetupWorkingDirectory(rootIDs); err != nil {
 		return err
 	}
@@ -41,12 +41,14 @@ func (daemon *Daemon) createContainerOSSpecificSettings(container *container.Con
 	}
 
 	for spec := range config.Volumes {
-		name := stringid.GenerateNonCryptoID()
+		name := stringid.GenerateRandomID()
 		destination := filepath.Clean(spec)
 
 		// Skip volumes for which we already have something mounted on that
 		// destination because of a --volume-from.
-		if container.IsDestinationMounted(destination) {
+		if container.HasMountFor(destination) {
+			logrus.WithField("container", container.ID).WithField("destination", spec).Debug("mountpoint already exists, skipping anonymous volume")
+			// Not an error, this could easily have come from the image config.
 			continue
 		}
 		path, err := container.GetResourcePath(destination)

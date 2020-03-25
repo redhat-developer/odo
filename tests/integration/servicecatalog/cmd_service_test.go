@@ -435,4 +435,27 @@ var _ = Describe("odo service command tests", func() {
 			helper.CmdShouldPass("odo", "catalog", "describe", "service", "dh-import-vm-apb")
 		})
 	})
+
+	Context("When the application is deleted", func() {
+		JustBeforeEach(func() {
+			preSetup()
+			app = helper.RandString(6)
+		})
+		It("should delete the service(s) in the application as well", func() {
+			helper.CmdShouldPass("odo", "service", "create", "--app", app, "-w", "dh-postgresql-apb", "--project", project, "--plan", "dev",
+				"-p", "postgresql_user=luke", "-p", "postgresql_password=secret",
+				"-p", "postgresql_database=my_data", "-p", "postgresql_version=9.6")
+			ocArgs := []string{"get", "serviceinstance", "-o", "name", "-n", project}
+			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+				return strings.Contains(output, "dh-postgresql-apb")
+			})
+
+			helper.CmdShouldPass("odo", "app", "delete", app, "-f")
+
+			ocArgs = []string{"get", "serviceinstances"}
+			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+				return strings.Contains(output, "No resources found")
+			}, true)
+		})
+	})
 })

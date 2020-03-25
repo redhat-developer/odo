@@ -13,9 +13,9 @@ import (
 	"github.com/docker/docker/pkg/stringid"
 	"github.com/docker/docker/pkg/system"
 	"github.com/docker/docker/plugin/v2"
-	"github.com/gotestyourself/gotestyourself/skip"
 	"github.com/opencontainers/runtime-spec/specs-go"
 	"github.com/pkg/errors"
+	"gotest.tools/skip"
 )
 
 func TestManagerWithPluginMounts(t *testing.T) {
@@ -70,7 +70,7 @@ func TestManagerWithPluginMounts(t *testing.T) {
 }
 
 func newTestPlugin(t *testing.T, name, cap, root string) *v2.Plugin {
-	id := stringid.GenerateNonCryptoID()
+	id := stringid.GenerateRandomID()
 	rootfs := filepath.Join(root, id)
 	if err := os.MkdirAll(rootfs, 0755); err != nil {
 		t.Fatal(err)

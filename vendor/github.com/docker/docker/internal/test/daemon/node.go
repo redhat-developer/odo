@@ -8,14 +8,14 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/swarm"
 	"github.com/docker/docker/internal/test"
-	"github.com/gotestyourself/gotestyourself/assert"
+	"gotest.tools/assert"
 )
 
 // NodeConstructor defines a swarm node constructor
 type NodeConstructor func(*swarm.Node)
 
 // GetNode returns a swarm node identified by the specified id
-func (d *Daemon) GetNode(t assert.TestingT, id string) *swarm.Node {
+func (d *Daemon) GetNode(t assert.TestingT, id string, errCheck ...func(error) bool) *swarm.Node {
 	if ht, ok := t.(test.HelperT); ok {
 		ht.Helper()
 	}
@@ -23,7 +23,14 @@ func (d *Daemon) GetNode(t assert.TestingT, id string) *swarm.Node {
 	defer cli.Close()
 
 	node, _, err := cli.NodeInspectWithRaw(context.Background(), id)
-	assert.NilError(t, err)
+	if err != nil {
+		for _, f := range errCheck {
+			if f(err) {
+				return nil
+			}
+		}
+	}
+	assert.NilError(t, err, "[%s] (*Daemon).GetNode: NodeInspectWithRaw(%q) failed", d.id, id)
 	assert.Check(t, node.ID == id)
 	return &node
 }

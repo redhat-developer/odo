@@ -6,7 +6,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
-	"github.com/gotestyourself/gotestyourself/assert"
+	"gotest.tools/assert"
 )
 
 func createNetwork(ctx context.Context, client client.APIClient, name string, ops ...func(*types.NetworkCreate)) (string, error) {
@@ -26,7 +26,7 @@ func Create(ctx context.Context, client client.APIClient, name string, ops ...fu
 }
 
 // CreateNoError creates a network with the specified options and verifies there were no errors
-func CreateNoError(t *testing.T, ctx context.Context, client client.APIClient, name string, ops ...func(*types.NetworkCreate)) string { // nolint: golint
+func CreateNoError(ctx context.Context, t *testing.T, client client.APIClient, name string, ops ...func(*types.NetworkCreate)) string { // nolint: golint
 	t.Helper()
 
 	name, err := createNetwork(ctx, client, name, ops...)

@@ -20,12 +20,7 @@ const name = "journald"
 type journald struct {
 	mu      sync.Mutex
 	vars    map[string]string // additional variables and values to send to the journal along with the log message
-	readers readerList
-	closed  bool
-}
-
-type readerList struct {
-	readers map[*logger.LogWatcher]*logger.LogWatcher
+	readers map[*logger.LogWatcher]struct{}
 }
 
 func init() {
@@ -75,6 +70,7 @@ func New(info logger.Info) (logger.Logger, error) {
 		"CONTAINER_ID_FULL": info.ContainerID,
 		"CONTAINER_NAME":    info.Name(),
 		"CONTAINER_TAG":     tag,
+		"IMAGE_NAME":        info.ImageName(),
 		"SYSLOG_IDENTIFIER": tag,
 	}
 	extraAttrs, err := info.ExtraAttributes(sanitizeKeyMod)
@@ -84,7 +80,7 @@ func New(info logger.Info) (logger.Logger, error) {
 	for k, v := range extraAttrs {
 		vars[k] = v
 	}
-	return &journald{vars: vars, readers: readerList{readers: make(map[*logger.LogWatcher]*logger.LogWatcher)}}, nil
+	return &journald{vars: vars, readers: make(map[*logger.LogWatcher]struct{})}, nil
 }
 
 // We don't actually accept any options, but we have to supply a callback for
@@ -108,7 +104,7 @@ func (s *journald) Log(msg *logger.Message) error {
 	for k, v := range s.vars {
 		vars[k] = v
 	}
-	if msg.PLogMetaData != nil {
+	if msg.PLogMetaData != nil && !msg.PLogMetaData.Last {
 		vars["CONTAINER_PARTIAL_MESSAGE"] = "true"
 	}
 
