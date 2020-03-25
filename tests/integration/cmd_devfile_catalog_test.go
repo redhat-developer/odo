@@ -37,7 +37,6 @@ var _ = Describe("odo devfile catalog command tests", func() {
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 			output := helper.CmdShouldPass("odo", "catalog", "list", "components")
 			helper.MatchAllInOutput(output, []string{"Odo Devfile Components", "java-spring-boot", "openLiberty"})
-			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "false")
 		})
 	})
 
@@ -46,7 +45,6 @@ var _ = Describe("odo devfile catalog command tests", func() {
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 			output := helper.CmdShouldPass("odo", "catalog", "list", "components", "-a")
 			helper.MatchAllInOutput(output, []string{"Odo Devfile Components", "java-spring-boot", "java-maven", "php-mysql"})
-			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "false")
 		})
 	})
 })
