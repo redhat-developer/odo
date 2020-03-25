@@ -457,3 +457,11 @@ func (oc *OcRunner) CheckForExistence(resourceType, namespace string) {
 	output := string(session.Wait().Out.Contents())
 	Expect(strings.ToLower(output)).To(ContainSubstring(""))
 }
+
+// GetServices gets services on the cluster
+func (oc *OcRunner) GetServices(namespace string) string {
+	session := CmdRunner(oc.path, "get", "services", "--namespace", namespace)
+	Eventually(session).Should(gexec.Exit(0))
+	output := string(session.Wait().Out.Contents())
+	return output
+}
