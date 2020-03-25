@@ -15,15 +15,15 @@ export ARTIFACTS_DIR="/tmp/artifacts"
 export CUSTOM_HOMEDIR=$ARTIFACTS_DIR
 
 # Integration tests
-make test-integration
-make test-cmd-login-logout
-make test-cmd-project
-make test-operator-hub
+# make test-integration
+# make test-cmd-login-logout
+# make test-cmd-project
+# make test-operator-hub
 
 # E2e tests
-make test-e2e-all
+make test-e2e-images
 
 # Benchmark tests
-make test-benchmark
+# make test-benchmark
 
 odo logout

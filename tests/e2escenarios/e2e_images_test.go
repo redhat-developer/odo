@@ -119,10 +119,17 @@ var _ = Describe("odo supported images e2e tests", func() {
 			helper.ReplaceString(filepath.Join(context, "src", "main", "java", "MessageProducer.java"), "Hello", "Hello Java UPDATED")
 			helper.CmdShouldPass("odo", "push", "--context", context)
 			helper.HttpWaitFor(routeURL, "Hello Java UPDATED", 90, 1)
+			helper.CmdShouldPass("oc", "get", "pod", "-n", project)
+			helper.CmdShouldPass("oc", "get", "dc", "-n", project)
+			helper.CmdShouldPass("oc", "get", "dc", "-n", project, "-o", "yaml")
 		} else {
 			helper.ReplaceString(filepath.Join(context, "server.js"), "Hello", "Hello nodejs UPDATED")
 			helper.CmdShouldPass("odo", "push", "--context", context)
 			helper.HttpWaitFor(routeURL, "Hello nodejs UPDATED", 90, 1)
+			helper.CmdShouldPass("oc", "get", "pod", "-n", project)
+			helper.CmdShouldPass("oc", "get", "dc", "-n", project)
+			helper.CmdShouldPass("oc", "get", "dc", "-n", project, "-o", "yaml")
+
 		}
 
 		// odo watch and validate
