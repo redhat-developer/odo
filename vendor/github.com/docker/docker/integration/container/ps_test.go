@@ -7,19 +7,18 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/integration/internal/container"
-	"github.com/docker/docker/internal/test/request"
-	"github.com/gotestyourself/gotestyourself/assert"
-	is "github.com/gotestyourself/gotestyourself/assert/cmp"
+	"gotest.tools/assert"
+	is "gotest.tools/assert/cmp"
 )
 
 func TestPsFilter(t *testing.T) {
 	defer setupTest(t)()
-	client := request.NewAPIClient(t)
+	client := testEnv.APIClient()
 	ctx := context.Background()
 
-	prev := container.Create(t, ctx, client)
-	top := container.Create(t, ctx, client)
-	next := container.Create(t, ctx, client)
+	prev := container.Create(ctx, t, client)
+	top := container.Create(ctx, t, client)
+	next := container.Create(ctx, t, client)
 
 	containerIDs := func(containers []types.Container) []string {
 		var entries []string

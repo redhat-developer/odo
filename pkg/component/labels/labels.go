@@ -16,7 +16,7 @@ const ComponentTypeVersion = "app.openshift.io/runtime-version"
 // GetLabels return labels that should be applied to every object for given component in active application
 // additional labels are used only for creating object
 // if you are creating something use additional=true
-// if you need labels to filter component that use additional=false
+// if you need labels to filter component then use additional=false
 func GetLabels(componentName string, applicationName string, additional bool) map[string]string {
 	labels := applabels.GetLabels(applicationName, additional)
 	labels[ComponentLabel] = componentName

@@ -17,7 +17,7 @@ import (
 // createFakeDeployment creates a fake deployment with the given pod name and labels
 func createFakeDeployment(fkclient *Client, fkclientset *FakeClientset, podName string, labels map[string]string) (*appsv1.Deployment, error) {
 	fakeUID := types.UID("12345")
-	container := GenerateContainer("container1", "image1", true, []string{"tail"}, []string{"-f", "/dev/null"}, []corev1.EnvVar{}, corev1.ResourceRequirements{})
+	container := GenerateContainer("container1", "image1", true, []string{"tail"}, []string{"-f", "/dev/null"}, []corev1.EnvVar{}, corev1.ResourceRequirements{}, []corev1.ContainerPort{})
 	objectMeta := CreateObjectMeta(podName, "default", labels, nil)
 	podTemplateSpec := GeneratePodTemplateSpec(objectMeta, []corev1.Container{*container})
 
@@ -99,7 +99,7 @@ func TestCreateDeployment(t *testing.T) {
 
 func TestUpdateDeployment(t *testing.T) {
 
-	container := GenerateContainer("container1", "image1", true, []string{"tail"}, []string{"-f", "/dev/null"}, []corev1.EnvVar{}, corev1.ResourceRequirements{})
+	container := GenerateContainer("container1", "image1", true, []string{"tail"}, []string{"-f", "/dev/null"}, []corev1.EnvVar{}, corev1.ResourceRequirements{}, []corev1.ContainerPort{})
 
 	labels := map[string]string{
 		"app":       "app",

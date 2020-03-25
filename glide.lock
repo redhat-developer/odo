@@ -1,5 +1,5 @@
-hash: fddec1c90e5dc60f67e98912159bb5cc6e4dcfc25fd2019752cfcbf176fa23ad
-updated: 2020-03-04T18:10:10.206875746+05:30
+hash: fc7706bbd5add40db1d34034d794abc8a892b9fb357d30d75f568bf1ba07f527
+updated: 2020-03-13T17:01:49.595596-04:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -36,6 +36,10 @@ imports:
   version: 2ee87856327ba09384cabd113bc6b5d174e9ec0f
 - name: github.com/certifi/gocertifi
   version: ee1a9a0726d2ae45f54118cac878c990d4016ded
+- name: github.com/containerd/containerd
+  version: d76c121f76a5fc8a462dc64594aea72fe18e1178
+  subpackages:
+  - errdefs
 - name: github.com/creack/pty
   version: 8ab47f72e8547a066b4ea926f4523775bc1a0ec2
 - name: github.com/davecgh/go-spew
@@ -50,11 +54,38 @@ imports:
   subpackages:
   - digestset
   - reference
+  - registry/api/errcode
 - name: github.com/docker/docker
-  version: a9fbbdc8dd8794b20af358382ab780559bca589d
+  version: aa6a9891b09cce3d9004121294301a30d45d998d
   subpackages:
+  - api
+  - api/types
+  - api/types/blkiodev
+  - api/types/container
+  - api/types/events
+  - api/types/filters
+  - api/types/image
+  - api/types/mount
+  - api/types/network
+  - api/types/registry
+  - api/types/strslice
+  - api/types/swarm
+  - api/types/swarm/runtime
+  - api/types/time
+  - api/types/versions
+  - api/types/volume
+  - client
+  - errdefs
   - pkg/term
   - pkg/term/windows
+- name: github.com/docker/go-connections
+  version: 3ede32e2033de7505e6500d6c868c2b9ed9f169d
+  subpackages:
+  - nat
+  - sockets
+  - tlsconfig
+- name: github.com/docker/go-units
+  version: 9e638d38cf6977a37a8ea0078f3ee75a7cdb2dd1
 - name: github.com/docker/spdystream
   version: 449fdfce4d962303d702fec724ef0ad181c92528
   subpackages:
@@ -92,7 +123,7 @@ imports:
   - util/runes
   - util/strings
 - name: github.com/gogo/protobuf
-  version: c0656edd0d9eab7c66d1eb0c568f9039345796f7
+  version: 5628607bb4c51c3157aacc3a50f0ab707582b805
   subpackages:
   - proto
   - sortkeys
@@ -113,7 +144,7 @@ imports:
 - name: github.com/google/btree
   version: 479b5e81b0a93ec038d201b0b33d17db599531d3
 - name: github.com/google/gofuzz
-  version: 44d81051d367757e1c7c6a5a86423ece9afcf63c
+  version: 1868c06f7fd92d7b8635996f597f048d5ab709aa
 - name: github.com/google/uuid
   version: 8c31c18f31ede9fc8eae72290a7e7a8064e9b3e3
 - name: github.com/googleapis/gnostic
@@ -146,7 +177,7 @@ imports:
 - name: github.com/hinshun/vt10x
   version: d55458df857cfff952e4bf72ce1b567c5a4e141c
 - name: github.com/hpcloud/tail
-  version: a30252cb686a21eb2d0b98132633053ec2f7f1e5
+  version: a1dbeea552b7c8df4b542c66073e393de198a800
   subpackages:
   - ratelimiter
   - util
@@ -202,6 +233,8 @@ imports:
   - pbutil
 - name: github.com/mgutz/ansi
   version: 9520e82c474b0a04dd04f8a40959027271bab992
+- name: github.com/Microsoft/go-winio
+  version: 78439966b38d69bf38227fbf57ac8a6fee70f69a
 - name: github.com/mitchellh/go-wordwrap
   version: ad45545899c7b13c020ea92b2072220eefad42b8
 - name: github.com/modern-go/concurrent
@@ -209,7 +242,7 @@ imports:
 - name: github.com/modern-go/reflect2
   version: 94122c33edd36123c84d5368cfb2b69df93a0ec8
 - name: github.com/Netflix/go-expect
-  version: 0e00d916866778d0c56bb09a9a7f2b861196221b
+  version: da48e75238e2d0bd8dd0fc70046a73c7d773e0ff
 - name: github.com/olekukonko/tablewriter
   version: d4647c9c7a84d847478d890b816b7d8b62b0b279
 - name: github.com/onsi/ginkgo
@@ -250,6 +283,11 @@ imports:
   - types
 - name: github.com/opencontainers/go-digest
   version: a6d0ee40d4207ea02364bd3b9e8e77b9159ba1eb
+- name: github.com/opencontainers/image-spec
+  version: 372ad780f63454fbbbbcc7cf80e5b90245c13e13
+  subpackages:
+  - specs-go
+  - specs-go/v1
 - name: github.com/openshift/api
   version: 9ea19f9dd57858bb3fd8ec7051a99ca5e1ae88d6
   subpackages:
@@ -364,7 +402,7 @@ imports:
   - pkg/user/apis/user/v1
   - pkg/user/apis/user/validation
 - name: github.com/operator-framework/operator-lifecycle-manager
-  version: 23f5c0292434c41743676abdd2da88f6a26990f5
+  version: 7137aa9e3c31269cf62731faf0fde9804cf782a0
   subpackages:
   - pkg/api/apis/operators/v1
   - pkg/api/apis/operators/v1alpha1
@@ -463,6 +501,7 @@ imports:
   - http2/hpack
   - idna
   - lex/httplex
+  - proxy
 - name: golang.org/x/oauth2
   version: a6bd8cefa1811bd24b86f8902872e4e8225f74c4
   subpackages:
@@ -520,19 +559,28 @@ imports:
   - internal/remote_api
   - internal/urlfetch
   - urlfetch
+- name: google.golang.org/genproto
+  version: 09f6ed296fc66555a25fe4ce95173148778dfa85
+  subpackages:
+  - googleapis/rpc/status
+- name: google.golang.org/grpc
+  version: 168a6198bcb0ef175f7dacec0b8691fc141dc9b8
+  subpackages:
+  - codes
+  - status
 - name: gopkg.in/AlecAivazis/survey.v1
   version: 38cdfa1242b19e0eb8b6f33004bf8e89832b8743
   subpackages:
   - core
   - terminal
-- name: gopkg.in/fsnotify.v1
-  version: 7be54206639f256967dd82fa767397ba5f8f48f5
+- name: gopkg.in/fsnotify/fsnotify.v1
+  version: 45d7d09e39ef4ac08d493309fa031790c15bfe8a
 - name: gopkg.in/inf.v0
-  version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
+  version: d2d2541c53f18d2a059457998ce2876cc8e67cbf
 - name: gopkg.in/tomb.v1
   version: c131134a1947e9afd9cecfe11f4c6dff0732ae58
 - name: gopkg.in/yaml.v2
-  version: f221b8435cfb71e54062f6c6e99e9ade30b124d5
+  version: 53403b58ad1b561927d19068c655246f2db79d48
 - name: k8s.io/api
   version: b18e97b54e4005d2ff259a96a0b5d06f11779b9d
   repo: https://github.com/openshift/kubernetes-api.git

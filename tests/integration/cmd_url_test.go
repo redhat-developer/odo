@@ -88,6 +88,28 @@ var _ = Describe("odo url command tests", func() {
 		})
 	})
 
+	Context("Describing urls", func() {
+		It("should describe appropriate URLs and push message", func() {
+			var stdout string
+			url1 := helper.RandString(5)
+			componentName := helper.RandString(6)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--project", project, componentName, "--ref", "master", "--git", "https://github.com/openshift/nodejs-ex", "--port", "8080,8000")
+
+			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "8080", "--context", context)
+			stdout = helper.CmdShouldPass("odo", "url", "describe", url1, "--context", context)
+			helper.MatchAllInOutput(stdout, []string{url1, "Not Pushed", url1, "odo push"})
+
+			helper.CmdShouldPass("odo", "push", "--context", context)
+			stdout = helper.CmdShouldPass("odo", "url", "describe", url1, "--context", context)
+			helper.MatchAllInOutput(stdout, []string{url1, "Pushed"})
+			helper.DontMatchAllInOutput(stdout, []string{"Not Pushed", "odo push"})
+
+			helper.CmdShouldPass("odo", "url", "delete", url1, "-f", "--context", context)
+			stdout = helper.CmdShouldPass("odo", "url", "describe", url1, "--context", context)
+			helper.MatchAllInOutput(stdout, []string{url1, "Locally Deleted", url1, "odo push"})
+		})
+	})
+
 	Context("when listing urls using -o json flag", func() {
 		JustBeforeEach(func() {
 			originalDir = helper.Getwd()

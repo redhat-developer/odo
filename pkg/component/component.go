@@ -30,7 +30,6 @@ import (
 )
 
 // componentSourceURLAnnotation is an source url from which component was build
-// it can be also file://
 const componentSourceURLAnnotation = "app.openshift.io/vcs-uri"
 const ComponentSourceTypeAnnotation = "app.kubernetes.io/component-source-type"
 const componentRandomNamePartsMaxLen = 12
@@ -223,8 +222,7 @@ func CreateFromPath(client *occlient.Client, params occlient.CreateArgs) error {
 	labels[componentlabels.ComponentTypeVersion] = imageTag
 
 	// save source path as annotation
-	sourceURL := util.GenFileURL(params.SourcePath)
-	annotations := map[string]string{componentSourceURLAnnotation: sourceURL}
+	annotations := map[string]string{}
 	annotations[ComponentSourceTypeAnnotation] = string(params.SourceType)
 
 	// Namespace the component
@@ -981,7 +979,6 @@ func ListIfPathGiven(client *occlient.Client, paths []string) (ComponentList, er
 				a := getMachineReadableFormat(data.GetName(), data.GetType())
 				a.Namespace = data.GetProject()
 				a.Spec.App = data.GetApplication()
-				a.Spec.Source = data.GetSourceLocation()
 				a.Spec.Ports = data.GetPorts()
 				a.Status.Context = con
 				state := "Not Pushed"
@@ -1015,11 +1012,15 @@ func GetComponentSource(client *occlient.Client, componentName string, applicati
 		return "", "", errors.Wrapf(err, "unable to get source path for component %s", componentName)
 	}
 
-	sourcePath := deploymentConfig.ObjectMeta.Annotations[componentSourceURLAnnotation]
 	sourceType := deploymentConfig.ObjectMeta.Annotations[ComponentSourceTypeAnnotation]
 
 	if !validateSourceType(sourceType) {
 		return "", "", fmt.Errorf("unsupported component source type %s", sourceType)
+	}
+
+	var sourcePath string
+	if sourceType == string(config.GIT) {
+		sourcePath = deploymentConfig.ObjectMeta.Annotations[componentSourceURLAnnotation]
 	}
 
 	glog.V(4).Infof("Source for component %s is %s (%s)", componentName, sourcePath, sourceType)
@@ -1070,7 +1071,10 @@ func Update(client *occlient.Client, componentConfig config.LocalConfigInfo, new
 	}
 
 	// Create annotations
-	annotations := map[string]string{componentSourceURLAnnotation: newSource}
+	annotations := make(map[string]string)
+	if newSourceType == config.GIT {
+		annotations[componentSourceURLAnnotation] = newSource
+	}
 	annotations[ComponentSourceTypeAnnotation] = string(newSourceType)
 
 	// Parse componentImageType before adding to labels
@@ -1196,10 +1200,6 @@ func Update(client *occlient.Client, componentConfig config.LocalConfigInfo, new
 	} else if oldSourceType == "git" && (newSourceType == "binary" || newSourceType == "local") {
 
 		// Steps to update component from git to local or binary
-
-		// Update the sourceURL since it is not a local/binary file.
-		sourceURL := util.GenFileURL(newSource)
-		annotations[componentSourceURLAnnotation] = sourceURL
 		updateComponentParams.CommonObjectMeta.Annotations = annotations
 
 		retrievingSpinner.End(true)
@@ -1272,9 +1272,6 @@ func Update(client *occlient.Client, componentConfig config.LocalConfigInfo, new
 
 		} else if newSourceType == "local" || newSourceType == "binary" {
 
-			// Update the sourceURL
-			sourceURL := util.GenFileURL(newSource)
-			annotations[componentSourceURLAnnotation] = sourceURL
 			updateComponentParams.CommonObjectMeta.Annotations = annotations
 
 			retrievingSpinner.End(true)

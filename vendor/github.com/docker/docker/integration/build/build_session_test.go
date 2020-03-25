@@ -3,23 +3,27 @@ package build
 import (
 	"context"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"strings"
 	"testing"
 
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/versions"
 	dclient "github.com/docker/docker/client"
 	"github.com/docker/docker/internal/test/fakecontext"
 	"github.com/docker/docker/internal/test/request"
-	"github.com/gotestyourself/gotestyourself/assert"
-	is "github.com/gotestyourself/gotestyourself/assert/cmp"
-	"github.com/gotestyourself/gotestyourself/skip"
 	"github.com/moby/buildkit/session"
 	"github.com/moby/buildkit/session/filesync"
 	"golang.org/x/sync/errgroup"
+	"gotest.tools/assert"
+	is "gotest.tools/assert/cmp"
+	"gotest.tools/skip"
 )
 
 func TestBuildWithSession(t *testing.T) {
-	skip.If(t, !testEnv.DaemonInfo.ExperimentalBuild)
+	skip.If(t, testEnv.DaemonInfo.OSType == "windows")
+	skip.If(t, versions.LessThan(testEnv.DaemonAPIVersion(), "1.39"), "experimental in older versions")
 
 	client := testEnv.APIClient()
 
@@ -76,7 +80,7 @@ func TestBuildWithSession(t *testing.T) {
 	assert.Check(t, is.Contains(string(outBytes), "Successfully built"))
 	assert.Check(t, is.Equal(strings.Count(string(outBytes), "Using cache"), 4))
 
-	_, err = client.BuildCachePrune(context.TODO())
+	_, err = client.BuildCachePrune(context.TODO(), types.BuildCachePruneOptions{All: true})
 	assert.Check(t, err)
 
 	du, err = client.DiskUsage(context.TODO())
@@ -97,7 +101,9 @@ func testBuildWithSession(t *testing.T, client dclient.APIClient, daemonHost str
 	g, ctx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
-		return sess.Run(ctx, client.DialSession)
+		return sess.Run(ctx, func(ctx context.Context, proto string, meta map[string][]string) (net.Conn, error) {
+			return client.DialHijack(ctx, "/session", "h2c", meta)
+		})
 	})
 
 	g.Go(func() error {

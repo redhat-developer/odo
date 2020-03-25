@@ -3,16 +3,22 @@
 package main
 
 import (
+	"os/exec"
+
 	"github.com/docker/docker/daemon/config"
 	"github.com/docker/docker/opts"
+	"github.com/docker/docker/rootless"
 	"github.com/docker/go-units"
+	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 )
 
 // installConfigFlags adds flags to the pflag.FlagSet to configure the daemon
-func installConfigFlags(conf *config.Config, flags *pflag.FlagSet) {
+func installConfigFlags(conf *config.Config, flags *pflag.FlagSet) error {
 	// First handle install flags which are consistent cross-platform
-	installCommonConfigFlags(conf, flags)
+	if err := installCommonConfigFlags(conf, flags); err != nil {
+		return err
+	}
 
 	// Then install flags common to unix platforms
 	installUnixConfigFlags(conf, flags)
@@ -32,7 +38,16 @@ func installConfigFlags(conf *config.Config, flags *pflag.FlagSet) {
 	flags.BoolVar(&conf.BridgeConfig.EnableIPv6, "ipv6", false, "Enable IPv6 networking")
 	flags.StringVar(&conf.BridgeConfig.FixedCIDRv6, "fixed-cidr-v6", "", "IPv6 subnet for fixed IPs")
 	flags.BoolVar(&conf.BridgeConfig.EnableUserlandProxy, "userland-proxy", true, "Use userland proxy for loopback traffic")
-	flags.StringVar(&conf.BridgeConfig.UserlandProxyPath, "userland-proxy-path", "", "Path to the userland proxy binary")
+	defaultUserlandProxyPath := ""
+	if rootless.RunningWithRootlessKit() {
+		var err error
+		// use rootlesskit-docker-proxy for exposing the ports in RootlessKit netns to the initial namespace.
+		defaultUserlandProxyPath, err = exec.LookPath(rootless.RootlessKitDockerProxyBinary)
+		if err != nil {
+			return errors.Wrapf(err, "running with RootlessKit, but %s not installed", rootless.RootlessKitDockerProxyBinary)
+		}
+	}
+	flags.StringVar(&conf.BridgeConfig.UserlandProxyPath, "userland-proxy-path", defaultUserlandProxyPath, "Path to the userland proxy binary")
 	flags.StringVar(&conf.CgroupParent, "cgroup-parent", "", "Set parent cgroup for all containers")
 	flags.StringVar(&conf.RemappedRoot, "userns-remap", "", "User/Group setting for user namespaces")
 	flags.BoolVar(&conf.LiveRestoreEnabled, "live-restore", false, "Enable live restore of docker when containers are still running")
@@ -46,5 +61,8 @@ func installConfigFlags(conf *config.Config, flags *pflag.FlagSet) {
 	flags.BoolVar(&conf.NoNewPrivileges, "no-new-privileges", false, "Set no-new-privileges by default for new containers")
 	flags.StringVar(&conf.IpcMode, "default-ipc-mode", config.DefaultIpcMode, `Default mode for containers ipc ("shareable" | "private")`)
 	flags.Var(&conf.NetworkConfig.DefaultAddressPools, "default-address-pool", "Default address pools for node specific local networks")
-
+	// rootless needs to be explicitly specified for running "rootful" dockerd in rootless dockerd (#38702)
+	// Note that defaultUserlandProxyPath and honorXDG are configured according to the value of rootless.RunningWithRootlessKit, not the value of --rootless.
+	flags.BoolVar(&conf.Rootless, "rootless", rootless.RunningWithRootlessKit(), "Enable rootless mode; typically used with RootlessKit (experimental)")
+	return nil
 }
