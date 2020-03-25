@@ -327,22 +327,26 @@ func TestGetCmdToDeleteFiles(t *testing.T) {
 
 func TestDoesComponentExist(t *testing.T) {
 
-	fakeComponentName := "fake-component"
-
 	tests := []struct {
-		name          string
-		componentType versionsCommon.DevfileComponentType
-		componentName string
+		name             string
+		componentType    versionsCommon.DevfileComponentType
+		componentName    string
+		getComponentName string
+		want             bool
 	}{
 		{
-			name:          "Case: Valid devfile",
-			componentType: versionsCommon.DevfileComponentTypeDockerimage,
-			componentName: "test-name",
+			name:             "Case 1: Valid component name",
+			componentType:    versionsCommon.DevfileComponentTypeDockerimage,
+			componentName:    "test-name",
+			getComponentName: "test-name",
+			want:             true,
 		},
 		{
-			name:          "Case: Valid devfile, empty component name",
-			componentType: versionsCommon.DevfileComponentTypeDockerimage,
-			componentName: "",
+			name:             "Case 2: Non-existent component name",
+			componentType:    versionsCommon.DevfileComponentTypeDockerimage,
+			componentName:    "test-name",
+			getComponentName: "fake-component",
+			want:             false,
 		},
 	}
 	for _, tt := range tests {
@@ -375,15 +379,9 @@ func TestDoesComponentExist(t *testing.T) {
 			}
 
 			// Verify that a comopnent with the specified name exists
-			componentExists := componentAdapter.DoesComponentExist(tt.componentName)
-			if !componentExists {
-				t.Errorf("unable to find component with name %s", tt.componentName)
-			}
-
-			// Verify that a component with some fake name doesn't exist
-			componentExists = componentAdapter.DoesComponentExist(fakeComponentName)
-			if componentExists {
-				t.Errorf("found non-existent component with name %s", fakeComponentName)
+			componentExists := componentAdapter.DoesComponentExist(tt.getComponentName)
+			if componentExists != tt.want {
+				t.Errorf("expected %v, actual %v", tt.want, componentExists)
 			}
 
 		})
