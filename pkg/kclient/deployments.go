@@ -1,6 +1,10 @@
 package kclient
 
 import (
+	"fmt"
+	"time"
+
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -10,12 +14,86 @@ import (
 const (
 	DeploymentKind       = "Deployment"
 	DeploymentAPIVersion = "apps/v1"
+
+	// TimedOutReason is added in a deployment when its newest replica set fails to show any progress
+	// within the given deadline (progressDeadlineSeconds).
+	timedOutReason = "ProgressDeadlineExceeded"
 )
 
 // GetDeploymentByName gets a deployment by querying by name
 func (c *Client) GetDeploymentByName(name string) (*appsv1.Deployment, error) {
 	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Get(name, metav1.GetOptions{})
 	return deployment, err
+}
+
+// getDeploymentCondition returns the condition with the provided type
+// from https://github.com/kubernetes/kubectl/blob/8bc20f428d7d5aed031de5fa160081de7b5af2b0/pkg/util/deployment/deployment.go#L58
+func getDeploymentCondition(status appsv1.DeploymentStatus, condType appsv1.DeploymentConditionType) *appsv1.DeploymentCondition {
+	for i := range status.Conditions {
+		c := status.Conditions[i]
+		if c.Type == condType {
+			return &c
+		}
+	}
+	return nil
+}
+
+// WaitForDeploymentRollout waits for deployment to finish rollout. Returns the state of the deployment after rollout.
+func (c *Client) WaitForDeploymentRollout(deploymentName string) (*appsv1.Deployment, error) {
+	glog.V(4).Infof("Waiting for %s deployment roll out", deploymentName)
+
+	w, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + deploymentName})
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to watch deployment")
+	}
+	defer w.Stop()
+
+	success := make(chan *appsv1.Deployment)
+	failure := make(chan error)
+
+	go func() {
+		defer close(success)
+		defer close(failure)
+
+		for {
+			val, ok := <-w.ResultChan()
+			if !ok {
+				failure <- errors.New("watch channel was closed")
+				return
+			}
+			//based on https://github.com/kubernetes/kubectl/blob/9a3954bf653c874c8af6f855f2c754a8e1a44b9e/pkg/polymorphichelpers/rollout_status.go#L66-L91
+			if deployment, ok := val.Object.(*appsv1.Deployment); ok {
+				if deployment.Generation <= deployment.Status.ObservedGeneration {
+					cond := getDeploymentCondition(deployment.Status, appsv1.DeploymentProgressing)
+					if cond != nil && cond.Reason == timedOutReason {
+						failure <- fmt.Errorf("deployment %q exceeded its progress deadline", deployment.Name)
+					} else if deployment.Spec.Replicas != nil && deployment.Status.UpdatedReplicas < *deployment.Spec.Replicas {
+						glog.V(4).Infof("Waiting for deployment %q rollout to finish: %d out of %d new replicas have been updated...\n", deployment.Name, deployment.Status.UpdatedReplicas, *deployment.Spec.Replicas)
+					} else if deployment.Status.Replicas > deployment.Status.UpdatedReplicas {
+						glog.V(4).Infof("Waiting for deployment %q rollout to finish: %d old replicas are pending termination...\n", deployment.Name, deployment.Status.Replicas-deployment.Status.UpdatedReplicas)
+					} else if deployment.Status.AvailableReplicas < deployment.Status.UpdatedReplicas {
+						glog.V(4).Infof("Waiting for deployment %q rollout to finish: %d of %d updated replicas are available...\n", deployment.Name, deployment.Status.AvailableReplicas, deployment.Status.UpdatedReplicas)
+					} else {
+						glog.V(4).Infof("Deployment %q successfully rolled out\n", deployment.Name)
+						success <- deployment
+					}
+				}
+				glog.V(4).Infof("Waiting for deployment spec update to be observed...\n")
+
+			} else {
+				failure <- errors.New("unable to convert event object to Pod")
+			}
+		}
+	}()
+
+	select {
+	case val := <-success:
+		return val, nil
+	case err := <-failure:
+		return nil, err
+	case <-time.After(5 * time.Minute):
+		return nil, errors.Errorf("timeout while waiting for %s deployment roll out", deploymentName)
+	}
 }
 
 // CreateDeployment creates a deployment based on the given deployment spec

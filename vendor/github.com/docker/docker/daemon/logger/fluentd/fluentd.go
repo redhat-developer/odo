@@ -133,7 +133,7 @@ func New(info logger.Info) (logger.Logger, error) {
 		BufferLimit:        bufferLimit,
 		RetryWait:          retryWait,
 		MaxRetry:           maxRetries,
-		AsyncConnect:       asyncConnect,
+		Async:              asyncConnect,
 		SubSecondPrecision: subSecondPrecision,
 	}
 
@@ -165,6 +165,9 @@ func (f *fluentd) Log(msg *logger.Message) error {
 	}
 	if msg.PLogMetaData != nil {
 		data["partial_message"] = "true"
+		data["partial_id"] = msg.PLogMetaData.ID
+		data["partial_ordinal"] = strconv.Itoa(msg.PLogMetaData.Ordinal)
+		data["partial_last"] = strconv.FormatBool(msg.PLogMetaData.Last)
 	}
 
 	ts := msg.Timestamp

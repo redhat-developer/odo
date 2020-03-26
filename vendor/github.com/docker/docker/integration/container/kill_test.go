@@ -5,21 +5,20 @@ import (
 	"testing"
 	"time"
 
-	containertypes "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/integration/internal/container"
 	"github.com/docker/docker/internal/test/request"
-	"github.com/gotestyourself/gotestyourself/assert"
-	is "github.com/gotestyourself/gotestyourself/assert/cmp"
-	"github.com/gotestyourself/gotestyourself/poll"
-	"github.com/gotestyourself/gotestyourself/skip"
+	"gotest.tools/assert"
+	is "gotest.tools/assert/cmp"
+	"gotest.tools/poll"
+	"gotest.tools/skip"
 )
 
 func TestKillContainerInvalidSignal(t *testing.T) {
 	defer setupTest(t)()
-	client := request.NewAPIClient(t)
+	client := testEnv.APIClient()
 	ctx := context.Background()
-	id := container.Run(t, ctx, client)
+	id := container.Run(ctx, t, client)
 
 	err := client.ContainerKill(ctx, id, "0")
 	assert.Error(t, err, "Error response from daemon: Invalid signal: 0")
@@ -31,8 +30,9 @@ func TestKillContainerInvalidSignal(t *testing.T) {
 }
 
 func TestKillContainer(t *testing.T) {
+	skip.If(t, testEnv.OSType == "windows", "TODO Windows: FIXME. No SIGWINCH")
 	defer setupTest(t)()
-	client := request.NewAPIClient(t)
+	client := testEnv.APIClient()
 
 	testCases := []struct {
 		doc    string
@@ -60,7 +60,7 @@ func TestKillContainer(t *testing.T) {
 		tc := tc
 		t.Run(tc.doc, func(t *testing.T) {
 			ctx := context.Background()
-			id := container.Run(t, ctx, client)
+			id := container.Run(ctx, t, client)
 			err := client.ContainerKill(ctx, id, tc.signal)
 			assert.NilError(t, err)
 
@@ -70,9 +70,9 @@ func TestKillContainer(t *testing.T) {
 }
 
 func TestKillWithStopSignalAndRestartPolicies(t *testing.T) {
-	skip.If(t, testEnv.OSType != "linux", "Windows only supports 1.25 or later")
+	skip.If(t, testEnv.OSType == "windows", "Windows only supports 1.25 or later")
 	defer setupTest(t)()
-	client := request.NewAPIClient(t)
+	client := testEnv.APIClient()
 
 	testCases := []struct {
 		doc        string
@@ -95,12 +95,11 @@ func TestKillWithStopSignalAndRestartPolicies(t *testing.T) {
 		tc := tc
 		t.Run(tc.doc, func(t *testing.T) {
 			ctx := context.Background()
-			id := container.Run(t, ctx, client, func(c *container.TestContainerConfig) {
-				c.Config.StopSignal = tc.stopsignal
-				c.HostConfig.RestartPolicy = containertypes.RestartPolicy{
-					Name: "always",
-				}
-			})
+			id := container.Run(ctx, t, client,
+				container.WithRestartPolicy("always"),
+				func(c *container.TestContainerConfig) {
+					c.Config.StopSignal = tc.stopsignal
+				})
 			err := client.ContainerKill(ctx, id, "TERM")
 			assert.NilError(t, err)
 
@@ -110,35 +109,35 @@ func TestKillWithStopSignalAndRestartPolicies(t *testing.T) {
 }
 
 func TestKillStoppedContainer(t *testing.T) {
-	skip.If(t, testEnv.OSType != "linux") // Windows only supports 1.25 or later
+	skip.If(t, testEnv.OSType == "windows", "Windows only supports 1.25 or later")
 	defer setupTest(t)()
 	ctx := context.Background()
-	client := request.NewAPIClient(t)
-	id := container.Create(t, ctx, client)
+	client := testEnv.APIClient()
+	id := container.Create(ctx, t, client)
 	err := client.ContainerKill(ctx, id, "SIGKILL")
 	assert.Assert(t, is.ErrorContains(err, ""))
 	assert.Assert(t, is.Contains(err.Error(), "is not running"))
 }
 
 func TestKillStoppedContainerAPIPre120(t *testing.T) {
-	skip.If(t, testEnv.OSType != "linux") // Windows only supports 1.25 or later
+	skip.If(t, testEnv.OSType == "windows", "Windows only supports 1.25 or later")
 	defer setupTest(t)()
 	ctx := context.Background()
 	client := request.NewAPIClient(t, client.WithVersion("1.19"))
-	id := container.Create(t, ctx, client)
+	id := container.Create(ctx, t, client)
 	err := client.ContainerKill(ctx, id, "SIGKILL")
 	assert.NilError(t, err)
 }
 
 func TestKillDifferentUserContainer(t *testing.T) {
 	// TODO Windows: Windows does not yet support -u (Feb 2016).
-	skip.If(t, testEnv.OSType != "linux", "User containers (container.Config.User) are not yet supported on %q platform", testEnv.OSType)
+	skip.If(t, testEnv.OSType == "windows", "User containers (container.Config.User) are not yet supported on %q platform", testEnv.OSType)
 
 	defer setupTest(t)()
 	ctx := context.Background()
 	client := request.NewAPIClient(t, client.WithVersion("1.19"))
 
-	id := container.Run(t, ctx, client, func(c *container.TestContainerConfig) {
+	id := container.Run(ctx, t, client, func(c *container.TestContainerConfig) {
 		c.Config.User = "daemon"
 	})
 	poll.WaitOn(t, container.IsInState(ctx, client, id, "running"), poll.WithDelay(100*time.Millisecond))
@@ -149,13 +148,13 @@ func TestKillDifferentUserContainer(t *testing.T) {
 }
 
 func TestInspectOomKilledTrue(t *testing.T) {
-	skip.If(t, testEnv.DaemonInfo.OSType != "linux" || !testEnv.DaemonInfo.MemoryLimit || !testEnv.DaemonInfo.SwapLimit)
+	skip.If(t, testEnv.DaemonInfo.OSType == "windows" || !testEnv.DaemonInfo.MemoryLimit || !testEnv.DaemonInfo.SwapLimit)
 
 	defer setupTest(t)()
 	ctx := context.Background()
-	client := request.NewAPIClient(t)
+	client := testEnv.APIClient()
 
-	cID := container.Run(t, ctx, client, container.WithCmd("sh", "-c", "x=a; while true; do x=$x$x$x$x; done"), func(c *container.TestContainerConfig) {
+	cID := container.Run(ctx, t, client, container.WithCmd("sh", "-c", "x=a; while true; do x=$x$x$x$x; done"), func(c *container.TestContainerConfig) {
 		c.HostConfig.Resources.Memory = 32 * 1024 * 1024
 	})
 
@@ -167,13 +166,13 @@ func TestInspectOomKilledTrue(t *testing.T) {
 }
 
 func TestInspectOomKilledFalse(t *testing.T) {
-	skip.If(t, testEnv.DaemonInfo.OSType != "linux" || !testEnv.DaemonInfo.MemoryLimit || !testEnv.DaemonInfo.SwapLimit)
+	skip.If(t, testEnv.DaemonInfo.OSType == "windows" || !testEnv.DaemonInfo.MemoryLimit || !testEnv.DaemonInfo.SwapLimit)
 
 	defer setupTest(t)()
 	ctx := context.Background()
-	client := request.NewAPIClient(t)
+	client := testEnv.APIClient()
 
-	cID := container.Run(t, ctx, client, container.WithCmd("sh", "-c", "echo hello world"))
+	cID := container.Run(ctx, t, client, container.WithCmd("sh", "-c", "echo hello world"))
 
 	poll.WaitOn(t, container.IsInState(ctx, client, cID, "exited"), poll.WithDelay(100*time.Millisecond))
 

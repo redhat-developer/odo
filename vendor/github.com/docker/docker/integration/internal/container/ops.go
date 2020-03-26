@@ -2,8 +2,10 @@ package container
 
 import (
 	"fmt"
+	"strings"
 
 	containertypes "github.com/docker/docker/api/types/container"
+	mounttypes "github.com/docker/docker/api/types/mount"
 	networktypes "github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/strslice"
 	"github.com/docker/go-connections/nat"
@@ -68,13 +70,20 @@ func WithWorkingDir(dir string) func(*TestContainerConfig) {
 	}
 }
 
+// WithMount adds an mount
+func WithMount(m mounttypes.Mount) func(*TestContainerConfig) {
+	return func(c *TestContainerConfig) {
+		c.HostConfig.Mounts = append(c.HostConfig.Mounts, m)
+	}
+}
+
 // WithVolume sets the volume of the container
-func WithVolume(name string) func(*TestContainerConfig) {
+func WithVolume(target string) func(*TestContainerConfig) {
 	return func(c *TestContainerConfig) {
 		if c.Config.Volumes == nil {
 			c.Config.Volumes = map[string]struct{}{}
 		}
-		c.Config.Volumes[name] = struct{}{}
+		c.Config.Volumes[target] = struct{}{}
 	}
 }
 
@@ -82,6 +91,22 @@ func WithVolume(name string) func(*TestContainerConfig) {
 func WithBind(src, target string) func(*TestContainerConfig) {
 	return func(c *TestContainerConfig) {
 		c.HostConfig.Binds = append(c.HostConfig.Binds, fmt.Sprintf("%s:%s", src, target))
+	}
+}
+
+// WithTmpfs sets a target path in the container to a tmpfs
+func WithTmpfs(target string) func(config *TestContainerConfig) {
+	return func(c *TestContainerConfig) {
+		if c.HostConfig.Tmpfs == nil {
+			c.HostConfig.Tmpfs = make(map[string]string)
+		}
+
+		spec := strings.SplitN(target, ":", 2)
+		var opts string
+		if len(spec) > 1 {
+			opts = spec[1]
+		}
+		c.HostConfig.Tmpfs[spec[0]] = opts
 	}
 }
 
@@ -120,17 +145,35 @@ func WithIPv6(network, ip string) func(*TestContainerConfig) {
 // WithLogDriver sets the log driver to use for the container
 func WithLogDriver(driver string) func(*TestContainerConfig) {
 	return func(c *TestContainerConfig) {
-		if c.HostConfig == nil {
-			c.HostConfig = &containertypes.HostConfig{}
-		}
 		c.HostConfig.LogConfig.Type = driver
 	}
 }
 
 // WithAutoRemove sets the container to be removed on exit
 func WithAutoRemove(c *TestContainerConfig) {
-	if c.HostConfig == nil {
-		c.HostConfig = &containertypes.HostConfig{}
-	}
 	c.HostConfig.AutoRemove = true
+}
+
+// WithPidsLimit sets the container's "pids-limit
+func WithPidsLimit(limit *int64) func(*TestContainerConfig) {
+	return func(c *TestContainerConfig) {
+		if c.HostConfig == nil {
+			c.HostConfig = &containertypes.HostConfig{}
+		}
+		c.HostConfig.PidsLimit = limit
+	}
+}
+
+// WithRestartPolicy sets container's restart policy
+func WithRestartPolicy(policy string) func(c *TestContainerConfig) {
+	return func(c *TestContainerConfig) {
+		c.HostConfig.RestartPolicy.Name = policy
+	}
+}
+
+// WithUser sets the user
+func WithUser(user string) func(c *TestContainerConfig) {
+	return func(c *TestContainerConfig) {
+		c.Config.User = user
+	}
 }

@@ -7,12 +7,12 @@ import (
 	"strings"
 
 	"github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/pkg/util"
+	"github.com/pkg/errors"
 
 	"github.com/openshift/odo/pkg/devfile/adapters"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/util"
-	"github.com/pkg/errors"
 )
 
 /*
