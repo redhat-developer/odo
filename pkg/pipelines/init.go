@@ -11,6 +11,7 @@ import (
 	"github.com/openshift/odo/pkg/pipelines/eventlisteners"
 	"github.com/openshift/odo/pkg/pipelines/meta"
 	"github.com/openshift/odo/pkg/pipelines/routes"
+	"github.com/openshift/odo/pkg/pipelines/secrets"
 	"github.com/openshift/odo/pkg/pipelines/tasks"
 	"github.com/openshift/odo/pkg/pipelines/triggers"
 	v1rbac "k8s.io/api/rbac/v1"
@@ -96,7 +97,8 @@ func Init(o *InitParameters) error {
 	outputs := map[string]interface{}{}
 
 	if o.GitOpsWebhookSecret != "" {
-		githubSecret, err := createOpaqueSecret(meta.NamespacedName(namespaces["cicd"], eventlisteners.GitOpsWebhookSecret), o.GitOpsWebhookSecret, eventlisteners.WebhookSecretKey)
+		githubSecret, err := secrets.CreateSealedSecret(meta.NamespacedName(namespaces["cicd"], eventlisteners.GitOpsWebhookSecret),
+			o.GitOpsWebhookSecret, eventlisteners.WebhookSecretKey)
 		if err != nil {
 			return fmt.Errorf("failed to generate GitHub Webhook Secret: %w", err)
 		}
