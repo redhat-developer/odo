@@ -3,7 +3,6 @@ package routes
 import (
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/openshift/odo/pkg/pipelines/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
@@ -11,11 +10,10 @@ var (
 	routeTypeMeta = meta.TypeMeta("Route", "route.openshift.io/v1")
 )
 
-// Generate creates a route for event listener
 func Generate(ns string) routev1.Route {
 	return routev1.Route{
 		TypeMeta:   routeTypeMeta,
-		ObjectMeta: createRouteObjectMeta(ns, "gitops-webhook-event-listener"),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, "gitops-webhook-event-listener-route")),
 		Spec: routev1.RouteSpec{
 			To: creatRouteTargetReference(
 				"Service",
@@ -24,22 +22,6 @@ func Generate(ns string) routev1.Route {
 			),
 			Port:           createRoutePort(8080),
 			WildcardPolicy: routev1.WildcardPolicyNone,
-		},
-		Status: createRouteStatus(),
-	}
-}
-
-func createRouteStatus() routev1.RouteStatus {
-	return routev1.RouteStatus{
-		Ingress: []routev1.RouteIngress{
-			routev1.RouteIngress{
-				Conditions: []routev1.RouteIngressCondition{
-					routev1.RouteIngressCondition{
-						Type:   "Admitted",
-						Status: "True",
-					},
-				},
-			},
 		},
 	}
 }
@@ -57,21 +39,5 @@ func creatRouteTargetReference(kind string, name string, weight int32) routev1.R
 		Kind:   kind,
 		Name:   name,
 		Weight: &weight,
-	}
-}
-
-func createRouteObjectMeta(ns, name string) metav1.ObjectMeta {
-	return metav1.ObjectMeta{
-		Name:      name,
-		Namespace: ns,
-		Labels:    createRouteLabels(),
-	}
-}
-
-func createRouteLabels() map[string]string {
-	return map[string]string{
-		"app.kubernetes.io/managed-by": "EventListener",
-		"app.kubernetes.io/part-of":    "Triggers",
-		"eventlistener":                "cicd-event-listener",
 	}
 }
