@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/pkg/odo/genericclioptions"
 
 	"github.com/openshift/odo/pkg/devfile/adapters"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
@@ -49,6 +50,12 @@ func (po *PushOptions) DevfilePush() (err error) {
 	po.sourcePath, err = util.GetAbsPath(filepath.Dir(po.componentContext))
 	if err != nil {
 		return errors.Wrap(err, "unable to get source path")
+	}
+
+	// Apply ignore information
+	err = genericclioptions.ApplyIgnore(&po.ignores, po.sourcePath)
+	if err != nil {
+		return errors.Wrap(err, "unable to apply ignore information")
 	}
 
 	spinner := log.SpinnerNoSpin(fmt.Sprintf("Push devfile component %s", componentName))
