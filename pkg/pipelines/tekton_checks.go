@@ -4,13 +4,11 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/openshift/odo/pkg/pipelines/clientconfig"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	errs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 // These CRDs names are checked to confirm that Tekton Pipelines/Triggers has been installed.
@@ -34,7 +32,7 @@ type tektonChecker struct {
 // newTektonChecker constructs a tektonChecker that is backed by a client configured with user's kubeconfig
 func newTektonChecker() (*tektonChecker, error) {
 	// obtain client config
-	clientConfig, err := getClientConfig()
+	clientConfig, err := clientconfig.GetRESTConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get client config due to %w", err)
 	}
@@ -51,14 +49,6 @@ func newTektonChecker() (*tektonChecker, error) {
 			client:       cs.ApiextensionsV1beta1().CustomResourceDefinitions(),
 		},
 	}, nil
-}
-
-// getClientConfig returns client config to be used to create client
-func getClientConfig() (*rest.Config, error) {
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	configOverrides := &clientcmd.ConfigOverrides{}
-	kubeconfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
-	return kubeconfig.ClientConfig()
 }
 
 // isCRDFound retuns true if crdName is found.  Otherwise, it returns false.

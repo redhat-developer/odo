@@ -3,6 +3,7 @@ package pipelines
 import (
 	"fmt"
 
+	"github.com/openshift/odo/pkg/pipelines/clientconfig"
 	"github.com/openshift/odo/pkg/pipelines/meta"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,7 +47,7 @@ func createNamespace(name string) *corev1.Namespace {
 }
 
 func getClientSet() (*kubernetes.Clientset, error) {
-	clientConfig, err := getClientConfig()
+	clientConfig, err := clientconfig.GetRESTConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get client config due to %w", err)
 	}

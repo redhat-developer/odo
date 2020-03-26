@@ -1,0 +1,33 @@
+# Binaries for programs and plugins
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test binary, build with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
+.glide/
+
+/controller
+/kubeseal
+/kubeseal-arm
+/kubeseal-arm64
+
+/controller.image
+/controller.image.*
+/pushed.controller.image.*
+/controller-manifest-*
+/push-controller-image
+/*-static
+/*-static-*
+/controller.yaml
+/controller-norbac.yaml
+/sealedsecret-crd.yaml
+/docker/controller
+*.iml
+.idea

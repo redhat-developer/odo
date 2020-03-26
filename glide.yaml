@@ -107,3 +107,9 @@ import:
 - package: github.com/tektoncd/triggers
   subpackages:
   - pkg/apis/triggers/v1alpha1
+- package: github.com/bitnami-labs/sealed-secrets
+  version: v0.11.0
+  subpackages:
+  - pkg/apis/sealed-secrets
+- package: github.com/mkmik/multierror
+  version: v0.3.0

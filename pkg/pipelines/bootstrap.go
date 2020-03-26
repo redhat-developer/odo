@@ -10,10 +10,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1rbac "k8s.io/api/rbac/v1"
 
+	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 	"github.com/mitchellh/go-homedir"
 	"github.com/openshift/odo/pkg/pipelines/eventlisteners"
 	"github.com/openshift/odo/pkg/pipelines/meta"
 	"github.com/openshift/odo/pkg/pipelines/routes"
+	"github.com/openshift/odo/pkg/pipelines/secrets"
 	"github.com/openshift/odo/pkg/pipelines/tasks"
 	"github.com/openshift/odo/pkg/pipelines/triggers"
 	"sigs.k8s.io/yaml"
@@ -67,7 +69,7 @@ func Bootstrap(o *BootstrapParameters) error {
 	}
 
 	if o.GithubToken != "" {
-		githubAuth, err := createOpaqueSecret(meta.NamespacedName(namespaces["cicd"], "github-auth"), o.GithubToken, "token")
+		githubAuth, err := secrets.CreateSealedSecret(meta.NamespacedName(namespaces["cicd"], "github-auth"), o.GithubToken, "token")
 		if err != nil {
 			return fmt.Errorf("failed to generate Status Tracker Secret: %w", err)
 		}
@@ -76,7 +78,7 @@ func Bootstrap(o *BootstrapParameters) error {
 	}
 
 	if o.GithubHookSecret != "" {
-		githubSecret, err := createOpaqueSecret(meta.NamespacedName(namespaces["cicd"], eventlisteners.GitOpsWebhookSecret), o.GithubHookSecret, eventlisteners.WebhookSecretKey)
+		githubSecret, err := secrets.CreateSealedSecret(meta.NamespacedName(namespaces["cicd"], eventlisteners.GitOpsWebhookSecret), o.GithubHookSecret, eventlisteners.WebhookSecretKey)
 		if err != nil {
 			return fmt.Errorf("failed to generate GitHub Webhook Secret: %w", err)
 		}
@@ -194,7 +196,7 @@ func createPipelines(ns map[string]string, isInternalRegistry bool, deploymentPa
 }
 
 // createDockerSecret creates Docker secret
-func createDockerSecret(dockerConfigJSONFileName, ns string) (*corev1.Secret, error) {
+func createDockerSecret(dockerConfigJSONFileName, ns string) (*ssv1alpha1.SealedSecret, error) {
 	if dockerConfigJSONFileName == "" {
 		return nil, errors.New("failed to generate path to file: --dockerconfigjson flag is not provided")
 	}
@@ -210,7 +212,7 @@ func createDockerSecret(dockerConfigJSONFileName, ns string) (*corev1.Secret, er
 	}
 	defer f.Close()
 
-	dockerSecret, err := createDockerConfigSecret(meta.NamespacedName(ns, dockerSecretName), f)
+	dockerSecret, err := secrets.CreateSealedDockerConfigSecret(meta.NamespacedName(ns, dockerSecretName), f)
 	if err != nil {
 		return nil, err
 	}
