@@ -16,6 +16,42 @@ import (
 	"github.com/openshift/odo/pkg/util"
 )
 
+// SelectDevfileComponentType lets the user to select the devfile component type in the prompt
+func SelectDevfileComponentType(options []catalog.DevfileComponentType) string {
+	var componentType string
+	prompt := &survey.Select{
+		Message: "Which devfile component type do you wish to create",
+		Options: getDevfileComponentTypeNameCandidates(options),
+	}
+	err := survey.AskOne(prompt, &componentType, survey.Required)
+	ui.HandleError(err)
+	return componentType
+}
+
+// EnterDevfileComponentName lets the user to specify the component name in the prompt
+func EnterDevfileComponentName(defaultComponentName string) string {
+	var componentName string
+	prompt := &survey.Input{
+		Message: "What do you wish to name the new devfile component",
+		Default: defaultComponentName,
+	}
+	err := survey.AskOne(prompt, &componentName, survey.Required)
+	ui.HandleError(err)
+	return componentName
+}
+
+// EnterDevfileComponentNamespace lets the user to specify the component namespace in the prompt
+func EnterDevfileComponentNamespace(defaultComponentNamespace string) string {
+	var name string
+	prompt := &survey.Input{
+		Message: "What namespace do you want the devfile component to be created in",
+		Default: defaultComponentNamespace,
+	}
+	err := survey.AskOne(prompt, &name, validation.NameValidator)
+	ui.HandleError(err)
+	return name
+}
+
 // SelectComponentType lets the user to select the builder image (name only) in the prompt
 func SelectComponentType(options []catalog.ComponentType) string {
 	var componentType string
@@ -26,6 +62,15 @@ func SelectComponentType(options []catalog.ComponentType) string {
 	err := survey.AskOne(prompt, &componentType, survey.Required)
 	ui.HandleError(err)
 	return componentType
+}
+
+func getDevfileComponentTypeNameCandidates(options []catalog.DevfileComponentType) []string {
+	result := make([]string, len(options))
+	for i, option := range options {
+		result[i] = option.Name
+	}
+	sort.Strings(result)
+	return result
 }
 
 func getComponentTypeNameCandidates(options []catalog.ComponentType) []string {
