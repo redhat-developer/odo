@@ -208,12 +208,18 @@ func GenerateSelfSignedCertificate(host string) (SelfSignedCertificate, error) {
 		return SelfSignedCertificate{}, errors.Wrap(err, "unable to create certificate")
 	}
 	out := &bytes.Buffer{}
-	pem.Encode(out, &pem.Block{Type: "CERTIFICATE", Bytes: certificateDerEncoding})
+	err = pem.Encode(out, &pem.Block{Type: "CERTIFICATE", Bytes: certificateDerEncoding})
+	if err != nil {
+		return SelfSignedCertificate{}, errors.Wrap(err, "unable to encode certificate")
+	}
 	certPemEncode := out.String()
 	certPemByteArr := []byte(certPemEncode)
 
 	tlsPrivKeyEncoding := x509.MarshalPKCS1PrivateKey(privateKey)
-	pem.Encode(out, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: tlsPrivKeyEncoding})
+	err = pem.Encode(out, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: tlsPrivKeyEncoding})
+	if err != nil {
+		return SelfSignedCertificate{}, errors.Wrap(err, "unable to encode rsa private key")
+	}
 	keyPemEncode := out.String()
 	keyPemByteArr := []byte(keyPemEncode)
 

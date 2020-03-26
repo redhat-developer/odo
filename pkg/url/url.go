@@ -118,7 +118,7 @@ func Create(client *occlient.Client, kClient *kclient.Client, urlName string, po
 	if experimental.IsExperimentalModeEnabled() {
 		serviceName := componentName
 		ingressDomain := fmt.Sprintf("%v.%v", urlName, host)
-		if secureURL == true {
+		if secureURL {
 			if len(secretName) != 0 {
 				_, err := kClient.KubeClient.CoreV1().Secrets(kClient.Namespace).Get(secretName, metav1.GetOptions{})
 				if err != nil {
