@@ -5,8 +5,11 @@ import (
 
 	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/devfile/adapters/docker"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/openshift/odo/pkg/kclient"
+	"github.com/openshift/odo/pkg/lclient"
+	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 )
 
 // NewPlatformAdapter returns a Devfile adapter for the targeted platform
@@ -19,11 +22,16 @@ func NewPlatformAdapter(componentName string, devObj devfile.DevfileObj, platfor
 
 	// Only the kubernetes adapter is implemented at the moment
 	// When there are others this function should be updated to retrieve the correct adapter for the desired platform target
+	if pushtarget.IsPushTargetDocker() {
+		return createDockerAdapter(adapterContext)
+	}
+
 	kc, ok := platformContext.(kubernetes.KubernetesContext)
 	if !ok {
 		return nil, fmt.Errorf("Error retrieving context for Kubernetes")
 	}
 	return createKubernetesAdapter(adapterContext, kc.Namespace)
+
 }
 
 func createKubernetesAdapter(adapterContext common.AdapterContext, namespace string) (PlatformAdapter, error) {
@@ -44,4 +52,18 @@ func newKubernetesAdapter(adapterContext common.AdapterContext, client kclient.C
 	kubernetesAdapter := kubernetes.New(adapterContext, client)
 
 	return kubernetesAdapter, nil
+}
+
+func createDockerAdapter(adapterContext common.AdapterContext) (PlatformAdapter, error) {
+	client, err := lclient.New()
+	if err != nil {
+		return nil, err
+	}
+
+	return newDockerAdapter(adapterContext, *client)
+}
+
+func newDockerAdapter(adapterContext common.AdapterContext, client lclient.Client) (PlatformAdapter, error) {
+	dockerAdapter := docker.New(adapterContext, client)
+	return dockerAdapter, nil
 }
