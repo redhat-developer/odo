@@ -36,9 +36,6 @@ func TestGenerateEventListener(t *testing.T) {
 									SecretName: GitOpsWebhookSecret,
 									SecretKey:  WebhookSecretKey,
 								},
-								EventTypes: []string{
-									"pull_request",
-								},
 							},
 						},
 					},
@@ -64,9 +61,6 @@ func TestGenerateEventListener(t *testing.T) {
 								SecretRef: &triggersv1.SecretRef{
 									SecretName: GitOpsWebhookSecret,
 									SecretKey:  WebhookSecretKey,
-								},
-								EventTypes: []string{
-									"push",
 								},
 							},
 						},
@@ -136,9 +130,6 @@ func TestCreateListenerTrigger(t *testing.T) {
 						SecretName: GitOpsWebhookSecret,
 						SecretKey:  WebhookSecretKey,
 					},
-					EventTypes: []string{
-						"pull_request",
-					},
 				},
 			},
 		},
@@ -151,7 +142,7 @@ func TestCreateListenerTrigger(t *testing.T) {
 			Name: "sampleTemplateName",
 		},
 	}
-	listenerTrigger := createListenerTrigger("sampleName", "sampleFilter %s", "sample", "sampleBindingName", "sampleTemplateName", "pull_request")
+	listenerTrigger := createListenerTrigger("sampleName", "sampleFilter %s", "sample", "sampleBindingName", "sampleTemplateName")
 	if diff := cmp.Diff(validListenerTrigger, listenerTrigger); diff != "" {
 		t.Fatalf("createListenerTrigger() failed:\n%s", diff)
 	}
@@ -169,20 +160,17 @@ func TestCreateEventInterceptor(t *testing.T) {
 	}
 }
 
-func TestCreateGithubInterceptor(t *testing.T) {
-	validGithubInterceptor := triggersv1.EventInterceptor{
+func TestCreateGitHubInterceptor(t *testing.T) {
+	validGitHubInterceptor := triggersv1.EventInterceptor{
 		GitHub: &triggersv1.GitHubInterceptor{
 			SecretRef: &triggersv1.SecretRef{
 				SecretName: GitOpsWebhookSecret,
 				SecretKey:  WebhookSecretKey,
 			},
-			EventTypes: []string{
-				"pull_request",
-			},
 		},
 	}
-	githubInterceptor := createGithubInterceptor("pull_request")
-	if diff := cmp.Diff(validGithubInterceptor, *githubInterceptor); diff != "" {
+	githubInterceptor := createGitHubInterceptor()
+	if diff := cmp.Diff(validGitHubInterceptor, *githubInterceptor); diff != "" {
 		t.Fatalf("createEventInterceptor() failed:\n%s", diff)
 	}
 }
