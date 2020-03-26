@@ -73,10 +73,10 @@ func (o *URLListOptions) Run() (err error) {
 			machineoutput.OutputSuccess(urls)
 		} else {
 			if len(urls.Items) == 0 {
-				return fmt.Errorf("no URLs found for component %v in application %v", componentName, o.Application)
+				return fmt.Errorf("no URLs found for component %v", componentName)
 			}
 
-			log.Infof("Found the following URLs for component %v in application %v:", componentName, o.Application)
+			log.Infof("Found the following URLs for component %v", componentName)
 			tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 			fmt.Fprintln(tabWriterURL, "NAME", "\t", "URL", "\t", "PORT")
 

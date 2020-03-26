@@ -97,15 +97,14 @@ func GetIngress(kClient *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInf
 
 // Delete deletes a URL
 func Delete(client *occlient.Client, kClient *kclient.Client, urlName string, applicationName string) error {
-
-	// Namespace the URL name
-	namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(urlName, applicationName)
-	if err != nil {
-		return errors.Wrapf(err, "unable to create namespaced name")
-	}
 	if experimental.IsExperimentalModeEnabled() {
-		return kClient.DeleteIngress(namespacedOpenShiftObject)
+		return kClient.DeleteIngress(urlName)
 	} else {
+		// Namespace the URL name
+		namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(urlName, applicationName)
+		if err != nil {
+			return errors.Wrapf(err, "unable to create namespaced name")
+		}
 		return client.DeleteRoute(namespacedOpenShiftObject)
 	}
 }

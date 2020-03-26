@@ -306,12 +306,14 @@ func UpdatedContext(context *Context) (*Context, *config.LocalConfigInfo, error)
 
 // newContext creates a new context based on the command flags, creating missing app when requested
 func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingConfiguration bool) *Context {
-
+	// create a new occlient
+	client := client(command)
 	// resolve output flag
 	outputFlag := FlagValueIfSet(command, OutputFlagName)
 
 	// create the internal context representation based on calculated values
 	internalCxt := internalCxt{
+		Client:     client,
 		OutputFlag: outputFlag,
 		command:    command,
 	}
@@ -330,9 +332,6 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 		}
 		return context
 	} else {
-		// create a new occlient
-		client := client(command)
-		internalCxt.Client = client
 		// Check for valid config
 		localConfiguration, err := getValidConfig(command, ignoreMissingConfiguration)
 		if err != nil {

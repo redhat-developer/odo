@@ -457,3 +457,11 @@ func (oc *OcRunner) CheckForExistence(resourceType, namespace string) {
 	output := string(session.Wait().Out.Contents())
 	Expect(strings.ToLower(output)).To(ContainSubstring(""))
 }
+
+// GetIngress gets ingress list on the cluster
+// func (oc *OcRunner) GetIngress(namespace string) string {
+// 	session := CmdRunner(oc.path, "get", "ingress", "--namespace", namespace)
+// 	Eventually(session).Should(gexec.Exit(0))
+// 	output := string(session.Wait().Out.Contents())
+// 	return output
+// }
