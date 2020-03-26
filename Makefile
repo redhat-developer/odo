@@ -198,6 +198,11 @@ test-cmd-push:
 test-cmd-devfile-catalog:
 	ginkgo $(GINKGO_FLAGS) -focus="odo devfile catalog command tests" tests/integration/
 
+# Run odo create devfile command tests
+.PHONY: test-cmd-devfile-create
+test-cmd-devfile-create:
+	ginkgo $(GINKGO_FLAGS) -focus="odo devfile create command tests" tests/integration/
+
 # Run odo push devfile command tests
 .PHONY: test-cmd-devfile-push
 test-cmd-devfile-push:
