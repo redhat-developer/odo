@@ -53,6 +53,22 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 		})
 
+		It("should have no errors when no endpoints within the devfile, should create a service when devfile has endpoints", func() {
+			// Devfile push requires experimental mode to be set
+			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
+			componentName := path.Base(context)
+			helper.CmdShouldPass("odo", "push", "--devfile", "devfile-no-endpoints.yaml", "--namespace", project)
+			output := oc.GetServices(project)
+			Expect(output).NotTo(ContainSubstring(componentName))
+			output = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", project)
+
+			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+			output = oc.GetServices(project)
+			Expect(output).To(ContainSubstring(componentName))
+		})
+
 	})
 
 	Context("when devfile push command is executed", func() {
@@ -162,22 +178,6 @@ var _ = Describe("odo devfile push command tests", func() {
 			// use the force build flag and push
 			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", project, "-f")
 			Expect(output).To(Not(ContainSubstring("No file changes detected, skipping build")))
-		})
-
-		It("should have no errors when no endpoints within the devfile, should create a service when devfile has endpoints", func() {
-			// Devfile push requires experimental mode to be set
-			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
-
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
-			componentName := path.Base(context)
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile-no-endpoints.yaml", "--namespace", project)
-			output := oc.GetServices(project)
-			Expect(output).NotTo(ContainSubstring(componentName))
-			output = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", project)
-
-			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
-			output = oc.GetServices(project)
-			Expect(output).To(ContainSubstring(componentName))
 		})
 
 	})
