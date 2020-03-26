@@ -10,6 +10,7 @@ import (
 
 	"github.com/openshift/odo/pkg/pipelines/eventlisteners"
 	"github.com/openshift/odo/pkg/pipelines/meta"
+	"github.com/openshift/odo/pkg/pipelines/roles"
 	"github.com/openshift/odo/pkg/pipelines/routes"
 	"github.com/openshift/odo/pkg/pipelines/secrets"
 	"github.com/openshift/odo/pkg/pipelines/tasks"
@@ -141,11 +142,11 @@ func createPipelineResources(outputs map[string]interface{}, namespaces map[stri
 
 	outputs[namespacesPath] = createNamespace(namespaces["cicd"])
 
-	outputs[rolesPath] = createClusterRole(meta.NamespacedName("", clusterRoleName), rules)
+	outputs[rolesPath] = roles.CreateClusterRole(meta.NamespacedName("", roles.ClusterRoleName), rules)
 
-	sa := createServiceAccount(meta.NamespacedName(namespaces["cicd"], saName))
+	sa := roles.CreateServiceAccount(meta.NamespacedName(namespaces["cicd"], saName))
 
-	outputs[rolebindingsPath] = createRoleBinding(meta.NamespacedName(namespaces["cicd"], roleBindingName), sa, "ClusterRole", clusterRoleName)
+	outputs[rolebindingsPath] = roles.CreateRoleBinding(meta.NamespacedName(namespaces["cicd"], roleBindingName), sa, "ClusterRole", roles.ClusterRoleName)
 
 	outputs[tasksPath] = tasks.CreateDeployFromSourceTask(namespaces["cicd"], getPipelinesDir("", prefix))
 

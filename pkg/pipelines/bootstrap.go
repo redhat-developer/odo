@@ -14,8 +14,10 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/openshift/odo/pkg/pipelines/eventlisteners"
 	"github.com/openshift/odo/pkg/pipelines/meta"
+	"github.com/openshift/odo/pkg/pipelines/roles"
 	"github.com/openshift/odo/pkg/pipelines/routes"
 	"github.com/openshift/odo/pkg/pipelines/secrets"
+	"github.com/openshift/odo/pkg/pipelines/statustracker"
 	"github.com/openshift/odo/pkg/pipelines/tasks"
 	"github.com/openshift/odo/pkg/pipelines/triggers"
 	"sigs.k8s.io/yaml"
@@ -33,8 +35,8 @@ const (
 // BootstrapParameters is a struct that provides the optional flags
 type BootstrapParameters struct {
 	DeploymentPath           string
-	GithubHookSecret         string
-	GithubToken              string
+	GitHubHookSecret         string
+	GitHubToken              string
 	GitRepo                  string
 	InternalRegistryHostname string
 	ImageRepo                string
@@ -68,17 +70,8 @@ func Bootstrap(o *BootstrapParameters) error {
 		outputs = append(outputs, n)
 	}
 
-	if o.GithubToken != "" {
-		githubAuth, err := secrets.CreateSealedSecret(meta.NamespacedName(namespaces["cicd"], "github-auth"), o.GithubToken, "token")
-		if err != nil {
-			return fmt.Errorf("failed to generate Status Tracker Secret: %w", err)
-		}
-
-		outputs = append(outputs, githubAuth)
-	}
-
-	if o.GithubHookSecret != "" {
-		githubSecret, err := secrets.CreateSealedSecret(meta.NamespacedName(namespaces["cicd"], eventlisteners.GitOpsWebhookSecret), o.GithubHookSecret, eventlisteners.WebhookSecretKey)
+	if o.GitHubHookSecret != "" {
+		githubSecret, err := secrets.CreateSealedSecret(meta.NamespacedName(namespaces["cicd"], eventlisteners.GitOpsWebhookSecret), o.GitHubHookSecret, eventlisteners.WebhookSecretKey)
 		if err != nil {
 			return fmt.Errorf("failed to generate GitHub Webhook Secret: %w", err)
 		}
@@ -116,7 +109,7 @@ func Bootstrap(o *BootstrapParameters) error {
 	outputs = append(outputs, route)
 
 	// Don't add this service account to outputs as this is the default service account created by Pipeline Operator
-	sa := createServiceAccount(meta.NamespacedName(namespaces["cicd"], saName))
+	sa := roles.CreateServiceAccount(meta.NamespacedName(namespaces["cicd"], saName))
 
 	manifests, err := createManifestsForImageRepo(sa, isInternalRegistry, imageRepo, o, namespaces)
 	if err != nil {
@@ -127,17 +120,25 @@ func Bootstrap(o *BootstrapParameters) error {
 	//  Create Role, Role Bindings, and ClusterRole Bindings
 	outputs = append(outputs, createRoleBindings(namespaces, sa)...)
 
+	if o.GitHubToken != "" {
+		res, err := statustracker.Resources(namespaces["cicd"], o.GitHubToken)
+		if err != nil {
+			return err
+		}
+		outputs = append(outputs, res...)
+	}
+
 	return marshalOutputs(os.Stdout, outputs)
 }
 
 func createRoleBindings(ns map[string]string, sa *corev1.ServiceAccount) []interface{} {
 	out := make([]interface{}, 0)
 
-	role := createRole(meta.NamespacedName(ns["cicd"], roleName), rules)
+	role := roles.CreateRole(meta.NamespacedName(ns["cicd"], roleName), rules)
 	out = append(out, role)
-	out = append(out, createRoleBinding(meta.NamespacedName(ns["cicd"], roleBindingName), sa, role.Kind, role.Name))
-	out = append(out, createRoleBinding(meta.NamespacedName(ns["dev"], devRoleBindingName), sa, "ClusterRole", "edit"))
-	out = append(out, createRoleBinding(meta.NamespacedName(ns["stage"], stageRoleBindingName), sa, "ClusterRole", "edit"))
+	out = append(out, roles.CreateRoleBinding(meta.NamespacedName(ns["cicd"], roleBindingName), sa, role.Kind, role.Name))
+	out = append(out, roles.CreateRoleBinding(meta.NamespacedName(ns["dev"], devRoleBindingName), sa, "ClusterRole", "edit"))
+	out = append(out, roles.CreateRoleBinding(meta.NamespacedName(ns["stage"], stageRoleBindingName), sa, "ClusterRole", "edit"))
 
 	return out
 }
@@ -163,10 +164,10 @@ func createManifestsForImageRepo(sa *corev1.ServiceAccount, isInternalRegistry b
 		}
 
 		// pipelines sa should have access to internal registry
-		out = append(out, createRoleBinding(meta.NamespacedName(internalRegistryNamespace, "internal-registry-binding"), sa, "ClusterRole", "edit"))
+		out = append(out, roles.CreateRoleBinding(meta.NamespacedName(internalRegistryNamespace, "internal-registry-binding"), sa, "ClusterRole", "edit"))
 
 		// add image puller role to allow pulling app images across namespaces from dev and stage envirnments
-		out = append(out, createRoleBindingForSubjects(meta.NamespacedName(internalRegistryNamespace, "image-puller-binding"), "ClusterRole", "system:image-puller",
+		out = append(out, roles.CreateRoleBindingForSubjects(meta.NamespacedName(internalRegistryNamespace, "image-puller-binding"), "ClusterRole", "system:image-puller",
 			[]v1rbac.Subject{v1rbac.Subject{Kind: "ServiceAccount", Name: "default", Namespace: namespaces["dev"]},
 				v1rbac.Subject{Kind: "ServiceAccount", Name: "default", Namespace: namespaces["stage"]},
 			}))
@@ -179,7 +180,7 @@ func createManifestsForImageRepo(sa *corev1.ServiceAccount, isInternalRegistry b
 		}
 		out = append(out, dockerSecret)
 		// add secret and sa to outputs
-		out = append(out, addSecretToSA(sa, dockerSecretName))
+		out = append(out, roles.AddSecretToSA(sa, dockerSecretName))
 	}
 
 	return out, nil

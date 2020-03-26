@@ -1,4 +1,4 @@
-package pipelines
+package roles
 
 import (
 	"testing"
@@ -9,6 +9,19 @@ import (
 	v1rbac "k8s.io/api/rbac/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+const (
+	roleBindingName = "my-test-role-binding"
+	roleName        = "test-role"
+)
+
+var testRules = []v1rbac.PolicyRule{
+	v1rbac.PolicyRule{
+		APIGroups: []string{"tekton.dev"},
+		Resources: []string{"eventlisteners", "triggerbindings", "triggertemplates", "tasks", "taskruns"},
+		Verbs:     []string{"get"},
+	},
+}
 
 func TestRoleBinding(t *testing.T) {
 	want := &v1rbac.RoleBinding{
@@ -33,7 +46,7 @@ func TestRoleBinding(t *testing.T) {
 		TypeMeta:   serviceAccountTypeMeta,
 		ObjectMeta: meta.ObjectMeta(meta.NamespacedName("testing", "pipeline")),
 	}
-	roleBindingTask := createRoleBinding(
+	roleBindingTask := CreateRoleBinding(
 		meta.NamespacedName("", roleBindingName),
 		sa, "Role", roleName)
 	if diff := cmp.Diff(want, roleBindingTask); diff != "" {
@@ -68,7 +81,7 @@ func TestRoleBindingForSubjects(t *testing.T) {
 		},
 	}
 
-	roleBinding := createRoleBindingForSubjects(meta.NamespacedName("testns", roleBindingName), "Role", roleName,
+	roleBinding := CreateRoleBindingForSubjects(meta.NamespacedName("testns", roleBindingName), "Role", roleName,
 		[]v1rbac.Subject{v1rbac.Subject{Kind: "ServiceAccount", Name: "pipeline", Namespace: "testing"},
 			v1rbac.Subject{Kind: "ServiceAccount", Name: "pipeline", Namespace: "testing2"},
 		})
@@ -85,9 +98,9 @@ func TestCreateRole(t *testing.T) {
 		ObjectMeta: v1.ObjectMeta{
 			Name: roleName,
 		},
-		Rules: rules,
+		Rules: testRules,
 	}
-	roleTask := createRole(meta.NamespacedName("", roleName), rules)
+	roleTask := CreateRole(meta.NamespacedName("", roleName), testRules)
 	if diff := cmp.Diff(roleTask, want); diff != "" {
 		t.Errorf("TestCreateRole() failed:\n%s", diff)
 	}
@@ -105,8 +118,8 @@ func TestServiceAccount(t *testing.T) {
 			},
 		},
 	}
-	servicetask := createServiceAccount(meta.NamespacedName("", "pipeline"))
-	servicetask = addSecretToSA(servicetask, "regcred")
+	servicetask := CreateServiceAccount(meta.NamespacedName("", "pipeline"))
+	servicetask = AddSecretToSA(servicetask, "regcred")
 	if diff := cmp.Diff(servicetask, want); diff != "" {
 		t.Errorf("TestServiceAccount() failed:\n%s", diff)
 	}
@@ -124,7 +137,7 @@ func TestAddSecretToSA(t *testing.T) {
 			Name: "regcred",
 		},
 	}
-	sa := addSecretToSA(validSA, "regcred")
+	sa := AddSecretToSA(validSA, "regcred")
 	if diff := cmp.Diff(sa.Secrets, validSecrets); diff != "" {
 		t.Errorf("addSecretToSA() failed:\n%s", diff)
 	}
@@ -134,11 +147,11 @@ func TestCreateClusterRole(t *testing.T) {
 	validClusterRole := &v1rbac.ClusterRole{
 		TypeMeta: clusterRoleTypeMeta,
 		ObjectMeta: v1.ObjectMeta{
-			Name: clusterRoleName,
+			Name: ClusterRoleName,
 		},
-		Rules: rules,
+		Rules: testRules,
 	}
-	clusterRole := createClusterRole(meta.NamespacedName("", clusterRoleName), rules)
+	clusterRole := CreateClusterRole(meta.NamespacedName("", ClusterRoleName), testRules)
 	if diff := cmp.Diff(validClusterRole, clusterRole); diff != "" {
 		t.Fatalf("createClusterRole() failed:\n%v", diff)
 	}
