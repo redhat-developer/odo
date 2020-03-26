@@ -6,7 +6,9 @@ import (
 
 // TestDevfileData is a convenience data type used to mock up a devfile configuration
 type TestDevfileData struct {
-	ComponentType versionsCommon.DevfileComponentType
+	ComponentType       versionsCommon.DevfileComponentType
+	CommandActions      []versionsCommon.DevfileCommandAction
+	MissingBuildCommand bool
 }
 
 // GetComponents is a mock function to get the components from a devfile
@@ -86,6 +88,31 @@ func (d TestDevfileData) GetProjects() []versionsCommon.DevfileProject {
 			},
 		},
 	}
+}
+
+// GetCommands is a mock function to get the components that have an alias from a devfile
+func (d TestDevfileData) GetCommands() []versionsCommon.DevfileCommand {
+	commandName := [...]string{"devbuild", "devrun", "customcommand"}
+
+	commands := []versionsCommon.DevfileCommand{
+		{
+			Name:    commandName[1],
+			Actions: d.CommandActions,
+		},
+		{
+			Name:    commandName[2],
+			Actions: d.CommandActions,
+		},
+	}
+
+	if !d.MissingBuildCommand {
+		commands = append(commands, versionsCommon.DevfileCommand{
+			Name:    commandName[0],
+			Actions: d.CommandActions,
+		})
+	}
+
+	return commands
 }
 
 // Validate is a mock validation that always validates without error

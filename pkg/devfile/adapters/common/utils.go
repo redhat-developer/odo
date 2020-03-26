@@ -52,32 +52,6 @@ func GetCommand(data versions.DevfileData, commandName string) (supportedCommand
 	return
 }
 
-// GetDefaultSupportedCommands iterates through the devfile commands in the devfile and returns
-// commands with 1. odo supported command name 2. odo supported command actions
-func GetDefaultSupportedCommands(data versions.DevfileData) []common.DevfileCommand {
-	var supportedCommands []common.DevfileCommand
-
-	for _, command := range data.GetCommands() {
-		var supportedCommand common.DevfileCommand
-
-		// Check if the command is supported by default
-		if IsDevfileCommandSupported(command.Name) {
-
-			// Get the supported command actions
-			supportedCommandActions := getSupportedCommandActions(command)
-
-			// if there is a supported command action of type exec, save it
-			if len(supportedCommandActions) > 0 {
-				supportedCommand.Name = command.Name
-				supportedCommand.Actions = supportedCommandActions
-				supportedCommands = append(supportedCommands, supportedCommand)
-			}
-		}
-	}
-
-	return supportedCommands
-}
-
 // getSupportedCommandActions returns the supported command action
 func getSupportedCommandActions(command common.DevfileCommand) (supportedCommandActions []common.DevfileCommandAction) {
 	glog.V(3).Infof("Validating command's action for %v ", command.Name)
@@ -133,22 +107,14 @@ func GetRunCommand(data versions.DevfileData, devfileRunCmd string) (runCommand 
 	return
 }
 
-// IsDefaultCommandPresent Present iterates through the default supported commands and
-// checks if the given default command is present
-func IsDefaultCommandPresent(data versions.DevfileData, commandName string) bool {
-	defaultSupportedCommands := GetDefaultSupportedCommands(data)
+// IsCommandPresent checks if the given command is empty or not
+func IsCommandPresent(command common.DevfileCommand) bool {
+	var emptyCommand common.DevfileCommand
 	isPresent := false
 
-	glog.V(3).Infof("Checking if command %v is present in the devfile", commandName)
-
-	for _, command := range defaultSupportedCommands {
-		if command.Name == commandName {
-			isPresent = true
-			break
-		}
+	if !reflect.DeepEqual(emptyCommand, command) {
+		isPresent = true
 	}
-
-	glog.V(3).Infof("Is command %v present in the devfile: %v", commandName, isPresent)
 
 	return isPresent
 }
@@ -158,15 +124,15 @@ func IsDefaultCommandPresent(data versions.DevfileData, commandName string) bool
 // It returns the build and run commands if its validated successfully, error otherwise.
 func ValidateAndGetPushDevfileCommands(data versions.DevfileData, devfileBuildCmd, devfileRunCmd string) ([]common.DevfileCommand, error) {
 	var pushDevfileCommands []common.DevfileCommand
-	var emptyCommand common.DevfileCommand
+	// var emptyCommand common.DevfileCommand
 	validateBuildCommand, validateRunCommand := false, false
 
 	buildCommand := GetBuildCommand(data, devfileBuildCmd)
-	if devfileBuildCmd == "" && !IsDefaultCommandPresent(data, string(DefaultDevfileBuildCommand)) {
+	if devfileBuildCmd == "" && !IsCommandPresent(buildCommand) {
 		// If there is no build command either in the devfile or through odo push, default validate to true since build command is optional
 		validateBuildCommand = true
 		glog.V(3).Infof("No Build command was provided")
-	} else if !reflect.DeepEqual(emptyCommand, buildCommand) && IsCommandValid(data, buildCommand) {
+	} else if IsCommandPresent(buildCommand) && IsCommandValid(data, buildCommand) {
 		// If the build command is present, validate it
 		pushDevfileCommands = append(pushDevfileCommands, buildCommand)
 		validateBuildCommand = true
@@ -174,7 +140,7 @@ func ValidateAndGetPushDevfileCommands(data versions.DevfileData, devfileBuildCm
 	}
 
 	runCommand := GetRunCommand(data, devfileRunCmd)
-	if !reflect.DeepEqual(emptyCommand, runCommand) && IsCommandValid(data, runCommand) {
+	if IsCommandPresent(runCommand) && IsCommandValid(data, runCommand) {
 		// If the run command is present, validate it
 		pushDevfileCommands = append(pushDevfileCommands, runCommand)
 		validateRunCommand = true
@@ -218,20 +184,4 @@ func IsCommandValid(data versions.DevfileData, command common.DevfileCommand) bo
 	}
 
 	return isCommandValid
-}
-
-// IsDevfileCommandSupported checks if a devfile command is supported by default
-func IsDevfileCommandSupported(commandName string) bool {
-	isSupported := false
-
-	switch commandName {
-	case string(DefaultDevfileBuildCommand):
-		fallthrough
-	case string(DefaultDevfileRunCommand):
-		isSupported = true
-	default:
-		isSupported = false
-	}
-
-	return isSupported
 }

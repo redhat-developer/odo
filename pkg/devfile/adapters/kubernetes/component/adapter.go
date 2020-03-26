@@ -390,12 +390,14 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 	var buildRequired bool
 	var s *log.Status
 
-	if a.devfileBuildCmd == "" && !common.IsDefaultCommandPresent(a.Devfile.Data, string(common.DefaultDevfileBuildCommand)) {
-		// if there is no build command, there is no need to build
+	if len(pushDevfileCommands) == 1 {
+		// if there is one command, it is the mandatory run command. No need to build.
 		buildRequired = false
-	} else {
-		// if there is a build command, set buildRequired to true
+	} else if len(pushDevfileCommands) == 2 {
+		// if there are two commands, it is the optional build command and the mandatory run command, set buildRequired to true
 		buildRequired = true
+	} else {
+		return fmt.Errorf("error executing devfile commands - there should be at least 1 command or at most 2 commands, currently there are %v commands", len(pushDevfileCommands))
 	}
 
 	for i := 0; i < len(pushDevfileCommands); i++ {
