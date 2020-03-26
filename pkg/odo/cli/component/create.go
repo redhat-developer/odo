@@ -667,13 +667,13 @@ func (co *CreateOptions) Run() (err error) {
 		if err != nil {
 			return err
 		}
-
 		if existsInCluster {
 			componentDesc, err = component.GetComponent(co.Context.Client, *co.componentSettings.Name, co.Context.Application, co.Context.Project)
 			if err != nil {
 				return err
 			}
 		} else {
+			co.Context, co.LocalConfigInfo, err = genericclioptions.UpdatedContext(co.Context)
 			componentDesc, err = component.GetComponentFromConfig(co.LocalConfigInfo)
 			if err != nil {
 				return err
