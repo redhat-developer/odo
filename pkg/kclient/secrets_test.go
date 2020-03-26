@@ -17,21 +17,21 @@ func TestCreateTLSSecret(t *testing.T) {
 		name          string
 		secretName    string
 		componentName string
-		host   string
+		host          string
 		wantErr       bool
 	}{
 		{
 			name:          "Case: Valid secret name",
 			componentName: "testComponent",
 			secretName:    "testComponent-tlssecret",
-			host:   "1.2.3.4.nip.io",
+			host:          "1.2.3.4.nip.io",
 			wantErr:       false,
 		},
 		{
 			name:          "Case: Invalid secret name",
 			secretName:    "",
 			componentName: "testComponent",
-			host:   "1.2.3.4.nip.io",
+			host:          "1.2.3.4.nip.io",
 			wantErr:       true,
 		},
 	}
