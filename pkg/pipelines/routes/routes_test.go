@@ -14,13 +14,8 @@ func TestGenerateRoute(t *testing.T) {
 	validRoute := routev1.Route{
 		TypeMeta: routeTypeMeta,
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "gitops-webhook-event-listener",
+			Name:      "gitops-webhook-event-listener-route",
 			Namespace: "cicd-environment",
-			Labels: map[string]string{
-				"app.kubernetes.io/managed-by": "EventListener",
-				"app.kubernetes.io/part-of":    "Triggers",
-				"eventlistener":                "cicd-event-listener",
-			},
 		},
 		Spec: routev1.RouteSpec{
 			To: routev1.RouteTargetReference{
@@ -35,7 +30,6 @@ func TestGenerateRoute(t *testing.T) {
 			},
 			WildcardPolicy: routev1.WildcardPolicyNone,
 		},
-		Status: createRouteStatus(),
 	}
 	route := Generate("cicd-environment")
 	if diff := cmp.Diff(validRoute, route); diff != "" {
@@ -65,21 +59,5 @@ func TestCreatRouteTargetReference(t *testing.T) {
 	routeTargetReference := creatRouteTargetReference("Service", "el-cicd-event-listener", 100)
 	if diff := cmp.Diff(validRouteTargetReference, routeTargetReference); diff != "" {
 		t.Fatalf("creatRouteTargetReference() failed:\n%s", diff)
-	}
-}
-
-func TestCreateRouteObjectMeta(t *testing.T) {
-	validObjectMeta := metav1.ObjectMeta{
-		Name:      "sampleName",
-		Namespace: "cicd-environment",
-		Labels: map[string]string{
-			"app.kubernetes.io/managed-by": "EventListener",
-			"app.kubernetes.io/part-of":    "Triggers",
-			"eventlistener":                "cicd-event-listener",
-		},
-	}
-	objectMeta := createRouteObjectMeta("cicd-environment", "sampleName")
-	if diff := cmp.Diff(validObjectMeta, objectMeta); diff != "" {
-		t.Fatalf("createRouteObjectMeta() failed:\n%s", diff)
 	}
 }
