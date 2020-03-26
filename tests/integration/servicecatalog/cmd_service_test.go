@@ -452,7 +452,7 @@ var _ = Describe("odo service command tests", func() {
 
 			helper.CmdShouldPass("odo", "app", "delete", app, "-f")
 
-			ocArgs = []string{"get", "serviceinstances"}
+			ocArgs = []string{"get", "serviceinstances", "-n", project}
 			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
 				return strings.Contains(output, "No resources found")
 			}, true)
