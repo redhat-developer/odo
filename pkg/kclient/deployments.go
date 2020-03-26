@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -136,4 +137,19 @@ func (c *Client) UpdateDeployment(deploymentSpec appsv1.DeploymentSpec) (*appsv1
 		return nil, errors.Wrapf(err, "unable to update Deployment %s", objectMeta.Name)
 	}
 	return deploy, nil
+}
+
+// DeleteDeployment deletes the deployments with the given selector
+func (c *Client) DeleteDeployment(labels map[string]string) error {
+	if labels == nil {
+		return errors.New("labels for deletion are empty")
+	}
+	// convert labels to selector
+	selector := util.ConvertLabelsToSelector(labels)
+	glog.V(4).Infof("Selectors used for deletion: %s", selector)
+
+	// Delete Deployment
+	glog.V(4).Info("Deleting Deployment")
+
+	return c.KubeClient.AppsV1().Deployments(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
 }

@@ -577,3 +577,12 @@ func getCmdToDeleteFiles(delFiles []string, syncFolder string) []string {
 	cmdArr := []string{"rm", "-rf"}
 	return append(cmdArr, rmPaths...)
 }
+
+// Delete deletes the component
+func (a Adapter) Delete(labels map[string]string) error {
+	if !utils.ComponentExists(a.Client, a.ComponentName) {
+		return errors.Errorf("the component %s doesn't exist on the cluster", a.ComponentName)
+	}
+
+	return a.Client.DeleteDeployment(labels)
+}
