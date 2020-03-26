@@ -72,6 +72,12 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 			return errors.Wrap(err, "unable to get source path")
 		}
 
+		// Apply ignore information
+		err = genericclioptions.ApplyIgnore(&wo.ignores, wo.sourcePath)
+		if err != nil {
+			return errors.Wrap(err, "unable to apply ignore information")
+		}
+
 		// Get the component name
 		wo.componentName, err = getComponentName()
 		if err != nil {
