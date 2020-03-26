@@ -45,20 +45,6 @@ var _ = Describe("odo devfile push command tests", func() {
 
 	Context("Verify devfile push works", func() {
 
-		It("Check that odo push works with a devfile", func() {
-			// Devfile push requires experimental mode to be set
-			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
-
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
-
-			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
-			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
-
-			// update devfile and push again
-			helper.ReplaceString("devfile.yaml", "name: FOO", "name: BAR")
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
-		})
-
 		It("should have no errors when no endpoints within the devfile, should create a service when devfile has endpoints", func() {
 			// Devfile push requires experimental mode to be set
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
@@ -73,6 +59,20 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 			output = oc.GetServices(project)
 			Expect(output).To(ContainSubstring(componentName))
+		})
+
+		It("Check that odo push works with a devfile", func() {
+			// Devfile push requires experimental mode to be set
+			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
+
+			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
+			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+
+			// update devfile and push again
+			helper.ReplaceString("devfile.yaml", "name: FOO", "name: BAR")
+			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 		})
 
 	})
