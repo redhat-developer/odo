@@ -22,9 +22,9 @@ make test-cmd-project
 make test-operator-hub
 
 # E2e tests
-make test-e2e-all
+# make test-e2e-all
 
 # Benchmark tests
-make test-benchmark
+# make test-benchmark
 
 odo logout

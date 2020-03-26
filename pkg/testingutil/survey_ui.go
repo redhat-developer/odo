@@ -1,13 +1,11 @@
-// +build !windows
-
 package testingutil
 
 import (
 	"bytes"
 	"testing"
 
-	"github.com/Netflix/go-expect"
 	"github.com/hinshun/vt10x"
+	"github.com/prietyc123/go-expect"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/AlecAivazis/survey.v1"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"

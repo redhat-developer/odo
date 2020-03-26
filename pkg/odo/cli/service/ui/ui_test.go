@@ -1,12 +1,10 @@
-// +build !windows
-
 package ui
 
 import (
 	"reflect"
 	"testing"
 
-	"github.com/Netflix/go-expect"
+	"github.com/prietyc123/go-expect"
 	beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	"github.com/openshift/odo/pkg/service"
 	"github.com/openshift/odo/pkg/testingutil"
