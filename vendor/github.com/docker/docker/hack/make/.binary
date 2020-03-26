@@ -47,15 +47,40 @@ if [ "$(go env GOOS)/$(go env GOARCH)" != "$(go env GOHOSTOS)/$(go env GOHOSTARC
 			export CC=x86_64-w64-mingw32-gcc
 			export CGO_ENABLED=1
 			;;
+		linux/arm)
+			case "${GOARM}" in
+			5|"")
+				export CC=arm-linux-gnueabi-gcc
+				export CGO_ENABLED=1
+				;;
+			7)
+				export CC=arm-linux-gnueabihf-gcc
+				export CGO_ENABLED=1
+				;;
+			esac
+			;;
+		linux/arm64)
+			export CC=aarch64-linux-gnu-gcc
+			export CGO_ENABLED=1
+			;;
+		linux/amd64)
+			export CC=x86_64-linux-gnu-gcc
+			export CGO_ENABLED=1
+			;;
 	esac
 fi
 
-# -buildmode=pie is not supported on Windows.
-if [ "$(go env GOOS)" != "windows" ]; then
-	BUILDFLAGS+=( "-buildmode=pie" )
-fi
+# -buildmode=pie is not supported on Windows and Linux on mips.
+case "$(go env GOOS)/$(go env GOARCH)" in
+	windows/*|linux/mips*)
+		;;
+	*)
+		BUILDFLAGS+=( "-buildmode=pie" )
+		;;
+esac
 
 echo "Building: $DEST/$BINARY_FULLNAME"
+echo "GOOS=\"${GOOS}\" GOARCH=\"${GOARCH}\" GOARM=\"${GOARM}\""
 go build \
 	-o "$DEST/$BINARY_FULLNAME" \
 	"${BUILDFLAGS[@]}" \
@@ -64,7 +89,7 @@ go build \
 		$LDFLAGS_STATIC_DOCKER
 		$DOCKER_LDFLAGS
 	" \
-	$GO_PACKAGE
+	${GO_PACKAGE}
 )
 
 echo "Created binary: $DEST/$BINARY_FULLNAME"

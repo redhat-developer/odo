@@ -8,6 +8,8 @@ Package expect provides an expect-like interface to automate control of applicat
 
 ## Usage
 
+### `os.Exec` example
+
 ```go
 package main
 
@@ -52,5 +54,43 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+```
+
+### `golang.org/x/crypto/ssh/terminal` example
+
+```
+package main
+
+import (
+	"fmt"
+
+	"golang.org/x/crypto/ssh/terminal"
+
+	expect "github.com/Netflix/go-expect"
+)
+
+func getPassword(fd int) string {
+	bytePassword, _ := terminal.ReadPassword(fd)
+
+	return string(bytePassword)
+}
+
+func main() {
+	c, _ := expect.NewConsole()
+
+	defer c.Close()
+
+	donec := make(chan struct{})
+	go func() {
+		defer close(donec)
+		c.SendLine("hunter2")
+	}()
+
+	echoText := getPassword(int(c.Tty().Fd()))
+
+	<-donec
+
+	fmt.Printf("\nPassword from stdin: %s", echoText)
 }
 ```

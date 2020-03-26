@@ -5,33 +5,33 @@ package main
 import (
 	"fmt"
 	"strings"
+	"testing"
 
-	"github.com/docker/docker/integration-cli/checker"
-	"github.com/go-check/check"
+	"gotest.tools/assert"
 )
 
-func (s *DockerSwarmSuite) TestServiceScale(c *check.C) {
+func (s *DockerSwarmSuite) TestServiceScale(c *testing.T) {
 	d := s.AddDaemon(c, true, true)
 
 	service1Name := "TestService1"
-	service1Args := append([]string{"service", "create", "--detach", "--no-resolve-image", "--name", service1Name, defaultSleepImage}, sleepCommandForDaemonPlatform()...)
+	service1Args := append([]string{"service", "create", "--detach", "--no-resolve-image", "--name", service1Name, "busybox"}, sleepCommandForDaemonPlatform()...)
 
 	// global mode
 	service2Name := "TestService2"
-	service2Args := append([]string{"service", "create", "--detach", "--no-resolve-image", "--name", service2Name, "--mode=global", defaultSleepImage}, sleepCommandForDaemonPlatform()...)
+	service2Args := append([]string{"service", "create", "--detach", "--no-resolve-image", "--name", service2Name, "--mode=global", "busybox"}, sleepCommandForDaemonPlatform()...)
 
 	// Create services
-	out, err := d.Cmd(service1Args...)
-	c.Assert(err, checker.IsNil)
+	_, err := d.Cmd(service1Args...)
+	assert.NilError(c, err)
 
-	out, err = d.Cmd(service2Args...)
-	c.Assert(err, checker.IsNil)
+	_, err = d.Cmd(service2Args...)
+	assert.NilError(c, err)
 
-	out, err = d.Cmd("service", "scale", "TestService1=2")
-	c.Assert(err, checker.IsNil)
+	_, err = d.Cmd("service", "scale", "TestService1=2")
+	assert.NilError(c, err)
 
-	out, err = d.Cmd("service", "scale", "TestService1=foobar")
-	c.Assert(err, checker.NotNil)
+	out, err := d.Cmd("service", "scale", "TestService1=foobar")
+	assert.ErrorContains(c, err, "")
 
 	str := fmt.Sprintf("%s: invalid replicas value %s", service1Name, "foobar")
 	if !strings.Contains(out, str) {
@@ -39,7 +39,7 @@ func (s *DockerSwarmSuite) TestServiceScale(c *check.C) {
 	}
 
 	out, err = d.Cmd("service", "scale", "TestService1=-1")
-	c.Assert(err, checker.NotNil)
+	assert.ErrorContains(c, err, "")
 
 	str = fmt.Sprintf("%s: invalid replicas value %s", service1Name, "-1")
 	if !strings.Contains(out, str) {
@@ -48,7 +48,7 @@ func (s *DockerSwarmSuite) TestServiceScale(c *check.C) {
 
 	// TestService2 is a global mode
 	out, err = d.Cmd("service", "scale", "TestService2=2")
-	c.Assert(err, checker.NotNil)
+	assert.ErrorContains(c, err, "")
 
 	str = fmt.Sprintf("%s: scale can only be used with replicated mode\n", service2Name)
 	if out != str {

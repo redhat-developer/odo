@@ -11,12 +11,12 @@ import (
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
+	"github.com/openshift/odo/pkg/util"
+	"github.com/pkg/errors"
 
 	"github.com/openshift/odo/pkg/devfile/adapters"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/util"
-	"github.com/pkg/errors"
 )
 
 /*

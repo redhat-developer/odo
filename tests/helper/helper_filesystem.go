@@ -37,6 +37,13 @@ func DeleteDir(dir string) {
 
 }
 
+// DeleteFile deletes file
+func DeleteFile(filepath string) {
+	fmt.Fprintf(GinkgoWriter, "Deleting file: %s\n", filepath)
+	err := os.Remove(filepath)
+	Expect(err).NotTo(HaveOccurred())
+}
+
 // RenameFile renames a file from oldFileName to newFileName
 func RenameFile(oldFileName, newFileName string) {
 	err := os.Rename(oldFileName, newFileName)
