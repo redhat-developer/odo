@@ -7,6 +7,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
@@ -43,7 +44,11 @@ func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args [
 	o.Context = genericclioptions.NewContext(cmd)
 	o.catalogList, err = catalog.ListComponents(o.Client)
 	if err != nil {
-		return err
+		if experimental.IsExperimentalModeEnabled() {
+			glog.V(4).Info("Please log in to an OpenShift cluster to list OpenShift/s2i components")
+		} else {
+			return err
+		}
 	}
 
 	if experimental.IsExperimentalModeEnabled() {

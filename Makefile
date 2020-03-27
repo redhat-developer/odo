@@ -193,6 +193,11 @@ test-cmd-pref-config:
 test-cmd-push:
 	ginkgo $(GINKGO_FLAGS) -focus="odo push command tests" tests/integration/
 
+# Run odo create devfile command tests
+.PHONY: test-cmd-devfile-create
+test-cmd-devfile-create:
+	ginkgo $(GINKGO_FLAGS) -focus="odo devfile create command tests" tests/integration/
+
 # Run odo push devfile command tests
 .PHONY: test-cmd-devfile-push
 test-cmd-devfile-push:
