@@ -287,7 +287,11 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	defer s.End(false)
 
 	// If there's only one project defined in the devfile, sync to `/projects/project-name`, otherwise sync to /projects
-	syncFolder := getSyncFolder(a.Devfile.Data.GetProjects())
+	syncFolder, err := getSyncFolder(a.Devfile.Data.GetProjects())
+	if err != nil {
+		return errors.Wrapf(err, "unable to sync the files to the component")
+	}
+
 	if syncFolder != kclient.OdoSourceVolumeMount {
 		// Need to make sure the folder already exists on the component or else sync will fail
 		glog.V(4).Infof("Creating %s on the remote container if it doesn't already exist", syncFolder)
@@ -348,13 +352,27 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, e
 }
 
 // getSyncFolder returns the folder that we need to sync the source files to
-// If there's exactly one project defined in the devfile, return `/projects/<projectName`
+// If there's exactly one project defined in the devfile, and clonePath isn't set return `/projects/<projectName>`
+// If there's exactly one project, and clonePath is set, return `/projects/<clonePath>`
+// If the clonePath is an absolute path or contains '..', return an error
 // Otherwise (zero projects or many), return `/projects`
-func getSyncFolder(projects []versionsCommon.DevfileProject) string {
+func getSyncFolder(projects []versionsCommon.DevfileProject) (string, error) {
 	if len(projects) == 1 {
-		return filepath.ToSlash(filepath.Join(kclient.OdoSourceVolumeMount, projects[0].Name))
+		project := projects[0]
+		// If the clonepath is set to a value, set it to be the sync folder
+		// As some devfiles rely on the code being synced to the folder in the clonepath
+		if project.ClonePath != nil {
+			if strings.HasPrefix(*project.ClonePath, "/") {
+				return "", fmt.Errorf("the clonePath in the devfile must be a relative path")
+			}
+			if strings.Contains(*project.ClonePath, "..") {
+				return "", fmt.Errorf("the clonePath in the devfile cannot escape the projects root. Don't use .. to try and do that")
+			}
+			return filepath.ToSlash(filepath.Join(kclient.OdoSourceVolumeMount, *project.ClonePath)), nil
+		}
+		return filepath.ToSlash(filepath.Join(kclient.OdoSourceVolumeMount, projects[0].Name)), nil
 	}
-	return kclient.OdoSourceVolumeMount
+	return kclient.OdoSourceVolumeMount, nil
 
 }
 
