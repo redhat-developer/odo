@@ -1,8 +1,8 @@
 package vt10x
 
 import (
-	expect "github.com/Netflix/go-expect"
-	"github.com/kr/pty"
+	"github.com/creack/pty"
+	expect "github.com/prietyc123/go-expect"
 )
 
 // NewVT10XConsole returns a new expect.Console that multiplexes the

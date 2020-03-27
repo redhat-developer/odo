@@ -4,10 +4,10 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/prietyc123/go-expect"
 	beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	"github.com/openshift/odo/pkg/service"
 	"github.com/openshift/odo/pkg/testingutil"
+	"github.com/prietyc123/go-expect"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/AlecAivazis/survey.v1/core"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
