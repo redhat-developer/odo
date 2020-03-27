@@ -250,12 +250,23 @@ func TestGetComponentLinkedSecretNames(t *testing.T) {
 func TestList(t *testing.T) {
 	mockConfig := GetOneExistingConfigInfo("comp", "app", "test")
 	componentConfig, err := GetComponentFromConfig(&mockConfig)
-	componentConfig.Status.State = StateTypeNotPushed
 	if err != nil {
 		t.Errorf("error occured while calling GetComponentFromConfig, error: %v", err)
 	}
+	componentConfig.Status.State = StateTypeNotPushed
+	componentConfig2, err := GetComponentFromConfig(&mockConfig)
+	if err != nil {
+		t.Errorf("error occured while calling GetComponentFromConfig, error: %v", err)
+	}
+	componentConfig2.Status.State = StateTypeUnknown
 
 	existingSampleLocalConfig := config.GetOneExistingConfigInfo("comp", "app", "test")
+
+	dcList := appsv1.DeploymentConfigList{Items: []appsv1.DeploymentConfig{
+		getFakeDC("frontend", "test", "app", "nodejs"),
+		getFakeDC("backend", "test", "app", "java"),
+		getFakeDC("test", "test", "otherApp", "python"),
+	}}
 
 	tests := []struct {
 		name                    string
@@ -266,86 +277,8 @@ func TestList(t *testing.T) {
 		output                  ComponentList
 	}{
 		{
-			name: "Case 1: Components are returned",
-			dcList: appsv1.DeploymentConfigList{
-				Items: []appsv1.DeploymentConfig{
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "frontend-app",
-							Namespace: "test",
-							Labels: map[string]string{
-								applabels.ApplicationLabel:         "app",
-								componentlabels.ComponentLabel:     "frontend",
-								componentlabels.ComponentTypeLabel: "nodejs",
-							},
-							Annotations: map[string]string{
-								ComponentSourceTypeAnnotation: "local",
-							},
-						},
-						Spec: appsv1.DeploymentConfigSpec{
-							Template: &corev1.PodTemplateSpec{
-								Spec: corev1.PodSpec{
-									Containers: []corev1.Container{
-										{
-											Name: "dummyContainer",
-										},
-									},
-								},
-							},
-						},
-					},
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "backend-app",
-							Namespace: "test",
-							Labels: map[string]string{
-								applabels.ApplicationLabel:         "app",
-								componentlabels.ComponentLabel:     "backend",
-								componentlabels.ComponentTypeLabel: "java",
-							},
-							Annotations: map[string]string{
-								ComponentSourceTypeAnnotation: "local",
-							},
-						},
-						Spec: appsv1.DeploymentConfigSpec{
-							Template: &corev1.PodTemplateSpec{
-								Spec: corev1.PodSpec{
-									Containers: []corev1.Container{
-										{
-											Name: "dummyContainer",
-										},
-									},
-								},
-							},
-						},
-					},
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "test-otherApp",
-							Namespace: "test",
-							Labels: map[string]string{
-								applabels.ApplicationLabel:         "otherApp",
-								componentlabels.ComponentLabel:     "test",
-								componentlabels.ComponentTypeLabel: "python",
-							},
-							Annotations: map[string]string{
-								ComponentSourceTypeAnnotation: "local",
-							},
-						},
-						Spec: appsv1.DeploymentConfigSpec{
-							Template: &corev1.PodTemplateSpec{
-								Spec: corev1.PodSpec{
-									Containers: []corev1.Container{
-										{
-											Name: "dummyContainer",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
+			name:          "Case 1: Components are returned",
+			dcList:        dcList,
 			wantErr:       false,
 			projectExists: true,
 			output: ComponentList{
@@ -355,44 +288,8 @@ func TestList(t *testing.T) {
 				},
 				ListMeta: metav1.ListMeta{},
 				Items: []Component{
-					{
-						TypeMeta: metav1.TypeMeta{
-							Kind:       "Component",
-							APIVersion: "odo.openshift.io/v1alpha1",
-						},
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "frontend",
-							Namespace: "test",
-						},
-						Spec: ComponentSpec{
-							Type: "nodejs",
-							App:  "app",
-						},
-						Status: ComponentStatus{
-							State:            StateTypePushed,
-							LinkedServices:   []string{},
-							LinkedComponents: map[string][]string{},
-						},
-					},
-					{
-						TypeMeta: metav1.TypeMeta{
-							Kind:       "Component",
-							APIVersion: "odo.openshift.io/v1alpha1",
-						},
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "backend",
-							Namespace: "test",
-						},
-						Spec: ComponentSpec{
-							Type: "java",
-							App:  "app",
-						},
-						Status: ComponentStatus{
-							State:            StateTypePushed,
-							LinkedServices:   []string{},
-							LinkedComponents: map[string][]string{},
-						},
-					},
+					getFakeComponent("frontend", "test", "app", "nodejs", StateTypePushed),
+					getFakeComponent("backend", "test", "app", "java", StateTypePushed),
 				},
 			},
 		},
@@ -409,86 +306,8 @@ func TestList(t *testing.T) {
 			output:        GetMachineReadableFormatForList([]Component{}),
 		},
 		{
-			name: "Case 4: Components are returned from the config plus and cluster",
-			dcList: appsv1.DeploymentConfigList{
-				Items: []appsv1.DeploymentConfig{
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "frontend-app",
-							Namespace: "test",
-							Labels: map[string]string{
-								applabels.ApplicationLabel:         "app",
-								componentlabels.ComponentLabel:     "frontend",
-								componentlabels.ComponentTypeLabel: "nodejs",
-							},
-							Annotations: map[string]string{
-								ComponentSourceTypeAnnotation: "local",
-							},
-						},
-						Spec: appsv1.DeploymentConfigSpec{
-							Template: &corev1.PodTemplateSpec{
-								Spec: corev1.PodSpec{
-									Containers: []corev1.Container{
-										{
-											Name: "dummyContainer",
-										},
-									},
-								},
-							},
-						},
-					},
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "backend-app",
-							Namespace: "project-testing",
-							Labels: map[string]string{
-								applabels.ApplicationLabel:         "app",
-								componentlabels.ComponentLabel:     "backend",
-								componentlabels.ComponentTypeLabel: "java",
-							},
-							Annotations: map[string]string{
-								ComponentSourceTypeAnnotation: "local",
-							},
-						},
-						Spec: appsv1.DeploymentConfigSpec{
-							Template: &corev1.PodTemplateSpec{
-								Spec: corev1.PodSpec{
-									Containers: []corev1.Container{
-										{
-											Name: "dummyContainer",
-										},
-									},
-								},
-							},
-						},
-					},
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "test-otherApp",
-							Namespace: "test",
-							Labels: map[string]string{
-								applabels.ApplicationLabel:         "otherApp",
-								componentlabels.ComponentLabel:     "test",
-								componentlabels.ComponentTypeLabel: "python",
-							},
-							Annotations: map[string]string{
-								ComponentSourceTypeAnnotation: "local",
-							},
-						},
-						Spec: appsv1.DeploymentConfigSpec{
-							Template: &corev1.PodTemplateSpec{
-								Spec: corev1.PodSpec{
-									Containers: []corev1.Container{
-										{
-											Name: "dummyContainer",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
+			name:                    "Case 4: Components are returned from the config plus and cluster",
+			dcList:                  dcList,
 			wantErr:                 false,
 			projectExists:           true,
 			existingLocalConfigInfo: &existingSampleLocalConfig,
@@ -499,47 +318,18 @@ func TestList(t *testing.T) {
 				},
 				ListMeta: metav1.ListMeta{},
 				Items: []Component{
-					{
-						TypeMeta: metav1.TypeMeta{
-							Kind:       "Component",
-							APIVersion: "odo.openshift.io/v1alpha1",
-						},
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "frontend",
-							Namespace: "test",
-						},
-						Spec: ComponentSpec{
-							Type: "nodejs",
-							App:  "app",
-						},
-						Status: ComponentStatus{
-							State:            StateTypePushed,
-							LinkedServices:   []string{},
-							LinkedComponents: map[string][]string{},
-						},
-					},
-					{
-						TypeMeta: metav1.TypeMeta{
-							Kind:       "Component",
-							APIVersion: "odo.openshift.io/v1alpha1",
-						},
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "backend",
-							Namespace: "test",
-						},
-						Spec: ComponentSpec{
-							Type: "java",
-							App:  "app",
-						},
-						Status: ComponentStatus{
-							State:            StateTypePushed,
-							LinkedServices:   []string{},
-							LinkedComponents: map[string][]string{},
-						},
-					},
+					getFakeComponent("frontend", "test", "app", "nodejs", StateTypePushed),
+					getFakeComponent("backend", "test", "app", "java", StateTypePushed),
 					componentConfig,
 				},
 			},
+		},
+		{
+			name:                    "Case 5: List component when openshift cluster not reachable",
+			wantErr:                 false,
+			projectExists:           false,
+			existingLocalConfigInfo: &existingSampleLocalConfig,
+			output:                  GetMachineReadableFormatForList([]Component{componentConfig2}),
 		},
 	}
 
@@ -561,9 +351,12 @@ func TestList(t *testing.T) {
 			})
 
 			// Prepend reactor returns the last matched reactor added
-			// to return conditional reactor as per calling count
+			// We need to return errorNotFound for localconfig only component
 			count := 0
 			fakeClientSet.AppsClientset.PrependReactor("get", "deploymentconfigs", func(action ktesting.Action) (bool, runtime.Object, error) {
+				if tt.name == "Case 5: List component when openshift cluster not reachable" {
+					return true, nil, errors.NewUnauthorized("user unauthorized")
+				}
 				switch count {
 				case 0, 1:
 					count++
@@ -578,8 +371,6 @@ func TestList(t *testing.T) {
 				count++
 				return true, &tt.dcList.Items[0], nil
 			})
-
-			//ret 	comp-app, errorNotfound
 
 			results, err := List(client, "app", tt.existingLocalConfigInfo)
 
@@ -967,6 +758,9 @@ func TestGetComponentFromConfig(t *testing.T) {
 }
 
 func TestUnlinkComponents(t *testing.T) {
+	namespace := "test"
+	appName := "app"
+	state := StateTypePushed
 	tests := []struct {
 		name            string
 		parentComponent Component
@@ -975,21 +769,23 @@ func TestUnlinkComponents(t *testing.T) {
 	}{
 		{
 			name:            "Case 1: Single child component linked to only one port of parent component",
-			parentComponent: fakeComponent("java"),
-			childComponents: []Component{fakeComponent("nodejs")},
+			parentComponent: getFakeComponent("java", namespace, appName, "java", state),
+			childComponents: []Component{getFakeComponent("nodejs", namespace, appName, "nodejs", state)},
 			ports:           []string{"8080"},
 		},
 		{
 			name:            "Case 2: Single child component linked to multiple ports of parent component",
-			parentComponent: fakeComponent("java"),
-			childComponents: []Component{fakeComponent("nodejs")},
+			parentComponent: getFakeComponent("java", namespace, appName, "java", state),
+			childComponents: []Component{getFakeComponent("nodejs", namespace, appName, "nodejs", state)},
 			ports:           []string{"8080", "8443"},
 		},
 		{
 			name:            "Case 3: Multiple child components linked to multiple ports of parent component",
-			parentComponent: fakeComponent("java"),
-			childComponents: []Component{fakeComponent("nodejs"), fakeComponent("python")},
-			ports:           []string{"8080", "8443"},
+			parentComponent: getFakeComponent("java", namespace, appName, "java", state),
+			childComponents: []Component{
+				getFakeComponent("nodejs", namespace, appName, "nodejs", state),
+				getFakeComponent("python", namespace, appName, "python", state)},
+			ports: []string{"8080", "8443"},
 		},
 	}
 
@@ -1028,32 +824,61 @@ func TestUnlinkComponents(t *testing.T) {
 
 }
 
-// fakeComponent returns a Component of name & type specified by cmpType
-func fakeComponent(cmpType string) Component {
+// linkFakeComponents adds link to "port" of "componentA" in "componentB". It
+// is equivalent to doing `odo link componentA --port <port>` from component
+// directory of componentB
+func linkFakeComponents(componentA, componentB *Component, port string) {
+	componentB.Status.LinkedComponents[componentA.Name] = append(componentB.Status.LinkedComponents[componentA.Name], port)
+}
+
+func getFakeDC(name, namespace, appName, componentType string) appsv1.DeploymentConfig {
+	return appsv1.DeploymentConfig{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-%s", name, appName),
+			Namespace: namespace,
+			Labels: map[string]string{
+				applabels.ApplicationLabel:         appName,
+				componentlabels.ComponentLabel:     name,
+				componentlabels.ComponentTypeLabel: componentType,
+			},
+			Annotations: map[string]string{
+				ComponentSourceTypeAnnotation: "local",
+			},
+		},
+		Spec: appsv1.DeploymentConfigSpec{
+			Template: &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{
+						{
+							Name: "dummyContainer",
+						},
+					},
+				},
+			},
+		},
+	}
+
+}
+
+func getFakeComponent(compName, namespace, appName, compType string, state State) Component {
 	return Component{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Component",
 			APIVersion: "odo.openshift.io/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      cmpType,
-			Namespace: "test",
+			Name:      compName,
+			Namespace: namespace,
 		},
 		Spec: ComponentSpec{
-			Type: cmpType,
-			App:  "app",
+			Type: compType,
+			App:  appName,
 		},
 		Status: ComponentStatus{
-			State:            StateTypePushed,
+			State:            state,
 			LinkedServices:   []string{},
 			LinkedComponents: map[string][]string{},
 		},
 	}
-}
 
-// linkFakeComponents adds link to "port" of "componentA" in "componentB". It
-// is equivalent to doing `odo link componentA --port <port>` from component
-// directory of componentB
-func linkFakeComponents(componentA, componentB *Component, port string) {
-	componentB.Status.LinkedComponents[componentA.Name] = append(componentB.Status.LinkedComponents[componentA.Name], port)
 }
