@@ -464,6 +464,7 @@ func (oc *OcRunner) WaitAndCheckForExistence(resourceType, namespace string, tim
 		case <-tick:
 			session := CmdRunner(oc.path, "get", resourceType, "--namespace", namespace)
 			Eventually(session).Should(gexec.Exit(0))
+			// https://github.com/kubernetes/kubectl/issues/847
 			output := string(session.Wait().Err.Contents())
 
 			if strings.Contains(strings.ToLower(output), "no resources found") {
