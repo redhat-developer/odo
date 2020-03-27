@@ -450,7 +450,7 @@ var _ = Describe("odo service command tests", func() {
 				return strings.Contains(output, "dh-postgresql-apb")
 			})
 
-			helper.CmdShouldPass("odo", "app", "delete", app, "-f")
+			helper.CmdShouldPass("odo", "app", "delete", app, "--project", project, "-f")
 
 			ocArgs = []string{"get", "serviceinstances", "-n", project}
 			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
