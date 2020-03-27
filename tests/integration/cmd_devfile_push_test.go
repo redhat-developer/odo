@@ -2,7 +2,6 @@ package integration
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -52,21 +51,9 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
 			componentName := path.Base(context)
-			originalContent, err := ioutil.ReadFile("devfile.yaml")
-			Expect(err).NotTo(HaveOccurred())
-			newContent, err := ioutil.ReadFile("devfile-no-endpoints.yaml")
-			Expect(err).NotTo(HaveOccurred())
-
-			// overwrite devfile.yaml content with content of devfile-no-endpoints.yaml
-			err = ioutil.WriteFile("devfile.yaml", []byte(newContent), 0600)
-			Expect(err).NotTo(HaveOccurred())
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", project)
+			helper.CmdShouldPass("odo", "push", "--devfile", "devfile-no-endpoints.yaml", "--namespace", project)
 			output := oc.GetServices(project)
 			Expect(output).NotTo(ContainSubstring(componentName))
-
-			// restore the original devfile content
-			err = ioutil.WriteFile("devfile.yaml", []byte(originalContent), 0600)
-			Expect(err).NotTo(HaveOccurred())
 			output = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", project)
 
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))

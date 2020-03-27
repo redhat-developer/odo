@@ -227,13 +227,17 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 				glog.V(3).Infof("Successfully created Service for component %s", componentName)
 			}
 		} else {
-			serviceSpec.ClusterIP = oldSvc.Spec.ClusterIP
-			objectMetaTemp.ResourceVersion = oldSvc.GetResourceVersion()
-			_, err = a.Client.UpdateService(objectMetaTemp, *serviceSpec)
-			if err != nil {
-				return err
+			if len(serviceSpec.Ports) > 0 {
+				serviceSpec.ClusterIP = oldSvc.Spec.ClusterIP
+				objectMetaTemp.ResourceVersion = oldSvc.GetResourceVersion()
+				_, err = a.Client.UpdateService(objectMetaTemp, *serviceSpec)
+				if err != nil {
+					return err
+				}
+				glog.V(3).Infof("Successfully update Service for component %s", componentName)
+			} else {
+				a.Client.KubeClient.CoreV1().Services(a.Client.Namespace).Delete(componentName, &metav1.DeleteOptions{})
 			}
-			glog.V(3).Infof("Successfully update Service for component %s", componentName)
 		}
 	} else {
 		deployment, err := a.Client.CreateDeployment(*deploymentSpec)
