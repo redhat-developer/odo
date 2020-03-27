@@ -236,7 +236,10 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 				}
 				glog.V(3).Infof("Successfully update Service for component %s", componentName)
 			} else {
-				a.Client.KubeClient.CoreV1().Services(a.Client.Namespace).Delete(componentName, &metav1.DeleteOptions{})
+				err = a.Client.KubeClient.CoreV1().Services(a.Client.Namespace).Delete(componentName, &metav1.DeleteOptions{})
+				if err != nil {
+					return err
+				}
 			}
 		}
 	} else {
