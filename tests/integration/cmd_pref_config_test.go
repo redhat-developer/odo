@@ -23,6 +23,23 @@ var _ = Describe("odo preference and config command tests", func() {
 		oc = helper.NewOcRunner("oc")
 	})
 
+	Context("check that help works", func() {
+		It("should display help when using odo -h", func() {
+			appHelp := helper.CmdShouldPass("odo", "-h")
+			Expect(appHelp).To(ContainSubstring(`Use "odo [command] --help" for more information about a command.`))
+		})
+
+		It("should display help when using odo help", func() {
+			appHelp := helper.CmdShouldPass("odo", "help")
+			Expect(appHelp).To(ContainSubstring(`Use "odo [command] --help" for more information about a command.`))
+		})
+
+		It("should display help when using odo --help", func() {
+			appHelp := helper.CmdShouldPass("odo", "--help")
+			Expect(appHelp).To(ContainSubstring(`Use "odo [command] --help" for more information about a command.`))
+		})
+	})
+
 	Context("when running help for preference command", func() {
 		It("should display the help", func() {
 			appHelp := helper.CmdShouldPass("odo", "preference", "-h")
