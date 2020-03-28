@@ -39,8 +39,9 @@ type Adapter struct {
 
 // Push updates the component if a matching component exists or creates one if it doesn't exist
 // Once the component has started, it will sync the source code to it.
-func (a Adapter) Push(path string, ignoredFiles []string, forceBuild bool, globExps []string) (err error) {
+func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	componentExists := utils.ComponentExists(a.Client, a.ComponentName)
+	globExps := util.GetAbsGlobExps(parameters.Path, parameters.IgnoredFiles)
 
 	deletedFiles := []string{}
 	changedFiles := []string{}
@@ -59,8 +60,9 @@ func (a Adapter) Push(path string, ignoredFiles []string, forceBuild bool, globE
 	// Sync source code to the component
 	// If syncing for the first time, sync the entire source directory
 	// If syncing to an already running component, sync the deltas
-	if !forceBuild {
-		absIgnoreRules := util.GetAbsGlobExps(path, ignoredFiles)
+	// If syncing from an odo watch process, skip this step, as we already have the list of changed and deleted files.
+	if !parameters.ForceBuild && len(parameters.WatchFiles) == 0 && len(parameters.WatchDeletedFiles) == 0 {
+		absIgnoreRules := util.GetAbsGlobExps(parameters.Path, parameters.IgnoredFiles)
 
 		spinner := log.NewStatus(log.GetStdout())
 		defer spinner.End(true)
@@ -73,7 +75,7 @@ func (a Adapter) Push(path string, ignoredFiles []string, forceBuild bool, globE
 		}
 
 		// Before running the indexer, make sure the .odo folder exists (or else the index file will not get created)
-		odoFolder := filepath.Join(path, ".odo")
+		odoFolder := filepath.Join(parameters.Path, ".odo")
 		if _, err := os.Stat(odoFolder); os.IsNotExist(err) {
 			err = os.Mkdir(odoFolder, 0750)
 			if err != nil {
@@ -82,7 +84,7 @@ func (a Adapter) Push(path string, ignoredFiles []string, forceBuild bool, globE
 		}
 
 		// run the indexer and find the modified/added/deleted/renamed files
-		filesChanged, filesDeleted, err := util.RunIndexer(path, absIgnoreRules)
+		filesChanged, filesDeleted, err := util.RunIndexer(parameters.Path, absIgnoreRules)
 		spinner.End(true)
 
 		if err != nil {
@@ -97,7 +99,7 @@ func (a Adapter) Push(path string, ignoredFiles []string, forceBuild bool, globE
 
 			// Remove the relative file directory from the list of deleted files
 			// in order to make the changes correctly within the Kubernetes pod
-			deletedFiles, err = util.RemoveRelativePathFromFiles(filesDeletedFiltered, path)
+			deletedFiles, err = util.RemoveRelativePathFromFiles(filesDeletedFiltered, parameters.Path)
 			if err != nil {
 				return errors.Wrap(err, "unable to remove relative path from list of changed/deleted files")
 			}
@@ -110,14 +112,17 @@ func (a Adapter) Push(path string, ignoredFiles []string, forceBuild bool, globE
 				return nil
 			}
 		}
+	} else if len(parameters.WatchFiles) > 0 || len(parameters.WatchDeletedFiles) > 0 {
+		changedFiles = parameters.WatchFiles
+		deletedFiles = parameters.WatchDeletedFiles
 	}
 
-	if forceBuild || !componentExists {
+	if parameters.ForceBuild || !componentExists {
 		isForcePush = true
 	}
 
 	// Sync the local source code to the component
-	err = a.pushLocal(path,
+	err = a.pushLocal(parameters.Path,
 		changedFiles,
 		deletedFiles,
 		isForcePush,
@@ -128,6 +133,11 @@ func (a Adapter) Push(path string, ignoredFiles []string, forceBuild bool, globE
 		return errors.Wrapf(err, "Failed to sync to component with name %s", a.ComponentName)
 	}
 	return nil
+}
+
+// DoesComponentExist returns true if a component with the specified name exists, false otherwise
+func (a Adapter) DoesComponentExist(cmpName string) bool {
+	return utils.ComponentExists(a.Client, cmpName)
 }
 
 func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
@@ -207,6 +217,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 	glog.V(3).Infof("The component name is %v", componentName)
 
 	if utils.ComponentExists(a.Client, componentName) {
+		// If the component already exists, get the resource version of the deploy before updating
 		glog.V(3).Info("The component already exists, attempting to update it")
 		deployment, err := a.Client.UpdateDeployment(*deploymentSpec)
 		if err != nil {

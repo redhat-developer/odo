@@ -391,3 +391,67 @@ func TestGetCmdToDeleteFiles(t *testing.T) {
 		}
 	}
 }
+
+func TestDoesComponentExist(t *testing.T) {
+
+	tests := []struct {
+		name             string
+		componentType    versionsCommon.DevfileComponentType
+		componentName    string
+		getComponentName string
+		want             bool
+	}{
+		{
+			name:             "Case 1: Valid component name",
+			componentType:    versionsCommon.DevfileComponentTypeDockerimage,
+			componentName:    "test-name",
+			getComponentName: "test-name",
+			want:             true,
+		},
+		{
+			name:             "Case 2: Non-existent component name",
+			componentType:    versionsCommon.DevfileComponentTypeDockerimage,
+			componentName:    "test-name",
+			getComponentName: "fake-component",
+			want:             false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			devObj := devfile.DevfileObj{
+				Data: testingutil.TestDevfileData{
+					ComponentType: tt.componentType,
+				},
+			}
+
+			adapterCtx := adaptersCommon.AdapterContext{
+				ComponentName: tt.componentName,
+				Devfile:       devObj,
+			}
+
+			fkclient, fkclientset := kclient.FakeNew()
+			fkWatch := watch.NewFake()
+
+			fkclientset.Kubernetes.PrependWatchReactor("pods", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
+				return true, fkWatch, nil
+			})
+
+			// DoesComponentExist requires an already started component, so start it.
+			componentAdapter := New(adapterCtx, *fkclient)
+			err := componentAdapter.createOrUpdateComponent(false)
+
+			// Checks for unexpected error cases
+			if err != nil {
+				t.Errorf("component adapter start unexpected error %v", err)
+			}
+
+			// Verify that a comopnent with the specified name exists
+			componentExists := componentAdapter.DoesComponentExist(tt.getComponentName)
+			if componentExists != tt.want {
+				t.Errorf("expected %v, actual %v", tt.want, componentExists)
+			}
+
+		})
+	}
+
+}
