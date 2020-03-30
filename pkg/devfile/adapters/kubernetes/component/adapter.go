@@ -188,7 +188,10 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 		return fmt.Errorf("No valid components found in the devfile")
 	}
 
-	containers = utils.UpdateContainersWithSupervisord(a.Devfile, containers, a.devfileRunCmd)
+	containers, err = utils.UpdateContainersWithSupervisord(a.Devfile, containers, a.devfileRunCmd)
+	if err != nil {
+		return err
+	}
 
 	objectMeta := kclient.CreateObjectMeta(componentName, a.Client.Namespace, labels, nil)
 	podTemplateSpec := kclient.GeneratePodTemplateSpec(objectMeta, containers)

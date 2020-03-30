@@ -100,9 +100,12 @@ func GetContainers(devfileObj devfile.DevfileObj) ([]corev1.Container, error) {
 
 // UpdateContainersWithSupervisord updates the run components entrypoint and volume mount
 // with supervisord if no entrypoint has been specified for the component in the devfile
-func UpdateContainersWithSupervisord(devfileObj devfile.DevfileObj, containers []corev1.Container, devfileRunCmd string) []corev1.Container {
+func UpdateContainersWithSupervisord(devfileObj devfile.DevfileObj, containers []corev1.Container, devfileRunCmd string) ([]corev1.Container, error) {
 
-	runCommand := adaptersCommon.GetRunCommand(devfileObj.Data, devfileRunCmd)
+	runCommand, err := adaptersCommon.GetRunCommand(devfileObj.Data, devfileRunCmd)
+	if err != nil {
+		return nil, err
+	}
 
 	for i, container := range containers {
 		for _, action := range runCommand.Actions {
@@ -144,7 +147,8 @@ func UpdateContainersWithSupervisord(devfileObj devfile.DevfileObj, containers [
 			}
 		}
 	}
-	return containers
+
+	return containers, nil
 
 }
 

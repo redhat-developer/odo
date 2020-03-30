@@ -14,18 +14,45 @@ import (
 func TestGetSupportedComponents(t *testing.T) {
 
 	tests := []struct {
-		name          string
-		componentType versionsCommon.DevfileComponentType
-		alias         []string
+		name                 string
+		componentType        versionsCommon.DevfileComponentType
+		alias                []string
+		expectedMatchesCount int
 	}{
 		{
-			name:          "Case: Invalid devfile",
-			componentType: "",
+			name:                 "Case: Invalid devfile",
+			componentType:        "",
+			expectedMatchesCount: 0,
 		},
 		{
-			name:          "Case: Valid devfile",
-			componentType: versionsCommon.DevfileComponentTypeDockerimage,
-			alias:         []string{"alias1", "alias2"},
+			name:                 "Case: Valid devfile with wrong component type (CheEditor)",
+			componentType:        versionsCommon.DevfileComponentTypeCheEditor,
+			alias:                []string{"alias1", "alias2"},
+			expectedMatchesCount: 0,
+		},
+		{
+			name:                 "Case: Valid devfile with wrong component type (ChePlugin)",
+			componentType:        versionsCommon.DevfileComponentTypeChePlugin,
+			alias:                []string{"alias1", "alias2"},
+			expectedMatchesCount: 0,
+		},
+		{
+			name:                 "Case: Valid devfile with wrong component type (Kubernetes)",
+			componentType:        versionsCommon.DevfileComponentTypeKubernetes,
+			alias:                []string{"alias1", "alias2"},
+			expectedMatchesCount: 0,
+		},
+		{
+			name:                 "Case: Valid devfile with wrong component type (Openshift)",
+			componentType:        versionsCommon.DevfileComponentTypeOpenshift,
+			alias:                []string{"alias1", "alias2"},
+			expectedMatchesCount: 0,
+		},
+		{
+			name:                 "Case: Valid devfile with correct component type (Dockerimage)",
+			componentType:        versionsCommon.DevfileComponentTypeDockerimage,
+			alias:                []string{"alias1", "alias2"},
+			expectedMatchesCount: 2,
 		},
 	}
 	for _, tt := range tests {
@@ -48,8 +75,8 @@ func TestGetSupportedComponents(t *testing.T) {
 				}
 			}
 
-			if componentsMatched != len(tt.alias) {
-				t.Errorf("TestGetSupportedComponents error: wrong number of components matched: expected %v, actual %v", len(tt.alias), componentsMatched)
+			if componentsMatched != tt.expectedMatchesCount {
+				t.Errorf("TestGetSupportedComponents error: wrong number of components matched: expected %v, actual %v", tt.expectedMatchesCount, componentsMatched)
 			}
 		})
 	}
@@ -58,24 +85,24 @@ func TestGetSupportedComponents(t *testing.T) {
 
 func TestGetCommand(t *testing.T) {
 
-	var emptyCommand common.DevfileCommand
-
 	commands := [...]string{"ls -la", "pwd"}
 	components := [...]string{"alias1", "alias2"}
+	invalidComponent := "garbagealias"
 	workDir := [...]string{"/", "/root"}
 	validCommandType := common.DevfileCommandTypeExec
 	invalidCommandType := common.DevfileCommandType("garbage")
 	emptyString := ""
 
 	tests := []struct {
-		name           string
-		commandNames   []string
-		commandActions []common.DevfileCommandAction
-		wantErr        bool
+		name              string
+		requestedCommands []string
+		commandActions    []common.DevfileCommandAction
+		isCommandRequired []bool
+		wantErr           bool
 	}{
 		{
-			name:         "Case: Valid devfile",
-			commandNames: []string{"devbuild", "devrun"},
+			name:              "Case: Valid devfile",
+			requestedCommands: []string{"devbuild", "devrun"},
 			commandActions: []versionsCommon.DevfileCommandAction{
 				{
 					Command:   &commands[0],
@@ -84,11 +111,12 @@ func TestGetCommand(t *testing.T) {
 					Type:      &validCommandType,
 				},
 			},
-			wantErr: false,
+			isCommandRequired: []bool{false, true},
+			wantErr:           false,
 		},
 		{
-			name:         "Case: Wrong Command",
-			commandNames: []string{"garbage1"},
+			name:              "Case: Wrong command requested",
+			requestedCommands: []string{"garbage1"},
 			commandActions: []versionsCommon.DevfileCommandAction{
 				{
 					Command:   &commands[0],
@@ -97,11 +125,12 @@ func TestGetCommand(t *testing.T) {
 					Type:      &validCommandType,
 				},
 			},
-			wantErr: true,
+			isCommandRequired: []bool{true},
+			wantErr:           true,
 		},
 		{
-			name:         "Case: Invalid devfile with wrong command type",
-			commandNames: []string{"devbuild"},
+			name:              "Case: Invalid devfile with wrong command type",
+			requestedCommands: []string{"devbuild"},
 			commandActions: []versionsCommon.DevfileCommandAction{
 				{
 					Command:   &commands[0],
@@ -110,11 +139,12 @@ func TestGetCommand(t *testing.T) {
 					Type:      &invalidCommandType,
 				},
 			},
-			wantErr: true,
+			isCommandRequired: []bool{true},
+			wantErr:           true,
 		},
 		{
-			name:         "Case: Invalid devfile with empty component",
-			commandNames: []string{"devbuild"},
+			name:              "Case: Invalid devfile with empty component",
+			requestedCommands: []string{"devbuild"},
 			commandActions: []versionsCommon.DevfileCommandAction{
 				{
 					Command:   &commands[0],
@@ -123,11 +153,12 @@ func TestGetCommand(t *testing.T) {
 					Type:      &validCommandType,
 				},
 			},
-			wantErr: true,
+			isCommandRequired: []bool{false},
+			wantErr:           true,
 		},
 		{
-			name:         "Case: Invalid devfile with empty command",
-			commandNames: []string{"devbuild"},
+			name:              "Case: Invalid devfile with empty command",
+			requestedCommands: []string{"devbuild"},
 			commandActions: []versionsCommon.DevfileCommandAction{
 				{
 					Command:   &emptyString,
@@ -136,11 +167,12 @@ func TestGetCommand(t *testing.T) {
 					Type:      &validCommandType,
 				},
 			},
-			wantErr: true,
+			isCommandRequired: []bool{false},
+			wantErr:           true,
 		},
 		{
-			name:         "Case: Valid devfile with empty workdir",
-			commandNames: []string{"devrun"},
+			name:              "Case: Valid devfile with empty workdir",
+			requestedCommands: []string{"devrun"},
 			commandActions: []versionsCommon.DevfileCommandAction{
 				{
 					Command:   &commands[0],
@@ -148,7 +180,21 @@ func TestGetCommand(t *testing.T) {
 					Type:      &validCommandType,
 				},
 			},
-			wantErr: false,
+			isCommandRequired: []bool{true},
+			wantErr:           false,
+		},
+		{
+			name:              "Case: Invalid command referencing an absent component",
+			requestedCommands: []string{"devrun"},
+			commandActions: []versionsCommon.DevfileCommandAction{
+				{
+					Command:   &commands[0],
+					Component: &invalidComponent,
+					Type:      &validCommandType,
+				},
+			},
+			isCommandRequired: []bool{true},
+			wantErr:           true,
 		},
 	}
 	for _, tt := range tests {
@@ -156,14 +202,14 @@ func TestGetCommand(t *testing.T) {
 			devObj := devfile.DevfileObj{
 				Data: testingutil.TestDevfileData{
 					CommandActions: tt.commandActions,
+					ComponentType:  versionsCommon.DevfileComponentTypeDockerimage,
 				},
 			}
 
-			for _, commandName := range tt.commandNames {
-				command := GetCommand(devObj.Data, commandName)
-
-				if !tt.wantErr && reflect.DeepEqual(emptyCommand, command) {
-					t.Errorf("TestGetCommand error: could not find devfile command for %v", commandName)
+			for i, commandName := range tt.requestedCommands {
+				command, err := getCommand(devObj.Data, commandName, tt.isCommandRequired[i])
+				if !tt.wantErr == (err != nil) {
+					t.Errorf("TestGetCommand unexpected error for command: %v wantErr: %v err: %v", commandName, tt.wantErr, err)
 					return
 				} else if tt.wantErr {
 					return
@@ -257,8 +303,20 @@ func TestGetSupportedCommandActions(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		devObj := devfile.DevfileObj{
+			Data: testingutil.TestDevfileData{
+				CommandActions: []versionsCommon.DevfileCommandAction{
+					{
+						Command:   &command,
+						Component: &component,
+						Type:      &validCommandType,
+					},
+				},
+				ComponentType: versionsCommon.DevfileComponentTypeDockerimage,
+			},
+		}
 		t.Run(tt.name, func(t *testing.T) {
-			supportedCommandActions := getSupportedCommandActions(tt.command)
+			supportedCommandActions, _ := getSupportedCommandActions(devObj.Data, tt.command)
 			if !tt.wantErr && len(supportedCommandActions) != len(tt.command.Actions) {
 				t.Errorf("TestGetSupportedCommandActions error: incorrect number of command actions expected: %v actual: %v", len(tt.command.Actions), len(supportedCommandActions))
 			} else if tt.wantErr && len(supportedCommandActions) != 0 {
@@ -324,12 +382,23 @@ func TestValidateAction(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		devObj := devfile.DevfileObj{
+			Data: testingutil.TestDevfileData{
+				CommandActions: []versionsCommon.DevfileCommandAction{
+					{
+						Command:   &command,
+						Component: &component,
+						Type:      &validCommandType,
+					},
+				},
+				ComponentType: versionsCommon.DevfileComponentTypeDockerimage,
+			},
+		}
 		t.Run(tt.name, func(t *testing.T) {
-			isValid := validateAction(tt.action)
-			if tt.wantErr == isValid {
-				t.Errorf("TestValidateAction error: command action validation failed expected: %v actual: %v", !isValid, isValid)
-			} else if tt.wantErr && isValid {
-				t.Errorf("TestValidateAction error: command action validation failed expected: %v actual: %v", !isValid, isValid)
+			err := validateAction(devObj.Data, tt.action)
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("TestValidateAction unexpected error: %v", err)
+				return
 			}
 		})
 	}
@@ -398,15 +467,16 @@ func TestGetBuildCommand(t *testing.T) {
 			devObj := devfile.DevfileObj{
 				Data: testingutil.TestDevfileData{
 					CommandActions: tt.commandActions,
+					ComponentType:  versionsCommon.DevfileComponentTypeDockerimage,
 				},
 			}
 
-			command := GetBuildCommand(devObj.Data, tt.commandName)
+			command, err := GetBuildCommand(devObj.Data, tt.commandName)
 
-			if !tt.wantErr && reflect.DeepEqual(emptyCommand, command) {
-				t.Errorf("TestGetBuildCommand error: command not found expected: %v actual: <EMPTY>", tt.commandName)
-			} else if tt.wantErr && !reflect.DeepEqual(emptyCommand, command) {
-				t.Errorf("TestGetBuildCommand error: command found expected: <EMPTY> actual: %v", command.Name)
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("TestGetBuildCommand: unexpected error for command \"%v\" expected: %v actual: %v", tt.commandName, tt.wantErr, err)
+			} else if !tt.wantErr && reflect.DeepEqual(emptyCommand, command) {
+				t.Errorf("TestGetBuildCommand: unexpected empty command returned for command: %v", tt.commandName)
 			}
 
 		})
@@ -476,65 +546,16 @@ func TestGetRunCommand(t *testing.T) {
 			devObj := devfile.DevfileObj{
 				Data: testingutil.TestDevfileData{
 					CommandActions: tt.commandActions,
+					ComponentType:  versionsCommon.DevfileComponentTypeDockerimage,
 				},
 			}
 
-			command := GetRunCommand(devObj.Data, tt.commandName)
+			command, err := GetRunCommand(devObj.Data, tt.commandName)
 
-			if !tt.wantErr && reflect.DeepEqual(emptyCommand, command) {
-				t.Errorf("TestGetRunCommand error: command not found expected: %v actual: <EMPTY>", tt.commandName)
-			} else if tt.wantErr && !reflect.DeepEqual(emptyCommand, command) {
-				t.Errorf("TestGetRunCommand error: command found expected: <EMPTY> actual: %v", command.Name)
-			}
-
-		})
-	}
-
-}
-
-func TestIsCommandPresent(t *testing.T) {
-
-	command := "ls -la"
-	component := "alias1"
-	workDir := "/"
-	validCommandType := common.DevfileCommandTypeExec
-
-	var emptyCommand common.DevfileCommand
-
-	tests := []struct {
-		name    string
-		command common.DevfileCommand
-		wantErr bool
-	}{
-		{
-			name: "Case: Valid Command",
-			command: common.DevfileCommand{
-				Name: "testCommand",
-				Actions: []versionsCommon.DevfileCommandAction{
-					{
-						Command:   &command,
-						Component: &component,
-						Workdir:   &workDir,
-						Type:      &validCommandType,
-					},
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name:    "Case: Valid Command",
-			command: emptyCommand,
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			isCommandPresent := IsCommandPresent(tt.command)
-
-			if isCommandPresent != !tt.wantErr {
-				t.Errorf("TestIsCommandPresent error: expected: %v actual: %v", !tt.wantErr, isCommandPresent)
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("TestGetRunCommand: unexpected error for command \"%v\" expected: %v actual: %v", tt.commandName, tt.wantErr, err)
+			} else if !tt.wantErr && reflect.DeepEqual(emptyCommand, command) {
+				t.Errorf("TestGetRunCommand: unexpected empty command returned for command: %v", tt.commandName)
 			}
 		})
 	}
@@ -629,8 +650,8 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 			}
 
 			pushCommands, err := ValidateAndGetPushDevfileCommands(devObj.Data, tt.buildCommand, tt.runCommand)
-			if !tt.wantErr && err != nil {
-				t.Errorf("TestValidateAndGetPushDevfileCommands unexpected error when validating commands: %v", err.Error())
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("TestValidateAndGetPushDevfileCommands unexpected error when validating commands wantErr: %v err: %v", tt.wantErr, err)
 			} else if tt.wantErr && err != nil {
 				return
 			}
@@ -638,91 +659,6 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 			if len(pushCommands) != tt.numberOfCommands {
 				t.Errorf("TestValidateAndGetPushDevfileCommands error: wrong number of validated commands expected: %v actual :%v", tt.numberOfCommands, len(pushCommands))
 			}
-		})
-	}
-
-}
-
-func TestIsCommandValid(t *testing.T) {
-
-	command := "ls -la"
-	component := []string{"alias1", "garbagealias"}
-	workDir := "/"
-	validCommandType := common.DevfileCommandTypeExec
-
-	tests := []struct {
-		name          string
-		command       common.DevfileCommand
-		componentType versionsCommon.DevfileComponentType
-		wantErr       bool
-	}{
-		{
-			name: "Case: Valid Command",
-			command: common.DevfileCommand{
-				Name: "testCommand",
-				Actions: []versionsCommon.DevfileCommandAction{
-					{
-						Command:   &command,
-						Component: &component[0],
-						Workdir:   &workDir,
-						Type:      &validCommandType,
-					},
-				},
-			},
-			componentType: versionsCommon.DevfileComponentTypeDockerimage,
-			wantErr:       false,
-		},
-		{
-			name: "Case: Invalid Command Referencing Component With Wrong Type",
-			command: common.DevfileCommand{
-				Name: "testCommand",
-				Actions: []versionsCommon.DevfileCommandAction{
-					{
-						Command:   &command,
-						Component: &component[0],
-						Workdir:   &workDir,
-						Type:      &validCommandType,
-					},
-				},
-			},
-			componentType: "",
-			wantErr:       true,
-		},
-		{
-			name: "Case: Invalid Command Referencing An Absent Component",
-			command: common.DevfileCommand{
-				Name: "testCommand",
-				Actions: []versionsCommon.DevfileCommandAction{
-					{
-						Command:   &command,
-						Component: &component[1],
-						Workdir:   &workDir,
-						Type:      &validCommandType,
-					},
-				},
-			},
-			componentType: versionsCommon.DevfileComponentTypeDockerimage,
-			wantErr:       true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			devObj := devfile.DevfileObj{
-				Data: testingutil.TestDevfileData{
-					CommandActions: tt.command.Actions,
-					ComponentType:  tt.componentType,
-				},
-			}
-
-			isCommandValid := IsCommandValid(devObj.Data, tt.command)
-
-			if tt.wantErr == isCommandValid {
-				t.Errorf("TestIsCommandValid unexpected error when validating command %v expected: %v actual: %v", tt.command.Name, !tt.wantErr, isCommandValid)
-			} else if tt.wantErr && isCommandValid {
-				t.Errorf("TestIsCommandValid unexpected error when validating command %v expected: %v actual: %v", tt.command.Name, !tt.wantErr, isCommandValid)
-			}
-
 		})
 	}
 

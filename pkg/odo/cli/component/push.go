@@ -44,13 +44,6 @@ type PushOptions struct {
 	namespace string
 }
 
-// DevfileCommand encapsulates the build and run command
-// which can be explicitly provided during odo push
-type DevfileCommand struct {
-	build string
-	run   string
-}
-
 // NewPushOptions returns new instance of PushOptions
 // with "default" values for certain values, for example, show is "false"
 func NewPushOptions() *PushOptions {
