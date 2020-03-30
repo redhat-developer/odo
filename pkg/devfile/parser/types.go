@@ -1,4 +1,4 @@
-package devfile
+package parser
 
 import (
 	devfileCtx "github.com/openshift/odo/pkg/devfile/parser/context"

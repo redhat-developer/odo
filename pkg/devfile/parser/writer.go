@@ -1,4 +1,4 @@
-package devfile
+package parser
 
 import (
 	"encoding/json"

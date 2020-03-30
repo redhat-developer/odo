@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/devfile/parser"
+	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/testingutil"
@@ -29,7 +29,7 @@ func TestNewPlatformAdapter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run("get platform adapter", func(t *testing.T) {
-			devObj := parser.DevfileObj{
+			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
 					ComponentType: tt.componentType,
 				},
