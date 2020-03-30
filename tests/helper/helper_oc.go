@@ -450,10 +450,26 @@ func (oc *OcRunner) WaitForDCRollout(dcName string, project string, timeout time
 	session.Wait(timeout)
 }
 
-// CheckForExistence checks if the given resource type exists on the cluster
-func (oc *OcRunner) CheckForExistence(resourceType, namespace string) {
-	session := CmdRunner(oc.path, "get", resourceType, "--namespace", namespace)
-	Eventually(session).Should(gexec.Exit(0))
-	output := string(session.Wait().Out.Contents())
-	Expect(strings.ToLower(output)).To(ContainSubstring(""))
+// WaitAndCheckForExistence wait for the given and checks if the given resource type gets deleted on the cluster
+func (oc *OcRunner) WaitAndCheckForExistence(resourceType, namespace string, timeoutMinutes int) bool {
+	pingTimeout := time.After(time.Duration(timeoutMinutes) * time.Minute)
+	// this is a test package so time.Tick() is acceptable
+	// nolint
+	tick := time.Tick(time.Second)
+	for {
+		select {
+		case <-pingTimeout:
+			Fail(fmt.Sprintf("Timeout out after %v minutes", timeoutMinutes))
+
+		case <-tick:
+			session := CmdRunner(oc.path, "get", resourceType, "--namespace", namespace)
+			Eventually(session).Should(gexec.Exit(0))
+			// https://github.com/kubernetes/kubectl/issues/847
+			output := string(session.Wait().Err.Contents())
+
+			if strings.Contains(strings.ToLower(output), "no resources found") {
+				return true
+			}
+		}
+	}
 }
