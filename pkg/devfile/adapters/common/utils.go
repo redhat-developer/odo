@@ -164,16 +164,16 @@ func GetRunCommand(data versions.DevfileData, devfileRunCmd string) (runCommand 
 // It returns the build and run commands if its validated successfully, error otherwise.
 func ValidateAndGetPushDevfileCommands(data versions.DevfileData, devfileBuildCmd, devfileRunCmd string) (pushDevfileCommands []common.DevfileCommand, err error) {
 	var emptyCommand common.DevfileCommand
-	validateBuildCommand, validateRunCommand := false, false
+	isBuildCommandValid, isRunCommandValid := false, false
 
 	buildCommand, buildCmdErr := GetBuildCommand(data, devfileBuildCmd)
 
 	if devfileBuildCmd == "" && buildCmdErr != nil {
 		// If there was no build command specified through odo push and no default build command in the devfile, default validate to true since the build command is optional
-		validateBuildCommand = true
+		isBuildCommandValid = true
 		glog.V(3).Infof("No build command was provided")
 	} else if buildCmdErr == nil {
-		validateBuildCommand = true
+		isBuildCommandValid = true
 		// The build command is optional so there may not be an error but the build command may still be empty, only add it if it exists
 		if !reflect.DeepEqual(emptyCommand, buildCommand) {
 			pushDevfileCommands = append(pushDevfileCommands, buildCommand)
@@ -184,13 +184,20 @@ func ValidateAndGetPushDevfileCommands(data versions.DevfileData, devfileBuildCm
 	runCommand, runCmdErr := GetRunCommand(data, devfileRunCmd)
 	if runCmdErr == nil && !reflect.DeepEqual(emptyCommand, runCommand) {
 		pushDevfileCommands = append(pushDevfileCommands, runCommand)
-		validateRunCommand = true
+		isRunCommandValid = true
 		glog.V(3).Infof("Run command: %v", runCommand.Name)
 	}
 
 	// If either command had a problem, return an empty list of commands and an error
-	if !validateBuildCommand || !validateRunCommand {
-		return []common.DevfileCommand{}, fmt.Errorf("devfile command validation failed, validateBuildCommand: %v validateRunCommand: %v", validateBuildCommand, validateRunCommand)
+	if !isBuildCommandValid || !isRunCommandValid {
+		commandErrors := ""
+		if buildCmdErr != nil {
+			commandErrors += buildCmdErr.Error()
+		}
+		if runCmdErr != nil {
+			commandErrors += runCmdErr.Error()
+		}
+		return []common.DevfileCommand{}, fmt.Errorf(commandErrors)
 	}
 
 	return pushDevfileCommands, nil
