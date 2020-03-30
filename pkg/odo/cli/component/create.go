@@ -663,6 +663,10 @@ func (co *CreateOptions) Run() (err error) {
 	}
 	if log.IsJSON() {
 		var componentDesc component.Component
+		co.Context, co.LocalConfigInfo, err = genericclioptions.UpdatedContext(co.Context)
+		if err != nil {
+			return err
+		}
 		existsInCluster, err := component.Exists(co.Context.Client, *co.componentSettings.Name, co.Context.Application)
 		if err != nil {
 			return err
@@ -673,12 +677,12 @@ func (co *CreateOptions) Run() (err error) {
 				return err
 			}
 		} else {
-			co.Context, co.LocalConfigInfo, err = genericclioptions.UpdatedContext(co.Context)
 			componentDesc, err = component.GetComponentFromConfig(co.LocalConfigInfo)
 			if err != nil {
 				return err
 			}
 		}
+		componentDesc.Spec.Ports = co.LocalConfigInfo.GetPorts()
 		machineoutput.OutputSuccess(componentDesc)
 	}
 	return
