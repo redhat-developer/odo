@@ -359,7 +359,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		// Set devfileMetadata struct
 		co.devfileMetadata.componentType = componentType
 		co.devfileMetadata.componentName = strings.ToLower(componentName)
-		co.devfileMetadata.componentNamespace = componentNamespace
+		co.devfileMetadata.componentNamespace = strings.ToLower(componentNamespace)
 
 		// Since we need to support both devfile and s2i, so we have to check if the component type is
 		// supported by devfile, if it is supported we return, but if it is not supported we still need to
@@ -590,6 +590,11 @@ func (co *CreateOptions) Validate() (err error) {
 			}
 
 			err = util.ValidateK8sResourceName("component name", co.devfileMetadata.componentName)
+			if err != nil {
+				return err
+			}
+
+			err = util.ValidateK8sResourceName("component namespace", co.devfileMetadata.componentNamespace)
 			if err != nil {
 				return err
 			}
