@@ -7,10 +7,12 @@ import (
 	"strings"
 
 	"github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 
 	"github.com/openshift/odo/pkg/devfile/adapters"
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/openshift/odo/pkg/log"
 )
@@ -50,6 +52,12 @@ func (po *PushOptions) DevfilePush() (err error) {
 		return errors.Wrap(err, "unable to get source path")
 	}
 
+	// Apply ignore information
+	err = genericclioptions.ApplyIgnore(&po.ignores, po.sourcePath)
+	if err != nil {
+		return errors.Wrap(err, "unable to apply ignore information")
+	}
+
 	spinner := log.SpinnerNoSpin(fmt.Sprintf("Push devfile component %s", componentName))
 	defer spinner.End(false)
 
@@ -62,8 +70,14 @@ func (po *PushOptions) DevfilePush() (err error) {
 		return err
 	}
 
+	pushParams := common.PushParameters{
+		Path:         po.sourcePath,
+		IgnoredFiles: po.ignores,
+		ForceBuild:   po.forceBuild,
+	}
+
 	// Start or update the component
-	err = devfileHandler.Push(po.sourcePath, po.ignores, po.forceBuild, util.GetAbsGlobExps(po.sourcePath, po.ignores))
+	err = devfileHandler.Push(pushParams)
 	if err != nil {
 		log.Errorf(
 			"Failed to start component with name %s.\nError: %v",

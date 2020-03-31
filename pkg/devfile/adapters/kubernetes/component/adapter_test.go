@@ -205,59 +205,126 @@ func TestGetFirstContainerWithSourceVolume(t *testing.T) {
 }
 
 func TestGetSyncFolder(t *testing.T) {
-	projectPaths := []string{"/some/path", "/another/path"}
 	projectNames := []string{"some-name", "another-name"}
 	projectRepos := []string{"https://github.com/some/repo.git", "https://github.com/another/repo.git"}
+	projectClonePath := "src/github.com/golang/example/"
+	invalidClonePaths := []string{"/var", "../var", "pkg/../../var"}
 
 	tests := []struct {
 		name     string
 		projects []versionsCommon.DevfileProject
 		want     string
+		wantErr  bool
 	}{
 		{
 			name:     "Case 1: No projects",
 			projects: []versionsCommon.DevfileProject{},
 			want:     kclient.OdoSourceVolumeMount,
+			wantErr:  false,
 		},
 		{
 			name: "Case 2: One project",
 			projects: []versionsCommon.DevfileProject{
 				{
-					ClonePath: &projectPaths[0],
-					Name:      projectNames[0],
+					Name: projectNames[0],
 					Source: versionsCommon.DevfileProjectSource{
 						Type:     versionsCommon.DevfileProjectTypeGit,
 						Location: projectRepos[0],
 					},
 				},
 			},
-			want: filepath.ToSlash(filepath.Join(kclient.OdoSourceVolumeMount, projectNames[0])),
+			want:    filepath.ToSlash(filepath.Join(kclient.OdoSourceVolumeMount, projectNames[0])),
+			wantErr: false,
 		},
 		{
 			name: "Case 3: Multiple projects",
 			projects: []versionsCommon.DevfileProject{
 				{
-					ClonePath: &projectPaths[0],
-					Name:      projectNames[0],
+					Name: projectNames[0],
 					Source: versionsCommon.DevfileProjectSource{
 						Type:     versionsCommon.DevfileProjectTypeGit,
 						Location: projectRepos[0],
 					},
 				},
 				{
-					ClonePath: &projectPaths[1],
-					Name:      projectNames[1],
+					Name: projectNames[1],
 					Source: versionsCommon.DevfileProjectSource{
 						Type:     versionsCommon.DevfileProjectTypeGit,
 						Location: projectRepos[1],
 					},
 				},
 			},
-			want: kclient.OdoSourceVolumeMount,
+			want:    kclient.OdoSourceVolumeMount,
+			wantErr: false,
+		},
+		{
+			name: "Case 4: Clone path set",
+			projects: []versionsCommon.DevfileProject{
+				{
+					ClonePath: &projectClonePath,
+					Name:      projectNames[0],
+					Source: versionsCommon.DevfileProjectSource{
+						Type:     versionsCommon.DevfileProjectTypeGit,
+						Location: projectRepos[0],
+					},
+				},
+			},
+			want:    filepath.ToSlash(filepath.Join(kclient.OdoSourceVolumeMount, projectClonePath)),
+			wantErr: false,
+		},
+		{
+			name: "Case 5: Invalid clone path, set with absolute path",
+			projects: []versionsCommon.DevfileProject{
+				{
+					ClonePath: &invalidClonePaths[0],
+					Name:      projectNames[0],
+					Source: versionsCommon.DevfileProjectSource{
+						Type:     versionsCommon.DevfileProjectTypeGit,
+						Location: projectRepos[0],
+					},
+				},
+			},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name: "Case 6: Invalid clone path, starts with ..",
+			projects: []versionsCommon.DevfileProject{
+				{
+					ClonePath: &invalidClonePaths[1],
+					Name:      projectNames[0],
+					Source: versionsCommon.DevfileProjectSource{
+						Type:     versionsCommon.DevfileProjectTypeGit,
+						Location: projectRepos[0],
+					},
+				},
+			},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name: "Case 7: Invalid clone path, contains ..",
+			projects: []versionsCommon.DevfileProject{
+				{
+					ClonePath: &invalidClonePaths[2],
+					Name:      projectNames[0],
+					Source: versionsCommon.DevfileProjectSource{
+						Type:     versionsCommon.DevfileProjectTypeGit,
+						Location: projectRepos[0],
+					},
+				},
+			},
+			want:    "",
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
-		syncFolder := getSyncFolder(tt.projects)
+		syncFolder, err := getSyncFolder(tt.projects)
+
+		if !tt.wantErr == (err != nil) {
+			t.Errorf("expected %v, actual %v", tt.wantErr, err)
+		}
+
 		if syncFolder != tt.want {
 			t.Errorf("expected %s, actual %s", tt.want, syncFolder)
 		}
@@ -323,4 +390,68 @@ func TestGetCmdToDeleteFiles(t *testing.T) {
 			t.Errorf("Expected %s, got %s", tt.want, cmdArr)
 		}
 	}
+}
+
+func TestDoesComponentExist(t *testing.T) {
+
+	tests := []struct {
+		name             string
+		componentType    versionsCommon.DevfileComponentType
+		componentName    string
+		getComponentName string
+		want             bool
+	}{
+		{
+			name:             "Case 1: Valid component name",
+			componentType:    versionsCommon.DevfileComponentTypeDockerimage,
+			componentName:    "test-name",
+			getComponentName: "test-name",
+			want:             true,
+		},
+		{
+			name:             "Case 2: Non-existent component name",
+			componentType:    versionsCommon.DevfileComponentTypeDockerimage,
+			componentName:    "test-name",
+			getComponentName: "fake-component",
+			want:             false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			devObj := devfile.DevfileObj{
+				Data: testingutil.TestDevfileData{
+					ComponentType: tt.componentType,
+				},
+			}
+
+			adapterCtx := adaptersCommon.AdapterContext{
+				ComponentName: tt.componentName,
+				Devfile:       devObj,
+			}
+
+			fkclient, fkclientset := kclient.FakeNew()
+			fkWatch := watch.NewFake()
+
+			fkclientset.Kubernetes.PrependWatchReactor("pods", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
+				return true, fkWatch, nil
+			})
+
+			// DoesComponentExist requires an already started component, so start it.
+			componentAdapter := New(adapterCtx, *fkclient)
+			err := componentAdapter.createOrUpdateComponent(false)
+
+			// Checks for unexpected error cases
+			if err != nil {
+				t.Errorf("component adapter start unexpected error %v", err)
+			}
+
+			// Verify that a comopnent with the specified name exists
+			componentExists := componentAdapter.DoesComponentExist(tt.getComponentName)
+			if componentExists != tt.want {
+				t.Errorf("expected %v, actual %v", tt.want, componentExists)
+			}
+
+		})
+	}
+
 }

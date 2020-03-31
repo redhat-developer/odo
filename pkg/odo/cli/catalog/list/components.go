@@ -7,6 +7,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
@@ -24,7 +25,7 @@ var componentsExample = `  # Get the supported components
 // ListComponentsOptions encapsulates the options for the odo catalog list components command
 type ListComponentsOptions struct {
 	// display both supported and unsupported devfile components
-	listAllDevfileComponnets bool
+	listAllDevfileComponents bool
 	// list of known images
 	catalogList catalog.ComponentTypeList
 	// list of known devfiles
@@ -43,7 +44,11 @@ func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args [
 	o.Context = genericclioptions.NewContext(cmd)
 	o.catalogList, err = catalog.ListComponents(o.Client)
 	if err != nil {
-		return err
+		if experimental.IsExperimentalModeEnabled() {
+			glog.V(4).Info("Please log in to an OpenShift cluster to list OpenShift/s2i components")
+		} else {
+			return err
+		}
 	}
 
 	if experimental.IsExperimentalModeEnabled() {
@@ -80,6 +85,7 @@ func (o *ListComponentsOptions) Run() (err error) {
 		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 		var supCatalogList, unsupCatalogList []catalog.ComponentType
 		var supDevfileCatalogList, unsupDevfileCatalogList []catalog.DevfileComponentType
+		var supported string
 
 		for _, image := range o.catalogList.Items {
 			supported, unsupported := catalog.SliceSupportedTags(image)
@@ -102,27 +108,38 @@ func (o *ListComponentsOptions) Run() (err error) {
 			}
 		}
 
-		if len(supCatalogList) != 0 {
-			fmt.Fprintln(w, "Odo Supported OpenShift Components:")
-			o.printCatalogList(w, supCatalogList)
+		if len(supCatalogList) != 0 || len(unsupCatalogList) != 0 {
+			fmt.Fprintln(w, "Odo OpenShift Components:")
+			fmt.Fprintln(w, "NAME", "\t", "PROJECT", "\t", "TAGS", "\t", "SUPPORTED")
+
+			if len(supCatalogList) != 0 {
+				supported = "YES"
+				o.printCatalogList(w, supCatalogList, supported)
+			}
+
+			if len(unsupCatalogList) != 0 {
+				supported = "NO"
+				o.printCatalogList(w, unsupCatalogList, supported)
+			}
+
 			fmt.Fprintln(w)
 		}
 
-		if len(unsupCatalogList) != 0 {
-			fmt.Fprintln(w, "Odo Unsupported OpenShift Components:")
-			o.printCatalogList(w, unsupCatalogList)
-		}
+		if len(supDevfileCatalogList) != 0 || (o.listAllDevfileComponents && len(unsupDevfileCatalogList) != 0) {
+			fmt.Fprintln(w, "Odo Devfile Components:")
+			fmt.Fprintln(w, "NAME", "\t", "DESCRIPTION", "\t", "SUPPORTED")
 
-		if len(supDevfileCatalogList) != 0 {
-			fmt.Fprintln(w)
-			fmt.Fprintln(w, "Odo Supported Devfile Components:")
-			o.printDevfileCatalogList(w, supDevfileCatalogList)
-			fmt.Fprintln(w)
-		}
+			if len(supDevfileCatalogList) != 0 {
+				supported = "YES"
+				o.printDevfileCatalogList(w, supDevfileCatalogList, supported)
+			}
 
-		if o.listAllDevfileComponnets && len(unsupDevfileCatalogList) != 0 {
-			fmt.Fprintln(w, "Odo Unsupported Devfile Components:")
-			o.printDevfileCatalogList(w, unsupDevfileCatalogList)
+			if o.listAllDevfileComponents && len(unsupDevfileCatalogList) != 0 {
+				supported = "NO"
+				o.printDevfileCatalogList(w, unsupDevfileCatalogList, supported)
+			}
+
+			fmt.Fprintln(w)
 		}
 
 		w.Flush()
@@ -145,14 +162,12 @@ func NewCmdCatalogListComponents(name, fullName string) *cobra.Command {
 		},
 	}
 
-	componentListCmd.Flags().BoolVarP(&o.listAllDevfileComponnets, "all", "a", false, "List both supported and unsupported devfile components.")
+	componentListCmd.Flags().BoolVarP(&o.listAllDevfileComponents, "all", "a", false, "List both supported and unsupported devfile components.")
 
 	return componentListCmd
 }
 
-func (o *ListComponentsOptions) printCatalogList(w io.Writer, catalogList []catalog.ComponentType) {
-	fmt.Fprintln(w, "NAME", "\t", "PROJECT", "\t", "TAGS")
-
+func (o *ListComponentsOptions) printCatalogList(w io.Writer, catalogList []catalog.ComponentType, supported string) {
 	for _, component := range catalogList {
 		componentName := component.Name
 		if component.Namespace == o.Project {
@@ -168,14 +183,12 @@ func (o *ListComponentsOptions) printCatalogList(w io.Writer, catalogList []cata
 				}
 			}
 		}
-		fmt.Fprintln(w, componentName, "\t", component.ObjectMeta.Namespace, "\t", strings.Join(component.Spec.NonHiddenTags, ","))
+		fmt.Fprintln(w, componentName, "\t", component.ObjectMeta.Namespace, "\t", strings.Join(component.Spec.NonHiddenTags, ","), "\t", supported)
 	}
 }
 
-func (o *ListComponentsOptions) printDevfileCatalogList(w io.Writer, catalogDevfileList []catalog.DevfileComponentType) {
-	fmt.Fprintln(w, "NAME", "\t", "DESCRIPTION")
-
+func (o *ListComponentsOptions) printDevfileCatalogList(w io.Writer, catalogDevfileList []catalog.DevfileComponentType, supported string) {
 	for _, devfileComponent := range catalogDevfileList {
-		fmt.Fprintln(w, devfileComponent.Name, "\t", devfileComponent.Description)
+		fmt.Fprintln(w, devfileComponent.Name, "\t", devfileComponent.Description, "\t", supported)
 	}
 }

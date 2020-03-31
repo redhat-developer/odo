@@ -1,4 +1,4 @@
-package component
+package watch
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/util"
 
 	"github.com/openshift/odo/pkg/occlient"
@@ -29,6 +30,8 @@ type WatchParameters struct {
 	FileIgnores []string
 	// Custom function that can be used to push detected changes to remote pod. For more info about what each of the parameters to this function, please refer, pkg/component/component.go#PushLocal
 	WatchHandler func(*occlient.Client, string, string, string, io.Writer, []string, []string, bool, []string, bool) error
+	// Custom function that can be used to push detected changes to remote devfile pod. For more info about what each of the parameters to this function, please refer, pkg/component/component.go#PushLocal
+	DevfileWatchHandler func(common.PushParameters) error
 	// This is a channel added to signal readiness of the watch command to the external channel listeners
 	StartChan chan bool
 	// This is a channel added to terminate the watch command gracefully without passing SIGINT. "Stop" message on this channel terminates WatchAndPush function
@@ -299,16 +302,42 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 				}
 				if fileInfo.IsDir() {
 					glog.V(4).Infof("Copying files %s to pod", changedFiles)
-					err = parameters.WatchHandler(client, parameters.ComponentName, parameters.ApplicationName, parameters.Path, out, changedFiles, deletedPaths, false, parameters.FileIgnores, parameters.Show)
+					if parameters.DevfileWatchHandler != nil {
+						pushParams := common.PushParameters{
+							Path:              parameters.Path,
+							WatchFiles:        changedFiles,
+							WatchDeletedFiles: deletedPaths,
+							IgnoredFiles:      parameters.FileIgnores,
+							ForceBuild:        false,
+						}
+
+						err = parameters.DevfileWatchHandler(pushParams)
+					} else {
+						err = parameters.WatchHandler(client, parameters.ComponentName, parameters.ApplicationName, parameters.Path, out, changedFiles, deletedPaths, false, parameters.FileIgnores, parameters.Show)
+					}
+
 				} else {
 					pathDir := filepath.Dir(parameters.Path)
 					glog.V(4).Infof("Copying file %s to pod", parameters.Path)
-					err = parameters.WatchHandler(client, parameters.ComponentName, parameters.ApplicationName, pathDir, out, []string{parameters.Path}, deletedPaths, false, parameters.FileIgnores, parameters.Show)
+					if parameters.DevfileWatchHandler != nil {
+						pushParams := common.PushParameters{
+							Path:              pathDir,
+							WatchFiles:        changedFiles,
+							WatchDeletedFiles: deletedPaths,
+							IgnoredFiles:      parameters.FileIgnores,
+							ForceBuild:        false,
+						}
+
+						err = parameters.DevfileWatchHandler(pushParams)
+					} else {
+						err = parameters.WatchHandler(client, parameters.ComponentName, parameters.ApplicationName, pathDir, out, []string{parameters.Path}, deletedPaths, false, parameters.FileIgnores, parameters.Show)
+					}
+
 				}
 				if err != nil {
 					// Intentionally not exiting on error here.
 					// We don't want to break watch when push failed, it might be fixed with the next change.
-					glog.V(4).Infof("Error from PushLocal: %v", err)
+					glog.V(4).Infof("Error from Push: %v", err)
 				}
 				dirty = false
 				showWaitingMessage = true
@@ -321,4 +350,10 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 		changeLock.Unlock()
 		<-ticker.C
 	}
+}
+
+// DevfileWatchAndPush calls out to the WatchAndPush function.
+// As an occlient instance is not needed for devfile components, it sets it to nil
+func DevfileWatchAndPush(out io.Writer, parameters WatchParameters) error {
+	return WatchAndPush(nil, out, parameters)
 }
