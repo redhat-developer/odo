@@ -90,7 +90,7 @@ func (d TestDevfileData) GetProjects() []versionsCommon.DevfileProject {
 	}
 }
 
-// GetCommands is a mock function to get the components that have an alias from a devfile
+// GetCommands is a mock function to get the commands from a devfile
 func (d TestDevfileData) GetCommands() []versionsCommon.DevfileCommand {
 	commandName := [...]string{"devbuild", "devrun", "customcommand"}
 

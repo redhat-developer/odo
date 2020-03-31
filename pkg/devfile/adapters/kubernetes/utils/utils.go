@@ -87,15 +87,31 @@ func GetContainers(devfileObj devfile.DevfileObj) ([]corev1.Container, error) {
 				MountPath: kclient.OdoSourceVolumeMount,
 			})
 
-			container.Env = append(container.Env,
-				corev1.EnvVar{
-					Name:  envCheProjectsRoot,
-					Value: kclient.OdoSourceVolumeMount,
-				})
+			// only add the env if it is not set by the devfile
+			if !isEnvPresent(container.Env, envCheProjectsRoot) {
+				container.Env = append(container.Env,
+					corev1.EnvVar{
+						Name:  envCheProjectsRoot,
+						Value: kclient.OdoSourceVolumeMount,
+					})
+			}
 		}
 		containers = append(containers, *container)
 	}
 	return containers, nil
+}
+
+// isEnvPresent checks if the env variable is present in an array of env variables
+func isEnvPresent(EnvVars []corev1.EnvVar, envVarName string) bool {
+	isPresent := false
+
+	for _, envVar := range EnvVars {
+		if envVar.Name == envVarName {
+			isPresent = true
+		}
+	}
+
+	return isPresent
 }
 
 // UpdateContainersWithSupervisord updates the run components entrypoint and volume mount
@@ -114,27 +130,31 @@ func UpdateContainersWithSupervisord(devfileObj devfile.DevfileObj, containers [
 				// If the run component container has no entrypoint and arguments, override the entrypoint with supervisord
 				if len(container.Command) == 0 && len(container.Args) == 0 {
 					glog.V(3).Infof("Updating container %v entrypoint with supervisord", container.Name)
-					container.Command = append(container.Command, kclient.GetSupervisordBinaryPath())
-					container.Args = append(container.Args, "-c", kclient.GetSupervisordConfFilePath())
+					container.Command = append(container.Command, adaptersCommon.SupervisordBinaryPath)
+					container.Args = append(container.Args, "-c", adaptersCommon.SupervisordConfFile)
 				}
 
 				// Always mount the supervisord volume in the run component container
 				glog.V(3).Infof("Updating container %v with supervisord volume mounts", container.Name)
 				container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
-					Name:      kclient.GetSupervisordVolumeName(),
-					MountPath: kclient.GetSupervisordMountPath(),
+					Name:      adaptersCommon.SupervisordVolumeName,
+					MountPath: adaptersCommon.SupervisordMountPath,
 				})
 
 				// Update the run container's ENV for work dir and command
-				// so supervisord can use it in it's program
-				glog.V(3).Infof("Updating container %v env with run command and workdir", container.Name)
-				container.Env = append(container.Env,
-					corev1.EnvVar{
-						Name:  envOdoCommandRun,
-						Value: *action.Command,
-					})
+				// only if the env var is not set in the devfile
+				// This is done, so supervisord can use it in it's program
+				if !isEnvPresent(container.Env, envOdoCommandRun) {
+					glog.V(3).Infof("Updating container %v env with run command", container.Name)
+					container.Env = append(container.Env,
+						corev1.EnvVar{
+							Name:  envOdoCommandRun,
+							Value: *action.Command,
+						})
+				}
 
-				if action.Workdir != nil {
+				if !isEnvPresent(container.Env, envOdoCommandRunWorkingDir) && action.Workdir != nil {
+					glog.V(3).Infof("Updating container %v env with run command's workdir", container.Name)
 					container.Env = append(container.Env,
 						corev1.EnvVar{
 							Name:  envOdoCommandRunWorkingDir,
