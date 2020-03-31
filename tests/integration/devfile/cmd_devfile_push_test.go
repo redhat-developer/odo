@@ -50,14 +50,18 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
+			helper.RenameFile("devfile.yaml", "devfile-old.yaml")
+			helper.RenameFile("devfile-no-endpoints.yaml", "devfile.yaml")
 			componentName := path.Base(context)
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile-no-endpoints.yaml", "--namespace", project)
-			output := oc.GetServices(project)
+			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
+			output := oc.GetServices(namespace)
 			Expect(output).NotTo(ContainSubstring(componentName))
-			output = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", project)
+
+			helper.RenameFile("devfile-old.yaml", "devfile.yaml")
+			output = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
-			output = oc.GetServices(project)
+			output = oc.GetServices(namespace)
 			Expect(output).To(ContainSubstring(componentName))
 		})
 
