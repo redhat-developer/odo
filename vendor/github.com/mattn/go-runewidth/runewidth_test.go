@@ -40,12 +40,12 @@ type tableInfo struct {
 var tables = []tableInfo{
 	{private, "private", 137468, "a4a641206dc8c5de80bd9f03515a54a706a5a4904c7684dc6a33d65c967a51b2"},
 	{nonprint, "nonprint", 2143, "288904683eb225e7c4c0bd3ee481b53e8dace404ec31d443afdbc4d13729fe95"},
-	{combining, "combining", 461, "ef1839ee99b2707da7d5592949bd9b40d434fa6462c6da61477bae923389e263"},
-	{doublewidth, "doublewidth", 181887, "de2d7a29c94fb2fe471b5fd0c003043845ce59d1823170606b95f9fc8988067a"},
+	{combining, "combining", 465, "3cce13deb5e23f9f7327f2b1ef162328285a7dcf277a98302a8f7cdd43971268"},
+	{doublewidth, "doublewidth", 182440, "3d16eda8650dc2c92d6318d32f0b4a74fda5a278db2d4544b1dd65863394823c"},
 	{ambiguous, "ambiguous", 138739, "d05e339a10f296de6547ff3d6c5aee32f627f6555477afebd4a3b7e3cf74c9e3"},
-	{emoji, "emoji", 3791, "bf02b49f5cbee8df150053574d20125164e7f16b5f62aa5971abca3b2f39a8e6"},
+	{emoji, "emoji", 3535, "9ec17351601d49c535658de8d129c1d0ccda2e620669fc39a2faaee7dedcef6d"},
 	{notassigned, "notassigned", 10, "68441e98eca1450efbe857ac051fcc872eed347054dfd0bc662d1c4ee021d69f"},
-	{neutral, "neutral", 26925, "d79d8558f3cc35c633e5025c9b29c005b853589c8f71b4a72507b5c31d8a6829"},
+	{neutral, "neutral", 27333, "5455f5e75c307f70b4e9b2384dc5a8bcd91a4c5e2b24b2b185dfad4d860ee5c2"},
 }
 
 func TestTableChecksums(t *testing.T) {
