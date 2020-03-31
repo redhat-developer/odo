@@ -222,7 +222,7 @@ func TestStartStartContainer(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		err := tt.client.StartContainer(&fakeContainer, nil, nil, "golang")
+		err := tt.client.StartContainer(&fakeContainer, nil, nil)
 		if !tt.wantErr == (err != nil) {
 			t.Errorf("expected %v, wanted %v", err, tt.wantErr)
 		}

@@ -8,7 +8,6 @@ import (
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/versions/common"
 	"github.com/openshift/odo/pkg/kclient"
-	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/util"
 
 	corev1 "k8s.io/api/core/v1"
@@ -23,16 +22,6 @@ const (
 func ComponentExists(client kclient.Client, name string) bool {
 	_, err := client.GetDeploymentByName(name)
 	return err == nil
-}
-
-// DockerComponentExists checks if containers labeled with the specified component name exists
-func DockerComponentExists(client lclient.Client, name string) bool {
-	containerList, err := client.GetContainerList()
-	if err != nil {
-		return false
-	}
-	containers := client.GetContainersByComponent(name, containerList)
-	return len(containers) != 0
 }
 
 // ConvertEnvs converts environment variables from the devfile structure to kubernetes structure

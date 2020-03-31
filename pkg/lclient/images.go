@@ -1,8 +1,8 @@
 package lclient
 
 import (
+	"bytes"
 	"io"
-	"os"
 
 	"github.com/docker/docker/api/types"
 	"github.com/pkg/errors"
@@ -14,18 +14,23 @@ import (
 func (dc *Client) PullImage(image string) error {
 
 	out, err := dc.Client.ImagePull(dc.Context, image, types.ImagePullOptions{})
+	defer out.Close()
 
 	if err != nil {
 		return errors.Wrapf(err, "Unable to pull image")
 	}
 
-	defer out.Close()
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(out)
+
 	if glog.V(4) {
-		_, err := io.Copy(os.Stdout, out)
+		_, err := io.Copy(nil, out)
 		if err != nil {
 			return err
 		}
 	}
 
+	newStr := buf.String()
+	glog.V(4).Infof(newStr)
 	return nil
 }

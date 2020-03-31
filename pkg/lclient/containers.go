@@ -33,10 +33,9 @@ func (dc *Client) GetContainerList() ([]types.Container, error) {
 // containerConfig - configurations for the container itself (image name, command, ports, etc) (if needed)
 // hostConfig - configurations related to the host (volume mounts, exposed ports, etc) (if needed)
 // networkingConfig - endpoints to expose (if needed)
-// containerName - name to give to the container
 // Returns an error if the container couldn't be started.
-func (dc *Client) StartContainer(containerConfig *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig, containerName string) error {
-	resp, err := dc.Client.ContainerCreate(dc.Context, containerConfig, hostConfig, networkingConfig, containerName)
+func (dc *Client) StartContainer(containerConfig *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig) error {
+	resp, err := dc.Client.ContainerCreate(dc.Context, containerConfig, hostConfig, networkingConfig, "")
 	if err != nil {
 		return err
 	}
@@ -47,4 +46,24 @@ func (dc *Client) StartContainer(containerConfig *container.Config, hostConfig *
 	}
 
 	return nil
+}
+
+// GenerateContainerConfig creates a containerConfig resource that can be used to create a local Docker container
+func (dc *Client) GenerateContainerConfig(image string, entrypoint []string, args []string, envVars []string, labels map[string]string) container.Config {
+	containerConfig := container.Config{
+		Image:      image,
+		Entrypoint: entrypoint,
+		Cmd:        args,
+		Env:        envVars,
+		Labels:     labels,
+	}
+	return containerConfig
+}
+
+func (dc *Client) GenerateHostConfig(isPrivileged bool, publishPorts bool) container.HostConfig {
+	hostConfig := container.HostConfig{
+		Privileged:      isPrivileged,
+		PublishAllPorts: publishPorts,
+	}
+	return hostConfig
 }

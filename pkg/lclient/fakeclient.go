@@ -12,6 +12,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/registry"
+	volumeTypes "github.com/docker/docker/api/types/volume"
 )
 
 // This mock client will return container and images lists
@@ -116,6 +117,15 @@ func (m *mockDockerClient) DistributionInspect(ctx context.Context, image, encod
 	return registry.DistributionInspect{}, nil
 }
 
+func (m *mockDockerClient) VolumeCreate(ctx context.Context, options volumeTypes.VolumeCreateBody) (types.Volume, error) {
+	return types.Volume{
+		Driver: "overlayfs2",
+		Labels: map[string]string{
+			"component": "golang",
+		},
+	}, nil
+}
+
 // This mock client will return errors for each call to a docker function
 type mockDockerErrorClient struct {
 }
@@ -139,6 +149,7 @@ var errContainerRemove = errors.New("error removing container")
 var errContainerInspect = errors.New("error inspecting container")
 var errContainerWait = errors.New("error timeout waiting for container")
 var errDistributionInspect = errors.New("error inspecting distribution")
+var errVolumeCreate = errors.New("error creating volume")
 
 func (m *mockDockerErrorClient) ImageList(ctx context.Context, imageListOptions types.ImageListOptions) ([]types.ImageSummary, error) {
 	return nil, errImageList
@@ -181,4 +192,8 @@ func (m *mockDockerErrorClient) ContainerWait(ctx context.Context, containerID s
 
 func (m *mockDockerErrorClient) DistributionInspect(ctx context.Context, image, encodedRegistryAuth string) (registry.DistributionInspect, error) {
 	return registry.DistributionInspect{}, errDistributionInspect
+}
+
+func (m *mockDockerErrorClient) VolumeCreate(ctx context.Context, options volumeTypes.VolumeCreateBody) (types.Volume, error) {
+	return types.Volume{}, errVolumeCreate
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/registry"
+	volumeTypes "github.com/docker/docker/api/types/volume"
 	"github.com/docker/docker/client"
 	"github.com/pkg/errors"
 )
@@ -19,7 +20,10 @@ Please ensure that Docker is currently running on your machine.
 
 // MinDockerAPIVersion is the minimum Docker API version to use
 // 1.30 corresponds to Docker 17.05, which should be sufficiently old enough
-const MinDockerAPIVersion = "1.30"
+const (
+	MinDockerAPIVersion = "1.30"
+	DockerStorageDriver = "overlayfs2"
+)
 
 // DockerClient requires functions called on the docker client package
 // By abstracting these functions into an interface, it makes creating mock clients for unit testing much easier
@@ -34,6 +38,7 @@ type DockerClient interface {
 	ContainerStop(ctx context.Context, containerID string, timeout *time.Duration) error
 	ContainerRemove(ctx context.Context, containerID string, options types.ContainerRemoveOptions) error
 	DistributionInspect(ctx context.Context, image, encodedRegistryAuth string) (registry.DistributionInspect, error)
+	VolumeCreate(ctx context.Context, options volumeTypes.VolumeCreateBody) (types.Volume, error)
 }
 
 // Client is a collection of fields used for client configuration and interaction
