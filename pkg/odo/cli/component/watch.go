@@ -3,12 +3,17 @@ package component
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/pkg/devfile/adapters"
+	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/openshift/odo/pkg/occlient"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/util/completion"
+	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/pkg/errors"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
 
@@ -18,6 +23,7 @@ import (
 	"github.com/openshift/odo/pkg/component"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/pkg/watch"
 	"github.com/spf13/cobra"
 )
 
@@ -43,6 +49,11 @@ type WatchOptions struct {
 	componentContext string
 	client           *occlient.Client
 
+	componentName  string
+	devfilePath    string
+	namespace      string
+	devfileHandler adapters.PlatformAdapter
+
 	*genericclioptions.Context
 }
 
@@ -53,6 +64,40 @@ func NewWatchOptions() *WatchOptions {
 
 // Complete completes watch args
 func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	// if experimental mode is enabled and devfile is present
+	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(wo.devfilePath) {
+		// Set the source path to either the context or current working directory (if context not set)
+		wo.sourcePath, err = util.GetAbsPath(filepath.Dir(wo.componentContext))
+		if err != nil {
+			return errors.Wrap(err, "unable to get source path")
+		}
+
+		// Apply ignore information
+		err = genericclioptions.ApplyIgnore(&wo.ignores, wo.sourcePath)
+		if err != nil {
+			return errors.Wrap(err, "unable to apply ignore information")
+		}
+
+		// Get the component name
+		wo.componentName, err = getComponentName()
+		if err != nil {
+			return err
+		}
+
+		// Parse devfile
+		devObj, err := devfile.Parse(wo.devfilePath)
+		if err != nil {
+			return err
+		}
+
+		kc := kubernetes.KubernetesContext{
+			Namespace: wo.namespace,
+		}
+		wo.devfileHandler, err = adapters.NewPlatformAdapter(wo.componentName, devObj, kc)
+
+		return err
+	}
+
 	// Set the correct context
 	wo.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 
@@ -80,6 +125,24 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 // Validate validates the watch parameters
 func (wo *WatchOptions) Validate() (err error) {
 
+	// Delay interval cannot be -ve
+	if wo.delay < 0 {
+		return fmt.Errorf("Delay cannot be lesser than 0 and delay=0 means changes will be pushed as soon as they are detected which can cause performance issues")
+	}
+	// Print a debug message warning user if delay is set to 0
+	if wo.delay == 0 {
+		glog.V(4).Infof("delay=0 means changes will be pushed as soon as they are detected which can cause performance issues")
+	}
+
+	// if experimental mode is enabled and devfile is present, return. The rest of the validation is for non-devfile components
+	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(wo.devfilePath) {
+		exists := wo.devfileHandler.DoesComponentExist(wo.componentName)
+		if !exists {
+			return fmt.Errorf("component does not exist. Please use `odo push` to create your component")
+		}
+		return nil
+	}
+
 	// Validate source of component is either local source or binary path until git watch is supported
 	if wo.sourceType != "binary" && wo.sourceType != "local" {
 		return fmt.Errorf("Watch is supported by binary and local components only and source type of component %s is %s",
@@ -92,15 +155,6 @@ func (wo *WatchOptions) Validate() (err error) {
 		return errors.Wrapf(err, "Cannot watch %s", wo.sourcePath)
 	}
 
-	// Delay interval cannot be -ve
-	if wo.delay < 0 {
-		return fmt.Errorf("Delay cannot be lesser than 0 and delay=0 means changes will be pushed as soon as they are detected which can cause performance issues")
-	}
-	// Print a debug message warning user if delay is set to 0
-	if wo.delay == 0 {
-		glog.V(4).Infof("delay=0 means changes will be pushed as soon as they are detected which can cause performance issues")
-	}
-
 	cmpName := wo.LocalConfigInfo.GetName()
 	appName := wo.LocalConfigInfo.GetApplication()
 	exists, err := component.Exists(wo.Client, cmpName, appName)
@@ -108,17 +162,39 @@ func (wo *WatchOptions) Validate() (err error) {
 		return
 	}
 	if !exists {
-		return fmt.Errorf("component does not exist. Please use `odo push` to create you component")
+		return fmt.Errorf("component does not exist. Please use `odo push` to create your component")
 	}
 	return
 }
 
 // Run has the logic to perform the required actions as part of command
 func (wo *WatchOptions) Run() (err error) {
-	err = component.WatchAndPush(
+	// if experimental mode is enabled and devfile is present
+	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(wo.devfilePath) {
+
+		err = watch.DevfileWatchAndPush(
+			os.Stdout,
+			watch.WatchParameters{
+				ComponentName:       wo.componentName,
+				Path:                wo.sourcePath,
+				FileIgnores:         util.GetAbsGlobExps(wo.sourcePath, wo.ignores),
+				PushDiffDelay:       wo.delay,
+				StartChan:           nil,
+				ExtChan:             make(chan bool),
+				DevfileWatchHandler: wo.devfileHandler.Push,
+				Show:                wo.show,
+			},
+		)
+		if err != nil {
+			return errors.Wrapf(err, "Error while trying to watch %s", wo.sourcePath)
+		}
+		return err
+	}
+
+	err = watch.WatchAndPush(
 		wo.Context.Client,
 		os.Stdout,
-		component.WatchParameters{
+		watch.WatchParameters{
 			ComponentName:   wo.LocalConfigInfo.GetName(),
 			ApplicationName: wo.Context.Application,
 			Path:            wo.sourcePath,
@@ -157,6 +233,13 @@ func NewCmdWatch(name, fullName string) *cobra.Command {
 	watchCmd.Flags().IntVar(&wo.delay, "delay", 1, "Time in seconds between a detection of code change and push.delay=0 means changes will be pushed as soon as they are detected which can cause performance issues")
 
 	watchCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
+
+	// enable devfile flag if experimental mode is enabled
+	if experimental.IsExperimentalModeEnabled() {
+		watchCmd.Flags().StringVar(&wo.devfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
+		watchCmd.Flags().StringVar(&wo.namespace, "namespace", "", "Namespace to push the component to")
+	}
+
 	// Adding context flag
 	genericclioptions.AddContextFlag(watchCmd, &wo.componentContext)
 

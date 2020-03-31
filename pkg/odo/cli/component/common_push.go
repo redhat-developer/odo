@@ -184,12 +184,6 @@ func (cpo *CommonPushOptions) Push() (err error) {
 	cmpName := cpo.LocalConfigInfo.GetName()
 	appName := cpo.LocalConfigInfo.GetApplication()
 
-	if cpo.Context == nil {
-		fmt.Println("normal push Context is nil!!!!!")
-	} else {
-		fmt.Println("hihihihi    " + cpo.Context.Client.Namespace)
-	}
-
 	if cpo.componentContext == "" {
 		cpo.componentContext = strings.TrimSuffix(filepath.Dir(cpo.LocalConfigInfo.Filename), ".odo")
 	}

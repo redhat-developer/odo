@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile"
 	adapterutils "github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
@@ -91,13 +90,13 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 				}
 			}
 			if compWithEndpoint > 1 {
-				return fmt.Errorf("Devfile should only have 1 component contains endpoint")
+				return fmt.Errorf("Devfile should only have one component containing endpoint")
 			}
 		}
 		if compWithEndpoint == 0 {
-			return fmt.Errorf("No valid component with endpoint found in the devfile")
+			return fmt.Errorf("No valid component with an endpoint found in the devfile")
 		}
-		componentName, _ := component.GetComponentName()
+		componentName := o.EnvSpecificInfo.GetName()
 		o.componentPort, err = url.GetValidPortNumber(componentName, o.urlPort, postList)
 		if err != nil {
 			return err
@@ -189,7 +188,7 @@ func (o *URLCreateOptions) Run() (err error) {
 		return errors.Wrapf(err, "failed to persist the component settings to config file")
 	}
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
-		componentName, _ := component.GetComponentName()
+		componentName := o.EnvSpecificInfo.GetName()
 		log.Successf("URL created for component: %v, cluster host: %v", componentName, o.host)
 	} else {
 		log.Successf("URL %s created for component: %v", o.urlName, o.Component())
@@ -228,7 +227,7 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 	// if experimental mode is enabled, add more flags to support ingress creation based on devfile
 	if experimental.IsExperimentalModeEnabled() {
 		urlCreateCmd.Flags().StringVar(&o.tlsSecret, "tls-secret", "", "tls secret name for the url of the component if the user bring his own tls secret")
-		urlCreateCmd.Flags().StringVarP(&o.host, "host", "", "", "Cluster host for this URL")
+		urlCreateCmd.Flags().StringVarP(&o.host, "host", "", "", "Cluster ip for this URL")
 		urlCreateCmd.Flags().StringVar(&o.DevfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
 	}
 	genericclioptions.AddNowFlag(urlCreateCmd, &o.now)

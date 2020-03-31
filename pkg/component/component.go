@@ -574,11 +574,7 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 // ApplyConfigDeleteURL applies url config deletion onto component
 func applyConfigDeleteURL(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo) (err error) {
 	if experimental.IsExperimentalModeEnabled() {
-		// TODO: use envSpecificInfo.GetName()
-		componentName, err := GetComponentName()
-		if err != nil {
-			return err
-		}
+		componentName := envSpecificInfo.GetName()
 		ingressList, err := urlpkg.ListPushedIngress(kClient, componentName)
 		if err != nil {
 			return err
@@ -641,10 +637,7 @@ type checkIfURLPresentInConfigParam struct {
 func ApplyConfigCreateURL(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo) error {
 	if experimental.IsExperimentalModeEnabled() {
 		urls := envSpecificInfo.GetURL()
-		componentName, err := GetComponentName()
-		if err != nil {
-			return errors.Wrapf(err, "unable to get componentName")
-		}
+		componentName := envSpecificInfo.GetName()
 		for _, urlo := range urls {
 			exist, err := urlpkg.Exists(client, kClient, urlo.Name, componentName, "")
 			if err != nil {
@@ -1529,26 +1522,11 @@ func getStorageFromConfig(localConfig *config.LocalConfigInfo) storage.StorageLi
 	return storageList
 }
 
-// GetComponentName gets the component name from current directory name
-func GetComponentName() (string, error) {
-	retVal := ""
-	currDir, err := os.Getwd()
-	if err != nil {
-		return "", errors.Wrapf(err, "unable to get component because getting current directory failed")
-	}
-	retVal = filepath.Base(currDir)
-	retVal = strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(retVal)))
-	return retVal, nil
-}
-
 // checkIfURLChangesWillBeMade checks to see if there are going to be any changes
 // to the URLs when deploying and returns a true / false
 func checkIfURLChangesWillBeMade(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo) (bool, error) {
 	if experimental.IsExperimentalModeEnabled() {
-		componentName, err := GetComponentName()
-		if err != nil {
-			return false, err
-		}
+		componentName := envSpecificInfo.GetName()
 		urlList, err := urlpkg.ListPushedIngress(kClient, componentName)
 		if err != nil {
 			return false, err

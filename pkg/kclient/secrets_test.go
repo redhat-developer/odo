@@ -56,7 +56,7 @@ func TestCreateTLSSecret(t *testing.T) {
 			if err != nil {
 				t.Errorf("fkclient.GenerateSelfSignedCertificate unexpected error %v", err)
 			}
-			createdTLSSceret, err := fkclient.CreateTLSSecret(selfsignedcert.CertPem, selfsignedcert.KeyPem, tt.componentName, "", 0)
+			createdTLSSceret, err := fkclient.CreateTLSSecret(selfsignedcert.CertPem, selfsignedcert.KeyPem, tt.componentName, "")
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("fkclient.CreateIngress unexpected error %v, wantErr %v", err, tt.wantErr)

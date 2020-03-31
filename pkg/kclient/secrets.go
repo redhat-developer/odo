@@ -10,8 +10,7 @@ import (
 // CreateTLSSecret creates a TLS Secret with the given certificate and private key
 // serviceName is the name of the service for the target reference
 // ingressDomain is the ingress domain to use for the ingress
-// portNumber is the target port of the ingress
-func (c *Client) CreateTLSSecret(tlsCertificate []byte, tlsPrivKey []byte, componentName string, applicationName string, portNumber int) (*corev1.Secret, error) {
+func (c *Client) CreateTLSSecret(tlsCertificate []byte, tlsPrivKey []byte, componentName string, applicationName string) (*corev1.Secret, error) {
 	labels := componentlabels.GetLabels(componentName, applicationName, true)
 	tlsSecretName := componentName + "-tlssecret"
 	data := make(map[string][]byte)

@@ -5,7 +5,6 @@ import (
 	"os"
 	"text/tabwriter"
 
-	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
 
 	routev1 "github.com/openshift/api/route/v1"
@@ -60,10 +59,7 @@ func (o *URLListOptions) Validate() (err error) {
 // Run contains the logic for the odo url list command
 func (o *URLListOptions) Run() (err error) {
 	if experimental.IsExperimentalModeEnabled() {
-		componentName, err := component.GetComponentName()
-		if err != nil {
-			return err
-		}
+		componentName := o.EnvSpecificInfo.GetName()
 		urls, err := url.ListIngress(o.KClient, o.EnvSpecificInfo, componentName)
 		if err != nil {
 			return err

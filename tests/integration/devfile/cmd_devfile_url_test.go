@@ -1,9 +1,8 @@
-package integration
+package devfile
 
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"time"
 
@@ -14,26 +13,27 @@ import (
 )
 
 var _ = Describe("odo devfile url command tests", func() {
-	var project string
+	var namespace string
 	var context string
 	var currentWorkingDirectory string
 
-	oc = helper.NewOcRunner("oc")
+	// oc := helper.NewOcRunner("oc")
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
-		project = helper.CreateRandProject()
+		namespace = helper.CreateRandProject()
 		context = helper.CreateNewDevfileContext()
 		currentWorkingDirectory = helper.Getwd()
 		helper.Chdir(context)
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 	})
 
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		helper.DeleteProject(project)
+		helper.DeleteProject(namespace)
 		helper.Chdir(currentWorkingDirectory)
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
@@ -42,11 +42,11 @@ var _ = Describe("odo devfile url command tests", func() {
 	Context("Listing urls", func() {
 		It("should list url after push", func() {
 			var stdout string
+			componentName := helper.RandString(6)
 			url1 := helper.RandString(5)
 			host := helper.RandString(5) + ".com"
-			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--namespace", namespace, componentName)
 			stdout = helper.CmdShouldFail("odo", "url", "list")
 			Expect(stdout).To(ContainSubstring("no URLs found"))
 
@@ -58,11 +58,11 @@ var _ = Describe("odo devfile url command tests", func() {
 
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "9090", "--host", host)
 
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", project)
+			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 			stdout = helper.CmdShouldPass("odo", "url", "list")
 			helper.MatchAllInOutput(stdout, []string{url1, url1 + "." + host})
 			helper.CmdShouldPass("odo", "url", "delete", url1, "-f")
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", project)
+			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 			stdout = helper.CmdShouldFail("odo", "url", "list")
 			Expect(stdout).To(ContainSubstring("no URLs found"))
 		})
@@ -70,13 +70,12 @@ var _ = Describe("odo devfile url command tests", func() {
 		It("should be able to list url in machine readable json format", func() {
 			url1 := helper.RandString(5)
 			host := helper.RandString(5) + ".com"
-			componentName := path.Base(context)
-			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+			componentName := helper.RandString(6)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--namespace", namespace, componentName)
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "9090", "--host", host)
 
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", project)
+			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 
 			// odo url list -o json
 			actualURLListJSON := helper.CmdShouldPass("odo", "url", "list", "-o", "json")
@@ -90,14 +89,14 @@ var _ = Describe("odo devfile url command tests", func() {
 			var stdout string
 			url1 := helper.RandString(5)
 			host := helper.RandString(5) + ".com"
-			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
+			componentName := helper.RandString(6)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--namespace", namespace, componentName)
 
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "9090", "--host", host, "--secure")
-			stdout = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", project)
+			stdout = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 			helper.MatchAllInOutput(stdout, []string{"https:", url1 + "." + host})
 			helper.CmdShouldPass("odo", "url", "delete", url1, "-f")
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", project)
+			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 			stdout = helper.CmdShouldFail("odo", "url", "list")
 			Expect(stdout).To(ContainSubstring("no URLs found"))
 		})
@@ -108,13 +107,13 @@ var _ = Describe("odo devfile url command tests", func() {
 			var stdout string
 			url1 := helper.RandString(5)
 			host := helper.RandString(5) + ".com"
-			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
+			componentName := helper.RandString(6)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--namespace", namespace, componentName)
 
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "9090", "--host", host)
 			stdout = helper.CmdShouldFail("odo", "url", "describe", url1)
 			helper.MatchAllInOutput(stdout, []string{url1, "exists in local", "odo push"})
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", project)
+			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 
 			stdout = helper.CmdShouldPass("odo", "url", "describe", url1)
 			helper.MatchAllInOutput(stdout, []string{url1, url1 + "." + host})

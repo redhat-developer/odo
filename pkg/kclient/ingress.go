@@ -1,6 +1,8 @@
 package kclient
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 
 	extensionsv1 "k8s.io/api/extensions/v1beta1"
@@ -13,7 +15,9 @@ func (c *Client) CreateIngress(objectMeta metav1.ObjectMeta, spec extensionsv1.I
 		ObjectMeta: objectMeta,
 		Spec:       spec,
 	}
-
+	if ingress.GetName() == "" {
+		return nil, fmt.Errorf("ingress name is empty")
+	}
 	ingressObj, err := c.KubeClient.ExtensionsV1beta1().Ingresses(c.Namespace).Create(ingress)
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating ingress")

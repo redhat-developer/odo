@@ -121,20 +121,87 @@ func getFirstChildOfCommand(command *cobra.Command) *cobra.Command {
 }
 
 func getValidEnvinfo(command *cobra.Command) (*envinfo.EnvSpecificInfo, error) {
-	// Get details from the local config file
+	// Get details from the env file
 	componentContext := FlagValueIfSet(command, ContextFlagName)
 
-	// Grab the absolute path of the configuration
+	// Grab the absolute path of the eenv file
 	if componentContext != "" {
 		fAbs, err := pkgUtil.GetAbsPath(componentContext)
 		util.LogErrorAndExit(err, "")
 		componentContext = fAbs
 	}
 
-	// Access the local configuration
+	// Access the env file
 	envInfo, err := envinfo.NewEnvSpecificInfo(componentContext)
 	if err != nil {
 		return nil, err
+	}
+
+	// Here we will check for parent commands, if the match a certain criteria, we will skip
+	// using the configuration.
+	//
+	// For example, `odo create` should NOT check to see if there is actually a configuration yet.
+	if command.HasParent() {
+
+		// Gather necessary preliminary information
+		parentCommand := command.Parent()
+		rootCommand := command.Root()
+		flagValue := FlagValueIfSet(command, ApplicationFlagName)
+
+		// Find the first child of the command, as some groups are allowed even with non existent configuration
+		firstChildCommand := getFirstChildOfCommand(command)
+
+		// This should not happen but just to be safe
+		if firstChildCommand == nil {
+			return nil, fmt.Errorf("Unable to get first child of command")
+		}
+		// Case 1 : if command is create operation just allow it
+		if command.Name() == "create" && (parentCommand.Name() == "component" || parentCommand.Name() == rootCommand.Name()) {
+			return envInfo, nil
+		}
+		// Case 2 : if command is describe or delete and app flag is used just allow it
+		if (firstChildCommand.Name() == "describe" || firstChildCommand.Name() == "delete") && len(flagValue) > 0 {
+			return envInfo, nil
+		}
+		// Case 2 : if command is list, just allow it
+		if firstChildCommand.Name() == "list" {
+			return envInfo, nil
+		}
+		// Case 3 : Check if firstChildCommand is project. If so, skip validation of context
+		if firstChildCommand.Name() == "project" {
+			return envInfo, nil
+		}
+		// Case 4 : Check if specific flags are set for specific first child commands
+		if firstChildCommand.Name() == "app" {
+			return envInfo, nil
+		}
+		// Case 5 : Check if firstChildCommand is catalog and request is to list or search
+		if firstChildCommand.Name() == "catalog" && (parentCommand.Name() == "list" || parentCommand.Name() == "search") {
+			return envInfo, nil
+		}
+		// Check if firstChildCommand is component and  request is list
+		if (firstChildCommand.Name() == "component" || firstChildCommand.Name() == "service") && command.Name() == "list" {
+			return envInfo, nil
+		}
+		// Case 6 : Check if firstChildCommand is component and app flag is used
+		if firstChildCommand.Name() == "component" && len(flagValue) > 0 {
+			return envInfo, nil
+		}
+		// Case 7 : Check if firstChildCommand is logout and app flag is used
+		if firstChildCommand.Name() == "logout" {
+			return envInfo, nil
+		}
+		// Case 8: Check if firstChildCommand is service and command is create or delete. Allow it if that's the case
+		if firstChildCommand.Name() == "service" && (command.Name() == "create" || command.Name() == "delete") {
+			return envInfo, nil
+		}
+
+	} else {
+		return envInfo, nil
+	}
+
+	if !envInfo.EnvInfoFileExists() {
+		return nil, fmt.Errorf("The current directory does not represent an odo component. Use 'odo create' to create component here or switch to directory with a component")
 	}
 	return envInfo, nil
 }
@@ -331,31 +398,31 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 			internalCxt: internalCxt,
 		}
 		return context
-	} else {
-		// Check for valid config
-		localConfiguration, err := getValidConfig(command, ignoreMissingConfiguration)
-		if err != nil {
-			util.LogErrorAndExit(err, "")
-		}
-
-		// resolve project
-		namespace := resolveProject(command, client, localConfiguration)
-
-		// resolve application
-		app := resolveApp(command, createAppIfNeeded, localConfiguration)
-		internalCxt.LocalConfigInfo = localConfiguration
-		internalCxt.Application = app
-		internalCxt.Project = namespace
-
-		// create a context from the internal representation
-		context := &Context{
-			internalCxt: internalCxt,
-		}
-		// once the component is resolved, add it to the context
-		context.cmp = resolveComponent(command, localConfiguration, context)
-
-		return context
 	}
+	// Check for valid config
+	localConfiguration, err := getValidConfig(command, ignoreMissingConfiguration)
+	if err != nil {
+		util.LogErrorAndExit(err, "")
+	}
+
+	// resolve project
+	namespace := resolveProject(command, client, localConfiguration)
+
+	// resolve application
+	app := resolveApp(command, createAppIfNeeded, localConfiguration)
+	internalCxt.LocalConfigInfo = localConfiguration
+	internalCxt.Application = app
+	internalCxt.Project = namespace
+
+	// create a context from the internal representation
+	context := &Context{
+		internalCxt: internalCxt,
+	}
+	// once the component is resolved, add it to the context
+	context.cmp = resolveComponent(command, localConfiguration, context)
+
+	return context
+
 }
 
 // FlagValueIfSet retrieves the value of the specified flag if it is set for the given command

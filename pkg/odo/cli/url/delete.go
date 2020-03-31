@@ -3,7 +3,6 @@ package url
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/log"
 	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
@@ -76,7 +75,7 @@ func (o *URLDeleteOptions) Validate() (err error) {
 	var exists bool
 	if experimental.IsExperimentalModeEnabled() {
 		urls := o.EnvSpecificInfo.GetURL()
-		componentName, _ := component.GetComponentName()
+		componentName := o.EnvSpecificInfo.GetName()
 		for _, url := range urls {
 			if url.Name == o.urlName {
 				exists = true
@@ -115,7 +114,7 @@ func (o *URLDeleteOptions) Run() (err error) {
 			if err != nil {
 				return err
 			}
-			log.Successf("URL %s removed from the config file", o.urlName)
+			log.Successf("URL %s removed from the env file", o.urlName)
 			log.Italic("\nTo delete URL on the OpenShift Cluster, please use `odo push`")
 		} else {
 			err = o.LocalConfigInfo.DeleteURL(o.urlName)

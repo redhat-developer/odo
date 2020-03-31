@@ -1,4 +1,4 @@
-package integration
+package devfile
 
 import (
 	"fmt"
@@ -21,7 +21,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 	// TODO: all oc commands in all devfile related test should get replaced by kubectl
 	// TODO: to goal is not to use "oc"
-	oc = helper.NewOcRunner("oc")
+	oc := helper.NewOcRunner("oc")
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
@@ -49,6 +49,8 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
+			cmpName := helper.RandString(6)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--namespace", namespace, cmpName)
 
 			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
@@ -67,6 +69,8 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
+			cmpName := helper.RandString(6)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--namespace", namespace, cmpName)
 
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
@@ -74,7 +78,6 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 			helper.ReplaceString(filepath.Join(context, "server.js"), "node listening on", "UPDATED!")
 
-			helper.CmdShouldPass("odo", "push", "--context", filepath.Join(context, "nodejs-ex"), "--namespace", namespace)
 		})
 
 		It("should be able to create a file, push, delete, then push again propagating the deletions", func() {
@@ -83,6 +86,8 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			// Create a new file that we plan on deleting later...
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
+			cmpName := helper.RandString(6)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--namespace", namespace, cmpName)
 
 			newFilePath := filepath.Join(context, "foobar.txt")
 			if err := helper.CreateFileWithContent(newFilePath, "hello world"); err != nil {
@@ -95,9 +100,6 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			// Push
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
-
-			// component name is currently equal to directory name until odo create for devfiles is implemented
-			cmpName := filepath.Base(context)
 
 			// Check to see if it's been pushed (foobar.txt abd directory testdir)
 			podName := oc.GetRunningPodNameByComponent(cmpName, namespace)
@@ -122,10 +124,9 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs-multicontainer"), context)
+			cmpName := helper.RandString(6)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--namespace", namespace, cmpName)
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
-
-			// component name is currently equal to directory name until odo create for devfiles is implemented
-			cmpName := filepath.Base(context)
 
 			// Check to see if it's been pushed (foobar.txt abd directory testdir)
 			podName := oc.GetRunningPodNameByComponent(cmpName, namespace)
@@ -162,6 +163,8 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs-multicontainer"), context)
+			cmpName := helper.RandString(6)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--namespace", namespace, cmpName)
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 
 			// use the force build flag and push

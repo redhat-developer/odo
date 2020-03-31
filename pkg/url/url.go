@@ -134,7 +134,7 @@ func Create(client *occlient.Client, kClient *kclient.Client, urlName string, po
 						return "", errors.Wrap(err, "unable to generate self-signed certificate for clutser: "+host)
 					}
 					// create tls secret
-					secret, err := kClient.CreateTLSSecret(selfsignedcert.CertPem, selfsignedcert.KeyPem, componentName, applicationName, portNumber)
+					secret, err := kClient.CreateTLSSecret(selfsignedcert.CertPem, selfsignedcert.KeyPem, componentName, applicationName)
 					if err != nil {
 						return "", errors.Wrap(err, "unable to create tls secret: "+secret.Name)
 					}
@@ -310,14 +310,12 @@ func GetProtocol(route routev1.Route, ingress iextensionsv1.Ingress) string {
 		if ingress.Spec.TLS != nil {
 			return "https"
 		}
-		return "http"
 	} else {
 		if route.Spec.TLS != nil {
 			return "https"
 		}
-		return "http"
 	}
-
+	return "http"
 }
 
 // ConvertConfigURL converts ConfigURL to URL
@@ -416,29 +414,6 @@ func GetValidPortNumber(componentName string, portNumber int, portList []string)
 
 	return portNumber, fmt.Errorf("given port %d is not exposed on given component, available ports are: %s", portNumber, strings.Trim(strings.Replace(fmt.Sprint(componentPorts), " ", ",", -1), "[]"))
 }
-
-// // GetComponentServicePortNumbers returns the port numbers exposed by the service of the component
-// // componentName is the name of the component
-// // applicationName is the name of the application
-// func GetComponentServicePortNumbers(client *kclient.Client, componentName string, applicationName string) ([]int, error) {
-// 	componentLabels := componentlabels.GetLabels(componentName, applicationName, false)
-// 	componentSelector := util.ConvertLabelsToSelector(componentLabels)
-
-// 	services, err := client.GetServicesFromSelector(componentSelector)
-// 	if err != nil {
-// 		return nil, errors.Wrapf(err, "unable to get the service")
-// 	}
-
-// 	var ports []int
-
-// 	for _, service := range services {
-// 		for _, port := range service.Spec.Ports {
-// 			ports = append(ports, int(port.Port))
-// 		}
-// 	}
-
-// 	return ports, nil
-// }
 
 // getMachineReadableFormat gives machine readable URL definition
 func getMachineReadableFormat(r routev1.Route) URL {
