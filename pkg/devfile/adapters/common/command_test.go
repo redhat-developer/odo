@@ -4,10 +4,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/openshift/odo/pkg/devfile"
-	"github.com/openshift/odo/pkg/devfile/versions/common"
-	versionsCommon "github.com/openshift/odo/pkg/devfile/versions/common"
-
+	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/testingutil"
 )
 
@@ -127,7 +126,7 @@ func TestGetCommand(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			devObj := devfile.DevfileObj{
+			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
 					CommandActions: tt.commandActions,
 					ComponentType:  versionsCommon.DevfileComponentTypeDockerimage,
@@ -231,7 +230,7 @@ func TestGetSupportedCommandActions(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		devObj := devfile.DevfileObj{
+		devObj := devfileParser.DevfileObj{
 			Data: testingutil.TestDevfileData{
 				CommandActions: []versionsCommon.DevfileCommandAction{
 					{
@@ -310,7 +309,7 @@ func TestValidateAction(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		devObj := devfile.DevfileObj{
+		devObj := devfileParser.DevfileObj{
 			Data: testingutil.TestDevfileData{
 				CommandActions: []versionsCommon.DevfileCommandAction{
 					{
@@ -392,7 +391,7 @@ func TestGetBuildCommand(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			devObj := devfile.DevfileObj{
+			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
 					CommandActions: tt.commandActions,
 					ComponentType:  versionsCommon.DevfileComponentTypeDockerimage,
@@ -471,7 +470,7 @@ func TestGetRunCommand(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			devObj := devfile.DevfileObj{
+			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
 					CommandActions: tt.commandActions,
 					ComponentType:  versionsCommon.DevfileComponentTypeDockerimage,
@@ -569,7 +568,7 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			devObj := devfile.DevfileObj{
+			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
 					CommandActions:      actions,
 					ComponentType:       tt.componentType,

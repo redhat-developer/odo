@@ -1,11 +1,12 @@
 package component
 
 import (
-	"github.com/openshift/odo/pkg/util"
-	"github.com/pkg/errors"
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/openshift/odo/pkg/util"
+	"github.com/pkg/errors"
 
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
@@ -491,7 +492,7 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			devObj := devfile.DevfileObj{
+			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
 					ComponentType: tt.componentType,
 				},
@@ -569,7 +570,7 @@ func TestAdapterDelete(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			devObj := devfile.DevfileObj{
+			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
 					ComponentType: "nodejs",
 				},
