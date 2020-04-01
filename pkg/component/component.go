@@ -580,7 +580,7 @@ func applyConfigDeleteURL(client *occlient.Client, kClient *kclient.Client, comp
 			return err
 		}
 		localURLList := envSpecificInfo.GetURL()
-		var tempMap map[string]envinfo.EnvInfoURL
+		tempMap := make(map[string]envinfo.EnvInfoURL)
 		for _, urlElement := range localURLList {
 			tempMap[urlElement.Name] = urlElement
 		}

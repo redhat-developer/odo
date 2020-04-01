@@ -35,8 +35,6 @@ The behaviour of this feature is subject to change as development for this
 feature progresses.
 */
 
-const componentNameMaxLen = 45
-
 // DevfilePush has the logic to perform the required actions for a given devfile
 func (po *PushOptions) DevfilePush() (err error) {
 	// Parse devfile
