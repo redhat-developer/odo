@@ -548,7 +548,7 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 		}
 	}
 
-	showChanges, err := checkIfURLChangesWillBeMade(client, kClient, componentConfig, envSpecificInfo)
+	showChanges, pushedURLMap, err := checkIfURLChangesWillBeMade(client, kClient, componentConfig, envSpecificInfo)
 	if err != nil {
 		return err
 	}
@@ -556,7 +556,7 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 	if showChanges {
 		log.Info("\nApplying URL changes")
 		// Create any URLs that have been added to the component
-		err = ApplyConfigCreateURL(client, kClient, componentConfig, envSpecificInfo)
+		err = ApplyConfigCreateURL(client, kClient, componentConfig, envSpecificInfo, pushedURLMap)
 		if err != nil {
 			return err
 		}
@@ -617,15 +617,12 @@ func applyConfigDeleteURL(client *occlient.Client, kClient *kclient.Client, comp
 }
 
 // ApplyConfigCreateURL applies url config onto component
-func ApplyConfigCreateURL(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo) error {
+func ApplyConfigCreateURL(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo, pushedURLMap map[string]bool) error {
 	if experimental.IsExperimentalModeEnabled() {
 		urls := envSpecificInfo.GetURL()
 		componentName := envSpecificInfo.GetName()
 		for _, urlo := range urls {
-			exist, err := urlpkg.Exists(client, kClient, urlo.Name, componentName, "")
-			if err != nil {
-				return errors.Wrapf(err, "unable to check url")
-			}
+			_, exist := pushedURLMap[urlo.Name]
 			if exist {
 				log.Successf("URL %s already exists", urlo.Name)
 			} else {
@@ -639,10 +636,7 @@ func ApplyConfigCreateURL(client *occlient.Client, kClient *kclient.Client, comp
 	} else {
 		urls := componentConfig.GetURL()
 		for _, urlo := range urls {
-			exist, err := urlpkg.Exists(client, kClient, urlo.Name, componentConfig.GetName(), componentConfig.GetApplication())
-			if err != nil {
-				return errors.Wrapf(err, "unable to check url")
-			}
+			_, exist := pushedURLMap[urlo.Name]
 			if exist {
 				log.Successf("URL %s already exists", urlo.Name)
 			} else {
@@ -1507,33 +1501,41 @@ func getStorageFromConfig(localConfig *config.LocalConfigInfo) storage.StorageLi
 
 // checkIfURLChangesWillBeMade checks to see if there are going to be any changes
 // to the URLs when deploying and returns a true / false
-func checkIfURLChangesWillBeMade(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo) (bool, error) {
+func checkIfURLChangesWillBeMade(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo) (bool, map[string]bool, error) {
 	if experimental.IsExperimentalModeEnabled() {
 		componentName := envSpecificInfo.GetName()
 		urlList, err := urlpkg.ListPushedIngress(kClient, componentName)
 		if err != nil {
-			return false, err
+			return false, nil, err
 		}
 
 		// If config has URL(s) (since we check) or if the cluster has URL's but
 		// componentConfig does not (deleting)
 		if len(envSpecificInfo.GetURL()) > 0 || len(envSpecificInfo.GetURL()) == 0 && (len(urlList.Items) > 0) {
-			return true, nil
+			pushedURLMap := make(map[string]bool)
+			for _, element := range urlList.Items {
+				pushedURLMap[element.Name] = true
+			}
+			return true, pushedURLMap, nil
 		}
 	} else {
 		urlList, err := urlpkg.ListPushed(client, componentConfig.GetName(), componentConfig.GetApplication())
 		if err != nil {
-			return false, err
+			return false, nil, err
 		}
 
 		// If config has URL(s) (since we check) or if the cluster has URL's but
 		// componentConfig does not (deleting)
 		if len(componentConfig.GetURL()) > 0 || len(componentConfig.GetURL()) == 0 && (len(urlList.Items) > 0) {
-			return true, nil
+			pushedURLMap := make(map[string]bool)
+			for _, element := range urlList.Items {
+				pushedURLMap[element.Name] = true
+			}
+			return true, pushedURLMap, nil
 		}
 	}
 
-	return false, nil
+	return false, nil, nil
 }
 
 func addDebugPortToEnv(envVarList *config.EnvVarList, componentConfig config.LocalConfigInfo) {

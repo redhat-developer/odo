@@ -370,7 +370,7 @@ func TestExists(t *testing.T) {
 			return true, &tt.routes, nil
 		})
 
-		exists, err := Exists(client, &kclient.Client{}, tt.urlName, tt.componentName, tt.applicationName)
+		exists, err := Exists(client, tt.urlName, tt.componentName, tt.applicationName)
 		if err == nil && !tt.wantErr {
 			if (len(fakeClientSet.RouteClientset.Actions()) != 1) && (tt.wantErr != true) {
 				t.Errorf("expected 1 action in ListRoutes got: %v", fakeClientSet.RouteClientset.Actions())

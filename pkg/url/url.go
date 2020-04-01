@@ -325,31 +325,17 @@ func GetURLString(protocol, URL string, ingressDomain string) string {
 // urlName is the name of the url for checking
 // componentName is the name of the component to which the url's existence is checked
 // applicationName is the name of the application to which the url's existence is checked
-func Exists(client *occlient.Client, kClient *kclient.Client, urlName string, componentName string, applicationName string) (bool, error) {
-	if experimental.IsExperimentalModeEnabled() {
-		urls, err := ListPushedIngress(kClient, componentName)
-		if err != nil {
-			return false, errors.Wrap(err, "unable to list the urls")
-		}
-
-		for _, url := range urls.Items {
-			if url.Name == urlName {
-				return true, nil
-			}
-		}
-	} else {
-		urls, err := ListPushed(client, componentName, applicationName)
-		if err != nil {
-			return false, errors.Wrap(err, "unable to list the urls")
-		}
-
-		for _, url := range urls.Items {
-			if url.Name == urlName {
-				return true, nil
-			}
-		}
+func Exists(client *occlient.Client, urlName string, componentName string, applicationName string) (bool, error) {
+	urls, err := ListPushed(client, componentName, applicationName)
+	if err != nil {
+		return false, errors.Wrap(err, "unable to list the urls")
 	}
 
+	for _, url := range urls.Items {
+		if url.Name == urlName {
+			return true, nil
+		}
+	}
 	return false, nil
 }
 
