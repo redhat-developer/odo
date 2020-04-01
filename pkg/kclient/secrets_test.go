@@ -3,7 +3,6 @@ package kclient
 import (
 	"testing"
 
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -21,16 +20,16 @@ func TestCreateTLSSecret(t *testing.T) {
 		wantErr       bool
 	}{
 		{
-			name:          "Case: Valid secret name",
+			name:          "Case: Valid Component name",
 			componentName: "testComponent",
 			secretName:    "testComponent-tlssecret",
 			host:          "1.2.3.4.nip.io",
 			wantErr:       false,
 		},
 		{
-			name:          "Case: Invalid secret name",
-			secretName:    "",
-			componentName: "testComponent",
+			name:          "Case: Invalid Component name",
+			secretName:    "testComponent-tlssecret",
+			componentName: "",
 			host:          "1.2.3.4.nip.io",
 			wantErr:       true,
 		},
@@ -42,9 +41,6 @@ func TestCreateTLSSecret(t *testing.T) {
 			fkclient.Namespace = "default"
 
 			fkclientset.Kubernetes.PrependReactor("create", "secrets", func(action ktesting.Action) (bool, runtime.Object, error) {
-				if tt.secretName == "" {
-					return true, nil, errors.Errorf("secret name is empty")
-				}
 				secret := corev1.Secret{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: tt.secretName,

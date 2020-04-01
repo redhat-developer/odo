@@ -562,7 +562,7 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 		}
 
 		// Delete any URLs
-		err = applyConfigDeleteURL(client, kClient, componentConfig, envSpecificInfo)
+		err = applyConfigDeleteURL(client, kClient, componentConfig, envSpecificInfo, pushedURLMap)
 		if err != nil {
 			return err
 		}
@@ -572,44 +572,37 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 }
 
 // ApplyConfigDeleteURL applies url config deletion onto component
-func applyConfigDeleteURL(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo) (err error) {
+func applyConfigDeleteURL(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo, pushedURLMap map[string]bool) (err error) {
 	if experimental.IsExperimentalModeEnabled() {
-		componentName := envSpecificInfo.GetName()
-		ingressList, err := urlpkg.ListPushedIngress(kClient, componentName)
-		if err != nil {
-			return err
-		}
 		localURLList := envSpecificInfo.GetURL()
 		tempMap := make(map[string]envinfo.EnvInfoURL)
 		for _, urlElement := range localURLList {
 			tempMap[urlElement.Name] = urlElement
 		}
-		for _, ingress := range ingressList.Items {
-			if _, exist := tempMap[ingress.Name]; !exist {
-				err = urlpkg.Delete(client, kClient, ingress.Name, componentConfig.GetApplication())
+		// urlName is the key of each element
+		for urlName, _ := range pushedURLMap {
+			if _, exist := tempMap[urlName]; !exist {
+				err = urlpkg.Delete(client, kClient, urlName, componentConfig.GetApplication())
 				if err != nil {
 					return err
 				}
-				log.Successf("URL %s successfully deleted", ingress.Name)
+				log.Successf("URL %s successfully deleted", urlName)
 			}
 		}
 	} else {
-		urlList, err := urlpkg.ListPushed(client, componentConfig.GetName(), componentConfig.GetApplication())
-		if err != nil {
-			return err
-		}
 		localURLList := componentConfig.GetURL()
 		tempMap := make(map[string]config.ConfigURL)
 		for _, urlElement := range localURLList {
 			tempMap[urlElement.Name] = urlElement
 		}
-		for _, url := range urlList.Items {
-			if _, exist := tempMap[url.Name]; !exist {
-				err = urlpkg.Delete(client, kClient, url.Name, componentConfig.GetApplication())
+		// urlName is the key of each element
+		for urlName, _ := range pushedURLMap {
+			if _, exist := tempMap[urlName]; !exist {
+				err = urlpkg.Delete(client, kClient, urlName, componentConfig.GetApplication())
 				if err != nil {
 					return err
 				}
-				log.Successf("URL %s successfully deleted", url.Name)
+				log.Successf("URL %s successfully deleted", urlName)
 			}
 		}
 	}
@@ -1509,8 +1502,8 @@ func checkIfURLChangesWillBeMade(client *occlient.Client, kClient *kclient.Clien
 			return false, nil, err
 		}
 
-		// If config has URL(s) (since we check) or if the cluster has URL's but
-		// componentConfig does not (deleting)
+		// If envinfo has URL(s) (since we check) or if the cluster has URL's but
+		// envinfo does not (deleting)
 		if len(envSpecificInfo.GetURL()) > 0 || len(envSpecificInfo.GetURL()) == 0 && (len(urlList.Items) > 0) {
 			pushedURLMap := make(map[string]bool)
 			for _, element := range urlList.Items {
@@ -1524,8 +1517,8 @@ func checkIfURLChangesWillBeMade(client *occlient.Client, kClient *kclient.Clien
 			return false, nil, err
 		}
 
-		// If config has URL(s) (since we check) or if the cluster has URL's but
-		// componentConfig does not (deleting)
+		// If envinfo has URL(s) (since we check) or if the cluster has URL's but
+		// envinfo does not (deleting)
 		if len(componentConfig.GetURL()) > 0 || len(componentConfig.GetURL()) == 0 && (len(urlList.Items) > 0) {
 			pushedURLMap := make(map[string]bool)
 			for _, element := range urlList.Items {

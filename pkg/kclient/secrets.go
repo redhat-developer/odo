@@ -1,6 +1,8 @@
 package kclient
 
 import (
+	"fmt"
+
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -11,6 +13,9 @@ import (
 // serviceName is the name of the service for the target reference
 // ingressDomain is the ingress domain to use for the ingress
 func (c *Client) CreateTLSSecret(tlsCertificate []byte, tlsPrivKey []byte, componentName string, applicationName string) (*corev1.Secret, error) {
+	if componentName == "" {
+		return nil, fmt.Errorf("componentName name is empty")
+	}
 	labels := componentlabels.GetLabels(componentName, applicationName, true)
 	tlsSecretName := componentName + "-tlssecret"
 	data := make(map[string][]byte)
