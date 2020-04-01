@@ -323,13 +323,17 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 			componentName = ui.EnterDevfileComponentName(componentType)
 
-			if cmd.Flags().Changed("project") {
-				componentNamespace, err = cmd.Flags().GetString("project")
-				if err != nil {
-					return err
+			if len(co.devfileMetadata.componentNamespace) == 0 {
+				if cmd.Flags().Changed("project") {
+					componentNamespace, err = cmd.Flags().GetString("project")
+					if err != nil {
+						return err
+					}
+				} else {
+					componentNamespace = ui.EnterDevfileComponentNamespace(defaultComponentNamespace)
 				}
 			} else {
-				componentNamespace = ui.EnterDevfileComponentNamespace(defaultComponentNamespace)
+				componentNamespace = co.devfileMetadata.componentNamespace
 			}
 		} else {
 			// Direct mode (User enters the full command)
@@ -346,13 +350,17 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 				componentName = args[0]
 			}
 
-			if cmd.Flags().Changed("project") {
-				componentNamespace, err = cmd.Flags().GetString("project")
-				if err != nil {
-					return err
+			if len(co.devfileMetadata.componentNamespace) == 0 {
+				if cmd.Flags().Changed("project") {
+					componentNamespace, err = cmd.Flags().GetString("project")
+					if err != nil {
+						return err
+					}
+				} else {
+					componentNamespace = defaultComponentNamespace
 				}
 			} else {
-				componentNamespace = defaultComponentNamespace
+				componentNamespace = co.devfileMetadata.componentNamespace
 			}
 		}
 
