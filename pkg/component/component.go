@@ -599,7 +599,7 @@ func applyConfigDeleteURL(client *occlient.Client, kClient *kclient.Client, comp
 			return err
 		}
 		localURLList := componentConfig.GetURL()
-		var tempMap map[string]config.ConfigURL
+		tempMap := make(map[string]config.ConfigURL)
 		for _, urlElement := range localURLList {
 			tempMap[urlElement.Name] = urlElement
 		}
