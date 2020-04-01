@@ -121,9 +121,6 @@ func (po *PushOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (po *PushOptions) Run() (err error) {
-	if po.Context == nil {
-		fmt.Println("Context is nil!!!!!")
-	}
 	// if experimental mode is enabled, use devfile push
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.DevfilePath) {
 		// devfile push

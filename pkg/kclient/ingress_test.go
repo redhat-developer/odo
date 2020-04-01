@@ -61,9 +61,6 @@ func TestCreateIngress(t *testing.T) {
 }
 
 func TestListIngresses(t *testing.T) {
-	type args struct {
-		labelSelector string
-	}
 	componentName := "testcomponent"
 	componentLabel := "componentName"
 	tests := []struct {
@@ -86,7 +83,7 @@ func TestListIngresses(t *testing.T) {
 			},
 		},
 		{
-			name:          "Case: two ingress",
+			name:          "Case: two ingresses",
 			labelSelector: fmt.Sprintf("%v=%v", componentLabel, componentName),
 			wantIngress: []extensionsv1.Ingress{
 				extensionsv1.Ingress{

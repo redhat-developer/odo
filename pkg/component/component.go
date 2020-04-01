@@ -580,57 +580,40 @@ func applyConfigDeleteURL(client *occlient.Client, kClient *kclient.Client, comp
 			return err
 		}
 		localURLList := envSpecificInfo.GetURL()
-		for _, i := range ingressList.Items {
-			if !checkIfURLPresentInConfig(checkIfURLPresentInConfigParam{envinfoURL: localURLList, url: i.Name}) {
-				err = urlpkg.Delete(client, kClient, i.Name, componentConfig.GetApplication())
+		var tempMap map[string]envinfo.EnvInfoURL
+		for _, urlElement := range localURLList {
+			tempMap[urlElement.Name] = urlElement
+		}
+		for _, ingress := range ingressList.Items {
+			if _, exist := tempMap[ingress.Name]; !exist {
+				err = urlpkg.Delete(client, kClient, ingress.Name, componentConfig.GetApplication())
 				if err != nil {
 					return err
 				}
-				log.Successf("URL %s successfully deleted", i.Name)
+				log.Successf("URL %s successfully deleted", ingress.Name)
 			}
 		}
-		return nil
 	} else {
 		urlList, err := urlpkg.ListPushed(client, componentConfig.GetName(), componentConfig.GetApplication())
 		if err != nil {
 			return err
 		}
 		localURLList := componentConfig.GetURL()
-		for _, u := range urlList.Items {
-			if !checkIfURLPresentInConfig(checkIfURLPresentInConfigParam{localURL: localURLList, url: u.Name}) {
-				err = urlpkg.Delete(client, kClient, u.Name, componentConfig.GetApplication())
+		var tempMap map[string]config.ConfigURL
+		for _, urlElement := range localURLList {
+			tempMap[urlElement.Name] = urlElement
+		}
+		for _, url := range urlList.Items {
+			if _, exist := tempMap[url.Name]; !exist {
+				err = urlpkg.Delete(client, kClient, url.Name, componentConfig.GetApplication())
 				if err != nil {
 					return err
 				}
-				log.Successf("URL %s successfully deleted", u.Name)
-			}
-		}
-		return nil
-	}
-}
-
-func checkIfURLPresentInConfig(checkIfURLPresentInConfigParam checkIfURLPresentInConfigParam) bool {
-	if experimental.IsExperimentalModeEnabled() {
-		for _, u := range checkIfURLPresentInConfigParam.envinfoURL {
-			if u.Name == checkIfURLPresentInConfigParam.url {
-				return true
-			}
-		}
-	} else {
-		for _, u := range checkIfURLPresentInConfigParam.localURL {
-			if u.Name == checkIfURLPresentInConfigParam.url {
-				return true
+				log.Successf("URL %s successfully deleted", url.Name)
 			}
 		}
 	}
-
-	return false
-}
-
-type checkIfURLPresentInConfigParam struct {
-	localURL   []config.ConfigURL
-	envinfoURL []envinfo.EnvInfoURL
-	url        string
+	return nil
 }
 
 // ApplyConfigCreateURL applies url config onto component

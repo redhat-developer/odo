@@ -205,7 +205,7 @@ func ListPushed(client *occlient.Client, componentName string, applicationName s
 
 }
 
-// ListIngress lists the ingress URLs for the given component
+// ListPushedIngress lists the ingress URLs for the given component
 func ListPushedIngress(client *kclient.Client, componentName string) (iextensionsv1.IngressList, error) {
 	labelSelector := fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, componentName)
 	glog.V(4).Infof("Listing ingresses with label selector: %v", labelSelector)
@@ -280,27 +280,6 @@ func List(client *occlient.Client, localConfig *config.LocalConfigInfo, componen
 	}
 
 	urlList := getMachineReadableFormatForList(urls)
-	return urlList, nil
-}
-
-// ListIngress returns all Ingress URLs for given component.
-func ListIngress(client *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, componentName string) (iextensionsv1.IngressList, error) {
-
-	labelSelector := fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, componentName)
-	// TODO: select url name
-	ingresses, err := client.ListIngresses(labelSelector)
-	if err != nil {
-		return iextensionsv1.IngressList{}, errors.Wrap(err, "unable to list ingress names")
-	}
-
-	var urls []iextensionsv1.Ingress
-
-	for _, i := range ingresses {
-		clusterURL := getMachineReadableFormatIngress(i)
-		urls = append(urls, clusterURL)
-	}
-
-	urlList := getMachineReadableFormatForIngressList(urls)
 	return urlList, nil
 }
 

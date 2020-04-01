@@ -60,7 +60,9 @@ func (o *URLListOptions) Validate() (err error) {
 func (o *URLListOptions) Run() (err error) {
 	if experimental.IsExperimentalModeEnabled() {
 		componentName := o.EnvSpecificInfo.GetName()
-		urls, err := url.ListIngress(o.KClient, o.EnvSpecificInfo, componentName)
+		// TODO: Need to list all local and pushed ingresses
+		//		 issue to track: https://github.com/openshift/odo/issues/2787
+		urls, err := url.ListPushedIngress(o.KClient, componentName)
 		if err != nil {
 			return err
 		}

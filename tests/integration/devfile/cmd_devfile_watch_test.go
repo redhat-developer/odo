@@ -12,7 +12,7 @@ import (
 )
 
 var _ = Describe("odo devfile watch command tests", func() {
-	var project string
+	var namespace string
 	var context string
 	var currentWorkingDirectory string
 
@@ -21,7 +21,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
-		project = helper.CreateRandProject()
+		namespace = helper.CreateRandProject()
 		context = helper.CreateNewContext()
 		currentWorkingDirectory = helper.Getwd()
 		helper.Chdir(context)
@@ -31,7 +31,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		helper.DeleteProject(project)
+		helper.DeleteProject(namespace)
 		helper.Chdir(currentWorkingDirectory)
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
@@ -51,7 +51,8 @@ var _ = Describe("odo devfile watch command tests", func() {
 		It("should fail", func() {
 			// Devfile push requires experimental mode to be set
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
-
+			cmpName := helper.RandString(6)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--namespace", namespace, cmpName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
 
 			output := helper.CmdShouldFail("odo", "watch", "--devfile", filepath.Join(context, "devfile.yaml"))
@@ -63,7 +64,6 @@ var _ = Describe("odo devfile watch command tests", func() {
 		It("should fail", func() {
 			// Devfile push requires experimental mode to be set
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
-
 			output := helper.CmdShouldFail("odo", "watch", "--devfile", "fake-devfile.yaml")
 			Expect(output).To(ContainSubstring("The current directory does not represent an odo component"))
 		})
@@ -72,7 +72,6 @@ var _ = Describe("odo devfile watch command tests", func() {
 	Context("when executing odo watch with devfile flag without experimental mode", func() {
 		It("should fail", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
-
 			output := helper.CmdShouldFail("odo", "watch", "--devfile", filepath.Join(context, "devfile.yaml"))
 			Expect(output).To(ContainSubstring("Error: unknown flag: --devfile"))
 		})
