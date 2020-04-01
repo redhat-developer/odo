@@ -319,7 +319,11 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 					supDevfileCatalogList = append(supDevfileCatalogList, devfileComponent)
 				}
 			}
-			componentType = ui.SelectDevfileComponentType(supDevfileCatalogList)
+
+			// devfile.yaml is not present, user has to specify the component type
+			if !util.CheckPathExists(DevfilePath) {
+				componentType = ui.SelectDevfileComponentType(supDevfileCatalogList)
+			}
 
 			componentName = ui.EnterDevfileComponentName(componentType)
 
@@ -338,6 +342,10 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			// Component type: Get from full command's first argument (mandatory)
 			// Component name: Get from full command's second argument (optional), by default it is component type from first argument
 			// Component namespace: Get from --project flag, by default it is the current active namespace
+			if util.CheckPathExists(DevfilePath) {
+				return errors.New("This workspace directory already contains a devfile.yaml, please delete it and run the component creation command again")
+			}
+
 			componentType = args[0]
 
 			if len(args) == 2 {
@@ -361,9 +369,21 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		co.devfileMetadata.componentName = strings.ToLower(componentName)
 		co.devfileMetadata.componentNamespace = componentNamespace
 
+		// If devfile.yaml is present, we don't need to download the devfile.yaml later
+		if util.CheckPathExists(DevfilePath) {
+			co.devfileMetadata.devfileSupport = true
+
+			err = co.InitEnvInfoFromContext()
+			if err != nil {
+				return err
+			}
+
+			return nil
+		}
+
 		// Since we need to support both devfile and s2i, so we have to check if the component type is
-		// supported by devfile, if it is supported we return, but if it is not supported we still need to
-		// run all codes related with s2i
+		// supported by devfile, if it is supported we return and will download the corresponding devfile.yaml later,
+		// but if it is not supported we still need to run all codes related with s2i
 		spinner := log.Spinner("Checking if the specified component type is supported devfile component type")
 
 		for _, devfileComponent := range catalogDevfileList.Items {
@@ -585,8 +605,8 @@ func (co *CreateOptions) Validate() (err error) {
 			spinner := log.Spinner("Validating component")
 			defer spinner.End(false)
 
-			if util.CheckPathExists(DevfilePath) || util.CheckPathExists(EnvFilePath) {
-				return errors.New("Devfile.yaml or env.yaml already exists")
+			if util.CheckPathExists(EnvFilePath) {
+				return errors.New("This workspace directory already contains a devfile component")
 			}
 
 			err = util.ValidateK8sResourceName("component name", co.devfileMetadata.componentName)
@@ -629,9 +649,11 @@ func (co *CreateOptions) Run() (err error) {
 				return errors.Wrap(err, "Failed to create env.yaml for devfile component")
 			}
 
-			err = util.DownloadFile(co.devfileMetadata.devfileRegistry+co.devfileMetadata.devfileLink, DevfilePath)
-			if err != nil {
-				return errors.Wrap(err, "Failed to download devfile.yaml for devfile component")
+			if !util.CheckPathExists(DevfilePath) {
+				err = util.DownloadFile(co.devfileMetadata.devfileRegistry+co.devfileMetadata.devfileLink, DevfilePath)
+				if err != nil {
+					return errors.Wrap(err, "Failed to download devfile.yaml for devfile component")
+				}
 			}
 
 			log.Italic("\nPlease use `odo push` command to create the component with source deployed")
