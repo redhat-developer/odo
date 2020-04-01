@@ -9,6 +9,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/application"
 	"github.com/openshift/odo/pkg/machineoutput"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -45,16 +46,26 @@ func NewListOptions() *ListOptions {
 
 // Complete completes log args
 func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	lo.Context = genericclioptions.NewContext(cmd)
+
+	if util.CheckKubeConfigExist() {
+		glog.V(4).Infof("New Context")
+		lo.Context = genericclioptions.NewContext(cmd)
+	} else {
+		glog.V(4).Infof("New Config Context")
+		lo.Context = genericclioptions.NewConfigContext(cmd)
+
+	}
 	return
+
 }
 
 // Validate validates the list parameters
 func (lo *ListOptions) Validate() (err error) {
-	if !lo.allAppsFlag && lo.pathFlag == "" && (lo.Context.Project == "" || lo.Application == "") {
-		return odoutil.ThrowContextError()
+	if util.CheckKubeConfigExist() {
+		if !lo.allAppsFlag && lo.pathFlag == "" && (lo.Context.Project == "" || lo.Application == "") {
+			return odoutil.ThrowContextError()
+		}
 	}
-
 	return nil
 }
 

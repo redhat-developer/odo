@@ -874,46 +874,54 @@ func List(client *occlient.Client, applicationName string, localConfigInfo *conf
 		applicationSelector = fmt.Sprintf("%s=%s", applabels.ApplicationLabel, applicationName)
 	}
 
-	project, err := client.GetProject(client.Namespace)
-	if err != nil {
-		return ComponentList{}, err
-	}
-
 	var components []Component
 	componentNamesMap := make(map[string]bool)
 
-	if project != nil {
-		// retrieve all the deployment configs that are associated with this application
-		dcList, err := client.GetDeploymentConfigsFromSelector(applicationSelector)
+	if client != nil {
+		project, err := client.GetProject(client.Namespace)
 		if err != nil {
-			return ComponentList{}, errors.Wrapf(err, "unable to list components")
+			return ComponentList{}, err
 		}
 
-		// extract the labels we care about from each component
-		for _, elem := range dcList {
-			component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], applicationName, client.Namespace)
+		if project != nil {
+			// retrieve all the deployment configs that are associated with this application
+			dcList, err := client.GetDeploymentConfigsFromSelector(applicationSelector)
 			if err != nil {
-				return ComponentList{}, errors.Wrap(err, "Unable to get component")
+				return ComponentList{}, errors.Wrapf(err, "unable to list components")
 			}
-			components = append(components, component)
-			componentNamesMap[component.Name] = true
+
+			// extract the labels we care about from each component
+			for _, elem := range dcList {
+				component, err := GetComponent(client, elem.Labels[componentlabels.ComponentLabel], applicationName, client.Namespace)
+				if err != nil {
+					return ComponentList{}, errors.Wrap(err, "Unable to get component")
+				}
+				components = append(components, component)
+				componentNamesMap[component.Name] = true
+			}
 		}
+
 	}
 
 	if localConfigInfo != nil {
 		component, err := GetComponentFromConfig(localConfigInfo)
+
 		if err != nil {
 			return GetMachineReadableFormatForList(components), err
 		}
-		_, ok := componentNamesMap[component.Name]
-		if component.Name != "" && !ok && component.Spec.App == applicationName && component.Namespace == client.Namespace {
-			component.Status.State = GetComponentState(client, component.Name, component.Spec.App)
+
+		if client != nil {
+			_, ok := componentNamesMap[component.Name]
+			if component.Name != "" && !ok && component.Spec.App == applicationName && component.Namespace == client.Namespace {
+				component.Status.State = GetComponentState(client, component.Name, component.Spec.App)
+				components = append(components, component)
+			}
+		} else {
+			component.Status.State = StateTypeUnknown
 			components = append(components, component)
+
 		}
 
-		if len(components) == 0 {
-			return GetMachineReadableFormatForList(components), nil
-		}
 	}
 
 	compoList := GetMachineReadableFormatForList(components)
@@ -972,7 +980,9 @@ func ListIfPathGiven(client *occlient.Client, paths []string) (ComponentList, er
 				}
 
 				// since the config file maybe belong to a component of a different project
-				client.Namespace = data.GetProject()
+				if client != nil {
+					client.Namespace = data.GetProject()
+				}
 
 				con, _ := filepath.Abs(filepath.Dir(path))
 				a := getMachineReadableFormat(data.GetName(), data.GetType())
@@ -980,7 +990,10 @@ func ListIfPathGiven(client *occlient.Client, paths []string) (ComponentList, er
 				a.Spec.App = data.GetApplication()
 				a.Spec.Ports = data.GetPorts()
 				a.Status.Context = con
-				a.Status.State = GetComponentState(client, data.GetName(), data.GetApplication())
+				if client != nil {
+					a.Status.State = GetComponentState(client, data.GetName(), data.GetApplication())
+				}
+				a.Status.State = StateTypeUnknown
 				components = append(components, a)
 			}
 			return nil
