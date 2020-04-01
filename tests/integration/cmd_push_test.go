@@ -280,12 +280,15 @@ var _ = Describe("odo push command tests", func() {
 			// During the startup sequence there is something that will modify the access time of a source file.
 			helper.HttpWaitFor("http://"+url, "Welcome to your Node.js", 30, 1)
 
+			envs := oc.GetEnvs(cmpName, appName, project)
+			dir := envs["ODO_S2I_SRC_BIN_PATH"]
+
 			earlierCatServerFile := ""
 			oc.CheckCmdOpInRemoteCmpPod(
 				cmpName,
 				appName,
 				project,
-				[]string{"stat", "/tmp/src/server.js"},
+				[]string{"stat", filepath.Join(dir, "src", "server.js")},
 				func(cmdOp string, err error) bool {
 					earlierCatServerFile = cmdOp
 					return true
@@ -297,7 +300,7 @@ var _ = Describe("odo push command tests", func() {
 				cmpName,
 				appName,
 				project,
-				[]string{"stat", "/tmp/src/views/index.html"},
+				[]string{"stat", filepath.Join(dir, "src", "views", "index.html")},
 				func(cmdOp string, err error) bool {
 					earlierCatViewFile = cmdOp
 					return true
@@ -313,7 +316,7 @@ var _ = Describe("odo push command tests", func() {
 				cmpName,
 				appName,
 				project,
-				[]string{"stat", "/tmp/src/views/index.html"},
+				[]string{"stat", filepath.Join(dir, "src", "views", "index.html")},
 				func(cmdOp string, err error) bool {
 					modifiedCatViewFile = cmdOp
 					return true
@@ -325,7 +328,7 @@ var _ = Describe("odo push command tests", func() {
 				cmpName,
 				appName,
 				project,
-				[]string{"stat", "/tmp/src/server.js"},
+				[]string{"stat", filepath.Join(dir, "src", "server.js")},
 				func(cmdOp string, err error) bool {
 					modifiedCatServerFile = cmdOp
 					return true
@@ -338,17 +341,21 @@ var _ = Describe("odo push command tests", func() {
 
 		It("should delete the files from the container if its removed locally", func() {
 			oc.ImportJavaIS(project)
+			cmpName := "backend"
 			helper.CopyExample(filepath.Join("source", "openjdk"), context)
 			helper.CmdShouldPass("odo", "create", "java:8", "backend", "--project", project, "--context", context, "--app", appName)
 			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", context)
 			helper.CmdShouldPass("odo", "push", "--context", context)
+
+			envs := oc.GetEnvs(cmpName, appName, project)
+			dir := envs["ODO_S2I_SRC_BIN_PATH"]
 
 			var statErr error
 			oc.CheckCmdOpInRemoteCmpPod(
 				"backend",
 				appName,
 				project,
-				[]string{"stat", "/tmp/src/src/main/java/AnotherMessageProducer.java"},
+				[]string{"stat", filepath.Join(dir, "src", "src", "main", "java", "AnotherMessageProducer.java")},
 				func(cmdOp string, err error) bool {
 					statErr = err
 					return true
@@ -362,7 +369,7 @@ var _ = Describe("odo push command tests", func() {
 				"backend",
 				appName,
 				project,
-				[]string{"stat", "/tmp/src/src/main/java/AnotherMessageProducer.java"},
+				[]string{"stat", filepath.Join(dir, "src", "src", "main", "java", "AnotherMessageProducer.java")},
 				func(cmdOp string, err error) bool {
 					statErr = err
 					return true
@@ -370,7 +377,8 @@ var _ = Describe("odo push command tests", func() {
 			)
 
 			Expect(statErr).To(HaveOccurred())
-			Expect(statErr.Error()).To(ContainSubstring("cannot stat '/tmp/src/src/main/java/AnotherMessageProducer.java': No such file or directory"))
+			path := filepath.Join(dir, "src", "src", "main", "java", "AnotherMessageProducer.java")
+			Expect(statErr.Error()).To(ContainSubstring("cannot stat '" + path + "': No such file or directory"))
 		})
 
 	})
