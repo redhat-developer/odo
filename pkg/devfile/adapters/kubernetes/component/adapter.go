@@ -36,7 +36,6 @@ func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
 type Adapter struct {
 	Client kclient.Client
 	common.AdapterContext
-	// pod             *corev1.Pod
 	devfileBuildCmd string
 	devfileRunCmd   string
 }
@@ -46,9 +45,6 @@ type Adapter struct {
 func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	componentExists := utils.ComponentExists(a.Client, a.ComponentName)
 	globExps := util.GetAbsGlobExps(parameters.Path, parameters.IgnoredFiles)
-
-	a.devfileBuildCmd = parameters.DevfileBuildCmd
-	a.devfileRunCmd = parameters.DevfileRunCmd
 
 	a.devfileBuildCmd = parameters.DevfileBuildCmd
 	a.devfileRunCmd = parameters.DevfileRunCmd
@@ -146,7 +142,6 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	if err != nil {
 		return errors.Wrapf(err, "error while waiting for pod  %s", podSelector)
 	}
-	// a.pod = pod
 
 	// Sync the local source code to the component
 	err = a.pushLocal(parameters.Path,
