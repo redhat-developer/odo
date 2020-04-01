@@ -21,7 +21,7 @@ func getCommand(data versions.DevfileData, commandName string, required bool) (s
 
 			// None of the actions are supported so the command cannot be run
 			if len(supportedCommandActions) == 0 {
-				return supportedCommand, errors.Wrapf(err, "The command \"%v\" was found but its actions are not supported", commandName)
+				return supportedCommand, errors.Wrapf(err, "\nThe command \"%v\" was found but its actions are not supported", commandName)
 			} else if err != nil {
 				glog.Warning(errors.Wrapf(err, "The command \"%v\" was found but some of its actions are not supported", commandName))
 			}
@@ -59,7 +59,7 @@ func getSupportedCommandActions(data versions.DevfileData, command common.Devfil
 			glog.V(3).Infof("Action %d maps to component %v", i+1, *action.Component)
 			supportedCommandActions = append(supportedCommandActions, action)
 		} else {
-			problemMsg += fmt.Sprintf("\nProblem with command \"%v\" action #%d: %v", command.Name, i+1, err)
+			problemMsg += fmt.Sprintf("Problem with command \"%v\" action #%d: %v", command.Name, i+1, err)
 		}
 	}
 
@@ -140,17 +140,14 @@ func ValidateAndGetPushDevfileCommands(data versions.DevfileData, devfileBuildCm
 
 	buildCommand, buildCmdErr := GetBuildCommand(data, devfileBuildCmd)
 
-	if devfileBuildCmd == "" && buildCmdErr != nil {
+	if reflect.DeepEqual(emptyCommand, buildCommand) && buildCmdErr == nil {
 		// If there was no build command specified through odo push and no default build command in the devfile, default validate to true since the build command is optional
 		isBuildCommandValid = true
 		glog.V(3).Infof("No build command was provided")
-	} else if buildCmdErr == nil {
+	} else if !reflect.DeepEqual(emptyCommand, buildCommand) && buildCmdErr == nil {
 		isBuildCommandValid = true
-		// The build command is optional so there may not be an error but the build command may still be empty, only add it if it exists
-		if !reflect.DeepEqual(emptyCommand, buildCommand) {
-			pushDevfileCommands = append(pushDevfileCommands, buildCommand)
-			glog.V(3).Infof("Build command: %v", buildCommand.Name)
-		}
+		pushDevfileCommands = append(pushDevfileCommands, buildCommand)
+		glog.V(3).Infof("Build command: %v", buildCommand.Name)
 	}
 
 	runCommand, runCmdErr := GetRunCommand(data, devfileRunCmd)
