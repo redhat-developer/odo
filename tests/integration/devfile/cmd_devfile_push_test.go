@@ -3,7 +3,6 @@ package devfile
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"time"
 
@@ -50,19 +49,20 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
+			cmpName := helper.RandString(6)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--namespace", namespace, cmpName)
 			helper.RenameFile("devfile.yaml", "devfile-old.yaml")
 			helper.RenameFile("devfile-no-endpoints.yaml", "devfile.yaml")
-			componentName := path.Base(context)
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 			output := oc.GetServices(namespace)
-			Expect(output).NotTo(ContainSubstring(componentName))
+			Expect(output).NotTo(ContainSubstring(cmpName))
 
 			helper.RenameFile("devfile-old.yaml", "devfile.yaml")
 			output = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 			output = oc.GetServices(namespace)
-			Expect(output).To(ContainSubstring(componentName))
+			Expect(output).To(ContainSubstring(cmpName))
 		})
 
 		It("Check that odo push works with a devfile", func() {

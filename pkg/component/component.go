@@ -580,7 +580,7 @@ func applyConfigDeleteURL(client *occlient.Client, kClient *kclient.Client, comp
 			tempMap[urlElement.Name] = urlElement
 		}
 		// urlName is the key of each element
-		for urlName, _ := range pushedURLMap {
+		for urlName := range pushedURLMap {
 			if _, exist := tempMap[urlName]; !exist {
 				err = urlpkg.Delete(client, kClient, urlName, componentConfig.GetApplication())
 				if err != nil {
@@ -596,7 +596,7 @@ func applyConfigDeleteURL(client *occlient.Client, kClient *kclient.Client, comp
 			tempMap[urlElement.Name] = urlElement
 		}
 		// urlName is the key of each element
-		for urlName, _ := range pushedURLMap {
+		for urlName := range pushedURLMap {
 			if _, exist := tempMap[urlName]; !exist {
 				err = urlpkg.Delete(client, kClient, urlName, componentConfig.GetApplication())
 				if err != nil {
