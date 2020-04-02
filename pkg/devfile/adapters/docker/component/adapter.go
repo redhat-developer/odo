@@ -158,7 +158,10 @@ func (a Adapter) updateComponent() (err error) {
 			if utils.DoesContainerNeedUpdating(comp, containerConfig) {
 				glog.V(3).Info("Updating the component")
 				// Remove the container
-				a.Client.RemoveContainer(containerID)
+				err := a.Client.RemoveContainer(containerID)
+				if err != nil {
+					return errors.Wrapf(err, "Unable to remove container %s for component %s", containerID, *comp.Alias)
+				}
 
 				// Start the container
 				err = a.startContainer(componentName, projectVolumeName, comp)

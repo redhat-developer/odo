@@ -15,11 +15,11 @@ import (
 func (dc *Client) PullImage(image string) error {
 
 	out, err := dc.Client.ImagePull(dc.Context, image, types.ImagePullOptions{})
-	defer out.Close()
 
 	if err != nil {
 		return errors.Wrapf(err, "Unable to pull image")
 	}
+	defer out.Close()
 
 	if glog.V(4) {
 		_, err := io.Copy(os.Stdout, out)

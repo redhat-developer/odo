@@ -43,9 +43,5 @@ func DoesContainerNeedUpdating(component common.DevfileComponent, containerConfi
 	// Update the container if the env vars were updated in the devfile
 	// Need to convert the devfile envvars to the format expected by Docker
 	devfileEnvVars := ConvertEnvs(component.Env)
-	if !reflect.DeepEqual(devfileEnvVars, containerConfig.Env) {
-		return true
-	}
-
-	return false
+	return !reflect.DeepEqual(devfileEnvVars, containerConfig.Env)
 }
