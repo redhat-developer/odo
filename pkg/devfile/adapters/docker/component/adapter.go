@@ -31,7 +31,7 @@ type Adapter struct {
 }
 
 // Push updates the component if a matching component exists or creates one if it doesn't exist
-func (a Adapter) Push(path string, ignoredFiles []string, forceBuild bool, globExps []string) (err error) {
+func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	componentExists := utils.ComponentExists(a.Client, a.ComponentName)
 
 	if componentExists {
@@ -45,6 +45,11 @@ func (a Adapter) Push(path string, ignoredFiles []string, forceBuild bool, globE
 	}
 
 	return nil
+}
+
+// DoesComponentExist returns true if a component with the specified name exists, false otherwise
+func (a Adapter) DoesComponentExist(cmpName string) bool {
+	return utils.ComponentExists(a.Client, cmpName)
 }
 
 func (a Adapter) createComponent() (err error) {
@@ -166,110 +171,6 @@ func (a Adapter) updateComponent() (err error) {
 	}
 	return nil
 }
-
-/*func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
-	componentName := a.ComponentName
-
-	volumeLabels := map[string]string{
-		"component": componentName,
-		"type":      "projects",
-	}
-
-	supportedComponents := adaptersCommon.GetSupportedComponents(a.Devfile.Data)
-	if len(supportedComponents) == 0 {
-		return fmt.Errorf("No valid components found in the devfile")
-	}
-
-	if componentExists {
-		glog.V(3).Info("The component already exists, attempting to update it")
-		for _, comp := range supportedComponents {
-			// Check to see if this component is already running and if so, update it
-			// If component isn't running, re-create it, as it either may be new, or crashed.
-			containerLabels := map[string]string{
-				"component": componentName,
-				"alias":     *comp.Alias,
-			}
-			containers, err := a.Client.GetContainersByLabel(containerLabels)
-			if err != nil {
-				return errors.Wrapf(err, "unable to list containers for component %s", componentName)
-			}
-			if len(containers) == 1 {
-				// Container already exists
-				containerID := containers[0].ID
-
-				// Get the associated container config from the container ID
-				containerConfig, err := a.Client.GetContainerConfig(containerID)
-				if err != nil {
-					return errors.Wrapf(err, "unable to get the container config for component %s", componentName)
-				}
-
-				// See if the container needs to be updated
-				if utils.DoesContainerNeedUpdating(comp, containerConfig) {
-					// Remove the container
-					a.Client.RemoveContainer(containerID)
-				}
-				// Remove the container
-				//a.Client.RemoveContainer(containerID)
-			} else {
-				// component+alias combination should be unique
-				// So if the number of containers retrieved is not equal to 1, then the container likely does not exist
-			}
-		}
-	} else {
-		// Create a docker volume to store the project source code
-		volume, err := a.Client.CreateVolume(volumeLabels)
-		if err != nil {
-			return errors.Wrapf(err, "Unable to create project source volume for component %s", componentName)
-		}
-
-		projectVolumeName := volume.Name
-
-		for _, comp := range supportedComponents {
-			envVars := utils.ConvertEnvs(comp.Env)
-
-			s := log.Spinner("Pulling image " + *comp.Image)
-			defer s.End(false)
-
-			// Pull the image (as the Docker daemon requires it to be on the system before starting it)
-			err = a.Client.PullImage(*comp.Image)
-			if err != nil {
-				return errors.Wrapf(err, "Unable to pull %s image", *comp.Image)
-			}
-			s.End(true)
-			containerLabels := map[string]string{
-				"component": componentName,
-				"alias":     *comp.Alias,
-			}
-			containerConfig := a.Client.GenerateContainerConfig(*comp.Image, comp.Command, comp.Args, envVars, containerLabels)
-			hostConfig := container.HostConfig{}
-
-			// If the component set `mountSources` to true, add the source volume to it
-			if comp.MountSources {
-				mounts := []mount.Mount{
-					{
-						Type:   mount.TypeVolume,
-						Source: projectVolumeName,
-						Target: "/projects",
-					},
-				}
-				hostConfig.Mounts = mounts
-			}
-
-			// Create the docker container
-			s = log.Spinner("Starting container for " + *comp.Image)
-			defer s.End(false)
-			err = a.Client.StartContainer(&containerConfig, &hostConfig, nil)
-			if err != nil {
-				return err
-			}
-			s.End(true)
-			glog.V(3).Infof("Successfully created container %s for component %s", *comp.Image, componentName)
-		}
-		glog.V(3).Infof("Successfully created all containers for component %s", componentName)
-	}
-
-	return nil
-}*/
 
 func (a Adapter) startContainer(componentName string, projectVolumeName string, comp versionsCommon.DevfileComponent) error {
 	containerConfig := a.getContainerConfig(componentName, comp)

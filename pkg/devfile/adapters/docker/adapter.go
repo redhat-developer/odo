@@ -23,12 +23,17 @@ func New(adapterContext common.AdapterContext, client lclient.Client) Adapter {
 }
 
 // Push creates Docker resources that correspond to the devfile if they don't already exist
-func (d Adapter) Push(path string, ignoredFiles []string, forceBuild bool, globExps []string) error {
+func (d Adapter) Push(parameters common.PushParameters) error {
 
-	err := d.componentAdapter.Push(path, ignoredFiles, forceBuild, globExps)
+	err := d.componentAdapter.Push(parameters)
 	if err != nil {
 		return errors.Wrap(err, "Failed to create the component")
 	}
 
 	return nil
+}
+
+// DoesComponentExist returns true if a component with the specified name exists
+func (d Adapter) DoesComponentExist(cmpName string) bool {
+	return d.componentAdapter.DoesComponentExist(cmpName)
 }
