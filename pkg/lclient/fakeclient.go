@@ -140,7 +140,7 @@ func (m *mockDockerClient) VolumeList(ctx context.Context, filter filters.Args) 
 			},
 			{
 				Labels: map[string]string{
-					"type": "java",
+					"component": "java",
 				},
 			},
 			{

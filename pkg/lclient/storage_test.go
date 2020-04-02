@@ -68,7 +68,7 @@ func TestCreateVolume(t *testing.T) {
 
 func TestGetVolumesByLabel(t *testing.T) {
 	fakeClient := FakeNew()
-	//fakeErrorClient := FakeErrorNew()
+	fakeErrorClient := FakeErrorNew()
 	tests := []struct {
 		name        string
 		client      *Client
@@ -80,7 +80,7 @@ func TestGetVolumesByLabel(t *testing.T) {
 			name:   "Case 1: Only one volume with label",
 			client: fakeClient,
 			labels: map[string]string{
-				"component": "golang",
+				"component": "java",
 			},
 			wantErr: false,
 			wantVolumes: []types.Volume{
@@ -104,7 +104,30 @@ func TestGetVolumesByLabel(t *testing.T) {
 						"component": "golang",
 					},
 				},
+				{
+					Labels: map[string]string{
+						"component": "golang",
+					},
+				},
 			},
+		},
+		{
+			name:   "Case 3: No volumes with label",
+			client: fakeClient,
+			labels: map[string]string{
+				"fakecomponent": "test",
+			},
+			wantErr:     false,
+			wantVolumes: nil,
+		},
+		{
+			name:   "Case 4: Docker client error",
+			client: fakeErrorClient,
+			labels: map[string]string{
+				"fakecomponent": "test",
+			},
+			wantErr:     true,
+			wantVolumes: nil,
 		},
 	}
 	for _, tt := range tests {
