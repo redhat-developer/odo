@@ -75,6 +75,9 @@ const DevfilePath = "./devfile.yaml"
 // EnvFilePath is the default path of env.yaml for devfile component
 const EnvFilePath = "./.odo/env/env.yaml"
 
+// ConfigFilePath is the default path of config.yaml for s2i component
+const ConfigFilePath = "./.odo/config.yaml"
+
 var createLongDesc = ktemplates.LongDesc(`Create a configuration describing a component.
 
 If a component name is not provided, it'll be auto-generated.
@@ -286,6 +289,10 @@ func (co *CreateOptions) setResourceLimits() error {
 // Complete completes create args
 func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	if experimental.IsExperimentalModeEnabled() {
+		if util.CheckPathExists(ConfigFilePath) {
+			return errors.New("This directory already contains a component")
+		}
+
 		if len(args) == 0 {
 			co.interactive = true
 		}
@@ -308,25 +315,24 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		if co.interactive {
 			// Interactive mode
-
 			// Get component type, name and namespace from user's choice via interactive mode
-			// Component type: We provide supported devfile component list then let you choose
-			// Component name: User needs to specify the componet name, by default it is component type that user chooses
-			// Component namespace: User needs to specify component namespace, by default it is the current active namespace
-			var supDevfileCatalogList []catalog.DevfileComponentType
-			for _, devfileComponent := range catalogDevfileList.Items {
-				if devfileComponent.Support {
-					supDevfileCatalogList = append(supDevfileCatalogList, devfileComponent)
-				}
-			}
 
 			// devfile.yaml is not present, user has to specify the component type
+			// Component type: We provide supported devfile component list then let you choose
 			if !util.CheckPathExists(DevfilePath) {
+				var supDevfileCatalogList []catalog.DevfileComponentType
+				for _, devfileComponent := range catalogDevfileList.Items {
+					if devfileComponent.Support {
+						supDevfileCatalogList = append(supDevfileCatalogList, devfileComponent)
+					}
+				}
 				componentType = ui.SelectDevfileComponentType(supDevfileCatalogList)
 			}
 
+			// Component name: User needs to specify the componet name, by default it is component type that user chooses
 			componentName = ui.EnterDevfileComponentName(componentType)
 
+			// Component namespace: User needs to specify component namespace, by default it is the current active namespace
 			if cmd.Flags().Changed("project") {
 				componentNamespace, err = cmd.Flags().GetString("project")
 				if err != nil {
@@ -337,23 +343,23 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			}
 		} else {
 			// Direct mode (User enters the full command)
-
 			// Get component type, name and namespace from user's full command
-			// Component type: Get from full command's first argument (mandatory)
-			// Component name: Get from full command's second argument (optional), by default it is component type from first argument
-			// Component namespace: Get from --project flag, by default it is the current active namespace
+
 			if util.CheckPathExists(DevfilePath) {
-				return errors.New("This workspace directory already contains a devfile.yaml, please delete it and run the component creation command again")
+				return errors.New("This directory already contains a devfile.yaml, please delete it and run the component creation command again")
 			}
 
+			// Component type: Get from full command's first argument (mandatory in direct mode)
 			componentType = args[0]
 
+			// Component name: Get from full command's second argument (optional in direct mode), by default it is component type from first argument
 			if len(args) == 2 {
 				componentName = args[1]
 			} else {
 				componentName = args[0]
 			}
 
+			// Component namespace: Get from --project flag or --namespace flag, by default it is the current active namespace
 			if cmd.Flags().Changed("project") {
 				componentNamespace, err = cmd.Flags().GetString("project")
 				if err != nil {
