@@ -17,8 +17,6 @@ var _ = Describe("odo devfile url command tests", func() {
 	var context string
 	var currentWorkingDirectory string
 
-	// oc := helper.NewOcRunner("oc")
-
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
@@ -99,6 +97,17 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 			stdout = helper.CmdShouldFail("odo", "url", "list")
 			Expect(stdout).To(ContainSubstring("no URLs found"))
+		})
+
+		It("create with now flag should pass", func() {
+			var stdout string
+			url1 := helper.RandString(5)
+			host := helper.RandString(5) + ".com"
+			componentName := helper.RandString(6)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--namespace", namespace, componentName)
+			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
+			stdout = helper.CmdShouldPass("odo", "url", "create", url1, "--port", "9090", "--host", host, "--now")
+			helper.MatchAllInOutput(stdout, []string{"URL created for component", "http:", url1 + "." + host})
 		})
 	})
 
