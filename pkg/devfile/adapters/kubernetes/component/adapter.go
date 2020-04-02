@@ -39,8 +39,9 @@ type Adapter struct {
 
 // Push updates the component if a matching component exists or creates one if it doesn't exist
 // Once the component has started, it will sync the source code to it.
-func (a Adapter) Push(path string, ignoredFiles []string, forceBuild bool, globExps []string) (err error) {
+func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	componentExists := utils.ComponentExists(a.Client, a.ComponentName)
+	globExps := util.GetAbsGlobExps(parameters.Path, parameters.IgnoredFiles)
 
 	deletedFiles := []string{}
 	changedFiles := []string{}
@@ -59,8 +60,9 @@ func (a Adapter) Push(path string, ignoredFiles []string, forceBuild bool, globE
 	// Sync source code to the component
 	// If syncing for the first time, sync the entire source directory
 	// If syncing to an already running component, sync the deltas
-	if !forceBuild {
-		absIgnoreRules := util.GetAbsGlobExps(path, ignoredFiles)
+	// If syncing from an odo watch process, skip this step, as we already have the list of changed and deleted files.
+	if !parameters.ForceBuild && len(parameters.WatchFiles) == 0 && len(parameters.WatchDeletedFiles) == 0 {
+		absIgnoreRules := util.GetAbsGlobExps(parameters.Path, parameters.IgnoredFiles)
 
 		spinner := log.NewStatus(log.GetStdout())
 		defer spinner.End(true)
@@ -73,7 +75,7 @@ func (a Adapter) Push(path string, ignoredFiles []string, forceBuild bool, globE
 		}
 
 		// Before running the indexer, make sure the .odo folder exists (or else the index file will not get created)
-		odoFolder := filepath.Join(path, ".odo")
+		odoFolder := filepath.Join(parameters.Path, ".odo")
 		if _, err := os.Stat(odoFolder); os.IsNotExist(err) {
 			err = os.Mkdir(odoFolder, 0750)
 			if err != nil {
@@ -82,7 +84,7 @@ func (a Adapter) Push(path string, ignoredFiles []string, forceBuild bool, globE
 		}
 
 		// run the indexer and find the modified/added/deleted/renamed files
-		filesChanged, filesDeleted, err := util.RunIndexer(path, absIgnoreRules)
+		filesChanged, filesDeleted, err := util.RunIndexer(parameters.Path, absIgnoreRules)
 		spinner.End(true)
 
 		if err != nil {
@@ -97,7 +99,7 @@ func (a Adapter) Push(path string, ignoredFiles []string, forceBuild bool, globE
 
 			// Remove the relative file directory from the list of deleted files
 			// in order to make the changes correctly within the Kubernetes pod
-			deletedFiles, err = util.RemoveRelativePathFromFiles(filesDeletedFiltered, path)
+			deletedFiles, err = util.RemoveRelativePathFromFiles(filesDeletedFiltered, parameters.Path)
 			if err != nil {
 				return errors.Wrap(err, "unable to remove relative path from list of changed/deleted files")
 			}
@@ -110,14 +112,17 @@ func (a Adapter) Push(path string, ignoredFiles []string, forceBuild bool, globE
 				return nil
 			}
 		}
+	} else if len(parameters.WatchFiles) > 0 || len(parameters.WatchDeletedFiles) > 0 {
+		changedFiles = parameters.WatchFiles
+		deletedFiles = parameters.WatchDeletedFiles
 	}
 
-	if forceBuild || !componentExists {
+	if parameters.ForceBuild || !componentExists {
 		isForcePush = true
 	}
 
 	// Sync the local source code to the component
-	err = a.pushLocal(path,
+	err = a.pushLocal(parameters.Path,
 		changedFiles,
 		deletedFiles,
 		isForcePush,
@@ -128,6 +133,11 @@ func (a Adapter) Push(path string, ignoredFiles []string, forceBuild bool, globE
 		return errors.Wrapf(err, "Failed to sync to component with name %s", a.ComponentName)
 	}
 	return nil
+}
+
+// DoesComponentExist returns true if a component with the specified name exists, false otherwise
+func (a Adapter) DoesComponentExist(cmpName string) bool {
+	return utils.ComponentExists(a.Client, cmpName)
 }
 
 func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
@@ -207,6 +217,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 	glog.V(3).Infof("The component name is %v", componentName)
 
 	if utils.ComponentExists(a.Client, componentName) {
+		// If the component already exists, get the resource version of the deploy before updating
 		glog.V(3).Info("The component already exists, attempting to update it")
 		deployment, err := a.Client.UpdateDeployment(*deploymentSpec)
 		if err != nil {
@@ -214,19 +225,34 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 		}
 		glog.V(3).Infof("Successfully updated component %v", componentName)
 		oldSvc, err := a.Client.KubeClient.CoreV1().Services(a.Client.Namespace).Get(componentName, metav1.GetOptions{})
-		if err != nil {
-			return err
-		}
-		serviceSpec.ClusterIP = oldSvc.Spec.ClusterIP
 		objectMetaTemp := objectMeta
-		objectMetaTemp.ResourceVersion = oldSvc.GetResourceVersion()
 		ownerReference := kclient.GenerateOwnerReference(deployment)
 		objectMetaTemp.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
-		_, err = a.Client.UpdateService(objectMetaTemp, *serviceSpec)
 		if err != nil {
-			return err
+			// no old service was found, create a new one
+			if len(serviceSpec.Ports) > 0 {
+				_, err = a.Client.CreateService(objectMetaTemp, *serviceSpec)
+				if err != nil {
+					return err
+				}
+				glog.V(3).Infof("Successfully created Service for component %s", componentName)
+			}
+		} else {
+			if len(serviceSpec.Ports) > 0 {
+				serviceSpec.ClusterIP = oldSvc.Spec.ClusterIP
+				objectMetaTemp.ResourceVersion = oldSvc.GetResourceVersion()
+				_, err = a.Client.UpdateService(objectMetaTemp, *serviceSpec)
+				if err != nil {
+					return err
+				}
+				glog.V(3).Infof("Successfully update Service for component %s", componentName)
+			} else {
+				err = a.Client.KubeClient.CoreV1().Services(a.Client.Namespace).Delete(componentName, &metav1.DeleteOptions{})
+				if err != nil {
+					return err
+				}
+			}
 		}
-		glog.V(3).Infof("Successfully update Service for component %s", componentName)
 	} else {
 		deployment, err := a.Client.CreateDeployment(*deploymentSpec)
 		if err != nil {
@@ -236,11 +262,13 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 		ownerReference := kclient.GenerateOwnerReference(deployment)
 		objectMetaTemp := objectMeta
 		objectMetaTemp.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
-		_, err = a.Client.CreateService(objectMetaTemp, *serviceSpec)
-		if err != nil {
-			return err
+		if len(serviceSpec.Ports) > 0 {
+			_, err = a.Client.CreateService(objectMetaTemp, *serviceSpec)
+			if err != nil {
+				return err
+			}
+			glog.V(3).Infof("Successfully created Service for component %s", componentName)
 		}
-		glog.V(3).Infof("Successfully created Service for component %s", componentName)
 
 	}
 
@@ -287,7 +315,11 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	defer s.End(false)
 
 	// If there's only one project defined in the devfile, sync to `/projects/project-name`, otherwise sync to /projects
-	syncFolder := getSyncFolder(a.Devfile.Data.GetProjects())
+	syncFolder, err := getSyncFolder(a.Devfile.Data.GetProjects())
+	if err != nil {
+		return errors.Wrapf(err, "unable to sync the files to the component")
+	}
+
 	if syncFolder != kclient.OdoSourceVolumeMount {
 		// Need to make sure the folder already exists on the component or else sync will fail
 		glog.V(4).Infof("Creating %s on the remote container if it doesn't already exist", syncFolder)
@@ -348,13 +380,27 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, e
 }
 
 // getSyncFolder returns the folder that we need to sync the source files to
-// If there's exactly one project defined in the devfile, return `/projects/<projectName`
+// If there's exactly one project defined in the devfile, and clonePath isn't set return `/projects/<projectName>`
+// If there's exactly one project, and clonePath is set, return `/projects/<clonePath>`
+// If the clonePath is an absolute path or contains '..', return an error
 // Otherwise (zero projects or many), return `/projects`
-func getSyncFolder(projects []versionsCommon.DevfileProject) string {
+func getSyncFolder(projects []versionsCommon.DevfileProject) (string, error) {
 	if len(projects) == 1 {
-		return filepath.ToSlash(filepath.Join(kclient.OdoSourceVolumeMount, projects[0].Name))
+		project := projects[0]
+		// If the clonepath is set to a value, set it to be the sync folder
+		// As some devfiles rely on the code being synced to the folder in the clonepath
+		if project.ClonePath != nil {
+			if strings.HasPrefix(*project.ClonePath, "/") {
+				return "", fmt.Errorf("the clonePath in the devfile must be a relative path")
+			}
+			if strings.Contains(*project.ClonePath, "..") {
+				return "", fmt.Errorf("the clonePath in the devfile cannot escape the projects root. Don't use .. to try and do that")
+			}
+			return filepath.ToSlash(filepath.Join(kclient.OdoSourceVolumeMount, *project.ClonePath)), nil
+		}
+		return filepath.ToSlash(filepath.Join(kclient.OdoSourceVolumeMount, projects[0].Name)), nil
 	}
-	return kclient.OdoSourceVolumeMount
+	return kclient.OdoSourceVolumeMount, nil
 
 }
 

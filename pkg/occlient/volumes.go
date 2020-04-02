@@ -194,7 +194,7 @@ func updateStorageOwnerReference(client *Client, pvc *corev1.PersistentVolumeCla
 		return err
 	}
 	for _, owRf := range ownerReference {
-		pvc.SetOwnerReferences(append(pvc.GetOwnerReferences(), owRf))
+		latestPVC.SetOwnerReferences(append(pvc.GetOwnerReferences(), owRf))
 	}
 	_, err = client.kubeClient.CoreV1().PersistentVolumeClaims(client.Namespace).Update(latestPVC)
 	if err != nil {

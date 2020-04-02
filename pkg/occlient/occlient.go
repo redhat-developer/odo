@@ -1953,6 +1953,8 @@ func (c *Client) WaitAndGetPod(selector string, desiredPhase corev1.PodPhase, wa
 	case val := <-podChannel:
 		spinner.End(true)
 		return val, nil
+	case err := <-watchErrorChannel:
+		return nil, err
 	case <-time.After(pushTimeout):
 
 		// Create a useful error if there are any failed events

@@ -139,6 +139,7 @@ func ListDevfileComponents() (DevfileComponentTypeList, error) {
 				Description: devfileIndexEntry.Description,
 				Link:        devfileIndexEntryLink,
 				Support:     IsDevfileComponentSupported(devfile),
+				Registry:    devfileRegistry,
 			}
 
 			catalogDevfileList.Items = append(catalogDevfileList.Items, catalogDevfile)

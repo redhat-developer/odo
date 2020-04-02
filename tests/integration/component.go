@@ -826,12 +826,12 @@ func componentTests(args ...string) {
 
 			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--context", context)...)
 
-			oc.CheckForExistence("routes", project)
-			oc.CheckForExistence("dc", project)
-			oc.CheckForExistence("pvc", project)
-			oc.CheckForExistence("bc", project)
-			oc.CheckForExistence("is", project)
-			oc.CheckForExistence("service", project)
+			oc.WaitAndCheckForExistence("routes", project, 1)
+			oc.WaitAndCheckForExistence("dc", project, 1)
+			oc.WaitAndCheckForExistence("pvc", project, 1)
+			oc.WaitAndCheckForExistence("bc", project, 1)
+			oc.WaitAndCheckForExistence("is", project, 1)
+			oc.WaitAndCheckForExistence("service", project, 1)
 		})
 	})
 }

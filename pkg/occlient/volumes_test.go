@@ -289,12 +289,13 @@ func Test_updateStorageOwnerReference(t *testing.T) {
 			fakeClient, fakeClientSet := FakeNew()
 
 			fakeClientSet.Kubernetes.PrependReactor("get", "persistentvolumeclaims", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
-				return true, tt.args.pvc, nil
+				returnedPVC := *tt.args.pvc
+				return true, &returnedPVC, nil
 			})
 
 			fakeClientSet.Kubernetes.PrependReactor("update", "persistentvolumeclaims", func(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
 				pvc := action.(ktesting.UpdateAction).GetObject().(*corev1.PersistentVolumeClaim)
-				if pvc.OwnerReferences[0].Name != fakeDC.Name {
+				if pvc.OwnerReferences == nil || pvc.OwnerReferences[0].Name != fakeDC.Name {
 					t.Errorf("owner reference not set for dc %s", tt.args.pvc.Name)
 				}
 				return true, pvc, nil

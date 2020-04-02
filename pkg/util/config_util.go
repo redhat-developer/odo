@@ -77,6 +77,14 @@ func IsSet(info interface{}, parameter string) bool {
 		imm = imm.Elem()
 	}
 	val := imm.FieldByNameFunc(CaseInsensitive(parameter))
+
+	// If the value kind is string, only checks if the value is valid
+	// since by definition argument must be a chan, func, interface, map, pointer, or slice
+	// for IsNil() function of reflect package
+	if val.Kind() == reflect.String && val.IsValid() {
+		return true
+	}
+
 	if !val.IsValid() || val.IsNil() {
 		return false
 	}

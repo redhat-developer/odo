@@ -13,6 +13,8 @@ import (
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	catalogutil "github.com/openshift/odo/pkg/odo/cli/catalog/util"
@@ -22,6 +24,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
+	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/util"
 
 	corev1 "k8s.io/api/core/v1"
@@ -46,6 +49,17 @@ type CreateOptions struct {
 	interactive       bool
 	now               bool
 	*CommonPushOptions
+	devfileMetadata DevfileMetadata
+}
+
+// DevfileMetadata includes devfile component metadata
+type DevfileMetadata struct {
+	componentType      string
+	componentName      string
+	componentNamespace string
+	devfileSupport     bool
+	devfileLink        string
+	devfileRegistry    string
 }
 
 // CreateRecommendedCommandName is the recommended watch command name
@@ -54,6 +68,12 @@ const CreateRecommendedCommandName = "create"
 // LocalDirectoryDefaultLocation is the default location of where --local files should always be..
 // since the application will always be in the same directory as `.odo`, we will always set this as: ./
 const LocalDirectoryDefaultLocation = "./"
+
+// DevfilePath is the default path of devfile.yaml
+const DevfilePath = "./devfile.yaml"
+
+// EnvFilePath is the default path of env.yaml for devfile component
+const EnvFilePath = "./.odo/env/env.yaml"
 
 var createLongDesc = ktemplates.LongDesc(`Create a configuration describing a component.
 
@@ -265,6 +285,109 @@ func (co *CreateOptions) setResourceLimits() error {
 
 // Complete completes create args
 func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	if experimental.IsExperimentalModeEnabled() {
+		if len(args) == 0 {
+			co.interactive = true
+		}
+
+		// Get current active namespace
+		client, err := kclient.New()
+		if err != nil {
+			return err
+		}
+		defaultComponentNamespace := client.Namespace
+
+		catalogDevfileList, err := catalog.ListDevfileComponents()
+		if err != nil {
+			return err
+		}
+
+		var componentType string
+		var componentName string
+		var componentNamespace string
+
+		if co.interactive {
+			// Interactive mode
+
+			// Get component type, name and namespace from user's choice via interactive mode
+			// Component type: We provide supported devfile component list then let you choose
+			// Component name: User needs to specify the componet name, by default it is component type that user chooses
+			// Component namespace: User needs to specify component namespace, by default it is the current active namespace
+			var supDevfileCatalogList []catalog.DevfileComponentType
+			for _, devfileComponent := range catalogDevfileList.Items {
+				if devfileComponent.Support {
+					supDevfileCatalogList = append(supDevfileCatalogList, devfileComponent)
+				}
+			}
+			componentType = ui.SelectDevfileComponentType(supDevfileCatalogList)
+
+			componentName = ui.EnterDevfileComponentName(componentType)
+
+			if cmd.Flags().Changed("project") {
+				componentNamespace, err = cmd.Flags().GetString("project")
+				if err != nil {
+					return err
+				}
+			} else {
+				componentNamespace = ui.EnterDevfileComponentNamespace(defaultComponentNamespace)
+			}
+		} else {
+			// Direct mode (User enters the full command)
+
+			// Get component type, name and namespace from user's full command
+			// Component type: Get from full command's first argument (mandatory)
+			// Component name: Get from full command's second argument (optional), by default it is component type from first argument
+			// Component namespace: Get from --project flag, by default it is the current active namespace
+			componentType = args[0]
+
+			if len(args) == 2 {
+				componentName = args[1]
+			} else {
+				componentName = args[0]
+			}
+
+			if cmd.Flags().Changed("project") {
+				componentNamespace, err = cmd.Flags().GetString("project")
+				if err != nil {
+					return err
+				}
+			} else {
+				componentNamespace = defaultComponentNamespace
+			}
+		}
+
+		// Set devfileMetadata struct
+		co.devfileMetadata.componentType = componentType
+		co.devfileMetadata.componentName = strings.ToLower(componentName)
+		co.devfileMetadata.componentNamespace = componentNamespace
+
+		// Since we need to support both devfile and s2i, so we have to check if the component type is
+		// supported by devfile, if it is supported we return, but if it is not supported we still need to
+		// run all codes related with s2i
+		spinner := log.Spinner("Checking if the specified component type is supported devfile component type")
+
+		for _, devfileComponent := range catalogDevfileList.Items {
+			if co.devfileMetadata.componentType == devfileComponent.Name && devfileComponent.Support {
+				co.devfileMetadata.devfileSupport = true
+				co.devfileMetadata.devfileLink = devfileComponent.Link
+				co.devfileMetadata.devfileRegistry = devfileComponent.Registry
+			}
+		}
+
+		if co.devfileMetadata.devfileSupport {
+			err = co.InitEnvInfoFromContext()
+			if err != nil {
+				return err
+			}
+
+			spinner.End(true)
+			return nil
+		}
+
+		spinner.End(false)
+		log.Italic("\nPlease run 'odo catalog list components' for a list of supported devfile component types")
+	}
+
 	if len(args) == 0 || !cmd.HasFlags() {
 		co.interactive = true
 	}
@@ -456,6 +579,27 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 // Validate validates the create parameters
 func (co *CreateOptions) Validate() (err error) {
+	if experimental.IsExperimentalModeEnabled() {
+		if co.devfileMetadata.devfileSupport {
+			// Validate if the devfile component that user wants to create already exists
+			spinner := log.Spinner("Validating component")
+			defer spinner.End(false)
+
+			if util.CheckPathExists(DevfilePath) || util.CheckPathExists(EnvFilePath) {
+				return errors.New("Devfile.yaml or env.yaml already exists")
+			}
+
+			err = util.ValidateK8sResourceName("component name", co.devfileMetadata.componentName)
+			if err != nil {
+				return err
+			}
+
+			spinner.End(true)
+
+			return nil
+		}
+	}
+
 	supported, err := catalog.IsComponentTypeSupported(co.Context.Client, *co.componentSettings.Type)
 	if err != nil {
 		return err
@@ -477,6 +621,24 @@ func (co *CreateOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (co *CreateOptions) Run() (err error) {
+	if experimental.IsExperimentalModeEnabled() {
+		// Download devfile.yaml file and create env.yaml file
+		if co.devfileMetadata.devfileSupport {
+			err := co.EnvSpecificInfo.SetConfiguration("create", envinfo.ComponentSettings{Name: co.devfileMetadata.componentName, Namespace: co.devfileMetadata.componentNamespace})
+			if err != nil {
+				return errors.Wrap(err, "Failed to create env.yaml for devfile component")
+			}
+
+			err = util.DownloadFile(co.devfileMetadata.devfileRegistry+co.devfileMetadata.devfileLink, DevfilePath)
+			if err != nil {
+				return errors.Wrap(err, "Failed to download devfile.yaml for devfile component")
+			}
+
+			log.Italic("\nPlease use `odo push` command to create the component with source deployed")
+			return nil
+		}
+	}
+
 	err = co.LocalConfigInfo.SetComponentSettings(co.componentSettings)
 	if err != nil {
 		return errors.Wrapf(err, "failed to persist the component settings to config file")
@@ -554,6 +716,10 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 	componentCreateCmd.Flags().StringVar(&co.cpuMax, "max-cpu", "", "Limit maximum amount of cpu to be allocated to the component. ex. 1")
 	componentCreateCmd.Flags().StringSliceVarP(&co.componentPorts, "port", "p", []string{}, "Ports to be used when the component is created (ex. 8080,8100/tcp,9100/udp)")
 	componentCreateCmd.Flags().StringSliceVar(&co.componentEnvVars, "env", []string{}, "Environmental variables for the component. For example --env VariableName=Value")
+
+	if experimental.IsExperimentalModeEnabled() {
+		componentCreateCmd.Flags().StringVarP(&co.devfileMetadata.componentNamespace, "namespace", "n", "", "Create devfile component under specific namespace")
+	}
 
 	componentCreateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 

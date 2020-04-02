@@ -19,6 +19,7 @@ type DevfileComponentType struct {
 	Description string
 	Link        string
 	Support     bool
+	Registry    string
 }
 
 // DevfileIndexEntry is the main struct of index.json from devfile registry
