@@ -200,7 +200,7 @@ func TestGetContainersList(t *testing.T) {
 	}
 }
 
-func TestStartStartContainer(t *testing.T) {
+func TestStartContainer(t *testing.T) {
 	fakeClient := FakeNew()
 	fakeErrorClient := FakeErrorNew()
 
@@ -223,6 +223,35 @@ func TestStartStartContainer(t *testing.T) {
 	}
 	for _, tt := range tests {
 		err := tt.client.StartContainer(&fakeContainer, nil, nil)
+		if !tt.wantErr == (err != nil) {
+			t.Errorf("expected %v, wanted %v", err, tt.wantErr)
+		}
+	}
+}
+
+func TestRemoveContainer(t *testing.T) {
+	fakeClient := FakeNew()
+	fakeErrorClient := FakeErrorNew()
+
+	fakeContainerID := "golang"
+	tests := []struct {
+		name    string
+		client  *Client
+		wantErr bool
+	}{
+		{
+			name:    "Case 1: Successfully remove container",
+			client:  fakeClient,
+			wantErr: false,
+		},
+		{
+			name:    "Case 2: Fail to remove container",
+			client:  fakeErrorClient,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		err := tt.client.RemoveContainer(fakeContainerID)
 		if !tt.wantErr == (err != nil) {
 			t.Errorf("expected %v, wanted %v", err, tt.wantErr)
 		}

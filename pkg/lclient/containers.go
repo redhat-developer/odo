@@ -20,6 +20,21 @@ func (dc *Client) GetContainersByComponent(componentName string, containers []ty
 	return containerList
 }
 
+// GetContainersByComponentAndAlias returns the list of Docker containers that have the same component and alias labeled
+func (dc *Client) GetContainersByComponentAndAlias(componentName string, alias string) ([]types.Container, error) {
+	containerList, err := dc.GetContainerList()
+	if err != nil {
+		return nil, err
+	}
+	var labeledContainers []types.Container
+	for _, container := range containerList {
+		if container.Labels["component"] == componentName && container.Labels["alias"] == alias {
+			labeledContainers = append(labeledContainers, container)
+		}
+	}
+	return labeledContainers, nil
+}
+
 // GetContainerList returns a list of all of the running containers on the user's system
 func (dc *Client) GetContainerList() ([]types.Container, error) {
 	containers, err := dc.Client.ContainerList(dc.Context, types.ContainerListOptions{})
@@ -48,12 +63,33 @@ func (dc *Client) StartContainer(containerConfig *container.Config, hostConfig *
 	return nil
 }
 
+// RemoveContainer takes in a given container ID and kills it, then removes it.
+func (dc *Client) RemoveContainer(containerID string) error {
+	err := dc.Client.ContainerRemove(dc.Context, containerID, types.ContainerRemoveOptions{
+		Force: true,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "unable to remove container %s", containerID)
+	}
+	return nil
+}
+
+// GetContainerConfig takes in a given container ID and retrieves its corresponding container config
+func (dc *Client) GetContainerConfig(containerID string) (*container.Config, error) {
+	containerJSON, err := dc.Client.ContainerInspect(dc.Context, containerID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to inspect container %s", containerID)
+	}
+
+	return containerJSON.Config, nil
+}
+
 // GenerateContainerConfig creates a containerConfig resource that can be used to create a local Docker container
-func (dc *Client) GenerateContainerConfig(image string, entrypoint []string, args []string, envVars []string, labels map[string]string) container.Config {
+func (dc *Client) GenerateContainerConfig(image string, entrypoint []string, cmd []string, envVars []string, labels map[string]string) container.Config {
 	containerConfig := container.Config{
 		Image:      image,
 		Entrypoint: entrypoint,
-		Cmd:        args,
+		Cmd:        cmd,
 		Env:        envVars,
 		Labels:     labels,
 	}

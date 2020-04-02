@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/docker/docker/api/types/container"
 	"github.com/openshift/odo/pkg/devfile/versions/common"
 	"github.com/openshift/odo/pkg/lclient"
 )
@@ -93,6 +94,81 @@ func TestConvertEnvs(t *testing.T) {
 		envVars := ConvertEnvs(tt.envVars)
 		if !reflect.DeepEqual(tt.want, envVars) {
 			t.Errorf("expected %v, wanted %v", envVars, tt.want)
+		}
+	}
+}
+
+func TestDoesContainerNeedUpdating(t *testing.T) {
+	envVarsNames := []string{"test", "sample-var", "myvar"}
+	envVarsValues := []string{"value1", "value2", "value3"}
+	tests := []struct {
+		name            string
+		envVars         []common.DockerimageEnv
+		image           string
+		containerConfig container.Config
+		want            bool
+	}{
+		{
+			name: "Case 1: No changes",
+			envVars: []common.DockerimageEnv{
+				{
+					Name:  &envVarsNames[0],
+					Value: &envVarsValues[0],
+				},
+				{
+					Name:  &envVarsNames[1],
+					Value: &envVarsValues[1],
+				},
+			},
+			image: "golang",
+			containerConfig: container.Config{
+				Image: "golang",
+				Env:   []string{"test=value1", "sample-var=value2"},
+			},
+			want: false,
+		},
+		{
+			name: "Case 2: Update required, env var changed",
+			envVars: []common.DockerimageEnv{
+				{
+					Name:  &envVarsNames[2],
+					Value: &envVarsValues[2],
+				},
+			},
+			image: "golang",
+			containerConfig: container.Config{
+				Image: "golang",
+				Env:   []string{"test=value1", "sample-var=value2"},
+			},
+			want: true,
+		},
+		{
+			name: "Case 2: Update required, image changed",
+			envVars: []common.DockerimageEnv{
+				{
+					Name:  &envVarsNames[2],
+					Value: &envVarsValues[2],
+				},
+			},
+			image: "node",
+			containerConfig: container.Config{
+				Image: "golang",
+				Env:   []string{"test=value1", "sample-var=value2"},
+			},
+			want: true,
+		},
+	}
+
+	for _, tt := range tests {
+		component := common.DevfileComponent{
+			DevfileComponentDockerimage: common.DevfileComponentDockerimage{
+				Image: &tt.image,
+				Env:   tt.envVars,
+			},
+		}
+		needsUpdating := DoesContainerNeedUpdating(component, &tt.containerConfig)
+		if needsUpdating != tt.want {
+			t.Errorf("expected %v, wanted %v", needsUpdating, tt.want)
 		}
 	}
 }

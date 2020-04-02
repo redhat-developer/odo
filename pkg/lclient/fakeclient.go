@@ -10,6 +10,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/registry"
 	volumeTypes "github.com/docker/docker/api/types/volume"
@@ -119,9 +120,35 @@ func (m *mockDockerClient) DistributionInspect(ctx context.Context, image, encod
 
 func (m *mockDockerClient) VolumeCreate(ctx context.Context, options volumeTypes.VolumeCreateBody) (types.Volume, error) {
 	return types.Volume{
-		Driver: "overlayfs2",
-		Labels: map[string]string{
-			"component": "golang",
+		Driver: "local",
+		Labels: options.Labels,
+	}, nil
+}
+
+func (m *mockDockerClient) VolumeList(ctx context.Context, filter filters.Args) (volumeTypes.VolumeListOKBody, error) {
+	return volumeTypes.VolumeListOKBody{
+		Volumes: []*types.Volume{
+			{
+				Labels: map[string]string{
+					"component": "golang",
+				},
+			},
+			{
+				Labels: map[string]string{
+					"component": "golang",
+				},
+			},
+			{
+				Labels: map[string]string{
+					"type": "java",
+				},
+			},
+			{
+				Labels: map[string]string{
+					"component": "node",
+					"type":      "projects",
+				},
+			},
 		},
 	}, nil
 }
@@ -150,6 +177,7 @@ var errContainerInspect = errors.New("error inspecting container")
 var errContainerWait = errors.New("error timeout waiting for container")
 var errDistributionInspect = errors.New("error inspecting distribution")
 var errVolumeCreate = errors.New("error creating volume")
+var errVolumeList = errors.New("error listing volume")
 
 func (m *mockDockerErrorClient) ImageList(ctx context.Context, imageListOptions types.ImageListOptions) ([]types.ImageSummary, error) {
 	return nil, errImageList
@@ -196,4 +224,8 @@ func (m *mockDockerErrorClient) DistributionInspect(ctx context.Context, image, 
 
 func (m *mockDockerErrorClient) VolumeCreate(ctx context.Context, options volumeTypes.VolumeCreateBody) (types.Volume, error) {
 	return types.Volume{}, errVolumeCreate
+}
+
+func (m *mockDockerErrorClient) VolumeList(ctx context.Context, filter filters.Args) (volumeTypes.VolumeListOKBody, error) {
+	return volumeTypes.VolumeListOKBody{}, errVolumeList
 }
