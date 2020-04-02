@@ -25,6 +25,7 @@ import (
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
+	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/openshift/odo/pkg/util"
 
 	corev1 "k8s.io/api/core/v1"
@@ -289,13 +290,16 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		if len(args) == 0 {
 			co.interactive = true
 		}
-
-		// Get current active namespace
-		client, err := kclient.New()
-		if err != nil {
-			return err
+		var defaultComponentNamespace string
+		// If the push target is set to Docker, we can't assume we have an active Kube context
+		if !pushtarget.IsPushTargetDocker() {
+			// Get current active namespace
+			client, err := kclient.New()
+			if err != nil {
+				return err
+			}
+			defaultComponentNamespace = client.Namespace
 		}
-		defaultComponentNamespace := client.Namespace
 
 		catalogDevfileList, err := catalog.ListDevfileComponents()
 		if err != nil {
