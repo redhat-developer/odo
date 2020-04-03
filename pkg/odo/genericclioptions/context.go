@@ -393,6 +393,7 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 			util.LogErrorAndExit(err, "")
 		}
 		internalCxt.EnvSpecificInfo = envInfo
+		internalCxt.KClient.Namespace = envInfo.GetNamespace()
 		// create a context from the internal representation
 		context := &Context{
 			internalCxt: internalCxt,

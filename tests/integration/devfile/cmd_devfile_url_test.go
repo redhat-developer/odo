@@ -57,9 +57,9 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "9090", "--host", host)
 
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
-			helper.WaitForCmdOut("odo", []string{"url", "list"}, 1, true, func(output string) bool {
+			helper.WaitForCmdOut("odo", []string{"url", "list"}, 1, false, func(output string) bool {
 				if strings.Contains(output, url1) {
-					helper.MatchAllInOutput(output, []string{url1, url1 + "." + host})
+					Expect(output).Should(ContainSubstring(url1 + "." + host))
 					return true
 				}
 				return false
@@ -131,9 +131,9 @@ var _ = Describe("odo devfile url command tests", func() {
 			stdout = helper.CmdShouldFail("odo", "url", "describe", url1)
 			helper.MatchAllInOutput(stdout, []string{url1, "exists in local", "odo push"})
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
-			helper.WaitForCmdOut("odo", []string{"url", "describe", url1}, 1, true, func(output string) bool {
+			helper.WaitForCmdOut("odo", []string{"url", "describe", url1}, 1, false, func(output string) bool {
 				if strings.Contains(output, url1) {
-					helper.MatchAllInOutput(output, []string{url1, url1 + "." + host})
+					Expect(output).Should(ContainSubstring(url1 + "." + host))
 					return true
 				}
 				return false

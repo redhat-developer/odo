@@ -62,7 +62,12 @@ func (po *PushOptions) DevfilePush() (err error) {
 
 	spinner := log.SpinnerNoSpin(fmt.Sprintf("Push devfile component %s", componentName))
 	defer spinner.End(false)
-
+	if len(po.namespace) <= 0 {
+		po.namespace, err = getNamespace()
+		if err != nil {
+			return err
+		}
+	}
 	kc := kubernetes.KubernetesContext{
 		Namespace: po.namespace,
 	}
@@ -71,6 +76,8 @@ func (po *PushOptions) DevfilePush() (err error) {
 	if err != nil {
 		return err
 	}
+
+	po.Context.KClient.Namespace = po.namespace
 	err = component.ApplyConfig(nil, po.Context.KClient, config.LocalConfigInfo{}, *po.EnvSpecificInfo, color.Output, po.doesComponentExist)
 	if err != nil {
 		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed.")
@@ -111,4 +118,18 @@ func getComponentName() (string, error) {
 	}
 	componentName := envInfo.GetName()
 	return componentName, nil
+}
+
+// Get namespace name from env.yaml file
+func getNamespace() (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	envInfo, err := envinfo.NewEnvSpecificInfo(dir)
+	if err != nil {
+		return "", err
+	}
+	Namespace := envInfo.GetNamespace()
+	return Namespace, nil
 }
