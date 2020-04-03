@@ -511,7 +511,7 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 			})
 
 			componentAdapter := New(adapterCtx, *fkclient)
-			_, err := componentAdapter.waitAndGetComponentPod()
+			_, err := componentAdapter.waitAndGetComponentPod(false)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
