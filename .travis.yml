@@ -7,6 +7,11 @@ env:
   global:
     - secure: "SSGPlBUXMb2F3ycFEvRKHoftYy0UkIprwgtfOKXU/Uc359Qct+IrF/b8GuTd64tedXtnQE4z4fxqT8wdYRdNwUysmOvRyzlNTRhs1gocx5iL5El8+7F4we7wElh6ckt2Z5AVI5g0JOwYeQNURFhgDumN14K8XsOu7a2LzRBVFRn55z79xgTL+JnTI89JIWjz1QCr8Z054CMaK0MHJRLkgPnbnx1Skra3Wt16g29wRZLqLWoU8lyrLy9Ao/yHw/AJMCNie8ah7nNiOEdgPTcr/onZ/v+eVyaTvzE9UrmdeqpUpASypAAUnmZ9Q6QsU31dVxwbfPB0r8TzrqinCOYMnHbU/3fIz49Q+yv7RyifYsTlnx7+J79LmCvs7X+iKkmOprWdBRwUUxzDhwgIGnmBlYf0nKj9H2U3XFCYDnbRSI9ZugGBprs3t09w15gwq/wLM6DhY87zNhM4Vfb34ZXVBCEhtUXKUVbVthiPOWlHtbs0YympG/QCV+27tVIszgek8FFt6/fJeEh/APNadK9fuU01ozB01aXj0xMl3PlvoWWeQXDnyttHEWRaiVpbPKGoV5a7LPCVpWk5EOX8YNgHEUnjKwfzVBUriXAd+8zp0sx6TRdt1ts7x04NP1yFF1SCXXBpz/geOsfa2bBQyJx6y7CODcmW7fbcJLxmwdGlm6E="
     - secure: "Tr9KxWvfQS6BSF1qUqz1Q41le5k/c+L37Aq8wTPQcmXVu8nLv5T1QMarx64KfZ2qaQBRV+M6DwnJQM7HU/cWX9AKpdoAO2INqANfoFLh8XTR5ncHjaNTzi9aS7owxa+9t0yfKowq7s4dp96nqmwchYFtUxpzKo0TMOcQ1l1AGEu5liniXb9VOKgG8UAZsLgD6b2a80nn6NP1JehGGxcWsow0EzxalnJ8Cv78YTLmqGNowYh5UmkhjkxqE4TskQafRd2qtYMPvxnC2CFd8G3qMlbBzCxM02lGKwbr/Vi41hcSyD3uuyaKVHr/g5qLcp/HNyrUGTREL1UvWkWjlL6ovuh6uHYlnpVwQkX5fzUH7z2hlr9HjQ3Tu6Sbh1CX5QBR5PUkvoOfdx0BHTmTTw2xkvUDHarqZT1OkMuUplCY/VMnJaqa5ko126r8CyKYqRoT4HQuqa6szVawGiB211VCQXJRVyLYtKUGO6mmnMUoi5H676/sv6c9py8bieMoyEyrI87lS0AhQ6QLnTjNbEO5xt6vFi7rEgcctD5nuEBwb/X2bmM2OdZFYXrIbXaZfq7fRKyzCQthfceCmySExOGI9ndCE/mS68X6NNFBVsVwb7zt0zSY6oGlf0/N2CR5sf8gwKYG1scr5Jyqmuifvqv433zepA0Sxj6WqC3ixlssNd8="
+    - MINIKUBE_WANTUPDATENOTIFICATION=false
+    - MINIKUBE_WANTREPORTERRORPROMPT=false
+    - MINIKUBE_HOME=$HOME
+    - CHANGE_MINIKUBE_NONE_USER=true
+    - KUBECONFIG=$HOME/.kube/config 
 jobs:
   include:
     # YAML alias, for settings shared across the tests
@@ -148,4 +153,24 @@ jobs:
         - make bin
         - sudo cp odo /usr/bin
         - travis_wait make test-cmd-docker-devfile-push
-
+    
+    # Run devfile integration test on Kubernetes cluster    
+    - <<: *base-test
+      stage: test
+      name: "devfile catalog command integration tests on kubernetes cluster"
+      before_script:
+        # Download kubectl, a cli tool for accessing Kubernetes cluster
+        - curl -sLo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.7.0/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+        # Download minikube and set up Kubernetes single node cluster
+        - curl -sLo minikube https://storage.googleapis.com/minikube/releases/v0.25.2/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
+        - mkdir -p $HOME/.kube $HOME/.minikube
+        - touch $KUBECONFIG
+        - sudo minikube start --vm-driver=none --kubernetes-version=v1.7.0
+        - minikube update-context
+        - "sudo chown -R travis: /home/travis/.minikube/"
+      script:
+        - kubectl cluster-info
+        - make bin
+        - sudo cp odo /usr/bin
+        - export KUBERNETES=true
+        - travis_wait make test-cmd-devfile-catalog
