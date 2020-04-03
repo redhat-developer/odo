@@ -24,7 +24,7 @@ const (
 
 	// Default Image that will be used containing the supervisord binary and assembly scripts
 	// use GetBootstrapperImage() function instead of this variable
-	defaultBootstrapperImage = "registry.access.redhat.com/openshiftdo/odo-init-image-rhel7:1.0.2"
+	defaultBootstrapperImage = "quay.io/odo-dev/init:1.1.2" // Switched temporarily, will revert back when registry.access.redhat.com/openshiftdo/odo-init-image-rhel7:1.0.2 is updated
 
 	// SupervisordVolumeName Create a custom name and (hope) that users don't use the *exact* same name in their deployment (occlient.go)
 	SupervisordVolumeName = "odo-supervisord-shared-data"
