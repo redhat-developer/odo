@@ -167,11 +167,12 @@ func (o *URLCreateOptions) Validate() (err error) {
 	if !util.CheckOutputFlag(o.OutputFlag) {
 		return fmt.Errorf("given output format %s is not supported", o.OutputFlag)
 	}
-
-	if o.now {
-		err = o.ValidateComponentCreate()
-		if err != nil {
-			return err
+	if !experimental.IsExperimentalModeEnabled() {
+		if o.now {
+			err = o.ValidateComponentCreate()
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return

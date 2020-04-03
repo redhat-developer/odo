@@ -1345,21 +1345,6 @@ func Exists(client *occlient.Client, componentName, applicationName string) (boo
 	return false, nil
 }
 
-// DevfileComponentExists checks whether a devfile component with the given name exists or not
-// componentName is the component name to perform check for
-// The first returned parameter is a bool indicating if a component with the given name already exists or not
-// The second returned parameter is the error that might occurs while execution
-func DevfileComponentExists(kClient *kclient.Client, componentName string) (bool, error) {
-	deployment, err := kClient.GetDeploymentByName(componentName)
-	if err != nil {
-		return false, errors.Wrapf(err, "unable to get deployment")
-	}
-	if deployment != nil {
-		return true, nil
-	}
-	return false, nil
-}
-
 // GetComponent provides component definition
 func GetComponent(client *occlient.Client, componentName string, applicationName string, projectName string) (component Component, err error) {
 	// Component Type

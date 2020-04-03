@@ -16,7 +16,6 @@ var _ = Describe("odo devfile url command tests", func() {
 	var namespace string
 	var context string
 	var currentWorkingDirectory string
-
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
@@ -57,6 +56,7 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "9090", "--host", host)
 
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
+			helper.WaitTillUrlexist(namespace, url1, 1)
 			stdout = helper.CmdShouldPass("odo", "url", "list")
 			helper.MatchAllInOutput(stdout, []string{url1, url1 + "." + host})
 			helper.CmdShouldPass("odo", "url", "delete", url1, "-f")
@@ -74,7 +74,7 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "9090", "--host", host)
 
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
-
+			helper.WaitTillUrlexist(namespace, url1, 1)
 			// odo url list -o json
 			actualURLListJSON := helper.CmdShouldPass("odo", "url", "list", "-o", "json")
 			desiredURLListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"udo.udo.io/v1alpha1","metadata":{},"items":[{"kind":"Ingress","apiVersion":"extensions/v1beta1","metadata":{"name":"%s","creationTimestamp":null},"spec":{"rules":[{"host":"%s","http":{"paths":[{"path":"/","backend":{"serviceName":"%s","servicePort":9090}}]}}]},"status":{"loadBalancer":{}}}]}`, url1, url1+"."+host, componentName)
@@ -105,7 +105,6 @@ var _ = Describe("odo devfile url command tests", func() {
 			host := helper.RandString(5) + ".com"
 			componentName := helper.RandString(6)
 			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--namespace", namespace, componentName)
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 			stdout = helper.CmdShouldPass("odo", "url", "create", url1, "--port", "9090", "--host", host, "--now")
 			helper.MatchAllInOutput(stdout, []string{"URL created for component", "http:", url1 + "." + host})
 		})
@@ -123,10 +122,9 @@ var _ = Describe("odo devfile url command tests", func() {
 			stdout = helper.CmdShouldFail("odo", "url", "describe", url1)
 			helper.MatchAllInOutput(stdout, []string{url1, "exists in local", "odo push"})
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
-
+			helper.WaitTillUrlexist(namespace, url1, 1)
 			stdout = helper.CmdShouldPass("odo", "url", "describe", url1)
 			helper.MatchAllInOutput(stdout, []string{url1, url1 + "." + host})
-
 			helper.CmdShouldPass("odo", "url", "delete", url1, "-f")
 		})
 	})
