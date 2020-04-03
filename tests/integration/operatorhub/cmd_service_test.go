@@ -49,9 +49,20 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			})
 
 			// Delete the pods created. This should idealy be done by `odo
-			// service delete` but that's implemented for operator backed
+			// service delete` but that's not implemented for operator backed
 			// services yet.
 			helper.CmdShouldPass("oc", "delete", "EtcdCluster", "example")
+		})
+	})
+
+	Context("When using dry-run option to create operator backed service", func() {
+		It("should only output the definition of the CR that will be used to start service", func() {
+			// First let's grab the etcd operator's name from "odo catalog list services" output
+			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
+			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]`).FindString(operators)
+
+			stdOut := helper.CmdShouldPass("odo", "service", "create", etcdOperator, "--crd", "EtcdCluster", "--dry-run")
+			Expect(stdOut).To(ContainSubstring("Following definition will be used to create"))
 		})
 	})
 
