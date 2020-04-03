@@ -66,7 +66,7 @@ func FilterHiddenComponents(input []catalog.ComponentType) []catalog.ComponentTy
 // DisplayClusterServiceVersions displays installed Operators in a human friendly manner
 func DisplayClusterServiceVersions(csvs *olm.ClusterServiceVersionList) {
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-	log.Info("Operators available through Operator Hub")
+	log.Info("Operators available in the cluster")
 	fmt.Fprintln(w, "NAME", "\t", "CRDs")
 	for _, csv := range csvs.Items {
 		fmt.Fprintln(w, csv.ObjectMeta.Name, "\t", csvOperators(csv.Spec.CustomResourceDefinitions))

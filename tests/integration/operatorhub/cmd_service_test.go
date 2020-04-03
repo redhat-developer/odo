@@ -22,7 +22,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 	Context("When experimental mode is enabled", func() {
 		It("should list operators installed in the namespace", func() {
 			stdOut := helper.CmdShouldPass("odo", "catalog", "list", "services")
-			Expect(stdOut).To(ContainSubstring("Operators available through Operator Hub"))
+			Expect(stdOut).To(ContainSubstring("Operators available in the cluster"))
 			Expect(stdOut).To(ContainSubstring("mongodb-enterprise"))
 			Expect(stdOut).To(ContainSubstring("etcdoperator"))
 		})
