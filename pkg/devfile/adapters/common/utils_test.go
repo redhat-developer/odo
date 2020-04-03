@@ -12,18 +12,45 @@ import (
 func TestGetSupportedComponents(t *testing.T) {
 
 	tests := []struct {
-		name          string
-		componentType versionsCommon.DevfileComponentType
-		alias         []string
+		name                 string
+		componentType        versionsCommon.DevfileComponentType
+		alias                []string
+		expectedMatchesCount int
 	}{
 		{
-			name:          "Case: Invalid devfile",
-			componentType: "",
+			name:                 "Case: Invalid devfile",
+			componentType:        "",
+			expectedMatchesCount: 0,
 		},
 		{
-			name:          "Case: Valid devfile",
-			componentType: versionsCommon.DevfileComponentTypeDockerimage,
-			alias:         []string{"alias1", "alias2"},
+			name:                 "Case: Valid devfile with wrong component type (CheEditor)",
+			componentType:        versionsCommon.DevfileComponentTypeCheEditor,
+			alias:                []string{"alias1", "alias2"},
+			expectedMatchesCount: 0,
+		},
+		{
+			name:                 "Case: Valid devfile with wrong component type (ChePlugin)",
+			componentType:        versionsCommon.DevfileComponentTypeChePlugin,
+			alias:                []string{"alias1", "alias2"},
+			expectedMatchesCount: 0,
+		},
+		{
+			name:                 "Case: Valid devfile with wrong component type (Kubernetes)",
+			componentType:        versionsCommon.DevfileComponentTypeKubernetes,
+			alias:                []string{"alias1", "alias2"},
+			expectedMatchesCount: 0,
+		},
+		{
+			name:                 "Case: Valid devfile with wrong component type (Openshift)",
+			componentType:        versionsCommon.DevfileComponentTypeOpenshift,
+			alias:                []string{"alias1", "alias2"},
+			expectedMatchesCount: 0,
+		},
+		{
+			name:                 "Case: Valid devfile with correct component type (Dockerimage)",
+			componentType:        versionsCommon.DevfileComponentTypeDockerimage,
+			alias:                []string{"alias1", "alias2"},
+			expectedMatchesCount: 2,
 		},
 	}
 	for _, tt := range tests {
@@ -46,8 +73,8 @@ func TestGetSupportedComponents(t *testing.T) {
 				}
 			}
 
-			if componentsMatched != len(tt.alias) {
-				t.Errorf("TestGetSupportedComponents error: wrong number of components matched: expected %v, actual %v", len(tt.alias), componentsMatched)
+			if componentsMatched != tt.expectedMatchesCount {
+				t.Errorf("TestGetSupportedComponents error: wrong number of components matched: expected %v, actual %v", tt.expectedMatchesCount, componentsMatched)
 			}
 		})
 	}

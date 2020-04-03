@@ -22,6 +22,7 @@ import (
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/pkg/errors"
@@ -4442,7 +4443,7 @@ func TestIsVolumeAnEmptyDir(t *testing.T) {
 		{
 			name: "Case 1 - Check that it is an emptyDir",
 			args: args{
-				VolumeName: supervisordVolumeName,
+				VolumeName: common.SupervisordVolumeName,
 				dc:         *fakeDeploymentConfig("foo", "bar", nil, nil, t),
 			},
 			wantEmptyDir: true,
