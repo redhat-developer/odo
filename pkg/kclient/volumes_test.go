@@ -340,8 +340,8 @@ func TestAddPVCAndVolumeMount(t *testing.T) {
 		namespace               string
 		labels                  map[string]string
 		containers              []corev1.Container
-		volumeNameToPVCName     map[string]string
-		componentAliasToVolumes map[string][]common.DevfileVolume
+		volumeNameToPVCName     []common.VolumePVCPair
+		componentAliasToVolumes []common.ComponentVolumesPair
 		wantErr                 bool
 	}{
 		{
@@ -372,34 +372,49 @@ func TestAddPVCAndVolumeMount(t *testing.T) {
 					Env:     []corev1.EnvVar{},
 				},
 			},
-			volumeNameToPVCName: map[string]string{
-				"volume1": "volume1-pvc",
-				"volume2": "volume2-pvc",
-				"volume3": "volume3-pvc",
+			volumeNameToPVCName: []common.VolumePVCPair{
+				common.VolumePVCPair{
+					Volume: "volume1",
+					PVC:    "volume1-pvc",
+				},
+				common.VolumePVCPair{
+					Volume: "volume2",
+					PVC:    "volume2-pvc",
+				},
+				common.VolumePVCPair{
+					Volume: "volume3",
+					PVC:    "volume3-pvc",
+				},
 			},
-			componentAliasToVolumes: map[string][]common.DevfileVolume{
-				"container1": []common.DevfileVolume{
-					{
-						Name:          &volNames[0],
-						ContainerPath: &volContainerPath[0],
-					},
-					{
-						Name:          &volNames[0],
-						ContainerPath: &volContainerPath[1],
-					},
-					{
-						Name:          &volNames[1],
-						ContainerPath: &volContainerPath[2],
+			componentAliasToVolumes: []common.ComponentVolumesPair{
+				common.ComponentVolumesPair{
+					ComponentAlias: "container1",
+					Volumes: []common.DevfileVolume{
+						{
+							Name:          &volNames[0],
+							ContainerPath: &volContainerPath[0],
+						},
+						{
+							Name:          &volNames[0],
+							ContainerPath: &volContainerPath[1],
+						},
+						{
+							Name:          &volNames[1],
+							ContainerPath: &volContainerPath[2],
+						},
 					},
 				},
-				"container2": []common.DevfileVolume{
-					{
-						Name:          &volNames[1],
-						ContainerPath: &volContainerPath[1],
-					},
-					{
-						Name:          &volNames[2],
-						ContainerPath: &volContainerPath[2],
+				common.ComponentVolumesPair{
+					ComponentAlias: "container2",
+					Volumes: []common.DevfileVolume{
+						{
+							Name:          &volNames[1],
+							ContainerPath: &volContainerPath[1],
+						},
+						{
+							Name:          &volNames[2],
+							ContainerPath: &volContainerPath[2],
+						},
 					},
 				},
 			},
@@ -414,19 +429,28 @@ func TestAddPVCAndVolumeMount(t *testing.T) {
 				"component": "frontend",
 			},
 			containers: []corev1.Container{},
-			volumeNameToPVCName: map[string]string{
-				"volume2": "volume2-pvc",
-				"volume3": "volume3-pvc",
+			volumeNameToPVCName: []common.VolumePVCPair{
+				common.VolumePVCPair{
+					Volume: "volume2",
+					PVC:    "volume2-pvc",
+				},
+				common.VolumePVCPair{
+					Volume: "volume3",
+					PVC:    "volume3-pvc",
+				},
 			},
-			componentAliasToVolumes: map[string][]common.DevfileVolume{
-				"container2": []common.DevfileVolume{
-					{
-						Name:          &volNames[1],
-						ContainerPath: &volContainerPath[1],
-					},
-					{
-						Name:          &volNames[2],
-						ContainerPath: &volContainerPath[2],
+			componentAliasToVolumes: []common.ComponentVolumesPair{
+				common.ComponentVolumesPair{
+					ComponentAlias: "container2",
+					Volumes: []common.DevfileVolume{
+						{
+							Name:          &volNames[1],
+							ContainerPath: &volContainerPath[1],
+						},
+						{
+							Name:          &volNames[2],
+							ContainerPath: &volContainerPath[2],
+						},
 					},
 				},
 			},
@@ -463,17 +487,17 @@ func TestAddPVCAndVolumeMount(t *testing.T) {
 
 			// check the volume mounts of the pod template spec containers
 			for _, container := range podTemplateSpec.Spec.Containers {
-				for testcontainerAlias, testContainerVolumes := range tt.componentAliasToVolumes {
-					if container.Name == testcontainerAlias {
+				for _, pair := range tt.componentAliasToVolumes {
+					if container.Name == pair.ComponentAlias {
 						// check if container has the correct number of volume mounts
-						if len(container.VolumeMounts) != len(testContainerVolumes) {
-							t.Errorf("Incorrect number of Volume Mounts found in the pod template spec container %v, expected: %v found: %v", container.Name, len(testContainerVolumes), len(container.VolumeMounts))
+						if len(container.VolumeMounts) != len(pair.Volumes) {
+							t.Errorf("Incorrect number of Volume Mounts found in the pod template spec container %v, expected: %v found: %v", container.Name, len(pair.Volumes), len(container.VolumeMounts))
 						}
 
 						// check if container has the specified volume
 						volumeMatched := 0
 						for _, volumeMount := range container.VolumeMounts {
-							for _, testVolume := range testContainerVolumes {
+							for _, testVolume := range pair.Volumes {
 								testVolumeName := *testVolume.Name
 								testVolumePath := *testVolume.ContainerPath
 								if strings.Contains(volumeMount.Name, testVolumeName) && volumeMount.MountPath == testVolumePath {
@@ -481,8 +505,8 @@ func TestAddPVCAndVolumeMount(t *testing.T) {
 								}
 							}
 						}
-						if volumeMatched != len(testContainerVolumes) {
-							t.Errorf("Failed to match Volume Mounts for pod template spec container %v, expected: %v found: %v", container.Name, len(testContainerVolumes), volumeMatched)
+						if volumeMatched != len(pair.Volumes) {
+							t.Errorf("Failed to match Volume Mounts for pod template spec container %v, expected: %v found: %v", container.Name, len(pair.Volumes), volumeMatched)
 						}
 					}
 				}

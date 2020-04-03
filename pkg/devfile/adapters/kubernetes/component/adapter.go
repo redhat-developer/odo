@@ -212,12 +212,12 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 	componentAliasToVolumes := utils.GetVolumes(a.Devfile)
 
 	var uniqueStorages []common.Storage
-	volumeNameToPVCName := make(map[string]string)
+	volumeNameToPVCName := []common.VolumePVCPair{}
 	processedVolumes := make(map[string]bool)
 
 	// Get a list of all the unique volume names and generate their PVC names
-	for _, volumes := range componentAliasToVolumes {
-		for _, vol := range volumes {
+	for _, volumeData := range componentAliasToVolumes {
+		for _, vol := range volumeData.Volumes {
 			if _, ok := processedVolumes[*vol.Name]; !ok {
 				processedVolumes[*vol.Name] = true
 
@@ -236,6 +236,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 				if len(existingPVCName) > 0 {
 					glog.V(3).Infof("Found an existing PVC for %v, PVC %v will be re-used", *vol.Name, existingPVCName)
 					generatedPVCName = existingPVCName
+
 				}
 
 				pvc := common.Storage{
@@ -243,7 +244,11 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 					Volume: vol,
 				}
 				uniqueStorages = append(uniqueStorages, pvc)
-				volumeNameToPVCName[*vol.Name] = generatedPVCName
+				pairData := common.VolumePVCPair{
+					Volume: *vol.Name,
+					PVC:    generatedPVCName,
+				}
+				volumeNameToPVCName = append(volumeNameToPVCName, pairData)
 			}
 		}
 	}

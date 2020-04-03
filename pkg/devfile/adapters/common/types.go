@@ -17,6 +17,22 @@ type DevfileVolume struct {
 	Size          *string
 }
 
+// ComponentVolumesPair is a struct to hold the relationship between components and their volumes
+// Use splices of this struct instead of a map because it is important to maintain order since iteration order of maps is not guaranteed.
+// When maps were used the ordering of the volumes could change in the pod spec causing an unnecessary rollout of the deployment which can be slow.
+type ComponentVolumesPair struct {
+	ComponentAlias string
+	Volumes        []DevfileVolume
+}
+
+// VolumePVCPair is a struct to hold the relationship between volumes and their PVCs
+// Use splices of this struct instead of a map because it is important to maintain order since iteration order of maps is not guaranteed.
+// When maps were used the ordering of the volumes could change in the pod spec causing an unnecessary rollout of the deployment which can be slow.
+type VolumePVCPair struct {
+	Volume string
+	PVC    string
+}
+
 // Storage is a struct that is common to all the adapters
 type Storage struct {
 	Name   string
