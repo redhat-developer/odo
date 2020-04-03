@@ -314,10 +314,12 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 		return errors.New(fmt.Sprintf("Directory / file %s is empty", path))
 	}
 
+	podSelector := fmt.Sprintf("component=%s", a.ComponentName)
+
 	// Wait for Pod to be in running state otherwise we can't sync data to it.
 	pod, err := a.waitAndGetComponentPod()
 	if err != nil {
-		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
+		return errors.Wrapf(err, "error retrieve pod %s for component %s", podSelector, a.ComponentName)
 	}
 
 	// Find at least one pod with the source volume mounted, error out if none can be found
