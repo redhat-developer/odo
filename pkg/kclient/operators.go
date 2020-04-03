@@ -3,18 +3,13 @@ package kclient
 import (
 	"github.com/golang/glog"
 	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	"github.com/pkg/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const (
-	ErrNoSuchOperator = odoError("Could not find specified operator")
+var (
+	ErrNoSuchOperator = errors.New("Could not find specified operator")
 )
-
-type odoError string
-
-func (e odoError) Error() string {
-	return string(e)
-}
 
 // GetClusterServiceVersionList returns a list of CSVs in the cluster
 // It is equivalent to doing `oc get csvs` using oc cli

@@ -157,11 +157,11 @@ func (c *Client) DeleteDeployment(labels map[string]string) error {
 }
 
 // CreateDynamicDeployment creates a dynamic deployment for Operator backed service
-func (c *Client) CreateDynamicDeployment(exampleCR map[string]interface{}, group, version, resource string) error {
+func (c *Client) CreateDynamicResource(exampleCustomResource map[string]interface{}, group, version, resource string) error {
 	deploymentRes := schema.GroupVersionResource{Group: group, Version: version, Resource: resource}
 
 	deployment := &unstructured.Unstructured{
-		Object: exampleCR,
+		Object: exampleCustomResource,
 	}
 
 	result, err := c.DynamicClient.Resource(deploymentRes).Namespace(c.Namespace).Create(deployment, metav1.CreateOptions{})
