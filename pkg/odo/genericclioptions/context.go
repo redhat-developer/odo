@@ -17,6 +17,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/project"
 	pkgUtil "github.com/openshift/odo/pkg/util"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // DefaultAppName is the default name of the application when an application name is not provided
@@ -333,6 +334,37 @@ func resolveProject(command *cobra.Command, client *occlient.Client, localConfig
 	return namespace
 }
 
+// resolveNamespace resolves namespace for devfile component
+func resolveNamespace(command *cobra.Command, client *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo) string {
+	var namespace string
+	namespaceFlag := FlagValueIfSet(command, "namespace")
+	if len(namespaceFlag) > 0 {
+		// if namespace flag was set, check that the specified namespace exists and use it
+		_, err := client.KubeClient.CoreV1().Namespaces().Get(namespaceFlag, metav1.GetOptions{})
+		util.LogErrorAndExit(err, "")
+		namespace = namespaceFlag
+	} else {
+		namespace = envSpecificInfo.GetNamespace()
+		if namespace == "" {
+			namespace = client.Namespace
+			if len(namespace) <= 0 {
+				errFormat := "Could not get current namespace. Please create or set a namespace\n"
+				checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
+			}
+		}
+
+		// check that the specified namespace exists
+		_, err := client.KubeClient.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
+		if err != nil {
+			errFormat := fmt.Sprintf("You don't have permission to create or set namespace '%s' or the namespace doesn't exist. Please create or set a different namespace\n\t", namespace)
+			// errFormat := fmt.Sprint(e1, "%s project create|set <project_name>")
+			checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
+		}
+	}
+	client.Namespace = namespace
+	return namespace
+}
+
 // resolveApp resolves the app
 func resolveApp(command *cobra.Command, createAppIfNeeded bool, localConfiguration *config.LocalConfigInfo) string {
 	var app string
@@ -393,7 +425,8 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 			util.LogErrorAndExit(err, "")
 		}
 		internalCxt.EnvSpecificInfo = envInfo
-		internalCxt.KClient.Namespace = envInfo.GetNamespace()
+		resolveNamespace(command, kClient, envInfo)
+		// internalCxt.KClient.Namespace = envInfo.GetNamespace()
 		// create a context from the internal representation
 		context := &Context{
 			internalCxt: internalCxt,

@@ -49,7 +49,11 @@ func WaitForCmdOut(program string, args []string, timeout int, errOnFail bool, c
 
 		case <-tick:
 			session := CmdRunner(program, args...)
-			Eventually(session).Should(gexec.Exit(0), runningCmd(session.Command))
+			if errOnFail {
+				Eventually(session).Should(gexec.Exit(0), runningCmd(session.Command))
+			} else {
+				Eventually(session).Should(gexec.Exit(), runningCmd(session.Command))
+			}
 			session.Wait()
 			output := string(session.Out.Contents())
 

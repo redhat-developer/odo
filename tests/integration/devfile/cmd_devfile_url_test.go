@@ -20,8 +20,9 @@ var _ = Describe("odo devfile url command tests", func() {
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
+		SetDefaultConsistentlyDuration(30 * time.Second)
 		namespace = helper.CreateRandProject()
-		context = helper.CreateNewDevfileContext()
+		context = helper.CreateNewContext()
 		currentWorkingDirectory = helper.Getwd()
 		helper.Chdir(context)
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
@@ -44,7 +45,7 @@ var _ = Describe("odo devfile url command tests", func() {
 			url1 := helper.RandString(5)
 			host := helper.RandString(5) + ".com"
 
-			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--namespace", namespace, componentName)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--project", namespace, componentName)
 			stdout = helper.CmdShouldFail("odo", "url", "list")
 			Expect(stdout).To(ContainSubstring("no URLs found"))
 
@@ -56,7 +57,7 @@ var _ = Describe("odo devfile url command tests", func() {
 
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "9090", "--host", host)
 
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
+			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
 			helper.WaitForCmdOut("odo", []string{"url", "list"}, 1, false, func(output string) bool {
 				if strings.Contains(output, url1) {
 					Expect(output).Should(ContainSubstring(url1 + "." + host))
@@ -75,7 +76,7 @@ var _ = Describe("odo devfile url command tests", func() {
 			host := helper.RandString(5) + ".com"
 			componentName := helper.RandString(6)
 
-			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--namespace", namespace, componentName)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--project", namespace, componentName)
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "9090", "--host", host)
 
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
@@ -97,7 +98,7 @@ var _ = Describe("odo devfile url command tests", func() {
 			url1 := helper.RandString(5)
 			host := helper.RandString(5) + ".com"
 			componentName := helper.RandString(6)
-			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--namespace", namespace, componentName)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--project", namespace, componentName)
 
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "9090", "--host", host, "--secure")
 			stdout = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
@@ -113,7 +114,7 @@ var _ = Describe("odo devfile url command tests", func() {
 			url1 := helper.RandString(5)
 			host := helper.RandString(5) + ".com"
 			componentName := helper.RandString(6)
-			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--namespace", namespace, componentName)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--project", namespace, componentName)
 			stdout = helper.CmdShouldPass("odo", "url", "create", url1, "--port", "9090", "--host", host, "--now")
 			helper.MatchAllInOutput(stdout, []string{"URL created for component", "http:", url1 + "." + host})
 		})
@@ -125,7 +126,7 @@ var _ = Describe("odo devfile url command tests", func() {
 			url1 := helper.RandString(5)
 			host := helper.RandString(5) + ".com"
 			componentName := helper.RandString(6)
-			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--namespace", namespace, componentName)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--project", namespace, componentName)
 
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "9090", "--host", host)
 			stdout = helper.CmdShouldFail("odo", "url", "describe", url1)
