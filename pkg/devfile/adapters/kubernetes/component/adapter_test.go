@@ -455,3 +455,69 @@ func TestDoesComponentExist(t *testing.T) {
 	}
 
 }
+
+func TestWaitAndGetComponentPod(t *testing.T) {
+
+	testComponentName := "test"
+
+	tests := []struct {
+		name          string
+		componentType versionsCommon.DevfileComponentType
+		status        corev1.PodPhase
+		wantErr       bool
+	}{
+		{
+			name:          "Case 1: Running",
+			componentType: versionsCommon.DevfileComponentTypeDockerimage,
+			status:        corev1.PodRunning,
+			wantErr:       false,
+		},
+		{
+			name:          "Case 2: Failed pod",
+			componentType: versionsCommon.DevfileComponentTypeDockerimage,
+			status:        corev1.PodFailed,
+			wantErr:       true,
+		},
+		{
+			name:          "Case 3: Unknown pod",
+			componentType: versionsCommon.DevfileComponentTypeDockerimage,
+			status:        corev1.PodUnknown,
+			wantErr:       true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			devObj := devfile.DevfileObj{
+				Data: testingutil.TestDevfileData{
+					ComponentType: tt.componentType,
+				},
+			}
+
+			adapterCtx := adaptersCommon.AdapterContext{
+				ComponentName: testComponentName,
+				Devfile:       devObj,
+			}
+
+			fkclient, fkclientset := kclient.FakeNew()
+			fkWatch := watch.NewFake()
+
+			// Change the status
+			go func() {
+				fkWatch.Modify(kclient.FakePodStatus(tt.status, testComponentName))
+			}()
+
+			fkclientset.Kubernetes.PrependWatchReactor("pods", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
+				return true, fkWatch, nil
+			})
+
+			componentAdapter := New(adapterCtx, *fkclient)
+			_, err := componentAdapter.waitAndGetComponentPod()
+
+			// Checks for unexpected error cases
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("component adapter create unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+
+}
