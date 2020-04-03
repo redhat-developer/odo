@@ -143,25 +143,3 @@ func WatchNonRetCmdStdOut(cmdStr string, timeout time.Duration, check func(outpu
 		}
 	}
 }
-
-// WaitTillUrlexist wait for the given url to be up on the cluster
-func WaitTillUrlexist(namespace, url string, timeoutMinutes int) bool {
-	pingTimeout := time.After(time.Duration(timeoutMinutes) * time.Minute)
-	// this is a test package so time.Tick() is acceptable
-	// nolint
-	tick := time.Tick(time.Second * 5)
-	for {
-		select {
-		case <-pingTimeout:
-			Fail(fmt.Sprintf("Timeout out after %v minutes", timeoutMinutes))
-
-		case <-tick:
-			session := CmdRunner("odo", "url", "list")
-			Eventually(session).Should(gexec.Exit(0), runningCmd(session.Command))
-			stdout := string(session.Wait().Out.Contents())
-			if strings.Contains(stdout, url) {
-				return true
-			}
-		}
-	}
-}

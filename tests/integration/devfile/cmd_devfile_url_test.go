@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/openshift/odo/tests/helper"
@@ -56,9 +57,13 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "9090", "--host", host)
 
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
-			helper.WaitTillUrlexist(namespace, url1, 1)
-			stdout = helper.CmdShouldPass("odo", "url", "list")
-			helper.MatchAllInOutput(stdout, []string{url1, url1 + "." + host})
+			helper.WaitForCmdOut("odo", []string{"url", "list"}, 1, true, func(output string) bool {
+				if strings.Contains(output, url1) {
+					helper.MatchAllInOutput(output, []string{url1, url1 + "." + host})
+					return true
+				}
+				return false
+			})
 			helper.CmdShouldPass("odo", "url", "delete", url1, "-f")
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 			stdout = helper.CmdShouldFail("odo", "url", "list")
@@ -74,11 +79,15 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "9090", "--host", host)
 
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
-			helper.WaitTillUrlexist(namespace, url1, 1)
 			// odo url list -o json
-			actualURLListJSON := helper.CmdShouldPass("odo", "url", "list", "-o", "json")
-			desiredURLListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"udo.udo.io/v1alpha1","metadata":{},"items":[{"kind":"Ingress","apiVersion":"extensions/v1beta1","metadata":{"name":"%s","creationTimestamp":null},"spec":{"rules":[{"host":"%s","http":{"paths":[{"path":"/","backend":{"serviceName":"%s","servicePort":9090}}]}}]},"status":{"loadBalancer":{}}}]}`, url1, url1+"."+host, componentName)
-			Expect(desiredURLListJSON).Should(MatchJSON(actualURLListJSON))
+			helper.WaitForCmdOut("odo", []string{"url", "list", "-o", "json"}, 1, true, func(output string) bool {
+				desiredURLListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"udo.udo.io/v1alpha1","metadata":{},"items":[{"kind":"Ingress","apiVersion":"extensions/v1beta1","metadata":{"name":"%s","creationTimestamp":null},"spec":{"rules":[{"host":"%s","http":{"paths":[{"path":"/","backend":{"serviceName":"%s","servicePort":9090}}]}}]},"status":{"loadBalancer":{}}}]}`, url1, url1+"."+host, componentName)
+				if strings.Contains(output, url1) {
+					Expect(desiredURLListJSON).Should(MatchJSON(output))
+					return true
+				}
+				return false
+			})
 		})
 	})
 
@@ -122,9 +131,13 @@ var _ = Describe("odo devfile url command tests", func() {
 			stdout = helper.CmdShouldFail("odo", "url", "describe", url1)
 			helper.MatchAllInOutput(stdout, []string{url1, "exists in local", "odo push"})
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
-			helper.WaitTillUrlexist(namespace, url1, 1)
-			stdout = helper.CmdShouldPass("odo", "url", "describe", url1)
-			helper.MatchAllInOutput(stdout, []string{url1, url1 + "." + host})
+			helper.WaitForCmdOut("odo", []string{"url", "describe", url1}, 1, true, func(output string) bool {
+				if strings.Contains(output, url1) {
+					helper.MatchAllInOutput(output, []string{url1, url1 + "." + host})
+					return true
+				}
+				return false
+			})
 			helper.CmdShouldPass("odo", "url", "delete", url1, "-f")
 		})
 	})
