@@ -1,6 +1,7 @@
 package kclient
 
 import (
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 
 	// api resource types
 
@@ -52,6 +53,14 @@ func GeneratePodTemplateSpec(objectMeta metav1.ObjectMeta, containers []corev1.C
 			Volumes: []corev1.Volume{
 				{
 					Name: OdoSourceVolume,
+				},
+				{
+					// Create a volume that will be shared betwen InitContainer and the applicationContainer
+					// in order to pass over the SupervisorD binary
+					Name: common.SupervisordVolumeName,
+					VolumeSource: corev1.VolumeSource{
+						EmptyDir: &corev1.EmptyDirVolumeSource{},
+					},
 				},
 			},
 		},

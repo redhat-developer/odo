@@ -17,7 +17,7 @@ commands:
         component: runtime
         command: "npm install"
   -
-    name: run
+    name: devrun
     actions:
       -
         type: exec

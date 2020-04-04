@@ -10,7 +10,8 @@ import (
 	"strings"
 
 	"github.com/openshift/odo/pkg/util"
-	"k8s.io/klog/glog"
+
+	"github.com/golang/glog"
 )
 
 type SyncClient interface {

@@ -29,6 +29,7 @@ const (
 	DevfileCommandTypeBuild DevfileCommandType = "build"
 	DevfileCommandTypeRun   DevfileCommandType = "run"
 	DevfileCommandTypeDebug DevfileCommandType = "debug"
+	DevfileCommandTypeExec  DevfileCommandType = "exec"
 )
 
 // ----------- Devfile Schema ---------- //

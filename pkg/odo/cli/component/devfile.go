@@ -71,9 +71,12 @@ func (po *PushOptions) DevfilePush() (err error) {
 	}
 
 	pushParams := common.PushParameters{
-		Path:         po.sourcePath,
-		IgnoredFiles: po.ignores,
-		ForceBuild:   po.forceBuild,
+		Path:            po.sourcePath,
+		IgnoredFiles:    po.ignores,
+		ForceBuild:      po.forceBuild,
+		Show:            po.show,
+		DevfileBuildCmd: strings.ToLower(po.devfileBuildCommand),
+		DevfileRunCmd:   strings.ToLower(po.devfileRunCommand),
 	}
 
 	// Start or update the component

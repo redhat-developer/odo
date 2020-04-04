@@ -2,9 +2,9 @@ package component
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
@@ -17,6 +17,7 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/versions/common"
+	"github.com/openshift/odo/pkg/exec"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/sync"
@@ -35,6 +36,8 @@ func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
 type Adapter struct {
 	Client kclient.Client
 	common.AdapterContext
+	devfileBuildCmd string
+	devfileRunCmd   string
 }
 
 // Push updates the component if a matching component exists or creates one if it doesn't exist
@@ -42,6 +45,9 @@ type Adapter struct {
 func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	componentExists := utils.ComponentExists(a.Client, a.ComponentName)
 	globExps := util.GetAbsGlobExps(parameters.Path, parameters.IgnoredFiles)
+
+	a.devfileBuildCmd = parameters.DevfileBuildCmd
+	a.devfileRunCmd = parameters.DevfileRunCmd
 
 	deletedFiles := []string{}
 	changedFiles := []string{}
@@ -58,6 +64,12 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		podName = pod.GetName()
 	}
 
+	// Validate the devfile build and run commands
+	pushDevfileCommands, err := common.ValidateAndGetPushDevfileCommands(a.Devfile.Data, a.devfileBuildCmd, a.devfileRunCmd)
+	if err != nil {
+		return errors.Wrap(err, "failed to validate devfile build and run commands")
+	}
+
 	err = a.createOrUpdateComponent(componentExists)
 	if err != nil {
 		return errors.Wrap(err, "unable to create or update component")
@@ -68,15 +80,15 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return errors.Wrap(err, "error while waiting for deployment rollout")
 	}
 
+	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
+	pod, err := a.waitAndGetComponentPod(false)
+	if err != nil {
+		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
+	}
+
 	// Compare the name of the pod with the one before the rollout. If they differ, it means there's a new pod and a force push is required
-	if componentExists {
-		pod, err := a.waitAndGetComponentPod(true)
-		if err != nil {
-			return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
-		}
-		if podName != pod.GetName() {
-			podChanged = true
-		}
+	if componentExists && podName != pod.GetName() {
+		podChanged = true
 	}
 
 	// Sync source code to the component
@@ -149,11 +161,18 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		deletedFiles,
 		isForcePush,
 		globExps,
+		pod.GetName(),
+		pod.Spec.Containers,
 	)
-
 	if err != nil {
 		return errors.Wrapf(err, "Failed to sync to component with name %s", a.ComponentName)
 	}
+
+	err = a.execDevfile(pushDevfileCommands, componentExists, parameters.Show, pod.GetName(), pod.Spec.Containers)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -173,12 +192,20 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 	if err != nil {
 		return err
 	}
+
 	if len(containers) == 0 {
 		return fmt.Errorf("No valid components found in the devfile")
 	}
 
+	containers, err = utils.UpdateContainersWithSupervisord(a.Devfile, containers, a.devfileRunCmd)
+	if err != nil {
+		return err
+	}
+
 	objectMeta := kclient.CreateObjectMeta(componentName, a.Client.Namespace, labels, nil)
 	podTemplateSpec := kclient.GeneratePodTemplateSpec(objectMeta, containers)
+
+	kclient.AddBootstrapSupervisordInitContainer(podTemplateSpec)
 
 	componentAliasToVolumes := utils.GetVolumes(a.Devfile)
 
@@ -304,8 +331,8 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 	return nil
 }
 
-// Push syncs source code from the user's disk to the component
-func (a Adapter) pushLocal(path string, files []string, delFiles []string, isForcePush bool, globExps []string) error {
+// pushLocal syncs source code from the user's disk to the component
+func (a Adapter) pushLocal(path string, files []string, delFiles []string, isForcePush bool, globExps []string, podName string, containers []corev1.Container) error {
 	glog.V(4).Infof("Push: componentName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", a.ComponentName, path, files, delFiles, isForcePush)
 
 	// Edge case: check to see that the path is NOT empty.
@@ -316,18 +343,10 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 		return errors.New(fmt.Sprintf("Directory / file %s is empty", path))
 	}
 
-	podSelector := fmt.Sprintf("component=%s", a.ComponentName)
-
-	// Wait for Pod to be in running state otherwise we can't sync data to it.
-	pod, err := a.waitAndGetComponentPod(false)
-	if err != nil {
-		return errors.Wrapf(err, "error retrieve pod %s for component %s", podSelector, a.ComponentName)
-	}
-
 	// Find at least one pod with the source volume mounted, error out if none can be found
-	containerName, err := getFirstContainerWithSourceVolume(pod.Spec.Containers)
+	containerName, err := getFirstContainerWithSourceVolume(containers)
 	if err != nil {
-		return errors.Wrapf(err, "error while retrieving container from pod: %s", podSelector)
+		return errors.Wrapf(err, "error while retrieving container from pod: %s", podName)
 	}
 
 	// Sync the files to the pod
@@ -344,9 +363,8 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 		// Need to make sure the folder already exists on the component or else sync will fail
 		glog.V(4).Infof("Creating %s on the remote container if it doesn't already exist", syncFolder)
 		cmdArr := getCmdToCreateSyncFolder(syncFolder)
-		reader, writer := io.Pipe()
 
-		err := a.Client.ExecCMDInContainer(pod.Name, containerName, cmdArr, writer, writer, reader, false)
+		err = exec.ExecuteCommand(&a.Client, podName, containerName, cmdArr, false)
 		if err != nil {
 			return err
 		}
@@ -354,9 +372,8 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	// If there were any files deleted locally, delete them remotely too.
 	if len(delFiles) > 0 {
 		cmdArr := getCmdToDeleteFiles(delFiles, syncFolder)
-		reader, writer := io.Pipe()
 
-		err := a.Client.ExecCMDInContainer(pod.Name, containerName, cmdArr, writer, writer, reader, false)
+		err = exec.ExecuteCommand(&a.Client, podName, containerName, cmdArr, false)
 		if err != nil {
 			return err
 		}
@@ -372,7 +389,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 
 	if isForcePush || len(files) > 0 {
 		glog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
-		err = sync.CopyFile(&a.Client, path, pod.GetName(), containerName, syncFolder, files, globExps)
+		err = sync.CopyFile(&a.Client, path, podName, containerName, syncFolder, files, globExps)
 		if err != nil {
 			s.End(false)
 			return errors.Wrap(err, "unable push files to pod")
@@ -394,6 +411,117 @@ func (a Adapter) waitAndGetComponentPod(hideSpinner bool) (*corev1.Pod, error) {
 		return nil, errors.Wrapf(err, "error while waiting for pod %s", podSelector)
 	}
 	return pod, nil
+}
+
+// Push syncs source code from the user's disk to the component
+func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand, componentExists, show bool, podName string, containers []corev1.Container) (err error) {
+	var buildRequired bool
+	var s *log.Status
+
+	if len(pushDevfileCommands) == 1 {
+		// if there is one command, it is the mandatory run command. No need to build.
+		buildRequired = false
+	} else if len(pushDevfileCommands) == 2 {
+		// if there are two commands, it is the optional build command and the mandatory run command, set buildRequired to true
+		buildRequired = true
+	} else {
+		return fmt.Errorf("error executing devfile commands - there should be at least 1 command or at most 2 commands, currently there are %v commands", len(pushDevfileCommands))
+	}
+
+	for i := 0; i < len(pushDevfileCommands); i++ {
+		command := pushDevfileCommands[i]
+
+		// Exec the devBuild command if buildRequired is true
+		if (command.Name == string(common.DefaultDevfileBuildCommand) || command.Name == a.devfileBuildCmd) && buildRequired {
+			glog.V(3).Infof("Executing devfile command %v", command.Name)
+
+			for _, action := range command.Actions {
+				// Change to the workdir and execute the command
+				var cmdArr []string
+				if action.Workdir != nil {
+					cmdArr = []string{"/bin/sh", "-c", "cd " + *action.Workdir + " && " + *action.Command}
+				} else {
+					cmdArr = []string{"/bin/sh", "-c", *action.Command}
+				}
+
+				if show {
+					s = log.SpinnerNoSpin("Executing " + command.Name + " command " + *action.Command)
+				} else {
+					s = log.Spinner("Executing " + command.Name + " command " + *action.Command)
+				}
+
+				defer s.End(false)
+
+				err = exec.ExecuteCommand(&a.Client, podName, *action.Component, cmdArr, show)
+				if err != nil {
+					s.End(false)
+					return err
+				}
+				s.End(true)
+			}
+
+			// Reset the for loop counter and iterate through all the devfile commands again for others
+			i = -1
+			// Set the buildRequired to false since we already executed the build command
+			buildRequired = false
+		} else if (command.Name == string(common.DefaultDevfileRunCommand) || command.Name == a.devfileRunCmd) && !buildRequired {
+			// Always check for buildRequired is false, since the command may be iterated out of order and we always want to execute devBuild first if buildRequired is true. If buildRequired is false, then we don't need to build and we can execute the devRun command
+			glog.V(3).Infof("Executing devfile command %v", command.Name)
+
+			for _, action := range command.Actions {
+
+				// Check if the devfile run component containers have supervisord as the entrypoint.
+				// Start the supervisord if the odo component does not exist
+				if !componentExists {
+					err = a.InitRunContainerSupervisord(*action.Component, podName, containers)
+					if err != nil {
+						return
+					}
+				}
+
+				// Exec the supervisord ctl stop and start for the devrun program
+				type devRunExecutable struct {
+					command []string
+				}
+				devRunExecs := []devRunExecutable{
+					{
+						command: []string{common.SupervisordBinaryPath, "ctl", "stop", "all"},
+					},
+					{
+						command: []string{common.SupervisordBinaryPath, "ctl", "start", string(common.DefaultDevfileRunCommand)},
+					},
+				}
+
+				s = log.Spinner("Executing " + command.Name + " command " + *action.Command)
+				defer s.End(false)
+
+				for _, devRunExec := range devRunExecs {
+
+					err = exec.ExecuteCommand(&a.Client, podName, *action.Component, devRunExec.command, show)
+					if err != nil {
+						s.End(false)
+						return
+					}
+				}
+				s.End(true)
+			}
+		}
+	}
+
+	return
+}
+
+// InitRunContainerSupervisord initializes the supervisord in the container if
+// the container has entrypoint that is not supervisord
+func (a Adapter) InitRunContainerSupervisord(containerName, podName string, containers []corev1.Container) (err error) {
+	for _, container := range containers {
+		if container.Name == containerName && !reflect.DeepEqual(container.Command, []string{common.SupervisordBinaryPath}) {
+			command := []string{common.SupervisordBinaryPath, "-c", common.SupervisordConfFile, "-d"}
+			err = exec.ExecuteCommand(&a.Client, podName, containerName, command, true)
+		}
+	}
+
+	return
 }
 
 // getFirstContainerWithSourceVolume returns the first container that set mountSources: true
