@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/openshift/odo/pkg/kclient"
+
 	"github.com/kylelemons/godebug/pretty"
 	appsv1 "github.com/openshift/api/apps/v1"
 	routev1 "github.com/openshift/api/route/v1"
@@ -161,7 +163,7 @@ func TestCreate(t *testing.T) {
 				return true, dc, nil
 			})
 
-			got, err := Create(client, tt.args.urlName, tt.args.portNumber, tt.args.secure, tt.args.componentName, tt.args.applicationName)
+			got, err := Create(client, &kclient.Client{}, tt.args.urlName, tt.args.portNumber, tt.args.secure, tt.args.componentName, tt.args.applicationName, "", "")
 
 			if err == nil && !tt.wantErr {
 				if len(fakeClientSet.RouteClientset.Actions()) != 1 {
@@ -221,7 +223,7 @@ func TestDelete(t *testing.T) {
 				return true, nil, nil
 			})
 
-			err := Delete(client, tt.args.urlName, tt.args.applicationName)
+			err := Delete(client, &kclient.Client{}, tt.args.urlName, tt.args.applicationName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Delete() error = %#v, wantErr %#v", err, tt.wantErr)
 				return

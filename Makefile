@@ -223,6 +223,11 @@ test-cmd-storage:
 test-cmd-url:
 	ginkgo $(GINKGO_FLAGS) -focus="odo url command tests" tests/integration/
 
+# Run odo url devfile command tests
+.PHONY: test-cmd-devfile-url
+test-cmd-devfile-url:
+	ginkgo $(GINKGO_FLAGS) -focus="odo devfile url command tests" tests/integration/devfile/
+
 # Run odo watch command tests
 .PHONY: test-cmd-watch
 test-cmd-watch:

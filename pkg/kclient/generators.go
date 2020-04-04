@@ -5,6 +5,16 @@ import (
 
 	// api resource types
 
+	"bytes"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
+	"math/big"
+	"time"
+
+	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	extensionsv1 "k8s.io/api/extensions/v1beta1"
@@ -172,6 +182,57 @@ func GenerateIngressSpec(ingressParam IngressParameter) *extensionsv1.IngressSpe
 	}
 
 	return ingressSpec
+}
+
+// SelfSignedCertificate struct is the return type of function GenerateSelfSignedCertificate
+// CertPem is the byte array for certificate pem encode
+// KeyPem is the byte array for key pem encode
+type SelfSignedCertificate struct {
+	CertPem []byte
+	KeyPem  []byte
+}
+
+// GenerateSelfSignedCertificate creates a self-signed SSl certificate
+func GenerateSelfSignedCertificate(host string) (SelfSignedCertificate, error) {
+
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return SelfSignedCertificate{}, errors.Wrap(err, "unable to generate rsa key")
+	}
+	template := x509.Certificate{
+		SerialNumber: big.NewInt(time.Now().Unix()),
+		Subject: pkix.Name{
+			CommonName:   "Odo self-signed certificate",
+			Organization: []string{"Odo"},
+		},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().Add(time.Hour * 24 * 365 * 10),
+		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		BasicConstraintsValid: true,
+		DNSNames:              []string{"*." + host},
+	}
+
+	certificateDerEncoding, err := x509.CreateCertificate(rand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
+	if err != nil {
+		return SelfSignedCertificate{}, errors.Wrap(err, "unable to create certificate")
+	}
+	out := &bytes.Buffer{}
+	err = pem.Encode(out, &pem.Block{Type: "CERTIFICATE", Bytes: certificateDerEncoding})
+	if err != nil {
+		return SelfSignedCertificate{}, errors.Wrap(err, "unable to encode certificate")
+	}
+	certPemEncode := out.String()
+	certPemByteArr := []byte(certPemEncode)
+
+	tlsPrivKeyEncoding := x509.MarshalPKCS1PrivateKey(privateKey)
+	err = pem.Encode(out, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: tlsPrivKeyEncoding})
+	if err != nil {
+		return SelfSignedCertificate{}, errors.Wrap(err, "unable to encode rsa private key")
+	}
+	keyPemEncode := out.String()
+	keyPemByteArr := []byte(keyPemEncode)
+
+	return SelfSignedCertificate{CertPem: certPemByteArr, KeyPem: keyPemByteArr}, nil
 }
 
 // GenerateOwnerReference genertes an ownerReference  from the deployment which can then be set as

@@ -1,6 +1,8 @@
 package kclient
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 
 	extensionsv1 "k8s.io/api/extensions/v1beta1"
@@ -13,7 +15,9 @@ func (c *Client) CreateIngress(objectMeta metav1.ObjectMeta, spec extensionsv1.I
 		ObjectMeta: objectMeta,
 		Spec:       spec,
 	}
-
+	if ingress.GetName() == "" {
+		return nil, fmt.Errorf("ingress name is empty")
+	}
 	ingressObj, err := c.KubeClient.ExtensionsV1beta1().Ingresses(c.Namespace).Create(ingress)
 	if err != nil {
 		return nil, errors.Wrap(err, "error creating ingress")
@@ -23,19 +27,7 @@ func (c *Client) CreateIngress(objectMeta metav1.ObjectMeta, spec extensionsv1.I
 
 // DeleteIngress deletes the given ingress
 func (c *Client) DeleteIngress(name string) error {
-	ingress, err := c.KubeClient.ExtensionsV1beta1().Ingresses(c.Namespace).Get(name, metav1.GetOptions{})
-	if err != nil {
-		return errors.Wrap(err, "unable to get ingress")
-	}
-	ingressTLSArray := ingress.Spec.TLS
-	for _, elem := range ingressTLSArray {
-		err = c.KubeClient.CoreV1().Secrets(c.Namespace).Delete(elem.SecretName, &metav1.DeleteOptions{})
-		if err != nil {
-			return errors.Wrap(err, "unable to delete tls secret")
-		}
-	}
-
-	err = c.KubeClient.ExtensionsV1beta1().Ingresses(c.Namespace).Delete(name, &metav1.DeleteOptions{})
+	err := c.KubeClient.ExtensionsV1beta1().Ingresses(c.Namespace).Delete(name, &metav1.DeleteOptions{})
 	if err != nil {
 		return errors.Wrap(err, "unable to delete ingress")
 	}
@@ -54,18 +46,8 @@ func (c *Client) ListIngresses(labelSelector string) ([]extensionsv1.Ingress, er
 	return ingressList.Items, nil
 }
 
-// ListIngressNames lists all the names of the ingresses based on the given label
-// selector
-func (c *Client) ListIngressNames(labelSelector string) ([]string, error) {
-	ingresses, err := c.ListIngresses(labelSelector)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to list ingresses")
-	}
-
-	var ingressNames []string
-	for _, i := range ingresses {
-		ingressNames = append(ingressNames, i.Name)
-	}
-
-	return ingressNames, nil
+// GetIngress gets an ingress based on the given name
+func (c *Client) GetIngress(name string) (*extensionsv1.Ingress, error) {
+	ingress, err := c.KubeClient.ExtensionsV1beta1().Ingresses(c.Namespace).Get(name, metav1.GetOptions{})
+	return ingress, err
 }

@@ -21,7 +21,7 @@ func TestSetEnvInfo(t *testing.T) {
 	}
 	defer tempEnvFile.Close()
 	os.Setenv(envInfoEnvName, tempEnvFile.Name())
-	testURL := EnvInfoURL{Name: "testURL", ClusterHost: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
+	testURL := EnvInfoURL{Name: "testURL", Host: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
 	invalidParam := "invalidParameter"
 	testCreate := ComponentSettings{Name: "componentName", Namespace: "namespace"}
 
@@ -110,7 +110,7 @@ func TestUnsetEnvInfo(t *testing.T) {
 	}
 	defer tempEnvFile.Close()
 	os.Setenv(envInfoEnvName, tempEnvFile.Name())
-	testURL := EnvInfoURL{Name: "testURL", ClusterHost: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
+	testURL := EnvInfoURL{Name: "testURL", Host: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
 	invalidParam := "invalidParameter"
 
 	tests := []struct {
@@ -171,8 +171,8 @@ func TestDeleteURLFromMultipleURLs(t *testing.T) {
 	}
 	defer tempEnvFile.Close()
 	os.Setenv(envInfoEnvName, tempEnvFile.Name())
-	testURL1 := EnvInfoURL{Name: "testURL1", ClusterHost: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
-	testURL2 := EnvInfoURL{Name: "testURL2", ClusterHost: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
+	testURL1 := EnvInfoURL{Name: "testURL1", Host: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
+	testURL2 := EnvInfoURL{Name: "testURL2", Host: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
 
 	tests := []struct {
 		name            string

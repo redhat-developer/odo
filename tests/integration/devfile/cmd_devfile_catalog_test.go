@@ -19,7 +19,7 @@ var _ = Describe("odo devfile catalog command tests", func() {
 	var _ = BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		project = helper.CreateRandProject()
-		context = helper.CreateNewDevfileContext()
+		context = helper.CreateNewContext()
 		currentWorkingDirectory = helper.Getwd()
 		helper.Chdir(context)
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
