@@ -20,6 +20,7 @@ import (
 	"github.com/openshift/odo/pkg/catalog"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/exec"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
@@ -742,37 +743,11 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 		s = log.Spinner("Building component")
 	}
 
-	// use pipes to write output from ExecCMDInContainer in yellow  to 'out' io.Writer
-	pipeReader, pipeWriter := io.Pipe()
-	var cmdOutput string
-
-	// This Go routine will automatically pipe the output from ExecCMDInContainer to
-	// our logger.
-	go func() {
-		scanner := bufio.NewScanner(pipeReader)
-		for scanner.Scan() {
-			line := scanner.Text()
-
-			if log.IsDebug() || show {
-				_, err := fmt.Fprintln(out, line)
-				if err != nil {
-					log.Errorf("Unable to print to stdout: %v", err)
-				}
-			}
-
-			cmdOutput += fmt.Sprintln(line)
-		}
-	}()
-
-	err = client.ExecCMDInContainer(pod.Name,
-		"",
-		// We will use the assemble-and-restart script located within the supervisord container we've created
-		[]string{"/opt/odo/bin/assemble-and-restart"},
-		pipeWriter, pipeWriter, nil, false)
+	// We will use the assemble-and-restart script located within the supervisord container we've created
+	cmdArr := []string{"/opt/odo/bin/assemble-and-restart"}
+	err = exec.ExecuteCommand(client, pod.Name, "", cmdArr, show)
 
 	if err != nil {
-		// If we fail, log the output
-		log.Errorf("Unable to build files\n%v", cmdOutput)
 		s.End(false)
 		return errors.Wrap(err, "unable to execute assemble script")
 	}
