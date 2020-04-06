@@ -48,9 +48,10 @@ var _ = Describe("odo devfile push command tests", func() {
 			// Devfile push requires experimental mode to be set
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
 			cmpName := helper.RandString(6)
 			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--project", namespace, cmpName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
+
 			helper.RenameFile("devfile.yaml", "devfile-old.yaml")
 			helper.RenameFile("devfile-no-endpoints.yaml", "devfile.yaml")
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
@@ -69,9 +70,9 @@ var _ = Describe("odo devfile push command tests", func() {
 			// Devfile push requires experimental mode to be set
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
 			cmpName := helper.RandString(6)
 			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--project", namespace, cmpName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
 
 			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
@@ -89,9 +90,9 @@ var _ = Describe("odo devfile push command tests", func() {
 			// Devfile push requires experimental mode to be set
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
 			cmpName := helper.RandString(6)
 			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--project", namespace, cmpName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
 
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
@@ -106,9 +107,9 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 
 			// Create a new file that we plan on deleting later...
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
 			cmpName := helper.RandString(6)
 			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--project", namespace, cmpName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
 
 			newFilePath := filepath.Join(context, "foobar.txt")
 			if err := helper.CreateFileWithContent(newFilePath, "hello world"); err != nil {
@@ -144,9 +145,10 @@ var _ = Describe("odo devfile push command tests", func() {
 			// Devfile push requires experimental mode to be set
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs-multicontainer"), context)
 			cmpName := helper.RandString(6)
 			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--project", namespace, cmpName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs-multicontainer"), context)
+
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 
 			// Check to see if it's been pushed (foobar.txt abd directory testdir)
@@ -183,9 +185,10 @@ var _ = Describe("odo devfile push command tests", func() {
 			// Devfile push requires experimental mode to be set
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs-multicontainer"), context)
 			cmpName := helper.RandString(6)
 			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--project", namespace, cmpName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs-multicontainer"), context)
+
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 
 			// use the force build flag and push
