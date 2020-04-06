@@ -22,10 +22,13 @@ const (
 
 // WaitAndGetPod block and waits until pod matching selector is in the desired phase
 // desiredPhase cannot be PodFailed or PodUnknown
-func (c *Client) WaitAndGetPod(watchOptions metav1.ListOptions, desiredPhase corev1.PodPhase, waitMessage string) (*corev1.Pod, error) {
+func (c *Client) WaitAndGetPod(watchOptions metav1.ListOptions, desiredPhase corev1.PodPhase, waitMessage string, hideSpinner bool) (*corev1.Pod, error) {
 	glog.V(4).Infof("Waiting for %s pod", watchOptions.LabelSelector)
-	s := log.Spinner(waitMessage)
-	defer s.End(false)
+	var s *log.Status
+	if !hideSpinner {
+		s = log.Spinner(waitMessage)
+		defer s.End(false)
+	}
 
 	w, err := c.KubeClient.CoreV1().Pods(c.Namespace).Watch(watchOptions)
 	if err != nil {
@@ -50,7 +53,9 @@ func (c *Client) WaitAndGetPod(watchOptions metav1.ListOptions, desiredPhase cor
 				glog.V(4).Infof("Status of %s pod is %s", e.Name, e.Status.Phase)
 				switch e.Status.Phase {
 				case desiredPhase:
-					s.End(true)
+					if !hideSpinner {
+						s.End(true)
+					}
 					glog.V(4).Infof("Pod %s is %v", e.Name, desiredPhase)
 					podChannel <- e
 					return
