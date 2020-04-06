@@ -6,8 +6,13 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/fatih/color"
+	"github.com/openshift/odo/pkg/component"
+	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
@@ -32,19 +37,17 @@ The behaviour of this feature is subject to change as development for this
 feature progresses.
 */
 
-const componentNameMaxLen = 45
-
 // DevfilePush has the logic to perform the required actions for a given devfile
 func (po *PushOptions) DevfilePush() (err error) {
 	// Parse devfile
-	devObj, err := devfile.Parse(po.devfilePath)
+	devObj, err := devfile.Parse(po.DevfilePath)
 	if err != nil {
 		return err
 	}
 
 	componentName, err := getComponentName()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "unable to get component name")
 	}
 
 	// Set the source path to either the context or current working directory (if context not set)
@@ -79,10 +82,19 @@ func (po *PushOptions) DevfilePush() (err error) {
 		return err
 	}
 
+	po.Context.KClient.Namespace = po.namespace
+	err = component.ApplyConfig(nil, po.Context.KClient, config.LocalConfigInfo{}, *po.EnvSpecificInfo, color.Output, po.doesComponentExist)
+	if err != nil {
+		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed.")
+	}
+
 	pushParams := common.PushParameters{
-		Path:         po.sourcePath,
-		IgnoredFiles: po.ignores,
-		ForceBuild:   po.forceBuild,
+		Path:            po.sourcePath,
+		IgnoredFiles:    po.ignores,
+		ForceBuild:      po.forceBuild,
+		Show:            po.show,
+		DevfileBuildCmd: strings.ToLower(po.devfileBuildCommand),
+		DevfileRunCmd:   strings.ToLower(po.devfileRunCommand),
 	}
 
 	// Start or update the component
@@ -102,21 +114,30 @@ func (po *PushOptions) DevfilePush() (err error) {
 	return
 }
 
-/*
- * getComponentName generates a component name by using the current directory's name and manipulates it if needed so that it
- * can be used for kubernetes resource names as well. This will likely be moved/replaced once devfile create is
- * implemented because component name should be determined at that point.
- */
+// Get component name from env.yaml file
 func getComponentName() (string, error) {
-	retVal := ""
-	currDir, err := os.Getwd()
+	dir, err := os.Getwd()
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to get component because getting current directory failed")
+		return "", err
 	}
-	retVal = filepath.Base(currDir)
-	// Kubernetes resources require a name that satisfies DNS-1123
-	retVal = strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(retVal)))
-	// Kubernetes resources have a characters limit, truncate and give sufficient space for other resources
-	retVal = util.TruncateString(retVal, componentNameMaxLen)
-	return retVal, nil
+	envInfo, err := envinfo.NewEnvSpecificInfo(dir)
+	if err != nil {
+		return "", err
+	}
+	componentName := envInfo.GetName()
+	return componentName, nil
+}
+
+// Get namespace name from env.yaml file
+func getNamespace() (string, error) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	envInfo, err := envinfo.NewEnvSpecificInfo(dir)
+	if err != nil {
+		return "", err
+	}
+	Namespace := envInfo.GetNamespace()
+	return Namespace, nil
 }

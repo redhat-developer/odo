@@ -11,6 +11,7 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/storage"
 	urlPkg "github.com/openshift/odo/pkg/url"
 
@@ -135,21 +136,23 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 	// URL
 	if componentDesc.Spec.URL != nil {
 		var output string
-		// if the component is not pushed
-		if componentDesc.Status.State == "Not Pushed" {
-			// Gather the output
-			for i, componentURL := range componentDesc.Spec.URL {
-				output += fmt.Sprintf(" · URL named %s will be exposed via %v\n", componentURL, componentDesc.Spec.Ports[i])
-			}
-		} else {
-			// Retrieve the URLs
-			urls, err := urlPkg.ListPushed(client, currentComponentName, applicationName)
-			LogErrorAndExit(err, "")
+		if !experimental.IsExperimentalModeEnabled() {
+			// if the component is not pushed
+			if componentDesc.Status.State == "Not Pushed" {
+				// Gather the output
+				for i, componentURL := range componentDesc.Spec.URL {
+					output += fmt.Sprintf(" · URL named %s will be exposed via %v\n", componentURL, componentDesc.Spec.Ports[i])
+				}
+			} else {
+				// Retrieve the URLs
+				urls, err := urlPkg.ListPushed(client, currentComponentName, applicationName)
+				LogErrorAndExit(err, "")
 
-			// Gather the output
-			for _, componentURL := range componentDesc.Spec.URL {
-				url := urls.Get(componentURL)
-				output += fmt.Sprintf(" · %v exposed via %v\n", urlPkg.GetURLString(url.Spec.Protocol, url.Spec.Host), url.Spec.Port)
+				// Gather the output
+				for _, componentURL := range componentDesc.Spec.URL {
+					url := urls.Get(componentURL)
+					output += fmt.Sprintf(" · %v exposed via %v\n", urlPkg.GetURLString(url.Spec.Protocol, url.Spec.Host, ""), url.Spec.Port)
+				}
 			}
 		}
 		// Cut off the last newline and output

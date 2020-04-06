@@ -589,8 +589,8 @@ func (co *CreateOptions) Validate() (err error) {
 			spinner := log.Spinner("Validating component")
 			defer spinner.End(false)
 
-			if util.CheckPathExists(DevfilePath) || util.CheckPathExists(EnvFilePath) {
-				return errors.New("Devfile.yaml or env.yaml already exists")
+			if util.CheckPathExists(EnvFilePath) {
+				return errors.New("env.yaml already exists")
 			}
 
 			err = util.ValidateK8sResourceName("component name", co.devfileMetadata.componentName)
@@ -632,10 +632,11 @@ func (co *CreateOptions) Run() (err error) {
 			if err != nil {
 				return errors.Wrap(err, "Failed to create env.yaml for devfile component")
 			}
-
-			err = util.DownloadFile(co.devfileMetadata.devfileRegistry+co.devfileMetadata.devfileLink, DevfilePath)
-			if err != nil {
-				return errors.Wrap(err, "Failed to download devfile.yaml for devfile component")
+			if !util.CheckPathExists(DevfilePath) {
+				err = util.DownloadFile(co.devfileMetadata.devfileRegistry+co.devfileMetadata.devfileLink, DevfilePath)
+				if err != nil {
+					return errors.Wrap(err, "Failed to download devfile.yaml for devfile component")
+				}
 			}
 
 			log.Italic("\nPlease use `odo push` command to create the component with source deployed")

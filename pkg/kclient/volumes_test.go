@@ -448,8 +448,8 @@ func TestAddPVCAndVolumeMount(t *testing.T) {
 				return
 			}
 
-			// The total number of expected volumes is equal to the number of volumes defined in the defile plus one (emptyDir source volume)
-			expectedNumVolumes := len(tt.volumeNameToPVCName) + 1
+			// The total number of expected volumes is equal to the number of volumes defined in the devfile plus two (emptyDir source and supervisord volumes)
+			expectedNumVolumes := len(tt.volumeNameToPVCName) + 2
 
 			// check the number of containers and volumes in the pod template spec
 			if len(podTemplateSpec.Spec.Containers) != len(tt.containers) {

@@ -10,12 +10,16 @@ import (
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/util"
 
+	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 const (
-	volumeSize = "5Gi"
+	volumeSize                 = "5Gi"
+	envCheProjectsRoot         = "CHE_PROJECTS_ROOT"
+	envOdoCommandRunWorkingDir = "ODO_COMMAND_RUN_WORKING_DIR"
+	envOdoCommandRun           = "ODO_COMMAND_RUN"
 )
 
 // ComponentExists checks whether a deployment by the given name exists
@@ -82,10 +86,90 @@ func GetContainers(devfileObj devfile.DevfileObj) ([]corev1.Container, error) {
 				Name:      kclient.OdoSourceVolume,
 				MountPath: kclient.OdoSourceVolumeMount,
 			})
+
+			// only add the env if it is not set by the devfile
+			if !isEnvPresent(container.Env, envCheProjectsRoot) {
+				container.Env = append(container.Env,
+					corev1.EnvVar{
+						Name:  envCheProjectsRoot,
+						Value: kclient.OdoSourceVolumeMount,
+					})
+			}
 		}
 		containers = append(containers, *container)
 	}
 	return containers, nil
+}
+
+// isEnvPresent checks if the env variable is present in an array of env variables
+func isEnvPresent(EnvVars []corev1.EnvVar, envVarName string) bool {
+	isPresent := false
+
+	for _, envVar := range EnvVars {
+		if envVar.Name == envVarName {
+			isPresent = true
+		}
+	}
+
+	return isPresent
+}
+
+// UpdateContainersWithSupervisord updates the run components entrypoint and volume mount
+// with supervisord if no entrypoint has been specified for the component in the devfile
+func UpdateContainersWithSupervisord(devfileObj devfile.DevfileObj, containers []corev1.Container, devfileRunCmd string) ([]corev1.Container, error) {
+
+	runCommand, err := adaptersCommon.GetRunCommand(devfileObj.Data, devfileRunCmd)
+	if err != nil {
+		return nil, err
+	}
+
+	for i, container := range containers {
+		for _, action := range runCommand.Actions {
+			// Check if the container belongs to a run command component
+			if container.Name == *action.Component {
+				// If the run component container has no entrypoint and arguments, override the entrypoint with supervisord
+				if len(container.Command) == 0 && len(container.Args) == 0 {
+					glog.V(3).Infof("Updating container %v entrypoint with supervisord", container.Name)
+					container.Command = append(container.Command, adaptersCommon.SupervisordBinaryPath)
+					container.Args = append(container.Args, "-c", adaptersCommon.SupervisordConfFile)
+				}
+
+				// Always mount the supervisord volume in the run component container
+				glog.V(3).Infof("Updating container %v with supervisord volume mounts", container.Name)
+				container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
+					Name:      adaptersCommon.SupervisordVolumeName,
+					MountPath: adaptersCommon.SupervisordMountPath,
+				})
+
+				// Update the run container's ENV for work dir and command
+				// only if the env var is not set in the devfile
+				// This is done, so supervisord can use it in it's program
+				if !isEnvPresent(container.Env, envOdoCommandRun) {
+					glog.V(3).Infof("Updating container %v env with run command", container.Name)
+					container.Env = append(container.Env,
+						corev1.EnvVar{
+							Name:  envOdoCommandRun,
+							Value: *action.Command,
+						})
+				}
+
+				if !isEnvPresent(container.Env, envOdoCommandRunWorkingDir) && action.Workdir != nil {
+					glog.V(3).Infof("Updating container %v env with run command's workdir", container.Name)
+					container.Env = append(container.Env,
+						corev1.EnvVar{
+							Name:  envOdoCommandRunWorkingDir,
+							Value: *action.Workdir,
+						})
+				}
+
+				// Update the containers array since the array is not a pointer to the container
+				containers[i] = container
+			}
+		}
+	}
+
+	return containers, nil
+
 }
 
 // GetVolumes iterates through the components in the devfile and returns a map of component alias to the devfile volumes

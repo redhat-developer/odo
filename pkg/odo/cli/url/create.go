@@ -2,8 +2,11 @@ package url
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/devfile"
+	adapterutils "github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/log"
 	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
@@ -44,7 +47,7 @@ type URLCreateOptions struct {
 	secureURL     bool
 	componentPort int
 	now           bool
-	clusterHost   string
+	host          string
 	tlsSecret     string
 }
 
@@ -60,15 +63,49 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 	} else {
 		o.Context = genericclioptions.NewContext(cmd)
 	}
-	if experimental.IsExperimentalModeEnabled() {
-		if len(args) == 0 {
-			o.urlName = url.GetURLName(o.Component(), o.urlPort)
-		} else {
-			o.urlName = args[0]
-		}
+	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
 		err = o.InitEnvInfoFromContext()
 		if err != nil {
 			return err
+		}
+
+		devObj, err := devfile.Parse(o.DevfilePath)
+		if err != nil {
+			return fmt.Errorf("fail to parse the devfile %s, with error: %s", o.DevfilePath, err)
+		}
+		containers, err := adapterutils.GetContainers(devObj)
+		if err != nil {
+			return err
+		}
+		if len(containers) == 0 {
+			return fmt.Errorf("No valid components found in the devfile")
+		}
+		compWithEndpoint := 0
+		var postList []string
+		for _, c := range containers {
+			if len(c.Ports) != 0 {
+				compWithEndpoint++
+				for _, port := range c.Ports {
+					postList = append(postList, strconv.FormatInt(int64(port.ContainerPort), 10))
+				}
+			}
+			if compWithEndpoint > 1 {
+				return fmt.Errorf("Devfile should only have one component containing endpoint")
+			}
+		}
+		if compWithEndpoint == 0 {
+			return fmt.Errorf("No valid component with an endpoint found in the devfile")
+		}
+		componentName := o.EnvSpecificInfo.GetName()
+		o.componentPort, err = url.GetValidPortNumber(componentName, o.urlPort, postList)
+		if err != nil {
+			return err
+		}
+
+		if len(args) == 0 {
+			o.urlName = url.GetURLName(componentName, o.componentPort)
+		} else {
+			o.urlName = args[0]
 		}
 
 	} else {
@@ -101,15 +138,15 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 // Validate validates the URLCreateOptions based on completed values
 func (o *URLCreateOptions) Validate() (err error) {
 	// Check if exist
-	if experimental.IsExperimentalModeEnabled() {
-		// if experimental mode is enabled
-		// check if valid clusterHost is provided
-		if len(o.clusterHost) <= 0 {
-			return fmt.Errorf("cluster host must be provided in order to create ingress")
+	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
+		// if experimental mode is enabled, and devfile is provided.
+		// check if valid host is provided
+		if len(o.host) <= 0 {
+			return fmt.Errorf("host must be provided in order to create ingress")
 		}
 		for _, localURL := range o.EnvSpecificInfo.GetURL() {
-			curIngressDomain := fmt.Sprintf("%v.%v", o.urlName, o.clusterHost)
-			ingressDomainEnv := fmt.Sprintf("%v.%v", localURL.Name, localURL.ClusterHost)
+			curIngressDomain := fmt.Sprintf("%v.%v", o.urlName, o.host)
+			ingressDomainEnv := fmt.Sprintf("%v.%v", localURL.Name, localURL.Host)
 			if curIngressDomain == ingressDomainEnv {
 				return fmt.Errorf("the url %s already exists in the application: %s", curIngressDomain, o.Application)
 			}
@@ -130,11 +167,12 @@ func (o *URLCreateOptions) Validate() (err error) {
 	if !util.CheckOutputFlag(o.OutputFlag) {
 		return fmt.Errorf("given output format %s is not supported", o.OutputFlag)
 	}
-
-	if o.now {
-		err = o.ValidateComponentCreate()
-		if err != nil {
-			return err
+	if !experimental.IsExperimentalModeEnabled() {
+		if o.now {
+			err = o.ValidateComponentCreate()
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return
@@ -142,21 +180,26 @@ func (o *URLCreateOptions) Validate() (err error) {
 
 // Run contains the logic for the odo url create command
 func (o *URLCreateOptions) Run() (err error) {
-	if experimental.IsExperimentalModeEnabled() {
-		err = o.EnvSpecificInfo.SetConfiguration("url", envinfo.EnvInfoURL{Name: o.urlName, Port: o.urlPort, ClusterHost: o.clusterHost, Secure: o.secureURL, TLSSecret: o.tlsSecret})
+	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
+		err = o.EnvSpecificInfo.SetConfiguration("url", envinfo.EnvInfoURL{Name: o.urlName, Port: o.componentPort, Host: o.host, Secure: o.secureURL, TLSSecret: o.tlsSecret})
 	} else {
 		err = o.LocalConfigInfo.SetConfiguration("url", config.ConfigURL{Name: o.urlName, Port: o.componentPort, Secure: o.secureURL})
 	}
 	if err != nil {
 		return errors.Wrapf(err, "failed to persist the component settings to config file")
 	}
-	if experimental.IsExperimentalModeEnabled() {
-		log.Successf("URL created for component: %v, cluster host: %v", o.Component(), o.clusterHost)
+	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
+		componentName := o.EnvSpecificInfo.GetName()
+		log.Successf("URL created for component: %v, cluster host: %v", componentName, o.host)
 	} else {
 		log.Successf("URL %s created for component: %v", o.urlName, o.Component())
 	}
 	if o.now {
-		err = o.Push()
+		if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
+			err = o.DevfilePush()
+		} else {
+			err = o.Push()
+		}
 		if err != nil {
 			return errors.Wrap(err, "failed to push changes")
 		}
@@ -182,10 +225,11 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 	}
 	urlCreateCmd.Flags().IntVarP(&o.urlPort, "port", "", -1, "port number for the url of the component, required in case of components which expose more than one service port")
 	urlCreateCmd.Flags().BoolVarP(&o.secureURL, "secure", "", false, "creates a secure https url")
-	// if experimental mode is enabled, add more flags to support ingress creation
+	// if experimental mode is enabled, add more flags to support ingress creation based on devfile
 	if experimental.IsExperimentalModeEnabled() {
-		urlCreateCmd.Flags().StringVar(&o.tlsSecret, "tlsSecret", "", "tls secret name for the url of the component if the user bring his own tls secret")
-		urlCreateCmd.Flags().StringVar(&o.clusterHost, "clusterHost", "", "Cluster host for this URL")
+		urlCreateCmd.Flags().StringVar(&o.tlsSecret, "tls-secret", "", "tls secret name for the url of the component if the user bring his own tls secret")
+		urlCreateCmd.Flags().StringVarP(&o.host, "host", "", "", "Cluster ip for this URL")
+		urlCreateCmd.Flags().StringVar(&o.DevfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
 	}
 	genericclioptions.AddNowFlag(urlCreateCmd, &o.now)
 	o.AddContextFlag(urlCreateCmd)

@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 
 	appsv1 "github.com/openshift/api/apps/v1"
 	buildv1 "github.com/openshift/api/build/v1"
@@ -95,7 +96,7 @@ func generateSupervisordDeploymentConfig(commonObjectMeta metav1.ObjectMeta, com
 							},
 							VolumeMounts: []corev1.VolumeMount{
 								{
-									Name:      supervisordVolumeName,
+									Name:      common.SupervisordVolumeName,
 									MountPath: "/opt/odo/",
 								},
 							},
@@ -108,7 +109,7 @@ func generateSupervisordDeploymentConfig(commonObjectMeta metav1.ObjectMeta, com
 					// in order to pass over the SupervisorD binary
 					Volumes: []corev1.Volume{
 						{
-							Name: supervisordVolumeName,
+							Name: common.SupervisordVolumeName,
 							VolumeSource: corev1.VolumeSource{
 								EmptyDir: &corev1.EmptyDirVolumeSource{},
 							},
@@ -409,12 +410,12 @@ func addBootstrapSupervisordInitContainer(dc *appsv1.DeploymentConfig, dcName st
 
 	dc.Spec.Template.Spec.InitContainers = append(dc.Spec.Template.Spec.InitContainers,
 		corev1.Container{
-			Name:  "copy-supervisord",
-			Image: getBootstrapperImage(),
+			Name:  common.SupervisordInitContainerName,
+			Image: common.GetBootstrapperImage(),
 			VolumeMounts: []corev1.VolumeMount{
 				{
-					Name:      supervisordVolumeName,
-					MountPath: "/opt/odo/",
+					Name:      common.SupervisordVolumeName,
+					MountPath: common.SupervisordMountPath,
 				},
 			},
 			Command: []string{
@@ -422,8 +423,8 @@ func addBootstrapSupervisordInitContainer(dc *appsv1.DeploymentConfig, dcName st
 			},
 			Args: []string{
 				"-r",
-				"/opt/odo-init/.",
-				"/opt/odo/",
+				common.OdoInitImageContents,
+				common.SupervisordMountPath,
 			},
 		})
 }

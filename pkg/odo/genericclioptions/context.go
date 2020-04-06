@@ -9,12 +9,15 @@ import (
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util"
+	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/project"
 	pkgUtil "github.com/openshift/odo/pkg/util"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // DefaultAppName is the default name of the application when an application name is not provided
@@ -80,6 +83,14 @@ func client(command *cobra.Command) *occlient.Client {
 	return client
 }
 
+// kClient creates an kclient based on the command flags
+func kClient(command *cobra.Command) *kclient.Client {
+	kClient, err := kclient.New()
+	util.LogErrorAndExit(err, "")
+
+	return kClient
+}
+
 // checkProjectCreateOrDeleteOnlyOnInvalidNamespace errors out if user is trying to create or delete something other than project
 // errFormatforCommand must contain one %s
 func checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command *cobra.Command, errFormatForCommand string) {
@@ -110,6 +121,92 @@ func getFirstChildOfCommand(command *cobra.Command) *cobra.Command {
 	return nil
 }
 
+func getValidEnvinfo(command *cobra.Command) (*envinfo.EnvSpecificInfo, error) {
+	// Get details from the env file
+	componentContext := FlagValueIfSet(command, ContextFlagName)
+
+	// Grab the absolute path of the eenv file
+	if componentContext != "" {
+		fAbs, err := pkgUtil.GetAbsPath(componentContext)
+		util.LogErrorAndExit(err, "")
+		componentContext = fAbs
+	}
+
+	// Access the env file
+	envInfo, err := envinfo.NewEnvSpecificInfo(componentContext)
+	if err != nil {
+		return nil, err
+	}
+
+	// Here we will check for parent commands, if the match a certain criteria, we will skip
+	// using the configuration.
+	//
+	// For example, `odo create` should NOT check to see if there is actually a configuration yet.
+	if command.HasParent() {
+
+		// Gather necessary preliminary information
+		parentCommand := command.Parent()
+		rootCommand := command.Root()
+		flagValue := FlagValueIfSet(command, ApplicationFlagName)
+
+		// Find the first child of the command, as some groups are allowed even with non existent configuration
+		firstChildCommand := getFirstChildOfCommand(command)
+
+		// This should not happen but just to be safe
+		if firstChildCommand == nil {
+			return nil, fmt.Errorf("Unable to get first child of command")
+		}
+		// Case 1 : if command is create operation just allow it
+		if command.Name() == "create" && (parentCommand.Name() == "component" || parentCommand.Name() == rootCommand.Name()) {
+			return envInfo, nil
+		}
+		// Case 2 : if command is describe or delete and app flag is used just allow it
+		if (firstChildCommand.Name() == "describe" || firstChildCommand.Name() == "delete") && len(flagValue) > 0 {
+			return envInfo, nil
+		}
+		// Case 2 : if command is list, just allow it
+		if firstChildCommand.Name() == "list" {
+			return envInfo, nil
+		}
+		// Case 3 : Check if firstChildCommand is project. If so, skip validation of context
+		if firstChildCommand.Name() == "project" {
+			return envInfo, nil
+		}
+		// Case 4 : Check if specific flags are set for specific first child commands
+		if firstChildCommand.Name() == "app" {
+			return envInfo, nil
+		}
+		// Case 5 : Check if firstChildCommand is catalog and request is to list or search
+		if firstChildCommand.Name() == "catalog" && (parentCommand.Name() == "list" || parentCommand.Name() == "search") {
+			return envInfo, nil
+		}
+		// Check if firstChildCommand is component and  request is list
+		if (firstChildCommand.Name() == "component" || firstChildCommand.Name() == "service") && command.Name() == "list" {
+			return envInfo, nil
+		}
+		// Case 6 : Check if firstChildCommand is component and app flag is used
+		if firstChildCommand.Name() == "component" && len(flagValue) > 0 {
+			return envInfo, nil
+		}
+		// Case 7 : Check if firstChildCommand is logout and app flag is used
+		if firstChildCommand.Name() == "logout" {
+			return envInfo, nil
+		}
+		// Case 8: Check if firstChildCommand is service and command is create or delete. Allow it if that's the case
+		if firstChildCommand.Name() == "service" && (command.Name() == "create" || command.Name() == "delete") {
+			return envInfo, nil
+		}
+
+	} else {
+		return envInfo, nil
+	}
+
+	if !envInfo.EnvInfoFileExists() {
+		return nil, fmt.Errorf("The current directory does not represent an odo component. Use 'odo create' to create component here or switch to directory with a component")
+	}
+	return envInfo, nil
+}
+
 func getValidConfig(command *cobra.Command, ignoreMissingConfiguration bool) (*config.LocalConfigInfo, error) {
 
 	// Get details from the local config file
@@ -121,7 +218,6 @@ func getValidConfig(command *cobra.Command, ignoreMissingConfiguration bool) (*c
 		util.LogErrorAndExit(err, "")
 		configFileName = fAbs
 	}
-
 	// Access the local configuration
 	localConfiguration, err := config.NewLocalConfigInfo(configFileName)
 	if err != nil {
@@ -229,8 +325,38 @@ func resolveProject(command *cobra.Command, client *occlient.Client, localConfig
 		// check that the specified project exists
 		_, err = project.Exists(client, namespace)
 		if err != nil {
-			e1 := fmt.Sprintf("You don't have permission to create or set project '%s' or the project doesn't exist. Please create or set a different project\n\t", namespace)
-			errFormat := fmt.Sprint(e1, "%s project create|set <project_name>")
+			errFormat := fmt.Sprintf("You don't have permission to create or set project '%s' or the project doesn't exist. Please create or set a different project\n\t", namespace)
+			checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
+		}
+	}
+	client.Namespace = namespace
+	return namespace
+}
+
+// resolveNamespace resolves namespace for devfile component
+func resolveNamespace(command *cobra.Command, client *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo) string {
+	var namespace string
+	namespaceFlag := FlagValueIfSet(command, "namespace")
+	if len(namespaceFlag) > 0 {
+		// if namespace flag was set, check that the specified namespace exists and use it
+		_, err := client.KubeClient.CoreV1().Namespaces().Get(namespaceFlag, metav1.GetOptions{})
+		util.LogErrorAndExit(err, "")
+		namespace = namespaceFlag
+	} else {
+		namespace = envSpecificInfo.GetNamespace()
+		if namespace == "" {
+			namespace = client.Namespace
+			if len(namespace) <= 0 {
+				errFormat := "Could not get current namespace. Please create or set a namespace\n"
+				checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
+			}
+		}
+
+		// check that the specified namespace exists
+		_, err := client.KubeClient.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
+		if err != nil {
+			errFormat := fmt.Sprintf("You don't have permission to create or set namespace '%s' or the namespace doesn't exist. Please create or set a different namespace\n\t", namespace)
+			// errFormat := fmt.Sprint(e1, "%s project create|set <project_name>")
 			checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command, errFormat)
 		}
 	}
@@ -280,13 +406,31 @@ func UpdatedContext(context *Context) (*Context, *config.LocalConfigInfo, error)
 func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingConfiguration bool) *Context {
 	// create a new occlient
 	client := client(command)
+	// resolve output flag
+	outputFlag := FlagValueIfSet(command, OutputFlagName)
 
-	// create a new kclient
-	KClient, err := kclient.New()
-	if err != nil {
-		util.LogErrorAndExit(err, "")
+	// create the internal context representation based on calculated values
+	internalCxt := internalCxt{
+		Client:     client,
+		OutputFlag: outputFlag,
+		command:    command,
 	}
-
+	if experimental.IsExperimentalModeEnabled() {
+		// create a new kclient
+		kClient := kClient(command)
+		internalCxt.KClient = kClient
+		envInfo, err := getValidEnvinfo(command)
+		if err != nil {
+			util.LogErrorAndExit(err, "")
+		}
+		internalCxt.EnvSpecificInfo = envInfo
+		resolveNamespace(command, kClient, envInfo)
+		// create a context from the internal representation
+		context := &Context{
+			internalCxt: internalCxt,
+		}
+		return context
+	}
 	// Check for valid config
 	localConfiguration, err := getValidConfig(command, ignoreMissingConfiguration)
 	if err != nil {
@@ -298,20 +442,9 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 
 	// resolve application
 	app := resolveApp(command, createAppIfNeeded, localConfiguration)
-
-	// resolve output flag
-	outputFlag := FlagValueIfSet(command, OutputFlagName)
-
-	// create the internal context representation based on calculated values
-	internalCxt := internalCxt{
-		Client:          client,
-		Project:         namespace,
-		Application:     app,
-		OutputFlag:      outputFlag,
-		command:         command,
-		LocalConfigInfo: localConfiguration,
-		KClient:         KClient,
-	}
+	internalCxt.LocalConfigInfo = localConfiguration
+	internalCxt.Application = app
+	internalCxt.Project = namespace
 
 	// create a context from the internal representation
 	context := &Context{
@@ -321,6 +454,7 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 	context.cmp = resolveComponent(command, localConfiguration, context)
 
 	return context
+
 }
 
 // FlagValueIfSet retrieves the value of the specified flag if it is set for the given command
@@ -345,7 +479,8 @@ type internalCxt struct {
 	cmp             string
 	OutputFlag      string
 	LocalConfigInfo *config.LocalConfigInfo
-	KClient         *kclient.Client // to work with Kubernetes clusters, we need kclient
+	KClient         *kclient.Client
+	EnvSpecificInfo *envinfo.EnvSpecificInfo
 }
 
 // Component retrieves the optionally specified component or the current one if it is set. If no component is set, exit with
