@@ -3,6 +3,8 @@ package component
 import (
 	"fmt"
 
+	"github.com/openshift/odo/pkg/envinfo"
+
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -35,7 +37,11 @@ type PushOptions struct {
 	*CommonPushOptions
 
 	// devfile path
-	devfilePath string
+	DevfilePath string
+
+	// devfile commands
+	devfileBuildCommand string
+	devfileRunCommand   string
 
 	namespace string
 }
@@ -52,7 +58,13 @@ func NewPushOptions() *PushOptions {
 func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 
 	// if experimental mode is enabled and devfile is present
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.devfilePath) {
+	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.DevfilePath) {
+		envinfo, err := envinfo.NewEnvSpecificInfo(po.componentContext)
+		if err != nil {
+			return errors.Wrap(err, "unable to retrieve configuration information")
+		}
+		po.EnvSpecificInfo = envinfo
+		po.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 		return nil
 	}
 
@@ -82,7 +94,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 func (po *PushOptions) Validate() (err error) {
 
 	// if experimental flag is set and devfile is present
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.devfilePath) {
+	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.DevfilePath) {
 		return nil
 	}
 
@@ -114,7 +126,7 @@ func (po *PushOptions) Validate() (err error) {
 // Run has the logic to perform the required actions as part of command
 func (po *PushOptions) Run() (err error) {
 	// if experimental mode is enabled, use devfile push
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.devfilePath) {
+	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.DevfilePath) {
 		// devfile push
 		return po.DevfilePush()
 	} else {
@@ -147,8 +159,10 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 
 	// enable devfile flag if experimental mode is enabled
 	if experimental.IsExperimentalModeEnabled() {
-		pushCmd.Flags().StringVar(&po.devfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
+		pushCmd.Flags().StringVar(&po.DevfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
 		pushCmd.Flags().StringVar(&po.namespace, "namespace", "", "Namespace to push the component to")
+		pushCmd.Flags().StringVar(&po.devfileBuildCommand, "build-command", "", "Devfile Build Command to execute")
+		pushCmd.Flags().StringVar(&po.devfileRunCommand, "run-command", "", "Devfile Run Command to execute")
 	}
 
 	pushCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)

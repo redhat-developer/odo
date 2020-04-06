@@ -12,11 +12,12 @@ import (
 // CreateTLSSecret creates a TLS Secret with the given certificate and private key
 // serviceName is the name of the service for the target reference
 // ingressDomain is the ingress domain to use for the ingress
-// portNumber is the target port of the ingress
-func (c *Client) CreateTLSSecret(tlsCertificate []byte, tlsPrivKey []byte, componentName string, applicationName string, portNumber int) (*corev1.Secret, error) {
+func (c *Client) CreateTLSSecret(tlsCertificate []byte, tlsPrivKey []byte, componentName string, applicationName string) (*corev1.Secret, error) {
+	if componentName == "" {
+		return nil, fmt.Errorf("componentName name is empty")
+	}
 	labels := componentlabels.GetLabels(componentName, applicationName, true)
-	portAsString := fmt.Sprintf("%v", portNumber)
-	tlsSecretName := componentName + "-" + portAsString + "-tlssecret"
+	tlsSecretName := componentName + "-tlssecret"
 	data := make(map[string][]byte)
 	data["tls.crt"] = tlsCertificate
 	data["tls.key"] = tlsPrivKey
@@ -34,21 +35,4 @@ func (c *Client) CreateTLSSecret(tlsCertificate []byte, tlsPrivKey []byte, compo
 		return nil, errors.Wrapf(err, "unable to create secret %s", tlsSecretName)
 	}
 	return secret, nil
-}
-
-// ListSecrets lists all the secrets based on the given label selector
-func (c *Client) ListSecrets(labelSelector string) ([]corev1.Secret, error) {
-	listOptions := metav1.ListOptions{}
-	if len(labelSelector) > 0 {
-		listOptions = metav1.ListOptions{
-			LabelSelector: labelSelector,
-		}
-	}
-
-	secretList, err := c.KubeClient.CoreV1().Secrets(c.Namespace).List(listOptions)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get secret list")
-	}
-
-	return secretList.Items, nil
 }

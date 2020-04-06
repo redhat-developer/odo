@@ -85,7 +85,6 @@ func (cpo *CommonPushOptions) ValidateComponentCreate() error {
 	var err error
 	s := log.Spinner("Checking component")
 	defer s.End(false)
-
 	cpo.doesComponentExist, err = component.Exists(cpo.Context.Client, cpo.LocalConfigInfo.GetName(), cpo.LocalConfigInfo.GetApplication())
 	if err != nil {
 		return errors.Wrapf(err, "failed to check if component of name %s exists in application %s", cpo.LocalConfigInfo.GetName(), cpo.LocalConfigInfo.GetApplication())
@@ -125,9 +124,8 @@ func (cpo *CommonPushOptions) createCmpIfNotExistsAndApplyCmpConfig(stdout io.Wr
 			os.Exit(1)
 		}
 	}
-
 	// Apply config
-	err := component.ApplyConfig(cpo.Context.Client, *cpo.LocalConfigInfo, stdout, cpo.doesComponentExist)
+	err := component.ApplyConfig(cpo.Context.Client, nil, *cpo.LocalConfigInfo, envinfo.EnvSpecificInfo{}, stdout, cpo.doesComponentExist)
 	if err != nil {
 		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed.")
 	}

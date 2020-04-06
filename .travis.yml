@@ -86,6 +86,7 @@ jobs:
         - odo login -u developer
         - travis_wait make test-cmd-pref-config
         - travis_wait make test-cmd-url
+        - travis_wait make test-cmd-devfile-url
         - travis_wait make test-cmd-debug
         - odo logout
 

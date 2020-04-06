@@ -21,14 +21,6 @@ func CreateNewContext() string {
 	return directory
 }
 
-// CreateNewDevfileContext create new empty temporary directory
-func CreateNewDevfileContext() string {
-	directory, err := ioutil.TempDir("", "prefix")
-	Expect(err).NotTo(HaveOccurred())
-	fmt.Fprintf(GinkgoWriter, "Created dir: %s\n", directory)
-	return directory
-}
-
 // DeleteDir delete directory
 func DeleteDir(dir string) {
 	fmt.Fprintf(GinkgoWriter, "Deleting dir: %s\n", dir)

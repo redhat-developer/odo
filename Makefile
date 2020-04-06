@@ -196,12 +196,12 @@ test-cmd-push:
 # Run odo catalog devfile command tests
 .PHONY: test-cmd-devfile-catalog
 test-cmd-devfile-catalog:
-	ginkgo $(GINKGO_FLAGS) -focus="odo devfile catalog command tests" tests/integration/
+	ginkgo $(GINKGO_FLAGS) -focus="odo devfile catalog command tests" tests/integration/devfile/
 
 # Run odo create devfile command tests
 .PHONY: test-cmd-devfile-create
 test-cmd-devfile-create:
-	ginkgo $(GINKGO_FLAGS) -focus="odo devfile create command tests" tests/integration/
+	ginkgo $(GINKGO_FLAGS) -focus="odo devfile create command tests" tests/integration/devfile/
 
 # Run odo push devfile command tests
 .PHONY: test-cmd-devfile-push
@@ -222,6 +222,11 @@ test-cmd-storage:
 .PHONY: test-cmd-url
 test-cmd-url:
 	ginkgo $(GINKGO_FLAGS) -focus="odo url command tests" tests/integration/
+
+# Run odo url devfile command tests
+.PHONY: test-cmd-devfile-url
+test-cmd-devfile-url:
+	ginkgo $(GINKGO_FLAGS) -focus="odo devfile url command tests" tests/integration/devfile/
 
 # Run odo watch command tests
 .PHONY: test-cmd-watch

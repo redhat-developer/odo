@@ -35,7 +35,7 @@ type EnvInfoURL struct {
 	// Indicates if the URL should be a secure https one
 	Secure bool `yaml:"Secure,omitempty"`
 	// Clutser host
-	ClusterHost string `yaml:"ClusterHost,omitempty"`
+	Host string `yaml:"host,omitempty"`
 	// TLS secret name to create ingress to provide a secure URL
 	TLSSecret string `yaml:"TLSSecret,omitempty"`
 }
