@@ -31,26 +31,26 @@ jobs:
         # submit coverage.txt to codecov.io
         - bash <(curl -s https://codecov.io/bash)
       
-    # YAML alias, for settings shared across the tests on windows
-    - &windows-test
-      stage: Test
-      name: "Unit test on windows"
-      os: 
-        - windows
-      init:
-      - git config --system core.longpaths true
-      go_import_path: github.com/openshift/odo
-      go: "1.13.1"
-      install:
-        - systeminfo.exe | grep '^OS'
-        - choco install make
-        - make goget-tools
-      script:
-        - export PATH="$PATH:$GOPATH/bin"
-        - make bin
-        - rm -r /tmp/*
-        - make test
-      after_success: skip
+    # # YAML alias, for settings shared across the tests on windows
+    # - &windows-test
+    #   stage: Test
+    #   name: "Unit test on windows"
+    #   os: 
+    #     - windows
+    #   init:
+    #   - git config --system core.longpaths true
+    #   go_import_path: github.com/openshift/odo
+    #   go: "1.13.1"
+    #   install:
+    #     - systeminfo.exe | grep '^OS'
+    #     - choco install make
+    #     - make goget-tools
+    #   script:
+    #     - export PATH="$PATH:$GOPATH/bin"
+    #     - make bin
+    #     - rm -r /tmp/*
+    #     - make test
+    #   after_success: skip
 
     # YAML alias, for settings shared across the tests on macOS
     - &osx-test
@@ -70,18 +70,18 @@ jobs:
         - make test
       after_success: skip
 
-    - <<: *base-test
-      stage: test
-      name: "generic, login, component command integration tests"
-      script:
-        - ./scripts/oc-cluster.sh
-        - make bin
-        - sudo cp odo /usr/bin
-        - odo login -u developer
-        - travis_wait make test-generic
-        - travis_wait make test-cmd-login-logout
-        - travis_wait make test-cmd-cmp
-        - odo logout
+    # - <<: *base-test
+    #   stage: test
+    #   name: "generic, login, component command integration tests"
+    #   script:
+    #     - ./scripts/oc-cluster.sh
+    #     - make bin
+    #     - sudo cp odo /usr/bin
+    #     - odo login -u developer
+    #     - travis_wait make test-generic
+    #     - travis_wait make test-cmd-login-logout
+    #     - travis_wait make test-cmd-cmp
+    #     - odo logout
 
     - <<: *base-test
       stage: test
