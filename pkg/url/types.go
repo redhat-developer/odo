@@ -17,6 +17,7 @@ type URLSpec struct {
 	Host     string `json:"host,omitempty"`
 	Protocol string `json:"protocol,omitempty"`
 	Port     int    `json:"port,omitempty"`
+	Secure   bool   `json:"secure,omitempty"`
 }
 
 // AppList is a list of applications

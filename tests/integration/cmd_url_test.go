@@ -84,6 +84,9 @@ var _ = Describe("odo url command tests", func() {
 			Expect(secureURL).To(ContainSubstring("https:"))
 			helper.HttpWaitFor(secureURL, "Hello world from node.js!", 20, 1)
 
+			stdout := helper.CmdShouldPass("odo", "url", "list", "--context", context)
+			helper.MatchAllInOutput(stdout, []string{secureURL, "Pushed", "true"})
+
 			helper.CmdShouldPass("odo", "delete", "-f", "--context", context)
 		})
 	})
@@ -129,6 +132,19 @@ var _ = Describe("odo url command tests", func() {
 			fullURLPath := helper.DetermineRouteURL("")
 			pathNoHTTP := strings.Split(fullURLPath, "//")[1]
 			desiredURLListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"url","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"host":"%s","protocol":"http","port":8080},"status":{"state": "Pushed"}}]}`, pathNoHTTP)
+			Expect(desiredURLListJSON).Should(MatchJSON(actualURLListJSON))
+		})
+
+		It("should be able to list url in machine readable json format for a secure url", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--app", "myapp", "--project", project, "--git", "https://github.com/openshift/nodejs-ex")
+			helper.CmdShouldPass("odo", "url", "create", "myurl", "--secure")
+			helper.CmdShouldPass("odo", "push")
+
+			// odo url list -o json
+			actualURLListJSON := helper.CmdShouldPass("odo", "url", "list", "-o", "json")
+			fullURLPath := helper.DetermineRouteURL("")
+			pathNoHTTP := strings.Split(fullURLPath, "//")[1]
+			desiredURLListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"url","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"host":"%s","protocol":"https","port":8080,"secure":true},"status":{"state": "Pushed"}}]}`, pathNoHTTP)
 			Expect(desiredURLListJSON).Should(MatchJSON(actualURLListJSON))
 		})
 	})
