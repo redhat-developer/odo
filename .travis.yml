@@ -136,5 +136,13 @@ jobs:
         - travis_wait make test-e2e-source
         - travis_wait make test-e2e-images
         - odo logout
-
+    
+    - <<: *base-test
+      stage: test
+      name: "docker devfile push command integration tests"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make bin
+        - sudo cp odo /usr/bin
+        - travis_wait make test-cmd-docker-devfile-push
 

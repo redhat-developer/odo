@@ -28,19 +28,22 @@ func (d *DockerRunner) Run(cmd string) *gexec.Session {
 	return session
 }
 
-// ListRunningImages runs 'docker ps' to list all running images
-func (d *DockerRunner) ListRunningImages() string {
+// ListRunningContainers runs 'docker ps' to list all running images
+func (d *DockerRunner) ListRunningContainers() string {
 	fmt.Fprintf(GinkgoWriter, "Listing locally running Docker images")
 	output := CmdShouldPass(d.path, "ps")
-
 	return output
 }
 
-// GetRunningImagesByLabel lists all running images with the label (of the form "key=value")
-func (d *DockerRunner) GetRunningImagesByLabel(label string) string {
+// GetRunningContainersByLabel lists all running images with the label (of the form "key=value")
+func (d *DockerRunner) GetRunningContainersByLabel(label string) []string {
 	fmt.Fprintf(GinkgoWriter, "Listing locally running Docker images with label %s", label)
-	output := CmdShouldPass(d.path, "ps", "-f", "label=\"", label, "\"")
-	return output
+	filterLabel := "label=" + label
+	output := strings.TrimSpace(CmdShouldPass(d.path, "ps", "-q", "--filter", filterLabel))
+
+	// Split the strings and remove any whitespace
+	containers := strings.Fields(output)
+	return containers
 }
 
 // ListVolumes lists all volumes on the cluster
@@ -51,4 +54,19 @@ func (d *DockerRunner) ListVolumes() string {
 		return strings.TrimSpace(string(session.Out.Contents()))
 	}
 	return ""
+}
+
+// StopContainers kills and stops all running containers with the specified label (such as component=nodejs)
+func (d *DockerRunner) StopContainers(label string) {
+	fmt.Fprintf(GinkgoWriter, "Removing locally running Docker images with label %s", label)
+
+	// Get the container IDs matching the specified label
+	containerIDs := d.GetRunningContainersByLabel(label)
+
+	// Loop over the containers to remove and run `docker stop` for each of them
+	// We have to loop because `docker stop` does not allow us to remove all of the containers at once (e.g. docker stop con1 con2 con3 ... is not allowed)
+	for _, container := range containerIDs {
+		CmdShouldPass(d.path, "stop", container)
+	}
+
 }
