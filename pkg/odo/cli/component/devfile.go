@@ -66,10 +66,18 @@ func (po *PushOptions) DevfilePush() (err error) {
 	defer spinner.End(false)
 
 	var platformContext interface{}
-
 	if pushtarget.IsPushTargetDocker() {
 		platformContext = nil
 	} else {
+		if len(po.namespace) <= 0 {
+			po.namespace, err = getNamespace()
+			if err != nil {
+				return err
+			}
+		}
+
+		po.Context.KClient.Namespace = po.namespace
+
 		kc := kubernetes.KubernetesContext{
 			Namespace: po.namespace,
 		}
@@ -82,7 +90,6 @@ func (po *PushOptions) DevfilePush() (err error) {
 		return err
 	}
 
-	po.Context.KClient.Namespace = po.namespace
 	err = component.ApplyConfig(nil, po.Context.KClient, config.LocalConfigInfo{}, *po.EnvSpecificInfo, color.Output, po.doesComponentExist)
 	if err != nil {
 		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed.")
