@@ -154,7 +154,7 @@ func TestSliceSupportedTags(t *testing.T) {
 		},
 		Spec: ComponentSpec{
 			NonHiddenTags: []string{
-				"10", "8", "6", "latest",
+				"12", "10", "8", "6", "latest",
 			},
 			ImageStreamRef: *imageStream,
 		},
@@ -162,7 +162,7 @@ func TestSliceSupportedTags(t *testing.T) {
 
 	supTags, unSupTags := SliceSupportedTags(img)
 
-	if !reflect.DeepEqual(supTags, []string{"10", "8", "latest"}) ||
+	if !reflect.DeepEqual(supTags, []string{"12", "10", "8", "latest"}) ||
 		!reflect.DeepEqual(unSupTags, []string{"6"}) {
 		t.Fatal("supported or unsupported tags are not as expected")
 	}
@@ -460,9 +460,11 @@ func TestIsDevfileComponentSupported(t *testing.T) {
 func MockImageStream() *imagev1.ImageStream {
 
 	tags := map[string]string{
-		"10": "docker.io/rhoar-nodejs/nodejs-10",
-		"8":  "docker.io/rhoar-nodejs/nodejs-8",
-		"6":  "docker.io/centos/nodejs-6-centos7:latest",
+		"12": "docker.io/rhscl/nodejs-12-rhel7:latest",
+		"10": "docker.io/rhscl/nodejs-10-rhel7:latest",
+		"8":  "docker.io/rhoar-nodejs/nodejs-8:latest",
+		// an unspported one
+		"6": "docker.io/rhoar-nodejs/nodejs-6:latest",
 	}
 
 	imageStream := &imagev1.ImageStream{
@@ -490,7 +492,7 @@ func MockImageStream() *imagev1.ImageStream {
 			Annotations: map[string]string{"tags": "builder"},
 			From: &corev1.ObjectReference{
 				Kind: "ImageStreamTag",
-				Name: "10",
+				Name: "12",
 			},
 		})
 

@@ -364,6 +364,7 @@ func SliceSupportedTags(component ComponentType) ([]string, []string) {
 	// this makes sure that json marshal shows these lists as [] instead of null
 	supTag, unSupTag := []string{}, []string{}
 	tagMap := createImageTagMap(component.Spec.ImageStreamRef.Spec.Tags)
+
 	for _, tag := range component.Spec.NonHiddenTags {
 		imageName := tagMap[tag]
 		if isSupportedImage(imageName) {
@@ -378,7 +379,6 @@ func SliceSupportedTags(component ComponentType) ([]string, []string) {
 // IsComponentTypeSupported takes the componentType e.g. java:8 and return true if
 // it is fully supported i.e. debug mode and more.
 func IsComponentTypeSupported(client *occlient.Client, componentType string) (bool, error) {
-
 	_, componentType, _, componentVersion := util.ParseComponentImageName(componentType)
 
 	imageStream, err := client.GetImageStream("", componentType, componentVersion)
@@ -386,6 +386,7 @@ func IsComponentTypeSupported(client *occlient.Client, componentType string) (bo
 		return false, err
 	}
 	tagMap := createImageTagMap(imageStream.Spec.Tags)
+
 	return isSupportedImage(tagMap[componentVersion]), nil
 }
 
@@ -429,13 +430,20 @@ func isSupportedImage(imgName string) bool {
 		"redhat-openjdk-18/openjdk18-openshift:latest",
 		"openjdk/openjdk-11-rhel8:latest",
 		"openjdk/openjdk-11-rhel7:latest",
-		"rhscl/nodejs-8-rhel7:latest",
+		"centos/nodejs-10-centos7:latest",
+		"centos/nodejs-12-centos7:latest",
 		"rhscl/nodejs-10-rhel7:latest",
+		"rhscl/nodejs-12-rhel7:latest",
+		"bucharestgold/centos7-s2i-nodejs:latest",
+		"nodeshift/centos7-s2i-nodejs:latest",
+
+		// older images which we should remove soon
 		"rhoar-nodejs/nodejs-8:latest",
 		"rhoar-nodejs/nodejs-10:latest",
 		"bucharestgold/centos7-s2i-nodejs:8.x",
 		"bucharestgold/centos7-s2i-nodejs:10.x",
 		"centos/nodejs-8-centos7:latest",
+		"rhscl/nodejs-8-rhel7:latest",
 	}
 	for _, supImage := range supportedImages {
 		if supImage == imgName {
