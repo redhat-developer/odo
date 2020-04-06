@@ -775,7 +775,8 @@ func CheckKubeConfigExist() bool {
 	if os.Getenv("KUBECONFIG") != "" {
 		kubeconfig = os.Getenv("KUBECONFIG")
 	} else {
-		kubeconfig = "~/.kube/config"
+		home, _ := os.UserHomeDir()
+		kubeconfig = fmt.Sprintf("%s/.kube/config", home)
 	}
 
 	if CheckPathExists(kubeconfig) {

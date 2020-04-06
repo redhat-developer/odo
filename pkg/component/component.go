@@ -992,8 +992,9 @@ func ListIfPathGiven(client *occlient.Client, paths []string) (ComponentList, er
 				a.Status.Context = con
 				if client != nil {
 					a.Status.State = GetComponentState(client, data.GetName(), data.GetApplication())
+				} else {
+					a.Status.State = StateTypeUnknown
 				}
-				a.Status.State = StateTypeUnknown
 				components = append(components, a)
 			}
 			return nil

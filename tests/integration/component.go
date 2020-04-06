@@ -217,12 +217,18 @@ func componentTests(args ...string) {
 		It("should list the state as unknown for disconnected cluster", func() {
 			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--min-memory", "100Mi", "--max-memory", "300Mi", "--min-cpu", "0.1", "--max-cpu", "2", "--context", context, "--app", "testing")...)
 			helper.ValidateLocalCmpExist(context, "Type,nodejs", "Name,cmp-git", "Application,testing", "MinCPU,100m")
-			kubeconfigOld := os.Getenv("KUBECONFIG")
+			kubeconfigOrig := os.Getenv("KUBECONFIG")
 			os.Setenv("KUBECONFIG", "/no/such/path")
 			cmpList := helper.CmdShouldPass("odo", append(args, "list", "--context", context, "--v", "9")...)
 			Expect(cmpList).To(ContainSubstring("cmp-git"))
 			Expect(cmpList).To(ContainSubstring("Unknown"))
-			os.Setenv("KUBECONFIG", kubeconfigOld)
+			// KUBECONFIG defaults to ~/.kube/config so it can be empty in some cases.
+			if kubeconfigOrig != "" {
+				os.Setenv("KUBECONFIG", kubeconfigOrig)
+			} else {
+				os.Unsetenv("KUBECONFIG")
+			}
+			fmt.Printf("kubeconfig before delete %v", os.Getenv("KUBECONFIG"))
 			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--all", "--context", context)...)
 		})
 

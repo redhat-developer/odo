@@ -61,10 +61,20 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 // Validate validates the list parameters
 func (lo *ListOptions) Validate() (err error) {
-	if util.CheckKubeConfigExist() {
-		if !lo.allAppsFlag && lo.pathFlag == "" && (lo.Context.Project == "" || lo.Application == "") {
-			return odoutil.ThrowContextError()
-		}
+
+	var project, app string
+
+	if !util.CheckKubeConfigExist() {
+		project = lo.LocalConfigInfo.GetProject()
+		app = lo.LocalConfigInfo.GetApplication()
+
+	} else {
+		project = lo.Context.Project
+		app = lo.Application
+	}
+
+	if !lo.allAppsFlag && lo.pathFlag == "" && (project == "" || app == "") {
+		return odoutil.ThrowContextError()
 	}
 	return nil
 }
