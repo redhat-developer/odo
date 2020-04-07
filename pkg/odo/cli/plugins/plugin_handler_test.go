@@ -15,6 +15,9 @@ echo 'hello'
 `)
 
 func TestDefaultHandlerLookup(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip()
+	}
 	tempDir, cleanup := makeTempDir(t)
 	defer cleanup()
 
@@ -24,9 +27,6 @@ func TestDefaultHandlerLookup(t *testing.T) {
 	}()
 	os.Setenv("PATH", fmt.Sprintf("%s:%s", origPath, tempDir))
 	var baseScriptName = "tst-script"
-	if runtime.GOOS == "windows" {
-		baseScriptName = baseScriptName + ".exe"
-	}
 	scriptName := path.Join(tempDir, baseScriptName)
 	err := ioutil.WriteFile(scriptName, sampleScript, 0755)
 	if err != nil {
