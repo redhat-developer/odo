@@ -1,6 +1,12 @@
 apiVersion: 1.0.0
 metadata:
   name: test-devfile
+projects:
+  -
+    name: nodejs-web-app
+    source:
+      type: git
+      location: "https://github.com/che-samples/web-nodejs-sample.git"
 components:
   - type: dockerimage
     image: quay.io/eclipse/che-nodejs10-ubi:nightly
@@ -8,27 +14,15 @@ components:
     memoryLimit: 1024Mi
     mountSources: true
 commands:
-  - name: build
-    actions:
-      - type: exec
-        component: runtime
-        command: "npm install"
-        workdir: ${CHE_PROJECTS_ROOT}/app
   - name: devbuild
     actions:
       - type: exec
         component: runtime
         command: "npm install"
-        workdir: ${CHE_PROJECTS_ROOT}/app
-  - name: run
-    actions:
-      - type: exec
-        component: runtime
-        command: "nodemon app.js"
-        workdir: ${CHE_PROJECTS_ROOT}/app
+        workdir: ${CHE_PROJECTS_ROOT}/nodejs-web-app/app
   - name: devrun
     actions:
       - type: exec
         component: runtime
         command: "nodemon app.js"
-        workdir: ${CHE_PROJECTS_ROOT}/app
+        workdir: ${CHE_PROJECTS_ROOT}/nodejs-web-app/app

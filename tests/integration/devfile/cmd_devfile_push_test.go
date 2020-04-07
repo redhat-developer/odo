@@ -15,7 +15,7 @@ import (
 
 var _ = Describe("odo devfile push command tests", func() {
 	var namespace, context, cmpName, currentWorkingDirectory string
-	var sourcePath = "/projects"
+	var sourcePath = "/projects/nodejs-web-app"
 
 	// TODO: all oc commands in all devfile related test should get replaced by kubectl
 	// TODO: to goal is not to use "oc"
@@ -34,7 +34,7 @@ var _ = Describe("odo devfile push command tests", func() {
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 
 		cmpName = helper.RandString(6)
-		helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--project", namespace, cmpName)
+		helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 	})
 
 	// Clean up after the test
@@ -107,7 +107,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 
 			helper.ReplaceString(filepath.Join(context, "app", "app.js"), "Hello World!", "UPDATED!")
-			output = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
+			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 		})
 
 		It("should be able to create a file, push, delete, then push again propagating the deletions", func() {
@@ -157,7 +157,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				podName,
 				"",
 				namespace,
-				[]string{"stat", "/projects/app/app.js"},
+				[]string{"stat", "/projects/nodejs-web-app/app/app.js"},
 				func(cmdOp string, err error) bool {
 					statErr = err
 					return true
@@ -171,14 +171,14 @@ var _ = Describe("odo devfile push command tests", func() {
 				podName,
 				"",
 				namespace,
-				[]string{"stat", "/projects/app/app.js"},
+				[]string{"stat", "/projects/nodejs-web-app/app/app.js"},
 				func(cmdOp string, err error) bool {
 					statErr = err
 					return true
 				},
 			)
 			Expect(statErr).To(HaveOccurred())
-			Expect(statErr.Error()).To(ContainSubstring("cannot stat '/projects/app/app.js': No such file or directory"))
+			Expect(statErr.Error()).To(ContainSubstring("cannot stat '/projects/nodejs-web-app/app/app.js': No such file or directory"))
 		})
 
 		It("should build when no changes are detected in the directory and force flag is enabled", func() {
