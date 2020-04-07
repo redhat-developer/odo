@@ -181,7 +181,7 @@ func main() {
 
 	fmt.Fprint(f, "package runewidth\n\n")
 
-	resp, err := http.Get("https://unicode.org/Public/12.1.0/ucd/EastAsianWidth.txt")
+	resp, err := http.Get("https://unicode.org/Public/13.0.0/ucd/EastAsianWidth.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -189,7 +189,7 @@ func main() {
 
 	eastasian(f, resp.Body)
 
-	resp, err = http.Get("https://unicode.org/Public/emoji/12.1/emoji-data.txt")
+	resp, err = http.Get("https://unicode.org/Public/13.0.0/ucd/emoji/emoji-data.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
