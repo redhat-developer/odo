@@ -324,13 +324,17 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 			componentName = ui.EnterDevfileComponentName(componentType)
 
-			if cmd.Flags().Changed("project") {
-				componentNamespace, err = cmd.Flags().GetString("project")
-				if err != nil {
-					return err
+			if len(co.devfileMetadata.componentNamespace) == 0 {
+				if cmd.Flags().Changed("project") {
+					componentNamespace, err = cmd.Flags().GetString("project")
+					if err != nil {
+						return err
+					}
+				} else {
+					componentNamespace = ui.EnterDevfileComponentNamespace(defaultComponentNamespace)
 				}
 			} else {
-				componentNamespace = ui.EnterDevfileComponentNamespace(defaultComponentNamespace)
+				componentNamespace = co.devfileMetadata.componentNamespace
 			}
 		} else {
 			// Direct mode (User enters the full command)
@@ -347,20 +351,24 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 				componentName = args[0]
 			}
 
-			if cmd.Flags().Changed("project") {
-				componentNamespace, err = cmd.Flags().GetString("project")
-				if err != nil {
-					return err
+			if len(co.devfileMetadata.componentNamespace) == 0 {
+				if cmd.Flags().Changed("project") {
+					componentNamespace, err = cmd.Flags().GetString("project")
+					if err != nil {
+						return err
+					}
+				} else {
+					componentNamespace = defaultComponentNamespace
 				}
 			} else {
-				componentNamespace = defaultComponentNamespace
+				componentNamespace = co.devfileMetadata.componentNamespace
 			}
 		}
 
 		// Set devfileMetadata struct
 		co.devfileMetadata.componentType = componentType
 		co.devfileMetadata.componentName = strings.ToLower(componentName)
-		co.devfileMetadata.componentNamespace = componentNamespace
+		co.devfileMetadata.componentNamespace = strings.ToLower(componentNamespace)
 
 		// Since we need to support both devfile and s2i, so we have to check if the component type is
 		// supported by devfile, if it is supported we return, but if it is not supported we still need to
@@ -591,6 +599,11 @@ func (co *CreateOptions) Validate() (err error) {
 			}
 
 			err = util.ValidateK8sResourceName("component name", co.devfileMetadata.componentName)
+			if err != nil {
+				return err
+			}
+
+			err := util.ValidateK8sResourceName("component namespace", co.devfileMetadata.componentNamespace)
 			if err != nil {
 				return err
 			}
