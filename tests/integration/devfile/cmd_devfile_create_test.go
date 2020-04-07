@@ -82,4 +82,14 @@ var _ = Describe("odo devfile create command tests", func() {
 			helper.MatchAllInOutput(output, []string{"Contain at most 63 characters"})
 		})
 	})
+
+	Context("When executing odo create with an invalid devfile component", func() {
+		It("should fail with please run 'odo catalog list components'", func() {
+			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+			fakeComponentName := "fake-component"
+			output := helper.CmdShouldFail("odo", "create", fakeComponentName)
+			expectedString := "\"" + fakeComponentName + "\" not found"
+			helper.MatchAllInOutput(output, []string{expectedString})
+		})
+	})
 })

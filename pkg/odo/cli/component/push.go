@@ -64,7 +64,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 			return errors.Wrap(err, "unable to retrieve configuration information")
 		}
 		po.EnvSpecificInfo = envinfo
-		po.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+		po.Context = genericclioptions.NewDevfileContext(cmd)
 		return nil
 	}
 
