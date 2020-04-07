@@ -16,6 +16,7 @@ import (
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	catalogutil "github.com/openshift/odo/pkg/odo/cli/catalog/util"
 	"github.com/openshift/odo/pkg/odo/cli/component/ui"
@@ -332,14 +333,19 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			// Component name: User needs to specify the componet name, by default it is component type that user chooses
 			componentName = ui.EnterDevfileComponentName(componentType)
 
-			// Component namespace: User needs to specify component namespace, by default it is the current active namespace
-			if cmd.Flags().Changed("project") {
-				componentNamespace, err = cmd.Flags().GetString("project")
-				if err != nil {
-					return err
+			// Component namespace: User needs to specify component namespace,
+			// by default it is the current active namespace if it can't get from --project flag or --namespace flag
+			if len(co.devfileMetadata.componentNamespace) == 0 {
+				if cmd.Flags().Changed("project") {
+					componentNamespace, err = cmd.Flags().GetString("project")
+					if err != nil {
+						return err
+					}
+				} else {
+					componentNamespace = ui.EnterDevfileComponentNamespace(defaultComponentNamespace)
 				}
 			} else {
-				componentNamespace = ui.EnterDevfileComponentNamespace(defaultComponentNamespace)
+				componentNamespace = co.devfileMetadata.componentNamespace
 			}
 		} else {
 			// Direct mode (User enters the full command)
@@ -360,20 +366,24 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			}
 
 			// Component namespace: Get from --project flag or --namespace flag, by default it is the current active namespace
-			if cmd.Flags().Changed("project") {
-				componentNamespace, err = cmd.Flags().GetString("project")
-				if err != nil {
-					return err
+			if len(co.devfileMetadata.componentNamespace) == 0 {
+				if cmd.Flags().Changed("project") {
+					componentNamespace, err = cmd.Flags().GetString("project")
+					if err != nil {
+						return err
+					}
+				} else {
+					componentNamespace = defaultComponentNamespace
 				}
 			} else {
-				componentNamespace = defaultComponentNamespace
+				componentNamespace = co.devfileMetadata.componentNamespace
 			}
 		}
 
 		// Set devfileMetadata struct
 		co.devfileMetadata.componentType = componentType
 		co.devfileMetadata.componentName = strings.ToLower(componentName)
-		co.devfileMetadata.componentNamespace = componentNamespace
+		co.devfileMetadata.componentNamespace = strings.ToLower(componentNamespace)
 
 		// If devfile.yaml is present, we don't need to download the devfile.yaml later
 		if util.CheckPathExists(DevfilePath) {
@@ -620,6 +630,11 @@ func (co *CreateOptions) Validate() (err error) {
 				return err
 			}
 
+			err := util.ValidateK8sResourceName("component namespace", co.devfileMetadata.componentNamespace)
+			if err != nil {
+				return err
+			}
+
 			spinner.End(true)
 
 			return nil
@@ -688,6 +703,30 @@ func (co *CreateOptions) Run() (err error) {
 	} else {
 		log.Italic("\nPlease use `odo push` command to create the component with source deployed")
 	}
+	if log.IsJSON() {
+		var componentDesc component.Component
+		co.Context, co.LocalConfigInfo, err = genericclioptions.UpdatedContext(co.Context)
+		if err != nil {
+			return err
+		}
+		existsInCluster, err := component.Exists(co.Context.Client, *co.componentSettings.Name, co.Context.Application)
+		if err != nil {
+			return err
+		}
+		if existsInCluster {
+			componentDesc, err = component.GetComponent(co.Context.Client, *co.componentSettings.Name, co.Context.Application, co.Context.Project)
+			if err != nil {
+				return err
+			}
+		} else {
+			componentDesc, err = component.GetComponentFromConfig(co.LocalConfigInfo)
+			if err != nil {
+				return err
+			}
+		}
+		componentDesc.Spec.Ports = co.LocalConfigInfo.GetPorts()
+		machineoutput.OutputSuccess(componentDesc)
+	}
 	return
 }
 
@@ -727,7 +766,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 		Long:        createLongDesc,
 		Example:     fmt.Sprintf(createExample, fullName),
 		Args:        cobra.RangeArgs(0, 2),
-		Annotations: map[string]string{"command": "component"},
+		Annotations: map[string]string{"machineoutput": "json", "command": "component"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(co, cmd, args)
 		},

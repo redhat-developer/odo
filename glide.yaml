@@ -27,6 +27,9 @@ import:
 - package: k8s.io/api
   version: origin-4.1-kubernetes-1.13.4
   repo: https://github.com/openshift/kubernetes-api.git
+- package: github.com/kr/pty
+  version: v1.1.9
+  repo: https://github.com/creack/pty
 - package: github.com/onsi/gomega
   version: v1.9.0
 - package: github.com/onsi/ginkgo

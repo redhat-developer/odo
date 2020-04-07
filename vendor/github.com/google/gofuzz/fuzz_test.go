@@ -17,9 +17,7 @@ limitations under the License.
 package fuzz
 
 import (
-	"math/rand"
 	"reflect"
-	"regexp"
 	"testing"
 	"time"
 )
@@ -40,8 +38,6 @@ func TestFuzz_basic(t *testing.T) {
 		S    string
 		B    bool
 		T    time.Time
-		C64  complex64
-		C128 complex128
 	}{}
 
 	failed := map[string]int{}
@@ -88,12 +84,6 @@ func TestFuzz_basic(t *testing.T) {
 			failed[n] = failed[n] + 1
 		}
 		if n, v := "t", obj.T; v.IsZero() {
-			failed[n] = failed[n] + 1
-		}
-		if n, v := "c64", obj.C64; v == 0 {
-			failed[n] = failed[n] + 1
-		}
-		if n, v := "c128", obj.C128; v == 0 {
 			failed[n] = failed[n] + 1
 		}
 	}
@@ -374,7 +364,7 @@ func TestFuzz_noCustom(t *testing.T) {
 			inner.Str = testPhrase
 		},
 	)
-	c := Continue{fc: &fuzzerContext{fuzzer: f}, Rand: f.r}
+	c := Continue{f: f, Rand: f.r}
 
 	// Fuzzer.Fuzz()
 	obj1 := Outer{}
@@ -434,122 +424,5 @@ func TestFuzz_NumElements(t *testing.T) {
 			return 3, false
 		}
 		return 4, len(obj.A) == 1
-	})
-}
-
-func TestFuzz_Maxdepth(t *testing.T) {
-	type S struct {
-		S *S
-	}
-
-	f := New().NilChance(0)
-
-	f.MaxDepth(1)
-	for i := 0; i < 100; i++ {
-		obj := S{}
-		f.Fuzz(&obj)
-
-		if obj.S != nil {
-			t.Errorf("Expected nil")
-		}
-	}
-
-	f.MaxDepth(3) // field, ptr
-	for i := 0; i < 100; i++ {
-		obj := S{}
-		f.Fuzz(&obj)
-
-		if obj.S == nil {
-			t.Errorf("Expected obj.S not nil")
-		} else if obj.S.S != nil {
-			t.Errorf("Expected obj.S.S nil")
-		}
-	}
-
-	f.MaxDepth(5) // field, ptr, field, ptr
-	for i := 0; i < 100; i++ {
-		obj := S{}
-		f.Fuzz(&obj)
-
-		if obj.S == nil {
-			t.Errorf("Expected obj.S not nil")
-		} else if obj.S.S == nil {
-			t.Errorf("Expected obj.S.S not nil")
-		} else if obj.S.S.S != nil {
-			t.Errorf("Expected obj.S.S.S nil")
-		}
-	}
-}
-
-func TestFuzz_SkipPattern(t *testing.T) {
-	obj := &struct {
-		S1    string
-		S2    string
-		XXX_S string
-		S_XXX string
-		In    struct {
-			Str    string
-			XXX_S1 string
-			S2_XXX string
-		}
-	}{}
-
-	f := New().NilChance(0).SkipFieldsWithPattern(regexp.MustCompile(`^XXX_`))
-	f.Fuzz(obj)
-
-	tryFuzz(t, f, obj, func() (int, bool) {
-		if obj.XXX_S != "" {
-			return 1, false
-		}
-		if obj.S_XXX == "" {
-			return 2, false
-		}
-		if obj.In.XXX_S1 != "" {
-			return 3, false
-		}
-		if obj.In.S2_XXX == "" {
-			return 4, false
-		}
-		return 5, true
-	})
-}
-
-type int63mode int
-
-const (
-	modeRandom int63mode = iota
-	modeFirst
-	modeLast
-)
-
-type customInt63 struct {
-	mode int63mode
-}
-
-func (c customInt63) Int63n(n int64) int64 {
-	switch c.mode {
-	case modeFirst: return 0
-	case modeLast: return n-1
-	default: return rand.Int63n(n)
-	}
-}
-
-func Test_charRange_choose(t *testing.T) {
-	lowercaseLetters := charRange{'a', 'z'}
-
-	t.Run("Picks first", func(t *testing.T) {
-		r := customInt63{mode: modeFirst}
-		letter := lowercaseLetters.choose(r)
-		if letter != 'a' {
-			t.Errorf("Expected a, got %v", letter)
-		}
-	})
-
-	t.Run("Picks last", func(t *testing.T) {
-		r := customInt63{mode: modeLast}
-		letter := lowercaseLetters.choose(r)
-		if letter != 'z' {
-			t.Errorf("Expected z, got %v", letter)
-		}
 	})
 }

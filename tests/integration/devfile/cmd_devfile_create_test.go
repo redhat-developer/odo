@@ -55,6 +55,14 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 	})
 
+	Context("When executing odo create with devfile component type argument and --namespace flag", func() {
+		It("should successfully create the devfile component", func() {
+			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+			componentNamespace := helper.RandString(6)
+			helper.CmdShouldPass("odo", "create", "openLiberty", "--namespace", componentNamespace)
+		})
+	})
+
 	Context("When executing odo create with devfile component name that contains unsupported character", func() {
 		It("should failed with devfile component name is not valid and prompt supported character", func() {
 			componentName := "BAD@123"
