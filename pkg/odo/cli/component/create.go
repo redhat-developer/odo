@@ -16,6 +16,7 @@ import (
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	catalogutil "github.com/openshift/odo/pkg/odo/cli/catalog/util"
 	"github.com/openshift/odo/pkg/odo/cli/component/ui"
@@ -661,6 +662,30 @@ func (co *CreateOptions) Run() (err error) {
 	} else {
 		log.Italic("\nPlease use `odo push` command to create the component with source deployed")
 	}
+	if log.IsJSON() {
+		var componentDesc component.Component
+		co.Context, co.LocalConfigInfo, err = genericclioptions.UpdatedContext(co.Context)
+		if err != nil {
+			return err
+		}
+		existsInCluster, err := component.Exists(co.Context.Client, *co.componentSettings.Name, co.Context.Application)
+		if err != nil {
+			return err
+		}
+		if existsInCluster {
+			componentDesc, err = component.GetComponent(co.Context.Client, *co.componentSettings.Name, co.Context.Application, co.Context.Project)
+			if err != nil {
+				return err
+			}
+		} else {
+			componentDesc, err = component.GetComponentFromConfig(co.LocalConfigInfo)
+			if err != nil {
+				return err
+			}
+		}
+		componentDesc.Spec.Ports = co.LocalConfigInfo.GetPorts()
+		machineoutput.OutputSuccess(componentDesc)
+	}
 	return
 }
 
@@ -700,7 +725,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 		Long:        createLongDesc,
 		Example:     fmt.Sprintf(createExample, fullName),
 		Args:        cobra.RangeArgs(0, 2),
-		Annotations: map[string]string{"command": "component"},
+		Annotations: map[string]string{"machineoutput": "json", "command": "component"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(co, cmd, args)
 		},
