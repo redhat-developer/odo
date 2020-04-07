@@ -1,30 +1,14 @@
 {
-  "name": "node",
+  "name": "nodejs-sample",
   "version": "1.0.0",
-  "description": "A generated Eclipse Codewind application",
-  "engines": {
-    "node": "^12.0.0"
-  },
-  "config": {
-    "entrypoint": "server/server.js"
-  },
+  "description": "",
+  "main": "app/app.js",
   "scripts": {
-    "start": "node $npm_package_config_entrypoint",
-    "debug": "node --inspect=0.0.0.0:9229 $npm_package_config_entrypoint",
-    "debug:brk": "node --inspect-brk=0.0.0.0:9229 $npm_package_config_entrypoint",
-    "debug:legacy": "node --debug=0.0.0.0:5858 $npm_package_config_entrypoint"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "author": "",
+  "license": "EPL-2.0",
   "dependencies": {
-    "appmetrics-dash": "^5.2.0",
-    "body-parser": "^1.18.3",
-    "express": "^4.16.4",
-    "express-pino-logger": "^4.0.0",
-    "pino": "^5.16.0"
-  },
-  "devDependencies": {},
-  "nodemonConfig": {
-    "env": {
-      "NODE_HEAPDUMP_OPTIONS": "nosignal"
-    }
+    "express": "^4.13.4"
   }
 }

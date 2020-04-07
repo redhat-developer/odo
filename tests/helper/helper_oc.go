@@ -136,8 +136,14 @@ func (oc *OcRunner) CheckCmdOpInRemoteCmpPod(cmpName string, appName string, prj
 }
 
 // CheckCmdOpInRemoteDevfilePod runs the provided command on remote component pod and returns the return value of command output handler function passed to it
-func (oc *OcRunner) CheckCmdOpInRemoteDevfilePod(podName string, prjName string, cmd []string, checkOp func(cmdOp string, err error) bool) bool {
-	session := CmdRunner(oc.path, append([]string{"exec", podName, "--namespace", prjName, "--"}, cmd...)...)
+func (oc *OcRunner) CheckCmdOpInRemoteDevfilePod(podName string, containerName string, prjName string, cmd []string, checkOp func(cmdOp string, err error) bool) bool {
+	var execOptions []string
+	execOptions = []string{"exec", podName, "--namespace", prjName, "--"}
+	if containerName != "" {
+		execOptions = []string{"exec", podName, "-c", containerName, "--namespace", prjName, "--"}
+	}
+	args := append(execOptions, cmd...)
+	session := CmdRunner(oc.path, args...)
 	stdOut := string(session.Wait().Out.Contents())
 	stdErr := string(session.Wait().Err.Contents())
 	if stdErr != "" {
@@ -392,6 +398,16 @@ func (oc *OcRunner) ServiceInstanceStatus(serviceInstanceName string) string {
 	serviceinstance := CmdShouldPass(oc.path, "get", "serviceinstance", serviceInstanceName,
 		"-o", "go-template='{{ (index .status.conditions 0).reason}}'")
 	return strings.TrimSpace(serviceinstance)
+}
+
+// GetVolumeMountNamesandPathsFromContainer returns the volume name and mount path in the format name:path\n
+func (oc *OcRunner) GetVolumeMountNamesandPathsFromContainer(deployName string, containerName, namespace string) string {
+	volumeName := CmdShouldPass(oc.path, "get", "deploy", deployName, "--namespace", namespace,
+		"-o", "go-template="+
+			"{{range .spec.template.spec.containers}}{{if eq .name \""+containerName+
+			"\"}}{{range .volumeMounts}}{{.name}}{{\":\"}}{{.mountPath}}{{\"\\n\"}}{{end}}{{end}}{{end}}")
+
+	return strings.TrimSpace(volumeName)
 }
 
 // GetVolumeMountName returns the name of the volume

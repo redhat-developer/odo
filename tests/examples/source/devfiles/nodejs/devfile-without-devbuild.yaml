@@ -1,0 +1,22 @@
+apiVersion: 1.0.0
+metadata:
+  name: test-devfile
+components:
+  - type: dockerimage
+    image: quay.io/eclipse/che-nodejs10-ubi:nightly
+    endpoints:
+      - name: 'nodejs'
+        port: 3000
+    alias: runtime
+    env:
+      - name: FOO
+        value: "bar"
+    memoryLimit: 1024Mi
+    mountSources: true
+commands:
+  - name: devrun
+    actions:
+      - type: exec
+        component: runtime
+        command: "npm install && nodemon app.js"
+        workdir: ${CHE_PROJECTS_ROOT}/app

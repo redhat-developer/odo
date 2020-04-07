@@ -1,0 +1,41 @@
+apiVersion: 1.0.0
+metadata:
+  name: test-devfile
+components:
+  - type: dockerimage
+    image: quay.io/eclipse/che-nodejs10-ubi:nightly
+    endpoints:
+      - name: 'nodejs'
+        port: 3000
+    alias: runtime
+    env:
+      - name: FOO
+        value: "bar"
+    memoryLimit: 1024Mi
+    mountSources: true
+    volumes:
+      - name: myvol
+        containerPath: /data
+  - type: dockerimage
+    image: quay.io/eclipse/che-nodejs10-ubi:nightly
+    alias: runtime2
+    memoryLimit: 1024Mi
+    mountSources: false
+    volumes:
+      - name: myvol
+        containerPath: /data
+      - name: myvol2
+        containerPath: /data2
+commands:
+  - name: devbuild
+    actions:
+      - type: exec
+        component: runtime
+        command: "echo hello >> myfile.log"
+        workdir: /data
+  - name: devrun
+    actions:
+      - type: exec
+        component: runtime2
+        command: "cat myfile.log"
+        workdir: /data

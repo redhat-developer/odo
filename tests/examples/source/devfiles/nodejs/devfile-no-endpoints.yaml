@@ -3,23 +3,32 @@ metadata:
   name: test-devfile
 components:
   - type: dockerimage
-    image: node:stretch
-    command: ["tail", "-f", "/dev/null"]
+    image: quay.io/eclipse/che-nodejs10-ubi:nightly
     alias: runtime
     memoryLimit: 1024Mi
     mountSources: true
 commands:
-  -
-    name: build
+  - name: build
     actions:
-      -
-        type: exec
+      - type: exec
         component: runtime
         command: "npm install"
-  -
-    name: devrun
+        workdir: ${CHE_PROJECTS_ROOT}/app
+  - name: devbuild
     actions:
-      -
-        type: exec
+      - type: exec
         component: runtime
-        command: "node run"
+        command: "npm install"
+        workdir: ${CHE_PROJECTS_ROOT}/app
+  - name: run
+    actions:
+      - type: exec
+        component: runtime
+        command: "nodemon app.js"
+        workdir: ${CHE_PROJECTS_ROOT}/app
+  - name: devrun
+    actions:
+      - type: exec
+        component: runtime
+        command: "nodemon app.js"
+        workdir: ${CHE_PROJECTS_ROOT}/app
