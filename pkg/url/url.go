@@ -152,6 +152,12 @@ func Create(client *occlient.Client, kClient *kclient.Client, urlName string, po
 		ingressSpec := kclient.GenerateIngressSpec(ingressParam)
 		objectMeta := kclient.CreateObjectMeta(componentName, kClient.Namespace, labels, nil)
 		objectMeta.Name = urlName
+		deployment, err := kClient.GetDeploymentByName(componentName)
+		if err != nil {
+			return "", err
+		}
+		ownerReference := kclient.GenerateOwnerReference(deployment)
+		objectMeta.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
 		// Pass in the namespace name, link to the service (componentName) and labels to create a ingress
 		ingress, err := kClient.CreateIngress(objectMeta, *ingressSpec)
 		if err != nil {

@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // CreateTLSSecret creates a TLS Secret with the given certificate and private key
@@ -15,6 +16,10 @@ import (
 func (c *Client) CreateTLSSecret(tlsCertificate []byte, tlsPrivKey []byte, componentName string, applicationName string) (*corev1.Secret, error) {
 	if componentName == "" {
 		return nil, fmt.Errorf("componentName name is empty")
+	}
+	deployment, err := c.GetDeploymentByName(componentName)
+	if err != nil {
+		return nil, err
 	}
 	labels := componentlabels.GetLabels(componentName, applicationName, true)
 	tlsSecretName := componentName + "-tlssecret"
@@ -25,6 +30,9 @@ func (c *Client) CreateTLSSecret(tlsCertificate []byte, tlsPrivKey []byte, compo
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   tlsSecretName,
 			Labels: labels,
+			OwnerReferences: []v1.OwnerReference{
+				GenerateOwnerReference(deployment),
+			},
 		},
 		Type: corev1.SecretTypeTLS,
 		Data: data,

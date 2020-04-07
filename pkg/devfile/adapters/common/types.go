@@ -2,6 +2,7 @@ package common
 
 import (
 	"github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/pkg/envinfo"
 )
 
 // AdapterContext is a construct that is common to all adapters
@@ -33,4 +34,5 @@ type PushParameters struct {
 	Show              bool     // Show tells whether the devfile command output should be shown on stdout
 	DevfileBuildCmd   string   // DevfileBuildCmd takes the build command through the command line and overwrites devfile build command
 	DevfileRunCmd     string   // DevfileRunCmd takes the run command through the command line and overwrites devfile run command
+	EnvSpecificInfo   envinfo.EnvSpecificInfo
 }

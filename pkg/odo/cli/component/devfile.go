@@ -6,13 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/fatih/color"
-	"github.com/openshift/odo/pkg/component"
-	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 
@@ -77,18 +73,12 @@ func (po *PushOptions) DevfilePush() (err error) {
 	if err != nil {
 		return err
 	}
-
-	po.Context.KClient.Namespace = po.namespace
-	err = component.ApplyConfig(nil, po.Context.KClient, config.LocalConfigInfo{}, *po.EnvSpecificInfo, color.Output, po.doesComponentExist)
-	if err != nil {
-		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed.")
-	}
-
 	pushParams := common.PushParameters{
 		Path:            po.sourcePath,
 		IgnoredFiles:    po.ignores,
 		ForceBuild:      po.forceBuild,
 		Show:            po.show,
+		EnvSpecificInfo: *po.EnvSpecificInfo,
 		DevfileBuildCmd: strings.ToLower(po.devfileBuildCommand),
 		DevfileRunCmd:   strings.ToLower(po.devfileRunCommand),
 	}
