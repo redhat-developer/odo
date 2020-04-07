@@ -29,7 +29,10 @@ type Client struct {
 	KubeClientConfig *rest.Config
 	Namespace        string
 	OperatorClient   *operatorsclientset.OperatorsV1alpha1Client
-	DynamicClient    dynamic.Interface // DynamicClient interacts with client-go's `dynamic` package
+	// DynamicClient interacts with client-go's `dynamic` package. It is used
+	// to dynamically create service from an operator. It can take an arbitrary
+	// yaml and create k8s/OpenShift resource from it.
+	DynamicClient dynamic.Interface
 }
 
 // New creates a new client

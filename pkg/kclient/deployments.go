@@ -164,11 +164,11 @@ func (c *Client) CreateDynamicResource(exampleCustomResource map[string]interfac
 		Object: exampleCustomResource,
 	}
 
-	result, err := c.DynamicClient.Resource(deploymentRes).Namespace(c.Namespace).Create(deployment, metav1.CreateOptions{})
+	// Create the dynamic resource based on the alm-example for the CRD
+	_, err := c.DynamicClient.Resource(deploymentRes).Namespace(c.Namespace).Create(deployment, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(result.GetName())
 	return nil
 }

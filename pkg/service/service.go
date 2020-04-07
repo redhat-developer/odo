@@ -63,8 +63,8 @@ func CreateService(client *occlient.Client, serviceName string, serviceType stri
 }
 
 // CreateOperatorService creates new service (actually a Deployment) from OperatorHub
-func CreateOperatorService(client *kclient.Client, group, version, resource string, exampleCR map[string]interface{}) error {
-	err := client.CreateDynamicResource(exampleCR, group, version, resource)
+func CreateOperatorService(client *kclient.Client, group, version, resource string, CustomResourceDefinition map[string]interface{}) error {
+	err := client.CreateDynamicResource(CustomResourceDefinition, group, version, resource)
 	if err != nil {
 		return errors.Wrap(err, "Unable to create operator backed service")
 	}
