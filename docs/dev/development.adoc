@@ -419,13 +419,14 @@ $ glide --version
 ==== Adding a new dependency
 
 . Update the `glide.yaml` file. Add the new package or sub-packages to the `glide.yaml` file. You can add a whole new package as a dependency or just a few sub-packages.
-. Run `glide update --strip-vendor` to get the new dependencies.
+. Run `make vendor-update` to get the new dependencies.
 . Commit the updated `glide.yaml`, `glide.lock` and `vendor` files to git.
 
 ==== Updating dependencies
 
 . Set new package version in `glide.yaml` file.
-. Run `glide update --strip-vendor` to update dependencies
+. Run `make vendor-update` to update dependencies
+. Commit the updated `glide.yaml`, `glide.lock` and `vendor` files to git.
 
 == Release guide
 
