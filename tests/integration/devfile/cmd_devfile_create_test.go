@@ -104,6 +104,6 @@ var _ = Describe("odo devfile create command tests", func() {
 			}
 			output := helper.CmdShouldFail("odo", "create", "openLiberty")
 			helper.MatchAllInOutput(output, []string{"This directory already contains a devfile.yaml, please delete it and run the component creation command again"})
-		}
-	}
+		})
+	})
 })
