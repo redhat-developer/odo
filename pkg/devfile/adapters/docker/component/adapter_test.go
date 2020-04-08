@@ -3,9 +3,9 @@ package component
 import (
 	"testing"
 
-	"github.com/openshift/odo/pkg/devfile"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
-	versionsCommon "github.com/openshift/odo/pkg/devfile/versions/common"
+	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/testingutil"
 )
@@ -43,7 +43,7 @@ func TestPush(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			devObj := devfile.DevfileObj{
+			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
 					ComponentType: tt.componentType,
 				},
@@ -106,7 +106,7 @@ func TestDoesComponentExist(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			devObj := devfile.DevfileObj{
+			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
 					ComponentType: tt.componentType,
 				},
