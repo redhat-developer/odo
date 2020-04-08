@@ -41,3 +41,14 @@ func (k Adapter) Push(parameters common.PushParameters) error {
 func (k Adapter) DoesComponentExist(cmpName string) bool {
 	return k.componentAdapter.DoesComponentExist(cmpName)
 }
+
+// Delete deletes the Kubernetes resources that correspond to the devfile
+func (k Adapter) Delete(labels map[string]string) error {
+
+	err := k.componentAdapter.Delete(labels)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
