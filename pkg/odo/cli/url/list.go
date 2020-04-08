@@ -43,7 +43,11 @@ func NewURLListOptions() *URLListOptions {
 
 // Complete completes URLListOptions after they've been Listed
 func (o *URLListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context = genericclioptions.NewContext(cmd)
+	if experimental.IsExperimentalModeEnabled() {
+		o.Context = genericclioptions.NewDevfileContext(cmd)
+	} else {
+		o.Context = genericclioptions.NewContext(cmd)
+	}
 	o.LocalConfigInfo, err = config.NewLocalConfigInfo(o.componentContext)
 	if err != nil {
 		return errors.Wrap(err, "failed intiating local config")

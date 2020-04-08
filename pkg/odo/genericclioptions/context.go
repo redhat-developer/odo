@@ -14,7 +14,6 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/project"
 	pkgUtil "github.com/openshift/odo/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,6 +29,11 @@ func NewContext(command *cobra.Command, ignoreMissingConfiguration ...bool) *Con
 		ignoreMissingConfig = ignoreMissingConfiguration[0]
 	}
 	return newContext(command, false, ignoreMissingConfig)
+}
+
+// NewDevfileContext creates a new Context struct populated with the current state based on flags specified for the provided command
+func NewDevfileContext(command *cobra.Command, ignoreMissingConfiguration ...bool) *Context {
+	return newDevfileContext(command)
 }
 
 // NewContextCreatingAppIfNeeded creates a new Context struct populated with the current state based on flags specified for the
@@ -406,31 +410,13 @@ func UpdatedContext(context *Context) (*Context, *config.LocalConfigInfo, error)
 func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingConfiguration bool) *Context {
 	// create a new occlient
 	client := client(command)
-	// resolve output flag
-	outputFlag := FlagValueIfSet(command, OutputFlagName)
 
-	// create the internal context representation based on calculated values
-	internalCxt := internalCxt{
-		Client:     client,
-		OutputFlag: outputFlag,
-		command:    command,
+	// create a new kclient
+	KClient, err := kclient.New()
+	if err != nil {
+		util.LogErrorAndExit(err, "")
 	}
-	if experimental.IsExperimentalModeEnabled() {
-		// create a new kclient
-		kClient := kClient(command)
-		internalCxt.KClient = kClient
-		envInfo, err := getValidEnvinfo(command)
-		if err != nil {
-			util.LogErrorAndExit(err, "")
-		}
-		internalCxt.EnvSpecificInfo = envInfo
-		resolveNamespace(command, kClient, envInfo)
-		// create a context from the internal representation
-		context := &Context{
-			internalCxt: internalCxt,
-		}
-		return context
-	}
+
 	// Check for valid config
 	localConfiguration, err := getValidConfig(command, ignoreMissingConfiguration)
 	if err != nil {
@@ -442,9 +428,20 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 
 	// resolve application
 	app := resolveApp(command, createAppIfNeeded, localConfiguration)
-	internalCxt.LocalConfigInfo = localConfiguration
-	internalCxt.Application = app
-	internalCxt.Project = namespace
+
+	// resolve output flag
+	outputFlag := FlagValueIfSet(command, OutputFlagName)
+
+	// create the internal context representation based on calculated values
+	internalCxt := internalCxt{
+		Client:          client,
+		Project:         namespace,
+		Application:     app,
+		OutputFlag:      outputFlag,
+		command:         command,
+		LocalConfigInfo: localConfiguration,
+		KClient:         KClient,
+	}
 
 	// create a context from the internal representation
 	context := &Context{
@@ -454,7 +451,33 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 	context.cmp = resolveComponent(command, localConfiguration, context)
 
 	return context
+}
 
+// newDevfileContext creates a new context based on command flags for devfile components
+func newDevfileContext(command *cobra.Command) *Context {
+	// resolve output flag
+	outputFlag := FlagValueIfSet(command, OutputFlagName)
+
+	// create the internal context representation based on calculated values
+	internalCxt := internalCxt{
+		OutputFlag: outputFlag,
+		command:    command,
+	}
+
+	// create a new kclient
+	kClient := kClient(command)
+	internalCxt.KClient = kClient
+	envInfo, err := getValidEnvinfo(command)
+	if err != nil {
+		util.LogErrorAndExit(err, "")
+	}
+	internalCxt.EnvSpecificInfo = envInfo
+	resolveNamespace(command, kClient, envInfo)
+	// create a context from the internal representation
+	context := &Context{
+		internalCxt: internalCxt,
+	}
+	return context
 }
 
 // FlagValueIfSet retrieves the value of the specified flag if it is set for the given command

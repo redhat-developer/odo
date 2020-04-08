@@ -289,7 +289,11 @@ func (co *CreateOptions) setResourceLimits() error {
 
 // Complete completes create args
 func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+
 	if experimental.IsExperimentalModeEnabled() {
+		// Add a disclaimer that we are in *experimental mode*
+		log.Experimental("Experimental mode is enabled, use at your own risk")
+
 		if util.CheckPathExists(ConfigFilePath) {
 			return errors.New("This directory already contains a component")
 		}
@@ -397,10 +401,13 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			return nil
 		}
 
+		// Categorize the sections
+		log.Info("Validation")
+
 		// Since we need to support both devfile and s2i, so we have to check if the component type is
 		// supported by devfile, if it is supported we return and will download the corresponding devfile.yaml later,
 		// but if it is not supported we still need to run all codes related with s2i
-		spinner := log.Spinner("Checking if the specified component type is supported devfile component type")
+		spinner := log.Spinner("Checking devfile compatibility")
 
 		for _, devfileComponent := range catalogDevfileList.Items {
 			if co.devfileMetadata.componentType == devfileComponent.Name && devfileComponent.Support {
@@ -615,10 +622,11 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 // Validate validates the create parameters
 func (co *CreateOptions) Validate() (err error) {
+
 	if experimental.IsExperimentalModeEnabled() {
 		if co.devfileMetadata.devfileSupport {
 			// Validate if the devfile component that user wants to create already exists
-			spinner := log.Spinner("Validating component")
+			spinner := log.Spinner("Validating devfile component")
 			defer spinner.End(false)
 
 			if util.CheckPathExists(EnvFilePath) {
@@ -640,6 +648,8 @@ func (co *CreateOptions) Validate() (err error) {
 			return nil
 		}
 	}
+
+	log.Info("Validation")
 
 	supported, err := catalog.IsComponentTypeSupported(co.Context.Client, *co.componentSettings.Type)
 	if err != nil {

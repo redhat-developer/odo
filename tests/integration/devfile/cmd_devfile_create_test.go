@@ -94,6 +94,12 @@ var _ = Describe("odo devfile create command tests", func() {
 			}
 			output := helper.CmdShouldFail("odo", "create", "openLiberty")
 			helper.MatchAllInOutput(output, []string{"This directory already contains a devfile.yaml, please delete it and run the component creation command again"})
+	Context("When executing odo create with an invalid devfile component", func() {
+		It("should fail with please run 'odo catalog list components'", func() {
+			fakeComponentName := "fake-component"
+			output := helper.CmdShouldFail("odo", "create", fakeComponentName)
+			expectedString := "\"" + fakeComponentName + "\" not found"
+			helper.MatchAllInOutput(output, []string{expectedString})
 		})
 	})
 })

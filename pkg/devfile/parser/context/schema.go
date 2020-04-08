@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
-	"github.com/openshift/odo/pkg/devfile/versions"
+	"github.com/openshift/odo/pkg/devfile/parser/data"
 	"github.com/pkg/errors"
 	"github.com/xeipuuv/gojsonschema"
 )
@@ -13,7 +13,7 @@ import (
 func (d *DevfileCtx) SetDevfileJSONSchema() error {
 
 	// Check if json schema is present for the given apiVersion
-	jsonSchema, err := versions.GetDevfileJSONSchema(d.apiVersion)
+	jsonSchema, err := data.GetDevfileJSONSchema(d.apiVersion)
 	if err != nil {
 		return err
 	}

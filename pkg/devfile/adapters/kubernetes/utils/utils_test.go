@@ -4,10 +4,10 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/openshift/odo/pkg/devfile"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/devfile/versions/common"
-	versionsCommon "github.com/openshift/odo/pkg/devfile/versions/common"
+	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/testingutil"
 
 	corev1 "k8s.io/api/core/v1"
@@ -156,7 +156,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			devObj := devfile.DevfileObj{
+			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
 					ComponentType:  tt.componentType,
 					CommandActions: tt.commandActions,

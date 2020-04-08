@@ -5,14 +5,14 @@ import (
 	"reflect"
 
 	"github.com/golang/glog"
-	"github.com/openshift/odo/pkg/devfile/versions"
-	"github.com/openshift/odo/pkg/devfile/versions/common"
+	"github.com/openshift/odo/pkg/devfile/parser/data"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 
 	"github.com/pkg/errors"
 )
 
 // GetCommand iterates through the devfile commands and returns the associated devfile command
-func getCommand(data versions.DevfileData, commandName string, required bool) (supportedCommand common.DevfileCommand, err error) {
+func getCommand(data data.DevfileData, commandName string, required bool) (supportedCommand common.DevfileCommand, err error) {
 	for _, command := range data.GetCommands() {
 		if command.Name == commandName {
 
@@ -48,7 +48,7 @@ func getCommand(data versions.DevfileData, commandName string, required bool) (s
 
 // getSupportedCommandActions returns the supported actions for a given command and any errors
 // If some actions are supported and others have errors both the supported actions and an aggregated error will be returned.
-func getSupportedCommandActions(data versions.DevfileData, command common.DevfileCommand) (supportedCommandActions []common.DevfileCommandAction, err error) {
+func getSupportedCommandActions(data data.DevfileData, command common.DevfileCommand) (supportedCommandActions []common.DevfileCommandAction, err error) {
 	glog.V(3).Infof("Validating actions for command: %v ", command.Name)
 
 	problemMsg := ""
@@ -74,7 +74,7 @@ func getSupportedCommandActions(data versions.DevfileData, command common.Devfil
 // 1. action has to be of type exec
 // 2. component should be present
 // 3. command should be present
-func validateAction(data versions.DevfileData, action common.DevfileCommandAction) (err error) {
+func validateAction(data data.DevfileData, action common.DevfileCommandAction) (err error) {
 
 	// type must be exec
 	if *action.Type != common.DevfileCommandTypeExec {
@@ -108,7 +108,7 @@ func validateAction(data versions.DevfileData, action common.DevfileCommandActio
 }
 
 // GetBuildCommand iterates through the components in the devfile and returns the build command
-func GetBuildCommand(data versions.DevfileData, devfileBuildCmd string) (buildCommand common.DevfileCommand, err error) {
+func GetBuildCommand(data data.DevfileData, devfileBuildCmd string) (buildCommand common.DevfileCommand, err error) {
 	if devfileBuildCmd != "" {
 		// a build command was specified so if it is not found then it is an error
 		buildCommand, err = getCommand(data, devfileBuildCmd, true)
@@ -121,7 +121,7 @@ func GetBuildCommand(data versions.DevfileData, devfileBuildCmd string) (buildCo
 }
 
 // GetRunCommand iterates through the components in the devfile and returns the run command
-func GetRunCommand(data versions.DevfileData, devfileRunCmd string) (runCommand common.DevfileCommand, err error) {
+func GetRunCommand(data data.DevfileData, devfileRunCmd string) (runCommand common.DevfileCommand, err error) {
 	if devfileRunCmd != "" {
 		runCommand, err = getCommand(data, devfileRunCmd, true)
 	} else {
@@ -134,7 +134,7 @@ func GetRunCommand(data versions.DevfileData, devfileRunCmd string) (runCommand 
 // ValidateAndGetPushDevfileCommands validates the build and the run command,
 // if provided through odo push or else checks the devfile for devBuild and devRun.
 // It returns the build and run commands if its validated successfully, error otherwise.
-func ValidateAndGetPushDevfileCommands(data versions.DevfileData, devfileBuildCmd, devfileRunCmd string) (pushDevfileCommands []common.DevfileCommand, err error) {
+func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileBuildCmd, devfileRunCmd string) (pushDevfileCommands []common.DevfileCommand, err error) {
 	var emptyCommand common.DevfileCommand
 	isBuildCommandValid, isRunCommandValid := false, false
 
