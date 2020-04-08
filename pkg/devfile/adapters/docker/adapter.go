@@ -37,3 +37,8 @@ func (d Adapter) Push(parameters common.PushParameters) error {
 func (d Adapter) DoesComponentExist(cmpName string) bool {
 	return d.componentAdapter.DoesComponentExist(cmpName)
 }
+
+// Delete attempts to delete the component with the specified labels, returning an error if it fails
+func (d Adapter) Delete(labels map[string]string) error {
+	return d.componentAdapter.Delete(labels)
+}

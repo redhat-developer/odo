@@ -43,3 +43,9 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 func (a Adapter) DoesComponentExist(cmpName string) bool {
 	return utils.ComponentExists(a.Client, cmpName)
 }
+
+// Delete attempts to delete the component with the specified labels, returning an error if it fails
+// Stub function until the functionality is added as part of https://github.com/openshift/odo/issues/2581
+func (d Adapter) Delete(labels map[string]string) error {
+	return nil
+}
