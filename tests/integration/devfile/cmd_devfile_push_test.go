@@ -65,6 +65,25 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(output).To(ContainSubstring(cmpName))
 		})
 
+		It("Check that the experimental warning appears for create and push", func() {
+			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+
+			// Check that it will contain the experimental mode output
+			experimentalOutputMsg := "Experimental mode is enabled, use at your own risk"
+			Expect(helper.CmdShouldPass("odo", "create", "nodejs")).To(ContainSubstring(experimentalOutputMsg))
+
+		})
+
+		It("Check that the experimental warning does *not* appear when Experimental is set to false", func() {
+			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "false")
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+
+			// Check that it will contain the experimental mode output
+			experimentalOutputMsg := "Experimental mode is enabled, use at your own risk"
+			Expect(helper.CmdShouldPass("odo", "create", "nodejs")).To(Not(ContainSubstring(experimentalOutputMsg)))
+		})
+
 		It("Check that odo push works with a devfile", func() {
 			// Devfile push requires experimental mode to be set
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")

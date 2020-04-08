@@ -93,7 +93,9 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 // Validate validates the push parameters
 func (po *PushOptions) Validate() (err error) {
 
-	// if experimental flag is set and devfile is present
+	// If the experimental flag is set and devfile is present, then we do *not* validate
+	// TODO: We need to clean this section up a bit.. We should also validate Devfile here
+	// too.
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.DevfilePath) {
 		return nil
 	}
@@ -125,9 +127,9 @@ func (po *PushOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (po *PushOptions) Run() (err error) {
-	// if experimental mode is enabled, use devfile push
+	// If experimental mode is enabled, use devfile push
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.DevfilePath) {
-		// devfile push
+		// Return Devfile push
 		return po.DevfilePush()
 	} else {
 		// Legacy odo push

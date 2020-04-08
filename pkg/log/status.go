@@ -197,6 +197,14 @@ func Swarningf(format string, a ...interface{}) string {
 	return fmt.Sprintf(" %s%s%s", yellow(getWarningString()), suffixSpacing, fmt.Sprintf(format, a...))
 }
 
+// Experimental will output in an appropriate "progress" manner
+func Experimental(a ...interface{}) {
+	yellow := color.New(color.FgYellow).SprintFunc()
+	if !IsJSON() {
+		fmt.Fprintf(GetStdout(), "%s\n", yellow(fmt.Sprintln(a...)))
+	}
+}
+
 // Warning will output in an appropriate "progress" manner
 func Warning(a ...interface{}) {
 	yellow := color.New(color.FgYellow).SprintFunc()
