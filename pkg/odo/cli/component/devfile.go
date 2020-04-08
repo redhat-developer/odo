@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/util"
@@ -15,6 +14,7 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
+	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/log"
 )
 
@@ -35,7 +35,7 @@ feature progresses.
 // DevfilePush has the logic to perform the required actions for a given devfile
 func (po *PushOptions) DevfilePush() (err error) {
 	// Parse devfile
-	devObj, err := devfile.Parse(po.DevfilePath)
+	devObj, err := devfileParser.Parse(po.DevfilePath)
 	if err != nil {
 		return err
 	}
@@ -126,4 +126,41 @@ func getNamespace() (string, error) {
 	}
 	Namespace := envInfo.GetNamespace()
 	return Namespace, nil
+}
+
+// DevfileComponentDelete deletes the devfile component
+func (do *DeleteOptions) DevfileComponentDelete() error {
+	// Parse devfile
+	devObj, err := devfileParser.Parse(do.devfilePath)
+	if err != nil {
+		return err
+	}
+
+	componentName, err := getComponentName()
+	if err != nil {
+		return err
+	}
+
+	kc := kubernetes.KubernetesContext{
+		Namespace: do.namespace,
+	}
+
+	labels := map[string]string{
+		"component": componentName,
+	}
+	devfileHandler, err := adapters.NewPlatformAdapter(componentName, devObj, kc)
+	if err != nil {
+		return err
+	}
+
+	spinner := log.Spinner(fmt.Sprintf("Deleting devfile component %s", componentName))
+	defer spinner.End(false)
+
+	err = devfileHandler.Delete(labels)
+	if err != nil {
+		return err
+	}
+	spinner.End(true)
+	log.Successf("Successfully deleted component")
+	return nil
 }

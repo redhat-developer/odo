@@ -3,7 +3,7 @@ package parser
 import (
 	"testing"
 
-	v100 "github.com/openshift/odo/pkg/devfile/versions/1.0.0"
+	v100 "github.com/openshift/odo/pkg/devfile/parser/data/1.0.0"
 )
 
 const (

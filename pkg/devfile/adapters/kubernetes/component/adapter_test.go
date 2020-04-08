@@ -5,13 +5,18 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/pkg/util"
+	"github.com/pkg/errors"
+
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
-	versionsCommon "github.com/openshift/odo/pkg/devfile/versions/common"
+	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/testingutil"
 
+	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	ktesting "k8s.io/client-go/testing"
 )
@@ -53,7 +58,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			devObj := devfile.DevfileObj{
+			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
 					ComponentType: tt.componentType,
 				},
@@ -418,7 +423,7 @@ func TestDoesComponentExist(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			devObj := devfile.DevfileObj{
+			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
 					ComponentType: tt.componentType,
 				},
@@ -487,7 +492,7 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			devObj := devfile.DevfileObj{
+			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
 					ComponentType: tt.componentType,
 				},
@@ -520,4 +525,90 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 		})
 	}
 
+}
+
+func TestAdapterDelete(t *testing.T) {
+	type args struct {
+		labels map[string]string
+	}
+	tests := []struct {
+		name               string
+		args               args
+		existingDeployment *v1.Deployment
+		componentName      string
+		componentExists    bool
+		wantErr            bool
+	}{
+		{
+			name: "case 1: component exists and given labels are valid",
+			args: args{labels: map[string]string{
+				"component": "component",
+			}},
+			existingDeployment: testingutil.CreateFakeDeployment("fronted"),
+			componentName:      "component",
+			componentExists:    true,
+			wantErr:            false,
+		},
+		{
+			name:               "case 2: component exists and given labels are not valid",
+			args:               args{labels: nil},
+			existingDeployment: testingutil.CreateFakeDeployment("fronted"),
+			componentName:      "component",
+			componentExists:    true,
+			wantErr:            true,
+		},
+		{
+			name: "case 3: component doesn't exists",
+			args: args{labels: map[string]string{
+				"component": "component",
+			}},
+			existingDeployment: testingutil.CreateFakeDeployment("fronted"),
+			componentName:      "component",
+			componentExists:    false,
+			wantErr:            true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			devObj := devfileParser.DevfileObj{
+				Data: testingutil.TestDevfileData{
+					ComponentType: "nodejs",
+				},
+			}
+
+			adapterCtx := adaptersCommon.AdapterContext{
+				ComponentName: tt.componentName,
+				Devfile:       devObj,
+			}
+
+			if !tt.componentExists {
+				adapterCtx.ComponentName = "doesNotExists"
+			}
+
+			fkclient, fkclientset := kclient.FakeNew()
+
+			a := Adapter{
+				Client:         *fkclient,
+				AdapterContext: adapterCtx,
+			}
+
+			fkclientset.Kubernetes.PrependReactor("delete-collection", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+				if util.ConvertLabelsToSelector(tt.args.labels) != action.(ktesting.DeleteCollectionAction).GetListRestrictions().Labels.String() {
+					return true, nil, errors.Errorf("collection labels are not matching, wanted: %v, got: %v", util.ConvertLabelsToSelector(tt.args.labels), action.(ktesting.DeleteCollectionAction).GetListRestrictions().Labels.String())
+				}
+				return true, nil, nil
+			})
+
+			fkclientset.Kubernetes.PrependReactor("get", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+				if action.(ktesting.GetAction).GetName() != tt.componentName {
+					return true, nil, errors.Errorf("get action called with different component name, want: %s, got: %s", action.(ktesting.GetAction).GetName(), tt.componentName)
+				}
+				return true, tt.existingDeployment, nil
+			})
+
+			if err := a.Delete(tt.args.labels); (err != nil) != tt.wantErr {
+				t.Errorf("Delete() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
 }

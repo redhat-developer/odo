@@ -17,8 +17,10 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
-	versionsCommon "github.com/openshift/odo/pkg/devfile/versions/common"
+
 	"github.com/openshift/odo/pkg/exec"
+
+	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
@@ -584,4 +586,13 @@ func getCmdToDeleteFiles(delFiles []string, syncFolder string) []string {
 	glog.V(4).Infof("remote files marked for deletion are %+v", rmPaths)
 	cmdArr := []string{"rm", "-rf"}
 	return append(cmdArr, rmPaths...)
+}
+
+// Delete deletes the component
+func (a Adapter) Delete(labels map[string]string) error {
+	if !utils.ComponentExists(a.Client, a.ComponentName) {
+		return errors.Errorf("the component %s doesn't exist on the cluster", a.ComponentName)
+	}
+
+	return a.Client.DeleteDeployment(labels)
 }
