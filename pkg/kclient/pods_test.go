@@ -63,7 +63,7 @@ func TestWaitAndGetPod(t *testing.T) {
 				LabelSelector:  podSelector,
 				TimeoutSeconds: &timeout,
 			}
-			pod, err := fkclient.WaitAndGetPod(watchOptions, corev1.PodRunning, "Waiting for component to start")
+			pod, err := fkclient.WaitAndGetPod(watchOptions, corev1.PodRunning, "Waiting for component to start", false)
 
 			if !tt.wantErr == (err != nil) {
 				t.Fatalf(" client.WaitAndGetPod(string) unexpected error %v, wantErr %v", err, tt.wantErr)

@@ -40,7 +40,7 @@ func NewURLDeleteOptions() *URLDeleteOptions {
 // Complete completes URLDeleteOptions after they've been Deleted
 func (o *URLDeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	if experimental.IsExperimentalModeEnabled() {
-		o.Context = genericclioptions.NewContext(cmd)
+		o.Context = genericclioptions.NewDevfileContext(cmd)
 		o.urlName = args[0]
 		err = o.InitEnvInfoFromContext()
 		if err != nil {

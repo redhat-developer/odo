@@ -212,6 +212,11 @@ test-cmd-devfile-push:
 .PHONY: test-cmd-devfile-watch
 test-cmd-devfile-watch:
 	ginkgo $(GINKGO_FLAGS) -focus="odo devfile watch command tests" tests/integration/devfile/
+
+# Run odo devfile delete command tests
+.PHONY: test-cmd-devfile-delete
+test-cmd-devfile-delete:
+	ginkgo $(GINKGO_FLAGS) -focus="odo devfile delete command tests" tests/integration/devfile/
 	
 # Run odo storage command tests
 .PHONY: test-cmd-storage

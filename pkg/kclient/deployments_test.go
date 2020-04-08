@@ -1,6 +1,7 @@
 package kclient
 
 import (
+	"github.com/openshift/odo/pkg/util"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -168,6 +169,48 @@ func TestUpdateDeployment(t *testing.T) {
 
 			}
 
+		})
+	}
+}
+
+func TestDeleteDeployment(t *testing.T) {
+	type args struct {
+		labels map[string]string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "case 1: normal delete with labels",
+			args: args{labels: map[string]string{
+				"component": "frontend",
+			}},
+			wantErr: false,
+		},
+		{
+			name:    "case 2: delete with empty labels",
+			args:    args{labels: nil},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// initialising the fakeclient
+			fkclient, fkclientset := FakeNew()
+			fkclient.Namespace = "default"
+
+			fkclientset.Kubernetes.PrependReactor("delete-collection", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+				if util.ConvertLabelsToSelector(tt.args.labels) != action.(ktesting.DeleteCollectionAction).GetListRestrictions().Labels.String() {
+					return true, nil, errors.Errorf("collection labels are not matching, wanted: %v, got: %v", util.ConvertLabelsToSelector(tt.args.labels), action.(ktesting.DeleteCollectionAction).GetListRestrictions().Labels.String())
+				}
+				return true, nil, nil
+			})
+
+			if err := fkclient.DeleteDeployment(tt.args.labels); (err != nil) != tt.wantErr {
+				t.Errorf("DeleteDeployment() error = %v, wantErr %v", err, tt.wantErr)
+			}
 		})
 	}
 }

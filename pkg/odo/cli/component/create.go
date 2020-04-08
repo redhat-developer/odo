@@ -16,6 +16,7 @@ import (
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	catalogutil "github.com/openshift/odo/pkg/odo/cli/catalog/util"
 	"github.com/openshift/odo/pkg/odo/cli/component/ui"
@@ -286,7 +287,12 @@ func (co *CreateOptions) setResourceLimits() error {
 
 // Complete completes create args
 func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+
 	if experimental.IsExperimentalModeEnabled() {
+
+		// Add a disclaimer that we are in *experimental mode*
+		log.Experimental("Experimental mode is enabled, use at your own risk")
+
 		if len(args) == 0 {
 			co.interactive = true
 		}
@@ -327,13 +333,17 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 			componentName = ui.EnterDevfileComponentName(componentType)
 
-			if cmd.Flags().Changed("project") {
-				componentNamespace, err = cmd.Flags().GetString("project")
-				if err != nil {
-					return err
+			if len(co.devfileMetadata.componentNamespace) == 0 {
+				if cmd.Flags().Changed("project") {
+					componentNamespace, err = cmd.Flags().GetString("project")
+					if err != nil {
+						return err
+					}
+				} else {
+					componentNamespace = ui.EnterDevfileComponentNamespace(defaultComponentNamespace)
 				}
 			} else {
-				componentNamespace = ui.EnterDevfileComponentNamespace(defaultComponentNamespace)
+				componentNamespace = co.devfileMetadata.componentNamespace
 			}
 		} else {
 			// Direct mode (User enters the full command)
@@ -350,25 +360,32 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 				componentName = args[0]
 			}
 
-			if cmd.Flags().Changed("project") {
-				componentNamespace, err = cmd.Flags().GetString("project")
-				if err != nil {
-					return err
+			if len(co.devfileMetadata.componentNamespace) == 0 {
+				if cmd.Flags().Changed("project") {
+					componentNamespace, err = cmd.Flags().GetString("project")
+					if err != nil {
+						return err
+					}
+				} else {
+					componentNamespace = defaultComponentNamespace
 				}
 			} else {
-				componentNamespace = defaultComponentNamespace
+				componentNamespace = co.devfileMetadata.componentNamespace
 			}
 		}
 
 		// Set devfileMetadata struct
 		co.devfileMetadata.componentType = componentType
 		co.devfileMetadata.componentName = strings.ToLower(componentName)
-		co.devfileMetadata.componentNamespace = componentNamespace
+		co.devfileMetadata.componentNamespace = strings.ToLower(componentNamespace)
+
+		// Categorize the sections
+		log.Info("Validation")
 
 		// Since we need to support both devfile and s2i, so we have to check if the component type is
 		// supported by devfile, if it is supported we return, but if it is not supported we still need to
 		// run all codes related with s2i
-		spinner := log.Spinner("Checking if the specified component type is supported devfile component type")
+		spinner := log.Spinner("Checking Devfile compatibility")
 
 		for _, devfileComponent := range catalogDevfileList.Items {
 			if co.devfileMetadata.componentType == devfileComponent.Name && devfileComponent.Support {
@@ -583,10 +600,11 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 // Validate validates the create parameters
 func (co *CreateOptions) Validate() (err error) {
+
 	if experimental.IsExperimentalModeEnabled() {
 		if co.devfileMetadata.devfileSupport {
 			// Validate if the devfile component that user wants to create already exists
-			spinner := log.Spinner("Validating component")
+			spinner := log.Spinner("Validating Devfile")
 			defer spinner.End(false)
 
 			if util.CheckPathExists(EnvFilePath) {
@@ -598,11 +616,18 @@ func (co *CreateOptions) Validate() (err error) {
 				return err
 			}
 
+			err := util.ValidateK8sResourceName("component namespace", co.devfileMetadata.componentNamespace)
+			if err != nil {
+				return err
+			}
+
 			spinner.End(true)
 
 			return nil
 		}
 	}
+
+	log.Info("Validation")
 
 	supported, err := catalog.IsComponentTypeSupported(co.Context.Client, *co.componentSettings.Type)
 	if err != nil {
@@ -665,6 +690,30 @@ func (co *CreateOptions) Run() (err error) {
 	} else {
 		log.Italic("\nPlease use `odo push` command to create the component with source deployed")
 	}
+	if log.IsJSON() {
+		var componentDesc component.Component
+		co.Context, co.LocalConfigInfo, err = genericclioptions.UpdatedContext(co.Context)
+		if err != nil {
+			return err
+		}
+		existsInCluster, err := component.Exists(co.Context.Client, *co.componentSettings.Name, co.Context.Application)
+		if err != nil {
+			return err
+		}
+		if existsInCluster {
+			componentDesc, err = component.GetComponent(co.Context.Client, *co.componentSettings.Name, co.Context.Application, co.Context.Project)
+			if err != nil {
+				return err
+			}
+		} else {
+			componentDesc, err = component.GetComponentFromConfig(co.LocalConfigInfo)
+			if err != nil {
+				return err
+			}
+		}
+		componentDesc.Spec.Ports = co.LocalConfigInfo.GetPorts()
+		machineoutput.OutputSuccess(componentDesc)
+	}
 	return
 }
 
@@ -704,7 +753,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 		Long:        createLongDesc,
 		Example:     fmt.Sprintf(createExample, fullName),
 		Args:        cobra.RangeArgs(0, 2),
-		Annotations: map[string]string{"command": "component"},
+		Annotations: map[string]string{"machineoutput": "json", "command": "component"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(co, cmd, args)
 		},

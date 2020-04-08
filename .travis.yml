@@ -106,7 +106,7 @@ jobs:
 
     - <<: *base-test
       stage: test
-      name: "watch, storage, app, project, push, devfile catalog, devfile create, devfile push command integration tests"
+      name: "watch, storage, app, project, push, devfile catalog, devfile create, devfile push, devfile delete command integration tests"
       script:
         - ./scripts/oc-cluster.sh
         - make bin
@@ -121,6 +121,7 @@ jobs:
         - travis_wait make test-cmd-devfile-create
         - travis_wait make test-cmd-devfile-push
         - travis_wait make test-cmd-devfile-watch
+        - travis_wait make test-cmd-devfile-delete
         - odo logout
 
     - <<: *base-test

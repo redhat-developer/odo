@@ -3,17 +3,17 @@ package adapters
 import (
 	"fmt"
 
-	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
+	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 )
 
 // NewPlatformAdapter returns a Devfile adapter for the targeted platform
-func NewPlatformAdapter(componentName string, devObj devfile.DevfileObj, platformContext interface{}) (PlatformAdapter, error) {
+func NewPlatformAdapter(componentName string, devObj devfileParser.DevfileObj, platformContext interface{}) (PlatformAdapter, error) {
 
 	adapterContext := common.AdapterContext{
 		ComponentName: componentName,

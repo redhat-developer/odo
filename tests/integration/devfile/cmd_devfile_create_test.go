@@ -56,6 +56,14 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 	})
 
+	Context("When executing odo create with devfile component type argument and --namespace flag", func() {
+		It("should successfully create the devfile component", func() {
+			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+			componentNamespace := helper.RandString(6)
+			helper.CmdShouldPass("odo", "create", "openLiberty", "--namespace", componentNamespace)
+		})
+	})
+
 	Context("When executing odo create with devfile component name that contains unsupported character", func() {
 		It("should failed with component name is not valid and prompt supported character", func() {
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
@@ -80,6 +88,16 @@ var _ = Describe("odo devfile create command tests", func() {
 			componentName := helper.RandString(64)
 			output := helper.CmdShouldFail("odo", "create", "openLiberty", componentName)
 			helper.MatchAllInOutput(output, []string{"Contain at most 63 characters"})
+		})
+	})
+
+	Context("When executing odo create with an invalid devfile component", func() {
+		It("should fail with please run 'odo catalog list components'", func() {
+			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+			fakeComponentName := "fake-component"
+			output := helper.CmdShouldFail("odo", "create", fakeComponentName)
+			expectedString := "\"" + fakeComponentName + "\" not found"
+			helper.MatchAllInOutput(output, []string{expectedString})
 		})
 	})
 })

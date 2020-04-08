@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/devfile"
 	adapterutils "github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
+	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/log"
 	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
@@ -58,7 +58,9 @@ func NewURLCreateOptions() *URLCreateOptions {
 
 // Complete completes URLCreateOptions after they've been Created
 func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	if o.now {
+	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
+		o.Context = genericclioptions.NewDevfileContext(cmd)
+	} else if o.now {
 		o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 	} else {
 		o.Context = genericclioptions.NewContext(cmd)
@@ -69,7 +71,7 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 			return err
 		}
 
-		devObj, err := devfile.Parse(o.DevfilePath)
+		devObj, err := devfileParser.Parse(o.DevfilePath)
 		if err != nil {
 			return fmt.Errorf("fail to parse the devfile %s, with error: %s", o.DevfilePath, err)
 		}

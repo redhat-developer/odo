@@ -16,8 +16,10 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
-	versionsCommon "github.com/openshift/odo/pkg/devfile/versions/common"
+
 	"github.com/openshift/odo/pkg/exec"
+
+	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/sync"
@@ -52,6 +54,17 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	deletedFiles := []string{}
 	changedFiles := []string{}
 	isForcePush := false
+	podChanged := false
+	var podName string
+
+	// If the component already exists, retrieve the pod's name before it's potentially updated
+	if componentExists {
+		pod, err := a.waitAndGetComponentPod(true)
+		if err != nil {
+			return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
+		}
+		podName = pod.GetName()
+	}
 
 	// Validate the devfile build and run commands
 	pushDevfileCommands, err := common.ValidateAndGetPushDevfileCommands(a.Devfile.Data, a.devfileBuildCmd, a.devfileRunCmd)
@@ -69,11 +82,22 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return errors.Wrap(err, "error while waiting for deployment rollout")
 	}
 
+	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
+	pod, err := a.waitAndGetComponentPod(false)
+	if err != nil {
+		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
+	}
+
+	// Compare the name of the pod with the one before the rollout. If they differ, it means there's a new pod and a force push is required
+	if componentExists && podName != pod.GetName() {
+		podChanged = true
+	}
+
 	// Sync source code to the component
 	// If syncing for the first time, sync the entire source directory
 	// If syncing to an already running component, sync the deltas
 	// If syncing from an odo watch process, skip this step, as we already have the list of changed and deleted files.
-	if !parameters.ForceBuild && len(parameters.WatchFiles) == 0 && len(parameters.WatchDeletedFiles) == 0 {
+	if !podChanged && !parameters.ForceBuild && len(parameters.WatchFiles) == 0 && len(parameters.WatchDeletedFiles) == 0 {
 		absIgnoreRules := util.GetAbsGlobExps(parameters.Path, parameters.IgnoredFiles)
 
 		spinner := log.NewStatus(log.GetStdout())
@@ -129,18 +153,8 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		deletedFiles = parameters.WatchDeletedFiles
 	}
 
-	if parameters.ForceBuild || !componentExists {
+	if parameters.ForceBuild || !componentExists || podChanged {
 		isForcePush = true
-	}
-
-	podSelector := fmt.Sprintf("component=%s", a.ComponentName)
-	watchOptions := metav1.ListOptions{
-		LabelSelector: podSelector,
-	}
-	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
-	pod, err := a.Client.WaitAndGetPod(watchOptions, corev1.PodRunning, "Waiting for component to start")
-	if err != nil {
-		return errors.Wrapf(err, "error while waiting for pod  %s", podSelector)
 	}
 
 	// Sync the local source code to the component
@@ -388,6 +402,19 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	return nil
 }
 
+func (a Adapter) waitAndGetComponentPod(hideSpinner bool) (*corev1.Pod, error) {
+	podSelector := fmt.Sprintf("component=%s", a.ComponentName)
+	watchOptions := metav1.ListOptions{
+		LabelSelector: podSelector,
+	}
+	// Wait for Pod to be in running state otherwise we can't sync data to it.
+	pod, err := a.Client.WaitAndGetPod(watchOptions, corev1.PodRunning, "Waiting for component to start", hideSpinner)
+	if err != nil {
+		return nil, errors.Wrapf(err, "error while waiting for pod %s", podSelector)
+	}
+	return pod, nil
+}
+
 // Push syncs source code from the user's disk to the component
 func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand, componentExists, show bool, podName string, containers []corev1.Container) (err error) {
 	var buildRequired bool
@@ -551,4 +578,13 @@ func getCmdToDeleteFiles(delFiles []string, syncFolder string) []string {
 	glog.V(4).Infof("remote files marked for deletion are %+v", rmPaths)
 	cmdArr := []string{"rm", "-rf"}
 	return append(cmdArr, rmPaths...)
+}
+
+// Delete deletes the component
+func (a Adapter) Delete(labels map[string]string) error {
+	if !utils.ComponentExists(a.Client, a.ComponentName) {
+		return errors.Errorf("the component %s doesn't exist on the cluster", a.ComponentName)
+	}
+
+	return a.Client.DeleteDeployment(labels)
 }

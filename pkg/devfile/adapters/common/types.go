@@ -1,13 +1,13 @@
 package common
 
 import (
-	"github.com/openshift/odo/pkg/devfile"
+	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 )
 
 // AdapterContext is a construct that is common to all adapters
 type AdapterContext struct {
-	ComponentName string             // ComponentName is the odo component name, it is NOT related to any devfile components
-	Devfile       devfile.DevfileObj // Devfile is the object returned by the Devfile parser
+	ComponentName string                   // ComponentName is the odo component name, it is NOT related to any devfile components
+	Devfile       devfileParser.DevfileObj // Devfile is the object returned by the Devfile parser
 }
 
 // DevfileVolume is a struct for Devfile volume that is common to all the adapters

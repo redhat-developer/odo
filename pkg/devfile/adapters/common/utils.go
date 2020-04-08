@@ -5,8 +5,8 @@ import (
 
 	"github.com/golang/glog"
 
-	"github.com/openshift/odo/pkg/devfile/versions"
-	"github.com/openshift/odo/pkg/devfile/versions/common"
+	"github.com/openshift/odo/pkg/devfile/parser/data"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 )
 
 // PredefinedDevfileCommands encapsulates constants for predefined devfile commands
@@ -24,7 +24,7 @@ const (
 
 	// Default Image that will be used containing the supervisord binary and assembly scripts
 	// use GetBootstrapperImage() function instead of this variable
-	defaultBootstrapperImage = "quay.io/odo-dev/init:1.1.2" // Switched temporarily, will revert back when registry.access.redhat.com/openshiftdo/odo-init-image-rhel7:1.0.2 is updated
+	defaultBootstrapperImage = "registry.access.redhat.com/openshiftdo/odo-init-image-rhel7:1.1.2"
 
 	// SupervisordVolumeName Create a custom name and (hope) that users don't use the *exact* same name in their deployment (occlient.go)
 	SupervisordVolumeName = "odo-supervisord-shared-data"
@@ -59,7 +59,8 @@ func GetBootstrapperImage() string {
 }
 
 // GetSupportedComponents iterates through the components in the devfile and returns a list of odo supported components
-func GetSupportedComponents(data versions.DevfileData) (components []common.DevfileComponent) {
+func GetSupportedComponents(data data.DevfileData) []common.DevfileComponent {
+	var components []common.DevfileComponent
 	// Only components with aliases are considered because without an alias commands cannot reference them
 	for _, comp := range data.GetAliasedComponents() {
 		if isComponentSupported(comp) {
