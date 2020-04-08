@@ -137,3 +137,40 @@ func getNamespace() (string, error) {
 	Namespace := envInfo.GetNamespace()
 	return Namespace, nil
 }
+
+// DevfileComponentDelete deletes the devfile component
+func (do *DeleteOptions) DevfileComponentDelete() error {
+	// Parse devfile
+	devObj, err := devfile.Parse(do.devfilePath)
+	if err != nil {
+		return err
+	}
+
+	componentName, err := getComponentName()
+	if err != nil {
+		return err
+	}
+
+	kc := kubernetes.KubernetesContext{
+		Namespace: do.namespace,
+	}
+
+	labels := map[string]string{
+		"component": componentName,
+	}
+	devfileHandler, err := adapters.NewPlatformAdapter(componentName, devObj, kc)
+	if err != nil {
+		return err
+	}
+
+	spinner := log.Spinner(fmt.Sprintf("Deleting devfile component %s", componentName))
+	defer spinner.End(false)
+
+	err = devfileHandler.Delete(labels)
+	if err != nil {
+		return err
+	}
+	spinner.End(true)
+	log.Successf("Successfully deleted component")
+	return nil
+}

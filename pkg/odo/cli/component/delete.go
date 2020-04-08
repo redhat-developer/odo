@@ -2,6 +2,9 @@ package component
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/odo/util/experimental"
+	"path/filepath"
 
 	"github.com/openshift/odo/pkg/util"
 
@@ -36,15 +39,31 @@ type DeleteOptions struct {
 	componentContext         string
 	isCmpExists              bool
 	*ComponentOptions
+
+	// devfile path
+	devfilePath     string
+	namespace       string
+	EnvSpecificInfo *envinfo.EnvSpecificInfo
 }
 
 // NewDeleteOptions returns new instance of DeleteOptions
 func NewDeleteOptions() *DeleteOptions {
-	return &DeleteOptions{false, false, "", false, &ComponentOptions{}}
+	return &DeleteOptions{false, false, "", false, &ComponentOptions{}, "", "", nil}
 }
 
 // Complete completes log args
 func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	do.devfilePath = filepath.Join(do.componentContext, do.devfilePath)
+
+	// if experimental mode is enabled and devfile is present
+	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(do.devfilePath) {
+		do.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(do.componentContext)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
 	do.Context = genericclioptions.NewContext(cmd)
 	err = do.ComponentOptions.Complete(name, cmd, args)
 
@@ -56,6 +75,11 @@ func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string
 
 // Validate validates the list parameters
 func (do *DeleteOptions) Validate() (err error) {
+	// if experimental mode is enabled and devfile is present
+	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(do.devfilePath) {
+		return nil
+	}
+
 	if do.Context.Project == "" || do.Application == "" {
 		return odoutil.ThrowContextError()
 	}
@@ -73,6 +97,39 @@ func (do *DeleteOptions) Validate() (err error) {
 func (do *DeleteOptions) Run() (err error) {
 	glog.V(4).Infof("component delete called")
 	glog.V(4).Infof("args: %#v", do)
+
+	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(do.devfilePath) {
+		// devfile delete
+		if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the devfile component?")) {
+			err = do.DevfileComponentDelete()
+			if err != nil {
+				log.Errorf("error occurred while deleting component, cause: %v", err)
+			}
+		} else {
+			log.Error("Aborting deletion of component")
+		}
+
+		if do.componentDeleteAllFlag {
+			if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete env folder?")) {
+				if !do.EnvSpecificInfo.EnvInfoFileExists() {
+					return fmt.Errorf("env folder doesn't exist for the component")
+				}
+				err = do.EnvSpecificInfo.DeleteEnvInfoFile()
+				if err != nil {
+					return err
+				}
+				err = do.EnvSpecificInfo.DeleteEnvDirIfEmpty()
+				if err != nil {
+					return err
+				}
+				log.Successf("Successfully deleted env file")
+			} else {
+				log.Error("Aborting deletion of env folder")
+			}
+		}
+
+		return nil
+	}
 
 	if do.isCmpExists {
 		err = printDeleteComponentInfo(do.Client, do.componentName, do.Context.Application, do.Context.Project)
@@ -168,6 +225,12 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(do, cmd, args)
 		},
+	}
+
+	// enable devfile flag if experimental mode is enabled
+	if experimental.IsExperimentalModeEnabled() {
+		componentDeleteCmd.Flags().StringVar(&do.devfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
+		componentDeleteCmd.Flags().StringVar(&do.namespace, "namespace", "", "Namespace to push the component to")
 	}
 
 	componentDeleteCmd.Flags().BoolVarP(&do.componentForceDeleteFlag, "force", "f", false, "Delete component without prompting")
