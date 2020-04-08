@@ -1856,7 +1856,7 @@ func (c *Client) CollectEvents(selector string, events map[string]corev1.Event, 
 						(events)[e.Name] = *newEvent
 						glog.V(4).Infof("Warning Event: Count: %d, Reason: %s, Message: %s", e.Count, e.Reason, e.Message)
 						// Change the spinner message to show the warning
-						spinner.WarningStatus(fmt.Sprintf("WARNING x%d: %s, use `-v` for more information.", e.Count, e.Reason))
+						spinner.WarningStatus(fmt.Sprintf("WARNING x%d: %s", e.Count, e.Reason))
 					}
 
 				}
