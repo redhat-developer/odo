@@ -616,9 +616,12 @@ func (co *CreateOptions) Validate() (err error) {
 				return err
 			}
 
-			err := util.ValidateK8sResourceName("component namespace", co.devfileMetadata.componentNamespace)
-			if err != nil {
-				return err
+			// Only validate namespace if pushtarget isn't docker
+			if !pushtarget.IsPushTargetDocker() {
+				err := util.ValidateK8sResourceName("component namespace", co.devfileMetadata.componentNamespace)
+				if err != nil {
+					return err
+				}
 			}
 
 			spinner.End(true)
