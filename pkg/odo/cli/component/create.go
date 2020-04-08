@@ -298,9 +298,6 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			return errors.New("This directory already contains a component")
 		}
 
-		// Add a disclaimer that we are in *experimental mode*
-		log.Experimental("Experimental mode is enabled, use at your own risk")
-
 		if len(args) == 0 {
 			co.interactive = true
 		}
