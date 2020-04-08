@@ -106,6 +106,7 @@ The `TAGS` column represents the available image versions, for example, `10` rep
 == Official documentation
 
 * link:https://docs.openshift.com/container-platform/latest/cli_reference/openshift_developer_cli/installing-odo.html[Installing odo]
+* link:https://docs.openshift.com/container-platform/latest/cli_reference/openshift_developer_cli/odo-architecture.html[Odo architecture]
 * link:https://docs.openshift.com/container-platform/latest/cli_reference/openshift_developer_cli/creating-a-single-component-application-with-odo.html[Creating a single-component application with odo]
 * link:https://docs.openshift.com/container-platform/latest/cli_reference/openshift_developer_cli/creating-a-multicomponent-application-with-odo.html[Creating a multicomponent application with odo]
 * link:https://docs.openshift.com/container-platform/latest/cli_reference/openshift_developer_cli/creating-an-application-with-a-database.html[Creating an application with a database]
