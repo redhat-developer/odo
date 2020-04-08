@@ -410,14 +410,11 @@ func UpdatedContext(context *Context) (*Context, *config.LocalConfigInfo, error)
 func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingConfiguration bool) *Context {
 	// create a new occlient
 	client := client(command)
-	// resolve output flag
-	outputFlag := FlagValueIfSet(command, OutputFlagName)
 
-	// create the internal context representation based on calculated values
-	internalCxt := internalCxt{
-		Client:     client,
-		OutputFlag: outputFlag,
-		command:    command,
+	// create a new kclient
+	KClient, err := kclient.New()
+	if err != nil {
+		util.LogErrorAndExit(err, "")
 	}
 
 	// Check for valid config
@@ -431,9 +428,20 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 
 	// resolve application
 	app := resolveApp(command, createAppIfNeeded, localConfiguration)
-	internalCxt.LocalConfigInfo = localConfiguration
-	internalCxt.Application = app
-	internalCxt.Project = namespace
+
+	// resolve output flag
+	outputFlag := FlagValueIfSet(command, OutputFlagName)
+
+	// create the internal context representation based on calculated values
+	internalCxt := internalCxt{
+		Client:          client,
+		Project:         namespace,
+		Application:     app,
+		OutputFlag:      outputFlag,
+		command:         command,
+		LocalConfigInfo: localConfiguration,
+		KClient:         KClient,
+	}
 
 	// create a context from the internal representation
 	context := &Context{
@@ -443,7 +451,6 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 	context.cmp = resolveComponent(command, localConfiguration, context)
 
 	return context
-
 }
 
 // newDevfileContext creates a new context based on command flags for devfile components
