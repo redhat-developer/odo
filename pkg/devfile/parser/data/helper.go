@@ -1,4 +1,4 @@
-package versions
+package data
 
 import (
 	"fmt"

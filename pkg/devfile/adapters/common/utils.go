@@ -5,8 +5,8 @@ import (
 
 	"github.com/golang/glog"
 
-	"github.com/openshift/odo/pkg/devfile/versions"
-	"github.com/openshift/odo/pkg/devfile/versions/common"
+	"github.com/openshift/odo/pkg/devfile/parser/data"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 )
 
 // PredefinedDevfileCommands encapsulates constants for predefined devfile commands
@@ -59,7 +59,8 @@ func GetBootstrapperImage() string {
 }
 
 // GetSupportedComponents iterates through the components in the devfile and returns a list of odo supported components
-func GetSupportedComponents(data versions.DevfileData) (components []common.DevfileComponent) {
+func GetSupportedComponents(data data.DevfileData) []common.DevfileComponent {
+	var components []common.DevfileComponent
 	// Only components with aliases are considered because without an alias commands cannot reference them
 	for _, comp := range data.GetAliasedComponents() {
 		if isComponentSupported(comp) {

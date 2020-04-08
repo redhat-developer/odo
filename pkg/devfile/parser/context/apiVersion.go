@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
-	"github.com/openshift/odo/pkg/devfile/versions"
+	"github.com/openshift/odo/pkg/devfile/parser/data"
 	"github.com/pkg/errors"
 )
 
@@ -43,5 +43,5 @@ func (d *DevfileCtx) GetApiVersion() string {
 
 // IsApiVersionSupported return true if the apiVersion in DevfileCtx is supported in odo
 func (d *DevfileCtx) IsApiVersionSupported() bool {
-	return versions.IsApiVersionSupported(d.apiVersion)
+	return data.IsApiVersionSupported(d.apiVersion)
 }

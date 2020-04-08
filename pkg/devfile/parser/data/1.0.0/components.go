@@ -3,7 +3,7 @@ package version100
 import (
 	"strings"
 
-	"github.com/openshift/odo/pkg/devfile/versions/common"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 )
 
 // GetComponents returns the slice of DevfileComponent objects parsed from the Devfile

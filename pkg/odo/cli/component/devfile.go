@@ -9,7 +9,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
@@ -19,6 +18,7 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
+	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/log"
 )
 
@@ -39,7 +39,7 @@ feature progresses.
 // DevfilePush has the logic to perform the required actions for a given devfile
 func (po *PushOptions) DevfilePush() (err error) {
 	// Parse devfile
-	devObj, err := devfile.Parse(po.DevfilePath)
+	devObj, err := devfileParser.Parse(po.DevfilePath)
 	if err != nil {
 		return err
 	}
@@ -141,7 +141,7 @@ func getNamespace() (string, error) {
 // DevfileComponentDelete deletes the devfile component
 func (do *DeleteOptions) DevfileComponentDelete() error {
 	// Parse devfile
-	devObj, err := devfile.Parse(do.devfilePath)
+	devObj, err := devfileParser.Parse(do.devfilePath)
 	if err != nil {
 		return err
 	}

@@ -1,7 +1,7 @@
 package version100
 
 import (
-	"github.com/openshift/odo/pkg/devfile/versions/common"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 )
 
 // Devfile100 struct maps to devfile 1.0.0 version schema
