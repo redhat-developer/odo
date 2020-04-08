@@ -1,10 +1,11 @@
 package devfile
 
 import (
-	"github.com/openshift/odo/tests/helper"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/openshift/odo/tests/helper"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -44,10 +45,9 @@ var _ = Describe("odo devfile delete command tests", func() {
 	Context("when devfile delete command is executed", func() {
 
 		It("should delete the component created from the devfile and also the owned resources", func() {
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
-
 			componentName := helper.RandString(6)
 			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--project", namespace, componentName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
 
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 
@@ -66,10 +66,9 @@ var _ = Describe("odo devfile delete command tests", func() {
 	Context("when devfile delete command is executed with all flag", func() {
 
 		It("should delete the component created from the devfile and also the env folder", func() {
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
-
 			componentName := helper.RandString(6)
 			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--project", namespace, componentName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
 
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 
