@@ -20,8 +20,7 @@ func NewPlatformAdapter(componentName string, devObj devfile.DevfileObj, platfor
 		Devfile:       devObj,
 	}
 
-	// Only the kubernetes adapter is implemented at the moment
-	// When there are others this function should be updated to retrieve the correct adapter for the desired platform target
+	// If the pushtarget is set to Docker, initialize the Docker adapter, otherwise initialize the Kubernetes adapter
 	if pushtarget.IsPushTargetDocker() {
 		return createDockerAdapter(adapterContext)
 	}

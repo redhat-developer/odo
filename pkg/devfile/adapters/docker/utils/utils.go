@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/openshift/odo/pkg/devfile/versions/common"
 	"github.com/openshift/odo/pkg/lclient"
 )
@@ -44,4 +45,24 @@ func DoesContainerNeedUpdating(component common.DevfileComponent, containerConfi
 	// Need to convert the devfile envvars to the format expected by Docker
 	devfileEnvVars := ConvertEnvs(component.Env)
 	return !reflect.DeepEqual(devfileEnvVars, containerConfig.Env)
+}
+
+func AddProjectVolumeToComp(projectVolumeName string, hostConfig *container.HostConfig) *container.HostConfig {
+	mount := mount.Mount{
+		Type:   mount.TypeVolume,
+		Source: projectVolumeName,
+		Target: lclient.OdoSourceVolumeMount,
+	}
+	hostConfig.Mounts = append(hostConfig.Mounts, mount)
+
+	return hostConfig
+}
+
+// GetProjectVolumeLabels returns the label selectors used to retrieve the project/source volume for a given component
+func GetProjectVolumeLabels(componentName string) map[string]string {
+	volumeLabels := map[string]string{
+		"component": componentName,
+		"type":      "projects",
+	}
+	return volumeLabels
 }

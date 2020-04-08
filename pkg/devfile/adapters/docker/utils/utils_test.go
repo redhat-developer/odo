@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/openshift/odo/pkg/devfile/versions/common"
 	"github.com/openshift/odo/pkg/lclient"
 )
@@ -171,4 +172,129 @@ func TestDoesContainerNeedUpdating(t *testing.T) {
 			t.Errorf("expected %v, wanted %v", needsUpdating, tt.want)
 		}
 	}
+}
+
+func TestAddProjectVolumeToComp(t *testing.T) {
+	projectVolumeName := "projects"
+
+	tests := []struct {
+		name   string
+		mounts []mount.Mount
+		want   container.HostConfig
+	}{
+		{
+			name:   "Case 1: No existing mounts",
+			mounts: []mount.Mount{},
+			want: container.HostConfig{
+				Mounts: []mount.Mount{
+					{
+						Type:   mount.TypeVolume,
+						Source: projectVolumeName,
+						Target: lclient.OdoSourceVolumeMount,
+					},
+				},
+			},
+		},
+		{
+			name: "Case 2: One existing mount",
+			mounts: []mount.Mount{
+				{
+					Type:   mount.TypeBind,
+					Source: "/my/local/folder",
+					Target: "/test",
+				},
+			},
+			want: container.HostConfig{
+				Mounts: []mount.Mount{
+					{
+						Type:   mount.TypeBind,
+						Source: "/my/local/folder",
+						Target: "/test",
+					},
+					{
+						Type:   mount.TypeVolume,
+						Source: projectVolumeName,
+						Target: lclient.OdoSourceVolumeMount,
+					},
+				},
+			},
+		},
+		{
+			name: "Case 3: Multiple mounts",
+			mounts: []mount.Mount{
+				{
+					Type:   mount.TypeBind,
+					Source: "/my/local/folder",
+					Target: "/test",
+				},
+				{
+					Type:   mount.TypeBind,
+					Source: "/my/second/folder",
+					Target: "/two",
+				},
+			},
+			want: container.HostConfig{
+				Mounts: []mount.Mount{
+					{
+						Type:   mount.TypeBind,
+						Source: "/my/local/folder",
+						Target: "/test",
+					},
+					{
+						Type:   mount.TypeBind,
+						Source: "/my/second/folder",
+						Target: "/two",
+					},
+					{
+						Type:   mount.TypeVolume,
+						Source: projectVolumeName,
+						Target: lclient.OdoSourceVolumeMount,
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		hostConfig := container.HostConfig{
+			Mounts: tt.mounts,
+		}
+		AddProjectVolumeToComp(projectVolumeName, &hostConfig)
+		if !reflect.DeepEqual(tt.want, hostConfig) {
+			t.Errorf("expected %v, actual %v", tt.want, hostConfig)
+		}
+	}
+
+}
+
+func TestGetProjectVolumeLabels(t *testing.T) {
+
+	tests := []struct {
+		name          string
+		componentName string
+		want          map[string]string
+	}{
+		{
+			name:          "Case 1: Regular component name",
+			componentName: "some-component",
+			want: map[string]string{
+				"component": "some-component",
+				"type":      "projects",
+			},
+		},
+		{
+			name:          "Case 1: Empty component name",
+			componentName: "",
+			want: map[string]string{
+				"component": "",
+				"type":      "projects",
+			},
+		},
+	}
+	for _, tt := range tests {
+		labels := GetProjectVolumeLabels(tt.componentName)
+		if !reflect.DeepEqual(tt.want, labels) {
+			t.Errorf("expected %v, actual %v", tt.want, labels)
+		}
+	}
+
 }
