@@ -28,13 +28,12 @@ var describeExample = ktemplates.Examples(`  # Describe nodejs component
 // DescribeOptions is a dummy container to attach complete, validate and run pattern
 type DescribeOptions struct {
 	componentContext string
-	isPushed         bool
 	*ComponentOptions
 }
 
 // NewDescribeOptions returns new instance of ListOptions
 func NewDescribeOptions() *DescribeOptions {
-	return &DescribeOptions{"", false, &ComponentOptions{}}
+	return &DescribeOptions{"", &ComponentOptions{}}
 }
 
 // Complete completes describe args
@@ -52,22 +51,18 @@ func (do *DescribeOptions) Validate() (err error) {
 		return odoutil.ThrowContextError()
 	}
 
-	existsInCluster, err := component.Exists(do.Context.Client, do.componentName, do.Context.Application)
-	if err != nil {
-		return err
-	}
-	if existsInCluster {
-		do.isPushed = true
-	}
-
 	return nil
 }
 
 // Run has the logic to perform the required actions as part of command
 func (do *DescribeOptions) Run() (err error) {
 	var componentDesc component.Component
-	if !do.isPushed {
+
+	state := component.GetComponentState(do.Context.Client, do.componentName, do.Context.Application)
+
+	if state == component.StateTypeNotPushed || state == component.StateTypeUnknown {
 		componentDesc, err = component.GetComponentFromConfig(do.LocalConfigInfo)
+		componentDesc.Status.State = state
 		if err != nil {
 			return err
 		}

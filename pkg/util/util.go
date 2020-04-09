@@ -766,3 +766,22 @@ func ValidateK8sResourceName(key string, value string) error {
 
 	return nil
 }
+
+// CheckKubeConfigExist checks for existence of kubeconfig
+func CheckKubeConfigExist() bool {
+
+	var kubeconfig string
+
+	if os.Getenv("KUBECONFIG") != "" {
+		kubeconfig = os.Getenv("KUBECONFIG")
+	} else {
+		home, _ := os.UserHomeDir()
+		kubeconfig = fmt.Sprintf("%s/.kube/config", home)
+	}
+
+	if CheckPathExists(kubeconfig) {
+		return true
+	}
+
+	return false
+}

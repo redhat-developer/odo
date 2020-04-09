@@ -2731,11 +2731,7 @@ func (c *Client) GetDeploymentConfigFromName(name string) (*appsv1.DeploymentCon
 	glog.V(4).Infof("Getting DeploymentConfig: %s", name)
 	deploymentConfig, err := c.appsClient.DeploymentConfigs(c.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
-		if !strings.Contains(err.Error(), fmt.Sprintf(DEPLOYMENT_CONFIG_NOT_FOUND_ERROR_STR, name)) {
-			return nil, errors.Wrapf(err, "unable to get DeploymentConfig %s", name)
-		} else {
-			return nil, DEPLOYMENT_CONFIG_NOT_FOUND
-		}
+		return nil, err
 	}
 	return deploymentConfig, nil
 }
