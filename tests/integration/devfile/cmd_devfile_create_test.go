@@ -33,6 +33,27 @@ var _ = Describe("odo devfile create command tests", func() {
 		os.Unsetenv("GLOBALODOCONFIG")
 	})
 
+	Context("Enabling experimental preference should show a disclaimer", func() {
+		It("checks that the experimental warning appears for create", func() {
+			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+
+			// Check that it will contain the experimental mode output
+			experimentalOutputMsg := "Experimental mode is enabled, use at your own risk"
+			Expect(helper.CmdShouldPass("odo", "create", "nodejs")).To(ContainSubstring(experimentalOutputMsg))
+
+		})
+
+		It("checks that the experimental warning does *not* appear when Experimental is set to false for create", func() {
+			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "false")
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+
+			// Check that it will contain the experimental mode output
+			experimentalOutputMsg := "Experimental mode is enabled, use at your own risk"
+			Expect(helper.CmdShouldPass("odo", "create", "nodejs")).To(Not(ContainSubstring(experimentalOutputMsg)))
+		})
+	})
+
 	Context("When executing odo create with devfile component type argument", func() {
 		It("should successfully create the devfile component", func() {
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
