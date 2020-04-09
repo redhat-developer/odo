@@ -173,7 +173,7 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 }
 
 // GetVolumes iterates through the components in the devfile and returns a map of component alias to the devfile volumes
-func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]adaptersCommon.DevfileVolume {
+func GetVolumes(devfileObj devfileParser.DevfileObj) []adaptersCommon.ComponentVolumesPair {
 	// componentAliasToVolumes maps the Devfile Component Alias to the Devfile Component Volumes
 	componentAliasToVolumes := []adaptersCommon.ComponentVolumesPair{}
 	size := volumeSize
