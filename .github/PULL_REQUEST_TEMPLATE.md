@@ -7,11 +7,14 @@
 > /kind cleanup
 > /kind deprecation
 > /kind design
-> /kind documentation
 > /kind failing-test
 > /kind feature
 > /kind flake
 > /kind code-refactoring
+>
+> Documentation changes: Please include [skip ci] in your commit message as well
+> /kind documentation
+> [skip ci]
 
 **What does does this PR do / why we need it**:
 
