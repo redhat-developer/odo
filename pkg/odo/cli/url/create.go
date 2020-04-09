@@ -27,7 +27,7 @@ const createRecommendedCommandName = "create"
 var (
 	urlCreateShortDesc = `Create a URL for a component`
 	urlCreateLongDesc  = ktemplates.LongDesc(`Create a URL for a component.
-	The created URL can be used to access the specified component from outside the OpenShift cluster.
+	The created URL can be used to access the specified component from outside the cluster.
 	`)
 	urlCreateExample = ktemplates.Examples(`  # Create a URL with a specific name by automatically detecting the port used by the component
 	%[1]s example
@@ -206,7 +206,7 @@ func (o *URLCreateOptions) Run() (err error) {
 			return errors.Wrap(err, "failed to push changes")
 		}
 	} else {
-		log.Italic("\nTo create URL on the OpenShift Cluster, please use `odo push`")
+		log.Italic("\nTo create the URL on the cluster, please use `odo push`")
 	}
 
 	return
