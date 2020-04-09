@@ -395,6 +395,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		spinner.End(false)
 		log.Italic("\nPlease run 'odo catalog list components' for a list of supported devfile component types")
+		return errors.New("Provided component is unknown")
 	}
 
 	if len(args) == 0 || !cmd.HasFlags() {
