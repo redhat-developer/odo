@@ -123,11 +123,12 @@ func Init(o *InitParameters) error {
 		return err
 	}
 
-	if err := addKustomize("bases", []string{"./pipelines"}, filepath.Join(getCICDDir(gitopsPath, o.Prefix), kustomize)); err != nil {
+	if err := addKustomize("bases", []string{"./pipelines"}, filepath.Join(getCICDDir(gitopsPath, o.Prefix), baseDir, kustomize)); err != nil {
 		return err
 	}
 
-	if err := addKustomize("bases", []string{}, filepath.Join(gitopsPath, envsDir, baseDir, kustomize)); err != nil {
+	// Add overlays
+	if err := addKustomize("bases", []string{"../base"}, filepath.Join(getCICDDir(gitopsPath, o.Prefix), "overlays", kustomize)); err != nil {
 		return err
 	}
 
@@ -172,7 +173,7 @@ func createPipelineResources(outputs map[string]interface{}, namespaces map[stri
 func writeResources(path string, files map[string]interface{}) ([]string, error) {
 	filenames := make([]string, 0)
 	for filename, item := range files {
-		err := marshalItemsToFile(filepath.Join(path, filename), list(item))
+		err := marshalItemsToFile(filepath.Join(path, filename), item)
 		if err != nil {
 			return nil, err
 		}
@@ -181,7 +182,7 @@ func writeResources(path string, files map[string]interface{}) ([]string, error)
 	return filenames, nil
 }
 
-func marshalItemsToFile(filename string, items []interface{}) error {
+func marshalItemsToFile(filename string, item interface{}) error {
 	err := os.MkdirAll(filepath.Dir(filename), 0755)
 	if err != nil {
 		return fmt.Errorf("failed to MkDirAll for %s: %v", filename, err)
@@ -191,19 +192,15 @@ func marshalItemsToFile(filename string, items []interface{}) error {
 		return fmt.Errorf("failed to Create file %s: %v", filename, err)
 	}
 	defer f.Close()
-	return marshalOutputs(f, items)
-}
-
-func list(i interface{}) []interface{} {
-	return []interface{}{i}
+	return marshalOutput(f, item)
 }
 
 func getPipelinesDir(rootPath, prefix string) string {
-	return filepath.Join(rootPath, envsDir, addPrefix(prefix, cicdDir), pipelineDir)
+	return filepath.Join(rootPath, envsDir, addPrefix(prefix, cicdDir), baseDir, pipelineDir)
 }
 
 func addKustomize(name string, items []string, path string) error {
-	content := make([]interface{}, 0)
+	content := []interface{}{}
 	content = append(content, map[string]interface{}{name: items})
 	return marshalItemsToFile(path, content)
 }
@@ -232,4 +229,12 @@ func isExisting(path string) (bool, error) {
 		return false, err
 	}
 	return true, nil
+}
+
+func isDirectory(path string) bool {
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return fileInfo.IsDir()
 }

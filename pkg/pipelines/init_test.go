@@ -22,8 +22,8 @@ func TestWriteResources(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to writeResources: %v", err)
 	}
-	assertFileContents(t, filepath.Join(tmpDir, "01_roles/serviceaccount.yaml"), []byte("key1: value1\n---\n"))
-	assertFileContents(t, filepath.Join(tmpDir, "02_tasks/buildah_task.yaml"), []byte("key2: value2\n---\n"))
+	assertFileContents(t, filepath.Join(tmpDir, "01_roles/serviceaccount.yaml"), []byte("key1: value1\n"))
+	assertFileContents(t, filepath.Join(tmpDir, "02_tasks/buildah_task.yaml"), []byte("key2: value2\n"))
 }
 
 func assertFileContents(t *testing.T, filename string, want []byte) {
