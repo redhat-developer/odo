@@ -4,6 +4,7 @@ import (
 	"github.com/pkg/errors"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth" // Required for Kube clusters which use auth plugins
 	"k8s.io/client-go/rest"
@@ -28,6 +29,10 @@ type Client struct {
 	KubeClientConfig *rest.Config
 	Namespace        string
 	OperatorClient   *operatorsclientset.OperatorsV1alpha1Client
+	// DynamicClient interacts with client-go's `dynamic` package. It is used
+	// to dynamically create service from an operator. It can take an arbitrary
+	// yaml and create k8s/OpenShift resource from it.
+	DynamicClient dynamic.Interface
 }
 
 // New creates a new client
@@ -56,6 +61,11 @@ func New() (*Client, error) {
 	}
 
 	client.OperatorClient, err = operatorsclientset.NewForConfig(client.KubeClientConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	client.DynamicClient, err = dynamic.NewForConfig(client.KubeClientConfig)
 	if err != nil {
 		return nil, err
 	}
