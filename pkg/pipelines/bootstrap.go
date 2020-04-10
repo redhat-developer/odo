@@ -128,7 +128,7 @@ func Bootstrap(o *BootstrapParameters) error {
 		outputs = append(outputs, res...)
 	}
 
-	return marshalOutputs(os.Stdout, outputs)
+	return marshalOutput(os.Stdout, outputs)
 }
 
 func createRoleBindings(ns map[string]string, sa *corev1.ServiceAccount) []interface{} {
@@ -231,17 +231,15 @@ func values(m map[string]string) []string {
 	return values
 }
 
-// marshalOutputs marshal outputs to given writer
-func marshalOutputs(out io.Writer, outputs []interface{}) error {
-	for _, r := range outputs {
-		data, err := yaml.Marshal(r)
-		if err != nil {
-			return fmt.Errorf("failed to marshal data: %w", err)
-		}
-		_, err = fmt.Fprintf(out, "%s---\n", data)
-		if err != nil {
-			return fmt.Errorf("failed to write data: %w", err)
-		}
+// marshalOutput marshal outputs to given writer
+func marshalOutput(out io.Writer, output interface{}) error {
+	data, err := yaml.Marshal(output)
+	if err != nil {
+		return fmt.Errorf("failed to marshal data: %w", err)
+	}
+	_, err = fmt.Fprintf(out, "%s", data)
+	if err != nil {
+		return fmt.Errorf("failed to write data: %w", err)
 	}
 	return nil
 }
