@@ -16,8 +16,6 @@ var _ = Describe("odo docker devfile push command tests", func() {
 	var currentWorkingDirectory string
 	var cmpName string
 
-	// TODO: all oc commands in all devfile related test should get replaced by kubectl
-	// TODO: to goal is not to use "oc"
 	dockerClient := helper.NewDockerRunner("docker")
 
 	// This is run after every Spec (It)

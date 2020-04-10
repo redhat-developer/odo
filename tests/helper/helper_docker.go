@@ -15,9 +15,9 @@ type DockerRunner struct {
 }
 
 // NewDockerRunner initializes new DockerRunner
-func NewDockerRunner(ocPath string) DockerRunner {
+func NewDockerRunner(dockerPath string) DockerRunner {
 	return DockerRunner{
-		path: ocPath,
+		path: dockerPath,
 	}
 }
 
