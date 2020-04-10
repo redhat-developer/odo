@@ -12,6 +12,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/debug"
 	"github.com/openshift/odo/pkg/odo/cli/login"
 	"github.com/openshift/odo/pkg/odo/cli/logout"
+	"github.com/openshift/odo/pkg/odo/cli/manifest"
 	"github.com/openshift/odo/pkg/odo/cli/pipelines"
 	"github.com/openshift/odo/pkg/odo/cli/preference"
 	"github.com/openshift/odo/pkg/odo/cli/project"
@@ -173,6 +174,7 @@ func NewCmdOdo(name, fullName string) *cobra.Command {
 		config.NewCmdConfiguration(config.RecommendedCommandName, util.GetFullName(fullName, config.RecommendedCommandName)),
 		preference.NewCmdPreference(preference.RecommendedCommandName, util.GetFullName(fullName, preference.RecommendedCommandName)),
 		debug.NewCmdDebug(debug.RecommendedCommandName, util.GetFullName(fullName, debug.RecommendedCommandName)),
+		manifest.NewCmdManifest(manifest.RecommendedCommandName, util.GetFullName(fullName, manifest.RecommendedCommandName)),
 		pipelines.NewCmdPipelines(pipelines.RecommendedCommandName, util.GetFullName(fullName, pipelines.RecommendedCommandName)),
 	)
 

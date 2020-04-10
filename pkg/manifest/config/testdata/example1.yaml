@@ -1,0 +1,32 @@
+environments:
+  - name: development
+    pipelines:
+      integration:
+        template: dev-ci-template
+        binding: dev-ci-binding
+      deployment:
+        template: dev-cd-template
+        binding: dev-cd-binding
+    apps:
+      - name: my-app-1
+        services:
+          - name: app-1-service-http
+            source_url: https://github.com/myproject/myservice.git
+          - name: app-1-service-metrics
+      - name: my-app-2
+        services:
+          - name: app-2-service
+  - name: staging
+    apps:
+      - name: my-app-1
+        config_repo:
+          url: https://github.com/testing/testing
+          target_revision: master
+          path: config
+  - name: production
+    apps:
+      - name: my-app-1
+        services:
+          - name: app-1-service-http
+          - name: app-1-service-metrics
+
