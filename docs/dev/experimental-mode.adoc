@@ -119,4 +119,4 @@ $ odo delete myspring
 
 The devfile registry can be accessed link:https://github.com/elsony/devfile-registry[here]. 
 
-For more information on how to develop and write a devfile, please visit link:https://docs.google.com/document/d/1piBG2Zu2PqPZSl0WySj25UouK3X5MKcFKqPrfC9ZAsc[Odo stack creation document]
+For more information on how to develop and write a devfile, please read the link:https://docs.google.com/document/d/1piBG2Zu2PqPZSl0WySj25UouK3X5MKcFKqPrfC9ZAsc[Odo stack creation] document.
