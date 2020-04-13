@@ -19,7 +19,7 @@ then
 fi
 
 MIRROR="https://mirror.openshift.com/pub/openshift-v4/clients/odo/$2/"
-INSTALLATION_GUIDE="https://docs.openshift.com/container-platform/4.2/cli_reference/openshift_developer_cli/installing-odo.html"
+INSTALLATION_GUIDE="https://docs.openshift.com/container-platform/latest/cli_reference/openshift_developer_cli/installing-odo.html"
 
 echo -e "# Installation of $2
 

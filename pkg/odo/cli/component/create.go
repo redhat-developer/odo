@@ -286,7 +286,12 @@ func (co *CreateOptions) setResourceLimits() error {
 
 // Complete completes create args
 func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+
 	if experimental.IsExperimentalModeEnabled() {
+
+		// Add a disclaimer that we are in *experimental mode*
+		log.Experimental("Experimental mode is enabled, use at your own risk")
+
 		if len(args) == 0 {
 			co.interactive = true
 		}
@@ -370,10 +375,13 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		co.devfileMetadata.componentName = strings.ToLower(componentName)
 		co.devfileMetadata.componentNamespace = strings.ToLower(componentNamespace)
 
+		// Categorize the sections
+		log.Info("Validation")
+
 		// Since we need to support both devfile and s2i, so we have to check if the component type is
 		// supported by devfile, if it is supported we return, but if it is not supported we still need to
 		// run all codes related with s2i
-		spinner := log.Spinner("Checking if the specified component type is supported devfile component type")
+		spinner := log.Spinner("Checking Devfile compatibility")
 
 		for _, devfileComponent := range catalogDevfileList.Items {
 			if co.devfileMetadata.componentType == devfileComponent.Name && devfileComponent.Support {
@@ -588,10 +596,11 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 // Validate validates the create parameters
 func (co *CreateOptions) Validate() (err error) {
+
 	if experimental.IsExperimentalModeEnabled() {
 		if co.devfileMetadata.devfileSupport {
 			// Validate if the devfile component that user wants to create already exists
-			spinner := log.Spinner("Validating component")
+			spinner := log.Spinner("Validating Devfile")
 			defer spinner.End(false)
 
 			if util.CheckPathExists(EnvFilePath) {
@@ -613,6 +622,8 @@ func (co *CreateOptions) Validate() (err error) {
 			return nil
 		}
 	}
+
+	log.Info("Validation")
 
 	supported, err := catalog.IsComponentTypeSupported(co.Context.Client, *co.componentSettings.Type)
 	if err != nil {
@@ -681,21 +692,21 @@ func (co *CreateOptions) Run() (err error) {
 		if err != nil {
 			return err
 		}
-		existsInCluster, err := component.Exists(co.Context.Client, *co.componentSettings.Name, co.Context.Application)
-		if err != nil {
-			return err
-		}
-		if existsInCluster {
-			componentDesc, err = component.GetComponent(co.Context.Client, *co.componentSettings.Name, co.Context.Application, co.Context.Project)
+		state := component.GetComponentState(co.Client, *co.componentSettings.Name, co.Context.Application)
+
+		if state == component.StateTypeNotPushed || state == component.StateTypeUnknown {
+			componentDesc, err = component.GetComponentFromConfig(co.LocalConfigInfo)
+			componentDesc.Status.State = state
 			if err != nil {
 				return err
 			}
 		} else {
-			componentDesc, err = component.GetComponentFromConfig(co.LocalConfigInfo)
+			componentDesc, err = component.GetComponent(co.Context.Client, *co.componentSettings.Name, co.Context.Application, co.Context.Project)
 			if err != nil {
 				return err
 			}
 		}
+
 		componentDesc.Spec.Ports = co.LocalConfigInfo.GetPorts()
 		machineoutput.OutputSuccess(componentDesc)
 	}

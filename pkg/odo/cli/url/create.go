@@ -58,7 +58,9 @@ func NewURLCreateOptions() *URLCreateOptions {
 
 // Complete completes URLCreateOptions after they've been Created
 func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	if o.now {
+	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
+		o.Context = genericclioptions.NewDevfileContext(cmd)
+	} else if o.now {
 		o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 	} else {
 		o.Context = genericclioptions.NewContext(cmd)

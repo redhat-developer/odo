@@ -455,9 +455,9 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 				}
 
 				if show {
-					s = log.SpinnerNoSpin("Executing " + command.Name + " command " + *action.Command)
+					s = log.SpinnerNoSpin("Executing " + command.Name + " command " + fmt.Sprintf("%q", *action.Command))
 				} else {
-					s = log.Spinner("Executing " + command.Name + " command " + *action.Command)
+					s = log.Spinner("Executing " + command.Name + " command " + fmt.Sprintf("%q", *action.Command))
 				}
 
 				defer s.End(false)
@@ -502,7 +502,7 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 					},
 				}
 
-				s = log.Spinner("Executing " + command.Name + " command " + *action.Command)
+				s = log.Spinner("Executing " + command.Name + " command " + fmt.Sprintf("%q", *action.Command))
 				defer s.End(false)
 
 				for _, devRunExec := range devRunExecs {

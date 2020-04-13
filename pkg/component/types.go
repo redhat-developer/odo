@@ -34,7 +34,19 @@ type ComponentList struct {
 // ComponentStatus is Status of components
 type ComponentStatus struct {
 	Context          string              `json:"context,omitempty"`
-	State            string              `json:"state"`
+	State            State               `json:"state"`
 	LinkedComponents map[string][]string `json:"linkedComponents,omitempty"`
 	LinkedServices   []string            `json:"linkedServices,omitempty"`
 }
+
+// State reperesents component state
+type State string
+
+const (
+	// StateTypePushed means that Storage is present both locally and on cluster
+	StateTypePushed State = "Pushed"
+	// StateTypeNotPushed means that Storage is only in local config, but not on the cluster
+	StateTypeNotPushed = "Not Pushed"
+	// StateTypeUnknown means that odo cannot tell its state
+	StateTypeUnknown = "Unknown"
+)

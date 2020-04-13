@@ -29,6 +29,10 @@ func ListInProject(client *occlient.Client) ([]string, error) {
 
 	var appNames []string
 
+	if client == nil {
+		return appNames, nil
+	}
+
 	// Get all DeploymentConfigs with the "app" label
 	deploymentConfigAppNames, err := client.GetDeploymentConfigLabelValues(applabels.ApplicationLabel, applabels.ApplicationLabel)
 	if err != nil {

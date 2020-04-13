@@ -1856,7 +1856,7 @@ func (c *Client) CollectEvents(selector string, events map[string]corev1.Event, 
 						(events)[e.Name] = *newEvent
 						glog.V(4).Infof("Warning Event: Count: %d, Reason: %s, Message: %s", e.Count, e.Reason, e.Message)
 						// Change the spinner message to show the warning
-						spinner.WarningStatus(fmt.Sprintf("WARNING x%d: %s, use `-v` for more information.", e.Count, e.Reason))
+						spinner.WarningStatus(fmt.Sprintf("WARNING x%d: %s", e.Count, e.Reason))
 					}
 
 				}
@@ -2731,11 +2731,7 @@ func (c *Client) GetDeploymentConfigFromName(name string) (*appsv1.DeploymentCon
 	glog.V(4).Infof("Getting DeploymentConfig: %s", name)
 	deploymentConfig, err := c.appsClient.DeploymentConfigs(c.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
-		if !strings.Contains(err.Error(), fmt.Sprintf(DEPLOYMENT_CONFIG_NOT_FOUND_ERROR_STR, name)) {
-			return nil, errors.Wrapf(err, "unable to get DeploymentConfig %s", name)
-		} else {
-			return nil, DEPLOYMENT_CONFIG_NOT_FOUND
-		}
+		return nil, err
 	}
 	return deploymentConfig, nil
 }
