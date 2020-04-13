@@ -31,6 +31,7 @@ var (
 	`)
 	urlCreateExample = ktemplates.Examples(`  # Create a URL with a specific name by automatically detecting the port used by the component
 	%[1]s example
+
 	# Create a URL for the current component with a specific port
 	%[1]s --port 8080
   
