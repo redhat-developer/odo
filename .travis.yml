@@ -17,6 +17,7 @@ jobs:
       install:
         - make goget-tools
       script:
+        - lsb_release -a
         - export PATH="$PATH:$GOPATH/bin"
         - make bin
         - make validate
@@ -57,6 +58,7 @@ jobs:
       install:
         - make goget-tools
       script:
+        - system_profiler SPSoftwareDataType
         - export PATH="$PATH:$GOPATH/bin"
         - make bin
         - make validate
