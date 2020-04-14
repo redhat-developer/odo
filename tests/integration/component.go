@@ -852,13 +852,14 @@ func componentTests(args ...string) {
 		It("should delete the component and the owned resources", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 			helper.CmdShouldPass("odo", append(args, "create", "nodejs", cmpName, "--app", appName, "--project", project, "--context", context)...)
-			helper.CmdShouldPass("odo", "url", "create", "example", "--context", context)
-			helper.CmdShouldPass("odo", "storage", "create", "storage-name", "--size", "1Gi", "--path", "/data", "--context", context)
-			helper.ValidateLocalCmpExist(context, "Type,nodejs", "Name,"+cmpName, "Application,"+appName, "URL,0,Name,example")
+			helper.CmdShouldPass("odo", "url", "create", "example-1", "--context", context)
+
+			helper.CmdShouldPass("odo", "storage", "create", "storage-1", "--size", "1Gi", "--path", "/data1", "--context", context)
+			helper.ValidateLocalCmpExist(context, "Type,nodejs", "Name,"+cmpName, "Application,"+appName, "URL,0,Name,example-1")
 			helper.CmdShouldPass("odo", append(args, "push", "--context", context)...)
 
-			helper.CmdShouldPass("odo", "url", "create", "example-1", "--context", context)
-			helper.CmdShouldPass("odo", "storage", "create", "storage-name-1", "--size", "1Gi", "--path", "/data-1", "--context", context)
+			helper.CmdShouldPass("odo", "url", "create", "example-2", "--context", context)
+			helper.CmdShouldPass("odo", "storage", "create", "storage-2", "--size", "1Gi", "--path", "/data2", "--context", context)
 			helper.CmdShouldPass("odo", append(args, "push", "--context", context)...)
 
 			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--context", context)...)
@@ -869,6 +870,31 @@ func componentTests(args ...string) {
 			oc.WaitAndCheckForExistence("bc", project, 1)
 			oc.WaitAndCheckForExistence("is", project, 1)
 			oc.WaitAndCheckForExistence("service", project, 1)
+		})
+
+		It("should delete the component and the owned resources with wait flag", func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", cmpName, "--app", appName, "--project", project, "--context", context)...)
+			helper.CmdShouldPass("odo", "url", "create", "example-1", "--context", context)
+
+			helper.CmdShouldPass("odo", "storage", "create", "storage-1", "--size", "1Gi", "--path", "/data1", "--context", context)
+			helper.ValidateLocalCmpExist(context, "Type,nodejs", "Name,"+cmpName, "Application,"+appName, "URL,0,Name,example-1")
+			helper.CmdShouldPass("odo", append(args, "push", "--context", context)...)
+
+			helper.CmdShouldPass("odo", "url", "create", "example-2", "--context", context)
+			helper.CmdShouldPass("odo", "storage", "create", "storage-2", "--size", "1Gi", "--path", "/data2", "--context", context)
+			helper.CmdShouldPass("odo", append(args, "push", "--context", context)...)
+
+			// delete with --wait flag
+			helper.CmdShouldPass("odo", append(args, "delete", "-f", "-w", "--context", context)...)
+
+			oc.VerifyResourceDeleted("routes", "example", project)
+			oc.VerifyResourceDeleted("service", cmpName, project)
+			// verify s2i pvc is delete
+			oc.VerifyResourceDeleted("pvc", "s2idata", project)
+			oc.VerifyResourceDeleted("pvc", "storage-1", project)
+			oc.VerifyResourceDeleted("pvc", "storage-2", project)
+			oc.VerifyResourceDeleted("dc", cmpName, project)
 		})
 	})
 }

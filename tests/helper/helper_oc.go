@@ -481,3 +481,11 @@ func (oc *OcRunner) GetServices(namespace string) string {
 	output := string(session.Wait().Out.Contents())
 	return output
 }
+
+// VerifyResourceDeleted verifies if the given resource is deleted from cluster
+func (oc *OcRunner) VerifyResourceDeleted(resourceType, resourceName, namespace string) {
+	session := CmdRunner(oc.path, "get", resourceType, "--namespace", namespace)
+	Eventually(session).Should(gexec.Exit(0))
+	output := string(session.Wait().Out.Contents())
+	Expect(output).NotTo(ContainSubstring(resourceName))
+}

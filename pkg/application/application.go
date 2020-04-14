@@ -91,7 +91,7 @@ func Delete(client *occlient.Client, name string) error {
 		}
 	}
 	// delete application from cluster
-	err = client.Delete(labels)
+	err = client.Delete(labels, false)
 	if err != nil {
 		return errors.Wrapf(err, "unable to delete application %s", name)
 	}

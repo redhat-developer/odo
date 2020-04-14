@@ -2,9 +2,10 @@ package component
 
 import (
 	"fmt"
+	"path/filepath"
+
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
-	"path/filepath"
 
 	"github.com/openshift/odo/pkg/util"
 
@@ -36,6 +37,7 @@ var deleteExample = ktemplates.Examples(`  # Delete component named 'frontend'.
 type DeleteOptions struct {
 	componentForceDeleteFlag bool
 	componentDeleteAllFlag   bool
+	componentDeleteWaitFlag  bool
 	componentContext         string
 	isCmpExists              bool
 	*ComponentOptions
@@ -48,7 +50,7 @@ type DeleteOptions struct {
 
 // NewDeleteOptions returns new instance of DeleteOptions
 func NewDeleteOptions() *DeleteOptions {
-	return &DeleteOptions{false, false, "", false, &ComponentOptions{}, "", "", nil}
+	return &DeleteOptions{false, false, false, "", false, &ComponentOptions{}, "", "", nil}
 }
 
 // Complete completes log args
@@ -171,7 +173,7 @@ func (do *DeleteOptions) Run() (err error) {
 					log.Successf(fmt.Sprintf("Unlinked component %q from component %q for secret %q", parentComponent.Name, component, secretName))
 				}
 			}
-			err = component.Delete(do.Client, do.componentName, do.Application)
+			err = component.Delete(do.Client, do.componentDeleteWaitFlag, do.componentName, do.Application)
 			if err != nil {
 				return err
 			}
@@ -235,6 +237,7 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 
 	componentDeleteCmd.Flags().BoolVarP(&do.componentForceDeleteFlag, "force", "f", false, "Delete component without prompting")
 	componentDeleteCmd.Flags().BoolVarP(&do.componentDeleteAllFlag, "all", "a", false, "Delete component and local config")
+	componentDeleteCmd.Flags().BoolVarP(&do.componentDeleteWaitFlag, "wait", "w", false, "Wait for complete deletion of component and its dependent")
 
 	componentDeleteCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(componentDeleteCmd, completion.ComponentNameCompletionHandler)
