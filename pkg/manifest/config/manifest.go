@@ -7,9 +7,10 @@ import (
 
 // Manifest describes a set of environments, apps and services for deployment.
 type Manifest struct {
-	Environments []*Environment `yaml:"environments,omitempty"`
+	Environments []*Environment `json:"environments,omitempty"`
 }
 
+// GetCICDEnvironment returns CICD Environemnt
 func (m *Manifest) GetCICDEnvironment() (*Environment, error) {
 	envs := []*Environment{}
 	for _, env := range m.Environments {
@@ -32,14 +33,15 @@ func (m *Manifest) GetCICDEnvironment() (*Environment, error) {
 // into.
 // The CICD environment should not have any applications defined.
 type Environment struct {
-	Name      string         `yaml:"name,omitempty"`
-	Pipelines *Pipelines     `yaml:"pipelines,omitempty"`
-	Apps      []*Application `yaml:"apps,omitempty"`
+	Name      string         `json:"name,omitempty"`
+	Pipelines *Pipelines     `json:"pipelines,omitempty"`
+	Apps      []*Application `json:"apps,omitempty"`
 	// TODO: this should check that there is 0 or 1 CICD environment in the
 	// manfifest.
-	IsCICD bool `yaml:"cicd,omitempty"`
+	IsCICD bool `json:"cicd,omitempty"`
 }
 
+// GoString return environment name
 func (e Environment) GoString() string {
 	return e.Name
 }
@@ -50,40 +52,40 @@ func (e Environment) GoString() string {
 // another repository.
 // TODO: validate that an app with a ConfigRepo has no services.
 type Application struct {
-	Name       string      `yaml:"name,omitempty"`
-	Services   []*Service  `yaml:"services,omitempty"`
-	ConfigRepo *Repository `yaml:"config_repo,omitempty"`
+	Name       string      `json:"name,omitempty"`
+	Services   []*Service  `json:"services,omitempty"`
+	ConfigRepo *Repository `json:"config_repo,omitempty"`
 }
 
 // Service has an upstream source.
 type Service struct {
-	Name      string `yaml:"name,omitempty"`
-	SourceURL string `yaml:"source_url,omitempty"`
+	Name      string `json:"name,omitempty"`
+	SourceURL string `json:"source_url,omitempty"`
 }
 
 // Repository refers to an upstream source for reading additional config from.
 type Repository struct {
-	URL string `yaml:"url,omitempty"`
+	URL string `json:"url,omitempty"`
 	// TargetRevision defines the commit, tag, or branch in which to sync the application to.
 	// If omitted, will sync to HEAD
-	TargetRevision string `yaml:"target_revision,omitempty"`
+	TargetRevision string `json:"target_revision,omitempty"`
 	// Path is a directory path within the Git repository.
-	Path string `yaml:"path,omitempty"`
+	Path string `json:"path,omitempty"`
 }
 
 // Pipelines describes the names for pipelines to be executed for CI and CD.
 //
 // These pipelines will be executed with a Git clone URL and commit SHA.
 type Pipelines struct {
-	Integration *TemplateBinding `yaml:"integration,omitempty"`
-	Deployment  *TemplateBinding `yaml:"deployment,omitempty"`
+	Integration *TemplateBinding `json:"integration,omitempty"`
+	Deployment  *TemplateBinding `json:"deployment,omitempty"`
 }
 
 // TemplateBinding is a combination of the template and binding to be used for a
 // pipeline execution.
 type TemplateBinding struct {
-	Template string `yaml:"template,omitempty"`
-	Binding  string `yaml:"binding,omitempty"`
+	Template string `json:"template,omitempty"`
+	Binding  string `json:"binding,omitempty"`
 }
 
 // Walk implements post-node visiting of each element in the manifest.

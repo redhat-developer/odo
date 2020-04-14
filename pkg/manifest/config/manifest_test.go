@@ -13,30 +13,30 @@ import (
 func TestManifestWalk(t *testing.T) {
 	m := &Manifest{
 		Environments: []*Environment{
-			&Environment{
+			{
 				Name: "development",
 				Apps: []*Application{
-					&Application{
+					{
 						Name: "my-app-1",
 						Services: []*Service{
-							&Service{Name: "app-1-service-http"},
-							&Service{Name: "app-1-service-test"},
+							{Name: "app-1-service-http"},
+							{Name: "app-1-service-test"},
 						},
 					},
-					&Application{
+					{
 						Name: "my-app-2",
 						Services: []*Service{
-							&Service{Name: "app-2-service"},
+							{Name: "app-2-service"},
 						},
 					},
 				},
 			},
-			&Environment{
+			{
 				Name: "staging",
 				Apps: []*Application{
-					&Application{Name: "my-app-1",
+					{Name: "my-app-1",
 						Services: []*Service{
-							&Service{Name: "app-1-service-user"},
+							{Name: "app-1-service-user"},
 						},
 					},
 				},
@@ -71,34 +71,34 @@ func TestManifestWalk(t *testing.T) {
 func TestManifestWalkCallsCICDEnvironmentLast(t *testing.T) {
 	m := &Manifest{
 		Environments: []*Environment{
-			&Environment{
+			{
 				Name:   "cicd",
 				IsCICD: true,
 			},
-			&Environment{
+			{
 				Name: "development",
 				Apps: []*Application{
-					&Application{
+					{
 						Name: "my-app-1",
 						Services: []*Service{
-							&Service{Name: "app-1-service-http"},
-							&Service{Name: "app-1-service-test"},
+							{Name: "app-1-service-http"},
+							{Name: "app-1-service-test"},
 						},
 					},
-					&Application{
+					{
 						Name: "my-app-2",
 						Services: []*Service{
-							&Service{Name: "app-2-service"},
+							{Name: "app-2-service"},
 						},
 					},
 				},
 			},
-			&Environment{
+			{
 				Name: "staging",
 				Apps: []*Application{
-					&Application{Name: "my-app-1",
+					{Name: "my-app-1",
 						Services: []*Service{
-							&Service{Name: "app-1-service-user"},
+							{Name: "app-1-service-user"},
 						},
 					},
 				},

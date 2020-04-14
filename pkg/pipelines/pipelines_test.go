@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/openshift/odo/pkg/pipelines/meta"
+	"github.com/openshift/odo/pkg/manifest/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
@@ -22,28 +22,28 @@ func TestCreateDevCIPipeline(t *testing.T) {
 		},
 		Spec: pipelinev1.PipelineSpec{
 			Params: []pipelinev1.ParamSpec{
-				pipelinev1.ParamSpec{
+				{
 					Name: "REPO",
 					Type: "string",
 				},
-				pipelinev1.ParamSpec{
+				{
 					Name: "COMMIT_SHA",
 					Type: "string",
 				},
 			},
 			Resources: []pipelinev1.PipelineDeclaredResource{
-				pipelinev1.PipelineDeclaredResource{
+				{
 					Name: "source-repo",
 					Type: "git",
 				},
-				pipelinev1.PipelineDeclaredResource{
+				{
 					Name: "runtime-image",
 					Type: "image",
 				},
 			},
 			Tasks: []pipelinev1.PipelineTask{
 
-				pipelinev1.PipelineTask{
+				{
 					Name: "build-image",
 					TaskRef: &pipelinev1.TaskRef{
 						Name: "buildah",
@@ -84,14 +84,14 @@ func TestCreateCIPipeline(t *testing.T) {
 		},
 		Spec: pipelinev1.PipelineSpec{
 			Resources: []pipelinev1.PipelineDeclaredResource{
-				pipelinev1.PipelineDeclaredResource{
+				{
 					Name: "source-repo",
 					Type: "git",
 				},
 			},
 
 			Tasks: []pipelinev1.PipelineTask{
-				pipelinev1.PipelineTask{
+				{
 					Name: "apply-source",
 					TaskRef: &pipelinev1.TaskRef{
 						Name: "deploy-from-source-task",
@@ -129,18 +129,17 @@ func TestCreateDevCDPipeline(t *testing.T) {
 
 		Spec: pipelinev1.PipelineSpec{
 			Resources: []pipelinev1.PipelineDeclaredResource{
-				pipelinev1.PipelineDeclaredResource{
+				{
 					Name: "source-repo",
 					Type: "git",
 				},
-				pipelinev1.PipelineDeclaredResource{
+				{
 					Name: "runtime-image",
 					Type: "image",
 				},
 			},
 			Tasks: []pipelinev1.PipelineTask{
-
-				pipelinev1.PipelineTask{
+				{
 					Name: "build-image",
 					TaskRef: &pipelinev1.TaskRef{
 						Name: "buildah",
@@ -160,8 +159,7 @@ func TestCreateDevCDPipeline(t *testing.T) {
 						},
 					},
 				},
-
-				pipelinev1.PipelineTask{
+				{
 					Name: "deploy-image",
 					TaskRef: &pipelinev1.TaskRef{
 						Name: "deploy-using-kubectl-task",
@@ -199,14 +197,14 @@ func TestCreateCDPipeline(t *testing.T) {
 		},
 		Spec: pipelinev1.PipelineSpec{
 			Resources: []pipelinev1.PipelineDeclaredResource{
-				pipelinev1.PipelineDeclaredResource{
+				{
 					Name: "source-repo",
 					Type: "git",
 				},
 			},
 
 			Tasks: []pipelinev1.PipelineTask{
-				pipelinev1.PipelineTask{
+				{
 					Name: "apply-source",
 					TaskRef: &pipelinev1.TaskRef{
 						Name: "deploy-from-source-task",

@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"gopkg.in/yaml.v2"
+	"sigs.k8s.io/yaml"
 )
 
 // WriteResources takes a prefix path, and a map of paths to values, and will
@@ -17,7 +17,7 @@ import (
 func WriteResources(path string, files map[string]interface{}) ([]string, error) {
 	filenames := make([]string, 0)
 	for filename, item := range files {
-		err := marshalItemsToFile(filepath.Join(path, filename), list(item))
+		err := marshalItemToFile(filepath.Join(path, filename), item)
 		if err != nil {
 			return nil, err
 		}
@@ -26,7 +26,7 @@ func WriteResources(path string, files map[string]interface{}) ([]string, error)
 	return filenames, nil
 }
 
-func marshalItemsToFile(filename string, items []interface{}) error {
+func marshalItemToFile(filename string, item interface{}) error {
 	err := os.MkdirAll(filepath.Dir(filename), 0755)
 	if err != nil {
 		return fmt.Errorf("failed to MkDirAll for %s: %v", filename, err)
@@ -36,24 +36,25 @@ func marshalItemsToFile(filename string, items []interface{}) error {
 		return fmt.Errorf("failed to Create file %s: %v", filename, err)
 	}
 	defer f.Close()
-	return marshalOutputs(f, items)
+	return MarshalOutput(f, item)
 }
 
-func list(i interface{}) []interface{} {
-	return []interface{}{i}
-}
-
-// marshalOutputs marshal outputs to given writer
-func marshalOutputs(out io.Writer, outputs []interface{}) error {
-	for _, r := range outputs {
-		data, err := yaml.Marshal(r)
-		if err != nil {
-			return fmt.Errorf("failed to marshal data: %w", err)
-		}
-		_, err = fmt.Fprintf(out, "%s---\n", data)
-		if err != nil {
-			return fmt.Errorf("failed to write data: %w", err)
-		}
+// MarshalOutput marshal output to given writer
+func MarshalOutput(out io.Writer, output interface{}) error {
+	data, err := yaml.Marshal(output)
+	if err != nil {
+		return fmt.Errorf("failed to marshal data: %w", err)
+	}
+	_, err = fmt.Fprintf(out, "%s", data)
+	if err != nil {
+		return fmt.Errorf("failed to write data: %w", err)
 	}
 	return nil
+}
+
+// AddKustomize adds kustomization.yaml.  Name and items become map key and value, respectively
+func AddKustomize(name string, items []string, path string) error {
+	content := []interface{}{}
+	content = append(content, map[string]interface{}{name: items})
+	return marshalItemToFile(path, content)
 }

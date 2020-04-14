@@ -2,16 +2,20 @@ package config
 
 import (
 	"io"
+	"io/ioutil"
 	"os"
 
-	"gopkg.in/yaml.v2"
+	"sigs.k8s.io/yaml"
 )
 
 // Parse decodes YAML describing an environment manifest.
 func Parse(in io.Reader) (*Manifest, error) {
-	dec := yaml.NewDecoder(in)
 	m := &Manifest{}
-	err := dec.Decode(&m)
+	buf, err := ioutil.ReadAll(in)
+	if err != nil {
+		return nil, err
+	}
+	err = yaml.Unmarshal(buf, m)
 	if err != nil {
 		return nil, err
 	}

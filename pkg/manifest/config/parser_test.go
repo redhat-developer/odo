@@ -15,7 +15,7 @@ func TestParse(t *testing.T) {
 	}{
 		{"testdata/example1.yaml", &Manifest{
 			Environments: []*Environment{
-				&Environment{
+				{
 					Name: "development",
 					Pipelines: &Pipelines{
 						Integration: &TemplateBinding{
@@ -28,28 +28,28 @@ func TestParse(t *testing.T) {
 						},
 					},
 					Apps: []*Application{
-						&Application{
+						{
 							Name: "my-app-1",
 							Services: []*Service{
-								&Service{
+								{
 									Name:      "app-1-service-http",
 									SourceURL: "https://github.com/myproject/myservice.git",
 								},
-								&Service{Name: "app-1-service-metrics"},
+								{Name: "app-1-service-metrics"},
 							},
 						},
-						&Application{
+						{
 							Name: "my-app-2",
 							Services: []*Service{
-								&Service{Name: "app-2-service"},
+								{Name: "app-2-service"},
 							},
 						},
 					},
 				},
-				&Environment{
+				{
 					Name: "staging",
 					Apps: []*Application{
-						&Application{Name: "my-app-1",
+						{Name: "my-app-1",
 							ConfigRepo: &Repository{
 								URL:            "https://github.com/testing/testing",
 								TargetRevision: "master",
@@ -58,13 +58,13 @@ func TestParse(t *testing.T) {
 						},
 					},
 				},
-				&Environment{
+				{
 					Name: "production",
 					Apps: []*Application{
-						&Application{Name: "my-app-1",
+						{Name: "my-app-1",
 							Services: []*Service{
-								&Service{Name: "app-1-service-http"},
-								&Service{Name: "app-1-service-metrics"},
+								{Name: "app-1-service-http"},
+								{Name: "app-1-service-metrics"},
 							},
 						},
 					},
@@ -75,22 +75,22 @@ func TestParse(t *testing.T) {
 
 		{"testdata/example2.yaml", &Manifest{
 			Environments: []*Environment{
-				&Environment{
+				{
 					Name: "development",
 					Apps: []*Application{
-						&Application{
+						{
 							Name: "my-app-1",
 							Services: []*Service{
-								&Service{
+								{
 									Name:      "app-1-service-http",
 									SourceURL: "https://github.com/myproject/myservice.git",
 								},
-								&Service{Name: "app-1-service-metrics"},
+								{Name: "app-1-service-metrics"},
 							},
 						},
 					},
 				},
-				&Environment{
+				{
 					Name:   "tst-cicd",
 					IsCICD: true,
 				},

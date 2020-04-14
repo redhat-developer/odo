@@ -15,6 +15,7 @@ type ServiceVisitor interface {
 	Service(*Environment, *Application, *Service) error
 }
 
+//ManifestVisitor is an interface for accessing manifests
 type ManifestVisitor interface {
 	Environment(*Environment) error
 	Application(*Environment, *Application) error

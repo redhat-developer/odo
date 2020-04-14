@@ -1,7 +1,7 @@
 package pipelines
 
 import (
-	"github.com/openshift/odo/pkg/pipelines/meta"
+	"github.com/openshift/odo/pkg/manifest/meta"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	"k8s.io/apimachinery/pkg/types"
 )

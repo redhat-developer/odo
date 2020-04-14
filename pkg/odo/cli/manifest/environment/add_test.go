@@ -1,4 +1,4 @@
-package manifest
+package environment
 
 import (
 	"bytes"
@@ -13,7 +13,7 @@ type keyValuePair struct {
 	value string
 }
 
-func TestCompleteInitParameters(t *testing.T) {
+func TestCompleteEnvParameters(t *testing.T) {
 	completeTests := []struct {
 		name       string
 		prefix     string
@@ -25,7 +25,7 @@ func TestCompleteInitParameters(t *testing.T) {
 	}
 
 	for _, tt := range completeTests {
-		o := InitParameters{prefix: tt.prefix}
+		o := AddEnvParameters{prefix: tt.prefix}
 
 		err := o.Complete("test", &cobra.Command{}, []string{"test", "test/repo"})
 
@@ -39,61 +39,30 @@ func TestCompleteInitParameters(t *testing.T) {
 	}
 }
 
-func TestValidateInitParameters(t *testing.T) {
-	optionTests := []struct {
-		name    string
-		gitRepo string
-		errMsg  string
-	}{
-		{"invalid repo", "test", "repo must be org/repo"},
-		{"valid repo", "test/repo", ""},
-	}
-
-	for _, tt := range optionTests {
-		o := InitParameters{gitOpsRepo: tt.gitRepo, prefix: "test"}
-
-		err := o.Validate()
-
-		if err != nil && tt.errMsg == "" {
-			t.Errorf("Validate() %#v got an unexpected error: %s", tt.name, err)
-			continue
-		}
-
-		if !matchError(t, tt.errMsg, err) {
-			t.Errorf("Validate() %#v failed to match error: got %s, want %s", tt.name, err, tt.errMsg)
-		}
-	}
-}
-
-func TestInitCommandWithMissingParams(t *testing.T) {
+func TestAddCommandWithMissingParams(t *testing.T) {
 	cmdTests := []struct {
 		desc    string
 		flags   []keyValuePair
 		wantErr string
 	}{
-		{"Missing gitops-repo flag",
+		{"Missing env-name flag",
 			[]keyValuePair{flag("output", "~/output"),
-				flag("gitops-webhook-secret", "123"), flag("skip-checks", "true")},
-			`Required flag(s) "gitops-repo" have/has not been set`},
-		{"Missing gitops-webhook-secret flag",
-			[]keyValuePair{flag("gitops-repo", "org/sample"), flag("output", "~/output"),
 				flag("skip-checks", "true")},
-			`Required flag(s) "gitops-webhook-secret" have/has not been set`},
+			`Required flag(s) "env-name" have/has not been set`},
 		{"Missing output flag",
-			[]keyValuePair{flag("gitops-repo", "org/sample"), flag("gitops-webhook-secret", "123"),
+			[]keyValuePair{flag("env-name", "stage"),
 				flag("skip-checks", "true")},
 			`Required flag(s) "output" have/has not been set`},
 	}
 	for _, tt := range cmdTests {
-		t.Run(tt.desc, func(t *testing.T) {
-			_, _, err := executeCommand(NewCmdInit("init", "odo manifest init"), tt.flags...)
+		t.Run(tt.desc, func(rt *testing.T) {
+			_, _, err := executeCommand(NewCmdAddEnv("add", "odo pipelines add"), tt.flags...)
 			if err.Error() != tt.wantErr {
-				t.Errorf("got %s, want %s", err, tt.wantErr)
+				rt.Errorf("got %s, want %s", err, tt.wantErr)
 			}
 		})
 	}
 }
-
 func executeCommand(cmd *cobra.Command, flags ...keyValuePair) (c *cobra.Command, output string, err error) {
 	buf := new(bytes.Buffer)
 	cmd.SetOutput(buf)
