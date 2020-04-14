@@ -31,11 +31,25 @@ var (
 	`)
 	urlCreateExample = ktemplates.Examples(`  # Create a URL with a specific name by automatically detecting the port used by the component
 	%[1]s example
+
 	# Create a URL for the current component with a specific port
 	%[1]s --port 8080
   
 	# Create a URL with a specific name and port
 	%[1]s example --port 8080
+	  `)
+
+	urlCreateExampleExperimental = ktemplates.Examples(`  # Create a URL with a specific name by automatically detecting the port used by the component
+	%[1]s example
+	
+	# Create a URL for the current component with a specific port
+	%[1]s --port 8080
+  
+	# Create a URL with a specific name and port
+	%[1]s example --port 8080
+
+	# Create a URL for the current component with specific port and host (using CRC as an exampple)
+	%[1]s --port 8080 --host apps-crc.testing
 	  `)
 )
 
@@ -232,6 +246,7 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 		urlCreateCmd.Flags().StringVar(&o.tlsSecret, "tls-secret", "", "tls secret name for the url of the component if the user bring his own tls secret")
 		urlCreateCmd.Flags().StringVarP(&o.host, "host", "", "", "Cluster ip for this URL")
 		urlCreateCmd.Flags().StringVar(&o.DevfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
+		urlCreateCmd.Example = fmt.Sprintf(urlCreateExampleExperimental, fullName)
 	}
 	genericclioptions.AddNowFlag(urlCreateCmd, &o.now)
 	o.AddContextFlag(urlCreateCmd)
