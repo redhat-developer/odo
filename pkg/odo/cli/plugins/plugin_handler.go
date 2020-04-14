@@ -25,10 +25,10 @@ func HandleCommand(handler PluginHandler, args []string) error {
 
 type execFunc func(string, []string, []string) (err error)
 
-// NewDefaultHandler creates and returns a new DefaultHandler configured with
+// NewExecHandler creates and returns a new ExecHandler configured with
 // the prefix.
-func NewDefaultHandler(prefix string) *DefaultHandler {
-	return &DefaultHandler{
+func NewExecHandler(prefix string) *ExecHandler {
+	return &ExecHandler{
 		Prefix: prefix,
 		Exec:   syscall.Exec,
 	}
@@ -45,15 +45,15 @@ type PluginHandler interface {
 	Execute(filename string, args, env []string) error
 }
 
-// DefaultHandler implements PluginHandler.
-type DefaultHandler struct {
+// ExecHandler implements PluginHandler using the "os/exec" package.
+type ExecHandler struct {
 	Prefix string
 	Exec   execFunc
 }
 
 // Lookup implements PluginHandler, using
 // https://golang.org/pkg/os/exec/#LookPath to search for the command.
-func (h *DefaultHandler) Lookup(command string) string {
+func (h *ExecHandler) Lookup(command string) string {
 	if runtime.GOOS == "windows" {
 		command = command + ".exe"
 	}
@@ -65,7 +65,7 @@ func (h *DefaultHandler) Lookup(command string) string {
 }
 
 // Execute implements PluginHandler.Execute
-func (h *DefaultHandler) Execute(filename string, args, env []string) error {
+func (h *ExecHandler) Execute(filename string, args, env []string) error {
 	// Windows does not support exec syscall.
 	if runtime.GOOS == "windows" {
 		cmd := exec.Command(filename, args...)

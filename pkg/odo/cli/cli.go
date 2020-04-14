@@ -119,7 +119,7 @@ func NewCmdOdo(name, fullName string) *cobra.Command {
 		if err == nil && cmd != rootCmd {
 			return rootCmd
 		}
-		handleErr := plugins.HandleCommand(plugins.NewDefaultHandler(pluginPrefix), cmdPathPieces)
+		handleErr := plugins.HandleCommand(plugins.NewExecHandler(pluginPrefix), cmdPathPieces)
 		if handleErr != nil {
 			return rootCmd
 		}
