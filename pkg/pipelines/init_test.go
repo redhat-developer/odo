@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/openshift/odo/pkg/manifest/yaml"
 )
 
 func TestWriteResources(t *testing.T) {
@@ -18,7 +19,7 @@ func TestWriteResources(t *testing.T) {
 		"02_tasks/buildah_task.yaml":   fakeYamlDoc(2),
 	}
 
-	_, err := writeResources(tmpDir, resources)
+	_, err := yaml.WriteResources(tmpDir, resources)
 	if err != nil {
 		t.Fatalf("failed to writeResources: %v", err)
 	}

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/openshift/odo/pkg/manifest/config"
 )
 
@@ -25,29 +26,50 @@ func TestCreateManifest(t *testing.T) {
 
 func TestInitialFiles(t *testing.T) {
 	prefix := "tst-"
-	got, err := createInitialFiles(prefix)
+	gitOpsRepo := "test-repo"
+	gitOpsWebhook := "123"
+	got, err := createInitialFiles(prefix, gitOpsRepo, gitOpsWebhook)
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := map[string]interface{}{
+	want := resources{
 		"manifest.yaml": createManifest(prefix),
 	}
-	want = merge(addPrefixToResources("environments/tst-cicd", getCICDKustomization()), want)
-	if diff := cmp.Diff(want, got); diff != "" {
+	cicdResources, err := CreateResources(prefix, gitOpsRepo, gitOpsWebhook)
+	if err != nil {
+		t.Fatalf("CreatePipelineResources() failed due to :%s\n", err)
+	}
+	files := getResourceFiles(cicdResources)
+
+	want = merge(addPrefixToResources("environments/tst-cicd/base/pipelines", cicdResources), want)
+
+	want = merge(addPrefixToResources("environments/tst-cicd", getCICDKustomization(files)), want)
+
+	if diff := cmp.Diff(want, got, cmpopts.IgnoreMapEntries(ignoreSecrets)); diff != "" {
 		t.Fatalf("outputs didn't match: %s\n", diff)
 	}
+}
+
+func ignoreSecrets(k string, v interface{}) bool {
+	if k == "environments/tst-cicd/base/pipelines/03-secrets/gitops-webhook-secret.yaml" {
+		return true
+	}
+	return false
 }
 
 func TestGetCICDKustomization(t *testing.T) {
 	want := resources{
 		"base/kustomization.yaml": map[string]interface{}{
-			"resources": []string{},
+			"bases": []string{"./pipelines"},
 		},
 		"overlays/kustomization.yaml": map[string]interface{}{
 			"bases": []string{"../base"},
 		},
+		"base/pipelines/kustomization.yaml": map[string]interface{}{
+			"resources": []string{"resource1", "resource2"},
+		},
 	}
-	got := getCICDKustomization()
+	got := getCICDKustomization([]string{"resource1", "resource2"})
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Fatalf("getCICDKustomization was not correct: %s\n", diff)
 	}

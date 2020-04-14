@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/openshift/odo/pkg/odo/cli/manifest/environment"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 )
 
@@ -15,6 +16,8 @@ const RecommendedCommandName = "manifest"
 func NewCmdManifest(name, fullName string) *cobra.Command {
 
 	initCmd := NewCmdInit(InitRecommendedCommandName, odoutil.GetFullName(fullName, InitRecommendedCommandName))
+	envCmd := environment.NewCmdEnv(environment.EnvRecommendedCommandName, odoutil.GetFullName(fullName, environment.EnvRecommendedCommandName))
+
 	var manifestCmd = &cobra.Command{
 		Use:   name,
 		Short: "Manifest operations",
@@ -26,6 +29,7 @@ func NewCmdManifest(name, fullName string) *cobra.Command {
 
 	manifestCmd.Flags().AddFlagSet(initCmd.Flags())
 	manifestCmd.AddCommand(initCmd)
+	manifestCmd.AddCommand(envCmd)
 
 	manifestCmd.Annotations = map[string]string{"command": "main"}
 	manifestCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)

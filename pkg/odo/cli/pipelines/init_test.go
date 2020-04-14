@@ -79,6 +79,10 @@ func TestInitCommandWithMissingParams(t *testing.T) {
 			[]keyValuePair{flag("gitops-repo", "org/sample"), flag("output", "~/output"),
 				flag("skip-checks", "true")},
 			`Required flag(s) "gitops-webhook-secret" have/has not been set`},
+		{"Missing output flag",
+			[]keyValuePair{flag("gitops-repo", "org/sample"), flag("gitops-webhook-secret", "123"),
+				flag("skip-checks", "true")},
+			`Required flag(s) "output" have/has not been set`},
 	}
 	for _, tt := range cmdTests {
 		t.Run(tt.desc, func(t *testing.T) {

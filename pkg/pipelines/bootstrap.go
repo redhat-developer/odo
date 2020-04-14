@@ -3,7 +3,6 @@ package pipelines
 import (
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"strings"
 
@@ -12,15 +11,17 @@ import (
 
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 	"github.com/mitchellh/go-homedir"
-	"github.com/openshift/odo/pkg/pipelines/eventlisteners"
-	"github.com/openshift/odo/pkg/pipelines/meta"
-	"github.com/openshift/odo/pkg/pipelines/roles"
-	"github.com/openshift/odo/pkg/pipelines/routes"
-	"github.com/openshift/odo/pkg/pipelines/secrets"
-	"github.com/openshift/odo/pkg/pipelines/statustracker"
-	"github.com/openshift/odo/pkg/pipelines/tasks"
-	"github.com/openshift/odo/pkg/pipelines/triggers"
-	"sigs.k8s.io/yaml"
+	"github.com/openshift/odo/pkg/manifest"
+	"github.com/openshift/odo/pkg/manifest/eventlisteners"
+	"github.com/openshift/odo/pkg/manifest/meta"
+	"github.com/openshift/odo/pkg/manifest/pipelines"
+	"github.com/openshift/odo/pkg/manifest/roles"
+	"github.com/openshift/odo/pkg/manifest/routes"
+	"github.com/openshift/odo/pkg/manifest/secrets"
+	"github.com/openshift/odo/pkg/manifest/statustracker"
+	"github.com/openshift/odo/pkg/manifest/tasks"
+	"github.com/openshift/odo/pkg/manifest/triggers"
+	"github.com/openshift/odo/pkg/manifest/yaml"
 )
 
 const (
@@ -50,7 +51,7 @@ type BootstrapParameters struct {
 func Bootstrap(o *BootstrapParameters) error {
 
 	if !o.SkipChecks {
-		installed, err := checkTektonInstall()
+		installed, err := pipelines.CheckTektonInstall()
 		if err != nil {
 			return fmt.Errorf("failed to run Tekton Pipelines installation check: %w", err)
 		}
@@ -65,8 +66,8 @@ func Bootstrap(o *BootstrapParameters) error {
 	}
 
 	outputs := make([]interface{}, 0)
-	namespaces := namespaceNames(o.Prefix)
-	for _, n := range createNamespaces(values(namespaces)) {
+	namespaces := manifest.NamespaceNames(o.Prefix)
+	for _, n := range manifest.CreateNamespaces(values(namespaces)) {
 		outputs = append(outputs, n)
 	}
 
@@ -128,13 +129,13 @@ func Bootstrap(o *BootstrapParameters) error {
 		outputs = append(outputs, res...)
 	}
 
-	return marshalOutput(os.Stdout, outputs)
+	return yaml.MarshalOutput(os.Stdout, outputs)
 }
 
 func createRoleBindings(ns map[string]string, sa *corev1.ServiceAccount) []interface{} {
 	out := make([]interface{}, 0)
 
-	role := roles.CreateRole(meta.NamespacedName(ns["cicd"], roleName), rules)
+	role := roles.CreateRole(meta.NamespacedName(ns["cicd"], roleName), manifest.Rules)
 	out = append(out, role)
 	out = append(out, roles.CreateRoleBinding(meta.NamespacedName(ns["cicd"], roleBindingName), sa, role.Kind, role.Name))
 	out = append(out, roles.CreateRoleBinding(meta.NamespacedName(ns["dev"], devRoleBindingName), sa, "ClusterRole", "edit"))
@@ -151,16 +152,16 @@ func createManifestsForImageRepo(sa *corev1.ServiceAccount, isInternalRegistry b
 		// Provide access to service account for using internal registry
 		internalRegistryNamespace := strings.Split(imageRepo, "/")[1]
 
-		clientSet, err := getClientSet()
+		clientSet, err := manifest.GetClientSet()
 		if err != nil {
 			return nil, err
 		}
-		namespaceExists, err := checkNamespace(clientSet, internalRegistryNamespace)
+		namespaceExists, err := manifest.CheckNamespace(clientSet, internalRegistryNamespace)
 		if err != nil {
 			return nil, err
 		}
 		if !namespaceExists {
-			out = append(out, createNamespace(internalRegistryNamespace))
+			out = append(out, manifest.CreateNamespace(internalRegistryNamespace))
 		}
 
 		// pipelines sa should have access to internal registry
@@ -168,8 +169,8 @@ func createManifestsForImageRepo(sa *corev1.ServiceAccount, isInternalRegistry b
 
 		// add image puller role to allow pulling app images across namespaces from dev and stage envirnments
 		out = append(out, roles.CreateRoleBindingForSubjects(meta.NamespacedName(internalRegistryNamespace, "image-puller-binding"), "ClusterRole", "system:image-puller",
-			[]v1rbac.Subject{v1rbac.Subject{Kind: "ServiceAccount", Name: "default", Namespace: namespaces["dev"]},
-				v1rbac.Subject{Kind: "ServiceAccount", Name: "default", Namespace: namespaces["stage"]},
+			[]v1rbac.Subject{{Kind: "ServiceAccount", Name: "default", Namespace: namespaces["dev"]},
+				{Kind: "ServiceAccount", Name: "default", Namespace: namespaces["stage"]},
 			}))
 
 	} else {
@@ -229,19 +230,6 @@ func values(m map[string]string) []string {
 
 	}
 	return values
-}
-
-// marshalOutput marshal outputs to given writer
-func marshalOutput(out io.Writer, output interface{}) error {
-	data, err := yaml.Marshal(output)
-	if err != nil {
-		return fmt.Errorf("failed to marshal data: %w", err)
-	}
-	_, err = fmt.Fprintf(out, "%s", data)
-	if err != nil {
-		return fmt.Errorf("failed to write data: %w", err)
-	}
-	return nil
 }
 
 // validateImageRepo validates the input image repo.  It determines if it is
