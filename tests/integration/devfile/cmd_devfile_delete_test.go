@@ -1,10 +1,11 @@
 package devfile
 
 import (
-	"github.com/openshift/odo/tests/helper"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/openshift/odo/tests/helper"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -49,6 +50,8 @@ var _ = Describe("odo devfile delete command tests", func() {
 			componentName := helper.RandString(6)
 			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--project", namespace, componentName)
 
+			helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io")
+
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 
 			helper.CmdShouldPass("odo", "delete", "--devfile", "devfile.yaml", "--namespace", namespace, "-f")
@@ -56,10 +59,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 			oc.WaitAndCheckForExistence("deployments", namespace, 1)
 			oc.WaitAndCheckForExistence("pods", namespace, 1)
 			oc.WaitAndCheckForExistence("services", namespace, 1)
-
-			// once https://github.com/openshift/odo/issues/2808 is resolved
-			// create a url also in this scenario
-			//oc.WaitAndCheckForExistence("ingress", namespace, 1)
+			oc.WaitAndCheckForExistence("ingress", namespace, 1)
 		})
 	})
 

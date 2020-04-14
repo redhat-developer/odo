@@ -21,6 +21,7 @@ import (
 	"github.com/golang/glog"
 	iextensionsv1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
@@ -118,6 +119,11 @@ func Create(client *occlient.Client, kClient *kclient.Client, urlName string, po
 	if experimental.IsExperimentalModeEnabled() {
 		serviceName := componentName
 		ingressDomain := fmt.Sprintf("%v.%v", urlName, host)
+		deployment, err := kClient.GetDeploymentByName(componentName)
+		if err != nil {
+			return "", err
+		}
+		ownerReference := kclient.GenerateOwnerReference(deployment)
 		if secureURL {
 			if len(secretName) != 0 {
 				_, err := kClient.KubeClient.CoreV1().Secrets(kClient.Namespace).Get(secretName, metav1.GetOptions{})
@@ -128,13 +134,22 @@ func Create(client *occlient.Client, kClient *kclient.Client, urlName string, po
 			if len(secretName) == 0 {
 				defaultTLSSecretName := componentName + "-tlssecret"
 				_, err := kClient.KubeClient.CoreV1().Secrets(kClient.Namespace).Get(defaultTLSSecretName, metav1.GetOptions{})
+				// create tls secret if it does not exist
 				if err != nil {
 					selfsignedcert, err := kclient.GenerateSelfSignedCertificate(host)
 					if err != nil {
 						return "", errors.Wrap(err, "unable to generate self-signed certificate for clutser: "+host)
 					}
 					// create tls secret
-					secret, err := kClient.CreateTLSSecret(selfsignedcert.CertPem, selfsignedcert.KeyPem, componentName, applicationName)
+					secretlabels := componentlabels.GetLabels(componentName, applicationName, true)
+					objectMeta := metav1.ObjectMeta{
+						Name:   defaultTLSSecretName,
+						Labels: secretlabels,
+						OwnerReferences: []v1.OwnerReference{
+							ownerReference,
+						},
+					}
+					secret, err := kClient.CreateTLSSecret(selfsignedcert.CertPem, selfsignedcert.KeyPem, objectMeta)
 					if err != nil {
 						return "", errors.Wrap(err, "unable to create tls secret: "+secret.Name)
 					}
@@ -152,6 +167,7 @@ func Create(client *occlient.Client, kClient *kclient.Client, urlName string, po
 		ingressSpec := kclient.GenerateIngressSpec(ingressParam)
 		objectMeta := kclient.CreateObjectMeta(componentName, kClient.Namespace, labels, nil)
 		objectMeta.Name = urlName
+		objectMeta.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
 		// Pass in the namespace name, link to the service (componentName) and labels to create a ingress
 		ingress, err := kClient.CreateIngress(objectMeta, *ingressSpec)
 		if err != nil {
