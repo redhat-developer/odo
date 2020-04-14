@@ -538,3 +538,5 @@ personal access token.
 The `whitelist` section is for licenses that are always allowed. The `blacklist` section is for licenses that are never allowed and will always fail a build. Any licenses that are not explicitly mentioned come under the `exceptions` secion and need to be explicitly allowed by adding the import path to the exceptions.
 
 More details about the license compatibility check tool can be found https://github.com/frapposelli/wwhrd[here]
+
+test123
