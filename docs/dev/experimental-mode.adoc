@@ -1,13 +1,16 @@
 # Experimental mode in `odo`
 ---
+
 By default, the features in `odo` which are under development or under experiment are not exposed to the user. The `odo` commands/subcommands/flags associated with these features are hidden in `odo` help as well. 
 
 It is understood that the features in experimental mode (hidden by default) are under development and the behavior of these features is subject to change till the feature is not removed from experimental mode and available for use.
 
 #### Enabling Experimental mode:
 Experimental mode can be enabled by:
+
 - Setting an enviroment variable
 - Setting odo preference
+
 ##### Setting environment variable `ODO_EXPERIMENTAL`:
 Experimental mode can be enabled by setting the enviroment variable `ODO_EXPERIMENTAL=true`
 ```sh
