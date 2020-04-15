@@ -1,7 +1,6 @@
 package devfile
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -109,22 +108,10 @@ var _ = Describe("odo devfile create command tests", func() {
 
 	Context("When executing odo create with an invalid devfile component", func() {
 		It("should fail with please run 'odo catalog list components'", func() {
-			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 			fakeComponentName := "fake-component"
 			output := helper.CmdShouldFail("odo", "create", fakeComponentName)
 			expectedString := "\"" + fakeComponentName + "\" not found"
 			helper.MatchAllInOutput(output, []string{expectedString})
-		})
-	})
-
-	Context("When executing odo create with devfile component type when devfile.yaml is present", func() {
-		It("should failed with devfile component already exists", func() {
-			newFilePath := filepath.Join(context, "devfile.yaml")
-			if err := helper.CreateFileWithContent(newFilePath, "hello world"); err != nil {
-				fmt.Printf("Failed to create the devfile.yaml, reason %v", err.Error())
-			}
-			output := helper.CmdShouldFail("odo", "create", "openLiberty")
-			helper.MatchAllInOutput(output, []string{"This directory already contains a devfile.yaml, please delete it and run the component creation command again"})
 		})
 	})
 })

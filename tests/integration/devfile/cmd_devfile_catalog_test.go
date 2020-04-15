@@ -23,6 +23,7 @@ var _ = Describe("odo devfile catalog command tests", func() {
 		currentWorkingDirectory = helper.Getwd()
 		helper.Chdir(context)
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 	})
 
 	// This is run after every Spec (It)
@@ -34,7 +35,6 @@ var _ = Describe("odo devfile catalog command tests", func() {
 
 	Context("When executing catalog list components", func() {
 		It("should list all supported devfile components", func() {
-			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 			output := helper.CmdShouldPass("odo", "catalog", "list", "components")
 			helper.MatchAllInOutput(output, []string{"Odo Devfile Components", "java-spring-boot", "openLiberty"})
 		})
@@ -42,7 +42,6 @@ var _ = Describe("odo devfile catalog command tests", func() {
 
 	Context("When executing catalog list components with -a flag", func() {
 		It("should list all supported and unsupported devfile components", func() {
-			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 			output := helper.CmdShouldPass("odo", "catalog", "list", "components", "-a")
 			helper.MatchAllInOutput(output, []string{"Odo Devfile Components", "java-spring-boot", "java-maven", "php-mysql"})
 		})
