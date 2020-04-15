@@ -7,6 +7,7 @@ import (
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/log"
+	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
@@ -65,6 +66,13 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		}
 		po.EnvSpecificInfo = envinfo
 		po.Context = genericclioptions.NewDevfileContext(cmd)
+
+		if cmd.Flags().Changed("project") {
+			po.namespace, err = cmd.Flags().GetString("project")
+			if err != nil {
+				return err
+			}
+		}
 		return nil
 	}
 
@@ -166,6 +174,9 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 		pushCmd.Flags().StringVar(&po.devfileBuildCommand, "build-command", "", "Devfile Build Command to execute")
 		pushCmd.Flags().StringVar(&po.devfileRunCommand, "run-command", "", "Devfile Run Command to execute")
 	}
+
+	//Adding `--project` flag
+	projectCmd.AddProjectFlag(pushCmd)
 
 	pushCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(pushCmd, completion.ComponentNameCompletionHandler)

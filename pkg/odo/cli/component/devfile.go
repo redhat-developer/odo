@@ -140,7 +140,12 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 	if err != nil {
 		return err
 	}
-
+	if len(do.namespace) <= 0 {
+		do.namespace, err = getNamespace()
+		if err != nil {
+			return err
+		}
+	}
 	kc := kubernetes.KubernetesContext{
 		Namespace: do.namespace,
 	}

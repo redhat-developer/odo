@@ -63,6 +63,14 @@ func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string
 		if err != nil {
 			return err
 		}
+
+		// Retrieve the project/namespace used to push the changes to
+		if cmd.Flags().Changed("project") {
+			do.namespace, err = cmd.Flags().GetString("project")
+			if err != nil {
+				return err
+			}
+		}
 		return nil
 	}
 
@@ -232,7 +240,6 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 	// enable devfile flag if experimental mode is enabled
 	if experimental.IsExperimentalModeEnabled() {
 		componentDeleteCmd.Flags().StringVar(&do.devfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
-		componentDeleteCmd.Flags().StringVar(&do.namespace, "namespace", "", "Namespace to push the component to")
 	}
 
 	componentDeleteCmd.Flags().BoolVarP(&do.componentForceDeleteFlag, "force", "f", false, "Delete component without prompting")

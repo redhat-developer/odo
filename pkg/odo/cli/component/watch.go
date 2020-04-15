@@ -90,6 +90,19 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 			return err
 		}
 
+		// Retrieve the project/namespace used to push the changes to
+		if cmd.Flags().Changed("project") {
+			wo.namespace, err = cmd.Flags().GetString("project")
+			if err != nil {
+				return err
+			}
+		}
+		if len(wo.namespace) <= 0 {
+			wo.namespace, err = getNamespace()
+			if err != nil {
+				return err
+			}
+		}
 		kc := kubernetes.KubernetesContext{
 			Namespace: wo.namespace,
 		}
