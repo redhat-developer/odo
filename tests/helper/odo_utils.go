@@ -82,26 +82,9 @@ func CreateRandProject() string {
 	return projectName
 }
 
-// CreateRandNamespace create new project with random name in kubernetes cluster (10 letters)
-func CreateRandNamespace(context string) string {
-	projectName := RandString(10)
-	fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
-	CmdShouldPass("kubectl", "create", "namespace", projectName)
-	CmdShouldPass("kubectl", "config", "set-context", context, "--namespace", projectName)
-	session := CmdShouldPass("kubectl", "get", "namespaces")
-	Expect(session).To(ContainSubstring(projectName))
-	return projectName
-}
-
 // DeleteProject deletes a specified project
 func DeleteProject(projectName string) {
 	fmt.Fprintf(GinkgoWriter, "Deleting project: %s\n", projectName)
 	session := CmdShouldPass("odo", "project", "delete", projectName, "-f")
 	Expect(session).To(ContainSubstring("Deleted project : " + projectName))
-}
-
-// DeleteNamespace deletes a specified project in kubernetes cluster
-func DeleteNamespace(projectName string) {
-	fmt.Fprintf(GinkgoWriter, "Deleting project: %s\n", projectName)
-	CmdShouldPass("kubectl", "delete", "namespaces", projectName)
 }
