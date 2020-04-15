@@ -63,10 +63,10 @@ var _ = Describe("odo devfile url command tests", func() {
 			stdout = helper.CmdShouldFail("odo", "url", "create", url1, "--port", "8080")
 			Expect(stdout).To(ContainSubstring("is not exposed"))
 
-			stdout = helper.CmdShouldFail("odo", "url", "create", url1, "--port", "3000")
+			stdout = helper.CmdShouldFail("odo", "url", "create", url1, "--port", "3000", "--ingress")
 			Expect(stdout).To(ContainSubstring("host must be provided"))
 
-			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host)
+			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress")
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
 			helper.WaitForCmdOut("odo", []string{"url", "list"}, 1, false, func(output string) bool {
 				if strings.Contains(output, url1) {
@@ -93,8 +93,9 @@ var _ = Describe("odo devfile url command tests", func() {
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
 
-			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host)
+			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress")
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
+
 			// odo url list -o json
 			helper.WaitForCmdOut("odo", []string{"url", "list", "-o", "json"}, 1, true, func(output string) bool {
 				desiredURLListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"udo.udo.io/v1alpha1","metadata":{},"items":[{"kind":"Ingress","apiVersion":"extensions/v1beta1","metadata":{"name":"%s","creationTimestamp":null},"spec":{"rules":[{"host":"%s","http":{"paths":[{"path":"/","backend":{"serviceName":"%s","servicePort":3000}}]}}]},"status":{"loadBalancer":{}}}]}`, url1, url1+"."+host, componentName)
@@ -120,7 +121,7 @@ var _ = Describe("odo devfile url command tests", func() {
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
 
-			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--secure")
+			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--secure", "--ingress")
 
 			stdout = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
 			helper.MatchAllInOutput(stdout, []string{"https:", url1 + "." + host})
@@ -145,8 +146,37 @@ var _ = Describe("odo devfile url command tests", func() {
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
 
-			stdout = helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--now")
-			helper.MatchAllInOutput(stdout, []string{"created for component", "http:", url1 + "." + host})
+			stdout = helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--now", "--ingress")
+			helper.MatchAllInOutput(stdout, []string{"URL created for component", "http:", url1 + "." + host})
+		})
+
+		It("should create a automatically route on a openShift cluster", func() {
+
+			if os.Getenv("KUBERNETES") != "true" {
+				Skip("This is a OpenShift specific scenario, skipping")
+			}
+
+			url1 := helper.RandString(5)
+
+			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
+			helper.Chdir(projectDirPath)
+
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
+
+			helper.CmdShouldPass("odo", "url", "create", url1)
+
+			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
+
+			output := helper.CmdShouldPass("oc", "get", "routes", "--namespace", namespace)
+			Expect(output).Should(ContainSubstring(url1))
+
+			helper.CmdShouldPass("odo", "url", "delete", url1, "-f")
+			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
+
+			output = helper.CmdShouldPass("oc", "get", "routes", "--namespace", namespace)
+			Expect(output).ShouldNot(ContainSubstring(url1))
 		})
 	})
 
@@ -163,7 +193,7 @@ var _ = Describe("odo devfile url command tests", func() {
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
 
-			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host)
+			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress")
 
 			stdout = helper.CmdShouldFail("odo", "url", "describe", url1)
 			helper.MatchAllInOutput(stdout, []string{url1, "exists in local", "odo push"})

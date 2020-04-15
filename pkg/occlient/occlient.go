@@ -57,6 +57,7 @@ import (
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/apimachinery/pkg/watch"
 
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -209,6 +210,7 @@ type Client struct {
 	routeClient          routeclientset.RouteV1Interface
 	userClient           userclientset.UserV1Interface
 	KubeConfig           clientcmd.ClientConfig
+	discoveryClient      discovery.DiscoveryClient
 	Namespace            string
 }
 
@@ -274,6 +276,12 @@ func New() (*Client, error) {
 	}
 
 	client.userClient = userClient
+
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	client.discoveryClient = *discoveryClient
 
 	namespace, _, err := client.KubeConfig.Namespace()
 	if err != nil {
@@ -909,7 +917,7 @@ func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta
 		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", commonObjectMeta.Name)
 	}
 
-	ownerReference := generateOwnerReference(createdDC)
+	ownerReference := GenerateOwnerReference(createdDC)
 
 	// update the owner references for the new storage
 	for _, storage := range params.StorageToBeMounted {
@@ -1213,7 +1221,7 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 	jsonDC, _ = json.Marshal(createdDC)
 	glog.V(5).Infof("Created new DeploymentConfig:\n%s\n", string(jsonDC))
 
-	ownerReference := generateOwnerReference(createdDC)
+	ownerReference := GenerateOwnerReference(createdDC)
 
 	// update the owner references for the new storage
 	for _, storage := range params.StorageToBeMounted {
@@ -1431,7 +1439,7 @@ func (c *Client) PatchCurrentDC(dc appsv1.DeploymentConfig, prePatchDCHandler dc
 
 	// update the owner references for the new storage
 	for _, storage := range ucp.StorageToBeMounted {
-		err := updateStorageOwnerReference(c, storage, generateOwnerReference(updatedDc))
+		err := updateStorageOwnerReference(c, storage, GenerateOwnerReference(updatedDc))
 		if err != nil {
 			return errors.Wrapf(err, "unable to update owner reference of storage")
 		}
@@ -1608,7 +1616,7 @@ func (c *Client) UpdateDCToSupervisor(ucp UpdateComponentParams, isToLocal bool,
 		)
 		addInitVolumesToDC(&dc, ucp.CommonObjectMeta.Name, s2iPaths.DeploymentDir)
 
-		ownerReference := generateOwnerReference(ucp.ExistingDC)
+		ownerReference := GenerateOwnerReference(ucp.ExistingDC)
 
 		// Setup PVC
 		_, err = c.CreatePVC(getAppRootVolumeName(ucp.CommonObjectMeta.Name), "1Gi", ucp.CommonObjectMeta.Labels, ownerReference)
@@ -2587,7 +2595,7 @@ func (c *Client) GetAllClusterServicePlans() ([]scv1beta1.ClusterServicePlan, er
 // serviceName is the name of the service for the target reference
 // portNumber is the target port of the route
 // secureURL indicates if the route is a secure one or not
-func (c *Client) CreateRoute(name string, serviceName string, portNumber intstr.IntOrString, labels map[string]string, secureURL bool) (*routev1.Route, error) {
+func (c *Client) CreateRoute(name string, serviceName string, portNumber intstr.IntOrString, labels map[string]string, secureURL bool, ownerReference metav1.OwnerReference) (*routev1.Route, error) {
 	route := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   name,
@@ -2610,16 +2618,6 @@ func (c *Client) CreateRoute(name string, serviceName string, portNumber intstr.
 			InsecureEdgeTerminationPolicy: routev1.InsecureEdgeTerminationPolicyRedirect,
 		}
 	}
-
-	// since the serviceName is same as the DC name, we use that to get the DC
-	// to which this route belongs. A better way could be to get service from
-	// the name and set it as owner of the route
-	dc, err := c.GetDeploymentConfigFromName(serviceName)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get DeploymentConfig %s", name)
-	}
-
-	ownerReference := generateOwnerReference(dc)
 
 	route.SetOwnerReferences(append(route.GetOwnerReferences(), ownerReference))
 
@@ -3255,11 +3253,28 @@ func isSubDir(baseDir, otherDir string) bool {
 	return matches
 }
 
-// generateOwnerReference genertes an ownerReference which can then be set as
+// IsRouteSupported checks if route resource type is present on the cluster
+func (c *Client) IsRouteSupported() (bool, error) {
+	list, err := c.discoveryClient.ServerResourcesForGroupVersion("route.openshift.io/v1")
+	if kerrors.IsNotFound(err) {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	for _, resources := range list.APIResources {
+		if resources.Name == "routes" {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// GenerateOwnerReference genertes an ownerReference which can then be set as
 // owner for various OpenShift objects and ensure that when the owner object is
 // deleted from the cluster, all other objects are automatically removed by
 // OpenShift garbage collector
-func generateOwnerReference(dc *appsv1.DeploymentConfig) metav1.OwnerReference {
+func GenerateOwnerReference(dc *appsv1.DeploymentConfig) metav1.OwnerReference {
 
 	ownerReference := metav1.OwnerReference{
 		APIVersion: "apps.openshift.io/v1",
