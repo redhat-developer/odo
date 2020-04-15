@@ -16,7 +16,7 @@ const setRecommendedCommandName = "set"
 var (
 	setExample = ktemplates.Examples(`
 	# Set the active project
-	%[1]s 
+	%[1]s myproject
 	`)
 
 	setLongDesc = ktemplates.LongDesc(`Set the active project`)
