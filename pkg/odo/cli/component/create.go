@@ -101,11 +101,8 @@ var EnvFilePath = filepath.Join(LocalDirectoryDefaultLocation, envFile)
 var ConfigFilePath = filepath.Join(LocalDirectoryDefaultLocation, configFile)
 
 var createLongDesc = ktemplates.LongDesc(`Create a configuration describing a component.
-
 If a component name is not provided, it'll be auto-generated.
-
 A full list of component types that can be deployed is available using: 'odo catalog list'
-
 By default, builder images (component type) will be used from the current namespace. You can explicitly supply a namespace by using: odo create namespace/name:version
 If version is not specified by default, latest will be chosen as the version.`)
 
@@ -119,19 +116,14 @@ Note: When you use odo with experimental mode enabled and create devfile compone
 
 # Create new Node.js component
 %[1]s nodejs
-
 # Create new Node.js component named 'frontend' with the source in './frontend' directory
 %[1]s nodejs frontend --context ./frontend
-
 # Create new Java component with binary named sample.jar in './target' directory
 %[1]s java:8  --binary target/sample.jar
-
 # Create new Node.js component with source from remote git repository
 %[1]s nodejs --git https://github.com/openshift/nodejs-ex.git
-
 # Create new Node.js component with custom ports, additional environment variables and memory and cpu limits
 %[1]s nodejs --port 8080,8100/tcp,9100/udp --env key=value,key1=value1 --memory 4Gi --cpu 2
-
 # Create new Node.js component and download the sample project named nodejs-web-app
 %[1]s nodejs --downloadSource=nodejs-web-app`)
 

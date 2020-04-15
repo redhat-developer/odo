@@ -23,17 +23,28 @@ var _ = Describe("odo devfile create command tests", func() {
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
-		namespace = helper.CreateRandProject()
 		context = helper.CreateNewContext()
-		currentWorkingDirectory = helper.Getwd()
-		helper.Chdir(context)
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+		if os.Getenv("KUBERNETES") == "true" {
+			homeDir := helper.GetUserHomeDir()
+			kubeConfigFile := helper.CopyKubeConfigFile(filepath.Join(homeDir, ".kube", "config"), filepath.Join(context, "config"))
+			namespace = helper.CreateRandNamespace(kubeConfigFile)
+		} else {
+			namespace = helper.CreateRandProject()
+		}
+		currentWorkingDirectory = helper.Getwd()
+		helper.Chdir(context)
 	})
 
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		helper.DeleteProject(namespace)
+		if os.Getenv("KUBERNETES") == "true" {
+			helper.DeleteNamespace(namespace)
+			os.Unsetenv("KUBECONFIG")
+		} else {
+			helper.DeleteProject(namespace)
+		}
 		helper.Chdir(currentWorkingDirectory)
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
@@ -67,7 +78,12 @@ var _ = Describe("odo devfile create command tests", func() {
 		It("should fail to create the devfile componet with invalid component type", func() {
 			fakeComponentName := "fake-component"
 			output := helper.CmdShouldFail("odo", "create", fakeComponentName)
-			expectedString := "component type \"" + fakeComponentName + "\" not found"
+			var expectedString string
+			if os.Getenv("KUBERNETES") == "true" {
+				expectedString = "component not found"
+			} else {
+				expectedString := "component type \"" + fakeComponentName + "\" not found"
+			}
 			helper.MatchAllInOutput(output, []string{expectedString})
 		})
 	})
