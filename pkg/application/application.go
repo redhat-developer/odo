@@ -29,6 +29,10 @@ func ListInProject(client *occlient.Client) ([]string, error) {
 
 	var appNames []string
 
+	if client == nil {
+		return appNames, nil
+	}
+
 	// Get all DeploymentConfigs with the "app" label
 	deploymentConfigAppNames, err := client.GetDeploymentConfigLabelValues(applabels.ApplicationLabel, applabels.ApplicationLabel)
 	if err != nil {
@@ -87,7 +91,7 @@ func Delete(client *occlient.Client, name string) error {
 		}
 	}
 	// delete application from cluster
-	err = client.Delete(labels)
+	err = client.Delete(labels, false)
 	if err != nil {
 		return errors.Wrapf(err, "unable to delete application %s", name)
 	}

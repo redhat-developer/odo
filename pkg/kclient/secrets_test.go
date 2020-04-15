@@ -5,33 +5,48 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	ktesting "k8s.io/client-go/testing"
 )
 
 func TestCreateTLSSecret(t *testing.T) {
-
 	tests := []struct {
-		name          string
-		secretName    string
-		componentName string
-		host          string
-		wantErr       bool
+		name       string
+		objectMeta metav1.ObjectMeta
+		host       string
+		wantErr    bool
 	}{
 		{
-			name:          "Case: Valid Component name",
-			componentName: "testComponent",
-			secretName:    "testComponent-tlssecret",
-			host:          "1.2.3.4.nip.io",
-			wantErr:       false,
+			name: "Case: Valid Secret name",
+			objectMeta: metav1.ObjectMeta{
+				Name: "testComponent-tlssecret",
+				OwnerReferences: []v1.OwnerReference{
+					metav1.OwnerReference{
+						APIVersion: "1",
+						Kind:       "fakeOwnerReference",
+						Name:       "testDeployment",
+					},
+				},
+			},
+			host:    "1.2.3.4.nip.io",
+			wantErr: false,
 		},
 		{
-			name:          "Case: Invalid Component name",
-			secretName:    "testComponent-tlssecret",
-			componentName: "",
-			host:          "1.2.3.4.nip.io",
-			wantErr:       true,
+			name: "Case: Invalid Secret name",
+			objectMeta: metav1.ObjectMeta{
+				Name: "",
+				OwnerReferences: []v1.OwnerReference{
+					metav1.OwnerReference{
+						APIVersion: "1",
+						Kind:       "fakeOwnerReference",
+						Name:       "testDeployment",
+					},
+				},
+			},
+			host:    "1.2.3.4.nip.io",
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
@@ -42,9 +57,7 @@ func TestCreateTLSSecret(t *testing.T) {
 
 			fkclientset.Kubernetes.PrependReactor("create", "secrets", func(action ktesting.Action) (bool, runtime.Object, error) {
 				secret := corev1.Secret{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: tt.secretName,
-					},
+					ObjectMeta: tt.objectMeta,
 				}
 				return true, &secret, nil
 			})
@@ -52,7 +65,7 @@ func TestCreateTLSSecret(t *testing.T) {
 			if err != nil {
 				t.Errorf("fkclient.GenerateSelfSignedCertificate unexpected error %v", err)
 			}
-			createdTLSSceret, err := fkclient.CreateTLSSecret(selfsignedcert.CertPem, selfsignedcert.KeyPem, tt.componentName, "")
+			createdTLSSceret, err := fkclient.CreateTLSSecret(selfsignedcert.CertPem, selfsignedcert.KeyPem, tt.objectMeta)
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("fkclient.CreateIngress unexpected error %v, wantErr %v", err, tt.wantErr)
@@ -61,8 +74,8 @@ func TestCreateTLSSecret(t *testing.T) {
 				if len(fkclientset.Kubernetes.Actions()) != 1 {
 					t.Errorf("expected 1 action, got: %v", fkclientset.Kubernetes.Actions())
 				} else {
-					if createdTLSSceret.Name != tt.secretName {
-						t.Errorf("secret name does not match the expected name, expected: %s, got %s", tt.secretName, createdTLSSceret.Name)
+					if createdTLSSceret.Name != tt.objectMeta.Name {
+						t.Errorf("secret name does not match the expected name, expected: %s, got %s", tt.objectMeta.Name, createdTLSSceret.Name)
 					}
 				}
 			}

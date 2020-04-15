@@ -9,6 +9,8 @@ import (
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // constants for deployments
@@ -152,4 +154,21 @@ func (c *Client) DeleteDeployment(labels map[string]string) error {
 	glog.V(4).Info("Deleting Deployment")
 
 	return c.KubeClient.AppsV1().Deployments(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
+}
+
+// CreateDynamicDeployment creates a dynamic deployment for Operator backed service
+func (c *Client) CreateDynamicResource(exampleCustomResource map[string]interface{}, group, version, resource string) error {
+	deploymentRes := schema.GroupVersionResource{Group: group, Version: version, Resource: resource}
+
+	deployment := &unstructured.Unstructured{
+		Object: exampleCustomResource,
+	}
+
+	// Create the dynamic resource based on the alm-example for the CRD
+	_, err := c.DynamicClient.Resource(deploymentRes).Namespace(c.Namespace).Create(deployment, metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -182,6 +182,7 @@ func (cpo *CommonPushOptions) Push() (err error) {
 
 	cmpName := cpo.LocalConfigInfo.GetName()
 	appName := cpo.LocalConfigInfo.GetApplication()
+	cpo.sourceType = cpo.LocalConfigInfo.GetSourceType()
 
 	if cpo.componentContext == "" {
 		cpo.componentContext = strings.TrimSuffix(filepath.Dir(cpo.LocalConfigInfo.Filename), ".odo")

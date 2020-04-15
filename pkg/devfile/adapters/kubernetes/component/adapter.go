@@ -10,9 +10,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/fatih/color"
 	"github.com/golang/glog"
-	"github.com/pkg/errors"
-
+	"github.com/openshift/odo/pkg/component"
+	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
@@ -22,8 +23,10 @@ import (
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
+	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/sync"
 	"github.com/openshift/odo/pkg/util"
+	"github.com/pkg/errors"
 )
 
 // New instantiantes a component adapter
@@ -86,6 +89,11 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	pod, err := a.waitAndGetComponentPod(false)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
+	}
+
+	err = component.ApplyConfig(nil, &a.Client, config.LocalConfigInfo{}, parameters.EnvSpecificInfo, color.Output, componentExists)
+	if err != nil {
+		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed.")
 	}
 
 	// Compare the name of the pod with the one before the rollout. If they differ, it means there's a new pod and a force push is required
@@ -447,9 +455,9 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 				}
 
 				if show {
-					s = log.SpinnerNoSpin("Executing " + command.Name + " command " + *action.Command)
+					s = log.SpinnerNoSpin("Executing " + command.Name + " command " + fmt.Sprintf("%q", *action.Command))
 				} else {
-					s = log.Spinner("Executing " + command.Name + " command " + *action.Command)
+					s = log.Spinner("Executing " + command.Name + " command " + fmt.Sprintf("%q", *action.Command))
 				}
 
 				defer s.End(false)
@@ -494,7 +502,7 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 					},
 				}
 
-				s = log.Spinner("Executing " + command.Name + " command " + *action.Command)
+				s = log.Spinner("Executing " + command.Name + " command " + fmt.Sprintf("%q", *action.Command))
 				defer s.End(false)
 
 				for _, devRunExec := range devRunExecs {

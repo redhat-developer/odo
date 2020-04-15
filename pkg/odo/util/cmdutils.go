@@ -136,9 +136,10 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 	// URL
 	if componentDesc.Spec.URL != nil {
 		var output string
+
 		if !experimental.IsExperimentalModeEnabled() {
 			// if the component is not pushed
-			if componentDesc.Status.State == "Not Pushed" {
+			if componentDesc.Status.State == component.StateTypeNotPushed {
 				// Gather the output
 				for i, componentURL := range componentDesc.Spec.URL {
 					output += fmt.Sprintf(" · URL named %s will be exposed via %v\n", componentURL, componentDesc.Spec.Ports[i])
@@ -153,6 +154,7 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 					url := urls.Get(componentURL)
 					output += fmt.Sprintf(" · %v exposed via %v\n", urlPkg.GetURLString(url.Spec.Protocol, url.Spec.Host, ""), url.Spec.Port)
 				}
+
 			}
 		}
 		// Cut off the last newline and output

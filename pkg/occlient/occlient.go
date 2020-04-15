@@ -93,10 +93,11 @@ type CreateArgs struct {
 }
 
 const (
-	failedEventCount   = 5
-	OcUpdateTimeout    = 5 * time.Minute
-	OcBuildTimeout     = 5 * time.Minute
-	OpenShiftNameSpace = "openshift"
+	failedEventCount                = 5
+	OcUpdateTimeout                 = 5 * time.Minute
+	OcBuildTimeout                  = 5 * time.Minute
+	OpenShiftNameSpace              = "openshift"
+	waitForComponentDeletionTimeout = 120 * time.Second
 
 	// timeout for getting the default service account
 	getDefaultServiceAccTimeout = 1 * time.Minute
@@ -2089,15 +2090,22 @@ func (c *Client) DisplayDeploymentConfigLog(deploymentConfigName string, followL
 }
 
 // Delete takes labels as a input and based on it, deletes respective resource
-func (c *Client) Delete(labels map[string]string) error {
+func (c *Client) Delete(labels map[string]string, wait bool) error {
+
 	// convert labels to selector
 	selector := util.ConvertLabelsToSelector(labels)
 	glog.V(4).Infof("Selectors used for deletion: %s", selector)
 
 	var errorList []string
+	var deletionPolicy = metav1.DeletePropagationBackground
+
+	// for --wait flag, it deletes component dependents first and then delete component
+	if wait {
+		deletionPolicy = metav1.DeletePropagationForeground
+	}
 	// Delete DeploymentConfig
 	glog.V(4).Info("Deleting DeploymentConfigs")
-	err := c.appsClient.DeploymentConfigs(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
+	err := c.appsClient.DeploymentConfigs(c.Namespace).DeleteCollection(&metav1.DeleteOptions{PropagationPolicy: &deletionPolicy}, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		errorList = append(errorList, "unable to delete deploymentconfig")
 	}
@@ -2114,6 +2122,16 @@ func (c *Client) Delete(labels map[string]string) error {
 		errorList = append(errorList, "unable to delete imagestream")
 	}
 
+	// for --wait it waits for component to be deleted
+	// TODO: Need to modify for `odo app delete`, currently wait flag is added only in `odo component delete`
+	//       so only one component gets passed in selector
+	if wait {
+		err = c.WaitForComponentDeletion(selector)
+		if err != nil {
+			errorList = append(errorList, err.Error())
+		}
+	}
+
 	// Error string
 	errString := strings.Join(errorList, ",")
 	if len(errString) != 0 {
@@ -2121,6 +2139,39 @@ func (c *Client) Delete(labels map[string]string) error {
 	}
 	return nil
 
+}
+
+// WaitForComponentDeletion waits for component to be deleted
+func (c *Client) WaitForComponentDeletion(selector string) error {
+
+	glog.V(4).Infof("Waiting for component to get deleted")
+
+	watcher, err := c.appsClient.DeploymentConfigs(c.Namespace).Watch(metav1.ListOptions{LabelSelector: selector})
+	if err != nil {
+		return err
+	}
+	defer watcher.Stop()
+	eventCh := watcher.ResultChan()
+
+	for {
+		select {
+		case event, ok := <-eventCh:
+			_, typeOk := event.Object.(*appsv1.DeploymentConfig)
+			if !ok || !typeOk {
+				return errors.New("Unable to watch deployment config")
+			}
+			if event.Type == watch.Deleted {
+				glog.V(4).Infof("WaitForComponentDeletion, Event Recieved:Deleted")
+				return nil
+			} else if event.Type == watch.Error {
+				glog.V(4).Infof("WaitForComponentDeletion, Event Recieved:Deleted ")
+				return errors.New("Unable to watch deployment config")
+			}
+		case <-time.After(waitForComponentDeletionTimeout):
+			glog.V(4).Infof("WaitForComponentDeletion, Timeout")
+			return errors.New("Time out waiting for component to get deleted")
+		}
+	}
 }
 
 // DeleteServiceInstance takes labels as a input and based on it, deletes respective service instance
@@ -2731,11 +2782,7 @@ func (c *Client) GetDeploymentConfigFromName(name string) (*appsv1.DeploymentCon
 	glog.V(4).Infof("Getting DeploymentConfig: %s", name)
 	deploymentConfig, err := c.appsClient.DeploymentConfigs(c.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
-		if !strings.Contains(err.Error(), fmt.Sprintf(DEPLOYMENT_CONFIG_NOT_FOUND_ERROR_STR, name)) {
-			return nil, errors.Wrapf(err, "unable to get DeploymentConfig %s", name)
-		} else {
-			return nil, DEPLOYMENT_CONFIG_NOT_FOUND
-		}
+		return nil, err
 	}
 	return deploymentConfig, nil
 }

@@ -719,21 +719,21 @@ func (co *CreateOptions) Run() (err error) {
 		if err != nil {
 			return err
 		}
-		existsInCluster, err := component.Exists(co.Context.Client, *co.componentSettings.Name, co.Context.Application)
-		if err != nil {
-			return err
-		}
-		if existsInCluster {
-			componentDesc, err = component.GetComponent(co.Context.Client, *co.componentSettings.Name, co.Context.Application, co.Context.Project)
+		state := component.GetComponentState(co.Client, *co.componentSettings.Name, co.Context.Application)
+
+		if state == component.StateTypeNotPushed || state == component.StateTypeUnknown {
+			componentDesc, err = component.GetComponentFromConfig(co.LocalConfigInfo)
+			componentDesc.Status.State = state
 			if err != nil {
 				return err
 			}
 		} else {
-			componentDesc, err = component.GetComponentFromConfig(co.LocalConfigInfo)
+			componentDesc, err = component.GetComponent(co.Context.Client, *co.componentSettings.Name, co.Context.Application, co.Context.Project)
 			if err != nil {
 				return err
 			}
 		}
+
 		componentDesc.Spec.Ports = co.LocalConfigInfo.GetPorts()
 		machineoutput.OutputSuccess(componentDesc)
 	}
