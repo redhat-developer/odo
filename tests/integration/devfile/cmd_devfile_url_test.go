@@ -103,6 +103,8 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "9090", "--host", host, "--secure")
 			stdout = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 			helper.MatchAllInOutput(stdout, []string{"https:", url1 + "." + host})
+			stdout = helper.CmdShouldPass("odo", "url", "list")
+			helper.MatchAllInOutput(stdout, []string{"https:", url1 + "." + host, "true"})
 			helper.CmdShouldPass("odo", "url", "delete", url1, "-f")
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 			stdout = helper.CmdShouldFail("odo", "url", "list")

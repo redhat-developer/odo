@@ -105,25 +105,26 @@ The `TAGS` column represents the available image versions, for example, `10` rep
 [[official-documentation]]
 == Official documentation
 
-* link:https://docs.openshift.com/container-platform/4.2/cli_reference/openshift_developer_cli/installing-odo.html[Installing odo]
-* link:https://docs.openshift.com/container-platform/4.2/cli_reference/openshift_developer_cli/creating-a-single-component-application-with-odo.html[Creating a single-component application with odo]
-* link:https://docs.openshift.com/container-platform/4.2/cli_reference/openshift_developer_cli/creating-a-multicomponent-application-with-odo.html[Creating a multicomponent application with odo]
-* link:https://docs.openshift.com/container-platform/4.2/cli_reference/openshift_developer_cli/creating-an-application-with-a-database.html[Creating an application with a database]
-* link:https://docs.openshift.com/container-platform/4.2/cli_reference/openshift_developer_cli/configuring-the-odo-cli.html[Configuring the odo CLI]
-* link:https://docs.openshift.com/container-platform/4.2/cli_reference/openshift_developer_cli/odo-cli-reference.html[odo CLI reference]
-* link:https://docs.openshift.com/container-platform/4.2/cli_reference/openshift_developer_cli/odo-release-notes.html[odo release notes]
+* link:https://docs.openshift.com/container-platform/latest/cli_reference/openshift_developer_cli/installing-odo.html[Installing odo]
+* link:https://docs.openshift.com/container-platform/latest/cli_reference/openshift_developer_cli/odo-architecture.html[Odo architecture]
+* link:https://docs.openshift.com/container-platform/latest/cli_reference/openshift_developer_cli/creating-a-single-component-application-with-odo.html[Creating a single-component application with odo]
+* link:https://docs.openshift.com/container-platform/latest/cli_reference/openshift_developer_cli/creating-a-multicomponent-application-with-odo.html[Creating a multicomponent application with odo]
+* link:https://docs.openshift.com/container-platform/latest/cli_reference/openshift_developer_cli/creating-an-application-with-a-database.html[Creating an application with a database]
+* link:https://docs.openshift.com/container-platform/latest/cli_reference/openshift_developer_cli/configuring-the-odo-cli.html[Configuring the odo CLI]
+* link:https://docs.openshift.com/container-platform/latest/cli_reference/openshift_developer_cli/odo-cli-reference.html[odo CLI reference]
+* link:https://docs.openshift.com/container-platform/latest/cli_reference/openshift_developer_cli/odo-release-notes.html[odo release notes]
 
 [[installing-odo]]
 == Installing `odo`
 
-To install on Linux / Windows / macOS follow our guide located on link:https://docs.openshift.com/container-platform/4.2/cli_reference/openshift_developer_cli/installing-odo.html[docs.openshift.com]. All binaries and tarballs are synced between our link:https://github.com/openshift/odo/releases[GitHub releases] and link:https://mirror.openshift.com/pub/openshift-v4/clients/odo/[OpenShift mirrors].
+To install on Linux / Windows / macOS follow our guide located on link:https://docs.openshift.com/container-platform/latest/cli_reference/openshift_developer_cli/installing-odo.html[docs.openshift.com]. All binaries and tarballs are synced between our link:https://github.com/openshift/odo/releases[GitHub releases] and link:https://mirror.openshift.com/pub/openshift-v4/clients/odo/[OpenShift mirrors].
 
 [[deploying-your-first-application]]
 == Deploying your first application
 
 Click on the tutorial below to deploy your first `odo` application:
 
-link:https://docs.openshift.com/container-platform/4.2/cli_reference/openshift_developer_cli/creating-a-single-component-application-with-odo.html[Creating a single-component application with odo]
+link:https://docs.openshift.com/container-platform/latest/cli_reference/openshift_developer_cli/creating-a-single-component-application-with-odo.html[Creating a single-component application with odo]
 
 The following demonstration provides an overview of `odo`:
 

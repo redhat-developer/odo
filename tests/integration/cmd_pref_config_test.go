@@ -353,6 +353,7 @@ var _ = Describe("odo preference and config command tests", func() {
 
 		It("should successfully set and unset variables", func() {
 			//set env var
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--project", project, "--context", context)
 			helper.CmdShouldPass("odo", "config", "set", "--now", "--env", "hello=world", "--context", context)
 			//*Check config
