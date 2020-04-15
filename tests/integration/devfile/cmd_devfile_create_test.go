@@ -46,7 +46,7 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 
 		It("checks that the experimental warning does *not* appear when Experimental is set to false for create", func() {
-			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "false")
+			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "false", "-f")
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 
 			// Check that it will contain the experimental mode output
