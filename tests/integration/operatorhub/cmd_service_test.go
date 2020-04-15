@@ -61,8 +61,9 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
 			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]`).FindString(operators)
 
-			stdOut := helper.CmdShouldPass("odo", "service", "create", etcdOperator, "--crd", "EtcdCluster", "--dry-run")
-			Expect(stdOut).To(ContainSubstring("Following definition will be used to create"))
+			stdout := helper.CmdShouldPass("odo", "service", "create", etcdOperator, "--crd", "EtcdCluster", "--dry-run")
+			Expect(stdout).To(ContainSubstring("apiVersion"))
+			Expect(stdout).To(ContainSubstring("kind"))
 		})
 	})
 

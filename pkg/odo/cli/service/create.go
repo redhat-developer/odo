@@ -326,7 +326,6 @@ func (o *ServiceCreateOptions) Run() (err error) {
 				return err
 			}
 
-			log.Infof("Following definition will be used to create %s:\n", o.CustomResource)
 			log.Info(string(yamlCR))
 
 			return nil
