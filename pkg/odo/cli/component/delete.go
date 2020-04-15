@@ -212,6 +212,15 @@ func (do *DeleteOptions) DevFileRun() (err error) {
 			if err != nil {
 				return err
 			}
+
+			cfg, err := config.NewLocalConfigInfo(do.componentContext)
+			if err != nil {
+				return err
+			}
+			if err = cfg.DeleteConfigDirIfEmpty(); err != nil {
+				return err
+			}
+
 			log.Successf("Successfully deleted env file")
 		} else {
 			log.Error("Aborting deletion of env folder")
