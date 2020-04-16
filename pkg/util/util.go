@@ -892,7 +892,12 @@ func Unzip(src, dest string) ([]string, error) {
 			return filenames, err
 		}
 
-		_, err = io.Copy(outFile, rc)
+		// limit the number of bytes copied from a file
+		// This is set to the limit of file size in Github
+		// which is 100MB
+		limited := io.LimitReader(rc, 100*1024*1024)
+
+		_, err = io.Copy(outFile, limited)
 
 		// Close the file without defer to close before next iteration of loop
 		outFile.Close()
