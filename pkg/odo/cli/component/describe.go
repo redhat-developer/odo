@@ -78,7 +78,7 @@ func (do *DescribeOptions) Run() (err error) {
 		machineoutput.OutputSuccess(componentDesc)
 	} else {
 
-		odoutil.PrintComponentInfo(do.Context.Client, do.componentName, componentDesc, do.Context.Application, do.Context.Project)
+		odoutil.PrintComponentInfo(do.Context.Client, do.componentName, componentDesc, do.LocalConfigInfo, do.Context.Application, do.Context.Project, true)
 	}
 
 	return
