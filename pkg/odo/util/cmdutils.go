@@ -72,7 +72,16 @@ func CheckOutputFlag(outputFlag string) error {
 }
 
 // PrintComponentInfo prints Component Information like path, URL & storage
-func PrintComponentInfo(client *occlient.Client, currentComponentName string, componentDesc component.Component, applicationName string, project string) {
+func PrintComponentInfo(client *occlient.Client, currentComponentName string, componentDesc component.Component, localConfigInfo *config.LocalConfigInfo, applicationName string, project string, useLocalConfig bool) {
+	var componentDescFromLC component.Component
+	var err error
+
+	if useLocalConfig {
+		componentDescFromLC, err = component.GetComponentFromConfig(localConfigInfo)
+		LogErrorAndExit(err, "")
+	} else {
+		componentDescFromLC = componentDesc
+	}
 
 	log.Describef("Component Name: ", currentComponentName)
 	log.Describef("Type: ", componentDesc.Spec.Type)
@@ -104,8 +113,7 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 
 		var storages storage.StorageList
 		var err error
-
-		if componentDesc.Status.State == "Pushed" {
+		if componentDesc.Status.State == component.StateTypePushed {
 			// Retrieve the storage list
 			storages, err = storage.List(client, currentComponentName, applicationName)
 			LogErrorAndExit(err, "")
@@ -134,29 +142,27 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 	}
 
 	// URL
-	if componentDesc.Spec.URL != nil {
+	if componentDescFromLC.Spec.URL != nil {
 		var output string
 
 		if !experimental.IsExperimentalModeEnabled() {
-			// if the component is not pushed
-			if componentDesc.Status.State == component.StateTypeNotPushed {
-				// Gather the output
-				for i, componentURL := range componentDesc.Spec.URL {
-					output += fmt.Sprintf(" · URL named %s will be exposed via %v\n", componentURL, componentDesc.Spec.Ports[i])
-				}
-			} else {
-				// Retrieve the URLs
-				urls, err := urlPkg.ListPushed(client, currentComponentName, applicationName)
+			//get all urls
+			allUrls, err := urlPkg.List(client, localConfigInfo, currentComponentName, applicationName)
+			if err != nil {
 				LogErrorAndExit(err, "")
+			}
 
-				// Gather the output
-				for _, componentURL := range componentDesc.Spec.URL {
-					url := urls.Get(componentURL)
-					output += fmt.Sprintf(" · %v exposed via %v\n", urlPkg.GetURLString(url.Spec.Protocol, url.Spec.Host, ""), url.Spec.Port)
+			// iterate over the URLs
+			for _, url := range componentDescFromLC.Spec.URL {
+				ui := allUrls.Get(url)
+				if ui.Status.State == urlPkg.StateTypePushed {
+					output += fmt.Sprintf(" · %v exposed via %v\n", urlPkg.GetURLString(ui.Spec.Protocol, ui.Spec.Host, ""), ui.Spec.Port)
+				} else {
+					output += fmt.Sprintf(" · URL named %s will be exposed via %v\n", url, ui.Spec.Port)
 				}
-
 			}
 		}
+
 		// Cut off the last newline and output
 		if len(output) > 0 {
 			output = output[:len(output)-1]
