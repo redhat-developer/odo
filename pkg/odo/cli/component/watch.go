@@ -31,11 +31,15 @@ import (
 const WatchRecommendedCommandName = "watch"
 
 var watchLongDesc = ktemplates.LongDesc(`Watch for changes, update component on change.`)
-var watchExample = ktemplates.Examples(`  # Watch for changes in directory for current component
+var watchExampleWithComponentName = ktemplates.Examples(`  # Watch for changes in directory for current component
 %[1]s
 
 # Watch for changes in directory for component called frontend 
 %[1]s frontend
+  `)
+
+var watchExample = ktemplates.Examples(`  # Watch for changes in directory for current component
+%[1]s
   `)
 
 // WatchOptions contains attributes of the watch command
@@ -216,11 +220,19 @@ func (wo *WatchOptions) Run() (err error) {
 func NewCmdWatch(name, fullName string) *cobra.Command {
 	wo := NewWatchOptions()
 
+	example := fmt.Sprintf(watchExample, fullName)
+	usage := name
+
+	if experimental.IsExperimentalModeEnabled() {
+		example = fmt.Sprintf(watchExampleWithComponentName, fullName)
+		usage = fmt.Sprintf("%s [component name]", name)
+	}
+
 	var watchCmd = &cobra.Command{
-		Use:         fmt.Sprintf("%s [component name]", name),
+		Use:         usage,
 		Short:       "Watch for changes, update component on change",
 		Long:        watchLongDesc,
-		Example:     fmt.Sprintf(watchExample, fullName),
+		Example:     example,
 		Args:        cobra.MaximumNArgs(1),
 		Annotations: map[string]string{"command": "component"},
 		Run: func(cmd *cobra.Command, args []string) {
