@@ -41,6 +41,10 @@ type DockerClient interface {
 	VolumeCreate(ctx context.Context, options volumeTypes.VolumeCreateBody) (types.Volume, error)
 	VolumeList(ctx context.Context, filter filters.Args) (volumeTypes.VolumeListOKBody, error)
 	VolumeRemove(ctx context.Context, volumeID string, force bool) error
+	ContainerExecCreate(ctx context.Context, container string, config types.ExecConfig) (types.IDResponse, error)
+	ContainerExecStart(ctx context.Context, execID string, config types.ExecStartCheck) error
+	ContainerExecAttach(ctx context.Context, execID string, config types.ExecStartCheck) (types.HijackedResponse, error)
+	ContainerExecInspect(ctx context.Context, execID string) (types.ContainerExecInspect, error)
 }
 
 // Client is a collection of fields used for client configuration and interaction

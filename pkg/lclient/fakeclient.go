@@ -158,6 +158,24 @@ func (m *mockDockerClient) VolumeRemove(ctx context.Context, volumeID string, fo
 	return nil
 }
 
+func (m *mockDockerClient) ContainerExecCreate(ctx context.Context, container string, config types.ExecConfig) (types.IDResponse, error) {
+	return types.IDResponse{
+		ID: "someid",
+	}, nil
+}
+
+func (m *mockDockerClient) ContainerExecStart(ctx context.Context, execID string, config types.ExecStartCheck) error {
+	return nil
+}
+
+func (m *mockDockerClient) ContainerExecAttach(ctx context.Context, execID string, config types.ExecStartCheck) (types.HijackedResponse, error) {
+	return types.HijackedResponse{}, nil
+}
+
+func (m *mockDockerClient) ContainerExecInspect(ctx context.Context, execID string) (types.ContainerExecInspect, error) {
+	return types.ContainerExecInspect{}, nil
+}
+
 // This mock client will return errors for each call to a docker function
 type mockDockerErrorClient struct {
 }
@@ -184,6 +202,10 @@ var errDistributionInspect = errors.New("error inspecting distribution")
 var errVolumeCreate = errors.New("error creating volume")
 var errVolumeList = errors.New("error listing volume")
 var errRemoveVolume = errors.New("error removing volume")
+var errContainerExecCreate = errors.New("error creating container exec")
+var errContainerExecStart = errors.New("error starting container exec")
+var errContainerExecAttach = errors.New("error attach container exec")
+var errContainerExecInspect = errors.New("error inspecting container exec")
 
 func (m *mockDockerErrorClient) ImageList(ctx context.Context, imageListOptions types.ImageListOptions) ([]types.ImageSummary, error) {
 	return nil, errImageList
@@ -251,4 +273,20 @@ func FakeNewMockClient(ctrl *gomock.Controller) (*Client, *MockDockerClient) {
 		Client: dockerClient,
 	}
 	return &localClient, dockerClient
+}
+
+func (m *mockDockerErrorClient) ContainerExecCreate(ctx context.Context, container string, config types.ExecConfig) (types.IDResponse, error) {
+	return types.IDResponse{}, errContainerExecCreate
+}
+
+func (m *mockDockerErrorClient) ContainerExecStart(ctx context.Context, execID string, config types.ExecStartCheck) error {
+	return errContainerExecStart
+}
+
+func (m *mockDockerErrorClient) ContainerExecAttach(ctx context.Context, execID string, config types.ExecStartCheck) (types.HijackedResponse, error) {
+	return types.HijackedResponse{}, errContainerExecAttach
+}
+
+func (m *mockDockerErrorClient) ContainerExecInspect(ctx context.Context, execID string) (types.ContainerExecInspect, error) {
+	return types.ContainerExecInspect{}, errContainerExecInspect
 }
