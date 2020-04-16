@@ -8,6 +8,7 @@ import (
 
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 
@@ -59,16 +60,27 @@ func (po *PushOptions) DevfilePush() (err error) {
 
 	spinner := log.SpinnerNoSpin(fmt.Sprintf("Push devfile component %s", componentName))
 	defer spinner.End(false)
-	if len(po.namespace) <= 0 {
-		po.namespace, err = getNamespace()
-		if err != nil {
-			return err
+
+	var platformContext interface{}
+	if pushtarget.IsPushTargetDocker() {
+		platformContext = nil
+	} else {
+		if len(po.namespace) <= 0 {
+			po.namespace, err = getNamespace()
+			if err != nil {
+				return err
+			}
 		}
+
+		po.Context.KClient.Namespace = po.namespace
+
+		kc := kubernetes.KubernetesContext{
+			Namespace: po.namespace,
+		}
+		platformContext = kc
 	}
-	kc := kubernetes.KubernetesContext{
-		Namespace: po.namespace,
-	}
-	devfileHandler, err := adapters.NewPlatformAdapter(componentName, devObj, kc)
+
+	devfileHandler, err := adapters.NewPlatformAdapter(componentName, devObj, platformContext)
 
 	if err != nil {
 		return err

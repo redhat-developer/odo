@@ -20,6 +20,21 @@ func (dc *Client) GetContainersByComponent(componentName string, containers []ty
 	return containerList
 }
 
+// GetContainersByComponentAndAlias returns the list of Docker containers that have the same component and alias labeled
+func (dc *Client) GetContainersByComponentAndAlias(componentName string, alias string) ([]types.Container, error) {
+	containerList, err := dc.GetContainerList()
+	if err != nil {
+		return nil, err
+	}
+	var labeledContainers []types.Container
+	for _, container := range containerList {
+		if container.Labels["component"] == componentName && container.Labels["alias"] == alias {
+			labeledContainers = append(labeledContainers, container)
+		}
+	}
+	return labeledContainers, nil
+}
+
 // GetContainerList returns a list of all of the running containers on the user's system
 func (dc *Client) GetContainerList() ([]types.Container, error) {
 	containers, err := dc.Client.ContainerList(dc.Context, types.ContainerListOptions{})
@@ -33,10 +48,9 @@ func (dc *Client) GetContainerList() ([]types.Container, error) {
 // containerConfig - configurations for the container itself (image name, command, ports, etc) (if needed)
 // hostConfig - configurations related to the host (volume mounts, exposed ports, etc) (if needed)
 // networkingConfig - endpoints to expose (if needed)
-// containerName - name to give to the container
 // Returns an error if the container couldn't be started.
-func (dc *Client) StartContainer(containerConfig *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig, containerName string) error {
-	resp, err := dc.Client.ContainerCreate(dc.Context, containerConfig, hostConfig, networkingConfig, containerName)
+func (dc *Client) StartContainer(containerConfig *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig) error {
+	resp, err := dc.Client.ContainerCreate(dc.Context, containerConfig, hostConfig, networkingConfig, "")
 	if err != nil {
 		return err
 	}
@@ -47,4 +61,25 @@ func (dc *Client) StartContainer(containerConfig *container.Config, hostConfig *
 	}
 
 	return nil
+}
+
+// RemoveContainer takes in a given container ID and kills it, then removes it.
+func (dc *Client) RemoveContainer(containerID string) error {
+	err := dc.Client.ContainerRemove(dc.Context, containerID, types.ContainerRemoveOptions{
+		Force: true,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "unable to remove container %s", containerID)
+	}
+	return nil
+}
+
+// GetContainerConfig takes in a given container ID and retrieves its corresponding container config
+func (dc *Client) GetContainerConfig(containerID string) (*container.Config, error) {
+	containerJSON, err := dc.Client.ContainerInspect(dc.Context, containerID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to inspect container %s", containerID)
+	}
+
+	return containerJSON.Config, nil
 }

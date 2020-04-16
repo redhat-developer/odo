@@ -233,6 +233,11 @@ test-cmd-url:
 test-cmd-devfile-url:
 	ginkgo $(GINKGO_FLAGS) -focus="odo devfile url command tests" tests/integration/devfile/
 
+# Run odo push docker devfile command tests
+.PHONY: test-cmd-docker-devfile-push
+test-cmd-docker-devfile-push:
+	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile push command tests" tests/integration/devfile/docker/
+
 # Run odo watch command tests
 .PHONY: test-cmd-watch
 test-cmd-watch:

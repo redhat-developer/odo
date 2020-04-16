@@ -18,17 +18,25 @@ var _ = Describe("odo devfile catalog command tests", func() {
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
-		project = helper.CreateRandProject()
 		context = helper.CreateNewContext()
-		currentWorkingDirectory = helper.Getwd()
-		helper.Chdir(context)
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+		if os.Getenv("KUBERNETES") == "true" {
+			project = helper.CreateRandNamespace(context)
+		} else {
+			project = helper.CreateRandProject()
+		}
+		currentWorkingDirectory = helper.Getwd()
+		helper.Chdir(context)
 	})
 
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		helper.DeleteProject(project)
+		if os.Getenv("KUBERNETES") == "true" {
+			helper.DeleteNamespace(project)
+		} else {
+			helper.DeleteProject(project)
+		}
 		helper.Chdir(currentWorkingDirectory)
 		helper.DeleteDir(context)
 	})
