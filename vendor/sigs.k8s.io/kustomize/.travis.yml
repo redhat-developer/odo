@@ -1,0 +1,38 @@
+os:
+  - linux
+  - osx
+# TODO: Uncomment when tests running on Windows.
+#  - windows
+
+addons:
+  apt:
+    packages:
+    - tree
+  homebrew:
+    packages:
+    - tree
+    update: true
+
+# Only clone the most recent commit.
+git:
+  depth: 1
+
+language: go
+
+go:
+  - "1.12"
+
+go_import_path: sigs.k8s.io/kustomize
+
+before_install:
+  - source ./travis/consider-early-travis-exit.sh
+
+# Skip the install process; let pre-commit.sh do it.
+install: true
+
+script:
+  - ./travis/pre-commit.sh
+
+# TBD. Suppressing for now.
+notifications:
+  email: false

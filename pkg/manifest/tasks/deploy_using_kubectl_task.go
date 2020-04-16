@@ -5,17 +5,6 @@ import (
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 )
 
-func generateDeployUsingKubectlTask(ns string) pipelinev1.Task {
-	return pipelinev1.Task{
-		TypeMeta:   taskTypeMeta,
-		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, "deploy-using-kubectl-task")),
-		Spec: pipelinev1.TaskSpec{
-			Inputs: createInputsForDeployKubectlTask(),
-			Steps:  createStepsForDeployKubectlTask(),
-		},
-	}
-}
-
 var argsForReplaceImageStep = []string{
 	"w",
 	"-i",
@@ -30,6 +19,18 @@ var argsForKubectlStep = []string{
 	"$(inputs.params.NAMESPACE)",
 	"-k",
 	"$(inputs.params.PATHTODEPLOYMENT)",
+}
+
+// CreateDeployUsingKubectlTask creates DeployUsingKubectlTask
+func CreateDeployUsingKubectlTask(ns string) pipelinev1.Task {
+	return pipelinev1.Task{
+		TypeMeta:   taskTypeMeta,
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, "deploy-using-kubectl-task")),
+		Spec: pipelinev1.TaskSpec{
+			Inputs: createInputsForDeployKubectlTask(),
+			Steps:  createStepsForDeployKubectlTask(),
+		},
+	}
 }
 
 func createStepsForDeployKubectlTask() []pipelinev1.Step {

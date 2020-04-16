@@ -5,6 +5,15 @@ import (
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 )
 
+var argsForRunKubectlStep = []string{
+	"apply",
+	"--dry-run=$(inputs.params.DRYRUN)",
+	"-n",
+	"$(inputs.params.NAMESPACE)",
+	"-k",
+	"$(inputs.params.PATHTODEPLOYMENT)",
+}
+
 // CreateDeployFromSourceTask creates DeployFromSourceTask
 func CreateDeployFromSourceTask(ns, path string) pipelinev1.Task {
 	task := pipelinev1.Task{
@@ -30,15 +39,6 @@ func createStepsForDeployFromSourceTask() []pipelinev1.Step {
 			),
 		},
 	}
-}
-
-var argsForRunKubectlStep = []string{
-	"apply",
-	"--dry-run=$(inputs.params.DRYRUN)",
-	"-n",
-	"$(inputs.params.NAMESPACE)",
-	"-k",
-	"$(inputs.params.PATHTODEPLOYMENT)",
 }
 
 func createInputsForDeployFromSourceTask(path string) *pipelinev1.Inputs {

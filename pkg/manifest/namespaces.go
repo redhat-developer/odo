@@ -12,9 +12,9 @@ import (
 
 var (
 	namespaceBaseNames = map[string]string{
-		"dev":   "dev-environment",
-		"stage": "stage-environment",
-		"cicd":  "cicd-environment",
+		"dev":   "dev",
+		"stage": "stage",
+		"cicd":  "cicd",
 	}
 
 	namespaceTypeMeta = meta.TypeMeta("Namespace", "v1")

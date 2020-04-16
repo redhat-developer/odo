@@ -29,8 +29,9 @@ func TestGenerateEventListener(t *testing.T) {
 						{
 							GitHub: &triggersv1.GitHubInterceptor{
 								SecretRef: &triggersv1.SecretRef{
-									SecretName: GitOpsWebhookSecret,
+									SecretName: "test",
 									SecretKey:  WebhookSecretKey,
+									Namespace:  "testing",
 								},
 							},
 						},
@@ -55,8 +56,9 @@ func TestGenerateEventListener(t *testing.T) {
 						{
 							GitHub: &triggersv1.GitHubInterceptor{
 								SecretRef: &triggersv1.SecretRef{
-									SecretName: GitOpsWebhookSecret,
+									SecretName: "test",
 									SecretKey:  WebhookSecretKey,
+									Namespace:  "testing",
 								},
 							},
 						},
@@ -74,7 +76,7 @@ func TestGenerateEventListener(t *testing.T) {
 		},
 	}
 
-	eventListener := Generate("sample", "testing", "pipeline")
+	eventListener := Generate("sample", "testing", "pipeline", "test")
 	if diff := cmp.Diff(validEventListener, eventListener); diff != "" {
 		t.Fatalf("Generate() failed:\n%s", diff)
 	}
@@ -123,7 +125,7 @@ func TestCreateListenerTrigger(t *testing.T) {
 			{
 				GitHub: &triggersv1.GitHubInterceptor{
 					SecretRef: &triggersv1.SecretRef{
-						SecretName: GitOpsWebhookSecret,
+						SecretName: "test",
 						SecretKey:  WebhookSecretKey,
 					},
 				},
@@ -138,7 +140,7 @@ func TestCreateListenerTrigger(t *testing.T) {
 			Name: "sampleTemplateName",
 		},
 	}
-	listenerTrigger := createListenerTrigger("sampleName", "sampleFilter %s", "sample", "sampleBindingName", "sampleTemplateName")
+	listenerTrigger := CreateListenerTrigger("sampleName", "sampleFilter %s", "sample", "sampleBindingName", "sampleTemplateName", "test", "")
 	if diff := cmp.Diff(validListenerTrigger, listenerTrigger); diff != "" {
 		t.Fatalf("createListenerTrigger() failed:\n%s", diff)
 	}
@@ -160,12 +162,12 @@ func TestCreateGitHubInterceptor(t *testing.T) {
 	validGitHubInterceptor := triggersv1.EventInterceptor{
 		GitHub: &triggersv1.GitHubInterceptor{
 			SecretRef: &triggersv1.SecretRef{
-				SecretName: GitOpsWebhookSecret,
+				SecretName: "test",
 				SecretKey:  WebhookSecretKey,
 			},
 		},
 	}
-	githubInterceptor := createGitHubInterceptor()
+	githubInterceptor := createGitHubInterceptor("test", "")
 	if diff := cmp.Diff(validGitHubInterceptor, *githubInterceptor); diff != "" {
 		t.Fatalf("createEventInterceptor() failed:\n%s", diff)
 	}

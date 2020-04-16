@@ -72,7 +72,7 @@ func TestDeployUsingKubectlTask(t *testing.T) {
 			},
 		},
 	}
-	task := generateDeployUsingKubectlTask(testNS)
+	task := CreateDeployUsingKubectlTask(testNS)
 	if diff := cmp.Diff(validTask, task); diff != "" {
 		t.Fatalf("GenerateDeployUsingKubectlTask() failed:\n%s", diff)
 	}
@@ -130,23 +130,5 @@ func TestCreateTaskResource(t *testing.T) {
 	taskResource := createTaskResource("sample", "git")
 	if diff := cmp.Diff(validTaskResource, taskResource); diff != "" {
 		t.Fatalf("createTaskResource() failed:\n%s", diff)
-	}
-}
-
-func TestCreateEnvFromSecret(t *testing.T) {
-	validEnv := corev1.EnvVar{
-		Name: "sampleName",
-		ValueFrom: &corev1.EnvVarSource{
-			SecretKeyRef: &corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: "sampleSec",
-				},
-				Key: "sampleKey",
-			},
-		},
-	}
-	env := createEnvFromSecret("sampleName", "sampleSec", "sampleKey")
-	if diff := cmp.Diff(validEnv, env); diff != "" {
-		t.Fatalf("createEnvFromSecret() failed:\n%s", diff)
 	}
 }

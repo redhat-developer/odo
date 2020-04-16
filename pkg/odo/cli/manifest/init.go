@@ -28,11 +28,14 @@ var (
 
 // InitParameters encapsulates the parameters for the odo pipelines init command.
 type InitParameters struct {
-	gitOpsRepo          string // repo to store Gitops resources e.g. org/repo
-	gitOpsWebhookSecret string // used to create Github's shared webhook secret for gitops repo
-	output              string // path to add Gitops resources
-	prefix              string // used to generate the environments in a shared cluster
-	skipChecks          bool   // skip Tekton installation checks
+	dockercfgjson            string // filepath name to dockerconfigjson file
+	gitOpsRepo               string // repo to store Gitops resources e.g. org/repo
+	gitOpsWebhookSecret      string // used to create Github's shared webhook secret for gitops repo
+	output                   string // path to add Gitops resources
+	prefix                   string // used to generate the environments in a shared cluster
+	skipChecks               bool
+	imageRepo                string
+	internalRegistryHostname string
 	// generic context options common to all commands
 	*genericclioptions.Context
 }
@@ -65,11 +68,14 @@ func (io *InitParameters) Validate() error {
 // Run runs the project bootstrap command.
 func (io *InitParameters) Run() error {
 	options := manifest.InitParameters{
-		GitOpsWebhookSecret: io.gitOpsWebhookSecret,
-		GitOpsRepo:          io.gitOpsRepo,
-		Output:              io.output,
-		Prefix:              io.prefix,
-		SkipChecks:          io.skipChecks,
+		DockerConfigJSONFileName: io.dockercfgjson,
+		GitOpsWebhookSecret:      io.gitOpsWebhookSecret,
+		GitOpsRepo:               io.gitOpsRepo,
+		Output:                   io.output,
+		Prefix:                   io.prefix,
+		SkipChecks:               io.skipChecks,
+		ImageRepo:                io.imageRepo,
+		InternalRegistryHostname: io.internalRegistryHostname,
 	}
 	return manifest.Init(&options)
 }
@@ -95,5 +101,8 @@ func NewCmdInit(name, fullName string) *cobra.Command {
 	initCmd.Flags().StringVar(&o.output, "output", ".", "folder path to add GitOps resources")
 	initCmd.MarkFlagRequired("output")
 	initCmd.Flags().StringVarP(&o.prefix, "prefix", "p", "", "add a prefix to the environment names")
+	initCmd.Flags().StringVar(&o.dockercfgjson, "dockercfgjson", "", "dockercfg json pathname")
+	initCmd.Flags().StringVar(&o.internalRegistryHostname, "internal-registry-hostname", "image-registry.openshift-image-registry.svc:5000", "internal image registry hostname")
+	initCmd.Flags().StringVar(&o.imageRepo, "image-repo", "", "image repository in this form <registry>/<username>/<repository> or <project>/<app> for internal registry")
 	return initCmd
 }

@@ -22,6 +22,8 @@ import (
 	"github.com/openshift/odo/pkg/manifest/tasks"
 	"github.com/openshift/odo/pkg/manifest/triggers"
 	"github.com/openshift/odo/pkg/manifest/yaml"
+
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 )
 
 const (
@@ -81,7 +83,7 @@ func Bootstrap(o *BootstrapParameters) error {
 	}
 
 	// Create Tasks
-	tasks := tasks.Generate(namespaces["cicd"])
+	tasks := generateTasks(namespaces["cicd"])
 	for _, task := range tasks {
 		outputs = append(outputs, task)
 	}
@@ -102,7 +104,7 @@ func Bootstrap(o *BootstrapParameters) error {
 	outputs = append(outputs, createPipelines(namespaces, isInternalRegistry, o.DeploymentPath)...)
 
 	// Create Event Listener
-	eventListener := eventlisteners.Generate(o.GitRepo, namespaces["cicd"], saName)
+	eventListener := eventlisteners.Generate(o.GitRepo, namespaces["cicd"], saName, eventlisteners.GitOpsWebhookSecret)
 	outputs = append(outputs, eventListener)
 
 	// Create route
@@ -130,6 +132,15 @@ func Bootstrap(o *BootstrapParameters) error {
 	}
 
 	return yaml.MarshalOutput(os.Stdout, outputs)
+}
+
+// Moved the Generate() out of the tasks package to put it here as Bootstrap.go is dead
+// and we can clean up tasks package
+func generateTasks(ns string) []pipelinev1.Task {
+	return []pipelinev1.Task{
+		tasks.CreateDeployFromSourceTask(ns, "deploy"),
+		tasks.CreateDeployUsingKubectlTask(ns),
+	}
 }
 
 func createRoleBindings(ns map[string]string, sa *corev1.ServiceAccount) []interface{} {
@@ -175,7 +186,7 @@ func createManifestsForImageRepo(sa *corev1.ServiceAccount, isInternalRegistry b
 
 	} else {
 		// Add secret to service account if external registry is used
-		dockerSecret, err := createDockerSecret(o.DockerConfigJSONFileName, namespaces["cicd"])
+		dockerSecret, err := CreateDockerSecret(o.DockerConfigJSONFileName, namespaces["cicd"])
 		if err != nil {
 			return nil, err
 		}
@@ -197,8 +208,8 @@ func createPipelines(ns map[string]string, isInternalRegistry bool, deploymentPa
 
 }
 
-// createDockerSecret creates Docker secret
-func createDockerSecret(dockerConfigJSONFileName, ns string) (*ssv1alpha1.SealedSecret, error) {
+// CreateDockerSecret creates Docker secret
+func CreateDockerSecret(dockerConfigJSONFileName, ns string) (*ssv1alpha1.SealedSecret, error) {
 	if dockerConfigJSONFileName == "" {
 		return nil, errors.New("failed to generate path to file: --dockerconfigjson flag is not provided")
 	}
