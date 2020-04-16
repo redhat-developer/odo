@@ -844,6 +844,7 @@ func GetAndExtractZip(zipURL string, destination string) error {
 
 // Unzip will decompress a zip archive, moving all files and folders
 // within the zip file (parameter 1) to an output directory (parameter 2).
+// Source: https://golangcode.com/unzip-files-in-go/
 func Unzip(src, dest string) ([]string, error) {
 	var filenames []string
 
