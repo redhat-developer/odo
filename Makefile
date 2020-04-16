@@ -290,11 +290,6 @@ test-e2e-images:
 test-e2e-all:
 	ginkgo $(GINKGO_FLAGS) tests/e2escenarios/
 
-# this test shouldn't be in paralel -  it will effect the results
-.PHONY: test-benchmark
-test-benchmark:
-	ginkgo $(GINKGO_FLAGS_SERIAL) tests/benchmark/
-
 # create deb and rpm packages using fpm in ./dist/pkgs/
 # run make cross before this!
 .PHONY: packages
