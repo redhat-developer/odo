@@ -449,34 +449,20 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 		command := pushDevfileCommands[i]
 
 		// Exec the devBuild command if buildRequired is true or devInit if initRequired
-		if ((command.Name == string(common.DefaultDevfileBuildCommand) || command.Name == a.devfileBuildCmd) && buildRequired) || ((command.Name == string(common.DefaultDevfileInitCommand) || command.Name == a.devfileInitCmd) && initRequired) {
-			glog.V(3).Infof("Executing devfile command %v", command.Name)
-
-			for _, action := range command.Actions {
-				// Change to the workdir and execute the command
-				var cmdArr []string
-				if action.Workdir != nil {
-					cmdArr = []string{"/bin/sh", "-c", "cd " + *action.Workdir + " && " + *action.Command}
-				} else {
-					cmdArr = []string{"/bin/sh", "-c", *action.Command}
-				}
-
-				if show {
-					s = log.SpinnerNoSpin("Executing " + command.Name + " command " + fmt.Sprintf("%q", *action.Command))
-				} else {
-					s = log.Spinner("Executing " + command.Name + " command " + fmt.Sprintf("%q", *action.Command))
-				}
-
-				defer s.End(false)
-
-				err = exec.ExecuteCommand(&a.Client, podName, *action.Component, cmdArr, show)
-				if err != nil {
-					s.End(false)
-					return err
-				}
-				s.End(true)
+		if (command.Name == string(common.DefaultDevfileInitCommand) || command.Name == a.devfileInitCmd) && initRequired {
+			err := a.ExecuteDevfileCommand(command, show, podName, s)
+			if err != nil {
+				return err
 			}
-
+			// Reset the for loop counter and iterate through all the devfile commands again for others
+			i = -1
+			// Set the buildRequired to false since we already executed the build command
+			initRequired = false
+		} else if (command.Name == string(common.DefaultDevfileBuildCommand) || command.Name == a.devfileBuildCmd) && buildRequired {
+			err := a.ExecuteDevfileCommand(command, show, podName, s)
+			if err != nil {
+				return err
+			}
 			// Reset the for loop counter and iterate through all the devfile commands again for others
 			i = -1
 			// Set the buildRequired to false since we already executed the build command
@@ -526,6 +512,37 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 	}
 
 	return
+}
+
+func (a Adapter) ExecuteDevfileCommand(command versionsCommon.DevfileCommand, show bool, podName string, s *log.Status) error {
+	glog.V(3).Infof("Executing devfile command %v", command.Name)
+
+	for _, action := range command.Actions {
+		// Change to the workdir and execute the command
+		var cmdArr []string
+		if action.Workdir != nil {
+			cmdArr = []string{"/bin/sh", "-c", "cd " + *action.Workdir + " && " + *action.Command}
+		} else {
+			cmdArr = []string{"/bin/sh", "-c", *action.Command}
+		}
+
+		if show {
+			s = log.SpinnerNoSpin("Executing " + command.Name + " command " + fmt.Sprintf("%q", *action.Command))
+		} else {
+			s = log.Spinner("Executing " + command.Name + " command " + fmt.Sprintf("%q", *action.Command))
+		}
+
+		defer s.End(false)
+
+		err := exec.ExecuteCommand(&a.Client, podName, *action.Component, cmdArr, show)
+		if err != nil {
+			s.End(false)
+			return err
+		}
+		s.End(true)
+	}
+
+	return nil
 }
 
 // InitRunContainerSupervisord initializes the supervisord in the container if
