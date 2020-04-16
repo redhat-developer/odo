@@ -65,7 +65,7 @@ func (po *PushOptions) DevfilePush() (err error) {
 	if pushtarget.IsPushTargetDocker() {
 		platformContext = nil
 	} else {
-		if len(po.namespace) <= 0 {
+		if po.namespace == "" {
 			po.namespace, err = getNamespace()
 			if err != nil {
 				return err

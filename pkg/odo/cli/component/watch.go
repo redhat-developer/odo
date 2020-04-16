@@ -97,7 +97,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 				return err
 			}
 		}
-		if len(wo.namespace) <= 0 {
+		if wo.namespace == "" {
 			wo.namespace, err = getNamespace()
 			if err != nil {
 				return err
