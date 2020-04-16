@@ -1,12 +1,22 @@
 apiVersion: 1.0.0
 metadata:
   name: test-devfile
+<<<<<<< HEAD
 projects:
   -
     name: nodejs-web-app
     source:
       type: git
       location: "https://github.com/che-samples/web-nodejs-sample.git"
+||||||| merged common ancestors
+=======
+projects:
+-
+  name: nodejs-web-app
+  source:
+    type: git
+    location: "https://github.com/che-samples/web-nodejs-sample.git"
+>>>>>>> 2582: Download source from project field in devfile
 components:
   - type: dockerimage
     image: quay.io/eclipse/che-nodejs10-ubi:nightly

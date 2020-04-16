@@ -1,5 +1,5 @@
 hash: 90f14d501dacd6ce7926e0acb91d1aee421d274ed7823cec5bde59da48821b55
-updated: 2020-04-16T10:22:45.292122+01:00
+updated: 2020-04-16T10:51:54.629793+01:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -145,6 +145,10 @@ imports:
   version: 371b0007be89061b4cf899dc2083dd08e3912c14
   subpackages:
   - github
+- name: github.com/google/go-querystring
+  version: c8c88dbee036db4e4808d1f2ec8c2e15e11c3f80
+  subpackages:
+  - query
 - name: github.com/google/gofuzz
   version: f140a6486e521aad38f5917de355cbf147cc0496
 - name: github.com/google/uuid
@@ -491,6 +495,13 @@ imports:
   subpackages:
   - bcrypt
   - blowfish
+  - cast5
+  - openpgp
+  - openpgp/armor
+  - openpgp/elgamal
+  - openpgp/errors
+  - openpgp/packet
+  - openpgp/s2k
   - ssh/terminal
 - name: golang.org/x/net
   version: 0ed95abb35c445290478a5348a7b38bb154135fd
