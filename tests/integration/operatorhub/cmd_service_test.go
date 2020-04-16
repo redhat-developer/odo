@@ -1,7 +1,10 @@
 package integration
 
 import (
+	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -61,10 +64,43 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
 			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]`).FindString(operators)
 
-			stdout := helper.CmdShouldPass("odo", "service", "create", etcdOperator, "--crd", "EtcdCluster", "--dry-run")
-			Expect(stdout).To(ContainSubstring("apiVersion"))
-			Expect(stdout).To(ContainSubstring("kind"))
+			stdOut := helper.CmdShouldPass("odo", "service", "create", etcdOperator, "--crd", "EtcdCluster", "--dry-run")
+			Expect(stdOut).To(ContainSubstring("apiVersion"))
+			Expect(stdOut).To(ContainSubstring("kind"))
 		})
 	})
 
+	Context("When using from-file option", func() {
+		It("should be able to create a service", func() {
+			// First let's grab the etcd operator's name from "odo catalog list services" output
+			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
+			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]`).FindString(operators)
+
+			stdOut := helper.CmdShouldPass("odo", "service", "create", etcdOperator, "--crd", "EtcdCluster", "--dry-run")
+			// stdOut contains the yaml specification. Store it to a file
+			randomFileName := helper.RandString(6) + ".yaml"
+			fileName := filepath.Join("/tmp", randomFileName)
+			if err := ioutil.WriteFile(fileName, []byte(stdOut), 0644); err != nil {
+				fmt.Errorf("Could not write yaml spec to file %s because of the error %v", fileName, err.Error())
+			}
+
+			// now create operator backed service
+			stdOut = helper.CmdShouldPass("odo", "service", "create", "--from-file", fileName)
+
+			// now verify if the pods for the operator have started
+			pods := helper.CmdShouldPass("oc", "get", "pods", "-n", CI_OPERATOR_HUB_PROJECT)
+			// Look for pod with example name because that's the name etcd will give to the pods.
+			etcdPod := regexp.MustCompile(`example-.[a-z0-9]*`).FindString(pods)
+
+			ocArgs := []string{"get", "pods", etcdPod, "-o", "template=\"{{.status.phase}}\"", "-n", CI_OPERATOR_HUB_PROJECT}
+			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+				return strings.Contains(output, "Running")
+			})
+
+			// Delete the pods created. This should idealy be done by `odo
+			// service delete` but that's not implemented for operator backed
+			// services yet.
+			helper.CmdShouldPass("oc", "delete", "EtcdCluster", "example")
+		})
+	})
 })
