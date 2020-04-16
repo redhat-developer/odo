@@ -41,6 +41,7 @@ func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
 type Adapter struct {
 	Client kclient.Client
 	common.AdapterContext
+	devfileInitCmd  string
 	devfileBuildCmd string
 	devfileRunCmd   string
 }
@@ -51,6 +52,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	componentExists := utils.ComponentExists(a.Client, a.ComponentName)
 	globExps := util.GetAbsGlobExps(parameters.Path, parameters.IgnoredFiles)
 
+	a.devfileInitCmd = parameters.DevfileInitCmd
 	a.devfileBuildCmd = parameters.DevfileBuildCmd
 	a.devfileRunCmd = parameters.DevfileRunCmd
 
@@ -70,7 +72,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	// Validate the devfile build and run commands
-	pushDevfileCommands, err := common.ValidateAndGetPushDevfileCommands(a.Devfile.Data, a.devfileBuildCmd, a.devfileRunCmd)
+	pushDevfileCommands, err := common.ValidateAndGetPushDevfileCommands(a.Devfile.Data, a.devfileInitCmd, a.devfileBuildCmd, a.devfileRunCmd)
 	if err != nil {
 		return errors.Wrap(err, "failed to validate devfile build and run commands")
 	}
@@ -425,15 +427,20 @@ func (a Adapter) waitAndGetComponentPod(hideSpinner bool) (*corev1.Pod, error) {
 
 // Push syncs source code from the user's disk to the component
 func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand, componentExists, show bool, podName string, containers []corev1.Container) (err error) {
-	var buildRequired bool
+	var initRequired, buildRequired bool
 	var s *log.Status
 
 	if len(pushDevfileCommands) == 1 {
 		// if there is one command, it is the mandatory run command. No need to build.
 		buildRequired = false
+		initRequired = false
 	} else if len(pushDevfileCommands) == 2 {
 		// if there are two commands, it is the optional build command and the mandatory run command, set buildRequired to true
 		buildRequired = true
+	} else if len(pushDevfileCommands) == 3 {
+		// if there are three commands, it is the optional init command, optional build command and the mandatory run command, set initRequired and buildRequired to true
+		buildRequired = true
+		initRequired = true
 	} else {
 		return fmt.Errorf("error executing devfile commands - there should be at least 1 command or at most 2 commands, currently there are %v commands", len(pushDevfileCommands))
 	}
@@ -441,8 +448,8 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 	for i := 0; i < len(pushDevfileCommands); i++ {
 		command := pushDevfileCommands[i]
 
-		// Exec the devBuild command if buildRequired is true
-		if (command.Name == string(common.DefaultDevfileBuildCommand) || command.Name == a.devfileBuildCmd) && buildRequired {
+		// Exec the devBuild command if buildRequired is true or devInit if initRequired
+		if ((command.Name == string(common.DefaultDevfileBuildCommand) || command.Name == a.devfileBuildCmd) && buildRequired) || ((command.Name == string(common.DefaultDevfileInitCommand) || command.Name == a.devfileInitCmd) && initRequired) {
 			glog.V(3).Infof("Executing devfile command %v", command.Name)
 
 			for _, action := range command.Actions {

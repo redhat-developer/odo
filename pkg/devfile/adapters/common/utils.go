@@ -13,6 +13,9 @@ import (
 type PredefinedDevfileCommands string
 
 const (
+	// DefaultDevfileInitCommand is a predefined devfile command for init
+	DefaultDevfileInitCommand PredefinedDevfileCommands = "devinit"
+
 	// DefaultDevfileBuildCommand is a predefined devfile command for build
 	DefaultDevfileBuildCommand PredefinedDevfileCommands = "devbuild"
 

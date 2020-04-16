@@ -217,6 +217,20 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(output).To(ContainSubstring("Executing devrun command \"/artifacts/bin/start-server.sh\""))
 		})
 
+		It("should execute devinit command if present", func() {
+			helper.CmdShouldPass("git", "clone", "https://github.com/maysunfaisal/springboot.git", projectDirPath)
+			helper.Chdir(projectDirPath)
+
+			helper.CmdShouldPass("odo", "create", "java-spring-boot", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "springboot"), projectDirPath)
+
+			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile-init.yaml", "--namespace", namespace)
+			Expect(output).To(ContainSubstring("Executing devinit command \"echo hello\""))
+			Expect(output).To(ContainSubstring("Executing devbuild command \"/artifacts/bin/build-container-full.sh\""))
+			Expect(output).To(ContainSubstring("Executing devrun command \"/artifacts/bin/start-server.sh\""))
+		})
+
 		It("should be able to handle a missing devbuild command", func() {
 			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
 			helper.Chdir(projectDirPath)

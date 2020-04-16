@@ -107,6 +107,19 @@ func validateAction(data data.DevfileData, action common.DevfileCommandAction) (
 	return
 }
 
+// GetInitCommand iterates through the components in the devfile and returns the init command
+func GetInitCommand(data data.DevfileData, devfileInitCmd string) (initCommand common.DevfileCommand, err error) {
+	if devfileInitCmd != "" {
+		// a init command was specified so if it is not found then it is an error
+		initCommand, err = getCommand(data, devfileInitCmd, true)
+	} else {
+		// a init command was not specified so if it is not found then it is not an error
+		initCommand, err = getCommand(data, string(DefaultDevfileInitCommand), false)
+	}
+
+	return
+}
+
 // GetBuildCommand iterates through the components in the devfile and returns the build command
 func GetBuildCommand(data data.DevfileData, devfileBuildCmd string) (buildCommand common.DevfileCommand, err error) {
 	if devfileBuildCmd != "" {
@@ -134,9 +147,20 @@ func GetRunCommand(data data.DevfileData, devfileRunCmd string) (runCommand comm
 // ValidateAndGetPushDevfileCommands validates the build and the run command,
 // if provided through odo push or else checks the devfile for devBuild and devRun.
 // It returns the build and run commands if its validated successfully, error otherwise.
-func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileBuildCmd, devfileRunCmd string) (pushDevfileCommands []common.DevfileCommand, err error) {
+func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileInitCmd, devfileBuildCmd, devfileRunCmd string) (pushDevfileCommands []common.DevfileCommand, err error) {
 	var emptyCommand common.DevfileCommand
-	isBuildCommandValid, isRunCommandValid := false, false
+	isInitCommandValid, isBuildCommandValid, isRunCommandValid := false, false, false
+
+	initCommand, initCmdErr := GetInitCommand(data, devfileInitCmd)
+	if reflect.DeepEqual(emptyCommand, initCommand) && initCmdErr == nil {
+		// If there was no build command specified through odo push and no default build command in the devfile, default validate to true since the build command is optional
+		isInitCommandValid = true
+		glog.V(3).Infof("No init command was provided")
+	} else if !reflect.DeepEqual(emptyCommand, initCommand) && initCmdErr == nil {
+		isInitCommandValid = true
+		pushDevfileCommands = append(pushDevfileCommands, initCommand)
+		glog.V(3).Infof("Init command: %v", initCommand.Name)
+	}
 
 	buildCommand, buildCmdErr := GetBuildCommand(data, devfileBuildCmd)
 
@@ -158,8 +182,11 @@ func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileBuildCmd, d
 	}
 
 	// If either command had a problem, return an empty list of commands and an error
-	if !isBuildCommandValid || !isRunCommandValid {
+	if !isInitCommandValid || !isBuildCommandValid || !isRunCommandValid {
 		commandErrors := ""
+		if initCmdErr != nil {
+			commandErrors += initCmdErr.Error()
+		}
 		if buildCmdErr != nil {
 			commandErrors += buildCmdErr.Error()
 		}

@@ -91,6 +91,7 @@ func (po *PushOptions) DevfilePush() (err error) {
 		ForceBuild:      po.forceBuild,
 		Show:            po.show,
 		EnvSpecificInfo: *po.EnvSpecificInfo,
+		DevfileInitCmd:  strings.ToLower(po.devfileInitCommand),
 		DevfileBuildCmd: strings.ToLower(po.devfileBuildCommand),
 		DevfileRunCmd:   strings.ToLower(po.devfileRunCommand),
 	}

@@ -40,10 +40,10 @@ type PushOptions struct {
 	DevfilePath string
 
 	// devfile commands
+	devfileInitCommand  string
 	devfileBuildCommand string
 	devfileRunCommand   string
-
-	namespace string
+	namespace           string
 }
 
 // NewPushOptions returns new instance of PushOptions
