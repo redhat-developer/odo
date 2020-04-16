@@ -148,7 +148,7 @@ var _ = Describe("odo devfile create command tests", func() {
 
 			err := helper.ReplaceDevfileField(devfile, "type", "github")
 			if err != nil {
-				log.Info("Could not replace the entry in the devfile: " + err.Error())
+				log.Error("Could not replace the entry in the devfile: " + err.Error())
 			}
 			helper.CmdShouldPass("odo", "create", "nodejs", "--downloadSource", "--devfile", devfile)
 			expectedFiles := []string{"package.json", "package-lock.json", "README.MD", devfile}
@@ -166,11 +166,11 @@ var _ = Describe("odo devfile create command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", devfile), filepath.Join(contextDevfile, devfile))
 			err := helper.ReplaceDevfileField(devfile, "location", "https://github.com/che-samples/web-nodejs-sample/archive/master.zip")
 			if err != nil {
-				log.Info("Could not replace the entry in the devfile: " + err.Error())
+				log.Error("Could not replace the entry in the devfile: " + err.Error())
 			}
 			err = helper.ReplaceDevfileField(devfile, "type", "zip")
 			if err != nil {
-				log.Info("Could not replace the entry in the devfile: " + err.Error())
+				log.Error("Could not replace the entry in the devfile: " + err.Error())
 			}
 			helper.CmdShouldPass("odo", "create", "nodejs", "--downloadSource", "--devfile", devfile, "--context", filepath.Join(context, "config.yaml"))
 			expectedFiles := []string{"package.json", "package-lock.json", "README.MD", devfile}
