@@ -12,6 +12,7 @@ import (
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/pkg/errors"
 
+	"github.com/ghodss/yaml"
 	"github.com/golang/glog"
 	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	"github.com/openshift/odo/pkg/log"
@@ -87,6 +88,8 @@ type ServiceCreateOptions struct {
 	version string
 	// Resource of the GVR
 	resource string
+	// If set to true, DryRun prints the yaml that will create the service
+	DryRun bool
 }
 
 // NewServiceCreateOptions creates a new ServiceCreateOptions instance
@@ -292,23 +295,43 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 
 // Run contains the logic for the odo service create command
 func (o *ServiceCreateOptions) Run() (err error) {
+	s := &log.Status{}
 	if experimental.IsExperimentalModeEnabled() {
 		// in case of an opertor backed service, name of the service is
 		// provided by the yaml specification in alm-examples. It might also
 		// happen that a user spins up Service Catalog based service in
 		// experimental mode but we're taking a bet against that for now, so
 		// the user won't get to see service name in the log message
-		log.Infof("Deploying service of type: %s", o.ServiceType)
+		if !o.DryRun {
+			log.Infof("Deploying service of type: %s", o.ServiceType)
+			s = log.Spinner("Deploying service")
+			defer s.End(false)
+		}
 	} else {
 		log.Infof("Deploying service %s of type: %s", o.ServiceName, o.ServiceType)
 	}
 
-	s := log.Spinner("Deploying service")
-	defer s.End(false)
-
 	if experimental.IsExperimentalModeEnabled() && o.CustomResource != "" {
 		// if experimental mode is enabled and o.CustomResource is not empty, we're expected to create an Operator backed service
-		err = svc.CreateOperatorService(o.KClient, o.group, o.version, o.resource, o.CustomResourceDefinition)
+		if o.DryRun {
+			// if it's dry run, only print the alm-example (o.CustomResourceDefinition) and exit
+			jsonCR, err := json.MarshalIndent(o.CustomResourceDefinition, "", "  ")
+			if err != nil {
+				return err
+			}
+
+			// convert json to yaml
+			yamlCR, err := yaml.JSONToYAML(jsonCR)
+			if err != nil {
+				return err
+			}
+
+			log.Info(string(yamlCR))
+
+			return nil
+		} else {
+			err = svc.CreateOperatorService(o.KClient, o.group, o.version, o.resource, o.CustomResourceDefinition)
+		}
 	} else {
 		// otherwise just create a ServiceInstance
 		err = svc.CreateService(o.Client, o.ServiceName, o.ServiceType, o.Plan, o.ParametersMap, o.Application)
@@ -359,6 +382,7 @@ func NewCmdServiceCreate(name, fullName string) *cobra.Command {
 		serviceCreateCmd.Use += fmt.Sprintf(" [flags]\n  %s <operator_type> --crd <crd_name> [service_name] [flags]", o.CmdFullName)
 		serviceCreateCmd.Example += fmt.Sprintf("\n\n") + fmt.Sprintf(createOperatorExample, fullName)
 		serviceCreateCmd.Flags().StringVar(&o.CustomResource, "crd", "", "The name of the CRD of the operator to be used to create the service")
+		serviceCreateCmd.Flags().BoolVar(&o.DryRun, "dry-run", false, "Print the yaml specificiation that will be used to create the service")
 	}
 
 	serviceCreateCmd.Flags().StringVar(&o.Plan, "plan", "", "The name of the plan of the service to be created")

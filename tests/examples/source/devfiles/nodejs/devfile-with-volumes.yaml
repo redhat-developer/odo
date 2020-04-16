@@ -19,28 +19,29 @@ components:
         value: "bar"
     memoryLimit: 1024Mi
     mountSources: true
+    volumes:
+      - name: myvol
+        containerPath: /data
+  - type: dockerimage
+    image: quay.io/eclipse/che-nodejs10-ubi:nightly
+    alias: runtime2
+    memoryLimit: 1024Mi
+    mountSources: false
+    volumes:
+      - name: myvol
+        containerPath: /data
+      - name: myvol2
+        containerPath: /data2
 commands:
-  - name: build
-    actions:
-      - type: exec
-        component: runtime
-        command: "npm install"
-        workdir: ${CHE_PROJECTS_ROOT}/nodejs-web-app/app
   - name: devbuild
     actions:
       - type: exec
         component: runtime
-        command: "npm install"
-        workdir: ${CHE_PROJECTS_ROOT}/nodejs-web-app/app
-  - name: run
-    actions:
-      - type: exec
-        component: runtime
-        command: "nodemon app.js"
-        workdir: ${CHE_PROJECTS_ROOT}/nodejs-web-app/app
+        command: "echo hello >> myfile.log"
+        workdir: /data
   - name: devrun
     actions:
       - type: exec
-        component: runtime
-        command: "nodemon app.js"
-        workdir: ${CHE_PROJECTS_ROOT}/nodejs-web-app/app
+        component: runtime2
+        command: "cat myfile.log"
+        workdir: /data

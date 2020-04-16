@@ -115,7 +115,7 @@ func (o *URLDeleteOptions) Run() (err error) {
 				return err
 			}
 			log.Successf("URL %s removed from the env file", o.urlName)
-			log.Italic("\nTo delete URL on the OpenShift Cluster, please use `odo push`")
+			log.Italic("\nTo delete the URL on the cluster, please use `odo push`")
 		} else {
 			err = o.LocalConfigInfo.DeleteURL(o.urlName)
 			if err != nil {
@@ -128,7 +128,7 @@ func (o *URLDeleteOptions) Run() (err error) {
 					return errors.Wrap(err, "failed to push changes")
 				}
 			} else {
-				log.Italic("\nTo delete URL on the OpenShift Cluster, please use `odo push`")
+				log.Italic("\nTo delete the URL on the cluster, please use `odo push`")
 			}
 		}
 	} else {
