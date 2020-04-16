@@ -2,7 +2,6 @@ package utils
 
 import (
 	"fmt"
-	"reflect"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
@@ -44,7 +43,13 @@ func DoesContainerNeedUpdating(component common.DevfileComponent, containerConfi
 	// Update the container if the env vars were updated in the devfile
 	// Need to convert the devfile envvars to the format expected by Docker
 	devfileEnvVars := ConvertEnvs(component.Env)
-	return !reflect.DeepEqual(devfileEnvVars, containerConfig.Env)
+	for _, envVar := range devfileEnvVars {
+		if !containerHasEnvVar(envVar, containerConfig.Env) {
+			return true
+		}
+	}
+	return false
+
 }
 
 func AddProjectVolumeToComp(projectVolumeName string, hostConfig *container.HostConfig) *container.HostConfig {
@@ -65,4 +70,15 @@ func GetProjectVolumeLabels(componentName string) map[string]string {
 		"type":      "projects",
 	}
 	return volumeLabels
+}
+
+// containerHasEnvVar returns true if the specified env var (and value) exist in the list of container env vars
+func containerHasEnvVar(envVar string, containerEnv []string) bool {
+	for _, env := range containerEnv {
+		fmt.Println("Here")
+		if envVar == env {
+			return true
+		}
+	}
+	return false
 }

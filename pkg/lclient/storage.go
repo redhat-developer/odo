@@ -10,8 +10,9 @@ import (
 )
 
 // CreateVolume creates a Docker volume with the given labels and the default Docker storage driver
-func (dc *Client) CreateVolume(labels map[string]string) (types.Volume, error) {
+func (dc *Client) CreateVolume(name string, labels map[string]string) (types.Volume, error) {
 	volume, err := dc.Client.VolumeCreate(dc.Context, volumeTypes.VolumeCreateBody{
+		Name:   name,
 		Driver: DockerStorageDriver,
 		Labels: labels,
 	})
