@@ -700,6 +700,19 @@ func componentTests(args ...string) {
 
 			helper.CmdShouldPass("odo", append(args, "delete", cmpName, "--app", appName, "--project", project, "-f")...)
 		})
+
+		It("should describe both push and unpushed urls", func() {
+			url1 := helper.RandString(5)
+			url2 := helper.RandString(5)
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", cmpName, "--app", appName, "--project", project, "--context", context)...)
+			helper.CmdShouldPass("odo", append(args, "url", "create", url1)...)
+			helper.CmdShouldPass("odo", append(args, "push", "--context", context)...)
+			helper.CmdShouldPass("odo", append(args, "url", "create", url2)...)
+			out := helper.CmdShouldPass("odo", append(args, "describe")...)
+			helper.MatchAllInOutput(out, []string{"exposed via 8080", fmt.Sprintf("%s will be exposed via 8080", url2)})
+			Expect(out).ToNot(ContainSubstring(url1))
+		})
 	})
 
 	Context("when running odo push multiple times, check for existence of environment variables", func() {
