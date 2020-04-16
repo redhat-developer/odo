@@ -58,7 +58,33 @@ func (a Adapter) DoesComponentExist(cmpName string) bool {
 }
 
 // Delete attempts to delete the component with the specified labels, returning an error if it fails
-// Stub function until the functionality is added as part of https://github.com/openshift/odo/issues/2581
-func (d Adapter) Delete(labels map[string]string) error {
+func (a Adapter) Delete(labels map[string]string) error {
+
+	componentName, exists := labels["component"]
+	if !exists {
+		return errors.New("unable to delete component without a component label")
+	}
+
+	list, err := a.Client.GetContainerList()
+	if err != nil {
+		return errors.Wrap(err, "unable to retrieve container list for delete operation")
+	}
+
+	componentContainer := a.Client.GetContainersByComponent(componentName, list)
+
+	if len(componentContainer) == 0 {
+		return errors.Errorf("the component %s doesn't exist", a.ComponentName)
+	}
+
+	for _, container := range componentContainer {
+		err = a.Client.RemoveContainer(container.ID)
+		if err != nil {
+			return errors.Wrapf(err, "unable to remove container ID %s of component %s", container.ID, componentName)
+		}
+	}
+
+	// TODO: Delete container volumes once https://github.com/openshift/odo/issues/2849 is implemented.
+
 	return nil
+
 }

@@ -3,6 +3,8 @@ package component
 import (
 	"testing"
 
+	"github.com/docker/docker/api/types"
+	"github.com/golang/mock/gomock"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
@@ -119,7 +121,7 @@ func TestDoesComponentExist(t *testing.T) {
 
 			componentAdapter := New(adapterCtx, *tt.client)
 
-			// Verify that a comopnent with the specified name exists
+			// Verify that a component with the specified name exists
 			componentExists := componentAdapter.DoesComponentExist(tt.getComponentName)
 			if componentExists != tt.want {
 				t.Errorf("expected %v, actual %v", tt.want, componentExists)
@@ -128,4 +130,100 @@ func TestDoesComponentExist(t *testing.T) {
 		})
 	}
 
+}
+
+func TestAdapterDelete(t *testing.T) {
+	type args struct {
+		labels map[string]string
+	}
+	tests := []struct {
+		name              string
+		args              args
+		componentName     string
+		componentExists   bool
+		skipContainerList bool
+		wantErr           bool
+	}{
+		{
+			name: "case 1: component exists and given labels are valid",
+			args: args{labels: map[string]string{
+				"component": "component",
+			}},
+			componentName:   "component",
+			componentExists: true,
+			wantErr:         false,
+		},
+		{
+			name:              "case 2: component exists and given labels are not valid",
+			args:              args{labels: nil},
+			componentName:     "component",
+			componentExists:   true,
+			wantErr:           true,
+			skipContainerList: true,
+		},
+		{
+			name: "case 3: component doesn't exists",
+			args: args{labels: map[string]string{
+				"component": "component",
+			}},
+			componentName:   "component",
+			componentExists: false,
+			wantErr:         true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			devObj := devfileParser.DevfileObj{
+				Data: testingutil.TestDevfileData{
+					ComponentType: "nodejs",
+				},
+			}
+
+			adapterCtx := adaptersCommon.AdapterContext{
+				ComponentName: tt.componentName,
+				Devfile:       devObj,
+			}
+
+			if !tt.componentExists {
+				adapterCtx.ComponentName = "doesNotExists"
+			}
+
+			fkclient, mockDockerClient := lclient.FakeNewMockClient(ctrl)
+
+			a := Adapter{
+				Client:         *fkclient,
+				AdapterContext: adapterCtx,
+			}
+
+			labeledContainers := []types.Container{}
+
+			if tt.componentExists {
+				labeledContainers = []types.Container{
+					{
+						ID: "my-id",
+						Labels: map[string]string{
+							"component": tt.componentName,
+						},
+					},
+				}
+
+			}
+
+			if !tt.skipContainerList {
+				mockDockerClient.EXPECT().ContainerList(gomock.Any(), gomock.Any()).Return(labeledContainers, nil)
+
+				if tt.componentExists {
+					mockDockerClient.EXPECT().ContainerRemove(gomock.Any(), gomock.Eq("my-id"), gomock.Any()).Return(nil)
+				}
+			}
+
+			if err := a.Delete(tt.args.labels); (err != nil) != tt.wantErr {
+				t.Errorf("Delete() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
 }

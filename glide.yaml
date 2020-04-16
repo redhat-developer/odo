@@ -78,6 +78,9 @@ import:
   version: v19.03.8
 - package: github.com/containerd/containerd
   version: v1.3.3
+- package: github.com/golang/mock
+  version: v1.4.3
+
   subpackages:
   - errdefs
 - package: github.com/google/go-github/github

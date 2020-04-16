@@ -14,6 +14,7 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/registry"
 	volumeTypes "github.com/docker/docker/api/types/volume"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // This mock client will return container and images lists
@@ -228,4 +229,15 @@ func (m *mockDockerErrorClient) VolumeCreate(ctx context.Context, options volume
 
 func (m *mockDockerErrorClient) VolumeList(ctx context.Context, filter filters.Args) (volumeTypes.VolumeListOKBody, error) {
 	return volumeTypes.VolumeListOKBody{}, errVolumeList
+}
+
+// FakeNew returns a fake local client instance that can be used in unit tests
+func FakeNewMockClient(ctrl *gomock.Controller) (*Client, *MockDockerClient) {
+
+	dockerClient := NewMockDockerClient(ctrl)
+
+	localClient := Client{
+		Client: dockerClient,
+	}
+	return &localClient, dockerClient
 }
