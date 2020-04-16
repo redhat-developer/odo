@@ -241,7 +241,7 @@ func ReplaceDevfileField(devfileLocation, field, newValue string) error {
 		}
 	}
 	output := strings.Join(lines, "\n")
-	err = ioutil.WriteFile(devfileLocation, []byte(output), 0644)
+	err = ioutil.WriteFile(devfileLocation, []byte(output), 0600)
 	if err != nil {
 		return err
 	}
