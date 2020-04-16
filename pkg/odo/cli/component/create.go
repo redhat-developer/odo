@@ -655,6 +655,8 @@ func (co *CreateOptions) Validate() (err error) {
 	return nil
 }
 
+// Downloads first project from list of projects in devfile
+// Currenty type git with a non github url is not supported
 func (co *CreateOptions) downloadProject() error {
 	devObj, err := devfile.Parse(co.devfileMetadata.devfilePath)
 	if err != nil {

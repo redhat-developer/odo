@@ -78,6 +78,7 @@ func CopyExample(exampleName string, targetDir string) {
 	Expect(err).NotTo(HaveOccurred())
 }
 
+// CopyExampleDevFile copies an example devfile from tests/e2e/examples/<exampleName>/devfile.yaml into targetDst
 func CopyExampleDevFile(devfilePath, targetDst string) {
 	// filename of this file
 	_, filename, _, _ := runtime.Caller(0)
@@ -139,6 +140,7 @@ func copyDir(src string, dst string, info os.FileInfo) error {
 	return copyFile(src, dst, info)
 }
 
+// copyFile copy one file to another location
 func copyFile(src, dst string, info os.FileInfo) error {
 	dFile, err := os.Create(dst)
 	if err != nil {
@@ -197,6 +199,8 @@ func CreateSymLink(oldFileName, newFileName string) {
 	Expect(err).NotTo(HaveOccurred())
 }
 
+// VerifyFileExists recieves a path to a file, and returns whether or not
+// it points to an existing file
 func VerifyFileExists(filename string) bool {
 	info, err := os.Stat(filename)
 	if os.IsNotExist(err) {
@@ -204,6 +208,10 @@ func VerifyFileExists(filename string) bool {
 	}
 	return !info.IsDir()
 }
+
+// VerifyFilesExist recieves an array of paths to files, and returns whether
+// or not they all exist. If any one of the expected files doesn't exist, it
+// returns false
 func VerifyFilesExist(path string, files []string) bool {
 	for _, f := range files {
 		if !VerifyFileExists(filepath.Join(path, f)) {
@@ -212,6 +220,12 @@ func VerifyFilesExist(path string, files []string) bool {
 	}
 	return true
 }
+
+// ReplaceDevfileField replaces the value of a given field in a specified
+// devfile.
+// Currently only the first match of the field is replaced. i.e if the
+// field is 'type' and there are two types throughout the devfile, only one
+// is replaced with the newValue
 func ReplaceDevfileField(devfileLocation, field, newValue string) error {
 	file, err := ioutil.ReadFile(devfileLocation)
 	if err != nil {

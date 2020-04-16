@@ -26,7 +26,6 @@ import (
 	"github.com/gobwas/glob"
 	"github.com/golang/glog"
 	"github.com/google/go-github/github"
-	"github.com/openshift/odo/pkg/log"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -721,6 +720,8 @@ func FilterIgnores(filesChanged, filesDeleted, absIgnoreRules []string) (filesCh
 	return filesChangedFiltered, filesDeletedFiltered
 }
 
+// Checks that the folder to download the project from devfile is
+// either empty or only contains the devfile used.
 func IsValidProjectDir(path string, devfilePath string) error {
 	files, err := ioutil.ReadDir(path)
 	if err != nil {
@@ -922,28 +923,6 @@ func DownloadFile(url string, filepath string) error {
 
 	// Write the body to file
 	_, err = io.Copy(out, resp.Body)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func ExecuteGitCommand(args []string) error {
-	cmd := exec.Command("git", args...)
-
-	output, err := cmd.CombinedOutput()
-	log.Infof("Output git command: %s", string(output))
-	if err != nil {
-		return errors.Errorf("Error running git command %s", err)
-	}
-
-	return nil
-}
-
-func DownloadGitRepo(url string, path string) error {
-	args := []string{"clone", url, path, "-v"}
-	err := ExecuteGitCommand(args)
 	if err != nil {
 		return err
 	}
