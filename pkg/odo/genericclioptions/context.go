@@ -14,6 +14,7 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util"
+	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/openshift/odo/pkg/project"
 	pkgUtil "github.com/openshift/odo/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -465,15 +466,19 @@ func newDevfileContext(command *cobra.Command) *Context {
 		command:    command,
 	}
 
-	// create a new kclient
-	kClient := kClient(command)
-	internalCxt.KClient = kClient
 	envInfo, err := getValidEnvinfo(command)
 	if err != nil {
 		util.LogErrorAndExit(err, "")
 	}
-	internalCxt.EnvSpecificInfo = envInfo
-	resolveNamespace(command, kClient, envInfo)
+
+	if !pushtarget.IsPushTargetDocker() {
+		// create a new kclient
+		kClient := kClient(command)
+		internalCxt.KClient = kClient
+
+		internalCxt.EnvSpecificInfo = envInfo
+		resolveNamespace(command, kClient, envInfo)
+	}
 	// create a context from the internal representation
 	context := &Context{
 		internalCxt: internalCxt,
