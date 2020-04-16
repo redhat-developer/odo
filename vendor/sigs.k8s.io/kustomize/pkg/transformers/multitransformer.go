@@ -18,34 +18,23 @@ package transformers
 
 import (
 	"fmt"
-	"sigs.k8s.io/kustomize/pkg/resource"
 
-	"sigs.k8s.io/kustomize/pkg/resmap"
+	"sigs.k8s.io/kustomize/v3/pkg/resmap"
 )
 
 // multiTransformer contains a list of transformers.
 type multiTransformer struct {
-	transformers         []Transformer
+	transformers         []resmap.Transformer
 	checkConflictEnabled bool
-	rf                   *resource.Factory
 }
 
-var _ Transformer = &multiTransformer{}
+var _ resmap.Transformer = &multiTransformer{}
 
 // NewMultiTransformer constructs a multiTransformer.
-func NewMultiTransformer(t []Transformer) Transformer {
+func NewMultiTransformer(t []resmap.Transformer) resmap.Transformer {
 	r := &multiTransformer{
-		transformers:         make([]Transformer, len(t)),
+		transformers:         make([]resmap.Transformer, len(t)),
 		checkConflictEnabled: false}
-	copy(r.transformers, t)
-	return r
-}
-
-// NewMultiTransformerWithConflictCheck constructs a multiTransformer with checking of conflicts.
-func NewMultiTransformerWithConflictCheck(t []Transformer) Transformer {
-	r := &multiTransformer{
-		transformers:         make([]Transformer, len(t)),
-		checkConflictEnabled: true}
 	copy(r.transformers, t)
 	return r
 }
@@ -71,7 +60,7 @@ func (o *multiTransformer) transform(m resmap.ResMap) error {
 // A spot check to perform when the transformations are supposed to be commutative.
 // Fail if there's a difference in the result.
 func (o *multiTransformer) transformWithCheckConflict(m resmap.ResMap) error {
-	mcopy := m.DeepCopy(o.rf)
+	mcopy := m.DeepCopy()
 	err := o.transform(m)
 	if err != nil {
 		return err
@@ -81,7 +70,7 @@ func (o *multiTransformer) transformWithCheckConflict(m resmap.ResMap) error {
 	if err != nil {
 		return err
 	}
-	err = m.ErrorIfNotEqual(mcopy)
+	err = m.ErrorIfNotEqualSets(mcopy)
 	if err != nil {
 		return fmt.Errorf("found conflict between different patches\n%v", err)
 	}

@@ -11,7 +11,48 @@ var (
 	pipelineTypeMeta = meta.TypeMeta("Pipeline", "tekton.dev/v1alpha1")
 )
 
-// CreateCDPipeline create CI pileline
+// CreateAppCIPipeline creates AppCIPipeline
+func CreateAppCIPipeline(name types.NamespacedName, isInternalRegistry bool) *pipelinev1.Pipeline {
+	return &pipelinev1.Pipeline{
+		TypeMeta:   pipelineTypeMeta,
+		ObjectMeta: meta.ObjectMeta(name),
+		Spec: pipelinev1.PipelineSpec{
+			Params: []pipelinev1.ParamSpec{
+				createParamSpec("REPO", "string"),
+				createParamSpec("COMMIT_SHA", "string"),
+			},
+			Resources: []pipelinev1.PipelineDeclaredResource{
+				createPipelineDeclaredResource("source-repo", "git"),
+				createPipelineDeclaredResource("runtime-image", "image"),
+			},
+
+			Tasks: []pipelinev1.PipelineTask{
+				createBuildImageTask("build-image", isInternalRegistry),
+			},
+		},
+	}
+}
+
+func createParamSpec(name string, paramType pipelinev1.ParamType) pipelinev1.ParamSpec {
+	return pipelinev1.ParamSpec{Name: name, Type: paramType}
+}
+
+func createBuildImageTask(name string, isInternalRegistry bool) pipelinev1.PipelineTask {
+	return pipelinev1.PipelineTask{
+		Name:    name,
+		TaskRef: createTaskRef("buildah", pipelinev1.ClusterTaskKind),
+		Resources: &pipelinev1.PipelineTaskResources{
+			Inputs:  []pipelinev1.PipelineTaskInputResource{createInputTaskResource("source", "source-repo")},
+			Outputs: []pipelinev1.PipelineTaskOutputResource{createOutputTaskResource("image", "runtime-image")},
+		},
+		Params: []pipelinev1.Param{
+			createTaskParam("TLSVERIFY", getTLSVerify(isInternalRegistry)),
+		},
+	}
+
+}
+
+// CreateCDPipeline creates CreateCDPipeline
 func CreateCDPipeline(name types.NamespacedName, stageNamespace string) *pipelinev1.Pipeline {
 	return &pipelinev1.Pipeline{
 		TypeMeta:   pipelineTypeMeta,
@@ -58,7 +99,8 @@ func CreateCIPipeline(name types.NamespacedName, stageNamespace string) *pipelin
 	}
 }
 
-func createDevCDPipeline(name types.NamespacedName, deploymentPath, devNamespace string, isInternalRegistry bool) *pipelinev1.Pipeline {
+// CreateAppCDPipeline creates AppCDPipelin
+func CreateAppCDPipeline(name types.NamespacedName, deploymentPath, devNamespace string, isInternalRegistry bool) *pipelinev1.Pipeline {
 	return &pipelinev1.Pipeline{
 		TypeMeta:   pipelineTypeMeta,
 		ObjectMeta: meta.ObjectMeta(name),

@@ -18,10 +18,12 @@ package target_test
 
 import (
 	"testing"
+
+	"sigs.k8s.io/kustomize/v3/pkg/kusttest"
 )
 
-func makeBaseReferencingCustomConfig(th *KustTestHarness) {
-	th.writeK("/app/base", `
+func makeBaseReferencingCustomConfig(th *kusttest_test.KustTestHarness) {
+	th.WriteK("/app/base", `
 namePrefix: x-
 commonLabels:
   app: myApp
@@ -39,29 +41,29 @@ vars:
   fieldref:
     fieldpath: spec.diet
 resources:
+- animalPark.yaml
 - giraffes.yaml
 - gorilla.yaml
-- animalPark.yaml
 configurations:
 - config/defaults.yaml
 - config/custom.yaml
 `)
-	th.writeF("/app/base/giraffes.yaml", `
-kind: Giraffe
-metadata:
-  name: may
-spec:
-  diet: acacia
-  location: SE
----
+	th.WriteF("/app/base/giraffes.yaml", `
 kind: Giraffe
 metadata:
   name: april
 spec:
   diet: mimosa
   location: NE
+---
+kind: Giraffe
+metadata:
+  name: may
+spec:
+  diet: acacia
+  location: SE
 `)
-	th.writeF("/app/base/gorilla.yaml", `
+	th.WriteF("/app/base/gorilla.yaml", `
 kind: Gorilla
 metadata:
   name: koko
@@ -69,7 +71,7 @@ spec:
   diet: bambooshoots
   location: SW
 `)
-	th.writeF("/app/base/animalPark.yaml", `
+	th.WriteF("/app/base/animalPark.yaml", `
 kind: AnimalPark
 metadata:
   name: sandiego
@@ -85,10 +87,10 @@ spec:
 }
 
 func TestCustomConfig(t *testing.T) {
-	th := NewKustTestHarness(t, "/app/base")
+	th := kusttest_test.NewKustTestHarness(t, "/app/base")
 	makeBaseReferencingCustomConfig(th)
-	th.writeDefaultConfigs("/app/base/config/defaults.yaml")
-	th.writeF("/app/base/config/custom.yaml", `
+	th.WriteDefaultConfigs("/app/base/config/defaults.yaml")
+	th.WriteF("/app/base/config/custom.yaml", `
 nameReference:
 - kind: Gorilla
   fieldSpecs:
@@ -102,11 +104,11 @@ varReference:
 - path: spec/food
   kind: AnimalPark
 `)
-	m, err := th.makeKustTarget().MakeCustomizedResMap()
+	m, err := th.MakeKustTarget().MakeCustomizedResMap()
 	if err != nil {
 		t.Fatalf("Err: %v", err)
 	}
-	th.assertActualEqualsExpected(m, `
+	th.AssertActualEqualsExpected(m, `
 kind: AnimalPark
 metadata:
   labels:
@@ -151,13 +153,13 @@ spec:
 }
 
 func TestCustomConfigWithDefaultOverspecification(t *testing.T) {
-	th := NewKustTestHarness(t, "/app/base")
+	th := kusttest_test.NewKustTestHarness(t, "/app/base")
 	makeBaseReferencingCustomConfig(th)
-	th.writeDefaultConfigs("/app/base/config/defaults.yaml")
+	th.WriteDefaultConfigs("/app/base/config/defaults.yaml")
 	// Specifying namePrefix here conflicts with (is the same as)
 	// the defaults written above.  This is intentional in the
 	// test to assure duplicate config doesn't cause problems.
-	th.writeF("/app/base/config/custom.yaml", `
+	th.WriteF("/app/base/config/custom.yaml", `
 namePrefix:
 - path: metadata/name
 nameReference:
@@ -173,11 +175,11 @@ varReference:
 - path: spec/food
   kind: AnimalPark
 `)
-	m, err := th.makeKustTarget().MakeCustomizedResMap()
+	m, err := th.MakeKustTarget().MakeCustomizedResMap()
 	if err != nil {
 		t.Fatalf("Err: %v", err)
 	}
-	th.assertActualEqualsExpected(m, `
+	th.AssertActualEqualsExpected(m, `
 kind: AnimalPark
 metadata:
   labels:
@@ -222,10 +224,10 @@ spec:
 }
 
 func TestFixedBug605_BaseCustomizationAvailableInOverlay(t *testing.T) {
-	th := NewKustTestHarness(t, "/app/overlay")
+	th := kusttest_test.NewKustTestHarness(t, "/app/overlay")
 	makeBaseReferencingCustomConfig(th)
-	th.writeDefaultConfigs("/app/base/config/defaults.yaml")
-	th.writeF("/app/base/config/custom.yaml", `
+	th.WriteDefaultConfigs("/app/base/config/defaults.yaml")
+	th.WriteF("/app/base/config/custom.yaml", `
 nameReference:
 - kind: Gorilla
   fieldSpecs:
@@ -239,18 +241,17 @@ varReference:
 - path: spec/food
   kind: AnimalPark
 `)
-	th.writeK("/app/overlay", `
+	th.WriteK("/app/overlay", `
 namePrefix: o-
 commonLabels:
   movie: planetOfTheApes
 patchesStrategicMerge:
 - animalPark.yaml
 resources:
-- ursus.yaml
-bases:
 - ../base
+- ursus.yaml
 `)
-	th.writeF("/app/overlay/ursus.yaml", `
+	th.WriteF("/app/overlay/ursus.yaml", `
 kind: Gorilla
 metadata:
   name: ursus
@@ -259,7 +260,7 @@ spec:
   location: Arizona
 `)
 	// The following replaces the gorillaRef in the AnimalPark.
-	th.writeF("/app/overlay/animalPark.yaml", `
+	th.WriteF("/app/overlay/animalPark.yaml", `
 kind: AnimalPark
 metadata:
   name: sandiego
@@ -268,19 +269,18 @@ spec:
     name: ursus
 `)
 
-	m, err := th.makeKustTarget().MakeCustomizedResMap()
+	m, err := th.MakeKustTarget().MakeCustomizedResMap()
 	if err != nil {
 		t.Fatalf("Err: %v", err)
 	}
-	// TODO(#669): The name of AnimalPark should be x-o-sandiego,
-	// not o-sandiego, since AnimalPark appears in the base.
-	th.assertActualEqualsExpected(m, `
+
+	th.AssertActualEqualsExpected(m, `
 kind: AnimalPark
 metadata:
   labels:
     app: myApp
     movie: planetOfTheApes
-  name: o-sandiego
+  name: o-x-sandiego
 spec:
   food:
   - mimosa

@@ -17,12 +17,14 @@ limitations under the License.
 package resource_test
 
 import (
+	"reflect"
 	"testing"
 
-	"sigs.k8s.io/kustomize/k8sdeps/kunstruct"
-	"sigs.k8s.io/kustomize/pkg/gvk"
-	"sigs.k8s.io/kustomize/pkg/resid"
-	. "sigs.k8s.io/kustomize/pkg/resource"
+	"sigs.k8s.io/kustomize/v3/k8sdeps/kunstruct"
+	"sigs.k8s.io/kustomize/v3/pkg/gvk"
+	"sigs.k8s.io/kustomize/v3/pkg/resid"
+	. "sigs.k8s.io/kustomize/v3/pkg/resource"
+	"sigs.k8s.io/kustomize/v3/pkg/types"
 )
 
 var factory = NewFactory(
@@ -53,6 +55,21 @@ var testDeployment = factory.FromMap(
 
 const deploymentAsString = `{"apiVersion":"apps/v1","kind":"Deployment","metadata":{"name":"pooh"}}`
 
+func TestAsYAML(t *testing.T) {
+	expected := `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pooh
+`
+	yaml, err := testDeployment.AsYAML()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(yaml) != expected {
+		t.Fatalf("--- expected\n%s\n--- got\n%s\n", expected, string(yaml))
+	}
+}
+
 func TestResourceString(t *testing.T) {
 	tests := []struct {
 		in *Resource
@@ -81,7 +98,8 @@ func TestResourceId(t *testing.T) {
 	}{
 		{
 			in: testConfigMap,
-			id: resid.NewResIdWithPrefixNamespace(gvk.Gvk{Version: "v1", Kind: "ConfigMap"}, "winnie", "", "hundred-acre-wood"),
+			id: resid.NewResIdWithNamespace(
+				gvk.Gvk{Version: "v1", Kind: "ConfigMap"}, "winnie", "hundred-acre-wood"),
 		},
 		{
 			in: testDeployment,
@@ -89,8 +107,33 @@ func TestResourceId(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		if test.in.Id() != test.id {
-			t.Fatalf("Expected %v, but got %v\n", test.id, test.in.Id())
+		if test.in.OrgId() != test.id {
+			t.Fatalf("Expected %v, but got %v\n", test.id, test.in.OrgId())
 		}
+	}
+}
+
+func TestDeepCopy(t *testing.T) {
+	r := factory.FromMap(
+		map[string]interface{}{
+			"apiVersion": "apps/v1",
+			"kind":       "Deployment",
+			"metadata": map[string]interface{}{
+				"name": "pooh",
+			},
+		})
+	r.AppendRefBy(resid.NewResId(gvk.Gvk{Group: "somegroup", Kind: "MyKind"}, "random"))
+
+	var1 := types.Var{
+		Name: "SERVICE_ONE",
+		ObjRef: types.Target{
+			Gvk:  gvk.Gvk{Version: "v1", Kind: "Service"},
+			Name: "backendOne"},
+	}
+	r.AppendRefVarName(var1)
+
+	cr := r.DeepCopy()
+	if !reflect.DeepEqual(r, cr) {
+		t.Errorf("expected %v\nbut got%v", r, cr)
 	}
 }

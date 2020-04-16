@@ -1,46 +1,54 @@
 # remote targets
 
-`kustomize build` can be run against a url. The effect is the same as cloing the repo, checking out the specified ref,
-then running `kustomize build` against the desired directory in the local copy.
+`kustomize build` can be run on a URL.
 
-Take `github.com/kubernetes-sigs/kustomize//examples/multibases?ref=v1.0.6` as an example.
-According to [multibases](multibases/README.md) demo, this kustomization contains three Pod objects with names as
-`cluster-a-dev-myapp-pod`, `cluster-a-stag-myapp-pod`, `cluster-a-prod-myapp-pod`.
-Running `kustomize build` against the url gives the same output.
+The effect is the same as cloning the repo, checking out a particular
+_ref_ (commit hash, branch name, release tag, etc.),
+then running `kustomize build` against the desired
+directory in the local copy.
 
-<!-- @remoteBuild @test -->
+To try this immediately, run a build against the kustomization
+in the [multibases](multibases/README.md) example.  There's
+one pod in the output:
+
+<!-- @remoteOverlayBuild @testAgainstLatestRelease -->
+
 ```
-target=github.com/kubernetes-sigs/kustomize//examples/multibases?ref=v1.0.6
+target="github.com/kubernetes-sigs/kustomize//examples/multibases/dev/?ref=v1.0.6"
+test 1 == \
+  $(kustomize build $target | grep dev-myapp-pod | wc -l); \
+  echo $?
+```
+
+Run against the overlay in that example to get three pods
+(the overlay combines the dev, staging and prod bases for
+someone who wants to send them all at the same time):
+
+<!-- @remoteBuild @testAgainstLatestRelease -->
+```
+target="https://github.com/kubernetes-sigs/kustomize//examples/multibases?ref=v1.0.6"
 test 3 == \
   $(kustomize build $target | grep cluster-a-.*-myapp-pod | wc -l); \
   echo $?
 ```
 
-Overlays can be remote as well:
+A base can be a URL:
 
-<!-- @remoteOverlayBuild @test -->
-
-```
-target=github.com/kubernetes-sigs/kustomize//examples/multibases/dev/?ref=v1.0.6
-test 1 == \
-  $(kustomize build $target | grep cluster-a-dev-myapp-pod | wc -l); \
-  echo $?
-```
-
-A base can also be specified as a URL:
-
-<!-- @createOverlay @test -->
+<!-- @createOverlay @testAgainstLatestRelease -->
 ```
 DEMO_HOME=$(mktemp -d)
 
 cat <<EOF >$DEMO_HOME/kustomization.yaml
-bases:
+resources:
 - github.com/kubernetes-sigs/kustomize//examples/multibases?ref=v1.0.6
 namePrefix: remote-
 EOF
 ```
-Running `kustomize build $DEMO_HOME` and confirm the output contains three Pods and all have `remote-` prefix.
-<!-- @remoteBases @test -->
+
+Build this to confirm that all three pods from the base
+have the `remote-` prefix.
+
+<!-- @remoteBases @testAgainstLatestRelease -->
 ```
 test 3 == \
   $(kustomize build $DEMO_HOME | grep remote-.*-myapp-pod | wc -l); \
@@ -48,6 +56,7 @@ test 3 == \
 ```
 
 ## URL format
+
 The url should follow
 [hashicorp/go-getter URL format](https://github.com/hashicorp/go-getter#url-format).
 Here are some example urls pointing to Github repos following this convention.

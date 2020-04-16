@@ -11,8 +11,9 @@
 [patches]: glossary.md#patch
 [rebase]: https://git-scm.com/docs/git-rebase
 [resources]: glossary.md#resource
-[workflowBespoke]: workflowBespoke.jpg
-[workflowOts]: workflowOts.jpg
+[workflowBespoke]: images/workflowBespoke.jpg
+[workflowOts]: images/workflowOts.jpg
+[kubectl-v1.14.0]:https://kubernetes.io/blog/2019/03/25/kubernetes-1-14-release-announcement/
 
 # workflows
 
@@ -71,6 +72,11 @@ Run kustomize, and pipe the output to [apply].
 > kustomize build ~/ldap/overlays/production | kubectl apply -f -
 > ```
 
+You can also use [kubectl-v1.14.0] to apply your [variants].
+> ```
+> kubectl apply -k ~/ldap/overlays/staging
+> kubectl apply -k ~/ldap/overlays/production
+> ```
 
 ## Off-the-shelf configuration
 
@@ -118,6 +124,12 @@ distinct repository.
 > ```
 > kustomize build ~/ldap/overlays/staging | kubectl apply -f -
 > kustomize build ~/ldap/overlays/production | kubectl apply -f -
+> ```
+
+You can also use [kubectl-v1.14.0] to apply your [variants].
+> ```
+> kubectl apply -k ~/ldap/overlays/staging
+> kubectl apply -k ~/ldap/overlays/production
 > ```
 
 #### 5) (optionally) capture changes from upstream

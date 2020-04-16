@@ -10,33 +10,11 @@ var (
 	taskTypeMeta = meta.TypeMeta("Task", "tekton.dev/v1alpha1")
 )
 
-// Generate will return a slice of tasks
-func Generate(ns string) []pipelinev1.Task {
-	return []pipelinev1.Task{
-		CreateDeployFromSourceTask(ns, "deploy"),
-		generateDeployUsingKubectlTask(ns),
-	}
-}
-
 func createTaskResource(name string, resourceType string) pipelinev1.TaskResource {
 	return pipelinev1.TaskResource{
 		ResourceDeclaration: pipelinev1.ResourceDeclaration{
 			Name: name,
 			Type: resourceType,
-		},
-	}
-}
-
-func createEnvFromSecret(name string, localObjectReference string, key string) corev1.EnvVar {
-	return corev1.EnvVar{
-		Name: name,
-		ValueFrom: &corev1.EnvVarSource{
-			SecretKeyRef: &corev1.SecretKeySelector{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: localObjectReference,
-				},
-				Key: key,
-			},
 		},
 	}
 }

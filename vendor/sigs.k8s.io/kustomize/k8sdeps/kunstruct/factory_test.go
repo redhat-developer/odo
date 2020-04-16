@@ -20,7 +20,7 @@ import (
 	"reflect"
 	"testing"
 
-	"sigs.k8s.io/kustomize/pkg/ifc"
+	"sigs.k8s.io/kustomize/v3/pkg/ifc"
 )
 
 func TestSliceFromBytes(t *testing.T) {
@@ -138,6 +138,22 @@ kind: Namespace
 metadata:
   annotations:
     foo: bar
+`),
+			expectedOut: nil,
+			expectedErr: true,
+		},
+		{
+			name: "nil value in list",
+			input: []byte(`
+apiVersion: builtin
+kind: ConfigMapGenerator
+metadata:
+  name: kube100-site
+  labels:
+    app: web
+    testList:
+      - testA
+      - 
 `),
 			expectedOut: nil,
 			expectedErr: true,

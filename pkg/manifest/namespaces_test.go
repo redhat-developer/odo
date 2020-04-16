@@ -26,9 +26,9 @@ func TestCreateNamespace(t *testing.T) {
 func TestNamespaceNames(t *testing.T) {
 	ns := NamespaceNames("test-")
 	want := map[string]string{
-		"dev":   "test-dev-environment",
-		"stage": "test-stage-environment",
-		"cicd":  "test-cicd-environment",
+		"dev":   "test-dev",
+		"stage": "test-stage",
+		"cicd":  "test-cicd",
 	}
 	if diff := cmp.Diff(want, ns); diff != "" {
 		t.Fatalf("namespaceNames() failed got\n%s", diff)
@@ -37,14 +37,14 @@ func TestNamespaceNames(t *testing.T) {
 
 func TestCreateNamespaces(t *testing.T) {
 	ns := CreateNamespaces([]string{
-		"test-dev-environment",
-		"test-stage-environment",
-		"test-cicd-environment",
+		"test-dev",
+		"test-stage",
+		"test-cicd",
 	})
 	want := []*corev1.Namespace{
-		CreateNamespace("test-dev-environment"),
-		CreateNamespace("test-stage-environment"),
-		CreateNamespace("test-cicd-environment"),
+		CreateNamespace("test-dev"),
+		CreateNamespace("test-stage"),
+		CreateNamespace("test-cicd"),
 	}
 	if diff := cmp.Diff(want, ns); diff != "" {
 		t.Fatalf("createNamespaces() failed got\n%s", diff)

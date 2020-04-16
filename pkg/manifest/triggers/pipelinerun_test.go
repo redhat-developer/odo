@@ -15,10 +15,10 @@ var (
 func TestCreateDevCDPipelineRun(t *testing.T) {
 	validDevCDPipeline := pipelinev1.PipelineRun{
 		TypeMeta:   pipelineRunTypeMeta,
-		ObjectMeta: meta.ObjectMeta(meta.NamespacedName("", "dev-cd-pipeline-run-$(uid)")),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName("", "app-cd-pipeline-run-$(uid)")),
 		Spec: pipelinev1.PipelineRunSpec{
 			ServiceAccountName: sName,
-			PipelineRef:        createPipelineRef("dev-cd-pipeline"),
+			PipelineRef:        createPipelineRef("app-cd-pipeline"),
 			Resources:          createDevResource("example.com:5000/testing/testing:$(params.gitsha)", "$(params.gitsha)"),
 		},
 	}
@@ -32,10 +32,10 @@ func TestCreateDevCDPipelineRun(t *testing.T) {
 func TestCreateDevCIPipelineRun(t *testing.T) {
 	validDevCIPipelineRun := pipelinev1.PipelineRun{
 		TypeMeta:   pipelineRunTypeMeta,
-		ObjectMeta: meta.ObjectMeta(meta.NamespacedName("", "dev-ci-pipeline-run-$(uid)")),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName("", "app-ci-pipeline-run-$(uid)")),
 		Spec: pipelinev1.PipelineRunSpec{
 			ServiceAccountName: sName,
-			PipelineRef:        createPipelineRef("dev-ci-pipeline"),
+			PipelineRef:        createPipelineRef("app-ci-pipeline"),
 			Params: []pipelinev1.Param{
 				createBindingParam("REPO", "$(params.fullname)"),
 				createBindingParam("COMMIT_SHA", "$(params.gitsha)"),

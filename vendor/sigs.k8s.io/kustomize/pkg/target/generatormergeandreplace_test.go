@@ -17,12 +17,15 @@ limitations under the License.
 package target_test
 
 import (
+	"strings"
 	"testing"
+
+	"sigs.k8s.io/kustomize/v3/pkg/kusttest"
 )
 
 func TestSimpleBase(t *testing.T) {
-	th := NewKustTestHarness(t, "/app/base")
-	th.writeK("/app/base", `
+	th := kusttest_test.NewKustTestHarness(t, "/app/base")
+	th.WriteK("/app/base", `
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namePrefix: team-foo-
@@ -33,11 +36,11 @@ commonLabels:
 commonAnnotations:
   note: This is a test annotation
 resources:
+  - service.yaml
   - deployment.yaml
   - networkpolicy.yaml
-  - service.yaml
 `)
-	th.writeF("/app/base/service.yaml", `
+	th.WriteF("/app/base/service.yaml", `
 apiVersion: v1
 kind: Service
 metadata:
@@ -50,7 +53,7 @@ spec:
   selector:
     app: nginx
 `)
-	th.writeF("/app/base/networkpolicy.yaml", `
+	th.WriteF("/app/base/networkpolicy.yaml", `
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -65,7 +68,7 @@ spec:
             matchLabels:
               app: nginx
 `)
-	th.writeF("/app/base/deployment.yaml", `
+	th.WriteF("/app/base/deployment.yaml", `
 apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
@@ -82,11 +85,11 @@ spec:
       - name: nginx
         image: nginx
 `)
-	m, err := th.makeKustTarget().MakeCustomizedResMap()
+	m, err := th.MakeKustTarget().MakeCustomizedResMap()
 	if err != nil {
 		t.Fatalf("Err: %v", err)
 	}
-	th.assertActualEqualsExpected(m, `
+	th.AssertActualEqualsExpected(m, `
 apiVersion: v1
 kind: Service
 metadata:
@@ -161,8 +164,8 @@ spec:
 `)
 }
 
-func makeBaseWithGenerators(th *KustTestHarness) {
-	th.writeK("/app", `
+func makeBaseWithGenerators(th *kusttest_test.KustTestHarness) {
+	th.WriteK("/app", `
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namePrefix: team-foo-
@@ -176,16 +179,16 @@ resources:
   - deployment.yaml
   - service.yaml
 configMapGenerator:
-  - name: configmap-in-base
-    literals:
-      - foo=bar
+- name: configmap-in-base
+  literals:
+  - foo=bar
 secretGenerator:
 - name: secret-in-base
   literals:
-    - username=admin
-    - password=somepw
+  - username=admin
+  - password=somepw
 `)
-	th.writeF("/app/deployment.yaml", `
+	th.WriteF("/app/deployment.yaml", `
 apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
@@ -211,7 +214,7 @@ spec:
           name: configmap-in-base
         name: configmap-in-base
 `)
-	th.writeF("/app/service.yaml", `
+	th.WriteF("/app/service.yaml", `
 apiVersion: v1
 kind: Service
 metadata:
@@ -227,59 +230,13 @@ spec:
 }
 
 func TestBaseWithGeneratorsAlone(t *testing.T) {
-	th := NewKustTestHarness(t, "/app")
+	th := kusttest_test.NewKustTestHarness(t, "/app")
 	makeBaseWithGenerators(th)
-	m, err := th.makeKustTarget().MakeCustomizedResMap()
+	m, err := th.MakeKustTarget().MakeCustomizedResMap()
 	if err != nil {
 		t.Fatalf("Err: %v", err)
 	}
-	th.assertActualEqualsExpected(m, `
-apiVersion: v1
-data:
-  foo: bar
-kind: ConfigMap
-metadata:
-  annotations:
-    note: This is a test annotation
-  labels:
-    app: mynginx
-    org: example.com
-    team: foo
-  name: team-foo-configmap-in-base-bbdmdh7m8t
----
-apiVersion: v1
-data:
-  password: c29tZXB3
-  username: YWRtaW4=
-kind: Secret
-metadata:
-  annotations:
-    note: This is a test annotation
-  labels:
-    app: mynginx
-    org: example.com
-    team: foo
-  name: team-foo-secret-in-base-tkm7hhtf8d
-type: Opaque
----
-apiVersion: v1
-kind: Service
-metadata:
-  annotations:
-    note: This is a test annotation
-  labels:
-    app: mynginx
-    org: example.com
-    team: foo
-  name: team-foo-nginx
-spec:
-  ports:
-  - port: 80
-  selector:
-    app: mynginx
-    org: example.com
-    team: foo
----
+	th.AssertActualEqualsExpected(m, `
 apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
@@ -317,13 +274,59 @@ spec:
       - configMap:
           name: team-foo-configmap-in-base-bbdmdh7m8t
         name: configmap-in-base
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    note: This is a test annotation
+  labels:
+    app: mynginx
+    org: example.com
+    team: foo
+  name: team-foo-nginx
+spec:
+  ports:
+  - port: 80
+  selector:
+    app: mynginx
+    org: example.com
+    team: foo
+---
+apiVersion: v1
+data:
+  foo: bar
+kind: ConfigMap
+metadata:
+  annotations:
+    note: This is a test annotation
+  labels:
+    app: mynginx
+    org: example.com
+    team: foo
+  name: team-foo-configmap-in-base-bbdmdh7m8t
+---
+apiVersion: v1
+data:
+  password: c29tZXB3
+  username: YWRtaW4=
+kind: Secret
+metadata:
+  annotations:
+    note: This is a test annotation
+  labels:
+    app: mynginx
+    org: example.com
+    team: foo
+  name: team-foo-secret-in-base-tkm7hhtf8d
+type: Opaque
 `)
 }
 
 func TestMergeAndReplaceGenerators(t *testing.T) {
-	th := NewKustTestHarness(t, "/overlay")
+	th := kusttest_test.NewKustTestHarness(t, "/overlay")
 	makeBaseWithGenerators(th)
-	th.writeF("/overlay/deployment.yaml", `
+	th.WriteF("/overlay/deployment.yaml", `
 apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
@@ -340,7 +343,7 @@ spec:
           name: configmap-in-overlay
         name: configmap-in-overlay
 `)
-	th.writeK("/overlay", `
+	th.WriteK("/overlay", `
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namePrefix: staging-
@@ -348,89 +351,28 @@ commonLabels:
   env: staging
   team: override-foo
 patchesStrategicMerge:
-  - deployment.yaml
-bases:
-  - ../app
+- deployment.yaml
+resources:
+- ../app
 configMapGenerator:
-  - name: configmap-in-overlay
-    literals:
-      - hello=world
-  - name: configmap-in-base
-    behavior: replace
-    literals:
-      - foo=override-bar
+- name: configmap-in-overlay
+  literals:
+  - hello=world
+- name: configmap-in-base
+  behavior: replace
+  literals:
+  - foo=override-bar
 secretGenerator:
 - name: secret-in-base
   behavior: merge
   literals:
-   - proxy=haproxy
+  - proxy=haproxy
 `)
-	m, err := th.makeKustTarget().MakeCustomizedResMap()
+	m, err := th.MakeKustTarget().MakeCustomizedResMap()
 	if err != nil {
 		t.Fatalf("Err: %v", err)
 	}
-	th.assertActualEqualsExpected(m, `
-apiVersion: v1
-data:
-  foo: override-bar
-kind: ConfigMap
-metadata:
-  annotations:
-    note: This is a test annotation
-  labels:
-    app: mynginx
-    env: staging
-    org: example.com
-    team: override-foo
-  name: staging-team-foo-configmap-in-base-gh9d7t85gb
----
-apiVersion: v1
-data:
-  hello: world
-kind: ConfigMap
-metadata:
-  labels:
-    env: staging
-    team: override-foo
-  name: staging-configmap-in-overlay-k7cbc75tg8
----
-apiVersion: v1
-data:
-  password: c29tZXB3
-  proxy: aGFwcm94eQ==
-  username: YWRtaW4=
-kind: Secret
-metadata:
-  annotations:
-    note: This is a test annotation
-  labels:
-    app: mynginx
-    env: staging
-    org: example.com
-    team: override-foo
-  name: staging-team-foo-secret-in-base-c8db7gk2m2
-type: Opaque
----
-apiVersion: v1
-kind: Service
-metadata:
-  annotations:
-    note: This is a test annotation
-  labels:
-    app: mynginx
-    env: staging
-    org: example.com
-    team: override-foo
-  name: staging-team-foo-nginx
-spec:
-  ports:
-  - port: 80
-  selector:
-    app: mynginx
-    env: staging
-    org: example.com
-    team: override-foo
----
+	th.AssertActualEqualsExpected(m, `
 apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
@@ -475,5 +417,181 @@ spec:
       - configMap:
           name: staging-team-foo-configmap-in-base-gh9d7t85gb
         name: configmap-in-base
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    note: This is a test annotation
+  labels:
+    app: mynginx
+    env: staging
+    org: example.com
+    team: override-foo
+  name: staging-team-foo-nginx
+spec:
+  ports:
+  - port: 80
+  selector:
+    app: mynginx
+    env: staging
+    org: example.com
+    team: override-foo
+---
+apiVersion: v1
+data:
+  foo: override-bar
+kind: ConfigMap
+metadata:
+  annotations:
+    note: This is a test annotation
+  labels:
+    app: mynginx
+    env: staging
+    org: example.com
+    team: override-foo
+  name: staging-team-foo-configmap-in-base-gh9d7t85gb
+---
+apiVersion: v1
+data:
+  password: c29tZXB3
+  proxy: aGFwcm94eQ==
+  username: YWRtaW4=
+kind: Secret
+metadata:
+  annotations:
+    note: This is a test annotation
+  labels:
+    app: mynginx
+    env: staging
+    org: example.com
+    team: override-foo
+  name: staging-team-foo-secret-in-base-c8db7gk2m2
+type: Opaque
+---
+apiVersion: v1
+data:
+  hello: world
+kind: ConfigMap
+metadata:
+  labels:
+    env: staging
+    team: override-foo
+  name: staging-configmap-in-overlay-k7cbc75tg8
 `)
+}
+
+func TestGeneratingIntoNamespaces(t *testing.T) {
+	th := kusttest_test.NewKustTestHarness(t, "/app")
+	th.WriteK("/app", `
+configMapGenerator:
+- name: test
+  namespace: default
+  literals:
+    - key=value
+- name: test
+  namespace: kube-system
+  literals:
+    - key=value
+secretGenerator:
+- name: test
+  namespace: default
+  literals:
+  - username=admin
+  - password=somepw
+- name: test
+  namespace: kube-system
+  literals:
+  - username=admin
+  - password=somepw
+`)
+	m, err := th.MakeKustTarget().MakeCustomizedResMap()
+	if err != nil {
+		t.Fatalf("Err: %v", err)
+	}
+	th.AssertActualEqualsExpected(m, `
+apiVersion: v1
+data:
+  key: value
+kind: ConfigMap
+metadata:
+  name: test-t5t4md8fdm
+  namespace: default
+---
+apiVersion: v1
+data:
+  key: value
+kind: ConfigMap
+metadata:
+  name: test-t5t4md8fdm
+  namespace: kube-system
+---
+apiVersion: v1
+data:
+  password: c29tZXB3
+  username: YWRtaW4=
+kind: Secret
+metadata:
+  name: test-h65t9hg6kc
+  namespace: default
+type: Opaque
+---
+apiVersion: v1
+data:
+  password: c29tZXB3
+  username: YWRtaW4=
+kind: Secret
+metadata:
+  name: test-h65t9hg6kc
+  namespace: kube-system
+type: Opaque
+`)
+}
+
+// Valid that conflict is detected is the name are identical
+// and namespace left to default
+func TestConfigMapGeneratingIntoSameNamespace(t *testing.T) {
+	th := kusttest_test.NewKustTestHarness(t, "/app")
+	th.WriteK("/app", `
+configMapGenerator:
+- name: test
+  namespace: default
+  literals:
+  - key=value
+- name: test
+  literals:
+  - key=value
+`)
+	_, err := th.MakeKustTarget().MakeCustomizedResMap()
+	if err == nil {
+		t.Fatalf("expected error")
+	}
+	if !strings.Contains(err.Error(), "must merge or replace") {
+		t.Fatalf("unexpected error %v", err)
+	}
+}
+
+// Valid that conflict is detected is the name are identical
+// and namespace left to default
+func TestSecretGeneratingIntoSameNamespace(t *testing.T) {
+	th := kusttest_test.NewKustTestHarness(t, "/app")
+	th.WriteK("/app", `
+secretGenerator:
+- name: test
+  namespace: default
+  literals:
+  - username=admin
+  - password=somepw
+- name: test
+  literals:
+  - username=admin
+  - password=somepw
+`)
+	_, err := th.MakeKustTarget().MakeCustomizedResMap()
+	if err == nil {
+		t.Fatalf("expected error")
+	}
+	if !strings.Contains(err.Error(), "must merge or replace") {
+		t.Fatalf("unexpected error %v", err)
+	}
 }

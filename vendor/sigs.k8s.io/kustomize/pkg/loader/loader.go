@@ -18,22 +18,31 @@ limitations under the License.
 package loader
 
 import (
-	"sigs.k8s.io/kustomize/pkg/fs"
-	"sigs.k8s.io/kustomize/pkg/git"
-	"sigs.k8s.io/kustomize/pkg/ifc"
+	"sigs.k8s.io/kustomize/v3/pkg/fs"
+	"sigs.k8s.io/kustomize/v3/pkg/git"
+	"sigs.k8s.io/kustomize/v3/pkg/ifc"
 )
 
-// NewLoader returns a Loader.
-func NewLoader(path string, fSys fs.FileSystem) (ifc.Loader, error) {
-	repoSpec, err := git.NewRepoSpecFromUrl(path)
+// NewLoader returns a Loader pointed at the given target.
+// If the target is remote, the loader will be restricted
+// to the root and below only.  If the target is local, the
+// loader will have the restrictions passed in.  Regardless,
+// if a local target attempts to transitively load remote bases,
+// the remote bases will all be root-only restricted.
+func NewLoader(
+	lr LoadRestrictorFunc,
+	v ifc.Validator,
+	target string, fSys fs.FileSystem) (ifc.Loader, error) {
+	repoSpec, err := git.NewRepoSpecFromUrl(target)
 	if err == nil {
+		// The target qualifies as a remote git target.
 		return newLoaderAtGitClone(
-			repoSpec, fSys, nil, git.ClonerUsingGitExec)
+			repoSpec, v, fSys, nil, git.ClonerUsingGitExec)
 	}
-	root, err := demandDirectoryRoot(fSys, path)
+	root, err := demandDirectoryRoot(fSys, target)
 	if err != nil {
 		return nil, err
 	}
 	return newLoaderAtConfirmedDir(
-		root, fSys, nil, git.ClonerUsingGitExec), nil
+		lr, v, root, fSys, nil, git.ClonerUsingGitExec), nil
 }
