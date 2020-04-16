@@ -154,6 +154,10 @@ func (m *mockDockerClient) VolumeList(ctx context.Context, filter filters.Args) 
 	}, nil
 }
 
+func (m *mockDockerClient) VolumeRemove(ctx context.Context, volumeID string, force bool) error {
+	return nil
+}
+
 // This mock client will return errors for each call to a docker function
 type mockDockerErrorClient struct {
 }
@@ -179,6 +183,7 @@ var errContainerWait = errors.New("error timeout waiting for container")
 var errDistributionInspect = errors.New("error inspecting distribution")
 var errVolumeCreate = errors.New("error creating volume")
 var errVolumeList = errors.New("error listing volume")
+var errRemoveVolume = errors.New("error removing volume")
 
 func (m *mockDockerErrorClient) ImageList(ctx context.Context, imageListOptions types.ImageListOptions) ([]types.ImageSummary, error) {
 	return nil, errImageList
@@ -231,7 +236,13 @@ func (m *mockDockerErrorClient) VolumeList(ctx context.Context, filter filters.A
 	return volumeTypes.VolumeListOKBody{}, errVolumeList
 }
 
-// FakeNew returns a fake local client instance that can be used in unit tests
+func (m *mockDockerErrorClient) VolumeRemove(ctx context.Context, volumeID string, force bool) error {
+	return errRemoveVolume
+}
+
+// FakeNewMockClient returns a fake local client instance that can be used in unit tests
+// To regenerate the mock file, in the same directory as mock_client.go, run:
+// 'mockgen -source=client.go -package=lclient DockerClient > /tmp/mock_client.go ; cp /tmp/mock_client.go ./mock_client.go'
 func FakeNewMockClient(ctrl *gomock.Controller) (*Client, *MockDockerClient) {
 
 	dockerClient := NewMockDockerClient(ctrl)

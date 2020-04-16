@@ -6,9 +6,6 @@ package lclient
 
 import (
 	context "context"
-	io "io"
-	reflect "reflect"
-
 	types "github.com/docker/docker/api/types"
 	container "github.com/docker/docker/api/types/container"
 	filters "github.com/docker/docker/api/types/filters"
@@ -16,6 +13,8 @@ import (
 	registry "github.com/docker/docker/api/types/registry"
 	volume "github.com/docker/docker/api/types/volume"
 	gomock "github.com/golang/mock/gomock"
+	io "io"
+	reflect "reflect"
 )
 
 // MockDockerClient is a mock of DockerClient interface
@@ -202,4 +201,18 @@ func (m *MockDockerClient) VolumeList(ctx context.Context, filter filters.Args) 
 func (mr *MockDockerClientMockRecorder) VolumeList(ctx, filter interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VolumeList", reflect.TypeOf((*MockDockerClient)(nil).VolumeList), ctx, filter)
+}
+
+// VolumeRemove mocks base method
+func (m *MockDockerClient) VolumeRemove(ctx context.Context, volumeID string, force bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VolumeRemove", ctx, volumeID, force)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// VolumeRemove indicates an expected call of VolumeRemove
+func (mr *MockDockerClientMockRecorder) VolumeRemove(ctx, volumeID, force interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VolumeRemove", reflect.TypeOf((*MockDockerClient)(nil).VolumeRemove), ctx, volumeID, force)
 }

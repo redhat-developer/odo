@@ -1,6 +1,9 @@
 package component
 
 import (
+	"fmt"
+
+	"github.com/docker/docker/api/types/mount"
 	"github.com/pkg/errors"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
@@ -81,9 +84,40 @@ func (a Adapter) Delete(labels map[string]string) error {
 		if err != nil {
 			return errors.Wrapf(err, "unable to remove container ID %s of component %s", container.ID, componentName)
 		}
-	}
 
-	// TODO: Delete container volumes once https://github.com/openshift/odo/issues/2849 is implemented.
+		// Generate a list of mounted volumes of the odo-managed container
+		volumeNames := map[string]string{}
+		for _, m := range container.Mounts {
+
+			if m.Type != mount.TypeVolume {
+				continue
+			}
+			volumeNames[m.Name] = m.Name
+		}
+
+		// Locate the source volume of the container
+		volumeLabels := utils.GetProjectVolumeLabels(componentName)
+		vols, err := a.Client.GetVolumesByLabel(volumeLabels)
+		if err != nil {
+			return errors.Wrapf(err, "unable to retrieve source volume for component "+componentName)
+		}
+		if len(vols) == 0 {
+			return fmt.Errorf("unable to find source volume for component %s", componentName)
+		}
+
+		for _, vol := range vols {
+
+			// If the volume was found to be attached to the component's container, then delete the volume.
+			if _, ok := volumeNames[vol.Name]; ok {
+				err := a.Client.RemoveVolume(vol.Name)
+				if err != nil {
+					return errors.Wrapf(err, "Unable to remove volume %s of component %s", vol.Name, componentName)
+				}
+			}
+
+		}
+
+	}
 
 	return nil
 

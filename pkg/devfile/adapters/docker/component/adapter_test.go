@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/mount"
+	volumeTypes "github.com/docker/docker/api/types/volume"
 	"github.com/golang/mock/gomock"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
@@ -174,6 +176,9 @@ func TestAdapterDelete(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
+			containerID := "my-id"
+			volumeID := "my-volume-name"
+
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
@@ -204,9 +209,15 @@ func TestAdapterDelete(t *testing.T) {
 			if tt.componentExists {
 				labeledContainers = []types.Container{
 					{
-						ID: "my-id",
+						ID: containerID,
 						Labels: map[string]string{
 							"component": tt.componentName,
+						},
+						Mounts: []types.MountPoint{
+							{
+								Type: mount.TypeVolume,
+								Name: volumeID,
+							},
 						},
 					},
 				}
@@ -217,7 +228,22 @@ func TestAdapterDelete(t *testing.T) {
 				mockDockerClient.EXPECT().ContainerList(gomock.Any(), gomock.Any()).Return(labeledContainers, nil)
 
 				if tt.componentExists {
-					mockDockerClient.EXPECT().ContainerRemove(gomock.Any(), gomock.Eq("my-id"), gomock.Any()).Return(nil)
+					mockDockerClient.EXPECT().VolumeList(gomock.Any(), gomock.Any()).Return(volumeTypes.VolumeListOKBody{
+						Volumes: []*types.Volume{
+							{
+								Name: volumeID,
+								Labels: map[string]string{
+									"component": tt.componentName,
+									"type":      "projects",
+								},
+							},
+						},
+					}, nil)
+
+					mockDockerClient.EXPECT().ContainerRemove(gomock.Any(), gomock.Eq(containerID), gomock.Any()).Return(nil)
+
+					mockDockerClient.EXPECT().VolumeRemove(gomock.Any(), gomock.Eq(volumeID), gomock.Eq(true)).Return(nil)
+
 				}
 			}
 

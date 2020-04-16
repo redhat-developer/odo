@@ -39,6 +39,8 @@ var _ = Describe("odo docker devfile delete command tests", func() {
 		label := "component=" + cmpName
 		dockerClient.StopContainers(label)
 
+		dockerClient.RemoveVolumesByComponentAndType(cmpName, "projects")
+
 		helper.Chdir(currentWorkingDirectory)
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
@@ -57,11 +59,14 @@ var _ = Describe("odo docker devfile delete command tests", func() {
 
 			Expect(dockerClient.GetRunningContainersByLabel("component=" + cmpName)).To(HaveLen(1))
 
+			Expect(dockerClient.ListVolumesOfComponentAndType(cmpName, "projects")).To(HaveLen(1))
+
 			helper.CmdShouldPass("odo", "delete", "--devfile", "devfile.yaml", "-f")
 
 			Expect(dockerClient.GetRunningContainersByLabel("component=" + cmpName)).To(HaveLen(0))
 
-			// TODO: Check volumes
+			Expect(dockerClient.ListVolumesOfComponentAndType(cmpName, "projects")).To(HaveLen(0))
+
 		})
 	})
 
@@ -76,14 +81,17 @@ var _ = Describe("odo docker devfile delete command tests", func() {
 
 			Expect(dockerClient.GetRunningContainersByLabel("component=" + cmpName)).To(HaveLen(1))
 
+			Expect(dockerClient.ListVolumesOfComponentAndType(cmpName, "projects")).To(HaveLen(1))
+
 			helper.CmdShouldPass("odo", "delete", "--devfile", "devfile.yaml", "-f", "--all")
 
 			Expect(dockerClient.GetRunningContainersByLabel("component=" + cmpName)).To(HaveLen(0))
 
+			Expect(dockerClient.ListVolumesOfComponentAndType(cmpName, "projects")).To(HaveLen(0))
+
 			files := helper.ListFilesInDir(filepath.Join(context, ".odo"))
 			Expect(files).To(Not(ContainElement("env")))
 
-			// TODO: Check volumes
 		})
 	})
 })

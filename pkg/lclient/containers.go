@@ -74,6 +74,24 @@ func (dc *Client) RemoveContainer(containerID string) error {
 	return nil
 }
 
+// RemoveVolume removes a volume with the specified volume ID
+func (dc *Client) RemoveVolume(volumeID string) error {
+	err := dc.Client.VolumeRemove(dc.Context, volumeID, true)
+	if err != nil {
+		return errors.Wrapf(err, "unable to remove volume %s", volumeID)
+	}
+	return nil
+}
+
+// RemoveVolume removes a volume with the specified volume ID
+func (dc *Client) RemoveVolume(volumeID string) error {
+	err := dc.Client.VolumeRemove(dc.Context, volumeID, true)
+	if err != nil {
+		return errors.Wrapf(err, "unable to remove volume %s", volumeID)
+	}
+	return nil
+}
+
 // GetContainerConfigAndMounts takes in a given container ID and retrieves its corresponding container config
 func (dc *Client) GetContainerConfigAndMounts(containerID string) (*container.Config, []types.MountPoint, error) {
 	containerJSON, err := dc.Client.ContainerInspect(dc.Context, containerID)
