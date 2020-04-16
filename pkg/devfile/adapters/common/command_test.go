@@ -508,6 +508,7 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 
 	tests := []struct {
 		name                string
+		initCommand         string
 		buildCommand        string
 		runCommand          string
 		numberOfCommands    int
@@ -517,6 +518,7 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 	}{
 		{
 			name:             "Case: Default Devfile Commands",
+			initCommand:      emptyString,
 			buildCommand:     emptyString,
 			runCommand:       emptyString,
 			numberOfCommands: 2,
@@ -525,6 +527,7 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 		},
 		{
 			name:             "Case: Default Build Command and Provided Run Command",
+			initCommand:      emptyString,
 			buildCommand:     emptyString,
 			runCommand:       "customcommand",
 			numberOfCommands: 2,
@@ -533,6 +536,7 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 		},
 		{
 			name:             "Case: Provided Build Command and Provided Run Command",
+			initCommand:      emptyString,
 			buildCommand:     "customcommand",
 			runCommand:       "customcommand",
 			numberOfCommands: 2,
@@ -541,6 +545,7 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 		},
 		{
 			name:             "Case: No Dockerimage Component",
+			initCommand:      emptyString,
 			buildCommand:     "customcommand",
 			runCommand:       "customcommand",
 			numberOfCommands: 0,
@@ -549,6 +554,7 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 		},
 		{
 			name:             "Case: Provided Wrong Build Command and Provided Run Command",
+			initCommand:      emptyString,
 			buildCommand:     "customcommand123",
 			runCommand:       "customcommand",
 			numberOfCommands: 1,
@@ -557,6 +563,7 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 		},
 		{
 			name:                "Case: Missing Build Command and Provided Run Command",
+			initCommand:         emptyString,
 			buildCommand:        emptyString,
 			runCommand:          "customcommand",
 			numberOfCommands:    1,
@@ -576,7 +583,7 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 				},
 			}
 
-			pushCommands, err := ValidateAndGetPushDevfileCommands(devObj.Data, tt.buildCommand, tt.runCommand)
+			pushCommands, err := ValidateAndGetPushDevfileCommands(devObj.Data, tt.initCommand, tt.buildCommand, tt.runCommand)
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("TestValidateAndGetPushDevfileCommands unexpected error when validating commands wantErr: %v err: %v", tt.wantErr, err)
 			} else if tt.wantErr && err != nil {
