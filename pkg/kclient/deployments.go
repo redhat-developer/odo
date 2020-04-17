@@ -47,6 +47,7 @@ func (c *Client) WaitForDeploymentRollout(deploymentName string) (*appsv1.Deploy
 	glog.V(4).Infof("Waiting for %s deployment rollout", deploymentName)
 	s := log.Spinner("Waiting for component to start")
 	defer s.End(false)
+
 	w, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + deploymentName})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to watch deployment")
