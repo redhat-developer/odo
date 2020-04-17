@@ -710,8 +710,7 @@ func componentTests(args ...string) {
 			helper.CmdShouldPass("odo", append(args, "push", "--context", context)...)
 			helper.CmdShouldPass("odo", append(args, "url", "create", url2, "--context", context)...)
 			out := helper.CmdShouldPass("odo", append(args, "describe", "--context", context)...)
-			helper.MatchAllInOutput(out, []string{"exposed via 8080", fmt.Sprintf("%s will be exposed via 8080", url2)})
-			Expect(out).ToNot(ContainSubstring(url1))
+			helper.MatchAllInOutput(out, []string{"exposed via 8080", url1, fmt.Sprintf("%s will be exposed via 8080", url2)})
 		})
 	})
 
