@@ -246,9 +246,9 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 			o.CustomResource = o.CustomResourceDefinition["kind"].(string)
 			csvs, err := o.KClient.GetClusterServiceVersionList()
 
-			csv, err := isCRInCluster(o.CustomResource, csvs)
+			csv, err := doesCRExist(o.CustomResource, csvs)
 			if err != nil {
-				return errors.New(fmt.Sprintf("Could not find specified service/custom resource: %s\nPlease check the \"kind\" field in the yaml (it's case-sensitive)", o.CustomResource))
+				return fmt.Errorf("Could not find specified service/custom resource: %s\nPlease check the \"kind\" field in the yaml (it's case-sensitive)", o.CustomResource)
 			}
 
 			// all is well, let's populate the fields required for creating operator backed service
@@ -474,7 +474,7 @@ func getAlmExample(almExamples []map[string]interface{}, crd, operator string) (
 	return nil, errors.Errorf("Could not find example yaml definition for %q service in %q operator's definition.\nPlease provide a file containing yaml specification to start the service from operator\n", crd, operator)
 }
 
-func isCRInCluster(kind string, csvs *olmv1alpha1.ClusterServiceVersionList) (olmv1alpha1.ClusterServiceVersion, error) {
+func doesCRExist(kind string, csvs *olmv1alpha1.ClusterServiceVersionList) (olmv1alpha1.ClusterServiceVersion, error) {
 	for _, csv := range csvs.Items {
 		for _, operatorCR := range csv.Spec.CustomResourceDefinitions.Owned {
 			if kind == operatorCR.Kind {
