@@ -3,8 +3,12 @@
 package watch
 
 import (
-	"bytes"
 	"fmt"
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/testingutil"
+	"github.com/openshift/odo/pkg/util"
+	"github.com/pkg/errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -15,12 +19,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
-	"github.com/openshift/odo/pkg/testingutil"
-	"github.com/pkg/errors"
 )
 
 // setUpF8AnalyticsComponentSrc sets up a mock analytics component source base for observing changes to source files.
@@ -105,47 +103,18 @@ type mockPushParameters struct {
 
 var mockPush mockPushParameters
 
-// Mocks the devfile push function that's called when odo watch pushes to a component
-func mockDevfilePush(parameters common.PushParameters) error {
+// Mocks the devFile push function that's called when odo watch pushes to a component
+func mockDevFilePush(parameters common.PushParameters) error {
 	muLock.Lock()
 	defer muLock.Unlock()
-
-	for _, expChangedFile := range ExpectedChangedFiles {
-		found := false
-		// Verify every file in expected file changes to be actually observed to be changed
-		// If found exactly same or different, return from PushLocal and signal exit for watch so that the watch terminates gracefully
-		for _, gotChangedFile := range parameters.WatchFiles {
-			wantedFileDetail := CompDirStructure[filepath.FromSlash(expChangedFile)]
-			if filepath.Join(wantedFileDetail.FileParent, wantedFileDetail.FilePath) == gotChangedFile {
-				found = true
-			}
-		}
-		if !found {
-			ExtChan <- true
-			fmt.Printf("received %+v which is not same as expected list %+v", parameters.WatchFiles, strings.Join(ExpectedChangedFiles, ","))
-			os.Exit(1)
-		}
+	if parameters.Show != mockPush.show {
+		fmt.Printf("some of the push parameters are different, wanted: %v, got: %v", mockPush, []string{
+			"show:" + strconv.FormatBool(parameters.Show),
+		})
+		os.Exit(1)
 	}
 
-	for _, deletedFile := range DeleteFiles {
-		found := false
-		// Verify every file in expected deleted file changes to be actually observed to be changed
-		// If found exactly same or different, return from PushLocal and signal exit for watch so that the watch terminates gracefully
-		for _, gotChangedFile := range parameters.WatchDeletedFiles {
-			wantedFileDetail := CompDirStructure[filepath.FromSlash(deletedFile)]
-			if filepath.Join(wantedFileDetail.FileParent, wantedFileDetail.FilePath) == filepath.Join(wantedFileDetail.FileParent, filepath.Base(gotChangedFile)) {
-				found = true
-			}
-		}
-		if !found {
-			ExtChan <- true
-			fmt.Printf("received deleted files: %+v which is not same as expected list %+v", parameters.WatchDeletedFiles, strings.Join(DeleteFiles, ","))
-			os.Exit(1)
-		}
-	}
-
-	ExtChan <- true
-	return nil
+	return commonChecks(parameters.Path, parameters.WatchFiles, parameters.WatchDeletedFiles, parameters.IgnoredFiles)
 }
 
 // Mock PushLocal to collect changed files and compare against expected changed files
@@ -158,7 +127,14 @@ func mockPushLocal(client *occlient.Client, componentName string, applicationNam
 		})
 		os.Exit(1)
 	}
+
+	return commonChecks(path, files, delFiles, globExps)
+}
+
+// commonChecks is the common checker for both the push handlers
+func commonChecks(path string, files []string, delFiles []string, globExps []string) error {
 	sort.Strings(globExps)
+	mockPush.globExps = util.GetAbsGlobExps(path, mockPush.globExps)
 	sort.Strings(mockPush.globExps)
 	if !reflect.DeepEqual(globExps, mockPush.globExps) {
 		fmt.Printf("some of the push parameters are different, wanted: %v, got: %v", mockPush.globExps, globExps)
@@ -219,17 +195,21 @@ func TestWatchAndPush(t *testing.T) {
 		fileModifications []testingutil.FileProperties
 		requiredFilePaths []testingutil.FileProperties
 		setupEnv          func(componentName string, requiredFilePaths []testingutil.FileProperties) (string, map[string]testingutil.FileProperties, error)
+		isExperimental    bool
 	}{
 		{
 			name:            "Case 1: Valid watch with list of files to be ignored with a append event",
 			componentName:   "license-analysis",
 			applicationName: "fabric8-analytics",
 			path:            "fabric8-analytics-license-analysis",
-			ignores:         []string{".git", "tests/", "LICENSE"},
-			delayInterval:   1,
-			wantErr:         false,
-			show:            false,
-			forcePush:       false,
+			// the test setup uses ioutil for creating temp directories and folders.
+			// it creates temp files and folders with random strings attached to the end of their path
+			// thus we use tests*/
+			ignores:       []string{".git", "tests*/", "LICENSE"},
+			delayInterval: 1,
+			wantErr:       false,
+			show:          false,
+			forcePush:     false,
 			requiredFilePaths: []testingutil.FileProperties{
 				{
 					FilePath:         "src",
@@ -327,7 +307,7 @@ func TestWatchAndPush(t *testing.T) {
 			componentName:   "license-analysis",
 			applicationName: "fabric8-analytics",
 			path:            "fabric8-analytics-license-analysis",
-			ignores:         []string{".git", "tests/", "LICENSE"},
+			ignores:         []string{".git", "tests*/", "LICENSE"},
 			delayInterval:   1,
 			wantErr:         false,
 			show:            false,
@@ -429,7 +409,7 @@ func TestWatchAndPush(t *testing.T) {
 			componentName:   "license-analysis",
 			applicationName: "fabric8-analytics",
 			path:            "fabric8-analytics-license-analysis",
-			ignores:         []string{".git", "tests/", "LICENSE"},
+			ignores:         []string{".git", "tests*/", "LICENSE"},
 			delayInterval:   1,
 			wantErr:         false,
 			show:            false,
@@ -525,7 +505,7 @@ func TestWatchAndPush(t *testing.T) {
 			componentName:   "license-analysis",
 			applicationName: "fabric8-analytics",
 			path:            "fabric8-analytics-license-analysis",
-			ignores:         []string{".git", "tests/", "LICENSE"},
+			ignores:         []string{".git", "tests*/", "LICENSE"},
 			delayInterval:   1,
 			wantErr:         false,
 			show:            false,
@@ -627,7 +607,7 @@ func TestWatchAndPush(t *testing.T) {
 			componentName:   "license-analysis",
 			applicationName: "fabric8-analytics",
 			path:            "fabric8-analytics-license-analysis",
-			ignores:         []string{".git", "tests/", "LICENSE"},
+			ignores:         []string{".git", "tests*/", "LICENSE"},
 			delayInterval:   1,
 			wantErr:         false,
 			show:            false,
@@ -733,612 +713,116 @@ func TestWatchAndPush(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		ExtChan = make(chan bool)
-		StartChan = make(chan bool)
-		t.Log("Running test: ", tt.name)
-		t.Run(tt.name, func(t *testing.T) {
-			mockPush = mockPushParameters{
-				componentName:   tt.componentName,
-				applicationName: tt.applicationName,
-				path:            tt.path,
-				isForcePush:     tt.forcePush,
-				globExps:        tt.ignores,
-				show:            tt.show,
+		// run the test twice, once with experimental on and once with off
+		for i := 0; i < 2; i++ {
+			if i == 1 {
+				tt.isExperimental = true
+				tt.name = strings.ReplaceAll(tt.name, "Case", "(Experimental mode on) Case")
 			}
+			ExtChan = make(chan bool)
+			StartChan = make(chan bool)
+			t.Log("Running test: ", tt.name)
+			t.Run(tt.name, func(t *testing.T) {
+				mockPush = mockPushParameters{
+					componentName:   tt.componentName,
+					applicationName: tt.applicationName,
+					path:            tt.path,
+					isForcePush:     tt.forcePush,
+					globExps:        tt.ignores,
+					show:            tt.show,
+				}
 
-			ExpectedChangedFiles = tt.want
-			DeleteFiles = tt.wantDeleted
-			// Create mock component source
-			basePath, dirStructure, err := tt.setupEnv(tt.path, tt.requiredFilePaths)
-			CompDirStructure = dirStructure
-			if err != nil {
-				t.Errorf("failed to setup test environment. Error %v", err)
-			}
+				ExpectedChangedFiles = tt.want
+				DeleteFiles = tt.wantDeleted
+				// Create mock component source
+				basePath, dirStructure, err := tt.setupEnv(tt.path, tt.requiredFilePaths)
+				CompDirStructure = dirStructure
+				if err != nil {
+					t.Errorf("failed to setup test environment. Error %v", err)
+				}
 
-			fkclient, _ := occlient.FakeNew()
+				fkclient, _ := occlient.FakeNew()
 
-			// Clear all the created temporary files
-			defer os.RemoveAll(basePath)
-			t.Logf("Done with basePath creation and client init will trigger WatchAndPush and file modifications next...\n%+v\n", CompDirStructure)
+				// Clear all the created temporary files
+				defer os.RemoveAll(basePath)
+				t.Logf("Done with basePath creation and client init will trigger WatchAndPush and file modifications next...\n%+v\n", CompDirStructure)
 
-			go func() {
-				t.Logf("Starting file simulations \n%+v\n", tt.fileModifications)
-				// Simulating file modifications for watch to observe
-				pingTimeout := time.After(time.Duration(1) * time.Minute)
-				for {
-					select {
-					case startMsg := <-StartChan:
-						if startMsg {
-							for _, fileModification := range tt.fileModifications {
+				go func() {
+					t.Logf("Starting file simulations \n%+v\n", tt.fileModifications)
+					// Simulating file modifications for watch to observe
+					pingTimeout := time.After(time.Duration(1) * time.Minute)
+					for {
+						select {
+						case startMsg := <-StartChan:
+							if startMsg {
+								for _, fileModification := range tt.fileModifications {
 
-								intendedFileRelPath := fileModification.FilePath
-								if fileModification.FileParent != "" {
-									intendedFileRelPath = filepath.Join(fileModification.FileParent, fileModification.FilePath)
-								}
+									intendedFileRelPath := fileModification.FilePath
+									if fileModification.FileParent != "" {
+										intendedFileRelPath = filepath.Join(fileModification.FileParent, fileModification.FilePath)
+									}
 
-								fileModification.FileParent = CompDirStructure[fileModification.FileParent].FilePath
-								if _, ok := CompDirStructure[intendedFileRelPath]; ok {
-									fileModification.FilePath = CompDirStructure[intendedFileRelPath].FilePath
-								}
+									fileModification.FileParent = CompDirStructure[fileModification.FileParent].FilePath
+									if _, ok := CompDirStructure[intendedFileRelPath]; ok {
+										fileModification.FilePath = CompDirStructure[intendedFileRelPath].FilePath
+									}
 
-								newFilePath, err := testingutil.SimulateFileModifications(basePath, fileModification)
-								if err != nil {
-									t.Errorf("CompDirStructure: %+v\nFileModification %+v\nError %v\n", CompDirStructure, fileModification, err)
-								}
+									newFilePath, err := testingutil.SimulateFileModifications(basePath, fileModification)
+									if err != nil {
+										t.Errorf("CompDirStructure: %+v\nFileModification %+v\nError %v\n", CompDirStructure, fileModification, err)
+									}
 
-								// If file operation is create, store even such modifications in dir structure for future references
-								if _, ok := CompDirStructure[intendedFileRelPath]; !ok && fileModification.ModificationType == testingutil.CREATE {
 									muLock.Lock()
-									CompDirStructure[intendedFileRelPath] = testingutil.FileProperties{
-										FilePath:         filepath.Base(newFilePath),
-										FileParent:       filepath.Dir(newFilePath),
-										FileType:         testingutil.Directory,
-										ModificationType: testingutil.CREATE,
+									// If file operation is create, store even such modifications in dir structure for future references
+									if _, ok := CompDirStructure[intendedFileRelPath]; !ok && fileModification.ModificationType == testingutil.CREATE {
+										CompDirStructure[intendedFileRelPath] = testingutil.FileProperties{
+											FilePath:         filepath.Base(newFilePath),
+											FileParent:       filepath.Dir(newFilePath),
+											FileType:         testingutil.Directory,
+											ModificationType: testingutil.CREATE,
+										}
 									}
 									muLock.Unlock()
 								}
 							}
+							t.Logf("The CompDirStructure is \n%+v\n", CompDirStructure)
+							return
+						case <-pingTimeout:
+							break
 						}
-						t.Logf("The CompDirStructure is \n%+v\n", CompDirStructure)
-						return
-					case <-pingTimeout:
-						break
 					}
+				}()
+
+				// Start WatchAndPush, the unit tested function
+				t.Logf("Starting WatchAndPush now\n")
+
+				watchParameters := WatchParameters{
+					ComponentName: tt.componentName,
+					Path:          basePath,
+					// convert the glob expressions to absolute form for WatchAndPush to work properly
+					FileIgnores:   util.GetAbsGlobExps(basePath, tt.ignores),
+					PushDiffDelay: tt.delayInterval,
+					StartChan:     StartChan,
+					ExtChan:       ExtChan,
+					Show:          tt.show,
 				}
-			}()
 
-			// Start WatchAndPush, the unit tested function
-			t.Logf("Starting WatchAndPush now\n")
-			err = WatchAndPush(
-				fkclient,
-				new(bytes.Buffer),
-				WatchParameters{
-					ComponentName:   tt.componentName,
-					ApplicationName: tt.applicationName,
-					Path:            basePath,
-					FileIgnores:     tt.ignores,
-					PushDiffDelay:   tt.delayInterval,
-					StartChan:       StartChan,
-					ExtChan:         ExtChan,
-					Show:            tt.show,
-					WatchHandler:    mockPushLocal,
-				},
-			)
-			if err != nil && err != ErrUserRequestedWatchExit {
-				t.Errorf("error in WatchAndPush %+v", err)
-			}
-		})
-	}
-}
+				if tt.isExperimental {
+					watchParameters.DevfileWatchHandler = mockDevFilePush
+				} else {
+					watchParameters.ApplicationName = tt.applicationName
+					watchParameters.WatchHandler = mockPushLocal
+				}
 
-func TestDevfileWatchAndPush(t *testing.T) {
-	tests := []struct {
-		name              string
-		path              string
-		ignores           []string
-		show              bool
-		forcePush         bool
-		delayInterval     int
-		wantErr           bool
-		want              []string
-		wantDeleted       []string
-		fileModifications []testingutil.FileProperties
-		requiredFilePaths []testingutil.FileProperties
-		setupEnv          func(componentName string, requiredFilePaths []testingutil.FileProperties) (string, map[string]testingutil.FileProperties, error)
-	}{
-		{
-			name:          "Case 1: Valid watch with list of files to be ignored with a append event",
-			path:          "fabric8-analytics-license-analysis",
-			ignores:       []string{".git", "tests/", "LICENSE"},
-			delayInterval: 1,
-			wantErr:       false,
-			show:          false,
-			forcePush:     false,
-			requiredFilePaths: []testingutil.FileProperties{
-				{
-					FilePath:         "src",
-					FileParent:       "",
-					FileType:         testingutil.Directory,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "tests",
-					FileParent:       "",
-					FileType:         testingutil.Directory,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         ".git",
-					FileParent:       "",
-					FileType:         testingutil.Directory,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "LICENSE",
-					FileParent:       "",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "__init__.py",
-					FileParent:       "",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "__init__.py",
-					FileParent:       "src",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "main.py",
-					FileParent:       "src",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "__init__.py",
-					FileParent:       "tests",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "test1.py",
-					FileParent:       "tests",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.CREATE,
-				},
-			},
-			fileModifications: []testingutil.FileProperties{
-				{
-					FilePath:         "__init__.py",
-					FileParent:       "",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.APPEND,
-				},
-				{
-					FilePath:         "read_licenses.py",
-					FileParent:       "src",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "read_licenses.py",
-					FileParent:       "src",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.APPEND,
-				},
-				{
-					FilePath:         "test_read_licenses.py",
-					FileParent:       "tests",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "tests",
-					FileParent:       "",
-					FileType:         testingutil.Directory,
-					ModificationType: testingutil.DELETE,
-				},
-			},
-			want:        []string{"src/read_licenses.py", "__init__.py"},
-			wantDeleted: []string{},
-			setupEnv:    setUpF8AnalyticsComponentSrc,
-		},
-		{
-			name:          "Case 2: Valid watch with list of files to be ignored with a append and a delete event",
-			path:          "fabric8-analytics-license-analysis",
-			ignores:       []string{".git", "tests/", "LICENSE"},
-			delayInterval: 1,
-			wantErr:       false,
-			show:          false,
-			forcePush:     false,
-			requiredFilePaths: []testingutil.FileProperties{
-				{
-					FilePath:         "src",
-					FileParent:       "",
-					FileType:         testingutil.Directory,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "tests",
-					FileParent:       "",
-					FileType:         testingutil.Directory,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         ".git",
-					FileParent:       "",
-					FileType:         testingutil.Directory,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "LICENSE",
-					FileParent:       "",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "__init__.py",
-					FileParent:       "",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "__init__.py",
-					FileParent:       "src",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "main.py",
-					FileParent:       "src",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "__init__.py",
-					FileParent:       "tests",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "test1.py",
-					FileParent:       "tests",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "read_licenses.py",
-					FileParent:       "src",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.CREATE,
-				},
-			},
-			fileModifications: []testingutil.FileProperties{
-				{
-					FilePath:         "__init__.py",
-					FileParent:       "",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.APPEND,
-				},
-				{
-					FilePath:         "read_licenses.py",
-					FileParent:       "src",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.DELETE,
-				},
-				{
-					FilePath:         "test_read_licenses.py",
-					FileParent:       "tests",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "tests",
-					FileParent:       "",
-					FileType:         testingutil.Directory,
-					ModificationType: testingutil.DELETE,
-				},
-			},
-			want:        []string{"__init__.py"},
-			wantDeleted: []string{"src/read_licenses.py"},
-			setupEnv:    setUpF8AnalyticsComponentSrc,
-		},
-		{
-			name:          "Case 3: Valid watch with list of files to be ignored with a create and a delete event",
-			path:          "fabric8-analytics-license-analysis",
-			ignores:       []string{".git", "tests/", "LICENSE"},
-			delayInterval: 1,
-			wantErr:       false,
-			show:          false,
-			forcePush:     false,
-			requiredFilePaths: []testingutil.FileProperties{
-				{
-					FilePath:         "src",
-					FileParent:       "",
-					FileType:         testingutil.Directory,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "tests",
-					FileParent:       "",
-					FileType:         testingutil.Directory,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         ".git",
-					FileParent:       "",
-					FileType:         testingutil.Directory,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "LICENSE",
-					FileParent:       "",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "__init__.py",
-					FileParent:       "src",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "main.py",
-					FileParent:       "src",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "__init__.py",
-					FileParent:       "tests",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "test1.py",
-					FileParent:       "tests",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "read_licenses.py",
-					FileParent:       "src",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.CREATE,
-				},
-			},
-			fileModifications: []testingutil.FileProperties{
-				{
-					FilePath:         "__init__.py",
-					FileParent:       "",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "read_licenses.py",
-					FileParent:       "src",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.DELETE,
-				},
-				{
-					FilePath:         "test_read_licenses.py",
-					FileParent:       "tests",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "tests",
-					FileParent:       "",
-					FileType:         testingutil.Directory,
-					ModificationType: testingutil.DELETE,
-				},
-			},
-			want:        []string{"__init__.py"},
-			wantDeleted: []string{"src/read_licenses.py"},
-			setupEnv:    setUpF8AnalyticsComponentSrc,
-		},
-		{
-			name:          "Case 4: Valid watch with list of files to be ignored with a folder create event",
-			path:          "fabric8-analytics-license-analysis",
-			ignores:       []string{".git", "tests/", "LICENSE"},
-			delayInterval: 1,
-			wantErr:       false,
-			show:          false,
-			forcePush:     false,
-			requiredFilePaths: []testingutil.FileProperties{
-				{
-					FilePath:         "src",
-					FileParent:       "",
-					FileType:         testingutil.Directory,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "tests",
-					FileParent:       "",
-					FileType:         testingutil.Directory,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         ".git",
-					FileParent:       "",
-					FileType:         testingutil.Directory,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "LICENSE",
-					FileParent:       "",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "__init__.py",
-					FileParent:       "src",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "main.py",
-					FileParent:       "src",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "__init__.py",
-					FileParent:       "tests",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "test1.py",
-					FileParent:       "tests",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "read_licenses.py",
-					FileParent:       "src",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.CREATE,
-				},
-			},
-			fileModifications: []testingutil.FileProperties{
-				{
-					FilePath:         "__init__.py",
-					FileParent:       "",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "read_licenses.py",
-					FileParent:       "src",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.DELETE,
-				},
-				{
-					FilePath:         "test_read_licenses.py",
-					FileParent:       "tests",
-					FileType:         testingutil.RegularFile,
-					ModificationType: testingutil.CREATE,
-				},
-				{
-					FilePath:         "tests",
-					FileParent:       "",
-					FileType:         testingutil.Directory,
-					ModificationType: testingutil.DELETE,
-				},
-				{
-					FilePath:         "bin",
-					FileParent:       "",
-					FileType:         testingutil.Directory,
-					ModificationType: testingutil.CREATE,
-				},
-			},
-			want:        []string{"__init__.py"},
-			wantDeleted: []string{"src/read_licenses.py"},
-			setupEnv:    setUpF8AnalyticsComponentSrc,
-		},
-	}
-
-	for _, tt := range tests {
-		err := os.Setenv(experimental.OdoExperimentalEnv, "true")
-		if err != nil {
-			t.Errorf("failed to set env %s. err: '%v'", experimental.OdoExperimentalEnv, err)
+				err = WatchAndPush(
+					fkclient,
+					os.Stdout,
+					watchParameters,
+				)
+				if err != nil && err != ErrUserRequestedWatchExit {
+					t.Errorf("error in WatchAndPush %+v", err)
+				}
+			})
 		}
-		defer os.Unsetenv(experimental.OdoExperimentalEnv)
-
-		ExtChan = make(chan bool)
-		StartChan = make(chan bool)
-		t.Log("Running test: ", tt.name)
-		t.Run(tt.name, func(t *testing.T) {
-			mockPush = mockPushParameters{
-				path:        tt.path,
-				isForcePush: tt.forcePush,
-				globExps:    tt.ignores,
-				show:        tt.show,
-			}
-
-			ExpectedChangedFiles = tt.want
-			DeleteFiles = tt.wantDeleted
-			// Create mock component source
-			basePath, dirStructure, err := tt.setupEnv(tt.path, tt.requiredFilePaths)
-			CompDirStructure = dirStructure
-			if err != nil {
-				t.Errorf("failed to setup test environment. Error %v", err)
-			}
-
-			fkclient, _ := occlient.FakeNew()
-
-			// Clear all the created temporary files
-			defer os.RemoveAll(basePath)
-			t.Logf("Done with basePath creation and client init will trigger WatchAndPush and file modifications next...\n%+v\n", CompDirStructure)
-
-			go func() {
-				t.Logf("Starting file simulations \n%+v\n", tt.fileModifications)
-				// Simulating file modifications for watch to observe
-				pingTimeout := time.After(time.Duration(1) * time.Minute)
-				for {
-					select {
-					case startMsg := <-StartChan:
-						if startMsg {
-							for _, fileModification := range tt.fileModifications {
-
-								intendedFileRelPath := fileModification.FilePath
-								if fileModification.FileParent != "" {
-									intendedFileRelPath = filepath.Join(fileModification.FileParent, fileModification.FilePath)
-								}
-
-								fileModification.FileParent = CompDirStructure[fileModification.FileParent].FilePath
-								if _, ok := CompDirStructure[intendedFileRelPath]; ok {
-									fileModification.FilePath = CompDirStructure[intendedFileRelPath].FilePath
-								}
-
-								newFilePath, err := testingutil.SimulateFileModifications(basePath, fileModification)
-								if err != nil {
-									t.Errorf("CompDirStructure: %+v\nFileModification %+v\nError %v\n", CompDirStructure, fileModification, err)
-								}
-
-								// If file operation is create, store even such modifications in dir structure for future references
-								if _, ok := CompDirStructure[intendedFileRelPath]; !ok && fileModification.ModificationType == testingutil.CREATE {
-									muLock.Lock()
-									CompDirStructure[intendedFileRelPath] = testingutil.FileProperties{
-										FilePath:         filepath.Base(newFilePath),
-										FileParent:       filepath.Dir(newFilePath),
-										FileType:         testingutil.Directory,
-										ModificationType: testingutil.CREATE,
-									}
-									muLock.Unlock()
-								}
-							}
-						}
-						t.Logf("The CompDirStructure is \n%+v\n", CompDirStructure)
-						return
-					case <-pingTimeout:
-						break
-					}
-				}
-			}()
-
-			// Start WatchAndPush, the unit tested function
-			t.Logf("Starting WatchAndPush now\n")
-			err = WatchAndPush(
-				fkclient,
-				new(bytes.Buffer),
-				WatchParameters{
-					Path:                basePath,
-					FileIgnores:         tt.ignores,
-					PushDiffDelay:       tt.delayInterval,
-					StartChan:           StartChan,
-					ExtChan:             ExtChan,
-					Show:                tt.show,
-					DevfileWatchHandler: mockDevfilePush,
-				},
-			)
-			if err != nil && err != ErrUserRequestedWatchExit {
-				t.Errorf("error in WatchAndPush %+v", err)
-			}
-		})
 	}
 }

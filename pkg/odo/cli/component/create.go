@@ -81,6 +81,9 @@ const DevfilePath = "./devfile.yaml"
 // EnvFilePath is the default path of env.yaml for devfile component
 const EnvFilePath = "./.odo/env/env.yaml"
 
+// ConfigFilePath is the default path of config.yaml for s2i component
+const ConfigFilePath = "./.odo/config.yaml"
+
 var createLongDesc = ktemplates.LongDesc(`Create a configuration describing a component.
 
 If a component name is not provided, it'll be auto-generated.
@@ -293,9 +296,12 @@ func (co *CreateOptions) setResourceLimits() error {
 func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 
 	if experimental.IsExperimentalModeEnabled() {
-
 		// Add a disclaimer that we are in *experimental mode*
 		log.Experimental("Experimental mode is enabled, use at your own risk")
+
+		if util.CheckPathExists(ConfigFilePath) {
+			return errors.New("This directory already contains a component")
+		}
 
 		if len(args) == 0 {
 			co.interactive = true
@@ -322,21 +328,25 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		if co.interactive {
 			// Interactive mode
-
 			// Get component type, name and namespace from user's choice via interactive mode
-			// Component type: We provide supported devfile component list then let you choose
-			// Component name: User needs to specify the componet name, by default it is component type that user chooses
-			// Component namespace: User needs to specify component namespace, by default it is the current active namespace
-			var supDevfileCatalogList []catalog.DevfileComponentType
-			for _, devfileComponent := range catalogDevfileList.Items {
-				if devfileComponent.Support {
-					supDevfileCatalogList = append(supDevfileCatalogList, devfileComponent)
-				}
-			}
-			componentType = ui.SelectDevfileComponentType(supDevfileCatalogList)
 
+			// devfile.yaml is not present, user has to specify the component type
+			// Component type: We provide supported devfile component list then let you choose
+			if !util.CheckPathExists(DevfilePath) {
+				var supDevfileCatalogList []catalog.DevfileComponentType
+				for _, devfileComponent := range catalogDevfileList.Items {
+					if devfileComponent.Support {
+						supDevfileCatalogList = append(supDevfileCatalogList, devfileComponent)
+					}
+				}
+				componentType = ui.SelectDevfileComponentType(supDevfileCatalogList)
+			}
+
+			// Component name: User needs to specify the componet name, by default it is component type that user chooses
 			componentName = ui.EnterDevfileComponentName(componentType)
 
+			// Component namespace: User needs to specify component namespace,
+			// by default it is the current active namespace if it can't get from --project flag or --namespace flag
 			if len(co.devfileMetadata.componentNamespace) == 0 {
 				if cmd.Flags().Changed("project") {
 					componentNamespace, err = cmd.Flags().GetString("project")
@@ -351,19 +361,23 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			}
 		} else {
 			// Direct mode (User enters the full command)
-
 			// Get component type, name and namespace from user's full command
-			// Component type: Get from full command's first argument (mandatory)
-			// Component name: Get from full command's second argument (optional), by default it is component type from first argument
-			// Component namespace: Get from --project flag, by default it is the current active namespace
+
+			if util.CheckPathExists(DevfilePath) {
+				return errors.New("This directory already contains a devfile.yaml, please delete it and run the component creation command again")
+			}
+
+			// Component type: Get from full command's first argument (mandatory in direct mode)
 			componentType = args[0]
 
+			// Component name: Get from full command's second argument (optional in direct mode), by default it is component type from first argument
 			if len(args) == 2 {
 				componentName = args[1]
 			} else {
 				componentName = args[0]
 			}
 
+			// Component namespace: Get from --project flag or --namespace flag, by default it is the current active namespace
 			if len(co.devfileMetadata.componentNamespace) == 0 {
 				if cmd.Flags().Changed("project") {
 					componentNamespace, err = cmd.Flags().GetString("project")
@@ -383,13 +397,25 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		co.devfileMetadata.componentName = strings.ToLower(componentName)
 		co.devfileMetadata.componentNamespace = strings.ToLower(componentNamespace)
 
+		// If devfile.yaml is present, we don't need to download the devfile.yaml later
+		if util.CheckPathExists(DevfilePath) {
+			co.devfileMetadata.devfileSupport = true
+
+			err = co.InitEnvInfoFromContext()
+			if err != nil {
+				return err
+			}
+
+			return nil
+		}
+
 		// Categorize the sections
 		log.Info("Validation")
 
 		// Since we need to support both devfile and s2i, so we have to check if the component type is
-		// supported by devfile, if it is supported we return, but if it is not supported we still need to
-		// run all codes related with s2i
-		spinner := log.Spinner("Checking Devfile compatibility")
+		// supported by devfile, if it is supported we return and will download the corresponding devfile.yaml later,
+		// but if it is not supported we still need to run all codes related with s2i
+		spinner := log.Spinner("Checking devfile compatibility")
 
 		for _, devfileComponent := range catalogDevfileList.Items {
 			if co.devfileMetadata.componentType == devfileComponent.Name && devfileComponent.Support {
@@ -608,11 +634,11 @@ func (co *CreateOptions) Validate() (err error) {
 	if experimental.IsExperimentalModeEnabled() {
 		if co.devfileMetadata.devfileSupport {
 			// Validate if the devfile component that user wants to create already exists
-			spinner := log.Spinner("Validating Devfile")
+			spinner := log.Spinner("Validating devfile component")
 			defer spinner.End(false)
 
 			if util.CheckPathExists(EnvFilePath) {
-				return errors.New("env.yaml already exists")
+				return errors.New("This workspace directory already contains a devfile component")
 			}
 
 			err = util.ValidateK8sResourceName("component name", co.devfileMetadata.componentName)

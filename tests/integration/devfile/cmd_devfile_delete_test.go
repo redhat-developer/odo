@@ -51,7 +51,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
 			helper.Chdir(projectDirPath)
 
-			helper.CmdShouldPass("odo", "create", "nodejs", "--context", projectDirPath, "--project", namespace, componentName)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
 
@@ -74,7 +74,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
 			helper.Chdir(projectDirPath)
 
-			helper.CmdShouldPass("odo", "create", "nodejs", "--context", projectDirPath, "--project", namespace, componentName)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
 
