@@ -718,7 +718,7 @@ func (co *CreateOptions) downloadProject() error {
 	case "zip":
 		zipUrl = project.Source.Location
 	default:
-		err = errors.Errorf("Project type not supported")
+		return errors.Errorf("Project type not supported")
 	}
 
 	err = util.GetAndExtractZip(zipUrl, path)

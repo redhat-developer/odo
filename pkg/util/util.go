@@ -802,6 +802,9 @@ func GetGitHubZipURL(repoURL string) (string, error) {
 // GetAndExtractZip downloads a zip file from a URL with a http prefix or
 // takes an absolute path prefixed with file:// and extracts it to a destination
 func GetAndExtractZip(zipURL string, destination string) error {
+	if zipURL == "" {
+		return errors.Errorf("Empty zip url: %s", zipURL)
+	}
 	if !strings.Contains(zipURL, ".zip") {
 		return errors.Errorf("Invalid zip url: %s", zipURL)
 	}
@@ -818,20 +821,18 @@ func GetAndExtractZip(zipURL string, destination string) error {
 		time = strings.Replace(time, ":", "-", -1) // ":" is illegal char in windows
 		pathToZip = path.Join(os.TempDir(), "_"+time+".zip")
 
-		defer func() error {
-			err := DeletePath(pathToZip)
-			if err != nil {
-				return err
-			}
-			return nil
-		}()
-
 		err := DownloadFile(zipURL, pathToZip)
 		if err != nil {
 			return err
 		}
-	} else {
 
+		defer func() {
+			if err := DeletePath(pathToZip); err != nil {
+				glog.Errorf("Could not delete temporary directory for zip file. Error: %s", err)
+			}
+		}()
+	} else {
+		return errors.Errorf("Invalid Zip URL: %s . Should either be prefixed with file://, http:// or https://", zipURL)
 	}
 
 	_, err := Unzip(pathToZip, destination)
@@ -873,7 +874,9 @@ func Unzip(src, dest string) ([]string, error) {
 
 		if f.FileInfo().IsDir() {
 			// Make Folder
-			os.MkdirAll(fpath, os.ModePerm)
+			if err = os.MkdirAll(fpath, os.ModePerm); err != nil {
+				return filenames, err
+			}
 			continue
 		}
 
