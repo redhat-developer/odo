@@ -35,7 +35,9 @@ func (a Adapter) createComponent() (err error) {
 	// Get the storage adapter and create the volumes if it does not exist
 	stoAdapter := storage.New(a.AdapterContext, a.Client)
 	err = stoAdapter.Create(uniqueStorage)
-
+	if err != nil {
+		return errors.Wrapf(err, "Unable to create Docker storage adapter for component %s", componentName)
+	}
 	// Additionally create a docker volume to store the project source code
 	volume, err := a.Client.CreateVolume("", projectVolumeLabels)
 	if err != nil {
