@@ -183,13 +183,13 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 						// Some of the editors like vim and gedit, generate temporary buffer files during update to the file and deletes it soon after exiting from the editor
 						// So, its better to log the error rather than feeding it to error handler via `watchError = errors.Wrap(err, "unable to watch changes")`,
 						// which will terminate the watch
-						glog.Errorf("Failed getting details of the changed file %s. Ignoring the change", event.Name)
+						glog.V(4).Infof("Failed getting details of the changed file %s. Ignoring the change", event.Name)
 					}
 					// Some of the editors generate temporary buffer files during update to the file and deletes it soon after exiting from the editor
 					// So, its better to log the error rather than feeding it to error handler via `watchError = errors.Wrap(err, "unable to watch changes")`,
 					// which will terminate the watch
 					if stat == nil {
-						glog.Errorf("Ignoring event for file %s as details about the file couldn't be fetched", event.Name)
+						glog.V(4).Infof("Ignoring event for file %s as details about the file couldn't be fetched", event.Name)
 						isIgnoreEvent = true
 					}
 
@@ -341,9 +341,9 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 				}
 				dirty = false
 				showWaitingMessage = true
-				// Reset changedfiles
+				// Reset changed files
 				changedFiles = []string{}
-				// Reset deletedPaths
+				// Reset deleted Paths
 				deletedPaths = []string{}
 			}
 		}

@@ -1,12 +1,6 @@
 # See the OWNERS docs: https://git.k8s.io/community/contributors/guide/owners.md
 
 approvers:
-- mohammedzee1000
-- amitkrout
-- cdrage
-
-
-reviewers:
-- mohammedzee1000
-- amitkrout
+- dharmit
+- girishramnani
 - cdrage
