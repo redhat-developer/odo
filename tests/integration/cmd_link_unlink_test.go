@@ -26,6 +26,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 		SetDefaultConsistentlyDuration(30 * time.Second)
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		helper.CmdShouldPass("odo", "preference", "set", "pushtimeout", "480", "-f")
 		oc = helper.NewOcRunner("oc")
 		project = helper.CreateRandProject()
 	})

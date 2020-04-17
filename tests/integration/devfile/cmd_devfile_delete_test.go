@@ -13,31 +13,46 @@ import (
 
 var _ = Describe("odo devfile delete command tests", func() {
 	var namespace, context, currentWorkingDirectory, componentName string
+	var cliRunner helper.CliRunner
 
-	// TODO: all oc commands in all devfile related test should get replaced by kubectl
-	// TODO: to goal is not to use "oc"
-	oc := helper.NewOcRunner("oc")
+	// Using program commmand according to cluter type in devfile
+	if os.Getenv("KUBERNETES") == "true" {
+		cliRunner = helper.NewKubectlRunner("kubectl")
+	} else {
+		cliRunner = helper.NewOcRunner("oc")
+	}
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
-		namespace = helper.CreateRandProject()
 		context = helper.CreateNewContext()
-		currentWorkingDirectory = helper.Getwd()
-		componentName = helper.RandString(6)
-
-		helper.Chdir(context)
-
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 
 		// Devfile commands require experimental mode to be set
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+
+		if os.Getenv("KUBERNETES") == "true" {
+			homeDir := helper.GetUserHomeDir()
+			kubeConfigFile := helper.CopyKubeConfigFile(filepath.Join(homeDir, ".kube", "config"), filepath.Join(context, "config"))
+			namespace = helper.CreateRandNamespace(kubeConfigFile)
+		} else {
+			namespace = helper.CreateRandProject()
+		}
+		currentWorkingDirectory = helper.Getwd()
+		componentName = helper.RandString(6)
+
+		helper.Chdir(context)
 	})
 
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		helper.DeleteProject(namespace)
+		if os.Getenv("KUBERNETES") == "true" {
+			helper.DeleteNamespace(namespace)
+			os.Unsetenv("KUBECONFIG")
+		} else {
+			helper.DeleteProject(namespace)
+		}
 		helper.Chdir(currentWorkingDirectory)
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
@@ -51,16 +66,18 @@ var _ = Describe("odo devfile delete command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io")
+			if os.Getenv("KUBERNETES") != "true" {
+				helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io")
+			}
 
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
 
 			helper.CmdShouldPass("odo", "delete", "--devfile", "devfile.yaml", "--project", namespace, "-f")
 
-			oc.WaitAndCheckForExistence("deployments", namespace, 1)
-			oc.WaitAndCheckForExistence("pods", namespace, 1)
-			oc.WaitAndCheckForExistence("services", namespace, 1)
-			oc.WaitAndCheckForExistence("ingress", namespace, 1)
+			cliRunner.WaitAndCheckForExistence("deployments", namespace, 1)
+			cliRunner.WaitAndCheckForExistence("pods", namespace, 1)
+			cliRunner.WaitAndCheckForExistence("services", namespace, 1)
+			cliRunner.WaitAndCheckForExistence("ingress", namespace, 1)
 		})
 	})
 
@@ -74,11 +91,13 @@ var _ = Describe("odo devfile delete command tests", func() {
 
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
 
-			helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io", "--context", context)
+			if os.Getenv("KUBERNETES") != "true" {
+				helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io", "--context", context)
+			}
 
 			helper.CmdShouldPass("odo", "delete", "--devfile", "devfile.yaml", "--project", namespace, "-f", "--all")
 
-			oc.WaitAndCheckForExistence("deployments", namespace, 1)
+			cliRunner.WaitAndCheckForExistence("deployments", namespace, 1)
 
 			files := helper.ListFilesInDir(context)
 			Expect(files).To(Not(ContainElement(".odo")))

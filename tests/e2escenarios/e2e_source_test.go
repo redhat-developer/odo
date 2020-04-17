@@ -20,6 +20,7 @@ var _ = Describe("odo source e2e tests", func() {
 		oc = helper.NewOcRunner("oc")
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		helper.CmdShouldPass("odo", "preference", "set", "pushtimeout", "480", "-f")
 		project = helper.CreateRandProject()
 	})
 
