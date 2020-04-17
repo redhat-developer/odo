@@ -125,13 +125,13 @@ func (a Adapter) updateComponent() (err error) {
 			containerID := containers[0].ID
 
 			// Get the associated container config from the container ID
-			containerConfig, err := a.Client.GetContainerConfig(containerID)
+			containerConfig, mounts, err := a.Client.GetContainerConfigAndMounts(containerID)
 			if err != nil {
 				return errors.Wrapf(err, "unable to get the container config for component %s", componentName)
 			}
 
 			// See if the container needs to be updated
-			if utils.DoesContainerNeedUpdating(comp, containerConfig) {
+			if utils.DoesContainerNeedUpdating(comp, containerConfig, dockerVolumeMounts, mounts) {
 				s := log.Spinner("Updating the component " + *comp.Alias)
 				defer s.End(false)
 				// Remove the container
