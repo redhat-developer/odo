@@ -158,20 +158,28 @@ func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileInitCmd, de
 		glog.V(3).Infof("No init command was provided")
 	} else if !reflect.DeepEqual(emptyCommand, initCommand) && initCmdErr == nil {
 		isInitCommandValid = true
-		pushDevfileCommands = append(pushDevfileCommands, initCommand)
 		glog.V(3).Infof("Init command: %v", initCommand.Name)
 	}
 
 	buildCommand, buildCmdErr := GetBuildCommand(data, devfileBuildCmd)
-
 	if reflect.DeepEqual(emptyCommand, buildCommand) && buildCmdErr == nil {
 		// If there was no build command specified through odo push and no default build command in the devfile, default validate to true since the build command is optional
 		isBuildCommandValid = true
 		glog.V(3).Infof("No build command was provided")
+
+		// If init command was provided, and no build command provide log a message
+		if !reflect.DeepEqual(emptyCommand, initCommand) && initCmdErr == nil {
+			glog.V(3).Infof("Not adding init command provided, since build command wasn't provided.")
+		}
 	} else if !reflect.DeepEqual(emptyCommand, buildCommand) && buildCmdErr == nil {
 		isBuildCommandValid = true
 		pushDevfileCommands = append(pushDevfileCommands, buildCommand)
 		glog.V(3).Infof("Build command: %v", buildCommand.Name)
+
+		// Only add init command if build command is provided
+		if !reflect.DeepEqual(emptyCommand, initCommand) && initCmdErr == nil {
+			pushDevfileCommands = append(pushDevfileCommands, initCommand)
+		}
 	}
 
 	runCommand, runCmdErr := GetRunCommand(data, devfileRunCmd)

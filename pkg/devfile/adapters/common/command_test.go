@@ -332,6 +332,85 @@ func TestValidateAction(t *testing.T) {
 
 }
 
+func TestGetInitCommand(t *testing.T) {
+
+	command := "ls -la"
+	component := "alias1"
+	workDir := "/"
+	validCommandType := common.DevfileCommandTypeExec
+	emptyString := ""
+
+	var emptyCommand common.DevfileCommand
+
+	tests := []struct {
+		name           string
+		commandName    string
+		commandActions []common.DevfileCommandAction
+		wantErr        bool
+	}{
+		{
+			name:        "Case: Default Init Command",
+			commandName: emptyString,
+			commandActions: []versionsCommon.DevfileCommandAction{
+				{
+					Command:   &command,
+					Component: &component,
+					Workdir:   &workDir,
+					Type:      &validCommandType,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:        "Case: Custom Init Command",
+			commandName: "customcommand",
+			commandActions: []versionsCommon.DevfileCommandAction{
+				{
+					Command:   &command,
+					Component: &component,
+					Workdir:   &workDir,
+					Type:      &validCommandType,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:        "Case: Missing Init Command",
+			commandName: "customcommand123",
+			commandActions: []versionsCommon.DevfileCommandAction{
+				{
+					Command:   &command,
+					Component: &component,
+					Workdir:   &workDir,
+					Type:      &validCommandType,
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			devObj := devfileParser.DevfileObj{
+				Data: testingutil.TestDevfileData{
+					CommandActions: tt.commandActions,
+					ComponentType:  versionsCommon.DevfileComponentTypeDockerimage,
+				},
+			}
+
+			command, err := GetInitCommand(devObj.Data, tt.commandName)
+
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("TestGetBuildCommand: unexpected error for command \"%v\" expected: %v actual: %v", tt.commandName, tt.wantErr, err)
+			} else if !tt.wantErr && reflect.DeepEqual(emptyCommand, command) {
+				t.Errorf("TestGetBuildCommand: unexpected empty command returned for command: %v", tt.commandName)
+			}
+
+		})
+	}
+
+}
+
 func TestGetBuildCommand(t *testing.T) {
 
 	command := "ls -la"
@@ -607,7 +686,7 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 			initCommand:         "customcommand",
 			buildCommand:        emptyString,
 			runCommand:          "customcommand",
-			numberOfCommands:    2,
+			numberOfCommands:    1,
 			componentType:       versionsCommon.DevfileComponentTypeDockerimage,
 			missingBuildCommand: true,
 			wantErr:             false,
