@@ -513,6 +513,7 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 		runCommand          string
 		numberOfCommands    int
 		componentType       versionsCommon.DevfileComponentType
+		missingInitCommand  bool
 		missingBuildCommand bool
 		wantErr             bool
 	}{
@@ -571,6 +572,46 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 			missingBuildCommand: true,
 			wantErr:             false,
 		},
+		{
+			name:             "Case: Optional Init Command with provided Build and Run Command",
+			initCommand:      "customcommand",
+			buildCommand:     "customcommand",
+			runCommand:       "customcommand",
+			numberOfCommands: 3,
+			componentType:    versionsCommon.DevfileComponentTypeDockerimage,
+			wantErr:          false,
+		},
+		{
+			name:               "Case: Missing Init Command with provided Build and Run Command",
+			initCommand:        emptyString,
+			buildCommand:       "customcommand",
+			runCommand:         "customcommand",
+			numberOfCommands:   2,
+			componentType:      versionsCommon.DevfileComponentTypeDockerimage,
+			missingInitCommand: true,
+			wantErr:            false,
+		},
+		{
+			name:                "Case: Missing Init and Build Command with provided Run Command",
+			initCommand:         emptyString,
+			buildCommand:        emptyString,
+			runCommand:          "customcommand",
+			numberOfCommands:    1,
+			componentType:       versionsCommon.DevfileComponentTypeDockerimage,
+			missingInitCommand:  true,
+			missingBuildCommand: true,
+			wantErr:             false,
+		},
+		{
+			name:                "Case: Missing Build Command with provided Init and Run Command",
+			initCommand:         "customcommand",
+			buildCommand:        emptyString,
+			runCommand:          "customcommand",
+			numberOfCommands:    2,
+			componentType:       versionsCommon.DevfileComponentTypeDockerimage,
+			missingBuildCommand: true,
+			wantErr:             false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -579,6 +620,7 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 				Data: testingutil.TestDevfileData{
 					CommandActions:      actions,
 					ComponentType:       tt.componentType,
+					MissingInitCommand:  tt.missingInitCommand,
 					MissingBuildCommand: tt.missingBuildCommand,
 				},
 			}

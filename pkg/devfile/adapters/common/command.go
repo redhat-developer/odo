@@ -153,7 +153,7 @@ func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileInitCmd, de
 
 	initCommand, initCmdErr := GetInitCommand(data, devfileInitCmd)
 	if reflect.DeepEqual(emptyCommand, initCommand) && initCmdErr == nil {
-		// If there was no build command specified through odo push and no default build command in the devfile, default validate to true since the build command is optional
+		// If there was no init command specified through odo push and no default init command in the devfile, default validate to true since the init command is optional
 		isInitCommandValid = true
 		glog.V(3).Infof("No init command was provided")
 	} else if !reflect.DeepEqual(emptyCommand, initCommand) && initCmdErr == nil {

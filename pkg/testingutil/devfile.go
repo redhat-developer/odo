@@ -8,6 +8,7 @@ import (
 type TestDevfileData struct {
 	ComponentType       versionsCommon.DevfileComponentType
 	CommandActions      []versionsCommon.DevfileCommandAction
+	MissingInitCommand  bool
 	MissingBuildCommand bool
 }
 

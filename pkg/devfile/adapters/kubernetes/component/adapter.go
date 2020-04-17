@@ -427,94 +427,166 @@ func (a Adapter) waitAndGetComponentPod(hideSpinner bool) (*corev1.Pod, error) {
 
 // Push syncs source code from the user's disk to the component
 func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand, componentExists, show bool, podName string, containers []corev1.Container) (err error) {
-	var initRequired, buildRequired bool
+	//var initRequired, buildRequired bool
 	var s *log.Status
 
-	if len(pushDevfileCommands) == 1 {
-		// if there is one command, it is the mandatory run command. No need to build.
-		buildRequired = false
-		initRequired = false
-	} else if len(pushDevfileCommands) == 2 {
-		// if there are two commands, it is the optional build command and the mandatory run command, set buildRequired to true
-		buildRequired = true
-	} else if len(pushDevfileCommands) == 3 {
-		// if there are three commands, it is the optional init command, optional build command and the mandatory run command, set initRequired and buildRequired to true
-		buildRequired = true
-		initRequired = true
-	} else {
-		return fmt.Errorf("error executing devfile commands - there should be at least 1 command or at most 2 commands, currently there are %v commands", len(pushDevfileCommands))
+	// if len(pushDevfileCommands) == 1 {
+	// 	// if there is one command, it is the mandatory run command. No need to build.
+	// 	buildRequired = false
+	// 	initRequired = false
+	// } else if len(pushDevfileCommands) == 2 {
+	// 	// if there are two commands, it is the optional build command and the mandatory run command, set buildRequired to true
+
+	// 	buildRequired = true
+
+	// } else if len(pushDevfileCommands) == 3 {
+	// 	// if there are three commands, it is the optional init command, optional build command and the mandatory run command, set initRequired and buildRequired to true
+	// 	buildRequired = true
+	// 	initRequired = true
+	// } else {
+	// 	return fmt.Errorf("error executing devfile commands - there should be at least 1 command or at most 2 commands, currently there are %v commands", len(pushDevfileCommands))
+	// }
+
+	type CommandNames struct {
+		defaultName string
+		adapterName string
 	}
 
-	for i := 0; i < len(pushDevfileCommands); i++ {
-		command := pushDevfileCommands[i]
-
-		// Exec the devBuild command if buildRequired is true or devInit if initRequired
-		if (command.Name == string(common.DefaultDevfileInitCommand) || command.Name == a.devfileInitCmd) && initRequired {
-			err := a.ExecuteDevfileCommand(command, show, podName, s)
-			if err != nil {
-				return err
-			}
-			// Reset the for loop counter and iterate through all the devfile commands again for others
-			i = -1
-			// Set the buildRequired to false since we already executed the build command
-			initRequired = false
-		} else if (command.Name == string(common.DefaultDevfileBuildCommand) || command.Name == a.devfileBuildCmd) && buildRequired {
-			err := a.ExecuteDevfileCommand(command, show, podName, s)
-			if err != nil {
-				return err
-			}
-			// Reset the for loop counter and iterate through all the devfile commands again for others
-			i = -1
-			// Set the buildRequired to false since we already executed the build command
-			buildRequired = false
-		} else if (command.Name == string(common.DefaultDevfileRunCommand) || command.Name == a.devfileRunCmd) && !buildRequired {
-			// Always check for buildRequired is false, since the command may be iterated out of order and we always want to execute devBuild first if buildRequired is true. If buildRequired is false, then we don't need to build and we can execute the devRun command
-			glog.V(3).Infof("Executing devfile command %v", command.Name)
-
-			for _, action := range command.Actions {
-
-				// Check if the devfile run component containers have supervisord as the entrypoint.
-				// Start the supervisord if the odo component does not exist
-				if !componentExists {
-					err = a.InitRunContainerSupervisord(*action.Component, podName, containers)
+	commandOrder := []CommandNames{
+		CommandNames{defaultName: string(common.DefaultDevfileInitCommand), adapterName: a.devfileInitCmd},
+		CommandNames{defaultName: string(common.DefaultDevfileBuildCommand), adapterName: a.devfileBuildCmd},
+		CommandNames{defaultName: string(common.DefaultDevfileRunCommand), adapterName: a.devfileRunCmd},
+	}
+	for i, currentCommand := range commandOrder {
+		for _, command := range pushDevfileCommands {
+			if command.Name == currentCommand.defaultName || command.Name == currentCommand.adapterName {
+				if i < len(commandOrder)-1 {
+					// Any exec command such as "Init" and "Build"
+					err := a.executeDevfileCommand(command, show, podName)
 					if err != nil {
-						return
+						return err
+					}
+				} else {
+					// Last command is "Run"
+					glog.V(3).Infof("Executing devfile command %v", command.Name)
+
+					for _, action := range command.Actions {
+
+						// Check if the devfile run component containers have supervisord as the entrypoint.
+						// Start the supervisord if the odo component does not exist
+						if !componentExists {
+							err = a.InitRunContainerSupervisord(*action.Component, podName, containers)
+							if err != nil {
+								return
+							}
+						}
+
+						// Exec the supervisord ctl stop and start for the devrun program
+						type devRunExecutable struct {
+							command []string
+						}
+						devRunExecs := []devRunExecutable{
+							{
+								command: []string{common.SupervisordBinaryPath, "ctl", "stop", "all"},
+							},
+							{
+								command: []string{common.SupervisordBinaryPath, "ctl", "start", string(common.DefaultDevfileRunCommand)},
+							},
+						}
+
+						s = log.Spinner("Executing " + command.Name + " command " + fmt.Sprintf("%q", *action.Command))
+						defer s.End(false)
+
+						for _, devRunExec := range devRunExecs {
+
+							err = exec.ExecuteCommand(&a.Client, podName, *action.Component, devRunExec.command, show)
+							if err != nil {
+								s.End(false)
+								return
+							}
+						}
+						s.End(true)
 					}
 				}
-
-				// Exec the supervisord ctl stop and start for the devrun program
-				type devRunExecutable struct {
-					command []string
-				}
-				devRunExecs := []devRunExecutable{
-					{
-						command: []string{common.SupervisordBinaryPath, "ctl", "stop", "all"},
-					},
-					{
-						command: []string{common.SupervisordBinaryPath, "ctl", "start", string(common.DefaultDevfileRunCommand)},
-					},
-				}
-
-				s = log.Spinner("Executing " + command.Name + " command " + fmt.Sprintf("%q", *action.Command))
-				defer s.End(false)
-
-				for _, devRunExec := range devRunExecs {
-
-					err = exec.ExecuteCommand(&a.Client, podName, *action.Component, devRunExec.command, show)
-					if err != nil {
-						s.End(false)
-						return
-					}
-				}
-				s.End(true)
 			}
 		}
 	}
 
+	// for i := 0; i < len(pushDevfileCommands); i++ {
+	// 	command := pushDevfileCommands[i]
+
+	// 	// buildRequired = true, 2 commands [run, build]
+	// 	// run --> !buildRequired
+	// 	// 2nd for loop: build, i = 1, i = -1, buildRequired = false
+	// 	//
+	// 	// Exec the devBuild command if buildRequired is true or devInit if initRequired
+	// 	if (command.Name == string(common.DefaultDevfileInitCommand) || command.Name == a.devfileInitCmd) && initRequired {
+	// 		err := a.executeDevfileCommand(command, show, podName)
+	// 		if err != nil {
+	// 			return err
+	// 		}
+	// 		// Reset the for loop counter and iterate through all the devfile commands again for others
+	// 		i = -1
+	// 		// Set the buildRequired to false since we already executed the build command
+	// 		initRequired = false
+	// 	} else if (command.Name == string(common.DefaultDevfileBuildCommand) || command.Name == a.devfileBuildCmd) && buildRequired {
+	// 		err := a.executeDevfileCommand(command, show, podName)
+	// 		if err != nil {
+	// 			return err
+	// 		}
+	// 		// Reset the for loop counter and iterate through all the devfile commands again for others
+	// 		i = -1
+	// 		// Set the buildRequired to false since we already executed the build command
+	// 		buildRequired = false
+	// 	} else if (command.Name == string(common.DefaultDevfileRunCommand) || command.Name == a.devfileRunCmd) && !buildRequired {
+	// 		// Always check for buildRequired is false, since the command may be iterated out of order and we always want to execute devBuild first if buildRequired is true. If buildRequired is false, then we don't need to build and we can execute the devRun command
+	// 		glog.V(3).Infof("Executing devfile command %v", command.Name)
+
+	// 		for _, action := range command.Actions {
+
+	// 			// Check if the devfile run component containers have supervisord as the entrypoint.
+	// 			// Start the supervisord if the odo component does not exist
+	// 			if !componentExists {
+	// 				err = a.InitRunContainerSupervisord(*action.Component, podName, containers)
+	// 				if err != nil {
+	// 					return
+	// 				}
+	// 			}
+
+	// 			// Exec the supervisord ctl stop and start for the devrun program
+	// 			type devRunExecutable struct {
+	// 				command []string
+	// 			}
+	// 			devRunExecs := []devRunExecutable{
+	// 				{
+	// 					command: []string{common.SupervisordBinaryPath, "ctl", "stop", "all"},
+	// 				},
+	// 				{
+	// 					command: []string{common.SupervisordBinaryPath, "ctl", "start", string(common.DefaultDevfileRunCommand)},
+	// 				},
+	// 			}
+
+	// 			s = log.Spinner("Executing " + command.Name + " command " + fmt.Sprintf("%q", *action.Command))
+	// 			defer s.End(false)
+
+	// 			for _, devRunExec := range devRunExecs {
+
+	// 				err = exec.ExecuteCommand(&a.Client, podName, *action.Component, devRunExec.command, show)
+	// 				if err != nil {
+	// 					s.End(false)
+	// 					return
+	// 				}
+	// 			}
+	// 			s.End(true)
+	// 		}
+	// 	}
+	// }
+
 	return
 }
 
-func (a Adapter) ExecuteDevfileCommand(command versionsCommon.DevfileCommand, show bool, podName string, s *log.Status) error {
+func (a Adapter) executeDevfileCommand(command versionsCommon.DevfileCommand, show bool, podName string) error {
+	var s *log.Status
 	glog.V(3).Infof("Executing devfile command %v", command.Name)
 
 	for _, action := range command.Actions {
