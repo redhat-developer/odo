@@ -2,11 +2,13 @@ package devfile
 
 import (
 	"os"
+	"path"
 	"path/filepath"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/openshift/odo/tests/helper"
 )
 
@@ -79,6 +81,21 @@ var _ = Describe("odo devfile create command tests", func() {
 		It("should successfully create the devfile component", func() {
 			componentNamespace := helper.RandString(6)
 			helper.CmdShouldPass("odo", "create", "openLiberty", "--namespace", componentNamespace)
+		})
+	})
+
+	Context("When executing odo create with devfile component type argument and --context flag", func() {
+		It("should successfully create the devfile componet in the context", func() {
+			newContext := path.Join(context, "newContext")
+			devfilePath := filepath.Join(newContext, "devfile.yaml")
+			envFilePath := filepath.Join(newContext, ".odo/env/env.yaml")
+			helper.MakeDir(newContext)
+
+			helper.CmdShouldPass("odo", "create", "openLiberty", "--context", newContext)
+			output := util.CheckPathExists(devfilePath)
+			Expect(output).Should(BeTrue())
+			output = util.CheckPathExists(envFilePath)
+			Expect(output).Should(BeTrue())
 		})
 	})
 
