@@ -17,6 +17,7 @@ export CUSTOM_HOMEDIR=$ARTIFACTS_DIR
 # Integration tests
 make test-integration
 make test-integration-devfile
+make test-cmd-docker-devfile-push
 make test-cmd-login-logout
 make test-cmd-project
 make test-operator-hub
