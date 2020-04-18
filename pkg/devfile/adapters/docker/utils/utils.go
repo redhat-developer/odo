@@ -15,12 +15,19 @@ import (
 
 // ComponentExists checks if Docker containers labeled with the specified component name exists
 func ComponentExists(client lclient.Client, name string) bool {
+	containers := GetComponentContainers(client, name)
+	return len(containers) != 0
+}
+
+// GetComponentContainers returns a list of the running component containers
+func GetComponentContainers(client lclient.Client, name string) (containers []types.Container) {
 	containerList, err := client.GetContainerList()
 	if err != nil {
-		return false
+		return
 	}
-	containers := client.GetContainersByComponent(name, containerList)
-	return len(containers) != 0
+	containers = client.GetContainersByComponent(name, containerList)
+
+	return
 }
 
 // ConvertEnvs converts environment variables from the devfile structure to an array of strings, as expected by Docker
@@ -87,6 +94,7 @@ func DoesContainerNeedUpdating(component common.DevfileComponent, containerConfi
 
 }
 
+// AddProjectVolumeToComp adds the project volume to the container host config
 func AddProjectVolumeToComp(projectVolumeName string, hostConfig *container.HostConfig) *container.HostConfig {
 	mount := mount.Mount{
 		Type:   mount.TypeVolume,

@@ -2,12 +2,10 @@ package sync
 
 import (
 	taro "archive/tar"
-	"bytes"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/openshift/odo/pkg/util"
 
@@ -16,6 +14,7 @@ import (
 
 type SyncClient interface {
 	ExecCMDInContainer(string, string, []string, io.Writer, io.Writer, io.Reader, bool) error
+	ExtractProjectToComponent(string, string, string, io.Reader) error
 }
 
 // CopyFile copies localPath directory or list of files in copyFiles list to the directory in running Pod.
@@ -30,7 +29,7 @@ func CopyFile(client SyncClient, localPath string, targetPodName string, targetC
 	dest := filepath.ToSlash(filepath.Join(targetPath, filepath.Base(localPath)))
 	targetPath = filepath.ToSlash(targetPath)
 
-	glog.V(4).Infof("CopyFile arguments: localPath %s, dest %s, copyFiles %s, globalExps %s", localPath, dest, copyFiles, globExps)
+	glog.V(4).Infof("CopyFile arguments: localPath %s, dest %s, targetPath %s, copyFiles %s, globalExps %s", localPath, dest, targetPath, copyFiles, globExps)
 	reader, writer := io.Pipe()
 	// inspired from https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L235
 	go func() {
@@ -43,18 +42,12 @@ func CopyFile(client SyncClient, localPath string, targetPodName string, targetC
 		}
 
 	}()
-	// cmdArr will run inside container
-	cmdArr := []string{"tar", "xf", "-", "-C", targetPath, "--strip", "1"}
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-	err := client.ExecCMDInContainer(targetPodName, targetContainerName, cmdArr, &stdout, &stderr, reader, false)
+
+	err := client.ExtractProjectToComponent(targetPodName, targetContainerName, targetPath, reader)
 	if err != nil {
-		glog.Errorf("Command '%s' in container failed.\n", strings.Join(cmdArr, " "))
-		glog.Errorf("stdout: %s\n", stdout.String())
-		glog.Errorf("stderr: %s\n", stderr.String())
-		glog.Errorf("err: %s\n", err.Error())
 		return err
 	}
+
 	return nil
 }
 
@@ -96,23 +89,26 @@ func makeTar(srcPath, destPath string, writer io.Writer, files []string, globExp
 
 				// We use "FromSlash" to make this OS-based (Windows uses \, Linux & macOS use /)
 				// we get the relative path by joining the two
-				srcFile, err := filepath.Rel(filepath.FromSlash(srcPath), filepath.FromSlash(fileAbsolutePath))
+				destFile, err := filepath.Rel(filepath.FromSlash(srcPath), filepath.FromSlash(fileAbsolutePath))
 				if err != nil {
 					return err
 				}
 
 				// Now we get the source file and join it to the base directory.
-				srcFile = filepath.Join(filepath.Base(srcPath), srcFile)
+				srcFile := filepath.Join(filepath.Base(srcPath), destFile)
+
+				glog.V(4).Infof("makeTar srcFile: %s", srcFile)
+				glog.V(4).Infof("makeTar destFile: %s", destFile)
 
 				// The file could be a regular file or even a folder, so use recursiveTar which handles symlinks, regular files and folders
-				err = recursiveTar(filepath.Dir(srcPath), srcFile, filepath.Dir(destPath), srcFile, tarWriter, globExps)
+				err = recursiveTar(filepath.Dir(srcPath), srcFile, filepath.Dir(destPath), destFile, tarWriter, globExps)
 				if err != nil {
 					return err
 				}
 			}
 		}
 	} else {
-		return recursiveTar(filepath.Dir(srcPath), filepath.Base(srcPath), filepath.Dir(destPath), filepath.Base(destPath), tarWriter, globExps)
+		return recursiveTar(filepath.Dir(srcPath), filepath.Base(srcPath), filepath.Dir(destPath), "", tarWriter, globExps)
 	}
 
 	return nil
@@ -210,5 +206,6 @@ func recursiveTar(srcBase, srcFile, destBase, destFile string, tw *taro.Writer, 
 			return f.Close()
 		}
 	}
+
 	return nil
 }

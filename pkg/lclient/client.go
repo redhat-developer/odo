@@ -45,6 +45,7 @@ type DockerClient interface {
 	ContainerExecStart(ctx context.Context, execID string, config types.ExecStartCheck) error
 	ContainerExecAttach(ctx context.Context, execID string, config types.ExecStartCheck) (types.HijackedResponse, error)
 	ContainerExecInspect(ctx context.Context, execID string) (types.ContainerExecInspect, error)
+	CopyToContainer(ctx context.Context, container, path string, content io.Reader, options types.CopyToContainerOptions) error
 }
 
 // Client is a collection of fields used for client configuration and interaction

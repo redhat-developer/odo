@@ -1,7 +1,9 @@
 package kclient
 
 import (
+	"bytes"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -124,5 +126,23 @@ func (c *Client) ExecCMDInContainer(podName string, containerName string, cmd []
 		return errors.Wrapf(err, "error while streaming command")
 	}
 
+	return nil
+}
+
+// ExtractProjectToComponent extracts the project archive(tar) from the reader stdin
+func (c *Client) ExtractProjectToComponent(podName, containerName, targetPath string, stdin io.Reader) error {
+	// cmdArr will run inside container
+	cmdArr := []string{"tar", "xf", "-", "-C", targetPath}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	glog.V(4).Infof("Executing command %s", strings.Join(cmdArr, " "))
+	err := c.ExecCMDInContainer(podName, containerName, cmdArr, &stdout, &stderr, stdin, false)
+	if err != nil {
+		glog.Errorf("Command '%s' in container failed.\n", strings.Join(cmdArr, " "))
+		glog.Errorf("stdout: %s\n", stdout.String())
+		glog.Errorf("stderr: %s\n", stderr.String())
+		glog.Errorf("err: %s\n", err.Error())
+		return err
+	}
 	return nil
 }

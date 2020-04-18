@@ -14,6 +14,7 @@ func (dc *Client) GenerateContainerConfig(image string, entrypoint []string, cmd
 		Env:          envVars,
 		Labels:       labels,
 		ExposedPorts: ports,
+		User:         "root",
 	}
 	return containerConfig
 }

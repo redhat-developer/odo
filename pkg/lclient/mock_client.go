@@ -275,3 +275,17 @@ func (mr *MockDockerClientMockRecorder) ContainerExecInspect(ctx, execID interfa
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ContainerExecInspect", reflect.TypeOf((*MockDockerClient)(nil).ContainerExecInspect), ctx, execID)
 }
+
+// CopyToContainer mocks base method
+func (m *MockDockerClient) CopyToContainer(ctx context.Context, container, path string, content io.Reader, options types.CopyToContainerOptions) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CopyToContainer", ctx, container, path, content, options)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CopyToContainer indicates an expected call of CopyToContainer
+func (mr *MockDockerClientMockRecorder) CopyToContainer(ctx, container, path, content, options interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CopyToContainer", reflect.TypeOf((*MockDockerClient)(nil).CopyToContainer), ctx, container, path, content, options)
+}

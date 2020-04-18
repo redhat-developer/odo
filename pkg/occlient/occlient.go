@@ -3002,6 +3002,24 @@ func (c *Client) ExecCMDInContainer(podName string, containerName string, cmd []
 	return nil
 }
 
+// ExtractProjectToComponent extracts the project archive(tar) from the reader stdin
+func (c *Client) ExtractProjectToComponent(podName, containerName, targetPath string, stdin io.Reader) error {
+	// cmdArr will run inside container
+	cmdArr := []string{"tar", "xf", "-", "-C", targetPath}
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	glog.V(4).Infof("Executing command %s", strings.Join(cmdArr, " "))
+	err := c.ExecCMDInContainer(podName, containerName, cmdArr, &stdout, &stderr, stdin, false)
+	if err != nil {
+		glog.Errorf("Command '%s' in container failed.\n", strings.Join(cmdArr, " "))
+		glog.Errorf("stdout: %s\n", stdout.String())
+		glog.Errorf("stderr: %s\n", stderr.String())
+		glog.Errorf("err: %s\n", err.Error())
+		return err
+	}
+	return nil
+}
+
 // BuildPortForwardReq builds a port forward request
 func (c *Client) BuildPortForwardReq(podName string) *rest.Request {
 	return c.kubeClient.CoreV1().RESTClient().

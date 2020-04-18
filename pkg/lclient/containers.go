@@ -8,6 +8,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/pkg/stdcopy"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
 
@@ -108,7 +109,8 @@ func (dc *Client) ExecCMDInContainer(podName string, containerID string, cmd []s
 		AttachStdout: stdout != nil,
 		AttachStderr: stderr != nil,
 		Cmd:          cmd,
-		WorkingDir:   "/tmp",
+		// WorkingDir:   "/tmp",
+		Tty: tty,
 	}
 
 	resp, err := dc.Client.ContainerExecCreate(dc.Context, containerID, execConfig)
@@ -117,8 +119,7 @@ func (dc *Client) ExecCMDInContainer(podName string, containerID string, cmd []s
 	}
 
 	// execStartCheck := types.ExecStartCheck{
-	// 	Detach: true,
-	// 	Tty:    tty,
+	// 	Tty: tty,
 	// }
 
 	hresp, err := dc.Client.ContainerExecAttach(dc.Context, resp.ID, types.ExecStartCheck{})
@@ -126,6 +127,11 @@ func (dc *Client) ExecCMDInContainer(podName string, containerID string, cmd []s
 		return err
 	}
 	defer hresp.Close()
+
+	// err = dc.Client.ContainerExecStart(dc.Context, resp.ID, execStartCheck)
+	// if err != nil {
+	// 	return err
+	// }
 
 	errorCh := make(chan error)
 
@@ -140,5 +146,34 @@ func (dc *Client) ExecCMDInContainer(podName string, containerID string, cmd []s
 		return err
 	}
 
+	hresp.Close()
+
+	// running := true
+	// for running {
+	// 	respThree, err := dc.Client.ContainerExecInspect(dc.Context, resp.ID)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+
+	// 	glog.V(3).Infof("MJF checking")
+
+	// 	if !respThree.Running {
+	// 		running = false
+	// 	}
+
+	// 	time.Sleep(250 * time.Millisecond)
+	// }
+
+	return nil
+}
+
+// ExtractProjectToComponent extracts the project archive(tar) from the reader stdin
+func (dc *Client) ExtractProjectToComponent(podName, containerID, targetPath string, stdin io.Reader) error {
+
+	err := dc.Client.CopyToContainer(dc.Context, containerID, targetPath, stdin, types.CopyToContainerOptions{})
+	if err != nil {
+		glog.Errorf("err: %s\n", err.Error())
+		return err
+	}
 	return nil
 }

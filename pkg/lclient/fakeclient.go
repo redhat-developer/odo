@@ -176,6 +176,10 @@ func (m *mockDockerClient) ContainerExecInspect(ctx context.Context, execID stri
 	return types.ContainerExecInspect{}, nil
 }
 
+func (m *mockDockerClient) CopyToContainer(ctx context.Context, container, path string, content io.Reader, options types.CopyToContainerOptions) error {
+	return nil
+}
+
 // This mock client will return errors for each call to a docker function
 type mockDockerErrorClient struct {
 }
@@ -206,6 +210,7 @@ var errContainerExecCreate = errors.New("error creating container exec")
 var errContainerExecStart = errors.New("error starting container exec")
 var errContainerExecAttach = errors.New("error attach container exec")
 var errContainerExecInspect = errors.New("error inspecting container exec")
+var errCopyToContainer = errors.New("error copying to container")
 
 func (m *mockDockerErrorClient) ImageList(ctx context.Context, imageListOptions types.ImageListOptions) ([]types.ImageSummary, error) {
 	return nil, errImageList
@@ -289,4 +294,8 @@ func (m *mockDockerErrorClient) ContainerExecAttach(ctx context.Context, execID 
 
 func (m *mockDockerErrorClient) ContainerExecInspect(ctx context.Context, execID string) (types.ContainerExecInspect, error) {
 	return types.ContainerExecInspect{}, errContainerExecInspect
+}
+
+func (m *mockDockerErrorClient) CopyToContainer(ctx context.Context, container, path string, content io.Reader, options types.CopyToContainerOptions) error {
+	return errCopyToContainer
 }
