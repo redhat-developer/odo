@@ -101,36 +101,7 @@ func (do *DeleteOptions) Run() (err error) {
 	glog.V(4).Infof("args: %#v", do)
 
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(do.devfilePath) {
-		// devfile delete
-		if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the devfile component?")) {
-			err = do.DevfileComponentDelete()
-			if err != nil {
-				log.Errorf("error occurred while deleting component, cause: %v", err)
-			}
-		} else {
-			log.Error("Aborting deletion of component")
-		}
-
-		if do.componentDeleteAllFlag {
-			if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete env folder?")) {
-				if !do.EnvSpecificInfo.EnvInfoFileExists() {
-					return fmt.Errorf("env folder doesn't exist for the component")
-				}
-				err = do.EnvSpecificInfo.DeleteEnvInfoFile()
-				if err != nil {
-					return err
-				}
-				err = do.EnvSpecificInfo.DeleteEnvDirIfEmpty()
-				if err != nil {
-					return err
-				}
-				log.Successf("Successfully deleted env file")
-			} else {
-				log.Error("Aborting deletion of env folder")
-			}
-		}
-
-		return nil
+		return do.DevFileRun()
 	}
 
 	if do.isCmpExists {
@@ -210,6 +181,53 @@ func (do *DeleteOptions) Run() (err error) {
 	}
 
 	return
+}
+
+// Run has the logic to perform the required actions as part of command for devfiles
+func (do *DeleteOptions) DevFileRun() (err error) {
+	// devfile delete
+	if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the devfile component: %s?", do.EnvSpecificInfo.GetName())) {
+		err = do.DevfileComponentDelete()
+		if err != nil {
+			log.Errorf("error occurred while deleting component, cause: %v", err)
+		}
+	} else {
+		log.Error("Aborting deletion of component")
+	}
+
+	if do.componentDeleteAllFlag {
+		if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete env folder?")) {
+			if !do.EnvSpecificInfo.EnvInfoFileExists() {
+				return fmt.Errorf("env folder doesn't exist for the component")
+			}
+			if err = util.DeleteIndexFile(filepath.Dir(do.devfilePath)); err != nil {
+				return err
+			}
+
+			err = do.EnvSpecificInfo.DeleteEnvInfoFile()
+			if err != nil {
+				return err
+			}
+			err = do.EnvSpecificInfo.DeleteEnvDirIfEmpty()
+			if err != nil {
+				return err
+			}
+
+			cfg, err := config.NewLocalConfigInfo(do.componentContext)
+			if err != nil {
+				return err
+			}
+			if err = cfg.DeleteConfigDirIfEmpty(); err != nil {
+				return err
+			}
+
+			log.Successf("Successfully deleted env file")
+		} else {
+			log.Error("Aborting deletion of env folder")
+		}
+	}
+
+	return nil
 }
 
 // NewCmdDelete implements the delete odo command
