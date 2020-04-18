@@ -936,10 +936,11 @@ func GetComponentFromConfig(localConfig *config.LocalConfigInfo) (Component, err
 		component.Namespace = localConfig.GetProject()
 
 		component.Spec = ComponentSpec{
-			App:    localConfig.GetApplication(),
-			Type:   localConfig.GetType(),
-			Source: localConfig.GetSourceLocation(),
-			Ports:  localConfig.GetPorts(),
+			App:        localConfig.GetApplication(),
+			Type:       localConfig.GetType(),
+			Source:     localConfig.GetSourceLocation(),
+			Ports:      localConfig.GetPorts(),
+			SourceType: string(localConfig.GetSourceType()),
 		}
 
 		if localConfig.GetSourceType() == "local" || localConfig.GetSourceType() == "binary" {
@@ -989,6 +990,7 @@ func ListIfPathGiven(client *occlient.Client, paths []string) (ComponentList, er
 				a.Namespace = data.GetProject()
 				a.Spec.App = data.GetApplication()
 				a.Spec.Ports = data.GetPorts()
+				a.Spec.SourceType = string(data.GetSourceType())
 				a.Status.Context = con
 				if client != nil {
 					a.Status.State = GetComponentState(client, data.GetName(), data.GetApplication())
@@ -1022,7 +1024,6 @@ func GetComponentSource(client *occlient.Client, componentName string, applicati
 	}
 
 	sourceType := deploymentConfig.ObjectMeta.Annotations[ComponentSourceTypeAnnotation]
-
 	if !validateSourceType(sourceType) {
 		return "", "", fmt.Errorf("unsupported component source type %s", sourceType)
 	}
@@ -1348,7 +1349,7 @@ func GetComponent(client *occlient.Client, componentName string, applicationName
 		return component, errors.Wrap(err, "unable to get source type")
 	}
 	// Source
-	_, path, err := GetComponentSource(client, componentName, applicationName)
+	sourceType, path, err := GetComponentSource(client, componentName, applicationName)
 	if err != nil {
 		return component, errors.Wrap(err, "unable to get source path")
 	}
@@ -1417,6 +1418,7 @@ func GetComponent(client *occlient.Client, componentName string, applicationName
 	component.Spec.App = applicationName
 	component.Spec.Source = path
 	component.Spec.URL = urls
+	component.Spec.SourceType = sourceType
 	component.Spec.Storage = storage
 	component.Spec.Env = filteredEnv
 	component.Status.LinkedComponents = linkedComponents

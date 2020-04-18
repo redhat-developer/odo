@@ -15,13 +15,14 @@ type Component struct {
 
 // ComponentSpec is spec of components
 type ComponentSpec struct {
-	App     string          `json:"app,omitempty"`
-	Type    string          `json:"type,omitempty"`
-	Source  string          `json:"source,omitempty"`
-	URL     []string        `json:"url,omitempty"`
-	Storage []string        `json:"storage,omitempty"`
-	Env     []corev1.EnvVar `json:"env,omitempty"`
-	Ports   []string        `json:"ports,omitempty"`
+	App        string          `json:"app,omitempty"`
+	Type       string          `json:"type,omitempty"`
+	Source     string          `json:"source,omitempty"`
+	SourceType string          `json:"sourceType,omitempty"`
+	URL        []string        `json:"url,omitempty"`
+	Storage    []string        `json:"storage,omitempty"`
+	Env        []corev1.EnvVar `json:"env,omitempty"`
+	Ports      []string        `json:"ports,omitempty"`
 }
 
 // ComponentList is list of components
