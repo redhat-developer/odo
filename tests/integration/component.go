@@ -15,7 +15,7 @@ import (
 )
 
 func componentTests(args ...string) {
-	var oc helper.OcRunner
+	var oc helper.ClusterRunner
 	var project string
 	var context string
 	var originalDir string
@@ -25,7 +25,7 @@ func componentTests(args ...string) {
 		SetDefaultConsistentlyDuration(30 * time.Second)
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-		oc = helper.NewOcRunner("oc")
+		oc = helper.NewClusterRunner("oc")
 	})
 
 	// Clean up after the test

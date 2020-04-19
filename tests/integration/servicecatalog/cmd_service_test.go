@@ -21,13 +21,13 @@ var _ = Describe("odo service command tests", func() {
 
 	//  current directory and project (before eny test is run) so it can restored  after all testing is done
 	var originalDir string
-	var oc helper.OcRunner
+	var oc helper.ClusterRunner
 	// Setup up state for each test spec
 	// create new project (not set as active) and new context directory for each test spec
 	// This is before every spec (It)
 	BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
-		oc = helper.NewOcRunner("oc")
+		oc = helper.NewClusterRunner("oc")
 	})
 
 	preSetup := func() {

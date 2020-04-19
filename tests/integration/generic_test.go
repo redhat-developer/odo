@@ -18,12 +18,12 @@ var _ = Describe("odo generic", func() {
 	var project string
 	var context string
 	var originalDir string
-	var oc helper.OcRunner
+	var oc helper.ClusterRunner
 	var testPHPGitURL = "https://github.com/appuio/example-php-sti-helloworld"
 	var testLongURLName = "long-url-name-long-url-name-long-url-name-long-url-name-long-url-name"
 
 	BeforeEach(func() {
-		oc = helper.NewOcRunner("oc")
+		oc = helper.NewClusterRunner("oc")
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		SetDefaultConsistentlyDuration(30 * time.Second)
 	})

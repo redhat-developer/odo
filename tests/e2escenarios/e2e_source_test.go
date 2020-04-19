@@ -13,11 +13,11 @@ import (
 var _ = Describe("odo source e2e tests", func() {
 	var project string
 	var context string
-	var oc helper.OcRunner
+	var oc helper.ClusterRunner
 
 	BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
-		oc = helper.NewOcRunner("oc")
+		oc = helper.NewClusterRunner("oc")
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 		project = helper.CreateRandProject()

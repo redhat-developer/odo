@@ -17,7 +17,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 
 	// TODO: all oc commands in all devfile related test should get replaced by kubectl
 	// TODO: to goal is not to use "oc"
-	oc := helper.NewOcRunner("oc")
+	oc := helper.NewClusterRunner("oc")
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {

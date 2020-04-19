@@ -13,6 +13,7 @@ import (
 var _ = Describe("odo storage command tests", func() {
 	var project string
 	var context string
+	var oc helper.ClusterRunner
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
@@ -21,7 +22,7 @@ var _ = Describe("odo storage command tests", func() {
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 		project = helper.CreateRandProject()
-		oc = helper.NewOcRunner("oc")
+		oc = helper.NewClusterRunner("oc")
 	})
 
 	// Clean up after the test

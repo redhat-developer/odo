@@ -12,7 +12,7 @@ import (
 
 // TODO: A neater way to provide odo path. Currently we assume \
 // odo and oc in $PATH already.
-var oc helper.OcRunner
+var oc helper.ClusterRunner
 var project string
 var context string
 var originalDir string
@@ -20,7 +20,7 @@ var originalDir string
 var _ = Describe("odo preference and config command tests", func() {
 	BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
-		oc = helper.NewOcRunner("oc")
+		oc = helper.NewClusterRunner("oc")
 	})
 
 	Context("check that help works", func() {

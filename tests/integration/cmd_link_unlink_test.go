@@ -16,7 +16,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 	//new clean project and context for each test
 	var project string
 	var context, frontendContext, backendContext string
-	var oc helper.OcRunner
+	var oc helper.ClusterRunner
 
 	// Setup up state for each test spec
 	// create new project (not set as active) and new context directory for each test spec
@@ -26,7 +26,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 		SetDefaultConsistentlyDuration(30 * time.Second)
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-		oc = helper.NewOcRunner("oc")
+		oc = helper.NewClusterRunner("oc")
 		project = helper.CreateRandProject()
 	})
 

@@ -257,9 +257,9 @@ For example:
 var _ = Describe("odo generic", func() {
     var project string
 	var context string
-	var oc helper.OcRunner
+	var oc helper.ClusterRunner
     BeforeEach(func() {
-	    oc = helper.NewOcRunner("oc")
+	    oc = helper.NewClusterRunner("oc")
 	    SetDefaultEventuallyTimeout(10 * time.Minute)
 	    context = helper.CreateNewContext()
     })
