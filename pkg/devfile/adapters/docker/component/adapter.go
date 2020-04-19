@@ -32,6 +32,8 @@ type Adapter struct {
 	componentAliasToVolumes   map[string][]adaptersCommon.DevfileVolume
 	uniqueStorage             []adaptersCommon.Storage
 	volumeNameToDockerVolName map[string]string
+	devfileBuildCmd           string
+	devfileRunCmd             string
 }
 
 // Push updates the component if a matching component exists or creates one if it doesn't exist
@@ -44,6 +46,8 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	if err != nil {
 		return errors.Wrapf(err, "Unable to process volumes for component %s", a.ComponentName)
 	}
+	a.devfileBuildCmd = parameters.DevfileBuildCmd
+	a.devfileRunCmd = parameters.DevfileRunCmd
 
 	if componentExists {
 		err = a.updateComponent()

@@ -17,6 +17,7 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/log"
 )
 
@@ -59,6 +60,23 @@ func (a Adapter) createComponent() (err error) {
 	if err != nil {
 		return errors.Wrapf(err, "Unable to create Docker storage adapter for component %s", componentName)
 	}
+	projectVolumeName := projectVolume.Name
+
+	// Get the supervisord volume
+	var supervisordVolumeName string
+	supervisordLabels := utils.GetSupervisordVolumeLabels()
+	supervisordVols, err := a.Client.GetVolumesByLabel(supervisordLabels)
+	if err != nil {
+		return errors.Wrapf(err, "Unable to retrieve supervisord volume for component "+componentName)
+	}
+	if len(supervisordVols) == 0 {
+		supervisordVolumeName, err = utils.CreateAndInitSupervisordVolume(a.Client)
+		if err != nil {
+			return errors.Wrapf(err, "Unable to create supervisord volume for component %s", componentName)
+		}
+	} else {
+		supervisordVolumeName = supervisordVols[0].Name
+	}
 
 	// Loop over each component and start a container for it
 	for _, comp := range supportedComponents {
@@ -87,16 +105,32 @@ func (a Adapter) updateComponent() (err error) {
 
 	// Get the project source volume
 	volumeLabels := utils.GetProjectVolumeLabels(componentName)
-	vols, err := a.Client.GetVolumesByLabel(volumeLabels)
+	projectVols, err := a.Client.GetVolumesByLabel(volumeLabels)
 	if err != nil {
 		return errors.Wrapf(err, "Unable to retrieve source volume for component "+componentName)
 	}
-	if len(vols) == 0 {
+	if len(projectVols) == 0 {
 		return fmt.Errorf("Unable to find source volume for component %s", componentName)
 	} else if len(vols) > 1 {
 		return errors.Wrapf(err, "Error, multiple source volumes found for component %s", componentName)
 	}
-	projectVolumeName := vols[0].Name
+	projectVolumeName := projectVols[0].Name
+
+	// Get the supervisord volume
+	var supervisordVolumeName string
+	supervisordLabels := utils.GetSupervisordVolumeLabels()
+	supervisordVols, err := a.Client.GetVolumesByLabel(supervisordLabels)
+	if err != nil {
+		return errors.Wrapf(err, "Unable to retrieve supervisord volume for component "+componentName)
+	}
+	if len(supervisordVols) == 0 {
+		supervisordVolumeName, err = utils.CreateAndInitSupervisordVolume(a.Client)
+		if err != nil {
+			return errors.Wrapf(err, "Unable to create supervisord volume for component %s", componentName)
+		}
+	} else {
+		supervisordVolumeName = supervisordVols[0].Name
+	}
 
 	// Get the storage adapter and create the volumes if it does not exist
 	stoAdapter := storage.New(a.AdapterContext, a.Client)
@@ -127,7 +161,7 @@ func (a Adapter) updateComponent() (err error) {
 
 		if len(containers) == 0 {
 			// Container doesn't exist, so need to pull its image (to be safe) and start a new container
-			err = a.pullAndStartContainer(dockerVolumeMounts, projectVolumeName, comp)
+			err = a.pullAndStartContainer(dockerVolumeMounts, projectVolumeName, supervisordVolumeName, comp)
 			if err != nil {
 				return errors.Wrapf(err, "unable to pull and start container %s for component %s", *comp.Alias, componentName)
 			}
@@ -155,7 +189,7 @@ func (a Adapter) updateComponent() (err error) {
 				}
 
 				// Start the container
-				err = a.startContainer(dockerVolumeMounts, projectVolumeName, comp)
+				err = a.startContainer(dockerVolumeMounts, projectVolumeName, supervisordVolumeName, comp)
 				if err != nil {
 					return errors.Wrapf(err, "Unable to start container for devfile component %s", *comp.Alias)
 				}
@@ -171,7 +205,7 @@ func (a Adapter) updateComponent() (err error) {
 	return nil
 }
 
-func (a Adapter) pullAndStartContainer(mounts []mount.Mount, projectVolumeName string, comp versionsCommon.DevfileComponent) error {
+func (a Adapter) pullAndStartContainer(mounts []mount.Mount, projectVolumeName, supervisordVolumeName string, comp versionsCommon.DevfileComponent) error {
 	// Container doesn't exist, so need to pull its image (to be safe) and start a new container
 	s := log.Spinner("Pulling image " + *comp.Image)
 
@@ -183,7 +217,7 @@ func (a Adapter) pullAndStartContainer(mounts []mount.Mount, projectVolumeName s
 	s.End(true)
 
 	// Start the container
-	err = a.startContainer(mounts, projectVolumeName, comp)
+	err = a.startContainer(mounts, projectVolumeName, supervisordVolumeName, comp)
 	if err != nil {
 		return errors.Wrapf(err, "Unable to start container for devfile component %s", *comp.Alias)
 	}
@@ -191,16 +225,37 @@ func (a Adapter) pullAndStartContainer(mounts []mount.Mount, projectVolumeName s
 	return nil
 }
 
-func (a Adapter) startContainer(mounts []mount.Mount, projectVolumeName string, comp versionsCommon.DevfileComponent) error {
+func (a Adapter) startContainer(mounts []mount.Mount, projectVolumeName, supervisordVolumeName string, comp versionsCommon.DevfileComponent) error {
 	containerConfig := a.generateAndGetContainerConfig(a.ComponentName, comp)
 	hostConfig, err := a.generateAndGetHostConfig()
 	hostConfig.Mounts = mounts
 	if err != nil {
 		return err
 	}
+
+	runCommand, err := adaptersCommon.GetRunCommand(a.Devfile.Data, a.devfileRunCmd)
+	if err != nil {
+		return err
+	}
+
+	// Mount the supervisord volume for the run command container
+	for _, action := range runCommand.Actions {
+		if *action.Component == *comp.Alias {
+			utils.AddVolumeToComp(supervisordVolumeName, adaptersCommon.SupervisordMountPath, &hostConfig)
+		}
+
+		if len(comp.Command) == 0 && len(comp.Args) == 0 {
+			glog.V(3).Infof("Updating container %v entrypoint with supervisord", comp.Alias)
+			comp.Command = append(comp.Command, adaptersCommon.SupervisordBinaryPath)
+			comp.Args = append(comp.Args, "-c", adaptersCommon.SupervisordConfFile)
+		}
+	}
+
+	containerConfig := a.generateAndGetContainerConfig(componentName, comp)
+
 	// If the component set `mountSources` to true, add the source volume to it
 	if comp.MountSources {
-		utils.AddProjectVolumeToComp(projectVolumeName, &hostConfig)
+		utils.AddVolumeToComp(projectVolumeName, lclient.OdoSourceVolumeMount, &hostConfig)
 	}
 
 	// Create the docker container

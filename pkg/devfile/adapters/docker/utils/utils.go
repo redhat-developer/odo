@@ -9,8 +9,11 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
+	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/lclient"
+	"github.com/openshift/odo/pkg/log"
+	"github.com/pkg/errors"
 )
 
 // ComponentExists checks if Docker containers labeled with the specified component name exists
@@ -94,12 +97,12 @@ func DoesContainerNeedUpdating(component common.DevfileComponent, containerConfi
 
 }
 
-// AddProjectVolumeToComp adds the project volume to the container host config
-func AddProjectVolumeToComp(projectVolumeName string, hostConfig *container.HostConfig) *container.HostConfig {
+// AddVolumeToComp adds the project volume to the container host config
+func AddVolumeToComp(volumeName, volumeMount string, hostConfig *container.HostConfig) *container.HostConfig {
 	mount := mount.Mount{
 		Type:   mount.TypeVolume,
-		Source: projectVolumeName,
-		Target: lclient.OdoSourceVolumeMount,
+		Source: volumeName,
+		Target: volumeMount,
 	}
 	hostConfig.Mounts = append(hostConfig.Mounts, mount)
 
@@ -142,4 +145,67 @@ func containerHasPort(devfilePort nat.Port, exposedPorts nat.PortSet) bool {
 		}
 	}
 	return false
+}
+
+// GetSupervisordVolumeLabels returns the label selectors used to retrieve the supervisord volume
+func GetSupervisordVolumeLabels() map[string]string {
+	supervisordLabels := map[string]string{
+		"name": adaptersCommon.SupervisordVolumeName,
+		"type": "supervisord",
+	}
+	return supervisordLabels
+}
+
+// CreateAndInitSupervisordVolume creates the supervisord volume and initializes it with odo init
+func CreateAndInitSupervisordVolume(client lclient.Client) (string, error) {
+	supervisordLabels := GetSupervisordVolumeLabels()
+	supervisordVolume, err := client.CreateVolume("", supervisordLabels)
+	if err != nil {
+		return "", errors.Wrapf(err, "Unable to create supervisord volume for component")
+	}
+	supervisordVolumeName := supervisordVolume.Name
+
+	err = StartBootstrapSupervisordInitContainer(client, supervisordVolumeName)
+	if err != nil {
+		return "", errors.Wrapf(err, "Unable to start supervisord container for component")
+	}
+
+	return supervisordVolumeName, nil
+}
+
+// StartBootstrapSupervisordInitContainer ...
+func StartBootstrapSupervisordInitContainer(client lclient.Client, supervisordVolumeName string) error {
+	supervisordLabels := GetSupervisordVolumeLabels()
+
+	image := adaptersCommon.GetBootstrapperImage()
+	command := []string{"/usr/bin/cp"}
+	args := []string{
+		"-r",
+		adaptersCommon.OdoInitImageContents,
+		adaptersCommon.SupervisordMountPath,
+	}
+
+	s := log.Spinner("Pulling image " + image)
+	err := client.PullImage(image)
+	if err != nil {
+		s.End(false)
+		return errors.Wrapf(err, "Unable to pull %s image", image)
+	}
+	s.End(true)
+
+	containerConfig := client.GenerateContainerConfig(image, command, args, nil, supervisordLabels, nat.PortSet{})
+	hostConfig := container.HostConfig{}
+
+	AddVolumeToComp(supervisordVolumeName, adaptersCommon.SupervisordMountPath, &hostConfig)
+
+	// Create the docker container
+	s = log.Spinner("Starting container for " + image)
+	defer s.End(false)
+	err = client.StartContainer(&containerConfig, &hostConfig, nil)
+	if err != nil {
+		return err
+	}
+	s.End(true)
+
+	return nil
 }
