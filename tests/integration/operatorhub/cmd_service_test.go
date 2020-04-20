@@ -81,7 +81,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			randomFileName := helper.RandString(6) + ".yaml"
 			fileName := filepath.Join("/tmp", randomFileName)
 			if err := ioutil.WriteFile(fileName, []byte(stdOut), 0644); err != nil {
-				fmt.Errorf("Could not write yaml spec to file %s because of the error %v", fileName, err.Error())
+				fmt.Printf("Could not write yaml spec to file %s because of the error %v", fileName, err.Error())
 			}
 
 			// now create operator backed service
@@ -101,6 +101,46 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			// service delete` but that's not implemented for operator backed
 			// services yet.
 			helper.CmdShouldPass("oc", "delete", "EtcdCluster", "example")
+		})
+		It("should fail to create service if metadata doesn't exist or is invalid", func() {
+			noMetadata := `
+apiVersion: etcd.database.coreos.com/v1beta2
+kind: EtcdCluster
+spec:
+  size: 3
+  version: 3.2.13
+`
+
+			invalidMetadata := `
+apiVersion: etcd.database.coreos.com/v1beta2
+kind: EtcdCluster
+metadata:
+  noname: noname
+spec:
+  size: 3
+  version: 3.2.13
+`
+
+			noMetaFile := helper.RandString(6) + ".yaml"
+			fileName := filepath.Join("/tmp", noMetaFile)
+			if err := ioutil.WriteFile(fileName, []byte(noMetadata), 0644); err != nil {
+				fmt.Printf("Could not write yaml spec to file %s because of the error %v", fileName, err.Error())
+			}
+
+			// now create operator backed service
+			stdOut := helper.CmdShouldFail("odo", "service", "create", "--from-file", fileName)
+			Expect(stdOut).To(ContainSubstring("Couldn't find \"metadata\" in the yaml"))
+
+			invalidMetaFile := helper.RandString(6) + ".yaml"
+			fileName = filepath.Join("/tmp", invalidMetaFile)
+			if err := ioutil.WriteFile(fileName, []byte(invalidMetadata), 0644); err != nil {
+				fmt.Printf("Could not write yaml spec to file %s because of the error %v", fileName, err.Error())
+			}
+
+			// now create operator backed service
+			stdOut = helper.CmdShouldFail("odo", "service", "create", "--from-file", fileName)
+			Expect(stdOut).To(ContainSubstring("Couldn't find metadata.name in the yaml"))
+
 		})
 	})
 })

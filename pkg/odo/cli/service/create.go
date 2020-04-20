@@ -254,7 +254,7 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 			// all is well, let's populate the fields required for creating operator backed service
 			o.group, o.version = groupVersionALMExample(o.CustomResourceDefinition)
 			o.resource = resourceFromCSV(csv, o.CustomResource)
-			o.ServiceName = serviceNameFromCRD(o.CustomResourceDefinition, o.ServiceName)
+			o.ServiceName, err = serviceNameFromCRD(o.CustomResourceDefinition, o.ServiceName)
 			return err
 		}
 		if o.CustomResource != "" {
@@ -285,8 +285,8 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 			o.CustomResourceDefinition = almExample
 			o.group, o.version = groupVersionALMExample(almExample)
 			o.resource = resourceFromCSV(csv, o.CustomResource)
-			o.ServiceName = serviceNameFromCRD(o.CustomResourceDefinition, o.ServiceName)
-			return nil
+			o.ServiceName, err = serviceNameFromCRD(o.CustomResourceDefinition, o.ServiceName)
+			return err
 		} else {
 			// prevent user from executing `odo service create <operator-name>`
 			// because the correct way is to execute `odo service
@@ -486,14 +486,14 @@ func doesCRExist(kind string, csvs *olmv1alpha1.ClusterServiceVersionList) (olmv
 
 }
 
-func serviceNameFromCRD(crd map[string]interface{}, serviceName string) string {
+func serviceNameFromCRD(crd map[string]interface{}, serviceName string) (string, error) {
 	metadata, ok := crd["metadata"].(map[string]interface{})
 	if !ok {
-		return serviceName
+		return "", fmt.Errorf("Couldn't find \"metadata\" in the yaml. Need metadata.name to start the service")
 	}
 
 	if name, ok := metadata["name"].(string); ok {
-		return name
+		return name, nil
 	}
-	return serviceName
+	return "", fmt.Errorf("Couldn't find metadata.name in the yaml. Provide a name for the service")
 }
