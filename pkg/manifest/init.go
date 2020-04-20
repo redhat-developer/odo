@@ -55,7 +55,7 @@ var (
 		},
 		{
 			APIGroups: []string{"rbac.authorization.k8s.io"},
-			Resources: []string{"rolebindings"},
+			Resources: []string{"clusterrolebindings"},
 			Verbs:     []string{"get", "patch"},
 		},
 		{
@@ -171,8 +171,7 @@ func CreateResources(prefix, gitOpsRepo, gitOpsWebhook, dockerConfigJSONPath, im
 		outputs[serviceAccountPath] = roles.AddSecretToSA(sa, dockerSecretName)
 	}
 
-	outputs[rolebindingsPath] = roles.CreateRoleBinding(meta.NamespacedName(cicdNamespace, roleBindingName), sa, "ClusterRole", roles.ClusterRoleName)
-
+	outputs[rolebindingsPath] = roles.CreateClusterRoleBinding(meta.NamespacedName("", roleBindingName), sa, "ClusterRole", roles.ClusterRoleName)
 	outputs[gitopsTasksPath] = tasks.CreateDeployFromSourceTask(cicdNamespace, GetPipelinesDir("", prefix))
 	outputs[appTaskPath] = tasks.CreateDeployUsingKubectlTask(cicdNamespace)
 	outputs[ciPipelinesPath] = pipelines.CreateCIPipeline(meta.NamespacedName(cicdNamespace, "ci-dryrun-from-pr-pipeline"), cicdNamespace)
