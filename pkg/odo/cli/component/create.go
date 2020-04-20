@@ -61,7 +61,7 @@ type DevfileMetadata struct {
 	componentNamespace string
 	devfileSupport     bool
 	devfileLink        string
-	devfileRegistry    string
+	devfileRegistry    catalog.Registry
 }
 
 // CreateRecommendedCommandName is the recommended watch command name
@@ -302,6 +302,8 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		if len(args) == 0 {
 			co.interactive = true
 		}
+
+		// Default namespace setup
 		var defaultComponentNamespace string
 		// If the push target is set to Docker, we can't assume we have an active Kube context
 		if !pushtarget.IsPushTargetDocker() {
@@ -313,9 +315,12 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			defaultComponentNamespace = client.Namespace
 		}
 
-		catalogDevfileList, err := catalog.ListDevfileComponents()
+		catalogDevfileList, err := catalog.ListDevfileComponents(co.devfileMetadata.devfileRegistry.Name)
 		if err != nil {
 			return err
+		}
+		if catalogDevfileList.DevfileRegistries == nil {
+			log.Warning("Please run 'odo registry add <registry name> <registry URL>' to add registry then create devfile components\n")
 		}
 
 		var componentType string
@@ -688,7 +693,7 @@ func (co *CreateOptions) Run() (err error) {
 			}
 
 			if !util.CheckPathExists(DevfilePath) {
-				err = util.DownloadFile(co.devfileMetadata.devfileRegistry+co.devfileMetadata.devfileLink, DevfilePath)
+				err = util.DownloadFile(co.devfileMetadata.devfileRegistry.URL+co.devfileMetadata.devfileLink, DevfilePath)
 				if err != nil {
 					return errors.Wrap(err, "Failed to download devfile.yaml for devfile component")
 				}
@@ -803,6 +808,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 
 	if experimental.IsExperimentalModeEnabled() {
 		componentCreateCmd.Flags().StringVarP(&co.devfileMetadata.componentNamespace, "namespace", "n", "", "Create devfile component under specific namespace")
+		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfileRegistry.Name, "registry", "", "Create devfile component from specific registry")
 	}
 
 	componentCreateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)

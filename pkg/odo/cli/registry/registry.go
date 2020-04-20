@@ -1,0 +1,44 @@
+package registry
+
+import (
+	// Built-in packages
+	"fmt"
+
+	// Third-party packages
+	"github.com/spf13/cobra"
+	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
+
+	// odo packages
+	"github.com/openshift/odo/pkg/odo/util"
+)
+
+// RecommendedCommandName is the recommended registry command name
+const RecommendedCommandName = "registry"
+
+var registryDesc = ktemplates.LongDesc(`Configure devfile registry`)
+
+// NewCmdRegistry implements the registry configuration command
+func NewCmdRegistry(name, fullName string) *cobra.Command {
+	registryAddCmd := NewCmdAdd(addCommandName, util.GetFullName(fullName, addCommandName))
+	registryListCmd := NewCmdList(listCommandName, util.GetFullName(fullName, listCommandName))
+	registryUpdateCmd := NewCmdUpdate(updateCommandName, util.GetFullName(fullName, updateCommandName))
+	registryRemoveCmd := NewCmdRemove(removeCommandName, util.GetFullName(fullName, removeCommandName))
+
+	registryCmd := &cobra.Command{
+		Use:   name,
+		Short: registryDesc,
+		Long:  registryDesc,
+		Example: fmt.Sprintf("%s\n\n%s\n\n%s\n\n%s",
+			registryAddCmd.Example,
+			registryListCmd.Example,
+			registryUpdateCmd.Example,
+			registryRemoveCmd.Example,
+		),
+	}
+
+	registryCmd.AddCommand(registryAddCmd, registryListCmd, registryUpdateCmd, registryRemoveCmd)
+	registryCmd.SetUsageTemplate(util.CmdUsageTemplate)
+	registryCmd.Annotations = map[string]string{"command": "main"}
+
+	return registryCmd
+}

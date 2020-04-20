@@ -117,6 +117,15 @@ type OdoSettings struct {
 
 	// PushTarget for telling odo which platform to push to (either kube or docker)
 	PushTarget *string `yaml:"PushTarget,omitempty"`
+
+	// RegistryList for telling odo to connect to all the registries in the registry list
+	RegistryList *[]Registry `yaml:"RegistryList,omitempty"`
+}
+
+// Registry includes the registry metadata
+type Registry struct {
+	Name string `yaml:"Name,omitempty"`
+	URL  string `yaml:"URL,omitempty"`
 }
 
 // Preference stores all the preferences related to odo
@@ -171,8 +180,20 @@ func NewPreferenceInfo() (*PreferenceInfo, error) {
 		Preference: NewPreference(),
 		Filename:   preferenceFile,
 	}
-	// if the preference file doesn't exist then we dont worry about it and return
+	// if the preference file doesn't exist then we return with default preference
 	if _, err = os.Stat(preferenceFile); os.IsNotExist(err) {
+		defaultRegistryList := []Registry{
+			{
+				Name: "CheDevfileRegistry",
+				URL:  "https://che-devfile-registry.openshift.io/",
+			},
+			{
+				Name: "DefaultDevfileRegistry",
+				URL:  "https://raw.githubusercontent.com/elsony/devfile-registry/master",
+			},
+		}
+		c.OdoSettings.RegistryList = &defaultRegistryList
+
 		return &c, nil
 	}
 
@@ -181,6 +202,87 @@ func NewPreferenceInfo() (*PreferenceInfo, error) {
 		return nil, err
 	}
 	return &c, nil
+}
+
+// RegistryHandler handles registry add, update and delete operations
+func (c *PreferenceInfo) RegistryHandler(operation string, registryName string, registryURL string) error {
+	var registryList []Registry
+	var err error
+	registryExist := false
+
+	// Registry list is empty
+	if c.OdoSettings.RegistryList == nil {
+		registryList, err = handleWithoutRegistryExist(registryList, operation, registryName, registryURL)
+		if err != nil {
+			return err
+		}
+	} else {
+		// The target registry exists in the registry list
+		registryList = *c.OdoSettings.RegistryList
+		for index, registry := range registryList {
+			if registry.Name == registryName {
+				registryExist = true
+				registryList, err = handleWithRegistryExist(index, registryList, operation, registryName, registryURL)
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		// The target registry doesn't exist in the registry list
+		if !registryExist {
+			registryList, err = handleWithoutRegistryExist(registryList, operation, registryName, registryURL)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	c.OdoSettings.RegistryList = &registryList
+	err = util.WriteToFile(&c.Preference, c.Filename)
+	if err != nil {
+		return errors.Wrapf(err, "Unable to write the configuration of %s operation to preference file", operation)
+	}
+
+	return nil
+}
+
+func handleWithoutRegistryExist(registryList []Registry, operation string, registryName string, registryURL string) ([]Registry, error) {
+	switch operation {
+
+	case "add":
+		registry := Registry{
+			Name: registryName,
+			URL:  registryURL,
+		}
+		registryList = append(registryList, registry)
+
+	case "update":
+		return nil, errors.Errorf("Failed to update registry: registry %s doesn't exist", registryName)
+
+	case "remove":
+		return nil, errors.Errorf("Failed to delete registry: registry %s doesn't exist", registryName)
+	}
+
+	return registryList, nil
+}
+
+func handleWithRegistryExist(index int, registryList []Registry, operation string, registryName string, registryURL string) ([]Registry, error) {
+	switch operation {
+
+	case "add":
+		return nil, errors.Errorf("Failed to add registry: registry %s already exists", registryName)
+
+	case "update":
+		registryList[index].URL = registryURL
+
+	case "remove":
+		copy(registryList[index:], registryList[index+1:])
+		registryList[len(registryList)-1] = Registry{}
+		registryList = registryList[:len(registryList)-1]
+	}
+
+	return registryList, nil
 }
 
 // SetConfiguration modifies Odo configurations in the config file
