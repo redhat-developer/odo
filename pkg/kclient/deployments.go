@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
@@ -43,7 +44,9 @@ func getDeploymentCondition(status appsv1.DeploymentStatus, condType appsv1.Depl
 
 // WaitForDeploymentRollout waits for deployment to finish rollout. Returns the state of the deployment after rollout.
 func (c *Client) WaitForDeploymentRollout(deploymentName string) (*appsv1.Deployment, error) {
-	glog.V(4).Infof("Waiting for %s deployment roll out", deploymentName)
+	glog.V(4).Infof("Waiting for %s deployment rollout", deploymentName)
+	s := log.Spinner("Waiting for component to start")
+	defer s.End(false)
 
 	w, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + deploymentName})
 	if err != nil {
@@ -77,6 +80,7 @@ func (c *Client) WaitForDeploymentRollout(deploymentName string) (*appsv1.Deploy
 					} else if deployment.Status.AvailableReplicas < deployment.Status.UpdatedReplicas {
 						glog.V(4).Infof("Waiting for deployment %q rollout to finish: %d of %d updated replicas are available...\n", deployment.Name, deployment.Status.AvailableReplicas, deployment.Status.UpdatedReplicas)
 					} else {
+						s.End(true)
 						glog.V(4).Infof("Deployment %q successfully rolled out\n", deployment.Name)
 						success <- deployment
 					}

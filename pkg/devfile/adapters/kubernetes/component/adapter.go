@@ -86,7 +86,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
-	pod, err := a.waitAndGetComponentPod(false)
+	pod, err := a.waitAndGetComponentPod(true)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
 	}
