@@ -65,15 +65,6 @@ func (po *PushOptions) DevfilePush() (err error) {
 	if pushtarget.IsPushTargetDocker() {
 		platformContext = nil
 	} else {
-		if po.namespace == "" {
-			po.namespace, err = getNamespace()
-			if err != nil {
-				return err
-			}
-		}
-
-		po.Context.KClient.Namespace = po.namespace
-
 		kc := kubernetes.KubernetesContext{
 			Namespace: po.namespace,
 		}
@@ -152,12 +143,7 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 	if err != nil {
 		return err
 	}
-	if len(do.namespace) <= 0 {
-		do.namespace, err = getNamespace()
-		if err != nil {
-			return err
-		}
-	}
+
 	kc := kubernetes.KubernetesContext{
 		Namespace: do.namespace,
 	}

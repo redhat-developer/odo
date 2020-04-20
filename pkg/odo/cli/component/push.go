@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odobackup/pkg/odo/util/pushtarget"
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/log"
@@ -67,11 +68,9 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		po.EnvSpecificInfo = envinfo
 		po.Context = genericclioptions.NewDevfileContext(cmd)
 
-		if cmd.Flags().Changed("project") {
-			po.namespace, err = cmd.Flags().GetString("project")
-			if err != nil {
-				return err
-			}
+		if !pushtarget.IsPushTargetDocker() {
+			// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initalizing the context
+			po.namespace = po.KClient.Namespace
 		}
 		return nil
 	}
