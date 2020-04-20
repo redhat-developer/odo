@@ -26,6 +26,7 @@ const (
 type DevfileCommandType string
 
 const (
+	DevfileCommandTypeInit  DevfileCommandType = "init"
 	DevfileCommandTypeBuild DevfileCommandType = "build"
 	DevfileCommandTypeRun   DevfileCommandType = "run"
 	DevfileCommandTypeDebug DevfileCommandType = "debug"

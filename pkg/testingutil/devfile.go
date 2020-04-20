@@ -93,22 +93,27 @@ func (d TestDevfileData) GetProjects() []versionsCommon.DevfileProject {
 
 // GetCommands is a mock function to get the commands from a devfile
 func (d TestDevfileData) GetCommands() []versionsCommon.DevfileCommand {
-	commandName := [...]string{"devbuild", "devrun", "customcommand"}
+	commandName := [...]string{"devinit", "devbuild", "devrun", "customcommand"}
 
 	commands := []versionsCommon.DevfileCommand{
-		{
-			Name:    commandName[1],
-			Actions: d.CommandActions,
-		},
 		{
 			Name:    commandName[2],
 			Actions: d.CommandActions,
 		},
+		{
+			Name:    commandName[3],
+			Actions: d.CommandActions,
+		},
 	}
-
-	if !d.MissingBuildCommand {
+	if !d.MissingInitCommand {
 		commands = append(commands, versionsCommon.DevfileCommand{
 			Name:    commandName[0],
+			Actions: d.CommandActions,
+		})
+	}
+	if !d.MissingBuildCommand {
+		commands = append(commands, versionsCommon.DevfileCommand{
+			Name:    commandName[1],
 			Actions: d.CommandActions,
 		})
 	}
