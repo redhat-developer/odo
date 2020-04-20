@@ -8,9 +8,10 @@ import (
 )
 
 var (
-	roleTypeMeta           = meta.TypeMeta("Role", "rbac.authorization.k8s.io/v1")
-	roleBindingTypeMeta    = meta.TypeMeta("RoleBinding", "rbac.authorization.k8s.io/v1")
-	serviceAccountTypeMeta = meta.TypeMeta("ServiceAccount", "v1")
+	roleTypeMeta               = meta.TypeMeta("Role", "rbac.authorization.k8s.io/v1")
+	roleBindingTypeMeta        = meta.TypeMeta("RoleBinding", "rbac.authorization.k8s.io/v1")
+	clusterRoleBindingTypeMeta = meta.TypeMeta("ClusterRoleBinding", "rbac.authorization.k8s.io/v1")
+	serviceAccountTypeMeta     = meta.TypeMeta("ServiceAccount", "v1")
 
 	clusterRoleTypeMeta = meta.TypeMeta("ClusterRole", "rbac.authorization.k8s.io/v1")
 )
@@ -42,10 +43,27 @@ func CreateRoleBinding(name types.NamespacedName, sa *corev1.ServiceAccount, rol
 	return CreateRoleBindingForSubjects(name, roleKind, roleName, []v1rbac.Subject{{Kind: sa.Kind, Name: sa.Name, Namespace: sa.Namespace}})
 }
 
+func CreateClusterRoleBinding(name types.NamespacedName, sa *corev1.ServiceAccount, roleKind, roleName string) *v1rbac.ClusterRoleBinding {
+	return ClusterRoleBindingForSubjects(name, roleKind, roleName, []v1rbac.Subject{{Kind: sa.Kind, Name: sa.Name, Namespace: sa.Namespace}})
+}
+
 // CreateRoleBindingForSubjects creates a RoleBinding with multiple subjects
 func CreateRoleBindingForSubjects(name types.NamespacedName, roleKind, roleName string, subjects []v1rbac.Subject) *v1rbac.RoleBinding {
 	return &v1rbac.RoleBinding{
 		TypeMeta:   roleBindingTypeMeta,
+		ObjectMeta: meta.ObjectMeta(name),
+		Subjects:   subjects,
+		RoleRef: v1rbac.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     roleKind,
+			Name:     roleName,
+		},
+	}
+}
+
+func ClusterRoleBindingForSubjects(name types.NamespacedName, roleKind, roleName string, subjects []v1rbac.Subject) *v1rbac.ClusterRoleBinding {
+	return &v1rbac.ClusterRoleBinding{
+		TypeMeta:   clusterRoleBindingTypeMeta,
 		ObjectMeta: meta.ObjectMeta(name),
 		Subjects:   subjects,
 		RoleRef: v1rbac.RoleRef{
