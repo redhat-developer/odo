@@ -3255,7 +3255,11 @@ func isSubDir(baseDir, otherDir string) bool {
 
 // IsRouteSupported checks if route resource type is present on the cluster
 func (c *Client) IsRouteSupported() (bool, error) {
-	list, err := c.discoveryClient.ServerResourcesForGroupVersion("route.openshift.io/v1")
+	const ClusterVersionGroup = "route.openshift.io"
+	const ClusterVersionVersion = "v1"
+	groupVersion := metav1.GroupVersion{Group: ClusterVersionGroup, Version: ClusterVersionVersion}.String()
+
+	list, err := c.discoveryClient.ServerResourcesForGroupVersion(groupVersion)
 	if kerrors.IsNotFound(err) {
 		return false, nil
 	} else if err != nil {
