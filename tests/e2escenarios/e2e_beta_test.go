@@ -18,7 +18,7 @@ var _ = Describe("odo core beta flow", func() {
 	//  current directory and project (before any test is run) so it can restored  after all testing is done
 	var originalDir string
 
-	var oc helper.ClusterRunner
+	var oc helper.OcRunner
 	// path to odo binary
 	var odo string
 
@@ -30,7 +30,7 @@ var _ = Describe("odo core beta flow", func() {
 
 		// initialize oc runner
 		// right now it uses oc binary, but we should convert it to client-go
-		oc = helper.NewClusterRunner("oc")
+		oc = helper.NewOcRunner("oc")
 		odo = "odo"
 
 		context = helper.CreateNewContext()

@@ -17,11 +17,11 @@ var _ = Describe("odo supported images e2e tests", func() {
 	var context string
 	appName := "app"
 
-	var oc helper.ClusterRunner
+	var oc helper.OcRunner
 
 	BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
-		oc = helper.NewClusterRunner("oc")
+		oc = helper.NewOcRunner("oc")
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 		project = helper.CreateRandProject()

@@ -14,13 +14,13 @@ var _ = Describe("odo login and logout command tests", func() {
 	const loginTestUserPassword = "developer"
 	var session1 string
 	var testUserToken string
-	var oc helper.ClusterRunner
+	var oc helper.OcRunner
 	var currentUserToken string
 
 	BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		SetDefaultConsistentlyDuration(30 * time.Second)
-		oc = helper.NewClusterRunner("oc")
+		oc = helper.NewOcRunner("oc")
 	})
 
 	Context("when running help for login command", func() {

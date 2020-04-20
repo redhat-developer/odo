@@ -21,7 +21,7 @@ var _ = Describe("Example of a clean test", func() {
 	//  current directory and project (before eny test is run) so it can restored  after all testing is done
 	var originalDir string
 	var originalProject string
-	var oc helper.ClusterRunner
+	var oc helper.OcRunner
 
 	BeforeEach(func() {
 		// Set default timeout for Eventually assertions
@@ -30,7 +30,7 @@ var _ = Describe("Example of a clean test", func() {
 
 		// initialize oc runner
 		// right now it uses oc binary, but we should convert it to client-go
-		oc = helper.NewClusterRunner("oc")
+		oc = helper.NewOcRunner("oc")
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 		project = helper.CreateRandProject()

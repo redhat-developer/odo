@@ -21,7 +21,7 @@ func NewDockerRunner(dockerPath string) DockerRunner {
 	}
 }
 
-// Run dpcler with given arguments
+// Run docker with given arguments
 func (d *DockerRunner) Run(cmd string) *gexec.Session {
 	session := CmdRunner(cmd)
 	Eventually(session).Should(gexec.Exit(0))

@@ -21,7 +21,7 @@ var _ = Describe("odo push command tests", func() {
 	appName := "app"
 	cmpName := "nodejs"
 
-	oc := helper.NewClusterRunner("oc")
+	oc := helper.NewOcRunner("oc")
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
