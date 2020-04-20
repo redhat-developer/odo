@@ -27,11 +27,14 @@ func (a Adapter) createComponent() (err error) {
 	}
 	if len(vols) == 0 {
 		// A source volume needs to be created
-		volume, err := a.Client.CreateVolume("", projectVolumeLabels)
+		projectVolumeName, err = storage.GenerateVolNameFromDevfileVol("odo-project-source", a.ComponentName)
+		if err != nil {
+			return errors.Wrapf(err, "Unable to generate project source volume name for component %s", componentName)
+		}
+		_, err := a.Client.CreateVolume(projectVolumeName, projectVolumeLabels)
 		if err != nil {
 			return errors.Wrapf(err, "Unable to create project source volume for component %s", componentName)
 		}
-		projectVolumeName = volume.Name
 	} else if len(vols) == 1 {
 		projectVolumeName = vols[0].Name
 	} else if len(vols) > 1 {
@@ -43,16 +46,9 @@ func (a Adapter) createComponent() (err error) {
 		return fmt.Errorf("No valid components found in the devfile")
 	}
 
-	// Process the volumes defined in the devfile
-	componentAliasToVolumes := adaptersCommon.GetVolumes(a.Devfile)
-	uniqueStorage, volumeMapping, err := storage.ProcessVolumes(&a.Client, componentName, componentAliasToVolumes)
-	if err != nil {
-		return errors.Wrapf(err, "Unable to process volumes for component %s", componentName)
-	}
-
 	// Get the storage adapter and create the volumes if it does not exist
 	stoAdapter := storage.New(a.AdapterContext, a.Client)
-	err = stoAdapter.Create(uniqueStorage)
+	err = stoAdapter.Create(a.uniqueStorage)
 	if err != nil {
 		return errors.Wrapf(err, "Unable to create Docker storage adapter for component %s", componentName)
 	}
@@ -60,10 +56,10 @@ func (a Adapter) createComponent() (err error) {
 	// Loop over each component and start a container for it
 	for _, comp := range supportedComponents {
 		var dockerVolumeMounts []mount.Mount
-		for _, vol := range componentAliasToVolumes[*comp.Alias] {
+		for _, vol := range a.componentAliasToVolumes[*comp.Alias] {
 			volMount := mount.Mount{
 				Type:   mount.TypeVolume,
-				Source: volumeMapping[*vol.Name],
+				Source: a.volumeNameToDockerVolName[*vol.Name],
 				Target: *vol.ContainerPath,
 			}
 			dockerVolumeMounts = append(dockerVolumeMounts, volMount)
@@ -90,19 +86,14 @@ func (a Adapter) updateComponent() (err error) {
 	}
 	if len(vols) == 0 {
 		return fmt.Errorf("Unable to find source volume for component %s", componentName)
+	} else if len(vols) > 1 {
+		return errors.Wrapf(err, "Error, multiple source volumes found for component %s", componentName)
 	}
 	projectVolumeName := vols[0].Name
 
-	// Process the volumes defined in the devfile
-	componentAliasToVolumes := adaptersCommon.GetVolumes(a.Devfile)
-	uniqueStorage, volumeMapping, err := storage.ProcessVolumes(&a.Client, componentName, componentAliasToVolumes)
-	if err != nil {
-		return errors.Wrapf(err, "Unable to process volumes for component %s", componentName)
-	}
-
 	// Get the storage adapter and create the volumes if it does not exist
 	stoAdapter := storage.New(a.AdapterContext, a.Client)
-	err = stoAdapter.Create(uniqueStorage)
+	err = stoAdapter.Create(a.uniqueStorage)
 
 	supportedComponents := adaptersCommon.GetSupportedComponents(a.Devfile.Data)
 	if len(supportedComponents) == 0 {
@@ -118,10 +109,10 @@ func (a Adapter) updateComponent() (err error) {
 		}
 
 		var dockerVolumeMounts []mount.Mount
-		for _, vol := range componentAliasToVolumes[*comp.Alias] {
+		for _, vol := range a.componentAliasToVolumes[*comp.Alias] {
 			volMount := mount.Mount{
 				Type:   mount.TypeVolume,
-				Source: volumeMapping[*vol.Name],
+				Source: a.volumeNameToDockerVolName[*vol.Name],
 				Target: *vol.ContainerPath,
 			}
 			dockerVolumeMounts = append(dockerVolumeMounts, volMount)

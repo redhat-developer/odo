@@ -44,7 +44,6 @@ func DoesContainerNeedUpdating(component common.DevfileComponent, containerConfi
 	// Update the container if the volumes were updated in the devfile
 	for _, devfileMount := range devfileMounts {
 		if !containerHasMount(devfileMount, containerMounts) {
-			fmt.Println("HERE!")
 			return true
 		}
 	}
