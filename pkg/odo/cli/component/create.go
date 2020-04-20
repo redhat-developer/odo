@@ -701,7 +701,7 @@ func (co *CreateOptions) downloadProject() error {
 
 	path, err := os.Getwd()
 	if err != nil {
-		return errors.Wrapf(err, "Could not get the current working directory: %s")
+		return errors.Wrapf(err, "Could not get the current working directory.")
 	}
 
 	if project.ClonePath != nil && *project.ClonePath != "" {
