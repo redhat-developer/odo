@@ -29,7 +29,35 @@ func TestGetCommand(t *testing.T) {
 	}{
 		{
 			name:              "Case: Valid devfile",
+			requestedCommands: []string{"devbuild", "devrun"},
+			commandActions: []versionsCommon.DevfileCommandAction{
+				{
+					Command:   &commands[0],
+					Component: &components[0],
+					Workdir:   &workDir[0],
+					Type:      &validCommandType,
+				},
+			},
+			isCommandRequired: []bool{false, false, true},
+			wantErr:           false,
+		},
+		{
+			name:              "Case: Valid devfile with devinit and devbuild",
 			requestedCommands: []string{"devinit", "devbuild", "devrun"},
+			commandActions: []versionsCommon.DevfileCommandAction{
+				{
+					Command:   &commands[0],
+					Component: &components[0],
+					Workdir:   &workDir[0],
+					Type:      &validCommandType,
+				},
+			},
+			isCommandRequired: []bool{false, false, true},
+			wantErr:           false,
+		},
+		{
+			name:              "Case: Valid devfile with devinit and devrun",
+			requestedCommands: []string{"devinit", "devrun"},
 			commandActions: []versionsCommon.DevfileCommandAction{
 				{
 					Command:   &commands[0],
@@ -56,7 +84,7 @@ func TestGetCommand(t *testing.T) {
 			wantErr:           true,
 		},
 		{
-			name:              "Case: Invalid devfile with wrong command type",
+			name:              "Case: Invalid devfile with wrong devinit command type",
 			requestedCommands: []string{"devinit"},
 			commandActions: []versionsCommon.DevfileCommandAction{
 				{
@@ -70,7 +98,7 @@ func TestGetCommand(t *testing.T) {
 			wantErr:           true,
 		},
 		{
-			name:              "Case: Invalid devfile with empty component",
+			name:              "Case: Invalid devfile with empty devinit component",
 			requestedCommands: []string{"devinit"},
 			commandActions: []versionsCommon.DevfileCommandAction{
 				{
@@ -84,7 +112,7 @@ func TestGetCommand(t *testing.T) {
 			wantErr:           true,
 		},
 		{
-			name:              "Case: Invalid devfile with empty command",
+			name:              "Case: Invalid devfile with empty devinit command",
 			requestedCommands: []string{"devinit"},
 			commandActions: []versionsCommon.DevfileCommandAction{
 				{
@@ -98,7 +126,7 @@ func TestGetCommand(t *testing.T) {
 			wantErr:           true,
 		},
 		{
-			name:              "Case: Invalid devfile with wrong command type",
+			name:              "Case: Invalid devfile with wrong devbuild command type",
 			requestedCommands: []string{"devbuild"},
 			commandActions: []versionsCommon.DevfileCommandAction{
 				{
@@ -112,7 +140,7 @@ func TestGetCommand(t *testing.T) {
 			wantErr:           true,
 		},
 		{
-			name:              "Case: Invalid devfile with empty component",
+			name:              "Case: Invalid devfile with empty devbuild component",
 			requestedCommands: []string{"devbuild"},
 			commandActions: []versionsCommon.DevfileCommandAction{
 				{
@@ -126,7 +154,7 @@ func TestGetCommand(t *testing.T) {
 			wantErr:           true,
 		},
 		{
-			name:              "Case: Invalid devfile with empty command",
+			name:              "Case: Invalid devfile with empty devbuild command",
 			requestedCommands: []string{"devbuild"},
 			commandActions: []versionsCommon.DevfileCommandAction{
 				{
@@ -657,15 +685,6 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 			wantErr:          false,
 		},
 		{
-			name:             "Case: Provided Init Command, Build Command and Run Command",
-			initCommand:      "customcommand",
-			buildCommand:     "customcommand",
-			runCommand:       "customcommand",
-			numberOfCommands: 3,
-			componentType:    versionsCommon.DevfileComponentTypeDockerimage,
-			wantErr:          false,
-		},
-		{
 			name:             "Case: No Dockerimage Component",
 			initCommand:      emptyString,
 			buildCommand:     "customcommand",
@@ -678,6 +697,15 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 			name:             "Case: Provided Wrong Build Command and Provided Run Command",
 			initCommand:      emptyString,
 			buildCommand:     "customcommand123",
+			runCommand:       "customcommand",
+			numberOfCommands: 1,
+			componentType:    versionsCommon.DevfileComponentTypeDockerimage,
+			wantErr:          true,
+		},
+		{
+			name:             "Case: Provided Wrong Init Command and Provided Build and Run Command",
+			initCommand:      "customcommand123",
+			buildCommand:     emptyString,
 			runCommand:       "customcommand",
 			numberOfCommands: 1,
 			componentType:    versionsCommon.DevfileComponentTypeDockerimage,
