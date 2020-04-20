@@ -122,7 +122,7 @@ var _ = Describe("odo devfile create command tests", func() {
 			helper.Chdir(contextDevfile)
 			devfile := "devfile.yaml"
 			helper.CmdShouldPass("odo", "create", "nodejs", "--downloadSource")
-			expectedFiles := []string{"package.json", "package-lock.json", "README.MD", devfile}
+			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
 			Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
 			helper.DeleteDir(contextDevfile)
 		})
