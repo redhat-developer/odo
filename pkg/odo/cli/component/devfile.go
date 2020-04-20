@@ -117,20 +117,6 @@ func getComponentName() (string, error) {
 	return componentName, nil
 }
 
-// Get namespace name from env.yaml file
-func getNamespace() (string, error) {
-	dir, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
-	envInfo, err := envinfo.NewEnvSpecificInfo(dir)
-	if err != nil {
-		return "", err
-	}
-	Namespace := envInfo.GetNamespace()
-	return Namespace, nil
-}
-
 // DevfileComponentDelete deletes the devfile component
 func (do *DeleteOptions) DevfileComponentDelete() error {
 	// Parse devfile
