@@ -16,7 +16,6 @@ import (
 )
 
 const (
-	volumeSize                 = "5Gi"
 	envCheProjectsRoot         = "CHE_PROJECTS_ROOT"
 	envOdoCommandRunWorkingDir = "ODO_COMMAND_RUN_WORKING_DIR"
 	envOdoCommandRun           = "ODO_COMMAND_RUN"
