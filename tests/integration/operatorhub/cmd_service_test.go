@@ -85,7 +85,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			}
 
 			// now create operator backed service
-			stdOut = helper.CmdShouldPass("odo", "service", "create", "--from-file", fileName)
+			helper.CmdShouldPass("odo", "service", "create", "--from-file", fileName)
 
 			// now verify if the pods for the operator have started
 			pods := helper.CmdShouldPass("oc", "get", "pods", "-n", CI_OPERATOR_HUB_PROJECT)
@@ -102,6 +102,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			// services yet.
 			helper.CmdShouldPass("oc", "delete", "EtcdCluster", "example")
 		})
+
 		It("should fail to create service if metadata doesn't exist or is invalid", func() {
 			noMetadata := `
 apiVersion: etcd.database.coreos.com/v1beta2

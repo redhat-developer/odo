@@ -245,6 +245,9 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 			// Check if the operator and the CR exist on cluster
 			o.CustomResource = o.CustomResourceDefinition["kind"].(string)
 			csvs, err := o.KClient.GetClusterServiceVersionList()
+			if err != nil {
+				return err
+			}
 
 			csv, err := doesCRExist(o.CustomResource, csvs)
 			if err != nil {
