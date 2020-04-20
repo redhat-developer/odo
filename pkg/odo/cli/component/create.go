@@ -316,16 +316,10 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		}
 
 		// Configure the context
-		if cmd.Flags().Changed("context") {
-			context, err := cmd.Flags().GetString("context")
-			if err != nil {
-				return err
-			}
-
-			DevfilePath = filepath.Join(context, "devfile.yaml")
-			EnvFilePath = filepath.Join(context, ".odo/env/env.yaml")
-			co.componentContext = context
-			co.CommonPushOptions.componentContext = context
+		if len(co.componentContext) != 0 {
+			DevfilePath = filepath.Join(co.componentContext, "devfile.yaml")
+			EnvFilePath = filepath.Join(co.componentContext, ".odo/env/env.yaml")
+			co.CommonPushOptions.componentContext = co.componentContext
 		}
 
 		catalogDevfileList, err := catalog.ListDevfileComponents()

@@ -96,6 +96,7 @@ var _ = Describe("odo devfile create command tests", func() {
 			Expect(output).Should(BeTrue())
 			output = util.CheckPathExists(envFilePath)
 			Expect(output).Should(BeTrue())
+			helper.DeleteDir(newContext)
 		})
 	})
 
