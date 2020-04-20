@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odobackup/pkg/odo/util/pushtarget"
+	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/log"
