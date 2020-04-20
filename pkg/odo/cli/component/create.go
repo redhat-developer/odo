@@ -64,7 +64,6 @@ type DevfileMetadata struct {
 	devfileSupport     bool
 	devfileLink        string
 	devfileRegistry    string
-	devfilePath        string
 	downloadSource     bool
 }
 
@@ -684,7 +683,7 @@ func (co *CreateOptions) Validate() (err error) {
 // Downloads first project from list of projects in devfile
 // Currenty type git with a non github url is not supported
 func (co *CreateOptions) downloadProject() error {
-	devObj, err := devfile.Parse(co.devfileMetadata.devfilePath)
+	devObj, err := devfile.Parse(DevfilePath)
 	if err != nil {
 		return err
 	}
@@ -702,7 +701,7 @@ func (co *CreateOptions) downloadProject() error {
 
 	path, err := os.Getwd()
 	if err != nil {
-		return errors.Errorf("Could not get the current working directory: %s", err)
+		return errors.Wrapf(err, "Could not get the current working directory: %s")
 	}
 
 	if project.ClonePath != nil && *project.ClonePath != "" {
@@ -720,7 +719,7 @@ func (co *CreateOptions) downloadProject() error {
 		}
 	}
 
-	err = util.IsValidProjectDir(path, co.devfileMetadata.devfilePath)
+	err = util.IsValidProjectDir(path, DevfilePath)
 	if err != nil {
 		return err
 	}
@@ -760,15 +759,14 @@ func (co *CreateOptions) Run() (err error) {
 	if experimental.IsExperimentalModeEnabled() {
 		// Download devfile.yaml file and create env.yaml file
 		if co.devfileMetadata.devfileSupport {
-			if co.devfileMetadata.devfilePath == "" && !util.CheckPathExists(DevfilePath) {
+			if !util.CheckPathExists(DevfilePath) {
 				err := util.DownloadFile(co.devfileMetadata.devfileRegistry+co.devfileMetadata.devfileLink, DevfilePath)
 				if err != nil {
 					return errors.Wrap(err, "Faile to download devfile.yaml for devfile component")
 				}
-				co.devfileMetadata.devfilePath = DevfilePath
 			}
 
-			if co.devfileMetadata.downloadSource {
+			if util.CheckPathExists(DevfilePath) && co.devfileMetadata.downloadSource {
 				err = co.downloadProject()
 				if err != nil {
 					return errors.Wrap(err, "Failed to download project for devfile component")
@@ -889,13 +887,13 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 
 	if experimental.IsExperimentalModeEnabled() {
 		componentCreateCmd.Flags().StringVarP(&co.devfileMetadata.componentNamespace, "namespace", "n", "", "Create devfile component under specific namespace")
-		componentCreateCmd.Flags().BoolVar(&co.devfileMetadata.downloadSource, "downloadSource", false, "")
-		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
+		componentCreateCmd.Flags().BoolVar(&co.devfileMetadata.downloadSource, "downloadSource", false, "Download sample project from devfile. (ex. odo component create <component_type> [component_name] --downloadSource")
 	}
 
 	componentCreateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	// Adding `--now` flag
+	genericclioptions.AddNowFlag(componentCreateCmd, &co.now)
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(componentCreateCmd)
 	//Adding `--application` flag

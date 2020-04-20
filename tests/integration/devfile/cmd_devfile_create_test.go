@@ -121,13 +121,12 @@ var _ = Describe("odo devfile create command tests", func() {
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 			contextDevfile := helper.CreateNewContext()
 			helper.Chdir(contextDevfile)
+			defer helper.DeleteDir(contextDevfile)
 			devfile := "devfile.yaml"
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", devfile), filepath.Join(contextDevfile, devfile))
-			// TODO: Check for devfile in non-default location
-			helper.CmdShouldPass("odo", "create", "nodejs", "--downloadSource", "--devfile", devfile)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--downloadSource")
 			expectedFiles := []string{"package.json", "package-lock.json", "README.MD", devfile}
 			Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
-			helper.DeleteDir(contextDevfile)
 		})
 	})
 
@@ -136,6 +135,7 @@ var _ = Describe("odo devfile create command tests", func() {
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 			contextDevfile := helper.CreateNewContext()
 			helper.Chdir(contextDevfile)
+			defer helper.DeleteDir(contextDevfile)
 			devfile := "devfile.yaml"
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", devfile), filepath.Join(contextDevfile, devfile))
 
@@ -143,7 +143,7 @@ var _ = Describe("odo devfile create command tests", func() {
 			if err != nil {
 				log.Error("Could not replace the entry in the devfile: " + err.Error())
 			}
-			helper.CmdShouldPass("odo", "create", "nodejs", "--downloadSource", "--devfile", devfile)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--downloadSource")
 			expectedFiles := []string{"package.json", "package-lock.json", "README.MD", devfile}
 			Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
 			helper.DeleteDir(contextDevfile)
@@ -155,6 +155,7 @@ var _ = Describe("odo devfile create command tests", func() {
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 			contextDevfile := helper.CreateNewContext()
 			helper.Chdir(contextDevfile)
+			defer helper.DeleteDir(contextDevfile)
 			devfile := "devfile.yaml"
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", devfile), filepath.Join(contextDevfile, devfile))
 			err := helper.ReplaceDevfileField(devfile, "location", "https://github.com/che-samples/web-nodejs-sample/archive/master.zip")
@@ -165,10 +166,9 @@ var _ = Describe("odo devfile create command tests", func() {
 			if err != nil {
 				log.Error("Could not replace the entry in the devfile: " + err.Error())
 			}
-			helper.CmdShouldPass("odo", "create", "nodejs", "--downloadSource", "--devfile", devfile, "--context", filepath.Join(context, "config.yaml"))
+			helper.CmdShouldPass("odo", "create", "nodejs", "--downloadSource")
 			expectedFiles := []string{"package.json", "package-lock.json", "README.MD", devfile}
 			Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
-			helper.DeleteDir(contextDevfile)
 		})
 	})
 })
