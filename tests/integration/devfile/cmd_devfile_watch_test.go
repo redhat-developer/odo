@@ -21,17 +21,25 @@ var _ = Describe("odo devfile watch command tests", func() {
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
-		namespace = helper.CreateRandProject()
 		context = helper.CreateNewContext()
+		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		if os.Getenv("KUBERNETES") == "true" {
+			namespace = helper.CreateRandNamespace(context)
+		} else {
+			namespace = helper.CreateRandProject()
+		}
 		currentWorkingDirectory = helper.Getwd()
 		helper.Chdir(context)
-		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 	})
 
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		helper.DeleteProject(namespace)
+		if os.Getenv("KUBERNETES") == "true" {
+			helper.DeleteNamespace(namespace)
+		} else {
+			helper.DeleteProject(namespace)
+		}
 		helper.Chdir(currentWorkingDirectory)
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
