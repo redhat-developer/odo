@@ -5,23 +5,34 @@ import (
 	"os"
 	"strconv"
 
+	"reflect"
+
 	"github.com/docker/go-connections/nat"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/exec"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/log"
 )
 
 var LocalhostIP = "127.0.0.1"
+
+const (
+	envCheProjectsRoot         = "CHE_PROJECTS_ROOT"
+	envOdoCommandRunWorkingDir = "ODO_COMMAND_RUN_WORKING_DIR"
+	envOdoCommandRun           = "ODO_COMMAND_RUN"
+)
 
 func (a Adapter) createComponent() (err error) {
 	componentName := a.ComponentName
@@ -60,7 +71,6 @@ func (a Adapter) createComponent() (err error) {
 	if err != nil {
 		return errors.Wrapf(err, "Unable to create Docker storage adapter for component %s", componentName)
 	}
-	projectVolumeName := projectVolume.Name
 
 	// Get the supervisord volume
 	var supervisordVolumeName string
@@ -89,7 +99,7 @@ func (a Adapter) createComponent() (err error) {
 			}
 			dockerVolumeMounts = append(dockerVolumeMounts, volMount)
 		}
-		err = a.pullAndStartContainer(dockerVolumeMounts, projectVolumeName, comp)
+		err = a.pullAndStartContainer(dockerVolumeMounts, projectVolumeName, supervisordVolumeName, comp)
 		if err != nil {
 			return errors.Wrapf(err, "unable to pull and start container %s for component %s", *comp.Alias, componentName)
 		}
@@ -111,7 +121,7 @@ func (a Adapter) updateComponent() (err error) {
 	}
 	if len(projectVols) == 0 {
 		return fmt.Errorf("Unable to find source volume for component %s", componentName)
-	} else if len(vols) > 1 {
+	} else if len(projectVols) > 1 {
 		return errors.Wrapf(err, "Error, multiple source volumes found for component %s", componentName)
 	}
 	projectVolumeName := projectVols[0].Name
@@ -226,7 +236,6 @@ func (a Adapter) pullAndStartContainer(mounts []mount.Mount, projectVolumeName, 
 }
 
 func (a Adapter) startContainer(mounts []mount.Mount, projectVolumeName, supervisordVolumeName string, comp versionsCommon.DevfileComponent) error {
-	containerConfig := a.generateAndGetContainerConfig(a.ComponentName, comp)
 	hostConfig, err := a.generateAndGetHostConfig()
 	hostConfig.Mounts = mounts
 	if err != nil {
@@ -249,14 +258,41 @@ func (a Adapter) startContainer(mounts []mount.Mount, projectVolumeName, supervi
 			comp.Command = append(comp.Command, adaptersCommon.SupervisordBinaryPath)
 			comp.Args = append(comp.Args, "-c", adaptersCommon.SupervisordConfFile)
 		}
-	}
 
-	containerConfig := a.generateAndGetContainerConfig(componentName, comp)
+		if !adaptersCommon.IsEnvPresent(comp.Env, envOdoCommandRun) {
+			envName := envOdoCommandRun
+			envValue := *action.Command
+			comp.Env = append(comp.Env, versionsCommon.DockerimageEnv{
+				Name:  &envName,
+				Value: &envValue,
+			})
+		}
+
+		if !adaptersCommon.IsEnvPresent(comp.Env, envOdoCommandRunWorkingDir) && action.Workdir != nil {
+			envName := envOdoCommandRunWorkingDir
+			envValue := *action.Workdir
+			comp.Env = append(comp.Env, versionsCommon.DockerimageEnv{
+				Name:  &envName,
+				Value: &envValue,
+			})
+		}
+	}
 
 	// If the component set `mountSources` to true, add the source volume to it
 	if comp.MountSources {
 		utils.AddVolumeToComp(projectVolumeName, lclient.OdoSourceVolumeMount, &hostConfig)
+
+		if !adaptersCommon.IsEnvPresent(comp.Env, envCheProjectsRoot) {
+			envName := envCheProjectsRoot
+			envValue := lclient.OdoSourceVolumeMount
+			comp.Env = append(comp.Env, versionsCommon.DockerimageEnv{
+				Name:  &envName,
+				Value: &envValue,
+			})
+		}
 	}
+
+	containerConfig := a.generateAndGetContainerConfig(a.ComponentName, comp)
 
 	// Create the docker container
 	s := log.Spinner("Starting container for " + *comp.Image)
@@ -329,4 +365,133 @@ func getPortMap() (nat.PortMap, error) {
 	}
 
 	return nat.PortMap{}, nil
+}
+
+// Push syncs source code from the user's disk to the component
+func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand, componentExists, show bool, podName string, containers []types.Container) (err error) {
+	var buildRequired bool
+	var s *log.Status
+
+	if len(pushDevfileCommands) == 1 {
+		// if there is one command, it is the mandatory run command. No need to build.
+		buildRequired = false
+	} else if len(pushDevfileCommands) == 2 {
+		// if there are two commands, it is the optional build command and the mandatory run command, set buildRequired to true
+		buildRequired = true
+	} else {
+		return fmt.Errorf("error executing devfile commands - there should be at least 1 command or at most 2 commands, currently there are %v commands", len(pushDevfileCommands))
+	}
+
+	for i := 0; i < len(pushDevfileCommands); i++ {
+		command := pushDevfileCommands[i]
+
+		// Exec the devBuild command if buildRequired is true
+		if (command.Name == string(common.DefaultDevfileBuildCommand) || command.Name == a.devfileBuildCmd) && buildRequired {
+			glog.V(3).Infof("Executing devfile command %v", command.Name)
+
+			for _, action := range command.Actions {
+				// Change to the workdir and execute the command
+				var cmdArr []string
+				if action.Workdir != nil {
+					cmdArr = []string{"/bin/sh", "-c", "cd " + *action.Workdir + " && " + *action.Command}
+				} else {
+					cmdArr = []string{"/bin/sh", "-c", *action.Command}
+				}
+
+				// Get the containerID
+				containerID := ""
+				for _, container := range containers {
+					if container.Labels["alias"] == *action.Component {
+						containerID = container.ID
+					}
+				}
+
+				if show {
+					s = log.SpinnerNoSpin("Executing " + command.Name + " command " + fmt.Sprintf("%q", *action.Command))
+				} else {
+					s = log.Spinner("Executing " + command.Name + " command " + fmt.Sprintf("%q", *action.Command))
+				}
+
+				defer s.End(false)
+
+				err = exec.ExecuteCommand(&a.Client, podName, containerID, cmdArr, show)
+				if err != nil {
+					s.End(false)
+					return err
+				}
+				s.End(true)
+			}
+
+			// Reset the for loop counter and iterate through all the devfile commands again for others
+			i = -1
+			// Set the buildRequired to false since we already executed the build command
+			buildRequired = false
+		} else if (command.Name == string(common.DefaultDevfileRunCommand) || command.Name == a.devfileRunCmd) && !buildRequired {
+			// Always check for buildRequired is false, since the command may be iterated out of order and we always want to execute devBuild first if buildRequired is true. If buildRequired is false, then we don't need to build and we can execute the devRun command
+			glog.V(3).Infof("Executing devfile command %v", command.Name)
+
+			for _, action := range command.Actions {
+
+				// Get the containerID
+				containerID := ""
+				for _, container := range containers {
+					if container.Labels["alias"] == *action.Component {
+						containerID = container.ID
+					}
+				}
+
+				// Check if the devfile run component containers have supervisord as the entrypoint.
+				// Start the supervisord if the odo component does not exist
+				if !componentExists {
+					err = a.InitRunContainerSupervisord(*action.Component, podName, containers)
+					if err != nil {
+						return
+					}
+				}
+
+				// Exec the supervisord ctl stop and start for the devrun program
+				type devRunExecutable struct {
+					command []string
+				}
+				devRunExecs := []devRunExecutable{
+					{
+						command: []string{common.SupervisordBinaryPath, "ctl", "stop", "all"},
+					},
+					{
+						command: []string{common.SupervisordBinaryPath, "ctl", "start", string(common.DefaultDevfileRunCommand)},
+					},
+				}
+
+				s = log.Spinner("Executing " + command.Name + " command " + fmt.Sprintf("%q", *action.Command))
+				defer s.End(false)
+
+				for _, devRunExec := range devRunExecs {
+
+					err = exec.ExecuteCommand(&a.Client, podName, containerID, devRunExec.command, show)
+					if err != nil {
+						s.End(false)
+						return
+					}
+				}
+				s.End(true)
+			}
+		}
+	}
+
+	return
+}
+
+// InitRunContainerSupervisord initializes the supervisord in the container if
+// the container has entrypoint that is not supervisord
+func (a Adapter) InitRunContainerSupervisord(containerName, podName string, containers []types.Container) (err error) {
+	for _, container := range containers {
+		glog.V(3).Infof("MJF container.Labels[alias] %v", container.Labels["alias"])
+		glog.V(3).Infof("MJF container.Command %v", container.Command)
+		if container.Labels["alias"] == containerName && !reflect.DeepEqual(container.Command, []string{common.SupervisordBinaryPath}) {
+			command := []string{common.SupervisordBinaryPath, "-c", common.SupervisordConfFile, "-d"}
+			err = exec.ExecuteCommand(&a.Client, podName, container.ID, command, true)
+		}
+	}
+
+	return
 }

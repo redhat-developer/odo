@@ -94,3 +94,16 @@ func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume 
 	}
 	return componentAliasToVolumes
 }
+
+// IsEnvPresent checks if the env variable is present in an array of env variables
+func IsEnvPresent(envVars []common.DockerimageEnv, envVarName string) bool {
+	isPresent := false
+
+	for _, envVar := range envVars {
+		if *envVar.Name == envVarName {
+			isPresent = true
+		}
+	}
+
+	return isPresent
+}

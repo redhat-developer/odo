@@ -49,6 +49,12 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	a.devfileBuildCmd = parameters.DevfileBuildCmd
 	a.devfileRunCmd = parameters.DevfileRunCmd
 
+	// Validate the devfile build and run commands
+	pushDevfileCommands, err := common.ValidateAndGetPushDevfileCommands(a.Devfile.Data, a.devfileBuildCmd, a.devfileRunCmd)
+	if err != nil {
+		return errors.Wrap(err, "failed to validate devfile build and run commands")
+	}
+
 	if componentExists {
 		err = a.updateComponent()
 	} else {
@@ -73,6 +79,11 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	err = syncAdapter.CheckProjectFiles(parameters, "", containerID, false, componentExists)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to sync to component with name %s", a.ComponentName)
+	}
+
+	err = a.execDevfile(pushDevfileCommands, componentExists, parameters.Show, "", containers)
+	if err != nil {
+		return errors.Wrapf(err, "Failed to execute devfile commands for component %s", a.ComponentName)
 	}
 
 	// cmd := []string{"/bin/sh", "-c", "/tmp/loop.sh"}
