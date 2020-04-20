@@ -18,7 +18,25 @@ import (
 func (a Adapter) createComponent() (err error) {
 	componentName := a.ComponentName
 
+	// Get or create the project source volume
+	var projectVolumeName string
 	projectVolumeLabels := utils.GetProjectVolumeLabels(componentName)
+	vols, err := a.Client.GetVolumesByLabel(projectVolumeLabels)
+	if err != nil {
+		return errors.Wrapf(err, "Unable to retrieve source volume for component "+componentName)
+	}
+	if len(vols) == 0 {
+		// A source volume needs to be created
+		volume, err := a.Client.CreateVolume("", projectVolumeLabels)
+		if err != nil {
+			return errors.Wrapf(err, "Unable to create project source volume for component %s", componentName)
+		}
+		projectVolumeName = volume.Name
+	} else if len(vols) == 1 {
+		projectVolumeName = vols[0].Name
+	} else if len(vols) > 1 {
+		return errors.Wrapf(err, "Error, multiple source volumes found for component %s", componentName)
+	}
 
 	supportedComponents := adaptersCommon.GetSupportedComponents(a.Devfile.Data)
 	if len(supportedComponents) == 0 {
@@ -38,13 +56,6 @@ func (a Adapter) createComponent() (err error) {
 	if err != nil {
 		return errors.Wrapf(err, "Unable to create Docker storage adapter for component %s", componentName)
 	}
-	// Additionally create a docker volume to store the project source code
-	volume, err := a.Client.CreateVolume("", projectVolumeLabels)
-	if err != nil {
-		return errors.Wrapf(err, "Unable to create project source volume for component %s", componentName)
-	}
-
-	projectVolumeName := volume.Name
 
 	// Loop over each component and start a container for it
 	for _, comp := range supportedComponents {

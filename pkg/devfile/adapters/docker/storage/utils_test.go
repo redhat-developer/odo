@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
@@ -314,9 +313,16 @@ func TestProcessVolumes(t *testing.T) {
 			}
 
 			if storageLength > 0 {
-				for index := range uniqueStorage {
-					if !reflect.DeepEqual(uniqueStorage[index].Volume, tt.wantStorage[index].Volume) {
-						t.Errorf("expected %v, wanted %v", uniqueStorage[index].Volume, tt.wantStorage[index].Volume)
+				for i := range uniqueStorage {
+					var volExists bool
+					for j := range tt.wantStorage {
+						if *uniqueStorage[i].Volume.Name == *tt.wantStorage[j].Volume.Name && uniqueStorage[i].Volume.ContainerPath == tt.wantStorage[j].Volume.ContainerPath {
+							volExists = true
+						}
+					}
+
+					if !volExists {
+						t.Errorf("expected %v, wanted %v", uniqueStorage[i].Volume, tt.wantStorage[i].Volume)
 					}
 				}
 			}
