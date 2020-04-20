@@ -231,6 +231,22 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(output).To(ContainSubstring("Executing devrun command \"/artifacts/bin/start-server.sh\""))
 		})
 
+		It("should be able to handle a missing devinit command", func() {
+			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
+			helper.Chdir(projectDirPath)
+
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
+			helper.RenameFile("devfile.yaml", "devfile-old.yaml")
+			helper.RenameFile("devfile-without-devinit.yaml", "devfile.yaml")
+
+			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
+			Expect(output).NotTo(ContainSubstring("Executing devinit command"))
+			Expect(output).To(ContainSubstring("Executing devbuild command \"npm install\""))
+			Expect(output).To(ContainSubstring("Executing devrun command \"nodemon app.js\""))
+		})
+
 		It("should be able to handle a missing devbuild command", func() {
 			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
 			helper.Chdir(projectDirPath)
@@ -301,6 +317,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.RenameFile("devfile-with-volumes.yaml", "devfile.yaml")
 
 			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
+			Expect(output).To(ContainSubstring("Executing devinit command"))
 			Expect(output).To(ContainSubstring("Executing devbuild command"))
 			Expect(output).To(ContainSubstring("Executing devrun command"))
 
@@ -309,6 +326,20 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			var statErr error
 			var cmdOutput string
+			oc.CheckCmdOpInRemoteDevfilePod(
+				podName,
+				"runtime",
+				namespace,
+				[]string{"cat", "/data/myfile-init.log"},
+				func(cmdOp string, err error) bool {
+					cmdOutput = cmdOp
+					statErr = err
+					return true
+				},
+			)
+			Expect(statErr).ToNot(HaveOccurred())
+			Expect(cmdOutput).To(ContainSubstring("init"))
+
 			oc.CheckCmdOpInRemoteDevfilePod(
 				podName,
 				"runtime2",

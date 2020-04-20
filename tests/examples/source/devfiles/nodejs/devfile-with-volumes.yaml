@@ -33,6 +33,12 @@ components:
       - name: myvol2
         containerPath: /data2
 commands:
+  - name: devinit
+    actions:
+      - type: exec
+        component: runtime
+        command: "echo init >> myfile-init.log"
+        workdir: /data
   - name: devbuild
     actions:
       - type: exec
