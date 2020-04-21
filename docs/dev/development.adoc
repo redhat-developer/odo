@@ -449,20 +449,15 @@ There is a helper script link:../scripts/bump-version.sh[scripts/bump-version.sh
 
 . Merge the above PR.
 . Once the PR is merged create and push the new git tag for the version.
-+
-----
-$ git tag v0.0.1
-$ git push upstream v0.0.1
-----
-*Or* create the new release using the GitHub site (this must be a proper release and not a draft).
+. Create a new release using the GitHub site (this must be a proper release and NOT a draft).
 +
 
-. Update the release description (changelog) on GitHub. To make things easier, a script was created to automatically generate a CHANGELOG and output to stdout.
+. Update the release description (changelog) on GitHub. To make things easier, a script was created to automatically generate a CHANGELOG and output to `/tmp/changelog`. This script will require a GitHub authentication token which will prompt you when running the script.
 +
 ----
+$ export GITHUB_TOKEN=yoursupersecretgithubtoken
 $ ./scripts/changelog-script.sh ${PREVIOUS_VERSION} ${NEW_VERSION}
 ----
-. Verify that packages have been uploaded to the `rpm` and `deb` repositories.
 . Update the Homebrew package:
 .. Check commit id for the released tag `git show-ref v0.0.1`
 .. Create a PR to update `:tag` and `:revision` in the https://github.com/kadel/homebrew-odo/blob/master/Formula/odo.rb[`odo.rb`] file
