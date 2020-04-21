@@ -109,8 +109,7 @@ func (dc *Client) ExecCMDInContainer(podName string, containerID string, cmd []s
 		AttachStdout: stdout != nil,
 		AttachStderr: stderr != nil,
 		Cmd:          cmd,
-		// WorkingDir:   "/tmp",
-		Tty: tty,
+		Tty:          tty,
 	}
 
 	resp, err := dc.Client.ContainerExecCreate(dc.Context, containerID, execConfig)
@@ -118,20 +117,11 @@ func (dc *Client) ExecCMDInContainer(podName string, containerID string, cmd []s
 		return err
 	}
 
-	// execStartCheck := types.ExecStartCheck{
-	// 	Tty: tty,
-	// }
-
 	hresp, err := dc.Client.ContainerExecAttach(dc.Context, resp.ID, types.ExecStartCheck{})
 	if err != nil {
 		return err
 	}
 	defer hresp.Close()
-
-	// err = dc.Client.ContainerExecStart(dc.Context, resp.ID, execStartCheck)
-	// if err != nil {
-	// 	return err
-	// }
 
 	errorCh := make(chan error)
 
@@ -147,22 +137,6 @@ func (dc *Client) ExecCMDInContainer(podName string, containerID string, cmd []s
 	}
 
 	hresp.Close()
-
-	// running := true
-	// for running {
-	// 	respThree, err := dc.Client.ContainerExecInspect(dc.Context, resp.ID)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-
-	// 	glog.V(3).Infof("MJF checking")
-
-	// 	if !respThree.Running {
-	// 		running = false
-	// 	}
-
-	// 	time.Sleep(250 * time.Millisecond)
-	// }
 
 	return nil
 }

@@ -9,21 +9,19 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
+
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
-	"github.com/openshift/odo/pkg/sync"
-
-	"github.com/openshift/odo/pkg/exec"
-
-	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
+	"github.com/openshift/odo/pkg/exec"
 	"github.com/openshift/odo/pkg/kclient"
-	"github.com/openshift/odo/pkg/log"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
-	"github.com/pkg/errors"
+	"github.com/openshift/odo/pkg/sync"
 )
 
 // New instantiantes a component adapter
@@ -102,7 +100,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	// Get a sync adapter. Check if project files have changed and sync accordingly
 	syncAdapter := sync.New(a.AdapterContext, &a.Client)
-	err = syncAdapter.CheckProjectFiles(parameters, pod.GetName(), containerName, podChanged, componentExists)
+	err = syncAdapter.SyncFiles(parameters, pod.GetName(), containerName, podChanged, componentExists)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to sync to component with name %s", a.ComponentName)
 	}
@@ -285,17 +283,9 @@ func (a Adapter) waitAndGetComponentPod(hideSpinner bool) (*corev1.Pod, error) {
 
 // Push syncs source code from the user's disk to the component
 func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand, componentExists, show bool, podName string, containers []corev1.Container) (err error) {
-	var buildRequired bool
-	var s *log.Status
-
-	if len(pushDevfileCommands) == 1 {
-		// if there is one command, it is the mandatory run command. No need to build.
-		buildRequired = false
-	} else if len(pushDevfileCommands) == 2 {
-		// if there are two commands, it is the optional build command and the mandatory run command, set buildRequired to true
-		buildRequired = true
-	} else {
-		return fmt.Errorf("error executing devfile commands - there should be at least 1 command or at most 2 commands, currently there are %v commands", len(pushDevfileCommands))
+	buildRequired, err := common.IsComponentBuildRequired(pushDevfileCommands)
+	if err != nil {
+		return err
 	}
 
 	for i := 0; i < len(pushDevfileCommands); i++ {
@@ -306,28 +296,10 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 			glog.V(3).Infof("Executing devfile command %v", command.Name)
 
 			for _, action := range command.Actions {
-				// Change to the workdir and execute the command
-				var cmdArr []string
-				if action.Workdir != nil {
-					cmdArr = []string{"/bin/sh", "-c", "cd " + *action.Workdir + " && " + *action.Command}
-				} else {
-					cmdArr = []string{"/bin/sh", "-c", *action.Command}
-				}
-
-				if show {
-					s = log.SpinnerNoSpin("Executing " + command.Name + " command " + fmt.Sprintf("%q", *action.Command))
-				} else {
-					s = log.Spinner("Executing " + command.Name + " command " + fmt.Sprintf("%q", *action.Command))
-				}
-
-				defer s.End(false)
-
-				err = exec.ExecuteCommand(&a.Client, podName, *action.Component, cmdArr, show)
+				err = exec.ExecuteDevfileBuildAction(&a.Client, action, command.Name, podName, *action.Component, show)
 				if err != nil {
-					s.End(false)
 					return err
 				}
-				s.End(true)
 			}
 
 			// Reset the for loop counter and iterate through all the devfile commands again for others
@@ -349,31 +321,10 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 					}
 				}
 
-				// Exec the supervisord ctl stop and start for the devrun program
-				type devRunExecutable struct {
-					command []string
+				err = exec.ExecuteDevfileRunAction(&a.Client, action, command.Name, podName, *action.Component, show)
+				if err != nil {
+					return err
 				}
-				devRunExecs := []devRunExecutable{
-					{
-						command: []string{common.SupervisordBinaryPath, "ctl", "stop", "all"},
-					},
-					{
-						command: []string{common.SupervisordBinaryPath, "ctl", "start", string(common.DefaultDevfileRunCommand)},
-					},
-				}
-
-				s = log.Spinner("Executing " + command.Name + " command " + fmt.Sprintf("%q", *action.Command))
-				defer s.End(false)
-
-				for _, devRunExec := range devRunExecs {
-
-					err = exec.ExecuteCommand(&a.Client, podName, *action.Component, devRunExec.command, show)
-					if err != nil {
-						s.End(false)
-						return
-					}
-				}
-				s.End(true)
 			}
 		}
 	}

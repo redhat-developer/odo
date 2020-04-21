@@ -31,8 +31,8 @@ type Adapter struct {
 	common.AdapterContext
 }
 
-// CheckProjectFiles checks whether files have changed in a project
-func (a Adapter) CheckProjectFiles(parameters common.PushParameters, podName, containerName string, podChanged, componentExists bool) (err error) {
+// SyncFiles checks whether files have changed in a project
+func (a Adapter) SyncFiles(parameters common.PushParameters, podName, containerName string, podChanged, componentExists bool) (err error) {
 
 	deletedFiles := []string{}
 	changedFiles := []string{}
@@ -47,15 +47,15 @@ func (a Adapter) CheckProjectFiles(parameters common.PushParameters, podName, co
 	if !podChanged && !parameters.ForceBuild && len(parameters.WatchFiles) == 0 && len(parameters.WatchDeletedFiles) == 0 {
 		absIgnoreRules := util.GetAbsGlobExps(parameters.Path, parameters.IgnoredFiles)
 
-		spinner := log.NewStatus(log.GetStdout())
-		defer spinner.End(true)
+		var s *log.Status
 		if componentExists {
-			spinner.Start("Checking file changes for pushing", false)
+			s = log.Spinner("Checking file changes for pushing")
 		} else {
 			// if the component doesn't exist, we don't check for changes in the files
 			// thus we show a different message
-			spinner.Start("Checking files for pushing", false)
+			s = log.Spinner("Checking files for pushing")
 		}
+		defer s.End(false)
 
 		// Before running the indexer, make sure the .odo folder exists (or else the index file will not get created)
 		odoFolder := filepath.Join(parameters.Path, ".odo")
@@ -68,7 +68,7 @@ func (a Adapter) CheckProjectFiles(parameters common.PushParameters, podName, co
 
 		// run the indexer and find the modified/added/deleted/renamed files
 		filesChanged, filesDeleted, err := util.RunIndexer(parameters.Path, absIgnoreRules)
-		spinner.End(true)
+		s.End(true)
 
 		if err != nil {
 			return errors.Wrap(err, "unable to run indexer")

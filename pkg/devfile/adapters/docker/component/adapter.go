@@ -34,6 +34,7 @@ type Adapter struct {
 	volumeNameToDockerVolName map[string]string
 	devfileBuildCmd           string
 	devfileRunCmd             string
+	supervisordVolumeName     string
 }
 
 // Push updates the component if a matching component exists or creates one if it doesn't exist
@@ -53,6 +54,21 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	pushDevfileCommands, err := common.ValidateAndGetPushDevfileCommands(a.Devfile.Data, a.devfileBuildCmd, a.devfileRunCmd)
 	if err != nil {
 		return errors.Wrap(err, "failed to validate devfile build and run commands")
+	}
+
+	// Get the supervisord volume
+	supervisordLabels := utils.GetSupervisordVolumeLabels()
+	supervisordVols, err := a.Client.GetVolumesByLabel(supervisordLabels)
+	if err != nil {
+		return errors.Wrapf(err, "Unable to retrieve supervisord volume for component %s", a.ComponentName)
+	}
+	if len(supervisordVols) == 0 {
+		a.supervisordVolumeName, err = utils.CreateAndInitSupervisordVolume(a.Client)
+		if err != nil {
+			return errors.Wrapf(err, "Unable to create supervisord volume for component %s", a.ComponentName)
+		}
+	} else {
+		a.supervisordVolumeName = supervisordVols[0].Name
 	}
 
 	if componentExists {
@@ -76,7 +92,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	syncAdapter := sync.New(a.AdapterContext, &a.Client)
 	// podName is set to empty string on docker
 	// podChanged is set to false, since docker volume is always present even if container goes down
-	err = syncAdapter.CheckProjectFiles(parameters, "", containerID, false, componentExists)
+	err = syncAdapter.SyncFiles(parameters, "", containerID, false, componentExists)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to sync to component with name %s", a.ComponentName)
 	}
@@ -85,14 +101,6 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	if err != nil {
 		return errors.Wrapf(err, "Failed to execute devfile commands for component %s", a.ComponentName)
 	}
-
-	// cmd := []string{"/bin/sh", "-c", "/tmp/loop.sh"}
-	// glog.V(3).Infof("MJF hola %v", cmd)
-	// // err = a.Client.ExecCMDInContainer("", "ac758bf7fb60", cmd, nil, nil, nil, false)
-	// err = exec.ExecuteCommand(&a.Client, "", "e91892812d10", cmd, parameters.Show)
-	// if err != nil {
-	// 	return errors.Wrap(err, "unable to exec component")
-	// }
 
 	return nil
 }
