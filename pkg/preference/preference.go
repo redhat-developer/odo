@@ -181,21 +181,8 @@ func NewPreferenceInfo() (*PreferenceInfo, error) {
 		Filename:   preferenceFile,
 	}
 
-	defaultRegistryList := []Registry{
-		{
-			Name: "CheDevfileRegistry",
-			URL:  "https://che-devfile-registry.openshift.io/",
-		},
-		{
-			Name: "DefaultDevfileRegistry",
-			URL:  "https://raw.githubusercontent.com/elsony/devfile-registry/master",
-		},
-	}
-
-	// if the preference file doesn't exist then we return with default preference
+	// If the preference file doesn't exist then we return with default preference
 	if _, err = os.Stat(preferenceFile); os.IsNotExist(err) {
-		c.OdoSettings.RegistryList = &defaultRegistryList
-
 		return &c, nil
 	}
 
@@ -203,8 +190,22 @@ func NewPreferenceInfo() (*PreferenceInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	if c.OdoSettings.RegistryList == nil {
-		c.OdoSettings.RegistryList = &defaultRegistryList
+
+	if c.OdoSettings.Experimental != nil && *c.OdoSettings.Experimental == true {
+		if c.OdoSettings.RegistryList == nil {
+			// Handle user has preference file but doesn't use dynamic registry before
+			defaultRegistryList := []Registry{
+				{
+					Name: "CheDevfileRegistry",
+					URL:  "https://che-devfile-registry.openshift.io/",
+				},
+				{
+					Name: "DefaultDevfileRegistry",
+					URL:  "https://raw.githubusercontent.com/elsony/devfile-registry/master",
+				},
+			}
+			c.OdoSettings.RegistryList = &defaultRegistryList
+		}
 	}
 
 	return &c, nil
