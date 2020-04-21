@@ -125,6 +125,7 @@ var _ = Describe("odo devfile create command tests", func() {
 			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
 			Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
 			helper.DeleteDir(contextDevfile)
+			helper.Chdir(context)
 		})
 	})
 
