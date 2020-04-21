@@ -315,7 +315,7 @@ Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 
 There are some test environment variable that helps to get more control over the test run and it's results
 
-* TEST_EXEC_NODES: Env variable TEST_EXEC_NODES is used to pass spec execution type (parallel or sequential) for ginkgo tests. To run the specs sequentially use TEST_EXEC_NODES=1, otherwise by default the specs are run in parallel on 2 ginkgo test node. Any TEST_EXEC_NODES value greater than one runs the spec in parallel on the same number of ginkgo test nodes.
+* TEST_EXEC_NODES: Env variable TEST_EXEC_NODES is used to pass spec execution type (parallel or sequential) for ginkgo tests. To run the specs sequentially use TEST_EXEC_NODES=1, otherwise by default the specs are run in parallel on 4 ginkgo test node. Any TEST_EXEC_NODES value greater than one runs the spec in parallel on the same number of ginkgo test nodes.
 
 * SLOW_SPEC_THRESHOLD: Env variable SLOW_SPEC_THRESHOLD is used for ginkgo tests. After this time (in second), ginkgo marks test as slow. The default value is set to 120s.
 
