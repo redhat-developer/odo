@@ -40,7 +40,7 @@ EOF
 
 # install mongo operator
 count=0
-while [ $count -lt 5 ] :
+while [ "$count" -lt "5" ];
 do
     if oc get csv -n openshift-operators | grep mongo; then
         break
@@ -67,7 +67,7 @@ EOF
 
 # install etcd operator
 count=0
-while [ $count -lt 5 ] :
+while [ "$count" -lt "5" ];
 do
     if oc get csv -n ${CI_OPERATOR_HUB_PROJECT} | grep etcd; then
         break
