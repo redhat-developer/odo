@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -54,7 +55,11 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			// Delete the pods created. This should idealy be done by `odo
 			// service delete` but that's not implemented for operator backed
 			// services yet.
-			helper.CmdShouldPass("oc", "delete", "EtcdCluster", "example")
+			// Wait for the pods of EtcdCluster service to get cleared off
+			// cluster. This is to avoid CI flakes because in next test, we're
+			// again doing similar regex check which picks up terminating pod
+			// from this run instead of initiating pod from that run
+			helper.CmdShouldRunWithTimeout(time.Duration(30)*time.Second, "oc", "delete", "--wait", "EtcdCluster", "example")
 		})
 	})
 
@@ -100,7 +105,12 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			// Delete the pods created. This should idealy be done by `odo
 			// service delete` but that's not implemented for operator backed
 			// services yet.
-			helper.CmdShouldPass("oc", "delete", "EtcdCluster", "example")
+			// Wait for the pods of EtcdCluster service to get cleared off
+			// cluster. This is to avoid CI flakes because in next test, we're
+			// again doing similar regex check which picks up terminating pod
+			// from this run instead of initiating pod from that run
+			helper.CmdShouldRunWithTimeout(time.Duration(30)*time.Second, "oc", "delete", "--wait", "EtcdCluster", "example")
+
 		})
 
 		It("should fail to create service if metadata doesn't exist or is invalid", func() {
