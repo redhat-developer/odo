@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/docker/docker/api/types/mount"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
@@ -79,7 +80,21 @@ func (a Adapter) Delete(labels map[string]string) error {
 		return errors.Errorf("the component %s doesn't exist", a.ComponentName)
 	}
 
+	// Get all volumes that match our component label
+	volumeLabels := utils.GetProjectVolumeLabels(componentName)
+	vols, err := a.Client.GetVolumesByLabel(volumeLabels)
+	if err != nil {
+		return errors.Wrapf(err, "unable to retrieve source volume for component "+componentName)
+	}
+	if len(vols) == 0 {
+		return fmt.Errorf("unable to find source volume for component %s", componentName)
+	}
+
+	volumesToDelete := map[string] /* volume name -> volume name (value unused)*/ string{}
+
 	for _, container := range componentContainer {
+
+		glog.V(3).Infof("Deleting container %s for component %s", container.ID, componentName)
 		err = a.Client.RemoveContainer(container.ID)
 		if err != nil {
 			return errors.Wrapf(err, "unable to remove container ID %s of component %s", container.ID, componentName)
@@ -95,28 +110,22 @@ func (a Adapter) Delete(labels map[string]string) error {
 			volumeNames[m.Name] = m.Name
 		}
 
-		// Locate the source volume of the container
-		volumeLabels := utils.GetProjectVolumeLabels(componentName)
-		vols, err := a.Client.GetVolumesByLabel(volumeLabels)
-		if err != nil {
-			return errors.Wrapf(err, "unable to retrieve source volume for component "+componentName)
-		}
-		if len(vols) == 0 {
-			return fmt.Errorf("unable to find source volume for component %s", componentName)
-		}
-
 		for _, vol := range vols {
-
-			// If the volume was found to be attached to the component's container, then delete the volume.
+			// If the volume was found to be attached to the component's container, then add the volume
+			// to the deletion list.
 			if _, ok := volumeNames[vol.Name]; ok {
-				err := a.Client.RemoveVolume(vol.Name)
-				if err != nil {
-					return errors.Wrapf(err, "Unable to remove volume %s of component %s", vol.Name, componentName)
-				}
+				volumesToDelete[vol.Name] = vol.Name
 			}
-
 		}
+	}
 
+	// Finally, delete the volumes we discovered during container deletion.
+	for name := range volumesToDelete {
+		glog.V(3).Infof("Deleting the volume %s for component %s", name, componentName)
+		err := a.Client.RemoveVolume(name)
+		if err != nil {
+			return errors.Wrapf(err, "Unable to remove volume %s of component %s", name, componentName)
+		}
 	}
 
 	return nil
