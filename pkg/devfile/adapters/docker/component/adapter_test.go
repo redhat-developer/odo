@@ -147,7 +147,7 @@ func TestAdapterDelete(t *testing.T) {
 		wantErr           bool
 	}{
 		{
-			name: "case 1: component exists and given labels are valid",
+			name: "Case 1: component exists and given labels are valid",
 			args: args{labels: map[string]string{
 				"component": "component",
 			}},
@@ -156,7 +156,7 @@ func TestAdapterDelete(t *testing.T) {
 			wantErr:         false,
 		},
 		{
-			name:              "case 2: component exists and given labels are not valid",
+			name:              "Case 2: component exists and given labels are not valid",
 			args:              args{labels: nil},
 			componentName:     "component",
 			componentExists:   true,
@@ -164,7 +164,7 @@ func TestAdapterDelete(t *testing.T) {
 			skipContainerList: true,
 		},
 		{
-			name: "case 3: component doesn't exists",
+			name: "Case 3: component doesn't exists",
 			args: args{labels: map[string]string{
 				"component": "component",
 			}},

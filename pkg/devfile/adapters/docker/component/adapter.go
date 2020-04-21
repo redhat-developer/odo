@@ -90,11 +90,12 @@ func (a Adapter) Delete(labels map[string]string) error {
 		return fmt.Errorf("unable to find source volume for component %s", componentName)
 	}
 
-	volumesToDelete := map[string] /* volume name -> volume name (value unused)*/ string{}
+	// A unique list of volumes to delete; map key is volume name.
+	volumesToDelete := map[string]string{}
 
 	for _, container := range componentContainer {
 
-		glog.V(3).Infof("Deleting container %s for component %s", container.ID, componentName)
+		glog.V(4).Infof("Deleting container %s for component %s", container.ID, componentName)
 		err = a.Client.RemoveContainer(container.ID)
 		if err != nil {
 			return errors.Wrapf(err, "unable to remove container ID %s of component %s", container.ID, componentName)
@@ -121,7 +122,7 @@ func (a Adapter) Delete(labels map[string]string) error {
 
 	// Finally, delete the volumes we discovered during container deletion.
 	for name := range volumesToDelete {
-		glog.V(3).Infof("Deleting the volume %s for component %s", name, componentName)
+		glog.V(4).Infof("Deleting the volume %s for component %s", name, componentName)
 		err := a.Client.RemoveVolume(name)
 		if err != nil {
 			return errors.Wrapf(err, "Unable to remove volume %s of component %s", name, componentName)
