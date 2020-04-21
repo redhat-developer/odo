@@ -62,8 +62,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 			cmpName := helper.RandString(6)
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 
-			output := helper.CmdShouldFail("odo", "watch")
-			Expect(output).To(ContainSubstring("component does not exist. Please use `odo push` to create your component"))
+			helper.CmdShouldFail("odo", "watch")
 		})
 	})
 
