@@ -100,14 +100,16 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	// Get a sync adapter. Check if project files have changed and sync accordingly
 	syncAdapter := sync.New(a.AdapterContext, &a.Client)
-	err = syncAdapter.SyncFiles(parameters, pod.GetName(), containerName, podChanged, componentExists)
+	isPushRequired, err := syncAdapter.SyncFiles(parameters, pod.GetName(), containerName, podChanged, componentExists)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to sync to component with name %s", a.ComponentName)
 	}
 
-	err = a.execDevfile(pushDevfileCommands, componentExists, parameters.Show, pod.GetName(), pod.Spec.Containers)
-	if err != nil {
-		return err
+	if isPushRequired {
+		err = a.execDevfile(pushDevfileCommands, componentExists, parameters.Show, pod.GetName(), pod.Spec.Containers)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

@@ -32,7 +32,7 @@ type Adapter struct {
 }
 
 // SyncFiles checks whether files have changed in a project
-func (a Adapter) SyncFiles(parameters common.PushParameters, podName, containerName string, podChanged, componentExists bool) (err error) {
+func (a Adapter) SyncFiles(parameters common.PushParameters, podName, containerName string, podChanged, componentExists bool) (isPushRequired bool, err error) {
 
 	deletedFiles := []string{}
 	changedFiles := []string{}
@@ -62,7 +62,7 @@ func (a Adapter) SyncFiles(parameters common.PushParameters, podName, containerN
 		if _, err := os.Stat(odoFolder); os.IsNotExist(err) {
 			err = os.Mkdir(odoFolder, 0750)
 			if err != nil {
-				return errors.Wrap(err, "unable to create directory")
+				return false, errors.Wrap(err, "unable to create directory")
 			}
 		}
 
@@ -71,7 +71,7 @@ func (a Adapter) SyncFiles(parameters common.PushParameters, podName, containerN
 		s.End(true)
 
 		if err != nil {
-			return errors.Wrap(err, "unable to run indexer")
+			return false, errors.Wrap(err, "unable to run indexer")
 		}
 
 		// If the component already exists, sync only the files that changed
@@ -84,7 +84,7 @@ func (a Adapter) SyncFiles(parameters common.PushParameters, podName, containerN
 			// in order to make the changes correctly within the Kubernetes pod
 			deletedFiles, err = util.RemoveRelativePathFromFiles(filesDeletedFiltered, parameters.Path)
 			if err != nil {
-				return errors.Wrap(err, "unable to remove relative path from list of changed/deleted files")
+				return false, errors.Wrap(err, "unable to remove relative path from list of changed/deleted files")
 			}
 			glog.V(4).Infof("List of files to be deleted: +%v", deletedFiles)
 			changedFiles = filesChangedFiltered
@@ -93,7 +93,7 @@ func (a Adapter) SyncFiles(parameters common.PushParameters, podName, containerN
 			if len(filesChangedFiltered) == 0 && len(filesDeletedFiltered) == 0 {
 				// no file was modified/added/deleted/renamed, thus return without building
 				log.Success("No file changes detected, skipping build. Use the '-f' flag to force the build.")
-				return nil
+				return false, nil
 			}
 		}
 	} else if len(parameters.WatchFiles) > 0 || len(parameters.WatchDeletedFiles) > 0 {
@@ -114,10 +114,10 @@ func (a Adapter) SyncFiles(parameters common.PushParameters, podName, containerN
 		containerName,
 	)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to sync to component with name %s", a.ComponentName)
+		return false, errors.Wrapf(err, "Failed to sync to component with name %s", a.ComponentName)
 	}
 
-	return //
+	return true, nil
 }
 
 // pushLocal syncs source code from the user's disk to the component

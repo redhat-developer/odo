@@ -92,14 +92,16 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	syncAdapter := sync.New(a.AdapterContext, &a.Client)
 	// podName is set to empty string on docker
 	// podChanged is set to false, since docker volume is always present even if container goes down
-	err = syncAdapter.SyncFiles(parameters, "", containerID, false, componentExists)
+	isPushRequired, err := syncAdapter.SyncFiles(parameters, "", containerID, false, componentExists)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to sync to component with name %s", a.ComponentName)
 	}
 
-	err = a.execDevfile(pushDevfileCommands, componentExists, parameters.Show, "", containers)
-	if err != nil {
-		return errors.Wrapf(err, "Failed to execute devfile commands for component %s", a.ComponentName)
+	if isPushRequired {
+		err = a.execDevfile(pushDevfileCommands, componentExists, parameters.Show, "", containers)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to execute devfile commands for component %s", a.ComponentName)
+		}
 	}
 
 	return nil
