@@ -39,12 +39,14 @@ EOF
 }
 
 # install mongo operator
-while :
+count=0
+while [ $count -lt 5 ] :
 do
     if oc get csv -n openshift-operators | grep mongo; then
         break
     else
         install_mongo_operator
+        count=`expr $count + 1`
         sleep 15
     fi
 done
@@ -64,12 +66,14 @@ spec:
 EOF
 
 # install etcd operator
-while :
+count=0
+while [ $count -lt 5 ] :
 do
     if oc get csv -n ${CI_OPERATOR_HUB_PROJECT} | grep etcd; then
         break
     else
         install_etcd_operator
+        count=`expr $count + 1`
         sleep 15
     fi
 done
