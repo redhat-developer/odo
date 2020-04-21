@@ -92,7 +92,7 @@ func TestUpdateComponent(t *testing.T) {
 		{
 			name:          "Case 2: Valid devfile",
 			componentType: versionsCommon.DevfileComponentTypeDockerimage,
-			componentName: "node",
+			componentName: "test",
 			client:        fakeClient,
 			wantErr:       false,
 		},
@@ -140,6 +140,7 @@ func TestPullAndStartContainer(t *testing.T) {
 
 	testComponentName := "test"
 	testVolumeName := "projects"
+	testSupervisordVolumeName := "supervisord"
 
 	fakeClient := lclient.FakeNew()
 	fakeErrorClient := lclient.FakeErrorNew()
@@ -208,7 +209,7 @@ func TestPullAndStartContainer(t *testing.T) {
 			}
 
 			componentAdapter := New(adapterCtx, *tt.client)
-			err := componentAdapter.pullAndStartContainer(tt.mounts, testVolumeName, adapterCtx.Devfile.Data.GetAliasedComponents()[0])
+			err := componentAdapter.pullAndStartContainer(tt.mounts, testVolumeName, testSupervisordVolumeName, adapterCtx.Devfile.Data.GetAliasedComponents()[0])
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
@@ -223,6 +224,7 @@ func TestStartContainer(t *testing.T) {
 
 	testComponentName := "test"
 	testVolumeName := "projects"
+	testSupervisordVolumeName := "supervisord"
 
 	fakeClient := lclient.FakeNew()
 	fakeErrorClient := lclient.FakeErrorNew()
@@ -291,7 +293,7 @@ func TestStartContainer(t *testing.T) {
 			}
 
 			componentAdapter := New(adapterCtx, *tt.client)
-			err := componentAdapter.startContainer(tt.mounts, testVolumeName, adapterCtx.Devfile.Data.GetAliasedComponents()[0])
+			err := componentAdapter.startContainer(tt.mounts, testVolumeName, testSupervisordVolumeName, adapterCtx.Devfile.Data.GetAliasedComponents()[0])
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {

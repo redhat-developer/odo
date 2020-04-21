@@ -34,6 +34,7 @@ func TestGenerateContainerConfig(t *testing.T) {
 				Cmd:        []string{"tail", "-f", "/dev/null"},
 				Env:        []string{},
 				Labels:     nil,
+				User:       "root",
 			},
 		},
 		{
@@ -55,6 +56,7 @@ func TestGenerateContainerConfig(t *testing.T) {
 					"component": "some-component",
 					"alias":     "maven",
 				},
+				User: "root",
 			},
 		},
 		{

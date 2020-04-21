@@ -39,7 +39,13 @@ var mockContainerList = []types.Container{
 		Names: []string{"/node"},
 		Image: "node",
 		Labels: map[string]string{
-			"component": "node",
+			"component": "test",
+			"alias":     "alias1",
+		},
+		Mounts: []types.MountPoint{
+			{
+				Destination: OdoSourceVolumeMount,
+			},
 		},
 	},
 	types.Container{
@@ -101,12 +107,16 @@ func (m *mockDockerClient) ContainerRemove(ctx context.Context, containerID stri
 }
 
 func (m *mockDockerClient) ContainerInspect(ctx context.Context, containerID string) (types.ContainerJSON, error) {
+	containerConfig := container.Config{
+		Image: "someimage",
+	}
 	return types.ContainerJSON{
 		ContainerJSONBase: &types.ContainerJSONBase{
 			HostConfig: &container.HostConfig{
 				AutoRemove: true,
 			},
 		},
+		Config: &containerConfig,
 	}, nil
 }
 
@@ -146,7 +156,7 @@ func (m *mockDockerClient) VolumeList(ctx context.Context, filter filters.Args) 
 			},
 			{
 				Labels: map[string]string{
-					"component": "node",
+					"component": "test",
 					"type":      "projects",
 				},
 			},

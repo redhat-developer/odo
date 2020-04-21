@@ -396,8 +396,6 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 // the container has entrypoint that is not supervisord
 func (a Adapter) InitRunContainerSupervisord(containerName, podName string, containers []types.Container) (err error) {
 	for _, container := range containers {
-		glog.V(3).Infof("MJF container.Labels[alias] %v", container.Labels["alias"])
-		glog.V(3).Infof("MJF container.Command %v", container.Command)
 		if container.Labels["alias"] == containerName && !reflect.DeepEqual(container.Command, []string{common.SupervisordBinaryPath}) {
 			command := []string{common.SupervisordBinaryPath, "-c", common.SupervisordConfFile, "-d"}
 			err = exec.ExecuteCommand(&a.Client, podName, container.ID, command, true)

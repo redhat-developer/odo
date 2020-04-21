@@ -161,7 +161,13 @@ func TestGetContainersList(t *testing.T) {
 					Names: []string{"/node"},
 					Image: "node",
 					Labels: map[string]string{
-						"component": "node",
+						"component": "test",
+						"alias":     "alias1",
+					},
+					Mounts: []types.MountPoint{
+						{
+							Destination: OdoSourceVolumeMount,
+						},
 					},
 				},
 				{
