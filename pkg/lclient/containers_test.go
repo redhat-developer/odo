@@ -290,7 +290,7 @@ func TestRemoveVolume(t *testing.T) {
 		err := client.RemoveVolume(tt.volumeToRemove)
 
 		if !tt.wantErr == (err != nil) {
-			t.Errorf("expected %v, wanted %v", err, tt.wantErr)
+			t.Errorf("expected %v but wanted %v", err, tt.wantErr)
 		}
 
 	}
