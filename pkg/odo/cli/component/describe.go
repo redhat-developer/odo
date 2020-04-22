@@ -56,38 +56,23 @@ func (do *DescribeOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (do *DescribeOptions) Run() (err error) {
-	var componentDesc component.Component
-
-	state := component.GetComponentState(do.Context.Client, do.componentName, do.Context.Application)
-
-	if state == component.StateTypeNotPushed || state == component.StateTypeUnknown {
-		if !do.LocalConfigInfo.ConfigFileExists() {
-			return fmt.Errorf("Component %v does not exist", do.componentName)
-		}
-		componentDesc, err = component.GetComponentFromConfig(do.LocalConfigInfo)
-		componentDesc.Status.State = state
-		if err != nil {
-			return err
-		}
-		if componentDesc.Name != do.componentName {
-			return fmt.Errorf("Component %v does not exist", do.componentName)
-		}
-
-	} else {
-		componentDesc, err = component.GetComponent(do.Context.Client, do.componentName, do.Context.Application, do.Context.Project)
-		if err != nil {
-			return err
-		}
+	if !do.LocalConfigInfo.ConfigFileExists() {
+		return fmt.Errorf("Component %v does not exist", do.componentName)
+	}
+	cfd, err := component.NewComponentFullDescription(do.Context.Client, do.LocalConfigInfo, do.componentName, do.Context.Application)
+	if err != nil {
+		return err
 	}
 
 	if log.IsJSON() {
-		componentDesc.Spec.Ports = do.LocalConfigInfo.GetPorts()
-		machineoutput.OutputSuccess(componentDesc)
+		cfd.Spec.Ports = do.LocalConfigInfo.GetPorts()
+		machineoutput.OutputSuccess(cfd)
 	} else {
-
-		odoutil.PrintComponentInfo(do.Context.Client, do.componentName, componentDesc, do.Context.Application, do.Context.Project)
+		err = cfd.PrintInfo(do.Context.Client, do.LocalConfigInfo)
+		if err != nil {
+			return err
+		}
 	}
-
 	return
 }
 
