@@ -17,6 +17,7 @@ func TestGenerateContainerConfig(t *testing.T) {
 		entrypoint []string
 		cmd        []string
 		envVars    []string
+		portset    nat.PortSet
 		labels     map[string]string
 		want       container.Config
 	}{
@@ -56,9 +57,28 @@ func TestGenerateContainerConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:       "Case 3: Simple config, adding portset",
+			image:      "docker.io/fake-image:latest",
+			entrypoint: []string{"bash"},
+			cmd:        []string{"tail", "-f", "/dev/null"},
+			portset: nat.PortSet{
+				"8080/tcp": struct{}{},
+				"9080/tcp": struct{}{},
+			},
+			want: container.Config{
+				Image:      "docker.io/fake-image:latest",
+				Entrypoint: []string{"bash"},
+				Cmd:        []string{"tail", "-f", "/dev/null"},
+				ExposedPorts: nat.PortSet{
+					"8080/tcp": struct{}{},
+					"9080/tcp": struct{}{},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
-		config := fakeClient.GenerateContainerConfig(tt.image, tt.entrypoint, tt.cmd, tt.envVars, tt.labels)
+		config := fakeClient.GenerateContainerConfig(tt.image, tt.entrypoint, tt.cmd, tt.envVars, tt.labels, tt.portset)
 		if !reflect.DeepEqual(tt.want, config) {
 			t.Errorf("expected %v, actual %v", tt.want, config)
 		}
