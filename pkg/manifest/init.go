@@ -175,17 +175,10 @@ func CreateResources(prefix, gitOpsRepo, gitOpsWebhookSecret, dockerConfigJSONPa
 	outputs[gitopsTasksPath] = tasks.CreateDeployFromSourceTask(cicdNamespace, GetPipelinesDir("", prefix))
 	outputs[appTaskPath] = tasks.CreateDeployUsingKubectlTask(cicdNamespace)
 	outputs[ciPipelinesPath] = pipelines.CreateCIPipeline(meta.NamespacedName(cicdNamespace, "ci-dryrun-from-pr-pipeline"), cicdNamespace)
-	outputs[cdPipelinesPath] = pipelines.CreateCDPipeline(meta.NamespacedName(cicdNamespace, "cd-deploy-from-push-pipeline"), cicdNamespace)
-
 	outputs[appCiPipelinesPath] = pipelines.CreateAppCIPipeline(meta.NamespacedName(cicdNamespace, "app-ci-pipeline"), false)
-	outputs[appCdPipelinesPath] = pipelines.CreateAppCDPipeline(meta.NamespacedName(cicdNamespace, "app-cd-pipeline"), "deploy", "", false)
-
 	outputs[prBindingPath] = triggers.CreatePRBinding(cicdNamespace)
-	outputs[pushBindingPath] = triggers.CreatePushBinding(cicdNamespace)
 	outputs[prTemplatePath] = triggers.CreateCIDryRunTemplate(cicdNamespace, saName)
 	outputs[appCIBuildPRTemplatePath] = triggers.CreateDevCIBuildPRTemplate(cicdNamespace, saName, imageRepo)
-	outputs[appCDBuildPRTemplatePath] = triggers.CreateDevCDDeployTemplate(cicdNamespace, saName, imageRepo)
-	outputs[pushTemplatePath] = triggers.CreateCDPushTemplate(cicdNamespace, saName)
 	outputs[eventListenerPath] = eventlisteners.Generate(gitOpsRepo, cicdNamespace, saName, eventlisteners.GitOpsWebhookSecret)
 
 	outputs[routePath] = routes.Generate(cicdNamespace)
