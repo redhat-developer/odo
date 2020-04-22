@@ -48,6 +48,12 @@ const (
 
 	// Default volume size for volumes defined in a devfile
 	volumeSize = "5Gi"
+
+	EnvCheProjectsRoot = "CHE_PROJECTS_ROOT"
+
+	EnvOdoCommandRunWorkingDir = "ODO_COMMAND_RUN_WORKING_DIR"
+
+	EnvOdoCommandRun = "ODO_COMMAND_RUN"
 )
 
 func isComponentSupported(component common.DevfileComponent) bool {

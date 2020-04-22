@@ -30,7 +30,6 @@ func ExecuteDevfileBuildAction(client ExecClient, action common.DevfileCommandAc
 
 	err := ExecuteCommand(client, podName, containerName, cmdArr, show)
 	if err != nil {
-		s.End(false)
 		return err
 	}
 	s.End(true)

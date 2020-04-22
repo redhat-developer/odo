@@ -466,7 +466,7 @@ func TestAddProjectVolumeToComp(t *testing.T) {
 		hostConfig := container.HostConfig{
 			Mounts: tt.mounts,
 		}
-		AddVolumeToComp(projectVolumeName, lclient.OdoSourceVolumeMount, &hostConfig)
+		AddVolumeToContainer(projectVolumeName, lclient.OdoSourceVolumeMount, &hostConfig)
 		if !reflect.DeepEqual(tt.want, hostConfig) {
 			t.Errorf("expected %v, actual %v", tt.want, hostConfig)
 		}

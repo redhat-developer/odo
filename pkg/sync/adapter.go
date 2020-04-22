@@ -31,7 +31,11 @@ type Adapter struct {
 	common.AdapterContext
 }
 
-// SyncFiles checks whether files have changed in a project
+// SyncFiles does a couple of things:
+// if files changed/deleted are passed in from watch, it syncs them to the component
+// otherwise, it checks which files have changed and syncs the delta
+// it returns a boolean execRequired and an error. execRequired tells us if files have
+// changed and devfile execution is required
 func (a Adapter) SyncFiles(parameters common.PushParameters, podName, containerName string, podChanged, componentExists bool) (isPushRequired bool, err error) {
 
 	deletedFiles := []string{}

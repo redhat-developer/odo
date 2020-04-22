@@ -95,17 +95,17 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// Find at least one pod with the source volume mounted, error out if none can be found
 	containerName, err := getFirstContainerWithSourceVolume(pod.Spec.Containers)
 	if err != nil {
-		return errors.Wrapf(err, "error while retrieving container from pod: %s", podName)
+		return errors.Wrapf(err, "error while retrieving container from pod %s with a mounted project volume", podName)
 	}
 
 	// Get a sync adapter. Check if project files have changed and sync accordingly
 	syncAdapter := sync.New(a.AdapterContext, &a.Client)
-	isPushRequired, err := syncAdapter.SyncFiles(parameters, pod.GetName(), containerName, podChanged, componentExists)
+	execRequired, err := syncAdapter.SyncFiles(parameters, pod.GetName(), containerName, podChanged, componentExists)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to sync to component with name %s", a.ComponentName)
 	}
 
-	if isPushRequired {
+	if execRequired {
 		err = a.execDevfile(pushDevfileCommands, componentExists, parameters.Show, pod.GetName(), pod.Spec.Containers)
 		if err != nil {
 			return err
