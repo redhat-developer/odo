@@ -1,13 +1,16 @@
 package catalog
 
 import (
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"testing"
 
 	imagev1 "github.com/openshift/api/image/v1"
 	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/testingutil"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -165,6 +168,64 @@ func TestSliceSupportedTags(t *testing.T) {
 	if !reflect.DeepEqual(supTags, []string{"12", "10", "8", "latest"}) ||
 		!reflect.DeepEqual(unSupTags, []string{"6"}) {
 		t.Fatal("supported or unsupported tags are not as expected")
+	}
+}
+
+func TestGetDevfileRegistries(t *testing.T) {
+	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
+	if err != nil {
+		t.Fatal("Fail to create temporary config file")
+	}
+	defer os.Remove(tempConfigFile.Name())
+	defer tempConfigFile.Close()
+	tempConfigFile.Write([]byte(
+		`kind: Preference
+apiversion: odo.openshift.io/v1alpha1
+OdoSettings:
+  Experimental: true
+  RegistryList:
+  - Name: CheDevfileRegistry
+    URL: https://che-devfile-registry.openshift.io/
+  - Name: DefaultDevfileRegistry
+    URL: https://raw.githubusercontent.com/elsony/devfile-registry/master`,
+	))
+
+	os.Setenv(preference.GlobalConfigEnvName, tempConfigFile.Name())
+	defer os.Unsetenv(preference.GlobalConfigEnvName)
+
+	tests := []struct {
+		name             string
+		registryNameList []string
+		want             map[string]string
+	}{
+		{
+			name:             "Case 1: Test get all devfile registries",
+			registryNameList: nil,
+			want: map[string]string{
+				"CheDevfileRegistry":     "https://che-devfile-registry.openshift.io/",
+				"DefaultDevfileRegistry": "https://raw.githubusercontent.com/elsony/devfile-registry/master",
+			},
+		},
+		{
+			name:             "Case 2: Test get specific devfile registry",
+			registryNameList: []string{"CheDevfileRegistry"},
+			want: map[string]string{
+				"CheDevfileRegistry": "https://che-devfile-registry.openshift.io/",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetDevfileRegistries(tt.registryNameList)
+			if err != nil {
+				t.Errorf("Error message is %v", err)
+			}
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Got: %v, want: %v", got, tt.want)
+			}
+		})
 	}
 }
 
