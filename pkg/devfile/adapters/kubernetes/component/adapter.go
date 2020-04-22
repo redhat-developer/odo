@@ -429,6 +429,10 @@ func (a Adapter) waitAndGetComponentPod(hideSpinner bool) (*corev1.Pod, error) {
 func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand, componentExists, show bool, podName string, containers []corev1.Container) (err error) {
 	var s *log.Status
 
+	if len(pushDevfileCommands) == 0 {
+		return errors.New(fmt.Sprint("error executing devfile commands - there should be at least 1 command."))
+	}
+
 	type CommandNames struct {
 		defaultName string
 		adapterName string
@@ -483,7 +487,6 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 
 							err = exec.ExecuteCommand(&a.Client, podName, *action.Component, devRunExec.command, show)
 							if err != nil {
-								s.End(false)
 								return
 							}
 						}

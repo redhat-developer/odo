@@ -152,32 +152,36 @@ func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileInitCmd, de
 	isInitCommandValid, isBuildCommandValid, isRunCommandValid := false, false, false
 
 	initCommand, initCmdErr := GetInitCommand(data, devfileInitCmd)
-	if reflect.DeepEqual(emptyCommand, initCommand) && initCmdErr == nil {
+
+	isInitCmdEmpty := reflect.DeepEqual(emptyCommand, initCommand)
+	if isInitCmdEmpty && initCmdErr == nil {
 		// If there was no init command specified through odo push and no default init command in the devfile, default validate to true since the init command is optional
 		isInitCommandValid = true
 		glog.V(3).Infof("No init command was provided")
-	} else if !reflect.DeepEqual(emptyCommand, initCommand) && initCmdErr == nil {
+	} else if !isInitCmdEmpty && initCmdErr == nil {
 		isInitCommandValid = true
 		glog.V(3).Infof("Init command: %v", initCommand.Name)
 	}
 
 	buildCommand, buildCmdErr := GetBuildCommand(data, devfileBuildCmd)
-	if reflect.DeepEqual(emptyCommand, buildCommand) && buildCmdErr == nil {
+
+	isBuildCmdEmpty := reflect.DeepEqual(emptyCommand, buildCommand)
+	if isBuildCmdEmpty && buildCmdErr == nil {
 		// If there was no build command specified through odo push and no default build command in the devfile, default validate to true since the build command is optional
 		isBuildCommandValid = true
 		glog.V(3).Infof("No build command was provided")
 
 		// If init command was provided, and no build command provide log a message
-		if !reflect.DeepEqual(emptyCommand, initCommand) && initCmdErr == nil {
-			glog.V(3).Infof("Not adding init command provided, since build command wasn't provided.")
+		if !isInitCmdEmpty && initCmdErr == nil {
+			return []common.DevfileCommand{}, errors.New(fmt.Sprint("Devfile init command provided without accompanied build command."))
 		}
-	} else if !reflect.DeepEqual(emptyCommand, buildCommand) && buildCmdErr == nil {
+	} else if !isBuildCmdEmpty && buildCmdErr == nil {
 		isBuildCommandValid = true
 		pushDevfileCommands = append(pushDevfileCommands, buildCommand)
 		glog.V(3).Infof("Build command: %v", buildCommand.Name)
 
 		// Only add init command if build command is provided
-		if !reflect.DeepEqual(emptyCommand, initCommand) && initCmdErr == nil {
+		if !isInitCmdEmpty && initCmdErr == nil {
 			pushDevfileCommands = append(pushDevfileCommands, initCommand)
 		}
 	}

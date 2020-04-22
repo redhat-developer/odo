@@ -712,12 +712,13 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 			wantErr:          true,
 		},
 		{
-			name:                "Case: Missing Build Command and Provided Run Command",
+			name:                "Case: Missing Init and Build Command, and Provided Run Command",
 			initCommand:         emptyString,
 			buildCommand:        emptyString,
 			runCommand:          "customcommand",
 			numberOfCommands:    1,
 			componentType:       versionsCommon.DevfileComponentTypeDockerimage,
+			missingInitCommand:  true,
 			missingBuildCommand: true,
 			wantErr:             false,
 		},
@@ -741,17 +742,6 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 			wantErr:            false,
 		},
 		{
-			name:                "Case: Missing Init and Build Command with provided Run Command",
-			initCommand:         emptyString,
-			buildCommand:        emptyString,
-			runCommand:          "customcommand",
-			numberOfCommands:    1,
-			componentType:       versionsCommon.DevfileComponentTypeDockerimage,
-			missingInitCommand:  true,
-			missingBuildCommand: true,
-			wantErr:             false,
-		},
-		{
 			name:                "Case: Missing Build Command with provided Init and Run Command",
 			initCommand:         "customcommand",
 			buildCommand:        emptyString,
@@ -759,7 +749,7 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 			numberOfCommands:    1,
 			componentType:       versionsCommon.DevfileComponentTypeDockerimage,
 			missingBuildCommand: true,
-			wantErr:             false,
+			wantErr:             true,
 		},
 	}
 
