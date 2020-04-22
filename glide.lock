@@ -1,5 +1,5 @@
-hash: 50333e5c7bd72e64e86a1ebee079f97232af5304746d341a47b38ea64e0db48d
-updated: 2020-03-31T11:38:10.907323+02:00
+hash: 90f14d501dacd6ce7926e0acb91d1aee421d274ed7823cec5bde59da48821b55
+updated: 2020-04-16T10:51:54.629793+01:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -121,7 +121,7 @@ imports:
   - util/runes
   - util/strings
 - name: github.com/gogo/protobuf
-  version: c0656edd0d9eab7c66d1eb0c568f9039345796f7
+  version: 342cbe0a04158f6dcb03ca0079991a51a4248c02
   subpackages:
   - proto
   - sortkeys
@@ -141,8 +141,16 @@ imports:
   - ptypes/timestamp
 - name: github.com/google/btree
   version: 479b5e81b0a93ec038d201b0b33d17db599531d3
+- name: github.com/google/go-github
+  version: 371b0007be89061b4cf899dc2083dd08e3912c14
+  subpackages:
+  - github
+- name: github.com/google/go-querystring
+  version: c8c88dbee036db4e4808d1f2ec8c2e15e11c3f80
+  subpackages:
+  - query
 - name: github.com/google/gofuzz
-  version: 44d81051d367757e1c7c6a5a86423ece9afcf63c
+  version: f140a6486e521aad38f5917de355cbf147cc0496
 - name: github.com/google/uuid
   version: 8c31c18f31ede9fc8eae72290a7e7a8064e9b3e3
 - name: github.com/googleapis/gnostic
@@ -167,7 +175,7 @@ imports:
 - name: github.com/hashicorp/errwrap
   version: 8a6fb523712970c966eefc6b39ed2c5e74880354
 - name: github.com/hashicorp/go-multierror
-  version: 72917a1559e17f38638ade54020ab372ba848d67
+  version: 2004d9dba6b07a5b8d133209244f376680f9d472
 - name: github.com/hashicorp/golang-lru
   version: a0d98a5f288019575c6d1f4bb1573fef2d1fcdc4
   subpackages:
@@ -175,7 +183,7 @@ imports:
 - name: github.com/hinshun/vt10x
   version: d55458df857cfff952e4bf72ce1b567c5a4e141c
 - name: github.com/hpcloud/tail
-  version: a30252cb686a21eb2d0b98132633053ec2f7f1e5
+  version: a1dbeea552b7c8df4b542c66073e393de198a800
   subpackages:
   - ratelimiter
   - util
@@ -487,6 +495,13 @@ imports:
   subpackages:
   - bcrypt
   - blowfish
+  - cast5
+  - openpgp
+  - openpgp/armor
+  - openpgp/elgamal
+  - openpgp/errors
+  - openpgp/packet
+  - openpgp/s2k
   - ssh/terminal
 - name: golang.org/x/net
   version: 0ed95abb35c445290478a5348a7b38bb154135fd
@@ -572,10 +587,10 @@ imports:
   subpackages:
   - core
   - terminal
-- name: gopkg.in/fsnotify.v1
-  version: 7be54206639f256967dd82fa767397ba5f8f48f5
+- name: gopkg.in/fsnotify/fsnotify.v1
+  version: 45d7d09e39ef4ac08d493309fa031790c15bfe8a
 - name: gopkg.in/inf.v0
-  version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
+  version: d2d2541c53f18d2a059457998ce2876cc8e67cbf
 - name: gopkg.in/tomb.v1
   version: c131134a1947e9afd9cecfe11f4c6dff0732ae58
 - name: gopkg.in/yaml.v2

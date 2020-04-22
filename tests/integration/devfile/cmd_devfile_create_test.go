@@ -114,4 +114,61 @@ var _ = Describe("odo devfile create command tests", func() {
 			helper.MatchAllInOutput(output, []string{expectedString})
 		})
 	})
+
+	Context("When executing odo create with devfile component and --downloadSource flag", func() {
+		It("should succesfully create the compoment and download the source", func() {
+			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+			contextDevfile := helper.CreateNewContext()
+			helper.Chdir(contextDevfile)
+			devfile := "devfile.yaml"
+			helper.CmdShouldPass("odo", "create", "nodejs", "--downloadSource")
+			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
+			Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
+			helper.DeleteDir(contextDevfile)
+			helper.Chdir(context)
+		})
+	})
+
+	// Currently these tests need interactive mode in order to set the name of the component.
+	// Once this feature is added we can change these tests.
+	//Context("When executing odo create with devfile component and --downloadSource flag with github type", func() {
+	//	It("should succesfully create the compoment and download the source", func() {
+	//		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+	//		contextDevfile := helper.CreateNewContext()
+	//		helper.Chdir(contextDevfile)
+	//		devfile := "devfile.yaml"
+	//		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", devfile), filepath.Join(contextDevfile, devfile))
+
+	//		err := helper.ReplaceDevfileField(devfile, "type", "github")
+	//		if err != nil {
+	//			log.Error("Could not replace the entry in the devfile: " + err.Error())
+	//		}
+	//		helper.CmdShouldPass("odo", "create", "--downloadSource")
+	//		expectedFiles := []string{"package.json", "package-lock.json", "README.MD", devfile}
+	//		Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
+	//		helper.DeleteDir(contextDevfile)
+	//	})
+	//})
+
+	//Context("When executing odo create with devfile component and --downloadSource flag with zip type", func() {
+	//	It("should create the compoment and download the source", func() {
+	//		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+	//		contextDevfile := helper.CreateNewContext()
+	//		helper.Chdir(contextDevfile)
+	//		devfile := "devfile.yaml"
+	//		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", devfile), filepath.Join(contextDevfile, devfile))
+	//		err := helper.ReplaceDevfileField(devfile, "location", "https://github.com/che-samples/web-nodejs-sample/archive/master.zip")
+	//		if err != nil {
+	//			log.Error("Could not replace the entry in the devfile: " + err.Error())
+	//		}
+	//		err = helper.ReplaceDevfileField(devfile, "type", "zip")
+	//		if err != nil {
+	//			log.Error("Could not replace the entry in the devfile: " + err.Error())
+	//		}
+	//		helper.CmdShouldPass("odo", "create", "--downloadSource")
+	//		expectedFiles := []string{"package.json", "package-lock.json", "README.MD", devfile}
+	//		Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
+	//		helper.DeleteDir(contextDevfile)
+	//	})
+	//})
 })
