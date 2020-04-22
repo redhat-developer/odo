@@ -1,0 +1,38 @@
+# Theme settings
+doks:
+    baseurl:
+    color_theme: blue # Available themes: blue (default), green, purple, red and yellow
+    header:
+        description: Fast iterative Fast, iterative OpenShift and Kubernetes development
+        logo:
+            text: Odo
+            image:
+        nav:
+            - item_name: Community
+              item_url: '/docs/community'
+            - item_name: Changelog
+              item_url: '/docs/changelog'
+    footer:
+        content:
+            logo:
+                text: Odo
+                image:
+            copyright: Copyright &copy; 2020. - Red Hat, Inc.
+        social_list:
+            - network_name: github
+              profile_url: 'https://github.com/openshift/odo'
+    google_analytics:
+        tracking_code: # Add your Google Analytics tracking code to activate Google Analytics
+    comments:
+        disqus_forum_shortname: # Add your disqus forum shortname to activate comments
+
+# SASS settings
+sass:
+    sass_dir: ./doks-theme/_sass
+    style: :compressed
+
+# Jekyll settings
+layouts_dir: ./doks-theme/_layouts
+includes_dir: ./doks-theme/_includes
+exclude: [ 'README.md', 'CHANGELOG.md' ]
+permalink: /:title/
