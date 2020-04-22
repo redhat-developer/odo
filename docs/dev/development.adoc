@@ -7,6 +7,8 @@ toc::[]
 
 == Setting up
 
+Requires *Go 1.13*
+
  . link:https://help.github.com/en/articles/fork-a-repo[Fork] the link:https://github.com/openshift/odo[`odo`] repository.
 
  . Clone your fork:
