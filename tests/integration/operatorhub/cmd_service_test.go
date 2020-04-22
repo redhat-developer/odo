@@ -59,7 +59,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			// cluster. This is to avoid CI flakes because in next test, we're
 			// again doing similar regex check which picks up terminating pod
 			// from this run instead of initiating pod from that run
-			helper.CmdShouldRunWithTimeout(time.Duration(30)*time.Second, "oc", "delete", "--wait", "EtcdCluster", "example")
+			helper.CmdShouldRunWithTimeout(time.Duration(15)*time.Second, "oc", "delete", "--wait", "EtcdCluster", "example")
 		})
 	})
 
@@ -109,7 +109,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			// cluster. This is to avoid CI flakes because in next test, we're
 			// again doing similar regex check which picks up terminating pod
 			// from this run instead of initiating pod from that run
-			helper.CmdShouldRunWithTimeout(time.Duration(30)*time.Second, "oc", "delete", "--wait", "EtcdCluster", "example")
+			helper.CmdShouldRunWithTimeout(time.Duration(15)*time.Second, "oc", "delete", "--wait", "EtcdCluster", "example")
 
 		})
 
