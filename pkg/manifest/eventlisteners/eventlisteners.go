@@ -9,6 +9,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	saName = "pipeline"
+)
+
 // Filters for interceptors
 const (
 	StageCIDryRunFilters = "(header.match('X-GitHub-Event', 'pull_request') && body.action == 'opened' || body.action == 'synchronize') && body.pull_request.head.repo.full_name == '%s'"
@@ -63,7 +67,8 @@ func CreateELFromTriggers(cicdNs string, triggers []triggersv1.EventListenerTrig
 			Namespace: cicdNs,
 		},
 		Spec: triggersv1.EventListenerSpec{
-			Triggers: triggers,
+			ServiceAccountName: saName,
+			Triggers:           triggers,
 		},
 	}
 }

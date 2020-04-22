@@ -70,7 +70,8 @@ func TestBootstrapManifest(t *testing.T) {
 									SourceURL: testSvcRepo,
 									Webhook: &config.Webhook{
 										Secret: &config.Secret{
-											Name: "github-webhook-secret-http-api-svc",
+											Name:      "github-webhook-secret-http-api-svc",
+											Namespace: "tst-cicd",
 										},
 									},
 								},
@@ -113,13 +114,15 @@ func TestApplicationFromRepo(t *testing.T) {
 				SourceURL: testSvcRepo,
 				Webhook: &config.Webhook{
 					Secret: &config.Secret{
-						Name: "test-svc-webhook-secret"},
+						Name:      "test-svc-webhook-secret",
+						Namespace: "test-cicd",
+					},
 				},
 			},
 		},
 	}
 
-	got, err := applicationFromRepo(testSvcRepo, "test-svc-webhook-secret")
+	got, err := applicationFromRepo(testSvcRepo, "test-svc-webhook-secret", "test-cicd")
 	if err != nil {
 		t.Fatal(err)
 	}
