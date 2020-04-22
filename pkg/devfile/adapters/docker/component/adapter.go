@@ -4,6 +4,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
 	"github.com/openshift/odo/pkg/lclient"
 )
@@ -20,11 +22,22 @@ func New(adapterContext common.AdapterContext, client lclient.Client) Adapter {
 type Adapter struct {
 	Client lclient.Client
 	common.AdapterContext
+
+	componentAliasToVolumes   map[string][]adaptersCommon.DevfileVolume
+	uniqueStorage             []adaptersCommon.Storage
+	volumeNameToDockerVolName map[string]string
 }
 
 // Push updates the component if a matching component exists or creates one if it doesn't exist
 func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	componentExists := utils.ComponentExists(a.Client, a.ComponentName)
+
+	// Process the volumes defined in the devfile
+	a.componentAliasToVolumes = adaptersCommon.GetVolumes(a.Devfile)
+	a.uniqueStorage, a.volumeNameToDockerVolName, err = storage.ProcessVolumes(&a.Client, a.ComponentName, a.componentAliasToVolumes)
+	if err != nil {
+		return errors.Wrapf(err, "Unable to process volumes for component %s", a.ComponentName)
+	}
 
 	if componentExists {
 		err = a.updateComponent()

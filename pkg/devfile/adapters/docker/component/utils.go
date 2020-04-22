@@ -4,10 +4,12 @@ import (
 	"fmt"
 
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/log"
@@ -16,24 +18,53 @@ import (
 func (a Adapter) createComponent() (err error) {
 	componentName := a.ComponentName
 
-	volumeLabels := utils.GetProjectVolumeLabels(componentName)
+	// Get or create the project source volume
+	var projectVolumeName string
+	projectVolumeLabels := utils.GetProjectVolumeLabels(componentName)
+	vols, err := a.Client.GetVolumesByLabel(projectVolumeLabels)
+	if err != nil {
+		return errors.Wrapf(err, "Unable to retrieve source volume for component "+componentName)
+	}
+	if len(vols) == 0 {
+		// A source volume needs to be created
+		projectVolumeName, err = storage.GenerateVolNameFromDevfileVol("odo-project-source", a.ComponentName)
+		if err != nil {
+			return errors.Wrapf(err, "Unable to generate project source volume name for component %s", componentName)
+		}
+		_, err := a.Client.CreateVolume(projectVolumeName, projectVolumeLabels)
+		if err != nil {
+			return errors.Wrapf(err, "Unable to create project source volume for component %s", componentName)
+		}
+	} else if len(vols) == 1 {
+		projectVolumeName = vols[0].Name
+	} else if len(vols) > 1 {
+		return errors.Wrapf(err, "Error, multiple source volumes found for component %s", componentName)
+	}
 
 	supportedComponents := adaptersCommon.GetSupportedComponents(a.Devfile.Data)
 	if len(supportedComponents) == 0 {
 		return fmt.Errorf("No valid components found in the devfile")
 	}
 
-	// Create a docker volume to store the project source code
-	volume, err := a.Client.CreateVolume(volumeLabels)
+	// Get the storage adapter and create the volumes if it does not exist
+	stoAdapter := storage.New(a.AdapterContext, a.Client)
+	err = stoAdapter.Create(a.uniqueStorage)
 	if err != nil {
-		return errors.Wrapf(err, "Unable to create project source volume for component %s", componentName)
+		return errors.Wrapf(err, "Unable to create Docker storage adapter for component %s", componentName)
 	}
-
-	projectVolumeName := volume.Name
 
 	// Loop over each component and start a container for it
 	for _, comp := range supportedComponents {
-		err = a.pullAndStartContainer(componentName, projectVolumeName, comp)
+		var dockerVolumeMounts []mount.Mount
+		for _, vol := range a.componentAliasToVolumes[*comp.Alias] {
+			volMount := mount.Mount{
+				Type:   mount.TypeVolume,
+				Source: a.volumeNameToDockerVolName[*vol.Name],
+				Target: *vol.ContainerPath,
+			}
+			dockerVolumeMounts = append(dockerVolumeMounts, volMount)
+		}
+		err = a.pullAndStartContainer(dockerVolumeMounts, projectVolumeName, comp)
 		if err != nil {
 			return errors.Wrapf(err, "unable to pull and start container %s for component %s", *comp.Alias, componentName)
 		}
@@ -55,8 +86,14 @@ func (a Adapter) updateComponent() (err error) {
 	}
 	if len(vols) == 0 {
 		return fmt.Errorf("Unable to find source volume for component %s", componentName)
+	} else if len(vols) > 1 {
+		return errors.Wrapf(err, "Error, multiple source volumes found for component %s", componentName)
 	}
 	projectVolumeName := vols[0].Name
+
+	// Get the storage adapter and create the volumes if it does not exist
+	stoAdapter := storage.New(a.AdapterContext, a.Client)
+	err = stoAdapter.Create(a.uniqueStorage)
 
 	supportedComponents := adaptersCommon.GetSupportedComponents(a.Devfile.Data)
 	if len(supportedComponents) == 0 {
@@ -70,9 +107,20 @@ func (a Adapter) updateComponent() (err error) {
 		if err != nil {
 			return errors.Wrapf(err, "unable to list containers for component %s", componentName)
 		}
+
+		var dockerVolumeMounts []mount.Mount
+		for _, vol := range a.componentAliasToVolumes[*comp.Alias] {
+			volMount := mount.Mount{
+				Type:   mount.TypeVolume,
+				Source: a.volumeNameToDockerVolName[*vol.Name],
+				Target: *vol.ContainerPath,
+			}
+			dockerVolumeMounts = append(dockerVolumeMounts, volMount)
+		}
+
 		if len(containers) == 0 {
 			// Container doesn't exist, so need to pull its image (to be safe) and start a new container
-			err = a.pullAndStartContainer(componentName, projectVolumeName, comp)
+			err = a.pullAndStartContainer(dockerVolumeMounts, projectVolumeName, comp)
 			if err != nil {
 				return errors.Wrapf(err, "unable to pull and start container %s for component %s", *comp.Alias, componentName)
 			}
@@ -81,13 +129,13 @@ func (a Adapter) updateComponent() (err error) {
 			containerID := containers[0].ID
 
 			// Get the associated container config from the container ID
-			containerConfig, err := a.Client.GetContainerConfig(containerID)
+			containerConfig, mounts, err := a.Client.GetContainerConfigAndMounts(containerID)
 			if err != nil {
 				return errors.Wrapf(err, "unable to get the container config for component %s", componentName)
 			}
 
 			// See if the container needs to be updated
-			if utils.DoesContainerNeedUpdating(comp, containerConfig) {
+			if utils.DoesContainerNeedUpdating(comp, containerConfig, dockerVolumeMounts, mounts) {
 				s := log.Spinner("Updating the component " + *comp.Alias)
 				defer s.End(false)
 				// Remove the container
@@ -97,7 +145,7 @@ func (a Adapter) updateComponent() (err error) {
 				}
 
 				// Start the container
-				err = a.startContainer(componentName, projectVolumeName, comp)
+				err = a.startContainer(dockerVolumeMounts, projectVolumeName, comp)
 				if err != nil {
 					return errors.Wrapf(err, "Unable to start container for devfile component %s", *comp.Alias)
 				}
@@ -113,7 +161,7 @@ func (a Adapter) updateComponent() (err error) {
 	return nil
 }
 
-func (a Adapter) pullAndStartContainer(componentName string, projectVolumeName string, comp versionsCommon.DevfileComponent) error {
+func (a Adapter) pullAndStartContainer(mounts []mount.Mount, projectVolumeName string, comp versionsCommon.DevfileComponent) error {
 	// Container doesn't exist, so need to pull its image (to be safe) and start a new container
 	s := log.Spinner("Pulling image " + *comp.Image)
 
@@ -125,17 +173,19 @@ func (a Adapter) pullAndStartContainer(componentName string, projectVolumeName s
 	s.End(true)
 
 	// Start the container
-	err = a.startContainer(componentName, projectVolumeName, comp)
+	err = a.startContainer(mounts, projectVolumeName, comp)
 	if err != nil {
 		return errors.Wrapf(err, "Unable to start container for devfile component %s", *comp.Alias)
 	}
-	glog.V(3).Infof("Successfully created container %s for component %s", *comp.Image, componentName)
+	glog.V(3).Infof("Successfully created container %s for component %s", *comp.Image, a.ComponentName)
 	return nil
 }
 
-func (a Adapter) startContainer(componentName string, projectVolumeName string, comp versionsCommon.DevfileComponent) error {
-	containerConfig := a.generateAndGetContainerConfig(componentName, comp)
-	hostConfig := container.HostConfig{}
+func (a Adapter) startContainer(mounts []mount.Mount, projectVolumeName string, comp versionsCommon.DevfileComponent) error {
+	containerConfig := a.generateAndGetContainerConfig(a.ComponentName, comp)
+	hostConfig := container.HostConfig{
+		Mounts: mounts,
+	}
 
 	// If the component set `mountSources` to true, add the source volume to it
 	if comp.MountSources {

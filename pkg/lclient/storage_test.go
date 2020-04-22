@@ -55,7 +55,7 @@ func TestCreateVolume(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		volume, err := tt.client.CreateVolume(tt.labels)
+		volume, err := tt.client.CreateVolume("", tt.labels)
 		if !tt.wantErr == (err != nil) {
 			t.Errorf("expected %v, wanted %v", err, tt.wantErr)
 		}

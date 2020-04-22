@@ -46,14 +46,59 @@ func (d *DockerRunner) GetRunningContainersByLabel(label string) []string {
 	return containers
 }
 
+// GetRunningContainersByCompAlias returns the list of containers labeled with the specified component and alias
+func (d *DockerRunner) GetRunningContainersByCompAlias(comp string, alias string) []string {
+	fmt.Fprintf(GinkgoWriter, "Listing locally running Docker images with comp %s and alias %s", comp, alias)
+	compLabel := "label=component=" + comp
+	aliasLabel := "label=alias=" + alias
+	output := strings.TrimSpace(CmdShouldPass(d.path, "ps", "-q", "--filter", compLabel, "--filter", aliasLabel))
+
+	containers := strings.Fields(output)
+	return containers
+}
+
 // ListVolumes lists all volumes on the cluster
-func (d *DockerRunner) ListVolumes() string {
-	session := CmdRunner(d.path, "volume", "ls", "-q")
-	session.Wait()
-	if session.ExitCode() == 0 {
-		return strings.TrimSpace(string(session.Out.Contents()))
-	}
-	return ""
+func (d *DockerRunner) ListVolumes() []string {
+	fmt.Fprintf(GinkgoWriter, "Listing locally running Docker volumes")
+	output := CmdShouldPass(d.path, "volume", "ls", "-q")
+
+	volumes := strings.Fields(output)
+	return volumes
+}
+
+// GetVolumesByLabel returns a list of volumes with the label (of the form "key=value")
+func (d *DockerRunner) GetVolumesByLabel(label string) []string {
+	fmt.Fprintf(GinkgoWriter, "Listing Docker volumes with label %s", label)
+	filterLabel := "label=" + label
+	output := strings.TrimSpace(CmdShouldPass(d.path, "volume", "ls", "-q", "--filter", filterLabel))
+
+	// Split the strings and remove any whitespace
+	containers := strings.Fields(output)
+	return containers
+}
+
+// GetVolumesByCompStorageName returns the list of volumes associated with a specific devfile volume in a component
+func (d *DockerRunner) GetVolumesByCompStorageName(component string, storageName string) []string {
+	fmt.Fprintf(GinkgoWriter, "Listing Docker volumes with comp %s and storage name %s", component, storageName)
+	compLabel := "label=component=" + component
+	storageLabel := "label=storage-name=" + storageName
+	output := strings.TrimSpace(CmdShouldPass(d.path, "volume", "ls", "-q", "--filter", compLabel, "--filter", storageLabel))
+
+	// Split the strings and remove any whitespace
+	containers := strings.Fields(output)
+	return containers
+}
+
+// IsVolumeMountedInContainer returns true if the specified volume is moutned in the container associated with specified component and alias
+func (d *DockerRunner) IsVolumeMountedInContainer(volumeName string, component string, alias string) bool {
+	// Get the container ID of the specified component and alias
+	containers := d.GetRunningContainersByCompAlias(component, alias)
+	Expect(len(containers)).To(Equal(1))
+
+	containerID := containers[0]
+
+	mounts := CmdShouldPass(d.path, "inspect", containerID, "--format", "'{{ .Mounts }}'")
+	return strings.Contains(mounts, volumeName)
 }
 
 // StopContainers kills and stops all running containers with the specified label (such as component=nodejs)
