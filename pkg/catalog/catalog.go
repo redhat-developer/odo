@@ -8,6 +8,7 @@ import (
 
 	"github.com/golang/glog"
 	imagev1 "github.com/openshift/api/image/v1"
+	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/util"
@@ -141,7 +142,8 @@ func ListDevfileComponents(registryNameList ...string) (DevfileComponentTypeList
 		devfileIndexLink := registryURL + "/devfiles/index.json"
 		devfileIndex, err := GetDevfileIndex(devfileIndexLink)
 		if err != nil {
-			return catalogDevfileList, err
+			log.Warningf("Registry %s is not set up properly with error: %v", registryName, err)
+			break
 		}
 
 		// 1. Load devfiles that indexed in devfile registry index.json
@@ -152,13 +154,14 @@ func ListDevfileComponents(registryNameList ...string) (DevfileComponentTypeList
 
 			// Load the devfile
 			devfileLink := registryURL + devfileIndexEntryLink
-			// TODO: We send http get resquest in this function mutiple times
+			// TODO: We send http get resquest in this function multiple times
 			// since devfile registry uses different links to host different devfiles,
 			// this can reduce the performance especially when we load devfiles from
 			// big registry. We may need to rethink and optimize this in the future
 			devfile, err := GetDevfile(devfileLink)
 			if err != nil {
-				return DevfileComponentTypeList{}, err
+				log.Warningf("Registry %s is not set up properly with error: %v", registryName, err)
+				break
 			}
 
 			// Populate devfile component with devfile data and form devfile component list
