@@ -114,6 +114,7 @@ func (po *PushOptions) DevfilePush() (err error) {
 
 // Get component name from env.yaml file
 func getComponentName() (string, error) {
+	// Todo: Use context to get the approraite envinfo after context is supported in experimental mode
 	dir, err := os.Getwd()
 	if err != nil {
 		return "", err
@@ -128,6 +129,7 @@ func getComponentName() (string, error) {
 
 // Get namespace name from env.yaml file
 func getNamespace() (string, error) {
+	// Todo: Use context to get the approraite envinfo after context is supported in experimental mode
 	dir, err := os.Getwd()
 	if err != nil {
 		return "", err

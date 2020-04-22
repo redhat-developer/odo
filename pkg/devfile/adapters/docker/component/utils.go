@@ -2,6 +2,10 @@ package component
 
 import (
 	"fmt"
+	"os"
+	"strconv"
+
+	"github.com/docker/go-connections/nat"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
@@ -12,8 +16,11 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
+	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/log"
 )
+
+var LocalhostIP = "127.0.0.1"
 
 func (a Adapter) createComponent() (err error) {
 	componentName := a.ComponentName
@@ -187,6 +194,10 @@ func (a Adapter) startContainer(mounts []mount.Mount, projectVolumeName string, 
 		Mounts: mounts,
 	}
 
+	hostConfig, err := a.generateAndGetHostConfig()
+	if err != nil {
+		return err
+	}
 	// If the component set `mountSources` to true, add the source volume to it
 	if comp.MountSources {
 		utils.AddProjectVolumeToComp(projectVolumeName, &hostConfig)
@@ -195,10 +206,11 @@ func (a Adapter) startContainer(mounts []mount.Mount, projectVolumeName string, 
 	// Create the docker container
 	s := log.Spinner("Starting container for " + *comp.Image)
 	defer s.End(false)
-	err := a.Client.StartContainer(&containerConfig, &hostConfig, nil)
+	err = a.Client.StartContainer(&containerConfig, &hostConfig, nil)
 	if err != nil {
 		return err
 	}
+
 	s.End(true)
 	return nil
 }
@@ -214,4 +226,53 @@ func (a Adapter) generateAndGetContainerConfig(componentName string, comp versio
 
 	containerConfig := a.Client.GenerateContainerConfig(*comp.Image, comp.Command, comp.Args, envVars, containerLabels)
 	return containerConfig
+}
+
+func (a Adapter) generateAndGetHostConfig() (container.HostConfig, error) {
+	// Convert the port bindings from env.yaml and generate docker host config
+	portMap, err := getPortMap()
+	if err != nil {
+		return container.HostConfig{}, err
+	}
+	hostConfig := container.HostConfig{}
+	if len(portMap) > 0 {
+		hostConfig = a.Client.GenerateHostConfig(false, false, portMap)
+	}
+	return hostConfig, nil
+}
+
+func getPortMap() (nat.PortMap, error) {
+	// Convert the exposed and internal port pairs saved in env.yaml file to PortMap
+	// Todo: Use context to get the approraite envinfo after context is supported in experimental mode
+	dir, err := os.Getwd()
+	if err != nil {
+		return nat.PortMap{}, err
+	}
+	envInfo, err := envinfo.NewEnvSpecificInfo(dir)
+	if err != nil {
+		return nat.PortMap{}, err
+	}
+	urlArr := envInfo.GetURL()
+	if len(urlArr) > 0 {
+		portmap := nat.PortMap{}
+		for _, element := range urlArr {
+			if element.ExposedPort > 0 {
+				port, err := nat.NewPort("tcp", strconv.Itoa(element.Port))
+				if err != nil {
+					return nat.PortMap{}, err
+				}
+				portmap[port] = []nat.PortBinding{
+					nat.PortBinding{
+						HostIP:   LocalhostIP,
+						HostPort: strconv.Itoa(element.ExposedPort),
+					},
+				}
+				log.Info("\nApplying URL configuration")
+				log.Successf("URL %v:%v created", LocalhostIP, element.ExposedPort)
+			}
+		}
+		return portmap, nil
+	}
+
+	return nat.PortMap{}, nil
 }

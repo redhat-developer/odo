@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/go-connections/nat"
 )
 
 // GenerateContainerConfig creates a containerConfig resource that can be used to create a local Docker container
@@ -67,50 +68,59 @@ func TestGenerateContainerConfig(t *testing.T) {
 func TestGenerateHostConfig(t *testing.T) {
 	fakeClient := FakeNew()
 	tests := []struct {
-		name         string
-		privileged   bool
-		publishPorts bool
-		want         container.HostConfig
+		name string
+		want container.HostConfig
 	}{
 		{
-			name:         "Case 1: Unprivileged and not publishing ports",
-			privileged:   false,
-			publishPorts: false,
+			name: "Case 1: Unprivileged and not publishing ports",
 			want: container.HostConfig{
 				Privileged:      false,
 				PublishAllPorts: false,
+				PortBindings:    nat.PortMap{},
 			},
 		},
 		{
-			name:         "Case 2: Privileged and not publishing ports",
-			privileged:   true,
-			publishPorts: false,
+			name: "Case 2: Privileged and not publishing ports",
 			want: container.HostConfig{
 				Privileged:      true,
 				PublishAllPorts: false,
+				PortBindings:    nat.PortMap{},
 			},
 		},
 		{
-			name:         "Case 3: Unprivileged and publishing ports",
-			privileged:   false,
-			publishPorts: true,
+			name: "Case 3: Unprivileged and publishing ports",
 			want: container.HostConfig{
 				Privileged:      false,
 				PublishAllPorts: true,
+				PortBindings:    nat.PortMap{},
 			},
 		},
 		{
-			name:         "Case 4: Privileged and publishing ports",
-			privileged:   true,
-			publishPorts: true,
+			name: "Case 4: Privileged and publishing ports",
 			want: container.HostConfig{
 				Privileged:      true,
 				PublishAllPorts: true,
+				PortBindings:    nat.PortMap{},
+			},
+		},
+		{
+			name: "Case 5: With non-empty PortBindings",
+			want: container.HostConfig{
+				Privileged:      true,
+				PublishAllPorts: true,
+				PortBindings: nat.PortMap{
+					"tcp/9090": []nat.PortBinding{
+						nat.PortBinding{
+							HostIP:   "127.0.0.1",
+							HostPort: "65432",
+						},
+					},
+				},
 			},
 		},
 	}
 	for _, tt := range tests {
-		config := fakeClient.GenerateHostConfig(tt.privileged, tt.publishPorts)
+		config := fakeClient.GenerateHostConfig(tt.want.Privileged, tt.want.PublishAllPorts, tt.want.PortBindings)
 		if !reflect.DeepEqual(tt.want, config) {
 			t.Errorf("expected %v, actual %v", tt.want, config)
 		}

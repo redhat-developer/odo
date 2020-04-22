@@ -3,10 +3,13 @@ package component
 import (
 	"testing"
 
+	"github.com/docker/go-connections/nat"
+
 	"github.com/docker/docker/api/types/mount"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
+	envinfo "github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/testingutil"
 )
@@ -297,4 +300,114 @@ func TestStartContainer(t *testing.T) {
 		})
 	}
 
+}
+
+func TestGenerateAndGetHostConfig(t *testing.T) {
+	fakeClient := lclient.FakeNew()
+	testComponentName := "test"
+	componentType := versionsCommon.DevfileComponentTypeDockerimage
+
+	tests := []struct {
+		name         string
+		urlValue     []envinfo.EnvInfoURL
+		expectResult nat.PortMap
+		client       *lclient.Client
+	}{
+		{
+			name:         "Case 1: no port mappings",
+			urlValue:     []envinfo.EnvInfoURL{},
+			expectResult: nil,
+			client:       fakeClient,
+		},
+		{
+			name: "Case 2: only one port mapping",
+			urlValue: []envinfo.EnvInfoURL{
+				{Port: 8080, ExposedPort: 65432},
+			},
+			expectResult: nat.PortMap{
+				"8080/tcp": []nat.PortBinding{
+					{
+						HostIP:   LocalhostIP,
+						HostPort: "65432",
+					},
+				},
+			},
+			client: fakeClient,
+		},
+		{
+			name: "Case 3: multiple port mappings",
+			urlValue: []envinfo.EnvInfoURL{
+				{Port: 8080, ExposedPort: 65432},
+				{Port: 9090, ExposedPort: 54321},
+				{Port: 9080, ExposedPort: 45678},
+			},
+			expectResult: nat.PortMap{
+				"8080/tcp": []nat.PortBinding{
+					{
+						HostIP:   LocalhostIP,
+						HostPort: "65432",
+					},
+				},
+				"9090/tcp": []nat.PortBinding{
+					{
+						HostIP:   LocalhostIP,
+						HostPort: "54321",
+					},
+				},
+				"9080/tcp": []nat.PortBinding{
+					{
+						HostIP:   LocalhostIP,
+						HostPort: "45678",
+					},
+				},
+			},
+			client: fakeClient,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			devObj := devfileParser.DevfileObj{
+				Data: testingutil.TestDevfileData{
+					ComponentType: componentType,
+				},
+			}
+
+			adapterCtx := adaptersCommon.AdapterContext{
+				ComponentName: testComponentName,
+				Devfile:       devObj,
+			}
+
+			esi, err := envinfo.NewEnvSpecificInfo("")
+			if err != nil {
+				t.Error(err)
+			}
+			for _, element := range tt.urlValue {
+				err = esi.SetConfiguration("URL", element)
+				if err != nil {
+					t.Error(err)
+				}
+			}
+			componentAdapter := New(adapterCtx, *tt.client)
+			hostConfig, err := componentAdapter.generateAndGetHostConfig()
+			if err != nil {
+				t.Error(err)
+			}
+
+			if len(hostConfig.PortBindings) != len(tt.expectResult) {
+				t.Errorf("host config PortBindings length mismatch: actual value %v, expected value %v", len(hostConfig.PortBindings), len(tt.expectResult))
+			}
+			if len(hostConfig.PortBindings) != 0 {
+				for key, value := range hostConfig.PortBindings {
+					if tt.expectResult[key][0].HostIP != value[0].HostIP || tt.expectResult[key][0].HostPort != value[0].HostPort {
+						t.Errorf("host config PortBindings mismatch: actual value %v, expected value %v", hostConfig.PortBindings, tt.expectResult)
+					}
+				}
+			}
+			err = esi.DeleteEnvInfoFile()
+			if err != nil {
+				t.Error(err)
+			}
+		})
+	}
 }
