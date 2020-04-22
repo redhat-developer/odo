@@ -14,10 +14,6 @@ const RecommendedCommandName = "manifest"
 
 // NewCmdManifest implements the component odo command
 func NewCmdManifest(name, fullName string) *cobra.Command {
-
-	initCmd := NewCmdInit(InitRecommendedCommandName, odoutil.GetFullName(fullName, InitRecommendedCommandName))
-	envCmd := environment.NewCmdEnv(environment.EnvRecommendedCommandName, odoutil.GetFullName(fullName, environment.EnvRecommendedCommandName))
-
 	var manifestCmd = &cobra.Command{
 		Use:   name,
 		Short: "Manifest operations",
@@ -27,9 +23,16 @@ func NewCmdManifest(name, fullName string) *cobra.Command {
 		},
 	}
 
-	manifestCmd.Flags().AddFlagSet(initCmd.Flags())
+	initCmd := NewCmdInit(InitRecommendedCommandName, odoutil.GetFullName(fullName, InitRecommendedCommandName))
+	bootstrapCmd := NewCmdBootstrap(BootstrapRecommendedCommandName, odoutil.GetFullName(fullName, BootstrapRecommendedCommandName))
+	envCmd := environment.NewCmdEnv(environment.EnvRecommendedCommandName, odoutil.GetFullName(fullName, environment.EnvRecommendedCommandName))
+
 	manifestCmd.AddCommand(initCmd)
+	manifestCmd.AddCommand(bootstrapCmd)
 	manifestCmd.AddCommand(envCmd)
+
+	buildCmd := NewCmdBuild(BuildRecommendedCommandName, odoutil.GetFullName(fullName, BuildRecommendedCommandName))
+	manifestCmd.AddCommand(buildCmd)
 
 	manifestCmd.Annotations = map[string]string{"command": "main"}
 	manifestCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)

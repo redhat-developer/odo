@@ -1,24 +1,27 @@
 package manifest
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+
 	"github.com/openshift/odo/pkg/manifest/config"
+	res "github.com/openshift/odo/pkg/manifest/resources"
+	"github.com/openshift/odo/pkg/manifest/secrets"
 )
+
+var testCICDEnv = &config.Environment{Name: "tst-cicd", IsCICD: true}
 
 func TestCreateManifest(t *testing.T) {
 	want := &config.Manifest{
 		Environments: []*config.Environment{
-			{
-				Name:   "tst-cicd",
-				IsCICD: true,
-			},
+			testCICDEnv,
 		},
 	}
-	got := createManifest("tst-")
-
+	got := createManifest(testCICDEnv)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Fatalf("manifest didn't match: %s\n", diff)
 	}
@@ -30,13 +33,25 @@ func TestInitialFiles(t *testing.T) {
 	gitOpsWebhook := "123"
 	imageRepo := "image/repo"
 
-	got, err := createInitialFiles(prefix, gitOpsRepo, gitOpsWebhook, "", imageRepo)
+	defer func(f secrets.PublicKeyFunc) {
+		secrets.DefaultPublicKeyFunc = f
+	}(secrets.DefaultPublicKeyFunc)
 
+	secrets.DefaultPublicKeyFunc = func() (*rsa.PublicKey, error) {
+		key, err := rsa.GenerateKey(rand.Reader, 1024)
+		if err != nil {
+			t.Fatalf("failed to generate a private RSA key: %s", err)
+		}
+		return &key.PublicKey, nil
+	}
+
+	got, err := createInitialFiles(prefix, gitOpsRepo, gitOpsWebhook, "", imageRepo)
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := resources{
-		"manifest.yaml": createManifest(prefix),
+
+	want := res.Resources{
+		"manifest.yaml": createManifest(testCICDEnv),
 	}
 
 	cicdResources, err := CreateResources(prefix, gitOpsRepo, gitOpsWebhook, "", imageRepo)
@@ -45,9 +60,9 @@ func TestInitialFiles(t *testing.T) {
 	}
 	files := getResourceFiles(cicdResources)
 
-	want = merge(addPrefixToResources("environments/tst-cicd/base/pipelines", cicdResources), want)
+	want = res.Merge(addPrefixToResources("environments/tst-cicd/base/pipelines", cicdResources), want)
 
-	want = merge(addPrefixToResources("environments/tst-cicd", getCICDKustomization(files)), want)
+	want = res.Merge(addPrefixToResources("environments/tst-cicd", getCICDKustomization(files)), want)
 
 	if diff := cmp.Diff(want, got, cmpopts.IgnoreMapEntries(ignoreSecrets)); diff != "" {
 		t.Fatalf("outputs didn't match: %s\n", diff)
@@ -62,7 +77,7 @@ func ignoreSecrets(k string, v interface{}) bool {
 }
 
 func TestGetCICDKustomization(t *testing.T) {
-	want := resources{
+	want := res.Resources{
 		"base/kustomization.yaml": map[string]interface{}{
 			"bases": []string{"./pipelines"},
 		},
@@ -116,11 +131,11 @@ func TestMerge(t *testing.T) {
 		"test-2": "value-2",
 	}
 
-	want := resources{
+	want := res.Resources{
 		"test-1": "value-1",
 		"test-2": "value-2",
 	}
-	if diff := cmp.Diff(want, merge(map1, map2)); diff != "" {
+	if diff := cmp.Diff(want, res.Merge(map1, map2)); diff != "" {
 		t.Fatalf("merge failed: %s\n", diff)
 	}
 	if diff := cmp.Diff(map2, map3); diff != "" {

@@ -10,6 +10,7 @@ import (
 	"github.com/openshift/odo/pkg/manifest"
 	"github.com/openshift/odo/pkg/manifest/ioutils"
 	pl "github.com/openshift/odo/pkg/manifest/pipelines"
+	"github.com/spf13/afero"
 
 	"github.com/openshift/odo/pkg/manifest/yaml"
 )
@@ -29,7 +30,6 @@ type InitParameters struct {
 
 // Init function will initialise the gitops directory
 func Init(o *InitParameters) error {
-
 	if !o.SkipChecks {
 		installed, err := pl.CheckTektonInstall()
 		if err != nil {
@@ -52,24 +52,24 @@ func Init(o *InitParameters) error {
 	}
 
 	pipelinesPath := manifest.GetPipelinesDir(o.Output, o.Prefix)
-
-	fileNames, err := yaml.WriteResources(pipelinesPath, files)
+	appFs := afero.NewOsFs()
+	fileNames, err := yaml.WriteResources(appFs, pipelinesPath, files)
 	if err != nil {
 		return err
 	}
 
 	sort.Strings(fileNames)
 	// kustomize file should refer all the pipeline resources
-	if err := yaml.AddKustomize("resources", fileNames, filepath.Join(pipelinesPath, manifest.Kustomize)); err != nil {
+	if err := yaml.AddKustomize(appFs, "resources", fileNames, filepath.Join(pipelinesPath, manifest.Kustomize)); err != nil {
 		return err
 	}
 
-	if err := yaml.AddKustomize("bases", []string{"./pipelines"}, filepath.Join(getCICDDir(o.Output, o.Prefix), manifest.BaseDir, manifest.Kustomize)); err != nil {
+	if err := yaml.AddKustomize(appFs, "bases", []string{"./pipelines"}, filepath.Join(getCICDDir(o.Output, o.Prefix), manifest.BaseDir, manifest.Kustomize)); err != nil {
 		return err
 	}
 
 	// Add overlays
-	if err := yaml.AddKustomize("bases", []string{"../base"}, filepath.Join(getCICDDir(o.Output, o.Prefix), "overlays", manifest.Kustomize)); err != nil {
+	if err := yaml.AddKustomize(appFs, "bases", []string{"../base"}, filepath.Join(getCICDDir(o.Output, o.Prefix), "overlays", manifest.Kustomize)); err != nil {
 		return err
 	}
 
