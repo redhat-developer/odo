@@ -61,7 +61,7 @@ var _ = Describe("odo docker devfile url command tests", func() {
 			helper.Chdir(projectDirPath)
 
 			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
-			stdout = helper.CmdShouldPass("odo", "url", "create", "--now")
+			stdout = helper.CmdShouldPass("odo", "url", "create", url1, "--now")
 			helper.MatchAllInOutput(stdout, []string{url1, "created for component", "Changes successfully pushed to component"})
 		})
 	})
