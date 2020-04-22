@@ -77,9 +77,6 @@ var _ = Describe("odo docker devfile delete command tests", func() {
 	Context("when docker devfile delete command is executed with all flag", func() {
 
 		It("should delete the component created from the devfile and also the env folder", func() {
-			// helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
-
-			// helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
 
 			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
 			helper.Chdir(projectDirPath)
