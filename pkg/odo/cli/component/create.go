@@ -71,11 +71,15 @@ const CreateRecommendedCommandName = "create"
 // since the application will always be in the same directory as `.odo`, we will always set this as: ./
 const LocalDirectoryDefaultLocation = "./"
 
+// Constants for devfile component
+const devfile = "devfile.yaml"
+const envFile = ".odo/env/env.yaml"
+
 // DevfilePath is the path of devfile.yaml, the default path is "./devfile.yaml"
-var DevfilePath = filepath.Join(LocalDirectoryDefaultLocation, "devfile.yaml")
+var DevfilePath = filepath.Join(LocalDirectoryDefaultLocation, devfile)
 
 // EnvFilePath is the path of env.yaml for devfile component, the defult path is "./.odo/env/env.yaml"
-var EnvFilePath = filepath.Join(LocalDirectoryDefaultLocation, ".odo/env/env.yaml")
+var EnvFilePath = filepath.Join(LocalDirectoryDefaultLocation, envFile)
 
 // ConfigFilePath is the default path of config.yaml for s2i component
 const ConfigFilePath = "./.odo/config.yaml"
@@ -317,8 +321,8 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		// Configure the context
 		if len(co.componentContext) != 0 {
-			DevfilePath = filepath.Join(co.componentContext, "devfile.yaml")
-			EnvFilePath = filepath.Join(co.componentContext, ".odo/env/env.yaml")
+			DevfilePath = filepath.Join(co.componentContext, devfile)
+			EnvFilePath = filepath.Join(co.componentContext, envFile)
 			co.CommonPushOptions.componentContext = co.componentContext
 		}
 
