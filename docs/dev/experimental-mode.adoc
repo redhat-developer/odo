@@ -22,74 +22,104 @@ Experimental mode can be enabled by setting odo preferences as well.
 odo preference set experimental true
 ```
 #### Working with experimental mode:
-Consider that the support for `odo push` using `--devfile` flag is under development.
-If the experimental mode is enabled, the `odo help push` will show the `--devfile` flag in `odo help push`
-```sh
-$ odo push -h
-Push source code to a component.
 
-Usage:
-  odo push [component name] [flags]
+##### Listing devfile components:
+When the experimental mode is enabled, `odo catalog list components` will list the devfile components alongside the OpenShift components.
 
-Examples:
-  # Push source code to the current component
-  odo push
-  
-  # Push data to the current component from the original source.
-  odo push
-  
-  # Push source code in ~/mycode to component called my-component
-  odo push my-component --context ~/mycode
+```
+$ odo catalog list components
+Odo OpenShift Components:
+NAME                       PROJECT       TAGS                                        SUPPORTED
+nodejs                     openshift     10,8,8-RHOAR,latest                         YES
+codewind-odo-openjdk18     che           latest                                      YES
+dotnet                     openshift     2.0,latest                                  NO
+httpd                      openshift     2.4,latest                                  NO
+nginx                      openshift     1.10,1.12,1.8,latest                        NO
+nodejs                     openshift     6                                           NO
+perl                       openshift     5.24,5.26,latest                            NO
+php                        openshift     7.0,7.1,latest                              NO
+python                     openshift     2.7,3.5,3.6,latest                          NO
+ruby                       openshift     2.3,2.4,2.5,latest                          NO
+wildfly                    openshift     10.0,10.1,11.0,12.0,13.0,8.1,9.0,latest     NO
 
-Flags:
-      --config               Use config flag to only apply config on to cluster
-      --context string       Use given context directory as a source for component settings
-      --devfile string       Path to a devfile.yaml (default "./devfile.yaml")              <---- seen in help
-  -f, --force-build          Use force-build flag to force building the component
-  -h, --help                 Help for push
-      --ignore stringSlice   Files or folders to be ignored via glob expressions.
-      --show-log             If enabled, logs will be shown when built
-      --source               Use source flag to only push latest source on to cluster
-
-Additional Flags:
-  -v, --v Level              Log level for V logs. Level varies from 0 to 9 (default 0).
-      --vmodule moduleSpec   Comma-separated list of pattern=N settings for file-filtered logging
+Odo Devfile Components:
+NAME                 DESCRIPTION                           SUPPORTED
+maven                Upstream Maven and OpenJDK 11         YES
+nodejs               Stack with NodeJS 10                  YES
+openLiberty          Open Liberty microservice in Java     YES
+java-spring-boot     Spring Boot® using IBM Java           YES
 ```
 
-If experimental mode is not enabled, `--devfile` flag is not seen in the `odo help push`
-```sh
-$ odo push -h
-Push source code to a component.
+##### Creating a devfile component:
+When creating a devfile component with the experimental flag enabled, a local config of the component settings in created at `.odo/env/env.yaml` in the project directory.
 
-Usage:
-  odo push [component name] [flags]
+```
+$ odo create java-spring-boot myspring
+Experimental mode is enabled, use at your own risk
 
-Examples:
-  # Push source code to the current component
-  odo push
-  
-  # Push data to the current component from the original source.
-  odo push
-  
-  # Push source code in ~/mycode to component called my-component
-  odo push my-component --context ~/mycode
+Validation
+ ✓  Checking Devfile compatibility [234445ns]
+ ✓  Validating Devfile [84112ns]
 
-Flags:
-      --config               Use config flag to only apply config on to cluster
-      --context string       Use given context directory as a source for component settings
-  -f, --force-build          Use force-build flag to force building the component
-  -h, --help                 Help for push
-      --ignore stringSlice   Files or folders to be ignored via glob expressions.
-      --show-log             If enabled, logs will be shown when built
-      --source               Use source flag to only push latest source on to cluster
-
-Additional Flags:
-  -v, --v Level              Log level for V logs. Level varies from 0 to 9 (default 0).
-      --vmodule moduleSpec   Comma-separated list of pattern=N settings for file-filtered logging
+Please use `odo push` command to create the component with source deployed
 ```
 
-If the experimental mode is disabled and the hidden flag is used, it will throw an unknown flag error.
-```sh
-$ odo push --devfile ./devfile.yaml  
-Error: unknown flag: --devfile
+##### Creating and deleting component url:
+Create a devfile component url with `odo url create` and delete a devfile component url with `odo url delete`. This updates the component settings at `.odo/env/env.yaml` accordingly.
+
+When creating a component url, the ingress domain must be specified with the flag `--host` and a valid port must be specified with `--port`. The ports to be pushed, must be in the devfile.
+
 ```
+$ odo url create myspring --port 8080 --host <ingress domain>
+ ✓  URL created for component: myspring, cluster host: <ingress domain>
+
+To create URL on the OpenShift Cluster, please use `odo push`
+```
+
+When deleting a component url, specify the url name to be deleted
+```
+$ odo url delete myspring
+? Are you sure you want to delete the url myspring Yes
+ ✓  URL myspring removed from the env file
+
+To delete URL on the OpenShift Cluster, please use `odo push`
+```
+
+To push either of the url sub-command changes, execute `odo push`.
+
+##### Pushing to a devfile component:
+When the experimental mode is enabled, `odo push` creates a pod with all the devfile component containers and volumes. Push syncs the local project on disk to the pod container where devfile component has `mountSources: true`. The optional build and the mandatory run commands are executed in order.
+
+```
+$ odo push
+ •  Push devfile component myspring  ...
+
+Applying URL changes
+ ✓  URL myspring: http://myspring.<ingress domain> created
+ ✓  Waiting for component to start [65ms]
+ ✓  Checking files for pushing [10ms]
+ ✓  Syncing files to the component [1s]
+ ✓  Executing devbuild command "/artifacts/bin/build-container-full.sh" [1m]
+ ✓  Executing devrun command "/artifacts/bin/start-server.sh" [3s]
+ ✓  Push devfile component myspring [2m]
+ ✓  Changes successfully pushed to component
+```
+
+By default, `odo push` executes `devbuild` and `devrun` devfile commands. However, custom commands can be also be provided to `odo push` via flags `--build-command` & `--run-command`. `odo push` also provides a `--devfile` flag to execute push with a `devfile.yaml` in a custom path. These flags are only available in the experimental mode.
+
+##### Deleting a devfile component:
+Delete a devfile component with `odo delete`. This deletes all the Kubernetes resources created during `odo push`. Use the `-all` flag to delete the Kubernetes resources and the local config at `.odo/env/env.yaml`
+
+```
+$ odo delete myspring
+? Are you sure you want to delete the devfile component? Yes
+ ✓  Deleting devfile component myspring [339ms]
+ ✓  Successfully deleted component
+
+```
+
+#### Developing a devfile:
+
+The devfile registry can be accessed link:https://github.com/elsony/devfile-registry[here]. 
+
+For more information on how to develop and write a devfile, please read the link:https://docs.google.com/document/d/1piBG2Zu2PqPZSl0WySj25UouK3X5MKcFKqPrfC9ZAsc[Odo stack creation] document.
