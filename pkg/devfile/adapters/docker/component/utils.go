@@ -190,11 +190,9 @@ func (a Adapter) pullAndStartContainer(mounts []mount.Mount, projectVolumeName s
 
 func (a Adapter) startContainer(mounts []mount.Mount, projectVolumeName string, comp versionsCommon.DevfileComponent) error {
 	containerConfig := a.generateAndGetContainerConfig(a.ComponentName, comp)
-	hostConfig := container.HostConfig{
-		Mounts: mounts,
-	}
 
 	hostConfig, err := a.generateAndGetHostConfig()
+	hostConfig.Mounts = mounts
 	if err != nil {
 		return err
 	}
