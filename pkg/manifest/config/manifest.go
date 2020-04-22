@@ -2,15 +2,41 @@ package config
 
 import (
 	"errors"
+	"fmt"
+	"path/filepath"
 	"sort"
 )
+
+// PathForService gives a repo-rooted path within a repository.
+func PathForService(env *Environment, svc *Service) string {
+	return filepath.Join(PathForEnvironment(env), "services", svc.Name)
+}
+
+// PathForApplication generates a repo-rooted path within a repository.
+func PathForApplication(env *Environment, app *Application) string {
+	return filepath.Join(PathForEnvironment(env), "apps", app.Name)
+}
+
+// PathForEnvironment gives a repo-rooted path within a repository.
+func PathForEnvironment(env *Environment) string {
+	return filepath.Join("environments", env.Name)
+}
 
 // Manifest describes a set of environments, apps and services for deployment.
 type Manifest struct {
 	Environments []*Environment `json:"environments,omitempty"`
 }
 
-// GetCICDEnvironment returns CICD Environemnt
+func (m *Manifest) GetEnvironment(n string) (*Environment, error) {
+	for _, env := range m.Environments {
+		if env.Name == n {
+			return env, nil
+		}
+	}
+	return nil, fmt.Errorf("failed to find environment: %s", n)
+}
+
+// GetCICDEnvironment returns the CICD Environment if one exists.
 func (m *Manifest) GetCICDEnvironment() (*Environment, error) {
 	envs := []*Environment{}
 	for _, env := range m.Environments {
@@ -27,6 +53,23 @@ func (m *Manifest) GetCICDEnvironment() (*Environment, error) {
 	return envs[0], nil
 }
 
+// GetArgoCDEnvironment returns the ArgoCD Environment if one exists.
+func (m *Manifest) GetArgoCDEnvironment() (*Environment, error) {
+	envs := []*Environment{}
+	for _, env := range m.Environments {
+		if env.IsArgoCD {
+			envs = append(envs, env)
+		}
+	}
+	if len(envs) > 1 {
+		return nil, errors.New("found multiple ArgoCD environments")
+	}
+	if len(envs) == 0 {
+		return nil, errors.New("could not find ArgoCD environment")
+	}
+	return envs[0], nil
+}
+
 // Environment is a slice of Apps, these are the named apps in the namespace.
 //
 // The CICD environment will be used to automatically generate CI/CD resources
@@ -38,12 +81,19 @@ type Environment struct {
 	Apps      []*Application `json:"apps,omitempty"`
 	// TODO: this should check that there is 0 or 1 CICD environment in the
 	// manfifest.
-	IsCICD bool `json:"cicd,omitempty"`
+	IsCICD   bool `json:"cicd,omitempty"`
+	IsArgoCD bool `json:"argo,omitempty"`
 }
 
 // GoString return environment name
 func (e Environment) GoString() string {
 	return e.Name
+}
+
+// IsSpecial returns true if the environment is a special environment reserved
+// for specific files.
+func (e Environment) IsSpecial() bool {
+	return e.IsCICD || e.IsArgoCD
 }
 
 // Application has many services.
@@ -59,8 +109,21 @@ type Application struct {
 
 // Service has an upstream source.
 type Service struct {
+	Name      string     `json:"name,omitempty"`
+	Webhook   *Webhook   `json:"webhook,omitempty"`
+	SourceURL string     `json:"source_url,omitempty"`
+	Pipelines *Pipelines `json:"pipelines,omitempty"`
+}
+
+// Webhook provides Github webhook secret for eventlisteners
+type Webhook struct {
+	Secret *Secret `json:"secret,omitempty"`
+}
+
+// Secret represents a K8s secret in a namespace
+type Secret struct {
 	Name      string `json:"name,omitempty"`
-	SourceURL string `json:"source_url,omitempty"`
+	Namespace string `json:"namespace,omitempty"`
 }
 
 // Repository refers to an upstream source for reading additional config from.
@@ -78,7 +141,6 @@ type Repository struct {
 // These pipelines will be executed with a Git clone URL and commit SHA.
 type Pipelines struct {
 	Integration *TemplateBinding `json:"integration,omitempty"`
-	Deployment  *TemplateBinding `json:"deployment,omitempty"`
 }
 
 // TemplateBinding is a combination of the template and binding to be used for a
@@ -96,7 +158,7 @@ type TemplateBinding struct {
 // The environments are sorted using a custom sorting mechanism, that orders by
 // name, but, moves CICD environments to the bottom of the list.
 func (m Manifest) Walk(visitor interface{}) error {
-	sort.Sort(byName(m.Environments))
+	sort.Sort(ByName(m.Environments))
 	for _, env := range m.Environments {
 		for _, app := range env.Apps {
 			for _, svc := range app.Services {
@@ -117,19 +179,22 @@ func (m Manifest) Walk(visitor interface{}) error {
 		if v, ok := visitor.(EnvironmentVisitor); ok {
 			err := v.Environment(env)
 			if err != nil {
-				return nil
+				return err
 			}
 		}
 	}
 	return nil
 }
 
-type byName []*Environment
+type ByName []*Environment
 
-func (a byName) Len() int      { return len(a) }
-func (a byName) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-func (a byName) Less(i, j int) bool {
-	if a[j].IsCICD {
+func (a ByName) Len() int      { return len(a) }
+func (a ByName) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a ByName) Less(i, j int) bool {
+	if a[i].IsSpecial() {
+		return false
+	}
+	if a[j].IsSpecial() {
 		return true
 	}
 	return a[i].Name < a[j].Name

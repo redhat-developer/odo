@@ -10,6 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
+	"github.com/openshift/odo/pkg/manifest/deployment"
 	"github.com/openshift/odo/pkg/manifest/meta"
 	"github.com/openshift/odo/pkg/manifest/roles"
 	"github.com/openshift/odo/pkg/manifest/secrets"
@@ -63,73 +64,36 @@ var (
 			Verbs:     []string{"get", "list", "watch"},
 		},
 	}
-)
 
-func createDeployment(ns string) *appsv1.Deployment {
-	return &appsv1.Deployment{
-		TypeMeta:   meta.TypeMeta("Deployment", "apps/v1"),
-		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, operatorName)),
-		Spec: appsv1.DeploymentSpec{
-			Replicas: ptr32(1),
-			Selector: labelSelector("name", operatorName),
-			Template: podTemplate(operatorName),
-		},
-	}
-}
-
-func ptr32(i int32) *int32 {
-	return &i
-}
-
-func labelSelector(name, value string) *metav1.LabelSelector {
-	return &metav1.LabelSelector{
-		MatchLabels: map[string]string{
-			name: value,
-		},
-	}
-}
-func podTemplate(name string) corev1.PodTemplateSpec {
-	return corev1.PodTemplateSpec{
-		ObjectMeta: metav1.ObjectMeta{
-			Labels: map[string]string{
-				"name": name,
-			},
-		},
-		Spec: corev1.PodSpec{
-			ServiceAccountName: operatorName,
-			Containers: []corev1.Container{
-				{
-					Name:            operatorName,
-					Image:           containerImage,
-					Command:         []string{operatorName},
-					ImagePullPolicy: corev1.PullAlways,
-					Env: []corev1.EnvVar{
-						{
-							Name: "WATCH_NAMESPACE",
-							ValueFrom: &corev1.EnvVarSource{
-								FieldRef: &corev1.ObjectFieldSelector{
-									FieldPath: "metadata.namespace",
-								},
-							},
-						},
-
-						{
-							Name: "POD_NAME",
-							ValueFrom: &corev1.EnvVarSource{
-								FieldRef: &corev1.ObjectFieldSelector{
-									FieldPath: "metadata.name",
-								},
-							},
-						},
-						{
-							Name:  "OPERATOR_NAME",
-							Value: operatorName,
-						},
-					},
+	statusTrackerEnv = []corev1.EnvVar{
+		{
+			Name: "WATCH_NAMESPACE",
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
+					FieldPath: "metadata.namespace",
 				},
 			},
 		},
+		{
+			Name: "POD_NAME",
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
+					FieldPath: "metadata.name",
+				},
+			},
+		},
+		{
+			Name:  "OPERATOR_NAME",
+			Value: operatorName,
+		},
 	}
+)
+
+func createStatusTrackerDeployment(ns string) *appsv1.Deployment {
+	return deployment.Create(ns, operatorName, containerImage,
+		deployment.ServiceAccount(operatorName),
+		deployment.Env(statusTrackerEnv),
+		deployment.Command([]string{operatorName}))
 }
 
 func createRoleBinding(ns string, roleKind, roleName string, subjects []rbacv1.Subject) *rbacv1.RoleBinding {
@@ -160,6 +124,18 @@ func Resources(ns, token string) ([]interface{}, error) {
 		githubAuth,
 		roles.CreateRole(name, roleRules),
 		roles.CreateRoleBinding(name, sa, "Role", operatorName),
-		createDeployment(ns),
+		createStatusTrackerDeployment(ns),
 	}, nil
+}
+
+func ptr32(i int32) *int32 {
+	return &i
+}
+
+func labelSelector(name, value string) *metav1.LabelSelector {
+	return &metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			name: value,
+		},
+	}
 }

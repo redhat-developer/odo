@@ -7,6 +7,7 @@ import (
 	"github.com/openshift/odo/pkg/manifest/meta"
 	"github.com/openshift/odo/pkg/manifest/roles"
 	"github.com/openshift/odo/pkg/manifest/yaml"
+	"github.com/spf13/afero"
 )
 
 const (
@@ -23,10 +24,8 @@ type EnvParameters struct {
 
 // Env will bootstrap a new environment directory
 func Env(o *EnvParameters) error {
-
 	envName := AddPrefix(o.Prefix, o.EnvName)
 	envPath := getEnvPath(o.Output, o.EnvName, o.Prefix)
-
 	// check if the gitops dir exists
 	exists, err := ioutils.IsExisting(o.Output)
 	if !exists {
@@ -39,27 +38,25 @@ func Env(o *EnvParameters) error {
 		return err
 	}
 
-	err = yaml.AddKustomize("resources", []string{envNamespace, envRoleBinding}, filepath.Join(envPath, "base", Kustomize))
+	appFs := afero.NewOsFs()
+	err = yaml.AddKustomize(appFs, "resources", []string{envNamespace, envRoleBinding}, filepath.Join(envPath, "base", Kustomize))
 	if err != nil {
 		return err
 	}
 
-	err = yaml.AddKustomize("bases", []string{"../base"}, filepath.Join(envPath, "overlays", Kustomize))
+	err = yaml.AddKustomize(appFs, "bases", []string{"../base"}, filepath.Join(envPath, "overlays", Kustomize))
 	if err != nil {
 		return err
 	}
 
-	if err = addEnvResources(o.Prefix, envPath, envName); err != nil {
+	if err = addEnvResources(appFs, o.Prefix, envPath, envName); err != nil {
 		return err
 	}
-
 	return nil
 }
 
-func addEnvResources(prefix, envPath, envName string) error {
-
+func addEnvResources(fs afero.Fs, prefix, envPath, envName string) error {
 	namespaces := NamespaceNames(prefix)
-
 	outputs := map[string]interface{}{}
 	basePath := filepath.Join(envPath, "base")
 
@@ -68,7 +65,7 @@ func addEnvResources(prefix, envPath, envName string) error {
 	sa := roles.CreateServiceAccount(meta.NamespacedName(namespaces["cicd"], saName))
 
 	outputs[envRoleBinding] = roles.CreateRoleBinding(meta.NamespacedName(envName, roleBindingName), sa, "ClusterRole", "edit")
-	_, err := yaml.WriteResources(basePath, outputs)
+	_, err := yaml.WriteResources(fs, basePath, outputs)
 	if err != nil {
 		return err
 	}

@@ -14,23 +14,23 @@ import (
 	"github.com/openshift/odo/pkg/manifest/ioutils"
 	"github.com/openshift/odo/pkg/manifest/meta"
 	"github.com/openshift/odo/pkg/manifest/pipelines"
+	res "github.com/openshift/odo/pkg/manifest/resources"
 	"github.com/openshift/odo/pkg/manifest/roles"
 	"github.com/openshift/odo/pkg/manifest/routes"
 	"github.com/openshift/odo/pkg/manifest/secrets"
 	"github.com/openshift/odo/pkg/manifest/tasks"
 	"github.com/openshift/odo/pkg/manifest/triggers"
 	"github.com/openshift/odo/pkg/manifest/yaml"
+	"github.com/spf13/afero"
 
 	v1rbac "k8s.io/api/rbac/v1"
 
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 )
 
-type resources map[string]interface{}
-
 // InitParameters is a struct that provides flags for the Init command.
 type InitParameters struct {
-	DockerConfigJSONFileName string
+	DockerConfigJSONFilename string
 	GitOpsRepo               string
 	GitOpsWebhookSecret      string
 	ImageRepo                string
@@ -103,14 +103,14 @@ const (
 	routePath                = "09-routes/gitops-webhook-event-listener.yaml"
 
 	dockerSecretName = "regcred"
-	saName           = "pipeline"
-	roleName         = "pipelines-service-role"
-	roleBindingName  = "pipelines-service-role-binding"
+
+	saName          = "pipeline"
+	roleName        = "pipelines-service-role"
+	roleBindingName = "pipelines-service-role-binding"
 )
 
 // Init bootstraps a GitOps manifest and repository structure.
 func Init(o *InitParameters) error {
-
 	if !o.SkipChecks {
 		installed, err := pipelines.CheckTektonInstall()
 		if err != nil {
@@ -121,35 +121,35 @@ func Init(o *InitParameters) error {
 		}
 	}
 
-	_, imageRepo, err := validatingImageRepo(o)
+	_, imageRepo, err := validateImageRepo(o.ImageRepo, o.InternalRegistryHostname)
 	if err != nil {
 		return err
 	}
 
+	// TODO: look into whether or not this can use afero.
 	exists, err := ioutils.IsExisting(o.Output)
 	if exists {
 		return err
 	}
 
-	outputs, err := createInitialFiles(o.Prefix, o.GitOpsRepo, o.GitOpsWebhookSecret, o.DockerConfigJSONFileName, imageRepo)
+	outputs, err := createInitialFiles(o.Prefix, o.GitOpsRepo, o.GitOpsWebhookSecret, o.DockerConfigJSONFilename, imageRepo)
 	if err != nil {
 		return err
 	}
-
-	_, err = yaml.WriteResources(o.Output, outputs)
+	appFs := afero.NewOsFs()
+	_, err = yaml.WriteResources(appFs, o.Output, outputs)
 	return err
 }
 
-// CreateResources creates resources assocated to pipelines
-func CreateResources(prefix, gitOpsRepo, gitOpsWebhook, dockerConfigJSONPath, imageRepo string) (map[string]interface{}, error) {
-
+// CreateResources creates resources assocated to pipelines.
+func CreateResources(prefix, gitOpsRepo, gitOpsWebhookSecret, dockerConfigJSONPath, imageRepo string) (map[string]interface{}, error) {
 	// key: path of the resource
 	// value: YAML content of the resource
 	outputs := map[string]interface{}{}
 	cicdNamespace := AddPrefix(prefix, "cicd")
 
 	githubSecret, err := secrets.CreateSealedSecret(meta.NamespacedName(cicdNamespace, eventlisteners.GitOpsWebhookSecret),
-		gitOpsWebhook, eventlisteners.WebhookSecretKey)
+		gitOpsWebhookSecret, eventlisteners.WebhookSecretKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate GitHub Webhook Secret: %w", err)
 	}
@@ -193,12 +193,12 @@ func CreateResources(prefix, gitOpsRepo, gitOpsWebhook, dockerConfigJSONPath, im
 }
 
 // CreateDockerSecret creates Docker secret
-func CreateDockerSecret(dockerConfigJSONFileName, ns string) (*ssv1alpha1.SealedSecret, error) {
-	if dockerConfigJSONFileName == "" {
+func CreateDockerSecret(dockerConfigJSONFilename, ns string) (*ssv1alpha1.SealedSecret, error) {
+	if dockerConfigJSONFilename == "" {
 		return nil, errors.New("failed to generate path to file: --dockerconfigjson flag is not provided")
 	}
 
-	authJSONPath, err := homedir.Expand(dockerConfigJSONFileName)
+	authJSONPath, err := homedir.Expand(dockerConfigJSONFilename)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate path to file: %w", err)
 	}
@@ -218,40 +218,34 @@ func CreateDockerSecret(dockerConfigJSONFileName, ns string) (*ssv1alpha1.Sealed
 
 }
 
-func createInitialFiles(prefix, gitOpsRepo, gitOpsWebhook, dockerConfigPath, imageRepo string) (resources, error) {
-	manifest := createManifest(prefix)
-	initialFiles := resources{
+func createInitialFiles(prefix, gitOpsRepo, gitOpsWebhookSecret, dockerConfigPath, imageRepo string) (res.Resources, error) {
+	manifest := createManifest(&config.Environment{Name: prefix + "cicd", IsCICD: true})
+	initialFiles := res.Resources{
 		"manifest.yaml": manifest,
 	}
-
-	cicdResources, err := CreateResources(prefix, gitOpsRepo, gitOpsWebhook, dockerConfigPath, imageRepo)
+	cicdResources, err := CreateResources(prefix, gitOpsRepo, gitOpsWebhookSecret, dockerConfigPath, imageRepo)
 	if err != nil {
 		return nil, err
 	}
 	files := getResourceFiles(cicdResources)
 
 	prefixedResources := addPrefixToResources(pipelinesPath(manifest), cicdResources)
-	initialFiles = merge(prefixedResources, initialFiles)
+	initialFiles = res.Merge(prefixedResources, initialFiles)
 
 	cicdKustomizations := addPrefixToResources(cicdEnvironmentPath(manifest), getCICDKustomization(files))
-	initialFiles = merge(cicdKustomizations, initialFiles)
+	initialFiles = res.Merge(cicdKustomizations, initialFiles)
 
 	return initialFiles, nil
 }
 
-func createManifest(prefix string) *config.Manifest {
+func createManifest(envs ...*config.Environment) *config.Manifest {
 	return &config.Manifest{
-		Environments: []*config.Environment{
-			{
-				Name:   prefix + "cicd",
-				IsCICD: true,
-			},
-		},
+		Environments: envs,
 	}
 }
 
-func getCICDKustomization(files []string) resources {
-	return resources{
+func getCICDKustomization(files []string) res.Resources {
+	return res.Resources{
 		"base/kustomization.yaml": map[string]interface{}{
 			"bases": []string{"./pipelines"},
 		},
@@ -272,7 +266,7 @@ func pipelinesPath(m *config.Manifest) string {
 	return filepath.Join(cicdEnvironmentPath(m), "base/pipelines")
 }
 
-func addPrefixToResources(prefix string, files resources) map[string]interface{} {
+func addPrefixToResources(prefix string, files res.Resources) map[string]interface{} {
 	updated := map[string]interface{}{}
 	for k, v := range files {
 		updated[filepath.Join(prefix, k)] = v
@@ -280,23 +274,12 @@ func addPrefixToResources(prefix string, files resources) map[string]interface{}
 	return updated
 }
 
-func merge(from, to resources) resources {
-	merged := resources{}
-	for k, v := range to {
-		merged[k] = v
-	}
-	for k, v := range from {
-		merged[k] = v
-	}
-	return merged
-}
-
 // TODO: this should probably use the .FindCICDEnvironment on the manifest.
 func cicdEnvironmentPath(m *config.Manifest) string {
 	return pathForEnvironment(m.Environments[0])
 }
 
-func getResourceFiles(res resources) []string {
+func getResourceFiles(res res.Resources) []string {
 	files := []string{}
 	for k := range res {
 		files = append(files, k)
@@ -310,44 +293,44 @@ func GetPipelinesDir(rootPath, prefix string) string {
 	return filepath.Join(rootPath, EnvsDir, AddPrefix(prefix, CICDDir), BaseDir, pipelineDir)
 }
 
-// validatingImageRepo validates the input image repo.  It determines if it is
+// validateImageRepo validates the input image repo.  It determines if it is
 // for internal registry and prepend internal registry hostname if neccessary.
-func validatingImageRepo(o *InitParameters) (bool, string, error) {
-	components := strings.Split(o.ImageRepo, "/")
+func validateImageRepo(imageRepo, registryURL string) (bool, string, error) {
+	components := strings.Split(imageRepo, "/")
 
 	// repo url has minimum of 2 components
 	if len(components) < 2 {
-		return false, "", imageRepoValidationErrors(o.ImageRepo)
+		return false, "", imageRepoValidationErrors(imageRepo)
 	}
 
 	for _, v := range components {
 		// check for empty components
 		if strings.TrimSpace(v) == "" {
-			return false, "", imageRepoValidationErrors(o.ImageRepo)
+			return false, "", imageRepoValidationErrors(imageRepo)
 		}
 		// check for white spaces
 		if len(v) > len(strings.TrimSpace(v)) {
-			return false, "", imageRepoValidationErrors(o.ImageRepo)
+			return false, "", imageRepoValidationErrors(imageRepo)
 		}
 	}
 
 	if len(components) == 2 {
 		if components[0] == "docker.io" || components[0] == "quay.io" {
 			// we recognize docker.io and quay.io.  It is missing one component
-			return false, "", imageRepoValidationErrors(o.ImageRepo)
+			return false, "", imageRepoValidationErrors(imageRepo)
 		}
 		// We have format like <project>/<app> which is an internal registry.
 		// We prepend the internal registry hostname.
-		return true, o.InternalRegistryHostname + "/" + o.ImageRepo, nil
+		return true, registryURL + "/" + imageRepo, nil
 	}
 
 	// Check the first component to see if it is an internal registry
 	if len(components) == 3 {
-		return components[0] == o.InternalRegistryHostname, o.ImageRepo, nil
+		return components[0] == registryURL, imageRepo, nil
 	}
 
 	// > 3 components.  invalid repo
-	return false, "", imageRepoValidationErrors(o.ImageRepo)
+	return false, "", imageRepoValidationErrors(imageRepo)
 }
 
 func imageRepoValidationErrors(imageRepo string) error {

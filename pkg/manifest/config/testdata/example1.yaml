@@ -4,9 +4,6 @@ environments:
       integration:
         template: dev-ci-template
         binding: dev-ci-binding
-      deployment:
-        template: dev-cd-template
-        binding: dev-cd-binding
     apps:
       - name: my-app-1
         services:

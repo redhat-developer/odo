@@ -11,6 +11,7 @@ import (
 	"github.com/openshift/odo/pkg/manifest/ioutils"
 	"github.com/openshift/odo/pkg/manifest/pipelines"
 	"github.com/openshift/odo/pkg/manifest/yaml"
+	"github.com/spf13/afero"
 	"sigs.k8s.io/kustomize/pkg/gvk"
 	"sigs.k8s.io/kustomize/pkg/types"
 
@@ -98,7 +99,8 @@ func CreateApplication(o *AddParameters) error {
 	createKustomizeMod(outputs, []string{fmt.Sprintf("../../../../environments/%s/overlays", environmentName["cicd"])}, []string{"app-webhook-secret.yaml"}, kustomizeModPath)
 	kustomizeModPath := filepath.Join(gitopsPath, fmt.Sprintf("/environments/%s/base/kustomization.yaml", o.EnvName))
 
-	createKustomizeEnv([]string{fmt.Sprintf("../../../%s/%s/overlays", appDir, o.AppName)}, []string{"namespace.yaml", "rolebinding.yaml"}, kustomizeModPath)
+	fs := afero.Afero{Fs: afero.OsFs{}}
+	createKustomizeEnv(fs, []string{fmt.Sprintf("../../../%s/%s/overlays", appDir, o.AppName)}, []string{"namespace.yaml", "rolebinding.yaml"}, kustomizeModPath)
 
 	secretName := fmt.Sprintf("svc-%s-secret", ServiceRepo)
 	files := createResourcesConfig(outputs, o.ServiceWebhookSecret, o.EnvName, secretName)
@@ -106,26 +108,26 @@ func CreateApplication(o *AddParameters) error {
 	createPatchFiles(outputs, o.ServiceGitRepo, o.EnvName, secretName)
 	createPipelinePatch(outputs, o.EnvName)
 
-	_, err := yaml.WriteResources(configPath, files)
+	_, err := yaml.WriteResources(fs, configPath, files)
 
 	if err != nil {
 		return err
 	}
-	if err := yaml.AddKustomize("bases", []string{"overlays"}, filepath.Join(gitopsPath, appDir, o.AppName, manifest.Kustomize)); err != nil {
+	if err := yaml.AddKustomize(fs, "bases", []string{"overlays"}, filepath.Join(gitopsPath, appDir, o.AppName, manifest.Kustomize)); err != nil {
 		return err
 	}
 
-	if err := yaml.AddKustomize("bases", []string{"../base"}, filepath.Join(gitopsPath, appDir, o.AppName, overlaysDir, manifest.Kustomize)); err != nil {
+	if err := yaml.AddKustomize(fs, "bases", []string{"../base"}, filepath.Join(gitopsPath, appDir, o.AppName, overlaysDir, manifest.Kustomize)); err != nil {
 		return err
 	}
 
-	if err := yaml.AddKustomize("bases", []string{fmt.Sprintf("../../../services/%s/overlays", ServiceRepo)}, filepath.Join(gitopsPath, appDir, o.AppName, manifest.BaseDir, manifest.Kustomize)); err != nil {
+	if err := yaml.AddKustomize(fs, "bases", []string{fmt.Sprintf("../../../services/%s/overlays", ServiceRepo)}, filepath.Join(gitopsPath, appDir, o.AppName, manifest.BaseDir, manifest.Kustomize)); err != nil {
 		return err
 	}
-	if err := yaml.AddKustomize("bases", []string{"../config"}, filepath.Join(gitopsPath, servicesDir, ServiceRepo, manifest.BaseDir, manifest.Kustomize)); err != nil {
+	if err := yaml.AddKustomize(fs, "bases", []string{"../config"}, filepath.Join(gitopsPath, servicesDir, ServiceRepo, manifest.BaseDir, manifest.Kustomize)); err != nil {
 		return err
 	}
-	if err := yaml.AddKustomize("bases", []string{"./config"}, filepath.Join(gitopsPath, servicesDir, ServiceRepo, manifest.BaseDir, manifest.Kustomize)); err != nil {
+	if err := yaml.AddKustomize(fs, "bases", []string{"./config"}, filepath.Join(gitopsPath, servicesDir, ServiceRepo, manifest.BaseDir, manifest.Kustomize)); err != nil {
 		return err
 	}
 
@@ -212,7 +214,6 @@ func pipelineTarget() *types.PatchTarget {
 }
 
 func createKustomizeMod(outputs map[string]interface{}, basesParams, resourcesParams []string, path string) {
-
 	bases := basesParams
 	resources := resourcesParams
 
@@ -223,17 +224,15 @@ func createKustomizeMod(outputs map[string]interface{}, basesParams, resourcesPa
 	outputs[path] = file
 }
 
-func createKustomizeEnv(basesParams, resourcesParams []string, path string) {
-
+func createKustomizeEnv(fs afero.Fs, basesParams, resourcesParams []string, path string) {
 	bases := basesParams
 	resources := resourcesParams
-
 	file := types.Kustomization{
 		Resources: resources,
 		Bases:     bases,
 	}
 
-	yaml.MarshalItemToFile(path, file)
+	yaml.MarshalItemToFile(fs, path, file)
 }
 
 func getGitopsRepoName(repo string) string {

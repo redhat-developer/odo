@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/openshift/odo/pkg/manifest/meta"
+	"github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
 	triggersv1 "github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -50,6 +51,19 @@ func Generate(githubRepo, ns, saName, secretName string) triggersv1.EventListene
 					ns,
 				),
 			},
+		},
+	}
+}
+
+func CreateELFromTriggers(cicdNs string, triggers []triggersv1.EventListenerTrigger) *triggersv1.EventListener {
+	return &v1alpha1.EventListener{
+		TypeMeta: eventListenerTypeMeta,
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "cicd-event-listener",
+			Namespace: cicdNs,
+		},
+		Spec: triggersv1.EventListenerSpec{
+			Triggers: triggers,
 		},
 	}
 }

@@ -22,10 +22,6 @@ func TestParse(t *testing.T) {
 							Template: "dev-ci-template",
 							Binding:  "dev-ci-binding",
 						},
-						Deployment: &TemplateBinding{
-							Template: "dev-cd-template",
-							Binding:  "dev-cd-binding",
-						},
 					},
 					Apps: []*Application{
 						{

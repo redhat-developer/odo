@@ -3,9 +3,9 @@ package yaml
 import (
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 
+	"github.com/spf13/afero"
 	"sigs.k8s.io/yaml"
 )
 
@@ -14,10 +14,10 @@ import (
 // the filenames before writing.
 //
 // It returns the list of filenames written out.
-func WriteResources(path string, files map[string]interface{}) ([]string, error) {
+func WriteResources(fs afero.Fs, path string, files map[string]interface{}) ([]string, error) {
 	filenames := make([]string, 0)
 	for filename, item := range files {
-		err := MarshalItemToFile(filepath.Join(path, filename), item)
+		err := MarshalItemToFile(fs, filepath.Join(path, filename), item)
 		if err != nil {
 			return nil, err
 		}
@@ -27,12 +27,12 @@ func WriteResources(path string, files map[string]interface{}) ([]string, error)
 }
 
 // MarshalItemToFile marshals item to file
-func MarshalItemToFile(filename string, item interface{}) error {
-	err := os.MkdirAll(filepath.Dir(filename), 0755)
+func MarshalItemToFile(fs afero.Fs, filename string, item interface{}) error {
+	err := fs.MkdirAll(filepath.Dir(filename), 0755)
 	if err != nil {
 		return fmt.Errorf("failed to MkDirAll for %s: %v", filename, err)
 	}
-	f, err := os.Create(filename)
+	f, err := fs.Create(filename)
 	if err != nil {
 		return fmt.Errorf("failed to Create file %s: %v", filename, err)
 	}
@@ -54,6 +54,8 @@ func MarshalOutput(out io.Writer, output interface{}) error {
 }
 
 // AddKustomize adds kustomization.yaml.  Name and items become map key and value, respectively
-func AddKustomize(name string, items []string, path string) error {
-	return MarshalItemToFile(path, map[string]interface{}{name: items})
+func AddKustomize(fs afero.Fs, name string, items []string, path string) error {
+	content := []interface{}{}
+	content = append(content, map[string]interface{}{name: items})
+	return MarshalItemToFile(fs, path, content)
 }

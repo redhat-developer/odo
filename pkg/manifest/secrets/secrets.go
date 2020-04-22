@@ -25,7 +25,10 @@ var (
 	sealedSecretTypeMeta = meta.TypeMeta("SealedSecret", "bitnami.com/v1alpha1")
 )
 
-type getPublicKey func() (*rsa.PublicKey, error)
+// DefaultPublicKeyFunc is the func used to get the key from Bitnami.
+var DefaultPublicKeyFunc = getClusterPublicKey
+
+type PublicKeyFunc func() (*rsa.PublicKey, error)
 
 // CreateSealedDockerConfigSecret creates a SealedSecret with the given name and reader
 func CreateSealedDockerConfigSecret(name types.NamespacedName, in io.Reader) (*ssv1alpha1.SealedSecret, error) {
@@ -34,7 +37,7 @@ func CreateSealedDockerConfigSecret(name types.NamespacedName, in io.Reader) (*s
 		return nil, err
 	}
 
-	return seal(secret, getClusterPublicKey)
+	return seal(secret, DefaultPublicKeyFunc)
 }
 
 // CreateSealedSecret creates a SealedSecret with the provided name and body/data and type
@@ -44,11 +47,11 @@ func CreateSealedSecret(name types.NamespacedName, data, secretKey string) (*ssv
 		return nil, err
 	}
 
-	return seal(secret, getClusterPublicKey)
+	return seal(secret, DefaultPublicKeyFunc)
 }
 
 // Returns a sealed secret
-func seal(secret *corev1.Secret, getPubKey getPublicKey) (*ssv1alpha1.SealedSecret, error) {
+func seal(secret *corev1.Secret, pubKey PublicKeyFunc) (*ssv1alpha1.SealedSecret, error) {
 	// Strip read-only server-side ObjectMeta (if present)
 	secret.SetSelfLink("")
 	secret.SetUID("")
@@ -58,12 +61,12 @@ func seal(secret *corev1.Secret, getPubKey getPublicKey) (*ssv1alpha1.SealedSecr
 	secret.SetDeletionTimestamp(nil)
 	secret.DeletionGracePeriodSeconds = nil
 
-	pubKey, err := getPubKey()
+	key, err := pubKey()
 	if err != nil {
-		return nil, fmt.Errorf("failed dto get public key from cluster: %w", err)
+		return nil, fmt.Errorf("failed to get public key from cluster (is sealed-secrets installed?): %w", err)
 	}
 
-	sealedSecret, err := ssv1alpha1.NewSealedSecret(scheme.Codecs, pubKey, secret)
+	sealedSecret, err := ssv1alpha1.NewSealedSecret(scheme.Codecs, key, secret)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +88,6 @@ func getClusterPublicKey() (*rsa.PublicKey, error) {
 		return nil, err
 	}
 	defer f.Close()
-
 	return parseKey(f)
 }
 
