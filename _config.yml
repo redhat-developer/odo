@@ -22,7 +22,7 @@ doks:
             - network_name: github
               profile_url: 'https://github.com/openshift/odo'
     google_analytics:
-        tracking_code: # Add your Google Analytics tracking code to activate Google Analytics
+        tracking_code: UA-119021845-1
     comments:
         disqus_forum_shortname: # Add your disqus forum shortname to activate comments
 
