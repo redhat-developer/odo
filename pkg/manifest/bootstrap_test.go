@@ -9,6 +9,8 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/openshift/odo/pkg/manifest/config"
 	"github.com/openshift/odo/pkg/manifest/deployment"
+	"github.com/openshift/odo/pkg/manifest/eventlisteners"
+	"github.com/openshift/odo/pkg/manifest/meta"
 	res "github.com/openshift/odo/pkg/manifest/resources"
 	"github.com/openshift/odo/pkg/manifest/secrets"
 )
@@ -37,15 +39,20 @@ func TestBootstrapManifest(t *testing.T) {
 		GitOpsWebhookSecret: "123",
 		AppRepoURL:          testSvcRepo,
 		ImageRepo:           "image/repo",
+		AppWebhookSecret:    "456",
 	}
 
 	r, err := bootstrapResources(params)
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	hookSecret, err := secrets.CreateSealedSecret(meta.NamespacedName("tst-cicd", "github-webhook-secret-http-api-svc"), "456", eventlisteners.WebhookSecretKey)
+	if err != nil {
+		t.Fatal(err)
+	}
 	want := res.Resources{
-		"environments/tst-dev/services/http-api-svc/base/config/100-deployment.yaml": deployment.Create("tst-dev", "http-api-svc", bootstrapImage, deployment.ContainerPort(80)),
+		"environments/tst-cicd/base/pipelines/03-secrets/github-webhook-secret-http-api-svc.yaml": hookSecret,
+		"environments/tst-dev/services/http-api-svc/base/config/100-deployment.yaml":              deployment.Create("tst-dev", "http-api-svc", bootstrapImage, deployment.ContainerPort(80)),
 
 		"environments/tst-dev/services/http-api-svc/base/config/200-service.yaml":   createBootstrapService("tst-dev", "http-api-svc"),
 		"environments/tst-dev/services/http-api-svc/base/config/kustomization.yaml": &res.Kustomization{Resources: []string{"100-deployment.yaml", "200-service.yaml"}},

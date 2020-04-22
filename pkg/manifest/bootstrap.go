@@ -98,8 +98,10 @@ func bootstrapResources(o *BootstrapOptions) (res.Resources, error) {
 	if err != nil {
 		return nil, err
 	}
-	hookSecret, err := secrets.CreateSealedSecret(meta.NamespacedName(ns["cicd"], eventlisteners.GitOpsWebhookSecret),
-		o.AppWebhookSecret, secretName)
+	hookSecret, err := secrets.CreateSealedSecret(
+		meta.NamespacedName(ns["cicd"], secretName),
+		o.AppWebhookSecret,
+		eventlisteners.WebhookSecretKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate GitHub Webhook Secret: %w", err)
 	}
