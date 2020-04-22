@@ -231,6 +231,38 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(output).To(ContainSubstring("Executing devrun command \"/artifacts/bin/start-server.sh\""))
 		})
 
+		It("should execute devinit and devrun commands if present", func() {
+			helper.CmdShouldPass("git", "clone", "https://github.com/maysunfaisal/springboot.git", projectDirPath)
+			helper.Chdir(projectDirPath)
+
+			helper.CmdShouldPass("odo", "create", "java-spring-boot", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "springboot"), projectDirPath)
+
+			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile-init-without-build.yaml", "--namespace", namespace)
+			Expect(output).To(ContainSubstring("Executing devinit command \"echo hello\""))
+			Expect(output).To(ContainSubstring("Executing devrun command \"/artifacts/bin/start-server.sh\""))
+		})
+
+		It("should only execute devinit once command if component is already created", func() {
+			helper.CmdShouldPass("git", "clone", "https://github.com/maysunfaisal/springboot.git", projectDirPath)
+			helper.Chdir(projectDirPath)
+
+			helper.CmdShouldPass("odo", "create", "java-spring-boot", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "springboot"), projectDirPath)
+
+			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile-init.yaml", "--namespace", namespace)
+			Expect(output).To(ContainSubstring("Executing devinit command \"echo hello\""))
+			Expect(output).To(ContainSubstring("Executing devbuild command \"/artifacts/bin/build-container-full.sh\""))
+			Expect(output).To(ContainSubstring("Executing devrun command \"/artifacts/bin/start-server.sh\""))
+
+			output = helper.CmdShouldPass("odo", "push", "--devfile", "devfile-init.yaml", "--namespace", namespace)
+			Expect(output).NotTo(ContainSubstring("Executing devinit command \"echo hello\""))
+			Expect(output).To(ContainSubstring("Executing devbuild command \"/artifacts/bin/build-container-full.sh\""))
+			Expect(output).To(ContainSubstring("Executing devrun command \"/artifacts/bin/start-server.sh\""))
+		})
+
 		It("should be able to handle a missing devinit command", func() {
 			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
 			helper.Chdir(projectDirPath)

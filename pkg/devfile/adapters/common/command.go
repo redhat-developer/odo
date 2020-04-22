@@ -160,6 +160,7 @@ func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileInitCmd, de
 		glog.V(3).Infof("No init command was provided")
 	} else if !isInitCmdEmpty && initCmdErr == nil {
 		isInitCommandValid = true
+		pushDevfileCommands = append(pushDevfileCommands, initCommand)
 		glog.V(3).Infof("Init command: %v", initCommand.Name)
 	}
 
@@ -171,19 +172,10 @@ func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileInitCmd, de
 		isBuildCommandValid = true
 		glog.V(3).Infof("No build command was provided")
 
-		// If init command was provided, and no build command provide log a message
-		if !isInitCmdEmpty && initCmdErr == nil {
-			return []common.DevfileCommand{}, errors.New(fmt.Sprint("Devfile init command provided without accompanied build command."))
-		}
 	} else if !isBuildCmdEmpty && buildCmdErr == nil {
 		isBuildCommandValid = true
 		pushDevfileCommands = append(pushDevfileCommands, buildCommand)
 		glog.V(3).Infof("Build command: %v", buildCommand.Name)
-
-		// Only add init command if build command is provided
-		if !isInitCmdEmpty && initCmdErr == nil {
-			pushDevfileCommands = append(pushDevfileCommands, initCommand)
-		}
 	}
 
 	runCommand, runCmdErr := GetRunCommand(data, devfileRunCmd)

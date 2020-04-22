@@ -60,6 +60,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	changedFiles := []string{}
 	isForcePush := false
 	podChanged := false
+	runInit := true
 	var podName string
 
 	// If the component already exists, retrieve the pod's name before it's potentially updated
@@ -69,6 +70,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 			return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
 		}
 		podName = pod.GetName()
+		runInit = false
 	}
 
 	// Validate the devfile build and run commands
@@ -180,7 +182,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return errors.Wrapf(err, "Failed to sync to component with name %s", a.ComponentName)
 	}
 
-	err = a.execDevfile(pushDevfileCommands, componentExists, parameters.Show, pod.GetName(), pod.Spec.Containers)
+	err = a.execDevfile(pushDevfileCommands, componentExists, parameters.Show, pod.GetName(), pod.Spec.Containers, runInit)
 	if err != nil {
 		return err
 	}
@@ -426,7 +428,7 @@ func (a Adapter) waitAndGetComponentPod(hideSpinner bool) (*corev1.Pod, error) {
 }
 
 // Executes Devfile Commands
-func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand, componentExists, show bool, podName string, containers []corev1.Container) (err error) {
+func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand, componentExists, show bool, podName string, containers []corev1.Container, runInit bool) (err error) {
 	var s *log.Status
 
 	if len(pushDevfileCommands) == 0 {
@@ -438,11 +440,17 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 		adapterName string
 	}
 
-	commandOrder := []CommandNames{
-		CommandNames{defaultName: string(common.DefaultDevfileInitCommand), adapterName: a.devfileInitCmd},
+	commandOrder := []CommandNames{}
+
+	if runInit {
+		commandOrder = append(commandOrder, CommandNames{defaultName: string(common.DefaultDevfileInitCommand), adapterName: a.devfileInitCmd})
+	}
+	commandOrder = append(
+		commandOrder,
 		CommandNames{defaultName: string(common.DefaultDevfileBuildCommand), adapterName: a.devfileBuildCmd},
 		CommandNames{defaultName: string(common.DefaultDevfileRunCommand), adapterName: a.devfileRunCmd},
-	}
+	)
+
 	for i, currentCommand := range commandOrder {
 		for _, command := range pushDevfileCommands {
 			if command.Name == currentCommand.defaultName || command.Name == currentCommand.adapterName {
