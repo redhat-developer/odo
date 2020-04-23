@@ -308,6 +308,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		}
 		var defaultComponentNamespace string
 
+		// If the push target is set to Docker, we can't assume we have an active Kube context
 		if !co.IsPushTargetDocker {
 			// Get current active namespace
 			client, err := kclient.New()
