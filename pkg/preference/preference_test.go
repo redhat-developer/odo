@@ -704,7 +704,7 @@ func TestMetaTypePopulatedInPreference(t *testing.T) {
 	}
 }
 
-func TesthandleWithoutRegistryExist(t *testing.T) {
+func TestHandleWithoutRegistryExist(t *testing.T) {
 	tests := []struct {
 		name         string
 		registryList []Registry
@@ -732,7 +732,7 @@ func TesthandleWithoutRegistryExist(t *testing.T) {
 			operation:    "update",
 			registryName: "testName",
 			registryURL:  "testURL",
-			want:         []Registry{},
+			want:         nil,
 		},
 		{
 			name:         "Case 3: Remove registry",
@@ -740,7 +740,7 @@ func TesthandleWithoutRegistryExist(t *testing.T) {
 			operation:    "remove",
 			registryName: "testName",
 			registryURL:  "testURL",
-			want:         []Registry{},
+			want:         nil,
 		},
 	}
 
@@ -748,7 +748,7 @@ func TesthandleWithoutRegistryExist(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := handleWithoutRegistryExist(tt.registryList, tt.operation, tt.registryName, tt.registryURL)
 			if err != nil {
-				t.Errorf("Error message is %v", err)
+				t.Logf("Error message is %v", err)
 			}
 
 			if !reflect.DeepEqual(got, tt.want) {
@@ -758,7 +758,7 @@ func TesthandleWithoutRegistryExist(t *testing.T) {
 	}
 }
 
-func TesthandleWithRegistryExist(t *testing.T) {
+func TestHandleWithRegistryExist(t *testing.T) {
 	tests := []struct {
 		name         string
 		index        int
@@ -780,7 +780,7 @@ func TesthandleWithRegistryExist(t *testing.T) {
 			operation:    "add",
 			registryName: "testName",
 			registryURL:  "addURL",
-			want:         []Registry{},
+			want:         nil,
 		},
 		{
 			name:  "Case 2: update registry",
@@ -818,9 +818,9 @@ func TesthandleWithRegistryExist(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		got, err := handleWithoutRegistryExist(tt.registryList, tt.operation, tt.registryName, tt.registryURL)
+		got, err := handleWithRegistryExist(tt.index, tt.registryList, tt.operation, tt.registryName, tt.registryURL)
 		if err != nil {
-			t.Errorf("Error message is %v", err)
+			t.Logf("Error message is %v", err)
 		}
 
 		if !reflect.DeepEqual(got, tt.want) {
