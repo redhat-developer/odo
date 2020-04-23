@@ -136,13 +136,16 @@ func (a Adapter) updateComponent() (err error) {
 			containerID := containers[0].ID
 
 			// Get the associated container config from the container ID
-			containerConfig, mounts, err := a.Client.GetContainerConfigAndMounts(containerID)
+			containerConfig, hostConfig, mounts, err := a.Client.GetContainerConfigHostConfigAndMounts(containerID)
 			if err != nil {
 				return errors.Wrapf(err, "unable to get the container config for component %s", componentName)
 			}
-
+			portMap, err := getPortMap()
+			if err != nil {
+				return errors.Wrapf(err, "unable to get the port map from env.yaml file for component %s", componentName)
+			}
 			// See if the container needs to be updated
-			if utils.DoesContainerNeedUpdating(comp, containerConfig, dockerVolumeMounts, mounts) {
+			if utils.DoesContainerNeedUpdating(comp, containerConfig, hostConfig, dockerVolumeMounts, mounts, portMap) {
 				s := log.Spinner("Updating the component " + *comp.Alias)
 				defer s.End(false)
 				// Remove the container
@@ -190,7 +193,6 @@ func (a Adapter) pullAndStartContainer(mounts []mount.Mount, projectVolumeName s
 
 func (a Adapter) startContainer(mounts []mount.Mount, projectVolumeName string, comp versionsCommon.DevfileComponent) error {
 	containerConfig := a.generateAndGetContainerConfig(a.ComponentName, comp)
-
 	hostConfig, err := a.generateAndGetHostConfig()
 	hostConfig.Mounts = mounts
 	if err != nil {
@@ -216,20 +218,12 @@ func (a Adapter) startContainer(mounts []mount.Mount, projectVolumeName string, 
 func (a Adapter) generateAndGetContainerConfig(componentName string, comp versionsCommon.DevfileComponent) container.Config {
 	// Convert the env vars in the Devfile to the format expected by Docker
 	envVars := utils.ConvertEnvs(comp.Env)
-
+	ports := utils.ConvertPorts(comp.Endpoints)
 	containerLabels := map[string]string{
 		"component": componentName,
 		"alias":     *comp.Alias,
 	}
-
-	// For each endpoint defined in the component in the devfile, add it to the portset for the container
-	portSet := nat.PortSet{}
-	for _, endpoint := range comp.Endpoints {
-		port := fmt.Sprint(*endpoint.Port) + "/tcp"
-		portSet[nat.Port(port)] = struct{}{}
-	}
-
-	containerConfig := a.Client.GenerateContainerConfig(*comp.Image, comp.Command, comp.Args, envVars, containerLabels, portSet)
+	containerConfig := a.Client.GenerateContainerConfig(*comp.Image, comp.Command, comp.Args, envVars, containerLabels, ports)
 	return containerConfig
 }
 
