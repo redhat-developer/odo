@@ -6,13 +6,14 @@ import (
 )
 
 // GenerateContainerConfig creates a containerConfig resource that can be used to create a local Docker container
-func (dc *Client) GenerateContainerConfig(image string, entrypoint []string, cmd []string, envVars []string, labels map[string]string) container.Config {
+func (dc *Client) GenerateContainerConfig(image string, entrypoint []string, cmd []string, envVars []string, labels map[string]string, ports nat.PortSet) container.Config {
 	containerConfig := container.Config{
-		Image:      image,
-		Entrypoint: entrypoint,
-		Cmd:        cmd,
-		Env:        envVars,
-		Labels:     labels,
+		Image:        image,
+		Entrypoint:   entrypoint,
+		Cmd:          cmd,
+		Env:          envVars,
+		Labels:       labels,
+		ExposedPorts: ports,
 	}
 	return containerConfig
 }

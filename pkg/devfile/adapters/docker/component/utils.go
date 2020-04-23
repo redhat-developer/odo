@@ -222,7 +222,14 @@ func (a Adapter) generateAndGetContainerConfig(componentName string, comp versio
 		"alias":     *comp.Alias,
 	}
 
-	containerConfig := a.Client.GenerateContainerConfig(*comp.Image, comp.Command, comp.Args, envVars, containerLabels)
+	// For each endpoint defined in the component in the devfile, add it to the portset for the container
+	portSet := nat.PortSet{}
+	for _, endpoint := range comp.Endpoints {
+		port := fmt.Sprint(*endpoint.Port) + "/tcp"
+		portSet[nat.Port(port)] = struct{}{}
+	}
+
+	containerConfig := a.Client.GenerateContainerConfig(*comp.Image, comp.Command, comp.Args, envVars, containerLabels, portSet)
 	return containerConfig
 }
 
