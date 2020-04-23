@@ -1,5 +1,5 @@
-hash: 90f14d501dacd6ce7926e0acb91d1aee421d274ed7823cec5bde59da48821b55
-updated: 2020-04-16T10:51:54.629793+01:00
+hash: 1f67a90716cef2c0b44fd4da28ac42cca92e812b48ba8b96a37d67fe0c80ed82
+updated: 2020-04-22T19:25:44.705181504-04:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -121,7 +121,7 @@ imports:
   - util/runes
   - util/strings
 - name: github.com/gogo/protobuf
-  version: 342cbe0a04158f6dcb03ca0079991a51a4248c02
+  version: 5628607bb4c51c3157aacc3a50f0ab707582b805
   subpackages:
   - proto
   - sortkeys
@@ -131,6 +131,10 @@ imports:
   version: 02826c3e79038b59d737d3b1c0a1d937f71a4433
   subpackages:
   - lru
+- name: github.com/golang/mock
+  version: 3a35fb6e3e18b9dbfee291262260dee7372d2a92
+  subpackages:
+  - gomock
 - name: github.com/golang/protobuf
   version: b4deda0973fb4c70b50d226b1af49f3da59f5265
   subpackages:
