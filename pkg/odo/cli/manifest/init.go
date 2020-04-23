@@ -33,7 +33,6 @@ type InitParameters struct {
 	gitOpsWebhookSecret      string // used to create Github's shared webhook secret for gitops repo
 	output                   string // path to add Gitops resources
 	prefix                   string // used to generate the environments in a shared cluster
-	skipChecks               bool
 	imageRepo                string
 	internalRegistryHostname string
 	// generic context options common to all commands
@@ -73,7 +72,6 @@ func (io *InitParameters) Run() error {
 		GitOpsRepo:               io.gitOpsRepo,
 		Output:                   io.output,
 		Prefix:                   io.prefix,
-		SkipChecks:               io.skipChecks,
 		ImageRepo:                io.imageRepo,
 		InternalRegistryHostname: io.internalRegistryHostname,
 	}
@@ -104,7 +102,6 @@ func NewCmdInit(name, fullName string) *cobra.Command {
 	initCmd.Flags().StringVar(&o.dockercfgjson, "dockercfgjson", "", "dockercfg json pathname")
 	initCmd.Flags().StringVar(&o.internalRegistryHostname, "internal-registry-hostname", "image-registry.openshift-image-registry.svc:5000", "internal image registry hostname")
 	initCmd.Flags().StringVar(&o.imageRepo, "image-repo", "", "image repository in this form <registry>/<username>/<repository> or <project>/<app> for internal registry")
-	initCmd.Flags().BoolVarP(&o.skipChecks, "skip-checks", "b", false, "skip Tekton installation checks")
 
 	return initCmd
 }

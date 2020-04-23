@@ -38,7 +38,6 @@ type AddParameters struct {
 	prefix               string
 	serviceGitRepo       string
 	serviceWebhookSecret string
-	skipChecks           bool
 
 	*genericclioptions.Context
 }
@@ -77,7 +76,6 @@ func (io *AddParameters) Run() error {
 		Prefix:               io.prefix,
 		ServiceGitRepo:       io.serviceGitRepo,
 		ServiceWebhookSecret: io.serviceWebhookSecret,
-		SkipChecks:           io.skipChecks,
 	}
 
 	return pipelines.CreateApplication(&options)
@@ -103,7 +101,6 @@ func NewCmdAddService(name, fullName string) *cobra.Command {
 	addCmd.Flags().StringVar(&o.serviceWebhookSecret, "service-webhook-secret", "", "Webhook secret of the service Git repository")
 	addCmd.Flags().StringVar(&o.envName, "env-name", "", "Add the name of the environment(namespace) to which the pipelines should be bootstrapped")
 	addCmd.Flags().StringVar(&o.serviceGitRepo, "service-git-repo", "", "service Git repository in this form <username>/<repository>")
-	addCmd.Flags().BoolVarP(&o.skipChecks, "skip-checks", "b", true, "skip Tekton installation checks")
 	addCmd.MarkFlagRequired("app-name")
 	addCmd.MarkFlagRequired("service-webhook-secret")
 	addCmd.MarkFlagRequired("env-name")

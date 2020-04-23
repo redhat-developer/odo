@@ -37,7 +37,6 @@ type InitParameters struct {
 	InternalRegistryHostname string
 	Output                   string
 	Prefix                   string
-	SkipChecks               bool
 }
 
 // PolicyRules to be bound to service account
@@ -111,16 +110,6 @@ const (
 
 // Init bootstraps a GitOps manifest and repository structure.
 func Init(o *InitParameters) error {
-	if !o.SkipChecks {
-		installed, err := pipelines.CheckTektonInstall()
-		if err != nil {
-			return fmt.Errorf("failed to run Tekton Pipelines installation check: %w", err)
-		}
-		if !installed {
-			return errors.New("failed due to Tekton Pipelines or Triggers are not installed")
-		}
-	}
-
 	_, imageRepo, err := validateImageRepo(o.ImageRepo, o.InternalRegistryHostname)
 	if err != nil {
 		return err

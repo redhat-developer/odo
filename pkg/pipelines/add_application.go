@@ -1,7 +1,6 @@
 package pipelines
 
 import (
-	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -9,7 +8,6 @@ import (
 	"github.com/openshift/odo/pkg/manifest"
 	"github.com/openshift/odo/pkg/manifest/eventlisteners"
 	"github.com/openshift/odo/pkg/manifest/ioutils"
-	"github.com/openshift/odo/pkg/manifest/pipelines"
 	"github.com/openshift/odo/pkg/manifest/yaml"
 	"github.com/spf13/afero"
 	"sigs.k8s.io/kustomize/pkg/gvk"
@@ -27,7 +25,6 @@ type AddParameters struct {
 	Prefix               string
 	ServiceWebhookSecret string
 	ServiceGitRepo       string
-	SkipChecks           bool
 }
 
 const (
@@ -60,16 +57,6 @@ type patchStringValue struct {
 
 // CreateApplication creates an application
 func CreateApplication(o *AddParameters) error {
-
-	if !o.SkipChecks {
-		installed, err := pipelines.CheckTektonInstall()
-		if err != nil {
-			return fmt.Errorf("failed to run Tekton Pipelines installation check: %w", err)
-		}
-		if !installed {
-			return errors.New("failed due to Tekton Pipelines or Triggers are not installed")
-		}
-	}
 
 	ServiceRepo := getGitopsRepoName(o.ServiceGitRepo)
 
