@@ -1,0 +1,253 @@
+:source-highlighter: pygments
+
+# Odo integration with Operator Hub
+---
+
+When working in experimental mode, Odo provides the abilitiy to work with
+link:https://www.openshift.com/learn/topics/operators[operators] installed on
+the cluster. It allows listing of operators, creation of services from CRD
+provided by the operators, printing the YAML definition and providing custom
+YAML definition to start the service from a CRD. 
+
+[NOTE]
+====
+Installation of operators is not a part of odo workflow. It is something that
+your OpenShift/Kubernetes cluster administrator should be able to do for you. 
+====
+
+In this document we will cover the following:
+
+. <<list-operators,List the operators installed in the current project>>
+. <<dry-run,Print the YAML specification that wil be used to start the service from a CRD>>
+. <<create-service,Create a service from the Custom Resource Definitions (CRD) provided by the operators>>
+. <<create-service-from-yaml,Create a service from the YAML stored in a file on local system>>
+
+[NOTE]
+====
+For every command mentioned below to work as expected, we first need to enable
+the experimental mode. This can be done in different ways. Make sure that you
+have installed latest version of odo and perform any one of the following actions.
+
+* Enable experimental mode in odo preferences:
++
+[source,shell]
+----
+$ odo prefrence set Experimental true
+----
+
+
+* Export the environment variable `ODO_EXPERIMENTAL`:
++
+[source,shell]
+----
+$ export ODO_EXPERIMENTAL=true
+----
+
+* Prefix every command mentioned below with `ODO_EXPERIMENTAL=true`. For
+  example, to list the operators installed in current project:
++
+[source,shell]
+----
+$ ODO_EXPERIMENTAL=true odo catalog list services
+----
+====
+
+=== [[list-operators]]Listing the operators
+
+To list the operators installed in current project, execute below command:
+
+[source,shell]
+----
+$ odo catalog list services
+----
+
+It will list the
+link:https://docs.openshift.com/container-platform/4.3/operators/olm-what-operators-are.html[operators]
+and the
+link:https://docs.openshift.com/container-platform/4.3/operators/crds/crd-extending-api-with-crds.html#crd-custom-resource-definitions_crd-extending-api-with-crds[CRD
+(Custom Resource Definitions)] provided by these operators. For example, we
+have installed Etcd and MongoDB opertors and the output we get is like below:
+
+[source,shell]
+----
+$ odo catalog list services                       
+Operators available in the cluster
+NAME                          CRDs
+etcdoperator.v0.9.4           EtcdCluster, EtcdBackup, EtcdRestore
+mongodb-enterprise.v1.4.5     MongoDB, MongoDBUser, MongoDBOpsManager
+----
+
+In above output, `etcdoperator.v0.9.4` is the operator while `EtcdCluster`,
+`EtcdBackup` and `EtcdRestore` are the CRDs provided by this operator.
+
+When starting a service, we will be doing that from one of the CRDs of an
+operator
+
+=== [[dry-run]]Print the YAML used to start a service
+
+Odo provides the feature to print the YAML definition of the service (Custom
+Resource or CR) provided by the operator before starting a service off it. This
+can be done by:
+
+[source,shell]
+----
+$ odo service create <operator-name> --crd <cr-name> --dry-run
+----
+
+For example, to print YAML definition of `EtcdCluster` provided by
+`etcdoperator.v0.9.4` operator, you would do:
+
+[source,shell]
+----
+$ odo service create etcdoperator.v0.9.4 --crd EtcdCluster --dry-run
+----
+
+You can also redirect the output generated above and modify it before starting
+a service. We will see this in <<create-from-yaml,creating service from YAML
+section>>.
+
+=== [[create-service]]Create a service from an operator 
+
+[NOTE]
+====
+For the commands mentioned in this section to work properly, you need to make
+sure that the operator has a valid definition in its `metadata` to start the
+requested service. The commands mentioned here refer the
+`metadata.annotations.alm-examples` of an operator and use it as-is to start
+the service. If this YAML has placeholder values or sample values that are not
+meant to aid in starting a real service, you will not be able to see a service
+start from it.
+====
+
+To start an `EtcdCluster` service from `etcdoperator.v0.9.4` operator, you need
+to execute:
+
+[source,shell]
+----
+$ odo service create etcdoperator.v0.9.4 --crd EtcdCluster
+----
+
+This is exactly same command as that shown in <<dry-run,printing the YAML of
+service>> section above but without the `--dry-run` flag.
+
+At the moment, `odo` is unable to list services started from an operator. To
+check if the above command succeeded in starting a service, use `kubectl` or
+`oc`:
+
+[source,shell]
+----
+$ kubectl get EtcdCluster
+----
+
+At the time of writing this document, above command worked out of the box
+because, as mentioned in the note, `etcdoperator.v0.9.4` 's definition has a
+valid example for `EtcdCluster` embedded into it. This can be checked by doing:
+
+
+[source,shell]
+----
+$ kubectl get csv/etcdoperator.v0.9.4 -o yaml
+----
+
+and referring to the `alm-examples` section under `annotations` in the
+`metadata` of the `etcdoperator.v0.9.4` operator.
+
+If you're using OpenShift, you can replace `kubectl` with `oc` in above
+command.
+
+If there is placeholder/invalid data or no data in the aforementioned section
+of the operator's definition, `odo` won't be able to start the service. As an
+example, refer to the YAML definition of `EtcdBackup` in the
+`etcdoperator.v0.9.4` 's `metadata`:
+
+[source,yaml]
+----
+apiVersion: etcd.database.coreos.com/v1beta2
+kind: EtcdBackup
+metadata:
+  name: example-etcd-cluster-backup
+spec:
+  etcdEndpoints:
+  - <etcd-cluster-endpoints>
+  s3:
+    awsSecret: <aws-secret>
+    path: <full-s3-path>
+  storageType: S3
+----
+
+Here we can see some placeholder data in the form of `<etcd-cluster-endpoints>`
+, `<aws-secret>` and `<full-s3-path>` that the user is expected to set to
+appropriate value for the service to start.
+
+On the other hand, `EtcdCluster` 's definition looks like below:
+
+[source,yaml]
+----
+apiVersion: etcd.database.coreos.com/v1beta2
+kind: EtcdCluster
+metadata:
+  name: example
+spec:
+  size: 3
+  version: 3.2.13
+----
+
+There's no placeholder data here and it can thus be used to spin a working
+service from the operator.
+
+=== [[create-service-from-yaml]]Create service from a YAML file
+
+[NOTE]
+====
+This feature is provided on temporary basis while we work on adding support for
+link:https://github.com/openshift/odo/issues/2785[passing parameters on the
+command line] and link:https://github.com/openshift/odo/issues/2799[using
+interactive mode] to create operator backed services.
+====
+
+If the YAML definition of the service (or Custom Resource) that you want to
+start has placeholder data in its operator's `metadata`, you can use
+<<dry-run,`--dry-run` feature>> explained above to get the YAML definition,
+replace the placeholder values with correct values and start the service
+using the corrected YAML definition.
+
+For example, if you would like start an `EtcdCluster` service but of a smaller
+size than what's configured by default, you could first fetch the YAML
+definition of the service:
+
+[source,shell]
+----
+$ odo service create etcdoperator.v0.9.4 --crd EtcdCluster --dry-run
+----
+
+and then modify the YAML to below:
+
+[source,yaml]
+.etcd.yaml
+----
+apiVersion: etcd.database.coreos.com/v1beta2
+kind: EtcdCluster
+metadata:
+  name: my-etcd-cluster // <1>
+spec: 
+  size: 1 // <2>
+  version: 3.2.13
+----
+<1> We changed the name from `example` to `my-etcd-cluster`
+<2> We reduced the size from `3` to `1`
+
+Now we can use the `etcd.yaml` file above to create a service:
+
+[source,shell]
+----
+$ odo service create --from-file etcd.yaml
+----
+
+This will result in a `EtcdCluster` service with only one pod instead of the
+three pods that it's originally configured to create. This can be checked by
+doing:
+
+[source,shell]
+----
+$ kubectl get pods | grep my-etcd-cluster
+----
