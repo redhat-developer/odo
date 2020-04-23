@@ -89,11 +89,11 @@ func (dc *Client) RemoveVolume(volumeID string) error {
 	return nil
 }
 
-// GetContainerConfigAndMounts takes in a given container ID and retrieves its corresponding container config
-func (dc *Client) GetContainerConfigAndMounts(containerID string) (*container.Config, []types.MountPoint, error) {
+// GetContainerConfigHostConfigAndMounts takes in a given container ID and retrieves its corresponding container config, host config and mounts
+func (dc *Client) GetContainerConfigHostConfigAndMounts(containerID string) (*container.Config, *container.HostConfig, []types.MountPoint, error) {
 	containerJSON, err := dc.Client.ContainerInspect(dc.Context, containerID)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "unable to inspect container %s", containerID)
+		return nil, nil, nil, errors.Wrapf(err, "unable to inspect container %s", containerID)
 	}
-	return containerJSON.Config, containerJSON.Mounts, err
+	return containerJSON.Config, containerJSON.HostConfig, containerJSON.Mounts, err
 }
