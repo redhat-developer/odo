@@ -101,6 +101,54 @@ func (d *DockerRunner) IsVolumeMountedInContainer(volumeName string, component s
 	return strings.Contains(mounts, volumeName)
 }
 
+// ListVolumesOfComponentAndType lists all volumes that match the expected component/type labels
+func (d *DockerRunner) ListVolumesOfComponentAndType(componentLabel string, typeLabel string) []string {
+
+	fmt.Fprintf(GinkgoWriter, "Listing volumes with component label %s and type label %s", componentLabel, typeLabel)
+	session := CmdRunner(d.path, "volume", "ls", "-q", "--filter", "label=component="+componentLabel, "--filter", "label=type="+typeLabel)
+
+	session.Wait()
+	if session.ExitCode() == 0 {
+
+		volumes := strings.Fields(strings.TrimSpace(string(session.Out.Contents())))
+
+		return volumes
+	}
+	return []string{}
+}
+
+// RemoveVolumesByComponentAndType removes any volumes that match specified component and type labels
+func (d *DockerRunner) RemoveVolumesByComponentAndType(componentLabel string, typeLabel string) string {
+
+	volumes := d.ListVolumesOfComponentAndType(componentLabel, typeLabel)
+
+	if len(volumes) == 0 {
+		return ""
+	}
+	fmt.Fprintf(GinkgoWriter, "Removing volumes with component label %s and type label %s", componentLabel, typeLabel)
+
+	output := ""
+
+	for _, volume := range volumes {
+
+		fmt.Fprintf(GinkgoWriter, "Removing volume with ID %s", volume)
+
+		session := CmdRunner(d.path, "volume", "rm", "-f", volume)
+		session.Wait()
+
+		sessionOut := strings.TrimSpace(string(session.Out.Contents()))
+
+		if session.ExitCode() == 0 {
+			output += sessionOut + " "
+		} else {
+			fmt.Fprintf(GinkgoWriter, "Non-zero error code on removing volume with component label %s and type label %s, output: %s", componentLabel, typeLabel, sessionOut)
+		}
+
+	}
+
+	return output
+}
+
 // StopContainers kills and stops all running containers with the specified label (such as component=nodejs)
 func (d *DockerRunner) StopContainers(label string) {
 	fmt.Fprintf(GinkgoWriter, "Removing locally running Docker images with label %s", label)

@@ -139,10 +139,12 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 			}
 		}
 
-		if len(args) == 0 {
-			o.urlName = url.GetURLName(componentName, o.componentPort)
-		} else {
+		if len(args) != 0 {
 			o.urlName = args[0]
+		} else if pushtarget.IsPushTargetDocker() {
+			o.urlName = "local-" + url.GetURLName(componentName, o.componentPort)
+		} else {
+			o.urlName = url.GetURLName(componentName, o.componentPort)
 		}
 
 	} else {
@@ -178,11 +180,17 @@ func (o *URLCreateOptions) Validate() (err error) {
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
 		// if experimental mode is enabled, and devfile is provided.
 		// check if valid host is provided
-		if !pushtarget.IsPushTargetDocker() {
-			if len(o.host) <= 0 {
-				return fmt.Errorf("host must be provided in order to create ingress")
+		if !pushtarget.IsPushTargetDocker() && len(o.host) <= 0 {
+			return fmt.Errorf("host must be provided in order to create ingress")
+		}
+		for _, localURL := range o.EnvSpecificInfo.GetURL() {
+			// if current push target is Kube, but localURL contains ExposedPort
+			// if current push target is docker, but localURL contains Host
+			if o.urlName == localURL.Name &&
+				((!pushtarget.IsPushTargetDocker() && localURL.ExposedPort > 0) || (pushtarget.IsPushTargetDocker() && len(localURL.Host) > 0)) {
+				return fmt.Errorf("the url %s already exists for a different push target, please rerun the command using a different url name", o.urlName)
 			}
-			for _, localURL := range o.EnvSpecificInfo.GetURL() {
+			if !pushtarget.IsPushTargetDocker() {
 				curIngressDomain := fmt.Sprintf("%v.%v", o.urlName, o.host)
 				ingressDomainEnv := fmt.Sprintf("%v.%v", localURL.Name, localURL.Host)
 				if curIngressDomain == ingressDomainEnv {
@@ -221,7 +229,7 @@ func (o *URLCreateOptions) Run() (err error) {
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
 		if pushtarget.IsPushTargetDocker() {
 			for _, localURL := range o.EnvSpecificInfo.GetURL() {
-				if o.urlPort == localURL.Port && &localURL.ExposedPort != nil {
+				if o.urlPort == localURL.Port && localURL.ExposedPort > 0 {
 					if !o.forceFlag {
 						if !ui.Proceed(fmt.Sprintf("Port %v already has an exposed port %v set for it. Do you want to override the exposed port", localURL.Port, localURL.ExposedPort)) {
 							log.Info("Aborted by the user")
@@ -265,7 +273,7 @@ func (o *URLCreateOptions) Run() (err error) {
 			return errors.Wrap(err, "failed to push changes")
 		}
 	} else {
-		log.Italic("\nTo create the URL on the cluster, please use `odo push`")
+		log.Italic("\nTo apply the URL configuration changes, please use `odo push`")
 	}
 
 	return
@@ -285,7 +293,6 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 		},
 	}
 	urlCreateCmd.Flags().IntVarP(&o.urlPort, "port", "", -1, "port number for the url of the component, required in case of components which expose more than one service port")
-	urlCreateCmd.Flags().BoolVarP(&o.secureURL, "secure", "", false, "creates a secure https url")
 	// if experimental mode is enabled, add more flags to support ingress creation or docker application based on devfile
 	if experimental.IsExperimentalModeEnabled() {
 		if pushtarget.IsPushTargetDocker() {
@@ -295,9 +302,12 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 		} else {
 			urlCreateCmd.Flags().StringVar(&o.tlsSecret, "tls-secret", "", "tls secret name for the url of the component if the user bring his own tls secret")
 			urlCreateCmd.Flags().StringVarP(&o.host, "host", "", "", "Cluster ip for this URL")
+			urlCreateCmd.Flags().BoolVarP(&o.secureURL, "secure", "", false, "creates a secure https url")
 			urlCreateCmd.Example = fmt.Sprintf(urlCreateExampleExperimental, fullName)
 		}
 		urlCreateCmd.Flags().StringVar(&o.DevfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
+	} else {
+		urlCreateCmd.Flags().BoolVarP(&o.secureURL, "secure", "", false, "creates a secure https url")
 	}
 	genericclioptions.AddNowFlag(urlCreateCmd, &o.now)
 	o.AddContextFlag(urlCreateCmd)

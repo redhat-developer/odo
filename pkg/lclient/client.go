@@ -40,6 +40,7 @@ type DockerClient interface {
 	DistributionInspect(ctx context.Context, image, encodedRegistryAuth string) (registry.DistributionInspect, error)
 	VolumeCreate(ctx context.Context, options volumeTypes.VolumeCreateBody) (types.Volume, error)
 	VolumeList(ctx context.Context, filter filters.Args) (volumeTypes.VolumeListOKBody, error)
+	VolumeRemove(ctx context.Context, volumeID string, force bool) error
 }
 
 // Client is a collection of fields used for client configuration and interaction

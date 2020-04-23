@@ -1,6 +1,10 @@
 package component
 
 import (
+	"fmt"
+
+	"github.com/docker/docker/api/types/mount"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
@@ -58,7 +62,73 @@ func (a Adapter) DoesComponentExist(cmpName string) bool {
 }
 
 // Delete attempts to delete the component with the specified labels, returning an error if it fails
-// Stub function until the functionality is added as part of https://github.com/openshift/odo/issues/2581
-func (d Adapter) Delete(labels map[string]string) error {
+func (a Adapter) Delete(labels map[string]string) error {
+
+	componentName, exists := labels["component"]
+	if !exists {
+		return errors.New("unable to delete component without a component label")
+	}
+
+	list, err := a.Client.GetContainerList()
+	if err != nil {
+		return errors.Wrap(err, "unable to retrieve container list for delete operation")
+	}
+
+	componentContainer := a.Client.GetContainersByComponent(componentName, list)
+
+	if len(componentContainer) == 0 {
+		return errors.Errorf("the component %s doesn't exist", a.ComponentName)
+	}
+
+	// Get all volumes that match our component label
+	volumeLabels := utils.GetProjectVolumeLabels(componentName)
+	vols, err := a.Client.GetVolumesByLabel(volumeLabels)
+	if err != nil {
+		return errors.Wrapf(err, "unable to retrieve source volume for component "+componentName)
+	}
+	if len(vols) == 0 {
+		return fmt.Errorf("unable to find source volume for component %s", componentName)
+	}
+
+	// A unique list of volumes to delete; map key is volume name.
+	volumesToDelete := map[string]string{}
+
+	for _, container := range componentContainer {
+
+		glog.V(4).Infof("Deleting container %s for component %s", container.ID, componentName)
+		err = a.Client.RemoveContainer(container.ID)
+		if err != nil {
+			return errors.Wrapf(err, "unable to remove container ID %s of component %s", container.ID, componentName)
+		}
+
+		// Generate a list of mounted volumes of the odo-managed container
+		volumeNames := map[string]string{}
+		for _, m := range container.Mounts {
+
+			if m.Type != mount.TypeVolume {
+				continue
+			}
+			volumeNames[m.Name] = m.Name
+		}
+
+		for _, vol := range vols {
+			// If the volume was found to be attached to the component's container, then add the volume
+			// to the deletion list.
+			if _, ok := volumeNames[vol.Name]; ok {
+				volumesToDelete[vol.Name] = vol.Name
+			}
+		}
+	}
+
+	// Finally, delete the volumes we discovered during container deletion.
+	for name := range volumesToDelete {
+		glog.V(4).Infof("Deleting the volume %s for component %s", name, componentName)
+		err := a.Client.RemoveVolume(name)
+		if err != nil {
+			return errors.Wrapf(err, "Unable to remove volume %s of component %s", name, componentName)
+		}
+	}
+
 	return nil
+
 }

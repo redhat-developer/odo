@@ -1,6 +1,8 @@
 package lclient
 
 import (
+	"strings"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
@@ -70,6 +72,19 @@ func (dc *Client) RemoveContainer(containerID string) error {
 	})
 	if err != nil {
 		return errors.Wrapf(err, "unable to remove container %s", containerID)
+	}
+	return nil
+}
+
+// RemoveVolume removes a volume with the specified volume ID
+func (dc *Client) RemoveVolume(volumeID string) error {
+	if len(strings.TrimSpace(volumeID)) == 0 {
+		return errors.Errorf("A valid volume ID must be specified \"%s\"", volumeID)
+	}
+
+	err := dc.Client.VolumeRemove(dc.Context, volumeID, true)
+	if err != nil {
+		return errors.Wrapf(err, "unable to remove volume %s", volumeID)
 	}
 	return nil
 }
