@@ -1,7 +1,6 @@
 package pipelines
 
 import (
-	"errors"
 	"fmt"
 	"path/filepath"
 	"sort"
@@ -9,7 +8,6 @@ import (
 
 	"github.com/openshift/odo/pkg/manifest"
 	"github.com/openshift/odo/pkg/manifest/ioutils"
-	pl "github.com/openshift/odo/pkg/manifest/pipelines"
 	"github.com/spf13/afero"
 
 	"github.com/openshift/odo/pkg/manifest/yaml"
@@ -21,7 +19,6 @@ type InitParameters struct {
 	GitOpsWebhookSecret      string
 	Output                   string
 	Prefix                   string
-	SkipChecks               bool
 	DeploymentPath           string
 	ImageRepo                string
 	InternalRegistryHostname string
@@ -30,15 +27,6 @@ type InitParameters struct {
 
 // Init function will initialise the gitops directory
 func Init(o *InitParameters) error {
-	if !o.SkipChecks {
-		installed, err := pl.CheckTektonInstall()
-		if err != nil {
-			return fmt.Errorf("failed to run Tekton Pipelines installation check: %w", err)
-		}
-		if !installed {
-			return errors.New("failed due to Tekton Pipelines or Triggers are not installed")
-		}
-	}
 
 	// check if the gitops dir already exists
 	exists, err := ioutils.IsExisting(o.Output)

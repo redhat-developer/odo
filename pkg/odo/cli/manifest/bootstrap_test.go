@@ -3,6 +3,8 @@ package manifest
 import (
 	"testing"
 
+	"github.com/openshift/odo/pkg/manifest"
+	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/spf13/cobra"
 )
 
@@ -18,7 +20,7 @@ func TestCompleteBootstrapParameters(t *testing.T) {
 	}
 
 	for _, tt := range completeTests {
-		o := BootstrapParameters{prefix: tt.prefix}
+		o := BootstrapParameters{&manifest.BootstrapOptions{Prefix: tt.prefix}, &genericclioptions.Context{}}
 
 		err := o.Complete("test", &cobra.Command{}, []string{"test", "test/repo"})
 
@@ -26,8 +28,8 @@ func TestCompleteBootstrapParameters(t *testing.T) {
 			t.Errorf("Complete() %#v failed: ", err)
 		}
 
-		if o.prefix != tt.wantPrefix {
-			t.Errorf("Complete() %#v prefix: got %s, want %s", tt.name, o.prefix, tt.wantPrefix)
+		if o.Prefix != tt.wantPrefix {
+			t.Errorf("Complete() %#v prefix: got %s, want %s", tt.name, o.Prefix, tt.wantPrefix)
 		}
 	}
 }
@@ -43,8 +45,13 @@ func TestValidateBootstrapParameters(t *testing.T) {
 	}
 
 	for _, tt := range optionTests {
-		o := BootstrapParameters{gitOpsRepo: tt.gitRepo, prefix: "test"}
-
+		o := BootstrapParameters{
+			&manifest.BootstrapOptions{
+				GitOpsRepoURL: tt.gitRepo,
+				Prefix:        "test",
+			},
+			&genericclioptions.Context{},
+		}
 		err := o.Validate()
 
 		if err != nil && tt.errMsg == "" {
@@ -55,32 +62,5 @@ func TestValidateBootstrapParameters(t *testing.T) {
 		if !matchError(t, tt.errMsg, err) {
 			t.Errorf("Validate() %#v failed to match error: got %s, want %s", tt.name, err, tt.errMsg)
 		}
-	}
-}
-
-func TestBypassBootstrapChecks(t *testing.T) {
-	tests := []struct {
-		description        string
-		skipChecks         bool
-		wantedBypassChecks bool
-	}{
-		{"bypass tekton installation checks", true, true},
-		{"don't bypass tekton installation checks", false, false},
-	}
-
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			o := BootstrapParameters{skipChecks: test.skipChecks}
-
-			err := o.Complete("test", &cobra.Command{}, []string{"test", "test/repo"})
-
-			if err != nil {
-				t.Errorf("Complete() %#v failed: ", err)
-			}
-
-			if o.skipChecks != test.wantedBypassChecks {
-				t.Errorf("Complete() %#v bypassChecks flag: got %v, want %v", test.description, o.skipChecks, test.wantedBypassChecks)
-			}
-		})
 	}
 }

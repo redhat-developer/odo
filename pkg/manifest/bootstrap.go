@@ -34,7 +34,6 @@ type BootstrapOptions struct {
 	Prefix                   string // Used to prefix generated environment names in a shared cluster.
 	OutputPath               string // Where to write the bootstrapped files to?
 	DockerConfigJSONFilename string
-	SkipChecks               bool // Don't check that the local cluster has Tekton installed
 }
 
 var defaultPipelines = &config.Pipelines{

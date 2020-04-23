@@ -94,7 +94,6 @@ func NewCmdBootstrap(name, fullName string) *cobra.Command {
 	initCmd.Flags().StringVar(&o.OutputPath, "output", ".", "folder path to add Gitops resources")
 	initCmd.Flags().StringVarP(&o.Prefix, "prefix", "p", "", "add a prefix to the environment names")
 	initCmd.Flags().StringVarP(&o.ImageRepo, "image-repo", "", "", "used to push built images")
-	initCmd.Flags().BoolVarP(&o.SkipChecks, "skip-checks", "b", false, "skip Tekton installation checks")
 
 	initCmd.MarkFlagRequired("gitops-repo-url")
 	initCmd.MarkFlagRequired("gitops-webhook-secret")

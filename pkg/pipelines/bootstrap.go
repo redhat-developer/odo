@@ -14,7 +14,6 @@ import (
 	"github.com/openshift/odo/pkg/manifest"
 	"github.com/openshift/odo/pkg/manifest/eventlisteners"
 	"github.com/openshift/odo/pkg/manifest/meta"
-	"github.com/openshift/odo/pkg/manifest/pipelines"
 	"github.com/openshift/odo/pkg/manifest/roles"
 	"github.com/openshift/odo/pkg/manifest/routes"
 	"github.com/openshift/odo/pkg/manifest/secrets"
@@ -45,22 +44,11 @@ type BootstrapParameters struct {
 	ImageRepo                string
 	Prefix                   string
 	DockerConfigJSONFileName string
-	SkipChecks               bool
 }
 
 // Bootstrap is the main driver for getting OpenShift pipelines for GitOps
 // configured with a basic configuration.
 func Bootstrap(o *BootstrapParameters) error {
-
-	if !o.SkipChecks {
-		installed, err := pipelines.CheckTektonInstall()
-		if err != nil {
-			return fmt.Errorf("failed to run Tekton Pipelines installation check: %w", err)
-		}
-		if !installed {
-			return errors.New("failed due to Tekton Pipelines or Triggers are not installed")
-		}
-	}
 
 	isInternalRegistry, imageRepo, err := validateImageRepo(o)
 	if err != nil {
