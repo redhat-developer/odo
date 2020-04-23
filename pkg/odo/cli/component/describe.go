@@ -61,11 +61,18 @@ func (do *DescribeOptions) Run() (err error) {
 	state := component.GetComponentState(do.Context.Client, do.componentName, do.Context.Application)
 
 	if state == component.StateTypeNotPushed || state == component.StateTypeUnknown {
+		if !do.LocalConfigInfo.ConfigFileExists() {
+			return fmt.Errorf("Component %v does not exist", do.componentName)
+		}
 		componentDesc, err = component.GetComponentFromConfig(do.LocalConfigInfo)
 		componentDesc.Status.State = state
 		if err != nil {
 			return err
 		}
+		if componentDesc.Name != do.componentName {
+			return fmt.Errorf("Component %v does not exist", do.componentName)
+		}
+
 	} else {
 		componentDesc, err = component.GetComponent(do.Context.Client, do.componentName, do.Context.Application, do.Context.Project)
 		if err != nil {

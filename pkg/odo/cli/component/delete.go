@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/openshift/odo/pkg/envinfo"
@@ -178,6 +179,11 @@ func (do *DeleteOptions) Run() (err error) {
 		} else {
 			return fmt.Errorf("Aborting deletion of config for component: %s", do.componentName)
 		}
+	}
+
+	// If request is to delete non existing component exit with exit code 1
+	if !do.isCmpExists && !do.componentDeleteAllFlag {
+		os.Exit(1)
 	}
 
 	return
