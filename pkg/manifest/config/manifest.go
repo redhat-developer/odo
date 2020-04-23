@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"path/filepath"
 	"sort"
+
+	"github.com/mkmik/multierror"
 )
 
 // PathForService gives a repo-rooted path within a repository.
@@ -94,6 +96,27 @@ func (e Environment) GoString() string {
 // for specific files.
 func (e Environment) IsSpecial() bool {
 	return e.IsCICD || e.IsArgoCD
+}
+
+func (m Manifest) Validate() error {
+	errors := []error{}
+	envNames := map[string]int{}
+
+	for _, e := range m.Environments {
+		n, ok := envNames[e.Name]
+		if !ok {
+			envNames[e.Name] = 1
+			continue
+		}
+		envNames[e.Name] = n + 1
+	}
+
+	for k, v := range envNames {
+		if v > 1 {
+			errors = append(errors, fmt.Errorf("environment %#v occurs more than once", k))
+		}
+	}
+	return multierror.Join(errors)
 }
 
 // Application has many services.
