@@ -70,7 +70,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 
 	Context("when devfile delete command is executed with all flag", func() {
 
-		It("should delete the component created from the devfile and also the env folder", func() {
+		It("should delete the component created from the devfile and also the env and odo folders and the odo-index-file.json file", func() {
 			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
 			helper.Chdir(projectDirPath)
 
@@ -86,8 +86,8 @@ var _ = Describe("odo devfile delete command tests", func() {
 
 			oc.WaitAndCheckForExistence("deployments", namespace, 1)
 
-			files := helper.ListFilesInDir(filepath.Join(projectDirPath, ".odo"))
-			Expect(files).To(Not(ContainElement("env")))
+			files := helper.ListFilesInDir(projectDirPath)
+			Expect(files).To(Not(ContainElement(".odo")))
 		})
 	})
 })

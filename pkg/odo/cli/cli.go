@@ -3,6 +3,7 @@ package cli
 import (
 	"flag"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/openshift/odo/pkg/odo/cli/application"
@@ -12,6 +13,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/debug"
 	"github.com/openshift/odo/pkg/odo/cli/login"
 	"github.com/openshift/odo/pkg/odo/cli/logout"
+	"github.com/openshift/odo/pkg/odo/cli/plugins"
 	"github.com/openshift/odo/pkg/odo/cli/preference"
 	"github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/cli/registry"
@@ -105,8 +107,29 @@ More information such as logs or what components you've deployed can be accessed
 To see a full list of commands, run 'odo --help'`
 )
 
+const pluginPrefix = "odo"
+
 // NewCmdOdo creates a new root command for odo
 func NewCmdOdo(name, fullName string) *cobra.Command {
+	rootCmd := odoRootCmd(name, fullName)
+
+	if len(os.Args) > 1 {
+		cmdPathPieces := os.Args[1:]
+		// only look for suitable extension executables if
+		// the specified command does not already exist
+		cmd, _, err := rootCmd.Find(cmdPathPieces)
+		if err == nil && cmd != rootCmd {
+			return rootCmd
+		}
+		handleErr := plugins.HandleCommand(plugins.NewExecHandler(pluginPrefix), cmdPathPieces)
+		if handleErr != nil {
+			return rootCmd
+		}
+	}
+	return rootCmd
+}
+
+func odoRootCmd(name, fullName string) *cobra.Command {
 	// rootCmd represents the base command when called without any subcommands
 	rootCmd := &cobra.Command{
 		Use:     name,

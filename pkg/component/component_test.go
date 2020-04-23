@@ -664,7 +664,7 @@ func TestGetComponentFromConfig(t *testing.T) {
 
 	localExistingConfigInfoValue := config.GetOneExistingConfigInfo("comp", "app", "project")
 	localNonExistingConfigInfoValue := config.GetOneNonExistingConfigInfo()
-	localGitExistingConfigInfoValue := config.GetOneGitExistingConfigInfo("comp", "app", "project")
+	gitExistingConfigInfoValue := config.GetOneGitExistingConfigInfo("comp", "app", "project")
 
 	tests := []struct {
 		name           string
@@ -697,7 +697,8 @@ func TestGetComponentFromConfig(t *testing.T) {
 							Value: localExistingConfigInfoValue.LocalConfig.GetEnvs()[1].Value,
 						},
 					},
-					Ports: localExistingConfigInfoValue.LocalConfig.GetPorts(),
+					SourceType: "local",
+					Ports:      localExistingConfigInfoValue.LocalConfig.GetPorts(),
 				},
 			},
 		},
@@ -710,29 +711,30 @@ func TestGetComponentFromConfig(t *testing.T) {
 		{
 			name:           "case 3: config file exists",
 			isConfigExists: true,
-			existingConfig: localGitExistingConfigInfoValue,
+			existingConfig: gitExistingConfigInfoValue,
 			wantSpec: Component{
 				Spec: ComponentSpec{
-					App:    localGitExistingConfigInfoValue.GetApplication(),
-					Type:   localGitExistingConfigInfoValue.GetType(),
-					Source: localGitExistingConfigInfoValue.GetSourceLocation(),
+					App:    gitExistingConfigInfoValue.GetApplication(),
+					Type:   gitExistingConfigInfoValue.GetType(),
+					Source: gitExistingConfigInfoValue.GetSourceLocation(),
 					URL: []string{
-						localGitExistingConfigInfoValue.LocalConfig.GetURL()[0].Name, localGitExistingConfigInfoValue.LocalConfig.GetURL()[1].Name,
+						gitExistingConfigInfoValue.LocalConfig.GetURL()[0].Name, gitExistingConfigInfoValue.LocalConfig.GetURL()[1].Name,
 					},
 					Storage: []string{
-						localGitExistingConfigInfoValue.LocalConfig.GetStorage()[0].Name, localExistingConfigInfoValue.LocalConfig.GetStorage()[1].Name,
+						gitExistingConfigInfoValue.LocalConfig.GetStorage()[0].Name, localExistingConfigInfoValue.LocalConfig.GetStorage()[1].Name,
 					},
 					Env: []corev1.EnvVar{
 						{
-							Name:  localGitExistingConfigInfoValue.LocalConfig.GetEnvs()[0].Name,
-							Value: localGitExistingConfigInfoValue.LocalConfig.GetEnvs()[0].Value,
+							Name:  gitExistingConfigInfoValue.LocalConfig.GetEnvs()[0].Name,
+							Value: gitExistingConfigInfoValue.LocalConfig.GetEnvs()[0].Value,
 						},
 						{
-							Name:  localGitExistingConfigInfoValue.LocalConfig.GetEnvs()[1].Name,
-							Value: localGitExistingConfigInfoValue.LocalConfig.GetEnvs()[1].Value,
+							Name:  gitExistingConfigInfoValue.LocalConfig.GetEnvs()[1].Name,
+							Value: gitExistingConfigInfoValue.LocalConfig.GetEnvs()[1].Value,
 						},
 					},
-					Ports: localGitExistingConfigInfoValue.LocalConfig.GetPorts(),
+					SourceType: "git",
+					Ports:      gitExistingConfigInfoValue.LocalConfig.GetPorts(),
 				},
 			},
 		},
@@ -871,8 +873,9 @@ func getFakeComponent(compName, namespace, appName, compType string, state State
 			Namespace: namespace,
 		},
 		Spec: ComponentSpec{
-			Type: compType,
-			App:  appName,
+			Type:       compType,
+			App:        appName,
+			SourceType: "local",
 		},
 		Status: ComponentStatus{
 			State:            state,

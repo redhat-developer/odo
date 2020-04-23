@@ -3,6 +3,7 @@ package component
 import (
 	"testing"
 
+	"github.com/docker/docker/api/types/mount"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
@@ -144,19 +145,50 @@ func TestPullAndStartContainer(t *testing.T) {
 		name          string
 		componentType versionsCommon.DevfileComponentType
 		client        *lclient.Client
+		mounts        []mount.Mount
 		wantErr       bool
 	}{
 		{
-			name:          "Case 1: Successfully start container",
+			name:          "Case 1: Successfully start container, no mount",
 			componentType: versionsCommon.DevfileComponentTypeDockerimage,
 			client:        fakeClient,
+			mounts:        []mount.Mount{},
 			wantErr:       false,
 		},
 		{
 			name:          "Case 2: Docker client error",
 			componentType: versionsCommon.DevfileComponentTypeDockerimage,
 			client:        fakeErrorClient,
+			mounts:        []mount.Mount{},
 			wantErr:       true,
+		},
+		{
+			name:          "Case 3: Successfully start container, one mount",
+			componentType: versionsCommon.DevfileComponentTypeDockerimage,
+			client:        fakeClient,
+			mounts: []mount.Mount{
+				{
+					Source: "test-vol",
+					Target: "/path",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:          "Case 4: Successfully start container, multiple mounts",
+			componentType: versionsCommon.DevfileComponentTypeDockerimage,
+			client:        fakeClient,
+			mounts: []mount.Mount{
+				{
+					Source: "test-vol",
+					Target: "/path",
+				},
+				{
+					Source: "test-vol-two",
+					Target: "/path-two",
+				},
+			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
@@ -173,7 +205,7 @@ func TestPullAndStartContainer(t *testing.T) {
 			}
 
 			componentAdapter := New(adapterCtx, *tt.client)
-			err := componentAdapter.pullAndStartContainer(testComponentName, testVolumeName, adapterCtx.Devfile.Data.GetAliasedComponents()[0])
+			err := componentAdapter.pullAndStartContainer(tt.mounts, testVolumeName, adapterCtx.Devfile.Data.GetAliasedComponents()[0])
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
@@ -196,19 +228,50 @@ func TestStartContainer(t *testing.T) {
 		name          string
 		componentType versionsCommon.DevfileComponentType
 		client        *lclient.Client
+		mounts        []mount.Mount
 		wantErr       bool
 	}{
 		{
-			name:          "Case 1: Successfully start container",
+			name:          "Case 1: Successfully start container, no mount",
 			componentType: versionsCommon.DevfileComponentTypeDockerimage,
 			client:        fakeClient,
+			mounts:        []mount.Mount{},
 			wantErr:       false,
 		},
 		{
 			name:          "Case 2: Docker client error",
 			componentType: versionsCommon.DevfileComponentTypeDockerimage,
 			client:        fakeErrorClient,
+			mounts:        []mount.Mount{},
 			wantErr:       true,
+		},
+		{
+			name:          "Case 3: Successfully start container, one mount",
+			componentType: versionsCommon.DevfileComponentTypeDockerimage,
+			client:        fakeClient,
+			mounts: []mount.Mount{
+				{
+					Source: "test-vol",
+					Target: "/path",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:          "Case 4: Successfully start container, multiple mount",
+			componentType: versionsCommon.DevfileComponentTypeDockerimage,
+			client:        fakeClient,
+			mounts: []mount.Mount{
+				{
+					Source: "test-vol",
+					Target: "/path",
+				},
+				{
+					Source: "test-vol-two",
+					Target: "/path-two",
+				},
+			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
@@ -225,7 +288,7 @@ func TestStartContainer(t *testing.T) {
 			}
 
 			componentAdapter := New(adapterCtx, *tt.client)
-			err := componentAdapter.startContainer(testComponentName, testVolumeName, adapterCtx.Devfile.Data.GetAliasedComponents()[0])
+			err := componentAdapter.startContainer(tt.mounts, testVolumeName, adapterCtx.Devfile.Data.GetAliasedComponents()[0])
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {

@@ -1,6 +1,8 @@
 package lclient
 
 import (
+	"strings"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
@@ -74,12 +76,24 @@ func (dc *Client) RemoveContainer(containerID string) error {
 	return nil
 }
 
-// GetContainerConfig takes in a given container ID and retrieves its corresponding container config
-func (dc *Client) GetContainerConfig(containerID string) (*container.Config, error) {
-	containerJSON, err := dc.Client.ContainerInspect(dc.Context, containerID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to inspect container %s", containerID)
+// RemoveVolume removes a volume with the specified volume ID
+func (dc *Client) RemoveVolume(volumeID string) error {
+	if len(strings.TrimSpace(volumeID)) == 0 {
+		return errors.Errorf("A valid volume ID must be specified \"%s\"", volumeID)
 	}
 
-	return containerJSON.Config, nil
+	err := dc.Client.VolumeRemove(dc.Context, volumeID, true)
+	if err != nil {
+		return errors.Wrapf(err, "unable to remove volume %s", volumeID)
+	}
+	return nil
+}
+
+// GetContainerConfigAndMounts takes in a given container ID and retrieves its corresponding container config
+func (dc *Client) GetContainerConfigAndMounts(containerID string) (*container.Config, []types.MountPoint, error) {
+	containerJSON, err := dc.Client.ContainerInspect(dc.Context, containerID)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "unable to inspect container %s", containerID)
+	}
+	return containerJSON.Config, containerJSON.Mounts, err
 }

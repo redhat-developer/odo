@@ -1410,3 +1410,202 @@ func TestValidateK8sResourceName(t *testing.T) {
 		})
 	}
 }
+
+func TestConvertGitSSHRemotetoHTTPS(t *testing.T) {
+	tests := []struct {
+		name           string
+		url            string
+		expectedResult string
+	}{
+		{
+			name:           "Case 1: Git ssh url is valid",
+			url:            "git@github.com:che-samples/web-nodejs-sample.git",
+			expectedResult: "https://github.com/che-samples/web-nodejs-sample.git",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ConvertGitSSHRemoteToHTTPS(tt.url)
+			if !reflect.DeepEqual(result, tt.expectedResult) {
+				t.Errorf("Got %s, want %s", result, tt.expectedResult)
+			}
+		})
+	}
+}
+
+func TestUnzip(t *testing.T) {
+	tests := []struct {
+		name          string
+		zipURL        string
+		zipDst        string
+		expectedFiles []string
+	}{
+		{
+			name:          "Case 1: Valid zip ",
+			zipURL:        "https://github.com/che-samples/web-nodejs-sample/archive/master.zip",
+			zipDst:        "master.zip",
+			expectedFiles: []string{"package.json", "package-lock.json", "app", ".gitignore", "LICENSE", "README.md"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir, err := ioutil.TempDir("", "unzip")
+			if err != nil {
+				t.Errorf("Error creating temp dir: %s", err)
+			}
+			//defer os.RemoveAll(dir)
+			t.Logf(dir)
+
+			tt.zipDst = filepath.Join(dir, tt.zipDst)
+			err = DownloadFile(tt.zipURL, tt.zipDst)
+			if err != nil {
+				t.Errorf("Error downloading zip: %s", err)
+			}
+			_, err = Unzip(tt.zipDst, dir)
+			if err != nil {
+				t.Errorf("Error unzipping: %s", err)
+			}
+
+			for _, file := range tt.expectedFiles {
+				if _, err := os.Stat(filepath.Join(dir, file)); os.IsNotExist(err) {
+					t.Errorf("Expected file %s does not exist in directory after unzipping", file)
+				}
+			}
+		})
+	}
+}
+
+func TestIsValidProjectDir(t *testing.T) {
+	tests := []struct {
+		name          string
+		devfilePath   string
+		filesToCreate []string
+		dirToCreate   []string
+		expectedError string
+	}{
+		{
+			name:          "Case 1: Empty Folder",
+			devfilePath:   "",
+			filesToCreate: []string{},
+			dirToCreate:   []string{},
+			expectedError: "",
+		},
+		{
+			name:          "Case 2: Folder contains devfile.yaml",
+			devfilePath:   "devfile.yaml",
+			filesToCreate: []string{"devfile.yaml"},
+			dirToCreate:   []string{},
+			expectedError: "",
+		},
+		{
+			name:          "Case 3: Folder contains a file which is not the devfile",
+			devfilePath:   "devfile.yaml",
+			filesToCreate: []string{"file1.yaml"},
+			dirToCreate:   []string{},
+			expectedError: "Folder contains one element and it's not the devfile used.",
+		},
+		{
+			name:          "Case 4: Folder contains a hidden file which is not the devfile",
+			devfilePath:   "devfile.yaml",
+			filesToCreate: []string{".file1.yaml"},
+			dirToCreate:   []string{},
+			expectedError: "Folder contains one element and it's not the devfile used.",
+		},
+		{
+			name:          "Case 5: Folder contains devfile.yaml and more files",
+			devfilePath:   "devfile.yaml",
+			filesToCreate: []string{"devfile.yaml", "file1.yaml", "file2.yaml"},
+			dirToCreate:   []string{},
+			expectedError: "Folder is not empty. It can only contain the devfile used.",
+		},
+		{
+			name:          "Case 6: Folder contains a directory",
+			devfilePath:   "",
+			filesToCreate: []string{},
+			dirToCreate:   []string{"dir"},
+			expectedError: "Folder is not empty. It contains a subfolder.",
+		},
+		{
+			name:          "Case 7: Folder contains a hidden directory",
+			devfilePath:   "",
+			filesToCreate: []string{},
+			dirToCreate:   []string{".dir"},
+			expectedError: "Folder is not empty. It contains a subfolder.",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpDir, err := ioutil.TempDir("", "valid-project")
+			if err != nil {
+				t.Errorf("Error creating temp dir: %s", err)
+			}
+			defer os.RemoveAll(tmpDir)
+
+			for _, file := range tt.filesToCreate {
+				file := filepath.Join(tmpDir, file)
+				_, err := os.Create(file)
+				if err != nil {
+					t.Errorf("Error creating file %s. Err: %s", file, err)
+				}
+			}
+
+			for _, dir := range tt.dirToCreate {
+				dir := filepath.Join(tmpDir, dir)
+				err := os.Mkdir(dir, os.FileMode(644))
+				if err != nil {
+					t.Errorf("Error creating dir %s. Err: %s", dir, err)
+				}
+			}
+
+			err = IsValidProjectDir(tmpDir, tt.devfilePath)
+			if err != nil && !reflect.DeepEqual(err.Error(), tt.expectedError) {
+				t.Errorf("Got err: %s, expected err %s", err.Error(), tt.expectedError)
+			}
+		})
+	}
+}
+
+func TestGetGitHubZipURL(t *testing.T) {
+	tests := []struct {
+		name          string
+		zipURL        string
+		expectedError string
+	}{
+		{
+			name:          "Case 1: Invalid http request",
+			zipURL:        "http://github.com/che-samples/web-nodejs-sample/archive/master",
+			expectedError: "Invalid GitHub URL. Please use https://",
+		},
+		{
+			name:          "Case 2: Invalid owner",
+			zipURL:        "https://github.com//web-nodejs-sample/archive/master",
+			expectedError: "Invalid GitHub URL: owner cannot be empty. Expecting 'https://github.com/<owner>/<repo>'",
+		},
+		{
+			name:          "Case 3: Invalid repo",
+			zipURL:        "https://github.com/che-samples//archive/master",
+			expectedError: "Invalid GitHub URL: repo cannot be empty. Expecting 'https://github.com/<owner>/<repo>'",
+		},
+		{
+			name:          "Case 4: Non-existent URL",
+			zipURL:        "https://github.com/this/does/not/exist",
+			expectedError: "Error getting zip url. Response: 404 Not Found.",
+		},
+		{
+			name:          "Case 5: Valid SSH Github URL",
+			zipURL:        "git@github.com:che-samples/web-nodejs-sample.git",
+			expectedError: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := GetGitHubZipURL(tt.zipURL)
+			if err != nil && !reflect.DeepEqual(err.Error(), tt.expectedError) {
+				t.Errorf("Got %s, want %s", err.Error(), tt.expectedError)
+			}
+		})
+	}
+}
