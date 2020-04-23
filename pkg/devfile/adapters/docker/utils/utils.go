@@ -180,10 +180,10 @@ func containerHasPort(devfilePort nat.Port, exposedPorts nat.PortSet) bool {
 	return false
 }
 
-// UpdateContainerWithSupervisord updates the devfile component's
+// UpdateComponentWithSupervisord updates the devfile component's
 // 1. command and args with supervisord, if absent
 // 2. env with ODO_COMMAND_RUN and ODO_COMMAND_RUN_WORKING_DIR, if absent
-func UpdateContainerWithSupervisord(comp *common.DevfileComponent, runCommand common.DevfileCommand, supervisordVolumeName string, hostConfig *container.HostConfig) {
+func UpdateComponentWithSupervisord(comp *common.DevfileComponent, runCommand common.DevfileCommand, supervisordVolumeName string, hostConfig *container.HostConfig) {
 
 	// Mount the supervisord volume for the run command container
 	for _, action := range runCommand.Actions {

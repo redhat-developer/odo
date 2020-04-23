@@ -16,7 +16,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
@@ -54,7 +53,7 @@ func (a Adapter) createComponent() (err error) {
 		return errors.Wrapf(err, "Error, multiple source volumes found for component %s", componentName)
 	}
 
-	supportedComponents := adaptersCommon.GetSupportedComponents(a.Devfile.Data)
+	supportedComponents := common.GetSupportedComponents(a.Devfile.Data)
 	if len(supportedComponents) == 0 {
 		return fmt.Errorf("No valid components found in the devfile")
 	}
@@ -108,7 +107,7 @@ func (a Adapter) updateComponent() (err error) {
 	stoAdapter := storage.New(a.AdapterContext, a.Client)
 	err = stoAdapter.Create(a.uniqueStorage)
 
-	supportedComponents := adaptersCommon.GetSupportedComponents(a.Devfile.Data)
+	supportedComponents := common.GetSupportedComponents(a.Devfile.Data)
 	if len(supportedComponents) == 0 {
 		return fmt.Errorf("No valid components found in the devfile")
 	}
@@ -161,7 +160,7 @@ func (a Adapter) updateComponent() (err error) {
 				}
 
 				// Start the container
-				err = a.startContainer(dockerVolumeMounts, projectVolumeName, comp)
+				err = a.startComponent(dockerVolumeMounts, projectVolumeName, comp)
 				if err != nil {
 					return errors.Wrapf(err, "Unable to start container for devfile component %s", *comp.Alias)
 				}
@@ -189,7 +188,7 @@ func (a Adapter) pullAndStartContainer(mounts []mount.Mount, projectVolumeName s
 	s.End(true)
 
 	// Start the container
-	err = a.startContainer(mounts, projectVolumeName, comp)
+	err = a.startComponent(mounts, projectVolumeName, comp)
 	if err != nil {
 		return errors.Wrapf(err, "Unable to start container for devfile component %s", *comp.Alias)
 	}
@@ -197,26 +196,26 @@ func (a Adapter) pullAndStartContainer(mounts []mount.Mount, projectVolumeName s
 	return nil
 }
 
-func (a Adapter) startContainer(mounts []mount.Mount, projectVolumeName, supervisordVolumeName string, comp versionsCommon.DevfileComponent) error {
+func (a Adapter) startComponent(mounts []mount.Mount, projectVolumeName, supervisordVolumeName string, comp versionsCommon.DevfileComponent) error {
 	hostConfig, err := a.generateAndGetHostConfig()
 	hostConfig.Mounts = mounts
 	if err != nil {
 		return err
 	}
 
-	runCommand, err := adaptersCommon.GetRunCommand(a.Devfile.Data, a.devfileRunCmd)
+	runCommand, err := common.GetRunCommand(a.Devfile.Data, a.devfileRunCmd)
 	if err != nil {
 		return err
 	}
 
-	utils.UpdateContainerWithSupervisord(&comp, runCommand, a.supervisordVolumeName, &hostConfig)
+	utils.UpdateComponentWithSupervisord(&comp, runCommand, a.supervisordVolumeName, &hostConfig)
 
 	// If the component set `mountSources` to true, add the source volume to it
 	if comp.MountSources {
 		utils.AddVolumeToContainer(projectVolumeName, lclient.OdoSourceVolumeMount, &hostConfig)
 
-		if !adaptersCommon.IsEnvPresent(comp.Env, adaptersCommon.EnvCheProjectsRoot) {
-			envName := adaptersCommon.EnvCheProjectsRoot
+		if !common.IsEnvPresent(comp.Env, common.EnvCheProjectsRoot) {
+			envName := common.EnvCheProjectsRoot
 			envValue := lclient.OdoSourceVolumeMount
 			comp.Env = append(comp.Env, versionsCommon.DockerimageEnv{
 				Name:  &envName,
@@ -302,8 +301,8 @@ func getPortMap() (nat.PortMap, error) {
 }
 
 // Push syncs source code from the user's disk to the component
-func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand, componentExists, show bool, podName string, containers []types.Container) (err error) {
-	buildRequired, err := adaptersCommon.IsComponentBuildRequired(pushDevfileCommands)
+func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand, componentExists, show bool, containers []types.Container) (err error) {
+	buildRequired, err := common.IsComponentBuildRequired(pushDevfileCommands)
 	if err != nil {
 		return err
 	}
@@ -318,8 +317,11 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 			for _, action := range command.Actions {
 				// Get the containerID
 				containerID := utils.GetContainerIDForAlias(containers, *action.Component)
+				compInfo := common.ComponentInfo{
+					ContainerName: containerID,
+				}
 
-				err = exec.ExecuteDevfileBuildAction(&a.Client, action, command.Name, podName, containerID, show)
+				err = exec.ExecuteDevfileBuildAction(&a.Client, action, command.Name, compInfo, show)
 				if err != nil {
 					return err
 				}
@@ -337,17 +339,20 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 
 				// Get the containerID
 				containerID := utils.GetContainerIDForAlias(containers, *action.Component)
+				compInfo := common.ComponentInfo{
+					ContainerName: containerID,
+				}
 
 				// Check if the devfile run component containers have supervisord as the entrypoint.
 				// Start the supervisord if the odo component does not exist
 				if !componentExists {
-					err = a.InitRunContainerSupervisord(*action.Component, podName, containers)
+					err = a.InitRunContainerSupervisord(*action.Component, containers)
 					if err != nil {
 						return
 					}
 				}
 
-				err = exec.ExecuteDevfileRunAction(&a.Client, action, command.Name, podName, containerID, show)
+				err = exec.ExecuteDevfileRunAction(&a.Client, action, command.Name, compInfo, show)
 				if err != nil {
 					return err
 				}
@@ -360,11 +365,14 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 
 // InitRunContainerSupervisord initializes the supervisord in the container if
 // the container has entrypoint that is not supervisord
-func (a Adapter) InitRunContainerSupervisord(containerName, podName string, containers []types.Container) (err error) {
+func (a Adapter) InitRunContainerSupervisord(component string, containers []types.Container) (err error) {
 	for _, container := range containers {
-		if container.Labels["alias"] == containerName && !strings.Contains(container.Command, common.SupervisordBinaryPath) {
+		if container.Labels["alias"] == component && !strings.Contains(container.Command, common.SupervisordBinaryPath) {
 			command := []string{common.SupervisordBinaryPath, "-c", common.SupervisordConfFile, "-d"}
-			err = exec.ExecuteCommand(&a.Client, podName, container.ID, command, true)
+			compInfo := common.ComponentInfo{
+				ContainerName: container.ID,
+			}
+			err = exec.ExecuteCommand(&a.Client, compInfo, command, true)
 		}
 	}
 

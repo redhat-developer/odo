@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/pkg/errors"
 
@@ -83,7 +84,7 @@ func (c *Client) WaitAndGetPod(watchOptions metav1.ListOptions, desiredPhase cor
 }
 
 // ExecCMDInContainer execute command in the container of a pod, pass an empty string for containerName to execute in the first container of the pod
-func (c *Client) ExecCMDInContainer(podName string, containerName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+func (c *Client) ExecCMDInContainer(compInfo common.ComponentInfo, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
 	podExecOptions := corev1.PodExecOptions{
 		Command: cmd,
 		Stdin:   stdin != nil,
@@ -93,15 +94,15 @@ func (c *Client) ExecCMDInContainer(podName string, containerName string, cmd []
 	}
 
 	// If a container name was passed in, set it in the exec options, otherwise leave it blank
-	if containerName != "" {
-		podExecOptions.Container = containerName
+	if compInfo.ContainerName != "" {
+		podExecOptions.Container = compInfo.ContainerName
 	}
 
 	req := c.KubeClient.CoreV1().RESTClient().
 		Post().
 		Namespace(c.Namespace).
 		Resource("pods").
-		Name(podName).
+		Name(compInfo.PodName).
 		SubResource("exec").
 		VersionedParams(&podExecOptions, scheme.ParameterCodec)
 
@@ -129,14 +130,14 @@ func (c *Client) ExecCMDInContainer(podName string, containerName string, cmd []
 	return nil
 }
 
-// ExtractProjectToComponent extracts the project archive(tar) from the reader stdin
-func (c *Client) ExtractProjectToComponent(podName, containerName, targetPath string, stdin io.Reader) error {
+// ExtractProjectToComponent extracts the project archive(tar) to the target path from the reader stdin
+func (c *Client) ExtractProjectToComponent(compInfo common.ComponentInfo, targetPath string, stdin io.Reader) error {
 	// cmdArr will run inside container
 	cmdArr := []string{"tar", "xf", "-", "-C", targetPath}
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	glog.V(4).Infof("Executing command %s", strings.Join(cmdArr, " "))
-	err := c.ExecCMDInContainer(podName, containerName, cmdArr, &stdout, &stderr, stdin, false)
+	err := c.ExecCMDInContainer(compInfo, cmdArr, &stdout, &stderr, stdin, false)
 	if err != nil {
 		glog.Errorf("Command '%s' in container failed.\n", strings.Join(cmdArr, " "))
 		glog.Errorf("stdout: %s\n", stdout.String())

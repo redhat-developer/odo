@@ -36,23 +36,24 @@ type Adapter struct {
 // otherwise, it checks which files have changed and syncs the delta
 // it returns a boolean execRequired and an error. execRequired tells us if files have
 // changed and devfile execution is required
-func (a Adapter) SyncFiles(parameters common.PushParameters, podName, containerName string, podChanged, componentExists bool) (isPushRequired bool, err error) {
+func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired bool, err error) {
 
 	deletedFiles := []string{}
 	changedFiles := []string{}
 	isForcePush := false
-
-	globExps := util.GetAbsGlobExps(parameters.Path, parameters.IgnoredFiles)
+	pushParameters := syncParameters.PushParams
+	compInfo := syncParameters.CompInfo
+	globExps := util.GetAbsGlobExps(pushParameters.Path, pushParameters.IgnoredFiles)
 
 	// Sync source code to the component
 	// If syncing for the first time, sync the entire source directory
 	// If syncing to an already running component, sync the deltas
 	// If syncing from an odo watch process, skip this step, as we already have the list of changed and deleted files.
-	if !podChanged && !parameters.ForceBuild && len(parameters.WatchFiles) == 0 && len(parameters.WatchDeletedFiles) == 0 {
-		absIgnoreRules := util.GetAbsGlobExps(parameters.Path, parameters.IgnoredFiles)
+	if !syncParameters.PodChanged && !pushParameters.ForceBuild && len(pushParameters.WatchFiles) == 0 && len(pushParameters.WatchDeletedFiles) == 0 {
+		absIgnoreRules := util.GetAbsGlobExps(pushParameters.Path, pushParameters.IgnoredFiles)
 
 		var s *log.Status
-		if componentExists {
+		if syncParameters.ComponentExists {
 			s = log.Spinner("Checking file changes for pushing")
 		} else {
 			// if the component doesn't exist, we don't check for changes in the files
@@ -62,7 +63,7 @@ func (a Adapter) SyncFiles(parameters common.PushParameters, podName, containerN
 		defer s.End(false)
 
 		// Before running the indexer, make sure the .odo folder exists (or else the index file will not get created)
-		odoFolder := filepath.Join(parameters.Path, ".odo")
+		odoFolder := filepath.Join(pushParameters.Path, ".odo")
 		if _, err := os.Stat(odoFolder); os.IsNotExist(err) {
 			err = os.Mkdir(odoFolder, 0750)
 			if err != nil {
@@ -71,7 +72,7 @@ func (a Adapter) SyncFiles(parameters common.PushParameters, podName, containerN
 		}
 
 		// run the indexer and find the modified/added/deleted/renamed files
-		filesChanged, filesDeleted, err := util.RunIndexer(parameters.Path, absIgnoreRules)
+		filesChanged, filesDeleted, err := util.RunIndexer(pushParameters.Path, absIgnoreRules)
 		s.End(true)
 
 		if err != nil {
@@ -79,14 +80,14 @@ func (a Adapter) SyncFiles(parameters common.PushParameters, podName, containerN
 		}
 
 		// If the component already exists, sync only the files that changed
-		if componentExists {
+		if syncParameters.ComponentExists {
 			// apply the glob rules from the .gitignore/.odo file
 			// and ignore the files on which the rules apply and filter them out
 			filesChangedFiltered, filesDeletedFiltered := util.FilterIgnores(filesChanged, filesDeleted, absIgnoreRules)
 
 			// Remove the relative file directory from the list of deleted files
 			// in order to make the changes correctly within the Kubernetes pod
-			deletedFiles, err = util.RemoveRelativePathFromFiles(filesDeletedFiltered, parameters.Path)
+			deletedFiles, err = util.RemoveRelativePathFromFiles(filesDeletedFiltered, pushParameters.Path)
 			if err != nil {
 				return false, errors.Wrap(err, "unable to remove relative path from list of changed/deleted files")
 			}
@@ -100,22 +101,21 @@ func (a Adapter) SyncFiles(parameters common.PushParameters, podName, containerN
 				return false, nil
 			}
 		}
-	} else if len(parameters.WatchFiles) > 0 || len(parameters.WatchDeletedFiles) > 0 {
-		changedFiles = parameters.WatchFiles
-		deletedFiles = parameters.WatchDeletedFiles
+	} else if len(pushParameters.WatchFiles) > 0 || len(pushParameters.WatchDeletedFiles) > 0 {
+		changedFiles = pushParameters.WatchFiles
+		deletedFiles = pushParameters.WatchDeletedFiles
 	}
 
-	if parameters.ForceBuild || !componentExists || podChanged {
+	if pushParameters.ForceBuild || !syncParameters.ComponentExists || syncParameters.PodChanged {
 		isForcePush = true
 	}
 
-	err = a.pushLocal(parameters.Path,
+	err = a.pushLocal(pushParameters.Path,
 		changedFiles,
 		deletedFiles,
 		isForcePush,
 		globExps,
-		podName,
-		containerName,
+		compInfo,
 	)
 	if err != nil {
 		return false, errors.Wrapf(err, "Failed to sync to component with name %s", a.ComponentName)
@@ -125,7 +125,7 @@ func (a Adapter) SyncFiles(parameters common.PushParameters, podName, containerN
 }
 
 // pushLocal syncs source code from the user's disk to the component
-func (a Adapter) pushLocal(path string, files []string, delFiles []string, isForcePush bool, globExps []string, podName, containerName string) error {
+func (a Adapter) pushLocal(path string, files []string, delFiles []string, isForcePush bool, globExps []string, compInfo common.ComponentInfo) error {
 	glog.V(4).Infof("Push: componentName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", a.ComponentName, path, files, delFiles, isForcePush)
 
 	// Edge case: check to see that the path is NOT empty.
@@ -151,7 +151,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 		glog.V(4).Infof("Creating %s on the remote container if it doesn't already exist", syncFolder)
 		cmdArr := getCmdToCreateSyncFolder(syncFolder)
 
-		err = exec.ExecuteCommand(a.Client, podName, containerName, cmdArr, false)
+		err = exec.ExecuteCommand(a.Client, compInfo, cmdArr, false)
 		if err != nil {
 			return err
 		}
@@ -160,7 +160,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	if len(delFiles) > 0 {
 		cmdArr := getCmdToDeleteFiles(delFiles, syncFolder)
 
-		err = exec.ExecuteCommand(a.Client, podName, containerName, cmdArr, false)
+		err = exec.ExecuteCommand(a.Client, compInfo, cmdArr, false)
 		if err != nil {
 			return err
 		}
@@ -176,7 +176,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 
 	if isForcePush || len(files) > 0 {
 		glog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
-		err = CopyFile(a.Client, path, podName, containerName, syncFolder, files, globExps)
+		err = CopyFile(a.Client, path, compInfo, syncFolder, files, globExps)
 		if err != nil {
 			s.End(false)
 			return errors.Wrap(err, "unable push files to pod")

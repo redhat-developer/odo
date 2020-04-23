@@ -9,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
 	"github.com/openshift/odo/pkg/lclient"
@@ -29,8 +28,8 @@ type Adapter struct {
 	Client lclient.Client
 	common.AdapterContext
 
-	componentAliasToVolumes   map[string][]adaptersCommon.DevfileVolume
-	uniqueStorage             []adaptersCommon.Storage
+	componentAliasToVolumes   map[string][]common.DevfileVolume
+	uniqueStorage             []common.Storage
 	volumeNameToDockerVolName map[string]string
 	devfileBuildCmd           string
 	devfileRunCmd             string
@@ -42,7 +41,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	componentExists := utils.ComponentExists(a.Client, a.ComponentName)
 
 	// Process the volumes defined in the devfile
-	a.componentAliasToVolumes = adaptersCommon.GetVolumes(a.Devfile)
+	a.componentAliasToVolumes = common.GetVolumes(a.Devfile)
 	a.uniqueStorage, a.volumeNameToDockerVolName, err = storage.ProcessVolumes(&a.Client, a.ComponentName, a.componentAliasToVolumes)
 	if err != nil {
 		return errors.Wrapf(err, "Unable to process volumes for component %s", a.ComponentName)
@@ -90,15 +89,22 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	// Get a sync adapter. Check if project files have changed and sync accordingly
 	syncAdapter := sync.New(a.AdapterContext, &a.Client)
-	// podName is set to empty string on docker
-	// podChanged is set to false, since docker volume is always present even if container goes down
-	execRequired, err := syncAdapter.SyncFiles(parameters, "", containerID, false, componentExists)
+	// podChanged is defaulted to false, since docker volume is always present even if container goes down
+	compInfo := common.ComponentInfo{
+		ContainerName: containerID,
+	}
+	syncParams := common.SyncParameters{
+		PushParams:      parameters,
+		CompInfo:        compInfo,
+		ComponentExists: componentExists,
+	}
+	execRequired, err := syncAdapter.SyncFiles(syncParams)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to sync to component with name %s", a.ComponentName)
 	}
 
 	if execRequired {
-		err = a.execDevfile(pushDevfileCommands, componentExists, parameters.Show, "", containers)
+		err = a.execDevfile(pushDevfileCommands, componentExists, parameters.Show, containers)
 		if err != nil {
 			return errors.Wrapf(err, "Failed to execute devfile commands for component %s", a.ComponentName)
 		}

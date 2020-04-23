@@ -9,7 +9,7 @@ import (
 )
 
 // ExecuteDevfileBuildAction executes the devfile build command action
-func ExecuteDevfileBuildAction(client ExecClient, action common.DevfileCommandAction, commandName, podName, containerName string, show bool) error {
+func ExecuteDevfileBuildAction(client ExecClient, action common.DevfileCommandAction, commandName string, compInfo adaptersCommon.ComponentInfo, show bool) error {
 	var s *log.Status
 
 	// Change to the workdir and execute the command
@@ -28,7 +28,7 @@ func ExecuteDevfileBuildAction(client ExecClient, action common.DevfileCommandAc
 
 	defer s.End(false)
 
-	err := ExecuteCommand(client, podName, containerName, cmdArr, show)
+	err := ExecuteCommand(client, compInfo, cmdArr, show)
 	if err != nil {
 		return err
 	}
@@ -38,7 +38,7 @@ func ExecuteDevfileBuildAction(client ExecClient, action common.DevfileCommandAc
 }
 
 // ExecuteDevfileRunAction executes the devfile run command action using the supervisord devrun program
-func ExecuteDevfileRunAction(client ExecClient, action common.DevfileCommandAction, commandName, podName, containerName string, show bool) error {
+func ExecuteDevfileRunAction(client ExecClient, action common.DevfileCommandAction, commandName string, compInfo adaptersCommon.ComponentInfo, show bool) error {
 	var s *log.Status
 
 	// Exec the supervisord ctl stop and start for the devrun program
@@ -59,7 +59,7 @@ func ExecuteDevfileRunAction(client ExecClient, action common.DevfileCommandActi
 
 	for _, devRunExec := range devRunExecs {
 
-		err := ExecuteCommand(client, podName, containerName, devRunExec.command, show)
+		err := ExecuteCommand(client, compInfo, devRunExec.command, show)
 		if err != nil {
 			s.End(false)
 			return err

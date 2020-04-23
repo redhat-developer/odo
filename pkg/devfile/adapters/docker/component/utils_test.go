@@ -291,7 +291,7 @@ func TestStartContainer(t *testing.T) {
 			}
 
 			componentAdapter := New(adapterCtx, *tt.client)
-			err := componentAdapter.startContainer(tt.mounts, testVolumeName, adapterCtx.Devfile.Data.GetAliasedComponents()[0])
+			err := componentAdapter.startComponent(tt.mounts, testVolumeName, adapterCtx.Devfile.Data.GetAliasedComponents()[0])
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {

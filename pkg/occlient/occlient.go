@@ -2950,7 +2950,7 @@ func (c *Client) GetServerVersion() (*ServerInfo, error) {
 }
 
 // ExecCMDInContainer execute command in the specified container of a pod. If `containerName` is blank, it execs in the first container.
-func (c *Client) ExecCMDInContainer(podName string, containerName string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+func (c *Client) ExecCMDInContainer(compInfo common.ComponentInfo, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
 	podExecOptions := corev1.PodExecOptions{
 		Command: cmd,
 		Stdin:   stdin != nil,
@@ -2960,15 +2960,15 @@ func (c *Client) ExecCMDInContainer(podName string, containerName string, cmd []
 	}
 
 	// If a container name was passed in, set it in the exec options, otherwise leave it blank
-	if containerName != "" {
-		podExecOptions.Container = containerName
+	if compInfo.ContainerName != "" {
+		podExecOptions.Container = compInfo.ContainerName
 	}
 
 	req := c.kubeClient.CoreV1().RESTClient().
 		Post().
 		Namespace(c.Namespace).
 		Resource("pods").
-		Name(podName).
+		Name(compInfo.PodName).
 		SubResource("exec").
 		VersionedParams(&corev1.PodExecOptions{
 			Command: cmd,
@@ -3002,14 +3002,14 @@ func (c *Client) ExecCMDInContainer(podName string, containerName string, cmd []
 	return nil
 }
 
-// ExtractProjectToComponent extracts the project archive(tar) from the reader stdin
-func (c *Client) ExtractProjectToComponent(podName, containerName, targetPath string, stdin io.Reader) error {
+// ExtractProjectToComponent extracts the project archive(tar) to the target path from the reader stdin
+func (c *Client) ExtractProjectToComponent(compInfo common.ComponentInfo, targetPath string, stdin io.Reader) error {
 	// cmdArr will run inside container
 	cmdArr := []string{"tar", "xf", "-", "-C", targetPath}
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	glog.V(4).Infof("Executing command %s", strings.Join(cmdArr, " "))
-	err := c.ExecCMDInContainer(podName, containerName, cmdArr, &stdout, &stderr, stdin, false)
+	err := c.ExecCMDInContainer(compInfo, cmdArr, &stdout, &stderr, stdin, false)
 	if err != nil {
 		glog.Errorf("Command '%s' in container failed.\n", strings.Join(cmdArr, " "))
 		glog.Errorf("stdout: %s\n", stdout.String())
@@ -3179,8 +3179,11 @@ func (c *Client) PropagateDeletes(targetPodName string, delSrcRelPaths []string,
 	glog.V(4).Infof("s2ipaths marked for deletion are %+v", rmPaths)
 	cmdArr := []string{"rm", "-rf"}
 	cmdArr = append(cmdArr, rmPaths...)
+	compInfo := common.ComponentInfo{
+		PodName: targetPodName,
+	}
 
-	err := c.ExecCMDInContainer(targetPodName, "", cmdArr, writer, writer, reader, false)
+	err := c.ExecCMDInContainer(compInfo, cmdArr, writer, writer, reader, false)
 	if err != nil {
 		return err
 	}

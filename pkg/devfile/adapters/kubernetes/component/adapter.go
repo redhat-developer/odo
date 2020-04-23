@@ -100,7 +100,17 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	// Get a sync adapter. Check if project files have changed and sync accordingly
 	syncAdapter := sync.New(a.AdapterContext, &a.Client)
-	execRequired, err := syncAdapter.SyncFiles(parameters, pod.GetName(), containerName, podChanged, componentExists)
+	compInfo := common.ComponentInfo{
+		ContainerName: containerName,
+		PodName:       pod.GetName(),
+	}
+	syncParams := adaptersCommon.SyncParameters{
+		PushParams:      parameters,
+		CompInfo:        compInfo,
+		ComponentExists: componentExists,
+		PodChanged:      podChanged,
+	}
+	execRequired, err := syncAdapter.SyncFiles(syncParams)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to sync to component with name %s", a.ComponentName)
 	}
@@ -298,7 +308,12 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 			glog.V(3).Infof("Executing devfile command %v", command.Name)
 
 			for _, action := range command.Actions {
-				err = exec.ExecuteDevfileBuildAction(&a.Client, action, command.Name, podName, *action.Component, show)
+				compInfo := common.ComponentInfo{
+					ContainerName: *action.Component,
+					PodName:       podName,
+				}
+
+				err = exec.ExecuteDevfileBuildAction(&a.Client, action, command.Name, compInfo, show)
 				if err != nil {
 					return err
 				}
@@ -323,7 +338,12 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 					}
 				}
 
-				err = exec.ExecuteDevfileRunAction(&a.Client, action, command.Name, podName, *action.Component, show)
+				compInfo := common.ComponentInfo{
+					ContainerName: *action.Component,
+					PodName:       podName,
+				}
+
+				err = exec.ExecuteDevfileRunAction(&a.Client, action, command.Name, compInfo, show)
 				if err != nil {
 					return err
 				}
@@ -340,7 +360,11 @@ func (a Adapter) InitRunContainerSupervisord(containerName, podName string, cont
 	for _, container := range containers {
 		if container.Name == containerName && !reflect.DeepEqual(container.Command, []string{common.SupervisordBinaryPath}) {
 			command := []string{common.SupervisordBinaryPath, "-c", common.SupervisordConfFile, "-d"}
-			err = exec.ExecuteCommand(&a.Client, podName, containerName, command, true)
+			compInfo := common.ComponentInfo{
+				ContainerName: containerName,
+				PodName:       podName,
+			}
+			err = exec.ExecuteCommand(&a.Client, compInfo, command, true)
 		}
 	}
 

@@ -7,14 +7,15 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/util"
 
 	"github.com/golang/glog"
 )
 
 type SyncClient interface {
-	ExecCMDInContainer(string, string, []string, io.Writer, io.Writer, io.Reader, bool) error
-	ExtractProjectToComponent(string, string, string, io.Reader) error
+	ExecCMDInContainer(common.ComponentInfo, []string, io.Writer, io.Writer, io.Reader, bool) error
+	ExtractProjectToComponent(common.ComponentInfo, string, io.Reader) error
 }
 
 // CopyFile copies localPath directory or list of files in copyFiles list to the directory in running Pod.
@@ -22,7 +23,7 @@ type SyncClient interface {
 // During copying binary components, localPath represent base directory path to binary and copyFiles contains path of binary
 // During copying local source components, localPath represent base directory path whereas copyFiles is empty
 // During `odo watch`, localPath represent base directory path whereas copyFiles contains list of changed Files
-func CopyFile(client SyncClient, localPath string, targetPodName string, targetContainerName string, targetPath string, copyFiles []string, globExps []string) error {
+func CopyFile(client SyncClient, localPath string, compInfo common.ComponentInfo, targetPath string, copyFiles []string, globExps []string) error {
 
 	// Destination is set to "ToSlash" as all containers being ran within OpenShift / S2I are all
 	// Linux based and thus: "\opt\app-root\src" would not work correctly.
@@ -43,7 +44,7 @@ func CopyFile(client SyncClient, localPath string, targetPodName string, targetC
 
 	}()
 
-	err := client.ExtractProjectToComponent(targetPodName, targetContainerName, targetPath, reader)
+	err := client.ExtractProjectToComponent(compInfo, targetPath, reader)
 	if err != nil {
 		return err
 	}

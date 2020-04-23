@@ -9,6 +9,7 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/golang/glog"
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/pkg/errors"
 )
 
@@ -101,8 +102,8 @@ func (dc *Client) GetContainerConfigHostConfigAndMounts(containerID string) (*co
 	return containerJSON.Config, containerJSON.HostConfig, containerJSON.Mounts, err
 }
 
-//ExecCMDInContainer executes
-func (dc *Client) ExecCMDInContainer(podName string, containerID string, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+//ExecCMDInContainer executes the command in the container with containerID
+func (dc *Client) ExecCMDInContainer(compInfo common.ComponentInfo, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
 
 	execConfig := types.ExecConfig{
 		AttachStdin:  stdin != nil,
@@ -112,7 +113,7 @@ func (dc *Client) ExecCMDInContainer(podName string, containerID string, cmd []s
 		Tty:          tty,
 	}
 
-	resp, err := dc.Client.ContainerExecCreate(dc.Context, containerID, execConfig)
+	resp, err := dc.Client.ContainerExecCreate(dc.Context, compInfo.ContainerName, execConfig)
 	if err != nil {
 		return err
 	}
@@ -141,10 +142,10 @@ func (dc *Client) ExecCMDInContainer(podName string, containerID string, cmd []s
 	return nil
 }
 
-// ExtractProjectToComponent extracts the project archive(tar) from the reader stdin
-func (dc *Client) ExtractProjectToComponent(podName, containerID, targetPath string, stdin io.Reader) error {
+// ExtractProjectToComponent extracts the project archive(tar) to the target path from the reader stdin
+func (dc *Client) ExtractProjectToComponent(compInfo common.ComponentInfo, targetPath string, stdin io.Reader) error {
 
-	err := dc.Client.CopyToContainer(dc.Context, containerID, targetPath, stdin, types.CopyToContainerOptions{})
+	err := dc.Client.CopyToContainer(dc.Context, compInfo.ContainerName, targetPath, stdin, types.CopyToContainerOptions{})
 	if err != nil {
 		glog.Errorf("err: %s\n", err.Error())
 		return err
