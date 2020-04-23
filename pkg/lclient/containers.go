@@ -74,12 +74,11 @@ func (dc *Client) RemoveContainer(containerID string) error {
 	return nil
 }
 
-// GetContainerConfig takes in a given container ID and retrieves its corresponding container config
-func (dc *Client) GetContainerConfig(containerID string) (*container.Config, error) {
+// GetContainerConfigAndMounts takes in a given container ID and retrieves its corresponding container config
+func (dc *Client) GetContainerConfigAndMounts(containerID string) (*container.Config, []types.MountPoint, error) {
 	containerJSON, err := dc.Client.ContainerInspect(dc.Context, containerID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to inspect container %s", containerID)
+		return nil, nil, errors.Wrapf(err, "unable to inspect container %s", containerID)
 	}
-
-	return containerJSON.Config, nil
+	return containerJSON.Config, containerJSON.Mounts, err
 }

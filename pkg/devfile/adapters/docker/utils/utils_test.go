@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
@@ -102,11 +103,17 @@ func TestConvertEnvs(t *testing.T) {
 func TestDoesContainerNeedUpdating(t *testing.T) {
 	envVarsNames := []string{"test", "sample-var", "myvar"}
 	envVarsValues := []string{"value1", "value2", "value3"}
+
+	volNames := []string{"vol1", "vol2", "vol3"}
+	volPaths := []string{"/path1", "/path2", "/path3"}
+
 	tests := []struct {
 		name            string
 		envVars         []common.DockerimageEnv
+		mounts          []mount.Mount
 		image           string
 		containerConfig container.Config
+		containerMounts []types.MountPoint
 		want            bool
 	}{
 		{
@@ -121,10 +128,22 @@ func TestDoesContainerNeedUpdating(t *testing.T) {
 					Value: &envVarsValues[1],
 				},
 			},
+			mounts: []mount.Mount{
+				{
+					Source: volNames[0],
+					Target: volPaths[0],
+				},
+			},
 			image: "golang",
 			containerConfig: container.Config{
 				Image: "golang",
 				Env:   []string{"test=value1", "sample-var=value2"},
+			},
+			containerMounts: []types.MountPoint{
+				{
+					Name:        volNames[0],
+					Destination: volPaths[0],
+				},
 			},
 			want: false,
 		},
@@ -144,7 +163,7 @@ func TestDoesContainerNeedUpdating(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "Case 2: Update required, image changed",
+			name: "Case 3: Update required, image changed",
 			envVars: []common.DockerimageEnv{
 				{
 					Name:  &envVarsNames[2],
@@ -158,6 +177,41 @@ func TestDoesContainerNeedUpdating(t *testing.T) {
 			},
 			want: true,
 		},
+		{
+			name: "Case 4: Update required, volumes changed",
+			envVars: []common.DockerimageEnv{
+				{
+					Name:  &envVarsNames[0],
+					Value: &envVarsValues[0],
+				},
+				{
+					Name:  &envVarsNames[1],
+					Value: &envVarsValues[1],
+				},
+			},
+			mounts: []mount.Mount{
+				{
+					Source: volNames[0],
+					Target: volPaths[0],
+				},
+				{
+					Source: volNames[1],
+					Target: volPaths[1],
+				},
+			},
+			image: "golang",
+			containerConfig: container.Config{
+				Image: "golang",
+				Env:   []string{"test=value1", "sample-var=value2"},
+			},
+			containerMounts: []types.MountPoint{
+				{
+					Name:        volNames[0],
+					Destination: volPaths[0],
+				},
+			},
+			want: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -167,7 +221,7 @@ func TestDoesContainerNeedUpdating(t *testing.T) {
 				Env:   tt.envVars,
 			},
 		}
-		needsUpdating := DoesContainerNeedUpdating(component, &tt.containerConfig)
+		needsUpdating := DoesContainerNeedUpdating(component, &tt.containerConfig, tt.mounts, tt.containerMounts)
 		if needsUpdating != tt.want {
 			t.Errorf("expected %v, wanted %v", needsUpdating, tt.want)
 		}

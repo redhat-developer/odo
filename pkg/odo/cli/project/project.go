@@ -53,7 +53,6 @@ func NewCmdProject(name, fullName string) *cobra.Command {
 		},
 	}
 
-	projectCmd.Flags().AddFlagSet(projectGetCmd.Flags())
 	projectCmd.AddCommand(projectGetCmd)
 	projectCmd.AddCommand(projectSetCmd)
 	projectCmd.AddCommand(projectCreateCmd)

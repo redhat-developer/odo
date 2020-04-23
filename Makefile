@@ -13,10 +13,10 @@ TIMEOUT ?= 7200s
 
 # Env variable TEST_EXEC_NODES is used to pass spec execution type
 # (parallel or sequential) for ginkgo tests. To run the specs sequentially use
-# TEST_EXEC_NODES=1, otherwise by default the specs are run in parallel on 2 ginkgo test node.
+# TEST_EXEC_NODES=1, otherwise by default the specs are run in parallel on 4 ginkgo test node.
 # NOTE: Any TEST_EXEC_NODES value greater than one runs the spec in parallel
 # on the same number of ginkgo test nodes.
-TEST_EXEC_NODES ?= 2
+TEST_EXEC_NODES ?= 4
 
 # Slow spec threshold for ginkgo tests. After this time (in second), ginkgo marks test as slow
 SLOW_SPEC_THRESHOLD := 120
@@ -289,11 +289,6 @@ test-e2e-images:
 .PHONY: test-e2e-all
 test-e2e-all:
 	ginkgo $(GINKGO_FLAGS) tests/e2escenarios/
-
-# this test shouldn't be in paralel -  it will effect the results
-.PHONY: test-benchmark
-test-benchmark:
-	ginkgo $(GINKGO_FLAGS_SERIAL) tests/benchmark/
 
 # create deb and rpm packages using fpm in ./dist/pkgs/
 # run make cross before this!

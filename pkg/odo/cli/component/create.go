@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/golang/glog"
@@ -13,6 +14,7 @@ import (
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
@@ -62,6 +64,7 @@ type DevfileMetadata struct {
 	devfileSupport     bool
 	devfileLink        string
 	devfileRegistry    string
+	downloadSource     bool
 }
 
 // CreateRecommendedCommandName is the recommended watch command name
@@ -690,21 +693,102 @@ func (co *CreateOptions) Validate() (err error) {
 	return nil
 }
 
+// Downloads first project from list of projects in devfile
+// Currenty type git with a non github url is not supported
+func (co *CreateOptions) downloadProject() error {
+	devObj, err := devfile.Parse(DevfilePath)
+	if err != nil {
+		return err
+	}
+	projects := devObj.Data.GetProjects()
+	nOfProjects := len(projects)
+	if nOfProjects == 0 {
+		return errors.Errorf("No project found in devfile component.")
+	}
+
+	if nOfProjects > 1 {
+		log.Warning("Only downloading first project from list.")
+	}
+
+	project := projects[0]
+
+	path, err := os.Getwd()
+	if err != nil {
+		return errors.Wrapf(err, "Could not get the current working directory.")
+	}
+
+	if project.ClonePath != nil && *project.ClonePath != "" {
+		clonePath := *project.ClonePath
+		if runtime.GOOS == "windows" {
+			clonePath = strings.Replace(clonePath, "\\", "/", -1)
+		}
+
+		path = filepath.Join(path, clonePath)
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			err = os.MkdirAll(path, os.FileMode(0755))
+			if err != nil {
+				return errors.Wrap(err, "Failed creating folder with path: "+path)
+			}
+		}
+	}
+
+	err = util.IsValidProjectDir(path, DevfilePath)
+	if err != nil {
+		return err
+	}
+
+	var zipUrl string
+	switch project.Source.Type {
+	case "git":
+		if strings.Contains(project.Source.Location, "github.com") {
+			zipUrl, err = util.GetGitHubZipURL(project.Source.Location)
+			if err != nil {
+				return err
+			}
+		} else {
+			return errors.Errorf("Project type git with non github url not supported")
+		}
+	case "github":
+		zipUrl, err = util.GetGitHubZipURL(project.Source.Location)
+		if err != nil {
+			return err
+		}
+	case "zip":
+		zipUrl = project.Source.Location
+	default:
+		return errors.Errorf("Project type not supported")
+	}
+
+	err = util.GetAndExtractZip(zipUrl, path)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Run has the logic to perform the required actions as part of command
 func (co *CreateOptions) Run() (err error) {
 	if experimental.IsExperimentalModeEnabled() {
 		// Download devfile.yaml file and create env.yaml file
 		if co.devfileMetadata.devfileSupport {
+			if !util.CheckPathExists(DevfilePath) {
+				err := util.DownloadFile(co.devfileMetadata.devfileRegistry+co.devfileMetadata.devfileLink, DevfilePath)
+				if err != nil {
+					return errors.Wrap(err, "Faile to download devfile.yaml for devfile component")
+				}
+			}
+
+			if util.CheckPathExists(DevfilePath) && co.devfileMetadata.downloadSource {
+				err = co.downloadProject()
+				if err != nil {
+					return errors.Wrap(err, "Failed to download project for devfile component")
+				}
+			}
+
 			err := co.EnvSpecificInfo.SetConfiguration("create", envinfo.ComponentSettings{Name: co.devfileMetadata.componentName, Namespace: co.devfileMetadata.componentNamespace})
 			if err != nil {
 				return errors.Wrap(err, "Failed to create env.yaml for devfile component")
-			}
-
-			if !util.CheckPathExists(DevfilePath) {
-				err = util.DownloadFile(co.devfileMetadata.devfileRegistry+co.devfileMetadata.devfileLink, DevfilePath)
-				if err != nil {
-					return errors.Wrap(err, "Failed to download devfile.yaml for devfile component")
-				}
 			}
 
 			log.Italic("\nPlease use `odo push` command to create the component with source deployed")
@@ -816,6 +900,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 
 	if experimental.IsExperimentalModeEnabled() {
 		componentCreateCmd.Flags().StringVarP(&co.devfileMetadata.componentNamespace, "namespace", "n", "", "Create devfile component under specific namespace")
+		componentCreateCmd.Flags().BoolVar(&co.devfileMetadata.downloadSource, "downloadSource", false, "Download sample project from devfile. (ex. odo component create <component_type> [component_name] --downloadSource")
 	}
 
 	componentCreateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)

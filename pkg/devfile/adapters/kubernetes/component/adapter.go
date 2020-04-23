@@ -20,6 +20,7 @@ import (
 
 	"github.com/openshift/odo/pkg/exec"
 
+	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
@@ -86,7 +87,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
-	pod, err := a.waitAndGetComponentPod(false)
+	pod, err := a.waitAndGetComponentPod(true)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
 	}
@@ -217,7 +218,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 
 	kclient.AddBootstrapSupervisordInitContainer(podTemplateSpec)
 
-	componentAliasToVolumes := utils.GetVolumes(a.Devfile)
+	componentAliasToVolumes := adaptersCommon.GetVolumes(a.Devfile)
 
 	var uniqueStorages []common.Storage
 	volumeNameToPVCName := make(map[string]string)
