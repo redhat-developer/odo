@@ -17,14 +17,14 @@ import (
 
 //ComponentFullDescriptionSpec repersents complete desciption of the component
 type ComponentFullDescriptionSpec struct {
-	App        string          `json:"app,omitempty"`
-	Type       string          `json:"type,omitempty"`
-	Source     string          `json:"source,omitempty"`
-	SourceType string          `json:"sourceType,omitempty"`
-	URL        urlpkg.URLList  `json:"urls,omitempty"`
-	Storage    []string        `json:"storage,omitempty"`
-	Env        []corev1.EnvVar `json:"env,omitempty"`
-	Ports      []string        `json:"ports,omitempty"`
+	App        string              `json:"app,omitempty"`
+	Type       string              `json:"type,omitempty"`
+	Source     string              `json:"source,omitempty"`
+	SourceType string              `json:"sourceType,omitempty"`
+	URL        urlpkg.URLList      `json:"urls,omitempty"`
+	Storage    storage.StorageList `json:"storages,omitempty"`
+	Env        []corev1.EnvVar     `json:"env,omitempty"`
+	Ports      []string            `json:"ports,omitempty"`
 }
 
 type ComponentFullDescription struct {
@@ -42,6 +42,35 @@ func (cfd *ComponentFullDescription) copyFromComponentDesc(component *Component)
 	return json.Unmarshal(d, cfd)
 }
 
+func (cfd *ComponentFullDescription) loadURLS(client *occlient.Client, localConfigInfo *config.LocalConfigInfo, componentName string, applicationName string) error {
+	urls, err := urlpkg.List(client, localConfigInfo, componentName, applicationName)
+	if err != nil {
+		return err
+	}
+
+	cfd.Spec.URL = urls
+	return nil
+}
+
+func (cfd *ComponentFullDescription) loadStorages(client *occlient.Client, localConfigInfo *config.LocalConfigInfo, componentName string, applicationName string, componentDesc *Component) error {
+	var storages storage.StorageList
+	var err error
+	if componentDesc.Status.State == StateTypePushed {
+		storages, err = storage.ListStorageWithState(client, localConfigInfo, componentName, applicationName)
+		if err != nil {
+			return err
+		}
+	} else {
+		storageLocal, err := localConfigInfo.StorageList()
+		if err != nil {
+			return err
+		}
+		storages = storage.ConvertListLocalToMachine(storageLocal)
+	}
+	cfd.Spec.Storage = storages
+	return nil
+}
+
 //NewComponentFullDescription gets the complete description of the component from both localconfig and cluster
 func NewComponentFullDescription(client *occlient.Client, localConfigInfo *config.LocalConfigInfo, componentName string, applicationName string) (*ComponentFullDescription, error) {
 	cfd := &ComponentFullDescription{}
@@ -54,15 +83,17 @@ func NewComponentFullDescription(client *occlient.Client, localConfigInfo *confi
 	if err != nil {
 		return cfd, err
 	}
-	if state == StateTypeNotPushed || state == StateTypeUnknown {
-		cfd.Status.State = state
-	}
-	urls, err := urlpkg.List(client, localConfigInfo, componentName, applicationName)
+
+	cfd.Status.State = state
+
+	err = cfd.loadURLS(client, localConfigInfo, componentName, applicationName)
 	if err != nil {
 		return cfd, err
 	}
-
-	cfd.Spec.URL = urls
+	err = cfd.loadStorages(client, localConfigInfo, componentName, applicationName, &componentDesc)
+	if err != nil {
+		return cfd, err
+	}
 	return cfd, nil
 }
 
@@ -93,34 +124,11 @@ func (componentDesc *ComponentFullDescription) PrintInfo(client *occlient.Client
 	}
 
 	// Storage
-	if len(componentDesc.Spec.Storage) > 0 {
-
-		var storages storage.StorageList
-		var err error
-
-		if componentDesc.Status.State == "Pushed" {
-			// Retrieve the storage list
-			storages, err = storage.List(client, componentDesc.Name, componentDesc.Spec.App)
-			if err != nil {
-				return err
-			}
-
-		} else {
-			localConfig, err := config.New()
-			if err != nil {
-				return err
-			}
-			storageLocal, err := localConfig.StorageList()
-			if err != nil {
-				return err
-			}
-			storages = storage.ConvertListLocalToMachine(storageLocal)
-
-		}
+	if len(componentDesc.Spec.Storage.Items) > 0 {
 
 		// Gather the output
 		var output string
-		for _, store := range storages.Items {
+		for _, store := range componentDesc.Spec.Storage.Items {
 			output += fmt.Sprintf(" · %v of size %v mounted to %v\n", store.Name, store.Spec.Size, store.Spec.Path)
 		}
 
