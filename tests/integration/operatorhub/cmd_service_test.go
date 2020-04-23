@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -55,11 +54,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			// Delete the pods created. This should idealy be done by `odo
 			// service delete` but that's not implemented for operator backed
 			// services yet.
-			// Wait for the pods of EtcdCluster service to get cleared off
-			// cluster. This is to avoid CI flakes because in next test, we're
-			// again doing similar regex check which picks up terminating pod
-			// from this run instead of initiating pod from that run
-			helper.CmdShouldRunWithTimeout(time.Duration(15)*time.Second, "oc", "delete", "--wait", "EtcdCluster", "example")
+			helper.CmdShouldPass("oc", "delete", "EtcdCluster", "example")
 		})
 	})
 
@@ -82,6 +77,16 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]`).FindString(operators)
 
 			stdOut := helper.CmdShouldPass("odo", "service", "create", etcdOperator, "--crd", "EtcdCluster", "--dry-run")
+
+			// change the metadata.name from example to example2 so that we can run tests parallely
+			lines := strings.Split(stdOut, "\n")
+			for i, line := range lines {
+				if strings.Contains(line, "name: example") {
+					lines[i] = strings.Replace(lines[i], "example", "example2", 1)
+				}
+			}
+			stdOut = strings.Join(lines, "\n")
+
 			// stdOut contains the yaml specification. Store it to a file
 			randomFileName := helper.RandString(6) + ".yaml"
 			fileName := filepath.Join("/tmp", randomFileName)
@@ -95,7 +100,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			// now verify if the pods for the operator have started
 			pods := helper.CmdShouldPass("oc", "get", "pods", "-n", CI_OPERATOR_HUB_PROJECT)
 			// Look for pod with example name because that's the name etcd will give to the pods.
-			etcdPod := regexp.MustCompile(`example-.[a-z0-9]*`).FindString(pods)
+			etcdPod := regexp.MustCompile(`example2-.[a-z0-9]*`).FindString(pods)
 
 			ocArgs := []string{"get", "pods", etcdPod, "-o", "template=\"{{.status.phase}}\"", "-n", CI_OPERATOR_HUB_PROJECT}
 			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
@@ -105,11 +110,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			// Delete the pods created. This should idealy be done by `odo
 			// service delete` but that's not implemented for operator backed
 			// services yet.
-			// Wait for the pods of EtcdCluster service to get cleared off
-			// cluster. This is to avoid CI flakes because in next test, we're
-			// again doing similar regex check which picks up terminating pod
-			// from this run instead of initiating pod from that run
-			helper.CmdShouldRunWithTimeout(time.Duration(15)*time.Second, "oc", "delete", "--wait", "EtcdCluster", "example")
+			helper.CmdShouldPass("oc", "delete", "EtcdCluster", "example2")
 
 		})
 
