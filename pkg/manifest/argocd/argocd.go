@@ -31,6 +31,7 @@ const (
 	defaultServer   = "https://kubernetes.default.svc"
 	defaultProject  = "default"
 	ArgoCDNamespace = "argocd"
+	gitOpsApp       = "gitops-app"
 )
 
 func Build(argoNS, repoURL string, m *config.Manifest) (res.Resources, error) {
@@ -67,6 +68,12 @@ func (b *argocdBuilder) Application(env *config.Environment, app *config.Applica
 }
 
 func (b *argocdBuilder) Environment(env *config.Environment) error {
+	if env.IsCICD {
+		basePath := filepath.Join(config.PathForEnvironment(b.argoEnv), "config")
+		filename := filepath.Join(basePath, gitOpsApp+".yaml")
+		sourcePath := filepath.Join(config.PathForEnvironment(env), "base")
+		b.files[filename] = makeApplication(gitOpsApp, b.argoNS, defaultProject, env.Name, defaultServer, argoappv1.ApplicationSource{RepoURL: b.repoURL, Path: sourcePath})
+	}
 	if !env.IsArgoCD {
 		return nil
 	}

@@ -1,6 +1,7 @@
 package argocd
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -34,11 +35,16 @@ var (
 			testApp,
 		},
 	}
+	testCICD = &config.Environment{
+		Name:   "test-cicd",
+		IsCICD: true,
+	}
 )
 
 func TestBuildCreatesArgoCD(t *testing.T) {
 	m := &config.Manifest{
 		Environments: []*config.Environment{
+			testCICD,
 			testEnv,
 			&config.Environment{Name: "argocd", IsArgoCD: true},
 		},
@@ -63,7 +69,8 @@ func TestBuildCreatesArgoCD(t *testing.T) {
 				SyncPolicy: syncPolicy,
 			},
 		},
-		"environments/argocd/config/kustomization.yaml": &res.Kustomization{Resources: []string{"test-dev-http-api-app.yaml"}},
+		"environments/argocd/config/gitops-app.yaml":    makeApplication(gitOpsApp, ArgoCDNamespace, defaultProject, "test-cicd", defaultServer, argoappv1.ApplicationSource{RepoURL: testRepoURL, Path: filepath.Join(config.PathForEnvironment(testCICD), "base")}),
+		"environments/argocd/config/kustomization.yaml": &res.Kustomization{Resources: []string{"gitops-app.yaml", "test-dev-http-api-app.yaml"}},
 	}
 
 	if diff := cmp.Diff(want, files); diff != "" {
