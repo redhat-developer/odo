@@ -75,11 +75,11 @@ const CreateRecommendedCommandName = "create"
 const LocalDirectoryDefaultLocation = "./"
 
 // Constants for devfile component
-const devfile = "devfile.yaml"
+const devFile = "devfile.yaml"
 const envFile = ".odo/env/env.yaml"
 
 // DevfilePath is the path of devfile.yaml, the default path is "./devfile.yaml"
-var DevfilePath = filepath.Join(LocalDirectoryDefaultLocation, devfile)
+var DevfilePath = filepath.Join(LocalDirectoryDefaultLocation, devFile)
 
 // EnvFilePath is the path of env.yaml for devfile component, the defult path is "./.odo/env/env.yaml"
 var EnvFilePath = filepath.Join(LocalDirectoryDefaultLocation, envFile)
@@ -324,7 +324,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		// Configure the context
 		if len(co.componentContext) != 0 {
-			DevfilePath = filepath.Join(co.componentContext, devfile)
+			DevfilePath = filepath.Join(co.componentContext, devFile)
 			EnvFilePath = filepath.Join(co.componentContext, envFile)
 			co.CommonPushOptions.componentContext = co.componentContext
 		}
