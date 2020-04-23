@@ -15,8 +15,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type M map[string]interface{}
-
 //ComponentFullDescriptionSpec repersents complete desciption of the component
 type ComponentFullDescriptionSpec struct {
 	App        string          `json:"app,omitempty"`
