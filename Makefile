@@ -44,32 +44,36 @@ GINKGO_FLAGS=$(GINKGO_FLAGS_ALL) -nodes=$(TEST_EXEC_NODES)
 
 default: bin
 
+.PHONY: common
+common:
+	go run scripts/check-go-version.go
+
 .PHONY: debug
-debug:
+debug: common
 	go build ${DEBUG_BUILD_FLAGS} cmd/odo/odo.go
 
 .PHONY: bin
-bin:
+bin: common
 	go build ${BUILD_FLAGS} cmd/odo/odo.go
 
 .PHONY: install
-install:
+install: common
 	go install ${BUILD_FLAGS} ./cmd/odo/
 
 # run all validation tests
 .PHONY: validate
-validate: gofmt check-fit check-vendor vet validate-vendor-licenses sec golint
+validate: common gofmt check-fit check-vendor vet validate-vendor-licenses sec golint
 
 .PHONY: gofmt
-gofmt:
+gofmt: common
 	./scripts/check-gofmt.sh
 
 .PHONY: check-vendor
-check-vendor:
+check-vendor: common
 	./scripts/check-vendor.sh
 
 .PHONY: check-fit
-check-fit:
+check-fit: common
 	./scripts/check-fit.sh
 
 .PHONY: validate-vendor-licenses
@@ -116,7 +120,7 @@ test-coverage:
 
 # compile for multiple platforms
 .PHONY: cross
-cross:
+cross: common
 	./scripts/cross-compile.sh '$(COMMON_FLAGS)'
 
 .PHONY: generate-cli-structure
@@ -138,104 +142,103 @@ prepare-release: cross
 configure-installer-tests-cluster:
 	. ./scripts/configure-installer-tests-cluster.sh
 
-
 .PHONY: test
-test:
+test: common
 	go test $(UNIT_TEST_ARGS) -race $(PKGS)
 
 # Run generic integration tests
 .PHONY: test-generic
-test-generic:
+test-generic: common
 	ginkgo $(GINKGO_FLAGS) -focus="odo generic" tests/integration/
 
 # Run odo login and logout tests
 .PHONY: test-cmd-login-logout
-test-cmd-login-logout:
+test-cmd-login-logout: common
 	ginkgo $(GINKGO_FLAGS_SERIAL) -focus="odo login and logout command tests" tests/integration/loginlogout/
 
 # Run link and unlink command tests
 .PHONY: test-cmd-link-unlink
-test-cmd-link-unlink:
+test-cmd-link-unlink: common
 	ginkgo $(GINKGO_FLAGS) -focus="odo link and unlink command tests" tests/integration/
 
 # Run odo service command tests
 .PHONY: test-cmd-service
-test-cmd-service:
+test-cmd-service: common
 	ginkgo $(GINKGO_FLAGS) -focus="odo service command tests" tests/integration/servicecatalog/
 
 # Run odo project command tests
 .PHONY: test-cmd-project
-test-cmd-project:
+test-cmd-project: common
 	ginkgo $(GINKGO_FLAGS_SERIAL) -focus="odo project command tests" tests/integration/project/
 
 # Run odo app command tests
 .PHONY: test-cmd-app
-test-cmd-app:
+test-cmd-app: common
 	ginkgo $(GINKGO_FLAGS) -focus="odo app command tests" tests/integration/
 
 # Run odo component command tests
 .PHONY: test-cmd-cmp
-test-cmd-cmp:
+test-cmd-cmp: common
 	ginkgo $(GINKGO_FLAGS) -focus="odo component command tests" tests/integration/
 
 # Run odo component subcommands tests
 .PHONY: test-cmd-cmp-sub
-test-cmd-cmp-sub:
+test-cmd-cmp-sub: common
 	ginkgo $(GINKGO_FLAGS) -focus="odo sub component command tests" tests/integration/
 
 # Run odo preference and config command tests
 .PHONY: test-cmd-pref-config
-test-cmd-pref-config:
+test-cmd-pref-config: common
 	ginkgo $(GINKGO_FLAGS) -focus="odo preference and config command tests" tests/integration/
 
 # Run odo push command tests
 .PHONY: test-cmd-push
-test-cmd-push:
+test-cmd-push: common
 	ginkgo $(GINKGO_FLAGS) -focus="odo push command tests" tests/integration/
 
 # Run odo catalog devfile command tests
 .PHONY: test-cmd-devfile-catalog
-test-cmd-devfile-catalog:
+test-cmd-devfile-catalog: common
 	ginkgo $(GINKGO_FLAGS) -focus="odo devfile catalog command tests" tests/integration/devfile/
 
 # Run odo create devfile command tests
 .PHONY: test-cmd-devfile-create
-test-cmd-devfile-create:
+test-cmd-devfile-create: common
 	ginkgo $(GINKGO_FLAGS) -focus="odo devfile create command tests" tests/integration/devfile/
 
 # Run odo push devfile command tests
 .PHONY: test-cmd-devfile-push
-test-cmd-devfile-push:
+test-cmd-devfile-push: common
 	ginkgo $(GINKGO_FLAGS) -focus="odo devfile push command tests" tests/integration/devfile/
 
 # Run odo devfile watch command tests
 .PHONY: test-cmd-devfile-watch
-test-cmd-devfile-watch:
+test-cmd-devfile-watch: common
 	ginkgo $(GINKGO_FLAGS) -focus="odo devfile watch command tests" tests/integration/devfile/
 
 # Run odo devfile delete command tests
 .PHONY: test-cmd-devfile-delete
-test-cmd-devfile-delete:
+test-cmd-devfile-delete: common
 	ginkgo $(GINKGO_FLAGS) -focus="odo devfile delete command tests" tests/integration/devfile/
 	
 # Run odo storage command tests
 .PHONY: test-cmd-storage
-test-cmd-storage:
+test-cmd-storage: common
 	ginkgo $(GINKGO_FLAGS) -focus="odo storage command tests" tests/integration/
 
 # Run odo url command tests
 .PHONY: test-cmd-url
-test-cmd-url:
+test-cmd-url: common
 	ginkgo $(GINKGO_FLAGS) -focus="odo url command tests" tests/integration/
 
 # Run odo url devfile command tests
 .PHONY: test-cmd-devfile-url
-test-cmd-devfile-url:
+test-cmd-devfile-url: common
 	ginkgo $(GINKGO_FLAGS) -focus="odo devfile url command tests" tests/integration/devfile/
 
 # Run odo push docker devfile command tests
 .PHONY: test-cmd-docker-devfile-push
-test-cmd-docker-devfile-push:
+test-cmd-docker-devfile-push: common
 	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile push command tests" tests/integration/devfile/docker/
 
 # Run odo docker devfile delete command tests
@@ -246,54 +249,54 @@ test-cmd-docker-devfile-delete:
 
 # Run odo watch command tests
 .PHONY: test-cmd-watch
-test-cmd-watch:
+test-cmd-watch: common
 	ginkgo $(GINKGO_FLAGS) -focus="odo watch command tests" tests/integration/
 
 # Run odo debug command tests
-test-cmd-debug:
+test-cmd-debug: common
 	ginkgo $(GINKGO_FLAGS) -focus="odo debug command tests" tests/integration/
 	ginkgo $(GINKGO_FLAGS_SERIAL) -focus="odo debug command serial tests" tests/integration/debug/
 
 # Run command's integration tests irrespective of service catalog status in the cluster.
 # Service, link and login/logout command tests are not the part of this test run
 .PHONY: test-integration
-test-integration:
+test-integration: common
 	ginkgo $(GINKGO_FLAGS) tests/integration/
 
 # Run devfile integration tests
 .PHONY: test-integration-devfile
-test-integration-devfile:
+test-integration-devfile: common
 	ginkgo $(GINKGO_FLAGS) tests/integration/devfile/
 
 # Run command's integration tests which are depend on service catalog enabled cluster.
 # Only service and link command tests are the part of this test run
 .PHONY: test-integration-service-catalog
-test-integration-service-catalog:
+test-integration-service-catalog: common
 	ginkgo $(GINKGO_FLAGS) tests/integration/servicecatalog/
 
 # Run core beta flow e2e tests
 .PHONY: test-e2e-beta
-test-e2e-beta:
+test-e2e-beta: common
 	ginkgo $(GINKGO_FLAGS) -focus="odo core beta flow" tests/e2escenarios/
 
 # Run java e2e tests
 .PHONY: test-e2e-java
-test-e2e-java:
+test-e2e-java: common
 	ginkgo $(GINKGO_FLAGS) -focus="odo java e2e tests" tests/e2escenarios/
 
 # Run source e2e tests
 .PHONY: test-e2e-source
-test-e2e-source:
+test-e2e-source: common
 	ginkgo $(GINKGO_FLAGS) -focus="odo source e2e tests" tests/e2escenarios/
 
 # Run supported images e2e tests
 .PHONY: test-e2e-images
-test-e2e-images:
+test-e2e-images: common
 	ginkgo $(GINKGO_FLAGS) -focus="odo supported images e2e tests" tests/e2escenarios/
 
 # Run all e2e test scenarios
 .PHONY: test-e2e-all
-test-e2e-all:
+test-e2e-all: common
 	ginkgo $(GINKGO_FLAGS) tests/e2escenarios/
 
 # create deb and rpm packages using fpm in ./dist/pkgs/

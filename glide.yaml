@@ -84,3 +84,5 @@ import:
   version: v30.1.0
 - package: github.com/golang/mock
   version: v1.4.3
+- package: github.com/hashicorp/go-version
+  version: v1.2.0
