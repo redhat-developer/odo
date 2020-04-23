@@ -191,7 +191,7 @@ func NewPreferenceInfo() (*PreferenceInfo, error) {
 		return nil, err
 	}
 
-	if c.OdoSettings.Experimental != nil && *c.OdoSettings.Experimental == true {
+	if c.OdoSettings.Experimental != nil && *c.OdoSettings.Experimental {
 		if c.OdoSettings.RegistryList == nil {
 			// Handle user has preference file but doesn't use dynamic registry before
 			defaultRegistryList := []Registry{

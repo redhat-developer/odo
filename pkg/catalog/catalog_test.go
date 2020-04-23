@@ -178,7 +178,7 @@ func TestGetDevfileRegistries(t *testing.T) {
 	}
 	defer os.Remove(tempConfigFile.Name())
 	defer tempConfigFile.Close()
-	tempConfigFile.Write([]byte(
+	_, err = tempConfigFile.Write([]byte(
 		`kind: Preference
 apiversion: odo.openshift.io/v1alpha1
 OdoSettings:
@@ -189,6 +189,9 @@ OdoSettings:
   - Name: DefaultDevfileRegistry
     URL: https://raw.githubusercontent.com/elsony/devfile-registry/master`,
 	))
+	if err != nil {
+		t.Error(err)
+	}
 
 	os.Setenv(preference.GlobalConfigEnvName, tempConfigFile.Name())
 	defer os.Unsetenv(preference.GlobalConfigEnvName)
