@@ -462,8 +462,9 @@ func newDevfileContext(command *cobra.Command) *Context {
 
 	// create the internal context representation based on calculated values
 	internalCxt := internalCxt{
-		OutputFlag: outputFlag,
-		command:    command,
+		OutputFlag:         outputFlag,
+		command:            command,
+		IsPushTargetDocker: pushtarget.IsPushTargetDocker(),
 	}
 
 	envInfo, err := getValidEnvinfo(command)
@@ -471,7 +472,7 @@ func newDevfileContext(command *cobra.Command) *Context {
 		util.LogErrorAndExit(err, "")
 	}
 
-	if !pushtarget.IsPushTargetDocker() {
+	if !internalCxt.IsPushTargetDocker {
 		// create a new kclient
 		kClient := kClient(command)
 		internalCxt.KClient = kClient
@@ -479,6 +480,7 @@ func newDevfileContext(command *cobra.Command) *Context {
 		internalCxt.EnvSpecificInfo = envInfo
 		resolveNamespace(command, kClient, envInfo)
 	}
+
 	// create a context from the internal representation
 	context := &Context{
 		internalCxt: internalCxt,
@@ -501,15 +503,16 @@ type Context struct {
 // internalCxt holds the actual context values and is not exported so that it cannot be instantiated outside of this package.
 // This ensures that Context objects are always created properly via NewContext factory functions.
 type internalCxt struct {
-	Client          *occlient.Client
-	command         *cobra.Command
-	Project         string
-	Application     string
-	cmp             string
-	OutputFlag      string
-	LocalConfigInfo *config.LocalConfigInfo
-	KClient         *kclient.Client
-	EnvSpecificInfo *envinfo.EnvSpecificInfo
+	Client             *occlient.Client
+	command            *cobra.Command
+	Project            string
+	Application        string
+	cmp                string
+	OutputFlag         string
+	LocalConfigInfo    *config.LocalConfigInfo
+	KClient            *kclient.Client
+	EnvSpecificInfo    *envinfo.EnvSpecificInfo
+	IsPushTargetDocker bool
 }
 
 // Component retrieves the optionally specified component or the current one if it is set. If no component is set, exit with
