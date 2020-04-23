@@ -24,7 +24,10 @@ var _ = Describe("odo devfile watch command tests", func() {
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 		if os.Getenv("KUBERNETES") == "true" {
-			namespace = helper.CreateRandNamespace(context)
+			info, err := os.Stat(os.Getenv("KUBECONFIG"))
+			Expect(err).NotTo(HaveOccurred())
+			kubeConfigFile := helper.CopyKubeConfigFile(os.Getenv("KUBECONFIG"), filepath.Join(context, "config"), info)
+			namespace = helper.CreateRandNamespace(kubeConfigFile)
 		} else {
 			namespace = helper.CreateRandProject()
 		}
@@ -37,6 +40,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 	var _ = AfterEach(func() {
 		if os.Getenv("KUBERNETES") == "true" {
 			helper.DeleteNamespace(namespace)
+			os.Unsetenv("KUBECONFIG")
 		} else {
 			helper.DeleteProject(namespace)
 		}
