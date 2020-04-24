@@ -13,10 +13,10 @@ TIMEOUT ?= 7200s
 
 # Env variable TEST_EXEC_NODES is used to pass spec execution type
 # (parallel or sequential) for ginkgo tests. To run the specs sequentially use
-# TEST_EXEC_NODES=1, otherwise by default the specs are run in parallel on 2 ginkgo test node.
+# TEST_EXEC_NODES=1, otherwise by default the specs are run in parallel on 4 ginkgo test node.
 # NOTE: Any TEST_EXEC_NODES value greater than one runs the spec in parallel
 # on the same number of ginkgo test nodes.
-TEST_EXEC_NODES ?= 2
+TEST_EXEC_NODES ?= 4
 
 # Slow spec threshold for ginkgo tests. After this time (in second), ginkgo marks test as slow
 SLOW_SPEC_THRESHOLD := 120
@@ -237,6 +237,16 @@ test-cmd-devfile-url:
 .PHONY: test-cmd-docker-devfile-push
 test-cmd-docker-devfile-push:
 	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile push command tests" tests/integration/devfile/docker/
+
+# Run odo url docker devfile command tests
+.PHONY: test-cmd-docker-devfile-url
+test-cmd-docker-devfile-url:
+	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile url command tests" tests/integration/devfile/docker/
+# Run odo docker devfile delete command tests
+.PHONY: test-cmd-docker-devfile-delete
+test-cmd-docker-devfile-delete:
+	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile delete command tests" tests/integration/devfile/docker/
+
 
 # Run odo watch command tests
 .PHONY: test-cmd-watch

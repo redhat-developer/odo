@@ -146,7 +146,7 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
 
 			stdout = helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--now")
-			helper.MatchAllInOutput(stdout, []string{"URL created for component", "http:", url1 + "." + host})
+			helper.MatchAllInOutput(stdout, []string{"created for component", "http:", url1 + "." + host})
 		})
 	})
 

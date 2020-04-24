@@ -78,6 +78,21 @@ func CopyExample(exampleName string, targetDir string) {
 	Expect(err).NotTo(HaveOccurred())
 }
 
+// CopyExampleDevFile copies an example devfile from tests/e2e/examples/<exampleName>/devfile.yaml into targetDst
+func CopyExampleDevFile(devfilePath, targetDst string) {
+	// filename of this file
+	_, filename, _, _ := runtime.Caller(0)
+	// path to the examples directory
+	examplesDir := filepath.Join(filepath.Dir(filename), "..", "examples")
+
+	src := filepath.Join(examplesDir, devfilePath)
+	info, err := os.Stat(src)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = copyFile(src, targetDst, info)
+	Expect(err).NotTo(HaveOccurred())
+}
+
 // FileShouldContainSubstring check if file contains subString
 func FileShouldContainSubstring(file string, subString string) {
 	data, err := ioutil.ReadFile(file)
@@ -122,6 +137,11 @@ func copyDir(src string, dst string, info os.FileInfo) error {
 		return err
 	}
 
+	return copyFile(src, dst, info)
+}
+
+// copyFile copy one file to another location
+func copyFile(src, dst string, info os.FileInfo) error {
 	dFile, err := os.Create(dst)
 	if err != nil {
 		return err
@@ -177,4 +197,53 @@ func ListFilesInDir(directoryName string) []string {
 func CreateSymLink(oldFileName, newFileName string) {
 	err := os.Symlink(oldFileName, newFileName)
 	Expect(err).NotTo(HaveOccurred())
+}
+
+// VerifyFileExists recieves a path to a file, and returns whether or not
+// it points to an existing file
+func VerifyFileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
+}
+
+// VerifyFilesExist recieves an array of paths to files, and returns whether
+// or not they all exist. If any one of the expected files doesn't exist, it
+// returns false
+func VerifyFilesExist(path string, files []string) bool {
+	for _, f := range files {
+		if !VerifyFileExists(filepath.Join(path, f)) {
+			return false
+		}
+	}
+	return true
+}
+
+// ReplaceDevfileField replaces the value of a given field in a specified
+// devfile.
+// Currently only the first match of the field is replaced. i.e if the
+// field is 'type' and there are two types throughout the devfile, only one
+// is replaced with the newValue
+func ReplaceDevfileField(devfileLocation, field, newValue string) error {
+	file, err := ioutil.ReadFile(devfileLocation)
+	if err != nil {
+		return err
+	}
+	lines := strings.Split(string(file), "\n")
+	for i, line := range lines {
+		if strings.Contains(line, field) {
+			lineSplit := strings.SplitN(lines[i], ":", 2)
+			lineSplit[1] = newValue
+			lines[i] = strings.Join(lineSplit, ": ")
+			break
+		}
+	}
+	output := strings.Join(lines, "\n")
+	err = ioutil.WriteFile(devfileLocation, []byte(output), 0600)
+	if err != nil {
+		return err
+	}
+	return nil
 }

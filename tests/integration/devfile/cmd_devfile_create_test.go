@@ -2,15 +2,19 @@ package devfile
 
 import (
 	"os"
+	"path"
 	"path/filepath"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/openshift/odo/tests/helper"
 )
 
 var _ = Describe("odo devfile create command tests", func() {
+	const devfile = "devfile.yaml"
+	const envFile = ".odo/env/env.yaml"
 	var namespace string
 	var context string
 	var currentWorkingDirectory string
@@ -75,6 +79,22 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 	})
 
+	Context("When executing odo create with devfile component type argument and --context flag", func() {
+		It("should successfully create the devfile componet in the context", func() {
+			newContext := path.Join(context, "newContext")
+			devfilePath := filepath.Join(newContext, devfile)
+			envFilePath := filepath.Join(newContext, envFile)
+			helper.MakeDir(newContext)
+
+			helper.CmdShouldPass("odo", "create", "openLiberty", "--context", newContext)
+			output := util.CheckPathExists(devfilePath)
+			Expect(output).Should(BeTrue())
+			output = util.CheckPathExists(envFilePath)
+			Expect(output).Should(BeTrue())
+			helper.DeleteDir(newContext)
+		})
+	})
+
 	Context("When executing odo create with devfile component name that contains unsupported character", func() {
 		It("should failed with devfile component name is not valid and prompt supported character", func() {
 			componentName := "BAD@123"
@@ -107,4 +127,61 @@ var _ = Describe("odo devfile create command tests", func() {
 			helper.MatchAllInOutput(output, []string{expectedString})
 		})
 	})
+
+	Context("When executing odo create with devfile component and --downloadSource flag", func() {
+		It("should succesfully create the compoment and download the source", func() {
+			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+			contextDevfile := helper.CreateNewContext()
+			helper.Chdir(contextDevfile)
+			devfile := "devfile.yaml"
+			helper.CmdShouldPass("odo", "create", "nodejs", "--downloadSource")
+			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
+			Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
+			helper.DeleteDir(contextDevfile)
+			helper.Chdir(context)
+		})
+	})
+
+	// Currently these tests need interactive mode in order to set the name of the component.
+	// Once this feature is added we can change these tests.
+	//Context("When executing odo create with devfile component and --downloadSource flag with github type", func() {
+	//	It("should succesfully create the compoment and download the source", func() {
+	//		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+	//		contextDevfile := helper.CreateNewContext()
+	//		helper.Chdir(contextDevfile)
+	//		devfile := "devfile.yaml"
+	//		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", devfile), filepath.Join(contextDevfile, devfile))
+
+	//		err := helper.ReplaceDevfileField(devfile, "type", "github")
+	//		if err != nil {
+	//			log.Error("Could not replace the entry in the devfile: " + err.Error())
+	//		}
+	//		helper.CmdShouldPass("odo", "create", "--downloadSource")
+	//		expectedFiles := []string{"package.json", "package-lock.json", "README.MD", devfile}
+	//		Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
+	//		helper.DeleteDir(contextDevfile)
+	//	})
+	//})
+
+	//Context("When executing odo create with devfile component and --downloadSource flag with zip type", func() {
+	//	It("should create the compoment and download the source", func() {
+	//		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+	//		contextDevfile := helper.CreateNewContext()
+	//		helper.Chdir(contextDevfile)
+	//		devfile := "devfile.yaml"
+	//		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", devfile), filepath.Join(contextDevfile, devfile))
+	//		err := helper.ReplaceDevfileField(devfile, "location", "https://github.com/che-samples/web-nodejs-sample/archive/master.zip")
+	//		if err != nil {
+	//			log.Error("Could not replace the entry in the devfile: " + err.Error())
+	//		}
+	//		err = helper.ReplaceDevfileField(devfile, "type", "zip")
+	//		if err != nil {
+	//			log.Error("Could not replace the entry in the devfile: " + err.Error())
+	//		}
+	//		helper.CmdShouldPass("odo", "create", "--downloadSource")
+	//		expectedFiles := []string{"package.json", "package-lock.json", "README.MD", devfile}
+	//		Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
+	//		helper.DeleteDir(contextDevfile)
+	//	})
+	//})
 })

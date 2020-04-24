@@ -38,6 +38,8 @@ type EnvInfoURL struct {
 	Host string `yaml:"host,omitempty"`
 	// TLS secret name to create ingress to provide a secure URL
 	TLSSecret string `yaml:"TLSSecret,omitempty"`
+	// Exposed port number for docker container, required for local scenarios
+	ExposedPort int `yaml:"ExposedPort,omitempty"`
 }
 
 // EnvInfo holds all the env specific infomation relavent to a specific Component.

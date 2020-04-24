@@ -16,7 +16,6 @@ import (
 )
 
 const (
-	volumeSize                 = "5Gi"
 	envCheProjectsRoot         = "CHE_PROJECTS_ROOT"
 	envOdoCommandRunWorkingDir = "ODO_COMMAND_RUN_WORKING_DIR"
 	envOdoCommandRun           = "ODO_COMMAND_RUN"
@@ -170,26 +169,6 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 
 	return containers, nil
 
-}
-
-// GetVolumes iterates through the components in the devfile and returns a map of component alias to the devfile volumes
-func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]adaptersCommon.DevfileVolume {
-	// componentAliasToVolumes is a map of the Devfile Component Alias to the Devfile Component Volumes
-	componentAliasToVolumes := make(map[string][]adaptersCommon.DevfileVolume)
-	size := volumeSize
-	for _, comp := range adaptersCommon.GetSupportedComponents(devfileObj.Data) {
-		if comp.Volumes != nil {
-			for _, volume := range comp.Volumes {
-				vol := adaptersCommon.DevfileVolume{
-					Name:          volume.Name,
-					ContainerPath: volume.ContainerPath,
-					Size:          &size,
-				}
-				componentAliasToVolumes[*comp.Alias] = append(componentAliasToVolumes[*comp.Alias], vol)
-			}
-		}
-	}
-	return componentAliasToVolumes
 }
 
 // GetResourceReqs creates a kubernetes ResourceRequirements object based on resource requirements set in the devfile
