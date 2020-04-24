@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/go-connections/nat"
 )
 
 // GenerateContainerConfig creates a containerConfig resource that can be used to create a local Docker container
@@ -16,6 +17,7 @@ func TestGenerateContainerConfig(t *testing.T) {
 		entrypoint []string
 		cmd        []string
 		envVars    []string
+		portset    nat.PortSet
 		labels     map[string]string
 		want       container.Config
 	}{
@@ -55,9 +57,28 @@ func TestGenerateContainerConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:       "Case 3: Simple config, adding portset",
+			image:      "docker.io/fake-image:latest",
+			entrypoint: []string{"bash"},
+			cmd:        []string{"tail", "-f", "/dev/null"},
+			portset: nat.PortSet{
+				"8080/tcp": struct{}{},
+				"9080/tcp": struct{}{},
+			},
+			want: container.Config{
+				Image:      "docker.io/fake-image:latest",
+				Entrypoint: []string{"bash"},
+				Cmd:        []string{"tail", "-f", "/dev/null"},
+				ExposedPorts: nat.PortSet{
+					"8080/tcp": struct{}{},
+					"9080/tcp": struct{}{},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
-		config := fakeClient.GenerateContainerConfig(tt.image, tt.entrypoint, tt.cmd, tt.envVars, tt.labels)
+		config := fakeClient.GenerateContainerConfig(tt.image, tt.entrypoint, tt.cmd, tt.envVars, tt.labels, tt.portset)
 		if !reflect.DeepEqual(tt.want, config) {
 			t.Errorf("expected %v, actual %v", tt.want, config)
 		}
@@ -67,50 +88,59 @@ func TestGenerateContainerConfig(t *testing.T) {
 func TestGenerateHostConfig(t *testing.T) {
 	fakeClient := FakeNew()
 	tests := []struct {
-		name         string
-		privileged   bool
-		publishPorts bool
-		want         container.HostConfig
+		name string
+		want container.HostConfig
 	}{
 		{
-			name:         "Case 1: Unprivileged and not publishing ports",
-			privileged:   false,
-			publishPorts: false,
+			name: "Case 1: Unprivileged and not publishing ports",
 			want: container.HostConfig{
 				Privileged:      false,
 				PublishAllPorts: false,
+				PortBindings:    nat.PortMap{},
 			},
 		},
 		{
-			name:         "Case 2: Privileged and not publishing ports",
-			privileged:   true,
-			publishPorts: false,
+			name: "Case 2: Privileged and not publishing ports",
 			want: container.HostConfig{
 				Privileged:      true,
 				PublishAllPorts: false,
+				PortBindings:    nat.PortMap{},
 			},
 		},
 		{
-			name:         "Case 3: Unprivileged and publishing ports",
-			privileged:   false,
-			publishPorts: true,
+			name: "Case 3: Unprivileged and publishing ports",
 			want: container.HostConfig{
 				Privileged:      false,
 				PublishAllPorts: true,
+				PortBindings:    nat.PortMap{},
 			},
 		},
 		{
-			name:         "Case 4: Privileged and publishing ports",
-			privileged:   true,
-			publishPorts: true,
+			name: "Case 4: Privileged and publishing ports",
 			want: container.HostConfig{
 				Privileged:      true,
 				PublishAllPorts: true,
+				PortBindings:    nat.PortMap{},
+			},
+		},
+		{
+			name: "Case 5: With non-empty PortBindings",
+			want: container.HostConfig{
+				Privileged:      true,
+				PublishAllPorts: true,
+				PortBindings: nat.PortMap{
+					"tcp/9090": []nat.PortBinding{
+						nat.PortBinding{
+							HostIP:   "127.0.0.1",
+							HostPort: "65432",
+						},
+					},
+				},
 			},
 		},
 	}
 	for _, tt := range tests {
-		config := fakeClient.GenerateHostConfig(tt.privileged, tt.publishPorts)
+		config := fakeClient.GenerateHostConfig(tt.want.Privileged, tt.want.PublishAllPorts, tt.want.PortBindings)
 		if !reflect.DeepEqual(tt.want, config) {
 			t.Errorf("expected %v, actual %v", tt.want, config)
 		}

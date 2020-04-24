@@ -2,6 +2,7 @@ package url
 
 import (
 	"fmt"
+	"net"
 	"strconv"
 	"strings"
 
@@ -394,6 +395,27 @@ func GetValidPortNumber(componentName string, portNumber int, portList []string)
 	}
 
 	return portNumber, fmt.Errorf("given port %d is not exposed on given component, available ports are: %s", portNumber, strings.Trim(strings.Replace(fmt.Sprint(componentPorts), " ", ",", -1), "[]"))
+}
+
+// GetValidExposedPortNumber checks if the given exposed port number is a valid port or not
+// if exposed port is not provided, a random free port will be generated and returned
+func GetValidExposedPortNumber(exposedPort int) (int, error) {
+	// exposed port number will be -1 if the user doesn't specify any port
+	if exposedPort == -1 {
+		freePort, err := util.HttpGetFreePort()
+		if err != nil {
+			return -1, err
+		}
+		return freePort, nil
+	} else {
+		// check if the given port is available
+		listener, err := net.Listen("tcp", ":"+strconv.Itoa(exposedPort))
+		if err != nil {
+			return -1, errors.Wrapf(err, "given port %d is not available, please choose another port", exposedPort)
+		}
+		defer listener.Close()
+		return exposedPort, nil
+	}
 }
 
 // getMachineReadableFormat gives machine readable URL definition
