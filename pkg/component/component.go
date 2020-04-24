@@ -564,7 +564,7 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 
 	var componentName string
 	var applicationName string
-	if !isExperimentalModeEnabled {
+	if !isExperimentalModeEnabled || kClient == nil {
 		componentName = componentConfig.GetName()
 		applicationName = componentConfig.GetApplication()
 	} else {

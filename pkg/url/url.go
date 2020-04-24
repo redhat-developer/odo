@@ -135,7 +135,7 @@ func Create(client *occlient.Client, kClient *kclient.Client, urlName string, po
 
 	serviceName := ""
 
-	if isExperimental && urlKind == envinfo.INGRESS {
+	if isExperimental && urlKind == envinfo.INGRESS && kClient != nil {
 		if host == "" {
 			return "", errors.Errorf("the host cannot be empty")
 		}
@@ -204,7 +204,7 @@ func Create(client *occlient.Client, kClient *kclient.Client, urlName string, po
 		}
 
 		var ownerReference metav1.OwnerReference
-		if !isExperimental {
+		if !isExperimental || kClient == nil {
 			var err error
 			urlName, err = util.NamespaceOpenShiftObject(urlName, applicationName)
 			if err != nil {
@@ -527,7 +527,10 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 	var applicationName string
 
 	urlLOCAL := make(map[string]URL)
-	if parameters.IsExperimentalModeEnabled {
+
+	// in case the component is a s2i one
+	// kClient will be nil
+	if parameters.IsExperimentalModeEnabled && kClient != nil {
 		componentName = parameters.ComponentName
 		urls := parameters.EnvURLS
 		for _, url := range urls {
@@ -558,7 +561,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 	}
 
 	urlCLUSTER := make(map[string]URL)
-	if parameters.IsExperimentalModeEnabled {
+	if parameters.IsExperimentalModeEnabled && kClient != nil {
 		urlList, err := ListPushedIngress(kClient, componentName)
 		if err != nil {
 			return err
@@ -595,6 +598,9 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 	for urlName, urlSpec := range urlCLUSTER {
 		val, ok := urlLOCAL[urlName]
 		if !ok {
+			if urlSpec.Spec.urlKind == envinfo.INGRESS && kClient == nil {
+				continue
+			}
 			// delete the url
 			err := Delete(client, kClient, urlName, applicationName, urlSpec.Spec.urlKind)
 			if err != nil {
@@ -614,7 +620,9 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 	for urlName, urlInfo := range urlLOCAL {
 		_, ok := urlCLUSTER[urlName]
 		if !ok {
-			var host string
+			if urlInfo.Spec.urlKind == envinfo.INGRESS && kClient == nil {
+				continue
+			}
 			host, err := Create(client, kClient, urlName, urlInfo.Spec.Port, urlInfo.Spec.Secure, componentName, parameters.ApplicationName, urlInfo.Spec.Host, urlInfo.Spec.tLSSecret, urlInfo.Spec.urlKind, parameters.IsRouteSupported, parameters.IsExperimentalModeEnabled)
 			if err != nil {
 				return err
