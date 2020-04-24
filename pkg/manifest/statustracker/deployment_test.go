@@ -10,6 +10,7 @@ import (
 
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 	"github.com/google/go-cmp/cmp"
+	"github.com/openshift/odo/pkg/manifest/deployment"
 	"github.com/openshift/odo/pkg/manifest/meta"
 	"github.com/openshift/odo/pkg/manifest/roles"
 )
@@ -22,11 +23,11 @@ func TestCreateStatusTrackerDeployment(t *testing.T) {
 		ObjectMeta: meta.ObjectMeta(meta.NamespacedName("dana-cicd", operatorName)),
 		Spec: appsv1.DeploymentSpec{
 			Replicas: ptr32(1),
-			Selector: labelSelector("name", operatorName),
+			Selector: labelSelector(deployment.KubernetesAppNameLabel, operatorName),
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"name": operatorName,
+						deployment.KubernetesAppNameLabel: operatorName,
 					},
 				},
 				Spec: corev1.PodSpec{
