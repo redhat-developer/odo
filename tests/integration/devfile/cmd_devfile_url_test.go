@@ -178,6 +178,22 @@ var _ = Describe("odo devfile url command tests", func() {
 			output = helper.CmdShouldPass("oc", "get", "routes", "--namespace", namespace)
 			Expect(output).ShouldNot(ContainSubstring(url1))
 		})
+
+		It("should create a url for a unsupported devfile component", func() {
+			url1 := helper.RandString(5)
+
+			helper.CopyExample(filepath.Join("source", "python"), context)
+			helper.Chdir(context)
+
+			helper.CmdShouldPass("odo", "create", "python", "--project", namespace, componentName)
+
+			helper.CmdShouldPass("odo", "url", "create", url1)
+
+			helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+
+			output := helper.CmdShouldPass("oc", "get", "routes", "--namespace", namespace)
+			Expect(output).Should(ContainSubstring(url1))
+		})
 	})
 
 	Context("Describing urls", func() {

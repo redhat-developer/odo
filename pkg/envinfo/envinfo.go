@@ -26,7 +26,7 @@ type ComponentSettings struct {
 	URL       *[]EnvInfoURL `yaml:"Url,omitempty"`
 }
 
-// URLType is an enum to indicate the type of the URL i.e ingress/route
+// URLKind is an enum to indicate the type of the URL i.e ingress/route
 type URLKind string
 
 const (
