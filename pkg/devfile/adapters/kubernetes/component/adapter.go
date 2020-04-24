@@ -20,6 +20,7 @@ import (
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/exec"
 	"github.com/openshift/odo/pkg/kclient"
+	"github.com/openshift/odo/pkg/log"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/sync"
 )
@@ -61,11 +62,14 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	// Validate the devfile build and run commands
+	log.Infof("\nValidation")
 	pushDevfileCommands, err := common.ValidateAndGetPushDevfileCommands(a.Devfile.Data, a.devfileBuildCmd, a.devfileRunCmd)
 	if err != nil {
 		return errors.Wrap(err, "failed to validate devfile build and run commands")
 	}
+	log.Successf("Devfile validated")
 
+	log.Infof("\nCreating Kubernetes resources for component %s", a.ComponentName)
 	err = a.createOrUpdateComponent(componentExists)
 	if err != nil {
 		return errors.Wrap(err, "unable to create or update component")
@@ -98,6 +102,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return errors.Wrapf(err, "error while retrieving container from pod %s with a mounted project volume", podName)
 	}
 
+	log.Infof("\nSyncing to component %s", a.ComponentName)
 	// Get a sync adapter. Check if project files have changed and sync accordingly
 	syncAdapter := sync.New(a.AdapterContext, &a.Client)
 	compInfo := common.ComponentInfo{
@@ -116,6 +121,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	if execRequired {
+		log.Infof("\nExecuting devfile commands for component %s", a.ComponentName)
 		err = a.execDevfile(pushDevfileCommands, componentExists, parameters.Show, pod.GetName(), pod.Spec.Containers)
 		if err != nil {
 			return err

@@ -113,8 +113,8 @@ func DoesContainerNeedUpdating(component common.DevfileComponent, containerConfi
 			return true
 		}
 	}
-	return false
 
+	return false
 }
 
 // AddVolumeToContainer adds the volume name and mount to the container host config
@@ -262,7 +262,7 @@ func StartBootstrapSupervisordInitContainer(client lclient.Client, supervisordVo
 		s.End(true)
 	}
 
-	containerConfig := client.GenerateContainerConfig(image, command, args, nil, supervisordLabels, nat.PortSet{})
+	containerConfig := client.GenerateContainerConfig(image, command, args, nil, supervisordLabels, nil)
 	hostConfig := container.HostConfig{}
 
 	AddVolumeToContainer(supervisordVolumeName, adaptersCommon.SupervisordMountPath, &hostConfig)

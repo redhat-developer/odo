@@ -12,6 +12,7 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
 	"github.com/openshift/odo/pkg/lclient"
+	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/sync"
 )
 
@@ -50,10 +51,12 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	a.devfileRunCmd = parameters.DevfileRunCmd
 
 	// Validate the devfile build and run commands
+	log.Infof("\nValidation")
 	pushDevfileCommands, err := common.ValidateAndGetPushDevfileCommands(a.Devfile.Data, a.devfileBuildCmd, a.devfileRunCmd)
 	if err != nil {
 		return errors.Wrap(err, "failed to validate devfile build and run commands")
 	}
+	log.Successf("Devfile validated")
 
 	// Get the supervisord volume
 	supervisordLabels := utils.GetSupervisordVolumeLabels()
@@ -87,8 +90,10 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return errors.Wrapf(err, "error while retrieving container for odo component %s with a mounted project volume", a.ComponentName)
 	}
 
+	log.Infof("\nSyncing to component %s", a.ComponentName)
 	// Get a sync adapter. Check if project files have changed and sync accordingly
 	syncAdapter := sync.New(a.AdapterContext, &a.Client)
+
 	// podChanged is defaulted to false, since docker volume is always present even if container goes down
 	compInfo := common.ComponentInfo{
 		ContainerName: containerID,
@@ -104,6 +109,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	if execRequired {
+		log.Infof("\nExecuting devfile commands for component %s", a.ComponentName)
 		err = a.execDevfile(pushDevfileCommands, componentExists, parameters.Show, containers)
 		if err != nil {
 			return errors.Wrapf(err, "Failed to execute devfile commands for component %s", a.ComponentName)

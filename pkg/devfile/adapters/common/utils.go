@@ -104,15 +104,24 @@ func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume 
 
 // IsEnvPresent checks if the env variable is present in an array of env variables
 func IsEnvPresent(envVars []common.DockerimageEnv, envVarName string) bool {
-	isPresent := false
-
 	for _, envVar := range envVars {
 		if *envVar.Name == envVarName {
-			isPresent = true
+			return true
 		}
 	}
 
-	return isPresent
+	return false
+}
+
+// IsPortPresent checks if the port is present in the endpoints array
+func IsPortPresent(endpoints []common.DockerimageEndpoint, port int) bool {
+	for _, endpoint := range endpoints {
+		if *endpoint.Port == int32(port) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // IsComponentBuildRequired checks if a component build is required based on the push commands, it throws an error
