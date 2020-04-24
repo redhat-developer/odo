@@ -74,7 +74,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	if componentExists {
-		err = a.updateComponent()
+		componentExists, err = a.updateComponent()
 	} else {
 		err = a.createComponent()
 	}

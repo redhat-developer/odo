@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-
 	"strings"
-
-	"github.com/docker/go-connections/nat"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
+	"github.com/docker/go-connections/nat"
+
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 
@@ -25,6 +24,7 @@ import (
 	"github.com/openshift/odo/pkg/log"
 )
 
+// LocalhostIP is the IP address for localhost
 var LocalhostIP = "127.0.0.1"
 
 func (a Adapter) createComponent() (err error) {
@@ -88,20 +88,21 @@ func (a Adapter) createComponent() (err error) {
 	return nil
 }
 
-func (a Adapter) updateComponent() (err error) {
+func (a Adapter) updateComponent() (componentExists bool, err error) {
 	glog.V(3).Info("The component already exists, attempting to update it")
+	componentExists = true
 	componentName := a.ComponentName
 
 	// Get the project source volume
 	volumeLabels := utils.GetProjectVolumeLabels(componentName)
 	projectVols, err := a.Client.GetVolumesByLabel(volumeLabels)
 	if err != nil {
-		return errors.Wrapf(err, "Unable to retrieve source volume for component "+componentName)
+		return componentExists, errors.Wrapf(err, "Unable to retrieve source volume for component "+componentName)
 	}
 	if len(projectVols) == 0 {
-		return fmt.Errorf("Unable to find source volume for component %s", componentName)
+		return componentExists, fmt.Errorf("Unable to find source volume for component %s", componentName)
 	} else if len(projectVols) > 1 {
-		return errors.Wrapf(err, "Error, multiple source volumes found for component %s", componentName)
+		return componentExists, errors.Wrapf(err, "Error, multiple source volumes found for component %s", componentName)
 	}
 	projectVolumeName := projectVols[0].Name
 
@@ -111,7 +112,7 @@ func (a Adapter) updateComponent() (err error) {
 
 	supportedComponents := common.GetSupportedComponents(a.Devfile.Data)
 	if len(supportedComponents) == 0 {
-		return fmt.Errorf("No valid components found in the devfile")
+		return componentExists, fmt.Errorf("No valid components found in the devfile")
 	}
 
 	for _, comp := range supportedComponents {
@@ -119,7 +120,7 @@ func (a Adapter) updateComponent() (err error) {
 		// If component isn't running, re-create it, as it either may be new, or crashed.
 		containers, err := a.Client.GetContainersByComponentAndAlias(componentName, *comp.Alias)
 		if err != nil {
-			return errors.Wrapf(err, "unable to list containers for component %s", componentName)
+			return false, errors.Wrapf(err, "unable to list containers for component %s", componentName)
 		}
 
 		var dockerVolumeMounts []mount.Mount
@@ -138,8 +139,11 @@ func (a Adapter) updateComponent() (err error) {
 			// Container doesn't exist, so need to pull its image (to be safe) and start a new container
 			err = a.pullAndStartContainer(dockerVolumeMounts, projectVolumeName, comp)
 			if err != nil {
-				return errors.Wrapf(err, "unable to pull and start container %s for component %s", *comp.Alias, componentName)
+				return false, errors.Wrapf(err, "unable to pull and start container %s for component %s", *comp.Alias, componentName)
 			}
+
+			// Update componentExists so that we re-sync project and initialize supervisord if required
+			componentExists = false
 		} else if len(containers) == 1 {
 			// Container already exists
 			containerID := containers[0].ID
@@ -147,12 +151,12 @@ func (a Adapter) updateComponent() (err error) {
 			// Get the associated container config, host config and mounts from the container
 			containerConfig, hostConfig, mounts, err := a.Client.GetContainerConfigHostConfigAndMounts(containerID)
 			if err != nil {
-				return errors.Wrapf(err, "unable to get the container config for component %s", componentName)
+				return componentExists, errors.Wrapf(err, "unable to get the container config for component %s", componentName)
 			}
 
 			portMap, err := getPortMap(comp.Endpoints, false)
 			if err != nil {
-				return errors.Wrapf(err, "unable to get the port map from env.yaml file for component %s", componentName)
+				return componentExists, errors.Wrapf(err, "unable to get the port map from env.yaml file for component %s", componentName)
 			}
 
 			// See if the container needs to be updated
@@ -165,26 +169,29 @@ func (a Adapter) updateComponent() (err error) {
 				// Remove the container
 				err := a.Client.RemoveContainer(containerID)
 				if err != nil {
-					return errors.Wrapf(err, "Unable to remove container %s for component %s", containerID, *comp.Alias)
+					return componentExists, errors.Wrapf(err, "Unable to remove container %s for component %s", containerID, *comp.Alias)
 				}
 
 				// Start the container
 				err = a.startComponent(dockerVolumeMounts, projectVolumeName, comp)
 				if err != nil {
-					return errors.Wrapf(err, "Unable to start container for devfile component %s", *comp.Alias)
+					return false, errors.Wrapf(err, "Unable to start container for devfile component %s", *comp.Alias)
 				}
 
 				glog.V(3).Infof("Successfully created container %s for component %s", *comp.Image, componentName)
 				s.End(true)
+
+				// Update componentExists so that we re-sync project and initialize supervisord if required
+				componentExists = false
 			}
 		} else {
 			// Multiple containers were returned with the specified label (which should be unique)
 			// Error out, as this isn't expected
-			return fmt.Errorf("Found multiple running containers for devfile component %s and cannot push changes", *comp.Alias)
+			err = fmt.Errorf("Found multiple running containers for devfile component %s and cannot push changes", *comp.Alias)
 		}
 	}
 
-	return nil
+	return
 }
 
 func (a Adapter) pullAndStartContainer(mounts []mount.Mount, projectVolumeName string, comp versionsCommon.DevfileComponent) error {

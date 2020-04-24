@@ -49,10 +49,13 @@ const (
 	// Default volume size for volumes defined in a devfile
 	volumeSize = "5Gi"
 
+	// EnvCheProjectsRoot is the env defined for /projects where component mountSources=true
 	EnvCheProjectsRoot = "CHE_PROJECTS_ROOT"
 
+	// EnvOdoCommandRunWorkingDir is the env defined in the runtime component container which holds the work dir for the run command
 	EnvOdoCommandRunWorkingDir = "ODO_COMMAND_RUN_WORKING_DIR"
 
+	// EnvOdoCommandRun is the env defined in the runtime component container which holds the run command to be executed
 	EnvOdoCommandRun = "ODO_COMMAND_RUN"
 )
 

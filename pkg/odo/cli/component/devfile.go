@@ -103,7 +103,7 @@ func (po *PushOptions) DevfilePush() (err error) {
 		os.Exit(1)
 	}
 
-	log.Info("\nPushing devfile component %s", componentName)
+	log.Infof("\nPushing devfile component %s", componentName)
 	log.Success("Changes successfully pushed to component")
 
 	return
