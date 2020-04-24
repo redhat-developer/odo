@@ -167,12 +167,13 @@ func List(client *occlient.Client, componentName string, applicationName string)
 		// if the component label exists, then check if the component is the current active component
 		// also check if the app label exists and is equal to the current application
 		if (!ok || pvcComponentName == componentName) && (okApp && pvcAppName == applicationName) {
-			if pvc.Name == "" {
+			readPVC := pvc
+			if readPVC.Name == "" {
 				return StorageList{}, fmt.Errorf("no PVC associated")
 			}
-			storageName := getStorageFromPVC(&pvc)
-			storageSize := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
-			storageMachineReadable := GetMachineReadableFormat(getStorageFromPVC(&pvc),
+			storageName := getStorageFromPVC(&readPVC)
+			storageSize := readPVC.Spec.Resources.Requests[corev1.ResourceStorage]
+			storageMachineReadable := GetMachineReadableFormat(getStorageFromPVC(&readPVC),
 				storageSize.String(),
 				mountedStorageMap[storageName],
 			)
@@ -211,11 +212,12 @@ func ListUnmounted(client *occlient.Client, applicationName string) (StorageList
 		// first check if component label does not exists indicating that the storage is not mounted in any component
 		// also check if the app label exists and is equal to the current application
 		if !ok && (okApp && pvcAppName == applicationName) {
-			if pvc.Name == "" {
+			readPVC := pvc
+			if readPVC.Name == "" {
 				return StorageList{}, fmt.Errorf("no PVC associated")
 			}
-			storageSize := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
-			storageMachineReadable := GetMachineReadableFormat(getStorageFromPVC(&pvc),
+			storageSize := readPVC.Spec.Resources.Requests[corev1.ResourceStorage]
+			storageMachineReadable := GetMachineReadableFormat(getStorageFromPVC(&readPVC),
 				storageSize.String(),
 				"",
 			)
