@@ -68,7 +68,7 @@ func GetSupportedComponents(data data.DevfileData) []common.DevfileComponent {
 	// Only components with aliases are considered because without an alias commands cannot reference them
 	for _, comp := range data.GetAliasedComponents() {
 		if isComponentSupported(comp) {
-			glog.V(3).Infof("Found component \"%v\" with alias \"%v\"\n", comp.Type, *comp.Alias)
+			glog.V(4).Infof("Found component \"%v\" with alias \"%v\"\n", comp.Type, *comp.Alias)
 			components = append(components, comp)
 		}
 	}

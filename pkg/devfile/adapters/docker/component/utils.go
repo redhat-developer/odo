@@ -76,13 +76,13 @@ func (a Adapter) createComponent() (err error) {
 			return errors.Wrapf(err, "unable to pull and start container %s for component %s", *comp.Alias, componentName)
 		}
 	}
-	glog.V(3).Infof("Successfully created all containers for component %s", componentName)
+	glog.V(4).Infof("Successfully created all containers for component %s", componentName)
 
 	return nil
 }
 
 func (a Adapter) updateComponent() (err error) {
-	glog.V(3).Info("The component already exists, attempting to update it")
+	glog.V(4).Info("The component already exists, attempting to update it")
 	componentName := a.ComponentName
 
 	// Get the project source volume
@@ -159,7 +159,7 @@ func (a Adapter) updateComponent() (err error) {
 				if err != nil {
 					return errors.Wrapf(err, "Unable to start container for devfile component %s", *comp.Alias)
 				}
-				glog.V(3).Infof("Successfully created container %s for component %s", *comp.Image, componentName)
+				glog.V(4).Infof("Successfully created container %s for component %s", *comp.Image, componentName)
 				s.End(true)
 			}
 		} else {
@@ -187,7 +187,7 @@ func (a Adapter) pullAndStartContainer(mounts []mount.Mount, projectVolumeName s
 	if err != nil {
 		return errors.Wrapf(err, "Unable to start container for devfile component %s", *comp.Alias)
 	}
-	glog.V(3).Infof("Successfully created container %s for component %s", *comp.Image, a.ComponentName)
+	glog.V(4).Infof("Successfully created container %s for component %s", *comp.Image, a.ComponentName)
 	return nil
 }
 

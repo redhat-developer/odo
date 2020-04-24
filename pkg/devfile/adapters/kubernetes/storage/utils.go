@@ -30,7 +30,7 @@ func CreateComponentStorage(Client *kclient.Client, storages []common.Storage, c
 		}
 
 		if len(existingPVCName) == 0 {
-			glog.V(3).Infof("Creating a PVC for %v", volumeName)
+			glog.V(4).Infof("Creating a PVC for %v", volumeName)
 			_, err := Create(Client, volumeName, volumeSize, componentName, pvcName)
 			if err != nil {
 				return errors.Wrapf(err, "Error creating PVC for "+volumeName)
@@ -68,7 +68,7 @@ func Create(Client *kclient.Client, name, size, componentName, pvcName string) (
 	objectMeta.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
 
 	// Create PVC
-	glog.V(3).Infof("Creating a PVC with name %v and labels %v", pvcName, labels)
+	glog.V(4).Infof("Creating a PVC with name %v and labels %v", pvcName, labels)
 	pvc, err := Client.CreatePVC(objectMeta, *pvcSpec)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create PVC")
@@ -95,14 +95,14 @@ func GetExistingPVC(Client *kclient.Client, volumeName, componentName string) (s
 
 	label := "component=" + componentName + ",storage-name=" + volumeName
 
-	glog.V(3).Infof("Checking PVC for volume %v and label %v\n", volumeName, label)
+	glog.V(4).Infof("Checking PVC for volume %v and label %v\n", volumeName, label)
 
 	PVCs, err := Client.GetPVCsFromSelector(label)
 	if err != nil {
 		return "", errors.Wrapf(err, "Unable to get PVC with selectors "+label)
 	}
 	if len(PVCs) == 1 {
-		glog.V(3).Infof("Found an existing PVC for volume %v and label %v\n", volumeName, label)
+		glog.V(4).Infof("Found an existing PVC for volume %v and label %v\n", volumeName, label)
 		existingPVC := &PVCs[0]
 		return existingPVC.Name, nil
 	} else if len(PVCs) == 0 {

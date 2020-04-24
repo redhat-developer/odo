@@ -231,7 +231,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 				processedVolumes[*vol.Name] = true
 
 				// Generate the PVC Names
-				glog.V(3).Infof("Generating PVC name for %v", *vol.Name)
+				glog.V(4).Infof("Generating PVC name for %v", *vol.Name)
 				generatedPVCName, err := storage.GeneratePVCNameFromDevfileVol(*vol.Name, componentName)
 				if err != nil {
 					return err
@@ -243,7 +243,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 					return err
 				}
 				if len(existingPVCName) > 0 {
-					glog.V(3).Infof("Found an existing PVC for %v, PVC %v will be re-used", *vol.Name, existingPVCName)
+					glog.V(4).Infof("Found an existing PVC for %v, PVC %v will be re-used", *vol.Name, existingPVCName)
 					generatedPVCName = existingPVCName
 				}
 
@@ -273,17 +273,17 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 		}
 	}
 	serviceSpec := kclient.GenerateServiceSpec(objectMeta.Name, containerPorts)
-	glog.V(3).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
-	glog.V(3).Infof("The component name is %v", componentName)
+	glog.V(4).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
+	glog.V(4).Infof("The component name is %v", componentName)
 
 	if utils.ComponentExists(a.Client, componentName) {
 		// If the component already exists, get the resource version of the deploy before updating
-		glog.V(3).Info("The component already exists, attempting to update it")
+		glog.V(4).Info("The component already exists, attempting to update it")
 		deployment, err := a.Client.UpdateDeployment(*deploymentSpec)
 		if err != nil {
 			return err
 		}
-		glog.V(3).Infof("Successfully updated component %v", componentName)
+		glog.V(4).Infof("Successfully updated component %v", componentName)
 		oldSvc, err := a.Client.KubeClient.CoreV1().Services(a.Client.Namespace).Get(componentName, metav1.GetOptions{})
 		objectMetaTemp := objectMeta
 		ownerReference := kclient.GenerateOwnerReference(deployment)
@@ -295,7 +295,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 				if err != nil {
 					return err
 				}
-				glog.V(3).Infof("Successfully created Service for component %s", componentName)
+				glog.V(4).Infof("Successfully created Service for component %s", componentName)
 			}
 		} else {
 			if len(serviceSpec.Ports) > 0 {
@@ -305,7 +305,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 				if err != nil {
 					return err
 				}
-				glog.V(3).Infof("Successfully update Service for component %s", componentName)
+				glog.V(4).Infof("Successfully update Service for component %s", componentName)
 			} else {
 				err = a.Client.KubeClient.CoreV1().Services(a.Client.Namespace).Delete(componentName, &metav1.DeleteOptions{})
 				if err != nil {
@@ -318,7 +318,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 		if err != nil {
 			return err
 		}
-		glog.V(3).Infof("Successfully created component %v", componentName)
+		glog.V(4).Infof("Successfully created component %v", componentName)
 		ownerReference := kclient.GenerateOwnerReference(deployment)
 		objectMetaTemp := objectMeta
 		objectMetaTemp.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
@@ -327,7 +327,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 			if err != nil {
 				return err
 			}
-			glog.V(3).Infof("Successfully created Service for component %s", componentName)
+			glog.V(4).Infof("Successfully created Service for component %s", componentName)
 		}
 
 	}
@@ -444,7 +444,7 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 
 		// Exec the devBuild command if buildRequired is true
 		if (command.Name == string(common.DefaultDevfileBuildCommand) || command.Name == a.devfileBuildCmd) && buildRequired {
-			glog.V(3).Infof("Executing devfile command %v", command.Name)
+			glog.V(4).Infof("Executing devfile command %v", command.Name)
 
 			for _, action := range command.Actions {
 				// Change to the workdir and execute the command
@@ -477,7 +477,7 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 			buildRequired = false
 		} else if (command.Name == string(common.DefaultDevfileRunCommand) || command.Name == a.devfileRunCmd) && !buildRequired {
 			// Always check for buildRequired is false, since the command may be iterated out of order and we always want to execute devBuild first if buildRequired is true. If buildRequired is false, then we don't need to build and we can execute the devRun command
-			glog.V(3).Infof("Executing devfile command %v", command.Name)
+			glog.V(4).Infof("Executing devfile command %v", command.Name)
 
 			for _, action := range command.Actions {
 
