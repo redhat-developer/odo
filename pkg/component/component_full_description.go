@@ -72,7 +72,7 @@ func (cfd *ComponentFullDescription) loadStorages(client *occlient.Client, local
 }
 
 //NewComponentFullDescription gets the complete description of the component from both localconfig and cluster
-func NewComponentFullDescription(client *occlient.Client, localConfigInfo *config.LocalConfigInfo, componentName string, applicationName string) (*ComponentFullDescription, error) {
+func NewComponentFullDescription(client *occlient.Client, localConfigInfo *config.LocalConfigInfo, componentName string, applicationName string, projectName string) (*ComponentFullDescription, error) {
 	cfd := &ComponentFullDescription{}
 	state := GetComponentState(client, componentName, applicationName)
 	componentDesc, err := GetComponentFromConfig(localConfigInfo)
@@ -82,6 +82,14 @@ func NewComponentFullDescription(client *occlient.Client, localConfigInfo *confi
 	err = cfd.copyFromComponentDesc(&componentDesc)
 	if err != nil {
 		return cfd, err
+	}
+
+	if state == StateTypePushed {
+		componentDescFromCluster, err := GetComponent(client, componentName, applicationName, projectName)
+		if err != nil {
+			return cfd, err
+		}
+		cfd.Spec.Env = componentDescFromCluster.Spec.Env
 	}
 
 	cfd.Status.State = state
