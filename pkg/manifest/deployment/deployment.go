@@ -8,6 +8,12 @@ import (
 	"github.com/openshift/odo/pkg/manifest/meta"
 )
 
+// KubernetesAppNameLabel string constant for Kubernetes App Name label
+const KubernetesAppNameLabel = "app.kubernetes.io/name"
+
+// KubernetesAppVersionLabel string constant for Kubernetes App Version label
+const KubernetesAppVersionLabel = "app.kubernetes.io/version"
+
 // ServiceAccount is an option that configures the deployment's pods to execute
 // with the provided service account name.
 func ServiceAccount(sa string) podSpecFunc {
@@ -47,7 +53,7 @@ func Create(ns, name, image string, opts ...podSpecFunc) *appsv1.Deployment {
 		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, name)),
 		Spec: appsv1.DeploymentSpec{
 			Replicas: ptr32(1),
-			Selector: labelSelector("name", name),
+			Selector: labelSelector(KubernetesAppNameLabel, name),
 			Template: podTemplate(name, image, opts...),
 		},
 	}
@@ -74,7 +80,7 @@ func podTemplate(name, image string, opts ...podSpecFunc) corev1.PodTemplateSpec
 	return corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
-				"name": name,
+				KubernetesAppNameLabel: name,
 			},
 		},
 		Spec: *podSpec,

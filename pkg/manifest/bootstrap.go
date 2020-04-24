@@ -189,7 +189,7 @@ func orgRepoFromURL(raw string) (string, error) {
 }
 
 func createBootstrapService(ns, name string) *corev1.Service {
-	return &corev1.Service{
+	svc := &corev1.Service{
 		TypeMeta:   meta.TypeMeta("Service", "v1"),
 		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, name)),
 		Spec: corev1.ServiceSpec{
@@ -198,4 +198,11 @@ func createBootstrapService(ns, name string) *corev1.Service {
 			},
 		},
 	}
+	labels := map[string]string{
+		deployment.KubernetesAppNameLabel:    name,
+		deployment.KubernetesAppVersionLabel: "0.0.1",
+	}
+	svc.ObjectMeta.Labels = labels
+	svc.Spec.Selector = labels
+	return svc
 }
