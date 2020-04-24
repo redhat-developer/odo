@@ -74,11 +74,15 @@ const CreateRecommendedCommandName = "create"
 // since the application will always be in the same directory as `.odo`, we will always set this as: ./
 const LocalDirectoryDefaultLocation = "./"
 
-// DevfilePath is the default path of devfile.yaml
-const DevfilePath = "./devfile.yaml"
+// Constants for devfile component
+const devFile = "devfile.yaml"
+const envFile = ".odo/env/env.yaml"
 
-// EnvFilePath is the default path of env.yaml for devfile component
-const EnvFilePath = "./.odo/env/env.yaml"
+// DevfilePath is the path of devfile.yaml, the default path is "./devfile.yaml"
+var DevfilePath = filepath.Join(LocalDirectoryDefaultLocation, devFile)
+
+// EnvFilePath is the path of env.yaml for devfile component, the defult path is "./.odo/env/env.yaml"
+var EnvFilePath = filepath.Join(LocalDirectoryDefaultLocation, envFile)
 
 // ConfigFilePath is the default path of config.yaml for s2i component
 const ConfigFilePath = "./.odo/config.yaml"
@@ -305,6 +309,8 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		if len(args) == 0 {
 			co.interactive = true
 		}
+
+		// Default namespace setup
 		var defaultComponentNamespace string
 		// If the push target is set to Docker, we can't assume we have an active Kube context
 		if !pushtarget.IsPushTargetDocker() {
@@ -314,6 +320,13 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 				return err
 			}
 			defaultComponentNamespace = client.Namespace
+		}
+
+		// Configure the context
+		if len(co.componentContext) != 0 {
+			DevfilePath = filepath.Join(co.componentContext, devFile)
+			EnvFilePath = filepath.Join(co.componentContext, envFile)
+			co.CommonPushOptions.componentContext = co.componentContext
 		}
 
 		catalogDevfileList, err := catalog.ListDevfileComponents()
