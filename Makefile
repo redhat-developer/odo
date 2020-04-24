@@ -217,6 +217,11 @@ test-cmd-devfile-watch:
 .PHONY: test-cmd-devfile-delete
 test-cmd-devfile-delete:
 	ginkgo $(GINKGO_FLAGS) -focus="odo devfile delete command tests" tests/integration/devfile/
+
+# Run odo devfile registry command tests
+.PHONY: test-cmd-devfile-registry
+test-cmd-devfile-registry:
+	ginkgo $(GINKGO_FLAGS) -focus="odo devfile registry command tests" tests/integration/devfile/
 	
 # Run odo storage command tests
 .PHONY: test-cmd-storage
