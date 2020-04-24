@@ -1,0 +1,11 @@
+environments:
+  - name: development
+    apps:
+      - name: app-1
+        services:
+          - name: service-1
+            source_url: https://github.com/myproject/myservice.git
+            webhook:
+              secret:       # secret is missing 
+            pipelines:
+              integration:  # templates and bindings are missing

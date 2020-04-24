@@ -1,0 +1,23 @@
+environments:
+  - name: develo.pment      # invalid name
+    pipelines:
+      integration:
+        template: dev-ci-template
+        binding: dev-ci-binding
+    apps:
+      - name: app-1$.       # invalid name
+        services:
+          - name:           # invalid name
+            source_url: https://github.com/myproject/myservice.git
+            webhook:
+              secret:
+                name: webhook-secret
+                namespace: webhook-secret-key
+            pipelines:
+              integration:
+                template: dev-ci-template
+                binding:    # invalid name
+  - name: test)cicd         # invalid name
+    cicd: true
+  - name: test-argocd
+    argo: true
