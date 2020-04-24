@@ -52,16 +52,6 @@ An example deployment scenario:
 - Before proceeding, you must know your ingress domain cluster name. For example: `apps-crc.testing` is the cluster domain name for [Red Hat CodeReady Containers](https://github.com/code-ready/crc)
 - Enable experimental mode for odo. This can be done by: `odo preference set experimental true`
 
-Creating a springboot component:
-
-```sh
-git clone https://github.com/odo-devfile/springboot-ex && cd springboot-ex
-odo create java-spring-boot myspring
-odo url create --host apps-crc.testing
-odo push
-curl <url-name>
-```
-
 # Creating a project
 
 Create a project to keep your source code, tests, and libraries
