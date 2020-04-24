@@ -87,4 +87,9 @@ grid_navigation:
       excerpt: An overview of all the CLI commands related to odo
       cta: Read more
       url: 'docs/odo-cli-reference'
+
+    - title: Deploying a devfile using odo
+      excerpt: Deploying a portable devfile that decribes your development environment
+      cta: Read more
+      url: 'docs/deploying-a-devfile-using-odo'
 ---
