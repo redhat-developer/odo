@@ -146,13 +146,13 @@ var _ = Describe("odo devfile url command tests", func() {
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
 
-			stdout = helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--now", "--ingress")
+			stdout = helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--now", "--ingress", "--devfile", "devfile.yaml")
 			helper.MatchAllInOutput(stdout, []string{"URL " + url1 + " created for component", "http:", url1 + "." + host})
 		})
 
 		It("should create a automatically route on a openShift cluster", func() {
 
-			if os.Getenv("KUBERNETES") != "true" {
+			if os.Getenv("KUBERNETES") == "true" {
 				Skip("This is a OpenShift specific scenario, skipping")
 			}
 

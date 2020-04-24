@@ -397,7 +397,18 @@ func TestCreate(t *testing.T) {
 				return true, testingutil.CreateFakeDeployment("nodejs"), nil
 			})
 
-			got, err := Create(client, fakeKClient, tt.args.urlName, tt.args.portNumber, tt.args.secure, tt.args.componentName, tt.args.applicationName, tt.args.host, tt.args.tlsSecret, tt.args.urlKind, tt.args.isRouteSupported, tt.args.isExperimentalModeEnabled)
+			urlCreateParameters := CreateParameters{
+				urlName:         tt.args.urlName,
+				portNumber:      tt.args.portNumber,
+				secureURL:       tt.args.secure,
+				componentName:   tt.args.componentName,
+				applicationName: tt.args.applicationName,
+				host:            tt.args.host,
+				secretName:      tt.args.tlsSecret,
+				urlKind:         tt.args.urlKind,
+			}
+
+			got, err := Create(client, fakeKClient, urlCreateParameters, tt.args.isRouteSupported, tt.args.isExperimentalModeEnabled)
 
 			if err == nil && !tt.wantErr {
 				if tt.args.urlKind == envinfo.INGRESS {

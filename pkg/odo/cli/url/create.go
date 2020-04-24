@@ -50,7 +50,7 @@ var (
 	# Create a URL for the current component with a specific port and host (using CRC as an example)
 	%[1]s --port 8080 --host apps-crc.testing
 
-	# Create a URL for the current component with a host (using CRC as an example) and a ingress
+	# Create a URL of ingress kind for the current component with a host (using CRC as an example)
 	%[1]s --host apps-crc.testing --ingress
 
 	# Create a secured URL for the current component with a specific host (using CRC as an example)
@@ -102,11 +102,11 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 
 	o.Client = genericclioptions.Client(cmd)
 
-	serverInfo, err := o.Client.IsRouteSupported()
+	routeSupported, err := o.Client.IsRouteSupported()
 	if err != nil {
 		return err
 	}
-	if serverInfo {
+	if routeSupported {
 		o.isRouteSupported = true
 	}
 

@@ -119,51 +119,62 @@ func Delete(client *occlient.Client, kClient *kclient.Client, urlName string, ap
 	return errors.New("url type is not supported")
 }
 
+type CreateParameters struct {
+	urlName         string
+	portNumber      int
+	secureURL       bool
+	componentName   string
+	applicationName string
+	host            string
+	secretName      string
+	urlKind         envinfo.URLKind
+}
+
 // Create creates a URL and returns url string and error if any
 // portNumber is the target port number for the route and is -1 in case no port number is specified in which case it is automatically detected for components which expose only one service port)
-func Create(client *occlient.Client, kClient *kclient.Client, urlName string, portNumber int, secureURL bool, componentName, applicationName string, host string, secretName string, urlKind envinfo.URLKind, isRouteSupported bool, isExperimental bool) (string, error) {
+func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateParameters, isRouteSupported bool, isExperimental bool) (string, error) {
 
-	if urlKind != envinfo.INGRESS && urlKind != envinfo.ROUTE {
-		return "", fmt.Errorf("urlKind %s is not supported for URL creation", urlKind)
+	if parameters.urlKind != envinfo.INGRESS && parameters.urlKind != envinfo.ROUTE {
+		return "", fmt.Errorf("urlKind %s is not supported for URL creation", parameters.urlKind)
 	}
 
-	if !secureURL && secretName != "" {
+	if !parameters.secureURL && parameters.secretName != "" {
 		return "", fmt.Errorf("secret name can only be used for secure URLs")
 	}
 
-	labels := urlLabels.GetLabels(urlName, componentName, applicationName, true)
+	labels := urlLabels.GetLabels(parameters.urlName, parameters.componentName, parameters.applicationName, true)
 
 	serviceName := ""
 
-	if isExperimental && urlKind == envinfo.INGRESS && kClient != nil {
-		if host == "" {
+	if isExperimental && parameters.urlKind == envinfo.INGRESS && kClient != nil {
+		if parameters.host == "" {
 			return "", errors.Errorf("the host cannot be empty")
 		}
-		serviceName := componentName
-		ingressDomain := fmt.Sprintf("%v.%v", urlName, host)
-		deployment, err := kClient.GetDeploymentByName(componentName)
+		serviceName := parameters.componentName
+		ingressDomain := fmt.Sprintf("%v.%v", parameters.urlName, parameters.host)
+		deployment, err := kClient.GetDeploymentByName(parameters.componentName)
 		if err != nil {
 			return "", err
 		}
 		ownerReference := kclient.GenerateOwnerReference(deployment)
-		if secureURL {
-			if len(secretName) != 0 {
-				_, err := kClient.KubeClient.CoreV1().Secrets(kClient.Namespace).Get(secretName, metav1.GetOptions{})
+		if parameters.secureURL {
+			if len(parameters.secretName) != 0 {
+				_, err := kClient.KubeClient.CoreV1().Secrets(kClient.Namespace).Get(parameters.secretName, metav1.GetOptions{})
 				if err != nil {
-					return "", errors.Wrap(err, "unable to get the provided secret: "+secretName)
+					return "", errors.Wrap(err, "unable to get the provided secret: "+parameters.secretName)
 				}
 			}
-			if len(secretName) == 0 {
-				defaultTLSSecretName := componentName + "-tlssecret"
+			if len(parameters.secretName) == 0 {
+				defaultTLSSecretName := parameters.componentName + "-tlssecret"
 				_, err := kClient.KubeClient.CoreV1().Secrets(kClient.Namespace).Get(defaultTLSSecretName, metav1.GetOptions{})
 				// create tls secret if it does not exist
 				if kerrors.IsNotFound(err) {
-					selfsignedcert, err := kclient.GenerateSelfSignedCertificate(host)
+					selfsignedcert, err := kclient.GenerateSelfSignedCertificate(parameters.host)
 					if err != nil {
-						return "", errors.Wrap(err, "unable to generate self-signed certificate for clutser: "+host)
+						return "", errors.Wrap(err, "unable to generate self-signed certificate for clutser: "+parameters.host)
 					}
 					// create tls secret
-					secretlabels := componentlabels.GetLabels(componentName, applicationName, true)
+					secretlabels := componentlabels.GetLabels(parameters.componentName, parameters.applicationName, true)
 					objectMeta := metav1.ObjectMeta{
 						Name:   defaultTLSSecretName,
 						Labels: secretlabels,
@@ -175,22 +186,22 @@ func Create(client *occlient.Client, kClient *kclient.Client, urlName string, po
 					if err != nil {
 						return "", errors.Wrap(err, "unable to create tls secret")
 					}
-					secretName = secret.Name
+					parameters.secretName = secret.Name
 				} else if err != nil {
 					return "", err
 				} else {
 					// tls secret found for this component
-					secretName = defaultTLSSecretName
+					parameters.secretName = defaultTLSSecretName
 				}
 
 			}
 
 		}
 
-		ingressParam := kclient.IngressParameter{ServiceName: serviceName, IngressDomain: ingressDomain, PortNumber: intstr.FromInt(portNumber), TLSSecretName: secretName}
+		ingressParam := kclient.IngressParameter{ServiceName: serviceName, IngressDomain: ingressDomain, PortNumber: intstr.FromInt(parameters.portNumber), TLSSecretName: parameters.secretName}
 		ingressSpec := kclient.GenerateIngressSpec(ingressParam)
-		objectMeta := kclient.CreateObjectMeta(componentName, kClient.Namespace, labels, nil)
-		objectMeta.Name = urlName
+		objectMeta := kclient.CreateObjectMeta(parameters.componentName, kClient.Namespace, labels, nil)
+		objectMeta.Name = parameters.urlName
 		objectMeta.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
 		// Pass in the namespace name, link to the service (componentName) and labels to create a ingress
 		ingress, err := kClient.CreateIngress(objectMeta, *ingressSpec)
@@ -206,11 +217,11 @@ func Create(client *occlient.Client, kClient *kclient.Client, urlName string, po
 		var ownerReference metav1.OwnerReference
 		if !isExperimental || kClient == nil {
 			var err error
-			urlName, err = util.NamespaceOpenShiftObject(urlName, applicationName)
+			parameters.urlName, err = util.NamespaceOpenShiftObject(parameters.urlName, parameters.applicationName)
 			if err != nil {
 				return "", errors.Wrapf(err, "unable to create namespaced name")
 			}
-			serviceName, err = util.NamespaceOpenShiftObject(componentName, applicationName)
+			serviceName, err = util.NamespaceOpenShiftObject(parameters.componentName, parameters.applicationName)
 			if err != nil {
 				return "", errors.Wrapf(err, "unable to create namespaced name")
 			}
@@ -225,9 +236,9 @@ func Create(client *occlient.Client, kClient *kclient.Client, urlName string, po
 
 			ownerReference = occlient.GenerateOwnerReference(dc)
 		} else {
-			serviceName = componentName
+			serviceName = parameters.componentName
 
-			deployment, err := kClient.GetDeploymentByName(componentName)
+			deployment, err := kClient.GetDeploymentByName(parameters.componentName)
 			if err != nil {
 				return "", err
 			}
@@ -235,7 +246,7 @@ func Create(client *occlient.Client, kClient *kclient.Client, urlName string, po
 		}
 
 		// Pass in the namespace name, link to the service (componentName) and labels to create a route
-		route, err := client.CreateRoute(urlName, serviceName, intstr.FromInt(portNumber), labels, secureURL, ownerReference)
+		route, err := client.CreateRoute(parameters.urlName, serviceName, intstr.FromInt(parameters.portNumber), labels, parameters.secureURL, ownerReference)
 		if err != nil {
 			return "", errors.Wrap(err, "unable to create route")
 		}
@@ -523,15 +534,11 @@ type PushParameters struct {
 
 // Push creates and deletes the required URLs
 func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParameters) error {
-	var componentName string
-	var applicationName string
-
 	urlLOCAL := make(map[string]URL)
 
 	// in case the component is a s2i one
 	// kClient will be nil
 	if parameters.IsExperimentalModeEnabled && kClient != nil {
-		componentName = parameters.ComponentName
 		urls := parameters.EnvURLS
 		for _, url := range urls {
 			urlLOCAL[url.Name] = URL{
@@ -545,9 +552,6 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 			}
 		}
 	} else {
-		componentName = parameters.ComponentName
-		applicationName = parameters.ApplicationName
-
 		urls := parameters.ConfigURLs
 		for _, url := range urls {
 			urlLOCAL[url.Name] = URL{
@@ -562,7 +566,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 
 	urlCLUSTER := make(map[string]URL)
 	if parameters.IsExperimentalModeEnabled && kClient != nil {
-		urlList, err := ListPushedIngress(kClient, componentName)
+		urlList, err := ListPushedIngress(kClient, parameters.ComponentName)
 		if err != nil {
 			return err
 		}
@@ -577,7 +581,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 	}
 
 	if parameters.IsRouteSupported {
-		urlPushedRoutes, err := ListPushed(client, componentName, applicationName)
+		urlPushedRoutes, err := ListPushed(client, parameters.ComponentName, parameters.ApplicationName)
 		if err != nil {
 			return err
 		}
@@ -602,7 +606,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 				continue
 			}
 			// delete the url
-			err := Delete(client, kClient, urlName, applicationName, urlSpec.Spec.urlKind)
+			err := Delete(client, kClient, urlName, parameters.ApplicationName, urlSpec.Spec.urlKind)
 			if err != nil {
 				return err
 			}
@@ -623,7 +627,18 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 			if urlInfo.Spec.urlKind == envinfo.INGRESS && kClient == nil {
 				continue
 			}
-			host, err := Create(client, kClient, urlName, urlInfo.Spec.Port, urlInfo.Spec.Secure, componentName, parameters.ApplicationName, urlInfo.Spec.Host, urlInfo.Spec.tLSSecret, urlInfo.Spec.urlKind, parameters.IsRouteSupported, parameters.IsExperimentalModeEnabled)
+
+			createParameters := CreateParameters{
+				urlName:         urlName,
+				portNumber:      urlInfo.Spec.Port,
+				secureURL:       urlInfo.Spec.Secure,
+				componentName:   parameters.ComponentName,
+				applicationName: parameters.ApplicationName,
+				host:            urlInfo.Spec.Host,
+				secretName:      urlInfo.Spec.tLSSecret,
+				urlKind:         urlInfo.Spec.urlKind,
+			}
+			host, err := Create(client, kClient, createParameters, parameters.IsRouteSupported, parameters.IsExperimentalModeEnabled)
 			if err != nil {
 				return err
 			}
