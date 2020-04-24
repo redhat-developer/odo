@@ -30,7 +30,7 @@ const (
 	// use GetBootstrapperImage() function instead of this variable
 	defaultBootstrapperImage = "registry.access.redhat.com/openshiftdo/odo-init-image-rhel7:1.1.2"
 
-	// Supervisord sub command which stands for control
+	// SupervisordControlCommand sub command which stands for control
 	SupervisordControlCommand = "ctl"
 
 	// SupervisordVolumeName Create a custom name and (hope) that users don't use the *exact* same name in their deployment (occlient.go)
@@ -53,7 +53,7 @@ const (
 
 	// BinBash The path to sh executable
 	BinBash = "/bin/sh"
-  
+
 	// Default volume size for volumes defined in a devfile
 	volumeSize = "5Gi"
 )
