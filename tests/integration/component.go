@@ -249,7 +249,11 @@ func componentTests(args ...string) {
 
 			cmpDescribeJSON, err := helper.Unindented(helper.CmdShouldPass("odo", append(args, "describe", "-o", "json", "--context", context)...))
 			Expect(err).Should(BeNil())
+<<<<<<< HEAD
 			expected, err := helper.Unindented(`{"kind": "Component","apiVersion": "odo.openshift.io/v1alpha1","metadata": {"name": "cmp-git","namespace": "` + project + `","creationTimestamp": null},"spec":{"app": "testing","type":"nodejs","source": "https://github.com/openshift/nodejs-ex","sourceType": "git","url": ["url-1", "url-2"],"storage": ["storage-1"],"ports": ["8080/TCP"]},"status": {"state": "Not Pushed"}}`)
+=======
+			expected, err := helper.Unindented(`{"kind": "Component","apiVersion": "odo.openshift.io/v1alpha1","metadata": {"name": "cmp-git","namespace": "` + project + `","creationTimestamp": null},"spec":{"app": "testing","type":"nodejs","source": "https://github.com/openshift/nodejs-ex","sourceType": "git","urls": {"kind": "List", "apiVersion": "odo.openshift.io/v1alpha1", "metadata": {}, "items": [{"kind": "url", "apiVersion": "odo.openshift.io/v1alpha1", "metadata": {"name": "url-1", "creationTimestamp": null}, "spec": {"port": 8080, "secure": false}, "status": {"state": "Not Pushed"}}]},"storages": {"kind": "List", "apiVersion": "odo.openshift.io/v1alpha1", "metadata": {}, "items": [{"kind": "storage", "apiVersion": "odo.openshift.io/v1alpha1", "metadata": {"name": "storage-1", "creationTimestamp": null}, "spec": {"size": "1Gi", "path": "/data1"}}]},"ports": ["8080/TCP"]},"status": {"state": "Not Pushed"}}`)
+>>>>>>> Fixing existing component tests for new json describe format
 			Expect(err).Should(BeNil())
 			Expect(cmpDescribeJSON).To(Equal(expected))
 
@@ -702,7 +706,7 @@ func componentTests(args ...string) {
 
 			actualDesCompJSON := helper.CmdShouldPass("odo", append(args, "describe", cmpName, "--app", appName, "--project", project, "-o", "json")...)
 
-			desiredDesCompJSON := fmt.Sprintf(`{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","namespace":"%s","creationTimestamp":null},"spec":{"app":"app","type":"nodejs","sourceType": "local","env":[{"name":"DEBUG_PORT","value":"5858"}]},"status":{"state":"Pushed"}}`, project)
+			desiredDesCompJSON := fmt.Sprintf(`{"kind":"Component","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"nodejs","namespace":"%s","creationTimestamp":null},"spec":{"app":"app","type":"nodejs","sourceType": "local", "urls": {"kind": "List", "apiVersion": "odo.openshift.io/v1alpha1", "metadata": {}, "items": null}, "storages": {"kind": "List", "apiVersion": "odo.openshift.io/v1alpha1", "metadata": {}, "items": null}, "env":[{"name":"DEBUG_PORT","value":"5858"}]},"status":{"state":"Pushed"}}`, project)
 			Expect(desiredDesCompJSON).Should(MatchJSON(actualDesCompJSON))
 
 			helper.CmdShouldPass("odo", append(args, "delete", cmpName, "--app", appName, "--project", project, "-f")...)
