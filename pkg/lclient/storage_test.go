@@ -55,14 +55,16 @@ func TestCreateVolume(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		volume, err := tt.client.CreateVolume("", tt.labels)
-		if !tt.wantErr == (err != nil) {
-			t.Errorf("expected %v, wanted %v", err, tt.wantErr)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			volume, err := tt.client.CreateVolume("", tt.labels)
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("expected %v, wanted %v", err, tt.wantErr)
+			}
 
-		if !reflect.DeepEqual(volume, tt.wantVolume) {
-			t.Errorf("expected %v, wanted %v", volume, tt.wantVolume)
-		}
+			if !reflect.DeepEqual(volume, tt.wantVolume) {
+				t.Errorf("expected %v, wanted %v", volume, tt.wantVolume)
+			}
+		})
 	}
 }
 
@@ -131,13 +133,15 @@ func TestGetVolumesByLabel(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		volumes, err := tt.client.GetVolumesByLabel(tt.labels)
-		if !tt.wantErr == (err != nil) {
-			t.Errorf("expected %v, wanted %v", err, tt.wantErr)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			volumes, err := tt.client.GetVolumesByLabel(tt.labels)
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("expected %v, wanted %v", err, tt.wantErr)
+			}
 
-		if !reflect.DeepEqual(volumes, tt.wantVolumes) {
-			t.Errorf("expected %v, wanted %v", volumes, tt.wantVolumes)
-		}
+			if !reflect.DeepEqual(volumes, tt.wantVolumes) {
+				t.Errorf("expected %v, wanted %v", volumes, tt.wantVolumes)
+			}
+		})
 	}
 }

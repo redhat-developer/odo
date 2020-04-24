@@ -125,7 +125,7 @@ func TestUpdateComponent(t *testing.T) {
 			}
 
 			componentAdapter := New(adapterCtx, *tt.client)
-			err := componentAdapter.updateComponent()
+			_, err := componentAdapter.updateComponent()
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
@@ -307,17 +307,22 @@ func TestGenerateAndGetHostConfig(t *testing.T) {
 	testComponentName := "test"
 	componentType := versionsCommon.DevfileComponentTypeDockerimage
 
+	endpointName := []string{"8080/tcp", "9090/tcp", "9080/tcp"}
+	var endpointPort = []int32{8080, 9090, 9080}
+
 	tests := []struct {
 		name         string
 		urlValue     []envinfo.EnvInfoURL
 		expectResult nat.PortMap
 		client       *lclient.Client
+		endpoints    []versionsCommon.DockerimageEndpoint
 	}{
 		{
 			name:         "Case 1: no port mappings",
 			urlValue:     []envinfo.EnvInfoURL{},
 			expectResult: nil,
 			client:       fakeClient,
+			endpoints:    []versionsCommon.DockerimageEndpoint{},
 		},
 		{
 			name: "Case 2: only one port mapping",
@@ -333,6 +338,12 @@ func TestGenerateAndGetHostConfig(t *testing.T) {
 				},
 			},
 			client: fakeClient,
+			endpoints: []versionsCommon.DockerimageEndpoint{
+				{
+					Name: &endpointName[0],
+					Port: &endpointPort[0],
+				},
+			},
 		},
 		{
 			name: "Case 3: multiple port mappings",
@@ -362,6 +373,20 @@ func TestGenerateAndGetHostConfig(t *testing.T) {
 				},
 			},
 			client: fakeClient,
+			endpoints: []versionsCommon.DockerimageEndpoint{
+				{
+					Name: &endpointName[0],
+					Port: &endpointPort[0],
+				},
+				{
+					Name: &endpointName[1],
+					Port: &endpointPort[1],
+				},
+				{
+					Name: &endpointName[2],
+					Port: &endpointPort[2],
+				},
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -382,14 +407,14 @@ func TestGenerateAndGetHostConfig(t *testing.T) {
 			if err != nil {
 				t.Error(err)
 			}
-			for _, element := range tt.urlValue {
-				err = esi.SetConfiguration("URL", element)
+			for _, url := range tt.urlValue {
+				err = esi.SetConfiguration("URL", url)
 				if err != nil {
 					t.Error(err)
 				}
 			}
 			componentAdapter := New(adapterCtx, *tt.client)
-			hostConfig, err := componentAdapter.generateAndGetHostConfig()
+			hostConfig, err := componentAdapter.generateAndGetHostConfig(tt.endpoints)
 			if err != nil {
 				t.Error(err)
 			}

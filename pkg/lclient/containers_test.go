@@ -195,15 +195,17 @@ func TestGetContainersList(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		containers, err := tt.client.GetContainerList()
+		t.Run(tt.name, func(t *testing.T) {
+			containers, err := tt.client.GetContainerList()
 
-		if !tt.wantErr == (err != nil) {
-			t.Errorf("expected %v, wanted %v", err, tt.wantErr)
-		}
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("expected %v, wanted %v", err, tt.wantErr)
+			}
 
-		if !reflect.DeepEqual(tt.wantContainers, containers) {
-			t.Errorf("Expected %v, got %v", tt.wantContainers, containers)
-		}
+			if !reflect.DeepEqual(tt.wantContainers, containers) {
+				t.Errorf("Expected %v, got %v", tt.wantContainers, containers)
+			}
+		})
 	}
 }
 
@@ -229,10 +231,12 @@ func TestStartContainer(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		err := tt.client.StartContainer(&fakeContainer, nil, nil)
-		if !tt.wantErr == (err != nil) {
-			t.Errorf("expected %v, wanted %v", err, tt.wantErr)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.client.StartContainer(&fakeContainer, nil, nil)
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("expected %v, wanted %v", err, tt.wantErr)
+			}
+		})
 	}
 }
 
@@ -258,10 +262,12 @@ func TestRemoveContainer(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		err := tt.client.RemoveContainer(fakeContainerID)
-		if !tt.wantErr == (err != nil) {
-			t.Errorf("expected %v, wanted %v", err, tt.wantErr)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.client.RemoveContainer(fakeContainerID)
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("expected %v, wanted %v", err, tt.wantErr)
+			}
+		})
 	}
 }
 
@@ -283,21 +289,22 @@ func TestRemoveVolume(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-		client, mockDockerClient := FakeNewMockClient(ctrl)
+			client, mockDockerClient := FakeNewMockClient(ctrl)
 
-		if !tt.wantErr {
-			mockDockerClient.EXPECT().VolumeRemove(gomock.Any(), gomock.Eq(tt.volumeToRemove), gomock.Eq(true)).Return(nil)
-		}
+			if !tt.wantErr {
+				mockDockerClient.EXPECT().VolumeRemove(gomock.Any(), gomock.Eq(tt.volumeToRemove), gomock.Eq(true)).Return(nil)
+			}
 
-		err := client.RemoveVolume(tt.volumeToRemove)
+			err := client.RemoveVolume(tt.volumeToRemove)
 
-		if !tt.wantErr == (err != nil) {
-			t.Errorf("expected %v but wanted %v", err, tt.wantErr)
-		}
-
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("expected %v but wanted %v", err, tt.wantErr)
+			}
+		})
 	}
 }

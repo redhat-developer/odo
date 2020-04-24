@@ -44,10 +44,12 @@ func TestComponentExists(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		cmpExists := ComponentExists(*tt.client, tt.componentName)
-		if tt.want != cmpExists {
-			t.Errorf("expected %v, wanted %v", cmpExists, tt.want)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			cmpExists := ComponentExists(*tt.client, tt.componentName)
+			if tt.want != cmpExists {
+				t.Errorf("expected %v, wanted %v", cmpExists, tt.want)
+			}
+		})
 	}
 }
 
@@ -95,10 +97,12 @@ func TestConvertEnvs(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		envVars := ConvertEnvs(tt.envVars)
-		if !reflect.DeepEqual(tt.want, envVars) {
-			t.Errorf("expected %v, wanted %v", envVars, tt.want)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			envVars := ConvertEnvs(tt.envVars)
+			if !reflect.DeepEqual(tt.want, envVars) {
+				t.Errorf("expected %v, wanted %v", envVars, tt.want)
+			}
+		})
 	}
 }
 
@@ -369,16 +373,18 @@ func TestDoesContainerNeedUpdating(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		component := common.DevfileComponent{
-			DevfileComponentDockerimage: common.DevfileComponentDockerimage{
-				Image: &tt.image,
-				Env:   tt.envVars,
-			},
-		}
-		needsUpdating := DoesContainerNeedUpdating(component, &tt.containerConfig, &tt.hostConfig, tt.mounts, tt.containerMounts, tt.portmap)
-		if needsUpdating != tt.want {
-			t.Errorf("expected %v, wanted %v", needsUpdating, tt.want)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			component := common.DevfileComponent{
+				DevfileComponentDockerimage: common.DevfileComponentDockerimage{
+					Image: &tt.image,
+					Env:   tt.envVars,
+				},
+			}
+			needsUpdating := DoesContainerNeedUpdating(component, &tt.containerConfig, &tt.hostConfig, tt.mounts, tt.containerMounts, tt.portmap)
+			if needsUpdating != tt.want {
+				t.Errorf("expected %v, wanted %v", needsUpdating, tt.want)
+			}
+		})
 	}
 }
 
@@ -463,13 +469,15 @@ func TestAddProjectVolumeToComp(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		hostConfig := container.HostConfig{
-			Mounts: tt.mounts,
-		}
-		AddVolumeToContainer(projectVolumeName, lclient.OdoSourceVolumeMount, &hostConfig)
-		if !reflect.DeepEqual(tt.want, hostConfig) {
-			t.Errorf("expected %v, actual %v", tt.want, hostConfig)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			hostConfig := container.HostConfig{
+				Mounts: tt.mounts,
+			}
+			AddVolumeToContainer(projectVolumeName, lclient.OdoSourceVolumeMount, &hostConfig)
+			if !reflect.DeepEqual(tt.want, hostConfig) {
+				t.Errorf("expected %v, actual %v", tt.want, hostConfig)
+			}
+		})
 	}
 
 }
@@ -499,10 +507,12 @@ func TestGetProjectVolumeLabels(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		labels := GetProjectVolumeLabels(tt.componentName)
-		if !reflect.DeepEqual(tt.want, labels) {
-			t.Errorf("expected %v, actual %v", tt.want, labels)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			labels := GetProjectVolumeLabels(tt.componentName)
+			if !reflect.DeepEqual(tt.want, labels) {
+				t.Errorf("expected %v, actual %v", tt.want, labels)
+			}
+		})
 	}
 
 }

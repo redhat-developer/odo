@@ -76,14 +76,17 @@ func TestGenerateContainerConfig(t *testing.T) {
 					"8080/tcp": struct{}{},
 					"9080/tcp": struct{}{},
 				},
+				User: "root",
 			},
 		},
 	}
 	for _, tt := range tests {
-		config := fakeClient.GenerateContainerConfig(tt.image, tt.entrypoint, tt.cmd, tt.envVars, tt.labels, tt.portset)
-		if !reflect.DeepEqual(tt.want, config) {
-			t.Errorf("expected %v, actual %v", tt.want, config)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			config := fakeClient.GenerateContainerConfig(tt.image, tt.entrypoint, tt.cmd, tt.envVars, tt.labels, tt.portset)
+			if !reflect.DeepEqual(tt.want, config) {
+				t.Errorf("expected %v, actual %v", tt.want, config)
+			}
+		})
 	}
 }
 
@@ -142,9 +145,11 @@ func TestGenerateHostConfig(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		config := fakeClient.GenerateHostConfig(tt.want.Privileged, tt.want.PublishAllPorts, tt.want.PortBindings)
-		if !reflect.DeepEqual(tt.want, config) {
-			t.Errorf("expected %v, actual %v", tt.want, config)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			config := fakeClient.GenerateHostConfig(tt.want.Privileged, tt.want.PublishAllPorts, tt.want.PortBindings)
+			if !reflect.DeepEqual(tt.want, config) {
+				t.Errorf("expected %v, actual %v", tt.want, config)
+			}
+		})
 	}
 }
