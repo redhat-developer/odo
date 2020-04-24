@@ -160,20 +160,20 @@ func List(client *occlient.Client, componentName string, applicationName string)
 	}
 
 	var storage []Storage
-	for _, pvc := range pvcs {
+	for i := range pvcs {
+		pvc := pvcs[i]
 		pvcComponentName, ok := pvc.Labels[componentlabels.ComponentLabel]
 		pvcAppName, okApp := pvc.Labels[applabels.ApplicationLabel]
 		// first check if component label does not exists indicating that the storage is not mounted in any component
 		// if the component label exists, then check if the component is the current active component
 		// also check if the app label exists and is equal to the current application
 		if (!ok || pvcComponentName == componentName) && (okApp && pvcAppName == applicationName) {
-			readPVC := pvc
-			if readPVC.Name == "" {
+			if pvc.Name == "" {
 				return StorageList{}, fmt.Errorf("no PVC associated")
 			}
-			storageName := getStorageFromPVC(&readPVC)
-			storageSize := readPVC.Spec.Resources.Requests[corev1.ResourceStorage]
-			storageMachineReadable := GetMachineReadableFormat(getStorageFromPVC(&readPVC),
+			storageName := getStorageFromPVC(&pvc)
+			storageSize := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
+			storageMachineReadable := GetMachineReadableFormat(getStorageFromPVC(&pvc),
 				storageSize.String(),
 				mountedStorageMap[storageName],
 			)
@@ -206,18 +206,18 @@ func ListUnmounted(client *occlient.Client, applicationName string) (StorageList
 		return StorageList{}, errors.Wrapf(err, "unable to get PVC using selector %v", storagelabels.StorageLabel)
 	}
 	var storage []Storage
-	for _, pvc := range pvcs {
+	for i := range pvcs {
+		pvc := pvcs[i]
 		_, ok := pvc.Labels[componentlabels.ComponentLabel]
 		pvcAppName, okApp := pvc.Labels[applabels.ApplicationLabel]
 		// first check if component label does not exists indicating that the storage is not mounted in any component
 		// also check if the app label exists and is equal to the current application
 		if !ok && (okApp && pvcAppName == applicationName) {
-			readPVC := pvc
-			if readPVC.Name == "" {
+			if pvc.Name == "" {
 				return StorageList{}, fmt.Errorf("no PVC associated")
 			}
-			storageSize := readPVC.Spec.Resources.Requests[corev1.ResourceStorage]
-			storageMachineReadable := GetMachineReadableFormat(getStorageFromPVC(&readPVC),
+			storageSize := pvc.Spec.Resources.Requests[corev1.ResourceStorage]
+			storageMachineReadable := GetMachineReadableFormat(getStorageFromPVC(&pvc),
 				storageSize.String(),
 				"",
 			)
