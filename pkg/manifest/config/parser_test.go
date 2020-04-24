@@ -113,30 +113,3 @@ func TestParse(t *testing.T) {
 		})
 	}
 }
-
-func TestParseErrorMessages(t *testing.T) {
-	errorTests := []struct {
-		filename string
-		errMsg   string
-	}{
-		{"testdata/bad_dupe_envs.yaml", "1 errors occurred:\nenvironment \"development\" occurs more than once"},
-	}
-
-	for _, tt := range errorTests {
-		t.Run(fmt.Sprintf("parsing %s", tt.filename), func(rt *testing.T) {
-			f, err := os.Open(tt.filename)
-			if err != nil {
-				rt.Fatalf("failed to open %v: %s", tt.filename, err)
-			}
-			defer f.Close()
-			m, err := Parse(f)
-			if err != nil {
-				rt.Errorf("failed to parse %s: %s", tt.filename, err)
-			}
-			err = m.Validate()
-			if err.Error() != tt.errMsg {
-				rt.Errorf("Parse() got error %s, want %s", err.Error(), tt.errMsg)
-			}
-		})
-	}
-}
