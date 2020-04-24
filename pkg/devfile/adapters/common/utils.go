@@ -29,6 +29,9 @@ const (
 	// use GetBootstrapperImage() function instead of this variable
 	defaultBootstrapperImage = "registry.access.redhat.com/openshiftdo/odo-init-image-rhel7:1.1.2"
 
+	// Supervisord sub command which stands for control
+	SupervisordControlCommand = "ctl"
+
 	// SupervisordVolumeName Create a custom name and (hope) that users don't use the *exact* same name in their deployment (occlient.go)
 	SupervisordVolumeName = "odo-supervisord-shared-data"
 
@@ -46,6 +49,9 @@ const (
 
 	// ENV variable to overwrite image used to bootstrap SupervisorD in S2I and Devfile builder Image
 	bootstrapperImageEnvName = "ODO_BOOTSTRAPPER_IMAGE"
+
+	// BinBash The path to sh executable
+	BinBash = "/bin/sh"
 )
 
 func isComponentSupported(component common.DevfileComponent) bool {

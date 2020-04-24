@@ -46,6 +46,11 @@ type Adapter struct {
 	devfileRunCmd   string
 }
 
+// Exec the supervisord ctl stop and start for the devrun program
+type devRunExecutable struct {
+	command []string
+}
+
 // Push updates the component if a matching component exists or creates one if it doesn't exist
 // Once the component has started, it will sync the source code to it.
 func (a Adapter) Push(parameters common.PushParameters) (err error) {
@@ -427,12 +432,14 @@ func (a Adapter) waitAndGetComponentPod(hideSpinner bool) (*corev1.Pod, error) {
 	return pod, nil
 }
 
-// Executes Devfile Commands
+// Executes all the commands from the devfile in order: init and build - which are both optional, and a compulsary run.
+// Init only runs once when the component is created.
 func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand, componentExists, show bool, podName string, containers []corev1.Container, runInit bool) (err error) {
 	var s *log.Status
 
+	// If nothing has been passed, then the devfile is missing the required run command
 	if len(pushDevfileCommands) == 0 {
-		return errors.New(fmt.Sprint("error executing devfile commands - there should be at least 1 command."))
+		return errors.New(fmt.Sprint("error executing devfile commands - there should be at least 1 command"))
 	}
 
 	type CommandNames struct {
@@ -442,6 +449,8 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 
 	commandOrder := []CommandNames{}
 
+	// Only add runinit to the expected commands if runInit bool is true
+	// This would be the case when first running the container
 	if runInit {
 		commandOrder = append(commandOrder, CommandNames{defaultName: string(common.DefaultDevfileInitCommand), adapterName: a.devfileInitCmd})
 	}
@@ -451,18 +460,25 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 		CommandNames{defaultName: string(common.DefaultDevfileRunCommand), adapterName: a.devfileRunCmd},
 	)
 
+	// Loop through each of the expected commands in the devfile
 	for i, currentCommand := range commandOrder {
+		// Loop through each of the command given from the devfile
 		for _, command := range pushDevfileCommands {
+			// If the current command from the devfile is the currently expected command from the devfile
 			if command.Name == currentCommand.defaultName || command.Name == currentCommand.adapterName {
+				// If the current command is not the last command in the slice
+				// it is not expected to be the run command
 				if i < len(commandOrder)-1 {
 					// Any exec command such as "Init" and "Build"
 					err := a.executeDevfileCommand(command, show, podName)
 					if err != nil {
 						return err
 					}
+					// If the current command is the last command in the slice
+					// it is expected to be the run command
 				} else {
 					// Last command is "Run"
-					glog.V(3).Infof("Executing devfile command %v", command.Name)
+					glog.V(4).Infof("Executing devfile command %v", command.Name)
 
 					for _, action := range command.Actions {
 
@@ -475,20 +491,16 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 							}
 						}
 
-						// Exec the supervisord ctl stop and start for the devrun program
-						type devRunExecutable struct {
-							command []string
-						}
 						devRunExecs := []devRunExecutable{
 							{
-								command: []string{common.SupervisordBinaryPath, "ctl", "stop", "all"},
+								command: []string{common.SupervisordBinaryPath, common.SupervisordControlCommand, "stop", "all"},
 							},
 							{
-								command: []string{common.SupervisordBinaryPath, "ctl", "start", string(common.DefaultDevfileRunCommand)},
+								command: []string{common.SupervisordBinaryPath, common.SupervisordControlCommand, "start", string(common.DefaultDevfileRunCommand)},
 							},
 						}
 
-						s = log.Spinner("Executing " + command.Name + " command " + fmt.Sprintf("%q", *action.Command))
+						s = log.Spinner(fmt.Sprintf("Executing %s command %q", command.Name, *action.Command))
 						defer s.End(false)
 
 						for _, devRunExec := range devRunExecs {
@@ -508,23 +520,25 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 	return
 }
 
+// Executes files given from devfile
 func (a Adapter) executeDevfileCommand(command versionsCommon.DevfileCommand, show bool, podName string) error {
 	var s *log.Status
-	glog.V(3).Infof("Executing devfile command %v", command.Name)
+
+	glog.V(4).Infof("Executing devfile command %v", command.Name)
 
 	for _, action := range command.Actions {
 		// Change to the workdir and execute the command
 		var cmdArr []string
 		if action.Workdir != nil {
-			cmdArr = []string{"/bin/sh", "-c", "cd " + *action.Workdir + " && " + *action.Command}
+			cmdArr = []string{common.BinBash, "-c", "cd " + *action.Workdir + " && " + *action.Command}
 		} else {
-			cmdArr = []string{"/bin/sh", "-c", *action.Command}
+			cmdArr = []string{common.BinBash, "-c", *action.Command}
 		}
 
 		if show {
-			s = log.SpinnerNoSpin("Executing " + command.Name + " command " + fmt.Sprintf("%q", *action.Command))
+			s = log.SpinnerNoSpin(fmt.Sprintf("Executing %s command %q", command.Name, *action.Command))
 		} else {
-			s = log.Spinner("Executing " + command.Name + " command " + fmt.Sprintf("%q", *action.Command))
+			s = log.Spinner(fmt.Sprintf("Executing %s command %q", command.Name, *action.Command))
 		}
 
 		defer s.End(false)

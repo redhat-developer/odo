@@ -28,7 +28,7 @@ func TestGetCommand(t *testing.T) {
 		wantErr           bool
 	}{
 		{
-			name:              "Case: Valid devfile",
+			name:              "Case 1: Valid devfile",
 			requestedCommands: []string{"devbuild", "devrun"},
 			commandActions: []versionsCommon.DevfileCommandAction{
 				{
@@ -42,7 +42,7 @@ func TestGetCommand(t *testing.T) {
 			wantErr:           false,
 		},
 		{
-			name:              "Case: Valid devfile with devinit and devbuild",
+			name:              "Case 2: Valid devfile with devinit and devbuild",
 			requestedCommands: []string{"devinit", "devbuild", "devrun"},
 			commandActions: []versionsCommon.DevfileCommandAction{
 				{
@@ -56,7 +56,7 @@ func TestGetCommand(t *testing.T) {
 			wantErr:           false,
 		},
 		{
-			name:              "Case: Valid devfile with devinit and devrun",
+			name:              "Case 3: Valid devfile with devinit and devrun",
 			requestedCommands: []string{"devinit", "devrun"},
 			commandActions: []versionsCommon.DevfileCommandAction{
 				{
@@ -70,7 +70,7 @@ func TestGetCommand(t *testing.T) {
 			wantErr:           false,
 		},
 		{
-			name:              "Case: Wrong command requested",
+			name:              "Case 4: Wrong command requested",
 			requestedCommands: []string{"garbage1"},
 			commandActions: []versionsCommon.DevfileCommandAction{
 				{
@@ -84,7 +84,7 @@ func TestGetCommand(t *testing.T) {
 			wantErr:           true,
 		},
 		{
-			name:              "Case: Invalid devfile with wrong devinit command type",
+			name:              "Case 5: Invalid devfile with wrong devinit command type",
 			requestedCommands: []string{"devinit"},
 			commandActions: []versionsCommon.DevfileCommandAction{
 				{
@@ -98,7 +98,7 @@ func TestGetCommand(t *testing.T) {
 			wantErr:           true,
 		},
 		{
-			name:              "Case: Invalid devfile with empty devinit component",
+			name:              "Case 6: Invalid devfile with empty devinit component",
 			requestedCommands: []string{"devinit"},
 			commandActions: []versionsCommon.DevfileCommandAction{
 				{
@@ -112,7 +112,7 @@ func TestGetCommand(t *testing.T) {
 			wantErr:           true,
 		},
 		{
-			name:              "Case: Invalid devfile with empty devinit command",
+			name:              "Case 7: Invalid devfile with empty devinit command",
 			requestedCommands: []string{"devinit"},
 			commandActions: []versionsCommon.DevfileCommandAction{
 				{
@@ -126,7 +126,7 @@ func TestGetCommand(t *testing.T) {
 			wantErr:           true,
 		},
 		{
-			name:              "Case: Invalid devfile with wrong devbuild command type",
+			name:              "Case 8: Invalid devfile with wrong devbuild command type",
 			requestedCommands: []string{"devbuild"},
 			commandActions: []versionsCommon.DevfileCommandAction{
 				{
@@ -140,7 +140,7 @@ func TestGetCommand(t *testing.T) {
 			wantErr:           true,
 		},
 		{
-			name:              "Case: Invalid devfile with empty devbuild component",
+			name:              "Case 9: Invalid devfile with empty devbuild component",
 			requestedCommands: []string{"devbuild"},
 			commandActions: []versionsCommon.DevfileCommandAction{
 				{
@@ -154,7 +154,7 @@ func TestGetCommand(t *testing.T) {
 			wantErr:           true,
 		},
 		{
-			name:              "Case: Invalid devfile with empty devbuild command",
+			name:              "Case 10: Invalid devfile with empty devbuild command",
 			requestedCommands: []string{"devbuild"},
 			commandActions: []versionsCommon.DevfileCommandAction{
 				{
@@ -168,7 +168,7 @@ func TestGetCommand(t *testing.T) {
 			wantErr:           true,
 		},
 		{
-			name:              "Case: Valid devfile with empty workdir",
+			name:              "Case 11: Valid devfile with empty workdir",
 			requestedCommands: []string{"devrun"},
 			commandActions: []versionsCommon.DevfileCommandAction{
 				{
@@ -181,7 +181,7 @@ func TestGetCommand(t *testing.T) {
 			wantErr:           false,
 		},
 		{
-			name:              "Case: Invalid command referencing an absent component",
+			name:              "Case 12: Invalid command referencing an absent component",
 			requestedCommands: []string{"devrun"},
 			commandActions: []versionsCommon.DevfileCommandAction{
 				{
