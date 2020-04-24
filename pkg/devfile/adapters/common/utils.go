@@ -5,6 +5,7 @@ import (
 
 	"github.com/golang/glog"
 
+	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 )
@@ -52,6 +53,9 @@ const (
 
 	// BinBash The path to sh executable
 	BinBash = "/bin/sh"
+  
+	// Default volume size for volumes defined in a devfile
+	volumeSize = "5Gi"
 )
 
 func isComponentSupported(component common.DevfileComponent) bool {
@@ -78,4 +82,24 @@ func GetSupportedComponents(data data.DevfileData) []common.DevfileComponent {
 		}
 	}
 	return components
+}
+
+// GetVolumes iterates through the components in the devfile and returns a map of component alias to the devfile volumes
+func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume {
+	// componentAliasToVolumes is a map of the Devfile Component Alias to the Devfile Component Volumes
+	componentAliasToVolumes := make(map[string][]DevfileVolume)
+	size := volumeSize
+	for _, comp := range GetSupportedComponents(devfileObj.Data) {
+		if comp.Volumes != nil {
+			for _, volume := range comp.Volumes {
+				vol := DevfileVolume{
+					Name:          volume.Name,
+					ContainerPath: volume.ContainerPath,
+					Size:          &size,
+				}
+				componentAliasToVolumes[*comp.Alias] = append(componentAliasToVolumes[*comp.Alias], vol)
+			}
+		}
+	}
+	return componentAliasToVolumes
 }

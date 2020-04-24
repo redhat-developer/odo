@@ -24,7 +24,4 @@ make test-operator-hub
 # E2e tests
 make test-e2e-all
 
-# Benchmark tests
-make test-benchmark
-
 odo logout

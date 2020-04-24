@@ -1,0 +1,53 @@
+on: [push, pull_request]
+name: tests
+env:
+  GO111MODULE: on
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        go-version: [1.x, 1.13.x]
+        platform: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+    - uses: actions/setup-go@v1
+      with:
+        go-version: ${{ matrix.go-version }}
+    - uses: actions/checkout@v2
+
+    - name: Cache go modules
+      uses: actions/cache@v1
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
+        restore-keys: ${{ runner.os }}-go-
+
+    - name: Run go fmt
+      if: runner.os != 'Windows'
+      run: diff -u <(echo -n) <(gofmt -d -s .)
+
+    - name: Ensure go generate produces a zero diff
+      shell: bash
+      run:  go generate -x ./... && git diff --exit-code; code=$?; git checkout -- .; (exit $code)
+
+    - name: Run go vet
+      run: go vet ./...
+
+    - name: Run go test
+      run: go test -v -race -coverprofile coverage.txt -covermode atomic ./...
+
+    - name: Ensure integration tests build
+      # don't actually run tests since they hit live GitHub API
+      run: go test -v -tags=integration -run=^$ ./test/integration
+
+    - name: Run scrape tests
+      run: |
+        cd scrape
+        go test ./...
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}

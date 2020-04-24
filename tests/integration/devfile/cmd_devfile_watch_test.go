@@ -21,17 +21,25 @@ var _ = Describe("odo devfile watch command tests", func() {
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
-		namespace = helper.CreateRandProject()
 		context = helper.CreateNewContext()
+		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		if os.Getenv("KUBERNETES") == "true" {
+			namespace = helper.CreateRandNamespace(context)
+		} else {
+			namespace = helper.CreateRandProject()
+		}
 		currentWorkingDirectory = helper.Getwd()
 		helper.Chdir(context)
-		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 	})
 
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		helper.DeleteProject(namespace)
+		if os.Getenv("KUBERNETES") == "true" {
+			helper.DeleteNamespace(namespace)
+		} else {
+			helper.DeleteProject(namespace)
+		}
 		helper.Chdir(currentWorkingDirectory)
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
@@ -52,7 +60,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 			// Devfile push requires experimental mode to be set
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 			cmpName := helper.RandString(6)
-			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--namespace", namespace, cmpName)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--namespace", namespace, cmpName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
 
 			output := helper.CmdShouldFail("odo", "watch", "--devfile", filepath.Join(context, "devfile.yaml"))

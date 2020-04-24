@@ -6,6 +6,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	gomock "github.com/golang/mock/gomock"
 )
 
 func TestGetContainersByComponentName(t *testing.T) {
@@ -255,5 +256,42 @@ func TestRemoveContainer(t *testing.T) {
 		if !tt.wantErr == (err != nil) {
 			t.Errorf("expected %v, wanted %v", err, tt.wantErr)
 		}
+	}
+}
+
+func TestRemoveVolume(t *testing.T) {
+	tests := []struct {
+		name           string
+		volumeToRemove string
+		wantErr        bool
+	}{
+		{
+			name:           "Case 1: Remove a volume and ensure the correct remove parameter is passed to the docker client",
+			volumeToRemove: "volume1",
+			wantErr:        false,
+		},
+		{
+			name:           "Case 2: Pass an invalid volume parameter to remove, and verify error",
+			volumeToRemove: "",
+			wantErr:        true,
+		},
+	}
+	for _, tt := range tests {
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		client, mockDockerClient := FakeNewMockClient(ctrl)
+
+		if !tt.wantErr {
+			mockDockerClient.EXPECT().VolumeRemove(gomock.Any(), gomock.Eq(tt.volumeToRemove), gomock.Eq(true)).Return(nil)
+		}
+
+		err := client.RemoveVolume(tt.volumeToRemove)
+
+		if !tt.wantErr == (err != nil) {
+			t.Errorf("expected %v but wanted %v", err, tt.wantErr)
+		}
+
 	}
 }
