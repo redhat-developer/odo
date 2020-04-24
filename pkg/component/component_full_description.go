@@ -84,6 +84,11 @@ func NewComponentFullDescription(client *occlient.Client, localConfigInfo *confi
 		return cfd, err
 	}
 
+	//fix missing names in case it in not in description
+	if len(cfd.Name) <= 0 {
+		cfd.Name = componentName
+	}
+
 	if state == StateTypePushed {
 		componentDescFromCluster, err := GetComponent(client, componentName, applicationName, projectName)
 		if err != nil {
