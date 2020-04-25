@@ -87,7 +87,7 @@ var _ = Describe("odo devfile create command tests", func() {
 	})
 
 	Context("When executing odo create with devfile component type argument and --context flag", func() {
-		It("should successfully create the devfile componet in the context", func() {
+		It("should successfully create the devfile component in the context", func() {
 			newContext := path.Join(context, "newContext")
 			devfilePath := filepath.Join(newContext, devfile)
 			envFilePath := filepath.Join(newContext, envFile)

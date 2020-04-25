@@ -187,7 +187,7 @@ func (a Adapter) updateComponent() (componentExists bool, err error) {
 		} else {
 			// Multiple containers were returned with the specified label (which should be unique)
 			// Error out, as this isn't expected
-			err = fmt.Errorf("Found multiple running containers for devfile component %s and cannot push changes", *comp.Alias)
+			return true, fmt.Errorf("Found multiple running containers for devfile component %s and cannot push changes", *comp.Alias)
 		}
 	}
 
