@@ -138,6 +138,15 @@ func GetProjectVolumeLabels(componentName string) map[string]string {
 	return volumeLabels
 }
 
+// GetContainerLabels returns the label selectors used to retrieve/create the component container
+func GetContainerLabels(componentName, alias string) map[string]string {
+	containerLabels := map[string]string{
+		"component": componentName,
+		"alias":     alias,
+	}
+	return containerLabels
+}
+
 // GetSupervisordVolumeLabels returns the label selectors used to retrieve the supervisord volume
 func GetSupervisordVolumeLabels() map[string]string {
 	image := adaptersCommon.GetBootstrapperImage()

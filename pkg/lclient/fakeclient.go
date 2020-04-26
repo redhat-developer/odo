@@ -1,11 +1,14 @@
 package lclient
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"errors"
 	"io"
 	"io/ioutil"
+	"net"
+	"strings"
 	"time"
 
 	"github.com/docker/docker/api/types"
@@ -174,16 +177,15 @@ func (m *mockDockerClient) ContainerExecCreate(ctx context.Context, container st
 	}, nil
 }
 
-func (m *mockDockerClient) ContainerExecStart(ctx context.Context, execID string, config types.ExecStartCheck) error {
-	return nil
-}
-
 func (m *mockDockerClient) ContainerExecAttach(ctx context.Context, execID string, config types.ExecStartCheck) (types.HijackedResponse, error) {
-	return types.HijackedResponse{}, nil
-}
+	s1 := strings.NewReader("hello")
+	r := bufio.NewReader(s1)
+	server, _ := net.Pipe()
 
-func (m *mockDockerClient) ContainerExecInspect(ctx context.Context, execID string) (types.ContainerExecInspect, error) {
-	return types.ContainerExecInspect{}, nil
+	return types.HijackedResponse{
+		Reader: r,
+		Conn:   server,
+	}, nil
 }
 
 func (m *mockDockerClient) CopyToContainer(ctx context.Context, container, path string, content io.Reader, options types.CopyToContainerOptions) error {
@@ -217,9 +219,7 @@ var errVolumeCreate = errors.New("error creating volume")
 var errVolumeList = errors.New("error listing volume")
 var errRemoveVolume = errors.New("error removing volume")
 var errContainerExecCreate = errors.New("error creating container exec")
-var errContainerExecStart = errors.New("error starting container exec")
 var errContainerExecAttach = errors.New("error attach container exec")
-var errContainerExecInspect = errors.New("error inspecting container exec")
 var errCopyToContainer = errors.New("error copying to container")
 
 func (m *mockDockerErrorClient) ImageList(ctx context.Context, imageListOptions types.ImageListOptions) ([]types.ImageSummary, error) {
@@ -294,16 +294,8 @@ func (m *mockDockerErrorClient) ContainerExecCreate(ctx context.Context, contain
 	return types.IDResponse{}, errContainerExecCreate
 }
 
-func (m *mockDockerErrorClient) ContainerExecStart(ctx context.Context, execID string, config types.ExecStartCheck) error {
-	return errContainerExecStart
-}
-
 func (m *mockDockerErrorClient) ContainerExecAttach(ctx context.Context, execID string, config types.ExecStartCheck) (types.HijackedResponse, error) {
 	return types.HijackedResponse{}, errContainerExecAttach
-}
-
-func (m *mockDockerErrorClient) ContainerExecInspect(ctx context.Context, execID string) (types.ContainerExecInspect, error) {
-	return types.ContainerExecInspect{}, errContainerExecInspect
 }
 
 func (m *mockDockerErrorClient) CopyToContainer(ctx context.Context, container, path string, content io.Reader, options types.CopyToContainerOptions) error {

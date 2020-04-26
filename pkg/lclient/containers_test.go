@@ -1,12 +1,15 @@
 package lclient
 
 import (
+	"io"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	gomock "github.com/golang/mock/gomock"
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 )
 
 func TestGetContainersByComponentName(t *testing.T) {
@@ -304,6 +307,78 @@ func TestRemoveVolume(t *testing.T) {
 
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("expected %v but wanted %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestExtractProjectToComponent(t *testing.T) {
+	fakeClient := FakeNew()
+	fakeErrorClient := FakeErrorNew()
+
+	compInfo := common.ComponentInfo{
+		ContainerName: "container",
+	}
+	targetPath := "/tmp"
+	r := strings.NewReader("Hello!")
+
+	tests := []struct {
+		name    string
+		client  *Client
+		wantErr bool
+	}{
+		{
+			name:    "Case 1: Successfully extract project to container",
+			client:  fakeClient,
+			wantErr: false,
+		},
+		{
+			name:    "Case 2: Fail to extract project to container",
+			client:  fakeErrorClient,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.client.ExtractProjectToComponent(compInfo, targetPath, r)
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("got %v, wanted %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestExecCMDInContainer(t *testing.T) {
+	fakeClient := FakeNew()
+	fakeErrorClient := FakeErrorNew()
+
+	compInfo := common.ComponentInfo{
+		ContainerName: "container",
+	}
+	cmd := []string{"echo", "hello"}
+	_, writer := io.Pipe()
+
+	tests := []struct {
+		name    string
+		client  *Client
+		wantErr bool
+	}{
+		{
+			name:    "Case 1: Successfully execute command in the container",
+			client:  fakeClient,
+			wantErr: false,
+		},
+		{
+			name:    "Case 2: Fail to execute command in the container",
+			client:  fakeErrorClient,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.client.ExecCMDInContainer(compInfo, cmd, writer, writer, nil, false)
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("got %v, wanted %v", err, tt.wantErr)
 			}
 		})
 	}

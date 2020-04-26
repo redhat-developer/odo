@@ -8,7 +8,6 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/pkg/stdcopy"
-	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/pkg/errors"
 )
@@ -147,7 +146,6 @@ func (dc *Client) ExtractProjectToComponent(compInfo common.ComponentInfo, targe
 
 	err := dc.Client.CopyToContainer(dc.Context, compInfo.ContainerName, targetPath, stdin, types.CopyToContainerOptions{})
 	if err != nil {
-		glog.Errorf("err: %s\n", err.Error())
 		return err
 	}
 	return nil

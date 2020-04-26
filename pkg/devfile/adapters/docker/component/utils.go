@@ -262,10 +262,7 @@ func (a Adapter) generateAndGetContainerConfig(componentName string, comp versio
 	// Convert the env vars in the Devfile to the format expected by Docker
 	envVars := utils.ConvertEnvs(comp.Env)
 	ports := utils.ConvertPorts(comp.Endpoints)
-	containerLabels := map[string]string{
-		"component": componentName,
-		"alias":     *comp.Alias,
-	}
+	containerLabels := utils.GetContainerLabels(componentName, *comp.Alias)
 
 	containerConfig := a.Client.GenerateContainerConfig(*comp.Image, comp.Command, comp.Args, envVars, containerLabels, ports)
 
