@@ -959,3 +959,115 @@ func TestUpdateComponentWithSupervisord(t *testing.T) {
 	}
 
 }
+
+func TestStartBootstrapSupervisordInitContainer(t *testing.T) {
+
+	supervisordVolumeName := supervisordVolume
+
+	fakeClient := lclient.FakeNew()
+	fakeErrorClient := lclient.FakeErrorNew()
+
+	tests := []struct {
+		name    string
+		client  *lclient.Client
+		wantErr bool
+	}{
+		{
+			name:    "Case 1: Successfully create a bootstrap container",
+			client:  fakeClient,
+			wantErr: false,
+		},
+		{
+			name:    "Case 2: Failed to create a bootstrap container ",
+			client:  fakeErrorClient,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := StartBootstrapSupervisordInitContainer(*tt.client, supervisordVolumeName)
+			if !tt.wantErr && err != nil {
+				t.Errorf("TestStartBootstrapSupervisordInitContainer: unexpected error got: %v wanted: %v", err, tt.wantErr)
+			}
+		})
+	}
+
+}
+
+func TestCreateAndInitSupervisordVolume(t *testing.T) {
+
+	fakeClient := lclient.FakeNew()
+	fakeErrorClient := lclient.FakeErrorNew()
+
+	tests := []struct {
+		name    string
+		client  *lclient.Client
+		wantErr bool
+	}{
+		{
+			name:    "Case 1: Successfully create a bootstrap vol and container",
+			client:  fakeClient,
+			wantErr: false,
+		},
+		{
+			name:    "Case 2: Failed to create a bootstrap vol and container ",
+			client:  fakeErrorClient,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			volName, err := CreateAndInitSupervisordVolume(*tt.client)
+			if !tt.wantErr && err != nil {
+				t.Logf("TestCreateAndInitSupervisordVolume: unexpected error %v, wanted %v", err, tt.wantErr)
+			} else if !tt.wantErr && volName != adaptersCommon.SupervisordVolumeName {
+				t.Logf("TestCreateAndInitSupervisordVolume: unexpected supervisord vol name, expected: %v got: %v", adaptersCommon.SupervisordVolumeName, volName)
+			}
+		})
+	}
+
+}
+
+func TestGetContainerIDForAlias(t *testing.T) {
+
+	containers := []types.Container{
+		{
+			ID: "someid",
+			Labels: map[string]string{
+				"alias": "somealias",
+			},
+		},
+		{
+			ID: "someid2",
+			Labels: map[string]string{
+				"alias": "somealias2",
+			},
+		},
+	}
+
+	tests := []struct {
+		name            string
+		alias           string
+		wantContainerID string
+	}{
+		{
+			name:            "Case 1: Get a container id for the a label match",
+			alias:           "somealias",
+			wantContainerID: "someid",
+		},
+		{
+			name:            "Case 2: No container id for a label mismatch",
+			alias:           "garbagealias",
+			wantContainerID: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			containerID := GetContainerIDForAlias(containers, tt.alias)
+			if containerID != tt.wantContainerID {
+				t.Logf("TestGetContainerIDForAlias error: container id %v does not match the expected container id %v", containerID, tt.wantContainerID)
+			}
+		})
+	}
+
+}

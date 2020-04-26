@@ -5,6 +5,7 @@ import (
 
 	"github.com/docker/go-connections/nat"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/mount"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
@@ -432,6 +433,210 @@ func TestGenerateAndGetHostConfig(t *testing.T) {
 			err = esi.DeleteEnvInfoFile()
 			if err != nil {
 				t.Error(err)
+			}
+		})
+	}
+}
+
+func TestExecDevfile(t *testing.T) {
+
+	testComponentName := "test"
+	componentType := versionsCommon.DevfileComponentTypeDockerimage
+	command := "ls -la"
+	workDir := "/tmp"
+	component := "alias1"
+	var actionType versionsCommon.DevfileCommandType = versionsCommon.DevfileCommandTypeExec
+
+	containers := []types.Container{
+		{
+			ID: "someid",
+			Labels: map[string]string{
+				"alias": "somealias",
+			},
+		},
+		{
+			ID: "someid2",
+			Labels: map[string]string{
+				"alias": "somealias2",
+			},
+		},
+	}
+
+	fakeClient := lclient.FakeNew()
+	fakeErrorClient := lclient.FakeErrorNew()
+
+	tests := []struct {
+		name                string
+		client              *lclient.Client
+		pushDevfileCommands []versionsCommon.DevfileCommand
+		componentExists     bool
+		wantErr             bool
+	}{
+		{
+			name:   "Case 1: Successful devfile command exec of devbuild and devrun",
+			client: fakeClient,
+			pushDevfileCommands: []versionsCommon.DevfileCommand{
+				{
+					Name: "devrun",
+					Actions: []versionsCommon.DevfileCommandAction{
+						{
+							Command:   &command,
+							Workdir:   &workDir,
+							Type:      &actionType,
+							Component: &component,
+						},
+					},
+				},
+				{
+					Name: "devbuild",
+					Actions: []versionsCommon.DevfileCommandAction{
+						{
+							Command:   &command,
+							Workdir:   &workDir,
+							Type:      &actionType,
+							Component: &component,
+						},
+					},
+				},
+			},
+			componentExists: false,
+			wantErr:         false,
+		},
+		{
+			name:   "Case 2: Successful devfile command exec of devrun",
+			client: fakeClient,
+			pushDevfileCommands: []versionsCommon.DevfileCommand{
+				{
+					Name: "devrun",
+					Actions: []versionsCommon.DevfileCommandAction{
+						{
+							Command:   &command,
+							Workdir:   &workDir,
+							Type:      &actionType,
+							Component: &component,
+						},
+					},
+				},
+			},
+			componentExists: true,
+			wantErr:         false,
+		},
+		{
+			name:                "Case 3: No devfile push commands should result in an err",
+			client:              fakeClient,
+			pushDevfileCommands: []versionsCommon.DevfileCommand{},
+			componentExists:     false,
+			wantErr:             true,
+		},
+		{
+			name:   "Case 4: Unsuccessful devfile command exec of devrun",
+			client: fakeErrorClient,
+			pushDevfileCommands: []versionsCommon.DevfileCommand{
+				{
+					Name: "devrun",
+					Actions: []versionsCommon.DevfileCommandAction{
+						{
+							Command:   &command,
+							Workdir:   &workDir,
+							Type:      &actionType,
+							Component: &component,
+						},
+					},
+				},
+			},
+			componentExists: true,
+			wantErr:         true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			devObj := devfileParser.DevfileObj{
+				Data: testingutil.TestDevfileData{
+					ComponentType: componentType,
+				},
+			}
+
+			adapterCtx := adaptersCommon.AdapterContext{
+				ComponentName: testComponentName,
+				Devfile:       devObj,
+			}
+
+			componentAdapter := New(adapterCtx, *tt.client)
+			err := componentAdapter.execDevfile(tt.pushDevfileCommands, tt.componentExists, false, containers)
+			if !tt.wantErr && err != nil {
+				t.Errorf("TestExecDevfile error: unexpected error during executing devfile commands: %v", err)
+			}
+		})
+	}
+}
+
+func TestInitRunContainerSupervisord(t *testing.T) {
+
+	testComponentName := "test"
+	componentType := versionsCommon.DevfileComponentTypeDockerimage
+
+	containers := []types.Container{
+		{
+			ID: "someid",
+			Labels: map[string]string{
+				"alias": "somealias",
+			},
+		},
+		{
+			ID: "someid2",
+			Labels: map[string]string{
+				"alias": "somealias2",
+			},
+		},
+	}
+
+	fakeClient := lclient.FakeNew()
+	fakeErrorClient := lclient.FakeErrorNew()
+
+	tests := []struct {
+		name      string
+		client    *lclient.Client
+		component string
+		wantErr   bool
+	}{
+		{
+			name:      "Case 1: Successful initialization of supervisord",
+			client:    fakeClient,
+			component: "somealias",
+			wantErr:   false,
+		},
+		{
+			name:      "Case 2: Unsuccessful initialization of supervisord",
+			client:    fakeErrorClient,
+			component: "somealias",
+			wantErr:   true,
+		},
+		{
+			name:      "Case 3: Unsuccessful initialization of supervisord with wrong component",
+			client:    fakeErrorClient,
+			component: "somealias123",
+			wantErr:   false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			devObj := devfileParser.DevfileObj{
+				Data: testingutil.TestDevfileData{
+					ComponentType: componentType,
+				},
+			}
+
+			adapterCtx := adaptersCommon.AdapterContext{
+				ComponentName: testComponentName,
+				Devfile:       devObj,
+			}
+
+			componentAdapter := New(adapterCtx, *tt.client)
+			err := componentAdapter.InitRunContainerSupervisord(tt.component, containers)
+			if !tt.wantErr && err != nil {
+				t.Errorf("TestInitRunContainerSupervisord error: unexpected error during init supervisord: %v", err)
 			}
 		})
 	}

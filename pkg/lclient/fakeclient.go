@@ -134,6 +134,7 @@ func (m *mockDockerClient) DistributionInspect(ctx context.Context, image, encod
 
 func (m *mockDockerClient) VolumeCreate(ctx context.Context, options volumeTypes.VolumeCreateBody) (types.Volume, error) {
 	return types.Volume{
+		Name:   options.Name,
 		Driver: "local",
 		Labels: options.Labels,
 	}, nil
