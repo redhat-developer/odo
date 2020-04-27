@@ -2,10 +2,11 @@ package config
 
 import (
 	"fmt"
-	"path/filepath"
+	"strings"
 
 	"github.com/mkmik/multierror"
 	"k8s.io/apimachinery/pkg/api/validation"
+	"knative.dev/pkg/apis"
 )
 
 type validateVisitor struct {
@@ -19,33 +20,35 @@ func (m *Manifest) Validate() error {
 }
 
 func (vv *validateVisitor) Environment(env *Environment) error {
-	if err := validateName(env.Name, PathForEnvironment(env)); err != nil {
+	envPath := yamlPath(PathForEnvironment(env))
+	if err := validateName(env.Name, envPath); err != nil {
 		vv.errs = append(vv.errs, err)
 	}
-	if err := validatePipelines(env.Pipelines, PathForEnvironment(env)); err != nil {
+	if err := validatePipelines(env.Pipelines, envPath); err != nil {
 		vv.errs = append(vv.errs, err...)
 	}
 	return nil
 }
 
 func (vv *validateVisitor) Application(env *Environment, app *Application) error {
-	if err := validateName(app.Name, PathForApplication(env, app)); err != nil {
+	appPath := yamlPath(PathForApplication(env, app))
+	if err := validateName(app.Name, appPath); err != nil {
 		vv.errs = append(vv.errs, err)
 	}
 	return nil
 }
 
 func (vv *validateVisitor) Service(env *Environment, app *Application, svc *Service) error {
-	if err := validateName(svc.Name, PathForService(env, svc)); err != nil {
+	svcPath := yamlPath(PathForService(env, svc))
+	if err := validateName(svc.Name, svcPath); err != nil {
 		vv.errs = append(vv.errs, err)
 	}
-	if err := validateWebhook(svc.Webhook, PathForService(env, svc)); err != nil {
+	if err := validateWebhook(svc.Webhook, svcPath); err != nil {
 		vv.errs = append(vv.errs, err...)
 	}
-	if err := validatePipelines(svc.Pipelines, PathForService(env, svc)); err != nil {
+	if err := validatePipelines(svc.Pipelines, svcPath); err != nil {
 		vv.errs = append(vv.errs, err...)
 	}
-
 	return nil
 }
 
@@ -55,12 +58,12 @@ func validateWebhook(hook *Webhook, path string) []error {
 		return nil
 	}
 	if hook.Secret == nil {
-		return list(notFoundError("secret", path))
+		return list(missingFieldsError([]string{"secret"}, []string{yamlJoin(path, "webhook")}))
 	}
-	if err := validateName(hook.Secret.Name, filepath.Join(path, "secret")); err != nil {
+	if err := validateName(hook.Secret.Name, yamlJoin(path, "webhook", "secret", "name")); err != nil {
 		errs = append(errs, err)
 	}
-	if err := validateName(hook.Secret.Namespace, filepath.Join(path, "secret")); err != nil {
+	if err := validateName(hook.Secret.Namespace, yamlJoin(path, "webhook", "secret", "namespace")); err != nil {
 		errs = append(errs, err)
 	}
 	return errs
@@ -72,29 +75,59 @@ func validatePipelines(pipelines *Pipelines, path string) []error {
 		return nil
 	}
 	if pipelines.Integration == nil {
-		return list(notFoundError("pipelines", path))
+		return list(missingFieldsError([]string{"integration"}, []string{yamlJoin(path, "pipelines")}))
 	}
-	if err := validateName(pipelines.Integration.Template, filepath.Join(path, "pipelines")); err != nil {
+	if err := validateName(pipelines.Integration.Template, yamlJoin(path, "pipelines", "integration", "template")); err != nil {
 		errs = append(errs, err)
 	}
-	if err := validateName(pipelines.Integration.Binding, filepath.Join(path, "pipelines")); err != nil {
+	if err := validateName(pipelines.Integration.Binding, yamlJoin(path, "pipelines", "integration", "binding")); err != nil {
 		errs = append(errs, err)
 	}
 	return errs
 }
 
-func validateName(name, path string) error {
+func validateName(name, path string) *apis.FieldError {
 	err := validation.NameIsDNS1035Label(name, true)
 	if len(err) > 0 {
-		return fmt.Errorf("%q is not a valid name at %v: \n%v", name, path, err)
+		return invalidNameError(name, err[0], []string{path})
 	}
 	return nil
 }
 
-func notFoundError(field string, at string) error {
-	return fmt.Errorf("%v not found at %v", field, at)
+func yamlPath(path string) string {
+	return strings.ReplaceAll(path, "/", ".")
+}
+
+func yamlJoin(a string, b ...string) string {
+	for _, s := range b {
+		a = a + "." + s
+	}
+	return a
 }
 
 func list(errs ...error) []error {
 	return errs
+}
+
+func invalidNameError(name, details string, paths []string) *apis.FieldError {
+	return &apis.FieldError{
+		Message: fmt.Sprintf("invalid name %q", name),
+		Details: details,
+		Paths:   paths,
+	}
+}
+
+func missingFieldsError(fields []string, paths []string) *apis.FieldError {
+	return &apis.FieldError{
+		Message: fmt.Sprintf("missing field(s) %v", strings.Join(addQuotes(fields...), ",")),
+		Paths:   paths,
+	}
+}
+
+func addQuotes(items ...string) []string {
+	quotes := []string{}
+	for _, item := range items {
+		quotes = append(quotes, fmt.Sprintf("%q", item))
+	}
+	return quotes
 }

@@ -1,5 +1,0 @@
-environments:
-  - name: development
-  - name: tst-cicd
-    cicd: true
-  - name: development
