@@ -305,12 +305,12 @@ func Test_getDebugInfo(t *testing.T) {
 				t.Errorf("error occured while getting a free port, cause: %v", err)
 			}
 
-			if (OdoDebugFile{}) != tt.readDebugFile {
-				tt.readDebugFile.LocalPort = freePort
+			if tt.readDebugFile.Spec.LocalPort != 0 {
+				tt.readDebugFile.Spec.LocalPort = freePort
 			}
 
-			if (OdoDebugFile{}) != tt.wantDebugFile {
-				tt.wantDebugFile.LocalPort = freePort
+			if tt.wantDebugFile.Spec.LocalPort != 0 {
+				tt.wantDebugFile.Spec.LocalPort = freePort
 			}
 
 			odoDebugFilePath := GetDebugInfoFilePath(tt.args.defaultPortForwarder.client, tt.args.defaultPortForwarder.componentName, tt.args.defaultPortForwarder.appName)
