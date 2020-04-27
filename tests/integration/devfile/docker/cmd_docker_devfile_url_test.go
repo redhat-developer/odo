@@ -85,7 +85,7 @@ var _ = Describe("odo docker devfile url command tests", func() {
 			helper.CmdShouldPass("odo", "url", "create", url2, "--host", "1.2.3.4.com")
 			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "docker", "-f")
 			stdout = helper.CmdShouldFail("odo", "url", "create", url2)
-			Expect(stdout).To(ContainSubstring("no configuration has been provided"))
+			Expect(stdout).To(ContainSubstring("already exists for a different push target"))
 
 		})
 
