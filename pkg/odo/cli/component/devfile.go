@@ -58,9 +58,6 @@ func (po *PushOptions) DevfilePush() (err error) {
 		return errors.Wrap(err, "unable to apply ignore information")
 	}
 
-	spinner := log.SpinnerNoSpin(fmt.Sprintf("Push devfile component %s", componentName))
-	defer spinner.End(false)
-
 	var platformContext interface{}
 	if pushtarget.IsPushTargetDocker() {
 		platformContext = nil
@@ -106,9 +103,9 @@ func (po *PushOptions) DevfilePush() (err error) {
 		os.Exit(1)
 	}
 
-	spinner.End(true)
-
+	log.Infof("\nPushing devfile component %s", componentName)
 	log.Success("Changes successfully pushed to component")
+
 	return
 }
 

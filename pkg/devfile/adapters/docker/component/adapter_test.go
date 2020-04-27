@@ -1,6 +1,8 @@
 package component
 
 import (
+	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/docker/docker/api/types"
@@ -9,6 +11,7 @@ import (
 	"github.com/golang/mock/gomock"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/testingutil"
@@ -19,6 +22,34 @@ func TestPush(t *testing.T) {
 	testComponentName := "test"
 	fakeClient := lclient.FakeNew()
 	fakeErrorClient := lclient.FakeErrorNew()
+
+	command := "ls -la"
+	component := "alias1"
+	workDir := "/root"
+	validCommandType := common.DevfileCommandTypeExec
+
+	// create a temp dir for the file indexer
+	directory, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Errorf("TestPush error: error creating temporary directory for the indexer: %v", err)
+	}
+
+	pushParams := adaptersCommon.PushParameters{
+		Path:              directory,
+		WatchFiles:        []string{},
+		WatchDeletedFiles: []string{},
+		IgnoredFiles:      []string{},
+		ForceBuild:        false,
+	}
+
+	commandActions := []versionsCommon.DevfileCommandAction{
+		{
+			Command:   &command,
+			Component: &component,
+			Workdir:   &workDir,
+			Type:      &validCommandType,
+		},
+	}
 
 	tests := []struct {
 		name          string
@@ -49,7 +80,8 @@ func TestPush(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					ComponentType: tt.componentType,
+					ComponentType:  tt.componentType,
+					CommandActions: commandActions,
 				},
 			}
 
@@ -60,13 +92,19 @@ func TestPush(t *testing.T) {
 
 			componentAdapter := New(adapterCtx, *tt.client)
 			// ToDo: Add more meaningful unit tests once Push actually does something with its parameters
-			err := componentAdapter.Push(adaptersCommon.PushParameters{})
+			err := componentAdapter.Push(pushParams)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("component adapter create unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
 		})
+	}
+
+	// Remove the temp dir created for the file indexer
+	err = os.RemoveAll(directory)
+	if err != nil {
+		t.Errorf("TestPush error: error deleting the temp dir %s", directory)
 	}
 
 }

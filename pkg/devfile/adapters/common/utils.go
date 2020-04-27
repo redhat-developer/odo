@@ -1,6 +1,7 @@
 package common
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/golang/glog"
@@ -47,6 +48,21 @@ const (
 
 	// Default volume size for volumes defined in a devfile
 	volumeSize = "5Gi"
+
+	// EnvCheProjectsRoot is the env defined for /projects where component mountSources=true
+	EnvCheProjectsRoot = "CHE_PROJECTS_ROOT"
+
+	// EnvOdoCommandRunWorkingDir is the env defined in the runtime component container which holds the work dir for the run command
+	EnvOdoCommandRunWorkingDir = "ODO_COMMAND_RUN_WORKING_DIR"
+
+	// EnvOdoCommandRun is the env defined in the runtime component container which holds the run command to be executed
+	EnvOdoCommandRun = "ODO_COMMAND_RUN"
+
+	// ShellExecutable is the shell executable
+	ShellExecutable = "/bin/sh"
+
+	// SupervisordCtlSubCommand is the supervisord sub command ctl
+	SupervisordCtlSubCommand = "ctl"
 )
 
 func isComponentSupported(component common.DevfileComponent) bool {
@@ -93,4 +109,44 @@ func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume 
 		}
 	}
 	return componentAliasToVolumes
+}
+
+// IsEnvPresent checks if the env variable is present in an array of env variables
+func IsEnvPresent(envVars []common.DockerimageEnv, envVarName string) bool {
+	for _, envVar := range envVars {
+		if *envVar.Name == envVarName {
+			return true
+		}
+	}
+
+	return false
+}
+
+// IsPortPresent checks if the port is present in the endpoints array
+func IsPortPresent(endpoints []common.DockerimageEndpoint, port int) bool {
+	for _, endpoint := range endpoints {
+		if *endpoint.Port == int32(port) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// IsComponentBuildRequired checks if a component build is required based on the push commands, it throws an error
+// if the push commands does not meet the expected criteria
+func IsComponentBuildRequired(pushDevfileCommands []common.DevfileCommand) (bool, error) {
+	var buildRequired bool
+
+	switch len(pushDevfileCommands) {
+	case 1: // if there is one command, it is the mandatory run command. No need to build.
+		buildRequired = false
+	case 2:
+		// if there are two commands, it is the optional build command and the mandatory run command, set buildRequired to true
+		buildRequired = true
+	default:
+		return false, fmt.Errorf("error executing devfile commands - there should be at least 1 command or at most 2 commands, currently there are %d commands", len(pushDevfileCommands))
+	}
+
+	return buildRequired, nil
 }
