@@ -108,8 +108,16 @@ func bootstrapResources(o *BootstrapOptions) (res.Resources, error) {
 	if err != nil {
 		return nil, fmt.Errorf("bootstrap environments: %w", err)
 	}
-	secretsPath := filepath.Join(config.PathForEnvironment(cicdEnv), "base", "pipelines", "03-secrets", secretName+".yaml")
+	secretFilename := filepath.Join("03-secrets", secretName+".yaml")
+	secretsPath := filepath.Join(config.PathForEnvironment(cicdEnv), "base", "pipelines", secretFilename)
 	bootstrapped[secretsPath] = hookSecret
+	kustomizePath := filepath.Join(config.PathForEnvironment(cicdEnv), "base", "pipelines", "kustomization.yaml")
+	k, ok := bootstrapped[kustomizePath].(res.Kustomization)
+	if !ok {
+		return nil, fmt.Errorf("no kustomization for the %s environment found", kustomizePath)
+	}
+	k.Resources = append(k.Resources, secretFilename)
+	bootstrapped[kustomizePath] = k
 	bootstrapped = res.Merge(svcFiles, bootstrapped)
 	return bootstrapped, nil
 }
