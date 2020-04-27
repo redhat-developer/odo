@@ -219,7 +219,6 @@ func TestSyncFiles(t *testing.T) {
 	if err != nil {
 		t.Errorf("TestSyncFiles error: error creating temporary directory for the indexer: %v", err)
 	}
-	t.Logf(">>> MJF directory is %v", directory)
 
 	tests := []struct {
 		name               string
@@ -345,7 +344,6 @@ func TestPushLocal(t *testing.T) {
 	if err != nil {
 		t.Errorf("TestPushLocal error: error creating temporary directory for the indexer: %v", err)
 	}
-	t.Logf(">>> MJF directory is %v", directory)
 
 	newFilePath := filepath.Join(directory, "foobar.txt")
 	if err := helper.CreateFileWithContent(newFilePath, "hello world"); err != nil {

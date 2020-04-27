@@ -33,7 +33,6 @@ func TestPush(t *testing.T) {
 	if err != nil {
 		t.Errorf("TestPush error: error creating temporary directory for the indexer: %v", err)
 	}
-	t.Logf(">>> MJF directory is %v", directory)
 
 	pushParams := adaptersCommon.PushParameters{
 		Path:              directory,

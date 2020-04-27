@@ -27,22 +27,27 @@ const (
 
 // ComponentExists checks if Docker containers labeled with the specified component name exists
 func ComponentExists(client lclient.Client, name string) bool {
-	containers := GetComponentContainers(client, name)
+	containers, err := GetComponentContainers(client, name)
+	if err != nil {
+		// log the error since this function basically returns a bool
+		log.Error(err)
+		return false
+	}
 	return len(containers) != 0
 }
 
 // GetComponentContainers returns a list of the running component containers
-func GetComponentContainers(client lclient.Client, name string) (containers []types.Container) {
+func GetComponentContainers(client lclient.Client, componentName string) (containers []types.Container, err error) {
 	containerList, err := client.GetContainerList()
 	if err != nil {
 		return
 	}
-	containers = client.GetContainersByComponent(name, containerList)
+	containers = client.GetContainersByComponent(componentName, containerList)
 
 	return
 }
 
-// GetContainerIDForAlias returns the container id for the devfile alias from a list of containers
+// GetContainerIDForAlias returns the container ID for the devfile alias from a list of containers
 func GetContainerIDForAlias(containers []types.Container, alias string) string {
 	containerID := ""
 	for _, container := range containers {
@@ -200,7 +205,7 @@ func UpdateComponentWithSupervisord(comp *common.DevfileComponent, runCommand co
 			AddVolumeToContainer(supervisordVolumeName, adaptersCommon.SupervisordMountPath, hostConfig)
 
 			if len(comp.Command) == 0 && len(comp.Args) == 0 {
-				glog.V(3).Infof("Updating container %v entrypoint with supervisord", *comp.Alias)
+				glog.V(4).Infof("Updating container %v entrypoint with supervisord", *comp.Alias)
 				comp.Command = append(comp.Command, adaptersCommon.SupervisordBinaryPath)
 				comp.Args = append(comp.Args, "-c", adaptersCommon.SupervisordConfFile)
 			}
@@ -259,13 +264,13 @@ func StartBootstrapSupervisordInitContainer(client lclient.Client, supervisordVo
 
 	var s *log.Status
 	if log.IsDebug() {
-		s = log.Spinner("Pulling image " + image)
+		s = log.Spinnerf("Pulling image %s", image)
 		defer s.End(false)
 	}
 
 	err := client.PullImage(image)
 	if err != nil {
-		return errors.Wrapf(err, "Unable to pull %s image", image)
+		return errors.Wrapf(err, "unable to pull %s image", image)
 	}
 	if log.IsDebug() {
 		s.End(true)
@@ -278,7 +283,7 @@ func StartBootstrapSupervisordInitContainer(client lclient.Client, supervisordVo
 
 	// Create the docker container
 	if log.IsDebug() {
-		s = log.Spinner("Starting container for " + image)
+		s = log.Spinnerf("Starting container for %s", image)
 		defer s.End(false)
 	}
 	err = client.StartContainer(&containerConfig, &hostConfig, nil)

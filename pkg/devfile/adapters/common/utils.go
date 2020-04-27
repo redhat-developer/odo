@@ -57,6 +57,12 @@ const (
 
 	// EnvOdoCommandRun is the env defined in the runtime component container which holds the run command to be executed
 	EnvOdoCommandRun = "ODO_COMMAND_RUN"
+
+	// ShellExecutable is the shell executable
+	ShellExecutable = "/bin/sh"
+
+	// SupervisordCtlSubCommand is the supervisord sub command ctl
+	SupervisordCtlSubCommand = "ctl"
 )
 
 func isComponentSupported(component common.DevfileComponent) bool {
@@ -132,14 +138,14 @@ func IsPortPresent(endpoints []common.DockerimageEndpoint, port int) bool {
 func IsComponentBuildRequired(pushDevfileCommands []common.DevfileCommand) (bool, error) {
 	var buildRequired bool
 
-	if len(pushDevfileCommands) == 1 {
-		// if there is one command, it is the mandatory run command. No need to build.
+	switch len(pushDevfileCommands) {
+	case 1: // if there is one command, it is the mandatory run command. No need to build.
 		buildRequired = false
-	} else if len(pushDevfileCommands) == 2 {
+	case 2:
 		// if there are two commands, it is the optional build command and the mandatory run command, set buildRequired to true
 		buildRequired = true
-	} else {
-		return false, fmt.Errorf("error executing devfile commands - there should be at least 1 command or at most 2 commands, currently there are %v commands", len(pushDevfileCommands))
+	default:
+		return false, fmt.Errorf("error executing devfile commands - there should be at least 1 command or at most 2 commands, currently there are %d commands", len(pushDevfileCommands))
 	}
 
 	return buildRequired, nil

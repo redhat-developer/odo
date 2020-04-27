@@ -118,7 +118,7 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 		compInfo,
 	)
 	if err != nil {
-		return false, errors.Wrapf(err, "Failed to sync to component with name %s", a.ComponentName)
+		return false, errors.Wrapf(err, "failed to sync to component with name %s", a.ComponentName)
 	}
 
 	return true, nil
@@ -131,9 +131,9 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	// Edge case: check to see that the path is NOT empty.
 	emptyDir, err := util.IsEmpty(path)
 	if err != nil {
-		return errors.Wrapf(err, "Unable to check directory: %s", path)
+		return errors.Wrapf(err, "unable to check directory: %s", path)
 	} else if emptyDir {
-		return errors.New(fmt.Sprintf("Directory / file %s is empty", path))
+		return errors.New(fmt.Sprintf("directory/file %s is empty", path))
 	}
 
 	// Sync the files to the pod

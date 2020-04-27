@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/util"
 
 	"github.com/golang/glog"
@@ -38,7 +39,7 @@ func CopyFile(client SyncClient, localPath string, compInfo common.ComponentInfo
 
 		err := makeTar(localPath, dest, writer, copyFiles, globExps)
 		if err != nil {
-			glog.Errorf("Error while creating tar: %#v", err)
+			log.Errorf("Error while creating tar: %#v", err)
 			os.Exit(1)
 		}
 

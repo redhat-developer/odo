@@ -139,10 +139,10 @@ func (c *Client) ExtractProjectToComponent(compInfo common.ComponentInfo, target
 	glog.V(4).Infof("Executing command %s", strings.Join(cmdArr, " "))
 	err := c.ExecCMDInContainer(compInfo, cmdArr, &stdout, &stderr, stdin, false)
 	if err != nil {
-		glog.Errorf("Command '%s' in container failed.\n", strings.Join(cmdArr, " "))
-		glog.Errorf("stdout: %s\n", stdout.String())
-		glog.Errorf("stderr: %s\n", stderr.String())
-		glog.Errorf("err: %s\n", err.Error())
+		log.Errorf("Command '%s' in container failed.\n", strings.Join(cmdArr, " "))
+		log.Errorf("stdout: %s\n", stdout.String())
+		log.Errorf("stderr: %s\n", stderr.String())
+		log.Errorf("err: %s\n", err.Error())
 		return err
 	}
 	return nil

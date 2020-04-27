@@ -196,7 +196,7 @@ func (a Adapter) updateComponent() (componentExists bool, err error) {
 
 func (a Adapter) pullAndStartContainer(mounts []mount.Mount, projectVolumeName string, comp versionsCommon.DevfileComponent) error {
 	// Container doesn't exist, so need to pull its image (to be safe) and start a new container
-	s := log.Spinner("Pulling image " + *comp.Image)
+	s := log.Spinnerf("Pulling image %s", *comp.Image)
 
 	err := a.Client.PullImage(*comp.Image)
 	if err != nil {

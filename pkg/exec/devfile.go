@@ -6,6 +6,7 @@ import (
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/pkg/errors"
 )
 
 // ExecuteDevfileBuildAction executes the devfile build command action
@@ -15,22 +16,23 @@ func ExecuteDevfileBuildAction(client ExecClient, action common.DevfileCommandAc
 	// Change to the workdir and execute the command
 	var cmdArr []string
 	if action.Workdir != nil {
-		cmdArr = []string{"/bin/sh", "-c", "cd " + *action.Workdir + " && " + *action.Command}
+		// since we are using /bin/sh -c, the command needs to be within a single double quote instance, for example "cd /tmp && pwd"
+		cmdArr = []string{adaptersCommon.ShellExecutable, "-c", "cd " + *action.Workdir + " && " + *action.Command}
 	} else {
-		cmdArr = []string{"/bin/sh", "-c", *action.Command}
+		cmdArr = []string{adaptersCommon.ShellExecutable, "-c", *action.Command}
 	}
 
 	if show {
 		s = log.SpinnerNoSpin("Executing " + commandName + " command " + fmt.Sprintf("%q", *action.Command))
 	} else {
-		s = log.Spinner("Executing " + commandName + " command " + fmt.Sprintf("%q", *action.Command))
+		s = log.Spinnerf("Executing %s command %q", commandName, *action.Command)
 	}
 
 	defer s.End(false)
 
 	err := ExecuteCommand(client, compInfo, cmdArr, show)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "unable to execute the build command")
 	}
 	s.End(true)
 
@@ -47,22 +49,21 @@ func ExecuteDevfileRunAction(client ExecClient, action common.DevfileCommandActi
 	}
 	devRunExecs := []devRunExecutable{
 		{
-			command: []string{adaptersCommon.SupervisordBinaryPath, "ctl", "stop", "all"},
+			command: []string{adaptersCommon.SupervisordBinaryPath, adaptersCommon.SupervisordCtlSubCommand, "stop", "all"},
 		},
 		{
-			command: []string{adaptersCommon.SupervisordBinaryPath, "ctl", "start", string(adaptersCommon.DefaultDevfileRunCommand)},
+			command: []string{adaptersCommon.SupervisordBinaryPath, adaptersCommon.SupervisordCtlSubCommand, "start", string(adaptersCommon.DefaultDevfileRunCommand)},
 		},
 	}
 
-	s = log.Spinner("Executing " + commandName + " command " + fmt.Sprintf("%q", *action.Command))
+	s = log.Spinnerf("Executing %s command %q", commandName, *action.Command)
 	defer s.End(false)
 
 	for _, devRunExec := range devRunExecs {
 
 		err := ExecuteCommand(client, compInfo, devRunExec.command, show)
 		if err != nil {
-			s.End(false)
-			return err
+			return errors.Wrapf(err, "unable to execute the run command")
 		}
 	}
 	s.End(true)

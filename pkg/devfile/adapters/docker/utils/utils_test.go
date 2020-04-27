@@ -58,6 +58,72 @@ func TestComponentExists(t *testing.T) {
 	}
 }
 
+func TestGetComponentContainers(t *testing.T) {
+	fakeClient := lclient.FakeNew()
+	fakeErrorClient := lclient.FakeErrorNew()
+
+	tests := []struct {
+		name          string
+		componentName string
+		client        *lclient.Client
+		wantContainer types.Container
+		wantErr       bool
+	}{
+		{
+			name:          "Case 1: Component exists",
+			componentName: "test",
+			client:        fakeClient,
+			wantContainer: types.Container{
+				Names: []string{"/node"},
+				Image: "node",
+				Labels: map[string]string{
+					"component": "test",
+					"alias":     "alias1",
+				},
+				Mounts: []types.MountPoint{
+					{
+						Destination: lclient.OdoSourceVolumeMount,
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:          "Case 2: Error client",
+			componentName: "test",
+			client:        fakeErrorClient,
+			wantContainer: types.Container{},
+			wantErr:       true,
+		},
+		{
+			name:          "Case 3: Component does not exist",
+			componentName: "somerandomcomponent",
+			client:        fakeClient,
+			wantContainer: types.Container{},
+			wantErr:       false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			containers, err := GetComponentContainers(*tt.client, tt.componentName)
+			if !tt.wantErr && err != nil {
+				t.Errorf("TestGetComponentContainers error: unexpected error %v", err)
+			} else if !tt.wantErr {
+				matched := false
+				for _, container := range containers {
+					if reflect.DeepEqual(tt.wantContainer, container) {
+						matched = true
+					}
+				}
+				if !matched && len(containers) > 0 {
+					t.Errorf("TestGetComponentContainers error: did not match wanted container %v", tt.wantContainer.Names)
+				}
+			}
+		})
+	}
+}
+
 func TestConvertEnvs(t *testing.T) {
 	envVarsNames := []string{"test", "sample-var", "myvar"}
 	envVarsValues := []string{"value1", "value2", "value3"}

@@ -51,26 +51,28 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	a.devfileRunCmd = parameters.DevfileRunCmd
 
 	// Validate the devfile build and run commands
-	log.Infof("\nValidation")
+	log.Info("\nValidation")
+	s := log.Spinner("Validating the devfile")
 	pushDevfileCommands, err := common.ValidateAndGetPushDevfileCommands(a.Devfile.Data, a.devfileBuildCmd, a.devfileRunCmd)
 	if err != nil {
+		s.End(false)
 		return errors.Wrap(err, "failed to validate devfile build and run commands")
 	}
-	log.Successf("Devfile validated")
+	s.End(true)
 
 	// Get the supervisord volume
 	supervisordLabels := utils.GetSupervisordVolumeLabels()
-	supervisordVols, err := a.Client.GetVolumesByLabel(supervisordLabels)
+	supervisordVolumes, err := a.Client.GetVolumesByLabel(supervisordLabels)
 	if err != nil {
-		return errors.Wrapf(err, "Unable to retrieve supervisord volume for component %s", a.ComponentName)
+		return errors.Wrapf(err, "unable to retrieve supervisord volume for component %s", a.ComponentName)
 	}
-	if len(supervisordVols) == 0 {
+	if len(supervisordVolumes) == 0 {
 		a.supervisordVolumeName, err = utils.CreateAndInitSupervisordVolume(a.Client)
 		if err != nil {
-			return errors.Wrapf(err, "Unable to create supervisord volume for component %s", a.ComponentName)
+			return errors.Wrapf(err, "unable to create supervisord volume for component %s", a.ComponentName)
 		}
 	} else {
-		a.supervisordVolumeName = supervisordVols[0].Name
+		a.supervisordVolumeName = supervisordVolumes[0].Name
 	}
 
 	if componentExists {
@@ -83,7 +85,11 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return errors.Wrap(err, "unable to create or update component")
 	}
 
-	containers := utils.GetComponentContainers(a.Client, a.ComponentName)
+	containers, err := utils.GetComponentContainers(a.Client, a.ComponentName)
+	if err != nil {
+		return errors.Wrapf(err, "error while retrieving container for odo component %s", a.ComponentName)
+	}
+
 	// Find at least one container with the source volume mounted, error out if none can be found
 	containerID, err := getFirstContainerWithSourceVolume(containers)
 	if err != nil {
@@ -105,14 +111,14 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 	execRequired, err := syncAdapter.SyncFiles(syncParams)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to sync to component with name %s", a.ComponentName)
+		return errors.Wrapf(err, "failed to sync to component with name %s", a.ComponentName)
 	}
 
 	if execRequired {
 		log.Infof("\nExecuting devfile commands for component %s", a.ComponentName)
 		err = a.execDevfile(pushDevfileCommands, componentExists, parameters.Show, containers)
 		if err != nil {
-			return errors.Wrapf(err, "Failed to execute devfile commands for component %s", a.ComponentName)
+			return errors.Wrapf(err, "failed to execute devfile commands for component %s", a.ComponentName)
 		}
 	}
 
@@ -137,7 +143,7 @@ func getFirstContainerWithSourceVolume(containers []types.Container) (string, er
 		}
 	}
 
-	return "", fmt.Errorf("In order to sync files, odo requires at least one component in a devfile to set 'mountSources: true'")
+	return "", fmt.Errorf("in order to sync files, odo requires at least one component in a devfile to set 'mountSources: true'")
 }
 
 // Delete attempts to delete the component with the specified labels, returning an error if it fails
