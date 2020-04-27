@@ -65,7 +65,6 @@ func (do *DescribeOptions) Run() (err error) {
 	}
 
 	if log.IsJSON() {
-		cfd.Spec.Ports = do.LocalConfigInfo.GetPorts()
 		machineoutput.OutputSuccess(cfd)
 	} else {
 		err = cfd.PrintInfo(do.Context.Client, do.LocalConfigInfo)
