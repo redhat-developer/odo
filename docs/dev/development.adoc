@@ -317,7 +317,7 @@ Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 
 There are some test environment variable that helps to get more control over the test run and it's results
 
-* TEST_EXEC_NODES: Env variable TEST_EXEC_NODES is used to pass spec execution type (parallel or sequential) for ginkgo tests. To run the specs sequentially use TEST_EXEC_NODES=1, otherwise by default the specs are run in parallel on 2 ginkgo test node. Any TEST_EXEC_NODES value greater than one runs the spec in parallel on the same number of ginkgo test nodes.
+* TEST_EXEC_NODES: Env variable TEST_EXEC_NODES is used to pass spec execution type (parallel or sequential) for ginkgo tests. To run the specs sequentially use TEST_EXEC_NODES=1, otherwise by default the specs are run in parallel on 4 ginkgo test node. Any TEST_EXEC_NODES value greater than one runs the spec in parallel on the same number of ginkgo test nodes.
 
 * SLOW_SPEC_THRESHOLD: Env variable SLOW_SPEC_THRESHOLD is used for ginkgo tests. After this time (in second), ginkgo marks test as slow. The default value is set to 120s.
 
@@ -329,7 +329,7 @@ There are some test environment variable that helps to get more control over the
 
 By default, tests are run against the `odo` binary placed in the PATH which is created by command `make`. Integration tests can be run in two (parallel and sequential) ways. To control the parallel run use environment variable `TEST_EXEC_NODES`. For example component test can be run
 
-* To run the test in parallel, on a test cluster (By default the test will run in parallel on two ginkgo test node):
+* To run the test in parallel, on a test cluster (By default the test will run in parallel on four ginkgo test node):
 
 +
 Run component command integration tests
@@ -347,13 +347,13 @@ Run component command integration tests
 $ TEST_EXEC_NODES=1 make test-cmd-cmp
 ----
 
-NOTE: To see the number of available integration test file for validation, press `tab` just after writing `make test-cmd-`. However there is a test file `generic_test.go` which handles certain test spec easily and can run the spec in parallel by calling `make test-generic`. By calling make `test-integration`, the whole suite can run all the spec in parallel on two ginkgo test node except `service` and `link` irrespective of service catalog status in the cluster. However `make test-integration-service-catalog` runs all spec of service and link tests successfully in parallel on cluster having service catalog enabled. `make test-odo-login-e2e` doesn't honour environment variable `TEST_EXEC_NODES`. So by default it runs login and logout command integration test suite on a single ginkgo test node sequentially to avoid race conditions in a parallel run.
+NOTE: To see the number of available integration test file for validation, press `tab` just after writing `make test-cmd-`. However there is a test file `generic_test.go` which handles certain test spec easily and can run the spec in parallel by calling `make test-generic`. By calling make `test-integration`, the whole suite can run all the spec in parallel on four ginkgo test node except `service` and `link` irrespective of service catalog status in the cluster. However `make test-integration-service-catalog` runs all spec of service and link tests successfully in parallel on cluster having service catalog enabled. `make test-odo-login-e2e` doesn't honour environment variable `TEST_EXEC_NODES`. So by default it runs login and logout command integration test suite on a single ginkgo test node sequentially to avoid race conditions in a parallel run.
 
 *Running e2e tests:*
 
 (E2e) End to end test run behaves in the similar way like integration test does. To see the number of available e2e test file for execution, press tab just after writing `make test-e2e-`. For e2e suite level execution of all e2e test spec use `make test-e2e-all`. For example
 
-* To run the java e2e test in parallel, on a test cluster (By default the component test will run in parallel on two ginkgo test node):
+* To run the java e2e test in parallel, on a test cluster (By default the component test will run in parallel on four ginkgo test node):
 +
 ----
 $ make test-e2e-java
