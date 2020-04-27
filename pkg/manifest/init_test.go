@@ -78,14 +78,14 @@ func ignoreSecrets(k string, v interface{}) bool {
 
 func TestGetCICDKustomization(t *testing.T) {
 	want := res.Resources{
-		"base/kustomization.yaml": map[string]interface{}{
-			"bases": []string{"./pipelines"},
+		"base/kustomization.yaml": res.Kustomization{
+			Bases: []string{"./pipelines"},
 		},
-		"overlays/kustomization.yaml": map[string]interface{}{
-			"bases": []string{"../base"},
+		"overlays/kustomization.yaml": res.Kustomization{
+			Bases: []string{"../base"},
 		},
-		"base/pipelines/kustomization.yaml": map[string]interface{}{
-			"resources": []string{"resource1", "resource2"},
+		"base/pipelines/kustomization.yaml": res.Kustomization{
+			Resources: []string{"resource1", "resource2"},
 		},
 	}
 	got := getCICDKustomization([]string{"resource1", "resource2"})

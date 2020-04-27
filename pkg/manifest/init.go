@@ -14,6 +14,7 @@ import (
 	"github.com/openshift/odo/pkg/manifest/ioutils"
 	"github.com/openshift/odo/pkg/manifest/meta"
 	"github.com/openshift/odo/pkg/manifest/pipelines"
+	"github.com/openshift/odo/pkg/manifest/resources"
 	res "github.com/openshift/odo/pkg/manifest/resources"
 	"github.com/openshift/odo/pkg/manifest/roles"
 	"github.com/openshift/odo/pkg/manifest/routes"
@@ -228,14 +229,14 @@ func createManifest(envs ...*config.Environment) *config.Manifest {
 
 func getCICDKustomization(files []string) res.Resources {
 	return res.Resources{
-		"base/kustomization.yaml": map[string]interface{}{
-			"bases": []string{"./pipelines"},
+		"base/kustomization.yaml": resources.Kustomization{
+			Bases: []string{"./pipelines"},
 		},
-		"overlays/kustomization.yaml": map[string]interface{}{
-			"bases": []string{"../base"},
+		"overlays/kustomization.yaml": resources.Kustomization{
+			Bases: []string{"../base"},
 		},
-		"base/pipelines/kustomization.yaml": map[string]interface{}{
-			"resources": files,
+		"base/pipelines/kustomization.yaml": resources.Kustomization{
+			Resources: files,
 		},
 	}
 }
