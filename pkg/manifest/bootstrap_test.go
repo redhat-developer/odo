@@ -52,7 +52,7 @@ func TestBootstrapManifest(t *testing.T) {
 	}
 	want := res.Resources{
 		"environments/tst-cicd/base/pipelines/03-secrets/github-webhook-secret-http-api-svc.yaml": hookSecret,
-		"environments/tst-dev/services/http-api-svc/base/config/100-deployment.yaml":              deployment.Create("tst-dev", "http-api-svc", bootstrapImage, deployment.ContainerPort(80)),
+		"environments/tst-dev/services/http-api-svc/base/config/100-deployment.yaml":              deployment.Create("tst-dev", "http-api-svc", bootstrapImage, deployment.ContainerPort(8080)),
 
 		"environments/tst-dev/services/http-api-svc/base/config/200-service.yaml":   createBootstrapService("tst-dev", "http-api-svc"),
 		"environments/tst-dev/services/http-api-svc/base/config/kustomization.yaml": &res.Kustomization{Resources: []string{"100-deployment.yaml", "200-service.yaml"}},
