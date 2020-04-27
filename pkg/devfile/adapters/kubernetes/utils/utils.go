@@ -15,12 +15,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-const (
-	envCheProjectsRoot         = "CHE_PROJECTS_ROOT"
-	envOdoCommandRunWorkingDir = "ODO_COMMAND_RUN_WORKING_DIR"
-	envOdoCommandRun           = "ODO_COMMAND_RUN"
-)
-
 // ComponentExists checks whether a deployment by the given name exists
 func ComponentExists(client kclient.Client, name string) bool {
 	_, err := client.GetDeploymentByName(name)
@@ -87,10 +81,10 @@ func GetContainers(devfileObj devfileParser.DevfileObj) ([]corev1.Container, err
 			})
 
 			// only add the env if it is not set by the devfile
-			if !isEnvPresent(container.Env, envCheProjectsRoot) {
+			if !isEnvPresent(container.Env, adaptersCommon.EnvCheProjectsRoot) {
 				container.Env = append(container.Env,
 					corev1.EnvVar{
-						Name:  envCheProjectsRoot,
+						Name:  adaptersCommon.EnvCheProjectsRoot,
 						Value: kclient.OdoSourceVolumeMount,
 					})
 			}
@@ -143,20 +137,20 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 				// Update the run container's ENV for work dir and command
 				// only if the env var is not set in the devfile
 				// This is done, so supervisord can use it in it's program
-				if !isEnvPresent(container.Env, envOdoCommandRun) {
+				if !isEnvPresent(container.Env, adaptersCommon.EnvOdoCommandRun) {
 					glog.V(3).Infof("Updating container %v env with run command", container.Name)
 					container.Env = append(container.Env,
 						corev1.EnvVar{
-							Name:  envOdoCommandRun,
+							Name:  adaptersCommon.EnvOdoCommandRun,
 							Value: *action.Command,
 						})
 				}
 
-				if !isEnvPresent(container.Env, envOdoCommandRunWorkingDir) && action.Workdir != nil {
+				if !isEnvPresent(container.Env, adaptersCommon.EnvOdoCommandRunWorkingDir) && action.Workdir != nil {
 					glog.V(3).Infof("Updating container %v env with run command's workdir", container.Name)
 					container.Env = append(container.Env,
 						corev1.EnvVar{
-							Name:  envOdoCommandRunWorkingDir,
+							Name:  adaptersCommon.EnvOdoCommandRunWorkingDir,
 							Value: *action.Workdir,
 						})
 				}

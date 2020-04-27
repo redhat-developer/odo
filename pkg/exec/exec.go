@@ -8,19 +8,20 @@ import (
 
 	"github.com/golang/glog"
 
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/log"
 )
 
 type ExecClient interface {
-	ExecCMDInContainer(string, string, []string, io.Writer, io.Writer, io.Reader, bool) error
+	ExecCMDInContainer(common.ComponentInfo, []string, io.Writer, io.Writer, io.Reader, bool) error
 }
 
 // ExecuteCommand executes the given command in the pod's container
-func ExecuteCommand(client ExecClient, podName, containerName string, command []string, show bool) (err error) {
+func ExecuteCommand(client ExecClient, compInfo common.ComponentInfo, command []string, show bool) (err error) {
 	reader, writer := io.Pipe()
 	var cmdOutput string
 
-	glog.V(3).Infof("Executing command %v for pod: %v in container: %v", command, podName, containerName)
+	glog.V(3).Infof("Executing command %v for pod: %v in container: %v", command, compInfo.PodName, compInfo.ContainerName)
 
 	// This Go routine will automatically pipe the output from ExecCMDInContainer to
 	// our logger.
@@ -40,7 +41,7 @@ func ExecuteCommand(client ExecClient, podName, containerName string, command []
 		}
 	}()
 
-	err = client.ExecCMDInContainer(podName, containerName, command, writer, writer, nil, false)
+	err = client.ExecCMDInContainer(compInfo, command, writer, writer, nil, false)
 	if err != nil {
 		log.Errorf("\nUnable to exec command %v: \n%v", command, cmdOutput)
 		return err

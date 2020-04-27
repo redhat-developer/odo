@@ -191,10 +191,10 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					}
 
 					for _, envVar := range container.Env {
-						if envVar.Name == envOdoCommandRun && envVar.Value == *tt.commandActions[0].Command {
+						if envVar.Name == adaptersCommon.EnvOdoCommandRun && envVar.Value == *tt.commandActions[0].Command {
 							envRunMatched = true
 						}
-						if tt.commandActions[0].Workdir != nil && envVar.Name == envOdoCommandRunWorkingDir && envVar.Value == *tt.commandActions[0].Workdir {
+						if tt.commandActions[0].Workdir != nil && envVar.Name == adaptersCommon.EnvOdoCommandRunWorkingDir && envVar.Value == *tt.commandActions[0].Workdir {
 							envWorkDirMatched = true
 						}
 					}
