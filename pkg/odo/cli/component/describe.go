@@ -59,7 +59,7 @@ func (do *DescribeOptions) Run() (err error) {
 	if !do.LocalConfigInfo.ConfigFileExists() {
 		return fmt.Errorf("Component %v does not exist", do.componentName)
 	}
-	cfd, err := component.NewComponentFullDescription(do.Context.Client, do.LocalConfigInfo, do.componentName, do.Context.Application, do.Context.Project)
+	cfd, err := component.NewComponentFullDescriptionFromClientAndLocalConfig(do.Context.Client, do.LocalConfigInfo, do.componentName, do.Context.Application, do.Context.Project)
 	if err != nil {
 		return err
 	}

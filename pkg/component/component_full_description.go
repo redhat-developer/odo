@@ -27,6 +27,7 @@ type ComponentFullDescriptionSpec struct {
 	Ports      []string            `json:"ports,omitempty"`
 }
 
+//ComponentFullDescription describes a component fully
 type ComponentFullDescription struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -42,7 +43,7 @@ func (cfd *ComponentFullDescription) copyFromComponentDesc(component *Component)
 	return json.Unmarshal(d, cfd)
 }
 
-func (cfd *ComponentFullDescription) loadURLS(client *occlient.Client, localConfigInfo *config.LocalConfigInfo, componentName string, applicationName string) error {
+func (cfd *ComponentFullDescription) loadURLSFromClientAndLocalConfig(client *occlient.Client, localConfigInfo *config.LocalConfigInfo, componentName string, applicationName string) error {
 	urls, err := urlpkg.List(client, localConfigInfo, componentName, applicationName)
 	if err != nil {
 		return err
@@ -52,7 +53,7 @@ func (cfd *ComponentFullDescription) loadURLS(client *occlient.Client, localConf
 	return nil
 }
 
-func (cfd *ComponentFullDescription) loadStorages(client *occlient.Client, localConfigInfo *config.LocalConfigInfo, componentName string, applicationName string, componentDesc *Component) error {
+func (cfd *ComponentFullDescription) loadStoragesFromClientAndLocalConfig(client *occlient.Client, localConfigInfo *config.LocalConfigInfo, componentName string, applicationName string, componentDesc *Component) error {
 	var storages storage.StorageList
 	var err error
 	if componentDesc.Status.State == StateTypePushed {
@@ -71,7 +72,7 @@ func (cfd *ComponentFullDescription) loadStorages(client *occlient.Client, local
 	return nil
 }
 
-func (cfd *ComponentFullDescription) fillEmpty(componentDesc Component, componentName string, applicationName string, projectName string) {
+func (cfd *ComponentFullDescription) fillEmptyFields(componentDesc Component, componentName string, applicationName string, projectName string) {
 	//fix missing names in case it in not in description
 	if len(cfd.Name) <= 0 {
 		cfd.Name = componentName
@@ -95,8 +96,8 @@ func (cfd *ComponentFullDescription) fillEmpty(componentDesc Component, componen
 	cfd.Spec.Ports = componentDesc.Spec.Ports
 }
 
-//NewComponentFullDescription gets the complete description of the component from both localconfig and cluster
-func NewComponentFullDescription(client *occlient.Client, localConfigInfo *config.LocalConfigInfo, componentName string, applicationName string, projectName string) (*ComponentFullDescription, error) {
+//NewComponentFullDescriptionFromClientAndLocalConfig gets the complete description of the component from both localconfig and cluster
+func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client, localConfigInfo *config.LocalConfigInfo, componentName string, applicationName string, projectName string) (*ComponentFullDescription, error) {
 	cfd := &ComponentFullDescription{}
 	state := GetComponentState(client, componentName, applicationName)
 	componentDesc, err := GetComponentFromConfig(localConfigInfo)
@@ -118,20 +119,21 @@ func NewComponentFullDescription(client *occlient.Client, localConfigInfo *confi
 		cfd.Spec.SourceType = componentDescFromCluster.Spec.SourceType
 	}
 
-	cfd.fillEmpty(componentDesc, componentName, applicationName, projectName)
+	cfd.fillEmptyFields(componentDesc, componentName, applicationName, projectName)
 
-	err = cfd.loadURLS(client, localConfigInfo, componentName, applicationName)
+	err = cfd.loadURLSFromClientAndLocalConfig(client, localConfigInfo, componentName, applicationName)
 	if err != nil {
 		return cfd, err
 	}
 
-	err = cfd.loadStorages(client, localConfigInfo, componentName, applicationName, &componentDesc)
+	err = cfd.loadStoragesFromClientAndLocalConfig(client, localConfigInfo, componentName, applicationName, &componentDesc)
 	if err != nil {
 		return cfd, err
 	}
 	return cfd, nil
 }
 
+//PrintInfo prints the complete information of component onto stdout
 func (cfd *ComponentFullDescription) PrintInfo(client *occlient.Client, localConfigInfo *config.LocalConfigInfo) error {
 	log.Describef("Component Name: ", cfd.GetName())
 	log.Describef("Type: ", cfd.Spec.Type)
