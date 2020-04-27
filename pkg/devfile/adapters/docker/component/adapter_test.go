@@ -1,6 +1,8 @@
 package component
 
 import (
+	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/docker/docker/api/types"
@@ -26,6 +28,21 @@ func TestPush(t *testing.T) {
 	workDir := "/root"
 	validCommandType := common.DevfileCommandTypeExec
 
+	// create a temp dir for the file indexer
+	directory, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Errorf("TestPush error: error creating temporary directory for the indexer: %v", err)
+	}
+	t.Logf(">>> MJF directory is %v", directory)
+
+	pushParams := adaptersCommon.PushParameters{
+		Path:              directory,
+		WatchFiles:        []string{},
+		WatchDeletedFiles: []string{},
+		IgnoredFiles:      []string{},
+		ForceBuild:        false,
+	}
+
 	commandActions := []versionsCommon.DevfileCommandAction{
 		{
 			Command:   &command,
@@ -47,13 +64,12 @@ func TestPush(t *testing.T) {
 			client:        fakeClient,
 			wantErr:       true,
 		},
-		// disabling this at the moment, because push requires a valid indexer path for syncing
-		// {
-		// 	name:          "Case 2: Valid devfile",
-		// 	componentType: versionsCommon.DevfileComponentTypeDockerimage,
-		// 	client:        fakeClient,
-		// 	wantErr:       false,
-		// },
+		{
+			name:          "Case 2: Valid devfile",
+			componentType: versionsCommon.DevfileComponentTypeDockerimage,
+			client:        fakeClient,
+			wantErr:       false,
+		},
 		{
 			name:          "Case 3: Valid devfile, docker client error",
 			componentType: versionsCommon.DevfileComponentTypeDockerimage,
@@ -77,13 +93,19 @@ func TestPush(t *testing.T) {
 
 			componentAdapter := New(adapterCtx, *tt.client)
 			// ToDo: Add more meaningful unit tests once Push actually does something with its parameters
-			err := componentAdapter.Push(adaptersCommon.PushParameters{})
+			err := componentAdapter.Push(pushParams)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("component adapter create unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
 		})
+	}
+
+	// Remove the temp dir created for the file indexer
+	err = os.RemoveAll(directory)
+	if err != nil {
+		t.Errorf("TestPush error: error deleting the temp dir %s", directory)
 	}
 
 }
