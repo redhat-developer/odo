@@ -3,9 +3,9 @@ doks:
     baseurl:
     color_theme: blue # Available themes: blue (default), green, purple, red and yellow
     header:
-        description: Fast iterative Fast, iterative OpenShift and Kubernetes development
+        description: Fast iterative OpenShift and Kubernetes development
         logo:
-            text: Odo
+            text: odo
             image:
         nav:
             - item_name: Community
@@ -15,7 +15,7 @@ doks:
     footer:
         content:
             logo:
-                text: Odo
+                text: odo
                 image:
             copyright: Copyright &copy; 2020. - Red Hat, Inc.
         social_list:

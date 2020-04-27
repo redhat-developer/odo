@@ -26,12 +26,12 @@ With a devfile you can describe:
  - A list of pre-defined commands that can be ran
  - Projects to initially clone
 
-Odo takes these devfile's and transforms them into a workspace of multiple containers running on OpenShift or Docker.
+odo takes these devfile's and transforms them into a workspace of multiple containers running on OpenShift or Docker.
 
 Devfile's are YAML files with a defined definition, take a look at the general [schema](https://github.com/redhat-developer/devfile/blob/master/docs/devfile.md) of devfile.
 
 
-# Odo and devfile
+# odo and devfile
 
 When deploying a devfile using odo, odo will automatically look at the default [devfile](https://github.com/elsony/devfile-registry) [registries](https://github.com/eclipse/che-devfile-registry/). Interacting with the devfile registries allows a user to pull a standard `devfile.yaml` and begin development immediately. 
 
