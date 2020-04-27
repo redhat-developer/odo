@@ -1,5 +1,5 @@
-hash: 1f67a90716cef2c0b44fd4da28ac42cca92e812b48ba8b96a37d67fe0c80ed82
-updated: 2020-04-22T19:25:44.705181504-04:00
+hash: 49bc28cb12533f0226bab6031a9b64dd5589d6ba0f07518dffacc647e2857876
+updated: 2020-04-28T00:05:07.786607+02:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -121,7 +121,7 @@ imports:
   - util/runes
   - util/strings
 - name: github.com/gogo/protobuf
-  version: 5628607bb4c51c3157aacc3a50f0ab707582b805
+  version: c0656edd0d9eab7c66d1eb0c568f9039345796f7
   subpackages:
   - proto
   - sortkeys
@@ -154,7 +154,7 @@ imports:
   subpackages:
   - query
 - name: github.com/google/gofuzz
-  version: f140a6486e521aad38f5917de355cbf147cc0496
+  version: 44d81051d367757e1c7c6a5a86423ece9afcf63c
 - name: github.com/google/uuid
   version: 8c31c18f31ede9fc8eae72290a7e7a8064e9b3e3
 - name: github.com/googleapis/gnostic
@@ -179,7 +179,7 @@ imports:
 - name: github.com/hashicorp/errwrap
   version: 8a6fb523712970c966eefc6b39ed2c5e74880354
 - name: github.com/hashicorp/go-multierror
-  version: 2004d9dba6b07a5b8d133209244f376680f9d472
+  version: 886a7fbe3eb1c874d46f623bfa70af45f425b3d1
 - name: github.com/hashicorp/golang-lru
   version: a0d98a5f288019575c6d1f4bb1573fef2d1fcdc4
   subpackages:
@@ -187,7 +187,7 @@ imports:
 - name: github.com/hinshun/vt10x
   version: d55458df857cfff952e4bf72ce1b567c5a4e141c
 - name: github.com/hpcloud/tail
-  version: a1dbeea552b7c8df4b542c66073e393de198a800
+  version: a30252cb686a21eb2d0b98132633053ec2f7f1e5
   subpackages:
   - ratelimiter
   - util
@@ -591,10 +591,10 @@ imports:
   subpackages:
   - core
   - terminal
-- name: gopkg.in/fsnotify/fsnotify.v1
-  version: 45d7d09e39ef4ac08d493309fa031790c15bfe8a
+- name: gopkg.in/fsnotify.v1
+  version: 7be54206639f256967dd82fa767397ba5f8f48f5
 - name: gopkg.in/inf.v0
-  version: d2d2541c53f18d2a059457998ce2876cc8e67cbf
+  version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
 - name: gopkg.in/tomb.v1
   version: c131134a1947e9afd9cecfe11f4c6dff0732ae58
 - name: gopkg.in/yaml.v2
