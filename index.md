@@ -4,13 +4,13 @@ layout: homepage
 keywords:
 
 # Hero section
-title: Odo 
+title: odo 
 description: "OpenShift Do (odo) is a fast, iterative, and straightforward CLI tool for developers who write, build, and deploy applications on OpenShift.<br><br>Existing tools such as oc are more operations-focused and require a deep-understanding of Kubernetes and OpenShift concepts. odo abstracts away complex Kubernetes and OpenShift concepts for the developer."
 project: A collaborative project between Red Hat and IBM
 asciinema: '<script id="asciicast-wVkVgUrO7PGR5CYBFbHB5fFDn" src="https://asciinema.org/a/wVkVgUrO7PGR5CYBFbHB5fFDn.js" async></script>'
 
 buttons:
-    - content: Installing Odo
+    - content: Installing odo
       url: '/docs/installing-odo'
       external_url: false
     - icon: github
@@ -23,7 +23,7 @@ author:
     title: Supported Languages
     title_url: '/docs/understanding-odo/#officially-supported-languages-and-corresponding-container-images'
     external_url: true
-    description: "Odo currently supports the following languages & frameworks:"
+    description: "odo currently supports the following languages & frameworks:"
     languages:
       - title: Node.JS
       - title: Java
