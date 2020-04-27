@@ -96,6 +96,11 @@ func (e Environment) IsSpecial() bool {
 	return e.IsCICD || e.IsArgoCD
 }
 
+// Application has many services.
+//
+// The ConfigRepo indicates that the configuration for this application lives in
+// another repository.
+// TODO: validate that an app with a ConfigRepo has no services.
 type Application struct {
 	Name       string      `json:"name,omitempty"`
 	Services   []*Service  `json:"services,omitempty"`
