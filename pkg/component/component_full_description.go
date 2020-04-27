@@ -71,6 +71,30 @@ func (cfd *ComponentFullDescription) loadStorages(client *occlient.Client, local
 	return nil
 }
 
+func (cfd *ComponentFullDescription) fillEmpty(componentDesc Component, componentName string, applicationName string, projectName string) {
+	//fix missing names in case it in not in description
+	if len(cfd.Name) <= 0 {
+		cfd.Name = componentName
+	}
+
+	if len(cfd.Namespace) <= 0 {
+		cfd.Namespace = projectName
+	}
+
+	if len(cfd.Kind) <= 0 {
+		cfd.Kind = "Component"
+	}
+
+	if len(cfd.APIVersion) <= 0 {
+		cfd.APIVersion = "odo.openshift.io/v1alpha1"
+	}
+
+	if len(cfd.Spec.App) <= 0 {
+		cfd.Spec.App = applicationName
+	}
+	cfd.Spec.Ports = componentDesc.Spec.Ports
+}
+
 //NewComponentFullDescription gets the complete description of the component from both localconfig and cluster
 func NewComponentFullDescription(client *occlient.Client, localConfigInfo *config.LocalConfigInfo, componentName string, applicationName string, projectName string) (*ComponentFullDescription, error) {
 	cfd := &ComponentFullDescription{}
@@ -83,26 +107,24 @@ func NewComponentFullDescription(client *occlient.Client, localConfigInfo *confi
 	if err != nil {
 		return cfd, err
 	}
-
-	//fix missing names in case it in not in description
-	if len(cfd.Name) <= 0 {
-		cfd.Name = componentName
-	}
-
+	cfd.Status.State = state
 	if state == StateTypePushed {
 		componentDescFromCluster, err := GetComponent(client, componentName, applicationName, projectName)
 		if err != nil {
 			return cfd, err
 		}
 		cfd.Spec.Env = componentDescFromCluster.Spec.Env
+		cfd.Spec.Type = componentDescFromCluster.Spec.Type
+		cfd.Spec.SourceType = componentDescFromCluster.Spec.SourceType
 	}
 
-	cfd.Status.State = state
+	cfd.fillEmpty(componentDesc, componentName, applicationName, projectName)
 
 	err = cfd.loadURLS(client, localConfigInfo, componentName, applicationName)
 	if err != nil {
 		return cfd, err
 	}
+
 	err = cfd.loadStorages(client, localConfigInfo, componentName, applicationName, &componentDesc)
 	if err != nil {
 		return cfd, err
@@ -110,21 +132,21 @@ func NewComponentFullDescription(client *occlient.Client, localConfigInfo *confi
 	return cfd, nil
 }
 
-func (componentDesc *ComponentFullDescription) PrintInfo(client *occlient.Client, localConfigInfo *config.LocalConfigInfo) error {
-	log.Describef("Component Name: ", componentDesc.GetName())
-	log.Describef("Type: ", componentDesc.Spec.Type)
+func (cfd *ComponentFullDescription) PrintInfo(client *occlient.Client, localConfigInfo *config.LocalConfigInfo) error {
+	log.Describef("Component Name: ", cfd.GetName())
+	log.Describef("Type: ", cfd.Spec.Type)
 
 	// Source
-	if componentDesc.Spec.Source != "" {
-		log.Describef("Source: ", componentDesc.Spec.Source)
+	if cfd.Spec.Source != "" {
+		log.Describef("Source: ", cfd.Spec.Source)
 	}
 
 	// Env
-	if componentDesc.Spec.Env != nil {
+	if cfd.Spec.Env != nil {
 
 		// Retrieve all the environment variables
 		var output string
-		for _, env := range componentDesc.Spec.Env {
+		for _, env := range cfd.Spec.Env {
 			output += fmt.Sprintf(" · %v=%v\n", env.Name, env.Value)
 		}
 
@@ -137,11 +159,11 @@ func (componentDesc *ComponentFullDescription) PrintInfo(client *occlient.Client
 	}
 
 	// Storage
-	if len(componentDesc.Spec.Storage.Items) > 0 {
+	if len(cfd.Spec.Storage.Items) > 0 {
 
 		// Gather the output
 		var output string
-		for _, store := range componentDesc.Spec.Storage.Items {
+		for _, store := range cfd.Spec.Storage.Items {
 			output += fmt.Sprintf(" · %v of size %v mounted to %v\n", store.Name, store.Spec.Size, store.Spec.Path)
 		}
 
@@ -154,20 +176,20 @@ func (componentDesc *ComponentFullDescription) PrintInfo(client *occlient.Client
 	}
 
 	// URL
-	if len(componentDesc.Spec.URL.Items) > 0 {
+	if len(cfd.Spec.URL.Items) > 0 {
 		var output string
 
 		if !experimental.IsExperimentalModeEnabled() {
 			// if the component is not pushed
-			for i, componentURL := range componentDesc.Spec.URL.Items {
+			for i, componentURL := range cfd.Spec.URL.Items {
 				if componentURL.Status.State == urlpkg.StateTypePushed {
 					output += fmt.Sprintf(" · %v exposed via %v\n", urlpkg.GetURLString(componentURL.Spec.Protocol, componentURL.Spec.Host, ""), componentURL.Spec.Port)
 				} else {
 					var p string
-					if i >= len(componentDesc.Spec.Ports) {
-						p = componentDesc.Spec.Ports[len(componentDesc.Spec.Ports)-1]
+					if i >= len(cfd.Spec.Ports) {
+						p = cfd.Spec.Ports[len(cfd.Spec.Ports)-1]
 					} else {
-						p = componentDesc.Spec.Ports[i]
+						p = cfd.Spec.Ports[i]
 					}
 					output += fmt.Sprintf(" · URL named %s will be exposed via %v\n", componentURL.Name, p)
 				}
@@ -182,11 +204,11 @@ func (componentDesc *ComponentFullDescription) PrintInfo(client *occlient.Client
 	}
 
 	// Linked components
-	if len(componentDesc.Status.LinkedComponents) > 0 {
+	if len(cfd.Status.LinkedComponents) > 0 {
 
 		// Gather the output
 		var output string
-		for name, ports := range componentDesc.Status.LinkedComponents {
+		for name, ports := range cfd.Status.LinkedComponents {
 			if len(ports) > 0 {
 				output += fmt.Sprintf(" · %v - Port(s): %v\n", name, strings.Join(ports, ","))
 			} else {
@@ -203,14 +225,14 @@ func (componentDesc *ComponentFullDescription) PrintInfo(client *occlient.Client
 	}
 
 	// Linked services
-	if len(componentDesc.Status.LinkedServices) > 0 {
+	if len(cfd.Status.LinkedServices) > 0 {
 
 		// Gather the output
 		var output string
-		for _, linkedService := range componentDesc.Status.LinkedServices {
+		for _, linkedService := range cfd.Status.LinkedServices {
 
 			// Let's also get the secrets / environment variables that are being passed in.. (if there are any)
-			secrets, err := client.GetSecret(linkedService, componentDesc.GetNamespace())
+			secrets, err := client.GetSecret(linkedService, cfd.GetNamespace())
 			if err != nil {
 				return err
 			}
