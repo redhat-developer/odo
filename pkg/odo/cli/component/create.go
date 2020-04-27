@@ -741,7 +741,7 @@ func (co *CreateOptions) downloadProject() error {
 	switch project.Source.Type {
 	case "git":
 		if strings.Contains(project.Source.Location, "github.com") {
-			zipUrl, err = util.GetGitHubZipURL(project.Source.Location)
+			zipUrl, err = util.GetGitHubZipURL(project)
 			if err != nil {
 				return err
 			}
@@ -749,7 +749,7 @@ func (co *CreateOptions) downloadProject() error {
 			return errors.Errorf("Project type git with non github url not supported")
 		}
 	case "github":
-		zipUrl, err = util.GetGitHubZipURL(project.Source.Location)
+		zipUrl, err = util.GetGitHubZipURL(project)
 		if err != nil {
 			return err
 		}

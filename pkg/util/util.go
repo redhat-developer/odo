@@ -26,6 +26,7 @@ import (
 	"github.com/gobwas/glob"
 	"github.com/golang/glog"
 	"github.com/google/go-github/github"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -753,8 +754,9 @@ func ConvertGitSSHRemoteToHTTPS(remote string) string {
 }
 
 // GetGitHubZipURL downloads a repo from a URL to a destination
-func GetGitHubZipURL(repoURL string) (string, error) {
+func GetGitHubZipURL(project common.DevfileProject) (string, error) {
 	var url string
+	repoURL := project.Source.Location
 	// Convert ssh remote to https
 	if strings.HasPrefix(repoURL, "git@") {
 		repoURL = ConvertGitSSHRemoteToHTTPS(repoURL)
@@ -785,11 +787,46 @@ func GetGitHubZipURL(repoURL string) (string, error) {
 		repo = strings.TrimSuffix(repo, ".git")
 	}
 
-	// TODO: pass branch or tag from devfile
-	branch := "master"
+	// Extract reference checkout for project
+	references := make(map[string]string)
+	if project.Source.Branch != nil && *project.Source.Branch != "" {
+		references["Branch"] = *project.Source.Branch
+	}
+
+	if project.Source.CommitId != nil && *project.Source.CommitId != "" {
+		references["CommitId"] = *project.Source.CommitId
+	}
+
+	if project.Source.Tag != nil && *project.Source.Tag != "" {
+		references["Tag"] = *project.Source.Tag
+	}
+
+	if project.Source.StartPoint != nil && *project.Source.StartPoint != "" {
+		references["StartPoint"] = *project.Source.StartPoint
+	}
+
+	if len(references) > 1 {
+		errMsg := ""
+		for key, value := range references {
+			errMsg += fmt.Sprintf("%s specified with value %s\n", key, value)
+		}
+
+		return url, errors.Errorf("More than one source reference specified. The following were specified:\n%s", errMsg)
+	}
+
+	var ref string
+	if len(references) == 1 {
+		// Only way to get the first element of the map
+		for _, value := range references {
+			ref = value
+		}
+	} else {
+		// Default to master if reference is not set
+		ref = "master"
+	}
 
 	client := github.NewClient(nil)
-	opt := &github.RepositoryContentGetOptions{Ref: branch}
+	opt := &github.RepositoryContentGetOptions{Ref: ref}
 
 	URL, response, err := client.Repositories.GetArchiveLink(context.Background(), owner, repo, "zipball", opt, true)
 	if err != nil {

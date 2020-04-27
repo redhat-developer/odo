@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -1571,46 +1572,69 @@ func TestIsValidProjectDir(t *testing.T) {
 	}
 }
 
-/*
 func TestGetGitHubZipURL(t *testing.T) {
+	commitid := "39b5ec7833a65278012eab13a895471bba2cd03d"
+	tag := "1.0.0"
 	tests := []struct {
 		name          string
-		zipURL        string
+		project       common.DevfileProject
 		expectedError string
+		expectedURL   string
 	}{
 		{
-			name:          "Case 1: Invalid http request",
-			zipURL:        "http://github.com/che-samples/web-nodejs-sample/archive/master",
+			name: "Case 1: Invalid http request",
+			project: common.DevfileProject{
+				Source: common.DevfileProjectSource{
+					Location: "http://github.com/che-samples/web-nodejs-sample/archive/master",
+				},
+			},
 			expectedError: "Invalid GitHub URL. Please use https://",
+			expectedURL:   "",
 		},
 		{
-			name:          "Case 2: Invalid owner",
-			zipURL:        "https://github.com//web-nodejs-sample/archive/master",
+			name: "Case 2: Invalid owner",
+			project: common.DevfileProject{
+				Source: common.DevfileProjectSource{
+					Location: "https://github.com//web-nodejs-sample/archive/master",
+				},
+			},
 			expectedError: "Invalid GitHub URL: owner cannot be empty. Expecting 'https://github.com/<owner>/<repo>'",
+			expectedURL:   "",
 		},
 		{
-			name:          "Case 3: Invalid repo",
-			zipURL:        "https://github.com/che-samples//archive/master",
+			name: "Case 3: Invalid repo",
+			project: common.DevfileProject{
+				Source: common.DevfileProjectSource{
+					Location: "https://github.com/che-samples//archive/master",
+				},
+			},
 			expectedError: "Invalid GitHub URL: repo cannot be empty. Expecting 'https://github.com/<owner>/<repo>'",
+			expectedURL:   "",
 		},
 		{
-			name:          "Case 4: Non-existent URL",
-			zipURL:        "https://github.com/this/does/not/exist",
-			expectedError: "Error getting zip url. Response: 404 Not Found.",
-		},
-		{
-			name:          "Case 5: Valid SSH Github URL",
-			zipURL:        "git@github.com:che-samples/web-nodejs-sample.git",
-			expectedError: "",
+			name: "Case 4: Invalid HTTPS Github URL with tag and commit",
+			project: common.DevfileProject{
+				Source: common.DevfileProjectSource{
+					Location: "https://github.com/che-samples/web-nodejs-sample.git",
+					CommitId: &commitid,
+					Tag:      &tag,
+				},
+			},
+			expectedError: fmt.Sprintf("More than one source reference specified. The following were specified:\nCommitId specified with value %s\nTag specified with value %s\n", commitid, tag),
+			expectedURL:   "",
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := GetGitHubZipURL(tt.zipURL)
+			url, err := GetGitHubZipURL(tt.project)
 			if err != nil && !reflect.DeepEqual(err.Error(), tt.expectedError) {
 				t.Errorf("Got %s, want %s", err.Error(), tt.expectedError)
+			}
+
+			if url != "" && url != tt.expectedURL {
+				t.Errorf("Got %s, want %s", url, tt.expectedURL)
 			}
 		})
 	}
 }
-*/
