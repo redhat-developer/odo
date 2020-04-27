@@ -38,7 +38,7 @@ components:
         containerPath: /data
 commands:
   - 
-    name: devInit
+    name: devinit
     actions:
       - 
         type: exec
@@ -46,7 +46,7 @@ commands:
         command: "echo hello"
         workdir: /projects/springbootproject
   -
-    name: devBuild
+    name: devbuild
     actions:
       -
         type: exec
@@ -54,7 +54,7 @@ commands:
         command: "/artifacts/bin/build-container-full.sh"
         workdir: /projects/springbootproject
   -
-    name: devRun
+    name: devrun
     actions:
       -
         type: exec
