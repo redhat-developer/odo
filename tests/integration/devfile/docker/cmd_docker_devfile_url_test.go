@@ -79,13 +79,13 @@ var _ = Describe("odo docker devfile url command tests", func() {
 			// url1 exists with push target set to docker, create url with same name should fail if push target is set to kube
 			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "kube", "-f")
 			stdout = helper.CmdShouldFail("odo", "url", "create", url1, "--host", "1.2.3.4.com")
-			Expect(stdout).To(ContainSubstring("already exists for a different push target"))
+			Expect(stdout).To(ContainSubstring("no configuration has been provided"))
 
 			// url2 exists with push target set to kube, create url with same name should fail if push target is set to docker
 			helper.CmdShouldPass("odo", "url", "create", url2, "--host", "1.2.3.4.com")
 			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "docker", "-f")
 			stdout = helper.CmdShouldFail("odo", "url", "create", url2)
-			Expect(stdout).To(ContainSubstring("already exists for a different push target"))
+			Expect(stdout).To(ContainSubstring("no configuration has been provided"))
 
 		})
 
