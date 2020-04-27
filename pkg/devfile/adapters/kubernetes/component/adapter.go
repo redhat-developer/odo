@@ -66,7 +66,6 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	changedFiles := []string{}
 	isForcePush := false
 	podChanged := false
-	runInit := true
 	var podName string
 
 	// If the component already exists, retrieve the pod's name before it's potentially updated
@@ -76,7 +75,6 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 			return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
 		}
 		podName = pod.GetName()
-		runInit = false
 	}
 
 	// Validate the devfile build and run commands
@@ -188,7 +186,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return errors.Wrapf(err, "Failed to sync to component with name %s", a.ComponentName)
 	}
 
-	err = a.execDevfile(pushDevfileCommands, componentExists, parameters.Show, pod.GetName(), pod.Spec.Containers, runInit)
+	err = a.execDevfile(pushDevfileCommands, componentExists, parameters.Show, pod.GetName(), pod.Spec.Containers)
 	if err != nil {
 		return err
 	}
@@ -435,7 +433,7 @@ func (a Adapter) waitAndGetComponentPod(hideSpinner bool) (*corev1.Pod, error) {
 
 // Executes all the commands from the devfile in order: init and build - which are both optional, and a compulsary run.
 // Init only runs once when the component is created.
-func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand, componentExists, show bool, podName string, containers []corev1.Container, runInit bool) (err error) {
+func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand, componentExists, show bool, podName string, containers []corev1.Container) (err error) {
 	var s *log.Status
 
 	// If nothing has been passed, then the devfile is missing the required run command
@@ -450,9 +448,9 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 
 	commandOrder := []CommandNames{}
 
-	// Only add runinit to the expected commands if runInit bool is true
+	// Only add runinit to the expected commands if the component doesn't already exist
 	// This would be the case when first running the container
-	if runInit {
+	if !componentExists {
 		commandOrder = append(commandOrder, CommandNames{defaultName: string(common.DefaultDevfileInitCommand), adapterName: a.devfileInitCmd})
 	}
 	commandOrder = append(
