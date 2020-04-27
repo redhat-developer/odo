@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
@@ -954,8 +955,18 @@ func GetComponentFromConfig(localConfig *config.LocalConfigInfo) (Component, err
 			component.Spec.Source = util.GenFileURL(localConfig.GetSourceLocation())
 		}
 
-		for _, localURL := range localConfig.GetURL() {
-			component.Spec.URL = append(component.Spec.URL, localURL.Name)
+		urls := localConfig.GetURL()
+		if len(urls) > 0 {
+			// We will clean up the existing value of ports and re-populate it so that we don't panic in `odo describe` and don't show inconsistent info
+			// This will also help in the case where there are more URLs created than the number of ports exposed by a component #2776
+			oldPortsProtocol := getPortsProtocol(component.Spec.Ports)
+			component.Spec.Ports = []string{}
+
+			for _, url := range urls {
+				port := strconv.Itoa(url.Port)
+				component.Spec.Ports = append(component.Spec.Ports, fmt.Sprintf("%s/%s", port, oldPortsProtocol[port]))
+				component.Spec.URL = append(component.Spec.URL, url.Name)
+			}
 		}
 
 		for _, localEnv := range localConfig.GetEnvVars() {
@@ -968,6 +979,15 @@ func GetComponentFromConfig(localConfig *config.LocalConfigInfo) (Component, err
 		return component, nil
 	}
 	return Component{}, nil
+}
+
+func getPortsProtocol(ports []string) map[string]string {
+	oldPortsProtocol := make(map[string]string, len(ports))
+	for _, port := range ports {
+		portProtocol := strings.Split(port, "/")
+		oldPortsProtocol[portProtocol[0]] = portProtocol[1]
+	}
+	return oldPortsProtocol
 }
 
 // ListIfPathGiven lists all available component in given path directory
