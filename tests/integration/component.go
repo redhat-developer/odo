@@ -284,6 +284,17 @@ func componentTests(args ...string) {
 			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--all", "--context", context)...)
 		})
 
+		It("should describe pushed and unpushed elements of components after a push", func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp", "--project", project, "--context", context, "--app", "testing", "--now")...)
+			helper.CmdShouldPass("odo", "url", "create", "url1", "--context", context)
+			helper.CmdShouldPass("odo", append(args, "push", "--context", context)...)
+			helper.CmdShouldPass("odo", "url", "create", "url2", "--context", context)
+			out := helper.CmdShouldPass("odo", append(args, "describe")...)
+			helper.MatchAllInOutput(out, []string{"url1-testing", "URL named url2"})
+			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--all", "--context", context)...)
+		})
+
 		It("should list the component in the same app when one is pushed and the other one is not pushed", func() {
 			helper.Chdir(originalDir)
 			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--context", context, "--app", "testing")...)
