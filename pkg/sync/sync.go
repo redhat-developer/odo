@@ -30,7 +30,7 @@ func CopyFile(client SyncClient, localPath string, targetPodName string, targetC
 	dest := filepath.ToSlash(filepath.Join(targetPath, filepath.Base(localPath)))
 	targetPath = filepath.ToSlash(targetPath)
 
-	glog.V(4).Infof("CopyFile arguments: localPath %s, dest %s, copyFiles %s, globalExps %s", localPath, dest, copyFiles, globExps)
+	glog.V(5).Infof("CopyFile arguments: localPath %s, dest %s, copyFiles %s, globalExps %s", localPath, dest, copyFiles, globExps)
 	reader, writer := io.Pipe()
 	// inspired from https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L235
 	go func() {
@@ -120,13 +120,13 @@ func makeTar(srcPath, destPath string, writer io.Writer, files []string, globExp
 
 // recursiveTar function is copied from https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L319
 func recursiveTar(srcBase, srcFile, destBase, destFile string, tw *taro.Writer, globExps []string) error {
-	glog.V(4).Infof("recursiveTar arguments: srcBase: %s, srcFile: %s, destBase: %s, destFile: %s", srcBase, srcFile, destBase, destFile)
+	glog.V(5).Infof("recursiveTar arguments: srcBase: %s, srcFile: %s, destBase: %s, destFile: %s", srcBase, srcFile, destBase, destFile)
 
 	// The destination is a LINUX container and thus we *must* use ToSlash in order
 	// to get the copying over done correctly..
 	destBase = filepath.ToSlash(destBase)
 	destFile = filepath.ToSlash(destFile)
-	glog.V(4).Infof("Corrected destinations: base: %s file: %s", destBase, destFile)
+	glog.V(5).Infof("Corrected destinations: base: %s file: %s", destBase, destFile)
 
 	joinedPath := filepath.Join(srcBase, srcFile)
 	matchedPathsDir, err := filepath.Glob(joinedPath)
