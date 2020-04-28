@@ -759,9 +759,38 @@ func (co *CreateOptions) downloadProject() error {
 		return errors.Errorf("Project type not supported")
 	}
 
-	err = util.GetAndExtractZip(zipUrl, path)
-	if err != nil {
-		return err
+	if project.Source.SparseCheckoutDir != nil && *project.Source.SparseCheckoutDir != "" {
+
+		// extract project to an extract folder
+		extractFolder := filepath.Join(path, "extract")
+		err = util.GetAndExtractZip(zipUrl, extractFolder)
+		if err != nil {
+			return err
+		}
+
+		defer os.RemoveAll(extractFolder)
+
+		sparseCheckoutDir := *project.Source.SparseCheckoutDir
+		fullSparseCheckoutDirPath := filepath.Join(extractFolder, sparseCheckoutDir)
+		if _, err := os.Stat(fullSparseCheckoutDirPath); os.IsNotExist(err) {
+			return errors.Errorf("Path specified in sparseCheckoutDir does not exist in project", err)
+		}
+
+		info, err := os.Stat(path)
+		if err != nil {
+			return err
+		}
+
+		err = util.CopyDir(fullSparseCheckoutDirPath, path, info)
+		if err != nil {
+			return errors.Errorf("Error copying sparseCheckoutDir to project path")
+		}
+
+	} else {
+		err = util.GetAndExtractZip(zipUrl, path)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

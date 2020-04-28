@@ -982,3 +982,52 @@ func CheckKubeConfigExist() bool {
 
 	return false
 }
+
+// copyDir copy one directory to the other
+// this function is called recursively info should start as os.Stat(src)
+func CopyDir(src string, dst string, info os.FileInfo) error {
+
+	if info.IsDir() {
+		files, err := ioutil.ReadDir(src)
+		if err != nil {
+			return err
+		}
+
+		for _, file := range files {
+			dsrt := filepath.Join(src, file.Name())
+			ddst := filepath.Join(dst, file.Name())
+			if err := CopyDir(dsrt, ddst, file); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	if err := os.MkdirAll(filepath.Dir(dst), os.ModePerm); err != nil {
+		return err
+	}
+
+	return CopyFile(src, dst, info)
+}
+
+// copyFile copy one file to another location
+func CopyFile(src, dst string, info os.FileInfo) error {
+	dFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer dFile.Close() // #nosec G307
+
+	sFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer sFile.Close() // #nosec G307
+
+	if err = os.Chmod(dFile.Name(), info.Mode()); err != nil {
+		return err
+	}
+
+	_, err = io.Copy(dFile, sFile)
+	return err
+}
