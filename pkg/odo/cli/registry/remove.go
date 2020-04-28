@@ -15,13 +15,13 @@ import (
 	"github.com/openshift/odo/pkg/preference"
 )
 
-const removeCommandName = "remove"
+const removeCommandName = "delete"
 
 // "odo registry remove" command description and examples
 var (
-	removeLongDesc = ktemplates.LongDesc(`Remove devfile registry`)
+	removeLongDesc = ktemplates.LongDesc(`Delete devfile registry`)
 
-	removeExample = ktemplates.Examples(`# Remove devfile registry
+	removeExample = ktemplates.Examples(`# Delete devfile registry
 	%[1]s cheregistry
 	`)
 )
@@ -40,7 +40,7 @@ func NewRemoveOptions() *RemoveOptions {
 
 // Complete completes RemoveOptions after they've been created
 func (o *RemoveOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.operation = "remove"
+	o.operation = "delete"
 	o.registryName = args[0]
 	o.registryURL = ""
 	return
@@ -56,7 +56,7 @@ func (o *RemoveOptions) Run() (err error) {
 
 	cfg, err := preference.New()
 	if err != nil {
-		return errors.Wrapf(err, "Unable to remove registry")
+		return errors.Wrapf(err, "Unable to delete registry")
 	}
 
 	err = cfg.RegistryHandler(o.operation, o.registryName, o.registryURL)
@@ -64,7 +64,7 @@ func (o *RemoveOptions) Run() (err error) {
 		return err
 	}
 
-	log.Info("Successfully removed registry")
+	log.Info("Successfully deleted registry")
 	return nil
 }
 

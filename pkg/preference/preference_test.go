@@ -735,9 +735,9 @@ func TestHandleWithoutRegistryExist(t *testing.T) {
 			want:         nil,
 		},
 		{
-			name:         "Case 3: Remove registry",
+			name:         "Case 3: Delete registry",
 			registryList: []Registry{},
-			operation:    "remove",
+			operation:    "delete",
 			registryName: "testName",
 			registryURL:  "testURL",
 			want:         nil,
@@ -802,7 +802,7 @@ func TestHandleWithRegistryExist(t *testing.T) {
 			},
 		},
 		{
-			name:  "Case 3: remove registry",
+			name:  "Case 3: Delete registry",
 			index: 0,
 			registryList: []Registry{
 				{
@@ -810,7 +810,7 @@ func TestHandleWithRegistryExist(t *testing.T) {
 					URL:  "testURL",
 				},
 			},
-			operation:    "remove",
+			operation:    "delete",
 			registryName: "testName",
 			registryURL:  "",
 			want:         []Registry{},

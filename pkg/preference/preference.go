@@ -267,7 +267,7 @@ func handleWithoutRegistryExist(registryList []Registry, operation string, regis
 	case "update":
 		return nil, errors.Errorf("Failed to update registry: registry %s doesn't exist", registryName)
 
-	case "remove":
+	case "delete":
 		return nil, errors.Errorf("Failed to delete registry: registry %s doesn't exist", registryName)
 	}
 
@@ -283,7 +283,7 @@ func handleWithRegistryExist(index int, registryList []Registry, operation strin
 	case "update":
 		registryList[index].URL = registryURL
 
-	case "remove":
+	case "delete":
 		copy(registryList[index:], registryList[index+1:])
 		registryList[len(registryList)-1] = Registry{}
 		registryList = registryList[:len(registryList)-1]

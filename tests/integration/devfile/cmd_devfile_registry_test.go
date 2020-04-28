@@ -53,15 +53,15 @@ var _ = Describe("odo devfile registry command tests", func() {
 			helper.CmdShouldPass("odo", "registry", "add", "TestRegistryName", "TestRegistryURL")
 			output := helper.CmdShouldPass("odo", "registry", "list")
 			helper.MatchAllInOutput(output, []string{"TestRegistryName", "TestRegistryURL"})
-			helper.CmdShouldPass("odo", "registry", "remove", "TestRegistryName")
+			helper.CmdShouldPass("odo", "registry", "delete", "TestRegistryName")
 		})
 
 		It("Should fail to update the registry", func() {
 			helper.CmdShouldFail("odo", "registry", "update", "TestRegistryName", "TestRegistryURL")
 		})
 
-		It("Should fail to remove the registry", func() {
-			helper.CmdShouldFail("odo", "registry", "remove", "TestRegistryName")
+		It("Should fail to delete the registry", func() {
+			helper.CmdShouldFail("odo", "registry", "delete", "TestRegistryName")
 		})
 	})
 
@@ -69,7 +69,7 @@ var _ = Describe("odo devfile registry command tests", func() {
 		It("Should fail to add the registry", func() {
 			helper.CmdShouldPass("odo", "registry", "add", "TestRegistryName", "TestRegistryURL")
 			helper.CmdShouldFail("odo", "registry", "add", "TestRegistryName", "NewTestRegistryURL")
-			helper.CmdShouldPass("odo", "registry", "remove", "TestRegistryName")
+			helper.CmdShouldPass("odo", "registry", "delete", "TestRegistryName")
 		})
 
 		It("Should successfully update the registry", func() {
@@ -77,12 +77,12 @@ var _ = Describe("odo devfile registry command tests", func() {
 			helper.CmdShouldPass("odo", "registry", "update", "TestRegistryName", "NewTestRegistryURL")
 			output := helper.CmdShouldPass("odo", "registry", "list")
 			helper.MatchAllInOutput(output, []string{"TestRegistryName", "NewTestRegistryURL"})
-			helper.CmdShouldPass("odo", "registry", "remove", "TestRegistryName")
+			helper.CmdShouldPass("odo", "registry", "delete", "TestRegistryName")
 		})
 
-		It("Should successfully remove the registry", func() {
+		It("Should successfully delete the registry", func() {
 			helper.CmdShouldPass("odo", "registry", "add", "TestRegistryName", "TestRegistryURL")
-			helper.CmdShouldPass("odo", "registry", "remove", "TestRegistryName")
+			helper.CmdShouldPass("odo", "registry", "delete", "TestRegistryName")
 		})
 	})
 })

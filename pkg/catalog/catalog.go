@@ -17,8 +17,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// GetDevfileRegistries gets devfile registries from preference file
-func GetDevfileRegistries(registryNameList []string) (map[string]string, error) {
+// GetDevfileRegistries gets devfile registries from preference file,
+// if registry name is specified return the specific registry, otherwise return all registries
+func GetDevfileRegistries(registryName string) (map[string]string, error) {
 	devfileRegistries := make(map[string]string)
 
 	cfg, err := preference.New()
@@ -28,9 +29,11 @@ func GetDevfileRegistries(registryNameList []string) (map[string]string, error) 
 
 	if cfg.OdoSettings.RegistryList != nil {
 		for _, registry := range *cfg.OdoSettings.RegistryList {
-			if len(registryNameList) != 0 && registryNameList[0] == registry.Name {
-				devfileRegistries[registry.Name] = registry.URL
-				break
+			if len(registryName) != 0 {
+				if registryName == registry.Name {
+					devfileRegistries[registry.Name] = registry.URL
+					return devfileRegistries, nil
+				}
 			} else {
 				devfileRegistries[registry.Name] = registry.URL
 			}
@@ -124,12 +127,12 @@ func IsDevfileComponentSupported(devfile Devfile) bool {
 }
 
 // ListDevfileComponents lists all the available devfile components
-func ListDevfileComponents(registryNameList ...string) (DevfileComponentTypeList, error) {
+func ListDevfileComponents(registryName string) (DevfileComponentTypeList, error) {
 	var catalogDevfileList DevfileComponentTypeList
 	var err error
 
 	// Get devfile registries
-	catalogDevfileList.DevfileRegistries, err = GetDevfileRegistries(registryNameList)
+	catalogDevfileList.DevfileRegistries, err = GetDevfileRegistries(registryName)
 	if err != nil {
 		return catalogDevfileList, err
 	}

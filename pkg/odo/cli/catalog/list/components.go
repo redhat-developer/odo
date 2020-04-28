@@ -52,7 +52,7 @@ func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args [
 	}
 
 	if experimental.IsExperimentalModeEnabled() {
-		o.catalogDevfileList, err = catalog.ListDevfileComponents()
+		o.catalogDevfileList, err = catalog.ListDevfileComponents("")
 		if err != nil {
 			return err
 		}
