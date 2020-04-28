@@ -184,4 +184,18 @@ var _ = Describe("odo devfile create command tests", func() {
 	//		helper.DeleteDir(contextDevfile)
 	//	})
 	//})
+
+	Context("When executing odo create with devfile component, --downloadSource flag and sparseContextDir has a valid value", func() {
+		It("should only download the specified path in the sparseContextDir field", func() {
+			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs"), currentWorkingDirectory)
+			helper.RenameFile(currentWorkingDirectory, "devfile.yaml")
+			devfile := "devfile.yaml"
+			helper.CmdShouldPass("odo", "create", "--downloadSource")
+			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
+			Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
+			helper.DeleteDir(contextDevfile)
+			helper.Chdir(context)
+		})
+	})
 })
