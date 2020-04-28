@@ -5,11 +5,11 @@ environments:
         template: dev-ci-template
         binding: dev-ci-binding
     apps:
-      - name: my-app-1 #Application my-app-1
+      - name: my-app-1 # Application my-app-1
         services:
           - name: app-1-service-http
           - name: app-1-service-metrics
-      - name: my-app-1 #Dupliacte application my-app-1 (invalid)
+      - name: my-app-1 # Duplicate application my-app-1 (invalid)
         services:
           - name: app-2-service
    

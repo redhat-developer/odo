@@ -7,6 +7,6 @@ environments:
     apps:
       - name: my-app-1
         services:
-          - name: app-1-service-http #Service Name
-          - name: app-1-service-http #Repeated Service Name(invalid)
+          - name: app-1-service-http # Service Name
+          - name: app-1-service-http # Duplicate Service Name (invalid)
      
