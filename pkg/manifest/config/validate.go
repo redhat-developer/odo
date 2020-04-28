@@ -10,17 +10,24 @@ import (
 )
 
 type validateVisitor struct {
-	errs []error
+	errs         []error
+	envNames     map[string]bool
+	appNames     map[string]bool
+	serviceNames map[string]bool
 }
 
 func (m *Manifest) Validate() error {
-	vv := &validateVisitor{errs: []error{}}
+	vv := &validateVisitor{errs: []error{}, envNames: map[string]bool{}, appNames: map[string]bool{}, serviceNames: map[string]bool{}}
+
 	m.Walk(vv)
 	return multierror.Join(vv.errs)
 }
 
 func (vv *validateVisitor) Environment(env *Environment) error {
 	envPath := yamlPath(PathForEnvironment(env))
+	if err := checkDuplicate(env.Name, envPath, vv.envNames); err != nil {
+		vv.errs = append(vv.errs, err)
+	}
 	if err := validateName(env.Name, envPath); err != nil {
 		vv.errs = append(vv.errs, err)
 	}
@@ -32,6 +39,10 @@ func (vv *validateVisitor) Environment(env *Environment) error {
 
 func (vv *validateVisitor) Application(env *Environment, app *Application) error {
 	appPath := yamlPath(PathForApplication(env, app))
+	if err := checkDuplicate(app.Name, appPath, vv.appNames); err != nil {
+		vv.errs = append(vv.errs, err)
+	}
+
 	if err := validateName(app.Name, appPath); err != nil {
 		vv.errs = append(vv.errs, err)
 	}
@@ -50,6 +61,9 @@ func (vv *validateVisitor) Application(env *Environment, app *Application) error
 
 func (vv *validateVisitor) Service(env *Environment, app *Application, svc *Service) error {
 	svcPath := yamlPath(PathForService(env, svc))
+	if err := checkDuplicate(svc.Name, svcPath, vv.serviceNames); err != nil {
+		vv.errs = append(vv.errs, err)
+	}
 	if err := validateName(svc.Name, svcPath); err != nil {
 		vv.errs = append(vv.errs, err)
 	}
@@ -149,10 +163,26 @@ func missingFieldsError(fields []string, paths []string) *apis.FieldError {
 	}
 }
 
+func duplicateFieldsError(fields []string, paths []string) *apis.FieldError {
+	return &apis.FieldError{
+		Message: fmt.Sprintf("duplicate field(s) %v", strings.Join(addQuotes(fields...), ",")),
+		Paths:   paths,
+	}
+}
+
 func addQuotes(items ...string) []string {
 	quotes := []string{}
 	for _, item := range items {
 		quotes = append(quotes, fmt.Sprintf("%q", item))
 	}
 	return quotes
+}
+
+func checkDuplicate(field, path string, checkMap map[string]bool) error {
+	_, ok := checkMap[path]
+	if ok {
+		return duplicateFieldsError([]string{field}, []string{path})
+	}
+	checkMap[path] = true
+	return nil
 }
