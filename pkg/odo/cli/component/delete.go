@@ -92,6 +92,10 @@ func (do *DeleteOptions) Validate() (err error) {
 	}
 	if !do.isCmpExists {
 		log.Errorf("Component %s does not exist on the cluster", do.ComponentOptions.componentName)
+		// If request is to delete non existing component without all flag, exit with exit code 1
+		if !do.componentDeleteAllFlag {
+			os.Exit(1)
+		}
 	}
 	return
 }
@@ -179,11 +183,6 @@ func (do *DeleteOptions) Run() (err error) {
 		} else {
 			return fmt.Errorf("Aborting deletion of config for component: %s", do.componentName)
 		}
-	}
-
-	// If request is to delete non existing component exit with exit code 1
-	if !do.isCmpExists && !do.componentDeleteAllFlag {
-		os.Exit(1)
 	}
 
 	return
