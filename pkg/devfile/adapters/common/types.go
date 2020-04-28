@@ -37,3 +37,17 @@ type PushParameters struct {
 	DevfileRunCmd     string                  // DevfileRunCmd takes the run command through the command line and overwrites devfile run command
 	EnvSpecificInfo   envinfo.EnvSpecificInfo // EnvSpecificInfo contains infomation of env.yaml file
 }
+
+// SyncParameters is a struct containing the parameters to be used when syncing a devfile component
+type SyncParameters struct {
+	PushParams      PushParameters
+	CompInfo        ComponentInfo
+	PodChanged      bool
+	ComponentExists bool
+}
+
+// ComponentInfo is a struct that holds information about a component i.e.; pod name, container name
+type ComponentInfo struct {
+	PodName       string
+	ContainerName string
+}

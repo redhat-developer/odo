@@ -2,10 +2,19 @@ package helper
 
 import (
 	"fmt"
+	"os"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
+
+// CopyKubeConfigFile copies default kubeconfig file into current context config file
+func CopyKubeConfigFile(kubeConfigFile, tempConfigFile string, info os.FileInfo) string {
+	err := copyFile(kubeConfigFile, tempConfigFile, info)
+	Expect(err).NotTo(HaveOccurred())
+	os.Setenv("KUBECONFIG", tempConfigFile)
+	return tempConfigFile
+}
 
 // CreateRandNamespace create new project with random name in kubernetes cluster (10 letters)
 func CreateRandNamespace(context string) string {

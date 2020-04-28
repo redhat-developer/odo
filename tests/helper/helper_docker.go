@@ -66,6 +66,13 @@ func (d *DockerRunner) ListVolumes() []string {
 	return volumes
 }
 
+// ExecContainer returns output after exec the command in the container
+func (d *DockerRunner) ExecContainer(containerID, command string) string {
+	stdOut := CmdShouldPass(d.path, "exec", containerID, "/bin/sh", "-c",
+		command)
+	return stdOut
+}
+
 // GetVolumesByLabel returns a list of volumes with the label (of the form "key=value")
 func (d *DockerRunner) GetVolumesByLabel(label string) []string {
 	fmt.Fprintf(GinkgoWriter, "Listing Docker volumes with label %s", label)

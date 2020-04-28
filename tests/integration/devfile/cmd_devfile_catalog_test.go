@@ -22,7 +22,10 @@ var _ = Describe("odo devfile catalog command tests", func() {
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 		if os.Getenv("KUBERNETES") == "true" {
-			project = helper.CreateRandNamespace(context)
+			info, err := os.Stat(os.Getenv("KUBECONFIG"))
+			Expect(err).NotTo(HaveOccurred())
+			kubeConfigFile := helper.CopyKubeConfigFile(os.Getenv("KUBECONFIG"), filepath.Join(context, "config"), info)
+			project = helper.CreateRandNamespace(kubeConfigFile)
 		} else {
 			project = helper.CreateRandProject()
 		}
@@ -34,11 +37,13 @@ var _ = Describe("odo devfile catalog command tests", func() {
 	var _ = AfterEach(func() {
 		if os.Getenv("KUBERNETES") == "true" {
 			helper.DeleteNamespace(project)
+			os.Unsetenv("KUBECONFIG")
 		} else {
 			helper.DeleteProject(project)
 		}
 		helper.Chdir(currentWorkingDirectory)
 		helper.DeleteDir(context)
+		os.Unsetenv("GLOBALODOCONFIG")
 	})
 
 	Context("When executing catalog list components", func() {

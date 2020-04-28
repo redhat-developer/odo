@@ -24,9 +24,11 @@ func TestPullImage(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		err := tt.client.PullImage("dummyImage")
-		if !tt.wantErr == (err != nil) {
-			t.Errorf("expected %v, wanted %v", err, tt.wantErr)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.client.PullImage("dummyImage")
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("expected %v, wanted %v", err, tt.wantErr)
+			}
+		})
 	}
 }
