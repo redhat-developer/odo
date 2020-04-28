@@ -50,18 +50,6 @@ var _ = Describe("odo watch command tests", func() {
 		})
 	})
 
-	Context("when executing watch without pushing a devfile component", func() {
-		It("should fail", func() {
-			// Devfile push requires experimental mode to be set
-			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
-
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
-
-			output := helper.CmdShouldFail("odo", "watch", "--devfile", filepath.Join(context, "devfile.yaml"))
-			Expect(output).To(ContainSubstring("component does not exist. Please use `odo push` to create your component"))
-		})
-	})
-
 	Context("when executing watch on a git source type component", func() {
 		It("should fail", func() {
 			helper.CmdShouldPass("odo", "create", "--context", context, "nodejs", "--git", "https://github.com/openshift/nodejs-ex.git")
