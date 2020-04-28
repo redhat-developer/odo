@@ -35,6 +35,16 @@ func (vv *validateVisitor) Application(env *Environment, app *Application) error
 	if err := validateName(app.Name, appPath); err != nil {
 		vv.errs = append(vv.errs, err)
 	}
+
+	if app.Services == nil && app.ConfigRepo == nil {
+		vv.errs = append(vv.errs, missingFieldsError([]string{"services", "config_repo"}, []string{appPath}))
+	}
+	if app.Services != nil && app.ConfigRepo != nil {
+		vv.errs = append(vv.errs, apis.ErrMultipleOneOf(yamlJoin(appPath, "services"), yamlJoin(appPath, "config_repo")))
+	}
+	if app.ConfigRepo != nil {
+		vv.errs = append(vv.errs, validateConfigRepo(app.ConfigRepo, yamlJoin(appPath, "config_repo"))...)
+	}
 	return nil
 }
 
@@ -50,6 +60,21 @@ func (vv *validateVisitor) Service(env *Environment, app *Application, svc *Serv
 		vv.errs = append(vv.errs, err...)
 	}
 	return nil
+}
+
+func validateConfigRepo(repo *Repository, path string) []error {
+	missingFields := []string{}
+	errs := []error{}
+	if repo.URL == "" {
+		missingFields = append(missingFields, "url")
+	}
+	if repo.Path == "" {
+		missingFields = append(missingFields, "path")
+	}
+	if len(missingFields) > 0 {
+		errs = append(errs, missingFieldsError(missingFields, []string{path}))
+	}
+	return errs
 }
 
 func validateWebhook(hook *Webhook, path string) []error {
