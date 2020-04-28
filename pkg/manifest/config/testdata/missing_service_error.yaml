@@ -1,0 +1,27 @@
+environments:
+  - name: development
+    apps:
+      - name: app-1                                     # both service and config_repo are missing 
+      - name: app-2
+        config_repo:
+          url: http://github.com/org/service-2.git      # path is missing from config_repo
+          target_revision: master
+      - name: app-3
+        config_repo:
+          target_revision: master                       # url is missing from config_repo
+          path: deploy/app-3
+      - name: app-4
+        config_repo:
+          target_revision: master                       # url and path are missing
+      - name: app-5                                     # both service and config_repo are present
+        services:
+          - name: service-5
+            source_url: https://github.com/myproject/myservice.git
+            webhook:
+              secret:
+                name: webhook-secret
+                namespace: webhook-secret-key
+        config_repo:
+          url: http://github.com/org/repo.git
+          target_revision: master
+          path: deploy/
