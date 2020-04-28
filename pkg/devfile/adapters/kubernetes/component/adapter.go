@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/openshift/odo/pkg/envinfo"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -402,4 +404,23 @@ func (a Adapter) Delete(labels map[string]string) error {
 	}
 
 	return a.Client.DeleteDeployment(labels)
+}
+
+// ValidateURL validates if env.yaml contains a valide URL for the current pushtarget
+// display a warning if no urls found with ingress host defined, but found url(s) defined for docker
+func (a Adapter) ValidateURL(url []envinfo.EnvInfoURL) {
+	dockerURLExists := false
+	ingressHostExists := false
+	for _, element := range url {
+		if len(element.Host) > 0 {
+			ingressHostExists = true
+			break
+		}
+		if element.ExposedPort > 0 {
+			dockerURLExists = true
+		}
+	}
+	if dockerURLExists && !ingressHostExists {
+		log.Warningf("found url(s) defined for docker, but no valid urls with ingress host defined for the component %s.", a.ComponentName)
+	}
 }

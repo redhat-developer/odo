@@ -83,6 +83,8 @@ func (po *PushOptions) DevfilePush() (err error) {
 		DevfileRunCmd:   strings.ToLower(po.devfileRunCommand),
 	}
 
+	url := po.EnvSpecificInfo.GetURL()
+	devfileHandler.ValidateURL(url)
 	// Start or update the component
 	err = devfileHandler.Push(pushParams)
 	if err != nil {

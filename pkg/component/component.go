@@ -622,11 +622,14 @@ func ApplyConfigCreateURL(client *occlient.Client, kClient *kclient.Client, comp
 			if exist {
 				log.Successf("URL %s already exists", urlo.Name)
 			} else {
-				host, err := urlpkg.Create(client, kClient, urlo.Name, urlo.Port, urlo.Secure, componentName, "", urlo.Host, urlo.TLSSecret)
-				if err != nil {
-					return errors.Wrapf(err, "unable to create url")
+				// if Host is not defined, the url is not for ingress
+				if len(urlo.Host) > 0 {
+					host, err := urlpkg.Create(client, kClient, urlo.Name, urlo.Port, urlo.Secure, componentName, "", urlo.Host, urlo.TLSSecret)
+					if err != nil {
+						return errors.Wrapf(err, "unable to create url")
+					}
+					log.Successf("URL %s: %s created", urlo.Name, host)
 				}
-				log.Successf("URL %s: %s created", urlo.Name, host)
 			}
 		}
 	} else {
