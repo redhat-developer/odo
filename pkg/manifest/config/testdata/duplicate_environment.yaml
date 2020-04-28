@@ -1,5 +1,5 @@
 environments:
-  - name: duplicate-environment #Environment duplicate-environment 
+  - name: duplicate-environment # Environment duplicate-environment 
     pipelines:
       integration:
         template: dev-ci-template
