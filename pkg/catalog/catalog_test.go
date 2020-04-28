@@ -197,21 +197,21 @@ OdoSettings:
 	defer os.Unsetenv(preference.GlobalConfigEnvName)
 
 	tests := []struct {
-		name             string
-		registryNameList []string
-		want             map[string]string
+		name         string
+		registryName string
+		want         map[string]string
 	}{
 		{
-			name:             "Case 1: Test get all devfile registries",
-			registryNameList: nil,
+			name:         "Case 1: Test get all devfile registries",
+			registryName: "",
 			want: map[string]string{
 				"CheDevfileRegistry":     "https://che-devfile-registry.openshift.io/",
 				"DefaultDevfileRegistry": "https://raw.githubusercontent.com/elsony/devfile-registry/master",
 			},
 		},
 		{
-			name:             "Case 2: Test get specific devfile registry",
-			registryNameList: []string{"CheDevfileRegistry"},
+			name:         "Case 2: Test get specific devfile registry",
+			registryName: "CheDevfileRegistry",
 			want: map[string]string{
 				"CheDevfileRegistry": "https://che-devfile-registry.openshift.io/",
 			},
@@ -220,7 +220,7 @@ OdoSettings:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetDevfileRegistries(tt.registryNameList)
+			got, err := GetDevfileRegistries(tt.registryName)
 			if err != nil {
 				t.Errorf("Error message is %v", err)
 			}
