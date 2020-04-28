@@ -86,6 +86,7 @@ jobs:
         - travis_wait make test-cmd-url
         - travis_wait make test-cmd-devfile-url
         - travis_wait make test-cmd-debug
+        - travis_wait make test-cmd-devfile-debug
         - odo logout
 
     # Run service-catalog e2e tests

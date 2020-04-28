@@ -133,6 +133,11 @@ func GetBuildCommand(data data.DevfileData, devfileBuildCmd string) (buildComman
 	return getCommand(data, devfileBuildCmd, common.BuildCommandGroupType)
 }
 
+// GetDebugCommand iterates through the components in the devfile and returns the build command
+func GetDebugCommand(data data.DevfileData, devfileDebugCmd string) (debugCommand common.DevfileCommand, err error) {
+	return 	getCommand(data, devfileDebugCmd, common.DebugCommandGroupType)
+}
+
 // GetRunCommand iterates through the components in the devfile and returns the run command
 func GetRunCommand(data data.DevfileData, devfileRunCmd string) (runCommand common.DevfileCommand, err error) {
 
@@ -208,4 +213,26 @@ func updateGroupforCommand(groupType common.DevfileCommandGroupType, command com
 		return command
 	}
 	return command
+}
+
+// ValidateAndGetDebugDevfileCommands validates the debug command
+func ValidateAndGetDebugDevfileCommands(data data.DevfileData, devfileDebugCmd string) (pushDebugCommand common.DevfileCommand, err error) {
+	var emptyCommand common.DevfileCommand
+
+	isDebugCommandValid := false
+	debugCommand, debugCmdErr := GetDebugCommand(data, devfileDebugCmd)
+	if debugCmdErr == nil && !reflect.DeepEqual(emptyCommand, debugCommand) {
+		isDebugCommandValid = true
+		klog.V(3).Infof("Debug command: %v", debugCommand.Exec.Id)
+	}
+
+	if !isDebugCommandValid {
+		commandErrors := ""
+		if debugCmdErr != nil {
+			commandErrors += debugCmdErr.Error()
+		}
+		return common.DevfileCommand{}, fmt.Errorf(commandErrors)
+	}
+
+	return debugCommand, nil
 }

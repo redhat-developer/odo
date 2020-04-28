@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
@@ -109,9 +110,14 @@ func isEnvPresent(EnvVars []corev1.EnvVar, envVarName string) bool {
 
 // UpdateContainersWithSupervisord updates the run components entrypoint and volume mount
 // with supervisord if no entrypoint has been specified for the component in the devfile
-func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, containers []corev1.Container, devfileRunCmd string) ([]corev1.Container, error) {
+func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, containers []corev1.Container, devfileRunCmd string, devfileDebugCmd string, devfileDebugPort int) ([]corev1.Container, error) {
 
 	runCommand, err := adaptersCommon.GetRunCommand(devfileObj.Data, devfileRunCmd)
+	if err != nil {
+		return nil, err
+	}
+
+	debugCommand, err := adaptersCommon.GetDebugCommand(devfileObj.Data, devfileDebugCmd)
 	if err != nil {
 		return nil, err
 	}
@@ -151,6 +157,56 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 					corev1.EnvVar{
 						Name:  adaptersCommon.EnvOdoCommandRunWorkingDir,
 						Value: runCommand.Exec.WorkingDir,
+					})
+			}
+
+			// Update the containers array since the array is not a pointer to the container
+			containers[i] = container
+		}
+
+		// Check if the container belongs to a debug command component
+		if debugCommand.Exec != nil && container.Name == debugCommand.Exec.Component {
+			// If the run component container has no entrypoint and arguments, override the entrypoint with supervisord
+			if len(container.Command) == 0 && len(container.Args) == 0 {
+				klog.V(3).Infof("Updating container %v entrypoint with supervisord", container.Name)
+				container.Command = append(container.Command, adaptersCommon.SupervisordBinaryPath)
+				container.Args = append(container.Args, "-c", adaptersCommon.SupervisordConfFile)
+			}
+
+			// Always mount the supervisord volume in the debug component container
+			klog.V(3).Infof("Updating container %v with supervisord volume mounts", container.Name)
+			container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
+				Name:      adaptersCommon.SupervisordVolumeName,
+				MountPath: adaptersCommon.SupervisordMountPath,
+			})
+
+			// Update the debug container's ENV for work dir and command
+			// only if the env var is not set in the devfile
+			// This is done, so supervisord can use it in it's program
+			if !isEnvPresent(container.Env, adaptersCommon.EnvOdoCommandDebug) {
+				klog.V(3).Infof("Updating container %v env with run command", container.Name)
+				container.Env = append(container.Env,
+					corev1.EnvVar{
+						Name:  adaptersCommon.EnvOdoCommandDebug,
+						Value: debugCommand.Exec.CommandLine,
+					})
+			}
+
+			if !isEnvPresent(container.Env, adaptersCommon.EnvOdoCommandDebugWorkingDir) && debugCommand.Exec.WorkingDir != "" {
+				klog.V(3).Infof("Updating container %v env with debug command's workdir", container.Name)
+				container.Env = append(container.Env,
+					corev1.EnvVar{
+						Name:  adaptersCommon.EnvOdoCommandDebugWorkingDir,
+						Value: debugCommand.Exec.WorkingDir,
+					})
+			}
+
+			if !isEnvPresent(container.Env, adaptersCommon.EnvDebugPort) {
+				klog.V(3).Infof("Updating container %v env with debug command's debugPort", container.Name)
+				container.Env = append(container.Env,
+					corev1.EnvVar{
+						Name:  adaptersCommon.EnvDebugPort,
+						Value: strconv.Itoa(devfileDebugPort),
 					})
 			}
 

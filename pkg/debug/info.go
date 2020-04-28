@@ -11,7 +11,6 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
@@ -24,18 +23,23 @@ type OdoDebugFile struct {
 }
 
 type OdoDebugFileSpec struct {
-	App            string `json:"app"`
+	App            string `json:"app,omitempty"`
 	DebugProcessID int    `json:"debugProcessID"`
 	RemotePort     int    `json:"remotePort"`
 	LocalPort      int    `json:"localPort"`
 }
 
 // GetDebugInfoFilePath gets the file path of the debug info file
-func GetDebugInfoFilePath(client *occlient.Client, componentName, appName string) string {
+func GetDebugInfoFilePath(componentName, appName string, projectName string) string {
 	tempDir := os.TempDir()
 	debugFileSuffix := "odo-debug.json"
-	s := []string{client.Namespace, appName, componentName, debugFileSuffix}
-	debugFileName := strings.Join(s, "-")
+	var arr []string
+	if appName == "" {
+		arr = []string{projectName, componentName, debugFileSuffix}
+	} else {
+		arr = []string{projectName, appName, componentName, debugFileSuffix}
+	}
+	debugFileName := strings.Join(arr, "-")
 	return filepath.Join(tempDir, debugFileName)
 }
 
@@ -66,7 +70,7 @@ func createDebugInfoFile(f *DefaultPortForwarder, portPair string, fs filesystem
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      f.componentName,
-			Namespace: f.client.Namespace,
+			Namespace: f.projectName,
 		},
 		Spec: OdoDebugFileSpec{
 			App:            f.appName,
@@ -81,7 +85,7 @@ func createDebugInfoFile(f *DefaultPortForwarder, portPair string, fs filesystem
 	}
 
 	// writes the data to the debug info file
-	file, err := fs.OpenFile(GetDebugInfoFilePath(f.client, f.componentName, f.appName), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
+	file, err := fs.OpenFile(GetDebugInfoFilePath(f.componentName, f.appName, f.projectName), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
 		return err
 	}
@@ -102,7 +106,7 @@ func GetDebugInfo(f *DefaultPortForwarder) (OdoDebugFile, bool) {
 // returns true if debugging is running else false
 func getDebugInfo(f *DefaultPortForwarder, fs filesystem.Filesystem) (OdoDebugFile, bool) {
 	// gets the debug info file path and reads/unmarshals it
-	debugInfoFilePath := GetDebugInfoFilePath(f.client, f.componentName, f.appName)
+	debugInfoFilePath := GetDebugInfoFilePath(f.componentName, f.appName, f.projectName)
 	readFile, err := fs.ReadFile(debugInfoFilePath)
 	if err != nil {
 		klog.V(4).Infof("the debug %v is not present", debugInfoFilePath)

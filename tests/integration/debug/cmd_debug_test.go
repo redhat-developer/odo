@@ -2,6 +2,7 @@ package debug
 
 import (
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/tests/helper"
 	"os"
@@ -18,8 +19,10 @@ import (
 // we execute these tests serially
 var _ = Describe("odo debug command serial tests", func() {
 
-	var project string
 	var context string
+
+	var namespace, componentName, projectDirPath string
+	var projectDir = "/projectDir"
 
 	// Setup up state for each test spec
 	// create new project (not set as active) and new context directory for each test spec
@@ -28,21 +31,24 @@ var _ = Describe("odo debug command serial tests", func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		SetDefaultConsistentlyDuration(30 * time.Second)
 		context = helper.CreateNewContext()
-		project = helper.CreateRandProject()
+		namespace = helper.CreateRandProject()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		componentName = helper.RandString(6)
+
+		projectDirPath = context + projectDir
 	})
 
 	// Clean up after the test
 	// This is run after every Spec (It)
 	AfterEach(func() {
-		helper.DeleteProject(project)
+		helper.DeleteProject(namespace)
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
 	})
 
 	It("should auto-select a local debug port when the given local port is occupied", func() {
 		helper.CopyExample(filepath.Join("source", "nodejs"), context)
-		helper.CmdShouldPass("odo", "component", "create", "nodejs:latest", "nodejs-cmp-"+project, "--project", project, "--context", context)
+		helper.CmdShouldPass("odo", "component", "create", "nodejs:latest", "nodejs-cmp-"+namespace, "--project", namespace, "--context", context)
 		helper.CmdShouldPass("odo", "push", "--context", context)
 
 		stopChannel := make(chan bool)
@@ -66,7 +72,63 @@ var _ = Describe("odo debug command serial tests", func() {
 		}
 
 		freePort := ""
-		helper.WaitForCmdOut("odo", []string{"debug", "info", "--context", context}, 1, true, func(output string) bool {
+		helper.WaitForCmdOut("odo", []string{"debug", "info", "--context", context}, 1, false, func(output string) bool {
+			if strings.Contains(output, "Debug is running") {
+				splits := strings.SplitN(output, ":", 2)
+				Expect(len(splits)).To(Equal(2))
+				freePort = strings.TrimSpace(splits[1])
+				_, err := strconv.Atoi(freePort)
+				Expect(err).NotTo(HaveOccurred())
+				return true
+			}
+			return false
+		})
+
+		// 400 response expected because the endpoint expects a websocket request and we are doing a HTTP GET
+		// We are just using this to validate if nodejs agent is listening on the other side
+		helper.HttpWaitForWithStatus("http://localhost:"+freePort, "WebSockets request was expected", 12, 5, 400)
+		stopChannel <- true
+		if listenerStarted == true {
+			stopListenerChan <- true
+		} else {
+			close(stopListenerChan)
+		}
+	})
+
+	It("should auto-select a local debug port when the given local port is occupied for a devfile component", func() {
+		// Devfile push requires experimental mode to be set
+		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true", "-f")
+
+		helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
+		helper.Chdir(projectDirPath)
+
+		helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
+		helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
+		helper.CmdShouldPass("odo", "push", "--devfile", "devfile-with-debugrun.yaml", "--debug")
+
+		stopChannel := make(chan bool)
+		go func() {
+			helper.CmdShouldRunAndTerminate(60*time.Second, stopChannel, "odo", "debug", "port-forward")
+		}()
+
+		stopListenerChan := make(chan bool)
+		startListenerChan := make(chan bool)
+		listenerStarted := false
+		go func() {
+			defer GinkgoRecover()
+			err := testingutil.FakePortListener(startListenerChan, stopListenerChan, envinfo.DefaultDebugPort)
+			if err != nil {
+				close(startListenerChan)
+				Expect(err).Should(BeNil())
+			}
+		}()
+		// wait for the test server to start listening
+		if <-startListenerChan {
+			listenerStarted = true
+		}
+
+		freePort := ""
+		helper.WaitForCmdOut("odo", []string{"debug", "info"}, 1, false, func(output string) bool {
 			if strings.Contains(output, "Debug is running") {
 				splits := strings.SplitN(output, ":", 2)
 				Expect(len(splits)).To(Equal(2))

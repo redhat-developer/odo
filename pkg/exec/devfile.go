@@ -96,3 +96,35 @@ func ExecuteDevfileRunActionWithoutRestart(client ExecClient, exec common.Exec, 
 
 	return nil
 }
+
+// ExecuteDevfileDebugAction executes the devfile debug command action using the supervisord debugrun program
+func ExecuteDevfileDebugAction(client ExecClient, exec common.Exec, commandName string, compInfo adaptersCommon.ComponentInfo, show bool) error {
+	var s *log.Status
+
+	// Exec the supervisord ctl stop and start for the debugRun program
+	type debugRunExecutable struct {
+		command []string
+	}
+	debugRunExecs := []debugRunExecutable{
+		{
+			command: []string{adaptersCommon.SupervisordBinaryPath, adaptersCommon.SupervisordCtlSubCommand, "stop", "all"},
+		},
+		{
+			command: []string{adaptersCommon.SupervisordBinaryPath, adaptersCommon.SupervisordCtlSubCommand, "start", string(adaptersCommon.DefaultDevfileDebugCommand)},
+		},
+	}
+
+	s = log.Spinnerf("Executing %s command %q", commandName, exec.CommandLine)
+	defer s.End(false)
+
+	for _, debugRunExec := range debugRunExecs {
+
+		err := ExecuteCommand(client, compInfo, debugRunExec.command, show)
+		if err != nil {
+			return errors.Wrapf(err, "unable to execute the run command")
+		}
+	}
+	s.End(true)
+
+	return nil
+}
