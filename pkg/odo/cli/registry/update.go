@@ -11,6 +11,7 @@ import (
 
 	// odo packages
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/preference"
 )
@@ -31,6 +32,7 @@ type UpdateOptions struct {
 	operation    string
 	registryName string
 	registryURL  string
+	forceFlag    bool
 }
 
 // NewUpdateOptions creates a new UpdateOptions instance
@@ -59,6 +61,13 @@ func (o *UpdateOptions) Run() (err error) {
 		return errors.Wrapf(err, "Unable to update registry")
 	}
 
+	if !o.forceFlag {
+		if !ui.Proceed(fmt.Sprintf("Are you sure you want to update registry %s", o.registryName)) {
+			log.Info("Aborted by the user")
+			return nil
+		}
+	}
+
 	err = cfg.RegistryHandler(o.operation, o.registryName, o.registryURL)
 	if err != nil {
 		return err
@@ -81,6 +90,8 @@ func NewCmdUpdate(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
+
+	registryUpdateCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Don't ask for confirmation, update the registry directly")
 
 	return registryUpdateCmd
 }

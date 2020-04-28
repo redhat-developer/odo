@@ -11,6 +11,7 @@ import (
 
 	// odo packages
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/preference"
 )
@@ -31,6 +32,7 @@ type RemoveOptions struct {
 	operation    string
 	registryName string
 	registryURL  string
+	forceFlag    bool
 }
 
 // NewRemoveOptions creates a new RemoveOptions instance
@@ -59,6 +61,13 @@ func (o *RemoveOptions) Run() (err error) {
 		return errors.Wrapf(err, "Unable to delete registry")
 	}
 
+	if !o.forceFlag {
+		if !ui.Proceed(fmt.Sprintf("Are you sure you want to delete registry %s", o.registryName)) {
+			log.Info("Aborted by the user")
+			return nil
+		}
+	}
+
 	err = cfg.RegistryHandler(o.operation, o.registryName, o.registryURL)
 	if err != nil {
 		return err
@@ -81,6 +90,8 @@ func NewCmdRemove(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
+
+	registryRemoveCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Don't ask for confirmation, delete the registry directly")
 
 	return registryRemoveCmd
 }
