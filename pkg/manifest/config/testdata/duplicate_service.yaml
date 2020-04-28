@@ -1,0 +1,12 @@
+environments:
+  - name: duplicate-service
+    pipelines:
+      integration:
+        template: dev-ci-template
+        binding: dev-ci-binding
+    apps:
+      - name: my-app-1
+        services:
+          - name: app-1-service-http # Service Name
+          - name: app-1-service-http # Duplicate Service Name (invalid)
+     
