@@ -13,6 +13,7 @@ func TestCreateVolume(t *testing.T) {
 	tests := []struct {
 		name       string
 		client     *Client
+		volName    string
 		labels     map[string]string
 		wantErr    bool
 		wantVolume types.Volume
@@ -20,6 +21,7 @@ func TestCreateVolume(t *testing.T) {
 		{
 			name:    "Case 1: Create volume, no labels",
 			client:  fakeClient,
+			volName: "",
 			labels:  map[string]string{},
 			wantErr: false,
 			wantVolume: types.Volume{
@@ -28,14 +30,16 @@ func TestCreateVolume(t *testing.T) {
 			},
 		},
 		{
-			name:   "Case 2: Create volume, multiple labels",
-			client: fakeClient,
+			name:    "Case 2: Create volume, multiple labels",
+			client:  fakeClient,
+			volName: "myvolume",
 			labels: map[string]string{
 				"component": "golang",
 				"type":      "project",
 			},
 			wantErr: false,
 			wantVolume: types.Volume{
+				Name:   "myvolume",
 				Driver: "local",
 				Labels: map[string]string{
 					"component": "golang",
@@ -44,8 +48,9 @@ func TestCreateVolume(t *testing.T) {
 			},
 		},
 		{
-			name:   "Case 3: Unable to create volume",
-			client: fakeErrorClient,
+			name:    "Case 3: Unable to create volume",
+			client:  fakeErrorClient,
+			volName: "",
 			labels: map[string]string{
 				"component": "golang",
 				"type":      "project",
@@ -55,14 +60,16 @@ func TestCreateVolume(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		volume, err := tt.client.CreateVolume("", tt.labels)
-		if !tt.wantErr == (err != nil) {
-			t.Errorf("expected %v, wanted %v", err, tt.wantErr)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			volume, err := tt.client.CreateVolume(tt.volName, tt.labels)
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("expected %v, wanted %v", err, tt.wantErr)
+			}
 
-		if !reflect.DeepEqual(volume, tt.wantVolume) {
-			t.Errorf("expected %v, wanted %v", volume, tt.wantVolume)
-		}
+			if !reflect.DeepEqual(volume, tt.wantVolume) {
+				t.Errorf("expected %v, wanted %v", volume, tt.wantVolume)
+			}
+		})
 	}
 }
 
@@ -131,13 +138,15 @@ func TestGetVolumesByLabel(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		volumes, err := tt.client.GetVolumesByLabel(tt.labels)
-		if !tt.wantErr == (err != nil) {
-			t.Errorf("expected %v, wanted %v", err, tt.wantErr)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			volumes, err := tt.client.GetVolumesByLabel(tt.labels)
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("expected %v, wanted %v", err, tt.wantErr)
+			}
 
-		if !reflect.DeepEqual(volumes, tt.wantVolumes) {
-			t.Errorf("expected %v, wanted %v", volumes, tt.wantVolumes)
-		}
+			if !reflect.DeepEqual(volumes, tt.wantVolumes) {
+				t.Errorf("expected %v, wanted %v", volumes, tt.wantVolumes)
+			}
+		})
 	}
 }

@@ -2,32 +2,27 @@ package component
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"reflect"
-	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/fatih/color"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
+
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
-
-	"github.com/openshift/odo/pkg/exec"
-
-	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
+	"github.com/openshift/odo/pkg/exec"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/sync"
-	"github.com/openshift/odo/pkg/util"
-	"github.com/pkg/errors"
 )
 
 // New instantiantes a component adapter
@@ -50,14 +45,10 @@ type Adapter struct {
 // Once the component has started, it will sync the source code to it.
 func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	componentExists := utils.ComponentExists(a.Client, a.ComponentName)
-	globExps := util.GetAbsGlobExps(parameters.Path, parameters.IgnoredFiles)
 
 	a.devfileBuildCmd = parameters.DevfileBuildCmd
 	a.devfileRunCmd = parameters.DevfileRunCmd
 
-	deletedFiles := []string{}
-	changedFiles := []string{}
-	isForcePush := false
 	podChanged := false
 	var podName string
 
@@ -71,11 +62,16 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	// Validate the devfile build and run commands
+	log.Info("\nValidation")
+	s := log.Spinner("Validating the devfile")
 	pushDevfileCommands, err := common.ValidateAndGetPushDevfileCommands(a.Devfile.Data, a.devfileBuildCmd, a.devfileRunCmd)
 	if err != nil {
+		s.End(false)
 		return errors.Wrap(err, "failed to validate devfile build and run commands")
 	}
+	s.End(true)
 
+	log.Infof("\nCreating Kubernetes resources for component %s", a.ComponentName)
 	err = a.createOrUpdateComponent(componentExists)
 	if err != nil {
 		return errors.Wrap(err, "unable to create or update component")
@@ -102,86 +98,36 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		podChanged = true
 	}
 
-	// Sync source code to the component
-	// If syncing for the first time, sync the entire source directory
-	// If syncing to an already running component, sync the deltas
-	// If syncing from an odo watch process, skip this step, as we already have the list of changed and deleted files.
-	if !podChanged && !parameters.ForceBuild && len(parameters.WatchFiles) == 0 && len(parameters.WatchDeletedFiles) == 0 {
-		absIgnoreRules := util.GetAbsGlobExps(parameters.Path, parameters.IgnoredFiles)
-
-		spinner := log.NewStatus(log.GetStdout())
-		defer spinner.End(true)
-		if componentExists {
-			spinner.Start("Checking file changes for pushing", false)
-		} else {
-			// if the component doesn't exist, we don't check for changes in the files
-			// thus we show a different message
-			spinner.Start("Checking files for pushing", false)
-		}
-
-		// Before running the indexer, make sure the .odo folder exists (or else the index file will not get created)
-		odoFolder := filepath.Join(parameters.Path, ".odo")
-		if _, err := os.Stat(odoFolder); os.IsNotExist(err) {
-			err = os.Mkdir(odoFolder, 0750)
-			if err != nil {
-				return errors.Wrap(err, "unable to create directory")
-			}
-		}
-
-		// run the indexer and find the modified/added/deleted/renamed files
-		filesChanged, filesDeleted, err := util.RunIndexer(parameters.Path, absIgnoreRules)
-		spinner.End(true)
-
-		if err != nil {
-			return errors.Wrap(err, "unable to run indexer")
-		}
-
-		// If the component already exists, sync only the files that changed
-		if componentExists {
-			// apply the glob rules from the .gitignore/.odo file
-			// and ignore the files on which the rules apply and filter them out
-			filesChangedFiltered, filesDeletedFiltered := util.FilterIgnores(filesChanged, filesDeleted, absIgnoreRules)
-
-			// Remove the relative file directory from the list of deleted files
-			// in order to make the changes correctly within the Kubernetes pod
-			deletedFiles, err = util.RemoveRelativePathFromFiles(filesDeletedFiltered, parameters.Path)
-			if err != nil {
-				return errors.Wrap(err, "unable to remove relative path from list of changed/deleted files")
-			}
-			glog.V(4).Infof("List of files to be deleted: +%v", deletedFiles)
-			changedFiles = filesChangedFiltered
-
-			if len(filesChangedFiltered) == 0 && len(filesDeletedFiltered) == 0 {
-				// no file was modified/added/deleted/renamed, thus return without building
-				log.Success("No file changes detected, skipping build. Use the '-f' flag to force the build.")
-				return nil
-			}
-		}
-	} else if len(parameters.WatchFiles) > 0 || len(parameters.WatchDeletedFiles) > 0 {
-		changedFiles = parameters.WatchFiles
-		deletedFiles = parameters.WatchDeletedFiles
+	// Find at least one pod with the source volume mounted, error out if none can be found
+	containerName, err := getFirstContainerWithSourceVolume(pod.Spec.Containers)
+	if err != nil {
+		return errors.Wrapf(err, "error while retrieving container from pod %s with a mounted project volume", podName)
 	}
 
-	if parameters.ForceBuild || !componentExists || podChanged {
-		isForcePush = true
+	log.Infof("\nSyncing to component %s", a.ComponentName)
+	// Get a sync adapter. Check if project files have changed and sync accordingly
+	syncAdapter := sync.New(a.AdapterContext, &a.Client)
+	compInfo := common.ComponentInfo{
+		ContainerName: containerName,
+		PodName:       pod.GetName(),
 	}
-
-	// Sync the local source code to the component
-	err = a.pushLocal(parameters.Path,
-		changedFiles,
-		deletedFiles,
-		isForcePush,
-		globExps,
-		pod.GetName(),
-		pod.Spec.Containers,
-	)
+	syncParams := adaptersCommon.SyncParameters{
+		PushParams:      parameters,
+		CompInfo:        compInfo,
+		ComponentExists: componentExists,
+		PodChanged:      podChanged,
+	}
+	execRequired, err := syncAdapter.SyncFiles(syncParams)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to sync to component with name %s", a.ComponentName)
 	}
 
-	err = a.execDevfile(pushDevfileCommands, componentExists, parameters.Show, pod.GetName(), pod.Spec.Containers)
-	if err != nil {
-		return err
+	if execRequired {
+		log.Infof("\nExecuting devfile commands for component %s", a.ComponentName)
+		err = a.execDevfile(pushDevfileCommands, componentExists, parameters.Show, pod.GetName(), pod.Spec.Containers)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -342,75 +288,6 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 	return nil
 }
 
-// pushLocal syncs source code from the user's disk to the component
-func (a Adapter) pushLocal(path string, files []string, delFiles []string, isForcePush bool, globExps []string, podName string, containers []corev1.Container) error {
-	glog.V(4).Infof("Push: componentName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", a.ComponentName, path, files, delFiles, isForcePush)
-
-	// Edge case: check to see that the path is NOT empty.
-	emptyDir, err := util.IsEmpty(path)
-	if err != nil {
-		return errors.Wrapf(err, "Unable to check directory: %s", path)
-	} else if emptyDir {
-		return errors.New(fmt.Sprintf("Directory / file %s is empty", path))
-	}
-
-	// Find at least one pod with the source volume mounted, error out if none can be found
-	containerName, err := getFirstContainerWithSourceVolume(containers)
-	if err != nil {
-		return errors.Wrapf(err, "error while retrieving container from pod: %s", podName)
-	}
-
-	// Sync the files to the pod
-	s := log.Spinner("Syncing files to the component")
-	defer s.End(false)
-
-	// If there's only one project defined in the devfile, sync to `/projects/project-name`, otherwise sync to /projects
-	syncFolder, err := getSyncFolder(a.Devfile.Data.GetProjects())
-	if err != nil {
-		return errors.Wrapf(err, "unable to sync the files to the component")
-	}
-
-	if syncFolder != kclient.OdoSourceVolumeMount {
-		// Need to make sure the folder already exists on the component or else sync will fail
-		glog.V(4).Infof("Creating %s on the remote container if it doesn't already exist", syncFolder)
-		cmdArr := getCmdToCreateSyncFolder(syncFolder)
-
-		err = exec.ExecuteCommand(&a.Client, podName, containerName, cmdArr, false)
-		if err != nil {
-			return err
-		}
-	}
-	// If there were any files deleted locally, delete them remotely too.
-	if len(delFiles) > 0 {
-		cmdArr := getCmdToDeleteFiles(delFiles, syncFolder)
-
-		err = exec.ExecuteCommand(&a.Client, podName, containerName, cmdArr, false)
-		if err != nil {
-			return err
-		}
-	}
-
-	if !isForcePush {
-		if len(files) == 0 && len(delFiles) == 0 {
-			// nothing to push
-			s.End(true)
-			return nil
-		}
-	}
-
-	if isForcePush || len(files) > 0 {
-		glog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
-		err = sync.CopyFile(&a.Client, path, podName, containerName, syncFolder, files, globExps)
-		if err != nil {
-			s.End(false)
-			return errors.Wrap(err, "unable push files to pod")
-		}
-	}
-	s.End(true)
-
-	return nil
-}
-
 func (a Adapter) waitAndGetComponentPod(hideSpinner bool) (*corev1.Pod, error) {
 	podSelector := fmt.Sprintf("component=%s", a.ComponentName)
 	watchOptions := metav1.ListOptions{
@@ -426,17 +303,9 @@ func (a Adapter) waitAndGetComponentPod(hideSpinner bool) (*corev1.Pod, error) {
 
 // Push syncs source code from the user's disk to the component
 func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand, componentExists, show bool, podName string, containers []corev1.Container) (err error) {
-	var buildRequired bool
-	var s *log.Status
-
-	if len(pushDevfileCommands) == 1 {
-		// if there is one command, it is the mandatory run command. No need to build.
-		buildRequired = false
-	} else if len(pushDevfileCommands) == 2 {
-		// if there are two commands, it is the optional build command and the mandatory run command, set buildRequired to true
-		buildRequired = true
-	} else {
-		return fmt.Errorf("error executing devfile commands - there should be at least 1 command or at most 2 commands, currently there are %v commands", len(pushDevfileCommands))
+	buildRequired, err := common.IsComponentBuildRequired(pushDevfileCommands)
+	if err != nil {
+		return err
 	}
 
 	for i := 0; i < len(pushDevfileCommands); i++ {
@@ -447,28 +316,15 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 			glog.V(3).Infof("Executing devfile command %v", command.Name)
 
 			for _, action := range command.Actions {
-				// Change to the workdir and execute the command
-				var cmdArr []string
-				if action.Workdir != nil {
-					cmdArr = []string{"/bin/sh", "-c", "cd " + *action.Workdir + " && " + *action.Command}
-				} else {
-					cmdArr = []string{"/bin/sh", "-c", *action.Command}
+				compInfo := common.ComponentInfo{
+					ContainerName: *action.Component,
+					PodName:       podName,
 				}
 
-				if show {
-					s = log.SpinnerNoSpin("Executing " + command.Name + " command " + fmt.Sprintf("%q", *action.Command))
-				} else {
-					s = log.Spinner("Executing " + command.Name + " command " + fmt.Sprintf("%q", *action.Command))
-				}
-
-				defer s.End(false)
-
-				err = exec.ExecuteCommand(&a.Client, podName, *action.Component, cmdArr, show)
+				err = exec.ExecuteDevfileBuildAction(&a.Client, action, command.Name, compInfo, show)
 				if err != nil {
-					s.End(false)
 					return err
 				}
-				s.End(true)
 			}
 
 			// Reset the for loop counter and iterate through all the devfile commands again for others
@@ -490,31 +346,15 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 					}
 				}
 
-				// Exec the supervisord ctl stop and start for the devrun program
-				type devRunExecutable struct {
-					command []string
-				}
-				devRunExecs := []devRunExecutable{
-					{
-						command: []string{common.SupervisordBinaryPath, "ctl", "stop", "all"},
-					},
-					{
-						command: []string{common.SupervisordBinaryPath, "ctl", "start", string(common.DefaultDevfileRunCommand)},
-					},
+				compInfo := common.ComponentInfo{
+					ContainerName: *action.Component,
+					PodName:       podName,
 				}
 
-				s = log.Spinner("Executing " + command.Name + " command " + fmt.Sprintf("%q", *action.Command))
-				defer s.End(false)
-
-				for _, devRunExec := range devRunExecs {
-
-					err = exec.ExecuteCommand(&a.Client, podName, *action.Component, devRunExec.command, show)
-					if err != nil {
-						s.End(false)
-						return
-					}
+				err = exec.ExecuteDevfileRunAction(&a.Client, action, command.Name, compInfo, show)
+				if err != nil {
+					return err
 				}
-				s.End(true)
 			}
 		}
 	}
@@ -528,7 +368,11 @@ func (a Adapter) InitRunContainerSupervisord(containerName, podName string, cont
 	for _, container := range containers {
 		if container.Name == containerName && !reflect.DeepEqual(container.Command, []string{common.SupervisordBinaryPath}) {
 			command := []string{common.SupervisordBinaryPath, "-c", common.SupervisordConfFile, "-d"}
-			err = exec.ExecuteCommand(&a.Client, podName, containerName, command, true)
+			compInfo := common.ComponentInfo{
+				ContainerName: containerName,
+				PodName:       podName,
+			}
+			err = exec.ExecuteCommand(&a.Client, compInfo, command, true)
 		}
 	}
 
@@ -549,44 +393,6 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, e
 	}
 
 	return "", fmt.Errorf("In order to sync files, odo requires at least one component in a devfile to set 'mountSources: true'")
-}
-
-// getSyncFolder returns the folder that we need to sync the source files to
-// If there's exactly one project defined in the devfile, and clonePath isn't set return `/projects/<projectName>`
-// If there's exactly one project, and clonePath is set, return `/projects/<clonePath>`
-// If the clonePath is an absolute path or contains '..', return an error
-// Otherwise (zero projects or many), return `/projects`
-func getSyncFolder(projects []versionsCommon.DevfileProject) (string, error) {
-	if len(projects) == 1 {
-		project := projects[0]
-		// If the clonepath is set to a value, set it to be the sync folder
-		// As some devfiles rely on the code being synced to the folder in the clonepath
-		if project.ClonePath != nil {
-			if strings.HasPrefix(*project.ClonePath, "/") {
-				return "", fmt.Errorf("the clonePath in the devfile must be a relative path")
-			}
-			if strings.Contains(*project.ClonePath, "..") {
-				return "", fmt.Errorf("the clonePath in the devfile cannot escape the projects root. Don't use .. to try and do that")
-			}
-			return filepath.ToSlash(filepath.Join(kclient.OdoSourceVolumeMount, *project.ClonePath)), nil
-		}
-		return filepath.ToSlash(filepath.Join(kclient.OdoSourceVolumeMount, projects[0].Name)), nil
-	}
-	return kclient.OdoSourceVolumeMount, nil
-
-}
-
-// getCmdToCreateSyncFolder returns the command used to create the remote sync folder on the running container
-func getCmdToCreateSyncFolder(syncFolder string) []string {
-	return []string{"mkdir", "-p", syncFolder}
-}
-
-// getCmdToDeleteFiles returns the command used to delete the remote files on the container that are marked for deletion
-func getCmdToDeleteFiles(delFiles []string, syncFolder string) []string {
-	rmPaths := util.GetRemoteFilesMarkedForDeletion(delFiles, syncFolder)
-	glog.V(4).Infof("remote files marked for deletion are %+v", rmPaths)
-	cmdArr := []string{"rm", "-rf"}
-	return append(cmdArr, rmPaths...)
 }
 
 // Delete deletes the component

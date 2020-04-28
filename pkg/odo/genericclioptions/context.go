@@ -342,12 +342,12 @@ func resolveProject(command *cobra.Command, client *occlient.Client, localConfig
 // resolveNamespace resolves namespace for devfile component
 func resolveNamespace(command *cobra.Command, client *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo) string {
 	var namespace string
-	namespaceFlag := FlagValueIfSet(command, "namespace")
-	if len(namespaceFlag) > 0 {
+	projectFlag := FlagValueIfSet(command, "project")
+	if len(projectFlag) > 0 {
 		// if namespace flag was set, check that the specified namespace exists and use it
-		_, err := client.KubeClient.CoreV1().Namespaces().Get(namespaceFlag, metav1.GetOptions{})
+		_, err := client.KubeClient.CoreV1().Namespaces().Get(projectFlag, metav1.GetOptions{})
 		util.LogErrorAndExit(err, "")
-		namespace = namespaceFlag
+		namespace = projectFlag
 	} else {
 		namespace = envSpecificInfo.GetNamespace()
 		if namespace == "" {
