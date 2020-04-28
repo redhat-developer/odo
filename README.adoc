@@ -15,7 +15,7 @@ image:https://img.shields.io/github/license/openshift/odo?style=for-the-badge[Li
 [[overview]]
 == Overview
 
-OpenShift Do (`odo`) is a fast, iterative, and straightforward CLI tool for developers who write, build, and deploy applications on OpenShift.
+`odo` is a fast, iterative, and straightforward CLI tool for developers who write, build, and deploy applications on OpenShift.
 
 Existing tools such as `oc` are more operations-focused and require a deep-understanding of Kubernetes and OpenShift concepts. `odo` abstracts away complex Kubernetes and OpenShift concepts for the developer, thus allowing developers to focus on what is most important to them: code.
 

@@ -57,9 +57,9 @@ var _ = Describe("odo devfile delete command tests", func() {
 
 			helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io")
 
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
+			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
 
-			helper.CmdShouldPass("odo", "delete", "--devfile", "devfile.yaml", "--namespace", namespace, "-f")
+			helper.CmdShouldPass("odo", "delete", "--devfile", "devfile.yaml", "--project", namespace, "-f")
 
 			oc.WaitAndCheckForExistence("deployments", namespace, 1)
 			oc.WaitAndCheckForExistence("pods", namespace, 1)
@@ -78,11 +78,11 @@ var _ = Describe("odo devfile delete command tests", func() {
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
 
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
+			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
 
 			helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io", "--context", projectDirPath)
 
-			helper.CmdShouldPass("odo", "delete", "--devfile", "devfile.yaml", "--namespace", namespace, "-f", "--all")
+			helper.CmdShouldPass("odo", "delete", "--devfile", "devfile.yaml", "--project", namespace, "-f", "--all")
 
 			oc.WaitAndCheckForExistence("deployments", namespace, 1)
 

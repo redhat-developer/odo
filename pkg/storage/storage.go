@@ -160,7 +160,8 @@ func List(client *occlient.Client, componentName string, applicationName string)
 	}
 
 	var storage []Storage
-	for _, pvc := range pvcs {
+	for i := range pvcs {
+		pvc := pvcs[i]
 		pvcComponentName, ok := pvc.Labels[componentlabels.ComponentLabel]
 		pvcAppName, okApp := pvc.Labels[applabels.ApplicationLabel]
 		// first check if component label does not exists indicating that the storage is not mounted in any component
@@ -205,7 +206,8 @@ func ListUnmounted(client *occlient.Client, applicationName string) (StorageList
 		return StorageList{}, errors.Wrapf(err, "unable to get PVC using selector %v", storagelabels.StorageLabel)
 	}
 	var storage []Storage
-	for _, pvc := range pvcs {
+	for i := range pvcs {
+		pvc := pvcs[i]
 		_, ok := pvc.Labels[componentlabels.ComponentLabel]
 		pvcAppName, okApp := pvc.Labels[applabels.ApplicationLabel]
 		// first check if component label does not exists indicating that the storage is not mounted in any component

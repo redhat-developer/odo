@@ -13,6 +13,7 @@ import (
 var _ = Describe("odo storage command tests", func() {
 	var project string
 	var context string
+	var oc helper.OcRunner
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {

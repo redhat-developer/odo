@@ -3,6 +3,7 @@ package docker
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/openshift/odo/tests/helper"
@@ -86,6 +87,22 @@ var _ = Describe("odo docker devfile url command tests", func() {
 			stdout = helper.CmdShouldFail("odo", "url", "create", url2)
 			Expect(stdout).To(ContainSubstring("already exists for a different push target"))
 
+		})
+
+		It("should be able to do a GET on the URL after a successful push", func() {
+			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
+			helper.Chdir(projectDirPath)
+
+			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
+
+			helper.CmdShouldPass("odo", "url", "create", cmpName)
+
+			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
+			helper.MatchAllInOutput(output, []string{"Executing devbuild command", "Executing devrun command"})
+
+			url := strings.TrimSpace(helper.ExtractSubString(output, "127.0.0.1", "created"))
+
+			helper.HttpWaitFor("http://"+url, "Hello World!", 30, 1)
 		})
 	})
 
