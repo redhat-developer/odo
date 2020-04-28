@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/mkmik/multierror"
+	"knative.dev/pkg/apis"
 )
 
 const (
@@ -37,6 +38,16 @@ func TestValidate(t *testing.T) {
 			multierror.Join([]error{
 				missingFieldsError([]string{"secret"}, []string{"environments.development.services.service-1.webhook"}),
 				missingFieldsError([]string{"integration"}, []string{"environments.development.services.service-1.pipelines"}),
+			}),
+		},
+		{
+			"Missing service and config repo from application",
+			"testdata/missing_service_error.yaml",
+			multierror.Join([]error{
+				missingFieldsError([]string{"services", "config_repo"}, []string{"environments.development.apps.app-1"}), missingFieldsError([]string{"path"}, []string{"environments.development.apps.app-2.config_repo"}),
+				missingFieldsError([]string{"url"}, []string{"environments.development.apps.app-3.config_repo"}),
+				missingFieldsError([]string{"url", "path"}, []string{"environments.development.apps.app-4.config_repo"}),
+				apis.ErrMultipleOneOf("environments.development.apps.app-5.services", "environments.development.apps.app-5.config_repo"),
 			}),
 		},
 	}
