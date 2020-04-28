@@ -14,6 +14,7 @@ const (
 )
 
 func TestValidate(t *testing.T) {
+
 	tests := []struct {
 		desc string
 		file string
@@ -49,6 +50,33 @@ func TestValidate(t *testing.T) {
 				missingFieldsError([]string{"url", "path"}, []string{"environments.development.apps.app-4.config_repo"}),
 				apis.ErrMultipleOneOf("environments.development.apps.app-5.services", "environments.development.apps.app-5.config_repo"),
 			}),
+		},
+		{
+			"duplicate environment name error",
+			"testdata/duplicate_environment.yaml",
+			multierror.Join(
+				[]error{
+					duplicateFieldsError([]string{"duplicate-environment"}, []string{"environments.duplicate-environment"}),
+				},
+			),
+		},
+		{
+			"duplicate application name error",
+			"testdata/duplicate_application.yaml",
+			multierror.Join(
+				[]error{
+					duplicateFieldsError([]string{"my-app-1"}, []string{"environments.app-environment.apps.my-app-1"}),
+				},
+			),
+		},
+		{
+			"duplicate service name error",
+			"testdata/duplicate_service.yaml",
+			multierror.Join(
+				[]error{
+					duplicateFieldsError([]string{"app-1-service-http"}, []string{"environments.duplicate-service.services.app-1-service-http"}),
+				},
+			),
 		},
 	}
 

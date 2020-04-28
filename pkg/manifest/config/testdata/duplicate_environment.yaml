@@ -1,0 +1,16 @@
+environments:
+  - name: duplicate-environment #Environment duplicate-environment 
+    pipelines:
+      integration:
+        template: dev-ci-template
+        binding: dev-ci-binding
+    apps:
+      - name: my-app-1
+        services:
+          - name: app-1-service-http
+          - name: app-1-service-metrics
+      - name: my-app-
+        services:
+          - name: app-2-service
+  - name: duplicate-environment # Duplicate environment (invalid)
+   
