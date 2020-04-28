@@ -1,25 +1,25 @@
 :source-highlighter: pygments
 
-# Odo integration with Operator Hub
+# odo integration with Operator Hub
 ---
 
-When working in experimental mode, Odo provides the abilitiy to work with
-link:https://www.openshift.com/learn/topics/operators[operators] installed on
-the cluster. It allows listing of operators, creation of services from CRD
-provided by the operators, printing the YAML definition and providing custom
+When working in experimental mode, Odo provides the ability to work with
+link:https://www.openshift.com/learn/topics/operators[Operators] installed on
+the cluster. It allows listing of Operators, creation of services from CRD
+provided by the Operators, printing the YAML definition and providing custom
 YAML definition to start the service from a CRD. 
 
 [NOTE]
 ====
-Installation of operators is not a part of odo workflow. It is something that
+Installation of Operators is not a part of odo workflow. It is something that
 your OpenShift/Kubernetes cluster administrator should be able to do for you. 
 ====
 
 In this document we will cover the following:
 
-. <<list-operators,List the operators installed in the current project>>
-. <<dry-run,Print the YAML specification that wil be used to start the service from a CRD>>
-. <<create-service,Create a service from the Custom Resource Definitions (CRD) provided by the operators>>
+. <<list-operators,List the Operators installed in the current project>>
+. <<dry-run,Print the YAML specification that will be used to start the service from a CRD>>
+. <<create-service,Create a service from the Custom Resource Definitions (CRD) provided by the Operators>>
 . <<create-service-from-yaml,Create a service from the YAML stored in a file on local system>>
 
 [NOTE]
@@ -44,7 +44,7 @@ $ export ODO_EXPERIMENTAL=true
 ----
 
 * Prefix every command mentioned below with `ODO_EXPERIMENTAL=true`. For
-  example, to list the operators installed in current project:
+  example, to list the Operators installed in current project:
 +
 [source,shell]
 ----
@@ -52,9 +52,9 @@ $ ODO_EXPERIMENTAL=true odo catalog list services
 ----
 ====
 
-=== [[list-operators]]Listing the operators
+=== [[list-operators]]Listing the Operators
 
-To list the operators installed in current project, execute below command:
+To list the Operators installed in current project, execute below command:
 
 [source,shell]
 ----
@@ -62,11 +62,11 @@ $ odo catalog list services
 ----
 
 It will list the
-link:https://docs.openshift.com/container-platform/4.3/operators/olm-what-operators-are.html[operators]
+link:https://docs.openshift.com/container-platform/4.3/operators/olm-what-operators-are.html[Operators]
 and the
 link:https://docs.openshift.com/container-platform/4.3/operators/crds/crd-extending-api-with-crds.html#crd-custom-resource-definitions_crd-extending-api-with-crds[CRD
-(Custom Resource Definitions)] provided by these operators. For example, we
-have installed Etcd and MongoDB opertors and the output we get is like below:
+(Custom Resource Definitions)] provided by these Operators. For example, we
+have installed Etcd and MongoDB Operators and the output we get is like below:
 
 [source,shell]
 ----
