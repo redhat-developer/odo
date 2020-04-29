@@ -42,11 +42,6 @@ type Adapter struct {
 	devfileRunCmd   string
 }
 
-// Exec the supervisord ctl stop and start for the devrun program
-type devRunExecutable struct {
-	command []string
-}
-
 // Push updates the component if a matching component exists or creates one if it doesn't exist
 // Once the component has started, it will sync the source code to it.
 func (a Adapter) Push(parameters common.PushParameters) (err error) {
