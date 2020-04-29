@@ -165,6 +165,14 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 	})
 
+	Context("When executing odo create using --downloadSource with a devfile component that contains no projects", func() {
+		It("should fail with please run 'No project found in devfile component.'", func() {
+			output := helper.CmdShouldFail("odo", "create", "maven", "--downloadSource")
+			expectedString := "No project found in devfile component."
+			helper.MatchAllInOutput(output, []string{expectedString})
+		})
+	})
+
 	// Currently these tests need interactive mode in order to set the name of the component.
 	// Once this feature is added we can change these tests.
 	//Context("When executing odo create with devfile component and --downloadSource flag with github type", func() {
