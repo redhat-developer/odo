@@ -12,6 +12,7 @@ import (
 	// odo packages
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/preference"
+	"github.com/openshift/odo/pkg/util"
 )
 
 const updateCommandName = "update"
@@ -48,6 +49,11 @@ func (o *UpdateOptions) Complete(name string, cmd *cobra.Command, args []string)
 
 // Validate validates the UpdateOptions based on completed values
 func (o *UpdateOptions) Validate() (err error) {
+	err = util.ValidateURL(o.registryURL)
+	if err != nil {
+		return err
+	}
+
 	return
 }
 
@@ -55,7 +61,7 @@ func (o *UpdateOptions) Validate() (err error) {
 func (o *UpdateOptions) Run() (err error) {
 	cfg, err := preference.New()
 	if err != nil {
-		return errors.Wrapf(err, "Unable to update registry")
+		return errors.Wrap(err, "Unable to update registry")
 	}
 
 	err = cfg.RegistryHandler(o.operation, o.registryName, o.registryURL, o.forceFlag)

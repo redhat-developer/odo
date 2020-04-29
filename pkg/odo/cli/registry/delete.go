@@ -55,7 +55,7 @@ func (o *DeleteOptions) Validate() (err error) {
 func (o *DeleteOptions) Run() (err error) {
 	cfg, err := preference.New()
 	if err != nil {
-		return errors.Wrapf(err, "Unable to delete registry")
+		return errors.Wrap(err, "Unable to delete registry")
 	}
 
 	err = cfg.RegistryHandler(o.operation, o.registryName, o.registryURL, o.forceFlag)

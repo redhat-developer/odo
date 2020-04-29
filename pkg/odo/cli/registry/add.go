@@ -13,6 +13,7 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/preference"
+	"github.com/openshift/odo/pkg/util"
 )
 
 const addCommandName = "add"
@@ -49,6 +50,11 @@ func (o *AddOptions) Complete(name string, cmd *cobra.Command, args []string) (e
 
 // Validate validates the AddOptions based on completed values
 func (o *AddOptions) Validate() (err error) {
+	err = util.ValidateURL(o.registryURL)
+	if err != nil {
+		return err
+	}
+
 	return
 }
 
@@ -57,7 +63,7 @@ func (o *AddOptions) Run() (err error) {
 
 	cfg, err := preference.New()
 	if err != nil {
-		return errors.Wrapf(err, "Unable to add registry")
+		return errors.Wrap(err, "Unable to add registry")
 	}
 
 	err = cfg.RegistryHandler(o.operation, o.registryName, o.registryURL, o.forceFlag)
