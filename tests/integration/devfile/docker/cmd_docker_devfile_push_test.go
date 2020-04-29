@@ -161,7 +161,7 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot"), projectDirPath)
 
 			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile-init.yaml")
-			Expect(output).To(ContainSubstring("Executing devinit command \"echo hello\""))
+			Expect(output).To(ContainSubstring("Executing devinit command \"echo hello"))
 			Expect(output).To(ContainSubstring("Executing devbuild command \"/artifacts/bin/build-container-full.sh\""))
 			Expect(output).To(ContainSubstring("Executing devrun command \"/artifacts/bin/start-server.sh\""))
 
@@ -183,12 +183,15 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot"), projectDirPath)
 
 			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile-init-without-build.yaml")
-			Expect(output).To(ContainSubstring("Executing devinit command \"echo hello\""))
+			Expect(output).To(ContainSubstring("Executing devinit command \"echo hello"))
 			Expect(output).To(ContainSubstring("Executing devrun command \"/artifacts/bin/start-server.sh\""))
 
 			// Check to see if it's been pushed (foobar.txt abd directory testdir)
 			containers := dockerClient.GetRunningContainersByCompAlias(cmpName, "runtime")
 			Expect(len(containers)).To(Equal(1))
+
+			stdOut := dockerClient.ExecContainer(containers[0], "ls /data")
+			Expect(stdOut).To(ContainSubstring(("afile.txt")))
 		})
 
 		It("should be able to handle a missing devbuild command", func() {

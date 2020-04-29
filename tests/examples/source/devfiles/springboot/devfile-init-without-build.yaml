@@ -43,7 +43,7 @@ commands:
       - 
         type: exec
         component: tools
-        command: "echo hello"
+        command: "echo hello; touch /data/afile.txt"
         workdir: /projects/springbootproject
   -
     name: devRun
