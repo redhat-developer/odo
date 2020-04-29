@@ -28,6 +28,17 @@ func SelectDevfileComponentType(options []catalog.DevfileComponentType) string {
 	return componentType
 }
 
+func SelectDevfileProject(options []string) string {
+	var projectName string
+	prompt := &survey.Select{
+		Message: "Which project do you wish to download?",
+		Options: options,
+	}
+	err := survey.AskOne(prompt, &projectName, survey.Required)
+	ui.HandleError(err)
+	return projectName
+}
+
 // EnterDevfileComponentName lets the user to specify the component name in the prompt
 func EnterDevfileComponentName(defaultComponentName string) string {
 	var componentName string

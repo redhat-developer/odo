@@ -15,6 +15,7 @@ import (
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
@@ -64,7 +65,7 @@ type DevfileMetadata struct {
 	devfileSupport     bool
 	devfileLink        string
 	devfileRegistry    string
-	downloadSource     bool
+	downloadSource     string
 }
 
 // CreateRecommendedCommandName is the recommended watch command name
@@ -695,7 +696,8 @@ func (co *CreateOptions) Validate() (err error) {
 
 // Downloads first project from list of projects in devfile
 // Currenty type git with a non github url is not supported
-func (co *CreateOptions) downloadProject() error {
+func (co *CreateOptions) downloadProject(projectPassed string) error {
+	var project common.DevfileProject
 	devObj, err := devfile.Parse(DevfilePath)
 	if err != nil {
 		return err
@@ -706,11 +708,37 @@ func (co *CreateOptions) downloadProject() error {
 		return errors.Errorf("No project found in devfile component.")
 	}
 
-	if nOfProjects > 1 {
-		log.Warning("Only downloading first project from list.")
+	if nOfProjects > 1 && projectPassed == "no-project-passed-to-flag" {
+		co.interactive = true
 	}
 
-	project := projects[0]
+	if nOfProjects == 1 && projectPassed == "no-project-passed-to-flag" {
+		project = projects[0]
+	} else if co.interactive && projectPassed == "no-project-passed-to-flag" { //If there is more than one project and the user hasn't specified which one to download.
+		var projectNames []string
+		for _, projectInfo := range projects {
+			projectNames = append(projectNames, projectInfo.Name) //Add all names to an array and use this as a survey
+		}
+		projectSelected := ui.SelectDevfileProject(projectNames)
+
+		for indexOfProject, x := range projects { //We then need to find the index of the project selected
+			if x.Name == projectSelected {
+				project = projects[indexOfProject]
+			}
+		}
+	} else { //If the user has specified a project
+		projectFound := false
+		for indexOfProject, projectInfo := range projects {
+			if projectInfo.Name == projectPassed { //Get the index
+				project = projects[indexOfProject]
+				projectFound = true
+			}
+		}
+
+		if !projectFound {
+			return errors.Errorf("The project: %s specified in --downloadSource does not exist", projectPassed)
+		}
+	}
 
 	path, err := os.Getwd()
 	if err != nil {
@@ -779,8 +807,8 @@ func (co *CreateOptions) Run() (err error) {
 				}
 			}
 
-			if util.CheckPathExists(DevfilePath) && co.devfileMetadata.downloadSource {
-				err = co.downloadProject()
+			if util.CheckPathExists(DevfilePath) && co.devfileMetadata.downloadSource != "" {
+				err = co.downloadProject(co.devfileMetadata.downloadSource)
 				if err != nil {
 					return errors.Wrap(err, "Failed to download project for devfile component")
 				}
@@ -900,7 +928,8 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 
 	if experimental.IsExperimentalModeEnabled() {
 		componentCreateCmd.Flags().StringVarP(&co.devfileMetadata.componentNamespace, "namespace", "n", "", "Create devfile component under specific namespace")
-		componentCreateCmd.Flags().BoolVar(&co.devfileMetadata.downloadSource, "downloadSource", false, "Download sample project from devfile. (ex. odo component create <component_type> [component_name] --downloadSource")
+		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.downloadSource, "downloadSource", "", "Download sample project from devfile. (ex. odo component create <component_type> [component_name] --downloadSource")
+		componentCreateCmd.Flags().Lookup("downloadSource").NoOptDefVal = "no-project-passed-to-flag" //Default value to pass to the flag if one is not specified.
 	}
 
 	componentCreateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
