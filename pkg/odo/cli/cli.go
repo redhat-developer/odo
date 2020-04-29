@@ -34,7 +34,7 @@ const OdoRecommendedName = "odo"
 
 var (
 	// We do not use ktemplates.Normalize here as it messed up the newlines..
-	odoLong = `(OpenShift Do) odo is a CLI tool for running OpenShift applications in a fast and automated manner.
+	odoLong = `odo is a CLI tool for running OpenShift applications in a fast and automated manner.
 Reducing the complexity of deployment, odo adds iterative development without the worry of deploying your source code.
 
 Find more information at https://github.com/openshift/odo`
@@ -131,7 +131,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 	// rootCmd represents the base command when called without any subcommands
 	rootCmd := &cobra.Command{
 		Use:     name,
-		Short:   "odo (OpenShift Do)",
+		Short:   "odo",
 		Long:    odoLong,
 		RunE:    ShowHelp,
 		Example: fmt.Sprintf(odoExample, fullName),

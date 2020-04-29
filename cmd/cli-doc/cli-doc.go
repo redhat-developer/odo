@@ -81,7 +81,7 @@ func referencePrinter(command *cobra.Command, level int) string {
 	}
 
 	// The main markdown "template" for everything
-	return fmt.Sprintf(`= Overview of the OpenShift Do (odo) CLI Structure
+	return fmt.Sprintf(`= Overview of the odo CLI Structure
 
 ___________________
 Example application

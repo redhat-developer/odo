@@ -26,7 +26,7 @@ Provides:       %{package_name}
 Obsoletes:      %{package_name}
 
 %description
-OpenShift Do (odo) is a fast, iterative, and straightforward CLI tool for developers who write, build, and deploy applications on OpenShift.
+odo is a fast, iterative, and straightforward CLI tool for developers who write, build, and deploy applications on OpenShift.
 
 %prep
 %setup -q -n %{source_dir}
