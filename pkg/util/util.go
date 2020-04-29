@@ -985,7 +985,7 @@ func CheckKubeConfigExist() bool {
 
 // ValidateURL validates the URL
 func ValidateURL(url string) error {
-	re, err := regexp.Compile("^(?:http(s)?:\\/\\/)?[\\w.-]+(?:\\.[\\w\\.-]+)+[\\w\\-\\._~:/?#[\\]@!\\$&'\\(\\)\\*\\+,;=.]+$")
+	re, err := regexp.Compile(`^(?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+$`)
 	if err != nil {
 		return err
 	}
