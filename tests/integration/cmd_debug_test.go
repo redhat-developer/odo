@@ -38,6 +38,31 @@ var _ = Describe("odo debug command tests", func() {
 	})
 
 	Context("odo debug on a nodejs:latest component", func() {
+		It("check that machine output debug information works", func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CmdShouldPass("odo", "component", "create", "nodejs:latest", "--project", project, "--context", context)
+			helper.CmdShouldPass("odo", "push", "--context", context)
+
+			httpPort, err := util.HttpGetFreePort()
+			Expect(err).NotTo(HaveOccurred())
+			freePort := strconv.Itoa(httpPort)
+
+			stopChannel := make(chan bool)
+			go func() {
+				helper.CmdShouldRunAndTerminate(60*time.Second, stopChannel, "odo", "debug", "port-forward", "--local-port", freePort, "--context", context)
+			}()
+
+			// Make sure that the debug information output, outputs correctly.
+			// We do *not* check the json output since the debugProcessID will be different each time.
+			helper.WaitForCmdOut("odo", []string{"debug", "info", "--context", context, "-o", "json"}, 1, true, func(output string) bool {
+				Expect(output).To(ContainSubstring(`"kind": "OdoDebugInfo"`))
+				Expect(output).To(ContainSubstring(`"localPort": ` + freePort))
+				return true
+			})
+
+			stopChannel <- true
+		})
+
 		It("should expect a ws connection when tried to connect on different debug port locally and remotely", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 			helper.CmdShouldPass("odo", "component", "create", "nodejs:latest", "--project", project, "--context", context)
@@ -119,7 +144,7 @@ var _ = Describe("odo debug command tests", func() {
 			runningString := helper.CmdShouldPass("odo", "debug", "info", "--context", context)
 			Expect(runningString).To(ContainSubstring(freePort))
 			stopChannel <- true
-			failString := helper.CmdShouldPass("odo", "debug", "info", "--context", context)
+			failString := helper.CmdShouldFail("odo", "debug", "info", "--context", context)
 			Expect(failString).To(ContainSubstring("not running"))
 
 			// according to https://golang.org/pkg/os/#Signal On Windows, sending os.Interrupt to a process with os.Process.Signal is not implemented

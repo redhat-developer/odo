@@ -65,9 +65,6 @@ var _ = Describe("odo debug command serial tests", func() {
 			listenerStarted = true
 		}
 
-		debugInfoString := helper.CmdShouldPass("odo", "debug", "info", "--context", context)
-		Expect(debugInfoString).To(ContainSubstring(""))
-
 		freePort := ""
 		helper.WaitForCmdOut("odo", []string{"debug", "info", "--context", context}, 1, true, func(output string) bool {
 			if strings.Contains(output, "Debug is running") {

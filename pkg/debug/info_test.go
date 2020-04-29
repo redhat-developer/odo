@@ -14,15 +14,19 @@ import (
 )
 
 // fakeOdoDebugFileString creates a json string of a fake OdoDebugFile
-func fakeOdoDebugFileString(typeMeta v1.TypeMeta, processId int, projectName, appName, componentName string, remotePort, localPort int) (string, error) {
+func fakeOdoDebugFileString(typeMeta v1.TypeMeta, processID int, projectName, appName, componentName string, remotePort, localPort int) (string, error) {
 	odoDebugFile := OdoDebugFile{
-		TypeMeta:       typeMeta,
-		DebugProcessId: processId,
-		ProjectName:    projectName,
-		AppName:        appName,
-		ComponentName:  componentName,
-		RemotePort:     remotePort,
-		LocalPort:      localPort,
+		TypeMeta: typeMeta,
+		ObjectMeta: v1.ObjectMeta{
+			Namespace: projectName,
+			Name:      componentName,
+		},
+		Spec: OdoDebugFileSpec{
+			App:            appName,
+			DebugProcessID: processID,
+			RemotePort:     remotePort,
+			LocalPort:      localPort,
+		},
 	}
 
 	data, err := json.Marshal(odoDebugFile)
@@ -64,12 +68,16 @@ func Test_createDebugInfoFile(t *testing.T) {
 					Kind:       "OdoDebugInfo",
 					APIVersion: "v1",
 				},
-				DebugProcessId: os.Getpid(),
-				ProjectName:    "testing-1",
-				AppName:        "app",
-				ComponentName:  "nodejs-ex",
-				RemotePort:     9001,
-				LocalPort:      5858,
+				ObjectMeta: v1.ObjectMeta{
+					Name:      "nodejs-ex",
+					Namespace: "testing-1",
+				},
+				Spec: OdoDebugFileSpec{
+					DebugProcessID: os.Getpid(),
+					App:            "app",
+					RemotePort:     9001,
+					LocalPort:      5858,
+				},
 			},
 			alreadyExistFile: false,
 			wantErr:          false,
@@ -89,12 +97,16 @@ func Test_createDebugInfoFile(t *testing.T) {
 					Kind:       "OdoDebugInfo",
 					APIVersion: "v1",
 				},
-				DebugProcessId: os.Getpid(),
-				ProjectName:    "testing-1",
-				AppName:        "app",
-				ComponentName:  "nodejs-ex",
-				RemotePort:     9004,
-				LocalPort:      5758,
+				ObjectMeta: v1.ObjectMeta{
+					Name:      "nodejs-ex",
+					Namespace: "testing-1",
+				},
+				Spec: OdoDebugFileSpec{
+					DebugProcessID: os.Getpid(),
+					App:            "app",
+					RemotePort:     9004,
+					LocalPort:      5758,
+				},
 			},
 			alreadyExistFile: true,
 			wantErr:          false,
@@ -173,22 +185,32 @@ func Test_getDebugInfo(t *testing.T) {
 					Kind:       "OdoDebugInfo",
 					APIVersion: "v1",
 				},
-				DebugProcessId: os.Getpid(),
-				ProjectName:    "testing-1",
-				AppName:        "app",
-				ComponentName:  "nodejs-ex",
-				RemotePort:     5858,
+				ObjectMeta: v1.ObjectMeta{
+					Name:      "nodejs-ex",
+					Namespace: "testing-1",
+				},
+				Spec: OdoDebugFileSpec{
+					DebugProcessID: os.Getpid(),
+					App:            "app",
+					RemotePort:     5858,
+					LocalPort:      9001,
+				},
 			},
 			readDebugFile: OdoDebugFile{
 				TypeMeta: v1.TypeMeta{
 					Kind:       "OdoDebugInfo",
 					APIVersion: "v1",
 				},
-				DebugProcessId: os.Getpid(),
-				ProjectName:    "testing-1",
-				AppName:        "app",
-				ComponentName:  "nodejs-ex",
-				RemotePort:     5858,
+				ObjectMeta: v1.ObjectMeta{
+					Name:      "nodejs-ex",
+					Namespace: "testing-1",
+				},
+				Spec: OdoDebugFileSpec{
+					DebugProcessID: os.Getpid(),
+					App:            "app",
+					RemotePort:     5858,
+					LocalPort:      9001,
+				},
 			},
 			debugPortListening: true,
 			fileExists:         true,
@@ -225,11 +247,16 @@ func Test_getDebugInfo(t *testing.T) {
 					Kind:       "OdoDebugInfo",
 					APIVersion: "v1",
 				},
-				DebugProcessId: os.Getpid(),
-				ProjectName:    "testing-1",
-				AppName:        "app",
-				ComponentName:  "nodejs-ex",
-				RemotePort:     5858,
+				ObjectMeta: v1.ObjectMeta{
+					Name:      "nodejs-ex",
+					Namespace: "testing-1",
+				},
+				Spec: OdoDebugFileSpec{
+					DebugProcessID: os.Getpid(),
+					App:            "app",
+					RemotePort:     5858,
+					LocalPort:      9001,
+				},
 			},
 			fileExists:   true,
 			debugRunning: false,
@@ -250,11 +277,16 @@ func Test_getDebugInfo(t *testing.T) {
 					Kind:       "OdoDebugInfo",
 					APIVersion: "v1",
 				},
-				DebugProcessId: os.Getpid() + 818177979,
-				ProjectName:    "testing-1",
-				AppName:        "app",
-				ComponentName:  "nodejs-ex",
-				RemotePort:     5858,
+				ObjectMeta: v1.ObjectMeta{
+					Name:      "nodejs-ex",
+					Namespace: "testing-1",
+				},
+				Spec: OdoDebugFileSpec{
+					DebugProcessID: os.Getpid() + 818177979,
+					App:            "app",
+					RemotePort:     5858,
+					LocalPort:      9001,
+				},
 			},
 			fileExists:   true,
 			debugRunning: false,
@@ -273,23 +305,23 @@ func Test_getDebugInfo(t *testing.T) {
 				t.Errorf("error occured while getting a free port, cause: %v", err)
 			}
 
-			if (OdoDebugFile{}) != tt.readDebugFile {
-				tt.readDebugFile.LocalPort = freePort
+			if tt.readDebugFile.Spec.LocalPort != 0 {
+				tt.readDebugFile.Spec.LocalPort = freePort
 			}
 
-			if (OdoDebugFile{}) != tt.wantDebugFile {
-				tt.wantDebugFile.LocalPort = freePort
+			if tt.wantDebugFile.Spec.LocalPort != 0 {
+				tt.wantDebugFile.Spec.LocalPort = freePort
 			}
 
 			odoDebugFilePath := GetDebugInfoFilePath(tt.args.defaultPortForwarder.client, tt.args.defaultPortForwarder.componentName, tt.args.defaultPortForwarder.appName)
 			if tt.fileExists {
 				fakeString, err := fakeOdoDebugFileString(tt.readDebugFile.TypeMeta,
-					tt.readDebugFile.DebugProcessId,
-					tt.readDebugFile.ProjectName,
-					tt.readDebugFile.AppName,
-					tt.readDebugFile.ComponentName,
-					tt.readDebugFile.RemotePort,
-					tt.readDebugFile.LocalPort)
+					tt.readDebugFile.Spec.DebugProcessID,
+					tt.readDebugFile.ObjectMeta.Namespace,
+					tt.readDebugFile.Spec.App,
+					tt.readDebugFile.ObjectMeta.Name,
+					tt.readDebugFile.Spec.RemotePort,
+					tt.readDebugFile.Spec.LocalPort)
 
 				if err != nil {
 					t.Errorf("error occured while getting odo debug file string, cause: %v", err)
@@ -306,7 +338,7 @@ func Test_getDebugInfo(t *testing.T) {
 			if tt.debugPortListening {
 				startListenerChan := make(chan bool)
 				go func() {
-					err := testingutil.FakePortListener(startListenerChan, stopListenerChan, tt.readDebugFile.LocalPort)
+					err := testingutil.FakePortListener(startListenerChan, stopListenerChan, tt.readDebugFile.Spec.LocalPort)
 					if err != nil {
 						// the fake listener failed, show error and close the channel
 						t.Errorf("error while starting fake port listerner, cause: %v", err)
