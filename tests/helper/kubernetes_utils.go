@@ -9,8 +9,10 @@ import (
 )
 
 // CopyKubeConfigFile copies default kubeconfig file into current context config file
-func CopyKubeConfigFile(kubeConfigFile, tempConfigFile string, info os.FileInfo) string {
-	err := copyFile(kubeConfigFile, tempConfigFile, info)
+func CopyKubeConfigFile(kubeConfigFile, tempConfigFile string) string {
+	info, err := os.Stat(kubeConfigFile)
+	Expect(err).NotTo(HaveOccurred())
+	err = copyFile(kubeConfigFile, tempConfigFile, info)
 	Expect(err).NotTo(HaveOccurred())
 	os.Setenv("KUBECONFIG", tempConfigFile)
 	return tempConfigFile
