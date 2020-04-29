@@ -31,6 +31,7 @@ type AddOptions struct {
 	operation    string
 	registryName string
 	registryURL  string
+	forceFlag    bool
 }
 
 // NewAddOptions creates a new AddOptions instance
@@ -59,7 +60,7 @@ func (o *AddOptions) Run() (err error) {
 		return errors.Wrapf(err, "Unable to add registry")
 	}
 
-	err = cfg.RegistryHandler(o.operation, o.registryName, o.registryURL)
+	err = cfg.RegistryHandler(o.operation, o.registryName, o.registryURL, o.forceFlag)
 	if err != nil {
 		return err
 	}

@@ -10,8 +10,6 @@ import (
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
 
 	// odo packages
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/preference"
 )
@@ -55,25 +53,16 @@ func (o *UpdateOptions) Validate() (err error) {
 
 // Run contains the logic for "odo registry update" command
 func (o *UpdateOptions) Run() (err error) {
-
 	cfg, err := preference.New()
 	if err != nil {
 		return errors.Wrapf(err, "Unable to update registry")
 	}
 
-	if !o.forceFlag {
-		if !ui.Proceed(fmt.Sprintf("Are you sure you want to update registry %s", o.registryName)) {
-			log.Info("Aborted by the user")
-			return nil
-		}
-	}
-
-	err = cfg.RegistryHandler(o.operation, o.registryName, o.registryURL)
+	err = cfg.RegistryHandler(o.operation, o.registryName, o.registryURL, o.forceFlag)
 	if err != nil {
 		return err
 	}
 
-	log.Info("Successfully updated registry")
 	return nil
 }
 

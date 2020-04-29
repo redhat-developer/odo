@@ -12,6 +12,8 @@ import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/util"
 )
 
@@ -212,7 +214,7 @@ func NewPreferenceInfo() (*PreferenceInfo, error) {
 }
 
 // RegistryHandler handles registry add, update and delete operations
-func (c *PreferenceInfo) RegistryHandler(operation string, registryName string, registryURL string) error {
+func (c *PreferenceInfo) RegistryHandler(operation string, registryName string, registryURL string, forceFlag bool) error {
 	var registryList []Registry
 	var err error
 	registryExist := false
@@ -229,7 +231,7 @@ func (c *PreferenceInfo) RegistryHandler(operation string, registryName string, 
 		for index, registry := range registryList {
 			if registry.Name == registryName {
 				registryExist = true
-				registryList, err = handleWithRegistryExist(index, registryList, operation, registryName, registryURL)
+				registryList, err = handleWithRegistryExist(index, registryList, operation, registryName, registryURL, forceFlag)
 				if err != nil {
 					return err
 				}
@@ -274,19 +276,35 @@ func handleWithoutRegistryExist(registryList []Registry, operation string, regis
 	return registryList, nil
 }
 
-func handleWithRegistryExist(index int, registryList []Registry, operation string, registryName string, registryURL string) ([]Registry, error) {
+func handleWithRegistryExist(index int, registryList []Registry, operation string, registryName string, registryURL string, forceFlag bool) ([]Registry, error) {
 	switch operation {
 
 	case "add":
 		return nil, errors.Errorf("Failed to add registry: registry %s already exists", registryName)
 
 	case "update":
+		if !forceFlag {
+			if !ui.Proceed(fmt.Sprintf("Are you sure you want to update registry %s", registryName)) {
+				log.Info("Aborted by the user")
+				return registryList, nil
+			}
+		}
+
 		registryList[index].URL = registryURL
+		log.Info("Successfully updated registry")
 
 	case "delete":
+		if !forceFlag {
+			if !ui.Proceed(fmt.Sprintf("Are you sure you want to delete registry %s", registryName)) {
+				log.Info("Aborted by the user")
+				return registryList, nil
+			}
+		}
+
 		copy(registryList[index:], registryList[index+1:])
 		registryList[len(registryList)-1] = Registry{}
 		registryList = registryList[:len(registryList)-1]
+		log.Info("Successfully deleted registry")
 	}
 
 	return registryList, nil
