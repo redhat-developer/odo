@@ -5,7 +5,7 @@ keywords:
 comments: false
 
 # Hero section
-title: Installing odo
+title: Installing Odo
 description: Installing odo on macOS, Linux and Windows
 
 # Micro navigation

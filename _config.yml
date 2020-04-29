@@ -10,14 +10,12 @@ doks:
         nav:
             - item_name: Community
               item_url: '/docs/community'
-            - item_name: Changelog
-              item_url: '/docs/changelog'
     footer:
         content:
             logo:
                 text: odo
                 image:
-            copyright: Copyright &copy; 2020. - Red Hat, Inc.
+            copyright: Copyright &copy; 2020 Red Hat, Inc.
         social_list:
             - network_name: github
               profile_url: 'https://github.com/openshift/odo'
