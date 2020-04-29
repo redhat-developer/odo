@@ -138,6 +138,8 @@ jobs:
         - travis_wait make test-cmd-devfile-watch
         - travis_wait make test-cmd-devfile-delete
         - odo logout
+        # Push target is set to kube environment in some test scenarios for
+        # docker devfile url testing which only needs kube config. So no cluster login is needed.
         - travis_wait make test-cmd-docker-devfile-url
 
     - <<: *base-test
