@@ -49,7 +49,7 @@ type BootstrapParameters struct {
 
 // Bootstrap is the main driver for getting OpenShift pipelines for GitOps
 // configured with a basic configuration.
-func Bootstrap(o *BootstrapParameters) error {
+func Bootstrap(o *BootstrapParameters, fs afero.Fs) error {
 
 	isInternalRegistry, imageRepo, err := validateImageRepo(o)
 	if err != nil {
@@ -103,7 +103,7 @@ func Bootstrap(o *BootstrapParameters) error {
 	// Don't add this service account to outputs as this is the default service account created by Pipeline Operator
 	sa := roles.CreateServiceAccount(meta.NamespacedName(namespaces["cicd"], saName))
 
-	manifests, err := createManifestsForImageRepo(sa, isInternalRegistry, imageRepo, o, namespaces)
+	manifests, err := createManifestsForImageRepo(fs, sa, isInternalRegistry, imageRepo, o, namespaces)
 	if err != nil {
 		return err
 	}
@@ -145,7 +145,7 @@ func createRoleBindings(ns map[string]string, sa *corev1.ServiceAccount) []inter
 }
 
 // createManifestsForImageRepo creates manifests like namespaces, secret, and role bindng for using image repo
-func createManifestsForImageRepo(sa *corev1.ServiceAccount, isInternalRegistry bool, imageRepo string, o *BootstrapParameters, namespaces map[string]string) ([]interface{}, error) {
+func createManifestsForImageRepo(appFs afero.Fs, sa *corev1.ServiceAccount, isInternalRegistry bool, imageRepo string, o *BootstrapParameters, namespaces map[string]string) ([]interface{}, error) {
 	out := make([]interface{}, 0)
 
 	if isInternalRegistry {
@@ -175,7 +175,7 @@ func createManifestsForImageRepo(sa *corev1.ServiceAccount, isInternalRegistry b
 
 	} else {
 		// Add secret to service account if external registry is used
-		dockerSecret, err := CreateDockerSecret(o.DockerConfigJSONFileName, namespaces["cicd"])
+		dockerSecret, err := CreateDockerSecret(appFs, o.DockerConfigJSONFileName, namespaces["cicd"])
 		if err != nil {
 			return nil, err
 		}
@@ -198,8 +198,7 @@ func createPipelines(ns map[string]string, isInternalRegistry bool, deploymentPa
 }
 
 // CreateDockerSecret creates Docker secret
-func CreateDockerSecret(dockerConfigJSONFileName, ns string) (*ssv1alpha1.SealedSecret, error) {
-	appFs := afero.NewOsFs()
+func CreateDockerSecret(appFs afero.Fs, dockerConfigJSONFileName, ns string) (*ssv1alpha1.SealedSecret, error) {
 
 	if dockerConfigJSONFileName == "" {
 		return nil, errors.New("failed to generate path to file: --dockerconfigjson flag is not provided")

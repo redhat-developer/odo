@@ -26,9 +26,8 @@ type InitParameters struct {
 }
 
 // Init function will initialise the gitops directory
-func Init(o *InitParameters) error {
+func Init(o *InitParameters, fs afero.Fs) error {
 
-	fs := afero.NewOsFs()
 	// check if the gitops dir already exists
 	exists, err := ioutils.IsExisting(fs, o.Output)
 	if exists {

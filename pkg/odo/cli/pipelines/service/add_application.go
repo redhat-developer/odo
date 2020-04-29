@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/openshift/odo/pkg/manifest/ioutils"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/pipelines"
 	"github.com/spf13/cobra"
@@ -78,7 +79,7 @@ func (io *AddParameters) Run() error {
 		ServiceWebhookSecret: io.serviceWebhookSecret,
 	}
 
-	return pipelines.CreateApplication(&options)
+	return pipelines.CreateApplication(ioutils.NewFilesystem(), &options)
 }
 
 // NewCmdAddService creates the project add service command.
