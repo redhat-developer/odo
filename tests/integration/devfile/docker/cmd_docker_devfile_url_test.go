@@ -97,4 +97,39 @@ var _ = Describe("odo docker devfile url command tests", func() {
 		})
 	})
 
+	Context("Switching pushtarget", func() {
+		It("swicth from docker to kube, odo push should display warning", func() {
+			var stdout string
+			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
+			helper.Chdir(projectDirPath)
+
+			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
+			helper.CmdShouldPass("odo", "url", "create")
+
+			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "kube", "-f")
+			session := helper.CmdRunner("odo", "push", "--devfile", "devfile.yaml")
+			stdout = string(session.Wait().Out.Contents())
+			stderr := string(session.Wait().Err.Contents())
+			Expect(stderr).To(ContainSubstring("found url(s) defined for docker, but no valid urls with ingress host defined for the component"))
+			Expect(stdout).To(ContainSubstring("Changes successfully pushed to component"))
+		})
+
+		It("swicth from kube to docker, odo push should display warning", func() {
+			var stdout string
+			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
+			helper.Chdir(projectDirPath)
+			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "kube", "-f")
+			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
+			helper.CmdShouldPass("odo", "url", "create", "--host", "1.2.3.4.com")
+
+			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "docker", "-f")
+			session := helper.CmdRunner("odo", "push", "--devfile", "devfile.yaml")
+			stdout = string(session.Wait().Out.Contents())
+			stderr := string(session.Wait().Err.Contents())
+			Expect(stderr).To(ContainSubstring("found url(s) defined for ingress, but no valid urls with exposed port defined for the component"))
+			Expect(stdout).To(ContainSubstring("Changes successfully pushed to component"))
+
+		})
+	})
+
 })
