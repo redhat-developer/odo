@@ -72,7 +72,7 @@ func (o *AddOptions) Run() (err error) {
 func NewCmdAdd(name, fullName string) *cobra.Command {
 	o := NewAddOptions()
 	registryAddCmd := &cobra.Command{
-		Use:     name,
+		Use:     fmt.Sprintf("%s <registry name> <registry URL>", name),
 		Short:   addLongDesc,
 		Long:    addLongDesc,
 		Example: fmt.Sprintf(fmt.Sprint(addExample), fullName),

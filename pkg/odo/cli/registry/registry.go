@@ -22,7 +22,7 @@ func NewCmdRegistry(name, fullName string) *cobra.Command {
 	registryAddCmd := NewCmdAdd(addCommandName, util.GetFullName(fullName, addCommandName))
 	registryListCmd := NewCmdList(listCommandName, util.GetFullName(fullName, listCommandName))
 	registryUpdateCmd := NewCmdUpdate(updateCommandName, util.GetFullName(fullName, updateCommandName))
-	registryRemoveCmd := NewCmdRemove(removeCommandName, util.GetFullName(fullName, removeCommandName))
+	registryDeleteCmd := NewCmdDelete(deleteCommandName, util.GetFullName(fullName, deleteCommandName))
 
 	registryCmd := &cobra.Command{
 		Use:   name,
@@ -32,11 +32,11 @@ func NewCmdRegistry(name, fullName string) *cobra.Command {
 			registryAddCmd.Example,
 			registryListCmd.Example,
 			registryUpdateCmd.Example,
-			registryRemoveCmd.Example,
+			registryDeleteCmd.Example,
 		),
 	}
 
-	registryCmd.AddCommand(registryAddCmd, registryListCmd, registryUpdateCmd, registryRemoveCmd)
+	registryCmd.AddCommand(registryAddCmd, registryListCmd, registryUpdateCmd, registryDeleteCmd)
 	registryCmd.SetUsageTemplate(util.CmdUsageTemplate)
 	registryCmd.Annotations = map[string]string{"command": "main"}
 

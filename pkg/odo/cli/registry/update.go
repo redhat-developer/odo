@@ -81,7 +81,7 @@ func (o *UpdateOptions) Run() (err error) {
 func NewCmdUpdate(name, fullName string) *cobra.Command {
 	o := NewUpdateOptions()
 	registryUpdateCmd := &cobra.Command{
-		Use:     name,
+		Use:     fmt.Sprintf("%s <registry name> <registry URL>", name),
 		Short:   updateLongDesc,
 		Long:    updateLongDesc,
 		Example: fmt.Sprintf(fmt.Sprint(updateExample), fullName),
