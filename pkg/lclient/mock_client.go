@@ -216,3 +216,76 @@ func (mr *MockDockerClientMockRecorder) VolumeRemove(ctx, volumeID, force interf
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VolumeRemove", reflect.TypeOf((*MockDockerClient)(nil).VolumeRemove), ctx, volumeID, force)
 }
+
+// ContainerExecCreate mocks base method
+func (m *MockDockerClient) ContainerExecCreate(ctx context.Context, container string, config types.ExecConfig) (types.IDResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ContainerExecCreate", ctx, container, config)
+	ret0, _ := ret[0].(types.IDResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ContainerExecCreate indicates an expected call of ContainerExecCreate
+func (mr *MockDockerClientMockRecorder) ContainerExecCreate(ctx, container, config interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ContainerExecCreate", reflect.TypeOf((*MockDockerClient)(nil).ContainerExecCreate), ctx, container, config)
+}
+
+// ContainerExecStart mocks base method
+func (m *MockDockerClient) ContainerExecStart(ctx context.Context, execID string, config types.ExecStartCheck) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ContainerExecStart", ctx, execID, config)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ContainerExecStart indicates an expected call of ContainerExecStart
+func (mr *MockDockerClientMockRecorder) ContainerExecStart(ctx, execID, config interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ContainerExecStart", reflect.TypeOf((*MockDockerClient)(nil).ContainerExecStart), ctx, execID, config)
+}
+
+// ContainerExecAttach mocks base method
+func (m *MockDockerClient) ContainerExecAttach(ctx context.Context, execID string, config types.ExecStartCheck) (types.HijackedResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ContainerExecAttach", ctx, execID, config)
+	ret0, _ := ret[0].(types.HijackedResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ContainerExecAttach indicates an expected call of ContainerExecAttach
+func (mr *MockDockerClientMockRecorder) ContainerExecAttach(ctx, execID, config interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ContainerExecAttach", reflect.TypeOf((*MockDockerClient)(nil).ContainerExecAttach), ctx, execID, config)
+}
+
+// ContainerExecInspect mocks base method
+func (m *MockDockerClient) ContainerExecInspect(ctx context.Context, execID string) (types.ContainerExecInspect, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ContainerExecInspect", ctx, execID)
+	ret0, _ := ret[0].(types.ContainerExecInspect)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ContainerExecInspect indicates an expected call of ContainerExecInspect
+func (mr *MockDockerClientMockRecorder) ContainerExecInspect(ctx, execID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ContainerExecInspect", reflect.TypeOf((*MockDockerClient)(nil).ContainerExecInspect), ctx, execID)
+}
+
+// CopyToContainer mocks base method
+func (m *MockDockerClient) CopyToContainer(ctx context.Context, container, path string, content io.Reader, options types.CopyToContainerOptions) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CopyToContainer", ctx, container, path, content, options)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CopyToContainer indicates an expected call of CopyToContainer
+func (mr *MockDockerClientMockRecorder) CopyToContainer(ctx, container, path, content, options interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CopyToContainer", reflect.TypeOf((*MockDockerClient)(nil).CopyToContainer), ctx, container, path, content, options)
+}

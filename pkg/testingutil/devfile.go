@@ -39,7 +39,8 @@ func (d TestDevfileData) GetAliasedComponents() []versionsCommon.DevfileComponen
 					},
 				},
 			},
-			Type: d.ComponentType,
+			Type:         d.ComponentType,
+			MountSources: true,
 		},
 		{
 			Alias: &alias[1],

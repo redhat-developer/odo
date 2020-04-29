@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -20,6 +21,8 @@ const (
 var _ = Describe("odo service command tests for OperatorHub", func() {
 
 	BeforeEach(func() {
+		SetDefaultEventuallyTimeout(10 * time.Minute)
+		SetDefaultConsistentlyDuration(30 * time.Second)
 		helper.CmdShouldPass("odo", "project", "set", CI_OPERATOR_HUB_PROJECT)
 		// TODO: remove this when OperatorHub integration is fully baked into odo
 		os.Setenv("ODO_EXPERIMENTAL", "true")
@@ -153,6 +156,14 @@ spec:
 			stdOut = helper.CmdShouldFail("odo", "service", "create", "--from-file", fileName)
 			Expect(stdOut).To(ContainSubstring("Couldn't find metadata.name in the yaml"))
 
+		})
+	})
+
+	Context("JSON output", func() {
+		It("listing catalog of services", func() {
+			jsonOut := helper.CmdShouldPass("odo", "catalog", "list", "services", "-o", "json")
+			Expect(jsonOut).To(ContainSubstring("mongodb-enterprise"))
+			Expect(jsonOut).To(ContainSubstring("etcdoperator"))
 		})
 	})
 })

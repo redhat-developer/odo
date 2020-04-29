@@ -217,13 +217,13 @@ func RunIndexer(directory string, ignoreRules []string) (filesChanged []string, 
 
 		if _, ok := existingFileIndex.Files[relativeFilename]; !ok {
 			filesChanged = append(filesChanged, fn)
-			glog.V(5).Infof("file added: %s", fn)
+			glog.V(4).Infof("file added: %s", fn)
 		} else if !fi.ModTime().Equal(existingFileIndex.Files[relativeFilename].LastModifiedDate) {
 			filesChanged = append(filesChanged, fn)
-			glog.V(5).Infof("last modified date changed: %s", fn)
+			glog.V(4).Infof("last modified date changed: %s", fn)
 		} else if fi.Size() != existingFileIndex.Files[relativeFilename].Size {
 			filesChanged = append(filesChanged, fn)
-			glog.V(5).Infof("size changed: %s", fn)
+			glog.V(4).Infof("size changed: %s", fn)
 		}
 
 		newFileMap[relativeFilename] = FileData{

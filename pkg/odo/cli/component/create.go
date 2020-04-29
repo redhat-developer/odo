@@ -927,7 +927,6 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 	componentCreateCmd.Flags().StringSliceVar(&co.componentEnvVars, "env", []string{}, "Environmental variables for the component. For example --env VariableName=Value")
 
 	if experimental.IsExperimentalModeEnabled() {
-		componentCreateCmd.Flags().StringVarP(&co.devfileMetadata.componentNamespace, "namespace", "n", "", "Create devfile component under specific namespace")
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.downloadSource, "downloadSource", "", "Download sample project from devfile. (ex. odo component create <component_type> [component_name] --downloadSource")
 		componentCreateCmd.Flags().Lookup("downloadSource").NoOptDefVal = "no-project-passed-to-flag" //Default value to pass to the flag if one is not specified.
 	}

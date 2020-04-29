@@ -6,7 +6,6 @@ import (
 
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
-	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/testingutil"
 )
 
@@ -30,7 +29,7 @@ func TestGetCommand(t *testing.T) {
 		{
 			name:              "Case: Valid devfile",
 			requestedCommands: []string{"devbuild", "devrun"},
-			commandActions: []versionsCommon.DevfileCommandAction{
+			commandActions: []common.DevfileCommandAction{
 				{
 					Command:   &commands[0],
 					Component: &components[0],
@@ -44,7 +43,7 @@ func TestGetCommand(t *testing.T) {
 		{
 			name:              "Case: Wrong command requested",
 			requestedCommands: []string{"garbage1"},
-			commandActions: []versionsCommon.DevfileCommandAction{
+			commandActions: []common.DevfileCommandAction{
 				{
 					Command:   &commands[0],
 					Component: &components[0],
@@ -58,7 +57,7 @@ func TestGetCommand(t *testing.T) {
 		{
 			name:              "Case: Invalid devfile with wrong command type",
 			requestedCommands: []string{"devbuild"},
-			commandActions: []versionsCommon.DevfileCommandAction{
+			commandActions: []common.DevfileCommandAction{
 				{
 					Command:   &commands[0],
 					Component: &components[0],
@@ -72,7 +71,7 @@ func TestGetCommand(t *testing.T) {
 		{
 			name:              "Case: Invalid devfile with empty component",
 			requestedCommands: []string{"devbuild"},
-			commandActions: []versionsCommon.DevfileCommandAction{
+			commandActions: []common.DevfileCommandAction{
 				{
 					Command:   &commands[0],
 					Component: &emptyString,
@@ -86,7 +85,7 @@ func TestGetCommand(t *testing.T) {
 		{
 			name:              "Case: Invalid devfile with empty command",
 			requestedCommands: []string{"devbuild"},
-			commandActions: []versionsCommon.DevfileCommandAction{
+			commandActions: []common.DevfileCommandAction{
 				{
 					Command:   &emptyString,
 					Component: &components[0],
@@ -100,7 +99,7 @@ func TestGetCommand(t *testing.T) {
 		{
 			name:              "Case: Valid devfile with empty workdir",
 			requestedCommands: []string{"devrun"},
-			commandActions: []versionsCommon.DevfileCommandAction{
+			commandActions: []common.DevfileCommandAction{
 				{
 					Command:   &commands[0],
 					Component: &components[0],
@@ -113,7 +112,7 @@ func TestGetCommand(t *testing.T) {
 		{
 			name:              "Case: Invalid command referencing an absent component",
 			requestedCommands: []string{"devrun"},
-			commandActions: []versionsCommon.DevfileCommandAction{
+			commandActions: []common.DevfileCommandAction{
 				{
 					Command:   &commands[0],
 					Component: &invalidComponent,
@@ -129,7 +128,7 @@ func TestGetCommand(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
 					CommandActions: tt.commandActions,
-					ComponentType:  versionsCommon.DevfileComponentTypeDockerimage,
+					ComponentType:  common.DevfileComponentTypeDockerimage,
 				},
 			}
 
@@ -173,7 +172,7 @@ func TestGetSupportedCommandActions(t *testing.T) {
 			name: "Case: Valid Command Action",
 			command: common.DevfileCommand{
 				Name: "testCommand",
-				Actions: []versionsCommon.DevfileCommandAction{
+				Actions: []common.DevfileCommandAction{
 					{
 						Command:   &command,
 						Component: &component,
@@ -188,7 +187,7 @@ func TestGetSupportedCommandActions(t *testing.T) {
 			name: "Case: Invalid Command Action with empty command",
 			command: common.DevfileCommand{
 				Name: "testCommand",
-				Actions: []versionsCommon.DevfileCommandAction{
+				Actions: []common.DevfileCommandAction{
 					{
 						Command:   &emptyString,
 						Component: &component,
@@ -203,7 +202,7 @@ func TestGetSupportedCommandActions(t *testing.T) {
 			name: "Case: Invalid Command Action with missing component",
 			command: common.DevfileCommand{
 				Name: "testCommand",
-				Actions: []versionsCommon.DevfileCommandAction{
+				Actions: []common.DevfileCommandAction{
 					{
 						Command: &command,
 						Workdir: &workDir,
@@ -217,7 +216,7 @@ func TestGetSupportedCommandActions(t *testing.T) {
 			name: "Case: Invalid Command Action with wrong type",
 			command: common.DevfileCommand{
 				Name: "testCommand",
-				Actions: []versionsCommon.DevfileCommandAction{
+				Actions: []common.DevfileCommandAction{
 					{
 						Command:   &command,
 						Component: &component,
@@ -232,14 +231,14 @@ func TestGetSupportedCommandActions(t *testing.T) {
 	for _, tt := range tests {
 		devObj := devfileParser.DevfileObj{
 			Data: testingutil.TestDevfileData{
-				CommandActions: []versionsCommon.DevfileCommandAction{
+				CommandActions: []common.DevfileCommandAction{
 					{
 						Command:   &command,
 						Component: &component,
 						Type:      &validCommandType,
 					},
 				},
-				ComponentType: versionsCommon.DevfileComponentTypeDockerimage,
+				ComponentType: common.DevfileComponentTypeDockerimage,
 			},
 		}
 		t.Run(tt.name, func(t *testing.T) {
@@ -270,7 +269,7 @@ func TestValidateAction(t *testing.T) {
 	}{
 		{
 			name: "Case: Valid Command Action",
-			action: versionsCommon.DevfileCommandAction{
+			action: common.DevfileCommandAction{
 				Command:   &command,
 				Component: &component,
 				Workdir:   &workDir,
@@ -280,7 +279,7 @@ func TestValidateAction(t *testing.T) {
 		},
 		{
 			name: "Case: Invalid Command Action with empty command",
-			action: versionsCommon.DevfileCommandAction{
+			action: common.DevfileCommandAction{
 				Command:   &emptyString,
 				Component: &component,
 				Workdir:   &workDir,
@@ -290,7 +289,7 @@ func TestValidateAction(t *testing.T) {
 		},
 		{
 			name: "Case: Invalid Command Action with missing component",
-			action: versionsCommon.DevfileCommandAction{
+			action: common.DevfileCommandAction{
 				Command: &command,
 				Workdir: &workDir,
 				Type:    &validCommandType,
@@ -299,7 +298,7 @@ func TestValidateAction(t *testing.T) {
 		},
 		{
 			name: "Case: Invalid Command Action with wrong type",
-			action: versionsCommon.DevfileCommandAction{
+			action: common.DevfileCommandAction{
 				Command:   &command,
 				Component: &component,
 				Workdir:   &workDir,
@@ -311,14 +310,14 @@ func TestValidateAction(t *testing.T) {
 	for _, tt := range tests {
 		devObj := devfileParser.DevfileObj{
 			Data: testingutil.TestDevfileData{
-				CommandActions: []versionsCommon.DevfileCommandAction{
+				CommandActions: []common.DevfileCommandAction{
 					{
 						Command:   &command,
 						Component: &component,
 						Type:      &validCommandType,
 					},
 				},
-				ComponentType: versionsCommon.DevfileComponentTypeDockerimage,
+				ComponentType: common.DevfileComponentTypeDockerimage,
 			},
 		}
 		t.Run(tt.name, func(t *testing.T) {
@@ -351,7 +350,7 @@ func TestGetBuildCommand(t *testing.T) {
 		{
 			name:        "Case: Default Build Command",
 			commandName: emptyString,
-			commandActions: []versionsCommon.DevfileCommandAction{
+			commandActions: []common.DevfileCommandAction{
 				{
 					Command:   &command,
 					Component: &component,
@@ -364,7 +363,7 @@ func TestGetBuildCommand(t *testing.T) {
 		{
 			name:        "Case: Custom Build Command",
 			commandName: "customcommand",
-			commandActions: []versionsCommon.DevfileCommandAction{
+			commandActions: []common.DevfileCommandAction{
 				{
 					Command:   &command,
 					Component: &component,
@@ -377,7 +376,7 @@ func TestGetBuildCommand(t *testing.T) {
 		{
 			name:        "Case: Missing Build Command",
 			commandName: "customcommand123",
-			commandActions: []versionsCommon.DevfileCommandAction{
+			commandActions: []common.DevfileCommandAction{
 				{
 					Command:   &command,
 					Component: &component,
@@ -394,7 +393,7 @@ func TestGetBuildCommand(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
 					CommandActions: tt.commandActions,
-					ComponentType:  versionsCommon.DevfileComponentTypeDockerimage,
+					ComponentType:  common.DevfileComponentTypeDockerimage,
 				},
 			}
 
@@ -430,7 +429,7 @@ func TestGetRunCommand(t *testing.T) {
 		{
 			name:        "Case: Default Run Command",
 			commandName: emptyString,
-			commandActions: []versionsCommon.DevfileCommandAction{
+			commandActions: []common.DevfileCommandAction{
 				{
 					Command:   &command,
 					Component: &component,
@@ -443,7 +442,7 @@ func TestGetRunCommand(t *testing.T) {
 		{
 			name:        "Case: Custom Run Command",
 			commandName: "customcommand",
-			commandActions: []versionsCommon.DevfileCommandAction{
+			commandActions: []common.DevfileCommandAction{
 				{
 					Command:   &command,
 					Component: &component,
@@ -456,7 +455,7 @@ func TestGetRunCommand(t *testing.T) {
 		{
 			name:        "Case: Missing Run Command",
 			commandName: "customcommand123",
-			commandActions: []versionsCommon.DevfileCommandAction{
+			commandActions: []common.DevfileCommandAction{
 				{
 					Command:   &command,
 					Component: &component,
@@ -473,7 +472,7 @@ func TestGetRunCommand(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
 					CommandActions: tt.commandActions,
-					ComponentType:  versionsCommon.DevfileComponentTypeDockerimage,
+					ComponentType:  common.DevfileComponentTypeDockerimage,
 				},
 			}
 
@@ -497,7 +496,7 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 	validCommandType := common.DevfileCommandTypeExec
 	emptyString := ""
 
-	actions := []versionsCommon.DevfileCommandAction{
+	actions := []common.DevfileCommandAction{
 		{
 			Command:   &command,
 			Component: &component,
@@ -511,7 +510,7 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 		buildCommand        string
 		runCommand          string
 		numberOfCommands    int
-		componentType       versionsCommon.DevfileComponentType
+		componentType       common.DevfileComponentType
 		missingBuildCommand bool
 		wantErr             bool
 	}{
@@ -520,7 +519,7 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 			buildCommand:     emptyString,
 			runCommand:       emptyString,
 			numberOfCommands: 2,
-			componentType:    versionsCommon.DevfileComponentTypeDockerimage,
+			componentType:    common.DevfileComponentTypeDockerimage,
 			wantErr:          false,
 		},
 		{
@@ -528,7 +527,7 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 			buildCommand:     emptyString,
 			runCommand:       "customcommand",
 			numberOfCommands: 2,
-			componentType:    versionsCommon.DevfileComponentTypeDockerimage,
+			componentType:    common.DevfileComponentTypeDockerimage,
 			wantErr:          false,
 		},
 		{
@@ -536,7 +535,7 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 			buildCommand:     "customcommand",
 			runCommand:       "customcommand",
 			numberOfCommands: 2,
-			componentType:    versionsCommon.DevfileComponentTypeDockerimage,
+			componentType:    common.DevfileComponentTypeDockerimage,
 			wantErr:          false,
 		},
 		{
@@ -552,7 +551,7 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 			buildCommand:     "customcommand123",
 			runCommand:       "customcommand",
 			numberOfCommands: 1,
-			componentType:    versionsCommon.DevfileComponentTypeDockerimage,
+			componentType:    common.DevfileComponentTypeDockerimage,
 			wantErr:          true,
 		},
 		{
@@ -560,7 +559,7 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 			buildCommand:        emptyString,
 			runCommand:          "customcommand",
 			numberOfCommands:    1,
-			componentType:       versionsCommon.DevfileComponentTypeDockerimage,
+			componentType:       common.DevfileComponentTypeDockerimage,
 			missingBuildCommand: true,
 			wantErr:             false,
 		},

@@ -93,7 +93,7 @@ func (o *ListServicesOptions) Validate() (err error) {
 // Run contains the logic for the command associated with ListServicesOptions
 func (o *ListServicesOptions) Run() (err error) {
 	if log.IsJSON() {
-		machineoutput.OutputSuccess(o.services)
+		machineoutput.OutputSuccess(machineoutput.NewCatalogListOutput(&o.services, o.csvs))
 	} else {
 		if experimental.IsExperimentalModeEnabled() {
 			if len(o.csvs.Items) > 0 {

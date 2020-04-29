@@ -6,6 +6,7 @@ import (
 
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
+	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 
 	"github.com/openshift/odo/pkg/util"
 
@@ -63,6 +64,13 @@ func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string
 		if err != nil {
 			return err
 		}
+
+		do.Context = genericclioptions.NewDevfileContext(cmd)
+		if !pushtarget.IsPushTargetDocker() {
+			// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initalizing the context
+			do.namespace = do.KClient.Namespace
+		}
+
 		return nil
 	}
 
@@ -250,7 +258,6 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 	// enable devfile flag if experimental mode is enabled
 	if experimental.IsExperimentalModeEnabled() {
 		componentDeleteCmd.Flags().StringVar(&do.devfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
-		componentDeleteCmd.Flags().StringVar(&do.namespace, "namespace", "", "Namespace to push the component to")
 	}
 
 	componentDeleteCmd.Flags().BoolVarP(&do.componentForceDeleteFlag, "force", "f", false, "Delete component without prompting")
