@@ -23,33 +23,32 @@ type EnvParameters struct {
 }
 
 // Env will bootstrap a new environment directory
-func Env(o *EnvParameters) error {
+func Env(o *EnvParameters, fs afero.Fs) error {
 	envName := AddPrefix(o.Prefix, o.EnvName)
 	envPath := getEnvPath(o.Output, o.EnvName, o.Prefix)
 	// check if the gitops dir exists
-	exists, err := ioutils.IsExisting(o.Output)
+	exists, err := ioutils.IsExisting(fs, o.Output)
 	if !exists {
 		return err
 	}
 
 	// check if the environment dir already exists
-	exists, err = ioutils.IsExisting(envPath)
+	exists, err = ioutils.IsExisting(fs, envPath)
 	if exists {
 		return err
 	}
 
-	appFs := afero.NewOsFs()
-	err = yaml.AddKustomize(appFs, "resources", []string{envNamespace, envRoleBinding}, filepath.Join(envPath, "base", Kustomize))
+	err = yaml.AddKustomize(fs, "resources", []string{envNamespace, envRoleBinding}, filepath.Join(envPath, "base", Kustomize))
 	if err != nil {
 		return err
 	}
 
-	err = yaml.AddKustomize(appFs, "bases", []string{"../base"}, filepath.Join(envPath, "overlays", Kustomize))
+	err = yaml.AddKustomize(fs, "bases", []string{"../base"}, filepath.Join(envPath, "overlays", Kustomize))
 	if err != nil {
 		return err
 	}
 
-	if err = addEnvResources(appFs, o.Prefix, envPath, envName); err != nil {
+	if err = addEnvResources(fs, o.Prefix, envPath, envName); err != nil {
 		return err
 	}
 	return nil

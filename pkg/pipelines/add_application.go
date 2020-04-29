@@ -58,6 +58,7 @@ type patchStringValue struct {
 // CreateApplication creates an application
 func CreateApplication(o *AddParameters) error {
 
+	fs := afero.NewOsFs()
 	ServiceRepo := getGitopsRepoName(o.ServiceGitRepo)
 
 	// we simpily output to the output dir, no gitops repo in the output path
@@ -65,14 +66,14 @@ func CreateApplication(o *AddParameters) error {
 
 	outputs := map[string]interface{}{}
 
-	exists, _ := ioutils.IsExisting(gitopsPath)
+	exists, _ := ioutils.IsExisting(fs, gitopsPath)
 
 	if !exists {
 		return fmt.Errorf("Output does not exist at %s", gitopsPath)
 	}
 
 	// check if the environment exists
-	exists, _ = ioutils.IsExisting(filepath.Join(gitopsPath, "environments", o.EnvName))
+	exists, _ = ioutils.IsExisting(fs, filepath.Join(gitopsPath, "environments", o.EnvName))
 	if !exists {
 		return fmt.Errorf("Environment %s doesn't exist at %s", o.EnvName, gitopsPath)
 	}
@@ -86,7 +87,6 @@ func CreateApplication(o *AddParameters) error {
 	createKustomizeMod(outputs, []string{fmt.Sprintf("../../../../environments/%s/overlays", environmentName["cicd"])}, []string{"app-webhook-secret.yaml"}, kustomizeModPath)
 	kustomizeModPath := filepath.Join(gitopsPath, fmt.Sprintf("/environments/%s/base/kustomization.yaml", o.EnvName))
 
-	fs := afero.Afero{Fs: afero.OsFs{}}
 	createKustomizeEnv(fs, []string{fmt.Sprintf("../../../%s/%s/overlays", appDir, o.AppName)}, []string{"namespace.yaml", "rolebinding.yaml"}, kustomizeModPath)
 
 	secretName := fmt.Sprintf("svc-%s-secret", ServiceRepo)

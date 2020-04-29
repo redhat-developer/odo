@@ -9,6 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/openshift/odo/pkg/manifest/config"
+	"github.com/openshift/odo/pkg/manifest/ioutils"
 	res "github.com/openshift/odo/pkg/manifest/resources"
 	"github.com/openshift/odo/pkg/manifest/secrets"
 )
@@ -44,8 +45,8 @@ func TestInitialFiles(t *testing.T) {
 		}
 		return &key.PublicKey, nil
 	}
-
-	got, err := createInitialFiles(prefix, gitOpsRepo, gitOpsWebhook, "", imageRepo)
+	fakeFs := ioutils.NewMapFilesystem()
+	got, err := createInitialFiles(fakeFs, prefix, gitOpsRepo, gitOpsWebhook, "", imageRepo)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,7 +55,7 @@ func TestInitialFiles(t *testing.T) {
 		"manifest.yaml": createManifest(testCICDEnv),
 	}
 
-	cicdResources, err := CreateResources(prefix, gitOpsRepo, gitOpsWebhook, "", imageRepo)
+	cicdResources, err := CreateResources(fakeFs, prefix, gitOpsRepo, gitOpsWebhook, "", imageRepo)
 	if err != nil {
 		t.Fatalf("CreatePipelineResources() failed due to :%s\n", err)
 	}

@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/spf13/afero"
 	corev1 "k8s.io/api/core/v1"
 	v1rbac "k8s.io/api/rbac/v1"
 
@@ -198,6 +199,8 @@ func createPipelines(ns map[string]string, isInternalRegistry bool, deploymentPa
 
 // CreateDockerSecret creates Docker secret
 func CreateDockerSecret(dockerConfigJSONFileName, ns string) (*ssv1alpha1.SealedSecret, error) {
+	appFs := afero.NewOsFs()
+
 	if dockerConfigJSONFileName == "" {
 		return nil, errors.New("failed to generate path to file: --dockerconfigjson flag is not provided")
 	}
@@ -207,7 +210,8 @@ func CreateDockerSecret(dockerConfigJSONFileName, ns string) (*ssv1alpha1.Sealed
 		return nil, fmt.Errorf("failed to generate path to file: %w", err)
 	}
 
-	f, err := os.Open(authJSONPath)
+	f, err := appFs.Open(authJSONPath)
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to read docker file '%s' : %w", authJSONPath, err)
 	}
