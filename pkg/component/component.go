@@ -959,7 +959,10 @@ func GetComponentFromConfig(localConfig *config.LocalConfigInfo) (Component, err
 		if len(urls) > 0 {
 			// We will clean up the existing value of ports and re-populate it so that we don't panic in `odo describe` and don't show inconsistent info
 			// This will also help in the case where there are more URLs created than the number of ports exposed by a component #2776
-			oldPortsProtocol := getPortsProtocolMapping(component.Spec.Ports)
+			oldPortsProtocol, err := getPortsProtocolMapping(component.Spec.Ports)
+			if err != nil {
+				return Component{}, err
+			}
 			component.Spec.Ports = []string{}
 
 			for _, url := range urls {
@@ -984,13 +987,17 @@ func GetComponentFromConfig(localConfig *config.LocalConfigInfo) (Component, err
 // This function returns a mapping of port and protocol.
 // So for a value of ports {"8080/TCP", "45/UDP"} it will return a map {"8080":
 // "TCP", "45": "UDP"}
-func getPortsProtocolMapping(ports []string) map[string]string {
+func getPortsProtocolMapping(ports []string) (map[string]string, error) {
 	oldPortsProtocol := make(map[string]string, len(ports))
 	for _, port := range ports {
 		portProtocol := strings.Split(port, "/")
+		if len(portProtocol) != 2 {
+			// this will be the case if value of a port is something like 8080/TCP/something-else or simply 8080
+			return nil, errors.New("invalid <port/protocol> mapping. Please update the component configuration")
+		}
 		oldPortsProtocol[portProtocol[0]] = portProtocol[1]
 	}
-	return oldPortsProtocol
+	return oldPortsProtocol, nil
 }
 
 // ListIfPathGiven lists all available component in given path directory
