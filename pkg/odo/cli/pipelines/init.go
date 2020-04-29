@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/openshift/odo/pkg/manifest/ioutils"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/pipelines"
 	"github.com/spf13/cobra"
@@ -78,7 +79,7 @@ func (io *InitParameters) Run() error {
 		Dockercfgjson:            io.dockercfgjson,
 	}
 
-	return pipelines.Init(&options)
+	return pipelines.Init(&options, ioutils.NewFilesystem())
 }
 
 // NewCmdInit creates the project init command.

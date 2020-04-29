@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/mkmik/multierror"
-	"github.com/spf13/afero"
+	"github.com/openshift/odo/pkg/manifest/ioutils"
 	"knative.dev/pkg/apis"
 )
 
@@ -83,7 +83,7 @@ func TestValidate(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(rt *testing.T) {
-			manifest, err := ParseFile(afero.NewOsFs(), test.file)
+			manifest, err := ParseFile(ioutils.NewFilesystem(), test.file)
 			if err != nil {
 				rt.Fatalf("failed to parse file:%v", err)
 			}

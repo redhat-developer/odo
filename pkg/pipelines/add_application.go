@@ -56,9 +56,8 @@ type patchStringValue struct {
 }
 
 // CreateApplication creates an application
-func CreateApplication(o *AddParameters) error {
+func CreateApplication(fs afero.Fs, o *AddParameters) error {
 
-	fs := afero.NewOsFs()
 	ServiceRepo := getGitopsRepoName(o.ServiceGitRepo)
 
 	// we simpily output to the output dir, no gitops repo in the output path
