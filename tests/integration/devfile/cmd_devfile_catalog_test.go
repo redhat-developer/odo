@@ -22,9 +22,8 @@ var _ = Describe("odo devfile catalog command tests", func() {
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 		if os.Getenv("KUBERNETES") == "true" {
-			info, err := os.Stat(os.Getenv("KUBECONFIG"))
-			Expect(err).NotTo(HaveOccurred())
-			kubeConfigFile := helper.CopyKubeConfigFile(os.Getenv("KUBECONFIG"), filepath.Join(context, "config"), info)
+			homeDir, _ := os.UserHomeDir()
+			kubeConfigFile := helper.CopyKubeConfigFile(filepath.Join(homeDir, ".kube", "config"), filepath.Join(context, "config"))
 			project = helper.CreateRandNamespace(kubeConfigFile)
 		} else {
 			project = helper.CreateRandProject()
