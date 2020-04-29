@@ -9,7 +9,7 @@ env:
     - MINIKUBE_WANTREPORTERRORPROMPT=false
     - MINIKUBE_HOME=$HOME
     - CHANGE_MINIKUBE_NONE_USER=true
-    - KUBECONFIG=$HOME/.kube/config 
+    - KUBECONFIG=$HOME/.kube/config
 jobs:
   include:
     # YAML alias, for settings shared across the tests
@@ -131,6 +131,10 @@ jobs:
         - ./scripts/oc-cluster.sh
         - make bin
         - sudo cp odo /usr/bin
+        # Push target is set to kube environment in some test scenarios like
+        # docker devfile url testing which only needs Kube config. So no cluster login is needed.
+        - travis_wait make test-cmd-docker-devfile-url
+        # These tests need cluster login as they will be interacting with a Kube environment
         - odo login -u developer
         - travis_wait make test-cmd-devfile-catalog
         - travis_wait make test-cmd-devfile-create
@@ -138,9 +142,6 @@ jobs:
         - travis_wait make test-cmd-devfile-watch
         - travis_wait make test-cmd-devfile-delete
         - odo logout
-        # Push target is set to kube environment in some test scenarios for
-        # docker devfile url testing which only needs kube config. So no cluster login is needed.
-        - travis_wait make test-cmd-docker-devfile-url
 
     - <<: *base-test
       stage: test
@@ -163,8 +164,9 @@ jobs:
         - make bin
         - sudo cp odo /usr/bin
         - travis_wait make test-cmd-docker-devfile-push
+        - travis_wait make test-cmd-docker-devfile-catalog
         - travis_wait make test-cmd-docker-devfile-delete
-    
+
     # Run devfile integration test on Kubernetes cluster    
     - <<: *base-test
       stage: test
