@@ -3,10 +3,12 @@ package url
 import (
 	"fmt"
 	"net"
+	"reflect"
 	"strconv"
 	"strings"
 
 	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/log"
 
 	routev1 "github.com/openshift/api/route/v1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
@@ -18,6 +20,7 @@ import (
 	urlLabels "github.com/openshift/odo/pkg/url/labels"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/golang/glog"
 	iextensionsv1 "k8s.io/api/extensions/v1beta1"
@@ -98,51 +101,80 @@ func GetIngress(kClient *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInf
 }
 
 // Delete deletes a URL
-func Delete(client *occlient.Client, kClient *kclient.Client, urlName string, applicationName string) error {
-	if experimental.IsExperimentalModeEnabled() {
+func Delete(client *occlient.Client, kClient *kclient.Client, urlName string, applicationName string, urlType envinfo.URLKind) error {
+	if urlType == envinfo.INGRESS {
 		return kClient.DeleteIngress(urlName)
-	} else {
-		// Namespace the URL name
-		namespacedOpenShiftObject, err := util.NamespaceOpenShiftObject(urlName, applicationName)
-		if err != nil {
-			return errors.Wrapf(err, "unable to create namespaced name")
+	} else if urlType == envinfo.ROUTE {
+		if applicationName != "" {
+			// Namespace the URL name
+			var err error
+			urlName, err = util.NamespaceOpenShiftObject(urlName, applicationName)
+			if err != nil {
+				return errors.Wrapf(err, "unable to create namespaced name")
+			}
 		}
-		return client.DeleteRoute(namespacedOpenShiftObject)
+
+		return client.DeleteRoute(urlName)
 	}
+	return errors.New("url type is not supported")
+}
+
+type CreateParameters struct {
+	urlName         string
+	portNumber      int
+	secureURL       bool
+	componentName   string
+	applicationName string
+	host            string
+	secretName      string
+	urlKind         envinfo.URLKind
 }
 
 // Create creates a URL and returns url string and error if any
 // portNumber is the target port number for the route and is -1 in case no port number is specified in which case it is automatically detected for components which expose only one service port)
-func Create(client *occlient.Client, kClient *kclient.Client, urlName string, portNumber int, secureURL bool, componentName, applicationName string, host string, secretName string) (string, error) {
-	labels := urlLabels.GetLabels(urlName, componentName, applicationName, true)
+func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateParameters, isRouteSupported bool, isExperimental bool) (string, error) {
 
-	var serviceName string
-	if experimental.IsExperimentalModeEnabled() {
-		serviceName := componentName
-		ingressDomain := fmt.Sprintf("%v.%v", urlName, host)
-		deployment, err := kClient.GetDeploymentByName(componentName)
+	if parameters.urlKind != envinfo.INGRESS && parameters.urlKind != envinfo.ROUTE {
+		return "", fmt.Errorf("urlKind %s is not supported for URL creation", parameters.urlKind)
+	}
+
+	if !parameters.secureURL && parameters.secretName != "" {
+		return "", fmt.Errorf("secret name can only be used for secure URLs")
+	}
+
+	labels := urlLabels.GetLabels(parameters.urlName, parameters.componentName, parameters.applicationName, true)
+
+	serviceName := ""
+
+	if isExperimental && parameters.urlKind == envinfo.INGRESS && kClient != nil {
+		if parameters.host == "" {
+			return "", errors.Errorf("the host cannot be empty")
+		}
+		serviceName := parameters.componentName
+		ingressDomain := fmt.Sprintf("%v.%v", parameters.urlName, parameters.host)
+		deployment, err := kClient.GetDeploymentByName(parameters.componentName)
 		if err != nil {
 			return "", err
 		}
 		ownerReference := kclient.GenerateOwnerReference(deployment)
-		if secureURL {
-			if len(secretName) != 0 {
-				_, err := kClient.KubeClient.CoreV1().Secrets(kClient.Namespace).Get(secretName, metav1.GetOptions{})
+		if parameters.secureURL {
+			if len(parameters.secretName) != 0 {
+				_, err := kClient.KubeClient.CoreV1().Secrets(kClient.Namespace).Get(parameters.secretName, metav1.GetOptions{})
 				if err != nil {
-					return "", errors.Wrap(err, "unable to get the provided secret: "+secretName)
+					return "", errors.Wrap(err, "unable to get the provided secret: "+parameters.secretName)
 				}
 			}
-			if len(secretName) == 0 {
-				defaultTLSSecretName := componentName + "-tlssecret"
+			if len(parameters.secretName) == 0 {
+				defaultTLSSecretName := parameters.componentName + "-tlssecret"
 				_, err := kClient.KubeClient.CoreV1().Secrets(kClient.Namespace).Get(defaultTLSSecretName, metav1.GetOptions{})
 				// create tls secret if it does not exist
-				if err != nil {
-					selfsignedcert, err := kclient.GenerateSelfSignedCertificate(host)
+				if kerrors.IsNotFound(err) {
+					selfsignedcert, err := kclient.GenerateSelfSignedCertificate(parameters.host)
 					if err != nil {
-						return "", errors.Wrap(err, "unable to generate self-signed certificate for clutser: "+host)
+						return "", errors.Wrap(err, "unable to generate self-signed certificate for clutser: "+parameters.host)
 					}
 					// create tls secret
-					secretlabels := componentlabels.GetLabels(componentName, applicationName, true)
+					secretlabels := componentlabels.GetLabels(parameters.componentName, parameters.applicationName, true)
 					objectMeta := metav1.ObjectMeta{
 						Name:   defaultTLSSecretName,
 						Labels: secretlabels,
@@ -152,44 +184,73 @@ func Create(client *occlient.Client, kClient *kclient.Client, urlName string, po
 					}
 					secret, err := kClient.CreateTLSSecret(selfsignedcert.CertPem, selfsignedcert.KeyPem, objectMeta)
 					if err != nil {
-						return "", errors.Wrap(err, "unable to create tls secret: "+secret.Name)
+						return "", errors.Wrap(err, "unable to create tls secret")
 					}
-					secretName = secret.Name
+					parameters.secretName = secret.Name
+				} else if err != nil {
+					return "", err
 				} else {
 					// tls secret found for this component
-					secretName = defaultTLSSecretName
+					parameters.secretName = defaultTLSSecretName
 				}
 
 			}
 
 		}
 
-		ingressParam := kclient.IngressParameter{ServiceName: serviceName, IngressDomain: ingressDomain, PortNumber: intstr.FromInt(portNumber), TLSSecretName: secretName}
+		ingressParam := kclient.IngressParameter{ServiceName: serviceName, IngressDomain: ingressDomain, PortNumber: intstr.FromInt(parameters.portNumber), TLSSecretName: parameters.secretName}
 		ingressSpec := kclient.GenerateIngressSpec(ingressParam)
-		objectMeta := kclient.CreateObjectMeta(componentName, kClient.Namespace, labels, nil)
-		objectMeta.Name = urlName
+		objectMeta := kclient.CreateObjectMeta(parameters.componentName, kClient.Namespace, labels, nil)
+		objectMeta.Name = parameters.urlName
 		objectMeta.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
 		// Pass in the namespace name, link to the service (componentName) and labels to create a ingress
 		ingress, err := kClient.CreateIngress(objectMeta, *ingressSpec)
 		if err != nil {
 			return "", errors.Wrap(err, "unable to create ingress")
 		}
-		return GetURLString(GetProtocol(routev1.Route{}, *ingress), "", ingressDomain), nil
+		return GetURLString(GetProtocol(routev1.Route{}, *ingress, isExperimental), "", ingressDomain, isExperimental), nil
 	} else {
-		urlName, err := util.NamespaceOpenShiftObject(urlName, applicationName)
-		if err != nil {
-			return "", errors.Wrapf(err, "unable to create namespaced name")
+		if !isRouteSupported {
+			return "", errors.Errorf("routes are not available on non OpenShift clusters")
 		}
-		serviceName, err = util.NamespaceOpenShiftObject(componentName, applicationName)
-		if err != nil {
-			return "", errors.Wrapf(err, "unable to create namespaced name")
+
+		var ownerReference metav1.OwnerReference
+		if !isExperimental || kClient == nil {
+			var err error
+			parameters.urlName, err = util.NamespaceOpenShiftObject(parameters.urlName, parameters.applicationName)
+			if err != nil {
+				return "", errors.Wrapf(err, "unable to create namespaced name")
+			}
+			serviceName, err = util.NamespaceOpenShiftObject(parameters.componentName, parameters.applicationName)
+			if err != nil {
+				return "", errors.Wrapf(err, "unable to create namespaced name")
+			}
+
+			// since the serviceName is same as the DC name, we use that to get the DC
+			// to which this route belongs. A better way could be to get service from
+			// the name and set it as owner of the route
+			dc, err := client.GetDeploymentConfigFromName(serviceName)
+			if err != nil {
+				return "", errors.Wrapf(err, "unable to get DeploymentConfig %s", serviceName)
+			}
+
+			ownerReference = occlient.GenerateOwnerReference(dc)
+		} else {
+			serviceName = parameters.componentName
+
+			deployment, err := kClient.GetDeploymentByName(parameters.componentName)
+			if err != nil {
+				return "", err
+			}
+			ownerReference = kclient.GenerateOwnerReference(deployment)
 		}
+
 		// Pass in the namespace name, link to the service (componentName) and labels to create a route
-		route, err := client.CreateRoute(urlName, serviceName, intstr.FromInt(portNumber), labels, secureURL)
+		route, err := client.CreateRoute(parameters.urlName, serviceName, intstr.FromInt(parameters.portNumber), labels, parameters.secureURL, ownerReference)
 		if err != nil {
 			return "", errors.Wrap(err, "unable to create route")
 		}
-		return GetURLString(GetProtocol(*route, iextensionsv1.Ingress{}), route.Spec.Host, ""), nil
+		return GetURLString(GetProtocol(*route, iextensionsv1.Ingress{}, isExperimental), route.Spec.Host, "", isExperimental), nil
 	}
 
 }
@@ -213,6 +274,9 @@ func ListPushed(client *occlient.Client, componentName string, applicationName s
 
 	var urls []URL
 	for _, r := range routes {
+		if r.OwnerReferences != nil && r.OwnerReferences[0].Kind == "Ingress" {
+			continue
+		}
 		a := getMachineReadableFormat(r)
 		urls = append(urls, a)
 	}
@@ -301,8 +365,8 @@ func List(client *occlient.Client, localConfig *config.LocalConfigInfo, componen
 }
 
 // GetProtocol returns the protocol string
-func GetProtocol(route routev1.Route, ingress iextensionsv1.Ingress) string {
-	if experimental.IsExperimentalModeEnabled() {
+func GetProtocol(route routev1.Route, ingress iextensionsv1.Ingress, isExperimental bool) string {
+	if isExperimental {
 		if ingress.Spec.TLS != nil {
 			return "https"
 		}
@@ -331,8 +395,8 @@ func ConvertConfigURL(configURL config.ConfigURL) URL {
 }
 
 // GetURLString returns a string representation of given url
-func GetURLString(protocol, URL string, ingressDomain string) string {
-	if experimental.IsExperimentalModeEnabled() {
+func GetURLString(protocol, URL string, ingressDomain string, isExperimentalMode bool) string {
+	if isExperimentalMode && URL == "" {
 		return protocol + "://" + ingressDomain
 	}
 	return protocol + "://" + URL
@@ -423,7 +487,7 @@ func getMachineReadableFormat(r routev1.Route) URL {
 	return URL{
 		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.openshift.io/v1alpha1"},
 		ObjectMeta: metav1.ObjectMeta{Name: r.Labels[urlLabels.URLLabel]},
-		Spec:       URLSpec{Host: r.Spec.Host, Port: r.Spec.Port.TargetPort.IntValue(), Protocol: GetProtocol(r, iextensionsv1.Ingress{}), Secure: r.Spec.TLS != nil},
+		Spec:       URLSpec{Host: r.Spec.Host, Port: r.Spec.Port.TargetPort.IntValue(), Protocol: GetProtocol(r, iextensionsv1.Ingress{}, experimental.IsExperimentalModeEnabled()), Secure: r.Spec.TLS != nil},
 	}
 
 }
@@ -457,4 +521,135 @@ func getMachineReadableFormatForIngressList(ingresses []iextensionsv1.Ingress) i
 		ListMeta: metav1.ListMeta{},
 		Items:    ingresses,
 	}
+}
+
+type PushParameters struct {
+	ComponentName             string
+	ApplicationName           string
+	ConfigURLs                []config.ConfigURL
+	EnvURLS                   []envinfo.EnvInfoURL
+	IsRouteSupported          bool
+	IsExperimentalModeEnabled bool
+}
+
+// Push creates and deletes the required URLs
+func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParameters) error {
+	urlLOCAL := make(map[string]URL)
+
+	// in case the component is a s2i one
+	// kClient will be nil
+	if parameters.IsExperimentalModeEnabled && kClient != nil {
+		urls := parameters.EnvURLS
+		for _, url := range urls {
+			urlLOCAL[url.Name] = URL{
+				Spec: URLSpec{
+					Host:      url.Host,
+					Port:      url.Port,
+					Secure:    url.Secure,
+					tLSSecret: url.TLSSecret,
+					urlKind:   url.Kind,
+				},
+			}
+		}
+	} else {
+		urls := parameters.ConfigURLs
+		for _, url := range urls {
+			urlLOCAL[url.Name] = URL{
+				Spec: URLSpec{
+					Port:    url.Port,
+					Secure:  url.Secure,
+					urlKind: envinfo.ROUTE,
+				},
+			}
+		}
+	}
+
+	urlCLUSTER := make(map[string]URL)
+	if parameters.IsExperimentalModeEnabled && kClient != nil {
+		urlList, err := ListPushedIngress(kClient, parameters.ComponentName)
+		if err != nil {
+			return err
+		}
+		for _, url := range urlList.Items {
+			urlCLUSTER[url.Name] = URL{
+				Spec: URLSpec{
+					Port:    int(url.Spec.Rules[0].HTTP.Paths[0].Backend.ServicePort.IntVal),
+					urlKind: envinfo.INGRESS,
+				},
+			}
+		}
+	}
+
+	if parameters.IsRouteSupported {
+		urlPushedRoutes, err := ListPushed(client, parameters.ComponentName, parameters.ApplicationName)
+		if err != nil {
+			return err
+		}
+		for _, urlRoute := range urlPushedRoutes.Items {
+			urlCLUSTER[urlRoute.Name] = URL{
+				Spec: URLSpec{
+					Port:    urlRoute.Spec.Port,
+					urlKind: envinfo.ROUTE,
+				},
+			}
+		}
+	}
+
+	log.Info("\nApplying URL changes")
+	urlChange := false
+
+	// find URLs to delete
+	for urlName, urlSpec := range urlCLUSTER {
+		val, ok := urlLOCAL[urlName]
+		if !ok {
+			if urlSpec.Spec.urlKind == envinfo.INGRESS && kClient == nil {
+				continue
+			}
+			// delete the url
+			err := Delete(client, kClient, urlName, parameters.ApplicationName, urlSpec.Spec.urlKind)
+			if err != nil {
+				return err
+			}
+			log.Successf("URL %s successfully deleted", urlName)
+			urlChange = true
+			continue
+		} else {
+			if !reflect.DeepEqual(val.Spec, urlSpec.Spec) {
+				return errors.Errorf("config mismatch for URL with the same name %s", val.Name)
+			}
+		}
+	}
+
+	// find URLs to create
+	for urlName, urlInfo := range urlLOCAL {
+		_, ok := urlCLUSTER[urlName]
+		if !ok {
+			if urlInfo.Spec.urlKind == envinfo.INGRESS && kClient == nil {
+				continue
+			}
+
+			createParameters := CreateParameters{
+				urlName:         urlName,
+				portNumber:      urlInfo.Spec.Port,
+				secureURL:       urlInfo.Spec.Secure,
+				componentName:   parameters.ComponentName,
+				applicationName: parameters.ApplicationName,
+				host:            urlInfo.Spec.Host,
+				secretName:      urlInfo.Spec.tLSSecret,
+				urlKind:         urlInfo.Spec.urlKind,
+			}
+			host, err := Create(client, kClient, createParameters, parameters.IsRouteSupported, parameters.IsExperimentalModeEnabled)
+			if err != nil {
+				return err
+			}
+			log.Successf("URL %s: %s created", urlName, host)
+			urlChange = true
+		}
+	}
+
+	if !urlChange {
+		log.Success("URLs are synced with the cluster, no changes are required.")
+	}
+
+	return nil
 }

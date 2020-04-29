@@ -270,7 +270,7 @@ func Test_updateStorageOwnerReference(t *testing.T) {
 			args: args{
 				pvc: testingutil.FakePVC("pvc-1", "1Gi", map[string]string{}),
 				ownerReference: []v1.OwnerReference{
-					generateOwnerReference(fakeDC),
+					GenerateOwnerReference(fakeDC),
 				},
 			},
 			wantErr: false,
