@@ -316,22 +316,17 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 		return errors.New(fmt.Sprint("error executing devfile commands - there should be at least 1 command"))
 	}
 
-	type CommandNames struct {
-		defaultName string
-		adapterName string
-	}
-
-	commandOrder := []CommandNames{}
+	commandOrder := []common.CommandNames{}
 
 	// Only add runinit to the expected commands if the component doesn't already exist
 	// This would be the case when first running the container
 	if !componentExists {
-		commandOrder = append(commandOrder, CommandNames{defaultName: string(common.DefaultDevfileInitCommand), adapterName: a.devfileInitCmd})
+		commandOrder = append(commandOrder, common.CommandNames{DefaultName: string(common.DefaultDevfileInitCommand), AdapterName: a.devfileInitCmd})
 	}
 	commandOrder = append(
 		commandOrder,
-		CommandNames{defaultName: string(common.DefaultDevfileBuildCommand), adapterName: a.devfileBuildCmd},
-		CommandNames{defaultName: string(common.DefaultDevfileRunCommand), adapterName: a.devfileRunCmd},
+		common.CommandNames{DefaultName: string(common.DefaultDevfileBuildCommand), AdapterName: a.devfileBuildCmd},
+		common.CommandNames{DefaultName: string(common.DefaultDevfileRunCommand), AdapterName: a.devfileRunCmd},
 	)
 
 	// Loop through each of the expected commands in the devfile
@@ -339,7 +334,7 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 		// Loop through each of the command given from the devfile
 		for _, command := range pushDevfileCommands {
 			// If the current command from the devfile is the currently expected command from the devfile
-			if command.Name == currentCommand.defaultName || command.Name == currentCommand.adapterName {
+			if command.Name == currentCommand.DefaultName || command.Name == currentCommand.AdapterName {
 				// If the current command is not the last command in the slice
 				// it is not expected to be the run command
 				if i < len(commandOrder)-1 {

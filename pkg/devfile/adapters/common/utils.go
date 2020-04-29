@@ -1,7 +1,6 @@
 package common
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/golang/glog"
@@ -74,6 +73,12 @@ const (
 	SupervisordCtlSubCommand = "ctl"
 )
 
+// CommandNames is a struct to store the default and adapter names for devfile commands
+type CommandNames struct {
+	DefaultName string
+	AdapterName string
+}
+
 func isComponentSupported(component common.DevfileComponent) bool {
 	// Currently odo only uses devfile components of type dockerimage, since most of the Che registry devfiles use it
 	return component.Type == common.DevfileComponentTypeDockerimage
@@ -140,22 +145,4 @@ func IsPortPresent(endpoints []common.DockerimageEndpoint, port int) bool {
 	}
 
 	return false
-}
-
-// IsComponentBuildRequired checks if a component build is required based on the push commands, it throws an error
-// if the push commands does not meet the expected criteria
-func IsComponentBuildRequired(pushDevfileCommands []common.DevfileCommand) (bool, error) {
-	var buildRequired bool
-
-	switch len(pushDevfileCommands) {
-	case 1: // if there is one command, it is the mandatory run command. No need to build.
-		buildRequired = false
-	case 2:
-		// if there are two commands, it is the optional build command and the mandatory run command, set buildRequired to true
-		buildRequired = true
-	default:
-		return false, fmt.Errorf("error executing devfile commands - there should be at least 1 command or at most 2 commands, currently there are %d commands", len(pushDevfileCommands))
-	}
-
-	return buildRequired, nil
 }

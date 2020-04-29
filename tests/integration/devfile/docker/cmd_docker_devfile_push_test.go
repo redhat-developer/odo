@@ -151,6 +151,46 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			Expect(stdOut).To(ContainSubstring(("/myproject/app.jar")))
 		})
 
+		It("should execute the optional devinit, and devrun commands if present", func() {
+
+			helper.CmdShouldPass("git", "clone", "https://github.com/maysunfaisal/springboot.git", projectDirPath)
+			helper.Chdir(projectDirPath)
+
+			helper.CmdShouldPass("odo", "create", "java-spring-boot", cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "springboot"), projectDirPath)
+
+			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile-init.yaml")
+			Expect(output).To(ContainSubstring("Executing devinit command \"echo hello\""))
+			Expect(output).To(ContainSubstring("Executing devbuild command \"/artifacts/bin/build-container-full.sh\""))
+			Expect(output).To(ContainSubstring("Executing devrun command \"/artifacts/bin/start-server.sh\""))
+
+			// Check to see if it's been pushed (foobar.txt abd directory testdir)
+			containers := dockerClient.GetRunningContainersByCompAlias(cmpName, "runtime")
+			Expect(len(containers)).To(Equal(1))
+
+			stdOut := dockerClient.ExecContainer(containers[0], "ps -ef")
+			Expect(stdOut).To(ContainSubstring(("/myproject/app.jar")))
+		})
+
+		It("should execute devinit and devrun commands if present", func() {
+
+			helper.CmdShouldPass("git", "clone", "https://github.com/maysunfaisal/springboot.git", projectDirPath)
+			helper.Chdir(projectDirPath)
+
+			helper.CmdShouldPass("odo", "create", "java-spring-boot", cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "springboot"), projectDirPath)
+
+			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile-init-without-build.yaml")
+			Expect(output).To(ContainSubstring("Executing devinit command \"echo hello\""))
+			Expect(output).To(ContainSubstring("Executing devrun command \"/artifacts/bin/start-server.sh\""))
+
+			// Check to see if it's been pushed (foobar.txt abd directory testdir)
+			containers := dockerClient.GetRunningContainersByCompAlias(cmpName, "runtime")
+			Expect(len(containers)).To(Equal(1))
+		})
+
 		It("should be able to handle a missing devbuild command", func() {
 			utils.ExecWithMissingBuildCommand(projectDirPath, cmpName, "")
 		})
