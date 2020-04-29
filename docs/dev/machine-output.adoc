@@ -170,7 +170,7 @@ See the below table for a list of all possible machine readable output commands:
 ----
 {
   "kind": "Application",
-  "apiVersion": "odo.openshift.io/v1alpha1",
+  "apiVersion": "odo.openshift.io/v1",
   "metadata": {
     "name": "app",
     "namespace": "myproject",
@@ -189,12 +189,12 @@ See the below table for a list of all possible machine readable output commands:
 ----
 {
   "kind": "List",
-  "apiVersion": "odo.openshift.io/v1alpha1",
+  "apiVersion": "odo.openshift.io/v1",
   "metadata": {},
   "items": [
     {
       "kind": "Application",
-      "apiVersion": "odo.openshift.io/v1alpha1",
+      "apiVersion": "odo.openshift.io/v1",
       "metadata": {
         "name": "app",
         "namespace": "myproject",
@@ -219,7 +219,7 @@ See the below table for a list of all possible machine readable output commands:
 ----
 {
   "kind": "Component",
-  "apiVersion": "odo.openshift.io/v1alpha1",
+  "apiVersion": "odo.openshift.io/v1",
   "metadata": {
     "name": "nodejs-nvnh",
     "creationTimestamp": null
@@ -247,12 +247,12 @@ See the below table for a list of all possible machine readable output commands:
 ----
 {
   "kind": "List",
-  "apiVersion": "odo.openshift.io/v1alpha1",
+  "apiVersion": "odo.openshift.io/v1",
   "metadata": {},
   "items": [
     {
       "kind": "Component",
-      "apiVersion": "odo.openshift.io/v1alpha1",
+      "apiVersion": "odo.openshift.io/v1",
       "metadata": {
         "name": "nodejs-nvnh",
         "creationTimestamp": null
@@ -282,12 +282,12 @@ See the below table for a list of all possible machine readable output commands:
 ----
 {
   "kind": "List",
-  "apiVersion": "odo.openshift.io/v1alpha1",
+  "apiVersion": "odo.openshift.io/v1",
   "metadata": {},
   "items": [
     {
       "kind": "Project",
-      "apiVersion": "odo.openshift.io/v1alpha1",
+      "apiVersion": "odo.openshift.io/v1",
       "metadata": {
         "name": "myproject",
         "creationTimestamp": null
@@ -311,7 +311,7 @@ See the below table for a list of all possible machine readable output commands:
 ----
 {
   "kind": "storage",
-  "apiVersion": "odo.openshift.io/v1alpha1",
+  "apiVersion": "odo.openshift.io/v1",
   "metadata": {
     "name": "mystorage",
     "creationTimestamp": null
@@ -334,7 +334,7 @@ See the below table for a list of all possible machine readable output commands:
   "items": [
     {
       "kind": "Storage",
-      "apiVersion": "odo.openshift.io/v1alpha1",
+      "apiVersion": "odo.openshift.io/v1",
       "metadata": {
         "name": "mystorage",
         "creationTimestamp": null
@@ -354,7 +354,7 @@ See the below table for a list of all possible machine readable output commands:
 ----
 {
   "kind": "url",
-  "apiVersion": "odo.openshift.io/v1alpha1",
+  "apiVersion": "odo.openshift.io/v1",
   "metadata": {
     "name": "foobar-8080",
     "creationTimestamp": null
@@ -373,12 +373,12 @@ See the below table for a list of all possible machine readable output commands:
 ----
 {
   "kind": "List",
-  "apiVersion": "odo.openshift.io/v1alpha1",
+  "apiVersion": "odo.openshift.io/v1",
   "metadata": {},
   "items": [
     {
       "kind": "url",
-      "apiVersion": "odo.openshift.io/v1alpha1",
+      "apiVersion": "odo.openshift.io/v1",
       "metadata": {
         "name": "foobar-8080",
         "creationTimestamp": null

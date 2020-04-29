@@ -164,7 +164,7 @@ func ListComponents(client *occlient.Client) (ComponentTypeList, error) {
 	return ComponentTypeList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "List",
-			APIVersion: "odo.openshift.io/v1alpha1",
+			APIVersion: "odo.openshift.io/v1",
 		},
 		Items: catalogList,
 	}, nil
@@ -219,7 +219,7 @@ func ListServices(client *occlient.Client) (ServiceTypeList, error) {
 	return ServiceTypeList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "List",
-			APIVersion: "odo.openshift.io/v1alpha1",
+			APIVersion: "odo.openshift.io/v1",
 		},
 		Items: clusterServiceClasses,
 	}, nil
@@ -243,7 +243,7 @@ func SearchService(client *occlient.Client, name string) (ServiceTypeList, error
 	return ServiceTypeList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "List",
-			APIVersion: "odo.openshift.io/v1alpha1",
+			APIVersion: "odo.openshift.io/v1",
 		},
 		Items: result,
 	}, nil
@@ -274,7 +274,7 @@ func getClusterCatalogServices(client *occlient.Client) ([]ServiceType, error) {
 		classNames = append(classNames, ServiceType{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "ServiceType",
-				APIVersion: "odo.openshift.io/v1alpha1",
+				APIVersion: "odo.openshift.io/v1",
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name: class.Spec.ExternalName,
@@ -499,7 +499,7 @@ func getBuildersFromImageStreams(imageStreams []imagev1.ImageStream, imageStream
 			catalogImage := ComponentType{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "ComponentType",
-					APIVersion: "odo.openshift.io/v1alpha1",
+					APIVersion: "odo.openshift.io/v1",
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      imageStream.Name,

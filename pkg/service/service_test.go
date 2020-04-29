@@ -393,7 +393,7 @@ func TestListWithDetailedStatus(t *testing.T) {
 				Service{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "Service",
-						APIVersion: "odo.openshift.io/v1alpha1",
+						APIVersion: "odo.openshift.io/v1",
 					},
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "mysql-persistent",
@@ -409,7 +409,7 @@ func TestListWithDetailedStatus(t *testing.T) {
 				Service{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "Service",
-						APIVersion: "odo.openshift.io/v1alpha1",
+						APIVersion: "odo.openshift.io/v1",
 					},
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "postgresql-ephemeral",
@@ -425,7 +425,7 @@ func TestListWithDetailedStatus(t *testing.T) {
 				Service{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "Service",
-						APIVersion: "odo.openshift.io/v1alpha1",
+						APIVersion: "odo.openshift.io/v1",
 					},
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "mongodb",
@@ -441,7 +441,7 @@ func TestListWithDetailedStatus(t *testing.T) {
 				Service{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "Service",
-						APIVersion: "odo.openshift.io/v1alpha1",
+						APIVersion: "odo.openshift.io/v1",
 					},
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "jenkins-persistent",

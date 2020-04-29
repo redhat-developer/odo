@@ -57,7 +57,7 @@ var _ = Describe("odo project command tests", func() {
 
 			// project deletion doesn't happen immediately and older projects still might exist
 			// so we test subset of the string
-			expected, err := helper.Unindented(`{"kind":"Project","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"` + project + `","namespace":"` + project + `","creationTimestamp":null},"spec":{},"status":{"active":true}}`)
+			expected, err := helper.Unindented(`{"kind":"Project","apiVersion":"odo.openshift.io/v1","metadata":{"name":"` + project + `","namespace":"` + project + `","creationTimestamp":null},"spec":{},"status":{"active":true}}`)
 			Expect(err).Should(BeNil())
 
 			helper.WaitForCmdOut("odo", []string{"project", "list", "-o", "json"}, 1, true, func(output string) bool {

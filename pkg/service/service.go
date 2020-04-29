@@ -144,7 +144,7 @@ func List(client *occlient.Client, applicationName string) (ServiceList, error) 
 			Service{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "Service",
-					APIVersion: "odo.openshift.io/v1alpha1",
+					APIVersion: "odo.openshift.io/v1",
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: elem.Labels[componentlabels.ComponentLabel],
@@ -157,7 +157,7 @@ func List(client *occlient.Client, applicationName string) (ServiceList, error) 
 	return ServiceList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ServiceList",
-			APIVersion: "odo.openshift.io/v1alpha1",
+			APIVersion: "odo.openshift.io/v1",
 		},
 		Items: services,
 	}, nil
@@ -213,7 +213,7 @@ func ListWithDetailedStatus(client *occlient.Client, applicationName string) (Se
 	return ServiceList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ServiceList",
-			APIVersion: "odo.openshift.io/v1alpha1",
+			APIVersion: "odo.openshift.io/v1",
 		},
 		Items: services.Items,
 	}, nil

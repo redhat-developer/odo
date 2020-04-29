@@ -1426,7 +1426,7 @@ func getMachineReadableFormat(componentName, componentType string) Component {
 	return Component{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Component",
-			APIVersion: "odo.openshift.io/v1alpha1",
+			APIVersion: "odo.openshift.io/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: componentName,
@@ -1447,7 +1447,7 @@ func GetMachineReadableFormatForList(components []Component) ComponentList {
 	return ComponentList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "List",
-			APIVersion: "odo.openshift.io/v1alpha1",
+			APIVersion: "odo.openshift.io/v1",
 		},
 		ListMeta: metav1.ListMeta{},
 		Items:    components,
