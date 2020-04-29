@@ -772,8 +772,7 @@ func (co *CreateOptions) downloadProject() error {
 
 		sparseCheckoutDir := *project.Source.SparseCheckoutDir
 		fullSparseCheckoutDirPath := filepath.Join(extractFolder, sparseCheckoutDir)
-		validPath := util.CheckPathExists(fullSparseCheckoutDirPath)
-		if !validPath {
+		if !util.CheckPathExists(fullSparseCheckoutDirPath) {
 			return errors.Errorf("Path: %v specified in sparseCheckoutDir does not exist in project", sparseCheckoutDir)
 		}
 
