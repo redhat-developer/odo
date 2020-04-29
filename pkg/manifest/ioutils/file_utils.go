@@ -2,13 +2,22 @@ package ioutils
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
+
+	"github.com/spf13/afero"
 )
 
+func NewFilesystem() afero.Fs {
+	return afero.NewOsFs()
+}
+
+func NewMapFilesystem() afero.Fs {
+	return afero.NewMemMapFs()
+}
+
 // IsExisting returns bool whether path exists
-func IsExisting(path string) (bool, error) {
-	fileInfo, err := os.Stat(path)
+func IsExisting(fs afero.Fs, path string) (bool, error) {
+	fileInfo, err := fs.Stat(path)
 	if err != nil {
 		return false, err
 	}

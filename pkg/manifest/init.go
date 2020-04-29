@@ -3,7 +3,6 @@ package manifest
 import (
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -110,29 +109,27 @@ const (
 )
 
 // Init bootstraps a GitOps manifest and repository structure.
-func Init(o *InitParameters) error {
+func Init(o *InitParameters, fs afero.Fs) error {
 	_, imageRepo, err := validateImageRepo(o.ImageRepo, o.InternalRegistryHostname)
 	if err != nil {
 		return err
 	}
 
-	// TODO: look into whether or not this can use afero.
-	exists, err := ioutils.IsExisting(o.Output)
+	exists, err := ioutils.IsExisting(fs, o.Output)
 	if exists {
 		return err
 	}
 
-	outputs, err := createInitialFiles(o.Prefix, o.GitOpsRepo, o.GitOpsWebhookSecret, o.DockerConfigJSONFilename, imageRepo)
+	outputs, err := createInitialFiles(fs, o.Prefix, o.GitOpsRepo, o.GitOpsWebhookSecret, o.DockerConfigJSONFilename, imageRepo)
 	if err != nil {
 		return err
 	}
-	appFs := afero.NewOsFs()
-	_, err = yaml.WriteResources(appFs, o.Output, outputs)
+	_, err = yaml.WriteResources(fs, o.Output, outputs)
 	return err
 }
 
 // CreateResources creates resources assocated to pipelines.
-func CreateResources(prefix, gitOpsRepo, gitOpsWebhookSecret, dockerConfigJSONPath, imageRepo string) (map[string]interface{}, error) {
+func CreateResources(fs afero.Fs, prefix, gitOpsRepo, gitOpsWebhookSecret, dockerConfigJSONPath, imageRepo string) (map[string]interface{}, error) {
 	// key: path of the resource
 	// value: YAML content of the resource
 	outputs := map[string]interface{}{}
@@ -151,7 +148,7 @@ func CreateResources(prefix, gitOpsRepo, gitOpsWebhookSecret, dockerConfigJSONPa
 	sa := roles.CreateServiceAccount(meta.NamespacedName(cicdNamespace, saName))
 
 	if dockerConfigJSONPath != "" {
-		dockerSecret, err := CreateDockerSecret(dockerConfigJSONPath, cicdNamespace)
+		dockerSecret, err := CreateDockerSecret(fs, dockerConfigJSONPath, cicdNamespace)
 		if err != nil {
 			return nil, err
 		}
@@ -176,7 +173,7 @@ func CreateResources(prefix, gitOpsRepo, gitOpsWebhookSecret, dockerConfigJSONPa
 }
 
 // CreateDockerSecret creates Docker secret
-func CreateDockerSecret(dockerConfigJSONFilename, ns string) (*ssv1alpha1.SealedSecret, error) {
+func CreateDockerSecret(fs afero.Fs, dockerConfigJSONFilename, ns string) (*ssv1alpha1.SealedSecret, error) {
 	if dockerConfigJSONFilename == "" {
 		return nil, errors.New("failed to generate path to file: --dockerconfigjson flag is not provided")
 	}
@@ -185,8 +182,7 @@ func CreateDockerSecret(dockerConfigJSONFilename, ns string) (*ssv1alpha1.Sealed
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate path to file: %w", err)
 	}
-
-	f, err := os.Open(authJSONPath)
+	f, err := fs.Open(authJSONPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read docker file '%s' : %w", authJSONPath, err)
 	}
@@ -201,12 +197,12 @@ func CreateDockerSecret(dockerConfigJSONFilename, ns string) (*ssv1alpha1.Sealed
 
 }
 
-func createInitialFiles(prefix, gitOpsRepo, gitOpsWebhookSecret, dockerConfigPath, imageRepo string) (res.Resources, error) {
+func createInitialFiles(fs afero.Fs, prefix, gitOpsRepo, gitOpsWebhookSecret, dockerConfigPath, imageRepo string) (res.Resources, error) {
 	manifest := createManifest(&config.Environment{Name: prefix + "cicd", IsCICD: true})
 	initialFiles := res.Resources{
 		"manifest.yaml": manifest,
 	}
-	cicdResources, err := CreateResources(prefix, gitOpsRepo, gitOpsWebhookSecret, dockerConfigPath, imageRepo)
+	cicdResources, err := CreateResources(fs, prefix, gitOpsRepo, gitOpsWebhookSecret, dockerConfigPath, imageRepo)
 	if err != nil {
 		return nil, err
 	}

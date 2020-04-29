@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/openshift/odo/pkg/manifest"
+	"github.com/openshift/odo/pkg/manifest/ioutils"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/spf13/cobra"
 
@@ -66,7 +67,7 @@ func (io *BootstrapParameters) Validate() error {
 
 // Run runs the project bootstrap command.
 func (io *BootstrapParameters) Run() error {
-	return manifest.Bootstrap(io.BootstrapOptions)
+	return manifest.Bootstrap(io.BootstrapOptions, ioutils.NewFilesystem())
 }
 
 // NewCmdBootstrap creates the project init command.

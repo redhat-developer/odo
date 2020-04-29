@@ -6,12 +6,13 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/openshift/odo/pkg/manifest/ioutils"
 	"github.com/openshift/odo/pkg/manifest/yaml"
 	"github.com/spf13/afero"
 )
 
 func TestWriteResources(t *testing.T) {
-	testFs := afero.NewMemMapFs()
+	testFs := ioutils.NewMapFilesystem()
 	tmpDir := afero.GetTempDir(testFs, "odo")
 	resources := map[string]interface{}{
 		"01_roles/serviceaccount.yaml": fakeYamlDoc(1),

@@ -10,6 +10,7 @@ import (
 	"github.com/openshift/odo/pkg/manifest/config"
 	"github.com/openshift/odo/pkg/manifest/deployment"
 	"github.com/openshift/odo/pkg/manifest/eventlisteners"
+	"github.com/openshift/odo/pkg/manifest/ioutils"
 	"github.com/openshift/odo/pkg/manifest/meta"
 	res "github.com/openshift/odo/pkg/manifest/resources"
 	"github.com/openshift/odo/pkg/manifest/secrets"
@@ -42,7 +43,7 @@ func TestBootstrapManifest(t *testing.T) {
 		AppWebhookSecret:    "456",
 	}
 
-	r, err := bootstrapResources(params)
+	r, err := bootstrapResources(params, ioutils.NewMapFilesystem())
 	if err != nil {
 		t.Fatal(err)
 	}

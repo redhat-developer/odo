@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/openshift/odo/pkg/manifest"
+	"github.com/openshift/odo/pkg/manifest/ioutils"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/spf13/cobra"
 
@@ -75,7 +76,7 @@ func (io *InitParameters) Run() error {
 		ImageRepo:                io.imageRepo,
 		InternalRegistryHostname: io.internalRegistryHostname,
 	}
-	return manifest.Init(&options)
+	return manifest.Init(&options, ioutils.NewFilesystem())
 }
 
 // NewCmdInit creates the project init command.

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/openshift/odo/pkg/manifest"
+	"github.com/openshift/odo/pkg/manifest/ioutils"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/spf13/cobra"
 
@@ -64,7 +65,7 @@ func (eo *AddEnvParameters) Run() error {
 		Prefix:  eo.prefix,
 	}
 
-	return manifest.Env(&options)
+	return manifest.Env(&options, ioutils.NewFilesystem())
 }
 
 // NewCmdAddEnv creates the project add environment command.

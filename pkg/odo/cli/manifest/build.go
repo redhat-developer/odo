@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/openshift/odo/pkg/manifest"
+	"github.com/openshift/odo/pkg/manifest/ioutils"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/spf13/cobra"
 
@@ -56,7 +57,7 @@ func (io *BuildParameters) Run() error {
 		OutputPath:       io.output,
 		RepositoryURL:    io.gitopsRepoURL,
 	}
-	return manifest.BuildResources(&options)
+	return manifest.BuildResources(&options, ioutils.NewFilesystem())
 }
 
 // NewCmdBuild creates the manifest build command.

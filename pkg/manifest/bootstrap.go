@@ -44,12 +44,11 @@ var defaultPipelines = &config.Pipelines{
 }
 
 // Bootstrap bootstraps a GitOps manifest and repository structure.
-func Bootstrap(o *BootstrapOptions) error {
-	bootstrapped, err := bootstrapResources(o)
+func Bootstrap(o *BootstrapOptions, appFs afero.Fs) error {
+	bootstrapped, err := bootstrapResources(o, appFs)
 	if err != nil {
 		return fmt.Errorf("failed to bootstrap resources: %w", err)
 	}
-	appFs := afero.NewOsFs()
 
 	buildParams := &BuildParameters{
 		ManifestFilename: manifestFile,
@@ -67,7 +66,7 @@ func Bootstrap(o *BootstrapOptions) error {
 	return err
 }
 
-func bootstrapResources(o *BootstrapOptions) (res.Resources, error) {
+func bootstrapResources(o *BootstrapOptions, appFs afero.Fs) (res.Resources, error) {
 	orgRepo, err := orgRepoFromURL(o.GitOpsRepoURL)
 	if err != nil {
 		return nil, err
@@ -77,7 +76,7 @@ func bootstrapResources(o *BootstrapOptions) (res.Resources, error) {
 		return nil, fmt.Errorf("invalid app repo URL: %w", err)
 	}
 
-	bootstrapped, err := createInitialFiles(o.Prefix, orgRepo, o.GitOpsWebhookSecret, o.DockerConfigJSONFilename, "")
+	bootstrapped, err := createInitialFiles(appFs, o.Prefix, orgRepo, o.GitOpsWebhookSecret, o.DockerConfigJSONFilename, "")
 	if err != nil {
 		return nil, err
 	}

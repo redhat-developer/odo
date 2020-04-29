@@ -6,12 +6,13 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/openshift/odo/pkg/manifest/config"
+	"github.com/openshift/odo/pkg/manifest/ioutils"
 	res "github.com/openshift/odo/pkg/manifest/resources"
 	"github.com/spf13/afero"
 )
 
 func TestBuildEnvironmentFiles(t *testing.T) {
-	var appFs = afero.NewMemMapFs()
+	var appFs = ioutils.NewMapFilesystem()
 	m := &config.Manifest{
 		Environments: []*config.Environment{
 			{
@@ -60,7 +61,7 @@ func TestBuildEnvironmentFiles(t *testing.T) {
 }
 
 func TestBuildEnvironmentsDoesNotOutputCIorArgo(t *testing.T) {
-	var appFs = afero.NewMemMapFs()
+	var appFs = ioutils.NewMapFilesystem()
 	m := &config.Manifest{
 		Environments: []*config.Environment{
 			{Name: "test-ci", IsCICD: true},
@@ -80,7 +81,7 @@ func TestBuildEnvironmentsDoesNotOutputCIorArgo(t *testing.T) {
 }
 
 func TestBuildEnvironmentsAddsKustomizedFiles(t *testing.T) {
-	var appFs = afero.NewMemMapFs()
+	var appFs = ioutils.NewMapFilesystem()
 	appFs.MkdirAll("environments/test-dev/base", 0755)
 	afero.WriteFile(appFs, "environments/test-dev/base/volume.yaml", []byte(`this is a file`), 0644)
 	afero.WriteFile(appFs, "environments/test-dev/base/test-dev-environment.yaml", []byte(`this is a file`), 0644)
