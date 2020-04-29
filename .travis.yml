@@ -70,7 +70,7 @@ jobs:
 
     - <<: *base-test
       stage: test
-      name: "generic, login, component command integration tests"
+      name: "generic, login and component command integration tests"
       script:
         - ./scripts/oc-cluster.sh
         - make bin
@@ -98,7 +98,7 @@ jobs:
     # Run service-catalog e2e tests
     - <<: *base-test
       stage: test
-      name: "service, link, component sub-commands command integration tests"
+      name: "service, link and component sub-commands command integration tests"
       script:
         - ./scripts/oc-cluster.sh service-catalog
         - make bin
@@ -111,7 +111,7 @@ jobs:
 
     - <<: *base-test
       stage: test
-      name: "watch, storage, app, project, push, devfile catalog, devfile create, devfile push, devfile delete command integration tests"
+      name: "watch, storage, app, project and push command integration tests"
       script:
         - ./scripts/oc-cluster.sh
         - make bin
@@ -122,12 +122,23 @@ jobs:
         - travis_wait make test-cmd-app
         - travis_wait make test-cmd-push
         - travis_wait make test-cmd-project
+        - odo logout
+
+    - <<: *base-test
+      stage: test
+      name: "devfile catalog, create, push, delete and docker devfile url command integration tests"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make bin
+        - sudo cp odo /usr/bin
+        - odo login -u developer
         - travis_wait make test-cmd-devfile-catalog
         - travis_wait make test-cmd-devfile-create
         - travis_wait make test-cmd-devfile-push
         - travis_wait make test-cmd-devfile-watch
         - travis_wait make test-cmd-devfile-delete
         - odo logout
+        - travis_wait make test-cmd-docker-devfile-url
 
     - <<: *base-test
       stage: test
@@ -145,12 +156,11 @@ jobs:
     
     - <<: *base-test
       stage: test
-      name: "docker devfile push command integration tests"
+      name: "docker devfile push and delete command integration tests"
       script:
         - make bin
         - sudo cp odo /usr/bin
         - travis_wait make test-cmd-docker-devfile-push
-        - travis_wait make test-cmd-docker-devfile-url
         - travis_wait make test-cmd-docker-devfile-delete
     
     # Run devfile integration test on Kubernetes cluster    
