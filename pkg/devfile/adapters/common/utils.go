@@ -1,7 +1,6 @@
 package common
 
 import (
-	"fmt"
 	"os"
 	"strconv"
 
@@ -149,25 +148,7 @@ func IsPortPresent(endpoints []common.DockerimageEndpoint, port int) bool {
 	return false
 }
 
-// IsComponentBuildRequired checks if a component build is required based on the push commands, it throws an error
-// if the push commands does not meet the expected criteria
-func IsComponentBuildRequired(pushDevfileCommands []common.DevfileCommand) (bool, error) {
-	var buildRequired bool
-
-	switch len(pushDevfileCommands) {
-	case 1: // if there is one command, it is the mandatory run command. No need to build.
-		buildRequired = false
-	case 2:
-		// if there are two commands, it is the optional build command and the mandatory run command, set buildRequired to true
-		buildRequired = true
-	default:
-		return false, fmt.Errorf("error executing devfile commands - there should be at least 1 command or at most 2 commands, currently there are %d commands", len(pushDevfileCommands))
-	}
-
-	return buildRequired, nil
-}
-
-// IsRestartRequired returns if restarted required for devrun command
+// IsRestartRequired returns if restart is required for devrun command
 func IsRestartRequired(command common.DevfileCommand) bool {
 	var restart = true
 	var err error

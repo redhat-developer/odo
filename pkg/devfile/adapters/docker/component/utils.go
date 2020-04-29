@@ -390,12 +390,17 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 							ContainerName: containerID,
 						}
 
-						err = exec.ExecuteDevfileRunAction(&a.Client, action, command.Name, compInfo, show)
-						if err != nil {
-							return err
+						if componentExists && !common.IsRestartRequired(command) {
+							glog.V(4).Info("restart:false, Not restarting DevRun Command")
+							err = exec.ExecuteDevfileRunActionWithoutRestart(&a.Client, action, command.Name, compInfo, show)
+							return
 						}
+
+						err = exec.ExecuteDevfileRunAction(&a.Client, action, command.Name, compInfo, show)
+
 					}
 				}
+
 			}
 		}
 	}

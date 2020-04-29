@@ -192,10 +192,11 @@ func ExecWithRestartAttribute(projectDirPath, cmpName, namespace string) {
 	args = []string{"push", "--devfile", "devfile.yaml"}
 	args = useProjectIfAvailable(args, namespace)
 	output := helper.CmdShouldPass("odo", args...)
-	Expect(output).To(ContainSubstring("Executing devrun command \"npm install && nodemon app.js\""))
+	Expect(output).To(ContainSubstring("Executing devrun command \"nodemon app.js\""))
 
 	args = []string{"push", "-f", "--devfile", "devfile.yaml"}
 	args = useProjectIfAvailable(args, namespace)
+	output = helper.CmdShouldPass("odo", args...)
 	Expect(output).To(ContainSubstring("if not running"))
 
 }
