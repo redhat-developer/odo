@@ -9,11 +9,13 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/occlient"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
+	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/pkg/errors"
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
 
@@ -58,6 +60,8 @@ type WatchOptions struct {
 	namespace      string
 	devfileHandler adapters.PlatformAdapter
 
+	EnvSpecificInfo *envinfo.EnvSpecificInfo
+
 	*genericclioptions.Context
 }
 
@@ -70,6 +74,13 @@ func NewWatchOptions() *WatchOptions {
 func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	// if experimental mode is enabled and devfile is present
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(wo.devfilePath) {
+		envinfo, err := envinfo.NewEnvSpecificInfo(wo.componentContext)
+		if err != nil {
+			return errors.Wrap(err, "unable to retrieve configuration information")
+		}
+		wo.EnvSpecificInfo = envinfo
+		wo.Context = genericclioptions.NewDevfileContext(cmd)
+
 		// Set the source path to either the context or current working directory (if context not set)
 		wo.sourcePath, err = util.GetAbsPath(filepath.Dir(wo.componentContext))
 		if err != nil {
@@ -94,10 +105,17 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 			return err
 		}
 
-		kc := kubernetes.KubernetesContext{
-			Namespace: wo.namespace,
+		var platformContext interface{}
+		if !pushtarget.IsPushTargetDocker() {
+			// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initalizing the context
+			wo.namespace = wo.KClient.Namespace
+			platformContext = kubernetes.KubernetesContext{
+				Namespace: wo.namespace,
+			}
+		} else {
+			platformContext = nil
 		}
-		wo.devfileHandler, err = adapters.NewPlatformAdapter(wo.componentName, devObj, kc)
+		wo.devfileHandler, err = adapters.NewPlatformAdapter(wo.componentName, devObj, platformContext)
 
 		return err
 	}
@@ -249,7 +267,6 @@ func NewCmdWatch(name, fullName string) *cobra.Command {
 	// enable devfile flag if experimental mode is enabled
 	if experimental.IsExperimentalModeEnabled() {
 		watchCmd.Flags().StringVar(&wo.devfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
-		watchCmd.Flags().StringVar(&wo.namespace, "namespace", "", "Namespace to push the component to")
 	}
 
 	// Adding context flag

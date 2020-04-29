@@ -117,7 +117,7 @@ cd ..
 #
 #toc_footers:
 #  - <a href='http://openshiftdo.org'>openshiftdo.org</a>
-#  - <a href='https://github.com/openshift/odo'>Odo (OpenShift Do) on GitHub</a>
+#  - <a href='https://github.com/openshift/odo'>odo on GitHub</a>
 #
 #search: true
 #---

@@ -4,9 +4,11 @@ import (
 	"fmt"
 
 	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/log"
+	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
@@ -65,6 +67,11 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		}
 		po.EnvSpecificInfo = envinfo
 		po.Context = genericclioptions.NewDevfileContext(cmd)
+
+		if !pushtarget.IsPushTargetDocker() {
+			// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initalizing the context
+			po.namespace = po.KClient.Namespace
+		}
 		return nil
 	}
 
@@ -167,6 +174,9 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 		pushCmd.Flags().StringVar(&po.devfileBuildCommand, "build-command", "", "Devfile Build Command to execute")
 		pushCmd.Flags().StringVar(&po.devfileRunCommand, "run-command", "", "Devfile Run Command to execute")
 	}
+
+	//Adding `--project` flag
+	projectCmd.AddProjectFlag(pushCmd)
 
 	pushCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(pushCmd, completion.ComponentNameCompletionHandler)

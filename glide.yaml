@@ -84,3 +84,6 @@ import:
   version: v30.1.0
 - package: github.com/golang/mock
   version: v1.4.3
+  # use older version due to https://github.com/hashicorp/go-multierror/issues/36
+- package: github.com/hashicorp/go-multierror
+  version: v1.0.0

@@ -62,15 +62,6 @@ func (po *PushOptions) DevfilePush() (err error) {
 	if pushtarget.IsPushTargetDocker() {
 		platformContext = nil
 	} else {
-		if len(po.namespace) <= 0 {
-			po.namespace, err = getNamespace()
-			if err != nil {
-				return err
-			}
-		}
-
-		po.Context.KClient.Namespace = po.namespace
-
 		kc := kubernetes.KubernetesContext{
 			Namespace: po.namespace,
 		}
@@ -123,21 +114,6 @@ func getComponentName() (string, error) {
 	}
 	componentName := envInfo.GetName()
 	return componentName, nil
-}
-
-// Get namespace name from env.yaml file
-func getNamespace() (string, error) {
-	// Todo: Use context to get the approraite envinfo after context is supported in experimental mode
-	dir, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
-	envInfo, err := envinfo.NewEnvSpecificInfo(dir)
-	if err != nil {
-		return "", err
-	}
-	Namespace := envInfo.GetNamespace()
-	return Namespace, nil
 }
 
 // DevfileComponentDelete deletes the devfile component

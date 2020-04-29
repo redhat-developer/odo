@@ -79,13 +79,6 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 	})
 
-	Context("When executing odo create with devfile component type argument and --namespace flag", func() {
-		It("should successfully create the devfile component", func() {
-			componentNamespace := helper.RandString(6)
-			helper.CmdShouldPass("odo", "create", "openLiberty", "--namespace", componentNamespace)
-		})
-	})
-
 	Context("When executing odo create with devfile component type argument and --context flag", func() {
 		It("should successfully create the devfile component in the context", func() {
 			newContext := path.Join(context, "newContext")
