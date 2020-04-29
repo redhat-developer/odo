@@ -167,7 +167,7 @@ func IsComponentBuildRequired(pushDevfileCommands []common.DevfileCommand) (bool
 	return buildRequired, nil
 }
 
-// IsRestartRequired gets command attributes.
+// IsRestartRequired returns if restarted required for devrun command
 func IsRestartRequired(command common.DevfileCommand) bool {
 	var restart = true
 	var err error

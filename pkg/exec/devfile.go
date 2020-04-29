@@ -75,6 +75,8 @@ func ExecuteDevfileRunAction(client ExecClient, action common.DevfileCommandActi
 func ExecuteDevfileRunActionWithoutRestart(client ExecClient, action common.DevfileCommandAction, commandName string, compInfo adaptersCommon.ComponentInfo, show bool) error {
 	var s *log.Status
 
+	var s *log.Status
+
 	type devRunExecutable struct {
 		command []string
 	}
