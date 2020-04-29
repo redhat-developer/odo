@@ -61,6 +61,7 @@ var _ = Describe("odo docker devfile delete command tests", func() {
 			Expect(dockerClient.VolumeExists(fakeVolume)).To(Equal(true))
 			dockerClient.RemoveVolumeByName(fakeVolume)
 		}
+		fakeVolumes = []string{}
 
 		// Stop all containers labeled with the component name
 		label := "component=" + cmpName
