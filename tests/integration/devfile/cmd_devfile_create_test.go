@@ -186,16 +186,34 @@ var _ = Describe("odo devfile create command tests", func() {
 	//})
 
 	Context("When executing odo create with devfile component, --downloadSource flag and sparseContextDir has a valid value", func() {
-		It("should only download the specified path in the sparseContextDir field", func() {
+		It("should only extract the specified path in the sparseContextDir field", func() {
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs"), currentWorkingDirectory)
-			helper.RenameFile(currentWorkingDirectory, "devfile.yaml")
+			contextDevfile := helper.CreateNewContext()
+			helper.Chdir(contextDevfile)
 			devfile := "devfile.yaml"
-			helper.CmdShouldPass("odo", "create", "--downloadSource")
-			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-sparseCheckoutDir"), filepath.Join(contextDevfile, devfile))
+			componentNamespace := helper.RandString(6)
+			helper.CmdShouldPass("odo", "create", "--downloadSource", "--project", componentNamespace)
+			expectedFiles := []string{"app.js", devfile}
 			Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
 			helper.DeleteDir(contextDevfile)
-			helper.Chdir(context)
+		})
+	})
+
+	Context("When executing odo create with devfile component, --downloadSource flag and sparseContextDir has an invalid value", func() {
+		It("should fail and alert the user that the specified path in sparseContextDir does not exist", func() {
+			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+			contextDevfile := helper.CreateNewContext()
+			helper.Chdir(contextDevfile)
+			devfile := "devfile.yaml"
+			devfilePath := filepath.Join(contextDevfile, devfile)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-sparseCheckoutDir"), devfilePath)
+			helper.ReplaceDevfileField(devfilePath, "sparseCheckoutDir", "/invalid/")
+			componentNamespace := helper.RandString(6)
+			output := helper.CmdShouldFail("odo", "create", "--downloadSource", "--project", componentNamespace)
+			expectedString := "Path: /invalid/ specified in sparseCheckoutDir does not exist in project"
+			helper.MatchAllInOutput(output, []string{expectedString})
+			helper.DeleteDir(contextDevfile)
 		})
 	})
 })
