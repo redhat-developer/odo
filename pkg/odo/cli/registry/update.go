@@ -20,9 +20,9 @@ const updateCommandName = "update"
 
 // "odo registry update" command description and examples
 var (
-	updateLongDesc = ktemplates.LongDesc(`Update devfile registry`)
+	updateLongDesc = ktemplates.LongDesc(`Update devfile registry URL`)
 
-	updateExample = ktemplates.Examples(`# Update devfile registry
+	updateExample = ktemplates.Examples(`# Update devfile registry URL
 	%[1]s cheregistry https://che-devfile-registry-update.openshift.io/
 	`)
 )

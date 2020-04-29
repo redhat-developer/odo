@@ -23,7 +23,7 @@ const listCommandName = "list"
 var (
 	listDesc = ktemplates.LongDesc(`List devfile registry`)
 
-	listExample = ktemplates.Examples(`# List the devfile registry
+	listExample = ktemplates.Examples(`# List devfile registry
 	%[1]s
 	`)
 )
