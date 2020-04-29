@@ -70,3 +70,29 @@ func ExecuteDevfileRunAction(client ExecClient, action common.DevfileCommandActi
 
 	return nil
 }
+
+// ExecuteDevfileRunActionWithoutRestart executes devfile run command without restarting.
+func ExecuteDevfileRunActionWithoutRestart(client ExecClient, action common.DevfileCommandAction, commandName string, compInfo adaptersCommon.ComponentInfo, show bool) error {
+	var s *log.Status
+
+	type devRunExecutable struct {
+		command []string
+	}
+	// with restart false, executing only supervisord start command, if the command is already running, supvervisord will not restart it.
+	// if the command is failed or not running suprvisord would start it.
+	devRunExec := devRunExecutable{
+		command: []string{adaptersCommon.SupervisordBinaryPath, adaptersCommon.SupervisordCtlSubCommand, "start", string(adaptersCommon.DefaultDevfileRunCommand)},
+	}
+
+	s = log.Spinnerf("Executing %s command %q, if not running", commandName, *action.Command)
+	defer s.End(false)
+
+	err := ExecuteCommand(client, compInfo, devRunExec.command, show)
+	if err != nil {
+		return errors.Wrapf(err, "unable to execute the run command")
+	}
+
+	s.End(true)
+
+	return nil
+}
