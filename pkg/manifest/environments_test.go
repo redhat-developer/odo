@@ -30,6 +30,10 @@ func TestBuildEnvironmentFiles(t *testing.T) {
 					},
 				},
 			},
+			{
+				Name:   "cicd",
+				IsCICD: true,
+			},
 		},
 	}
 
@@ -45,7 +49,8 @@ func TestBuildEnvironmentFiles(t *testing.T) {
 		"environments/test-dev/apps/my-app-1/kustomization.yaml":                     &res.Kustomization{Bases: []string{"overlays"}},
 		"environments/test-dev/apps/my-app-1/overlays/kustomization.yaml":            &res.Kustomization{Bases: []string{"../base"}},
 		"environments/test-dev/env/base/test-dev-environment.yaml":                   CreateNamespace("test-dev"),
-		"environments/test-dev/env/base/kustomization.yaml":                          &res.Kustomization{Resources: []string{"test-dev-environment.yaml"}},
+		"environments/test-dev/env/base/test-dev-rolebinding.yaml":                   createRoleBinding(m.Environments[0], "environments/test-dev/env/base", "cicd"),
+		"environments/test-dev/env/base/kustomization.yaml":                          &res.Kustomization{Resources: []string{"test-dev-environment.yaml", "test-dev-rolebinding.yaml"}},
 		"environments/test-dev/env/overlays/kustomization.yaml":                      &res.Kustomization{Bases: []string{"../base"}},
 		"environments/test-dev/services/service-http/kustomization.yaml":             &res.Kustomization{Bases: []string{"overlays"}},
 		"environments/test-dev/services/service-http/base/kustomization.yaml":        &res.Kustomization{Bases: []string{"./config"}},
@@ -90,6 +95,7 @@ func TestBuildEnvironmentsAddsKustomizedFiles(t *testing.T) {
 	m := &config.Manifest{
 		Environments: []*config.Environment{
 			{Name: "test-dev"},
+			{Name: "cicd", IsCICD: true},
 		},
 	}
 

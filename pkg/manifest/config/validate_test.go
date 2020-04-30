@@ -79,6 +79,11 @@ func TestValidate(t *testing.T) {
 				},
 			),
 		},
+		{
+			"valid manifest file",
+			"testdata/valid_manifest.yaml",
+			nil,
+		},
 	}
 
 	for _, test := range tests {
@@ -98,6 +103,12 @@ func TestValidate(t *testing.T) {
 
 func matchMultiErrors(t *testing.T, a error, b error) error {
 	t.Helper()
+	if a == nil || b == nil {
+		if a != b {
+			return fmt.Errorf("did not match error, got %v want %v", a, b)
+		}
+		return nil
+	}
 	got, want := multierror.Split(a), multierror.Split(b)
 	if len(got) != len(want) {
 		return fmt.Errorf("did not match error, got %v want %v", got, want)
