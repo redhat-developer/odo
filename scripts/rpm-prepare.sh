@@ -11,12 +11,19 @@ export ODO_RELEASE=${ODO_RELEASE:=1}
 export GIT_COMMIT=${GIT_COMMIT:=`git rev-parse --short HEAD 2>/dev/null`}
 export ODO_RPM_VERSION=${ODO_VERSION//-}
 
+# Golang version variables, if you are bumping this, please contact redhat maintainers to ensure that internal
+# build systems can handle these versions
+export GOLANG_VERSION=${GOLANG_VERSION:-1.12}
+export GOLANG_VERSION_NODOT=${GOLANG_VERSION_NODOT:-112}
+
 # Print env for verifcation
 echo "Printing envs for verification"
 echo "ODO_VERSION=$ODO_VERSION"
 echo "ODO_RELEASE=$ODO_RELEASE"
 echo "GIT_COMMIT=$GIT_COMMIT"
 echo "ODO_RPM_VERSION=$ODO_RPM_VERSION"
+echo "GOLANG_VERSION=$GOLANG_VERSION"
+echo "GOLANG_VERSION_NODO=$GOLANG_VERSION_NODOT"
 
 OUT_DIR=".rpmbuild"
 DIST_DIR="$(pwd)/dist"
@@ -73,6 +80,8 @@ echo "ODO_VERSION=$ODO_VERSION" > $OUT_DIR/version
 echo "ODO_RELEASE=$ODO_RELEASE" >> $OUT_DIR/version
 echo "GIT_COMMIT=$GIT_COMMIT" >> $OUT_DIR/version
 echo "ODO_RPM_VERSION=$ODO_RPM_VERSION" >> $OUT_DIR/version
+echo "GOLANG_VERSION=$GOLANG_VERSION" >> $OUT_DIR/version
+echo "GOLANG_VERSION_NODOT=$GOLANG_VERSION_NODOT" >> $OUT_DIR/version
 
 
 # After success copy stuff to actual location
