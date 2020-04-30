@@ -84,8 +84,7 @@ func (po *PushOptions) DevfilePush() (err error) {
 		DevfileRunCmd:   strings.ToLower(po.devfileRunCommand),
 	}
 
-	url := po.EnvSpecificInfo.GetURL()
-	devfileHandler.ValidateURL(url)
+	validateURL(po.EnvSpecificInfo.GetURL())
 	// Start or update the component
 	err = devfileHandler.Push(pushParams)
 	if err != nil {
@@ -153,4 +152,23 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 	spinner.End(true)
 	log.Successf("Successfully deleted component")
 	return nil
+}
+
+func validateURL(url []envinfo.EnvInfoURL) {
+	// validateURL validates if env.yaml contains a valide URL for the current pushtarget
+	// display a warning if no url(s) found for the current push target, but found url(s) for another push target
+	dockerURLExists := false
+	kubeURLExists := false
+	for _, element := range url {
+		if element.Kind == envinfo.DOCKER {
+			dockerURLExists = true
+		} else {
+			kubeURLExists = true
+		}
+	}
+	if pushtarget.IsPushTargetDocker() && !dockerURLExists && kubeURLExists {
+		log.Warningf("found url(s) defined for ingress/route, but no valid urls with exposed port defined")
+	} else if !pushtarget.IsPushTargetDocker() && !kubeURLExists && dockerURLExists {
+		log.Warningf("found url(s) defined for docker, but no valid urls for ingress/route defined")
+	}
 }

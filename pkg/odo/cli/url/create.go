@@ -164,6 +164,7 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 			if err != nil {
 				return err
 			}
+			o.urlType = envinfo.DOCKER
 		}
 
 		if len(args) != 0 {

@@ -110,7 +110,7 @@ var _ = Describe("odo docker devfile url command tests", func() {
 			session := helper.CmdRunner("odo", "push", "--devfile", "devfile.yaml")
 			stdout = string(session.Wait().Out.Contents())
 			stderr := string(session.Wait().Err.Contents())
-			Expect(stderr).To(ContainSubstring("found url(s) defined for docker, but no valid urls with ingress host defined for the component"))
+			Expect(stderr).To(ContainSubstring("found url(s) defined for docker, but no valid urls for ingress/route defined"))
 			Expect(stdout).To(ContainSubstring("Changes successfully pushed to component"))
 		})
 
@@ -120,13 +120,13 @@ var _ = Describe("odo docker devfile url command tests", func() {
 			helper.Chdir(projectDirPath)
 			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "kube", "-f")
 			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
-			helper.CmdShouldPass("odo", "url", "create", "--host", "1.2.3.4.com")
+			helper.CmdShouldPass("odo", "url", "create", "--host", "1.2.3.4.com", "--ingress")
 
 			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "docker", "-f")
 			session := helper.CmdRunner("odo", "push", "--devfile", "devfile.yaml")
 			stdout = string(session.Wait().Out.Contents())
 			stderr := string(session.Wait().Err.Contents())
-			Expect(stderr).To(ContainSubstring("found url(s) defined for ingress, but no valid urls with exposed port defined for the component"))
+			Expect(stderr).To(ContainSubstring("found url(s) defined for ingress/route, but no valid urls with exposed port defined"))
 			Expect(stdout).To(ContainSubstring("Changes successfully pushed to component"))
 
 		})

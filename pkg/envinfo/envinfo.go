@@ -32,6 +32,7 @@ type URLKind string
 const (
 	INGRESS URLKind = "ingress"
 	ROUTE   URLKind = "route"
+	DOCKER  URLKind = "docker"
 )
 
 // EnvInfoURL holds URL related information

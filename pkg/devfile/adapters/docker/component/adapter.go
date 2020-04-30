@@ -11,7 +11,6 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
-	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/sync"
@@ -218,23 +217,4 @@ func (a Adapter) Delete(labels map[string]string) error {
 
 	return nil
 
-}
-
-// ValidateURL validates if env.yaml contains a valide URL for the current pushtarget
-// display a warning if urls found with ingress host defined, but found no url(s) defined for docker
-func (a Adapter) ValidateURL(url []envinfo.EnvInfoURL) {
-	dockerURLExists := false
-	ingressHostExists := false
-	for _, element := range url {
-		if element.ExposedPort > 0 {
-			dockerURLExists = true
-			break
-		}
-		if len(element.Host) > 0 {
-			ingressHostExists = true
-		}
-	}
-	if !dockerURLExists && ingressHostExists {
-		log.Warningf("found url(s) defined for ingress, but no valid urls with exposed port defined for the component %s.", a.ComponentName)
-	}
 }

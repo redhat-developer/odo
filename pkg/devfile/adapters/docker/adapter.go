@@ -3,7 +3,6 @@ package docker
 import (
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/component"
-	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/pkg/errors"
 )
@@ -42,9 +41,4 @@ func (d Adapter) DoesComponentExist(cmpName string) bool {
 // Delete attempts to delete the component with the specified labels, returning an error if it fails
 func (d Adapter) Delete(labels map[string]string) error {
 	return d.componentAdapter.Delete(labels)
-}
-
-// ValidateURL displays a warning if there exists url(s) for another push target but no valid urls found for the current push target
-func (d Adapter) ValidateURL(url []envinfo.EnvInfoURL) {
-	d.componentAdapter.ValidateURL(url)
 }
