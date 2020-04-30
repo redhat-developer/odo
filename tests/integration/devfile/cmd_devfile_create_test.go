@@ -211,7 +211,7 @@ var _ = Describe("odo devfile create command tests", func() {
 	// 		helper.ReplaceDevfileField(devfilePath, "sparseCheckoutDir", "/invalid/")
 	// 		componentNamespace := helper.RandString(6)
 	// 		output := helper.CmdShouldFail("odo", "create", "--downloadSource", "--project", componentNamespace)
-	// 		expectedString := "Path: /invalid/ specified in sparseCheckoutDir does not exist in project"
+	// 		expectedString := "No files were unzipped, ensure that the project repo is not empty or that sparseCheckoutDir has a valid path"
 	// 		helper.MatchAllInOutput(output, []string{expectedString})
 	// 		helper.DeleteDir(contextDevfile)
 	// 	})

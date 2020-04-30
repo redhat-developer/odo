@@ -836,9 +836,13 @@ func GetAndExtractZip(zipURL string, destination string, pathToUnzip string) err
 		return errors.Errorf("Invalid Zip URL: %s . Should either be prefixed with file://, http:// or https://", zipURL)
 	}
 
-	_, err := Unzip(pathToZip, destination, pathToUnzip)
+	filenames, err := Unzip(pathToZip, destination, pathToUnzip)
 	if err != nil {
 		return err
+	}
+
+	if len(filenames) == 0 {
+		return errors.Errorf("No files were unzipped, ensure that the project repo is not empty or that sparseCheckoutDir has a valid path")
 	}
 
 	return nil
@@ -873,7 +877,7 @@ func Unzip(src, dest, pathToUnzip string) ([]string, error) {
 		// if sparseCheckoutDir has a pattern
 		match, err := filepath.Match(pathToUnzip, filename)
 		if err != nil {
-			return nil, err
+			return filenames, err
 		}
 
 		// removes first slash of pathToUnzip
