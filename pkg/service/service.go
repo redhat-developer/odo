@@ -3,15 +3,20 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
+	"text/tabwriter"
+	"time"
 
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/odo/util/validation"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog"
 
 	scv1beta1 "github.com/kubernetes-sigs/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	appsv1 "github.com/openshift/api/apps/v1"
+	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
@@ -217,6 +222,84 @@ func ListWithDetailedStatus(client *occlient.Client, applicationName string) (Se
 		},
 		Items: services.Items,
 	}, nil
+}
+
+// ListOperatorServices lists all operator backed services
+func ListOperatorServices(client *kclient.Client) error {
+	glog.V(4).Info("Getting list of services")
+
+	// First let's get the list of all the operators in the namespace
+	csvs, err := client.GetClusterServiceVersionList()
+	if err != nil {
+		return errors.Wrap(err, "Unable to list operator backed services")
+	}
+
+	var allCRInstances []unstructured.Unstructured
+
+	// let's get the Services a.k.a Custom Resources (CR) defined by each operator, one by one
+	for _, csv := range csvs.Items {
+		glog.V(4).Infof("Getting services started from operator: %s\n", csv.Name)
+		customResources := client.GetCustomResourcesFromCSV(csv)
+
+		// list and write active instances of each service/CR
+		instances, err := getCRInstances(client, customResources)
+		if err != nil {
+			return err
+		}
+
+		// assuming there are more than one instances of a CR
+		allCRInstances = append(allCRInstances, instances...)
+	}
+
+	displayServices(allCRInstances)
+
+	return nil
+}
+
+func getGVRFromCR(cr olm.CRDDescription) (group, version, resource string) {
+	version = cr.Version
+
+	gr := strings.SplitN(cr.Name, ".", 2)
+	resource = gr[0]
+	group = gr[1]
+
+	return
+}
+
+func getCRInstances(client *kclient.Client, customResources []olm.CRDDescription) ([]unstructured.Unstructured, error) {
+	var instances []unstructured.Unstructured
+
+	for _, cr := range customResources {
+		group, version, resource := getGVRFromCR(cr)
+		glog.V(4).Infof("Getting instances of: %s\n", cr.Name)
+		list, err := client.ListDynamicResource(group, version, resource)
+		if err != nil {
+			return []unstructured.Unstructured{}, err
+		}
+
+		if len(list.Items) > 0 {
+			instances = append(instances, list.Items...)
+		}
+	}
+	return instances, nil
+}
+
+func displayServices(list []unstructured.Unstructured) {
+	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+
+	if len(list) > 0 {
+		fmt.Fprintln(w, "NAME", "\t", "TYPE", "\t", "AGE")
+
+		for _, item := range list {
+			duration := time.Since(item.GetCreationTimestamp().Time).Truncate(time.Minute).String()
+			fmt.Fprintln(w, item.GetName(), "\t", item.GetKind(), "\t", duration)
+		}
+
+	} else {
+		fmt.Fprintln(w, "No operator backed services found in the namesapce")
+	}
+
+	w.Flush()
 }
 
 func updateStatusIfMatchingDeploymentExists(dcs []appsv1.DeploymentConfig, secretName string, services []Service, index int) {

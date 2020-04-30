@@ -9,6 +9,7 @@ import (
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
+	"github.com/openshift/odo/pkg/odo/util/experimental"
 	svc "github.com/openshift/odo/pkg/service"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -56,6 +57,9 @@ func (o *ServiceListOptions) Validate() (err error) {
 
 // Run contains the logic for the odo service list command
 func (o *ServiceListOptions) Run() (err error) {
+	if experimental.IsExperimentalModeEnabled() {
+		return svc.ListOperatorServices(o.KClient)
+	}
 	services, err := svc.ListWithDetailedStatus(o.Client, o.Application)
 	if err != nil {
 		return fmt.Errorf("Service catalog is not enabled within your cluster: %v", err)
