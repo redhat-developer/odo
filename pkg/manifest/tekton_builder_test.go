@@ -24,7 +24,7 @@ func TestBuildEventListener(t *testing.T) {
 	}
 	cicdPath := filepath.Join("environments", "test-cicd")
 	gitOpsRepo := "http://github.com/org/gitops.git"
-	got, err := buildEventlistenerResources(gitOpsRepo, m)
+	got, err := buildEventListenerResources(gitOpsRepo, m)
 	assertNoError(t, err)
 	triggers := fakeTriggers("org/gitops", "test-cicd", testService())
 
@@ -56,7 +56,7 @@ func TestBuildEventListenerWithServiceWithNoURL(t *testing.T) {
 	}
 	cicdPath := filepath.Join("environments", "test-cicd")
 	gitOpsRepo := "http://github.com/org/gitops.git"
-	got, err := buildEventlistenerResources(gitOpsRepo, m)
+	got, err := buildEventListenerResources(gitOpsRepo, m)
 	assertNoError(t, err)
 	triggers := fakeTriggers("org/gitops", "test-cicd", nil)
 
@@ -120,7 +120,7 @@ func TestGetPipelines(t *testing.T) {
 
 func fakeTriggers(gitopsRepo string, cicdNs string, svc *config.Service) []v1alpha1.EventListenerTrigger {
 	triggers := []v1alpha1.EventListenerTrigger{
-		eventlisteners.CreateListenerTrigger("ci-dryrun-from-pr", eventlisteners.StageCIDryRunFilters, gitopsRepo, "github-pr-binding", "app-ci-template", eventlisteners.GitOpsWebhookSecret, cicdNs),
+		eventlisteners.CreateListenerTrigger("ci-dryrun-from-pr", eventlisteners.StageCIDryRunFilters, gitopsRepo, "github-pr-binding", "ci-dryrun-from-pr-template", eventlisteners.GitOpsWebhookSecret, cicdNs),
 	}
 	if svc != nil {
 		l := eventlisteners.CreateListenerTrigger(triggerName(svc.Name), eventlisteners.StageCIDryRunFilters, "org/test", "test-ci-binding", "test-ci-template", svc.Webhook.Secret.Name, svc.Webhook.Secret.Namespace)

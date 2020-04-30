@@ -76,7 +76,7 @@ func bootstrapResources(o *BootstrapOptions, appFs afero.Fs) (res.Resources, err
 		return nil, fmt.Errorf("invalid app repo URL: %w", err)
 	}
 
-	bootstrapped, err := createInitialFiles(appFs, o.Prefix, orgRepo, o.GitOpsWebhookSecret, o.DockerConfigJSONFilename, "")
+	bootstrapped, err := createInitialFiles(appFs, o.Prefix, orgRepo, o.GitOpsWebhookSecret, o.DockerConfigJSONFilename, o.ImageRepo)
 	if err != nil {
 		return nil, err
 	}
