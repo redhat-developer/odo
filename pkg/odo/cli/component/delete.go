@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/openshift/odo/pkg/envinfo"
@@ -99,6 +100,10 @@ func (do *DeleteOptions) Validate() (err error) {
 	}
 	if !do.isCmpExists {
 		log.Errorf("Component %s does not exist on the cluster", do.ComponentOptions.componentName)
+		// If request is to delete non existing component without all flag, exit with exit code 1
+		if !do.componentDeleteAllFlag {
+			os.Exit(1)
+		}
 	}
 	return
 }
