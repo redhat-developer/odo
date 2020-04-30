@@ -39,6 +39,7 @@ func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
 type Adapter struct {
 	Client kclient.Client
 	common.AdapterContext
+	devfileInitCmd  string
 	devfileBuildCmd string
 	devfileRunCmd   string
 }
@@ -48,6 +49,7 @@ type Adapter struct {
 func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	componentExists := utils.ComponentExists(a.Client, a.ComponentName)
 
+	a.devfileInitCmd = parameters.DevfileInitCmd
 	a.devfileBuildCmd = parameters.DevfileBuildCmd
 	a.devfileRunCmd = parameters.DevfileRunCmd
 
@@ -66,7 +68,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// Validate the devfile build and run commands
 	log.Info("\nValidation")
 	s := log.Spinner("Validating the devfile")
-	pushDevfileCommands, err := common.ValidateAndGetPushDevfileCommands(a.Devfile.Data, a.devfileBuildCmd, a.devfileRunCmd)
+	pushDevfileCommands, err := common.ValidateAndGetPushDevfileCommands(a.Devfile.Data, a.devfileInitCmd, a.devfileBuildCmd, a.devfileRunCmd)
 	if err != nil {
 		s.End(false)
 		return errors.Wrap(err, "failed to validate devfile build and run commands")
@@ -303,59 +305,77 @@ func (a Adapter) waitAndGetComponentPod(hideSpinner bool) (*corev1.Pod, error) {
 	return pod, nil
 }
 
-// Push syncs source code from the user's disk to the component
+// Executes all the commands from the devfile in order: init and build - which are both optional, and a compulsary run.
+// Init only runs once when the component is created.
 func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand, componentExists, show bool, podName string, containers []corev1.Container) (err error) {
-	buildRequired, err := common.IsComponentBuildRequired(pushDevfileCommands)
-	if err != nil {
-		return err
+	// If nothing has been passed, then the devfile is missing the required run command
+	if len(pushDevfileCommands) == 0 {
+		return errors.New(fmt.Sprint("error executing devfile commands - there should be at least 1 command"))
 	}
 
-	for i := 0; i < len(pushDevfileCommands); i++ {
-		command := pushDevfileCommands[i]
+	commandOrder := []common.CommandNames{}
 
-		// Exec the devBuild command if buildRequired is true
-		if (command.Name == string(common.DefaultDevfileBuildCommand) || command.Name == a.devfileBuildCmd) && buildRequired {
-			glog.V(3).Infof("Executing devfile command %v", command.Name)
+	// Only add runinit to the expected commands if the component doesn't already exist
+	// This would be the case when first running the container
+	if !componentExists {
+		commandOrder = append(commandOrder, common.CommandNames{DefaultName: string(common.DefaultDevfileInitCommand), AdapterName: a.devfileInitCmd})
+	}
+	commandOrder = append(
+		commandOrder,
+		common.CommandNames{DefaultName: string(common.DefaultDevfileBuildCommand), AdapterName: a.devfileBuildCmd},
+		common.CommandNames{DefaultName: string(common.DefaultDevfileRunCommand), AdapterName: a.devfileRunCmd},
+	)
 
-			for _, action := range command.Actions {
-				compInfo := common.ComponentInfo{
-					ContainerName: *action.Component,
-					PodName:       podName,
-				}
+	// Loop through each of the expected commands in the devfile
+	for i, currentCommand := range commandOrder {
+		// Loop through each of the command given from the devfile
+		for _, command := range pushDevfileCommands {
+			// If the current command from the devfile is the currently expected command from the devfile
+			if command.Name == currentCommand.DefaultName || command.Name == currentCommand.AdapterName {
+				// If the current command is not the last command in the slice
+				// it is not expected to be the run command
+				if i < len(commandOrder)-1 {
+					// Any exec command such as "Init" and "Build"
 
-				err = exec.ExecuteDevfileBuildAction(&a.Client, action, command.Name, compInfo, show)
-				if err != nil {
-					return err
-				}
-			}
+					for _, action := range command.Actions {
+						compInfo := common.ComponentInfo{
+							ContainerName: *action.Component,
+							PodName:       podName,
+						}
 
-			// Reset the for loop counter and iterate through all the devfile commands again for others
-			i = -1
-			// Set the buildRequired to false since we already executed the build command
-			buildRequired = false
-		} else if (command.Name == string(common.DefaultDevfileRunCommand) || command.Name == a.devfileRunCmd) && !buildRequired {
-			// Always check for buildRequired is false, since the command may be iterated out of order and we always want to execute devBuild first if buildRequired is true. If buildRequired is false, then we don't need to build and we can execute the devRun command
-			glog.V(3).Infof("Executing devfile command %v", command.Name)
-
-			for _, action := range command.Actions {
-
-				// Check if the devfile run component containers have supervisord as the entrypoint.
-				// Start the supervisord if the odo component does not exist
-				if !componentExists {
-					err = a.InitRunContainerSupervisord(*action.Component, podName, containers)
-					if err != nil {
-						return
+						err = exec.ExecuteDevfileBuildAction(&a.Client, action, command.Name, compInfo, show)
+						if err != nil {
+							return err
+						}
 					}
-				}
 
-				compInfo := common.ComponentInfo{
-					ContainerName: *action.Component,
-					PodName:       podName,
-				}
+					// If the current command is the last command in the slice
+					// it is expected to be the run command
+				} else {
+					// Last command is "Run"
+					glog.V(4).Infof("Executing devfile command %v", command.Name)
 
-				err = exec.ExecuteDevfileRunAction(&a.Client, action, command.Name, compInfo, show)
-				if err != nil {
-					return err
+					for _, action := range command.Actions {
+
+						// Check if the devfile run component containers have supervisord as the entrypoint.
+						// Start the supervisord if the odo component does not exist
+						if !componentExists {
+							err = a.InitRunContainerSupervisord(*action.Component, podName, containers)
+							if err != nil {
+								return
+							}
+						}
+
+						compInfo := common.ComponentInfo{
+							ContainerName: *action.Component,
+							PodName:       podName,
+						}
+
+						err = exec.ExecuteDevfileRunAction(&a.Client, action, command.Name, compInfo, show)
+						if err != nil {
+							return err
+						}
+					}
 				}
 			}
 		}

@@ -33,6 +33,7 @@ type Adapter struct {
 	componentAliasToVolumes   map[string][]common.DevfileVolume
 	uniqueStorage             []common.Storage
 	volumeNameToDockerVolName map[string]string
+	devfileInitCmd            string
 	devfileBuildCmd           string
 	devfileRunCmd             string
 	supervisordVolumeName     string
@@ -54,7 +55,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// Validate the devfile build and run commands
 	log.Info("\nValidation")
 	s := log.Spinner("Validating the devfile")
-	pushDevfileCommands, err := common.ValidateAndGetPushDevfileCommands(a.Devfile.Data, a.devfileBuildCmd, a.devfileRunCmd)
+	pushDevfileCommands, err := common.ValidateAndGetPushDevfileCommands(a.Devfile.Data, a.devfileInitCmd, a.devfileBuildCmd, a.devfileRunCmd)
 	if err != nil {
 		s.End(false)
 		return errors.Wrap(err, "failed to validate devfile build and run commands")

@@ -33,6 +33,7 @@ var (
    %[1]s %[9]s 0.5
    %[1]s %[10]s 2
    %[1]s %[11]s 1
+   %[1]s %[12]s 8080/TCP,8443/TCP
 
    # Set a env variable in the local config
    %[1]s --env KAFKA_HOST=kafka --env KAFKA_PORT=6639
@@ -159,7 +160,7 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 		Short: "Set a value in odo config file",
 		Long:  fmt.Sprintf(setLongDesc, config.FormatLocallySupportedParameters()),
 		Example: fmt.Sprintf(fmt.Sprint("\n", setExample), fullName, config.Type,
-			config.Name, config.MinMemory, config.MaxMemory, config.Memory, config.DebugPort, config.Ignore, config.MinCPU, config.MaxCPU, config.CPU),
+			config.Name, config.MinMemory, config.MaxMemory, config.Memory, config.DebugPort, config.Ignore, config.MinCPU, config.MaxCPU, config.CPU, config.Ports),
 		Args: func(cmd *cobra.Command, args []string) error {
 			if o.envArray != nil {
 				// no args are needed

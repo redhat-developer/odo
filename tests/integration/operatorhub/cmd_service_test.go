@@ -158,4 +158,12 @@ spec:
 
 		})
 	})
+
+	Context("JSON output", func() {
+		It("listing catalog of services", func() {
+			jsonOut := helper.CmdShouldPass("odo", "catalog", "list", "services", "-o", "json")
+			Expect(jsonOut).To(ContainSubstring("mongodb-enterprise"))
+			Expect(jsonOut).To(ContainSubstring("etcdoperator"))
+		})
+	})
 })

@@ -242,10 +242,16 @@ test-cmd-docker-devfile-push:
 .PHONY: test-cmd-docker-devfile-url
 test-cmd-docker-devfile-url:
 	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile url command tests" tests/integration/devfile/docker/
+
 # Run odo docker devfile delete command tests
 .PHONY: test-cmd-docker-devfile-delete
 test-cmd-docker-devfile-delete:
 	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile delete command tests" tests/integration/devfile/docker/
+
+# Run odo catalog devfile command tests
+.PHONY: test-cmd-docker-devfile-catalog
+test-cmd-docker-devfile-catalog:
+	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile catalog command tests" tests/integration/devfile/docker/
 
 
 # Run odo watch command tests
