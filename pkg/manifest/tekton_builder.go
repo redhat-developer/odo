@@ -30,7 +30,7 @@ type tektonBuilder struct {
 	triggers   []v1alpha1.EventListenerTrigger
 }
 
-func buildEventlistenerResources(gitOpsRepo string, m *config.Manifest) (res.Resources, error) {
+func buildEventListenerResources(gitOpsRepo string, m *config.Manifest) (res.Resources, error) {
 	files := make(res.Resources)
 	tb := &tektonBuilder{files: files, gitOpsRepo: gitOpsRepo}
 	err := m.Walk(tb)
@@ -69,7 +69,7 @@ func getEventListenerPath(cicdPath string) string {
 func createTrigger(gitOpsRepo string, env *config.Environment, svc *config.Service) (v1alpha1.EventListenerTrigger, error) {
 	if env.IsCICD {
 		repo, err := extractRepo(gitOpsRepo)
-		return eventlisteners.CreateListenerTrigger("ci-dryrun-from-pr", eventlisteners.StageCIDryRunFilters, repo, "github-pr-binding", "app-ci-template", eventlisteners.GitOpsWebhookSecret, env.Name), err
+		return eventlisteners.CreateListenerTrigger("ci-dryrun-from-pr", eventlisteners.StageCIDryRunFilters, repo, "github-pr-binding", "ci-dryrun-from-pr-template", eventlisteners.GitOpsWebhookSecret, env.Name), err
 	}
 	pipelines := getPipelines(env, svc)
 	svcRepo, err := extractRepo(svc.SourceURL)
