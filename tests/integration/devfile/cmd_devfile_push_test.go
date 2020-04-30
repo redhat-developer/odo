@@ -345,7 +345,6 @@ var _ = Describe("odo devfile push command tests", func() {
 			}
 			Expect(volumesMatched).To(Equal(true))
 		})
-
 	})
 
 })

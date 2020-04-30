@@ -1081,9 +1081,26 @@ func TestPush(t *testing.T) {
 					*fake.GetSingleIngress("example-local-0", "nodejs"),
 				},
 			},
-			createdURLs: []URL{},
-			deletedURLs: []URL{},
-			wantErr:     true,
+			createdURLs: []URL{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "example-local-0",
+					},
+					Spec: URLSpec{
+						Port:    8080,
+						Secure:  false,
+						urlKind: envinfo.ROUTE,
+					},
+				},
+			},
+			deletedURLs: []URL{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "example-local-0",
+					},
+				},
+			},
+			wantErr: false,
 		},
 		{
 			name:            "url with same name exists on config and cluster but with different specs",
@@ -1103,9 +1120,26 @@ func TestPush(t *testing.T) {
 				},
 			},
 			returnedIngress: &extensionsv1.IngressList{},
-			createdURLs:     []URL{},
-			deletedURLs:     []URL{},
-			wantErr:         true,
+			createdURLs: []URL{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "example-local-0-app",
+					},
+					Spec: URLSpec{
+						Port:    8080,
+						Secure:  false,
+						urlKind: envinfo.ROUTE,
+					},
+				},
+			},
+			deletedURLs: []URL{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "example-local-0-app",
+					},
+				},
+			},
+			wantErr: false,
 		},
 
 		{
