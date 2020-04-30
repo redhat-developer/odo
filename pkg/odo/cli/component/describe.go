@@ -67,7 +67,7 @@ func (do *DescribeOptions) Run() (err error) {
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(cfd)
 	} else {
-		err = cfd.PrintInfo(do.Context.Client, do.LocalConfigInfo)
+		err = cfd.Print(do.Context.Client)
 		if err != nil {
 			return err
 		}

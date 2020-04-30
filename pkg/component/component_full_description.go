@@ -133,8 +133,8 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 	return cfd, nil
 }
 
-//PrintInfo prints the complete information of component onto stdout
-func (cfd *ComponentFullDescription) PrintInfo(client *occlient.Client, localConfigInfo *config.LocalConfigInfo) error {
+//Print prints the complete information of component onto stdout (Note: longterm this function should not need to access any parameters, but just print the information in struct)
+func (cfd *ComponentFullDescription) Print(client *occlient.Client) error {
 	log.Describef("Component Name: ", cfd.GetName())
 	log.Describef("Type: ", cfd.Spec.Type)
 
@@ -185,7 +185,7 @@ func (cfd *ComponentFullDescription) PrintInfo(client *occlient.Client, localCon
 			// if the component is not pushed
 			for i, componentURL := range cfd.Spec.URL.Items {
 				if componentURL.Status.State == urlpkg.StateTypePushed {
-					output += fmt.Sprintf(" · %v exposed via %v\n", urlpkg.GetURLString(componentURL.Spec.Protocol, componentURL.Spec.Host, ""), componentURL.Spec.Port)
+					output += fmt.Sprintf(" · %v exposed via %v\n", urlpkg.GetURLString(componentURL.Spec.Protocol, componentURL.Spec.Host, "", experimental.IsExperimentalModeEnabled()), componentURL.Spec.Port)
 				} else {
 					var p string
 					if i >= len(cfd.Spec.Ports) {
