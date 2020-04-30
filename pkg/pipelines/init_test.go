@@ -1,53 +1,146 @@
 package pipelines
 
 import (
-	"fmt"
-	"path/filepath"
+	"crypto/rand"
+	"crypto/rsa"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/openshift/odo/pkg/manifest/ioutils"
-	"github.com/openshift/odo/pkg/manifest/yaml"
-	"github.com/spf13/afero"
+	"github.com/google/go-cmp/cmp/cmpopts"
+
+	"github.com/openshift/odo/pkg/pipelines/config"
+	"github.com/openshift/odo/pkg/pipelines/ioutils"
+	res "github.com/openshift/odo/pkg/pipelines/resources"
+	"github.com/openshift/odo/pkg/pipelines/secrets"
 )
 
-func TestWriteResources(t *testing.T) {
-	testFs := ioutils.NewMapFilesystem()
-	tmpDir := afero.GetTempDir(testFs, "odo")
-	resources := map[string]interface{}{
-		"01_roles/serviceaccount.yaml": fakeYamlDoc(1),
-		"02_tasks/buildah_task.yaml":   fakeYamlDoc(2),
-	}
+var testCICDEnv = &config.Environment{Name: "tst-cicd", IsCICD: true}
 
-	_, err := yaml.WriteResources(testFs, tmpDir, resources)
-	if err != nil {
-		t.Fatalf("failed to writeResources: %v", err)
+func TestCreateManifest(t *testing.T) {
+	want := &config.Manifest{
+		Environments: []*config.Environment{
+			testCICDEnv,
+		},
 	}
-	assertFileContents(t, testFs, filepath.Join(tmpDir, "01_roles/serviceaccount.yaml"), []byte("key1: value1\n"))
-	assertFileContents(t, testFs, filepath.Join(tmpDir, "02_tasks/buildah_task.yaml"), []byte("key2: value2\n"))
-}
-
-func assertFileContents(t *testing.T, fs afero.Fs, filename string, want []byte) {
-	t.Helper()
-	body, err := afero.ReadFile(fs, filename)
-	if err != nil {
-		t.Fatalf("failed to read file: %s", filename)
-	}
-
-	if diff := cmp.Diff(body, want); diff != "" {
-		t.Fatalf("file %s diff = \n%s\n", filename, diff)
+	got := createManifest(testCICDEnv)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Fatalf("pipelines didn't match: %s\n", diff)
 	}
 }
 
-func assertNoError(t *testing.T, err error) {
-	t.Helper()
+func TestInitialFiles(t *testing.T) {
+	prefix := "tst-"
+	gitOpsRepo := "test-repo"
+	gitOpsWebhook := "123"
+	imageRepo := "image/repo"
+
+	defer func(f secrets.PublicKeyFunc) {
+		secrets.DefaultPublicKeyFunc = f
+	}(secrets.DefaultPublicKeyFunc)
+
+	secrets.DefaultPublicKeyFunc = func() (*rsa.PublicKey, error) {
+		key, err := rsa.GenerateKey(rand.Reader, 1024)
+		if err != nil {
+			t.Fatalf("failed to generate a private RSA key: %s", err)
+		}
+		return &key.PublicKey, nil
+	}
+	fakeFs := ioutils.NewMapFilesystem()
+	got, err := createInitialFiles(fakeFs, prefix, gitOpsRepo, gitOpsWebhook, "", imageRepo)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	want := res.Resources{
+		"pipelines.yaml": createManifest(testCICDEnv),
+	}
+
+	cicdResources, err := CreateResources(fakeFs, prefix, gitOpsRepo, gitOpsWebhook, "", imageRepo)
+	if err != nil {
+		t.Fatalf("CreatePipelineResources() failed due to :%s\n", err)
+	}
+	files := getResourceFiles(cicdResources)
+
+	want = res.Merge(addPrefixToResources("environments/tst-cicd/base/pipelines", cicdResources), want)
+
+	want = res.Merge(addPrefixToResources("environments/tst-cicd", getCICDKustomization(files)), want)
+
+	if diff := cmp.Diff(want, got, cmpopts.IgnoreMapEntries(ignoreSecrets)); diff != "" {
+		t.Fatalf("outputs didn't match: %s\n", diff)
+	}
 }
 
-func fakeYamlDoc(n int) map[string]string {
-	return map[string]string{
-		fmt.Sprintf("key%d", n): fmt.Sprintf("value%d", n),
+func ignoreSecrets(k string, v interface{}) bool {
+	if k == "environments/tst-cicd/base/pipelines/03-secrets/gitops-webhook-secret.yaml" {
+		return true
 	}
+	return false
+}
+
+func TestGetCICDKustomization(t *testing.T) {
+	want := res.Resources{
+		"base/kustomization.yaml": res.Kustomization{
+			Bases: []string{"./pipelines"},
+		},
+		"overlays/kustomization.yaml": res.Kustomization{
+			Bases: []string{"../base"},
+		},
+		"base/pipelines/kustomization.yaml": res.Kustomization{
+			Resources: []string{"resource1", "resource2"},
+		},
+	}
+	got := getCICDKustomization([]string{"resource1", "resource2"})
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Fatalf("getCICDKustomization was not correct: %s\n", diff)
+	}
+
+}
+
+func TestAddPrefixToResources(t *testing.T) {
+	files := map[string]interface{}{
+		"base/kustomization.yaml": map[string]interface{}{
+			"resources": []string{},
+		},
+		"overlays/kustomization.yaml": map[string]interface{}{
+			"bases": []string{"../base"},
+		},
+	}
+
+	want := map[string]interface{}{
+		"test-prefix/base/kustomization.yaml": map[string]interface{}{
+			"resources": []string{},
+		},
+		"test-prefix/overlays/kustomization.yaml": map[string]interface{}{
+			"bases": []string{"../base"},
+		},
+	}
+	if diff := cmp.Diff(want, addPrefixToResources("test-prefix", files)); diff != "" {
+		t.Fatalf("addPrefixToResources failed, diff %s\n", diff)
+	}
+}
+
+func TestMerge(t *testing.T) {
+	map1 := map[string]interface{}{
+		"test-1": "value-1",
+	}
+	map2 := map[string]interface{}{
+		"test-1": "value-a",
+		"test-2": "value-2",
+	}
+	map3 := map[string]interface{}{
+		"test-1": "value-a",
+		"test-2": "value-2",
+	}
+
+	want := res.Resources{
+		"test-1": "value-1",
+		"test-2": "value-2",
+	}
+	if diff := cmp.Diff(want, res.Merge(map1, map2)); diff != "" {
+		t.Fatalf("merge failed: %s\n", diff)
+	}
+	if diff := cmp.Diff(map2, map3); diff != "" {
+		t.Fatalf("original map changed %s\n", diff)
+	}
+
 }

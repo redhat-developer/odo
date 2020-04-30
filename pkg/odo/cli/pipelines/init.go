@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/openshift/odo/pkg/manifest/ioutils"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/pipelines"
+	"github.com/openshift/odo/pkg/pipelines/ioutils"
 	"github.com/spf13/cobra"
 
 	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
@@ -19,24 +19,23 @@ const (
 
 var (
 	initExample = ktemplates.Examples(`
-    # Initialise OpenShift pipelines in a cluster
-    %[1]s 
-    `)
+	# Initialize OpenShift GitOps pipelines
+	%[1]s 
+	`)
 
-	initLongDesc  = ktemplates.LongDesc(`Initialise GitOps CI/CD Pipelines`)
-	initShortDesc = `Initialise pipelines`
+	initLongDesc  = ktemplates.LongDesc(`Initialize GitOps pipelines`)
+	initShortDesc = `Initialize pipelines`
 )
 
 // InitParameters encapsulates the parameters for the odo pipelines init command.
 type InitParameters struct {
+	dockercfgjson            string // filepath name to dockerconfigjson file
 	gitOpsRepo               string // repo to store Gitops resources e.g. org/repo
 	gitOpsWebhookSecret      string // used to create Github's shared webhook secret for gitops repo
 	output                   string // path to add Gitops resources
 	prefix                   string // used to generate the environments in a shared cluster
 	imageRepo                string
 	internalRegistryHostname string
-	deploymentPath           string
-	dockercfgjson            string
 	// generic context options common to all commands
 	*genericclioptions.Context
 }
@@ -69,16 +68,14 @@ func (io *InitParameters) Validate() error {
 // Run runs the project bootstrap command.
 func (io *InitParameters) Run() error {
 	options := pipelines.InitParameters{
+		DockerConfigJSONFilename: io.dockercfgjson,
 		GitOpsWebhookSecret:      io.gitOpsWebhookSecret,
 		GitOpsRepo:               io.gitOpsRepo,
 		Output:                   io.output,
 		Prefix:                   io.prefix,
-		DeploymentPath:           io.deploymentPath,
 		ImageRepo:                io.imageRepo,
 		InternalRegistryHostname: io.internalRegistryHostname,
-		Dockercfgjson:            io.dockercfgjson,
 	}
-
 	return pipelines.Init(&options, ioutils.NewFilesystem())
 }
 
@@ -97,18 +94,15 @@ func NewCmdInit(name, fullName string) *cobra.Command {
 	}
 
 	initCmd.Flags().StringVar(&o.gitOpsRepo, "gitops-repo", "", "CI/CD pipelines configuration Git repository in this form <username>/<repository>")
-	initCmd.Flags().StringVar(&o.gitOpsWebhookSecret, "gitops-webhook-secret", "", "provide the GitHub webhook secret for gitops repository")
-	initCmd.Flags().StringVar(&o.dockercfgjson, "dockercfgjson", "", "provide the dockercfg json path")
-	initCmd.Flags().StringVar(&o.output, "output", ".", "folder path to add Gitops resources")
+	initCmd.MarkFlagRequired("gitops-repo")
+	initCmd.Flags().StringVar(&o.gitOpsWebhookSecret, "gitops-webhook-secret", "", "provide the GitHub webhook secret for GitOps repository")
+	initCmd.MarkFlagRequired("gitops-webhook-secret")
+	initCmd.Flags().StringVar(&o.output, "output", ".", "folder path to add GitOps resources")
 	initCmd.MarkFlagRequired("output")
 	initCmd.Flags().StringVarP(&o.prefix, "prefix", "p", "", "add a prefix to the environment names")
-	initCmd.Flags().StringVar(&o.imageRepo, "image-repo", "", "image repository in this form <registry>/<username>/<repository> or <project>/<app> for internal registry")
-	initCmd.Flags().StringVar(&o.deploymentPath, "deployment-path", "deploy", "deployment folder path name")
+	initCmd.Flags().StringVar(&o.dockercfgjson, "dockercfgjson", "", "dockercfg json pathname")
 	initCmd.Flags().StringVar(&o.internalRegistryHostname, "internal-registry-hostname", "image-registry.openshift-image-registry.svc:5000", "internal image registry hostname")
-	initCmd.MarkFlagRequired("gitops-repo")
-	initCmd.MarkFlagRequired("gitops-webhook-secret")
-	initCmd.MarkFlagRequired("dockercfgjson")
-	initCmd.MarkFlagRequired("image-repo")
+	initCmd.Flags().StringVar(&o.imageRepo, "image-repo", "", "image repository in this form <registry>/<username>/<repository> or <project>/<app> for internal registry")
 
 	return initCmd
 }

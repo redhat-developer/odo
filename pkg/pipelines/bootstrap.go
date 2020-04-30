@@ -1,279 +1,218 @@
 package pipelines
 
 import (
-	"errors"
 	"fmt"
-	"os"
+	"net/url"
+	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/spf13/afero"
 	corev1 "k8s.io/api/core/v1"
-	v1rbac "k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
-	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
-	"github.com/mitchellh/go-homedir"
-	"github.com/openshift/odo/pkg/manifest"
-	"github.com/openshift/odo/pkg/manifest/eventlisteners"
-	"github.com/openshift/odo/pkg/manifest/meta"
-	"github.com/openshift/odo/pkg/manifest/roles"
-	"github.com/openshift/odo/pkg/manifest/routes"
-	"github.com/openshift/odo/pkg/manifest/secrets"
-	"github.com/openshift/odo/pkg/manifest/statustracker"
-	"github.com/openshift/odo/pkg/manifest/tasks"
-	"github.com/openshift/odo/pkg/manifest/triggers"
-	"github.com/openshift/odo/pkg/manifest/yaml"
-
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	"github.com/openshift/odo/pkg/pipelines/config"
+	"github.com/openshift/odo/pkg/pipelines/deployment"
+	"github.com/openshift/odo/pkg/pipelines/eventlisteners"
+	"github.com/openshift/odo/pkg/pipelines/meta"
+	res "github.com/openshift/odo/pkg/pipelines/resources"
+	"github.com/openshift/odo/pkg/pipelines/secrets"
+	"github.com/openshift/odo/pkg/pipelines/yaml"
 )
 
-const (
-	dockerSecretName     = "regcred"
-	saName               = "pipeline"
-	roleName             = "pipelines-service-role"
-	roleBindingName      = "pipelines-service-role-binding"
-	devRoleBindingName   = "pipeline-edit-dev"
-	stageRoleBindingName = "pipeline-edit-stage"
-)
+const pipelinesFile = "pipelines.yaml"
+const bootstrapImage = "nginxinc/nginx-unprivileged:latest"
 
-// BootstrapParameters is a struct that provides the optional flags
-type BootstrapParameters struct {
-	DeploymentPath           string
-	GitHubHookSecret         string
-	GitHubToken              string
-	GitRepo                  string
-	InternalRegistryHostname string
-	ImageRepo                string
-	Prefix                   string
-	DockerConfigJSONFileName string
+// BootstrapOptions is a struct that provides the optional flags
+type BootstrapOptions struct {
+	GitOpsRepoURL            string // This is where the pipelines and configuration are.
+	GitOpsWebhookSecret      string // This is the secret for authenticating hooks from your GitOps repo.
+	AppRepoURL               string // This is the full URL to your GitHub repository for your app source.
+	AppWebhookSecret         string // This is the secret for authenticating hooks from your app source.
+	InternalRegistryHostname string // This is the internal registry hostname used for pushing images.
+	ImageRepo                string // This is where built images are pushed to.
+	Prefix                   string // Used to prefix generated environment names in a shared cluster.
+	OutputPath               string // Where to write the bootstrapped files to?
+	DockerConfigJSONFilename string
 }
 
-// Bootstrap is the main driver for getting OpenShift pipelines for GitOps
-// configured with a basic configuration.
-func Bootstrap(o *BootstrapParameters, fs afero.Fs) error {
+var defaultPipelines = &config.Pipelines{
+	Integration: &config.TemplateBinding{
+		Template: "app-ci-template",
+		Binding:  "github-pr-binding",
+	},
+}
 
-	isInternalRegistry, imageRepo, err := validateImageRepo(o)
+// Bootstrap bootstraps a GitOps pipelines and repository structure.
+func Bootstrap(o *BootstrapOptions, appFs afero.Fs) error {
+	bootstrapped, err := bootstrapResources(o, appFs)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to bootstrap resources: %w", err)
 	}
 
-	outputs := make([]interface{}, 0)
-	namespaces := manifest.NamespaceNames(o.Prefix)
-	for _, n := range manifest.CreateNamespaces(values(namespaces)) {
-		outputs = append(outputs, n)
+	buildParams := &BuildParameters{
+		ManifestFilename: pipelinesFile,
+		OutputPath:       o.OutputPath,
+		RepositoryURL:    o.GitOpsRepoURL,
 	}
 
-	if o.GitHubHookSecret != "" {
-		githubSecret, err := secrets.CreateSealedSecret(meta.NamespacedName(namespaces["cicd"], eventlisteners.GitOpsWebhookSecret), o.GitHubHookSecret, eventlisteners.WebhookSecretKey)
-		if err != nil {
-			return fmt.Errorf("failed to generate GitHub Webhook Secret: %w", err)
-		}
-
-		outputs = append(outputs, githubSecret)
-	}
-
-	// Create Tasks
-	tasks := generateTasks(namespaces["cicd"])
-	for _, task := range tasks {
-		outputs = append(outputs, task)
-	}
-
-	// Create trigger templates
-	templates := triggers.GenerateTemplates(namespaces["cicd"], saName, imageRepo)
-	for _, template := range templates {
-		outputs = append(outputs, template)
-	}
-
-	// Create trigger bindings
-	bindings := triggers.GenerateBindings(namespaces["cicd"])
-	for _, binding := range bindings {
-		outputs = append(outputs, binding)
-	}
-
-	// Create Pipelines
-	outputs = append(outputs, createPipelines(namespaces, isInternalRegistry, o.DeploymentPath)...)
-
-	// Create Event Listener
-	eventListener := eventlisteners.Generate(o.GitRepo, namespaces["cicd"], saName, eventlisteners.GitOpsWebhookSecret)
-	outputs = append(outputs, eventListener)
-
-	// Create route
-	route := routes.Generate(namespaces["cicd"])
-	outputs = append(outputs, route)
-
-	// Don't add this service account to outputs as this is the default service account created by Pipeline Operator
-	sa := roles.CreateServiceAccount(meta.NamespacedName(namespaces["cicd"], saName))
-
-	manifests, err := createManifestsForImageRepo(fs, sa, isInternalRegistry, imageRepo, o, namespaces)
+	m := bootstrapped[pipelinesFile].(*config.Manifest)
+	built, err := buildResources(appFs, buildParams, m)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to build resources: %w", err)
 	}
-	outputs = append(outputs, manifests...)
-
-	//  Create Role, Role Bindings, and ClusterRole Bindings
-	outputs = append(outputs, createRoleBindings(namespaces, sa)...)
-
-	if o.GitHubToken != "" {
-		res, err := statustracker.Resources(namespaces["cicd"], o.GitHubToken)
-		if err != nil {
-			return err
-		}
-		outputs = append(outputs, res...)
-	}
-
-	return yaml.MarshalOutput(os.Stdout, outputs)
+	bootstrapped = res.Merge(built, bootstrapped)
+	_, err = yaml.WriteResources(appFs, o.OutputPath, bootstrapped)
+	return err
 }
 
-// Moved the Generate() out of the tasks package to put it here as Bootstrap.go is dead
-// and we can clean up tasks package
-func generateTasks(ns string) []pipelinev1.Task {
-	return []pipelinev1.Task{
-		tasks.CreateDeployFromSourceTask(ns, "deploy"),
-		tasks.CreateDeployUsingKubectlTask(ns),
-	}
-}
-
-func createRoleBindings(ns map[string]string, sa *corev1.ServiceAccount) []interface{} {
-	out := make([]interface{}, 0)
-
-	role := roles.CreateRole(meta.NamespacedName(ns["cicd"], roleName), manifest.Rules)
-	out = append(out, role)
-	out = append(out, roles.CreateRoleBinding(meta.NamespacedName(ns["cicd"], roleBindingName), sa, role.Kind, role.Name))
-	out = append(out, roles.CreateRoleBinding(meta.NamespacedName(ns["dev"], devRoleBindingName), sa, "ClusterRole", "edit"))
-	out = append(out, roles.CreateRoleBinding(meta.NamespacedName(ns["stage"], stageRoleBindingName), sa, "ClusterRole", "edit"))
-
-	return out
-}
-
-// createManifestsForImageRepo creates manifests like namespaces, secret, and role bindng for using image repo
-func createManifestsForImageRepo(appFs afero.Fs, sa *corev1.ServiceAccount, isInternalRegistry bool, imageRepo string, o *BootstrapParameters, namespaces map[string]string) ([]interface{}, error) {
-	out := make([]interface{}, 0)
-
-	if isInternalRegistry {
-		// Provide access to service account for using internal registry
-		internalRegistryNamespace := strings.Split(imageRepo, "/")[1]
-
-		clientSet, err := manifest.GetClientSet()
-		if err != nil {
-			return nil, err
-		}
-		namespaceExists, err := manifest.CheckNamespace(clientSet, internalRegistryNamespace)
-		if err != nil {
-			return nil, err
-		}
-		if !namespaceExists {
-			out = append(out, manifest.CreateNamespace(internalRegistryNamespace))
-		}
-
-		// pipelines sa should have access to internal registry
-		out = append(out, roles.CreateRoleBinding(meta.NamespacedName(internalRegistryNamespace, "internal-registry-binding"), sa, "ClusterRole", "edit"))
-
-		// add image puller role to allow pulling app images across namespaces from dev and stage envirnments
-		out = append(out, roles.CreateRoleBindingForSubjects(meta.NamespacedName(internalRegistryNamespace, "image-puller-binding"), "ClusterRole", "system:image-puller",
-			[]v1rbac.Subject{{Kind: "ServiceAccount", Name: "default", Namespace: namespaces["dev"]},
-				{Kind: "ServiceAccount", Name: "default", Namespace: namespaces["stage"]},
-			}))
-
-	} else {
-		// Add secret to service account if external registry is used
-		dockerSecret, err := CreateDockerSecret(appFs, o.DockerConfigJSONFileName, namespaces["cicd"])
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, dockerSecret)
-		// add secret and sa to outputs
-		out = append(out, roles.AddSecretToSA(sa, dockerSecretName))
-	}
-
-	return out, nil
-}
-
-func createPipelines(ns map[string]string, isInternalRegistry bool, deploymentPath string) []interface{} {
-	out := make([]interface{}, 0)
-	out = append(out, createDevCIPipeline(meta.NamespacedName(ns["cicd"], "dev-ci-pipeline"), isInternalRegistry))
-	out = append(out, createCIPipeline(meta.NamespacedName(ns["cicd"], "stage-ci-pipeline"), ns["stage"]))
-	out = append(out, createDevCDPipeline(meta.NamespacedName(ns["cicd"], "dev-cd-pipeline"), deploymentPath, ns["dev"], isInternalRegistry))
-	out = append(out, createCDPipeline(meta.NamespacedName(ns["cicd"], "stage-cd-pipeline"), ns["stage"]))
-	return out
-
-}
-
-// CreateDockerSecret creates Docker secret
-func CreateDockerSecret(appFs afero.Fs, dockerConfigJSONFileName, ns string) (*ssv1alpha1.SealedSecret, error) {
-
-	if dockerConfigJSONFileName == "" {
-		return nil, errors.New("failed to generate path to file: --dockerconfigjson flag is not provided")
-	}
-
-	authJSONPath, err := homedir.Expand(dockerConfigJSONFileName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate path to file: %w", err)
-	}
-
-	f, err := appFs.Open(authJSONPath)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to read docker file '%s' : %w", authJSONPath, err)
-	}
-	defer f.Close()
-
-	dockerSecret, err := secrets.CreateSealedDockerConfigSecret(meta.NamespacedName(ns, dockerSecretName), f)
+func bootstrapResources(o *BootstrapOptions, appFs afero.Fs) (res.Resources, error) {
+	orgRepo, err := orgRepoFromURL(o.GitOpsRepoURL)
 	if err != nil {
 		return nil, err
 	}
+	repoName, err := repoFromURL(o.AppRepoURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid app repo URL: %w", err)
+	}
 
-	return dockerSecret, nil
-
+	bootstrapped, err := createInitialFiles(appFs, o.Prefix, orgRepo, o.GitOpsWebhookSecret, o.DockerConfigJSONFilename, "")
+	if err != nil {
+		return nil, err
+	}
+	ns := NamespaceNames(o.Prefix)
+	secretName := "github-webhook-secret-" + repoName + "-svc"
+	envs, err := bootstrapEnvironments(o.Prefix, o.AppRepoURL, secretName, ns)
+	if err != nil {
+		return nil, err
+	}
+	m := createManifest(envs...)
+	bootstrapped[pipelinesFile] = m
+	env, err := m.GetEnvironment(ns["dev"])
+	if err != nil {
+		return nil, err
+	}
+	svcFiles, err := bootstrapServiceDeployment(env)
+	if err != nil {
+		return nil, err
+	}
+	hookSecret, err := secrets.CreateSealedSecret(
+		meta.NamespacedName(ns["cicd"], secretName),
+		o.AppWebhookSecret,
+		eventlisteners.WebhookSecretKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate GitHub Webhook Secret: %w", err)
+	}
+	cicdEnv, err := m.GetCICDEnvironment()
+	if err != nil {
+		return nil, fmt.Errorf("bootstrap environments: %w", err)
+	}
+	secretFilename := filepath.Join("03-secrets", secretName+".yaml")
+	secretsPath := filepath.Join(config.PathForEnvironment(cicdEnv), "base", "pipelines", secretFilename)
+	bootstrapped[secretsPath] = hookSecret
+	kustomizePath := filepath.Join(config.PathForEnvironment(cicdEnv), "base", "pipelines", "kustomization.yaml")
+	k, ok := bootstrapped[kustomizePath].(res.Kustomization)
+	if !ok {
+		return nil, fmt.Errorf("no kustomization for the %s environment found", kustomizePath)
+	}
+	k.Resources = append(k.Resources, secretFilename)
+	bootstrapped[kustomizePath] = k
+	bootstrapped = res.Merge(svcFiles, bootstrapped)
+	return bootstrapped, nil
 }
 
-func values(m map[string]string) []string {
-	values := []string{}
-	for _, v := range m {
-		values = append(values, v)
-
-	}
-	return values
+func bootstrapServiceDeployment(dev *config.Environment) (res.Resources, error) {
+	svc := dev.Apps[0].Services[0]
+	svcBase := filepath.Join(config.PathForService(dev, svc), "base", "config")
+	resources := res.Resources{}
+	// TODO: This should change if we add Namespace to Environment.
+	resources[filepath.Join(svcBase, "100-deployment.yaml")] = deployment.Create(dev.Name, svc.Name, bootstrapImage, deployment.ContainerPort(8080))
+	resources[filepath.Join(svcBase, "200-service.yaml")] = createBootstrapService(dev.Name, svc.Name)
+	resources[filepath.Join(svcBase, "kustomization.yaml")] = &res.Kustomization{Resources: []string{"100-deployment.yaml", "200-service.yaml"}}
+	return resources, nil
 }
 
-// validateImageRepo validates the input image repo.  It determines if it is
-// for internal registry and prepend internal registry hostname if neccessary.
-func validateImageRepo(o *BootstrapParameters) (bool, string, error) {
-	components := strings.Split(o.ImageRepo, "/")
-
-	// repo url has minimum of 2 components
-	if len(components) < 2 {
-		return false, "", imageRepoValidationError(o.ImageRepo)
-	}
-
-	for _, v := range components {
-		// check for empty components
-		if strings.TrimSpace(v) == "" {
-			return false, "", imageRepoValidationError(o.ImageRepo)
+func bootstrapEnvironments(prefix, repoURL, secretName string, ns map[string]string) ([]*config.Environment, error) {
+	envs := []*config.Environment{}
+	for k, v := range ns {
+		env := &config.Environment{Name: v}
+		if k == "cicd" {
+			env.IsCICD = true
 		}
-		// check for white spaces
-		if len(v) > len(strings.TrimSpace(v)) {
-			return false, "", imageRepoValidationError(o.ImageRepo)
+		if k == "dev" {
+			app, err := applicationFromRepo(repoURL, secretName, ns["cicd"])
+			if err != nil {
+				return nil, err
+			}
+			env.Apps = []*config.Application{app}
+			env.Pipelines = defaultPipelines
 		}
+		envs = append(envs, env)
 	}
-
-	if len(components) == 2 {
-		if components[0] == "docker.io" || components[0] == "quay.io" {
-			// we recognize docker.io and quay.io.  It is missing one component
-			return false, "", imageRepoValidationError(o.ImageRepo)
-		}
-		// We have format like <project>/<app> which is an internal registry.
-		// We prepend the internal registry hostname.
-		return true, o.InternalRegistryHostname + "/" + o.ImageRepo, nil
-	}
-
-	// Check the first component to see if it is an internal registry
-	if len(components) == 3 {
-		return components[0] == o.InternalRegistryHostname, o.ImageRepo, nil
-	}
-
-	// > 3 components.  invalid repo
-	return false, "", imageRepoValidationError(o.ImageRepo)
+	envs = append(envs, &config.Environment{Name: prefix + "argocd", IsArgoCD: true})
+	sort.Sort(config.ByName(envs))
+	return envs, nil
 }
 
-func imageRepoValidationError(imageRepo string) error {
-	return fmt.Errorf("failed to parse image repo:%s, expected image repository in the form <registry>/<username>/<repository> or <project>/<app> for internal registry", imageRepo)
+func applicationFromRepo(repoURL, secretName, secretNS string) (*config.Application, error) {
+	repo, err := repoFromURL(repoURL)
+	if err != nil {
+		return nil, err
+	}
+	return &config.Application{
+		Name: repo,
+		Services: []*config.Service{
+			{
+				Name:      repo + "-svc",
+				SourceURL: repoURL,
+				Webhook: &config.Webhook{
+					Secret: &config.Secret{
+						Name:      secretName,
+						Namespace: secretNS,
+					},
+				},
+			},
+		},
+	}, nil
+}
+
+func repoFromURL(raw string) (string, error) {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return "", err
+	}
+	parts := strings.Split(u.Path, "/")
+	return strings.TrimSuffix(parts[len(parts)-1], ".git"), nil
+}
+
+func orgRepoFromURL(raw string) (string, error) {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return "", err
+	}
+	parts := strings.Split(u.Path, "/")
+	orgRepo := strings.Join(parts[len(parts)-2:], "/")
+	return strings.TrimSuffix(orgRepo, ".git"), nil
+}
+
+func createBootstrapService(ns, name string) *corev1.Service {
+	svc := &corev1.Service{
+		TypeMeta:   meta.TypeMeta("Service", "v1"),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, name)),
+		Spec: corev1.ServiceSpec{
+			Ports: []corev1.ServicePort{
+				{
+					Name:       "http",
+					Protocol:   corev1.ProtocolTCP,
+					Port:       8080,
+					TargetPort: intstr.FromInt(8080)},
+			},
+		},
+	}
+	labels := map[string]string{
+		deployment.KubernetesAppNameLabel: name,
+	}
+	svc.ObjectMeta.Labels = labels
+	svc.Spec.Selector = labels
+	return svc
 }
