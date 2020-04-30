@@ -2,6 +2,9 @@ package url
 
 import (
 	"fmt"
+	"reflect"
+	"testing"
+
 	"github.com/kylelemons/godebug/pretty"
 	appsv1 "github.com/openshift/api/apps/v1"
 	routev1 "github.com/openshift/api/route/v1"
@@ -15,12 +18,11 @@ import (
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/url/labels"
 	"github.com/openshift/odo/pkg/util"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	extensionsv1 "k8s.io/api/extensions/v1beta1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"reflect"
-	"testing"
+
 	//"github.com/openshift/odo/pkg/util"
 	"github.com/openshift/odo/pkg/version"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -1329,7 +1331,7 @@ func TestPush(t *testing.T) {
 				}
 
 				if len(createdURLMap) != len(tt.createdURLs) {
-					t.Errorf("number of created urls is different, want: %d,got: %d", len(tt.deletedURLs), len(deletedURLMap))
+					t.Errorf("number of created urls is different, want: %d,got: %d", len(tt.createdURLs), len(createdURLMap))
 				}
 
 				if !tt.args.isRouteSupported {

@@ -541,7 +541,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 	if parameters.IsExperimentalModeEnabled && kClient != nil {
 		urls := parameters.EnvURLS
 		for _, url := range urls {
-			if url.Kind == envinfo.INGRESS {
+			if url.Kind != envinfo.DOCKER {
 				urlLOCAL[url.Name] = URL{
 					Spec: URLSpec{
 						Host:      url.Host,
