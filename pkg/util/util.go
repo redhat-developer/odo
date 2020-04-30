@@ -880,10 +880,8 @@ func Unzip(src, dest, pathToUnzip string) ([]string, error) {
 			return filenames, err
 		}
 
-		// removes first slash of pathToUnzip
-		if strings.HasPrefix(pathToUnzip, "/") {
-			pathToUnzip = pathToUnzip[1:]
-		}
+		// removes first slash of pathToUnzip if present
+		pathToUnzip = strings.TrimPrefix(pathToUnzip, "/")
 
 		// check for prefix or match
 		if strings.HasPrefix(filename, pathToUnzip) || match {
