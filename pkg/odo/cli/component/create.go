@@ -761,35 +761,16 @@ func (co *CreateOptions) downloadProject() error {
 
 	if project.Source.SparseCheckoutDir != nil && *project.Source.SparseCheckoutDir != "" {
 
-		// extract project to an extract folder
-		extractFolder := filepath.Join(path, "extract")
-		err = util.GetAndExtractZip(zipUrl, extractFolder)
-		if err != nil {
-			return err
-		}
-
-		defer os.RemoveAll(extractFolder)
-
 		sparseCheckoutDir := *project.Source.SparseCheckoutDir
-		fullSparseCheckoutDirPath := filepath.Join(extractFolder, sparseCheckoutDir)
-		if !util.CheckPathExists(fullSparseCheckoutDirPath) {
-			return errors.Errorf("Path: %v specified in sparseCheckoutDir does not exist in project", sparseCheckoutDir)
-		}
-
-		info, err := os.Stat(path)
+		err = util.GetAndExtractZip(zipUrl, path, sparseCheckoutDir)
 		if err != nil {
 			return err
-		}
-
-		err = util.CopyDir(fullSparseCheckoutDirPath, path, info)
-		if err != nil {
-			return errors.Errorf("Error copying sparseCheckoutDir to project path")
 		}
 
 	} else {
 
 		// extract project to current working directory
-		err = util.GetAndExtractZip(zipUrl, path)
+		err = util.GetAndExtractZip(zipUrl, path, "/")
 		if err != nil {
 			return err
 		}

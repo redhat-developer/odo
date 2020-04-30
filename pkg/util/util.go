@@ -802,7 +802,7 @@ func GetGitHubZipURL(repoURL string) (string, error) {
 
 // GetAndExtractZip downloads a zip file from a URL with a http prefix or
 // takes an absolute path prefixed with file:// and extracts it to a destination
-func GetAndExtractZip(zipURL string, destination string) error {
+func GetAndExtractZip(zipURL string, destination string, pathsToUnzip string) error {
 	if zipURL == "" {
 		return errors.Errorf("Empty zip url: %s", zipURL)
 	}
@@ -836,7 +836,7 @@ func GetAndExtractZip(zipURL string, destination string) error {
 		return errors.Errorf("Invalid Zip URL: %s . Should either be prefixed with file://, http:// or https://", zipURL)
 	}
 
-	_, err := Unzip(pathToZip, destination)
+	_, err := Unzip(pathToZip, destination, pathsToUnzip)
 	if err != nil {
 		return err
 	}
@@ -847,7 +847,7 @@ func GetAndExtractZip(zipURL string, destination string) error {
 // Unzip will decompress a zip archive, moving all files and folders
 // within the zip file (parameter 1) to an output directory (parameter 2).
 // Source: https://golangcode.com/unzip-files-in-go/
-func Unzip(src, dest string) ([]string, error) {
+func Unzip(src, dest, pathToUnzip string) ([]string, error) {
 	var filenames []string
 
 	r, err := zip.OpenReader(src)
@@ -857,7 +857,6 @@ func Unzip(src, dest string) ([]string, error) {
 	defer r.Close()
 
 	for _, f := range r.File {
-
 		// Store filename/path for returning and using later on
 		index := strings.Index(f.Name, "/")
 		filename := f.Name[index+1:]
@@ -871,8 +870,23 @@ func Unzip(src, dest string) ([]string, error) {
 			return filenames, fmt.Errorf("%s: illegal file path", fpath)
 		}
 
-		filenames = append(filenames, fpath)
+		// if sparseCheckoutDir has a pattern
+		match, err := filepath.Match(pathToUnzip, filename)
+		if err != nil {
+			return nil, err
+		}
 
+		// removes first slash of pathToUnzip
+		if strings.HasPrefix(pathToUnzip, "/") {
+			pathToUnzip = pathToUnzip[1:]
+		}
+
+		// check for prefix or match
+		if strings.HasPrefix(filename, pathToUnzip) || match {
+			filenames = append(filenames, fpath)
+		} else {
+			continue
+		}
 		if f.FileInfo().IsDir() {
 			// Make Folder
 			if err = os.MkdirAll(fpath, os.ModePerm); err != nil {
@@ -981,53 +995,4 @@ func CheckKubeConfigExist() bool {
 	}
 
 	return false
-}
-
-// copyDir copy one directory to the other
-// this function is called recursively info should start as os.Stat(src)
-func CopyDir(src string, dst string, info os.FileInfo) error {
-
-	if info.IsDir() {
-		files, err := ioutil.ReadDir(src)
-		if err != nil {
-			return err
-		}
-
-		for _, file := range files {
-			dsrt := filepath.Join(src, file.Name())
-			ddst := filepath.Join(dst, file.Name())
-			if err := CopyDir(dsrt, ddst, file); err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-
-	if err := os.MkdirAll(filepath.Dir(dst), os.ModePerm); err != nil {
-		return err
-	}
-
-	return CopyFile(src, dst, info)
-}
-
-// copyFile copy one file to another location
-func CopyFile(src, dst string, info os.FileInfo) error {
-	dFile, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	defer dFile.Close() // #nosec G307
-
-	sFile, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer sFile.Close() // #nosec G307
-
-	if err = os.Chmod(dFile.Name(), info.Mode()); err != nil {
-		return err
-	}
-
-	_, err = io.Copy(dFile, sFile)
-	return err
 }
