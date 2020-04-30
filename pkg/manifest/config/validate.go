@@ -20,7 +20,10 @@ func (m *Manifest) Validate() error {
 	vv := &validateVisitor{errs: []error{}, envNames: map[string]bool{}, appNames: map[string]bool{}, serviceNames: map[string]bool{}}
 
 	m.Walk(vv)
-	return multierror.Join(vv.errs)
+	if len(vv.errs) > 0 {
+		return multierror.Join(vv.errs)
+	}
+	return nil
 }
 
 func (vv *validateVisitor) Environment(env *Environment) error {

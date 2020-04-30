@@ -8,24 +8,32 @@ import (
 	"strings"
 
 	"github.com/openshift/odo/pkg/manifest/config"
+	"github.com/openshift/odo/pkg/manifest/meta"
 	res "github.com/openshift/odo/pkg/manifest/resources"
+	"github.com/openshift/odo/pkg/manifest/roles"
 	"github.com/spf13/afero"
+	v1 "k8s.io/api/rbac/v1"
 )
 
 const kustomization = "kustomization.yaml"
-
-func buildEnvironments(fs afero.Fs, m *config.Manifest) (res.Resources, error) {
-	files := make(res.Resources)
-	eb := &envBuilder{fs: fs, files: files, appServices: make(map[string][]string)}
-	err := m.Walk(eb)
-	return eb.files, err
-}
 
 type envBuilder struct {
 	// this is a mapping of app.Name to environment relative service paths.
 	appServices map[string][]string
 	files       res.Resources
+	cicdEnv     *config.Environment
 	fs          afero.Fs
+}
+
+func buildEnvironments(fs afero.Fs, m *config.Manifest) (res.Resources, error) {
+	files := make(res.Resources)
+	cicdEnv, err := m.GetCICDEnvironment()
+	if err != nil {
+		return nil, err
+	}
+	eb := &envBuilder{fs: fs, files: files, appServices: make(map[string][]string), cicdEnv: cicdEnv}
+	err = m.Walk(eb)
+	return eb.files, err
 }
 
 func (b *envBuilder) Application(env *config.Environment, app *config.Application) error {
@@ -49,7 +57,12 @@ func (b *envBuilder) Service(env *config.Environment, app *config.Application, s
 		return err
 	}
 	b.files = res.Merge(svcFiles, b.files)
-
+	// rolebinding is created only when an environment has a service
+	envBasePath := filepath.Join(config.PathForEnvironment(env), "env", "base")
+	envBindingPath := filepath.Join(envBasePath, fmt.Sprintf("%s-rolebinding.yaml", env.Name))
+	if _, ok := b.files[envBindingPath]; !ok {
+		b.files[envBindingPath] = createRoleBinding(env, envBasePath, b.cicdEnv.Name)
+	}
 	return nil
 }
 
@@ -64,11 +77,14 @@ func (b *envBuilder) Environment(env *config.Environment) error {
 	if err != nil {
 		return fmt.Errorf("failed to list initial files for %s: %s", basePath, err)
 	}
+	envBindingPath := filepath.Join(basePath, fmt.Sprintf("%s-rolebinding.yaml", env.Name))
+	if _, ok := b.files[envBindingPath]; ok {
+		envFiles[envBindingPath] = b.files[envBindingPath]
+	}
 	for k, _ := range envFiles {
 		kustomizedFilenames[filepath.Base(k)] = true
 	}
 	envFiles[filepath.Join(basePath, kustomization)] = &res.Kustomization{Resources: extractFilenames(kustomizedFilenames)}
-
 	overlaysPath := filepath.Join(envPath, "overlays")
 	relPath, err := filepath.Rel(overlaysPath, basePath)
 	if err != nil {
@@ -109,6 +125,11 @@ func filesForApplication(appPath string, app *config.Application, services []str
 	envFiles[overlaysFile] = &res.Kustomization{Bases: []string{overlayRel}}
 
 	return envFiles, nil
+}
+
+func createRoleBinding(env *config.Environment, basePath, cicdNs string) *v1.RoleBinding {
+	sa := roles.CreateServiceAccount(meta.NamespacedName(cicdNs, saName))
+	return roles.CreateRoleBinding(meta.NamespacedName(env.Name, fmt.Sprintf("%s-rolebinding", env.Name)), sa, "ClusterRole", "edit")
 }
 
 func filesForService(svcPath string, app *config.Service) (res.Resources, error) {

@@ -1,0 +1,16 @@
+environments:
+  - name: development
+    pipelines:
+      integration:
+        template: dev-ci-template
+        binding: dev-ci-binding
+    apps:
+      - name: my-app-1
+        services:
+          - name: app-1-service-http
+            source_url: https://github.com/myproject/myservice.git
+            webhook:
+              secret:
+                name: app-1-secret
+                namespace: app-1-secret-ns
+
