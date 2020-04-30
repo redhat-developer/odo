@@ -1,7 +1,6 @@
 package common
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/golang/glog"
@@ -15,6 +14,9 @@ import (
 type PredefinedDevfileCommands string
 
 const (
+	// DefaultDevfileInitCommand is a predefined devfile command for init
+	DefaultDevfileInitCommand PredefinedDevfileCommands = "devinit"
+
 	// DefaultDevfileBuildCommand is a predefined devfile command for build
 	DefaultDevfileBuildCommand PredefinedDevfileCommands = "devbuild"
 
@@ -27,6 +29,9 @@ const (
 	// Default Image that will be used containing the supervisord binary and assembly scripts
 	// use GetBootstrapperImage() function instead of this variable
 	defaultBootstrapperImage = "registry.access.redhat.com/openshiftdo/odo-init-image-rhel7:1.1.2"
+
+	// SupervisordControlCommand sub command which stands for control
+	SupervisordControlCommand = "ctl"
 
 	// SupervisordVolumeName Create a custom name and (hope) that users don't use the *exact* same name in their deployment (occlient.go)
 	SupervisordVolumeName = "odo-supervisord-shared-data"
@@ -46,6 +51,9 @@ const (
 	// ENV variable to overwrite image used to bootstrap SupervisorD in S2I and Devfile builder Image
 	bootstrapperImageEnvName = "ODO_BOOTSTRAPPER_IMAGE"
 
+	// BinBash The path to sh executable
+	BinBash = "/bin/sh"
+
 	// Default volume size for volumes defined in a devfile
 	volumeSize = "5Gi"
 
@@ -64,6 +72,12 @@ const (
 	// SupervisordCtlSubCommand is the supervisord sub command ctl
 	SupervisordCtlSubCommand = "ctl"
 )
+
+// CommandNames is a struct to store the default and adapter names for devfile commands
+type CommandNames struct {
+	DefaultName string
+	AdapterName string
+}
 
 func isComponentSupported(component common.DevfileComponent) bool {
 	// Currently odo only uses devfile components of type dockerimage, since most of the Che registry devfiles use it
@@ -131,22 +145,4 @@ func IsPortPresent(endpoints []common.DockerimageEndpoint, port int) bool {
 	}
 
 	return false
-}
-
-// IsComponentBuildRequired checks if a component build is required based on the push commands, it throws an error
-// if the push commands does not meet the expected criteria
-func IsComponentBuildRequired(pushDevfileCommands []common.DevfileCommand) (bool, error) {
-	var buildRequired bool
-
-	switch len(pushDevfileCommands) {
-	case 1: // if there is one command, it is the mandatory run command. No need to build.
-		buildRequired = false
-	case 2:
-		// if there are two commands, it is the optional build command and the mandatory run command, set buildRequired to true
-		buildRequired = true
-	default:
-		return false, fmt.Errorf("error executing devfile commands - there should be at least 1 command or at most 2 commands, currently there are %d commands", len(pushDevfileCommands))
-	}
-
-	return buildRequired, nil
 }
