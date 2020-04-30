@@ -708,24 +708,11 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 		return errors.Errorf("No project found in devfile component.")
 	}
 
-	if nOfProjects > 1 && projectPassed == "no-project-passed-to-flag" {
-		co.interactive = true
-	}
-
 	if nOfProjects == 1 && projectPassed == "no-project-passed-to-flag" {
 		project = projects[0]
-	} else if co.interactive && projectPassed == "no-project-passed-to-flag" { //If there is more than one project and the user hasn't specified which one to download.
-		var projectNames []string
-		for _, projectInfo := range projects {
-			projectNames = append(projectNames, projectInfo.Name) //Add all names to an array and use this as a survey
-		}
-		projectSelected := ui.SelectDevfileProject(projectNames)
-
-		for indexOfProject, x := range projects { //We then need to find the index of the project selected
-			if x.Name == projectSelected {
-				project = projects[indexOfProject]
-			}
-		}
+	} else if nOfProjects > 1 && projectPassed == "no-project-passed-to-flag" {
+		project = projects[0]
+		log.Warning("There are multiple projects in this devfile but none have been specified in --downloadSource. Downloading the first.")
 	} else { //If the user has specified a project
 		projectFound := false
 		for indexOfProject, projectInfo := range projects {
@@ -927,7 +914,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 	componentCreateCmd.Flags().StringSliceVar(&co.componentEnvVars, "env", []string{}, "Environmental variables for the component. For example --env VariableName=Value")
 
 	if experimental.IsExperimentalModeEnabled() {
-		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.downloadSource, "downloadSource", "", "Download sample project from devfile. (ex. odo component create <component_type> [component_name] --downloadSource")
+		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.downloadSource, "downloadSource", "", "Download sample project from devfile. (ex. odo component create <component_type> [component_name] --downloadSource/--downloadSource=<devfile-project>")
 		componentCreateCmd.Flags().Lookup("downloadSource").NoOptDefVal = "no-project-passed-to-flag" //Default value to pass to the flag if one is not specified.
 	}
 
