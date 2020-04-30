@@ -14,6 +14,9 @@ var _ = Describe("odo devfile registry command tests", func() {
 	var project string
 	var context string
 	var currentWorkingDirectory string
+	const registryName string = "RegistryName"
+	const addRegistryURL string = "http://www.example.com/"
+	const updateRegistryURL string = "http://www.example.com/update"
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
@@ -50,39 +53,39 @@ var _ = Describe("odo devfile registry command tests", func() {
 
 	Context("When executing registry commands with the registry is not present", func() {
 		It("Should successfully add the registry", func() {
-			helper.CmdShouldPass("odo", "registry", "add", "TestRegistryName", "TestRegistryURL")
+			helper.CmdShouldPass("odo", "registry", "add", registryName, addRegistryURL)
 			output := helper.CmdShouldPass("odo", "registry", "list")
-			helper.MatchAllInOutput(output, []string{"TestRegistryName", "TestRegistryURL"})
-			helper.CmdShouldPass("odo", "registry", "delete", "TestRegistryName", "-f")
+			helper.MatchAllInOutput(output, []string{registryName, addRegistryURL})
+			helper.CmdShouldPass("odo", "registry", "delete", registryName, "-f")
 		})
 
 		It("Should fail to update the registry", func() {
-			helper.CmdShouldFail("odo", "registry", "update", "TestRegistryName", "TestRegistryURL", "-f")
+			helper.CmdShouldFail("odo", "registry", "update", registryName, updateRegistryURL, "-f")
 		})
 
 		It("Should fail to delete the registry", func() {
-			helper.CmdShouldFail("odo", "registry", "delete", "TestRegistryName", "-f")
+			helper.CmdShouldFail("odo", "registry", "delete", registryName, "-f")
 		})
 	})
 
 	Context("When executing registry commands with the registry is present", func() {
 		It("Should fail to add the registry", func() {
-			helper.CmdShouldPass("odo", "registry", "add", "TestRegistryName", "TestRegistryURL")
-			helper.CmdShouldFail("odo", "registry", "add", "TestRegistryName", "NewTestRegistryURL")
-			helper.CmdShouldPass("odo", "registry", "delete", "TestRegistryName", "-f")
+			helper.CmdShouldPass("odo", "registry", "add", registryName, addRegistryURL)
+			helper.CmdShouldFail("odo", "registry", "add", registryName, addRegistryURL)
+			helper.CmdShouldPass("odo", "registry", "delete", registryName, "-f")
 		})
 
 		It("Should successfully update the registry", func() {
-			helper.CmdShouldPass("odo", "registry", "add", "TestRegistryName", "TestRegistryURL")
-			helper.CmdShouldPass("odo", "registry", "update", "TestRegistryName", "NewTestRegistryURL", "-f")
+			helper.CmdShouldPass("odo", "registry", "add", registryName, addRegistryURL)
+			helper.CmdShouldPass("odo", "registry", "update", registryName, updateRegistryURL, "-f")
 			output := helper.CmdShouldPass("odo", "registry", "list")
-			helper.MatchAllInOutput(output, []string{"TestRegistryName", "NewTestRegistryURL"})
-			helper.CmdShouldPass("odo", "registry", "delete", "TestRegistryName", "-f")
+			helper.MatchAllInOutput(output, []string{registryName, updateRegistryURL})
+			helper.CmdShouldPass("odo", "registry", "delete", registryName, "-f")
 		})
 
 		It("Should successfully delete the registry", func() {
-			helper.CmdShouldPass("odo", "registry", "add", "TestRegistryName", "TestRegistryURL")
-			helper.CmdShouldPass("odo", "registry", "delete", "TestRegistryName", "-f")
+			helper.CmdShouldPass("odo", "registry", "add", registryName, addRegistryURL)
+			helper.CmdShouldPass("odo", "registry", "delete", registryName, "-f")
 		})
 	})
 })

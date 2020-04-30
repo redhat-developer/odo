@@ -1623,17 +1623,17 @@ func TestValidateURL(t *testing.T) {
 	}{
 		{
 			name:    "Case 1: Valid URL",
-			url:     "http://www.example.com/product",
+			url:     "http://www.example.com/",
 			wantErr: false,
 		},
 		{
-			name:    "Case 2: Valid URL with parameters",
-			url:     "http://www.example.com/products?id=1&page=2",
-			wantErr: false,
+			name:    "Case 2: Invalid URL - No host",
+			url:     "http://",
+			wantErr: true,
 		},
 		{
-			name:    "Case 3: Invalid URL",
-			url:     "fakeURL",
+			name:    "Case 3: Invalid URL - No scheme",
+			url:     "://www.example.com/",
 			wantErr: true,
 		},
 	}

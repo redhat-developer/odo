@@ -984,13 +984,13 @@ func CheckKubeConfigExist() bool {
 }
 
 // ValidateURL validates the URL
-func ValidateURL(url string) error {
-	re, err := regexp.Compile(`^(?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+$`)
+func ValidateURL(sourceURL string) error {
+	u, err := url.Parse(sourceURL)
 	if err != nil {
 		return err
 	}
 
-	if !re.MatchString(url) {
+	if len(u.Host) == 0 || len(u.Scheme) == 0 {
 		return errors.New("URL is invalid")
 	}
 
