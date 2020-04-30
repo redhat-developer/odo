@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/docker/docker/api/types"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/lclient"
@@ -27,7 +27,7 @@ func CreateComponentStorage(Client *lclient.Client, storages []common.Storage, c
 		}
 
 		if len(existingDockerVolName) == 0 {
-			glog.V(3).Infof("Creating a Docker volume for %v", volumeName)
+			klog.V(3).Infof("Creating a Docker volume for %v", volumeName)
 			_, err := Create(Client, volumeName, componentName, dockerVolName)
 			if err != nil {
 				return errors.Wrapf(err, "Error creating Docker volume for "+volumeName)
@@ -46,7 +46,7 @@ func Create(Client *lclient.Client, name, componentName, dockerVolName string) (
 		"storage-name": name,
 	}
 
-	glog.V(3).Infof("Creating a Docker volume with name %v and labels %v", dockerVolName, labels)
+	klog.V(3).Infof("Creating a Docker volume with name %v and labels %v", dockerVolName, labels)
 	vol, err := Client.CreateVolume(dockerVolName, labels)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create Docker volume")
@@ -76,14 +76,14 @@ func GetExistingVolume(Client *lclient.Client, volumeName, componentName string)
 		"storage-name": volumeName,
 	}
 
-	glog.V(3).Infof("Checking Docker volume for volume %v and labels %v\n", volumeName, volumeLabels)
+	klog.V(3).Infof("Checking Docker volume for volume %v and labels %v\n", volumeName, volumeLabels)
 
 	vols, err := Client.GetVolumesByLabel(volumeLabels)
 	if err != nil {
 		return "", errors.Wrapf(err, "Unable to get Docker volume with selectors %v", volumeLabels)
 	}
 	if len(vols) == 1 {
-		glog.V(3).Infof("Found an existing Docker volume for volume %v and labels %v\n", volumeName, volumeLabels)
+		klog.V(3).Infof("Found an existing Docker volume for volume %v and labels %v\n", volumeName, volumeLabels)
 		existingVolume := vols[0]
 		return existingVolume.Name, nil
 	} else if len(vols) == 0 {
@@ -108,7 +108,7 @@ func ProcessVolumes(client *lclient.Client, componentName string, componentAlias
 				processedVolumes[*vol.Name] = true
 
 				// Generate the volume Names
-				glog.V(3).Infof("Generating Docker volumes name for %v", *vol.Name)
+				klog.V(3).Infof("Generating Docker volumes name for %v", *vol.Name)
 				generatedDockerVolName, err := GenerateVolNameFromDevfileVol(*vol.Name, componentName)
 				if err != nil {
 					return nil, nil, err
@@ -120,7 +120,7 @@ func ProcessVolumes(client *lclient.Client, componentName string, componentAlias
 					return nil, nil, err
 				}
 				if len(existingVolName) > 0 {
-					glog.V(3).Infof("Found an existing Docker volume for %v, volume %v will be re-used", *vol.Name, existingVolName)
+					klog.V(3).Infof("Found an existing Docker volume for %v, volume %v will be re-used", *vol.Name, existingVolName)
 					generatedDockerVolName = existingVolName
 				}
 

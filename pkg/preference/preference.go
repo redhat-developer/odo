@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/util"
 )
@@ -162,7 +162,7 @@ func NewPreference() Preference {
 // not present
 func NewPreferenceInfo() (*PreferenceInfo, error) {
 	preferenceFile, err := getPreferenceFile()
-	glog.V(4).Infof("The path for preference file is %+v", preferenceFile)
+	klog.V(4).Infof("The path for preference file is %+v", preferenceFile)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get odo preference file")
 	}

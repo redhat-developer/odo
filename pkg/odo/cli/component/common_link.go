@@ -3,7 +3,6 @@ package component
 import (
 	"fmt"
 
-	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/component"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/log"
@@ -13,6 +12,7 @@ import (
 	"github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/klog"
 )
 
 type commonLinkOptions struct {
@@ -43,7 +43,7 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 	svcExists, err := svc.SvcExists(o.Client, suppliedName, o.Application)
 	if err != nil {
 		// we consider this error to be non-terminal since it's entirely possible to use odo without the service catalog
-		glog.V(4).Infof("Unable to determine if %s is a service. This most likely means the service catalog is not installed. Proceesing to only use components", suppliedName)
+		klog.V(4).Infof("Unable to determine if %s is a service. This most likely means the service catalog is not installed. Proceesing to only use components", suppliedName)
 		svcExists = false
 	}
 
@@ -60,7 +60,7 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 
 	if svcExists {
 		if cmpExists {
-			glog.V(4).Infof("Both a service and component with name %s - assuming a(n) %s to the service is required", suppliedName, o.operationName)
+			klog.V(4).Infof("Both a service and component with name %s - assuming a(n) %s to the service is required", suppliedName, o.operationName)
 		}
 
 		o.secretName = suppliedName

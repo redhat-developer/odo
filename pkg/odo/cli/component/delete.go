@@ -11,8 +11,8 @@ import (
 
 	"github.com/openshift/odo/pkg/util"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
@@ -24,7 +24,7 @@ import (
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
 // DeleteRecommendedCommandName is the recommended delete command name
@@ -110,8 +110,8 @@ func (do *DeleteOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (do *DeleteOptions) Run() (err error) {
-	glog.V(4).Infof("component delete called")
-	glog.V(4).Infof("args: %#v", do)
+	klog.V(4).Infof("component delete called")
+	klog.V(4).Infof("args: %#v", do)
 
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(do.devfilePath) {
 		return do.DevFileRun()

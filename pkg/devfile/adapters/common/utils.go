@@ -4,7 +4,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data"
@@ -99,7 +99,7 @@ func GetSupportedComponents(data data.DevfileData) []common.DevfileComponent {
 	// Only components with aliases are considered because without an alias commands cannot reference them
 	for _, comp := range data.GetAliasedComponents() {
 		if isComponentSupported(comp) {
-			glog.V(3).Infof("Found component \"%v\" with alias \"%v\"\n", comp.Type, *comp.Alias)
+			klog.V(3).Infof("Found component \"%v\" with alias \"%v\"\n", comp.Type, *comp.Alias)
 			components = append(components, comp)
 		}
 	}
@@ -157,7 +157,7 @@ func IsRestartRequired(command common.DevfileCommand) bool {
 		restart, err = strconv.ParseBool(rs)
 		// Ignoring error here as restart is true for all error and default cases.
 		if err != nil {
-			glog.V(4).Info("Error converting restart attribute to bool")
+			klog.V(4).Info("Error converting restart attribute to bool")
 		}
 	}
 
