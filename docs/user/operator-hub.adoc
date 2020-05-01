@@ -3,7 +3,7 @@
 # odo integration with Operator Hub
 ---
 
-When working in experimental mode, Odo provides the ability to work with
+When working in experimental mode, odo provides the ability to work with
 link:https://www.openshift.com/learn/topics/operators[Operators] installed on
 the cluster. It allows listing of Operators, creation of services from CRD
 provided by the Operators, printing the YAML definition and providing custom
@@ -85,7 +85,7 @@ operator
 
 === [[dry-run]]Print the YAML used to start a service
 
-Odo provides the feature to print the YAML definition of the service (Custom
+odo provides the feature to print the YAML definition of the service (Custom
 Resource or CR) provided by the operator before starting a service off it. This
 can be done by:
 
