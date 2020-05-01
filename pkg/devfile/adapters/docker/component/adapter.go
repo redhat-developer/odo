@@ -230,7 +230,7 @@ func (a Adapter) Delete(labels map[string]string) error {
 
 			// Don't delete any volumes which are mapped into other containers
 			if _, exists := volumesNotToDelete[vol.Name]; exists {
-				glog.V(4).Infof("Skipping volume %s as it is mapped into another container", vol.Name, componentName)
+				glog.V(4).Infof("Skipping volume %s as it is mapped into another container", vol.Name)
 				continue
 			}
 
