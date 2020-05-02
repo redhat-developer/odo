@@ -13,8 +13,7 @@ import (
 )
 
 var _ = Describe("odo docker devfile url command tests", func() {
-	var projectDirPath, context, currentWorkingDirectory, cmpName string
-	var projectDir = "/projectDir"
+	var context, currentWorkingDirectory, cmpName string
 	dockerClient := helper.NewDockerRunner("docker")
 
 	// This is run after every Spec (It)
@@ -22,7 +21,6 @@ var _ = Describe("odo docker devfile url command tests", func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		context = helper.CreateNewContext()
 		currentWorkingDirectory = helper.Getwd()
-		projectDirPath = context + projectDir
 		cmpName = helper.RandString(6)
 		helper.Chdir(context)
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
@@ -45,10 +43,11 @@ var _ = Describe("odo docker devfile url command tests", func() {
 	Context("Creating urls", func() {
 		It("create should pass", func() {
 			var stdout string
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-			helper.Chdir(projectDirPath)
-
 			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
 			stdout = helper.CmdShouldPass("odo", "url", "create")
 			helper.MatchAllInOutput(stdout, []string{cmpName + "-3000", "created for component"})
 			stdout = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
@@ -58,10 +57,12 @@ var _ = Describe("odo docker devfile url command tests", func() {
 		It("create with now flag should pass", func() {
 			var stdout string
 			url1 := helper.RandString(5)
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-			helper.Chdir(projectDirPath)
 
 			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
 			stdout = helper.CmdShouldPass("odo", "url", "create", url1, "--now")
 			helper.MatchAllInOutput(stdout, []string{url1, "created for component", "Changes successfully pushed to component"})
 		})
@@ -69,10 +70,12 @@ var _ = Describe("odo docker devfile url command tests", func() {
 		It("create with same url name should fail", func() {
 			var stdout string
 			url1 := helper.RandString(5)
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-			helper.Chdir(projectDirPath)
 
 			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
 			helper.CmdShouldPass("odo", "url", "create", url1)
 
 			stdout = helper.CmdShouldFail("odo", "url", "create", url1)
@@ -81,10 +84,10 @@ var _ = Describe("odo docker devfile url command tests", func() {
 		})
 
 		It("should be able to do a GET on the URL after a successful push", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-			helper.Chdir(projectDirPath)
-
 			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			helper.CmdShouldPass("odo", "url", "create", cmpName)
 
@@ -100,10 +103,12 @@ var _ = Describe("odo docker devfile url command tests", func() {
 	Context("Switching pushtarget", func() {
 		It("switch from docker to kube, odo push should display warning", func() {
 			var stdout string
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-			helper.Chdir(projectDirPath)
 
 			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
 			helper.CmdShouldPass("odo", "url", "create")
 
 			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "kube", "-f")
@@ -116,10 +121,12 @@ var _ = Describe("odo docker devfile url command tests", func() {
 
 		It("switch from kube to docker, odo push should display warning", func() {
 			var stdout string
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-			helper.Chdir(projectDirPath)
 			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "kube", "-f")
 			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
 			helper.CmdShouldPass("odo", "url", "create", "--host", "1.2.3.4.com", "--ingress")
 
 			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "docker", "-f")

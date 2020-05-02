@@ -14,8 +14,7 @@ import (
 )
 
 var _ = Describe("odo devfile url command tests", func() {
-	var namespace, context, componentName, currentWorkingDirectory, projectDirPath string
-	var projectDir = "/projectDir"
+	var namespace, context, componentName, currentWorkingDirectory string
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
@@ -24,7 +23,6 @@ var _ = Describe("odo devfile url command tests", func() {
 		namespace = helper.CreateRandProject()
 		context = helper.CreateNewContext()
 		currentWorkingDirectory = helper.Getwd()
-		projectDirPath = context + projectDir
 		componentName = helper.RandString(6)
 
 		helper.Chdir(context)
@@ -50,12 +48,10 @@ var _ = Describe("odo devfile url command tests", func() {
 			url1 := helper.RandString(5)
 			host := helper.RandString(5) + ".com"
 
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-			helper.Chdir(projectDirPath)
-
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			stdout = helper.CmdShouldFail("odo", "url", "list")
 			Expect(stdout).To(ContainSubstring("no URLs found"))
@@ -86,12 +82,10 @@ var _ = Describe("odo devfile url command tests", func() {
 			url1 := helper.RandString(5)
 			host := helper.RandString(5) + ".com"
 
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-			helper.Chdir(projectDirPath)
-
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress")
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
@@ -114,12 +108,10 @@ var _ = Describe("odo devfile url command tests", func() {
 			url1 := helper.RandString(5)
 			host := helper.RandString(5) + ".com"
 
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-			helper.Chdir(projectDirPath)
-
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--secure", "--ingress")
 
@@ -139,12 +131,10 @@ var _ = Describe("odo devfile url command tests", func() {
 			url1 := helper.RandString(5)
 			host := helper.RandString(5) + ".com"
 
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-			helper.Chdir(projectDirPath)
-
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			stdout = helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--now", "--ingress", "--devfile", "devfile.yaml")
 			helper.MatchAllInOutput(stdout, []string{"URL " + url1 + " created for component", "http:", url1 + "." + host})
@@ -158,12 +148,10 @@ var _ = Describe("odo devfile url command tests", func() {
 
 			url1 := helper.RandString(5)
 
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-			helper.Chdir(projectDirPath)
-
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			helper.CmdShouldPass("odo", "url", "create", url1)
 
@@ -208,12 +196,10 @@ var _ = Describe("odo devfile url command tests", func() {
 			url1 := helper.RandString(5)
 			host := helper.RandString(5) + ".com"
 
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-			helper.Chdir(projectDirPath)
-
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress")
 
