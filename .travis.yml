@@ -126,13 +126,15 @@ jobs:
 
     - <<: *base-test
       stage: test
+      # Docker push target test command does not need a running cluster at all, however few test
+      # scenario of docker devfile url testing needs only Kube config file. So the test has been
+      # added here just to make sure docker devfile url command test gets a proper kube config file.
+      # without creating a separate OpenShift cluster.
       name: "devfile catalog, create, push, delete and docker devfile url command integration tests"
       script:
         - ./scripts/oc-cluster.sh
         - make bin
         - sudo cp odo /usr/bin
-        # Push target is set to kube environment in some test scenarios like
-        # docker devfile url testing which only needs Kube config. So no cluster login is needed.
         - travis_wait make test-cmd-docker-devfile-url
         # These tests need cluster login as they will be interacting with a Kube environment
         - odo login -u developer
