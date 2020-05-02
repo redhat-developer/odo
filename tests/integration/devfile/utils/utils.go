@@ -19,12 +19,12 @@ func useProjectIfAvailable(args []string, project string) []string {
 
 // ExecDefaultDevfileCommands executes the default devfile commands
 func ExecDefaultDevfileCommands(projectDirPath, cmpName, namespace string) {
-	helper.CmdShouldPass("git", "clone", "https://github.com/maysunfaisal/springboot.git", projectDirPath)
-	helper.Chdir(projectDirPath)
-
 	args := []string{"create", "java-spring-boot", cmpName}
 	args = useProjectIfAvailable(args, namespace)
 	helper.CmdShouldPass("odo", args...)
+
+	helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), projectDirPath)
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
 
 	args = []string{"push", "--devfile", "devfile.yaml"}
 	args = useProjectIfAvailable(args, namespace)
@@ -35,13 +35,11 @@ func ExecDefaultDevfileCommands(projectDirPath, cmpName, namespace string) {
 
 // ExecWithMissingBuildCommand executes odo push with a missing build command
 func ExecWithMissingBuildCommand(projectDirPath, cmpName, namespace string) {
-	helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-	helper.Chdir(projectDirPath)
-
 	args := []string{"create", "nodejs", cmpName}
 	args = useProjectIfAvailable(args, namespace)
 	helper.CmdShouldPass("odo", args...)
 
+	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-without-devbuild.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
 
 	args = []string{"push", "--devfile", "devfile.yaml"}
@@ -53,14 +51,12 @@ func ExecWithMissingBuildCommand(projectDirPath, cmpName, namespace string) {
 
 // ExecWithMissingRunCommand executes odo push with a missing run command
 func ExecWithMissingRunCommand(projectDirPath, cmpName, namespace string) {
-	helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-	helper.Chdir(projectDirPath)
-
 	args := []string{"create", "nodejs", cmpName}
 	args = useProjectIfAvailable(args, namespace)
 	helper.CmdShouldPass("odo", args...)
 
-	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
+	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
 
 	// Rename the devrun command
 	helper.ReplaceString(filepath.Join(projectDirPath, "devfile.yaml"), "devrun", "randomcommand")
@@ -74,14 +70,12 @@ func ExecWithMissingRunCommand(projectDirPath, cmpName, namespace string) {
 
 // ExecWithCustomCommand executes odo push with a custom command
 func ExecWithCustomCommand(projectDirPath, cmpName, namespace string) {
-	helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-	helper.Chdir(projectDirPath)
-
 	args := []string{"create", "nodejs", cmpName}
 	args = useProjectIfAvailable(args, namespace)
 	helper.CmdShouldPass("odo", args...)
 
-	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
+	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
 
 	args = []string{"push", "--devfile", "devfile.yaml", "--build-command", "build", "--run-command", "run"}
 	args = useProjectIfAvailable(args, namespace)
@@ -94,14 +88,12 @@ func ExecWithCustomCommand(projectDirPath, cmpName, namespace string) {
 func ExecWithWrongCustomCommand(projectDirPath, cmpName, namespace string) {
 	garbageCommand := "buildgarbage"
 
-	helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-	helper.Chdir(projectDirPath)
-
 	args := []string{"create", "nodejs", cmpName}
 	args = useProjectIfAvailable(args, namespace)
 	helper.CmdShouldPass("odo", args...)
 
-	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
+	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
 
 	args = []string{"push", "--devfile", "devfile.yaml", "--build-command", garbageCommand}
 	args = useProjectIfAvailable(args, namespace)
@@ -112,12 +104,12 @@ func ExecWithWrongCustomCommand(projectDirPath, cmpName, namespace string) {
 
 // ExecPushToTestFileChanges executes odo push with and without a file change
 func ExecPushToTestFileChanges(projectDirPath, cmpName, namespace string) {
-	helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-	helper.Chdir(projectDirPath)
-
 	args := []string{"create", "nodejs", cmpName}
 	args = useProjectIfAvailable(args, namespace)
 	helper.CmdShouldPass("odo", args...)
+
+	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
 
 	args = []string{"push", "--devfile", "devfile.yaml"}
 	args = useProjectIfAvailable(args, namespace)
@@ -133,14 +125,12 @@ func ExecPushToTestFileChanges(projectDirPath, cmpName, namespace string) {
 
 // ExecPushWithForceFlag executes odo push with a force flag
 func ExecPushWithForceFlag(projectDirPath, cmpName, namespace string) {
-	helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-	helper.Chdir(projectDirPath)
-
 	args := []string{"create", "nodejs", cmpName}
 	args = useProjectIfAvailable(args, namespace)
 	helper.CmdShouldPass("odo", args...)
 
-	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
+	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
 
 	args = []string{"push", "--devfile", "devfile.yaml"}
 	args = useProjectIfAvailable(args, namespace)
@@ -155,14 +145,12 @@ func ExecPushWithForceFlag(projectDirPath, cmpName, namespace string) {
 
 // ExecPushWithNewFileAndDir executes odo push after creating a new file and dir
 func ExecPushWithNewFileAndDir(projectDirPath, cmpName, namespace, newFilePath, newDirPath string) {
-	helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-	helper.Chdir(projectDirPath)
-
 	args := []string{"create", "nodejs", cmpName}
 	args = useProjectIfAvailable(args, namespace)
 	helper.CmdShouldPass("odo", args...)
 
-	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
+	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
 
 	// Create a new file that we plan on deleting later...
 	if err := helper.CreateFileWithContent(newFilePath, "hello world"); err != nil {

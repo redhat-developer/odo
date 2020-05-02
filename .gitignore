@@ -75,3 +75,10 @@ tags
 
 # VSCode specific
 .vscode
+
+#
+# MAC OS SPECIFIC
+#
+
+# Finder Desktop Service
+.DS_Store
