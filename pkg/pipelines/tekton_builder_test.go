@@ -29,7 +29,7 @@ func TestBuildEventListener(t *testing.T) {
 	triggers := fakeTriggers("org/gitops", "test-cicd", testService())
 
 	want := res.Resources{
-		getEventListenerPath(cicdPath): eventlisteners.CreateELFromTriggers("test-cicd", triggers),
+		getEventListenerPath(cicdPath): eventlisteners.CreateELFromTriggers("test-cicd", saName, triggers),
 	}
 	if diff := cmp.Diff(got, want); diff != "" {
 		t.Fatalf("resources didn't match:%s\n", diff)
@@ -61,8 +61,27 @@ func TestBuildEventListenerWithServiceWithNoURL(t *testing.T) {
 	triggers := fakeTriggers("org/gitops", "test-cicd", nil)
 
 	want := res.Resources{
-		getEventListenerPath(cicdPath): eventlisteners.CreateELFromTriggers("test-cicd", triggers),
+		getEventListenerPath(cicdPath): eventlisteners.CreateELFromTriggers("test-cicd", saName, triggers),
 	}
+	if diff := cmp.Diff(got, want); diff != "" {
+		t.Fatalf("resources didn't match:%s\n", diff)
+	}
+}
+
+func TestBuildEventListenerWithNoGitOpsURL(t *testing.T) {
+	m := &config.Manifest{
+		Environments: []*config.Environment{
+			{
+				Name:   "test-cicd",
+				IsCICD: true,
+			},
+			testEnv(testService()),
+		},
+	}
+	got, err := buildEventListenerResources("", m)
+	assertNoError(t, err)
+
+	want := res.Resources{}
 	if diff := cmp.Diff(got, want); diff != "" {
 		t.Fatalf("resources didn't match:%s\n", diff)
 	}

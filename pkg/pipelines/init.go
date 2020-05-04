@@ -12,6 +12,7 @@ import (
 	"github.com/openshift/odo/pkg/pipelines/eventlisteners"
 	"github.com/openshift/odo/pkg/pipelines/ioutils"
 	"github.com/openshift/odo/pkg/pipelines/meta"
+	"github.com/openshift/odo/pkg/pipelines/namespaces"
 	"github.com/openshift/odo/pkg/pipelines/pipelines"
 	"github.com/openshift/odo/pkg/pipelines/resources"
 	res "github.com/openshift/odo/pkg/pipelines/resources"
@@ -35,7 +36,7 @@ type InitParameters struct {
 	GitOpsWebhookSecret      string
 	ImageRepo                string
 	InternalRegistryHostname string
-	Output                   string
+	OutputPath               string
 	Prefix                   string
 }
 
@@ -68,14 +69,7 @@ var (
 const (
 	pipelineDir = "pipelines"
 
-	// CICDDir constants for CICD directory name
-	CICDDir = "cicd"
-
-	// EnvsDir constants for environment directory name
-	EnvsDir = "environments"
-
-	// BaseDir constant for base directory name
-	BaseDir = "base"
+	baseDir = "base"
 
 	// Kustomize constants for kustomization.yaml
 	Kustomize = "kustomization.yaml"
@@ -115,26 +109,46 @@ func Init(o *InitParameters, fs afero.Fs) error {
 		return err
 	}
 
-	exists, err := ioutils.IsExisting(fs, o.Output)
+	exists, err := ioutils.IsExisting(fs, o.OutputPath)
 	if exists {
 		return err
 	}
 
-	outputs, err := createInitialFiles(fs, o.Prefix, o.GitOpsRepo, o.GitOpsWebhookSecret, o.DockerConfigJSONFilename, imageRepo)
+	outputs, err := createInitialFiles(fs, o.GitOpsRepo, o.Prefix, o.GitOpsWebhookSecret, o.DockerConfigJSONFilename, imageRepo)
 	if err != nil {
 		return err
 	}
-	_, err = yaml.WriteResources(fs, o.Output, outputs)
+	_, err = yaml.WriteResources(fs, o.OutputPath, outputs)
 	return err
 }
 
-// CreateResources creates resources assocated to pipelines.
-func CreateResources(fs afero.Fs, prefix, gitOpsRepo, gitOpsWebhookSecret, dockerConfigJSONPath, imageRepo string) (map[string]interface{}, error) {
+func createInitialFiles(fs afero.Fs, prefix, gitOpsRepo, gitOpsWebhookSecret, dockerConfigPath, imageRepo string) (res.Resources, error) {
+	cicdEnv := &config.Environment{Name: prefix + "cicd", IsCICD: true}
+	pipelines := createManifest(cicdEnv)
+	initialFiles := res.Resources{
+		pipelinesFile: pipelines,
+	}
+	resources, err := createCICDResources(fs, cicdEnv, gitOpsRepo, gitOpsWebhookSecret, dockerConfigPath, imageRepo)
+	if err != nil {
+		return nil, err
+	}
+	files := getResourceFiles(resources)
+
+	prefixedResources := addPrefixToResources(pipelinesPath(pipelines), resources)
+	initialFiles = res.Merge(prefixedResources, initialFiles)
+
+	cicdKustomizations := addPrefixToResources(cicdEnvironmentPath(pipelines), getCICDKustomization(files))
+	initialFiles = res.Merge(cicdKustomizations, initialFiles)
+
+	return initialFiles, nil
+}
+
+// createCICDResources creates resources assocated to pipelines.
+func createCICDResources(fs afero.Fs, cicdEnv *config.Environment, gitOpsRepo, gitOpsWebhookSecret, dockerConfigJSONPath, imageRepo string) (res.Resources, error) {
+	cicdNamespace := cicdEnv.Name
 	// key: path of the resource
 	// value: YAML content of the resource
 	outputs := map[string]interface{}{}
-	cicdNamespace := AddPrefix(prefix, "cicd")
-
 	githubSecret, err := secrets.CreateSealedSecret(meta.NamespacedName(cicdNamespace, eventlisteners.GitOpsWebhookSecret),
 		gitOpsWebhookSecret, eventlisteners.WebhookSecretKey)
 	if err != nil {
@@ -142,7 +156,7 @@ func CreateResources(fs afero.Fs, prefix, gitOpsRepo, gitOpsWebhookSecret, docke
 	}
 
 	outputs[secretsPath] = githubSecret
-	outputs[namespacesPath] = CreateNamespace(cicdNamespace)
+	outputs[namespacesPath] = namespaces.Create(cicdNamespace)
 	outputs[rolesPath] = roles.CreateClusterRole(meta.NamespacedName("", roles.ClusterRoleName), Rules)
 
 	sa := roles.CreateServiceAccount(meta.NamespacedName(cicdNamespace, saName))
@@ -159,7 +173,7 @@ func CreateResources(fs afero.Fs, prefix, gitOpsRepo, gitOpsWebhookSecret, docke
 	}
 
 	outputs[rolebindingsPath] = roles.CreateClusterRoleBinding(meta.NamespacedName("", roleBindingName), sa, "ClusterRole", roles.ClusterRoleName)
-	outputs[gitopsTasksPath] = tasks.CreateDeployFromSourceTask(cicdNamespace, GetPipelinesDir("", prefix))
+	outputs[gitopsTasksPath] = tasks.CreateDeployFromSourceTask(cicdNamespace, "testing")
 	outputs[appTaskPath] = tasks.CreateDeployUsingKubectlTask(cicdNamespace)
 	outputs[ciPipelinesPath] = pipelines.CreateCIPipeline(meta.NamespacedName(cicdNamespace, "ci-dryrun-from-pr-pipeline"), cicdNamespace)
 	outputs[appCiPipelinesPath] = pipelines.CreateAppCIPipeline(meta.NamespacedName(cicdNamespace, "app-ci-pipeline"), false)
@@ -195,26 +209,6 @@ func CreateDockerSecret(fs afero.Fs, dockerConfigJSONFilename, ns string) (*ssv1
 
 	return dockerSecret, nil
 
-}
-
-func createInitialFiles(fs afero.Fs, prefix, gitOpsRepo, gitOpsWebhookSecret, dockerConfigPath, imageRepo string) (res.Resources, error) {
-	pipelines := createManifest(&config.Environment{Name: prefix + "cicd", IsCICD: true})
-	initialFiles := res.Resources{
-		"pipelines.yaml": pipelines,
-	}
-	cicdResources, err := CreateResources(fs, prefix, gitOpsRepo, gitOpsWebhookSecret, dockerConfigPath, imageRepo)
-	if err != nil {
-		return nil, err
-	}
-	files := getResourceFiles(cicdResources)
-
-	prefixedResources := addPrefixToResources(pipelinesPath(pipelines), cicdResources)
-	initialFiles = res.Merge(prefixedResources, initialFiles)
-
-	cicdKustomizations := addPrefixToResources(cicdEnvironmentPath(pipelines), getCICDKustomization(files))
-	initialFiles = res.Merge(cicdKustomizations, initialFiles)
-
-	return initialFiles, nil
 }
 
 func createManifest(envs ...*config.Environment) *config.Manifest {
@@ -265,11 +259,6 @@ func getResourceFiles(res res.Resources) []string {
 	}
 	sort.Strings(files)
 	return files
-}
-
-// GetPipelinesDir gets pipelines directory
-func GetPipelinesDir(rootPath, prefix string) string {
-	return filepath.Join(rootPath, EnvsDir, AddPrefix(prefix, CICDDir), BaseDir, pipelineDir)
 }
 
 // validateImageRepo validates the input image repo.  It determines if it is

@@ -1,4 +1,4 @@
-package pipelines
+package environments
 
 import (
 	"fmt"
@@ -9,6 +9,7 @@ import (
 
 	"github.com/openshift/odo/pkg/pipelines/config"
 	"github.com/openshift/odo/pkg/pipelines/meta"
+	"github.com/openshift/odo/pkg/pipelines/namespaces"
 	res "github.com/openshift/odo/pkg/pipelines/resources"
 	"github.com/openshift/odo/pkg/pipelines/roles"
 	"github.com/spf13/afero"
@@ -23,15 +24,16 @@ type envBuilder struct {
 	files       res.Resources
 	cicdEnv     *config.Environment
 	fs          afero.Fs
+	saName      string
 }
 
-func buildEnvironments(fs afero.Fs, m *config.Manifest) (res.Resources, error) {
-	files := make(res.Resources)
+func Build(fs afero.Fs, m *config.Manifest, saName string) (res.Resources, error) {
+	files := res.Resources{}
 	cicdEnv, err := m.GetCICDEnvironment()
 	if err != nil {
 		return nil, err
 	}
-	eb := &envBuilder{fs: fs, files: files, appServices: make(map[string][]string), cicdEnv: cicdEnv}
+	eb := &envBuilder{fs: fs, files: files, appServices: make(map[string][]string), cicdEnv: cicdEnv, saName: saName}
 	err = m.Walk(eb)
 	return eb.files, err
 }
@@ -57,11 +59,15 @@ func (b *envBuilder) Service(env *config.Environment, app *config.Application, s
 		return err
 	}
 	b.files = res.Merge(svcFiles, b.files)
-	// rolebinding is created only when an environment has a service
+	// RoleBinding is created only when an environment has a service and the
+	// CICD environment is defined.
+	if b.cicdEnv == nil {
+		return nil
+	}
 	envBasePath := filepath.Join(config.PathForEnvironment(env), "env", "base")
 	envBindingPath := filepath.Join(envBasePath, fmt.Sprintf("%s-rolebinding.yaml", env.Name))
 	if _, ok := b.files[envBindingPath]; !ok {
-		b.files[envBindingPath] = createRoleBinding(env, envBasePath, b.cicdEnv.Name)
+		b.files[envBindingPath] = createRoleBinding(env, envBasePath, b.cicdEnv.Name, b.saName)
 	}
 	return nil
 }
@@ -98,7 +104,7 @@ func (b *envBuilder) Environment(env *config.Environment) error {
 func filesForEnvironment(basePath string, env *config.Environment) res.Resources {
 	envFiles := res.Resources{}
 	filename := filepath.Join(basePath, fmt.Sprintf("%s-environment.yaml", env.Name))
-	envFiles[filename] = CreateNamespace(env.Name)
+	envFiles[filename] = namespaces.Create(env.Name)
 	return envFiles
 }
 
@@ -127,8 +133,8 @@ func filesForApplication(appPath string, app *config.Application, services []str
 	return envFiles, nil
 }
 
-func createRoleBinding(env *config.Environment, basePath, cicdNs string) *v1.RoleBinding {
-	sa := roles.CreateServiceAccount(meta.NamespacedName(cicdNs, saName))
+func createRoleBinding(env *config.Environment, basePath, cicdNS, saName string) *v1.RoleBinding {
+	sa := roles.CreateServiceAccount(meta.NamespacedName(cicdNS, saName))
 	return roles.CreateRoleBinding(meta.NamespacedName(env.Name, fmt.Sprintf("%s-rolebinding", env.Name)), sa, "ClusterRole", "edit")
 }
 

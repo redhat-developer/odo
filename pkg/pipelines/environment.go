@@ -1,11 +1,11 @@
 package pipelines
 
 import (
+	"fmt"
 	"path/filepath"
 
-	"github.com/openshift/odo/pkg/pipelines/ioutils"
-	"github.com/openshift/odo/pkg/pipelines/meta"
-	"github.com/openshift/odo/pkg/pipelines/roles"
+	"github.com/openshift/odo/pkg/pipelines/config"
+	res "github.com/openshift/odo/pkg/pipelines/resources"
 	"github.com/openshift/odo/pkg/pipelines/yaml"
 	"github.com/spf13/afero"
 )
@@ -17,60 +17,33 @@ const (
 
 // EnvParameters encapsulates parameters for add env command
 type EnvParameters struct {
-	EnvName string
-	Output  string
-	Prefix  string
+	ManifestFilename string
+	EnvName          string
 }
 
-// Env will bootstrap a new environment directory
-func Env(o *EnvParameters, fs afero.Fs) error {
-	envName := AddPrefix(o.Prefix, o.EnvName)
-	envPath := getEnvPath(o.Output, o.EnvName, o.Prefix)
-	// check if the gitops dir exists
-	exists, err := ioutils.IsExisting(fs, o.Output)
-	if !exists {
-		return err
-	}
-
-	// check if the environment dir already exists
-	exists, err = ioutils.IsExisting(fs, envPath)
-	if exists {
-		return err
-	}
-
-	err = yaml.AddKustomize(fs, "resources", []string{envNamespace, envRoleBinding}, filepath.Join(envPath, "base", Kustomize))
+// AddEnv adds a new environment to the manifest.
+func AddEnv(o *EnvParameters, appFs afero.Fs) error {
+	m, err := config.ParseFile(appFs, o.ManifestFilename)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to parse manifest: %w", err)
 	}
-
-	err = yaml.AddKustomize(fs, "bases", []string{"../base"}, filepath.Join(envPath, "overlays", Kustomize))
+	env := m.GetEnvironment(o.EnvName)
+	if env != nil {
+		return fmt.Errorf("environment %s already exists", o.EnvName)
+	}
+	files := res.Resources{}
+	m.Environments = append(m.Environments, &config.Environment{Name: o.EnvName})
+	files[pipelinesFile] = m
+	outputPath := filepath.Dir(o.ManifestFilename)
+	buildParams := &BuildParameters{
+		ManifestFilename: o.ManifestFilename,
+		OutputPath:       outputPath,
+	}
+	built, err := buildResources(appFs, buildParams, m)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to build resources: %w", err)
 	}
-
-	if err = addEnvResources(fs, o.Prefix, envPath, envName); err != nil {
-		return err
-	}
-	return nil
-}
-
-func addEnvResources(fs afero.Fs, prefix, envPath, envName string) error {
-	namespaces := NamespaceNames(prefix)
-	outputs := map[string]interface{}{}
-	basePath := filepath.Join(envPath, "base")
-
-	outputs[envNamespace] = CreateNamespace(envName)
-
-	sa := roles.CreateServiceAccount(meta.NamespacedName(namespaces["cicd"], saName))
-
-	outputs[envRoleBinding] = roles.CreateRoleBinding(meta.NamespacedName(envName, roleBindingName), sa, "ClusterRole", "edit")
-	_, err := yaml.WriteResources(fs, basePath, outputs)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func getEnvPath(gitopsPath, envName, prefix string) string {
-	return filepath.Join(gitopsPath, EnvsDir, AddPrefix(prefix, envName))
+	files = res.Merge(built, files)
+	_, err = yaml.WriteResources(appFs, outputPath, files)
+	return err
 }

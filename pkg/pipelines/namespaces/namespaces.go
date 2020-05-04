@@ -1,4 +1,4 @@
-package pipelines
+package namespaces
 
 import (
 	"fmt"
@@ -20,17 +20,18 @@ var (
 	namespaceTypeMeta = meta.TypeMeta("Namespace", "v1")
 )
 
-// CreateNamespaces create namespaces for the given names
-func CreateNamespaces(names []string) []*corev1.Namespace {
+// Namespaces create namespaces for the given names.
+func Namespaces(names []string) []*corev1.Namespace {
 	ns := []*corev1.Namespace{}
 	for _, n := range names {
-		ns = append(ns, CreateNamespace(n))
+		ns = append(ns, Create(n))
 	}
 	return ns
 }
 
-// NamespaceNames returns namespaces of all environments
-func NamespaceNames(prefix string) map[string]string {
+// NamesWithPrefix returns namespaces of all environments based on the prefix,
+// and using the set of predefined names: dev, stage, cicd.
+func NamesWithPrefix(prefix string) map[string]string {
 	prefixedNames := make(map[string]string)
 	for k, v := range namespaceBaseNames {
 		prefixedNames[k] = fmt.Sprintf("%s%s", prefix, v)
@@ -38,8 +39,8 @@ func NamespaceNames(prefix string) map[string]string {
 	return prefixedNames
 }
 
-// CreateNamespace creates a Namespace object from a string
-func CreateNamespace(name string) *corev1.Namespace {
+// Create creates a Namespace value from a string.
+func Create(name string) *corev1.Namespace {
 	ns := &corev1.Namespace{
 		TypeMeta: namespaceTypeMeta,
 		ObjectMeta: metav1.ObjectMeta{
@@ -49,7 +50,7 @@ func CreateNamespace(name string) *corev1.Namespace {
 	return ns
 }
 
-// GetClientSet returns clientset
+// GetClientSet creates and returns a new Kubernetes clientset.
 func GetClientSet() (*kubernetes.Clientset, error) {
 	clientConfig, err := clientconfig.GetRESTConfig()
 	if err != nil {
@@ -62,8 +63,8 @@ func GetClientSet() (*kubernetes.Clientset, error) {
 	return clientSet, nil
 }
 
-// CheckNamespace returns true if the given namespace exists
-func CheckNamespace(clientSet kubernetes.Interface, name string) (bool, error) {
+// Exists returns true if the given namespace exists
+func Exists(clientSet kubernetes.Interface, name string) (bool, error) {
 	_, err := clientSet.CoreV1().Namespaces().Get(name, metav1.GetOptions{})
 	if err != nil {
 		return false, nil
@@ -71,8 +72,7 @@ func CheckNamespace(clientSet kubernetes.Interface, name string) (bool, error) {
 	return true, nil
 }
 
-// AddPrefix add namespace prefix
-func AddPrefix(prefix, name string) string {
+func addPrefix(prefix, name string) string {
 	if prefix != "" {
 		return prefix + name
 	}

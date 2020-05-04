@@ -31,6 +31,9 @@ type tektonBuilder struct {
 }
 
 func buildEventListenerResources(gitOpsRepo string, m *config.Manifest) (res.Resources, error) {
+	if gitOpsRepo == "" {
+		return res.Resources{}, nil
+	}
 	files := make(res.Resources)
 	tb := &tektonBuilder{files: files, gitOpsRepo: gitOpsRepo}
 	err := m.Walk(tb)
@@ -57,7 +60,7 @@ func (tk *tektonBuilder) Environment(env *config.Environment) error {
 		}
 		tk.triggers = append(tk.triggers, trigger)
 		cicdPath := config.PathForEnvironment(env)
-		tk.files[getEventListenerPath(cicdPath)] = eventlisteners.CreateELFromTriggers(env.Name, tk.triggers)
+		tk.files[getEventListenerPath(cicdPath)] = eventlisteners.CreateELFromTriggers(env.Name, saName, tk.triggers)
 	}
 	return nil
 }

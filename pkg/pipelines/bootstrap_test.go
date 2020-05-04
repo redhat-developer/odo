@@ -57,7 +57,7 @@ func TestBootstrapManifest(t *testing.T) {
 
 		"environments/tst-dev/services/http-api-svc/base/config/200-service.yaml":   createBootstrapService("tst-dev", "http-api-svc"),
 		"environments/tst-dev/services/http-api-svc/base/config/kustomization.yaml": &res.Kustomization{Resources: []string{"100-deployment.yaml", "200-service.yaml"}},
-		"pipelines.yaml": &config.Manifest{
+		pipelinesFile: &config.Manifest{
 			Environments: []*config.Environment{
 				{
 					Pipelines: defaultPipelines,
