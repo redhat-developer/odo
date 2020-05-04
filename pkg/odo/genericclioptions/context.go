@@ -531,11 +531,7 @@ func (o *Context) ComponentAllowingEmpty(allowEmpty bool, optionalComponent ...s
 		}
 	case 1:
 		cmp := optionalComponent[0]
-		// only check the component if we passed a non-empty string, otherwise return the current component set in NewContext
-		if len(cmp) > 0 {
-			o.checkComponentExistsOrFail(cmp)
-			o.cmp = cmp // update context
-		}
+		o.cmp = cmp
 	default:
 		// safeguard: fail if more than one optional string is passed because it would be a programming error
 		log.Errorf("ComponentAllowingEmpty function only accepts one optional argument, was given: %v", optionalComponent)

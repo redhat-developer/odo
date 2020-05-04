@@ -235,6 +235,7 @@ func componentTests(args ...string) {
 		It("should describe the component when it is not pushed", func() {
 			helper.CmdShouldPass("odo", append(args, "create", "nodejs", "cmp-git", "--project", project, "--git", "https://github.com/openshift/nodejs-ex", "--context", context, "--app", "testing")...)
 			helper.CmdShouldPass("odo", "url", "create", "url-1", "--context", context)
+			helper.CmdShouldPass("odo", "url", "create", "url-2", "--context", context)
 			helper.CmdShouldPass("odo", "storage", "create", "storage-1", "--size", "1Gi", "--path", "/data1", "--context", context)
 			helper.ValidateLocalCmpExist(context, "Type,nodejs", "Name,cmp-git", "Application,testing", "URL,0,Name,url-1")
 			cmpDescribe := helper.CmdShouldPass("odo", append(args, "describe", "--context", context)...)
@@ -242,14 +243,20 @@ func componentTests(args ...string) {
 			Expect(cmpDescribe).To(ContainSubstring("cmp-git"))
 			Expect(cmpDescribe).To(ContainSubstring("nodejs"))
 			Expect(cmpDescribe).To(ContainSubstring("url-1"))
+			Expect(cmpDescribe).To(ContainSubstring("url-2"))
 			Expect(cmpDescribe).To(ContainSubstring("https://github.com/openshift/nodejs-ex"))
 			Expect(cmpDescribe).To(ContainSubstring("storage-1"))
 
 			cmpDescribeJSON, err := helper.Unindented(helper.CmdShouldPass("odo", append(args, "describe", "-o", "json", "--context", context)...))
 			Expect(err).Should(BeNil())
-			expected, err := helper.Unindented(`{"kind": "Component","apiVersion": "odo.openshift.io/v1alpha1","metadata": {"name": "cmp-git","namespace": "` + project + `","creationTimestamp": null},"spec":{"app": "testing","type":"nodejs","source": "https://github.com/openshift/nodejs-ex","sourceType": "git","url": ["url-1"],"storage": ["storage-1"],"ports": ["8080/TCP"]},"status": {"state": "Not Pushed"}}`)
+			expected, err := helper.Unindented(`{"kind": "Component","apiVersion": "odo.openshift.io/v1alpha1","metadata": {"name": "cmp-git","namespace": "` + project + `","creationTimestamp": null},"spec":{"app": "testing","type":"nodejs","source": "https://github.com/openshift/nodejs-ex","sourceType": "git","url": ["url-1", "url-2"],"storage": ["storage-1"],"ports": ["8080/TCP"]},"status": {"state": "Not Pushed"}}`)
 			Expect(err).Should(BeNil())
 			Expect(cmpDescribeJSON).To(Equal(expected))
+
+			// odo should describe not pushed component if component name is given.
+			helper.CmdShouldPass("odo", append(args, "describe", "cmp-git", "--context", context)...)
+			Expect(cmpDescribe).To(ContainSubstring("cmp-git"))
+
 			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--all", "--context", context)...)
 		})
 

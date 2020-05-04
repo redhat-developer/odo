@@ -3,7 +3,8 @@
 %global debug_package %{nil}
 %global package_name openshift-odo
 %global product_name odo
-%global golang_version 1.12
+%global golang_version ${GOLANG_VERSION}
+%global golang_version_nodot ${GOLANG_VERSION_NODOT}
 %global odo_version ${ODO_RPM_VERSION}
 %global odo_release ${ODO_RELEASE}
 %global git_commit  ${GIT_COMMIT}
@@ -26,7 +27,7 @@ Provides:       %{package_name}
 Obsoletes:      %{package_name}
 
 %description
-OpenShift Do (odo) is a fast, iterative, and straightforward CLI tool for developers who write, build, and deploy applications on OpenShift.
+odo is a fast, iterative, and straightforward CLI tool for developers who write, build, and deploy applications on OpenShift.
 
 %prep
 %setup -q -n %{source_dir}

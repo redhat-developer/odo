@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -158,4 +159,11 @@ func WatchNonRetCmdStdOut(cmdStr string, timeout time.Duration, check func(outpu
 			}
 		}
 	}
+}
+
+// GetUserHomeDir gets the user home directory
+func GetUserHomeDir() string {
+	homeDir, err := os.UserHomeDir()
+	Expect(err).NotTo(HaveOccurred())
+	return homeDir
 }
