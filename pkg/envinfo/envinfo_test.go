@@ -234,8 +234,80 @@ func TestDeleteURLFromMultipleURLs(t *testing.T) {
 
 }
 
+func TestGetPushCommand(t *testing.T) {
+	tempEnvFile, err := ioutil.TempFile("", "odoenvinfo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tempEnvFile.Close()
+	os.Setenv(envInfoEnvName, tempEnvFile.Name())
+
+	tests := []struct {
+		name            string
+		existingEnvInfo EnvInfo
+		wantPushCommand EnvInfoPushCommand
+	}{
+		{
+			name: "Case 1: Init, Build & Run commands present",
+			existingEnvInfo: EnvInfo{
+				componentSettings: ComponentSettings{
+					PushCommand: &EnvInfoPushCommand{
+						Init:  "myinit",
+						Build: "mybuild",
+						Run:   "myrun",
+					},
+				},
+			},
+			wantPushCommand: EnvInfoPushCommand{
+				Init:  "myinit",
+				Run:   "myrun",
+				Build: "mybuild",
+			},
+		},
+		{
+			name: "Case 2: Build & Run commands present",
+			existingEnvInfo: EnvInfo{
+				componentSettings: ComponentSettings{
+					PushCommand: &EnvInfoPushCommand{
+						Build: "mybuild",
+						Run:   "myrun",
+					},
+				},
+			},
+			wantPushCommand: EnvInfoPushCommand{
+				Run:   "myrun",
+				Build: "mybuild",
+			},
+		},
+		{
+			name: "Case 3: No commands present",
+			existingEnvInfo: EnvInfo{
+				componentSettings: ComponentSettings{
+					PushCommand: &EnvInfoPushCommand{},
+				},
+			},
+			wantPushCommand: EnvInfoPushCommand{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			esi, err := NewEnvSpecificInfo("")
+			if err != nil {
+				t.Error(err)
+			}
+			esi.EnvInfo = tt.existingEnvInfo
+			pushCommand := esi.GetPushCommand()
+
+			if !reflect.DeepEqual(tt.wantPushCommand, pushCommand) {
+				t.Errorf("TestGetPushCommand error: push commands mismatch, expected: %v got: %v", tt.wantPushCommand, pushCommand)
+			}
+		})
+	}
+
+}
+
 func TestLowerCaseParameterForLocalParameters(t *testing.T) {
-	expected := map[string]bool{"create": true, "url": true}
+	expected := map[string]bool{"create": true, "push": true, "url": true}
 	actual := util.GetLowerCaseParameters(GetLocallySupportedParameters())
 	if !reflect.DeepEqual(expected, actual) {
 		t.Errorf("expected '%v', got '%v'", expected, actual)
