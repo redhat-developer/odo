@@ -334,7 +334,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			return err
 		}
 		if catalogDevfileList.DevfileRegistries == nil {
-			log.Warning("Please run `odo registry add <registry name> <registry URL>` to add registry then create devfile components\n")
+			log.Warning("Please run `odo registry add <registry name> <registry URL>` to add a registry then create a devfile components\n")
 		}
 
 		var componentType string
@@ -425,7 +425,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		}
 
 		// Categorize the sections
-		log.Info("Validation (devfile component)")
+		log.Info("Validation")
 
 		// Since we need to support both devfile and s2i, so we have to check if the component type is
 		// supported by devfile, if it is supported we return and will download the corresponding devfile.yaml later,
@@ -440,7 +440,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			}
 		}
 
-		registrySpinner := log.Spinnerf("Creating devfile component from registry: %s", co.devfileMetadata.devfileRegistry.Name)
+		registrySpinner := log.Spinnerf("Creating a devfile component from registry: %s", co.devfileMetadata.devfileRegistry.Name)
 
 		if co.devfileMetadata.devfileSupport {
 			err = co.InitEnvInfoFromContext()
@@ -679,7 +679,7 @@ func (co *CreateOptions) Validate() (err error) {
 		}
 	}
 
-	log.Info("Validation (s2i component)")
+	log.Info("Validation")
 
 	supported, err := catalog.IsComponentTypeSupported(co.Context.Client, *co.componentSettings.Type)
 	if err != nil {

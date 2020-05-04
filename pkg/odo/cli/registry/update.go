@@ -61,7 +61,7 @@ func (o *UpdateOptions) Validate() (err error) {
 func (o *UpdateOptions) Run() (err error) {
 	cfg, err := preference.New()
 	if err != nil {
-		return errors.Wrap(err, "Unable to update registry")
+		return errors.Wrap(err, "unable to update registry")
 	}
 
 	err = cfg.RegistryHandler(o.operation, o.registryName, o.registryURL, o.forceFlag)

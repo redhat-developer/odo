@@ -250,7 +250,7 @@ func (c *PreferenceInfo) RegistryHandler(operation string, registryName string, 
 	c.OdoSettings.RegistryList = &registryList
 	err = util.WriteToFile(&c.Preference, c.Filename)
 	if err != nil {
-		return errors.Wrapf(err, "Unable to write the configuration of %s operation to preference file", operation)
+		return errors.Wrapf(err, "unable to write the configuration of %s operation to preference file", operation)
 	}
 
 	return nil
@@ -267,10 +267,10 @@ func handleWithoutRegistryExist(registryList []Registry, operation string, regis
 		registryList = append(registryList, registry)
 
 	case "update":
-		return nil, errors.Errorf("Failed to update registry: registry %s doesn't exist", registryName)
+		return nil, errors.Errorf("failed to update registry: registry %s doesn't exist", registryName)
 
 	case "delete":
-		return nil, errors.Errorf("Failed to delete registry: registry %s doesn't exist", registryName)
+		return nil, errors.Errorf("failed to delete registry: registry %s doesn't exist", registryName)
 	}
 
 	return registryList, nil
@@ -280,7 +280,7 @@ func handleWithRegistryExist(index int, registryList []Registry, operation strin
 	switch operation {
 
 	case "add":
-		return nil, errors.Errorf("Failed to add registry: registry %s already exists", registryName)
+		return nil, errors.Errorf("failed to add registry: registry %s already exists", registryName)
 
 	case "update":
 		if !forceFlag {

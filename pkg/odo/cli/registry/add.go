@@ -63,7 +63,7 @@ func (o *AddOptions) Run() (err error) {
 
 	cfg, err := preference.New()
 	if err != nil {
-		return errors.Wrap(err, "Unable to add registry")
+		return errors.Wrap(err, "unable to add registry")
 	}
 
 	err = cfg.RegistryHandler(o.operation, o.registryName, o.registryURL, o.forceFlag)
@@ -71,7 +71,7 @@ func (o *AddOptions) Run() (err error) {
 		return err
 	}
 
-	log.Info("New registry was successfully added")
+	log.Info("New registry successfully added")
 	return nil
 }
 
