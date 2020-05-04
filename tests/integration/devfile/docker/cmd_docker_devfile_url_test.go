@@ -110,7 +110,7 @@ var _ = Describe("odo docker devfile url command tests", func() {
 			session := helper.CmdRunner("odo", "push", "--devfile", "devfile.yaml")
 			stdout = string(session.Wait().Out.Contents())
 			stderr := string(session.Wait().Err.Contents())
-			Expect(stderr).To(ContainSubstring("found url(s) defined for docker, but no valid urls for ingress/route defined"))
+			Expect(stderr).To(ContainSubstring("Found a URL defined for Docker, but no valid URLs for Kubernetes."))
 			Expect(stdout).To(ContainSubstring("Changes successfully pushed to component"))
 		})
 
@@ -126,7 +126,7 @@ var _ = Describe("odo docker devfile url command tests", func() {
 			session := helper.CmdRunner("odo", "push", "--devfile", "devfile.yaml")
 			stdout = string(session.Wait().Out.Contents())
 			stderr := string(session.Wait().Err.Contents())
-			Expect(stderr).To(ContainSubstring("found url(s) defined for ingress/route, but no valid urls with exposed port defined"))
+			Expect(stderr).To(ContainSubstring("Found a URL defined for Kubernetes, but no valid URLs for Docker."))
 			Expect(stdout).To(ContainSubstring("Changes successfully pushed to component"))
 
 		})

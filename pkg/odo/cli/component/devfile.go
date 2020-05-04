@@ -166,9 +166,15 @@ func validateURL(url []envinfo.EnvInfoURL) {
 			kubeURLExists = true
 		}
 	}
+	var urlOutput string
+	if len(url) > 1 {
+		urlOutput = "URLs"
+	} else {
+		urlOutput = "a URL"
+	}
 	if pushtarget.IsPushTargetDocker() && !dockerURLExists && kubeURLExists {
-		log.Warningf("found url(s) defined for ingress/route, but no valid urls with exposed port defined")
+		log.Warningf("Found %v defined for Kubernetes, but no valid URLs for Docker.", urlOutput)
 	} else if !pushtarget.IsPushTargetDocker() && !kubeURLExists && dockerURLExists {
-		log.Warningf("found url(s) defined for docker, but no valid urls for ingress/route defined")
+		log.Warningf("Found %v defined for Docker, but no valid URLs for Kubernetes.", urlOutput)
 	}
 }
