@@ -156,7 +156,7 @@ func (a Adapter) Delete(labels map[string]string) error {
 		return errors.New("unable to delete component without a component label")
 	}
 
-	list, err := a.Client.GetContainerList()
+	containers, err := a.Client.GetContainerList()
 	if err != nil {
 		return errors.Wrap(err, "unable to retrieve container list for delete operation")
 	}
@@ -167,7 +167,7 @@ func (a Adapter) Delete(labels map[string]string) error {
 
 	// Go through the containers which are NOT part of this component, and make a list of all
 	// their volumes so we don't delete them.
-	for _, container := range list {
+	for _, container := range containers {
 
 		if container.Labels["component"] == componentName {
 			continue
@@ -178,7 +178,7 @@ func (a Adapter) Delete(labels map[string]string) error {
 		}
 	}
 
-	componentContainer := a.Client.GetContainersByComponent(componentName, list)
+	componentContainer := a.Client.GetContainersByComponent(componentName, containers)
 
 	if len(componentContainer) == 0 {
 		return errors.Errorf("the component %s doesn't exist", a.ComponentName)
@@ -186,7 +186,7 @@ func (a Adapter) Delete(labels map[string]string) error {
 
 	allVolumes, err := a.Client.GetVolumes()
 	if err != nil {
-		return errors.Wrapf(err, "unable to retrieve volume list")
+		return errors.Wrapf(err, "unable to retrieve list of all Docker volumes")
 	}
 
 	// Look for this component's volumes that contain either a storage-name label or a type label
@@ -230,7 +230,7 @@ func (a Adapter) Delete(labels map[string]string) error {
 
 			// Don't delete any volumes which are mapped into other containers
 			if _, exists := volumesNotToDelete[vol.Name]; exists {
-				glog.V(4).Infof("Skipping volume %s as it is mapped into another container", vol.Name)
+				glog.V(4).Infof("Skipping volume %s as it is mapped into a non-odo managed container", vol.Name)
 				continue
 			}
 
