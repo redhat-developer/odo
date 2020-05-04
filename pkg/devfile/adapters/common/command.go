@@ -29,6 +29,7 @@ func getCommand(data data.DevfileData, commandName string, required bool) (suppo
 			// The command is supported, use it
 			supportedCommand.Name = command.Name
 			supportedCommand.Actions = supportedCommandActions
+			supportedCommand.Attributes = command.Attributes
 			return supportedCommand, nil
 		}
 	}

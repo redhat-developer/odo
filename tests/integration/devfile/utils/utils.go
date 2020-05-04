@@ -177,3 +177,26 @@ func ExecPushWithNewFileAndDir(projectDirPath, cmpName, namespace, newFilePath, 
 	args = useProjectIfAvailable(args, namespace)
 	helper.CmdShouldPass("odo", args...)
 }
+
+// ExecWithRestartAttribute executes odo push with a command attribute restart
+func ExecWithRestartAttribute(projectDirPath, cmpName, namespace string) {
+	helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
+	helper.Chdir(projectDirPath)
+
+	args := []string{"create", "nodejs", cmpName}
+	args = useProjectIfAvailable(args, namespace)
+	helper.CmdShouldPass("odo", args...)
+
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-restart.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
+
+	args = []string{"push", "--devfile", "devfile.yaml"}
+	args = useProjectIfAvailable(args, namespace)
+	output := helper.CmdShouldPass("odo", args...)
+	Expect(output).To(ContainSubstring("Executing devrun command \"nodemon app.js\""))
+
+	args = []string{"push", "-f", "--devfile", "devfile.yaml"}
+	args = useProjectIfAvailable(args, namespace)
+	output = helper.CmdShouldPass("odo", args...)
+	Expect(output).To(ContainSubstring("if not running"))
+
+}

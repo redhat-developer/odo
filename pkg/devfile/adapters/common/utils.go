@@ -2,6 +2,7 @@ package common
 
 import (
 	"os"
+	"strconv"
 
 	"github.com/golang/glog"
 
@@ -145,4 +146,20 @@ func IsPortPresent(endpoints []common.DockerimageEndpoint, port int) bool {
 	}
 
 	return false
+}
+
+// IsRestartRequired returns if restart is required for devrun command
+func IsRestartRequired(command common.DevfileCommand) bool {
+	var restart = true
+	var err error
+	rs, ok := command.Attributes["restart"]
+	if ok {
+		restart, err = strconv.ParseBool(rs)
+		// Ignoring error here as restart is true for all error and default cases.
+		if err != nil {
+			glog.V(4).Info("Error converting restart attribute to bool")
+		}
+	}
+
+	return restart
 }

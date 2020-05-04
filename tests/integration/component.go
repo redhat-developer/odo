@@ -252,6 +252,11 @@ func componentTests(args ...string) {
 			expected, err := helper.Unindented(`{"kind": "Component","apiVersion": "odo.openshift.io/v1alpha1","metadata": {"name": "cmp-git","namespace": "` + project + `","creationTimestamp": null},"spec":{"app": "testing","type":"nodejs","source": "https://github.com/openshift/nodejs-ex","sourceType": "git","url": ["url-1", "url-2"],"storage": ["storage-1"],"ports": ["8080/TCP"]},"status": {"state": "Not Pushed"}}`)
 			Expect(err).Should(BeNil())
 			Expect(cmpDescribeJSON).To(Equal(expected))
+
+			// odo should describe not pushed component if component name is given.
+			helper.CmdShouldPass("odo", append(args, "describe", "cmp-git", "--context", context)...)
+			Expect(cmpDescribe).To(ContainSubstring("cmp-git"))
+
 			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--all", "--context", context)...)
 		})
 
