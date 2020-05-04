@@ -49,8 +49,11 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	if err != nil {
 		return errors.Wrapf(err, "Unable to process volumes for component %s", a.ComponentName)
 	}
-	a.devfileBuildCmd = parameters.DevfileBuildCmd
-	a.devfileRunCmd = parameters.DevfileRunCmd
+
+	pushCommand := parameters.EnvSpecificInfo.GetPushCommand()
+	a.devfileInitCmd = pushCommand.Init
+	a.devfileBuildCmd = pushCommand.Build
+	a.devfileRunCmd = pushCommand.Run
 
 	// Validate the devfile build and run commands
 	log.Info("\nValidation")

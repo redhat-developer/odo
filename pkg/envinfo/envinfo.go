@@ -14,25 +14,23 @@ import (
 	"github.com/openshift/odo/pkg/util"
 )
 
-const (
-	envInfoEnvName  = "ENVINFO"
-	envInfoFileName = "env.yaml"
-)
-
 // ComponentSettings holds all component related information
 type ComponentSettings struct {
-	Name      string        `yaml:"Name,omitempty"`
-	Namespace string        `yaml:"Namespace,omitempty"`
-	URL       *[]EnvInfoURL `yaml:"Url,omitempty"`
+	Name        string              `yaml:"Name,omitempty"`
+	Namespace   string              `yaml:"Namespace,omitempty"`
+	URL         *[]EnvInfoURL       `yaml:"Url,omitempty"`
+	PushCommand *EnvInfoPushCommand `yaml:"PushCommand,omitempty"`
 }
 
 // URLKind is an enum to indicate the type of the URL i.e ingress/route
 type URLKind string
 
 const (
-	INGRESS URLKind = "ingress"
-	ROUTE   URLKind = "route"
-	DOCKER  URLKind = "docker"
+	DOCKER          URLKind = "docker"
+	INGRESS         URLKind = "ingress"
+	ROUTE           URLKind = "route"
+	envInfoEnvName          = "ENVINFO"
+	envInfoFileName         = "env.yaml"
 )
 
 // EnvInfoURL holds URL related information
@@ -44,7 +42,7 @@ type EnvInfoURL struct {
 	// Indicates if the URL should be a secure https one
 	Secure bool `yaml:"Secure,omitempty"`
 	// Cluster host
-	Host string `yaml:"host,omitempty"`
+	Host string `yaml:"Host,omitempty"`
 	// TLS secret name to create ingress to provide a secure URL
 	TLSSecret string `yaml:"TLSSecret,omitempty"`
 	// Exposed port number for docker container, required for local scenarios
@@ -53,7 +51,14 @@ type EnvInfoURL struct {
 	Kind URLKind `yaml:"Kind,omitempty"`
 }
 
-// EnvInfo holds all the env specific infomation relavent to a specific Component.
+// EnvInfoPushCommand holds the devfile push commands for the component
+type EnvInfoPushCommand struct {
+	Init  string `yaml:"Init,omitempty"`
+	Build string `yaml:"Build,omitempty"`
+	Run   string `yaml:"Run,omitempty"`
+}
+
+// EnvInfo holds all the env specific information relavent to a specific Component.
 type EnvInfo struct {
 	componentSettings ComponentSettings `yaml:"ComponentSettings,omitempty"`
 }
@@ -161,6 +166,9 @@ func (esi *EnvSpecificInfo) SetConfiguration(parameter string, value interface{}
 			} else {
 				esi.componentSettings.URL = &[]EnvInfoURL{urlValue}
 			}
+		case "push":
+			pushCommandValue := value.(EnvInfoPushCommand)
+			esi.componentSettings.PushCommand = &pushCommandValue
 		}
 
 		return esi.writeToFile()
@@ -266,6 +274,14 @@ func (ei *EnvInfo) GetURL() []EnvInfoURL {
 	return *ei.componentSettings.URL
 }
 
+// GetPushCommand returns the EnvInfoPushCommand, returns default if nil
+func (ei *EnvInfo) GetPushCommand() EnvInfoPushCommand {
+	if ei.componentSettings.PushCommand == nil {
+		return EnvInfoPushCommand{}
+	}
+	return *ei.componentSettings.PushCommand
+}
+
 // GetName returns the component name
 func (ei *EnvInfo) GetName() string {
 	if ei.componentSettings.Name == "" {
@@ -287,16 +303,21 @@ const (
 	Create = "CREATE"
 	// CreateDescription is the description of Create parameter
 	CreateDescription = "Create parameter is the action to write devfile metadata to env.yaml"
-	// URL
+	// URL parameter
 	URL = "URL"
 	// URLDescription is the description of URL
 	URLDescription = "URL to access the component"
+	// Push parameter
+	Push = "PUSH"
+	// PushDescription is the description of URL
+	PushDescription = "Push parameter is the action to write devfile commands to env.yaml"
 )
 
 var (
 	supportedLocalParameterDescriptions = map[string]string{
 		Create: CreateDescription,
 		URL:    URLDescription,
+		Push:   PushDescription,
 	}
 
 	lowerCaseLocalParameters = util.GetLowerCaseParameters(GetLocallySupportedParameters())

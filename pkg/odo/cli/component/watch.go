@@ -207,6 +207,7 @@ func (wo *WatchOptions) Run() (err error) {
 				ExtChan:             make(chan bool),
 				DevfileWatchHandler: wo.devfileHandler.Push,
 				Show:                wo.show,
+				EnvSpecificInfo:     wo.EnvSpecificInfo,
 			},
 		)
 		if err != nil {

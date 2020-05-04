@@ -3,7 +3,6 @@ package component
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -78,9 +77,6 @@ func (po *PushOptions) DevfilePush() (err error) {
 		ForceBuild:      po.forceBuild,
 		Show:            po.show,
 		EnvSpecificInfo: *po.EnvSpecificInfo,
-		DevfileInitCmd:  strings.ToLower(po.devfileInitCommand),
-		DevfileBuildCmd: strings.ToLower(po.devfileBuildCommand),
-		DevfileRunCmd:   strings.ToLower(po.devfileRunCommand),
 	}
 
 	warnIfURLSInvalid(po.EnvSpecificInfo.GetURL())

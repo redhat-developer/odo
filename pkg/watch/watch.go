@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/util"
 
 	"github.com/openshift/odo/pkg/occlient"
@@ -40,6 +41,8 @@ type WatchParameters struct {
 	PushDiffDelay int
 	// Parameter whether or not to show build logs
 	Show bool
+	// EnvSpecificInfo contains infomation of env.yaml file
+	EnvSpecificInfo *envinfo.EnvSpecificInfo
 }
 
 // addRecursiveWatch handles adding watches recursively for the path provided
@@ -309,6 +312,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 							WatchDeletedFiles: deletedPaths,
 							IgnoredFiles:      parameters.FileIgnores,
 							ForceBuild:        false,
+							EnvSpecificInfo:   *parameters.EnvSpecificInfo,
 						}
 
 						err = parameters.DevfileWatchHandler(pushParams)
@@ -326,6 +330,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 							WatchDeletedFiles: deletedPaths,
 							IgnoredFiles:      parameters.FileIgnores,
 							ForceBuild:        false,
+							EnvSpecificInfo:   *parameters.EnvSpecificInfo,
 						}
 
 						err = parameters.DevfileWatchHandler(pushParams)

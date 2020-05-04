@@ -3,6 +3,7 @@ package component
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
@@ -63,12 +64,28 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 	// if experimental mode is enabled and devfile is present
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.DevfilePath) {
-		envinfo, err := envinfo.NewEnvSpecificInfo(po.componentContext)
+		envInfo, err := envinfo.NewEnvSpecificInfo(po.componentContext)
 		if err != nil {
 			return errors.Wrap(err, "unable to retrieve configuration information")
 		}
-		po.EnvSpecificInfo = envinfo
+		po.EnvSpecificInfo = envInfo
 		po.Context = genericclioptions.NewDevfileContext(cmd)
+
+		pushCommand := po.EnvSpecificInfo.GetPushCommand()
+		if po.devfileInitCommand != "" {
+			pushCommand.Init = strings.ToLower(po.devfileInitCommand)
+		}
+		if po.devfileBuildCommand != "" {
+			pushCommand.Build = strings.ToLower(po.devfileBuildCommand)
+		}
+		if po.devfileRunCommand != "" {
+			pushCommand.Run = strings.ToLower(po.devfileRunCommand)
+		}
+
+		err = po.EnvSpecificInfo.SetConfiguration("push", pushCommand)
+		if err != nil {
+			return errors.Wrap(err, "unable to set push configuration for env.yaml")
+		}
 
 		if !pushtarget.IsPushTargetDocker() {
 			// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initalizing the context
