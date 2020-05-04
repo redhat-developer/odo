@@ -9,29 +9,53 @@ import (
 	"github.com/spf13/afero"
 )
 
-func TestEnv(t *testing.T) {
-
+func TestAddEnv(t *testing.T) {
 	fakeFs := ioutils.NewMapFilesystem()
 	gitopsPath := afero.GetTempDir(fakeFs, "test")
+
+	manifestFile := filepath.Join(gitopsPath, pipelinesFile)
 	envParameters := EnvParameters{
-		EnvName: "dev",
-		Output:  gitopsPath,
+		ManifestFilename: manifestFile,
+		EnvName:          "dev",
 	}
-	if err := Env(&envParameters, fakeFs); err != nil {
-		t.Fatalf("Env() failed :%s", err)
+	afero.WriteFile(fakeFs, manifestFile, []byte("environments:"), 0644)
+
+	if err := AddEnv(&envParameters, fakeFs); err != nil {
+		t.Fatalf("AddEnv() failed :%s", err)
 	}
 
 	wantedPaths := []string{
-		"environments/dev/base/kustomization.yaml",
-		"environments/dev/base/namespace.yaml",
-		"environments/dev/base/rolebinding.yaml",
-		"environments/dev/overlays/kustomization.yaml",
+		"environments/dev/env/base/kustomization.yaml",
+		"environments/dev/env/base/dev-environment.yaml",
+		"environments/dev/env/overlays/kustomization.yaml",
 	}
-
 	for _, path := range wantedPaths {
 		t.Run(fmt.Sprintf("checking path %s already exists", path), func(rt *testing.T) {
 			assertFileExists(rt, fakeFs, filepath.Join(gitopsPath, path))
 		})
+	}
+}
+
+func TestAddEnvWithExistingName(t *testing.T) {
+	fakeFs := ioutils.NewMapFilesystem()
+	gitopsPath := afero.GetTempDir(fakeFs, "test")
+
+	manifestFile := filepath.Join(gitopsPath, pipelinesFile)
+	envParameters := EnvParameters{
+		ManifestFilename: manifestFile,
+		EnvName:          "dev",
+	}
+	afero.WriteFile(fakeFs, manifestFile, []byte("environments:\n - name: dev\n"), 0644)
+
+	if err := AddEnv(&envParameters, fakeFs); err == nil {
+		t.Fatal("AddEnv() did not fail with duplicate environment")
+	}
+}
+
+func assertNoError(t *testing.T, err error) {
+	t.Helper()
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -46,12 +70,5 @@ func assertFileExists(t *testing.T, testFs afero.Fs, path string) {
 	assertNoError(t, err)
 	if isDir {
 		t.Fatalf("%q is a directory", path)
-	}
-}
-
-func assertNoError(t *testing.T, err error) {
-	t.Helper()
-	if err != nil {
-		t.Fatal(err)
 	}
 }

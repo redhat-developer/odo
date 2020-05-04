@@ -98,12 +98,9 @@ func NewCmdBootstrap(name, fullName string) *cobra.Command {
 
 	initCmd.MarkFlagRequired("gitops-repo-url")
 	initCmd.MarkFlagRequired("gitops-webhook-secret")
-
 	initCmd.MarkFlagRequired("app-repo-url")
 	initCmd.MarkFlagRequired("app-webhook-secret")
-
 	initCmd.MarkFlagRequired("dockercfgjson")
-
 	initCmd.MarkFlagRequired("image-repo")
 
 	return initCmd

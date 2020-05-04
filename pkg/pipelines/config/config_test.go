@@ -168,7 +168,7 @@ func TestFindCICDEnviroment(t *testing.T) {
 		want  string
 		err   string
 	}{
-		{[]testEnv{{"prod", false, false}, {"staging", false, false}, {"dev", false, false}}, "", "could not find CI/CD environment"},
+		{[]testEnv{{"prod", false, false}, {"staging", false, false}, {"dev", false, false}}, "", ""},
 		{[]testEnv{{"test-cicd", true, false}, {"staging", false, false}, {"dev", false, false}}, "test-cicd", ""},
 		{[]testEnv{{"test-cicd", true, false}, {"oc-cicd", true, false}, {"dev", false, false}}, "", "found multiple CI/CD environments"},
 	}
@@ -191,16 +191,13 @@ func TestFindCICDEnviroment(t *testing.T) {
 
 func TestGetEnvironment(t *testing.T) {
 	m := &Manifest{Environments: makeEnvs([]testEnv{{name: "prod"}, {name: "testing"}})}
-	env, err := m.GetEnvironment("prod")
-	if err != nil {
-		t.Fatalf("failed to find prod environment: %s", err)
-	}
+	env := m.GetEnvironment("prod")
 	if env.Name != "prod" {
 		t.Fatalf("got the wrong environment back: %#v", env)
 	}
 
-	unknown, err := m.GetEnvironment("unknown")
-	if err == nil {
+	unknown := m.GetEnvironment("unknown")
+	if unknown != nil {
 		t.Fatalf("found an unknown env: %#v", unknown)
 	}
 }

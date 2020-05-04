@@ -10,10 +10,6 @@ import (
 	"github.com/openshift/odo/pkg/pipelines/meta"
 )
 
-const (
-	saName = "pipeline"
-)
-
 // Filters for interceptors
 const (
 	StageCIDryRunFilters = "(header.match('X-GitHub-Event', 'pull_request') && body.action == 'opened' || body.action == 'synchronize') && body.pull_request.head.repo.full_name == '%s'"
@@ -60,12 +56,12 @@ func Generate(githubRepo, ns, saName, secretName string) triggersv1.EventListene
 	}
 }
 
-func CreateELFromTriggers(cicdNs string, triggers []triggersv1.EventListenerTrigger) *triggersv1.EventListener {
+func CreateELFromTriggers(cicdNS, saName string, triggers []triggersv1.EventListenerTrigger) *triggersv1.EventListener {
 	return &v1alpha1.EventListener{
 		TypeMeta: eventListenerTypeMeta,
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "cicd-event-listener",
-			Namespace: cicdNs,
+			Namespace: cicdNS,
 		},
 		Spec: triggersv1.EventListenerSpec{
 			ServiceAccountName: saName,
@@ -94,12 +90,12 @@ func createGitHubInterceptor(secretName, ns string) *triggersv1.EventInterceptor
 	}
 }
 
-func CreateListenerTrigger(name, filter, repoName, binding, template, secretName, secretNs string) triggersv1.EventListenerTrigger {
+func CreateListenerTrigger(name, filter, repoName, binding, template, secretName, secretNS string) triggersv1.EventListenerTrigger {
 	return triggersv1.EventListenerTrigger{
 		Name: name,
 		Interceptors: []*triggersv1.EventInterceptor{
 			createEventInterceptor(filter, repoName),
-			createGitHubInterceptor(secretName, secretNs),
+			createGitHubInterceptor(secretName, secretNS),
 		},
 		Bindings: []*triggersv1.EventListenerBinding{
 			createListenerBinding(binding),

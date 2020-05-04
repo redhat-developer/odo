@@ -2,7 +2,6 @@ package config
 
 import (
 	"errors"
-	"fmt"
 	"path/filepath"
 	"sort"
 )
@@ -27,13 +26,13 @@ type Manifest struct {
 	Environments []*Environment `json:"environments,omitempty"`
 }
 
-func (m *Manifest) GetEnvironment(n string) (*Environment, error) {
+func (m *Manifest) GetEnvironment(n string) *Environment {
 	for _, env := range m.Environments {
 		if env.Name == n {
-			return env, nil
+			return env
 		}
 	}
-	return nil, fmt.Errorf("failed to find environment: %s", n)
+	return nil
 }
 
 // GetCICDEnvironment returns the CICD Environment if one exists.
@@ -48,7 +47,7 @@ func (m *Manifest) GetCICDEnvironment() (*Environment, error) {
 		return nil, errors.New("found multiple CI/CD environments")
 	}
 	if len(envs) == 0 {
-		return nil, errors.New("could not find CI/CD environment")
+		return nil, nil
 	}
 	return envs[0], nil
 }

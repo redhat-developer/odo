@@ -2,7 +2,6 @@ package environment
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/pipelines"
@@ -29,9 +28,9 @@ var (
 
 // AddEnvParameters encapsulates the parameters for the odo pipelines init command.
 type AddEnvParameters struct {
-	envName string
-	output  string
-	prefix  string
+	envName  string
+	output   string
+	manifest string
 	// generic context options common to all commands
 	*genericclioptions.Context
 }
@@ -46,9 +45,6 @@ func NewAddEnvParameters() *AddEnvParameters {
 // If the prefix provided doesn't have a "-" then one is added, this makes the
 // generated environment names nicer to read.
 func (eo *AddEnvParameters) Complete(name string, cmd *cobra.Command, args []string) error {
-	if eo.prefix != "" && !strings.HasSuffix(eo.prefix, "-") {
-		eo.prefix = eo.prefix + "-"
-	}
 	return nil
 }
 
@@ -60,12 +56,10 @@ func (eo *AddEnvParameters) Validate() error {
 // Run runs the project bootstrap command.
 func (eo *AddEnvParameters) Run() error {
 	options := pipelines.EnvParameters{
-		EnvName: eo.envName,
-		Output:  eo.output,
-		Prefix:  eo.prefix,
+		EnvName:          eo.envName,
+		ManifestFilename: eo.manifest,
 	}
-
-	return pipelines.Env(&options, ioutils.NewFilesystem())
+	return pipelines.AddEnv(&options, ioutils.NewFilesystem())
 }
 
 // NewCmdAddEnv creates the project add environment command.
@@ -84,9 +78,6 @@ func NewCmdAddEnv(name, fullName string) *cobra.Command {
 
 	addEnvCmd.Flags().StringVar(&o.envName, "env-name", "", "name of the environment/namespace")
 	addEnvCmd.MarkFlagRequired("env-name")
-	addEnvCmd.Flags().StringVar(&o.output, "output", ".", "folder/path to add Gitops resources")
-	addEnvCmd.MarkFlagRequired("output")
-	addEnvCmd.Flags().StringVarP(&o.prefix, "prefix", "p", "", "add a prefix to the environment names")
-
+	addEnvCmd.Flags().StringVar(&o.manifest, "manifest", "pipelines.yaml", "path to manifest file")
 	return addEnvCmd
 }

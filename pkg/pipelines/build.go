@@ -5,6 +5,7 @@ import (
 
 	"github.com/openshift/odo/pkg/pipelines/argocd"
 	"github.com/openshift/odo/pkg/pipelines/config"
+	"github.com/openshift/odo/pkg/pipelines/environments"
 	res "github.com/openshift/odo/pkg/pipelines/resources"
 	"github.com/openshift/odo/pkg/pipelines/yaml"
 	"github.com/spf13/afero"
@@ -37,11 +38,12 @@ func BuildResources(o *BuildParameters, appFs afero.Fs) error {
 
 func buildResources(fs afero.Fs, o *BuildParameters, m *config.Manifest) (res.Resources, error) {
 	resources := res.Resources{}
-	envs, err := buildEnvironments(fs, m)
+	envs, err := environments.Build(fs, m, saName)
 	if err != nil {
 		return nil, err
 	}
 	resources = res.Merge(envs, resources)
+
 	elFiles, err := buildEventListenerResources(o.RepositoryURL, m)
 	if err != nil {
 		return nil, err
