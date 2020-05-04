@@ -168,13 +168,11 @@ func ExecPushWithNewFileAndDir(projectDirPath, cmpName, namespace, newFilePath, 
 
 // ExecWithRestartAttribute executes odo push with a command attribute restart
 func ExecWithRestartAttribute(projectDirPath, cmpName, namespace string) {
-	helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-	helper.Chdir(projectDirPath)
-
 	args := []string{"create", "nodejs", cmpName}
 	args = useProjectIfAvailable(args, namespace)
 	helper.CmdShouldPass("odo", args...)
 
+	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-restart.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
 
 	args = []string{"push", "--devfile", "devfile.yaml"}

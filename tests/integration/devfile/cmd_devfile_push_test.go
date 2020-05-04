@@ -257,7 +257,7 @@ var _ = Describe("odo devfile push command tests", func() {
 		})
 
 		It("should not restart the application if restart is false", func() {
-			utils.ExecWithRestartAttribute(projectDirPath, cmpName, namespace)
+			utils.ExecWithRestartAttribute(context, cmpName, namespace)
 		})
 
 		It("should create pvc and reuse if it shares the same devfile volume name", func() {
