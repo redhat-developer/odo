@@ -708,11 +708,11 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 		return errors.Errorf("No project found in devfile component.")
 	}
 
-	if nOfProjects == 1 && projectPassed == "no-project-passed-to-flag" {
+	if nOfProjects == 1 && projectPassed == "devfile-project-name" {
 		project = projects[0]
-	} else if nOfProjects > 1 && projectPassed == "no-project-passed-to-flag" {
+	} else if nOfProjects > 1 && projectPassed == "devfile-project-name" {
 		project = projects[0]
-		log.Warning("There are multiple projects in this devfile but none have been specified in --downloadSource. Downloading the first.")
+		log.Warning("There are multiple projects in this devfile but none have been specified in --downloadSource. Downloading the first: " + project.Name)
 	} else { //If the user has specified a project
 		projectFound := false
 		for indexOfProject, projectInfo := range projects {
@@ -915,7 +915,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 
 	if experimental.IsExperimentalModeEnabled() {
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.downloadSource, "downloadSource", "", "Download sample project from devfile. (ex. odo component create <component_type> [component_name] --downloadSource/--downloadSource=<devfile-project>")
-		componentCreateCmd.Flags().Lookup("downloadSource").NoOptDefVal = "no-project-passed-to-flag" //Default value to pass to the flag if one is not specified.
+		componentCreateCmd.Flags().Lookup("downloadSource").NoOptDefVal = "devfile-project-name" //Default value to pass to the flag if one is not specified.
 	}
 
 	componentCreateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
