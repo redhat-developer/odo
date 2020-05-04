@@ -30,6 +30,7 @@ _obj
 _test
 
 # Architecture specific extensions/prefixes
+.DS_Store
 *.[568vq]
 [568vq].out
 
