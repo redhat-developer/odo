@@ -777,11 +777,33 @@ func TestPush(t *testing.T) {
 				},
 				{
 					Name:   "example-1",
-					Port:   8080,
+					Port:   9090,
 					Secure: false,
 				},
 			},
 			returnedRoutes: &routev1.RouteList{},
+			createdURLs: []URL{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "example-app",
+					},
+					Spec: URLSpec{
+						Port:    8080,
+						Secure:  false,
+						urlKind: envinfo.ROUTE,
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "example-1-app",
+					},
+					Spec: URLSpec{
+						Port:    9090,
+						Secure:  false,
+						urlKind: envinfo.ROUTE,
+					},
+				},
+			},
 		},
 		{
 			name:            "0 url on local config and 2 on openshift cluster",
@@ -838,6 +860,27 @@ func TestPush(t *testing.T) {
 					},
 				},
 			},
+		},
+		{
+			name:            "2 url on local config and openshift cluster are in sync",
+			componentName:   "nodejs",
+			applicationName: "app",
+			args:            args{isRouteSupported: true},
+			existingConfigURLs: []config.ConfigURL{
+				{
+					Name:   "example",
+					Port:   8080,
+					Secure: false,
+				},
+				{
+					Name:   "example-1",
+					Port:   9100,
+					Secure: false,
+				},
+			},
+			returnedRoutes: testingutil.GetRouteListWithMultiple("nodejs", "app"),
+			deletedURLs:    []URL{},
+			createdURLs:    []URL{},
 		},
 
 		{
@@ -973,6 +1016,31 @@ func TestPush(t *testing.T) {
 					},
 				},
 			},
+		},
+		{
+			name:          "2 urls on env file and openshift cluster are in sync",
+			componentName: "wildfly",
+			args:          args{isRouteSupported: true, isExperimentalModeEnabled: true},
+			existingEnvInfoURLs: []envinfo.EnvInfoURL{
+				{
+					Name:   "example-0",
+					Port:   8080,
+					Secure: false,
+					Host:   "com",
+					Kind:   envinfo.INGRESS,
+				},
+				{
+					Name:   "example-1",
+					Port:   9090,
+					Secure: false,
+					Host:   "com",
+					Kind:   envinfo.INGRESS,
+				},
+			},
+			returnedRoutes:  &routev1.RouteList{},
+			returnedIngress: fake.GetIngressListWithMultiple("wildfly"),
+			createdURLs:     []URL{},
+			deletedURLs:     []URL{},
 		},
 		{
 			name:          "2 (1 ingress,1 route) urls on env file and 2 on openshift cluster (1 ingress,1 route), but they are different",
@@ -1371,6 +1439,16 @@ func TestPush(t *testing.T) {
 				if !tt.args.isRouteSupported {
 					if len(fakeClientSet.RouteClientset.Actions()) > 0 {
 						t.Errorf("route is not supproted, total actions on the routeClient should be 0")
+					}
+				}
+
+				if len(tt.createdURLs) == 0 && len(tt.deletedURLs) == 0 {
+					if len(fakeClientSet.RouteClientset.Actions()) > 1 {
+						t.Errorf("when urls are in sync, total action for route client set should be less than 1")
+					}
+
+					if len(fakeClientSet.Kubernetes.Actions()) > 1 {
+						t.Errorf("when urls are in snyc, total action for kubernetes client set should be less than 1")
 					}
 				}
 			}

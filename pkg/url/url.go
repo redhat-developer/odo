@@ -614,7 +614,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 			}
 			if !reflect.DeepEqual(val.Spec, urlSpec.Spec) {
 				configMismatch = true
-				glog.V(4).Infof("config and cluster mismatch for url %s", urlName)
+				klog.V(4).Infof("config and cluster mismatch for url %s", urlName)
 			}
 		}
 
