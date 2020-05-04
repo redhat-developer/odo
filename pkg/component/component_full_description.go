@@ -15,7 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-//ComponentFullDescriptionSpec repersents complete desciption of the component
+// ComponentFullDescriptionSpec repersents complete desciption of the component
 type ComponentFullDescriptionSpec struct {
 	App        string              `json:"app,omitempty"`
 	Type       string              `json:"type,omitempty"`
@@ -27,7 +27,7 @@ type ComponentFullDescriptionSpec struct {
 	Ports      []string            `json:"ports,omitempty"`
 }
 
-//ComponentFullDescription describes a component fully
+// ComponentFullDescription describes a component fully
 type ComponentFullDescription struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -35,6 +35,7 @@ type ComponentFullDescription struct {
 	Status            ComponentStatus              `json:"status,omitempty"`
 }
 
+// copyFromComponentDescription copies over all fields from Component that can be copied
 func (cfd *ComponentFullDescription) copyFromComponentDesc(component *Component) error {
 	d, err := json.Marshal(component)
 	if err != nil {
@@ -43,6 +44,7 @@ func (cfd *ComponentFullDescription) copyFromComponentDesc(component *Component)
 	return json.Unmarshal(d, cfd)
 }
 
+// loadURLSFromClientAndLocalConfig loads url information from localconfig and cluster
 func (cfd *ComponentFullDescription) loadURLSFromClientAndLocalConfig(client *occlient.Client, localConfigInfo *config.LocalConfigInfo, componentName string, applicationName string) error {
 	urls, err := urlpkg.List(client, localConfigInfo, componentName, applicationName)
 	if err != nil {
@@ -53,25 +55,31 @@ func (cfd *ComponentFullDescription) loadURLSFromClientAndLocalConfig(client *oc
 	return nil
 }
 
+// loadStoragesFromClientAndLocalConfig collects information about storages in localconfig and cluster.
 func (cfd *ComponentFullDescription) loadStoragesFromClientAndLocalConfig(client *occlient.Client, localConfigInfo *config.LocalConfigInfo, componentName string, applicationName string, componentDesc *Component) error {
 	var storages storage.StorageList
 	var err error
+	// if component is pushed call ListWithState which gets storages from localconfig and cluster
+	// this result is already in mc readable form
 	if componentDesc.Status.State == StateTypePushed {
 		storages, err = storage.ListStorageWithState(client, localConfigInfo, componentName, applicationName)
 		if err != nil {
 			return err
 		}
 	} else {
+		// otherwise simply fetch storagelist from localconfig
 		storageLocal, err := localConfigInfo.StorageList()
 		if err != nil {
 			return err
 		}
+		// convert to machine readable format
 		storages = storage.ConvertListLocalToMachine(storageLocal)
 	}
 	cfd.Spec.Storage = storages
 	return nil
 }
 
+// fillEmptyFields fills any fields that are empty in componentfulldescription
 func (cfd *ComponentFullDescription) fillEmptyFields(componentDesc Component, componentName string, applicationName string, projectName string) {
 	//fix missing names in case it in not in description
 	if len(cfd.Name) <= 0 {
@@ -96,7 +104,7 @@ func (cfd *ComponentFullDescription) fillEmptyFields(componentDesc Component, co
 	cfd.Spec.Ports = componentDesc.Spec.Ports
 }
 
-//NewComponentFullDescriptionFromClientAndLocalConfig gets the complete description of the component from both localconfig and cluster
+// NewComponentFullDescriptionFromClientAndLocalConfig gets the complete description of the component from both localconfig and cluster
 func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client, localConfigInfo *config.LocalConfigInfo, componentName string, applicationName string, projectName string) (*ComponentFullDescription, error) {
 	cfd := &ComponentFullDescription{}
 	state := GetComponentState(client, componentName, applicationName)
@@ -133,8 +141,9 @@ func NewComponentFullDescriptionFromClientAndLocalConfig(client *occlient.Client
 	return cfd, nil
 }
 
-//Print prints the complete information of component onto stdout (Note: longterm this function should not need to access any parameters, but just print the information in struct)
+// Print prints the complete information of component onto stdout (Note: longterm this function should not need to access any parameters, but just print the information in struct)
 func (cfd *ComponentFullDescription) Print(client *occlient.Client) error {
+	// TODO: remove the need to client here print should just deal with printing
 	log.Describef("Component Name: ", cfd.GetName())
 	log.Describef("Type: ", cfd.Spec.Type)
 
