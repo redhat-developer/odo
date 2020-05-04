@@ -56,9 +56,10 @@ func (do *DescribeOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (do *DescribeOptions) Run() (err error) {
-	if !do.LocalConfigInfo.ConfigFileExists() {
+	if (len(do.componentName) <= 0 || len(do.Application) <= 0 || len(do.Project) <= 0) && !do.LocalConfigInfo.ConfigFileExists() {
 		return fmt.Errorf("Component %v does not exist", do.componentName)
 	}
+
 	cfd, err := component.NewComponentFullDescriptionFromClientAndLocalConfig(do.Context.Client, do.LocalConfigInfo, do.componentName, do.Context.Application, do.Context.Project)
 	if err != nil {
 		return err
