@@ -131,14 +131,6 @@ var _ = Describe("odo docker devfile url command tests", func() {
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
 			stdout = helper.CmdShouldPass("odo", "url", "list")
 			helper.MatchAllInOutput(stdout, []string{url1, "Pushed"})
-			// helper.WaitForCmdOut("odo", []string{"url", "list"}, 1, false, func(output string) bool {
-			// 	if strings.Contains(output, url1) {
-			// 		Expect(output).Should(ContainSubstring(url1))
-			// 		Expect(output).Should(ContainSubstring("Pushed"))
-			// 		return true
-			// 	}
-			// 	return false
-			// })
 			helper.CmdShouldPass("odo", "url", "delete", url1, "-f")
 
 			stdout = helper.CmdShouldPass("odo", "url", "list")

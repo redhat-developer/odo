@@ -132,7 +132,6 @@ func (a Adapter) updateComponent() (componentExists bool, err error) {
 			}
 			dockerVolumeMounts = append(dockerVolumeMounts, volMount)
 		}
-
 		if len(containers) == 0 {
 			log.Infof("\nCreating Docker resources for component %s", a.ComponentName)
 

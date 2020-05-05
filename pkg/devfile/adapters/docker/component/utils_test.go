@@ -310,6 +310,11 @@ func TestGenerateAndGetHostConfig(t *testing.T) {
 
 	endpointName := []string{"8080/tcp", "9090/tcp", "9080/tcp"}
 	var endpointPort = []int32{8080, 9090, 9080}
+	var expectPortNameMapping = map[nat.Port]string{
+		nat.Port("8080/tcp"): "url1",
+		nat.Port("9090/tcp"): "url2",
+		nat.Port("9080/tcp"): "url3",
+	}
 
 	tests := []struct {
 		name         string
@@ -328,7 +333,7 @@ func TestGenerateAndGetHostConfig(t *testing.T) {
 		{
 			name: "Case 2: only one port mapping",
 			urlValue: []envinfo.EnvInfoURL{
-				{Port: 8080, ExposedPort: 65432},
+				{Name: "url1", Port: 8080, ExposedPort: 65432},
 			},
 			expectResult: nat.PortMap{
 				"8080/tcp": []nat.PortBinding{
@@ -349,9 +354,9 @@ func TestGenerateAndGetHostConfig(t *testing.T) {
 		{
 			name: "Case 3: multiple port mappings",
 			urlValue: []envinfo.EnvInfoURL{
-				{Port: 8080, ExposedPort: 65432},
-				{Port: 9090, ExposedPort: 54321},
-				{Port: 9080, ExposedPort: 45678},
+				{Name: "url1", Port: 8080, ExposedPort: 65432},
+				{Name: "url2", Port: 9090, ExposedPort: 54321},
+				{Name: "url3", Port: 9080, ExposedPort: 45678},
 			},
 			expectResult: nat.PortMap{
 				"8080/tcp": []nat.PortBinding{
@@ -415,7 +420,7 @@ func TestGenerateAndGetHostConfig(t *testing.T) {
 				}
 			}
 			componentAdapter := New(adapterCtx, *tt.client)
-			hostConfig, err := componentAdapter.generateAndGetHostConfig(tt.endpoints)
+			hostConfig, portURLNameMapping, err := componentAdapter.generateAndGetHostConfig(tt.endpoints)
 			if err != nil {
 				t.Error(err)
 			}
@@ -427,6 +432,13 @@ func TestGenerateAndGetHostConfig(t *testing.T) {
 				for key, value := range hostConfig.PortBindings {
 					if tt.expectResult[key][0].HostIP != value[0].HostIP || tt.expectResult[key][0].HostPort != value[0].HostPort {
 						t.Errorf("host config PortBindings mismatch: actual value %v, expected value %v", hostConfig.PortBindings, tt.expectResult)
+					}
+				}
+			}
+			if len(portURLNameMapping) != 0 {
+				for key, value := range portURLNameMapping {
+					if expectPortNameMapping[key] != value {
+						t.Errorf("port and urlName mapping mismatch for port %v: actual value %v, expected value %v", key, value, expectPortNameMapping[key])
 					}
 				}
 			}
