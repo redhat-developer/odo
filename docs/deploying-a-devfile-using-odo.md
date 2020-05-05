@@ -17,8 +17,8 @@ micro_nav: true
 What is a devfile?
 
 A [devfile](https://redhat-developer.github.io/devfile/) is a portable
-file that describes your initial development environment. It allows for
-a *portable* developmental environment without the need of
+file that describes your development environment. It allows for a
+*portable* developmental environment without the need of
 reconfiguration.
 
 With a devfile you can describe:
@@ -32,10 +32,10 @@ With a devfile you can describe:
 
   - Projects to initially clone
 
-Odo takes these devfile’s and transforms them into a workspace of
-multiple containers running on OpenShift or Docker.
+Odo takes this devfile and transforms it into a workspace of multiple
+containers running on OpenShift, Kubernetes or Docker.
 
-Devfile’s are YAML files with a defined definition, take a look at the
+Devfile’s are YAML files with a defined structure, take a look at the
 general
 [schema](https://github.com/redhat-developer/devfile/blob/master/docs/devfile.md)
 of devfile.
@@ -175,9 +175,11 @@ component](https://github.com/odo-devfiles/springboot-ex) that uses
      To apply the URL configuration changes, please use odo push
     ```
     
-    > **Note**
-    > 
-    > You must use your cluster host domain name when creating your URL.
+    <div class="note">
+    
+    You must use your cluster host domain name when creating your URL.
+    
+    </div>
 
 6.  Push the component to the cluster:
     
@@ -260,9 +262,11 @@ component](https://github.com/odo-devfiles/nodejs-ex) that uses
      To apply the URL configuration changes, please use odo push
     ```
     
-    > **Note**
-    > 
-    > You must use your cluster host domain name when creating your URL.
+    <div class="note">
+    
+    You must use your cluster host domain name when creating your URL.
+    
+    </div>
 
 6.  Push the component to the cluster:
     
@@ -362,7 +366,7 @@ component we did earlier, but to a locally running Docker instance.
     `dockercontainer` in `devfile.yaml` and deploys them.
     
     Each docker container that is deployed is labeled with the name of
-    the odo component, linking all of them together.
+    the odo component.
     
     Docker volumes are created for the project source, and any other
     volumes defined in the devfile and mounted to the necessary

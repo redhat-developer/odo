@@ -20,10 +20,12 @@ page_nav:
 The following section describes how to install `odo` on different
 platforms.
 
-> **Note**
-> 
-> Currently, `odo` does not support installation in a restricted network
-> environment.
+<div class="note">
+
+Currently, `odo` does not support installation in a restricted network
+environment.
+
+</div>
 
 # Installing odo on Linux
 
@@ -78,8 +80,7 @@ Edit `Environment Variables` using search:
 3.  Select **Path** from the **Variable** section and click **Edit**.
 
 4.  Click **New** and type `C:\go-bin` into the field or click
-    **Browse** and select the directory, and click
-    **OK**.
+    **Browse** and select the directory, and click **OK**.
 
 # Installing odo on macOS
 
