@@ -65,6 +65,18 @@ func (d *DevfileCtx) SetDevfileContent() error {
 	return nil
 }
 
+func (d *DevfileCtx) SetDevfileContentFromBytes(data []byte) error {
+	// If YAML file convert it to JSON
+	var err error
+	d.rawContent, err = YAMLToJSON(data)
+	if err != nil {
+		return err
+	}
+
+	// Successful
+	return nil
+}
+
 // GetDevfileContent returns the devfile content
 func (d *DevfileCtx) GetDevfileContent() []byte {
 	return d.rawContent

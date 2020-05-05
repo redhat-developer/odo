@@ -72,6 +72,34 @@ func (d *DevfileCtx) Populate() (err error) {
 	return nil
 }
 
+// Populate fills the DevfileCtx struct with relevant context info
+func (d *DevfileCtx) PopulateFromBytes(bytes []byte) (err error) {
+
+	// Read and save devfile content
+	if err := d.SetDevfileContentFromBytes(bytes); err != nil {
+		return err
+	}
+
+	// Get devfile APIVersion
+	if err := d.SetDevfileAPIVersion(); err != nil {
+		return err
+	}
+
+	// Check if the apiVersion is supported
+	if !d.IsApiVersionSupported() {
+		return fmt.Errorf("devfile apiVersion '%s' not supported in odo", d.apiVersion)
+	}
+	glog.V(4).Infof("devfile apiVersion '%s' is supported in odo", d.apiVersion)
+
+	// Read and save devfile JSON schema for provided apiVersion
+	if err := d.SetDevfileJSONSchema(); err != nil {
+		return err
+	}
+
+	// Successful
+	return nil
+}
+
 // Validate func validates devfile JSON schema for the given apiVersion
 func (d *DevfileCtx) Validate() error {
 

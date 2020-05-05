@@ -9,23 +9,17 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/catalog"
-	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/cli/catalog/util"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
-	pkgUtil "github.com/openshift/odo/pkg/util"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v2"
 )
 
 const componentsRecommendedCommandName = "components"
 
-// DevfilePath is the path of temporary devfile.yaml, which we need to cleanup after calling list"
-var DevfilePath = "./tmp-devfile.yaml"
 var componentsExample = `  # Get the supported components
   %[1]s`
 
@@ -33,16 +27,12 @@ var componentsExample = `  # Get the supported components
 type ListComponentsOptions struct {
 	// display both supported and unsupported devfile components
 	listAllDevfileComponents bool
-	// display both supported and unsupported devfile components
-	listAllDevfileComponentsProjectInfo bool
 	// list of known images
 	catalogList catalog.ComponentTypeList
 	// list of known devfiles
 	catalogDevfileList catalog.DevfileComponentTypeList
 	// generic context options common to all commands
 	*genericclioptions.Context
-	// display project information about specified component
-	specifiedComponent string
 }
 
 // NewListComponentsOptions creates a new ListComponentsOptions instance
@@ -98,35 +88,26 @@ func (o *ListComponentsOptions) Run() (err error) {
 		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 		var supCatalogList, unsupCatalogList []catalog.ComponentType
 		var supDevfileCatalogList, unsupDevfileCatalogList []catalog.DevfileComponentType
-		var specifiedComponent catalog.DevfileComponentType
 		var supported string
 
-		// if user passes an arg, look through all devfile components
-		if o.specifiedComponent != "" {
-			o.listAllDevfileComponents = true
-		}
 		for _, image := range o.catalogList.Items {
 			supported, unsupported := catalog.SliceSupportedTags(image)
-			if (o.specifiedComponent != "" && image.Name == o.specifiedComponent) || o.specifiedComponent == "" {
-				if len(supported) != 0 {
-					image.Spec.NonHiddenTags = supported
-					supCatalogList = append(supCatalogList, image)
-				}
-				if len(unsupported) != 0 {
-					image.Spec.NonHiddenTags = unsupported
-					unsupCatalogList = append(unsupCatalogList, image)
-				}
+
+			if len(supported) != 0 {
+				image.Spec.NonHiddenTags = supported
+				supCatalogList = append(supCatalogList, image)
+			}
+			if len(unsupported) != 0 {
+				image.Spec.NonHiddenTags = unsupported
+				unsupCatalogList = append(unsupCatalogList, image)
 			}
 		}
 
 		for _, devfileComponent := range o.catalogDevfileList.Items {
-			if (o.specifiedComponent != "" && devfileComponent.Name == o.specifiedComponent) || o.specifiedComponent == "" {
-				if devfileComponent.Support {
-					supDevfileCatalogList = append(supDevfileCatalogList, devfileComponent)
-				} else {
-					unsupDevfileCatalogList = append(unsupDevfileCatalogList, devfileComponent)
-				}
-				specifiedComponent = devfileComponent
+			if devfileComponent.Support {
+				supDevfileCatalogList = append(supDevfileCatalogList, devfileComponent)
+			} else {
+				unsupDevfileCatalogList = append(unsupDevfileCatalogList, devfileComponent)
 			}
 		}
 
@@ -162,50 +143,6 @@ func (o *ListComponentsOptions) Run() (err error) {
 			}
 
 			fmt.Fprintln(w)
-
-			// if user passes an arg, download the devfile and get the project information
-			if o.specifiedComponent != "" {
-				err := pkgUtil.DownloadFile(specifiedComponent.Registry+specifiedComponent.Link, DevfilePath)
-				if err != nil {
-					return errors.Errorf("Failed to download devfile.yaml for devfile component: %v", err)
-				}
-
-				devObj, err := devfile.Parse(DevfilePath)
-				if err != nil {
-					return err
-				}
-
-				projects := devObj.Data.GetProjects()
-				// only print project info if there is at least one project in the devfile
-				if len(projects) > 0 {
-					fmt.Fprintln(w, "Devfile Starter Project(s):")
-
-					for _, project := range projects {
-						// if they pass the -p flag, print all project information, else print the default fields
-						if o.listAllDevfileComponentsProjectInfo {
-							yamlData, err := yaml.Marshal(project)
-							if err != nil {
-								return errors.Errorf("Failed to marshal devfile object into yaml:", err)
-							}
-							fmt.Printf("---\n%s\n", string(yamlData))
-						} else {
-							fmt.Fprintln(w, "NAME", "\t", "TYPE", "\t", "LOCATION")
-							fmt.Fprintln(w, project.Name, "\t", project.Source.Type, "\t", project.Source.Location)
-						}
-					}
-					fmt.Fprintln(w)
-				} else {
-					fmt.Println("This devfile component does not have any available starter projects.")
-				}
-				err = os.Remove(DevfilePath)
-				if err != nil {
-					return err
-				}
-			}
-			// download component devfile
-		}
-		if len(supCatalogList) == 0 && len(unsupCatalogList) == 0 && len(supDevfileCatalogList) == 0 && len(unsupDevfileCatalogList) == 0 {
-			return errors.Errorf("The component \"%s\" is not a valid Odo component.", o.specifiedComponent)
 		}
 
 		w.Flush()
@@ -222,20 +159,13 @@ func NewCmdCatalogListComponents(name, fullName string) *cobra.Command {
 		Short:       "List all components",
 		Long:        "List all available component types from OpenShift's Image Builder",
 		Example:     fmt.Sprintf(componentsExample, fullName),
-		Args:        cobra.RangeArgs(0, 1),
 		Annotations: map[string]string{"machineoutput": "json"},
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 1 {
-				o.specifiedComponent = args[0]
-			} else {
-				o.specifiedComponent = ""
-			}
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
 
 	componentListCmd.Flags().BoolVarP(&o.listAllDevfileComponents, "all", "a", false, "List both supported and unsupported devfile components.")
-	componentListCmd.Flags().BoolVarP(&o.listAllDevfileComponentsProjectInfo, "projectInfo", "p", false, "List all information about the component's available projects.")
 
 	return componentListCmd
 }

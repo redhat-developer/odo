@@ -914,6 +914,18 @@ func Unzip(src, dest string) ([]string, error) {
 	return filenames, nil
 }
 
+// DownloadFileInMemory uses the url to download the file and return bytes
+func DownloadFileInMemory(url string) ([]byte, error) {
+	var httpClient = &http.Client{Timeout: HTTPRequestTimeout}
+	resp, err := httpClient.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return ioutil.ReadAll(resp.Body)
+}
+
 // DownloadFile uses the url to download the file to the filepath
 func DownloadFile(url string, filepath string) error {
 	// Create the file
