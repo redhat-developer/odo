@@ -239,3 +239,28 @@ func warnIfURLSInvalid(url []envinfo.EnvInfoURL) {
 		log.Warningf("Found %v defined for Docker, but no valid URLs for Kubernetes.", urlOutput)
 	}
 }
+
+// DevfileComponentExec executes the given user command inside the component
+func (eo *ExecOptions) DevfileComponentExec(command []string) error {
+	// Parse devfile
+	devObj, err := parser.ParseAndValidate(eo.devfilePath)
+	if err != nil {
+		return err
+	}
+
+	componentName, err := getComponentName(eo.componentContext)
+	if err != nil {
+		return err
+	}
+
+	kc := kubernetes.KubernetesContext{
+		Namespace: eo.namespace,
+	}
+
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, eo.componentContext, devObj, kc)
+	if err != nil {
+		return err
+	}
+
+	return devfileHandler.Exec(command)
+}

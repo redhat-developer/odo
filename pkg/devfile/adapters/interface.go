@@ -11,4 +11,5 @@ type PlatformAdapter interface {
 	DoesComponentExist(cmpName string) bool
 	Delete(labels map[string]string) error
 	Log(follow, debug bool) (io.ReadCloser, error)
+	Exec(command []string) error
 }
