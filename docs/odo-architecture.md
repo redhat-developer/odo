@@ -208,13 +208,11 @@ on an OpenShift cluster with all the necessary OpenShift resources.
         
           - `go-init` process starts the SupervisorD daemon.
             
-            <div class="note">
-            
-            The user application code has not been copied into the
-            application container yet, so the `SupervisorD` daemon does
-            not execute the `run` script.
-            
-            </div>
+            > **Note**
+            > 
+            > The user application code has not been copied into the
+            > application container yet, so the `SupervisorD` daemon
+            > does not execute the `run` script.
     
       - Service
     

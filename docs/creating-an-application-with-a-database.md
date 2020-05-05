@@ -70,12 +70,10 @@ application and push the source code to your cluster with `odo`.
         $ ls
         assets  bin  index.html  kwww-frontend.iml  package.json  package-lock.json  playfield.png  README.md  server.js
     
-    <div class="note">
-    
-    The front-end component is written in an interpreted language
-    (Node.js); it does not need to be built.
-    
-    </div>
+    > **Note**
+    > 
+    > The front-end component is written in an interpreted language
+    > (Node.js); it does not need to be built.
 
 4.  Create a component configuration of Node.js component-type named
     `frontend`:
@@ -133,12 +131,10 @@ deployment.
         Progress of the provisioning will not be reported and might take a long time.
         You can see the current status by executing 'odo service list'
 
-<div class="note">
-
-Your password or username will be passed to the front-end application as
-environment variables.
-
-</div>
+> **Note**
+> 
+> Your password or username will be passed to the front-end application
+> as environment variables.
 
 # Deploying a database manually
 
@@ -184,7 +180,8 @@ environment variables.
                                          | MONGODB_USER
 
 3.  Pass the required parameters as flags and wait for the deployment of
-    the database:
+    the
+        database:
     
         $ odo service create mongodb-persistent --plan default --wait -p DATABASE_SERVICE_NAME=mongodb -p MEMORY_LIMIT=512Mi -p MONGODB_DATABASE=sampledb -p VOLUME_CAPACITY=1Gi
 
@@ -233,12 +230,10 @@ environment variables.
 
 # Deleting an application
 
-<div class="important">
-
-Deleting an application will delete all components associated with the
-application.
-
-</div>
+> **Important**
+> 
+> Deleting an application will delete all components associated with the
+> application.
 
 1.  List the applications in the current project:
     

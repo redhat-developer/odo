@@ -66,12 +66,10 @@ the source code to your cluster with `odo`.
     
         $ odo create nodejs
     
-    <div class="note">
-    
-    By default, the latest image is used. You can also explicitly
-    specify an image version by using `odo create openshift/nodejs:8`.
-    
-    </div>
+    > **Note**
+    > 
+    > By default, the latest image is used. You can also explicitly
+    > specify an image version by using `odo create openshift/nodejs:8`.
 
 5.  Push the initial source code to the component:
     
@@ -115,7 +113,8 @@ your application on OpenShift.
 Persistent storage keeps data available between restarts of odo. You can
 add storage to your components with the `odo storage` command.
 
-  - Add storage to your components:
+  - Add storage to your
+        components:
     
         $ odo storage create nodestorage --path=/opt/app-root/src/storage/ --size=1Gi
 
@@ -170,12 +169,10 @@ applications deployed in OpenShift to a variety of services.
 
 # Deleting an application
 
-<div class="important">
-
-Deleting an application will delete all components associated with the
-application.
-
-</div>
+> **Important**
+> 
+> Deleting an application will delete all components associated with the
+> application.
 
 1.  List the applications in the current project:
     

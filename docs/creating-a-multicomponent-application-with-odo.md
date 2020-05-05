@@ -77,7 +77,8 @@ Java application and push the source code to your cluster with `odo`.
     
         $ mkdir my_components $$ cd my_components
 
-5.  Download the example back-end application:
+5.  Download the example back-end
+        application:
     
         $ git clone https://github.com/openshift-evangelists/Wild-West-Backend backend
 
@@ -185,12 +186,10 @@ application and push the source code to your cluster with `odo`.
         $ ls
         assets  bin  index.html  kwww-frontend.iml  package.json  package-lock.json  playfield.png  README.md  server.js
     
-    <div class="note">
-    
-    The front-end component is written in an interpreted language
-    (Node.js); it does not need to be built.
-    
-    </div>
+    > **Note**
+    > 
+    > The front-end component is written in an interpreted language
+    > (Node.js); it does not need to be built.
 
 4.  Create a component configuration of Node.js component-type named
     `frontend`:
@@ -270,23 +269,23 @@ bindings from a program to its clients.
 
 3.  Open the URL in a browser to view the application.
 
-<div class="note">
-
-If an application requires permissions to the active Service Account to
-access the OpenShift namespace and delete active pods, the following
-error may occur when looking at `odo log` from the back-end component:
-
-`Message: Forbidden!Configured service account doesn’t have access.
-Service account may have been revoked`
-
-To resolve this error, add permissions for the Service Account role:
-
-    $ oc policy add-role-to-group view system:serviceaccounts -n <project>
-    $ oc policy add-role-to-group edit system:serviceaccounts -n <project>
-
-Do not do this on a production cluster.
-
-</div>
+> **Note**
+> 
+> If an application requires permissions to the active Service Account
+> to access the OpenShift namespace and delete active pods, the
+> following error may occur when looking at `odo log` from the back-end
+> component:
+> 
+> `Message: Forbidden!Configured service account doesn’t have access.
+> Service account may have been revoked`
+> 
+> To resolve this error, add permissions for the Service Account
+>     role:
+> 
+>     $ oc policy add-role-to-group view system:serviceaccounts -n <project>
+>     $ oc policy add-role-to-group edit system:serviceaccounts -n <project>
+> 
+> Do not do this on a production cluster.
 
 # Modifying the running application
 
@@ -301,11 +300,9 @@ Do not do this on a production cluster.
 3.  Edit the `index.html` file to change the displayed name for the
     game.
     
-    <div class="note">
-    
-    A slight delay is possible before odo recognizes the change.
-    
-    </div>
+    > **Note**
+    > 
+    > A slight delay is possible before odo recognizes the change.
     
     odo pushes the changes to the front-end component and prints its
     status to the terminal:
@@ -322,12 +319,10 @@ Do not do this on a production cluster.
 
 # Deleting an application
 
-<div class="important">
-
-Deleting an application will delete all components associated with the
-application.
-
-</div>
+> **Important**
+> 
+> Deleting an application will delete all components associated with the
+> application.
 
 1.  List the applications in the current project:
     

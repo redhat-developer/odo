@@ -35,13 +35,11 @@ within the OpenShift catalog of component types. For example:
     ruby        openshift     2.0,2.2,2.3,2.4,latest
     wildfly     openshift     10.0,10.1,8.1,9.0,latest
 
-<div class="note">
-
-For `odo` 1.1.2 Java and Node.js are the officialy supported component
-types. Run `odo catalog list components` to verify the officially
-supported component types.
-
-</div>
+> **Note**
+> 
+> For `odo` 1.1.2 Java and Node.js are the officialy supported component
+> types. Run `odo catalog list components` to verify the officially
+> supported component types.
 
 In order to access the component over the web, create a URL using `odo
 url create`.

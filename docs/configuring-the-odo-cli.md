@@ -22,12 +22,10 @@ page_nav:
 ---
 # Using command completion
 
-<div class="note">
-
-Currently command completion is only supported for bash, zsh, and fish
-shells.
-
-</div>
+> **Note**
+> 
+> Currently command completion is only supported for bash, zsh, and fish
+> shells.
 
 odo provides a smart completion of command parameters based on user
 input. For this to work, odo needs to integrate with the executing
@@ -54,12 +52,10 @@ shell.
     
     2.  Press `y` when prompted to uninstall the completion hook.
 
-<div class="note">
-
-Re-enable command completion if you either rename the odo executable or
-move it to a different directory.
-
-</div>
+> **Note**
+> 
+> Re-enable command completion if you either rename the odo executable
+> or move it to a different directory.
 
 # Ignoring files or patterns
 
