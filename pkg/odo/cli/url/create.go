@@ -164,12 +164,11 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 			if err != nil {
 				return err
 			}
+			o.urlType = envinfo.DOCKER
 		}
 
 		if len(args) != 0 {
 			o.urlName = args[0]
-		} else if pushtarget.IsPushTargetDocker() {
-			o.urlName = "local-" + url.GetURLName(componentName, o.componentPort)
 		} else {
 			o.urlName = url.GetURLName(componentName, o.componentPort)
 		}
@@ -211,18 +210,8 @@ func (o *URLCreateOptions) Validate() (err error) {
 			return fmt.Errorf("host must be provided in order to create ingress")
 		}
 		for _, localURL := range o.EnvSpecificInfo.GetURL() {
-			// if current push target is Kube, but localURL contains ExposedPort
-			// if current push target is docker, but localURL contains Host
-			if o.urlName == localURL.Name &&
-				((!pushtarget.IsPushTargetDocker() && localURL.ExposedPort > 0) || (pushtarget.IsPushTargetDocker() && len(localURL.Host) > 0)) {
-				return fmt.Errorf("the url %s already exists for a different push target, please rerun the command using a different url name", o.urlName)
-			}
-			if !pushtarget.IsPushTargetDocker() {
-				curIngressDomain := fmt.Sprintf("%v.%v", o.urlName, o.host)
-				ingressDomainEnv := fmt.Sprintf("%v.%v", localURL.Name, localURL.Host)
-				if curIngressDomain == ingressDomainEnv {
-					return fmt.Errorf("the url %s already exists", curIngressDomain)
-				}
+			if o.urlName == localURL.Name {
+				return fmt.Errorf("the url %s already exists", o.urlName)
 			}
 		}
 	} else {

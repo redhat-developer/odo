@@ -50,7 +50,7 @@ var _ = Describe("odo docker devfile url command tests", func() {
 
 			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
 			stdout = helper.CmdShouldPass("odo", "url", "create")
-			helper.MatchAllInOutput(stdout, []string{"local-" + cmpName + "-3000", "created for component"})
+			helper.MatchAllInOutput(stdout, []string{cmpName + "-3000", "created for component"})
 			stdout = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
 			Expect(stdout).To(ContainSubstring("Changes successfully pushed to component"))
 		})
@@ -66,26 +66,17 @@ var _ = Describe("odo docker devfile url command tests", func() {
 			helper.MatchAllInOutput(stdout, []string{url1, "created for component", "Changes successfully pushed to component"})
 		})
 
-		It("create with same url name under a different push target should fail", func() {
+		It("create with same url name should fail", func() {
 			var stdout string
 			url1 := helper.RandString(5)
-			url2 := helper.RandString(5)
 			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
 			helper.Chdir(projectDirPath)
 
 			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
 			helper.CmdShouldPass("odo", "url", "create", url1)
 
-			// url1 exists with push target set to docker, create url with same name should fail if push target is set to kube
-			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "kube", "-f")
-			stdout = helper.CmdShouldFail("odo", "url", "create", url1, "--host", "1.2.3.4.com")
-			Expect(stdout).To(ContainSubstring("already exists for a different push target"))
-
-			// url2 exists with push target set to kube, create url with same name should fail if push target is set to docker
-			helper.CmdShouldPass("odo", "url", "create", url2, "--host", "1.2.3.4.com")
-			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "docker", "-f")
-			stdout = helper.CmdShouldFail("odo", "url", "create", url2)
-			Expect(stdout).To(ContainSubstring("already exists for a different push target"))
+			stdout = helper.CmdShouldFail("odo", "url", "create", url1)
+			Expect(stdout).To(ContainSubstring("the url " + url1 + " already exists"))
 
 		})
 
@@ -103,6 +94,41 @@ var _ = Describe("odo docker devfile url command tests", func() {
 			url := strings.TrimSpace(helper.ExtractSubString(output, "127.0.0.1", "created"))
 
 			helper.HttpWaitFor("http://"+url, "Hello World!", 30, 1)
+		})
+	})
+
+	Context("Switching pushtarget", func() {
+		It("switch from docker to kube, odo push should display warning", func() {
+			var stdout string
+			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
+			helper.Chdir(projectDirPath)
+
+			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
+			helper.CmdShouldPass("odo", "url", "create")
+
+			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "kube", "-f")
+			session := helper.CmdRunner("odo", "push", "--devfile", "devfile.yaml")
+			stdout = string(session.Wait().Out.Contents())
+			stderr := string(session.Wait().Err.Contents())
+			Expect(stderr).To(ContainSubstring("Found a URL defined for Docker, but no valid URLs for Kubernetes."))
+			Expect(stdout).To(ContainSubstring("Changes successfully pushed to component"))
+		})
+
+		It("switch from kube to docker, odo push should display warning", func() {
+			var stdout string
+			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
+			helper.Chdir(projectDirPath)
+			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "kube", "-f")
+			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
+			helper.CmdShouldPass("odo", "url", "create", "--host", "1.2.3.4.com", "--ingress")
+
+			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "docker", "-f")
+			session := helper.CmdRunner("odo", "push", "--devfile", "devfile.yaml")
+			stdout = string(session.Wait().Out.Contents())
+			stderr := string(session.Wait().Err.Contents())
+			Expect(stderr).To(ContainSubstring("Found a URL defined for Kubernetes, but no valid URLs for Docker."))
+			Expect(stdout).To(ContainSubstring("Changes successfully pushed to component"))
+
 		})
 	})
 
