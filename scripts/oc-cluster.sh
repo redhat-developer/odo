@@ -28,12 +28,12 @@ sudo docker run -v /:/rootfs -ti --rm --entrypoint=/bin/bash --privileged opensh
 
 while true; do
     if [ "$1" = "service-catalog" ]; then
-        oc cluster up --base-dir=$HOME/oscluster --skip-registry-check=true
+        oc cluster up --base-dir=$HOME/oscluster
         oc cluster add --base-dir=$HOME/oscluster service-catalog
         oc cluster add --base-dir=$HOME/oscluster template-service-broker
         oc cluster add --base-dir=$HOME/oscluster automation-service-broker
     else
-        oc cluster up --skip-registry-check=true
+        oc cluster up
     fi
     if [ "$?" -eq 0 ]; then
         ./scripts/travis-check-pods.sh $1
