@@ -26,10 +26,8 @@ func TestBuildEventListener(t *testing.T) {
 	gitOpsRepo := "http://github.com/org/gitops.git"
 	got, err := buildEventListenerResources(gitOpsRepo, m)
 	assertNoError(t, err)
-	triggers := fakeTriggers("org/gitops", "test-cicd", testService())
-
 	want := res.Resources{
-		getEventListenerPath(cicdPath): eventlisteners.CreateELFromTriggers("test-cicd", saName, triggers),
+		getEventListenerPath(cicdPath): eventlisteners.CreateELFromTriggers("test-cicd", saName, fakeTiggers(t, m, gitOpsRepo)),
 	}
 	if diff := cmp.Diff(got, want); diff != "" {
 		t.Fatalf("resources didn't match:%s\n", diff)
@@ -43,25 +41,15 @@ func TestBuildEventListenerWithServiceWithNoURL(t *testing.T) {
 				Name:   "test-cicd",
 				IsCICD: true,
 			},
-			testEnv(&config.Service{
-				Name: "test-svc",
-				Webhook: &config.Webhook{
-					Secret: &config.Secret{
-						Name:      "webhook-secret",
-						Namespace: "webhook-ns",
-					},
-				},
-			}),
+			testEnv(testService()),
 		},
 	}
 	cicdPath := filepath.Join("environments", "test-cicd")
 	gitOpsRepo := "http://github.com/org/gitops.git"
 	got, err := buildEventListenerResources(gitOpsRepo, m)
 	assertNoError(t, err)
-	triggers := fakeTriggers("org/gitops", "test-cicd", nil)
-
 	want := res.Resources{
-		getEventListenerPath(cicdPath): eventlisteners.CreateELFromTriggers("test-cicd", saName, triggers),
+		getEventListenerPath(cicdPath): eventlisteners.CreateELFromTriggers("test-cicd", saName, fakeTiggers(t, m, gitOpsRepo)),
 	}
 	if diff := cmp.Diff(got, want); diff != "" {
 		t.Fatalf("resources didn't match:%s\n", diff)
@@ -137,14 +125,18 @@ func TestGetPipelines(t *testing.T) {
 	}
 }
 
-func fakeTriggers(gitopsRepo string, cicdNs string, svc *config.Service) []v1alpha1.EventListenerTrigger {
-	triggers := []v1alpha1.EventListenerTrigger{
-		eventlisteners.CreateListenerTrigger("ci-dryrun-from-pr", eventlisteners.StageCIDryRunFilters, gitopsRepo, "github-pr-binding", "ci-dryrun-from-pr-template", eventlisteners.GitOpsWebhookSecret, cicdNs),
-	}
-	if svc != nil {
-		l := eventlisteners.CreateListenerTrigger(triggerName(svc.Name), eventlisteners.StageCIDryRunFilters, "org/test", "test-ci-binding", "test-ci-template", svc.Webhook.Secret.Name, svc.Webhook.Secret.Namespace)
-		triggers = append([]v1alpha1.EventListenerTrigger{l}, triggers...)
-	}
+func fakeTiggers(t *testing.T, m *config.Manifest, gitOpsRepo string) []v1alpha1.EventListenerTrigger {
+	triggers := []v1alpha1.EventListenerTrigger{}
+	devEnv := m.GetEnvironment("test-dev")
+	cicdEnv, err := m.GetCICDEnvironment()
+	assertNoError(t, err)
+	devCITrigger, err := createCITrigger(gitOpsRepo, devEnv, testService())
+	assertNoError(t, err)
+	ciTrigger, err := createCITrigger(gitOpsRepo, cicdEnv, nil)
+	assertNoError(t, err)
+	cdTrigger, err := createCDTrigger(gitOpsRepo, cicdEnv, nil)
+	assertNoError(t, err)
+	triggers = append(triggers, devCITrigger, ciTrigger, cdTrigger)
 	return triggers
 }
 

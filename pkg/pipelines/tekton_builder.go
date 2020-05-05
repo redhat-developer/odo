@@ -44,21 +44,25 @@ func (tk *tektonBuilder) Service(env *config.Environment, app *config.Applicatio
 	if svc.SourceURL == "" {
 		return nil
 	}
-	trigger, err := createTrigger(tk.gitOpsRepo, env, svc)
+	ciTrigger, err := createCITrigger(tk.gitOpsRepo, env, svc)
 	if err != nil {
 		return err
 	}
-	tk.triggers = append(tk.triggers, trigger)
+	tk.triggers = append(tk.triggers, ciTrigger)
 	return nil
 }
 
 func (tk *tektonBuilder) Environment(env *config.Environment) error {
 	if env.IsCICD {
-		trigger, err := createTrigger(tk.gitOpsRepo, env, nil)
+		ciTrigger, err := createCITrigger(tk.gitOpsRepo, env, nil)
 		if err != nil {
 			return err
 		}
-		tk.triggers = append(tk.triggers, trigger)
+		cdTrigger, err := createCDTrigger(tk.gitOpsRepo, env, nil)
+		if err != nil {
+			return err
+		}
+		tk.triggers = append(tk.triggers, ciTrigger, cdTrigger)
 		cicdPath := config.PathForEnvironment(env)
 		tk.files[getEventListenerPath(cicdPath)] = eventlisteners.CreateELFromTriggers(env.Name, saName, tk.triggers)
 	}
@@ -69,7 +73,7 @@ func getEventListenerPath(cicdPath string) string {
 	return filepath.Join(cicdPath, "base", "pipelines", eventListenerPath)
 }
 
-func createTrigger(gitOpsRepo string, env *config.Environment, svc *config.Service) (v1alpha1.EventListenerTrigger, error) {
+func createCITrigger(gitOpsRepo string, env *config.Environment, svc *config.Service) (v1alpha1.EventListenerTrigger, error) {
 	if env.IsCICD {
 		repo, err := extractRepo(gitOpsRepo)
 		return eventlisteners.CreateListenerTrigger("ci-dryrun-from-pr", eventlisteners.StageCIDryRunFilters, repo, "github-pr-binding", "ci-dryrun-from-pr-template", eventlisteners.GitOpsWebhookSecret, env.Name), err
@@ -77,6 +81,12 @@ func createTrigger(gitOpsRepo string, env *config.Environment, svc *config.Servi
 	pipelines := getPipelines(env, svc)
 	svcRepo, err := extractRepo(svc.SourceURL)
 	return eventlisteners.CreateListenerTrigger(triggerName(svc.Name), eventlisteners.StageCIDryRunFilters, svcRepo, pipelines.Integration.Binding, pipelines.Integration.Template, svc.Webhook.Secret.Name, svc.Webhook.Secret.Namespace), err
+}
+
+func createCDTrigger(gitOpsRepo string, env *config.Environment, svc *config.Service) (v1alpha1.EventListenerTrigger, error) {
+	repo, err := extractRepo(gitOpsRepo)
+	return eventlisteners.CreateListenerTrigger("cd-deploy-from-push", eventlisteners.StageCDDeployFilters, repo, "github-push-binding", "cd-deploy-from-push-template", eventlisteners.GitOpsWebhookSecret, env.Name), err
+
 }
 
 func getPipelines(env *config.Environment, svc *config.Service) *config.Pipelines {
