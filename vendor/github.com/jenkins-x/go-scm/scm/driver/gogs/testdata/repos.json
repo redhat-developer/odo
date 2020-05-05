@@ -1,0 +1,38 @@
+[
+  {
+    "id": 1,
+    "owner": {
+      "id": 1,
+      "login": "gogits",
+      "full_name": "gogits",
+      "email": "",
+      "avatar_url": "http://gogs.io/avatars/1",
+      "username": "gogits"
+    },
+    "name": "gogs",
+    "full_name": "gogits/gogs",
+    "description": "",
+    "private": true,
+    "fork": false,
+    "parent": null,
+    "empty": false,
+    "mirror": false,
+    "size": 4485120,
+    "html_url": "http://gogs.io/drone/cover",
+    "ssh_url": "git@localhost:drone/cover.git",
+    "clone_url": "http://gogs.io/drone/cover.git",
+    "website": "",
+    "stars_count": 0,
+    "forks_count": 0,
+    "watchers_count": 2,
+    "open_issues_count": 0,
+    "default_branch": "master",
+    "created_at": "2017-10-22T18:25:33Z",
+    "updated_at": "2017-11-16T22:07:01Z",
+    "permissions": {
+      "admin": true,
+      "push": true,
+      "pull": true
+    }
+  }
+]

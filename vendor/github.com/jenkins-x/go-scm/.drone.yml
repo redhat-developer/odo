@@ -1,0 +1,15 @@
+kind: pipeline
+name: default
+
+workspace:
+  base: /go
+  path: src/github.com/drone/go-scm
+
+
+steps:
+- name: test
+  image: golang:1.11
+  commands:
+  - go get github.com/google/go-cmp/cmp
+  - go get github.com/h2non/gock
+  - go test -cover github.com/drone/go-scm/scm/...

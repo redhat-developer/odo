@@ -1,0 +1,16 @@
+[
+    {
+        "ID": "1",
+        "Name": "",
+        "Target": "http://example.com/hook",
+        "Events": [
+            "issues",
+            "tag",
+            "push",
+            "comment",
+            "merge"
+        ],
+        "Active": true,
+        "SkipVerify": false
+    }
+]

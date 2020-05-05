@@ -1,0 +1,6 @@
+{
+    "Login": "john_smith",
+    "Name": "John Smith",
+    "Email": "john@example.com",
+    "Avatar": "http://localhost:3000/uploads/user/avatar/1/index.jpg"
+}

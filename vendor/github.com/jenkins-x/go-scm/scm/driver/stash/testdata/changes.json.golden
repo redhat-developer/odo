@@ -1,0 +1,26 @@
+[
+    {
+        "Path": ".gitignore",
+        "Added": false,
+        "Renamed": false,
+        "Deleted": true
+    },
+    {
+        "Path": "COPYING",
+        "Added": false,
+        "Renamed": false,
+        "Deleted": false
+    },
+    {
+        "Path": "README.md",
+        "Added": false,
+        "Renamed": true,
+        "Deleted": false
+    },
+    {
+        "Path": "main.go",
+        "Added": true,
+        "Renamed": false,
+        "Deleted": false
+    }
+]

@@ -1,0 +1,39 @@
+{
+  "Action": "opened",
+  "Repo": {
+    "ID": "61",
+    "Namespace": "gogits",
+    "Name": "hello-world",
+    "Perm": {},
+    "Branch": "master",
+    "Private": true,
+    "Clone": "http://try.gogs.io/gogits/hello-world.git",
+    "CloneSSH": "git@localhost:gogits/hello-world.git",
+    "Link": "",
+    "Created": "0001-01-01T00:00:00Z",
+    "Updated": "0001-01-01T00:00:00Z"
+  },
+  "Issue": {
+    "Number": 1,
+    "Title": "Problem",
+    "Body": "Found a bug",
+    "Link": "",
+    "Labels": null,
+    "Closed": false,
+    "Locked": false,
+    "Author": {
+      "Login": "unknwon",
+      "Name": "",
+      "Email": "noreply@gogs.io",
+      "Avatar": "https://secure.gravatar.com/avatar/8c58a0be77ee441bb8f8595b7f1b4e87"
+    },
+    "Created": "2017-12-08T17:30:43-08:00",
+    "Updated": "2017-12-08T17:30:43-08:00"
+  },
+  "Sender": {
+    "Login": "unknwon",
+    "Name": "",
+    "Email": "noreply@gogs.io",
+    "Avatar": "https://secure.gravatar.com/avatar/8c58a0be77ee441bb8f8595b7f1b4e87"
+  }
+}

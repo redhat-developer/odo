@@ -69,26 +69,22 @@ func Bootstrap(o *BootstrapOptions, appFs afero.Fs) error {
 }
 
 func bootstrapResources(o *BootstrapOptions, appFs afero.Fs) (res.Resources, error) {
-	orgRepo, err := orgRepoFromURL(o.GitOpsRepoURL)
-	if err != nil {
-		return nil, err
-	}
 	repoName, err := repoFromURL(o.AppRepoURL)
 	if err != nil {
 		return nil, fmt.Errorf("invalid app repo URL: %w", err)
 	}
 
-	bootstrapped, err := createInitialFiles(appFs, o.Prefix, orgRepo, o.GitOpsWebhookSecret, o.DockerConfigJSONFilename, o.ImageRepo)
+	bootstrapped, err := createInitialFiles(appFs, o.Prefix, o.GitOpsRepoURL, o.GitOpsWebhookSecret, o.DockerConfigJSONFilename, o.ImageRepo)
 	if err != nil {
 		return nil, err
 	}
 	ns := namespaces.NamesWithPrefix(o.Prefix)
-	secretName := "github-webhook-secret-" + repoName + "-svc"
+	secretName := secrets.MakeServiceWebhookSecretName(repoName)
 	envs, err := bootstrapEnvironments(o.Prefix, o.AppRepoURL, secretName, ns)
 	if err != nil {
 		return nil, err
 	}
-	m := createManifest(envs...)
+	m := createManifest(o.GitOpsRepoURL, envs...)
 	bootstrapped[pipelinesFile] = m
 	env := m.GetEnvironment(ns["dev"])
 	if env == nil {

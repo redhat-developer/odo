@@ -1,0 +1,102 @@
+{
+    "action": "created",
+    "installation": {
+        "id": 3183683,
+        "account": {
+            "login": "jstrachan",
+            "id": 30140,
+            "node_id": "MDQ6VXNlcjMwMTQw",
+            "avatar_url": "https://avatars1.githubusercontent.com/u/30140?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/jstrachan",
+            "html_url": "https://github.com/jstrachan",
+            "followers_url": "https://api.github.com/users/jstrachan/followers",
+            "following_url": "https://api.github.com/users/jstrachan/following{/other_user}",
+            "gists_url": "https://api.github.com/users/jstrachan/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/jstrachan/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/jstrachan/subscriptions",
+            "organizations_url": "https://api.github.com/users/jstrachan/orgs",
+            "repos_url": "https://api.github.com/users/jstrachan/repos",
+            "events_url": "https://api.github.com/users/jstrachan/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/jstrachan/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "repository_selection": "all",
+        "access_tokens_url": "https://api.github.com/app/installations/3183683/access_tokens",
+        "repositories_url": "https://api.github.com/installation/repositories",
+        "html_url": "https://github.com/settings/installations/3183683",
+        "app_id": 43792,
+        "target_id": 30140,
+        "target_type": "User",
+        "permissions": {
+            "contents": "write",
+            "issues": "write",
+            "metadata": "read",
+            "pull_requests": "write",
+            "repository_hooks": "write",
+            "statuses": "write"
+        },
+        "events": [
+            "commit_comment",
+            "create",
+            "delete",
+            "fork",
+            "gollum",
+            "issues",
+            "issue_comment",
+            "label",
+            "milestone",
+            "public",
+            "pull_request",
+            "pull_request_review",
+            "pull_request_review_comment",
+            "push",
+            "release",
+            "repository",
+            "repository_dispatch",
+            "star",
+            "status",
+            "watch"
+        ],
+        "created_at": 1571334506,
+        "updated_at": 1571334506,
+        "single_file_name": null
+    },
+    "repositories": [
+        {
+            "id": 171757,
+            "node_id": "MDEwOlJlcG9zaXRvcnkxNzE3NTc=",
+            "name": "guicey",
+            "full_name": "jstrachan/guicey",
+            "private": false
+        },
+        {
+            "id": 246928,
+            "node_id": "MDEwOlJlcG9zaXRvcnkyNDY5Mjg=",
+            "name": "scamples",
+            "full_name": "jstrachan/scamples",
+            "private": false
+        }
+    ],
+    "sender": {
+        "login": "jstrachan",
+        "id": 30140,
+        "node_id": "MDQ6VXNlcjMwMTQw",
+        "avatar_url": "https://avatars1.githubusercontent.com/u/30140?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/jstrachan",
+        "html_url": "https://github.com/jstrachan",
+        "followers_url": "https://api.github.com/users/jstrachan/followers",
+        "following_url": "https://api.github.com/users/jstrachan/following{/other_user}",
+        "gists_url": "https://api.github.com/users/jstrachan/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/jstrachan/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/jstrachan/subscriptions",
+        "organizations_url": "https://api.github.com/users/jstrachan/orgs",
+        "repos_url": "https://api.github.com/users/jstrachan/repos",
+        "events_url": "https://api.github.com/users/jstrachan/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/jstrachan/received_events",
+        "type": "User",
+        "site_admin": false
+    }
+}

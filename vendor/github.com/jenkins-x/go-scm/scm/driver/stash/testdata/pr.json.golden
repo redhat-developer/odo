@@ -1,0 +1,30 @@
+{
+  "Number": 1,
+  "Title": "Updated Files",
+  "Body": "* added LICENSE\r\n* update files\r\n* update files",
+  "Sha": "131cb13f4aed12e725177bc4b7c28db67839bf9f",
+  "Ref": "refs/pull-requests/1/from",
+  "Source": "feature/x",
+  "Target": "master",
+  "Base": {
+    "Ref": "",
+    "Sha": "131cb13f4aed12e725177bc4b7c28db67839bf9f"
+  },
+  "Head": {
+    "Ref": "",
+    "Sha": "131cb13f4aed12e725177bc4b7c28db67839bf9f"
+  },
+  "Fork": "PRJ/my-repo",
+  "Link": "http://example.com:7990/projects/PRJ/repos/my-repo/pull-requests/1",
+  "State": "open",
+  "Closed": false,
+  "Merged": false,
+  "Author": {
+    "Login": "jcitizen",
+    "Name": "Jane Citizen",
+    "Email": "jane@example.com",
+    "Avatar": "https://www.gravatar.com/avatar/9e26471d35a78862c17e467d87cddedf.jpg"
+  },
+  "Created": "2018-07-04T22:01:10-07:00",
+  "Updated": "2018-07-04T22:01:10-07:00"
+}

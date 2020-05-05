@@ -1,0 +1,12 @@
+{
+    "ID": "{d53603cc-3f67-45ea-b310-aaa5ef6ec061}",
+    "Name": "beta.drone.io",
+    "Target": "http://example.com/webhook",
+    "Events": [
+        "pullrequest:created",
+        "pullrequest:updated",
+        "repo:push"
+    ],
+    "Active": true,
+    "SkipVerify": false
+}

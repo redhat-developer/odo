@@ -1,0 +1,24 @@
+{
+  "size": 2,
+  "limit": 100,
+  "isLastPage": true,
+  "values": [
+    {
+      "state": "SUCCESSFUL",
+      "key": "new-key",
+      "name": "team-bb-server » repo-1 » master #23",
+      "url": "http://example.com/master-1/job/kyounger/job/repo-1/job/master/21/display/redirect",
+      "description": "This commit looks good.",
+      "dateAdded": 1567107583395
+    },
+    {
+      "state": "SUCCESSFUL",
+      "key": "old-key",
+      "name": "team-bb-server » repo-1 » master #22",
+      "url": "http://example.com/master-1/job/kyounger/job/repo-1/job/master/22/display/redirect",
+      "description": "This commit looks good.",
+      "dateAdded": 1567087389770
+    }
+  ],
+  "start": 0
+}

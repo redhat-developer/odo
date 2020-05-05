@@ -1,0 +1,18 @@
+{
+  "ID": "1296269",
+  "Namespace": "octocat",
+  "Name": "Hello-World",
+  "FullName": "octocat/Hello-World",
+  "Perm": {
+    "Pull": true,
+    "Push": false,
+    "Admin": false
+  },
+  "Branch": "master",
+  "Private": false,
+  "Clone": "https://github.com/octocat/Hello-World.git",
+  "CloneSSH": "git@github.com:octocat/Hello-World.git",
+  "Link": "https://github.com/octocat/Hello-World",
+  "Created": "2011-01-26T19:01:12Z",
+  "Updated": "2011-01-26T19:14:43Z"
+}

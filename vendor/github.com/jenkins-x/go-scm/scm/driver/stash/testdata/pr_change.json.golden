@@ -1,0 +1,26 @@
+[
+    {
+        "Path": "COPYING",
+        "Added": true,
+        "Renamed": false,
+        "Deleted": false
+    },
+    {
+        "Path": "README",
+        "Added": false,
+        "Renamed": false,
+        "Deleted": true
+    },
+    {
+        "Path": "README.md",
+        "Added": true,
+        "Renamed": false,
+        "Deleted": false
+    },
+    {
+        "Path": "main.go",
+        "Added": true,
+        "Renamed": false,
+        "Deleted": false
+    }
+]

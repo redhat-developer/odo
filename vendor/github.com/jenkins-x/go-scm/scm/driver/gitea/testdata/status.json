@@ -1,0 +1,19 @@
+{
+    "id": 1,
+    "status": "success",
+    "target_url": "https://example.com",
+    "description": "",
+    "url": "https://try.gitea.io/api/v1/jcitizen/my-repo/statuses/f026eb4eb1d83a7149e52058bf2134f4360d9bc4",
+    "context": "continuous-integration/drone",
+    "creator": {
+        "id": 6641,
+        "login": "jcitizen",
+        "full_name": "",
+        "email": "jane@example.com",
+        "avatar_url": "https://secure.gravatar.com/avatar/66f07ff48e6a9cb393de7a34e03bb52a?d=identicon",
+        "language": "en-US",
+        "username": "jcitizen"
+    },
+    "created_at": "2018-07-06T02:03:38Z",
+    "updated_at": "2018-07-06T02:03:38Z"
+}

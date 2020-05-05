@@ -1,0 +1,16 @@
+{
+    "name": "jcitizen",
+    "emailAddress": "jane@example.com",
+    "id": 1,
+    "displayName": "Jane Citizen",
+    "active": true,
+    "slug": "jcitizen",
+    "type": "NORMAL",
+    "links": {
+        "self": [
+            {
+                "href": "http://example.com:7990/users/jcitizen"
+            }
+        ]
+    }
+}

@@ -1,0 +1,19 @@
+[
+    {
+        "Number": 1,
+        "Title": "Bug found",
+        "Body": "I'm having a problem with this.",
+        "Link": "",
+        "Labels": null,
+        "Closed": false,
+        "Locked": false,
+        "Author": {
+            "Login": "janedoe",
+            "Name": "",
+            "Email": "janedoe@mail.com",
+            "Avatar": "https://secure.gravatar.com/avatar/8c58a0be77ee441bb8f8595b7f1b4e87"
+        },
+        "Created": "2017-09-23T19:24:01Z",
+        "Updated": "2017-09-23T19:24:01Z"
+    }
+]

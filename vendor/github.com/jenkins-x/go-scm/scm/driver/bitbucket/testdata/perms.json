@@ -1,0 +1,45 @@
+{
+  "pagelen": 10,
+  "values": [
+    {
+      "type": "repository_permission",
+      "user": {
+        "username": "johndoe",
+        "display_name": "John Doe",
+        "account_id": "557058:2a6349dc-4346-4805-bd84-3abdd0812d17",
+        "links": {
+          "self": {
+            "href": "https:\/\/api.bitbucket.org\/2.0\/users\/johndoe"
+          },
+          "html": {
+            "href": "https:\/\/bitbucket.org\/johndoe\/"
+          },
+          "avatar": {
+            "href": "https:\/\/bitbucket.org\/account\/johndoe\/avatar\/32\/"
+          }
+        },
+        "type": "user",
+        "uuid": "{87bb15eb-47c1-49b3-9f16-ca824a2979a4}"
+      },
+      "repository": {
+        "links": {
+          "self": {
+            "href": "https:\/\/api.bitbucket.org\/2.0\/repositories\/atlassian\/stash-example-plugin"
+          },
+          "html": {
+            "href": "https:\/\/bitbucket.org\/atlassian\/stash-example-plugin"
+          },
+          "avatar": {
+            "href": "https:\/\/bytebucket.org\/ravatar\/%7Bc179f544-ba1f-4ea9-bd8f-2b2c1efa4046%7D?ts=go"
+          }
+        },
+        "type": "repository",
+        "name": "stash-example-plugin",
+        "full_name": "atlassian\/stash-example-plugin",
+        "uuid": "{c179f544-ba1f-4ea9-bd8f-2b2c1efa4046}"
+      },
+      "permission": "admin"
+    }
+  ],
+  "page": 1
+}

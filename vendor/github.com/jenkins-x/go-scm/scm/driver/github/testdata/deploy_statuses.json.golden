@@ -1,0 +1,25 @@
+[
+  {
+    "ID": "1",
+    "State": "success",
+    "Author": {
+      "ID": 1,
+      "Login": "octocat",
+      "Name": "",
+      "Email": "",
+      "Avatar": "https://github.com/images/error/octocat_happy.gif",
+      "Link": "https://github.com/octocat",
+      "Created": "0001-01-01T00:00:00Z",
+      "Updated": "0001-01-01T00:00:00Z"
+    },
+    "Description": "Deployment finished successfully.",
+    "Environment": "production",
+    "DeploymentLink": "https://api.github.com/repos/octocat/example/deployments/42",
+    "EnvironmentLink": "",
+    "LogLink": "https://example.com/deployment/42/output",
+    "RepositoryLink": "https://api.github.com/repos/octocat/example",
+    "TargetLink": "https://example.com/deployment/42/output",
+    "Created": "2012-07-20T01:19:13Z",
+    "Updated": "2012-07-20T01:19:13Z"
+  }
+]

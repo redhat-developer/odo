@@ -1,0 +1,30 @@
+[
+    {
+        "ID": "{7dd600e6-0d9c-4801-b967-cb4cc17359ff}",
+        "Namespace": "atlassian",
+        "Name": "stash-example-plugin",
+        "FullName": "atlassian/stash-example-plugin",
+        "Perm": null,
+        "Branch": "master",
+        "Private": true,
+        "Clone": "https://bitbucket.org/atlassian/stash-example-plugin.git",
+        "CloneSSH": "git@bitbucket.org:atlassian/stash-example-plugin.git",
+        "Link": "https://bitbucket.org/atlassian/stash-example-plugin",
+        "Created": "2013-04-15T03:05:05.595458Z",
+        "Updated": "2018-04-01T16:36:35.970175Z"
+    },
+    {
+        "ID": "{7dd600e6-0d9c-4801-b967-cb4cc17359ff}",
+        "Namespace": "atlassian",
+        "Name": "stash-example-plugin",
+        "FullName": "atlassian/stash-example-plugin",
+        "Perm": null,
+        "Branch": "master",
+        "Private": true,
+        "Clone": "https://bitbucket.org/atlassian/stash-example-plugin.git",
+        "CloneSSH": "git@bitbucket.org:atlassian/stash-example-plugin.git",
+        "Link": "https://bitbucket.org/atlassian/stash-example-plugin",
+        "Created": "2013-04-15T03:05:05.595458Z",
+        "Updated": "2018-04-01T16:36:35.970175Z"
+    }
+]

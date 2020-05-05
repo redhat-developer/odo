@@ -1,0 +1,13 @@
+[
+    {
+        "ID": "1",
+        "Name": "",
+        "Target": "http://example.com/webhook",
+        "Events": [
+            "push",
+            "pull_request"
+        ],
+        "Active": true,
+        "SkipVerify": false
+    }
+]

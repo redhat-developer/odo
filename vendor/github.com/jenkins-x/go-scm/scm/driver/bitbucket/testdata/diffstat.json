@@ -1,0 +1,31 @@
+{
+  "pagelen": 500,
+  "values": [
+    {
+      "status": "modified",
+      "old": {
+        "path": "CONTRIBUTING.md",
+        "type": "commit_file",
+        "links": {
+          "self": {
+            "href": "https:\/\/api.bitbucket.org\/2.0\/repositories\/atlassian\/atlaskit\/src\/dec26e0fe887167743c2b7e36531dedfeb6cd478\/CONTRIBUTING.md"
+          }
+        }
+      },
+      "lines_removed": 15,
+      "lines_added": 15,
+      "new": {
+        "path": "CONTRIBUTING.md",
+        "type": "commit_file",
+        "links": {
+          "self": {
+            "href": "https:\/\/api.bitbucket.org\/2.0\/repositories\/atlassian\/atlaskit\/src\/425863f9dbe56d70c8dcdbf2e4e0805e85591fcc\/CONTRIBUTING.md"
+          }
+        }
+      },
+      "type": "diffstat"
+    }
+  ],
+  "page": 1,
+  "size": 1
+}

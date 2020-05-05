@@ -1,0 +1,81 @@
+{
+  "action": "created",
+  "issue": {
+    "id": 47,
+    "number": 1,
+    "user": {
+      "id": 1,
+      "login": "unknwon",
+      "full_name": "",
+      "email": "noreply@gogs.io",
+      "avatar_url": "https://secure.gravatar.com/avatar/8c58a0be77ee441bb8f8595b7f1b4e87",
+      "username": "unknwon"
+    },
+    "title": "Problem",
+    "body": "Got it",
+    "labels": [
+      
+    ],
+    "milestone": null,
+    "assignee": null,
+    "state": "open",
+    "comments": 0,
+    "created_at": "2017-12-09T01:30:43Z",
+    "updated_at": "2017-12-09T01:39:10Z",
+    "pull_request": null
+  },
+  "comment": {
+    "id": 43,
+    "html_url": "http://try.gitea.io/gogits/hello-world/issues/1#issuecomment-43",
+    "user": {
+      "id": 1,
+      "login": "unknwon",
+      "full_name": "",
+      "email": "noreply@gogs.io",
+      "avatar_url": "https://secure.gravatar.com/avatar/8c58a0be77ee441bb8f8595b7f1b4e87",
+      "username": "unknwon"
+    },
+    "body": "Got it",
+    "created_at": "2017-12-09T01:30:43Z",
+    "updated_at": "2017-12-09T01:39:10Z"
+  },
+  "repository": {
+    "id": 61,
+    "owner": {
+      "id": 25,
+      "login": "gogits",
+      "full_name": "",
+      "email": "",
+      "avatar_url": "http://try.gitea.io/avatars/25",
+      "username": "gogits"
+    },
+    "name": "hello-world",
+    "full_name": "gogits/hello-world",
+    "description": "",
+    "private": true,
+    "fork": false,
+    "parent": null,
+    "empty": false,
+    "mirror": false,
+    "size": 36864,
+    "html_url": "http://try.gitea.io/gogits/hello-world",
+    "ssh_url": "git@localhost:gogits/hello-world.git",
+    "clone_url": "http://try.gitea.io/gogits/hello-world.git",
+    "website": "",
+    "stars_count": 0,
+    "forks_count": 0,
+    "watchers_count": 2,
+    "open_issues_count": 1,
+    "default_branch": "master",
+    "created_at": "2017-12-09T01:30:43Z",
+    "updated_at": "2017-12-09T01:39:10Z"
+  },
+  "sender": {
+    "id": 1,
+    "login": "unknwon",
+    "full_name": "",
+    "email": "noreply@gogs.io",
+    "avatar_url": "https://secure.gravatar.com/avatar/8c58a0be77ee441bb8f8595b7f1b4e87",
+    "username": "unknwon"
+  }
+}

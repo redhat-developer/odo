@@ -1,0 +1,17 @@
+{
+    "ID": "178504",
+    "Namespace": "diaspora",
+    "Name": "diaspora",
+    "Perm": {
+        "Pull": true,
+        "Push": false,
+        "Admin": false
+    },
+    "Branch": "master",
+    "Private": false,
+    "Clone": "https://gitlab.com/diaspora/diaspora.git",
+    "CloneSSH": "git@gitlab.com:diaspora/diaspora.git",
+    "Link": "",
+    "Created": "0001-01-01T00:00:00Z",
+    "Updated": "0001-01-01T00:00:00Z"
+}

@@ -1,0 +1,29 @@
+{
+  "Number": 1347,
+  "Title": "Found a bug",
+  "Body": "I'm having a problem with this.",
+  "Link": "https://github.com/octocat/Hello-World/issues/1347",
+  "State": "open",
+  "Labels": [
+    "bug"
+  ],
+  "Closed": false,
+  "Locked": false,
+  "PullRequest": true,
+  "Author": {
+    "Login": "octocat",
+    "Name": "",
+    "Email": "",
+    "Avatar": "https://github.com/images/error/octocat_happy.gif"
+  },
+  "Assignees": [
+    {
+      "ID": 1,
+      "Login": "octocat",
+      "Link": "https://github.com/octocat",
+      "Avatar": "https://github.com/images/error/octocat_happy.gif"
+    }
+  ],
+  "Created": "2011-04-22T13:33:48Z",
+  "Updated": "2011-04-22T13:33:48Z"
+}

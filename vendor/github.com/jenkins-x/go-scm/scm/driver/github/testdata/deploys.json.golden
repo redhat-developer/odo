@@ -1,0 +1,30 @@
+[
+  {
+    "ID": "1",
+    "Namespace": "octocat",
+    "Name": "example",
+    "Link": "https://api.github.com/repos/octocat/example/deployments/1",
+    "Sha": "a84d88e7554fc1fa21bcbc4efae3c782a70d2b9d",
+    "Ref": "topic-branch",
+    "FullName": "octocat/example",
+    "Description": "Deploy request from hubot",
+    "OriginalEnvironment": "staging",
+    "Environment": "production",
+    "RepositoryLink": "https://api.github.com/repos/octocat/example",
+    "StatusLink": "https://api.github.com/repos/octocat/example/deployments/1/statuses",
+    "Author": {
+      "ID": 1,
+      "Login": "octocat",
+      "Name": "",
+      "Email": "",
+      "Avatar": "https://github.com/images/error/octocat_happy.gif",
+      "Link": "https://github.com/octocat",
+      "Created": "0001-01-01T00:00:00Z",
+      "Updated": "0001-01-01T00:00:00Z"
+    },
+    "Created": "2012-07-20T01:19:13Z",
+    "Updated": "2012-07-20T01:19:13Z",
+    "TransientEnvironment": false,
+    "ProductionEnvironment": true
+  }
+]

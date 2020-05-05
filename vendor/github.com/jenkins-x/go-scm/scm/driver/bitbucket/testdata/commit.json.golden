@@ -1,0 +1,19 @@
+{
+    "Sha": "a6e5e7d797edf751cbd839d6bd4aef86c941eec9",
+    "Message": "Add Apache 2.0 License\n",
+    "Author": {
+        "Name": "Adam Ahmed",
+        "Email": "aahmed@atlassian.com",
+        "Date": "2015-08-27T03:25:04Z",
+        "Login": "aahmed",
+        "Avatar": "https://bitbucket.org/account/aahmed/avatar/32/"
+    },
+    "Committer": {
+        "Name": "Adam Ahmed",
+        "Email": "aahmed@atlassian.com",
+        "Date": "2015-08-27T03:25:04Z",
+        "Login": "aahmed",
+        "Avatar": "https://bitbucket.org/account/aahmed/avatar/32/"
+    },
+    "Link": "https://bitbucket.org/atlassian/stash-example-plugin/commits/a6e5e7d797edf751cbd839d6bd4aef86c941eec9"
+}

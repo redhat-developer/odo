@@ -1,0 +1,43 @@
+{
+    "Action": "closed",
+    "Repo": {
+        "ID": "{bc771cbf-829e-4c4b-b71f-a0eb3ac2b860}",
+        "Namespace": "brydzewski",
+        "Name": "foo",
+        "Perm": null,
+        "Branch": "",
+        "Private": true,
+        "Clone": "https://bitbucket.org/brydzewski/foo.git",
+        "CloneSSH": "git@bitbucket.org:brydzewski/foo.git",
+        "Link": "https://bitbucket.org/brydzewski/foo",
+        "Created": "0001-01-01T00:00:00Z",
+        "Updated": "0001-01-01T00:00:00Z"
+    },
+    "PullRequest": {
+        "Number": 2,
+        "Title": "update README",
+        "Body": "",
+        "Sha": "6ca9fe26898a",
+        "Ref": "refs/pull-requests/2/from",
+        "Source": "develop",
+        "Target": "master",
+        "Fork": "brydzewski/foo",
+        "Link": "https://bitbucket.org/brydzewski/foo/pull-requests/2",
+        "Closed": true,
+        "Merged": false,
+        "Author": {
+            "Login": "brydzewski",
+            "Name": "Brad Rydzewski",
+            "Email": "",
+            "Avatar": "https://bitbucket.org/account/brydzewski/avatar/32/"
+        },
+        "Created": "2018-07-03T01:39:22.782818Z",
+        "Updated": "2018-07-03T01:44:00.030575Z"
+    },
+    "Sender": {
+        "Login": "brydzewski",
+        "Name": "Brad Rydzewski",
+        "Email": "",
+        "Avatar": "https://bitbucket.org/account/brydzewski/avatar/32/"
+    }
+}

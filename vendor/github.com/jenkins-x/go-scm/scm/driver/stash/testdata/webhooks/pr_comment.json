@@ -1,0 +1,110 @@
+{
+  "eventKey": "pr:comment:added",
+  "date": "2017-09-19T11:21:06+1000",
+  "actor": {
+    "name": "admin",
+    "emailAddress": "admin@example.com",
+    "id": 1,
+    "displayName": "Administrator",
+    "active": true,
+    "slug": "admin",
+    "type": "NORMAL"
+  },
+  "pullRequest": {
+    "id": 11,
+    "version": 1,
+    "title": "A cool PR",
+    "state": "OPEN",
+    "open": true,
+    "closed": false,
+    "createdDate": 1505783860548,
+    "updatedDate": 1505783878981,
+    "fromRef": {
+      "id": "refs/heads/comment-pr",
+      "displayId": "comment-pr",
+      "latestCommit": "ddc19f786996396d57e17c8f6d1d05d00318ad10",
+      "repository": {
+        "slug": "repository",
+        "id": 84,
+        "name": "repository",
+        "scmId": "git",
+        "state": "AVAILABLE",
+        "statusMessage": "Available",
+        "forkable": true,
+        "project": {
+          "key": "PROJ",
+          "id": 84,
+          "name": "project",
+          "public": false,
+          "type": "NORMAL"
+        },
+        "public": false
+      }
+    },
+    "toRef": {
+      "id": "refs/heads/master",
+      "displayId": "master",
+      "latestCommit": "7e48f426f0a6e47c5b5e862c31be6ca965f82c9c",
+      "repository": {
+        "slug": "repository",
+        "id": 84,
+        "name": "repository",
+        "scmId": "git",
+        "state": "AVAILABLE",
+        "statusMessage": "Available",
+        "forkable": true,
+        "project": {
+          "key": "PROJ",
+          "id": 84,
+          "name": "project",
+          "public": false,
+          "type": "NORMAL"
+        },
+        "public": false
+      }
+    },
+    "locked": false,
+    "author": {
+      "user": {
+        "name": "admin",
+        "emailAddress": "admin@example.com",
+        "id": 1,
+        "displayName": "Administrator",
+        "active": true,
+        "slug": "admin",
+        "type": "NORMAL"
+      },
+      "role": "AUTHOR",
+      "approved": false,
+      "status": "UNAPPROVED"
+    },
+    "reviewers": [
+    ],
+    "participants": [
+    ]
+  },
+  "comment": {
+    "properties": {
+      "repositoryId": 84
+    },
+    "id": 62,
+    "version": 0,
+    "text": "I am a PR comment",
+    "author": {
+      "name": "admin",
+      "emailAddress": "admin@example.com",
+      "id": 1,
+      "displayName": "Administrator",
+      "active": true,
+      "slug": "admin",
+      "type": "NORMAL"
+    },
+    "createdDate": 1505784066751,
+    "updatedDate": 1505784066751,
+    "comments": [
+    ],
+    "tasks": [
+    ]
+  },
+  "commentParentId": 43
+}

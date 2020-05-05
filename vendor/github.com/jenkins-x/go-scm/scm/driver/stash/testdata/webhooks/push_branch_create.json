@@ -1,0 +1,43 @@
+{
+    "eventKey": "repo:refs_changed",
+    "date": "2018-07-05T18:24:15+0000",
+    "actor": {
+        "name": "jcitizen",
+        "emailAddress": "jane@example.com",
+        "id": 1,
+        "displayName": "Jane Citizen",
+        "active": true,
+        "slug": "jcitizen",
+        "type": "NORMAL"
+    },
+    "repository": {
+        "slug": "my-repo",
+        "id": 1,
+        "name": "my-repo",
+        "scmId": "git",
+        "state": "AVAILABLE",
+        "statusMessage": "Available",
+        "forkable": true,
+        "project": {
+            "key": "PRJ",
+            "id": 2,
+            "name": "PRJ",
+            "public": false,
+            "type": "NORMAL"
+        },
+        "public": false
+    },
+    "changes": [
+        {
+            "ref": {
+                "id": "refs/heads/develop",
+                "displayId": "develop",
+                "type": "BRANCH"
+            },
+            "refId": "refs/heads/develop",
+            "fromHash": "0000000000000000000000000000000000000000",
+            "toHash": "208b0a5c05eddadad01f2aed8802fe0c3b3eaf5e",
+            "type": "ADD"
+        }
+    ]
+}

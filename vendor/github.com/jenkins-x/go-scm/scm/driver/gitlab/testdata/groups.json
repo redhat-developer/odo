@@ -1,0 +1,16 @@
+[
+    {
+        "id": 1,
+        "name": "Twitter",
+        "path": "twitter",
+        "description": "An interesting group",
+        "visibility": "public",
+        "lfs_enabled": true,
+        "avatar_url": "http://localhost:3000/uploads/group/avatar/1/twitter.jpg",
+        "web_url": "http://localhost:3000/groups/twitter",
+        "request_access_enabled": false,
+        "full_name": "Twitter",
+        "full_path": "twitter",
+        "parent_id": null
+    }
+]

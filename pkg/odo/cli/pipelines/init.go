@@ -2,6 +2,7 @@ package pipelines
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -30,7 +31,7 @@ var (
 // InitParameters encapsulates the parameters for the odo pipelines init command.
 type InitParameters struct {
 	dockercfgjson            string // filepath name to dockerconfigjson file
-	gitOpsRepo               string // repo to store Gitops resources e.g. org/repo
+	gitOpsRepoURL            string // This is where the pipelines and configuration are.
 	gitOpsWebhookSecret      string // used to create Github's shared webhook secret for gitops repo
 	output                   string // path to add Gitops resources
 	prefix                   string // used to generate the environments in a shared cluster
@@ -58,9 +59,14 @@ func (io *InitParameters) Complete(name string, cmd *cobra.Command, args []strin
 
 // Validate validates the parameters of the InitParameters.
 func (io *InitParameters) Validate() error {
+	gr, err := url.Parse(io.gitOpsRepoURL)
+	if err != nil {
+		return fmt.Errorf("failed to parse url %s: %w", io.gitOpsRepoURL, err)
+	}
+
 	// TODO: this won't work with GitLab as the repo can have more path elements.
-	if len(strings.Split(io.gitOpsRepo, "/")) != 2 {
-		return fmt.Errorf("repo must be org/repo: %s", io.gitOpsRepo)
+	if len(removeEmptyStrings(strings.Split(gr.Path, "/"))) != 2 {
+		return fmt.Errorf("repo must be org/repo: %s", strings.Trim(gr.Path, ".git"))
 	}
 	return nil
 }
@@ -70,7 +76,7 @@ func (io *InitParameters) Run() error {
 	options := pipelines.InitParameters{
 		DockerConfigJSONFilename: io.dockercfgjson,
 		GitOpsWebhookSecret:      io.gitOpsWebhookSecret,
-		GitOpsRepo:               io.gitOpsRepo,
+		GitOpsRepoURL:            io.gitOpsRepoURL,
 		OutputPath:               io.output,
 		Prefix:                   io.prefix,
 		ImageRepo:                io.imageRepo,
@@ -93,8 +99,8 @@ func NewCmdInit(name, fullName string) *cobra.Command {
 		},
 	}
 
-	initCmd.Flags().StringVar(&o.gitOpsRepo, "gitops-repo", "", "CI/CD pipelines configuration Git repository in this form <username>/<repository>")
-	initCmd.MarkFlagRequired("gitops-repo")
+	initCmd.Flags().StringVar(&o.gitOpsRepoURL, "gitops-repo-url", "", "GitOps repository e.g. https://github.com/organisation/repository")
+	initCmd.MarkFlagRequired("gitops-repo-url")
 	initCmd.Flags().StringVar(&o.gitOpsWebhookSecret, "gitops-webhook-secret", "", "provide the GitHub webhook secret for GitOps repository")
 	initCmd.MarkFlagRequired("gitops-webhook-secret")
 	initCmd.Flags().StringVar(&o.output, "output", ".", "folder path to add GitOps resources")

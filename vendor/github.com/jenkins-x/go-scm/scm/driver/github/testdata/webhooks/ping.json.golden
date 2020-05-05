@@ -1,0 +1,32 @@
+{
+  "Repo": {
+    "ID": "215576972",
+    "Namespace": "jstrachan",
+    "Name": "nodey227",
+    "FullName": "jstrachan/nodey227",
+    "Perm": {
+      "Pull": false,
+      "Push": false,
+      "Admin": false
+    },
+    "Branch": "master",
+    "Private": true,
+    "Clone": "https://github.com/jstrachan/nodey227.git",
+    "CloneSSH": "git@github.com:jstrachan/nodey227.git",
+    "Link": "https://github.com/jstrachan/nodey227",
+    "Created": "2019-10-16T15:03:50Z",
+    "Updated": "2019-10-16T15:13:57Z"
+  },
+  "Sender": {
+    "ID": 30140,
+    "Login": "jstrachan",
+    "Name": "",
+    "Email": "",
+    "Avatar": "https://avatars1.githubusercontent.com/u/30140?v=4",
+    "Link": "https://github.com/jstrachan",
+    "Created": "0001-01-01T00:00:00Z",
+    "Updated": "0001-01-01T00:00:00Z"
+  },
+  "Installation": null,
+  "GUID": "f2467dea-70d6-11e8-8955-3c83993e0aef"
+}

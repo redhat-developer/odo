@@ -1,0 +1,64 @@
+{
+  "object_kind": "push",
+  "event_name": "push",
+  "before": "9217710ce8c7e1eae7a5d1c45f6e43e1c769f866",
+  "after": "2adc9465c4edfc33834e173fe89436a7cb899a1d",
+  "ref": "refs/heads/master",
+  "checkout_sha": "2adc9465c4edfc33834e173fe89436a7cb899a1d",
+  "message": null,
+  "user_id": 51764,
+  "user_name": "Sid Sijbrandij",
+  "user_username": "sytses",
+  "user_email": "noreply@gitlab.com",
+  "user_avatar": "https://secure.gravatar.com/avatar/8c58a0be77ee441bb8f8595b7f1b4e87?s=80&d=identicon",
+  "project_id": 4861503,
+  "project": {
+    "id": 4861503,
+    "name": "hello-world",
+    "description": "",
+    "web_url": "https://gitlab.com/gitlab-org/hello-world",
+    "avatar_url": null,
+    "git_ssh_url": "git@gitlab.com:gitlab-org/hello-world.git",
+    "git_http_url": "https://gitlab.com/gitlab-org/hello-world.git",
+    "namespace": "sytses",
+    "visibility_level": 0,
+    "path_with_namespace": "gitlab-org/hello-world",
+    "default_branch": "master",
+    "ci_config_path": null,
+    "homepage": "https://gitlab.com/gitlab-org/hello-world",
+    "url": "git@gitlab.com:gitlab-org/hello-world.git",
+    "ssh_url": "git@gitlab.com:gitlab-org/hello-world.git",
+    "http_url": "https://gitlab.com/gitlab-org/hello-world.git"
+  },
+  "commits": [
+    {
+      "id": "2adc9465c4edfc33834e173fe89436a7cb899a1d",
+      "message": "added readme\n",
+      "timestamp": "2017-12-10T08:26:38-08:00",
+      "url": "https://gitlab.com/gitlab-org/hello-world/commit/2adc9465c4edfc33834e173fe89436a7cb899a1d",
+      "author": {
+        "name": "Sid Sijbrandij",
+        "email": "noreply@gitlab.com"
+      },
+      "added": [
+        "README.md"
+      ],
+      "modified": [
+        
+      ],
+      "removed": [
+        
+      ]
+    }
+  ],
+  "total_commits_count": 1,
+  "repository": {
+    "name": "hello-world",
+    "url": "git@gitlab.com:gitlab-org/hello-world.git",
+    "description": "",
+    "homepage": "https://gitlab.com/gitlab-org/hello-world",
+    "git_http_url": "https://gitlab.com/gitlab-org/hello-world.git",
+    "git_ssh_url": "git@gitlab.com:gitlab-org/hello-world.git",
+    "visibility_level": 0
+  }
+}

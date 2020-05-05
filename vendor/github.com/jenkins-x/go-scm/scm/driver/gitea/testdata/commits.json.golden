@@ -1,0 +1,11 @@
+{
+    "committer": {
+        "name": "Lunny Xiao",
+        "login": "lunny",
+        "email": "xiaolunwen@gmail.com",
+        "avatar": "https://secure.gravatar.com/avatar/271fc56bcea89c6f69ab0024b59b3f81?d=identicon"
+    },
+    "link": "https://try.gitea.io/api/v1/repos/gitea/gitea/git/commits/c43399cad8766ee521b873a32c1652407c5a4630",
+    "sha": "c43399cad8766ee521b873a32c1652407c5a4630",
+    "message": "Fixes repo branch endpoint summary (#4893)"
+}

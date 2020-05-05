@@ -1,0 +1,34 @@
+buildPack: go
+buildPackGitURL: https://github.com/jenkins-x-buildpacks/jenkins-x-classic.git
+pipelineConfig:
+  pipelines:
+    release:
+      promote:
+        steps:
+        - command: ./updatebot.sh
+          dir: /workspace/source
+          name: update-lighthouse
+          image: gcr.io/jenkinsxio/builder-go
+    pullRequest:
+      pipeline:
+        agent:
+          image: gcr.io/jenkinsxio/builder-go
+        env:
+        - name: GITHUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: lighthouse-bot-test-github
+              key: password
+        - name: GITLAB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: jx-pipeline-git-gitlab-gl
+              key: password
+        stages:
+        - name: ci
+          steps:
+          - name: test
+            command: make
+            args:
+            - test
+            dir: /workspace/source

@@ -1,0 +1,45 @@
+{
+  "pagelen": 10,
+  "values": [
+    {
+      "read_only": false,
+      "description": "example.com",
+      "links": {
+        "self": {
+          "href": "https:\/\/api.bitbucket.org\/2.0\/repositories\/atlassian\/stash-example-plugin\/hooks\/%7Bd53603cc-3f67-45ea-b310-aaa5ef6ec061%7D"
+        }
+      },
+      "url": "http://example.com/webhook",
+      "created_at": "2015-10-05T01:11:48.096116Z",
+      "skip_cert_verification": false,
+      "source": null,
+      "active": true,
+      "subject": {
+        "links": {
+          "self": {
+            "href": "https:\/\/api.bitbucket.org\/2.0\/repositories\/atlassian\/stash-example-plugin"
+          },
+          "html": {
+            "href": "https:\/\/bitbucket.org\/atlassian\/stash-example-plugin"
+          },
+          "avatar": {
+            "href": "https:\/\/bytebucket.org\/ravatar\/%7Bc179f544-ba1f-4ea9-bd8f-2b2c1efa4046%7D?ts=go"
+          }
+        },
+        "type": "repository",
+        "name": "stash-example-plugin",
+        "full_name": "atlassian\/stash-example-plugin",
+        "uuid": "{c179f544-ba1f-4ea9-bd8f-2b2c1efa4046}"
+      },
+      "type": "webhook_subscription",
+      "events": [
+        "pullrequest:created",
+        "pullrequest:updated",
+        "repo:push"
+      ],
+      "uuid": "{d53603cc-3f67-45ea-b310-aaa5ef6ec061}"
+    }
+  ],
+  "page": 1,
+  "size": 1
+}

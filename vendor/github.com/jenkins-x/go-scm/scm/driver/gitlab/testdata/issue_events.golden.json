@@ -1,0 +1,32 @@
+[
+  {
+    "Actor": {
+      "Name": "Administrator",
+      "Login": "root",
+      "Avatar": "https://www.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61?s=80&d=identicon"
+    },
+    "Created": "2018-08-20T13:38:20.077Z",
+    "Label": {
+      "ID": 73,
+      "Name": "a1",
+      "Color": "#34495E",
+      "Description": ""
+    },
+    "Event": "labeled"
+  },
+  {
+    "Actor": {
+      "Name": "Administrator",
+      "Login": "root",
+      "Avatar": "https://www.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61?s=80&d=identicon"
+    },
+    "Created": "2018-08-20T13:38:20.077Z",
+    "Label": {
+      "ID": 74,
+      "Name": "p1",
+      "Color": "#0033CC",
+      "Description": ""
+    },
+    "Event": "unlabeled"
+  }
+]

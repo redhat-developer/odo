@@ -1,0 +1,32 @@
+[
+  {
+    "Actor": {
+      "Name": "Administrator",
+      "Login": "root",
+      "Avatar": "https://www.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61?s=80&d=identicon"
+    },
+    "Created": "2018-08-20T06:17:28.394Z",
+    "Label": {
+      "ID": 74,
+      "Name": "p1",
+      "Color": "#0033CC",
+      "Description": ""
+    },
+    "Event": "labeled"
+  },
+  {
+    "Actor": {
+      "Name": "Administrator",
+      "Login": "root",
+      "Avatar": "https://www.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61?s=80&d=identicon"
+    },
+    "Created": "2018-08-20T06:17:28.394Z",
+    "Label": {
+      "ID": 41,
+      "Name": "project",
+      "Color": "#D1D100",
+      "Description": ""
+    },
+    "Event": "labeled"
+  }
+]
