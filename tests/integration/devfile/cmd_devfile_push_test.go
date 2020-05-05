@@ -304,7 +304,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(statErr).ToNot(HaveOccurred())
 			Expect(cmdOutput).To(ContainSubstring("init"))
 
-			oc.CheckCmdOpInRemoteDevfilePod(
+			clusterType.CheckCmdOpInRemoteDevfilePod(
 				podName,
 				"runtime2",
 				namespace,
