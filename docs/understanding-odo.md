@@ -76,8 +76,7 @@ features:
     A service is software that your component links to or depends on.
     Examples of services: MariaDB, Jenkins, MySQL. In `odo`, services
     are provisioned from the OpenShift Service Catalog and must be
-    enabled within your
-cluster.
+    enabled within your cluster.
 
 ## Officially supported languages and corresponding container images
 
@@ -96,11 +95,13 @@ Supported languages, container images, and package managers
 
 ### Listing available container images
 
-> **Note**
-> 
-> The list of available container images is sourced from the cluster’s
-> internal container registry and external registries associated with
-> the cluster.
+<div class="note">
+
+The list of available container images is sourced from the cluster’s
+internal container registry and external registries associated with the
+cluster.
+
+</div>
 
 To list the available components and associated container images for
 your cluster:

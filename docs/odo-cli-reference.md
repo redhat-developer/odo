@@ -349,13 +349,15 @@ preference file.
   odo preference set experimental false
 ```
 
-> **Note**
-> 
-> By default, the path to the global preference file is
-> `~/.odo/preferece.yaml` and it is stored in the environment variable
-> `GLOBALODOCONFIG`. You can set up a custom path by setting the value
-> of the environment variable to a new preference path, for example
-> `GLOBALODOCONFIG="new_path/preference.yaml"`
+<div class="note">
+
+By default, the path to the global preference file is
+`~/.odo/preferece.yaml` and it is stored in the environment variable
+`GLOBALODOCONFIG`. You can set up a custom path by setting the value of
+the environment variable to a new preference path, for example
+`GLOBALODOCONFIG="new_path/preference.yaml"`
+
+</div>
 
 |                    |                                                                                                |
 | ------------------ | ---------------------------------------------------------------------------------------------- |
@@ -409,8 +411,7 @@ Push source code to a component.
 
 Perform service catalog operations.
 
-**Example using
-service.**
+**Example using service.**
 
 ``` 
   # Create new postgresql service from service catalog using dev plan and name my-postgresql-db.
@@ -477,8 +478,7 @@ been linked prior to the invocation using `odo link`.
 
 Update the source code path of a component
 
-**Example using
-update.**
+**Example using update.**
 
 ``` 
   # Change the source code path of a currently active component to local (use the current directory as a source)
