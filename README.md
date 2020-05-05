@@ -14,6 +14,14 @@ This is the GitHub branch for [odo.dev](https://odo.dev).
 
 ## How to update documentation.
 
+Requirements:
+ * Unfortunately, an older version of `pandoc` is required to convert the notes. 
+
+```
+$ sudo wget https://github.com/jgm/pandoc/releases/download/2.0.0.1/pandoc-2.0.0.1-1-amd64.deb
+$ sudo dpkg -i pandoc-2.0.0.1-1-amd64.deb
+```
+
 1. Check the `/chosen-docs` directory for which file you want to update.
 2. Find out where the file is located.
   - If the file is located in the `/upstream` folder, update it here: [github.com/openshift/odo/tree/master/docs/public](https://github.com/openshift/odo/tree/master/docs/public)
