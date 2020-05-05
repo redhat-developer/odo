@@ -19,3 +19,19 @@
 .section--grey {
 	background-color: $color-section-grey;
 }
+
+/* ----- Notes ----- */    
+.note {    
+  background-color: $color-theme-green;    
+  margin-bottom:1em;    
+  margin-top:1em;    
+  padding:0.5em;    
+}    
+                                  
+/* ----- Important ---- */    
+.important {    
+  background-color: $color-theme-red;    
+  margin-bottom:1em;    
+  margin-top:1em;    
+  padding:0.5em;    
+}
