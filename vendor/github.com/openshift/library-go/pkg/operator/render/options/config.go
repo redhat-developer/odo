@@ -20,6 +20,9 @@ type ManifestConfig struct {
 	// Image is the pull spec of the image to use for the controller manager.
 	Image string
 
+	// OperatorImage is the pull spec of the image to use for the operator (optional).
+	OperatorImage string
+
 	// ImagePullPolicy specifies the image pull policy to use for the images.
 	ImagePullPolicy string
 }
@@ -28,9 +31,6 @@ type ManifestConfig struct {
 type FileConfig struct {
 	// BootstrapConfig holds the rendered control plane component config file for bootstrapping (phase 1).
 	BootstrapConfig []byte
-
-	// PostBootstrapConfig holds the rendered control plane component config file after bootstrapping (phase 2).
-	PostBootstrapConfig []byte
 
 	// Assets holds the loaded assets like certs and keys.
 	Assets map[string][]byte

@@ -73,19 +73,18 @@ message DeploymentCondition {
 // is carried out and may be changed at any time. The `latestVersion` field is updated when a new deployment
 // is triggered by any means.
 message DeploymentConfig {
-  // Standard object's metadata.
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   // Spec represents a desired deployment state and how to deploy to it.
   optional DeploymentConfigSpec spec = 2;
 
   // Status represents the current deployment state.
+  // +optional
   optional DeploymentConfigStatus status = 3;
 }
 
 // DeploymentConfigList is a collection of deployment configs.
 message DeploymentConfigList {
-  // Standard object's metadata.
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   // Items is a list of deployment configs

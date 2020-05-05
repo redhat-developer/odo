@@ -2,17 +2,26 @@
 #  OLM - Build and Test  #
 ##########################
 
+# Undefine GOFLAGS environment variable.
+ifdef GOFLAGS
+$(warning Undefining GOFLAGS set in CI)
+undefine GOFLAGS
+endif
+
 SHELL := /bin/bash
 PKG   := github.com/operator-framework/operator-lifecycle-manager
-MOD_FLAGS := $(shell (go version | grep -q -E "1\.(11|12|13)") && echo -mod=vendor)
-CMDS  := $(addprefix bin/, $(shell go list $(MOD_FLAGS) ./cmd/... | xargs -I{} basename {}))
-CODEGEN := ./vendor/k8s.io/code-generator/generate_groups.sh
-CODEGEN_INTERNAL := ./vendor/k8s.io/code-generator/generate_internal_groups.sh
-MOCKGEN := ./scripts/generate_mocks.sh
-# counterfeiter := $(GOBIN)/counterfeiter
-# mockgen := $(GOBIN)/mockgen
+MOD_FLAGS := $(shell (go version | grep -q -E "1\.1[1-9]") && echo -mod=vendor)
+CMDS  := $(shell go list $(MOD_FLAGS) ./cmd/...)
+TCMDS := $(shell go list $(MOD_FLAGS) ./test/e2e/...)
+MOCKGEN := ./scripts/update_mockgen.sh
+CODEGEN := ./scripts/update_codegen.sh
 IMAGE_REPO := quay.io/operator-framework/olm
 IMAGE_TAG ?= "dev"
+SPECIFIC_UNIT_TEST := $(if $(TEST),-run $(TEST),)
+LOCAL_NAMESPACE := "olm"
+export GO111MODULE=on
+CONTROLLER_GEN := go run $(MOD_FLAGS) ./vendor/sigs.k8s.io/controller-tools/cmd/controller-gen
+YQ_INTERNAL := go run $(MOD_FLAGS) ./vendor/github.com/mikefarah/yq/v2/
 
 # ART builds are performed in dist-git, with content (but not commits) copied 
 # from the source repo. Thus at build time if your code is inspecting the local
@@ -31,12 +40,12 @@ all: test build
 test: clean cover.out
 
 unit:
-	go test $(MOD_FLAGS) -v -race -tags=json1 -count=1 ./pkg/...
+	go test $(MOD_FLAGS) $(SPECIFIC_UNIT_TEST) -v -race -count=1 ./pkg/...
 
 schema-check:
 
 cover.out: schema-check
-	go test $(MOD_FLAGS) -v -race -tags=json1 -coverprofile=cover.out -covermode=atomic \
+	go test $(MOD_FLAGS) -v -race -coverprofile=cover.out -covermode=atomic \
 		-coverpkg ./pkg/controller/... ./pkg/...
 
 coverage: cover.out
@@ -47,6 +56,11 @@ coverage-html: cover.out
 
 build: build_cmd=build
 build: clean $(CMDS)
+
+test-bare: BUILD_TAGS=-tags=bare
+test-bare: clean $(TCMDS)
+
+test-bin: clean $(TCMDS)
 
 # build versions of the binaries with coverage enabled
 build-coverage: build_cmd=test -c -covermode=count -coverpkg ./pkg/controller/...
@@ -59,24 +73,37 @@ build-linux: clean $(CMDS)
 build-wait: clean bin/wait
 
 bin/wait:
-	CGO_ENABLED=0 GOOS=linux GOARCH=386 go build -o $@ $(PKG)/test/e2e/wait
+	GOOS=linux GOARCH=386 go build -o $@ $(PKG)/test/e2e/wait
+
+build-util-linux: arch_flags=GOOS=linux GOARCH=386
+build-util-linux: build-util
+
+build-util: bin/cpb
+
+bin/cpb:
+	CGO_ENABLED=0 $(arch_flags) go build $(MOD_FLAGS) -ldflags '-extldflags "-static"' -o $@ ./util/cpb
 
 $(CMDS): version_flags=-ldflags "-X $(PKG)/pkg/version.GitCommit=$(GIT_COMMIT) -X $(PKG)/pkg/version.OLMVersion=`cat OLM_VERSION`"
 $(CMDS):
-	CGO_ENABLED=0 $(arch_flags) go $(build_cmd) $(MOD_FLAGS) $(version_flags) -o $@ $(PKG)/cmd/$(shell basename $@);
+	$(arch_flags) go $(build_cmd) $(MOD_FLAGS) $(version_flags) -o bin/$(shell basename $@) $@
 
-run-local: build-linux
+build: clean $(CMDS)
+
+$(TCMDS):
+	go test -c $(BUILD_TAGS) $(MOD_FLAGS) -o bin/$(shell basename $@) $@
+
+run-local: build-linux build-wait build-util-linux
 	rm -rf build
 	. ./scripts/build_local.sh
 	mkdir -p build/resources
-	. ./scripts/package_release.sh 1.0.0 build/resources Documentation/install/local-values.yaml
-	. ./scripts/install_local.sh local build/resources
+	. ./scripts/package_release.sh 1.0.0 build/resources doc/install/local-values.yaml
+	. ./scripts/install_local.sh $(LOCAL_NAMESPACE) build/resources
 	rm -rf build
 
 deploy-local:
 	mkdir -p build/resources
-	. ./scripts/package_release.sh 1.0.0 build/resources Documentation/install/local-values.yaml
-	. ./scripts/install_local.sh local build/resources
+	. ./scripts/package_release.sh 1.0.0 build/resources doc/install/local-values.yaml
+	. ./scripts/install_local.sh $(LOCAL_NAMESPACE) build/resources
 	rm -rf build
 
 e2e.namespace:
@@ -88,6 +115,7 @@ setup-bare: clean e2e.namespace
 	. ./scripts/package_release.sh 1.0.0 test/e2e/resources test/e2e/e2e-bare-values.yaml
 	. ./scripts/install_bare.sh $(shell cat ./e2e.namespace) test/e2e/resources
 
+# e2e test exculding the rh-operators directory which tests rh-operators and their metric cardinality.
 e2e:
 	go test -v $(MOD_FLAGS) -failfast -timeout 70m ./test/e2e/... -namespace=openshift-operators -kubeconfig=${KUBECONFIG} -olmNamespace=openshift-operator-lifecycle-manager -dummyImage=bitnami/nginx:latest
 
@@ -102,7 +130,10 @@ e2e-local-docker:
 	. ./scripts/build_local.sh
 	. ./scripts/run_e2e_docker.sh $(TEST)
 
-vendor: $(KUBE_DEPS)
+e2e-operator-metrics:
+	go test -v $(MOD_FLAGS) -failfast -timeout 70m ./test/rh-operators/...
+
+vendor:
 	go mod tidy
 	go mod vendor
 
@@ -122,54 +153,32 @@ clean:
 	@rm -rf test/e2e/log
 	@rm -rf e2e.namespace
 
-CI := $(shell find . -iname "*.jsonnet") $(shell find . -iname "*.libsonnet")
-$(CI):
-	jsonnet fmt -i -n 4 $@
 
-gen-ci: $(CI)
-	ffctl gen
+# Generate manifests for CRDs
+manifests: vendor
+	$(CONTROLLER_GEN) schemapatch:manifests=./deploy/chart/templates paths=./pkg/api/apis/operators/... output:dir=./deploy/chart/templates
 
-# Must be run in gopath: https://github.com/kubernetes/kubernetes/issues/67566
-# use container-codegen
+	$(YQ_INTERNAL) w --inplace deploy/chart/templates/0000_50_olm_03-clusterserviceversion.crd.yaml spec.validation.openAPIV3Schema.properties.spec.properties.install.properties.spec.properties.deployments.items.properties.spec.properties.template.properties.metadata.x-kubernetes-preserve-unknown-fields true
+
+# Generate clients, listers, and informers
 codegen:
-	cp scripts/generate_groups.sh vendor/k8s.io/code-generator/generate_groups.sh
-	cp scripts/generate_internal_groups.sh vendor/k8s.io/code-generator/generate_internal_groups.sh
-	mkdir -p vendor/k8s.io/code-generator/hack
-	cp boilerplate.go.txt vendor/k8s.io/code-generator/hack/boilerplate.go.txt
-	go run vendor/k8s.io/kube-openapi/cmd/openapi-gen/openapi-gen.go --logtostderr -i ./vendor/k8s.io/apimachinery/pkg/runtime,./vendor/k8s.io/apimachinery/pkg/apis/meta/v1,./vendor/k8s.io/apimachinery/pkg/version,./pkg/package-server/apis/operators/v1,./pkg/package-server/apis/apps/v1alpha1,./pkg/api/apis/operators/v1alpha1,./pkg/lib/version -p $(PKG)/pkg/package-server/apis/openapi -O zz_generated.openapi -h boilerplate.go.txt -r /dev/null
-	$(CODEGEN) all $(PKG)/pkg/api/client $(PKG)/pkg/api/apis "operators:v1alpha1,v1"
-	$(CODEGEN_INTERNAL) all $(PKG)/pkg/package-server/client $(PKG)/pkg/package-server/apis $(PKG)/pkg/package-server/apis "operators:v1 apps:v1alpha1"
+	$(CODEGEN)
 
-container-codegen:
-	docker build -t olm:codegen -f codegen.Dockerfile .
-	docker run --name temp-codegen olm:codegen /bin/true
-	docker cp temp-codegen:/go/src/github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/. ./pkg/api/client
-	docker cp temp-codegen:/go/src/github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/. ./pkg/api/apis
-	docker cp temp-codegen:/go/src/github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/. ./pkg/package-server/apis
-	docker cp temp-codegen:/go/src/github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/. ./pkg/package-server/client
-	docker rm temp-codegen
-
-container-mockgen:
-	docker build -t olm:mockgen -f mockgen.Dockerfile . --no-cache
-	docker run --name temp-mockgen olm:mockgen /bin/true
-	docker cp temp-mockgen:/operator-lifecycle-manager/pkg/api/wrappers/wrappersfakes/. ./pkg/api/wrappers/wrappersfakes
-	docker cp temp-mockgen:/operator-lifecycle-manager/pkg/lib/operatorlister/operatorlisterfakes/. ./pkg/lib/operatorlister/operatorlisterfakes
-	docker cp temp-mockgen:/operator-lifecycle-manager/pkg/lib/operatorclient/operatorclientmocks/. ./pkg/lib/operatorclient/operatorclientmocks
-	docker cp temp-mockgen:/operator-lifecycle-manager/pkg/fakes/. ./pkg/fakes
-	docker cp temp-mockgen:/operator-lifecycle-manager/pkg/controller/registry/resolver/fakes/. ./pkg/controller/registry/resolver/fakes
-	docker cp temp-mockgen:/operator-lifecycle-manager/pkg/package-server/client/fakes/. ./pkg/package-server/client/fakes
-	docker rm temp-mockgen
-
-# Must be run in gopath: https://github.com/kubernetes/kubernetes/issues/67566
-verify-codegen: codegen
-	git diff --exit-code
-
-verify-catalog:
-
+# Generate mock types.
 mockgen:
 	$(MOCKGEN)
 
-gen-all: gen-ci container-codegen container-mockgen
+# Generates everything.
+gen-all: codegen mockgen manifests
+
+diff:
+	git diff --exit-code
+
+verify-codegen: codegen diff
+verify-mockgen: mockgen diff
+verify-manifests: manifests diff
+verify: verify-codegen verify-mockgen verify-manifests
+
 
 # before running release, bump the version in OLM_VERSION and push to master,
 # then tag those builds in quay with the version in OLM_VERSION
@@ -177,13 +186,15 @@ release: ver=$(shell cat OLM_VERSION)
 release:
 	docker pull quay.io/operator-framework/olm:$(ver)
 	$(MAKE) target=upstream ver=$(ver) quickstart=true package
-	$(MAKE) target=okd ver=$(ver) package
 	$(MAKE) target=ocp ver=$(ver) package
 	rm -rf manifests
 	mkdir manifests
 	cp -R deploy/ocp/manifests/$(ver)/. manifests
+	# requires gnu sed if on mac
 	find ./manifests -type f -exec sed -i "/^#/d" {} \;
 	find ./manifests -type f -exec sed -i "1{/---/d}" {} \;
+
+verify-release: release diff
 
 package: olmref=$(shell docker inspect --format='{{index .RepoDigests 0}}' quay.io/operator-framework/olm:$(ver))
 package:
@@ -193,18 +204,14 @@ endif
 ifndef ver
 	$(error ver is undefined)
 endif
-	yq w -i deploy/$(target)/values.yaml olm.image.ref $(olmref)
-	yq w -i deploy/$(target)/values.yaml catalog.image.ref $(olmref)
-	yq w -i deploy/$(target)/values.yaml package.image.ref $(olmref)
+	$(YQ_INTERNAL) w -i deploy/$(target)/values.yaml olm.image.ref $(olmref)
+	$(YQ_INTERNAL) w -i deploy/$(target)/values.yaml catalog.image.ref $(olmref)
+	$(YQ_INTERNAL) w -i deploy/$(target)/values.yaml package.image.ref $(olmref)
 	./scripts/package_release.sh $(ver) deploy/$(target)/manifests/$(ver) deploy/$(target)/values.yaml
 	ln -sfFn ./$(ver) deploy/$(target)/manifests/latest
 ifeq ($(quickstart), true)
-	./scripts/package_quickstart.sh deploy/$(target)/manifests/$(ver) deploy/$(target)/quickstart/olm.yaml
+	./scripts/package_quickstart.sh deploy/$(target)/manifests/$(ver) deploy/$(target)/quickstart/olm.yaml deploy/$(target)/quickstart/crds.yaml deploy/$(target)/quickstart/install.sh
 endif
-
-##########################
-#  OLM - Commands        #
-##########################
 
 .PHONY: run-console-local
 run-console-local:

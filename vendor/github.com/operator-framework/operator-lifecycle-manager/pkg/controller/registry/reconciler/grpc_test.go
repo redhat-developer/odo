@@ -22,6 +22,7 @@ func validGrpcCatalogSource(image, address string) *v1alpha1.CatalogSource {
 			Name:      "img-catalog",
 			Namespace: testNamespace,
 			UID:       types.UID("catalog-uid"),
+			Labels:    map[string]string{"olm.catalogSource": "img-catalog"},
 		},
 		Spec: v1alpha1.CatalogSourceSpec{
 			Image:      image,
@@ -32,8 +33,7 @@ func validGrpcCatalogSource(image, address string) *v1alpha1.CatalogSource {
 }
 
 func TestGrpcRegistryReconciler(t *testing.T) {
-	nowTime := metav1.Date(2018, time.January, 26, 20, 40, 0, 0, time.UTC)
-	timeNow = func() metav1.Time { return nowTime }
+	now := func() metav1.Time { return metav1.Date(2018, time.January, 26, 20, 40, 0, 0, time.UTC) }
 
 	type cluster struct {
 		k8sObjs []runtime.Object
@@ -58,7 +58,7 @@ func TestGrpcRegistryReconciler(t *testing.T) {
 			},
 			out: out{
 				status: &v1alpha1.RegistryServiceStatus{
-					CreatedAt:        timeNow(),
+					CreatedAt:        now(),
 					Protocol:         "grpc",
 					ServiceName:      "img-catalog",
 					ServiceNamespace: testNamespace,
@@ -76,7 +76,7 @@ func TestGrpcRegistryReconciler(t *testing.T) {
 			},
 			out: out{
 				status: &v1alpha1.RegistryServiceStatus{
-					CreatedAt:        timeNow(),
+					CreatedAt:        now(),
 					Protocol:         "grpc",
 					ServiceName:      "img-catalog",
 					ServiceNamespace: testNamespace,
@@ -92,7 +92,7 @@ func TestGrpcRegistryReconciler(t *testing.T) {
 			},
 			out: out{
 				status: &v1alpha1.RegistryServiceStatus{
-					CreatedAt: timeNow(),
+					CreatedAt: now(),
 					Protocol:  "grpc",
 				},
 			},
@@ -105,7 +105,7 @@ func TestGrpcRegistryReconciler(t *testing.T) {
 			},
 			out: out{
 				status: &v1alpha1.RegistryServiceStatus{
-					CreatedAt:        timeNow(),
+					CreatedAt:        now(),
 					Protocol:         "grpc",
 					ServiceName:      "img-catalog",
 					ServiceNamespace: testNamespace,
@@ -123,7 +123,7 @@ func TestGrpcRegistryReconciler(t *testing.T) {
 			},
 			out: out{
 				status: &v1alpha1.RegistryServiceStatus{
-					CreatedAt:        timeNow(),
+					CreatedAt:        now(),
 					Protocol:         "grpc",
 					ServiceName:      "img-catalog",
 					ServiceNamespace: testNamespace,
@@ -141,7 +141,7 @@ func TestGrpcRegistryReconciler(t *testing.T) {
 			},
 			out: out{
 				status: &v1alpha1.RegistryServiceStatus{
-					CreatedAt:        timeNow(),
+					CreatedAt:        now(),
 					Protocol:         "grpc",
 					ServiceName:      "img-catalog",
 					ServiceNamespace: testNamespace,
@@ -159,7 +159,7 @@ func TestGrpcRegistryReconciler(t *testing.T) {
 			},
 			out: out{
 				status: &v1alpha1.RegistryServiceStatus{
-					CreatedAt:        timeNow(),
+					CreatedAt:        now(),
 					Protocol:         "grpc",
 					ServiceName:      "img-catalog",
 					ServiceNamespace: testNamespace,
@@ -173,7 +173,7 @@ func TestGrpcRegistryReconciler(t *testing.T) {
 			stopc := make(chan struct{})
 			defer close(stopc)
 
-			factory, client := fakeReconcilerFactory(t, stopc, withK8sObjs(tt.in.cluster.k8sObjs...), withK8sClientOptions(clientfake.WithNameGeneration(t)))
+			factory, client := fakeReconcilerFactory(t, stopc, withNow(now), withK8sObjs(tt.in.cluster.k8sObjs...), withK8sClientOptions(clientfake.WithNameGeneration(t)))
 			rec := factory.ReconcilerForSource(tt.in.catsrc)
 
 			err := rec.EnsureRegistryServer(tt.in.catsrc)
@@ -217,9 +217,6 @@ func TestGrpcRegistryReconciler(t *testing.T) {
 }
 
 func TestGrpcRegistryChecker(t *testing.T) {
-	nowTime := metav1.Date(2018, time.January, 26, 20, 40, 0, 0, time.UTC)
-	timeNow = func() metav1.Time { return nowTime }
-
 	type cluster struct {
 		k8sObjs []runtime.Object
 	}
@@ -367,5 +364,54 @@ func TestGrpcRegistryChecker(t *testing.T) {
 			require.Equal(t, tt.out.healthy, healthy)
 
 		})
+	}
+}
+
+func TestGetPodImageID(t *testing.T) {
+	var table = []struct {
+		description string
+		pod         *corev1.Pod
+		result      string
+	}{
+		{
+			description: "no pod status: return nothing",
+			pod:         &corev1.Pod{Status: corev1.PodStatus{ContainerStatuses: []corev1.ContainerStatus{}}},
+			result:      "",
+		},
+		{
+			description: "pod has status: return status",
+			pod:         &corev1.Pod{Status: corev1.PodStatus{ContainerStatuses: []corev1.ContainerStatus{{ImageID: "xyz123"}}}},
+			result:      "xyz123",
+		},
+	}
+
+	for i, tt := range table {
+		require.Equal(t, tt.result, getPodImageID(tt.pod), table[i].description)
+	}
+}
+
+func TestUpdatePodByDigest(t *testing.T) {
+	var table = []struct {
+		description string
+		updatePod   *corev1.Pod
+		servingPods []*corev1.Pod
+		result      bool
+	}{
+		{
+			description: "pod image ids match: not update from the registry: return false",
+			updatePod:   &corev1.Pod{Status: corev1.PodStatus{ContainerStatuses: []corev1.ContainerStatus{{ImageID: "xyz123"}}}},
+			servingPods: []*corev1.Pod{{Status: corev1.PodStatus{ContainerStatuses: []corev1.ContainerStatus{{ImageID: "xyz123"}}}}},
+			result:      false,
+		},
+		{
+			description: "pod image ids do not match:  updated image on the registry: return true",
+			updatePod:   &corev1.Pod{Status: corev1.PodStatus{ContainerStatuses: []corev1.ContainerStatus{{ImageID: "abc456"}}}},
+			servingPods: []*corev1.Pod{{Status: corev1.PodStatus{ContainerStatuses: []corev1.ContainerStatus{{ImageID: "xyz123"}}}}},
+			result:      true,
+		},
+	}
+
+	for i, tt := range table {
+		require.Equal(t, tt.result, updatePodByDigest(tt.updatePod, tt.servingPods), table[i].description)
 	}
 }

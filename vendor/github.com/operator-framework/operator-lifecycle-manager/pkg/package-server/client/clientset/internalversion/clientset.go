@@ -1,5 +1,5 @@
 /*
-Copyright Red Hat, Inc.
+Copyright 2020 Red Hat, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,7 +19,8 @@ limitations under the License.
 package internalversion
 
 import (
-	appsinternalversion "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/clientset/internalversion/typed/apps/internalversion"
+	"fmt"
+
 	operatorsinternalversion "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/client/clientset/internalversion/typed/operators/internalversion"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
@@ -28,7 +29,6 @@ import (
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
-	Apps() appsinternalversion.AppsInterface
 	Operators() operatorsinternalversion.OperatorsInterface
 }
 
@@ -36,13 +36,7 @@ type Interface interface {
 // version included in a Clientset.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	apps      *appsinternalversion.AppsClient
 	operators *operatorsinternalversion.OperatorsClient
-}
-
-// Apps retrieves the AppsClient
-func (c *Clientset) Apps() appsinternalversion.AppsInterface {
-	return c.apps
 }
 
 // Operators retrieves the OperatorsClient
@@ -59,17 +53,18 @@ func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 }
 
 // NewForConfig creates a new Clientset for the given config.
+// If config's RateLimiter is not set and QPS and Burst are acceptable,
+// NewForConfig will generate a rate-limiter in configShallowCopy.
 func NewForConfig(c *rest.Config) (*Clientset, error) {
 	configShallowCopy := *c
 	if configShallowCopy.RateLimiter == nil && configShallowCopy.QPS > 0 {
+		if configShallowCopy.Burst <= 0 {
+			return nil, fmt.Errorf("Burst is required to be greater than 0 when RateLimiter is not set and QPS is set to greater than 0")
+		}
 		configShallowCopy.RateLimiter = flowcontrol.NewTokenBucketRateLimiter(configShallowCopy.QPS, configShallowCopy.Burst)
 	}
 	var cs Clientset
 	var err error
-	cs.apps, err = appsinternalversion.NewForConfig(&configShallowCopy)
-	if err != nil {
-		return nil, err
-	}
 	cs.operators, err = operatorsinternalversion.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
@@ -86,7 +81,6 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 // panics if there is an error in the config.
 func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
-	cs.apps = appsinternalversion.NewForConfigOrDie(c)
 	cs.operators = operatorsinternalversion.NewForConfigOrDie(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
@@ -96,7 +90,6 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
-	cs.apps = appsinternalversion.New(c)
 	cs.operators = operatorsinternalversion.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)

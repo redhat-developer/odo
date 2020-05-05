@@ -17,6 +17,7 @@ import (
 	"math"
 	"math/rand"
 	"reflect"
+	"runtime"
 	"sort"
 	"sync"
 	"testing"
@@ -230,13 +231,6 @@ func TestHistogramVecConcurrency(t *testing.T) {
 
 	rand.Seed(42)
 
-	objectives := make([]float64, 0, len(DefObjectives))
-	for qu := range DefObjectives {
-
-		objectives = append(objectives, qu)
-	}
-	sort.Float64s(objectives)
-
 	it := func(n uint32) bool {
 		mutations := int(n%1e4 + 1e4)
 		concLevel := int(n%7 + 1)
@@ -343,6 +337,50 @@ func TestBuckets(t *testing.T) {
 	got = ExponentialBuckets(100, 1.2, 3)
 	want = []float64{100, 120, 144}
 	if !reflect.DeepEqual(got, want) {
-		t.Errorf("linear buckets: got %v, want %v", got, want)
+		t.Errorf("exponential buckets: got %v, want %v", got, want)
+	}
+}
+
+func TestHistogramAtomicObserve(t *testing.T) {
+	var (
+		quit = make(chan struct{})
+		his  = NewHistogram(HistogramOpts{
+			Buckets: []float64{0.5, 10, 20},
+		})
+	)
+
+	defer func() { close(quit) }()
+
+	observe := func() {
+		for {
+			select {
+			case <-quit:
+				return
+			default:
+				his.Observe(1)
+			}
+		}
+	}
+
+	go observe()
+	go observe()
+	go observe()
+
+	for i := 0; i < 100; i++ {
+		m := &dto.Metric{}
+		if err := his.Write(m); err != nil {
+			t.Fatal("unexpected error writing histogram:", err)
+		}
+		h := m.GetHistogram()
+		if h.GetSampleCount() != uint64(h.GetSampleSum()) ||
+			h.GetSampleCount() != h.GetBucket()[1].GetCumulativeCount() ||
+			h.GetSampleCount() != h.GetBucket()[2].GetCumulativeCount() {
+			t.Fatalf(
+				"inconsistent counts in histogram: count=%d sum=%f buckets=[%d, %d]",
+				h.GetSampleCount(), h.GetSampleSum(),
+				h.GetBucket()[1].GetCumulativeCount(), h.GetBucket()[2].GetCumulativeCount(),
+			)
+		}
+		runtime.Gosched()
 	}
 }

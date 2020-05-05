@@ -1,7 +1,9 @@
 package status
 
 import (
+	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"k8s.io/klog"
@@ -47,9 +49,10 @@ type StatusSyncer struct {
 	clusterOperatorClient configv1client.ClusterOperatorsGetter
 	clusterOperatorLister configv1listers.ClusterOperatorLister
 
-	cachesToSync  []cache.InformerSynced
-	queue         workqueue.RateLimitingInterface
-	eventRecorder events.Recorder
+	cachesToSync    []cache.InformerSynced
+	queue           workqueue.RateLimitingInterface
+	eventRecorder   events.Recorder
+	degradedInertia Inertia
 }
 
 func NewClusterOperatorStatusController(
@@ -69,8 +72,9 @@ func NewClusterOperatorStatusController(
 		clusterOperatorLister: clusterOperatorInformer.Lister(),
 		operatorClient:        operatorClient,
 		eventRecorder:         recorder.WithComponentSuffix("status-controller"),
+		degradedInertia:       MustNewInertia(2 * time.Minute).Inertia,
 
-		queue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "StatusSyncer-"+name),
+		queue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "StatusSyncer_"+strings.Replace(name, "-", "_", -1)),
 	}
 
 	operatorClient.Informer().AddEventHandler(c.eventHandler())
@@ -80,6 +84,14 @@ func NewClusterOperatorStatusController(
 	c.cachesToSync = append(c.cachesToSync, clusterOperatorInformer.Informer().HasSynced)
 
 	return c
+}
+
+// WithDegradedInertia returns a copy of the StatusSyncer with the
+// requested inertia function for degraded conditions.
+func (c *StatusSyncer) WithDegradedInertia(inertia Inertia) *StatusSyncer {
+	output := *c
+	output.degradedInertia = inertia
+	return &output
 }
 
 // sync reacts to a change in prereqs by finding information that is required to match another value in the cluster. This
@@ -142,10 +154,10 @@ func (c StatusSyncer) sync() error {
 	}
 
 	clusterOperatorObj.Status.RelatedObjects = c.relatedObjects
-	configv1helpers.SetStatusCondition(&clusterOperatorObj.Status.Conditions, unionInertialCondition("Degraded", operatorv1.ConditionFalse, currentDetailedStatus.Conditions...))
-	configv1helpers.SetStatusCondition(&clusterOperatorObj.Status.Conditions, unionCondition("Progressing", operatorv1.ConditionFalse, currentDetailedStatus.Conditions...))
-	configv1helpers.SetStatusCondition(&clusterOperatorObj.Status.Conditions, unionCondition("Available", operatorv1.ConditionTrue, currentDetailedStatus.Conditions...))
-	configv1helpers.SetStatusCondition(&clusterOperatorObj.Status.Conditions, unionCondition("Upgradeable", operatorv1.ConditionTrue, currentDetailedStatus.Conditions...))
+	configv1helpers.SetStatusCondition(&clusterOperatorObj.Status.Conditions, unionCondition("Degraded", operatorv1.ConditionFalse, c.degradedInertia, currentDetailedStatus.Conditions...))
+	configv1helpers.SetStatusCondition(&clusterOperatorObj.Status.Conditions, unionCondition("Progressing", operatorv1.ConditionFalse, nil, currentDetailedStatus.Conditions...))
+	configv1helpers.SetStatusCondition(&clusterOperatorObj.Status.Conditions, unionCondition("Available", operatorv1.ConditionTrue, nil, currentDetailedStatus.Conditions...))
+	configv1helpers.SetStatusCondition(&clusterOperatorObj.Status.Conditions, unionCondition("Upgradeable", operatorv1.ConditionTrue, nil, currentDetailedStatus.Conditions...))
 
 	// TODO work out removal.  We don't always know the existing value, so removing early seems like a bad idea.  Perhaps a remove flag.
 	versions := c.versionGetter.GetVersions()
@@ -161,7 +173,7 @@ func (c StatusSyncer) sync() error {
 	if equality.Semantic.DeepEqual(clusterOperatorObj, originalClusterOperatorObj) {
 		return nil
 	}
-	klog.V(2).Infof("clusteroperator/%s diff %v", c.clusterOperatorName, resourceapply.JSONPatch(originalClusterOperatorObj, clusterOperatorObj))
+	klog.V(2).Infof("clusteroperator/%s diff %v", c.clusterOperatorName, resourceapply.JSONPatchNoError(originalClusterOperatorObj, clusterOperatorObj))
 
 	if _, updateErr := c.clusterOperatorClient.ClusterOperators().UpdateStatus(clusterOperatorObj); err != nil {
 		return updateErr
@@ -180,23 +192,23 @@ func OperatorConditionToClusterOperatorCondition(condition operatorv1.OperatorCo
 	}
 }
 
-func (c *StatusSyncer) Run(workers int, stopCh <-chan struct{}) {
+func (c *StatusSyncer) Run(ctx context.Context, workers int) {
 	defer utilruntime.HandleCrash()
 	defer c.queue.ShutDown()
 
 	klog.Infof("Starting StatusSyncer-" + c.clusterOperatorName)
 	defer klog.Infof("Shutting down StatusSyncer-" + c.clusterOperatorName)
-	if !cache.WaitForCacheSync(stopCh, c.cachesToSync...) {
+	if !cache.WaitForCacheSync(ctx.Done(), c.cachesToSync...) {
 		return
 	}
 
 	// start watching for version changes
-	go c.watchVersionGetter(stopCh)
+	go c.watchVersionGetter(ctx.Done())
 
 	// doesn't matter what workers say, only start one.
-	go wait.Until(c.runWorker, time.Second, stopCh)
+	go wait.UntilWithContext(ctx, c.runWorker, time.Second)
 
-	<-stopCh
+	<-ctx.Done()
 }
 
 func (c *StatusSyncer) watchVersionGetter(stopCh <-chan struct{}) {
@@ -216,7 +228,7 @@ func (c *StatusSyncer) watchVersionGetter(stopCh <-chan struct{}) {
 	}
 }
 
-func (c *StatusSyncer) runWorker() {
+func (c *StatusSyncer) runWorker(_ context.Context) {
 	for c.processNextWorkItem() {
 	}
 }

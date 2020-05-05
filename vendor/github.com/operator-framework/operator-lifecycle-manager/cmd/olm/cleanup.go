@@ -3,17 +3,23 @@ package main
 import (
 	"time"
 
+	"k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset"
+
 	"github.com/sirupsen/logrus"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/retry"
+	apiregv1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/olm"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 )
 
 const (
@@ -26,12 +32,36 @@ type deleteResourceFunc func() error
 type mutateMeta func(obj metav1.Object) (mutated bool)
 
 func cleanup(logger *logrus.Logger, c operatorclient.ClientInterface, crc versioned.Interface) {
-	if err := cleanupOwnerReferences(c, crc); err != nil {
-		logger.WithError(err).Fatal("couldn't cleanup cross-namespace ownerreferences")
+	if err := waitForDelete(checkCatalogSource(crc, "olm-operators"), deleteCatalogSource(crc, "olm-operators")); err != nil {
+		logger.WithError(err).Fatal("couldn't clean previous release")
+	}
+
+	if err := waitForDelete(checkConfigMap(c, "olm-operators"), deleteConfigMap(c, "olm-operators")); err != nil {
+		logger.WithError(err).Fatal("couldn't clean previous release")
 	}
 
 	if err := waitForDelete(checkSubscription(crc, "packageserver"), deleteSubscription(crc, "packageserver")); err != nil {
 		logger.WithError(err).Fatal("couldn't clean previous release")
+	}
+
+	if err := waitForDelete(checkClusterServiceVersion(crc, "packageserver.v0.10.0"), deleteClusterServiceVersion(crc, "packageserver.v0.10.0")); err != nil {
+		logger.WithError(err).Fatal("couldn't clean previous release")
+	}
+
+	if err := waitForDelete(checkClusterServiceVersion(crc, "packageserver.v0.10.1"), deleteClusterServiceVersion(crc, "packageserver.v0.10.0")); err != nil {
+		logger.WithError(err).Fatal("couldn't clean previous release")
+	}
+
+	if err := waitForDelete(checkClusterServiceVersion(crc, "packageserver.v0.9.0"), deleteClusterServiceVersion(crc, "packageserver.v0.9.0")); err != nil {
+		logger.WithError(err).Fatal("couldn't clean previous release")
+	}
+
+	if err := cleanupOwnerReferences(c, crc); err != nil {
+		logger.WithError(err).Fatal("couldn't cleanup cross-namespace ownerreferences")
+	}
+
+	if err := ensureAPIServiceLabels(c.ApiregistrationV1Interface()); err != nil {
+		logger.WithError(err).Fatal("couldn't ensure APIService labels")
 	}
 }
 
@@ -56,6 +86,19 @@ func waitForDelete(checkResource checkResourceFunc, deleteResource deleteResourc
 	return err
 }
 
+func checkClusterServiceVersion(crc versioned.Interface, name string) checkResourceFunc {
+	return func() error {
+		_, err := crc.OperatorsV1alpha1().ClusterServiceVersions(*namespace).Get(name, metav1.GetOptions{})
+		return err
+	}
+}
+
+func deleteClusterServiceVersion(crc versioned.Interface, name string) deleteResourceFunc {
+	return func() error {
+		return crc.OperatorsV1alpha1().ClusterServiceVersions(*namespace).Delete(name, metav1.NewDeleteOptions(0))
+	}
+}
+
 func checkSubscription(crc versioned.Interface, name string) checkResourceFunc {
 	return func() error {
 		_, err := crc.OperatorsV1alpha1().Subscriptions(*namespace).Get(name, metav1.GetOptions{})
@@ -66,6 +109,32 @@ func checkSubscription(crc versioned.Interface, name string) checkResourceFunc {
 func deleteSubscription(crc versioned.Interface, name string) deleteResourceFunc {
 	return func() error {
 		return crc.OperatorsV1alpha1().Subscriptions(*namespace).Delete(name, metav1.NewDeleteOptions(0))
+	}
+}
+
+func checkConfigMap(c operatorclient.ClientInterface, name string) checkResourceFunc {
+	return func() error {
+		_, err := c.KubernetesInterface().CoreV1().ConfigMaps(*namespace).Get(name, metav1.GetOptions{})
+		return err
+	}
+}
+
+func deleteConfigMap(c operatorclient.ClientInterface, name string) deleteResourceFunc {
+	return func() error {
+		return c.KubernetesInterface().CoreV1().ConfigMaps(*namespace).Delete(name, metav1.NewDeleteOptions(0))
+	}
+}
+
+func checkCatalogSource(crc versioned.Interface, name string) checkResourceFunc {
+	return func() error {
+		_, err := crc.OperatorsV1alpha1().CatalogSources(*namespace).Get(name, metav1.GetOptions{})
+		return err
+	}
+}
+
+func deleteCatalogSource(crc versioned.Interface, name string) deleteResourceFunc {
+	return func() error {
+		return crc.OperatorsV1alpha1().CatalogSources(*namespace).Delete(name, metav1.NewDeleteOptions(0))
 	}
 }
 
@@ -112,6 +181,11 @@ func cleanupOwnerReferences(c operatorclient.ClientInterface, crc versioned.Inte
 		objs = append(objs, &obj)
 	}
 
+	apiServices, _ := c.ApiregistrationV1Interface().ApiregistrationV1().APIServices().List(listOpts)
+	for _, obj := range apiServices.Items {
+		objs = append(objs, &obj)
+	}
+
 	for _, obj := range objs {
 		if !removeBadRefs(obj) {
 			continue
@@ -147,6 +221,11 @@ func cleanupOwnerReferences(c operatorclient.ClientInterface, crc versioned.Inte
 				_, err = c.KubernetesInterface().RbacV1().RoleBindings(v.GetNamespace()).Update(v)
 				return err
 			}
+		case *apiregv1.APIService:
+			update = func() error {
+				_, err = c.ApiregistrationV1Interface().ApiregistrationV1().APIServices().Update(v)
+				return err
+			}
 		}
 
 		if err := retry.RetryOnConflict(retry.DefaultBackoff, update); err != nil {
@@ -179,4 +258,36 @@ func crossNamespaceOwnerReferenceRemoval(kind string, uidNamespaces map[types.UI
 
 		return
 	}
+}
+
+// ensureAPIServiceLabels checks the labels of existing APIService objects to ensure ownership is set correctly.
+// If the APIService label does not correspond to the expected packageserver owner the APIService labels are updated
+func ensureAPIServiceLabels(c clientset.Interface) error {
+	apiService, err := c.ApiregistrationV1().APIServices().Get(olm.PackageserverName, metav1.GetOptions{})
+	if err != nil && !k8serrors.IsNotFound(err) {
+		logrus.WithField("apiService", "packageserver").Debugf("get error: %s", err)
+		return err
+	}
+	if apiService == nil || k8serrors.IsNotFound(err) || apiService.Name == "" {
+		logrus.WithField("apiService", "packageserver").Debugf("not found")
+		return nil
+	}
+
+	if l := apiService.GetLabels(); l == nil {
+		apiService.Labels = make(map[string]string)
+	}
+
+	if apiService.Labels[ownerutil.OwnerKey] != ownerutil.OwnerPackageServer {
+		apiService.Labels[ownerutil.OwnerKey] = ownerutil.OwnerPackageServer
+		update := func() error {
+			_, err := c.ApiregistrationV1().APIServices().Update(apiService)
+			return err
+		}
+		if err := retry.RetryOnConflict(retry.DefaultBackoff, update); err != nil {
+			logrus.WithField("apiService", apiService.Name).Warnf("update error: %s", err)
+			return err
+		}
+	}
+
+	return nil
 }

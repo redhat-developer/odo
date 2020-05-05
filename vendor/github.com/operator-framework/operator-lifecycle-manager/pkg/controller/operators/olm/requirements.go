@@ -16,6 +16,10 @@ import (
 )
 
 func (a *Operator) minKubeVersionStatus(name string, minKubeVersion string) (met bool, statuses []v1alpha1.RequirementStatus) {
+	if minKubeVersion == "" {
+		return true, nil
+	}
+
 	status := v1alpha1.RequirementStatus{
 		Group:   "operators.coreos.com",
 		Version: "v1alpha1",
@@ -23,16 +27,8 @@ func (a *Operator) minKubeVersionStatus(name string, minKubeVersion string) (met
 		Name:    name,
 	}
 
-	if minKubeVersion == "" {
-		status.Status = v1alpha1.RequirementStatusReasonNotPresent
-		status.Message = "CSV missing minimum kube version specification"
-		met = true
-		statuses = append(statuses, status)
-		return
-	}
-
 	// Retrieve server k8s version
-	serverVersionInfo, err := a.OpClient.KubernetesInterface().Discovery().ServerVersion()
+	serverVersionInfo, err := a.opClient.KubernetesInterface().Discovery().ServerVersion()
 	if err != nil {
 		status.Status = v1alpha1.RequirementStatusReasonPresentNotSatisfied
 		status.Message = "Server version discovery error"
@@ -74,7 +70,7 @@ func (a *Operator) minKubeVersionStatus(name string, minKubeVersion string) (met
 	return
 }
 
-func (a *Operator) requirementStatus(strategyDetailsDeployment *install.StrategyDetailsDeployment, crdDescs []v1alpha1.CRDDescription,
+func (a *Operator) requirementStatus(strategyDetailsDeployment *v1alpha1.StrategyDetailsDeployment, crdDescs []v1alpha1.CRDDescription,
 	ownedAPIServiceDescs []v1alpha1.APIServiceDescription, requiredAPIServiceDescs []v1alpha1.APIServiceDescription,
 	requiredNativeAPIs []metav1.GroupVersionKind) (met bool, statuses []v1alpha1.RequirementStatus) {
 	met = true
@@ -93,7 +89,7 @@ func (a *Operator) requirementStatus(strategyDetailsDeployment *install.Strategy
 		if err != nil {
 			status.Status = v1alpha1.RequirementStatusReasonNotPresent
 			status.Message = "CRD is not present"
-			a.Log.Debugf("Setting 'met' to false, %v with status %v, with err: %v", r.Name, status, err)
+			a.logger.Debugf("Setting 'met' to false, %v with status %v, with err: %v", r.Name, status, err)
 			met = false
 			statuses = append(statuses, status)
 			continue
@@ -113,7 +109,7 @@ func (a *Operator) requirementStatus(strategyDetailsDeployment *install.Strategy
 			if !served {
 				status.Status = v1alpha1.RequirementStatusReasonNotPresent
 				status.Message = "CRD version not served"
-				a.Log.Debugf("Setting 'met' to false, %v with status %v, CRD version %v not found", r.Name, status, r.Version)
+				a.logger.Debugf("Setting 'met' to false, %v with status %v, CRD version %v not found", r.Name, status, r.Version)
 				met = false
 				statuses = append(statuses, status)
 				continue
@@ -145,7 +141,7 @@ func (a *Operator) requirementStatus(strategyDetailsDeployment *install.Strategy
 			status.Status = v1alpha1.RequirementStatusReasonNotAvailable
 			status.Message = "CRD is present but the Established condition is False (not available)"
 			met = false
-			a.Log.Debugf("Setting 'met' to false, %v with status %v, established=%v, namesAccepted=%v", r.Name, status, established, namesAccepted)
+			a.logger.Debugf("Setting 'met' to false, %v with status %v, established=%v, namesAccepted=%v", r.Name, status, established, namesAccepted)
 			statuses = append(statuses, status)
 		}
 	}
@@ -242,14 +238,14 @@ func (a *Operator) requirementStatus(strategyDetailsDeployment *install.Strategy
 }
 
 // permissionStatus checks whether the given CSV's RBAC requirements are met in its namespace
-func (a *Operator) permissionStatus(strategyDetailsDeployment *install.StrategyDetailsDeployment, ruleChecker install.RuleChecker, targetNamespace, serviceAccountNamespace string) (bool, []v1alpha1.RequirementStatus, error) {
+func (a *Operator) permissionStatus(strategyDetailsDeployment *v1alpha1.StrategyDetailsDeployment, ruleChecker install.RuleChecker, targetNamespace, serviceAccountNamespace string) (bool, []v1alpha1.RequirementStatus, error) {
 	statusesSet := map[string]v1alpha1.RequirementStatus{}
 
-	checkPermissions := func(permissions []install.StrategyDeploymentPermissions, namespace string) (bool, error) {
+	checkPermissions := func(permissions []v1alpha1.StrategyDeploymentPermissions, namespace string) (bool, error) {
 		met := true
 		for _, perm := range permissions {
 			saName := perm.ServiceAccountName
-			a.Log.Debugf("perm.ServiceAccountName: %s", saName)
+			a.logger.Debugf("perm.ServiceAccountName: %s", saName)
 
 			var status v1alpha1.RequirementStatus
 			if stored, ok := statusesSet[saName]; !ok {
@@ -266,7 +262,7 @@ func (a *Operator) permissionStatus(strategyDetailsDeployment *install.StrategyD
 			}
 
 			// Ensure the ServiceAccount exists
-			sa, err := a.OpClient.GetServiceAccount(serviceAccountNamespace, perm.ServiceAccountName)
+			sa, err := a.opClient.GetServiceAccount(serviceAccountNamespace, perm.ServiceAccountName)
 			if err != nil {
 				met = false
 				status.Status = v1alpha1.RequirementStatusReasonNotPresent
@@ -331,7 +327,7 @@ func (a *Operator) permissionStatus(strategyDetailsDeployment *install.StrategyD
 
 	statuses := []v1alpha1.RequirementStatus{}
 	for key, status := range statusesSet {
-		a.Log.WithField("key", key).WithField("status", status).Debugf("appending permission status")
+		a.logger.WithField("key", key).WithField("status", status).Tracef("appending permission status")
 		statuses = append(statuses, status)
 	}
 
@@ -340,6 +336,7 @@ func (a *Operator) permissionStatus(strategyDetailsDeployment *install.StrategyD
 
 // requirementAndPermissionStatus returns the aggregate requirement and permissions statuses for the given CSV
 func (a *Operator) requirementAndPermissionStatus(csv *v1alpha1.ClusterServiceVersion) (bool, []v1alpha1.RequirementStatus, error) {
+	allReqStatuses := []v1alpha1.RequirementStatus{}
 	// Use a StrategyResolver to unmarshal
 	strategyResolver := install.StrategyResolver{}
 	strategy, err := strategyResolver.UnmarshalStrategy(csv.Spec.InstallStrategy)
@@ -348,15 +345,19 @@ func (a *Operator) requirementAndPermissionStatus(csv *v1alpha1.ClusterServiceVe
 	}
 
 	// Assume the strategy is for a deployment
-	strategyDetailsDeployment, ok := strategy.(*install.StrategyDetailsDeployment)
+	strategyDetailsDeployment, ok := strategy.(*v1alpha1.StrategyDetailsDeployment)
 	if !ok {
 		return false, nil, fmt.Errorf("could not cast install strategy as type %T", strategyDetailsDeployment)
 	}
 
 	// Check kubernetes version requirement between CSV and server
 	minKubeMet, minKubeStatus := a.minKubeVersionStatus(csv.GetName(), csv.Spec.MinKubeVersion)
+	if minKubeStatus != nil {
+		allReqStatuses = append(allReqStatuses, minKubeStatus...)
+	}
+
 	reqMet, reqStatuses := a.requirementStatus(strategyDetailsDeployment, csv.GetAllCRDDescriptions(), csv.GetOwnedAPIServiceDescriptions(), csv.GetRequiredAPIServiceDescriptions(), csv.Spec.NativeAPIs)
-	allReqStatuses := append(minKubeStatus, reqStatuses...)
+	allReqStatuses = append(allReqStatuses, reqStatuses...)
 
 	rbacLister := a.lister.RbacV1()
 	roleLister := rbacLister.RoleLister()
@@ -374,21 +375,21 @@ func (a *Operator) requirementAndPermissionStatus(csv *v1alpha1.ClusterServiceVe
 	statuses := append(allReqStatuses, permStatuses...)
 	met := minKubeMet && reqMet && permMet
 	if !met {
-		a.Log.WithField("minKubeMet", minKubeMet).WithField("reqMet", reqMet).WithField("permMet", permMet).Debug("permissions/requirements not met")
+		a.logger.WithField("minKubeMet", minKubeMet).WithField("reqMet", reqMet).WithField("permMet", permMet).Debug("permissions/requirements not met")
 	}
 
 	return met, statuses, nil
 }
 
 func (a *Operator) isGVKRegistered(group, version, kind string) error {
-	logger := a.Log.WithFields(logrus.Fields{
+	logger := a.logger.WithFields(logrus.Fields{
 		"group":   group,
 		"version": version,
 		"kind":    kind,
 	})
 
 	gv := metav1.GroupVersion{Group: group, Version: version}
-	resources, err := a.OpClient.KubernetesInterface().Discovery().ServerResourcesForGroupVersion(gv.String())
+	resources, err := a.opClient.KubernetesInterface().Discovery().ServerResourcesForGroupVersion(gv.String())
 	if err != nil {
 		logger.WithField("err", err).Info("could not query for GVK in api discovery")
 		return err
