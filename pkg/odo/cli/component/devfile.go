@@ -41,7 +41,7 @@ func (po *PushOptions) DevfilePush() (err error) {
 		return err
 	}
 
-	componentName, err := getComponentName()
+	componentName, err := getComponentName(po.componentContext)
 	if err != nil {
 		return errors.Wrap(err, "unable to get component name")
 	}
@@ -102,12 +102,18 @@ func (po *PushOptions) DevfilePush() (err error) {
 }
 
 // Get component name from env.yaml file
-func getComponentName() (string, error) {
-	// Todo: Use context to get the approraite envinfo after context is supported in experimental mode
-	dir, err := os.Getwd()
-	if err != nil {
-		return "", err
+func getComponentName(context string) (string, error) {
+	var dir string
+	var err error
+	if context == "" {
+		dir, err = os.Getwd()
+		if err != nil {
+			return "", err
+		}
+	} else {
+		dir = context
 	}
+
 	envInfo, err := envinfo.NewEnvSpecificInfo(dir)
 	if err != nil {
 		return "", err
@@ -124,7 +130,7 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 		return err
 	}
 
-	componentName, err := getComponentName()
+	componentName, err := getComponentName(do.componentContext)
 	if err != nil {
 		return err
 	}

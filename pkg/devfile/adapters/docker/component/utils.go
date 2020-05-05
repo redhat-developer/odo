@@ -154,7 +154,7 @@ func (a Adapter) updateComponent() (componentExists bool, err error) {
 				return componentExists, errors.Wrapf(err, "unable to get the container config for component %s", componentName)
 			}
 
-			portMap, err := getPortMap(comp.Endpoints, false)
+			portMap, err := getPortMap(a.Context, comp.Endpoints, false)
 			if err != nil {
 				return componentExists, errors.Wrapf(err, "unable to get the port map from env.yaml file for component %s", componentName)
 			}
@@ -271,7 +271,7 @@ func (a Adapter) generateAndGetContainerConfig(componentName string, comp versio
 
 func (a Adapter) generateAndGetHostConfig(endpoints []versionsCommon.DockerimageEndpoint) (container.HostConfig, error) {
 	// Convert the port bindings from env.yaml and generate docker host config
-	portMap, err := getPortMap(endpoints, true)
+	portMap, err := getPortMap(a.Context, endpoints, true)
 	if err != nil {
 		return container.HostConfig{}, err
 	}
@@ -284,12 +284,21 @@ func (a Adapter) generateAndGetHostConfig(endpoints []versionsCommon.Dockerimage
 	return hostConfig, nil
 }
 
-func getPortMap(endpoints []versionsCommon.DockerimageEndpoint, show bool) (nat.PortMap, error) {
+func getPortMap(context string, endpoints []versionsCommon.DockerimageEndpoint, show bool) (nat.PortMap, error) {
 	// Convert the exposed and internal port pairs saved in env.yaml file to PortMap
 	// Todo: Use context to get the approraite envinfo after context is supported in experimental mode
 	portmap := nat.PortMap{}
 
-	dir, err := os.Getwd()
+	var dir string
+	var err error
+	if context == "" {
+		dir, err = os.Getwd()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		dir = context
+	}
 	if err != nil {
 		return portmap, err
 	}

@@ -72,6 +72,8 @@ func NewWatchOptions() *WatchOptions {
 
 // Complete completes watch args
 func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	wo.devfilePath = filepath.Join(wo.componentContext, wo.devfilePath)
+
 	// if experimental mode is enabled and devfile is present
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(wo.devfilePath) {
 		envinfo, err := envinfo.NewEnvSpecificInfo(wo.componentContext)
@@ -94,7 +96,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 		}
 
 		// Get the component name
-		wo.componentName, err = getComponentName()
+		wo.componentName, err = getComponentName(wo.componentContext)
 		if err != nil {
 			return err
 		}
