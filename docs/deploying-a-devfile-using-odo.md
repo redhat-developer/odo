@@ -175,11 +175,9 @@ component](https://github.com/odo-devfiles/springboot-ex) that uses
      To apply the URL configuration changes, please use odo push
     ```
     
-    <div class="note">
-    
-    You must use your cluster host domain name when creating your URL.
-    
-    </div>
+    > **Note**
+    > 
+    > You must use your cluster host domain name when creating your URL.
 
 6.  Push the component to the cluster:
     
@@ -262,11 +260,9 @@ component](https://github.com/odo-devfiles/nodejs-ex) that uses
      To apply the URL configuration changes, please use odo push
     ```
     
-    <div class="note">
-    
-    You must use your cluster host domain name when creating your URL.
-    
-    </div>
+    > **Note**
+    > 
+    > You must use your cluster host domain name when creating your URL.
 
 6.  Push the component to the cluster:
     
