@@ -84,7 +84,7 @@ func (po *PushOptions) DevfilePush() (err error) {
 		DevfileRunCmd:   strings.ToLower(po.devfileRunCommand),
 	}
 
-	validateURL(po.EnvSpecificInfo.GetURL())
+	warnIfURLSInvalid(po.EnvSpecificInfo.GetURL())
 	// Start or update the component
 	err = devfileHandler.Push(pushParams)
 	if err != nil {
@@ -154,8 +154,8 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 	return nil
 }
 
-func validateURL(url []envinfo.EnvInfoURL) {
-	// validateURL validates if env.yaml contains a valide URL for the current pushtarget
+func warnIfURLSInvalid(url []envinfo.EnvInfoURL) {
+	// warnIfURLSInvalid checks if env.yaml contains a valide URL for the current pushtarget
 	// display a warning if no url(s) found for the current push target, but found url(s) for another push target
 	dockerURLExists := false
 	kubeURLExists := false
