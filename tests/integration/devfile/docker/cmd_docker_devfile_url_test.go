@@ -98,7 +98,7 @@ var _ = Describe("odo docker devfile url command tests", func() {
 	})
 
 	Context("Switching pushtarget", func() {
-		It("swicth from docker to kube, odo push should display warning", func() {
+		It("switch from docker to kube, odo push should display warning", func() {
 			var stdout string
 			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
 			helper.Chdir(projectDirPath)
@@ -114,7 +114,7 @@ var _ = Describe("odo docker devfile url command tests", func() {
 			Expect(stdout).To(ContainSubstring("Changes successfully pushed to component"))
 		})
 
-		It("swicth from kube to docker, odo push should display warning", func() {
+		It("switch from kube to docker, odo push should display warning", func() {
 			var stdout string
 			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
 			helper.Chdir(projectDirPath)
