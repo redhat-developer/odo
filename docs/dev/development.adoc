@@ -42,6 +42,7 @@ A PR must include:
 
  * Descriptive context that outlines what has been changed and why
  * A link to the active or open issue it fixes (if applicable)
+ * (OPTIONAL) A "signed-off" signature is good practice. You may sign your commit using `git commit -s` or `git commit --amend --no-edit -s` to a previously created commit
 
 == Useful make targets
 
