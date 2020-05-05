@@ -1,0 +1,150 @@
+{
+    "size": 1,
+    "limit": 25,
+    "isLastPage": true,
+    "values": [
+        {
+            "id": 1,
+            "version": 0,
+            "title": "Updated Files",
+            "description": "* added LICENSE\r\n* update files\r\n* update files",
+            "state": "OPEN",
+            "open": true,
+            "closed": false,
+            "createdDate": 1530766870981,
+            "updatedDate": 1530766870981,
+            "fromRef": {
+                "id": "refs/heads/feature/x",
+                "displayId": "feature/x",
+                "latestCommit": "131cb13f4aed12e725177bc4b7c28db67839bf9f",
+                "repository": {
+                    "slug": "my-repo",
+                    "id": 1,
+                    "name": "my-repo",
+                    "scmId": "git",
+                    "state": "AVAILABLE",
+                    "statusMessage": "Available",
+                    "forkable": true,
+                    "project": {
+                        "key": "PRJ",
+                        "id": 2,
+                        "name": "PRJ",
+                        "public": false,
+                        "type": "NORMAL",
+                        "links": {
+                            "self": [
+                                {
+                                    "href": "http://example.com:7990/projects/PRJ"
+                                }
+                            ]
+                        }
+                    },
+                    "public": false,
+                    "links": {
+                        "clone": [
+                            {
+                                "href": "ssh://git@example.com:7999/prj/my-repo.git",
+                                "name": "ssh"
+                            },
+                            {
+                                "href": "http://jcitizen@example.com:7990/scm/prj/my-repo.git",
+                                "name": "http"
+                            }
+                        ],
+                        "self": [
+                            {
+                                "href": "http://example.com:7990/projects/PRJ/repos/my-repo/browse"
+                            }
+                        ]
+                    }
+                }
+            },
+            "toRef": {
+                "id": "refs/heads/master",
+                "displayId": "master",
+                "latestCommit": "5c64a07cd6c0f21b753bf261ef059c7e7633c50a",
+                "repository": {
+                    "slug": "my-repo",
+                    "id": 1,
+                    "name": "my-repo",
+                    "scmId": "git",
+                    "state": "AVAILABLE",
+                    "statusMessage": "Available",
+                    "forkable": true,
+                    "project": {
+                        "key": "PRJ",
+                        "id": 2,
+                        "name": "PRJ",
+                        "public": false,
+                        "type": "NORMAL",
+                        "links": {
+                            "self": [
+                                {
+                                    "href": "http://example.com:7990/projects/PRJ"
+                                }
+                            ]
+                        }
+                    },
+                    "public": false,
+                    "links": {
+                        "clone": [
+                            {
+                                "href": "ssh://git@example.com:7999/prj/my-repo.git",
+                                "name": "ssh"
+                            },
+                            {
+                                "href": "http://jcitizen@example.com:7990/scm/prj/my-repo.git",
+                                "name": "http"
+                            }
+                        ],
+                        "self": [
+                            {
+                                "href": "http://example.com:7990/projects/PRJ/repos/my-repo/browse"
+                            }
+                        ]
+                    }
+                }
+            },
+            "locked": false,
+            "author": {
+                "user": {
+                    "name": "jcitizen",
+                    "emailAddress": "jane@example.com",
+                    "id": 1,
+                    "displayName": "Jane Citizen",
+                    "active": true,
+                    "slug": "jcitizen",
+                    "type": "NORMAL",
+                    "links": {
+                        "self": [
+                            {
+                                "href": "http://example.com:7990/users/jcitizen"
+                            }
+                        ]
+                    }
+                },
+                "role": "AUTHOR",
+                "approved": false,
+                "status": "UNAPPROVED"
+            },
+            "reviewers": [],
+            "participants": [],
+            "properties": {
+                "mergeResult": {
+                    "outcome": "CONFLICTED",
+                    "current": true
+                },
+                "resolvedTaskCount": 0,
+                "openTaskCount": 0
+            },
+            "links": {
+                "self": [
+                    {
+                        "href": "http://example.com:7990/projects/PRJ/repos/my-repo/pull-requests/1"
+                    }
+                ]
+            }
+        }
+    ],
+    "start": 0
+}

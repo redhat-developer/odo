@@ -1,0 +1,8 @@
+[
+    {
+        "State": "success",
+        "Label": "drone",
+        "Desc": "Build has completed successfully",
+        "Target": "https://ci.example.com/1000/output"
+    }
+]

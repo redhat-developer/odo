@@ -1,0 +1,17 @@
+{
+    "State": "pending",
+    "Sha": "18f3e63d05582537db6d183d9d557be09e1f90c8",
+    "Statuses": [
+        {
+            "State": "pending",
+            "Label": "default",
+            "Desc": "the dude abides",
+            "Target": "https://gitlab.example.com/thedude/gitlab-ce/builds/91"
+        },
+        {
+            "State": "success",
+            "Label": "test",
+            "Target": "https://gitlab.example.com/thedude/gitlab-foss/builds/90"
+        }
+    ]
+}

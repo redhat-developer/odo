@@ -1,0 +1,107 @@
+{
+  "Action": "created",
+  "Repo": {
+    "ID": "84",
+    "Namespace": "PROJ",
+    "Name": "repository",
+    "FullName": "",
+    "Perm": null,
+    "Branch": "master",
+    "Private": true,
+    "Clone": "",
+    "CloneSSH": "",
+    "Link": "",
+    "Created": "0001-01-01T00:00:00Z",
+    "Updated": "0001-01-01T00:00:00Z"
+  },
+  "PullRequest": {
+    "Number": 11,
+    "Title": "A cool PR",
+    "Body": "",
+    "Sha": "ddc19f786996396d57e17c8f6d1d05d00318ad10",
+    "Ref": "refs/pull-requests/11/from",
+    "Source": "comment-pr",
+    "Target": "master",
+    "Base": {
+      "Ref": "",
+      "Sha": "ddc19f786996396d57e17c8f6d1d05d00318ad10",
+      "Repo": {
+        "ID": "84",
+        "Namespace": "PROJ",
+        "Name": "repository",
+        "FullName": "",
+        "Perm": null,
+        "Branch": "master",
+        "Private": true,
+        "Clone": "",
+        "CloneSSH": "",
+        "Link": "",
+        "Created": "0001-01-01T00:00:00Z",
+        "Updated": "0001-01-01T00:00:00Z"
+      }
+    },
+    "Head": {
+      "Ref": "",
+      "Sha": "ddc19f786996396d57e17c8f6d1d05d00318ad10",
+      "Repo": {
+        "ID": "84",
+        "Namespace": "PROJ",
+        "Name": "repository",
+        "FullName": "",
+        "Perm": null,
+        "Branch": "master",
+        "Private": true,
+        "Clone": "",
+        "CloneSSH": "",
+        "Link": "",
+        "Created": "0001-01-01T00:00:00Z",
+        "Updated": "0001-01-01T00:00:00Z"
+      }
+    },
+    "Fork": "PROJ/repository",
+    "Link": "",
+    "State": "",
+    "Closed": false,
+    "Draft": false,
+    "Merged": false,
+    "State": "open",
+    "MergeSha": "",
+    "Author": {
+      "Login": "admin",
+      "Name": "Administrator",
+      "Email": "admin@example.com",
+      "Avatar": "https://www.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61.jpg",
+      "Link": "",
+      "Created": "0001-01-01T00:00:00Z",
+      "Updated": "0001-01-01T00:00:00Z"
+    },
+    "Assignees": null,
+    "Created": "2017-09-19T02:17:40+01:00",
+    "Updated": "2017-09-19T02:17:58+01:00"
+  },
+  "Comment": {
+    "ID": 62,
+    "Body": "I am a PR comment",
+    "Author": {
+      "Login": "admin",
+      "Name": "Administrator",
+      "Email": "admin@example.com",
+      "Avatar": "https://www.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61.jpg",
+      "Link": "",
+      "Created": "0001-01-01T00:00:00Z",
+      "Updated": "0001-01-01T00:00:00Z"
+    },
+    "Link": "",
+    "Created": "2017-09-19T02:21:06+01:00",
+    "Updated": "2017-09-19T02:21:06+01:00"
+  },
+  "Sender": {
+    "Login": "admin",
+    "Name": "Administrator",
+    "Email": "admin@example.com",
+    "Avatar": "https://www.gravatar.com/avatar/e64c7d89f26bd1972efa854d13d7dd61.jpg",
+    "Link": "",
+    "Created": "0001-01-01T00:00:00Z",
+    "Updated": "0001-01-01T00:00:00Z"
+  }
+}

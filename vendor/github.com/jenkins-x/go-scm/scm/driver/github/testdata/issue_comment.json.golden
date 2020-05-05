@@ -1,0 +1,13 @@
+{
+    "ID": 1,
+    "Body": "Me too",
+    "Author": {
+        "Login": "octocat",
+        "Name": "",
+        "Email": "",
+        "Avatar": "https://github.com/images/error/octocat_happy.gif"
+    },
+    "Link": "https://github.com/octocat/Hello-World/issues/1347#issuecomment-1",
+    "Created": "2011-04-14T16:00:49Z",
+    "Updated": "2011-04-14T16:00:49Z"
+}

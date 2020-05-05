@@ -1,0 +1,37 @@
+{
+  "Data": {
+    "foo": "bar"
+  },
+  "Desc": "this is a description",
+  "Ref": {
+    "Name": "master",
+    "Path": "refs/heads/master",
+    "Sha": "a10867b14bb761a232cd80139fbd4c0d33264240"
+  },
+  "Repo": {
+    "ID": "135493233",
+    "Namespace": "Codertocat",
+    "Name": "Hello-World",
+    "Perm": null,
+    "Branch": "master",
+    "Private": false,
+    "Clone": "https://github.com/Codertocat/Hello-World.git",
+    "CloneSSH": "git@github.com:Codertocat/Hello-World.git",
+    "Link": "https://github.com/Codertocat/Hello-World",
+    "Created": "0001-01-01T00:00:00Z",
+    "Updated": "0001-01-01T00:00:00Z"
+  },
+  "Sender": {
+    "ID": 21031067,
+    "Login": "Codertocat",
+    "Name": "",
+    "Email": "",
+    "Avatar": "https://avatars1.githubusercontent.com/u/21031067?v=4",
+    "Link": "https://github.com/Codertocat",
+    "Created": "0001-01-01T00:00:00Z",
+    "Updated": "0001-01-01T00:00:00Z"
+  },
+  "Target": "production",
+  "TargetURL": "",
+  "Task": "deploy"
+}

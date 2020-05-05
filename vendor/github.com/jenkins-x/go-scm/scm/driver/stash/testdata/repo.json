@@ -1,0 +1,41 @@
+{
+    "slug": "my-repo",
+    "id": 1,
+    "name": "my-repo",
+    "scmId": "git",
+    "state": "AVAILABLE",
+    "statusMessage": "Available",
+    "forkable": true,
+    "project": {
+        "key": "PRJ",
+        "id": 2,
+        "name": "PRJ",
+        "public": false,
+        "type": "NORMAL",
+        "links": {
+            "self": [
+                {
+                    "href": "http://example.com:7990/projects/PRJ"
+                }
+            ]
+        }
+    },
+    "public": false,
+    "links": {
+        "clone": [
+            {
+                "href": "ssh://git@example.com:7999/prj/my-repo.git",
+                "name": "ssh"
+            },
+            {
+                "href": "http://jcitizen@example.com:7990/scm/prj/my-repo.git",
+                "name": "http"
+            }
+        ],
+        "self": [
+            {
+                "href": "http://example.com:7990/projects/PRJ/repos/my-repo/browse"
+            }
+        ]
+    }
+}

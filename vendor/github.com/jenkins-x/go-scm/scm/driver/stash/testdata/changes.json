@@ -1,0 +1,129 @@
+{
+    "fromHash": null,
+    "toHash": "131cb13f4aed12e725177bc4b7c28db67839bf9f",
+    "properties": {},
+    "values": [
+        {
+            "contentId": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+            "fromContentId": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+            "path": {
+                "components": [
+                    ".gitignore"
+                ],
+                "parent": "",
+                "name": ".gitignore",
+                "extension": "gitignore",
+                "toString": ".gitignore"
+            },
+            "percentUnchanged": -1,
+            "type": "DELETE",
+            "nodeType": "FILE",
+            "srcExecutable": false,
+            "links": {
+                "self": [
+                    {
+                        "href": "http://example.com:7990/projects/PRJ/repos/my-repo/commits/131cb13f4aed12e725177bc4b7c28db67839bf9f#.gitignore"
+                    }
+                ]
+            },
+            "properties": {
+                "gitChangeType": "DELETE"
+            }
+        },
+        {
+            "contentId": "f1df0de7c4a94b7d83bd4864154e48e8b7f4d2cb",
+            "fromContentId": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+            "path": {
+                "components": [
+                    "COPYING"
+                ],
+                "parent": "",
+                "name": "COPYING",
+                "toString": "COPYING"
+            },
+            "executable": false,
+            "percentUnchanged": -1,
+            "type": "MODIFY",
+            "nodeType": "FILE",
+            "srcExecutable": false,
+            "links": {
+                "self": [
+                    {
+                        "href": "http://example.com:7990/projects/PRJ/repos/my-repo/commits/131cb13f4aed12e725177bc4b7c28db67839bf9f#COPYING"
+                    }
+                ]
+            },
+            "properties": {
+                "gitChangeType": "MODIFY"
+            }
+        },
+        {
+            "contentId": "e427984d4a2c1904681f2e2ee5980f37640d353f",
+            "fromContentId": "e427984d4a2c1904681f2e2ee5980f37640d353f",
+            "path": {
+                "components": [
+                    "README.md"
+                ],
+                "parent": "",
+                "name": "README.md",
+                "extension": "md",
+                "toString": "README.md"
+            },
+            "executable": false,
+            "percentUnchanged": 100,
+            "type": "MOVE",
+            "nodeType": "FILE",
+            "srcPath": {
+                "components": [
+                    "README"
+                ],
+                "parent": "",
+                "name": "README",
+                "toString": "README"
+            },
+            "srcExecutable": false,
+            "links": {
+                "self": [
+                    {
+                        "href": "http://example.com:7990/projects/PRJ/repos/my-repo/commits/131cb13f4aed12e725177bc4b7c28db67839bf9f#README.md"
+                    }
+                ]
+            },
+            "properties": {
+                "gitChangeType": "RENAME"
+            }
+        },
+        {
+            "contentId": "002a5c740c7d288d40d490a43aae9297488a2433",
+            "fromContentId": "0000000000000000000000000000000000000000",
+            "path": {
+                "components": [
+                    "main.go"
+                ],
+                "parent": "",
+                "name": "main.go",
+                "extension": "go",
+                "toString": "main.go"
+            },
+            "executable": false,
+            "percentUnchanged": -1,
+            "type": "ADD",
+            "nodeType": "FILE",
+            "links": {
+                "self": [
+                    {
+                        "href": "http://example.com:7990/projects/PRJ/repos/my-repo/commits/131cb13f4aed12e725177bc4b7c28db67839bf9f#main.go"
+                    }
+                ]
+            },
+            "properties": {
+                "gitChangeType": "ADD"
+            }
+        }
+    ],
+    "size": 4,
+    "isLastPage": true,
+    "start": 0,
+    "limit": 25,
+    "nextPageStart": null
+}

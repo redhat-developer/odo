@@ -1,0 +1,18 @@
+{
+    "State": "success",
+    "Sha": "6dcb09b5b57875f334f61aebed695e2e4193db5e",
+    "Statuses": [
+        {
+            "State": "success",
+            "Label": "continuous-integration/jenkins",
+            "Desc": "Build has completed successfully",
+            "Target": "https://ci.example.com/1000/output"
+        },
+        {
+            "State": "success",
+            "Label": "security/brakeman",
+            "Desc": "Testing has completed successfully",
+            "Target": "https://ci.example.com/2000/output"
+        }
+    ]
+}

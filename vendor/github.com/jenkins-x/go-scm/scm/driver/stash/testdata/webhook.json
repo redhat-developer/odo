@@ -1,0 +1,28 @@
+{
+    "id": 1,
+    "name": "example",
+    "createdDate": 1530808431270,
+    "updatedDate": 1530808431270,
+    "events": [
+        "repo:refs_changed",
+        "repo:comment:edited",
+        "pr:declined",
+        "pr:reviewer:approved",
+        "pr:modified",
+        "pr:deleted",
+        "pr:opened",
+        "pr:reviewer:unapproved",
+        "repo:comment:deleted",
+        "pr:comment:added",
+        "pr:comment:deleted",
+        "pr:merged",
+        "pr:comment:edited",
+        "repo:comment:added",
+        "pr:reviewer:needs_work"
+    ],
+    "configuration": {
+        "secret": "12345"
+    },
+    "url": "http://example.com",
+    "active": true
+}

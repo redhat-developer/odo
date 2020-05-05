@@ -1,0 +1,51 @@
+{
+  "Ref": "refs/tags/v0.0.1",
+  "BaseRef": "refs/heads/master",
+  "Before": "0000000000000000000000000000000000000000",
+  "After": "d2b75aa7797ec26b088fa2dd527e9d2c052fcedd",
+  "Repo": {
+    "ID": "13933572",
+    "Namespace": "bradrydzewski",
+    "Name": "drone-test-go",
+    "FullName": "bradrydzewski/drone-test-go",
+    "Perm": null,
+    "Branch": "master",
+    "Private": true,
+    "Clone": "https://github.com/bradrydzewski/drone-test-go.git",
+    "CloneSSH": "git@github.com:bradrydzewski/drone-test-go.git",
+    "Link": "https://github.com/bradrydzewski/drone-test-go",
+    "Created": "0001-01-01T00:00:00Z",
+    "Updated": "0001-01-01T00:00:00Z"
+  },
+  "Compare": "https://github.com/bradrydzewski/drone-test-go/compare/v0.0.1",
+  "Created": true,
+  "Commit": {
+    "Sha": "d2b75aa7797ec26b088fa2dd527e9d2c052fcedd",
+    "Message": "Update .drone.yml",
+    "Author": {
+      "Name": "Brad Rydzewski",
+      "Email": "brad.rydzewski@gmail.com",
+      "Date": "0001-01-01T00:00:00Z",
+      "Login": "bradrydzewski",
+      "Link": "https://github.com/bradrydzewski",
+      "Avatar": ""
+    },
+    "Committer": {
+      "Name": "GitHub",
+      "Email": "noreply@github.com",
+      "Date": "0001-01-01T00:00:00Z",
+      "Login": "web-flow",
+      "Avatar": ""
+    },
+    "Link": "https://github.com/bradrydzewski/drone-test-go/compare/v0.0.1"
+  },
+  "Sender": {
+    "ID": 817538,
+    "Login": "bradrydzewski",
+    "Name": "",
+    "Email": "",
+    "Link": "https://github.com/bradrydzewski",
+    "Avatar": "https://avatars1.githubusercontent.com/u/817538?v=4"
+  },
+  "GUID": "f2467dea-70d6-11e8-8955-3c83993e0aef"
+}

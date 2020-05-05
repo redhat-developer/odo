@@ -1,0 +1,90 @@
+{
+  "hash": "a6e5e7d797edf751cbd839d6bd4aef86c941eec9",
+  "repository": {
+    "links": {
+      "self": {
+        "href": "https:\/\/api.bitbucket.org\/2.0\/repositories\/atlassian\/stash-example-plugin"
+      },
+      "html": {
+        "href": "https:\/\/bitbucket.org\/atlassian\/stash-example-plugin"
+      },
+      "avatar": {
+        "href": "https:\/\/bytebucket.org\/ravatar\/%7B7dd600e6-0d9c-4801-b967-cb4cc17359ff%7D?ts=default"
+      }
+    },
+    "type": "repository",
+    "name": "stash-example-plugin",
+    "full_name": "atlassian\/stash-example-plugin",
+    "uuid": "{7dd600e6-0d9c-4801-b967-cb4cc17359ff}"
+  },
+  "links": {
+    "self": {
+      "href": "https:\/\/api.bitbucket.org\/2.0\/repositories\/atlassian\/stash-example-plugin\/commit\/a6e5e7d797edf751cbd839d6bd4aef86c941eec9"
+    },
+    "comments": {
+      "href": "https:\/\/api.bitbucket.org\/2.0\/repositories\/atlassian\/stash-example-plugin\/commit\/a6e5e7d797edf751cbd839d6bd4aef86c941eec9\/comments"
+    },
+    "patch": {
+      "href": "https:\/\/api.bitbucket.org\/2.0\/repositories\/atlassian\/stash-example-plugin\/patch\/a6e5e7d797edf751cbd839d6bd4aef86c941eec9"
+    },
+    "html": {
+      "href": "https:\/\/bitbucket.org\/atlassian\/stash-example-plugin\/commits\/a6e5e7d797edf751cbd839d6bd4aef86c941eec9"
+    },
+    "diff": {
+      "href": "https:\/\/api.bitbucket.org\/2.0\/repositories\/atlassian\/stash-example-plugin\/diff\/a6e5e7d797edf751cbd839d6bd4aef86c941eec9"
+    },
+    "approve": {
+      "href": "https:\/\/api.bitbucket.org\/2.0\/repositories\/atlassian\/stash-example-plugin\/commit\/a6e5e7d797edf751cbd839d6bd4aef86c941eec9\/approve"
+    },
+    "statuses": {
+      "href": "https:\/\/api.bitbucket.org\/2.0\/repositories\/atlassian\/stash-example-plugin\/commit\/a6e5e7d797edf751cbd839d6bd4aef86c941eec9\/statuses"
+    }
+  },
+  "author": {
+    "raw": "Adam Ahmed <aahmed@atlassian.com>",
+    "user": {
+      "username": "aahmed",
+      "display_name": "Adam Ahmed",
+      "account_id": "557057:74dc5efb-ffe7-49af-b427-6abc299bb3b9",
+      "links": {
+        "self": {
+          "href": "https:\/\/api.bitbucket.org\/2.0\/users\/aahmed"
+        },
+        "html": {
+          "href": "https:\/\/bitbucket.org\/aahmed\/"
+        },
+        "avatar": {
+          "href": "https:\/\/bitbucket.org\/account\/aahmed\/avatar\/32\/"
+        }
+      },
+      "type": "user",
+      "uuid": "{3d5de233-98d4-4138-b4af-8678fbb009ad}"
+    }
+  },
+  "summary": {
+    "raw": "Add Apache 2.0 License\n",
+    "markup": "markdown",
+    "html": "<p>Add Apache 2.0 License<\/p>",
+    "type": "rendered"
+  },
+  "participants": [
+    
+  ],
+  "parents": [
+    {
+      "hash": "5be6855032e171280a1acb860d7265c29f40487c",
+      "type": "commit",
+      "links": {
+        "self": {
+          "href": "https:\/\/api.bitbucket.org\/2.0\/repositories\/atlassian\/stash-example-plugin\/commit\/5be6855032e171280a1acb860d7265c29f40487c"
+        },
+        "html": {
+          "href": "https:\/\/bitbucket.org\/atlassian\/stash-example-plugin\/commits\/5be6855032e171280a1acb860d7265c29f40487c"
+        }
+      }
+    }
+  ],
+  "date": "2015-08-27T03:25:04+00:00",
+  "message": "Add Apache 2.0 License\n",
+  "type": "commit"
+}

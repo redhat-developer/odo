@@ -1,0 +1,140 @@
+{
+  "push": {
+    "changes": [
+      {
+        "forced": false,
+        "old": {
+          "type": "branch",
+          "name": "develop",
+          "links": {
+            "commits": {
+              "href": "https://api.bitbucket.org/2.0/repositories/brydzewski/foo/commits/develop"
+            },
+            "self": {
+              "href": "https://api.bitbucket.org/2.0/repositories/brydzewski/foo/refs/branches/develop"
+            },
+            "html": {
+              "href": "https://bitbucket.org/brydzewski/foo/branch/develop"
+            }
+          },
+          "target": {
+            "hash": "141977fedf5cf35aa290ac87d4b5177ac4cd9de1",
+            "links": {
+              "self": {
+                "href": "https://api.bitbucket.org/2.0/repositories/brydzewski/foo/commit/141977fedf5cf35aa290ac87d4b5177ac4cd9de1"
+              },
+              "html": {
+                "href": "https://bitbucket.org/brydzewski/foo/commits/141977fedf5cf35aa290ac87d4b5177ac4cd9de1"
+              }
+            },
+            "author": {
+              "raw": "Brad Rydzewski <brad.rydzewski@gmail.com>",
+              "type": "author",
+              "user": {
+                "username": "brydzewski",
+                "display_name": "Brad Rydzewski",
+                "account_id": "557058:2a6349dc-4346-4805-bd84-3abdd0812d17",
+                "links": {
+                  "self": {
+                    "href": "https://api.bitbucket.org/2.0/users/brydzewski"
+                  },
+                  "html": {
+                    "href": "https://bitbucket.org/brydzewski/"
+                  },
+                  "avatar": {
+                    "href": "https://bitbucket.org/account/brydzewski/avatar/32/"
+                  }
+                },
+                "type": "user",
+                "uuid": "{87bb15eb-47c1-49b3-9f16-ca824a2979a4}"
+              }
+            },
+            "summary": {
+              "raw": "Update README\n",
+              "markup": "markdown",
+              "html": "<p>Update README</p>",
+              "type": "rendered"
+            },
+            "parents": [
+              {
+                "type": "commit",
+                "hash": "40e7580cf11311d84a6e5e97e2cbba6df1675750",
+                "links": {
+                  "self": {
+                    "href": "https://api.bitbucket.org/2.0/repositories/brydzewski/foo/commit/40e7580cf11311d84a6e5e97e2cbba6df1675750"
+                  },
+                  "html": {
+                    "href": "https://bitbucket.org/brydzewski/foo/commits/40e7580cf11311d84a6e5e97e2cbba6df1675750"
+                  }
+                }
+              }
+            ],
+            "date": "2018-07-02T20:26:56+00:00",
+            "message": "Update README\n",
+            "type": "commit"
+          }
+        },
+        "truncated": false,
+        "created": false,
+        "closed": true,
+        "new": null
+      }
+    ]
+  },
+  "repository": {
+    "scm": "git",
+    "website": "",
+    "name": "foo",
+    "links": {
+      "self": {
+        "href": "https://api.bitbucket.org/2.0/repositories/brydzewski/foo"
+      },
+      "html": {
+        "href": "https://bitbucket.org/brydzewski/foo"
+      },
+      "avatar": {
+        "href": "https://bytebucket.org/ravatar/%7Bbc771cbf-829e-4c4b-b71f-a0eb3ac2b860%7D?ts=default"
+      }
+    },
+    "full_name": "brydzewski/foo",
+    "owner": {
+      "username": "brydzewski",
+      "display_name": "Brad Rydzewski",
+      "account_id": "557058:2a6349dc-4346-4805-bd84-3abdd0812d17",
+      "links": {
+        "self": {
+          "href": "https://api.bitbucket.org/2.0/users/brydzewski"
+        },
+        "html": {
+          "href": "https://bitbucket.org/brydzewski/"
+        },
+        "avatar": {
+          "href": "https://bitbucket.org/account/brydzewski/avatar/32/"
+        }
+      },
+      "type": "user",
+      "uuid": "{87bb15eb-47c1-49b3-9f16-ca824a2979a4}"
+    },
+    "type": "repository",
+    "is_private": true,
+    "uuid": "{bc771cbf-829e-4c4b-b71f-a0eb3ac2b860}"
+  },
+  "actor": {
+    "username": "brydzewski",
+    "display_name": "Brad Rydzewski",
+    "account_id": "557058:2a6349dc-4346-4805-bd84-3abdd0812d17",
+    "links": {
+      "self": {
+        "href": "https://api.bitbucket.org/2.0/users/brydzewski"
+      },
+      "html": {
+        "href": "https://bitbucket.org/brydzewski/"
+      },
+      "avatar": {
+        "href": "https://bitbucket.org/account/brydzewski/avatar/32/"
+      }
+    },
+    "type": "user",
+    "uuid": "{87bb15eb-47c1-49b3-9f16-ca824a2979a4}"
+  }
+}

@@ -32,7 +32,7 @@ import (
 // InitParameters is a struct that provides flags for the Init command.
 type InitParameters struct {
 	DockerConfigJSONFilename string
-	GitOpsRepo               string
+	GitOpsRepoURL            string
 	GitOpsWebhookSecret      string
 	ImageRepo                string
 	InternalRegistryHostname string
@@ -114,33 +114,12 @@ func Init(o *InitParameters, fs afero.Fs) error {
 		return err
 	}
 
-	outputs, err := createInitialFiles(fs, o.GitOpsRepo, o.Prefix, o.GitOpsWebhookSecret, o.DockerConfigJSONFilename, imageRepo)
+	outputs, err := createInitialFiles(fs, o.GitOpsRepoURL, o.Prefix, o.GitOpsWebhookSecret, o.DockerConfigJSONFilename, imageRepo)
 	if err != nil {
 		return err
 	}
 	_, err = yaml.WriteResources(fs, o.OutputPath, outputs)
 	return err
-}
-
-func createInitialFiles(fs afero.Fs, prefix, gitOpsRepo, gitOpsWebhookSecret, dockerConfigPath, imageRepo string) (res.Resources, error) {
-	cicdEnv := &config.Environment{Name: prefix + "cicd", IsCICD: true}
-	pipelines := createManifest(cicdEnv)
-	initialFiles := res.Resources{
-		pipelinesFile: pipelines,
-	}
-	resources, err := createCICDResources(fs, cicdEnv, gitOpsRepo, gitOpsWebhookSecret, dockerConfigPath, imageRepo)
-	if err != nil {
-		return nil, err
-	}
-	files := getResourceFiles(resources)
-
-	prefixedResources := addPrefixToResources(pipelinesPath(pipelines), resources)
-	initialFiles = res.Merge(prefixedResources, initialFiles)
-
-	cicdKustomizations := addPrefixToResources(cicdEnvironmentPath(pipelines), getCICDKustomization(files))
-	initialFiles = res.Merge(cicdKustomizations, initialFiles)
-
-	return initialFiles, nil
 }
 
 // createCICDResources creates resources assocated to pipelines.
@@ -214,8 +193,35 @@ func CreateDockerSecret(fs afero.Fs, dockerConfigJSONFilename, ns string) (*ssv1
 
 }
 
-func createManifest(envs ...*config.Environment) *config.Manifest {
+func createInitialFiles(fs afero.Fs, prefix, gitOpsURL, gitOpsWebhookSecret, dockerConfigPath, imageRepo string) (res.Resources, error) {
+	cicdEnv := &config.Environment{Name: prefix + "cicd", IsCICD: true}
+	pipelines := createManifest(gitOpsURL, cicdEnv)
+	initialFiles := res.Resources{
+		pipelinesFile: pipelines,
+	}
+	orgRepo, err := orgRepoFromURL(gitOpsURL)
+	if err != nil {
+		return nil, err
+	}
+
+	resources, err := createCICDResources(fs, cicdEnv, orgRepo, gitOpsWebhookSecret, dockerConfigPath, imageRepo)
+	if err != nil {
+		return nil, err
+	}
+	files := getResourceFiles(resources)
+
+	prefixedResources := addPrefixToResources(pipelinesPath(pipelines), resources)
+	initialFiles = res.Merge(prefixedResources, initialFiles)
+
+	cicdKustomizations := addPrefixToResources(cicdEnvironmentPath(pipelines), getCICDKustomization(files))
+	initialFiles = res.Merge(cicdKustomizations, initialFiles)
+
+	return initialFiles, nil
+}
+
+func createManifest(gitOpsURL string, envs ...*config.Environment) *config.Manifest {
 	return &config.Manifest{
+		GitOpsURL:    gitOpsURL,
 		Environments: envs,
 	}
 }

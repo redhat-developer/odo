@@ -1,0 +1,15 @@
+[
+  {
+    "id": 74,
+    "user": {
+      "id": 1,
+      "username": "unknwon",
+      "full_name": "无闻",
+      "email": "u@gogs.io",
+      "avatar_url": "http://localhost:3000/avatars/1"
+    },
+    "body": "what?",
+    "created_at": "2016-08-26T11:58:18-07:00",
+    "updated_at": "2016-08-26T11:58:18-07:00"
+  }
+]

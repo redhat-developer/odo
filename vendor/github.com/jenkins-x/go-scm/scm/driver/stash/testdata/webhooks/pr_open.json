@@ -1,0 +1,85 @@
+{
+    "eventKey": "pr:opened",
+    "date": "2018-07-05T19:21:30+0000",
+    "actor": {
+        "name": "jcitizen",
+        "emailAddress": "jane@example.com",
+        "id": 1,
+        "displayName": "Jane Citizen",
+        "active": true,
+        "slug": "jcitizen",
+        "type": "NORMAL"
+    },
+    "pullRequest": {
+        "id": 2,
+        "version": 0,
+        "title": "added LICENSE",
+        "description": "added BSD license text",
+        "state": "OPEN",
+        "open": true,
+        "closed": false,
+        "createdDate": 1530818490848,
+        "updatedDate": 1530818490848,
+        "fromRef": {
+            "id": "refs/heads/develop",
+            "displayId": "develop",
+            "latestCommit": "208b0a5c05eddadad01f2aed8802fe0c3b3eaf5e",
+            "repository": {
+                "slug": "my-repo",
+                "id": 1,
+                "name": "my-repo",
+                "scmId": "git",
+                "state": "AVAILABLE",
+                "statusMessage": "Available",
+                "forkable": true,
+                "project": {
+                    "key": "PRJ",
+                    "id": 2,
+                    "name": "PRJ",
+                    "public": false,
+                    "type": "NORMAL"
+                },
+                "public": false
+            }
+        },
+        "toRef": {
+            "id": "refs/heads/master",
+            "displayId": "master",
+            "latestCommit": "823b2230a56056231c9425d63758fa87078a66b4",
+            "repository": {
+                "slug": "my-repo",
+                "id": 1,
+                "name": "my-repo",
+                "scmId": "git",
+                "state": "AVAILABLE",
+                "statusMessage": "Available",
+                "forkable": true,
+                "project": {
+                    "key": "PRJ",
+                    "id": 2,
+                    "name": "PRJ",
+                    "public": false,
+                    "type": "NORMAL"
+                },
+                "public": false
+            }
+        },
+        "locked": false,
+        "author": {
+            "user": {
+                "name": "jcitizen",
+                "emailAddress": "jane@example.com",
+                "id": 1,
+                "displayName": "Jane Citizen",
+                "active": true,
+                "slug": "jcitizen",
+                "type": "NORMAL"
+            },
+            "role": "AUTHOR",
+            "approved": false,
+            "status": "UNAPPROVED"
+        },
+        "reviewers": [],
+        "participants": []
+    }
+}

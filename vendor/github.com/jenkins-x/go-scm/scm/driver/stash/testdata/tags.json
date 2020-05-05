@@ -1,0 +1,16 @@
+{
+    "size": 1,
+    "limit": 25,
+    "isLastPage": true,
+    "values": [
+        {
+            "id": "refs/tags/v1.0.0",
+            "displayId": "v1.0.0",
+            "type": "TAG",
+            "latestCommit": "11ce869211917dd65610e70fcee454943b35ac6e",
+            "latestChangeset": "11ce869211917dd65610e70fcee454943b35ac6e",
+            "hash": null
+        }
+    ],
+    "start": 0
+}

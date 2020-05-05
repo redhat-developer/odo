@@ -1,0 +1,25 @@
+{
+    "Sha": "7fd1a60b01f91b314f59955a4e4d4e80d8edf11d",
+    "Message": "Merge pull request #6 from Spaceghost/patch-1\n\nNew line at end of file.",
+    "Tree": {
+        "Sha": "b4eecafa9be2f2006ce1b709d6857b07069b4608",
+        "Link": "https://api.github.com/repos/octocat/Hello-World/git/trees/b4eecafa9be2f2006ce1b709d6857b07069b4608"
+    },
+    "Author": {
+        "ID": 583231,
+        "Name": "The Octocat",
+        "Email": "octocat@nowhere.com",
+        "Date": "2012-03-06T23:06:50Z",
+        "Login": "octocat",
+        "Avatar": "https://avatars3.githubusercontent.com/u/583231?v=4"
+    },
+    "Committer": {
+        "ID": 583231,
+        "Name": "The Octocat",
+        "Email": "octocat@nowhere.com",
+        "Date": "2012-03-06T23:06:50Z",
+        "Login": "octocat",
+        "Avatar": "https://avatars3.githubusercontent.com/u/583231?v=4"
+    },
+    "Link": "https://github.com/octocat/Hello-World/commit/7fd1a60b01f91b314f59955a4e4d4e80d8edf11d"
+}

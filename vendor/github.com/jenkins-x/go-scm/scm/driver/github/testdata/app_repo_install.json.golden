@@ -1,0 +1,21 @@
+{
+  "ID": 1,
+  "AppID": 1,
+  "TargetID": 1,
+  "TargetType": "Organization",
+  "RepositorySelection": "all",
+  "Account": {
+    "ID": 1,
+    "Login": "github",
+    "Link": "https://github.com/github"
+  },
+  "AccessTokensLink": "https://api.github.com/installations/1/access_tokens",
+  "RepositoriesURL": "https://api.github.com/installation/repositories",
+  "Link": "https://github.com/organizations/github/settings/installations/1",
+  "Events": [
+    "push",
+    "pull_request"
+  ],
+  "CreatedAt": "2018-02-09T20:51:14Z",
+  "UpdatedAt": "2018-02-09T20:51:14Z"
+}

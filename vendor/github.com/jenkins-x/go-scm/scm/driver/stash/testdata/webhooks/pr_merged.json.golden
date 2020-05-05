@@ -1,0 +1,78 @@
+{
+  "Action": "merged",
+  "Repo": {
+    "ID": "1",
+    "Namespace": "PRJ",
+    "Name": "my-repo",
+    "Perm": null,
+    "Branch": "master",
+    "Private": true,
+    "Clone": "",
+    "CloneSSH": "",
+    "Link": "",
+    "Created": "0001-01-01T00:00:00Z",
+    "Updated": "0001-01-01T00:00:00Z"
+  },
+  "PullRequest": {
+    "Number": 3,
+    "Title": "Develop",
+    "Body": "* added LICENSE\r\n* add COPYING file",
+    "Sha": "b9eaed50a03c073b20dfa82e5e753d295e7f0e56",
+    "Ref": "refs/pull-requests/3/from",
+    "Source": "develop",
+    "Target": "master",
+    "Fork": "PRJ/my-repo",
+    "Link": "",
+    "Closed": true,
+    "Merged": true,
+    "State": "merged",
+    "Base": {
+      "Ref": "master",
+      "Sha": "b9eaed50a03c073b20dfa82e5e753d295e7f0e56",
+      "Repo": {
+        "ID": "1",
+        "Namespace": "PRJ",
+        "Name": "my-repo",
+        "Perm": null,
+        "Branch": "master",
+        "Private": true,
+        "Clone": "",
+        "CloneSSH": "",
+        "Link": "",
+        "Created": "0001-01-01T00:00:00Z",
+        "Updated": "0001-01-01T00:00:00Z"
+      }
+    },
+    "Head": {
+      "Ref": "master",
+      "Sha": "b9eaed50a03c073b20dfa82e5e753d295e7f0e56",
+      "Repo": {
+        "ID": "1",
+        "Namespace": "PRJ",
+        "Name": "my-repo",
+        "Perm": null,
+        "Branch": "master",
+        "Private": true,
+        "Clone": "",
+        "CloneSSH": "",
+        "Link": "",
+        "Created": "0001-01-01T00:00:00Z",
+        "Updated": "0001-01-01T00:00:00Z"
+      }
+    },
+    "Author": {
+      "Login": "jcitizen",
+      "Name": "Jane Citizen",
+      "Email": "jane@example.com",
+      "Avatar": "https://www.gravatar.com/avatar/9e26471d35a78862c17e467d87cddedf.jpg"
+    },
+    "Created": "2018-07-05T12:33:14-07:00",
+    "Updated": "2018-07-05T12:33:20-07:00"
+  },
+  "Sender": {
+    "Login": "jcitizen",
+    "Name": "Jane Citizen",
+    "Email": "jane@example.com",
+    "Avatar": "https://www.gravatar.com/avatar/9e26471d35a78862c17e467d87cddedf.jpg"
+  }
+}

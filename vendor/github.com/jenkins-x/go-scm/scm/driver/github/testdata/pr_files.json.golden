@@ -1,0 +1,17 @@
+[
+    {
+        "Path": "file1.txt",
+        "Added": true,
+        "Renamed": false,
+        "Deleted": false,
+        "Additions": 103,
+        "Deletions": 21,
+        "Changes": 124,
+        "Tree": {
+            "Sha": "b4eecafa9be2f2006ce1b709d6857b07069b4608",
+            "Link": "https://api.github.com/repos/octocat/Hello-World/git/trees/b4eecafa9be2f2006ce1b709d6857b07069b4608"
+        },
+        "BlobURL": "https://github.com/octocat/Hello-World/blob/6dcb09b5b57875f334f61aebed695e2e4193db5e/file1.txt",
+        "Sha": "bbcd538c8e72b8c175046e27cc8f907076331401"
+    }
+]

@@ -1,0 +1,17 @@
+{
+    "ID": "1",
+    "Namespace": "gogits",
+    "Name": "gogs",
+    "Perm": {
+        "Pull": true,
+        "Push": true,
+        "Admin": true
+    },
+    "Branch": "master",
+    "Private": true,
+    "Clone": "http://gogs.io/drone/cover.git",
+    "CloneSSH": "git@localhost:drone/cover.git",
+    "Link": "",
+    "Created": "0001-01-01T00:00:00Z",
+    "Updated": "0001-01-01T00:00:00Z"
+}

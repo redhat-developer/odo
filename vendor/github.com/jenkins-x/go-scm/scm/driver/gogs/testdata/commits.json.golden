@@ -1,0 +1,15 @@
+{
+  "author": {
+    "name": "Stephen Lane-Walsh",
+    "email": "sdl.slane@gmail.com"
+  },
+  "committer": {
+    "name": "Unknwon",
+    "login": "unknwon",
+    "email": "u@gogs.io",
+    "avatar": "https://secure.gravatar.com/avatar/d8b2871cdac01b57bbda23716cc03b96?d=identicon"
+  },
+  "message": "conf/gitignore: add Unreal Engine (#5623)",
+  "link": "https://try.gogs.io/api/v1/repos/gogs/gogs/commits/2c3e2b701e012294d457937e6bfbffd63dd8ae4f",
+  "sha": "2c3e2b701e012294d457937e6bfbffd63dd8ae4f"
+}

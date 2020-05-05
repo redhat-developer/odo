@@ -1,0 +1,136 @@
+{
+    "fromHash": "5c64a07cd6c0f21b753bf261ef059c7e7633c50a",
+    "toHash": "3d9cef97aa670eb646a3d165fd9302b2edc5acd0",
+    "properties": {
+        "changeScope": "ALL"
+    },
+    "values": [
+        {
+            "contentId": "f1df0de7c4a94b7d83bd4864154e48e8b7f4d2cb",
+            "fromContentId": "0000000000000000000000000000000000000000",
+            "path": {
+                "components": [
+                    "COPYING"
+                ],
+                "parent": "",
+                "name": "COPYING",
+                "toString": "COPYING"
+            },
+            "executable": false,
+            "percentUnchanged": -1,
+            "type": "ADD",
+            "nodeType": "FILE",
+            "links": {
+                "self": [
+                    null
+                ]
+            },
+            "properties": {
+                "gitChangeType": "ADD"
+            }
+        },
+        {
+            "contentId": "22c02951195e38dc2a602ed78dfec38f184f462c",
+            "fromContentId": "22c02951195e38dc2a602ed78dfec38f184f462c",
+            "path": {
+                "components": [
+                    "README"
+                ],
+                "parent": "",
+                "name": "README",
+                "toString": "README"
+            },
+            "percentUnchanged": -1,
+            "type": "DELETE",
+            "nodeType": "FILE",
+            "srcExecutable": false,
+            "conflict": {
+                "ourChange": {
+                    "type": "MODIFY",
+                    "path": {
+                        "components": [
+                            "README"
+                        ],
+                        "parent": "",
+                        "name": "README",
+                        "toString": "README"
+                    }
+                },
+                "theirChange": {
+                    "type": "DELETE",
+                    "path": {
+                        "components": [
+                            "README"
+                        ],
+                        "parent": "",
+                        "name": "README",
+                        "toString": "README"
+                    }
+                }
+            },
+            "links": {
+                "self": [
+                    null
+                ]
+            },
+            "properties": {
+                "gitChangeType": "DELETE"
+            }
+        },
+        {
+            "contentId": "e427984d4a2c1904681f2e2ee5980f37640d353f",
+            "fromContentId": "0000000000000000000000000000000000000000",
+            "path": {
+                "components": [
+                    "README.md"
+                ],
+                "parent": "",
+                "name": "README.md",
+                "extension": "md",
+                "toString": "README.md"
+            },
+            "executable": false,
+            "percentUnchanged": -1,
+            "type": "ADD",
+            "nodeType": "FILE",
+            "links": {
+                "self": [
+                    null
+                ]
+            },
+            "properties": {
+                "gitChangeType": "ADD"
+            }
+        },
+        {
+            "contentId": "002a5c740c7d288d40d490a43aae9297488a2433",
+            "fromContentId": "0000000000000000000000000000000000000000",
+            "path": {
+                "components": [
+                    "main.go"
+                ],
+                "parent": "",
+                "name": "main.go",
+                "extension": "go",
+                "toString": "main.go"
+            },
+            "executable": false,
+            "percentUnchanged": -1,
+            "type": "ADD",
+            "nodeType": "FILE",
+            "links": {
+                "self": [
+                    null
+                ]
+            },
+            "properties": {
+                "gitChangeType": "ADD"
+            }
+        }
+    ],
+    "size": 4,
+    "isLastPage": true,
+    "start": 0,
+    "limit": 25,
+    "nextPageStart": null
+}

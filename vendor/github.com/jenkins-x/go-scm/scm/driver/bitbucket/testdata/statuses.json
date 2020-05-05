@@ -1,0 +1,55 @@
+{
+  "pagelen": 30,
+  "values": [
+    {
+      "key": "drone",
+      "description": "Build has completed successfully",
+      "repository": {
+        "links": {
+          "self": {
+            "href": "https:\/\/api.bitbucket.org\/2.0\/repositories\/atlassian\/stash-example-plugin"
+          },
+          "html": {
+            "href": "https:\/\/bitbucket.org\/atlassian\/stash-example-plugin"
+          },
+          "avatar": {
+            "href": "https:\/\/bytebucket.org\/ravatar\/%7B4834ac2c-bfa9-4be8-aa54-49990e738ae5%7D?ts=default"
+          }
+        },
+        "type": "repository",
+        "name": "stash-example-plugin",
+        "full_name": "atlassian\/stash-example-plugin",
+        "uuid": "{4834ac2c-bfa9-4be8-aa54-49990e738ae5}"
+      },
+      "url": "https:\/\/ci.example.com\/1000\/output",
+      "links": {
+        "commit": {
+          "href": "https:\/\/api.bitbucket.org\/2.0\/repositories\/atlassian\/stash-example-plugin\/commit\/a6e5e7d797edf751cbd839d6bd4aef86c941eec9"
+        },
+        "self": {
+          "href": "https:\/\/api.bitbucket.org\/2.0\/repositories\/atlassian\/stash-example-plugin\/commit\/a6e5e7d797edf751cbd839d6bd4aef86c941eec9\/statuses\/build\/drone"
+        }
+      },
+      "refname": null,
+      "state": "SUCCESSFUL",
+      "created_on": "2018-07-01T20:27:45.726745+00:00",
+      "commit": {
+        "hash": "a6e5e7d797edf751cbd839d6bd4aef86c941eec9",
+        "type": "commit",
+        "links": {
+          "self": {
+            "href": "https:\/\/api.bitbucket.org\/2.0\/repositories\/atlassian\/stash-example-plugin\/commit\/a6e5e7d797edf751cbd839d6bd4aef86c941eec9"
+          },
+          "html": {
+            "href": "https:\/\/bitbucket.org\/atlassian\/stash-example-plugin\/commits\/a6e5e7d797edf751cbd839d6bd4aef86c941eec9"
+          }
+        }
+      },
+      "updated_on": "2018-07-01T20:27:45.726774+00:00",
+      "type": "build",
+      "name": ""
+    }
+  ],
+  "page": 1,
+  "next": "https://bitbucket.org/2.0/repositories/atlassian/stash-example-plugin/commit/a6e5e7d797edf751cbd839d6bd4aef86c941eec9/statuses/build?pagelen=30&page=2"
+}

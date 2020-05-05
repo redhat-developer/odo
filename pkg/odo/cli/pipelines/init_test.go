@@ -41,16 +41,16 @@ func TestCompleteInitParameters(t *testing.T) {
 
 func TestValidateInitParameters(t *testing.T) {
 	optionTests := []struct {
-		name    string
-		gitRepo string
-		errMsg  string
+		name       string
+		gitRepoURL string
+		errMsg     string
 	}{
 		{"invalid repo", "test", "repo must be org/repo"},
 		{"valid repo", "test/repo", ""},
 	}
 
 	for _, tt := range optionTests {
-		o := InitParameters{gitOpsRepo: tt.gitRepo, prefix: "test"}
+		o := InitParameters{gitOpsRepoURL: tt.gitRepoURL, prefix: "test"}
 
 		err := o.Validate()
 
@@ -71,16 +71,16 @@ func TestInitCommandWithMissingParams(t *testing.T) {
 		flags   []keyValuePair
 		wantErr string
 	}{
-		{"Missing gitops-repo flag",
+		{"Missing gitops-repo-url flag",
 			[]keyValuePair{flag("output", "~/output"),
 				flag("gitops-webhook-secret", "123"), flag("skip-checks", "true")},
-			`Required flag(s) "gitops-repo" have/has not been set`},
+			`Required flag(s) "gitops-repo-url" have/has not been set`},
 		{"Missing gitops-webhook-secret flag",
-			[]keyValuePair{flag("gitops-repo", "org/sample"), flag("output", "~/output"),
+			[]keyValuePair{flag("gitops-repo-url", "https://github.com/org/sample"), flag("output", "~/output"),
 				flag("skip-checks", "true")},
 			`Required flag(s) "gitops-webhook-secret" have/has not been set`},
 		{"Missing output flag",
-			[]keyValuePair{flag("gitops-repo", "org/sample"), flag("gitops-webhook-secret", "123"),
+			[]keyValuePair{flag("gitops-repo-url", "https://github.com/org/sample"), flag("gitops-webhook-secret", "123"),
 				flag("skip-checks", "true")},
 			`Required flag(s) "output" have/has not been set`},
 	}

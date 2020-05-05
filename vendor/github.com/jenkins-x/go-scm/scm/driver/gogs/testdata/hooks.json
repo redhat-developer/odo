@@ -1,0 +1,17 @@
+[
+  {
+    "id": 20,
+    "type": "gogs",
+    "config": {
+      "content_type": "json",
+      "url": "http://gogs.io"
+    },
+    "events": [
+      "create",
+      "push"
+    ],
+    "active": true,
+    "updated_at": "2015-08-29T11:31:22.453572732+08:00",
+    "created_at": "2015-08-29T11:31:22.453569275+08:00"
+  }
+]

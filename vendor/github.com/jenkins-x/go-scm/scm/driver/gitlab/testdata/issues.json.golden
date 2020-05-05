@@ -1,0 +1,27 @@
+[
+    {
+        "Number": 1,
+        "Title": "Ut commodi ullam eos dolores perferendis nihil sunt.",
+        "Body": "Omnis vero earum sunt corporis dolor et placeat.",
+        "Link": "http://example.com/example/example/issues/1",
+        "Labels": [],
+        "Closed": true,
+        "Locked": false,
+        "Author": {
+            "Login": "root",
+            "Name": "Administrator",
+            "Email": "",
+            "Avatar": ""
+        },
+        "Assignees": [
+            {
+                "ID": 9,
+                "Login": "lennie",
+                "Name": "Dr. Luella Kovacek",
+                "Link": "https://gitlab.example.com/lennie"
+            }
+        ],
+        "Created": "2016-01-04T15:31:46.176Z",
+        "Updated": "2016-01-04T15:31:46.176Z"
+    }
+]

@@ -1,0 +1,21 @@
+{
+    "Number": 1,
+    "Title": "Add License File",
+    "Body": "Using a BSD License",
+    "Sha": "4f5e7d8f15cf79387cfd8a0d30c58855ab61e138",
+    "Ref": "refs/pull/1/head",
+    "Source": "feature",
+    "Target": "master",
+    "Fork": "jcitizen/my-repo",
+    "Link": "https://try.gitea.io/jcitizen/my-repo/pulls/1",
+    "Closed": false,
+    "Merged": false,
+    "Author": {
+        "Login": "jcitizen",
+        "Name": "",
+        "Email": "jcitizen@example.com",
+        "Avatar": "https://secure.gravatar.com/avatar/66f07ff48e6a9cb393de7a34e03bb52a?d=identicon"
+    },
+    "Created": "2018-07-06T00:37:47Z",
+    "Updated": "2018-07-06T00:37:47Z"
+}

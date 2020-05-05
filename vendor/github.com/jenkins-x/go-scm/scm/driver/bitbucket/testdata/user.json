@@ -1,0 +1,37 @@
+{
+    "username": "brydzewski",
+    "website": null,
+    "display_name": "Brad Rydzewski",
+    "account_id": "557058:2a6349dc-4346-4805-bd84-3abdd0812d17",
+    "links": {
+        "hooks": {
+            "href": "https:\/\/api.bitbucket.org\/2.0\/users\/brydzewski\/hooks"
+        },
+        "self": {
+            "href": "https:\/\/api.bitbucket.org\/2.0\/users\/brydzewski"
+        },
+        "repositories": {
+            "href": "https:\/\/api.bitbucket.org\/2.0\/repositories\/brydzewski"
+        },
+        "html": {
+            "href": "https:\/\/bitbucket.org\/brydzewski\/"
+        },
+        "followers": {
+            "href": "https:\/\/api.bitbucket.org\/2.0\/users\/brydzewski\/followers"
+        },
+        "avatar": {
+            "href": "https:\/\/bitbucket.org\/account\/brydzewski\/avatar\/32\/"
+        },
+        "following": {
+            "href": "https:\/\/api.bitbucket.org\/2.0\/users\/brydzewski\/following"
+        },
+        "snippets": {
+            "href": "https:\/\/api.bitbucket.org\/2.0\/snippets\/brydzewski"
+        }
+    },
+    "created_on": "2012-07-25T04:53:41.525465+00:00",
+    "is_staff": false,
+    "location": null,
+    "type": "user",
+    "uuid": "{87bb15eb-47c1-49b3-9f16-ca824a2979a4}"
+}

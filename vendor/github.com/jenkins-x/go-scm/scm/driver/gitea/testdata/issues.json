@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "number": 1,
+    "user": {
+      "id": 1,
+      "login": "janedoe",
+      "full_name": "",
+      "email": "janedoe@mail.com",
+      "avatar_url": "https://secure.gravatar.com/avatar/8c58a0be77ee441bb8f8595b7f1b4e87",
+      "username": "janedoe"
+    },
+    "title": "Bug found",
+    "body": "I'm having a problem with this.",
+    "labels": [
+      
+    ],
+    "milestone": null,
+    "assignee": null,
+    "state": "open",
+    "comments": 0,
+    "created_at": "2017-09-23T19:24:01Z",
+    "updated_at": "2017-09-23T19:24:01Z",
+    "pull_request": null
+  }
+]

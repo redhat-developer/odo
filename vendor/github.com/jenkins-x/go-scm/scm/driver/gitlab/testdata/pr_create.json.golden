@@ -1,0 +1,76 @@
+{
+  "Number": 1,
+  "Title": "test1",
+  "Body": "fixed login page css paddings",
+  "Labels": [{"Name":"Community contribution"},{"Name":"Manage"}],
+  "Sha": "8888888888888888888888888888888888888888",
+  "Ref": "refs/merge-requests/1/head",
+  "Source": "test1",
+  "Target": "master",
+  "Base": {
+    "Ref": "refs/heads/master",
+    "Sha": "c380d3acebd181f13629a25d2e2acca46ffe1e00",
+    "Repo": {
+      "ID": "",
+      "Namespace": "",
+      "Name": "",
+      "FullName": "",
+      "Perm": null,
+      "Branch": "",
+      "Private": false,
+      "Clone": "",
+      "CloneSSH": "",
+      "Link": "",
+      "Created": "0001-01-01T00:00:00Z",
+      "Updated": "0001-01-01T00:00:00Z"
+    }
+  },
+  "Head": {
+    "Ref": "refs/heads/test1",
+    "Sha": "8888888888888888888888888888888888888888",
+    "Repo": {
+      "ID": "",
+      "Namespace": "",
+      "Name": "",
+      "FullName": "",
+      "Perm": null,
+      "Branch": "",
+      "Private": false,
+      "Clone": "",
+      "CloneSSH": "",
+      "Link": "",
+      "Created": "0001-01-01T00:00:00Z",
+      "Updated": "0001-01-01T00:00:00Z"
+    }
+  },
+  "Fork": "",
+  "Link": "http://gitlab.example.com/my-group/my-project/merge_requests/1",
+  "State": "",
+  "Closed": true,
+  "Draft": false,
+  "Merged": true,
+  "Mergeable": true,
+  "Rebaseable": false,
+  "MergeableState": "mergeable",
+  "MergeSha": "",
+  "Author": {
+    "Login": "admin",
+    "Name": "Administrator",
+    "Email": "",
+    "Avatar": "",
+    "Link": "",
+    "Created": "0001-01-01T00:00:00Z",
+    "Updated": "0001-01-01T00:00:00Z"
+  },
+  "Assignees": null,
+  "Milestone": {
+    "Number": 0,
+    "ID": 0,
+    "Title": "",
+    "Description": "",
+    "Link": "",
+    "State": ""
+  },
+  "Created": "2017-04-29T08:46:00Z",
+  "Updated": "2017-04-29T08:46:00Z"
+}

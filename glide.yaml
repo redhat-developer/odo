@@ -117,3 +117,11 @@ import:
   version: v3.3.1
   subpackages:
   - api
+- package: github.com/jenkins-x/go-scm
+  version: v1.5.102
+- package: github.com/shurcooL/githubv4
+- package: github.com/shurcooL/graphql
+- package: github.com/h2non/gock
+  version: v1.0.15
+- package: github.com/h2non/parth
+  version: v2.0.1

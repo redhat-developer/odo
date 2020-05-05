@@ -1,0 +1,32 @@
+{
+    "properties": {
+        "repositoryId": 1
+    },
+    "id": 1,
+    "version": 0,
+    "text": "this is a comment",
+    "author": {
+        "name": "jcitizen",
+        "emailAddress": "jane@example.com",
+        "id": 1,
+        "displayName": "Jane Citizen",
+        "active": true,
+        "slug": "jcitizen",
+        "type": "NORMAL",
+        "links": {
+            "self": [
+                {
+                    "href": "http://example.com:7990/users/jcitizen"
+                }
+            ]
+        }
+    },
+    "createdDate": 1530770325043,
+    "updatedDate": 1530770325043,
+    "comments": [],
+    "tasks": [],
+    "permittedOperations": {
+        "editable": true,
+        "deletable": true
+    }
+}

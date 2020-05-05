@@ -23,6 +23,7 @@ func PathForEnvironment(env *Environment) string {
 
 // Manifest describes a set of environments, apps and services for deployment.
 type Manifest struct {
+	GitOpsURL    string         `json:"gitops_url,omitempty"`
 	Environments []*Environment `json:"environments,omitempty"`
 }
 

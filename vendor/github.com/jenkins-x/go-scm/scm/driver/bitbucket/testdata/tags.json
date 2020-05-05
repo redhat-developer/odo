@@ -1,0 +1,128 @@
+{
+  "pagelen": 30,
+  "values": [
+    {
+      "name": "@atlaskit\/activity@1.0.3",
+      "links": {
+        "commits": {
+          "href": "https:\/\/api.bitbucket.org\/2.0\/repositories\/atlassian\/atlaskit\/commits\/@atlaskit\/activity@1.0.3"
+        },
+        "self": {
+          "href": "https:\/\/api.bitbucket.org\/2.0\/repositories\/atlassian\/atlaskit\/refs\/tags\/@atlaskit\/activity@1.0.3"
+        },
+        "html": {
+          "href": "https:\/\/bitbucket.org\/atlassian\/atlaskit\/commits\/tag\/@atlaskit\/activity@1.0.3"
+        }
+      },
+      "tagger": {
+        "raw": "AUI team account <aui-team@atlassian.com>",
+        "type": "author",
+        "user": {
+          "username": "aui-team-bot",
+          "display_name": "aui-team Bot[ADM-89581]",
+          "account_id": "557057:622791b4-b30c-4eca-a271-730924c591ac",
+          "links": {
+            "self": {
+              "href": "https:\/\/api.bitbucket.org\/2.0\/users\/aui-team-bot"
+            },
+            "html": {
+              "href": "https:\/\/bitbucket.org\/aui-team-bot\/"
+            },
+            "avatar": {
+              "href": "https:\/\/bitbucket.org\/account\/aui-team-bot\/avatar\/32\/"
+            }
+          },
+          "type": "user",
+          "uuid": "{04da8e95-c147-4cc7-bc8c-a906e30ed561}"
+        }
+      },
+      "date": "2018-04-16T02:35:52+00:00",
+      "message": "tag for lerna releases\n",
+      "type": "tag",
+      "target": {
+        "hash": "ceb01356c3f062579bdfeb15bc53fe151b9e00f0",
+        "repository": {
+          "links": {
+            "self": {
+              "href": "https:\/\/api.bitbucket.org\/2.0\/repositories\/atlassian\/atlaskit"
+            },
+            "html": {
+              "href": "https:\/\/bitbucket.org\/atlassian\/atlaskit"
+            },
+            "avatar": {
+              "href": "https:\/\/bytebucket.org\/ravatar\/%7B1082744e-871d-4463-b373-df00db2986e7%7D?ts=1198711"
+            }
+          },
+          "type": "repository",
+          "name": "Atlaskit",
+          "full_name": "atlassian\/atlaskit",
+          "uuid": "{1082744e-871d-4463-b373-df00db2986e7}"
+        },
+        "links": {
+          "self": {
+            "href": "https:\/\/api.bitbucket.org\/2.0\/repositories\/atlassian\/atlaskit\/commit\/ceb01356c3f062579bdfeb15bc53fe151b9e00f0"
+          },
+          "comments": {
+            "href": "https:\/\/api.bitbucket.org\/2.0\/repositories\/atlassian\/atlaskit\/commit\/ceb01356c3f062579bdfeb15bc53fe151b9e00f0\/comments"
+          },
+          "patch": {
+            "href": "https:\/\/api.bitbucket.org\/2.0\/repositories\/atlassian\/atlaskit\/patch\/ceb01356c3f062579bdfeb15bc53fe151b9e00f0"
+          },
+          "html": {
+            "href": "https:\/\/bitbucket.org\/atlassian\/atlaskit\/commits\/ceb01356c3f062579bdfeb15bc53fe151b9e00f0"
+          },
+          "diff": {
+            "href": "https:\/\/api.bitbucket.org\/2.0\/repositories\/atlassian\/atlaskit\/diff\/ceb01356c3f062579bdfeb15bc53fe151b9e00f0"
+          },
+          "approve": {
+            "href": "https:\/\/api.bitbucket.org\/2.0\/repositories\/atlassian\/atlaskit\/commit\/ceb01356c3f062579bdfeb15bc53fe151b9e00f0\/approve"
+          },
+          "statuses": {
+            "href": "https:\/\/api.bitbucket.org\/2.0\/repositories\/atlassian\/atlaskit\/commit\/ceb01356c3f062579bdfeb15bc53fe151b9e00f0\/statuses"
+          }
+        },
+        "author": {
+          "raw": "AUI team account <aui-team@atlassian.com>",
+          "type": "author",
+          "user": {
+            "username": "aui-team-bot",
+            "display_name": "aui-team Bot[ADM-89581]",
+            "account_id": "557057:622791b4-b30c-4eca-a271-730924c591ac",
+            "links": {
+              "self": {
+                "href": "https:\/\/api.bitbucket.org\/2.0\/users\/aui-team-bot"
+              },
+              "html": {
+                "href": "https:\/\/bitbucket.org\/aui-team-bot\/"
+              },
+              "avatar": {
+                "href": "https:\/\/bitbucket.org\/account\/aui-team-bot\/avatar\/32\/"
+              }
+            },
+            "type": "user",
+            "uuid": "{04da8e95-c147-4cc7-bc8c-a906e30ed561}"
+          }
+        },
+        "parents": [
+          {
+            "hash": "07428d55c0ec2c2b571d87ff89dfb9362185ce00",
+            "type": "commit",
+            "links": {
+              "self": {
+                "href": "https:\/\/api.bitbucket.org\/2.0\/repositories\/atlassian\/atlaskit\/commit\/07428d55c0ec2c2b571d87ff89dfb9362185ce00"
+              },
+              "html": {
+                "href": "https:\/\/bitbucket.org\/atlassian\/atlaskit\/commits\/07428d55c0ec2c2b571d87ff89dfb9362185ce00"
+              }
+            }
+          }
+        ],
+        "date": "2018-04-16T02:35:52+00:00",
+        "message": "chore(release): releasing component\n\naffects: @atlaskit\/activity@1.0.3\n\nReleased from sha 07428d55c0ec2c2b571d87ff89dfb9362185ce00\n\n[skip ci]\nTag for lerna release\n",
+        "type": "commit"
+      }
+    }
+  ],
+  "page": 1,
+  "next": "https:\/\/api.bitbucket.org\/2.0\/repositories\/atlassian\/atlaskit\/refs\/tags?pagelen=30&page=2"
+}

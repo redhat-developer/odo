@@ -1,0 +1,983 @@
+{
+  "pagelen": 10,
+  "values": [
+    {
+      "name": "James-Strachan/dockerfile-edited-online-with-bitbucket-1570036875971",
+      "links": {
+        "commits": {
+          "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commits/James-Strachan/dockerfile-edited-online-with-bitbucket-1570036875971"
+        },
+        "self": {
+          "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/refs/branches/James-Strachan/dockerfile-edited-online-with-bitbucket-1570036875971"
+        },
+        "html": {
+          "href": "https://bitbucket.org/jstrachan/demo6/branch/James-Strachan/dockerfile-edited-online-with-bitbucket-1570036875971"
+        }
+      },
+      "default_merge_strategy": "merge_commit",
+      "merge_strategies": [
+        "merge_commit",
+        "squash",
+        "fast_forward"
+      ],
+      "type": "branch",
+      "target": {
+        "hash": "57f74ee5a5c6d97049636a221bf5e767bb9d2dca",
+        "repository": {
+          "links": {
+            "self": {
+              "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6"
+            },
+            "html": {
+              "href": "https://bitbucket.org/jstrachan/demo6"
+            },
+            "avatar": {
+              "href": "https://bytebucket.org/ravatar/%7Bb7c5a1c5-28bb-4e20-b262-3beaff0dd827%7D?ts=default"
+            }
+          },
+          "type": "repository",
+          "name": "demo6",
+          "full_name": "jstrachan/demo6",
+          "uuid": "{b7c5a1c5-28bb-4e20-b262-3beaff0dd827}"
+        },
+        "links": {
+          "self": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/57f74ee5a5c6d97049636a221bf5e767bb9d2dca"
+          },
+          "comments": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/57f74ee5a5c6d97049636a221bf5e767bb9d2dca/comments"
+          },
+          "patch": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/patch/57f74ee5a5c6d97049636a221bf5e767bb9d2dca"
+          },
+          "html": {
+            "href": "https://bitbucket.org/jstrachan/demo6/commits/57f74ee5a5c6d97049636a221bf5e767bb9d2dca"
+          },
+          "diff": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/diff/57f74ee5a5c6d97049636a221bf5e767bb9d2dca"
+          },
+          "approve": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/57f74ee5a5c6d97049636a221bf5e767bb9d2dca/approve"
+          },
+          "statuses": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/57f74ee5a5c6d97049636a221bf5e767bb9d2dca/statuses"
+          }
+        },
+        "author": {
+          "raw": "James Strachan <james.strachan@gmail.com>",
+          "type": "author",
+          "user": {
+            "display_name": "James Strachan",
+            "uuid": "{9c09f561-6d19-4635-8d6f-5eb06fed3a08}",
+            "links": {
+              "self": {
+                "href": "https://api.bitbucket.org/2.0/users/%7B9c09f561-6d19-4635-8d6f-5eb06fed3a08%7D"
+              },
+              "html": {
+                "href": "https://bitbucket.org/%7B9c09f561-6d19-4635-8d6f-5eb06fed3a08%7D/"
+              },
+              "avatar": {
+                "href": "https://secure.gravatar.com/avatar/64dbbbeb960d4014b28cd64d73340d94?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FJS-3.png"
+              }
+            },
+            "nickname": "JamesS",
+            "type": "user",
+            "account_id": "557058:8ad5a564-ff17-4b3f-8b89-67d523e02c90"
+          }
+        },
+        "parents": [
+          {
+            "hash": "ec8d3da80fc5bc66a473d7aaec7c4d2531116d42",
+            "type": "commit",
+            "links": {
+              "self": {
+                "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/ec8d3da80fc5bc66a473d7aaec7c4d2531116d42"
+              },
+              "html": {
+                "href": "https://bitbucket.org/jstrachan/demo6/commits/ec8d3da80fc5bc66a473d7aaec7c4d2531116d42"
+              }
+            }
+          }
+        ],
+        "date": "2019-10-02T17:21:18+00:00",
+        "message": "Dockerfile edited online with Bitbucket",
+        "type": "commit"
+      }
+    },
+    {
+      "name": "cheese",
+      "links": {
+        "commits": {
+          "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commits/cheese"
+        },
+        "self": {
+          "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/refs/branches/cheese"
+        },
+        "html": {
+          "href": "https://bitbucket.org/jstrachan/demo6/branch/cheese"
+        }
+      },
+      "default_merge_strategy": "merge_commit",
+      "merge_strategies": [
+        "merge_commit",
+        "squash",
+        "fast_forward"
+      ],
+      "type": "branch",
+      "target": {
+        "hash": "bf9b796a1dd044d790efecee84b7f1c143eaf4da",
+        "repository": {
+          "links": {
+            "self": {
+              "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6"
+            },
+            "html": {
+              "href": "https://bitbucket.org/jstrachan/demo6"
+            },
+            "avatar": {
+              "href": "https://bytebucket.org/ravatar/%7Bb7c5a1c5-28bb-4e20-b262-3beaff0dd827%7D?ts=default"
+            }
+          },
+          "type": "repository",
+          "name": "demo6",
+          "full_name": "jstrachan/demo6",
+          "uuid": "{b7c5a1c5-28bb-4e20-b262-3beaff0dd827}"
+        },
+        "links": {
+          "self": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/bf9b796a1dd044d790efecee84b7f1c143eaf4da"
+          },
+          "comments": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/bf9b796a1dd044d790efecee84b7f1c143eaf4da/comments"
+          },
+          "patch": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/patch/bf9b796a1dd044d790efecee84b7f1c143eaf4da"
+          },
+          "html": {
+            "href": "https://bitbucket.org/jstrachan/demo6/commits/bf9b796a1dd044d790efecee84b7f1c143eaf4da"
+          },
+          "diff": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/diff/bf9b796a1dd044d790efecee84b7f1c143eaf4da"
+          },
+          "approve": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/bf9b796a1dd044d790efecee84b7f1c143eaf4da/approve"
+          },
+          "statuses": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/bf9b796a1dd044d790efecee84b7f1c143eaf4da/statuses"
+          }
+        },
+        "author": {
+          "raw": "James Strachan <james.strachan@gmail.com>",
+          "type": "author",
+          "user": {
+            "display_name": "James Strachan",
+            "uuid": "{9c09f561-6d19-4635-8d6f-5eb06fed3a08}",
+            "links": {
+              "self": {
+                "href": "https://api.bitbucket.org/2.0/users/%7B9c09f561-6d19-4635-8d6f-5eb06fed3a08%7D"
+              },
+              "html": {
+                "href": "https://bitbucket.org/%7B9c09f561-6d19-4635-8d6f-5eb06fed3a08%7D/"
+              },
+              "avatar": {
+                "href": "https://secure.gravatar.com/avatar/64dbbbeb960d4014b28cd64d73340d94?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FJS-3.png"
+              }
+            },
+            "nickname": "JamesS",
+            "type": "user",
+            "account_id": "557058:8ad5a564-ff17-4b3f-8b89-67d523e02c90"
+          }
+        },
+        "parents": [
+          {
+            "hash": "ec8d3da80fc5bc66a473d7aaec7c4d2531116d42",
+            "type": "commit",
+            "links": {
+              "self": {
+                "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/ec8d3da80fc5bc66a473d7aaec7c4d2531116d42"
+              },
+              "html": {
+                "href": "https://bitbucket.org/jstrachan/demo6/commits/ec8d3da80fc5bc66a473d7aaec7c4d2531116d42"
+              }
+            }
+          }
+        ],
+        "date": "2018-04-18T14:07:00+00:00",
+        "message": "added awesome\n",
+        "type": "commit"
+      }
+    },
+    {
+      "name": "jenkinsfile-edited-online-with-bitbucket-1524060350874",
+      "links": {
+        "commits": {
+          "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commits/jenkinsfile-edited-online-with-bitbucket-1524060350874"
+        },
+        "self": {
+          "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/refs/branches/jenkinsfile-edited-online-with-bitbucket-1524060350874"
+        },
+        "html": {
+          "href": "https://bitbucket.org/jstrachan/demo6/branch/jenkinsfile-edited-online-with-bitbucket-1524060350874"
+        }
+      },
+      "default_merge_strategy": "merge_commit",
+      "merge_strategies": [
+        "merge_commit",
+        "squash",
+        "fast_forward"
+      ],
+      "type": "branch",
+      "target": {
+        "hash": "4cd1b7a23cd98e563398719996e5b9ca3deb8d8f",
+        "repository": {
+          "links": {
+            "self": {
+              "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6"
+            },
+            "html": {
+              "href": "https://bitbucket.org/jstrachan/demo6"
+            },
+            "avatar": {
+              "href": "https://bytebucket.org/ravatar/%7Bb7c5a1c5-28bb-4e20-b262-3beaff0dd827%7D?ts=default"
+            }
+          },
+          "type": "repository",
+          "name": "demo6",
+          "full_name": "jstrachan/demo6",
+          "uuid": "{b7c5a1c5-28bb-4e20-b262-3beaff0dd827}"
+        },
+        "links": {
+          "self": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/4cd1b7a23cd98e563398719996e5b9ca3deb8d8f"
+          },
+          "comments": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/4cd1b7a23cd98e563398719996e5b9ca3deb8d8f/comments"
+          },
+          "patch": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/patch/4cd1b7a23cd98e563398719996e5b9ca3deb8d8f"
+          },
+          "html": {
+            "href": "https://bitbucket.org/jstrachan/demo6/commits/4cd1b7a23cd98e563398719996e5b9ca3deb8d8f"
+          },
+          "diff": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/diff/4cd1b7a23cd98e563398719996e5b9ca3deb8d8f"
+          },
+          "approve": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/4cd1b7a23cd98e563398719996e5b9ca3deb8d8f/approve"
+          },
+          "statuses": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/4cd1b7a23cd98e563398719996e5b9ca3deb8d8f/statuses"
+          }
+        },
+        "author": {
+          "raw": "James Strachan <james.strachan@gmail.com>",
+          "type": "author",
+          "user": {
+            "display_name": "James Strachan",
+            "uuid": "{9c09f561-6d19-4635-8d6f-5eb06fed3a08}",
+            "links": {
+              "self": {
+                "href": "https://api.bitbucket.org/2.0/users/%7B9c09f561-6d19-4635-8d6f-5eb06fed3a08%7D"
+              },
+              "html": {
+                "href": "https://bitbucket.org/%7B9c09f561-6d19-4635-8d6f-5eb06fed3a08%7D/"
+              },
+              "avatar": {
+                "href": "https://secure.gravatar.com/avatar/64dbbbeb960d4014b28cd64d73340d94?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FJS-3.png"
+              }
+            },
+            "nickname": "JamesS",
+            "type": "user",
+            "account_id": "557058:8ad5a564-ff17-4b3f-8b89-67d523e02c90"
+          }
+        },
+        "parents": [
+          {
+            "hash": "ec8d3da80fc5bc66a473d7aaec7c4d2531116d42",
+            "type": "commit",
+            "links": {
+              "self": {
+                "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/ec8d3da80fc5bc66a473d7aaec7c4d2531116d42"
+              },
+              "html": {
+                "href": "https://bitbucket.org/jstrachan/demo6/commits/ec8d3da80fc5bc66a473d7aaec7c4d2531116d42"
+              }
+            }
+          }
+        ],
+        "date": "2018-04-18T14:05:59+00:00",
+        "message": "Jenkinsfile edited online with Bitbucket",
+        "type": "commit"
+      }
+    },
+    {
+      "name": "jstrachan/jenkinsfile-edited-online-with-bitbucket-1524060272472",
+      "links": {
+        "commits": {
+          "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commits/jstrachan/jenkinsfile-edited-online-with-bitbucket-1524060272472"
+        },
+        "self": {
+          "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/refs/branches/jstrachan/jenkinsfile-edited-online-with-bitbucket-1524060272472"
+        },
+        "html": {
+          "href": "https://bitbucket.org/jstrachan/demo6/branch/jstrachan/jenkinsfile-edited-online-with-bitbucket-1524060272472"
+        }
+      },
+      "default_merge_strategy": "merge_commit",
+      "merge_strategies": [
+        "merge_commit",
+        "squash",
+        "fast_forward"
+      ],
+      "type": "branch",
+      "target": {
+        "hash": "2f2acbf07e7ac273ed74cdfac45b5dcc61cafff2",
+        "repository": {
+          "links": {
+            "self": {
+              "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6"
+            },
+            "html": {
+              "href": "https://bitbucket.org/jstrachan/demo6"
+            },
+            "avatar": {
+              "href": "https://bytebucket.org/ravatar/%7Bb7c5a1c5-28bb-4e20-b262-3beaff0dd827%7D?ts=default"
+            }
+          },
+          "type": "repository",
+          "name": "demo6",
+          "full_name": "jstrachan/demo6",
+          "uuid": "{b7c5a1c5-28bb-4e20-b262-3beaff0dd827}"
+        },
+        "links": {
+          "self": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/2f2acbf07e7ac273ed74cdfac45b5dcc61cafff2"
+          },
+          "comments": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/2f2acbf07e7ac273ed74cdfac45b5dcc61cafff2/comments"
+          },
+          "patch": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/patch/2f2acbf07e7ac273ed74cdfac45b5dcc61cafff2"
+          },
+          "html": {
+            "href": "https://bitbucket.org/jstrachan/demo6/commits/2f2acbf07e7ac273ed74cdfac45b5dcc61cafff2"
+          },
+          "diff": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/diff/2f2acbf07e7ac273ed74cdfac45b5dcc61cafff2"
+          },
+          "approve": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/2f2acbf07e7ac273ed74cdfac45b5dcc61cafff2/approve"
+          },
+          "statuses": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/2f2acbf07e7ac273ed74cdfac45b5dcc61cafff2/statuses"
+          }
+        },
+        "author": {
+          "raw": "James Strachan <james.strachan@gmail.com>",
+          "type": "author",
+          "user": {
+            "display_name": "James Strachan",
+            "uuid": "{9c09f561-6d19-4635-8d6f-5eb06fed3a08}",
+            "links": {
+              "self": {
+                "href": "https://api.bitbucket.org/2.0/users/%7B9c09f561-6d19-4635-8d6f-5eb06fed3a08%7D"
+              },
+              "html": {
+                "href": "https://bitbucket.org/%7B9c09f561-6d19-4635-8d6f-5eb06fed3a08%7D/"
+              },
+              "avatar": {
+                "href": "https://secure.gravatar.com/avatar/64dbbbeb960d4014b28cd64d73340d94?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FJS-3.png"
+              }
+            },
+            "nickname": "JamesS",
+            "type": "user",
+            "account_id": "557058:8ad5a564-ff17-4b3f-8b89-67d523e02c90"
+          }
+        },
+        "parents": [
+          {
+            "hash": "ec8d3da80fc5bc66a473d7aaec7c4d2531116d42",
+            "type": "commit",
+            "links": {
+              "self": {
+                "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/ec8d3da80fc5bc66a473d7aaec7c4d2531116d42"
+              },
+              "html": {
+                "href": "https://bitbucket.org/jstrachan/demo6/commits/ec8d3da80fc5bc66a473d7aaec7c4d2531116d42"
+              }
+            }
+          }
+        ],
+        "date": "2018-04-18T14:04:37+00:00",
+        "message": "lemme create a PR",
+        "type": "commit"
+      }
+    },
+    {
+      "name": "jstrachan/jenkinsfile-edited-online-with-bitbucket-1524300874436",
+      "links": {
+        "commits": {
+          "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commits/jstrachan/jenkinsfile-edited-online-with-bitbucket-1524300874436"
+        },
+        "self": {
+          "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/refs/branches/jstrachan/jenkinsfile-edited-online-with-bitbucket-1524300874436"
+        },
+        "html": {
+          "href": "https://bitbucket.org/jstrachan/demo6/branch/jstrachan/jenkinsfile-edited-online-with-bitbucket-1524300874436"
+        }
+      },
+      "default_merge_strategy": "merge_commit",
+      "merge_strategies": [
+        "merge_commit",
+        "squash",
+        "fast_forward"
+      ],
+      "type": "branch",
+      "target": {
+        "hash": "7a9e47d84bf89c3b4a544621994492d722a1273a",
+        "repository": {
+          "links": {
+            "self": {
+              "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6"
+            },
+            "html": {
+              "href": "https://bitbucket.org/jstrachan/demo6"
+            },
+            "avatar": {
+              "href": "https://bytebucket.org/ravatar/%7Bb7c5a1c5-28bb-4e20-b262-3beaff0dd827%7D?ts=default"
+            }
+          },
+          "type": "repository",
+          "name": "demo6",
+          "full_name": "jstrachan/demo6",
+          "uuid": "{b7c5a1c5-28bb-4e20-b262-3beaff0dd827}"
+        },
+        "links": {
+          "self": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/7a9e47d84bf89c3b4a544621994492d722a1273a"
+          },
+          "comments": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/7a9e47d84bf89c3b4a544621994492d722a1273a/comments"
+          },
+          "patch": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/patch/7a9e47d84bf89c3b4a544621994492d722a1273a"
+          },
+          "html": {
+            "href": "https://bitbucket.org/jstrachan/demo6/commits/7a9e47d84bf89c3b4a544621994492d722a1273a"
+          },
+          "diff": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/diff/7a9e47d84bf89c3b4a544621994492d722a1273a"
+          },
+          "approve": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/7a9e47d84bf89c3b4a544621994492d722a1273a/approve"
+          },
+          "statuses": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/7a9e47d84bf89c3b4a544621994492d722a1273a/statuses"
+          }
+        },
+        "author": {
+          "raw": "James Strachan <james.strachan@gmail.com>",
+          "type": "author",
+          "user": {
+            "display_name": "James Strachan",
+            "uuid": "{9c09f561-6d19-4635-8d6f-5eb06fed3a08}",
+            "links": {
+              "self": {
+                "href": "https://api.bitbucket.org/2.0/users/%7B9c09f561-6d19-4635-8d6f-5eb06fed3a08%7D"
+              },
+              "html": {
+                "href": "https://bitbucket.org/%7B9c09f561-6d19-4635-8d6f-5eb06fed3a08%7D/"
+              },
+              "avatar": {
+                "href": "https://secure.gravatar.com/avatar/64dbbbeb960d4014b28cd64d73340d94?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FJS-3.png"
+              }
+            },
+            "nickname": "JamesS",
+            "type": "user",
+            "account_id": "557058:8ad5a564-ff17-4b3f-8b89-67d523e02c90"
+          }
+        },
+        "parents": [
+          {
+            "hash": "ec8d3da80fc5bc66a473d7aaec7c4d2531116d42",
+            "type": "commit",
+            "links": {
+              "self": {
+                "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/ec8d3da80fc5bc66a473d7aaec7c4d2531116d42"
+              },
+              "html": {
+                "href": "https://bitbucket.org/jstrachan/demo6/commits/ec8d3da80fc5bc66a473d7aaec7c4d2531116d42"
+              }
+            }
+          }
+        ],
+        "date": "2018-04-21T08:54:36+00:00",
+        "message": "Jenkinsfile edited online with Bitbucket",
+        "type": "commit"
+      }
+    },
+    {
+      "name": "master",
+      "links": {
+        "commits": {
+          "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commits/master"
+        },
+        "self": {
+          "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/refs/branches/master"
+        },
+        "html": {
+          "href": "https://bitbucket.org/jstrachan/demo6/branch/master"
+        }
+      },
+      "default_merge_strategy": "merge_commit",
+      "merge_strategies": [
+        "merge_commit",
+        "squash",
+        "fast_forward"
+      ],
+      "type": "branch",
+      "target": {
+        "hash": "ec8d3da80fc5bc66a473d7aaec7c4d2531116d42",
+        "repository": {
+          "links": {
+            "self": {
+              "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6"
+            },
+            "html": {
+              "href": "https://bitbucket.org/jstrachan/demo6"
+            },
+            "avatar": {
+              "href": "https://bytebucket.org/ravatar/%7Bb7c5a1c5-28bb-4e20-b262-3beaff0dd827%7D?ts=default"
+            }
+          },
+          "type": "repository",
+          "name": "demo6",
+          "full_name": "jstrachan/demo6",
+          "uuid": "{b7c5a1c5-28bb-4e20-b262-3beaff0dd827}"
+        },
+        "links": {
+          "self": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/ec8d3da80fc5bc66a473d7aaec7c4d2531116d42"
+          },
+          "comments": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/ec8d3da80fc5bc66a473d7aaec7c4d2531116d42/comments"
+          },
+          "patch": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/patch/ec8d3da80fc5bc66a473d7aaec7c4d2531116d42"
+          },
+          "html": {
+            "href": "https://bitbucket.org/jstrachan/demo6/commits/ec8d3da80fc5bc66a473d7aaec7c4d2531116d42"
+          },
+          "diff": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/diff/ec8d3da80fc5bc66a473d7aaec7c4d2531116d42"
+          },
+          "approve": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/ec8d3da80fc5bc66a473d7aaec7c4d2531116d42/approve"
+          },
+          "statuses": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/ec8d3da80fc5bc66a473d7aaec7c4d2531116d42/statuses"
+          }
+        },
+        "author": {
+          "raw": "James Strachan <james.strachan@gmail.com>",
+          "type": "author",
+          "user": {
+            "display_name": "James Strachan",
+            "uuid": "{9c09f561-6d19-4635-8d6f-5eb06fed3a08}",
+            "links": {
+              "self": {
+                "href": "https://api.bitbucket.org/2.0/users/%7B9c09f561-6d19-4635-8d6f-5eb06fed3a08%7D"
+              },
+              "html": {
+                "href": "https://bitbucket.org/%7B9c09f561-6d19-4635-8d6f-5eb06fed3a08%7D/"
+              },
+              "avatar": {
+                "href": "https://secure.gravatar.com/avatar/64dbbbeb960d4014b28cd64d73340d94?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FJS-3.png"
+              }
+            },
+            "nickname": "JamesS",
+            "type": "user",
+            "account_id": "557058:8ad5a564-ff17-4b3f-8b89-67d523e02c90"
+          }
+        },
+        "parents": [
+          {
+            "hash": "964a5114356f4ed24192bc850645c4173bde7ede",
+            "type": "commit",
+            "links": {
+              "self": {
+                "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/964a5114356f4ed24192bc850645c4173bde7ede"
+              },
+              "html": {
+                "href": "https://bitbucket.org/jstrachan/demo6/commits/964a5114356f4ed24192bc850645c4173bde7ede"
+              }
+            }
+          }
+        ],
+        "date": "2018-04-18T14:02:59+00:00",
+        "message": "Draft create\n",
+        "type": "commit"
+      }
+    },
+    {
+      "name": "somestuff",
+      "links": {
+        "commits": {
+          "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commits/somestuff"
+        },
+        "self": {
+          "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/refs/branches/somestuff"
+        },
+        "html": {
+          "href": "https://bitbucket.org/jstrachan/demo6/branch/somestuff"
+        }
+      },
+      "default_merge_strategy": "merge_commit",
+      "merge_strategies": [
+        "merge_commit",
+        "squash",
+        "fast_forward"
+      ],
+      "type": "branch",
+      "target": {
+        "hash": "42f383c381d90cc05d91ae199f69206d3996c574",
+        "repository": {
+          "links": {
+            "self": {
+              "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6"
+            },
+            "html": {
+              "href": "https://bitbucket.org/jstrachan/demo6"
+            },
+            "avatar": {
+              "href": "https://bytebucket.org/ravatar/%7Bb7c5a1c5-28bb-4e20-b262-3beaff0dd827%7D?ts=default"
+            }
+          },
+          "type": "repository",
+          "name": "demo6",
+          "full_name": "jstrachan/demo6",
+          "uuid": "{b7c5a1c5-28bb-4e20-b262-3beaff0dd827}"
+        },
+        "links": {
+          "self": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/42f383c381d90cc05d91ae199f69206d3996c574"
+          },
+          "comments": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/42f383c381d90cc05d91ae199f69206d3996c574/comments"
+          },
+          "patch": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/patch/42f383c381d90cc05d91ae199f69206d3996c574"
+          },
+          "html": {
+            "href": "https://bitbucket.org/jstrachan/demo6/commits/42f383c381d90cc05d91ae199f69206d3996c574"
+          },
+          "diff": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/diff/42f383c381d90cc05d91ae199f69206d3996c574"
+          },
+          "approve": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/42f383c381d90cc05d91ae199f69206d3996c574/approve"
+          },
+          "statuses": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/42f383c381d90cc05d91ae199f69206d3996c574/statuses"
+          }
+        },
+        "author": {
+          "raw": "James Strachan <james.strachan@gmail.com>",
+          "type": "author",
+          "user": {
+            "display_name": "James Strachan",
+            "uuid": "{9c09f561-6d19-4635-8d6f-5eb06fed3a08}",
+            "links": {
+              "self": {
+                "href": "https://api.bitbucket.org/2.0/users/%7B9c09f561-6d19-4635-8d6f-5eb06fed3a08%7D"
+              },
+              "html": {
+                "href": "https://bitbucket.org/%7B9c09f561-6d19-4635-8d6f-5eb06fed3a08%7D/"
+              },
+              "avatar": {
+                "href": "https://secure.gravatar.com/avatar/64dbbbeb960d4014b28cd64d73340d94?d=https%3A%2F%2Favatar-management--avatars.us-west-2.prod.public.atl-paas.net%2Finitials%2FJS-3.png"
+              }
+            },
+            "nickname": "JamesS",
+            "type": "user",
+            "account_id": "557058:8ad5a564-ff17-4b3f-8b89-67d523e02c90"
+          }
+        },
+        "parents": [
+          {
+            "hash": "ec8d3da80fc5bc66a473d7aaec7c4d2531116d42",
+            "type": "commit",
+            "links": {
+              "self": {
+                "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/ec8d3da80fc5bc66a473d7aaec7c4d2531116d42"
+              },
+              "html": {
+                "href": "https://bitbucket.org/jstrachan/demo6/commits/ec8d3da80fc5bc66a473d7aaec7c4d2531116d42"
+              }
+            }
+          }
+        ],
+        "date": "2018-04-21T08:55:24+00:00",
+        "message": "Jenkinsfile edited online with Bitbucket",
+        "type": "commit"
+      }
+    },
+    {
+      "name": "v0.0.1",
+      "links": {
+        "commits": {
+          "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commits/v0.0.1"
+        },
+        "self": {
+          "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/refs/tags/v0.0.1"
+        },
+        "html": {
+          "href": "https://bitbucket.org/jstrachan/demo6/commits/tag/v0.0.1"
+        }
+      },
+      "tagger": {
+        "raw": "jenkins-x-bot <jenkins-x@googlegroups.com>",
+        "type": "author"
+      },
+      "date": "2018-04-18T14:06:14+00:00",
+      "message": "Release version 0.0.1\n",
+      "type": "tag",
+      "target": {
+        "hash": "d1294efc2a8085ea3641098e04f7b3625a92c936",
+        "repository": {
+          "links": {
+            "self": {
+              "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6"
+            },
+            "html": {
+              "href": "https://bitbucket.org/jstrachan/demo6"
+            },
+            "avatar": {
+              "href": "https://bytebucket.org/ravatar/%7Bb7c5a1c5-28bb-4e20-b262-3beaff0dd827%7D?ts=default"
+            }
+          },
+          "type": "repository",
+          "name": "demo6",
+          "full_name": "jstrachan/demo6",
+          "uuid": "{b7c5a1c5-28bb-4e20-b262-3beaff0dd827}"
+        },
+        "links": {
+          "self": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/d1294efc2a8085ea3641098e04f7b3625a92c936"
+          },
+          "comments": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/d1294efc2a8085ea3641098e04f7b3625a92c936/comments"
+          },
+          "patch": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/patch/d1294efc2a8085ea3641098e04f7b3625a92c936"
+          },
+          "html": {
+            "href": "https://bitbucket.org/jstrachan/demo6/commits/d1294efc2a8085ea3641098e04f7b3625a92c936"
+          },
+          "diff": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/diff/d1294efc2a8085ea3641098e04f7b3625a92c936"
+          },
+          "approve": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/d1294efc2a8085ea3641098e04f7b3625a92c936/approve"
+          },
+          "statuses": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/d1294efc2a8085ea3641098e04f7b3625a92c936/statuses"
+          }
+        },
+        "author": {
+          "raw": "jenkins-x-bot <jenkins-x@googlegroups.com>",
+          "type": "author"
+        },
+        "parents": [
+          {
+            "hash": "ec8d3da80fc5bc66a473d7aaec7c4d2531116d42",
+            "type": "commit",
+            "links": {
+              "self": {
+                "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/ec8d3da80fc5bc66a473d7aaec7c4d2531116d42"
+              },
+              "html": {
+                "href": "https://bitbucket.org/jstrachan/demo6/commits/ec8d3da80fc5bc66a473d7aaec7c4d2531116d42"
+              }
+            }
+          }
+        ],
+        "date": "2018-04-18T14:06:14+00:00",
+        "message": "release 0.0.1\n",
+        "type": "commit"
+      }
+    },
+    {
+      "name": "v0.0.2",
+      "links": {
+        "commits": {
+          "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commits/v0.0.2"
+        },
+        "self": {
+          "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/refs/tags/v0.0.2"
+        },
+        "html": {
+          "href": "https://bitbucket.org/jstrachan/demo6/commits/tag/v0.0.2"
+        }
+      },
+      "tagger": {
+        "raw": "jenkins-x-bot <jenkins-x@googlegroups.com>",
+        "type": "author"
+      },
+      "date": "2018-04-21T08:54:52+00:00",
+      "message": "Release version 0.0.2\n",
+      "type": "tag",
+      "target": {
+        "hash": "f52c219bfc89609ca5c8d060bbd2dc79429167f2",
+        "repository": {
+          "links": {
+            "self": {
+              "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6"
+            },
+            "html": {
+              "href": "https://bitbucket.org/jstrachan/demo6"
+            },
+            "avatar": {
+              "href": "https://bytebucket.org/ravatar/%7Bb7c5a1c5-28bb-4e20-b262-3beaff0dd827%7D?ts=default"
+            }
+          },
+          "type": "repository",
+          "name": "demo6",
+          "full_name": "jstrachan/demo6",
+          "uuid": "{b7c5a1c5-28bb-4e20-b262-3beaff0dd827}"
+        },
+        "links": {
+          "self": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/f52c219bfc89609ca5c8d060bbd2dc79429167f2"
+          },
+          "comments": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/f52c219bfc89609ca5c8d060bbd2dc79429167f2/comments"
+          },
+          "patch": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/patch/f52c219bfc89609ca5c8d060bbd2dc79429167f2"
+          },
+          "html": {
+            "href": "https://bitbucket.org/jstrachan/demo6/commits/f52c219bfc89609ca5c8d060bbd2dc79429167f2"
+          },
+          "diff": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/diff/f52c219bfc89609ca5c8d060bbd2dc79429167f2"
+          },
+          "approve": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/f52c219bfc89609ca5c8d060bbd2dc79429167f2/approve"
+          },
+          "statuses": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/f52c219bfc89609ca5c8d060bbd2dc79429167f2/statuses"
+          }
+        },
+        "author": {
+          "raw": "jenkins-x-bot <jenkins-x@googlegroups.com>",
+          "type": "author"
+        },
+        "parents": [
+          {
+            "hash": "ec8d3da80fc5bc66a473d7aaec7c4d2531116d42",
+            "type": "commit",
+            "links": {
+              "self": {
+                "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/ec8d3da80fc5bc66a473d7aaec7c4d2531116d42"
+              },
+              "html": {
+                "href": "https://bitbucket.org/jstrachan/demo6/commits/ec8d3da80fc5bc66a473d7aaec7c4d2531116d42"
+              }
+            }
+          }
+        ],
+        "date": "2018-04-21T08:54:52+00:00",
+        "message": "release 0.0.2\n",
+        "type": "commit"
+      }
+    },
+    {
+      "name": "v0.0.3",
+      "links": {
+        "commits": {
+          "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commits/v0.0.3"
+        },
+        "self": {
+          "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/refs/tags/v0.0.3"
+        },
+        "html": {
+          "href": "https://bitbucket.org/jstrachan/demo6/commits/tag/v0.0.3"
+        }
+      },
+      "tagger": {
+        "raw": "jenkins-x-bot <jenkins-x@googlegroups.com>",
+        "type": "author"
+      },
+      "date": "2018-04-21T09:01:04+00:00",
+      "message": "Release version 0.0.3\n",
+      "type": "tag",
+      "target": {
+        "hash": "b90b1d6e1245600802522bd5ffa8d119c7ac5bc7",
+        "repository": {
+          "links": {
+            "self": {
+              "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6"
+            },
+            "html": {
+              "href": "https://bitbucket.org/jstrachan/demo6"
+            },
+            "avatar": {
+              "href": "https://bytebucket.org/ravatar/%7Bb7c5a1c5-28bb-4e20-b262-3beaff0dd827%7D?ts=default"
+            }
+          },
+          "type": "repository",
+          "name": "demo6",
+          "full_name": "jstrachan/demo6",
+          "uuid": "{b7c5a1c5-28bb-4e20-b262-3beaff0dd827}"
+        },
+        "links": {
+          "self": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/b90b1d6e1245600802522bd5ffa8d119c7ac5bc7"
+          },
+          "comments": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/b90b1d6e1245600802522bd5ffa8d119c7ac5bc7/comments"
+          },
+          "patch": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/patch/b90b1d6e1245600802522bd5ffa8d119c7ac5bc7"
+          },
+          "html": {
+            "href": "https://bitbucket.org/jstrachan/demo6/commits/b90b1d6e1245600802522bd5ffa8d119c7ac5bc7"
+          },
+          "diff": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/diff/b90b1d6e1245600802522bd5ffa8d119c7ac5bc7"
+          },
+          "approve": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/b90b1d6e1245600802522bd5ffa8d119c7ac5bc7/approve"
+          },
+          "statuses": {
+            "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/b90b1d6e1245600802522bd5ffa8d119c7ac5bc7/statuses"
+          }
+        },
+        "author": {
+          "raw": "jenkins-x-bot <jenkins-x@googlegroups.com>",
+          "type": "author"
+        },
+        "parents": [
+          {
+            "hash": "ec8d3da80fc5bc66a473d7aaec7c4d2531116d42",
+            "type": "commit",
+            "links": {
+              "self": {
+                "href": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/commit/ec8d3da80fc5bc66a473d7aaec7c4d2531116d42"
+              },
+              "html": {
+                "href": "https://bitbucket.org/jstrachan/demo6/commits/ec8d3da80fc5bc66a473d7aaec7c4d2531116d42"
+              }
+            }
+          }
+        ],
+        "date": "2018-04-21T09:01:04+00:00",
+        "message": "release 0.0.3\n",
+        "type": "commit"
+      }
+    }
+  ],
+  "page": 1,
+  "next": "https://api.bitbucket.org/2.0/repositories/jstrachan/demo6/refs?name=heads%2Frefs%2Fpull-requests%2F2%2Fhead&page=8xhd"
+}

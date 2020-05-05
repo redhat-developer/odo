@@ -1,0 +1,17 @@
+{
+    "ID": "1",
+    "Namespace": "go-gitea",
+    "Name": "gitea",
+    "Perm": {
+        "Pull": true,
+        "Push": true,
+        "Admin": true
+    },
+    "Branch": "master",
+    "Private": true,
+    "Clone": "https://try.gitea.io/go-gitea/gitea.git",
+    "CloneSSH": "git@try.gitea.io:go-gitea/gitea.git",
+    "Link": "",
+    "Created": "0001-01-01T00:00:00Z",
+    "Updated": "0001-01-01T00:00:00Z"
+}

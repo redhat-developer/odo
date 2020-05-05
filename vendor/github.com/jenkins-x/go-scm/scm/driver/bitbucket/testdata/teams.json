@@ -1,0 +1,48 @@
+{
+  "pagelen": 30,
+  "values": [
+    {
+      "username": "atlassian",
+      "website": null,
+      "display_name": "Atlassian",
+      "uuid": "{d5bb8c49-f033-4498-910e-7e4b546b04ee}",
+      "links": {
+        "hooks": {
+          "href": "https:\/\/api.bitbucket.org\/2.0\/teams\/atlassian\/hooks"
+        },
+        "self": {
+          "href": "https:\/\/api.bitbucket.org\/2.0\/teams\/atlassian"
+        },
+        "repositories": {
+          "href": "https:\/\/api.bitbucket.org\/2.0\/repositories\/atlassian"
+        },
+        "html": {
+          "href": "https:\/\/bitbucket.org\/atlassian\/"
+        },
+        "followers": {
+          "href": "https:\/\/api.bitbucket.org\/2.0\/teams\/atlassian\/followers"
+        },
+        "avatar": {
+          "href": "https:\/\/bitbucket.org\/account\/atlassian\/avatar\/32\/"
+        },
+        "members": {
+          "href": "https:\/\/api.bitbucket.org\/2.0\/teams\/atlassian\/members"
+        },
+        "following": {
+          "href": "https:\/\/api.bitbucket.org\/2.0\/teams\/atlassian\/following"
+        },
+        "projects": {
+          "href": "https:\/\/api.bitbucket.org\/2.0\/teams\/atlassian\/projects\/"
+        },
+        "snippets": {
+          "href": "https:\/\/api.bitbucket.org\/2.0\/snippets\/atlassian"
+        }
+      },
+      "created_on": "2012-11-08T19:05:39.080491+00:00",
+      "location": null,
+      "type": "team"
+    }
+  ],
+  "page": 1,
+  "next": "https://api.bitbucket.org/2.0/teams?pagelen=30&role=member&page=2"
+}

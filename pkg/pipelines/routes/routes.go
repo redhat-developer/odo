@@ -7,6 +7,9 @@ import (
 	"github.com/openshift/odo/pkg/pipelines/meta"
 )
 
+// GitOpsWebhookEventListenerRouteName is the OpenShift Route name for GitOps Webhook Listener
+const GitOpsWebhookEventListenerRouteName = "gitops-webhook-event-listener-route"
+
 var (
 	routeTypeMeta = meta.TypeMeta("Route", "route.openshift.io/v1")
 )
@@ -15,7 +18,7 @@ var (
 func Generate(ns string) routev1.Route {
 	return routev1.Route{
 		TypeMeta:   routeTypeMeta,
-		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, "gitops-webhook-event-listener-route")),
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, GitOpsWebhookEventListenerRouteName)),
 		Spec: routev1.RouteSpec{
 			To: creatRouteTargetReference(
 				"Service",

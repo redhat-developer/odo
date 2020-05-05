@@ -1,0 +1,40 @@
+{
+  "url": "https://api.github.com/orgs/testOrg/memberships/testUser",
+  "state": "active",
+  "role": "member",
+  "organization_url": "https://api.github.com/orgs/testOrg",
+  "user": {
+    "login": "testUser",
+    "id": 1234578,
+    "node_id": "blablablablbalbalbla=",
+    "avatar_url": "https://avatars0.githubusercontent.com/u/1395710?v=4",
+    "gravatar_id": "",
+    "url": "https://api.github.com/users/testUser",
+    "html_url": "https://github.com/testUser",
+    "followers_url": "https://api.github.com/users/testUser/followers",
+    "following_url": "https://api.github.com/users/testUser/following{/other_user}",
+    "gists_url": "https://api.github.com/users/testUser/gists{/gist_id}",
+    "starred_url": "https://api.github.com/users/testUser/starred{/owner}{/repo}",
+    "subscriptions_url": "https://api.github.com/users/testUser/subscriptions",
+    "organizations_url": "https://api.github.com/users/testUser/orgs",
+    "repos_url": "https://api.github.com/users/testUser/repos",
+    "events_url": "https://api.github.com/users/testUser/events{/privacy}",
+    "received_events_url": "https://api.github.com/users/testUser/received_events",
+    "type": "User",
+    "site_admin": false
+  },
+  "organization": {
+    "login": "testOrg",
+    "id": 1234567,
+    "node_id": "blbalbalbalalabala",
+    "url": "https://api.github.com/orgs/testOrg",
+    "repos_url": "https://api.github.com/orgs/testOrg/repos",
+    "events_url": "https://api.github.com/orgs/testOrg/events",
+    "hooks_url": "https://api.github.com/orgs/testOrg/hooks",
+    "issues_url": "https://api.github.com/orgs/testOrg/issues",
+    "members_url": "https://api.github.com/orgs/testOrg/members{/member}",
+    "public_members_url": "https://api.github.com/orgs/testOrg/public_members{/member}",
+    "avatar_url": "https://avatars2.githubusercontent.com/u/1974314?v=4",
+    "description": null
+  }
+}

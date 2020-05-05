@@ -1,0 +1,11 @@
+{
+    "ID": "20",
+    "Name": "",
+    "Target": "http://gogs.io",
+    "Events": [
+        "create",
+        "push"
+    ],
+    "Active": true,
+    "SkipVerify": false
+}

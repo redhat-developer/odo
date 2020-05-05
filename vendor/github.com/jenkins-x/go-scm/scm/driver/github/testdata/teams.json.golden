@@ -1,0 +1,11 @@
+[
+  {
+    "ID": 1,
+    "url": "https://api.github.com/teams/1",
+    "Name": "Justice League",
+    "Slug": "justice-league",
+    "Description": "A great team.",
+    "Privacy": "closed",
+    "Permission": "admin"
+  }
+]
