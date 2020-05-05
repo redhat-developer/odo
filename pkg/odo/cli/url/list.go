@@ -3,7 +3,12 @@ package url
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"text/tabwriter"
+
+	"github.com/openshift/odo/pkg/envinfo"
+
+	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 
 	"github.com/openshift/odo/pkg/odo/util/experimental"
 
@@ -45,10 +50,11 @@ func NewURLListOptions() *URLListOptions {
 func (o *URLListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	if experimental.IsExperimentalModeEnabled() {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
+		o.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(o.componentContext)
 	} else {
 		o.Context = genericclioptions.NewContext(cmd)
+		o.LocalConfigInfo, err = config.NewLocalConfigInfo(o.componentContext)
 	}
-	o.LocalConfigInfo, err = config.NewLocalConfigInfo(o.componentContext)
 	if err != nil {
 		return errors.Wrap(err, "failed intiating local config")
 	}
@@ -62,7 +68,38 @@ func (o *URLListOptions) Validate() (err error) {
 
 // Run contains the logic for the odo url list command
 func (o *URLListOptions) Run() (err error) {
-	if experimental.IsExperimentalModeEnabled() {
+	if experimental.IsExperimentalModeEnabled() && pushtarget.IsPushTargetDocker() {
+		componentName := o.EnvSpecificInfo.GetName()
+		urls, err := url.ListDockerURL(componentName, o.EnvSpecificInfo)
+		if err != nil {
+			return err
+		}
+		if log.IsJSON() {
+			machineoutput.OutputSuccess(urls)
+		} else {
+			if len(urls.Items) == 0 {
+				return fmt.Errorf("no URLs found for component %v", componentName)
+			}
+
+			log.Infof("Found the following URLs for component %v", componentName)
+			tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+			fmt.Fprintln(tabWriterURL, "NAME", "\t", "STATE", "\t", "URL", "\t", "PORT")
+
+			// are there changes between local and cluster states?
+			outOfSync := false
+			for _, u := range urls.Items {
+				fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", u.Spec.Host+":"+strconv.Itoa(u.Spec.ExternalPort), "\t", u.Spec.Port)
+				if u.Status.State != url.StateTypePushed {
+					outOfSync = true
+				}
+			}
+			tabWriterURL.Flush()
+			if outOfSync {
+				fmt.Fprintf(os.Stdout, "\n")
+				fmt.Fprintf(os.Stdout, "There are local changes. Please run 'odo push'.\n")
+			}
+		}
+	} else if experimental.IsExperimentalModeEnabled() {
 		componentName := o.EnvSpecificInfo.GetName()
 		// TODO: Need to list all local and pushed ingresses
 		//		 issue to track: https://github.com/openshift/odo/issues/2787

@@ -14,7 +14,10 @@ import (
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
+	dockercomponent "github.com/openshift/odo/pkg/devfile/adapters/docker/component"
+	dockerutils "github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
 	"github.com/openshift/odo/pkg/kclient"
+	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
 	urlLabels "github.com/openshift/odo/pkg/url/labels"
@@ -98,6 +101,79 @@ func GetIngress(kClient *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInf
 
 	// can't find the URL in local and remote
 	return iextensionsv1.Ingress{}, errors.New(fmt.Sprintf("the url %v does not exist", urlName))
+}
+
+// GetContainer returns Docker URL definition for given URL name
+func GetContainerURL(envSpecificInfo *envinfo.EnvSpecificInfo, urlName string, componentName string) (URL, error) {
+	client, err := lclient.New()
+	if err != nil {
+		return URL{}, err
+	}
+	localURLs := envSpecificInfo.GetURL()
+	containers, err := dockerutils.GetComponentContainers(*client, componentName)
+	if err != nil {
+		return URL{}, errors.Wrap(err, "unable to get component containers")
+	}
+	for _, c := range containers {
+		containerJSON, err := client.Client.ContainerInspect(client.Context, c.ID)
+		if err != nil {
+			return URL{}, err
+		}
+		for internalPort, portbinding := range containerJSON.HostConfig.PortBindings {
+			remoteURLName := containerJSON.Config.Labels[internalPort.Port()]
+			if remoteURLName != urlName {
+				continue
+			}
+			externalport, err := strconv.Atoi(portbinding[0].HostPort)
+			if err != nil {
+				return URL{}, err
+			}
+			dockerURL := getMachineReadableFormatDocker(internalPort.Int(), externalport, portbinding[0].HostIP, remoteURLName)
+			for _, localurl := range localURLs {
+				if localurl.ExposedPort <= 0 {
+					continue
+				}
+				if localurl.Name == remoteURLName {
+					// URL is in both env file and docker host config
+					dockerURL.Status.State = StateTypePushed
+					return dockerURL, nil
+				}
+			}
+			dockerURL.Status.State = StateTypeLocallyDeleted
+			return dockerURL, nil
+		}
+	}
+
+	for _, localurl := range localURLs {
+		if localurl.ExposedPort <= 0 || localurl.Name != urlName {
+			continue
+		}
+		var found = false
+		localURL := getMachineReadableFormatDocker(localurl.Port, localurl.ExposedPort, dockercomponent.LocalhostIP, localurl.Name)
+		for _, c := range containers {
+			containerJSON, err := client.Client.ContainerInspect(client.Context, c.ID)
+			if err != nil {
+				return URL{}, err
+			}
+			for internalPort := range containerJSON.HostConfig.PortBindings {
+				remoteURLName := containerJSON.Config.Labels[internalPort.Port()]
+				if remoteURLName != urlName {
+					continue
+				} else {
+					found = true
+					break
+				}
+			}
+		}
+		if !found {
+			// URL is in the env file but not on pushed
+			localURL.Status.State = StateTypeNotPushed
+			return localURL, nil
+		}
+	}
+
+	// can't find the URL in local and remote
+	return URL{}, errors.New(fmt.Sprintf("the url %v does not exist", urlName))
 }
 
 // Delete deletes a URL
@@ -364,6 +440,86 @@ func List(client *occlient.Client, localConfig *config.LocalConfigInfo, componen
 	return urlList, nil
 }
 
+// ListDockerURL returns all Docker URLs for given component.
+func ListDockerURL(componentName string, envSpecificInfo *envinfo.EnvSpecificInfo) (URLList, error) {
+	client, err := lclient.New()
+	if err != nil {
+		return URLList{}, err
+	}
+	containers, err := dockerutils.GetComponentContainers(*client, componentName)
+	if err != nil {
+		return URLList{}, errors.Wrap(err, "unable to list component container")
+	}
+
+	localURLs := envSpecificInfo.GetURL()
+
+	var urls []URL
+
+	for _, c := range containers {
+		var found = false
+		containerJSON, err := client.Client.ContainerInspect(client.Context, c.ID)
+		if err != nil {
+			return URLList{}, err
+		}
+		for internalPort, portbinding := range containerJSON.HostConfig.PortBindings {
+			externalport, err := strconv.Atoi(portbinding[0].HostPort)
+			if err != nil {
+				return URLList{}, err
+			}
+			dockerURL := getMachineReadableFormatDocker(internalPort.Int(), externalport, portbinding[0].HostIP, containerJSON.Config.Labels[internalPort.Port()])
+			for _, localurl := range localURLs {
+				if localurl.ExposedPort <= 0 {
+					continue
+				}
+				if localurl.Port == dockerURL.Spec.Port && localurl.ExposedPort == dockerURL.Spec.ExternalPort {
+					// URL is in both env file and docker host config
+					dockerURL.Status.State = StateTypePushed
+					urls = append(urls, dockerURL)
+					found = true
+					break
+				}
+			}
+			if !found {
+				// URL is in docker host config but not in env file
+				dockerURL.Status.State = StateTypeLocallyDeleted
+				urls = append(urls, dockerURL)
+			}
+		}
+	}
+
+	for _, localurl := range localURLs {
+		if localurl.ExposedPort <= 0 {
+			continue
+		}
+		var found = false
+		localURL := getMachineReadableFormatDocker(localurl.Port, localurl.ExposedPort, dockercomponent.LocalhostIP, localurl.Name)
+		for _, c := range containers {
+			containerJSON, err := client.Client.ContainerInspect(client.Context, c.ID)
+			if err != nil {
+				return URLList{}, err
+			}
+			for internalPort, portbinding := range containerJSON.HostConfig.PortBindings {
+				externalport, err := strconv.Atoi(portbinding[0].HostPort)
+				if err != nil {
+					return URLList{}, err
+				}
+				if localURL.Spec.Port == internalPort.Int() && localURL.Spec.ExternalPort == externalport {
+					found = true
+					break
+				}
+			}
+		}
+		if !found {
+			// URL is in the env file but not on pushed
+			localURL.Status.State = StateTypeNotPushed
+			urls = append(urls, localURL)
+		}
+	}
+
+	urlList := getMachineReadableFormatForList(urls)
+	return urlList, nil
+}
+
 // GetProtocol returns the protocol string
 func GetProtocol(route routev1.Route, ingress iextensionsv1.Ingress, isExperimental bool) string {
 	if isExperimental {
@@ -516,10 +672,18 @@ func getMachineReadableFormatForIngressList(ingresses []iextensionsv1.Ingress) i
 	return iextensionsv1.IngressList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "List",
-			APIVersion: "udo.udo.io/v1alpha1",
+			APIVersion: "extensions/v1beta1",
 		},
 		ListMeta: metav1.ListMeta{},
 		Items:    ingresses,
+	}
+}
+
+func getMachineReadableFormatDocker(internalPort int, externalPort int, hostIP string, urlName string) URL {
+	return URL{
+		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.openshift.io/v1alpha1"},
+		ObjectMeta: metav1.ObjectMeta{Name: urlName},
+		Spec:       URLSpec{Host: hostIP, Port: internalPort, ExternalPort: externalPort},
 	}
 }
 

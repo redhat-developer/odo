@@ -154,9 +154,12 @@ func (a Adapter) updateComponent() (componentExists bool, err error) {
 				return componentExists, errors.Wrapf(err, "unable to get the container config for component %s", componentName)
 			}
 
-			portMap, err := getPortMap(comp.Endpoints, false)
+			portMap, namePortMapping, err := getPortMap(comp.Endpoints, false)
 			if err != nil {
 				return componentExists, errors.Wrapf(err, "unable to get the port map from env.yaml file for component %s", componentName)
+			}
+			for port, urlName := range namePortMapping {
+				containerConfig.Labels[port.Port()] = urlName
 			}
 
 			// See if the container needs to be updated
@@ -216,7 +219,7 @@ func (a Adapter) pullAndStartContainer(mounts []mount.Mount, projectVolumeName s
 }
 
 func (a Adapter) startComponent(mounts []mount.Mount, projectVolumeName string, comp versionsCommon.DevfileComponent) error {
-	hostConfig, err := a.generateAndGetHostConfig(comp.Endpoints)
+	hostConfig, namePortMapping, err := a.generateAndGetHostConfig(comp.Endpoints)
 	hostConfig.Mounts = mounts
 	if err != nil {
 		return err
@@ -245,6 +248,9 @@ func (a Adapter) startComponent(mounts []mount.Mount, projectVolumeName string, 
 
 	// Generate the container config after updating the component with the necessary data
 	containerConfig := a.generateAndGetContainerConfig(a.ComponentName, comp)
+	for port, urlName := range namePortMapping {
+		containerConfig.Labels[port.Port()] = urlName
+	}
 
 	// Create the docker container
 	s := log.Spinner("Starting container for " + *comp.Image)
@@ -269,11 +275,11 @@ func (a Adapter) generateAndGetContainerConfig(componentName string, comp versio
 	return containerConfig
 }
 
-func (a Adapter) generateAndGetHostConfig(endpoints []versionsCommon.DockerimageEndpoint) (container.HostConfig, error) {
+func (a Adapter) generateAndGetHostConfig(endpoints []versionsCommon.DockerimageEndpoint) (container.HostConfig, map[nat.Port]string, error) {
 	// Convert the port bindings from env.yaml and generate docker host config
-	portMap, err := getPortMap(endpoints, true)
+	portMap, namePortMapping, err := getPortMap(endpoints, true)
 	if err != nil {
-		return container.HostConfig{}, err
+		return container.HostConfig{}, map[nat.Port]string{}, err
 	}
 
 	hostConfig := container.HostConfig{}
@@ -281,22 +287,23 @@ func (a Adapter) generateAndGetHostConfig(endpoints []versionsCommon.Dockerimage
 		hostConfig = a.Client.GenerateHostConfig(false, false, portMap)
 	}
 
-	return hostConfig, nil
+	return hostConfig, namePortMapping, nil
 }
 
-func getPortMap(endpoints []versionsCommon.DockerimageEndpoint, show bool) (nat.PortMap, error) {
+func getPortMap(endpoints []versionsCommon.DockerimageEndpoint, show bool) (nat.PortMap, map[nat.Port]string, error) {
 	// Convert the exposed and internal port pairs saved in env.yaml file to PortMap
 	// Todo: Use context to get the approraite envinfo after context is supported in experimental mode
 	portmap := nat.PortMap{}
+	namePortMapping := make(map[nat.Port]string)
 
 	dir, err := os.Getwd()
 	if err != nil {
-		return portmap, err
+		return portmap, map[nat.Port]string{}, err
 	}
 
 	envInfo, err := envinfo.NewEnvSpecificInfo(dir)
 	if err != nil {
-		return portmap, err
+		return portmap, map[nat.Port]string{}, err
 	}
 
 	urlArr := envInfo.GetURL()
@@ -305,7 +312,7 @@ func getPortMap(endpoints []versionsCommon.DockerimageEndpoint, show bool) (nat.
 		if url.ExposedPort > 0 && common.IsPortPresent(endpoints, url.Port) {
 			port, err := nat.NewPort("tcp", strconv.Itoa(url.Port))
 			if err != nil {
-				return nat.PortMap{}, err
+				return nat.PortMap{}, map[nat.Port]string{}, err
 			}
 			portmap[port] = []nat.PortBinding{
 				nat.PortBinding{
@@ -313,15 +320,16 @@ func getPortMap(endpoints []versionsCommon.DockerimageEndpoint, show bool) (nat.
 					HostPort: strconv.Itoa(url.ExposedPort),
 				},
 			}
+			namePortMapping[port] = url.Name
 			if show {
 				log.Successf("URL %v:%v created", LocalhostIP, url.ExposedPort)
 			}
 		} else if url.ExposedPort > 0 && len(endpoints) > 0 && !common.IsPortPresent(endpoints, url.Port) {
-			return portmap, fmt.Errorf("Error creating url: odo url config's port is not present in the devfile. Please re-create odo url with the new devfile port")
+			return portmap, map[nat.Port]string{}, fmt.Errorf("Error creating url: odo url config's port is not present in the devfile. Please re-create odo url with the new devfile port")
 		}
 	}
 
-	return portmap, nil
+	return portmap, namePortMapping, nil
 }
 
 // Executes all the commands from the devfile in order: init and build - which are both optional, and a compulsary run.
