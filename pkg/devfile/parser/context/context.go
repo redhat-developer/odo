@@ -72,7 +72,7 @@ func (d *DevfileCtx) Populate() (err error) {
 	return nil
 }
 
-// Populate fills the DevfileCtx struct with relevant context info
+// PopulateFromBytes fills the DevfileCtx struct with relevant context info
 func (d *DevfileCtx) PopulateFromBytes(bytes []byte) (err error) {
 
 	// Read and save devfile content

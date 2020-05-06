@@ -107,7 +107,7 @@ func (o *DescribeComponentOptions) Run() (err error) {
 
 				machineoutput.OutputSuccess(devObj)
 			}
-		} 
+		}
 	} else {
 		if len(o.devfileComponents) > 1 {
 			fmt.Fprintln(w, "WARNING: There are multiple components named \""+o.componentName+"\" in different multiple devfile registries.\n")
@@ -128,7 +128,7 @@ func (o *DescribeComponentOptions) Run() (err error) {
 
 				yamlData, err := yaml.Marshal(devObj)
 				if err != nil {
-					return errors.Errorf("Failed to marshal devfile object into yaml:", err)
+					return errors.Errorf("Failed to marshal devfile object into yaml: %v", err)
 				}
 				fmt.Printf("---\n%s", string(yamlData))
 			}
@@ -145,7 +145,7 @@ func (o *DescribeComponentOptions) Run() (err error) {
 	return nil
 }
 
-// NewCmdCatalogDescribeComponent implements the odo catalog describe service command
+// NewCmdCatalogDescribeComponent implements the odo catalog describe component command
 func NewCmdCatalogDescribeComponent(name, fullName string) *cobra.Command {
 	o := NewDescribeComponentOptions()
 	command := &cobra.Command{

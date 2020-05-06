@@ -43,7 +43,7 @@ func Parse(path string) (d DevfileObj, err error) {
 	return d, nil
 }
 
-// Parse func parses and validates the devfile integrity.
+// ParseInMemory func parses and validates the devfile integrity.
 // Creates devfile context and runtime objects
 func ParseInMemory(bytes []byte) (d DevfileObj, err error) {
 

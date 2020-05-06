@@ -45,7 +45,7 @@ func hasPrefix(buf []byte, prefix []byte) bool {
 	return bytes.HasPrefix(trim, prefix)
 }
 
-// SetDevfileContent reads devfile and if devfile is in YAML format converts is to JSON
+// SetDevfileContent reads devfile and if devfile is in YAML format converts it to JSON
 func (d *DevfileCtx) SetDevfileContent() error {
 
 	// Read devfile

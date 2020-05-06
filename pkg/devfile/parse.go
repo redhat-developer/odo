@@ -25,11 +25,11 @@ func Parse(path string) (d devfileParser.DevfileObj, err error) {
 	return d, nil
 }
 
-// Parse func parses and validates the devfile integrity.
+// ParseInMemory func parses and validates the devfile integrity.
 // Creates devfile context and runtime objects
 func ParseInMemory(data []byte) (d devfileParser.DevfileObj, err error) {
 
-	// read and parse devfile from given path
+	// read and parse devfile from given data
 	d, err = devfileParser.ParseInMemory(data)
 	if err != nil {
 		return d, err
