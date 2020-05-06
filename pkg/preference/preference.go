@@ -71,13 +71,13 @@ const (
 	CheDevfileRegistryName = "CheDevfileRegistry"
 
 	// CheDevfileRegistryURL is the URL of Che devfile registry
-	CheDevfileRegistryURL = "https://che-devfile-registry.openshift.io/"
+	CheDevfileRegistryURL = "https://che-devfile-registry.openshift.io"
 
 	// DefaultDevfileRegistryName is the name of default devfile registry
 	DefaultDevfileRegistryName = "DefaultDevfileRegistry"
 
 	// DefaultDevfileRegistryURL is the URL of default devfile registry
-	DefaultDevfileRegistryURL = "https://raw.githubusercontent.com/elsony/devfile-registry/master/"
+	DefaultDevfileRegistryURL = "https://raw.githubusercontent.com/elsony/devfile-registry/master"
 )
 
 // TimeoutSettingDescription is human-readable description for the timeout setting
