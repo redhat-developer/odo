@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 
 	imagev1 "github.com/openshift/api/image/v1"
-	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
@@ -17,32 +16,21 @@ import (
 	"k8s.io/klog"
 )
 
-// GetDevfileRegistries gets devfile registries from preference file,
-// if registry name is specified return the specific registry, otherwise return all registries
-func GetDevfileRegistries(registryName string) (map[string]string, error) {
-	devfileRegistries := make(map[string]string)
+// DevfileRegistries contains the links of all devfile registries
+var DevfileRegistries = []string{
+	"https://raw.githubusercontent.com/elsony/devfile-registry/master",
+	"https://che-devfile-registry.openshift.io/",
+}
 
-	cfg, err := preference.New()
-	if err != nil {
-		return nil, err
+func getDevfileIndexWith(link string, entries *[]DevfileIndexEntry, err error, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	devfileIndexLink := link + "/devfiles/index.json"
+	indexEntries, err := GetDevfileIndex(devfileIndexLink)
+	for i := range indexEntries {
+		indexEntries[i].Links.base = link
 	}
-
-	if cfg.OdoSettings.RegistryList != nil {
-		for _, registry := range *cfg.OdoSettings.RegistryList {
-			if len(registryName) != 0 {
-				if registryName == registry.Name {
-					devfileRegistries[registry.Name] = registry.URL
-					return devfileRegistries, nil
-				}
-			} else {
-				devfileRegistries[registry.Name] = registry.URL
-			}
-		}
-	} else {
-		return nil, nil
-	}
-
-	return devfileRegistries, nil
+	*entries = append(*entries, indexEntries...)
 }
 
 // GetDevfileIndex loads the devfile registry index.json
@@ -60,6 +48,28 @@ func GetDevfileIndex(devfileIndexLink string) ([]DevfileIndexEntry, error) {
 	}
 
 	return devfileIndex, nil
+}
+
+var mutex = &sync.Mutex{}
+
+func getDevfileWith(link string, devfileIndexEntry DevfileIndexEntry, catalogDevfileList *DevfileComponentTypeList, err error, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	devfile, err := GetDevfile(link)
+
+	// Populate devfile component with devfile data and form devfile component list
+	catalogDevfile := DevfileComponentType{
+		Name:        strings.TrimSuffix(devfile.MetaData.GenerateName, "-"),
+		DisplayName: devfileIndexEntry.DisplayName,
+		Description: devfileIndexEntry.Description,
+		Link:        devfileIndexEntry.Links.Link,
+		Support:     IsDevfileComponentSupported(devfile),
+		Registry:    devfileIndexEntry.Links.base,
+	}
+
+	mutex.Lock()
+	catalogDevfileList.Items = append(catalogDevfileList.Items, catalogDevfile)
+	mutex.Unlock()
 }
 
 // GetDevfile loads the devfile
@@ -127,64 +137,45 @@ func IsDevfileComponentSupported(devfile Devfile) bool {
 }
 
 // ListDevfileComponents lists all the available devfile components
-func ListDevfileComponents(registryName string) (DevfileComponentTypeList, error) {
-	var catalogDevfileList DevfileComponentTypeList
-	var err error
+func ListDevfileComponents() (DevfileComponentTypeList, error) {
+	catalogDevfileList := &DevfileComponentTypeList{}
+	catalogDevfileList.DevfileRegistries = DevfileRegistries
 
-	// Get devfile registries
-	catalogDevfileList.DevfileRegistries, err = GetDevfileRegistries(registryName)
-	if err != nil {
-		return catalogDevfileList, err
-	}
-	if catalogDevfileList.DevfileRegistries == nil {
-		return catalogDevfileList, nil
-	}
-
-	for registryName, registryURL := range catalogDevfileList.DevfileRegistries {
+	devfileIndex := make([]DevfileIndexEntry, 0, 20)
+	var registryWG sync.WaitGroup
+	for _, devfileRegistry := range DevfileRegistries {
 		// Load the devfile registry index.json
-		devfileIndexLink := registryURL + "/devfiles/index.json"
-		devfileIndex, err := GetDevfileIndex(devfileIndexLink)
+		registryWG.Add(1)
+		var err error
+		go getDevfileIndexWith(devfileRegistry, &devfileIndex, err, &registryWG)
 		if err != nil {
-			log.Warningf("Registry %s is not set up properly with error: %v", registryName, err)
-			break
-		}
-
-		// 1. Load devfiles that indexed in devfile registry index.json
-		// 2. Populate devfile components with devfile data
-		// 3. Form devfile component list
-		for _, devfileIndexEntry := range devfileIndex {
-			devfileIndexEntryLink := devfileIndexEntry.Links.Link
-
-			// Load the devfile
-			devfileLink := registryURL + devfileIndexEntryLink
-			// TODO: We send http get resquest in this function multiple times
-			// since devfile registry uses different links to host different devfiles,
-			// this can reduce the performance especially when we load devfiles from
-			// big registry. We may need to rethink and optimize this in the future
-			devfile, err := GetDevfile(devfileLink)
-			if err != nil {
-				log.Warningf("Registry %s is not set up properly with error: %v", registryName, err)
-				break
-			}
-
-			// Populate devfile component with devfile data and form devfile component list
-			catalogDevfile := DevfileComponentType{
-				Name:        strings.TrimSuffix(devfile.MetaData.GenerateName, "-"),
-				DisplayName: devfileIndexEntry.DisplayName,
-				Description: devfileIndexEntry.Description,
-				Link:        devfileIndexEntryLink,
-				Support:     IsDevfileComponentSupported(devfile),
-				Registry: Registry{
-					Name: registryName,
-					URL:  registryURL,
-				},
-			}
-
-			catalogDevfileList.Items = append(catalogDevfileList.Items, catalogDevfile)
+			return DevfileComponentTypeList{}, err
 		}
 	}
+	registryWG.Wait()
 
-	return catalogDevfileList, nil
+	// 1. Load devfiles that indexed in devfile registry index.json
+	// 2. Populate devfile components with devfile data
+	// 3. Form devfile component list
+	var wg sync.WaitGroup
+	for _, devfileIndexEntry := range devfileIndex {
+		devfileLink := devfileIndexEntry.Links.base + devfileIndexEntry.Links.Link
+
+		// Load the devfile
+		// TODO: We send http get resquest in this function mutiple times
+		// since devfile registry uses different links to host different devfiles,
+		// this can reduce the performance especially when we load devfiles from
+		// big registry. We may need to rethink and optimize this in the future
+		wg.Add(1)
+		var err error
+		go getDevfileWith(devfileLink, devfileIndexEntry, catalogDevfileList, err, &wg)
+		if err != nil {
+			return DevfileComponentTypeList{}, err
+		}
+	}
+	wg.Wait()
+
+	return *catalogDevfileList, nil
 }
 
 // ListComponents lists all the available component types

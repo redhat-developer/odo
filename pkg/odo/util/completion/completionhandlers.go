@@ -2,15 +2,12 @@ package completion
 
 import (
 	"fmt"
-	"strings"
-
-	"github.com/openshift/odo/pkg/config"
-
 	appsv1 "github.com/openshift/api/apps/v1"
 	"github.com/openshift/odo/pkg/application"
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/service"
 	"github.com/openshift/odo/pkg/storage"
@@ -18,6 +15,8 @@ import (
 	"github.com/openshift/odo/pkg/util"
 	"github.com/posener/complete"
 	"github.com/spf13/cobra"
+	"strings"
+	"sync"
 )
 
 // ServiceCompletionHandler provides service name completion for the current project and application
@@ -271,20 +270,44 @@ var StorageUnMountCompletionHandler = func(cmd *cobra.Command, args parsedArgs, 
 // CreateCompletionHandler provides component type completion in odo create command
 var CreateCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
-	catalogList, err := catalog.ListComponents(context.Client)
-	if err != nil {
-		return completions
-	}
+	found := false
 
-	for _, builder := range catalogList.Items {
-		// we found the builder name in the list which means
-		// that the builder name has been already selected by the user so no need to suggest more
-		if args.commands[builder.Name] {
-			return nil
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func(completions *[]string, wg *sync.WaitGroup) {
+		defer wg.Done()
+
+		catalogList, _ := catalog.ListComponents(context.Client)
+		for _, builder := range catalogList.Items {
+			if args.commands[builder.Name] {
+				found = true
+				return
+			}
+			if len(builder.Spec.NonHiddenTags) > 0 {
+				*completions = append(*completions, builder.Name)
+			}
 		}
-		completions = append(completions, builder.Name)
-	}
+	}(&completions, &wg)
 
+	go func(completions *[]string, wg *sync.WaitGroup) {
+		defer wg.Done()
+
+		components, _ := catalog.ListDevfileComponents()
+		for _, devfile := range components.Items {
+			if args.commands[devfile.Name] {
+				found = true
+				return
+			}
+			*completions = append(*completions, devfile.Name)
+		}
+	}(&completions, &wg)
+
+	wg.Wait()
+
+	if found {
+		return nil
+	}
 	return completions
 }
 

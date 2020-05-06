@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
 	"text/tabwriter"
 
 	"github.com/openshift/odo/pkg/catalog"
@@ -42,9 +43,17 @@ func NewListComponentsOptions() *ListComponentsOptions {
 
 // Complete completes ListComponentsOptions after they've been created
 func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	var wg sync.WaitGroup
+
 	if !pushtarget.IsPushTargetDocker() {
 		o.Context = genericclioptions.NewContext(cmd)
-		o.catalogList, err = catalog.ListComponents(o.Client)
+
+		wg.Add(1)
+		var err error
+		go func(err error) {
+			defer wg.Done()
+			o.catalogList, err = catalog.ListComponents(o.Client)
+		}(err)
 		if err != nil {
 			if experimental.IsExperimentalModeEnabled() {
 				klog.V(4).Info("Please log in to an OpenShift cluster to list OpenShift/s2i components")
@@ -57,7 +66,12 @@ func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args [
 	}
 
 	if experimental.IsExperimentalModeEnabled() {
-		o.catalogDevfileList, err = catalog.ListDevfileComponents("")
+		wg.Add(1)
+		var err error
+		go func(err error) {
+			defer wg.Done()
+			o.catalogDevfileList, err = catalog.ListDevfileComponents("")
+		}(err)
 		if err != nil {
 			return err
 		}
@@ -66,6 +80,8 @@ func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args [
 			log.Warning("Please run 'odo registry add <registry name> <registry URL>' to add registry for listing devfile components\n")
 		}
 	}
+
+	wg.Wait()
 
 	return
 }

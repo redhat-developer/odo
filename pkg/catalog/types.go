@@ -36,6 +36,7 @@ type DevfileIndexEntry struct {
 	Icon              string   `json:"icon"`
 	GlobalMemoryLimit string   `json:"globalMemoryLimit"`
 	Links             struct {
+		base string
 		Link string `json:"self"`
 	} `json:"links"`
 }
