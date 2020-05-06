@@ -253,10 +253,14 @@ func ListOperatorServices(client *kclient.Client) ([]unstructured.Unstructured, 
 
 // getGVRFromCR parses and returns the values for group, version and resource
 // for a given Custom Resource (CR).
-func getGVRFromCR(cr olm.CRDDescription) (group, version, resource string) {
+func getGVRFromCR(cr olm.CRDDescription) (group, version, resource string, err error) {
 	version = cr.Version
 
 	gr := strings.SplitN(cr.Name, ".", 2)
+	if len(gr) != 2 {
+		err = fmt.Errorf("Couldn't split Custom Resource's name into two: %s\n", cr.Name)
+		return
+	}
 	resource = gr[0]
 	group = gr[1]
 
@@ -269,8 +273,12 @@ func getCRInstances(client *kclient.Client, customResources []olm.CRDDescription
 	var instances []unstructured.Unstructured
 
 	for _, cr := range customResources {
-		group, version, resource := getGVRFromCR(cr)
 		klog.V(4).Infof("Getting instances of: %s\n", cr.Name)
+		group, version, resource, err := getGVRFromCR(cr)
+		if err != nil {
+			return []unstructured.Unstructured{}, err
+		}
+
 		list, err := client.ListDynamicResource(group, version, resource)
 		if err != nil {
 			return []unstructured.Unstructured{}, err
