@@ -1579,7 +1579,6 @@ func TestGetGitHubZipURL(t *testing.T) {
 		name          string
 		project       common.DevfileProject
 		expectedError string
-		expectedURL   string
 	}{
 		{
 			name: "Case 1: Invalid http request",
@@ -1589,7 +1588,6 @@ func TestGetGitHubZipURL(t *testing.T) {
 				},
 			},
 			expectedError: "Invalid GitHub URL. Please use https://",
-			expectedURL:   "",
 		},
 		{
 			name: "Case 2: Invalid owner",
@@ -1599,7 +1597,6 @@ func TestGetGitHubZipURL(t *testing.T) {
 				},
 			},
 			expectedError: "Invalid GitHub URL: owner cannot be empty. Expecting 'https://github.com/<owner>/<repo>'",
-			expectedURL:   "",
 		},
 		{
 			name: "Case 3: Invalid repo",
@@ -1609,7 +1606,6 @@ func TestGetGitHubZipURL(t *testing.T) {
 				},
 			},
 			expectedError: "Invalid GitHub URL: repo cannot be empty. Expecting 'https://github.com/<owner>/<repo>'",
-			expectedURL:   "",
 		},
 		{
 			name: "Case 4: Invalid HTTPS Github URL with tag and commit",
@@ -1621,7 +1617,6 @@ func TestGetGitHubZipURL(t *testing.T) {
 				},
 			},
 			expectedError: fmt.Sprintf("More than one source reference specified. The following were specified:\nCommitId specified with value %s\nTag specified with value %s\n", commitid, tag),
-			expectedURL:   "",
 		},
 	}
 
@@ -1630,10 +1625,6 @@ func TestGetGitHubZipURL(t *testing.T) {
 			url, err := GetGitHubZipURL(tt.project)
 			if err != nil && !reflect.DeepEqual(err.Error(), tt.expectedError) {
 				t.Errorf("Got %s, want %s", err.Error(), tt.expectedError)
-			}
-
-			if url != "" && url != tt.expectedURL {
-				t.Errorf("Got %s, want %s", url, tt.expectedURL)
 			}
 		})
 	}
