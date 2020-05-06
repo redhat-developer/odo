@@ -1,38 +1,28 @@
 package node
 
 import (
+	"context"
 	"fmt"
-	"time"
+	"strings"
 
-	"github.com/openshift/library-go/pkg/operator/v1helpers"
-
-	"k8s.io/klog"
-
-	"k8s.io/apimachinery/pkg/api/equality"
+	coreapiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/informers"
 	corelisterv1 "k8s.io/client-go/listers/core/v1"
-	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/util/workqueue"
 
 	operatorv1 "github.com/openshift/api/operator/v1"
-	"github.com/openshift/library-go/pkg/operator/events"
-)
 
-const nodeControllerWorkQueueKey = "key"
+	"github.com/openshift/library-go/pkg/controller/factory"
+	"github.com/openshift/library-go/pkg/operator/condition"
+	"github.com/openshift/library-go/pkg/operator/events"
+	"github.com/openshift/library-go/pkg/operator/v1helpers"
+)
 
 // NodeController watches for new master nodes and adds them to the node status list in the operator config status.
 type NodeController struct {
 	operatorClient v1helpers.StaticPodOperatorClient
-
-	nodeLister corelisterv1.NodeLister
-
-	cachesToSync  []cache.InformerSynced
-	queue         workqueue.RateLimitingInterface
-	eventRecorder events.Recorder
+	nodeLister     corelisterv1.NodeLister
 }
 
 // NewNodeController creates a new node controller.
@@ -40,30 +30,19 @@ func NewNodeController(
 	operatorClient v1helpers.StaticPodOperatorClient,
 	kubeInformersClusterScoped informers.SharedInformerFactory,
 	eventRecorder events.Recorder,
-) *NodeController {
+) factory.Controller {
 	c := &NodeController{
 		operatorClient: operatorClient,
-		eventRecorder:  eventRecorder.WithComponentSuffix("node-controller"),
 		nodeLister:     kubeInformersClusterScoped.Core().V1().Nodes().Lister(),
-
-		queue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "NodeController"),
 	}
-
-	operatorClient.Informer().AddEventHandler(c.eventHandler())
-	kubeInformersClusterScoped.Core().V1().Nodes().Informer().AddEventHandler(c.eventHandler())
-
-	c.cachesToSync = append(c.cachesToSync, operatorClient.Informer().HasSynced)
-	c.cachesToSync = append(c.cachesToSync, kubeInformersClusterScoped.Core().V1().Nodes().Informer().HasSynced)
-
-	return c
+	return factory.New().WithInformers(operatorClient.Informer(), kubeInformersClusterScoped.Core().V1().Nodes().Informer()).WithSync(c.sync).ToController("NodeController", eventRecorder)
 }
 
-func (c NodeController) sync() error {
-	_, originalOperatorStatus, resourceVersion, err := c.operatorClient.GetStaticPodOperatorState()
+func (c NodeController) sync(ctx context.Context, syncCtx factory.SyncContext) error {
+	_, originalOperatorStatus, _, err := c.operatorClient.GetStaticPodOperatorState()
 	if err != nil {
 		return err
 	}
-	operatorStatus := originalOperatorStatus.DeepCopy()
 
 	selector, err := labels.NewRequirement("node-role.kubernetes.io/master", selection.Equals, []string{""})
 	if err != nil {
@@ -86,7 +65,7 @@ func (c NodeController) sync() error {
 		if found {
 			newTargetNodeStates = append(newTargetNodeStates, originalOperatorStatus.NodeStatuses[i])
 		} else {
-			c.eventRecorder.Warningf("MasterNodeRemoved", "Observed removal of master node %s", nodeState.NodeName)
+			syncCtx.Recorder().Warningf("MasterNodeRemoved", "Observed removal of master node %s", nodeState.NodeName)
 		}
 	}
 
@@ -102,66 +81,55 @@ func (c NodeController) sync() error {
 			continue
 		}
 
-		c.eventRecorder.Eventf("MasterNodeObserved", "Observed new master node %s", node.Name)
+		syncCtx.Recorder().Eventf("MasterNodeObserved", "Observed new master node %s", node.Name)
 		newTargetNodeStates = append(newTargetNodeStates, operatorv1.NodeStatus{NodeName: node.Name})
 	}
 
-	operatorStatus.NodeStatuses = newTargetNodeStates
-	if !equality.Semantic.DeepEqual(originalOperatorStatus, operatorStatus) {
-		if _, updateError := c.operatorClient.UpdateStaticPodOperatorStatus(resourceVersion, operatorStatus); updateError != nil {
-			return updateError
+	// detect and report master nodes that are not ready
+	notReadyNodes := []string{}
+	for _, node := range nodes {
+		for _, con := range node.Status.Conditions {
+			if con.Type == coreapiv1.NodeReady && con.Status != coreapiv1.ConditionTrue {
+				notReadyNodes = append(notReadyNodes, fmt.Sprintf("node %q not ready since %s because %s (%s)", node.Name, con.LastTransitionTime, con.Reason, con.Message))
+			}
 		}
 	}
+	newCondition := operatorv1.OperatorCondition{
+		Type: condition.NodeControllerDegradedConditionType,
+	}
+	if len(notReadyNodes) > 0 {
+		newCondition.Status = operatorv1.ConditionTrue
+		newCondition.Reason = "MasterNodesReady"
+		newCondition.Message = fmt.Sprintf("The master nodes not ready: %s", strings.Join(notReadyNodes, ", "))
+	} else {
+		newCondition.Status = operatorv1.ConditionFalse
+		newCondition.Reason = "MasterNodesReady"
+		newCondition.Message = "All master nodes are ready"
+	}
 
+	oldStatus := &operatorv1.StaticPodOperatorStatus{}
+	_, updated, updateError := v1helpers.UpdateStaticPodStatus(c.operatorClient, v1helpers.UpdateStaticPodConditionFn(newCondition), func(status *operatorv1.StaticPodOperatorStatus) error {
+		status.NodeStatuses = newTargetNodeStates
+		return nil
+	}, func(status *operatorv1.StaticPodOperatorStatus) error {
+		//a hack for storing the old status (before the update)
+		oldStatus = status
+		return nil
+	})
+
+	if updateError != nil {
+		return updateError
+	}
+
+	if !updated {
+		return nil
+	}
+
+	for _, oldCondition := range oldStatus.Conditions {
+		if oldCondition.Type == condition.NodeControllerDegradedConditionType && oldCondition.Message != newCondition.Message {
+			syncCtx.Recorder().Eventf("MasterNodesReadyChanged", newCondition.Message)
+			break
+		}
+	}
 	return nil
-}
-
-// Run starts the kube-apiserver and blocks until stopCh is closed.
-func (c *NodeController) Run(workers int, stopCh <-chan struct{}) {
-	defer utilruntime.HandleCrash()
-	defer c.queue.ShutDown()
-
-	klog.Infof("Starting NodeController")
-	defer klog.Infof("Shutting down NodeController")
-	if !cache.WaitForCacheSync(stopCh, c.cachesToSync...) {
-		return
-	}
-
-	// doesn't matter what workers say, only start one.
-	go wait.Until(c.runWorker, time.Second, stopCh)
-
-	<-stopCh
-}
-
-func (c *NodeController) runWorker() {
-	for c.processNextWorkItem() {
-	}
-}
-
-func (c *NodeController) processNextWorkItem() bool {
-	dsKey, quit := c.queue.Get()
-	if quit {
-		return false
-	}
-	defer c.queue.Done(dsKey)
-
-	err := c.sync()
-	if err == nil {
-		c.queue.Forget(dsKey)
-		return true
-	}
-
-	utilruntime.HandleError(fmt.Errorf("%v failed with : %v", dsKey, err))
-	c.queue.AddRateLimited(dsKey)
-
-	return true
-}
-
-// eventHandler queues the operator to check spec and status
-func (c *NodeController) eventHandler() cache.ResourceEventHandler {
-	return cache.ResourceEventHandlerFuncs{
-		AddFunc:    func(obj interface{}) { c.queue.Add(nodeControllerWorkQueueKey) },
-		UpdateFunc: func(old, new interface{}) { c.queue.Add(nodeControllerWorkQueueKey) },
-		DeleteFunc: func(obj interface{}) { c.queue.Add(nodeControllerWorkQueueKey) },
-	}
 }

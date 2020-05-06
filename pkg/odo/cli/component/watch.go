@@ -17,10 +17,10 @@ import (
 	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/pkg/errors"
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
-	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/component"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
@@ -153,7 +153,7 @@ func (wo *WatchOptions) Validate() (err error) {
 	}
 	// Print a debug message warning user if delay is set to 0
 	if wo.delay == 0 {
-		glog.V(4).Infof("delay=0 means changes will be pushed as soon as they are detected which can cause performance issues")
+		klog.V(4).Infof("delay=0 means changes will be pushed as soon as they are detected which can cause performance issues")
 	}
 
 	// if experimental mode is enabled and devfile is present, return. The rest of the validation is for non-devfile components

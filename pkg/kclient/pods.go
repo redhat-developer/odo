@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 
 	// api resource types
 	corev1 "k8s.io/api/core/v1"
@@ -26,7 +26,7 @@ const (
 // WaitAndGetPod block and waits until pod matching selector is in the desired phase
 // desiredPhase cannot be PodFailed or PodUnknown
 func (c *Client) WaitAndGetPod(watchOptions metav1.ListOptions, desiredPhase corev1.PodPhase, waitMessage string, hideSpinner bool) (*corev1.Pod, error) {
-	glog.V(4).Infof("Waiting for %s pod", watchOptions.LabelSelector)
+	klog.V(4).Infof("Waiting for %s pod", watchOptions.LabelSelector)
 	var s *log.Status
 	if !hideSpinner {
 		s = log.Spinner(waitMessage)
@@ -53,13 +53,13 @@ func (c *Client) WaitAndGetPod(watchOptions metav1.ListOptions, desiredPhase cor
 				return
 			}
 			if e, ok := val.Object.(*corev1.Pod); ok {
-				glog.V(4).Infof("Status of %s pod is %s", e.Name, e.Status.Phase)
+				klog.V(4).Infof("Status of %s pod is %s", e.Name, e.Status.Phase)
 				switch e.Status.Phase {
 				case desiredPhase:
 					if !hideSpinner {
 						s.End(true)
 					}
-					glog.V(4).Infof("Pod %s is %v", e.Name, desiredPhase)
+					klog.V(4).Infof("Pod %s is %v", e.Name, desiredPhase)
 					podChannel <- e
 					return
 				case corev1.PodFailed, corev1.PodUnknown:
@@ -136,7 +136,7 @@ func (c *Client) ExtractProjectToComponent(compInfo common.ComponentInfo, target
 	cmdArr := []string{"tar", "xf", "-", "-C", targetPath}
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	glog.V(4).Infof("Executing command %s", strings.Join(cmdArr, " "))
+	klog.V(4).Infof("Executing command %s", strings.Join(cmdArr, " "))
 	err := c.ExecCMDInContainer(compInfo, cmdArr, &stdout, &stderr, stdin, false)
 	if err != nil {
 		log.Errorf("Command '%s' in container failed.\n", strings.Join(cmdArr, " "))

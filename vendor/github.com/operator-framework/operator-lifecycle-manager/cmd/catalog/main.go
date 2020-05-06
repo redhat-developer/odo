@@ -1,34 +1,37 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"flag"
 	"fmt"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorstatus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
+	utilclock "k8s.io/apimachinery/pkg/util/clock"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/catalog"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/filemonitor"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorstatus"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/profile"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/signals"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/metrics"
 	olmversion "github.com/operator-framework/operator-lifecycle-manager/pkg/version"
 )
 
 const (
+	catalogNamespaceEnvVarName  = "GLOBAL_CATALOG_NAMESPACE"
 	defaultWakeupInterval       = 15 * time.Minute
 	defaultCatalogNamespace     = "openshift-operator-lifecycle-manager"
 	defaultConfigMapServerImage = "quay.io/operatorframework/configmap-operator-registry:latest"
+	defaultUtilImage            = "quay.io/operator-framework/olm:latest"
 	defaultOperatorName         = ""
 )
 
@@ -40,14 +43,14 @@ var (
 	wakeupInterval = flag.Duration(
 		"interval", defaultWakeupInterval, "wakeup interval")
 
-	watchedNamespaces = flag.String(
-		"watchedNamespaces", "", "comma separated list of namespaces that catalog watches, leave empty to watch all namespaces")
-
 	catalogNamespace = flag.String(
 		"namespace", defaultCatalogNamespace, "namespace where catalog will run and install catalog resources")
 
 	configmapServerImage = flag.String(
 		"configmapServerImage", defaultConfigMapServerImage, "the image to use for serving the operator registry api for a configmap")
+
+	utilImage = flag.String(
+		"util-image", defaultUtilImage, "an image containing custom olm utilities")
 
 	writeStatusName = flag.String(
 		"writeStatusName", defaultOperatorName, "ClusterOperator name in which to write status, set to \"\" to disable.")
@@ -62,6 +65,9 @@ var (
 
 	tlsCertPath = flag.String(
 		"tls-cert", "", "Path to use for certificate key (requires tls-key)")
+
+	profiling = flag.Bool(
+		"profiling", false, "serve profiling data (on port 8080)")
 )
 
 func init() {
@@ -69,7 +75,9 @@ func init() {
 }
 
 func main() {
-	stopCh := signals.SetupSignalHandler()
+	// Get exit signal context
+	ctx, cancel := context.WithCancel(signals.Context())
+	defer cancel()
 
 	// Parse the command-line flags.
 	flag.Parse()
@@ -82,21 +90,17 @@ func main() {
 		os.Exit(0)
 	}
 
-	// `namespaces` will always contain at least one entry: if `*watchedNamespaces` is
-	// the empty string, the resulting array will be `[]string{""}`.
-	namespaces := strings.Split(*watchedNamespaces, ",")
-	for _, ns := range namespaces {
-		if ns == v1.NamespaceAll {
-			namespaces = []string{v1.NamespaceAll}
-			break
-		}
-	}
-
 	logger := log.New()
 	if *debug {
 		logger.SetLevel(log.DebugLevel)
 	}
 	logger.Infof("log level %s", logger.Level)
+
+	// If the catalogNamespaceEnvVarName environment variable is set, then  update the value of catalogNamespace.
+	if catalogNamespaceEnvVarValue := os.Getenv(catalogNamespaceEnvVarName); catalogNamespaceEnvVarValue != "" {
+		logger.Infof("%s environment variable is set. Updating Global Catalog Namespace to %s", catalogNamespaceEnvVarName, catalogNamespaceEnvVarValue)
+		*catalogNamespace = catalogNamespaceEnvVarValue
+	}
 
 	var useTLS bool
 	if *tlsCertPath != "" && *tlsKeyPath == "" || *tlsCertPath == "" && *tlsKeyPath != "" {
@@ -113,6 +117,13 @@ func main() {
 	healthMux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
+
+	// Serve profiling if enabled
+	if *profiling {
+		logger.Infof("profiling enabled")
+		profile.RegisterHandlers(healthMux)
+	}
+
 	go http.ListenAndServe(":8080", healthMux)
 
 	metricsMux := http.NewServeMux()
@@ -161,17 +172,17 @@ func main() {
 	}
 
 	// Create a new instance of the operator.
-	catalogOperator, err := catalog.NewOperator(*kubeConfigPath, logger, *wakeupInterval, *configmapServerImage, *catalogNamespace, namespaces...)
+	op, err := catalog.NewOperator(ctx, *kubeConfigPath, utilclock.RealClock{}, logger, *wakeupInterval, *configmapServerImage, *utilImage, *catalogNamespace)
 	if err != nil {
 		log.Panicf("error configuring operator: %s", err.Error())
 	}
 
-	ready, done, sync := catalogOperator.Run(stopCh)
-	<-ready
+	op.Run(ctx)
+	<-op.Ready()
 
 	if *writeStatusName != "" {
-		operatorstatus.MonitorClusterStatus(*writeStatusName, sync, stopCh, opClient, configClient, crClient)
+		operatorstatus.MonitorClusterStatus(*writeStatusName, op.AtLevel(), op.Done(), opClient, configClient, crClient)
 	}
 
-	<-done
+	<-op.Done()
 }

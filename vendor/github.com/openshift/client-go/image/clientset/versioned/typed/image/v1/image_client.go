@@ -5,7 +5,6 @@ package v1
 import (
 	v1 "github.com/openshift/api/image/v1"
 	"github.com/openshift/client-go/image/clientset/versioned/scheme"
-	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	rest "k8s.io/client-go/rest"
 )
 
@@ -18,6 +17,7 @@ type ImageV1Interface interface {
 	ImageStreamImportsGetter
 	ImageStreamMappingsGetter
 	ImageStreamTagsGetter
+	ImageTagsGetter
 }
 
 // ImageV1Client is used to interact with features provided by the image.openshift.io group.
@@ -53,6 +53,10 @@ func (c *ImageV1Client) ImageStreamTags(namespace string) ImageStreamTagInterfac
 	return newImageStreamTags(c, namespace)
 }
 
+func (c *ImageV1Client) ImageTags(namespace string) ImageTagInterface {
+	return newImageTags(c, namespace)
+}
+
 // NewForConfig creates a new ImageV1Client for the given config.
 func NewForConfig(c *rest.Config) (*ImageV1Client, error) {
 	config := *c
@@ -85,7 +89,7 @@ func setConfigDefaults(config *rest.Config) error {
 	gv := v1.SchemeGroupVersion
 	config.GroupVersion = &gv
 	config.APIPath = "/apis"
-	config.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: scheme.Codecs}
+	config.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
 
 	if config.UserAgent == "" {
 		config.UserAgent = rest.DefaultKubernetesUserAgent()

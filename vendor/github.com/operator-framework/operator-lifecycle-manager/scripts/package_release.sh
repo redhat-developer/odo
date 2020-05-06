@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 
-# requires helm to be installed
-
-if [[ ${#@} < 3 ]]; then
+if [[ ${#@} -lt 3 ]]; then
     echo "Usage: $0 semver chart values"
     echo "* semver: semver-formatted version for this package"
     echo "* chart: the directory to output the chart"
@@ -23,6 +21,6 @@ echo "Version: $1" >> ${charttmpdir}/Chart.yaml
 
 mkdir -p ${chartdir}
 
-helm template -n olm -f ${values} ${charttmpdir} --output-dir ${charttmpdir}
+go run -mod=vendor helm.sh/helm/v3/cmd/helm template -n olm -f ${values} ${charttmpdir} --output-dir ${charttmpdir}
 
 cp -R ${charttmpdir}/olm/templates/. ${chartdir}

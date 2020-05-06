@@ -3,8 +3,8 @@ package validate
 import (
 	"reflect"
 
-	"github.com/golang/glog"
 	v100 "github.com/openshift/odo/pkg/devfile/parser/data/1.0.0"
+	"k8s.io/klog"
 )
 
 // ValidateDevfileData validates whether sections of devfile are odo compatible
@@ -20,7 +20,7 @@ func ValidateDevfileData(data interface{}) error {
 		}
 
 		// Successful
-		glog.V(4).Info("Successfully validated devfile sections")
+		klog.V(4).Info("Successfully validated devfile sections")
 		return nil
 	}
 	return nil

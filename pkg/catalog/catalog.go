@@ -6,13 +6,13 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/golang/glog"
 	imagev1 "github.com/openshift/api/image/v1"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
 )
 
 // DevfileRegistries contains the links of all devfile registries
@@ -302,7 +302,7 @@ func getDefaultBuilderImages(client *occlient.Client) ([]ComponentType, error) {
 		// We may get the imagestreams from other Namespaces
 		//err = errors.Wrapf(openshiftNSISFetchError, "unable to get Image Streams from namespace %s", occlient.OpenShiftNameSpace)
 		// log it for debugging purposes
-		glog.V(4).Infof("Unable to get Image Streams from namespace %s. Error %s", occlient.OpenShiftNameSpace, openshiftNSISFetchError.Error())
+		klog.V(4).Infof("Unable to get Image Streams from namespace %s. Error %s", occlient.OpenShiftNameSpace, openshiftNSISFetchError.Error())
 	}
 
 	// Fetch imagestreams from current namespace
@@ -311,7 +311,7 @@ func getDefaultBuilderImages(client *occlient.Client) ([]ComponentType, error) {
 	if currentNSISFetchError != nil {
 		// Tolerate the error as it is totally a valid scenario to not have any imagestreams in current namespace
 		// log it for debugging purposes
-		glog.V(4).Infof("Unable to get Image Streams from namespace %s. Error %s", currentNamespace, currentNSISFetchError.Error())
+		klog.V(4).Infof("Unable to get Image Streams from namespace %s. Error %s", currentNamespace, currentNSISFetchError.Error())
 	}
 
 	// If failure fetching imagestreams from both namespaces, error out
@@ -488,7 +488,7 @@ func getBuildersFromImageStreams(imageStreams []imagev1.ImageStream, imageStream
 					for _, t := range strings.Split(imageStreamTag.Annotations["tags"], ",") {
 						// If the tagReference has "builder" then we will add the image to the list
 						if t == "hidden" {
-							glog.V(5).Infof("Tag: %v of builder: %v is marked as hidden and therefore will be excluded", tag, imageStream.Name)
+							klog.V(5).Infof("Tag: %v of builder: %v is marked as hidden and therefore will be excluded", tag, imageStream.Name)
 							hiddenTags = append(hiddenTags, tag)
 						}
 					}
@@ -512,7 +512,7 @@ func getBuildersFromImageStreams(imageStreams []imagev1.ImageStream, imageStream
 				},
 			}
 			builderImages = append(builderImages, catalogImage)
-			glog.V(5).Infof("Found builder image: %#v", catalogImage)
+			klog.V(5).Infof("Found builder image: %#v", catalogImage)
 		}
 
 	}

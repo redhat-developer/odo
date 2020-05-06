@@ -2,84 +2,81 @@ package install
 
 import (
 	"fmt"
+	"hash/fnv"
 
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
-	rbac "k8s.io/api/rbac/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/util/rand"
+	hashutil "k8s.io/kubernetes/pkg/util/hash"
 
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/wrappers"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 )
 
-const (
-	InstallStrategyNameDeployment = "deployment"
-)
-
-// StrategyDeploymentPermissions describe the rbac rules and service account needed by the install strategy
-type StrategyDeploymentPermissions struct {
-	ServiceAccountName string            `json:"serviceAccountName"`
-	Rules              []rbac.PolicyRule `json:"rules"`
-}
-
-// StrategyDeploymentSpec contains the name and spec for the deployment ALM should create
-type StrategyDeploymentSpec struct {
-	Name string                `json:"name"`
-	Spec appsv1.DeploymentSpec `json:"spec"`
-}
-
-// StrategyDetailsDeployment represents the parsed details of a Deployment
-// InstallStrategy.
-type StrategyDetailsDeployment struct {
-	DeploymentSpecs    []StrategyDeploymentSpec        `json:"deployments"`
-	Permissions        []StrategyDeploymentPermissions `json:"permissions,omitempty"`
-	ClusterPermissions []StrategyDeploymentPermissions `json:"clusterPermissions,omitempty"`
-}
+const DeploymentSpecHashLabelKey = "olm.deployment-spec-hash"
 
 type StrategyDeploymentInstaller struct {
 	strategyClient      wrappers.InstallStrategyDeploymentInterface
 	owner               ownerutil.Owner
 	previousStrategy    Strategy
 	templateAnnotations map[string]string
+	initializers        DeploymentInitializerFuncChain
 }
 
-func (d *StrategyDetailsDeployment) GetStrategyName() string {
-	return InstallStrategyNameDeployment
-}
-
-var _ Strategy = &StrategyDetailsDeployment{}
+var _ Strategy = &v1alpha1.StrategyDetailsDeployment{}
 var _ StrategyInstaller = &StrategyDeploymentInstaller{}
 
-func NewStrategyDeploymentInstaller(strategyClient wrappers.InstallStrategyDeploymentInterface, templateAnnotations map[string]string, owner ownerutil.Owner, previousStrategy Strategy) StrategyInstaller {
+// DeploymentInitializerFunc takes a deployment object and appropriately
+// initializes it for install.
+//
+// Before a deployment is created on the cluster, we can run a series of
+// overrides functions that will properly initialize the deployment object.
+type DeploymentInitializerFunc func(deployment *appsv1.Deployment) error
+
+// DeploymentInitializerFuncChain defines a chain of DeploymentInitializerFunc.
+type DeploymentInitializerFuncChain []DeploymentInitializerFunc
+
+// Apply runs series of overrides functions that will properly initialize
+// the deployment object.
+func (c DeploymentInitializerFuncChain) Apply(deployment *appsv1.Deployment) (err error) {
+	for _, initializer := range c {
+		if initializer == nil {
+			continue
+		}
+
+		if initializationErr := initializer(deployment); initializationErr != nil {
+			err = initializationErr
+			break
+		}
+	}
+
+	return
+}
+
+// DeploymentInitializerBuilderFunc returns a DeploymentInitializerFunc based on
+// the given context.
+type DeploymentInitializerBuilderFunc func(owner ownerutil.Owner) DeploymentInitializerFunc
+
+func NewStrategyDeploymentInstaller(strategyClient wrappers.InstallStrategyDeploymentInterface, templateAnnotations map[string]string, owner ownerutil.Owner, previousStrategy Strategy, initializers DeploymentInitializerFuncChain) StrategyInstaller {
 	return &StrategyDeploymentInstaller{
 		strategyClient:      strategyClient,
 		owner:               owner,
 		previousStrategy:    previousStrategy,
 		templateAnnotations: templateAnnotations,
+		initializers:        initializers,
 	}
 }
 
-func (i *StrategyDeploymentInstaller) installDeployments(deps []StrategyDeploymentSpec) error {
+func (i *StrategyDeploymentInstaller) installDeployments(deps []v1alpha1.StrategyDeploymentSpec) error {
 	for _, d := range deps {
-		dep := &appsv1.Deployment{Spec: d.Spec}
-		dep.SetName(d.Name)
-		dep.SetNamespace(i.owner.GetNamespace())
-
-		// Merge annotations (to avoid losing info from pod template)
-		annotations := map[string]string{}
-		for k, v := range i.templateAnnotations {
-			annotations[k] = v
-		}
-		for k, v := range dep.Spec.Template.GetAnnotations() {
-			annotations[k] = v
-		}
-		dep.Spec.Template.SetAnnotations(annotations)
-
-		ownerutil.AddNonBlockingOwner(dep, i.owner)
-		if err := ownerutil.AddOwnerLabels(dep, i.owner); err != nil {
+		deployment, _, err := i.deploymentForSpec(d.Name, d.Spec)
+		if err != nil {
 			return err
 		}
-		if _, err := i.strategyClient.CreateOrUpdateDeployment(dep); err != nil {
+
+		if _, err := i.strategyClient.CreateOrUpdateDeployment(deployment); err != nil {
 			return err
 		}
 	}
@@ -87,7 +84,36 @@ func (i *StrategyDeploymentInstaller) installDeployments(deps []StrategyDeployme
 	return nil
 }
 
-func (i *StrategyDeploymentInstaller) cleanupPrevious(current *StrategyDetailsDeployment, previous *StrategyDetailsDeployment) error {
+func (i *StrategyDeploymentInstaller) deploymentForSpec(name string, spec appsv1.DeploymentSpec) (deployment *appsv1.Deployment, hash string, err error) {
+	dep := &appsv1.Deployment{Spec: spec}
+	dep.SetName(name)
+	dep.SetNamespace(i.owner.GetNamespace())
+
+	// Merge annotations (to avoid losing info from pod template)
+	annotations := map[string]string{}
+	for k, v := range i.templateAnnotations {
+		annotations[k] = v
+	}
+	for k, v := range dep.Spec.Template.GetAnnotations() {
+		annotations[k] = v
+	}
+	dep.Spec.Template.SetAnnotations(annotations)
+
+	ownerutil.AddNonBlockingOwner(dep, i.owner)
+	ownerutil.AddOwnerLabelsForKind(dep, i.owner, v1alpha1.ClusterServiceVersionKind)
+
+	if applyErr := i.initializers.Apply(dep); applyErr != nil {
+		err = applyErr
+		return
+	}
+
+	hash = HashDeploymentSpec(dep.Spec)
+	dep.Labels[DeploymentSpecHashLabelKey] = hash
+	deployment = dep
+	return
+}
+
+func (i *StrategyDeploymentInstaller) cleanupPrevious(current *v1alpha1.StrategyDetailsDeployment, previous *v1alpha1.StrategyDetailsDeployment) error {
 	previousDeploymentsMap := map[string]struct{}{}
 	for _, d := range previous.DeploymentSpecs {
 		previousDeploymentsMap[d.Name] = struct{}{}
@@ -105,12 +131,15 @@ func (i *StrategyDeploymentInstaller) cleanupPrevious(current *StrategyDetailsDe
 }
 
 func (i *StrategyDeploymentInstaller) Install(s Strategy) error {
-	strategy, ok := s.(*StrategyDetailsDeployment)
+	strategy, ok := s.(*v1alpha1.StrategyDetailsDeployment)
 	if !ok {
 		return fmt.Errorf("attempted to install %s strategy with deployment installer", strategy.GetStrategyName())
 	}
 
 	if err := i.installDeployments(strategy.DeploymentSpecs); err != nil {
+		if k8serrors.IsForbidden(err) {
+			return StrategyError{Reason: StrategyErrInsufficientPermissions, Message: fmt.Sprintf("install strategy failed: %s", err)}
+		}
 		return err
 	}
 
@@ -121,7 +150,7 @@ func (i *StrategyDeploymentInstaller) Install(s Strategy) error {
 // CheckInstalled can return nil (installed), or errors
 // Errors can indicate: some component missing (keep installing), unable to query (check again later), or unrecoverable (failed in a way we know we can't recover from)
 func (i *StrategyDeploymentInstaller) CheckInstalled(s Strategy) (installed bool, err error) {
-	strategy, ok := s.(*StrategyDetailsDeployment)
+	strategy, ok := s.(*v1alpha1.StrategyDetailsDeployment)
 	if !ok {
 		return false, StrategyError{Reason: StrategyErrReasonInvalidStrategy, Message: fmt.Sprintf("attempted to check %s strategy with deployment installer", strategy.GetStrategyName())}
 	}
@@ -133,7 +162,7 @@ func (i *StrategyDeploymentInstaller) CheckInstalled(s Strategy) (installed bool
 	return true, nil
 }
 
-func (i *StrategyDeploymentInstaller) checkForDeployments(deploymentSpecs []StrategyDeploymentSpec) error {
+func (i *StrategyDeploymentInstaller) checkForDeployments(deploymentSpecs []v1alpha1.StrategyDeploymentSpec) error {
 	var depNames []string
 	for _, dep := range deploymentSpecs {
 		depNames = append(depNames, dep.Name)
@@ -179,12 +208,31 @@ func (i *StrategyDeploymentInstaller) checkForDeployments(deploymentSpecs []Stra
 				return StrategyError{Reason: StrategyErrReasonAnnotationsMissing, Message: fmt.Sprintf("annotations on deployment don't match. couldn't find %s: %s", key, value)}
 			}
 		}
+
+		// check that the deployment spec hasn't changed since it was created
+		labels := dep.GetLabels()
+		if len(labels) == 0 {
+			return StrategyError{Reason: StrategyErrDeploymentUpdated, Message: fmt.Sprintf("deployment doesn't have a spec hash, update it")}
+		}
+		existingDeploymentSpecHash, ok := labels[DeploymentSpecHashLabelKey]
+		if !ok {
+			return StrategyError{Reason: StrategyErrDeploymentUpdated, Message: fmt.Sprintf("deployment doesn't have a spec hash, update it")}
+		}
+
+		_, calculatedDeploymentHash, err := i.deploymentForSpec(spec.Name, spec.Spec)
+		if err != nil {
+			return StrategyError{Reason: StrategyErrDeploymentUpdated, Message: fmt.Sprintf("couldn't calculate deployment spec hash: %v", err)}
+		}
+
+		if existingDeploymentSpecHash != calculatedDeploymentHash {
+			return StrategyError{Reason: StrategyErrDeploymentUpdated, Message: fmt.Sprintf("deployment changed old hash=%s, new hash=%s", existingDeploymentSpecHash, calculatedDeploymentHash)}
+		}
 	}
 	return nil
 }
 
 // Clean up orphaned deployments after reinstalling deployments process
-func (i *StrategyDeploymentInstaller) cleanupOrphanedDeployments(deploymentSpecs []StrategyDeploymentSpec) error {
+func (i *StrategyDeploymentInstaller) cleanupOrphanedDeployments(deploymentSpecs []v1alpha1.StrategyDeploymentSpec) error {
 	// Map of deployments
 	depNames := map[string]string{}
 	for _, dep := range deploymentSpecs {
@@ -217,4 +265,12 @@ func (i *StrategyDeploymentInstaller) cleanupOrphanedDeployments(deploymentSpecs
 	}
 
 	return nil
+}
+
+// HashDeploymentSpec calculates a hash given a copy of the deployment spec from a CSV, stripping any
+// operatorgroup annotations.
+func HashDeploymentSpec(spec appsv1.DeploymentSpec) string {
+	hasher := fnv.New32a()
+	hashutil.DeepHashObject(hasher, &spec)
+	return rand.SafeEncodeString(fmt.Sprint(hasher.Sum32()))
 }

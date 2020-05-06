@@ -18,7 +18,7 @@ import (
 
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
 var pushCmdExample = ktemplates.Examples(`  # Push source code to the current component

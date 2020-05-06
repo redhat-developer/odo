@@ -31,7 +31,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/wait"
 	watch "k8s.io/apimachinery/pkg/watch"
 	certificatesclient "k8s.io/client-go/kubernetes/typed/certificates/v1beta1"
 )
@@ -164,12 +163,17 @@ func TestNewManagerNoRotation(t *testing.T) {
 	}
 }
 
-type gaugeMock struct {
+type metricMock struct {
 	calls     int
 	lastValue float64
 }
 
-func (g *gaugeMock) Set(v float64) {
+func (g *metricMock) Set(v float64) {
+	g.calls++
+	g.lastValue = v
+}
+
+func (g *metricMock) Observe(v float64) {
 	g.calls++
 	g.lastValue = v
 }
@@ -196,7 +200,7 @@ func TestSetRotationDeadline(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			g := gaugeMock{}
+			g := metricMock{}
 			m := manager{
 				cert: &tls.Certificate{
 					Leaf: &x509.Certificate{
@@ -207,6 +211,7 @@ func TestSetRotationDeadline(t *testing.T) {
 				getTemplate:           func() *x509.CertificateRequest { return &x509.CertificateRequest{} },
 				usages:                []certificates.KeyUsage{},
 				certificateExpiration: &g,
+				now:                   func() time.Time { return now },
 			}
 			jitteryDuration = func(float64) time.Duration { return time.Duration(float64(tc.notAfter.Sub(tc.notBefore)) * 0.7) }
 			lowerBound := tc.notBefore.Add(time.Duration(float64(tc.notAfter.Sub(tc.notBefore)) * 0.7))
@@ -384,6 +389,7 @@ func TestCertSatisfiesTemplate(t *testing.T) {
 			m := manager{
 				cert:        tlsCert,
 				getTemplate: func() *x509.CertificateRequest { return tc.template },
+				now:         time.Now,
 			}
 
 			result := m.certSatisfiesTemplate()
@@ -408,6 +414,7 @@ func TestRotateCertCreateCSRError(t *testing.T) {
 		clientFn: func(_ *tls.Certificate) (certificatesclient.CertificateSigningRequestInterface, error) {
 			return fakeClient{failureType: createError}, nil
 		},
+		now: func() time.Time { return now },
 	}
 
 	if success, err := m.rotateCerts(); success {
@@ -431,9 +438,11 @@ func TestRotateCertWaitingForResultError(t *testing.T) {
 		clientFn: func(_ *tls.Certificate) (certificatesclient.CertificateSigningRequestInterface, error) {
 			return fakeClient{failureType: watchError}, nil
 		},
+		now: func() time.Time { return now },
 	}
 
-	certificateWaitBackoff = wait.Backoff{Steps: 1}
+	defer func(t time.Duration) { certificateWaitTimeout = t }(certificateWaitTimeout)
+	certificateWaitTimeout = 1 * time.Millisecond
 	if success, err := m.rotateCerts(); success {
 		t.Errorf("Got success from 'rotateCerts', wanted failure.")
 	} else if err != nil {
@@ -880,15 +889,6 @@ func TestServerHealth(t *testing.T) {
 			expectRotateFail: true,
 			expectHealthy:    true,
 		},
-		{
-			description: "Conflict error on watch",
-			certs:       currentCerts,
-
-			failureType:      watchError,
-			clientErr:        errors.NewGenericServerResponse(409, "POST", schema.GroupResource{}, "", "", 0, false),
-			expectRotateFail: true,
-			expectHealthy:    false,
-		},
 	}
 
 	for _, tc := range testCases {
@@ -954,6 +954,40 @@ func TestServerHealth(t *testing.T) {
 	}
 }
 
+func TestRotationLogsDuration(t *testing.T) {
+	h := metricMock{}
+	now := time.Now()
+	certIss := now.Add(-2 * time.Hour)
+	m := manager{
+		cert: &tls.Certificate{
+			Leaf: &x509.Certificate{
+				NotBefore: certIss,
+				NotAfter:  now.Add(-1 * time.Hour),
+			},
+		},
+		certStore:   &fakeStore{cert: expiredStoreCertData.certificate},
+		getTemplate: func() *x509.CertificateRequest { return &x509.CertificateRequest{} },
+		clientFn: func(_ *tls.Certificate) (certificatesclient.CertificateSigningRequestInterface, error) {
+			return &fakeClient{
+				certificatePEM: apiServerCertData.certificatePEM,
+			}, nil
+		},
+		certificateRotation: &h,
+		now:                 func() time.Time { return now },
+	}
+	ok, err := m.rotateCerts()
+	if err != nil || !ok {
+		t.Errorf("failed to rotate certs: %v", err)
+	}
+	if h.calls != 1 {
+		t.Errorf("rotation metric was not called")
+	}
+	if h.lastValue != now.Sub(certIss).Seconds() {
+		t.Errorf("rotation metric did not record the right value got: %f; want %f", h.lastValue, now.Sub(certIss).Seconds())
+	}
+
+}
+
 type fakeClientFailureType int
 
 const (
@@ -990,7 +1024,7 @@ func (c fakeClient) Create(*certificates.CertificateSigningRequest) (*certificat
 		if c.err != nil {
 			return nil, c.err
 		}
-		return nil, fmt.Errorf("Create error")
+		return nil, fmt.Errorf("create error")
 	}
 	csrReply := certificates.CertificateSigningRequest{}
 	csrReply.UID = "fake-uid"
@@ -1002,7 +1036,7 @@ func (c fakeClient) Watch(opts v1.ListOptions) (watch.Interface, error) {
 		if c.err != nil {
 			return nil, c.err
 		}
-		return nil, fmt.Errorf("Watch error")
+		return nil, fmt.Errorf("watch error")
 	}
 	return &fakeWatch{
 		failureType:    c.failureType,

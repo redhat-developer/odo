@@ -10,9 +10,9 @@ import (
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/util"
 
-	"github.com/golang/glog"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/klog"
 )
 
 // ComponentExists checks whether a deployment by the given name exists
@@ -122,13 +122,13 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 			if container.Name == *action.Component {
 				// If the run component container has no entrypoint and arguments, override the entrypoint with supervisord
 				if len(container.Command) == 0 && len(container.Args) == 0 {
-					glog.V(3).Infof("Updating container %v entrypoint with supervisord", container.Name)
+					klog.V(3).Infof("Updating container %v entrypoint with supervisord", container.Name)
 					container.Command = append(container.Command, adaptersCommon.SupervisordBinaryPath)
 					container.Args = append(container.Args, "-c", adaptersCommon.SupervisordConfFile)
 				}
 
 				// Always mount the supervisord volume in the run component container
-				glog.V(3).Infof("Updating container %v with supervisord volume mounts", container.Name)
+				klog.V(3).Infof("Updating container %v with supervisord volume mounts", container.Name)
 				container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
 					Name:      adaptersCommon.SupervisordVolumeName,
 					MountPath: adaptersCommon.SupervisordMountPath,
@@ -138,7 +138,7 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 				// only if the env var is not set in the devfile
 				// This is done, so supervisord can use it in it's program
 				if !isEnvPresent(container.Env, adaptersCommon.EnvOdoCommandRun) {
-					glog.V(3).Infof("Updating container %v env with run command", container.Name)
+					klog.V(3).Infof("Updating container %v env with run command", container.Name)
 					container.Env = append(container.Env,
 						corev1.EnvVar{
 							Name:  adaptersCommon.EnvOdoCommandRun,
@@ -147,7 +147,7 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 				}
 
 				if !isEnvPresent(container.Env, adaptersCommon.EnvOdoCommandRunWorkingDir) && action.Workdir != nil {
-					glog.V(3).Infof("Updating container %v env with run command's workdir", container.Name)
+					klog.V(3).Infof("Updating container %v env with run command's workdir", container.Name)
 					container.Env = append(container.Env,
 						corev1.EnvVar{
 							Name:  adaptersCommon.EnvOdoCommandRunWorkingDir,

@@ -9,22 +9,23 @@ import (
 	"strings"
 	"text/template"
 
-	commonui "github.com/openshift/odo/pkg/odo/cli/ui"
-	"github.com/openshift/odo/pkg/odo/util/validation"
-	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
-	"github.com/pkg/errors"
-
-	"github.com/ghodss/yaml"
-	"github.com/golang/glog"
-	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/cli/service/ui"
+	commonui "github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
+	"github.com/openshift/odo/pkg/odo/util/validation"
 	svc "github.com/openshift/odo/pkg/service"
+
+	"github.com/ghodss/yaml"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
+
+	scv1beta1 "github.com/kubernetes-sigs/service-catalog/pkg/apis/servicecatalog/v1beta1"
+	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	"k8s.io/klog"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
 const (
@@ -147,7 +148,7 @@ func (o *ServiceCreateOptions) Complete(name string, cmd *cobra.Command, args []
 				o.Plan = k
 				svcPlan = v
 			}
-			glog.V(4).Infof("Plan %s was automatically selected since it's the only one available for service %s", o.Plan, o.ServiceType)
+			klog.V(4).Infof("Plan %s was automatically selected since it's the only one available for service %s", o.Plan, o.ServiceType)
 		} else {
 			// otherwise select the plan interactively
 			o.Plan = ui.SelectPlanNameInteractively(plans, "Which service plan should we use ")
@@ -328,7 +329,7 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 			for k := range plans {
 				o.Plan = k
 			}
-			glog.V(4).Infof("Plan %s was automatically selected since it's the only one available for service %s", o.Plan, o.ServiceType)
+			klog.V(4).Infof("Plan %s was automatically selected since it's the only one available for service %s", o.Plan, o.ServiceType)
 		} else {
 			return fmt.Errorf("no plan was supplied for service %v.\nPlease select one of: %v\n", o.ServiceType, strings.Join(ui.GetServicePlanNames(plans), ","))
 		}

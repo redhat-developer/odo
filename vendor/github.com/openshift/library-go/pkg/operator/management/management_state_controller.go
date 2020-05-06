@@ -1,7 +1,9 @@
 package management
 
 import (
+	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"k8s.io/klog"
@@ -14,6 +16,7 @@ import (
 
 	operatorv1 "github.com/openshift/api/operator/v1"
 
+	"github.com/openshift/library-go/pkg/operator/condition"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	operatorv1helpers "github.com/openshift/library-go/pkg/operator/v1helpers"
@@ -43,7 +46,7 @@ func NewOperatorManagementStateController(
 		operatorClient: operatorClient,
 		eventRecorder:  recorder,
 
-		queue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "ManagementStateController-"+name),
+		queue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "ManagementStateController_"+strings.Replace(name, "-", "_", -1)),
 	}
 
 	operatorClient.Informer().AddEventHandler(c.eventHandler())
@@ -61,7 +64,7 @@ func (c ManagementStateController) sync() error {
 	}
 
 	cond := operatorv1.OperatorCondition{
-		Type:   "ManagementStateDegraded",
+		Type:   condition.ManagementStateDegradedConditionType,
 		Status: operatorv1.ConditionFalse,
 	}
 
@@ -92,23 +95,23 @@ func (c ManagementStateController) sync() error {
 	return nil
 }
 
-func (c *ManagementStateController) Run(workers int, stopCh <-chan struct{}) {
+func (c *ManagementStateController) Run(ctx context.Context, workers int) {
 	defer utilruntime.HandleCrash()
 	defer c.queue.ShutDown()
 
 	klog.Infof("Starting management-state-controller-" + c.operatorName)
 	defer klog.Infof("Shutting down management-state-controller-" + c.operatorName)
-	if !cache.WaitForCacheSync(stopCh, c.cachesToSync...) {
+	if !cache.WaitForCacheSync(ctx.Done(), c.cachesToSync...) {
 		return
 	}
 
 	// doesn't matter what workers say, only start one.
-	go wait.Until(c.runWorker, time.Second, stopCh)
+	go wait.UntilWithContext(ctx, c.runWorker, time.Second)
 
-	<-stopCh
+	<-ctx.Done()
 }
 
-func (c *ManagementStateController) runWorker() {
+func (c *ManagementStateController) runWorker(_ context.Context) {
 	for c.processNextWorkItem() {
 	}
 }

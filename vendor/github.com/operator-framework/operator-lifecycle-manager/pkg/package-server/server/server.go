@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -8,7 +9,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	genericserver "k8s.io/apiserver/pkg/server"
 	genericoptions "k8s.io/apiserver/pkg/server/options"
 	"k8s.io/client-go/informers"
@@ -25,12 +25,12 @@ import (
 
 // NewCommandStartPackageServer provides a CLI handler for 'start master' command
 // with a default PackageServerOptions.
-func NewCommandStartPackageServer(defaults *PackageServerOptions, stopCh <-chan struct{}) *cobra.Command {
+func NewCommandStartPackageServer(ctx context.Context, defaults *PackageServerOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Short: "Launch a package API server",
 		Long:  "Launch a package API server",
 		RunE: func(c *cobra.Command, args []string) error {
-			if err := defaults.Run(stopCh); err != nil {
+			if err := defaults.Run(ctx); err != nil {
 				return err
 			}
 			return nil
@@ -38,10 +38,8 @@ func NewCommandStartPackageServer(defaults *PackageServerOptions, stopCh <-chan 
 	}
 
 	flags := cmd.Flags()
-
-	// flags.BoolVar(&defaults.InsecureKubeletTLS, "kubelet-insecure-tls", defaults.InsecureKubeletTLS, "Do not verify CA of serving certificates presented by Kubelets.  For testing purposes only.")
 	flags.DurationVar(&defaults.WakeupInterval, "interval", defaults.WakeupInterval, "interval at which to re-sync CatalogSources")
-	flags.StringSliceVar(&defaults.WatchedNamespaces, "watched-namespaces", defaults.WatchedNamespaces, "list of namespaces the package-server will watch watch for CatalogSources")
+	flags.StringVar(&defaults.GlobalNamespace, "global-namespace", defaults.GlobalNamespace, "Name of the namespace where the global CatalogSources are located")
 	flags.StringVar(&defaults.Kubeconfig, "kubeconfig", defaults.Kubeconfig, "path to the kubeconfig used to connect to the Kubernetes API server and the Kubelets (defaults to in-cluster config)")
 	flags.BoolVar(&defaults.Debug, "debug", defaults.Debug, "use debug log level")
 
@@ -60,9 +58,8 @@ type PackageServerOptions struct {
 	Authorization  *genericoptions.DelegatingAuthorizationOptions
 	Features       *genericoptions.FeatureOptions
 
-	GlobalNamespace   string
-	WatchedNamespaces []string
-	WakeupInterval    time.Duration
+	GlobalNamespace string
+	WakeupInterval  time.Duration
 
 	Kubeconfig   string
 	RegistryAddr string
@@ -86,8 +83,7 @@ func NewPackageServerOptions(out, errOut io.Writer) *PackageServerOptions {
 		Authorization:  genericoptions.NewDelegatingAuthorizationOptions(),
 		Features:       genericoptions.NewFeatureOptions(),
 
-		WatchedNamespaces: []string{v1.NamespaceAll},
-		WakeupInterval:    5 * time.Minute,
+		WakeupInterval: 5 * time.Minute,
 
 		DisableAuthForTesting: false,
 		Debug:                 false,
@@ -99,10 +95,7 @@ func NewPackageServerOptions(out, errOut io.Writer) *PackageServerOptions {
 	return o
 }
 
-func (o *PackageServerOptions) Complete() error {
-	return nil
-}
-
+// Config returns config for the PackageServerOptions.
 func (o *PackageServerOptions) Config() (*apiserver.Config, error) {
 	if err := o.SecureServing.MaybeDefaultWithSelfSignedCerts("localhost", nil, []net.IP{net.ParseIP("127.0.0.1")}); err != nil {
 		return nil, fmt.Errorf("error creating self-signed certificates: %v", err)
@@ -128,7 +121,8 @@ func (o *PackageServerOptions) Config() (*apiserver.Config, error) {
 	}, nil
 }
 
-func (o *PackageServerOptions) Run(stopCh <-chan struct{}) error {
+// Run starts a new packageserver for the PackageServerOptions.
+func (o *PackageServerOptions) Run(ctx context.Context) error {
 	if o.Debug {
 		log.SetLevel(log.DebugLevel)
 	}
@@ -164,12 +158,15 @@ func (o *PackageServerOptions) Run(stopCh <-chan struct{}) error {
 		return err
 	}
 
-	queueOperator, err := queueinformer.NewOperator(o.Kubeconfig, log.New())
+	queueOperator, err := queueinformer.NewOperator(crClient.Discovery())
 	if err != nil {
 		return err
 	}
 
-	sourceProvider := provider.NewRegistryProvider(crClient, queueOperator, o.WakeupInterval, o.WatchedNamespaces, o.GlobalNamespace)
+	sourceProvider, err := provider.NewRegistryProvider(ctx, crClient, queueOperator, o.WakeupInterval, o.GlobalNamespace)
+	if err != nil {
+		return err
+	}
 	config.ProviderConfig.Provider = sourceProvider
 
 	// we should never need to resync, since we're not worried about missing events,
@@ -182,15 +179,11 @@ func (o *PackageServerOptions) Run(stopCh <-chan struct{}) error {
 		return err
 	}
 
-	// Ensure that provider stops after the apiserver gracefully shuts down
-	provCh := make(chan struct{})
-	ready, done, _ := sourceProvider.Run(provCh)
-	<-ready
+	sourceProvider.Run(ctx)
+	<-sourceProvider.Ready()
 
-	err = server.GenericAPIServer.PrepareRun().Run(stopCh)
-	go func() { provCh <- struct{}{} }()
-
-	<-done
+	err = server.GenericAPIServer.PrepareRun().Run(ctx.Done())
+	<-sourceProvider.Done()
 
 	return err
 }

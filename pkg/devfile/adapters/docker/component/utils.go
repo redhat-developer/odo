@@ -11,8 +11,8 @@ import (
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/go-connections/nat"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
@@ -83,13 +83,13 @@ func (a Adapter) createComponent() (err error) {
 			return errors.Wrapf(err, "unable to pull and start container %s for component %s", *comp.Alias, componentName)
 		}
 	}
-	glog.V(3).Infof("Successfully created all containers for component %s", componentName)
+	klog.V(3).Infof("Successfully created all containers for component %s", componentName)
 
 	return nil
 }
 
 func (a Adapter) updateComponent() (componentExists bool, err error) {
-	glog.V(3).Info("The component already exists, attempting to update it")
+	klog.V(3).Info("The component already exists, attempting to update it")
 	componentExists = true
 	componentName := a.ComponentName
 
@@ -178,7 +178,7 @@ func (a Adapter) updateComponent() (componentExists bool, err error) {
 					return false, errors.Wrapf(err, "Unable to start container for devfile component %s", *comp.Alias)
 				}
 
-				glog.V(3).Infof("Successfully created container %s for component %s", *comp.Image, componentName)
+				klog.V(3).Infof("Successfully created container %s for component %s", *comp.Image, componentName)
 				s.End(true)
 
 				// Update componentExists so that we re-sync project and initialize supervisord if required
@@ -211,7 +211,7 @@ func (a Adapter) pullAndStartContainer(mounts []mount.Mount, projectVolumeName s
 		return errors.Wrapf(err, "Unable to start container for devfile component %s", *comp.Alias)
 	}
 
-	glog.V(3).Infof("Successfully created container %s for component %s", *comp.Image, a.ComponentName)
+	klog.V(3).Infof("Successfully created container %s for component %s", *comp.Image, a.ComponentName)
 	return nil
 }
 
@@ -372,7 +372,7 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 					// it is expected to be the run command
 				} else {
 					// Last command is "Run"
-					glog.V(4).Infof("Executing devfile command %v", command.Name)
+					klog.V(4).Infof("Executing devfile command %v", command.Name)
 
 					for _, action := range command.Actions {
 
@@ -391,7 +391,7 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 						}
 
 						if componentExists && !common.IsRestartRequired(command) {
-							glog.V(4).Info("restart:false, Not restarting DevRun Command")
+							klog.V(4).Info("restart:false, Not restarting DevRun Command")
 							err = exec.ExecuteDevfileRunActionWithoutRestart(&a.Client, action, command.Name, compInfo, show)
 							return
 						}

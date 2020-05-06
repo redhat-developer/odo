@@ -1,33 +1,65 @@
-[![Docker Repository on Quay](https://quay.io/repository/coreos/alm/status?token=ccfd2fde-446d-4d82-88a8-4386f8deaab0 "Docker Repository on Quay")](https://quay.io/repository/coreos/alm) [![Docker Repository on Quay](https://quay.io/repository/coreos/catalog/status?token=b5fc43ed-9f5f-408b-961b-c8493e983da5 "Docker Repository on Quay")](https://quay.io/repository/coreos/catalog)[![pipeline status](https://gitlab.com/operator-framework/operator-framework_operator-lifecycle-manager/badges/master/pipeline.svg)](https://gitlab.com/operator-framework/operator-framework_operator-lifecycle-manager/pipelines)
-
 <img src="/logo.svg" height="125px" alt="Operator Lifecycle Manager"></img>
 
-This project is a component of the [Operator Framework](https://github.com/operator-framework), an open source toolkit to manage Kubernetes native applications, called Operators, in an effective, automated, and scalable way. Read more in the [introduction blog post](https://coreos.com/blog/introducing-operator-framework).
+[![Docker Repository on Quay](https://quay.io/repository/coreos/alm/status?token=ccfd2fde-446d-4d82-88a8-4386f8deaab0 "Docker Repository on Quay")](https://quay.io/repository/coreos/alm) 
+[![Docker Repository on Quay](https://quay.io/repository/coreos/catalog/status?token=b5fc43ed-9f5f-408b-961b-c8493e983da5 "Docker Repository on Quay")](https://quay.io/repository/coreos/catalog) 
+[![License](http://img.shields.io/:license-apache-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
+[![Go Report Card](https://goreportcard.com/badge/github.com/operator-framework/operator-lifecycle-manager)](https://goreportcard.com/report/github.com/operator-framework/operator-lifecycle-manager)
 
-OLM extends Kubernetes to provide a declarative way to install, manage, and upgrade operators and their dependencies in a cluster.
+## Overview
 
-It also enforces some constraints on the components it manages in order to ensure a good user experience.
+This project is a component of the [Operator Framework](https://github.com/operator-framework), an open source toolkit to manage Kubernetes native applications, called Operators, in an effective, automated, and scalable way. Read more in the [introduction blog post](https://operatorhub.io/what-is-an-operator).
 
-This project enables users to do the following:
+OLM extends Kubernetes to provide a declarative way to install, manage, and upgrade Operators and their dependencies in a cluster. It provides the following features:
 
-* Define applications as a single Kubernetes resource that encapsulates requirements and metadata
-* Install applications automatically with dependency resolution or manually with nothing but `kubectl`
-* Upgrade applications automatically with different approval policies
+### Over-the-Air Updates and Catalogs
+Kubernetes clusters are being kept up to date using elaborate update mechanisms today, more often automatically and in the background. Operators, being cluster extensions, should follow that. OLM has a concept of catalogs from which Operators are available to install and being kept up to date. In this model OLM allows maintainers granular authoring of the update path and gives commercial vendors a flexible publishing mechanism using channels.
 
-This project does not:
+### Dependency Model
+With OLMs packaging format Operators can express dependencies on the platform and on other Operators. They can rely on OLM to respect these requirements as long as the cluster is up. In this way, OLMs dependency model ensures Operators stay working during their long lifecycle across multiple updates of the platform or other Operators.
 
-* Replace [Helm](https://github.com/kubernetes/helm)
-* Turn Kubernetes into a [PaaS](https://en.wikipedia.org/wiki/Platform_as_a_service)
+### Discoverability
+OLM advertises installed Operators and their services into the namespaces of tenants. They can discover which managed services are available and which Operator provides them. Administrators can rely on catalog content projected into a cluster, enabling discovery of Operators available to install.
+
+### Cluster Stability
+Operators must claim ownership of their APIs. OLM will prevent conflicting Operators owning the same APIs being installed, ensuring cluster stability.
+
+### Declarative UI controls
+Operators can behave like managed service providers. Their user interface on the command line are APIs. For graphical consoles OLM annotates those APIs with descriptors that drive the creation of rich interfaces and forms for users to interact with the Operator in a natural, cloud-like way.
+
+
+## Prerequisites
+
+- [git][git_tool]
+- [go][go_tool] version v1.12+.
+- [docker][docker_tool] version 17.03+.
+  - Alternatively [podman][podman_tool] `v1.2.0+` or [buildah][buildah_tool] `v1.7+`
+- [kubectl][kubectl_tool] version v1.11.3+.
+- Access to a Kubernetes v1.11.3+ cluster.
 
 ## Getting Started 
 
-#### Installation
+### Installation
 
 Install OLM on a Kubernetes or OpenShift cluster by following the [installation guide].
 
 For a complete end-to-end example of how OLM fits into the Operator Framework, see the [Operator Framework Getting Started Guide](https://github.com/operator-framework/getting-started).
 
-#### Kubernetes-native Applications
+### User Interface
+
+Use the OpenShift admin console (compatible with upstream Kubernetes) to interact with and visualize the resources managed by OLM. Create subscriptions, approve install plans, identify Operator-managed resources, and more.
+
+Ensure `kubectl` is pointing at a cluster and run:
+
+```shell
+$ make run-console-local
+```
+
+Then visit `http://localhost:9000` to view the console.
+
+**Subscription detail view:**
+![screenshot_20180628_165240](https://user-images.githubusercontent.com/11700385/42060125-c3cde42c-7af3-11e8-87ec-e5910a554902.png)
+
+## Kubernetes-native Applications
 
 An Operator is an application-specific controller that extends the Kubernetes API to create, configure, manage, and operate instances of complex applications on behalf of a user.
 
@@ -36,16 +68,11 @@ OLM requires that applications be managed by an operator, but that doesn't mean 
 - Package up an existing set of resources for OLM with [helm-app-operator-kit](https://github.com/operator-framework/helm-app-operator-kit) without writing a single line of go.
 - Use the [operator-sdk](https://github.com/operator-framework/operator-sdk) to quickly build an operator from scratch.
 
-The primary vehicle for describing operator requirements with OLM is a [`ClusterServiceVersion`](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/Documentation/design/building-your-csv.md). Once you have an application packaged for OLM, you can deploy it with OLM by creating its `ClusterServiceVersion` in a namespace with a supporting [`OperatorGroup`](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/Documentation/design/operatorgroups.md).
+The primary vehicle for describing operator requirements with OLM is a [`ClusterServiceVersion`](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/building-your-csv.md). Once you have an application packaged for OLM, you can deploy it with OLM by creating its `ClusterServiceVersion` in a namespace with a supporting [`OperatorGroup`](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/operatorgroups.md).
 
 ClusterServiceVersions can be collected into `CatalogSource`s which will allow automated installation and dependency resolution via an `InstallPlan`, and can be kept up-to-date with a `Subscription`.
 
 Learn more about the components used by OLM by reading about the [architecture] and [philosophy].
-
-[architecture]: /Documentation/design/architecture.md
-[philosophy]: /Documentation/design/philosophy.md
-[installation guide]: /Documentation/install/install.md
-
 
 # Key Concepts
 
@@ -53,13 +80,13 @@ Learn more about the components used by OLM by reading about the [architecture] 
 
 OLM standardizes interactions with operators by requiring that the interface to an operator be via the Kubernetes API. Because we expect users to define the interfaces to their applications, OLM currently uses CRDs to define the Kubernetes API interactions.  
 
-Examples: [EtcdCluster CRD](https://github.com/operator-framework/community-operators/blob/master/community-operators/etcd/etcdcluster.crd.yaml), [EtcdBackup CRD](https://github.com/operator-framework/community-operators/blob/master/community-operators/etcd/etcdbackup.crd.yaml)
+Examples: [EtcdCluster CRD](https://github.com/operator-framework/community-operators/blob/master/community-operators/etcd/0.9.4/etcdclusters.etcd.database.coreos.com.crd.yaml), [EtcdBackup CRD](https://github.com/operator-framework/community-operators/blob/master/community-operators/etcd/0.9.4/etcdbackups.etcd.database.coreos.com.crd.yaml)
 
 ## Descriptors
 
 OLM introduces the notion of “descriptors” of both `spec` and `status` fields in kubernetes API responses. Descriptors are intended to indicate various properties of a field in order to make decisions about their content. For example, this can drive connecting two operators together (e.g. connecting the connection string from a mysql instance to a consuming application) and be used to drive rich interactions in a UI.
 
-[See an example of a ClusterServiceVersion with descriptors](https://github.com/operator-framework/community-operators/blob/master/community-operators/etcd/etcdoperator.v0.9.2.clusterserviceversion.yaml)
+[See an example of a ClusterServiceVersion with descriptors](https://github.com/operator-framework/community-operators/blob/master/community-operators/etcd/0.9.2/etcdoperator.v0.9.2.clusterserviceversion.yaml)
 
 ## Dependency Resolution
 
@@ -96,28 +123,38 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
   name: etcd
-  namespace: local 
+  namespace: olm
 spec:
-  channel: alpha
+  channel: singlenamespace-alpha
   name: etcd
-  source: rh-operators
+  source: operatorhubio-catalog
+  sourceNamespace: olm
 ```
 
 This will keep the etcd `ClusterServiceVersion` up to date as new versions become available in the catalog.
 
-Catalogs are served internally over a grpc interface to OLM from [operator-registry](https://github.com/operator-framework/operator-registry) pods.
+Catalogs are served internally over a grpc interface to OLM from [operator-registry](https://github.com/operator-framework/operator-registry) pods.  Catalog data such as `bundles` are documented [there](https://github.com/operator-framework/operator-registry#manifest-format) as well.
 
-### User Interface
+## Samples
 
-Use the OpenShift admin console (compatible with upstream Kubernetes) to interact with and visualize the resources managed by OLM. Create subscriptions, approve install plans, identify Operator-managed resources, and more.
+To explore any operator samples using the OLM, see the [https://operatorhub.io/](https://operatorhub.io/) and its resources in [Community Operators](https://github.com/operator-framework/community-operators/tree/master/upstream-community-operators). 
 
-Ensure `kubectl` is pointing at a cluster and run:
+## Contributing
 
-```shell
-$ make run-console-local
-```
+See the [proposal docs][proposals_docs] and issues for ongoing or planned work.
 
-Then visit `http://localhost:9000` to view the console.
+## License
 
-**Subscription detail view:**
-![screenshot_20180628_165240](https://user-images.githubusercontent.com/11700385/42060125-c3cde42c-7af3-11e8-87ec-e5910a554902.png)
+Operator Lifecycle Manager is under Apache 2.0 license. See the [LICENSE][license_file] file for details.
+
+[architecture]: /doc/design/architecture.md
+[philosophy]: /doc/design/philosophy.md
+[installation guide]: /doc/install/install.md
+[git_tool]:https://git-scm.com/downloads
+[go_tool]:https://golang.org/dl/
+[docker_tool]:https://docs.docker.com/install/
+[podman_tool]:https://github.com/containers/libpod/blob/master/install.md
+[buildah_tool]:https://github.com/containers/buildah/blob/master/install.md
+[kubectl_tool]:https://kubernetes.io/docs/tasks/tools/install-kubectl/
+[proposals_docs]: ./doc/contributors/design-proposals
+[license_file]:./LICENSE

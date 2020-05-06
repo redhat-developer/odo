@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/golang/glog"
 	"gopkg.in/AlecAivazis/survey.v1"
+	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
@@ -101,7 +101,7 @@ func getTagCandidates(options []catalog.ComponentType, selectedComponentType str
 			return option.Spec.NonHiddenTags
 		}
 	}
-	glog.V(4).Infof("Selected component type %s was not part of the catalog images", selectedComponentType)
+	klog.V(4).Infof("Selected component type %s was not part of the catalog images", selectedComponentType)
 	return []string{}
 }
 
@@ -125,7 +125,7 @@ func SelectSourceType(sourceTypes []config.SrcType) config.SrcType {
 			return sourceType
 		}
 	}
-	glog.V(4).Infof("Selected source type %s was not part of the source type options", selectedSourceType)
+	klog.V(4).Infof("Selected source type %s was not part of the source type options", selectedSourceType)
 	return config.NONE
 }
 
@@ -158,7 +158,7 @@ func createComponentNameValidator(context *genericclioptions.Context) survey.Val
 
 			exists, err := component.Exists(context.Client, s, context.Application)
 			if err != nil {
-				glog.V(4).Info(err)
+				klog.V(4).Info(err)
 				return fmt.Errorf("Unable to determine if component '%s' exists or not", s)
 			}
 			if exists {

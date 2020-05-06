@@ -8,10 +8,13 @@ import (
 // +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// APIServer holds cluster-wide information about api-servers.  The canonical name is `cluster`
+// APIServer holds configuration (like serving certificates, client CA and CORS domains)
+// shared by all API servers in the system, among them especially kube-apiserver
+// and openshift-apiserver. The canonical name of an instance is 'cluster'.
 type APIServer struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
+	// +kubebuilder:validation:Required
 	// +required
 	Spec APIServerSpec `json:"spec"`
 	// +optional
@@ -30,6 +33,22 @@ type APIServerSpec struct {
 	// - ConfigMap.Data["ca-bundle.crt"] - CA bundle.
 	// +optional
 	ClientCA ConfigMapNameReference `json:"clientCA"`
+	// additionalCORSAllowedOrigins lists additional, user-defined regular expressions describing hosts for which the
+	// API server allows access using the CORS headers. This may be needed to access the API and the integrated OAuth
+	// server from JavaScript applications.
+	// The values are regular expressions that correspond to the Golang regular expression language.
+	// +optional
+	AdditionalCORSAllowedOrigins []string `json:"additionalCORSAllowedOrigins,omitempty"`
+	// encryption allows the configuration of encryption of resources at the datastore layer.
+	// +optional
+	Encryption APIServerEncryption `json:"encryption"`
+	// tlsSecurityProfile specifies settings for TLS connections for externally exposed servers.
+	//
+	// If unset, a default (which may change between releases) is chosen. Note that only Old and
+	// Intermediate profiles are currently supported, and the maximum available MinTLSVersions
+	// is VersionTLS12.
+	// +optional
+	TLSSecurityProfile *TLSSecurityProfile `json:"tlsSecurityProfile,omitempty"`
 }
 
 type APIServerServingCerts struct {
@@ -53,6 +72,39 @@ type APIServerNamedServingCert struct {
 	// - Secret.Data["tls.crt"] - TLS certificate.
 	ServingCertificate SecretNameReference `json:"servingCertificate"`
 }
+
+type APIServerEncryption struct {
+	// type defines what encryption type should be used to encrypt resources at the datastore layer.
+	// When this field is unset (i.e. when it is set to the empty string), identity is implied.
+	// The behavior of unset can and will change over time.  Even if encryption is enabled by default,
+	// the meaning of unset may change to a different encryption type based on changes in best practices.
+	//
+	// When encryption is enabled, all sensitive resources shipped with the platform are encrypted.
+	// This list of sensitive resources can and will change over time.  The current authoritative list is:
+	//
+	//   1. secrets
+	//   2. configmaps
+	//   3. routes.route.openshift.io
+	//   4. oauthaccesstokens.oauth.openshift.io
+	//   5. oauthauthorizetokens.oauth.openshift.io
+	//
+	// +unionDiscriminator
+	// +optional
+	Type EncryptionType `json:"type,omitempty"`
+}
+
+// +kubebuilder:validation:Enum="";identity;aescbc
+type EncryptionType string
+
+const (
+	// identity refers to a type where no encryption is performed at the datastore layer.
+	// Resources are written as-is without encryption.
+	EncryptionTypeIdentity EncryptionType = "identity"
+
+	// aescbc refers to a type where AES-CBC with PKCS#7 padding and a 32-byte key
+	// is used to perform encryption at the datastore layer.
+	EncryptionTypeAESCBC EncryptionType = "aescbc"
+)
 
 type APIServerStatus struct {
 }

@@ -35,13 +35,22 @@ import (
 var (
 	// ClusterDefaults has the same behavior as the old EnvVar and DefaultCluster fields
 	// DEPRECATED will be replaced
-	ClusterDefaults = clientcmdapi.Cluster{Server: os.Getenv("KUBERNETES_MASTER")}
+	ClusterDefaults = clientcmdapi.Cluster{Server: getDefaultServer()}
 	// DefaultClientConfig represents the legacy behavior of this package for defaulting
 	// DEPRECATED will be replace
 	DefaultClientConfig = DirectClientConfig{*clientcmdapi.NewConfig(), "", &ConfigOverrides{
 		ClusterDefaults: ClusterDefaults,
 	}, nil, NewDefaultClientConfigLoadingRules(), promptedCredentials{}}
 )
+
+// getDefaultServer returns a default setting for DefaultClientConfig
+// DEPRECATED
+func getDefaultServer() string {
+	if server := os.Getenv("KUBERNETES_MASTER"); len(server) > 0 {
+		return server
+	}
+	return "http://localhost:8080"
+}
 
 // ClientConfig is used to make it easy to get an api server client
 type ClientConfig interface {
@@ -219,6 +228,7 @@ func (config *DirectClientConfig) getUserIdentificationPartialConfig(configAuthI
 	// blindly overwrite existing values based on precedence
 	if len(configAuthInfo.Token) > 0 {
 		mergedConfig.BearerToken = configAuthInfo.Token
+		mergedConfig.BearerTokenFile = configAuthInfo.TokenFile
 	} else if len(configAuthInfo.TokenFile) > 0 {
 		tokenBytes, err := ioutil.ReadFile(configAuthInfo.TokenFile)
 		if err != nil {
@@ -284,16 +294,6 @@ func makeUserIdentificationConfig(info clientauth.Info) *restclient.Config {
 	config.CertFile = info.CertFile
 	config.KeyFile = info.KeyFile
 	config.BearerToken = info.BearerToken
-	return config
-}
-
-// makeUserIdentificationFieldsConfig returns a client.Config capable of being merged using mergo for only server identification information
-func makeServerIdentificationConfig(info clientauth.Info) restclient.Config {
-	config := restclient.Config{}
-	config.CAFile = info.CAFile
-	if info.Insecure != nil {
-		config.Insecure = *info.Insecure
-	}
 	return config
 }
 
@@ -449,13 +449,15 @@ func (config *DirectClientConfig) getCluster() (clientcmdapi.Cluster, error) {
 		return clientcmdapi.Cluster{}, fmt.Errorf("cluster %q does not exist", clusterInfoName)
 	}
 	mergo.MergeWithOverwrite(mergedClusterInfo, config.overrides.ClusterInfo)
-	// An override of --insecure-skip-tls-verify=true and no accompanying CA/CA data should clear already-set CA/CA data
-	// otherwise, a kubeconfig containing a CA reference would return an error that "CA and insecure-skip-tls-verify couldn't both be set"
+	// * An override of --insecure-skip-tls-verify=true and no accompanying CA/CA data should clear already-set CA/CA data
+	// otherwise, a kubeconfig containing a CA reference would return an error that "CA and insecure-skip-tls-verify couldn't both be set".
+	// * An override of --certificate-authority should also override TLS skip settings and CA data, otherwise existing CA data will take precedence.
 	caLen := len(config.overrides.ClusterInfo.CertificateAuthority)
 	caDataLen := len(config.overrides.ClusterInfo.CertificateAuthorityData)
-	if config.overrides.ClusterInfo.InsecureSkipTLSVerify && caLen == 0 && caDataLen == 0 {
-		mergedClusterInfo.CertificateAuthority = ""
-		mergedClusterInfo.CertificateAuthorityData = nil
+	if config.overrides.ClusterInfo.InsecureSkipTLSVerify || caLen > 0 || caDataLen > 0 {
+		mergedClusterInfo.InsecureSkipTLSVerify = config.overrides.ClusterInfo.InsecureSkipTLSVerify
+		mergedClusterInfo.CertificateAuthority = config.overrides.ClusterInfo.CertificateAuthority
+		mergedClusterInfo.CertificateAuthorityData = config.overrides.ClusterInfo.CertificateAuthorityData
 	}
 
 	return *mergedClusterInfo, nil
@@ -490,8 +492,9 @@ func (config *inClusterClientConfig) ClientConfig() (*restclient.Config, error) 
 		if server := config.overrides.ClusterInfo.Server; len(server) > 0 {
 			icc.Host = server
 		}
-		if token := config.overrides.AuthInfo.Token; len(token) > 0 {
-			icc.BearerToken = token
+		if len(config.overrides.AuthInfo.Token) > 0 || len(config.overrides.AuthInfo.TokenFile) > 0 {
+			icc.BearerToken = config.overrides.AuthInfo.Token
+			icc.BearerTokenFile = config.overrides.AuthInfo.TokenFile
 		}
 		if certificateAuthorityFile := config.overrides.ClusterInfo.CertificateAuthority; len(certificateAuthorityFile) > 0 {
 			icc.TLSClientConfig.CAFile = certificateAuthorityFile

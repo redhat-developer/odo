@@ -22,11 +22,11 @@ import (
 	"github.com/pkg/errors"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 
-	"github.com/golang/glog"
 	iextensionsv1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/klog"
 )
 
 // Get returns URL definition for given URL name
@@ -266,7 +266,7 @@ func ListPushed(client *occlient.Client, componentName string, applicationName s
 		labelSelector = labelSelector + fmt.Sprintf(",%v=%v", componentlabels.ComponentLabel, componentName)
 	}
 
-	glog.V(4).Infof("Listing routes with label selector: %v", labelSelector)
+	klog.V(4).Infof("Listing routes with label selector: %v", labelSelector)
 	routes, err := client.ListRoutes(labelSelector)
 	if err != nil {
 		return URLList{}, errors.Wrap(err, "unable to list route names")
@@ -289,7 +289,7 @@ func ListPushed(client *occlient.Client, componentName string, applicationName s
 // ListPushedIngress lists the ingress URLs for the given component
 func ListPushedIngress(client *kclient.Client, componentName string) (iextensionsv1.IngressList, error) {
 	labelSelector := fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, componentName)
-	glog.V(4).Infof("Listing ingresses with label selector: %v", labelSelector)
+	klog.V(4).Infof("Listing ingresses with label selector: %v", labelSelector)
 	ingresses, err := client.ListIngresses(labelSelector)
 	if err != nil {
 		return iextensionsv1.IngressList{}, errors.Wrap(err, "unable to list ingress names")
