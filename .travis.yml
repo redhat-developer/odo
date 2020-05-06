@@ -81,19 +81,19 @@ jobs:
         - travis_wait make test-cmd-cmp
         - odo logout
 
-    # - <<: *base-test
-    #   stage: test
-    #   name: "preference, config, url and debug command integration tests"
-    #   script:
-    #     - ./scripts/oc-cluster.sh
-    #     - make bin
-    #     - sudo cp odo /usr/bin
-    #     - odo login -u developer
-    #     - travis_wait make test-cmd-pref-config
-    #     - travis_wait make test-cmd-url
-    #     - travis_wait make test-cmd-devfile-url
-    #     - travis_wait make test-cmd-debug
-    #     - odo logout
+    - <<: *base-test
+      stage: test
+      name: "preference, config, url and debug command integration tests"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make bin
+        - sudo cp odo /usr/bin
+        - odo login -u developer
+        - travis_wait make test-cmd-pref-config
+        - travis_wait make test-cmd-url
+        - travis_wait make test-cmd-devfile-url
+        - travis_wait make test-cmd-debug
+        - odo logout
 
     # Run service-catalog e2e tests
     - <<: *base-test
@@ -105,8 +105,8 @@ jobs:
         - sudo cp odo /usr/bin
         - odo login -u developer
         - travis_wait make test-cmd-service
-        # - travis_wait make test-cmd-link-unlink
-        # - travis_wait make test-cmd-cmp-sub
+        - travis_wait make test-cmd-link-unlink
+        - travis_wait make test-cmd-cmp-sub
         - odo logout
 
     - <<: *base-test
@@ -146,20 +146,19 @@ jobs:
         - travis_wait make test-cmd-devfile-registry
         - odo logout
 
-    # - <<: *base-test
-    #   stage: test
-    #   name: "core beta, java, source e2e tests"
-    #   script:
-    #     - ./scripts/oc-cluster.sh
-    #     - docker version
-    #     - make bin
-    #     - sudo cp odo /usr/bin
-    #     - odo login -u developer
-    #     - travis_wait make test-e2e-beta
-    #     - travis_wait make test-e2e-java
-    #     - travis_wait make test-e2e-source
-    #     - travis_wait make test-e2e-images
-    #     - odo logout
+    - <<: *base-test
+      stage: test
+      name: "core beta, java, source e2e tests"
+      script:
+        - ./scripts/oc-cluster.sh
+        - make bin
+        - sudo cp odo /usr/bin
+        - odo login -u developer
+        - travis_wait make test-e2e-beta
+        - travis_wait make test-e2e-java
+        - travis_wait make test-e2e-source
+        - travis_wait make test-e2e-images
+        - odo logout
     
     - <<: *base-test
       stage: test
@@ -176,7 +175,7 @@ jobs:
     # Run devfile integration test on Kubernetes cluster    
     - <<: *base-test
       stage: test
-      name: "devfile catalog, watch push and delete command integration tests on kubernetes cluster"
+      name: "devfile catalog, watch, push and delete command integration tests on kubernetes cluster"
       before_script:
         # Download kubectl, a cli tool for accessing Kubernetes cluster
         - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.16.0/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
@@ -195,4 +194,3 @@ jobs:
         - travis_wait make test-cmd-devfile-watch
         - travis_wait make test-cmd-devfile-push
         - travis_wait make test-cmd-devfile-delete
-

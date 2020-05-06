@@ -25,7 +25,6 @@ func componentTests(args ...string) {
 		SetDefaultConsistentlyDuration(30 * time.Second)
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-		helper.CmdShouldPass("odo", "preference", "set", "pushtimeout", "480", "-f")
 		oc = helper.NewOcRunner("oc")
 	})
 
