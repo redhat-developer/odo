@@ -13,7 +13,7 @@ import (
 const Kind = "Error"
 
 // APIVersion is the current API version we are using
-const APIVersion = "odo.openshift.io/v1alpha1"
+const APIVersion = "odo.dev/v1alpha1"
 
 // GenericError for machine readable output error messages
 type GenericError struct {

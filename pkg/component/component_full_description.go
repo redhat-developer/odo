@@ -95,7 +95,7 @@ func (cfd *ComponentFullDescription) fillEmptyFields(componentDesc Component, co
 	}
 
 	if len(cfd.APIVersion) <= 0 {
-		cfd.APIVersion = "odo.openshift.io/v1alpha1"
+		cfd.APIVersion = apiVersion
 	}
 
 	if len(cfd.Spec.App) <= 0 {

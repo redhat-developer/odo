@@ -22,6 +22,7 @@ import (
 
 const provisionedAndBoundStatus = "ProvisionedAndBound"
 const provisionedAndLinkedStatus = "ProvisionedAndLinked"
+const apiVersion = "odo.dev/v1alpha1"
 
 // NewServicePlanParameter creates a new ServicePlanParameter instance with the specified state
 func NewServicePlanParameter(name, typeName, defaultValue string, required bool) ServicePlanParameter {
@@ -144,7 +145,7 @@ func List(client *occlient.Client, applicationName string) (ServiceList, error) 
 			Service{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "Service",
-					APIVersion: "odo.openshift.io/v1alpha1",
+					APIVersion: apiVersion,
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: elem.Labels[componentlabels.ComponentLabel],
@@ -157,7 +158,7 @@ func List(client *occlient.Client, applicationName string) (ServiceList, error) 
 	return ServiceList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ServiceList",
-			APIVersion: "odo.openshift.io/v1alpha1",
+			APIVersion: apiVersion,
 		},
 		Items: services,
 	}, nil
@@ -213,7 +214,7 @@ func ListWithDetailedStatus(client *occlient.Client, applicationName string) (Se
 	return ServiceList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ServiceList",
-			APIVersion: "odo.openshift.io/v1alpha1",
+			APIVersion: apiVersion,
 		},
 		Items: services.Items,
 	}, nil
