@@ -14,8 +14,8 @@ import (
 	"github.com/openshift/odo/pkg/occlient"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 )
 
 // WatchParameters is designed to hold the controllables and attributes that the watch function works on
@@ -65,7 +65,7 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 			return errors.Wrapf(err, "unable to watcher on %s", path)
 		}
 		if !matched {
-			glog.V(4).Infof("adding watch on path %s", path)
+			klog.V(4).Infof("adding watch on path %s", path)
 
 			// checking if the file exits before adding the watcher to it
 			if !util.CheckPathExists(path) {
@@ -74,7 +74,7 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 
 			err = watcher.Add(path)
 			if err != nil {
-				glog.V(4).Infof("error adding watcher for path %s: %v", path, err)
+				klog.V(4).Infof("error adding watcher for path %s: %v", path, err)
 			}
 			return nil
 		}
@@ -93,7 +93,7 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 				return errors.Wrapf(err, "unable to addRecursiveWatch on %s", newPath)
 			}
 			if matched {
-				glog.V(4).Infof("ignoring watch on path %s", newPath)
+				klog.V(4).Infof("ignoring watch on path %s", newPath)
 				return filepath.SkipDir
 			}
 			// Append the folder we just walked on
@@ -107,7 +107,7 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 	for _, folder := range folders {
 
 		if matched, _ := util.IsGlobExpMatch(folder, ignores); matched {
-			glog.V(4).Infof("ignoring watch for %s", folder)
+			klog.V(4).Infof("ignoring watch for %s", folder)
 			continue
 		}
 
@@ -116,14 +116,14 @@ func addRecursiveWatch(watcher *fsnotify.Watcher, path string, ignores []string)
 			continue
 		}
 
-		glog.V(4).Infof("adding watch on path %s", folder)
+		klog.V(4).Infof("adding watch on path %s", folder)
 		err = watcher.Add(folder)
 		if err != nil {
 			// Linux "no space left on device" issues are usually resolved via
 			// $ sudo sysctl fs.inotify.max_user_watches=65536
 			// BSD / OSX: "too many open files" issues are ussualy resolved via
 			// $ sysctl variables "kern.maxfiles" and "kern.maxfilesperproc",
-			glog.V(4).Infof("error adding watcher for path %s: %v", folder, err)
+			klog.V(4).Infof("error adding watcher for path %s: %v", folder, err)
 		}
 	}
 	return nil
@@ -142,7 +142,7 @@ var ErrUserRequestedWatchExit = fmt.Errorf("safely exiting from filesystem watch
 func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParameters) error {
 	// ToDo reduce number of parameters to this function by extracting them into a struct and passing the struct instance instead of passing each of them separately
 	// delayInterval int
-	glog.V(4).Infof("starting WatchAndPush, path: %s, component: %s, ignores %s", parameters.Path, parameters.ComponentName, parameters.FileIgnores)
+	klog.V(4).Infof("starting WatchAndPush, path: %s, component: %s, ignores %s", parameters.Path, parameters.ComponentName, parameters.FileIgnores)
 
 	// these variables must be accessed while holding the changeLock
 	// mutex as they are shared between goroutines to communicate
@@ -175,7 +175,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 			case event := <-watcher.Events:
 				isIgnoreEvent := false
 				changeLock.Lock()
-				glog.V(4).Infof("filesystem watch event: %s", event)
+				klog.V(4).Infof("filesystem watch event: %s", event)
 
 				if !(event.Op&fsnotify.Remove == fsnotify.Remove || event.Op&fsnotify.Rename == fsnotify.Rename) {
 					stat, err := os.Lstat(event.Name)
@@ -183,13 +183,13 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 						// Some of the editors like vim and gedit, generate temporary buffer files during update to the file and deletes it soon after exiting from the editor
 						// So, its better to log the error rather than feeding it to error handler via `watchError = errors.Wrap(err, "unable to watch changes")`,
 						// which will terminate the watch
-						glog.V(4).Infof("Failed getting details of the changed file %s. Ignoring the change", event.Name)
+						klog.V(4).Infof("Failed getting details of the changed file %s. Ignoring the change", event.Name)
 					}
 					// Some of the editors generate temporary buffer files during update to the file and deletes it soon after exiting from the editor
 					// So, its better to log the error rather than feeding it to error handler via `watchError = errors.Wrap(err, "unable to watch changes")`,
 					// which will terminate the watch
 					if stat == nil {
-						glog.V(4).Infof("Ignoring event for file %s as details about the file couldn't be fetched", event.Name)
+						klog.V(4).Infof("Ignoring event for file %s as details about the file couldn't be fetched", event.Name)
 						isIgnoreEvent = true
 					}
 
@@ -217,7 +217,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 				// because its parent is watched, the fsnotify automatically raises an event
 				// for it.
 				matched, err := util.IsGlobExpMatch(event.Name, parameters.FileIgnores)
-				glog.V(4).Infof("Matching %s with %s. Matched %v, err: %v", event.Name, parameters.FileIgnores, matched, err)
+				klog.V(4).Infof("Matching %s with %s. Matched %v, err: %v", event.Name, parameters.FileIgnores, matched, err)
 				if err != nil {
 					watchError = errors.Wrap(err, "unable to watch changes")
 				}
@@ -234,7 +234,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 				// Also weirdly, fsnotify raises a RENAME event for deletion of files/folders with space in their name so even that should be handled here
 				if event.Op&fsnotify.Remove == fsnotify.Remove || event.Op&fsnotify.Rename == fsnotify.Rename {
 					if e := watcher.Remove(event.Name); e != nil {
-						glog.V(4).Infof("error removing watch for %s: %v", event.Name, e)
+						klog.V(4).Infof("error removing watch for %s: %v", event.Name, e)
 					}
 					// append the file to list of deleted files
 					// When a file/folder is deleted, it raises 2 events:
@@ -301,7 +301,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 					return errors.Wrapf(err, "%s: file doesn't exist", parameters.Path)
 				}
 				if fileInfo.IsDir() {
-					glog.V(4).Infof("Copying files %s to pod", changedFiles)
+					klog.V(4).Infof("Copying files %s to pod", changedFiles)
 					if parameters.DevfileWatchHandler != nil {
 						pushParams := common.PushParameters{
 							Path:              parameters.Path,
@@ -318,7 +318,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 
 				} else {
 					pathDir := filepath.Dir(parameters.Path)
-					glog.V(4).Infof("Copying file %s to pod", parameters.Path)
+					klog.V(4).Infof("Copying file %s to pod", parameters.Path)
 					if parameters.DevfileWatchHandler != nil {
 						pushParams := common.PushParameters{
 							Path:              pathDir,
@@ -337,7 +337,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 				if err != nil {
 					// Intentionally not exiting on error here.
 					// We don't want to break watch when push failed, it might be fixed with the next change.
-					glog.V(4).Infof("Error from Push: %v", err)
+					klog.V(4).Infof("Error from Push: %v", err)
 				}
 				dirty = false
 				showWaitingMessage = true

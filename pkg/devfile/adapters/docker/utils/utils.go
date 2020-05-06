@@ -16,8 +16,8 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/util"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 )
 
 const (
@@ -205,7 +205,7 @@ func UpdateComponentWithSupervisord(comp *common.DevfileComponent, runCommand co
 			AddVolumeToContainer(supervisordVolumeName, adaptersCommon.SupervisordMountPath, hostConfig)
 
 			if len(comp.Command) == 0 && len(comp.Args) == 0 {
-				glog.V(4).Infof("Updating container %v entrypoint with supervisord", *comp.Alias)
+				klog.V(4).Infof("Updating container %v entrypoint with supervisord", *comp.Alias)
 				comp.Command = append(comp.Command, adaptersCommon.SupervisordBinaryPath)
 				comp.Args = append(comp.Args, "-c", adaptersCommon.SupervisordConfFile)
 			}

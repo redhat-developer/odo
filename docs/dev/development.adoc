@@ -47,6 +47,7 @@ A PR must include:
 
  * Descriptive context that outlines what has been changed and why
  * A link to the active or open issue it fixes (if applicable)
+ * (OPTIONAL) A "signed-off" signature is good practice. You may sign your commit using `git commit -s` or `git commit --amend --no-edit -s` to a previously created commit
 
 == Useful make targets
 
@@ -66,9 +67,9 @@ Read the Makefile itself for more information.
 === PR review process
 
 . Once you submit a PR, the @openshift-ci-robot automatically requests two reviews from reviewers and suggests an approver based on `OWNERS` files.
-. After a reviewer is satisfied with the changes he adds `/lgtm` (looks good to me) as a comment to the PR. This applies the *lgtm* label.
-. The approver then reviews the PR and if satisfied, adds
-`/approve` as a comment to the PR. This applies the *approve* label.
+. Each PR requires *one* code review (lgtm label) and *one* approve (approved label).
+. After a code reviewer is satisfied with the changes he adds `/lgtm` (looks good to me) as a comment to the PR. Which applies the *lgtm* label.
+. The approver reviews the PR and if satisfied, adds `/approve` as a comment to the PR. Which applies the *approve* label.
 * After the PR has *lgtm* and *approve* labels and the required tests pass, the bot automatically merges the PR.
 +
 NOTE: If you are a maintainer and have write access to the `odo` repository, modify your git configuration so that you do not accidentally push to upstream:

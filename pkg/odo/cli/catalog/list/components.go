@@ -7,7 +7,6 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
@@ -16,6 +15,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 )
 
 const componentsRecommendedCommandName = "components"
@@ -47,7 +47,7 @@ func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args [
 		o.catalogList, err = catalog.ListComponents(o.Client)
 		if err != nil {
 			if experimental.IsExperimentalModeEnabled() {
-				glog.V(4).Info("Please log in to an OpenShift cluster to list OpenShift/s2i components")
+				klog.V(4).Info("Please log in to an OpenShift cluster to list OpenShift/s2i components")
 			} else {
 				return err
 			}

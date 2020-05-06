@@ -2,13 +2,13 @@ package occlient
 
 import (
 	"fmt"
-	"github.com/golang/glog"
 	appsv1 "github.com/openshift/api/apps/v1"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
 )
 
 // CreatePVC creates a PVC resource in the cluster with the given name, size and
@@ -105,7 +105,7 @@ func (c *Client) getVolumeNamesFromPVC(pvc string, dc *appsv1.DeploymentConfig) 
 
 		// If PVC does not exist, we skip (as this is either EmptyDir or "shared-data" from SupervisorD
 		if volume.PersistentVolumeClaim == nil {
-			glog.V(4).Infof("Volume has no PVC, skipping %s", volume.Name)
+			klog.V(4).Infof("Volume has no PVC, skipping %s", volume.Name)
 			continue
 		}
 

@@ -8,21 +8,21 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	utilclock "k8s.io/apimachinery/pkg/util/clock"
 
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/reconciler"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/fakes"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/clientfake"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 )
 
 func TestSyncSubscriptions(t *testing.T) {
-	now := metav1.Date(2018, time.January, 26, 20, 40, 0, 0, time.UTC)
-	timeNow = func() metav1.Time { return now }
+	clockFake := utilclock.NewFakeClock(time.Date(2018, time.January, 26, 20, 40, 0, 0, time.UTC))
+	now := metav1.NewTime(clockFake.Now())
 	testNamespace := "testNamespace"
 
 	type fields struct {
@@ -30,6 +30,7 @@ func TestSyncSubscriptions(t *testing.T) {
 		sourcesLastUpdate metav1.Time
 		resolveSteps      []*v1alpha1.Step
 		resolveSubs       []*v1alpha1.Subscription
+		bundleLookups     []v1alpha1.BundleLookup
 		resolveErr        error
 		existingOLMObjs   []runtime.Object
 		existingObjects   []runtime.Object
@@ -53,11 +54,152 @@ func TestSyncSubscriptions(t *testing.T) {
 			wantErr: fmt.Errorf("casting Subscription failed"),
 		},
 		{
+			name: "NoStatus/NoCurrentCSV/MissingCatalogSourceNamespace",
+			fields: fields{
+				clientOptions: []clientfake.Option{clientfake.WithSelfLinks(t)},
+				existingOLMObjs: []runtime.Object{
+					&v1alpha1.Subscription{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       v1alpha1.SubscriptionKind,
+							APIVersion: v1alpha1.SchemeGroupVersion.String(),
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "sub",
+							Namespace: testNamespace,
+						},
+						Spec: &v1alpha1.SubscriptionSpec{
+							CatalogSource: "src",
+						},
+						Status: v1alpha1.SubscriptionStatus{
+							CurrentCSV: "",
+							State:      "",
+						},
+					},
+				},
+				resolveSteps: []*v1alpha1.Step{
+					{
+						Resolving: "csv.v.1",
+						Resource: v1alpha1.StepResource{
+							CatalogSource:          "src",
+							CatalogSourceNamespace: testNamespace,
+							Group:                  v1alpha1.GroupName,
+							Version:                v1alpha1.GroupVersion,
+							Kind:                   v1alpha1.ClusterServiceVersionKind,
+							Name:                   "csv.v.1",
+							Manifest:               "{}",
+						},
+					},
+				},
+				resolveSubs: []*v1alpha1.Subscription{
+					{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       v1alpha1.SubscriptionKind,
+							APIVersion: v1alpha1.SchemeGroupVersion.String(),
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "sub",
+							Namespace: testNamespace,
+						},
+						Spec: &v1alpha1.SubscriptionSpec{
+							CatalogSource: "src",
+						},
+						Status: v1alpha1.SubscriptionStatus{
+							CurrentCSV: "csv.v.1",
+							State:      "SubscriptionStateAtLatest",
+						},
+					},
+				},
+			},
+			args: args{
+				obj: &v1alpha1.Subscription{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       v1alpha1.SubscriptionKind,
+						APIVersion: v1alpha1.SchemeGroupVersion.String(),
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "sub",
+						Namespace: testNamespace,
+					},
+					Spec: &v1alpha1.SubscriptionSpec{
+						CatalogSource: "src",
+					},
+					Status: v1alpha1.SubscriptionStatus{
+						CurrentCSV: "",
+						State:      "",
+					},
+				},
+			},
+			wantSubscriptions: []*v1alpha1.Subscription{
+				{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       v1alpha1.SubscriptionKind,
+						APIVersion: v1alpha1.SubscriptionCRDAPIVersion,
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "sub",
+						Namespace: testNamespace,
+					},
+					Spec: &v1alpha1.SubscriptionSpec{
+						CatalogSource: "src",
+					},
+					Status: v1alpha1.SubscriptionStatus{
+						CurrentCSV: "csv.v.1",
+						State:      v1alpha1.SubscriptionStateUpgradePending,
+						Install: &v1alpha1.InstallPlanReference{
+							Kind:       v1alpha1.InstallPlanKind,
+							APIVersion: v1alpha1.InstallPlanAPIVersion,
+						},
+						InstallPlanRef: &corev1.ObjectReference{
+							Namespace:  testNamespace,
+							Kind:       v1alpha1.InstallPlanKind,
+							APIVersion: v1alpha1.InstallPlanAPIVersion,
+						},
+						LastUpdated:           now,
+						InstallPlanGeneration: 1,
+					},
+				},
+			},
+			wantInstallPlan: &v1alpha1.InstallPlan{
+				Spec: v1alpha1.InstallPlanSpec{
+					ClusterServiceVersionNames: []string{
+						"csv.v.1",
+					},
+					Approval:   v1alpha1.ApprovalAutomatic,
+					Approved:   true,
+					Generation: 1,
+				},
+				Status: v1alpha1.InstallPlanStatus{
+					Phase: v1alpha1.InstallPlanPhaseInstalling,
+					CatalogSources: []string{
+						"src",
+					},
+					Plan: []*v1alpha1.Step{
+						{
+							Resolving: "csv.v.1",
+							Resource: v1alpha1.StepResource{
+								CatalogSource:          "src",
+								CatalogSourceNamespace: testNamespace,
+								Group:                  v1alpha1.GroupName,
+								Version:                v1alpha1.GroupVersion,
+								Kind:                   v1alpha1.ClusterServiceVersionKind,
+								Name:                   "csv.v.1",
+								Manifest:               "{}",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "NoStatus/NoCurrentCSV/FoundInCatalog",
 			fields: fields{
 				clientOptions: []clientfake.Option{clientfake.WithSelfLinks(t)},
 				existingOLMObjs: []runtime.Object{
 					&v1alpha1.Subscription{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       v1alpha1.SubscriptionKind,
+							APIVersion: v1alpha1.SchemeGroupVersion.String(),
+						},
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "sub",
 							Namespace: testNamespace,
@@ -78,11 +220,11 @@ func TestSyncSubscriptions(t *testing.T) {
 						Resource: v1alpha1.StepResource{
 							CatalogSource:          "src",
 							CatalogSourceNamespace: testNamespace,
-							Group:    v1alpha1.GroupName,
-							Version:  v1alpha1.GroupVersion,
-							Kind:     v1alpha1.ClusterServiceVersionKind,
-							Name:     "csv.v.1",
-							Manifest: "{}",
+							Group:                  v1alpha1.GroupName,
+							Version:                v1alpha1.GroupVersion,
+							Kind:                   v1alpha1.ClusterServiceVersionKind,
+							Name:                   "csv.v.1",
+							Manifest:               "{}",
 						},
 					},
 				},
@@ -109,6 +251,10 @@ func TestSyncSubscriptions(t *testing.T) {
 			},
 			args: args{
 				obj: &v1alpha1.Subscription{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       v1alpha1.SubscriptionKind,
+						APIVersion: v1alpha1.SchemeGroupVersion.String(),
+					},
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "sub",
 						Namespace: testNamespace,
@@ -144,12 +290,13 @@ func TestSyncSubscriptions(t *testing.T) {
 							Kind:       v1alpha1.InstallPlanKind,
 							APIVersion: v1alpha1.InstallPlanAPIVersion,
 						},
-						InstallPlanRef: &v1.ObjectReference{
+						InstallPlanRef: &corev1.ObjectReference{
 							Namespace:  testNamespace,
 							Kind:       v1alpha1.InstallPlanKind,
 							APIVersion: v1alpha1.InstallPlanAPIVersion,
 						},
-						LastUpdated: now,
+						LastUpdated:           now,
+						InstallPlanGeneration: 1,
 					},
 				},
 			},
@@ -158,8 +305,9 @@ func TestSyncSubscriptions(t *testing.T) {
 					ClusterServiceVersionNames: []string{
 						"csv.v.1",
 					},
-					Approval: v1alpha1.ApprovalAutomatic,
-					Approved: true,
+					Approval:   v1alpha1.ApprovalAutomatic,
+					Approved:   true,
+					Generation: 1,
 				},
 				Status: v1alpha1.InstallPlanStatus{
 					Phase: v1alpha1.InstallPlanPhaseInstalling,
@@ -172,11 +320,158 @@ func TestSyncSubscriptions(t *testing.T) {
 							Resource: v1alpha1.StepResource{
 								CatalogSource:          "src",
 								CatalogSourceNamespace: testNamespace,
-								Group:    v1alpha1.GroupName,
-								Version:  v1alpha1.GroupVersion,
-								Kind:     v1alpha1.ClusterServiceVersionKind,
-								Name:     "csv.v.1",
-								Manifest: "{}",
+								Group:                  v1alpha1.GroupName,
+								Version:                v1alpha1.GroupVersion,
+								Kind:                   v1alpha1.ClusterServiceVersionKind,
+								Name:                   "csv.v.1",
+								Manifest:               "{}",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "NoStatus/NoCurrentCSV/BundlePath",
+			fields: fields{
+				clientOptions: []clientfake.Option{clientfake.WithSelfLinks(t)},
+				existingOLMObjs: []runtime.Object{
+					&v1alpha1.Subscription{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       v1alpha1.SubscriptionKind,
+							APIVersion: v1alpha1.SchemeGroupVersion.String(),
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "sub",
+							Namespace: testNamespace,
+						},
+						Spec: &v1alpha1.SubscriptionSpec{
+							CatalogSource:          "src",
+							CatalogSourceNamespace: testNamespace,
+						},
+						Status: v1alpha1.SubscriptionStatus{
+							CurrentCSV: "",
+							State:      "",
+						},
+					},
+				},
+				resolveSubs: []*v1alpha1.Subscription{
+					{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       v1alpha1.SubscriptionKind,
+							APIVersion: v1alpha1.SchemeGroupVersion.String(),
+						},
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "sub",
+							Namespace: testNamespace,
+						},
+						Spec: &v1alpha1.SubscriptionSpec{
+							CatalogSource:          "src",
+							CatalogSourceNamespace: testNamespace,
+						},
+						Status: v1alpha1.SubscriptionStatus{
+							CurrentCSV: "",
+							State:      v1alpha1.SubscriptionStateUpgradePending,
+						},
+					},
+				},
+				bundleLookups: []v1alpha1.BundleLookup{
+					{
+						Path: "bundle-path-a",
+						Identifier: "bundle-a",
+						CatalogSourceRef: &corev1.ObjectReference{
+							Namespace: testNamespace,
+							Name:      "src",
+						},
+						Conditions: []v1alpha1.BundleLookupCondition{
+							{
+								Type:               v1alpha1.BundleLookupPending,
+								Status:             corev1.ConditionTrue,
+								Reason:             "JobIncomplete",
+								Message:            "unpack job not completed",
+								LastTransitionTime: &now,
+							},
+						},
+					},
+				},
+			},
+			args: args{
+				obj: &v1alpha1.Subscription{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       v1alpha1.SubscriptionKind,
+						APIVersion: v1alpha1.SchemeGroupVersion.String(),
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "sub",
+						Namespace: testNamespace,
+					},
+					Spec: &v1alpha1.SubscriptionSpec{
+						CatalogSource:          "src",
+						CatalogSourceNamespace: testNamespace,
+					},
+					Status: v1alpha1.SubscriptionStatus{
+						CurrentCSV: "",
+						State:      "",
+					},
+				},
+			},
+			wantSubscriptions: []*v1alpha1.Subscription{
+				{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       v1alpha1.SubscriptionKind,
+						APIVersion: v1alpha1.SubscriptionCRDAPIVersion,
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "sub",
+						Namespace: testNamespace,
+					},
+					Spec: &v1alpha1.SubscriptionSpec{
+						CatalogSource:          "src",
+						CatalogSourceNamespace: testNamespace,
+					},
+					Status: v1alpha1.SubscriptionStatus{
+						CurrentCSV: "",
+						State:      v1alpha1.SubscriptionStateUpgradePending,
+						Install: &v1alpha1.InstallPlanReference{
+							Kind:       v1alpha1.InstallPlanKind,
+							APIVersion: v1alpha1.InstallPlanAPIVersion,
+						},
+						InstallPlanRef: &corev1.ObjectReference{
+							Namespace:  testNamespace,
+							Kind:       v1alpha1.InstallPlanKind,
+							APIVersion: v1alpha1.InstallPlanAPIVersion,
+						},
+						InstallPlanGeneration: 1,
+						LastUpdated:           now,
+					},
+				},
+			},
+			wantInstallPlan: &v1alpha1.InstallPlan{
+				Spec: v1alpha1.InstallPlanSpec{
+					ClusterServiceVersionNames: []string{"bundle-a"},
+					Approval:                   v1alpha1.ApprovalAutomatic,
+					Approved:                   true,
+					Generation:                 1,
+				},
+				Status: v1alpha1.InstallPlanStatus{
+					Phase:          v1alpha1.InstallPlanPhaseInstalling,
+					CatalogSources: []string{},
+					BundleLookups: []v1alpha1.BundleLookup{
+						{
+							Path: "bundle-path-a",
+							Identifier: "bundle-a",
+							CatalogSourceRef: &corev1.ObjectReference{
+								Namespace: testNamespace,
+								Name:      "src",
+							},
+							Conditions: []v1alpha1.BundleLookupCondition{
+								{
+									Type:               v1alpha1.BundleLookupPending,
+									Status:             corev1.ConditionTrue,
+									Reason:             "JobIncomplete",
+									Message:            "unpack job not completed",
+									LastTransitionTime: &now,
+								},
 							},
 						},
 					},
@@ -198,6 +493,10 @@ func TestSyncSubscriptions(t *testing.T) {
 						},
 					},
 					&v1alpha1.Subscription{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       v1alpha1.SubscriptionKind,
+							APIVersion: v1alpha1.SchemeGroupVersion.String(),
+						},
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "sub",
 							Namespace: testNamespace,
@@ -218,11 +517,11 @@ func TestSyncSubscriptions(t *testing.T) {
 						Resource: v1alpha1.StepResource{
 							CatalogSource:          "src",
 							CatalogSourceNamespace: testNamespace,
-							Group:    v1alpha1.GroupName,
-							Version:  v1alpha1.GroupVersion,
-							Kind:     v1alpha1.ClusterServiceVersionKind,
-							Name:     "csv.v.2",
-							Manifest: "{}",
+							Group:                  v1alpha1.GroupName,
+							Version:                v1alpha1.GroupVersion,
+							Kind:                   v1alpha1.ClusterServiceVersionKind,
+							Name:                   "csv.v.2",
+							Manifest:               "{}",
 						},
 					},
 				},
@@ -249,6 +548,10 @@ func TestSyncSubscriptions(t *testing.T) {
 			},
 			args: args{
 				obj: &v1alpha1.Subscription{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       v1alpha1.SubscriptionKind,
+						APIVersion: v1alpha1.SchemeGroupVersion.String(),
+					},
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "sub",
 						Namespace: testNamespace,
@@ -284,12 +587,13 @@ func TestSyncSubscriptions(t *testing.T) {
 							Kind:       v1alpha1.InstallPlanKind,
 							APIVersion: v1alpha1.InstallPlanAPIVersion,
 						},
-						InstallPlanRef: &v1.ObjectReference{
+						InstallPlanRef: &corev1.ObjectReference{
 							Namespace:  testNamespace,
 							Kind:       v1alpha1.InstallPlanKind,
 							APIVersion: v1alpha1.InstallPlanAPIVersion,
 						},
-						LastUpdated: now,
+						LastUpdated:           now,
+						InstallPlanGeneration: 1,
 					},
 				},
 			},
@@ -298,8 +602,9 @@ func TestSyncSubscriptions(t *testing.T) {
 					ClusterServiceVersionNames: []string{
 						"csv.v.2",
 					},
-					Approval: v1alpha1.ApprovalAutomatic,
-					Approved: true,
+					Approval:   v1alpha1.ApprovalAutomatic,
+					Approved:   true,
+					Generation: 1,
 				},
 				Status: v1alpha1.InstallPlanStatus{
 					Phase: v1alpha1.InstallPlanPhaseInstalling,
@@ -312,11 +617,11 @@ func TestSyncSubscriptions(t *testing.T) {
 							Resource: v1alpha1.StepResource{
 								CatalogSource:          "src",
 								CatalogSourceNamespace: testNamespace,
-								Group:    v1alpha1.GroupName,
-								Version:  v1alpha1.GroupVersion,
-								Kind:     v1alpha1.ClusterServiceVersionKind,
-								Name:     "csv.v.2",
-								Manifest: "{}",
+								Group:                  v1alpha1.GroupName,
+								Version:                v1alpha1.GroupVersion,
+								Kind:                   v1alpha1.ClusterServiceVersionKind,
+								Name:                   "csv.v.2",
+								Manifest:               "{}",
 							},
 						},
 					},
@@ -338,6 +643,10 @@ func TestSyncSubscriptions(t *testing.T) {
 						},
 					},
 					&v1alpha1.Subscription{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       v1alpha1.SubscriptionKind,
+							APIVersion: v1alpha1.SchemeGroupVersion.String(),
+						},
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "sub",
 							Namespace: testNamespace,
@@ -358,11 +667,11 @@ func TestSyncSubscriptions(t *testing.T) {
 						Resource: v1alpha1.StepResource{
 							CatalogSource:          "src",
 							CatalogSourceNamespace: testNamespace,
-							Group:    v1alpha1.GroupName,
-							Version:  v1alpha1.GroupVersion,
-							Kind:     v1alpha1.ClusterServiceVersionKind,
-							Name:     "csv.v.2",
-							Manifest: "{}",
+							Group:                  v1alpha1.GroupName,
+							Version:                v1alpha1.GroupVersion,
+							Kind:                   v1alpha1.ClusterServiceVersionKind,
+							Name:                   "csv.v.2",
+							Manifest:               "{}",
 						},
 					},
 					{
@@ -370,11 +679,11 @@ func TestSyncSubscriptions(t *testing.T) {
 						Resource: v1alpha1.StepResource{
 							CatalogSource:          "src",
 							CatalogSourceNamespace: testNamespace,
-							Group:    v1alpha1.GroupName,
-							Version:  v1alpha1.GroupVersion,
-							Kind:     v1alpha1.ClusterServiceVersionKind,
-							Name:     "dep.v.1",
-							Manifest: "{}",
+							Group:                  v1alpha1.GroupName,
+							Version:                v1alpha1.GroupVersion,
+							Kind:                   v1alpha1.ClusterServiceVersionKind,
+							Name:                   "dep.v.1",
+							Manifest:               "{}",
 						},
 					},
 					{
@@ -382,11 +691,11 @@ func TestSyncSubscriptions(t *testing.T) {
 						Resource: v1alpha1.StepResource{
 							CatalogSource:          "src",
 							CatalogSourceNamespace: testNamespace,
-							Group:    v1alpha1.GroupName,
-							Version:  v1alpha1.GroupVersion,
-							Kind:     v1alpha1.SubscriptionKind,
-							Name:     "sub-dep",
-							Manifest: "{}",
+							Group:                  v1alpha1.GroupName,
+							Version:                v1alpha1.GroupVersion,
+							Kind:                   v1alpha1.SubscriptionKind,
+							Name:                   "sub-dep",
+							Manifest:               "{}",
 						},
 					},
 				},
@@ -413,6 +722,10 @@ func TestSyncSubscriptions(t *testing.T) {
 			},
 			args: args{
 				obj: &v1alpha1.Subscription{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       v1alpha1.SubscriptionKind,
+						APIVersion: v1alpha1.SchemeGroupVersion.String(),
+					},
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "sub",
 						Namespace: testNamespace,
@@ -448,12 +761,13 @@ func TestSyncSubscriptions(t *testing.T) {
 							Kind:       v1alpha1.InstallPlanKind,
 							APIVersion: v1alpha1.InstallPlanAPIVersion,
 						},
-						InstallPlanRef: &v1.ObjectReference{
+						InstallPlanRef: &corev1.ObjectReference{
 							Namespace:  testNamespace,
 							Kind:       v1alpha1.InstallPlanKind,
 							APIVersion: v1alpha1.InstallPlanAPIVersion,
 						},
-						LastUpdated: now,
+						LastUpdated:           now,
+						InstallPlanGeneration: 1,
 					},
 				},
 			},
@@ -463,8 +777,9 @@ func TestSyncSubscriptions(t *testing.T) {
 						"csv.v.2",
 						"dep.v.1",
 					},
-					Approval: v1alpha1.ApprovalAutomatic,
-					Approved: true,
+					Approval:   v1alpha1.ApprovalAutomatic,
+					Approved:   true,
+					Generation: 1,
 				},
 				Status: v1alpha1.InstallPlanStatus{
 					Phase: v1alpha1.InstallPlanPhaseInstalling,
@@ -477,11 +792,11 @@ func TestSyncSubscriptions(t *testing.T) {
 							Resource: v1alpha1.StepResource{
 								CatalogSource:          "src",
 								CatalogSourceNamespace: testNamespace,
-								Group:    v1alpha1.GroupName,
-								Version:  v1alpha1.GroupVersion,
-								Kind:     v1alpha1.ClusterServiceVersionKind,
-								Name:     "csv.v.2",
-								Manifest: "{}",
+								Group:                  v1alpha1.GroupName,
+								Version:                v1alpha1.GroupVersion,
+								Kind:                   v1alpha1.ClusterServiceVersionKind,
+								Name:                   "csv.v.2",
+								Manifest:               "{}",
 							},
 						},
 						{
@@ -489,11 +804,11 @@ func TestSyncSubscriptions(t *testing.T) {
 							Resource: v1alpha1.StepResource{
 								CatalogSource:          "src",
 								CatalogSourceNamespace: testNamespace,
-								Group:    v1alpha1.GroupName,
-								Version:  v1alpha1.GroupVersion,
-								Kind:     v1alpha1.ClusterServiceVersionKind,
-								Name:     "dep.v.1",
-								Manifest: "{}",
+								Group:                  v1alpha1.GroupName,
+								Version:                v1alpha1.GroupVersion,
+								Kind:                   v1alpha1.ClusterServiceVersionKind,
+								Name:                   "dep.v.1",
+								Manifest:               "{}",
 							},
 						},
 						{
@@ -501,169 +816,12 @@ func TestSyncSubscriptions(t *testing.T) {
 							Resource: v1alpha1.StepResource{
 								CatalogSource:          "src",
 								CatalogSourceNamespace: testNamespace,
-								Group:    v1alpha1.GroupName,
-								Version:  v1alpha1.GroupVersion,
-								Kind:     v1alpha1.SubscriptionKind,
-								Name:     "sub-dep",
-								Manifest: "{}",
+								Group:                  v1alpha1.GroupName,
+								Version:                v1alpha1.GroupVersion,
+								Kind:                   v1alpha1.SubscriptionKind,
+								Name:                   "sub-dep",
+								Manifest:               "{}",
 							},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "Status/HaveCurrentCSV/SameManifests",
-			fields: fields{
-				clientOptions: []clientfake.Option{clientfake.WithSelfLinks(t)},
-				existingOLMObjs: []runtime.Object{
-					&v1alpha1.ClusterServiceVersion{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "csv.v.1",
-							Namespace: testNamespace,
-						},
-						Status: v1alpha1.ClusterServiceVersionStatus{
-							Phase: v1alpha1.CSVPhaseSucceeded,
-						},
-					},
-					&v1alpha1.Subscription{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "sub",
-							Namespace: testNamespace,
-						},
-						Spec: &v1alpha1.SubscriptionSpec{
-							CatalogSource:          "src",
-							CatalogSourceNamespace: testNamespace,
-						},
-						Status: v1alpha1.SubscriptionStatus{
-							CurrentCSV: "",
-							State:      "",
-						},
-					},
-					&v1alpha1.InstallPlan{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "install-ip123",
-							Namespace: testNamespace,
-							SelfLink:  fmt.Sprintf("/apis/%s/namespaces/%s/%s/%s", v1alpha1.SchemeGroupVersion.String(), "installplans", testNamespace, "install-ip123"),
-						},
-						Spec: v1alpha1.InstallPlanSpec{
-							ClusterServiceVersionNames: []string{
-								"csv.v.1",
-							},
-							Approval: v1alpha1.ApprovalAutomatic,
-							Approved: true,
-						},
-						Status: v1alpha1.InstallPlanStatus{
-							Phase: v1alpha1.InstallPlanPhaseComplete,
-							CatalogSources: []string{
-								"src",
-							},
-							Plan: []*v1alpha1.Step{
-								{
-									Resolving: "csv.v.1",
-									Resource: v1alpha1.StepResource{
-										CatalogSource:          "src",
-										CatalogSourceNamespace: testNamespace,
-										Group:    v1alpha1.GroupName,
-										Version:  v1alpha1.GroupVersion,
-										Kind:     v1alpha1.ClusterServiceVersionKind,
-										Name:     "csv.v.1",
-										Manifest: "{}",
-									},
-								},
-							},
-						},
-					},
-				},
-				resolveSteps: []*v1alpha1.Step{
-					{
-						Resolving: "csv.v.1",
-						Resource: v1alpha1.StepResource{
-							CatalogSource:          "src",
-							CatalogSourceNamespace: testNamespace,
-							Group:    v1alpha1.GroupName,
-							Version:  v1alpha1.GroupVersion,
-							Kind:     v1alpha1.ClusterServiceVersionKind,
-							Name:     "csv.v.1",
-							Manifest: "{}",
-						},
-					},
-				},
-				resolveSubs: []*v1alpha1.Subscription{
-					{
-						TypeMeta: metav1.TypeMeta{
-							Kind:       v1alpha1.SubscriptionKind,
-							APIVersion: v1alpha1.SubscriptionCRDAPIVersion,
-						},
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "sub",
-							Namespace: testNamespace,
-						},
-						Spec: &v1alpha1.SubscriptionSpec{
-							CatalogSource:          "src",
-							CatalogSourceNamespace: testNamespace,
-						},
-						Status: v1alpha1.SubscriptionStatus{
-							CurrentCSV: "csv.v.1",
-							State:      "SubscriptionStateAtLatest",
-						},
-					},
-				},
-			},
-			args: args{
-				obj: &v1alpha1.Subscription{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "sub",
-						Namespace: testNamespace,
-					},
-					Spec: &v1alpha1.SubscriptionSpec{
-						CatalogSource:          "src",
-						CatalogSourceNamespace: testNamespace,
-					},
-					Status: v1alpha1.SubscriptionStatus{
-						CurrentCSV: "",
-						State:      "",
-					},
-				},
-			},
-			wantInstallPlan: &v1alpha1.InstallPlan{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "install-ip123",
-					Namespace: testNamespace,
-					SelfLink:  fmt.Sprintf("/apis/%s/namespaces/%s/%s/%s", v1alpha1.SchemeGroupVersion.String(), "installplans", testNamespace, "install-ip123"),
-					OwnerReferences: []metav1.OwnerReference{{
-						APIVersion:         v1alpha1.SubscriptionCRDAPIVersion,
-						Kind:               v1alpha1.SubscriptionKind,
-						Name:               "sub",
-						Controller:         &ownerutil.NotController,
-						BlockOwnerDeletion: &ownerutil.DontBlockOwnerDeletion,
-					}},
-				},
-				Spec: v1alpha1.InstallPlanSpec{
-					ClusterServiceVersionNames: []string{
-						"csv.v.1",
-					},
-					Approval: v1alpha1.ApprovalAutomatic,
-					Approved: true,
-				},
-				Status: v1alpha1.InstallPlanStatus{
-					Phase: v1alpha1.InstallPlanPhaseInstalling,
-					CatalogSources: []string{
-						"src",
-					},
-					Plan: []*v1alpha1.Step{
-						{
-							Resolving: "csv.v.1",
-							Resource: v1alpha1.StepResource{
-								CatalogSource:          "src",
-								CatalogSourceNamespace: testNamespace,
-								Group:    v1alpha1.GroupName,
-								Version:  v1alpha1.GroupVersion,
-								Kind:     v1alpha1.ClusterServiceVersionKind,
-								Name:     "csv.v.1",
-								Manifest: "{}",
-							},
-							Status: v1alpha1.StepStatusUnknown,
 						},
 					},
 				},
@@ -673,10 +831,10 @@ func TestSyncSubscriptions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create test operator
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(context.TODO())
 			defer cancel()
 
-			o, err := NewFakeOperator(testNamespace, []string{testNamespace}, ctx, withClientObjs(tt.fields.existingOLMObjs...), withK8sObjs(tt.fields.existingObjects...), withFakeClientOptions(tt.fields.clientOptions...))
+			o, err := NewFakeOperator(ctx, testNamespace, []string{testNamespace}, withClock(clockFake), withClientObjs(tt.fields.existingOLMObjs...), withK8sObjs(tt.fields.existingObjects...), withFakeClientOptions(tt.fields.clientOptions...))
 			require.NoError(t, err)
 
 			o.reconciler = &fakes.FakeRegistryReconcilerFactory{
@@ -691,12 +849,12 @@ func TestSyncSubscriptions(t *testing.T) {
 
 			o.sourcesLastUpdate.Set(tt.fields.sourcesLastUpdate.Time)
 			o.resolver = &fakes.FakeResolver{
-				ResolveStepsStub: func(string, resolver.SourceQuerier) ([]*v1alpha1.Step, []*v1alpha1.Subscription, error) {
-					return tt.fields.resolveSteps, tt.fields.resolveSubs, tt.fields.resolveErr
+				ResolveStepsStub: func(string, resolver.SourceQuerier) ([]*v1alpha1.Step, []v1alpha1.BundleLookup, []*v1alpha1.Subscription, error) {
+					return tt.fields.resolveSteps, tt.fields.bundleLookups, tt.fields.resolveSubs, tt.fields.resolveErr
 				},
 			}
 
-			namespace := &v1.Namespace{
+			namespace := &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: testNamespace,
 				},
@@ -725,4 +883,146 @@ func TestSyncSubscriptions(t *testing.T) {
 			}
 		})
 	}
+}
+
+type operatorBuilder interface {
+	operator(ctx context.Context) (*Operator, error)
+}
+
+type objs struct {
+	clientObjs []runtime.Object
+	k8sObjs    []runtime.Object
+}
+
+type srnFields struct {
+	clientOptions []clientfake.Option
+	existingObjs  objs
+	resolver      resolver.Resolver
+	reconciler    reconciler.RegistryReconcilerFactory
+}
+
+type srnArgs struct {
+	namespace string
+}
+
+type srnTest struct {
+	fields srnFields
+	args   srnArgs
+}
+
+func (t srnTest) operator(ctx context.Context) (*Operator, error) {
+	return NewFakeOperator(
+		ctx,
+		t.args.namespace,
+		[]string{t.args.namespace},
+		withClientObjs(t.fields.existingObjs.clientObjs...),
+		withK8sObjs(t.fields.existingObjs.k8sObjs...),
+		withFakeClientOptions(t.fields.clientOptions...),
+		withResolver(t.fields.resolver),
+	)
+}
+
+func benchOperator(ctx context.Context, test operatorBuilder, b *testing.B) (*Operator, error) {
+	b.StartTimer()
+	defer b.StopTimer()
+
+	return test.operator(ctx)
+}
+
+func benchmarkSyncResolvingNamespace(test srnTest, b *testing.B) {
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		ctx, cancel := context.WithCancel(context.TODO())
+		defer cancel()
+
+		o, err := benchOperator(ctx, test, b)
+		require.NoError(b, err)
+
+		namespace := &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: test.args.namespace,
+			},
+		}
+		require.NoError(b, o.syncResolvingNamespace(namespace))
+	}
+}
+
+func BenchmarkSyncResolvingNamespace(b *testing.B) {
+	ns := "default"
+	name := "sub"
+	benchmarkSyncResolvingNamespace(srnTest{
+		fields: srnFields{
+			clientOptions: []clientfake.Option{clientfake.WithSelfLinks(b)},
+			existingObjs: objs{
+				clientObjs: []runtime.Object{
+					&v1alpha1.Subscription{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      name,
+							Namespace: ns,
+						},
+						Spec: &v1alpha1.SubscriptionSpec{
+							CatalogSource:          "src",
+							CatalogSourceNamespace: ns,
+						},
+						Status: v1alpha1.SubscriptionStatus{
+							CurrentCSV: "",
+							State:      "",
+						},
+					},
+				},
+			},
+			reconciler: &fakes.FakeRegistryReconcilerFactory{
+				ReconcilerForSourceStub: func(*v1alpha1.CatalogSource) reconciler.RegistryReconciler {
+					return &fakes.FakeRegistryReconciler{
+						CheckRegistryServerStub: func(*v1alpha1.CatalogSource) (bool, error) {
+							return true, nil
+						},
+					}
+				},
+			},
+			resolver: &fakes.FakeResolver{
+				ResolveStepsStub: func(string, resolver.SourceQuerier) ([]*v1alpha1.Step, []v1alpha1.BundleLookup, []*v1alpha1.Subscription, error) {
+					steps := []*v1alpha1.Step{
+						{
+							Resolving: "csv.v.2",
+							Resource: v1alpha1.StepResource{
+								CatalogSource:          "src",
+								CatalogSourceNamespace: ns,
+								Group:                  v1alpha1.GroupName,
+								Version:                v1alpha1.GroupVersion,
+								Kind:                   v1alpha1.ClusterServiceVersionKind,
+								Name:                   "csv.v.2",
+								Manifest:               "{}",
+							},
+						},
+					}
+					subs := []*v1alpha1.Subscription{
+						{
+							TypeMeta: metav1.TypeMeta{
+								Kind:       v1alpha1.SubscriptionKind,
+								APIVersion: v1alpha1.SubscriptionCRDAPIVersion,
+							},
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      name,
+								Namespace: ns,
+							},
+							Spec: &v1alpha1.SubscriptionSpec{
+								CatalogSource:          "src",
+								CatalogSourceNamespace: ns,
+							},
+							Status: v1alpha1.SubscriptionStatus{
+								CurrentCSV: "csv.v.2",
+								State:      "SubscriptionStateAtLatest",
+							},
+						},
+					}
+
+					return steps, nil, subs, nil
+				},
+			},
+		},
+		args: srnArgs{
+			namespace: ns,
+		},
+	}, b)
 }

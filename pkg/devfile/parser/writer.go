@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"gopkg.in/yaml.v2"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 )
 
 // WriteJsonDevfile creates a devfile.json file
@@ -25,7 +25,7 @@ func (d *DevfileObj) WriteJsonDevfile() error {
 	}
 
 	// Successful
-	glog.V(4).Infof("devfile json created at: '%s'", OutputDevfileJsonPath)
+	klog.V(4).Infof("devfile json created at: '%s'", OutputDevfileJsonPath)
 	return nil
 }
 
@@ -46,6 +46,6 @@ func (d *DevfileObj) WriteYamlDevfile() error {
 	}
 
 	// Successful
-	glog.V(4).Infof("devfile yaml created at: '%s'", OutputDevfileYamlPath)
+	klog.V(4).Infof("devfile yaml created at: '%s'", OutputDevfileYamlPath)
 	return nil
 }

@@ -6,27 +6,33 @@ import:
   version: v1.0.0
 - package: github.com/pkg/errors
   version: v0.8.0
-- package: github.com/golang/glog
-  version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
-- package: github.com/spf13/cobra
-  version: v0.0.1
-- package: github.com/spf13/pflag
+- package: k8s.io/klog
   version: v1.0.0
+- package: github.com/spf13/cobra
+  version: v0.0.5
+- package: github.com/spf13/pflag
+  version: v1.0.5
 - package: github.com/fatih/color
   version: v1.6.0
 - package: github.com/openshift/client-go
-  version: release-4.1
+  version: release-4.4
 - package: github.com/openshift/api
-  version: release-4.1
+  version: release-4.4
 - package: k8s.io/client-go
-  version: origin-4.1-kubernetes-1.13.4
+  version: origin-4.4-kubernetes-1.17.1
   repo: https://github.com/openshift/kubernetes-client-go.git
+- package: k8s.io/kubectl
+  version: origin-4.4-kubernetes-1.17.1
+  repo: https://github.com/openshift/kubernetes-kubectl
 - package: k8s.io/apimachinery
-  version: origin-4.1-kubernetes-1.13.4
+  version: origin-4.4-kubernetes-1.17.1
   repo: https://github.com/openshift/kubernetes-apimachinery.git
 - package: k8s.io/api
-  version: origin-4.1-kubernetes-1.13.4
+  version: origin-4.4-kubernetes-1.17.1
   repo: https://github.com/openshift/kubernetes-api.git
+- package: k8s.io/cli-runtime
+  version: oc-4.4-kubernetes-1.17.0
+  repo: https://github.com/openshift/kubernetes-cli-runtime.git
 - package: github.com/kr/pty
   version: v1.1.9
   repo: https://github.com/creack/pty
@@ -34,8 +40,8 @@ import:
   version: v1.9.0
 - package: github.com/onsi/ginkgo
   version: v1.12.0
-- package: github.com/kubernetes-incubator/service-catalog
-  version: v0.1.42
+- package: github.com/kubernetes-sigs/service-catalog
+  version: v0.2.2
 - package: github.com/satori/go.uuid
   version: v1.1.0
 - package: github.com/fsnotify/fsnotify
@@ -54,10 +60,12 @@ import:
   version: v1.1.2
 - package: github.com/gobwas/glob
   version: e7a84e9525fe90abcda167b604e483cc959ad4aa
-- package: github.com/openshift/origin
-  version: release-4.1
+- package: github.com/openshift/library-go
+  version: release-4.4
+- package: github.com/openshift/oc
+  version: release-4.4
   subpackages:
-  - pkg/oc/cli/login
+  - pkg/cli/login
 - package: github.com/mattn/go-colorable
   version: efa589957cd060542a26d2dd7832fd6a6c6c3ade
 - package: github.com/Benjamintf1/unmarshalledmatchers
@@ -72,7 +80,7 @@ import:
 - package: github.com/xeipuuv/gojsonschema
   version: v1.2.0
 - package: github.com/operator-framework/operator-lifecycle-manager
-  version: release-4.1
+  version: release-4.4
 - package: github.com/golang/groupcache
 - package: github.com/docker/docker
   version: v19.03.8
@@ -84,6 +92,9 @@ import:
   version: v30.1.0
 - package: github.com/golang/mock
   version: v1.4.3
+# help glide with go mod submodule tag
+- package: github.com/Azure/go-autorest
+  version: autorest/v0.9.0
   # use older version due to https://github.com/hashicorp/go-multierror/issues/36
 - package: github.com/hashicorp/go-multierror
   version: v1.0.0

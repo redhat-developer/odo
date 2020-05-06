@@ -1,10 +1,11 @@
 package e2e
 
 import (
-	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
@@ -16,14 +17,17 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/watch"
+	apiregistrationv1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 
 	v1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/install"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/olm"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 )
 
 var singleInstance = int32(1)
@@ -159,44 +163,54 @@ func newNginxDeployment(name string) appsv1.DeploymentSpec {
 	}
 }
 
-func newMockExtServerDeployment(name, mockGroupVersion string, mockKinds []string) appsv1.DeploymentSpec {
+type mockGroupVersionKind struct {
+	Name             string
+	MockGroupVersion string
+	MockKinds        []string
+	Port             int
+}
+
+func newMockExtServerDeployment(labelName string, mGVKs []mockGroupVersionKind) appsv1.DeploymentSpec {
+	// Create the list of containers
+	containers := []corev1.Container{}
+	for _, mGVK := range mGVKs {
+		containers = append(containers, corev1.Container{
+			Name:    genName(mGVK.Name),
+			Image:   "quay.io/coreos/mock-extension-apiserver:master",
+			Command: []string{"/bin/mock-extension-apiserver"},
+			Args: []string{
+				"-v=4",
+				"--mock-kinds",
+				strings.Join(mGVK.MockKinds, ","),
+				"--mock-group-version",
+				mGVK.MockGroupVersion,
+				"--secure-port",
+				strconv.Itoa(mGVK.Port),
+				"--debug",
+			},
+			Ports: []corev1.ContainerPort{
+				{
+					ContainerPort: int32(mGVK.Port),
+				},
+			},
+			ImagePullPolicy: corev1.PullIfNotPresent,
+		})
+	}
 	return appsv1.DeploymentSpec{
 		Selector: &metav1.LabelSelector{
 			MatchLabels: map[string]string{
-				"app": name,
+				"app": labelName,
 			},
 		},
 		Replicas: &singleInstance,
 		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{
 				Labels: map[string]string{
-					"app": name,
+					"app": labelName,
 				},
 			},
 			Spec: corev1.PodSpec{
-				Containers: []corev1.Container{
-					{
-						Name:    genName(name),
-						Image:   "quay.io/coreos/mock-extension-apiserver:master",
-						Command: []string{"/bin/mock-extension-apiserver"},
-						Args: []string{
-							"-v=4",
-							"--mock-kinds",
-							strings.Join(mockKinds, ","),
-							"--mock-group-version",
-							mockGroupVersion,
-							"--secure-port",
-							"5443",
-							"--debug",
-						},
-						Ports: []corev1.ContainerPort{
-							{
-								ContainerPort: 5443,
-							},
-						},
-						ImagePullPolicy: corev1.PullIfNotPresent,
-					},
-				},
+				Containers: containers,
 			},
 		},
 	}
@@ -440,7 +454,7 @@ func TestCreateCSVWithUnmetPermissionsCRD(t *testing.T) {
 	crc := newCRClient(t)
 
 	saName := genName("dep-")
-	permissions := []install.StrategyDeploymentPermissions{
+	permissions := []v1alpha1.StrategyDeploymentPermissions{
 		{
 			ServiceAccountName: saName,
 			Rules: []rbacv1.PolicyRule{
@@ -453,7 +467,7 @@ func TestCreateCSVWithUnmetPermissionsCRD(t *testing.T) {
 		},
 	}
 
-	clusterPermissions := []install.StrategyDeploymentPermissions{
+	clusterPermissions := []v1alpha1.StrategyDeploymentPermissions{
 		{
 			ServiceAccountName: saName,
 			Rules: []rbacv1.PolicyRule{
@@ -612,7 +626,7 @@ func TestCreateCSVWithUnmetPermissionsAPIService(t *testing.T) {
 	crc := newCRClient(t)
 
 	saName := genName("dep-")
-	permissions := []install.StrategyDeploymentPermissions{
+	permissions := []v1alpha1.StrategyDeploymentPermissions{
 		{
 			ServiceAccountName: saName,
 			Rules: []rbacv1.PolicyRule{
@@ -625,7 +639,7 @@ func TestCreateCSVWithUnmetPermissionsAPIService(t *testing.T) {
 		},
 	}
 
-	clusterPermissions := []install.StrategyDeploymentPermissions{
+	clusterPermissions := []v1alpha1.StrategyDeploymentPermissions{
 		{
 			ServiceAccountName: saName,
 			Rules: []rbacv1.PolicyRule{
@@ -760,7 +774,7 @@ func TestCreateCSVRequirementsMetCRD(t *testing.T) {
 	_, err := c.CreateServiceAccount(&sa)
 	require.NoError(t, err, "could not create ServiceAccount %#v", sa)
 
-	permissions := []install.StrategyDeploymentPermissions{
+	permissions := []v1alpha1.StrategyDeploymentPermissions{
 		{
 			ServiceAccountName: sa.GetName(),
 			Rules: []rbacv1.PolicyRule{
@@ -773,7 +787,7 @@ func TestCreateCSVRequirementsMetCRD(t *testing.T) {
 		},
 	}
 
-	clusterPermissions := []install.StrategyDeploymentPermissions{
+	clusterPermissions := []v1alpha1.StrategyDeploymentPermissions{
 		{
 			ServiceAccountName: sa.GetName(),
 			Rules: []rbacv1.PolicyRule{
@@ -1022,7 +1036,7 @@ func TestCreateCSVRequirementsMetAPIService(t *testing.T) {
 	_, err := c.CreateServiceAccount(&sa)
 	require.NoError(t, err, "could not create ServiceAccount")
 
-	permissions := []install.StrategyDeploymentPermissions{
+	permissions := []v1alpha1.StrategyDeploymentPermissions{
 		{
 			ServiceAccountName: sa.GetName(),
 			Rules: []rbacv1.PolicyRule{
@@ -1035,7 +1049,7 @@ func TestCreateCSVRequirementsMetAPIService(t *testing.T) {
 		},
 	}
 
-	clusterPermissions := []install.StrategyDeploymentPermissions{
+	clusterPermissions := []v1alpha1.StrategyDeploymentPermissions{
 		{
 			ServiceAccountName: sa.GetName(),
 			Rules: []rbacv1.PolicyRule{
@@ -1184,19 +1198,18 @@ func TestCreateCSVWithOwnedAPIService(t *testing.T) {
 	version := "v1alpha1"
 	mockGroupVersion := strings.Join([]string{mockGroup, version}, "/")
 	mockKinds := []string{"fez", "fedora"}
-	depSpec := newMockExtServerDeployment(depName, mockGroupVersion, mockKinds)
+	depSpec := newMockExtServerDeployment(depName, []mockGroupVersionKind{mockGroupVersionKind{depName, mockGroupVersion, mockKinds, 5443}})
 	apiServiceName := strings.Join([]string{version, mockGroup}, ".")
 
 	// Create CSV for the package-server
-	strategy := install.StrategyDetailsDeployment{
-		DeploymentSpecs: []install.StrategyDeploymentSpec{
+	strategy := v1alpha1.StrategyDetailsDeployment{
+		DeploymentSpecs: []v1alpha1.StrategyDeploymentSpec{
 			{
 				Name: depName,
 				Spec: depSpec,
 			},
 		},
 	}
-	strategyRaw, err := json.Marshal(strategy)
 
 	owned := make([]v1alpha1.APIServiceDescription, len(mockKinds))
 	for i, kind := range mockKinds {
@@ -1234,8 +1247,8 @@ func TestCreateCSVWithOwnedAPIService(t *testing.T) {
 				},
 			},
 			InstallStrategy: v1alpha1.NamedInstallStrategy{
-				StrategyName:    install.InstallStrategyNameDeployment,
-				StrategySpecRaw: strategyRaw,
+				StrategyName: v1alpha1.InstallStrategyNameDeployment,
+				StrategySpec: strategy,
 			},
 			APIServiceDefinitions: v1alpha1.APIServiceDefinitions{
 				Owned: owned,
@@ -1245,9 +1258,31 @@ func TestCreateCSVWithOwnedAPIService(t *testing.T) {
 	csv.SetName(depName)
 
 	// Create the APIService CSV
-	cleanupCSV, err := createCSV(t, c, crc, csv, testNamespace, false, true)
+	cleanupCSV, err := createCSV(t, c, crc, csv, testNamespace, false, false)
 	require.NoError(t, err)
-	defer cleanupCSV()
+	defer func() {
+		watcher, err := c.ApiregistrationV1Interface().ApiregistrationV1().APIServices().Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + apiServiceName})
+		require.NoError(t, err)
+
+		deleted := make(chan struct{})
+		go func() {
+			events := watcher.ResultChan()
+			for {
+				select {
+				case evt := <-events:
+					if evt.Type == watch.Deleted {
+						deleted <- struct{}{}
+						return
+					}
+				case <-time.After(pollDuration):
+					require.FailNow(t, "apiservice not cleaned up after CSV deleted")
+				}
+			}
+		}()
+
+		cleanupCSV()
+		<-deleted
+	}()
 
 	fetchedCSV, err := fetchCSV(t, crc, csv.Name, testNamespace, csvSucceededChecker)
 	require.NoError(t, err)
@@ -1261,11 +1296,12 @@ func TestCreateCSVWithOwnedAPIService(t *testing.T) {
 	require.NoError(t, err, "error getting expected APIService")
 
 	// Should create Service
-	_, err = c.GetService(testNamespace, olm.APIServiceNameToServiceName(apiServiceName))
+	serviceName := fmt.Sprintf("%s-service", depName)
+	_, err = c.GetService(testNamespace, serviceName)
 	require.NoError(t, err, "error getting expected Service")
 
 	// Should create certificate Secret
-	secretName := fmt.Sprintf("%s-cert", apiServiceName)
+	secretName := fmt.Sprintf("%s-cert", serviceName)
 	_, err = c.GetSecret(testNamespace, secretName)
 	require.NoError(t, err, "error getting expected Secret")
 
@@ -1278,11 +1314,11 @@ func TestCreateCSVWithOwnedAPIService(t *testing.T) {
 	require.NoError(t, err, "error getting exptected Secret RoleBinding")
 
 	// Should create a system:auth-delegator Cluster RoleBinding
-	_, err = c.GetClusterRoleBinding(fmt.Sprintf("%s-system:auth-delegator", apiServiceName))
+	_, err = c.GetClusterRoleBinding(fmt.Sprintf("%s-system:auth-delegator", serviceName))
 	require.NoError(t, err, "error getting expected system:auth-delegator ClusterRoleBinding")
 
 	// Should create an extension-apiserver-authentication-reader RoleBinding in kube-system
-	_, err = c.GetRoleBinding("kube-system", fmt.Sprintf("%s-auth-reader", apiServiceName))
+	_, err = c.GetRoleBinding("kube-system", fmt.Sprintf("%s-auth-reader", serviceName))
 	require.NoError(t, err, "error getting expected extension-apiserver-authentication-reader RoleBinding")
 
 	// Store the ca sha annotation
@@ -1290,8 +1326,9 @@ func TestCreateCSVWithOwnedAPIService(t *testing.T) {
 	require.True(t, ok, "expected olm sha annotation not present on existing pod template")
 
 	// Induce a cert rotation
-	fetchedCSV.Status.CertsLastUpdated = metav1.Now()
-	fetchedCSV.Status.CertsRotateAt = metav1.Now()
+	now := metav1.Now()
+	fetchedCSV.Status.CertsLastUpdated = &now
+	fetchedCSV.Status.CertsRotateAt = &now
 	fetchedCSV, err = crc.OperatorsV1alpha1().ClusterServiceVersions(testNamespace).UpdateStatus(fetchedCSV)
 	require.NoError(t, err)
 
@@ -1350,19 +1387,18 @@ func TestUpdateCSVWithOwnedAPIService(t *testing.T) {
 	version := "v1alpha1"
 	mockGroupVersion := strings.Join([]string{mockGroup, version}, "/")
 	mockKinds := []string{"fedora"}
-	depSpec := newMockExtServerDeployment(depName, mockGroupVersion, mockKinds)
+	depSpec := newMockExtServerDeployment(depName, []mockGroupVersionKind{mockGroupVersionKind{depName, mockGroupVersion, mockKinds, 5443}})
 	apiServiceName := strings.Join([]string{version, mockGroup}, ".")
 
 	// Create CSVs for the hat-server
-	strategy := install.StrategyDetailsDeployment{
-		DeploymentSpecs: []install.StrategyDeploymentSpec{
+	strategy := v1alpha1.StrategyDetailsDeployment{
+		DeploymentSpecs: []v1alpha1.StrategyDeploymentSpec{
 			{
 				Name: depName,
 				Spec: depSpec,
 			},
 		},
 	}
-	strategyRaw, err := json.Marshal(strategy)
 
 	owned := make([]v1alpha1.APIServiceDescription, len(mockKinds))
 	for i, kind := range mockKinds {
@@ -1400,8 +1436,8 @@ func TestUpdateCSVWithOwnedAPIService(t *testing.T) {
 				},
 			},
 			InstallStrategy: v1alpha1.NamedInstallStrategy{
-				StrategyName:    install.InstallStrategyNameDeployment,
-				StrategySpecRaw: strategyRaw,
+				StrategyName: v1alpha1.InstallStrategyNameDeployment,
+				StrategySpec: strategy,
 			},
 			APIServiceDefinitions: v1alpha1.APIServiceDefinitions{
 				Owned: owned,
@@ -1411,7 +1447,7 @@ func TestUpdateCSVWithOwnedAPIService(t *testing.T) {
 	csv.SetName("csv-hat-1")
 
 	// Create the APIService CSV
-	_, err = createCSV(t, c, crc, csv, testNamespace, false, false)
+	_, err := createCSV(t, c, crc, csv, testNamespace, false, false)
 	require.NoError(t, err)
 
 	_, err = fetchCSV(t, crc, csv.Name, testNamespace, csvSucceededChecker)
@@ -1426,11 +1462,12 @@ func TestUpdateCSVWithOwnedAPIService(t *testing.T) {
 	require.NoError(t, err, "error getting expected APIService")
 
 	// Should create Service
-	_, err = c.GetService(testNamespace, olm.APIServiceNameToServiceName(apiServiceName))
+	serviceName := fmt.Sprintf("%s-service", depName)
+	_, err = c.GetService(testNamespace, serviceName)
 	require.NoError(t, err, "error getting expected Service")
 
 	// Should create certificate Secret
-	secretName := fmt.Sprintf("%s-cert", apiServiceName)
+	secretName := fmt.Sprintf("%s-cert", serviceName)
 	_, err = c.GetSecret(testNamespace, secretName)
 	require.NoError(t, err, "error getting expected Secret")
 
@@ -1443,11 +1480,11 @@ func TestUpdateCSVWithOwnedAPIService(t *testing.T) {
 	require.NoError(t, err, "error getting exptected Secret RoleBinding")
 
 	// Should create a system:auth-delegator Cluster RoleBinding
-	_, err = c.GetClusterRoleBinding(fmt.Sprintf("%s-system:auth-delegator", apiServiceName))
+	_, err = c.GetClusterRoleBinding(fmt.Sprintf("%s-system:auth-delegator", serviceName))
 	require.NoError(t, err, "error getting expected system:auth-delegator ClusterRoleBinding")
 
 	// Should create an extension-apiserver-authentication-reader RoleBinding in kube-system
-	_, err = c.GetRoleBinding("kube-system", fmt.Sprintf("%s-auth-reader", apiServiceName))
+	_, err = c.GetRoleBinding("kube-system", fmt.Sprintf("%s-auth-reader", serviceName))
 	require.NoError(t, err, "error getting expected extension-apiserver-authentication-reader RoleBinding")
 
 	// Create a new CSV that owns the same API Service and replace the old CSV
@@ -1474,8 +1511,8 @@ func TestUpdateCSVWithOwnedAPIService(t *testing.T) {
 				},
 			},
 			InstallStrategy: v1alpha1.NamedInstallStrategy{
-				StrategyName:    install.InstallStrategyNameDeployment,
-				StrategySpecRaw: strategyRaw,
+				StrategyName: v1alpha1.InstallStrategyNameDeployment,
+				StrategySpec: strategy,
 			},
 			APIServiceDefinitions: v1alpha1.APIServiceDefinitions{
 				Owned: owned,
@@ -1501,11 +1538,11 @@ func TestUpdateCSVWithOwnedAPIService(t *testing.T) {
 	require.NoError(t, err, "error getting expected APIService")
 
 	// Should create Service
-	_, err = c.GetService(testNamespace, olm.APIServiceNameToServiceName(apiServiceName))
+	_, err = c.GetService(testNamespace, serviceName)
 	require.NoError(t, err, "error getting expected Service")
 
 	// Should create certificate Secret
-	secretName = fmt.Sprintf("%s-cert", apiServiceName)
+	secretName = fmt.Sprintf("%s-cert", serviceName)
 	_, err = c.GetSecret(testNamespace, secretName)
 	require.NoError(t, err, "error getting expected Secret")
 
@@ -1518,11 +1555,11 @@ func TestUpdateCSVWithOwnedAPIService(t *testing.T) {
 	require.NoError(t, err, "error getting exptected Secret RoleBinding")
 
 	// Should create a system:auth-delegator Cluster RoleBinding
-	_, err = c.GetClusterRoleBinding(fmt.Sprintf("%s-system:auth-delegator", apiServiceName))
+	_, err = c.GetClusterRoleBinding(fmt.Sprintf("%s-system:auth-delegator", serviceName))
 	require.NoError(t, err, "error getting expected system:auth-delegator ClusterRoleBinding")
 
 	// Should create an extension-apiserver-authentication-reader RoleBinding in kube-system
-	_, err = c.GetRoleBinding("kube-system", fmt.Sprintf("%s-auth-reader", apiServiceName))
+	_, err = c.GetRoleBinding("kube-system", fmt.Sprintf("%s-auth-reader", serviceName))
 	require.NoError(t, err, "error getting expected extension-apiserver-authentication-reader RoleBinding")
 
 	// Should eventually GC the CSV
@@ -1606,19 +1643,18 @@ func TestCreateSameCSVWithOwnedAPIServiceMultiNamespace(t *testing.T) {
 	version := "v1alpha1"
 	mockGroupVersion := strings.Join([]string{mockGroup, version}, "/")
 	mockKinds := []string{"fedora"}
-	depSpec := newMockExtServerDeployment(depName, mockGroupVersion, mockKinds)
+	depSpec := newMockExtServerDeployment(depName, []mockGroupVersionKind{mockGroupVersionKind{depName, mockGroupVersion, mockKinds, 5443}})
 	apiServiceName := strings.Join([]string{version, mockGroup}, ".")
 
 	// Create CSVs for the hat-server
-	strategy := install.StrategyDetailsDeployment{
-		DeploymentSpecs: []install.StrategyDeploymentSpec{
+	strategy := v1alpha1.StrategyDetailsDeployment{
+		DeploymentSpecs: []v1alpha1.StrategyDeploymentSpec{
 			{
 				Name: depName,
 				Spec: depSpec,
 			},
 		},
 	}
-	strategyRaw, err := json.Marshal(strategy)
 
 	owned := make([]v1alpha1.APIServiceDescription, len(mockKinds))
 	for i, kind := range mockKinds {
@@ -1656,8 +1692,8 @@ func TestCreateSameCSVWithOwnedAPIServiceMultiNamespace(t *testing.T) {
 				},
 			},
 			InstallStrategy: v1alpha1.NamedInstallStrategy{
-				StrategyName:    install.InstallStrategyNameDeployment,
-				StrategySpecRaw: strategyRaw,
+				StrategyName: v1alpha1.InstallStrategyNameDeployment,
+				StrategySpec: strategy,
 			},
 			APIServiceDefinitions: v1alpha1.APIServiceDefinitions{
 				Owned: owned,
@@ -1683,11 +1719,12 @@ func TestCreateSameCSVWithOwnedAPIServiceMultiNamespace(t *testing.T) {
 	require.NoError(t, err, "error getting expected APIService")
 
 	// Should create Service
-	_, err = c.GetService(testNamespace, olm.APIServiceNameToServiceName(apiServiceName))
+	serviceName := fmt.Sprintf("%s-service", depName)
+	_, err = c.GetService(testNamespace, serviceName)
 	require.NoError(t, err, "error getting expected Service")
 
 	// Should create certificate Secret
-	secretName := fmt.Sprintf("%s-cert", apiServiceName)
+	secretName := fmt.Sprintf("%s-cert", serviceName)
 	_, err = c.GetSecret(testNamespace, secretName)
 	require.NoError(t, err, "error getting expected Secret")
 
@@ -1700,11 +1737,11 @@ func TestCreateSameCSVWithOwnedAPIServiceMultiNamespace(t *testing.T) {
 	require.NoError(t, err, "error getting exptected Secret RoleBinding")
 
 	// Should create a system:auth-delegator Cluster RoleBinding
-	_, err = c.GetClusterRoleBinding(fmt.Sprintf("%s-system:auth-delegator", apiServiceName))
+	_, err = c.GetClusterRoleBinding(fmt.Sprintf("%s-system:auth-delegator", serviceName))
 	require.NoError(t, err, "error getting expected system:auth-delegator ClusterRoleBinding")
 
 	// Should create an extension-apiserver-authentication-reader RoleBinding in kube-system
-	_, err = c.GetRoleBinding("kube-system", fmt.Sprintf("%s-auth-reader", apiServiceName))
+	_, err = c.GetRoleBinding("kube-system", fmt.Sprintf("%s-auth-reader", serviceName))
 	require.NoError(t, err, "error getting expected extension-apiserver-authentication-reader RoleBinding")
 
 	// Create a new CSV that owns the same API Service but in a different namespace
@@ -1730,8 +1767,8 @@ func TestCreateSameCSVWithOwnedAPIServiceMultiNamespace(t *testing.T) {
 				},
 			},
 			InstallStrategy: v1alpha1.NamedInstallStrategy{
-				StrategyName:    install.InstallStrategyNameDeployment,
-				StrategySpecRaw: strategyRaw,
+				StrategyName: v1alpha1.InstallStrategyNameDeployment,
+				StrategySpec: strategy,
 			},
 			APIServiceDefinitions: v1alpha1.APIServiceDefinitions{
 				Owned: owned,
@@ -1746,6 +1783,72 @@ func TestCreateSameCSVWithOwnedAPIServiceMultiNamespace(t *testing.T) {
 
 	_, err = fetchCSV(t, crc, csv2.Name, secondNamespaceName, csvFailedChecker)
 	require.NoError(t, err)
+}
+
+func TestOrphanedAPIServiceCleanUp(t *testing.T) {
+	defer cleaner.NotifyTestComplete(t, true)
+
+	c := newKubeClient(t)
+
+	mockGroup := fmt.Sprintf("hats.%s.redhat.com", genName(""))
+	version := "v1alpha1"
+	apiServiceName := strings.Join([]string{version, mockGroup}, ".")
+
+	apiService := &apiregistrationv1.APIService{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: apiServiceName,
+		},
+		Spec: apiregistrationv1.APIServiceSpec{
+			Group:                mockGroup,
+			Version:              version,
+			GroupPriorityMinimum: 100,
+			VersionPriority:      100,
+		},
+	}
+
+	watcher, err := c.ApiregistrationV1Interface().ApiregistrationV1().APIServices().Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + apiServiceName})
+	require.NoError(t, err)
+
+	deleted := make(chan struct{})
+	quit := make(chan struct{})
+	defer close(quit)
+	go func() {
+		events := watcher.ResultChan()
+		for {
+			select {
+			case <-quit:
+				return
+			case evt := <-events:
+				if evt.Type == watch.Deleted {
+					deleted <- struct{}{}
+				}
+			case <-time.After(pollDuration):
+				require.FailNow(t, "orphaned apiservice not cleaned up as expected")
+			}
+		}
+	}()
+
+	_, err = c.CreateAPIService(apiService)
+	require.NoError(t, err, "error creating expected APIService")
+	orphanedAPISvc, err := c.GetAPIService(apiServiceName)
+	require.NoError(t, err, "error getting expected APIService")
+
+	newLabels := map[string]string{"olm.owner": "hat-serverfd4r5", "olm.owner.kind": "ClusterServiceVersion", "olm.owner.namespace": "nonexistent-namespace"}
+	orphanedAPISvc.SetLabels(newLabels)
+	_, err = c.UpdateAPIService(orphanedAPISvc)
+	require.NoError(t, err, "error updating APIService")
+	<-deleted
+
+	_, err = c.CreateAPIService(apiService)
+	require.NoError(t, err, "error creating expected APIService")
+	orphanedAPISvc, err = c.GetAPIService(apiServiceName)
+	require.NoError(t, err, "error getting expected APIService")
+
+	newLabels = map[string]string{"olm.owner": "hat-serverfd4r5", "olm.owner.kind": "ClusterServiceVersion", "olm.owner.namespace": testNamespace}
+	orphanedAPISvc.SetLabels(newLabels)
+	_, err = c.UpdateAPIService(orphanedAPISvc)
+	require.NoError(t, err, "error updating APIService")
+	<-deleted
 }
 
 func TestUpdateCSVSameDeploymentName(t *testing.T) {
@@ -1776,15 +1879,15 @@ func TestUpdateCSVSameDeploymentName(t *testing.T) {
 
 	// Create "current" CSV
 	nginxName := genName("nginx-")
-	strategy := install.StrategyDetailsDeployment{
-		DeploymentSpecs: []install.StrategyDeploymentSpec{
+	strategy := v1alpha1.StrategyDetailsDeployment{
+		DeploymentSpecs: []v1alpha1.StrategyDeploymentSpec{
 			{
 				Name: genName("dep-"),
 				Spec: newNginxDeployment(nginxName),
 			},
 		},
 	}
-	strategyRaw, err := json.Marshal(strategy)
+
 	require.NoError(t, err)
 
 	require.NoError(t, err)
@@ -1818,8 +1921,8 @@ func TestUpdateCSVSameDeploymentName(t *testing.T) {
 				},
 			},
 			InstallStrategy: v1alpha1.NamedInstallStrategy{
-				StrategyName:    install.InstallStrategyNameDeployment,
-				StrategySpecRaw: strategyRaw,
+				StrategyName: v1alpha1.InstallStrategyNameDeployment,
+				StrategySpec: strategy,
 			},
 			CustomResourceDefinitions: v1alpha1.CustomResourceDefinitions{
 				Owned: []v1alpha1.CRDDescription{
@@ -1849,8 +1952,8 @@ func TestUpdateCSVSameDeploymentName(t *testing.T) {
 	require.NotNil(t, dep)
 
 	// Create "updated" CSV
-	strategyNew := install.StrategyDetailsDeployment{
-		DeploymentSpecs: []install.StrategyDeploymentSpec{
+	strategyNew := v1alpha1.StrategyDetailsDeployment{
+		DeploymentSpecs: []v1alpha1.StrategyDeploymentSpec{
 			{
 				// Same name
 				Name: strategy.DeploymentSpecs[0].Name,
@@ -1859,7 +1962,7 @@ func TestUpdateCSVSameDeploymentName(t *testing.T) {
 			},
 		},
 	}
-	strategyNewRaw, err := json.Marshal(strategyNew)
+
 	require.NoError(t, err)
 
 	csvNew := v1alpha1.ClusterServiceVersion{
@@ -1891,8 +1994,8 @@ func TestUpdateCSVSameDeploymentName(t *testing.T) {
 				},
 			},
 			InstallStrategy: v1alpha1.NamedInstallStrategy{
-				StrategyName:    install.InstallStrategyNameDeployment,
-				StrategySpecRaw: strategyNewRaw,
+				StrategyName: v1alpha1.InstallStrategyNameDeployment,
+				StrategySpec: strategyNew,
 			},
 			CustomResourceDefinitions: v1alpha1.CustomResourceDefinitions{
 				Owned: []v1alpha1.CRDDescription{
@@ -1961,15 +2064,15 @@ func TestUpdateCSVDifferentDeploymentName(t *testing.T) {
 	defer cleanupCRD()
 
 	// create "current" CSV
-	strategy := install.StrategyDetailsDeployment{
-		DeploymentSpecs: []install.StrategyDeploymentSpec{
+	strategy := v1alpha1.StrategyDetailsDeployment{
+		DeploymentSpecs: []v1alpha1.StrategyDeploymentSpec{
 			{
 				Name: genName("dep-"),
 				Spec: newNginxDeployment(genName("nginx-")),
 			},
 		},
 	}
-	strategyRaw, err := json.Marshal(strategy)
+
 	require.NoError(t, err)
 
 	csv := v1alpha1.ClusterServiceVersion{
@@ -2001,8 +2104,8 @@ func TestUpdateCSVDifferentDeploymentName(t *testing.T) {
 				},
 			},
 			InstallStrategy: v1alpha1.NamedInstallStrategy{
-				StrategyName:    install.InstallStrategyNameDeployment,
-				StrategySpecRaw: strategyRaw,
+				StrategyName: v1alpha1.InstallStrategyNameDeployment,
+				StrategySpec: strategy,
 			},
 			CustomResourceDefinitions: v1alpha1.CustomResourceDefinitions{
 				Owned: []v1alpha1.CRDDescription{
@@ -2032,15 +2135,15 @@ func TestUpdateCSVDifferentDeploymentName(t *testing.T) {
 	require.NotNil(t, dep)
 
 	// Create "updated" CSV
-	strategyNew := install.StrategyDetailsDeployment{
-		DeploymentSpecs: []install.StrategyDeploymentSpec{
+	strategyNew := v1alpha1.StrategyDetailsDeployment{
+		DeploymentSpecs: []v1alpha1.StrategyDeploymentSpec{
 			{
 				Name: genName("dep2"),
 				Spec: newNginxDeployment(genName("nginx-")),
 			},
 		},
 	}
-	strategyNewRaw, err := json.Marshal(strategyNew)
+
 	require.NoError(t, err)
 
 	csvNew := v1alpha1.ClusterServiceVersion{
@@ -2072,8 +2175,8 @@ func TestUpdateCSVDifferentDeploymentName(t *testing.T) {
 				},
 			},
 			InstallStrategy: v1alpha1.NamedInstallStrategy{
-				StrategyName:    install.InstallStrategyNameDeployment,
-				StrategySpecRaw: strategyNewRaw,
+				StrategyName: v1alpha1.InstallStrategyNameDeployment,
+				StrategySpec: strategyNew,
 			},
 			CustomResourceDefinitions: v1alpha1.CustomResourceDefinitions{
 				Owned: []v1alpha1.CRDDescription{
@@ -2149,15 +2252,15 @@ func TestUpdateCSVMultipleIntermediates(t *testing.T) {
 	defer cleanupCRD()
 
 	// create "current" CSV
-	strategy := install.StrategyDetailsDeployment{
-		DeploymentSpecs: []install.StrategyDeploymentSpec{
+	strategy := v1alpha1.StrategyDetailsDeployment{
+		DeploymentSpecs: []v1alpha1.StrategyDeploymentSpec{
 			{
 				Name: genName("dep-"),
 				Spec: newNginxDeployment(genName("nginx-")),
 			},
 		},
 	}
-	strategyRaw, err := json.Marshal(strategy)
+
 	require.NoError(t, err)
 
 	csv := v1alpha1.ClusterServiceVersion{
@@ -2189,8 +2292,8 @@ func TestUpdateCSVMultipleIntermediates(t *testing.T) {
 				},
 			},
 			InstallStrategy: v1alpha1.NamedInstallStrategy{
-				StrategyName:    install.InstallStrategyNameDeployment,
-				StrategySpecRaw: strategyRaw,
+				StrategyName: v1alpha1.InstallStrategyNameDeployment,
+				StrategySpec: strategy,
 			},
 			CustomResourceDefinitions: v1alpha1.CustomResourceDefinitions{
 				Owned: []v1alpha1.CRDDescription{
@@ -2220,15 +2323,15 @@ func TestUpdateCSVMultipleIntermediates(t *testing.T) {
 	require.NotNil(t, dep)
 
 	// Create "updated" CSV
-	strategyNew := install.StrategyDetailsDeployment{
-		DeploymentSpecs: []install.StrategyDeploymentSpec{
+	strategyNew := v1alpha1.StrategyDetailsDeployment{
+		DeploymentSpecs: []v1alpha1.StrategyDeploymentSpec{
 			{
 				Name: genName("dep2"),
 				Spec: newNginxDeployment(genName("nginx-")),
 			},
 		},
 	}
-	strategyNewRaw, err := json.Marshal(strategyNew)
+
 	require.NoError(t, err)
 
 	csvNew := v1alpha1.ClusterServiceVersion{
@@ -2260,8 +2363,8 @@ func TestUpdateCSVMultipleIntermediates(t *testing.T) {
 				},
 			},
 			InstallStrategy: v1alpha1.NamedInstallStrategy{
-				StrategyName:    install.InstallStrategyNameDeployment,
-				StrategySpecRaw: strategyNewRaw,
+				StrategyName: v1alpha1.InstallStrategyNameDeployment,
+				StrategySpec: strategyNew,
 			},
 			CustomResourceDefinitions: v1alpha1.CustomResourceDefinitions{
 				Owned: []v1alpha1.CRDDescription{
@@ -2300,6 +2403,160 @@ func TestUpdateCSVMultipleIntermediates(t *testing.T) {
 	// Should eventually GC the CSV
 	err = waitForCSVToDelete(t, crc, csv.Name)
 	require.NoError(t, err)
+}
+
+func TestUpdateCSVInPlace(t *testing.T) {
+	defer cleaner.NotifyTestComplete(t, true)
+
+	c := newKubeClient(t)
+	crc := newCRClient(t)
+
+	// Create dependency first (CRD)
+	crdPlural := genName("ins")
+	crdName := crdPlural + ".cluster.com"
+	cleanupCRD, err := createCRD(c, apiextensions.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: crdName,
+		},
+		Spec: apiextensions.CustomResourceDefinitionSpec{
+			Group:   "cluster.com",
+			Version: "v1alpha1",
+			Names: apiextensions.CustomResourceDefinitionNames{
+				Plural:   crdPlural,
+				Singular: crdPlural,
+				Kind:     crdPlural,
+				ListKind: "list" + crdPlural,
+			},
+			Scope: "Namespaced",
+		},
+	})
+
+	// Create "current" CSV
+	nginxName := genName("nginx-")
+	strategy := v1alpha1.StrategyDetailsDeployment{
+		DeploymentSpecs: []v1alpha1.StrategyDeploymentSpec{
+			{
+				Name: genName("dep-"),
+				Spec: newNginxDeployment(nginxName),
+			},
+		},
+	}
+
+	require.NoError(t, err)
+
+	require.NoError(t, err)
+	defer cleanupCRD()
+	csv := v1alpha1.ClusterServiceVersion{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       v1alpha1.ClusterServiceVersionKind,
+			APIVersion: v1alpha1.ClusterServiceVersionAPIVersion,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: genName("csv"),
+		},
+		Spec: v1alpha1.ClusterServiceVersionSpec{
+			MinKubeVersion: "0.0.0",
+			InstallModes: []v1alpha1.InstallMode{
+				{
+					Type:      v1alpha1.InstallModeTypeOwnNamespace,
+					Supported: true,
+				},
+				{
+					Type:      v1alpha1.InstallModeTypeSingleNamespace,
+					Supported: true,
+				},
+				{
+					Type:      v1alpha1.InstallModeTypeMultiNamespace,
+					Supported: true,
+				},
+				{
+					Type:      v1alpha1.InstallModeTypeAllNamespaces,
+					Supported: true,
+				},
+			},
+			InstallStrategy: v1alpha1.NamedInstallStrategy{
+				StrategyName: v1alpha1.InstallStrategyNameDeployment,
+				StrategySpec: strategy,
+			},
+			CustomResourceDefinitions: v1alpha1.CustomResourceDefinitions{
+				Owned: []v1alpha1.CRDDescription{
+					{
+						Name:        crdName,
+						Version:     "v1alpha1",
+						Kind:        crdPlural,
+						DisplayName: crdName,
+						Description: "In the cluster",
+					},
+				},
+			},
+		},
+	}
+
+	cleanupCSV, err := createCSV(t, c, crc, csv, testNamespace, false, true)
+	require.NoError(t, err)
+	defer cleanupCSV()
+
+	// Wait for current CSV to succeed
+	fetchedCSV, err := fetchCSV(t, crc, csv.Name, testNamespace, csvSucceededChecker)
+	require.NoError(t, err)
+
+	// Should have created deployment
+	dep, err := c.GetDeployment(testNamespace, strategy.DeploymentSpecs[0].Name)
+	require.NoError(t, err)
+	require.NotNil(t, dep)
+
+	// Create "updated" CSV
+	strategyNew := strategy
+	strategyNew.DeploymentSpecs[0].Spec.Template.Spec.Containers = []corev1.Container{
+		{
+			Name:  genName("nginx-"),
+			Image: *dummyImage,
+			Ports: []corev1.ContainerPort{
+				{
+					ContainerPort: 80,
+				},
+			},
+			ImagePullPolicy: corev1.PullIfNotPresent,
+		},
+	}
+
+	// Also set something outside the spec template - this should be ignored
+	var five int32 = 5
+	strategyNew.DeploymentSpecs[0].Spec.Replicas = &five
+
+	require.NoError(t, err)
+
+	fetchedCSV.Spec.InstallStrategy.StrategySpec = strategyNew
+
+	// Update CSV directly
+	_, err = crc.OperatorsV1alpha1().ClusterServiceVersions(testNamespace).Update(fetchedCSV)
+	require.NoError(t, err)
+
+	// wait for deployment spec to be updated
+	err = wait.Poll(pollInterval, pollDuration, func() (bool, error) {
+		fetched, err := c.GetDeployment(testNamespace, strategyNew.DeploymentSpecs[0].Name)
+		if err != nil {
+			return false, err
+		}
+		fmt.Println("waiting for deployment to update...")
+		return fetched.Spec.Template.Spec.Containers[0].Name == strategyNew.DeploymentSpecs[0].Spec.Template.Spec.Containers[0].Name, nil
+	})
+	require.NoError(t, err)
+
+	// Wait for updated CSV to succeed
+	_, err = fetchCSV(t, crc, csv.Name, testNamespace, csvSucceededChecker)
+	require.NoError(t, err)
+
+	depUpdated, err := c.GetDeployment(testNamespace, strategyNew.DeploymentSpecs[0].Name)
+	require.NoError(t, err)
+	require.NotNil(t, depUpdated)
+
+	// Deployment should have changed even though the CSV is otherwise the same
+	require.Equal(t, depUpdated.Spec.Template.Spec.Containers[0].Name, strategyNew.DeploymentSpecs[0].Spec.Template.Spec.Containers[0].Name)
+	require.Equal(t, depUpdated.Spec.Template.Spec.Containers[0].Image, strategyNew.DeploymentSpecs[0].Spec.Template.Spec.Containers[0].Image)
+
+	// Field updated even though template spec didn't change, because it was part of a template spec change as well
+	require.Equal(t, *depUpdated.Spec.Replicas, *strategyNew.DeploymentSpecs[0].Spec.Replicas)
 }
 
 func TestUpdateCSVMultipleVersionCRD(t *testing.T) {
@@ -2342,15 +2599,15 @@ func TestUpdateCSVMultipleVersionCRD(t *testing.T) {
 	defer cleanupCRD()
 
 	// create initial deployment strategy
-	strategy := install.StrategyDetailsDeployment{
-		DeploymentSpecs: []install.StrategyDeploymentSpec{
+	strategy := v1alpha1.StrategyDetailsDeployment{
+		DeploymentSpecs: []v1alpha1.StrategyDeploymentSpec{
 			{
 				Name: genName("dep1-"),
 				Spec: newNginxDeployment(genName("nginx-")),
 			},
 		},
 	}
-	strategyRaw, err := json.Marshal(strategy)
+
 	require.NoError(t, err)
 
 	// First CSV with owning CRD v1alpha1
@@ -2383,8 +2640,8 @@ func TestUpdateCSVMultipleVersionCRD(t *testing.T) {
 				},
 			},
 			InstallStrategy: v1alpha1.NamedInstallStrategy{
-				StrategyName:    install.InstallStrategyNameDeployment,
-				StrategySpecRaw: strategyRaw,
+				StrategyName: v1alpha1.InstallStrategyNameDeployment,
+				StrategySpec: strategy,
 			},
 			CustomResourceDefinitions: v1alpha1.CustomResourceDefinitions{
 				Owned: []v1alpha1.CRDDescription{
@@ -2414,15 +2671,15 @@ func TestUpdateCSVMultipleVersionCRD(t *testing.T) {
 	require.NotNil(t, dep)
 
 	// Create updated deployment strategy
-	strategyNew := install.StrategyDetailsDeployment{
-		DeploymentSpecs: []install.StrategyDeploymentSpec{
+	strategyNew := v1alpha1.StrategyDetailsDeployment{
+		DeploymentSpecs: []v1alpha1.StrategyDeploymentSpec{
 			{
 				Name: genName("dep2-"),
 				Spec: newNginxDeployment(genName("nginx-")),
 			},
 		},
 	}
-	strategyNewRaw, err := json.Marshal(strategyNew)
+
 	require.NoError(t, err)
 
 	// Second CSV with owning CRD v1alpha1 and v1alpha2
@@ -2455,8 +2712,8 @@ func TestUpdateCSVMultipleVersionCRD(t *testing.T) {
 				},
 			},
 			InstallStrategy: v1alpha1.NamedInstallStrategy{
-				StrategyName:    install.InstallStrategyNameDeployment,
-				StrategySpecRaw: strategyNewRaw,
+				StrategyName: v1alpha1.InstallStrategyNameDeployment,
+				StrategySpec: strategyNew,
 			},
 			CustomResourceDefinitions: v1alpha1.CustomResourceDefinitions{
 				Owned: []v1alpha1.CRDDescription{
@@ -2500,15 +2757,14 @@ func TestUpdateCSVMultipleVersionCRD(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create updated deployment strategy
-	strategyNew2 := install.StrategyDetailsDeployment{
-		DeploymentSpecs: []install.StrategyDeploymentSpec{
+	strategyNew2 := v1alpha1.StrategyDetailsDeployment{
+		DeploymentSpecs: []v1alpha1.StrategyDeploymentSpec{
 			{
 				Name: genName("dep3-"),
 				Spec: newNginxDeployment(genName("nginx-")),
 			},
 		},
 	}
-	strategyNewRaw2, err := json.Marshal(strategyNew2)
 	require.NoError(t, err)
 
 	// Third CSV with owning CRD v1alpha2
@@ -2541,8 +2797,8 @@ func TestUpdateCSVMultipleVersionCRD(t *testing.T) {
 				},
 			},
 			InstallStrategy: v1alpha1.NamedInstallStrategy{
-				StrategyName:    install.InstallStrategyNameDeployment,
-				StrategySpecRaw: strategyNewRaw2,
+				StrategyName: v1alpha1.InstallStrategyNameDeployment,
+				StrategySpec: strategyNew2,
 			},
 			CustomResourceDefinitions: v1alpha1.CustomResourceDefinitions{
 				Owned: []v1alpha1.CRDDescription{
@@ -2613,8 +2869,8 @@ func TestUpdateCSVModifyDeploymentName(t *testing.T) {
 	defer cleanupCRD()
 
 	// create "current" CSV
-	strategy := install.StrategyDetailsDeployment{
-		DeploymentSpecs: []install.StrategyDeploymentSpec{
+	strategy := v1alpha1.StrategyDetailsDeployment{
+		DeploymentSpecs: []v1alpha1.StrategyDeploymentSpec{
 			{
 				Name: genName("dep-"),
 				Spec: newNginxDeployment(genName("nginx-")),
@@ -2625,7 +2881,7 @@ func TestUpdateCSVModifyDeploymentName(t *testing.T) {
 			},
 		},
 	}
-	strategyRaw, err := json.Marshal(strategy)
+
 	require.NoError(t, err)
 
 	csv := v1alpha1.ClusterServiceVersion{
@@ -2656,8 +2912,8 @@ func TestUpdateCSVModifyDeploymentName(t *testing.T) {
 				},
 			},
 			InstallStrategy: v1alpha1.NamedInstallStrategy{
-				StrategyName:    install.InstallStrategyNameDeployment,
-				StrategySpecRaw: strategyRaw,
+				StrategyName: v1alpha1.InstallStrategyNameDeployment,
+				StrategySpec: strategy,
 			},
 			CustomResourceDefinitions: v1alpha1.CustomResourceDefinitions{
 				Owned: []v1alpha1.CRDDescription{
@@ -2690,8 +2946,8 @@ func TestUpdateCSVModifyDeploymentName(t *testing.T) {
 	require.NotNil(t, dep2)
 
 	// Create "updated" CSV
-	strategyNew := install.StrategyDetailsDeployment{
-		DeploymentSpecs: []install.StrategyDeploymentSpec{
+	strategyNew := v1alpha1.StrategyDetailsDeployment{
+		DeploymentSpecs: []v1alpha1.StrategyDeploymentSpec{
 			{
 				Name: genName("dep3-"),
 				Spec: newNginxDeployment(genName("nginx3-")),
@@ -2702,7 +2958,7 @@ func TestUpdateCSVModifyDeploymentName(t *testing.T) {
 			},
 		},
 	}
-	strategyNewRaw, err := json.Marshal(strategyNew)
+
 	require.NoError(t, err)
 
 	// Fetch the current csv
@@ -2710,7 +2966,7 @@ func TestUpdateCSVModifyDeploymentName(t *testing.T) {
 	require.NoError(t, err)
 
 	// Update csv with same strategy with different deployment's name
-	fetchedCSV.Spec.InstallStrategy.StrategySpecRaw = strategyNewRaw
+	fetchedCSV.Spec.InstallStrategy.StrategySpec = strategyNew
 
 	// Update the current csv with the new csv
 	_, err = crc.OperatorsV1alpha1().ClusterServiceVersions(testNamespace).Update(fetchedCSV)
@@ -2749,7 +3005,7 @@ func TestCreateCSVRequirementsEvents(t *testing.T) {
 	_, err := c.CreateServiceAccount(&sa)
 	require.NoError(t, err, "could not create ServiceAccount")
 
-	permissions := []install.StrategyDeploymentPermissions{
+	permissions := []v1alpha1.StrategyDeploymentPermissions{
 		{
 			ServiceAccountName: sa.GetName(),
 			Rules: []rbacv1.PolicyRule{
@@ -2767,7 +3023,7 @@ func TestCreateCSVRequirementsEvents(t *testing.T) {
 		},
 	}
 
-	clusterPermissions := []install.StrategyDeploymentPermissions{
+	clusterPermissions := []v1alpha1.StrategyDeploymentPermissions{
 		{
 			ServiceAccountName: sa.GetName(),
 			Rules: []rbacv1.PolicyRule{
@@ -2955,3 +3211,551 @@ func TestCreateCSVRequirementsEvents(t *testing.T) {
 }
 
 // TODO: test behavior when replaces field doesn't point to existing CSV
+
+func TestCSVStatusInvalidCSV(t *testing.T) {
+	defer cleaner.NotifyTestComplete(t, true)
+
+	c := newKubeClient(t)
+	crc := newCRClient(t)
+
+	// Create CRD
+	crdPlural := genName("ins")
+	crdName := crdPlural + ".cluster.com"
+	cleanupCRD, err := createCRD(c, apiextensions.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: crdName,
+		},
+		Spec: apiextensions.CustomResourceDefinitionSpec{
+			Group:   "cluster.com",
+			Version: "v1alpha1",
+			Names: apiextensions.CustomResourceDefinitionNames{
+				Plural:   crdPlural,
+				Singular: crdPlural,
+				Kind:     crdPlural,
+				ListKind: "list" + crdPlural,
+			},
+			Scope: "Namespaced",
+		},
+	})
+	require.NoError(t, err)
+	defer cleanupCRD()
+
+	// create CSV
+	strategy := v1alpha1.StrategyDetailsDeployment{
+		DeploymentSpecs: []v1alpha1.StrategyDeploymentSpec{
+			{
+				Name: genName("dep-"),
+				Spec: newNginxDeployment(genName("nginx-")),
+			},
+		},
+	}
+
+	require.NoError(t, err)
+
+	csv := v1alpha1.ClusterServiceVersion{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       v1alpha1.ClusterServiceVersionKind,
+			APIVersion: v1alpha1.ClusterServiceVersionAPIVersion,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: genName("csv"),
+		},
+		Spec: v1alpha1.ClusterServiceVersionSpec{
+			InstallModes: []v1alpha1.InstallMode{
+				{
+					Type:      v1alpha1.InstallModeTypeOwnNamespace,
+					Supported: true,
+				},
+				{
+					Type:      v1alpha1.InstallModeTypeSingleNamespace,
+					Supported: true,
+				},
+				{
+					Type:      v1alpha1.InstallModeTypeMultiNamespace,
+					Supported: true,
+				},
+				{
+					Type:      v1alpha1.InstallModeTypeAllNamespaces,
+					Supported: true,
+				},
+			},
+			InstallStrategy: v1alpha1.NamedInstallStrategy{
+				StrategyName: v1alpha1.InstallStrategyNameDeployment,
+				StrategySpec: strategy,
+			},
+			CustomResourceDefinitions: v1alpha1.CustomResourceDefinitions{
+				Owned: []v1alpha1.CRDDescription{
+					{
+						Name:        crdName,
+						Version:     "apiextensions.k8s.io/v1alpha1", // purposely invalid, should be just v1alpha1 to match CRD
+						Kind:        crdPlural,
+						DisplayName: crdName,
+						Description: "In the cluster2",
+					},
+				},
+			},
+		},
+	}
+
+	cleanupCSV, err := createCSV(t, c, crc, csv, testNamespace, true, false)
+	require.NoError(t, err)
+	defer cleanupCSV()
+
+	notServedStatus := v1alpha1.RequirementStatus{
+		Group:   "apiextensions.k8s.io",
+		Version: "v1beta1",
+		Kind:    "CustomResourceDefinition",
+		Name:    crdName,
+		Status:  v1alpha1.RequirementStatusReasonNotPresent,
+		Message: "CRD version not served",
+	}
+	csvCheckPhaseAndRequirementStatus := func(csv *v1alpha1.ClusterServiceVersion) bool {
+		if csv.Status.Phase == v1alpha1.CSVPhasePending {
+			for _, status := range csv.Status.RequirementStatus {
+				if status.Message == notServedStatus.Message {
+					return true
+				}
+			}
+		}
+		return false
+	}
+
+	fetchedCSV, err := fetchCSV(t, crc, csv.Name, testNamespace, csvCheckPhaseAndRequirementStatus)
+	require.NoError(t, err)
+
+	require.Contains(t, fetchedCSV.Status.RequirementStatus, notServedStatus)
+}
+
+func TestAPIServiceResourcesMigratedIfAdoptable(t *testing.T) {
+	defer cleaner.NotifyTestComplete(t, true)
+
+	c := newKubeClient(t)
+	crc := newCRClient(t)
+
+	depName := genName("hat-server")
+	mockGroup := fmt.Sprintf("hats.%s.redhat.com", genName(""))
+	version := "v1alpha1"
+	mockGroupVersion := strings.Join([]string{mockGroup, version}, "/")
+	mockKinds := []string{"fedora"}
+	depSpec := newMockExtServerDeployment(depName, []mockGroupVersionKind{mockGroupVersionKind{depName, mockGroupVersion, mockKinds, 5443}})
+	apiServiceName := strings.Join([]string{version, mockGroup}, ".")
+
+	// Create CSVs for the hat-server
+	strategy := v1alpha1.StrategyDetailsDeployment{
+		DeploymentSpecs: []v1alpha1.StrategyDeploymentSpec{
+			{
+				Name: depName,
+				Spec: depSpec,
+			},
+		},
+	}
+
+	owned := make([]v1alpha1.APIServiceDescription, len(mockKinds))
+	for i, kind := range mockKinds {
+		owned[i] = v1alpha1.APIServiceDescription{
+			Name:           apiServiceName,
+			Group:          mockGroup,
+			Version:        version,
+			Kind:           kind,
+			DeploymentName: depName,
+			ContainerPort:  int32(5443),
+			DisplayName:    kind,
+			Description:    fmt.Sprintf("A %s", kind),
+		}
+	}
+
+	csv := v1alpha1.ClusterServiceVersion{
+		Spec: v1alpha1.ClusterServiceVersionSpec{
+			MinKubeVersion: "0.0.0",
+			InstallModes: []v1alpha1.InstallMode{
+				{
+					Type:      v1alpha1.InstallModeTypeOwnNamespace,
+					Supported: true,
+				},
+				{
+					Type:      v1alpha1.InstallModeTypeSingleNamespace,
+					Supported: true,
+				},
+				{
+					Type:      v1alpha1.InstallModeTypeMultiNamespace,
+					Supported: true,
+				},
+				{
+					Type:      v1alpha1.InstallModeTypeAllNamespaces,
+					Supported: true,
+				},
+			},
+			InstallStrategy: v1alpha1.NamedInstallStrategy{
+				StrategyName: v1alpha1.InstallStrategyNameDeployment,
+				StrategySpec: strategy,
+			},
+			APIServiceDefinitions: v1alpha1.APIServiceDefinitions{
+				Owned: owned,
+			},
+		},
+	}
+	csv.SetName("csv-hat-1")
+	csv.SetNamespace(testNamespace)
+
+	createLegacyAPIResources(t, &csv, owned[0])
+
+	// Create the APIService CSV
+	cleanupCSV, err := createCSV(t, c, crc, csv, testNamespace, false, false)
+	require.NoError(t, err)
+	defer cleanupCSV()
+
+	_, err = fetchCSV(t, crc, csv.Name, testNamespace, csvSucceededChecker)
+	require.NoError(t, err)
+
+	checkLegacyAPIResources(t, owned[0], true)
+}
+
+func TestAPIServiceResourcesNotMigratedIfNotAdoptable(t *testing.T) {
+	defer cleaner.NotifyTestComplete(t, true)
+
+	c := newKubeClient(t)
+	crc := newCRClient(t)
+
+	depName := genName("hat-server")
+	mockGroup := fmt.Sprintf("hats.%s.redhat.com", genName(""))
+	version := "v1alpha1"
+	mockGroupVersion := strings.Join([]string{mockGroup, version}, "/")
+	mockKinds := []string{"fedora"}
+	depSpec := newMockExtServerDeployment(depName, []mockGroupVersionKind{mockGroupVersionKind{depName, mockGroupVersion, mockKinds, 5443}})
+	apiServiceName := strings.Join([]string{version, mockGroup}, ".")
+
+	// Create CSVs for the hat-server
+	strategy := v1alpha1.StrategyDetailsDeployment{
+		DeploymentSpecs: []v1alpha1.StrategyDeploymentSpec{
+			{
+				Name: depName,
+				Spec: depSpec,
+			},
+		},
+	}
+
+	owned := make([]v1alpha1.APIServiceDescription, len(mockKinds))
+	for i, kind := range mockKinds {
+		owned[i] = v1alpha1.APIServiceDescription{
+			Name:           apiServiceName,
+			Group:          mockGroup,
+			Version:        version,
+			Kind:           kind,
+			DeploymentName: depName,
+			ContainerPort:  int32(5443),
+			DisplayName:    kind,
+			Description:    fmt.Sprintf("A %s", kind),
+		}
+	}
+
+	csv := v1alpha1.ClusterServiceVersion{
+		Spec: v1alpha1.ClusterServiceVersionSpec{
+			MinKubeVersion: "0.0.0",
+			InstallModes: []v1alpha1.InstallMode{
+				{
+					Type:      v1alpha1.InstallModeTypeOwnNamespace,
+					Supported: true,
+				},
+				{
+					Type:      v1alpha1.InstallModeTypeSingleNamespace,
+					Supported: true,
+				},
+				{
+					Type:      v1alpha1.InstallModeTypeMultiNamespace,
+					Supported: true,
+				},
+				{
+					Type:      v1alpha1.InstallModeTypeAllNamespaces,
+					Supported: true,
+				},
+			},
+			InstallStrategy: v1alpha1.NamedInstallStrategy{
+				StrategyName: v1alpha1.InstallStrategyNameDeployment,
+				StrategySpec: strategy,
+			},
+			APIServiceDefinitions: v1alpha1.APIServiceDefinitions{
+				Owned: owned,
+			},
+		},
+	}
+	csv.SetName("csv-hat-1")
+	csv.SetNamespace(testNamespace)
+
+	createLegacyAPIResources(t, nil, owned[0])
+
+	// Create the APIService CSV
+	cleanupCSV, err := createCSV(t, c, crc, csv, testNamespace, false, false)
+	require.NoError(t, err)
+	defer cleanupCSV()
+
+	_, err = fetchCSV(t, crc, csv.Name, testNamespace, csvSucceededChecker)
+	require.NoError(t, err)
+
+	checkLegacyAPIResources(t, owned[0], false)
+
+	// Cleanup the resources created for this test that were not cleaned up.
+	deleteLegacyAPIResources(t, owned[0])
+}
+
+func deleteLegacyAPIResources(t *testing.T, desc v1alpha1.APIServiceDescription) {
+	c := newKubeClient(t)
+
+	apiServiceName := fmt.Sprintf("%s.%s", desc.Version, desc.Group)
+
+	err := c.DeleteService(testNamespace, strings.Replace(apiServiceName, ".", "-", -1), &metav1.DeleteOptions{})
+	require.NoError(t, err)
+
+	err = c.DeleteSecret(testNamespace, apiServiceName+"-cert", &metav1.DeleteOptions{})
+	require.NoError(t, err)
+
+	err = c.DeleteRole(testNamespace, apiServiceName+"-cert", &metav1.DeleteOptions{})
+	require.NoError(t, err)
+
+	err = c.DeleteRoleBinding(testNamespace, apiServiceName+"-cert", &metav1.DeleteOptions{})
+	require.NoError(t, err)
+
+	err = c.DeleteClusterRoleBinding(apiServiceName+"-system:auth-delegator", &metav1.DeleteOptions{})
+	require.NoError(t, err)
+
+	err = c.DeleteRoleBinding("kube-system", apiServiceName+"-auth-reader", &metav1.DeleteOptions{})
+	require.NoError(t, err)
+}
+
+func TestMultipleAPIServicesOnSinglePod(t *testing.T) {
+	defer cleaner.NotifyTestComplete(t, true)
+
+	c := newKubeClient(t)
+	crc := newCRClient(t)
+
+	// Create the deployment that both APIServices will be deployed to.
+	depName := genName("hat-server")
+
+	// Define the expected mock APIService settings.
+	version := "v1alpha1"
+	apiService1Group := fmt.Sprintf("hats.%s.redhat.com", genName(""))
+	apiService1GroupVersion := strings.Join([]string{apiService1Group, version}, "/")
+	apiService1Kinds := []string{"fedora"}
+	apiService1Name := strings.Join([]string{version, apiService1Group}, ".")
+
+	apiService2Group := fmt.Sprintf("hats.%s.redhat.com", genName(""))
+	apiService2GroupVersion := strings.Join([]string{apiService2Group, version}, "/")
+	apiService2Kinds := []string{"fez"}
+	apiService2Name := strings.Join([]string{version, apiService2Group}, ".")
+
+	// Create the deployment spec with the two APIServices.
+	mockGroupVersionKinds := []mockGroupVersionKind{
+		mockGroupVersionKind{
+			depName,
+			apiService1GroupVersion,
+			apiService1Kinds,
+			5443,
+		},
+		mockGroupVersionKind{
+			depName,
+			apiService2GroupVersion,
+			apiService2Kinds,
+			5444,
+		},
+	}
+	depSpec := newMockExtServerDeployment(depName, mockGroupVersionKinds)
+
+	// Create the CSV.
+	strategy := v1alpha1.StrategyDetailsDeployment{
+		DeploymentSpecs: []v1alpha1.StrategyDeploymentSpec{
+			{
+				Name: depName,
+				Spec: depSpec,
+			},
+		},
+	}
+
+	// Update the owned APIServices two include the two APIServices.
+	owned := []v1alpha1.APIServiceDescription{
+		v1alpha1.APIServiceDescription{
+			Name:           apiService1Name,
+			Group:          apiService1Group,
+			Version:        version,
+			Kind:           apiService1Kinds[0],
+			DeploymentName: depName,
+			ContainerPort:  int32(5443),
+			DisplayName:    apiService1Kinds[0],
+			Description:    fmt.Sprintf("A %s", apiService1Kinds[0]),
+		},
+		v1alpha1.APIServiceDescription{
+			Name:           apiService2Name,
+			Group:          apiService2Group,
+			Version:        version,
+			Kind:           apiService2Kinds[0],
+			DeploymentName: depName,
+			ContainerPort:  int32(5444),
+			DisplayName:    apiService2Kinds[0],
+			Description:    fmt.Sprintf("A %s", apiService2Kinds[0]),
+		},
+	}
+
+	csv := v1alpha1.ClusterServiceVersion{
+		Spec: v1alpha1.ClusterServiceVersionSpec{
+			MinKubeVersion: "0.0.0",
+			InstallModes: []v1alpha1.InstallMode{
+				{
+					Type:      v1alpha1.InstallModeTypeOwnNamespace,
+					Supported: true,
+				},
+				{
+					Type:      v1alpha1.InstallModeTypeSingleNamespace,
+					Supported: true,
+				},
+				{
+					Type:      v1alpha1.InstallModeTypeMultiNamespace,
+					Supported: true,
+				},
+				{
+					Type:      v1alpha1.InstallModeTypeAllNamespaces,
+					Supported: true,
+				},
+			},
+			InstallStrategy: v1alpha1.NamedInstallStrategy{
+				StrategyName: v1alpha1.InstallStrategyNameDeployment,
+				StrategySpec: strategy,
+			},
+			APIServiceDefinitions: v1alpha1.APIServiceDefinitions{
+				Owned: owned,
+			},
+		},
+	}
+	csv.SetName("csv-hat-1")
+	csv.SetNamespace(testNamespace)
+
+	// Create the APIService CSV
+	cleanupCSV, err := createCSV(t, c, crc, csv, testNamespace, false, false)
+	require.NoError(t, err)
+	defer cleanupCSV()
+
+	_, err = fetchCSV(t, crc, csv.Name, testNamespace, csvSucceededChecker)
+	require.NoError(t, err)
+
+	// Check that the APIService caBundles are equal
+	apiService1, err := c.GetAPIService(apiService1Name)
+	require.NoError(t, err)
+
+	apiService2, err := c.GetAPIService(apiService2Name)
+	require.NoError(t, err)
+
+	require.Equal(t, apiService1.Spec.CABundle, apiService2.Spec.CABundle)
+}
+
+func createLegacyAPIResources(t *testing.T, csv *v1alpha1.ClusterServiceVersion, desc v1alpha1.APIServiceDescription) {
+	c := newKubeClient(t)
+
+	apiServiceName := fmt.Sprintf("%s.%s", desc.Version, desc.Group)
+
+	// Attempt to create the legacy service
+	service := corev1.Service{}
+	service.SetName(strings.Replace(apiServiceName, ".", "-", -1))
+	service.SetNamespace(testNamespace)
+	if csv != nil {
+		err := ownerutil.AddOwnerLabels(&service, csv)
+		require.NoError(t, err)
+	}
+
+	service.Spec.Ports = []corev1.ServicePort{corev1.ServicePort{Port: 433, TargetPort: intstr.FromInt(443)}}
+	_, err := c.CreateService(&service)
+	require.NoError(t, err)
+
+	// Attempt to create the legacy secret
+	secret := corev1.Secret{}
+	secret.SetName(apiServiceName + "-cert")
+	secret.SetNamespace(testNamespace)
+	if csv != nil {
+		err = ownerutil.AddOwnerLabels(&secret, csv)
+		require.NoError(t, err)
+	}
+
+	_, err = c.CreateSecret(&secret)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		require.NoError(t, err)
+	}
+
+	// Attempt to create the legacy secret role
+	role := rbacv1.Role{}
+	role.SetName(apiServiceName + "-cert")
+	role.SetNamespace(testNamespace)
+	if csv != nil {
+		err = ownerutil.AddOwnerLabels(&role, csv)
+		require.NoError(t, err)
+	}
+	_, err = c.CreateRole(&role)
+	require.NoError(t, err)
+
+	// Attempt to create the legacy secret role binding
+	roleBinding := rbacv1.RoleBinding{}
+	roleBinding.SetName(apiServiceName + "-cert")
+	roleBinding.SetNamespace(testNamespace)
+	roleBinding.RoleRef = rbacv1.RoleRef{
+		APIGroup: "rbac.authorization.k8s.io",
+		Kind:     "Role",
+		Name:     role.GetName(),
+	}
+	if csv != nil {
+		err = ownerutil.AddOwnerLabels(&roleBinding, csv)
+		require.NoError(t, err)
+	}
+
+	_, err = c.CreateRoleBinding(&roleBinding)
+	require.NoError(t, err)
+
+	// Attempt to create the legacy authDelegatorClusterRoleBinding
+	clusterRoleBinding := rbacv1.ClusterRoleBinding{}
+	clusterRoleBinding.SetName(apiServiceName + "-system:auth-delegator")
+	clusterRoleBinding.RoleRef = rbacv1.RoleRef{
+		APIGroup: "rbac.authorization.k8s.io",
+		Kind:     "ClusterRole",
+		Name:     "system:auth-delegator",
+	}
+	if csv != nil {
+		err = ownerutil.AddOwnerLabels(&clusterRoleBinding, csv)
+		require.NoError(t, err)
+	}
+	_, err = c.CreateClusterRoleBinding(&clusterRoleBinding)
+	require.NoError(t, err)
+
+	// Attempt to create the legacy authReadingRoleBinding
+	roleBinding.SetName(apiServiceName + "-auth-reader")
+	roleBinding.SetNamespace("kube-system")
+	roleBinding.RoleRef = rbacv1.RoleRef{
+		APIGroup: "rbac.authorization.k8s.io",
+		Kind:     "Role",
+		Name:     "extension-apiserver-authentication-reader",
+	}
+	_, err = c.CreateRoleBinding(&roleBinding)
+	require.NoError(t, err)
+}
+
+func checkLegacyAPIResources(t *testing.T, desc v1alpha1.APIServiceDescription, expectedIsNotFound bool) {
+	c := newKubeClient(t)
+	apiServiceName := fmt.Sprintf("%s.%s", desc.Version, desc.Group)
+
+	// Attempt to create the legacy service
+	_, err := c.GetService(testNamespace, strings.Replace(apiServiceName, ".", "-", -1))
+	require.Equal(t, expectedIsNotFound, errors.IsNotFound(err))
+
+	// Attempt to create the legacy secret
+	_, err = c.GetSecret(testNamespace, apiServiceName+"-cert")
+	require.Equal(t, expectedIsNotFound, errors.IsNotFound(err))
+
+	// Attempt to create the legacy secret role
+	_, err = c.GetRole(testNamespace, apiServiceName+"-cert")
+	require.Equal(t, expectedIsNotFound, errors.IsNotFound(err))
+
+	// Attempt to create the legacy secret role binding
+	_, err = c.GetRoleBinding(testNamespace, apiServiceName+"-cert")
+	require.Equal(t, expectedIsNotFound, errors.IsNotFound(err))
+
+	// Attempt to create the legacy authDelegatorClusterRoleBinding
+	_, err = c.GetClusterRoleBinding(apiServiceName + "-system:auth-delegator")
+	require.Equal(t, expectedIsNotFound, errors.IsNotFound(err))
+
+	// Attempt to create the legacy authReadingRoleBinding
+	_, err = c.GetRoleBinding("kube-system", apiServiceName+"-auth-reader")
+	require.Equal(t, expectedIsNotFound, errors.IsNotFound(err))
+}

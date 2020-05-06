@@ -1,6 +1,4 @@
 //+build use_codec
-//+build !easyjson_nounsafe
-//+build !appengine
 
 // ************************************************************
 // DO NOT EDIT.
@@ -12,11 +10,10 @@ package benchmark
 import (
 	"errors"
 	"fmt"
+	codec1978 "github.com/ugorji/go/codec"
 	"reflect"
 	"runtime"
 	"unsafe"
-
-	codec1978 "github.com/ugorji/go/codec"
 )
 
 const (

@@ -84,6 +84,7 @@ func (po *PushOptions) DevfilePush() (err error) {
 		DevfileRunCmd:   strings.ToLower(po.devfileRunCommand),
 	}
 
+	warnIfURLSInvalid(po.EnvSpecificInfo.GetURL())
 	// Start or update the component
 	err = devfileHandler.Push(pushParams)
 	if err != nil {
@@ -151,4 +152,29 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 	spinner.End(true)
 	log.Successf("Successfully deleted component")
 	return nil
+}
+
+func warnIfURLSInvalid(url []envinfo.EnvInfoURL) {
+	// warnIfURLSInvalid checks if env.yaml contains a valide URL for the current pushtarget
+	// display a warning if no url(s) found for the current push target, but found url(s) for another push target
+	dockerURLExists := false
+	kubeURLExists := false
+	for _, element := range url {
+		if element.Kind == envinfo.DOCKER {
+			dockerURLExists = true
+		} else {
+			kubeURLExists = true
+		}
+	}
+	var urlOutput string
+	if len(url) > 1 {
+		urlOutput = "URLs"
+	} else {
+		urlOutput = "a URL"
+	}
+	if pushtarget.IsPushTargetDocker() && !dockerURLExists && kubeURLExists {
+		log.Warningf("Found %v defined for Kubernetes, but no valid URLs for Docker.", urlOutput)
+	} else if !pushtarget.IsPushTargetDocker() && !kubeURLExists && dockerURLExists {
+		log.Warningf("Found %v defined for Docker, but no valid URLs for Kubernetes.", urlOutput)
+	}
 }

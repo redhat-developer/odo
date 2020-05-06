@@ -10,8 +10,6 @@ import (
 	"google.golang.org/grpc/connectivity"
 
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver"
-	"github.com/operator-framework/operator-registry/pkg/api"
-	"github.com/operator-framework/operator-registry/pkg/api/grpc_health_v1"
 	"github.com/operator-framework/operator-registry/pkg/client"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -66,11 +64,7 @@ func (s *SourceStore) Start(ctx context.Context) {
 					s.logger.Debug("closing source manager")
 					return
 				case e := <-s.notify:
-					s.logger.WithFields(
-						logrus.Fields{
-							"state":  e.State.String(),
-							"source": e.Key.String(),
-						}).Info("source event")
+					s.logger.Debugf("Got source event: %#v", e)
 					s.syncFn(e)
 				}
 			}
@@ -148,27 +142,30 @@ func (s *SourceStore) watch(ctx context.Context, key resolver.CatalogKey, source
 		case <-ctx.Done():
 			return
 		default:
-			timer, _ := context.WithTimeout(ctx, s.stateTimeout(state))
-			if source.Conn.WaitForStateChange(timer, state) {
-				newState := source.Conn.GetState()
-				state = newState
+			func() {
+				timer, cancel := context.WithTimeout(ctx, s.stateTimeout(state))
+				defer cancel()
+				if source.Conn.WaitForStateChange(timer, state) {
+					newState := source.Conn.GetState()
+					state = newState
 
-				// update connection state
-				src := s.Get(key)
-				if src == nil {
-					// source was removed, cleanup this goroutine
-					return
+					// update connection state
+					src := s.Get(key)
+					if src == nil {
+						// source was removed, cleanup this goroutine
+						return
+					}
+
+					src.LastConnect = metav1.Now()
+					src.ConnectionState = newState
+					s.sourcesLock.Lock()
+					s.sources[key] = *src
+					s.sourcesLock.Unlock()
+
+					// notify subscriber
+					s.notify <- SourceState{Key: key, State: newState}
 				}
-
-				src.LastConnect = metav1.Now()
-				src.ConnectionState = newState
-				s.sourcesLock.Lock()
-				s.sources[key] = *src
-				s.sourcesLock.Unlock()
-
-				// notify subscriber
-				s.notify <- SourceState{Key: key, State: newState}
-			}
+			}()
 		}
 	}
 }
@@ -196,6 +193,7 @@ func (s *SourceStore) Remove(key resolver.CatalogKey) error {
 func (s *SourceStore) AsClients(globalNamespace, localNamespace string) map[resolver.CatalogKey]client.Interface {
 	refs := map[resolver.CatalogKey]client.Interface{}
 	s.sourcesLock.RLock()
+	defer s.sourcesLock.RUnlock()
 	for key, source := range s.sources {
 		if !(key.Namespace == globalNamespace || key.Namespace == localNamespace) {
 			continue
@@ -203,19 +201,9 @@ func (s *SourceStore) AsClients(globalNamespace, localNamespace string) map[reso
 		if source.LastConnect.IsZero() {
 			continue
 		}
-		refs[key] = NewClient(source.Conn)
+		refs[key] = client.NewClientFromConn(source.Conn)
 	}
-	s.sourcesLock.RUnlock()
 
 	// TODO : remove unhealthy
 	return refs
-}
-
-// TODO: move to operator-registry
-func NewClient(conn *grpc.ClientConn) client.Interface {
-	return &client.Client{
-		Registry: api.NewRegistryClient(conn),
-		Health:   grpc_health_v1.NewHealthClient(conn),
-		Conn:     conn,
-	}
 }

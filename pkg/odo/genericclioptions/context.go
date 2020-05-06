@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
@@ -298,7 +298,7 @@ func getValidConfig(command *cobra.Command, ignoreMissingConfiguration bool) (*c
 	// HOWEVER..
 	// When using auto-completion, we should NOT error out, just ignore the fact that there is no configuration
 	if !localConfiguration.ConfigFileExists() && ignoreMissingConfiguration {
-		glog.V(4).Info("There is NO config file that exists, we are however ignoring this as the ignoreMissingConfiguration flag has been passed in as true")
+		klog.V(4).Info("There is NO config file that exists, we are however ignoring this as the ignoreMissingConfiguration flag has been passed in as true")
 	} else if !localConfiguration.ConfigFileExists() {
 		return nil, fmt.Errorf("The current directory does not represent an odo component. Use 'odo create' to create component here or switch to directory with a component")
 	}

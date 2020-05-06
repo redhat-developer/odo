@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"flag"
 	"fmt"
@@ -9,27 +10,29 @@ import (
 	"strings"
 	"time"
 
+	configclientset "github.com/openshift/client-go/config/clientset/versioned"
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorstatus"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/queueinformer"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/install"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/olm"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/filemonitor"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorstatus"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/profile"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/signals"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/metrics"
 	olmversion "github.com/operator-framework/operator-lifecycle-manager/pkg/version"
 )
 
 const (
-	defaultWakeupInterval = 5 * time.Minute
-	defaultOperatorName   = ""
-	defaultOLMNamespace   = "openshift-operator-lifecycle-manager"
+	defaultWakeupInterval          = 5 * time.Minute
+	defaultOperatorName            = ""
+	defaultPackageServerStatusName = ""
 )
 
 // config flags defined globally so that they appear on the test binary as well
@@ -48,6 +51,9 @@ var (
 	writeStatusName = flag.String(
 		"writeStatusName", defaultOperatorName, "ClusterOperator name in which to write status, set to \"\" to disable.")
 
+	writePackageServerStatusName = flag.String(
+		"writePackageServerStatusName", defaultPackageServerStatusName, "ClusterOperator name in which to write status for package API server, set to \"\" to disable.")
+
 	debug = flag.Bool(
 		"debug", false, "use debug log level")
 
@@ -59,8 +65,11 @@ var (
 	tlsCertPath = flag.String(
 		"tls-cert", "", "Path to use for certificate key (requires tls-key)")
 
+	profiling = flag.Bool(
+		"profiling", false, "serve profiling data (on port 8080)")
+
 	namespace = flag.String(
-		"namespace", defaultOLMNamespace, "namespace where olm will run and install olm resources")
+		"namespace", "", "namespace where cleanup runs")
 )
 
 func init() {
@@ -69,7 +78,9 @@ func init() {
 
 // main function - entrypoint to OLM operator
 func main() {
-	stopCh := signals.SetupSignalHandler()
+	// Get exit signal context
+	ctx, cancel := context.WithCancel(signals.Context())
+	defer cancel()
 
 	// Parse the command-line flags.
 	flag.Parse()
@@ -92,41 +103,12 @@ func main() {
 		}
 	}
 
-	// Create a client for OLM
-	crClient, err := client.NewClient(*kubeConfigPath)
-	if err != nil {
-		log.Fatalf("error configuring client: %s", err.Error())
-	}
-
-	logger := log.New()
-
 	// Set log level to debug if `debug` flag set
+	logger := log.New()
 	if *debug {
 		logger.SetLevel(log.DebugLevel)
 	}
 	logger.Infof("log level %s", logger.Level)
-
-	opClient := operatorclient.NewClientFromConfig(*kubeConfigPath, logger)
-
-	// Perform resource cleanup before starting the operator
-	cleanup(logger, opClient, crClient)
-
-	// create a config client for operator status
-	config, err := clientcmd.BuildConfigFromFlags("", *kubeConfigPath)
-	if err != nil {
-		log.Fatalf("error configuring client: %s", err.Error())
-	}
-	configClient, err := configv1client.NewForConfig(config)
-	if err != nil {
-		log.Fatalf("error configuring client: %s", err.Error())
-	}
-
-	// Create a new instance of the operator.
-	operator, err := olm.NewOperator(logger, crClient, opClient, &install.StrategyResolver{}, *wakeupInterval, namespaces)
-
-	if err != nil {
-		log.Fatalf("error configuring operator: %s", err.Error())
-	}
 
 	var useTLS bool
 	if *tlsCertPath != "" && *tlsKeyPath == "" || *tlsCertPath == "" && *tlsKeyPath != "" {
@@ -143,6 +125,13 @@ func main() {
 	healthMux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
+
+	// Serve profiling if enabled
+	if *profiling {
+		logger.Infof("profiling enabled")
+		profile.RegisterHandlers(healthMux)
+	}
+
 	go func() {
 		err := http.ListenAndServe(":8080", healthMux)
 		if err != nil {
@@ -180,12 +169,63 @@ func main() {
 		}()
 	}
 
-	ready, done, sync := operator.Run(stopCh)
-	<-ready
-
-	if *writeStatusName != "" {
-		operatorstatus.MonitorClusterStatus(*writeStatusName, sync, stopCh, opClient, configClient, crClient)
+	// create a config client for operator status
+	config, err := clientcmd.BuildConfigFromFlags("", *kubeConfigPath)
+	if err != nil {
+		log.Fatalf("error configuring client: %s", err.Error())
+	}
+	versionedConfigClient, err := configclientset.NewForConfig(config)
+	if err != nil {
+		err = fmt.Errorf("error configuring OpenShift Proxy client: %v", err)
+		return
+	}
+	configClient, err := configv1client.NewForConfig(config)
+	if err != nil {
+		log.Fatalf("error configuring client: %s", err.Error())
+	}
+	opClient := operatorclient.NewClientFromConfig(*kubeConfigPath, logger)
+	crClient, err := client.NewClient(*kubeConfigPath)
+	if err != nil {
+		log.Fatalf("error configuring client: %s", err.Error())
 	}
 
-	<-done
+	cleanup(logger, opClient, crClient)
+
+	// Create a new instance of the operator.
+	op, err := olm.NewOperator(
+		ctx,
+		olm.WithLogger(logger),
+		olm.WithWatchedNamespaces(namespaces...),
+		olm.WithResyncPeriod(queueinformer.ResyncWithJitter(*wakeupInterval, 0.2)),
+		olm.WithExternalClient(crClient),
+		olm.WithOperatorClient(opClient),
+		olm.WithRestConfig(config),
+		olm.WithConfigClient(versionedConfigClient),
+	)
+	if err != nil {
+		log.WithError(err).Fatalf("error configuring operator")
+		return
+	}
+
+	op.Run(ctx)
+	<-op.Ready()
+
+	if *writeStatusName != "" {
+		operatorstatus.MonitorClusterStatus(*writeStatusName, op.AtLevel(), ctx.Done(), opClient, configClient, crClient)
+	}
+
+	if *writePackageServerStatusName != "" {
+		logger.Info("Initializing cluster operator monitor for package server")
+
+		names := *writePackageServerStatusName
+		discovery := opClient.KubernetesInterface().Discovery()
+		monitor, sender := operatorstatus.NewMonitor(logger, discovery, configClient, names)
+
+		handler := operatorstatus.NewCSVWatchNotificationHandler(logger, op.GetCSVSetGenerator(), op.GetReplaceFinder(), sender)
+		op.RegisterCSVWatchNotification(handler)
+
+		go monitor.Run(op.Done())
+	}
+
+	<-op.Done()
 }

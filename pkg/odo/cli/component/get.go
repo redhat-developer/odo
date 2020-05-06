@@ -3,13 +3,13 @@ package component
 import (
 	"fmt"
 
-	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/log"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	"github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/spf13/cobra"
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
+	"k8s.io/klog"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
 // GetRecommendedCommandName is the recommended get command name
@@ -46,7 +46,7 @@ func (gto *GetOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (gto *GetOptions) Run() (err error) {
-	glog.V(4).Infof("component get called")
+	klog.V(4).Infof("component get called")
 
 	if gto.componentShortFlag {
 		fmt.Print(gto.componentName)
