@@ -84,7 +84,7 @@ func (o *DescribeComponentOptions) Complete(name string, cmd *cobra.Command, arg
 // Validate validates the DescribeComponentOptions based on completed values
 func (o *DescribeComponentOptions) Validate() (err error) {
 	if len(o.devfileComponents) == 0 && o.component == "" {
-		return errors.Errorf("no components with the name %s found", o.componentName)
+		return errors.Errorf("No components with the name \"%s\" found", o.componentName)
 	}
 
 	return nil
