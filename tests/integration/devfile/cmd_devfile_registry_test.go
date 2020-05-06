@@ -15,7 +15,7 @@ var _ = Describe("odo devfile registry command tests", func() {
 	var context string
 	var currentWorkingDirectory string
 	const registryName string = "RegistryName"
-	const addRegistryURL string = "http://www.example.com/"
+	const addRegistryURL string = "https://raw.githubusercontent.com/GeekArthur/registry/master"
 	const updateRegistryURL string = "http://www.example.com/update"
 
 	// This is run after every Spec (It)
@@ -56,6 +56,7 @@ var _ = Describe("odo devfile registry command tests", func() {
 			helper.CmdShouldPass("odo", "registry", "add", registryName, addRegistryURL)
 			output := helper.CmdShouldPass("odo", "registry", "list")
 			helper.MatchAllInOutput(output, []string{registryName, addRegistryURL})
+			helper.CmdShouldPass("odo", "create", "nodejs", "--registry", registryName)
 			helper.CmdShouldPass("odo", "registry", "delete", registryName, "-f")
 		})
 
@@ -86,6 +87,7 @@ var _ = Describe("odo devfile registry command tests", func() {
 		It("Should successfully delete the registry", func() {
 			helper.CmdShouldPass("odo", "registry", "add", registryName, addRegistryURL)
 			helper.CmdShouldPass("odo", "registry", "delete", registryName, "-f")
+			helper.CmdShouldFail("odo", "create", "nodejs", "--registry", registryName)
 		})
 	})
 })
