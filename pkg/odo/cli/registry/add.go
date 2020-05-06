@@ -1,13 +1,13 @@
 package registry
 
 import (
-	// Build-in packages
+	// Built-in packages
 	"fmt"
 
 	// Third-party packages
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"k8s.io/kubernetes/pkg/kubectl/util/templates"
+	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
 
 	// odo packages
 	"github.com/openshift/odo/pkg/log"
@@ -20,9 +20,9 @@ const addCommandName = "add"
 
 // "odo registry add" command description and examples
 var (
-	addLongDesc = templates.LongDesc(`Add devfile registry`)
+	addLongDesc = ktemplates.LongDesc(`Add devfile registry`)
 
-	addExample = templates.Examples(`# Add devfile registry
+	addExample = ktemplates.Examples(`# Add devfile registry
 	%[1]s CheRegistry https://che-devfile-registry.openshift.io
 
 	%[1]s CheRegistryFromGitHub https://raw.githubusercontent.com/eclipse/che-devfile-registry/master

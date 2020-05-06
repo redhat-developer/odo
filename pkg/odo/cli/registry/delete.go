@@ -1,7 +1,7 @@
 package registry
 
 import (
-	// Build-in packages
+	// Built-in packages
 	"fmt"
 
 	// Third-party packages
