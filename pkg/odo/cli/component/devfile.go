@@ -3,7 +3,6 @@ package component
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/openshift/odo/pkg/envinfo"
@@ -47,7 +46,7 @@ func (po *PushOptions) DevfilePush() (err error) {
 	}
 
 	// Set the source path to either the context or current working directory (if context not set)
-	po.sourcePath, err = util.GetAbsPath(filepath.Dir(po.componentContext))
+	po.sourcePath, err = util.GetAbsPath(po.componentContext)
 	if err != nil {
 		return errors.Wrap(err, "unable to get source path")
 	}
