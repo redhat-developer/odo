@@ -23,9 +23,7 @@ var (
 	addLongDesc = ktemplates.LongDesc(`Add devfile registry`)
 
 	addExample = ktemplates.Examples(`# Add devfile registry
-	%[1]s CheRegistry https://che-devfile-registry.openshift.io/
-
-	%[1]s CheRegistryFromGitHub https://raw.githubusercontent.com/eclipse/che-devfile-registry/master/
+	%[1]s CheRegistry https://che-devfile-registry.openshift.io
 	`)
 )
 
