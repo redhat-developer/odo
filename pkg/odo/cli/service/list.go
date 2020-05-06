@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"text/tabwriter"
+	"time"
 
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
@@ -12,6 +13,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/util/experimental"
 	svc "github.com/openshift/odo/pkg/service"
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
@@ -58,8 +60,53 @@ func (o *ServiceListOptions) Validate() (err error) {
 // Run contains the logic for the odo service list command
 func (o *ServiceListOptions) Run() (err error) {
 	if experimental.IsExperimentalModeEnabled() {
-		return svc.ListOperatorServices(o.KClient)
+		var list []unstructured.Unstructured
+		list, err = svc.ListOperatorServices(o.KClient)
+		if err != nil {
+			return err
+		}
+
+		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+
+		if len(list) > 0 {
+			fmt.Fprintln(w, "NAME", "\t", "TYPE", "\t", "AGE")
+
+			for _, item := range list {
+				duration := time.Since(item.GetCreationTimestamp().Time).Truncate(time.Minute).String()
+				fmt.Fprintln(w, item.GetName(), "\t", item.GetKind(), "\t", duration)
+			}
+
+		} else {
+			fmt.Fprintln(w, "No operator backed services found in the namesapce")
+		}
+
+		services, err := svc.ListWithDetailedStatus(o.Client, o.Application)
+		if err != nil {
+			// if experimental mode is enabled, we don't bother if service catalog is not enabled. Hence we don't error here but simply notify the user
+			fmt.Fprintln(w, "\nService catalog is not enabled within your cluster")
+			return nil
+		}
+
+		if len(services.Items) == 0 {
+			fmt.Fprintln(w, "\nThere are no services deployed through Service Catalog")
+			return nil
+		}
+
+		w.Flush()
+
+		if log.IsJSON() {
+			machineoutput.OutputSuccess(services)
+		} else {
+			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+			fmt.Fprintln(w, "NAME", "\t", "TYPE", "\t", "PLAN", "\t", "STATUS")
+			for _, comp := range services.Items {
+				fmt.Fprintln(w, comp.ObjectMeta.Name, "\t", comp.Spec.Type, "\t", comp.Spec.Plan, "\t", comp.Status.Status)
+			}
+			w.Flush()
+		}
+		return err
 	}
+
 	services, err := svc.ListWithDetailedStatus(o.Client, o.Application)
 	if err != nil {
 		return fmt.Errorf("Service catalog is not enabled within your cluster: %v", err)
