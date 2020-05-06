@@ -1622,7 +1622,7 @@ func TestGetGitHubZipURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			url, err := GetGitHubZipURL(tt.project)
+			_, err := GetGitHubZipURL(tt.project)
 			if err != nil && !reflect.DeepEqual(err.Error(), tt.expectedError) {
 				t.Errorf("Got %s, want %s", err.Error(), tt.expectedError)
 			}
