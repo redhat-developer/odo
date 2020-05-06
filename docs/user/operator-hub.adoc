@@ -6,8 +6,9 @@
 When working in experimental mode, odo provides the ability to work with
 link:https://www.openshift.com/learn/topics/operators[Operators] installed on
 the cluster. It allows listing of Operators, creation of services from CRD
-provided by the Operators, printing the YAML definition and providing custom
-YAML definition to start the service from a CRD. 
+(Custom Resource Definitions) provided by the Operators, printing the YAML
+definition and providing custom YAML definition to start the service from a
+CRD.
 
 [NOTE]
 ====
@@ -15,18 +16,16 @@ Installation of Operators is not a part of odo workflow. It is something that
 your OpenShift/Kubernetes cluster administrator should be able to do for you. 
 ====
 
-In this document we will cover the following:
+=== Prerequisites
 
-. <<list-operators,List the Operators installed in the current project>>
-. <<dry-run,Print the YAML specification that will be used to start the service from a CRD>>
-. <<create-service,Create a service from the Custom Resource Definitions (CRD) provided by the Operators>>
-. <<create-service-from-yaml,Create a service from the YAML stored in a file on local system>>
-
-[NOTE]
-====
-For every command mentioned below to work as expected, we first need to enable
-the experimental mode. This can be done in different ways. Make sure that you
-have installed latest version of odo and perform any one of the following actions.
+- `odo` is installed.
+- Required Operators are installed in the project/namespace by cluster
+  administrator.
+- Experimental mode is enabled. For every command (other than those for
+  <<create-project,project creation>>) mentioned in this document to work, we
+  first need to enable the experimental mode. This can be done in
+  different ways. Make sure that you have installed latest version of odo and
+  perform any one of the following actions.
 
 * Enable experimental mode in odo preferences:
 +
@@ -50,7 +49,26 @@ $ export ODO_EXPERIMENTAL=true
 ----
 $ ODO_EXPERIMENTAL=true odo catalog list services
 ----
-====
+
+=== [[create-project]]Creating a project
+Create a project to keep your source code, tests, and libraries organized in a
+separate single unit.
+
+1. Log in to the Kubernetes/OpenShift cluster:
++
+[source,shell]
+----
+$ odo login -u developer -p developer
+----
+
+2. Create a project:
++
+[source,shell]
+----
+$ odo project create myproject
+ ✓  Project 'myproject' is ready for use
+ ✓  New project created and now using project : myproject
+----
 
 === [[list-operators]]Listing the Operators
 
