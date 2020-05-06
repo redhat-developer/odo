@@ -100,7 +100,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			// update devfile and push again
 			helper.ReplaceString("devfile.yaml", "name: FOO", "name: BAR")
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace, "--context", projectDirPath)
+			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--context", projectDirPath)
 		})
 
 	})
