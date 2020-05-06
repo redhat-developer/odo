@@ -21,7 +21,7 @@ var (
 	deleteLongDesc = ktemplates.LongDesc(`Delete devfile registry`)
 
 	deleteExample = ktemplates.Examples(`# Delete devfile registry
-	%[1]s cheregistry
+	%[1]s CheRegistry
 	`)
 )
 

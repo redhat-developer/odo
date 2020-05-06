@@ -22,7 +22,7 @@ var (
 	updateLongDesc = ktemplates.LongDesc(`Update devfile registry URL`)
 
 	updateExample = ktemplates.Examples(`# Update devfile registry URL
-	%[1]s cheregistry https://che-devfile-registry-update.openshift.io/
+	%[1]s CheRegistry https://che-devfile-registry-update.openshift.io/
 	`)
 )
 
