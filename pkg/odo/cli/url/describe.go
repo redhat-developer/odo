@@ -50,7 +50,7 @@ func (o *URLDescribeOptions) Complete(name string, cmd *cobra.Command, args []st
 		o.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(o.componentContext)
 	} else {
 		o.Context = genericclioptions.NewContext(cmd)
-		o.LocalConfigInfo, err = config.NewLocalConfigInfo(o.componentContext)
+		o.localConfigInfo, err = config.NewLocalConfigInfo(o.componentContext)
 	}
 	if err != nil {
 		return errors.Wrap(err, "failed intiating local config")
