@@ -97,10 +97,6 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--context", projectDirPath)
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
-
-			// update devfile and push again
-			helper.ReplaceString("devfile.yaml", "name: FOO", "name: BAR")
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--context", projectDirPath)
 		})
 
 	})
