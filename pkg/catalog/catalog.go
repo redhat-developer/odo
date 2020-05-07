@@ -24,6 +24,10 @@ var DevfileRegistries = []string{
 
 var devfileIndicesMutex sync.Mutex
 
+// getDevfileIndexWith populates the given entries array with DevfileIndexEntry found in the given registry link.
+// This function is meant to be called concurrently by go routines so that all registries can be processed at the
+// same time, using a WaitGroup to make sure we get the results from all the registries before further processing.
+// If an error occurs, it will be populated using the given error parameter.
 func getDevfileIndexWith(link string, entries *[]DevfileIndexEntry, err error, wg *sync.WaitGroup) {
 	defer wg.Done()
 
@@ -56,6 +60,11 @@ func GetDevfileIndex(devfileIndexLink string) ([]DevfileIndexEntry, error) {
 
 var devfileMutex = &sync.Mutex{}
 
+// getDevfileWith retrieves the devfile corresponding to the specified DevfileIndexEntry and creates an associate
+// DevfileComponentType which is then added to the specified DevfileComponentTypeList.
+// This function is meant to be called from go routine, each devfile being processed by its own go routine, using a WaitGroup
+// to wait for all devfiles to be processed before continuing work.
+// If an error occurs, it will be populated in the specified error field.
 func getDevfileWith(devfileIndexEntry DevfileIndexEntry, catalogDevfileList *DevfileComponentTypeList, err error, wg *sync.WaitGroup) {
 	defer wg.Done()
 
@@ -146,6 +155,10 @@ func ListDevfileComponents() (DevfileComponentTypeList, error) {
 	catalogDevfileList := &DevfileComponentTypeList{}
 	catalogDevfileList.DevfileRegistries = DevfileRegistries
 
+	// TODO: consider caching the registry information for better performance since we can consider that
+	// the registry info should be fairly stable over time
+
+	// first retrieve the indices for each registry, concurrently
 	devfileIndex := make([]DevfileIndexEntry, 0, 20)
 	var registryWG sync.WaitGroup
 	for _, devfileRegistry := range DevfileRegistries {
@@ -159,18 +172,16 @@ func ListDevfileComponents() (DevfileComponentTypeList, error) {
 	}
 	registryWG.Wait()
 
-	// 1. Load devfiles that indexed in devfile registry index.json
+	// 1. Load each devfile concurrently from the previously retrieved devfile index entries
 	// 2. Populate devfile components with devfile data
-	// 3. Form devfile component list
+	// 3. Add devfile component types to the catalog devfile list
 	var wg sync.WaitGroup
 	for _, devfileIndexEntry := range devfileIndex {
 		// Load the devfile
-		// TODO: We send http get resquest in this function mutiple times
-		// since devfile registry uses different links to host different devfiles,
-		// this can reduce the performance especially when we load devfiles from
-		// big registry. We may need to rethink and optimize this in the future
 		wg.Add(1)
 		var err error
+		// Note that this issues an HTTP get per devfile entry in the catalog, while doing it concurrently instead of
+		// sequentially improves the performance, caching that information would improve the performance even more
 		go getDevfileWith(devfileIndexEntry, catalogDevfileList, err, &wg)
 		if err != nil {
 			return DevfileComponentTypeList{}, err
