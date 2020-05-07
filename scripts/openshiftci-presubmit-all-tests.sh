@@ -13,6 +13,7 @@ go get -u github.com/onsi/ginkgo/ginkgo
 export PATH="$PATH:$(pwd):$GOPATH/bin"
 export ARTIFACTS_DIR="/tmp/artifacts"
 export CUSTOM_HOMEDIR=$ARTIFACTS_DIR
+export ODO_LOG_LEVEL=4
 
 # Integration tests
 make test-integration

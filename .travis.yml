@@ -10,6 +10,7 @@ env:
     - MINIKUBE_HOME=$HOME
     - CHANGE_MINIKUBE_NONE_USER=true
     - KUBECONFIG=$HOME/.kube/config
+    - ODO_LOG_LEVEL=4
 jobs:
   include:
     # YAML alias, for settings shared across the tests
