@@ -780,29 +780,29 @@ func (co *CreateOptions) Run() (err error) {
 		// Download devfile.yaml file and create env.yaml file
 		if co.devfileMetadata.devfileSupport {
 			if !util.CheckPathExists(DevfilePath) && len(co.devfileMetadata.devfilePath) != 0 {
-				util.CopyFile(co.devfileMetadata.devfilePath, DevfilePath)
+				err = util.CopyFile(co.devfileMetadata.devfilePath, DevfilePath)
 				if err != nil {
-					return errors.Wrap(err, "Failed to copy user specify devfile path")
+					return errors.Wrap(err, "failed to copy user specify devfile path")
 				}
 			}
 
 			if !util.CheckPathExists(DevfilePath) {
-				err := util.DownloadFile(co.devfileMetadata.devfileRegistry+co.devfileMetadata.devfileLink, DevfilePath)
+				err = util.DownloadFile(co.devfileMetadata.devfileRegistry+co.devfileMetadata.devfileLink, DevfilePath)
 				if err != nil {
-					return errors.Wrap(err, "Failed to download devfile.yaml for devfile component")
+					return errors.Wrap(err, "failed to download devfile.yaml for devfile component")
 				}
 			}
 
 			if util.CheckPathExists(DevfilePath) && co.devfileMetadata.downloadSource {
 				err = co.downloadProject()
 				if err != nil {
-					return errors.Wrap(err, "Failed to download project for devfile component")
+					return errors.Wrap(err, "failed to download project for devfile component")
 				}
 			}
 
-			err := co.EnvSpecificInfo.SetConfiguration("create", envinfo.ComponentSettings{Name: co.devfileMetadata.componentName, Namespace: co.devfileMetadata.componentNamespace})
+			err = co.EnvSpecificInfo.SetConfiguration("create", envinfo.ComponentSettings{Name: co.devfileMetadata.componentName, Namespace: co.devfileMetadata.componentNamespace})
 			if err != nil {
-				return errors.Wrap(err, "Failed to create env.yaml for devfile component")
+				return errors.Wrap(err, "failed to create env.yaml for devfile component")
 			}
 
 			log.Italic("\nPlease use `odo push` command to create the component with source deployed")
