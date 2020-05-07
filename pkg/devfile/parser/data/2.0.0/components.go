@@ -35,7 +35,10 @@ func (d *Devfile200) GetAliasedComponents() []common.DevfileComponent {
 func (d *Devfile200) GetProjects() []common.DevfileProject {
 	var projects []common.DevfileProject
 	for _, v := range d.Projects {
-		projects = append(projects, convertV2ProjectToCommon(v))
+		if v.Git != nil {
+			projects = append(projects, convertV2ProjectToCommon(v))
+		}
+
 	}
 
 	return projects
@@ -66,7 +69,7 @@ func convertV2CommandToCommon(c Command) (d common.DevfileCommand) {
 		Command:   &c.Exec.CommandLine,
 		Component: &c.Exec.Component,
 		Type:      &ex,
-		Workdir:   &c.Exec.WorkingDir,
+		Workdir:   c.Exec.WorkingDir,
 	}
 
 	actions = append(actions, action)
@@ -81,6 +84,9 @@ func convertV2CommandToCommon(c Command) (d common.DevfileCommand) {
 }
 
 func convertV2ComponentToCommon(c Component) (d common.DevfileComponent) {
+	// TODO: for other component types, custom cheplugin, cheeditor etc.
+	// TODO: Support for Volume, SourceMapping
+
 	if c.Container != nil {
 		d = common.DevfileComponent{
 			Alias:                       &c.Container.Name,
@@ -89,7 +95,6 @@ func convertV2ComponentToCommon(c Component) (d common.DevfileComponent) {
 			DevfileComponentDockerimage: convertV2ContainerToCommon(*c.Container),
 		}
 	}
-	// TODO: for other component types, cheplugin, cheeditor etc.
 
 	return d
 }
@@ -158,7 +163,7 @@ func convertV2ProjectToCommon(p Project) common.DevfileProject {
 	}
 
 	return common.DevfileProject{
-		ClonePath: &p.ClonePath,
+		ClonePath: p.ClonePath,
 		Name:      p.Name,
 		Source:    src,
 	}
