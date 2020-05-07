@@ -168,13 +168,6 @@ spec:
 
 	Context("When operator backed services are created", func() {
 		It("should list the services if they exist", func() {
-			// service list needs a valid component directory so we craete that first
-			context := helper.CreateNewContext()
-			helper.Chdir(context)
-			os.Unsetenv("ODO_EXPERIMENTAL")
-			helper.CmdShouldPass("odo", "create", "nodejs")
-			os.Setenv("ODO_EXPERIMENTAL", "true")
-
 			// First let's grab the etcd operator's name from "odo catalog list services" output
 			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
 			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]`).FindString(operators)

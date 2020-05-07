@@ -42,17 +42,23 @@ func NewServiceListOptions() *ServiceListOptions {
 
 // Complete completes ServiceListOptions after they've been created
 func (o *ServiceListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context = genericclioptions.NewContext(cmd)
+	if experimental.IsExperimentalModeEnabled() {
+		o.Context = genericclioptions.NewDevfileContext(cmd)
+	} else {
+		o.Context = genericclioptions.NewContext(cmd)
+	}
 	return
 }
 
 // Validate validates the ServiceListOptions based on completed values
 func (o *ServiceListOptions) Validate() (err error) {
-	// Throw error if project and application values are not available.
-	// This will most likely be the case when user does odo service list from outside a component directory and
-	// doesn't provide --app and/or --project flags
-	if o.Context.Project == "" || o.Context.Application == "" {
-		return odoutil.ThrowContextError()
+	if !experimental.IsExperimentalModeEnabled() {
+		// Throw error if project and application values are not available.
+		// This will most likely be the case when user does odo service list from outside a component directory and
+		// doesn't provide --app and/or --project flags
+		if o.Context.Project == "" || o.Context.Application == "" {
+			return odoutil.ThrowContextError()
+		}
 	}
 	return
 }
@@ -60,6 +66,8 @@ func (o *ServiceListOptions) Validate() (err error) {
 // Run contains the logic for the odo service list command
 func (o *ServiceListOptions) Run() (err error) {
 	if experimental.IsExperimentalModeEnabled() {
+		// if experimental mode is enabled, we list only operator hub backed
+		// services and not service catalog ones
 		var list []unstructured.Unstructured
 		list, err = svc.ListOperatorServices(o.KClient)
 		if err != nil {
@@ -80,30 +88,8 @@ func (o *ServiceListOptions) Run() (err error) {
 			fmt.Fprintln(w, "No operator backed services found in the namesapce")
 		}
 
-		services, err := svc.ListWithDetailedStatus(o.Client, o.Application)
-		if err != nil {
-			// if experimental mode is enabled, we don't bother if service catalog is not enabled. Hence we don't error here but simply notify the user
-			fmt.Fprintln(w, "\nService catalog is not enabled within your cluster")
-			return nil
-		}
-
-		if len(services.Items) == 0 {
-			fmt.Fprintln(w, "\nThere are no services deployed through Service Catalog")
-			return nil
-		}
-
 		w.Flush()
 
-		if log.IsJSON() {
-			machineoutput.OutputSuccess(services)
-		} else {
-			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-			fmt.Fprintln(w, "NAME", "\t", "TYPE", "\t", "PLAN", "\t", "STATUS")
-			for _, comp := range services.Items {
-				fmt.Fprintln(w, comp.ObjectMeta.Name, "\t", comp.Spec.Type, "\t", comp.Spec.Plan, "\t", comp.Status.Status)
-			}
-			w.Flush()
-		}
 		return err
 	}
 
