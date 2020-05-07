@@ -927,7 +927,9 @@ func DownloadFile(url string, filepath string) error {
 	defer out.Close() // #nosec G307
 
 	// Get the data
-	var httpClient = &http.Client{Timeout: HTTPRequestTimeout}
+	var httpClient = &http.Client{Transport: &http.Transport{
+		ResponseHeaderTimeout: HTTPRequestTimeout,
+	}, Timeout: HTTPRequestTimeout}
 	resp, err := httpClient.Get(url)
 	if err != nil {
 		return err
