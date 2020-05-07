@@ -50,10 +50,10 @@ func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args [
 
 		wg.Add(1)
 		var err error
-		go func(err error) {
+		go func() {
 			defer wg.Done()
 			o.catalogList, err = catalog.ListComponents(o.Client)
-		}(err)
+		}()
 		if err != nil {
 			if experimental.IsExperimentalModeEnabled() {
 				klog.V(4).Info("Please log in to an OpenShift cluster to list OpenShift/s2i components")
@@ -68,10 +68,10 @@ func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args [
 	if experimental.IsExperimentalModeEnabled() {
 		wg.Add(1)
 		var err error
-		go func(err error) {
+		go func() {
 			defer wg.Done()
 			o.catalogDevfileList, err = catalog.ListDevfileComponents("")
-		}(err)
+		}()
 		if err != nil {
 			return err
 		}
