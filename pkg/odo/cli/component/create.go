@@ -65,6 +65,7 @@ type DevfileMetadata struct {
 	devfileLink        string
 	devfileRegistry    string
 	downloadSource     bool
+	devfilePath        string
 }
 
 // CreateRecommendedCommandName is the recommended watch command name
@@ -342,9 +343,9 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			// Interactive mode
 			// Get component type, name and namespace from user's choice via interactive mode
 
-			// devfile.yaml is not present, user has to specify the component type
+			// devfile.yaml is not present and --devfile is not specified, user has to specify the component type
 			// Component type: We provide supported devfile component list then let you choose
-			if !util.CheckPathExists(DevfilePath) {
+			if !util.CheckPathExists(DevfilePath) && len(co.devfileMetadata.devfilePath) == 0 {
 				var supDevfileCatalogList []catalog.DevfileComponentType
 				for _, devfileComponent := range catalogDevfileList.Items {
 					if devfileComponent.Support {
@@ -352,6 +353,8 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 					}
 				}
 				componentType = ui.SelectDevfileComponentType(supDevfileCatalogList)
+			} else if util.CheckPathExists(DevfilePath) && len(co.devfileMetadata.devfilePath) != 0 {
+				return errors.New("This directory already contains a devfile.yaml, you can't specify devfile path via --devfile")
 			}
 
 			// Component name: User needs to specify the componet name, by default it is component type that user chooses
@@ -377,6 +380,10 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 			if util.CheckPathExists(DevfilePath) {
 				return errors.New("This directory already contains a devfile.yaml, please delete it and run the component creation command again")
+			}
+
+			if len(co.devfileMetadata.devfilePath) != 0 {
+				return errors.New("Component type and --devfile can not be specified together")
 			}
 
 			// Component type: Get from full command's first argument (mandatory in direct mode)
@@ -410,7 +417,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		co.devfileMetadata.componentNamespace = strings.ToLower(componentNamespace)
 
 		// If devfile.yaml is present, we don't need to download the devfile.yaml later
-		if util.CheckPathExists(DevfilePath) {
+		if util.CheckPathExists(DevfilePath) || len(co.devfileMetadata.devfilePath) != 0 {
 			co.devfileMetadata.devfileSupport = true
 
 			err = co.InitEnvInfoFromContext()
@@ -772,10 +779,17 @@ func (co *CreateOptions) Run() (err error) {
 	if experimental.IsExperimentalModeEnabled() {
 		// Download devfile.yaml file and create env.yaml file
 		if co.devfileMetadata.devfileSupport {
+			if !util.CheckPathExists(DevfilePath) && len(co.devfileMetadata.devfilePath) != 0 {
+				util.CopyFile(co.devfileMetadata.devfilePath, DevfilePath)
+				if err != nil {
+					return errors.Wrap(err, "Failed to copy user specify devfile path")
+				}
+			}
+
 			if !util.CheckPathExists(DevfilePath) {
 				err := util.DownloadFile(co.devfileMetadata.devfileRegistry+co.devfileMetadata.devfileLink, DevfilePath)
 				if err != nil {
-					return errors.Wrap(err, "Faile to download devfile.yaml for devfile component")
+					return errors.Wrap(err, "Failed to download devfile.yaml for devfile component")
 				}
 			}
 
@@ -900,6 +914,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 
 	if experimental.IsExperimentalModeEnabled() {
 		componentCreateCmd.Flags().BoolVar(&co.devfileMetadata.downloadSource, "downloadSource", false, "Download sample project from devfile. (ex. odo component create <component_type> [component_name] --downloadSource")
+		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfilePath, "devfile", "", "Specify user's own devfile path")
 	}
 
 	componentCreateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)

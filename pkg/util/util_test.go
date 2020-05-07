@@ -1614,3 +1614,61 @@ func TestGetGitHubZipURL(t *testing.T) {
 	}
 }
 */
+
+func TestCopyFile(t *testing.T) {
+	// Create temp dir
+	tempDir, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Errorf("Failed to create temp dir: %s", tempDir)
+	}
+
+	// Create temp file under temp dir as source file
+	tempFile, err := ioutil.TempFile(tempDir, "")
+	if err != nil {
+		t.Errorf("Failed to create temp file: %s", tempFile.Name())
+	}
+
+	srcPath := tempFile.Name()
+	fakePath := filepath.Join(tempDir, "fakeFile")
+	dstPath := filepath.Join(tempDir, "dstFile")
+
+	tests := []struct {
+		name    string
+		srcPath string
+		dstPath string
+		wantErr bool
+	}{
+		{
+			name:    "Case 1: Copy successfully",
+			srcPath: srcPath,
+			dstPath: dstPath,
+			wantErr: false,
+		},
+		{
+			name:    "Case 2: Source doesn't exist",
+			srcPath: fakePath,
+			dstPath: dstPath,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotErr := false
+			err = CopyFile(tt.srcPath, tt.dstPath)
+			if err != nil {
+				gotErr = true
+			}
+
+			if !reflect.DeepEqual(gotErr, tt.wantErr) {
+				t.Errorf("Got error: %t, want error: %t", gotErr, tt.wantErr)
+			}
+		})
+	}
+
+	// Remove temp dir
+	err = os.RemoveAll(tempDir)
+	if err != nil {
+		t.Errorf("Failed to remove temp dir %s", tempDir)
+	}
+}
