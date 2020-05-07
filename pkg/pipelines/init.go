@@ -114,7 +114,7 @@ func Init(o *InitParameters, fs afero.Fs) error {
 		return err
 	}
 
-	outputs, err := createInitialFiles(fs, o.GitOpsRepoURL, o.Prefix, o.GitOpsWebhookSecret, o.DockerConfigJSONFilename, imageRepo)
+	outputs, err := createInitialFiles(fs, o.Prefix, o.GitOpsRepoURL, o.GitOpsWebhookSecret, o.DockerConfigJSONFilename, imageRepo)
 	if err != nil {
 		return err
 	}
@@ -193,7 +193,7 @@ func CreateDockerSecret(fs afero.Fs, dockerConfigJSONFilename, ns string) (*ssv1
 
 }
 
-func createInitialFiles(fs afero.Fs, gitOpsURL, prefix, gitOpsWebhookSecret, dockerConfigPath, imageRepo string) (res.Resources, error) {
+func createInitialFiles(fs afero.Fs, prefix, gitOpsURL, gitOpsWebhookSecret, dockerConfigPath, imageRepo string) (res.Resources, error) {
 	cicdEnv := &config.Environment{Name: prefix + "cicd", IsCICD: true}
 	pipelines := createManifest(gitOpsURL, cicdEnv)
 	initialFiles := res.Resources{
