@@ -2,7 +2,10 @@ package utils
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/openshift/odo/tests/helper"
 
@@ -185,4 +188,82 @@ func ExecWithRestartAttribute(projectDirPath, cmpName, namespace string) {
 	output = helper.CmdShouldPass("odo", args...)
 	Expect(output).To(ContainSubstring("if not running"))
 
+}
+
+// OdoWatch creates files, dir in the context and watches for the changes to be pushed
+// this was taken from e2e_images_test.go and modified for devfile
+func OdoWatch(cmpName, project, context string, stringsToBeMatched []string, runner interface{}, platform string) {
+
+	startSimulationCh := make(chan bool)
+	go func() {
+		startMsg := <-startSimulationCh
+		if startMsg {
+			err := os.MkdirAll(filepath.Join(context, ".abc"), 0755)
+			if err != nil {
+				panic(err)
+			}
+			err = os.MkdirAll(filepath.Join(context, "abcd"), 0755)
+			if err != nil {
+				panic(err)
+			}
+			_, err = os.Create(filepath.Join(context, "a.txt"))
+			if err != nil {
+				panic(err)
+			}
+
+			helper.DeleteDir(filepath.Join(context, "abcd"))
+
+			helper.ReplaceString(filepath.Join(context, "app", "app.js"), "Hello", "Hello odo")
+		}
+	}()
+
+	success, err := helper.WatchNonRetCmdStdOut(
+		("odo watch --context " + context),
+		time.Duration(10)*time.Minute,
+		func(output string) bool {
+			sourcePath := "/projects/nodejs-web-app"
+
+			stringsMatched := true
+
+			for _, stringToBeMatched := range stringsToBeMatched {
+				if !strings.Contains(output, stringToBeMatched) {
+					stringsMatched = false
+				}
+			}
+
+			if stringsMatched {
+				// Verify delete from component pod
+				stdOut := getContainerExecListdir(runner, platform, cmpName, project, sourcePath)
+				Expect(stdOut).To(ContainSubstring(("a.txt")))
+				Expect(stdOut).To(ContainSubstring((".abc")))
+				Expect(stdOut).To(Not(ContainSubstring(("abcd"))))
+				return true
+			}
+			return false
+		},
+		startSimulationCh,
+		func(output string) bool {
+			return strings.Contains(output, "Waiting for something to change")
+		})
+
+	Expect(success).To(Equal(true))
+	Expect(err).To(BeNil())
+}
+
+func getContainerExecListdir(runner interface{}, platform, cmpName, project, sourcePath string) string {
+	var stdOut string
+	// if !reflect.DeepEqual(runner.(helper.OcRunner), helper.OcRunner{}) {
+
+	if platform == "kube" {
+		ocRunner := runner.(helper.OcRunner)
+		podName := ocRunner.GetRunningPodNameByComponent(cmpName, project)
+		stdOut = ocRunner.ExecListDir(podName, project, sourcePath)
+	} else if platform == "docker" {
+		dockerRunner := runner.(helper.DockerRunner)
+		containers := dockerRunner.GetRunningContainersByCompAlias(cmpName, "runtime")
+		Expect(len(containers)).To(Equal(1))
+		stdOut = dockerRunner.ExecContainer(containers[0], "ls -la "+sourcePath)
+	}
+
+	return stdOut
 }
