@@ -24,18 +24,25 @@ var DevfileRegistries = []string{
 	"https://che-devfile-registry.openshift.io/",
 }
 
+const indexPath = "/devfiles/index.json"
+
 // GetDevfileIndex loads the devfile registry index.json
-func GetDevfileIndex(devfileIndexLink string) ([]DevfileIndexEntry, error) {
+func GetDevfileIndex(registryURL string) ([]DevfileIndexEntry, error) {
 	var devfileIndex []DevfileIndexEntry
 
-	jsonBytes, err := util.HTTPGetRequest(devfileIndexLink)
+	indexLink := registryURL + indexPath
+	jsonBytes, err := util.HTTPGetRequest(indexLink)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Unable to download the devfile index.json from %s", devfileIndexLink)
+		return nil, errors.Wrapf(err, "Unable to download the devfile index.json from %s", indexLink)
 	}
 
 	err = json.Unmarshal(jsonBytes, &devfileIndex)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Unable to unmarshal the devfile index.json from %s", devfileIndexLink)
+		return nil, errors.Wrapf(err, "Unable to unmarshal the devfile index.json from %s", indexLink)
+	}
+
+	for i := range devfileIndex {
+		devfileIndex[i].Links.base = registryURL
 	}
 
 	return devfileIndex, nil
@@ -119,16 +126,12 @@ func ListDevfileComponents() (DevfileComponentTypeList, error) {
 	devfileIndexChannel := make(chan []DevfileIndexEntry)
 	errChannel := make(chan error)
 	for _, registryURL := range DevfileRegistries {
-		devfileIndexLink := registryURL + "/devfiles/index.json"
 		url := registryURL
 		go func() {
-			indexEntries, err := GetDevfileIndex(devfileIndexLink)
+			indexEntries, err := GetDevfileIndex(url)
 			if err != nil {
 				errChannel <- err
 				return
-			}
-			for i := range indexEntries {
-				indexEntries[i].Links.base = url
 			}
 			devfileIndexChannel <- indexEntries
 		}()
