@@ -46,6 +46,12 @@ const maxAllowedNamespacedStringLength = 63 - len("-s2idata") - 1
 // note for mocking purpose ONLY
 var customHomeDir = os.Getenv("CUSTOM_HOMEDIR")
 
+const defaultGithubRef = "master"
+const githubBranchKey = "Branch"
+const githubTagKey = "Tag"
+const githubCommitIDKey = "CommitID"
+const githubStartPointKey = "StartPoint"
+
 // ResourceRequirementInfo holds resource quantity before transformation into its appropriate form in container spec
 type ResourceRequirementInfo struct {
 	ResourceType corev1.ResourceName
@@ -790,19 +796,19 @@ func GetGitHubZipURL(project common.DevfileProject) (string, error) {
 	// Extract reference checkout for project
 	references := make(map[string]string)
 	if project.Source.Branch != nil && *project.Source.Branch != "" {
-		references["Branch"] = *project.Source.Branch
+		references[githubBranchKey] = *project.Source.Branch
 	}
 
 	if project.Source.CommitId != nil && *project.Source.CommitId != "" {
-		references["CommitId"] = *project.Source.CommitId
+		references[githubCommitIDKey] = *project.Source.CommitId
 	}
 
 	if project.Source.Tag != nil && *project.Source.Tag != "" {
-		references["Tag"] = *project.Source.Tag
+		references[githubTagKey] = *project.Source.Tag
 	}
 
 	if project.Source.StartPoint != nil && *project.Source.StartPoint != "" {
-		references["StartPoint"] = *project.Source.StartPoint
+		references[githubStartPointKey] = *project.Source.StartPoint
 	}
 
 	if len(references) > 1 {
@@ -822,7 +828,7 @@ func GetGitHubZipURL(project common.DevfileProject) (string, error) {
 		}
 	} else {
 		// Default to master if reference is not set
-		ref = "master"
+		ref = defaultGithubRef
 	}
 
 	client := github.NewClient(nil)
