@@ -15,6 +15,7 @@ import (
 	"runtime"
 	"sort"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
@@ -1576,9 +1577,9 @@ func TestGetGitHubZipURL(t *testing.T) {
 	commitid := "39b5ec7833a65278012eab13a895471bba2cd03d"
 	tag := "1.0.0"
 	tests := []struct {
-		name          string
-		project       common.DevfileProject
-		expectedError string
+		name           string
+		project        common.DevfileProject
+		expectedErrors []string
 	}{
 		{
 			name: "Case 1: Invalid http request",
@@ -1587,7 +1588,7 @@ func TestGetGitHubZipURL(t *testing.T) {
 					Location: "http://github.com/che-samples/web-nodejs-sample/archive/master",
 				},
 			},
-			expectedError: "Invalid GitHub URL. Please use https://",
+			expectedErrors: []string{"Invalid GitHub URL. Please use https://"},
 		},
 		{
 			name: "Case 2: Invalid owner",
@@ -1596,7 +1597,7 @@ func TestGetGitHubZipURL(t *testing.T) {
 					Location: "https://github.com//web-nodejs-sample/archive/master",
 				},
 			},
-			expectedError: "Invalid GitHub URL: owner cannot be empty. Expecting 'https://github.com/<owner>/<repo>'",
+			expectedErrors: []string{"Invalid GitHub URL: owner cannot be empty. Expecting 'https://github.com/<owner>/<repo>'"},
 		},
 		{
 			name: "Case 3: Invalid repo",
@@ -1605,7 +1606,7 @@ func TestGetGitHubZipURL(t *testing.T) {
 					Location: "https://github.com/che-samples//archive/master",
 				},
 			},
-			expectedError: "Invalid GitHub URL: repo cannot be empty. Expecting 'https://github.com/<owner>/<repo>'",
+			expectedErrors: []string{"Invalid GitHub URL: repo cannot be empty. Expecting 'https://github.com/<owner>/<repo>'"},
 		},
 		{
 			name: "Case 4: Invalid HTTPS Github URL with tag and commit",
@@ -1616,15 +1617,21 @@ func TestGetGitHubZipURL(t *testing.T) {
 					Tag:      &tag,
 				},
 			},
-			expectedError: fmt.Sprintf("More than one source reference specified. The following were specified:\nCommitID specified with value %s\nTag specified with value %s\n", commitid, tag),
+			expectedErrors: []string{"More than one source reference specified. The following were specified:\n",
+				fmt.Sprintf("CommitID specified with value %s\n", commitid),
+				fmt.Sprintf("Tag specified with value %s\n", tag)},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := GetGitHubZipURL(tt.project)
-			if err != nil && !reflect.DeepEqual(err.Error(), tt.expectedError) {
-				t.Errorf("Got %s, want %s", err.Error(), tt.expectedError)
+			if err != nil {
+				for _, expectedError := range tt.expectedErrors {
+					if !strings.Contains(err.Error(), expectedError) {
+						t.Errorf("Got %s,\n want %s", err.Error(), expectedError)
+					}
+				}
 			}
 		})
 	}
