@@ -87,7 +87,7 @@ var _ = Describe("odo devfile registry command tests", func() {
 		It("Should successfully delete the registry", func() {
 			helper.CmdShouldPass("odo", "registry", "add", registryName, addRegistryURL)
 			helper.CmdShouldPass("odo", "registry", "delete", registryName, "-f")
-			helper.CmdShouldFail("odo", "create", "nodejs", "--registry", registryName)
+			helper.CmdShouldFail("odo", "create", "maven", "--registry", registryName)
 		})
 	})
 })
