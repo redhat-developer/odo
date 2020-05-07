@@ -237,12 +237,18 @@ func CreateAndInitSupervisordVolume(client lclient.Client) (string, error) {
 	log.Info("\nInitialization")
 	s := log.Spinner("Initializing the component")
 	defer s.End(false)
+
+	randomChars := util.GenerateRandomString(4)
+	supervisordVolumeName, err := util.NamespaceOpenShiftObject(adaptersCommon.SupervisordVolumeName, randomChars)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to create namespaced name")
+	}
+
 	supervisordLabels := GetSupervisordVolumeLabels()
-	supervisordVolume, err := client.CreateVolume(adaptersCommon.SupervisordVolumeName, supervisordLabels)
+	_, err = client.CreateVolume(supervisordVolumeName, supervisordLabels)
 	if err != nil {
 		return "", errors.Wrapf(err, "Unable to create supervisord volume for component")
 	}
-	supervisordVolumeName := supervisordVolume.Name
 
 	err = StartBootstrapSupervisordInitContainer(client, supervisordVolumeName)
 	if err != nil {
