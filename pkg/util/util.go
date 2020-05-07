@@ -33,7 +33,10 @@ import (
 )
 
 // HTTPRequestTimeout configures timeout of all HTTP requests
-const HTTPRequestTimeout = 10 * time.Second
+const (
+	HTTPRequestTimeout    = 20 * time.Second
+	ResponseHeaderTimeout = 10 * time.Second
+)
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
 
@@ -681,7 +684,7 @@ func GetRemoteFilesMarkedForDeletion(delSrcRelPaths []string, remoteFolder strin
 // HTTPGetRequest uses url to get file contents
 func HTTPGetRequest(url string) ([]byte, error) {
 	var httpClient = &http.Client{Transport: &http.Transport{
-		ResponseHeaderTimeout: HTTPRequestTimeout,
+		ResponseHeaderTimeout: ResponseHeaderTimeout,
 	},
 		Timeout: HTTPRequestTimeout}
 	resp, err := httpClient.Get(url)
@@ -928,7 +931,7 @@ func DownloadFile(url string, filepath string) error {
 
 	// Get the data
 	var httpClient = &http.Client{Transport: &http.Transport{
-		ResponseHeaderTimeout: HTTPRequestTimeout,
+		ResponseHeaderTimeout: ResponseHeaderTimeout,
 	}, Timeout: HTTPRequestTimeout}
 	resp, err := httpClient.Get(url)
 	if err != nil {
