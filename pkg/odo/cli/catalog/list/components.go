@@ -60,9 +60,9 @@ func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args [
 			} else {
 				return err
 			}
+		} else {
+			o.catalogList.Items = util.FilterHiddenComponents(o.catalogList.Items)
 		}
-
-		o.catalogList.Items = util.FilterHiddenComponents(o.catalogList.Items)
 	}
 
 	if experimental.IsExperimentalModeEnabled() {
@@ -82,7 +82,6 @@ func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args [
 	}
 
 	wg.Wait()
-
 	return
 }
 
