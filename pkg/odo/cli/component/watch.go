@@ -84,7 +84,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 		wo.Context = genericclioptions.NewDevfileContext(cmd)
 
 		// Set the source path to either the context or current working directory (if context not set)
-		wo.sourcePath, err = util.GetAbsPath(filepath.Dir(wo.componentContext))
+		wo.sourcePath, err = util.GetAbsPath(wo.componentContext)
 		if err != nil {
 			return errors.Wrap(err, "unable to get source path")
 		}
