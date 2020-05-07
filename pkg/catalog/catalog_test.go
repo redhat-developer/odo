@@ -283,8 +283,10 @@ func TestGetDevfileIndex(t *testing.T) {
 					Icon:              "/images/angular.svg",
 					GlobalMemoryLimit: "2686Mi",
 					Links: struct {
+						base string
 						Link string `json:"self"`
 					}{
+						base: server.URL,
 						Link: "/devfiles/angular/devfile.yaml",
 					},
 				},
