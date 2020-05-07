@@ -234,6 +234,9 @@ func UpdateComponentWithSupervisord(comp *common.DevfileComponent, runCommand co
 // CreateAndInitSupervisordVolume creates the supervisord volume and initializes
 // it with supervisord bootstrap image - assembly files and supervisord binary
 func CreateAndInitSupervisordVolume(client lclient.Client) (string, error) {
+	log.Info("\nInitialization")
+	s := log.Spinner("Initializing the component")
+	defer s.End(false)
 	supervisordLabels := GetSupervisordVolumeLabels()
 	supervisordVolume, err := client.CreateVolume(adaptersCommon.SupervisordVolumeName, supervisordLabels)
 	if err != nil {
@@ -245,6 +248,7 @@ func CreateAndInitSupervisordVolume(client lclient.Client) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "Unable to start supervisord container for component")
 	}
+	s.End(true)
 
 	return supervisordVolumeName, nil
 }
