@@ -114,7 +114,7 @@ func Init(o *InitParameters, fs afero.Fs) error {
 		return err
 	}
 
-	outputs, err := createInitialFiles(fs, o.GitOpsRepoURL, o.Prefix, o.GitOpsWebhookSecret, o.DockerConfigJSONFilename, imageRepo)
+	outputs, err := createInitialFiles(fs, o.Prefix, o.GitOpsRepoURL, o.GitOpsWebhookSecret, o.DockerConfigJSONFilename, imageRepo)
 	if err != nil {
 		return err
 	}
