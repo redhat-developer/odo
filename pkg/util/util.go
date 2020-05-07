@@ -996,14 +996,14 @@ func CopyFile(srcPath string, dstPath string) error {
 	if err != nil {
 		return err
 	}
-	defer srcFile.Close()
+	defer srcFile.Close() // #nosec G307
 
 	// Create destination file
 	dstFile, err := os.Create(dstPath)
 	if err != nil {
 		return err
 	}
-	defer dstFile.Close()
+	defer dstFile.Close() // #nosec G307
 
 	// Copy file
 	_, err = io.Copy(dstFile, srcFile)
