@@ -56,9 +56,10 @@ func GetDevfileIndex(devfileIndexLink string) ([]DevfileIndexEntry, error) {
 
 var devfileMutex = &sync.Mutex{}
 
-func getDevfileWith(link string, devfileIndexEntry DevfileIndexEntry, catalogDevfileList *DevfileComponentTypeList, err error, wg *sync.WaitGroup) {
+func getDevfileWith(devfileIndexEntry DevfileIndexEntry, catalogDevfileList *DevfileComponentTypeList, err error, wg *sync.WaitGroup) {
 	defer wg.Done()
 
+	link := devfileIndexEntry.Links.base + devfileIndexEntry.Links.Link
 	devfile, err := GetDevfile(link)
 
 	// Populate devfile component with devfile data and form devfile component list
@@ -163,8 +164,6 @@ func ListDevfileComponents() (DevfileComponentTypeList, error) {
 	// 3. Form devfile component list
 	var wg sync.WaitGroup
 	for _, devfileIndexEntry := range devfileIndex {
-		devfileLink := devfileIndexEntry.Links.base + devfileIndexEntry.Links.Link
-
 		// Load the devfile
 		// TODO: We send http get resquest in this function mutiple times
 		// since devfile registry uses different links to host different devfiles,
@@ -172,7 +171,7 @@ func ListDevfileComponents() (DevfileComponentTypeList, error) {
 		// big registry. We may need to rethink and optimize this in the future
 		wg.Add(1)
 		var err error
-		go getDevfileWith(devfileLink, devfileIndexEntry, catalogDevfileList, err, &wg)
+		go getDevfileWith(devfileIndexEntry, catalogDevfileList, err, &wg)
 		if err != nil {
 			return DevfileComponentTypeList{}, err
 		}
