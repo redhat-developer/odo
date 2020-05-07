@@ -22,6 +22,8 @@ var DevfileRegistries = []string{
 	"https://che-devfile-registry.openshift.io/",
 }
 
+var devfileIndicesMutex sync.Mutex
+
 func getDevfileIndexWith(link string, entries *[]DevfileIndexEntry, err error, wg *sync.WaitGroup) {
 	defer wg.Done()
 
@@ -30,7 +32,9 @@ func getDevfileIndexWith(link string, entries *[]DevfileIndexEntry, err error, w
 	for i := range indexEntries {
 		indexEntries[i].Links.base = link
 	}
+	devfileIndicesMutex.Lock()
 	*entries = append(*entries, indexEntries...)
+	devfileIndicesMutex.Unlock()
 }
 
 // GetDevfileIndex loads the devfile registry index.json
@@ -50,7 +54,7 @@ func GetDevfileIndex(devfileIndexLink string) ([]DevfileIndexEntry, error) {
 	return devfileIndex, nil
 }
 
-var mutex = &sync.Mutex{}
+var devfileMutex = &sync.Mutex{}
 
 func getDevfileWith(link string, devfileIndexEntry DevfileIndexEntry, catalogDevfileList *DevfileComponentTypeList, err error, wg *sync.WaitGroup) {
 	defer wg.Done()
@@ -67,9 +71,9 @@ func getDevfileWith(link string, devfileIndexEntry DevfileIndexEntry, catalogDev
 		Registry:    devfileIndexEntry.Links.base,
 	}
 
-	mutex.Lock()
+	devfileMutex.Lock()
 	catalogDevfileList.Items = append(catalogDevfileList.Items, catalogDevfile)
-	mutex.Unlock()
+	devfileMutex.Unlock()
 }
 
 // GetDevfile loads the devfile
