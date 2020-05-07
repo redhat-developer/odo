@@ -8,8 +8,8 @@ OPENSHIFT_CLIENT_BINARY_URL=${OPENSHIFT_CLIENT_BINARY_URL:-'https://github.com/o
 
 sudo service docker stop
 
-sudo sed -i -e 's/sock/sock --insecure-registry 172.30.0.0\/16/' /etc/default/docker
-sudo cat /etc/default/docker
+sudo sed -i -e 's/"mtu": 1460/"mtu": 1460, "insecure-registries": ["172.30.0.0\/16"]/' /etc/docker/daemon.json
+sudo cat /etc/docker/daemon.json
 
 sudo service docker start
 sudo service docker status
