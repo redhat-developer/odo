@@ -110,7 +110,12 @@ var createExample = ktemplates.Examples(`  # Create new Node.js component with t
 %[1]s nodejs --git https://github.com/openshift/nodejs-ex.git
 
 # Create new Node.js component with custom ports, additional environment variables and memory and cpu limits
-%[1]s nodejs --port 8080,8100/tcp,9100/udp --env key=value,key1=value1 --memory 4Gi --cpu 2`)
+%[1]s nodejs --port 8080,8100/tcp,9100/udp --env key=value,key1=value1 --memory 4Gi --cpu 2
+
+# Create new Node.js component and download the sample project named nodejs-web-app
+%[1]s nodejs --downloadSource=nodejs-web-app`)
+
+const defaultProjectName = "devfile-project-name"
 
 // NewCreateOptions returns new instance of CreateOptions
 func NewCreateOptions() *CreateOptions {
@@ -708,9 +713,9 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 		return errors.Errorf("No project found in devfile component.")
 	}
 
-	if nOfProjects == 1 && projectPassed == "devfile-project-name" {
+	if nOfProjects == 1 && projectPassed == defaultProjectName {
 		project = projects[0]
-	} else if nOfProjects > 1 && projectPassed == "devfile-project-name" {
+	} else if nOfProjects > 1 && projectPassed == defaultProjectName {
 		project = projects[0]
 		log.Warning("There are multiple projects in this devfile but none have been specified in --downloadSource. Downloading the first: " + project.Name)
 	} else { //If the user has specified a project
@@ -914,8 +919,8 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 	componentCreateCmd.Flags().StringSliceVar(&co.componentEnvVars, "env", []string{}, "Environmental variables for the component. For example --env VariableName=Value")
 
 	if experimental.IsExperimentalModeEnabled() {
-		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.downloadSource, "downloadSource", "", "Download sample project from devfile. (ex. odo component create <component_type> [component_name] --downloadSource/--downloadSource=<devfile-project>")
-		componentCreateCmd.Flags().Lookup("downloadSource").NoOptDefVal = "devfile-project-name" //Default value to pass to the flag if one is not specified.
+		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.downloadSource, "downloadSource", "", "Download sample project from devfile.")
+		componentCreateCmd.Flags().Lookup("downloadSource").NoOptDefVal = defaultProjectName //Default value to pass to the flag if one is not specified.
 	}
 
 	componentCreateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
