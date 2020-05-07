@@ -175,19 +175,19 @@ func ListDevfileComponents() (DevfileComponentTypeList, error) {
 	// 1. Load each devfile concurrently from the previously retrieved devfile index entries
 	// 2. Populate devfile components with devfile data
 	// 3. Add devfile component types to the catalog devfile list
-	var wg sync.WaitGroup
+	var devfileWG sync.WaitGroup
 	for _, devfileIndexEntry := range devfileIndex {
 		// Load the devfile
-		wg.Add(1)
+		devfileWG.Add(1)
 		var err error
 		// Note that this issues an HTTP get per devfile entry in the catalog, while doing it concurrently instead of
 		// sequentially improves the performance, caching that information would improve the performance even more
-		go getDevfileWith(devfileIndexEntry, catalogDevfileList, err, &wg)
+		go getDevfileWith(devfileIndexEntry, catalogDevfileList, err, &devfileWG)
 		if err != nil {
 			return DevfileComponentTypeList{}, err
 		}
 	}
-	wg.Wait()
+	devfileWG.Wait()
 
 	return *catalogDevfileList, nil
 }
