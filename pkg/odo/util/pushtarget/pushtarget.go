@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/openshift/odo/pkg/preference"
-	"k8s.io/klog/glog"
+	"k8s.io/klog"
 )
 
 // env variables
@@ -32,14 +32,14 @@ func IsPushTargetDocker() bool {
 		return pushTargetEnv == preference.DockerPushTarget
 	} else if pushTargetEnv != "" {
 		// Log an error and return false if an invalid value was passed in to env var and return false
-		glog.Error("Invalid value passed in to ")
+		klog.Error("Invalid value passed in to ")
 		return false
 	}
 
 	// Fetch odo preferences and check if pushtarget is set
 	cfg, err := preference.New()
 	if err != nil {
-		glog.Errorf("failed to read odo preferences config. err: '%v'\n", err)
+		klog.Errorf("failed to read odo preferences config. err: '%v'\n", err)
 		return false
 	}
 

@@ -19,14 +19,14 @@ import (
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/install"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
+	"github.com/operator-framework/operator-registry/pkg/registry"
+	opregistry "github.com/operator-framework/operator-registry/pkg/registry"
 )
 
 const (
-	operatorGroupAggregrationKeyPrefix = "olm.opgroup.permissions/aggregate-to-"
-	kubeRBACAggregationKeyPrefix       = "rbac.authorization.k8s.io/aggregate-to-"
-	AdminSuffix                        = "admin"
-	EditSuffix                         = "edit"
-	ViewSuffix                         = "view"
+	AdminSuffix = "admin"
+	EditSuffix  = "edit"
+	ViewSuffix  = "view"
 )
 
 var (
@@ -41,17 +41,54 @@ var (
 	}
 )
 
+func aggregationLabelFromAPIKey(k opregistry.APIKey, suffix string) (string, error) {
+	hash, err := resolver.APIKeyToGVKHash(k)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("olm.opgroup.permissions/aggregate-to-%s-%s", hash, suffix), nil
+}
+
 func (a *Operator) syncOperatorGroups(obj interface{}) error {
 	op, ok := obj.(*v1.OperatorGroup)
 	if !ok {
-		a.Log.Debugf("wrong type: %#v\n", obj)
+		a.logger.Debugf("wrong type: %#v\n", obj)
 		return fmt.Errorf("casting OperatorGroup failed")
 	}
 
-	logger := a.Log.WithFields(logrus.Fields{
+	logger := a.logger.WithFields(logrus.Fields{
 		"operatorGroup": op.GetName(),
 		"namespace":     op.GetNamespace(),
 	})
+
+	previousRef := op.Status.ServiceAccountRef.DeepCopy()
+	op, err := a.serviceAccountSyncer.SyncOperatorGroup(op)
+	if err != nil {
+		logger.Errorf("error updating service account - %v", err)
+		return err
+	}
+	if op.Status.ServiceAccountRef != previousRef {
+		crdList, err := a.lister.OperatorsV1alpha1().ClusterServiceVersionLister().List(labels.Everything())
+		if err != nil {
+			return err
+		}
+		for _, csv := range crdList {
+			if group, ok := csv.GetAnnotations()[v1.OperatorGroupAnnotationKey]; !ok || group != op.GetName() {
+				continue
+			}
+			if csv.Status.Reason == v1alpha1.CSVReasonComponentFailedNoRetry {
+				csv.SetPhase(v1alpha1.CSVPhasePending, v1alpha1.CSVReasonDetectedClusterChange, "Cluster resources changed state", a.now())
+				_, err := a.client.OperatorsV1alpha1().ClusterServiceVersions(csv.GetNamespace()).UpdateStatus(csv)
+				if err != nil {
+					return err
+				}
+				if err := a.csvQueueSet.Requeue(csv.GetNamespace(), csv.GetName()); err != nil {
+					return err
+				}
+				logger.Debug("Requeuing CSV due to detected service account change")
+			}
+		}
+	}
 
 	targetNamespaces, err := a.updateNamespaceList(op)
 	if err != nil {
@@ -65,7 +102,7 @@ func (a *Operator) syncOperatorGroups(obj interface{}) error {
 		logger.WithField("targets", targetNamespaces).Debug("namespace change detected")
 		op.Status = v1.OperatorGroupStatus{
 			Namespaces:  targetNamespaces,
-			LastUpdated: timeNow(),
+			LastUpdated: a.now(),
 		}
 
 		if _, err = a.client.OperatorsV1().OperatorGroups(op.GetNamespace()).UpdateStatus(op); err != nil && !k8serrors.IsNotFound(err) {
@@ -85,19 +122,25 @@ func (a *Operator) syncOperatorGroups(obj interface{}) error {
 	}
 	logger.Debug("OperatorGroup CSV annotation completed")
 
-	if err := a.ensureOpGroupClusterRoles(op); err != nil {
-		logger.WithError(err).Warn("failed to ensure operatorgroup clusterroles")
-		return err
-	}
-	logger.Debug("operatorgroup clusterroles ensured")
-
 	// Requeue all CSVs that provide the same APIs (including those removed). This notifies conflicting CSVs in
 	// intersecting groups that their conflict has possibly been resolved, either through resizing or through
 	// deletion of the conflicting CSV.
 	groupSurface := resolver.NewOperatorGroup(op)
 	groupProvidedAPIs := groupSurface.ProvidedAPIs()
 	providedAPIsForCSVs := a.providedAPIsFromCSVs(op, logger)
-	providedAPIsForGroup := providedAPIsForCSVs.Union(groupProvidedAPIs)
+	providedAPIsForGroup := make(resolver.APISet)
+	for api := range providedAPIsForCSVs {
+		providedAPIsForGroup[api] = struct{}{}
+	}
+	for api := range groupProvidedAPIs {
+		providedAPIsForGroup[api] = struct{}{}
+	}
+
+	if err := a.ensureOpGroupClusterRoles(op, providedAPIsForGroup); err != nil {
+		logger.WithError(err).Warn("failed to ensure operatorgroup clusterroles")
+		return err
+	}
+	logger.Debug("operatorgroup clusterroles ensured")
 
 	csvs, err := a.findCSVsThatProvideAnyOf(providedAPIsForGroup)
 	if err != nil {
@@ -108,7 +151,7 @@ func (a *Operator) syncOperatorGroups(obj interface{}) error {
 			"csv":       csv.GetName(),
 			"namespace": csv.GetNamespace(),
 		}).Debug("requeueing provider")
-		if err := a.csvQueueSet.Requeue(csv.GetName(), csv.GetNamespace()); err != nil {
+		if err := a.csvQueueSet.Requeue(csv.GetNamespace(), csv.GetName()); err != nil {
 			logger.WithError(err).Warn("could not requeue provider")
 		}
 	}
@@ -117,11 +160,39 @@ func (a *Operator) syncOperatorGroups(obj interface{}) error {
 	return nil
 }
 
+func (a *Operator) operatorGroupDeleted(obj interface{}) {
+	op, ok := obj.(*v1.OperatorGroup)
+	if !ok {
+		a.logger.Debugf("casting OperatorGroup failed, wrong type: %#v\n", obj)
+		return
+	}
+
+	logger := a.logger.WithFields(logrus.Fields{
+		"operatorGroup": op.GetName(),
+		"namespace":     op.GetNamespace(),
+	})
+
+	clusterRoles, err := a.lister.RbacV1().ClusterRoleLister().List(labels.SelectorFromSet(ownerutil.OwnerLabel(op, "OperatorGroup")))
+	if err != nil {
+		logger.WithError(err).Error("failed to list ClusterRoles for garbage collection")
+		return
+	}
+	for _, clusterRole := range clusterRoles {
+		err = a.opClient.KubernetesInterface().RbacV1().ClusterRoles().Delete(clusterRole.GetName(), &metav1.DeleteOptions{})
+		if err != nil {
+			logger.WithError(err).Error("failed to delete ClusterRole during garbage collection")
+		}
+	}
+}
+
 func (a *Operator) annotateCSVs(group *v1.OperatorGroup, targetNamespaces []string, logger *logrus.Entry) error {
 	updateErrs := []error{}
 	targetNamespaceSet := resolver.NewNamespaceSet(targetNamespaces)
 
 	for _, csv := range a.csvSet(group.GetNamespace(), v1alpha1.CSVPhaseAny) {
+		if csv.IsCopied() {
+			continue
+		}
 		logger := logger.WithField("csv", csv.GetName())
 
 		originalNamespacesAnnotation, _ := a.copyOperatorGroupAnnotations(&csv.ObjectMeta)[v1.OperatorGroupTargetsAnnotationKey]
@@ -141,7 +212,7 @@ func (a *Operator) annotateCSVs(group *v1.OperatorGroup, targetNamespaces []stri
 		requeueNamespaces := originalNamespaceSet.Union(targetNamespaceSet)
 		if !requeueNamespaces.IsAllNamespaces() {
 			for ns := range requeueNamespaces {
-				if err := a.csvQueueSet.Requeue(csv.GetName(), ns); err != nil {
+				if err := a.csvQueueSet.Requeue(ns, csv.GetName()); err != nil {
 					logger.WithError(err).Warn("could not requeue csv")
 				}
 			}
@@ -149,7 +220,7 @@ func (a *Operator) annotateCSVs(group *v1.OperatorGroup, targetNamespaces []stri
 		// have to requeue in all namespaces, previous or new targets were AllNamespaces
 		if namespaces, err := a.lister.CoreV1().NamespaceLister().List(labels.Everything()); err != nil {
 			for _, ns := range namespaces {
-				if err := a.csvQueueSet.Requeue(csv.GetName(), ns.GetName()); err != nil {
+				if err := a.csvQueueSet.Requeue(ns.GetName(), csv.GetName()); err != nil {
 					logger.WithError(err).Warn("could not requeue csv")
 				}
 			}
@@ -158,9 +229,9 @@ func (a *Operator) annotateCSVs(group *v1.OperatorGroup, targetNamespaces []stri
 	return errors.NewAggregate(updateErrs)
 }
 
-func (a *Operator) providedAPIsFromCSVs(group *v1.OperatorGroup, logger *logrus.Entry) resolver.APISet {
+func (a *Operator) providedAPIsFromCSVs(group *v1.OperatorGroup, logger *logrus.Entry) map[opregistry.APIKey]*v1alpha1.ClusterServiceVersion {
 	set := a.csvSet(group.Namespace, v1alpha1.CSVPhaseAny)
-	providedAPIsFromCSVs := make(resolver.APISet)
+	providedAPIsFromCSVs := make(map[opregistry.APIKey]*v1alpha1.ClusterServiceVersion)
 	for _, csv := range set {
 		// Don't union providedAPIsFromCSVs if the CSV is copied (member of another OperatorGroup)
 		if csv.IsCopied() {
@@ -176,20 +247,40 @@ func (a *Operator) providedAPIsFromCSVs(group *v1.OperatorGroup, logger *logrus.
 			logger.WithError(err).Warn("could not create OperatorSurface from csv")
 			continue
 		}
-		providedAPIsFromCSVs = providedAPIsFromCSVs.Union(operatorSurface.ProvidedAPIs().StripPlural())
+		for providedAPI := range operatorSurface.ProvidedAPIs().StripPlural() {
+			providedAPIsFromCSVs[providedAPI] = csv
+		}
 	}
 	return providedAPIsFromCSVs
 }
 
-func (a *Operator) pruneProvidedAPIs(group *v1.OperatorGroup, groupProvidedAPIs, providedAPIsFromCSVs resolver.APISet, logger *logrus.Entry) {
+func (a *Operator) pruneProvidedAPIs(group *v1.OperatorGroup, groupProvidedAPIs resolver.APISet, providedAPIsFromCSVs map[opregistry.APIKey]*v1alpha1.ClusterServiceVersion, logger *logrus.Entry) {
 	// Don't prune providedAPIsFromCSVs if static
 	if group.Spec.StaticProvidedAPIs {
-		a.Log.Debug("group has static provided apis. skipping provided api pruning")
+		a.logger.Debug("group has static provided apis. skipping provided api pruning")
 		return
 	}
 
+	intersection := make(resolver.APISet)
+	for api := range providedAPIsFromCSVs {
+		if _, ok := groupProvidedAPIs[api]; ok {
+			intersection[api] = struct{}{}
+		} else {
+			csv := providedAPIsFromCSVs[api]
+			_, err := a.lister.OperatorsV1alpha1().ClusterServiceVersionLister().ClusterServiceVersions(csv.GetNamespace()).Get(csv.GetName())
+			if k8serrors.IsNotFound(err) {
+				continue
+			}
+			if csv.DeletionTimestamp == nil && (csv.Status.Phase == v1alpha1.CSVPhaseNone || csv.Status.Phase == v1alpha1.CSVPhasePending) {
+				logger.Debugf("aborting operator group provided API update due to CSV %v in phase %v", csv.GetName(), csv.Status.Phase)
+				return
+			}
+		}
+	}
+
 	// Prune providedAPIs annotation if the cluster has fewer providedAPIs (handles CSV deletion)
-	if intersection := groupProvidedAPIs.Intersection(providedAPIsFromCSVs); len(intersection) < len(groupProvidedAPIs) {
+	//if intersection := groupProvidedAPIs.Intersection(providedAPIsFromCSVs); len(intersection) < len(groupProvidedAPIs) {
+	if len(intersection) < len(groupProvidedAPIs) {
 		difference := groupProvidedAPIs.Difference(intersection)
 		logger := logger.WithFields(logrus.Fields{
 			"providedAPIsOnCluster":  providedAPIsFromCSVs,
@@ -211,28 +302,43 @@ func (a *Operator) pruneProvidedAPIs(group *v1.OperatorGroup, groupProvidedAPIs,
 }
 
 // ensureProvidedAPIClusterRole ensures that a clusterrole exists (admin, edit, or view) for a single provided API Type
-func (a *Operator) ensureProvidedAPIClusterRole(operatorGroup *v1.OperatorGroup, csv *v1alpha1.ClusterServiceVersion, namePrefix, suffix string, verbs []string, group, resource string, resourceNames []string) error {
+func (a *Operator) ensureProvidedAPIClusterRole(operatorGroup *v1.OperatorGroup, csv *v1alpha1.ClusterServiceVersion, namePrefix, suffix string, verbs []string, group, resource string, resourceNames []string, api ownerutil.Owner, key opregistry.APIKey) error {
+	aggregationLabel, err := aggregationLabelFromAPIKey(key, suffix)
+	if err != nil {
+		return err
+	}
 	clusterRole := &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: namePrefix + suffix,
 			Labels: map[string]string{
-				kubeRBACAggregationKeyPrefix + suffix:       "true",
-				operatorGroupAggregrationKeyPrefix + suffix: operatorGroup.GetName(),
+				// Matches aggregation rules on the bootstrap ClusterRoles.
+				// https://github.com/kubernetes/kubernetes/blob/61847eab61788fb0543b4cf147773c9da646ed2f/plugin/pkg/auth/authorizer/rbac/bootstrappolicy/policy.go#L232
+				fmt.Sprintf("rbac.authorization.k8s.io/aggregate-to-%s", suffix): "true",
+				aggregationLabel: "true",
 			},
+			OwnerReferences: []metav1.OwnerReference{ownerutil.NonBlockingOwner(api)},
 		},
 		Rules: []rbacv1.PolicyRule{{Verbs: verbs, APIGroups: []string{group}, Resources: []string{resource}, ResourceNames: resourceNames}},
 	}
-	existingCR, err := a.OpClient.KubernetesInterface().RbacV1().ClusterRoles().Create(clusterRole)
-	if k8serrors.IsAlreadyExists(err) {
-		if existingCR != nil && reflect.DeepEqual(existingCR.Labels, clusterRole.Labels) && reflect.DeepEqual(existingCR.Rules, clusterRole.Rules) {
+
+	existingCR, err := a.lister.RbacV1().ClusterRoleLister().Get(clusterRole.Name)
+	if existingCR == nil {
+		existingCR, err = a.opClient.KubernetesInterface().RbacV1().ClusterRoles().Create(clusterRole)
+		if err == nil {
 			return nil
 		}
-		if _, err = a.OpClient.UpdateClusterRole(clusterRole); err != nil {
-			a.Log.WithError(err).Errorf("Update existing cluster role failed: %v", clusterRole)
+		if !k8serrors.IsAlreadyExists(err) {
+			a.logger.WithError(err).Errorf("Create cluster role failed: %v", clusterRole)
 			return err
 		}
-	} else if err != nil {
-		a.Log.WithError(err).Errorf("Create cluster role failed: %v", clusterRole)
+	}
+
+	if existingCR != nil && reflect.DeepEqual(existingCR.Rules, clusterRole.Rules) && ownerutil.IsOwnedBy(existingCR, api) && labels.Equals(existingCR.Labels, clusterRole.Labels) {
+		return nil
+	}
+
+	if _, err := a.opClient.UpdateClusterRole(clusterRole); err != nil {
+		a.logger.WithError(err).Errorf("Update existing cluster role failed: %v", clusterRole)
 		return err
 	}
 	return nil
@@ -241,6 +347,10 @@ func (a *Operator) ensureProvidedAPIClusterRole(operatorGroup *v1.OperatorGroup,
 // ensureClusterRolesForCSV ensures that ClusterRoles for writing and reading provided APIs exist for each operator
 func (a *Operator) ensureClusterRolesForCSV(csv *v1alpha1.ClusterServiceVersion, operatorGroup *v1.OperatorGroup) error {
 	for _, owned := range csv.Spec.CustomResourceDefinitions.Owned {
+		crd, err := a.lister.APIExtensionsV1beta1().CustomResourceDefinitionLister().Get(owned.Name)
+		if err != nil {
+			return fmt.Errorf("crd %q not found: %s", owned.Name, err.Error())
+		}
 		nameGroupPair := strings.SplitN(owned.Name, ".", 2) // -> etcdclusters etcd.database.coreos.com
 		if len(nameGroupPair) != 2 {
 			return fmt.Errorf("invalid parsing of name '%v', got %v", owned.Name, nameGroupPair)
@@ -248,20 +358,26 @@ func (a *Operator) ensureClusterRolesForCSV(csv *v1alpha1.ClusterServiceVersion,
 		plural := nameGroupPair[0]
 		group := nameGroupPair[1]
 		namePrefix := fmt.Sprintf("%s-%s-", owned.Name, owned.Version)
-
+		key := registry.APIKey{Group: group, Version: owned.Version, Kind: owned.Kind, Plural: plural}
 		for suffix, verbs := range VerbsForSuffix {
-			if err := a.ensureProvidedAPIClusterRole(operatorGroup, csv, namePrefix, suffix, verbs, group, plural, nil); err != nil {
+			if err := a.ensureProvidedAPIClusterRole(operatorGroup, csv, namePrefix, suffix, verbs, group, plural, nil, crd, key); err != nil {
 				return err
 			}
 		}
-		if err := a.ensureProvidedAPIClusterRole(operatorGroup, csv, namePrefix+"crd", ViewSuffix, []string{"get"}, "apiextensions.k8s.io", "customresourcedefinitions", []string{owned.Name}); err != nil {
+		if err := a.ensureProvidedAPIClusterRole(operatorGroup, csv, namePrefix+"crd", ViewSuffix, []string{"get"}, "apiextensions.k8s.io", "customresourcedefinitions", []string{owned.Name}, crd, key); err != nil {
 			return err
 		}
 	}
 	for _, owned := range csv.Spec.APIServiceDefinitions.Owned {
+		svcName := strings.Join([]string{owned.Version, owned.Group}, ".")
+		svc, err := a.lister.APIRegistrationV1().APIServiceLister().Get(svcName)
+		if err != nil {
+			return fmt.Errorf("apiservice %q not found: %s", svcName, err.Error())
+		}
 		namePrefix := fmt.Sprintf("%s-%s-", owned.Name, owned.Version)
+		key := registry.APIKey{Group: owned.Group, Version: owned.Version, Kind: owned.Kind}
 		for suffix, verbs := range VerbsForSuffix {
-			if err := a.ensureProvidedAPIClusterRole(operatorGroup, csv, namePrefix, suffix, verbs, owned.Group, owned.Name, nil); err != nil {
+			if err := a.ensureProvidedAPIClusterRole(operatorGroup, csv, namePrefix, suffix, verbs, owned.Group, owned.Name, nil, svc, key); err != nil {
 				return err
 			}
 		}
@@ -280,13 +396,13 @@ func (a *Operator) ensureRBACInTargetNamespace(csv *v1alpha1.ClusterServiceVersi
 	if err != nil {
 		return err
 	}
-	strategyDetailsDeployment, ok := strategy.(*install.StrategyDetailsDeployment)
+	strategyDetailsDeployment, ok := strategy.(*v1alpha1.StrategyDetailsDeployment)
 	if !ok {
 		return fmt.Errorf("could not cast install strategy as type %T", strategyDetailsDeployment)
 	}
 	ruleChecker := install.NewCSVRuleChecker(a.lister.RbacV1().RoleLister(), a.lister.RbacV1().RoleBindingLister(), a.lister.RbacV1().ClusterRoleLister(), a.lister.RbacV1().ClusterRoleBindingLister(), csv)
 
-	logger := a.Log.WithField("opgroup", operatorGroup.GetName()).WithField("csv", csv.GetName())
+	logger := a.logger.WithField("opgroup", operatorGroup.GetName()).WithField("csv", csv.GetName())
 
 	// if OperatorGroup is global (all namespaces) we generate cluster roles / cluster role bindings instead
 	if len(targetNamespaces) == 1 && targetNamespaces[0] == corev1.NamespaceAll {
@@ -315,30 +431,6 @@ func (a *Operator) ensureRBACInTargetNamespace(csv *v1alpha1.ClusterServiceVersi
 		return nil
 	}
 
-	// otherwise, create roles/rolebindings for each target namespace
-	for _, ns := range targetNamespaces {
-		if ns == operatorGroup.GetNamespace() {
-			continue
-		}
-
-		permMet, _, err := a.permissionStatus(strategyDetailsDeployment, ruleChecker, ns, csv.GetNamespace())
-		if err != nil {
-			logger.WithError(err).Debug("permission status")
-			return err
-		}
-		logger.WithField("target", ns).WithField("permMet", permMet).Debug("permission status")
-
-		// operator already has access in the target namespace
-		if permMet {
-			logger.Debug("operator has access")
-			continue
-		}
-
-		if err := a.ensureTenantRBAC(operatorGroup.GetNamespace(), ns, csv); err != nil {
-			logger.WithError(err).Debug("ensuring tenant rbac")
-			return err
-		}
-	}
 	return nil
 }
 
@@ -353,7 +445,7 @@ func (a *Operator) ensureSingletonRBAC(operatorNamespace string, csv *v1alpha1.C
 	}
 
 	for _, r := range ownedRoles {
-		a.Log.Debug("processing role")
+		a.logger.Debug("processing role")
 		_, err := a.lister.RbacV1().ClusterRoleLister().Get(r.GetName())
 		if err != nil {
 			clusterRole := &rbacv1.ClusterRole{
@@ -371,10 +463,10 @@ func (a *Operator) ensureSingletonRBAC(operatorNamespace string, csv *v1alpha1.C
 					Resources: []string{"namespaces"},
 				}),
 			}
-			if _, err := a.OpClient.CreateClusterRole(clusterRole); err != nil {
+			if _, err := a.opClient.CreateClusterRole(clusterRole); err != nil {
 				return err
 			}
-			a.Log.Debug("created cluster role")
+			a.logger.Debug("created cluster role")
 		}
 	}
 
@@ -405,7 +497,7 @@ func (a *Operator) ensureSingletonRBAC(operatorNamespace string, csv *v1alpha1.C
 					Name:     r.RoleRef.Name,
 				},
 			}
-			if _, err := a.OpClient.CreateClusterRoleBinding(clusterRoleBinding); err != nil {
+			if _, err := a.opClient.CreateClusterRoleBinding(clusterRoleBinding); err != nil {
 				return err
 			}
 		}
@@ -413,15 +505,11 @@ func (a *Operator) ensureSingletonRBAC(operatorNamespace string, csv *v1alpha1.C
 	return nil
 }
 
-func (a *Operator) ensureTenantRBAC(operatorNamespace, targetNamespace string, csv *v1alpha1.ClusterServiceVersion) error {
+func (a *Operator) ensureTenantRBAC(operatorNamespace, targetNamespace string, csv *v1alpha1.ClusterServiceVersion, targetCSV *v1alpha1.ClusterServiceVersion) error {
 	if operatorNamespace == targetNamespace {
 		return nil
 	}
 
-	targetCSV, err := a.lister.OperatorsV1alpha1().ClusterServiceVersionLister().ClusterServiceVersions(targetNamespace).Get(csv.GetName())
-	if err != nil {
-		return err
-	}
 	ownerSelector := ownerutil.CSVOwnerSelector(csv)
 	ownedRoles, err := a.lister.RbacV1().RoleLister().Roles(operatorNamespace).List(ownerSelector)
 	if err != nil {
@@ -454,7 +542,7 @@ func (a *Operator) ensureTenantRBAC(operatorNamespace, targetNamespace string, c
 		// role already exists, update the rules
 		if ok {
 			existing.Rules = ownedRole.Rules
-			if _, err := a.OpClient.UpdateRole(existing); err != nil {
+			if _, err := a.opClient.UpdateRole(existing); err != nil {
 				return err
 			}
 			continue
@@ -470,7 +558,7 @@ func (a *Operator) ensureTenantRBAC(operatorNamespace, targetNamespace string, c
 			return err
 		}
 		targetRole.SetLabels(utillabels.AddLabel(targetRole.GetLabels(), v1alpha1.CopiedLabelKey, operatorNamespace))
-		if _, err := a.OpClient.CreateRole(targetRole); err != nil {
+		if _, err := a.opClient.CreateRole(targetRole); err != nil {
 			return err
 		}
 	}
@@ -496,7 +584,7 @@ func (a *Operator) ensureTenantRBAC(operatorNamespace, targetNamespace string, c
 		if !ownerutil.IsOwnedBy(ownedRoleBinding, csv) {
 			continue
 		}
-		_, ok := targetRolesByName[ownedRoleBinding.GetName()]
+		_, ok := targetRoleBindingsByName[ownedRoleBinding.GetName()]
 
 		// role binding exists
 		if ok {
@@ -506,6 +594,7 @@ func (a *Operator) ensureTenantRBAC(operatorNamespace, targetNamespace string, c
 
 		// role binding doesn't exist
 		// TODO: we can work around error cases here; if there's an un-owned role with a matching name we should generate instead
+		ownedRoleBinding = ownedRoleBinding.DeepCopy()
 		ownedRoleBinding.SetNamespace(targetNamespace)
 		ownedRoleBinding.SetResourceVersion("0")
 		ownedRoleBinding.SetOwnerReferences([]metav1.OwnerReference{ownerutil.NonBlockingOwner(targetCSV)})
@@ -513,7 +602,7 @@ func (a *Operator) ensureTenantRBAC(operatorNamespace, targetNamespace string, c
 			return err
 		}
 		ownedRoleBinding.SetLabels(utillabels.AddLabel(ownedRoleBinding.GetLabels(), v1alpha1.CopiedLabelKey, operatorNamespace))
-		if _, err := a.OpClient.CreateRoleBinding(ownedRoleBinding); err != nil {
+		if _, err := a.opClient.CreateRoleBinding(ownedRoleBinding); err != nil {
 			return err
 		}
 	}
@@ -525,30 +614,77 @@ func (a *Operator) ensureCSVsInNamespaces(csv *v1alpha1.ClusterServiceVersion, o
 	if err != nil {
 		return err
 	}
+
+	strategyDetailsDeployment := &csv.Spec.InstallStrategy.StrategySpec
+	ruleChecker := install.NewCSVRuleChecker(a.lister.RbacV1().RoleLister(), a.lister.RbacV1().RoleBindingLister(), a.lister.RbacV1().ClusterRoleLister(), a.lister.RbacV1().ClusterRoleBindingLister(), csv)
+
+	logger := a.logger.WithField("opgroup", operatorGroup.GetName()).WithField("csv", csv.GetName())
+
+	targetCSVs := make(map[string]*v1alpha1.ClusterServiceVersion)
 	for _, ns := range namespaces {
 		if ns.GetName() == operatorGroup.Namespace {
 			continue
 		}
 		if targets.Contains(ns.GetName()) {
-			if err := a.copyToNamespace(csv, ns.GetName()); err != nil {
-				a.Log.WithError(err).Debug("error copying to target")
+			var targetCSV *v1alpha1.ClusterServiceVersion
+			if targetCSV, err = a.copyToNamespace(csv, ns.GetName()); err != nil {
+				a.logger.WithError(err).Debug("error copying to target")
+				continue
 			}
+			targetCSVs[ns.GetName()] = targetCSV
 		} else {
 			if err := a.pruneFromNamespace(operatorGroup.GetName(), ns.GetName()); err != nil {
-				a.Log.WithError(err).Debug("error pruning from old target")
+				a.logger.WithError(err).Debug("error pruning from old target")
 			}
 		}
+	}
+
+	targetNamespaces := operatorGroup.Status.Namespaces
+	if targetNamespaces == nil {
+		a.logger.Errorf("operatorgroup '%v' should have non-nil status", operatorGroup.GetName())
+		return nil
+	}
+	if len(targetNamespaces) == 1 && targetNamespaces[0] == corev1.NamespaceAll {
+		// global operator group handled by ensureRBACInTargetNamespace
+		return nil
+	}
+	for _, ns := range targetNamespaces {
+		// create roles/rolebindings for each target namespace
+		permMet, _, err := a.permissionStatus(strategyDetailsDeployment, ruleChecker, ns, csv.GetNamespace())
+		if err != nil {
+			logger.WithError(err).Debug("permission status")
+			return err
+		}
+		logger.WithField("target", ns).WithField("permMet", permMet).Debug("permission status")
+
+		// operator already has access in the target namespace
+		if permMet {
+			logger.Debug("operator has access")
+			continue
+		} else {
+			logger.Debug("operator needs access, going to create permissions")
+		}
+
+		targetCSV, ok := targetCSVs[ns]
+		if !ok {
+			return fmt.Errorf("bug: no target CSV for namespace %v", ns)
+		}
+		if err := a.ensureTenantRBAC(operatorGroup.GetNamespace(), ns, csv, targetCSV); err != nil {
+			logger.WithError(err).Debug("ensuring tenant rbac")
+			return err
+		}
+		logger.Debug("permissions created")
 	}
 
 	return nil
 }
 
-func (a *Operator) copyToNamespace(csv *v1alpha1.ClusterServiceVersion, namespace string) error {
+func (a *Operator) copyToNamespace(csv *v1alpha1.ClusterServiceVersion, namespace string) (*v1alpha1.ClusterServiceVersion, error) {
 	if csv.GetNamespace() == namespace {
-		return nil
+		return nil, fmt.Errorf("bug: can not copy to active namespace %v", csv.GetNamespace())
 	}
 
-	logger := a.Log.WithField("operator-ns", csv.GetNamespace()).WithField("target-ns", namespace)
+	logger := a.logger.WithField("operator-ns", csv.GetNamespace()).WithField("target-ns", namespace)
 	newCSV := csv.DeepCopy()
 	delete(newCSV.Annotations, v1.OperatorGroupTargetsAnnotationKey)
 
@@ -564,9 +700,9 @@ func (a *Operator) copyToNamespace(csv *v1alpha1.ClusterServiceVersion, namespac
 			fetchedCSV.SetLabels(utillabels.AddLabel(fetchedCSV.GetLabels(), v1alpha1.CopiedLabelKey, csv.GetNamespace()))
 			// CRs don't support strategic merge patching, but in the future if they do this should be updated to patch
 			logger.Debug("updating target CSV")
-			if _, err := a.client.OperatorsV1alpha1().ClusterServiceVersions(namespace).Update(fetchedCSV); err != nil {
+			if fetchedCSV, err = a.client.OperatorsV1alpha1().ClusterServiceVersions(namespace).Update(fetchedCSV); err != nil {
 				logger.WithError(err).Error("update target CSV failed")
-				return err
+				return nil, err
 			}
 		}
 
@@ -579,12 +715,14 @@ func (a *Operator) copyToNamespace(csv *v1alpha1.ClusterServiceVersion, namespac
 			logger.Debug("updating status")
 			// Must use fetchedCSV because UpdateStatus(...) checks resource UID.
 			fetchedCSV.Status = newCSV.Status
-			fetchedCSV.Status.LastUpdateTime = timeNow()
-			if _, err := a.client.OperatorsV1alpha1().ClusterServiceVersions(namespace).UpdateStatus(fetchedCSV); err != nil {
+			fetchedCSV.Status.LastUpdateTime = a.now()
+			if fetchedCSV, err = a.client.OperatorsV1alpha1().ClusterServiceVersions(namespace).UpdateStatus(fetchedCSV); err != nil {
 				logger.WithError(err).Error("status update for target CSV failed")
-				return err
+				return nil, err
 			}
 		}
+
+		return fetchedCSV, nil
 
 	} else if k8serrors.IsNotFound(err) {
 		newCSV.SetNamespace(namespace)
@@ -594,22 +732,26 @@ func (a *Operator) copyToNamespace(csv *v1alpha1.ClusterServiceVersion, namespac
 		logger.Debug("copying CSV to target")
 		createdCSV, err := a.client.OperatorsV1alpha1().ClusterServiceVersions(namespace).Create(newCSV)
 		if err != nil {
-			a.Log.Errorf("Create for new CSV failed: %v", err)
-			return err
+			a.logger.Errorf("Create for new CSV failed: %v", err)
+			return nil, err
 		}
 		createdCSV.Status.Reason = v1alpha1.CSVReasonCopied
 		createdCSV.Status.Message = fmt.Sprintf("The operator is running in %s but is managing this namespace", csv.GetNamespace())
-		createdCSV.Status.LastUpdateTime = timeNow()
+		createdCSV.Status.LastUpdateTime = a.now()
 		if _, err := a.client.OperatorsV1alpha1().ClusterServiceVersions(namespace).UpdateStatus(createdCSV); err != nil {
-			a.Log.Errorf("Status update for CSV failed: %v", err)
-			return err
+			a.logger.Errorf("Status update for CSV failed: %v", err)
+			return nil, err
 		}
+
+		return createdCSV, nil
 
 	} else if err != nil {
 		logger.WithError(err).Error("couldn't get CSV")
-		return err
+		return nil, err
 	}
-	return nil
+
+	// this return shouldn't be hit
+	return nil, fmt.Errorf("unhandled code path")
 }
 
 func (a *Operator) pruneFromNamespace(operatorGroupName, namespace string) error {
@@ -620,8 +762,8 @@ func (a *Operator) pruneFromNamespace(operatorGroupName, namespace string) error
 
 	for _, csv := range fetchedCSVs {
 		if csv.IsCopied() && csv.GetAnnotations()[v1.OperatorGroupAnnotationKey] == operatorGroupName {
-			a.Log.Debugf("Found CSV '%v' in namespace %v to delete", csv.GetName(), namespace)
-			a.gcQueueIndexer.Enqueue(csv)
+			a.logger.Debugf("Found CSV '%v' in namespace %v to delete", csv.GetName(), namespace)
+			a.csvGCQueueSet.Requeue(csv.GetNamespace(), csv.GetName())
 		}
 	}
 	return nil
@@ -648,14 +790,14 @@ func (a *Operator) operatorGroupAnnotationsDiffer(obj *metav1.ObjectMeta, op *v1
 		return true
 	}
 	if targets, ok := annotations[v1.OperatorGroupTargetsAnnotationKey]; !ok || targets != op.BuildTargetNamespaces() {
-		a.Log.WithFields(logrus.Fields{
+		a.logger.WithFields(logrus.Fields{
 			"annotationTargets": annotations[v1.OperatorGroupTargetsAnnotationKey],
 			"opgroupTargets":    op.BuildTargetNamespaces(),
 		}).Debug("annotations different")
 		return true
 	}
 
-	a.Log.WithFields(logrus.Fields{
+	a.logger.WithFields(logrus.Fields{
 		"annotationTargets": annotations[v1.OperatorGroupTargetsAnnotationKey],
 		"opgroupTargets":    op.BuildTargetNamespaces(),
 	}).Debug("annotations correct")
@@ -715,6 +857,8 @@ func (a *Operator) getOperatorGroupTargets(op *v1.OperatorGroup) (map[string]str
 		matchedNamespaces, err := a.lister.CoreV1().NamespaceLister().List(selector)
 		if err != nil {
 			return nil, err
+		} else if len(matchedNamespaces) == 0 {
+			a.logger.Debugf("No matched TargetNamespaces are found for given selector: %#v\n", selector)
 		}
 
 		for _, ns := range matchedNamespaces {
@@ -737,34 +881,60 @@ func (a *Operator) updateNamespaceList(op *v1.OperatorGroup) ([]string, error) {
 	return namespaceList, nil
 }
 
-func (a *Operator) ensureOpGroupClusterRole(op *v1.OperatorGroup, suffix string) error {
+func (a *Operator) ensureOpGroupClusterRole(op *v1.OperatorGroup, suffix string, apis resolver.APISet) error {
 	clusterRole := &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: strings.Join([]string{op.GetName(), suffix}, "-"),
 		},
-		AggregationRule: &rbacv1.AggregationRule{
-			ClusterRoleSelectors: []metav1.LabelSelector{
-				{
-					MatchLabels: map[string]string{
-						operatorGroupAggregrationKeyPrefix + suffix: op.GetName(),
-					},
-				},
-			},
-		},
 	}
-	_, err := a.OpClient.KubernetesInterface().RbacV1().ClusterRoles().Create(clusterRole)
-	if k8serrors.IsAlreadyExists(err) {
+	var selectors []metav1.LabelSelector
+	for api := range apis {
+		aggregationLabel, err := aggregationLabelFromAPIKey(api, suffix)
+		if err != nil {
+			return err
+		}
+		selectors = append(selectors, metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				aggregationLabel: "true",
+			},
+		})
+	}
+	if len(selectors) > 0 {
+		clusterRole.AggregationRule = &rbacv1.AggregationRule{
+			ClusterRoleSelectors: selectors,
+		}
+	}
+	err := ownerutil.AddOwnerLabels(clusterRole, op)
+	if err != nil {
+		return err
+	}
+
+	existingRole, err := a.lister.RbacV1().ClusterRoleLister().Get(clusterRole.Name)
+	if existingRole == nil {
+		existingRole, err = a.opClient.KubernetesInterface().RbacV1().ClusterRoles().Create(clusterRole)
+		if err == nil {
+			return nil
+		}
+		if !k8serrors.IsAlreadyExists(err) {
+			a.logger.WithError(err).Errorf("Create cluster role failed: %v", clusterRole)
+			return err
+		}
+	}
+
+	if existingRole != nil && labels.Equals(existingRole.Labels, clusterRole.Labels) && reflect.DeepEqual(existingRole.AggregationRule, clusterRole.AggregationRule) {
 		return nil
-	} else if err != nil {
-		a.Log.WithError(err).Errorf("Create cluster role failed: %v", clusterRole)
+	}
+
+	if _, err := a.opClient.UpdateClusterRole(clusterRole); err != nil {
+		a.logger.WithError(err).Errorf("Update existing cluster role failed: %v", clusterRole)
 		return err
 	}
 	return nil
 }
 
-func (a *Operator) ensureOpGroupClusterRoles(op *v1.OperatorGroup) error {
+func (a *Operator) ensureOpGroupClusterRoles(op *v1.OperatorGroup, apis resolver.APISet) error {
 	for _, suffix := range Suffices {
-		if err := a.ensureOpGroupClusterRole(op, suffix); err != nil {
+		if err := a.ensureOpGroupClusterRole(op, suffix, apis); err != nil {
 			return err
 		}
 	}

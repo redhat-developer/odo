@@ -6,12 +6,12 @@ import (
 	"path/filepath"
 	"text/tabwriter"
 
-	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/application"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/log"
@@ -21,7 +21,7 @@ import (
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
 // ListRecommendedCommandName is the recommended watch command name
@@ -48,10 +48,10 @@ func NewListOptions() *ListOptions {
 func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 
 	if util.CheckKubeConfigExist() {
-		glog.V(4).Infof("New Context")
+		klog.V(4).Infof("New Context")
 		lo.Context = genericclioptions.NewContext(cmd)
 	} else {
-		glog.V(4).Infof("New Config Context")
+		klog.V(4).Infof("New Config Context")
 		lo.Context = genericclioptions.NewConfigContext(cmd)
 
 	}
@@ -136,7 +136,7 @@ func (lo *ListOptions) Run() (err error) {
 			return errors.Wrapf(err, "failed to fetch components list")
 		}
 	}
-	glog.V(4).Infof("the components are %+v", components)
+	klog.V(4).Infof("the components are %+v", components)
 
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(components)

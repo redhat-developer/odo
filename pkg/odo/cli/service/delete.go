@@ -6,13 +6,13 @@ import (
 
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 
-	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	svc "github.com/openshift/odo/pkg/service"
 	"github.com/spf13/cobra"
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
+	"k8s.io/klog"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
 const deleteRecommendedCommandName = "delete"
@@ -84,7 +84,7 @@ func NewCmdServiceDelete(name, fullName string) *cobra.Command {
 		Example: fmt.Sprintf(deleteExample, fullName),
 		Args:    cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			glog.V(4).Infof("service delete called\n args: %#v", strings.Join(args, " "))
+			klog.V(4).Infof("service delete called\n args: %#v", strings.Join(args, " "))
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}

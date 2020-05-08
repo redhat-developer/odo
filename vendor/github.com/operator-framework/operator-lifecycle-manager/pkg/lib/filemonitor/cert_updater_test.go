@@ -59,7 +59,7 @@ func TestOLMGetCertRotationFn(t *testing.T) {
 	require.NoError(t, err)
 
 	// find a free port to listen on and start server
-	listener, err := net.Listen("tcp", ":0")
+	listener, err := net.Listen("tcp", "localhost:0")
 	require.NoError(t, err)
 	freePort := listener.Addr().(*net.TCPAddr).Port
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -95,8 +95,7 @@ func TestOLMGetCertRotationFn(t *testing.T) {
 	assert.Equal(t, resp.StatusCode, http.StatusOK)
 	assert.Equal(t, expectedOldCN, resp.TLS.PeerCertificates[0].Subject.String())
 	resp.Body.Close()
-	// not available until go 1.12 - later branches compile with a newer version of go
-	//client.CloseIdleConnections()
+	client.CloseIdleConnections()
 
 	// atomically switch out the symlink so the file contents are always seen in a consistent state
 	// (the same idea is used in the atomic writer in kubernetes)

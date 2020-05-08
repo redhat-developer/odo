@@ -1,6 +1,7 @@
 package resourceapply
 
 import (
+	"bytes"
 	"fmt"
 	"sort"
 	"strings"
@@ -38,7 +39,7 @@ func ApplyNamespace(client coreclientv1.NamespacesGetter, recorder events.Record
 	}
 
 	if klog.V(4) {
-		klog.Infof("Namespace %q changes: %v", required.Name, JSONPatch(existing, existingCopy))
+		klog.Infof("Namespace %q changes: %v", required.Name, JSONPatchNoError(existing, existingCopy))
 	}
 
 	actual, err := client.Namespaces().Update(existingCopy)
@@ -81,7 +82,7 @@ func ApplyService(client coreclientv1.ServicesGetter, recorder events.Recorder, 
 	existingCopy.Spec.Type = required.Spec.Type // if this is different, the update will fail.  Status will indicate it.
 
 	if klog.V(4) {
-		klog.Infof("Service %q changes: %v", required.Namespace+"/"+required.Name, JSONPatch(existing, required))
+		klog.Infof("Service %q changes: %v", required.Namespace+"/"+required.Name, JSONPatchNoError(existing, required))
 	}
 
 	actual, err := client.Services(required.Namespace).Update(existingCopy)
@@ -110,7 +111,7 @@ func ApplyPod(client coreclientv1.PodsGetter, recorder events.Recorder, required
 	}
 
 	if klog.V(4) {
-		klog.Infof("Pod %q changes: %v", required.Namespace+"/"+required.Name, JSONPatch(existing, required))
+		klog.Infof("Pod %q changes: %v", required.Namespace+"/"+required.Name, JSONPatchNoError(existing, required))
 	}
 
 	actual, err := client.Pods(required.Namespace).Update(existingCopy)
@@ -138,7 +139,7 @@ func ApplyServiceAccount(client coreclientv1.ServiceAccountsGetter, recorder eve
 		return existingCopy, false, nil
 	}
 	if klog.V(4) {
-		klog.Infof("ServiceAccount %q changes: %v", required.Namespace+"/"+required.Name, JSONPatch(existing, required))
+		klog.Infof("ServiceAccount %q changes: %v", required.Namespace+"/"+required.Name, JSONPatchNoError(existing, required))
 	}
 	actual, err := client.ServiceAccounts(required.Namespace).Update(existingCopy)
 	reportUpdateEvent(recorder, required, err)
@@ -162,15 +163,34 @@ func ApplyConfigMap(client coreclientv1.ConfigMapsGetter, recorder events.Record
 
 	resourcemerge.EnsureObjectMeta(modified, &existingCopy.ObjectMeta, required.ObjectMeta)
 
+	caBundleInjected := required.Labels["config.openshift.io/inject-trusted-cabundle"] == "true"
+	_, newCABundleRequired := required.Data["ca-bundle.crt"]
+
 	var modifiedKeys []string
 	for existingCopyKey, existingCopyValue := range existingCopy.Data {
+		// if we're injecting a ca-bundle and the required isn't forcing the value, then don't use the value of existing
+		// to drive a diff detection. If required has set the value then we need to force the value in order to have apply
+		// behave predictably.
+		if caBundleInjected && !newCABundleRequired && existingCopyKey == "ca-bundle.crt" {
+			continue
+		}
 		if requiredValue, ok := required.Data[existingCopyKey]; !ok || (existingCopyValue != requiredValue) {
 			modifiedKeys = append(modifiedKeys, "data."+existingCopyKey)
+		}
+	}
+	for existingCopyKey, existingCopyBinValue := range existingCopy.BinaryData {
+		if requiredBinValue, ok := required.BinaryData[existingCopyKey]; !ok || !bytes.Equal(existingCopyBinValue, requiredBinValue) {
+			modifiedKeys = append(modifiedKeys, "binaryData."+existingCopyKey)
 		}
 	}
 	for requiredKey := range required.Data {
 		if _, ok := existingCopy.Data[requiredKey]; !ok {
 			modifiedKeys = append(modifiedKeys, "data."+requiredKey)
+		}
+	}
+	for requiredBinKey := range required.BinaryData {
+		if _, ok := existingCopy.BinaryData[requiredBinKey]; !ok {
+			modifiedKeys = append(modifiedKeys, "binaryData."+requiredBinKey)
 		}
 	}
 
@@ -179,6 +199,14 @@ func ApplyConfigMap(client coreclientv1.ConfigMapsGetter, recorder events.Record
 		return existingCopy, false, nil
 	}
 	existingCopy.Data = required.Data
+	existingCopy.BinaryData = required.BinaryData
+	// if we're injecting a cabundle, and we had a previous value, and the required object isn't setting the value, then set back to the previous
+	if existingCABundle, existedBefore := existing.Data["ca-bundle.crt"]; caBundleInjected && existedBefore && !newCABundleRequired {
+		if existingCopy.Data == nil {
+			existingCopy.Data = map[string]string{}
+		}
+		existingCopy.Data["ca-bundle.crt"] = existingCABundle
+	}
 
 	actual, err := client.ConfigMaps(required.Namespace).Update(existingCopy)
 
@@ -188,7 +216,7 @@ func ApplyConfigMap(client coreclientv1.ConfigMapsGetter, recorder events.Record
 		details = fmt.Sprintf("cause by changes in %v", strings.Join(modifiedKeys, ","))
 	}
 	if klog.V(4) {
-		klog.Infof("ConfigMap %q changes: %v", required.Namespace+"/"+required.Name, JSONPatch(existing, required))
+		klog.Infof("ConfigMap %q changes: %v", required.Namespace+"/"+required.Name, JSONPatchNoError(existing, required))
 	}
 	reportUpdateEvent(recorder, required, err, details)
 	return actual, true, err
@@ -210,23 +238,54 @@ func ApplySecret(client coreclientv1.SecretsGetter, recorder events.Recorder, re
 		return nil, false, err
 	}
 
-	modified := resourcemerge.BoolPtr(false)
 	existingCopy := existing.DeepCopy()
 
-	resourcemerge.EnsureObjectMeta(modified, &existingCopy.ObjectMeta, required.ObjectMeta)
+	resourcemerge.EnsureObjectMeta(resourcemerge.BoolPtr(false), &existingCopy.ObjectMeta, required.ObjectMeta)
 
-	dataSame := equality.Semantic.DeepEqual(existingCopy.Data, required.Data)
-	if dataSame && !*modified {
-		return existingCopy, false, nil
+	switch required.Type {
+	case corev1.SecretTypeServiceAccountToken:
+		// Secrets for ServiceAccountTokens will have data injected by kube controller manager.
+		// We will apply only the explicitly set keys.
+		if existingCopy.Data == nil {
+			existingCopy.Data = map[string][]byte{}
+		}
+
+		for k, v := range required.Data {
+			existingCopy.Data[k] = v
+		}
+
+	default:
+		existingCopy.Data = required.Data
 	}
-	existingCopy.Data = required.Data
+
+	existingCopy.Type = required.Type
+
+	if equality.Semantic.DeepEqual(existingCopy, existing) {
+		return existing, false, nil
+	}
 
 	if klog.V(4) {
-		klog.Infof("Secret %s/%s changes: %v", required.Namespace, required.Name, JSONPatchSecret(existing, required))
+		klog.Infof("Secret %s/%s changes: %v", required.Namespace, required.Name, JSONPatchSecretNoError(existing, existingCopy))
 	}
 	actual, err := client.Secrets(required.Namespace).Update(existingCopy)
+	reportUpdateEvent(recorder, existingCopy, err)
 
-	reportUpdateEvent(recorder, required, err)
+	if err == nil {
+		return actual, true, err
+	}
+	if !strings.Contains(err.Error(), "field is immutable") {
+		return actual, true, err
+	}
+
+	// if the field was immutable on a secret, we're going to be stuck until we delete it.  Try to delete and then create
+	deleteErr := client.Secrets(required.Namespace).Delete(existingCopy.Name, nil)
+	reportDeleteEvent(recorder, existingCopy, deleteErr)
+
+	// clear the RV and track the original actual and error for the return like our create value.
+	existingCopy.ResourceVersion = ""
+	actual, err = client.Secrets(required.Namespace).Create(existingCopy)
+	reportCreateEvent(recorder, existingCopy, err)
+
 	return actual, true, err
 }
 
@@ -276,6 +335,24 @@ func SyncSecret(client coreclientv1.SecretsGetter, recorder events.Recorder, sou
 	case err != nil:
 		return nil, false, err
 	default:
+		if source.Type == corev1.SecretTypeServiceAccountToken {
+
+			// Make sure the token is already present, otherwise we have to wait before creating the target
+			if len(source.Data[corev1.ServiceAccountTokenKey]) == 0 {
+				return nil, false, fmt.Errorf("secret %s/%s doesn't have a token yet", source.Namespace, source.Name)
+			}
+
+			if source.Annotations != nil {
+				// When syncing a service account token we have to remove the SA annotation to disable injection into copies
+				delete(source.Annotations, corev1.ServiceAccountNameKey)
+				// To make it clean, remove the dormant annotations as well
+				delete(source.Annotations, corev1.ServiceAccountUIDKey)
+			}
+
+			// SecretTypeServiceAccountToken implies required fields and injection which we do not want in copies
+			source.Type = corev1.SecretTypeOpaque
+		}
+
 		source.Namespace = targetNamespace
 		source.Name = targetName
 		source.ResourceVersion = ""

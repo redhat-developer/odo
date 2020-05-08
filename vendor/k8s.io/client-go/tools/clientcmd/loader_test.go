@@ -78,6 +78,32 @@ var (
 	}
 )
 
+func TestNilOutMap(t *testing.T) {
+	var fakeKubeconfigData = `apiVersion: v1
+kind: Config
+clusters:
+- cluster:
+    certificate-authority-data: UEhPTlkK
+    server: https://1.1.1.1
+  name: production
+contexts:
+- context:
+    cluster: production
+    user: production
+  name: production
+current-context: production
+users:
+- name: production
+  user:
+    auth-provider:
+      name: gcp`
+
+	_, _, err := clientcmdlatest.Codec.Decode([]byte(fakeKubeconfigData), nil, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestNonExistentCommandLineFile(t *testing.T) {
 	loadingRules := ClientConfigLoadingRules{
 		ExplicitPath: "bogus_file",
@@ -557,6 +583,22 @@ func TestMigratingFileSourceMissingSkip(t *testing.T) {
 
 	if _, err := os.Stat(destinationFile.Name()); !os.IsNotExist(err) {
 		t.Errorf("destination should not exist")
+	}
+}
+
+func TestFileLocking(t *testing.T) {
+	f, _ := ioutil.TempFile("", "")
+	defer os.Remove(f.Name())
+
+	err := lockFile(f.Name())
+	if err != nil {
+		t.Errorf("unexpected error while locking file: %v", err)
+	}
+	defer unlockFile(f.Name())
+
+	err = lockFile(f.Name())
+	if err == nil {
+		t.Error("expected error while locking file.")
 	}
 }
 

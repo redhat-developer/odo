@@ -168,12 +168,20 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.CmdShouldPass("odo", "url", "create", url1)
 
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
+			pushStdOut := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
+			Expect(pushStdOut).NotTo(ContainSubstring("successfully deleted"))
+			Expect(pushStdOut).NotTo(ContainSubstring("created"))
+			Expect(pushStdOut).To(ContainSubstring("URLs are synced with the cluster, no changes are required"))
 
 			output := helper.CmdShouldPass("oc", "get", "routes", "--namespace", namespace)
 			Expect(output).Should(ContainSubstring(url1))
 
 			helper.CmdShouldPass("odo", "url", "delete", url1, "-f")
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
+			pushStdOut = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
+			Expect(pushStdOut).NotTo(ContainSubstring("successfully deleted"))
+			Expect(pushStdOut).NotTo(ContainSubstring("created"))
+			Expect(pushStdOut).To(ContainSubstring("URLs are synced with the cluster, no changes are required"))
 
 			output = helper.CmdShouldPass("oc", "get", "routes", "--namespace", namespace)
 			Expect(output).ShouldNot(ContainSubstring(url1))
@@ -193,6 +201,35 @@ var _ = Describe("odo devfile url command tests", func() {
 
 			output := helper.CmdShouldPass("oc", "get", "routes", "--namespace", namespace)
 			Expect(output).Should(ContainSubstring(url1))
+		})
+
+		It("should be able to push again twice after creating and deleting a url", func() {
+			var stdOut string
+			url1 := helper.RandString(5)
+			host := helper.RandString(5) + ".com"
+
+			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
+			helper.Chdir(projectDirPath)
+
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
+
+			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress")
+
+			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
+			stdOut = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
+			Expect(stdOut).NotTo(ContainSubstring("successfully deleted"))
+			Expect(stdOut).NotTo(ContainSubstring("created"))
+			Expect(stdOut).To(ContainSubstring("URLs are synced with the cluster, no changes are required"))
+
+			helper.CmdShouldPass("odo", "url", "delete", url1, "-f")
+
+			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
+			stdOut = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
+			Expect(stdOut).NotTo(ContainSubstring("successfully deleted"))
+			Expect(stdOut).NotTo(ContainSubstring("created"))
+			Expect(stdOut).To(ContainSubstring("URLs are synced with the cluster, no changes are required"))
 		})
 	})
 

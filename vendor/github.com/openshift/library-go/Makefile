@@ -2,13 +2,13 @@ all: build
 .PHONY: all
 
 # All the go packages (e.g. for verfy)
-GO_PACKAGES :=./pkg/... ./cmd/...
+GO_PACKAGES :=./pkg/...
 # Packages to be compiled
 GO_BUILD_PACKAGES :=$(GO_PACKAGES)
 # Do not auto-expand packages for libraries or it would compile them separately
 GO_BUILD_PACKAGES_EXPANDED :=$(GO_BUILD_PACKAGES)
 
-include $(addprefix alpha-build-machinery/make/, \
+include $(addprefix ./vendor/github.com/openshift/build-machinery-go/make/, \
 	golang.mk \
 	targets/openshift/deps.mk \
 	targets/openshift/bindata.mk \
@@ -18,3 +18,6 @@ $(call add-bindata,backingresources,./pkg/operator/staticpod/controller/backingr
 $(call add-bindata,monitoring,./pkg/operator/staticpod/controller/monitoring/manifests/...,bindata,bindata,./pkg/operator/staticpod/controller/monitoring/bindata/bindata.go)
 $(call add-bindata,installer,./pkg/operator/staticpod/controller/installer/manifests/...,bindata,bindata,./pkg/operator/staticpod/controller/installer/bindata/bindata.go)
 $(call add-bindata,staticpod,./pkg/operator/staticpod/controller/prune/manifests/...,bindata,bindata,./pkg/operator/staticpod/controller/prune/bindata/bindata.go)
+
+test-e2e-encryption: GO_TEST_PACKAGES :=./test/e2e-encryption/...
+.PHONY: test-e2e-encryption

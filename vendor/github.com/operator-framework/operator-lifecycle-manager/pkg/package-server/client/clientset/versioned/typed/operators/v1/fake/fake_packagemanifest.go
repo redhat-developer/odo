@@ -1,5 +1,5 @@
 /*
-Copyright Red Hat, Inc.
+Copyright 2020 Red Hat, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -131,7 +131,7 @@ func (c *FakePackageManifests) DeleteCollection(options *v1.DeleteOptions, listO
 // Patch applies the patch and returns the patched packageManifest.
 func (c *FakePackageManifests) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *operatorsv1.PackageManifest, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(packagemanifestsResource, c.ns, name, data, subresources...), &operatorsv1.PackageManifest{})
+		Invokes(testing.NewPatchSubresourceAction(packagemanifestsResource, c.ns, name, pt, data, subresources...), &operatorsv1.PackageManifest{})
 
 	if obj == nil {
 		return nil, err

@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
@@ -18,7 +19,7 @@ import (
 
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
 var pushCmdExample = ktemplates.Examples(`  # Push source code to the current component
@@ -58,6 +59,7 @@ func NewPushOptions() *PushOptions {
 
 // Complete completes push args
 func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	po.DevfilePath = filepath.Join(po.componentContext, po.DevfilePath)
 
 	// if experimental mode is enabled and devfile is present
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.DevfilePath) {
@@ -72,6 +74,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 			// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initalizing the context
 			po.namespace = po.KClient.Namespace
 		}
+
 		return nil
 	}
 

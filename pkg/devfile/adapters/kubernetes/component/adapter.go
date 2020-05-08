@@ -8,8 +8,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/fatih/color"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
@@ -179,7 +179,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 				processedVolumes[*vol.Name] = true
 
 				// Generate the PVC Names
-				glog.V(3).Infof("Generating PVC name for %v", *vol.Name)
+				klog.V(3).Infof("Generating PVC name for %v", *vol.Name)
 				generatedPVCName, err := storage.GeneratePVCNameFromDevfileVol(*vol.Name, componentName)
 				if err != nil {
 					return err
@@ -191,7 +191,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 					return err
 				}
 				if len(existingPVCName) > 0 {
-					glog.V(3).Infof("Found an existing PVC for %v, PVC %v will be re-used", *vol.Name, existingPVCName)
+					klog.V(3).Infof("Found an existing PVC for %v, PVC %v will be re-used", *vol.Name, existingPVCName)
 					generatedPVCName = existingPVCName
 				}
 
@@ -221,17 +221,17 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 		}
 	}
 	serviceSpec := kclient.GenerateServiceSpec(objectMeta.Name, containerPorts)
-	glog.V(3).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
-	glog.V(3).Infof("The component name is %v", componentName)
+	klog.V(3).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
+	klog.V(3).Infof("The component name is %v", componentName)
 
 	if utils.ComponentExists(a.Client, componentName) {
 		// If the component already exists, get the resource version of the deploy before updating
-		glog.V(3).Info("The component already exists, attempting to update it")
+		klog.V(3).Info("The component already exists, attempting to update it")
 		deployment, err := a.Client.UpdateDeployment(*deploymentSpec)
 		if err != nil {
 			return err
 		}
-		glog.V(3).Infof("Successfully updated component %v", componentName)
+		klog.V(3).Infof("Successfully updated component %v", componentName)
 		oldSvc, err := a.Client.KubeClient.CoreV1().Services(a.Client.Namespace).Get(componentName, metav1.GetOptions{})
 		objectMetaTemp := objectMeta
 		ownerReference := kclient.GenerateOwnerReference(deployment)
@@ -243,7 +243,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 				if err != nil {
 					return err
 				}
-				glog.V(3).Infof("Successfully created Service for component %s", componentName)
+				klog.V(3).Infof("Successfully created Service for component %s", componentName)
 			}
 		} else {
 			if len(serviceSpec.Ports) > 0 {
@@ -253,7 +253,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 				if err != nil {
 					return err
 				}
-				glog.V(3).Infof("Successfully update Service for component %s", componentName)
+				klog.V(3).Infof("Successfully update Service for component %s", componentName)
 			} else {
 				err = a.Client.KubeClient.CoreV1().Services(a.Client.Namespace).Delete(componentName, &metav1.DeleteOptions{})
 				if err != nil {
@@ -266,7 +266,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 		if err != nil {
 			return err
 		}
-		glog.V(3).Infof("Successfully created component %v", componentName)
+		klog.V(3).Infof("Successfully created component %v", componentName)
 		ownerReference := kclient.GenerateOwnerReference(deployment)
 		objectMetaTemp := objectMeta
 		objectMetaTemp.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
@@ -275,7 +275,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 			if err != nil {
 				return err
 			}
-			glog.V(3).Infof("Successfully created Service for component %s", componentName)
+			klog.V(3).Infof("Successfully created Service for component %s", componentName)
 		}
 
 	}
@@ -351,7 +351,7 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 					// it is expected to be the run command
 				} else {
 					// Last command is "Run"
-					glog.V(4).Infof("Executing devfile command %v", command.Name)
+					klog.V(4).Infof("Executing devfile command %v", command.Name)
 
 					for _, action := range command.Actions {
 
@@ -370,7 +370,7 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 						}
 
 						if componentExists && !common.IsRestartRequired(command) {
-							glog.V(4).Infof("restart:false, Not restarting DevRun Command")
+							klog.V(4).Infof("restart:false, Not restarting DevRun Command")
 							err = exec.ExecuteDevfileRunActionWithoutRestart(&a.Client, action, command.Name, compInfo, show)
 							return
 						}

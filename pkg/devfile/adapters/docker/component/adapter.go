@@ -5,8 +5,8 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/mount"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
@@ -181,7 +181,7 @@ func (a Adapter) Delete(labels map[string]string) error {
 
 	for _, container := range componentContainer {
 
-		glog.V(4).Infof("Deleting container %s for component %s", container.ID, componentName)
+		klog.V(4).Infof("Deleting container %s for component %s", container.ID, componentName)
 		err = a.Client.RemoveContainer(container.ID)
 		if err != nil {
 			return errors.Wrapf(err, "unable to remove container ID %s of component %s", container.ID, componentName)
@@ -208,7 +208,7 @@ func (a Adapter) Delete(labels map[string]string) error {
 
 	// Finally, delete the volumes we discovered during container deletion.
 	for name := range volumesToDelete {
-		glog.V(4).Infof("Deleting the volume %s for component %s", name, componentName)
+		klog.V(4).Infof("Deleting the volume %s for component %s", name, componentName)
 		err := a.Client.RemoveVolume(name)
 		if err != nil {
 			return errors.Wrapf(err, "Unable to remove volume %s of component %s", name, componentName)

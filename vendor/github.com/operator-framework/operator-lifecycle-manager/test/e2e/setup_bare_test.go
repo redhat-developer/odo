@@ -3,6 +3,7 @@
 package e2e
 
 import (
+	"context"
 	"flag"
 	"io"
 	"io/ioutil"
@@ -12,14 +13,17 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	utilclock "k8s.io/apimachinery/pkg/util/clock"
+	"k8s.io/client-go/tools/clientcmd"
 
 	v1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client"
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/install"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/catalog"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/operators/olm"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/signals"
 )
 
 var (
@@ -41,7 +45,6 @@ var (
 		"communityOperators",
 		"quay.io/operator-framework/upstream-community-operators@sha256:098457dc5e0b6ca9599bd0e7a67809f8eca397907ca4d93597380511db478fec",
 		"reference to upstream-community-operators image")
-	
 
 	dummyImage = flag.String(
 		"dummyImage",
@@ -73,8 +76,14 @@ func TestMain(m *testing.M) {
 	cleaner = newNamespaceCleaner(testNamespace)
 	namespaces := strings.Split(*watchedNamespaces, ",")
 
-	olmStopCh := make(chan struct{}, 1)
-	catalogStopCh := make(chan struct{}, 1)
+	// Get exit signal context
+	ctx, cancel := context.WithCancel(signals.Context())
+	defer cancel()
+
+	config, err := clientcmd.BuildConfigFromFlags("", *kubeConfigPath)
+	if err != nil {
+		log.Fatalf("error configuring client: %s", err.Error())
+	}
 
 	// operator dependencies
 	crClient, err := client.NewClient(*kubeConfigPath)
@@ -112,25 +121,33 @@ func TestMain(m *testing.M) {
 	})
 
 	// start operators
-	olmOperator, err := olm.NewOperator(olmlogger, crClient, olmOpClient, &install.StrategyResolver{}, time.Minute, namespaces)
+	olmOperator, err := olm.NewOperator(
+		ctx,
+		olm.WithLogger(olmlogger),
+		olm.WithWatchedNamespaces(namespaces...),
+		olm.WithResyncPeriod(time.Minute),
+		olm.WithExternalClient(crClient),
+		olm.WithOperatorClient(olmOpClient),
+		olm.WithRestConfig(config),
+	)
 	if err != nil {
 		logrus.WithError(err).Fatalf("error configuring olm")
 	}
-	olmready, _ := olmOperator.Run(olmStopCh)
-	catalogOperator, err := catalog.NewOperator(*kubeConfigPath, catlogger, time.Minute, "quay.io/operatorframework/configmap-operator-registry:latest", *namespace, namespaces...)
+	olmOperator.Run(ctx)
+	catalogOperator, err := catalog.NewOperator(ctx, *kubeConfigPath, utilclock.RealClock{}, catlogger, time.Minute, "quay.io/operatorframework/configmap-operator-registry:latest", *namespace, namespaces...)
 	if err != nil {
 		logrus.WithError(err).Fatalf("error configuring catalog")
 	}
-	catready, _ := catalogOperator.Run(catalogStopCh)
-	<-olmready
-	<-catready
+	catalogOperator.Run(ctx)
+	<-olmOperator.Ready()
+	<-catalogOperator.Ready()
 
 	c, err := client.NewClient(*kubeConfigPath)
 	if err != nil {
 		panic(err)
 	}
 
-	_, err = c.OperatorsV1alpha2().OperatorGroups(testNamespace).Create(&v1.OperatorGroup{
+	_, err = c.OperatorsV1().OperatorGroups(testNamespace).Create(&v1.OperatorGroup{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "opgroup",
 			Namespace: testNamespace,

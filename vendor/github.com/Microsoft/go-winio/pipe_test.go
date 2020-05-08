@@ -2,12 +2,16 @@ package winio
 
 import (
 	"bufio"
+	"bytes"
+	"context"
 	"io"
 	"net"
 	"os"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
+	"unsafe"
 )
 
 var testPipeName = `\\.\pipe\winiotestpipe`
@@ -31,6 +35,40 @@ func TestDialListenerTimesOut(t *testing.T) {
 	_, err = DialPipe(testPipeName, &d)
 	if err != ErrTimeout {
 		t.Fatalf("expected ErrTimeout, got %v", err)
+	}
+}
+
+func TestDialContextListenerTimesOut(t *testing.T) {
+	l, err := ListenPipe(testPipeName, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer l.Close()
+	var d = time.Duration(10 * time.Millisecond)
+	ctx, _ := context.WithTimeout(context.Background(), d)
+	_, err = DialPipeContext(ctx, testPipeName)
+	if err != context.DeadlineExceeded {
+		t.Fatalf("expected context.DeadlineExceeded, got %v", err)
+	}
+}
+
+func TestDialListenerGetsCancelled(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	l, err := ListenPipe(testPipeName, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ch := make(chan error)
+	defer l.Close()
+	go func(ctx context.Context, ch chan error) {
+		_, err := DialPipeContext(ctx, testPipeName)
+		ch <- err
+	}(ctx, ch)
+	time.Sleep(time.Millisecond * 30)
+	cancel()
+	err = <-ch
+	if err != context.Canceled {
+		t.Fatalf("expected context.Canceled, got %v", err)
 	}
 }
 
@@ -421,4 +459,114 @@ func TestEchoWithMessaging(t *testing.T) {
 	client.(CloseWriter).CloseWrite()
 	<-listenerDone
 	<-clientDone
+}
+
+func TestConnectRace(t *testing.T) {
+	l, err := ListenPipe(testPipeName, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer l.Close()
+	go func() {
+		for {
+			s, err := l.Accept()
+			if err == ErrPipeListenerClosed {
+				return
+			}
+
+			if err != nil {
+				t.Fatal(err)
+			}
+			s.Close()
+		}
+	}()
+
+	for i := 0; i < 1000; i++ {
+		c, err := DialPipe(testPipeName, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		c.Close()
+	}
+}
+
+func TestMessageReadMode(t *testing.T) {
+	var wg sync.WaitGroup
+	defer wg.Wait()
+
+	l, err := ListenPipe(testPipeName, &PipeConfig{MessageMode: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer l.Close()
+
+	msg := ([]byte)("hello world")
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		s, err := l.Accept()
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, err = s.Write(msg)
+		if err != nil {
+			t.Fatal(err)
+		}
+		s.Close()
+	}()
+
+	c, err := DialPipe(testPipeName, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Close()
+
+	setNamedPipeHandleState := syscall.NewLazyDLL("kernel32.dll").NewProc("SetNamedPipeHandleState")
+
+	p := c.(*win32MessageBytePipe)
+	mode := uint32(cPIPE_READMODE_MESSAGE)
+	if s, _, err := setNamedPipeHandleState.Call(uintptr(p.handle), uintptr(unsafe.Pointer(&mode)), 0, 0); s == 0 {
+		t.Fatal(err)
+	}
+
+	ch := make([]byte, 1)
+	var vmsg []byte
+	for {
+		n, err := c.Read(ch)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		if n != 1 {
+			t.Fatal("expected 1: ", n)
+		}
+		vmsg = append(vmsg, ch[0])
+	}
+	if !bytes.Equal(msg, vmsg) {
+		t.Fatalf("expected %s: %s", msg, vmsg)
+	}
+}
+
+func TestListenConnectRace(t *testing.T) {
+	for i := 0; i < 50 && !t.Failed(); i++ {
+		var wg sync.WaitGroup
+		wg.Add(1)
+		go func() {
+			c, err := DialPipe(testPipeName, nil)
+			if err == nil {
+				c.Close()
+			}
+			wg.Done()
+		}()
+		s, err := ListenPipe(testPipeName, nil)
+		if err != nil {
+			t.Error(i, err)
+		} else {
+			s.Close()
+		}
+		wg.Wait()
+	}
 }

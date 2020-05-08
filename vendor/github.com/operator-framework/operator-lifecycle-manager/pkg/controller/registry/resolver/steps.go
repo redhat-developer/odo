@@ -2,14 +2,18 @@ package resolver
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"strings"
 
-	"github.com/operator-framework/operator-registry/pkg/registry"
+	"github.com/operator-framework/operator-registry/pkg/api"
 	extScheme "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	k8sjson "k8s.io/apimachinery/pkg/runtime/serializer/json"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/util/yaml"
 	k8sscheme "k8s.io/client-go/kubernetes/scheme"
 
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -21,11 +25,9 @@ var (
 )
 
 func init() {
-	k8sscheme.AddToScheme(scheme)
-	extScheme.AddToScheme(scheme)
-	if err := v1alpha1.AddToScheme(scheme); err != nil {
-		panic(err)
-	}
+	utilruntime.Must(k8sscheme.AddToScheme(scheme))
+	utilruntime.Must(extScheme.AddToScheme(scheme))
+	utilruntime.Must(v1alpha1.AddToScheme(scheme))
 }
 
 // NewStepResourceForObject returns a new StepResource for the provided object
@@ -89,8 +91,16 @@ func NewSubscriptionStepResource(namespace string, info OperatorSourceInfo) (v1a
 	}, info.Catalog.Name, info.Catalog.Namespace)
 }
 
-func NewStepResourceFromBundle(bundle *registry.Bundle, namespace, replaces, catalogSourceName, catalogSourceNamespace string) ([]v1alpha1.StepResource, error) {
-	csv, err := bundle.ClusterServiceVersion()
+func V1alpha1CSVFromBundle(bundle *api.Bundle) (*v1alpha1.ClusterServiceVersion, error) {
+	csv := &v1alpha1.ClusterServiceVersion{}
+	if err := json.Unmarshal([]byte(bundle.CsvJson), csv); err != nil {
+		return nil, err
+	}
+	return csv, nil
+}
+
+func NewStepResourceFromBundle(bundle *api.Bundle, namespace, replaces, catalogSourceName, catalogSourceNamespace string) ([]v1alpha1.StepResource, error) {
+	csv, err := V1alpha1CSVFromBundle(bundle)
 	if err != nil {
 		return nil, err
 	}
@@ -104,11 +114,17 @@ func NewStepResourceFromBundle(bundle *registry.Bundle, namespace, replaces, cat
 	}
 	steps := []v1alpha1.StepResource{step}
 
-	for _, object := range bundle.Objects {
-		if object.GetObjectKind().GroupVersionKind().Kind == v1alpha1.ClusterServiceVersionKind {
+	for _, object := range bundle.Object {
+		dec := yaml.NewYAMLOrJSONDecoder(strings.NewReader(object), 10)
+		unst := &unstructured.Unstructured{}
+		if err := dec.Decode(unst); err != nil {
+			return nil, err
+		}
+
+		if unst.GetObjectKind().GroupVersionKind().Kind == v1alpha1.ClusterServiceVersionKind {
 			continue
 		}
-		step, err := NewStepResourceFromObject(object, catalogSourceName, catalogSourceNamespace)
+		step, err := NewStepResourceFromObject(unst, catalogSourceName, catalogSourceNamespace)
 		if err != nil {
 			return nil, err
 		}
@@ -120,6 +136,24 @@ func NewStepResourceFromBundle(bundle *registry.Bundle, namespace, replaces, cat
 		return nil, err
 	}
 	steps = append(steps, operatorServiceAccountSteps...)
+	return steps, nil
+}
+
+func NewStepsFromBundle(bundle *api.Bundle, namespace, replaces, catalogSourceName, catalogSourceNamespace string) ([]*v1alpha1.Step, error) {
+	bundleSteps, err := NewStepResourceFromBundle(bundle, namespace, replaces, catalogSourceName, catalogSourceNamespace)
+	if err != nil {
+		return nil, err
+	}
+
+	var steps []*v1alpha1.Step
+	for _, s := range bundleSteps {
+		steps = append(steps, &v1alpha1.Step{
+			Resolving: bundle.CsvName,
+			Resource:  s,
+			Status:    v1alpha1.StepStatusUnknown,
+		})
+	}
+
 	return steps, nil
 }
 
