@@ -61,7 +61,7 @@ var (
 		{
 			APIGroups: []string{"bitnami.com"},
 			Resources: []string{"sealedsecrets"},
-			Verbs:     []string{"get", "patch"},
+			Verbs:     []string{"get", "patch", "create"},
 		},
 	}
 )
