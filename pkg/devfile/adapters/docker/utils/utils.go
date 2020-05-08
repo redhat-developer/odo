@@ -11,6 +11,7 @@ import (
 	"github.com/docker/docker/api/types/mount"
 
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/log"
@@ -23,6 +24,7 @@ import (
 const (
 	supervisordVolume = "supervisord"
 	projectsVolume    = "projects"
+	volume            = "vol"
 )
 
 // ComponentExists checks if Docker containers labeled with the specified component name exists
@@ -238,10 +240,9 @@ func CreateAndInitSupervisordVolume(client lclient.Client) (string, error) {
 	s := log.Spinner("Initializing the component")
 	defer s.End(false)
 
-	randomChars := util.GenerateRandomString(4)
-	supervisordVolumeName, err := util.NamespaceOpenShiftObject(adaptersCommon.SupervisordVolumeName, randomChars)
+	supervisordVolumeName, err := storage.GenerateVolName(adaptersCommon.SupervisordVolumeName, volume)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to create namespaced name")
+		return "", errors.Wrapf(err, "unable to generate volume name for supervisord")
 	}
 
 	supervisordLabels := GetSupervisordVolumeLabels()
