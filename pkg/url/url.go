@@ -575,6 +575,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 		for _, url := range urlList.Items {
 			urlCLUSTER[url.Name] = URL{
 				Spec: URLSpec{
+					Host:    url.Spec.Rules[0].Host,
 					Port:    int(url.Spec.Rules[0].HTTP.Paths[0].Backend.ServicePort.IntVal),
 					urlKind: envinfo.INGRESS,
 				},
@@ -603,7 +604,21 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 	// find URLs to delete
 	for urlName, urlSpec := range urlCLUSTER {
 		val, ok := urlLOCAL[urlName]
-		if !ok {
+
+		configMismatch := false
+		if ok {
+			// since the host stored in an ingress
+			// is the combination of name and host of the url
+			if val.Spec.urlKind == envinfo.INGRESS {
+				val.Spec.Host = fmt.Sprintf("%v.%v", urlName, val.Spec.Host)
+			}
+			if !reflect.DeepEqual(val.Spec, urlSpec.Spec) {
+				configMismatch = true
+				klog.V(4).Infof("config and cluster mismatch for url %s", urlName)
+			}
+		}
+
+		if !ok || configMismatch {
 			if urlSpec.Spec.urlKind == envinfo.INGRESS && kClient == nil {
 				continue
 			}
@@ -614,11 +629,8 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 			}
 			log.Successf("URL %s successfully deleted", urlName)
 			urlChange = true
+			delete(urlCLUSTER, urlName)
 			continue
-		} else {
-			if !reflect.DeepEqual(val.Spec, urlSpec.Spec) {
-				return errors.Errorf("config mismatch for URL with the same name %s", val.Name)
-			}
 		}
 	}
 
