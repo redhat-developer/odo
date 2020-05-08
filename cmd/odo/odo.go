@@ -49,7 +49,7 @@ func main() {
 	// The "-v" flag set on command line will take precedence over ODO_LOG_LEVEL env
 	v := flag.CommandLine.Lookup("v").Value.String()
 
-	// if the output flag is set to `json` (only valid value), we don't turn on ODO_LOG_LEVEL
+	// if the output flag is set, we don't turn on ODO_LOG_LEVEL
 	outputFlag := pflag.Lookup("o")
 	hasFlagChanged := outputFlag != nil && outputFlag.Changed
 	if level, ok := os.LookupEnv("ODO_LOG_LEVEL"); ok && v == "0" && hasFlagChanged {
