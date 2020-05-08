@@ -1468,10 +1468,12 @@ func TestListDockerURL(t *testing.T) {
 	err := esi.SetConfiguration("url", testURL1)
 	if err != nil {
 		// discard the error, since no physical file to write
+		t.Log("Expected error since no physical env file to write")
 	}
 	err = esi.SetConfiguration("url", testURL2)
 	if err != nil {
 		// discard the error, since no physical file to write
+		t.Log("Expected error since no physical env file to write")
 	}
 
 	tests := []struct {
@@ -1554,10 +1556,12 @@ func TestGetContainerURL(t *testing.T) {
 	err := esi.SetConfiguration("url", testURL1)
 	if err != nil {
 		// discard the error, since no physical file to write
+		t.Log("Expected error since no physical env file to write")
 	}
 	err = esi.SetConfiguration("url", testURL2)
 	if err != nil {
 		// discard the error, since no physical file to write
+		t.Log("Expected error since no physical env file to write")
 	}
 	tests := []struct {
 		name      string
