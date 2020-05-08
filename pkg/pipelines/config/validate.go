@@ -14,16 +14,35 @@ type validateVisitor struct {
 	envNames     map[string]bool
 	appNames     map[string]bool
 	serviceNames map[string]bool
+	serviceURLs  map[string][]string
 }
 
 func (m *Manifest) Validate() error {
-	vv := &validateVisitor{errs: []error{}, envNames: map[string]bool{}, appNames: map[string]bool{}, serviceNames: map[string]bool{}}
-
+	vv := &validateVisitor{
+		errs:         []error{},
+		envNames:     map[string]bool{},
+		appNames:     map[string]bool{},
+		serviceNames: map[string]bool{},
+		serviceURLs:  map[string][]string{},
+	}
 	m.Walk(vv)
+
+	vv.errs = append(vv.errs, vv.validateServiceURLs()...)
+
 	if len(vv.errs) == 0 {
 		return nil
 	}
 	return multierror.Join(vv.errs)
+}
+
+func (vv *validateVisitor) validateServiceURLs() []error {
+	errs := []error{}
+	for url, paths := range vv.serviceURLs {
+		if len(paths) > 1 {
+			errs = append(errs, duplicateSourceError(url, paths))
+		}
+	}
+	return errs
 }
 
 func (vv *validateVisitor) Environment(env *Environment) error {
@@ -50,20 +69,38 @@ func (vv *validateVisitor) Application(env *Environment, app *Application) error
 		vv.errs = append(vv.errs, err)
 	}
 
-	if app.Services == nil && app.ConfigRepo == nil {
+	if len(app.ServiceRefs) == 0 && app.ConfigRepo == nil {
 		vv.errs = append(vv.errs, missingFieldsError([]string{"services", "config_repo"}, []string{appPath}))
 	}
-	if app.Services != nil && app.ConfigRepo != nil {
+	if len(app.ServiceRefs) > 0 && app.ConfigRepo != nil {
 		vv.errs = append(vv.errs, apis.ErrMultipleOneOf(yamlJoin(appPath, "services"), yamlJoin(appPath, "config_repo")))
 	}
+
+	if len(app.ServiceRefs) > 0 {
+		for _, r := range app.ServiceRefs {
+			_, ok := vv.serviceNames[r]
+			if !ok {
+				vv.errs = append(vv.errs, missingServiceRefError(r, app.Name, []string{appPath}))
+			}
+		}
+	}
+
 	if app.ConfigRepo != nil {
 		vv.errs = append(vv.errs, validateConfigRepo(app.ConfigRepo, yamlJoin(appPath, "config_repo"))...)
 	}
 	return nil
 }
 
-func (vv *validateVisitor) Service(env *Environment, app *Application, svc *Service) error {
-	svcPath := yamlPath(PathForService(env, svc))
+func (vv *validateVisitor) Service(env *Environment, svc *Service) error {
+	svcPath := yamlPath(PathForService(env, svc.Name))
+	if svc.SourceURL != "" {
+		previous, ok := vv.serviceURLs[svc.SourceURL]
+		if !ok {
+			previous = []string{}
+		}
+		previous = append(previous, svcPath)
+		vv.serviceURLs[svc.SourceURL] = previous
+	}
 	if err := checkDuplicate(svc.Name, svcPath, vv.serviceNames); err != nil {
 		vv.errs = append(vv.errs, err)
 	}
@@ -76,6 +113,7 @@ func (vv *validateVisitor) Service(env *Environment, app *Application, svc *Serv
 	if err := validatePipelines(svc.Pipelines, svcPath); err != nil {
 		vv.errs = append(vv.errs, err...)
 	}
+	vv.serviceNames[svc.Name] = true
 	return nil
 }
 
@@ -169,6 +207,20 @@ func missingFieldsError(fields []string, paths []string) *apis.FieldError {
 func duplicateFieldsError(fields []string, paths []string) *apis.FieldError {
 	return &apis.FieldError{
 		Message: fmt.Sprintf("duplicate field(s) %v", strings.Join(addQuotes(fields...), ",")),
+		Paths:   paths,
+	}
+}
+
+func missingServiceRefError(svc, app string, paths []string) *apis.FieldError {
+	return &apis.FieldError{
+		Message: fmt.Sprintf("missing service %q in app %q", svc, app),
+		Paths:   paths,
+	}
+}
+
+func duplicateSourceError(url string, paths []string) *apis.FieldError {
+	return &apis.FieldError{
+		Message: fmt.Sprintf("duplicate source %v", url),
 		Paths:   paths,
 	}
 }

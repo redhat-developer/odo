@@ -10,7 +10,6 @@ import (
 )
 
 type options struct {
-	appName     string
 	accessToken string
 	envName     string
 	isCICD      bool
@@ -30,12 +29,12 @@ func (o *options) Complete(name string, cmd *cobra.Command, args []string) (err 
 func (o *options) Validate() (err error) {
 
 	if o.isCICD {
-		if o.serviceName != "" || o.appName != "" || o.envName != "" {
-			return fmt.Errorf("Only one of 'cicd' or 'app-name/env-name/service-name' can be specified")
+		if o.serviceName != "" || o.envName != "" {
+			return fmt.Errorf("Only one of 'cicd' or 'env-name/service-name' can be specified")
 		}
 	} else {
-		if o.serviceName == "" || o.appName == "" || o.envName == "" {
-			return fmt.Errorf("One of 'cicd' or 'app-name/env-name/service-name' must be specified")
+		if o.serviceName == "" || o.envName == "" {
+			return fmt.Errorf("One of 'cicd' or 'env-name/service-name' must be specified")
 		}
 	}
 
@@ -55,9 +54,8 @@ func (o *options) setFlags(command *cobra.Command) {
 	command.Flags().BoolVar(&o.isCICD, "cicd", false, "provide this flag if the target Git repository is a CI/CD configuration repository")
 
 	// service option
-	command.Flags().StringVar(&o.serviceName, "service-name", "", "provide fully qualified service name in this format <env/app/<svc> if the target Git repository is a service's source repository.")
-	command.Flags().StringVar(&o.appName, "app-name", "", "provide fully qualified service name in this format <env/app/<svc> if the target Git repository is a service's source repository.")
-	command.Flags().StringVar(&o.envName, "env-name", "", "provide fully qualified service name in this format <env/app/<svc> if the target Git repository is a service's source repository.")
+	command.Flags().StringVar(&o.serviceName, "service-name", "", "provide service name if the target Git repository is a service's source repository.")
+	command.Flags().StringVar(&o.envName, "env-name", "", "provide environment name if the target Git repository is a service's source repository.")
 
 }
 
@@ -65,7 +63,6 @@ func (o *options) getAppServiceNames() *backend.QualifiedServiceName {
 
 	return &backend.QualifiedServiceName{
 		EnvironmentName: o.envName,
-		ApplicationName: o.appName,
 		ServiceName:     o.serviceName,
 	}
 }

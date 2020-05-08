@@ -6,8 +6,7 @@ environments:
         binding: dev-ci-binding
     services:
       - name: app-1-service-http # Service Name
-      - name: app-1-service-http # Duplicate Service Name (invalid)
     apps:
       - name: my-app-1
         services:
-          - app-1-service-http
+          - app-1-svc-http

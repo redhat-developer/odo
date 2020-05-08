@@ -7,8 +7,8 @@ import (
 )
 
 // PathForService gives a repo-rooted path within a repository.
-func PathForService(env *Environment, svc *Service) string {
-	return filepath.Join(PathForEnvironment(env), "services", svc.Name)
+func PathForService(env *Environment, serviceName string) string {
+	return filepath.Join(PathForEnvironment(env), "services", serviceName)
 }
 
 // PathForApplication generates a repo-rooted path within a repository.
@@ -78,6 +78,7 @@ func (m *Manifest) GetArgoCDEnvironment() (*Environment, error) {
 type Environment struct {
 	Name      string         `json:"name,omitempty"`
 	Pipelines *Pipelines     `json:"pipelines,omitempty"`
+	Services  []*Service     `json:"services,omitempty"`
 	Apps      []*Application `json:"apps,omitempty"`
 	// TODO: this should check that there is 0 or 1 CICD environment in the
 	// manfifest.
@@ -102,9 +103,9 @@ func (e Environment) IsSpecial() bool {
 // another repository.
 // TODO: validate that an app with a ConfigRepo has no services.
 type Application struct {
-	Name       string      `json:"name,omitempty"`
-	Services   []*Service  `json:"services,omitempty"`
-	ConfigRepo *Repository `json:"config_repo,omitempty"`
+	Name        string      `json:"name,omitempty"`
+	ServiceRefs []string    `json:"services,omitempty"`
+	ConfigRepo  *Repository `json:"config_repo,omitempty"`
 }
 
 // Service has an upstream source.
@@ -160,15 +161,16 @@ type TemplateBinding struct {
 func (m Manifest) Walk(visitor interface{}) error {
 	sort.Sort(ByName(m.Environments))
 	for _, env := range m.Environments {
-		for _, app := range env.Apps {
-			for _, svc := range app.Services {
-				if v, ok := visitor.(ServiceVisitor); ok {
-					err := v.Service(env, app, svc)
-					if err != nil {
-						return err
-					}
+		for _, svc := range env.Services {
+			if v, ok := visitor.(ServiceVisitor); ok {
+				err := v.Service(env, svc)
+				if err != nil {
+					return err
 				}
 			}
+		}
+
+		for _, app := range env.Apps {
 			if v, ok := visitor.(ApplicationVisitor); ok {
 				err := v.Application(env, app)
 				if err != nil {

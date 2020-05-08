@@ -120,8 +120,8 @@ func bootstrapResources(o *BootstrapOptions, appFs afero.Fs) (res.Resources, err
 }
 
 func bootstrapServiceDeployment(dev *config.Environment) (res.Resources, error) {
-	svc := dev.Apps[0].Services[0]
-	svcBase := filepath.Join(config.PathForService(dev, svc), "base", "config")
+	svc := dev.Services[0]
+	svcBase := filepath.Join(config.PathForService(dev, svc.Name), "base", "config")
 	resources := res.Resources{}
 	// TODO: This should change if we add Namespace to Environment.
 	resources[filepath.Join(svcBase, "100-deployment.yaml")] = deployment.Create(dev.Name, svc.Name, bootstrapImage, deployment.ContainerPort(8080))
@@ -138,11 +138,16 @@ func bootstrapEnvironments(prefix, repoURL, secretName string, ns map[string]str
 			env.IsCICD = true
 		}
 		if k == "dev" {
-			app, err := applicationFromRepo(repoURL, secretName, ns["cicd"])
+			svc, err := serviceFromRepo(repoURL, secretName, ns["cicd"])
+			if err != nil {
+				return nil, err
+			}
+			app, err := applicationFromRepo(repoURL, svc.Name)
 			if err != nil {
 				return nil, err
 			}
 			env.Apps = []*config.Application{app}
+			env.Services = []*config.Service{svc}
 			env.Pipelines = defaultPipelines
 		}
 		envs = append(envs, env)
@@ -152,25 +157,31 @@ func bootstrapEnvironments(prefix, repoURL, secretName string, ns map[string]str
 	return envs, nil
 }
 
-func applicationFromRepo(repoURL, secretName, secretNS string) (*config.Application, error) {
+func serviceFromRepo(repoURL, secretName, secretNS string) (*config.Service, error) {
+	repo, err := repoFromURL(repoURL)
+	if err != nil {
+		return nil, err
+	}
+	return &config.Service{
+		Name:      repo + "-svc",
+		SourceURL: repoURL,
+		Webhook: &config.Webhook{
+			Secret: &config.Secret{
+				Name:      secretName,
+				Namespace: secretNS,
+			},
+		},
+	}, nil
+}
+
+func applicationFromRepo(repoURL, serviceName string) (*config.Application, error) {
 	repo, err := repoFromURL(repoURL)
 	if err != nil {
 		return nil, err
 	}
 	return &config.Application{
-		Name: repo,
-		Services: []*config.Service{
-			{
-				Name:      repo + "-svc",
-				SourceURL: repoURL,
-				Webhook: &config.Webhook{
-					Secret: &config.Secret{
-						Name:      secretName,
-						Namespace: secretNS,
-					},
-				},
-			},
-		},
+		Name:        repo,
+		ServiceRefs: []string{serviceName},
 	}, nil
 }
 

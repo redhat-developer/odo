@@ -143,13 +143,19 @@ func buildManifest(withCICD bool) *config.Manifest {
 				Apps: []*config.Application{
 					{
 						Name: "my-app-1",
-						Services: []*config.Service{
-							{
-								Name:      "service-http",
-								SourceURL: "https://github.com/myproject/myservice.git",
-							},
-							{Name: "service-metrics"},
+						ServiceRefs: []string{
+							"service-http",
+							"service-metrics",
 						},
+					},
+				},
+				Services: []*config.Service{
+					{
+						Name:      "service-http",
+						SourceURL: "https://github.com/myproject/myservice.git",
+					},
+					{
+						Name: "service-metrics",
 					},
 				},
 			},

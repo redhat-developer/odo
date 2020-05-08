@@ -63,21 +63,23 @@ func TestBootstrapManifest(t *testing.T) {
 				{
 					Pipelines: defaultPipelines,
 					Name:      "tst-dev",
-					Apps: []*config.Application{
+					Services: []*config.Service{
 						{
-							Name: "http-api",
-							Services: []*config.Service{
-								{
-									Name:      "http-api-svc",
-									SourceURL: testSvcRepo,
-									Webhook: &config.Webhook{
-										Secret: &config.Secret{
-											Name:      "github-webhook-secret-http-api-svc",
-											Namespace: "tst-cicd",
-										},
-									},
+							Name:      "http-api-svc",
+							SourceURL: testSvcRepo,
+							Webhook: &config.Webhook{
+								Secret: &config.Secret{
+									Name:      "github-webhook-secret-http-api-svc",
+									Namespace: "tst-cicd",
 								},
 							},
+						},
+					},
+
+					Apps: []*config.Application{
+						{
+							Name:        "http-api",
+							ServiceRefs: []string{"http-api-svc"},
 						},
 					},
 				},
@@ -132,22 +134,11 @@ func TestOrgRepoFromURL(t *testing.T) {
 
 func TestApplicationFromRepo(t *testing.T) {
 	want := &config.Application{
-		Name: "http-api",
-		Services: []*config.Service{
-			{
-				Name:      "http-api-svc",
-				SourceURL: testSvcRepo,
-				Webhook: &config.Webhook{
-					Secret: &config.Secret{
-						Name:      "test-svc-webhook-secret",
-						Namespace: "test-cicd",
-					},
-				},
-			},
-		},
+		Name:        "http-api",
+		ServiceRefs: []string{"http-api-svc"},
 	}
 
-	got, err := applicationFromRepo(testSvcRepo, "test-svc-webhook-secret", "test-cicd")
+	got, err := applicationFromRepo(testSvcRepo, "http-api-svc")
 	if err != nil {
 		t.Fatal(err)
 	}

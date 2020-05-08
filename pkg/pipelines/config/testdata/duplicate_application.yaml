@@ -4,12 +4,15 @@ environments:
       integration:
         template: dev-ci-template
         binding: dev-ci-binding
+    services:
+      - name: app-1-service-http
+      - name: app-1-service-metrics
+      - name: app-2-service
     apps:
       - name: my-app-1 # Application my-app-1
         services:
-          - name: app-1-service-http
-          - name: app-1-service-metrics
+          - app-1-service-http
+          - app-1-service-metrics
       - name: my-app-1 # Duplicate application my-app-1 (invalid)
         services:
-          - name: app-2-service
-   
+          - app-2-service
