@@ -120,31 +120,86 @@ func (c *Client) getVolumeNamesFromPVC(pvc string, dc *appsv1.DeploymentConfig) 
 
 // removeVolumeFromDC removes the volume from the given Deployment Config and
 // returns true. If the given volume is not found, it returns false.
-func removeVolumeFromDC(vol string, dc *appsv1.DeploymentConfig) bool {
+func removeVolumeFromDC(vol string, dc *appsv1.DeploymentConfig) error {
+
+	// Error out immediately if there are zero volumes to begin with
+	if len(dc.Spec.Template.Spec.Volumes) == 0 {
+		return errors.New("there are *no* volumes in this DeploymentConfig to remove")
+	}
+
 	found := false
-	for i, volume := range dc.Spec.Template.Spec.Volumes {
-		if volume.Name == vol {
-			found = true
-			dc.Spec.Template.Spec.Volumes = append(dc.Spec.Template.Spec.Volumes[:i], dc.Spec.Template.Spec.Volumes[i+1:]...)
+
+	// If for some reason there is only one volume, let's slice the array to zero length
+	// or else you will get a "runtime error: slice bounds of of range [2:1] error
+	if len(dc.Spec.Template.Spec.Volumes) == 1 && vol == dc.Spec.Template.Spec.Volumes[0].Name {
+		// Mark as found and slice to zero length
+		found = true
+		dc.Spec.Template.Spec.Volumes = dc.Spec.Template.Spec.Volumes[:0]
+	} else {
+
+		for i, volume := range dc.Spec.Template.Spec.Volumes {
+
+			// If we find a match
+			if volume.Name == vol {
+				found = true
+
+				// Copy (it takes longer, but maintains volume order)
+				copy(dc.Spec.Template.Spec.Volumes[i:], dc.Spec.Template.Spec.Volumes[i+1:])
+				dc.Spec.Template.Spec.Volumes = dc.Spec.Template.Spec.Volumes[:len(dc.Spec.Template.Spec.Volumes)-1]
+
+				break
+			}
+
 		}
 	}
-	return found
+
+	if found {
+		return nil
+	}
+
+	return fmt.Errorf("unable to find volume '%s' within DeploymentConfig '%s'", vol, dc.ObjectMeta.Name)
 }
 
 // removeVolumeMountsFromDC removes the volumeMounts from all the given containers
 // in the given Deployment Config and return true. If any of the volumeMount with the name
 // is not found, it returns false.
-func removeVolumeMountsFromDC(vm string, dc *appsv1.DeploymentConfig) bool {
+func removeVolumeMountsFromDC(volumeMount string, dc *appsv1.DeploymentConfig) error {
+
+	if len(dc.Spec.Template.Spec.Containers) == 0 {
+		return errors.New("something went wrong, there are *no* containers available to iterate through")
+	}
+
 	found := false
+
 	for i, container := range dc.Spec.Template.Spec.Containers {
-		for j, volumeMount := range container.VolumeMounts {
-			if volumeMount.Name == vm {
-				found = true
-				dc.Spec.Template.Spec.Containers[i].VolumeMounts = append(dc.Spec.Template.Spec.Containers[i].VolumeMounts[:j], dc.Spec.Template.Spec.Containers[i].VolumeMounts[j+1:]...)
+
+		if len(dc.Spec.Template.Spec.Containers[i].VolumeMounts) == 1 && dc.Spec.Template.Spec.Containers[i].VolumeMounts[0].Name == volumeMount {
+			// Mark as found and slice to zero length
+			found = true
+			dc.Spec.Template.Spec.Containers[i].VolumeMounts = dc.Spec.Template.Spec.Containers[i].VolumeMounts[:0]
+		} else {
+
+			for j, volMount := range container.VolumeMounts {
+
+				// If we find a match
+				if volMount.Name == volumeMount {
+					found = true
+
+					// Copy (it takes longer, but maintains volume mount order)
+					copy(dc.Spec.Template.Spec.Containers[i].VolumeMounts[j:], dc.Spec.Template.Spec.Containers[i].VolumeMounts[j+1:])
+					dc.Spec.Template.Spec.Containers[i].VolumeMounts = dc.Spec.Template.Spec.Containers[i].VolumeMounts[:len(dc.Spec.Template.Spec.Containers[i].VolumeMounts)-1]
+
+					break
+				}
 			}
 		}
 	}
-	return found
+
+	if found {
+		return nil
+	}
+
+	return fmt.Errorf("unable to find volume mount '%s'", volumeMount)
 }
 
 // generateVolumeNameFromPVC generates a random volume name based on the name
