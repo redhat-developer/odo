@@ -782,7 +782,7 @@ func (co *CreateOptions) Run() (err error) {
 			if !util.CheckPathExists(DevfilePath) && len(co.devfileMetadata.devfilePath) != 0 {
 				err = util.CopyFile(co.devfileMetadata.devfilePath, DevfilePath)
 				if err != nil {
-					return errors.Wrap(err, "failed to copy user specify devfile path")
+					return errors.Wrapf(err, "failed to copy devfile from %s to %s", co.devfileMetadata.devfilePath, DevfilePath)
 				}
 			}
 
@@ -914,7 +914,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 
 	if experimental.IsExperimentalModeEnabled() {
 		componentCreateCmd.Flags().BoolVar(&co.devfileMetadata.downloadSource, "downloadSource", false, "Download sample project from devfile. (ex. odo component create <component_type> [component_name] --downloadSource")
-		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfilePath, "devfile", "", "Specify user's own devfile path")
+		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfilePath, "devfile", "", "Path to the user specify devfile")
 	}
 
 	componentCreateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
