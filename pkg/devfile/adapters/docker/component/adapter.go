@@ -230,17 +230,17 @@ func (a Adapter) Delete(labels map[string]string) error {
 
 			// Don't delete any volumes which are mapped into other containers
 			if _, exists := volumesNotToDelete[vol.Name]; exists {
-				glog.V(4).Infof("Skipping volume %s as it is mapped into a non-odo managed container", vol.Name)
+				klog.V(4).Infof("Skipping volume %s as it is mapped into a non-odo managed container", vol.Name)
 				continue
 			}
 
 			// If the volume was found to be attached to the component's container, then add the volume
 			// to the deletion list.
 			if _, ok := volumeNames[vol.Name]; ok {
-				glog.V(4).Infof("Adding volume %s to deletion list", vol.Name)
+				klog.V(4).Infof("Adding volume %s to deletion list", vol.Name)
 				volumesToDelete[vol.Name] = vol.Name
 			} else {
-				glog.V(4).Infof("Skipping volume %s as it was not attached to the component's container", vol.Name)
+				klog.V(4).Infof("Skipping volume %s as it was not attached to the component's container", vol.Name)
 			}
 		}
 	}
