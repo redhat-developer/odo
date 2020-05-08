@@ -111,64 +111,52 @@ func GetContainerURL(client *lclient.Client, envSpecificInfo *envinfo.EnvSpecifi
 	if err != nil {
 		return URL{}, errors.Wrap(err, "unable to get component containers")
 	}
-	containerJSONMap := make(map[string]types.ContainerJSON)
+	var remoteExist = false
+	var dockerURL URL
+	// iterating through each container's HostConfig, generate and cache the dockerURL if found a match urlName
 	for _, c := range containers {
 		containerJSON, err := client.Client.ContainerInspect(client.Context, c.ID)
 		if err != nil {
 			return URL{}, err
 		}
-		containerJSONMap[c.ID] = containerJSON
 		for internalPort, portbinding := range containerJSON.HostConfig.PortBindings {
 			remoteURLName := containerJSON.Config.Labels[internalPort.Port()]
 			if remoteURLName != urlName {
 				continue
 			}
+			// found urlName in Docker container's config
+			remoteExist = true
 			externalport, err := strconv.Atoi(portbinding[0].HostPort)
 			if err != nil {
 				return URL{}, err
 			}
-			dockerURL := getMachineReadableFormatDocker(internalPort.Int(), externalport, portbinding[0].HostIP, remoteURLName)
-			for _, localurl := range localURLs {
-				if localurl.ExposedPort <= 0 {
-					continue
-				}
-				if localurl.Name == remoteURLName {
-					// URL is in both env file and docker host config
-					dockerURL.Status.State = StateTypePushed
-					return dockerURL, nil
-				}
-			}
-			dockerURL.Status.State = StateTypeLocallyDeleted
-			return dockerURL, nil
+			dockerURL = getMachineReadableFormatDocker(internalPort.Int(), externalport, portbinding[0].HostIP, remoteURLName)
 		}
 	}
 
+	// iterating through URLs in local env.yaml
 	for _, localurl := range localURLs {
-		if localurl.ExposedPort <= 0 || localurl.Name != urlName {
+		if localurl.Kind != envinfo.DOCKER || localurl.Name != urlName {
 			continue
 		}
-		var found = false
 		localURL := getMachineReadableFormatDocker(localurl.Port, localurl.ExposedPort, dockercomponent.LocalhostIP, localurl.Name)
-		for _, c := range containers {
-			containerJSON := containerJSONMap[c.ID]
-			for internalPort := range containerJSON.HostConfig.PortBindings {
-				remoteURLName := containerJSON.Config.Labels[internalPort.Port()]
-				if remoteURLName != urlName {
-					continue
-				} else {
-					found = true
-					break
-				}
-			}
-		}
-		if !found {
-			// URL is in the env file but not on pushed
+		// found urlName in local env file
+		if remoteExist {
+			// URL is in both env file and Docker HostConfig
+			localURL.Status.State = StateTypePushed
+			return localURL, nil
+		} else {
+			// URL only exists in local env file
 			localURL.Status.State = StateTypeNotPushed
 			return localURL, nil
 		}
 	}
-
-	// can't find the URL in local and remote
+	// URL only exists in pushed Docker container
+	if remoteExist {
+		dockerURL.Status.State = StateTypeLocallyDeleted
+		return dockerURL, nil
+	}
+	// can't find the URL in local env.yaml or Docker containers
 	return URL{}, errors.New(fmt.Sprintf("the url %v does not exist", urlName))
 }
 
@@ -449,6 +437,10 @@ func ListDockerURL(client *lclient.Client, componentName string, envSpecificInfo
 
 	containerJSONMap := make(map[string]types.ContainerJSON)
 
+	// iterating through each container's HostConfig
+	// find out if there is a match config in local env.yaml
+	// if found a match, then the URL is <Pushed>
+	// if the config does not exist in local env.yaml file, then the URL is <Locally Deleted>
 	for _, c := range containers {
 		var found = false
 		containerJSON, err := client.Client.ContainerInspect(client.Context, c.ID)
@@ -463,11 +455,12 @@ func ListDockerURL(client *lclient.Client, componentName string, envSpecificInfo
 			}
 			dockerURL := getMachineReadableFormatDocker(internalPort.Int(), externalport, portbinding[0].HostIP, containerJSON.Config.Labels[internalPort.Port()])
 			for _, localurl := range localURLs {
-				if localurl.ExposedPort <= 0 {
+				// only checks for Docker URLs
+				if localurl.Kind != envinfo.DOCKER {
 					continue
 				}
 				if localurl.Port == dockerURL.Spec.Port && localurl.ExposedPort == dockerURL.Spec.ExternalPort {
-					// URL is in both env file and docker host config
+					// URL is in both env file and Docker HostConfig
 					dockerURL.Status.State = StateTypePushed
 					urls = append(urls, dockerURL)
 					found = true
@@ -475,15 +468,19 @@ func ListDockerURL(client *lclient.Client, componentName string, envSpecificInfo
 				}
 			}
 			if !found {
-				// URL is in docker host config but not in env file
+				// URL is in Docker HostConfig but not in env file
 				dockerURL.Status.State = StateTypeLocallyDeleted
 				urls = append(urls, dockerURL)
 			}
 		}
 	}
 
+	// iterating through URLs in local env.yaml
+	// find out if there is a match config in Docker container
+	// if the config does not exist in Docker container, then the URL is <Not Pushed>
 	for _, localurl := range localURLs {
-		if localurl.ExposedPort <= 0 {
+		// only checks for Docker URLs
+		if localurl.Kind != envinfo.DOCKER {
 			continue
 		}
 		var found = false
@@ -502,7 +499,7 @@ func ListDockerURL(client *lclient.Client, componentName string, envSpecificInfo
 			}
 		}
 		if !found {
-			// URL is in the env file but not on pushed
+			// URL is in the env file but not pushed to Docker container
 			localURL.Status.State = StateTypeNotPushed
 			urls = append(urls, localURL)
 		}

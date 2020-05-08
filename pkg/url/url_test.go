@@ -1352,9 +1352,6 @@ func TestListDockerURL(t *testing.T) {
 	testURL1 := envinfo.EnvInfoURL{Name: "testurl1", Port: 8080, ExposedPort: 56789}
 	testURL2 := envinfo.EnvInfoURL{Name: "testurl2", Port: 8080, ExposedPort: 54321}
 	testURL3 := envinfo.EnvInfoURL{Name: "testurl3", Port: 8080, ExposedPort: 65432}
-	esi := &envinfo.EnvSpecificInfo{}
-	esi.SetConfiguration("url", testURL1)
-	esi.SetConfiguration("url", testURL2)
 
 	tests := []struct {
 		name      string
@@ -1405,7 +1402,18 @@ func TestListDockerURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
+			esi, err := envinfo.NewEnvSpecificInfo("")
+			if err != nil {
+				t.Errorf("Unexpected %v", err)
+			}
+			err = esi.SetConfiguration("url", testURL1)
+			if err != nil {
+				t.Errorf("Unexpected %v", err)
+			}
+			err = esi.SetConfiguration("url", testURL2)
+			if err != nil {
+				t.Errorf("Unexpected %v", err)
+			}
 			urls, err := ListDockerURL(tt.client, tt.component, esi)
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("expected %v, got %v", tt.wantErr, err)
@@ -1433,9 +1441,6 @@ func TestGetContainerURL(t *testing.T) {
 	testURL1 := envinfo.EnvInfoURL{Name: "testurl1", Port: 8080, ExposedPort: 56789}
 	testURL2 := envinfo.EnvInfoURL{Name: "testurl2", Port: 8080, ExposedPort: 54321}
 	testURL3 := envinfo.EnvInfoURL{Name: "testurl3", Port: 8080, ExposedPort: 65432}
-	esi := &envinfo.EnvSpecificInfo{}
-	esi.SetConfiguration("url", testURL1)
-	esi.SetConfiguration("url", testURL2)
 
 	tests := []struct {
 		name      string
@@ -1501,6 +1506,18 @@ func TestGetContainerURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			esi, err := envinfo.NewEnvSpecificInfo("")
+			if err != nil {
+				t.Errorf("Unexpected %v", err)
+			}
+			err = esi.SetConfiguration("url", testURL1)
+			if err != nil {
+				t.Errorf("Unexpected %v", err)
+			}
+			err = esi.SetConfiguration("url", testURL2)
+			if err != nil {
+				t.Errorf("Unexpected %v", err)
+			}
 
 			url, err := GetContainerURL(fakeClient, esi, tt.urlName, tt.component)
 			if !tt.wantErr == (err != nil) {
