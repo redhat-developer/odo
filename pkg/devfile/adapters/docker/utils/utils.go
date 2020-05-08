@@ -40,11 +40,11 @@ func ComponentExists(client lclient.Client, name string) bool {
 func GetComponentContainers(client lclient.Client, componentName string) (containers []types.Container, err error) {
 	containerList, err := client.GetContainerList()
 	if err != nil {
-		return
+		return nil, err
 	}
 	containers = client.GetContainersByComponent(componentName, containerList)
 
-	return
+	return containers, nil
 }
 
 // GetContainerIDForAlias returns the container ID for the devfile alias from a list of containers

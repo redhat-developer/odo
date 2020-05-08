@@ -10,6 +10,7 @@ import (
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/log"
 
+	types "github.com/docker/docker/api/types"
 	routev1 "github.com/openshift/api/route/v1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
@@ -104,21 +105,19 @@ func GetIngress(kClient *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInf
 }
 
 // GetContainer returns Docker URL definition for given URL name
-func GetContainerURL(envSpecificInfo *envinfo.EnvSpecificInfo, urlName string, componentName string) (URL, error) {
-	client, err := lclient.New()
-	if err != nil {
-		return URL{}, err
-	}
+func GetContainerURL(client *lclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, urlName string, componentName string) (URL, error) {
 	localURLs := envSpecificInfo.GetURL()
 	containers, err := dockerutils.GetComponentContainers(*client, componentName)
 	if err != nil {
 		return URL{}, errors.Wrap(err, "unable to get component containers")
 	}
+	containerJSONMap := make(map[string]types.ContainerJSON)
 	for _, c := range containers {
 		containerJSON, err := client.Client.ContainerInspect(client.Context, c.ID)
 		if err != nil {
 			return URL{}, err
 		}
+		containerJSONMap[c.ID] = containerJSON
 		for internalPort, portbinding := range containerJSON.HostConfig.PortBindings {
 			remoteURLName := containerJSON.Config.Labels[internalPort.Port()]
 			if remoteURLName != urlName {
@@ -151,10 +150,7 @@ func GetContainerURL(envSpecificInfo *envinfo.EnvSpecificInfo, urlName string, c
 		var found = false
 		localURL := getMachineReadableFormatDocker(localurl.Port, localurl.ExposedPort, dockercomponent.LocalhostIP, localurl.Name)
 		for _, c := range containers {
-			containerJSON, err := client.Client.ContainerInspect(client.Context, c.ID)
-			if err != nil {
-				return URL{}, err
-			}
+			containerJSON := containerJSONMap[c.ID]
 			for internalPort := range containerJSON.HostConfig.PortBindings {
 				remoteURLName := containerJSON.Config.Labels[internalPort.Port()]
 				if remoteURLName != urlName {
@@ -441,11 +437,7 @@ func List(client *occlient.Client, localConfig *config.LocalConfigInfo, componen
 }
 
 // ListDockerURL returns all Docker URLs for given component.
-func ListDockerURL(componentName string, envSpecificInfo *envinfo.EnvSpecificInfo) (URLList, error) {
-	client, err := lclient.New()
-	if err != nil {
-		return URLList{}, err
-	}
+func ListDockerURL(client *lclient.Client, componentName string, envSpecificInfo *envinfo.EnvSpecificInfo) (URLList, error) {
 	containers, err := dockerutils.GetComponentContainers(*client, componentName)
 	if err != nil {
 		return URLList{}, errors.Wrap(err, "unable to list component container")
@@ -455,12 +447,15 @@ func ListDockerURL(componentName string, envSpecificInfo *envinfo.EnvSpecificInf
 
 	var urls []URL
 
+	containerJSONMap := make(map[string]types.ContainerJSON)
+
 	for _, c := range containers {
 		var found = false
 		containerJSON, err := client.Client.ContainerInspect(client.Context, c.ID)
 		if err != nil {
 			return URLList{}, err
 		}
+		containerJSONMap[c.ID] = containerJSON
 		for internalPort, portbinding := range containerJSON.HostConfig.PortBindings {
 			externalport, err := strconv.Atoi(portbinding[0].HostPort)
 			if err != nil {
@@ -494,10 +489,7 @@ func ListDockerURL(componentName string, envSpecificInfo *envinfo.EnvSpecificInf
 		var found = false
 		localURL := getMachineReadableFormatDocker(localurl.Port, localurl.ExposedPort, dockercomponent.LocalhostIP, localurl.Name)
 		for _, c := range containers {
-			containerJSON, err := client.Client.ContainerInspect(client.Context, c.ID)
-			if err != nil {
-				return URLList{}, err
-			}
+			containerJSON := containerJSONMap[c.ID]
 			for internalPort, portbinding := range containerJSON.HostConfig.PortBindings {
 				externalport, err := strconv.Atoi(portbinding[0].HostPort)
 				if err != nil {

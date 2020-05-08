@@ -11,6 +11,7 @@ import (
 
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -67,7 +68,11 @@ func (o *URLDescribeOptions) Validate() (err error) {
 // Run contains the logic for the odo url list command
 func (o *URLDescribeOptions) Run() (err error) {
 	if pushtarget.IsPushTargetDocker() && experimental.IsExperimentalModeEnabled() {
-		u, err := url.GetContainerURL(o.EnvSpecificInfo, o.url, o.EnvSpecificInfo.GetName())
+		client, err := lclient.New()
+		if err != nil {
+			return err
+		}
+		u, err := url.GetContainerURL(client, o.EnvSpecificInfo, o.url, o.EnvSpecificInfo.GetName())
 		if err != nil {
 			return err
 		}
@@ -77,10 +82,17 @@ func (o *URLDescribeOptions) Run() (err error) {
 		} else {
 			tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 			fmt.Fprintln(tabWriterURL, "NAME", "\t", "STATE", "\t", "URL", "\t", "PORT")
-
+			var urlString string
+			if u.Status.State == url.StateTypeNotPushed {
+				// to be consistent with URL for ingress and routes
+				// if not pushed, display URl as ://
+				urlString = "://"
+			} else {
+				urlString = u.Spec.Host + ":" + strconv.Itoa(u.Spec.ExternalPort)
+			}
 			// are there changes between local and cluster states?
 			outOfSync := false
-			fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", u.Spec.Host+":"+strconv.Itoa(u.Spec.ExternalPort), "\t", u.Spec.Port)
+			fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", urlString, "\t", u.Spec.Port)
 			if u.Status.State != url.StateTypePushed {
 				outOfSync = true
 			}

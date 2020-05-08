@@ -100,8 +100,42 @@ var _ = Describe("odo docker devfile url command tests", func() {
 		})
 	})
 
+	Context("Switching pushtarget", func() {
+		It("switch from docker to kube, odo push should display warning", func() {
+			var stdout string
+			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
+			helper.Chdir(projectDirPath)
+
+			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
+			helper.CmdShouldPass("odo", "url", "create")
+
+			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "kube", "-f")
+			session := helper.CmdRunner("odo", "push", "--devfile", "devfile.yaml")
+			stdout = string(session.Wait().Out.Contents())
+			stderr := string(session.Wait().Err.Contents())
+			Expect(stderr).To(ContainSubstring("Found a URL defined for Docker, but no valid URLs for Kubernetes."))
+			Expect(stdout).To(ContainSubstring("Changes successfully pushed to component"))
+		})
+
+		It("switch from kube to docker, odo push should display warning", func() {
+			var stdout string
+			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
+			helper.Chdir(projectDirPath)
+			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "kube", "-f")
+			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
+			helper.CmdShouldPass("odo", "url", "create", "--host", "1.2.3.4.com", "--ingress")
+
+			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "docker", "-f")
+			session := helper.CmdRunner("odo", "push", "--devfile", "devfile.yaml")
+			stdout = string(session.Wait().Out.Contents())
+			stderr := string(session.Wait().Err.Contents())
+			Expect(stderr).To(ContainSubstring("Found a URL defined for Kubernetes, but no valid URLs for Docker."))
+			Expect(stdout).To(ContainSubstring("Changes successfully pushed to component"))
+		})
+	})
+
 	Context("Listing urls", func() {
-		It("should list url after push", func() {
+		It("should list url with appropriate state", func() {
 			var stdout string
 			url1 := helper.RandString(5)
 			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
@@ -134,8 +168,6 @@ var _ = Describe("odo docker devfile url command tests", func() {
 
 			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
-
 			stdout = helper.CmdShouldFail("odo", "url", "list")
 			Expect(stdout).To(ContainSubstring("no URLs found"))
 
@@ -155,37 +187,52 @@ var _ = Describe("odo docker devfile url command tests", func() {
 		})
 	})
 
-	Context("Switching pushtarget", func() {
-		It("switch from docker to kube, odo push should display warning", func() {
+	Context("Describing urls", func() {
+		It("should describe URL with appropriate appropriate", func() {
 			var stdout string
+			url1 := helper.RandString(5)
+
 			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
 			helper.Chdir(projectDirPath)
 
 			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
-			helper.CmdShouldPass("odo", "url", "create")
 
-			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "kube", "-f")
-			session := helper.CmdRunner("odo", "push", "--devfile", "devfile.yaml")
-			stdout = string(session.Wait().Out.Contents())
-			stderr := string(session.Wait().Err.Contents())
-			Expect(stderr).To(ContainSubstring("Found a URL defined for Docker, but no valid URLs for Kubernetes."))
-			Expect(stdout).To(ContainSubstring("Changes successfully pushed to component"))
+			helper.CmdShouldPass("odo", "url", "create", url1)
+
+			stdout = helper.CmdShouldPass("odo", "url", "describe", url1)
+			helper.MatchAllInOutput(stdout, []string{url1, "Not Pushed"})
+
+			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
+			stdout = helper.CmdShouldPass("odo", "url", "describe", url1)
+			helper.MatchAllInOutput(stdout, []string{url1, "Pushed"})
+
+			helper.CmdShouldPass("odo", "url", "delete", url1, "-f")
+			stdout = helper.CmdShouldPass("odo", "url", "describe", url1)
+			helper.MatchAllInOutput(stdout, []string{url1, "Locally Deleted"})
 		})
 
-		It("switch from kube to docker, odo push should display warning", func() {
+		It("should be able to describe url in machine readable json format", func() {
 			var stdout string
+			url1 := helper.RandString(5)
+
 			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
 			helper.Chdir(projectDirPath)
-			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "kube", "-f")
-			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
-			helper.CmdShouldPass("odo", "url", "create", "--host", "1.2.3.4.com", "--ingress")
 
-			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "docker", "-f")
-			session := helper.CmdRunner("odo", "push", "--devfile", "devfile.yaml")
-			stdout = string(session.Wait().Out.Contents())
-			stderr := string(session.Wait().Err.Contents())
-			Expect(stderr).To(ContainSubstring("Found a URL defined for Kubernetes, but no valid URLs for Docker."))
-			Expect(stdout).To(ContainSubstring("Changes successfully pushed to component"))
+			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
+
+			stdout = helper.CmdShouldFail("odo", "url", "describe", url1)
+			Expect(stdout).To(ContainSubstring("the url " + url1 + " does not exist"))
+
+			httpPort, err := util.HttpGetFreePort()
+			Expect(err).NotTo(HaveOccurred())
+			freePort := strconv.Itoa(httpPort)
+			helper.CmdShouldPass("odo", "url", "create", url1, "--exposed-port", freePort, "--now")
+			stdout = helper.CmdShouldPass("odo", "url", "describe", url1)
+			helper.MatchAllInOutput(stdout, []string{url1, "Pushed"})
+
+			desiredURLListJSON := fmt.Sprintf(`{"kind":"url","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"%s","creationTimestamp":null},"spec":{"host":"127.0.0.1","port": 3000,"secure":false,"externalport":%s},"status":{"state":"Pushed"}}`, url1, freePort)
+			stdout = helper.CmdShouldPass("odo", "url", "describe", url1, "-o", "json")
+			Expect(desiredURLListJSON).Should(MatchJSON(stdout))
 		})
 	})
 
