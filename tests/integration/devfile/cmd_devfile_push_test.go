@@ -14,8 +14,7 @@ import (
 )
 
 var _ = Describe("odo devfile push command tests", func() {
-	var namespace, context, cmpName, currentWorkingDirectory, projectDirPath string
-	var projectDir = "/projectDir"
+	var namespace, context, cmpName, currentWorkingDirectory string
 	var sourcePath = "/projects/nodejs-web-app"
 
 	// TODO: all oc commands in all devfile related test should get replaced by kubectl
@@ -28,7 +27,6 @@ var _ = Describe("odo devfile push command tests", func() {
 		namespace = helper.CreateRandProject()
 		context = helper.CreateNewContext()
 		currentWorkingDirectory = helper.Getwd()
-		projectDirPath = context + projectDir
 		cmpName = helper.RandString(6)
 
 		helper.Chdir(context)
@@ -51,15 +49,12 @@ var _ = Describe("odo devfile push command tests", func() {
 	Context("Verify devfile push works", func() {
 
 		It("should have no errors when no endpoints within the devfile, should create a service when devfile has endpoints", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-			helper.Chdir(projectDirPath)
-
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
-
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.RenameFile("devfile.yaml", "devfile-old.yaml")
-			helper.RenameFile("devfile-no-endpoints.yaml", "devfile.yaml")
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-no-endpoints.yaml"), filepath.Join(context, "devfile.yaml"))
+
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
 			output := oc.GetServices(namespace)
 			Expect(output).NotTo(ContainSubstring(cmpName))
@@ -73,12 +68,10 @@ var _ = Describe("odo devfile push command tests", func() {
 		})
 
 		It("checks that odo push works with a devfile", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-			helper.Chdir(projectDirPath)
-
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
@@ -89,28 +82,25 @@ var _ = Describe("odo devfile push command tests", func() {
 		})
 
 		It("checks that odo push works outside of the context directory", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
+			helper.Chdir(currentWorkingDirectory)
 
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, "--context", projectDirPath, cmpName)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, "--context", context, cmpName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--context", projectDirPath)
+			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--context", context)
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 		})
 
-	})
-
-	Context("When devfile push command is executed", func() {
-
 		It("should not build when no changes are detected in the directory and build when a file change is detected", func() {
-			utils.ExecPushToTestFileChanges(projectDirPath, cmpName, namespace)
+			utils.ExecPushToTestFileChanges(context, cmpName, namespace)
 		})
 
 		It("should be able to create a file, push, delete, then push again propagating the deletions", func() {
-			newFilePath := filepath.Join(projectDirPath, "foobar.txt")
-			newDirPath := filepath.Join(projectDirPath, "testdir")
-			utils.ExecPushWithNewFileAndDir(projectDirPath, cmpName, namespace, newFilePath, newDirPath)
+			newFilePath := filepath.Join(context, "foobar.txt")
+			newDirPath := filepath.Join(context, "testdir")
+			utils.ExecPushWithNewFileAndDir(context, cmpName, namespace, newFilePath, newDirPath)
 
 			// Check to see if it's been pushed (foobar.txt abd directory testdir)
 			podName := oc.GetRunningPodNameByComponent(cmpName, namespace)
@@ -131,12 +121,10 @@ var _ = Describe("odo devfile push command tests", func() {
 		})
 
 		It("should delete the files from the container if its removed locally", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-			helper.Chdir(projectDirPath)
-
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
 
@@ -155,7 +143,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
-			Expect(os.Remove(filepath.Join(projectDirPath, "app", "app.js"))).NotTo(HaveOccurred())
+			Expect(os.Remove(filepath.Join(context, "app", "app.js"))).NotTo(HaveOccurred())
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
 
 			oc.CheckCmdOpInRemoteDevfilePod(
@@ -173,11 +161,11 @@ var _ = Describe("odo devfile push command tests", func() {
 		})
 
 		It("should build when no changes are detected in the directory and force flag is enabled", func() {
-			utils.ExecPushWithForceFlag(projectDirPath, cmpName, namespace)
+			utils.ExecPushWithForceFlag(context, cmpName, namespace)
 		})
 
 		It("should execute the default devbuild and devrun commands if present", func() {
-			utils.ExecDefaultDevfileCommands(projectDirPath, cmpName, namespace)
+			utils.ExecDefaultDevfileCommands(context, cmpName, namespace)
 
 			// Check to see if it's been pushed (foobar.txt abd directory testdir)
 			podName := oc.GetRunningPodNameByComponent(cmpName, namespace)
@@ -200,61 +188,51 @@ var _ = Describe("odo devfile push command tests", func() {
 		})
 
 		It("should execute devinit command if present", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/maysunfaisal/springboot.git", projectDirPath)
-			helper.Chdir(projectDirPath)
-
 			helper.CmdShouldPass("odo", "create", "java-spring-boot", "--project", namespace, cmpName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "springboot"), projectDirPath)
+			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile-init.yaml", "--namespace", namespace)
+			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 			Expect(output).To(ContainSubstring("Executing devinit command \"echo hello"))
 			Expect(output).To(ContainSubstring("Executing devbuild command \"/artifacts/bin/build-container-full.sh\""))
 			Expect(output).To(ContainSubstring("Executing devrun command \"/artifacts/bin/start-server.sh\""))
 		})
 
 		It("should execute devinit and devrun commands if present", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/maysunfaisal/springboot.git", projectDirPath)
-			helper.Chdir(projectDirPath)
-
 			helper.CmdShouldPass("odo", "create", "java-spring-boot", "--project", namespace, cmpName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "springboot"), projectDirPath)
+			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile-init-without-build.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile-init-without-build.yaml", "--namespace", namespace)
+			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 			Expect(output).To(ContainSubstring("Executing devinit command \"echo hello"))
 			Expect(output).To(ContainSubstring("Executing devrun command \"/artifacts/bin/start-server.sh\""))
 		})
 
 		It("should only execute devinit command once if component is already created", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/maysunfaisal/springboot.git", projectDirPath)
-			helper.Chdir(projectDirPath)
-
 			helper.CmdShouldPass("odo", "create", "java-spring-boot", "--project", namespace, cmpName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "springboot"), projectDirPath)
+			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile-init.yaml", "--namespace", namespace)
+			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 			Expect(output).To(ContainSubstring("Executing devinit command \"echo hello"))
 			Expect(output).To(ContainSubstring("Executing devbuild command \"/artifacts/bin/build-container-full.sh\""))
 			Expect(output).To(ContainSubstring("Executing devrun command \"/artifacts/bin/start-server.sh\""))
 
 			// Need to force so build and run get triggered again with the component already created.
-			output = helper.CmdShouldPass("odo", "push", "--devfile", "devfile-init.yaml", "--namespace", namespace, "-f")
+			output = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace, "-f")
 			Expect(output).NotTo(ContainSubstring("Executing devinit command \"echo hello"))
 			Expect(output).To(ContainSubstring("Executing devbuild command \"/artifacts/bin/build-container-full.sh\""))
 			Expect(output).To(ContainSubstring("Executing devrun command \"/artifacts/bin/start-server.sh\""))
 		})
 
 		It("should be able to handle a missing devinit command", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-			helper.Chdir(projectDirPath)
-
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
-			helper.RenameFile("devfile.yaml", "devfile-old.yaml")
-			helper.RenameFile("devfile-without-devinit.yaml", "devfile.yaml")
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-without-devinit.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 			Expect(output).NotTo(ContainSubstring("Executing devinit command"))
@@ -263,34 +241,30 @@ var _ = Describe("odo devfile push command tests", func() {
 		})
 
 		It("should be able to handle a missing devbuild command", func() {
-			utils.ExecWithMissingBuildCommand(projectDirPath, cmpName, namespace)
+			utils.ExecWithMissingBuildCommand(context, cmpName, namespace)
 		})
 
 		It("should error out on a missing devrun command", func() {
-			utils.ExecWithMissingRunCommand(projectDirPath, cmpName, namespace)
+			utils.ExecWithMissingRunCommand(context, cmpName, namespace)
 		})
 
 		It("should be able to push using the custom commands", func() {
-			utils.ExecWithCustomCommand(projectDirPath, cmpName, namespace)
+			utils.ExecWithCustomCommand(context, cmpName, namespace)
 		})
 
 		It("should error out on a wrong custom commands", func() {
-			utils.ExecWithWrongCustomCommand(projectDirPath, cmpName, namespace)
+			utils.ExecWithWrongCustomCommand(context, cmpName, namespace)
 		})
 
 		It("should not restart the application if restart is false", func() {
-			utils.ExecWithRestartAttribute(projectDirPath, cmpName, namespace)
+			utils.ExecWithRestartAttribute(context, cmpName, namespace)
 		})
 
 		It("should create pvc and reuse if it shares the same devfile volume name", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-			helper.Chdir(projectDirPath)
-
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
-			helper.RenameFile("devfile.yaml", "devfile-old.yaml")
-			helper.RenameFile("devfile-with-volumes.yaml", "devfile.yaml")
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-volumes.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 			Expect(output).To(ContainSubstring("Executing devinit command"))
