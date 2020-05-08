@@ -135,56 +135,55 @@ func ListDevfileComponents() (DevfileComponentTypeList, error) {
 			}
 			devfileIndexChannel <- indexEntries
 		}()
-	}
 
-	// decide what to do based on what we get back:
-	// if we get an index, concurrently retrieve the devfiles
-	var devfileMutex = &sync.Mutex{}
-	select {
-	case indices := <-devfileIndexChannel:
-		for _, entry := range indices {
-			// Load the devfile
-			// Note that this issues an HTTP get per devfile entry in the catalog, while doing it concurrently instead of
-			// sequentially improves the performance, caching that information would improve the performance even more
-			devfileChannel := make(chan DevfileComponentType)
-			errChannel := make(chan error)
+		// decide what to do based on what we get back:
+		// if we get an index, concurrently retrieve the devfiles
+		var devfileMutex = &sync.Mutex{}
+		select {
+		case indices := <-devfileIndexChannel:
+			for _, entry := range indices {
+				// Load the devfile
+				// Note that this issues an HTTP get per devfile entry in the catalog, while doing it concurrently instead of
+				// sequentially improves the performance, caching that information would improve the performance even more
+				devfileChannel := make(chan DevfileComponentType)
+				errChannel := make(chan error)
 
-			link := entry.Links.base + entry.Links.Link
-			go func() {
-				devfile, err := GetDevfile(link)
-				if err != nil {
-					errChannel <- err
-					return
+				link := entry.Links.base + entry.Links.Link
+				go func() {
+					devfile, err := GetDevfile(link)
+					if err != nil {
+						errChannel <- err
+						return
+					}
+
+					// Populate devfile component with devfile data and form devfile component list
+					devfileChannel <- DevfileComponentType{
+						Name:        strings.TrimSuffix(devfile.MetaData.GenerateName, "-"),
+						DisplayName: entry.DisplayName,
+						Description: entry.Description,
+						Link:        entry.Links.Link,
+						Support:     IsDevfileComponentSupported(devfile),
+						Registry:    entry.Links.base,
+					}
+				}()
+
+				select {
+				case devfile := <-devfileChannel:
+					devfileMutex.Lock()
+					catalogDevfileList.Items = append(catalogDevfileList.Items, devfile)
+					devfileMutex.Unlock()
+				case err := <-errChannel:
+					log.Errorf("ignoring devfile at %s due to error: %e", link, err)
+				case <-time.After(timeout):
+					log.Errorf("ignoring devfile at %s: couldn't access it after %s", link, timeout)
 				}
-
-				// Populate devfile component with devfile data and form devfile component list
-				devfileChannel <- DevfileComponentType{
-					Name:        strings.TrimSuffix(devfile.MetaData.GenerateName, "-"),
-					DisplayName: entry.DisplayName,
-					Description: entry.Description,
-					Link:        entry.Links.Link,
-					Support:     IsDevfileComponentSupported(devfile),
-					Registry:    entry.Links.base,
-				}
-			}()
-
-			select {
-			case devfile := <-devfileChannel:
-				devfileMutex.Lock()
-				catalogDevfileList.Items = append(catalogDevfileList.Items, devfile)
-				devfileMutex.Unlock()
-			case err := <-errChannel:
-				log.Errorf("ignoring devfile at %s due to error: %e", link, err)
-			case <-time.After(timeout):
-				log.Errorf("ignoring devfile at %s: couldn't access it after %s", link, timeout)
 			}
+		case err := <-errChannel:
+			return DevfileComponentTypeList{}, err
+		case <-time.After(timeout):
+			return DevfileComponentTypeList{}, fmt.Errorf("couldn't access devfile registries after %s", timeout)
 		}
-	case err := <-errChannel:
-		return DevfileComponentTypeList{}, err
-	case <-time.After(timeout):
-		return DevfileComponentTypeList{}, fmt.Errorf("couldn't access devfile registries after %s", timeout)
 	}
-
 	return *catalogDevfileList, nil
 }
 
