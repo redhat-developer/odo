@@ -65,7 +65,8 @@ type DevfileMetadata struct {
 	devfileLink        string
 	devfileRegistry    string
 	downloadSource     bool
-	devfilePath        string
+	// User specify devfile path via --devfile flag
+	devfilePath string
 }
 
 // CreateRecommendedCommandName is the recommended watch command name
@@ -79,10 +80,10 @@ const LocalDirectoryDefaultLocation = "./"
 const devFile = "devfile.yaml"
 const envFile = ".odo/env/env.yaml"
 
-// DevfilePath is the path of devfile.yaml, the default path is "./devfile.yaml"
+// DevfilePath is the default path of devfile.yaml
 var DevfilePath = filepath.Join(LocalDirectoryDefaultLocation, devFile)
 
-// EnvFilePath is the path of env.yaml for devfile component, the defult path is "./.odo/env/env.yaml"
+// EnvFilePath is the default path of env.yaml for devfile component
 var EnvFilePath = filepath.Join(LocalDirectoryDefaultLocation, envFile)
 
 // ConfigFilePath is the default path of config.yaml for s2i component
@@ -303,7 +304,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		// Add a disclaimer that we are in *experimental mode*
 		log.Experimental("Experimental mode is enabled, use at your own risk")
 
-		if util.CheckPathExists(ConfigFilePath) {
+		if util.CheckPathExists(ConfigFilePath) || util.CheckPathExists(EnvFilePath) {
 			return errors.New("This directory already contains a component")
 		}
 
@@ -330,11 +331,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			co.CommonPushOptions.componentContext = co.componentContext
 		}
 
-		catalogDevfileList, err := catalog.ListDevfileComponents()
-		if err != nil {
-			return err
-		}
-
+		var catalogDevfileList catalog.DevfileComponentTypeList
 		var componentType string
 		var componentName string
 		var componentNamespace string
@@ -343,9 +340,25 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			// Interactive mode
 			// Get component type, name and namespace from user's choice via interactive mode
 
-			// devfile.yaml is not present and --devfile is not specified, user has to specify the component type
-			// Component type: We provide supported devfile component list then let you choose
+			if len(co.devfileMetadata.devfilePath) != 0 {
+				file, err := os.Stat(co.devfileMetadata.devfilePath)
+				if err != nil {
+					return err
+				}
+
+				if file.IsDir() {
+					return errors.Errorf("%s exists but it's not file", co.devfileMetadata.devfilePath)
+				}
+			}
+
 			if !util.CheckPathExists(DevfilePath) && len(co.devfileMetadata.devfilePath) == 0 {
+				// If devfile.yaml is not present and --devfile is not specified, user has to specify the component type
+				// Component type: We provide supported devfile component list then let you choose
+				catalogDevfileList, err = catalog.ListDevfileComponents()
+				if err != nil {
+					return err
+				}
+
 				var supDevfileCatalogList []catalog.DevfileComponentType
 				for _, devfileComponent := range catalogDevfileList.Items {
 					if devfileComponent.Support {
@@ -408,6 +421,12 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 				}
 			} else {
 				componentNamespace = co.devfileMetadata.componentNamespace
+			}
+
+			// Get available devfile components for checking devfile compatibility
+			catalogDevfileList, err = catalog.ListDevfileComponents()
+			if err != nil {
+				return err
 			}
 		}
 
@@ -655,10 +674,6 @@ func (co *CreateOptions) Validate() (err error) {
 			// Validate if the devfile component that user wants to create already exists
 			spinner := log.Spinner("Validating devfile component")
 			defer spinner.End(false)
-
-			if util.CheckPathExists(EnvFilePath) {
-				return errors.New("This workspace directory already contains a devfile component")
-			}
 
 			err = util.ValidateK8sResourceName("component name", co.devfileMetadata.componentName)
 			if err != nil {

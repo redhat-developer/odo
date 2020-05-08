@@ -986,9 +986,13 @@ func CheckKubeConfigExist() bool {
 // CopyFile copies file from source path to destination path
 func CopyFile(srcPath string, dstPath string) error {
 	// Check if the source file path exists
-	_, err := os.Stat(srcPath)
+	file, err := os.Stat(srcPath)
 	if err != nil {
 		return err
+	}
+
+	if file.IsDir() {
+		return errors.Errorf("%s exists but it's not file", srcPath)
 	}
 
 	// Open source file
