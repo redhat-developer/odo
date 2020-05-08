@@ -145,7 +145,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 	// We use "flag" in order to make this accessible throughtout ALL of odo, rather than the
 	// above traditional "persistentflags" usage that does not make it a pointer within the 'pflag'
 	// package
-	flag.CommandLine.String("o", "json", "Specify output format, supported format: json")
+	flag.CommandLine.String("o", "", "Specify output format, supported format: json")
 
 	// Here we add the necessary "logging" flags.. However, we choose to hide some of these from the user
 	// as they are not necessarily needed and more for advanced debugging
