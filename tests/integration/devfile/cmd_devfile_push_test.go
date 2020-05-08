@@ -88,6 +88,17 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
 		})
 
+		It("checks that odo push works outside of the context directory", func() {
+			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
+
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, "--context", projectDirPath, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
+
+			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--context", projectDirPath)
+			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+		})
+
 	})
 
 	Context("When devfile push command is executed", func() {
