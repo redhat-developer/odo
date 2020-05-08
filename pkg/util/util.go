@@ -687,12 +687,61 @@ func HTTPGetRequest(url string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
+	// we have a non 1xx / 2xx status, return an error
+	if (resp.StatusCode - 300) > 0 {
+		return nil, fmt.Errorf("error retrieving %s: %s", url, http.StatusText(resp.StatusCode))
+	}
+
 	bytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
 	return bytes, err
+}
+
+type ErrorWrapper struct {
+	errors []error
+}
+
+func NewErrorWrapper(capacity ...int) *ErrorWrapper {
+	c := 7
+	if len(capacity) == 1 {
+		c = capacity[0]
+	}
+	return &ErrorWrapper{errors: make([]error, 0, c)}
+}
+
+func (ew *ErrorWrapper) AddError(err error) {
+	ew.errors = append(ew.errors, err)
+}
+
+func (ew *ErrorWrapper) HasError() bool {
+	return len(ew.errors) > 0
+}
+
+func (ew *ErrorWrapper) AsError() string {
+	const sep = "\n\t- "
+	elems := ew.errors
+	switch len(elems) {
+	case 0:
+		return ""
+	case 1:
+		return elems[0].Error()
+	}
+	n := len(sep) * (len(elems) - 1)
+	for i := 0; i < len(elems); i++ {
+		n += len(elems[i].Error())
+	}
+
+	var b strings.Builder
+	b.Grow(n)
+	b.WriteString(elems[0].Error())
+	for _, s := range elems[1:] {
+		b.WriteString(sep)
+		b.WriteString(s.Error())
+	}
+	return b.String()
 }
 
 // filterIgnores applies the glob rules on the filesChanged and filesDeleted and filters them

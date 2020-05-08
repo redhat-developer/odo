@@ -3,11 +3,9 @@ package catalog
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/openshift/odo/pkg/log"
 	"sort"
 	"strings"
 	"sync"
-	"time"
 
 	imagev1 "github.com/openshift/api/image/v1"
 	"github.com/openshift/odo/pkg/occlient"
@@ -117,73 +115,75 @@ func ListDevfileComponents() (DevfileComponentTypeList, error) {
 	catalogDevfileList := &DevfileComponentTypeList{}
 	catalogDevfileList.DevfileRegistries = DevfileRegistries
 
-	timeout := 5 * time.Second
-
-	// TODO: consider caching the registry information for better performance since we can consider that
-	// the registry info should be fairly stable over time
+	// TODO: consider caching registry information for better performance since it should be fairly stable over time
 
 	// first retrieve the indices for each registry, concurrently
-	devfileIndexChannel := make(chan []DevfileIndexEntry)
-	errChannel := make(chan error)
+	registryIndices := make([]DevfileIndexEntry, 0, 20)
+	devfileIndicesMutex := &sync.Mutex{}
+	retrieveRegistryIndices := util.NewConcurrentTasks(len(DevfileRegistries))
 	for _, registryURL := range DevfileRegistries {
-		url := registryURL
-		go func() {
-			indexEntries, err := GetDevfileIndex(url)
+		// Load the devfile registry index.json
+		url := registryURL // needed to avoid the lambda capturing the value
+		retrieveRegistryIndices.Add(util.ConcurrentTask{ToRun: func(errChannel chan error, wg *sync.WaitGroup) {
+			defer wg.Done()
+
+			indexEntries, e := GetDevfileIndex(url)
+			if e != nil {
+				errChannel <- e
+				return
+			}
+
+			for i := range indexEntries {
+				indexEntries[i].Links.base = url
+			}
+			devfileIndicesMutex.Lock()
+			registryIndices = append(registryIndices, indexEntries...)
+			devfileIndicesMutex.Unlock()
+		}})
+	}
+	if err := retrieveRegistryIndices.Run(); err != nil {
+		return *catalogDevfileList, err
+	}
+
+	// 1. Load each devfile concurrently from the previously retrieved devfile index entries
+	// 2. Populate devfile components with devfile data
+	// 3. Add devfile component types to the catalog devfile list
+	retrieveDevfiles := util.NewConcurrentTasks(len(registryIndices))
+	devfileMutex := &sync.Mutex{}
+	for _, index := range registryIndices {
+		// Load the devfile
+		devfileIndex := index // needed to avoid the lambda capturing the value
+		link := devfileIndex.Links.base + devfileIndex.Links.Link
+		retrieveDevfiles.Add(util.ConcurrentTask{ToRun: func(errChannel chan error, wg *sync.WaitGroup) {
+			defer wg.Done()
+
+			// Note that this issues an HTTP get per devfile entry in the catalog, while doing it concurrently instead of
+			// sequentially improves the performance, caching that information would improve the performance even more
+			devfile, err := GetDevfile(link)
 			if err != nil {
 				errChannel <- err
 				return
 			}
-			devfileIndexChannel <- indexEntries
-		}()
 
-		// decide what to do based on what we get back:
-		// if we get an index, concurrently retrieve the devfiles
-		var devfileMutex = &sync.Mutex{}
-		select {
-		case indices := <-devfileIndexChannel:
-			for _, entry := range indices {
-				// Load the devfile
-				// Note that this issues an HTTP get per devfile entry in the catalog, while doing it concurrently instead of
-				// sequentially improves the performance, caching that information would improve the performance even more
-				devfileChannel := make(chan DevfileComponentType)
-				errChannel := make(chan error)
-
-				link := entry.Links.base + entry.Links.Link
-				go func() {
-					devfile, err := GetDevfile(link)
-					if err != nil {
-						errChannel <- err
-						return
-					}
-
-					// Populate devfile component with devfile data and form devfile component list
-					devfileChannel <- DevfileComponentType{
-						Name:        strings.TrimSuffix(devfile.MetaData.GenerateName, "-"),
-						DisplayName: entry.DisplayName,
-						Description: entry.Description,
-						Link:        entry.Links.Link,
-						Support:     IsDevfileComponentSupported(devfile),
-						Registry:    entry.Links.base,
-					}
-				}()
-
-				select {
-				case devfile := <-devfileChannel:
-					devfileMutex.Lock()
-					catalogDevfileList.Items = append(catalogDevfileList.Items, devfile)
-					devfileMutex.Unlock()
-				case err := <-errChannel:
-					log.Errorf("ignoring devfile at %s due to error: %e", link, err)
-				case <-time.After(timeout):
-					log.Errorf("ignoring devfile at %s: couldn't access it after %s", link, timeout)
-				}
+			// Populate devfile component with devfile data and form devfile component list
+			catalogDevfile := DevfileComponentType{
+				Name:        strings.TrimSuffix(devfile.MetaData.GenerateName, "-"),
+				DisplayName: devfileIndex.DisplayName,
+				Description: devfileIndex.Description,
+				Link:        devfileIndex.Links.Link,
+				Support:     IsDevfileComponentSupported(devfile),
+				Registry:    devfileIndex.Links.base,
 			}
-		case err := <-errChannel:
-			return DevfileComponentTypeList{}, err
-		case <-time.After(timeout):
-			return DevfileComponentTypeList{}, fmt.Errorf("couldn't access devfile registries after %s", timeout)
-		}
+
+			devfileMutex.Lock()
+			catalogDevfileList.Items = append(catalogDevfileList.Items, catalogDevfile)
+			devfileMutex.Unlock()
+		}})
 	}
+	if err := retrieveDevfiles.Run(); err != nil {
+		return *catalogDevfileList, err
+	}
+
 	return *catalogDevfileList, nil
 }
 
