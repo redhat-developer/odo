@@ -40,7 +40,7 @@ func buildEventListenerResources(gitOpsRepo string, m *config.Manifest) (res.Res
 	return tb.files, err
 }
 
-func (tk *tektonBuilder) Service(env *config.Environment, app *config.Application, svc *config.Service) error {
+func (tk *tektonBuilder) Service(env *config.Environment, svc *config.Service) error {
 	if svc.SourceURL == "" {
 		return nil
 	}

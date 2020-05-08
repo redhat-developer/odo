@@ -43,47 +43,35 @@ func TestValidateForDelete(t *testing.T) {
 			&deleteOptions{
 				options{isCICD: true, serviceName: "foo"},
 			},
-			"Only one of 'cicd' or 'app-name/env-name/service-name' can be specified",
-		},
-		{
-			&deleteOptions{
-				options{isCICD: true, appName: "foo"},
-			},
-			"Only one of 'cicd' or 'app-name/env-name/service-name' can be specified",
+			"Only one of 'cicd' or 'env-name/service-name' can be specified",
 		},
 		{
 			&deleteOptions{
 				options{isCICD: true, envName: "foo"},
 			},
-			"Only one of 'cicd' or 'app-name/env-name/service-name' can be specified",
+			"Only one of 'cicd' or 'env-name/service-name' can be specified",
 		},
 		{
 			&deleteOptions{
-				options{isCICD: true, envName: "foo", serviceName: "bar", appName: "gau"},
+				options{isCICD: true, envName: "foo", serviceName: "bar"},
 			},
-			"Only one of 'cicd' or 'app-name/env-name/service-name' can be specified",
+			"Only one of 'cicd' or 'env-name/service-name' can be specified",
 		},
 		{
 			&deleteOptions{
 				options{isCICD: false},
 			},
-			"One of 'cicd' or 'app-name/env-name/service-name' must be specified",
+			"One of 'cicd' or 'env-name/service-name' must be specified",
 		},
 		{
 			&deleteOptions{
 				options{isCICD: false, serviceName: "foo"},
 			},
-			"One of 'cicd' or 'app-name/env-name/service-name' must be specified",
+			"One of 'cicd' or 'env-name/service-name' must be specified",
 		},
 		{
 			&deleteOptions{
-				options{isCICD: false, serviceName: "foo", appName: "bar"},
-			},
-			"One of 'cicd' or 'app-name/env-name/service-name' must be specified",
-		},
-		{
-			&deleteOptions{
-				options{isCICD: false, serviceName: "foo", appName: "bar", envName: "gau"},
+				options{isCICD: false, serviceName: "foo", envName: "gau"},
 			},
 			"",
 		},

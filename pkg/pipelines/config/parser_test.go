@@ -23,21 +23,24 @@ func TestParse(t *testing.T) {
 							Binding:  "dev-ci-binding",
 						},
 					},
+					Services: []*Service{
+						{
+							Name:      "service-http",
+							SourceURL: "https://github.com/myproject/myservice.git",
+						},
+						{Name: "service-redis"},
+					},
 					Apps: []*Application{
 						{
 							Name: "my-app-1",
-							Services: []*Service{
-								{
-									Name:      "app-1-service-http",
-									SourceURL: "https://github.com/myproject/myservice.git",
-								},
-								{Name: "app-1-service-metrics"},
+							ServiceRefs: []string{
+								"service-http",
 							},
 						},
 						{
 							Name: "my-app-2",
-							Services: []*Service{
-								{Name: "app-2-service"},
+							ServiceRefs: []string{
+								"service-redis",
 							},
 						},
 					},
@@ -56,11 +59,16 @@ func TestParse(t *testing.T) {
 				},
 				{
 					Name: "production",
+					Services: []*Service{
+						{Name: "service-http"},
+						{Name: "service-metrics"},
+					},
 					Apps: []*Application{
-						{Name: "my-app-1",
-							Services: []*Service{
-								{Name: "app-1-service-http"},
-								{Name: "app-1-service-metrics"},
+						{
+							Name: "my-app-1",
+							ServiceRefs: []string{
+								"service-http",
+								"service-metrics",
 							},
 						},
 					},
@@ -73,15 +81,19 @@ func TestParse(t *testing.T) {
 			Environments: []*Environment{
 				{
 					Name: "development",
+					Services: []*Service{
+						{
+							Name:      "app-1-service-http",
+							SourceURL: "https://github.com/myproject/myservice.git",
+						},
+						{Name: "app-1-service-metrics"},
+					},
 					Apps: []*Application{
 						{
 							Name: "my-app-1",
-							Services: []*Service{
-								{
-									Name:      "app-1-service-http",
-									SourceURL: "https://github.com/myproject/myservice.git",
-								},
-								{Name: "app-1-service-metrics"},
+							ServiceRefs: []string{
+								"app-1-service-http",
+								"app-1-service-metrics",
 							},
 						},
 					},

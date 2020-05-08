@@ -1,5 +1,12 @@
 environments:
   - name: development
+    services:
+      - name: service-5
+        source_url: https://github.com/myproject/myservice.git
+        webhook:
+          secret:
+            name: webhook-secret
+            namespace: webhook-secret-key
     apps:
       - name: app-1                                     # both service and config_repo are missing 
       - name: app-2
@@ -15,12 +22,7 @@ environments:
           target_revision: master                       # url and path are missing
       - name: app-5                                     # both service and config_repo are present
         services:
-          - name: service-5
-            source_url: https://github.com/myproject/myservice.git
-            webhook:
-              secret:
-                name: webhook-secret
-                namespace: webhook-secret-key
+          - service-5
         config_repo:
           url: http://github.com/org/repo.git
           target_revision: master

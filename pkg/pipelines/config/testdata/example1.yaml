@@ -1,5 +1,9 @@
 environments:
   - name: development
+    services:
+      - name: service-http
+        source_url: https://github.com/myproject/myservice.git
+      - name: service-redis
     pipelines:
       integration:
         template: dev-ci-template
@@ -7,12 +11,10 @@ environments:
     apps:
       - name: my-app-1
         services:
-          - name: app-1-service-http
-            source_url: https://github.com/myproject/myservice.git
-          - name: app-1-service-metrics
+          - service-http
       - name: my-app-2
         services:
-          - name: app-2-service
+          - service-redis
   - name: staging
     apps:
       - name: my-app-1
@@ -21,9 +23,11 @@ environments:
           target_revision: master
           path: config
   - name: production
+    services:
+      - name: service-http
+      - name: service-metrics
     apps:
       - name: my-app-1
         services:
-          - name: app-1-service-http
-          - name: app-1-service-metrics
-
+          - service-http
+          - service-metrics
