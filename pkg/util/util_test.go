@@ -1666,6 +1666,12 @@ func TestCopyFile(t *testing.T) {
 		})
 	}
 
+	// Remove temp file
+	err = os.Remove(tempFile.Name())
+	if err != nil {
+		t.Errorf("Failed to remove temp file: %s, error: %v", tempFile.Name(), err)
+	}
+
 	// Remove temp dir
 	err = os.RemoveAll(tempDir)
 	if err != nil {
