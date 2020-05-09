@@ -12,6 +12,12 @@ type ComponentType struct {
 	Spec              ComponentSpec `json:"spec,omitempty"`
 }
 
+// Registry is the main struct of devfile registry
+type Registry struct {
+	Name string
+	URL  string
+}
+
 // DevfileComponentType is the main struct for devfile catalog components
 type DevfileComponentType struct {
 	Name        string
@@ -19,7 +25,7 @@ type DevfileComponentType struct {
 	Description string
 	Link        string
 	Support     bool
-	Registry    string
+	Registry    Registry
 }
 
 // DevfileIndexEntry is the main struct of index.json from devfile registry
@@ -66,7 +72,7 @@ type ComponentTypeList struct {
 
 // DevfileComponentTypeList lists all the DevfileComponentType's
 type DevfileComponentTypeList struct {
-	DevfileRegistries []string
+	DevfileRegistries map[string]string
 	Items             []DevfileComponentType
 }
 
