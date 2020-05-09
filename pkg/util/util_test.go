@@ -1619,13 +1619,13 @@ func TestCopyFile(t *testing.T) {
 	// Create temp dir
 	tempDir, err := ioutil.TempDir("", "")
 	if err != nil {
-		t.Errorf("Failed to create temp dir: %s", tempDir)
+		t.Errorf("Failed to create temp dir: %s, error: %v", tempDir, err)
 	}
 
 	// Create temp file under temp dir as source file
 	tempFile, err := ioutil.TempFile(tempDir, "")
 	if err != nil {
-		t.Errorf("Failed to create temp file: %s", tempFile.Name())
+		t.Errorf("Failed to create temp file: %s, error: %v", tempFile.Name(), err)
 	}
 
 	srcPath := tempFile.Name()
@@ -1669,6 +1669,6 @@ func TestCopyFile(t *testing.T) {
 	// Remove temp dir
 	err = os.RemoveAll(tempDir)
 	if err != nil {
-		t.Errorf("Failed to remove temp dir %s", tempDir)
+		t.Errorf("Failed to remove temp dir: %s, error: %v", tempDir, err)
 	}
 }
