@@ -74,7 +74,7 @@ func (b *envBuilder) Environment(env *config.Environment) error {
 	envPath := filepath.Join(config.PathForEnvironment(env), "env")
 	basePath := filepath.Join(envPath, "base")
 	envFiles := filesForEnvironment(basePath, env)
-	kustomizedFilenames, err := listFiles(b.fs, basePath)
+	kustomizedFilenames, err := ListFiles(b.fs, basePath)
 	if err != nil {
 		return fmt.Errorf("failed to list initial files for %s: %s", basePath, err)
 	}
@@ -85,7 +85,7 @@ func (b *envBuilder) Environment(env *config.Environment) error {
 	for k, _ := range envFiles {
 		kustomizedFilenames[filepath.Base(k)] = true
 	}
-	envFiles[filepath.Join(basePath, kustomization)] = &res.Kustomization{Resources: extractFilenames(kustomizedFilenames)}
+	envFiles[filepath.Join(basePath, kustomization)] = &res.Kustomization{Resources: ExtractFilenames(kustomizedFilenames)}
 	overlaysPath := filepath.Join(envPath, "overlays")
 	relPath, err := filepath.Rel(overlaysPath, basePath)
 	if err != nil {
@@ -151,7 +151,7 @@ func filesForService(svcPath string, app *config.Service) (res.Resources, error)
 	return envFiles, nil
 }
 
-func extractFilenames(f map[string]bool) []string {
+func ExtractFilenames(f map[string]bool) []string {
 	names := []string{}
 	for k, _ := range f {
 		names = append(names, k)
@@ -160,7 +160,7 @@ func extractFilenames(f map[string]bool) []string {
 	return names
 }
 
-func listFiles(fs afero.Fs, base string) (map[string]bool, error) {
+func ListFiles(fs afero.Fs, base string) (map[string]bool, error) {
 	files := map[string]bool{}
 	err := afero.Walk(fs, base, func(path string, info os.FileInfo, err error) error {
 		if err != nil {

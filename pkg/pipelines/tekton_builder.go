@@ -34,9 +34,16 @@ func buildEventListenerResources(gitOpsRepo string, m *config.Manifest) (res.Res
 	if gitOpsRepo == "" {
 		return res.Resources{}, nil
 	}
+	cicd, err := m.GetCICDEnvironment()
+	if err != nil {
+		return nil, err
+	}
+	if cicd == nil {
+		return nil, nil
+	}
 	files := make(res.Resources)
 	tb := &tektonBuilder{files: files, gitOpsRepo: gitOpsRepo}
-	err := m.Walk(tb)
+	err = m.Walk(tb)
 	return tb.files, err
 }
 
