@@ -1627,6 +1627,7 @@ func TestCopyFile(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to create temp file: %s, error: %v", tempFile.Name(), err)
 	}
+	defer tempFile.Close()
 
 	srcPath := tempFile.Name()
 	fakePath := filepath.Join(tempDir, "fakeFile")
@@ -1664,17 +1665,5 @@ func TestCopyFile(t *testing.T) {
 				t.Errorf("Got error: %t, want error: %t", gotErr, tt.wantErr)
 			}
 		})
-	}
-
-	// Remove temp file
-	err = os.Remove(tempFile.Name())
-	if err != nil {
-		t.Errorf("Failed to remove temp file: %s, error: %v", tempFile.Name(), err)
-	}
-
-	// Remove temp dir
-	err = os.RemoveAll(tempDir)
-	if err != nil {
-		t.Errorf("Failed to remove temp dir: %s, error: %v", tempDir, err)
 	}
 }
