@@ -64,7 +64,6 @@ func (vv *validateVisitor) Application(env *Environment, app *Application) error
 	if err := checkDuplicate(app.Name, appPath, vv.appNames); err != nil {
 		vv.errs = append(vv.errs, err)
 	}
-
 	if err := validateName(app.Name, appPath); err != nil {
 		vv.errs = append(vv.errs, err)
 	}
@@ -76,6 +75,9 @@ func (vv *validateVisitor) Application(env *Environment, app *Application) error
 		vv.errs = append(vv.errs, apis.ErrMultipleOneOf(yamlJoin(appPath, "services"), yamlJoin(appPath, "config_repo")))
 	}
 
+	if app.ConfigRepo != nil {
+		vv.errs = append(vv.errs, validateConfigRepo(app.ConfigRepo, yamlJoin(appPath, "config_repo"))...)
+	}
 	if len(app.ServiceRefs) > 0 {
 		for _, r := range app.ServiceRefs {
 			_, ok := vv.serviceNames[r]
@@ -85,9 +87,6 @@ func (vv *validateVisitor) Application(env *Environment, app *Application) error
 		}
 	}
 
-	if app.ConfigRepo != nil {
-		vv.errs = append(vv.errs, validateConfigRepo(app.ConfigRepo, yamlJoin(appPath, "config_repo"))...)
-	}
 	return nil
 }
 

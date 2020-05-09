@@ -68,6 +68,10 @@ func Bootstrap(o *BootstrapOptions, appFs afero.Fs) error {
 	return err
 }
 
+func repoToServiceName(repoName string) string {
+	return repoName + "-svc"
+}
+
 func bootstrapResources(o *BootstrapOptions, appFs afero.Fs) (res.Resources, error) {
 	repoName, err := repoFromURL(o.AppRepoURL)
 	if err != nil {
@@ -79,7 +83,7 @@ func bootstrapResources(o *BootstrapOptions, appFs afero.Fs) (res.Resources, err
 		return nil, err
 	}
 	ns := namespaces.NamesWithPrefix(o.Prefix)
-	secretName := secrets.MakeServiceWebhookSecretName(repoName)
+	secretName := secrets.MakeServiceWebhookSecretName(repoToServiceName(repoName))
 	envs, err := bootstrapEnvironments(o.Prefix, o.AppRepoURL, secretName, ns)
 	if err != nil {
 		return nil, err
@@ -163,7 +167,7 @@ func serviceFromRepo(repoURL, secretName, secretNS string) (*config.Service, err
 		return nil, err
 	}
 	return &config.Service{
-		Name:      repo + "-svc",
+		Name:      repoToServiceName(repo),
 		SourceURL: repoURL,
 		Webhook: &config.Webhook{
 			Secret: &config.Secret{

@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"path/filepath"
 	"sort"
 )
@@ -33,6 +34,39 @@ func (m *Manifest) GetEnvironment(n string) *Environment {
 			return env
 		}
 	}
+	return nil
+}
+
+func (m *Manifest) GetApplication(environment, application string) (*Application, error) {
+	for _, env := range m.Environments {
+		if env.Name == environment {
+			for _, app := range env.Apps {
+				if app.Name == application {
+					return app, nil
+				}
+			}
+		}
+	}
+	return nil, fmt.Errorf("failed to find application: %s", application)
+}
+
+func (m *Manifest) AddService(envName, appName string, svc *Service) error {
+	env := m.GetEnvironment(envName)
+	if env == nil {
+		return fmt.Errorf("environment %s does not exist", envName)
+	}
+	for _, service := range env.Services {
+		if service.Name == svc.Name {
+			return fmt.Errorf("service %s already exists at %s", svc.Name, env.Name)
+		}
+	}
+	app, err := m.GetApplication(envName, appName)
+	if app == nil && err != nil {
+		app = &Application{Name: appName}
+		env.Apps = append(env.Apps, app)
+	}
+	env.Services = append(env.Services, svc)
+	app.ServiceRefs = append(app.ServiceRefs, svc.Name)
 	return nil
 }
 
