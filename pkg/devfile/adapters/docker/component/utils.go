@@ -24,8 +24,10 @@ import (
 	"github.com/openshift/odo/pkg/log"
 )
 
-// LocalhostIP is the IP address for localhost
-var LocalhostIP = "127.0.0.1"
+const (
+	localhostIP             = "127.0.0.1"
+	projectSourceVolumeName = "odo-project-source"
+)
 
 func (a Adapter) createComponent() (err error) {
 	componentName := a.ComponentName
@@ -41,7 +43,7 @@ func (a Adapter) createComponent() (err error) {
 	}
 	if len(projectVols) == 0 {
 		// A source volume needs to be created
-		projectVolumeName, err = storage.GenerateVolNameFromDevfileVol("odo-project-source", a.ComponentName)
+		projectVolumeName, err = storage.GenerateVolName(projectSourceVolumeName, a.ComponentName)
 		if err != nil {
 			return errors.Wrapf(err, "Unable to generate project source volume name for component %s", componentName)
 		}
@@ -318,12 +320,12 @@ func getPortMap(context string, endpoints []versionsCommon.DockerimageEndpoint, 
 			}
 			portmap[port] = []nat.PortBinding{
 				nat.PortBinding{
-					HostIP:   LocalhostIP,
+					HostIP:   localhostIP,
 					HostPort: strconv.Itoa(url.ExposedPort),
 				},
 			}
 			if show {
-				log.Successf("URL %v:%v created", LocalhostIP, url.ExposedPort)
+				log.Successf("URL %v:%v created", localhostIP, url.ExposedPort)
 			}
 		} else if url.ExposedPort > 0 && len(endpoints) > 0 && !common.IsPortPresent(endpoints, url.Port) {
 			return portmap, fmt.Errorf("Error creating url: odo url config's port is not present in the devfile. Please re-create odo url with the new devfile port")
