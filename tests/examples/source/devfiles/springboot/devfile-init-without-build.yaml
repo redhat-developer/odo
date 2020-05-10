@@ -1,0 +1,55 @@
+---
+apiVersion: 1.0.0
+metadata:
+  generateName: java-spring-boot
+projects:
+  -
+    name: springbootproject
+    source:
+      type: git
+      location: "https://github.com/maysunfaisal/springboot.git"
+components:
+  -
+    type: chePlugin
+    id: redhat/java/latest
+    memoryLimit: 1512Mi
+  -
+    type: dockerimage
+    image: maysunfaisal/springbootbuild
+    alias: tools
+    memoryLimit: 768Mi
+    command: ['tail']
+    args: [ '-f', '/dev/null']
+    mountSources: true
+    volumes:
+      - name: springbootpvc
+        containerPath: /data
+  -
+    type: dockerimage
+    image: maysunfaisal/springbootruntime
+    alias: runtime
+    memoryLimit: 768Mi
+    endpoints:
+      - name: '8080/tcp'
+        port: 8080
+    mountSources: false
+    volumes:
+      - name: springbootpvc
+        containerPath: /data
+commands:
+  - 
+    name: devInit
+    actions:
+      - 
+        type: exec
+        component: tools
+        command: "echo hello; touch /data/afile.txt"
+        workdir: /projects/springbootproject
+  -
+    name: devRun
+    actions:
+      -
+        type: exec
+        component: runtime
+        command: "/artifacts/bin/start-server.sh"
+        workdir: /

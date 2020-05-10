@@ -7,9 +7,9 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
@@ -33,7 +33,7 @@ import (
 	"github.com/openshift/odo/pkg/util"
 
 	corev1 "k8s.io/api/core/v1"
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
 // CreateOptions encapsulates create options
@@ -64,7 +64,7 @@ type DevfileMetadata struct {
 	componentNamespace string
 	devfileSupport     bool
 	devfileLink        string
-	devfileRegistry    string
+	devfileRegistry    catalog.Registry
 	downloadSource     string
 }
 
@@ -335,9 +335,12 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			co.CommonPushOptions.componentContext = co.componentContext
 		}
 
-		catalogDevfileList, err := catalog.ListDevfileComponents()
+		catalogDevfileList, err := catalog.ListDevfileComponents(co.devfileMetadata.devfileRegistry.Name)
 		if err != nil {
 			return err
+		}
+		if catalogDevfileList.DevfileRegistries == nil {
+			log.Warning("Please run `odo registry add <registry name> <registry URL>` to add a registry then create a devfile components\n")
 		}
 
 		var componentType string
@@ -443,6 +446,8 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			}
 		}
 
+		registrySpinner := log.Spinnerf("Creating a devfile component from registry: %s", co.devfileMetadata.devfileRegistry.Name)
+
 		if co.devfileMetadata.devfileSupport {
 			err = co.InitEnvInfoFromContext()
 			if err != nil {
@@ -450,11 +455,13 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			}
 
 			spinner.End(true)
+			registrySpinner.End(true)
 			return nil
 		}
 
 		spinner.End(false)
-		log.Italic("\nPlease run 'odo catalog list components' for a list of supported devfile component types")
+		registrySpinner.End(false)
+		log.Italic("\nPlease run `odo catalog list components` for a list of supported devfile component types")
 	}
 
 	if len(args) == 0 || !cmd.HasFlags() {
@@ -508,7 +515,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 			// We ask for the source of the component context
 			co.componentContext = ui.EnterInputTypePath("context", currentDirectory, ".")
-			glog.V(4).Infof("Context: %s", co.componentContext)
+			klog.V(4).Infof("Context: %s", co.componentContext)
 
 			// If it's a binary, we have to ask where the actual binary in relation
 			// to the context
@@ -793,7 +800,7 @@ func (co *CreateOptions) Run() (err error) {
 		// Download devfile.yaml file and create env.yaml file
 		if co.devfileMetadata.devfileSupport {
 			if !util.CheckPathExists(DevfilePath) {
-				err := util.DownloadFile(co.devfileMetadata.devfileRegistry+co.devfileMetadata.devfileLink, DevfilePath)
+				err := util.DownloadFile(co.devfileMetadata.devfileRegistry.URL+co.devfileMetadata.devfileLink, DevfilePath)
 				if err != nil {
 					return errors.Wrap(err, "Faile to download devfile.yaml for devfile component")
 				}
@@ -921,6 +928,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 	if experimental.IsExperimentalModeEnabled() {
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.downloadSource, "downloadSource", "", "Download sample project from devfile.")
 		componentCreateCmd.Flags().Lookup("downloadSource").NoOptDefVal = defaultProjectName //Default value to pass to the flag if one is not specified.
+		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfileRegistry.Name, "registry", "", "Create devfile component from specific registry")
 	}
 
 	componentCreateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)

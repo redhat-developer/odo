@@ -21,13 +21,16 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	k8sjson "k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"k8s.io/apimachinery/pkg/util/diff"
 	"k8s.io/apimachinery/pkg/util/wait"
-	watch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/apiserver/pkg/storage/names"
+	"k8s.io/client-go/dynamic"
 	k8sscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client"
@@ -105,6 +108,13 @@ func newCRClient(t *testing.T) versioned.Interface {
 	return crclient
 }
 
+func newDynamicClient(t *testing.T, config *rest.Config) dynamic.Interface {
+	// TODO: impersonate ALM serviceaccount
+	dynamicClient, err := dynamic.NewForConfig(config)
+	require.NoError(t, err)
+	return dynamicClient
+}
+
 func newPMClient(t *testing.T) pmversioned.Interface {
 	if kubeConfigPath == nil {
 		t.Log("using in-cluster config")
@@ -121,6 +131,29 @@ func awaitPods(t *testing.T, c operatorclient.ClientInterface, namespace, select
 	var err error
 
 	err = wait.Poll(pollInterval, pollDuration, func() (bool, error) {
+		fetchedPodList, err = c.KubernetesInterface().CoreV1().Pods(namespace).List(metav1.ListOptions{
+			LabelSelector: selector,
+		})
+
+		if err != nil {
+			return false, err
+		}
+
+		t.Logf("Waiting for pods matching selector %s to match given conditions", selector)
+
+		return checkPods(fetchedPodList), nil
+	})
+
+	require.NoError(t, err)
+	return fetchedPodList, err
+}
+
+func awaitPodsWithInterval(t *testing.T, c operatorclient.ClientInterface, namespace, selector string, interval time.Duration,
+	duration time.Duration, checkPods podsCheckFunc) (*corev1.PodList, error) {
+	var fetchedPodList *corev1.PodList
+	var err error
+
+	err = wait.Poll(interval, duration, func() (bool, error) {
 		fetchedPodList, err = c.KubernetesInterface().CoreV1().Pods(namespace).List(metav1.ListOptions{
 			LabelSelector: selector,
 		})
@@ -281,6 +314,19 @@ func waitForEmptyList(checkList func() (int, error)) error {
 	return err
 }
 
+func waitForGVR(dynamicClient dynamic.Interface, gvr schema.GroupVersionResource, name, namespace string) error {
+	return wait.Poll(pollInterval, pollDuration, func() (bool, error) {
+		_, err := dynamicClient.Resource(gvr).Namespace(namespace).Get(name, metav1.GetOptions{})
+		if err != nil {
+			if errors.IsNotFound(err) {
+				return false, nil
+			}
+			return false, err
+		}
+		return true, nil
+	})
+}
+
 type catalogSourceCheckFunc func(*v1alpha1.CatalogSource) bool
 
 // This check is disabled for most test runs, but can be enabled for verifying pod health if the e2e tests are running
@@ -311,11 +357,13 @@ func registryPodHealthy(address string) bool {
 }
 
 func catalogSourceRegistryPodSynced(catalog *v1alpha1.CatalogSource) bool {
-	if !catalog.Status.LastSync.IsZero() && catalog.Status.RegistryServiceStatus != nil {
-		fmt.Printf("catalog %s pod with address %s\n", catalog.GetName(), catalog.Status.RegistryServiceStatus.Address())
-		return registryPodHealthy(catalog.Status.RegistryServiceStatus.Address())
+	registry := catalog.Status.RegistryServiceStatus
+	connState := catalog.Status.GRPCConnectionState
+	if registry != nil && connState != nil && !connState.LastConnectTime.IsZero() {
+		fmt.Printf("catalog %s pod with address %s\n", catalog.GetName(), registry.Address())
+		return registryPodHealthy(registry.Address())
 	}
-	fmt.Println("waiting for catalog pod to be available")
+	fmt.Printf("waiting for catalog pod %v to be available (for sync)\n", catalog.GetName())
 	return false
 }
 
@@ -531,28 +579,49 @@ func serializeObject(obj interface{}) string {
 	return string(bytes)
 }
 
-type conditionChecker interface {
-	conditionMet(t *testing.T, event watch.Event) (met bool)
+func createCR(c operatorclient.ClientInterface, item *unstructured.Unstructured, apiGroup, version, namespace, resourceKind, resourceName string) (cleanupFunc, error) {
+	err := c.CreateCustomResource(item)
+	if err != nil {
+		return nil, err
+	}
+	return buildCRCleanupFunc(c, apiGroup, version, namespace, resourceKind, resourceName), nil
 }
 
-type conditionMetFunc func(t *testing.T, event watch.Event) (met bool)
+func buildCRCleanupFunc(c operatorclient.ClientInterface, apiGroup, version, namespace, resourceKind, resourceName string) cleanupFunc {
+	return func() {
+		err := c.DeleteCustomResource(apiGroup, version, namespace, resourceKind, resourceName)
+		if err != nil {
+			fmt.Println(err)
+		}
 
-func (c conditionMetFunc) conditionMet(t *testing.T, event watch.Event) bool {
-	return c(t, event)
+		waitForDelete(func() error {
+			_, err := c.GetCustomResource(apiGroup, version, namespace, resourceKind, resourceName)
+			return err
+		})
+	}
 }
 
-func awaitCondition(ctx context.Context, t *testing.T, w watch.Interface, checker conditionChecker) {
-	met := false
-	for !met {
-		select {
-		case <-ctx.Done():
-			require.NoError(t, ctx.Err())
-			return
-		case event, ok := <-w.ResultChan():
-			if !ok {
-				return
-			}
-			met = checker.conditionMet(t, event)
+// Local determines whether test is running locally or in a container on openshift-CI.
+// Queries for a clusterversion object specific to OpenShift.
+func Local(client operatorclient.ClientInterface) (bool, error) {
+	const ClusterVersionGroup = "config.openshift.io"
+	const ClusterVersionVersion = "v1"
+	const ClusterVersionKind = "ClusterVersion"
+	gv := metav1.GroupVersion{Group: ClusterVersionGroup, Version: ClusterVersionVersion}.String()
+
+	groups, err := client.KubernetesInterface().Discovery().ServerResourcesForGroupVersion(gv)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			return true, nil
+		}
+		return true, fmt.Errorf("checking if cluster is local: checking server groups: %s", err)
+	}
+
+	for _, group := range groups.APIResources {
+		if group.Kind == ClusterVersionKind {
+			return false, nil
 		}
 	}
+
+	return true, nil
 }

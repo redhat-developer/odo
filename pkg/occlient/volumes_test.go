@@ -270,7 +270,7 @@ func Test_updateStorageOwnerReference(t *testing.T) {
 			args: args{
 				pvc: testingutil.FakePVC("pvc-1", "1Gi", map[string]string{}),
 				ownerReference: []v1.OwnerReference{
-					generateOwnerReference(fakeDC),
+					GenerateOwnerReference(fakeDC),
 				},
 			},
 			wantErr: false,
@@ -304,6 +304,110 @@ func Test_updateStorageOwnerReference(t *testing.T) {
 			if err := updateStorageOwnerReference(fakeClient, tt.args.pvc, tt.args.ownerReference...); (err != nil) != tt.wantErr {
 				t.Errorf("updateStorageOwnerReference() error = %v, wantErr %v", err, tt.wantErr)
 			}
+		})
+	}
+}
+
+func TestRemoveVolumeFromDC(t *testing.T) {
+	type args struct {
+		volName string
+		dc      appsv1.DeploymentConfig
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Case 1 - Test removing volumes",
+			args: args{
+				volName: "foo-s2idata",
+				dc:      *fakeDeploymentConfig("foo", "bar", nil, nil, t),
+			},
+			wantErr: false,
+		},
+		{
+			name: "Case 2 - Error out, test removing non-existant volume",
+			args: args{
+				volName: "doesnotexist",
+				dc:      *fakeDeploymentConfig("foo", "bar", nil, nil, t),
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			err := removeVolumeFromDC(tt.args.volName, &tt.args.dc)
+
+			if tt.wantErr && err == nil {
+				t.Errorf("Wanted an error, got a pass")
+			}
+
+			if err != nil && !tt.wantErr {
+				t.Errorf("Got error: %s", err)
+			}
+
+			// Check that it was actually removed
+			for _, j := range tt.args.dc.Spec.Template.Spec.Volumes {
+				if j.Name == tt.args.volName {
+					t.Errorf("volume %s still exists even after removeVolumeFromDC function, %+v", tt.args.volName, tt.args.dc.Spec.Template.Spec.Containers)
+				}
+			}
+
+		})
+	}
+}
+
+func TestRemoveVolumeMountsFromDC(t *testing.T) {
+	type args struct {
+		volName string
+		dc      appsv1.DeploymentConfig
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "Case 1 - Test removing volume mount",
+			args: args{
+				volName: "foo-s2idata",
+				dc:      *fakeDeploymentConfig("foo", "bar", nil, nil, t),
+			},
+			wantErr: false,
+		},
+		{
+			name: "Case 2 - Error out, test removing non-existant volume mount",
+			args: args{
+				volName: "doesnotexist",
+				dc:      *fakeDeploymentConfig("foo", "bar", nil, nil, t),
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			err := removeVolumeMountsFromDC(tt.args.volName, &tt.args.dc)
+
+			if tt.wantErr && err == nil {
+				t.Errorf("Wanted an error, got a pass")
+			}
+
+			if err != nil && !tt.wantErr {
+				t.Errorf("Got error: %s", err)
+			}
+
+			// Check that it was actually removed
+			for _, container := range tt.args.dc.Spec.Template.Spec.Containers {
+				for _, volMount := range container.VolumeMounts {
+					if volMount.Name == tt.args.volName {
+						t.Errorf("volume mount %s still exists even after removeVolumeMountsFromDC function, %+v", tt.args.volName, tt.args.dc.Spec.Template.Spec.Containers)
+					}
+				}
+			}
+
 		})
 	}
 }

@@ -3,10 +3,10 @@ package parser
 import (
 	"fmt"
 
-	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/devfile/parser/data"
 	"github.com/pkg/errors"
 	"github.com/xeipuuv/gojsonschema"
+	"k8s.io/klog"
 )
 
 // SetDevfileJSONSchema returns the JSON schema for the given devfile apiVersion
@@ -44,6 +44,6 @@ func (d *DevfileCtx) ValidateDevfileSchema() error {
 	}
 
 	// Sucessful
-	glog.V(4).Info("validated devfile schema")
+	klog.V(4).Info("validated devfile schema")
 	return nil
 }

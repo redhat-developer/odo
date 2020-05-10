@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
-	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/envinfo"
@@ -19,6 +18,7 @@ import (
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 )
 
 // CommonPushOptions has data needed for all pushes
@@ -159,7 +159,7 @@ func (cpo *CommonPushOptions) ResolveProject(prjName string) (err error) {
 func (cpo *CommonPushOptions) SetSourceInfo() (err error) {
 	cpo.sourceType = cpo.LocalConfigInfo.GetSourceType()
 
-	glog.V(4).Infof("SourceLocation: %s", cpo.LocalConfigInfo.GetSourceLocation())
+	klog.V(4).Infof("SourceLocation: %s", cpo.LocalConfigInfo.GetSourceLocation())
 
 	// Get SourceLocation here...
 	cpo.sourcePath, err = cpo.LocalConfigInfo.GetOSSourcePath()
@@ -167,7 +167,7 @@ func (cpo *CommonPushOptions) SetSourceInfo() (err error) {
 		return errors.Wrap(err, "unable to retrieve absolute path to source location")
 	}
 
-	glog.V(4).Infof("Source Path: %s", cpo.sourcePath)
+	klog.V(4).Infof("Source Path: %s", cpo.sourcePath)
 	return
 }
 
@@ -232,7 +232,7 @@ func (cpo *CommonPushOptions) Push() (err error) {
 			if err != nil {
 				return errors.Wrap(err, "unable to remove relative path from list of changed/deleted files")
 			}
-			glog.V(4).Infof("List of files to be deleted: +%v", deletedFiles)
+			klog.V(4).Infof("List of files to be deleted: +%v", deletedFiles)
 			changedFiles = filesChangedFiltered
 
 			if len(filesChangedFiltered) == 0 && len(filesDeletedFiltered) == 0 {
@@ -255,7 +255,7 @@ func (cpo *CommonPushOptions) Push() (err error) {
 
 	switch cpo.sourceType {
 	case config.LOCAL:
-		glog.V(4).Infof("Copying directory %s to pod", cpo.sourcePath)
+		klog.V(4).Infof("Copying directory %s to pod", cpo.sourcePath)
 		err = component.PushLocal(
 			cpo.Context.Client,
 			cmpName,
@@ -278,7 +278,7 @@ func (cpo *CommonPushOptions) Push() (err error) {
 		// We will pass in the directory, NOT filepath since this is a binary..
 		binaryDirectory := filepath.Dir(cpo.sourcePath)
 
-		glog.V(4).Infof("Copying binary file %s to pod", cpo.sourcePath)
+		klog.V(4).Infof("Copying binary file %s to pod", cpo.sourcePath)
 		err = component.PushLocal(
 			cpo.Context.Client,
 			cmpName,

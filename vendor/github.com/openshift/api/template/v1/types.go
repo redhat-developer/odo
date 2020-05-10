@@ -13,8 +13,7 @@ import (
 
 // Template contains the inputs needed to produce a Config.
 type Template struct {
-	metav1.TypeMeta `json:",inline"`
-	// Standard object's metadata.
+	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 
 	// message is an optional instructional message that will
@@ -31,6 +30,7 @@ type Template struct {
 	// is, or contains, a ${PARAMETER_REFERENCE}, the resolved
 	// value after parameter substitution will be respected and the object
 	// will be created in that namespace.
+	// +kubebuilder:pruning:PreserveUnknownFields
 	Objects []runtime.RawExtension `json:"objects" protobuf:"bytes,3,rep,name=objects"`
 
 	// parameters is an optional array of Parameters used during the
@@ -47,7 +47,6 @@ type Template struct {
 // TemplateList is a list of Template objects.
 type TemplateList struct {
 	metav1.TypeMeta `json:",inline"`
-	// Standard object's metadata.
 	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 
 	// Items is a list of templates
@@ -105,14 +104,14 @@ type Parameter struct {
 // TemplateInstance requests and records the instantiation of a Template.
 // TemplateInstance is part of an experimental API.
 type TemplateInstance struct {
-	metav1.TypeMeta `json:",inline"`
-	// Standard object metadata.
+	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 
 	// spec describes the desired state of this TemplateInstance.
 	Spec TemplateInstanceSpec `json:"spec" protobuf:"bytes,2,opt,name=spec"`
 
 	// status describes the current state of this TemplateInstance.
+	// +optional
 	Status TemplateInstanceStatus `json:"status" protobuf:"bytes,3,opt,name=status"`
 }
 
@@ -127,6 +126,7 @@ type TemplateInstanceSpec struct {
 
 	// requester holds the identity of the agent requesting the template
 	// instantiation.
+	// +optional
 	Requester *TemplateInstanceRequester `json:"requester" protobuf:"bytes,3,opt,name=requester"`
 }
 
@@ -211,7 +211,6 @@ type TemplateInstanceObject struct {
 // TemplateInstanceList is a list of TemplateInstance objects.
 type TemplateInstanceList struct {
 	metav1.TypeMeta `json:",inline"`
-	// Standard object metadata.
 	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 
 	// items is a list of Templateinstances
@@ -225,8 +224,7 @@ type TemplateInstanceList struct {
 // BrokerTemplateInstance holds the service broker-related state associated with
 // a TemplateInstance.  BrokerTemplateInstance is part of an experimental API.
 type BrokerTemplateInstance struct {
-	metav1.TypeMeta `json:",inline"`
-	// Standard object metadata.
+	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 
 	// spec describes the state of this BrokerTemplateInstance.
@@ -253,7 +251,6 @@ type BrokerTemplateInstanceSpec struct {
 // BrokerTemplateInstanceList is a list of BrokerTemplateInstance objects.
 type BrokerTemplateInstanceList struct {
 	metav1.TypeMeta `json:",inline"`
-	// Standard object metadata.
 	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 
 	// items is a list of BrokerTemplateInstances

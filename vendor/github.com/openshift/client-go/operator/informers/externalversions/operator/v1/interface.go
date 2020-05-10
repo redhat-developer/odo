@@ -10,6 +10,8 @@ import (
 type Interface interface {
 	// Authentications returns a AuthenticationInformer.
 	Authentications() AuthenticationInformer
+	// CSISnapshotControllers returns a CSISnapshotControllerInformer.
+	CSISnapshotControllers() CSISnapshotControllerInformer
 	// Consoles returns a ConsoleInformer.
 	Consoles() ConsoleInformer
 	// DNSes returns a DNSInformer.
@@ -24,6 +26,8 @@ type Interface interface {
 	KubeControllerManagers() KubeControllerManagerInformer
 	// KubeSchedulers returns a KubeSchedulerInformer.
 	KubeSchedulers() KubeSchedulerInformer
+	// KubeStorageVersionMigrators returns a KubeStorageVersionMigratorInformer.
+	KubeStorageVersionMigrators() KubeStorageVersionMigratorInformer
 	// Networks returns a NetworkInformer.
 	Networks() NetworkInformer
 	// OpenShiftAPIServers returns a OpenShiftAPIServerInformer.
@@ -52,6 +56,11 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // Authentications returns a AuthenticationInformer.
 func (v *version) Authentications() AuthenticationInformer {
 	return &authenticationInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
+// CSISnapshotControllers returns a CSISnapshotControllerInformer.
+func (v *version) CSISnapshotControllers() CSISnapshotControllerInformer {
+	return &cSISnapshotControllerInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // Consoles returns a ConsoleInformer.
@@ -87,6 +96,11 @@ func (v *version) KubeControllerManagers() KubeControllerManagerInformer {
 // KubeSchedulers returns a KubeSchedulerInformer.
 func (v *version) KubeSchedulers() KubeSchedulerInformer {
 	return &kubeSchedulerInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
+// KubeStorageVersionMigrators returns a KubeStorageVersionMigratorInformer.
+func (v *version) KubeStorageVersionMigrators() KubeStorageVersionMigratorInformer {
+	return &kubeStorageVersionMigratorInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // Networks returns a NetworkInformer.

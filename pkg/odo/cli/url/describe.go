@@ -16,7 +16,7 @@ import (
 	"github.com/openshift/odo/pkg/url"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
 // DescribeRecommendedCommandName is the recommended describe command name
@@ -73,7 +73,7 @@ func (o *URLDescribeOptions) Run() (err error) {
 			tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 			fmt.Fprintln(tabWriterURL, "NAME", "\t", "URL", "\t", "PORT")
 
-			fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, u), "", u.Spec.Rules[0].Host), "\t", u.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Backend.ServicePort.IntVal)
+			fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, u, experimental.IsExperimentalModeEnabled()), "", u.Spec.Rules[0].Host, experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Backend.ServicePort.IntVal)
 			tabWriterURL.Flush()
 		}
 	} else {
@@ -91,7 +91,7 @@ func (o *URLDescribeOptions) Run() (err error) {
 
 			// are there changes between local and cluster states?
 			outOfSync := false
-			fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, ""), "\t", u.Spec.Port)
+			fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Port)
 			if u.Status.State != url.StateTypePushed {
 				outOfSync = true
 			}

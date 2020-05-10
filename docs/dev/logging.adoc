@@ -1,6 +1,6 @@
 = Logging in `odo`
 
-https://godoc.org/github.com/golang/glog[Glog] is used for V style logging in `odo`.
+https://godoc.org/k8s.io/klog[Glog] is used for V style logging in `odo`.
 
 == Working
 
@@ -15,13 +15,13 @@ All ERROR severity level log messages will always be logged regardless of the va
 Every source file that requires logging will need to import glog:
 
 ----
-$ import "github.com/golang/glog"
+$ import "k8s.io/klog"
 ----
 
 Any default debug level severity messages need to be logged using:
 
 ----
-$ glog.V(4).Infof(msg, args...)`
+$ klog.V(4).Infof(msg, args...)`
 ----
 
 For more information on level logging conventions please refer
@@ -30,13 +30,13 @@ link:https://kubernetes.io/docs/reference/kubectl/cheatsheet/#kubectl-output-ver
 Error messages can be logged as under:
 
 ----
-$ glog.Errorf(msg, args...)
+$ klog.Errorf(msg, args...)
 ----
 
 Warning messages can be logged as under:
 
 ----
-$ glog.Warningf(msg, args...)
+$ klog.Warningf(msg, args...)
 ----
 
 In addition to the above logging, the following hidden flags are available for debugging:

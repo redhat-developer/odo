@@ -13,23 +13,26 @@ API_GROUP_VERSIONS="\
 apps/v1 \
 authorization/v1 \
 build/v1 \
+console/v1 \
 config/v1 \
 image/v1 \
+imageregistry/v1 \
 kubecontrolplane/v1 \
 legacyconfig/v1 \
 network/v1 \
 oauth/v1 \
 openshiftcontrolplane/v1 \
 operator/v1 \
+operatoringress/v1 \
 operator/v1alpha1 \
 project/v1 \
 quota/v1 \
 route/v1 \
+samples/v1 \
 security/v1 \
 servicecertsigner/v1alpha1 \
 template/v1 \
 user/v1 \
-webconsole/v1 \
 "
 API_PACKAGES="\
 github.com/openshift/api/apps/v1,\
@@ -41,6 +44,7 @@ github.com/openshift/api/oauth/v1,\
 github.com/openshift/api/project/v1,\
 github.com/openshift/api/quota/v1,\
 github.com/openshift/api/route/v1,\
+github.com/openshift/api/samples/v1,\
 github.com/openshift/api/security/v1,\
 github.com/openshift/api/template/v1,\
 github.com/openshift/api/user/v1\

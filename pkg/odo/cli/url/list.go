@@ -17,7 +17,7 @@ import (
 	"github.com/openshift/odo/pkg/url"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
 const listRecommendedCommandName = "list"
@@ -88,7 +88,7 @@ func (o *URLListOptions) Run() (err error) {
 				var present bool
 				for _, u := range urls.Items {
 					if i.Name == u.Name {
-						fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, u), "", u.Spec.Rules[0].Host), "\t", u.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Backend.ServicePort.IntVal, "\t", u.Spec.TLS != nil)
+						fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, u, experimental.IsExperimentalModeEnabled()), "", u.Spec.Rules[0].Host, experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Backend.ServicePort.IntVal, "\t", u.Spec.TLS != nil)
 						present = true
 					}
 				}
@@ -121,7 +121,7 @@ func (o *URLListOptions) Run() (err error) {
 			// are there changes between local and cluster states?
 			outOfSync := false
 			for _, u := range urls.Items {
-				fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, ""), "\t", u.Spec.Port, "\t", u.Spec.Secure)
+				fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Port, "\t", u.Spec.Secure)
 				if u.Status.State != url.StateTypePushed {
 					outOfSync = true
 				}

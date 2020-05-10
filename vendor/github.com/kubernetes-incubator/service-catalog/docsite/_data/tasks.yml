@@ -1,5 +1,0 @@
-bigheader: "Tasks"
-abstract: "Step-by-step instructions for performing operations with Kubernetes."
-landing_page: /docs/tasks/index/
-toc:
-- docs/docs/tasks/index.md

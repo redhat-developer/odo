@@ -3,7 +3,8 @@
 %global debug_package %{nil}
 %global package_name openshift-odo
 %global product_name odo
-%global golang_version 1.12
+%global golang_version ${GOLANG_VERSION}
+%global golang_version_nodot ${GOLANG_VERSION_NODOT}
 %global odo_version ${ODO_RPM_VERSION}
 %global odo_release ${ODO_RELEASE}
 %global git_commit  ${GIT_COMMIT}

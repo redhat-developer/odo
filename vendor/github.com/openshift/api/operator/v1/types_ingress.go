@@ -4,10 +4,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	corev1 "k8s.io/api/core/v1"
+
+	configv1 "github.com/openshift/api/config/v1"
 )
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:subresource:scale:specpath=.spec.replicas,statuspath=.status.availableReplicas,selectorpath=.status.selector
 
 // IngressController describes a managed ingress controller for the cluster. The
 // controller can service OpenShift Route and Kubernetes Ingress resources.
@@ -67,7 +72,10 @@ type IngressControllerSpec struct {
 	// If unset, the default is based on
 	// infrastructure.config.openshift.io/cluster .status.platform:
 	//
-	//   AWS:      LoadBalancerService
+	//   AWS:      LoadBalancerService (with External scope)
+	//   Azure:    LoadBalancerService (with External scope)
+	//   GCP:      LoadBalancerService (with External scope)
+	//   IBMCloud: LoadBalancerService (with External scope)
 	//   Libvirt:  HostNetwork
 	//
 	// Any other platform types (including None) default to HostNetwork.
@@ -120,6 +128,33 @@ type IngressControllerSpec struct {
 	//
 	// +optional
 	NodePlacement *NodePlacement `json:"nodePlacement,omitempty"`
+
+	// tlsSecurityProfile specifies settings for TLS connections for ingresscontrollers.
+	//
+	// If unset, the default is based on the apiservers.config.openshift.io/cluster resource.
+	//
+	// Note that when using the Old, Intermediate, and Modern profile types, the effective
+	// profile configuration is subject to change between releases. For example, given
+	// a specification to use the Intermediate profile deployed on release X.Y.Z, an upgrade
+	// to release X.Y.Z+1 may cause a new profile configuration to be applied to the ingress
+	// controller, resulting in a rollout.
+	//
+	// Note that the minimum TLS version for ingress controllers is 1.1, and
+	// the maximum TLS version is 1.2.  An implication of this restriction
+	// is that the Modern TLS profile type cannot be used because it
+	// requires TLS 1.3.
+	//
+	// +optional
+	TLSSecurityProfile *configv1.TLSSecurityProfile `json:"tlsSecurityProfile,omitempty"`
+
+	// routeAdmission defines a policy for handling new route claims (for example,
+	// to allow or deny claims across namespaces).
+	//
+	// If empty, defaults will be applied. See specific routeAdmission fields
+	// for details about their defaults.
+	//
+	// +optional
+	RouteAdmission *RouteAdmissionPolicy `json:"routeAdmission,omitempty"`
 }
 
 // NodePlacement describes node scheduling configuration for an ingress
@@ -150,6 +185,7 @@ type NodePlacement struct {
 }
 
 // EndpointPublishingStrategyType is a way to publish ingress controller endpoints.
+// +kubebuilder:validation:Enum=LoadBalancerService;HostNetwork;Private;NodePortService
 type EndpointPublishingStrategyType string
 
 const (
@@ -163,11 +199,53 @@ const (
 
 	// Private does not publish the ingress controller.
 	PrivateStrategyType EndpointPublishingStrategyType = "Private"
+
+	// NodePortService publishes the ingress controller using a Kubernetes NodePort Service.
+	NodePortServiceStrategyType EndpointPublishingStrategyType = "NodePortService"
 )
+
+// LoadBalancerScope is the scope at which a load balancer is exposed.
+// +kubebuilder:validation:Enum=Internal;External
+type LoadBalancerScope string
+
+var (
+	// InternalLoadBalancer is a load balancer that is exposed only on the
+	// cluster's private network.
+	InternalLoadBalancer LoadBalancerScope = "Internal"
+
+	// ExternalLoadBalancer is a load balancer that is exposed on the
+	// cluster's public network (which is typically on the Internet).
+	ExternalLoadBalancer LoadBalancerScope = "External"
+)
+
+// LoadBalancerStrategy holds parameters for a load balancer.
+type LoadBalancerStrategy struct {
+	// scope indicates the scope at which the load balancer is exposed.
+	// Possible values are "External" and "Internal".
+	//
+	// +kubebuilder:validation:Required
+	// +required
+	Scope LoadBalancerScope `json:"scope"`
+}
+
+// HostNetworkStrategy holds parameters for the HostNetwork endpoint publishing
+// strategy.
+type HostNetworkStrategy struct {
+}
+
+// PrivateStrategy holds parameters for the Private endpoint publishing
+// strategy.
+type PrivateStrategy struct {
+}
+
+// NodePortStrategy holds parameters for the NodePortService endpoint publishing strategy.
+type NodePortStrategy struct {
+}
 
 // EndpointPublishingStrategy is a way to publish the endpoints of an
 // IngressController, and represents the type and any additional configuration
 // for a specific type.
+// +union
 type EndpointPublishingStrategy struct {
 	// type is the publishing strategy to use. Valid values are:
 	//
@@ -178,14 +256,15 @@ type EndpointPublishingStrategy struct {
 	// In this configuration, the ingress controller deployment uses container
 	// networking. A LoadBalancer Service is created to publish the deployment.
 	//
-	// See: https://kubernetes.io/docs/concepts/services-networking/#loadbalancer
+	// See: https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer
 	//
 	// If domain is set, a wildcard DNS record will be managed to point at the
 	// LoadBalancer Service's external name. DNS records are managed only in DNS
 	// zones defined by dns.config.openshift.io/cluster .spec.publicZone and
 	// .spec.privateZone.
 	//
-	// Wildcard DNS management is currently supported only on the AWS platform.
+	// Wildcard DNS management is currently supported only on the AWS, Azure,
+	// and GCP platforms.
 	//
 	// * HostNetwork
 	//
@@ -204,8 +283,72 @@ type EndpointPublishingStrategy struct {
 	// In this configuration, the ingress controller deployment uses container
 	// networking, and is not explicitly published. The user must manually publish
 	// the ingress controller.
+	//
+	// * NodePortService
+	//
+	// Publishes the ingress controller using a Kubernetes NodePort Service.
+	//
+	// In this configuration, the ingress controller deployment uses container
+	// networking. A NodePort Service is created to publish the deployment. The
+	// specific node ports are dynamically allocated by OpenShift; however, to
+	// support static port allocations, user changes to the node port
+	// field of the managed NodePort Service will preserved.
+	//
+	// +unionDiscriminator
+	// +kubebuilder:validation:Required
+	// +required
 	Type EndpointPublishingStrategyType `json:"type"`
+
+	// loadBalancer holds parameters for the load balancer. Present only if
+	// type is LoadBalancerService.
+	// +optional
+	LoadBalancer *LoadBalancerStrategy `json:"loadBalancer,omitempty"`
+
+	// hostNetwork holds parameters for the HostNetwork endpoint publishing
+	// strategy. Present only if type is HostNetwork.
+	// +optional
+	HostNetwork *HostNetworkStrategy `json:"hostNetwork,omitempty"`
+
+	// private holds parameters for the Private endpoint publishing
+	// strategy. Present only if type is Private.
+	// +optional
+	Private *PrivateStrategy `json:"private,omitempty"`
+
+	// nodePort holds parameters for the NodePortService endpoint publishing strategy.
+	// Present only if type is NodePortService.
+	// +optional
+	NodePort *NodePortStrategy `json:"nodePort,omitempty"`
 }
+
+// RouteAdmissionPolicy is an admission policy for allowing new route claims.
+type RouteAdmissionPolicy struct {
+	// namespaceOwnership describes how host name claims across namespaces should
+	// be handled.
+	//
+	// Value must be one of:
+	//
+	// - Strict: Do not allow routes in different namespaces to claim the same host.
+	//
+	// - InterNamespaceAllowed: Allow routes to claim different paths of the same
+	//   host name across namespaces.
+	//
+	// If empty, the default is Strict.
+	// +optional
+	NamespaceOwnership NamespaceOwnershipCheck `json:"namespaceOwnership,omitempty"`
+}
+
+// NamespaceOwnershipCheck is a route admission policy component that describes
+// how host name claims across namespaces should be handled.
+// +kubebuilder:validation:Enum=InterNamespaceAllowed;Strict
+type NamespaceOwnershipCheck string
+
+const (
+	// InterNamespaceAllowedOwnershipCheck allows routes to claim different paths of the same host name across namespaces.
+	InterNamespaceAllowedOwnershipCheck NamespaceOwnershipCheck = "InterNamespaceAllowed"
+
+	// StrictNamespaceOwnershipCheck does not allow routes to claim the same host name across namespaces.
+	StrictNamespaceOwnershipCheck NamespaceOwnershipCheck = "Strict"
+)
 
 var (
 	// Available indicates the ingress controller deployment is available.
@@ -274,9 +417,18 @@ type IngressControllerStatus struct {
 	//     * DNS records have been successfully created.
 	//   - False if any of those conditions are unsatisfied.
 	Conditions []OperatorCondition `json:"conditions,omitempty"`
+
+	// tlsProfile is the TLS connection configuration that is in effect.
+	// +optional
+	TLSProfile *configv1.TLSProfileSpec `json:"tlsProfile,omitempty"`
+
+	// observedGeneration is the most recent generation observed.
+	// +optional
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:object:root=true
 
 // IngressControllerList contains a list of IngressControllers.
 type IngressControllerList struct {

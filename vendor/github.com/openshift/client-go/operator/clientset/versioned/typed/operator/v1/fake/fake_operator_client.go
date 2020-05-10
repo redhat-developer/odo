@@ -16,6 +16,10 @@ func (c *FakeOperatorV1) Authentications() v1.AuthenticationInterface {
 	return &FakeAuthentications{c}
 }
 
+func (c *FakeOperatorV1) CSISnapshotControllers() v1.CSISnapshotControllerInterface {
+	return &FakeCSISnapshotControllers{c}
+}
+
 func (c *FakeOperatorV1) Consoles() v1.ConsoleInterface {
 	return &FakeConsoles{c}
 }
@@ -42,6 +46,10 @@ func (c *FakeOperatorV1) KubeControllerManagers() v1.KubeControllerManagerInterf
 
 func (c *FakeOperatorV1) KubeSchedulers() v1.KubeSchedulerInterface {
 	return &FakeKubeSchedulers{c}
+}
+
+func (c *FakeOperatorV1) KubeStorageVersionMigrators() v1.KubeStorageVersionMigratorInterface {
+	return &FakeKubeStorageVersionMigrators{c}
 }
 
 func (c *FakeOperatorV1) Networks() v1.NetworkInterface {

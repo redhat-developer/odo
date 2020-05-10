@@ -8,8 +8,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/fatih/color"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
@@ -37,6 +37,7 @@ func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
 type Adapter struct {
 	Client kclient.Client
 	common.AdapterContext
+	devfileInitCmd  string
 	devfileBuildCmd string
 	devfileRunCmd   string
 }
@@ -46,6 +47,7 @@ type Adapter struct {
 func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	componentExists := utils.ComponentExists(a.Client, a.ComponentName)
 
+	a.devfileInitCmd = parameters.DevfileInitCmd
 	a.devfileBuildCmd = parameters.DevfileBuildCmd
 	a.devfileRunCmd = parameters.DevfileRunCmd
 
@@ -64,7 +66,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// Validate the devfile build and run commands
 	log.Info("\nValidation")
 	s := log.Spinner("Validating the devfile")
-	pushDevfileCommands, err := common.ValidateAndGetPushDevfileCommands(a.Devfile.Data, a.devfileBuildCmd, a.devfileRunCmd)
+	pushDevfileCommands, err := common.ValidateAndGetPushDevfileCommands(a.Devfile.Data, a.devfileInitCmd, a.devfileBuildCmd, a.devfileRunCmd)
 	if err != nil {
 		s.End(false)
 		return errors.Wrap(err, "failed to validate devfile build and run commands")
@@ -177,7 +179,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 				processedVolumes[*vol.Name] = true
 
 				// Generate the PVC Names
-				glog.V(3).Infof("Generating PVC name for %v", *vol.Name)
+				klog.V(3).Infof("Generating PVC name for %v", *vol.Name)
 				generatedPVCName, err := storage.GeneratePVCNameFromDevfileVol(*vol.Name, componentName)
 				if err != nil {
 					return err
@@ -189,7 +191,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 					return err
 				}
 				if len(existingPVCName) > 0 {
-					glog.V(3).Infof("Found an existing PVC for %v, PVC %v will be re-used", *vol.Name, existingPVCName)
+					klog.V(3).Infof("Found an existing PVC for %v, PVC %v will be re-used", *vol.Name, existingPVCName)
 					generatedPVCName = existingPVCName
 				}
 
@@ -219,17 +221,17 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 		}
 	}
 	serviceSpec := kclient.GenerateServiceSpec(objectMeta.Name, containerPorts)
-	glog.V(3).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
-	glog.V(3).Infof("The component name is %v", componentName)
+	klog.V(3).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
+	klog.V(3).Infof("The component name is %v", componentName)
 
 	if utils.ComponentExists(a.Client, componentName) {
 		// If the component already exists, get the resource version of the deploy before updating
-		glog.V(3).Info("The component already exists, attempting to update it")
+		klog.V(3).Info("The component already exists, attempting to update it")
 		deployment, err := a.Client.UpdateDeployment(*deploymentSpec)
 		if err != nil {
 			return err
 		}
-		glog.V(3).Infof("Successfully updated component %v", componentName)
+		klog.V(3).Infof("Successfully updated component %v", componentName)
 		oldSvc, err := a.Client.KubeClient.CoreV1().Services(a.Client.Namespace).Get(componentName, metav1.GetOptions{})
 		objectMetaTemp := objectMeta
 		ownerReference := kclient.GenerateOwnerReference(deployment)
@@ -241,7 +243,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 				if err != nil {
 					return err
 				}
-				glog.V(3).Infof("Successfully created Service for component %s", componentName)
+				klog.V(3).Infof("Successfully created Service for component %s", componentName)
 			}
 		} else {
 			if len(serviceSpec.Ports) > 0 {
@@ -251,7 +253,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 				if err != nil {
 					return err
 				}
-				glog.V(3).Infof("Successfully update Service for component %s", componentName)
+				klog.V(3).Infof("Successfully update Service for component %s", componentName)
 			} else {
 				err = a.Client.KubeClient.CoreV1().Services(a.Client.Namespace).Delete(componentName, &metav1.DeleteOptions{})
 				if err != nil {
@@ -264,7 +266,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 		if err != nil {
 			return err
 		}
-		glog.V(3).Infof("Successfully created component %v", componentName)
+		klog.V(3).Infof("Successfully created component %v", componentName)
 		ownerReference := kclient.GenerateOwnerReference(deployment)
 		objectMetaTemp := objectMeta
 		objectMetaTemp.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
@@ -273,7 +275,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 			if err != nil {
 				return err
 			}
-			glog.V(3).Infof("Successfully created Service for component %s", componentName)
+			klog.V(3).Infof("Successfully created Service for component %s", componentName)
 		}
 
 	}
@@ -301,59 +303,80 @@ func (a Adapter) waitAndGetComponentPod(hideSpinner bool) (*corev1.Pod, error) {
 	return pod, nil
 }
 
-// Push syncs source code from the user's disk to the component
+// Executes all the commands from the devfile in order: init and build - which are both optional, and a compulsary run.
+// Init only runs once when the component is created.
 func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand, componentExists, show bool, podName string, containers []corev1.Container) (err error) {
-	buildRequired, err := common.IsComponentBuildRequired(pushDevfileCommands)
-	if err != nil {
-		return err
+	// If nothing has been passed, then the devfile is missing the required run command
+	if len(pushDevfileCommands) == 0 {
+		return errors.New(fmt.Sprint("error executing devfile commands - there should be at least 1 command"))
 	}
 
-	for i := 0; i < len(pushDevfileCommands); i++ {
-		command := pushDevfileCommands[i]
+	commandOrder := []common.CommandNames{}
 
-		// Exec the devBuild command if buildRequired is true
-		if (command.Name == string(common.DefaultDevfileBuildCommand) || command.Name == a.devfileBuildCmd) && buildRequired {
-			glog.V(3).Infof("Executing devfile command %v", command.Name)
+	// Only add runinit to the expected commands if the component doesn't already exist
+	// This would be the case when first running the container
+	if !componentExists {
+		commandOrder = append(commandOrder, common.CommandNames{DefaultName: string(common.DefaultDevfileInitCommand), AdapterName: a.devfileInitCmd})
+	}
+	commandOrder = append(
+		commandOrder,
+		common.CommandNames{DefaultName: string(common.DefaultDevfileBuildCommand), AdapterName: a.devfileBuildCmd},
+		common.CommandNames{DefaultName: string(common.DefaultDevfileRunCommand), AdapterName: a.devfileRunCmd},
+	)
 
-			for _, action := range command.Actions {
-				compInfo := common.ComponentInfo{
-					ContainerName: *action.Component,
-					PodName:       podName,
-				}
+	// Loop through each of the expected commands in the devfile
+	for i, currentCommand := range commandOrder {
+		// Loop through each of the command given from the devfile
+		for _, command := range pushDevfileCommands {
+			// If the current command from the devfile is the currently expected command from the devfile
+			if command.Name == currentCommand.DefaultName || command.Name == currentCommand.AdapterName {
+				// If the current command is not the last command in the slice
+				// it is not expected to be the run command
+				if i < len(commandOrder)-1 {
+					// Any exec command such as "Init" and "Build"
 
-				err = exec.ExecuteDevfileBuildAction(&a.Client, action, command.Name, compInfo, show)
-				if err != nil {
-					return err
-				}
-			}
+					for _, action := range command.Actions {
+						compInfo := common.ComponentInfo{
+							ContainerName: *action.Component,
+							PodName:       podName,
+						}
 
-			// Reset the for loop counter and iterate through all the devfile commands again for others
-			i = -1
-			// Set the buildRequired to false since we already executed the build command
-			buildRequired = false
-		} else if (command.Name == string(common.DefaultDevfileRunCommand) || command.Name == a.devfileRunCmd) && !buildRequired {
-			// Always check for buildRequired is false, since the command may be iterated out of order and we always want to execute devBuild first if buildRequired is true. If buildRequired is false, then we don't need to build and we can execute the devRun command
-			glog.V(3).Infof("Executing devfile command %v", command.Name)
-
-			for _, action := range command.Actions {
-
-				// Check if the devfile run component containers have supervisord as the entrypoint.
-				// Start the supervisord if the odo component does not exist
-				if !componentExists {
-					err = a.InitRunContainerSupervisord(*action.Component, podName, containers)
-					if err != nil {
-						return
+						err = exec.ExecuteDevfileBuildAction(&a.Client, action, command.Name, compInfo, show)
+						if err != nil {
+							return err
+						}
 					}
-				}
 
-				compInfo := common.ComponentInfo{
-					ContainerName: *action.Component,
-					PodName:       podName,
-				}
+					// If the current command is the last command in the slice
+					// it is expected to be the run command
+				} else {
+					// Last command is "Run"
+					klog.V(4).Infof("Executing devfile command %v", command.Name)
 
-				err = exec.ExecuteDevfileRunAction(&a.Client, action, command.Name, compInfo, show)
-				if err != nil {
-					return err
+					for _, action := range command.Actions {
+
+						// Check if the devfile run component containers have supervisord as the entrypoint.
+						// Start the supervisord if the odo component does not exist
+						if !componentExists {
+							err = a.InitRunContainerSupervisord(*action.Component, podName, containers)
+							if err != nil {
+								return
+							}
+						}
+
+						compInfo := common.ComponentInfo{
+							ContainerName: *action.Component,
+							PodName:       podName,
+						}
+
+						if componentExists && !common.IsRestartRequired(command) {
+							klog.V(4).Infof("restart:false, Not restarting DevRun Command")
+							err = exec.ExecuteDevfileRunActionWithoutRestart(&a.Client, action, command.Name, compInfo, show)
+							return
+						}
+
+						err = exec.ExecuteDevfileRunAction(&a.Client, action, command.Name, compInfo, show)
+					}
 				}
 			}
 		}

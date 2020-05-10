@@ -1,8 +1,9 @@
 package resolver
 
 import (
-	opregistry "github.com/operator-framework/operator-registry/pkg/registry"
 	"github.com/pkg/errors"
+
+	"github.com/operator-framework/operator-registry/pkg/api"
 )
 
 // TODO: this should take a cancellable context for killing long resolution
@@ -62,10 +63,11 @@ func (e *NamespaceGenerationEvolver) checkForUpdates() error {
 			continue
 		}
 
-		o, err := NewOperatorFromBundle(bundle, op.Identifier(), op.SourceInfo().StartingCSV, *key)
+		o, err := NewOperatorFromBundle(bundle, op.SourceInfo().StartingCSV, *key)
 		if err != nil {
 			return errors.Wrap(err, "error parsing bundle")
 		}
+		o.SetReplaces(op.Identifier())
 		if err := e.gen.AddOperator(o); err != nil {
 			return errors.Wrap(err, "error calculating generation changes due to new bundle")
 		}
@@ -76,7 +78,7 @@ func (e *NamespaceGenerationEvolver) checkForUpdates() error {
 
 func (e *NamespaceGenerationEvolver) addNewOperators(add map[OperatorSourceInfo]struct{}) error {
 	for s := range add {
-		var bundle *opregistry.Bundle
+		var bundle *api.Bundle
 		var key *CatalogKey
 		var err error
 		if s.StartingCSV != "" {
@@ -85,18 +87,15 @@ func (e *NamespaceGenerationEvolver) addNewOperators(add map[OperatorSourceInfo]
 			bundle, key, err = e.querier.FindLatestBundle(s.Package, s.Channel, s.Catalog)
 		}
 		if err != nil {
-			// TODO: log or collect warnings
 			return errors.Wrapf(err, "%s not found", s)
 		}
 
-		o, err := NewOperatorFromBundle(bundle, "", s.StartingCSV, *key)
+		o, err := NewOperatorFromBundle(bundle, s.StartingCSV, *key)
 		if err != nil {
 			return errors.Wrap(err, "error parsing bundle")
 		}
 		if err := e.gen.AddOperator(o); err != nil {
-			if err != nil {
-				return errors.Wrap(err, "error calculating generation changes due to new bundle")
-			}
+			return errors.Wrap(err, "error calculating generation changes due to new bundle")
 		}
 	}
 	return nil
@@ -113,16 +112,16 @@ func (e *NamespaceGenerationEvolver) queryForRequiredAPIs() error {
 		e.gen.MarkAPIChecked(*api)
 
 		// identify the initialSource
-		initialSource := CatalogKey{}
+		var initialSource *OperatorSourceInfo
 		for _, operator := range e.gen.MissingAPIs()[*api] {
-			initialSource = operator.SourceInfo().Catalog
+			initialSource = operator.SourceInfo()
 			break
 		}
 
 		// attempt to find a bundle that provides that api
-		if bundle, key, err := e.querier.FindProvider(*api, initialSource); err == nil {
+		if bundle, key, err := e.querier.FindProvider(*api, initialSource.Catalog); err == nil {
 			// add a bundle that provides the api to the generation
-			o, err := NewOperatorFromBundle(bundle, "", "", *key)
+			o, err := NewOperatorFromBundle(bundle, "", *key)
 			if err != nil {
 				return errors.Wrap(err, "error parsing bundle")
 			}

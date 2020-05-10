@@ -1,17 +1,21 @@
 package certrotation
 
 import (
+	"context"
 	"fmt"
+	"strings"
 	"time"
 
-	"k8s.io/klog"
-
-	operatorv1 "github.com/openshift/api/operator/v1"
-	"github.com/openshift/library-go/pkg/operator/v1helpers"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/klog"
+
+	operatorv1 "github.com/openshift/api/operator/v1"
+
+	"github.com/openshift/library-go/pkg/operator/condition"
+	"github.com/openshift/library-go/pkg/operator/v1helpers"
 )
 
 const (
@@ -62,7 +66,7 @@ func NewCertRotationController(
 		TargetRotation:   targetRotation,
 		OperatorClient:   operatorClient,
 
-		queue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), name),
+		queue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), strings.Replace(name, "-", "_", -1)),
 	}
 
 	signingRotation.Informer.Informer().AddEventHandler(c.eventHandler())
@@ -79,16 +83,16 @@ func NewCertRotationController(
 func (c CertRotationController) sync() error {
 	syncErr := c.syncWorker()
 
-	condition := operatorv1.OperatorCondition{
-		Type:   "CertRotation_" + c.name + "_Degraded",
+	newCondition := operatorv1.OperatorCondition{
+		Type:   fmt.Sprintf(condition.CertRotationDegradedConditionTypeFmt, c.name),
 		Status: operatorv1.ConditionFalse,
 	}
 	if syncErr != nil {
-		condition.Status = operatorv1.ConditionTrue
-		condition.Reason = "RotationError"
-		condition.Message = syncErr.Error()
+		newCondition.Status = operatorv1.ConditionTrue
+		newCondition.Reason = "RotationError"
+		newCondition.Message = syncErr.Error()
 	}
-	if _, _, updateErr := v1helpers.UpdateStaticPodStatus(c.OperatorClient, v1helpers.UpdateStaticPodConditionFn(condition)); updateErr != nil {
+	if _, _, updateErr := v1helpers.UpdateStaticPodStatus(c.OperatorClient, v1helpers.UpdateStaticPodConditionFn(newCondition)); updateErr != nil {
 		return updateErr
 	}
 
@@ -129,16 +133,16 @@ func (c *CertRotationController) RunOnce() error {
 	return c.syncWorker()
 }
 
-func (c *CertRotationController) Run(workers int, stopCh <-chan struct{}) {
+func (c *CertRotationController) Run(ctx context.Context, workers int) {
 	defer utilruntime.HandleCrash()
 	defer c.queue.ShutDown()
 
 	klog.Infof("Starting CertRotationController - %q", c.name)
 	defer klog.Infof("Shutting down CertRotationController - %q", c.name)
-	c.WaitForReady(stopCh)
+	c.WaitForReady(ctx.Done())
 
 	// doesn't matter what workers say, only start one.
-	go wait.Until(c.runWorker, time.Second, stopCh)
+	go wait.UntilWithContext(ctx, c.runWorker, time.Second)
 
 	// start a time based thread to ensure we stay up to date
 	go wait.Until(func() {
@@ -149,12 +153,12 @@ func (c *CertRotationController) Run(workers int, stopCh <-chan struct{}) {
 			c.queue.Add(workQueueKey)
 			select {
 			case <-ticker.C:
-			case <-stopCh:
+			case <-ctx.Done():
 				return
 			}
 		}
 
-	}, time.Minute, stopCh)
+	}, time.Minute, ctx.Done())
 
 	// if we have a need to force rechecking the cert, use this channel to do it.
 	if refresher, ok := c.TargetRotation.CertCreator.(TargetCertRechecker); ok {
@@ -164,18 +168,18 @@ func (c *CertRotationController) Run(workers int, stopCh <-chan struct{}) {
 				select {
 				case <-targetRefresh:
 					c.queue.Add(workQueueKey)
-				case <-stopCh:
+				case <-ctx.Done():
 					return
 				}
 			}
 
-		}, time.Minute, stopCh)
+		}, time.Minute, ctx.Done())
 	}
 
-	<-stopCh
+	<-ctx.Done()
 }
 
-func (c *CertRotationController) runWorker() {
+func (c *CertRotationController) runWorker(_ context.Context) {
 	for c.processNextWorkItem() {
 	}
 }

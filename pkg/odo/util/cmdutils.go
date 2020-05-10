@@ -152,7 +152,7 @@ func PrintComponentInfo(client *occlient.Client, currentComponentName string, co
 				// Gather the output
 				for _, componentURL := range componentDesc.Spec.URL {
 					url := urls.Get(componentURL)
-					output += fmt.Sprintf(" · %v exposed via %v\n", urlPkg.GetURLString(url.Spec.Protocol, url.Spec.Host, ""), url.Spec.Port)
+					output += fmt.Sprintf(" · %v exposed via %v\n", urlPkg.GetURLString(url.Spec.Protocol, url.Spec.Host, "", experimental.IsExperimentalModeEnabled()), url.Spec.Port)
 				}
 
 			}

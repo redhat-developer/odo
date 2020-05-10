@@ -13,7 +13,6 @@ package v1
 // AUTO-GENERATED FUNCTIONS START HERE
 var map_BinaryBuildRequestOptions = map[string]string{
 	"":                        "BinaryBuildRequestOptions are the options required to fully speficy a binary build request",
-	"metadata":                "metadata for BinaryBuildRequestOptions.",
 	"asFile":                  "asFile determines if the binary should be created as a file within the source rather than extracted as an archive",
 	"revision.commit":         "revision.commit is the value identifying a specific commit",
 	"revision.message":        "revision.message is the description of a specific commit",
@@ -45,21 +44,33 @@ func (BitbucketWebHookCause) SwaggerDoc() map[string]string {
 }
 
 var map_Build = map[string]string{
-	"":         "Build encapsulates the inputs needed to produce a new deployable image, as well as the status of the execution and a reference to the Pod which executed the build.",
-	"metadata": "Standard object's metadata.",
-	"spec":     "spec is all the inputs used to execute the build.",
-	"status":   "status is the current status of the build.",
+	"":       "Build encapsulates the inputs needed to produce a new deployable image, as well as the status of the execution and a reference to the Pod which executed the build.",
+	"spec":   "spec is all the inputs used to execute the build.",
+	"status": "status is the current status of the build.",
 }
 
 func (Build) SwaggerDoc() map[string]string {
 	return map_Build
 }
 
+var map_BuildCondition = map[string]string{
+	"":                   "BuildCondition describes the state of a build at a certain point.",
+	"type":               "Type of build condition.",
+	"status":             "Status of the condition, one of True, False, Unknown.",
+	"lastUpdateTime":     "The last time this condition was updated.",
+	"lastTransitionTime": "The last time the condition transitioned from one status to another.",
+	"reason":             "The reason for the condition's last transition.",
+	"message":            "A human readable message indicating details about the transition.",
+}
+
+func (BuildCondition) SwaggerDoc() map[string]string {
+	return map_BuildCondition
+}
+
 var map_BuildConfig = map[string]string{
-	"":         "Build configurations define a build process for new container images. There are three types of builds possible - a container image build using a Dockerfile, a Source-to-Image build that uses a specially prepared base image that accepts source code that it can make runnable, and a custom build that can run // arbitrary container images as a base and accept the build parameters. Builds run on the cluster and on completion are pushed to the container image registry specified in the \"output\" section. A build can be triggered via a webhook, when the base image changes, or when a user manually requests a new build be // created.\n\nEach build created by a build configuration is numbered and refers back to its parent configuration. Multiple builds can be triggered at once. Builds that do not have \"output\" set can be used to test code or run a verification build.",
-	"metadata": "metadata for BuildConfig.",
-	"spec":     "spec holds all the input necessary to produce a new build, and the conditions when to trigger them.",
-	"status":   "status holds any relevant information about a build config",
+	"":       "Build configurations define a build process for new container images. There are three types of builds possible - a container image build using a Dockerfile, a Source-to-Image build that uses a specially prepared base image that accepts source code that it can make runnable, and a custom build that can run // arbitrary container images as a base and accept the build parameters. Builds run on the cluster and on completion are pushed to the container image registry specified in the \"output\" section. A build can be triggered via a webhook, when the base image changes, or when a user manually requests a new build be // created.\n\nEach build created by a build configuration is numbered and refers back to its parent configuration. Multiple builds can be triggered at once. Builds that do not have \"output\" set can be used to test code or run a verification build.",
+	"spec":   "spec holds all the input necessary to produce a new build, and the conditions when to trigger them.",
+	"status": "status holds any relevant information about a build config",
 }
 
 func (BuildConfig) SwaggerDoc() map[string]string {
@@ -67,9 +78,8 @@ func (BuildConfig) SwaggerDoc() map[string]string {
 }
 
 var map_BuildConfigList = map[string]string{
-	"":         "BuildConfigList is a collection of BuildConfigs.",
-	"metadata": "metadata for BuildConfigList.",
-	"items":    "items is a list of build configs",
+	"":      "BuildConfigList is a collection of BuildConfigs.",
+	"items": "items is a list of build configs",
 }
 
 func (BuildConfigList) SwaggerDoc() map[string]string {
@@ -98,9 +108,8 @@ func (BuildConfigStatus) SwaggerDoc() map[string]string {
 }
 
 var map_BuildList = map[string]string{
-	"":         "BuildList is a collection of Builds.",
-	"metadata": "metadata for BuildList.",
-	"items":    "items is a list of builds",
+	"":      "BuildList is a collection of Builds.",
+	"items": "items is a list of builds",
 }
 
 func (BuildList) SwaggerDoc() map[string]string {
@@ -157,7 +166,6 @@ func (BuildPostCommitSpec) SwaggerDoc() map[string]string {
 
 var map_BuildRequest = map[string]string{
 	"":                      "BuildRequest is the resource used to pass parameters to build generator",
-	"metadata":              "metadata for BuildRequest.",
 	"revision":              "revision is the information from the source for a specific repo snapshot.",
 	"triggeredByImage":      "triggeredByImage is the Image that triggered this build.",
 	"from":                  "from is the reference to the ImageStreamTag that triggered the build.",
@@ -213,6 +221,7 @@ var map_BuildStatus = map[string]string{
 	"output":                     "output describes the container image the build has produced.",
 	"stages":                     "stages contains details about each stage that occurs during the build including start time, duration (in milliseconds), and the steps that occured within each stage.",
 	"logSnippet":                 "logSnippet is the last few lines of the build log.  This value is only set for builds that failed.",
+	"conditions":                 "Conditions represents the latest available observations of a build's current state.",
 }
 
 func (BuildStatus) SwaggerDoc() map[string]string {
@@ -243,7 +252,7 @@ var map_BuildStrategy = map[string]string{
 	"dockerStrategy":          "dockerStrategy holds the parameters to the container image build strategy.",
 	"sourceStrategy":          "sourceStrategy holds the parameters to the Source build strategy.",
 	"customStrategy":          "customStrategy holds the parameters to the Custom build strategy",
-	"jenkinsPipelineStrategy": "JenkinsPipelineStrategy holds the parameters to the Jenkins Pipeline build strategy.",
+	"jenkinsPipelineStrategy": "JenkinsPipelineStrategy holds the parameters to the Jenkins Pipeline build strategy. Deprecated: use OpenShift Pipelines",
 }
 
 func (BuildStrategy) SwaggerDoc() map[string]string {
@@ -332,7 +341,7 @@ func (CustomBuildStrategy) SwaggerDoc() map[string]string {
 
 var map_DockerBuildStrategy = map[string]string{
 	"":                        "DockerBuildStrategy defines input parameters specific to container image build.",
-	"from":                    "from is reference to an DockerImage, ImageStreamTag, or ImageStreamImage from which the container image should be pulled the resulting image will be used in the FROM line of the Dockerfile for this build.",
+	"from":                    "from is a reference to an DockerImage, ImageStreamTag, or ImageStreamImage which overrides the FROM image in the Dockerfile for the build. If the Dockerfile uses multi-stage builds, this will replace the image in the last FROM directive of the file.",
 	"pullSecret":              "pullSecret is the name of a Secret that would be used for setting up the authentication for pulling the container images from the private Docker registries",
 	"noCache":                 "noCache if set to true indicates that the container image build must be executed with the --no-cache=true flag",
 	"env":                     "env contains additional environment variables you want to pass into a builder container.",
@@ -489,7 +498,7 @@ func (ImageSourcePath) SwaggerDoc() map[string]string {
 }
 
 var map_JenkinsPipelineBuildStrategy = map[string]string{
-	"":                "JenkinsPipelineBuildStrategy holds parameters specific to a Jenkins Pipeline build.",
+	"":                "JenkinsPipelineBuildStrategy holds parameters specific to a Jenkins Pipeline build. Deprecated: use OpenShift Pipelines",
 	"jenkinsfilePath": "JenkinsfilePath is the optional path of the Jenkinsfile that will be used to configure the pipeline relative to the root of the context (contextDir). If both JenkinsfilePath & Jenkinsfile are both not specified, this defaults to Jenkinsfile in the root of the specified contextDir.",
 	"jenkinsfile":     "Jenkinsfile defines the optional raw contents of a Jenkinsfile which defines a Jenkins pipeline build.",
 	"env":             "env contains additional environment variables you want to pass into a build pipeline.",
