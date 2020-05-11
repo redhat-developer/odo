@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 
 	"github.com/openshift/odo/pkg/component"
@@ -63,11 +62,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 	// if experimental mode is enabled and devfile is present
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.DevfilePath) {
-		envinfo, err := envinfo.NewEnvSpecificInfo(po.componentContext)
-		if err != nil {
-			return errors.Wrap(err, "unable to retrieve configuration information")
-		}
-		po.EnvSpecificInfo = envinfo
+
 		po.Context = genericclioptions.NewDevfileContext(cmd)
 
 		if !pushtarget.IsPushTargetDocker() {

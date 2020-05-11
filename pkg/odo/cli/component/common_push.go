@@ -30,8 +30,6 @@ type CommonPushOptions struct {
 	sourcePath       string
 	componentContext string
 
-	EnvSpecificInfo *envinfo.EnvSpecificInfo
-
 	pushConfig         bool
 	pushSource         bool
 	forceBuild         bool
