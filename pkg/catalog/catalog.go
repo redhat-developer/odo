@@ -3,11 +3,13 @@ package catalog
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/openshift/odo/pkg/preference"
 	"sort"
 	"strings"
 	"sync"
 
 	imagev1 "github.com/openshift/api/image/v1"
+	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
@@ -16,19 +18,65 @@ import (
 	"k8s.io/klog"
 )
 
-// DevfileRegistries contains the links of all devfile registries
-var DevfileRegistries = []string{
-	"https://raw.githubusercontent.com/elsony/devfile-registry/master",
-	"https://che-devfile-registry.openshift.io/",
+// GetDevfileRegistries gets devfile registries from preference file,
+// if registry name is specified return the specific registry, otherwise return all registries
+func GetDevfileRegistries(registryName string) (map[string]Registry, error) {
+	devfileRegistries := make(map[string]Registry)
+
+	cfg, err := preference.New()
+	if err != nil {
+		return nil, err
+	}
+
+	hasName := len(registryName) != 0
+	if cfg.OdoSettings.RegistryList != nil {
+		for _, registry := range *cfg.OdoSettings.RegistryList {
+			if hasName {
+				if registryName == registry.Name {
+					devfileRegistries[registry.Name] = Registry{
+						Name: registry.Name,
+						URL:  registry.URL,
+					}
+					return devfileRegistries, nil
+				}
+			} else {
+				devfileRegistries[registry.Name] = Registry{
+					Name: registry.Name,
+					URL:  registry.URL,
+				}
+			}
+		}
+	} else {
+		return nil, nil
+	}
+
+	return devfileRegistries, nil
 }
 
 const indexPath = "/devfiles/index.json"
 
 // GetDevfileIndex loads the devfile registry index.json
-func GetDevfileIndex(registryURL string) ([]DevfileIndexEntry, error) {
-	var devfileIndex []DevfileIndexEntry
+func GetDevfileIndex(registryName string) ([]DevfileIndexEntry, error) {
+	registries, err2 := GetDevfileRegistries(registryName)
+	if err2 != nil {
+		return nil, err2
+	}
 
-	indexLink := registryURL + indexPath
+	registry := registries[registryName]
+	return getDevfileIndexEntries(registry)
+}
+
+func getDevfileIndexEntriesFrom(registryName, registryURL string) ([]DevfileIndexEntry, error) {
+	registry := Registry{
+		Name: registryName,
+		URL:  registryURL,
+	}
+	return getDevfileIndexEntries(registry)
+}
+
+func getDevfileIndexEntries(registry Registry) ([]DevfileIndexEntry, error) {
+	var devfileIndex []DevfileIndexEntry
+	indexLink := registry.URL + indexPath
 	jsonBytes, err := util.HTTPGetRequest(indexLink)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Unable to download the devfile index.json from %s", indexLink)
@@ -40,7 +88,7 @@ func GetDevfileIndex(registryURL string) ([]DevfileIndexEntry, error) {
 	}
 
 	for i := range devfileIndex {
-		devfileIndex[i].Links.base = registryURL
+		devfileIndex[i].Registry = registry
 	}
 
 	return devfileIndex, nil
@@ -111,31 +159,37 @@ func IsDevfileComponentSupported(devfile Devfile) bool {
 }
 
 // ListDevfileComponents lists all the available devfile components
-func ListDevfileComponents() (DevfileComponentTypeList, error) {
+func ListDevfileComponents(registryName string) (DevfileComponentTypeList, error) {
 	catalogDevfileList := &DevfileComponentTypeList{}
-	catalogDevfileList.DevfileRegistries = DevfileRegistries
+	var err error
 
 	// TODO: consider caching registry information for better performance since it should be fairly stable over time
+	// Get devfile registries
+	catalogDevfileList.DevfileRegistries, err = GetDevfileRegistries(registryName)
+	if err != nil {
+		return *catalogDevfileList, err
+	}
+	if catalogDevfileList.DevfileRegistries == nil {
+		return *catalogDevfileList, nil
+	}
 
 	// first retrieve the indices for each registry, concurrently
 	registryIndices := make([]DevfileIndexEntry, 0, 20)
 	devfileIndicesMutex := &sync.Mutex{}
-	retrieveRegistryIndices := util.NewConcurrentTasks(len(DevfileRegistries))
-	for _, registryURL := range DevfileRegistries {
+	retrieveRegistryIndices := util.NewConcurrentTasks(len(catalogDevfileList.DevfileRegistries))
+	for _, reg := range catalogDevfileList.DevfileRegistries {
 		// Load the devfile registry index.json
-		url := registryURL // needed to avoid the lambda capturing the value
+		registry := reg // needed to prevent the lambda from capturing the value
 		retrieveRegistryIndices.Add(util.ConcurrentTask{ToRun: func(errChannel chan error, wg *sync.WaitGroup) {
 			defer wg.Done()
 
-			indexEntries, e := GetDevfileIndex(url)
+			indexEntries, e := getDevfileIndexEntries(registry)
 			if e != nil {
+				log.Warningf("Registry %s is not set up properly with error: %v", registryName, err)
 				errChannel <- e
 				return
 			}
 
-			for i := range indexEntries {
-				indexEntries[i].Links.base = url
-			}
 			devfileIndicesMutex.Lock()
 			registryIndices = append(registryIndices, indexEntries...)
 			devfileIndicesMutex.Unlock()
@@ -152,8 +206,8 @@ func ListDevfileComponents() (DevfileComponentTypeList, error) {
 	devfileMutex := &sync.Mutex{}
 	for _, index := range registryIndices {
 		// Load the devfile
-		devfileIndex := index // needed to avoid the lambda capturing the value
-		link := devfileIndex.Links.base + devfileIndex.Links.Link
+		devfileIndex := index // needed to prevent the lambda from capturing the value
+		link := devfileIndex.Registry.URL + devfileIndex.Links.Link
 		retrieveDevfiles.Add(util.ConcurrentTask{ToRun: func(errChannel chan error, wg *sync.WaitGroup) {
 			defer wg.Done()
 
@@ -161,6 +215,7 @@ func ListDevfileComponents() (DevfileComponentTypeList, error) {
 			// sequentially improves the performance, caching that information would improve the performance even more
 			devfile, err := GetDevfile(link)
 			if err != nil {
+				log.Warningf("Registry %s is not set up properly with error: %v", devfileIndex.Registry.Name, err)
 				errChannel <- err
 				return
 			}
@@ -172,7 +227,7 @@ func ListDevfileComponents() (DevfileComponentTypeList, error) {
 				Description: devfileIndex.Description,
 				Link:        devfileIndex.Links.Link,
 				Support:     IsDevfileComponentSupported(devfile),
-				Registry:    devfileIndex.Links.base,
+				Registry:    devfileIndex.Registry,
 			}
 
 			devfileMutex.Lock()

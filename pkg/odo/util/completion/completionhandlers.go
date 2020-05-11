@@ -270,12 +270,11 @@ var StorageUnMountCompletionHandler = func(cmd *cobra.Command, args parsedArgs, 
 // CreateCompletionHandler provides component type completion in odo create command
 var CreateCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context *genericclioptions.Context) (completions []string) {
 	completions = make([]string, 0)
+	comps := &completions
 	found := false
 
-	var wg sync.WaitGroup
-	wg.Add(2)
-
-	go func(completions *[]string, wg *sync.WaitGroup) {
+	tasks := util.NewConcurrentTasks(2)
+	tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error, wg *sync.WaitGroup) {
 		defer wg.Done()
 
 		catalogList, _ := catalog.ListComponents(context.Client)
@@ -285,26 +284,24 @@ var CreateCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context 
 				return
 			}
 			if len(builder.Spec.NonHiddenTags) > 0 {
-				*completions = append(*completions, builder.Name)
+				*comps = append(*comps, builder.Name)
 			}
 		}
-	}(&completions, &wg)
-
-	go func(completions *[]string, wg *sync.WaitGroup) {
+	}})
+	tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error, wg *sync.WaitGroup) {
 		defer wg.Done()
 
-		components, _ := catalog.ListDevfileComponents()
+		components, _ := catalog.ListDevfileComponents("")
 		for _, devfile := range components.Items {
 			if args.commands[devfile.Name] {
 				found = true
 				return
 			}
-			*completions = append(*completions, devfile.Name)
+			*comps = append(*comps, devfile.Name)
 		}
-	}(&completions, &wg)
+	}})
 
-	wg.Wait()
-
+	_ = tasks.Run()
 	if found {
 		return nil
 	}

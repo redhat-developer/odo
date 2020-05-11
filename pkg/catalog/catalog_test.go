@@ -263,14 +263,17 @@ func TestGetDevfileIndex(t *testing.T) {
 	// Close the server when test finishes
 	defer server.Close()
 
+	const registryName = "some registry"
 	tests := []struct {
-		name             string
-		devfileIndexLink string
-		want             []DevfileIndexEntry
+		name         string
+		registryURL  string
+		registryName string
+		want         []DevfileIndexEntry
 	}{
 		{
-			name:             "Test NodeJS devfile index",
-			devfileIndexLink: server.URL,
+			name:         "Test NodeJS devfile index",
+			registryURL:  server.URL,
+			registryName: registryName,
 			want: []DevfileIndexEntry{
 				{
 					DisplayName: "NodeJS Angular Web Application",
@@ -282,11 +285,13 @@ func TestGetDevfileIndex(t *testing.T) {
 					},
 					Icon:              "/images/angular.svg",
 					GlobalMemoryLimit: "2686Mi",
+					Registry: Registry{
+						Name: registryName,
+						URL:  server.URL,
+					},
 					Links: struct {
-						base string
 						Link string `json:"self"`
 					}{
-						base: server.URL,
 						Link: "/devfiles/angular/devfile.yaml",
 					},
 				},
@@ -296,7 +301,7 @@ func TestGetDevfileIndex(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetDevfileIndex(tt.devfileIndexLink)
+			got, err := getDevfileIndexEntriesFrom(tt.registryName, tt.registryURL)
 
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Got: %v, want: %v", got, tt.want)
