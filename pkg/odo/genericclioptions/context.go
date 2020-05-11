@@ -471,16 +471,17 @@ func newDevfileContext(command *cobra.Command) *Context {
 		util.LogErrorAndExit(err, "unable to retrieve configuration information")
 	}
 
+	internalCxt.EnvSpecificInfo = envInfo
+	internalCxt.Application = ResolveApp(command, true, envInfo)
+
 	if !pushtarget.IsPushTargetDocker() {
 		// create a new kclient
 		kClient := kClient(command)
 		internalCxt.KClient = kClient
 
-		internalCxt.EnvSpecificInfo = envInfo
 		internalCxt.Project = resolveNamespace(command, kClient, envInfo)
 
 		// ignore the "true" for now
-		internalCxt.Application = ResolveApp(command, true, envInfo)
 	}
 	// create a context from the internal representation
 	context := &Context{
