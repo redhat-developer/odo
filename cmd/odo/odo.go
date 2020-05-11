@@ -45,17 +45,6 @@ func main() {
 		}
 	}
 
-	// Override the logging level by the value (if set) by the ODO_LOG_LEVEL env
-	// The "-v" flag set on command line will take precedence over ODO_LOG_LEVEL env
-	v := flag.CommandLine.Lookup("v").Value.String()
-
-	// if the output flag is set, we don't turn on ODO_LOG_LEVEL
-	outputFlag := pflag.Lookup("o")
-	hasFlagChanged := outputFlag != nil && outputFlag.Changed
-	if level, ok := os.LookupEnv("ODO_LOG_LEVEL"); ok && v == "0" && hasFlagChanged {
-		_ = flag.CommandLine.Set("v", level)
-	}
-
 	// run the completion, in case that the completion was invoked
 	// and ran as a completion script or handled a flag that passed
 	// as argument, the Run method will return true,
