@@ -11,7 +11,7 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/util"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 )
 
 type SyncClient interface {
@@ -31,7 +31,7 @@ func CopyFile(client SyncClient, localPath string, compInfo common.ComponentInfo
 	dest := filepath.ToSlash(filepath.Join(targetPath, filepath.Base(localPath)))
 	targetPath = filepath.ToSlash(targetPath)
 
-	glog.V(4).Infof("CopyFile arguments: localPath %s, dest %s, targetPath %s, copyFiles %s, globalExps %s", localPath, dest, targetPath, copyFiles, globExps)
+	klog.V(4).Infof("CopyFile arguments: localPath %s, dest %s, targetPath %s, copyFiles %s, globalExps %s", localPath, dest, targetPath, copyFiles, globExps)
 	reader, writer := io.Pipe()
 	// inspired from https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L235
 	go func() {
@@ -72,7 +72,7 @@ func makeTar(srcPath, destPath string, writer io.Writer, files []string, globExp
 	// are converted to forward.
 	destPath = filepath.ToSlash(filepath.Clean(destPath))
 
-	glog.V(4).Infof("makeTar arguments: srcPath: %s, destPath: %s, files: %+v", srcPath, destPath, files)
+	klog.V(4).Infof("makeTar arguments: srcPath: %s, destPath: %s, files: %+v", srcPath, destPath, files)
 	if len(files) != 0 {
 		//watchTar
 		for _, fileName := range files {
@@ -86,8 +86,8 @@ func makeTar(srcPath, destPath string, writer io.Writer, files []string, globExp
 				if err != nil {
 					return err
 				}
-				glog.V(4).Infof("Got abs path: %s", fileAbsolutePath)
-				glog.V(4).Infof("Making %s relative to %s", srcPath, fileAbsolutePath)
+				klog.V(4).Infof("Got abs path: %s", fileAbsolutePath)
+				klog.V(4).Infof("Making %s relative to %s", srcPath, fileAbsolutePath)
 
 				// We use "FromSlash" to make this OS-based (Windows uses \, Linux & macOS use /)
 				// we get the relative path by joining the two
@@ -99,8 +99,8 @@ func makeTar(srcPath, destPath string, writer io.Writer, files []string, globExp
 				// Now we get the source file and join it to the base directory.
 				srcFile := filepath.Join(filepath.Base(srcPath), destFile)
 
-				glog.V(4).Infof("makeTar srcFile: %s", srcFile)
-				glog.V(4).Infof("makeTar destFile: %s", destFile)
+				klog.V(4).Infof("makeTar srcFile: %s", srcFile)
+				klog.V(4).Infof("makeTar destFile: %s", destFile)
 
 				// The file could be a regular file or even a folder, so use recursiveTar which handles symlinks, regular files and folders
 				err = recursiveTar(filepath.Dir(srcPath), srcFile, filepath.Dir(destPath), destFile, tarWriter, globExps)
@@ -118,13 +118,13 @@ func makeTar(srcPath, destPath string, writer io.Writer, files []string, globExp
 
 // recursiveTar function is copied from https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/cp.go#L319
 func recursiveTar(srcBase, srcFile, destBase, destFile string, tw *taro.Writer, globExps []string) error {
-	glog.V(4).Infof("recursiveTar arguments: srcBase: %s, srcFile: %s, destBase: %s, destFile: %s", srcBase, srcFile, destBase, destFile)
+	klog.V(4).Infof("recursiveTar arguments: srcBase: %s, srcFile: %s, destBase: %s, destFile: %s", srcBase, srcFile, destBase, destFile)
 
 	// The destination is a LINUX container and thus we *must* use ToSlash in order
 	// to get the copying over done correctly..
 	destBase = filepath.ToSlash(destBase)
 	destFile = filepath.ToSlash(destFile)
-	glog.V(4).Infof("Corrected destinations: base: %s file: %s", destBase, destFile)
+	klog.V(4).Infof("Corrected destinations: base: %s file: %s", destBase, destFile)
 
 	joinedPath := filepath.Join(srcBase, srcFile)
 	matchedPathsDir, err := filepath.Glob(joinedPath)

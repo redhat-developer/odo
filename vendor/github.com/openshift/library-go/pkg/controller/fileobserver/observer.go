@@ -10,7 +10,8 @@ import (
 
 type Observer interface {
 	Run(stopChan <-chan struct{})
-	AddReactor(reaction reactorFn, startingFileContent map[string][]byte, files ...string) Observer
+	HasSynced() bool
+	AddReactor(reaction ReactorFn, startingFileContent map[string][]byte, files ...string) Observer
 }
 
 // ActionType define a type of action observed on the file
@@ -27,6 +28,19 @@ const (
 	FileDeleted
 )
 
+func (t ActionType) name() string {
+	switch t {
+	case FileCreated:
+		return "create"
+	case FileDeleted:
+		return "delete"
+	case FileModified:
+		return "modified"
+	default:
+		return "unknown"
+	}
+}
+
 // String returns human readable form of action taken on a file.
 func (t ActionType) String(filename string) string {
 	switch t {
@@ -40,20 +54,26 @@ func (t ActionType) String(filename string) string {
 	return ""
 }
 
-// reactorFn define a reaction function called when an observed file is modified.
-type reactorFn func(file string, action ActionType) error
+// ReactorFn define a reaction function called when an observed file is modified.
+type ReactorFn func(file string, action ActionType) error
 
 // ExitOnChangeReactor provides reactor function that causes the process to exit when the change is detected.
-var ExitOnChangeReactor reactorFn = func(filename string, action ActionType) error {
-	klog.Infof("exiting because %q changed", filename)
-	os.Exit(0)
-	return nil
+// DEPRECATED: Using this function cause process to exit immediately without proper shutdown (context close/etc.)
+//             Use the TerminateOnChangeReactor() instead.
+var ExitOnChangeReactor = TerminateOnChangeReactor(func() { os.Exit(0) })
+
+func TerminateOnChangeReactor(terminateFn func()) ReactorFn {
+	return func(filename string, action ActionType) error {
+		klog.Infof("Triggering shutdown because %s", action.String(filename))
+		terminateFn()
+		return nil
+	}
 }
 
 func NewObserver(interval time.Duration) (Observer, error) {
 	return &pollingObserver{
 		interval: interval,
-		reactors: map[string][]reactorFn{},
-		files:    map[string]string{},
+		reactors: map[string][]ReactorFn{},
+		files:    map[string]fileHashAndState{},
 	}, nil
 }

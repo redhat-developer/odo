@@ -62,10 +62,6 @@ func TestErrorf(t *testing.T) {
 		chain("wraps:wrapw/path.TestErrorf/path.go:xxx",
 			"chained/somefile.go:xxx"),
 	}, {
-		xerrors.Errorf("wrapw %w middle", chained),
-		chain("wraps:wrapw chained middle/path.TestErrorf/path.go:xxx",
-			"chained/somefile.go:xxx"),
-	}, {
 		xerrors.Errorf("not wrapped: %+v", chained),
 		chain("not wrapped: chained: somefile.go:123/path.TestErrorf/path.go:xxx"),
 	}}
@@ -160,7 +156,7 @@ func TestErrorFormatter(t *testing.T) {
 		fmt: "%+v",
 		want: "something:" +
 			"\n    golang.org/x/xerrors_test.TestErrorFormatter" +
-			"\n        .+/fmt_test.go:101" +
+			"\n        .+/fmt_test.go:97" +
 			"\n    something more",
 		regexp: true,
 	}, {

@@ -5,7 +5,12 @@ import (
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorlister"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+type nowFunc func() metav1.Time
 
 const (
 	// CatalogSourceLabelKey is the key for a label containing a CatalogSource name.
@@ -37,6 +42,7 @@ type RegistryReconcilerFactory interface {
 
 // RegistryReconcilerFactory is a factory for RegistryReconcilers.
 type registryReconcilerFactory struct {
+	now                  nowFunc
 	Lister               operatorlister.OperatorLister
 	OpClient             operatorclient.ClientInterface
 	ConfigMapServerImage string
@@ -44,9 +50,11 @@ type registryReconcilerFactory struct {
 
 // ReconcilerForSource returns a RegistryReconciler based on the configuration of the given CatalogSource.
 func (r *registryReconcilerFactory) ReconcilerForSource(source *v1alpha1.CatalogSource) RegistryReconciler {
+	// TODO: add memoization by source type
 	switch source.Spec.SourceType {
 	case v1alpha1.SourceTypeInternal, v1alpha1.SourceTypeConfigmap:
 		return &ConfigMapRegistryReconciler{
+			now:      r.now,
 			Lister:   r.Lister,
 			OpClient: r.OpClient,
 			Image:    r.ConfigMapServerImage,
@@ -54,21 +62,90 @@ func (r *registryReconcilerFactory) ReconcilerForSource(source *v1alpha1.Catalog
 	case v1alpha1.SourceTypeGrpc:
 		if source.Spec.Image != "" {
 			return &GrpcRegistryReconciler{
+				now:      r.now,
 				Lister:   r.Lister,
 				OpClient: r.OpClient,
 			}
 		} else if source.Spec.Address != "" {
-			return &GrpcAddressRegistryReconciler{}
+			return &GrpcAddressRegistryReconciler{
+				now: r.now,
+			}
 		}
 	}
 	return nil
 }
 
 // NewRegistryReconcilerFactory returns an initialized RegistryReconcilerFactory.
-func NewRegistryReconcilerFactory(lister operatorlister.OperatorLister, opClient operatorclient.ClientInterface, configMapServerImage string) RegistryReconcilerFactory {
+func NewRegistryReconcilerFactory(lister operatorlister.OperatorLister, opClient operatorclient.ClientInterface, configMapServerImage string, now nowFunc) RegistryReconcilerFactory {
 	return &registryReconcilerFactory{
+		now:                  now,
 		Lister:               lister,
 		OpClient:             opClient,
 		ConfigMapServerImage: configMapServerImage,
 	}
+}
+
+func Pod(source *v1alpha1.CatalogSource, name string, image string, labels map[string]string, readinessDelay int32, livenessDelay int32) *v1.Pod {
+	// ensure catalog image is pulled always if catalog polling is configured
+	var pullPolicy v1.PullPolicy
+	if source.Spec.UpdateStrategy != nil {
+		pullPolicy = v1.PullAlways
+	} else {
+		pullPolicy = v1.PullIfNotPresent
+	}
+
+	pod := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: source.GetName() + "-",
+			Namespace:    source.GetNamespace(),
+			Labels:       labels,
+		},
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				{
+					Name:  name,
+					Image: image,
+					Ports: []v1.ContainerPort{
+						{
+							Name:          "grpc",
+							ContainerPort: 50051,
+						},
+					},
+					ReadinessProbe: &v1.Probe{
+						Handler: v1.Handler{
+							Exec: &v1.ExecAction{
+								Command: []string{"grpc_health_probe", "-addr=localhost:50051"},
+							},
+						},
+						InitialDelaySeconds: readinessDelay,
+						TimeoutSeconds: 5,
+					},
+					LivenessProbe: &v1.Probe{
+						Handler: v1.Handler{
+							Exec: &v1.ExecAction{
+								Command: []string{"grpc_health_probe", "-addr=localhost:50051"},
+							},
+						},
+						InitialDelaySeconds: livenessDelay,
+					},
+					Resources: v1.ResourceRequirements{
+						Requests: v1.ResourceList{
+							v1.ResourceCPU:    resource.MustParse("10m"),
+							v1.ResourceMemory: resource.MustParse("50Mi"),
+						},
+					},
+					ImagePullPolicy: pullPolicy,
+				},
+			},
+			Tolerations: []v1.Toleration{
+				{
+					Operator: v1.TolerationOpExists,
+				},
+			},
+			NodeSelector: map[string]string{
+				"beta.kubernetes.io/os": "linux",
+			},
+		},
+	}
+	return pod
 }

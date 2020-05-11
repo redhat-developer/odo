@@ -11,18 +11,20 @@ import (
 	"github.com/docker/docker/api/types/mount"
 
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/util"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 )
 
 const (
 	supervisordVolume = "supervisord"
 	projectsVolume    = "projects"
+	volume            = "vol"
 )
 
 // ComponentExists checks if Docker containers labeled with the specified component name exists
@@ -205,7 +207,7 @@ func UpdateComponentWithSupervisord(comp *common.DevfileComponent, runCommand co
 			AddVolumeToContainer(supervisordVolumeName, adaptersCommon.SupervisordMountPath, hostConfig)
 
 			if len(comp.Command) == 0 && len(comp.Args) == 0 {
-				glog.V(4).Infof("Updating container %v entrypoint with supervisord", *comp.Alias)
+				klog.V(4).Infof("Updating container %v entrypoint with supervisord", *comp.Alias)
 				comp.Command = append(comp.Command, adaptersCommon.SupervisordBinaryPath)
 				comp.Args = append(comp.Args, "-c", adaptersCommon.SupervisordConfFile)
 			}
@@ -234,17 +236,26 @@ func UpdateComponentWithSupervisord(comp *common.DevfileComponent, runCommand co
 // CreateAndInitSupervisordVolume creates the supervisord volume and initializes
 // it with supervisord bootstrap image - assembly files and supervisord binary
 func CreateAndInitSupervisordVolume(client lclient.Client) (string, error) {
+	log.Info("\nInitialization")
+	s := log.Spinner("Initializing the component")
+	defer s.End(false)
+
+	supervisordVolumeName, err := storage.GenerateVolName(adaptersCommon.SupervisordVolumeName, volume)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to generate volume name for supervisord")
+	}
+
 	supervisordLabels := GetSupervisordVolumeLabels()
-	supervisordVolume, err := client.CreateVolume(adaptersCommon.SupervisordVolumeName, supervisordLabels)
+	_, err = client.CreateVolume(supervisordVolumeName, supervisordLabels)
 	if err != nil {
 		return "", errors.Wrapf(err, "Unable to create supervisord volume for component")
 	}
-	supervisordVolumeName := supervisordVolume.Name
 
 	err = StartBootstrapSupervisordInitContainer(client, supervisordVolumeName)
 	if err != nil {
 		return "", errors.Wrapf(err, "Unable to start supervisord container for component")
 	}
+	s.End(true)
 
 	return supervisordVolumeName, nil
 }

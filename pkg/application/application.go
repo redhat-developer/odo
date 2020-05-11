@@ -1,8 +1,8 @@
 package application
 
 import (
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	"github.com/openshift/odo/pkg/component"
@@ -46,7 +46,7 @@ func ListInProject(client *occlient.Client) ([]string, error) {
 	// however, we should at least warn the user.
 	serviceInstanceAppNames, err := client.GetServiceInstanceLabelValues(applabels.ApplicationLabel, applabels.ApplicationLabel)
 	if err != nil {
-		glog.V(4).Infof("Unable to list Service Catalog instances: %s", err)
+		klog.V(4).Infof("Unable to list Service Catalog instances: %s", err)
 	} else {
 		appNames = append(deploymentConfigAppNames, serviceInstanceAppNames...)
 	}
@@ -72,7 +72,7 @@ func Exists(app string, client *occlient.Client) (bool, error) {
 
 // Delete deletes the given application
 func Delete(client *occlient.Client, name string) error {
-	glog.V(4).Infof("Deleting application %s", name)
+	klog.V(4).Infof("Deleting application %s", name)
 
 	labels := applabels.GetLabels(name, false)
 
@@ -81,7 +81,7 @@ func Delete(client *occlient.Client, name string) error {
 	svcList, err := service.List(client, name)
 	if err != nil {
 		// error is returned when there's no Service Catalog enabled in the service
-		glog.V(4).Infof("Service catalog is not enabled in the cluster, skipping service deletion")
+		klog.V(4).Infof("Service catalog is not enabled in the cluster, skipping service deletion")
 	} else {
 		for _, svc := range svcList.Items {
 			err = service.DeleteServiceAndUnlinkComponents(client, svc.Name, name)

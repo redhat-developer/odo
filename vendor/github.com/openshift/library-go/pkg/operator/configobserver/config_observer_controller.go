@@ -2,6 +2,7 @@ package configobserver
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -19,12 +20,12 @@ import (
 	"k8s.io/client-go/util/workqueue"
 
 	operatorv1 "github.com/openshift/api/operator/v1"
+	"github.com/openshift/library-go/pkg/operator/condition"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/resourcesynccontroller"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 )
 
-const operatorStatusTypeConfigObservationDegraded = "ConfigObservationDegraded"
 const configObserverWorkKey = "key"
 
 // Listers is an interface which will be passed to the config observer funcs.  It is expected to be hard-cast to the "correct" type
@@ -126,7 +127,7 @@ func (c ConfigObserver) sync() error {
 
 	// update failing condition
 	cond := operatorv1.OperatorCondition{
-		Type:   operatorStatusTypeConfigObservationDegraded,
+		Type:   condition.ConfigObservationDegradedConditionType,
 		Status: operatorv1.ConditionFalse,
 	}
 	if configError != nil {
@@ -141,24 +142,24 @@ func (c ConfigObserver) sync() error {
 	return configError
 }
 
-func (c *ConfigObserver) Run(workers int, stopCh <-chan struct{}) {
+func (c *ConfigObserver) Run(ctx context.Context, workers int) {
 	defer utilruntime.HandleCrash()
 	defer c.queue.ShutDown()
 
 	klog.Infof("Starting ConfigObserver")
 	defer klog.Infof("Shutting down ConfigObserver")
-	if !cache.WaitForCacheSync(stopCh, c.listers.PreRunHasSynced()...) {
+	if !cache.WaitForCacheSync(ctx.Done(), c.listers.PreRunHasSynced()...) {
 		utilruntime.HandleError(fmt.Errorf("caches did not sync"))
 		return
 	}
 
 	// doesn't matter what workers say, only start one.
-	go wait.Until(c.runWorker, time.Second, stopCh)
+	go wait.UntilWithContext(ctx, c.runWorker, time.Second)
 
-	<-stopCh
+	<-ctx.Done()
 }
 
-func (c *ConfigObserver) runWorker() {
+func (c *ConfigObserver) runWorker(_ context.Context) {
 	for c.processNextWorkItem() {
 	}
 }

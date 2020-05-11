@@ -3,9 +3,9 @@ package parser
 import (
 	"fmt"
 
-	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 	"github.com/openshift/odo/pkg/util"
+	"k8s.io/klog"
 )
 
 // DevfileCtx stores context info regarding devfile
@@ -45,7 +45,7 @@ func (d *DevfileCtx) Populate() (err error) {
 	if d.absPath, err = util.GetAbsPath(d.relPath); err != nil {
 		return err
 	}
-	glog.V(4).Infof("absolute devfile path: '%s'", d.absPath)
+	klog.V(4).Infof("absolute devfile path: '%s'", d.absPath)
 
 	// Read and save devfile content
 	if err := d.SetDevfileContent(); err != nil {
@@ -61,7 +61,7 @@ func (d *DevfileCtx) Populate() (err error) {
 	if !d.IsApiVersionSupported() {
 		return fmt.Errorf("devfile apiVersion '%s' not supported in odo", d.apiVersion)
 	}
-	glog.V(4).Infof("devfile apiVersion '%s' is supported in odo", d.apiVersion)
+	klog.V(4).Infof("devfile apiVersion '%s' is supported in odo", d.apiVersion)
 
 	// Read and save devfile JSON schema for provided apiVersion
 	if err := d.SetDevfileJSONSchema(); err != nil {

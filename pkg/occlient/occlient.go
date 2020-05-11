@@ -17,8 +17,8 @@ import (
 	"github.com/olekukonko/tablewriter"
 
 	"github.com/fatih/color"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
@@ -27,7 +27,7 @@ import (
 	"github.com/openshift/odo/pkg/util"
 
 	// api clientsets
-	servicecatalogclienset "github.com/kubernetes-incubator/service-catalog/pkg/client/clientset_generated/clientset/typed/servicecatalog/v1beta1"
+	servicecatalogclienset "github.com/kubernetes-sigs/service-catalog/pkg/client/clientset_generated/clientset/typed/servicecatalog/v1beta1"
 	appsschema "github.com/openshift/client-go/apps/clientset/versioned/scheme"
 	appsclientset "github.com/openshift/client-go/apps/clientset/versioned/typed/apps/v1"
 	buildschema "github.com/openshift/client-go/build/clientset/versioned/scheme"
@@ -38,7 +38,7 @@ import (
 	userclientset "github.com/openshift/client-go/user/clientset/versioned/typed/user/v1"
 
 	// api resource types
-	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
+	scv1beta1 "github.com/kubernetes-sigs/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	appsv1 "github.com/openshift/api/apps/v1"
 	buildv1 "github.com/openshift/api/build/v1"
 	dockerapiv10 "github.com/openshift/api/image/docker10"
@@ -57,6 +57,7 @@ import (
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/apimachinery/pkg/watch"
 
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -209,6 +210,7 @@ type Client struct {
 	routeClient          routeclientset.RouteV1Interface
 	userClient           userclientset.UserV1Interface
 	KubeConfig           clientcmd.ClientConfig
+	discoveryClient      discovery.DiscoveryClient
 	Namespace            string
 }
 
@@ -274,6 +276,12 @@ func New() (*Client, error) {
 	}
 
 	client.userClient = userClient
+
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	client.discoveryClient = *discoveryClient
 
 	namespace, _, err := client.KubeConfig.Namespace()
 	if err != nil {
@@ -388,28 +396,28 @@ func (c *Client) GetPortsFromBuilderImage(componentType string) ([]string, error
 func (c *Client) RunLogout(stdout io.Writer) error {
 	output, err := c.userClient.Users().Get("~", metav1.GetOptions{})
 	if err != nil {
-		glog.V(1).Infof("%v : unable to get userinfo", err)
+		klog.V(1).Infof("%v : unable to get userinfo", err)
 	}
 
 	// read the current config form ~/.kube/config
 	conf, err := c.KubeConfig.ClientConfig()
 	if err != nil {
-		glog.V(1).Infof("%v : unable to get client config", err)
+		klog.V(1).Infof("%v : unable to get client config", err)
 	}
 	// initialising oauthv1client
 	client, err := oauthv1client.NewForConfig(conf)
 	if err != nil {
-		glog.V(1).Infof("%v : unable to create a new OauthV1Client", err)
+		klog.V(1).Infof("%v : unable to create a new OauthV1Client", err)
 	}
 
 	// deleting token form the server
 	if err := client.OAuthAccessTokens().Delete(conf.BearerToken, &metav1.DeleteOptions{}); err != nil {
-		glog.V(1).Infof("%v", err)
+		klog.V(1).Infof("%v", err)
 	}
 
 	rawConfig, err := c.KubeConfig.RawConfig()
 	if err != nil {
-		glog.V(1).Infof("%v : unable to switch to  project", err)
+		klog.V(1).Infof("%v : unable to switch to  project", err)
 	}
 
 	// deleting token for the current server from local config
@@ -420,7 +428,7 @@ func (c *Client) RunLogout(stdout io.Writer) error {
 	}
 	err = clientcmd.ModifyConfig(clientcmd.NewDefaultClientConfigLoadingRules(), rawConfig, true)
 	if err != nil {
-		glog.V(1).Infof("%v : unable to write config to config file", err)
+		klog.V(1).Infof("%v : unable to write config to config file", err)
 	}
 
 	_, err = io.WriteString(stdout, fmt.Sprintf("Logged \"%v\" out on \"%v\"\n", output.Name, conf.Host))
@@ -437,22 +445,22 @@ func isServerUp(server string) bool {
 	// before proceeding with default timeout
 	cfg, configReadErr := preference.New()
 	if configReadErr != nil {
-		glog.V(4).Info(errors.Wrap(configReadErr, "unable to read config file"))
+		klog.V(4).Info(errors.Wrap(configReadErr, "unable to read config file"))
 	} else {
 		ocRequestTimeout = time.Duration(cfg.GetTimeout()) * time.Second
 	}
 	address, err := util.GetHostWithPort(server)
 	if err != nil {
-		glog.V(4).Infof("Unable to parse url %s (%s)", server, err)
+		klog.V(4).Infof("Unable to parse url %s (%s)", server, err)
 	}
-	glog.V(4).Infof("Trying to connect to server %s", address)
+	klog.V(4).Infof("Trying to connect to server %s", address)
 	_, connectionError := net.DialTimeout("tcp", address, time.Duration(ocRequestTimeout))
 	if connectionError != nil {
-		glog.V(4).Info(errors.Wrap(connectionError, "unable to connect to server"))
+		klog.V(4).Info(errors.Wrap(connectionError, "unable to connect to server"))
 		return false
 	}
 
-	glog.V(4).Infof("Server %v is up", server)
+	klog.V(4).Infof("Server %v is up", server)
 	return true
 }
 
@@ -528,12 +536,12 @@ func (c *Client) CreateNewProject(projectName string, wait bool) error {
 				break
 			}
 			if prj, ok := val.Object.(*projectv1.Project); ok {
-				glog.V(4).Infof("Status of creation of project %s is %s", prj.Name, prj.Status.Phase)
+				klog.V(4).Infof("Status of creation of project %s is %s", prj.Name, prj.Status.Phase)
 				switch prj.Status.Phase {
 				//prj.Status.Phase can only be "Terminating" or "Active" or ""
 				case corev1.NamespaceActive:
 					if val.Type == watch.Added {
-						glog.V(4).Infof("Project %s now exists", prj.Name)
+						klog.V(4).Infof("Project %s now exists", prj.Name)
 						return nil
 					}
 					if val.Type == watch.Error {
@@ -568,7 +576,7 @@ func (c *Client) WaitForServiceAccountInNamespace(namespace, serviceAccountName 
 				}
 				if serviceAccount, ok := val.Object.(*corev1.ServiceAccount); ok {
 					if serviceAccount.Name == serviceAccountName {
-						glog.V(4).Infof("Status of creation of service account %s is ready", serviceAccount)
+						klog.V(4).Infof("Status of creation of service account %s is ready", serviceAccount)
 						return nil
 					}
 				}
@@ -781,7 +789,7 @@ func (c *Client) GetImageStreamImage(imageStream *imagev1.ImageStream, imageTag 
 	for _, tag := range imageStream.Status.Tags {
 		// look for matching tag
 		if tag.Tag == imageTag {
-			glog.V(4).Infof("Found exact image tag match for %s:%s", imageName, imageTag)
+			klog.V(4).Infof("Found exact image tag match for %s:%s", imageName, imageTag)
 
 			if len(tag.Items) > 0 {
 				tagDigest := tag.Items[0].Image
@@ -835,7 +843,7 @@ func getAppRootVolumeName(dcName string) string {
 // inputPorts is the array containing the string port values
 // envVars is the array containing the string env var values
 func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta) error {
-	glog.V(4).Infof("Using BuilderImage: %s", params.ImageName)
+	klog.V(4).Infof("Using BuilderImage: %s", params.ImageName)
 	imageNS, imageName, imageTag, _, err := ParseImageName(params.ImageName)
 	if err != nil {
 		return errors.Wrap(err, "unable to parse image name")
@@ -850,7 +858,7 @@ func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta
 	*/
 
 	imageNS = imageStream.ObjectMeta.Namespace
-	glog.V(4).Infof("Using imageNS: %s", imageNS)
+	klog.V(4).Infof("Using imageNS: %s", imageNS)
 
 	imageStreamImage, err := c.GetImageStreamImage(imageStream, imageTag)
 	if err != nil {
@@ -909,7 +917,7 @@ func (c *Client) NewAppS2I(params CreateArgs, commonObjectMeta metav1.ObjectMeta
 		return errors.Wrapf(err, "unable to create DeploymentConfig for %s", commonObjectMeta.Name)
 	}
 
-	ownerReference := generateOwnerReference(createdDC)
+	ownerReference := GenerateOwnerReference(createdDC)
 
 	// update the owner references for the new storage
 	for _, storage := range params.StorageToBeMounted {
@@ -1008,7 +1016,7 @@ func GetS2IMetaInfoFromBuilderImg(builderImage *imagev1.ImageStreamImage) (S2IPa
 
 	// If by any chance, labels attribute is nil(although ideally not the case for builder images), return
 	if dimdr.ContainerConfig.Labels == nil {
-		glog.V(4).Infof("No Labels found in %+v in builder image %+v", dimdr, builderImage)
+		klog.V(4).Infof("No Labels found in %+v in builder image %+v", dimdr, builderImage)
 		return S2IPaths{}, nil
 	}
 
@@ -1211,9 +1219,9 @@ func (c *Client) BootstrapSupervisoredS2I(params CreateArgs, commonObjectMeta me
 
 	var jsonDC []byte
 	jsonDC, _ = json.Marshal(createdDC)
-	glog.V(5).Infof("Created new DeploymentConfig:\n%s\n", string(jsonDC))
+	klog.V(5).Infof("Created new DeploymentConfig:\n%s\n", string(jsonDC))
 
-	ownerReference := generateOwnerReference(createdDC)
+	ownerReference := GenerateOwnerReference(createdDC)
 
 	// update the owner references for the new storage
 	for _, storage := range params.StorageToBeMounted {
@@ -1413,7 +1421,7 @@ func (c *Client) PatchCurrentDC(dc appsv1.DeploymentConfig, prePatchDCHandler dc
 		if errCurrent != nil || errUpdated != nil {
 			return errors.Wrapf(err, "unable to unmarshal dc")
 		}
-		glog.V(4).Infof("going to wait for new deployment roll out because updatedDc Spec.Template: %v doesn't match currentDc Spec.Template: %v", string(updatedDCBytes), string(currentDCBytes))
+		klog.V(4).Infof("going to wait for new deployment roll out because updatedDc Spec.Template: %v doesn't match currentDc Spec.Template: %v", string(updatedDCBytes), string(currentDCBytes))
 
 	}
 
@@ -1431,7 +1439,7 @@ func (c *Client) PatchCurrentDC(dc appsv1.DeploymentConfig, prePatchDCHandler dc
 
 	// update the owner references for the new storage
 	for _, storage := range ucp.StorageToBeMounted {
-		err := updateStorageOwnerReference(c, storage, generateOwnerReference(updatedDc))
+		err := updateStorageOwnerReference(c, storage, GenerateOwnerReference(updatedDc))
 		if err != nil {
 			return errors.Wrapf(err, "unable to update owner reference of storage")
 		}
@@ -1608,7 +1616,7 @@ func (c *Client) UpdateDCToSupervisor(ucp UpdateComponentParams, isToLocal bool,
 		)
 		addInitVolumesToDC(&dc, ucp.CommonObjectMeta.Name, s2iPaths.DeploymentDir)
 
-		ownerReference := generateOwnerReference(ucp.ExistingDC)
+		ownerReference := GenerateOwnerReference(ucp.ExistingDC)
 
 		// Setup PVC
 		_, err = c.CreatePVC(getAppRootVolumeName(ucp.CommonObjectMeta.Name), "1Gi", ucp.CommonObjectMeta.Labels, ownerReference)
@@ -1678,14 +1686,14 @@ func (c *Client) UpdateDCAnnotations(dcName string, annotations map[string]strin
 func removeTracesOfSupervisordFromDC(dc *appsv1.DeploymentConfig) error {
 	dcName := dc.Name
 
-	found := removeVolumeFromDC(getAppRootVolumeName(dcName), dc)
-	if !found {
-		return errors.New("unable to find volume in dc with name: " + dcName)
+	err := removeVolumeFromDC(getAppRootVolumeName(dcName), dc)
+	if err != nil {
+		return err
 	}
 
-	found = removeVolumeMountsFromDC(getAppRootVolumeName(dcName), dc)
-	if !found {
-		return errors.New("unable to find volume mount in dc with name: " + dcName)
+	err = removeVolumeMountsFromDC(getAppRootVolumeName(dcName), dc)
+	if err != nil {
+		return err
 	}
 
 	// remove the one bootstrapped init container
@@ -1711,7 +1719,7 @@ func (c *Client) GetLatestBuildName(buildConfigName string) (string, error) {
 
 // StartBuild starts new build as it is, returns name of the build stat was started
 func (c *Client) StartBuild(name string) (string, error) {
-	glog.V(4).Infof("Build %s started.", name)
+	klog.V(4).Infof("Build %s started.", name)
 	buildRequest := buildv1.BuildRequest{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
@@ -1721,7 +1729,7 @@ func (c *Client) StartBuild(name string) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to instantiate BuildConfig for %s", name)
 	}
-	glog.V(4).Infof("Build %s for BuildConfig %s triggered.", name, result.Name)
+	klog.V(4).Infof("Build %s for BuildConfig %s triggered.", name, result.Name)
 
 	return result.Name, nil
 }
@@ -1730,7 +1738,7 @@ func (c *Client) StartBuild(name string) (string, error) {
 func (c *Client) WaitForBuildToFinish(buildName string, stdout io.Writer) error {
 	// following indicates if we have already setup the following logic
 	following := false
-	glog.V(4).Infof("Waiting for %s  build to finish", buildName)
+	klog.V(4).Infof("Waiting for %s  build to finish", buildName)
 
 	// start a watch on the build resources and look for the given build name
 	w, err := c.buildClient.Builds(c.Namespace).Watch(metav1.ListOptions{
@@ -1750,11 +1758,11 @@ func (c *Client) WaitForBuildToFinish(buildName string, stdout io.Writer) error 
 			}
 			// cast the object returned to a build object and check the phase of the build
 			if e, ok := val.Object.(*buildv1.Build); ok {
-				glog.V(4).Infof("Status of %s build is %s", e.Name, e.Status.Phase)
+				klog.V(4).Infof("Status of %s build is %s", e.Name, e.Status.Phase)
 				switch e.Status.Phase {
 				case buildv1.BuildPhaseComplete:
 					// the build is completed thus return
-					glog.V(4).Infof("Build %s completed.", e.Name)
+					klog.V(4).Infof("Build %s completed.", e.Name)
 					return nil
 				case buildv1.BuildPhaseFailed, buildv1.BuildPhaseCancelled, buildv1.BuildPhaseError:
 					// the build failed/got cancelled/error occurred thus return with error
@@ -1839,7 +1847,7 @@ func (c *Client) CollectEvents(selector string, events map[string]corev1.Event, 
 	for {
 		select {
 		case <-quit:
-			glog.V(4).Info("Quitting collect events")
+			klog.V(4).Info("Quitting collect events")
 			return
 		case val, ok := <-eventWatcher.ResultChan():
 			mu.Lock()
@@ -1855,7 +1863,7 @@ func (c *Client) CollectEvents(selector string, events map[string]corev1.Event, 
 					if e.Count >= failedEventCount {
 						newEvent := e
 						(events)[e.Name] = *newEvent
-						glog.V(4).Infof("Warning Event: Count: %d, Reason: %s, Message: %s", e.Count, e.Reason, e.Message)
+						klog.V(4).Infof("Warning Event: Count: %d, Reason: %s, Message: %s", e.Count, e.Reason, e.Message)
 						// Change the spinner message to show the warning
 						spinner.WarningStatus(fmt.Sprintf("WARNING x%d: %s", e.Count, e.Reason))
 					}
@@ -1879,12 +1887,12 @@ func (c *Client) WaitAndGetPod(selector string, desiredPhase corev1.PodPhase, wa
 	pushTimeout := preference.DefaultPushTimeout * time.Second
 	cfg, configReadErr := preference.New()
 	if configReadErr != nil {
-		glog.V(4).Info(errors.Wrap(configReadErr, "unable to read config file"))
+		klog.V(4).Info(errors.Wrap(configReadErr, "unable to read config file"))
 	} else {
 		pushTimeout = time.Duration(cfg.GetPushTimeout()) * time.Second
 	}
 
-	glog.V(4).Infof("Waiting for %s pod", selector)
+	klog.V(4).Infof("Waiting for %s pod", selector)
 	spinner := log.Spinner(waitMessage)
 	defer spinner.End(false)
 
@@ -1908,10 +1916,10 @@ func (c *Client) WaitAndGetPod(selector string, desiredPhase corev1.PodPhase, wa
 				break loop
 			}
 			if e, ok := val.Object.(*corev1.Pod); ok {
-				glog.V(4).Infof("Status of %s pod is %s", e.Name, e.Status.Phase)
+				klog.V(4).Infof("Status of %s pod is %s", e.Name, e.Status.Phase)
 				switch e.Status.Phase {
 				case desiredPhase:
-					glog.V(4).Infof("Pod %s is %v", e.Name, desiredPhase)
+					klog.V(4).Infof("Pod %s is %v", e.Name, desiredPhase)
 					podChannel <- e
 					break loop
 				case corev1.PodFailed, corev1.PodUnknown:
@@ -1977,7 +1985,7 @@ See below for a list of failed events that occured more than %d times during dep
 
 // WaitAndGetSecret blocks and waits until the secret is available
 func (c *Client) WaitAndGetSecret(name string, namespace string) (*corev1.Secret, error) {
-	glog.V(4).Infof("Waiting for secret %s to become available", name)
+	klog.V(4).Infof("Waiting for secret %s to become available", name)
 
 	w, err := c.kubeClient.CoreV1().Secrets(namespace).Watch(metav1.ListOptions{
 		FieldSelector: fields.Set{"metadata.name": name}.AsSelector().String(),
@@ -1992,7 +2000,7 @@ func (c *Client) WaitAndGetSecret(name string, namespace string) (*corev1.Secret
 			break
 		}
 		if e, ok := val.Object.(*corev1.Secret); ok {
-			glog.V(4).Infof("Secret %s now exists", e.Name)
+			klog.V(4).Infof("Secret %s now exists", e.Name)
 			return e, nil
 		}
 	}
@@ -2094,7 +2102,7 @@ func (c *Client) Delete(labels map[string]string, wait bool) error {
 
 	// convert labels to selector
 	selector := util.ConvertLabelsToSelector(labels)
-	glog.V(4).Infof("Selectors used for deletion: %s", selector)
+	klog.V(4).Infof("Selectors used for deletion: %s", selector)
 
 	var errorList []string
 	var deletionPolicy = metav1.DeletePropagationBackground
@@ -2104,19 +2112,19 @@ func (c *Client) Delete(labels map[string]string, wait bool) error {
 		deletionPolicy = metav1.DeletePropagationForeground
 	}
 	// Delete DeploymentConfig
-	glog.V(4).Info("Deleting DeploymentConfigs")
+	klog.V(4).Info("Deleting DeploymentConfigs")
 	err := c.appsClient.DeploymentConfigs(c.Namespace).DeleteCollection(&metav1.DeleteOptions{PropagationPolicy: &deletionPolicy}, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		errorList = append(errorList, "unable to delete deploymentconfig")
 	}
 	// Delete BuildConfig
-	glog.V(4).Info("Deleting BuildConfigs")
+	klog.V(4).Info("Deleting BuildConfigs")
 	err = c.buildClient.BuildConfigs(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		errorList = append(errorList, "unable to delete buildconfig")
 	}
 	// Delete ImageStream
-	glog.V(4).Info("Deleting ImageStreams")
+	klog.V(4).Info("Deleting ImageStreams")
 	err = c.imageClient.ImageStreams(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		errorList = append(errorList, "unable to delete imagestream")
@@ -2144,7 +2152,7 @@ func (c *Client) Delete(labels map[string]string, wait bool) error {
 // WaitForComponentDeletion waits for component to be deleted
 func (c *Client) WaitForComponentDeletion(selector string) error {
 
-	glog.V(4).Infof("Waiting for component to get deleted")
+	klog.V(4).Infof("Waiting for component to get deleted")
 
 	watcher, err := c.appsClient.DeploymentConfigs(c.Namespace).Watch(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
@@ -2161,14 +2169,14 @@ func (c *Client) WaitForComponentDeletion(selector string) error {
 				return errors.New("Unable to watch deployment config")
 			}
 			if event.Type == watch.Deleted {
-				glog.V(4).Infof("WaitForComponentDeletion, Event Recieved:Deleted")
+				klog.V(4).Infof("WaitForComponentDeletion, Event Recieved:Deleted")
 				return nil
 			} else if event.Type == watch.Error {
-				glog.V(4).Infof("WaitForComponentDeletion, Event Recieved:Deleted ")
+				klog.V(4).Infof("WaitForComponentDeletion, Event Recieved:Deleted ")
 				return errors.New("Unable to watch deployment config")
 			}
 		case <-time.After(waitForComponentDeletionTimeout):
-			glog.V(4).Infof("WaitForComponentDeletion, Timeout")
+			klog.V(4).Infof("WaitForComponentDeletion, Timeout")
 			return errors.New("Time out waiting for component to get deleted")
 		}
 	}
@@ -2176,11 +2184,11 @@ func (c *Client) WaitForComponentDeletion(selector string) error {
 
 // DeleteServiceInstance takes labels as a input and based on it, deletes respective service instance
 func (c *Client) DeleteServiceInstance(labels map[string]string) error {
-	glog.V(4).Infof("Deleting Service Instance")
+	klog.V(4).Infof("Deleting Service Instance")
 
 	// convert labels to selector
 	selector := util.ConvertLabelsToSelector(labels)
-	glog.V(4).Infof("Selectors used for deletion: %s", selector)
+	klog.V(4).Infof("Selectors used for deletion: %s", selector)
 
 	// Listing out serviceInstance because `DeleteCollection` method don't work on serviceInstance
 	serviceInstances, err := c.GetServiceInstanceList(selector)
@@ -2254,7 +2262,7 @@ func (c *Client) DeleteProject(name string) error {
 		}
 		// So we depend on val.Type as val.Object.Status.Phase is just empty string and not a mapped value constant
 		if prj, ok := val.Object.(*projectv1.Project); ok {
-			glog.V(4).Infof("Status of delete of project %s is %s", name, prj.Status.Phase)
+			klog.V(4).Infof("Status of delete of project %s is %s", name, prj.Status.Phase)
 			switch prj.Status.Phase {
 			//prj.Status.Phase can only be "Terminating" or "Active" or ""
 			case "":
@@ -2332,7 +2340,7 @@ func (c *Client) GetServiceInstanceList(selector string) ([]scv1beta1.ServiceIns
 
 // GetBuildConfigFromName get BuildConfig by its name
 func (c *Client) GetBuildConfigFromName(name string) (*buildv1.BuildConfig, error) {
-	glog.V(4).Infof("Getting BuildConfig: %s", name)
+	klog.V(4).Infof("Getting BuildConfig: %s", name)
 	bc, err := c.buildClient.BuildConfigs(c.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to get BuildConfig %s", name)
@@ -2587,7 +2595,7 @@ func (c *Client) GetAllClusterServicePlans() ([]scv1beta1.ClusterServicePlan, er
 // serviceName is the name of the service for the target reference
 // portNumber is the target port of the route
 // secureURL indicates if the route is a secure one or not
-func (c *Client) CreateRoute(name string, serviceName string, portNumber intstr.IntOrString, labels map[string]string, secureURL bool) (*routev1.Route, error) {
+func (c *Client) CreateRoute(name string, serviceName string, portNumber intstr.IntOrString, labels map[string]string, secureURL bool, ownerReference metav1.OwnerReference) (*routev1.Route, error) {
 	route := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   name,
@@ -2611,16 +2619,6 @@ func (c *Client) CreateRoute(name string, serviceName string, portNumber intstr.
 		}
 	}
 
-	// since the serviceName is same as the DC name, we use that to get the DC
-	// to which this route belongs. A better way could be to get service from
-	// the name and set it as owner of the route
-	dc, err := c.GetDeploymentConfigFromName(serviceName)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get DeploymentConfig %s", name)
-	}
-
-	ownerReference := generateOwnerReference(dc)
-
 	route.SetOwnerReferences(append(route.GetOwnerReferences(), ownerReference))
 
 	r, err := c.routeClient.Routes(c.Namespace).Create(route)
@@ -2641,7 +2639,7 @@ func (c *Client) DeleteRoute(name string) error {
 
 // ListRoutes lists all the routes based on the given label selector
 func (c *Client) ListRoutes(labelSelector string) ([]routev1.Route, error) {
-	glog.V(4).Infof("Listing routes with label selector: %v", labelSelector)
+	klog.V(4).Infof("Listing routes with label selector: %v", labelSelector)
 	routeList, err := c.routeClient.Routes(c.Namespace).List(metav1.ListOptions{
 		LabelSelector: labelSelector,
 	})
@@ -2696,10 +2694,10 @@ func (c *Client) DeleteBuildConfig(commonObjectMeta metav1.ObjectMeta) error {
 
 	// Convert labels to selector
 	selector := util.ConvertLabelsToSelector(commonObjectMeta.Labels)
-	glog.V(4).Infof("DeleteBuildConfig selectors used for deletion: %s", selector)
+	klog.V(4).Infof("DeleteBuildConfig selectors used for deletion: %s", selector)
 
 	// Delete BuildConfig
-	glog.V(4).Info("Deleting BuildConfigs with DeleteBuildConfig")
+	klog.V(4).Info("Deleting BuildConfigs with DeleteBuildConfig")
 	return c.buildClient.BuildConfigs(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
 }
 
@@ -2723,15 +2721,18 @@ func (c *Client) RemoveVolumeFromDeploymentConfig(pvc string, dcName string) err
 			return fmt.Errorf("found more than one volume for PVC %v in DC %v, expected one", pvc, dc.Name)
 		}
 		volumeName := volumeNames[0]
+
 		// Remove volume if volume exists in Deployment Config
-		if !removeVolumeFromDC(volumeName, dc) {
-			return fmt.Errorf("could not find volume '%v' in Deployment Config '%v'", volumeName, dc.Name)
+		err = removeVolumeFromDC(volumeName, dc)
+		if err != nil {
+			return err
 		}
-		glog.V(4).Infof("Found volume: %v in Deployment Config: %v", volumeName, dc.Name)
+		klog.V(4).Infof("Found volume: %v in Deployment Config: %v", volumeName, dc.Name)
 
 		// Remove at max 2 volume mounts if volume mounts exists
-		if !removeVolumeMountsFromDC(volumeName, dc) {
-			return fmt.Errorf("could not find volumeMount: %v in Deployment Config: %v", volumeName, dc)
+		err = removeVolumeMountsFromDC(volumeName, dc)
+		if err != nil {
+			return err
 		}
 
 		_, updateErr := c.appsClient.DeploymentConfigs(c.Namespace).Update(dc)
@@ -2779,7 +2780,7 @@ func (c *Client) GetServicesFromSelector(selector string) ([]corev1.Service, err
 // GetDeploymentConfigFromName returns the Deployment Config resource given
 // the Deployment Config name
 func (c *Client) GetDeploymentConfigFromName(name string) (*appsv1.DeploymentConfig, error) {
-	glog.V(4).Infof("Getting DeploymentConfig: %s", name)
+	klog.V(4).Infof("Getting DeploymentConfig: %s", name)
 	deploymentConfig, err := c.appsClient.DeploymentConfigs(c.Namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
@@ -2926,7 +2927,7 @@ func (c *Client) GetServerVersion() (*ServerInfo, error) {
 	rawOpenShiftVersion, err := c.kubeClient.CoreV1().RESTClient().Get().AbsPath("/version/openshift").Do().Raw()
 	if err != nil {
 		// when using Minishift (or plain 'oc cluster up' for that matter) with OKD 3.11, the version endpoint is missing...
-		glog.V(4).Infof("Unable to get OpenShift Version - endpoint '/version/openshift' doesn't exist")
+		klog.V(4).Infof("Unable to get OpenShift Version - endpoint '/version/openshift' doesn't exist")
 	} else {
 		var openShiftVersion version.Info
 		if err := json.Unmarshal(rawOpenShiftVersion, &openShiftVersion); err != nil {
@@ -3008,7 +3009,7 @@ func (c *Client) ExtractProjectToComponent(compInfo common.ComponentInfo, target
 	cmdArr := []string{"tar", "xf", "-", "-C", targetPath}
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	glog.V(4).Infof("Executing command %s", strings.Join(cmdArr, " "))
+	klog.V(4).Infof("Executing command %s", strings.Join(cmdArr, " "))
 	err := c.ExecCMDInContainer(compInfo, cmdArr, &stdout, &stderr, stdin, false)
 	if err != nil {
 		log.Errorf("Command '%s' in container failed.\n", strings.Join(cmdArr, " "))
@@ -3084,7 +3085,7 @@ func (c *Client) CreateBuildConfig(commonObjectMeta metav1.ObjectMeta, builderIm
 	}
 	imageNS = imageStream.ObjectMeta.Namespace
 
-	glog.V(4).Infof("Using namespace: %s for the CreateBuildConfig function", imageNS)
+	klog.V(4).Infof("Using namespace: %s for the CreateBuildConfig function", imageNS)
 
 	// Use BuildConfig to build the container with Git
 	bc := generateBuildConfig(commonObjectMeta, gitURL, gitRef, imageName+":"+imageTag, imageNS)
@@ -3176,7 +3177,7 @@ func (c *Client) PropagateDeletes(targetPodName string, delSrcRelPaths []string,
 			rmPaths = append(rmPaths, filepath.ToSlash(filepath.Join(s2iPath, delRelPath)))
 		}
 	}
-	glog.V(4).Infof("s2ipaths marked for deletion are %+v", rmPaths)
+	klog.V(4).Infof("s2ipaths marked for deletion are %+v", rmPaths)
 	cmdArr := []string{"rm", "-rf"}
 	cmdArr = append(cmdArr, rmPaths...)
 	compInfo := common.ComponentInfo{
@@ -3196,7 +3197,7 @@ func (c *Client) StartDeployment(deploymentName string) (string, error) {
 	if deploymentName == "" {
 		return "", errors.Errorf("deployment name is empty")
 	}
-	glog.V(4).Infof("Deployment %s started.", deploymentName)
+	klog.V(4).Infof("Deployment %s started.", deploymentName)
 	deploymentRequest := appsv1.DeploymentRequest{
 		Name: deploymentName,
 		// latest is set to true to prevent image name resolution issue
@@ -3208,7 +3209,7 @@ func (c *Client) StartDeployment(deploymentName string) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "unable to instantiate Deployment for %s", deploymentName)
 	}
-	glog.V(4).Infof("Deployment %s for DeploymentConfig %s triggered.", deploymentName, result.Name)
+	klog.V(4).Infof("Deployment %s for DeploymentConfig %s triggered.", deploymentName, result.Name)
 
 	return result.Name, nil
 }
@@ -3255,11 +3256,32 @@ func isSubDir(baseDir, otherDir string) bool {
 	return matches
 }
 
-// generateOwnerReference genertes an ownerReference which can then be set as
+// IsRouteSupported checks if route resource type is present on the cluster
+func (c *Client) IsRouteSupported() (bool, error) {
+	const ClusterVersionGroup = "route.openshift.io"
+	const ClusterVersionVersion = "v1"
+	groupVersion := metav1.GroupVersion{Group: ClusterVersionGroup, Version: ClusterVersionVersion}.String()
+
+	list, err := c.discoveryClient.ServerResourcesForGroupVersion(groupVersion)
+	if kerrors.IsNotFound(err) {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	for _, resources := range list.APIResources {
+		if resources.Name == "routes" {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// GenerateOwnerReference genertes an ownerReference which can then be set as
 // owner for various OpenShift objects and ensure that when the owner object is
 // deleted from the cluster, all other objects are automatically removed by
 // OpenShift garbage collector
-func generateOwnerReference(dc *appsv1.DeploymentConfig) metav1.OwnerReference {
+func GenerateOwnerReference(dc *appsv1.DeploymentConfig) metav1.OwnerReference {
 
 	ownerReference := metav1.OwnerReference{
 		APIVersion: "apps.openshift.io/v1",

@@ -3,7 +3,6 @@ package component
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/openshift/odo/pkg/envinfo"
@@ -41,13 +40,13 @@ func (po *PushOptions) DevfilePush() (err error) {
 		return err
 	}
 
-	componentName, err := getComponentName()
+	componentName, err := getComponentName(po.componentContext)
 	if err != nil {
 		return errors.Wrap(err, "unable to get component name")
 	}
 
 	// Set the source path to either the context or current working directory (if context not set)
-	po.sourcePath, err = util.GetAbsPath(filepath.Dir(po.componentContext))
+	po.sourcePath, err = util.GetAbsPath(po.componentContext)
 	if err != nil {
 		return errors.Wrap(err, "unable to get source path")
 	}
@@ -68,7 +67,7 @@ func (po *PushOptions) DevfilePush() (err error) {
 		platformContext = kc
 	}
 
-	devfileHandler, err := adapters.NewPlatformAdapter(componentName, devObj, platformContext)
+	devfileHandler, err := adapters.NewPlatformAdapter(componentName, po.componentContext, devObj, platformContext)
 
 	if err != nil {
 		return err
@@ -79,10 +78,12 @@ func (po *PushOptions) DevfilePush() (err error) {
 		ForceBuild:      po.forceBuild,
 		Show:            po.show,
 		EnvSpecificInfo: *po.EnvSpecificInfo,
+		DevfileInitCmd:  strings.ToLower(po.devfileInitCommand),
 		DevfileBuildCmd: strings.ToLower(po.devfileBuildCommand),
 		DevfileRunCmd:   strings.ToLower(po.devfileRunCommand),
 	}
 
+	warnIfURLSInvalid(po.EnvSpecificInfo.GetURL())
 	// Start or update the component
 	err = devfileHandler.Push(pushParams)
 	if err != nil {
@@ -101,12 +102,18 @@ func (po *PushOptions) DevfilePush() (err error) {
 }
 
 // Get component name from env.yaml file
-func getComponentName() (string, error) {
-	// Todo: Use context to get the approraite envinfo after context is supported in experimental mode
-	dir, err := os.Getwd()
-	if err != nil {
-		return "", err
+func getComponentName(context string) (string, error) {
+	var dir string
+	var err error
+	if context == "" {
+		dir, err = os.Getwd()
+		if err != nil {
+			return "", err
+		}
+	} else {
+		dir = context
 	}
+
 	envInfo, err := envinfo.NewEnvSpecificInfo(dir)
 	if err != nil {
 		return "", err
@@ -123,7 +130,7 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 		return err
 	}
 
-	componentName, err := getComponentName()
+	componentName, err := getComponentName(do.componentContext)
 	if err != nil {
 		return err
 	}
@@ -135,7 +142,7 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 	labels := map[string]string{
 		"component": componentName,
 	}
-	devfileHandler, err := adapters.NewPlatformAdapter(componentName, devObj, kc)
+	devfileHandler, err := adapters.NewPlatformAdapter(componentName, do.componentContext, devObj, kc)
 	if err != nil {
 		return err
 	}
@@ -150,4 +157,29 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 	spinner.End(true)
 	log.Successf("Successfully deleted component")
 	return nil
+}
+
+func warnIfURLSInvalid(url []envinfo.EnvInfoURL) {
+	// warnIfURLSInvalid checks if env.yaml contains a valide URL for the current pushtarget
+	// display a warning if no url(s) found for the current push target, but found url(s) for another push target
+	dockerURLExists := false
+	kubeURLExists := false
+	for _, element := range url {
+		if element.Kind == envinfo.DOCKER {
+			dockerURLExists = true
+		} else {
+			kubeURLExists = true
+		}
+	}
+	var urlOutput string
+	if len(url) > 1 {
+		urlOutput = "URLs"
+	} else {
+		urlOutput = "a URL"
+	}
+	if pushtarget.IsPushTargetDocker() && !dockerURLExists && kubeURLExists {
+		log.Warningf("Found %v defined for Kubernetes, but no valid URLs for Docker.", urlOutput)
+	} else if !pushtarget.IsPushTargetDocker() && !kubeURLExists && dockerURLExists {
+		log.Warningf("Found %v defined for Docker, but no valid URLs for Kubernetes.", urlOutput)
+	}
 }

@@ -11,8 +11,8 @@ import (
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/go-connections/nat"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
@@ -24,8 +24,10 @@ import (
 	"github.com/openshift/odo/pkg/log"
 )
 
-// LocalhostIP is the IP address for localhost
-var LocalhostIP = "127.0.0.1"
+const (
+	localhostIP             = "127.0.0.1"
+	projectSourceVolumeName = "odo-project-source"
+)
 
 func (a Adapter) createComponent() (err error) {
 	componentName := a.ComponentName
@@ -41,7 +43,7 @@ func (a Adapter) createComponent() (err error) {
 	}
 	if len(projectVols) == 0 {
 		// A source volume needs to be created
-		projectVolumeName, err = storage.GenerateVolNameFromDevfileVol("odo-project-source", a.ComponentName)
+		projectVolumeName, err = storage.GenerateVolName(projectSourceVolumeName, a.ComponentName)
 		if err != nil {
 			return errors.Wrapf(err, "Unable to generate project source volume name for component %s", componentName)
 		}
@@ -83,13 +85,13 @@ func (a Adapter) createComponent() (err error) {
 			return errors.Wrapf(err, "unable to pull and start container %s for component %s", *comp.Alias, componentName)
 		}
 	}
-	glog.V(3).Infof("Successfully created all containers for component %s", componentName)
+	klog.V(3).Infof("Successfully created all containers for component %s", componentName)
 
 	return nil
 }
 
 func (a Adapter) updateComponent() (componentExists bool, err error) {
-	glog.V(3).Info("The component already exists, attempting to update it")
+	klog.V(3).Info("The component already exists, attempting to update it")
 	componentExists = true
 	componentName := a.ComponentName
 
@@ -154,7 +156,7 @@ func (a Adapter) updateComponent() (componentExists bool, err error) {
 				return componentExists, errors.Wrapf(err, "unable to get the container config for component %s", componentName)
 			}
 
-			portMap, err := getPortMap(comp.Endpoints, false)
+			portMap, err := getPortMap(a.Context, comp.Endpoints, false)
 			if err != nil {
 				return componentExists, errors.Wrapf(err, "unable to get the port map from env.yaml file for component %s", componentName)
 			}
@@ -178,7 +180,7 @@ func (a Adapter) updateComponent() (componentExists bool, err error) {
 					return false, errors.Wrapf(err, "Unable to start container for devfile component %s", *comp.Alias)
 				}
 
-				glog.V(3).Infof("Successfully created container %s for component %s", *comp.Image, componentName)
+				klog.V(3).Infof("Successfully created container %s for component %s", *comp.Image, componentName)
 				s.End(true)
 
 				// Update componentExists so that we re-sync project and initialize supervisord if required
@@ -211,7 +213,7 @@ func (a Adapter) pullAndStartContainer(mounts []mount.Mount, projectVolumeName s
 		return errors.Wrapf(err, "Unable to start container for devfile component %s", *comp.Alias)
 	}
 
-	glog.V(3).Infof("Successfully created container %s for component %s", *comp.Image, a.ComponentName)
+	klog.V(3).Infof("Successfully created container %s for component %s", *comp.Image, a.ComponentName)
 	return nil
 }
 
@@ -271,7 +273,7 @@ func (a Adapter) generateAndGetContainerConfig(componentName string, comp versio
 
 func (a Adapter) generateAndGetHostConfig(endpoints []versionsCommon.DockerimageEndpoint) (container.HostConfig, error) {
 	// Convert the port bindings from env.yaml and generate docker host config
-	portMap, err := getPortMap(endpoints, true)
+	portMap, err := getPortMap(a.Context, endpoints, true)
 	if err != nil {
 		return container.HostConfig{}, err
 	}
@@ -284,12 +286,21 @@ func (a Adapter) generateAndGetHostConfig(endpoints []versionsCommon.Dockerimage
 	return hostConfig, nil
 }
 
-func getPortMap(endpoints []versionsCommon.DockerimageEndpoint, show bool) (nat.PortMap, error) {
+func getPortMap(context string, endpoints []versionsCommon.DockerimageEndpoint, show bool) (nat.PortMap, error) {
 	// Convert the exposed and internal port pairs saved in env.yaml file to PortMap
 	// Todo: Use context to get the approraite envinfo after context is supported in experimental mode
 	portmap := nat.PortMap{}
 
-	dir, err := os.Getwd()
+	var dir string
+	var err error
+	if context == "" {
+		dir, err = os.Getwd()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		dir = context
+	}
 	if err != nil {
 		return portmap, err
 	}
@@ -309,12 +320,12 @@ func getPortMap(endpoints []versionsCommon.DockerimageEndpoint, show bool) (nat.
 			}
 			portmap[port] = []nat.PortBinding{
 				nat.PortBinding{
-					HostIP:   LocalhostIP,
+					HostIP:   localhostIP,
 					HostPort: strconv.Itoa(url.ExposedPort),
 				},
 			}
 			if show {
-				log.Successf("URL %v:%v created", LocalhostIP, url.ExposedPort)
+				log.Successf("URL %v:%v created", localhostIP, url.ExposedPort)
 			}
 		} else if url.ExposedPort > 0 && len(endpoints) > 0 && !common.IsPortPresent(endpoints, url.Port) {
 			return portmap, fmt.Errorf("Error creating url: odo url config's port is not present in the devfile. Please re-create odo url with the new devfile port")
@@ -324,62 +335,83 @@ func getPortMap(endpoints []versionsCommon.DockerimageEndpoint, show bool) (nat.
 	return portmap, nil
 }
 
-// Push syncs source code from the user's disk to the component
+// Executes all the commands from the devfile in order: init and build - which are both optional, and a compulsary run.
+// Init only runs once when the component is created.
 func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand, componentExists, show bool, containers []types.Container) (err error) {
-	buildRequired, err := common.IsComponentBuildRequired(pushDevfileCommands)
-	if err != nil {
-		return err
+	// If nothing has been passed, then the devfile is missing the required run command
+	if len(pushDevfileCommands) == 0 {
+		return errors.New(fmt.Sprint("error executing devfile commands - there should be at least 1 command"))
 	}
 
-	for i := 0; i < len(pushDevfileCommands); i++ {
-		command := pushDevfileCommands[i]
+	commandOrder := []common.CommandNames{}
 
-		// Exec the devBuild command if buildRequired is true
-		if (command.Name == string(common.DefaultDevfileBuildCommand) || command.Name == a.devfileBuildCmd) && buildRequired {
-			glog.V(3).Infof("Executing devfile command %v", command.Name)
+	// Only add runinit to the expected commands if the component doesn't already exist
+	// This would be the case when first running the container
+	if !componentExists {
+		commandOrder = append(commandOrder, common.CommandNames{DefaultName: string(common.DefaultDevfileInitCommand), AdapterName: a.devfileInitCmd})
+	}
+	commandOrder = append(
+		commandOrder,
+		common.CommandNames{DefaultName: string(common.DefaultDevfileBuildCommand), AdapterName: a.devfileBuildCmd},
+		common.CommandNames{DefaultName: string(common.DefaultDevfileRunCommand), AdapterName: a.devfileRunCmd},
+	)
 
-			for _, action := range command.Actions {
-				// Get the containerID
-				containerID := utils.GetContainerIDForAlias(containers, *action.Component)
-				compInfo := common.ComponentInfo{
-					ContainerName: containerID,
-				}
+	// Loop through each of the expected commands in the devfile
+	for i, currentCommand := range commandOrder {
+		// Loop through each of the command given from the devfile
+		for _, command := range pushDevfileCommands {
+			// If the current command from the devfile is the currently expected command from the devfile
+			if command.Name == currentCommand.DefaultName || command.Name == currentCommand.AdapterName {
+				// If the current command is not the last command in the slice
+				// it is not expected to be the run command
+				if i < len(commandOrder)-1 {
+					// Any exec command such as "Init" and "Build"
 
-				err = exec.ExecuteDevfileBuildAction(&a.Client, action, command.Name, compInfo, show)
-				if err != nil {
-					return err
-				}
-			}
+					for _, action := range command.Actions {
+						containerID := utils.GetContainerIDForAlias(containers, *action.Component)
+						compInfo := common.ComponentInfo{
+							ContainerName: containerID,
+						}
 
-			// Reset the for loop counter and iterate through all the devfile commands again for others
-			i = -1
-			// Set the buildRequired to false since we already executed the build command
-			buildRequired = false
-		} else if (command.Name == string(common.DefaultDevfileRunCommand) || command.Name == a.devfileRunCmd) && !buildRequired {
-			// Always check for buildRequired is false, since the command may be iterated out of order and we always want to execute devBuild first if buildRequired is true. If buildRequired is false, then we don't need to build and we can execute the devRun command
-			glog.V(3).Infof("Executing devfile command %v", command.Name)
+						err = exec.ExecuteDevfileBuildAction(&a.Client, action, command.Name, compInfo, show)
+						if err != nil {
+							return err
+						}
+					}
 
-			for _, action := range command.Actions {
+					// If the current command is the last command in the slice
+					// it is expected to be the run command
+				} else {
+					// Last command is "Run"
+					klog.V(4).Infof("Executing devfile command %v", command.Name)
 
-				// Get the containerID
-				containerID := utils.GetContainerIDForAlias(containers, *action.Component)
-				compInfo := common.ComponentInfo{
-					ContainerName: containerID,
-				}
+					for _, action := range command.Actions {
 
-				// Check if the devfile run component containers have supervisord as the entrypoint.
-				// Start the supervisord if the odo component does not exist
-				if !componentExists {
-					err = a.InitRunContainerSupervisord(*action.Component, containers)
-					if err != nil {
-						return
+						// Check if the devfile run component containers have supervisord as the entrypoint.
+						// Start the supervisord if the odo component does not exist
+						if !componentExists {
+							err = a.InitRunContainerSupervisord(*action.Component, containers)
+							if err != nil {
+								return
+							}
+						}
+
+						containerID := utils.GetContainerIDForAlias(containers, *action.Component)
+						compInfo := common.ComponentInfo{
+							ContainerName: containerID,
+						}
+
+						if componentExists && !common.IsRestartRequired(command) {
+							klog.V(4).Info("restart:false, Not restarting DevRun Command")
+							err = exec.ExecuteDevfileRunActionWithoutRestart(&a.Client, action, command.Name, compInfo, show)
+							return
+						}
+
+						err = exec.ExecuteDevfileRunAction(&a.Client, action, command.Name, compInfo, show)
+
 					}
 				}
 
-				err = exec.ExecuteDevfileRunAction(&a.Client, action, command.Name, compInfo, show)
-				if err != nil {
-					return err
-				}
 			}
 		}
 	}

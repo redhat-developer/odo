@@ -14,7 +14,6 @@ option go_package = "v1";
 
 // BinaryBuildRequestOptions are the options required to fully speficy a binary build request
 message BinaryBuildRequestOptions {
-  // metadata for BinaryBuildRequestOptions.
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   // asFile determines if the binary should be created as a file within the source rather than extracted as an archive
@@ -60,21 +59,41 @@ message BitbucketWebHookCause {
 // Build encapsulates the inputs needed to produce a new deployable image, as well as
 // the status of the execution and a reference to the Pod which executed the build.
 message Build {
-  // Standard object's metadata.
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   // spec is all the inputs used to execute the build.
   optional BuildSpec spec = 2;
 
   // status is the current status of the build.
+  // +optional
   optional BuildStatus status = 3;
+}
+
+// BuildCondition describes the state of a build at a certain point.
+message BuildCondition {
+  // Type of build condition.
+  optional string type = 1;
+
+  // Status of the condition, one of True, False, Unknown.
+  optional string status = 2;
+
+  // The last time this condition was updated.
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time lastUpdateTime = 6;
+
+  // The last time the condition transitioned from one status to another.
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time lastTransitionTime = 3;
+
+  // The reason for the condition's last transition.
+  optional string reason = 4;
+
+  // A human readable message indicating details about the transition.
+  optional string message = 5;
 }
 
 // Build configurations define a build process for new container images. There are three types of builds possible - a container image build using a Dockerfile, a Source-to-Image build that uses a specially prepared base image that accepts source code that it can make runnable, and a custom build that can run // arbitrary container images as a base and accept the build parameters. Builds run on the cluster and on completion are pushed to the container image registry specified in the "output" section. A build can be triggered via a webhook, when the base image changes, or when a user manually requests a new build be // created.
 //
 // Each build created by a build configuration is numbered and refers back to its parent configuration. Multiple builds can be triggered at once. Builds that do not have "output" set can be used to test code or run a verification build.
 message BuildConfig {
-  // metadata for BuildConfig.
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   // spec holds all the input necessary to produce a new build, and the conditions when
@@ -82,12 +101,12 @@ message BuildConfig {
   optional BuildConfigSpec spec = 2;
 
   // status holds any relevant information about a build config
+  // +optional
   optional BuildConfigStatus status = 3;
 }
 
 // BuildConfigList is a collection of BuildConfigs.
 message BuildConfigList {
-  // metadata for BuildConfigList.
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   // items is a list of build configs
@@ -128,7 +147,6 @@ message BuildConfigStatus {
 
 // BuildList is a collection of Builds.
 message BuildList {
-  // metadata for BuildList.
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ListMeta metadata = 1;
 
   // items is a list of builds
@@ -297,7 +315,6 @@ message BuildPostCommitSpec {
 
 // BuildRequest is the resource used to pass parameters to build generator
 message BuildRequest {
-  // metadata for BuildRequest.
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
   // revision is the information from the source for a specific repo snapshot.
@@ -440,6 +457,11 @@ message BuildStatus {
 
   // logSnippet is the last few lines of the build log.  This value is only set for builds that failed.
   optional string logSnippet = 12;
+
+  // Conditions represents the latest available observations of a build's current state.
+  // +patchMergeKey=type
+  // +patchStrategy=merge
+  repeated BuildCondition conditions = 13;
 }
 
 // BuildStatusOutput contains the status of the built image.
@@ -476,6 +498,7 @@ message BuildStrategy {
   optional CustomBuildStrategy customStrategy = 4;
 
   // JenkinsPipelineStrategy holds the parameters to the Jenkins Pipeline build strategy.
+  // Deprecated: use OpenShift Pipelines
   optional JenkinsPipelineBuildStrategy jenkinsPipelineStrategy = 5;
 }
 
@@ -567,6 +590,7 @@ message CommonSpec {
   // If nil, it can be overridden by default build nodeselector values for the cluster.
   // If set to an empty map or a map with any values, default build nodeselector values
   // are ignored.
+  // +optional
   optional OptionalNodeSelector nodeSelector = 9;
 }
 
@@ -631,9 +655,9 @@ message CustomBuildStrategy {
 
 // DockerBuildStrategy defines input parameters specific to container image build.
 message DockerBuildStrategy {
-  // from is reference to an DockerImage, ImageStreamTag, or ImageStreamImage from which
-  // the container image should be pulled
-  // the resulting image will be used in the FROM line of the Dockerfile for this build.
+  // from is a reference to an DockerImage, ImageStreamTag, or ImageStreamImage which overrides
+  // the FROM image in the Dockerfile for the build. If the Dockerfile uses multi-stage builds,
+  // this will replace the image in the last FROM directive of the file.
   optional k8s.io.api.core.v1.ObjectReference from = 1;
 
   // pullSecret is the name of a Secret that would be used for setting up
@@ -852,6 +876,7 @@ message ImageSourcePath {
 }
 
 // JenkinsPipelineBuildStrategy holds parameters specific to a Jenkins Pipeline build.
+// Deprecated: use OpenShift Pipelines
 message JenkinsPipelineBuildStrategy {
   // JenkinsfilePath is the optional path of the Jenkinsfile that will be used to configure the pipeline
   // relative to the root of the context (contextDir). If both JenkinsfilePath & Jenkinsfile are

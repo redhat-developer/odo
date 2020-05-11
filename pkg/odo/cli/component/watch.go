@@ -17,10 +17,10 @@ import (
 	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/pkg/errors"
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
-	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/component"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
@@ -72,6 +72,8 @@ func NewWatchOptions() *WatchOptions {
 
 // Complete completes watch args
 func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	wo.devfilePath = filepath.Join(wo.componentContext, wo.devfilePath)
+
 	// if experimental mode is enabled and devfile is present
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(wo.devfilePath) {
 		envinfo, err := envinfo.NewEnvSpecificInfo(wo.componentContext)
@@ -82,7 +84,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 		wo.Context = genericclioptions.NewDevfileContext(cmd)
 
 		// Set the source path to either the context or current working directory (if context not set)
-		wo.sourcePath, err = util.GetAbsPath(filepath.Dir(wo.componentContext))
+		wo.sourcePath, err = util.GetAbsPath(wo.componentContext)
 		if err != nil {
 			return errors.Wrap(err, "unable to get source path")
 		}
@@ -94,7 +96,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 		}
 
 		// Get the component name
-		wo.componentName, err = getComponentName()
+		wo.componentName, err = getComponentName(wo.componentContext)
 		if err != nil {
 			return err
 		}
@@ -115,7 +117,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 		} else {
 			platformContext = nil
 		}
-		wo.devfileHandler, err = adapters.NewPlatformAdapter(wo.componentName, devObj, platformContext)
+		wo.devfileHandler, err = adapters.NewPlatformAdapter(wo.componentName, wo.componentContext, devObj, platformContext)
 
 		return err
 	}
@@ -153,7 +155,7 @@ func (wo *WatchOptions) Validate() (err error) {
 	}
 	// Print a debug message warning user if delay is set to 0
 	if wo.delay == 0 {
-		glog.V(4).Infof("delay=0 means changes will be pushed as soon as they are detected which can cause performance issues")
+		klog.V(4).Infof("delay=0 means changes will be pushed as soon as they are detected which can cause performance issues")
 	}
 
 	// if experimental mode is enabled and devfile is present, return. The rest of the validation is for non-devfile components

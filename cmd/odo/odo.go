@@ -5,7 +5,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/cli"
 	"github.com/openshift/odo/pkg/odo/cli/version"
@@ -15,10 +14,13 @@ import (
 	"github.com/posener/complete"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"k8s.io/klog"
 )
 
 func main() {
 	// create the complete command
+	klog.InitFlags(nil)
+
 	root := cli.NewCmdOdo(cli.OdoRecommendedName, cli.OdoRecommendedName)
 	rootCmp := createCompletion(root)
 	cmp := complete.New("odo", rootCmp)
@@ -77,7 +79,7 @@ func main() {
 		case message := <-updateInfo:
 			log.Italic(message)
 		default:
-			glog.V(4).Info("Could not get the latest release information in time. Never mind, exiting gracefully :)")
+			klog.V(4).Info("Could not get the latest release information in time. Never mind, exiting gracefully :)")
 		}
 	} else {
 		util.LogErrorAndExit(root.Execute(), "")

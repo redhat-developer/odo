@@ -24,9 +24,8 @@ var _ = Describe("odo devfile watch command tests", func() {
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 		if os.Getenv("KUBERNETES") == "true" {
-			info, err := os.Stat(os.Getenv("KUBECONFIG"))
-			Expect(err).NotTo(HaveOccurred())
-			kubeConfigFile := helper.CopyKubeConfigFile(os.Getenv("KUBECONFIG"), filepath.Join(context, "config"), info)
+			homeDir := helper.GetUserHomeDir()
+			kubeConfigFile := helper.CopyKubeConfigFile(filepath.Join(homeDir, ".kube", "config"), filepath.Join(context, "config"))
 			namespace = helper.CreateRandNamespace(kubeConfigFile)
 		} else {
 			namespace = helper.CreateRandProject()
@@ -64,9 +63,9 @@ var _ = Describe("odo devfile watch command tests", func() {
 			// Devfile push requires experimental mode to be set
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 			cmpName := helper.RandString(6)
+			helper.Chdir(currentWorkingDirectory)
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, "--context", context, cmpName)
-
-			output := helper.CmdShouldFail("odo", "watch", "--devfile", filepath.Join(context, "devfile.yaml"), "--context", context)
+			output := helper.CmdShouldFail("odo", "watch", "--context", context)
 			Expect(output).To(ContainSubstring("component does not exist. Please use `odo push` to create your component"))
 		})
 	})

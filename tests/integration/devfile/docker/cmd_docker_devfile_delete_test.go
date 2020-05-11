@@ -14,8 +14,6 @@ var _ = Describe("odo docker devfile delete command tests", func() {
 	var context string
 	var currentWorkingDirectory string
 	var cmpName string
-	var projectDir = "/projectDir"
-	var projectDirPath string
 
 	dockerClient := helper.NewDockerRunner("docker")
 
@@ -25,7 +23,6 @@ var _ = Describe("odo docker devfile delete command tests", func() {
 		context = helper.CreateNewContext()
 		currentWorkingDirectory = helper.Getwd()
 		cmpName = helper.RandString(6)
-		projectDirPath = context + projectDir
 		helper.Chdir(context)
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 
@@ -53,11 +50,10 @@ var _ = Describe("odo docker devfile delete command tests", func() {
 	Context("when docker devfile delete command is executed", func() {
 
 		It("should delete the component created from the devfile and also the owned resources", func() {
-
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-			helper.Chdir(projectDirPath)
-
 			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
 
@@ -77,11 +73,10 @@ var _ = Describe("odo docker devfile delete command tests", func() {
 	Context("when docker devfile delete command is executed with all flag", func() {
 
 		It("should delete the component created from the devfile and also the env folder", func() {
-
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-			helper.Chdir(projectDirPath)
-
 			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
 
@@ -95,7 +90,7 @@ var _ = Describe("odo docker devfile delete command tests", func() {
 
 			Expect(dockerClient.ListVolumesOfComponentAndType(cmpName, "projects")).To(HaveLen(0))
 
-			files := helper.ListFilesInDir(projectDirPath)
+			files := helper.ListFilesInDir(context)
 			Expect(files).To(Not(ContainElement(".odo")))
 
 		})

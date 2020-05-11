@@ -15,8 +15,6 @@
 package spec
 
 import (
-	"bytes"
-	"encoding/gob"
 	"encoding/json"
 	"net/http"
 	"os"
@@ -57,7 +55,7 @@ func (r *Ref) RemoteURI() string {
 }
 
 // IsValidURI returns true when the url the ref points to can be found
-func (r *Ref) IsValidURI(basepaths ...string) bool {
+func (r *Ref) IsValidURI() bool {
 	if r.String() == "" {
 		return true
 	}
@@ -83,18 +81,14 @@ func (r *Ref) IsValidURI(basepaths ...string) bool {
 	// check for local file
 	pth := v
 	if r.HasURLPathOnly {
-		base := "."
-		if len(basepaths) > 0 {
-			base = filepath.Dir(filepath.Join(basepaths...))
-		}
-		p, e := filepath.Abs(filepath.ToSlash(filepath.Join(base, pth)))
+		p, e := filepath.Abs(pth)
 		if e != nil {
 			return false
 		}
 		pth = p
 	}
 
-	fi, err := os.Stat(filepath.ToSlash(pth))
+	fi, err := os.Stat(pth)
 	if err != nil {
 		return false
 	}
@@ -122,18 +116,25 @@ func NewRef(refURI string) (Ref, error) {
 	return Ref{Ref: ref}, nil
 }
 
-// MustCreateRef creates a ref object but panics when refURI is invalid.
-// Use the NewRef method for a version that returns an error.
+// MustCreateRef creates a ref object but
 func MustCreateRef(refURI string) Ref {
 	return Ref{Ref: jsonreference.MustCreateRef(refURI)}
 }
+
+// // NewResolvedRef creates a resolved ref
+// func NewResolvedRef(refURI string, data interface{}) Ref {
+// 	return Ref{
+// 		Ref:      jsonreference.MustCreateRef(refURI),
+// 		Resolved: data,
+// 	}
+// }
 
 // MarshalJSON marshals this ref into a JSON object
 func (r Ref) MarshalJSON() ([]byte, error) {
 	str := r.String()
 	if str == "" {
 		if r.IsRoot() {
-			return []byte(`{"$ref":""}`), nil
+			return []byte(`{"$ref":"#"}`), nil
 		}
 		return []byte("{}"), nil
 	}
@@ -147,32 +148,7 @@ func (r *Ref) UnmarshalJSON(d []byte) error {
 	if err := json.Unmarshal(d, &v); err != nil {
 		return err
 	}
-	return r.fromMap(v)
-}
 
-// GobEncode provides a safe gob encoder for Ref
-func (r Ref) GobEncode() ([]byte, error) {
-	var b bytes.Buffer
-	raw, err := r.MarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	err = gob.NewEncoder(&b).Encode(raw)
-	return b.Bytes(), err
-}
-
-// GobDecode provides a safe gob decoder for Ref
-func (r *Ref) GobDecode(b []byte) error {
-	var raw []byte
-	buf := bytes.NewBuffer(b)
-	err := gob.NewDecoder(buf).Decode(&raw)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(raw, r)
-}
-
-func (r *Ref) fromMap(v map[string]interface{}) error {
 	if v == nil {
 		return nil
 	}

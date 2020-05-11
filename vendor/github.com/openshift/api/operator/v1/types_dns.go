@@ -7,6 +7,9 @@ import (
 // +genclient
 // +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:object:root=true
+// +kubebuilder:resource:path=dnses,scope=Cluster
+// +kubebuilder:subresource:status
 
 // DNS manages the CoreDNS component to provide a name resolution service
 // for pods and services in the cluster.
@@ -27,6 +30,47 @@ type DNS struct {
 
 // DNSSpec is the specification of the desired behavior of the DNS.
 type DNSSpec struct {
+	// servers is a list of DNS resolvers that provide name query delegation for one or
+	// more subdomains outside the scope of the cluster domain. If servers consists of
+	// more than one Server, longest suffix match will be used to determine the Server.
+	//
+	// For example, if there are two Servers, one for "foo.com" and another for "a.foo.com",
+	// and the name query is for "www.a.foo.com", it will be routed to the Server with Zone
+	// "a.foo.com".
+	//
+	// If this field is nil, no servers are created.
+	//
+	// +optional
+	Servers []Server `json:"servers,omitempty"`
+}
+
+// Server defines the schema for a server that runs per instance of CoreDNS.
+type Server struct {
+	// name is required and specifies a unique name for the server. Name must comply
+	// with the Service Name Syntax of rfc6335.
+	Name string `json:"name"`
+	// zones is required and specifies the subdomains that Server is authoritative for.
+	// Zones must conform to the rfc1123 definition of a subdomain. Specifying the
+	// cluster domain (i.e., "cluster.local") is invalid.
+	Zones []string `json:"zones"`
+	// forwardPlugin defines a schema for configuring CoreDNS to proxy DNS messages
+	// to upstream resolvers.
+	ForwardPlugin ForwardPlugin `json:"forwardPlugin"`
+}
+
+// ForwardPlugin defines a schema for configuring the CoreDNS forward plugin.
+type ForwardPlugin struct {
+	// upstreams is a list of resolvers to forward name queries for subdomains of Zones.
+	// Upstreams are randomized when more than 1 upstream is specified. Each instance of
+	// CoreDNS performs health checking of Upstreams. When a healthy upstream returns an
+	// error during the exchange, another resolver is tried from Upstreams. Each upstream
+	// is represented by an IP address or IP:port if the upstream listens on a port other
+	// than 53.
+	//
+	// A maximum of 15 upstreams is allowed per ForwardPlugin.
+	//
+	// +kubebuilder:validation:MaxItems=15
+	Upstreams []string `json:"upstreams"`
 }
 
 const (
@@ -46,6 +90,9 @@ type DNSStatus struct {
 	// Example: dig foo.com @<service IP>
 	//
 	// More info: https://kubernetes.io/docs/concepts/services-networking/service/#virtual-ips-and-service-proxies
+	//
+	// +kubebuilder:validation:Required
+	// +required
 	ClusterIP string `json:"clusterIP"`
 
 	// clusterDomain is the local cluster DNS domain suffix for DNS services.
@@ -54,6 +101,9 @@ type DNSStatus struct {
 	// Example: "cluster.local"
 	//
 	// More info: https://kubernetes.io/docs/concepts/services-networking/dns-pod-service
+	//
+	// +kubebuilder:validation:Required
+	// +required
 	ClusterDomain string `json:"clusterDomain"`
 
 	// conditions provide information about the state of the DNS on the cluster.
@@ -72,6 +122,7 @@ type DNSStatus struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:object:root=true
 
 // DNSList contains a list of DNS
 type DNSList struct {

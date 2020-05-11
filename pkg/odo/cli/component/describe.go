@@ -13,7 +13,7 @@ import (
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/spf13/cobra"
 )
@@ -56,31 +56,23 @@ func (do *DescribeOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (do *DescribeOptions) Run() (err error) {
-	var componentDesc component.Component
+	if (len(do.componentName) <= 0 || len(do.Application) <= 0 || len(do.Project) <= 0) && !do.LocalConfigInfo.ConfigFileExists() {
+		return fmt.Errorf("Component %v does not exist", do.componentName)
+	}
 
-	state := component.GetComponentState(do.Context.Client, do.componentName, do.Context.Application)
-
-	if state == component.StateTypeNotPushed || state == component.StateTypeUnknown {
-		componentDesc, err = component.GetComponentFromConfig(do.LocalConfigInfo)
-		componentDesc.Status.State = state
-		if err != nil {
-			return err
-		}
-	} else {
-		componentDesc, err = component.GetComponent(do.Context.Client, do.componentName, do.Context.Application, do.Context.Project)
-		if err != nil {
-			return err
-		}
+	cfd, err := component.NewComponentFullDescriptionFromClientAndLocalConfig(do.Context.Client, do.LocalConfigInfo, do.componentName, do.Context.Application, do.Context.Project)
+	if err != nil {
+		return err
 	}
 
 	if log.IsJSON() {
-		componentDesc.Spec.Ports = do.LocalConfigInfo.GetPorts()
-		machineoutput.OutputSuccess(componentDesc)
+		machineoutput.OutputSuccess(cfd)
 	} else {
-
-		odoutil.PrintComponentInfo(do.Context.Client, do.componentName, componentDesc, do.Context.Application, do.Context.Project)
+		err = cfd.Print(do.Context.Client)
+		if err != nil {
+			return err
+		}
 	}
-
 	return
 }
 

@@ -18,14 +18,14 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/util/retry"
 
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
-
-	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
+	v1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/install"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 )
 
 func checkOperatorGroupAnnotations(obj metav1.Object, op *v1.OperatorGroup, checkTargetNamespaces bool, targetNamespaces string) error {
@@ -139,11 +139,6 @@ func TestOperatorGroup(t *testing.T) {
 	}
 	_, err = crc.OperatorsV1().OperatorGroups(opGroupNamespace).Create(&operatorGroup)
 	require.NoError(t, err)
-	defer func() {
-		err = crc.OperatorsV1().OperatorGroups(opGroupNamespace).Delete(operatorGroup.Name, &metav1.DeleteOptions{})
-		require.NoError(t, err)
-	}()
-
 	expectedOperatorGroupStatus := v1.OperatorGroupStatus{
 		Namespaces: []string{opGroupNamespace, createdOtherNamespace.GetName()},
 	}
@@ -166,7 +161,7 @@ func TestOperatorGroup(t *testing.T) {
 
 	// Generate permissions
 	serviceAccountName := genName("nginx-sa")
-	permissions := []install.StrategyDeploymentPermissions{
+	permissions := []v1alpha1.StrategyDeploymentPermissions{
 		{
 			ServiceAccountName: serviceAccountName,
 			Rules: []rbacv1.PolicyRule{
@@ -407,6 +402,36 @@ func TestOperatorGroup(t *testing.T) {
 		return err
 	})
 	require.NoError(t, err)
+
+	err = crc.OperatorsV1().OperatorGroups(opGroupNamespace).Delete(operatorGroup.Name, &metav1.DeleteOptions{})
+	require.NoError(t, err)
+	t.Log("Waiting for OperatorGroup RBAC to be garbage collected")
+	err = wait.Poll(pollInterval, pollDuration, func() (bool, error) {
+		_, err := c.KubernetesInterface().RbacV1().ClusterRoles().Get(operatorGroup.Name+"-admin", metav1.GetOptions{})
+		if err == nil {
+			return false, nil
+		}
+		return true, err
+	})
+	require.True(t, errors.IsNotFound(err))
+
+	err = wait.Poll(pollInterval, pollDuration, func() (bool, error) {
+		_, err := c.KubernetesInterface().RbacV1().ClusterRoles().Get(operatorGroup.Name+"-edit", metav1.GetOptions{})
+		if err == nil {
+			return false, nil
+		}
+		return true, err
+	})
+	require.True(t, errors.IsNotFound(err))
+
+	err = wait.Poll(pollInterval, pollDuration, func() (bool, error) {
+		_, err := c.KubernetesInterface().RbacV1().ClusterRoles().Get(operatorGroup.Name+"-view", metav1.GetOptions{})
+		if err == nil {
+			return false, nil
+		}
+		return true, err
+	})
+	require.True(t, errors.IsNotFound(err))
 }
 
 func createProjectAdmin(t *testing.T, c operatorclient.ClientInterface, namespace string) (string, cleanupFunc) {
@@ -496,10 +521,82 @@ func TestOperatorGroupRoleAggregation(t *testing.T) {
 	_, err = fetchCSV(t, crc, csvA.GetName(), nsA, csvSucceededChecker)
 	require.NoError(t, err)
 
+	// Create a csv for an apiserver
+	depName := genName("hat-server")
+	mockGroup := fmt.Sprintf("hats.%s.redhat.com", genName(""))
+	version := "v1alpha1"
+	mockGroupVersion := strings.Join([]string{mockGroup, version}, "/")
+	mockKinds := []string{"fez", "fedora"}
+	mockNames := []string{"fezs", "fedoras"}
+	depSpec := newMockExtServerDeployment(depName, []mockGroupVersionKind{mockGroupVersionKind{depName, mockGroupVersion, mockKinds, 5443}})
+	strategy := v1alpha1.StrategyDetailsDeployment{
+		DeploymentSpecs: []v1alpha1.StrategyDeploymentSpec{
+			{
+				Name: depName,
+				Spec: depSpec,
+			},
+		},
+	}
+
+	owned := make([]v1alpha1.APIServiceDescription, len(mockKinds))
+	for i, kind := range mockKinds {
+		owned[i] = v1alpha1.APIServiceDescription{
+			Name:           mockNames[i],
+			Group:          mockGroup,
+			Version:        version,
+			Kind:           kind,
+			DeploymentName: depName,
+			ContainerPort:  int32(5443),
+			DisplayName:    kind,
+			Description:    fmt.Sprintf("A %s", kind),
+		}
+	}
+
+	csvB := v1alpha1.ClusterServiceVersion{
+		Spec: v1alpha1.ClusterServiceVersionSpec{
+			MinKubeVersion: "0.0.0",
+			InstallModes: []v1alpha1.InstallMode{
+				{
+					Type:      v1alpha1.InstallModeTypeOwnNamespace,
+					Supported: true,
+				},
+				{
+					Type:      v1alpha1.InstallModeTypeSingleNamespace,
+					Supported: true,
+				},
+				{
+					Type:      v1alpha1.InstallModeTypeMultiNamespace,
+					Supported: true,
+				},
+				{
+					Type:      v1alpha1.InstallModeTypeAllNamespaces,
+					Supported: true,
+				},
+			},
+			InstallStrategy: v1alpha1.NamedInstallStrategy{
+				StrategyName: v1alpha1.InstallStrategyNameDeployment,
+				StrategySpec: strategy,
+			},
+			APIServiceDefinitions: v1alpha1.APIServiceDefinitions{
+				Owned: owned,
+			},
+		},
+	}
+	csvB.SetName(depName)
+
+	// Create the APIService CSV
+	cleanupCSV, err := createCSV(t, c, crc, csvB, nsA, false, true)
+	require.NoError(t, err)
+	defer cleanupCSV()
+
+	_, err = fetchCSV(t, crc, csvB.GetName(), nsA, csvSucceededChecker)
+	require.NoError(t, err)
+
 	// Ensure clusterroles created and aggregated for access provided APIs
 	padmin, cleanupPadmin := createProjectAdmin(t, c, nsA)
 	defer cleanupPadmin()
 
+	// Check CRD access aggregated
 	err = wait.Poll(pollInterval, pollDuration, func() (bool, error) {
 		res, err := c.KubernetesInterface().AuthorizationV1().SubjectAccessReviews().Create(&authorizationv1.SubjectAccessReview{
 			Spec: authorizationv1.SubjectAccessReviewSpec{
@@ -520,6 +617,31 @@ func TestOperatorGroupRoleAggregation(t *testing.T) {
 			return false, nil
 		}
 		t.Log("checking padmin for permission")
+		return res.Status.Allowed, nil
+	})
+	require.NoError(t, err)
+
+	// Check apiserver access aggregated
+	err = wait.Poll(pollInterval, pollDuration, func() (bool, error) {
+		res, err := c.KubernetesInterface().AuthorizationV1().SubjectAccessReviews().Create(&authorizationv1.SubjectAccessReview{
+			Spec: authorizationv1.SubjectAccessReviewSpec{
+				User: padmin,
+				ResourceAttributes: &authorizationv1.ResourceAttributes{
+					Namespace: nsA,
+					Group:     mockGroup,
+					Version:   version,
+					Resource:  mockNames[1],
+					Verb:      "create",
+				},
+			},
+		})
+		if err != nil {
+			return false, err
+		}
+		if res == nil {
+			return false, nil
+		}
+		t.Logf("checking padmin for permission: %#v", res)
 		return res.Status.Allowed, nil
 	})
 	require.NoError(t, err)
@@ -763,7 +885,7 @@ func TestOperatorGroupIntersection(t *testing.T) {
 	// Generate operatorGroupD in namespaceD that selects namespace D and E
 	// Generate csvD in namespaceD
 	// Wait for csvD to be successful
-	// Wait for csvD to have a CSV with copied status in namespace D
+	// Wait for csvD to have a CSV with copied status in namespace E
 	// Wait for operatorGroupD to have providedAPI annotation with crdD's Kind.version.group
 	// Generate operatorGroupA in namespaceA that selects AllNamespaces
 	// Generate csvD in namespaceA
@@ -774,6 +896,8 @@ func TestOperatorGroupIntersection(t *testing.T) {
 	// Wait for csvA to be successful
 	// Ensure clusterroles created and aggregated for accessing provided APIs
 	// Wait for operatorGroupA to have providedAPI annotation with crdA's Kind.version.group in its providedAPIs annotation
+	// Wait for csvA to have a CSV with copied status in namespace D
+	// Ensure csvA retains the operatorgroup annotations for operatorgroupA
 	// Wait for csvA to have a CSV with copied status in namespace C
 	// Generate operatorGroupB in namespaceB that selects namespace C
 	// Generate csvB in namespaceB that owns crdA
@@ -970,6 +1094,26 @@ func TestOperatorGroupIntersection(t *testing.T) {
 	}
 	require.NoError(t, awaitAnnotations(t, q, map[string]string{v1.OperatorGroupProvidedAPIsAnnotationKey: kvgA}))
 
+	// Wait for csvA to have a CSV with copied status in namespace D
+	csvAinNsD, err := awaitCSV(t, crc, nsD, csvA.GetName(), csvCopiedChecker)
+	require.NoError(t, err)
+
+	// trigger a resync of operatorgropuD
+	fetchedGroupD, err := crc.OperatorsV1().OperatorGroups(nsD).Get(groupD.GetName(), metav1.GetOptions{})
+	require.NoError(t, err)
+
+	fetchedGroupD.Annotations["bump"] = "update"
+	_, err = crc.OperatorsV1().OperatorGroups(nsD).Update(fetchedGroupD)
+	require.NoError(t, err)
+
+	// Ensure csvA retains the operatorgroup annotations for operatorgroupA
+	csvAinNsD, err = awaitCSV(t, crc, nsD, csvA.GetName(), csvCopiedChecker)
+	require.NoError(t, err)
+
+	require.Equal(t, groupA.GetName(), csvAinNsD.Annotations[v1.OperatorGroupAnnotationKey])
+	require.Equal(t, nsA, csvAinNsD.Annotations[v1.OperatorGroupNamespaceAnnotationKey])
+	require.Equal(t, nsA, csvAinNsD.Labels[v1alpha1.CopiedLabelKey])
+
 	// Await csvA's copy in namespaceC
 	_, err = awaitCSV(t, crc, nsC, csvA.GetName(), csvCopiedChecker)
 	require.NoError(t, err)
@@ -1123,8 +1267,7 @@ func TestStaticProviderOperatorGroup(t *testing.T) {
 	}
 
 	// Create subscription for csvA in namespaceB
-	subAName := genName("a-" +
-		"")
+	subAName := genName("a-")
 	cleanupSubA := createSubscriptionForCatalog(t, crc, nsB, subAName, catalog, pkgA, stableChannel, pkgAStable, v1alpha1.ApprovalAutomatic)
 	defer cleanupSubA()
 	subA, err := fetchSubscription(t, crc, nsB, subAName, subscriptionHasInstallPlanChecker)
@@ -1282,7 +1425,7 @@ func TestCSVCopyWatchingAllNamespaces(t *testing.T) {
 	t.Log("Creating CSV")
 	// Generate permissions
 	serviceAccountName := genName("nginx-sa")
-	permissions := []install.StrategyDeploymentPermissions{
+	permissions := []v1alpha1.StrategyDeploymentPermissions{
 		{
 			ServiceAccountName: serviceAccountName,
 			Rules: []rbacv1.PolicyRule{
@@ -1488,6 +1631,496 @@ func TestCSVCopyWatchingAllNamespaces(t *testing.T) {
 			t.Logf("Error (in %v): %v", opGroupNamespace, fetchErr.Error())
 			return false, fetchErr
 		}
+		return false, nil
+	})
+	require.NoError(t, err)
+}
+
+func TestOperatorGroupInsufficientPermissionsResolveViaRBAC(t *testing.T) {
+	defer cleaner.NotifyTestComplete(t, true)
+
+	log := func(s string) {
+		t.Logf("%s: %s", time.Now().Format("15:04:05.9999"), s)
+	}
+
+	c := newKubeClient(t)
+	crc := newCRClient(t)
+	csvName := genName("another-csv-")
+
+	newNamespaceName := genName(testNamespace + "-")
+
+	_, err := c.KubernetesInterface().CoreV1().Namespaces().Create(&corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: newNamespaceName,
+		},
+	})
+	require.NoError(t, err)
+	defer func() {
+		err = c.KubernetesInterface().CoreV1().Namespaces().Delete(newNamespaceName, &metav1.DeleteOptions{})
+		require.NoError(t, err)
+	}()
+
+	log("Creating CRD")
+	mainCRDPlural := genName("opgroup")
+	mainCRD := newCRD(mainCRDPlural)
+	cleanupCRD, err := createCRD(c, mainCRD)
+	require.NoError(t, err)
+	defer cleanupCRD()
+
+	log("Creating operator group")
+	serviceAccountName := genName("nginx-sa")
+	// intentionally creating an operator group without a service account already existing
+	operatorGroup := v1.OperatorGroup{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      genName("e2e-operator-group-"),
+			Namespace: newNamespaceName,
+		},
+		Spec: v1.OperatorGroupSpec{
+			ServiceAccountName: serviceAccountName,
+			TargetNamespaces:   []string{newNamespaceName},
+		},
+	}
+	_, err = crc.OperatorsV1().OperatorGroups(newNamespaceName).Create(&operatorGroup)
+	require.NoError(t, err)
+
+	log("Creating CSV")
+
+	// Create a new NamedInstallStrategy
+	deploymentName := genName("operator-deployment")
+	namedStrategy := newNginxInstallStrategy(deploymentName, nil, nil)
+
+	aCSV := newCSV(csvName, newNamespaceName, "", semver.MustParse("0.0.0"), []apiextensions.CustomResourceDefinition{mainCRD}, nil, namedStrategy)
+	createdCSV, err := crc.OperatorsV1alpha1().ClusterServiceVersions(newNamespaceName).Create(&aCSV)
+	require.NoError(t, err)
+
+	serviceAccount := &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: newNamespaceName,
+			Name:      serviceAccountName,
+		},
+	}
+	ownerutil.AddNonBlockingOwner(serviceAccount, createdCSV)
+	err = ownerutil.AddOwnerLabels(serviceAccount, createdCSV)
+	require.NoError(t, err)
+
+	_, err = c.CreateServiceAccount(serviceAccount)
+	require.NoError(t, err)
+
+	log("wait for CSV to fail")
+	err = wait.Poll(pollInterval, pollDuration, func() (bool, error) {
+		fetched, err := crc.OperatorsV1alpha1().ClusterServiceVersions(newNamespaceName).Get(createdCSV.GetName(), metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+		log(fmt.Sprintf("%s (%s): %s", fetched.Status.Phase, fetched.Status.Reason, fetched.Status.Message))
+		return csvFailedChecker(fetched), nil
+	})
+	require.NoError(t, err)
+
+	// now add cluster admin permissions to service account
+	role := &rbacv1.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: newNamespaceName,
+			Name:      serviceAccountName + "-role",
+		},
+		Rules: []rbacv1.PolicyRule{
+			{
+				Verbs:     []string{"*"},
+				APIGroups: []string{"*"},
+				Resources: []string{"*"},
+			},
+		},
+	}
+	ownerutil.AddNonBlockingOwner(role, createdCSV)
+	err = ownerutil.AddOwnerLabels(role, createdCSV)
+	require.NoError(t, err)
+
+	roleBinding := &rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: newNamespaceName,
+			Name:      serviceAccountName + "-rb",
+		},
+		Subjects: []rbacv1.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Name:      serviceAccountName,
+				Namespace: newNamespaceName,
+			},
+		},
+		RoleRef: rbacv1.RoleRef{
+			Kind: "Role",
+			Name: role.GetName(),
+		},
+	}
+	ownerutil.AddNonBlockingOwner(roleBinding, createdCSV)
+	err = ownerutil.AddOwnerLabels(roleBinding, createdCSV)
+	require.NoError(t, err)
+
+	_, err = c.CreateRole(role)
+	require.NoError(t, err)
+	_, err = c.CreateRoleBinding(roleBinding)
+	require.NoError(t, err)
+
+	log("wait for CSV to succeeed")
+	err = wait.Poll(pollInterval, pollDuration, func() (bool, error) {
+		fetched, err := crc.OperatorsV1alpha1().ClusterServiceVersions(newNamespaceName).Get(createdCSV.GetName(), metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+		log(fmt.Sprintf("%s (%s): %s", fetched.Status.Phase, fetched.Status.Reason, fetched.Status.Message))
+		return csvSucceededChecker(fetched), nil
+	})
+	require.NoError(t, err)
+}
+
+func TestOperatorGroupInsufficientPermissionsResolveViaServiceAccountRemoval(t *testing.T) {
+	defer cleaner.NotifyTestComplete(t, true)
+
+	log := func(s string) {
+		t.Logf("%s: %s", time.Now().Format("15:04:05.9999"), s)
+	}
+
+	c := newKubeClient(t)
+	crc := newCRClient(t)
+	csvName := genName("another-csv-")
+
+	newNamespaceName := genName(testNamespace + "-")
+
+	_, err := c.KubernetesInterface().CoreV1().Namespaces().Create(&corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: newNamespaceName,
+		},
+	})
+	require.NoError(t, err)
+	defer func() {
+		err = c.KubernetesInterface().CoreV1().Namespaces().Delete(newNamespaceName, &metav1.DeleteOptions{})
+		require.NoError(t, err)
+	}()
+
+	log("Creating CRD")
+	mainCRDPlural := genName("opgroup")
+	mainCRD := newCRD(mainCRDPlural)
+	cleanupCRD, err := createCRD(c, mainCRD)
+	require.NoError(t, err)
+	defer cleanupCRD()
+
+	log("Creating operator group")
+	serviceAccountName := genName("nginx-sa")
+	// intentionally creating an operator group without a service account already existing
+	operatorGroup := v1.OperatorGroup{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      genName("e2e-operator-group-"),
+			Namespace: newNamespaceName,
+		},
+		Spec: v1.OperatorGroupSpec{
+			ServiceAccountName: serviceAccountName,
+			TargetNamespaces:   []string{newNamespaceName},
+		},
+	}
+	_, err = crc.OperatorsV1().OperatorGroups(newNamespaceName).Create(&operatorGroup)
+	require.NoError(t, err)
+
+	log("Creating CSV")
+
+	// Create a new NamedInstallStrategy
+	deploymentName := genName("operator-deployment")
+	namedStrategy := newNginxInstallStrategy(deploymentName, nil, nil)
+
+	aCSV := newCSV(csvName, newNamespaceName, "", semver.MustParse("0.0.0"), []apiextensions.CustomResourceDefinition{mainCRD}, nil, namedStrategy)
+	createdCSV, err := crc.OperatorsV1alpha1().ClusterServiceVersions(newNamespaceName).Create(&aCSV)
+	require.NoError(t, err)
+
+	serviceAccount := &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: newNamespaceName,
+			Name:      serviceAccountName,
+		},
+	}
+	ownerutil.AddNonBlockingOwner(serviceAccount, createdCSV)
+	err = ownerutil.AddOwnerLabels(serviceAccount, createdCSV)
+	require.NoError(t, err)
+
+	_, err = c.CreateServiceAccount(serviceAccount)
+	require.NoError(t, err)
+
+	log("wait for CSV to fail")
+	err = wait.Poll(pollInterval, pollDuration, func() (bool, error) {
+		fetched, err := crc.OperatorsV1alpha1().ClusterServiceVersions(newNamespaceName).Get(createdCSV.GetName(), metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+		log(fmt.Sprintf("%s (%s): %s", fetched.Status.Phase, fetched.Status.Reason, fetched.Status.Message))
+		return csvFailedChecker(fetched), nil
+	})
+	require.NoError(t, err)
+
+	// now remove operator group specified service account
+	createdOpGroup, err := crc.OperatorsV1().OperatorGroups(newNamespaceName).Get(operatorGroup.GetName(), metav1.GetOptions{})
+	require.NoError(t, err)
+	createdOpGroup.Spec.ServiceAccountName = ""
+	_, err = crc.OperatorsV1().OperatorGroups(newNamespaceName).Update(createdOpGroup)
+	require.NoError(t, err)
+
+	log("wait for CSV to succeeed")
+	err = wait.Poll(pollInterval, pollDuration, func() (bool, error) {
+		fetched, err := crc.OperatorsV1alpha1().ClusterServiceVersions(newNamespaceName).Get(createdCSV.GetName(), metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+		log(fmt.Sprintf("%s (%s): %s", fetched.Status.Phase, fetched.Status.Reason, fetched.Status.Message))
+		return csvSucceededChecker(fetched), nil
+	})
+	require.NoError(t, err)
+}
+
+// Versions of OLM at 0.14.1 and older had a bug that would place the wrong namespace annotation on copied CSVs,
+// preventing them from being GCd. This ensures that any leftover CSVs in that state are properly cleared up.
+func TestCleanupCsvsWithBadOwnerOperatorGroups(t *testing.T) {
+	defer cleaner.NotifyTestComplete(t, true)
+	c := newKubeClient(t)
+	crc := newCRClient(t)
+	csvName := genName("another-csv-") // must be lowercase for DNS-1123 validation
+
+	opGroupNamespace := testNamespace
+	matchingLabel := map[string]string{"inGroup": opGroupNamespace}
+	otherNamespaceName := genName(opGroupNamespace + "-")
+
+	t.Log("Creating CRD")
+	mainCRDPlural := genName("opgroup-")
+	mainCRD := newCRD(mainCRDPlural)
+	cleanupCRD, err := createCRD(c, mainCRD)
+	require.NoError(t, err)
+	defer cleanupCRD()
+
+	t.Logf("Getting default operator group 'global-operators' installed via operatorgroup-default.yaml %v", opGroupNamespace)
+	operatorGroup, err := crc.OperatorsV1().OperatorGroups(opGroupNamespace).Get("global-operators", metav1.GetOptions{})
+	require.NoError(t, err)
+
+	expectedOperatorGroupStatus := v1.OperatorGroupStatus{
+		Namespaces: []string{metav1.NamespaceAll},
+	}
+
+	t.Log("Waiting on operator group to have correct status")
+	err = wait.Poll(pollInterval, pollDuration, func() (bool, error) {
+		fetched, fetchErr := crc.OperatorsV1().OperatorGroups(opGroupNamespace).Get(operatorGroup.Name, metav1.GetOptions{})
+		if fetchErr != nil {
+			return false, fetchErr
+		}
+		if len(fetched.Status.Namespaces) > 0 {
+			require.ElementsMatch(t, expectedOperatorGroupStatus.Namespaces, fetched.Status.Namespaces)
+			fmt.Println(fetched.Status.Namespaces)
+			return true, nil
+		}
+		return false, nil
+	})
+	require.NoError(t, err)
+
+	t.Log("Creating CSV")
+	// Generate permissions
+	serviceAccountName := genName("nginx-sa")
+	permissions := []v1alpha1.StrategyDeploymentPermissions{
+		{
+			ServiceAccountName: serviceAccountName,
+			Rules: []rbacv1.PolicyRule{
+				{
+					Verbs:     []string{rbacv1.VerbAll},
+					APIGroups: []string{mainCRD.Spec.Group},
+					Resources: []string{mainCRDPlural},
+				},
+			},
+		},
+	}
+
+	serviceAccount := &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: opGroupNamespace,
+			Name:      serviceAccountName,
+		},
+	}
+	role := &rbacv1.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: opGroupNamespace,
+			Name:      serviceAccountName + "-role",
+		},
+		Rules: permissions[0].Rules,
+	}
+	roleBinding := &rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: opGroupNamespace,
+			Name:      serviceAccountName + "-rb",
+		},
+		Subjects: []rbacv1.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Name:      serviceAccountName,
+				Namespace: opGroupNamespace,
+			},
+		},
+		RoleRef: rbacv1.RoleRef{
+			Kind: "Role",
+			Name: role.GetName(),
+		},
+	}
+	_, err = c.CreateServiceAccount(serviceAccount)
+	require.NoError(t, err)
+	defer func() {
+		c.DeleteServiceAccount(serviceAccount.GetNamespace(), serviceAccount.GetName(), metav1.NewDeleteOptions(0))
+	}()
+	createdRole, err := c.CreateRole(role)
+	require.NoError(t, err)
+	defer func() {
+		c.DeleteRole(role.GetNamespace(), role.GetName(), metav1.NewDeleteOptions(0))
+	}()
+	createdRoleBinding, err := c.CreateRoleBinding(roleBinding)
+	require.NoError(t, err)
+	defer func() {
+		c.DeleteRoleBinding(roleBinding.GetNamespace(), roleBinding.GetName(), metav1.NewDeleteOptions(0))
+	}()
+	// Create a new NamedInstallStrategy
+	deploymentName := genName("operator-deployment")
+	namedStrategy := newNginxInstallStrategy(deploymentName, permissions, nil)
+
+	aCSV := newCSV(csvName, opGroupNamespace, "", semver.MustParse("0.0.0"), []apiextensions.CustomResourceDefinition{mainCRD}, nil, namedStrategy)
+	aCSV.Labels = map[string]string{"label": t.Name()}
+	createdCSV, err := crc.OperatorsV1alpha1().ClusterServiceVersions(opGroupNamespace).Create(&aCSV)
+	require.NoError(t, err)
+
+	err = ownerutil.AddOwnerLabels(createdRole, createdCSV)
+	require.NoError(t, err)
+	_, err = c.UpdateRole(createdRole)
+	require.NoError(t, err)
+
+	err = ownerutil.AddOwnerLabels(createdRoleBinding, createdCSV)
+	require.NoError(t, err)
+	_, err = c.UpdateRoleBinding(createdRoleBinding)
+	require.NoError(t, err)
+
+	t.Log("wait for CSV to succeed")
+	_, err = fetchCSV(t, crc, createdCSV.GetName(), opGroupNamespace, csvSucceededChecker)
+	require.NoError(t, err)
+
+	t.Log("wait for roles to be promoted to clusterroles")
+	var fetchedRole *rbacv1.ClusterRole
+	err = wait.Poll(pollInterval, pollDuration, func() (bool, error) {
+		fetchedRole, err = c.GetClusterRole(role.GetName())
+		if err != nil {
+			if k8serrors.IsNotFound(err) {
+				return false, nil
+			}
+			return false, err
+		}
+		return true, nil
+	})
+	require.EqualValues(t, append(role.Rules, rbacv1.PolicyRule{
+		Verbs:     []string{"get", "list", "watch"},
+		APIGroups: []string{""},
+		Resources: []string{"namespaces"},
+	}), fetchedRole.Rules)
+	var fetchedRoleBinding *rbacv1.ClusterRoleBinding
+	err = wait.Poll(pollInterval, pollDuration, func() (bool, error) {
+		fetchedRoleBinding, err = c.GetClusterRoleBinding(roleBinding.GetName())
+		if err != nil {
+			if k8serrors.IsNotFound(err) {
+				return false, nil
+			}
+			return false, err
+		}
+		return true, nil
+	})
+	require.EqualValues(t, roleBinding.Subjects, fetchedRoleBinding.Subjects)
+	require.EqualValues(t, roleBinding.RoleRef.Name, fetchedRoleBinding.RoleRef.Name)
+	require.EqualValues(t, "rbac.authorization.k8s.io", fetchedRoleBinding.RoleRef.APIGroup)
+	require.EqualValues(t, "ClusterRole", fetchedRoleBinding.RoleRef.Kind)
+
+	t.Log("ensure operator was granted namespace list permission")
+	res, err := c.KubernetesInterface().AuthorizationV1().SubjectAccessReviews().Create(&authorizationv1.SubjectAccessReview{
+		Spec: authorizationv1.SubjectAccessReviewSpec{
+			User: "system:serviceaccount:" + opGroupNamespace + ":" + serviceAccountName,
+			ResourceAttributes: &authorizationv1.ResourceAttributes{
+				Group:    corev1.GroupName,
+				Version:  "v1",
+				Resource: "namespaces",
+				Verb:     "list",
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.True(t, res.Status.Allowed, "got %#v", res.Status)
+
+	t.Log("Waiting for operator namespace csv to have annotations")
+	err = wait.Poll(pollInterval, pollDuration, func() (bool, error) {
+		fetchedCSV, fetchErr := crc.OperatorsV1alpha1().ClusterServiceVersions(opGroupNamespace).Get(csvName, metav1.GetOptions{})
+		if fetchErr != nil {
+			if errors.IsNotFound(fetchErr) {
+				return false, nil
+			}
+			t.Logf("Error (in %v): %v", testNamespace, fetchErr.Error())
+			return false, fetchErr
+		}
+		if checkOperatorGroupAnnotations(fetchedCSV, operatorGroup, true, corev1.NamespaceAll) == nil {
+			return true, nil
+		}
+		return false, nil
+	})
+	require.NoError(t, err)
+
+	csvList, err := crc.OperatorsV1alpha1().ClusterServiceVersions(corev1.NamespaceAll).List(metav1.ListOptions{LabelSelector: fmt.Sprintf("label=%s", t.Name())})
+	require.NoError(t, err)
+	t.Logf("Found CSV count of %v", len(csvList.Items))
+
+	t.Logf("Create other namespace %s", otherNamespaceName)
+	otherNamespace := corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   otherNamespaceName,
+			Labels: matchingLabel,
+		},
+	}
+	_, err = c.KubernetesInterface().CoreV1().Namespaces().Create(&otherNamespace)
+	require.NoError(t, err)
+	defer func() {
+		err = c.KubernetesInterface().CoreV1().Namespaces().Delete(otherNamespaceName, &metav1.DeleteOptions{})
+		require.NoError(t, err)
+	}()
+
+	t.Log("Waiting to ensure copied CSV shows up in other namespace")
+	err = wait.Poll(pollInterval, pollDuration, func() (bool, error) {
+		fetchedCSV, fetchErr := crc.OperatorsV1alpha1().ClusterServiceVersions(otherNamespaceName).Get(csvName, metav1.GetOptions{})
+		if fetchErr != nil {
+			if errors.IsNotFound(fetchErr) {
+				return false, nil
+			}
+			t.Logf("Error (in %v): %v", otherNamespaceName, fetchErr.Error())
+			return false, fetchErr
+		}
+		if checkOperatorGroupAnnotations(fetchedCSV, operatorGroup, false, "") == nil {
+			return true, nil
+		}
+		return false, nil
+	})
+	require.NoError(t, err)
+
+	// Give copied CSV a bad operatorgroup annotation
+	updateCSV := func() error {
+		fetchedCSV, err := crc.OperatorsV1alpha1().ClusterServiceVersions(otherNamespaceName).Get(csvName, metav1.GetOptions{})
+		require.NoError(t, err)
+		fetchedCSV.Annotations[v1.OperatorGroupNamespaceAnnotationKey] = fetchedCSV.GetNamespace()
+		_, err = crc.OperatorsV1alpha1().ClusterServiceVersions(otherNamespaceName).Update(fetchedCSV)
+		return err
+	}
+	require.NoError(t, retry.RetryOnConflict(retry.DefaultBackoff, updateCSV))
+
+	// wait for CSV to be gc'd
+	err = wait.Poll(pollInterval, 2*pollDuration, func() (bool, error) {
+		csv, fetchErr := crc.OperatorsV1alpha1().ClusterServiceVersions(otherNamespaceName).Get(csvName, metav1.GetOptions{})
+		if fetchErr != nil {
+			if errors.IsNotFound(fetchErr) {
+				return true, nil
+			}
+			t.Logf("Error (in %v): %v", opGroupNamespace, fetchErr.Error())
+			return false, fetchErr
+		}
+		t.Logf("%#v", csv.Annotations)
+		t.Logf(csv.GetNamespace())
 		return false, nil
 	})
 	require.NoError(t, err)
