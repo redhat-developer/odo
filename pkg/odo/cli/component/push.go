@@ -60,9 +60,19 @@ func NewPushOptions() *PushOptions {
 	}
 }
 
+func (po *PushOptions) CompleteDevfilePath() {
+	if len(po.DevfilePath) > 0 {
+		po.DevfilePath = filepath.Join(po.componentContext, po.DevfilePath)
+	} else {
+		po.DevfilePath = filepath.Join(po.componentContext, "devfile.yaml")
+	}
+}
+
 // Complete completes push args
 func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	po.DevfilePath = filepath.Join(po.componentContext, DevfilePath)
+	po.CompleteDevfilePath()
+
 	// if experimental mode is enabled and devfile is present
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.DevfilePath) {
 		envInfo, err := envinfo.NewEnvSpecificInfo(po.componentContext)
