@@ -477,7 +477,7 @@ func newDevfileContext(command *cobra.Command) *Context {
 		internalCxt.KClient = kClient
 
 		internalCxt.EnvSpecificInfo = envInfo
-		resolveNamespace(command, kClient, envInfo)
+		internalCxt.Project = resolveNamespace(command, kClient, envInfo)
 
 		// ignore the "true" for now
 		internalCxt.Application = ResolveApp(command, true, envInfo)
