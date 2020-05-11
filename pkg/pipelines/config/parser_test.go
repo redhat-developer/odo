@@ -20,7 +20,7 @@ func TestParse(t *testing.T) {
 					Pipelines: &Pipelines{
 						Integration: &TemplateBinding{
 							Template: "dev-ci-template",
-							Binding:  "dev-ci-binding",
+							Bindings: []string{"dev-ci-binding"},
 						},
 					},
 					Services: []*Service{

@@ -41,7 +41,7 @@ type BootstrapOptions struct {
 var defaultPipelines = &config.Pipelines{
 	Integration: &config.TemplateBinding{
 		Template: "app-ci-template",
-		Binding:  "github-pr-binding",
+		Bindings: []string{"github-pr-binding"},
 	},
 }
 

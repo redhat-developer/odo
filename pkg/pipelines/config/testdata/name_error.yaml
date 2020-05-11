@@ -16,7 +16,8 @@ environments:
         pipelines:
               integration:
                 template: dev-ci-template
-                binding:    # invalid name
+                bindings:    # invalid name
+                 - 
     apps:
       - name: app-1$.       # invalid name
         services:

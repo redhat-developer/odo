@@ -7,7 +7,8 @@ environments:
     pipelines:
       integration:
         template: dev-ci-template
-        binding: dev-ci-binding
+        bindings:
+          - dev-ci-binding
     apps:
       - name: my-app-1
         services:

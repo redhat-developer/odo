@@ -83,27 +83,41 @@ func getEventListenerPath(cicdPath string) string {
 func createCITrigger(gitOpsRepo string, env *config.Environment, svc *config.Service) (v1alpha1.EventListenerTrigger, error) {
 	if env.IsCICD {
 		repo, err := extractRepo(gitOpsRepo)
-		return eventlisteners.CreateListenerTrigger("ci-dryrun-from-pr", eventlisteners.StageCIDryRunFilters, repo, "github-pr-binding", "ci-dryrun-from-pr-template", eventlisteners.GitOpsWebhookSecret, env.Name), err
+		if err != nil {
+			return v1alpha1.EventListenerTrigger{}, err
+		}
+		return eventlisteners.CreateListenerTrigger("ci-dryrun-from-pr", eventlisteners.StageCIDryRunFilters, repo, eventlisteners.GitOpsWebhookSecret, env.Name, "ci-dryrun-from-pr-template", []string{"github-pr-binding"}), nil
 	}
 	pipelines := getPipelines(env, svc)
 	svcRepo, err := extractRepo(svc.SourceURL)
-	return eventlisteners.CreateListenerTrigger(triggerName(svc.Name), eventlisteners.StageCIDryRunFilters, svcRepo, pipelines.Integration.Binding, pipelines.Integration.Template, svc.Webhook.Secret.Name, svc.Webhook.Secret.Namespace), err
+	if err != nil {
+		return v1alpha1.EventListenerTrigger{}, err
+	}
+	return eventlisteners.CreateListenerTrigger(triggerName(svc.Name), eventlisteners.StageCIDryRunFilters, svcRepo, svc.Webhook.Secret.Name, svc.Webhook.Secret.Namespace, pipelines.Integration.Template, pipelines.Integration.Bindings), nil
 }
 
 func createCDTrigger(gitOpsRepo string, env *config.Environment, svc *config.Service) (v1alpha1.EventListenerTrigger, error) {
 	repo, err := extractRepo(gitOpsRepo)
-	return eventlisteners.CreateListenerTrigger("cd-deploy-from-push", eventlisteners.StageCDDeployFilters, repo, "github-push-binding", "cd-deploy-from-push-template", eventlisteners.GitOpsWebhookSecret, env.Name), err
-
+	if err != nil {
+		return v1alpha1.EventListenerTrigger{}, err
+	}
+	return eventlisteners.CreateListenerTrigger("cd-deploy-from-push", eventlisteners.StageCDDeployFilters, repo, eventlisteners.GitOpsWebhookSecret, env.Name, "cd-deploy-from-push-template", []string{"github-push-binding"}), nil
 }
 
 func getPipelines(env *config.Environment, svc *config.Service) *config.Pipelines {
-	if svc.Pipelines != nil {
-		return svc.Pipelines
-	}
+	pipelines := defaultPipelines
 	if env.Pipelines != nil {
-		return env.Pipelines
+		pipelines = env.Pipelines
 	}
-	return defaultPipelines
+	if svc.Pipelines != nil {
+		if len(svc.Pipelines.Integration.Bindings) > 0 {
+			pipelines.Integration.Bindings = svc.Pipelines.Integration.Bindings
+		}
+		if svc.Pipelines.Integration.Template != "" {
+			pipelines.Integration.Template = svc.Pipelines.Integration.Template
+		}
+	}
+	return pipelines
 }
 
 func extractRepo(u string) (string, error) {

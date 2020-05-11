@@ -181,8 +181,8 @@ type Pipelines struct {
 // TemplateBinding is a combination of the template and binding to be used for a
 // pipeline execution.
 type TemplateBinding struct {
-	Template string `json:"template,omitempty"`
-	Binding  string `json:"binding,omitempty"`
+	Template string   `json:"template,omitempty"`
+	Bindings []string `json:"bindings,omitempty"`
 }
 
 // Walk implements post-node visiting of each element in the manifest.
