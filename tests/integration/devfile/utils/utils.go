@@ -198,11 +198,11 @@ func OdoWatch(cmpName, project, context string, stringsToBeMatched []string, run
 	go func() {
 		startMsg := <-startSimulationCh
 		if startMsg {
-			err := os.MkdirAll(filepath.Join(context, ".abc"), 0755)
+			err := os.MkdirAll(filepath.Join(context, ".abc"), 0750)
 			if err != nil {
 				panic(err)
 			}
-			err = os.MkdirAll(filepath.Join(context, "abcd"), 0755)
+			err = os.MkdirAll(filepath.Join(context, "abcd"), 0750)
 			if err != nil {
 				panic(err)
 			}
