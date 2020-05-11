@@ -333,6 +333,12 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			co.CommonPushOptions.componentContext = co.componentContext
 		}
 
+		// One exception of a validation present in Complete code because, this is an optimisation
+		// i.e. if the devfile is present locally then we dont need to list the devfile catalog
+		if util.CheckPathExists(DevfilePath) {
+			return errors.New("This directory already contains a devfile.yaml, please delete it and run the component creation command again")
+		}
+
 		catalogDevfileList, err := catalog.ListDevfileComponents(co.devfileMetadata.devfileRegistry.Name)
 		if err != nil {
 			return err
@@ -351,15 +357,13 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 			// devfile.yaml is not present, user has to specify the component type
 			// Component type: We provide supported devfile component list then let you choose
-			if !util.CheckPathExists(DevfilePath) {
-				var supDevfileCatalogList []catalog.DevfileComponentType
-				for _, devfileComponent := range catalogDevfileList.Items {
-					if devfileComponent.Support {
-						supDevfileCatalogList = append(supDevfileCatalogList, devfileComponent)
-					}
+			var supDevfileCatalogList []catalog.DevfileComponentType
+			for _, devfileComponent := range catalogDevfileList.Items {
+				if devfileComponent.Support {
+					supDevfileCatalogList = append(supDevfileCatalogList, devfileComponent)
 				}
-				componentType = ui.SelectDevfileComponentType(supDevfileCatalogList)
 			}
+			componentType = ui.SelectDevfileComponentType(supDevfileCatalogList)
 
 			// Component name: User needs to specify the componet name, by default it is component type that user chooses
 			componentName = ui.EnterDevfileComponentName(componentType)
@@ -381,10 +385,6 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		} else {
 			// Direct mode (User enters the full command)
 			// Get component type, name and namespace from user's full command
-
-			if util.CheckPathExists(DevfilePath) {
-				return errors.New("This directory already contains a devfile.yaml, please delete it and run the component creation command again")
-			}
 
 			// Component type: Get from full command's first argument (mandatory in direct mode)
 			componentType = args[0]
@@ -415,18 +415,6 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		co.devfileMetadata.componentType = componentType
 		co.devfileMetadata.componentName = strings.ToLower(componentName)
 		co.devfileMetadata.componentNamespace = strings.ToLower(componentNamespace)
-
-		// If devfile.yaml is present, we don't need to download the devfile.yaml later
-		if util.CheckPathExists(DevfilePath) {
-			co.devfileMetadata.devfileSupport = true
-
-			err = co.InitEnvInfoFromContext()
-			if err != nil {
-				return err
-			}
-
-			return nil
-		}
 
 		co.devfileAppName = genericclioptions.ResolveApp(cmd, true, co.EnvSpecificInfo)
 
@@ -662,6 +650,7 @@ func (co *CreateOptions) Validate() (err error) {
 			spinner := log.Spinner("Validating devfile component")
 			defer spinner.End(false)
 
+			// This checks for the presence of s2i style component
 			if util.CheckPathExists(ConfigFilePath) {
 				return errors.New("This directory already contains a component")
 			}
@@ -801,13 +790,11 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 // Run has the logic to perform the required actions as part of command
 func (co *CreateOptions) Run() (err error) {
 	if experimental.IsExperimentalModeEnabled() {
-		// Download devfile.yaml file and create env.yaml file
+		// Download devfile.yaml file and create env.yaml file only if its not already present
 		if co.devfileMetadata.devfileSupport {
-			if !util.CheckPathExists(DevfilePath) {
-				err := util.DownloadFile(co.devfileMetadata.devfileRegistry.URL+co.devfileMetadata.devfileLink, DevfilePath)
-				if err != nil {
-					return errors.Wrap(err, "Faile to download devfile.yaml for devfile component")
-				}
+			err := util.DownloadFile(co.devfileMetadata.devfileRegistry.URL+co.devfileMetadata.devfileLink, DevfilePath)
+			if err != nil {
+				return errors.Wrap(err, "Faile to download devfile.yaml for devfile component")
 			}
 
 			if util.CheckPathExists(DevfilePath) && co.devfileMetadata.downloadSource != "" {
@@ -817,7 +804,7 @@ func (co *CreateOptions) Run() (err error) {
 				}
 			}
 
-			err := co.EnvSpecificInfo.SetComponentSettings(envinfo.ComponentSettings{Name: co.devfileMetadata.componentName,
+			err = co.EnvSpecificInfo.SetComponentSettings(envinfo.ComponentSettings{Name: co.devfileMetadata.componentName,
 				Namespace: co.devfileMetadata.componentNamespace,
 				AppName:   co.devfileAppName})
 			if err != nil {
