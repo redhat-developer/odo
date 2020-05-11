@@ -96,7 +96,7 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 			// the secret should have been created along with the secret
 			_, err = o.Client.GetSecret(o.secretName, o.Project)
 			if err != nil {
-				return fmt.Errorf("The service %s created by 'odo service create' is being provisioned. You may have to wait a few seconds until OpenShift fully provisions it before executing 'odo %s'.", o.secretName, o.operationName)
+				return fmt.Errorf("the service %s created by 'odo service create' is being provisioned. You may have to wait a few seconds until OpenShift fully provisions it before executing 'odo %s'", o.secretName, o.operationName)
 			}
 		}
 	}
