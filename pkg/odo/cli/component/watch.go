@@ -76,11 +76,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 
 	// if experimental mode is enabled and devfile is present
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(wo.devfilePath) {
-		envinfo, err := envinfo.NewEnvSpecificInfo(wo.componentContext)
-		if err != nil {
-			return errors.Wrap(err, "unable to retrieve configuration information")
-		}
-		wo.EnvSpecificInfo = envinfo
+
 		wo.Context = genericclioptions.NewDevfileContext(cmd)
 
 		// Set the source path to either the context or current working directory (if context not set)
@@ -96,10 +92,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 		}
 
 		// Get the component name
-		wo.componentName, err = getComponentName(wo.componentContext)
-		if err != nil {
-			return err
-		}
+		wo.componentName = wo.EnvSpecificInfo.GetName()
 
 		// Parse devfile
 		devObj, err := devfileParser.Parse(wo.devfilePath)
@@ -117,7 +110,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 		} else {
 			platformContext = nil
 		}
-		wo.devfileHandler, err = adapters.NewPlatformAdapter(wo.componentName, wo.componentContext, devObj, platformContext)
+		wo.devfileHandler, err = adapters.NewPlatformAdapter(wo.Application, wo.componentName, wo.componentContext, devObj, platformContext)
 
 		return err
 	}

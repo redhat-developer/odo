@@ -468,7 +468,7 @@ func newDevfileContext(command *cobra.Command) *Context {
 
 	envInfo, err := getValidEnvinfo(command)
 	if err != nil {
-		util.LogErrorAndExit(err, "")
+		util.LogErrorAndExit(err, "unable to retrieve configuration information")
 	}
 
 	if !pushtarget.IsPushTargetDocker() {

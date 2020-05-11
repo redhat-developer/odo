@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 
@@ -45,14 +44,13 @@ type DeleteOptions struct {
 	*ComponentOptions
 
 	// devfile path
-	devfilePath     string
-	namespace       string
-	EnvSpecificInfo *envinfo.EnvSpecificInfo
+	devfilePath string
+	namespace   string
 }
 
 // NewDeleteOptions returns new instance of DeleteOptions
 func NewDeleteOptions() *DeleteOptions {
-	return &DeleteOptions{false, false, false, "", false, &ComponentOptions{}, "", "", nil}
+	return &DeleteOptions{false, false, false, "", false, &ComponentOptions{}, "", ""}
 }
 
 // Complete completes log args
@@ -61,10 +59,6 @@ func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string
 
 	// if experimental mode is enabled and devfile is present
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(do.devfilePath) {
-		do.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(do.componentContext)
-		if err != nil {
-			return err
-		}
 
 		do.Context = genericclioptions.NewDevfileContext(cmd)
 		if !pushtarget.IsPushTargetDocker() {

@@ -40,11 +40,7 @@ func (po *PushOptions) DevfilePush() (err error) {
 		return err
 	}
 
-	componentName, err := getComponentName(po.componentContext)
-	if err != nil {
-		return errors.Wrap(err, "unable to get component name")
-	}
-
+	componentName := po.EnvSpecificInfo.GetName()
 	// Set the source path to either the context or current working directory (if context not set)
 	po.sourcePath, err = util.GetAbsPath(po.componentContext)
 	if err != nil {
@@ -67,7 +63,7 @@ func (po *PushOptions) DevfilePush() (err error) {
 		platformContext = kc
 	}
 
-	devfileHandler, err := adapters.NewPlatformAdapter(componentName, po.componentContext, devObj, platformContext)
+	devfileHandler, err := adapters.NewPlatformAdapter(componentName, po.Application, po.componentContext, devObj, platformContext)
 
 	if err != nil {
 		return err
@@ -101,27 +97,6 @@ func (po *PushOptions) DevfilePush() (err error) {
 	return
 }
 
-// Get component name from env.yaml file
-func getComponentName(context string) (string, error) {
-	var dir string
-	var err error
-	if context == "" {
-		dir, err = os.Getwd()
-		if err != nil {
-			return "", err
-		}
-	} else {
-		dir = context
-	}
-
-	envInfo, err := envinfo.NewEnvSpecificInfo(dir)
-	if err != nil {
-		return "", err
-	}
-	componentName := envInfo.GetName()
-	return componentName, nil
-}
-
 // DevfileComponentDelete deletes the devfile component
 func (do *DeleteOptions) DevfileComponentDelete() error {
 	// Parse devfile
@@ -130,10 +105,7 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 		return err
 	}
 
-	componentName, err := getComponentName(do.componentContext)
-	if err != nil {
-		return err
-	}
+	componentName := do.EnvSpecificInfo.GetName()
 
 	kc := kubernetes.KubernetesContext{
 		Namespace: do.namespace,
@@ -142,7 +114,7 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 	labels := map[string]string{
 		"component": componentName,
 	}
-	devfileHandler, err := adapters.NewPlatformAdapter(componentName, do.componentContext, devObj, kc)
+	devfileHandler, err := adapters.NewPlatformAdapter(componentName, do.Application, do.componentContext, devObj, kc)
 	if err != nil {
 		return err
 	}
