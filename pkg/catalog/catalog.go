@@ -180,9 +180,7 @@ func ListDevfileComponents(registryName string) (DevfileComponentTypeList, error
 	for _, reg := range catalogDevfileList.DevfileRegistries {
 		// Load the devfile registry index.json
 		registry := reg // needed to prevent the lambda from capturing the value
-		retrieveRegistryIndices.Add(util.ConcurrentTask{ToRun: func(errChannel chan error, wg *sync.WaitGroup) {
-			defer wg.Done()
-
+		retrieveRegistryIndices.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
 			indexEntries, e := getDevfileIndexEntries(registry)
 			if e != nil {
 				log.Warningf("Registry %s is not set up properly with error: %v", registryName, err)
@@ -208,8 +206,7 @@ func ListDevfileComponents(registryName string) (DevfileComponentTypeList, error
 		// Load the devfile
 		devfileIndex := index // needed to prevent the lambda from capturing the value
 		link := devfileIndex.Registry.URL + devfileIndex.Links.Link
-		retrieveDevfiles.Add(util.ConcurrentTask{ToRun: func(errChannel chan error, wg *sync.WaitGroup) {
-			defer wg.Done()
+		retrieveDevfiles.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
 
 			// Note that this issues an HTTP get per devfile entry in the catalog, while doing it concurrently instead of
 			// sequentially improves the performance, caching that information would improve the performance even more

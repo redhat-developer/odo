@@ -15,7 +15,6 @@ import (
 	"k8s.io/klog"
 	"os"
 	"strings"
-	"sync"
 	"text/tabwriter"
 )
 
@@ -49,8 +48,7 @@ func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args [
 	if !pushtarget.IsPushTargetDocker() {
 		o.Context = genericclioptions.NewContext(cmd)
 
-		tasks.Add(util2.ConcurrentTask{ToRun: func(errChannel chan error, wg *sync.WaitGroup) {
-			defer wg.Done()
+		tasks.Add(util2.ConcurrentTask{ToRun: func(errChannel chan error) {
 			o.catalogList, err = catalog.ListComponents(o.Client)
 			if err != nil {
 				if experimental.IsExperimentalModeEnabled() {
@@ -65,8 +63,7 @@ func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args [
 	}
 
 	if experimental.IsExperimentalModeEnabled() {
-		tasks.Add(util2.ConcurrentTask{ToRun: func(errChannel chan error, wg *sync.WaitGroup) {
-			defer wg.Done()
+		tasks.Add(util2.ConcurrentTask{ToRun: func(errChannel chan error) {
 			o.catalogDevfileList, err = catalog.ListDevfileComponents("")
 			if o.catalogDevfileList.DevfileRegistries == nil {
 				log.Warning("Please run 'odo registry add <registry name> <registry URL>' to add registry for listing devfile components\n")

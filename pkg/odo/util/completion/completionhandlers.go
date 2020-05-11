@@ -16,7 +16,6 @@ import (
 	"github.com/posener/complete"
 	"github.com/spf13/cobra"
 	"strings"
-	"sync"
 )
 
 // ServiceCompletionHandler provides service name completion for the current project and application
@@ -274,9 +273,7 @@ var CreateCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context 
 	found := false
 
 	tasks := util.NewConcurrentTasks(2)
-	tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error, wg *sync.WaitGroup) {
-		defer wg.Done()
-
+	tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
 		catalogList, _ := catalog.ListComponents(context.Client)
 		for _, builder := range catalogList.Items {
 			if args.commands[builder.Name] {
@@ -288,9 +285,7 @@ var CreateCompletionHandler = func(cmd *cobra.Command, args parsedArgs, context 
 			}
 		}
 	}})
-	tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error, wg *sync.WaitGroup) {
-		defer wg.Done()
-
+	tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
 		components, _ := catalog.ListDevfileComponents("")
 		for _, devfile := range components.Items {
 			if args.commands[devfile.Name] {

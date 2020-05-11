@@ -6,12 +6,13 @@ import (
 
 // A task to execute in a go-routine
 type ConcurrentTask struct {
-	ToRun func(errChannel chan error, wg *sync.WaitGroup)
+	ToRun func(errChannel chan error)
 }
 
-// Run encapsulates the work to be done by calling the ToRun function
-func (ct ConcurrentTask) Run(errChannel chan error, wg *sync.WaitGroup) {
-	ct.ToRun(errChannel, wg)
+// run encapsulates the work to be done by calling the ToRun function
+func (ct ConcurrentTask) run(errChannel chan error, wg *sync.WaitGroup) {
+	defer wg.Done()
+	ct.ToRun(errChannel)
 }
 
 // Records tasks to be run concurrently with go-routines
@@ -41,7 +42,7 @@ func (ct *ConcurrentTasks) Run() error {
 
 	for _, task := range ct.tasks {
 		wg.Add(1)
-		go task.Run(errChannel, &wg)
+		go task.run(errChannel, &wg)
 	}
 
 	// Put the wait group in a go routine.
