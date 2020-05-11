@@ -370,8 +370,8 @@ func resolveNamespace(command *cobra.Command, client *kclient.Client, envSpecifi
 	return namespace
 }
 
-// resolveApp resolves the app
-func resolveApp(command *cobra.Command, createAppIfNeeded bool, localConfiguration *config.LocalConfigInfo) string {
+// resolveApp resolves the app, the order of precedence being flag > local config > default.
+func resolveApp(command *cobra.Command, createAppIfNeeded bool, localConfiguration envinfo.LocalConfigProvider) string {
 	var app string
 	appFlag := FlagValueIfSet(command, ApplicationFlagName)
 	if len(appFlag) > 0 {
@@ -478,6 +478,9 @@ func newDevfileContext(command *cobra.Command) *Context {
 
 		internalCxt.EnvSpecificInfo = envInfo
 		resolveNamespace(command, kClient, envInfo)
+
+		// ignore the "true" for now
+		internalCxt.Application = resolveApp(command, true, envInfo)
 	}
 	// create a context from the internal representation
 	context := &Context{
