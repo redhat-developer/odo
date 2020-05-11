@@ -37,19 +37,19 @@ func Generate(githubRepo, ns, saName, secretName string) triggersv1.EventListene
 					"ci-dryrun-from-pr",
 					StageCIDryRunFilters,
 					githubRepo,
-					"github-pr-binding",
-					"ci-dryrun-from-pr-template",
 					secretName,
 					ns,
+					"ci-dryrun-from-pr-template",
+					[]string{"github-pr-binding"},
 				),
 				CreateListenerTrigger(
 					"cd-deploy-from-push",
 					StageCDDeployFilters,
 					githubRepo,
-					"github-push-binding",
-					"cd-deploy-from-push-template",
 					secretName,
 					ns,
+					"cd-deploy-from-push-template",
+					[]string{"github-push-binding"},
 				),
 			},
 		},
@@ -90,16 +90,14 @@ func createGitHubInterceptor(secretName, ns string) *triggersv1.EventInterceptor
 	}
 }
 
-func CreateListenerTrigger(name, filter, repoName, binding, template, secretName, secretNS string) triggersv1.EventListenerTrigger {
+func CreateListenerTrigger(name, filter, repoName, secretName, secretNS, template string, bindings []string) triggersv1.EventListenerTrigger {
 	return triggersv1.EventListenerTrigger{
 		Name: name,
 		Interceptors: []*triggersv1.EventInterceptor{
 			createEventInterceptor(filter, repoName),
 			createGitHubInterceptor(secretName, secretNS),
 		},
-		Bindings: []*triggersv1.EventListenerBinding{
-			createListenerBinding(binding),
-		},
+		Bindings: createBindings(bindings),
 		Template: createListenerTemplate(template),
 	}
 }
@@ -121,4 +119,11 @@ func createListenerObjectMeta(name, ns string) metav1.ObjectMeta {
 		Name:      name,
 		Namespace: ns,
 	}
+}
+func createBindings(names []string) []*triggersv1.EventListenerBinding {
+	bindings := make([]*triggersv1.EventListenerBinding, len(names))
+	for i, name := range names {
+		bindings[i] = createListenerBinding(name)
+	}
+	return bindings
 }

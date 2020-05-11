@@ -114,11 +114,53 @@ func TestGetPipelines(t *testing.T) {
 			},
 			defaultPipelines,
 		},
+		{
+			"Only override the bindings in the service",
+			&config.Environment{
+				Name:      "test-env",
+				Pipelines: testPipelines("env"),
+			},
+			&config.Service{
+				Name: "test-service",
+				Pipelines: &config.Pipelines{
+					Integration: &config.TemplateBinding{
+						Bindings: []string{"svc-ci-binding"},
+					},
+				},
+			},
+			&config.Pipelines{
+				Integration: &config.TemplateBinding{
+					Template: "env-ci-template",
+					Bindings: []string{"svc-ci-binding"},
+				},
+			},
+		},
+		{
+			"Only override the template in the service",
+			&config.Environment{
+				Name:      "test-env",
+				Pipelines: testPipelines("env"),
+			},
+			&config.Service{
+				Name: "test-service",
+				Pipelines: &config.Pipelines{
+					Integration: &config.TemplateBinding{
+						Template: fmt.Sprintf("svc-ci-template"),
+					},
+				},
+			},
+			&config.Pipelines{
+				Integration: &config.TemplateBinding{
+					Template: "svc-ci-template",
+					Bindings: []string{"env-ci-binding"},
+				},
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.desc, func(rt *testing.T) {
 			got := getPipelines(test.env, test.svc)
-			if diff := cmp.Diff(got, test.want); diff != "" {
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				rt.Fatalf("getPipelines() failed:\n%v", diff)
 			}
 		})
@@ -172,7 +214,7 @@ func testPipelines(name string) *config.Pipelines {
 	return &config.Pipelines{
 		Integration: &config.TemplateBinding{
 			Template: fmt.Sprintf("%s-ci-template", name),
-			Binding:  fmt.Sprintf("%s-ci-binding", name),
+			Bindings: []string{fmt.Sprintf("%s-ci-binding", name)},
 		},
 	}
 }

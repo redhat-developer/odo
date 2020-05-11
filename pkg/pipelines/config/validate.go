@@ -159,8 +159,10 @@ func validatePipelines(pipelines *Pipelines, path string) []error {
 	if err := validateName(pipelines.Integration.Template, yamlJoin(path, "pipelines", "integration", "template")); err != nil {
 		errs = append(errs, err)
 	}
-	if err := validateName(pipelines.Integration.Binding, yamlJoin(path, "pipelines", "integration", "binding")); err != nil {
-		errs = append(errs, err)
+	for _, name := range pipelines.Integration.Bindings {
+		if err := validateName(name, yamlJoin(path, "pipelines", "integration", "binding")); err != nil {
+			errs = append(errs, err)
+		}
 	}
 	return errs
 }

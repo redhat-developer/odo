@@ -140,7 +140,7 @@ func TestCreateListenerTrigger(t *testing.T) {
 			Name: "sampleTemplateName",
 		},
 	}
-	listenerTrigger := CreateListenerTrigger("sampleName", "sampleFilter %s", "sample", "sampleBindingName", "sampleTemplateName", "test", "")
+	listenerTrigger := CreateListenerTrigger("sampleName", "sampleFilter %s", "sample", "test", "", "sampleTemplateName", []string{"sampleBindingName"})
 	if diff := cmp.Diff(validListenerTrigger, listenerTrigger); diff != "" {
 		t.Fatalf("createListenerTrigger() failed:\n%s", diff)
 	}
