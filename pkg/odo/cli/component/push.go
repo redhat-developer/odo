@@ -60,6 +60,7 @@ func NewPushOptions() *PushOptions {
 	}
 }
 
+// CompleteDevfilePath completes the devfile path from context
 func (po *PushOptions) CompleteDevfilePath() {
 	if len(po.DevfilePath) > 0 {
 		po.DevfilePath = filepath.Join(po.componentContext, po.DevfilePath)
