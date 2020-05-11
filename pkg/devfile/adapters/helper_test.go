@@ -11,8 +11,6 @@ import (
 	"github.com/openshift/odo/pkg/testingutil"
 )
 
-const testAppName = "app"
-
 func TestNewPlatformAdapter(t *testing.T) {
 	tests := []struct {
 		adapterType   string
