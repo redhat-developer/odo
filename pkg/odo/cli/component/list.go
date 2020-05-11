@@ -37,6 +37,7 @@ type ListOptions struct {
 	pathFlag         string
 	allAppsFlag      bool
 	componentContext string
+	IsOpenshift      bool
 	*genericclioptions.Context
 }
 
@@ -51,6 +52,8 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	if experimental.IsExperimentalModeEnabled() {
 		// Add a disclaimer that we are in *experimental mode*
 		log.Experimental("Experimental mode is enabled, use at your own risk")
+
+		lo.Context = genericclioptions.NewDevfileContext(cmd)
 
 	} else {
 		if util.CheckKubeConfigExist() {
@@ -70,6 +73,12 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 // Validate validates the list parameters
 func (lo *ListOptions) Validate() (err error) {
 
+	if experimental.IsExperimentalModeEnabled() {
+		if lo.Context.Application == "" && lo.Context.Project == "" {
+			return odoutil.ThrowContextError()
+		}
+		return nil
+	}
 	var project, app string
 
 	if !util.CheckKubeConfigExist() {
@@ -85,6 +94,7 @@ func (lo *ListOptions) Validate() (err error) {
 		return odoutil.ThrowContextError()
 	}
 	return nil
+
 }
 
 // Run has the logic to perform the required actions as part of command

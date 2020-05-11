@@ -44,16 +44,15 @@ type CreateOptions struct {
 	componentContext  string
 	componentPorts    []string
 	componentEnvVars  []string
-	// this is the application name specific for devfile
-	devfileAppName string
-	memoryMax      string
-	memoryMin      string
-	memory         string
-	cpuMax         string
-	cpuMin         string
-	cpu            string
-	interactive    bool
-	now            bool
+
+	memoryMax   string
+	memoryMin   string
+	memory      string
+	cpuMax      string
+	cpuMin      string
+	cpu         string
+	interactive bool
+	now         bool
 	*CommonPushOptions
 	devfileMetadata DevfileMetadata
 }
@@ -327,6 +326,8 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			co.CommonPushOptions.componentContext = co.componentContext
 		}
 
+		co.Context = genericclioptions.NewDevfileContext(cmd)
+
 		// One exception of a validation present in Complete code because, this is an optimisation
 		// i.e. if the devfile is present locally then we dont need to list the devfile catalog
 		if util.CheckPathExists(DevfilePath) {
@@ -409,8 +410,6 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		co.devfileMetadata.componentType = componentType
 		co.devfileMetadata.componentName = strings.ToLower(componentName)
 		co.devfileMetadata.componentNamespace = strings.ToLower(componentNamespace)
-
-		co.devfileAppName = genericclioptions.ResolveApp(cmd, true, co.EnvSpecificInfo)
 
 		// Categorize the sections
 		log.Info("Validation")
@@ -786,7 +785,7 @@ func (co *CreateOptions) Run() (err error) {
 
 			err = co.EnvSpecificInfo.SetComponentSettings(envinfo.ComponentSettings{Name: co.devfileMetadata.componentName,
 				Namespace: co.devfileMetadata.componentNamespace,
-				AppName:   co.devfileAppName})
+				AppName:   co.Application})
 			if err != nil {
 				return errors.Wrap(err, "Failed to create env.yaml for devfile component")
 			}
