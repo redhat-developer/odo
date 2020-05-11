@@ -233,7 +233,7 @@ func TestAddService(t *testing.T) {
 		"environments/argocd/config/test-dev-test-app-app.yaml",
 		"environments/argocd/config/test-dev-new-app-app.yaml",
 	}
-	err = AddService("http://github.com/org/test", "test-dev", "new-app", "test", "123", manifestPath, fakeFs)
+	err = AddService("http://github.com/org/test", "test-dev", "new-app", "test", "123", manifestPath, "", "", fakeFs)
 	assertNoError(t, err)
 	for _, path := range wantedPaths {
 		t.Run(fmt.Sprintf("checking path %s already exists", path), func(rt *testing.T) {

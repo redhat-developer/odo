@@ -15,7 +15,8 @@ import (
 	"github.com/spf13/afero"
 )
 
-func AddService(gitRepoURL, envName, appName, serviceName, webhookSecret, manifest string, fs afero.Fs) error {
+func AddService(gitRepoURL, envName, appName, serviceName, webhookSecret, manifest, imageRepo, internalRegistryHostname string, fs afero.Fs) error {
+
 	m, err := config.ParseFile(fs, manifest)
 	if err != nil {
 		return fmt.Errorf("failed to parse manifest: %w", err)
