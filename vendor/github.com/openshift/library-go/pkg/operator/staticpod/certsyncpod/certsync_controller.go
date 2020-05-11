@@ -1,26 +1,22 @@
 package certsyncpod
 
 import (
-	"fmt"
+	"context"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
-	"time"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	corev1interface "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/client-go/listers/core/v1"
-	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/util/workqueue"
+	v1 "k8s.io/client-go/listers/core/v1"
 	"k8s.io/klog"
 
+	"github.com/openshift/library-go/pkg/controller/factory"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/staticpod/controller/revision"
 )
@@ -36,13 +32,9 @@ type CertSyncController struct {
 	secretGetter    corev1interface.SecretInterface
 	secretLister    v1.SecretLister
 	eventRecorder   events.Recorder
-
-	// queue only ever has one item, but it has nice error handling backoff/retry semantics
-	queue        workqueue.RateLimitingInterface
-	preRunCaches []cache.InformerSynced
 }
 
-func NewCertSyncController(targetDir, targetNamespace string, configmaps, secrets []revision.RevisionResource, kubeClient kubernetes.Interface, informers informers.SharedInformerFactory, eventRecorder events.Recorder) (*CertSyncController, error) {
+func NewCertSyncController(targetDir, targetNamespace string, configmaps, secrets []revision.RevisionResource, kubeClient kubernetes.Interface, informers informers.SharedInformerFactory, eventRecorder events.Recorder) factory.Controller {
 	c := &CertSyncController{
 		destinationDir: targetDir,
 		namespace:      targetNamespace,
@@ -54,18 +46,9 @@ func NewCertSyncController(targetDir, targetNamespace string, configmaps, secret
 		configMapLister: informers.Core().V1().ConfigMaps().Lister(),
 		secretLister:    informers.Core().V1().Secrets().Lister(),
 		secretGetter:    kubeClient.CoreV1().Secrets(targetNamespace),
-
-		queue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(), "CertSyncController"),
-		preRunCaches: []cache.InformerSynced{
-			informers.Core().V1().ConfigMaps().Informer().HasSynced,
-			informers.Core().V1().Secrets().Informer().HasSynced,
-		},
 	}
 
-	informers.Core().V1().ConfigMaps().Informer().AddEventHandler(c.eventHandler())
-	informers.Core().V1().Secrets().Informer().AddEventHandler(c.eventHandler())
-
-	return c, nil
+	return factory.New().WithInformers(informers.Core().V1().ConfigMaps().Informer(), informers.Core().V1().Secrets().Informer()).WithSync(c.sync).ToController("CertSyncController", eventRecorder)
 }
 
 func getConfigMapDir(targetDir, configMapName string) string {
@@ -76,9 +59,10 @@ func getSecretDir(targetDir, secretName string) string {
 	return filepath.Join(targetDir, "secrets", secretName)
 }
 
-func (c *CertSyncController) sync() error {
+func (c *CertSyncController) sync(ctx context.Context, syncCtx factory.SyncContext) error {
 	errors := []error{}
 
+	klog.Infof("Syncing configmaps: %v", c.configMaps)
 	for _, cm := range c.configMaps {
 		configMap, err := c.configMapLister.ConfigMaps(c.namespace).Get(cm.Name)
 		switch {
@@ -101,11 +85,14 @@ func (c *CertSyncController) sync() error {
 
 			// remove missing content
 			if err := os.RemoveAll(getConfigMapDir(c.destinationDir, cm.Name)); err != nil {
+				c.eventRecorder.Warningf("CertificateUpdateFailed", "Failed removing file for configmap: %s/%s: %v", c.namespace, cm.Name, err)
 				errors = append(errors, err)
 			}
+			c.eventRecorder.Eventf("CertificateRemoved", "Removed file for configmap: %s/%s", c.namespace, cm.Name)
 			continue
 
 		case err != nil:
+			c.eventRecorder.Warningf("CertificateUpdateFailed", "Failed getting configmap: %s/%s: %v", c.namespace, cm.Name, err)
 			errors = append(errors, err)
 			continue
 		}
@@ -138,6 +125,7 @@ func (c *CertSyncController) sync() error {
 		configMap, err = c.configmapGetter.Get(configMap.Name, metav1.GetOptions{})
 		if err != nil {
 			// Even if the error is not exists we will act on it when caches catch up
+			c.eventRecorder.Warningf("CertificateUpdateFailed", "Failed getting configmap: %s/%s: %v", c.namespace, cm.Name, err)
 			errors = append(errors, err)
 			continue
 		}
@@ -150,6 +138,7 @@ func (c *CertSyncController) sync() error {
 
 		klog.Infof("Creating directory %q ...", contentDir)
 		if err := os.MkdirAll(contentDir, 0755); err != nil && !os.IsExist(err) {
+			c.eventRecorder.Warningf("CertificateUpdateFailed", "Failed creating directory for configmap: %s/%s: %v", configMap.Namespace, configMap.Name, err)
 			errors = append(errors, err)
 			continue
 		}
@@ -162,12 +151,15 @@ func (c *CertSyncController) sync() error {
 
 			klog.Infof("Writing configmap manifest %q ...", fullFilename)
 			if err := ioutil.WriteFile(fullFilename, []byte(content), 0644); err != nil {
+				c.eventRecorder.Warningf("CertificateUpdateFailed", "Failed writing file for configmap: %s/%s: %v", configMap.Namespace, configMap.Name, err)
 				errors = append(errors, err)
 				continue
 			}
 		}
+		c.eventRecorder.Eventf("CertificateUpdated", "Wrote updated configmap: %s/%s", configMap.Namespace, configMap.Name)
 	}
 
+	klog.Infof("Syncing secrets: %v", c.secrets)
 	for _, s := range c.secrets {
 		secret, err := c.secretLister.Secrets(c.namespace).Get(s.Name)
 		switch {
@@ -188,13 +180,23 @@ func (c *CertSyncController) sync() error {
 				continue
 			}
 
-			// remove missing content
-			if err := os.RemoveAll(getSecretDir(c.destinationDir, s.Name)); err != nil {
-				errors = append(errors, err)
+			// check if the secret file exists, skip firing events if it does not
+			secretFile := getSecretDir(c.destinationDir, s.Name)
+			if _, err := os.Stat(secretFile); os.IsNotExist(err) {
+				continue
 			}
+
+			// remove missing content
+			if err := os.RemoveAll(secretFile); err != nil {
+				c.eventRecorder.Warningf("CertificateUpdateFailed", "Failed removing file for missing secret: %s/%s: %v", c.namespace, s.Name, err)
+				errors = append(errors, err)
+				continue
+			}
+			c.eventRecorder.Warningf("CertificateRemoved", "Removed file for missing secret: %s/%s", c.namespace, s.Name)
 			continue
 
 		case err != nil:
+			c.eventRecorder.Warningf("CertificateUpdateFailed", "Failed getting secret: %s/%s: %v", c.namespace, s.Name, err)
 			errors = append(errors, err)
 			continue
 		}
@@ -227,6 +229,7 @@ func (c *CertSyncController) sync() error {
 		secret, err = c.secretGetter.Get(secret.Name, metav1.GetOptions{})
 		if err != nil {
 			// Even if the error is not exists we will act on it when caches catch up
+			c.eventRecorder.Warningf("CertificateUpdateFailed", "Failed getting secret: %s/%s: %v", c.namespace, s.Name, err)
 			errors = append(errors, err)
 			continue
 		}
@@ -239,6 +242,7 @@ func (c *CertSyncController) sync() error {
 
 		klog.Infof("Creating directory %q ...", contentDir)
 		if err := os.MkdirAll(contentDir, 0755); err != nil && !os.IsExist(err) {
+			c.eventRecorder.Warningf("CertificateUpdateFailed", "Failed creating directory for secret: %s/%s: %v", secret.Namespace, secret.Name, err)
 			errors = append(errors, err)
 			continue
 		}
@@ -252,66 +256,13 @@ func (c *CertSyncController) sync() error {
 
 			klog.Infof("Writing secret manifest %q ...", fullFilename)
 			if err := ioutil.WriteFile(fullFilename, content, 0644); err != nil {
+				c.eventRecorder.Warningf("CertificateUpdateFailed", "Failed writing file for secret: %s/%s: %v", secret.Namespace, secret.Name, err)
 				errors = append(errors, err)
 				continue
 			}
 		}
+		c.eventRecorder.Eventf("CertificateUpdated", "Wrote updated secret: %s/%s", secret.Namespace, secret.Name)
 	}
 
 	return utilerrors.NewAggregate(errors)
-}
-
-// Run starts the kube-apiserver and blocks until stopCh is closed.
-func (c *CertSyncController) Run(workers int, stopCh <-chan struct{}) {
-	defer utilruntime.HandleCrash()
-	defer c.queue.ShutDown()
-
-	klog.Infof("Starting CertSyncer")
-	defer klog.Infof("Shutting down CertSyncer")
-
-	if !cache.WaitForCacheSync(stopCh, c.preRunCaches...) {
-		klog.Error("failed waiting for caches")
-		return
-	}
-	klog.V(2).Infof("CertSyncer caches synced")
-
-	// doesn't matter what workers say, only start one.
-	go wait.Until(c.runWorker, time.Second, stopCh)
-
-	<-stopCh
-}
-
-func (c *CertSyncController) runWorker() {
-	for c.processNextWorkItem() {
-	}
-}
-
-func (c *CertSyncController) processNextWorkItem() bool {
-	dsKey, quit := c.queue.Get()
-	if quit {
-		return false
-	}
-	defer c.queue.Done(dsKey)
-
-	err := c.sync()
-	if err == nil {
-		c.queue.Forget(dsKey)
-		return true
-	}
-
-	utilruntime.HandleError(fmt.Errorf("%v failed with : %v", dsKey, err))
-	c.queue.AddRateLimited(dsKey)
-
-	return true
-}
-
-const workQueueKey = "key"
-
-// eventHandler queues the operator to check spec and status
-func (c *CertSyncController) eventHandler() cache.ResourceEventHandler {
-	return cache.ResourceEventHandlerFuncs{
-		AddFunc:    func(obj interface{}) { c.queue.Add(workQueueKey) },
-		UpdateFunc: func(old, new interface{}) { c.queue.Add(workQueueKey) },
-		DeleteFunc: func(obj interface{}) { c.queue.Add(workQueueKey) },
-	}
 }

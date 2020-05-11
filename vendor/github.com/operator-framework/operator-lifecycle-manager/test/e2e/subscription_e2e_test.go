@@ -10,20 +10,22 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/ghodss/yaml"
+	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/install"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/controller/registry/resolver"
+	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/comparison"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorclient"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/version"
 )
@@ -61,8 +63,8 @@ var (
 		APIVersion: v1alpha1.GroupVersion,
 	}
 
-	strategy = install.StrategyDetailsDeployment{
-		DeploymentSpecs: []install.StrategyDeploymentSpec{
+	strategy = v1alpha1.StrategyDetailsDeployment{
+		DeploymentSpecs: []v1alpha1.StrategyDeploymentSpec{
 			{
 				Name: genName("dep-"),
 				Spec: newNginxDeployment(genName("nginx-")),
@@ -71,8 +73,8 @@ var (
 	}
 	strategyRaw, _  = json.Marshal(strategy)
 	installStrategy = v1alpha1.NamedInstallStrategy{
-		StrategyName:    install.InstallStrategyNameDeployment,
-		StrategySpecRaw: strategyRaw,
+		StrategyName: v1alpha1.InstallStrategyNameDeployment,
+		StrategySpec: strategy,
 	}
 	outdatedCSV = v1alpha1.ClusterServiceVersion{
 		TypeMeta: csvType,
@@ -194,8 +196,8 @@ var (
 	}
 	csvList = []v1alpha1.ClusterServiceVersion{outdatedCSV, stableCSV, betaCSV, alphaCSV}
 
-	strategyNew = install.StrategyDetailsDeployment{
-		DeploymentSpecs: []install.StrategyDeploymentSpec{
+	strategyNew = v1alpha1.StrategyDetailsDeployment{
+		DeploymentSpecs: []v1alpha1.StrategyDeploymentSpec{
 			{
 				Name: genName("dep-"),
 				Spec: appsv1.DeploymentSpec{
@@ -244,12 +246,8 @@ var (
 )
 
 func init() {
-	strategyNewRaw, err := json.Marshal(strategyNew)
-	if err != nil {
-		panic(err)
-	}
 	for i := 0; i < len(csvList); i++ {
-		csvList[i].Spec.InstallStrategy.StrategySpecRaw = strategyNewRaw
+		csvList[i].Spec.InstallStrategy.StrategySpec = strategyNew
 	}
 
 	manifestsRaw, err := yaml.Marshal(dummyManifest)
@@ -307,7 +305,13 @@ func subscriptionStateAtLatestChecker(subscription *v1alpha1.Subscription) bool 
 }
 
 func subscriptionHasInstallPlanChecker(subscription *v1alpha1.Subscription) bool {
-	return subscription.Status.Install != nil
+	return subscription.Status.InstallPlanRef != nil
+}
+
+func subscriptionHasInstallPlanDifferentChecker(currentInstallPlanName string) subscriptionStateChecker {
+	return func(subscription *v1alpha1.Subscription) bool {
+		return subscriptionHasInstallPlanChecker(subscription) && subscription.Status.InstallPlanRef.Name != currentInstallPlanName
+	}
 }
 
 func subscriptionStateNoneChecker(subscription *v1alpha1.Subscription) bool {
@@ -324,6 +328,19 @@ func subscriptionStateAny(subscription *v1alpha1.Subscription) bool {
 func subscriptionHasCurrentCSV(currentCSV string) subscriptionStateChecker {
 	return func(subscription *v1alpha1.Subscription) bool {
 		return subscription.Status.CurrentCSV == currentCSV
+	}
+}
+
+func subscriptionHasCondition(condType v1alpha1.SubscriptionConditionType, status corev1.ConditionStatus, reason, message string) subscriptionStateChecker {
+	return func(subscription *v1alpha1.Subscription) bool {
+		cond := subscription.Status.GetCondition(condType)
+		if cond.Status == status && cond.Reason == reason && cond.Message == message {
+			fmt.Printf("subscription condition met %v\n", cond)
+			return true
+		}
+
+		fmt.Printf("subscription condition not met: %v\n", cond)
+		return false
 	}
 }
 
@@ -457,11 +474,6 @@ func TestCreateNewSubscriptionNotInstalled(t *testing.T) {
 
 	_, err = fetchCSV(t, crc, subscription.Status.CurrentCSV, testNamespace, buildCSVConditionChecker(v1alpha1.CSVPhaseSucceeded))
 	require.NoError(t, err)
-
-	// Fetch subscription again to check for unnecessary control loops
-	sameSubscription, err := fetchSubscription(t, crc, testNamespace, testSubscriptionName, subscriptionStateAtLatestChecker)
-	require.NoError(t, err)
-	compareResources(t, subscription, sameSubscription)
 }
 
 //   I. Creating a new subscription
@@ -489,11 +501,6 @@ func TestCreateNewSubscriptionExistingCSV(t *testing.T) {
 	require.NotNil(t, subscription)
 	_, err = fetchCSV(t, crc, subscription.Status.CurrentCSV, testNamespace, buildCSVConditionChecker(v1alpha1.CSVPhaseSucceeded))
 	require.NoError(t, err)
-
-	// check for unnecessary control loops
-	sameSubscription, err := fetchSubscription(t, crc, testNamespace, testSubscriptionName, subscriptionStateAtLatestChecker)
-	require.NoError(t, err)
-	compareResources(t, subscription, sameSubscription)
 }
 
 func TestSubscriptionSkipRange(t *testing.T) {
@@ -864,6 +871,7 @@ func TestSubscriptionUpdatesMultipleIntermediates(t *testing.T) {
 // TestSubscriptionUpdatesExistingInstallPlan ensures that an existing InstallPlan
 //  has the appropriate approval requirement from Subscription.
 func TestSubscriptionUpdatesExistingInstallPlan(t *testing.T) {
+	t.Skip()
 	defer cleaner.NotifyTestComplete(t, true)
 
 	// Create CSV
@@ -979,6 +987,385 @@ func TestSubscriptionUpdatesExistingInstallPlan(t *testing.T) {
 	require.NoError(t, err)
 }
 
+// TestSubscriptionStatusMissingTargetCatalogSource ensures that a Subscription has the appropriate status condition when
+// its target catalog is missing.
+//
+// Steps:
+// 1. Generate an initial CatalogSource in the target namespace
+// 2. Generate Subscription, "sub", targetting non-existent CatalogSource, "missing"
+// 3. Wait for sub status to show SubscriptionCatalogSourcesUnhealthy with status True, reason CatalogSourcesUpdated, and appropriate missing message
+// 4. Update sub's spec to target the "mysubscription"
+// 5. Wait for sub's status to show SubscriptionCatalogSourcesUnhealthy with status False, reason AllCatalogSourcesHealthy, and reason "all available catalogsources are healthy"
+// 6. Wait for sub to succeed
+func TestSubscriptionStatusMissingTargetCatalogSource(t *testing.T) {
+	defer cleaner.NotifyTestComplete(t, true)
+
+	c := newKubeClient(t)
+	crc := newCRClient(t)
+	defer func() {
+		require.NoError(t, crc.OperatorsV1alpha1().Subscriptions(testNamespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{}))
+	}()
+	require.NoError(t, initCatalog(t, c, crc))
+
+	missingName := "missing"
+	cleanup := createSubscriptionForCatalog(t, crc, testNamespace, testSubscriptionName, missingName, testPackageName, betaChannel, "", v1alpha1.ApprovalAutomatic)
+	defer cleanup()
+
+	sub, err := fetchSubscription(t, crc, testNamespace, testSubscriptionName, subscriptionHasCondition(v1alpha1.SubscriptionCatalogSourcesUnhealthy, corev1.ConditionTrue, v1alpha1.UnhealthyCatalogSourceFound, fmt.Sprintf("targeted catalogsource %s/%s missing", testNamespace, missingName)))
+	require.NoError(t, err)
+	require.NotNil(t, sub)
+
+	// Update sub to target an existing CatalogSource
+	sub.Spec.CatalogSource = catalogSourceName
+	_, err = crc.OperatorsV1alpha1().Subscriptions(testNamespace).Update(sub)
+	require.NoError(t, err)
+
+	// Wait for SubscriptionCatalogSourcesUnhealthy to be false
+	_, err = fetchSubscription(t, crc, testNamespace, testSubscriptionName, subscriptionHasCondition(v1alpha1.SubscriptionCatalogSourcesUnhealthy, corev1.ConditionFalse, v1alpha1.AllCatalogSourcesHealthy, "all available catalogsources are healthy"))
+	require.NoError(t, err)
+
+	// Wait for success
+	_, err = fetchSubscription(t, crc, testNamespace, testSubscriptionName, subscriptionStateAtLatestChecker)
+	require.NoError(t, err)
+}
+
+// TestSubscriptionInstallPlanStatus ensures that a Subscription has the appropriate status conditions for possible referenced
+// InstallPlan states.
+//
+// Steps:
+// 1. Create namespace, ns
+// 2. Create CatalogSource, cs, in ns
+// 3. Create OperatorGroup, og, in ns selecting its own namespace
+// 4. Create Subscription to a package of cs in ns, sub
+// 5. Wait for the package from sub to install successfully with no remaining InstallPlan status conditions
+// 6. Store conditions for later comparision
+// 7. Get the InstallPlan
+// 8. Set the InstallPlan's approval mode to Manual
+// 9. Set the InstallPlan's phase to None
+// 10. Wait for sub to have status condition SubscriptionInstallPlanPending true and reason InstallPlanNotYetReconciled
+// 11. Get the latest IntallPlan and set the phase to InstallPlanPhaseRequiresApproval
+// 12. Wait for sub to have status condition SubscriptionInstallPlanPending true and reason RequiresApproval
+// 13. Get the latest InstallPlan and set the phase to InstallPlanPhaseInstalling
+// 14. Wait for sub to have status condition SubscriptionInstallPlanPending true and reason Installing
+// 15. Get the latest InstallPlan and set the phase to InstallPlanPhaseFailed and remove all status conditions
+// 16. Wait for sub to have status condition SubscriptionInstallPlanFailed true and reason InstallPlanFailed
+// 17. Get the latest InstallPlan and set status condition of type Installed to false with reason InstallComponentFailed
+// 18. Wait for sub to have status condition SubscriptionInstallPlanFailed true and reason InstallComponentFailed
+// 19. Delete the referenced InstallPlan
+// 20. Wait for sub to have status condition SubscriptionInstallPlanMissing true
+// 21. Ensure original non-InstallPlan status conditions remain after InstallPlan transitions
+func TestSubscriptionInstallPlanStatus(t *testing.T) {
+	defer cleaner.NotifyTestComplete(t, true)
+
+	c := newKubeClient(t)
+	crc := newCRClient(t)
+
+	// Create namespace ns
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: genName("ns-"),
+		},
+	}
+	_, err := c.KubernetesInterface().CoreV1().Namespaces().Create(ns)
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, c.KubernetesInterface().CoreV1().Namespaces().Delete(ns.GetName(), &metav1.DeleteOptions{}))
+	}()
+
+	// Create CatalogSource, cs, in ns
+	pkgName := genName("pkg-")
+	channelName := genName("channel-")
+	strategy := newNginxInstallStrategy(pkgName, nil, nil)
+	crd := newCRD(pkgName)
+	csv := newCSV(pkgName, ns.GetName(), "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crd}, nil, strategy)
+	manifests := []registry.PackageManifest{
+		{
+			PackageName: pkgName,
+			Channels: []registry.PackageChannel{
+				{Name: channelName, CurrentCSVName: csv.GetName()},
+			},
+			DefaultChannelName: channelName,
+		},
+	}
+	catalogName := genName("catalog-")
+	_, cleanupCatalogSource := createInternalCatalogSource(t, c, crc, catalogName, ns.GetName(), manifests, []apiextensions.CustomResourceDefinition{crd}, []v1alpha1.ClusterServiceVersion{csv})
+	defer cleanupCatalogSource()
+	_, err = fetchCatalogSource(t, crc, catalogName, ns.GetName(), catalogSourceRegistryPodSynced)
+	require.NoError(t, err)
+
+	// Create OperatorGroup, og, in ns selecting its own namespace
+	og := newOperatorGroup(ns.GetName(), genName("og-"), nil, nil, []string{ns.GetName()}, false)
+	_, err = crc.OperatorsV1().OperatorGroups(og.GetNamespace()).Create(og)
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, crc.OperatorsV1().OperatorGroups(og.GetNamespace()).Delete(og.GetName(), &metav1.DeleteOptions{}))
+	}()
+
+	// Create Subscription to a package of cs in ns, sub
+	subName := genName("sub-")
+	defer createSubscriptionForCatalog(t, crc, ns.GetName(), subName, catalogName, pkgName, channelName, pkgName, v1alpha1.ApprovalAutomatic)()
+
+	// Wait for the package from sub to install successfully with no remaining InstallPlan status conditions
+	sub, err := fetchSubscription(t, crc, ns.GetName(), subName, func(s *v1alpha1.Subscription) bool {
+		for _, cond := range s.Status.Conditions {
+			switch cond.Type {
+			case v1alpha1.SubscriptionInstallPlanMissing, v1alpha1.SubscriptionInstallPlanPending, v1alpha1.SubscriptionInstallPlanFailed:
+				return false
+			}
+		}
+		return subscriptionStateAtLatestChecker(s)
+	})
+	require.NoError(t, err)
+	require.NotNil(t, sub)
+
+	// Store conditions for later comparision
+	conds := sub.Status.Conditions
+
+	// Get the InstallPlan
+	ref := sub.Status.InstallPlanRef
+	require.NotNil(t, ref)
+	plan, err := crc.OperatorsV1alpha1().InstallPlans(ref.Namespace).Get(ref.Name, metav1.GetOptions{})
+	require.NoError(t, err)
+
+	// Set the InstallPlan's approval mode to Manual
+	plan.Spec.Approval = v1alpha1.ApprovalManual
+	plan.Spec.Approved = false
+	plan, err = crc.OperatorsV1alpha1().InstallPlans(ref.Namespace).Update(plan)
+	require.NoError(t, err)
+
+	// Set the InstallPlan's phase to None
+	plan.Status.Phase = v1alpha1.InstallPlanPhaseNone
+	plan, err = crc.OperatorsV1alpha1().InstallPlans(ref.Namespace).UpdateStatus(plan)
+	require.NoError(t, err)
+
+	// Wait for sub to have status condition SubscriptionInstallPlanPending true and reason InstallPlanNotYetReconciled
+	sub, err = fetchSubscription(t, crc, ns.GetName(), subName, func(s *v1alpha1.Subscription) bool {
+		cond := s.Status.GetCondition(v1alpha1.SubscriptionInstallPlanPending)
+		return cond.Status == corev1.ConditionTrue && cond.Reason == v1alpha1.InstallPlanNotYetReconciled
+	})
+	require.NoError(t, err)
+
+	// Get the latest InstallPlan and set the phase to InstallPlanPhaseRequiresApproval
+	plan, err = crc.OperatorsV1alpha1().InstallPlans(ref.Namespace).Get(ref.Name, metav1.GetOptions{})
+	require.NoError(t, err)
+	plan.Status.Phase = v1alpha1.InstallPlanPhaseRequiresApproval
+	plan, err = crc.OperatorsV1alpha1().InstallPlans(ref.Namespace).UpdateStatus(plan)
+	require.NoError(t, err)
+
+	// Wait for sub to have status condition SubscriptionInstallPlanPending true and reason RequiresApproval
+	sub, err = fetchSubscription(t, crc, ns.GetName(), subName, func(s *v1alpha1.Subscription) bool {
+		cond := s.Status.GetCondition(v1alpha1.SubscriptionInstallPlanPending)
+		return cond.Status == corev1.ConditionTrue && cond.Reason == string(v1alpha1.InstallPlanPhaseRequiresApproval)
+	})
+	require.NoError(t, err)
+
+	// Get the latest InstallPlan and set the phase to InstallPlanPhaseInstalling
+	plan, err = crc.OperatorsV1alpha1().InstallPlans(ref.Namespace).Get(ref.Name, metav1.GetOptions{})
+	require.NoError(t, err)
+	plan.Status.Phase = v1alpha1.InstallPlanPhaseInstalling
+	plan, err = crc.OperatorsV1alpha1().InstallPlans(ref.Namespace).UpdateStatus(plan)
+	require.NoError(t, err)
+
+	// Wait for sub to have status condition SubscriptionInstallPlanPending true and reason Installing
+	sub, err = fetchSubscription(t, crc, ns.GetName(), subName, func(s *v1alpha1.Subscription) bool {
+		cond := s.Status.GetCondition(v1alpha1.SubscriptionInstallPlanPending)
+		return cond.Status == corev1.ConditionTrue && cond.Reason == string(v1alpha1.InstallPlanPhaseInstalling)
+	})
+	require.NoError(t, err)
+
+	// Get the latest InstallPlan and set the phase to InstallPlanPhaseFailed and remove all status conditions
+	plan, err = crc.OperatorsV1alpha1().InstallPlans(ref.Namespace).Get(ref.Name, metav1.GetOptions{})
+	require.NoError(t, err)
+	plan.Status.Phase = v1alpha1.InstallPlanPhaseFailed
+	plan.Status.Conditions = nil
+	plan, err = crc.OperatorsV1alpha1().InstallPlans(ref.Namespace).UpdateStatus(plan)
+	require.NoError(t, err)
+
+	// Wait for sub to have status condition SubscriptionInstallPlanFailed true and reason InstallPlanFailed
+	sub, err = fetchSubscription(t, crc, ns.GetName(), subName, func(s *v1alpha1.Subscription) bool {
+		cond := s.Status.GetCondition(v1alpha1.SubscriptionInstallPlanFailed)
+		return cond.Status == corev1.ConditionTrue && cond.Reason == v1alpha1.InstallPlanFailed
+	})
+	require.NoError(t, err)
+
+	// Get the latest InstallPlan and set status condition of type Installed to false with reason InstallComponentFailed
+	plan, err = crc.OperatorsV1alpha1().InstallPlans(ref.Namespace).Get(ref.Name, metav1.GetOptions{})
+	require.NoError(t, err)
+	plan.Status.Phase = v1alpha1.InstallPlanPhaseFailed
+	failedCond := plan.Status.GetCondition(v1alpha1.InstallPlanInstalled)
+	failedCond.Status = corev1.ConditionFalse
+	failedCond.Reason = v1alpha1.InstallPlanReasonComponentFailed
+	plan.Status.SetCondition(failedCond)
+	plan, err = crc.OperatorsV1alpha1().InstallPlans(ref.Namespace).UpdateStatus(plan)
+	require.NoError(t, err)
+
+	// Wait for sub to have status condition SubscriptionInstallPlanFailed true and reason InstallComponentFailed
+	sub, err = fetchSubscription(t, crc, ns.GetName(), subName, func(s *v1alpha1.Subscription) bool {
+		cond := s.Status.GetCondition(v1alpha1.SubscriptionInstallPlanFailed)
+		return cond.Status == corev1.ConditionTrue && cond.Reason == string(v1alpha1.InstallPlanReasonComponentFailed)
+	})
+	require.NoError(t, err)
+
+	// Delete the referenced InstallPlan
+	require.NoError(t, crc.OperatorsV1alpha1().InstallPlans(ref.Namespace).Delete(ref.Name, &metav1.DeleteOptions{}))
+
+	// Wait for sub to have status condition SubscriptionInstallPlanMissing true
+	sub, err = fetchSubscription(t, crc, ns.GetName(), subName, func(s *v1alpha1.Subscription) bool {
+		return s.Status.GetCondition(v1alpha1.SubscriptionInstallPlanMissing).Status == corev1.ConditionTrue
+	})
+	require.NoError(t, err)
+	require.NotNil(t, sub)
+
+	// Ensure original non-InstallPlan status conditions remain after InstallPlan transitions
+	hashEqual := comparison.NewHashEqualitor()
+	for _, cond := range conds {
+		switch condType := cond.Type; condType {
+		case v1alpha1.SubscriptionInstallPlanPending, v1alpha1.SubscriptionInstallPlanFailed:
+			require.FailNowf(t, "failed", "subscription contains unexpected installplan condition: %v", cond)
+		case v1alpha1.SubscriptionInstallPlanMissing:
+			require.Equal(t, v1alpha1.ReferencedInstallPlanNotFound, cond.Reason)
+		default:
+			require.True(t, hashEqual(cond, sub.Status.GetCondition(condType)), "non-installplan status condition changed")
+		}
+	}
+}
+
+func TestCreateNewSubscriptionWithPodConfig(t *testing.T) {
+	defer cleaner.NotifyTestComplete(t, true)
+
+	newConfigClient := func(t *testing.T) configv1client.ConfigV1Interface {
+		config, err := clientcmd.BuildConfigFromFlags("", *kubeConfigPath)
+		require.NoError(t, err)
+
+		client, err := configv1client.NewForConfig(config)
+		require.NoError(t, err)
+
+		return client
+	}
+
+	proxyEnvVarFunc := func(t *testing.T, client configv1client.ConfigV1Interface) []corev1.EnvVar {
+		proxy, getErr := client.Proxies().Get("cluster", metav1.GetOptions{})
+		if getErr != nil {
+			if !k8serrors.IsNotFound(getErr) {
+				require.NoError(t, getErr)
+			}
+
+			return nil
+		}
+
+		require.NotNil(t, proxy)
+		proxyEnv := []corev1.EnvVar{}
+
+		if proxy.Status.HTTPProxy != "" {
+			proxyEnv = append(proxyEnv, corev1.EnvVar{
+				Name:  "HTTP_PROXY",
+				Value: proxy.Status.HTTPProxy,
+			})
+		}
+
+		if proxy.Status.HTTPSProxy != "" {
+			proxyEnv = append(proxyEnv, corev1.EnvVar{
+				Name:  "HTTPS_PROXY",
+				Value: proxy.Status.HTTPSProxy,
+			})
+		}
+
+		if proxy.Status.NoProxy != "" {
+			proxyEnv = append(proxyEnv, corev1.EnvVar{
+				Name:  "NO_PROXY",
+				Value: proxy.Status.NoProxy,
+			})
+		}
+
+		return proxyEnv
+	}
+
+	kubeClient := newKubeClient(t)
+	crClient := newCRClient(t)
+	config := newConfigClient(t)
+
+	// Create a ConfigMap that is mounted to the operator via the subscription
+	testConfigMapName := genName("test-configmap-")
+	testConfigMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: testConfigMapName,
+		},
+	}
+
+	_, err := kubeClient.KubernetesInterface().CoreV1().ConfigMaps(testNamespace).Create(testConfigMap)
+	require.NoError(t, err)
+	defer func() {
+		err := kubeClient.KubernetesInterface().CoreV1().ConfigMaps(testNamespace).Delete(testConfigMap.Name, nil)
+		require.NoError(t, err)
+	}()
+
+	// Configure the Subscription.
+
+	podEnv := []corev1.EnvVar{
+		corev1.EnvVar{
+			Name:  "MY_ENV_VARIABLE1",
+			Value: "value1",
+		},
+		corev1.EnvVar{
+			Name:  "MY_ENV_VARIABLE2",
+			Value: "value2",
+		},
+	}
+	testVolumeName := genName("test-volume-")
+	podVolumes := []corev1.Volume{
+		corev1.Volume{
+			Name: testVolumeName,
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: testConfigMapName,
+					},
+				},
+			},
+		},
+	}
+
+	podVolumeMounts := []corev1.VolumeMount{
+		corev1.VolumeMount{Name: testVolumeName, MountPath: "/test"},
+	}
+
+	podConfig := v1alpha1.SubscriptionConfig{
+		Env:          podEnv,
+		Volumes:      podVolumes,
+		VolumeMounts: podVolumeMounts,
+	}
+
+	permissions := deploymentPermissions(t)
+	catsrc, subSpec, catsrcCleanup := newCatalogSource(t, kubeClient, crClient, "podconfig", testNamespace, permissions)
+	defer catsrcCleanup()
+
+	// Ensure that the catalog source is resolved before we create a subscription.
+	_, err = fetchCatalogSource(t, crClient, catsrc.GetName(), testNamespace, catalogSourceRegistryPodSynced)
+	require.NoError(t, err)
+
+	subscriptionName := genName("podconfig-sub-")
+	subSpec.Config = podConfig
+	cleanupSubscription := createSubscriptionForCatalogWithSpec(t, crClient, testNamespace, subscriptionName, subSpec)
+	defer cleanupSubscription()
+
+	subscription, err := fetchSubscription(t, crClient, testNamespace, subscriptionName, subscriptionStateAtLatestChecker)
+	require.NoError(t, err)
+	require.NotNil(t, subscription)
+
+	csv, err := fetchCSV(t, crClient, subscription.Status.CurrentCSV, testNamespace, buildCSVConditionChecker(v1alpha1.CSVPhaseSucceeded))
+	if err != nil {
+		// TODO: If OLM doesn't have the subscription in its cache when it initially creates the deployment, the CSV will hang on "Installing" until it reaches the five-minute timeout, then succeed on a retry. It should be possible to skip the wait and retry immediately, but in the meantime, giving this test a little extra patience should mitigate flakes.
+		csv, err = fetchCSV(t, crClient, subscription.Status.CurrentCSV, testNamespace, buildCSVConditionChecker(v1alpha1.CSVPhaseSucceeded))
+	}
+	require.NoError(t, err)
+
+	proxyEnv := proxyEnvVarFunc(t, config)
+	expected := podEnv
+	expected = append(expected, proxyEnv...)
+
+	checkDeploymentWithPodConfiguration(t, kubeClient, csv, podConfig.Env, podConfig.Volumes, podConfig.VolumeMounts)
+}
+
 func TestCreateNewSubscriptionWithDependencies(t *testing.T) {
 	defer cleaner.NotifyTestComplete(t, true)
 
@@ -1020,105 +1407,46 @@ func TestCreateNewSubscriptionWithDependencies(t *testing.T) {
 
 }
 
-func deploymentPermissions(t *testing.T) []install.StrategyDeploymentPermissions {
-	// Generate permissions
-	serviceAccountName := genName("nginx-sa-")
-	permissions := []install.StrategyDeploymentPermissions{
-		{
-			ServiceAccountName: serviceAccountName,
-			Rules: []rbacv1.PolicyRule{
-				{
-					Verbs:     []string{rbacv1.VerbAll},
-					APIGroups: []string{rbacv1.APIGroupAll},
-					Resources: []string{rbacv1.ResourceAll}},
-			},
-		},
-	}
-
-	return permissions
-}
-
-func newCatalogSourceWithDependencies(t *testing.T, kubeclient operatorclient.ClientInterface, crclient versioned.Interface, prefix, namespace string, permissions []install.StrategyDeploymentPermissions) (catsrc *v1alpha1.CatalogSource, subscriptionSpec *v1alpha1.SubscriptionSpec, cleanup cleanupFunc) {
-	crdPlural := genName("ins")
-	crdName := crdPlural + ".cluster.com"
-
-	crd := apiextensions.CustomResourceDefinition{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: crdName,
-		},
-		Spec: apiextensions.CustomResourceDefinitionSpec{
-			Group:   "cluster.com",
-			Version: "v1alpha1",
-			Names: apiextensions.CustomResourceDefinitionNames{
-				Plural:   crdPlural,
-				Singular: crdPlural,
-				Kind:     crdPlural,
-				ListKind: "list" + crdPlural,
-			},
-			Scope: "Namespaced",
-		},
-	}
-
-	prefixFunc := func(s string) string {
-		return fmt.Sprintf("%s-%s-", prefix, s)
-	}
-
-	// Create CSV
-	packageName1 := genName(prefixFunc("package"))
-	packageName2 := genName(prefixFunc("package"))
-	stableChannel := "stable"
-
-	namedStrategy := newNginxInstallStrategy(genName(prefixFunc("dep")), permissions, nil)
-	csvA := newCSV("nginx-req-dep", namespace, "", semver.MustParse("0.1.0"), nil, []apiextensions.CustomResourceDefinition{crd}, namedStrategy)
-	csvB := newCSV("nginx-dependency", namespace, "", semver.MustParse("0.1.0"), []apiextensions.CustomResourceDefinition{crd}, nil, namedStrategy)
-
-	// Create PackageManifests
-	manifests := []registry.PackageManifest{
-		{
-			PackageName: packageName1,
-			Channels: []registry.PackageChannel{
-				{Name: stableChannel, CurrentCSVName: csvA.GetName()},
-			},
-			DefaultChannelName: stableChannel,
-		},
-		{
-			PackageName: packageName2,
-			Channels: []registry.PackageChannel{
-				{Name: stableChannel, CurrentCSVName: csvB.GetName()},
-			},
-			DefaultChannelName: stableChannel,
-		},
-	}
-
-	catalogSourceName := genName(prefixFunc("catsrc"))
-	catsrc, cleanup = createInternalCatalogSource(t, kubeclient, crclient, catalogSourceName, namespace, manifests, []apiextensions.CustomResourceDefinition{crd}, []v1alpha1.ClusterServiceVersion{csvA, csvB})
-	require.NotNil(t, catsrc)
-	require.NotNil(t, cleanup)
-
-	subscriptionSpec = &v1alpha1.SubscriptionSpec{
-		CatalogSource:          catsrc.GetName(),
-		CatalogSourceNamespace: catsrc.GetNamespace(),
-		Package:                packageName1,
-		Channel:                stableChannel,
-		StartingCSV:            csvA.GetName(),
-		InstallPlanApproval:    v1alpha1.ApprovalAutomatic,
-	}
-	return
-}
-func checkDeploymentWithPodConfiguration(t *testing.T, client operatorclient.ClientInterface, csv *v1alpha1.ClusterServiceVersion, envVar []corev1.EnvVar) {
+func checkDeploymentWithPodConfiguration(t *testing.T, client operatorclient.ClientInterface, csv *v1alpha1.ClusterServiceVersion, envVar []corev1.EnvVar, volumes []corev1.Volume, volumeMounts []corev1.VolumeMount) {
 	resolver := install.StrategyResolver{}
 
 	strategy, err := resolver.UnmarshalStrategy(csv.Spec.InstallStrategy)
 	require.NoError(t, err)
 
-	strategyDetailsDeployment, ok := strategy.(*install.StrategyDetailsDeployment)
+	strategyDetailsDeployment, ok := strategy.(*v1alpha1.StrategyDetailsDeployment)
 	require.Truef(t, ok, "could not cast install strategy as type %T", strategyDetailsDeployment)
 
-	find := func(envVar []corev1.EnvVar, name string) (env *corev1.EnvVar, found bool) {
+	findEnvVar := func(envVar []corev1.EnvVar, name string) (foundEnvVar *corev1.EnvVar, found bool) {
 		for i := range envVar {
 			if name == envVar[i].Name {
 				found = true
-				env = &envVar[i]
+				foundEnvVar = &envVar[i]
+
+				break
+			}
+		}
+
+		return
+	}
+
+	findVolumeMount := func(volumeMounts []corev1.VolumeMount, name string) (foundVolumeMount *corev1.VolumeMount, found bool) {
+		for i := range volumeMounts {
+			if name == volumeMounts[i].Name {
+				found = true
+				foundVolumeMount = &volumeMounts[i]
+
+				break
+			}
+		}
+
+		return
+	}
+
+	findVolume := func(volumes []corev1.Volume, name string) (foundVolume *corev1.Volume, found bool) {
+		for i := range volumes {
+			if name == volumes[i].Name {
+				found = true
+				foundVolume = &volumes[i]
 
 				break
 			}
@@ -1129,16 +1457,29 @@ func checkDeploymentWithPodConfiguration(t *testing.T, client operatorclient.Cli
 
 	check := func(container *corev1.Container) {
 		for _, e := range envVar {
-			existing, found := find(container.Env, e.Name)
+			existing, found := findEnvVar(container.Env, e.Name)
 			require.Truef(t, found, "env variable name=%s not injected", e.Name)
 			require.NotNil(t, existing)
 			require.Equalf(t, e.Value, existing.Value, "env variable value does not match %s=%s", e.Name, e.Value)
+		}
+
+		for _, v := range volumeMounts {
+			existing, found := findVolumeMount(container.VolumeMounts, v.Name)
+			require.Truef(t, found, "VolumeMount name=%s not injected", v.Name)
+			require.NotNil(t, existing)
+			require.Equalf(t, v.MountPath, existing.MountPath, "VolumeMount MountPath does not match %s=%s", v.Name, v.MountPath)
 		}
 	}
 
 	for _, deploymentSpec := range strategyDetailsDeployment.DeploymentSpecs {
 		deployment, err := client.KubernetesInterface().AppsV1().Deployments(csv.GetNamespace()).Get(deploymentSpec.Name, metav1.GetOptions{})
 		require.NoError(t, err)
+		for _, v := range volumes {
+			existing, found := findVolume(deployment.Spec.Template.Spec.Volumes, v.Name)
+			require.Truef(t, found, "Volume name=%s not injected", v.Name)
+			require.NotNil(t, existing)
+			require.Equalf(t, v.ConfigMap.LocalObjectReference.Name, existing.ConfigMap.LocalObjectReference.Name, "volume ConfigMap Names does not match %s=%s", v.Name, v.ConfigMap.LocalObjectReference.Name)
+		}
 
 		for i := range deployment.Spec.Template.Spec.Containers {
 			check(&deployment.Spec.Template.Spec.Containers[i])
@@ -1151,7 +1492,7 @@ func updateInternalCatalog(t *testing.T, c operatorclient.ClientInterface, crc v
 	require.NoError(t, err)
 
 	// Get initial configmap
-	configMap, err := c.KubernetesInterface().CoreV1().ConfigMaps(testNamespace).Get(fetchedInitialCatalog.Spec.ConfigMap, metav1.GetOptions{})
+	configMap, err := c.KubernetesInterface().CoreV1().ConfigMaps(namespace).Get(fetchedInitialCatalog.Spec.ConfigMap, metav1.GetOptions{})
 	require.NoError(t, err)
 
 	// Update package to point to new csv
@@ -1175,16 +1516,18 @@ func updateInternalCatalog(t *testing.T, c operatorclient.ClientInterface, crc v
 	configMap.Data[registry.ConfigMapCSVName] = string(csvsRaw)
 
 	// Update configmap
-	_, err = c.KubernetesInterface().CoreV1().ConfigMaps(testNamespace).Update(configMap)
+	_, err = c.KubernetesInterface().CoreV1().ConfigMaps(namespace).Update(configMap)
 	require.NoError(t, err)
 
 	// wait for catalog to update
-	_, err = fetchCatalogSource(t, crc, catalogSourceName, testNamespace, func(catalog *v1alpha1.CatalogSource) bool {
-		if catalog.Status.LastSync != fetchedInitialCatalog.Status.LastSync && catalog.Status.ConfigMapResource.ResourceVersion != fetchedInitialCatalog.Status.ConfigMapResource.ResourceVersion {
+	_, err = fetchCatalogSource(t, crc, catalogSourceName, namespace, func(catalog *v1alpha1.CatalogSource) bool {
+		before := fetchedInitialCatalog.Status.ConfigMapResource
+		after := catalog.Status.ConfigMapResource
+		if after != nil && after.LastUpdateTime.After(before.LastUpdateTime.Time) && after.ResourceVersion != before.ResourceVersion {
 			fmt.Println("catalog updated")
 			return true
 		}
-		fmt.Println("waiting for catalog pod to be available")
+		fmt.Printf("waiting for catalog pod %v to be available (after catalog update)\n", catalog.GetName())
 		return false
 	})
 	require.NoError(t, err)

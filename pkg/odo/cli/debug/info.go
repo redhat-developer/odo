@@ -10,7 +10,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/spf13/cobra"
 	k8sgenclioptions "k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/kubernetes/pkg/kubectl/util/templates"
+	"k8s.io/kubectl/pkg/util/templates"
 )
 
 // PortForwardOptions contains all the options for running the port-forward cli command.

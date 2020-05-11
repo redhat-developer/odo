@@ -1,7 +1,7 @@
 package occlient
 
 import (
-	fakeServiceCatalogClientSet "github.com/kubernetes-incubator/service-catalog/pkg/client/clientset_generated/clientset/fake"
+	fakeServiceCatalogClientSet "github.com/kubernetes-sigs/service-catalog/pkg/client/clientset_generated/clientset/fake"
 	fakeAppsClientset "github.com/openshift/client-go/apps/clientset/versioned/fake"
 	fakeBuildClientset "github.com/openshift/client-go/build/clientset/versioned/fake"
 	fakeImageClientset "github.com/openshift/client-go/image/clientset/versioned/fake"
@@ -33,25 +33,25 @@ func FakeNew() (*Client, *FakeClientset) {
 	client.kubeClient = fkclientset.Kubernetes
 
 	fkclientset.AppsClientset = fakeAppsClientset.NewSimpleClientset()
-	client.appsClient = fkclientset.AppsClientset.Apps()
+	client.appsClient = fkclientset.AppsClientset.AppsV1()
 
 	fkclientset.BuildClientset = fakeBuildClientset.NewSimpleClientset()
-	client.buildClient = fkclientset.BuildClientset.Build()
+	client.buildClient = fkclientset.BuildClientset.BuildV1()
 
 	fkclientset.RouteClientset = fakeRouteClientset.NewSimpleClientset()
-	client.routeClient = fkclientset.RouteClientset.Route()
+	client.routeClient = fkclientset.RouteClientset.RouteV1()
 
 	fkclientset.ImageClientset = fakeImageClientset.NewSimpleClientset()
-	client.imageClient = fkclientset.ImageClientset.Image()
+	client.imageClient = fkclientset.ImageClientset.ImageV1()
 
 	fkclientset.ProjClientset = fakeProjClientset.NewSimpleClientset()
-	client.projectClient = fkclientset.ProjClientset.Project()
+	client.projectClient = fkclientset.ProjClientset.ProjectV1()
 
 	fkclientset.BuildClientset = fakeBuildClientset.NewSimpleClientset()
-	client.buildClient = fkclientset.BuildClientset.Build()
+	client.buildClient = fkclientset.BuildClientset.BuildV1()
 
 	fkclientset.ServiceCatalogClientSet = fakeServiceCatalogClientSet.NewSimpleClientset()
-	client.serviceCatalogClient = fkclientset.ServiceCatalogClientSet.Servicecatalog()
+	client.serviceCatalogClient = fkclientset.ServiceCatalogClientSet.ServicecatalogV1beta1()
 
 	return &client, &fkclientset
 }

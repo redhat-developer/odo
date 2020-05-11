@@ -11,8 +11,8 @@ import (
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/go-connections/nat"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
@@ -24,8 +24,10 @@ import (
 	"github.com/openshift/odo/pkg/log"
 )
 
-// LocalhostIP is the IP address for localhost
-var LocalhostIP = "127.0.0.1"
+const (
+	localhostIP             = "127.0.0.1"
+	projectSourceVolumeName = "odo-project-source"
+)
 
 func (a Adapter) createComponent() (err error) {
 	componentName := a.ComponentName
@@ -41,7 +43,7 @@ func (a Adapter) createComponent() (err error) {
 	}
 	if len(projectVols) == 0 {
 		// A source volume needs to be created
-		projectVolumeName, err = storage.GenerateVolNameFromDevfileVol("odo-project-source", a.ComponentName)
+		projectVolumeName, err = storage.GenerateVolName(projectSourceVolumeName, a.ComponentName)
 		if err != nil {
 			return errors.Wrapf(err, "Unable to generate project source volume name for component %s", componentName)
 		}
@@ -83,13 +85,13 @@ func (a Adapter) createComponent() (err error) {
 			return errors.Wrapf(err, "unable to pull and start container %s for component %s", *comp.Alias, componentName)
 		}
 	}
-	glog.V(3).Infof("Successfully created all containers for component %s", componentName)
+	klog.V(3).Infof("Successfully created all containers for component %s", componentName)
 
 	return nil
 }
 
 func (a Adapter) updateComponent() (componentExists bool, err error) {
-	glog.V(3).Info("The component already exists, attempting to update it")
+	klog.V(3).Info("The component already exists, attempting to update it")
 	componentExists = true
 	componentName := a.ComponentName
 
@@ -154,7 +156,7 @@ func (a Adapter) updateComponent() (componentExists bool, err error) {
 				return componentExists, errors.Wrapf(err, "unable to get the container config for component %s", componentName)
 			}
 
-			portMap, err := getPortMap(comp.Endpoints, false)
+			portMap, err := getPortMap(a.Context, comp.Endpoints, false)
 			if err != nil {
 				return componentExists, errors.Wrapf(err, "unable to get the port map from env.yaml file for component %s", componentName)
 			}
@@ -178,7 +180,7 @@ func (a Adapter) updateComponent() (componentExists bool, err error) {
 					return false, errors.Wrapf(err, "Unable to start container for devfile component %s", *comp.Alias)
 				}
 
-				glog.V(3).Infof("Successfully created container %s for component %s", *comp.Image, componentName)
+				klog.V(3).Infof("Successfully created container %s for component %s", *comp.Image, componentName)
 				s.End(true)
 
 				// Update componentExists so that we re-sync project and initialize supervisord if required
@@ -211,7 +213,7 @@ func (a Adapter) pullAndStartContainer(mounts []mount.Mount, projectVolumeName s
 		return errors.Wrapf(err, "Unable to start container for devfile component %s", *comp.Alias)
 	}
 
-	glog.V(3).Infof("Successfully created container %s for component %s", *comp.Image, a.ComponentName)
+	klog.V(3).Infof("Successfully created container %s for component %s", *comp.Image, a.ComponentName)
 	return nil
 }
 
@@ -271,7 +273,7 @@ func (a Adapter) generateAndGetContainerConfig(componentName string, comp versio
 
 func (a Adapter) generateAndGetHostConfig(endpoints []versionsCommon.DockerimageEndpoint) (container.HostConfig, error) {
 	// Convert the port bindings from env.yaml and generate docker host config
-	portMap, err := getPortMap(endpoints, true)
+	portMap, err := getPortMap(a.Context, endpoints, true)
 	if err != nil {
 		return container.HostConfig{}, err
 	}
@@ -284,12 +286,21 @@ func (a Adapter) generateAndGetHostConfig(endpoints []versionsCommon.Dockerimage
 	return hostConfig, nil
 }
 
-func getPortMap(endpoints []versionsCommon.DockerimageEndpoint, show bool) (nat.PortMap, error) {
+func getPortMap(context string, endpoints []versionsCommon.DockerimageEndpoint, show bool) (nat.PortMap, error) {
 	// Convert the exposed and internal port pairs saved in env.yaml file to PortMap
 	// Todo: Use context to get the approraite envinfo after context is supported in experimental mode
 	portmap := nat.PortMap{}
 
-	dir, err := os.Getwd()
+	var dir string
+	var err error
+	if context == "" {
+		dir, err = os.Getwd()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		dir = context
+	}
 	if err != nil {
 		return portmap, err
 	}
@@ -309,12 +320,12 @@ func getPortMap(endpoints []versionsCommon.DockerimageEndpoint, show bool) (nat.
 			}
 			portmap[port] = []nat.PortBinding{
 				nat.PortBinding{
-					HostIP:   LocalhostIP,
+					HostIP:   localhostIP,
 					HostPort: strconv.Itoa(url.ExposedPort),
 				},
 			}
 			if show {
-				log.Successf("URL %v:%v created", LocalhostIP, url.ExposedPort)
+				log.Successf("URL %v:%v created", localhostIP, url.ExposedPort)
 			}
 		} else if url.ExposedPort > 0 && len(endpoints) > 0 && !common.IsPortPresent(endpoints, url.Port) {
 			return portmap, fmt.Errorf("Error creating url: odo url config's port is not present in the devfile. Please re-create odo url with the new devfile port")
@@ -372,7 +383,7 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 					// it is expected to be the run command
 				} else {
 					// Last command is "Run"
-					glog.V(4).Infof("Executing devfile command %v", command.Name)
+					klog.V(4).Infof("Executing devfile command %v", command.Name)
 
 					for _, action := range command.Actions {
 
@@ -391,7 +402,7 @@ func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand
 						}
 
 						if componentExists && !common.IsRestartRequired(command) {
-							glog.V(4).Info("restart:false, Not restarting DevRun Command")
+							klog.V(4).Info("restart:false, Not restarting DevRun Command")
 							err = exec.ExecuteDevfileRunActionWithoutRestart(&a.Client, action, command.Name, compInfo, show)
 							return
 						}

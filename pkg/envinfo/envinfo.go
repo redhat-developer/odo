@@ -8,8 +8,8 @@ import (
 
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/util"
 )
@@ -189,7 +189,7 @@ func (esi *EnvSpecificInfo) DeleteEnvDirIfEmpty() error {
 
 	// If directory is empty we can remove it
 	if err == io.EOF {
-		glog.V(4).Info("Deleting the env directory as well because its empty")
+		klog.V(4).Info("Deleting the env directory as well because its empty")
 
 		return esi.fs.Remove(envDir)
 	}

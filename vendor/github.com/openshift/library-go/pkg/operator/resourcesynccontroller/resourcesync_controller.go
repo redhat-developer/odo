@@ -1,6 +1,7 @@
 package resourcesynccontroller
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -21,16 +22,14 @@ import (
 
 	operatorv1 "github.com/openshift/api/operator/v1"
 
+	"github.com/openshift/library-go/pkg/operator/condition"
 	"github.com/openshift/library-go/pkg/operator/events"
 	"github.com/openshift/library-go/pkg/operator/management"
 	"github.com/openshift/library-go/pkg/operator/resource/resourceapply"
 	"github.com/openshift/library-go/pkg/operator/v1helpers"
 )
 
-const (
-	operatorStatusResourceSyncControllerDegraded = "ResourceSyncControllerDegraded"
-	controllerWorkQueueKey                       = "key"
-)
+const controllerWorkQueueKey = "key"
 
 // ResourceSyncController is a controller that will copy source configmaps and secrets to their destinations.
 // It will also mirror deletions by deleting destinations.
@@ -191,7 +190,7 @@ func (c *ResourceSyncController) sync() error {
 
 	if len(errors) > 0 {
 		cond := operatorv1.OperatorCondition{
-			Type:    operatorStatusResourceSyncControllerDegraded,
+			Type:    condition.ResourceSyncControllerDegradedConditionType,
 			Status:  operatorv1.ConditionTrue,
 			Reason:  "Error",
 			Message: v1helpers.NewMultiLineAggregate(errors).Error(),
@@ -203,7 +202,7 @@ func (c *ResourceSyncController) sync() error {
 	}
 
 	cond := operatorv1.OperatorCondition{
-		Type:   operatorStatusResourceSyncControllerDegraded,
+		Type:   condition.ResourceSyncControllerDegradedConditionType,
 		Status: operatorv1.ConditionFalse,
 	}
 	if _, _, updateError := v1helpers.UpdateStatus(c.operatorConfigClient, v1helpers.UpdateConditionFn(cond)); updateError != nil {
@@ -212,23 +211,23 @@ func (c *ResourceSyncController) sync() error {
 	return nil
 }
 
-func (c *ResourceSyncController) Run(workers int, stopCh <-chan struct{}) {
+func (c *ResourceSyncController) Run(ctx context.Context, workers int) {
 	defer utilruntime.HandleCrash()
 	defer c.queue.ShutDown()
 
 	klog.Infof("Starting ResourceSyncController")
 	defer klog.Infof("Shutting down ResourceSyncController")
-	if !cache.WaitForCacheSync(stopCh, c.cachesToSync...) {
+	if !cache.WaitForCacheSync(ctx.Done(), c.cachesToSync...) {
 		return
 	}
 
 	// doesn't matter what workers say, only start one.
-	go wait.Until(c.runWorker, time.Second, stopCh)
+	go wait.UntilWithContext(ctx, c.runWorker, time.Second)
 
-	<-stopCh
+	<-ctx.Done()
 }
 
-func (c *ResourceSyncController) runWorker() {
+func (c *ResourceSyncController) runWorker(_ context.Context) {
 	for c.processNextWorkItem() {
 	}
 }

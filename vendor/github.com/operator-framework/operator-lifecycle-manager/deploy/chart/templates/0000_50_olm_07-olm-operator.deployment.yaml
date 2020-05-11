@@ -26,6 +26,8 @@ spec:
           command:
           - /bin/olm
           args:
+          - -namespace
+          - $(OPERATOR_NAMESPACE)
           {{- if .Values.watchedNamespaces }}
           - -watchedNamespaces
           - {{ .Values.watchedNamespaces }}
@@ -39,6 +41,10 @@ spec:
           {{- if .Values.writeStatusName }}
           - -writeStatusName
           - {{ .Values.writeStatusName }}
+          {{- end }}
+          {{- if .Values.writePackageServerStatusName }}
+          - -writePackageServerStatusName
+          - {{ .Values.writePackageServerStatusName }}
           {{- end }}
           {{- if .Values.olm.tlsCertPath }}
           - -tls-cert
@@ -96,5 +102,5 @@ spec:
     {{- end }}
     {{- if .Values.olm.tolerations }}
       tolerations:
-{{ toYaml .Values.olm.tolerations | indent 8 }}
+{{ toYaml .Values.olm.tolerations | indent 6 }}
     {{- end }}

@@ -9,11 +9,11 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoversion "github.com/openshift/odo/pkg/version"
 
-	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/notify"
 	"github.com/openshift/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
+	"k8s.io/klog"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
 // RecommendedCommandName is the recommended version command name
@@ -65,7 +65,7 @@ func (o *VersionOptions) Run() (err error) {
 	// this is usefull for debuging oc plugin integration
 	for _, v := range os.Environ() {
 		if strings.HasPrefix(v, "KUBECTL_") {
-			glog.V(4).Info(v)
+			klog.V(4).Info(v)
 		}
 	}
 
@@ -117,7 +117,7 @@ func GetLatestReleaseInfo(info chan<- string) {
 	if err != nil {
 		// The error is intentionally not being handled because we don't want
 		// to stop the execution of the program because of this failure
-		glog.V(4).Infof("Error checking if newer odo release is available: %v", err)
+		klog.V(4).Infof("Error checking if newer odo release is available: %v", err)
 	}
 	if len(newTag) > 0 {
 		info <- fmt.Sprintf(`

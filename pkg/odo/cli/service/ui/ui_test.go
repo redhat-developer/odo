@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/Netflix/go-expect"
-	beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
+	beta1 "github.com/kubernetes-sigs/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	"github.com/openshift/odo/pkg/service"
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/stretchr/testify/require"

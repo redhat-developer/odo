@@ -1,4 +1,4 @@
-dist: trusty
+dist: xenial
 sudo: required
 
 language: go
@@ -130,7 +130,7 @@ jobs:
       # scenario of docker devfile url testing needs only Kube config file. So the test has been
       # added here just to make sure docker devfile url command test gets a proper kube config file.
       # without creating a separate OpenShift cluster.
-      name: "devfile catalog, create, push, delete and docker devfile url command integration tests"
+      name: "devfile catalog, create, push, delete, registry and docker devfile url command integration tests"
       script:
         - ./scripts/oc-cluster.sh
         - make bin
@@ -143,6 +143,7 @@ jobs:
         - travis_wait make test-cmd-devfile-push
         - travis_wait make test-cmd-devfile-watch
         - travis_wait make test-cmd-devfile-delete
+        - travis_wait make test-cmd-devfile-registry
         - odo logout
 
     - <<: *base-test
@@ -161,7 +162,7 @@ jobs:
     
     - <<: *base-test
       stage: test
-      name: "docker devfile push and delete command integration tests"
+      name: "docker devfile push, url, catalog, delete command integration tests"
       script:
         - make bin
         - sudo cp odo /usr/bin
@@ -172,16 +173,15 @@ jobs:
     # Run devfile integration test on Kubernetes cluster    
     - <<: *base-test
       stage: test
-      name: "devfile catalog, watch command integration tests on kubernetes cluster"
+      name: "devfile catalog and watch command integration tests on kubernetes cluster"
       before_script:
         # Download kubectl, a cli tool for accessing Kubernetes cluster
-        - curl -sLo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.7.0/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+        - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.16.0/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
         # Download minikube and set up Kubernetes single node cluster
-        - curl -sLo minikube https://storage.googleapis.com/minikube/releases/v0.25.2/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
+        - curl -Lo minikube https://storage.googleapis.com/minikube/releases/v1.4.0/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
         - mkdir -p $HOME/.kube $HOME/.minikube
         - touch $KUBECONFIG
-        - sudo minikube start --vm-driver=none --kubernetes-version=v1.7.0
-        - minikube update-context
+        - sudo minikube start --vm-driver=none --kubernetes-version=v1.16.0
         - "sudo chown -R travis: /home/travis/.minikube/"
       script:
         - kubectl cluster-info

@@ -1,14 +1,41 @@
-dependencies:
-  pre:
-    # setup ipv6
-    - sudo sysctl -w net.ipv6.conf.lo.disable_ipv6=0 net.ipv6.conf.default.disable_ipv6=0 net.ipv6.conf.all.disable_ipv6=0
-  post:
-    # install golint
-    - go get github.com/golang/lint/golint
-
-test:
-  pre:
-    # run analysis before tests
-    - go vet ./...
-    - test -z "$(golint ./... | tee /dev/stderr)"
-    - test -z "$(gofmt -s -l . | tee /dev/stderr)"
+version: 2
+jobs:
+  build:
+    machine: true
+    working_directory: ~/go/src/github.com/docker/go-connections
+    steps:
+      - checkout
+      - run:
+          name: Setup IPv6
+          command: sudo sysctl -w net.ipv6.conf.lo.disable_ipv6=0 net.ipv6.conf.default.disable_ipv6=0 net.ipv6.conf.all.disable_ipv6=0
+      - run:
+          name: Get dependencies
+          command: |
+            go get -u golang.org/x/lint/golint &&
+            go get -d github.com/pkg/errors &&
+            go get -d github.com/stretchr/testify &&
+            go get -d golang.org/x/net/proxy
+      - run:
+          name: Run analysis before tests
+          command: go vet ./...
+      # set min_confidence > 0.8 to ignore "error strings should not be capitalized or end with punctuation or a newline"
+      - run:
+          name: golint
+          command: test -z "$(golint -min_confidence 0.81 ./... | tee /dev/stderr)"
+      - run:
+          name: gofmt
+          command: test -z "$(gofmt -s -l . | tee /dev/stderr)"
+      # make sure that it passes build on both Linux and Windows
+      - run:
+          name: Build for Linux
+          command: go build ./...
+          environment:
+            GOOS: linux
+      - run: which go && echo $GOPATH && echo $GOROOT
+      - run:
+          name: Build for Windows
+          command: |
+            go get -d github.com/Microsoft/go-winio &&
+            go build ./...
+          environment:
+            GOOS: windows

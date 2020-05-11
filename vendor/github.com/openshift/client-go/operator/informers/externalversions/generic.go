@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	v1 "github.com/openshift/api/operator/v1"
+	v1alpha1 "github.com/openshift/api/operator/v1alpha1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
 )
@@ -39,6 +40,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	// Group=operator.openshift.io, Version=v1
 	case v1.SchemeGroupVersion.WithResource("authentications"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Operator().V1().Authentications().Informer()}, nil
+	case v1.SchemeGroupVersion.WithResource("csisnapshotcontrollers"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Operator().V1().CSISnapshotControllers().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("consoles"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Operator().V1().Consoles().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("dnses"):
@@ -53,6 +56,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Operator().V1().KubeControllerManagers().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("kubeschedulers"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Operator().V1().KubeSchedulers().Informer()}, nil
+	case v1.SchemeGroupVersion.WithResource("kubestorageversionmigrators"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Operator().V1().KubeStorageVersionMigrators().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("networks"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Operator().V1().Networks().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("openshiftapiservers"):
@@ -65,6 +70,10 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Operator().V1().ServiceCatalogAPIServers().Informer()}, nil
 	case v1.SchemeGroupVersion.WithResource("servicecatalogcontrollermanagers"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Operator().V1().ServiceCatalogControllerManagers().Informer()}, nil
+
+		// Group=operator.openshift.io, Version=v1alpha1
+	case v1alpha1.SchemeGroupVersion.WithResource("imagecontentsourcepolicies"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Operator().V1alpha1().ImageContentSourcePolicies().Informer()}, nil
 
 	}
 

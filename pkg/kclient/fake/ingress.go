@@ -38,7 +38,7 @@ func GetIngressListWithMultiple(componentName string) *extensionsv1.IngressList 
 						labels.URLLabel:                "example-1",
 					},
 				},
-				Spec: *kclient.GenerateIngressSpec(kclient.IngressParameter{ServiceName: "example-1", PortNumber: intstr.FromInt(8080)}),
+				Spec: *kclient.GenerateIngressSpec(kclient.IngressParameter{ServiceName: "example-1", PortNumber: intstr.FromInt(9090)}),
 			},
 		},
 	}

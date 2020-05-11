@@ -24,13 +24,13 @@ import (
 	"time"
 
 	"github.com/gobwas/glob"
-	"github.com/golang/glog"
 	"github.com/google/go-github/github"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	kvalidation "k8s.io/apimachinery/pkg/util/validation"
+	"k8s.io/klog"
 )
 
 // HTTPRequestTimeout configures timeout of all HTTP requests
@@ -120,7 +120,7 @@ func NamespaceOpenShiftObject(componentName string, applicationName string) (str
 	originalName := fmt.Sprintf("%s-%s", strings.Replace(componentName, "/", "-", -1), applicationName)
 	truncatedName := TruncateString(originalName, maxAllowedNamespacedStringLength)
 	if originalName != truncatedName {
-		glog.V(4).Infof("The combination of application %s and component %s was too long so the final name was truncated to %s",
+		klog.V(4).Infof("The combination of application %s and component %s was too long so the final name was truncated to %s",
 			applicationName, componentName, truncatedName)
 	}
 	return truncatedName, nil
@@ -200,7 +200,7 @@ func ConvertKeyValueStringToMap(params []string) map[string]string {
 	for _, param := range params {
 		str := strings.Split(param, "=")
 		if len(str) != 2 {
-			glog.Fatalf("Parameter %s is not in the expected key=value format", param)
+			klog.Fatalf("Parameter %s is not in the expected key=value format", param)
 		} else {
 			result[str[0]] = str[1]
 		}
@@ -400,7 +400,7 @@ func CheckPathExists(path string) bool {
 		// path to file does exist
 		return true
 	}
-	glog.V(4).Infof("path %s doesn't exist, skipping it", path)
+	klog.V(4).Infof("path %s doesn't exist, skipping it", path)
 	return false
 }
 
@@ -582,7 +582,7 @@ func IsGlobExpMatch(strToMatch string, globExps []string) (bool, error) {
 		}
 		matched := pattern.Match(strToMatch)
 		if matched {
-			glog.V(4).Infof("ignoring path %s because of glob rule %s", strToMatch, globExp)
+			klog.V(4).Infof("ignoring path %s because of glob rule %s", strToMatch, globExp)
 			return true, nil
 		}
 	}
@@ -872,7 +872,7 @@ func GetAndExtractZip(zipURL string, destination string) error {
 
 		defer func() {
 			if err := DeletePath(pathToZip); err != nil {
-				glog.Errorf("Could not delete temporary directory for zip file. Error: %s", err)
+				klog.Errorf("Could not delete temporary directory for zip file. Error: %s", err)
 			}
 		}()
 	} else {
@@ -1024,4 +1024,18 @@ func CheckKubeConfigExist() bool {
 	}
 
 	return false
+}
+
+// ValidateURL validates the URL
+func ValidateURL(sourceURL string) error {
+	u, err := url.Parse(sourceURL)
+	if err != nil {
+		return err
+	}
+
+	if len(u.Host) == 0 || len(u.Scheme) == 0 {
+		return errors.New("URL is invalid")
+	}
+
+	return nil
 }

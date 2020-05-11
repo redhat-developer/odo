@@ -10,6 +10,7 @@ import (
 	configv1client "github.com/openshift/client-go/config/clientset/versioned/typed/config/v1"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/client/clientset/versioned"
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -28,7 +29,7 @@ const (
 	openshiftNamespace           = "openshift-operator-lifecycle-manager"
 )
 
-func MonitorClusterStatus(name string, syncCh chan error, stopCh <-chan struct{}, opClient operatorclient.ClientInterface, configClient configv1client.ConfigV1Interface, crClient versioned.Interface) {
+func MonitorClusterStatus(name string, syncCh <-chan error, stopCh <-chan struct{}, opClient operatorclient.ClientInterface, configClient configv1client.ConfigV1Interface, crClient versioned.Interface) {
 	var (
 		syncs              int
 		successfulSyncs    int
@@ -312,6 +313,7 @@ func relatedObjects(name string, opClient operatorclient.ClientInterface, crClie
 		}
 	}
 	namespaces := configv1.ObjectReference{
+		Group:    corev1.GroupName,
 		Resource: "namespaces",
 		Name:     namespace,
 	}

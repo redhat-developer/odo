@@ -1,0 +1,4 @@
+  Name:     ups-broker            
+  Scope:    cluster               
+  URL:      http://upsbroker.com  
+  Status:                         

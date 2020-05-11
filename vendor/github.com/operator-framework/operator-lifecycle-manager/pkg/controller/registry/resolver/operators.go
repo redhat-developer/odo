@@ -1,14 +1,18 @@
 package resolver
 
 import (
+	"encoding/json"
 	"fmt"
 	"hash/fnv"
 	"sort"
 	"strings"
 
 	"github.com/blang/semver"
-	opregistry "github.com/operator-framework/operator-registry/pkg/registry"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/operator-framework/operator-registry/pkg/api"
+	"github.com/operator-framework/operator-registry/pkg/registry"
+	opregistry "github.com/operator-framework/operator-registry/pkg/registry"
 
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 )
@@ -219,7 +223,8 @@ type OperatorSurface interface {
 	Replaces() string
 	Version() *semver.Version
 	SourceInfo() *OperatorSourceInfo
-	Bundle() *opregistry.Bundle
+	Bundle() *api.Bundle
+	Inline() bool
 }
 
 type Operator struct {
@@ -228,42 +233,65 @@ type Operator struct {
 	providedAPIs APISet
 	requiredAPIs APISet
 	version      *semver.Version
-	bundle       *opregistry.Bundle
+	bundle       *api.Bundle
 	sourceInfo   *OperatorSourceInfo
 }
 
 var _ OperatorSurface = &Operator{}
 
-func NewOperatorFromBundle(bundle *opregistry.Bundle, replaces string, startingCSV string, sourceKey CatalogKey) (*Operator, error) {
-	csv, err := bundle.ClusterServiceVersion()
+func NewOperatorFromBundle(bundle *api.Bundle, startingCSV string, sourceKey CatalogKey) (*Operator, error) {
+	parsedVersion, err := semver.ParseTolerant(bundle.Version)
+	version := &parsedVersion
 	if err != nil {
-		return nil, err
+		version = nil
 	}
-	providedAPIs, err := bundle.ProvidedAPIs()
-	if err != nil {
-		return nil, err
+	provided := APISet{}
+	for _, gvk := range bundle.ProvidedApis {
+		provided[registry.APIKey{Plural: gvk.Plural, Group: gvk.Group, Kind: gvk.Kind, Version: gvk.Version}] = struct{}{}
 	}
-	requiredAPIs, err := bundle.RequiredAPIs()
-	if err != nil {
-		return nil, err
+	required := APISet{}
+	for _, gvk := range bundle.RequiredApis {
+		required[registry.APIKey{Plural: gvk.Plural, Group: gvk.Group, Kind: gvk.Kind, Version: gvk.Version}] = struct{}{}
 	}
-	r := replaces
-	if r == "" {
-		r = csv.Spec.Replaces
+	sourceInfo := &OperatorSourceInfo{
+		Package:     bundle.PackageName,
+		Channel:     bundle.ChannelName,
+		StartingCSV: startingCSV,
+		Catalog:     sourceKey,
 	}
+
+	// legacy support - if the grpc api doesn't contain the information we need, fallback to csv parsing
+	if len(required) == 0 && len(provided) == 0 {
+		// fallback to csv parsing
+		if bundle.CsvJson == "" {
+			if bundle.GetBundlePath() != "" {
+				return nil, fmt.Errorf("couldn't parse bundle path, missing provided and required apis")
+			}
+
+			return nil, fmt.Errorf("couldn't parse bundle, missing provided and required apis")
+		}
+
+		csv := &v1alpha1.ClusterServiceVersion{}
+		if err := json.Unmarshal([]byte(bundle.CsvJson), csv); err != nil {
+			return nil, err
+		}
+
+		op, err := NewOperatorFromV1Alpha1CSV(csv)
+		if err != nil {
+			return nil, err
+		}
+		op.sourceInfo = sourceInfo
+		op.bundle = bundle
+		return op, nil
+	}
+
 	return &Operator{
-		name:         csv.GetName(),
-		replaces:     r,
-		version:      &csv.Spec.Version.Version,
-		providedAPIs: providedAPIs,
-		requiredAPIs: requiredAPIs,
+		name:         bundle.CsvName,
+		version:      version,
+		providedAPIs: provided,
+		requiredAPIs: required,
 		bundle:       bundle,
-		sourceInfo: &OperatorSourceInfo{
-			Package:     bundle.Package,
-			Channel:     bundle.Channel,
-			StartingCSV: startingCSV,
-			Catalog:     sourceKey,
-		},
+		sourceInfo:   sourceInfo,
 	}, nil
 }
 
@@ -295,7 +323,6 @@ func NewOperatorFromV1Alpha1CSV(csv *v1alpha1.ClusterServiceVersion) (*Operator,
 	return &Operator{
 		name:         csv.GetName(),
 		version:      &csv.Spec.Version.Version,
-		replaces:     csv.Spec.Replaces,
 		providedAPIs: providedAPIs,
 		requiredAPIs: requiredAPIs,
 		sourceInfo:   &ExistingOperator,
@@ -318,18 +345,26 @@ func (o *Operator) Replaces() string {
 	return o.replaces
 }
 
+func (o *Operator) SetReplaces(replacing string) {
+	o.replaces = replacing
+}
+
 func (o *Operator) Package() string {
-	return o.bundle.Package
+	return o.bundle.PackageName
 }
 
 func (o *Operator) SourceInfo() *OperatorSourceInfo {
 	return o.sourceInfo
 }
 
-func (o *Operator) Bundle() *opregistry.Bundle {
+func (o *Operator) Bundle() *api.Bundle {
 	return o.bundle
 }
 
 func (o *Operator) Version() *semver.Version {
 	return o.version
+}
+
+func (o *Operator) Inline() bool {
+	return o.bundle != nil && o.bundle.GetBundlePath() == ""
 }
