@@ -109,8 +109,7 @@ func (o *URLListOptions) Run() (err error) {
 				}
 				tabWriterURL.Flush()
 				if outOfSync {
-					fmt.Fprintf(os.Stdout, "\n")
-					fmt.Fprintf(os.Stdout, "There are local changes. Please run 'odo push'.\n")
+					log.Info("There are local changes. Please run 'odo push'.")
 				}
 			}
 		} else {
@@ -149,8 +148,7 @@ func (o *URLListOptions) Run() (err error) {
 				}
 				tabWriterURL.Flush()
 				if outOfSync {
-					fmt.Fprintf(os.Stdout, "\n")
-					fmt.Fprintf(os.Stdout, "There are local changes. Please run 'odo push'.\n")
+					log.Info("There are local changes. Please run 'odo push'.")
 				}
 			}
 		}
@@ -180,8 +178,7 @@ func (o *URLListOptions) Run() (err error) {
 			}
 			tabWriterURL.Flush()
 			if outOfSync {
-				fmt.Fprintf(os.Stdout, "\n")
-				fmt.Fprintf(os.Stdout, "There are local changes. Please run 'odo push'.\n")
+				log.Info("There are local changes. Please run 'odo push'.")
 			}
 		}
 	}

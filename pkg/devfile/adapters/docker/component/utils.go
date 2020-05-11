@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	localhostIP             = "127.0.0.1"
+	LocalhostIP             = "127.0.0.1"
 	projectSourceVolumeName = "odo-project-source"
 )
 
@@ -326,13 +326,13 @@ func getPortMap(context string, endpoints []versionsCommon.DockerimageEndpoint, 
 			}
 			portmap[port] = []nat.PortBinding{
 				nat.PortBinding{
-					HostIP:   localhostIP,
+					HostIP:   LocalhostIP,
 					HostPort: strconv.Itoa(url.ExposedPort),
 				},
 			}
 			namePortMapping[port] = url.Name
 			if show {
-				log.Successf("URL %v:%v created", localhostIP, url.ExposedPort)
+				log.Successf("URL %v:%v created", LocalhostIP, url.ExposedPort)
 			}
 		} else if url.ExposedPort > 0 && len(endpoints) > 0 && !common.IsPortPresent(endpoints, url.Port) {
 			return nil, nil, fmt.Errorf("Error creating url: odo url config's port is not present in the devfile. Please re-create odo url with the new devfile port")
