@@ -23,7 +23,6 @@ func TestSetEnvInfo(t *testing.T) {
 	os.Setenv(envInfoEnvName, tempEnvFile.Name())
 	testURL := EnvInfoURL{Name: "testURL", Host: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
 	invalidParam := "invalidParameter"
-	testCreate := ComponentSettings{Name: "componentName", Namespace: "namespace"}
 
 	tests := []struct {
 		name            string
@@ -50,15 +49,6 @@ func TestSetEnvInfo(t *testing.T) {
 			},
 			expectError: true,
 		},
-		{
-			name:      "Case 3: Test fields setup from create parameter",
-			parameter: Create,
-			value:     testCreate,
-			existingEnvInfo: EnvInfo{
-				componentSettings: ComponentSettings{},
-			},
-			expectError: false,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -75,19 +65,7 @@ func TestSetEnvInfo(t *testing.T) {
 					t.Error(err)
 				}
 
-				isSet := false
-
-				if tt.parameter == Create {
-					parameters := []string{"Name", "Namespace"}
-					for _, parameter := range parameters {
-						isSet = esi.IsSet(parameter)
-						if !isSet {
-							t.Errorf("the '%v' is not set", parameter)
-						}
-					}
-				} else {
-					isSet = esi.IsSet(tt.parameter)
-				}
+				isSet := esi.IsSet(tt.parameter)
 
 				if !isSet {
 					t.Errorf("the '%v' is not set", tt.parameter)
@@ -235,7 +213,7 @@ func TestDeleteURLFromMultipleURLs(t *testing.T) {
 }
 
 func TestLowerCaseParameterForLocalParameters(t *testing.T) {
-	expected := map[string]bool{"create": true, "url": true}
+	expected := map[string]bool{"url": true}
 	actual := util.GetLowerCaseParameters(GetLocallySupportedParameters())
 	if !reflect.DeepEqual(expected, actual) {
 		t.Errorf("expected '%v', got '%v'", expected, actual)
