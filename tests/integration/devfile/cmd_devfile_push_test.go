@@ -16,13 +16,13 @@ import (
 var _ = Describe("odo devfile push command tests", func() {
 	var namespace, context, cmpName, currentWorkingDirectory string
 	var sourcePath = "/projects/nodejs-web-app"
-	var clusterType helper.CliRunner
+	var cliRunner helper.CliRunner
 
-	// Using program commmand according to cluter type in devfile
+	// Using program commmand according to cliRunner in devfile
 	if os.Getenv("KUBERNETES") == "true" {
-		clusterType = helper.NewKubectlRunner("kubectl")
+		cliRunner = helper.NewKubectlRunner("kubectl")
 	} else {
-		clusterType = helper.NewOcRunner("oc")
+		cliRunner = helper.NewOcRunner("oc")
 	}
 
 	// This is run after every Spec (It)
@@ -36,8 +36,8 @@ var _ = Describe("odo devfile push command tests", func() {
 
 		if os.Getenv("KUBERNETES") == "true" {
 			homeDir := helper.GetUserHomeDir()
-			kubeConfigFile := helper.CopyKubeConfigFile(filepath.Join(homeDir, ".kube", "config"), filepath.Join(context, "config"))
-			namespace = helper.CreateRandNamespace(kubeConfigFile)
+			_ = helper.CopyKubeConfigFile(filepath.Join(homeDir, ".kube", "config"), filepath.Join(context, "config"))
+			namespace = helper.CreateRandNamespace()
 		} else {
 			namespace = helper.CreateRandProject()
 		}
@@ -70,14 +70,14 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-no-endpoints.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
-			output := clusterType.GetServices(namespace)
+			output := cliRunner.GetServices(namespace)
 			Expect(output).NotTo(ContainSubstring(cmpName))
 
 			helper.RenameFile("devfile-old.yaml", "devfile.yaml")
 			output = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
 
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
-			output = clusterType.GetServices(namespace)
+			output = cliRunner.GetServices(namespace)
 			Expect(output).To(ContainSubstring(cmpName))
 		})
 
@@ -117,9 +117,9 @@ var _ = Describe("odo devfile push command tests", func() {
 			utils.ExecPushWithNewFileAndDir(context, cmpName, namespace, newFilePath, newDirPath)
 
 			// Check to see if it's been pushed (foobar.txt abd directory testdir)
-			podName := clusterType.GetRunningPodNameByComponent(cmpName, namespace)
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
 
-			stdOut := clusterType.ExecListDir(podName, namespace, sourcePath)
+			stdOut := cliRunner.ExecListDir(podName, namespace, sourcePath)
 			Expect(stdOut).To(ContainSubstring(("foobar.txt")))
 			Expect(stdOut).To(ContainSubstring(("testdir")))
 
@@ -129,7 +129,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace, "-v4")
 
 			// Then check to see if it's truly been deleted
-			stdOut = clusterType.ExecListDir(podName, namespace, sourcePath)
+			stdOut = cliRunner.ExecListDir(podName, namespace, sourcePath)
 			Expect(stdOut).To(Not(ContainSubstring(("foobar.txt"))))
 			Expect(stdOut).To(Not(ContainSubstring(("testdir"))))
 		})
@@ -143,10 +143,10 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
 
 			// Check to see if it's been pushed (foobar.txt abd directory testdir)
-			podName := clusterType.GetRunningPodNameByComponent(cmpName, namespace)
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
 
 			var statErr error
-			clusterType.CheckCmdOpInRemoteDevfilePod(
+			cliRunner.CheckCmdOpInRemoteDevfilePod(
 				podName,
 				"",
 				namespace,
@@ -160,7 +160,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(os.Remove(filepath.Join(context, "app", "app.js"))).NotTo(HaveOccurred())
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
 
-			clusterType.CheckCmdOpInRemoteDevfilePod(
+			cliRunner.CheckCmdOpInRemoteDevfilePod(
 				podName,
 				"",
 				namespace,
@@ -182,11 +182,11 @@ var _ = Describe("odo devfile push command tests", func() {
 			utils.ExecDefaultDevfileCommands(context, cmpName, namespace)
 
 			// Check to see if it's been pushed (foobar.txt abd directory testdir)
-			podName := clusterType.GetRunningPodNameByComponent(cmpName, namespace)
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
 
 			var statErr error
 			var cmdOutput string
-			clusterType.CheckCmdOpInRemoteDevfilePod(
+			cliRunner.CheckCmdOpInRemoteDevfilePod(
 				podName,
 				"runtime",
 				namespace,
@@ -286,11 +286,11 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(output).To(ContainSubstring("Executing devrun command"))
 
 			// Check to see if it's been pushed (foobar.txt abd directory testdir)
-			podName := clusterType.GetRunningPodNameByComponent(cmpName, namespace)
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
 
 			var statErr error
 			var cmdOutput string
-			clusterType.CheckCmdOpInRemoteDevfilePod(
+			cliRunner.CheckCmdOpInRemoteDevfilePod(
 				podName,
 				"runtime",
 				namespace,
@@ -304,7 +304,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(statErr).ToNot(HaveOccurred())
 			Expect(cmdOutput).To(ContainSubstring("init"))
 
-			clusterType.CheckCmdOpInRemoteDevfilePod(
+			cliRunner.CheckCmdOpInRemoteDevfilePod(
 				podName,
 				"runtime2",
 				namespace,
@@ -318,7 +318,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(statErr).ToNot(HaveOccurred())
 			Expect(cmdOutput).To(ContainSubstring("hello"))
 
-			clusterType.CheckCmdOpInRemoteDevfilePod(
+			cliRunner.CheckCmdOpInRemoteDevfilePod(
 				podName,
 				"runtime2",
 				namespace,
@@ -333,7 +333,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			volumesMatched := false
 
 			// check the volume name and mount paths for the containers
-			volNamesAndPaths := clusterType.GetVolumeMountNamesandPathsFromContainer(cmpName, "runtime", namespace)
+			volNamesAndPaths := cliRunner.GetVolumeMountNamesandPathsFromContainer(cmpName, "runtime", namespace)
 			volNamesAndPathsArr := strings.Fields(volNamesAndPaths)
 			for _, volNamesAndPath := range volNamesAndPathsArr {
 				volNamesAndPathArr := strings.Split(volNamesAndPath, ":")

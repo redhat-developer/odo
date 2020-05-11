@@ -29,146 +29,146 @@ jobs:
         # submit coverage.txt to codecov.io
         - bash <(curl -s https://codecov.io/bash)
       
-    # YAML alias, for settings shared across the tests on windows
-    - &windows-test
-      stage: Test
-      name: "Unit test on windows"
-      os: 
-        - windows
-      init:
-      - git config --system core.longpaths true
-      go_import_path: github.com/openshift/odo
-      go: "1.13.1"
-      install:
-        - systeminfo.exe | grep '^OS'
-        - choco install make
-        - make goget-tools
-      script:
-        - export PATH="$PATH:$GOPATH/bin"
-        - make bin
-        - rm -r /tmp/*
-        - make test
-      after_success: skip
+    # # YAML alias, for settings shared across the tests on windows
+    # - &windows-test
+    #   stage: Test
+    #   name: "Unit test on windows"
+    #   os: 
+    #     - windows
+    #   init:
+    #   - git config --system core.longpaths true
+    #   go_import_path: github.com/openshift/odo
+    #   go: "1.13.1"
+    #   install:
+    #     - systeminfo.exe | grep '^OS'
+    #     - choco install make
+    #     - make goget-tools
+    #   script:
+    #     - export PATH="$PATH:$GOPATH/bin"
+    #     - make bin
+    #     - rm -r /tmp/*
+    #     - make test
+    #   after_success: skip
 
-    # YAML alias, for settings shared across the tests on macOS
-    - &osx-test
-      stage: Test
-      name: "Unit test on OSX"
-      os:
-        - osx
-      go_import_path: github.com/openshift/odo
-      go: "1.13.1"
-      install:
-        - make goget-tools
-      script:
-        - system_profiler SPSoftwareDataType
-        - export PATH="$PATH:$GOPATH/bin"
-        - make bin
-        - make validate
-        - make test
-      after_success: skip
+    # # YAML alias, for settings shared across the tests on macOS
+    # - &osx-test
+    #   stage: Test
+    #   name: "Unit test on OSX"
+    #   os:
+    #     - osx
+    #   go_import_path: github.com/openshift/odo
+    #   go: "1.13.1"
+    #   install:
+    #     - make goget-tools
+    #   script:
+    #     - system_profiler SPSoftwareDataType
+    #     - export PATH="$PATH:$GOPATH/bin"
+    #     - make bin
+    #     - make validate
+    #     - make test
+    #   after_success: skip
 
-    - <<: *base-test
-      stage: test
-      name: "generic, login and component command integration tests"
-      script:
-        - ./scripts/oc-cluster.sh
-        - make bin
-        - sudo cp odo /usr/bin
-        - odo login -u developer
-        - travis_wait make test-generic
-        - travis_wait make test-cmd-login-logout
-        - travis_wait make test-cmd-cmp
-        - odo logout
+    # - <<: *base-test
+    #   stage: test
+    #   name: "generic, login and component command integration tests"
+    #   script:
+    #     - ./scripts/oc-cluster.sh
+    #     - make bin
+    #     - sudo cp odo /usr/bin
+    #     - odo login -u developer
+    #     - travis_wait make test-generic
+    #     - travis_wait make test-cmd-login-logout
+    #     - travis_wait make test-cmd-cmp
+    #     - odo logout
 
-    - <<: *base-test
-      stage: test
-      name: "preference, config, url and debug command integration tests"
-      script:
-        - ./scripts/oc-cluster.sh
-        - make bin
-        - sudo cp odo /usr/bin
-        - odo login -u developer
-        - travis_wait make test-cmd-pref-config
-        - travis_wait make test-cmd-url
-        - travis_wait make test-cmd-devfile-url
-        - travis_wait make test-cmd-debug
-        - odo logout
+    # - <<: *base-test
+    #   stage: test
+    #   name: "preference, config, url and debug command integration tests"
+    #   script:
+    #     - ./scripts/oc-cluster.sh
+    #     - make bin
+    #     - sudo cp odo /usr/bin
+    #     - odo login -u developer
+    #     - travis_wait make test-cmd-pref-config
+    #     - travis_wait make test-cmd-url
+    #     - travis_wait make test-cmd-devfile-url
+    #     - travis_wait make test-cmd-debug
+    #     - odo logout
 
-    # Run service-catalog e2e tests
-    - <<: *base-test
-      stage: test
-      name: "service, link and component sub-commands command integration tests"
-      script:
-        - ./scripts/oc-cluster.sh service-catalog
-        - make bin
-        - sudo cp odo /usr/bin
-        - odo login -u developer
-        - travis_wait make test-cmd-service
-        - travis_wait make test-cmd-link-unlink
-        - travis_wait make test-cmd-cmp-sub
-        - odo logout
+    # # Run service-catalog e2e tests
+    # - <<: *base-test
+    #   stage: test
+    #   name: "service, link and component sub-commands command integration tests"
+    #   script:
+    #     - ./scripts/oc-cluster.sh service-catalog
+    #     - make bin
+    #     - sudo cp odo /usr/bin
+    #     - odo login -u developer
+    #     - travis_wait make test-cmd-service
+    #     - travis_wait make test-cmd-link-unlink
+    #     - travis_wait make test-cmd-cmp-sub
+    #     - odo logout
 
-    - <<: *base-test
-      stage: test
-      name: "watch, storage, app, project and push command integration tests"
-      script:
-        - ./scripts/oc-cluster.sh
-        - make bin
-        - sudo cp odo /usr/bin
-        - odo login -u developer
-        - travis_wait make test-cmd-watch
-        - travis_wait make test-cmd-storage
-        - travis_wait make test-cmd-app
-        - travis_wait make test-cmd-push
-        - travis_wait make test-cmd-project
-        - odo logout
+    # - <<: *base-test
+    #   stage: test
+    #   name: "watch, storage, app, project and push command integration tests"
+    #   script:
+    #     - ./scripts/oc-cluster.sh
+    #     - make bin
+    #     - sudo cp odo /usr/bin
+    #     - odo login -u developer
+    #     - travis_wait make test-cmd-watch
+    #     - travis_wait make test-cmd-storage
+    #     - travis_wait make test-cmd-app
+    #     - travis_wait make test-cmd-push
+    #     - travis_wait make test-cmd-project
+    #     - odo logout
 
-    - <<: *base-test
-      stage: test
-      # Docker push target test command does not need a running cluster at all, however few test
-      # scenario of docker devfile url testing needs only Kube config file. So the test has been
-      # added here just to make sure docker devfile url command test gets a proper kube config file.
-      # without creating a separate OpenShift cluster.
-      name: "devfile catalog, create, push, delete, registry and docker devfile url command integration tests"
-      script:
-        - ./scripts/oc-cluster.sh
-        - make bin
-        - sudo cp odo /usr/bin
-        - travis_wait make test-cmd-docker-devfile-url
-        # These tests need cluster login as they will be interacting with a Kube environment
-        - odo login -u developer
-        - travis_wait make test-cmd-devfile-catalog
-        - travis_wait make test-cmd-devfile-create
-        - travis_wait make test-cmd-devfile-push
-        - travis_wait make test-cmd-devfile-watch
-        - travis_wait make test-cmd-devfile-delete
-        - travis_wait make test-cmd-devfile-registry
-        - odo logout
+    # - <<: *base-test
+    #   stage: test
+    #   # Docker push target test command does not need a running cluster at all, however few test
+    #   # scenario of docker devfile url testing needs only Kube config file. So the test has been
+    #   # added here just to make sure docker devfile url command test gets a proper kube config file.
+    #   # without creating a separate OpenShift cluster.
+    #   name: "devfile catalog, create, push, delete, registry and docker devfile url command integration tests"
+    #   script:
+    #     - ./scripts/oc-cluster.sh
+    #     - make bin
+    #     - sudo cp odo /usr/bin
+    #     - travis_wait make test-cmd-docker-devfile-url
+    #     # These tests need cluster login as they will be interacting with a Kube environment
+    #     - odo login -u developer
+    #     - travis_wait make test-cmd-devfile-catalog
+    #     - travis_wait make test-cmd-devfile-create
+    #     - travis_wait make test-cmd-devfile-push
+    #     - travis_wait make test-cmd-devfile-watch
+    #     - travis_wait make test-cmd-devfile-delete
+    #     - travis_wait make test-cmd-devfile-registry
+    #     - odo logout
 
-    - <<: *base-test
-      stage: test
-      name: "core beta, java, source e2e tests"
-      script:
-        - ./scripts/oc-cluster.sh
-        - make bin
-        - sudo cp odo /usr/bin
-        - odo login -u developer
-        - travis_wait make test-e2e-beta
-        - travis_wait make test-e2e-java
-        - travis_wait make test-e2e-source
-        - travis_wait make test-e2e-images
-        - odo logout
+    # - <<: *base-test
+    #   stage: test
+    #   name: "core beta, java, source e2e tests"
+    #   script:
+    #     - ./scripts/oc-cluster.sh
+    #     - make bin
+    #     - sudo cp odo /usr/bin
+    #     - odo login -u developer
+    #     - travis_wait make test-e2e-beta
+    #     - travis_wait make test-e2e-java
+    #     - travis_wait make test-e2e-source
+    #     - travis_wait make test-e2e-images
+    #     - odo logout
     
-    - <<: *base-test
-      stage: test
-      name: "docker devfile push, url, catalog, delete command integration tests"
-      script:
-        - make bin
-        - sudo cp odo /usr/bin
-        - travis_wait make test-cmd-docker-devfile-push
-        - travis_wait make test-cmd-docker-devfile-catalog
-        - travis_wait make test-cmd-docker-devfile-delete
+    # - <<: *base-test
+    #   stage: test
+    #   name: "docker devfile push, url, catalog, delete command integration tests"
+    #   script:
+    #     - make bin
+    #     - sudo cp odo /usr/bin
+    #     - travis_wait make test-cmd-docker-devfile-push
+    #     - travis_wait make test-cmd-docker-devfile-catalog
+    #     - travis_wait make test-cmd-docker-devfile-delete
 
     # Run devfile integration test on Kubernetes cluster    
     - <<: *base-test
