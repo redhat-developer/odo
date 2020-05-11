@@ -68,61 +68,61 @@ jobs:
         - make test
       after_success: skip
 
-    - <<: *base-test
-      stage: test
-      name: "generic, login and component command integration tests"
-      script:
-        - ./scripts/oc-cluster.sh
-        - make bin
-        - sudo cp odo /usr/bin
-        - odo login -u developer
-        - travis_wait make test-generic
-        - travis_wait make test-cmd-login-logout
-        - travis_wait make test-cmd-cmp
-        - odo logout
+    # - <<: *base-test
+    #   stage: test
+    #   name: "generic, login and component command integration tests"
+    #   script:
+    #     - ./scripts/oc-cluster.sh
+    #     - make bin
+    #     - sudo cp odo /usr/bin
+    #     - odo login -u developer
+    #     - travis_wait make test-generic
+    #     - travis_wait make test-cmd-login-logout
+    #     - travis_wait make test-cmd-cmp
+    #     - odo logout
 
-    - <<: *base-test
-      stage: test
-      name: "preference, config, url and debug command integration tests"
-      script:
-        - ./scripts/oc-cluster.sh
-        - make bin
-        - sudo cp odo /usr/bin
-        - odo login -u developer
-        - travis_wait make test-cmd-pref-config
-        - travis_wait make test-cmd-url
-        - travis_wait make test-cmd-devfile-url
-        - travis_wait make test-cmd-debug
-        - odo logout
+    # - <<: *base-test
+    #   stage: test
+    #   name: "preference, config, url and debug command integration tests"
+    #   script:
+    #     - ./scripts/oc-cluster.sh
+    #     - make bin
+    #     - sudo cp odo /usr/bin
+    #     - odo login -u developer
+    #     - travis_wait make test-cmd-pref-config
+    #     - travis_wait make test-cmd-url
+    #     - travis_wait make test-cmd-devfile-url
+    #     - travis_wait make test-cmd-debug
+    #     - odo logout
 
-    # Run service-catalog e2e tests
-    - <<: *base-test
-      stage: test
-      name: "service, link and component sub-commands command integration tests"
-      script:
-        - ./scripts/oc-cluster.sh service-catalog
-        - make bin
-        - sudo cp odo /usr/bin
-        - odo login -u developer
-        - travis_wait make test-cmd-service
-        - travis_wait make test-cmd-link-unlink
-        - travis_wait make test-cmd-cmp-sub
-        - odo logout
+    # # Run service-catalog e2e tests
+    # - <<: *base-test
+    #   stage: test
+    #   name: "service, link and component sub-commands command integration tests"
+    #   script:
+    #     - ./scripts/oc-cluster.sh service-catalog
+    #     - make bin
+    #     - sudo cp odo /usr/bin
+    #     - odo login -u developer
+    #     - travis_wait make test-cmd-service
+    #     - travis_wait make test-cmd-link-unlink
+    #     - travis_wait make test-cmd-cmp-sub
+    #     - odo logout
 
-    - <<: *base-test
-      stage: test
-      name: "watch, storage, app, project and push command integration tests"
-      script:
-        - ./scripts/oc-cluster.sh
-        - make bin
-        - sudo cp odo /usr/bin
-        - odo login -u developer
-        - travis_wait make test-cmd-watch
-        - travis_wait make test-cmd-storage
-        - travis_wait make test-cmd-app
-        - travis_wait make test-cmd-push
-        - travis_wait make test-cmd-project
-        - odo logout
+    # - <<: *base-test
+    #   stage: test
+    #   name: "watch, storage, app, project and push command integration tests"
+    #   script:
+    #     - ./scripts/oc-cluster.sh
+    #     - make bin
+    #     - sudo cp odo /usr/bin
+    #     - odo login -u developer
+    #     - travis_wait make test-cmd-watch
+    #     - travis_wait make test-cmd-storage
+    #     - travis_wait make test-cmd-app
+    #     - travis_wait make test-cmd-push
+    #     - travis_wait make test-cmd-project
+    #     - odo logout
 
     - <<: *base-test
       stage: test
@@ -146,19 +146,19 @@ jobs:
         - travis_wait make test-cmd-devfile-registry
         - odo logout
 
-    - <<: *base-test
-      stage: test
-      name: "core beta, java, source e2e tests"
-      script:
-        - ./scripts/oc-cluster.sh
-        - make bin
-        - sudo cp odo /usr/bin
-        - odo login -u developer
-        - travis_wait make test-e2e-beta
-        - travis_wait make test-e2e-java
-        - travis_wait make test-e2e-source
-        - travis_wait make test-e2e-images
-        - odo logout
+    # - <<: *base-test
+    #   stage: test
+    #   name: "core beta, java, source e2e tests"
+    #   script:
+    #     - ./scripts/oc-cluster.sh
+    #     - make bin
+    #     - sudo cp odo /usr/bin
+    #     - odo login -u developer
+    #     - travis_wait make test-e2e-beta
+    #     - travis_wait make test-e2e-java
+    #     - travis_wait make test-e2e-source
+    #     - travis_wait make test-e2e-images
+    #     - odo logout
     
     - <<: *base-test
       stage: test
