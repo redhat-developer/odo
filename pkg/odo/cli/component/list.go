@@ -20,6 +20,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
+	"github.com/openshift/odo/pkg/odo/util/experimental"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -47,14 +48,21 @@ func NewListOptions() *ListOptions {
 // Complete completes log args
 func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 
-	if util.CheckKubeConfigExist() {
-		klog.V(4).Infof("New Context")
-		lo.Context = genericclioptions.NewContext(cmd)
-	} else {
-		klog.V(4).Infof("New Config Context")
-		lo.Context = genericclioptions.NewConfigContext(cmd)
+	if experimental.IsExperimentalModeEnabled() {
+		// Add a disclaimer that we are in *experimental mode*
+		log.Experimental("Experimental mode is enabled, use at your own risk")
 
+	} else {
+		if util.CheckKubeConfigExist() {
+			klog.V(4).Infof("New Context")
+			lo.Context = genericclioptions.NewContext(cmd)
+		} else {
+			klog.V(4).Infof("New Config Context")
+			lo.Context = genericclioptions.NewConfigContext(cmd)
+
+		}
 	}
+
 	return
 
 }
