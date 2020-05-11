@@ -199,21 +199,30 @@ OdoSettings:
 	tests := []struct {
 		name         string
 		registryName string
-		want         map[string]string
+		want         map[string]Registry
 	}{
 		{
 			name:         "Case 1: Test get all devfile registries",
 			registryName: "",
-			want: map[string]string{
-				"CheDevfileRegistry":     "https://che-devfile-registry.openshift.io/",
-				"DefaultDevfileRegistry": "https://raw.githubusercontent.com/elsony/devfile-registry/master",
+			want: map[string]Registry{
+				"CheDevfileRegistry": {
+					Name: "CheDevfileRegistry",
+					URL:  "https://che-devfile-registry.openshift.io/",
+				},
+				"DefaultDevfileRegistry": {
+					Name: "DefaultDevfileRegistry",
+					URL:  "https://raw.githubusercontent.com/elsony/devfile-registry/master",
+				},
 			},
 		},
 		{
 			name:         "Case 2: Test get specific devfile registry",
 			registryName: "CheDevfileRegistry",
-			want: map[string]string{
-				"CheDevfileRegistry": "https://che-devfile-registry.openshift.io/",
+			want: map[string]Registry{
+				"CheDevfileRegistry": {
+					Name: "CheDevfileRegistry",
+					URL:  "https://che-devfile-registry.openshift.io/",
+				},
 			},
 		},
 	}
