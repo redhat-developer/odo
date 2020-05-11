@@ -141,10 +141,9 @@ func (po *PushOptions) Run() (err error) {
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.DevfilePath) {
 		// Return Devfile push
 		return po.DevfilePush()
-	} else {
-		// Legacy odo push
-		return po.Push()
 	}
+	// Legacy odo push
+	return po.Push()
 }
 
 // NewCmdPush implements the push odo command

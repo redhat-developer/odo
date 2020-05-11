@@ -21,9 +21,13 @@ const (
 
 // ComponentSettings holds all component related information
 type ComponentSettings struct {
-	Name      string        `yaml:"Name,omitempty"`
-	Namespace string        `yaml:"Namespace,omitempty"`
-	URL       *[]EnvInfoURL `yaml:"Url,omitempty"`
+	Name      string `yaml:"Name,omitempty"`
+	Namespace string `yaml:"Namespace,omitempty"`
+
+	// AppName is the application name. Application is a virtual concept present in odo used
+	// for grouping of components. A namespace can contain multiple applications
+	AppName string        `yaml:"AppName,omitempty" json:"AppName,omitempty"`
+	URL     *[]EnvInfoURL `yaml:"Url,omitempty"`
 }
 
 // URLKind is an enum to indicate the type of the URL i.e ingress/route
@@ -161,6 +165,8 @@ func (esi *EnvSpecificInfo) SetConfiguration(parameter string, value interface{}
 			} else {
 				esi.componentSettings.URL = &[]EnvInfoURL{urlValue}
 			}
+		case "appname":
+			esi.componentSettings.AppName = parameter
 		}
 
 		return esi.writeToFile()
@@ -268,18 +274,17 @@ func (ei *EnvInfo) GetURL() []EnvInfoURL {
 
 // GetName returns the component name
 func (ei *EnvInfo) GetName() string {
-	if ei.componentSettings.Name == "" {
-		return ""
-	}
 	return ei.componentSettings.Name
 }
 
 // GetNamespace returns component namespace
 func (ei *EnvInfo) GetNamespace() string {
-	if ei.componentSettings.Namespace == "" {
-		return ""
-	}
 	return ei.componentSettings.Namespace
+}
+
+// GetApplication returns the application name
+func (ei *EnvInfo) GetApplication() string {
+	return ei.componentSettings.AppName
 }
 
 const (

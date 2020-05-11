@@ -308,10 +308,6 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		// Add a disclaimer that we are in *experimental mode*
 		log.Experimental("Experimental mode is enabled, use at your own risk")
 
-		if util.CheckPathExists(ConfigFilePath) {
-			return errors.New("This directory already contains a component")
-		}
-
 		if len(args) == 0 {
 			co.interactive = true
 		}
@@ -661,6 +657,10 @@ func (co *CreateOptions) Validate() (err error) {
 			// Validate if the devfile component that user wants to create already exists
 			spinner := log.Spinner("Validating devfile component")
 			defer spinner.End(false)
+
+			if util.CheckPathExists(ConfigFilePath) {
+				return errors.New("This directory already contains a component")
+			}
 
 			if util.CheckPathExists(EnvFilePath) {
 				return errors.New("This workspace directory already contains a devfile component")
