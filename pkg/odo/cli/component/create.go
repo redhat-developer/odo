@@ -44,14 +44,16 @@ type CreateOptions struct {
 	componentContext  string
 	componentPorts    []string
 	componentEnvVars  []string
-	memoryMax         string
-	memoryMin         string
-	memory            string
-	cpuMax            string
-	cpuMin            string
-	cpu               string
-	interactive       bool
-	now               bool
+	// this is the application name specific for devfile
+	devfileAppName string
+	memoryMax      string
+	memoryMin      string
+	memory         string
+	cpuMax         string
+	cpuMin         string
+	cpu            string
+	interactive    bool
+	now            bool
 	*CommonPushOptions
 	devfileMetadata DevfileMetadata
 }
@@ -419,6 +421,8 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 			return nil
 		}
+
+		co.devfileAppName = genericclioptions.ResolveApp(cmd, true, co.EnvSpecificInfo)
 
 		// Categorize the sections
 		log.Info("Validation")
@@ -793,7 +797,9 @@ func (co *CreateOptions) Run() (err error) {
 				}
 			}
 
-			err := co.EnvSpecificInfo.SetConfiguration("create", envinfo.ComponentSettings{Name: co.devfileMetadata.componentName, Namespace: co.devfileMetadata.componentNamespace})
+			err := co.EnvSpecificInfo.SetComponentSettings(envinfo.ComponentSettings{Name: co.devfileMetadata.componentName,
+				Namespace: co.devfileMetadata.componentNamespace,
+				AppName:   co.devfileAppName})
 			if err != nil {
 				return errors.Wrap(err, "Failed to create env.yaml for devfile component")
 			}
