@@ -8,21 +8,21 @@ With a devfile you can describe:
 
 * The source code being used
 * Development components such as IDE tools (VSCode) and application runtimes (Yarn / NPM)
-* A list of pre-defined commands that can be ran
+* A list of pre-defined commands that can be run
 * Projects to initially clone
 
 Odo takes this devfile and transforms it into a workspace of multiple containers running on OpenShift, Kubernetes or Docker.
 
-Devfile's are YAML files with a defined structure, take a look at the general https://github.com/redhat-developer/devfile/blob/master/docs/devfile.md[schema] of devfile.
+Devfiles are YAML files with a defined https://github.com/redhat-developer/devfile/blob/master/docs/devfile.md[schema].
 
 == Odo and devfile
 
-When deploying a devfile using odo, odo will automatically look at the default https://github.com/elsony/devfile-registry[devfile] https://github.com/eclipse/che-devfile-registry/[registries]. Interacting with the devfile registries allows a user to pull a standard `devfile.yaml` and begin development immediately.
+Odo can now create components from devfiles as recorded in registries. Odo consults automatically the default https://github.com/elsony/devfile-registry[devfile] https://github.com/eclipse/che-devfile-registry/[registries] but users can also add their own registries. Devfiles contribute new component types that users can pull to begin development immediately.
 
 An example deployment scenario:
 
-. `odo create` will look at devfile registry and pull down the `devfile.yaml` file
-. odo push  parses and then deploys the component in the following order:
+. `odo create` will consult the recorded devfile registries to offer the user a selection of available component types and pull down the associated `devfile.yaml` file
+. `odo push` parses and then deploys the component in the following order:
  .. Parses and validates the YAML file
  .. Deploys the development environment to your OpenShift cluster
  .. Synchronizes your source code to the containers
@@ -91,7 +91,7 @@ In our example, we will be using `java-spring-boot` to deploy a sample https://s
 
 == Deploying a Java Spring Boot® component to an OpenShift cluster
 
-In this example we will be deploying an https://github.com/odo-devfiles/springboot-ex[example Springboot component] that uses https://maven.apache.org/install.html[Maven] and Java 8 JDK.
+In this example we will be deploying an https://github.com/odo-devfiles/springboot-ex[example Spring Boot® component] that uses https://maven.apache.org/install.html[Maven] and Java 8 JDK.
 
 . Download the example Spring Boot® component
 +
@@ -107,7 +107,7 @@ In this example we will be deploying an https://github.com/odo-devfiles/springbo
  $ cd <directory-name>
 ----
 
-. List the contents of the directory to see that the front end is a Java application:
+. List the contents of the directory to confirm that the front end is indeed a Java application:
 +
 [source,sh]
 ----
@@ -115,7 +115,7 @@ In this example we will be deploying an https://github.com/odo-devfiles/springbo
  chart  Dockerfile  Dockerfile-build  Dockerfile-tools  Jenkinsfile  pom.xml  README.md  src
 ----
 
-. Create a component configuration of Spring Boot component-type named myspring:
+. Create a component configuration using the `java-spring-boot` component-type named `myspring`:
 +
 [source,sh]
 ----
@@ -194,7 +194,7 @@ In this example we will be deploying an https://github.com/odo-devfiles/nodejs-e
  $ cd <directory-name>
 ----
 
-. List the contents of the directory to see that the front end is a Node.js application:
+. List the contents of the directory to confirm that the application is indeed a Node.js® application:
 +
 [source,sh]
 ----
@@ -202,7 +202,7 @@ In this example we will be deploying an https://github.com/odo-devfiles/nodejs-e
  app  LICENSE  package.json  package-lock.json  README.md
 ----
 
-. Create a component configuration of Node.js component-type named mynodejs:
+. Create a component configuration using the `nodejs` component-type named `mynodejs`:
 +
 [source,sh]
 ----
@@ -269,7 +269,7 @@ In this example, we will be deploying the same Java Spring Boot® component we d
 
 *Prerequisites:* Docker `17.05` or higher installed
 
-. Enabling the separate pushtarget preference:
+. Enabling a separate push target, using the `pushtarget` preference:
 +
 [source,sh]
 ----
@@ -277,9 +277,8 @@ In this example, we will be deploying the same Java Spring Boot® component we d
  Global preference was successfully updated
 ----
 +
-You can configure a separate push target by making use of the `pushtarget` preference.
 
-. Create a component configuration of Spring Boot component-type named mydockerspringboot:
+. Create a component configuration using the `java-spring-boot` component-type named `mydockerspringboot`:
 +
 [source,sh]
 ----
@@ -305,7 +304,7 @@ You can configure a separate push target by making use of the `pushtarget` prefe
 +
 In order to access the docker application, exposed ports are required and automatically generated by odo.
 
-. Deploy the Spring Boot devfile component to Docker:
+. Deploy the Spring Boot® devfile component to Docker:
 +
 [source,sh]
 ----
