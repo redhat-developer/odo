@@ -58,6 +58,12 @@ var _ = Describe("odo devfile catalog command tests", func() {
 			helper.MatchAllInOutput(output, []string{"Odo Devfile Components", "java-spring-boot", "java-maven", "php-mysql"})
 		})
 	})
+	Context("When executing catalog describe component with a component name with a single component", func() {
+		It("should only give information about one component", func() {
+			output := helper.CmdShouldPass("odo", "catalog", "describe", "component", "maven")
+			helper.MatchAllInOutput(output, []string{"generateName: maven-", "- command: java -jar target/*.jar"})
+		})
+	})
 	Context("When executing catalog describe component with a component name with multiple components", func() {
 		It("should give a warning that there are multiple components with this name in different registries", func() {
 			output := helper.CmdShouldPass("odo", "catalog", "describe", "component", "nodejs")

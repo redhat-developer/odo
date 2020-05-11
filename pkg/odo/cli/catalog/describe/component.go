@@ -12,6 +12,7 @@ import (
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
+	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	pkgUtil "github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -27,7 +28,7 @@ var (
 
 	componentLongDesc = ktemplates.LongDesc(`Describe a component type.
 
-This describes the component and its' associated starter projects.
+This describes the component and its associated starter projects.
 `)
 )
 
@@ -50,19 +51,21 @@ func NewDescribeComponentOptions() *DescribeComponentOptions {
 
 // Complete completes DescribeComponentOptions after they've been created
 func (o *DescribeComponentOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context = genericclioptions.NewContext(cmd, true)
-	o.componentName = args[0]
-	catalogList, err := catalog.ListComponents(o.Client)
-	if err != nil {
-		if experimental.IsExperimentalModeEnabled() {
-			glog.V(4).Info("Please log in to an OpenShift cluster to list OpenShift/s2i components")
-		} else {
-			return err
+	if !pushtarget.IsPushTargetDocker() {
+		o.Context = genericclioptions.NewContext(cmd, true)
+		o.componentName = args[0]
+		catalogList, err := catalog.ListComponents(o.Client)
+		if err != nil {
+			if experimental.IsExperimentalModeEnabled() {
+				glog.V(4).Info("Please log in to an OpenShift cluster to list OpenShift/s2i components")
+			} else {
+				return err
+			}
 		}
-	}
-	for _, image := range catalogList.Items {
-		if image.Name == o.componentName {
-			o.component = image.Name
+		for _, image := range catalogList.Items {
+			if image.Name == o.componentName {
+				o.component = image.Name
+			}
 		}
 	}
 
@@ -78,13 +81,13 @@ func (o *DescribeComponentOptions) Complete(name string, cmd *cobra.Command, arg
 		}
 	}
 
-	return
+	return nil
 }
 
 // Validate validates the DescribeComponentOptions based on completed values
 func (o *DescribeComponentOptions) Validate() (err error) {
 	if len(o.devfileComponents) == 0 && o.component == "" {
-		return errors.Errorf("No components with the name \"%s\" found", o.componentName)
+		return errors.Wrapf(err, "No components with the name \"%s\" found", o.componentName)
 	}
 
 	return nil
@@ -98,7 +101,7 @@ func (o *DescribeComponentOptions) Run() (err error) {
 			for _, devfileComponent := range o.devfileComponents {
 				data, err := pkgUtil.DownloadFileInMemory(devfileComponent.Registry + devfileComponent.Link)
 				if err != nil {
-					return errors.Errorf("Failed to download devfile.yaml for devfile component: %v", err)
+					return errors.Wrapf(err, "Failed to download devfile.yaml for devfile component: %s", devfileComponent)
 				}
 				devObj, err := devfile.ParseInMemory(data)
 				if err != nil {
@@ -110,7 +113,7 @@ func (o *DescribeComponentOptions) Run() (err error) {
 		}
 	} else {
 		if len(o.devfileComponents) > 1 {
-			fmt.Fprintln(w, "WARNING: There are multiple components named \""+o.componentName+"\" in different multiple devfile registries.\n")
+			log.Warningf("There are multiple components named \"%s\" in different multiple devfile registries.\n", o.componentName)
 		}
 		if len(o.devfileComponents) > 0 {
 			fmt.Fprintln(w, "Devfile Component(s):")
@@ -119,7 +122,7 @@ func (o *DescribeComponentOptions) Run() (err error) {
 				fmt.Fprintln(w, "\n* Registry: "+devfileComponent.Registry)
 				data, err := pkgUtil.DownloadFileInMemory(devfileComponent.Registry + devfileComponent.Link)
 				if err != nil {
-					return errors.Errorf("Failed to download devfile.yaml for devfile component: %v", err)
+					return errors.Wrapf(err, "Failed to download devfile.yaml for devfile component: %s", devfileComponent)
 				}
 				devObj, err := devfile.ParseInMemory(data)
 				if err != nil {
@@ -128,7 +131,7 @@ func (o *DescribeComponentOptions) Run() (err error) {
 
 				yamlData, err := yaml.Marshal(devObj)
 				if err != nil {
-					return errors.Errorf("Failed to marshal devfile object into yaml: %v", err)
+					return errors.Wrapf(err, "Failed to marshal devfile object into yaml")
 				}
 				fmt.Printf("---\n%s", string(yamlData))
 			}

@@ -38,19 +38,8 @@ func NewDevfileCtx(path string) DevfileCtx {
 	}
 }
 
-// Populate fills the DevfileCtx struct with relevant context info
-func (d *DevfileCtx) Populate() (err error) {
-
-	// Get devfile absolute path
-	if d.absPath, err = util.GetAbsPath(d.relPath); err != nil {
-		return err
-	}
-	glog.V(4).Infof("absolute devfile path: '%s'", d.absPath)
-
-	// Read and save devfile content
-	if err := d.SetDevfileContent(); err != nil {
-		return err
-	}
+// PopulateDevfile fills the DevfileCtx struct with relevant context info
+func (d *DevfileCtx) PopulateDevfile() (err error) {
 
 	// Get devfile APIVersion
 	if err := d.SetDevfileAPIVersion(); err != nil {
@@ -72,6 +61,28 @@ func (d *DevfileCtx) Populate() (err error) {
 	return nil
 }
 
+// Populate fills the DevfileCtx struct with relevant context info
+func (d *DevfileCtx) Populate() (err error) {
+
+	// Get devfile absolute path
+	if d.absPath, err = util.GetAbsPath(d.relPath); err != nil {
+		return err
+	}
+	glog.V(4).Infof("absolute devfile path: '%s'", d.absPath)
+
+	// Read and save devfile content
+	if err := d.SetDevfileContent(); err != nil {
+		return err
+	}
+
+	if err := d.PopulateDevfile(); err != nil {
+		return err
+	}
+
+	// Successful
+	return nil
+}
+
 // PopulateFromBytes fills the DevfileCtx struct with relevant context info
 func (d *DevfileCtx) PopulateFromBytes(bytes []byte) (err error) {
 
@@ -80,22 +91,9 @@ func (d *DevfileCtx) PopulateFromBytes(bytes []byte) (err error) {
 		return err
 	}
 
-	// Get devfile APIVersion
-	if err := d.SetDevfileAPIVersion(); err != nil {
+	if err := d.PopulateDevfile(); err != nil {
 		return err
 	}
-
-	// Check if the apiVersion is supported
-	if !d.IsApiVersionSupported() {
-		return fmt.Errorf("devfile apiVersion '%s' not supported in odo", d.apiVersion)
-	}
-	glog.V(4).Infof("devfile apiVersion '%s' is supported in odo", d.apiVersion)
-
-	// Read and save devfile JSON schema for provided apiVersion
-	if err := d.SetDevfileJSONSchema(); err != nil {
-		return err
-	}
-
 	// Successful
 	return nil
 }
