@@ -876,9 +876,11 @@ func Unzip(src, dest, pathToUnzip string) ([]string, error) {
 			return filenames, err
 		}
 
-		// removes first slash of pathToUnzip if present
+		// removes first slash of pathToUnzip if present, adds trailing slash
 		pathToUnzip = strings.TrimPrefix(pathToUnzip, "/")
-
+		if pathToUnzip[len(pathToUnzip)-1:] != string(os.PathSeparator) {
+			pathToUnzip = pathToUnzip + string(os.PathSeparator)
+		}
 		// destination filepath before trim
 		fpath := filepath.Join(dest, filename)
 

@@ -771,7 +771,7 @@ func (co *CreateOptions) downloadProject() error {
 		sparseCheckoutDir := *project.Source.SparseCheckoutDir
 		err = util.GetAndExtractZip(zipUrl, path, sparseCheckoutDir)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "Error downloading and extracting project zip folder")
 		}
 
 	} else {
@@ -779,7 +779,7 @@ func (co *CreateOptions) downloadProject() error {
 		// extract project to current working directory
 		err = util.GetAndExtractZip(zipUrl, path, "/")
 		if err != nil {
-			return err
+			return errors.Wrap(err, "Error downloading and extracting project zip folder")
 		}
 	}
 
