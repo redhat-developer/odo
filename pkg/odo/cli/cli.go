@@ -16,6 +16,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/plugins"
 	"github.com/openshift/odo/pkg/odo/cli/preference"
 	"github.com/openshift/odo/pkg/odo/cli/project"
+	"github.com/openshift/odo/pkg/odo/cli/registry"
 	"github.com/openshift/odo/pkg/odo/cli/service"
 	"github.com/openshift/odo/pkg/odo/cli/storage"
 	"github.com/openshift/odo/pkg/odo/cli/url"
@@ -23,6 +24,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/version"
 	"github.com/openshift/odo/pkg/odo/util"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
+	"github.com/openshift/odo/pkg/odo/util/experimental"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -196,6 +198,12 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 		preference.NewCmdPreference(preference.RecommendedCommandName, util.GetFullName(fullName, preference.RecommendedCommandName)),
 		debug.NewCmdDebug(debug.RecommendedCommandName, util.GetFullName(fullName, debug.RecommendedCommandName)),
 	)
+
+	if experimental.IsExperimentalModeEnabled() {
+		rootCmd.AddCommand(
+			registry.NewCmdRegistry(registry.RecommendedCommandName, util.GetFullName(fullName, registry.RecommendedCommandName)),
+		)
+	}
 
 	odoutil.VisitCommands(rootCmd, reconfigureCmdWithSubcmd)
 

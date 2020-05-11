@@ -982,3 +982,17 @@ func CheckKubeConfigExist() bool {
 
 	return false
 }
+
+// ValidateURL validates the URL
+func ValidateURL(sourceURL string) error {
+	u, err := url.Parse(sourceURL)
+	if err != nil {
+		return err
+	}
+
+	if len(u.Host) == 0 || len(u.Scheme) == 0 {
+		return errors.New("URL is invalid")
+	}
+
+	return nil
+}

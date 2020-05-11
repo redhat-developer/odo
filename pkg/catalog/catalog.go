@@ -7,7 +7,9 @@ import (
 	"strings"
 
 	imagev1 "github.com/openshift/api/image/v1"
+	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
@@ -15,10 +17,32 @@ import (
 	"k8s.io/klog"
 )
 
-// DevfileRegistries contains the links of all devfile registries
-var DevfileRegistries = []string{
-	"https://raw.githubusercontent.com/elsony/devfile-registry/master",
-	"https://che-devfile-registry.openshift.io/",
+// GetDevfileRegistries gets devfile registries from preference file,
+// if registry name is specified return the specific registry, otherwise return all registries
+func GetDevfileRegistries(registryName string) (map[string]string, error) {
+	devfileRegistries := make(map[string]string)
+
+	cfg, err := preference.New()
+	if err != nil {
+		return nil, err
+	}
+
+	if cfg.OdoSettings.RegistryList != nil {
+		for _, registry := range *cfg.OdoSettings.RegistryList {
+			if len(registryName) != 0 {
+				if registryName == registry.Name {
+					devfileRegistries[registry.Name] = registry.URL
+					return devfileRegistries, nil
+				}
+			} else {
+				devfileRegistries[registry.Name] = registry.URL
+			}
+		}
+	} else {
+		return nil, nil
+	}
+
+	return devfileRegistries, nil
 }
 
 // GetDevfileIndex loads the devfile registry index.json
@@ -103,16 +127,26 @@ func IsDevfileComponentSupported(devfile Devfile) bool {
 }
 
 // ListDevfileComponents lists all the available devfile components
-func ListDevfileComponents() (DevfileComponentTypeList, error) {
+func ListDevfileComponents(registryName string) (DevfileComponentTypeList, error) {
 	var catalogDevfileList DevfileComponentTypeList
-	catalogDevfileList.DevfileRegistries = DevfileRegistries
+	var err error
 
-	for _, devfileRegistry := range DevfileRegistries {
+	// Get devfile registries
+	catalogDevfileList.DevfileRegistries, err = GetDevfileRegistries(registryName)
+	if err != nil {
+		return catalogDevfileList, err
+	}
+	if catalogDevfileList.DevfileRegistries == nil {
+		return catalogDevfileList, nil
+	}
+
+	for registryName, registryURL := range catalogDevfileList.DevfileRegistries {
 		// Load the devfile registry index.json
-		devfileIndexLink := devfileRegistry + "/devfiles/index.json"
+		devfileIndexLink := registryURL + "/devfiles/index.json"
 		devfileIndex, err := GetDevfileIndex(devfileIndexLink)
 		if err != nil {
-			return DevfileComponentTypeList{}, err
+			log.Warningf("Registry %s is not set up properly with error: %v", registryName, err)
+			break
 		}
 
 		// 1. Load devfiles that indexed in devfile registry index.json
@@ -122,14 +156,15 @@ func ListDevfileComponents() (DevfileComponentTypeList, error) {
 			devfileIndexEntryLink := devfileIndexEntry.Links.Link
 
 			// Load the devfile
-			devfileLink := devfileRegistry + devfileIndexEntryLink
-			// TODO: We send http get resquest in this function mutiple times
+			devfileLink := registryURL + devfileIndexEntryLink
+			// TODO: We send http get resquest in this function multiple times
 			// since devfile registry uses different links to host different devfiles,
 			// this can reduce the performance especially when we load devfiles from
 			// big registry. We may need to rethink and optimize this in the future
 			devfile, err := GetDevfile(devfileLink)
 			if err != nil {
-				return DevfileComponentTypeList{}, err
+				log.Warningf("Registry %s is not set up properly with error: %v", registryName, err)
+				break
 			}
 
 			// Populate devfile component with devfile data and form devfile component list
@@ -139,7 +174,10 @@ func ListDevfileComponents() (DevfileComponentTypeList, error) {
 				Description: devfileIndexEntry.Description,
 				Link:        devfileIndexEntryLink,
 				Support:     IsDevfileComponentSupported(devfile),
-				Registry:    devfileRegistry,
+				Registry: Registry{
+					Name: registryName,
+					URL:  registryURL,
+				},
 			}
 
 			catalogDevfileList.Items = append(catalogDevfileList.Items, catalogDevfile)

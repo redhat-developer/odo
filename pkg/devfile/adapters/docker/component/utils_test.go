@@ -338,7 +338,7 @@ func TestGenerateAndGetHostConfig(t *testing.T) {
 			expectResult: nat.PortMap{
 				"8080/tcp": []nat.PortBinding{
 					{
-						HostIP:   LocalhostIP,
+						HostIP:   localhostIP,
 						HostPort: "65432",
 					},
 				},
@@ -361,19 +361,19 @@ func TestGenerateAndGetHostConfig(t *testing.T) {
 			expectResult: nat.PortMap{
 				"8080/tcp": []nat.PortBinding{
 					{
-						HostIP:   LocalhostIP,
+						HostIP:   localhostIP,
 						HostPort: "65432",
 					},
 				},
 				"9090/tcp": []nat.PortBinding{
 					{
-						HostIP:   LocalhostIP,
+						HostIP:   localhostIP,
 						HostPort: "54321",
 					},
 				},
 				"9080/tcp": []nat.PortBinding{
 					{
-						HostIP:   LocalhostIP,
+						HostIP:   localhostIP,
 						HostPort: "45678",
 					},
 				},

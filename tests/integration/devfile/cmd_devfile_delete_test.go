@@ -12,8 +12,7 @@ import (
 )
 
 var _ = Describe("odo devfile delete command tests", func() {
-	var namespace, context, currentWorkingDirectory, componentName, projectDirPath string
-	var projectDir = "/projectDir"
+	var namespace, context, currentWorkingDirectory, componentName string
 
 	// TODO: all oc commands in all devfile related test should get replaced by kubectl
 	// TODO: to goal is not to use "oc"
@@ -25,7 +24,6 @@ var _ = Describe("odo devfile delete command tests", func() {
 		namespace = helper.CreateRandProject()
 		context = helper.CreateNewContext()
 		currentWorkingDirectory = helper.Getwd()
-		projectDirPath = context + projectDir
 		componentName = helper.RandString(6)
 
 		helper.Chdir(context)
@@ -48,12 +46,10 @@ var _ = Describe("odo devfile delete command tests", func() {
 	Context("when devfile delete command is executed", func() {
 
 		It("should delete the component created from the devfile and also the owned resources", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-			helper.Chdir(projectDirPath)
-
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io")
 
@@ -71,22 +67,20 @@ var _ = Describe("odo devfile delete command tests", func() {
 	Context("when devfile delete command is executed with all flag", func() {
 
 		It("should delete the component created from the devfile and also the env and odo folders and the odo-index-file.json file", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-			helper.Chdir(projectDirPath)
-
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
 
-			helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io", "--context", projectDirPath)
+			helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io", "--context", context)
 
 			helper.CmdShouldPass("odo", "delete", "--devfile", "devfile.yaml", "--project", namespace, "-f", "--all")
 
 			oc.WaitAndCheckForExistence("deployments", namespace, 1)
 
-			files := helper.ListFilesInDir(projectDirPath)
+			files := helper.ListFilesInDir(context)
 			Expect(files).To(Not(ContainElement(".odo")))
 		})
 	})
