@@ -104,12 +104,9 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 		if !pushtarget.IsPushTargetDocker() {
 			o.Client = genericclioptions.Client(cmd)
 
-			routeSupported, err := o.Client.IsRouteSupported()
+			o.isRouteSupported, err = o.Client.IsRouteSupported()
 			if err != nil {
 				return err
-			}
-			if routeSupported {
-				o.isRouteSupported = true
 			}
 
 			if o.wantIngress || (!o.isRouteSupported) {
