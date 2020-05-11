@@ -8,6 +8,7 @@ import (
 // AdapterContext is a construct that is common to all adapters
 type AdapterContext struct {
 	ComponentName string                   // ComponentName is the odo component name, it is NOT related to any devfile components
+	AppName       string                   // AppName is the name of the application under which a component will be created
 	Context       string                   // Context is the given directory containing the source code and configs
 	Devfile       devfileParser.DevfileObj // Devfile is the object returned by the Devfile parser
 }
