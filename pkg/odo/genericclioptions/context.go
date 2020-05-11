@@ -370,8 +370,8 @@ func resolveNamespace(command *cobra.Command, client *kclient.Client, envSpecifi
 	return namespace
 }
 
-// resolveApp resolves the app, the order of precedence being flag > local config > default.
-func resolveApp(command *cobra.Command, createAppIfNeeded bool, localConfiguration envinfo.LocalConfigProvider) string {
+// ResolveApp resolves the app, the order of precedence being flag > local config > default.
+func ResolveApp(command *cobra.Command, createAppIfNeeded bool, localConfiguration envinfo.LocalConfigProvider) string {
 	var app string
 	appFlag := FlagValueIfSet(command, ApplicationFlagName)
 	if len(appFlag) > 0 {
@@ -429,7 +429,7 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 	namespace := resolveProject(command, client, localConfiguration)
 
 	// resolve application
-	app := resolveApp(command, createAppIfNeeded, localConfiguration)
+	app := ResolveApp(command, createAppIfNeeded, localConfiguration)
 
 	// resolve output flag
 	outputFlag := FlagValueIfSet(command, OutputFlagName)
@@ -480,7 +480,7 @@ func newDevfileContext(command *cobra.Command) *Context {
 		resolveNamespace(command, kClient, envInfo)
 
 		// ignore the "true" for now
-		internalCxt.Application = resolveApp(command, true, envInfo)
+		internalCxt.Application = ResolveApp(command, true, envInfo)
 	}
 	// create a context from the internal representation
 	context := &Context{
