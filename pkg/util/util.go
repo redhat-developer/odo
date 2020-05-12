@@ -1005,16 +1005,27 @@ func ValidateURL(sourceURL string) error {
 	return nil
 }
 
-// CopyFile copies file from source path to destination path
-func CopyFile(srcPath string, dstPath string) error {
-	// Check if the source file path exists
-	file, err := os.Stat(srcPath)
+// ValidateFile validates the file
+func ValidateFile(filePath string) error {
+	// Check if the file path exist
+	file, err := os.Stat(filePath)
 	if err != nil {
 		return err
 	}
 
 	if file.IsDir() {
-		return errors.Errorf("%s exists but it's not file", srcPath)
+		return errors.Errorf("%s exists but it's not file", filePath)
+	}
+
+	return nil
+}
+
+// CopyFile copies file from source path to destination path
+func CopyFile(srcPath string, dstPath string) error {
+	// Check if the source file path exists
+	err := ValidateFile(srcPath)
+	if err != nil {
+		return err
 	}
 
 	// Open source file

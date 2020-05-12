@@ -65,7 +65,8 @@ type DevfileMetadata struct {
 	devfileLink        string
 	devfileRegistry    catalog.Registry
 	downloadSource     bool
-	// User specify devfile path via --devfile flag
+	// Path of user's own devfile,
+	// user specifies the path via --devfile flag
 	devfilePath string
 }
 
@@ -80,8 +81,11 @@ const LocalDirectoryDefaultLocation = "./"
 const devFile = "devfile.yaml"
 const envFile = ".odo/env/env.yaml"
 
-// DefaultDevfilePath is the default path of devfile.yaml
-var DefaultDevfilePath = filepath.Join(LocalDirectoryDefaultLocation, devFile)
+// DevfilePath is the path of devfile.yaml that is used by odo,
+// which means odo can:
+// 1. Download devfile.yaml from registry to DevfilePath
+// 2. Copy user's own devfile.yaml (path is specified via --devfile flag) to DevfilePath
+var DevfilePath = filepath.Join(LocalDirectoryDefaultLocation, devFile)
 
 // EnvFilePath is the path of env.yaml for devfile component
 var EnvFilePath = filepath.Join(LocalDirectoryDefaultLocation, envFile)
@@ -326,7 +330,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		// Configure the context
 		if co.componentContext != "" {
-			DefaultDevfilePath = filepath.Join(co.componentContext, devFile)
+			DevfilePath = filepath.Join(co.componentContext, devFile)
 			EnvFilePath = filepath.Join(co.componentContext, envFile)
 			co.CommonPushOptions.componentContext = co.componentContext
 		}
@@ -339,19 +343,16 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		if co.interactive {
 			// Interactive mode
 			// Get component type, name and namespace from user's choice via interactive mode
-
-			if co.devfileMetadata.devfilePath != "" {
-				file, err := os.Stat(co.devfileMetadata.devfilePath)
-				if err != nil {
-					return err
-				}
-
-				if file.IsDir() {
-					return errors.Errorf("%s exists but it's not file", co.devfileMetadata.devfilePath)
+			userDevfilePath := co.devfileMetadata.devfilePath
+			if userDevfilePath != "" {
+				fileErr := util.ValidateFile(userDevfilePath)
+				urlErr := util.ValidateURL(userDevfilePath)
+				if fileErr != nil && urlErr != nil {
+					return errors.New("The devfile path you specify is invalid")
 				}
 			}
 
-			if !util.CheckPathExists(DefaultDevfilePath) && co.devfileMetadata.devfilePath == "" {
+			if !util.CheckPathExists(DevfilePath) && co.devfileMetadata.devfilePath == "" {
 				// If devfile.yaml is not present and --devfile is not specified, user has to specify the component type
 				// Component type: We provide supported devfile component list then let you choose
 				catalogDevfileList, err = catalog.ListDevfileComponents("")
@@ -369,7 +370,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 					}
 				}
 				componentType = ui.SelectDevfileComponentType(supDevfileCatalogList)
-			} else if util.CheckPathExists(DefaultDevfilePath) && co.devfileMetadata.devfilePath != "" {
+			} else if util.CheckPathExists(DevfilePath) && co.devfileMetadata.devfilePath != "" {
 				return errors.New("This directory already contains a devfile.yaml, you can't specify devfile path via --devfile")
 			}
 
@@ -394,7 +395,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			// Direct mode (User enters the full command)
 			// Get component type, name and namespace from user's full command
 
-			if util.CheckPathExists(DefaultDevfilePath) {
+			if util.CheckPathExists(DevfilePath) {
 				return errors.New("This directory already contains a devfile.yaml, please delete it and run the component creation command again")
 			}
 
@@ -445,7 +446,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		log.Info("Validation")
 
 		// If devfile.yaml is present, we don't need to download the devfile.yaml later
-		if util.CheckPathExists(DefaultDevfilePath) || co.devfileMetadata.devfilePath != "" {
+		if util.CheckPathExists(DevfilePath) || co.devfileMetadata.devfilePath != "" {
 			co.devfileMetadata.devfileSupport = true
 
 			err = co.InitEnvInfoFromContext()
@@ -728,7 +729,7 @@ func (co *CreateOptions) Validate() (err error) {
 // Downloads first project from list of projects in devfile
 // Currenty type git with a non github url is not supported
 func (co *CreateOptions) downloadProject() error {
-	devObj, err := devfile.Parse(DefaultDevfilePath)
+	devObj, err := devfile.Parse(DevfilePath)
 	if err != nil {
 		return err
 	}
@@ -764,7 +765,7 @@ func (co *CreateOptions) downloadProject() error {
 		}
 	}
 
-	err = util.IsValidProjectDir(path, DefaultDevfilePath)
+	err = util.IsValidProjectDir(path, DevfilePath)
 	if err != nil {
 		return err
 	}
@@ -802,29 +803,42 @@ func (co *CreateOptions) downloadProject() error {
 // Run has the logic to perform the required actions as part of command
 func (co *CreateOptions) Run() (err error) {
 	if experimental.IsExperimentalModeEnabled() {
-		// Download devfile.yaml file and create env.yaml file
 		if co.devfileMetadata.devfileSupport {
-			if !util.CheckPathExists(DefaultDevfilePath) && co.devfileMetadata.devfilePath != "" {
-				err = util.CopyFile(co.devfileMetadata.devfilePath, DefaultDevfilePath)
-				if err != nil {
-					return errors.Wrapf(err, "failed to copy devfile from %s to %s", co.devfileMetadata.devfilePath, DefaultDevfilePath)
+			// Generate devfile file
+			if !util.CheckPathExists(DevfilePath) {
+				userDevfilePath := co.devfileMetadata.devfilePath
+
+				if userDevfilePath != "" {
+					if util.ValidateURL(userDevfilePath) == nil {
+						// User specify devfile path is http(s) URL
+						err = util.DownloadFile(userDevfilePath, DevfilePath)
+						if err != nil {
+							return errors.Wrap(err, "failed to download devfile.yaml for devfile component")
+						}
+					} else {
+						// User specify devfile path is file system link
+						err = util.CopyFile(userDevfilePath, DevfilePath)
+						if err != nil {
+							return errors.Wrapf(err, "failed to copy devfile.yaml from %s to %s", userDevfilePath, DevfilePath)
+						}
+					}
+				} else {
+					// Download devfile from registry
+					err := util.DownloadFile(co.devfileMetadata.devfileRegistry.URL+co.devfileMetadata.devfileLink, DevfilePath)
+					if err != nil {
+						return errors.Wrap(err, "failed to download devfile.yaml for devfile component")
+					}
 				}
 			}
 
-			if !util.CheckPathExists(DefaultDevfilePath) {
-				err := util.DownloadFile(co.devfileMetadata.devfileRegistry.URL+co.devfileMetadata.devfileLink, DefaultDevfilePath)
-				if err != nil {
-					return errors.Wrap(err, "failed to download devfile.yaml for devfile component")
-				}
-			}
-
-			if util.CheckPathExists(DefaultDevfilePath) && co.devfileMetadata.downloadSource {
+			if util.CheckPathExists(DevfilePath) && co.devfileMetadata.downloadSource {
 				err = co.downloadProject()
 				if err != nil {
 					return errors.Wrap(err, "failed to download project for devfile component")
 				}
 			}
 
+			// Generate env.yaml file
 			err = co.EnvSpecificInfo.SetConfiguration("create", envinfo.ComponentSettings{Name: co.devfileMetadata.componentName, Namespace: co.devfileMetadata.componentNamespace})
 			if err != nil {
 				return errors.Wrap(err, "failed to create env.yaml for devfile component")
