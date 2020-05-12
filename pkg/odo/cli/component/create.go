@@ -804,8 +804,7 @@ func (co *CreateOptions) Run() (err error) {
 			}
 
 			err = co.EnvSpecificInfo.SetComponentSettings(envinfo.ComponentSettings{Name: co.devfileMetadata.componentName,
-				Namespace: co.devfileMetadata.componentNamespace,
-				AppName:   co.Application})
+				Namespace: co.devfileMetadata.componentNamespace})
 			if err != nil {
 				return errors.Wrap(err, "Failed to create env.yaml for devfile component")
 			}

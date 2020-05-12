@@ -370,8 +370,8 @@ func resolveNamespace(command *cobra.Command, client *kclient.Client, envSpecifi
 	return namespace
 }
 
-// ResolveApp resolves the app, the order of precedence being flag > local config > default.
-func ResolveApp(command *cobra.Command, createAppIfNeeded bool, localConfiguration envinfo.LocalConfigProvider) string {
+// resolveApp resolves the app, the order of precedence being flag > local config > default.
+func resolveApp(command *cobra.Command, createAppIfNeeded bool, localConfiguration *config.LocalConfigInfo) string {
 	var app string
 	appFlag := FlagValueIfSet(command, ApplicationFlagName)
 	if len(appFlag) > 0 {
@@ -429,7 +429,7 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 	namespace := resolveProject(command, client, localConfiguration)
 
 	// resolve application
-	app := ResolveApp(command, createAppIfNeeded, localConfiguration)
+	app := resolveApp(command, createAppIfNeeded, localConfiguration)
 
 	// resolve output flag
 	outputFlag := FlagValueIfSet(command, OutputFlagName)
@@ -472,7 +472,6 @@ func newDevfileContext(command *cobra.Command) *Context {
 	}
 
 	internalCxt.EnvSpecificInfo = envInfo
-	internalCxt.Application = ResolveApp(command, true, envInfo)
 
 	if !pushtarget.IsPushTargetDocker() {
 		// create a new kclient

@@ -19,23 +19,12 @@ const (
 	envInfoFileName = "env.yaml"
 )
 
-// LocalConfigProvider is an interface which all local config providers need to implement
-// currently for openshift there is localConfigInfo and for devfile its EnvInfo.
-// The reason this interface is declared here instead of config package is because
-// some day local config would get deprecated and hence to keep the interfaces in the new package
-type LocalConfigProvider interface {
-	GetApplication() string
-}
-
 // ComponentSettings holds all component related information
 type ComponentSettings struct {
 	Name      string `yaml:"Name,omitempty"`
 	Namespace string `yaml:"Namespace,omitempty"`
 
-	// AppName is the application name. Application is a virtual concept present in odo used
-	// for grouping of components. A namespace can contain multiple applications
-	AppName string        `yaml:"AppName,omitempty" json:"AppName,omitempty"`
-	URL     *[]EnvInfoURL `yaml:"Url,omitempty"`
+	URL *[]EnvInfoURL `yaml:"Url,omitempty"`
 }
 
 // URLKind is an enum to indicate the type of the URL i.e ingress/route
@@ -170,8 +159,7 @@ func (esi *EnvSpecificInfo) SetConfiguration(parameter string, value interface{}
 			} else {
 				esi.componentSettings.URL = &[]EnvInfoURL{urlValue}
 			}
-		case "appname":
-			esi.componentSettings.AppName = parameter
+
 		}
 
 		return esi.writeToFile()
@@ -285,11 +273,6 @@ func (ei *EnvInfo) GetName() string {
 // GetNamespace returns component namespace
 func (ei *EnvInfo) GetNamespace() string {
 	return ei.componentSettings.Namespace
-}
-
-// GetApplication returns the application name
-func (ei *EnvInfo) GetApplication() string {
-	return ei.componentSettings.AppName
 }
 
 const (

@@ -20,7 +20,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -37,7 +36,6 @@ type ListOptions struct {
 	pathFlag         string
 	allAppsFlag      bool
 	componentContext string
-	IsOpenshift      bool
 	*genericclioptions.Context
 }
 
@@ -49,21 +47,13 @@ func NewListOptions() *ListOptions {
 // Complete completes log args
 func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 
-	if experimental.IsExperimentalModeEnabled() {
-		// Add a disclaimer that we are in *experimental mode*
-		log.Experimental("Experimental mode is enabled, use at your own risk")
-
-		lo.Context = genericclioptions.NewDevfileContext(cmd)
-
+	if util.CheckKubeConfigExist() {
+		klog.V(4).Infof("New Context")
+		lo.Context = genericclioptions.NewContext(cmd)
 	} else {
-		if util.CheckKubeConfigExist() {
-			klog.V(4).Infof("New Context")
-			lo.Context = genericclioptions.NewContext(cmd)
-		} else {
-			klog.V(4).Infof("New Config Context")
-			lo.Context = genericclioptions.NewConfigContext(cmd)
+		klog.V(4).Infof("New Config Context")
+		lo.Context = genericclioptions.NewConfigContext(cmd)
 
-		}
 	}
 
 	return
@@ -73,12 +63,6 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 // Validate validates the list parameters
 func (lo *ListOptions) Validate() (err error) {
 
-	if experimental.IsExperimentalModeEnabled() {
-		if lo.Context.Application == "" && lo.Context.Project == "" {
-			return odoutil.ThrowContextError()
-		}
-		return nil
-	}
 	var project, app string
 
 	if !util.CheckKubeConfigExist() {

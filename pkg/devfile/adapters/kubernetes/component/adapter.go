@@ -7,8 +7,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	componentlabels "github.com/openshift/odo/pkg/component/labels"
-
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
@@ -144,9 +142,9 @@ func (a Adapter) DoesComponentExist(cmpName string) bool {
 
 func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 	componentName := a.ComponentName
-	labels := componentlabels.GetLabels(componentName, a.AppName, true)
-	labels["component"] = componentName
-
+	labels := map[string]string{
+		"component": componentName,
+	}
 	containers, err := utils.GetContainers(a.Devfile)
 	if err != nil {
 		return err
