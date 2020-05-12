@@ -18,12 +18,17 @@ page_nav:
         url: '/docs/understanding-odo'
 ---
 The following section describes how to install `odo` on different
-platforms.
+platforms using the CLI.
 
 > **Note**
 > 
 > Currently, `odo` does not support installation in a restricted network
 > environment.
+
+You can also find the URL to the latest binaries from the OpenShift web
+console by clicking the **?** icon in the upper-right corner and
+selecting **Command Line
+    Tools**
 
 # Installing odo on Linux
 
