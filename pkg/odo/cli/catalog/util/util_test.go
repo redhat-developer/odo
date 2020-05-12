@@ -29,7 +29,7 @@ func TestFilterHiddenServices(t *testing.T) {
 			input: catalog.ServiceTypeList{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "List",
-					APIVersion: "odo.openshift.io/v1alpha1",
+					APIVersion: "odo.dev/v1alpha1",
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "foobar",
@@ -72,7 +72,7 @@ func TestFilterHiddenServices(t *testing.T) {
 			expected: catalog.ServiceTypeList{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "List",
-					APIVersion: "odo.openshift.io/v1alpha1",
+					APIVersion: "odo.dev/v1alpha1",
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "foobar",

@@ -703,3 +703,132 @@ func TestMetaTypePopulatedInPreference(t *testing.T) {
 		t.Error("the api version and kind in preference are incorrect")
 	}
 }
+
+func TestHandleWithoutRegistryExist(t *testing.T) {
+	tests := []struct {
+		name         string
+		registryList []Registry
+		operation    string
+		registryName string
+		registryURL  string
+		want         []Registry
+	}{
+		{
+			name:         "Case 1: Add registry",
+			registryList: []Registry{},
+			operation:    "add",
+			registryName: "testName",
+			registryURL:  "testURL",
+			want: []Registry{
+				{
+					Name: "testName",
+					URL:  "testURL",
+				},
+			},
+		},
+		{
+			name:         "Case 2: Update registry",
+			registryList: []Registry{},
+			operation:    "update",
+			registryName: "testName",
+			registryURL:  "testURL",
+			want:         nil,
+		},
+		{
+			name:         "Case 3: Delete registry",
+			registryList: []Registry{},
+			operation:    "delete",
+			registryName: "testName",
+			registryURL:  "testURL",
+			want:         nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := handleWithoutRegistryExist(tt.registryList, tt.operation, tt.registryName, tt.registryURL)
+			if err != nil {
+				t.Logf("Error message is %v", err)
+			}
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Got: %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestHandleWithRegistryExist(t *testing.T) {
+	tests := []struct {
+		name         string
+		index        int
+		registryList []Registry
+		operation    string
+		registryName string
+		registryURL  string
+		forceFlag    bool
+		want         []Registry
+	}{
+		{
+			name:  "Case 1: Add registry",
+			index: 0,
+			registryList: []Registry{
+				{
+					Name: "testName",
+					URL:  "testURL",
+				},
+			},
+			operation:    "add",
+			registryName: "testName",
+			registryURL:  "addURL",
+			forceFlag:    false,
+			want:         nil,
+		},
+		{
+			name:  "Case 2: update registry",
+			index: 0,
+			registryList: []Registry{
+				{
+					Name: "testName",
+					URL:  "testURL",
+				},
+			},
+			operation:    "update",
+			registryName: "testName",
+			registryURL:  "updateURL",
+			forceFlag:    true,
+			want: []Registry{
+				{
+					Name: "testName",
+					URL:  "updateURL",
+				},
+			},
+		},
+		{
+			name:  "Case 3: Delete registry",
+			index: 0,
+			registryList: []Registry{
+				{
+					Name: "testName",
+					URL:  "testURL",
+				},
+			},
+			operation:    "delete",
+			registryName: "testName",
+			registryURL:  "",
+			forceFlag:    true,
+			want:         []Registry{},
+		},
+	}
+
+	for _, tt := range tests {
+		got, err := handleWithRegistryExist(tt.index, tt.registryList, tt.operation, tt.registryName, tt.registryURL, tt.forceFlag)
+		if err != nil {
+			t.Logf("Error message is %v", err)
+		}
+
+		if !reflect.DeepEqual(got, tt.want) {
+			t.Errorf("Got: %v, want: %v", got, tt.want)
+		}
+	}
+}

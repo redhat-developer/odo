@@ -57,9 +57,13 @@ func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args [
 	}
 
 	if experimental.IsExperimentalModeEnabled() {
-		o.catalogDevfileList, err = catalog.ListDevfileComponents()
+		o.catalogDevfileList, err = catalog.ListDevfileComponents("")
 		if err != nil {
 			return err
+		}
+
+		if o.catalogDevfileList.DevfileRegistries == nil {
+			log.Warning("Please run 'odo registry add <registry name> <registry URL>' to add registry for listing devfile components\n")
 		}
 	}
 
@@ -130,7 +134,7 @@ func (o *ListComponentsOptions) Run() (err error) {
 
 		if len(supDevfileCatalogList) != 0 || (o.listAllDevfileComponents && len(unsupDevfileCatalogList) != 0) {
 			fmt.Fprintln(w, "Odo Devfile Components:")
-			fmt.Fprintln(w, "NAME", "\t", "DESCRIPTION", "\t", "SUPPORTED")
+			fmt.Fprintln(w, "NAME", "\t", "DESCRIPTION", "\t", "REGISTRY", "\t", "SUPPORTED")
 
 			if len(supDevfileCatalogList) != 0 {
 				supported = "YES"
@@ -192,6 +196,6 @@ func (o *ListComponentsOptions) printCatalogList(w io.Writer, catalogList []cata
 
 func (o *ListComponentsOptions) printDevfileCatalogList(w io.Writer, catalogDevfileList []catalog.DevfileComponentType, supported string) {
 	for _, devfileComponent := range catalogDevfileList {
-		fmt.Fprintln(w, devfileComponent.Name, "\t", devfileComponent.Description, "\t", supported)
+		fmt.Fprintln(w, devfileComponent.Name, "\t", devfileComponent.Description, "\t", devfileComponent.Registry.Name, "\t", supported)
 	}
 }
