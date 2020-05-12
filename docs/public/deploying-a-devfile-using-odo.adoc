@@ -17,7 +17,7 @@ Devfiles are YAML files with a defined https://github.com/redhat-developer/devfi
 
 == Odo and devfile
 
-Odo can now create components from devfiles as recorded in registries. Odo consults automatically the default https://github.com/elsony/devfile-registry[devfile] https://github.com/eclipse/che-devfile-registry/[registries] but users can also add their own registries. Devfiles contribute new component types that users can pull to begin development immediately.
+Odo can now create components from devfiles as recorded in registries. Odo automatically consults the default https://github.com/elsony/devfile-registry[devfile] https://github.com/eclipse/che-devfile-registry/[registries] but users can also add their own registries. Devfiles contribute new component types that users can pull to begin development immediately.
 
 An example deployment scenario:
 
