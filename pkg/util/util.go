@@ -817,7 +817,7 @@ func GetGitHubZipURL(project common.DevfileProject) (string, error) {
 			errMsg += fmt.Sprintf("%s specified with value %s\n", key, value)
 		}
 
-		return url, errors.Errorf("More than one source reference specified. The following were specified:\n%s", errMsg)
+		return url, errors.Errorf("more than one source reference specified. The following were specified:\n%s", errMsg)
 	}
 
 	var ref string
