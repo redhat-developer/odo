@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"os"
-	"strings"
 
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/cli"
@@ -44,15 +43,6 @@ func main() {
 		if err == flag.ErrHelp {
 			os.Exit(0)
 		}
-	}
-
-	// Override the logging level by the value (if set) by the ODO_LOG_LEVEL env
-	// The "-v" flag set on command line will take precedence over ODO_LOG_LEVEL env
-	v := flag.CommandLine.Lookup("v").Value.String()
-	// if the json flag is passed and is valid, we don't turn on ODO_LOG_LEVEL
-	jsonFlagValue := flag.CommandLine.Lookup("o").Value.String()
-	if level, ok := os.LookupEnv("ODO_LOG_LEVEL"); ok && v == "0" && strings.ToLower(jsonFlagValue) != "json" {
-		_ = flag.CommandLine.Set("v", level)
 	}
 
 	// run the completion, in case that the completion was invoked
