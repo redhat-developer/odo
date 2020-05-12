@@ -2,6 +2,7 @@ package url
 
 import (
 	"github.com/openshift/odo/pkg/envinfo"
+	iextensionsv1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -11,6 +12,14 @@ type URL struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Spec              URLSpec   `json:"spec,omitempty"`
 	Status            URLStatus `json:"status,omitempty"`
+}
+
+// IngressURL contains Ingress Object and the URL status
+type IngressURL struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              iextensionsv1.IngressSpec `json:"spec,omitempty"`
+	Status            URLStatus                 `json:"status,omitempty"`
 }
 
 // URLSpec is
@@ -28,6 +37,12 @@ type URLList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []URL `json:"items"`
+}
+
+type IngressURLList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []IngressURL `json:"items"`
 }
 
 // URLStatus is Status of url

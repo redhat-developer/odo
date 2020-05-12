@@ -92,7 +92,7 @@ var _ = Describe("odo devfile url command tests", func() {
 
 			// odo url list -o json
 			helper.WaitForCmdOut("odo", []string{"url", "list", "-o", "json"}, 1, true, func(output string) bool {
-				desiredURLListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.dev/v1alpha1","metadata":{},"items":[{"kind":"Ingress","apiVersion":"extensions/v1beta1","metadata":{"name":"%s","creationTimestamp":null},"spec":{"rules":[{"host":"%s","http":{"paths":[{"path":"/","backend":{"serviceName":"%s","servicePort":3000}}]}}]},"status":{"loadBalancer":{}}}]}`, url1, url1+"."+host, componentName)
+				desiredURLListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.dev/v1alpha1","metadata":{},"items":[{"kind":"url","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"%s","creationTimestamp":null},"spec":{"rules":[{"host":"%s","http":{"paths":[{"path":"/","backend":{"serviceName":"%s","servicePort":3000}}]}}]},"status":{"state":"Pushed"}}]}`, url1, url1+"."+host, componentName)
 				if strings.Contains(output, url1) {
 					Expect(desiredURLListJSON).Should(MatchJSON(output))
 					return true
@@ -232,17 +232,19 @@ var _ = Describe("odo devfile url command tests", func() {
 
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress")
 
-			stdout = helper.CmdShouldFail("odo", "url", "describe", url1)
-			helper.MatchAllInOutput(stdout, []string{url1, "exists in local", "odo push"})
+			stdout = helper.CmdShouldPass("odo", "url", "describe", url1)
+			helper.MatchAllInOutput(stdout, []string{url1 + "." + host, "Not Pushed", "odo push"})
 
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
-			helper.WaitForCmdOut("odo", []string{"url", "describe", url1}, 1, false, func(output string) bool {
-				if strings.Contains(output, url1) {
-					Expect(output).Should(ContainSubstring(url1 + "." + host))
-					return true
-				}
-				return false
-			})
+			// helper.WaitForCmdOut("odo", []string{"url", "describe", url1}, 1, false, func(output string) bool {
+			// 	if strings.Contains(output, url1) {
+			// 		Expect(output).Should(ContainSubstring(url1 + "." + host))
+			// 		return true
+			// 	}
+			// 	return false
+			// })
+			stdout = helper.CmdShouldPass("odo", "url", "describe", url1)
+			helper.MatchAllInOutput(stdout, []string{url1 + "." + host, "Pushed"})
 			helper.CmdShouldPass("odo", "url", "delete", url1, "-f")
 		})
 	})
