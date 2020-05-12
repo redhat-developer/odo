@@ -3277,6 +3277,28 @@ func (c *Client) IsRouteSupported() (bool, error) {
 	return false, nil
 }
 
+// IsDeploymentConfigSupported checks if DeploymentConfig type is present on the cluster
+func (c *Client) IsDeploymentConfigSupported() (bool, error) {
+	const ClusterVersionGroup = "apps.openshift.io"
+	const ClusterVersionVersion = "v1"
+	groupVersion := metav1.GroupVersion{Group: ClusterVersionGroup, Version: ClusterVersionVersion}.String()
+
+	list, err := c.discoveryClient.ServerResourcesForGroupVersion(groupVersion)
+	if kerrors.IsNotFound(err) {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	for _, resources := range list.APIResources {
+
+		if resources.Kind == "DeploymentConfig" {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // GenerateOwnerReference genertes an ownerReference which can then be set as
 // owner for various OpenShift objects and ensure that when the owner object is
 // deleted from the cluster, all other objects are automatically removed by

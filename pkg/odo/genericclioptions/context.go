@@ -464,6 +464,8 @@ func newDevfileContext(command *cobra.Command) *Context {
 	internalCxt := internalCxt{
 		OutputFlag: outputFlag,
 		command:    command,
+		// this is only so we can make devfile and s2i work together for certain cases
+		LocalConfigInfo: &config.LocalConfigInfo{},
 	}
 
 	envInfo, err := getValidEnvinfo(command)

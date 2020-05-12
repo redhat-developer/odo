@@ -6,6 +6,7 @@ import (
 
 // TestDevfileData is a convenience data type used to mock up a devfile configuration
 type TestDevfileData struct {
+	Metadata            versionsCommon.DevfileMetadata
 	ComponentType       versionsCommon.DevfileComponentType
 	CommandActions      []versionsCommon.DevfileCommandAction
 	MissingInitCommand  bool
@@ -15,6 +16,10 @@ type TestDevfileData struct {
 // GetComponents is a mock function to get the components from a devfile
 func (d TestDevfileData) GetComponents() []versionsCommon.DevfileComponent {
 	return d.GetAliasedComponents()
+}
+
+func (d *TestDevfileData) GetMetadata() versionsCommon.DevfileMetadata {
+	return d.Metadata
 }
 
 // GetAliasedComponents is a mock function to get the components that have an alias from a devfile

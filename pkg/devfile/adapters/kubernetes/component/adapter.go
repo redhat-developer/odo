@@ -3,6 +3,7 @@ package component
 import (
 	"fmt"
 	"reflect"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -144,8 +145,12 @@ func (a Adapter) DoesComponentExist(cmpName string) bool {
 
 func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 	componentName := a.ComponentName
+
+	// dont ask me how I know this
+	componentType := strings.TrimSuffix(*a.AdapterContext.Devfile.Data.GetMetadata().GenerateName, "-")
 	labels := componentlabels.GetLabels(componentName, a.AppName, true)
 	labels["component"] = componentName
+	labels[componentlabels.ComponentTypeLabel] = componentType
 
 	containers, err := utils.GetContainers(a.Devfile)
 	if err != nil {

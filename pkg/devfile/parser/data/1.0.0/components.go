@@ -11,6 +11,10 @@ func (d *Devfile100) GetComponents() []common.DevfileComponent {
 	return d.Components
 }
 
+func (d *Devfile100) GetMetadata() common.DevfileMetadata {
+	return d.Metadata
+}
+
 // GetAliasedComponents returns the slice of DevfileComponent objects that each have an alias
 func (d *Devfile100) GetAliasedComponents() []common.DevfileComponent {
 	var aliasedComponents = []common.DevfileComponent{}

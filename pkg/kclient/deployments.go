@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"time"
 
+	applabels "github.com/openshift/odo/pkg/application/labels"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
+
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -28,6 +30,18 @@ const (
 func (c *Client) GetDeploymentByName(name string) (*appsv1.Deployment, error) {
 	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Get(name, metav1.GetOptions{})
 	return deployment, err
+}
+
+func (c *Client) ListDeployments(appName string) (*appsv1.DeploymentList, error) {
+	applicationSelector := fmt.Sprintf("%s=%s", applabels.ApplicationLabel, appName)
+
+	return c.KubeClient.AppsV1().Deployments(c.Namespace).List(metav1.ListOptions{
+		LabelSelector: applicationSelector,
+	})
+}
+
+func (c *Client) ListAllDeployments() (*appsv1.DeploymentList, error) {
+	return c.KubeClient.AppsV1().Deployments(c.Namespace).List(metav1.ListOptions{})
 }
 
 // getDeploymentCondition returns the condition with the provided type
