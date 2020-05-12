@@ -23,7 +23,7 @@ const (
 	localConfigEnvName    = "LOCALODOCONFIG"
 	configFileName        = "config.yaml"
 	localConfigKind       = "LocalConfig"
-	localConfigAPIVersion = "odo.openshift.io/v1alpha1"
+	localConfigAPIVersion = "odo.dev/v1alpha1"
 	// DefaultDebugPort is the default port used for debugging on remote pod
 	DefaultDebugPort = 5858
 )

@@ -284,7 +284,7 @@ func TestList(t *testing.T) {
 			output: ComponentList{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "List",
-					APIVersion: "odo.openshift.io/v1alpha1",
+					APIVersion: "odo.dev/v1alpha1",
 				},
 				ListMeta: metav1.ListMeta{},
 				Items: []Component{
@@ -314,7 +314,7 @@ func TestList(t *testing.T) {
 			output: ComponentList{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "List",
-					APIVersion: "odo.openshift.io/v1alpha1",
+					APIVersion: "odo.dev/v1alpha1",
 				},
 				ListMeta: metav1.ListMeta{},
 				Items: []Component{
@@ -545,7 +545,7 @@ func Test_getMachineReadableFormat(t *testing.T) {
 			want: Component{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "Component",
-					APIVersion: "odo.openshift.io/v1alpha1",
+					APIVersion: "odo.dev/v1alpha1",
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "frontend",
@@ -583,7 +583,7 @@ func Test_getMachineReadableFormatForList(t *testing.T) {
 					{
 						TypeMeta: metav1.TypeMeta{
 							Kind:       "Component",
-							APIVersion: "odo.openshift.io/v1alpha1",
+							APIVersion: "odo.dev/v1alpha1",
 						},
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "frontend",
@@ -596,7 +596,7 @@ func Test_getMachineReadableFormatForList(t *testing.T) {
 					{
 						TypeMeta: metav1.TypeMeta{
 							Kind:       "Component",
-							APIVersion: "odo.openshift.io/v1alpha1",
+							APIVersion: "odo.dev/v1alpha1",
 						},
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "backend",
@@ -611,14 +611,14 @@ func Test_getMachineReadableFormatForList(t *testing.T) {
 			want: ComponentList{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "List",
-					APIVersion: "odo.openshift.io/v1alpha1",
+					APIVersion: "odo.dev/v1alpha1",
 				},
 				ListMeta: metav1.ListMeta{},
 				Items: []Component{
 					{
 						TypeMeta: metav1.TypeMeta{
 							Kind:       "Component",
-							APIVersion: "odo.openshift.io/v1alpha1",
+							APIVersion: "odo.dev/v1alpha1",
 						},
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "frontend",
@@ -631,7 +631,7 @@ func Test_getMachineReadableFormatForList(t *testing.T) {
 					{
 						TypeMeta: metav1.TypeMeta{
 							Kind:       "Component",
-							APIVersion: "odo.openshift.io/v1alpha1",
+							APIVersion: "odo.dev/v1alpha1",
 						},
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "backend",
@@ -798,7 +798,7 @@ func TestUnlinkComponents(t *testing.T) {
 			componentList := ComponentList{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "List",
-					APIVersion: "odo.openshift.io/v1alpha1",
+					APIVersion: "odo.dev/v1alpha1",
 				},
 				ListMeta: metav1.ListMeta{},
 				Items:    tt.childComponents,
@@ -866,7 +866,7 @@ func getFakeComponent(compName, namespace, appName, compType string, state State
 	return Component{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Component",
-			APIVersion: "odo.openshift.io/v1alpha1",
+			APIVersion: "odo.dev/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      compName,
