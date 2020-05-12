@@ -83,10 +83,10 @@ const envFile = ".odo/env/env.yaml"
 // DefaultDevfilePath is the default path of devfile.yaml
 var DefaultDevfilePath = filepath.Join(LocalDirectoryDefaultLocation, devFile)
 
-// EnvFilePath is the default path of env.yaml for devfile component
+// EnvFilePath is the path of env.yaml for devfile component
 var EnvFilePath = filepath.Join(LocalDirectoryDefaultLocation, envFile)
 
-// ConfigFilePath is the default path of config.yaml for s2i component
+// ConfigFilePath is the path of config.yaml for s2i component
 const ConfigFilePath = "./.odo/config.yaml"
 
 var createLongDesc = ktemplates.LongDesc(`Create a configuration describing a component.
