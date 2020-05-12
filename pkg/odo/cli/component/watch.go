@@ -9,7 +9,6 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/occlient"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
@@ -59,8 +58,6 @@ type WatchOptions struct {
 	devfilePath    string
 	namespace      string
 	devfileHandler adapters.PlatformAdapter
-
-	EnvSpecificInfo *envinfo.EnvSpecificInfo
 
 	*genericclioptions.Context
 }
