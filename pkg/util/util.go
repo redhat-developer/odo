@@ -862,9 +862,14 @@ func Unzip(src, dest, pathToUnzip string) ([]string, error) {
 	}
 	defer r.Close()
 
+	// change path separator to correct character for windows
+	if runtime.GOOS == "windows" {
+		strings.Replace(pathToUnzip, "/", string(os.PathSeparator), -1)
+	}
+
 	for _, f := range r.File {
 		// Store filename/path for returning and using later on
-		index := strings.Index(f.Name, "/")
+		index := strings.Index(f.Name, string(os.PathSeparator))
 		filename := f.Name[index+1:]
 		if filename == "" {
 			continue
@@ -877,7 +882,7 @@ func Unzip(src, dest, pathToUnzip string) ([]string, error) {
 		}
 
 		// removes first slash of pathToUnzip if present, adds trailing slash
-		pathToUnzip = strings.TrimPrefix(pathToUnzip, "/")
+		pathToUnzip = strings.TrimPrefix(pathToUnzip, string(os.PathSeparator))
 		if pathToUnzip != "" && pathToUnzip[len(pathToUnzip)-1:] != string(os.PathSeparator) {
 			pathToUnzip = pathToUnzip + string(os.PathSeparator)
 		}
@@ -894,7 +899,7 @@ func Unzip(src, dest, pathToUnzip string) ([]string, error) {
 			continue
 		}
 		// adds trailing slash to destination if needed as filepath.Join removes it
-		if (len(filename) == 1 && os.IsPathSeparator(filename[0])) || len(filename) == 0 {
+		if (len(filename) == 1 && os.IsPathSeparator(filename[0])) || filename == "" {
 			fpath = dest + string(os.PathSeparator)
 		} else {
 			fpath = filepath.Join(dest, filename)
