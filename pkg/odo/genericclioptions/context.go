@@ -481,7 +481,6 @@ func newDevfileContext(command *cobra.Command) *Context {
 
 		internalCxt.Project = resolveNamespace(command, kClient, envInfo)
 
-		// ignore the "true" for now
 	}
 	// create a context from the internal representation
 	context := &Context{

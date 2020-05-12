@@ -127,6 +127,7 @@ func newEnvSpecificInfo(envDir string, fs filesystem.Filesystem) (*EnvSpecificIn
 	// if the env.yaml file doesn't exist then we dont worry about it and return
 	if _, err = e.fs.Stat(envInfoFile); os.IsNotExist(err) {
 		e.envinfoFileExists = false
+
 		return &e, nil
 	}
 
