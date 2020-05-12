@@ -18,7 +18,7 @@ func (d TestDevfileData) GetComponents() []versionsCommon.DevfileComponent {
 	return d.GetAliasedComponents()
 }
 
-func (d *TestDevfileData) GetMetadata() versionsCommon.DevfileMetadata {
+func (d TestDevfileData) GetMetadata() versionsCommon.DevfileMetadata {
 	return d.Metadata
 }
 
