@@ -18,6 +18,8 @@ import (
 	"k8s.io/klog"
 )
 
+const apiVersion = "odo.dev/v1alpha1"
+
 // Get returns Storage defination for given Storage name
 func (storages StorageList) Get(storageName string) Storage {
 	for _, storage := range storages.Items {
@@ -442,7 +444,7 @@ func GetMachineReadableFormatForList(storage []Storage) StorageList {
 	return StorageList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "List",
-			APIVersion: "odo.openshift.io/v1alpha1",
+			APIVersion: apiVersion,
 		},
 		ListMeta: metav1.ListMeta{},
 		Items:    storage,
@@ -453,7 +455,7 @@ func GetMachineReadableFormatForList(storage []Storage) StorageList {
 // storagePath indicates the path to which the storage is mounted to, "" if not mounted
 func GetMachineReadableFormat(storageName, storageSize, storagePath string) Storage {
 	return Storage{
-		TypeMeta:   metav1.TypeMeta{Kind: "storage", APIVersion: "odo.openshift.io/v1alpha1"},
+		TypeMeta:   metav1.TypeMeta{Kind: "storage", APIVersion: apiVersion},
 		ObjectMeta: metav1.ObjectMeta{Name: storageName},
 		Spec: StorageSpec{
 			Size: storageSize,

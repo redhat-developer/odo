@@ -54,15 +54,20 @@ func Create(Client *lclient.Client, name, componentName, dockerVolName string) (
 	return &vol, nil
 }
 
-// GenerateVolNameFromDevfileVol generates a Docker volume name from the Devfile volume name and component name
-func GenerateVolNameFromDevfileVol(volName, componentName string) (string, error) {
+// GenerateVolName generates a Docker volume name from the Devfile volume name and component name
+func GenerateVolName(volName, componentName string) (string, error) {
+
+	if volName == "" {
+		err := errors.New("unable to generate volume name with an empty name")
+		return "", err
+	}
 
 	dockerVolName := fmt.Sprintf("%v-%v", volName, componentName)
 	dockerVolName = util.TruncateString(dockerVolName, volNameMaxLength)
 	randomChars := util.GenerateRandomString(4)
 	dockerVolName, err := util.NamespaceOpenShiftObject(dockerVolName, randomChars)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to create namespaced name")
+		return "", errors.Wrapf(err, "unable to create namespaced name for volume %s", volName)
 	}
 
 	return dockerVolName, nil
@@ -109,7 +114,7 @@ func ProcessVolumes(client *lclient.Client, componentName string, componentAlias
 
 				// Generate the volume Names
 				klog.V(3).Infof("Generating Docker volumes name for %v", *vol.Name)
-				generatedDockerVolName, err := GenerateVolNameFromDevfileVol(*vol.Name, componentName)
+				generatedDockerVolName, err := GenerateVolName(*vol.Name, componentName)
 				if err != nil {
 					return nil, nil, err
 				}

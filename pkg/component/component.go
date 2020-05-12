@@ -45,6 +45,8 @@ const componentRandomNamePartsMaxLen = 12
 const componentNameMaxRetries = 3
 const componentNameMaxLen = -1
 
+const apiVersion = "odo.dev/v1alpha1"
+
 // GetComponentDir returns source repo name
 // Parameters:
 //		path: git url or source path or binary path
@@ -1426,7 +1428,7 @@ func getMachineReadableFormat(componentName, componentType string) Component {
 	return Component{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Component",
-			APIVersion: "odo.openshift.io/v1alpha1",
+			APIVersion: apiVersion,
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: componentName,
@@ -1447,7 +1449,7 @@ func GetMachineReadableFormatForList(components []Component) ComponentList {
 	return ComponentList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "List",
-			APIVersion: "odo.openshift.io/v1alpha1",
+			APIVersion: apiVersion,
 		},
 		ListMeta: metav1.ListMeta{},
 		Items:    components,

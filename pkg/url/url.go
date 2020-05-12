@@ -29,6 +29,8 @@ import (
 	"k8s.io/klog"
 )
 
+const apiVersion = "odo.dev/v1alpha1"
+
 // Get returns URL definition for given URL name
 func (urls URLList) Get(urlName string) URL {
 	for _, url := range urls.Items {
@@ -383,7 +385,7 @@ func ConvertConfigURL(configURL config.ConfigURL) URL {
 	return URL{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "url",
-			APIVersion: "odo.openshift.io/v1alpha1",
+			APIVersion: apiVersion,
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: configURL.Name,
@@ -485,7 +487,7 @@ func GetValidExposedPortNumber(exposedPort int) (int, error) {
 // getMachineReadableFormat gives machine readable URL definition
 func getMachineReadableFormat(r routev1.Route) URL {
 	return URL{
-		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.openshift.io/v1alpha1"},
+		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: apiVersion},
 		ObjectMeta: metav1.ObjectMeta{Name: r.Labels[urlLabels.URLLabel]},
 		Spec:       URLSpec{Host: r.Spec.Host, Port: r.Spec.Port.TargetPort.IntValue(), Protocol: GetProtocol(r, iextensionsv1.Ingress{}, experimental.IsExperimentalModeEnabled()), Secure: r.Spec.TLS != nil},
 	}
@@ -496,7 +498,7 @@ func getMachineReadableFormatForList(urls []URL) URLList {
 	return URLList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "List",
-			APIVersion: "odo.openshift.io/v1alpha1",
+			APIVersion: apiVersion,
 		},
 		ListMeta: metav1.ListMeta{},
 		Items:    urls,
@@ -516,7 +518,7 @@ func getMachineReadableFormatForIngressList(ingresses []iextensionsv1.Ingress) i
 	return iextensionsv1.IngressList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "List",
-			APIVersion: "udo.udo.io/v1alpha1",
+			APIVersion: apiVersion,
 		},
 		ListMeta: metav1.ListMeta{},
 		Items:    ingresses,
@@ -575,6 +577,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 		for _, url := range urlList.Items {
 			urlCLUSTER[url.Name] = URL{
 				Spec: URLSpec{
+					Host:    url.Spec.Rules[0].Host,
 					Port:    int(url.Spec.Rules[0].HTTP.Paths[0].Backend.ServicePort.IntVal),
 					urlKind: envinfo.INGRESS,
 				},
@@ -603,7 +606,21 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 	// find URLs to delete
 	for urlName, urlSpec := range urlCLUSTER {
 		val, ok := urlLOCAL[urlName]
-		if !ok {
+
+		configMismatch := false
+		if ok {
+			// since the host stored in an ingress
+			// is the combination of name and host of the url
+			if val.Spec.urlKind == envinfo.INGRESS {
+				val.Spec.Host = fmt.Sprintf("%v.%v", urlName, val.Spec.Host)
+			}
+			if !reflect.DeepEqual(val.Spec, urlSpec.Spec) {
+				configMismatch = true
+				klog.V(4).Infof("config and cluster mismatch for url %s", urlName)
+			}
+		}
+
+		if !ok || configMismatch {
 			if urlSpec.Spec.urlKind == envinfo.INGRESS && kClient == nil {
 				continue
 			}
@@ -614,11 +631,8 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 			}
 			log.Successf("URL %s successfully deleted", urlName)
 			urlChange = true
+			delete(urlCLUSTER, urlName)
 			continue
-		} else {
-			if !reflect.DeepEqual(val.Spec, urlSpec.Spec) {
-				return errors.Errorf("config mismatch for URL with the same name %s", val.Name)
-			}
 		}
 	}
 

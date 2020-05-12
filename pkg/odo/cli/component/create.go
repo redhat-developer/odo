@@ -63,7 +63,7 @@ type DevfileMetadata struct {
 	componentNamespace string
 	devfileSupport     bool
 	devfileLink        string
-	devfileRegistry    string
+	devfileRegistry    catalog.Registry
 	downloadSource     bool
 	// User specify devfile path via --devfile flag
 	devfilePath string
@@ -354,9 +354,12 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			if !util.CheckPathExists(DevfilePath) && len(co.devfileMetadata.devfilePath) == 0 {
 				// If devfile.yaml is not present and --devfile is not specified, user has to specify the component type
 				// Component type: We provide supported devfile component list then let you choose
-				catalogDevfileList, err = catalog.ListDevfileComponents()
+				catalogDevfileList, err = catalog.ListDevfileComponents("")
 				if err != nil {
 					return err
+				}
+				if catalogDevfileList.DevfileRegistries == nil {
+					log.Warning("Please run `odo registry add <registry name> <registry URL>` to add a registry then create a devfile components\n")
 				}
 
 				var supDevfileCatalogList []catalog.DevfileComponentType
@@ -424,9 +427,12 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			}
 
 			// Get available devfile components for checking devfile compatibility
-			catalogDevfileList, err = catalog.ListDevfileComponents()
+			catalogDevfileList, err = catalog.ListDevfileComponents("")
 			if err != nil {
 				return err
+			}
+			if catalogDevfileList.DevfileRegistries == nil {
+				log.Warning("Please run `odo registry add <registry name> <registry URL>` to add a registry then create a devfile components\n")
 			}
 		}
 
@@ -463,6 +469,8 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			}
 		}
 
+		registrySpinner := log.Spinnerf("Creating a devfile component from registry: %s", co.devfileMetadata.devfileRegistry.Name)
+
 		if co.devfileMetadata.devfileSupport {
 			err = co.InitEnvInfoFromContext()
 			if err != nil {
@@ -470,11 +478,13 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			}
 
 			spinner.End(true)
+			registrySpinner.End(true)
 			return nil
 		}
 
 		spinner.End(false)
-		log.Italic("\nPlease run 'odo catalog list components' for a list of supported devfile component types")
+		registrySpinner.End(false)
+		log.Italic("\nPlease run `odo catalog list components` for a list of supported devfile component types")
 	}
 
 	if len(args) == 0 || !cmd.HasFlags() {
@@ -802,7 +812,7 @@ func (co *CreateOptions) Run() (err error) {
 			}
 
 			if !util.CheckPathExists(DevfilePath) {
-				err = util.DownloadFile(co.devfileMetadata.devfileRegistry+co.devfileMetadata.devfileLink, DevfilePath)
+				err := util.DownloadFile(co.devfileMetadata.devfileRegistry.URL+co.devfileMetadata.devfileLink, DevfilePath)
 				if err != nil {
 					return errors.Wrap(err, "failed to download devfile.yaml for devfile component")
 				}
@@ -928,6 +938,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 	componentCreateCmd.Flags().StringSliceVar(&co.componentEnvVars, "env", []string{}, "Environmental variables for the component. For example --env VariableName=Value")
 
 	if experimental.IsExperimentalModeEnabled() {
+		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfileRegistry.Name, "registry", "", "Create devfile component from specific registry")
 		componentCreateCmd.Flags().BoolVar(&co.devfileMetadata.downloadSource, "downloadSource", false, "Download sample project from devfile. (ex. odo component create <component_type> [component_name] --downloadSource")
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfilePath, "devfile", "", "Path to the user specify devfile")
 	}
