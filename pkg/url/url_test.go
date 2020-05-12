@@ -1489,7 +1489,7 @@ func TestListDockerURL(t *testing.T) {
 			component: "golang",
 			wantURLs: []URL{
 				URL{
-					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.openshift.io/v1alpha1"},
+					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 					ObjectMeta: metav1.ObjectMeta{Name: testURL1.Name},
 					Spec:       URLSpec{Host: dockercomponent.LocalhostIP, Port: testURL1.Port, ExternalPort: testURL1.ExposedPort},
 					Status: URLStatus{
@@ -1497,7 +1497,7 @@ func TestListDockerURL(t *testing.T) {
 					},
 				},
 				URL{
-					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.openshift.io/v1alpha1"},
+					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 					ObjectMeta: metav1.ObjectMeta{Name: testURL2.Name},
 					Spec:       URLSpec{Host: dockercomponent.LocalhostIP, Port: testURL2.Port, ExternalPort: testURL2.ExposedPort},
 					Status: URLStatus{
@@ -1505,7 +1505,7 @@ func TestListDockerURL(t *testing.T) {
 					},
 				},
 				URL{
-					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.openshift.io/v1alpha1"},
+					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 					ObjectMeta: metav1.ObjectMeta{Name: testURL3.Name},
 					Spec:       URLSpec{Host: dockercomponent.LocalhostIP, Port: testURL3.Port, ExternalPort: testURL3.ExposedPort},
 					Status: URLStatus{
@@ -1577,7 +1577,7 @@ func TestGetContainerURL(t *testing.T) {
 			component: "golang",
 			urlName:   testURL1.Name,
 			wantURL: URL{
-				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.openshift.io/v1alpha1"},
+				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 				ObjectMeta: metav1.ObjectMeta{Name: testURL1.Name},
 				Spec:       URLSpec{Host: dockercomponent.LocalhostIP, Port: testURL1.Port, ExternalPort: testURL1.ExposedPort},
 				Status: URLStatus{
@@ -1592,7 +1592,7 @@ func TestGetContainerURL(t *testing.T) {
 			component: "golang",
 			urlName:   testURL2.Name,
 			wantURL: URL{
-				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.openshift.io/v1alpha1"},
+				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 				ObjectMeta: metav1.ObjectMeta{Name: testURL2.Name},
 				Spec:       URLSpec{Host: dockercomponent.LocalhostIP, Port: testURL2.Port, ExternalPort: testURL2.ExposedPort},
 				Status: URLStatus{
@@ -1607,7 +1607,7 @@ func TestGetContainerURL(t *testing.T) {
 			component: "golang",
 			urlName:   testURL3.Name,
 			wantURL: URL{
-				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.openshift.io/v1alpha1"},
+				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 				ObjectMeta: metav1.ObjectMeta{Name: testURL3.Name},
 				Spec:       URLSpec{Host: dockercomponent.LocalhostIP, Port: testURL3.Port, ExternalPort: testURL3.ExposedPort},
 				Status: URLStatus{
