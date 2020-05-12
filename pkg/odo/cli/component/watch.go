@@ -3,7 +3,6 @@ package component
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters"
@@ -72,7 +71,7 @@ func NewWatchOptions() *WatchOptions {
 
 // Complete completes watch args
 func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	wo.devfilePath = filepath.Join(wo.componentContext, wo.devfilePath)
+	wo.devfilePath = DevfilePath
 
 	// if experimental mode is enabled and devfile is present
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(wo.devfilePath) {
@@ -265,11 +264,6 @@ func NewCmdWatch(name, fullName string) *cobra.Command {
 	watchCmd.Flags().IntVar(&wo.delay, "delay", 1, "Time in seconds between a detection of code change and push.delay=0 means changes will be pushed as soon as they are detected which can cause performance issues")
 
 	watchCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
-
-	// enable devfile flag if experimental mode is enabled
-	if experimental.IsExperimentalModeEnabled() {
-		watchCmd.Flags().StringVar(&wo.devfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
-	}
 
 	// Adding context flag
 	genericclioptions.AddContextFlag(watchCmd, &wo.componentContext)

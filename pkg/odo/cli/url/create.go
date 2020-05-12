@@ -321,7 +321,6 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 			urlCreateCmd.Flags().BoolVar(&o.wantIngress, "ingress", false, "Creates an ingress instead of Route on OpenShift clusters")
 			urlCreateCmd.Example = fmt.Sprintf(urlCreateExampleExperimental, fullName)
 		}
-		urlCreateCmd.Flags().StringVar(&o.DevfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
 	} else {
 		urlCreateCmd.Flags().BoolVarP(&o.secureURL, "secure", "", false, "creates a secure https url")
 		urlCreateCmd.Example = fmt.Sprintf(urlCreateExample, fullName)

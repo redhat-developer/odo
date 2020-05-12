@@ -55,12 +55,12 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.RenameFile("devfile.yaml", "devfile-old.yaml")
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-no-endpoints.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
+			helper.CmdShouldPass("odo", "push", "--project", namespace)
 			output := oc.GetServices(namespace)
 			Expect(output).NotTo(ContainSubstring(cmpName))
 
 			helper.RenameFile("devfile-old.yaml", "devfile.yaml")
-			output = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
+			output = helper.CmdShouldPass("odo", "push", "--project", namespace)
 
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 			output = oc.GetServices(namespace)
@@ -73,12 +73,12 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
+			output := helper.CmdShouldPass("odo", "push", "--project", namespace)
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
 			// update devfile and push again
 			helper.ReplaceString("devfile.yaml", "name: FOO", "name: BAR")
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
+			helper.CmdShouldPass("odo", "push", "--project", namespace)
 		})
 
 		It("checks that odo push works outside of the context directory", func() {
@@ -89,7 +89,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--context", context)
+			output := helper.CmdShouldPass("odo", "push", "--context", context)
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 		})
 
@@ -112,7 +112,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			// Now we delete the file and dir and push
 			helper.DeleteDir(newFilePath)
 			helper.DeleteDir(newDirPath)
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace, "-v4")
+			helper.CmdShouldPass("odo", "push", "--project", namespace, "-v4")
 
 			// Then check to see if it's truly been deleted
 			stdOut = oc.ExecListDir(podName, namespace, sourcePath)
@@ -126,7 +126,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
+			helper.CmdShouldPass("odo", "push", "--project", namespace)
 
 			// Check to see if it's been pushed (foobar.txt abd directory testdir)
 			podName := oc.GetRunningPodNameByComponent(cmpName, namespace)
@@ -144,7 +144,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			)
 			Expect(statErr).ToNot(HaveOccurred())
 			Expect(os.Remove(filepath.Join(context, "app", "app.js"))).NotTo(HaveOccurred())
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
+			helper.CmdShouldPass("odo", "push", "--project", namespace)
 
 			oc.CheckCmdOpInRemoteDevfilePod(
 				podName,
@@ -193,7 +193,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
+			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
 			Expect(output).To(ContainSubstring("Executing devinit command \"echo hello"))
 			Expect(output).To(ContainSubstring("Executing devbuild command \"/artifacts/bin/build-container-full.sh\""))
 			Expect(output).To(ContainSubstring("Executing devrun command \"/artifacts/bin/start-server.sh\""))
@@ -205,7 +205,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile-init-without-build.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
+			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
 			Expect(output).To(ContainSubstring("Executing devinit command \"echo hello"))
 			Expect(output).To(ContainSubstring("Executing devrun command \"/artifacts/bin/start-server.sh\""))
 		})
@@ -216,13 +216,13 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
+			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
 			Expect(output).To(ContainSubstring("Executing devinit command \"echo hello"))
 			Expect(output).To(ContainSubstring("Executing devbuild command \"/artifacts/bin/build-container-full.sh\""))
 			Expect(output).To(ContainSubstring("Executing devrun command \"/artifacts/bin/start-server.sh\""))
 
 			// Need to force so build and run get triggered again with the component already created.
-			output = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace, "-f")
+			output = helper.CmdShouldPass("odo", "push", "--namespace", namespace, "-f")
 			Expect(output).NotTo(ContainSubstring("Executing devinit command \"echo hello"))
 			Expect(output).To(ContainSubstring("Executing devbuild command \"/artifacts/bin/build-container-full.sh\""))
 			Expect(output).To(ContainSubstring("Executing devrun command \"/artifacts/bin/start-server.sh\""))
@@ -234,7 +234,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-without-devinit.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
+			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
 			Expect(output).NotTo(ContainSubstring("Executing devinit command"))
 			Expect(output).To(ContainSubstring("Executing devbuild command \"npm install\""))
 			Expect(output).To(ContainSubstring("Executing devrun command \"nodemon app.js\""))
@@ -266,7 +266,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-volumes.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
+			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
 			Expect(output).To(ContainSubstring("Executing devinit command"))
 			Expect(output).To(ContainSubstring("Executing devbuild command"))
 			Expect(output).To(ContainSubstring("Executing devrun command"))

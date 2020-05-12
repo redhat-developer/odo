@@ -69,21 +69,4 @@ var _ = Describe("odo devfile watch command tests", func() {
 			Expect(output).To(ContainSubstring("component does not exist. Please use `odo push` to create your component"))
 		})
 	})
-
-	Context("when executing watch without a valid devfile", func() {
-		It("should fail", func() {
-			// Devfile push requires experimental mode to be set
-			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
-			output := helper.CmdShouldFail("odo", "watch", "--devfile", "fake-devfile.yaml")
-			Expect(output).To(ContainSubstring("The current directory does not represent an odo component"))
-		})
-	})
-
-	Context("when executing odo watch with devfile flag without experimental mode", func() {
-		It("should fail", func() {
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
-			output := helper.CmdShouldFail("odo", "watch", "--devfile", filepath.Join(context, "devfile.yaml"))
-			Expect(output).To(ContainSubstring("Error: unknown flag: --devfile"))
-		})
-	})
 })

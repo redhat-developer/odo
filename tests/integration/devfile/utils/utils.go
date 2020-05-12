@@ -26,7 +26,7 @@ func ExecDefaultDevfileCommands(projectDirPath, cmpName, namespace string) {
 	helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), projectDirPath)
 	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
 
-	args = []string{"push", "--devfile", "devfile.yaml"}
+	args = []string{"push"}
 	args = useProjectIfAvailable(args, namespace)
 	output := helper.CmdShouldPass("odo", args...)
 	Expect(output).To(ContainSubstring("Executing devbuild command \"/artifacts/bin/build-container-full.sh\""))
@@ -42,7 +42,7 @@ func ExecWithMissingBuildCommand(projectDirPath, cmpName, namespace string) {
 	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-without-devbuild.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
 
-	args = []string{"push", "--devfile", "devfile.yaml"}
+	args = []string{"push"}
 	args = useProjectIfAvailable(args, namespace)
 	output := helper.CmdShouldPass("odo", args...)
 	Expect(output).NotTo(ContainSubstring("Executing devbuild command"))
@@ -61,7 +61,7 @@ func ExecWithMissingRunCommand(projectDirPath, cmpName, namespace string) {
 	// Rename the devrun command
 	helper.ReplaceString(filepath.Join(projectDirPath, "devfile.yaml"), "devrun", "randomcommand")
 
-	args = []string{"push", "--devfile", "devfile.yaml"}
+	args = []string{"push"}
 	args = useProjectIfAvailable(args, namespace)
 	output := helper.CmdShouldFail("odo", args...)
 	Expect(output).NotTo(ContainSubstring("Executing devrun command"))
@@ -77,7 +77,7 @@ func ExecWithCustomCommand(projectDirPath, cmpName, namespace string) {
 	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
 
-	args = []string{"push", "--devfile", "devfile.yaml", "--build-command", "build", "--run-command", "run"}
+	args = []string{"push", "--build-command", "build", "--run-command", "run"}
 	args = useProjectIfAvailable(args, namespace)
 	output := helper.CmdShouldPass("odo", args...)
 	Expect(output).To(ContainSubstring("Executing build command \"npm install\""))
@@ -95,7 +95,7 @@ func ExecWithWrongCustomCommand(projectDirPath, cmpName, namespace string) {
 	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
 
-	args = []string{"push", "--devfile", "devfile.yaml", "--build-command", garbageCommand}
+	args = []string{"push", "--build-command", garbageCommand}
 	args = useProjectIfAvailable(args, namespace)
 	output := helper.CmdShouldFail("odo", args...)
 	Expect(output).NotTo(ContainSubstring("Executing buildgarbage command"))
@@ -111,7 +111,7 @@ func ExecPushToTestFileChanges(projectDirPath, cmpName, namespace string) {
 	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
 
-	args = []string{"push", "--devfile", "devfile.yaml"}
+	args = []string{"push"}
 	args = useProjectIfAvailable(args, namespace)
 	helper.CmdShouldPass("odo", args...)
 
@@ -132,12 +132,12 @@ func ExecPushWithForceFlag(projectDirPath, cmpName, namespace string) {
 	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
 
-	args = []string{"push", "--devfile", "devfile.yaml"}
+	args = []string{"push"}
 	args = useProjectIfAvailable(args, namespace)
 	helper.CmdShouldPass("odo", args...)
 
 	// use the force build flag and push
-	args = []string{"push", "--devfile", "devfile.yaml", "-f"}
+	args = []string{"push", "-f"}
 	args = useProjectIfAvailable(args, namespace)
 	output := helper.CmdShouldPass("odo", args...)
 	Expect(output).To(Not(ContainSubstring("No file changes detected, skipping build")))
@@ -161,7 +161,7 @@ func ExecPushWithNewFileAndDir(projectDirPath, cmpName, namespace, newFilePath, 
 	helper.MakeDir(newDirPath)
 
 	// Push
-	args = []string{"push", "--devfile", "devfile.yaml"}
+	args = []string{"push"}
 	args = useProjectIfAvailable(args, namespace)
 	helper.CmdShouldPass("odo", args...)
 }
@@ -175,12 +175,12 @@ func ExecWithRestartAttribute(projectDirPath, cmpName, namespace string) {
 	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-restart.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
 
-	args = []string{"push", "--devfile", "devfile.yaml"}
+	args = []string{"push"}
 	args = useProjectIfAvailable(args, namespace)
 	output := helper.CmdShouldPass("odo", args...)
 	Expect(output).To(ContainSubstring("Executing devrun command \"nodemon app.js\""))
 
-	args = []string{"push", "-f", "--devfile", "devfile.yaml"}
+	args = []string{"push", "-f"}
 	args = useProjectIfAvailable(args, namespace)
 	output = helper.CmdShouldPass("odo", args...)
 	Expect(output).To(ContainSubstring("if not running"))
