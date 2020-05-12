@@ -92,7 +92,7 @@ var _ = Describe("odo devfile url command tests", func() {
 
 			// odo url list -o json
 			helper.WaitForCmdOut("odo", []string{"url", "list", "-o", "json"}, 1, true, func(output string) bool {
-				desiredURLListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"extensions/v1beta1","metadata":{},"items":[{"kind":"Ingress","apiVersion":"extensions/v1beta1","metadata":{"name":"%s","creationTimestamp":null},"spec":{"rules":[{"host":"%s","http":{"paths":[{"path":"/","backend":{"serviceName":"%s","servicePort":3000}}]}}]},"status":{"loadBalancer":{}}}]}`, url1, url1+"."+host, componentName)
+				desiredURLListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.dev/v1alpha1","metadata":{},"items":[{"kind":"Ingress","apiVersion":"extensions/v1beta1","metadata":{"name":"%s","creationTimestamp":null},"spec":{"rules":[{"host":"%s","http":{"paths":[{"path":"/","backend":{"serviceName":"%s","servicePort":3000}}]}}]},"status":{"loadBalancer":{}}}]}`, url1, url1+"."+host, componentName)
 				if strings.Contains(output, url1) {
 					Expect(desiredURLListJSON).Should(MatchJSON(output))
 					return true

@@ -17,6 +17,16 @@ import (
 	"k8s.io/klog"
 )
 
+const (
+	apiVersion = "odo.dev/v1alpha1"
+)
+
+// DevfileRegistries contains the links of all devfile registries
+var DevfileRegistries = []string{
+	"https://raw.githubusercontent.com/elsony/devfile-registry/master",
+	"https://che-devfile-registry.openshift.io/",
+}
+
 // GetDevfileRegistries gets devfile registries from preference file,
 // if registry name is specified return the specific registry, otherwise return all registries
 func GetDevfileRegistries(registryName string) (map[string]string, error) {
@@ -202,7 +212,7 @@ func ListComponents(client *occlient.Client) (ComponentTypeList, error) {
 	return ComponentTypeList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "List",
-			APIVersion: "odo.openshift.io/v1alpha1",
+			APIVersion: apiVersion,
 		},
 		Items: catalogList,
 	}, nil
@@ -257,7 +267,7 @@ func ListServices(client *occlient.Client) (ServiceTypeList, error) {
 	return ServiceTypeList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "List",
-			APIVersion: "odo.openshift.io/v1alpha1",
+			APIVersion: apiVersion,
 		},
 		Items: clusterServiceClasses,
 	}, nil
@@ -281,7 +291,7 @@ func SearchService(client *occlient.Client, name string) (ServiceTypeList, error
 	return ServiceTypeList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "List",
-			APIVersion: "odo.openshift.io/v1alpha1",
+			APIVersion: apiVersion,
 		},
 		Items: result,
 	}, nil
@@ -312,7 +322,7 @@ func getClusterCatalogServices(client *occlient.Client) ([]ServiceType, error) {
 		classNames = append(classNames, ServiceType{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "ServiceType",
-				APIVersion: "odo.openshift.io/v1alpha1",
+				APIVersion: apiVersion,
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name: class.Spec.ExternalName,
@@ -537,7 +547,7 @@ func getBuildersFromImageStreams(imageStreams []imagev1.ImageStream, imageStream
 			catalogImage := ComponentType{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "ComponentType",
-					APIVersion: "odo.openshift.io/v1alpha1",
+					APIVersion: apiVersion,
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      imageStream.Name,
