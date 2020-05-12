@@ -1617,7 +1617,7 @@ func TestGetGitHubZipURL(t *testing.T) {
 					Tag:      &tag,
 				},
 			},
-			expectedErrors: []string{"More than one source reference specified. The following were specified:\n",
+			expectedErrors: []string{"more than one source reference specified. The following were specified:\n",
 				fmt.Sprintf("CommitID specified with value %s\n", commitid),
 				fmt.Sprintf("Tag specified with value %s\n", tag)},
 		},
