@@ -4,6 +4,10 @@ export GO15VENDOREXPERIMENT
 DOCKER ?= $(shell command -v docker 2>/dev/null)
 PANDOC ?= $(shell command -v pandoc 2>/dev/null)
 
+OUTPUT_DIRNAME	?= output/
+DOC_FILENAME	?= oci-image-spec
+
+PANDOC_CONTAINER ?= docker.io/vbatts/pandoc:1.17.0.3-2.fc25.x86_64
 ifeq "$(strip $(PANDOC))" ''
 	ifneq "$(strip $(DOCKER))" ''
 		PANDOC = $(DOCKER) run \
@@ -13,7 +17,7 @@ ifeq "$(strip $(PANDOC))" ''
 			-v $(shell pwd)/$(OUTPUT_DIRNAME)/:/$(OUTPUT_DIRNAME)/ \
 			-u $(shell id -u) \
 			--workdir /input \
-			docker.io/vbatts/pandoc:1.17.0.3-2.fc25.x86_64
+			$(PANDOC_CONTAINER)
 		PANDOC_SRC := /input/
 		PANDOC_DST := /
 	endif
@@ -36,9 +40,6 @@ DOC_FILES := \
 
 FIGURE_FILES := \
 	img/media-types.png
-
-OUTPUT_DIRNAME		?= output/
-DOC_FILENAME	?= oci-image-spec
 
 EPOCH_TEST_COMMIT ?= v0.2.0
 
@@ -70,13 +71,13 @@ else
 $(OUTPUT_DIRNAME)/$(DOC_FILENAME).pdf: $(DOC_FILES) $(FIGURE_FILES)
 	@mkdir -p $(OUTPUT_DIRNAME)/ && \
 	$(PANDOC) -f markdown_github -t latex --latex-engine=xelatex -o $(PANDOC_DST)$@ $(patsubst %,$(PANDOC_SRC)%,$(DOC_FILES))
-	ls -sh $(shell readlink -f $@)
+	ls -sh $(realpath $@)
 
 $(OUTPUT_DIRNAME)/$(DOC_FILENAME).html: header.html $(DOC_FILES) $(FIGURE_FILES)
 	@mkdir -p $(OUTPUT_DIRNAME)/ && \
 	cp -ap img/ $(shell pwd)/$(OUTPUT_DIRNAME)/&& \
 	$(PANDOC) -f markdown_github -t html5 -H $(PANDOC_SRC)header.html --standalone -o $(PANDOC_DST)$@ $(patsubst %,$(PANDOC_SRC)%,$(DOC_FILES))
-	ls -sh $(shell readlink -f $@)
+	ls -sh $(realpath $@)
 endif
 
 header.html: .tool/genheader.go specs-go/version.go

@@ -26,10 +26,6 @@ spec:
           command:
           - /bin/catalog
           args:
-          {{- if .Values.watchedNamespaces }}
-          - -watchedNamespaces
-          - {{ .Values.watchedNamespaces }}
-          {{- end }}
           - '-namespace'
           - {{ .Values.catalog_namespace }}
           {{- if .Values.debug }}
@@ -38,6 +34,8 @@ spec:
           {{- if .Values.catalog.commandArgs }}
           - {{ .Values.catalog.commandArgs }}
           {{- end }}
+          - -util-image
+          -  {{ .Values.catalog.image.ref }}
           {{- if .Values.writeStatusNameCatalog }}
           - -writeStatusName
           - {{ .Values.writeStatusNameCatalog }}
@@ -92,5 +90,5 @@ spec:
     {{- end }}
     {{- if .Values.catalog.tolerations }}
       tolerations:
-{{ toYaml .Values.catalog.tolerations | indent 8 }}
+{{ toYaml .Values.catalog.tolerations | indent 6 }}
     {{- end }}

@@ -2,8 +2,9 @@ package common
 
 import (
 	"os"
+	"strconv"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data"
@@ -28,7 +29,7 @@ const (
 
 	// Default Image that will be used containing the supervisord binary and assembly scripts
 	// use GetBootstrapperImage() function instead of this variable
-	defaultBootstrapperImage = "registry.access.redhat.com/openshiftdo/odo-init-image-rhel7:1.1.2"
+	defaultBootstrapperImage = "registry.access.redhat.com/openshiftdo/odo-init-image-rhel7:1.1.3"
 
 	// SupervisordControlCommand sub command which stands for control
 	SupervisordControlCommand = "ctl"
@@ -98,7 +99,7 @@ func GetSupportedComponents(data data.DevfileData) []common.DevfileComponent {
 	// Only components with aliases are considered because without an alias commands cannot reference them
 	for _, comp := range data.GetAliasedComponents() {
 		if isComponentSupported(comp) {
-			glog.V(3).Infof("Found component \"%v\" with alias \"%v\"\n", comp.Type, *comp.Alias)
+			klog.V(3).Infof("Found component \"%v\" with alias \"%v\"\n", comp.Type, *comp.Alias)
 			components = append(components, comp)
 		}
 	}
@@ -145,4 +146,20 @@ func IsPortPresent(endpoints []common.DockerimageEndpoint, port int) bool {
 	}
 
 	return false
+}
+
+// IsRestartRequired returns if restart is required for devrun command
+func IsRestartRequired(command common.DevfileCommand) bool {
+	var restart = true
+	var err error
+	rs, ok := command.Attributes["restart"]
+	if ok {
+		restart, err = strconv.ParseBool(rs)
+		// Ignoring error here as restart is true for all error and default cases.
+		if err != nil {
+			klog.V(4).Info("Error converting restart attribute to bool")
+		}
+	}
+
+	return restart
 }

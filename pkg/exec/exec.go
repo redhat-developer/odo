@@ -6,7 +6,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/log"
@@ -21,7 +21,7 @@ func ExecuteCommand(client ExecClient, compInfo common.ComponentInfo, command []
 	reader, writer := io.Pipe()
 	var cmdOutput string
 
-	glog.V(3).Infof("Executing command %v for pod: %v in container: %v", command, compInfo.PodName, compInfo.ContainerName)
+	klog.V(3).Infof("Executing command %v for pod: %v in container: %v", command, compInfo.PodName, compInfo.ContainerName)
 
 	// This Go routine will automatically pipe the output from ExecCMDInContainer to
 	// our logger.

@@ -2,11 +2,12 @@ package component
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/mount"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
@@ -155,25 +156,53 @@ func (a Adapter) Delete(labels map[string]string) error {
 		return errors.New("unable to delete component without a component label")
 	}
 
-	list, err := a.Client.GetContainerList()
+	containers, err := a.Client.GetContainerList()
 	if err != nil {
 		return errors.Wrap(err, "unable to retrieve container list for delete operation")
 	}
 
-	componentContainer := a.Client.GetContainersByComponent(componentName, list)
+	// A unique list of volumes NOT to delete, because they are still mapped into other containers.
+	// map key is volume name.
+	volumesNotToDelete := map[string]string{}
+
+	// Go through the containers which are NOT part of this component, and make a list of all
+	// their volumes so we don't delete them.
+	for _, container := range containers {
+
+		if container.Labels["component"] == componentName {
+			continue
+		}
+
+		for _, mount := range container.Mounts {
+			volumesNotToDelete[mount.Name] = mount.Name
+		}
+	}
+
+	componentContainer := a.Client.GetContainersByComponent(componentName, containers)
 
 	if len(componentContainer) == 0 {
 		return errors.Errorf("the component %s doesn't exist", a.ComponentName)
 	}
 
-	// Get all volumes that match our component label
-	volumeLabels := utils.GetProjectVolumeLabels(componentName)
-	vols, err := a.Client.GetVolumesByLabel(volumeLabels)
+	allVolumes, err := a.Client.GetVolumes()
 	if err != nil {
-		return errors.Wrapf(err, "unable to retrieve source volume for component "+componentName)
+		return errors.Wrapf(err, "unable to retrieve list of all Docker volumes")
 	}
-	if len(vols) == 0 {
-		return fmt.Errorf("unable to find source volume for component %s", componentName)
+
+	// Look for this component's volumes that contain either a storage-name label or a type label
+	var vols []types.Volume
+	for _, vol := range allVolumes {
+
+		if vol.Labels["component"] == componentName {
+
+			if snVal := vol.Labels["storage-name"]; len(strings.TrimSpace(snVal)) > 0 {
+				vols = append(vols, vol)
+			} else {
+				if typeVal := vol.Labels["type"]; typeVal == "projects" {
+					vols = append(vols, vol)
+				}
+			}
+		}
 	}
 
 	// A unique list of volumes to delete; map key is volume name.
@@ -181,7 +210,7 @@ func (a Adapter) Delete(labels map[string]string) error {
 
 	for _, container := range componentContainer {
 
-		glog.V(4).Infof("Deleting container %s for component %s", container.ID, componentName)
+		klog.V(4).Infof("Deleting container %s for component %s", container.ID, componentName)
 		err = a.Client.RemoveContainer(container.ID)
 		if err != nil {
 			return errors.Wrapf(err, "unable to remove container ID %s of component %s", container.ID, componentName)
@@ -198,17 +227,27 @@ func (a Adapter) Delete(labels map[string]string) error {
 		}
 
 		for _, vol := range vols {
+
+			// Don't delete any volumes which are mapped into other containers
+			if _, exists := volumesNotToDelete[vol.Name]; exists {
+				klog.V(4).Infof("Skipping volume %s as it is mapped into a non-odo managed container", vol.Name)
+				continue
+			}
+
 			// If the volume was found to be attached to the component's container, then add the volume
 			// to the deletion list.
 			if _, ok := volumeNames[vol.Name]; ok {
+				klog.V(4).Infof("Adding volume %s to deletion list", vol.Name)
 				volumesToDelete[vol.Name] = vol.Name
+			} else {
+				klog.V(4).Infof("Skipping volume %s as it was not attached to the component's container", vol.Name)
 			}
 		}
 	}
 
 	// Finally, delete the volumes we discovered during container deletion.
 	for name := range volumesToDelete {
-		glog.V(4).Infof("Deleting the volume %s for component %s", name, componentName)
+		klog.V(4).Infof("Deleting the volume %s for component %s", name, componentName)
 		err := a.Client.RemoveVolume(name)
 		if err != nil {
 			return errors.Wrapf(err, "Unable to remove volume %s of component %s", name, componentName)

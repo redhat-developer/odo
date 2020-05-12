@@ -11,13 +11,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// +build go1.8
+
 package config
 
 import (
 	"crypto/tls"
 	"io/ioutil"
 	"reflect"
-	"strings"
 	"testing"
 
 	"gopkg.in/yaml.v2"
@@ -29,11 +30,11 @@ func LoadTLSConfig(filename string) (*tls.Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	cfg := &TLSConfig{}
-	if err = yaml.Unmarshal(content, cfg); err != nil {
+	cfg := TLSConfig{}
+	if err = yaml.UnmarshalStrict(content, &cfg); err != nil {
 		return nil, err
 	}
-	return cfg.GenerateConfig()
+	return NewTLSConfig(&cfg)
 }
 
 var expectedTLSConfigs = []struct {
@@ -51,42 +52,14 @@ var expectedTLSConfigs = []struct {
 
 func TestValidTLSConfig(t *testing.T) {
 	for _, cfg := range expectedTLSConfigs {
-		cfg.config.BuildNameToCertificate()
 		got, err := LoadTLSConfig("testdata/" + cfg.filename)
 		if err != nil {
 			t.Errorf("Error parsing %s: %s", cfg.filename, err)
 		}
+		// non-nil functions are never equal.
+		got.GetClientCertificate = nil
 		if !reflect.DeepEqual(*got, *cfg.config) {
-			t.Fatalf("%s: unexpected config result: \n\n%s\n expected\n\n%s", cfg.filename, got, cfg.config)
-		}
-	}
-}
-
-var expectedTLSConfigErrors = []struct {
-	filename string
-	errMsg   string
-}{
-	{
-		filename: "tls_config.invalid_field.bad.yml",
-		errMsg:   "unknown fields in",
-	}, {
-		filename: "tls_config.cert_no_key.bad.yml",
-		errMsg:   "specified without client key file",
-	}, {
-		filename: "tls_config.key_no_cert.bad.yml",
-		errMsg:   "specified without client cert file",
-	},
-}
-
-func TestBadTLSConfigs(t *testing.T) {
-	for _, ee := range expectedTLSConfigErrors {
-		_, err := LoadTLSConfig("testdata/" + ee.filename)
-		if err == nil {
-			t.Errorf("Expected error parsing %s but got none", ee.filename)
-			continue
-		}
-		if !strings.Contains(err.Error(), ee.errMsg) {
-			t.Errorf("Expected error for %s to contain %q but got: %s", ee.filename, ee.errMsg, err)
+			t.Fatalf("%v: unexpected config result: \n\n%v\n expected\n\n%v", cfg.filename, got, cfg.config)
 		}
 	}
 }

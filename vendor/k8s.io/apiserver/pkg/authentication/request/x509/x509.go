@@ -23,16 +23,24 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
-
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apiserver/pkg/authentication/authenticator"
 	"k8s.io/apiserver/pkg/authentication/user"
+	"k8s.io/component-base/metrics"
+	"k8s.io/component-base/metrics/legacyregistry"
 )
 
-var clientCertificateExpirationHistogram = prometheus.NewHistogram(
-	prometheus.HistogramOpts{
+/*
+ * By default, the following metric is defined as falling under
+ * ALPHA stability level https://github.com/kubernetes/enhancements/blob/master/keps/sig-instrumentation/20190404-kubernetes-control-plane-metrics-stability.md#stability-classes)
+ *
+ * Promoting the stability level of the metric is a responsibility of the component owner, since it
+ * involves explicitly acknowledging support for the metric across multiple releases, in accordance with
+ * the metric stability policy.
+ */
+var clientCertificateExpirationHistogram = metrics.NewHistogram(
+	&metrics.HistogramOpts{
 		Namespace: "apiserver",
 		Subsystem: "client",
 		Name:      "certificate_expiration_seconds",
@@ -53,11 +61,12 @@ var clientCertificateExpirationHistogram = prometheus.NewHistogram(
 			(6 * 30 * 24 * time.Hour).Seconds(),
 			(12 * 30 * 24 * time.Hour).Seconds(),
 		},
+		StabilityLevel: metrics.ALPHA,
 	},
 )
 
 func init() {
-	prometheus.MustRegister(clientCertificateExpirationHistogram)
+	legacyregistry.MustRegister(clientCertificateExpirationHistogram)
 }
 
 // UserConversion defines an interface for extracting user info from a client certificate chain
@@ -73,13 +82,11 @@ func (f UserConversionFunc) User(chain []*x509.Certificate) (*authenticator.Resp
 	return f(chain)
 }
 
-type VerifyOptionFunc func() x509.VerifyOptions
-
-func StaticVerifierFn(opts x509.VerifyOptions) VerifyOptionFunc {
-	return func() x509.VerifyOptions {
-		return opts
-	}
-}
+// VerifyOptionFunc is function which provides a shallow copy of the VerifyOptions to the authenticator.  This allows
+// for cases where the options (particularly the CAs) can change.  If the bool is false, then the returned VerifyOptions
+// are ignored and the authenticator will express "no opinion".  This allows a clear signal for cases where a CertPool
+// is eventually expected, but not currently present.
+type VerifyOptionFunc func() (x509.VerifyOptions, bool)
 
 // Authenticator implements request.Authenticator by extracting user info from verified client certificates
 type Authenticator struct {
@@ -93,8 +100,8 @@ func New(opts x509.VerifyOptions, user UserConversion) *Authenticator {
 	return NewDynamic(StaticVerifierFn(opts), user)
 }
 
-// New returns a request.Authenticator that verifies client certificates using the provided
-// VerifyOptions, and converts valid certificate chains into user.Info using the provided UserConversion
+// NewDynamic returns a request.Authenticator that verifies client certificates using the provided
+// VerifyOptionFunc (which may be dynamic), and converts valid certificate chains into user.Info using the provided UserConversion
 func NewDynamic(verifyOptionsFn VerifyOptionFunc, user UserConversion) *Authenticator {
 	return &Authenticator{verifyOptionsFn, user}
 }
@@ -106,7 +113,11 @@ func (a *Authenticator) AuthenticateRequest(req *http.Request) (*authenticator.R
 	}
 
 	// Use intermediates, if provided
-	optsCopy := a.verifyOptionsFn()
+	optsCopy, ok := a.verifyOptionsFn()
+	// if there are intentionally no verify options, then we cannot authenticate this request
+	if !ok {
+		return nil, false, nil
+	}
 	if optsCopy.Intermediates == nil && len(req.TLS.PeerCertificates) > 1 {
 		optsCopy.Intermediates = x509.NewCertPool()
 		for _, intermediate := range req.TLS.PeerCertificates[1:] {
@@ -143,16 +154,16 @@ type Verifier struct {
 
 	// allowedCommonNames contains the common names which a verified certificate is allowed to have.
 	// If empty, all verified certificates are allowed.
-	allowedCommonNames sets.String
+	allowedCommonNames StringSliceProvider
 }
 
 // NewVerifier create a request.Authenticator by verifying a client cert on the request, then delegating to the wrapped auth
 func NewVerifier(opts x509.VerifyOptions, auth authenticator.Request, allowedCommonNames sets.String) authenticator.Request {
-	return NewDynamicVerifier(StaticVerifierFn(opts), auth, allowedCommonNames)
+	return NewDynamicCAVerifier(StaticVerifierFn(opts), auth, StaticStringSlice(allowedCommonNames.List()))
 }
 
-// NewVerifier create a request.Authenticator by verifying a client cert on the request, then delegating to the wrapped auth
-func NewDynamicVerifier(verifyOptionsFn VerifyOptionFunc, auth authenticator.Request, allowedCommonNames sets.String) authenticator.Request {
+// NewDynamicCAVerifier create a request.Authenticator by verifying a client cert on the request, then delegating to the wrapped auth
+func NewDynamicCAVerifier(verifyOptionsFn VerifyOptionFunc, auth authenticator.Request, allowedCommonNames StringSliceProvider) authenticator.Request {
 	return &Verifier{verifyOptionsFn, auth, allowedCommonNames}
 }
 
@@ -163,7 +174,11 @@ func (a *Verifier) AuthenticateRequest(req *http.Request) (*authenticator.Respon
 	}
 
 	// Use intermediates, if provided
-	optsCopy := a.verifyOptionsFn()
+	optsCopy, ok := a.verifyOptionsFn()
+	// if there are intentionally no verify options, then we cannot authenticate this request
+	if !ok {
+		return nil, false, nil
+	}
 	if optsCopy.Intermediates == nil && len(req.TLS.PeerCertificates) > 1 {
 		optsCopy.Intermediates = x509.NewCertPool()
 		for _, intermediate := range req.TLS.PeerCertificates[1:] {
@@ -182,12 +197,14 @@ func (a *Verifier) AuthenticateRequest(req *http.Request) (*authenticator.Respon
 
 func (a *Verifier) verifySubject(subject pkix.Name) error {
 	// No CN restrictions
-	if len(a.allowedCommonNames) == 0 {
+	if len(a.allowedCommonNames.Value()) == 0 {
 		return nil
 	}
 	// Enforce CN restrictions
-	if a.allowedCommonNames.Has(subject.CommonName) {
-		return nil
+	for _, allowedCommonName := range a.allowedCommonNames.Value() {
+		if allowedCommonName == subject.CommonName {
+			return nil
+		}
 	}
 	return fmt.Errorf("x509: subject with cn=%s is not in the allowed list", subject.CommonName)
 }

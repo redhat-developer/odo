@@ -28,7 +28,7 @@ import (
 )
 
 // StartFunc is the function to call on leader election start
-type StartFunc func(*ControllerContext) error
+type StartFunc func(context.Context, *ControllerContext) error
 
 type ControllerContext struct {
 	ComponentConfig *unstructured.Unstructured
@@ -46,13 +46,6 @@ type ControllerContext struct {
 
 	// Server is the GenericAPIServer serving healthz checks and debug info
 	Server *genericapiserver.GenericAPIServer
-
-	stopChan <-chan struct{}
-}
-
-// Done returns a channel which will close on termination.
-func (c ControllerContext) Done() <-chan struct{} {
-	return c.stopChan
 }
 
 // defaultObserverInterval specifies the default interval that file observer will do rehash the files it watches and react to any changes
@@ -76,7 +69,7 @@ type ControllerBuilder struct {
 	servingInfo          *configv1.HTTPServingInfo
 	authenticationConfig *operatorv1alpha1.DelegatedAuthentication
 	authorizationConfig  *operatorv1alpha1.DelegatedAuthorization
-	healthChecks         []healthz.HealthzChecker
+	healthChecks         []healthz.HealthChecker
 }
 
 // NewController returns a builder struct for constructing the command you want to run
@@ -141,7 +134,7 @@ func (b *ControllerBuilder) WithServer(servingInfo configv1.HTTPServingInfo, aut
 }
 
 // WithHealthChecks adds a list of healthchecks to the server
-func (b *ControllerBuilder) WithHealthChecks(healthChecks ...healthz.HealthzChecker) *ControllerBuilder {
+func (b *ControllerBuilder) WithHealthChecks(healthChecks ...healthz.HealthChecker) *ControllerBuilder {
 	b.healthChecks = append(b.healthChecks, healthChecks...)
 	return b
 }
@@ -161,7 +154,7 @@ func (b *ControllerBuilder) WithInstanceIdentity(identity string) *ControllerBui
 }
 
 // Run starts your controller for you.  It uses leader election if you asked, otherwise it directly calls you
-func (b *ControllerBuilder) Run(config *unstructured.Unstructured, ctx context.Context) error {
+func (b *ControllerBuilder) Run(ctx context.Context, config *unstructured.Unstructured) error {
 	clientConfig, err := b.getClientConfig()
 	if err != nil {
 		return err
@@ -191,31 +184,31 @@ func (b *ControllerBuilder) Run(config *unstructured.Unstructured, ctx context.C
 		}
 	}
 
-	if b.servingInfo == nil {
-		return fmt.Errorf("server config required for health checks and debugging endpoints")
-	}
-
 	kubeConfig := ""
 	if b.kubeAPIServerConfigFile != nil {
 		kubeConfig = *b.kubeAPIServerConfigFile
 	}
-	serverConfig, err := serving.ToServerConfig(ctx, *b.servingInfo, *b.authenticationConfig, *b.authorizationConfig, kubeConfig)
-	if err != nil {
-		return err
-	}
-	serverConfig.HealthzChecks = append(serverConfig.HealthzChecks, b.healthChecks...)
 
-	server, err := serverConfig.Complete(nil).New(b.componentName, genericapiserver.NewEmptyDelegate())
-	if err != nil {
-		return err
-	}
-
-	go func() {
-		if err := server.PrepareRun().Run(ctx.Done()); err != nil {
-			klog.Error(err)
+	var server *genericapiserver.GenericAPIServer
+	if b.servingInfo != nil {
+		serverConfig, err := serving.ToServerConfig(ctx, *b.servingInfo, *b.authenticationConfig, *b.authorizationConfig, kubeConfig)
+		if err != nil {
+			return err
 		}
-		klog.Fatal("server exited")
-	}()
+		serverConfig.HealthzChecks = append(serverConfig.HealthzChecks, b.healthChecks...)
+
+		server, err = serverConfig.Complete(nil).New(b.componentName, genericapiserver.NewEmptyDelegate())
+		if err != nil {
+			return err
+		}
+
+		go func() {
+			if err := server.PrepareRun().Run(ctx.Done()); err != nil {
+				klog.Error(err)
+			}
+			klog.Fatal("server exited")
+		}()
+	}
 
 	protoConfig := rest.CopyConfig(clientConfig)
 	protoConfig.AcceptContentTypes = "application/vnd.kubernetes.protobuf,application/json"
@@ -227,24 +220,26 @@ func (b *ControllerBuilder) Run(config *unstructured.Unstructured, ctx context.C
 		ProtoKubeConfig: protoConfig,
 		EventRecorder:   eventRecorder,
 		Server:          server,
-		stopChan:        ctx.Done(),
 	}
 
 	if b.leaderElection == nil {
-		if err := b.startFunc(controllerContext); err != nil {
+		if err := b.startFunc(ctx, controllerContext); err != nil {
 			return err
 		}
 		return fmt.Errorf("exited")
 	}
 
-	leaderElection, err := leaderelectionconverter.ToConfigMapLeaderElection(clientConfig, *b.leaderElection, b.componentName, b.instanceIdentity)
+	// ensure blocking TCP connections don't block the leader election
+	leaderConfig := rest.CopyConfig(protoConfig)
+	leaderConfig.Timeout = b.leaderElection.RenewDeadline.Duration
+
+	leaderElection, err := leaderelectionconverter.ToConfigMapLeaderElection(leaderConfig, *b.leaderElection, b.componentName, b.instanceIdentity)
 	if err != nil {
 		return err
 	}
 
 	leaderElection.Callbacks.OnStartedLeading = func(ctx context.Context) {
-		controllerContext.stopChan = ctx.Done()
-		if err := b.startFunc(controllerContext); err != nil {
+		if err := b.startFunc(ctx, controllerContext); err != nil {
 			klog.Fatal(err)
 		}
 	}

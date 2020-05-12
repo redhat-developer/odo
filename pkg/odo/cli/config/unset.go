@@ -12,7 +12,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
 const unsetCommandName = "unset"

@@ -6,6 +6,10 @@ package v1
 // AuthenticationLister.
 type AuthenticationListerExpansion interface{}
 
+// CSISnapshotControllerListerExpansion allows custom methods to be added to
+// CSISnapshotControllerLister.
+type CSISnapshotControllerListerExpansion interface{}
+
 // ConsoleListerExpansion allows custom methods to be added to
 // ConsoleLister.
 type ConsoleListerExpansion interface{}
@@ -37,6 +41,10 @@ type KubeControllerManagerListerExpansion interface{}
 // KubeSchedulerListerExpansion allows custom methods to be added to
 // KubeSchedulerLister.
 type KubeSchedulerListerExpansion interface{}
+
+// KubeStorageVersionMigratorListerExpansion allows custom methods to be added to
+// KubeStorageVersionMigratorLister.
+type KubeStorageVersionMigratorListerExpansion interface{}
 
 // NetworkListerExpansion allows custom methods to be added to
 // NetworkLister.

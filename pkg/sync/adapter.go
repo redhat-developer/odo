@@ -6,13 +6,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/exec"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/util"
+	"k8s.io/klog"
 
 	"github.com/pkg/errors"
 )
@@ -91,9 +91,9 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 			if err != nil {
 				return false, errors.Wrap(err, "unable to remove relative path from list of changed/deleted files")
 			}
-			glog.V(4).Infof("List of files to be deleted: +%v", deletedFiles)
+			klog.V(4).Infof("List of files to be deleted: +%v", deletedFiles)
 			changedFiles = filesChangedFiltered
-			glog.V(4).Infof("List of files changed: +%v", changedFiles)
+			klog.V(4).Infof("List of files changed: +%v", changedFiles)
 
 			if len(filesChangedFiltered) == 0 && len(filesDeletedFiltered) == 0 {
 				// no file was modified/added/deleted/renamed, thus return without building
@@ -126,7 +126,7 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 
 // pushLocal syncs source code from the user's disk to the component
 func (a Adapter) pushLocal(path string, files []string, delFiles []string, isForcePush bool, globExps []string, compInfo common.ComponentInfo) error {
-	glog.V(4).Infof("Push: componentName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", a.ComponentName, path, files, delFiles, isForcePush)
+	klog.V(4).Infof("Push: componentName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", a.ComponentName, path, files, delFiles, isForcePush)
 
 	// Edge case: check to see that the path is NOT empty.
 	emptyDir, err := util.IsEmpty(path)
@@ -148,7 +148,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 
 	if syncFolder != kclient.OdoSourceVolumeMount {
 		// Need to make sure the folder already exists on the component or else sync will fail
-		glog.V(4).Infof("Creating %s on the remote container if it doesn't already exist", syncFolder)
+		klog.V(4).Infof("Creating %s on the remote container if it doesn't already exist", syncFolder)
 		cmdArr := getCmdToCreateSyncFolder(syncFolder)
 
 		err = exec.ExecuteCommand(a.Client, compInfo, cmdArr, false)
@@ -175,7 +175,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	}
 
 	if isForcePush || len(files) > 0 {
-		glog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
+		klog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
 		err = CopyFile(a.Client, path, compInfo, syncFolder, files, globExps)
 		if err != nil {
 			s.End(false)
@@ -220,7 +220,7 @@ func getCmdToCreateSyncFolder(syncFolder string) []string {
 // getCmdToDeleteFiles returns the command used to delete the remote files on the container that are marked for deletion
 func getCmdToDeleteFiles(delFiles []string, syncFolder string) []string {
 	rmPaths := util.GetRemoteFilesMarkedForDeletion(delFiles, syncFolder)
-	glog.V(4).Infof("remote files marked for deletion are %+v", rmPaths)
+	klog.V(4).Infof("remote files marked for deletion are %+v", rmPaths)
 	cmdArr := []string{"rm", "-rf"}
 	return append(cmdArr, rmPaths...)
 }

@@ -21,12 +21,16 @@ func TestConstantMaps(t *testing.T) {
 	}
 	discoveredVersions := map[string]bool{}
 	discoveredCiphers := map[string]bool{}
+	discoveredCiphersTLS13 := map[string]bool{}
 	for _, declName := range pkg.Scope().Names() {
 		if strings.HasPrefix(declName, "VersionTLS") {
 			discoveredVersions[declName] = true
 		}
 		if strings.HasPrefix(declName, "TLS_RSA_") || strings.HasPrefix(declName, "TLS_ECDHE_") {
 			discoveredCiphers[declName] = true
+		}
+		if strings.HasPrefix(declName, "TLS_AES_") || strings.HasPrefix(declName, "TLS_CHACHA20_") {
+			discoveredCiphersTLS13[declName] = true
 		}
 	}
 
@@ -41,6 +45,17 @@ func TestConstantMaps(t *testing.T) {
 		}
 	}
 
+	for k := range discoveredCiphersTLS13 {
+		if _, ok := ciphersTLS13[k]; !ok {
+			t.Errorf("discovered cipher tls.%s not in ciphers map", k)
+		}
+	}
+	for k := range ciphersTLS13 {
+		if _, ok := discoveredCiphersTLS13[k]; !ok {
+			t.Errorf("ciphersTLS13 map has %s not in tls package", k)
+		}
+	}
+
 	for k := range discoveredVersions {
 		if _, ok := versions[k]; !ok {
 			t.Errorf("discovered version tls.%s not in version map", k)
@@ -51,6 +66,13 @@ func TestConstantMaps(t *testing.T) {
 			t.Errorf("versions map has %s not in tls package", k)
 		}
 	}
+
+	for k := range supportedVersions {
+		if _, ok := discoveredVersions[k]; !ok {
+			t.Errorf("supported versions map has %s not in tls package", k)
+		}
+	}
+
 }
 
 func TestCrypto(t *testing.T) {
@@ -131,7 +153,7 @@ func newSigningCertificateTemplate(subject pkix.Name, expireDays int, currentTim
 
 	caLifetime := time.Duration(caLifetimeInDays) * 24 * time.Hour
 
-	return newSigningCertificateTemplateForDuration(subject, caLifetime, currentTime)
+	return newSigningCertificateTemplateForDuration(subject, caLifetime, currentTime, nil, nil)
 }
 
 func buildCA(t *testing.T) (crypto.PrivateKey, *x509.Certificate) {
@@ -169,7 +191,7 @@ func buildServer(t *testing.T, signingKey crypto.PrivateKey, signingCrt *x509.Ce
 		t.Fatalf("Unexpected error: %#v", err)
 	}
 	hosts := []string{"127.0.0.1", "localhost", "www.example.com"}
-	serverTemplate := newServerCertificateTemplate(pkix.Name{CommonName: "Server"}, hosts, certificateLifetime, time.Now)
+	serverTemplate := newServerCertificateTemplate(pkix.Name{CommonName: "Server"}, hosts, certificateLifetime, time.Now, nil, nil)
 	serverCrt, err := signCertificate(serverTemplate, serverPublicKey, signingCrt, signingKey)
 	if err != nil {
 		t.Fatalf("Unexpected error: %#v", err)
@@ -217,7 +239,7 @@ func TestRandomSerialGenerator(t *testing.T) {
 	generator := &RandomSerialGenerator{}
 
 	hostnames := []string{"foo", "bar"}
-	template := newServerCertificateTemplate(pkix.Name{CommonName: hostnames[0]}, hostnames, certificateLifetime, time.Now)
+	template := newServerCertificateTemplate(pkix.Name{CommonName: hostnames[0]}, hostnames, certificateLifetime, time.Now, nil, nil)
 	if _, err := generator.Next(template); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -289,6 +311,8 @@ func TestValidityPeriodOfServerCertificate(t *testing.T) {
 			[]string{"www.example.com"},
 			test.passedExpireDays,
 			currentFakeTime,
+			nil,
+			nil,
 		)
 		expirationDate := cert.NotAfter
 		expectedExpirationDate := currentTime.Add(time.Duration(test.realExpireDays) * 24 * time.Hour)

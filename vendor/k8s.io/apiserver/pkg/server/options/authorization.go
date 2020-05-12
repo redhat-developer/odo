@@ -146,7 +146,7 @@ func (s *DelegatingAuthorizationOptions) toAuthorizer(client kubernetes.Interfac
 		klog.Warningf("No authorization-kubeconfig provided, so SubjectAccessReview of authorization tokens won't work.")
 	} else {
 		cfg := authorizerfactory.DelegatingAuthorizerConfig{
-			SubjectAccessReviewClient: client.AuthorizationV1beta1().SubjectAccessReviews(),
+			SubjectAccessReviewClient: client.AuthorizationV1().SubjectAccessReviews(),
 			AllowCacheTTL:             s.AllowCacheTTL,
 			DenyCacheTTL:              s.DenyCacheTTL,
 		}
@@ -187,10 +187,5 @@ func (s *DelegatingAuthorizationOptions) getClient() (kubernetes.Interface, erro
 	clientConfig.QPS = 200
 	clientConfig.Burst = 400
 
-	// make the client use protobuf
-	protoConfig := rest.CopyConfig(clientConfig)
-	protoConfig.AcceptContentTypes = "application/vnd.kubernetes.protobuf,application/json"
-	protoConfig.ContentType = "application/vnd.kubernetes.protobuf"
-
-	return kubernetes.NewForConfig(protoConfig)
+	return kubernetes.NewForConfig(clientConfig)
 }

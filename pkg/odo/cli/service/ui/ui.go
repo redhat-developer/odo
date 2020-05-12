@@ -3,18 +3,21 @@ package ui
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/golang/glog"
-	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
-	"github.com/mgutz/ansi"
+	"sort"
+	"strings"
+
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/util/validation"
 	"github.com/openshift/odo/pkg/service"
+	"k8s.io/klog"
+
+	"github.com/mgutz/ansi"
 	terminal2 "golang.org/x/crypto/ssh/terminal"
 	"gopkg.in/AlecAivazis/survey.v1"
 	"gopkg.in/AlecAivazis/survey.v1/core"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
-	"sort"
-	"strings"
+
+	scv1beta1 "github.com/kubernetes-sigs/service-catalog/pkg/apis/servicecatalog/v1beta1"
 )
 
 // Retrieve the list of existing service class categories
@@ -224,7 +227,7 @@ func getLongDescription(class scv1beta1.ClusterServiceClass) (longDescription st
 		var meta map[string]interface{}
 		err := json.Unmarshal(extension.Raw, &meta)
 		if err != nil {
-			glog.V(4).Infof("Unable unmarshal Extension metadata for ClusterServiceClass '%v'", class.Spec.ExternalName)
+			klog.V(4).Infof("Unable unmarshal Extension metadata for ClusterServiceClass '%v'", class.Spec.ExternalName)
 		}
 		if val, ok := meta["longDescription"]; ok {
 			longDescription = val.(string)

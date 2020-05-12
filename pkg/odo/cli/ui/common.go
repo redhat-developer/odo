@@ -1,10 +1,10 @@
 package ui
 
 import (
-	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/odo/util/validation"
 	"gopkg.in/AlecAivazis/survey.v1"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
+	"k8s.io/klog"
 	"os"
 )
 
@@ -14,7 +14,7 @@ func HandleError(err error) {
 		if err == terminal.InterruptErr {
 			os.Exit(1)
 		} else {
-			glog.V(4).Infof("Encountered an error processing prompt: %v", err)
+			klog.V(4).Infof("Encountered an error processing prompt: %v", err)
 		}
 	}
 }

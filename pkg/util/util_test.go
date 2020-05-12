@@ -1657,3 +1657,41 @@ func TestGetGitHubZipURL(t *testing.T) {
 	}
 }
 */
+
+func TestValidateURL(t *testing.T) {
+	tests := []struct {
+		name    string
+		url     string
+		wantErr bool
+	}{
+		{
+			name:    "Case 1: Valid URL",
+			url:     "http://www.example.com/",
+			wantErr: false,
+		},
+		{
+			name:    "Case 2: Invalid URL - No host",
+			url:     "http://",
+			wantErr: true,
+		},
+		{
+			name:    "Case 3: Invalid URL - No scheme",
+			url:     "://www.example.com/",
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotErr := false
+			got := ValidateURL(tt.url)
+			if got != nil {
+				gotErr = true
+			}
+
+			if !reflect.DeepEqual(gotErr, tt.wantErr) {
+				t.Errorf("Got %v, want %v", got, tt.wantErr)
+			}
+		})
+	}
+}

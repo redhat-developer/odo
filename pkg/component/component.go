@@ -15,8 +15,8 @@ import (
 
 	"github.com/openshift/odo/pkg/envinfo"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	"github.com/openshift/odo/pkg/catalog"
@@ -511,7 +511,7 @@ func ValidateComponentCreateRequest(client *occlient.Client, componentSettings c
 
 	// If component is of type local, check if the source path is valid
 	if *componentSettings.SourceType == config.LOCAL {
-		glog.V(4).Infof("Checking source location: %s", *(componentSettings.SourceLocation))
+		klog.V(4).Infof("Checking source location: %s", *(componentSettings.SourceLocation))
 		srcLocInfo, err := os.Stat(*(componentSettings.SourceLocation))
 		if err != nil {
 			return errors.Wrap(err, "failed to create component. Please view the settings used using the command `odo config view`")
@@ -604,7 +604,7 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 // Returns
 //	Error if any
 func PushLocal(client *occlient.Client, componentName string, applicationName string, path string, out io.Writer, files []string, delFiles []string, isForcePush bool, globExps []string, show bool) error {
-	glog.V(4).Infof("PushLocal: componentName: %s, applicationName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", componentName, applicationName, path, files, delFiles, isForcePush)
+	klog.V(4).Infof("PushLocal: componentName: %s, applicationName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", componentName, applicationName, path, files, delFiles, isForcePush)
 
 	// Edge case: check to see that the path is NOT empty.
 	emptyDir, err := util.IsEmpty(path)
@@ -643,7 +643,7 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 
 	// If there are files identified as deleted, propagate them to the component pod
 	if len(delFiles) > 0 {
-		glog.V(4).Infof("propogating deletion of files %s to pod", strings.Join(delFiles, " "))
+		klog.V(4).Infof("propogating deletion of files %s to pod", strings.Join(delFiles, " "))
 		/*
 			Delete files observed by watch to have been deleted from each of s2i directories like:
 				deployment dir: In interpreted runtimes like python, source is copied over to deployment dir so delete needs to happen here as well
@@ -670,7 +670,7 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	}
 
 	if isForcePush || len(files) > 0 {
-		glog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
+		klog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
 		compInfo := common.ComponentInfo{
 			PodName: pod.Name,
 		}
@@ -1009,7 +1009,7 @@ func GetComponentSource(client *occlient.Client, componentName string, applicati
 		sourcePath = deploymentConfig.ObjectMeta.Annotations[componentSourceURLAnnotation]
 	}
 
-	glog.V(4).Infof("Source for component %s is %s (%s)", componentName, sourcePath, sourceType)
+	klog.V(4).Infof("Source for component %s is %s (%s)", componentName, sourcePath, sourceType)
 	return sourceType, sourcePath, nil
 }
 
@@ -1138,7 +1138,7 @@ func Update(client *occlient.Client, componentConfig config.LocalConfigInfo, new
 
 	// STEP 2. Determine what the new source is going to be
 
-	glog.V(4).Infof("Updating component %s, from %s to %s (%s).", componentName, oldSourceType, newSource, newSourceType)
+	klog.V(4).Infof("Updating component %s, from %s to %s (%s).", componentName, oldSourceType, newSource, newSourceType)
 
 	if (oldSourceType == "local" || oldSourceType == "binary") && newSourceType == "git" {
 		// Steps to update component from local or binary to git
@@ -1148,7 +1148,7 @@ func Update(client *occlient.Client, componentConfig config.LocalConfigInfo, new
 		// 4. Build the application
 
 		// CreateBuildConfig here!
-		glog.V(4).Infof("Creating BuildConfig %s using imageName: %s for updating", namespacedOpenShiftObject, imageName)
+		klog.V(4).Infof("Creating BuildConfig %s using imageName: %s for updating", namespacedOpenShiftObject, imageName)
 		bc, err := client.CreateBuildConfig(commonObjectMeta, componentImageType, newSource, newSourceRef, evl)
 		if err != nil {
 			return errors.Wrapf(err, "unable to update BuildConfig  for %s component", componentName)
@@ -1167,7 +1167,7 @@ func Update(client *occlient.Client, componentConfig config.LocalConfigInfo, new
 		defer s.End(false)
 
 		// Update / replace the current DeploymentConfig with a Git one (not SupervisorD!)
-		glog.V(4).Infof("Updating the DeploymentConfig %s image to %s", namespacedOpenShiftObject, bc.Spec.Output.To.Name)
+		klog.V(4).Infof("Updating the DeploymentConfig %s image to %s", namespacedOpenShiftObject, bc.Spec.Output.To.Name)
 
 		// Update the image for git deployment to the BC built component image
 		updateComponentParams.ImageMeta.Name = bc.Spec.Output.To.Name
@@ -1238,7 +1238,7 @@ func Update(client *occlient.Client, componentConfig config.LocalConfigInfo, new
 			}
 
 			// Update the current DeploymentConfig with all config applied
-			glog.V(4).Infof("Updating the DeploymentConfig %s image to %s", namespacedOpenShiftObject, bc.Spec.Output.To.Name)
+			klog.V(4).Infof("Updating the DeploymentConfig %s image to %s", namespacedOpenShiftObject, bc.Spec.Output.To.Name)
 
 			s := log.Spinner("Applying configuration")
 			defer s.End(false)

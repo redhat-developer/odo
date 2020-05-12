@@ -11,7 +11,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
 const deleteRecommendedCommandName = "delete"

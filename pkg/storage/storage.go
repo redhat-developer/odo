@@ -13,9 +13,9 @@ import (
 	"github.com/openshift/odo/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/klog"
 )
 
 // Get returns Storage defination for given Storage name
@@ -42,7 +42,7 @@ func Create(client *occlient.Client, name string, size string, componentName str
 
 	labels := storagelabels.GetLabels(name, componentName, applicationName, true)
 
-	glog.V(4).Infof("Got labels for PVC: %v", labels)
+	klog.V(4).Infof("Got labels for PVC: %v", labels)
 
 	// Create PVC
 	pvc, err := client.CreatePVC(generatePVCNameFromStorageName(namespacedOpenShiftObject), size, labels)
@@ -341,7 +341,7 @@ func Mount(client *occlient.Client, path string, storageName string, componentNa
 	if err != nil {
 		return errors.Wrapf(err, "unable to get Deployment Config for component: %v in application: %v", componentName, applicationName)
 	}
-	glog.V(4).Infof("Deployment Config: %v is associated with the component: %v", dc.Name, componentName)
+	klog.V(4).Infof("Deployment Config: %v is associated with the component: %v", dc.Name, componentName)
 
 	// Add PVC to DeploymentConfig
 	if err := client.AddPVCToDeploymentConfig(dc, pvc.Name, path); err != nil {
@@ -473,7 +473,7 @@ func ListStorageWithState(client *occlient.Client, localConfig *config.LocalConf
 
 	storageCluster, err := List(client, componentName, applicationName)
 	if err != nil {
-		glog.V(4).Infof("Storage list from cluster error: %v", err)
+		klog.V(4).Infof("Storage list from cluster error: %v", err)
 	}
 
 	var storageList []Storage

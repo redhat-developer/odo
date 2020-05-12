@@ -5,8 +5,8 @@ import (
 	"unicode"
 
 	"github.com/ghodss/yaml"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 )
 
 // Every JSON document starts with "{"
@@ -29,7 +29,7 @@ func YAMLToJSON(data []byte) ([]byte, error) {
 	}
 
 	// Successful
-	glog.V(4).Infof("converted devfile YAML to JSON")
+	klog.V(4).Infof("converted devfile YAML to JSON")
 	return data, nil
 }
 

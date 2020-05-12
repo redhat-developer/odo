@@ -4,6 +4,8 @@ package v1
 
 type AuthenticationExpansion interface{}
 
+type CSISnapshotControllerExpansion interface{}
+
 type ConsoleExpansion interface{}
 
 type DNSExpansion interface{}
@@ -17,6 +19,8 @@ type KubeAPIServerExpansion interface{}
 type KubeControllerManagerExpansion interface{}
 
 type KubeSchedulerExpansion interface{}
+
+type KubeStorageVersionMigratorExpansion interface{}
 
 type NetworkExpansion interface{}
 

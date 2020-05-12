@@ -13,8 +13,12 @@ type KubeControllerManager struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
 
+	// spec is the specification of the desired behavior of the Kubernetes Controller Manager
+	// +kubebuilder:validation:Required
 	// +required
 	Spec KubeControllerManagerSpec `json:"spec"`
+
+	// status is the most recently observed status of the Kubernetes Controller Manager
 	// +optional
 	Status KubeControllerManagerStatus `json:"status"`
 }
@@ -32,8 +36,8 @@ type KubeControllerManagerStatus struct {
 // KubeControllerManagerList is a collection of items
 type KubeControllerManagerList struct {
 	metav1.TypeMeta `json:",inline"`
-	// Standard object's metadata.
 	metav1.ListMeta `json:"metadata"`
+
 	// Items contains the items
 	Items []KubeControllerManager `json:"items"`
 }

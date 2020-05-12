@@ -2,7 +2,7 @@ FROM golang:1.12-alpine as builder
 LABEL stage=builder
 WORKDIR /build
 
-RUN apk update && apk add bash make git mercurial jq
+RUN apk update && apk add bash make git mercurial jq && apk upgrade
 
 # copy just enough of the git repo to parse HEAD, used to record version in OLM binaries
 COPY .git/HEAD .git/HEAD
@@ -17,6 +17,7 @@ COPY go.sum go.sum
 COPY cmd cmd
 COPY test test
 RUN make build
+RUN make build-util
 
 FROM alpine:latest
 LABEL stage=olm
@@ -24,6 +25,7 @@ WORKDIR /
 COPY --from=builder /build/bin/olm /bin/olm
 COPY --from=builder /build/bin/catalog /bin/catalog
 COPY --from=builder /build/bin/package-server /bin/package-server
+COPY --from=builder /build/bin/cpb /bin/cpb
 EXPOSE 8080
 EXPOSE 5443
 CMD ["/bin/olm"]
