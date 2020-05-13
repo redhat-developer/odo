@@ -80,7 +80,7 @@ func (o *ServiceListOptions) Run() (err error) {
 			fmt.Fprintln(w, "NAME", "\t", "TYPE", "\t", "AGE")
 
 			for _, item := range list {
-				duration := time.Since(item.GetCreationTimestamp().Time).Truncate(time.Minute).String()
+				duration := time.Since(item.GetCreationTimestamp().Time).Truncate(time.Second).String()
 				fmt.Fprintln(w, item.GetName(), "\t", item.GetKind(), "\t", duration)
 			}
 
