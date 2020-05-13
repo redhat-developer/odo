@@ -5,11 +5,11 @@ import (
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
-	"github.com/openshift/odo/pkg/odo/cli/catalog/util"
+	catalogutil "github.com/openshift/odo/pkg/odo/cli/catalog/util"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
-	util2 "github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
 	"io"
 	"k8s.io/klog"
@@ -43,12 +43,12 @@ func NewListComponentsOptions() *ListComponentsOptions {
 // Complete completes ListComponentsOptions after they've been created
 func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 
-	tasks := util2.NewConcurrentTasks(2)
+	tasks := util.NewConcurrentTasks(2)
 
 	if !pushtarget.IsPushTargetDocker() {
 		o.Context = genericclioptions.NewContext(cmd)
 
-		tasks.Add(util2.ConcurrentTask{ToRun: func(errChannel chan error) {
+		tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
 			o.catalogList, err = catalog.ListComponents(o.Client)
 			if err != nil {
 				if experimental.IsExperimentalModeEnabled() {
@@ -57,13 +57,13 @@ func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args [
 					errChannel <- err
 				}
 			} else {
-				o.catalogList.Items = util.FilterHiddenComponents(o.catalogList.Items)
+				o.catalogList.Items = catalogutil.FilterHiddenComponents(o.catalogList.Items)
 			}
 		}})
 	}
 
 	if experimental.IsExperimentalModeEnabled() {
-		tasks.Add(util2.ConcurrentTask{ToRun: func(errChannel chan error) {
+		tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
 			o.catalogDevfileList, err = catalog.ListDevfileComponents("")
 			if o.catalogDevfileList.DevfileRegistries == nil {
 				log.Warning("Please run 'odo registry add <registry name> <registry URL>' to add registry for listing devfile components\n")
