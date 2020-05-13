@@ -862,10 +862,8 @@ func Unzip(src, dest, pathToUnzip string) ([]string, error) {
 	}
 	defer r.Close()
 
-	// change path separator to correct character for windows
-	if runtime.GOOS == "windows" {
-		pathToUnzip = strings.Replace(pathToUnzip, "/", string(os.PathSeparator), -1)
-	}
+	// change path separator to correct character
+	pathToUnzip = filepath.FromSlash(pathToUnzip)
 
 	for _, f := range r.File {
 		// Store filename/path for returning and using later on
