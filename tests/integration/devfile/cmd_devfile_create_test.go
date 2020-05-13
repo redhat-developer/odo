@@ -149,6 +149,13 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 	})
 
+	Context("When executing odo create with component with no devBuild command", func() {
+		It("should successfully create the devfile component", func() {
+			// Quarkus devfile has no devBuild command
+			helper.CmdShouldPass("odo", "create", "quarkus")
+		})
+	})
+
 	// Currently these tests need interactive mode in order to set the name of the component.
 	// Once this feature is added we can change these tests.
 	//Context("When executing odo create with devfile component and --downloadSource flag with github type", func() {

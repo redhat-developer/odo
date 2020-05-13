@@ -53,6 +53,7 @@ var _ = Describe("odo devfile catalog command tests", func() {
 				"NAME",
 				"java-spring-boot",
 				"openLiberty",
+				"quarkus",
 				"DESCRIPTION",
 				"REGISTRY",
 				"SUPPORTED",
