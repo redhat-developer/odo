@@ -75,6 +75,7 @@ func TestGetComponentContainers(t *testing.T) {
 			client:        fakeClient,
 			wantContainer: types.Container{
 				Names: []string{"/node"},
+				ID:    "1",
 				Image: "node",
 				Labels: map[string]string{
 					"component": "test",
