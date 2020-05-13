@@ -14,6 +14,7 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util"
+	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/openshift/odo/pkg/project"
 	pkgUtil "github.com/openshift/odo/pkg/util"
@@ -436,13 +437,15 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 
 	// create the internal context representation based on calculated values
 	internalCxt := internalCxt{
-		Client:          client,
-		Project:         namespace,
-		Application:     app,
-		OutputFlag:      outputFlag,
-		command:         command,
-		LocalConfigInfo: localConfiguration,
-		KClient:         KClient,
+		Client:                  client,
+		Project:                 namespace,
+		Application:             app,
+		OutputFlag:              outputFlag,
+		command:                 command,
+		LocalConfigInfo:         localConfiguration,
+		KClient:                 KClient,
+		IsPushTargetDocker:      pushtarget.IsPushTargetDocker(),
+		ExperimentalModeEnabled: experimental.IsExperimentalModeEnabled(),
 	}
 
 	// create a context from the internal representation
@@ -462,9 +465,10 @@ func newDevfileContext(command *cobra.Command) *Context {
 
 	// create the internal context representation based on calculated values
 	internalCxt := internalCxt{
-		OutputFlag:         outputFlag,
-		command:            command,
-		IsPushTargetDocker: pushtarget.IsPushTargetDocker(),
+		OutputFlag:              outputFlag,
+		command:                 command,
+		IsPushTargetDocker:      pushtarget.IsPushTargetDocker(),
+		ExperimentalModeEnabled: experimental.IsExperimentalModeEnabled(),
 	}
 
 	envInfo, err := getValidEnvinfo(command)
@@ -503,16 +507,17 @@ type Context struct {
 // internalCxt holds the actual context values and is not exported so that it cannot be instantiated outside of this package.
 // This ensures that Context objects are always created properly via NewContext factory functions.
 type internalCxt struct {
-	Client             *occlient.Client
-	command            *cobra.Command
-	Project            string
-	Application        string
-	cmp                string
-	OutputFlag         string
-	LocalConfigInfo    *config.LocalConfigInfo
-	KClient            *kclient.Client
-	EnvSpecificInfo    *envinfo.EnvSpecificInfo
-	IsPushTargetDocker bool
+	Client                  *occlient.Client
+	command                 *cobra.Command
+	Project                 string
+	Application             string
+	cmp                     string
+	OutputFlag              string
+	LocalConfigInfo         *config.LocalConfigInfo
+	KClient                 *kclient.Client
+	EnvSpecificInfo         *envinfo.EnvSpecificInfo
+	IsPushTargetDocker      bool
+	ExperimentalModeEnabled bool
 }
 
 // Component retrieves the optionally specified component or the current one if it is set. If no component is set, exit with

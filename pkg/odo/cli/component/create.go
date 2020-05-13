@@ -652,7 +652,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 // Validate validates the create parameters
 func (co *CreateOptions) Validate() (err error) {
 
-	if experimental.IsExperimentalModeEnabled() {
+	if co.ExperimentalModeEnabled {
 		if co.devfileMetadata.devfileSupport {
 			// Validate if the devfile component that user wants to create already exists
 			spinner := log.Spinner("Validating devfile component")
@@ -778,7 +778,7 @@ func (co *CreateOptions) downloadProject() error {
 
 // Run has the logic to perform the required actions as part of command
 func (co *CreateOptions) Run() (err error) {
-	if experimental.IsExperimentalModeEnabled() {
+	if co.ExperimentalModeEnabled {
 		// Download devfile.yaml file and create env.yaml file
 		if co.devfileMetadata.devfileSupport {
 			if !util.CheckPathExists(DevfilePath) {

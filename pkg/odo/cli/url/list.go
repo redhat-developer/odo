@@ -8,8 +8,6 @@ import (
 
 	"github.com/openshift/odo/pkg/envinfo"
 
-	"github.com/openshift/odo/pkg/odo/util/pushtarget"
-
 	"github.com/openshift/odo/pkg/odo/util/experimental"
 
 	routev1 "github.com/openshift/api/route/v1"
@@ -69,8 +67,8 @@ func (o *URLListOptions) Validate() (err error) {
 
 // Run contains the logic for the odo url list command
 func (o *URLListOptions) Run() (err error) {
-	if experimental.IsExperimentalModeEnabled() {
-		if pushtarget.IsPushTargetDocker() {
+	if o.ExperimentalModeEnabled {
+		if o.IsPushTargetDocker {
 			componentName := o.EnvSpecificInfo.GetName()
 			client, err := lclient.New()
 			if err != nil {
@@ -138,7 +136,7 @@ func (o *URLListOptions) Run() (err error) {
 					var present bool
 					for _, u := range urls.Items {
 						if i.Name == u.Name {
-							fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, u, experimental.IsExperimentalModeEnabled()), "", u.Spec.Rules[0].Host, experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Backend.ServicePort.IntVal, "\t", u.Spec.TLS != nil)
+							fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, u, o.ExperimentalModeEnabled), "", u.Spec.Rules[0].Host, o.ExperimentalModeEnabled), "\t", u.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Backend.ServicePort.IntVal, "\t", u.Spec.TLS != nil)
 							present = true
 						}
 					}
@@ -171,7 +169,7 @@ func (o *URLListOptions) Run() (err error) {
 			// are there changes between local and cluster states?
 			outOfSync := false
 			for _, u := range urls.Items {
-				fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Port, "\t", u.Spec.Secure)
+				fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", o.ExperimentalModeEnabled), "\t", u.Spec.Port, "\t", u.Spec.Secure)
 				if u.Status.State != url.StateTypePushed {
 					outOfSync = true
 				}

@@ -7,7 +7,6 @@ import (
 	"text/tabwriter"
 
 	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/openshift/odo/pkg/config"
@@ -67,8 +66,8 @@ func (o *URLDescribeOptions) Validate() (err error) {
 
 // Run contains the logic for the odo url list command
 func (o *URLDescribeOptions) Run() (err error) {
-	if experimental.IsExperimentalModeEnabled() {
-		if pushtarget.IsPushTargetDocker() {
+	if o.ExperimentalModeEnabled {
+		if o.IsPushTargetDocker {
 			client, err := lclient.New()
 			if err != nil {
 				return err
@@ -114,7 +113,7 @@ func (o *URLDescribeOptions) Run() (err error) {
 				tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 				fmt.Fprintln(tabWriterURL, "NAME", "\t", "URL", "\t", "PORT")
 
-				fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, u, experimental.IsExperimentalModeEnabled()), "", u.Spec.Rules[0].Host, experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Backend.ServicePort.IntVal)
+				fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, u, o.ExperimentalModeEnabled), "", u.Spec.Rules[0].Host, o.ExperimentalModeEnabled), "\t", u.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Backend.ServicePort.IntVal)
 				tabWriterURL.Flush()
 			}
 		}

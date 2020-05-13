@@ -12,8 +12,6 @@ import (
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/cli/catalog/util"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
-	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
 )
@@ -42,11 +40,13 @@ func NewListComponentsOptions() *ListComponentsOptions {
 
 // Complete completes ListComponentsOptions after they've been created
 func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	if !pushtarget.IsPushTargetDocker() {
+	o.Context = genericclioptions.NewDevfileContext(cmd)
+	if !o.IsPushTargetDocker {
+		// If pushtarget not set to Docker, need to try initalizing a regular context w/ oc-client
 		o.Context = genericclioptions.NewContext(cmd)
 		o.catalogList, err = catalog.ListComponents(o.Client)
 		if err != nil {
-			if experimental.IsExperimentalModeEnabled() {
+			if o.ExperimentalModeEnabled {
 				klog.V(4).Info("Please log in to an OpenShift cluster to list OpenShift/s2i components")
 			} else {
 				return err
@@ -56,7 +56,7 @@ func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args [
 		o.catalogList.Items = util.FilterHiddenComponents(o.catalogList.Items)
 	}
 
-	if experimental.IsExperimentalModeEnabled() {
+	if o.ExperimentalModeEnabled {
 		o.catalogDevfileList, err = catalog.ListDevfileComponents("")
 		if err != nil {
 			return err

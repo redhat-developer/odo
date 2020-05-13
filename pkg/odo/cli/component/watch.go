@@ -15,7 +15,6 @@ import (
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
-	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/pkg/errors"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
@@ -108,7 +107,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 		}
 
 		var platformContext interface{}
-		if !pushtarget.IsPushTargetDocker() {
+		if !wo.IsPushTargetDocker {
 			// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initalizing the context
 			wo.namespace = wo.KClient.Namespace
 			platformContext = kubernetes.KubernetesContext{
@@ -159,7 +158,7 @@ func (wo *WatchOptions) Validate() (err error) {
 	}
 
 	// if experimental mode is enabled and devfile is present, return. The rest of the validation is for non-devfile components
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(wo.devfilePath) {
+	if wo.ExperimentalModeEnabled && util.CheckPathExists(wo.devfilePath) {
 		exists := wo.devfileHandler.DoesComponentExist(wo.componentName)
 		if !exists {
 			return fmt.Errorf("component does not exist. Please use `odo push` to create your component")
@@ -243,7 +242,8 @@ func NewCmdWatch(name, fullName string) *cobra.Command {
 	example := fmt.Sprintf(watchExample, fullName)
 	usage := name
 
-	if experimental.IsExperimentalModeEnabled() {
+	experimentalModeEnabled := experimental.IsExperimentalModeEnabled()
+	if experimentalModeEnabled {
 		example = fmt.Sprintf(watchExampleWithComponentName, fullName)
 		usage = fmt.Sprintf("%s [component name]", name)
 	}
@@ -267,7 +267,7 @@ func NewCmdWatch(name, fullName string) *cobra.Command {
 	watchCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 
 	// enable devfile flag if experimental mode is enabled
-	if experimental.IsExperimentalModeEnabled() {
+	if experimentalModeEnabled {
 		watchCmd.Flags().StringVar(&wo.devfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
 	}
 

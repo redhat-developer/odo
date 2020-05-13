@@ -110,7 +110,7 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 		o.isRouteSupported = true
 	}
 
-	if o.ExperimentalModeEnabled && util.CheckPathExists(o.DevfilePath) {
+	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
 		if o.wantIngress || (!o.isRouteSupported) {
 			o.urlType = envinfo.INGRESS
 		} else {
@@ -169,6 +169,11 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 
 		if len(args) != 0 {
 			o.urlName = args[0]
+<<<<<<< HEAD
+		} else if o.IsPushTargetDocker {
+			o.urlName = "local-" + url.GetURLName(componentName, o.componentPort)
+=======
+>>>>>>> 6ed4650137bf9908c55b04283b6b590d607c794a
 		} else {
 			o.urlName = url.GetURLName(componentName, o.componentPort)
 		}
@@ -203,15 +208,34 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 // Validate validates the URLCreateOptions based on completed values
 func (o *URLCreateOptions) Validate() (err error) {
 	// Check if exist
-	if o.ExperimentalModeEnabled && util.CheckPathExists(o.DevfilePath) {
+	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
 		// if experimental mode is enabled, and devfile is provided.
 		// check if valid host is provided
-		if !o.IsPushTargetDocker && len(o.host) <= 0 && (!o.isRouteSupported || o.wantIngress) {
+<<<<<<< HEAD
+		if !o.IsPushTargetDocker && len(o.host) <= 0 {
+			return fmt.Errorf("host must be provided in order to create ingress")
+		}
+		for _, localURL := range o.EnvSpecificInfo.GetURL() {
+			// if current push target is Kube, but localURL contains ExposedPort
+			// if current push target is docker, but localURL contains Host
+			if o.urlName == localURL.Name &&
+				((!o.IsPushTargetDocker && localURL.ExposedPort > 0) || (o.IsPushTargetDocker && len(localURL.Host) > 0)) {
+				return fmt.Errorf("the url %s already exists for a different push target, please rerun the command using a different url name", o.urlName)
+			}
+			if !o.IsPushTargetDocker {
+				curIngressDomain := fmt.Sprintf("%v.%v", o.urlName, o.host)
+				ingressDomainEnv := fmt.Sprintf("%v.%v", localURL.Name, localURL.Host)
+				if curIngressDomain == ingressDomainEnv {
+					return fmt.Errorf("the url %s already exists", curIngressDomain)
+				}
+=======
+		if !pushtarget.IsPushTargetDocker() && len(o.host) <= 0 && (!o.isRouteSupported || o.wantIngress) {
 			return fmt.Errorf("host must be provided in order to create ingress")
 		}
 		for _, localURL := range o.EnvSpecificInfo.GetURL() {
 			if o.urlName == localURL.Name {
 				return fmt.Errorf("the url %s already exists", o.urlName)
+>>>>>>> 6ed4650137bf9908c55b04283b6b590d607c794a
 			}
 		}
 	} else {
@@ -229,7 +253,7 @@ func (o *URLCreateOptions) Validate() (err error) {
 	if !util.CheckOutputFlag(o.OutputFlag) {
 		return fmt.Errorf("given output format %s is not supported", o.OutputFlag)
 	}
-	if !o.ExperimentalModeEnabled {
+	if !experimental.IsExperimentalModeEnabled() {
 		if o.now {
 			err = o.ValidateComponentCreate()
 			if err != nil {
@@ -242,7 +266,7 @@ func (o *URLCreateOptions) Validate() (err error) {
 
 // Run contains the logic for the odo url create command
 func (o *URLCreateOptions) Run() (err error) {
-	if o.ExperimentalModeEnabled && util.CheckPathExists(o.DevfilePath) {
+	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
 		if o.IsPushTargetDocker {
 			for _, localURL := range o.EnvSpecificInfo.GetURL() {
 				fmt.Printf("componentPort is %v, localUrl.port is %v", o.componentPort, localURL.Port)
@@ -269,7 +293,7 @@ func (o *URLCreateOptions) Run() (err error) {
 	if err != nil {
 		return errors.Wrapf(err, "failed to persist the component settings to config file")
 	}
-	if o.ExperimentalModeEnabled && util.CheckPathExists(o.DevfilePath) {
+	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
 		componentName := o.EnvSpecificInfo.GetName()
 		if o.IsPushTargetDocker {
 			log.Successf("URL %s created for component: %v with exposed port: %v", o.urlName, componentName, o.exposedPort)
@@ -280,7 +304,7 @@ func (o *URLCreateOptions) Run() (err error) {
 		log.Successf("URL %s created for component: %v", o.urlName, o.Component())
 	}
 	if o.now {
-		if o.ExperimentalModeEnabled && util.CheckPathExists(o.DevfilePath) {
+		if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
 			err = o.DevfilePush()
 		} else {
 			err = o.Push()

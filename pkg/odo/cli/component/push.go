@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 
 	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/log"
@@ -70,7 +69,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		po.EnvSpecificInfo = envinfo
 		po.Context = genericclioptions.NewDevfileContext(cmd)
 
-		if !pushtarget.IsPushTargetDocker() {
+		if !po.IsPushTargetDocker {
 			// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initalizing the context
 			po.namespace = po.KClient.Namespace
 		}
@@ -106,7 +105,7 @@ func (po *PushOptions) Validate() (err error) {
 	// If the experimental flag is set and devfile is present, then we do *not* validate
 	// TODO: We need to clean this section up a bit.. We should also validate Devfile here
 	// too.
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.DevfilePath) {
+	if po.ExperimentalModeEnabled && util.CheckPathExists(po.DevfilePath) {
 		return nil
 	}
 
@@ -138,7 +137,7 @@ func (po *PushOptions) Validate() (err error) {
 // Run has the logic to perform the required actions as part of command
 func (po *PushOptions) Run() (err error) {
 	// If experimental mode is enabled, use devfile push
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.DevfilePath) {
+	if po.ExperimentalModeEnabled && util.CheckPathExists(po.DevfilePath) {
 		// Return Devfile push
 		return po.DevfilePush()
 	} else {

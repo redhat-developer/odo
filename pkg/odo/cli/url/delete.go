@@ -73,7 +73,7 @@ func (o *URLDeleteOptions) Complete(name string, cmd *cobra.Command, args []stri
 // Validate validates the URLDeleteOptions based on completed values
 func (o *URLDeleteOptions) Validate() (err error) {
 	var exists bool
-	if experimental.IsExperimentalModeEnabled() {
+	if o.ExperimentalModeEnabled {
 		urls := o.EnvSpecificInfo.GetURL()
 		componentName := o.EnvSpecificInfo.GetName()
 		for _, url := range urls {
@@ -109,7 +109,7 @@ func (o *URLDeleteOptions) Validate() (err error) {
 // Run contains the logic for the odo url delete command
 func (o *URLDeleteOptions) Run() (err error) {
 	if o.urlForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the url %v", o.urlName)) {
-		if experimental.IsExperimentalModeEnabled() {
+		if o.ExperimentalModeEnabled {
 			err = o.EnvSpecificInfo.DeleteURL(o.urlName)
 			if err != nil {
 				return err

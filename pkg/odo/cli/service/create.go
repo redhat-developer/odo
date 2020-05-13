@@ -119,7 +119,7 @@ func (o *ServiceCreateOptions) Complete(name string, cmd *cobra.Command, args []
 
 	var class scv1beta1.ClusterServiceClass
 
-	if experimental.IsExperimentalModeEnabled() && o.fromFile != "" {
+	if o.ExperimentalModeEnabled && o.fromFile != "" {
 		o.interactive = false
 		return
 	}
@@ -223,7 +223,7 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 	}
 
 	// we want to find an Operator only if something's passed to the crd flag on CLI
-	if experimental.IsExperimentalModeEnabled() {
+	if o.ExperimentalModeEnabled {
 		// if the user wants to create service from a file, we check for
 		// existence of file and validate if the requested operator and CR
 		// exist on the cluster
@@ -346,7 +346,7 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 // Run contains the logic for the odo service create command
 func (o *ServiceCreateOptions) Run() (err error) {
 	s := &log.Status{}
-	if experimental.IsExperimentalModeEnabled() {
+	if o.ExperimentalModeEnabled {
 		// in case of an opertor backed service, name of the service is
 		// provided by the yaml specification in alm-examples. It might also
 		// happen that a user spins up Service Catalog based service in
@@ -361,7 +361,7 @@ func (o *ServiceCreateOptions) Run() (err error) {
 		log.Infof("Deploying service %s of type: %s", o.ServiceName, o.ServiceType)
 	}
 
-	if experimental.IsExperimentalModeEnabled() && o.CustomResource != "" {
+	if o.ExperimentalModeEnabled && o.CustomResource != "" {
 		// if experimental mode is enabled and o.CustomResource is not empty, we're expected to create an Operator backed service
 		if o.DryRun {
 			// if it's dry run, only print the alm-example (o.CustomResourceDefinition) and exit

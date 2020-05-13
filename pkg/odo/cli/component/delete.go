@@ -7,7 +7,6 @@ import (
 
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
-	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 
 	"github.com/openshift/odo/pkg/util"
 
@@ -67,7 +66,7 @@ func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string
 		}
 
 		do.Context = genericclioptions.NewDevfileContext(cmd)
-		if !pushtarget.IsPushTargetDocker() {
+		if !do.ExperimentalModeEnabled {
 			// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initalizing the context
 			do.namespace = do.KClient.Namespace
 		}
@@ -87,7 +86,7 @@ func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string
 // Validate validates the list parameters
 func (do *DeleteOptions) Validate() (err error) {
 	// if experimental mode is enabled and devfile is present
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(do.devfilePath) {
+	if do.ExperimentalModeEnabled && util.CheckPathExists(do.devfilePath) {
 		return nil
 	}
 
@@ -113,7 +112,7 @@ func (do *DeleteOptions) Run() (err error) {
 	klog.V(4).Infof("component delete called")
 	klog.V(4).Infof("args: %#v", do)
 
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(do.devfilePath) {
+	if do.ExperimentalModeEnabled && util.CheckPathExists(do.devfilePath) {
 		return do.DevFileRun()
 	}
 
