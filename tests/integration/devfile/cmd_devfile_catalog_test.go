@@ -85,9 +85,9 @@ var _ = Describe("odo devfile catalog command tests", func() {
 		})
 	})
 	Context("When executing catalog describe component with a component name with multiple components", func() {
-		It("should give a warning that there are multiple components with this name in different registries", func() {
+		It("should print multiple devfiles from different registries", func() {
 			output := helper.CmdShouldPass("odo", "catalog", "describe", "component", "nodejs")
-			helper.MatchAllInOutput(output, []string{"There are multiple components named \"nodejs\" in different multiple devfile registries"})
+			helper.MatchAllInOutput(output, []string{"Registry: DefaultDevfileRegistry", "Registry: CheDevfileRegistry"})
 		})
 	})
 	Context("When executing catalog describe component with a component name that does not have a devfile component", func() {
