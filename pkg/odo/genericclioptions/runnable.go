@@ -94,5 +94,12 @@ func CheckMachineReadableOutputCommand(cmd *cobra.Command) {
 	// is not malformed / mixed in with normal logging
 	if log.IsJSON() {
 		_ = flag.Set("v", "0")
+	} else {
+		// Override the logging level by the value (if set) by the ODO_LOG_LEVEL env
+		// The "-v" flag set on command line will take precedence over ODO_LOG_LEVEL env
+		v := flag.CommandLine.Lookup("v").Value.String()
+		if level, ok := os.LookupEnv("ODO_LOG_LEVEL"); ok && v == "0" {
+			_ = flag.CommandLine.Set("v", level)
+		}
 	}
 }
