@@ -8,21 +8,12 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Parse func parses and validates the devfile integrity.
+// ParseDevfile func validates the devfile integrity.
 // Creates devfile context and runtime objects
-func Parse(path string) (d DevfileObj, err error) {
-
-	// NewDevfileCtx
-	d.Ctx = devfileCtx.NewDevfileCtx(path)
-
-	// Fill the fields of DevfileCtx struct
-	err = d.Ctx.Populate()
-	if err != nil {
-		return d, err
-	}
+func ParseDevfile(d DevfileObj) (DevfileObj, error) {
 
 	// Validate devfile
-	err = d.Ctx.Validate()
+	err := d.Ctx.Validate()
 	if err != nil {
 		return d, err
 	}
@@ -37,6 +28,47 @@ func Parse(path string) (d DevfileObj, err error) {
 	err = json.Unmarshal(d.Ctx.GetDevfileContent(), &d.Data)
 	if err != nil {
 		return d, errors.Wrapf(err, "failed to decode devfile content")
+	}
+
+	// Successful
+	return d, nil
+}
+
+// Parse func parses and validates the devfile integrity.
+// Creates devfile context and runtime objects
+func Parse(path string) (d DevfileObj, err error) {
+
+	// NewDevfileCtx
+	d.Ctx = devfileCtx.NewDevfileCtx(path)
+
+	// Fill the fields of DevfileCtx struct
+	err = d.Ctx.Populate()
+	if err != nil {
+		return d, err
+	}
+
+	d, err = ParseDevfile(d)
+	if err != nil {
+		return d, err
+	}
+
+	// Successful
+	return d, nil
+}
+
+// ParseInMemory func parses and validates the devfile integrity.
+// Creates devfile context and runtime objects
+func ParseInMemory(bytes []byte) (d DevfileObj, err error) {
+
+	// Fill the fields of DevfileCtx struct
+	err = d.Ctx.PopulateFromBytes(bytes)
+	if err != nil {
+		return d, err
+	}
+
+	d, err = ParseDevfile(d)
+	if err != nil {
+		return d, err
 	}
 
 	// Successful

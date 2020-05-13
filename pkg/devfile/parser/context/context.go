@@ -38,19 +38,8 @@ func NewDevfileCtx(path string) DevfileCtx {
 	}
 }
 
-// Populate fills the DevfileCtx struct with relevant context info
-func (d *DevfileCtx) Populate() (err error) {
-
-	// Get devfile absolute path
-	if d.absPath, err = util.GetAbsPath(d.relPath); err != nil {
-		return err
-	}
-	klog.V(4).Infof("absolute devfile path: '%s'", d.absPath)
-
-	// Read and save devfile content
-	if err := d.SetDevfileContent(); err != nil {
-		return err
-	}
+// PopulateDevfile fills the DevfileCtx struct with relevant context info
+func (d *DevfileCtx) PopulateDevfile() (err error) {
 
 	// Get devfile APIVersion
 	if err := d.SetDevfileAPIVersion(); err != nil {
@@ -68,6 +57,43 @@ func (d *DevfileCtx) Populate() (err error) {
 		return err
 	}
 
+	// Successful
+	return nil
+}
+
+// Populate fills the DevfileCtx struct with relevant context info
+func (d *DevfileCtx) Populate() (err error) {
+
+	// Get devfile absolute path
+	if d.absPath, err = util.GetAbsPath(d.relPath); err != nil {
+		return err
+	}
+	klog.V(4).Infof("absolute devfile path: '%s'", d.absPath)
+
+	// Read and save devfile content
+	if err := d.SetDevfileContent(); err != nil {
+		return err
+	}
+
+	if err := d.PopulateDevfile(); err != nil {
+		return err
+	}
+
+	// Successful
+	return nil
+}
+
+// PopulateFromBytes fills the DevfileCtx struct with relevant context info
+func (d *DevfileCtx) PopulateFromBytes(bytes []byte) (err error) {
+
+	// Read and save devfile content
+	if err := d.SetDevfileContentFromBytes(bytes); err != nil {
+		return err
+	}
+
+	if err := d.PopulateDevfile(); err != nil {
+		return err
+	}
 	// Successful
 	return nil
 }

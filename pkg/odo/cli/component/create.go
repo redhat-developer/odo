@@ -782,7 +782,7 @@ func (co *CreateOptions) Run() (err error) {
 			if !util.CheckPathExists(DevfilePath) {
 				err := util.DownloadFile(co.devfileMetadata.devfileRegistry.URL+co.devfileMetadata.devfileLink, DevfilePath)
 				if err != nil {
-					return errors.Wrap(err, "Faile to download devfile.yaml for devfile component")
+					return errors.Wrap(err, "Failed to download devfile.yaml for devfile component")
 				}
 			}
 
