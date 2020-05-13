@@ -42,11 +42,11 @@ func ComponentExists(client lclient.Client, name string) bool {
 func GetComponentContainers(client lclient.Client, componentName string) (containers []types.Container, err error) {
 	containerList, err := client.GetContainerList()
 	if err != nil {
-		return
+		return nil, err
 	}
 	containers = client.GetContainersByComponent(componentName, containerList)
 
-	return
+	return containers, nil
 }
 
 // GetContainerIDForAlias returns the container ID for the devfile alias from a list of containers
@@ -114,9 +114,16 @@ func DoesContainerNeedUpdating(component common.DevfileComponent, containerConfi
 		}
 	}
 
-	for internalPort, portbinding := range portMap {
-		if hostConfig.PortBindings[internalPort] == nil || hostConfig.PortBindings[internalPort][0].HostPort != portbinding[0].HostPort {
-			// if there is no exposed port assigned to the internal port, or if the exposed port has changed
+	for localInternalPort, localPortbinding := range portMap {
+		if hostConfig.PortBindings[localInternalPort] == nil || hostConfig.PortBindings[localInternalPort][0].HostPort != localPortbinding[0].HostPort {
+			// if there is no exposed port assigned to the internal port for the container, or if the exposed port has changed
+			return true
+		}
+	}
+
+	for containerInternalPort := range hostConfig.PortBindings {
+		if portMap[containerInternalPort] == nil {
+			// if the url is locally deleted
 			return true
 		}
 	}

@@ -3,12 +3,18 @@ package url
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"text/tabwriter"
+
+	"github.com/openshift/odo/pkg/envinfo"
+
+	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 
 	"github.com/openshift/odo/pkg/odo/util/experimental"
 
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -45,10 +51,11 @@ func NewURLListOptions() *URLListOptions {
 func (o *URLListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	if experimental.IsExperimentalModeEnabled() {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
+		o.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(o.componentContext)
 	} else {
 		o.Context = genericclioptions.NewContext(cmd)
+		o.LocalConfigInfo, err = config.NewLocalConfigInfo(o.componentContext)
 	}
-	o.LocalConfigInfo, err = config.NewLocalConfigInfo(o.componentContext)
 	if err != nil {
 		return errors.Wrap(err, "failed intiating local config")
 	}
@@ -63,37 +70,80 @@ func (o *URLListOptions) Validate() (err error) {
 // Run contains the logic for the odo url list command
 func (o *URLListOptions) Run() (err error) {
 	if experimental.IsExperimentalModeEnabled() {
-		componentName := o.EnvSpecificInfo.GetName()
-		// TODO: Need to list all local and pushed ingresses
-		//		 issue to track: https://github.com/openshift/odo/issues/2787
-		urls, err := url.ListIngressURL(o.KClient, o.EnvSpecificInfo, componentName)
-		if err != nil {
-			return err
-		}
-		// localUrls := o.EnvSpecificInfo.GetURL()
-		if log.IsJSON() {
-			machineoutput.OutputSuccess(urls)
-		} else {
-			if len(urls.Items) == 0 {
-				return fmt.Errorf("no URLs found for component %v", componentName)
+		if pushtarget.IsPushTargetDocker() {
+			componentName := o.EnvSpecificInfo.GetName()
+			client, err := lclient.New()
+			if err != nil {
+				return err
 			}
+			urls, err := url.ListDockerURL(client, componentName, o.EnvSpecificInfo)
+			if err != nil {
+				return err
+			}
+			if log.IsJSON() {
+				machineoutput.OutputSuccess(urls)
+			} else {
+				if len(urls.Items) == 0 {
+					return fmt.Errorf("no URLs found for component %v", componentName)
+				}
 
-			log.Infof("Found the following URLs for component %v", componentName)
-			tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-			fmt.Fprintln(tabWriterURL, "NAME", "\t", "STATE", "\t", "URL", "\t", "PORT", "\t", "SECURE")
+				log.Infof("Found the following URLs for component %v", componentName)
+				tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+				fmt.Fprintln(tabWriterURL, "NAME", "\t", "STATE", "\t", "URL", "\t", "PORT")
 
-			// are there changes between local and cluster states?
-			outOfSync := false
-			for _, u := range urls.Items {
-				fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, url.ConvertIngressURLToIngress(u), experimental.IsExperimentalModeEnabled()), "", u.Spec.Rules[0].Host, experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Backend.ServicePort.IntVal, "\t", u.Spec.TLS != nil)
-				if u.Status.State != url.StateTypePushed {
-					outOfSync = true
+				// are there changes between local and container states?
+				outOfSync := false
+				for _, u := range urls.Items {
+					var urlString string
+					if u.Status.State == url.StateTypeNotPushed {
+						// to be consistent with URL for ingress and routes
+						// if not pushed, display URl as ://
+						urlString = "://"
+					} else {
+						urlString = fmt.Sprintf("%s:%s", u.Spec.Host, strconv.Itoa(u.Spec.ExternalPort))
+					}
+					fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", urlString, "\t", u.Spec.Port)
+					if u.Status.State != url.StateTypePushed {
+						outOfSync = true
+					}
+				}
+				tabWriterURL.Flush()
+				if outOfSync {
+					log.Info("There are local changes. Please run 'odo push'.")
 				}
 			}
-			tabWriterURL.Flush()
-			if outOfSync {
-				fmt.Fprintf(os.Stdout, "\n")
-				fmt.Fprintf(os.Stdout, "There are local changes. Please run 'odo push'.\n")
+		} else {
+			componentName := o.EnvSpecificInfo.GetName()
+			// TODO: Need to list all local and pushed ingresses
+			//		 issue to track: https://github.com/openshift/odo/issues/2787
+			urls, err := url.ListIngressURL(o.KClient, o.EnvSpecificInfo, componentName)
+			if err != nil {
+				return err
+			}
+			// localUrls := o.EnvSpecificInfo.GetURL()
+			if log.IsJSON() {
+				machineoutput.OutputSuccess(urls)
+			} else {
+				if len(urls.Items) == 0 {
+					return fmt.Errorf("no URLs found for component %v", componentName)
+				}
+				log.Infof("Found the following URLs for component %v", componentName)
+				tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+				fmt.Fprintln(tabWriterURL, "NAME", "\t", "STATE", "\t", "URL", "\t", "PORT", "\t", "SECURE")
+
+				// are there changes between local and cluster states?
+				outOfSync := false
+				for _, u := range urls.Items {
+					fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, url.ConvertIngressURLToIngress(u), experimental.IsExperimentalModeEnabled()), "", u.Spec.Rules[0].Host, experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Backend.ServicePort.IntVal, "\t", u.Spec.TLS != nil)
+					if u.Status.State != url.StateTypePushed {
+						outOfSync = true
+					}
+				}
+
+				tabWriterURL.Flush()
+				if outOfSync {
+					log.Info("There are local changes. Please run 'odo push'.")
+				}
 			}
 		}
 	} else {
@@ -122,8 +172,7 @@ func (o *URLListOptions) Run() (err error) {
 			}
 			tabWriterURL.Flush()
 			if outOfSync {
-				fmt.Fprintf(os.Stdout, "\n")
-				fmt.Fprintf(os.Stdout, "There are local changes. Please run 'odo push'.\n")
+				log.Info("There are local changes. Please run 'odo push'.")
 			}
 		}
 	}

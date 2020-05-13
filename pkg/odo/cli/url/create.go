@@ -245,7 +245,8 @@ func (o *URLCreateOptions) Run() (err error) {
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
 		if pushtarget.IsPushTargetDocker() {
 			for _, localURL := range o.EnvSpecificInfo.GetURL() {
-				if o.urlPort == localURL.Port && localURL.ExposedPort > 0 {
+				fmt.Printf("componentPort is %v, localUrl.port is %v", o.componentPort, localURL.Port)
+				if o.componentPort == localURL.Port && localURL.ExposedPort > 0 {
 					if !o.forceFlag {
 						if !ui.Proceed(fmt.Sprintf("Port %v already has an exposed port %v set for it. Do you want to override the exposed port", localURL.Port, localURL.ExposedPort)) {
 							log.Info("Aborted by the user")
