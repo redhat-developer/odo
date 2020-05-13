@@ -55,15 +55,6 @@ func GetDevfileRegistries(registryName string) (map[string]Registry, error) {
 
 const indexPath = "/devfiles/index.json"
 
-// getDevfileIndexEntriesFrom retrieves the devfile entries associated with the specified name, url associated with a registry
-func getDevfileIndexEntriesFrom(registryName, registryURL string) ([]DevfileIndexEntry, error) {
-	registry := Registry{
-		Name: registryName,
-		URL:  registryURL,
-	}
-	return getDevfileIndexEntries(registry)
-}
-
 // getDevfileIndexEntries retrieves the devfile entries associated with the specified registry
 func getDevfileIndexEntries(registry Registry) ([]DevfileIndexEntry, error) {
 	var devfileIndex []DevfileIndexEntry

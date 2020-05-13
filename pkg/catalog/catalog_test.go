@@ -241,7 +241,7 @@ OdoSettings:
 	}
 }
 
-func TestGetDevfileIndex(t *testing.T) {
+func TestGetDevfileIndexEntries(t *testing.T) {
 	// Start a local HTTP server
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		// Send response to be tested
@@ -274,15 +274,13 @@ func TestGetDevfileIndex(t *testing.T) {
 
 	const registryName = "some registry"
 	tests := []struct {
-		name         string
-		registryURL  string
-		registryName string
-		want         []DevfileIndexEntry
+		name     string
+		registry Registry
+		want     []DevfileIndexEntry
 	}{
 		{
-			name:         "Test NodeJS devfile index",
-			registryURL:  server.URL,
-			registryName: registryName,
+			name:     "Test NodeJS devfile index",
+			registry: Registry{Name: registryName, URL: server.URL},
 			want: []DevfileIndexEntry{
 				{
 					DisplayName: "NodeJS Angular Web Application",
@@ -310,7 +308,7 @@ func TestGetDevfileIndex(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getDevfileIndexEntriesFrom(tt.registryName, tt.registryURL)
+			got, err := getDevfileIndexEntries(tt.registry)
 
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Got: %v, want: %v", got, tt.want)
