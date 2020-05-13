@@ -17,7 +17,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
 const componentRecommendedCommandName = "component"
@@ -70,7 +70,7 @@ func (o *DescribeComponentOptions) Complete(name string, cmd *cobra.Command, arg
 	}
 
 	if experimental.IsExperimentalModeEnabled() {
-		catalogDevfileList, err := catalog.ListDevfileComponents()
+		catalogDevfileList, err := catalog.ListDevfileComponents("")
 		if err != nil {
 			return err
 		}
@@ -99,7 +99,7 @@ func (o *DescribeComponentOptions) Run() (err error) {
 	if log.IsJSON() {
 		if len(o.devfileComponents) > 0 {
 			for _, devfileComponent := range o.devfileComponents {
-				data, err := pkgUtil.DownloadFileInMemory(devfileComponent.Registry + devfileComponent.Link)
+				data, err := pkgUtil.DownloadFileInMemory(devfileComponent.Registry.Name + devfileComponent.Link)
 				if err != nil {
 					return errors.Wrapf(err, "Failed to download devfile.yaml for devfile component: %s", devfileComponent)
 				}
@@ -119,8 +119,8 @@ func (o *DescribeComponentOptions) Run() (err error) {
 			fmt.Fprintln(w, "Devfile Component(s):")
 
 			for _, devfileComponent := range o.devfileComponents {
-				fmt.Fprintln(w, "\n* Registry: "+devfileComponent.Registry)
-				data, err := pkgUtil.DownloadFileInMemory(devfileComponent.Registry + devfileComponent.Link)
+				fmt.Fprintln(w, "\n* Registry: "+devfileComponent.Registry.Name)
+				data, err := pkgUtil.DownloadFileInMemory(devfileComponent.Registry.Name + devfileComponent.Link)
 				if err != nil {
 					return errors.Wrapf(err, "Failed to download devfile.yaml for devfile component: %s", devfileComponent)
 				}
