@@ -37,7 +37,7 @@ func (ct *ConcurrentTasks) Add(task ConcurrentTask) {
 // Based on https://garrypolley.com/2016/02/10/golang-routines-errors/
 func (ct *ConcurrentTasks) Run() error {
 	var wg sync.WaitGroup
-	finished := make(chan bool, 1) // this along with wg.Wait() are why the error handling works and doesn't deadlock
+	finished := make(chan bool, 1) // this along with wg.Wait() is why the error handling works and doesn't deadlock
 	errChannel := make(chan error)
 
 	for _, task := range ct.tasks {
