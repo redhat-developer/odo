@@ -136,10 +136,6 @@ regenerate:
 	make -C test/issue498 regenerate
 	make -C test/issue503 regenerate
 	make -C test/issue530 regenerate
-	make -C test/issue617 regenerate
-	make -C test/issue620 regenerate
-	make -C test/protobuffer regenerate
-	make -C test/issue630 regenerate
 
 	make gofmt
 

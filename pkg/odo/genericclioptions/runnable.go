@@ -89,10 +89,17 @@ func CheckMachineReadableOutputCommand(cmd *cobra.Command) {
 	}
 
 	// Before running anything, we will make sure that no verbose output is made
-	// This is a HACK to manually override `-v 4` to `-v 0` (in which we have no glog.V(0) in our code...
+	// This is a HACK to manually override `-v 4` to `-v 0` (in which we have no klog.V(0) in our code...
 	// in order to have NO verbose output when combining both `-o json` and `-v 4` so json output
 	// is not malformed / mixed in with normal logging
 	if log.IsJSON() {
 		_ = flag.Set("v", "0")
+	} else {
+		// Override the logging level by the value (if set) by the ODO_LOG_LEVEL env
+		// The "-v" flag set on command line will take precedence over ODO_LOG_LEVEL env
+		v := flag.CommandLine.Lookup("v").Value.String()
+		if level, ok := os.LookupEnv("ODO_LOG_LEVEL"); ok && v == "0" {
+			_ = flag.CommandLine.Set("v", level)
+		}
 	}
 }

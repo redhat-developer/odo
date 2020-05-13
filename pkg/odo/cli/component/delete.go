@@ -2,15 +2,17 @@ package component
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
+	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 
 	"github.com/openshift/odo/pkg/util"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
@@ -22,7 +24,7 @@ import (
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
 // DeleteRecommendedCommandName is the recommended delete command name
@@ -63,6 +65,13 @@ func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string
 		if err != nil {
 			return err
 		}
+
+		do.Context = genericclioptions.NewDevfileContext(cmd)
+		if !pushtarget.IsPushTargetDocker() {
+			// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initalizing the context
+			do.namespace = do.KClient.Namespace
+		}
+
 		return nil
 	}
 
@@ -91,14 +100,18 @@ func (do *DeleteOptions) Validate() (err error) {
 	}
 	if !do.isCmpExists {
 		log.Errorf("Component %s does not exist on the cluster", do.ComponentOptions.componentName)
+		// If request is to delete non existing component without all flag, exit with exit code 1
+		if !do.componentDeleteAllFlag {
+			os.Exit(1)
+		}
 	}
 	return
 }
 
 // Run has the logic to perform the required actions as part of command
 func (do *DeleteOptions) Run() (err error) {
-	glog.V(4).Infof("component delete called")
-	glog.V(4).Infof("args: %#v", do)
+	klog.V(4).Infof("component delete called")
+	klog.V(4).Infof("args: %#v", do)
 
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(do.devfilePath) {
 		return do.DevFileRun()
@@ -250,7 +263,6 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 	// enable devfile flag if experimental mode is enabled
 	if experimental.IsExperimentalModeEnabled() {
 		componentDeleteCmd.Flags().StringVar(&do.devfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
-		componentDeleteCmd.Flags().StringVar(&do.namespace, "namespace", "", "Namespace to push the component to")
 	}
 
 	componentDeleteCmd.Flags().BoolVarP(&do.componentForceDeleteFlag, "force", "f", false, "Delete component without prompting")

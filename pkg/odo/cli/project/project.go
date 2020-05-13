@@ -5,7 +5,6 @@ import (
 
 	"github.com/openshift/odo/pkg/config"
 
-	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/application"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/log"
@@ -16,6 +15,7 @@ import (
 	"github.com/openshift/odo/pkg/service"
 	"github.com/openshift/odo/pkg/url"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 
 	"github.com/spf13/cobra"
 )
@@ -133,7 +133,7 @@ func printDeleteProjectInfo(client *occlient.Client, projectName string) error {
 			serviceList, err := service.List(client, app)
 			if err != nil {
 				log.Info("No services / could not get services")
-				glog.V(4).Info(err.Error())
+				klog.V(4).Info(err.Error())
 			}
 
 			if len(serviceList.Items) != 0 {

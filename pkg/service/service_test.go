@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/kylelemons/godebug/pretty"
 	"github.com/onsi/gomega/matchers"
 	"github.com/openshift/odo/pkg/testingutil"
@@ -11,7 +12,7 @@ import (
 	"sort"
 	"testing"
 
-	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
+	scv1beta1 "github.com/kubernetes-sigs/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	appsv1 "github.com/openshift/api/apps/v1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
@@ -390,10 +391,10 @@ func TestListWithDetailedStatus(t *testing.T) {
 				},
 			},
 			output: []Service{
-				Service{
+				{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "Service",
-						APIVersion: "odo.openshift.io/v1alpha1",
+						APIVersion: "odo.dev/v1alpha1",
 					},
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "mysql-persistent",
@@ -406,10 +407,10 @@ func TestListWithDetailedStatus(t *testing.T) {
 						Status: "ProvisionedAndLinked",
 					},
 				},
-				Service{
+				{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "Service",
-						APIVersion: "odo.openshift.io/v1alpha1",
+						APIVersion: "odo.dev/v1alpha1",
 					},
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "postgresql-ephemeral",
@@ -422,10 +423,10 @@ func TestListWithDetailedStatus(t *testing.T) {
 						Status: "ProvisionedAndBound",
 					},
 				},
-				Service{
+				{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "Service",
-						APIVersion: "odo.openshift.io/v1alpha1",
+						APIVersion: "odo.dev/v1alpha1",
 					},
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "mongodb",
@@ -438,10 +439,10 @@ func TestListWithDetailedStatus(t *testing.T) {
 						Status: "ProvisionedSuccessfully",
 					},
 				},
-				Service{
+				{
 					TypeMeta: metav1.TypeMeta{
 						Kind:       "Service",
-						APIVersion: "odo.openshift.io/v1alpha1",
+						APIVersion: "odo.dev/v1alpha1",
 					},
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "jenkins-persistent",

@@ -170,7 +170,7 @@ See the below table for a list of all possible machine readable output commands:
 ----
 {
   "kind": "Application",
-  "apiVersion": "odo.openshift.io/v1alpha1",
+  "apiVersion": "odo.dev/v1alpha1",
   "metadata": {
     "name": "app",
     "namespace": "myproject",
@@ -189,12 +189,12 @@ See the below table for a list of all possible machine readable output commands:
 ----
 {
   "kind": "List",
-  "apiVersion": "odo.openshift.io/v1alpha1",
+  "apiVersion": "odo.dev/v1alpha1",
   "metadata": {},
   "items": [
     {
       "kind": "Application",
-      "apiVersion": "odo.openshift.io/v1alpha1",
+      "apiVersion": "odo.dev/v1alpha1",
       "metadata": {
         "name": "app",
         "namespace": "myproject",
@@ -218,26 +218,102 @@ See the below table for a list of all possible machine readable output commands:
 [source,json]
 ----
 {
-  "kind": "Component",
-  "apiVersion": "odo.openshift.io/v1alpha1",
-  "metadata": {
-    "name": "nodejs-nvnh",
-    "creationTimestamp": null
-  },
-  "spec": {
-    "type": "nodejs",
-    "url": [
-      "example",
-      "json",
-      "nodejs-nvnh-8080"
-    ],
-    "storage": [
-      "mystorage"
-    ]
-  },
-  "status": {
-    "state": "Pushed"
-  }
+    "kind": "Component",
+    "apiVersion": "odo.dev/v1alpha1",
+    "metadata": {
+        "name": "nodejs-nodejs-ex-xvgz",
+        "namespace": "foobarz",
+        "creationTimestamp": null
+    },
+    "spec": {
+        "app": "app",
+        "type": "nodejs",
+        "source": "file://./",
+        "sourceType": "local",
+        "urls": {
+            "kind": "List",
+            "apiVersion": "odo.dev/v1alpha1",
+            "metadata": {},
+            "items": [
+                {
+                    "kind": "url",
+                    "apiVersion": "odo.dev/v1alpha1",
+                    "metadata": {
+                        "name": "myurl",
+                        "creationTimestamp": null
+                    },
+                    "spec": {
+                        "host": "myurl-app-foobarz.192.168.42.68.nip.io",
+                        "protocol": "http",
+                        "port": 8080,
+                        "secure": false
+                    },
+                    "status": {
+                        "state": "Pushed"
+                    }
+                },
+                {
+                    "kind": "url",
+                    "apiVersion": "odo.dev/v1alpha1",
+                    "metadata": {
+                        "name": "json",
+                        "creationTimestamp": null
+                    },
+                    "spec": {
+                        "port": 8080,
+                        "secure": false
+                    },
+                    "status": {
+                        "state": "Not Pushed"
+                    }
+                }
+            ]
+        },
+        "storages": {
+            "kind": "List",
+            "apiVersion": "odo.dev/v1alpha1",
+            "metadata": {},
+            "items": [
+                {
+                    "kind": "storage",
+                    "apiVersion": "odo.dev/v1alpha1",
+                    "metadata": {
+                        "name": "mystorage",
+                        "creationTimestamp": null
+                    },
+                    "spec": {
+                        "size": "1Gi",
+                        "path": "/opt/app-root/src/storage/"
+                    }
+                },
+                {
+                    "kind": "storage",
+                    "apiVersion": "odo.dev/v1alpha1",
+                    "metadata": {
+                        "name": "mystorage2",
+                        "creationTimestamp": null
+                    },
+                    "spec": {
+                        "size": "1Gi",
+                        "path": "/opt/app-root/src/storage1/"
+                    }
+                }
+            ]
+        },
+        "env": [
+            {
+                "name": "DEBUG_PORT",
+                "value": "5858"
+            }
+        ],
+        "ports": [
+            "8080/TCP",
+            "8080/TCP"
+        ]
+    },
+    "status": {
+        "state": "Pushed"
+    }
 }
 ----
 
@@ -247,12 +323,12 @@ See the below table for a list of all possible machine readable output commands:
 ----
 {
   "kind": "List",
-  "apiVersion": "odo.openshift.io/v1alpha1",
+  "apiVersion": "odo.dev/v1alpha1",
   "metadata": {},
   "items": [
     {
       "kind": "Component",
-      "apiVersion": "odo.openshift.io/v1alpha1",
+      "apiVersion": "odo.dev/v1alpha1",
       "metadata": {
         "name": "nodejs-nvnh",
         "creationTimestamp": null
@@ -282,12 +358,12 @@ See the below table for a list of all possible machine readable output commands:
 ----
 {
   "kind": "List",
-  "apiVersion": "odo.openshift.io/v1alpha1",
+  "apiVersion": "odo.dev/v1alpha1",
   "metadata": {},
   "items": [
     {
       "kind": "Project",
-      "apiVersion": "odo.openshift.io/v1alpha1",
+      "apiVersion": "odo.dev/v1alpha1",
       "metadata": {
         "name": "myproject",
         "creationTimestamp": null
@@ -311,7 +387,7 @@ See the below table for a list of all possible machine readable output commands:
 ----
 {
   "kind": "storage",
-  "apiVersion": "odo.openshift.io/v1alpha1",
+  "apiVersion": "odo.dev/v1alpha1",
   "metadata": {
     "name": "mystorage",
     "creationTimestamp": null
@@ -329,12 +405,12 @@ See the below table for a list of all possible machine readable output commands:
 ----
 {
   "kind": "List",
-  "apiVersion": "odo.openshift.io/v1aplha1",
+  "apiVersion": "odo.dev/v1aplha1",
   "metadata": {},
   "items": [
     {
       "kind": "Storage",
-      "apiVersion": "odo.openshift.io/v1alpha1",
+      "apiVersion": "odo.dev/v1alpha1",
       "metadata": {
         "name": "mystorage",
         "creationTimestamp": null
@@ -354,7 +430,7 @@ See the below table for a list of all possible machine readable output commands:
 ----
 {
   "kind": "url",
-  "apiVersion": "odo.openshift.io/v1alpha1",
+  "apiVersion": "odo.dev/v1alpha1",
   "metadata": {
     "name": "foobar-8080",
     "creationTimestamp": null
@@ -373,12 +449,12 @@ See the below table for a list of all possible machine readable output commands:
 ----
 {
   "kind": "List",
-  "apiVersion": "odo.openshift.io/v1alpha1",
+  "apiVersion": "odo.dev/v1alpha1",
   "metadata": {},
   "items": [
     {
       "kind": "url",
-      "apiVersion": "odo.openshift.io/v1alpha1",
+      "apiVersion": "odo.dev/v1alpha1",
       "metadata": {
         "name": "foobar-8080",
         "creationTimestamp": null

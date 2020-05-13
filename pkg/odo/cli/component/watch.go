@@ -9,16 +9,18 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/occlient"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
+	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/pkg/errors"
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
-	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/component"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
@@ -31,11 +33,15 @@ import (
 const WatchRecommendedCommandName = "watch"
 
 var watchLongDesc = ktemplates.LongDesc(`Watch for changes, update component on change.`)
-var watchExample = ktemplates.Examples(`  # Watch for changes in directory for current component
+var watchExampleWithComponentName = ktemplates.Examples(`  # Watch for changes in directory for current component
 %[1]s
 
 # Watch for changes in directory for component called frontend 
 %[1]s frontend
+  `)
+
+var watchExample = ktemplates.Examples(`  # Watch for changes in directory for current component
+%[1]s
   `)
 
 // WatchOptions contains attributes of the watch command
@@ -54,6 +60,8 @@ type WatchOptions struct {
 	namespace      string
 	devfileHandler adapters.PlatformAdapter
 
+	EnvSpecificInfo *envinfo.EnvSpecificInfo
+
 	*genericclioptions.Context
 }
 
@@ -64,10 +72,19 @@ func NewWatchOptions() *WatchOptions {
 
 // Complete completes watch args
 func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	wo.devfilePath = filepath.Join(wo.componentContext, wo.devfilePath)
+
 	// if experimental mode is enabled and devfile is present
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(wo.devfilePath) {
+		envinfo, err := envinfo.NewEnvSpecificInfo(wo.componentContext)
+		if err != nil {
+			return errors.Wrap(err, "unable to retrieve configuration information")
+		}
+		wo.EnvSpecificInfo = envinfo
+		wo.Context = genericclioptions.NewDevfileContext(cmd)
+
 		// Set the source path to either the context or current working directory (if context not set)
-		wo.sourcePath, err = util.GetAbsPath(filepath.Dir(wo.componentContext))
+		wo.sourcePath, err = util.GetAbsPath(wo.componentContext)
 		if err != nil {
 			return errors.Wrap(err, "unable to get source path")
 		}
@@ -79,7 +96,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 		}
 
 		// Get the component name
-		wo.componentName, err = getComponentName()
+		wo.componentName, err = getComponentName(wo.componentContext)
 		if err != nil {
 			return err
 		}
@@ -90,10 +107,17 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 			return err
 		}
 
-		kc := kubernetes.KubernetesContext{
-			Namespace: wo.namespace,
+		var platformContext interface{}
+		if !pushtarget.IsPushTargetDocker() {
+			// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initalizing the context
+			wo.namespace = wo.KClient.Namespace
+			platformContext = kubernetes.KubernetesContext{
+				Namespace: wo.namespace,
+			}
+		} else {
+			platformContext = nil
 		}
-		wo.devfileHandler, err = adapters.NewPlatformAdapter(wo.componentName, devObj, kc)
+		wo.devfileHandler, err = adapters.NewPlatformAdapter(wo.componentName, wo.componentContext, devObj, platformContext)
 
 		return err
 	}
@@ -131,7 +155,7 @@ func (wo *WatchOptions) Validate() (err error) {
 	}
 	// Print a debug message warning user if delay is set to 0
 	if wo.delay == 0 {
-		glog.V(4).Infof("delay=0 means changes will be pushed as soon as they are detected which can cause performance issues")
+		klog.V(4).Infof("delay=0 means changes will be pushed as soon as they are detected which can cause performance issues")
 	}
 
 	// if experimental mode is enabled and devfile is present, return. The rest of the validation is for non-devfile components
@@ -216,11 +240,19 @@ func (wo *WatchOptions) Run() (err error) {
 func NewCmdWatch(name, fullName string) *cobra.Command {
 	wo := NewWatchOptions()
 
+	example := fmt.Sprintf(watchExample, fullName)
+	usage := name
+
+	if experimental.IsExperimentalModeEnabled() {
+		example = fmt.Sprintf(watchExampleWithComponentName, fullName)
+		usage = fmt.Sprintf("%s [component name]", name)
+	}
+
 	var watchCmd = &cobra.Command{
-		Use:         fmt.Sprintf("%s [component name]", name),
+		Use:         usage,
 		Short:       "Watch for changes, update component on change",
 		Long:        watchLongDesc,
-		Example:     fmt.Sprintf(watchExample, fullName),
+		Example:     example,
 		Args:        cobra.MaximumNArgs(1),
 		Annotations: map[string]string{"command": "component"},
 		Run: func(cmd *cobra.Command, args []string) {
@@ -237,7 +269,6 @@ func NewCmdWatch(name, fullName string) *cobra.Command {
 	// enable devfile flag if experimental mode is enabled
 	if experimental.IsExperimentalModeEnabled() {
 		watchCmd.Flags().StringVar(&wo.devfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
-		watchCmd.Flags().StringVar(&wo.namespace, "namespace", "", "Namespace to push the component to")
 	}
 
 	// Adding context flag

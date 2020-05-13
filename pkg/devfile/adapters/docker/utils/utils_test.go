@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"os"
 	"reflect"
 	"testing"
 
@@ -9,8 +10,12 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
+	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
+	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/lclient"
+	"github.com/openshift/odo/pkg/testingutil"
+	"github.com/openshift/odo/pkg/util"
 )
 
 func TestComponentExists(t *testing.T) {
@@ -44,10 +49,79 @@ func TestComponentExists(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		cmpExists := ComponentExists(*tt.client, tt.componentName)
-		if tt.want != cmpExists {
-			t.Errorf("expected %v, wanted %v", cmpExists, tt.want)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			cmpExists := ComponentExists(*tt.client, tt.componentName)
+			if tt.want != cmpExists {
+				t.Errorf("expected %v, wanted %v", cmpExists, tt.want)
+			}
+		})
+	}
+}
+
+func TestGetComponentContainers(t *testing.T) {
+	fakeClient := lclient.FakeNew()
+	fakeErrorClient := lclient.FakeErrorNew()
+
+	tests := []struct {
+		name          string
+		componentName string
+		client        *lclient.Client
+		wantContainer types.Container
+		wantErr       bool
+	}{
+		{
+			name:          "Case 1: Component exists",
+			componentName: "test",
+			client:        fakeClient,
+			wantContainer: types.Container{
+				Names: []string{"/node"},
+				ID:    "1",
+				Image: "node",
+				Labels: map[string]string{
+					"component": "test",
+					"alias":     "alias1",
+				},
+				Mounts: []types.MountPoint{
+					{
+						Destination: lclient.OdoSourceVolumeMount,
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:          "Case 2: Error client",
+			componentName: "test",
+			client:        fakeErrorClient,
+			wantContainer: types.Container{},
+			wantErr:       true,
+		},
+		{
+			name:          "Case 3: Component does not exist",
+			componentName: "somerandomcomponent",
+			client:        fakeClient,
+			wantContainer: types.Container{},
+			wantErr:       false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			containers, err := GetComponentContainers(*tt.client, tt.componentName)
+			if !tt.wantErr && err != nil {
+				t.Errorf("TestGetComponentContainers error: unexpected error %v", err)
+			} else if !tt.wantErr {
+				matched := false
+				for _, container := range containers {
+					if reflect.DeepEqual(tt.wantContainer, container) {
+						matched = true
+					}
+				}
+				if !matched && len(containers) > 0 {
+					t.Errorf("TestGetComponentContainers error: did not match wanted container %v", tt.wantContainer.Names)
+				}
+			}
+		})
 	}
 }
 
@@ -95,10 +169,12 @@ func TestConvertEnvs(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		envVars := ConvertEnvs(tt.envVars)
-		if !reflect.DeepEqual(tt.want, envVars) {
-			t.Errorf("expected %v, wanted %v", envVars, tt.want)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			envVars := ConvertEnvs(tt.envVars)
+			if !reflect.DeepEqual(tt.want, envVars) {
+				t.Errorf("expected %v, wanted %v", envVars, tt.want)
+			}
+		})
 	}
 }
 
@@ -369,16 +445,18 @@ func TestDoesContainerNeedUpdating(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		component := common.DevfileComponent{
-			DevfileComponentDockerimage: common.DevfileComponentDockerimage{
-				Image: &tt.image,
-				Env:   tt.envVars,
-			},
-		}
-		needsUpdating := DoesContainerNeedUpdating(component, &tt.containerConfig, &tt.hostConfig, tt.mounts, tt.containerMounts, tt.portmap)
-		if needsUpdating != tt.want {
-			t.Errorf("expected %v, wanted %v", needsUpdating, tt.want)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			component := common.DevfileComponent{
+				DevfileComponentDockerimage: common.DevfileComponentDockerimage{
+					Image: &tt.image,
+					Env:   tt.envVars,
+				},
+			}
+			needsUpdating := DoesContainerNeedUpdating(component, &tt.containerConfig, &tt.hostConfig, tt.mounts, tt.containerMounts, tt.portmap)
+			if needsUpdating != tt.want {
+				t.Errorf("expected %v, wanted %v", needsUpdating, tt.want)
+			}
+		})
 	}
 }
 
@@ -463,13 +541,15 @@ func TestAddProjectVolumeToComp(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		hostConfig := container.HostConfig{
-			Mounts: tt.mounts,
-		}
-		AddProjectVolumeToComp(projectVolumeName, &hostConfig)
-		if !reflect.DeepEqual(tt.want, hostConfig) {
-			t.Errorf("expected %v, actual %v", tt.want, hostConfig)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			hostConfig := container.HostConfig{
+				Mounts: tt.mounts,
+			}
+			AddVolumeToContainer(projectVolumeName, lclient.OdoSourceVolumeMount, &hostConfig)
+			if !reflect.DeepEqual(tt.want, hostConfig) {
+				t.Errorf("expected %v, actual %v", tt.want, hostConfig)
+			}
+		})
 	}
 
 }
@@ -499,10 +579,562 @@ func TestGetProjectVolumeLabels(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		labels := GetProjectVolumeLabels(tt.componentName)
-		if !reflect.DeepEqual(tt.want, labels) {
-			t.Errorf("expected %v, actual %v", tt.want, labels)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			labels := GetProjectVolumeLabels(tt.componentName)
+			if !reflect.DeepEqual(tt.want, labels) {
+				t.Errorf("expected %v, actual %v", tt.want, labels)
+			}
+		})
+	}
+
+}
+
+func TestGetContainerLabels(t *testing.T) {
+
+	tests := []struct {
+		name          string
+		componentName string
+		alias         string
+		want          map[string]string
+	}{
+		{
+			name:          "Case 1: Regular component name and alias",
+			componentName: "some-component",
+			alias:         "some-alias",
+			want: map[string]string{
+				"component": "some-component",
+				"alias":     "some-alias",
+			},
+		},
+		{
+			name:          "Case 1: Empty component name and alias",
+			componentName: "",
+			want: map[string]string{
+				"component": "",
+				"alias":     "",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			labels := GetContainerLabels(tt.componentName, tt.alias)
+			if !reflect.DeepEqual(tt.want, labels) {
+				t.Errorf("expected %v, actual %v", tt.want, labels)
+			}
+		})
+	}
+
+}
+
+func TestGetSupervisordVolumeLabels(t *testing.T) {
+
+	tests := []struct {
+		name        string
+		customImage bool
+		want        map[string]string
+	}{
+		{
+			name:        "Case 1: Default supervisord image",
+			customImage: false,
+			want: map[string]string{
+				"name": adaptersCommon.SupervisordVolumeName,
+				"type": supervisordVolume,
+			},
+		},
+		{
+			name:        "Case 2: Custom supervisord image",
+			customImage: true,
+			want: map[string]string{
+				"name": adaptersCommon.SupervisordVolumeName,
+				"type": supervisordVolume,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.customImage {
+				os.Setenv("ODO_BOOTSTRAPPER_IMAGE", "customimage:customtag")
+			}
+			image := adaptersCommon.GetBootstrapperImage()
+			_, _, _, imageTag := util.ParseComponentImageName(image)
+
+			tt.want["version"] = imageTag
+
+			labels := GetSupervisordVolumeLabels()
+			if !reflect.DeepEqual(tt.want, labels) {
+				t.Errorf("expected %v, actual %v", tt.want, labels)
+			}
+		})
+	}
+
+}
+
+func TestUpdateComponentWithSupervisord(t *testing.T) {
+
+	command := "ls -la"
+	component := "alias1"
+	workDir := "/"
+	emptyString := ""
+	garbageString := "garbageString"
+	validCommandType := common.DevfileCommandTypeExec
+	supervisordVolumeName := "supervisordVolumeName"
+	defaultWorkDirEnv := adaptersCommon.EnvOdoCommandRunWorkingDir
+	defaultCommandEnv := adaptersCommon.EnvOdoCommandRun
+
+	tests := []struct {
+		name                  string
+		commandActions        []common.DevfileCommandAction
+		commandName           string
+		comp                  common.DevfileComponent
+		supervisordVolumeName string
+		hostConfig            container.HostConfig
+		wantHostConfig        container.HostConfig
+		wantCommand           []string
+		wantArgs              []string
+		wantEnv               []common.DockerimageEnv
+	}{
+		{
+			name: "Case 1: No component commands, args, env",
+			commandActions: []common.DevfileCommandAction{
+				{
+					Command:   &command,
+					Component: &component,
+					Workdir:   &workDir,
+					Type:      &validCommandType,
+				},
+			},
+			commandName: emptyString,
+			comp: common.DevfileComponent{
+				Alias: &component,
+				DevfileComponentDockerimage: common.DevfileComponentDockerimage{
+					Command: []string{},
+					Args:    []string{},
+					Env:     []common.DockerimageEnv{},
+				},
+			},
+			supervisordVolumeName: supervisordVolumeName,
+			hostConfig:            container.HostConfig{},
+			wantHostConfig: container.HostConfig{
+				Mounts: []mount.Mount{
+					{
+						Type:   mount.TypeVolume,
+						Source: supervisordVolumeName,
+						Target: adaptersCommon.SupervisordMountPath,
+					},
+				},
+			},
+			wantCommand: []string{adaptersCommon.SupervisordBinaryPath},
+			wantArgs:    []string{"-c", adaptersCommon.SupervisordConfFile},
+			wantEnv: []common.DockerimageEnv{
+				{
+					Name:  &defaultWorkDirEnv,
+					Value: &workDir,
+				},
+				{
+					Name:  &defaultCommandEnv,
+					Value: &command,
+				},
+			},
+		},
+		{
+			name: "Case 2: Existing component command and no args, env",
+			commandActions: []common.DevfileCommandAction{
+				{
+					Command:   &command,
+					Component: &component,
+					Workdir:   &workDir,
+					Type:      &validCommandType,
+				},
+			},
+			commandName: emptyString,
+			comp: common.DevfileComponent{
+				Alias: &component,
+				DevfileComponentDockerimage: common.DevfileComponentDockerimage{
+					Command: []string{"some", "command"},
+					Args:    []string{},
+					Env:     []common.DockerimageEnv{},
+				},
+			},
+			supervisordVolumeName: supervisordVolumeName,
+			hostConfig:            container.HostConfig{},
+			wantHostConfig: container.HostConfig{
+				Mounts: []mount.Mount{
+					{
+						Type:   mount.TypeVolume,
+						Source: supervisordVolumeName,
+						Target: adaptersCommon.SupervisordMountPath,
+					},
+				},
+			},
+			wantCommand: []string{"some", "command"},
+			wantArgs:    []string{},
+			wantEnv: []common.DockerimageEnv{
+				{
+					Name:  &defaultWorkDirEnv,
+					Value: &workDir,
+				},
+				{
+					Name:  &defaultCommandEnv,
+					Value: &command,
+				},
+			},
+		},
+		{
+			name: "Case 3: Existing component command and args and no env",
+			commandActions: []common.DevfileCommandAction{
+				{
+					Command:   &command,
+					Component: &component,
+					Workdir:   &workDir,
+					Type:      &validCommandType,
+				},
+			},
+			commandName: emptyString,
+			comp: common.DevfileComponent{
+				Alias: &component,
+				DevfileComponentDockerimage: common.DevfileComponentDockerimage{
+					Command: []string{"some", "command"},
+					Args:    []string{"some", "args"},
+					Env:     []common.DockerimageEnv{},
+				},
+			},
+			supervisordVolumeName: supervisordVolumeName,
+			hostConfig:            container.HostConfig{},
+			wantHostConfig: container.HostConfig{
+				Mounts: []mount.Mount{
+					{
+						Type:   mount.TypeVolume,
+						Source: supervisordVolumeName,
+						Target: adaptersCommon.SupervisordMountPath,
+					},
+				},
+			},
+			wantCommand: []string{"some", "command"},
+			wantArgs:    []string{"some", "args"},
+			wantEnv: []common.DockerimageEnv{
+				{
+					Name:  &defaultWorkDirEnv,
+					Value: &workDir,
+				},
+				{
+					Name:  &defaultCommandEnv,
+					Value: &command,
+				},
+			},
+		},
+		{
+			name: "Case 4: Existing component command, args and env",
+			commandActions: []common.DevfileCommandAction{
+				{
+					Command:   &command,
+					Component: &component,
+					Workdir:   &workDir,
+					Type:      &validCommandType,
+				},
+			},
+			commandName: emptyString,
+			comp: common.DevfileComponent{
+				Alias: &component,
+				DevfileComponentDockerimage: common.DevfileComponentDockerimage{
+					Command: []string{"some", "command"},
+					Args:    []string{"some", "args"},
+					Env: []common.DockerimageEnv{
+						{
+							Name:  &defaultWorkDirEnv,
+							Value: &garbageString,
+						},
+						{
+							Name:  &defaultCommandEnv,
+							Value: &garbageString,
+						},
+					},
+				},
+			},
+			supervisordVolumeName: supervisordVolumeName,
+			hostConfig:            container.HostConfig{},
+			wantHostConfig: container.HostConfig{
+				Mounts: []mount.Mount{
+					{
+						Type:   mount.TypeVolume,
+						Source: supervisordVolumeName,
+						Target: adaptersCommon.SupervisordMountPath,
+					},
+				},
+			},
+			wantCommand: []string{"some", "command"},
+			wantArgs:    []string{"some", "args"},
+			wantEnv: []common.DockerimageEnv{
+				{
+					Name:  &defaultWorkDirEnv,
+					Value: &garbageString,
+				},
+				{
+					Name:  &defaultCommandEnv,
+					Value: &garbageString,
+				},
+			},
+		},
+		{
+			name: "Case 5: Existing host config, should append to it",
+			commandActions: []common.DevfileCommandAction{
+				{
+					Command:   &command,
+					Component: &component,
+					Workdir:   &workDir,
+					Type:      &validCommandType,
+				},
+			},
+			commandName: emptyString,
+			comp: common.DevfileComponent{
+				Alias: &component,
+				DevfileComponentDockerimage: common.DevfileComponentDockerimage{
+					Command: []string{"some", "command"},
+					Args:    []string{"some", "args"},
+					Env: []common.DockerimageEnv{
+						{
+							Name:  &defaultWorkDirEnv,
+							Value: &garbageString,
+						},
+						{
+							Name:  &defaultCommandEnv,
+							Value: &garbageString,
+						},
+					},
+				},
+			},
+			supervisordVolumeName: supervisordVolumeName,
+			hostConfig: container.HostConfig{
+				Mounts: []mount.Mount{
+					{
+						Type:   mount.TypeVolume,
+						Source: garbageString,
+						Target: garbageString,
+					},
+				},
+			},
+			wantHostConfig: container.HostConfig{
+				Mounts: []mount.Mount{
+					{
+						Type:   mount.TypeVolume,
+						Source: supervisordVolumeName,
+						Target: adaptersCommon.SupervisordMountPath,
+					},
+					{
+						Type:   mount.TypeVolume,
+						Source: garbageString,
+						Target: garbageString,
+					},
+				},
+			},
+			wantCommand: []string{"some", "command"},
+			wantArgs:    []string{"some", "args"},
+			wantEnv: []common.DockerimageEnv{
+				{
+					Name:  &defaultWorkDirEnv,
+					Value: &garbageString,
+				},
+				{
+					Name:  &defaultCommandEnv,
+					Value: &garbageString,
+				},
+			},
+		},
+		{
+			name: "Case 6: Not a run command component",
+			commandActions: []common.DevfileCommandAction{
+				{
+					Command:   &command,
+					Component: &component,
+					Workdir:   &workDir,
+					Type:      &validCommandType,
+				},
+			},
+			commandName: emptyString,
+			comp: common.DevfileComponent{
+				Alias: &garbageString,
+				DevfileComponentDockerimage: common.DevfileComponentDockerimage{
+					Command: []string{},
+					Args:    []string{},
+					Env:     []common.DockerimageEnv{},
+				},
+			},
+			supervisordVolumeName: supervisordVolumeName,
+			hostConfig:            container.HostConfig{},
+			wantHostConfig: container.HostConfig{
+				Mounts: []mount.Mount{},
+			},
+			wantCommand: []string{},
+			wantArgs:    []string{},
+			wantEnv:     []common.DockerimageEnv{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			devObj := devfileParser.DevfileObj{
+				Data: testingutil.TestDevfileData{
+					CommandActions: tt.commandActions,
+					ComponentType:  common.DevfileComponentTypeDockerimage,
+				},
+			}
+
+			runCommand, err := adaptersCommon.GetRunCommand(devObj.Data, tt.commandName)
+			if err != nil {
+				t.Errorf("TestUpdateComponentWithSupervisord: error getting the run command")
+			}
+
+			UpdateComponentWithSupervisord(&tt.comp, runCommand, tt.supervisordVolumeName, &tt.hostConfig)
+
+			// Check the container host config
+			for _, containerHostConfigMount := range tt.hostConfig.Mounts {
+				matched := false
+				for _, wantHostConfigMount := range tt.wantHostConfig.Mounts {
+					if reflect.DeepEqual(wantHostConfigMount, containerHostConfigMount) {
+						matched = true
+					}
+				}
+
+				if !matched {
+					t.Errorf("TestUpdateComponentWithSupervisord: host configs source: %v target:%v do not match wanted host config", containerHostConfigMount.Source, containerHostConfigMount.Target)
+				}
+			}
+
+			// Check the component command
+			if !reflect.DeepEqual(tt.comp.Command, tt.wantCommand) {
+				t.Errorf("TestUpdateComponentWithSupervisord: component commands dont match actual: %v wanted: %v", tt.comp.Command, tt.wantCommand)
+			}
+
+			// Check the component args
+			if !reflect.DeepEqual(tt.comp.Args, tt.wantArgs) {
+				t.Errorf("TestUpdateComponentWithSupervisord: component args dont match actual: %v wanted: %v", tt.comp.Args, tt.wantArgs)
+			}
+
+			// Check the component env
+			for _, compEnv := range tt.comp.Env {
+				matched := false
+				for _, wantEnv := range tt.wantEnv {
+					if reflect.DeepEqual(wantEnv, compEnv) {
+						matched = true
+					}
+				}
+
+				if !matched {
+					t.Errorf("TestUpdateComponentWithSupervisord: component env dont match env: %v:%v not present in wanted list", *compEnv.Name, *compEnv.Value)
+				}
+			}
+
+		})
+	}
+
+}
+
+func TestStartBootstrapSupervisordInitContainer(t *testing.T) {
+
+	supervisordVolumeName := supervisordVolume
+
+	fakeClient := lclient.FakeNew()
+	fakeErrorClient := lclient.FakeErrorNew()
+
+	tests := []struct {
+		name    string
+		client  *lclient.Client
+		wantErr bool
+	}{
+		{
+			name:    "Case 1: Successfully create a bootstrap container",
+			client:  fakeClient,
+			wantErr: false,
+		},
+		{
+			name:    "Case 2: Failed to create a bootstrap container ",
+			client:  fakeErrorClient,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := StartBootstrapSupervisordInitContainer(*tt.client, supervisordVolumeName)
+			if !tt.wantErr && err != nil {
+				t.Errorf("TestStartBootstrapSupervisordInitContainer: unexpected error got: %v wanted: %v", err, tt.wantErr)
+			}
+		})
+	}
+
+}
+
+func TestCreateAndInitSupervisordVolume(t *testing.T) {
+
+	fakeClient := lclient.FakeNew()
+	fakeErrorClient := lclient.FakeErrorNew()
+
+	tests := []struct {
+		name    string
+		client  *lclient.Client
+		wantErr bool
+	}{
+		{
+			name:    "Case 1: Successfully create a bootstrap vol and container",
+			client:  fakeClient,
+			wantErr: false,
+		},
+		{
+			name:    "Case 2: Failed to create a bootstrap vol and container ",
+			client:  fakeErrorClient,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			volName, err := CreateAndInitSupervisordVolume(*tt.client)
+			if !tt.wantErr && err != nil {
+				t.Logf("TestCreateAndInitSupervisordVolume: unexpected error %v, wanted %v", err, tt.wantErr)
+			} else if !tt.wantErr && volName != adaptersCommon.SupervisordVolumeName {
+				t.Logf("TestCreateAndInitSupervisordVolume: unexpected supervisord vol name, expected: %v got: %v", adaptersCommon.SupervisordVolumeName, volName)
+			}
+		})
+	}
+
+}
+
+func TestGetContainerIDForAlias(t *testing.T) {
+
+	containers := []types.Container{
+		{
+			ID: "someid",
+			Labels: map[string]string{
+				"alias": "somealias",
+			},
+		},
+		{
+			ID: "someid2",
+			Labels: map[string]string{
+				"alias": "somealias2",
+			},
+		},
+	}
+
+	tests := []struct {
+		name            string
+		alias           string
+		wantContainerID string
+	}{
+		{
+			name:            "Case 1: Get a container id for the a label match",
+			alias:           "somealias",
+			wantContainerID: "someid",
+		},
+		{
+			name:            "Case 2: No container id for a label mismatch",
+			alias:           "garbagealias",
+			wantContainerID: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			containerID := GetContainerIDForAlias(containers, tt.alias)
+			if containerID != tt.wantContainerID {
+				t.Logf("TestGetContainerIDForAlias error: container id %v does not match the expected container id %v", containerID, tt.wantContainerID)
+			}
+		})
 	}
 
 }

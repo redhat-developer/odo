@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/devfile/parser/data"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 )
 
 // SetDevfileAPIVersion returns the devfile APIVersion
@@ -32,7 +32,7 @@ func (d *DevfileCtx) SetDevfileAPIVersion() error {
 
 	// Successful
 	d.apiVersion = apiVersion.(string)
-	glog.V(4).Infof("devfile apiVersion: '%s'", d.apiVersion)
+	klog.V(4).Infof("devfile apiVersion: '%s'", d.apiVersion)
 	return nil
 }
 

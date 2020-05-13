@@ -1,6 +1,8 @@
 package component
 
 import (
+	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/docker/docker/api/types"
@@ -9,6 +11,7 @@ import (
 	"github.com/golang/mock/gomock"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/testingutil"
@@ -19,6 +22,34 @@ func TestPush(t *testing.T) {
 	testComponentName := "test"
 	fakeClient := lclient.FakeNew()
 	fakeErrorClient := lclient.FakeErrorNew()
+
+	command := "ls -la"
+	component := "alias1"
+	workDir := "/root"
+	validCommandType := common.DevfileCommandTypeExec
+
+	// create a temp dir for the file indexer
+	directory, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Errorf("TestPush error: error creating temporary directory for the indexer: %v", err)
+	}
+
+	pushParams := adaptersCommon.PushParameters{
+		Path:              directory,
+		WatchFiles:        []string{},
+		WatchDeletedFiles: []string{},
+		IgnoredFiles:      []string{},
+		ForceBuild:        false,
+	}
+
+	commandActions := []versionsCommon.DevfileCommandAction{
+		{
+			Command:   &command,
+			Component: &component,
+			Workdir:   &workDir,
+			Type:      &validCommandType,
+		},
+	}
 
 	tests := []struct {
 		name          string
@@ -49,7 +80,8 @@ func TestPush(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					ComponentType: tt.componentType,
+					ComponentType:  tt.componentType,
+					CommandActions: commandActions,
 				},
 			}
 
@@ -60,13 +92,19 @@ func TestPush(t *testing.T) {
 
 			componentAdapter := New(adapterCtx, *tt.client)
 			// ToDo: Add more meaningful unit tests once Push actually does something with its parameters
-			err := componentAdapter.Push(adaptersCommon.PushParameters{})
+			err := componentAdapter.Push(pushParams)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("component adapter create unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
 		})
+	}
+
+	// Remove the temp dir created for the file indexer
+	err = os.RemoveAll(directory)
+	if err != nil {
+		t.Errorf("TestPush error: error deleting the temp dir %s", directory)
 	}
 
 }
@@ -252,4 +290,316 @@ func TestAdapterDelete(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAdapterDeleteVolumes(t *testing.T) {
+
+	// Convenience func to create a mock ODO-style container with the given volume mounts
+	containerWithMount := func(componentName string, mountPoints []types.MountPoint) types.Container {
+
+		return types.Container{
+			ID: componentName,
+			Labels: map[string]string{
+				"component": componentName,
+			},
+			Mounts: mountPoints,
+		}
+	}
+
+	componentName := "my-component"
+	anotherComponentName := "other-component"
+
+	// The purpose of these tests is to verify the correctness of container deletion, such as:
+	// - Only volumes that match the format of an ODO-managed volume (storage or source) are deleted
+	// - Ensure that bind mounts are never deleted
+	// - Ensure that other component's volumes are never deleted
+	// - Ensure that volumes that have only the exact source/storage labels format are deleted
+
+	tests := []struct {
+		name           string
+		containers     []types.Container
+		volumes        []*types.Volume
+		expectToDelete []string
+	}{
+		{
+			name: "Case 1: Should delete both storage and source mount",
+			containers: []types.Container{
+				containerWithMount(componentName,
+					[]types.MountPoint{
+						{
+							Name: "my-src-mount",
+							Type: mount.TypeVolume,
+						},
+						{
+							Name: "my-storage-mount",
+							Type: mount.TypeVolume,
+						},
+					}),
+			},
+			volumes: []*types.Volume{
+				{
+					Name: "my-src-mount",
+					Labels: map[string]string{
+						"component": componentName,
+						"type":      "projects",
+					},
+				},
+				{
+					Name: "my-storage-mount",
+					Labels: map[string]string{
+						"component":    componentName,
+						"storage-name": "anyval",
+					},
+				},
+			},
+			expectToDelete: []string{
+				"my-src-mount",
+				"my-storage-mount",
+			},
+		},
+		{
+			name: "Case 2: Should delete storage mount alone",
+			containers: []types.Container{
+				containerWithMount(componentName,
+					[]types.MountPoint{
+						{
+							Name: "my-storage-mount",
+							Type: mount.TypeVolume,
+						},
+					}),
+			},
+			volumes: []*types.Volume{
+				{
+					Name: "my-storage-mount",
+					Labels: map[string]string{
+						"component":    componentName,
+						"storage-name": "anyval",
+					},
+				},
+			},
+			expectToDelete: []string{
+				"my-storage-mount",
+			},
+		},
+		{
+			name: "Case 3: Should not delete a bind mount even if it matches src volume labels",
+			containers: []types.Container{
+				containerWithMount(componentName,
+					[]types.MountPoint{
+						{
+							Name: "my-src-mount",
+							Type: mount.TypeBind,
+						},
+					}),
+			},
+
+			volumes: []*types.Volume{
+				{
+					Name: "my-src-mount",
+					Labels: map[string]string{
+						"component": componentName,
+						"type":      "projects",
+					},
+				},
+			},
+			expectToDelete: []string{},
+		},
+		{
+			name: "Case 4: Should not try to delete other component's volumes",
+			containers: []types.Container{
+				containerWithMount(componentName,
+					[]types.MountPoint{
+						{
+							Name: "my-src-mount",
+							Type: mount.TypeVolume,
+						},
+						{
+							Name: "my-storage-mount",
+							Type: mount.TypeVolume,
+						},
+					}),
+				containerWithMount(anotherComponentName,
+					[]types.MountPoint{
+						{
+							Name: "my-src-mount-other-component",
+							Type: mount.TypeVolume,
+						},
+						{
+							Name: "my-storage-mount-other-component",
+							Type: mount.TypeVolume,
+						},
+					}),
+			},
+			volumes: []*types.Volume{
+				{
+					Name: "my-src-mount",
+					Labels: map[string]string{
+						"component": componentName,
+						"type":      "projects",
+					},
+				},
+				{
+					Name: "my-storage-mount",
+					Labels: map[string]string{
+						"component":    componentName,
+						"storage-name": "anyval",
+					},
+				},
+				{
+					Name: "my-src-mount-other-component",
+					Labels: map[string]string{
+						"component": anotherComponentName,
+						"type":      "projects",
+					},
+				},
+				{
+					Name: "my-storage-mount-other-component",
+					Labels: map[string]string{
+						"component":    anotherComponentName,
+						"storage-name": "anyval",
+					},
+				},
+			},
+			expectToDelete: []string{
+				"my-src-mount",
+				"my-storage-mount",
+			},
+		},
+		{
+			name: "Case 5: Should not try to delete a component's non-ODO volumes, even if the format is very close to ODO",
+			containers: []types.Container{containerWithMount("my-component",
+				[]types.MountPoint{
+					{
+						Name: "my-src-mount",
+						Type: mount.TypeVolume,
+					},
+					{
+						Name: "my-storage-mount",
+						Type: mount.TypeVolume,
+					},
+					{
+						Name: "another-volume-1",
+						Type: mount.TypeVolume,
+					},
+					{
+						Name: "another-volume-2",
+						Type: mount.TypeVolume,
+					},
+				})},
+			volumes: []*types.Volume{
+				{
+					Name: "my-src-mount",
+					Labels: map[string]string{
+						"component": componentName,
+						"type":      "projects",
+					},
+				},
+				{
+					Name: "my-storage-mount",
+					Labels: map[string]string{
+						"component":    componentName,
+						"storage-name": "anyval",
+					},
+				},
+				{
+					Name: "another-volume-1",
+					Labels: map[string]string{
+						"component": componentName,
+						"type":      "projects-but-not-really",
+					},
+				},
+				{
+					Name: "another-volume-2",
+					Labels: map[string]string{
+						"component":                   componentName,
+						"storage-name-but-not-really": "anyval",
+					},
+				},
+			},
+			expectToDelete: []string{
+				"my-src-mount",
+				"my-storage-mount",
+			},
+		},
+		{
+			name: "Case 6: Should not delete a volume that is mounted into another container",
+			containers: []types.Container{
+
+				containerWithMount("my-component",
+					[]types.MountPoint{
+						{
+							Name: "my-storage-mount",
+							Type: mount.TypeVolume,
+						},
+					}),
+
+				containerWithMount("a-non-odo-container-for-example",
+					[]types.MountPoint{
+						{
+							Name: "my-storage-mount",
+							Type: mount.TypeVolume,
+						},
+					}),
+			},
+			volumes: []*types.Volume{
+				{
+					Name: "my-storage-mount",
+					Labels: map[string]string{
+						"component":    componentName,
+						"storage-name": "anyval",
+					},
+				},
+			},
+			expectToDelete: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			devObj := devfileParser.DevfileObj{
+				Data: testingutil.TestDevfileData{
+					ComponentType: "nodejs",
+				},
+			}
+
+			adapterCtx := adaptersCommon.AdapterContext{
+				ComponentName: componentName,
+				Devfile:       devObj,
+			}
+
+			fkclient, mockDockerClient := lclient.FakeNewMockClient(ctrl)
+
+			a := Adapter{
+				Client:         *fkclient,
+				AdapterContext: adapterCtx,
+			}
+
+			arg := map[string]string{
+				"component": componentName,
+			}
+
+			mockDockerClient.EXPECT().ContainerList(gomock.Any(), gomock.Any()).Return(tt.containers, nil)
+
+			mockDockerClient.EXPECT().ContainerRemove(gomock.Any(), componentName, gomock.Any()).Return(nil)
+
+			mockDockerClient.EXPECT().VolumeList(gomock.Any(), gomock.Any()).Return(volumeTypes.VolumeListOKBody{
+				Volumes: tt.volumes,
+			}, nil)
+
+			for _, deleteExpected := range tt.expectToDelete {
+				mockDockerClient.EXPECT().VolumeRemove(gomock.Any(), deleteExpected, gomock.Any()).Return(nil)
+			}
+
+			err := a.Delete(arg)
+			if err != nil {
+				t.Errorf("Delete() unexpected error = %v", err)
+			}
+
+		})
+
+	}
+
 }

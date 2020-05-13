@@ -8,8 +8,8 @@ import (
 
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/util"
 )
@@ -26,6 +26,15 @@ type ComponentSettings struct {
 	URL       *[]EnvInfoURL `yaml:"Url,omitempty"`
 }
 
+// URLKind is an enum to indicate the type of the URL i.e ingress/route
+type URLKind string
+
+const (
+	INGRESS URLKind = "ingress"
+	ROUTE   URLKind = "route"
+	DOCKER  URLKind = "docker"
+)
+
 // EnvInfoURL holds URL related information
 type EnvInfoURL struct {
 	// Name of the URL
@@ -34,12 +43,14 @@ type EnvInfoURL struct {
 	Port int `yaml:"Port,omitempty"`
 	// Indicates if the URL should be a secure https one
 	Secure bool `yaml:"Secure,omitempty"`
-	// Clutser host
+	// Cluster host
 	Host string `yaml:"host,omitempty"`
 	// TLS secret name to create ingress to provide a secure URL
 	TLSSecret string `yaml:"TLSSecret,omitempty"`
 	// Exposed port number for docker container, required for local scenarios
 	ExposedPort int `yaml:"ExposedPort,omitempty"`
+	// Kind is the kind of the URL
+	Kind URLKind `yaml:"Kind,omitempty"`
 }
 
 // EnvInfo holds all the env specific infomation relavent to a specific Component.
@@ -178,7 +189,7 @@ func (esi *EnvSpecificInfo) DeleteEnvDirIfEmpty() error {
 
 	// If directory is empty we can remove it
 	if err == io.EOF {
-		glog.V(4).Info("Deleting the env directory as well because its empty")
+		klog.V(4).Info("Deleting the env directory as well because its empty")
 
 		return esi.fs.Remove(envDir)
 	}

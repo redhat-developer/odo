@@ -3,10 +3,15 @@ package url
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"text/tabwriter"
+
+	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -16,7 +21,7 @@ import (
 	"github.com/openshift/odo/pkg/url"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
 // DescribeRecommendedCommandName is the recommended describe command name
@@ -43,12 +48,13 @@ func NewURLDescribeOptions() *URLDescribeOptions {
 func (o *URLDescribeOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	if experimental.IsExperimentalModeEnabled() {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
+		o.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(o.componentContext)
 	} else {
 		o.Context = genericclioptions.NewContext(cmd)
+		o.localConfigInfo, err = config.NewLocalConfigInfo(o.componentContext)
 	}
-	o.localConfigInfo, err = config.NewLocalConfigInfo(o.componentContext)
 	if err != nil {
-		return errors.Wrap(err, "failed initialize local config")
+		return errors.Wrap(err, "failed intiating local config")
 	}
 	o.url = args[0]
 	return
@@ -62,19 +68,55 @@ func (o *URLDescribeOptions) Validate() (err error) {
 // Run contains the logic for the odo url list command
 func (o *URLDescribeOptions) Run() (err error) {
 	if experimental.IsExperimentalModeEnabled() {
-		u, err := url.GetIngress(o.KClient, o.EnvSpecificInfo, o.url)
-		if err != nil {
-			return err
-		}
-		if log.IsJSON() {
-			machineoutput.OutputSuccess(u)
+		if pushtarget.IsPushTargetDocker() {
+			client, err := lclient.New()
+			if err != nil {
+				return err
+			}
+			u, err := url.GetContainerURL(client, o.EnvSpecificInfo, o.url, o.EnvSpecificInfo.GetName())
+			if err != nil {
+				return err
+			}
+
+			if log.IsJSON() {
+				machineoutput.OutputSuccess(u)
+			} else {
+				tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+				fmt.Fprintln(tabWriterURL, "NAME", "\t", "STATE", "\t", "URL", "\t", "PORT")
+				var urlString string
+				if u.Status.State == url.StateTypeNotPushed {
+					// to be consistent with URL for ingress and routes
+					// if not pushed, display URl as ://
+					urlString = "://"
+				} else {
+					urlString = fmt.Sprintf("%s:%s", u.Spec.Host, strconv.Itoa(u.Spec.ExternalPort))
+				}
+				// are there changes between local and cluster states?
+				outOfSync := false
+				fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", urlString, "\t", u.Spec.Port)
+				if u.Status.State != url.StateTypePushed {
+					outOfSync = true
+				}
+				tabWriterURL.Flush()
+				if outOfSync {
+					log.Info("There are local changes. Please run 'odo push'.")
+				}
+			}
 		} else {
+			u, err := url.GetIngress(o.KClient, o.EnvSpecificInfo, o.url)
+			if err != nil {
+				return err
+			}
+			if log.IsJSON() {
+				machineoutput.OutputSuccess(u)
+			} else {
 
-			tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-			fmt.Fprintln(tabWriterURL, "NAME", "\t", "URL", "\t", "PORT")
+				tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+				fmt.Fprintln(tabWriterURL, "NAME", "\t", "URL", "\t", "PORT")
 
-			fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, u), "", u.Spec.Rules[0].Host), "\t", u.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Backend.ServicePort.IntVal)
-			tabWriterURL.Flush()
+				fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, u, experimental.IsExperimentalModeEnabled()), "", u.Spec.Rules[0].Host, experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Backend.ServicePort.IntVal)
+				tabWriterURL.Flush()
+			}
 		}
 	} else {
 		u, err := url.Get(o.Client, o.localConfigInfo, o.url, o.Application)
@@ -91,14 +133,13 @@ func (o *URLDescribeOptions) Run() (err error) {
 
 			// are there changes between local and cluster states?
 			outOfSync := false
-			fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, ""), "\t", u.Spec.Port)
+			fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Port)
 			if u.Status.State != url.StateTypePushed {
 				outOfSync = true
 			}
 			tabWriterURL.Flush()
 			if outOfSync {
-				fmt.Fprintf(os.Stdout, "\n")
-				fmt.Fprintf(os.Stdout, "There are local changes. Please run 'odo push'.\n")
+				log.Info("There are local changes. Please run 'odo push'.")
 			}
 		}
 	}

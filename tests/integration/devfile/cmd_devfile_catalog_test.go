@@ -22,7 +22,9 @@ var _ = Describe("odo devfile catalog command tests", func() {
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 		if os.Getenv("KUBERNETES") == "true" {
-			project = helper.CreateRandNamespace(context)
+			homeDir := helper.GetUserHomeDir()
+			kubeConfigFile := helper.CopyKubeConfigFile(filepath.Join(homeDir, ".kube", "config"), filepath.Join(context, "config"))
+			project = helper.CreateRandNamespace(kubeConfigFile)
 		} else {
 			project = helper.CreateRandProject()
 		}
@@ -34,24 +36,45 @@ var _ = Describe("odo devfile catalog command tests", func() {
 	var _ = AfterEach(func() {
 		if os.Getenv("KUBERNETES") == "true" {
 			helper.DeleteNamespace(project)
+			os.Unsetenv("KUBECONFIG")
 		} else {
 			helper.DeleteProject(project)
 		}
 		helper.Chdir(currentWorkingDirectory)
 		helper.DeleteDir(context)
+		os.Unsetenv("GLOBALODOCONFIG")
 	})
 
 	Context("When executing catalog list components", func() {
 		It("should list all supported devfile components", func() {
 			output := helper.CmdShouldPass("odo", "catalog", "list", "components")
-			helper.MatchAllInOutput(output, []string{"Odo Devfile Components", "java-spring-boot", "openLiberty"})
+			wantOutput := []string{
+				"Odo Devfile Components",
+				"NAME",
+				"java-spring-boot",
+				"openLiberty",
+				"DESCRIPTION",
+				"REGISTRY",
+				"SUPPORTED",
+			}
+			helper.MatchAllInOutput(output, wantOutput)
 		})
 	})
 
 	Context("When executing catalog list components with -a flag", func() {
 		It("should list all supported and unsupported devfile components", func() {
 			output := helper.CmdShouldPass("odo", "catalog", "list", "components", "-a")
-			helper.MatchAllInOutput(output, []string{"Odo Devfile Components", "java-spring-boot", "java-maven", "php-mysql"})
+			wantOutput := []string{
+				"Odo Devfile Components",
+				"NAME",
+				"java-spring-boot",
+				"java-maven",
+				"php-mysql",
+				"DESCRIPTION",
+				"REGISTRY",
+				"SUPPORTED",
+			}
+			helper.MatchAllInOutput(output, wantOutput)
 		})
 	})
 })

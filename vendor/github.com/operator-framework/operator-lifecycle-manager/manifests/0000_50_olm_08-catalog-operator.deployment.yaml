@@ -25,15 +25,17 @@ spec:
           - /bin/catalog
           args:
           - '-namespace'
-          - openshift-operator-lifecycle-manager
+          - openshift-marketplace
           - -configmapServerImage=quay.io/operator-framework/configmap-operator-registry:latest
+          - -util-image
+          -  quay.io/operator-framework/olm@sha256:f6ce23402d5309872855a47116ada409155b15d3ef7f74940eb1bdca6ebbded3
           - -writeStatusName
           - operator-lifecycle-manager-catalog
           - -tls-cert
           - /var/run/secrets/serving-cert/tls.crt
           - -tls-key
           - /var/run/secrets/serving-cert/tls.key
-          image: quay.io/operator-framework/olm@sha256:7e4b13b89b3d59876b228697bbd0c9e364fd73f946ab90308c34fd82053a5a76
+          image: quay.io/operator-framework/olm@sha256:f6ce23402d5309872855a47116ada409155b15d3ef7f74940eb1bdca6ebbded3
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
@@ -54,6 +56,10 @@ spec:
           - name: RELEASE_VERSION
             value: "0.0.1-snapshot"
           
+          resources:
+            requests:
+              cpu: 10m
+              memory: 80Mi
           
           volumeMounts:
           - mountPath: /var/run/secrets/serving-cert
@@ -68,17 +74,15 @@ spec:
       nodeSelector:
         beta.kubernetes.io/os: linux
         node-role.kubernetes.io/master: ""
-        
       tolerations:
-      - key: node-role.kubernetes.io/master
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
         operator: Exists
-        effect: "NoSchedule"
-      - key: "node.kubernetes.io/unreachable"
-        operator: "Exists"
-        effect: "NoExecute"
+      - effect: NoExecute
+        key: node.kubernetes.io/unreachable
+        operator: Exists
         tolerationSeconds: 120
-      - key: "node.kubernetes.io/not-ready"
-        operator: "Exists"
-        effect: "NoExecute"
+      - effect: NoExecute
+        key: node.kubernetes.io/not-ready
+        operator: Exists
         tolerationSeconds: 120
-        

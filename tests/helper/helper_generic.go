@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
@@ -97,6 +98,18 @@ func Unindented(jsonStr string) (string, error) {
 	return string(obj), err
 }
 
+// ExtractSubString extracts substring from output, beginning at start and before end
+func ExtractSubString(output, start, end string) string {
+	i := strings.Index(output, start)
+	if i >= 0 {
+		j := strings.Index(output[i:], end)
+		if j >= 0 {
+			return output[i : i+j]
+		}
+	}
+	return ""
+}
+
 // WatchNonRetCmdStdOut run odo watch and get the cmdSTDOUT output into buffer.
 // startIndicatorFunc sets true and startSimulationCh starts, when buffer contain "Waiting for something to change"
 // check function checks for the changes into the buffer
@@ -146,4 +159,11 @@ func WatchNonRetCmdStdOut(cmdStr string, timeout time.Duration, check func(outpu
 			}
 		}
 	}
+}
+
+// GetUserHomeDir gets the user home directory
+func GetUserHomeDir() string {
+	homeDir, err := os.UserHomeDir()
+	Expect(err).NotTo(HaveOccurred())
+	return homeDir
 }

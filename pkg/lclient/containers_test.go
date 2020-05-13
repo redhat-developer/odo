@@ -1,12 +1,16 @@
 package lclient
 
 import (
+	"io"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/go-connections/nat"
 	gomock "github.com/golang/mock/gomock"
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 )
 
 func TestGetContainersByComponentName(t *testing.T) {
@@ -159,23 +163,54 @@ func TestGetContainersList(t *testing.T) {
 			wantContainers: []types.Container{
 				{
 					Names: []string{"/node"},
+					ID:    "1",
 					Image: "node",
 					Labels: map[string]string{
-						"component": "node",
+						"component": "test",
+						"alias":     "alias1",
+					},
+					Mounts: []types.MountPoint{
+						{
+							Destination: OdoSourceVolumeMount,
+						},
 					},
 				},
 				{
 					Names: []string{"/go-test"},
+					ID:    "2",
 					Image: "golang",
 					Labels: map[string]string{
 						"component": "golang",
+						"8080":      "testurl2",
+					},
+					HostConfig: container.HostConfig{
+						PortBindings: nat.PortMap{
+							nat.Port("8080/tcp"): []nat.PortBinding{
+								nat.PortBinding{
+									HostIP:   "127.0.0.1",
+									HostPort: "54321",
+								},
+							},
+						},
 					},
 				},
 				{
 					Names: []string{"/go-test-build"},
+					ID:    "3",
 					Image: "golang",
 					Labels: map[string]string{
 						"component": "golang",
+						"8080":      "testurl3",
+					},
+					HostConfig: container.HostConfig{
+						PortBindings: nat.PortMap{
+							nat.Port("8080/tcp"): []nat.PortBinding{
+								nat.PortBinding{
+									HostIP:   "127.0.0.1",
+									HostPort: "65432",
+								},
+							},
+						},
 					},
 				},
 			},
@@ -189,15 +224,17 @@ func TestGetContainersList(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		containers, err := tt.client.GetContainerList()
+		t.Run(tt.name, func(t *testing.T) {
+			containers, err := tt.client.GetContainerList()
 
-		if !tt.wantErr == (err != nil) {
-			t.Errorf("expected %v, wanted %v", err, tt.wantErr)
-		}
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("expected %v, wanted %v", err, tt.wantErr)
+			}
 
-		if !reflect.DeepEqual(tt.wantContainers, containers) {
-			t.Errorf("Expected %v, got %v", tt.wantContainers, containers)
-		}
+			if !reflect.DeepEqual(tt.wantContainers, containers) {
+				t.Errorf("Expected %v, got %v", tt.wantContainers, containers)
+			}
+		})
 	}
 }
 
@@ -223,10 +260,12 @@ func TestStartContainer(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		err := tt.client.StartContainer(&fakeContainer, nil, nil)
-		if !tt.wantErr == (err != nil) {
-			t.Errorf("expected %v, wanted %v", err, tt.wantErr)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.client.StartContainer(&fakeContainer, nil, nil)
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("expected %v, wanted %v", err, tt.wantErr)
+			}
+		})
 	}
 }
 
@@ -252,10 +291,12 @@ func TestRemoveContainer(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		err := tt.client.RemoveContainer(fakeContainerID)
-		if !tt.wantErr == (err != nil) {
-			t.Errorf("expected %v, wanted %v", err, tt.wantErr)
-		}
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.client.RemoveContainer(fakeContainerID)
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("expected %v, wanted %v", err, tt.wantErr)
+			}
+		})
 	}
 }
 
@@ -277,21 +318,94 @@ func TestRemoveVolume(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 
-		ctrl := gomock.NewController(t)
-		defer ctrl.Finish()
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-		client, mockDockerClient := FakeNewMockClient(ctrl)
+			client, mockDockerClient := FakeNewMockClient(ctrl)
 
-		if !tt.wantErr {
-			mockDockerClient.EXPECT().VolumeRemove(gomock.Any(), gomock.Eq(tt.volumeToRemove), gomock.Eq(true)).Return(nil)
-		}
+			if !tt.wantErr {
+				mockDockerClient.EXPECT().VolumeRemove(gomock.Any(), gomock.Eq(tt.volumeToRemove), gomock.Eq(true)).Return(nil)
+			}
 
-		err := client.RemoveVolume(tt.volumeToRemove)
+			err := client.RemoveVolume(tt.volumeToRemove)
 
-		if !tt.wantErr == (err != nil) {
-			t.Errorf("expected %v but wanted %v", err, tt.wantErr)
-		}
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("expected %v but wanted %v", err, tt.wantErr)
+			}
+		})
+	}
+}
 
+func TestExtractProjectToComponent(t *testing.T) {
+	fakeClient := FakeNew()
+	fakeErrorClient := FakeErrorNew()
+
+	compInfo := common.ComponentInfo{
+		ContainerName: "container",
+	}
+	targetPath := "/tmp"
+	r := strings.NewReader("Hello!")
+
+	tests := []struct {
+		name    string
+		client  *Client
+		wantErr bool
+	}{
+		{
+			name:    "Case 1: Successfully extract project to container",
+			client:  fakeClient,
+			wantErr: false,
+		},
+		{
+			name:    "Case 2: Fail to extract project to container",
+			client:  fakeErrorClient,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.client.ExtractProjectToComponent(compInfo, targetPath, r)
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("got %v, wanted %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestExecCMDInContainer(t *testing.T) {
+	fakeClient := FakeNew()
+	fakeErrorClient := FakeErrorNew()
+
+	compInfo := common.ComponentInfo{
+		ContainerName: "container",
+	}
+	cmd := []string{"echo", "hello"}
+	_, writer := io.Pipe()
+
+	tests := []struct {
+		name    string
+		client  *Client
+		wantErr bool
+	}{
+		{
+			name:    "Case 1: Successfully execute command in the container",
+			client:  fakeClient,
+			wantErr: false,
+		},
+		{
+			name:    "Case 2: Fail to execute command in the container",
+			client:  fakeErrorClient,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.client.ExecCMDInContainer(compInfo, cmd, writer, writer, nil, false)
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("got %v, wanted %v", err, tt.wantErr)
+			}
+		})
 	}
 }

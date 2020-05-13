@@ -16,6 +16,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/plugins"
 	"github.com/openshift/odo/pkg/odo/cli/preference"
 	"github.com/openshift/odo/pkg/odo/cli/project"
+	"github.com/openshift/odo/pkg/odo/cli/registry"
 	"github.com/openshift/odo/pkg/odo/cli/service"
 	"github.com/openshift/odo/pkg/odo/cli/storage"
 	"github.com/openshift/odo/pkg/odo/cli/url"
@@ -23,10 +24,11 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/version"
 	"github.com/openshift/odo/pkg/odo/util"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
+	"github.com/openshift/odo/pkg/odo/util/experimental"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
 // OdoRecommendedName is the recommended odo command name
@@ -34,7 +36,7 @@ const OdoRecommendedName = "odo"
 
 var (
 	// We do not use ktemplates.Normalize here as it messed up the newlines..
-	odoLong = `(OpenShift Do) odo is a CLI tool for running OpenShift applications in a fast and automated manner.
+	odoLong = `odo is a CLI tool for running OpenShift applications in a fast and automated manner.
 Reducing the complexity of deployment, odo adds iterative development without the worry of deploying your source code.
 
 Find more information at https://github.com/openshift/odo`
@@ -131,7 +133,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 	// rootCmd represents the base command when called without any subcommands
 	rootCmd := &cobra.Command{
 		Use:     name,
-		Short:   "odo (OpenShift Do)",
+		Short:   "odo",
 		Long:    odoLong,
 		RunE:    ShowHelp,
 		Example: fmt.Sprintf(odoExample, fullName),
@@ -145,7 +147,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 	// We use "flag" in order to make this accessible throughtout ALL of odo, rather than the
 	// above traditional "persistentflags" usage that does not make it a pointer within the 'pflag'
 	// package
-	flag.CommandLine.String("o", "json", "Specify output format, supported format: json")
+	flag.CommandLine.String("o", "", "Specify output format, supported format: json")
 
 	// Here we add the necessary "logging" flags.. However, we choose to hide some of these from the user
 	// as they are not necessarily needed and more for advanced debugging
@@ -196,6 +198,12 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 		preference.NewCmdPreference(preference.RecommendedCommandName, util.GetFullName(fullName, preference.RecommendedCommandName)),
 		debug.NewCmdDebug(debug.RecommendedCommandName, util.GetFullName(fullName, debug.RecommendedCommandName)),
 	)
+
+	if experimental.IsExperimentalModeEnabled() {
+		rootCmd.AddCommand(
+			registry.NewCmdRegistry(registry.RecommendedCommandName, util.GetFullName(fullName, registry.RecommendedCommandName)),
+		)
+	}
 
 	odoutil.VisitCommands(rootCmd, reconfigureCmdWithSubcmd)
 

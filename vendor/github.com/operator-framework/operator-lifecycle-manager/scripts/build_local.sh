@@ -6,7 +6,7 @@
 set -e
 
 if [ -z "$NO_MINIKUBE" ]; then
-  pgrep -qf "[m]inikube" || minikube start --kubernetes-version="v1.14.2" --extra-config=apiserver.v=4 || { echo 'Cannot start minikube.'; exit 1; }
+  pgrep -f "[m]inikube" >/dev/null || minikube start --kubernetes-version="v1.16.4" --extra-config=apiserver.v=4 || { echo 'Cannot start minikube.'; exit 1; }
   eval "$(minikube docker-env)" || { echo 'Cannot switch to minikube docker'; exit 1; }
   kubectl config use-context minikube
 fi
@@ -14,7 +14,7 @@ fi
 docker build -f local.Dockerfile -t quay.io/operator-framework/olm:local -t quay.io/operator-framework/olm-e2e:local ./bin
 docker build -f test/e2e/hang.Dockerfile -t hang:10 ./bin
 
-if [ -x "$(command -v kind)" ] && [ "kubectl config current-context" -eq "kind" ]; then
+if [ -x "$(command -v kind)" ] && [ "$(kubectl config current-context)" = "kind" ]; then
   kind load docker-image quay.io/operator-framework/olm:local
   kind load docker-image quay.io/operator-framework/olm-e2e:local
 fi

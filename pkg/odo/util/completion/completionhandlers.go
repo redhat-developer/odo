@@ -118,7 +118,8 @@ var ServiceParameterCompletionHandler = func(cmd *cobra.Command, args parsedArgs
 	} else if len(servicePlans) == 1 && inputPlanName == "" {
 		matchingServicePlan = &servicePlans[0]
 	} else {
-		for _, servicePlan := range servicePlans {
+		for _, sp := range servicePlans {
+			servicePlan := sp
 			if servicePlan.Name == inputPlanName {
 				matchingServicePlan = &servicePlan
 				break

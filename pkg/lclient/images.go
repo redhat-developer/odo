@@ -6,8 +6,8 @@ import (
 	"os"
 
 	"github.com/docker/docker/api/types"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 )
 
 // PullImage uses Docker to pull the specified image. If there are any issues pulling the image,
@@ -21,7 +21,7 @@ func (dc *Client) PullImage(image string) error {
 	}
 	defer out.Close()
 
-	if glog.V(4) {
+	if klog.V(4) {
 		_, err := io.Copy(os.Stdout, out)
 		if err != nil {
 			return err

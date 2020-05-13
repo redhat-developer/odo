@@ -13,6 +13,7 @@ import (
 var _ = Describe("odo storage command tests", func() {
 	var project string
 	var context string
+	var oc helper.OcRunner
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
@@ -44,7 +45,7 @@ var _ = Describe("odo storage command tests", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 			helper.CmdShouldPass("odo", "component", "create", "nodejs", "nodejs", "--app", "nodeapp", "--project", project, "--context", context)
 			stdErr := helper.CmdShouldFail("odo", "storage", "create", "pv1")
-			Expect(stdErr).To(ContainSubstring("Required flag"))
+			Expect(stdErr).To(ContainSubstring("required flag"))
 			//helper.CmdShouldFail("odo", "storage", "create", "pv1", "-o", "json")
 		})
 	})
@@ -129,11 +130,11 @@ var _ = Describe("odo storage command tests", func() {
 			helper.CopyExample(filepath.Join("source", "wildfly"), context)
 			helper.CmdShouldPass("odo", "component", "create", "wildfly", "wildfly", "--app", "wildflyapp", "--project", project, "--context", context)
 			actualJSONStorage := helper.CmdShouldPass("odo", "storage", "create", "mystorage", "--path=/opt/app-root/src/storage/", "--size=1Gi", "--context", context, "-o", "json")
-			desiredJSONStorage := `{"kind":"storage","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"mystorage","creationTimestamp":null},"spec":{"size":"1Gi","path":"/opt/app-root/src/storage/"}}`
+			desiredJSONStorage := `{"kind":"storage","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"mystorage","creationTimestamp":null},"spec":{"size":"1Gi","path":"/opt/app-root/src/storage/"}}`
 			Expect(desiredJSONStorage).Should(MatchJSON(actualJSONStorage))
 
 			actualStorageList := helper.CmdShouldPass("odo", "storage", "list", "--context", context, "-o", "json")
-			desiredStorageList := `{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"storage","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"mystorage","creationTimestamp":null},"spec":{"size":"1Gi","path":"/opt/app-root/src/storage/"},"status":"Not Pushed"}]}`
+			desiredStorageList := `{"kind":"List","apiVersion":"odo.dev/v1alpha1","metadata":{},"items":[{"kind":"storage","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"mystorage","creationTimestamp":null},"spec":{"size":"1Gi","path":"/opt/app-root/src/storage/"},"status":"Not Pushed"}]}`
 			Expect(desiredStorageList).Should(MatchJSON(actualStorageList))
 
 			helper.CmdShouldPass("odo", "storage", "delete", "mystorage", "--context", context, "-f")

@@ -25,8 +25,7 @@ func (DockerImageReference) SwaggerDoc() map[string]string {
 }
 
 var map_Image = map[string]string{
-	"":                             "Image is an immutable representation of a container image and metadata at a point in time.",
-	"metadata":                     "Standard object's metadata.",
+	"":                             "Image is an immutable representation of a container image and metadata at a point in time. Images are named by taking a hash of their contents (metadata and content) and any change in format, content, or metadata results in a new name. The images resource is primarily for use by cluster administrators and integrations like the cluster image registry - end users instead access images via the imagestreamtags or imagestreamimages resources. While image metadata is stored in the API, any integration that implements the container image registry API must provide its own storage for the raw manifest data, image config, and layer contents.",
 	"dockerImageReference":         "DockerImageReference is the string that can be used to pull this image.",
 	"dockerImageMetadata":          "DockerImageMetadata contains metadata about this image",
 	"dockerImageMetadataVersion":   "DockerImageMetadataVersion conveys the version of the object, which if empty defaults to \"1.0\"",
@@ -99,9 +98,8 @@ func (ImageLayerData) SwaggerDoc() map[string]string {
 }
 
 var map_ImageList = map[string]string{
-	"":         "ImageList is a list of Image objects.",
-	"metadata": "Standard object's metadata.",
-	"items":    "Items is a list of images",
+	"":      "ImageList is a list of Image objects.",
+	"items": "Items is a list of images",
 }
 
 func (ImageList) SwaggerDoc() map[string]string {
@@ -119,7 +117,6 @@ func (ImageLookupPolicy) SwaggerDoc() map[string]string {
 
 var map_ImageSignature = map[string]string{
 	"":              "ImageSignature holds a signature of an image. It allows to verify image identity and possibly other claims as long as the signature is trusted. Based on this information it is possible to restrict runnable images to those matching cluster-wide policy. Mandatory fields should be parsed by clients doing image verification. The others are parsed from signature's content by the server. They serve just an informative purpose.",
-	"metadata":      "Standard object's metadata.",
 	"type":          "Required: Describes a type of stored blob.",
 	"content":       "Required: An opaque binary string which is an image's signature.",
 	"conditions":    "Conditions represent the latest available observations of a signature's current state.",
@@ -135,10 +132,9 @@ func (ImageSignature) SwaggerDoc() map[string]string {
 }
 
 var map_ImageStream = map[string]string{
-	"":         "ImageStream stores a mapping of tags to images, metadata overrides that are applied when images are tagged in a stream, and an optional reference to a container image repository on a registry.",
-	"metadata": "Standard object's metadata.",
-	"spec":     "Spec describes the desired state of this stream",
-	"status":   "Status describes the current state of this stream",
+	"":       "An ImageStream stores a mapping of tags to images, metadata overrides that are applied when images are tagged in a stream, and an optional reference to a container image repository on a registry. Users typically update the spec.tags field to point to external images which are imported from container registries using credentials in your namespace with the pull secret type, or to existing image stream tags and images which are immediately accessible for tagging or pulling. The history of images applied to a tag is visible in the status.tags field and any user who can view an image stream is allowed to tag that image into their own image streams. Access to pull images from the integrated registry is granted by having the \"get imagestreams/layers\" permission on a given image stream. Users may remove a tag by deleting the imagestreamtag resource, which causes both spec and status for that tag to be removed. Image stream history is retained until an administrator runs the prune operation, which removes references that are no longer in use. To preserve a historical image, ensure there is a tag in spec pointing to that image by its digest.",
+	"spec":   "Spec describes the desired state of this stream",
+	"status": "Status describes the current state of this stream",
 }
 
 func (ImageStream) SwaggerDoc() map[string]string {
@@ -146,9 +142,8 @@ func (ImageStream) SwaggerDoc() map[string]string {
 }
 
 var map_ImageStreamImage = map[string]string{
-	"":         "ImageStreamImage represents an Image that is retrieved by image name from an ImageStream.",
-	"metadata": "Standard object's metadata.",
-	"image":    "Image associated with the ImageStream and image name.",
+	"":      "ImageStreamImage represents an Image that is retrieved by image name from an ImageStream. User interfaces and regular users can use this resource to access the metadata details of a tagged image in the image stream history for viewing, since Image resources are not directly accessible to end users. A not found error will be returned if no such image is referenced by a tag within the ImageStream. Images are created when spec tags are set on an image stream that represent an image in an external registry, when pushing to the integrated registry, or when tagging an existing image from one image stream to another. The name of an image stream image is in the form \"<STREAM>@<DIGEST>\", where the digest is the content addressible identifier for the image (sha256:xxxxx...). You can use ImageStreamImages as the from.kind of an image stream spec tag to reference an image exactly. The only operations supported on the imagestreamimage endpoint are retrieving the image.",
+	"image": "Image associated with the ImageStream and image name.",
 }
 
 func (ImageStreamImage) SwaggerDoc() map[string]string {
@@ -156,10 +151,9 @@ func (ImageStreamImage) SwaggerDoc() map[string]string {
 }
 
 var map_ImageStreamImport = map[string]string{
-	"":         "The image stream import resource provides an easy way for a user to find and import container images from other container image registries into the server. Individual images or an entire image repository may be imported, and users may choose to see the results of the import prior to tagging the resulting images into the specified image stream.\n\nThis API is intended for end-user tools that need to see the metadata of the image prior to import (for instance, to generate an application from it). Clients that know the desired image can continue to create spec.tags directly into their image streams.",
-	"metadata": "Standard object's metadata.",
-	"spec":     "Spec is a description of the images that the user wishes to import",
-	"status":   "Status is the the result of importing the image",
+	"":       "The image stream import resource provides an easy way for a user to find and import container images from other container image registries into the server. Individual images or an entire image repository may be imported, and users may choose to see the results of the import prior to tagging the resulting images into the specified image stream.\n\nThis API is intended for end-user tools that need to see the metadata of the image prior to import (for instance, to generate an application from it). Clients that know the desired image can continue to create spec.tags directly into their image streams.",
+	"spec":   "Spec is a description of the images that the user wishes to import",
+	"status": "Status is the the result of importing the image",
 }
 
 func (ImageStreamImport) SwaggerDoc() map[string]string {
@@ -189,10 +183,9 @@ func (ImageStreamImportStatus) SwaggerDoc() map[string]string {
 }
 
 var map_ImageStreamLayers = map[string]string{
-	"":         "ImageStreamLayers describes information about the layers referenced by images in this image stream.",
-	"metadata": "Standard object's metadata.",
-	"blobs":    "blobs is a map of blob name to metadata about the blob.",
-	"images":   "images is a map between an image name and the names of the blobs and config that comprise the image.",
+	"":       "ImageStreamLayers describes information about the layers referenced by images in this image stream.",
+	"blobs":  "blobs is a map of blob name to metadata about the blob.",
+	"images": "images is a map between an image name and the names of the blobs and config that comprise the image.",
 }
 
 func (ImageStreamLayers) SwaggerDoc() map[string]string {
@@ -200,9 +193,8 @@ func (ImageStreamLayers) SwaggerDoc() map[string]string {
 }
 
 var map_ImageStreamList = map[string]string{
-	"":         "ImageStreamList is a list of ImageStream objects.",
-	"metadata": "Standard object's metadata.",
-	"items":    "Items is a list of imageStreams",
+	"":      "ImageStreamList is a list of ImageStream objects.",
+	"items": "Items is a list of imageStreams",
 }
 
 func (ImageStreamList) SwaggerDoc() map[string]string {
@@ -210,10 +202,9 @@ func (ImageStreamList) SwaggerDoc() map[string]string {
 }
 
 var map_ImageStreamMapping = map[string]string{
-	"":         "ImageStreamMapping represents a mapping from a single tag to a container image as well as the reference to the container image stream the image came from.",
-	"metadata": "Standard object's metadata.",
-	"image":    "Image is a container image.",
-	"tag":      "Tag is a string value this image can be located with inside the stream.",
+	"":      "ImageStreamMapping represents a mapping from a single image stream tag to a container image as well as the reference to the container image stream the image came from. This resource is used by privileged integrators to create an image resource and to associate it with an image stream in the status tags field. Creating an ImageStreamMapping will allow any user who can view the image stream to tag or pull that image, so only create mappings where the user has proven they have access to the image contents directly. The only operation supported for this resource is create and the metadata name and namespace should be set to the image stream containing the tag that should be updated.",
+	"image": "Image is a container image.",
+	"tag":   "Tag is a string value this image can be located with inside the stream.",
 }
 
 func (ImageStreamMapping) SwaggerDoc() map[string]string {
@@ -243,8 +234,7 @@ func (ImageStreamStatus) SwaggerDoc() map[string]string {
 }
 
 var map_ImageStreamTag = map[string]string{
-	"":             "ImageStreamTag represents an Image that is retrieved by tag name from an ImageStream.",
-	"metadata":     "Standard object's metadata.",
+	"":             "ImageStreamTag represents an Image that is retrieved by tag name from an ImageStream. Use this resource to interact with the tags and images in an image stream by tag, or to see the image details for a particular tag. The image associated with this resource is the most recently successfully tagged, imported, or pushed image (as described in the image stream status.tags.items list for this tag). If an import is in progress or has failed the previous image will be shown. Deleting an image stream tag clears both the status and spec fields of an image stream. If no image can be retrieved for a given tag, a not found error will be returned.",
 	"tag":          "tag is the spec tag associated with this image stream tag, and it may be null if only pushes have occurred to this image stream.",
 	"generation":   "generation is the current generation of the tagged image - if tag is provided and this value is not equal to the tag generation, a user has requested an import that has not completed, or conditions will be filled out indicating any error.",
 	"lookupPolicy": "lookupPolicy indicates whether this tag will handle image references in this namespace.",
@@ -257,13 +247,32 @@ func (ImageStreamTag) SwaggerDoc() map[string]string {
 }
 
 var map_ImageStreamTagList = map[string]string{
-	"":         "ImageStreamTagList is a list of ImageStreamTag objects.",
-	"metadata": "Standard object's metadata.",
-	"items":    "Items is the list of image stream tags",
+	"":      "ImageStreamTagList is a list of ImageStreamTag objects.",
+	"items": "Items is the list of image stream tags",
 }
 
 func (ImageStreamTagList) SwaggerDoc() map[string]string {
 	return map_ImageStreamTagList
+}
+
+var map_ImageTag = map[string]string{
+	"":       "ImageTag represents a single tag within an image stream and includes the spec, the status history, and the currently referenced image (if any) of the provided tag. This type replaces the ImageStreamTag by providing a full view of the tag. ImageTags are returned for every spec or status tag present on the image stream. If no tag exists in either form a not found error will be returned by the API. A create operation will succeed if no spec tag has already been defined and the spec field is set. Delete will remove both spec and status elements from the image stream.",
+	"spec":   "spec is the spec tag associated with this image stream tag, and it may be null if only pushes have occurred to this image stream.",
+	"status": "status is the status tag details associated with this image stream tag, and it may be null if no push or import has been performed.",
+	"image":  "image is the details of the most recent image stream status tag, and it may be null if import has not completed or an administrator has deleted the image object. To verify this is the most recent image, you must verify the generation of the most recent status.items entry matches the spec tag (if a spec tag is set). This field will not be set when listing image tags.",
+}
+
+func (ImageTag) SwaggerDoc() map[string]string {
+	return map_ImageTag
+}
+
+var map_ImageTagList = map[string]string{
+	"":      "ImageTagList is a list of ImageTag objects. When listing image tags, the image field is not populated. Tags are returned in alphabetical order by image stream and then tag.",
+	"items": "Items is the list of image stream tags",
+}
+
+func (ImageTagList) SwaggerDoc() map[string]string {
+	return map_ImageTagList
 }
 
 var map_NamedTagEventList = map[string]string{

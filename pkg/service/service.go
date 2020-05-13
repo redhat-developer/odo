@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/odo/util/validation"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
 
-	scv1beta1 "github.com/kubernetes-incubator/service-catalog/pkg/apis/servicecatalog/v1beta1"
+	scv1beta1 "github.com/kubernetes-sigs/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	appsv1 "github.com/openshift/api/apps/v1"
 
 	applabels "github.com/openshift/odo/pkg/application/labels"
@@ -22,6 +22,7 @@ import (
 
 const provisionedAndBoundStatus = "ProvisionedAndBound"
 const provisionedAndLinkedStatus = "ProvisionedAndLinked"
+const apiVersion = "odo.dev/v1alpha1"
 
 // NewServicePlanParameter creates a new ServicePlanParameter instance with the specified state
 func NewServicePlanParameter(name, typeName, defaultValue string, required bool) ServicePlanParameter {
@@ -95,9 +96,9 @@ func DeleteServiceAndUnlinkComponents(client *occlient.Client, serviceName strin
 				if componentName, ok := dc.Labels[componentlabels.ComponentLabel]; ok {
 					err := client.UnlinkSecret(serviceName, componentName, applicationName)
 					if err != nil {
-						glog.Warningf("Unable to unlink component %s from service", componentName)
+						klog.Warningf("Unable to unlink component %s from service", componentName)
 					} else {
-						glog.V(2).Infof("Component %s was successfully unlinked from service", componentName)
+						klog.V(2).Infof("Component %s was successfully unlinked from service", componentName)
 					}
 				}
 			}
@@ -129,7 +130,7 @@ func List(client *occlient.Client, applicationName string) (ServiceList, error) 
 		conditions := elem.Status.Conditions
 		var status string
 		if len(conditions) == 0 {
-			glog.Warningf("no condition in status for %+v, marking it as Unknown", elem)
+			klog.Warningf("no condition in status for %+v, marking it as Unknown", elem)
 			status = "Unknown"
 		} else {
 			status = conditions[0].Reason
@@ -144,7 +145,7 @@ func List(client *occlient.Client, applicationName string) (ServiceList, error) 
 			Service{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "Service",
-					APIVersion: "odo.openshift.io/v1alpha1",
+					APIVersion: apiVersion,
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: elem.Labels[componentlabels.ComponentLabel],
@@ -157,7 +158,7 @@ func List(client *occlient.Client, applicationName string) (ServiceList, error) 
 	return ServiceList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ServiceList",
-			APIVersion: "odo.openshift.io/v1alpha1",
+			APIVersion: apiVersion,
 		},
 		Items: services,
 	}, nil
@@ -213,7 +214,7 @@ func ListWithDetailedStatus(client *occlient.Client, applicationName string) (Se
 	return ServiceList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ServiceList",
-			APIVersion: "odo.openshift.io/v1alpha1",
+			APIVersion: apiVersion,
 		},
 		Items: services.Items,
 	}, nil

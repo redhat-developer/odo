@@ -147,11 +147,11 @@ func (m *testMetricsProvider) NewAddsMetric(name string) CounterMetric {
 	return &m.adds
 }
 
-func (m *testMetricsProvider) NewLatencyMetric(name string) SummaryMetric {
+func (m *testMetricsProvider) NewLatencyMetric(name string) HistogramMetric {
 	return &m.latency
 }
 
-func (m *testMetricsProvider) NewWorkDurationMetric(name string) SummaryMetric {
+func (m *testMetricsProvider) NewWorkDurationMetric(name string) HistogramMetric {
 	return &m.duration
 }
 
@@ -159,7 +159,7 @@ func (m *testMetricsProvider) NewUnfinishedWorkSecondsMetric(name string) Settab
 	return &m.unfinished
 }
 
-func (m *testMetricsProvider) NewLongestRunningProcessorMicrosecondsMetric(name string) SettableGaugeMetric {
+func (m *testMetricsProvider) NewLongestRunningProcessorSecondsMetric(name string) SettableGaugeMetric {
 	return &m.longest
 }
 
@@ -213,13 +213,10 @@ func TestMetrics(t *testing.T) {
 		t.Errorf("Expected %v, got %v", "foo", i)
 	}
 
-	if e, a := 50.0, mp.latency.observationValue(); e != a {
+	if e, a := 5e-05, mp.latency.observationValue(); e != a {
 		t.Errorf("expected %v, got %v", e, a)
 	}
 	if e, a := 1, mp.latency.observationCount(); e != a {
-		t.Errorf("expected %v, got %v", e, a)
-	}
-	if e, a := 0.0, mp.depth.gaugeValue(); e != a {
 		t.Errorf("expected %v, got %v", e, a)
 	}
 
@@ -243,7 +240,7 @@ func TestMetrics(t *testing.T) {
 	// Finish it up
 	q.Done(i)
 
-	if e, a := 25.0, mp.duration.observationValue(); e != a {
+	if e, a := 2.5e-05, mp.duration.observationValue(); e != a {
 		t.Errorf("expected %v, got %v", e, a)
 	}
 	if e, a := 1, mp.duration.observationCount(); e != a {
@@ -261,7 +258,7 @@ func TestMetrics(t *testing.T) {
 		t.Errorf("Expected %v, got %v", "foo", i)
 	}
 
-	if e, a := 25.0, mp.latency.observationValue(); e != a {
+	if e, a := 2.5e-05, mp.latency.observationValue(); e != a {
 		t.Errorf("expected %v, got %v", e, a)
 	}
 	if e, a := 2, mp.latency.observationCount(); e != a {
@@ -278,13 +275,13 @@ func TestMetrics(t *testing.T) {
 	if e, a := .001, mp.unfinished.gaugeValue(); e != a {
 		t.Errorf("expected %v, got %v", e, a)
 	}
-	if e, a := 1000.0, mp.longest.gaugeValue(); e != a {
+	if e, a := .001, mp.longest.gaugeValue(); e != a {
 		t.Errorf("expected %v, got %v", e, a)
 	}
 
 	// Finish that one up
 	q.Done(i)
-	if e, a := 1000.0, mp.duration.observationValue(); e != a {
+	if e, a := .001, mp.duration.observationValue(); e != a {
 		t.Errorf("expected %v, got %v", e, a)
 	}
 	if e, a := 2, mp.duration.observationCount(); e != a {

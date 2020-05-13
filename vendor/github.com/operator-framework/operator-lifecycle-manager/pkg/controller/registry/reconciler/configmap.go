@@ -3,7 +3,6 @@ package reconciler
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -18,8 +17,6 @@ import (
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/operatorlister"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/ownerutil"
 )
-
-var timeNow = func() metav1.Time { return metav1.NewTime(time.Now().UTC()) }
 
 // configMapCatalogSourceDecorator wraps CatalogSource to add additional methods
 type configMapCatalogSourceDecorator struct {
@@ -92,50 +89,9 @@ func (s *configMapCatalogSourceDecorator) Service() *v1.Service {
 }
 
 func (s *configMapCatalogSourceDecorator) Pod(image string) *v1.Pod {
-	pod := &v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: s.GetName() + "-",
-			Namespace:    s.GetNamespace(),
-			Labels:       s.Labels(),
-		},
-		Spec: v1.PodSpec{
-			Containers: []v1.Container{
-				{
-					Name:    "configmap-registry-server",
-					Image:   image,
-					Command: []string{"configmap-server", "-c", s.Spec.ConfigMap, "-n", s.GetNamespace()},
-					Ports: []v1.ContainerPort{
-						{
-							Name:          "grpc",
-							ContainerPort: 50051,
-						},
-					},
-					ReadinessProbe: &v1.Probe{
-						Handler: v1.Handler{
-							Exec: &v1.ExecAction{
-								Command: []string{"grpc_health_probe", "-addr=localhost:50051"},
-							},
-						},
-						InitialDelaySeconds: 1,
-					},
-					LivenessProbe: &v1.Probe{
-						Handler: v1.Handler{
-							Exec: &v1.ExecAction{
-								Command: []string{"grpc_health_probe", "-addr=localhost:50051"},
-							},
-						},
-						InitialDelaySeconds: 2,
-					},
-				},
-			},
-			Tolerations: []v1.Toleration{
-				{
-					Operator: v1.TolerationOpExists,
-				},
-			},
-			ServiceAccountName: s.GetName() + ConfigMapServerPostfix,
-		},
-	}
+	pod := Pod(s.CatalogSource, "configmap-registry-server", image, s.Labels(), 5, 2)
+	pod.Spec.ServiceAccountName = s.GetName() + ConfigMapServerPostfix
+	pod.Spec.Containers[0].Command = []string{"configmap-server", "-c", s.Spec.ConfigMap, "-n", s.GetNamespace()}
 	ownerutil.AddOwner(pod, s.CatalogSource, false, false)
 	return pod
 }
@@ -194,6 +150,7 @@ func (s *configMapCatalogSourceDecorator) RoleBinding() *rbacv1.RoleBinding {
 }
 
 type ConfigMapRegistryReconciler struct {
+	now      nowFunc
 	Lister   operatorlister.OperatorLister
 	OpClient operatorclient.ClientInterface
 	Image    string
@@ -298,6 +255,7 @@ func (c *ConfigMapRegistryReconciler) EnsureRegistryServer(catalogSource *v1alph
 				Namespace:       configMap.GetNamespace(),
 				UID:             configMap.GetUID(),
 				ResourceVersion: configMap.GetResourceVersion(),
+				LastUpdateTime:  c.now(),
 			}
 
 			// recreate the pod if there are configmap changes; this causes the db to be rebuilt
@@ -328,14 +286,14 @@ func (c *ConfigMapRegistryReconciler) EnsureRegistryServer(catalogSource *v1alph
 	}
 
 	if overwritePod {
+		now := c.now()
 		catalogSource.Status.RegistryServiceStatus = &v1alpha1.RegistryServiceStatus{
-			CreatedAt:        timeNow(),
+			CreatedAt:        now,
 			Protocol:         "grpc",
 			ServiceName:      source.Service().GetName(),
 			ServiceNamespace: source.GetNamespace(),
 			Port:             fmt.Sprintf("%d", source.Service().Spec.Ports[0].Port),
 		}
-		catalogSource.Status.LastSync = timeNow()
 	}
 	return nil
 }

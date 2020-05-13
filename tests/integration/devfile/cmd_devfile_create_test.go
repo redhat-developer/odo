@@ -2,15 +2,19 @@ package devfile
 
 import (
 	"os"
+	"path"
 	"path/filepath"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/openshift/odo/tests/helper"
 )
 
 var _ = Describe("odo devfile create command tests", func() {
+	const devfile = "devfile.yaml"
+	const envFile = ".odo/env/env.yaml"
 	var namespace string
 	var context string
 	var currentWorkingDirectory string
@@ -75,10 +79,26 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 	})
 
-	Context("When executing odo create with devfile component type argument and --namespace flag", func() {
+	Context("When executing odo create with devfile component type argument and --registry flag", func() {
 		It("should successfully create the devfile component", func() {
-			componentNamespace := helper.RandString(6)
-			helper.CmdShouldPass("odo", "create", "openLiberty", "--namespace", componentNamespace)
+			componentRegistry := "DefaultDevfileRegistry"
+			helper.CmdShouldPass("odo", "create", "openLiberty", "--registry", componentRegistry)
+		})
+	})
+
+	Context("When executing odo create with devfile component type argument and --context flag", func() {
+		It("should successfully create the devfile component in the context", func() {
+			newContext := path.Join(context, "newContext")
+			devfilePath := filepath.Join(newContext, devfile)
+			envFilePath := filepath.Join(newContext, envFile)
+			helper.MakeDir(newContext)
+
+			helper.CmdShouldPass("odo", "create", "openLiberty", "--context", newContext)
+			output := util.CheckPathExists(devfilePath)
+			Expect(output).Should(BeTrue())
+			output = util.CheckPathExists(envFilePath)
+			Expect(output).Should(BeTrue())
+			helper.DeleteDir(newContext)
 		})
 	})
 

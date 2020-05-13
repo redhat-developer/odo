@@ -1,7 +1,5 @@
 package install
 
-import "fmt"
-
 const (
 	StrategyErrReasonComponentMissing   = "ComponentMissing"
 	StrategyErrReasonAnnotationsMissing = "AnnotationsMissing"
@@ -9,12 +7,17 @@ const (
 	StrategyErrReasonInvalidStrategy    = "InvalidStrategy"
 	StrategyErrReasonTimeout            = "Timeout"
 	StrategyErrReasonUnknown            = "Unknown"
+	StrategyErrBadPatch                 = "PatchUnsuccessful"
+	StrategyErrDeploymentUpdated        = "DeploymentUpdated"
+	StrategyErrInsufficientPermissions  = "InsufficentPermissions"
 )
 
 // unrecoverableErrors are the set of errors that mean we can't recover an install strategy
 var unrecoverableErrors = map[string]struct{}{
-	StrategyErrReasonInvalidStrategy: {},
-	StrategyErrReasonTimeout:         {},
+	StrategyErrReasonInvalidStrategy:   {},
+	StrategyErrReasonTimeout:           {},
+	StrategyErrBadPatch:                {},
+	StrategyErrInsufficientPermissions: {},
 }
 
 // StrategyError is used to represent error types for install strategies
@@ -27,7 +30,7 @@ var _ error = StrategyError{}
 
 // Error implements the Error interface.
 func (e StrategyError) Error() string {
-	return fmt.Sprintf("%s: %s", e.Reason, e.Message)
+	return e.Message
 }
 
 // IsErrorUnrecoverable reports if a given strategy error is one of the predefined unrecoverable types

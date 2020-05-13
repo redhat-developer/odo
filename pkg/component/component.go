@@ -7,14 +7,16 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/kclient"
 
 	"github.com/openshift/odo/pkg/envinfo"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	"github.com/openshift/odo/pkg/catalog"
@@ -42,6 +44,8 @@ const ComponentSourceTypeAnnotation = "app.kubernetes.io/component-source-type"
 const componentRandomNamePartsMaxLen = 12
 const componentNameMaxRetries = 3
 const componentNameMaxLen = -1
+
+const apiVersion = "odo.dev/v1alpha1"
 
 // GetComponentDir returns source repo name
 // Parameters:
@@ -509,7 +513,7 @@ func ValidateComponentCreateRequest(client *occlient.Client, componentSettings c
 
 	// If component is of type local, check if the source path is valid
 	if *componentSettings.SourceType == config.LOCAL {
-		glog.V(4).Infof("Checking source location: %s", *(componentSettings.SourceLocation))
+		klog.V(4).Infof("Checking source location: %s", *(componentSettings.SourceLocation))
 		srcLocInfo, err := os.Stat(*(componentSettings.SourceLocation))
 		if err != nil {
 			return errors.Wrap(err, "failed to create component. Please view the settings used using the command `odo config view`")
@@ -541,7 +545,18 @@ func ValidateComponentCreateRequest(client *occlient.Client, componentSettings c
 // Returns:
 //	err: Errors if any else nil
 func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo, stdout io.Writer, cmpExist bool) (err error) {
-	if !experimental.IsExperimentalModeEnabled() {
+	isExperimentalModeEnabled := experimental.IsExperimentalModeEnabled()
+
+	if client == nil {
+		var err error
+		client, err = occlient.New()
+		if err != nil {
+			return err
+		}
+		client.Namespace = envSpecificInfo.GetNamespace()
+	}
+
+	if !isExperimentalModeEnabled {
 		// if component exist then only call the update function
 		if cmpExist {
 			if err = Update(client, componentConfig, componentConfig.GetSourceLocation(), stdout); err != nil {
@@ -550,101 +565,29 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 		}
 	}
 
-	showChanges, pushedURLMap, err := checkIfURLChangesWillBeMade(client, kClient, componentConfig, envSpecificInfo)
+	var componentName string
+	var applicationName string
+	if !isExperimentalModeEnabled || kClient == nil {
+		componentName = componentConfig.GetName()
+		applicationName = componentConfig.GetApplication()
+	} else {
+		componentName = envSpecificInfo.GetName()
+	}
+
+	isRouteSupported := false
+	isRouteSupported, err = client.IsRouteSupported()
 	if err != nil {
-		return err
+		isRouteSupported = false
 	}
 
-	if showChanges {
-		log.Info("\nApplying URL changes")
-		// Create any URLs that have been added to the component
-		err = ApplyConfigCreateURL(client, kClient, componentConfig, envSpecificInfo, pushedURLMap)
-		if err != nil {
-			return err
-		}
-
-		// Delete any URLs
-		err = applyConfigDeleteURL(client, kClient, componentConfig, envSpecificInfo, pushedURLMap)
-		if err != nil {
-			return err
-		}
-	}
-
-	return
-}
-
-// ApplyConfigDeleteURL applies url config deletion onto component
-func applyConfigDeleteURL(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo, pushedURLMap map[string]bool) (err error) {
-	if experimental.IsExperimentalModeEnabled() {
-		localURLList := envSpecificInfo.GetURL()
-		tempMap := make(map[string]envinfo.EnvInfoURL)
-		for _, urlElement := range localURLList {
-			tempMap[urlElement.Name] = urlElement
-		}
-		// urlName is the key of each element
-		for urlName := range pushedURLMap {
-			if _, exist := tempMap[urlName]; !exist {
-				err = urlpkg.Delete(client, kClient, urlName, componentConfig.GetApplication())
-				if err != nil {
-					return err
-				}
-				log.Successf("URL %s successfully deleted", urlName)
-			}
-		}
-	} else {
-		localURLList := componentConfig.GetURL()
-		tempMap := make(map[string]config.ConfigURL)
-		for _, urlElement := range localURLList {
-			tempMap[urlElement.Name] = urlElement
-		}
-		// urlName is the key of each element
-		for urlName := range pushedURLMap {
-			if _, exist := tempMap[urlName]; !exist {
-				err = urlpkg.Delete(client, kClient, urlName, componentConfig.GetApplication())
-				if err != nil {
-					return err
-				}
-				log.Successf("URL %s successfully deleted", urlName)
-			}
-		}
-	}
-	return nil
-}
-
-// ApplyConfigCreateURL applies url config onto component
-func ApplyConfigCreateURL(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo, pushedURLMap map[string]bool) error {
-	if experimental.IsExperimentalModeEnabled() {
-		urls := envSpecificInfo.GetURL()
-		componentName := envSpecificInfo.GetName()
-		for _, urlo := range urls {
-			_, exist := pushedURLMap[urlo.Name]
-			if exist {
-				log.Successf("URL %s already exists", urlo.Name)
-			} else {
-				host, err := urlpkg.Create(client, kClient, urlo.Name, urlo.Port, urlo.Secure, componentName, "", urlo.Host, urlo.TLSSecret)
-				if err != nil {
-					return errors.Wrapf(err, "unable to create url")
-				}
-				log.Successf("URL %s: %s created", urlo.Name, host)
-			}
-		}
-	} else {
-		urls := componentConfig.GetURL()
-		for _, urlo := range urls {
-			_, exist := pushedURLMap[urlo.Name]
-			if exist {
-				log.Successf("URL %s already exists", urlo.Name)
-			} else {
-				host, err := urlpkg.Create(client, kClient, urlo.Name, urlo.Port, urlo.Secure, componentConfig.GetName(), componentConfig.GetApplication(), "", "")
-				if err != nil {
-					return errors.Wrapf(err, "unable to create url")
-				}
-				log.Successf("URL %s: %s created", urlo.Name, host)
-			}
-		}
-	}
-
-	return nil
+	return urlpkg.Push(client, kClient, urlpkg.PushParameters{
+		ComponentName:             componentName,
+		ApplicationName:           applicationName,
+		ConfigURLs:                componentConfig.GetURL(),
+		EnvURLS:                   envSpecificInfo.GetURL(),
+		IsRouteSupported:          isRouteSupported,
+		IsExperimentalModeEnabled: isExperimentalModeEnabled,
+	})
 }
 
 // PushLocal push local code to the cluster and trigger build there.
@@ -663,7 +606,7 @@ func ApplyConfigCreateURL(client *occlient.Client, kClient *kclient.Client, comp
 // Returns
 //	Error if any
 func PushLocal(client *occlient.Client, componentName string, applicationName string, path string, out io.Writer, files []string, delFiles []string, isForcePush bool, globExps []string, show bool) error {
-	glog.V(4).Infof("PushLocal: componentName: %s, applicationName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", componentName, applicationName, path, files, delFiles, isForcePush)
+	klog.V(4).Infof("PushLocal: componentName: %s, applicationName: %s, path: %s, files: %s, delFiles: %s, isForcePush: %+v", componentName, applicationName, path, files, delFiles, isForcePush)
 
 	// Edge case: check to see that the path is NOT empty.
 	emptyDir, err := util.IsEmpty(path)
@@ -702,7 +645,7 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 
 	// If there are files identified as deleted, propagate them to the component pod
 	if len(delFiles) > 0 {
-		glog.V(4).Infof("propogating deletion of files %s to pod", strings.Join(delFiles, " "))
+		klog.V(4).Infof("propogating deletion of files %s to pod", strings.Join(delFiles, " "))
 		/*
 			Delete files observed by watch to have been deleted from each of s2i directories like:
 				deployment dir: In interpreted runtimes like python, source is copied over to deployment dir so delete needs to happen here as well
@@ -729,8 +672,11 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	}
 
 	if isForcePush || len(files) > 0 {
-		glog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
-		err = sync.CopyFile(client, path, pod.Name, "", targetPath, files, globExps)
+		klog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
+		compInfo := common.ComponentInfo{
+			PodName: pod.Name,
+		}
+		err = sync.CopyFile(client, path, compInfo, targetPath, files, globExps)
 		if err != nil {
 			s.End(false)
 			return errors.Wrap(err, "unable push files to pod")
@@ -746,7 +692,10 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 
 	// We will use the assemble-and-restart script located within the supervisord container we've created
 	cmdArr := []string{"/opt/odo/bin/assemble-and-restart"}
-	err = exec.ExecuteCommand(client, pod.Name, "", cmdArr, show)
+	compInfo := common.ComponentInfo{
+		PodName: pod.Name,
+	}
+	err = exec.ExecuteCommand(client, compInfo, cmdArr, show)
 
 	if err != nil {
 		s.End(false)
@@ -947,8 +896,21 @@ func GetComponentFromConfig(localConfig *config.LocalConfigInfo) (Component, err
 			component.Spec.Source = util.GenFileURL(localConfig.GetSourceLocation())
 		}
 
-		for _, localURL := range localConfig.GetURL() {
-			component.Spec.URL = append(component.Spec.URL, localURL.Name)
+		urls := localConfig.GetURL()
+		if len(urls) > 0 {
+			// We will clean up the existing value of ports and re-populate it so that we don't panic in `odo describe` and don't show inconsistent info
+			// This will also help in the case where there are more URLs created than the number of ports exposed by a component #2776
+			oldPortsProtocol, err := getPortsProtocolMapping(component.Spec.Ports)
+			if err != nil {
+				return Component{}, err
+			}
+			component.Spec.Ports = []string{}
+
+			for _, url := range urls {
+				port := strconv.Itoa(url.Port)
+				component.Spec.Ports = append(component.Spec.Ports, fmt.Sprintf("%s/%s", port, oldPortsProtocol[port]))
+				component.Spec.URL = append(component.Spec.URL, url.Name)
+			}
 		}
 
 		for _, localEnv := range localConfig.GetEnvVars() {
@@ -961,6 +923,22 @@ func GetComponentFromConfig(localConfig *config.LocalConfigInfo) (Component, err
 		return component, nil
 	}
 	return Component{}, nil
+}
+
+// This function returns a mapping of port and protocol.
+// So for a value of ports {"8080/TCP", "45/UDP"} it will return a map {"8080":
+// "TCP", "45": "UDP"}
+func getPortsProtocolMapping(ports []string) (map[string]string, error) {
+	oldPortsProtocol := make(map[string]string, len(ports))
+	for _, port := range ports {
+		portProtocol := strings.Split(port, "/")
+		if len(portProtocol) != 2 {
+			// this will be the case if value of a port is something like 8080/TCP/something-else or simply 8080
+			return nil, errors.New("invalid <port/protocol> mapping. Please update the component configuration")
+		}
+		oldPortsProtocol[portProtocol[0]] = portProtocol[1]
+	}
+	return oldPortsProtocol, nil
 }
 
 // ListIfPathGiven lists all available component in given path directory
@@ -1033,7 +1011,7 @@ func GetComponentSource(client *occlient.Client, componentName string, applicati
 		sourcePath = deploymentConfig.ObjectMeta.Annotations[componentSourceURLAnnotation]
 	}
 
-	glog.V(4).Infof("Source for component %s is %s (%s)", componentName, sourcePath, sourceType)
+	klog.V(4).Infof("Source for component %s is %s (%s)", componentName, sourcePath, sourceType)
 	return sourceType, sourcePath, nil
 }
 
@@ -1162,7 +1140,7 @@ func Update(client *occlient.Client, componentConfig config.LocalConfigInfo, new
 
 	// STEP 2. Determine what the new source is going to be
 
-	glog.V(4).Infof("Updating component %s, from %s to %s (%s).", componentName, oldSourceType, newSource, newSourceType)
+	klog.V(4).Infof("Updating component %s, from %s to %s (%s).", componentName, oldSourceType, newSource, newSourceType)
 
 	if (oldSourceType == "local" || oldSourceType == "binary") && newSourceType == "git" {
 		// Steps to update component from local or binary to git
@@ -1172,7 +1150,7 @@ func Update(client *occlient.Client, componentConfig config.LocalConfigInfo, new
 		// 4. Build the application
 
 		// CreateBuildConfig here!
-		glog.V(4).Infof("Creating BuildConfig %s using imageName: %s for updating", namespacedOpenShiftObject, imageName)
+		klog.V(4).Infof("Creating BuildConfig %s using imageName: %s for updating", namespacedOpenShiftObject, imageName)
 		bc, err := client.CreateBuildConfig(commonObjectMeta, componentImageType, newSource, newSourceRef, evl)
 		if err != nil {
 			return errors.Wrapf(err, "unable to update BuildConfig  for %s component", componentName)
@@ -1191,7 +1169,7 @@ func Update(client *occlient.Client, componentConfig config.LocalConfigInfo, new
 		defer s.End(false)
 
 		// Update / replace the current DeploymentConfig with a Git one (not SupervisorD!)
-		glog.V(4).Infof("Updating the DeploymentConfig %s image to %s", namespacedOpenShiftObject, bc.Spec.Output.To.Name)
+		klog.V(4).Infof("Updating the DeploymentConfig %s image to %s", namespacedOpenShiftObject, bc.Spec.Output.To.Name)
 
 		// Update the image for git deployment to the BC built component image
 		updateComponentParams.ImageMeta.Name = bc.Spec.Output.To.Name
@@ -1262,7 +1240,7 @@ func Update(client *occlient.Client, componentConfig config.LocalConfigInfo, new
 			}
 
 			// Update the current DeploymentConfig with all config applied
-			glog.V(4).Infof("Updating the DeploymentConfig %s image to %s", namespacedOpenShiftObject, bc.Spec.Output.To.Name)
+			klog.V(4).Infof("Updating the DeploymentConfig %s image to %s", namespacedOpenShiftObject, bc.Spec.Output.To.Name)
 
 			s := log.Spinner("Applying configuration")
 			defer s.End(false)
@@ -1450,7 +1428,7 @@ func getMachineReadableFormat(componentName, componentType string) Component {
 	return Component{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Component",
-			APIVersion: "odo.openshift.io/v1alpha1",
+			APIVersion: apiVersion,
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: componentName,
@@ -1471,7 +1449,7 @@ func GetMachineReadableFormatForList(components []Component) ComponentList {
 	return ComponentList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "List",
-			APIVersion: "odo.openshift.io/v1alpha1",
+			APIVersion: apiVersion,
 		},
 		ListMeta: metav1.ListMeta{},
 		Items:    components,
@@ -1487,45 +1465,6 @@ func getStorageFromConfig(localConfig *config.LocalConfigInfo) storage.StorageLi
 		storageList.Items = append(storageList.Items, storage.GetMachineReadableFormat(storageVar.Name, storageVar.Size, storageVar.Path))
 	}
 	return storageList
-}
-
-// checkIfURLChangesWillBeMade checks to see if there are going to be any changes
-// to the URLs when deploying and returns a true / false
-func checkIfURLChangesWillBeMade(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo) (bool, map[string]bool, error) {
-	if experimental.IsExperimentalModeEnabled() {
-		componentName := envSpecificInfo.GetName()
-		urlList, err := urlpkg.ListPushedIngress(kClient, componentName)
-		if err != nil {
-			return false, nil, err
-		}
-
-		// If envinfo has URL(s) (since we check) or if the cluster has URL's but
-		// envinfo does not (deleting)
-		if len(envSpecificInfo.GetURL()) > 0 || len(envSpecificInfo.GetURL()) == 0 && (len(urlList.Items) > 0) {
-			pushedURLMap := make(map[string]bool)
-			for _, element := range urlList.Items {
-				pushedURLMap[element.Name] = true
-			}
-			return true, pushedURLMap, nil
-		}
-	} else {
-		urlList, err := urlpkg.ListPushed(client, componentConfig.GetName(), componentConfig.GetApplication())
-		if err != nil {
-			return false, nil, err
-		}
-
-		// If envinfo has URL(s) (since we check) or if the cluster has URL's but
-		// envinfo does not (deleting)
-		if len(componentConfig.GetURL()) > 0 || len(componentConfig.GetURL()) == 0 && (len(urlList.Items) > 0) {
-			pushedURLMap := make(map[string]bool)
-			for _, element := range urlList.Items {
-				pushedURLMap[element.Name] = true
-			}
-			return true, pushedURLMap, nil
-		}
-	}
-
-	return false, nil, nil
 }
 
 func addDebugPortToEnv(envVarList *config.EnvVarList, componentConfig config.LocalConfigInfo) {

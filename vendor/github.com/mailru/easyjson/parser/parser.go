@@ -34,8 +34,6 @@ func (p *Parser) needType(comments string) bool {
 
 func (v *visitor) Visit(n ast.Node) (w ast.Visitor) {
 	switch n := n.(type) {
-	case *ast.Package:
-		return v
 	case *ast.File:
 		v.PkgName = n.Name.String()
 		return v
@@ -63,29 +61,18 @@ func (v *visitor) Visit(n ast.Node) (w ast.Visitor) {
 	return nil
 }
 
-func (p *Parser) Parse(fname string, isDir bool) error {
+func (p *Parser) Parse(fname string) error {
 	var err error
-	if p.PkgPath, err = getPkgPath(fname, isDir); err != nil {
+	if p.PkgPath, err = getPkgPath(fname); err != nil {
 		return err
 	}
 
 	fset := token.NewFileSet()
-	if isDir {
-		packages, err := parser.ParseDir(fset, fname, nil, parser.ParseComments)
-		if err != nil {
-			return err
-		}
-
-		for _, pckg := range packages {
-			ast.Walk(&visitor{Parser: p}, pckg)
-		}
-	} else {
-		f, err := parser.ParseFile(fset, fname, nil, parser.ParseComments)
-		if err != nil {
-			return err
-		}
-
-		ast.Walk(&visitor{Parser: p}, f)
+	f, err := parser.ParseFile(fset, fname, nil, parser.ParseComments)
+	if err != nil {
+		return err
 	}
+
+	ast.Walk(&visitor{Parser: p}, f)
 	return nil
 }

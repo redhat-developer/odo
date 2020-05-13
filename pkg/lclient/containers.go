@@ -1,11 +1,14 @@
 package lclient
 
 import (
+	"io"
 	"strings"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/pkg/stdcopy"
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/pkg/errors"
 )
 
@@ -96,4 +99,54 @@ func (dc *Client) GetContainerConfigHostConfigAndMounts(containerID string) (*co
 		return nil, nil, nil, errors.Wrapf(err, "unable to inspect container %s", containerID)
 	}
 	return containerJSON.Config, containerJSON.HostConfig, containerJSON.Mounts, err
+}
+
+//ExecCMDInContainer executes the command in the container with containerID
+func (dc *Client) ExecCMDInContainer(compInfo common.ComponentInfo, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+
+	execConfig := types.ExecConfig{
+		AttachStdin:  stdin != nil,
+		AttachStdout: stdout != nil,
+		AttachStderr: stderr != nil,
+		Cmd:          cmd,
+		Tty:          tty,
+	}
+
+	resp, err := dc.Client.ContainerExecCreate(dc.Context, compInfo.ContainerName, execConfig)
+	if err != nil {
+		return err
+	}
+
+	hresp, err := dc.Client.ContainerExecAttach(dc.Context, resp.ID, types.ExecStartCheck{})
+	if err != nil {
+		return err
+	}
+	defer hresp.Close()
+
+	errorCh := make(chan error)
+
+	// read the output
+	go func() {
+		_, err = stdcopy.StdCopy(stdout, stderr, hresp.Reader)
+		errorCh <- err
+	}()
+
+	err = <-errorCh
+	if err != nil {
+		return err
+	}
+
+	hresp.Close()
+
+	return nil
+}
+
+// ExtractProjectToComponent extracts the project archive(tar) to the target path from the reader stdin
+func (dc *Client) ExtractProjectToComponent(compInfo common.ComponentInfo, targetPath string, stdin io.Reader) error {
+
+	err := dc.Client.CopyToContainer(dc.Context, compInfo.ContainerName, targetPath, stdin, types.CopyToContainerOptions{})
+	if err != nil {
+		return err
+	}
+	return nil
 }

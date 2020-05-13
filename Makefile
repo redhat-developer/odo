@@ -16,7 +16,7 @@ TIMEOUT ?= 7200s
 # TEST_EXEC_NODES=1, otherwise by default the specs are run in parallel on 4 ginkgo test node.
 # NOTE: Any TEST_EXEC_NODES value greater than one runs the spec in parallel
 # on the same number of ginkgo test nodes.
-TEST_EXEC_NODES ?= 4
+TEST_EXEC_NODES ?= 2
 
 # Slow spec threshold for ginkgo tests. After this time (in second), ginkgo marks test as slow
 SLOW_SPEC_THRESHOLD := 120
@@ -217,6 +217,11 @@ test-cmd-devfile-watch:
 .PHONY: test-cmd-devfile-delete
 test-cmd-devfile-delete:
 	ginkgo $(GINKGO_FLAGS) -focus="odo devfile delete command tests" tests/integration/devfile/
+
+# Run odo devfile registry command tests
+.PHONY: test-cmd-devfile-registry
+test-cmd-devfile-registry:
+	ginkgo $(GINKGO_FLAGS) -focus="odo devfile registry command tests" tests/integration/devfile/
 	
 # Run odo storage command tests
 .PHONY: test-cmd-storage
@@ -242,11 +247,16 @@ test-cmd-docker-devfile-push:
 .PHONY: test-cmd-docker-devfile-url
 test-cmd-docker-devfile-url:
 	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile url command tests" tests/integration/devfile/docker/
+
 # Run odo docker devfile delete command tests
 .PHONY: test-cmd-docker-devfile-delete
 test-cmd-docker-devfile-delete:
 	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile delete command tests" tests/integration/devfile/docker/
 
+# Run odo catalog devfile command tests
+.PHONY: test-cmd-docker-devfile-catalog
+test-cmd-docker-devfile-catalog:
+	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile catalog command tests" tests/integration/devfile/docker/
 
 # Run odo watch command tests
 .PHONY: test-cmd-watch

@@ -11,8 +11,8 @@ import (
 
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/util"
 
@@ -23,7 +23,7 @@ const (
 	localConfigEnvName    = "LOCALODOCONFIG"
 	configFileName        = "config.yaml"
 	localConfigKind       = "LocalConfig"
-	localConfigAPIVersion = "odo.openshift.io/v1alpha1"
+	localConfigAPIVersion = "odo.dev/v1alpha1"
 	// DefaultDebugPort is the default port used for debugging on remote pod
 	DefaultDebugPort = 5858
 )
@@ -291,7 +291,7 @@ func (lci *LocalConfigInfo) DeleteConfigDirIfEmpty() error {
 
 	// If directory is empty we can remove it
 	if err == io.EOF {
-		glog.V(4).Info("Deleting the config directory as well because its empty")
+		klog.V(4).Info("Deleting the config directory as well because its empty")
 
 		return lci.fs.Remove(configDir)
 	}
@@ -711,7 +711,7 @@ func (lci *LocalConfigInfo) GetOSSourcePath() (path string, err error) {
 	}
 
 	if sourceType == GIT {
-		glog.V(4).Info("Git source type detected, not correcting SourcePath location")
+		klog.V(4).Info("Git source type detected, not correcting SourcePath location")
 		return sourceLocation, nil
 	}
 

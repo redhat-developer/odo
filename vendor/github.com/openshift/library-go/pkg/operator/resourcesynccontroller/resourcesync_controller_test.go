@@ -1,6 +1,7 @@
 package resourcesynccontroller
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -106,11 +107,11 @@ func TestSyncSecret(t *testing.T) {
 	c.configMapGetter = kubeClient.CoreV1()
 	c.secretGetter = kubeClient.CoreV1()
 
-	stopCh := make(chan struct{})
-	defer close(stopCh)
+	ctx, ctxCancel := context.WithCancel(context.TODO())
+	defer ctxCancel()
 
-	go secretInformers.Start(stopCh)
-	go c.Run(1, stopCh)
+	go secretInformers.Start(ctx.Done())
+	go c.Run(ctx, 1)
 
 	// The source secret was removed (404) but the destination exists. This should increase the "deleteSecretCounter"
 	if err := c.SyncSecret(ResourceLocation{Namespace: "operator", Name: "to-remove"}, ResourceLocation{Namespace: "config", Name: "removed"}); err != nil {
@@ -198,7 +199,7 @@ func TestSyncConfigMap(t *testing.T) {
 			"operator":       operatorInformers,
 		}),
 		v1helpers.CachedSecretGetter(kubeClient.CoreV1(), kubeInformersForNamespaces),
-		v1helpers.CachedConfigMapGetter(kubeClient.Core(), kubeInformersForNamespaces),
+		v1helpers.CachedConfigMapGetter(kubeClient.CoreV1(), kubeInformersForNamespaces),
 		eventRecorder,
 	)
 	c.configMapGetter = kubeClient.CoreV1()

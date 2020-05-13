@@ -1,12 +1,17 @@
 package lclient
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"errors"
 	"io"
 	"io/ioutil"
+	"net"
+	"strings"
 	"time"
+
+	"github.com/docker/go-connections/nat"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -38,22 +43,53 @@ var mockContainerList = []types.Container{
 	types.Container{
 		Names: []string{"/node"},
 		Image: "node",
+		ID:    "1",
 		Labels: map[string]string{
-			"component": "node",
+			"component": "test",
+			"alias":     "alias1",
+		},
+		Mounts: []types.MountPoint{
+			{
+				Destination: OdoSourceVolumeMount,
+			},
 		},
 	},
 	types.Container{
 		Names: []string{"/go-test"},
 		Image: "golang",
+		ID:    "2",
 		Labels: map[string]string{
 			"component": "golang",
+			"8080":      "testurl2",
+		},
+		HostConfig: container.HostConfig{
+			PortBindings: nat.PortMap{
+				nat.Port("8080/tcp"): []nat.PortBinding{
+					nat.PortBinding{
+						HostIP:   "127.0.0.1",
+						HostPort: "54321",
+					},
+				},
+			},
 		},
 	},
 	types.Container{
 		Names: []string{"/go-test-build"},
 		Image: "golang",
+		ID:    "3",
 		Labels: map[string]string{
 			"component": "golang",
+			"8080":      "testurl3",
+		},
+		HostConfig: container.HostConfig{
+			PortBindings: nat.PortMap{
+				nat.Port("8080/tcp"): []nat.PortBinding{
+					nat.PortBinding{
+						HostIP:   "127.0.0.1",
+						HostPort: "65432",
+					},
+				},
+			},
 		},
 	},
 }
@@ -101,13 +137,22 @@ func (m *mockDockerClient) ContainerRemove(ctx context.Context, containerID stri
 }
 
 func (m *mockDockerClient) ContainerInspect(ctx context.Context, containerID string) (types.ContainerJSON, error) {
-	return types.ContainerJSON{
-		ContainerJSONBase: &types.ContainerJSONBase{
-			HostConfig: &container.HostConfig{
-				AutoRemove: true,
-			},
-		},
-	}, nil
+	for _, containerElement := range mockContainerList {
+		if containerElement.ID == containerID {
+			containerConfig := container.Config{
+				Image:  containerElement.Image,
+				Labels: containerElement.Labels,
+			}
+			return types.ContainerJSON{
+				ContainerJSONBase: &types.ContainerJSONBase{
+					HostConfig: &containerElement.HostConfig,
+				},
+				Config: &containerConfig,
+			}, nil
+		}
+	}
+	return types.ContainerJSON{}, nil
+
 }
 
 func (m *mockDockerClient) ContainerWait(ctx context.Context, containerID string, condition container.WaitCondition) (<-chan container.ContainerWaitOKBody, <-chan error) {
@@ -121,6 +166,7 @@ func (m *mockDockerClient) DistributionInspect(ctx context.Context, image, encod
 
 func (m *mockDockerClient) VolumeCreate(ctx context.Context, options volumeTypes.VolumeCreateBody) (types.Volume, error) {
 	return types.Volume{
+		Name:   options.Name,
 		Driver: "local",
 		Labels: options.Labels,
 	}, nil
@@ -146,7 +192,7 @@ func (m *mockDockerClient) VolumeList(ctx context.Context, filter filters.Args) 
 			},
 			{
 				Labels: map[string]string{
-					"component": "node",
+					"component": "test",
 					"type":      "projects",
 				},
 			},
@@ -155,6 +201,27 @@ func (m *mockDockerClient) VolumeList(ctx context.Context, filter filters.Args) 
 }
 
 func (m *mockDockerClient) VolumeRemove(ctx context.Context, volumeID string, force bool) error {
+	return nil
+}
+
+func (m *mockDockerClient) ContainerExecCreate(ctx context.Context, container string, config types.ExecConfig) (types.IDResponse, error) {
+	return types.IDResponse{
+		ID: "someid",
+	}, nil
+}
+
+func (m *mockDockerClient) ContainerExecAttach(ctx context.Context, execID string, config types.ExecStartCheck) (types.HijackedResponse, error) {
+	s1 := strings.NewReader("hello")
+	r := bufio.NewReader(s1)
+	server, _ := net.Pipe()
+
+	return types.HijackedResponse{
+		Reader: r,
+		Conn:   server,
+	}, nil
+}
+
+func (m *mockDockerClient) CopyToContainer(ctx context.Context, container, path string, content io.Reader, options types.CopyToContainerOptions) error {
 	return nil
 }
 
@@ -184,6 +251,9 @@ var errDistributionInspect = errors.New("error inspecting distribution")
 var errVolumeCreate = errors.New("error creating volume")
 var errVolumeList = errors.New("error listing volume")
 var errRemoveVolume = errors.New("error removing volume")
+var errContainerExecCreate = errors.New("error creating container exec")
+var errContainerExecAttach = errors.New("error attach container exec")
+var errCopyToContainer = errors.New("error copying to container")
 
 func (m *mockDockerErrorClient) ImageList(ctx context.Context, imageListOptions types.ImageListOptions) ([]types.ImageSummary, error) {
 	return nil, errImageList
@@ -251,4 +321,16 @@ func FakeNewMockClient(ctrl *gomock.Controller) (*Client, *MockDockerClient) {
 		Client: dockerClient,
 	}
 	return &localClient, dockerClient
+}
+
+func (m *mockDockerErrorClient) ContainerExecCreate(ctx context.Context, container string, config types.ExecConfig) (types.IDResponse, error) {
+	return types.IDResponse{}, errContainerExecCreate
+}
+
+func (m *mockDockerErrorClient) ContainerExecAttach(ctx context.Context, execID string, config types.ExecStartCheck) (types.HijackedResponse, error) {
+	return types.HijackedResponse{}, errContainerExecAttach
+}
+
+func (m *mockDockerErrorClient) CopyToContainer(ctx context.Context, container, path string, content io.Reader, options types.CopyToContainerOptions) error {
+	return errCopyToContainer
 }

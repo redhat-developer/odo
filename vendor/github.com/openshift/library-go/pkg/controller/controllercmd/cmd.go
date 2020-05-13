@@ -1,7 +1,6 @@
 package controllercmd
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io/ioutil"
@@ -17,12 +16,13 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/apiserver/pkg/server"
-	"k8s.io/apiserver/pkg/util/logs"
+	"k8s.io/component-base/logs"
 	"k8s.io/klog"
 
 	operatorv1alpha1 "github.com/openshift/api/operator/v1alpha1"
 
 	"github.com/openshift/library-go/pkg/config/configdefaults"
+	"github.com/openshift/library-go/pkg/controller/fileobserver"
 	"github.com/openshift/library-go/pkg/crypto"
 	"github.com/openshift/library-go/pkg/serviceability"
 
@@ -37,6 +37,9 @@ type ControllerCommandConfig struct {
 	version       version.Info
 
 	basicFlags *ControllerFlags
+
+	// DisableServing disables serving metrics, debug and health checks and so on.
+	DisableServing bool
 }
 
 // NewControllerConfig returns a new ControllerCommandConfig which can be used to wire up all the boiler plate of a controller
@@ -48,6 +51,8 @@ func NewControllerCommandConfig(componentName string, version version.Info, star
 		version:       version,
 
 		basicFlags: NewControllerFlags(),
+
+		DisableServing: false,
 	}
 }
 
@@ -88,7 +93,34 @@ func (c *ControllerCommandConfig) NewCommandWithContext(ctx context.Context) *co
 				klog.Fatal(err)
 			}
 
-			if err := c.StartController(shutdownCtx); err != nil {
+			ctx, terminate := context.WithCancel(shutdownCtx)
+			defer terminate()
+
+			if len(c.basicFlags.TerminateOnFiles) > 0 {
+				// setup file observer to terminate when given files change
+				obs, err := fileobserver.NewObserver(10 * time.Second)
+				if err != nil {
+					klog.Fatal(err)
+				}
+				files := map[string][]byte{}
+				for _, fn := range c.basicFlags.TerminateOnFiles {
+					fileBytes, err := ioutil.ReadFile(fn)
+					if err != nil {
+						klog.Warningf("Unable to read initial content of %q: %v", fn, err)
+						continue // intentionally ignore errors
+					}
+					files[fn] = fileBytes
+				}
+				obs.AddReactor(func(filename string, action fileobserver.ActionType) error {
+					klog.Infof("exiting because %q changed", filename)
+					terminate()
+					return nil
+				}, files, c.basicFlags.TerminateOnFiles...)
+
+				go obs.Run(shutdownHandler)
+			}
+
+			if err := c.StartController(ctx); err != nil {
 				klog.Fatal(err)
 			}
 		},
@@ -136,7 +168,6 @@ func (c *ControllerCommandConfig) AddDefaultRotationToConfig(config *operatorv1a
 	certDir := "/var/run/secrets/serving-cert"
 
 	observedFiles := []string{
-		c.basicFlags.ConfigFile,
 		// We observe these, so we they are created or modified by service serving cert signer, we can react and restart the process
 		// that will pick these up instead of generating the self-signed certs.
 		// NOTE: We are not observing the temporary, self-signed certificates.
@@ -146,8 +177,12 @@ func (c *ControllerCommandConfig) AddDefaultRotationToConfig(config *operatorv1a
 	// startingFileContent holds hardcoded starting content.  If we generate our own certificates, then we want to specify empty
 	// content to avoid a starting race.  When we consume them, the race is really about as good as we can do since we don't know
 	// what's actually been read.
-	startingFileContent := map[string][]byte{
-		c.basicFlags.ConfigFile: configContent,
+	startingFileContent := map[string][]byte{}
+
+	// Since provision of a config filename is optional, only observe when one is provided.
+	if len(c.basicFlags.ConfigFile) > 0 {
+		observedFiles = append(observedFiles, c.basicFlags.ConfigFile)
+		startingFileContent[c.basicFlags.ConfigFile] = configContent
 	}
 
 	// if we don't have any serving cert/key pairs specified and the defaults are not present, generate a self-signed set
@@ -162,6 +197,11 @@ func (c *ControllerCommandConfig) AddDefaultRotationToConfig(config *operatorv1a
 			config.ServingInfo.KeyFile = filepath.Join(certDir, "tls.key")
 		} else {
 			klog.Warningf("Using insecure, self-signed certificates")
+			// If we generate our own certificates, then we want to specify empty content to avoid a starting race.  This way,
+			// if any change comes in, we will properly restart
+			startingFileContent[filepath.Join(certDir, "tls.crt")] = []byte{}
+			startingFileContent[filepath.Join(certDir, "tls.key")] = []byte{}
+
 			temporaryCertDir, err := ioutil.TempDir("", "serving-cert-")
 			if err != nil {
 				return nil, nil, err
@@ -177,11 +217,10 @@ func (c *ControllerCommandConfig) AddDefaultRotationToConfig(config *operatorv1a
 			if err != nil {
 				return nil, nil, err
 			}
-			certDir = temporaryCertDir
 
 			// force the values to be set to where we are writing the certs
-			config.ServingInfo.CertFile = filepath.Join(certDir, "tls.crt")
-			config.ServingInfo.KeyFile = filepath.Join(certDir, "tls.key")
+			config.ServingInfo.CertFile = filepath.Join(temporaryCertDir, "tls.crt")
+			config.ServingInfo.KeyFile = filepath.Join(temporaryCertDir, "tls.key")
 			// nothing can trust this, so we don't really care about hostnames
 			servingCert, err := ca.MakeServerCert(sets.NewString("localhost"), 30)
 			if err != nil {
@@ -190,16 +229,6 @@ func (c *ControllerCommandConfig) AddDefaultRotationToConfig(config *operatorv1a
 			if err := servingCert.WriteCertConfigFile(config.ServingInfo.CertFile, config.ServingInfo.KeyFile); err != nil {
 				return nil, nil, err
 			}
-			crtContent := &bytes.Buffer{}
-			keyContent := &bytes.Buffer{}
-			if err := servingCert.WriteCertConfig(crtContent, keyContent); err != nil {
-				return nil, nil, err
-			}
-
-			// If we generate our own certificates, then we want to specify empty content to avoid a starting race.  This way,
-			// if any change comes in, we will properly restart
-			startingFileContent[filepath.Join(certDir, "tls.crt")] = crtContent.Bytes()
-			startingFileContent[filepath.Join(certDir, "tls.key")] = keyContent.Bytes()
 		}
 	}
 	return startingFileContent, observedFiles, nil
@@ -218,8 +247,12 @@ func (c *ControllerCommandConfig) StartController(ctx context.Context) error {
 		return err
 	}
 
+	if len(c.basicFlags.BindAddress) != 0 {
+		config.ServingInfo.BindAddress = c.basicFlags.BindAddress
+	}
+
 	exitOnChangeReactorCh := make(chan struct{})
-	ctx2, cancel := context.WithCancel(ctx)
+	controllerCtx, cancel := context.WithCancel(ctx)
 	go func() {
 		select {
 		case <-exitOnChangeReactorCh:
@@ -231,9 +264,13 @@ func (c *ControllerCommandConfig) StartController(ctx context.Context) error {
 
 	builder := NewController(c.componentName, c.startFunc).
 		WithKubeConfigFile(c.basicFlags.KubeConfigFile, nil).
-		WithLeaderElection(config.LeaderElection, "", c.componentName+"-lock").
-		WithServer(config.ServingInfo, config.Authentication, config.Authorization).
+		WithComponentNamespace(c.basicFlags.Namespace).
+		WithLeaderElection(config.LeaderElection, c.basicFlags.Namespace, c.componentName+"-lock").
 		WithRestartOnChange(exitOnChangeReactorCh, startingFileContent, observedFiles...)
 
-	return builder.Run(unstructuredConfig, ctx2)
+	if !c.DisableServing {
+		builder = builder.WithServer(config.ServingInfo, config.Authentication, config.Authorization)
+	}
+
+	return builder.Run(controllerCtx, unstructuredConfig)
 }

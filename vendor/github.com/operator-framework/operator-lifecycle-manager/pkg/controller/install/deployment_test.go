@@ -10,6 +10,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/kubernetes/pkg/util/labels"
 
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	clientfakes "github.com/operator-framework/operator-lifecycle-manager/pkg/api/wrappers/wrappersfakes"
@@ -55,15 +56,15 @@ func testServiceAccount(name string, mockOwner ownerutil.Owner) *corev1.ServiceA
 	return serviceAccount
 }
 
-func strategy(n int, namespace string, mockOwner ownerutil.Owner) *StrategyDetailsDeployment {
-	var deploymentSpecs = []StrategyDeploymentSpec{}
-	var permissions = []StrategyDeploymentPermissions{}
+func strategy(n int, namespace string, mockOwner ownerutil.Owner) *v1alpha1.StrategyDetailsDeployment {
+	var deploymentSpecs = []v1alpha1.StrategyDeploymentSpec{}
+	var permissions = []v1alpha1.StrategyDeploymentPermissions{}
 	for i := 1; i <= n; i++ {
 		dep := testDeployment(fmt.Sprintf("olm-dep-%d", i), namespace, mockOwner)
-		spec := StrategyDeploymentSpec{Name: dep.GetName(), Spec: dep.Spec}
+		spec := v1alpha1.StrategyDeploymentSpec{Name: dep.GetName(), Spec: dep.Spec}
 		deploymentSpecs = append(deploymentSpecs, spec)
 		serviceAccount := testServiceAccount(fmt.Sprintf("olm-sa-%d", i), mockOwner)
-		permissions = append(permissions, StrategyDeploymentPermissions{
+		permissions = append(permissions, v1alpha1.StrategyDeploymentPermissions{
 			ServiceAccountName: serviceAccount.Name,
 			Rules: []rbacv1.PolicyRule{
 				{
@@ -74,7 +75,7 @@ func strategy(n int, namespace string, mockOwner ownerutil.Owner) *StrategyDetai
 			},
 		})
 	}
-	return &StrategyDetailsDeployment{
+	return &v1alpha1.StrategyDetailsDeployment{
 		DeploymentSpecs: deploymentSpecs,
 		Permissions:     permissions,
 	}
@@ -103,7 +104,7 @@ func TestInstallStrategyDeploymentInstallDeployments(t *testing.T) {
 	)
 
 	type inputs struct {
-		strategyDeploymentSpecs []StrategyDeploymentSpec
+		strategyDeploymentSpecs []v1alpha1.StrategyDeploymentSpec
 	}
 	type setup struct {
 		existingDeployments []*appsv1.Deployment
@@ -122,7 +123,7 @@ func TestInstallStrategyDeploymentInstallDeployments(t *testing.T) {
 		{
 			description: "updates/creates correctly",
 			inputs: inputs{
-				strategyDeploymentSpecs: []StrategyDeploymentSpec{
+				strategyDeploymentSpecs: []v1alpha1.StrategyDeploymentSpec{
 					{
 						Name: "test-deployment-1",
 						Spec: appsv1.DeploymentSpec{},
@@ -264,7 +265,7 @@ func TestNewStrategyDeploymentInstaller(t *testing.T) {
 		},
 	}
 	fakeClient := new(clientfakes.FakeInstallStrategyDeploymentInterface)
-	strategy := NewStrategyDeploymentInstaller(fakeClient, map[string]string{"test": "annotation"}, &mockOwner, nil)
+	strategy := NewStrategyDeploymentInstaller(fakeClient, map[string]string{"test": "annotation"}, &mockOwner, nil, nil)
 	require.Implements(t, (*StrategyInstaller)(nil), strategy)
 	require.Error(t, strategy.Install(&BadStrategy{}))
 	installed, err := strategy.CheckInstalled(&BadStrategy{})
@@ -302,10 +303,11 @@ func TestInstallStrategyDeploymentCheckInstallErrors(t *testing.T) {
 		t.Run(tt.description, func(t *testing.T) {
 			fakeClient := new(clientfakes.FakeInstallStrategyDeploymentInterface)
 			strategy := strategy(1, namespace, &mockOwner)
-			installer := NewStrategyDeploymentInstaller(fakeClient, map[string]string{"test": "annotation"}, &mockOwner, nil)
+			installer := NewStrategyDeploymentInstaller(fakeClient, map[string]string{"test": "annotation"}, &mockOwner, nil, nil)
 
 			dep := testDeployment("olm-dep-1", namespace, &mockOwner)
 			dep.Spec.Template.SetAnnotations(map[string]string{"test": "annotation"})
+			dep.SetLabels(labels.CloneAndAddLabel(dep.ObjectMeta.GetLabels(), DeploymentSpecHashLabelKey, HashDeploymentSpec(dep.Spec)))
 			fakeClient.FindAnyDeploymentsMatchingLabelsReturns(
 				[]*appsv1.Deployment{
 					&dep,
@@ -321,6 +323,7 @@ func TestInstallStrategyDeploymentCheckInstallErrors(t *testing.T) {
 
 			deployment := testDeployment("olm-dep-1", namespace, &mockOwner)
 			deployment.Spec.Template.SetAnnotations(map[string]string{"test": "annotation"})
+			deployment.SetLabels(labels.CloneAndAddLabel(dep.ObjectMeta.GetLabels(), DeploymentSpecHashLabelKey, HashDeploymentSpec(deployment.Spec)))
 			fakeClient.CreateOrUpdateDeploymentReturns(&deployment, tt.createDeploymentErr)
 			defer func() {
 				require.Equal(t, &deployment, fakeClient.CreateOrUpdateDeploymentArgsForCall(0))
@@ -358,7 +361,7 @@ func TestInstallStrategyDeploymentCleanupDeployments(t *testing.T) {
 	)
 
 	type inputs struct {
-		strategyDeploymentSpecs []StrategyDeploymentSpec
+		strategyDeploymentSpecs []v1alpha1.StrategyDeploymentSpec
 	}
 	type setup struct {
 		existingDeployments []*appsv1.Deployment
@@ -378,7 +381,7 @@ func TestInstallStrategyDeploymentCleanupDeployments(t *testing.T) {
 		{
 			description: "cleanup successfully",
 			inputs: inputs{
-				strategyDeploymentSpecs: []StrategyDeploymentSpec{
+				strategyDeploymentSpecs: []v1alpha1.StrategyDeploymentSpec{
 					{
 						Name: "test-deployment-1",
 						Spec: appsv1.DeploymentSpec{},
@@ -410,7 +413,7 @@ func TestInstallStrategyDeploymentCleanupDeployments(t *testing.T) {
 		{
 			description: "cleanup unsuccessfully as no orphaned deployments found",
 			inputs: inputs{
-				strategyDeploymentSpecs: []StrategyDeploymentSpec{
+				strategyDeploymentSpecs: []v1alpha1.StrategyDeploymentSpec{
 					{
 						Name: "test-deployment-1",
 						Spec: appsv1.DeploymentSpec{},
@@ -430,7 +433,7 @@ func TestInstallStrategyDeploymentCleanupDeployments(t *testing.T) {
 		{
 			description: "cleanup unsuccessfully as unable to look up orphaned deployments",
 			inputs: inputs{
-				strategyDeploymentSpecs: []StrategyDeploymentSpec{
+				strategyDeploymentSpecs: []v1alpha1.StrategyDeploymentSpec{
 					{
 						Name: "test-deployment-1",
 						Spec: appsv1.DeploymentSpec{},
@@ -450,7 +453,7 @@ func TestInstallStrategyDeploymentCleanupDeployments(t *testing.T) {
 		{
 			description: "cleanup unsuccessfully as unable to delete deployments",
 			inputs: inputs{
-				strategyDeploymentSpecs: []StrategyDeploymentSpec{
+				strategyDeploymentSpecs: []v1alpha1.StrategyDeploymentSpec{
 					{
 						Name: "test-deployment-1",
 						Spec: appsv1.DeploymentSpec{},

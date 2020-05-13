@@ -7,14 +7,15 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/golang/glog"
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/cli/catalog/util"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
+	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 )
 
 const componentsRecommendedCommandName = "components"
@@ -41,24 +42,30 @@ func NewListComponentsOptions() *ListComponentsOptions {
 
 // Complete completes ListComponentsOptions after they've been created
 func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context = genericclioptions.NewContext(cmd)
-	o.catalogList, err = catalog.ListComponents(o.Client)
-	if err != nil {
-		if experimental.IsExperimentalModeEnabled() {
-			glog.V(4).Info("Please log in to an OpenShift cluster to list OpenShift/s2i components")
-		} else {
-			return err
+	if !pushtarget.IsPushTargetDocker() {
+		o.Context = genericclioptions.NewContext(cmd)
+		o.catalogList, err = catalog.ListComponents(o.Client)
+		if err != nil {
+			if experimental.IsExperimentalModeEnabled() {
+				klog.V(4).Info("Please log in to an OpenShift cluster to list OpenShift/s2i components")
+			} else {
+				return err
+			}
 		}
+
+		o.catalogList.Items = util.FilterHiddenComponents(o.catalogList.Items)
 	}
 
 	if experimental.IsExperimentalModeEnabled() {
-		o.catalogDevfileList, err = catalog.ListDevfileComponents()
+		o.catalogDevfileList, err = catalog.ListDevfileComponents("")
 		if err != nil {
 			return err
 		}
-	}
 
-	o.catalogList.Items = util.FilterHiddenComponents(o.catalogList.Items)
+		if o.catalogDevfileList.DevfileRegistries == nil {
+			log.Warning("Please run 'odo registry add <registry name> <registry URL>' to add registry for listing devfile components\n")
+		}
+	}
 
 	return
 }
@@ -127,7 +134,7 @@ func (o *ListComponentsOptions) Run() (err error) {
 
 		if len(supDevfileCatalogList) != 0 || (o.listAllDevfileComponents && len(unsupDevfileCatalogList) != 0) {
 			fmt.Fprintln(w, "Odo Devfile Components:")
-			fmt.Fprintln(w, "NAME", "\t", "DESCRIPTION", "\t", "SUPPORTED")
+			fmt.Fprintln(w, "NAME", "\t", "DESCRIPTION", "\t", "REGISTRY", "\t", "SUPPORTED")
 
 			if len(supDevfileCatalogList) != 0 {
 				supported = "YES"
@@ -189,6 +196,6 @@ func (o *ListComponentsOptions) printCatalogList(w io.Writer, catalogList []cata
 
 func (o *ListComponentsOptions) printDevfileCatalogList(w io.Writer, catalogDevfileList []catalog.DevfileComponentType, supported string) {
 	for _, devfileComponent := range catalogDevfileList {
-		fmt.Fprintln(w, devfileComponent.Name, "\t", devfileComponent.Description, "\t", supported)
+		fmt.Fprintln(w, devfileComponent.Name, "\t", devfileComponent.Description, "\t", devfileComponent.Registry.Name, "\t", supported)
 	}
 }
