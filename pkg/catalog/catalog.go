@@ -124,12 +124,9 @@ func IsDevfileComponentSupported(devfile Devfile) bool {
 			hasRunCommand = strings.Contains(command.Name, "devRun")
 		}
 
-		if !hasBuildCommand {
-			hasBuildCommand = strings.Contains(command.Name, "devBuild")
-		}
 	}
 
-	if hasDockerImage && hasAlias && hasBuildCommand && hasRunCommand {
+	if hasDockerImage && hasAlias && hasRunCommand {
 		return true
 	}
 
