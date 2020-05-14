@@ -1,7 +1,6 @@
 package devfile
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -16,6 +15,14 @@ var _ = Describe("odo devfile watch command tests", func() {
 	var namespace string
 	var context string
 	var currentWorkingDirectory string
+	var cliRunner helper.CliRunner
+
+	// Using program commmand according to cliRunner in devfile
+	if os.Getenv("KUBERNETES") == "true" {
+		cliRunner = helper.NewKubectlRunner("kubectl")
+	} else {
+		cliRunner = helper.NewOcRunner("oc")
+	}
 
 	// Setup up state for each test spec
 	// create new project (not set as active) and new context directory for each test spec
@@ -24,15 +31,9 @@ var _ = Describe("odo devfile watch command tests", func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-		if os.Getenv("KUBERNETES") == "true" {
-			homeDir := helper.GetUserHomeDir()
-			_ = helper.CopyKubeConfigFile(filepath.Join(homeDir, ".kube", "config"), filepath.Join(context, "config"))
-			namespace = helper.CreateRandNamespace()
-			con := helper.CmdShouldPass("kubectl", "config", "get-contexts")
-			fmt.Println("current context is show", con)
-		} else {
-			namespace = helper.CreateRandProject()
-		}
+		homeDir := helper.GetUserHomeDir()
+		helper.CopyKubeConfigFile(filepath.Join(homeDir, ".kube", "config"), filepath.Join(context, "config"))
+		namespace = cliRunner.CreateRandNamespaceProject()
 		currentWorkingDirectory = helper.Getwd()
 		helper.Chdir(context)
 	})
@@ -40,12 +41,8 @@ var _ = Describe("odo devfile watch command tests", func() {
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		if os.Getenv("KUBERNETES") == "true" {
-			helper.DeleteNamespace(namespace)
-			os.Unsetenv("KUBECONFIG")
-		} else {
-			helper.DeleteProject(namespace)
-		}
+		cliRunner.DeleteNamespaceProject(namespace)
+		os.Unsetenv("KUBECONFIG")
 		helper.Chdir(currentWorkingDirectory)
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
