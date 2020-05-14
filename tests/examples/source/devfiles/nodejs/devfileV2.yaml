@@ -17,19 +17,23 @@ components:
       endpoints:
         - name: '3000/tcp'
           targetPort: 3000
-          # Not parsing currently, added to validate JSON Schema
+          # odo not using currently, added to validate JSON Schema
           configuration:
             protocol: tcp
             scheme: http
             type: terminal
 commands:
   - exec:
-      id: devbuild
+      id: download dependencies
       commandLine: "npm install"
       component: runtime
       workingDir: ${CHE_PROJECTS_ROOT}/nodejs-web-app/app
+      group:
+        kind: build
   - exec:
-      id: devrun
+      id: run the app
       commandLine: "nodemon app.js"
       component: runtime
-      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-web-app/app                               
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-web-app/app 
+      group:
+        kind: run                              
