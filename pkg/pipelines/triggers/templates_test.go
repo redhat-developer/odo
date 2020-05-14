@@ -33,13 +33,13 @@ func TestCreateDevCDDeployTemplate(t *testing.T) {
 
 			ResourceTemplates: []triggersv1.TriggerResourceTemplate{
 				{
-					RawMessage: createDevCDResourcetemplate(serviceAccName, "example.com:5000/testing/testing"),
+					RawMessage: createDevCDResourcetemplate(serviceAccName),
 				},
 			},
 		},
 	}
 
-	template := CreateDevCDDeployTemplate("testns", serviceAccName, "example.com:5000/testing/testing")
+	template := CreateDevCDDeployTemplate("testns", serviceAccName)
 	if diff := cmp.Diff(validDevCDTemplate, template); diff != "" {
 		t.Fatalf("CreateDevCDDeployTemplate failed:\n%s", diff)
 	}
@@ -54,7 +54,7 @@ func TestCreateDevCIBuildPRTemplate(t *testing.T) {
 			Params: []pipelinev1.ParamSpec{
 				{
 					Name:        "gitref",
-					Description: "The git branch for this PR",
+					Description: "The git branch for this PR.",
 				},
 				{
 					Name:        "gitsha",
@@ -62,21 +62,25 @@ func TestCreateDevCIBuildPRTemplate(t *testing.T) {
 				},
 				{
 					Name:        "gitrepositoryurl",
-					Description: "The git repository url",
+					Description: "The git repository URL.",
 				},
 				{
 					Name:        "fullname",
 					Description: "The GitHub repository for this PullRequest.",
 				},
+				{
+					Name:        "imageRepo",
+					Description: "The repository to push built images to.",
+				},
 			},
 			ResourceTemplates: []triggersv1.TriggerResourceTemplate{
 				{
-					RawMessage: createDevCIResourceTemplate(serviceAccName, "example.com:5000/testing/testing"),
+					RawMessage: createDevCIResourceTemplate(serviceAccName),
 				},
 			},
 		},
 	}
-	template := CreateDevCIBuildPRTemplate("testns", serviceAccName, "example.com:5000/testing/testing")
+	template := CreateDevCIBuildPRTemplate("testns", serviceAccName)
 	if diff := cmp.Diff(validdevCIPRTemplate, template); diff != "" {
 		t.Fatalf("CreatedevCIBuildPRTemplate failed:\n%s", diff)
 	}

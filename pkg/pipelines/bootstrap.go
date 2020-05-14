@@ -19,11 +19,19 @@ import (
 	"github.com/openshift/odo/pkg/pipelines/namespaces"
 	res "github.com/openshift/odo/pkg/pipelines/resources"
 	"github.com/openshift/odo/pkg/pipelines/secrets"
+	"github.com/openshift/odo/pkg/pipelines/triggers"
 	"github.com/openshift/odo/pkg/pipelines/yaml"
 )
 
 const pipelinesFile = "pipelines.yaml"
 const bootstrapImage = "nginxinc/nginx-unprivileged:latest"
+
+var defaultPipelines = &config.Pipelines{
+	Integration: &config.TemplateBinding{
+		Template: "app-ci-template",
+		Bindings: []string{"github-pr-binding"},
+	},
+}
 
 // BootstrapOptions is a struct that provides the optional flags
 type BootstrapOptions struct {
@@ -36,13 +44,6 @@ type BootstrapOptions struct {
 	Prefix                   string // Used to prefix generated environment names in a shared cluster.
 	OutputPath               string // Where to write the bootstrapped files to?
 	DockerConfigJSONFilename string
-}
-
-var defaultPipelines = &config.Pipelines{
-	Integration: &config.TemplateBinding{
-		Template: "app-ci-template",
-		Bindings: []string{"github-pr-binding"},
-	},
 }
 
 // Bootstrap bootstraps a GitOps pipelines and repository structure.
@@ -68,20 +69,21 @@ func Bootstrap(o *BootstrapOptions, appFs afero.Fs) error {
 	return err
 }
 
-func repoToServiceName(repoName string) string {
-	return repoName + "-svc"
-}
-
 func bootstrapResources(o *BootstrapOptions, appFs afero.Fs) (res.Resources, error) {
+	_, imageRepo, err := validateImageRepo(o.ImageRepo, o.InternalRegistryHostname)
+	if err != nil {
+		return nil, err
+	}
 	repoName, err := repoFromURL(o.AppRepoURL)
 	if err != nil {
 		return nil, fmt.Errorf("invalid app repo URL: %w", err)
 	}
 
-	bootstrapped, err := createInitialFiles(appFs, o.Prefix, o.GitOpsRepoURL, o.GitOpsWebhookSecret, o.DockerConfigJSONFilename, o.ImageRepo)
+	bootstrapped, err := createInitialFiles(appFs, o.Prefix, o.GitOpsRepoURL, o.GitOpsWebhookSecret, o.DockerConfigJSONFilename)
 	if err != nil {
 		return nil, err
 	}
+
 	ns := namespaces.NamesWithPrefix(o.Prefix)
 	secretName := secrets.MakeServiceWebhookSecretName(repoToServiceName(repoName))
 	envs, err := bootstrapEnvironments(o.Prefix, o.AppRepoURL, secretName, ns)
@@ -89,12 +91,12 @@ func bootstrapResources(o *BootstrapOptions, appFs afero.Fs) (res.Resources, err
 		return nil, err
 	}
 	m := createManifest(o.GitOpsRepoURL, envs...)
-	bootstrapped[pipelinesFile] = m
-	env := m.GetEnvironment(ns["dev"])
-	if env == nil {
+
+	devEnv := m.GetEnvironment(ns["dev"])
+	if devEnv == nil {
 		return nil, errors.New("unable to bootstrap without dev environment")
 	}
-	svcFiles, err := bootstrapServiceDeployment(env)
+	svcFiles, err := bootstrapServiceDeployment(devEnv)
 	if err != nil {
 		return nil, err
 	}
@@ -112,13 +114,28 @@ func bootstrapResources(o *BootstrapOptions, appFs afero.Fs) (res.Resources, err
 	secretFilename := filepath.Join("03-secrets", secretName+".yaml")
 	secretsPath := filepath.Join(config.PathForEnvironment(cicdEnv), "base", "pipelines", secretFilename)
 	bootstrapped[secretsPath] = hookSecret
+
+	bindingName := fmt.Sprintf("%s-%s-binding", cicdEnv.Name, repoToServiceName(repoName))
+	imageRepoBindingFilename := filepath.Join("06-bindings", bindingName+".yaml")
+	imageRepoBindingPath := filepath.Join(config.PathForEnvironment(cicdEnv), "base", "pipelines", imageRepoBindingFilename)
+	bootstrapped[imageRepoBindingPath] = triggers.CreateImageRepoBinding(cicdEnv.Name, bindingName, imageRepo)
+
+	// This is specific to bootstrap, because there's only one service.
+	devEnv.Services[0].Pipelines = &config.Pipelines{
+		Integration: &config.TemplateBinding{
+			Bindings: append([]string{bindingName}, devEnv.Pipelines.Integration.Bindings[:]...),
+		},
+	}
+	bootstrapped[pipelinesFile] = m
 	kustomizePath := filepath.Join(config.PathForEnvironment(cicdEnv), "base", "pipelines", "kustomization.yaml")
 	k, ok := bootstrapped[kustomizePath].(res.Kustomization)
 	if !ok {
 		return nil, fmt.Errorf("no kustomization for the %s environment found", kustomizePath)
 	}
-	k.Resources = append(k.Resources, secretFilename)
+	k.Resources = append(k.Resources, secretFilename, imageRepoBindingFilename)
+	sort.Strings(k.Resources)
 	bootstrapped[kustomizePath] = k
+
 	bootstrapped = res.Merge(svcFiles, bootstrapped)
 	return bootstrapped, nil
 }
@@ -128,6 +145,7 @@ func bootstrapServiceDeployment(dev *config.Environment) (res.Resources, error) 
 	svcBase := filepath.Join(config.PathForService(dev, svc.Name), "base", "config")
 	resources := res.Resources{}
 	// TODO: This should change if we add Namespace to Environment.
+	// We'd need to create the resources in the namespace _of_ the Environment.
 	resources[filepath.Join(svcBase, "100-deployment.yaml")] = deployment.Create(dev.Name, svc.Name, bootstrapImage, deployment.ContainerPort(8080))
 	resources[filepath.Join(svcBase, "200-service.yaml")] = createBootstrapService(dev.Name, svc.Name)
 	resources[filepath.Join(svcBase, "kustomization.yaml")] = &res.Kustomization{Resources: []string{"100-deployment.yaml", "200-service.yaml"}}
@@ -228,4 +246,8 @@ func createBootstrapService(ns, name string) *corev1.Service {
 	svc.ObjectMeta.Labels = labels
 	svc.Spec.Selector = labels
 	return svc
+}
+
+func repoToServiceName(repoName string) string {
+	return repoName + "-svc"
 }

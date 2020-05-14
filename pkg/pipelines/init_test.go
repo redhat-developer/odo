@@ -33,8 +33,6 @@ func TestInitialFiles(t *testing.T) {
 	prefix := "tst-"
 	gitOpsURL := "https://gibhub.com/foo/test-repo"
 	gitOpsWebhook := "123"
-	imageRepo := "image/repo"
-
 	defer func(f secrets.PublicKeyFunc) {
 		secrets.DefaultPublicKeyFunc = f
 	}(secrets.DefaultPublicKeyFunc)
@@ -47,7 +45,8 @@ func TestInitialFiles(t *testing.T) {
 		return &key.PublicKey, nil
 	}
 	fakeFs := ioutils.NewMapFilesystem()
-	got, err := createInitialFiles(fakeFs, prefix, gitOpsURL, gitOpsWebhook, "", imageRepo)
+
+	got, err := createInitialFiles(fakeFs, prefix, gitOpsURL, gitOpsWebhook, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,13 +54,11 @@ func TestInitialFiles(t *testing.T) {
 	want := res.Resources{
 		pipelinesFile: createManifest(gitOpsURL, testCICDEnv),
 	}
-
 	gitOpsRepo, err := orgRepoFromURL(gitOpsURL)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	resources, err := createCICDResources(fakeFs, testCICDEnv, gitOpsRepo, gitOpsWebhook, "", imageRepo)
+	resources, err := createCICDResources(fakeFs, testCICDEnv, gitOpsRepo, gitOpsWebhook, "")
 	if err != nil {
 		t.Fatalf("CreatePipelineResources() failed due to :%s\n", err)
 	}

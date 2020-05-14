@@ -73,6 +73,9 @@ func TestBootstrapManifest(t *testing.T) {
 									Namespace: "tst-cicd",
 								},
 							},
+							Pipelines: &config.Pipelines{
+								Integration: &config.TemplateBinding{Bindings: []string{"tst-cicd-http-api-svc-binding", "github-pr-binding"}},
+							},
 						},
 					},
 
@@ -100,6 +103,7 @@ func TestBootstrapManifest(t *testing.T) {
 	wantResources := []string{"01-namespaces/cicd-environment.yaml",
 		"02-rolebindings/pipeline-service-role.yaml",
 		"02-rolebindings/pipeline-service-rolebinding.yaml",
+		"03-secrets/github-webhook-secret-http-api-svc.yaml",
 		"03-secrets/gitops-webhook-secret.yaml",
 		"04-tasks/deploy-from-source-task.yaml",
 		"04-tasks/deploy-using-kubectl-task.yaml",
@@ -108,12 +112,12 @@ func TestBootstrapManifest(t *testing.T) {
 		"05-pipelines/ci-dryrun-from-pr-pipeline.yaml",
 		"06-bindings/github-pr-binding.yaml",
 		"06-bindings/github-push-binding.yaml",
+		"06-bindings/tst-cicd-http-api-svc-binding.yaml",
 		"07-templates/app-ci-build-pr-template.yaml",
 		"07-templates/cd-deploy-from-push-template.yaml",
 		"07-templates/ci-dryrun-from-pr-template.yaml",
 		"08-eventlisteners/cicd-event-listener.yaml",
 		"09-routes/gitops-webhook-event-listener.yaml",
-		"03-secrets/github-webhook-secret-http-api-svc.yaml",
 	}
 	k := r["environments/tst-cicd/base/pipelines/kustomization.yaml"].(res.Kustomization)
 	if diff := cmp.Diff(wantResources, k.Resources); diff != "" {
