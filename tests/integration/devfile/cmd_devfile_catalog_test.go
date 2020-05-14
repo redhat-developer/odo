@@ -14,6 +14,14 @@ var _ = Describe("odo devfile catalog command tests", func() {
 	var project string
 	var context string
 	var currentWorkingDirectory string
+	var cliRunner helper.CliRunner
+
+	// Using program commmand according to cliRunner in devfile
+	if os.Getenv("KUBERNETES") == "true" {
+		cliRunner = helper.NewKubectlRunner("kubectl")
+	} else {
+		cliRunner = helper.NewOcRunner("oc")
+	}
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
@@ -21,25 +29,17 @@ var _ = Describe("odo devfile catalog command tests", func() {
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
-		if os.Getenv("KUBERNETES") == "true" {
-			homeDir := helper.GetUserHomeDir()
-			_ = helper.CopyKubeConfigFile(filepath.Join(homeDir, ".kube", "config"), filepath.Join(context, "config"))
-			project = helper.CreateRandNamespace()
-		} else {
-			project = helper.CreateRandProject()
-		}
+		homeDir := helper.GetUserHomeDir()
+		helper.CopyKubeConfigFile(filepath.Join(homeDir, ".kube", "config"), filepath.Join(context, "config"))
+		project = cliRunner.CreateRandNamespaceProject()
 		currentWorkingDirectory = helper.Getwd()
 		helper.Chdir(context)
 	})
 
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		if os.Getenv("KUBERNETES") == "true" {
-			helper.DeleteNamespace(project)
-			os.Unsetenv("KUBECONFIG")
-		} else {
-			helper.DeleteProject(project)
-		}
+		cliRunner.DeleteNamespaceProject(project)
+		os.Unsetenv("KUBECONFIG")
 		helper.Chdir(currentWorkingDirectory)
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
