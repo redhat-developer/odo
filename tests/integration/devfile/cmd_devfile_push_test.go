@@ -34,13 +34,9 @@ var _ = Describe("odo devfile push command tests", func() {
 		// Devfile push requires experimental mode to be set
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 
-		if os.Getenv("KUBERNETES") == "true" {
-			homeDir := helper.GetUserHomeDir()
-			_ = helper.CopyKubeConfigFile(filepath.Join(homeDir, ".kube", "config"), filepath.Join(context, "config"))
-			namespace = helper.CreateRandNamespace()
-		} else {
-			namespace = helper.CreateRandProject()
-		}
+		homeDir := helper.GetUserHomeDir()
+		helper.CopyKubeConfigFile(filepath.Join(homeDir, ".kube", "config"), filepath.Join(context, "config"))
+		namespace = cliRunner.CreateRandNamespaceProject()
 		currentWorkingDirectory = helper.Getwd()
 		cmpName = helper.RandString(6)
 		helper.Chdir(context)
@@ -49,12 +45,8 @@ var _ = Describe("odo devfile push command tests", func() {
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		if os.Getenv("KUBERNETES") == "true" {
-			helper.DeleteNamespace(namespace)
-			os.Unsetenv("KUBECONFIG")
-		} else {
-			helper.DeleteProject(namespace)
-		}
+		cliRunner.DeleteNamespaceProject(namespace)
+		os.Unsetenv("KUBECONFIG")
 		helper.Chdir(currentWorkingDirectory)
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")

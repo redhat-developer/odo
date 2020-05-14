@@ -17,7 +17,6 @@ var _ = Describe("odo devfile watch command tests", func() {
 	var context string
 	var cmpName string
 	var currentWorkingDirectory string
-
 	var cliRunner helper.CliRunner
 
 	// Setup up state for each test spec
@@ -29,8 +28,8 @@ var _ = Describe("odo devfile watch command tests", func() {
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 		if os.Getenv("KUBERNETES") == "true" {
 			homeDir := helper.GetUserHomeDir()
-			_ = helper.CopyKubeConfigFile(filepath.Join(homeDir, ".kube", "config"), filepath.Join(context, "config"))
-			namespace = helper.CreateRandNamespace()
+			helper.CopyKubeConfigFile(filepath.Join(homeDir, ".kube", "config"), filepath.Join(context, "config"))
+			namespace = cliRunner.CreateRandNamespaceProject()
 			cliRunner = helper.NewKubectlRunner("kubectl")
 		} else {
 			namespace = helper.CreateRandProject()
@@ -47,12 +46,8 @@ var _ = Describe("odo devfile watch command tests", func() {
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		if os.Getenv("KUBERNETES") == "true" {
-			helper.DeleteNamespace(namespace)
-			os.Unsetenv("KUBECONFIG")
-		} else {
-			helper.DeleteProject(namespace)
-		}
+		cliRunner.DeleteNamespaceProject(namespace)
+		os.Unsetenv("KUBECONFIG")
 		helper.Chdir(currentWorkingDirectory)
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
