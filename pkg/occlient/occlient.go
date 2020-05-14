@@ -3258,46 +3258,14 @@ func isSubDir(baseDir, otherDir string) bool {
 
 // IsRouteSupported checks if route resource type is present on the cluster
 func (c *Client) IsRouteSupported() (bool, error) {
-	const ClusterVersionGroup = "route.openshift.io"
-	const ClusterVersionVersion = "v1"
-	groupVersion := metav1.GroupVersion{Group: ClusterVersionGroup, Version: ClusterVersionVersion}.String()
 
-	list, err := c.discoveryClient.ServerResourcesForGroupVersion(groupVersion)
-	if kerrors.IsNotFound(err) {
-		return false, nil
-	} else if err != nil {
-		return false, err
-	}
-
-	for _, resources := range list.APIResources {
-		if resources.Name == "routes" {
-			return true, nil
-		}
-	}
-	return false, nil
+	return c.isResourceSupported("route.openshift.io", "v1", "routes")
 }
 
 // IsImageStreamSupported checks if imagestream resource type is present on the cluster
 func (c *Client) IsImageStreamSupported() (bool, error) {
 
-	const ClusterVersionGroup = "image.openshift.io"
-	const ClusterVersionVersion = "v1"
-	groupVersion := metav1.GroupVersion{Group: ClusterVersionGroup, Version: ClusterVersionVersion}.String()
-
-	list, err := c.discoveryClient.ServerResourcesForGroupVersion(groupVersion)
-	if kerrors.IsNotFound(err) {
-		return false, nil
-	} else if err != nil {
-		return false, err
-	}
-
-	for _, resources := range list.APIResources {
-		if resources.Name == "imagestreams" {
-			return true, nil
-		}
-	}
-
-	return false, nil
+	return c.isResourceSupported("image.openshift.io", "v1", "imagestreams")
 }
 
 // GenerateOwnerReference genertes an ownerReference which can then be set as
@@ -3314,4 +3282,23 @@ func GenerateOwnerReference(dc *appsv1.DeploymentConfig) metav1.OwnerReference {
 	}
 
 	return ownerReference
+}
+
+func (c *Client) isResourceSupported(apiGroup, apiVersion, resourceName string) (bool, error) {
+
+	groupVersion := metav1.GroupVersion{Group: apiGroup, Version: apiVersion}.String()
+
+	list, err := c.discoveryClient.ServerResourcesForGroupVersion(groupVersion)
+	if kerrors.IsNotFound(err) {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	for _, resources := range list.APIResources {
+		if resources.Name == resourceName {
+			return true, nil
+		}
+	}
+	return false, nil
 }
