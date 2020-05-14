@@ -22,8 +22,10 @@ With this issue, we are looking at adding odo support for allowing external tool
 **Detailed application status**: 
 - While app status works well for standalone application frameworks (Go, Node Express, Spring Boot), it works less well for full server runtimes such as Java EE application servers like OpenLiberty/WildFly that may begin responding to Web requests before the user's deployed WAR/EAR application has finished startup. 
 - Since these application servers are built to serve multiple concurrently-deployed applications, it is more difficult to determine the status of any specific application running on them. The lifecycle of the application server differs from the lifecycle of the application running inside the application server. 
-- Fortunately, in these cases we can use the console logs (from `odo log`) from the runtime container to determine a more detailed application status.
+- Fortunately, in these cases the IDE/consuming tool can use the console logs (from `odo log`) from the runtime container to determine a more detailed application status.
 - For example, OpenLiberty (as an example of an application-server-style container) prints a specific code when an application is starting  `CWWKZ0018I: Starting application {0}.`, and another when it has started. `CWWKZ0001I: Application {0} started in {1} seconds.`
+- Odo itself should NOT know anything about these specific application codes; knowing how these translate into a detailed application status would be the responsibility of the IDE/consuming tool. Odo's role here is only to provide the console output log. 
+- In the future, we could add these codes into the devfile to give Odo itself some agency over determining the detailed application status, but for this proposal I am leaving this responsibility with the consuming tool.
 
 **Devfile writer**: A devfile writer may be a runtime developer (for example, a Red-Hatter working on WildFly or an IBMer working on OpenLibery) creating a devfile for their organization's runtime (for example 'OpenLiberty w/ Maven' dev file), or an application developer creating/customizing a dev file for use with their own application. In either case, the devfile writer must be familiar with the semantics of both odo and the devfile.
 
