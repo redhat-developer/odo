@@ -19,7 +19,7 @@ func GenerateBindings(ns string) []triggersv1.TriggerBinding {
 	}
 }
 
-// CreatePRBinding returns TriggerBindings for Pull Request
+// CreatePRBinding returns a TriggerBinding for GitHub PullRequest hooks.
 func CreatePRBinding(ns string) triggersv1.TriggerBinding {
 	return triggersv1.TriggerBinding{
 		TypeMeta:   triggerBindingTypeMeta,
@@ -35,7 +35,7 @@ func CreatePRBinding(ns string) triggersv1.TriggerBinding {
 	}
 }
 
-// CreatePushBinding returns TriggerBinding for Push Request
+// CreatePushBinding returns a TriggerBinding for GitHub Push hooks.
 func CreatePushBinding(ns string) triggersv1.TriggerBinding {
 	return triggersv1.TriggerBinding{
 		TypeMeta:   triggerBindingTypeMeta,
@@ -45,6 +45,19 @@ func CreatePushBinding(ns string) triggersv1.TriggerBinding {
 				createBindingParam("gitref", "$(body.ref)"),
 				createBindingParam("gitsha", "$(body.head_commit.id)"),
 				createBindingParam("gitrepositoryurl", "$(body.repository.clone_url)"),
+			},
+		},
+	}
+}
+
+// CreateImageRepoBinding returns a TriggerBinding with the imageRepo.
+func CreateImageRepoBinding(ns, bindingName, imageRepo string) triggersv1.TriggerBinding {
+	return triggersv1.TriggerBinding{
+		TypeMeta:   triggerBindingTypeMeta,
+		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, bindingName)),
+		Spec: triggersv1.TriggerBindingSpec{
+			Params: []pipelinev1.Param{
+				createBindingParam("imageRepo", imageRepo),
 			},
 		},
 	}

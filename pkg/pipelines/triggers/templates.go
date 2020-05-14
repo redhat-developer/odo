@@ -15,17 +15,17 @@ var (
 )
 
 // GenerateTemplates will return a slice of trigger templates
-func GenerateTemplates(ns, saName, imageRepo string) []triggersv1.TriggerTemplate {
+func GenerateTemplates(ns, saName string) []triggersv1.TriggerTemplate {
 	return []triggersv1.TriggerTemplate{
-		CreateDevCDDeployTemplate(ns, saName, imageRepo),
-		CreateDevCIBuildPRTemplate(ns, saName, imageRepo),
+		CreateDevCDDeployTemplate(ns, saName),
+		CreateDevCIBuildPRTemplate(ns, saName),
 		CreateCDPushTemplate(ns, saName),
 		CreateCIDryRunTemplate(ns, saName),
 	}
 }
 
 // CreateDevCDDeployTemplate creates DevCDDeployTemplate
-func CreateDevCDDeployTemplate(ns, saName, imageRepo string) triggersv1.TriggerTemplate {
+func CreateDevCDDeployTemplate(ns, saName string) triggersv1.TriggerTemplate {
 	return triggersv1.TriggerTemplate{
 		TypeMeta:   triggerTemplateTypeMeta,
 		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, "app-cd-template")),
@@ -36,7 +36,7 @@ func CreateDevCDDeployTemplate(ns, saName, imageRepo string) triggersv1.TriggerT
 			},
 			ResourceTemplates: []triggersv1.TriggerResourceTemplate{
 				{
-					RawMessage: createDevCDResourcetemplate(saName, imageRepo),
+					RawMessage: createDevCDResourcetemplate(saName),
 				},
 			},
 		},
@@ -44,7 +44,7 @@ func CreateDevCDDeployTemplate(ns, saName, imageRepo string) triggersv1.TriggerT
 }
 
 // CreateDevCIBuildPRTemplate creates DevCIBuildPRTemplate
-func CreateDevCIBuildPRTemplate(ns, saName, imageRepo string) triggersv1.TriggerTemplate {
+func CreateDevCIBuildPRTemplate(ns, saName string) triggersv1.TriggerTemplate {
 	return triggersv1.TriggerTemplate{
 		TypeMeta: triggerTemplateTypeMeta,
 		ObjectMeta: meta.ObjectMeta(
@@ -52,14 +52,15 @@ func CreateDevCIBuildPRTemplate(ns, saName, imageRepo string) triggersv1.Trigger
 			statusTrackerAnnotations("dev-ci-build-from-pr", "Dev CI Build")),
 		Spec: triggersv1.TriggerTemplateSpec{
 			Params: []pipelinev1.ParamSpec{
-				createTemplateParamSpec("gitref", "The git branch for this PR"),
+				createTemplateParamSpec("gitref", "The git branch for this PR."),
 				createTemplateParamSpec("gitsha", "the specific commit SHA."),
-				createTemplateParamSpec("gitrepositoryurl", "The git repository url"),
+				createTemplateParamSpec("gitrepositoryurl", "The git repository URL."),
 				createTemplateParamSpec("fullname", "The GitHub repository for this PullRequest."),
+				createTemplateParamSpec("imageRepo", "The repository to push built images to."),
 			},
 			ResourceTemplates: []triggersv1.TriggerResourceTemplate{
 				{
-					RawMessage: createDevCIResourceTemplate(saName, imageRepo),
+					RawMessage: createDevCIResourceTemplate(saName),
 				},
 			},
 		},
@@ -124,16 +125,15 @@ func createTemplateParamSpec(name string, description string) pipelinev1.ParamSp
 		Name:        name,
 		Description: description,
 	}
-
 }
 
-func createDevCDResourcetemplate(saName, imageRepo string) []byte {
-	byteTemplate, _ := json.Marshal(createDevCDPipelineRun(saName, imageRepo))
+func createDevCDResourcetemplate(saName string) []byte {
+	byteTemplate, _ := json.Marshal(createDevCDPipelineRun(saName))
 	return []byte(string(byteTemplate))
 }
 
-func createDevCIResourceTemplate(saName, imageRepo string) []byte {
-	byteTemplateCI, _ := json.Marshal(createDevCIPipelineRun(saName, imageRepo))
+func createDevCIResourceTemplate(saName string) []byte {
+	byteTemplateCI, _ := json.Marshal(createDevCIPipelineRun(saName))
 	return []byte(string(byteTemplateCI))
 }
 
