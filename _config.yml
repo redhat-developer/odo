@@ -15,7 +15,7 @@ doks:
             logo:
                 text: odo
                 image:
-            copyright: Copyright &copy; 2020 Red Hat, Inc.
+            copyright: Apache License Version 2.0
         social_list:
             - network_name: github
               profile_url: 'https://github.com/openshift/odo'
