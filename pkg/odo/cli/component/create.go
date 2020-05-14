@@ -334,12 +334,6 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		co.Context = genericclioptions.NewDevfileContext(cmd)
 
-		// One exception of a validation present in Complete code because, this is an optimisation
-		// i.e. if the devfile is present locally then we dont need to list the devfile catalog
-		if util.CheckPathExists(DevfilePath) {
-			return errors.New("This directory already contains a devfile.yaml, please delete it and run the component creation command again")
-		}
-
 		catalogDevfileList, err := catalog.ListDevfileComponents(co.devfileMetadata.devfileRegistry.Name)
 		if err != nil {
 			return err
@@ -387,6 +381,10 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		} else {
 			// Direct mode (User enters the full command)
 			// Get component type, name and namespace from user's full command
+
+			if util.CheckPathExists(DevfilePath) {
+				return errors.New("This directory already contains a devfile.yaml, please delete it and run the component creation command again")
+			}
 
 			// Component type: Get from full command's first argument (mandatory in direct mode)
 			componentType = args[0]
