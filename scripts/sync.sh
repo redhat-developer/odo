@@ -9,7 +9,7 @@ set -e
 
 tmp_openshift_docs_dir=$(mktemp -d -t odo-upstream-docs-XXXXXXXXXX)
 tmp_public_docs_dir=$(mktemp -d -t odo-public-docs-XXXXXXXXXX)
-odo_doc_directory="/cli_reference/openshift_developer_cli"
+odo_doc_directory="/cli_reference/developer_cli_odo"
 odo_public_doc_dir="/docs/public"
 output_dir=$(mktemp -d -t odo-output-docs-XXXXXXXXXX)
 openshift_docs="chosen-docs/openshift-docs"
