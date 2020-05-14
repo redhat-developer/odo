@@ -104,17 +104,12 @@ const (
 
 // Init bootstraps a GitOps pipelines and repository structure.
 func Init(o *InitParameters, fs afero.Fs) error {
-	_, imageRepo, err := validateImageRepo(o.ImageRepo, o.InternalRegistryHostname)
-	if err != nil {
-		return err
-	}
-
 	exists, err := ioutils.IsExisting(fs, o.OutputPath)
 	if exists {
 		return err
 	}
 
-	outputs, err := createInitialFiles(fs, o.Prefix, o.GitOpsRepoURL, o.GitOpsWebhookSecret, o.DockerConfigJSONFilename, imageRepo)
+	outputs, err := createInitialFiles(fs, o.Prefix, o.GitOpsRepoURL, o.GitOpsWebhookSecret, o.DockerConfigJSONFilename)
 	if err != nil {
 		return err
 	}
@@ -122,8 +117,58 @@ func Init(o *InitParameters, fs afero.Fs) error {
 	return err
 }
 
+// CreateDockerSecret creates Docker secret
+func CreateDockerSecret(fs afero.Fs, dockerConfigJSONFilename, ns string) (*ssv1alpha1.SealedSecret, error) {
+	if dockerConfigJSONFilename == "" {
+		return nil, errors.New("failed to generate path to file: --dockerconfigjson flag is not provided")
+	}
+
+	authJSONPath, err := homedir.Expand(dockerConfigJSONFilename)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate path to file: %w", err)
+	}
+	f, err := fs.Open(authJSONPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read docker file '%s' : %w", authJSONPath, err)
+	}
+	defer f.Close()
+
+	dockerSecret, err := secrets.CreateSealedDockerConfigSecret(meta.NamespacedName(ns, dockerSecretName), f)
+	if err != nil {
+		return nil, err
+	}
+
+	return dockerSecret, nil
+
+}
+
+func createInitialFiles(fs afero.Fs, prefix, gitOpsURL, gitOpsWebhookSecret, dockerConfigPath string) (res.Resources, error) {
+	cicdEnv := &config.Environment{Name: prefix + "cicd", IsCICD: true}
+	pipelines := createManifest(gitOpsURL, cicdEnv)
+	initialFiles := res.Resources{
+		pipelinesFile: pipelines,
+	}
+	orgRepo, err := orgRepoFromURL(gitOpsURL)
+	if err != nil {
+		return nil, err
+	}
+	resources, err := createCICDResources(fs, cicdEnv, orgRepo, gitOpsWebhookSecret, dockerConfigPath)
+	if err != nil {
+		return nil, err
+	}
+
+	files := getResourceFiles(resources)
+	prefixedResources := addPrefixToResources(pipelinesPath(pipelines), resources)
+	initialFiles = res.Merge(prefixedResources, initialFiles)
+
+	cicdKustomizations := addPrefixToResources(cicdEnvironmentPath(pipelines), getCICDKustomization(files))
+	initialFiles = res.Merge(cicdKustomizations, initialFiles)
+
+	return initialFiles, nil
+}
+
 // createCICDResources creates resources assocated to pipelines.
-func createCICDResources(fs afero.Fs, cicdEnv *config.Environment, gitOpsRepo, gitOpsWebhookSecret, dockerConfigJSONPath, imageRepo string) (res.Resources, error) {
+func createCICDResources(fs afero.Fs, cicdEnv *config.Environment, gitOpsRepo, gitOpsWebhookSecret, dockerConfigJSONPath string) (res.Resources, error) {
 	cicdNamespace := cicdEnv.Name
 	// key: path of the resource
 	// value: YAML content of the resource
@@ -161,62 +206,11 @@ func createCICDResources(fs afero.Fs, cicdEnv *config.Environment, gitOpsRepo, g
 	outputs[pushBindingPath] = triggers.CreatePushBinding(cicdNamespace)
 	outputs[prTemplatePath] = triggers.CreateCIDryRunTemplate(cicdNamespace, saName)
 	outputs[pushTemplatePath] = triggers.CreateCDPushTemplate(cicdNamespace, saName)
-	outputs[appCIBuildPRTemplatePath] = triggers.CreateDevCIBuildPRTemplate(cicdNamespace, saName, imageRepo)
+	outputs[appCIBuildPRTemplatePath] = triggers.CreateDevCIBuildPRTemplate(cicdNamespace, saName)
 	outputs[eventListenerPath] = eventlisteners.Generate(gitOpsRepo, cicdNamespace, saName, eventlisteners.GitOpsWebhookSecret)
 
 	outputs[routePath] = routes.Generate(cicdNamespace)
 	return outputs, nil
-}
-
-// CreateDockerSecret creates Docker secret
-func CreateDockerSecret(fs afero.Fs, dockerConfigJSONFilename, ns string) (*ssv1alpha1.SealedSecret, error) {
-	if dockerConfigJSONFilename == "" {
-		return nil, errors.New("failed to generate path to file: --dockerconfigjson flag is not provided")
-	}
-
-	authJSONPath, err := homedir.Expand(dockerConfigJSONFilename)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate path to file: %w", err)
-	}
-	f, err := fs.Open(authJSONPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read docker file '%s' : %w", authJSONPath, err)
-	}
-	defer f.Close()
-
-	dockerSecret, err := secrets.CreateSealedDockerConfigSecret(meta.NamespacedName(ns, dockerSecretName), f)
-	if err != nil {
-		return nil, err
-	}
-
-	return dockerSecret, nil
-
-}
-
-func createInitialFiles(fs afero.Fs, prefix, gitOpsURL, gitOpsWebhookSecret, dockerConfigPath, imageRepo string) (res.Resources, error) {
-	cicdEnv := &config.Environment{Name: prefix + "cicd", IsCICD: true}
-	pipelines := createManifest(gitOpsURL, cicdEnv)
-	initialFiles := res.Resources{
-		pipelinesFile: pipelines,
-	}
-	orgRepo, err := orgRepoFromURL(gitOpsURL)
-	if err != nil {
-		return nil, err
-	}
-
-	resources, err := createCICDResources(fs, cicdEnv, orgRepo, gitOpsWebhookSecret, dockerConfigPath, imageRepo)
-	if err != nil {
-		return nil, err
-	}
-	files := getResourceFiles(resources)
-
-	prefixedResources := addPrefixToResources(pipelinesPath(pipelines), resources)
-	initialFiles = res.Merge(prefixedResources, initialFiles)
-
-	cicdKustomizations := addPrefixToResources(cicdEnvironmentPath(pipelines), getCICDKustomization(files))
-	initialFiles = res.Merge(cicdKustomizations, initialFiles)
-
-	return initialFiles, nil
 }
 
 func createManifest(gitOpsURL string, envs ...*config.Environment) *config.Manifest {

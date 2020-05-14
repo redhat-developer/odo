@@ -159,9 +159,16 @@ func TestGetPipelines(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.desc, func(rt *testing.T) {
+			var envPipelines *config.Pipelines
+			if test.env.Pipelines != nil {
+				envPipelines = clonePipelines(test.env.Pipelines)
+			}
 			got := getPipelines(test.env, test.svc)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				rt.Fatalf("getPipelines() failed:\n%v", diff)
+				rt.Errorf("getPipelines() failed:\n%v", diff)
+			}
+			if diff := cmp.Diff(envPipelines, test.env.Pipelines); diff != "" {
+				rt.Errorf("environment pipelines overwritten: %s\n", diff)
 			}
 		})
 	}
