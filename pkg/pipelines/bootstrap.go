@@ -115,7 +115,7 @@ func bootstrapResources(o *BootstrapOptions, appFs afero.Fs) (res.Resources, err
 	secretsPath := filepath.Join(config.PathForEnvironment(cicdEnv), "base", "pipelines", secretFilename)
 	bootstrapped[secretsPath] = hookSecret
 
-	bindingName := fmt.Sprintf("%s-%s-binding", cicdEnv.Name, repoToServiceName(repoName))
+	bindingName := fmt.Sprintf("%s-%s-binding", devEnv.Name, repoToServiceName(repoName))
 	imageRepoBindingFilename := filepath.Join("06-bindings", bindingName+".yaml")
 	imageRepoBindingPath := filepath.Join(config.PathForEnvironment(cicdEnv), "base", "pipelines", imageRepoBindingFilename)
 	bootstrapped[imageRepoBindingPath] = triggers.CreateImageRepoBinding(cicdEnv.Name, bindingName, imageRepo)

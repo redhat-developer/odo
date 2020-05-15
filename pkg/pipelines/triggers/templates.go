@@ -14,16 +14,6 @@ var (
 	triggerTemplateTypeMeta = meta.TypeMeta("TriggerTemplate", "tekton.dev/v1alpha1")
 )
 
-// GenerateTemplates will return a slice of trigger templates
-func GenerateTemplates(ns, saName string) []triggersv1.TriggerTemplate {
-	return []triggersv1.TriggerTemplate{
-		CreateDevCDDeployTemplate(ns, saName),
-		CreateDevCIBuildPRTemplate(ns, saName),
-		CreateCDPushTemplate(ns, saName),
-		CreateCIDryRunTemplate(ns, saName),
-	}
-}
-
 // CreateDevCDDeployTemplate creates DevCDDeployTemplate
 func CreateDevCDDeployTemplate(ns, saName string) triggersv1.TriggerTemplate {
 	return triggersv1.TriggerTemplate{
