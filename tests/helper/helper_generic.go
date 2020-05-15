@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -166,4 +167,14 @@ func GetUserHomeDir() string {
 	homeDir, err := os.UserHomeDir()
 	Expect(err).NotTo(HaveOccurred())
 	return homeDir
+}
+
+// LocalKubeconfigSet checks for the running CI and sets the KUBECONFIG to the temporary config directory respectively
+func LocalKubeconfigSet(context string) {
+	originalKubeCfg := os.Getenv("KUBECONFIG")
+	if originalKubeCfg == "" {
+		homeDir := GetUserHomeDir()
+		originalKubeCfg = filepath.Join(homeDir, ".kube", "config")
+	}
+	copyKubeConfigFile(originalKubeCfg, filepath.Join(context, "config"))
 }

@@ -6,8 +6,8 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-// CopyKubeConfigFile copies default kubeconfig file into current temporary context config file
-func CopyKubeConfigFile(kubeConfigFile, tempConfigFile string) {
+// copyKubeConfigFile copies default kubeconfig file into current temporary context config file
+func copyKubeConfigFile(kubeConfigFile, tempConfigFile string) {
 	info, err := os.Stat(kubeConfigFile)
 	Expect(err).NotTo(HaveOccurred())
 	err = copyFile(kubeConfigFile, tempConfigFile, info)
