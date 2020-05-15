@@ -2,13 +2,14 @@ package validate
 
 import (
 	"fmt"
+
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 )
 
 // Errors
 var (
-	ErrorNoComponents           = "no components present"
-	ErrorNoDockerImageComponent = fmt.Sprintf("odo requires atleast one component of type '%s' in devfile", common.DevfileComponentTypeDockerimage)
+	ErrorNoComponents         = "no components present"
+	ErrorNoContainerComponent = fmt.Sprintf("odo requires atleast one component of type '%s' in devfile", common.ContainerComponentType)
 )
 
 // ValidateComponents validates all the devfile components
@@ -19,17 +20,17 @@ func ValidateComponents(components []common.DevfileComponent) error {
 		return fmt.Errorf(ErrorNoComponents)
 	}
 
-	// Check wether component of type dockerimage is present
-	isDockerImageComponentPresent := false
+	// Check weather component of type container  is present
+	isContainerComponentPresent := false
 	for _, component := range components {
-		if component.Type == common.DevfileComponentTypeDockerimage {
-			isDockerImageComponentPresent = true
+		if component.Type == common.ContainerComponentType {
+			isContainerComponentPresent = true
 			break
 		}
 	}
 
-	if !isDockerImageComponentPresent {
-		return fmt.Errorf(ErrorNoDockerImageComponent)
+	if !isContainerComponentPresent {
+		return fmt.Errorf(ErrorNoContainerComponent)
 	}
 
 	// Successful
