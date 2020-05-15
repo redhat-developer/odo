@@ -92,4 +92,9 @@ grid_navigation:
       excerpt: Deploying a portable devfile that decribes your development environment
       cta: Read more
       url: 'docs/deploying-a-devfile-using-odo'
+
+    - title: Introduction to Operators
+      excerpt: Deploying an Operator from Operator Hub using odo.
+      cta: Read more
+      url: 'docs/operator-hub'
 ---

@@ -37,7 +37,7 @@ within the OpenShift catalog of component types. For example:
 
 > **Note**
 > 
-> For `odo` 1.1.2 Java and Node.js are the officialy supported component
+> For `odo` Java and Node.js are the officially supported component
 > types. Run `odo catalog list components` to verify the officially
 > supported component types.
 
