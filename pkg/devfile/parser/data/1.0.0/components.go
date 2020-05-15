@@ -221,6 +221,11 @@ func getGroup(name string) *common.Group {
 			Kind:      common.InitCommandGroupType,
 			IsDefault: true,
 		}
+	case "debugrun":
+		return &common.Group{
+			Kind:      common.DebugCommandGroupType,
+			IsDefault: true,
+		}
 	}
 
 	return nil

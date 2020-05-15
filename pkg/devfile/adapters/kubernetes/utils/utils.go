@@ -173,12 +173,21 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 				container.Args = append(container.Args, "-c", adaptersCommon.SupervisordConfFile)
 			}
 
-			// Always mount the supervisord volume in the debug component container
-			klog.V(3).Infof("Updating container %v with supervisord volume mounts", container.Name)
-			container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
-				Name:      adaptersCommon.SupervisordVolumeName,
-				MountPath: adaptersCommon.SupervisordMountPath,
-			})
+			foundMountPath := false
+			for _, mounts := range container.VolumeMounts {
+				if mounts.Name == adaptersCommon.SupervisordVolumeName && mounts.MountPath == adaptersCommon.SupervisordMountPath {
+					foundMountPath = true
+				}
+			}
+
+			if !foundMountPath {
+				// Always mount the supervisord volume in the debug component container
+				klog.V(3).Infof("Updating container %v with supervisord volume mounts", container.Name)
+				container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
+					Name:      adaptersCommon.SupervisordVolumeName,
+					MountPath: adaptersCommon.SupervisordMountPath,
+				})
+			}
 
 			// Update the debug container's ENV for work dir and command
 			// only if the env var is not set in the devfile

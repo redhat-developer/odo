@@ -24,7 +24,7 @@ const (
 	// DefaultDevfileRunCommand is a predefined devfile command for run
 	DefaultDevfileRunCommand PredefinedDevfileCommands = "devrun"
 
-	// DefaultDevfileDebugCommand is a predefined devfile command for build
+	// DefaultDevfileDebugCommand is a predefined devfile command for debug
 	DefaultDevfileDebugCommand PredefinedDevfileCommands = "debugrun"
 
 	// SupervisordInitContainerName The init container name for supervisord

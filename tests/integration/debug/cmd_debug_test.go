@@ -24,6 +24,9 @@ var _ = Describe("odo debug command serial tests", func() {
 	var namespace, componentName, projectDirPath string
 	var projectDir = "/projectDir"
 
+	//  current directory and project (before eny test is run) so it can restored  after all testing is done
+	var originalDir string
+
 	// Setup up state for each test spec
 	// create new project (not set as active) and new context directory for each test spec
 	// This is before every spec (It)
@@ -34,13 +37,14 @@ var _ = Describe("odo debug command serial tests", func() {
 		namespace = helper.CreateRandProject()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 		componentName = helper.RandString(6)
-
+		originalDir = helper.Getwd()
 		projectDirPath = context + projectDir
 	})
 
 	// Clean up after the test
 	// This is run after every Spec (It)
 	AfterEach(func() {
+		helper.Chdir(originalDir)
 		helper.DeleteProject(namespace)
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
