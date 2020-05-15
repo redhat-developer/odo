@@ -1,0 +1,17 @@
+environments:
+  - name: development
+    services:
+      - name: app-1-service-http
+        source_url: https://github.com/myproject/myservice.git
+        pipelines:
+          integration:
+            bindings:
+              - my-test-binding
+      - name: app-1-service-metrics
+    apps:
+      - name: my-app-1
+        services:
+          - app-1-service-http
+          - app-1-service-metrics
+  - name: tst-cicd
+    cicd: true

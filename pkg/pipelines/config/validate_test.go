@@ -98,6 +98,11 @@ func TestValidate(t *testing.T) {
 			),
 		},
 		{
+			"service with pipeline with no template",
+			"testdata/service_with_bindings_no_template.yaml",
+			nil,
+		},
+		{
 			"valid manifest file",
 			"testdata/valid_manifest.yaml",
 			nil,
