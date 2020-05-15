@@ -156,9 +156,6 @@ func validatePipelines(pipelines *Pipelines, path string) []error {
 	if pipelines.Integration == nil {
 		return list(missingFieldsError([]string{"integration"}, []string{yamlJoin(path, "pipelines")}))
 	}
-	if err := validateName(pipelines.Integration.Template, yamlJoin(path, "pipelines", "integration", "template")); err != nil {
-		errs = append(errs, err)
-	}
 	for _, name := range pipelines.Integration.Bindings {
 		if err := validateName(name, yamlJoin(path, "pipelines", "integration", "binding")); err != nil {
 			errs = append(errs, err)
