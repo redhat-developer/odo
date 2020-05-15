@@ -74,7 +74,7 @@ func TestBootstrapManifest(t *testing.T) {
 								},
 							},
 							Pipelines: &config.Pipelines{
-								Integration: &config.TemplateBinding{Bindings: []string{"tst-cicd-http-api-svc-binding", "github-pr-binding"}},
+								Integration: &config.TemplateBinding{Bindings: []string{"tst-dev-http-api-svc-binding", "github-pr-binding"}},
 							},
 						},
 					},
@@ -112,7 +112,7 @@ func TestBootstrapManifest(t *testing.T) {
 		"05-pipelines/ci-dryrun-from-pr-pipeline.yaml",
 		"06-bindings/github-pr-binding.yaml",
 		"06-bindings/github-push-binding.yaml",
-		"06-bindings/tst-cicd-http-api-svc-binding.yaml",
+		"06-bindings/tst-dev-http-api-svc-binding.yaml",
 		"07-templates/app-ci-build-pr-template.yaml",
 		"07-templates/cd-deploy-from-push-template.yaml",
 		"07-templates/ci-dryrun-from-pr-template.yaml",
