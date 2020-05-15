@@ -1,52 +1,79 @@
-package common
+package version200
+
+import (
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+)
+
+// Devfile200 Devfile schema.
+type Devfile200 struct {
+
+	// Devfile schema version
+	SchemaVersion string `json:"schemaVersion"`
+
+	// Optional metadata
+	Metadata common.DevfileMetadata `json:"metadata,omitempty"`
+
+	// Projects worked on in the workspace, containing names and sources locations
+	Projects []common.DevfileProject `json:"projects,omitempty"`
+
+	// Parent workspace template
+	Parent common.DevfileParent `json:"parent,omitempty"`
+
+	// Predefined, ready-to-use, workspace-related commands
+	Commands []common.DevfileCommand `json:"commands,omitempty"`
+
+	// List of the workspace components, such as editor and plugins, user-provided containers, or other types of components
+	Components []common.DevfileComponent `json:"components,omitempty"`
+
+	// Bindings of commands to events. Each command is referred-to by its name.
+	Events common.DevfileEvents `json:"events,omitempty"`
+}
 
 // ProjectSourceType describes the type of Project sources.
 // Only one of the following project sources may be specified.
-type DevfileProjectSourceType string
+type ProjectSourceType string
 
 const (
-	GitProjectSourceType    DevfileProjectSourceType = "Git"
-	GitHubProjectSourceType DevfileProjectSourceType = "Github"
-	ZipProjectSourceType    DevfileProjectSourceType = "Zip"
-	CustomProjectSourceType DevfileProjectSourceType = "Custom"
+	GitProjectSourceType    ProjectSourceType = "Git"
+	GitHubProjectSourceType ProjectSourceType = "Github"
+	ZipProjectSourceType    ProjectSourceType = "Zip"
+	CustomProjectSourceType ProjectSourceType = "Custom"
 )
 
-type DevfileComponentType string
+type ComponentType string
 
 const (
-	ContainerComponentType  DevfileComponentType = "Container"
-	KubernetesComponentType DevfileComponentType = "Kubernetes"
-	OpenshiftComponentType  DevfileComponentType = "Openshift"
-	PluginComponentType     DevfileComponentType = "Plugin"
-	VolumeComponentType     DevfileComponentType = "Volume"
-	CustomComponentType     DevfileComponentType = "Custom"
+	ContainerComponentType  ComponentType = "Container"
+	KubernetesComponentType ComponentType = "Kubernetes"
+	OpenshiftComponentType  ComponentType = "Openshift"
+	PluginComponentType     ComponentType = "Plugin"
+	VolumeComponentType     ComponentType = "Volume"
+	CustomComponentType     ComponentType = "Custom"
 )
 
-type DevfileCommandType string
+type CommandType string
 
 const (
-	ExecCommandType         DevfileCommandType = "Exec"
-	VscodeTaskCommandType   DevfileCommandType = "VscodeTask"
-	VscodeLaunchCommandType DevfileCommandType = "VscodeLaunch"
-	CompositeCommandType    DevfileCommandType = "Composite"
-	CustomCommandType       DevfileCommandType = "Custom"
+	ExecCommandType         CommandType = "Exec"
+	VscodeTaskCommandType   CommandType = "VscodeTask"
+	VscodeLaunchCommandType CommandType = "VscodeLaunch"
+	CompositeCommandType    CommandType = "Composite"
+	CustomCommandType       CommandType = "Custom"
 )
 
 // CommandGroupType describes the kind of command group.
 // +kubebuilder:validation:Enum=build;run;test;debug
-type DevfileCommandGroupType string
+type CommandGroupType string
 
 const (
-	BuildCommandGroupType DevfileCommandGroupType = "build"
-	RunCommandGroupType   DevfileCommandGroupType = "run"
-	TestCommandGroupType  DevfileCommandGroupType = "test"
-	DebugCommandGroupType DevfileCommandGroupType = "debug"
-	// To Support V1
-	InitCommandGroupType DevfileCommandGroupType = "init"
+	BuildCommandGroupType CommandGroupType = "build"
+	RunCommandGroupType   CommandGroupType = "run"
+	TestCommandGroupType  CommandGroupType = "test"
+	DebugCommandGroupType CommandGroupType = "debug"
 )
 
 // Metadata Optional metadata
-type DevfileMetadata struct {
+type Metadata struct {
 
 	// Optional devfile name
 	Name string `json:"name,omitempty"`
@@ -56,7 +83,7 @@ type DevfileMetadata struct {
 }
 
 // CommandsItems
-type DevfileCommand struct {
+type Command struct {
 
 	// Composite command
 	Composite *Composite `json:"composite,omitempty"`
@@ -68,7 +95,7 @@ type DevfileCommand struct {
 	Exec *Exec `json:"exec,omitempty"`
 
 	// Type of workspace command
-	Type DevfileCommandType `json:"type,omitempty"`
+	Type CommandType `json:"type,omitempty"`
 
 	// VscodeLaunch command
 	VscodeLaunch *VscodeLaunch `json:"vscodeLaunch,omitempty"`
@@ -78,7 +105,7 @@ type DevfileCommand struct {
 }
 
 // ComponentsItems
-type DevfileComponent struct {
+type Component struct {
 
 	// CheEditor component
 	CheEditor *CheEditor `json:"cheEditor,omitempty"`
@@ -99,14 +126,14 @@ type DevfileComponent struct {
 	Openshift *Openshift `json:"openshift,omitempty"`
 
 	// Type of project source
-	Type DevfileComponentType `json:"type,omitempty"`
+	Type CommandType `json:"type,omitempty"`
 
 	// Volume component
 	Volume *Volume `json:"volume,omitempty"`
 }
 
 // ProjectsItems
-type DevfileProject struct {
+type Project struct {
 
 	// Path relative to the root of the projects to which this project should be cloned into. This is a unix-style relative path (i.e. uses forward slashes). The path is invalid if it is absolute or tries to escape the project root through the usage of '..'. If not specified, defaults to the project name.
 	ClonePath *string `json:"clonePath,omitempty"`
@@ -124,7 +151,7 @@ type DevfileProject struct {
 	Name string `json:"name"`
 
 	// Type of project source
-	SourceType DevfileProjectSourceType `json:"sourceType,omitempty"`
+	SourceType ProjectSourceType `json:"sourceType,omitempty"`
 
 	// Project's Zip source
 	Zip *Zip `json:"zip,omitempty"`
@@ -244,7 +271,7 @@ type Env struct {
 }
 
 // Events Bindings of commands to events. Each command is referred-to by its name.
-type DevfileEvents struct {
+type Events struct {
 
 	// Names of commands that should be executed after the workspace is completely started. In the case of Che-Theia, these commands should be executed after all plugins and extensions have started, including project cloning. This means that those commands are not triggered until the user opens the IDE in his browser.
 	PostStart []string `json:"postStart,omitempty"`
@@ -266,7 +293,7 @@ type Exec struct {
 	Attributes map[string]string `json:"attributes,omitempty"`
 
 	// The actual command-line string
-	CommandLine string `json:"commandLine"`
+	CommandLine *string `json:"commandLine"`
 
 	// Describes component to which given action relates
 	Component string `json:"component,omitempty"`
@@ -326,7 +353,7 @@ type Group struct {
 	IsDefault bool `json:"isDefault,omitempty"`
 
 	// Kind of group the command is part of
-	Kind DevfileCommandGroupType `json:"kind"`
+	Kind CommandGroupType `json:"kind"`
 }
 
 // Kubernetes Kubernetes component
@@ -362,7 +389,7 @@ type Openshift struct {
 }
 
 // Parent Parent workspace template
-type DevfileParent struct {
+type Parent struct {
 
 	// Reference to a Kubernetes CRD of type DevWorkspaceTemplate
 	Kubernetes *Kubernetes `json:"kubernetes,omitempty"`
