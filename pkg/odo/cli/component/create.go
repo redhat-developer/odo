@@ -470,9 +470,15 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 	// this populates the LocalConfigInfo as well
 	co.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
-
 	if err != nil {
 		return errors.Wrap(err, "failed intiating local config")
+	}
+
+	// Do not execute S2I specific code on Kubernetes Cluster
+	// return from here, if it is not an openshift cluster.
+	openshiftCluster, _ := co.Client.IsImageStreamSupported()
+	if !openshiftCluster {
+		return errors.New("component not found")
 	}
 
 	// check to see if config file exists or not, if it does that
