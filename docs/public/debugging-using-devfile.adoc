@@ -1,56 +1,62 @@
-# Debugging applications using devfiles
+# Debugging components using devfiles
 
-ODO uses devfiles to build and deploy applications. More information on devifles : https://redhat-developer.github.io/devfile/[Introduction to devfile]
+`odo` uses devfiles to build and deploy components. More information on devifles : https://redhat-developer.github.io/devfile/[Introduction to devfile]
 
-To enable debugging mode in the application, we need a devfile with debugrun step. Example of a nodejs devfile with a debugrun step
+To enable debugging mode for the component using devfiles, we need to enable the experimental mode for odo. This can be done by: `odo preference set experimental true`. We also need a devfile with `debugrun` step. Example of a nodejs devfile with a debugrun step:
 
-    apiVersion: 1.0.0
-    metadata:
-      name: test-devfile
-    projects:
-      -
-        name: nodejs-web-app
-        source:
-          type: git
-          location: "https://github.com/che-samples/web-nodejs-sample.git"
-    components:
-      - type: dockerimage
-        image: quay.io/eclipse/che-nodejs10-ubi:nightly
-        endpoints:
-          - name: "3000/tcp"
-            port: 3000
-        alias: runtime
-        env:
-          - name: FOO
-            value: "bar"
-        memoryLimit: 1024Mi
-        mountSources: true
-    commands:
-      - name: devbuild
-        actions:
-          - type: exec
-            component: runtime
-            command: "npm install"
-            workdir: ${CHE_PROJECTS_ROOT}/nodejs-web-app/app
-      - name: devrun
-        actions:
-          - type: exec
-            component: runtime
-            command: "nodemon app.js"
-            workdir: ${CHE_PROJECTS_ROOT}/nodejs-web-app/app
-      - name: debugrun
-        actions:
-          - type: exec
-            component: runtime
-            command: "nodemon --inspect=${DEBUG_PORT}"
-            workdir: ${CHE_PROJECTS_ROOT}/nodejs-web-app/
+```yaml
+apiVersion: 1.0.0
+metadata:
+  name: test-devfile
+projects:
+  -
+    name: nodejs-web-app
+    source:
+      type: git
+      location: "https://github.com/che-samples/web-nodejs-sample.git"
+components:
+  - type: dockerimage
+    image: quay.io/eclipse/che-nodejs10-ubi:nightly
+    endpoints:
+      - name: "3000/tcp"
+        port: 3000
+    alias: runtime
+    env:
+      - name: FOO
+        value: "bar"
+    memoryLimit: 1024Mi
+    mountSources: true
+commands:
+  - name: devbuild
+    actions:
+      - type: exec
+        component: runtime
+        command: "npm install"
+        workdir: ${CHE_PROJECTS_ROOT}/nodejs-web-app/app
+  - name: devrun
+    actions:
+      - type: exec
+        component: runtime
+        command: "nodemon app.js"
+        workdir: ${CHE_PROJECTS_ROOT}/nodejs-web-app/app
+  - name: debugrun
+    actions:
+      - type: exec
+        component: runtime
+        command: "nodemon --inspect=${DEBUG_PORT}"
+        workdir: ${CHE_PROJECTS_ROOT}/nodejs-web-app/
+```
 
-- First we need to create the application using `odo create nodejs`
-- We can enable remote debugging for the application using `odo push --debug`. We can also use a custom step as the debugrun step using `odo push --debug --debug-command="custom-step"`
-
-- We then port forward a local port for debugging using `odo debug port-forward`. The default local port used for debugging is 5858. If 5858 is occupied, ODO will automatically pick up a local port. We can also specify the local port using, `odo debug port-forward --local-port 5858`
-- Next we need to attach the debugger to the local port. Here's a guide how to do it for vscode : [Remote Debugging](https://code.visualstudio.com/docs/nodejs/nodejs-debugging#_remote-debugging)
+- Now we need to create the component using `odo create nodejs`
+- Next we enable remote debugging for the component using `odo push --debug`. We can also use a custom step as the debugrun step using `odo push --debug --debug-command="custom-step"`
+- Next we port forward a local port for debugging using `odo debug port-forward`. The default local port used for debugging is 5858. If 5858 is occupied, odo will automatically pick up a local port. We can also specify the local port using, `odo debug port-forward --local-port 5858`
+- Next we need to attach the debugger to the local port. Here's a guide to do it for VS Code : https://code.visualstudio.com/docs/nodejs/nodejs-debugging#_remote-debugging[Remote Debugging]
 
 ### Check if a debugging session is running
 
 We can check if a debugging session is running for a component by using `odo debug info`
+
+```
+odo debug info
+Debug is running for the component on the local port : 5858
+```
