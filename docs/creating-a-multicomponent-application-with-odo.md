@@ -29,10 +29,9 @@ and a back-end Java component.
 
   - `odo` is installed.
 
-  - You have a running OpenShift cluster. Developers can use [CodeReady
-    Containers
+  - You have a running cluster. Developers can use [CodeReady Containers
     (CRC)](https://cloud.redhat.com/openshift/install/crc/installer-provisioned?intcmp=7013a000002CtetAAC)
-    to deploy a local OpenShift cluster quickly.
+    to deploy a local cluster quickly.
 
   - Maven is installed.
 

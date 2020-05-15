@@ -20,12 +20,11 @@ page_nav:
         content: Creating a single-component application with odo
         url: '/docs/creating-a-single-component-application-with-odo'
 ---
-OpenShift Do (`odo`) is a fast and easy-to-use CLI tool for creating
-applications on OpenShift. `odo` allows developers to concentrate on
-creating applications without the need to administrate an OpenShift
-cluster itself. Creating deployment configurations, build
-configurations, service routes and other OpenShift elements are all
-automated by `odo`.
+`odo` is a CLI tool for creating applications on OpenShift and
+Kubernetes. `odo` allows developers to concentrate on creating
+applications without the need to administer a cluster itself. Creating
+deployment configurations, build configurations, service routes and
+other OpenShift or Kubernetes elements are all automated by `odo`.
 
 Existing tools such as `oc` are more operations-focused and require a
 deep understanding of Kubernetes and OpenShift concepts. `odo` abstracts
@@ -40,8 +39,8 @@ features:
   - Simple syntax and design centered around concepts familiar to
     developers, such as projects, applications, and components.
 
-  - Completely client based. No server is required within the OpenShift
-    cluster for deployment.
+  - Completely client based. No server is required within the cluster
+    for deployment.
 
   - Official support for Node.js and Java components.
 
@@ -52,8 +51,7 @@ features:
     automatically, giving instant feedback to validate changes in real
     time.
 
-  - Lists all the available components and services from the OpenShift
-    cluster.
+  - Lists all the available components and services from the cluster.
 
 # Core concepts
 
@@ -105,7 +103,7 @@ Supported languages, container images, and package managers
 To list the available components and associated container images for
 your cluster:
 
-1.  Log in to the OpenShift cluster with `odo`:
+1.  Log in to the cluster with `odo`:
     
         $ odo login -u developer -p developer
 

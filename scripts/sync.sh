@@ -89,8 +89,7 @@ done
 shout "Converting $odo_repo documentation"
 
 # Clone the master odo repo
-#git clone https://$odo_repo $tmp_public_docs_dir
-git clone --single-branch --branch add-new-docs https://github.com/cdrage/odo $tmp_public_docs_dir
+git clone https://$odo_repo $tmp_public_docs_dir
 
 # Directory
 public_doc_dir=$tmp_public_docs_dir$odo_public_doc_dir
@@ -134,7 +133,7 @@ for f in $upstream_docs/*.md; do
       cp $upstream_docs/$file $docs/$file
       cat $output_dir/$file >> $docs/$file
   else 
-      echo "$file does not exist, cancelling script, there is no upstream doc available from github.com/openshift/openshift-docs"
+      echo "$file does not exist, cancelling script, there is no upstream doc available from github.com/openshift/odo/blob/master/docs/public/"
       exit 0
   fi
 done

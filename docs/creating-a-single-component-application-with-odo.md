@@ -20,15 +20,13 @@ page_nav:
         content: Creating a multicomponent application with odo
         url: '/docs/creating-a-multicomponent-application-with-odo'
 ---
-With `odo`, you can create and deploy applications on OpenShift
-clusters.
+With `odo`, you can create and deploy applications on clusters.
 
   - `odo` is installed.
 
-  - You have a running OpenShift cluster. You can use [CodeReady
-    Containers
+  - You have a running cluster. You can use [CodeReady Containers
     (CRC)](https://cloud.redhat.com/openshift/install/crc/installer-provisioned?intcmp=7013a000002CtetAAC)
-    to deploy a local OpenShift cluster quickly.
+    to deploy a local cluster quickly.
 
 # Creating a project
 

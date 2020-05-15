@@ -21,7 +21,7 @@ page_nav:
         url: '/docs/odo-cli-reference'
 ---
 This section describes `odo` architecture and how `odo` manages
-OpenShift resources on a cluster.
+resources on a cluster.
 
 # Developer setup
 
@@ -35,7 +35,7 @@ odo works on Windows, macOS, and Linux operating systems and from any
 terminal. odo provides autocompletion for bash and zsh command line
 shells.
 
-odo 1.1.2 supports Node.js and Java components.
+odo supports Node.js and Java components.
 
 # OpenShift source-to-image
 
