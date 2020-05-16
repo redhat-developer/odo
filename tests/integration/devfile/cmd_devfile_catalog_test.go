@@ -96,12 +96,6 @@ var _ = Describe("odo devfile catalog command tests", func() {
 			helper.MatchAllInOutput(output, []string{"There are no Odo devfile components with the name \"java\"", "S2I Based Components:", "-java"})
 		})
 	})
-	Context("When executing catalog describe component with a component name that is invalid", func() {
-		It("should fail and give an error", func() {
-			output := helper.CmdShouldFail("odo", "catalog", "describe", "component", "invalidcomponent")
-			helper.MatchAllInOutput(output, []string{"No components with the name \"invalidcomponent\" found"})
-		})
-	})
 	Context("When executing catalog describe component with more than one argument", func() {
 		It("should give an error saying it received too many arguments", func() {
 			output := helper.CmdShouldFail("odo", "catalog", "describe", "component", "too", "many", "args")
