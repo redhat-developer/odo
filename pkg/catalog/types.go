@@ -35,6 +35,7 @@ type DevfileIndexEntry struct {
 	Tags              []string `json:"tags"`
 	Icon              string   `json:"icon"`
 	GlobalMemoryLimit string   `json:"globalMemoryLimit"`
+	Registry          Registry `json:"registry"`
 	Links             struct {
 		Link string `json:"self"`
 	} `json:"links"`
@@ -72,7 +73,7 @@ type ComponentTypeList struct {
 
 // DevfileComponentTypeList lists all the DevfileComponentType's
 type DevfileComponentTypeList struct {
-	DevfileRegistries map[string]string
+	DevfileRegistries map[string]Registry
 	Items             []DevfileComponentType
 }
 
