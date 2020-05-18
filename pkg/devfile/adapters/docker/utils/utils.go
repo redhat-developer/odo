@@ -18,7 +18,6 @@ import (
 	"github.com/openshift/odo/pkg/util"
 
 	"github.com/pkg/errors"
-	"k8s.io/klog"
 )
 
 const (
@@ -61,20 +60,20 @@ func GetContainerIDForAlias(containers []types.Container, alias string) string {
 }
 
 // ConvertEnvs converts environment variables from the devfile structure to an array of strings, as expected by Docker
-func ConvertEnvs(vars []common.DockerimageEnv) []string {
+func ConvertEnvs(vars []*common.Env) []string {
 	dockerVars := []string{}
 	for _, env := range vars {
-		envString := fmt.Sprintf("%s=%s", *env.Name, *env.Value)
+		envString := fmt.Sprintf("%s=%s", env.Name, env.Value)
 		dockerVars = append(dockerVars, envString)
 	}
 	return dockerVars
 }
 
 // ConvertPorts converts endpoints from the devfile structure to PortSet, which is expected by Docker
-func ConvertPorts(endpoints []common.DockerimageEndpoint) nat.PortSet {
+func ConvertPorts(endpoints []*common.Endpoint) nat.PortSet {
 	portSet := nat.PortSet{}
 	for _, endpoint := range endpoints {
-		port := nat.Port(strconv.Itoa(int(*endpoint.Port)) + "/tcp")
+		port := nat.Port(strconv.Itoa(int(endpoint.TargetPort)) + "/tcp")
 		portSet[port] = struct{}{}
 	}
 	return portSet
@@ -87,7 +86,7 @@ func ConvertPorts(endpoints []common.DockerimageEndpoint) nat.PortSet {
 // so this function is necessary to prevent having to restart the container on every odo pushs
 func DoesContainerNeedUpdating(component common.DevfileComponent, containerConfig *container.Config, hostConfig *container.HostConfig, devfileMounts []mount.Mount, containerMounts []types.MountPoint, portMap nat.PortMap) bool {
 	// If the image was changed in the devfile, the container needs to be updated
-	if *component.Image != containerConfig.Image {
+	if component.Container.Image != containerConfig.Image {
 		return true
 	}
 
@@ -100,14 +99,14 @@ func DoesContainerNeedUpdating(component common.DevfileComponent, containerConfi
 
 	// Update the container if the env vars were updated in the devfile
 	// Need to convert the devfile envvars to the format expected by Docker
-	devfileEnvVars := ConvertEnvs(component.Env)
+	devfileEnvVars := ConvertEnvs(component.Container.Env)
 	for _, envVar := range devfileEnvVars {
 		if !containerHasEnvVar(envVar, containerConfig.Env) {
 			return true
 		}
 	}
 
-	devfilePorts := ConvertPorts(component.Endpoints)
+	devfilePorts := ConvertPorts(component.Container.Endpoints)
 	for port := range devfilePorts {
 		if !containerHasPort(port, containerConfig.ExposedPorts) {
 			return true
@@ -209,33 +208,31 @@ func containerHasPort(devfilePort nat.Port, exposedPorts nat.PortSet) bool {
 func UpdateComponentWithSupervisord(comp *common.DevfileComponent, runCommand common.DevfileCommand, supervisordVolumeName string, hostConfig *container.HostConfig) {
 
 	// Mount the supervisord volume for the run command container
-	for _, action := range runCommand.Actions {
-		if *action.Component == *comp.Alias {
-			AddVolumeToContainer(supervisordVolumeName, adaptersCommon.SupervisordMountPath, hostConfig)
+	if runCommand.Exec.Component == comp.Container.Name {
+		AddVolumeToContainer(supervisordVolumeName, adaptersCommon.SupervisordMountPath, hostConfig)
 
-			if len(comp.Command) == 0 && len(comp.Args) == 0 {
-				klog.V(4).Infof("Updating container %v entrypoint with supervisord", *comp.Alias)
-				comp.Command = append(comp.Command, adaptersCommon.SupervisordBinaryPath)
-				comp.Args = append(comp.Args, "-c", adaptersCommon.SupervisordConfFile)
-			}
+		//if len(comp.Command) == 0 && len(comp.Args) == 0 {
+		//	klog.V(4).Infof("Updating container %v entrypoint with supervisord", *comp.Alias)
+		//	comp.Command = append(comp.Command, adaptersCommon.SupervisordBinaryPath)
+		//	comp.Args = append(comp.Args, "-c", adaptersCommon.SupervisordConfFile)
+		//}
 
-			if !adaptersCommon.IsEnvPresent(comp.Env, adaptersCommon.EnvOdoCommandRun) {
-				envName := adaptersCommon.EnvOdoCommandRun
-				envValue := *action.Command
-				comp.Env = append(comp.Env, common.DockerimageEnv{
-					Name:  &envName,
-					Value: &envValue,
-				})
-			}
+		if !adaptersCommon.IsEnvPresent(comp.Container.Env, adaptersCommon.EnvOdoCommandRun) {
+			envName := adaptersCommon.EnvOdoCommandRun
+			envValue := runCommand.Exec.CommandLine
+			comp.Container.Env = append(comp.Container.Env, &common.Env{
+				Name:  envName,
+				Value: envValue,
+			})
+		}
 
-			if !adaptersCommon.IsEnvPresent(comp.Env, adaptersCommon.EnvOdoCommandRunWorkingDir) && action.Workdir != nil {
-				envName := adaptersCommon.EnvOdoCommandRunWorkingDir
-				envValue := *action.Workdir
-				comp.Env = append(comp.Env, common.DockerimageEnv{
-					Name:  &envName,
-					Value: &envValue,
-				})
-			}
+		if !adaptersCommon.IsEnvPresent(comp.Container.Env, adaptersCommon.EnvOdoCommandRunWorkingDir) && runCommand.Exec.WorkingDir != nil {
+			envName := adaptersCommon.EnvOdoCommandRunWorkingDir
+			envValue := runCommand.Exec.WorkingDir
+			comp.Container.Env = append(comp.Container.Env, &common.Env{
+				Name:  envName,
+				Value: *envValue,
+			})
 		}
 	}
 }
