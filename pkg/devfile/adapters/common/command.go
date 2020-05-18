@@ -10,18 +10,37 @@ import (
 )
 
 // GetCommand iterates through the devfile commands and returns the associated devfile command
-func getCommand(data data.DevfileData, commandName string, required bool) (supportedCommand common.DevfileCommand, err error) {
+func getCommand(data data.DevfileData, commandName string, groupType common.DevfileCommandGroupType, required bool) (supportedCommand common.DevfileCommand, err error) {
+
 	for _, command := range data.GetCommands() {
-		if command.Exec.Id == commandName {
+		// validate command
+		err = validateCommand(data, command)
 
-			// Get the supported actions
-			err = validateCommand(data, command)
+		if err != nil {
+			return common.DevfileCommand{}, err
+		}
 
-			if err != nil {
-				return common.DevfileCommand{}, err
+		// if command is specified via flags, it has the highest priority
+		// search through all commands to find the specified command name
+		// if not found fallback to error.
+		if commandName != "" {
+
+			if command.Exec.Id == commandName {
+				supportedCommand = command
+				return supportedCommand, nil
 			}
-			// The command is supported, use it
-			supportedCommand.Exec = command.Exec
+			continue
+		}
+
+		// if not command specified via flag, default command has the highest priority
+		if command.Exec.Group.Kind == groupType && command.Exec.Group.IsDefault {
+			supportedCommand = command
+			return supportedCommand, nil
+		}
+
+		// return the first command found for the matching type.
+		if command.Exec.Group.Kind == groupType {
+			supportedCommand = command
 			return supportedCommand, nil
 		}
 	}
@@ -47,17 +66,17 @@ func validateCommand(data data.DevfileData, command common.DevfileCommand) (err 
 
 	// type must be exec
 	if command.Type != common.ExecCommandType {
-		return fmt.Errorf("Actions must be of type \"exec\"")
+		return fmt.Errorf("Command must be of type \"exec\"")
 	}
 
 	// component must be specified
 	if &command.Exec.Component == nil || command.Exec.Component == "" {
-		return fmt.Errorf("Actions must reference a component")
+		return fmt.Errorf("Exec commands must reference a component")
 	}
 
 	// must specify a command
 	if &command.Exec.CommandLine == nil || command.Exec.CommandLine == "" {
-		return fmt.Errorf("Actions must have a command")
+		return fmt.Errorf("Exec commands must have a command")
 	}
 
 	// must map to a supported component
@@ -78,30 +97,31 @@ func validateCommand(data data.DevfileData, command common.DevfileCommand) (err 
 
 // GetInitCommand iterates through the components in the devfile and returns the init command
 func GetInitCommand(data data.DevfileData, devfileInitCmd string) (initCommand common.DevfileCommand, err error) {
+
 	if devfileInitCmd != "" {
 		// a init command was specified so if it is not found then it is an error
-		return getCommand(data, devfileInitCmd, true)
+		return getCommand(data, devfileInitCmd, common.InitCommandGroupType, true)
 	}
 	// a init command was not specified so if it is not found then it is not an error
-	return getCommand(data, string(DefaultDevfileInitCommand), false)
+	return getCommand(data, "", common.InitCommandGroupType, false)
 }
 
 // GetBuildCommand iterates through the components in the devfile and returns the build command
 func GetBuildCommand(data data.DevfileData, devfileBuildCmd string) (buildCommand common.DevfileCommand, err error) {
 	if devfileBuildCmd != "" {
 		// a build command was specified so if it is not found then it is an error
-		return getCommand(data, devfileBuildCmd, true)
+		return getCommand(data, devfileBuildCmd, common.BuildCommandGroupType, true)
 	}
 	// a build command was not specified so if it is not found then it is not an error
-	return getCommand(data, string(DefaultDevfileBuildCommand), false)
+	return getCommand(data, "", common.BuildCommandGroupType, false)
 }
 
 // GetRunCommand iterates through the components in the devfile and returns the run command
 func GetRunCommand(data data.DevfileData, devfileRunCmd string) (runCommand common.DevfileCommand, err error) {
 	if devfileRunCmd != "" {
-		return getCommand(data, devfileRunCmd, true)
+		return getCommand(data, devfileRunCmd, common.RunCommandGroupType, true)
 	}
-	return getCommand(data, string(DefaultDevfileRunCommand), true)
+	return getCommand(data, "", common.RunCommandGroupType, true)
 }
 
 // ValidateAndGetPushDevfileCommands validates the build and the run command,
