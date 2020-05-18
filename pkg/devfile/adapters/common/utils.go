@@ -113,13 +113,13 @@ func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume 
 	size := volumeSize
 	for _, comp := range GetSupportedComponents(devfileObj.Data) {
 		if comp.Volume != nil {
-			for _, volume := range comp.Volumes {
+			for _, volume := range comp.Container.VolumeMounts {
 				vol := DevfileVolume{
-					Name:          volume.Name,
-					ContainerPath: volume.ContainerPath,
+					Name:          &volume.Name,
+					ContainerPath: &volume.Path,
 					Size:          &size,
 				}
-				componentAliasToVolumes[*comp.Alias] = append(componentAliasToVolumes[*comp.Alias], vol)
+				componentAliasToVolumes[comp.Container.Name] = append(componentAliasToVolumes[comp.Container.Name], vol)
 			}
 		}
 	}
