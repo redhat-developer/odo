@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 #!/bin/bash
 set -e
 
@@ -295,3 +296,10 @@ verify_odo() {
 parse_installer_action_flag "$@"
 installer_odo
 verify_odo
+=======
+#!/usr/bin/env bash
+
+echo "The installer script has been deprecated. Please check one of following for information"
+echo " - https://github.com/openshift/odo/releases"
+echo " - https://odo.dev/docs/installing-odo/ "
+>>>>>>> Adding a message to installer script so as to not break it for existing users
