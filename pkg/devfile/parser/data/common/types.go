@@ -58,23 +58,11 @@ type DevfileMetadata struct {
 // CommandsItems
 type DevfileCommand struct {
 
-	// Composite command
-	Composite *Composite `json:"composite,omitempty"`
-
-	// Custom command
-	Custom *Custom `json:"custom,omitempty"`
-
 	// Exec command
 	Exec *Exec `json:"exec,omitempty"`
 
 	// Type of workspace command
 	Type DevfileCommandType `json:"type,omitempty"`
-
-	// VscodeLaunch command
-	VscodeLaunch *VscodeLaunch `json:"vscodeLaunch,omitempty"`
-
-	// VscodeTask command
-	VscodeTask *VscodeTask `json:"vscodeTask,omitempty"`
 }
 
 // ComponentsItems
