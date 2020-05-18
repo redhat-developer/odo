@@ -22,31 +22,31 @@ func ComponentExists(client kclient.Client, name string) bool {
 }
 
 // ConvertEnvs converts environment variables from the devfile structure to kubernetes structure
-func ConvertEnvs(vars []common.DockerimageEnv) []corev1.EnvVar {
+func ConvertEnvs(vars []*common.Env) []corev1.EnvVar {
 	kVars := []corev1.EnvVar{}
 	for _, env := range vars {
 		kVars = append(kVars, corev1.EnvVar{
-			Name:  *env.Name,
-			Value: *env.Value,
+			Name:  env.Name,
+			Value: env.Value,
 		})
 	}
 	return kVars
 }
 
 // ConvertPorts converts endpoint variables from the devfile structure to kubernetes ContainerPort
-func ConvertPorts(endpoints []common.DockerimageEndpoint) ([]corev1.ContainerPort, error) {
+func ConvertPorts(endpoints []*common.Endpoint) ([]corev1.ContainerPort, error) {
 	containerPorts := []corev1.ContainerPort{}
 	for _, endpoint := range endpoints {
-		name := strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(*endpoint.Name)))
+		name := strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(endpoint.Name)))
 		name = util.TruncateString(name, 15)
 		for _, c := range containerPorts {
-			if c.ContainerPort == *endpoint.Port {
-				return nil, fmt.Errorf("Devfile contains multiple identical ports: %v", *endpoint.Port)
+			if c.ContainerPort == endpoint.TargetPort {
+				return nil, fmt.Errorf("Devfile contains multiple identical ports: %v", endpoint.TargetPort)
 			}
 		}
 		containerPorts = append(containerPorts, corev1.ContainerPort{
 			Name:          name,
-			ContainerPort: *endpoint.Port,
+			ContainerPort: endpoint.TargetPort,
 		})
 	}
 	return containerPorts, nil
@@ -56,13 +56,13 @@ func ConvertPorts(endpoints []common.DockerimageEndpoint) ([]corev1.ContainerPor
 func GetContainers(devfileObj devfileParser.DevfileObj) ([]corev1.Container, error) {
 	var containers []corev1.Container
 	for _, comp := range adaptersCommon.GetSupportedComponents(devfileObj.Data) {
-		envVars := ConvertEnvs(comp.Env)
+		envVars := ConvertEnvs(comp.Container.Env)
 		resourceReqs := GetResourceReqs(comp)
-		ports, err := ConvertPorts(comp.Endpoints)
+		ports, err := ConvertPorts(comp.Container.Endpoints)
 		if err != nil {
 			return nil, err
 		}
-		container := kclient.GenerateContainer(*comp.Alias, *comp.Image, false, comp.Command, comp.Args, envVars, resourceReqs, ports)
+		container := kclient.GenerateContainer(comp.Container.Name, comp.Container.Image, false, envVars, resourceReqs, ports)
 		for _, c := range containers {
 			for _, containerPort := range c.Ports {
 				for _, curPort := range container.Ports {
@@ -74,7 +74,7 @@ func GetContainers(devfileObj devfileParser.DevfileObj) ([]corev1.Container, err
 		}
 
 		// If `mountSources: true` was set, add an empty dir volume to the container to sync the source to
-		if comp.MountSources {
+		if comp.Container.MountSources {
 			container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
 				Name:      kclient.OdoSourceVolume,
 				MountPath: kclient.OdoSourceVolumeMount,
@@ -117,47 +117,45 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 	}
 
 	for i, container := range containers {
-		for _, action := range runCommand.Actions {
-			// Check if the container belongs to a run command component
-			if container.Name == *action.Component {
-				// If the run component container has no entrypoint and arguments, override the entrypoint with supervisord
-				if len(container.Command) == 0 && len(container.Args) == 0 {
-					klog.V(3).Infof("Updating container %v entrypoint with supervisord", container.Name)
-					container.Command = append(container.Command, adaptersCommon.SupervisordBinaryPath)
-					container.Args = append(container.Args, "-c", adaptersCommon.SupervisordConfFile)
-				}
-
-				// Always mount the supervisord volume in the run component container
-				klog.V(3).Infof("Updating container %v with supervisord volume mounts", container.Name)
-				container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
-					Name:      adaptersCommon.SupervisordVolumeName,
-					MountPath: adaptersCommon.SupervisordMountPath,
-				})
-
-				// Update the run container's ENV for work dir and command
-				// only if the env var is not set in the devfile
-				// This is done, so supervisord can use it in it's program
-				if !isEnvPresent(container.Env, adaptersCommon.EnvOdoCommandRun) {
-					klog.V(3).Infof("Updating container %v env with run command", container.Name)
-					container.Env = append(container.Env,
-						corev1.EnvVar{
-							Name:  adaptersCommon.EnvOdoCommandRun,
-							Value: *action.Command,
-						})
-				}
-
-				if !isEnvPresent(container.Env, adaptersCommon.EnvOdoCommandRunWorkingDir) && action.Workdir != nil {
-					klog.V(3).Infof("Updating container %v env with run command's workdir", container.Name)
-					container.Env = append(container.Env,
-						corev1.EnvVar{
-							Name:  adaptersCommon.EnvOdoCommandRunWorkingDir,
-							Value: *action.Workdir,
-						})
-				}
-
-				// Update the containers array since the array is not a pointer to the container
-				containers[i] = container
+		// Check if the container belongs to a run command component
+		if container.Name == runCommand.Exec.Component {
+			// If the run component container has no entrypoint and arguments, override the entrypoint with supervisord
+			if len(container.Command) == 0 && len(container.Args) == 0 {
+				klog.V(3).Infof("Updating container %v entrypoint with supervisord", container.Name)
+				container.Command = append(container.Command, adaptersCommon.SupervisordBinaryPath)
+				container.Args = append(container.Args, "-c", adaptersCommon.SupervisordConfFile)
 			}
+
+			// Always mount the supervisord volume in the run component container
+			klog.V(3).Infof("Updating container %v with supervisord volume mounts", container.Name)
+			container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
+				Name:      adaptersCommon.SupervisordVolumeName,
+				MountPath: adaptersCommon.SupervisordMountPath,
+			})
+
+			// Update the run container's ENV for work dir and command
+			// only if the env var is not set in the devfile
+			// This is done, so supervisord can use it in it's program
+			if !isEnvPresent(container.Env, adaptersCommon.EnvOdoCommandRun) {
+				klog.V(3).Infof("Updating container %v env with run command", container.Name)
+				container.Env = append(container.Env,
+					corev1.EnvVar{
+						Name:  adaptersCommon.EnvOdoCommandRun,
+						Value: runCommand.Exec.CommandLine,
+					})
+			}
+
+			if !isEnvPresent(container.Env, adaptersCommon.EnvOdoCommandRunWorkingDir) && runCommand.Exec.WorkingDir != nil {
+				klog.V(3).Infof("Updating container %v env with run command's workdir", container.Name)
+				container.Env = append(container.Env,
+					corev1.EnvVar{
+						Name:  adaptersCommon.EnvOdoCommandRunWorkingDir,
+						Value: *runCommand.Exec.WorkingDir,
+					})
+			}
+
+			// Update the containers array since the array is not a pointer to the container
+			containers[i] = container
 		}
 	}
 
@@ -169,8 +167,8 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 func GetResourceReqs(comp common.DevfileComponent) corev1.ResourceRequirements {
 	reqs := corev1.ResourceRequirements{}
 	limits := make(corev1.ResourceList)
-	if comp.MemoryLimit != nil {
-		memoryLimit, err := resource.ParseQuantity(*comp.MemoryLimit)
+	if &comp.Container.MemoryLimit != nil {
+		memoryLimit, err := resource.ParseQuantity(comp.Container.MemoryLimit)
 		if err == nil {
 			limits[corev1.ResourceMemory] = memoryLimit
 		}
