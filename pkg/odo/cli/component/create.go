@@ -770,29 +770,29 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 		return err
 	}
 
-	var zipUrl string
-	switch project.Source.Type {
-	case "git":
-		if strings.Contains(project.Source.Location, "github.com") {
-			zipUrl, err = util.GetGitHubZipURL(project.Source.Location)
+	var url string
+	switch project.SourceType {
+	case common.GitProjectSourceType:
+		if strings.Contains(project.Git.Location, "github.com") {
+			url, err = util.GetGitHubZipURL(project.Git.Location)
 			if err != nil {
 				return err
 			}
 		} else {
 			return errors.Errorf("Project type git with non github url not supported")
 		}
-	case "github":
-		zipUrl, err = util.GetGitHubZipURL(project.Source.Location)
+	case common.GitHubProjectSourceType:
+		url, err = util.GetGitHubZipURL(project.Github.Location)
 		if err != nil {
 			return err
 		}
-	case "zip":
-		zipUrl = project.Source.Location
+	case common.ZipProjectSourceType:
+		url = project.Zip.Location
 	default:
 		return errors.Errorf("Project type not supported")
 	}
 
-	err = util.GetAndExtractZip(zipUrl, path)
+	err = util.GetAndExtractZip(url, path)
 	if err != nil {
 		return err
 	}
