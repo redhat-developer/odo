@@ -225,105 +225,6 @@ func TestGetCommand(t *testing.T) {
 
 }
 
-func TestGetSupportedCommandActions(t *testing.T) {
-
-	command := "ls -la"
-	component := "alias1"
-	workDir := "/"
-	validCommandType := common.DevfileCommandTypeExec
-	invalidCommandType := common.DevfileCommandType("garbage")
-	emptyString := ""
-
-	tests := []struct {
-		name    string
-		command common.DevfileCommand
-		wantErr bool
-	}{
-		{
-			name: "Case: Valid Command Action",
-			command: common.DevfileCommand{
-				Name: "testCommand",
-				Actions: []common.DevfileCommandAction{
-					{
-						Command:   &command,
-						Component: &component,
-						Workdir:   &workDir,
-						Type:      &validCommandType,
-					},
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "Case: Invalid Command Action with empty command",
-			command: common.DevfileCommand{
-				Name: "testCommand",
-				Actions: []common.DevfileCommandAction{
-					{
-						Command:   &emptyString,
-						Component: &component,
-						Workdir:   &workDir,
-						Type:      &validCommandType,
-					},
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "Case: Invalid Command Action with missing component",
-			command: common.DevfileCommand{
-				Name: "testCommand",
-				Actions: []common.DevfileCommandAction{
-					{
-						Command: &command,
-						Workdir: &workDir,
-						Type:    &validCommandType,
-					},
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "Case: Invalid Command Action with wrong type",
-			command: common.DevfileCommand{
-				Name: "testCommand",
-				Actions: []common.DevfileCommandAction{
-					{
-						Command:   &command,
-						Component: &component,
-						Workdir:   &workDir,
-						Type:      &invalidCommandType,
-					},
-				},
-			},
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		devObj := devfileParser.DevfileObj{
-			Data: testingutil.TestDevfileData{
-				CommandActions: []common.DevfileCommandAction{
-					{
-						Command:   &command,
-						Component: &component,
-						Type:      &validCommandType,
-					},
-				},
-				ComponentType: common.DevfileComponentTypeDockerimage,
-			},
-		}
-		t.Run(tt.name, func(t *testing.T) {
-			supportedCommandActions, _ := getSupportedCommandActions(devObj.Data, tt.command)
-			if !tt.wantErr && len(supportedCommandActions) != len(tt.command.Actions) {
-				t.Errorf("TestGetSupportedCommandActions error: incorrect number of command actions expected: %v actual: %v", len(tt.command.Actions), len(supportedCommandActions))
-			} else if tt.wantErr && len(supportedCommandActions) != 0 {
-				t.Errorf("TestGetSupportedCommandActions error: incorrect number of command actions expected: %v actual: %v", 0, len(supportedCommandActions))
-			}
-		})
-	}
-
-}
-
 func TestValidateAction(t *testing.T) {
 
 	command := "ls -la"
@@ -392,7 +293,7 @@ func TestValidateAction(t *testing.T) {
 			},
 		}
 		t.Run(tt.name, func(t *testing.T) {
-			err := validateAction(devObj.Data, tt.action)
+			err := validateCommand(devObj.Data, tt.action)
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("TestValidateAction unexpected error: %v", err)
 				return
@@ -407,7 +308,7 @@ func TestGetInitCommand(t *testing.T) {
 	command := "ls -la"
 	component := "alias1"
 	workDir := "/"
-	validCommandType := common.DevfileCommandTypeExec
+	validCommandType := common.ExecCommandType
 	emptyString := ""
 
 	var emptyCommand common.DevfileCommand

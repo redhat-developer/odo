@@ -7,29 +7,21 @@ import (
 	"github.com/openshift/odo/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"k8s.io/klog"
-
-	"github.com/pkg/errors"
 )
 
 // GetCommand iterates through the devfile commands and returns the associated devfile command
 func getCommand(data data.DevfileData, commandName string, required bool) (supportedCommand common.DevfileCommand, err error) {
 	for _, command := range data.GetCommands() {
-		if command.Name == commandName {
+		if command.Exec.Id == commandName {
 
 			// Get the supported actions
-			supportedCommandActions, err := getSupportedCommandActions(data, command)
+			err = validateCommand(data, command)
 
-			// None of the actions are supported so the command cannot be run
-			if len(supportedCommandActions) == 0 {
-				return supportedCommand, errors.Wrapf(err, "\nThe command \"%v\" was found but its actions are not supported", commandName)
-			} else if err != nil {
-				klog.Warning(errors.Wrapf(err, "The command \"%v\" was found but some of its actions are not supported", commandName))
+			if err != nil {
+				return common.DevfileCommand{}, err
 			}
-
 			// The command is supported, use it
-			supportedCommand.Name = command.Name
-			supportedCommand.Actions = supportedCommandActions
-			supportedCommand.Attributes = command.Attributes
+			supportedCommand.Exec = command.Exec
 			return supportedCommand, nil
 		}
 	}
@@ -47,48 +39,24 @@ func getCommand(data data.DevfileData, commandName string, required bool) (suppo
 	return
 }
 
-// getSupportedCommandActions returns the supported actions for a given command and any errors
-// If some actions are supported and others have errors both the supported actions and an aggregated error will be returned.
-func getSupportedCommandActions(data data.DevfileData, command common.DevfileCommand) (supportedCommandActions []common.DevfileCommandAction, err error) {
-	klog.V(3).Infof("Validating actions for command: %v ", command.Name)
-
-	problemMsg := ""
-	for i, action := range command.Actions {
-		// Check if the command action is of type exec
-		err := validateAction(data, action)
-		if err == nil {
-			klog.V(3).Infof("Action %d maps to component %v", i+1, *action.Component)
-			supportedCommandActions = append(supportedCommandActions, action)
-		} else {
-			problemMsg += fmt.Sprintf("Problem with command \"%v\" action #%d: %v", command.Name, i+1, err)
-		}
-	}
-
-	if len(problemMsg) > 0 {
-		err = fmt.Errorf(problemMsg)
-	}
-
-	return
-}
-
-// validateAction validates the given action
-// 1. action has to be of type exec
+// validateCommand validates the given command
+// 1. command has to be of type exec
 // 2. component should be present
 // 3. command should be present
-func validateAction(data data.DevfileData, action common.DevfileCommandAction) (err error) {
+func validateCommand(data data.DevfileData, command common.DevfileCommand) (err error) {
 
 	// type must be exec
-	if *action.Type != common.DevfileCommandTypeExec {
+	if command.Type != common.ExecCommandType {
 		return fmt.Errorf("Actions must be of type \"exec\"")
 	}
 
 	// component must be specified
-	if action.Component == nil || *action.Component == "" {
+	if &command.Exec.Component == nil || command.Exec.Component == "" {
 		return fmt.Errorf("Actions must reference a component")
 	}
 
 	// must specify a command
-	if action.Command == nil || *action.Command == "" {
+	if &command.Exec.CommandLine == nil || command.Exec.CommandLine == "" {
 		return fmt.Errorf("Actions must have a command")
 	}
 
@@ -97,12 +65,12 @@ func validateAction(data data.DevfileData, action common.DevfileCommandAction) (
 
 	isActionValid := false
 	for _, component := range components {
-		if *action.Component == *component.Alias && isComponentSupported(component) {
+		if command.Exec.Component == component.Container.Name && isComponentSupported(component) {
 			isActionValid = true
 		}
 	}
 	if !isActionValid {
-		return fmt.Errorf("The action does not map to a supported component")
+		return fmt.Errorf("the command does not map to a supported component")
 	}
 
 	return
@@ -153,7 +121,7 @@ func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileInitCmd, de
 	} else if !isInitCmdEmpty && initCmdErr == nil {
 		isInitCommandValid = true
 		pushDevfileCommands = append(pushDevfileCommands, initCommand)
-		klog.V(3).Infof("Init command: %v", initCommand.Name)
+		klog.V(3).Infof("Init command: %v", initCommand.Exec.Id)
 	}
 
 	buildCommand, buildCmdErr := GetBuildCommand(data, devfileBuildCmd)
@@ -166,14 +134,14 @@ func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileInitCmd, de
 	} else if !reflect.DeepEqual(emptyCommand, buildCommand) && buildCmdErr == nil {
 		isBuildCommandValid = true
 		pushDevfileCommands = append(pushDevfileCommands, buildCommand)
-		klog.V(3).Infof("Build command: %v", buildCommand.Name)
+		klog.V(3).Infof("Build command: %v", buildCommand.Exec.Id)
 	}
 
 	runCommand, runCmdErr := GetRunCommand(data, devfileRunCmd)
 	if runCmdErr == nil && !reflect.DeepEqual(emptyCommand, runCommand) {
 		pushDevfileCommands = append(pushDevfileCommands, runCommand)
 		isRunCommandValid = true
-		klog.V(3).Infof("Run command: %v", runCommand.Name)
+		klog.V(3).Infof("Run command: %v", runCommand.Exec.Id)
 	}
 
 	// If either command had a problem, return an empty list of commands and an error
