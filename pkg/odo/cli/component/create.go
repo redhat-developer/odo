@@ -770,29 +770,30 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 		return err
 	}
 
-	var zipUrl string
-	switch project.Source.Type {
-	case "git":
-		if strings.Contains(project.Source.Location, "github.com") {
-			zipUrl, err = util.GetGitHubZipURL(project.Source.Location)
+	var url string
+	switch project.SourceType {
+	case common.GitProjectSourceType:
+		if strings.Contains(project.Git.Location, "github.com") {
+			url, err = util.GetGitHubZipURL(project.Git.Location)
 			if err != nil {
 				return err
 			}
 		} else {
 			return errors.Errorf("Project type git with non github url not supported")
 		}
-	case "github":
-		zipUrl, err = util.GetGitHubZipURL(project.Source.Location)
+	case common.GitHubProjectSourceType:
+		url, err = util.GetGitHubZipURL(project.Github.Location)
 		if err != nil {
 			return err
 		}
-	case "zip":
-		zipUrl = project.Source.Location
+	case common.ZipProjectSourceType:
+		url = project.Zip.Location
 	default:
 		return errors.Errorf("Project type not supported")
 	}
 
-	err = checkoutProject(project, zipUrl, path)
+	err = checkoutProject(project, url, path)
+
 	if err != nil {
 		return err
 	}
@@ -905,8 +906,15 @@ func ensureAndLogProperResourceUsage(resource, resourceMin, resourceMax, resourc
 }
 
 func checkoutProject(project common.DevfileProject, zipURL, path string) error {
-	if project.Source.SparseCheckoutDir != nil && *project.Source.SparseCheckoutDir != "" {
-		sparseCheckoutDir := *project.Source.SparseCheckoutDir
+	var sparseCheckoutDir string
+	if project.Git.SparseCheckoutDir != "" {
+		sparseCheckoutDir = project.Git.SparseCheckoutDir
+	} else if project.Github.SparseCheckoutDir != "" {
+		sparseCheckoutDir = project.Github.SparseCheckoutDir
+	} else if project.Zip.SparseCheckoutDir != "" {
+		sparseCheckoutDir = project.Zip.SparseCheckoutDir
+	}
+	if sparseCheckoutDir != "" {
 		err := util.GetAndExtractZip(zipURL, path, sparseCheckoutDir)
 		if err != nil {
 			return errors.Wrap(err, "failed to download and extract project zip folder")
