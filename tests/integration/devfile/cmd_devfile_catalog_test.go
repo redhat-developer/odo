@@ -70,6 +70,7 @@ var _ = Describe("odo devfile catalog command tests", func() {
 				"NAME",
 				"java-spring-boot",
 				"java-maven",
+				"quarkus",
 				"php-mysql",
 				"DESCRIPTION",
 				"REGISTRY",
