@@ -26,6 +26,23 @@ func getCommand(data data.DevfileData, commandName string, groupType common.Devf
 		if commandName != "" {
 
 			if command.Exec.Id == commandName {
+
+				if supportedCommand.Exec.Group.Kind == "" {
+					// Devfile V1 for commands passed from flags
+					// Group type is not updated during conversion
+					command.Exec.Group.Kind = groupType
+				}
+
+				// we have found the command with name, its groupType Should match to the flag
+				// e.g --build-command "mybuild"
+				// exec:
+				//   id: mybuild
+				// group:
+				//   kind: build
+				if command.Exec.Group.Kind != groupType {
+					return supportedCommand, fmt.Errorf("mismatched type, command %s is of type %v groupType in devfile", commandName, groupType)
+
+				}
 				supportedCommand = command
 				return supportedCommand, nil
 			}
@@ -65,7 +82,7 @@ func getCommand(data data.DevfileData, commandName string, groupType common.Devf
 func validateCommand(data data.DevfileData, command common.DevfileCommand) (err error) {
 
 	// type must be exec
-	if command.Type != common.ExecCommandType {
+	if command.Exec == nil {
 		return fmt.Errorf("Command must be of type \"exec\"")
 	}
 
@@ -84,7 +101,7 @@ func validateCommand(data data.DevfileData, command common.DevfileCommand) (err 
 
 	isActionValid := false
 	for _, component := range components {
-		if command.Exec.Component == component.Container.Name && isComponentSupported(component) {
+		if command.Exec.Component == component.Container.Name {
 			isActionValid = true
 		}
 	}
@@ -127,8 +144,10 @@ func GetRunCommand(data data.DevfileData, devfileRunCmd string) (runCommand comm
 // ValidateAndGetPushDevfileCommands validates the build and the run command,
 // if provided through odo push or else checks the devfile for devBuild and devRun.
 // It returns the build and run commands if its validated successfully, error otherwise.
-func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileInitCmd, devfileBuildCmd, devfileRunCmd string) (pushDevfileCommands []common.DevfileCommand, err error) {
+func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileInitCmd, devfileBuildCmd, devfileRunCmd string) (commandMap PushCommandsMap, err error) {
 	var emptyCommand common.DevfileCommand
+	commandMap = NewPushCommandMap()
+
 	isInitCommandValid, isBuildCommandValid, isRunCommandValid := false, false, false
 
 	initCommand, initCmdErr := GetInitCommand(data, devfileInitCmd)
@@ -140,7 +159,7 @@ func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileInitCmd, de
 		klog.V(3).Infof("No init command was provided")
 	} else if !isInitCmdEmpty && initCmdErr == nil {
 		isInitCommandValid = true
-		pushDevfileCommands = append(pushDevfileCommands, initCommand)
+		commandMap[common.InitCommandGroupType] = initCommand
 		klog.V(3).Infof("Init command: %v", initCommand.Exec.Id)
 	}
 
@@ -153,14 +172,14 @@ func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileInitCmd, de
 		klog.V(3).Infof("No build command was provided")
 	} else if !reflect.DeepEqual(emptyCommand, buildCommand) && buildCmdErr == nil {
 		isBuildCommandValid = true
-		pushDevfileCommands = append(pushDevfileCommands, buildCommand)
+		commandMap[common.BuildCommandGroupType] = buildCommand
 		klog.V(3).Infof("Build command: %v", buildCommand.Exec.Id)
 	}
 
 	runCommand, runCmdErr := GetRunCommand(data, devfileRunCmd)
 	if runCmdErr == nil && !reflect.DeepEqual(emptyCommand, runCommand) {
-		pushDevfileCommands = append(pushDevfileCommands, runCommand)
 		isRunCommandValid = true
+		commandMap[common.RunCommandGroupType] = runCommand
 		klog.V(3).Infof("Run command: %v", runCommand.Exec.Id)
 	}
 
@@ -176,8 +195,8 @@ func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileInitCmd, de
 		if runCmdErr != nil {
 			commandErrors += fmt.Sprintf(runCmdErr.Error(), "\n")
 		}
-		return []common.DevfileCommand{}, fmt.Errorf(commandErrors)
+		return commandMap, fmt.Errorf(commandErrors)
 	}
 
-	return pushDevfileCommands, nil
+	return commandMap, nil
 }
