@@ -97,7 +97,7 @@ type DevfileComponent struct {
 type DevfileProject struct {
 
 	// Path relative to the root of the projects to which this project should be cloned into. This is a unix-style relative path (i.e. uses forward slashes). The path is invalid if it is absolute or tries to escape the project root through the usage of '..'. If not specified, defaults to the project name.
-	ClonePath *string `json:"clonePath,omitempty"`
+	ClonePath string `json:"clonePath,omitempty"`
 
 	// Project's Custom source
 	Custom *Custom `json:"custom,omitempty"`
@@ -272,7 +272,7 @@ type Exec struct {
 	Label string `json:"label,omitempty"`
 
 	// Working directory where the command should be executed
-	WorkingDir *string `json:"workingDir,omitempty"`
+	WorkingDir string `json:"workingDir,omitempty"`
 }
 
 // Git Project's Git source

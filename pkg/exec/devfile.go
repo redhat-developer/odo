@@ -15,9 +15,9 @@ func ExecuteDevfileBuildAction(client ExecClient, exec common.Exec, commandName 
 
 	// Change to the workdir and execute the command
 	var cmdArr []string
-	if exec.WorkingDir != nil {
+	if exec.WorkingDir != "" {
 		// since we are using /bin/sh -c, the command needs to be within a single double quote instance, for example "cd /tmp && pwd"
-		cmdArr = []string{adaptersCommon.ShellExecutable, "-c", "cd " + *exec.WorkingDir + " && " + exec.CommandLine}
+		cmdArr = []string{adaptersCommon.ShellExecutable, "-c", "cd " + exec.WorkingDir + " && " + exec.CommandLine}
 	} else {
 		cmdArr = []string{adaptersCommon.ShellExecutable, "-c", exec.CommandLine}
 	}

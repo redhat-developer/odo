@@ -63,18 +63,18 @@ type Metadata struct {
 
 	// Workspaces created from devfile, will use it as base and append random suffix.
 	// It's used when name is not defined.
-	GenerateName *string `yaml:"generateName,omitempty" json:"generateName,omitempty"`
+	GenerateName string `yaml:"generateName,omitempty" json:"generateName,omitempty"`
 
 	// The name of the devfile. Workspaces created from devfile, will inherit this
 	// name
-	Name *string `yaml:"name,omitempty" json:"name,omitempty"`
+	Name string `yaml:"name,omitempty" json:"name,omitempty"`
 }
 
 // Description of the projects, containing names and sources locations
 type Project struct {
 
 	// The path relative to the root of the projects to which this project should be cloned into. This is a unix-style relative path (i.e. uses forward slashes). The path is invalid if it is absolute or tries to escape the project root through the usage of '..'. If not specified, defaults to the project name."
-	ClonePath *string `yaml:"clonePath,omitempty" json:"clonePath,omitempty"`
+	ClonePath string `yaml:"clonePath,omitempty" json:"clonePath,omitempty"`
 
 	// The Project Name
 	Name string `yaml:"name" json:"name"`
@@ -92,21 +92,21 @@ type ProjectSource struct {
 	// The name of the of the branch to check out after obtaining the source from the location.
 	//  The branch has to already exist in the source otherwise the default branch is used.
 	//  In case of git, this is also the name of the remote branch to push to.
-	Branch *string `yaml:"branch,omitempty" json:"branch,omitempty"`
+	Branch string `yaml:"branch,omitempty" json:"branch,omitempty"`
 
 	// The id of the commit to reset the checked out branch to.
 	//  Note that this is equivalent to 'startPoint' and provided for convenience.
-	CommitId *string `yaml:"commitId,omitempty" json:"commitId,omitempty"`
+	CommitId string `yaml:"commitId,omitempty" json:"commitId,omitempty"`
 
 	// Part of project to populate in the working directory.
-	SparseCheckoutDir *string `yaml:"sparseCheckoutDir,omitempty" json:"sparseCheckoutDir,omitempty"`
+	SparseCheckoutDir string `yaml:"sparseCheckoutDir,omitempty" json:"sparseCheckoutDir,omitempty"`
 
 	// The tag or commit id to reset the checked out branch to.
-	StartPoint *string `yaml:"startPoint,omitempty" json:"startPoint,omitempty"`
+	StartPoint string `yaml:"startPoint,omitempty" json:"startPoint,omitempty"`
 
 	// The name of the tag to reset the checked out branch to.
 	//  Note that this is equivalent to 'startPoint' and provided for convenience.
-	Tag *string `yaml:"tag,omitempty" json:"tag,omitempty"`
+	Tag string `yaml:"tag,omitempty" json:"tag,omitempty"`
 }
 
 type Command struct {
@@ -127,31 +127,31 @@ type Command struct {
 }
 
 type CommandPreviewUrl struct {
-	Port *int32  `yaml:"port,omitempty" json:"port,omitempty"`
-	Path *string `yaml:"path,omitempty" json:"path,omitempty"`
+	Port int32  `yaml:"port,omitempty" json:"port,omitempty"`
+	Path string `yaml:"path,omitempty" json:"path,omitempty"`
 }
 
 type CommandAction struct {
 
 	// The actual action command-line string
-	Command *string `yaml:"command,omitempty" json:"command,omitempty"`
+	Command string `yaml:"command,omitempty" json:"command,omitempty"`
 
 	// Describes component to which given action relates
-	Component *string `yaml:"component,omitempty" json:"component,omitempty"`
+	Component string `yaml:"component,omitempty" json:"component,omitempty"`
 
 	// the path relative to the location of the devfile to the configuration file
 	// defining one or more actions in the editor-specific format
-	Reference *string `yaml:"reference,omitempty" json:"reference,omitempty"`
+	Reference string `yaml:"reference,omitempty" json:"reference,omitempty"`
 
 	// The content of the referenced configuration file that defines one or more
 	// actions in the editor-specific format
-	ReferenceContent *string `yaml:"referenceContent,omitempty" json:"referenceContent,omitempty"`
+	ReferenceContent string `yaml:"referenceContent,omitempty" json:"referenceContent,omitempty"`
 
 	// Describes action type
-	Type *CommandType `yaml:"type,omitempty" json:"type,omitempty"`
+	Type CommandType `yaml:"type,omitempty" json:"type,omitempty"`
 
 	// Working directory where the command should be executed
-	Workdir *string `yaml:"workdir,omitempty" json:"workdir,omitempty"`
+	Workdir string `yaml:"workdir,omitempty" json:"workdir,omitempty"`
 }
 
 type Component struct {
@@ -159,7 +159,7 @@ type Component struct {
 	// The name using which other places of this devfile (like commands) can refer to
 	// this component. This attribute is optional but must be unique in the devfile if
 	// specified.
-	Alias *string `yaml:"alias,omitempty" json:"alias,omitempty"`
+	Alias string `yaml:"alias,omitempty" json:"alias,omitempty"`
 
 	// Describes whether projects sources should be mount to the component.
 	// `CHE_PROJECTS_ROOT` environment variable should contains a path where projects
@@ -178,36 +178,36 @@ type Component struct {
 }
 
 type ComponentChePlugin struct {
-	Id          *string `yaml:"id,omitempty" json:"id,omitempty"`
-	Reference   *string `yaml:"reference,omitempty" json:"reference,omitempty"`
-	RegistryUrl *string `yaml:"registryUrl,omitempty" json:"registryUrl,omitempty"`
+	Id          string `yaml:"id,omitempty" json:"id,omitempty"`
+	Reference   string `yaml:"reference,omitempty" json:"reference,omitempty"`
+	RegistryUrl string `yaml:"registryUrl,omitempty" json:"registryUrl,omitempty"`
 }
 
 type ComponentCheEditor struct {
-	Id          *string `yaml:"id,omitempty" json:"id,omitempty"`
-	Reference   *string `yaml:"reference,omitempty" json:"reference,omitempty"`
-	RegistryUrl *string `yaml:"registryUrl,omitempty" json:"registryUrl,omitempty"`
+	Id          string `yaml:"id,omitempty" json:"id,omitempty"`
+	Reference   string `yaml:"reference,omitempty" json:"reference,omitempty"`
+	RegistryUrl string `yaml:"registryUrl,omitempty" json:"registryUrl,omitempty"`
 }
 
 type ComponentOpenshift struct {
-	Reference        *string `yaml:"reference,omitempty" json:"reference,omitempty"`
-	ReferenceContent *string `yaml:"referenceContent,omitempty" json:"referenceContent,omitempty"`
-	Selector         *string `yaml:"selector,omitempty" json:"selector,omitempty"`
-	EntryPoints      *string `yaml:"entryPoints,omitempty" json:"entryPoints,omitempty"`
-	MemoryLimit      *string `yaml:"memoryLimit,omitempty" json:"memoryLimit,omitempty"`
+	Reference        string `yaml:"reference,omitempty" json:"reference,omitempty"`
+	ReferenceContent string `yaml:"referenceContent,omitempty" json:"referenceContent,omitempty"`
+	Selector         string `yaml:"selector,omitempty" json:"selector,omitempty"`
+	EntryPoints      string `yaml:"entryPoints,omitempty" json:"entryPoints,omitempty"`
+	MemoryLimit      string `yaml:"memoryLimit,omitempty" json:"memoryLimit,omitempty"`
 }
 
 type ComponentKubernetes struct {
-	Reference        *string `yaml:"reference,omitempty" json:"reference,omitempty"`
-	ReferenceContent *string `yaml:"referenceContent,omitempty" json:"referenceContent,omitempty"`
-	Selector         *string `yaml:"selector,omitempty" json:"selector,omitempty"`
-	EntryPoints      *string `yaml:"entryPoints,omitempty" json:"entryPoints,omitempty"`
-	MemoryLimit      *string `yaml:"memoryLimit,omitempty" json:"memoryLimit,omitempty"`
+	Reference        string `yaml:"reference,omitempty" json:"reference,omitempty"`
+	ReferenceContent string `yaml:"referenceContent,omitempty" json:"referenceContent,omitempty"`
+	Selector         string `yaml:"selector,omitempty" json:"selector,omitempty"`
+	EntryPoints      string `yaml:"entryPoints,omitempty" json:"entryPoints,omitempty"`
+	MemoryLimit      string `yaml:"memoryLimit,omitempty" json:"memoryLimit,omitempty"`
 }
 
 type ComponentDockerimage struct {
-	Image       *string               `yaml:"image,omitempty" json:"image,omitempty"`
-	MemoryLimit *string               `yaml:"memoryLimit,omitempty" json:"memoryLimit,omitempty"`
+	Image       string                `yaml:"image,omitempty" json:"image,omitempty"`
+	MemoryLimit string                `yaml:"memoryLimit,omitempty" json:"memoryLimit,omitempty"`
 	Command     []string              `yaml:"command,omitempty" json:"command,omitempty"`
 	Args        []string              `yaml:"args,omitempty" json:"args,omitempty"`
 	Volumes     []DockerimageVolume   `yaml:"volumes,omitempty" json:"volumes,omitempty"`
@@ -216,16 +216,16 @@ type ComponentDockerimage struct {
 }
 
 type DockerimageVolume struct {
-	Name          *string `yaml:"name,omitempty" json:"name,omitempty"`
-	ContainerPath *string `yaml:"containerPath,omitempty" json:"containerPath,omitempty"`
+	Name          string `yaml:"name,omitempty" json:"name,omitempty"`
+	ContainerPath string `yaml:"containerPath,omitempty" json:"containerPath,omitempty"`
 }
 
 type DockerimageEnv struct {
-	Name  *string `yaml:"name,omitempty" json:"name,omitempty"`
-	Value *string `yaml:"value,omitempty" json:"value,omitempty"`
+	Name  string `yaml:"name,omitempty" json:"name,omitempty"`
+	Value string `yaml:"value,omitempty" json:"value,omitempty"`
 }
 
 type DockerimageEndpoint struct {
-	Name *string `yaml:"name,omitempty" json:"name,omitempty"`
-	Port *int32  `yaml:"port,omitempty" json:"port,omitempty"`
+	Name string `yaml:"name,omitempty" json:"name,omitempty"`
+	Port int32  `yaml:"port,omitempty" json:"port,omitempty"`
 }

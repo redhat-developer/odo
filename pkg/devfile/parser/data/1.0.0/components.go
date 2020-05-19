@@ -7,7 +7,7 @@ import (
 func (d *Devfile100) GetMetadata() common.DevfileMetadata {
 	// No GenerateName field in V2
 	return common.DevfileMetadata{
-		Name: *d.Metadata.Name,
+		Name: d.Metadata.Name,
 		//Version: No field in V1
 	}
 }
@@ -80,11 +80,11 @@ func convertV1CommandToCommon(c Command) (d common.DevfileCommand) {
 
 	for _, action := range c.Actions {
 
-		if *action.Type == DevfileCommandTypeExec {
+		if action.Type == DevfileCommandTypeExec {
 			exec = common.Exec{
 				Attributes:  c.Attributes,
-				CommandLine: *action.Command,
-				Component:   *action.Component,
+				CommandLine: action.Command,
+				Component:   action.Component,
 				Group:       getGroup(c.Name),
 				Id:          c.Name,
 				WorkingDir:  action.Workdir,
@@ -120,11 +120,11 @@ func convertV1ComponentToCommon(c Component) (d common.DevfileComponent) {
 	}
 
 	container := common.Container{
-		Name:         *c.Alias,
+		Name:         c.Alias,
 		Endpoints:    endpoints,
 		Env:          envs,
-		Image:        *c.ComponentDockerimage.Image,
-		MemoryLimit:  *c.ComponentDockerimage.MemoryLimit,
+		Image:        c.ComponentDockerimage.Image,
+		MemoryLimit:  c.ComponentDockerimage.MemoryLimit,
 		MountSources: c.MountSources,
 		VolumeMounts: volumes,
 		// SourceMapping: Not present in V1
@@ -139,32 +139,32 @@ func convertV1EndpointsToCommon(e DockerimageEndpoint) *common.Endpoint {
 	return &common.Endpoint{
 		// Attributes:
 		// Configuration:
-		Name:       *e.Name,
-		TargetPort: *e.Port,
+		Name:       e.Name,
+		TargetPort: e.Port,
 	}
 }
 
 func convertV1EnvToCommon(e DockerimageEnv) *common.Env {
 	return &common.Env{
-		Name:  *e.Name,
-		Value: *e.Value,
+		Name:  e.Name,
+		Value: e.Value,
 	}
 }
 
 func convertV1VolumeToCommon(v DockerimageVolume) *common.VolumeMount {
 	return &common.VolumeMount{
-		Name: *v.Name,
-		Path: *v.ContainerPath,
+		Name: v.Name,
+		Path: v.ContainerPath,
 	}
 }
 
 func convertV1ProjectToCommon(p Project) common.DevfileProject {
 
 	git := common.Git{
-		Branch:            *p.Source.Branch,
+		Branch:            p.Source.Branch,
 		Location:          p.Source.Location,
-		SparseCheckoutDir: *p.Source.SparseCheckoutDir,
-		StartPoint:        *p.Source.StartPoint,
+		SparseCheckoutDir: p.Source.SparseCheckoutDir,
+		StartPoint:        p.Source.StartPoint,
 	}
 
 	return common.DevfileProject{
