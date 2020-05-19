@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	imagev1 "github.com/openshift/api/image/v1"
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/preference"
@@ -121,7 +122,7 @@ func IsDevfileComponentSupported(devfile Devfile) bool {
 		}
 
 		if !hasRunCommand {
-			hasRunCommand = strings.Contains(command.Name, "devRun")
+			hasRunCommand = strings.Contains(strings.ToLower(command.Name), string(common.DefaultDevfileRunCommand))
 		}
 
 	}
