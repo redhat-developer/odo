@@ -226,12 +226,12 @@ func UpdateComponentWithSupervisord(comp *common.DevfileComponent, runCommand co
 			})
 		}
 
-		if !adaptersCommon.IsEnvPresent(comp.Container.Env, adaptersCommon.EnvOdoCommandRunWorkingDir) && runCommand.Exec.WorkingDir != nil {
+		if !adaptersCommon.IsEnvPresent(comp.Container.Env, adaptersCommon.EnvOdoCommandRunWorkingDir) && runCommand.Exec.WorkingDir != "" {
 			envName := adaptersCommon.EnvOdoCommandRunWorkingDir
 			envValue := runCommand.Exec.WorkingDir
 			comp.Container.Env = append(comp.Container.Env, &common.Env{
 				Name:  envName,
-				Value: *envValue,
+				Value: envValue,
 			})
 		}
 	}
