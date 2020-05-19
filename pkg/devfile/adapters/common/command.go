@@ -91,12 +91,12 @@ func validateCommand(data data.DevfileData, command common.DevfileCommand) (err 
 	}
 
 	// component must be specified
-	if &command.Exec.Component == nil || command.Exec.Component == "" {
+	if command.Exec.Component == "" {
 		return fmt.Errorf("Exec commands must reference a component")
 	}
 
 	// must specify a command
-	if &command.Exec.CommandLine == nil || command.Exec.CommandLine == "" {
+	if command.Exec.CommandLine == "" {
 		return fmt.Errorf("Exec commands must have a command")
 	}
 
