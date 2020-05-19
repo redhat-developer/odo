@@ -169,7 +169,7 @@ func GetUserHomeDir() string {
 	return homeDir
 }
 
-// LocalKubeconfigSet checks for the running CI and sets the KUBECONFIG to the temporary config directory respectively
+// LocalKubeconfigSet sets the KUBECONFIG to the temporary config file
 func LocalKubeconfigSet(context string) {
 	originalKubeCfg := os.Getenv("KUBECONFIG")
 	if originalKubeCfg == "" {

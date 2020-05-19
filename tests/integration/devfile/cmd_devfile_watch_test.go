@@ -31,7 +31,11 @@ var _ = Describe("odo devfile watch command tests", func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-		helper.LocalKubeconfigSet(context)
+
+		// Skipping the KUBECONFIG set to a temporary config for prow due to https://github.com/openshift/odo/issues/3203
+		if os.Getenv("CI") != "openshift" {
+			helper.LocalKubeconfigSet(context)
+		}
 		namespace = cliRunner.CreateRandNamespaceProject()
 		currentWorkingDirectory = helper.Getwd()
 		helper.Chdir(context)
@@ -41,7 +45,9 @@ var _ = Describe("odo devfile watch command tests", func() {
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
 		cliRunner.DeleteNamespaceProject(namespace)
-		os.Unsetenv("KUBECONFIG")
+		if os.Getenv("CI") != "openshift" {
+			os.Unsetenv("KUBECONFIG")
+		}
 		helper.Chdir(currentWorkingDirectory)
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
