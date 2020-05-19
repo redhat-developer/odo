@@ -2,6 +2,7 @@ package common
 
 import (
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 )
 
@@ -51,4 +52,12 @@ type SyncParameters struct {
 type ComponentInfo struct {
 	PodName       string
 	ContainerName string
+}
+
+// PushCommandsMap stores the commands to be executed as per there types.
+type PushCommandsMap map[common.DevfileCommandGroupType]common.DevfileCommand
+
+// NewPushCommandMap returns the instance of PushCommandsMap
+func NewPushCommandMap() PushCommandsMap {
+	return make(map[common.DevfileCommandGroupType]common.DevfileCommand)
 }
