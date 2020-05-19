@@ -7,14 +7,14 @@ toc::[]
 
 == Setting up
 
-[Golang Version]
-====
-
 Requires *Go 1.12*
 
 Testing and release builds happen with the above version. Developers are advised to stick to this version if they can but it is not compulsory.
 
-WARNING: If you are adding any features that require a higher version of golang, that the one mentioned above, please contact maintainers to check of the releasing systems can handle the newer versions. If that is ok, please ensure you update the required golang version, both here and in the files below, in your PR.
+
+[WARNING]
+====
+If you are adding any features that require a higher version of golang, that the one mentioned above, please contact maintainers to check of the releasing systems can handle the newer versions. If that is ok, please ensure you update the required golang version, both here and in the files below, in your PR.
 
 .List of files to update for golang version
  * link:/scripts/rpm-prepare.sh[`scripts/rpm-prepare.sh`]
