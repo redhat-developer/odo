@@ -20,10 +20,10 @@ oc whoami
 oc config view
 
 # Integration tests
-# make test-integration
+make test-integration
 make test-integration-devfile
-# make test-cmd-login-logout
-# make test-cmd-project
-# make test-operator-hub
+make test-cmd-login-logout
+make test-cmd-project
+make test-operator-hub
 
 odo logout

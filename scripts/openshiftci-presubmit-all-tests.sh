@@ -21,10 +21,10 @@ oc config view
 
 # Integration tests
 make test-integration
-# make test-integration-devfile
-# make test-cmd-login-logout
-# make test-cmd-project
-# make test-operator-hub
+make test-integration-devfile
+make test-cmd-login-logout
+make test-cmd-project
+make test-operator-hub
 
 # E2e tests
 # make test-e2e-all

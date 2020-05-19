@@ -34,9 +34,8 @@ var _ = Describe("odo devfile push command tests", func() {
 		// Devfile push requires experimental mode to be set
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 
-		if os.Getenv("KUBERNETES") == "true" {
-			helper.LocalKubeconfigSet(context)
-		}
+		helper.LocalKubeconfigSet(context)
+
 		namespace = cliRunner.CreateRandNamespaceProject()
 		currentWorkingDirectory = helper.Getwd()
 		cmpName = helper.RandString(6)

@@ -30,9 +30,8 @@ var _ = Describe("odo devfile catalog command tests", func() {
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 
-		if os.Getenv("KUBERNETES") == "true" {
-			helper.LocalKubeconfigSet(context)
-		}
+		helper.LocalKubeconfigSet(context)
+
 		project = cliRunner.CreateRandNamespaceProject()
 		currentWorkingDirectory = helper.Getwd()
 		helper.Chdir(context)
