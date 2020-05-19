@@ -81,8 +81,11 @@ type CommandNames struct {
 }
 
 func isComponentSupported(component common.DevfileComponent) bool {
-	// Currently odo only uses devfile components of type dockerimage, since most of the Che registry devfiles use it
-	return component.Type == common.ContainerComponentType
+	// Currently odo only uses devfile components of type container, since most of the Che registry devfiles use it
+	if component.Container != nil {
+		return true
+	}
+	return false
 }
 
 // GetBootstrapperImage returns the odo-init bootstrapper image

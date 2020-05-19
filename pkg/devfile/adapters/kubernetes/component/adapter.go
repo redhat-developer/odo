@@ -305,76 +305,64 @@ func (a Adapter) waitAndGetComponentPod(hideSpinner bool) (*corev1.Pod, error) {
 
 // Executes all the commands from the devfile in order: init and build - which are both optional, and a compulsary run.
 // Init only runs once when the component is created.
-func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand, componentExists, show bool, podName string, containers []corev1.Container) (err error) {
+func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists, show bool, podName string, containers []corev1.Container) (err error) {
 	// If nothing has been passed, then the devfile is missing the required run command
-	if len(pushDevfileCommands) == 0 {
+	if len(commandsMap) == 0 {
 		return errors.New(fmt.Sprint("error executing devfile commands - there should be at least 1 command"))
 	}
 
-	commandOrder := []common.CommandNames{}
+	compInfo := common.ComponentInfo{
+		PodName: podName,
+	}
 
 	// Only add runinit to the expected commands if the component doesn't already exist
 	// This would be the case when first running the container
 	if !componentExists {
-		commandOrder = append(commandOrder, common.CommandNames{DefaultName: string(common.DefaultDevfileInitCommand), AdapterName: a.devfileInitCmd})
+		// Get Init Command
+		command, ok := commandsMap[versionsCommon.InitCommandGroupType]
+		if ok {
+			compInfo.ContainerName = command.Exec.Component
+			err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
+			if err != nil {
+				return err
+			}
+
+		}
+
 	}
-	commandOrder = append(
-		commandOrder,
-		common.CommandNames{DefaultName: string(common.DefaultDevfileBuildCommand), AdapterName: a.devfileBuildCmd},
-		common.CommandNames{DefaultName: string(common.DefaultDevfileRunCommand), AdapterName: a.devfileRunCmd},
-	)
 
-	// Loop through each of the expected commands in the devfile
-	for i, currentCommand := range commandOrder {
-		// Loop through each of the command given from the devfile
-		for _, command := range pushDevfileCommands {
-			// If the current command from the devfile is the currently expected command from the devfile
-			if command.Exec.Id == currentCommand.DefaultName || command.Exec.Id == currentCommand.AdapterName {
-				// If the current command is not the last command in the slice
-				// it is not expected to be the run command
-				if i < len(commandOrder)-1 {
-					// Any exec command such as "Init" and "Build"
+	// Get Build Command
+	command, ok := commandsMap[versionsCommon.BuildCommandGroupType]
+	if ok {
+		compInfo.ContainerName = command.Exec.Component
+		err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
+		if err != nil {
+			return err
+		}
+	}
 
-					compInfo := common.ComponentInfo{
-						ContainerName: command.Exec.Component,
-						PodName:       podName,
-					}
+	// Get Run Command
+	command, ok = commandsMap[versionsCommon.RunCommandGroupType]
+	if ok {
+		klog.V(4).Infof("Executing devfile command %v", command.Exec.Id)
+		compInfo.ContainerName = command.Exec.Component
 
-					err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
-					if err != nil {
-						return err
-					}
-
-					// If the current command is the last command in the slice
-					// it is expected to be the run command
-				} else {
-					// Last command is "Run"
-					klog.V(4).Infof("Executing devfile command %v", command.Exec.Id)
-
-					// Check if the devfile run component containers have supervisord as the entrypoint.
-					// Start the supervisord if the odo component does not exist
-					if !componentExists {
-						err = a.InitRunContainerSupervisord(command.Exec.Component, podName, containers)
-						if err != nil {
-							return
-						}
-					}
-
-					compInfo := common.ComponentInfo{
-						ContainerName: command.Exec.Component,
-						PodName:       podName,
-					}
-
-					if componentExists && !common.IsRestartRequired(command) {
-						klog.V(4).Infof("restart:false, Not restarting DevRun Command")
-						err = exec.ExecuteDevfileRunActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
-						return
-					}
-
-					err = exec.ExecuteDevfileRunAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
-				}
+		// Check if the devfile run component containers have supervisord as the entrypoint.
+		// Start the supervisord if the odo component does not exist
+		if !componentExists {
+			err = a.InitRunContainerSupervisord(command.Exec.Component, podName, containers)
+			if err != nil {
+				return
 			}
 		}
+
+		if componentExists && !common.IsRestartRequired(command) {
+			klog.V(4).Infof("restart:false, Not restarting DevRun Command")
+			err = exec.ExecuteDevfileRunActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
+			return
+		}
+		err = exec.ExecuteDevfileRunAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
+
 	}
 
 	return
