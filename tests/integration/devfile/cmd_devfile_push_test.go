@@ -34,8 +34,7 @@ var _ = Describe("odo devfile push command tests", func() {
 		// Devfile push requires experimental mode to be set
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 
-		// Skipping the KUBECONFIG set to a temporary config for prow due to https://github.com/openshift/odo/issues/3203
-		if os.Getenv("CI") != "openshift" {
+		if os.Getenv("KUBERNETES") == "true" {
 			helper.LocalKubeconfigSet(context)
 		}
 		namespace = cliRunner.CreateRandNamespaceProject()
@@ -48,7 +47,7 @@ var _ = Describe("odo devfile push command tests", func() {
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
 		cliRunner.DeleteNamespaceProject(namespace)
-		if os.Getenv("CI") != "openshift" {
+		if os.Getenv("KUBERNETES") == "true" {
 			os.Unsetenv("KUBECONFIG")
 		}
 		helper.Chdir(currentWorkingDirectory)
