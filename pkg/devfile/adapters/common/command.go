@@ -10,7 +10,7 @@ import (
 )
 
 // GetCommand iterates through the devfile commands and returns the associated devfile command
-func getCommand(data data.DevfileData, commandName string, groupType common.DevfileCommandGroupType, required bool) (supportedCommand common.DevfileCommand, err error) {
+func getCommand(data data.DevfileData, commandName string, groupType common.DevfileCommandGroupType) (supportedCommand common.DevfileCommand, err error) {
 
 	for _, command := range data.GetCommands() {
 		// validate command
@@ -62,14 +62,18 @@ func getCommand(data data.DevfileData, commandName string, groupType common.Devf
 		}
 	}
 
-	// The command was not found
-	msg := fmt.Sprintf("The command \"%v\" was not found in the devfile", commandName)
-	if required {
-		// Not found and required, return an error
-		err = fmt.Errorf(msg)
+	// if any command specified via flag is not found in devfile then it is an error.
+	if commandName != "" {
+		err = fmt.Errorf("The command \"%v\" is not found in the devfile", commandName)
 	} else {
-		// Not found and optional, so just log it
-		klog.V(3).Info(msg)
+		msg := fmt.Sprintf("The command type \"%v\" is not found in the devfile", groupType)
+		// if run command is not found in devfile then it is an error
+		if groupType == common.RunCommandGroupType {
+			err = fmt.Errorf(msg)
+		} else {
+			klog.V(3).Info(msg)
+
+		}
 	}
 
 	return
@@ -115,30 +119,19 @@ func validateCommand(data data.DevfileData, command common.DevfileCommand) (err 
 // GetInitCommand iterates through the components in the devfile and returns the init command
 func GetInitCommand(data data.DevfileData, devfileInitCmd string) (initCommand common.DevfileCommand, err error) {
 
-	if devfileInitCmd != "" {
-		// a init command was specified so if it is not found then it is an error
-		return getCommand(data, devfileInitCmd, common.InitCommandGroupType, true)
-	}
-	// a init command was not specified so if it is not found then it is not an error
-	return getCommand(data, "", common.InitCommandGroupType, false)
+	return getCommand(data, devfileInitCmd, common.InitCommandGroupType)
 }
 
 // GetBuildCommand iterates through the components in the devfile and returns the build command
 func GetBuildCommand(data data.DevfileData, devfileBuildCmd string) (buildCommand common.DevfileCommand, err error) {
-	if devfileBuildCmd != "" {
-		// a build command was specified so if it is not found then it is an error
-		return getCommand(data, devfileBuildCmd, common.BuildCommandGroupType, true)
-	}
-	// a build command was not specified so if it is not found then it is not an error
-	return getCommand(data, "", common.BuildCommandGroupType, false)
+
+	return getCommand(data, devfileBuildCmd, common.BuildCommandGroupType)
 }
 
 // GetRunCommand iterates through the components in the devfile and returns the run command
 func GetRunCommand(data data.DevfileData, devfileRunCmd string) (runCommand common.DevfileCommand, err error) {
-	if devfileRunCmd != "" {
-		return getCommand(data, devfileRunCmd, common.RunCommandGroupType, true)
-	}
-	return getCommand(data, "", common.RunCommandGroupType, true)
+
+	return getCommand(data, devfileRunCmd, common.RunCommandGroupType)
 }
 
 // ValidateAndGetPushDevfileCommands validates the build and the run command,
