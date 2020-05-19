@@ -7,9 +7,14 @@ toc::[]
 
 == Setting up
 
+[Golang Version]
+====
+
 Requires *Go 1.12*
 
-**WARNING**: If you are adding any features that require a higher version of golang, that the one mentioned above, please contact maintainers to check of the releasing systems can handle the newer versions.
+Testing and release builds happen with the above version. Developers are advised to stick to this version if they can but it is not compulsory.
+
+If you are adding any features that require a higher version of golang, that the one mentioned above, please contact maintainers to check of the releasing systems can handle the newer versions.
 
 If that is ok, please ensure you update the required golang version, both here and in the files below, in your PR.
 
@@ -17,6 +22,7 @@ If that is ok, please ensure you update the required golang version, both here a
  * link:/.travis.yml[`.travis.yml`]
  * link:/Dockerfile.rhel[`Dockerfile.rhel`]
  * link:/openshift-ci/build-root/Dockerfile[`openshift-ci/build-root/Dockerfile`]
+====
 
  First setup your fork of the odo project, following the steps below
 
