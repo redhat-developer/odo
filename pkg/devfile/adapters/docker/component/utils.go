@@ -344,7 +344,7 @@ func getPortMap(context string, endpoints []*versionsCommon.Endpoint, show bool)
 
 // Executes all the commands from the devfile in order: init and build - which are both optional, and a compulsary run.
 // Init only runs once when the component is created.
-func (a Adapter) execDevfile(commandsMap common.CommandsMap, componentExists, show bool, containers []types.Container) (err error) {
+func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists, show bool, containers []types.Container) (err error) {
 	// If nothing has been passed, then the devfile is missing the required run command
 	if len(commandsMap) == 0 {
 		return errors.New(fmt.Sprint("error executing devfile commands - there should be at least 1 command"))

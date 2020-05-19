@@ -305,7 +305,7 @@ func (a Adapter) waitAndGetComponentPod(hideSpinner bool) (*corev1.Pod, error) {
 
 // Executes all the commands from the devfile in order: init and build - which are both optional, and a compulsary run.
 // Init only runs once when the component is created.
-func (a Adapter) execDevfile(commandsMap common.CommandsMap, componentExists, show bool, podName string, containers []corev1.Container) (err error) {
+func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists, show bool, podName string, containers []corev1.Container) (err error) {
 	// If nothing has been passed, then the devfile is missing the required run command
 	if len(commandsMap) == 0 {
 		return errors.New(fmt.Sprint("error executing devfile commands - there should be at least 1 command"))
@@ -339,29 +339,29 @@ func (a Adapter) execDevfile(commandsMap common.CommandsMap, componentExists, sh
 		if err != nil {
 			return err
 		}
+	}
 
-		command, ok := commandsMap[versionsCommon.RunCommandGroupType]
-		if ok {
-			klog.V(4).Infof("Executing devfile command %v", command.Exec.Id)
-			compInfo.ContainerName = command.Exec.Component
+	// Get Run Command
+	command, ok = commandsMap[versionsCommon.RunCommandGroupType]
+	if ok {
+		klog.V(4).Infof("Executing devfile command %v", command.Exec.Id)
+		compInfo.ContainerName = command.Exec.Component
 
-			// Check if the devfile run component containers have supervisord as the entrypoint.
-			// Start the supervisord if the odo component does not exist
-			if !componentExists {
-				err = a.InitRunContainerSupervisord(command.Exec.Component, podName, containers)
-				if err != nil {
-					return
-				}
-			}
-
-			if componentExists && !common.IsRestartRequired(command) {
-				klog.V(4).Infof("restart:false, Not restarting DevRun Command")
-				err = exec.ExecuteDevfileRunActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
+		// Check if the devfile run component containers have supervisord as the entrypoint.
+		// Start the supervisord if the odo component does not exist
+		if !componentExists {
+			err = a.InitRunContainerSupervisord(command.Exec.Component, podName, containers)
+			if err != nil {
 				return
 			}
-			err = exec.ExecuteDevfileRunAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
-
 		}
+
+		if componentExists && !common.IsRestartRequired(command) {
+			klog.V(4).Infof("restart:false, Not restarting DevRun Command")
+			err = exec.ExecuteDevfileRunActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
+			return
+		}
+		err = exec.ExecuteDevfileRunAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
 
 	}
 

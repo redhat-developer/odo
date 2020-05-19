@@ -82,7 +82,7 @@ func getCommand(data data.DevfileData, commandName string, groupType common.Devf
 func validateCommand(data data.DevfileData, command common.DevfileCommand) (err error) {
 
 	// type must be exec
-	if command.Type != common.ExecCommandType {
+	if command.Exec == nil {
 		return fmt.Errorf("Command must be of type \"exec\"")
 	}
 
@@ -101,7 +101,7 @@ func validateCommand(data data.DevfileData, command common.DevfileCommand) (err 
 
 	isActionValid := false
 	for _, component := range components {
-		if command.Exec.Component == component.Container.Name && isComponentSupported(component) {
+		if command.Exec.Component == component.Container.Name {
 			isActionValid = true
 		}
 	}
@@ -144,9 +144,9 @@ func GetRunCommand(data data.DevfileData, devfileRunCmd string) (runCommand comm
 // ValidateAndGetPushDevfileCommands validates the build and the run command,
 // if provided through odo push or else checks the devfile for devBuild and devRun.
 // It returns the build and run commands if its validated successfully, error otherwise.
-func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileInitCmd, devfileBuildCmd, devfileRunCmd string) (commandMap CommandsMap, err error) {
+func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileInitCmd, devfileBuildCmd, devfileRunCmd string) (commandMap PushCommandsMap, err error) {
 	var emptyCommand common.DevfileCommand
-	commandMap = NewCommandMap()
+	commandMap = NewPushCommandMap()
 
 	isInitCommandValid, isBuildCommandValid, isRunCommandValid := false, false, false
 
