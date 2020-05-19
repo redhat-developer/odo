@@ -19,8 +19,8 @@ func (d *Devfile200) GetParent() common.DevfileParent {
 	return d.Parent
 }
 
-// GetProject returns the DevfileProject Object parsed from devfile
-func (d *Devfile200) GetProject() []common.DevfileProject {
+// GetProjects returns the DevfileProject Object parsed from devfile
+func (d *Devfile200) GetProjects() []common.DevfileProject {
 	return d.Projects
 }
 
