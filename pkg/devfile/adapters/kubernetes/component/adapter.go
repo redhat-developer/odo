@@ -47,10 +47,9 @@ type Adapter struct {
 func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	componentExists := utils.ComponentExists(a.Client, a.ComponentName)
 
-	pushCommand := parameters.EnvSpecificInfo.GetPushCommand()
-	a.devfileInitCmd = pushCommand.Init
-	a.devfileBuildCmd = pushCommand.Build
-	a.devfileRunCmd = pushCommand.Run
+	a.devfileInitCmd = parameters.DevfileInitCmd
+	a.devfileBuildCmd = parameters.DevfileBuildCmd
+	a.devfileRunCmd = parameters.DevfileRunCmd
 
 	podChanged := false
 	var podName string

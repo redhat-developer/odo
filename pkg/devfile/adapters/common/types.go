@@ -33,6 +33,9 @@ type PushParameters struct {
 	IgnoredFiles      []string                // IgnoredFiles is the list of files to not push up to a component
 	ForceBuild        bool                    // ForceBuild determines whether or not to push all of the files up to a component or just files that have changed, added or removed.
 	Show              bool                    // Show tells whether the devfile command output should be shown on stdout
+	DevfileInitCmd    string                  // DevfileInitCmd takes the init command through the command line and overwrites devfile init command
+	DevfileBuildCmd   string                  // DevfileBuildCmd takes the build command through the command line and overwrites devfile build command
+	DevfileRunCmd     string                  // DevfileRunCmd takes the run command through the command line and overwrites devfile run command
 	EnvSpecificInfo   envinfo.EnvSpecificInfo // EnvSpecificInfo contains infomation of env.yaml file
 }
 

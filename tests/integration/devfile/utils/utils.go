@@ -199,17 +199,13 @@ func OdoWatch(cmpName, project, context string, stringsToBeMatched []string, run
 		startMsg := <-startSimulationCh
 		if startMsg {
 			err := os.MkdirAll(filepath.Join(context, ".abc"), 0750)
-			if err != nil {
-				panic(err)
-			}
+			Expect(err).To(BeNil())
+
 			err = os.MkdirAll(filepath.Join(context, "abcd"), 0750)
-			if err != nil {
-				panic(err)
-			}
+			Expect(err).To(BeNil())
+
 			_, err = os.Create(filepath.Join(context, "a.txt"))
-			if err != nil {
-				panic(err)
-			}
+			Expect(err).To(BeNil())
 
 			helper.DeleteDir(filepath.Join(context, "abcd"))
 
@@ -252,7 +248,6 @@ func OdoWatch(cmpName, project, context string, stringsToBeMatched []string, run
 
 func getContainerExecListdir(runner interface{}, platform, cmpName, project, sourcePath string) string {
 	var stdOut string
-	// if !reflect.DeepEqual(runner.(helper.OcRunner), helper.OcRunner{}) {
 
 	if platform == "kube" {
 		ocRunner := runner.(helper.OcRunner)

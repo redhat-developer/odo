@@ -3,7 +3,6 @@ package component
 import (
 	"fmt"
 	"path/filepath"
-	"strings"
 
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
@@ -26,15 +25,13 @@ import (
 var pushCmdExample = ktemplates.Examples(`  # Push source code to the current component
 %[1]s
 
-# Push data to the current component from the original source.
+# Push data to the current component from the original source
 %[1]s
 
 # Push source code in ~/mycode to component called my-component
 %[1]s my-component --context ~/mycode
 
-# Push source code with custom devfile commands using --build-command and --run-command.
-# Thereafter, odo push will use the specified commands without the need of the flag.
-# Push with --build-command or --run-command again to change the default devfile command.
+# Push source code with custom devfile commands using --build-command and --run-command for experimental mode
 %[1]s --build-command="mybuild" --run-command="myrun"
   `)
 
@@ -75,34 +72,6 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		}
 		po.EnvSpecificInfo = envInfo
 		po.Context = genericclioptions.NewDevfileContext(cmd)
-
-		devfileCommandChanged := false
-		var pushCommands string
-		pushCommand := po.EnvSpecificInfo.GetPushCommand()
-		if po.devfileInitCommand != "" {
-			pushCommand.Init = strings.ToLower(po.devfileInitCommand)
-			pushCommands = fmt.Sprintf("%s Init: %s", pushCommands, pushCommand.Init)
-			devfileCommandChanged = true
-		}
-		if po.devfileBuildCommand != "" {
-			pushCommand.Build = strings.ToLower(po.devfileBuildCommand)
-			pushCommands = fmt.Sprintf("%s Build: %s", pushCommands, pushCommand.Build)
-			devfileCommandChanged = true
-		}
-		if po.devfileRunCommand != "" {
-			pushCommand.Run = strings.ToLower(po.devfileRunCommand)
-			pushCommands = fmt.Sprintf("%s Run: %s", pushCommands, pushCommand.Run)
-			devfileCommandChanged = true
-		}
-
-		// only if the devfile command changed, update env.yaml and display the information
-		if devfileCommandChanged {
-			err = po.EnvSpecificInfo.SetConfiguration("push", pushCommand)
-			if err != nil {
-				return errors.Wrap(err, "unable to set push configuration for env.yaml")
-			}
-			log.Italicf("The default devfile command(s) has changed for%s", pushCommands)
-		}
 
 		if !pushtarget.IsPushTargetDocker() {
 			// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initalizing the context

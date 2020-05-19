@@ -31,7 +31,7 @@ type WatchParameters struct {
 	FileIgnores []string
 	// Custom function that can be used to push detected changes to remote pod. For more info about what each of the parameters to this function, please refer, pkg/component/component.go#PushLocal
 	WatchHandler func(*occlient.Client, string, string, string, io.Writer, []string, []string, bool, []string, bool) error
-	// Custom function that can be used to push detected changes to remote devfile pod. For more info about what each of the parameters to this function, please refer, pkg/component/component.go#PushLocal
+	// Custom function that can be used to push detected changes to remote devfile pod. For more info about what each of the parameters to this function, please refer, pkg/devfile/adapters/interface.go#PlatformAdapter
 	DevfileWatchHandler func(common.PushParameters) error
 	// This is a channel added to signal readiness of the watch command to the external channel listeners
 	StartChan chan bool
@@ -43,6 +43,12 @@ type WatchParameters struct {
 	Show bool
 	// EnvSpecificInfo contains infomation of env.yaml file
 	EnvSpecificInfo *envinfo.EnvSpecificInfo
+	// DevfileInitCmd takes the init command through the command line and overwrites devfile init command
+	DevfileInitCmd string
+	// DevfileBuildCmd takes the build command through the command line and overwrites devfile build command
+	DevfileBuildCmd string
+	// DevfileRunCmd takes the run command through the command line and overwrites devfile run command
+	DevfileRunCmd string
 }
 
 // addRecursiveWatch handles adding watches recursively for the path provided
@@ -312,6 +318,9 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 							WatchDeletedFiles: deletedPaths,
 							IgnoredFiles:      parameters.FileIgnores,
 							ForceBuild:        false,
+							DevfileInitCmd:    parameters.DevfileInitCmd,
+							DevfileBuildCmd:   parameters.DevfileBuildCmd,
+							DevfileRunCmd:     parameters.DevfileRunCmd,
 							EnvSpecificInfo:   *parameters.EnvSpecificInfo,
 						}
 
@@ -330,6 +339,9 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 							WatchDeletedFiles: deletedPaths,
 							IgnoredFiles:      parameters.FileIgnores,
 							ForceBuild:        false,
+							DevfileInitCmd:    parameters.DevfileInitCmd,
+							DevfileBuildCmd:   parameters.DevfileBuildCmd,
+							DevfileRunCmd:     parameters.DevfileRunCmd,
 							EnvSpecificInfo:   *parameters.EnvSpecificInfo,
 						}
 
