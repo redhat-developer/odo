@@ -1,10 +1,8 @@
 package devfile
 
 import (
-	"os"
 	"path"
 	"path/filepath"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -15,33 +13,25 @@ import (
 var _ = Describe("odo devfile create command tests", func() {
 	const devfile = "devfile.yaml"
 	const envFile = ".odo/env/env.yaml"
-	var namespace string
-	var context string
-	var currentWorkingDirectory string
+	var globals helper.Globals
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
-		SetDefaultEventuallyTimeout(10 * time.Minute)
-		namespace = helper.CreateRandProject()
-		context = helper.CreateNewContext()
-		currentWorkingDirectory = helper.Getwd()
-		helper.Chdir(context)
-		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		globals = helper.CommonBeforeEach()
+		helper.Chdir(globals.Context)
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 	})
 
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		helper.DeleteProject(namespace)
-		helper.Chdir(currentWorkingDirectory)
-		helper.DeleteDir(context)
-		os.Unsetenv("GLOBALODOCONFIG")
+		helper.CommonAfterEeach(globals)
+
 	})
 
 	Context("Enabling experimental preference should show a disclaimer", func() {
 		It("checks that the experimental warning appears for create", func() {
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
-			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CopyExample(filepath.Join("source", "nodejs"), globals.Context)
 
 			// Check that it will contain the experimental mode output
 			experimentalOutputMsg := "Experimental mode is enabled, use at your own risk"
@@ -51,7 +41,7 @@ var _ = Describe("odo devfile create command tests", func() {
 
 		It("checks that the experimental warning does *not* appear when Experimental is set to false for create", func() {
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "false", "-f")
-			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CopyExample(filepath.Join("source", "nodejs"), globals.Context)
 
 			// Check that it will contain the experimental mode output
 			experimentalOutputMsg := "Experimental mode is enabled, use at your own risk"
@@ -88,7 +78,7 @@ var _ = Describe("odo devfile create command tests", func() {
 
 	Context("When executing odo create with devfile component type argument and --context flag", func() {
 		It("should successfully create the devfile component in the context", func() {
-			newContext := path.Join(context, "newContext")
+			newContext := path.Join(globals.Context, "newContext")
 			devfilePath := filepath.Join(newContext, devfile)
 			envFilePath := filepath.Join(newContext, envFile)
 			helper.MakeDir(newContext)
@@ -145,7 +135,7 @@ var _ = Describe("odo devfile create command tests", func() {
 			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
 			Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
 			helper.DeleteDir(contextDevfile)
-			helper.Chdir(context)
+			helper.Chdir(globals.Context)
 		})
 	})
 
@@ -167,7 +157,7 @@ var _ = Describe("odo devfile create command tests", func() {
 			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
 			Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
 			helper.DeleteDir(contextDevfile)
-			helper.Chdir(context)
+			helper.Chdir(globals.Context)
 		})
 	})
 

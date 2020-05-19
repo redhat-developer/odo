@@ -1,9 +1,7 @@
 package docker
 
 import (
-	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/openshift/odo/tests/helper"
 
@@ -12,17 +10,15 @@ import (
 )
 
 var _ = Describe("odo docker devfile url pushtarget command tests", func() {
-	var context, currentWorkingDirectory, cmpName string
+	var cmpName string
 	dockerClient := helper.NewDockerRunner("docker")
+	var globals helper.Globals
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
-		SetDefaultEventuallyTimeout(10 * time.Minute)
-		context = helper.CreateNewContext()
-		currentWorkingDirectory = helper.Getwd()
+		globals = helper.CommonBeforeEachDocker()
 		cmpName = helper.RandString(6)
-		helper.Chdir(context)
-		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		helper.Chdir(globals.Context)
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 		helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "docker")
 	})
@@ -33,10 +29,7 @@ var _ = Describe("odo docker devfile url pushtarget command tests", func() {
 		// Stop all containers labeled with the component name
 		label := "component=" + cmpName
 		dockerClient.StopContainers(label)
-
-		helper.Chdir(currentWorkingDirectory)
-		helper.DeleteDir(context)
-		os.Unsetenv("GLOBALODOCONFIG")
+		helper.CommonAfterEeachDocker(globals)
 	})
 
 	// These tests require an active kube context *and* Docker daemon, so keeping them separate
@@ -47,8 +40,8 @@ var _ = Describe("odo docker devfile url pushtarget command tests", func() {
 
 			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), globals.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(globals.Context, "devfile.yaml"))
 
 			helper.CmdShouldPass("odo", "url", "create")
 
@@ -65,8 +58,8 @@ var _ = Describe("odo docker devfile url pushtarget command tests", func() {
 			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "kube", "-f")
 			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), globals.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(globals.Context, "devfile.yaml"))
 
 			helper.CmdShouldPass("odo", "url", "create", "--host", "1.2.3.4.com", "--ingress")
 

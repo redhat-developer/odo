@@ -2,10 +2,8 @@ package integration
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -13,29 +11,21 @@ import (
 )
 
 var _ = Describe("odo url command tests", func() {
-	//new clean project and context for each test
-	var project string
-	var context string
+	var globals helper.Globals
 
 	// Setup up state for each test spec
 	// create new project (not set as active) and new context directory for each test spec
 	// This is before every spec (It)
 	var _ = BeforeEach(func() {
-		// Set default timeout for Eventually assertions
-		// commands like odo push, might take a long time
-		SetDefaultEventuallyTimeout(10 * time.Minute)
-		SetDefaultConsistentlyDuration(30 * time.Second)
-		context = helper.CreateNewContext()
-		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-		project = helper.CreateRandProject()
+		globals = helper.CommonBeforeEach()
+
 	})
 
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		helper.DeleteProject(project)
-		helper.DeleteDir(context)
-		os.Unsetenv("GLOBALODOCONFIG")
+		helper.CommonAfterEeach(globals)
+
 	})
 
 	Context("Listing urls", func() {
@@ -44,29 +34,29 @@ var _ = Describe("odo url command tests", func() {
 			url1 := helper.RandString(5)
 			url2 := helper.RandString(5)
 			componentName := helper.RandString(6)
-			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--project", project, componentName, "--ref", "master", "--git", "https://github.com/openshift/nodejs-ex", "--port", "8080,8000")
-			helper.CmdShouldPass("odo", "push", "--context", context)
-			stdout = helper.CmdShouldFail("odo", "url", "list", "--context", context)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", globals.Context, "--project", globals.Project, componentName, "--ref", "master", "--git", "https://github.com/openshift/nodejs-ex", "--port", "8080,8000")
+			helper.CmdShouldPass("odo", "push", "--context", globals.Context)
+			stdout = helper.CmdShouldFail("odo", "url", "list", "--context", globals.Context)
 			Expect(stdout).To(ContainSubstring("no URLs found"))
 
-			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "8080", "--context", context)
-			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", context)
+			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "8080", "--context", globals.Context)
+			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", globals.Context)
 			helper.MatchAllInOutput(stdout, []string{url1, "Not Pushed", url1, "odo push"})
 
-			helper.CmdShouldPass("odo", "push", "--context", context)
-			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", context)
+			helper.CmdShouldPass("odo", "push", "--context", globals.Context)
+			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", globals.Context)
 			helper.MatchAllInOutput(stdout, []string{url1, "Pushed"})
 			helper.DontMatchAllInOutput(stdout, []string{"Not Pushed", "odo push"})
 
-			helper.CmdShouldPass("odo", "url", "delete", url1, "-f", "--context", context)
-			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", context)
+			helper.CmdShouldPass("odo", "url", "delete", url1, "-f", "--context", globals.Context)
+			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", globals.Context)
 			helper.MatchAllInOutput(stdout, []string{url1, "Locally Deleted", url1, "odo push"})
 
-			helper.CmdShouldPass("odo", "url", "create", url2, "--port", "8000", "--context", context)
-			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", context)
+			helper.CmdShouldPass("odo", "url", "create", url2, "--port", "8000", "--context", globals.Context)
+			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", globals.Context)
 			helper.MatchAllInOutput(stdout, []string{url1, "Locally Deleted", url2, "Not Pushed", "odo push"})
-			helper.CmdShouldPass("odo", "push", "--context", context)
-			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", context)
+			helper.CmdShouldPass("odo", "push", "--context", globals.Context)
+			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", globals.Context)
 			helper.MatchAllInOutput(stdout, []string{url2, "Pushed"})
 			helper.DontMatchAllInOutput(stdout, []string{url1, "Not Pushed", "odo push"})
 		})
@@ -74,20 +64,20 @@ var _ = Describe("odo url command tests", func() {
 		It("should create a secure URL", func() {
 			url1 := helper.RandString(5)
 			componentName := helper.RandString(6)
-			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--project", project, componentName)
+			helper.CopyExample(filepath.Join("source", "nodejs"), globals.Context)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", globals.Context, "--project", globals.Project, componentName)
 
-			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "8080", "--context", context, "--secure")
-			helper.CmdShouldPass("odo", "push", "--context", context)
+			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "8080", "--context", globals.Context, "--secure")
+			helper.CmdShouldPass("odo", "push", "--context", globals.Context)
 
-			secureURL := helper.DetermineRouteURL(context)
+			secureURL := helper.DetermineRouteURL(globals.Context)
 			Expect(secureURL).To(ContainSubstring("https:"))
 			helper.HttpWaitFor(secureURL, "Hello world from node.js!", 20, 1)
 
-			stdout := helper.CmdShouldPass("odo", "url", "list", "--context", context)
+			stdout := helper.CmdShouldPass("odo", "url", "list", "--context", globals.Context)
 			helper.MatchAllInOutput(stdout, []string{secureURL, "Pushed", "true"})
 
-			helper.CmdShouldPass("odo", "delete", "-f", "--context", context)
+			helper.CmdShouldPass("odo", "delete", "-f", "--context", globals.Context)
 		})
 	})
 
@@ -96,34 +86,35 @@ var _ = Describe("odo url command tests", func() {
 			var stdout string
 			url1 := helper.RandString(5)
 			componentName := helper.RandString(6)
-			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--project", project, componentName, "--ref", "master", "--git", "https://github.com/openshift/nodejs-ex", "--port", "8080,8000")
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", globals.Context, "--project", globals.Project, componentName, "--ref", "master", "--git", "https://github.com/openshift/nodejs-ex", "--port", "8080,8000")
 
-			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "8080", "--context", context)
-			stdout = helper.CmdShouldPass("odo", "url", "describe", url1, "--context", context)
+			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "8080", "--context", globals.Context)
+			stdout = helper.CmdShouldPass("odo", "url", "describe", url1, "--context", globals.Context)
 			helper.MatchAllInOutput(stdout, []string{url1, "Not Pushed", url1, "odo push"})
 
-			helper.CmdShouldPass("odo", "push", "--context", context)
-			stdout = helper.CmdShouldPass("odo", "url", "describe", url1, "--context", context)
+			helper.CmdShouldPass("odo", "push", "--context", globals.Context)
+			stdout = helper.CmdShouldPass("odo", "url", "describe", url1, "--context", globals.Context)
 			helper.MatchAllInOutput(stdout, []string{url1, "Pushed"})
 			helper.DontMatchAllInOutput(stdout, []string{"Not Pushed", "odo push"})
 
-			helper.CmdShouldPass("odo", "url", "delete", url1, "-f", "--context", context)
-			stdout = helper.CmdShouldPass("odo", "url", "describe", url1, "--context", context)
+			helper.CmdShouldPass("odo", "url", "delete", url1, "-f", "--context", globals.Context)
+			stdout = helper.CmdShouldPass("odo", "url", "describe", url1, "--context", globals.Context)
 			helper.MatchAllInOutput(stdout, []string{url1, "Locally Deleted", url1, "odo push"})
 		})
 	})
 
 	Context("when listing urls using -o json flag", func() {
+		var originalDir string
 		JustBeforeEach(func() {
 			originalDir = helper.Getwd()
-			helper.Chdir(context)
+			helper.Chdir(globals.Context)
 		})
 
 		JustAfterEach(func() {
 			helper.Chdir(originalDir)
 		})
 		It("should be able to list url in machine readable json format", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--app", "myapp", "--project", project, "--git", "https://github.com/openshift/nodejs-ex")
+			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--app", "myapp", "--project", globals.Project, "--git", "https://github.com/openshift/nodejs-ex")
 			helper.CmdShouldPass("odo", "url", "create", "myurl")
 			helper.CmdShouldPass("odo", "push")
 
@@ -136,7 +127,7 @@ var _ = Describe("odo url command tests", func() {
 		})
 
 		It("should be able to list url in machine readable json format for a secure url", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--app", "myapp", "--project", project, "--git", "https://github.com/openshift/nodejs-ex")
+			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--app", "myapp", "--project", globals.Project, "--git", "https://github.com/openshift/nodejs-ex")
 			helper.CmdShouldPass("odo", "url", "create", "myurl", "--secure")
 			helper.CmdShouldPass("odo", "push")
 
@@ -153,17 +144,17 @@ var _ = Describe("odo url command tests", func() {
 		It("should create and delete url on cluster successfully with now flag", func() {
 			url1 := helper.RandString(5)
 			componentName := helper.RandString(6)
-			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, "--project", project, componentName, "--ref", "master", "--git", "https://github.com/openshift/nodejs-ex", "--port", "8080,8000")
-			helper.CmdShouldPass("odo", "url", "create", url1, "--context", context, "--port", "8080", "--now")
-			out1 := helper.CmdShouldPass("odo", "url", "list", "--context", context)
+			helper.CopyExample(filepath.Join("source", "nodejs"), globals.Context)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", globals.Context, "--project", globals.Project, componentName, "--ref", "master", "--git", "https://github.com/openshift/nodejs-ex", "--port", "8080,8000")
+			helper.CmdShouldPass("odo", "url", "create", url1, "--context", globals.Context, "--port", "8080", "--now")
+			out1 := helper.CmdShouldPass("odo", "url", "list", "--context", globals.Context)
 			helper.MatchAllInOutput(out1, []string{url1, "Pushed", url1})
 			helper.DontMatchAllInOutput(out1, []string{"odo push"})
-			routeURL := helper.DetermineRouteURL(context)
+			routeURL := helper.DetermineRouteURL(globals.Context)
 			// Ping said URL
 			helper.HttpWaitFor(routeURL, "Node.js", 30, 1)
-			helper.CmdShouldPass("odo", "url", "delete", url1, "--context", context, "--now", "-f")
-			out2 := helper.CmdShouldFail("odo", "url", "list", "--context", context)
+			helper.CmdShouldPass("odo", "url", "delete", url1, "--context", globals.Context, "--now", "-f")
+			out2 := helper.CmdShouldFail("odo", "url", "list", "--context", globals.Context)
 			Expect(out2).To(ContainSubstring("no URLs found"))
 		})
 	})

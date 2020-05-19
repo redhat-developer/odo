@@ -1,8 +1,10 @@
 package helper
 
 import (
+	"fmt"
 	"os"
 
+	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
@@ -13,4 +15,6 @@ func copyKubeConfigFile(kubeConfigFile, tempConfigFile string) {
 	err = copyFile(kubeConfigFile, tempConfigFile, info)
 	Expect(err).NotTo(HaveOccurred())
 	os.Setenv("KUBECONFIG", tempConfigFile)
+	fmt.Fprintf(GinkgoWriter, "Setting KUBECONFIG=%s\n", tempConfigFile)
+
 }

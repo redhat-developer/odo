@@ -2,11 +2,9 @@ package docker
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/openshift/odo/pkg/util"
 	"github.com/openshift/odo/tests/helper"
@@ -16,17 +14,17 @@ import (
 )
 
 var _ = Describe("odo docker devfile url command tests", func() {
-	var context, currentWorkingDirectory, cmpName string
+	var cmpName string
 	dockerClient := helper.NewDockerRunner("docker")
+	var globals helper.Globals
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
-		SetDefaultEventuallyTimeout(10 * time.Minute)
-		context = helper.CreateNewContext()
-		currentWorkingDirectory = helper.Getwd()
+		globals = helper.CommonBeforeEach()
 		cmpName = helper.RandString(6)
-		helper.Chdir(context)
-		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		fmt.Fprintf(GinkgoWriter, "XXX: Using cmpName %s", cmpName)
+
+		helper.Chdir(globals.Context)
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 		helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "docker")
 	})
@@ -38,9 +36,8 @@ var _ = Describe("odo docker devfile url command tests", func() {
 		label := "component=" + cmpName
 		dockerClient.StopContainers(label)
 
-		helper.Chdir(currentWorkingDirectory)
-		helper.DeleteDir(context)
-		os.Unsetenv("GLOBALODOCONFIG")
+		helper.CommonAfterEeach(globals)
+
 	})
 
 	Context("Creating urls", func() {
@@ -48,8 +45,8 @@ var _ = Describe("odo docker devfile url command tests", func() {
 			var stdout string
 			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), globals.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(globals.Context, "devfile.yaml"))
 
 			stdout = helper.CmdShouldPass("odo", "url", "create")
 			helper.MatchAllInOutput(stdout, []string{cmpName + "-3000", "created for component"})
@@ -63,8 +60,8 @@ var _ = Describe("odo docker devfile url command tests", func() {
 
 			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), globals.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(globals.Context, "devfile.yaml"))
 
 			stdout = helper.CmdShouldPass("odo", "url", "create", url1, "--now")
 			helper.MatchAllInOutput(stdout, []string{url1, "created for component", "Changes successfully pushed to component"})
@@ -76,8 +73,8 @@ var _ = Describe("odo docker devfile url command tests", func() {
 
 			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), globals.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(globals.Context, "devfile.yaml"))
 
 			helper.CmdShouldPass("odo", "url", "create", url1)
 
@@ -89,8 +86,8 @@ var _ = Describe("odo docker devfile url command tests", func() {
 		It("should be able to do a GET on the URL after a successful push", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), globals.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(globals.Context, "devfile.yaml"))
 
 			helper.CmdShouldPass("odo", "url", "create", cmpName)
 
@@ -103,14 +100,52 @@ var _ = Describe("odo docker devfile url command tests", func() {
 		})
 	})
 
+	Context("Switching pushtarget", func() {
+		It("switch from docker to kube, odo push should display warning", func() {
+			var stdout string
+
+			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), globals.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(globals.Context, "devfile.yaml"))
+
+			helper.CmdShouldPass("odo", "url", "create")
+
+			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "kube", "-f")
+			session := helper.CmdRunner("odo", "push", "--devfile", "devfile.yaml")
+			stdout = string(session.Wait().Out.Contents())
+			stderr := string(session.Wait().Err.Contents())
+			Expect(stderr).To(ContainSubstring("Found a URL defined for Docker, but no valid URLs for Kubernetes."))
+			Expect(stdout).To(ContainSubstring("Changes successfully pushed to component"))
+		})
+
+		It("switch from kube to docker, odo push should display warning", func() {
+			var stdout string
+			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "kube", "-f")
+			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), globals.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(globals.Context, "devfile.yaml"))
+
+			helper.CmdShouldPass("odo", "url", "create", "--host", "1.2.3.4.com", "--ingress")
+
+			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "docker", "-f")
+			session := helper.CmdRunner("odo", "push", "--devfile", "devfile.yaml")
+			stdout = string(session.Wait().Out.Contents())
+			stderr := string(session.Wait().Err.Contents())
+			Expect(stderr).To(ContainSubstring("Found a URL defined for Kubernetes, but no valid URLs for Docker."))
+			Expect(stdout).To(ContainSubstring("Changes successfully pushed to component"))
+		})
+	})
+
 	Context("Listing urls", func() {
 		It("should list url with appropriate state", func() {
 			var stdout string
 			url1 := helper.RandString(5)
 			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), globals.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(globals.Context, "devfile.yaml"))
 
 			stdout = helper.CmdShouldFail("odo", "url", "list")
 			Expect(stdout).To(ContainSubstring("no URLs found"))
@@ -134,8 +169,8 @@ var _ = Describe("odo docker devfile url command tests", func() {
 
 			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), globals.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(globals.Context, "devfile.yaml"))
 			stdout = helper.CmdShouldFail("odo", "url", "list")
 			Expect(stdout).To(ContainSubstring("no URLs found"))
 
@@ -161,8 +196,8 @@ var _ = Describe("odo docker devfile url command tests", func() {
 			url1 := helper.RandString(5)
 			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), globals.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(globals.Context, "devfile.yaml"))
 
 			helper.CmdShouldPass("odo", "url", "create", url1)
 
@@ -184,8 +219,8 @@ var _ = Describe("odo docker devfile url command tests", func() {
 
 			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), globals.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(globals.Context, "devfile.yaml"))
 
 			stdout = helper.CmdShouldFail("odo", "url", "describe", url1)
 			Expect(stdout).To(ContainSubstring("the url " + url1 + " does not exist"))

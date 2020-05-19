@@ -1,9 +1,7 @@
 package docker
 
 import (
-	"os"
 	"path/filepath"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -11,9 +9,9 @@ import (
 )
 
 var _ = Describe("odo docker devfile delete command tests", func() {
-	var context string
-	var currentWorkingDirectory string
+
 	var cmpName string
+	var globals helper.Globals
 
 	var fakeVolumes []string
 
@@ -21,13 +19,10 @@ var _ = Describe("odo docker devfile delete command tests", func() {
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
-		SetDefaultEventuallyTimeout(10 * time.Minute)
-		context = helper.CreateNewContext()
-		currentWorkingDirectory = helper.Getwd()
-		cmpName = helper.RandString(6)
-		helper.Chdir(context)
-		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		globals = helper.CommonBeforeEachDocker()
 
+		cmpName = helper.RandString(6)
+		helper.Chdir(globals.Context)
 		// Devfile commands require experimental mode to be set
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 		helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "docker")
@@ -68,11 +63,7 @@ var _ = Describe("odo docker devfile delete command tests", func() {
 		dockerClient.StopContainers(label)
 
 		dockerClient.RemoveVolumesByComponent(cmpName)
-
-		helper.Chdir(currentWorkingDirectory)
-		helper.DeleteDir(context)
-		os.Unsetenv("GLOBALODOCONFIG")
-
+		helper.CommonAfterEeachDocker(globals)
 	})
 
 	Context("when docker devfile delete command is executed", func() {
@@ -80,8 +71,8 @@ var _ = Describe("odo docker devfile delete command tests", func() {
 		It("should delete the component created from the devfile and also the owned resources", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), globals.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(globals.Context, "devfile.yaml"))
 
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
 
@@ -99,9 +90,9 @@ var _ = Describe("odo docker devfile delete command tests", func() {
 
 		It("should delete all the mounted volume types listed in the devfile", func() {
 
-			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", globals.Context, cmpName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), globals.Context)
 			helper.RenameFile("devfile.yaml", "devfile-old.yaml")
 			helper.RenameFile("devfile-with-volumes.yaml", "devfile.yaml")
 
@@ -134,8 +125,8 @@ var _ = Describe("odo docker devfile delete command tests", func() {
 		It("should delete the component created from the devfile and also the env folder", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), globals.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(globals.Context, "devfile.yaml"))
 
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
 
@@ -149,7 +140,7 @@ var _ = Describe("odo docker devfile delete command tests", func() {
 
 			Expect(dockerClient.GetSourceAndStorageVolumesByComponent(cmpName)).To(HaveLen(0))
 
-			files := helper.ListFilesInDir(context)
+			files := helper.ListFilesInDir(globals.Context)
 			Expect(files).To(Not(ContainElement(".odo")))
 
 		})

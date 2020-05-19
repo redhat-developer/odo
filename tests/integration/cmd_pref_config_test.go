@@ -3,24 +3,25 @@ package integration
 import (
 	"os"
 	"path/filepath"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/odo/tests/helper"
 )
 
-// TODO: A neater way to provide odo path. Currently we assume \
-// odo and oc in $PATH already.
-var oc helper.OcRunner
-var project string
-var context string
-var originalDir string
-
 var _ = Describe("odo preference and config command tests", func() {
+	// TODO: A neater way to provide odo path. Currently we assume \
+	// odo and oc in $PATH already.
+	var oc helper.OcRunner
+	var globals helper.Globals
+
 	BeforeEach(func() {
-		SetDefaultEventuallyTimeout(10 * time.Minute)
+		globals = helper.CommonBeforeEach()
 		oc = helper.NewOcRunner("oc")
+	})
+
+	AfterEach(func() {
+		helper.CommonAfterEeach(globals)
 	})
 
 	Context("check that help works", func() {
@@ -55,14 +56,7 @@ var _ = Describe("odo preference and config command tests", func() {
 	})
 
 	Context("When viewing global config", func() {
-		JustBeforeEach(func() {
-			context = helper.CreateNewContext()
-			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "preference.yaml"))
-		})
-		JustAfterEach(func() {
-			helper.DeleteDir(context)
-			os.Unsetenv("GLOBALODOCONFIG")
-		})
+
 		It("should get the default global config keys", func() {
 			configOutput := helper.CmdShouldPass("odo", "preference", "view")
 			Expect(configOutput).To(ContainSubstring("UpdateNotification"))
@@ -110,18 +104,10 @@ var _ = Describe("odo preference and config command tests", func() {
 
 	Context("when creating odo local config in the same config dir", func() {
 		JustBeforeEach(func() {
-			context = helper.CreateNewContext()
-			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "preference.yaml"))
-			project = helper.CreateRandProject()
-			originalDir = helper.Getwd()
-			helper.Chdir(context)
+
+			helper.Chdir(globals.Context)
 		})
-		JustAfterEach(func() {
-			helper.DeleteProject(project)
-			os.Unsetenv("GLOBALODOCONFIG")
-			helper.Chdir(originalDir)
-			helper.DeleteDir(context)
-		})
+
 		It("should set, unset local config successfully", func() {
 			cases := []struct {
 				paramName  string
@@ -176,7 +162,7 @@ var _ = Describe("odo preference and config command tests", func() {
 					paramValue: "https://github.com/sclorg/nodejs-ex",
 				},
 			}
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", project)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", globals.Project)
 			for _, testCase := range cases {
 				helper.CmdShouldPass("odo", "config", "set", testCase.paramName, testCase.paramValue, "-f")
 				setValue := helper.GetConfigValue(testCase.paramName)
@@ -190,16 +176,6 @@ var _ = Describe("odo preference and config command tests", func() {
 	})
 
 	Context("when creating odo local config with context flag", func() {
-		JustBeforeEach(func() {
-			context = helper.CreateNewContext()
-			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "preference.yaml"))
-			project = helper.CreateRandProject()
-		})
-		JustAfterEach(func() {
-			helper.DeleteProject(project)
-			os.Unsetenv("GLOBALODOCONFIG")
-			helper.DeleteDir(context)
-		})
 		It("should allow setting and unsetting a config locally with context", func() {
 			context := helper.CreateNewContext()
 			cases := []struct {
@@ -255,7 +231,7 @@ var _ = Describe("odo preference and config command tests", func() {
 					paramValue: "https://github.com/sclorg/nodejs-ex",
 				},
 			}
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", project, "--context", context)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", globals.Project, "--context", context)
 			for _, testCase := range cases {
 
 				helper.CmdShouldPass("odo", "config", "set", "-f", "--context", context, testCase.paramName, testCase.paramValue)
@@ -268,107 +244,77 @@ var _ = Describe("odo preference and config command tests", func() {
 	})
 
 	Context("when creating odo local config with env variables", func() {
-		JustBeforeEach(func() {
-			context = helper.CreateNewContext()
-			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "preference.yaml"))
-			project = helper.CreateRandProject()
-		})
-		JustAfterEach(func() {
-			helper.DeleteProject(project)
-			os.Unsetenv("GLOBALODOCONFIG")
-			helper.DeleteDir(context)
-		})
 		It("should set and unset env variables", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", project, "--context", context)
-			helper.CmdShouldPass("odo", "config", "set", "--env", "PORT=4000", "--env", "PORT=1234", "--context", context)
-			configPort := helper.GetConfigValueWithContext("PORT", context)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", globals.Project, "--context", globals.Context)
+			helper.CmdShouldPass("odo", "config", "set", "--env", "PORT=4000", "--env", "PORT=1234", "--context", globals.Context)
+			configPort := helper.GetConfigValueWithContext("PORT", globals.Context)
 			Expect(configPort).To(ContainSubstring("1234"))
-			helper.CmdShouldPass("odo", "config", "set", "--env", "SECRET_KEY=R2lyaXNoIFJhbW5hbmkgaXMgdGhlIGJlc3Q=", "--context", context)
-			configSecret := helper.GetConfigValueWithContext("SECRET_KEY", context)
+			helper.CmdShouldPass("odo", "config", "set", "--env", "SECRET_KEY=R2lyaXNoIFJhbW5hbmkgaXMgdGhlIGJlc3Q=", "--context", globals.Context)
+			configSecret := helper.GetConfigValueWithContext("SECRET_KEY", globals.Context)
 			Expect(configSecret).To(ContainSubstring("R2lyaXNoIFJhbW5hbmkgaXMgdGhlIGJlc3Q"))
-			helper.CmdShouldPass("odo", "config", "unset", "--env", "PORT", "--context", context)
-			helper.CmdShouldPass("odo", "config", "unset", "--env", "SECRET_KEY", "--context", context)
-			configValue := helper.CmdShouldPass("odo", "config", "view", "--context", context)
+			helper.CmdShouldPass("odo", "config", "unset", "--env", "PORT", "--context", globals.Context)
+			helper.CmdShouldPass("odo", "config", "unset", "--env", "SECRET_KEY", "--context", globals.Context)
+			configValue := helper.CmdShouldPass("odo", "config", "view", "--context", globals.Context)
 			Expect(configValue).To(Not(ContainSubstring(("PORT"))))
 			Expect(configValue).To(Not(ContainSubstring(("SECRET_KEY"))))
 		})
 		It("should check for existence of environment variable in config before unsetting it", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", project, "--context", context)
-			helper.CmdShouldPass("odo", "config", "set", "--env", "PORT=4000", "--env", "PORT=1234", "--context", context)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", globals.Project, "--context", globals.Context)
+			helper.CmdShouldPass("odo", "config", "set", "--env", "PORT=4000", "--env", "PORT=1234", "--context", globals.Context)
 
 			// unset a valid env var
-			helper.CmdShouldPass("odo", "config", "unset", "--env", "PORT", "--context", context)
+			helper.CmdShouldPass("odo", "config", "unset", "--env", "PORT", "--context", globals.Context)
 
 			// try to unset an env var that doesn't exist
-			stdOut := helper.CmdShouldFail("odo", "config", "unset", "--env", "nosuchenv", "--context", context)
+			stdOut := helper.CmdShouldFail("odo", "config", "unset", "--env", "nosuchenv", "--context", globals.Context)
 			Expect(stdOut).To(ContainSubstring("unable to find environment variable nosuchenv in the component"))
 		})
 	})
 
 	Context("when viewing local config without logging into the OpenShift cluster", func() {
-		JustBeforeEach(func() {
-			context = helper.CreateNewContext()
-			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "preference.yaml"))
-			project = helper.CreateRandProject()
-		})
-		JustAfterEach(func() {
-			helper.DeleteProject(project)
-			os.Unsetenv("GLOBALODOCONFIG")
-			helper.DeleteDir(context)
-		})
+
 		It("should list config successfully", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", project, "--context", context)
-			helper.CmdShouldPass("odo", "config", "set", "--env", "hello=world", "--context", context)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", globals.Project, "--context", globals.Context)
+			helper.CmdShouldPass("odo", "config", "set", "--env", "hello=world", "--context", globals.Context)
 			kubeconfigOld := os.Getenv("KUBECONFIG")
 			os.Setenv("KUBECONFIG", "/no/such/path")
-			configValue := helper.CmdShouldPass("odo", "config", "view", "--context", context)
+			configValue := helper.CmdShouldPass("odo", "config", "view", "--context", globals.Context)
 			Expect(configValue).To(ContainSubstring("hello"))
 			Expect(configValue).To(ContainSubstring("world"))
 			os.Setenv("KUBECONFIG", kubeconfigOld)
 		})
 
 		It("should set config variable without logging in", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", project, "--context", context)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", globals.Project, "--context", globals.Context)
 			kubeconfigOld := os.Getenv("KUBECONFIG")
 			os.Setenv("KUBECONFIG", "/no/such/path")
-			helper.CmdShouldPass("odo", "config", "set", "--force", "--context", context, "Name", "foobar")
-			configValue := helper.CmdShouldPass("odo", "config", "view", "--context", context)
+			helper.CmdShouldPass("odo", "config", "set", "--force", "--context", globals.Context, "Name", "foobar")
+			configValue := helper.CmdShouldPass("odo", "config", "view", "--context", globals.Context)
 			Expect(configValue).To(ContainSubstring("foobar"))
-			helper.CmdShouldPass("odo", "config", "unset", "--force", "--context", context, "Name")
+			helper.CmdShouldPass("odo", "config", "unset", "--force", "--context", globals.Context, "Name")
 			os.Setenv("KUBECONFIG", kubeconfigOld)
 		})
 	})
 
 	Context("when using --now with config command", func() {
-		JustBeforeEach(func() {
-			context = helper.CreateNewContext()
-			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "preference.yaml"))
-			project = helper.CreateRandProject()
-		})
-		JustAfterEach(func() {
-			helper.DeleteDir(context)
-			helper.DeleteProject(project)
-			os.Unsetenv("GLOBALODOCONFIG")
-		})
-
 		It("should successfully set and unset variables", func() {
 			//set env var
-			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--project", project, "--context", context)
-			helper.CmdShouldPass("odo", "config", "set", "--now", "--env", "hello=world", "--context", context)
+			helper.CopyExample(filepath.Join("source", "nodejs"), globals.Context)
+			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--project", globals.Project, "--context", globals.Context)
+			helper.CmdShouldPass("odo", "config", "set", "--now", "--env", "hello=world", "--context", globals.Context)
 			//*Check config
-			configValue1 := helper.CmdShouldPass("odo", "config", "view", "--context", context)
+			configValue1 := helper.CmdShouldPass("odo", "config", "view", "--context", globals.Context)
 			helper.MatchAllInOutput(configValue1, []string{"hello", "world"})
 			//*Check dc
-			envs := oc.GetEnvs("nodejs", "app", project)
+			envs := oc.GetEnvs("nodejs", "app", globals.Project)
 			val, ok := envs["hello"]
 			Expect(ok).To(BeTrue())
 			Expect(val).To(ContainSubstring("world"))
 			// unset a valid env var
-			helper.CmdShouldPass("odo", "config", "unset", "--now", "--env", "hello", "--context", context)
-			configValue2 := helper.CmdShouldPass("odo", "config", "view", "--context", context)
+			helper.CmdShouldPass("odo", "config", "unset", "--now", "--env", "hello", "--context", globals.Context)
+			configValue2 := helper.CmdShouldPass("odo", "config", "view", "--context", globals.Context)
 			helper.DontMatchAllInOutput(configValue2, []string{"hello", "world"})
-			envs = oc.GetEnvs("nodejs", "app", project)
+			envs = oc.GetEnvs("nodejs", "app", globals.Project)
 			_, ok = envs["hello"]
 			Expect(ok).To(BeFalse())
 		})

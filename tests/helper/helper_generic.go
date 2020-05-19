@@ -178,3 +178,77 @@ func LocalKubeconfigSet(context string) {
 	}
 	copyKubeConfigFile(originalKubeCfg, filepath.Join(context, "config"))
 }
+
+type Globals struct {
+	// Project is new clean project/namespase with random name
+	Project string
+	// Context is a new temporary directory
+	Context string
+	// CliRunner is either oc or kubectl runner (depends on KUBERNETES env variable )
+	CliRunner CliRunner
+	// storing original values so they can be restored in CommonAfterEach after the test is done
+	originalWorkingDirectory string
+	originalKubeconfig       string
+}
+
+// CommonBeforeEach creates clean environment for running odo against Kubernetes or OpenShift
+// returned Globals contains values that the tests can use.
+func CommonBeforeEach() Globals {
+	SetDefaultConsistentlyDuration(30 * time.Second)
+	SetDefaultEventuallyTimeout(10 * time.Minute)
+
+	globals := Globals{}
+
+	globals.originalWorkingDirectory = Getwd()
+	globals.originalKubeconfig = os.Getenv("KUBECONFIG")
+
+	globals.Context = CreateNewContext()
+
+	if os.Getenv("KUBERNETES") == "true" {
+		globals.CliRunner = NewKubectlRunner("kubectl")
+	} else {
+		globals.CliRunner = NewOcRunner("oc")
+	}
+
+	LocalKubeconfigSet(globals.Context)
+	os.Setenv("GLOBALODOCONFIG", filepath.Join(globals.Context, "config.yaml"))
+	globals.Project = globals.CliRunner.CreateRandNamespaceProject()
+
+	return globals
+}
+
+// CommonAfterEeach cleans up after calling CommonBeforeEach
+func CommonAfterEeach(globals Globals) {
+	// Restore original working directory
+	Chdir(globals.originalWorkingDirectory)
+	// Restore original KUBECONFIG
+	err := os.Setenv("KUBECONFIG", globals.originalKubeconfig)
+	Expect(err).NotTo(HaveOccurred())
+
+	// Clean up
+	globals.CliRunner.DeleteNamespaceProject(globals.Project)
+	DeleteDir(globals.Context)
+}
+
+// CommonBeforeEachDocker creates clean environment for running odo against Docker
+// returned Globals contains values that the tests can use.
+func CommonBeforeEachDocker() Globals {
+	SetDefaultConsistentlyDuration(30 * time.Second)
+	SetDefaultEventuallyTimeout(10 * time.Minute)
+
+	globals := Globals{}
+	globals.Context = CreateNewContext()
+
+	os.Setenv("GLOBALODOCONFIG", filepath.Join(globals.Context, "config.yaml"))
+
+	globals.originalWorkingDirectory = Getwd()
+	globals.Context = CreateNewContext()
+
+	return globals
+}
+
+// CommonAfterEeach cleans up after calling CommonBeforeEach
+func CommonAfterEeachDocker(globals Globals) {
+	Chdir(globals.originalWorkingDirectory)
+	DeleteDir(globals.Context)
+}

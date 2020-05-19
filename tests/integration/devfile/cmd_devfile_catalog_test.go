@@ -1,52 +1,23 @@
 package devfile
 
 import (
-	"os"
-	"path/filepath"
-	"time"
-
 	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"github.com/openshift/odo/tests/helper"
 )
 
 var _ = Describe("odo devfile catalog command tests", func() {
-	var project string
-	var context string
-	var currentWorkingDirectory string
-	var cliRunner helper.CliRunner
-
-	// Using program commmand according to cliRunner in devfile
-	if os.Getenv("KUBERNETES") == "true" {
-		cliRunner = helper.NewKubectlRunner("kubectl")
-	} else {
-		cliRunner = helper.NewOcRunner("oc")
-	}
+	var globals helper.Globals
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
-		SetDefaultEventuallyTimeout(10 * time.Minute)
-		context = helper.CreateNewContext()
-		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		globals = helper.CommonBeforeEach()
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
-
-		if os.Getenv("KUBERNETES") == "true" {
-			helper.LocalKubeconfigSet(context)
-		}
-		project = cliRunner.CreateRandNamespaceProject()
-		currentWorkingDirectory = helper.Getwd()
-		helper.Chdir(context)
+		helper.Chdir(globals.Context)
 	})
 
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		cliRunner.DeleteNamespaceProject(project)
-		if os.Getenv("KUBERNETES") == "true" {
-			os.Unsetenv("KUBECONFIG")
-		}
-		helper.Chdir(currentWorkingDirectory)
-		helper.DeleteDir(context)
-		os.Unsetenv("GLOBALODOCONFIG")
+		helper.CommonAfterEeach(globals)
 	})
 
 	Context("When executing catalog list components", func() {

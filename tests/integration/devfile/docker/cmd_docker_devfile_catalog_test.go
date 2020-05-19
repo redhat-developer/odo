@@ -1,26 +1,17 @@
 package docker
 
 import (
-	"os"
-	"path/filepath"
-	"time"
-
 	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"github.com/openshift/odo/tests/helper"
 )
 
 var _ = Describe("odo docker devfile catalog command tests", func() {
-	var context string
-	var currentWorkingDirectory string
+	var globals helper.Globals
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
-		SetDefaultEventuallyTimeout(10 * time.Minute)
-		context = helper.CreateNewContext()
-		currentWorkingDirectory = helper.Getwd()
-		helper.Chdir(context)
-		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		globals = helper.CommonBeforeEachDocker()
+		helper.Chdir(globals.Context)
 
 		// Devfile commands require experimental mode to be set
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
@@ -29,8 +20,8 @@ var _ = Describe("odo docker devfile catalog command tests", func() {
 
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		helper.Chdir(currentWorkingDirectory)
-		helper.DeleteDir(context)
+		helper.CommonAfterEeachDocker(globals)
+
 	})
 
 	Context("When executing catalog list components on Docker", func() {

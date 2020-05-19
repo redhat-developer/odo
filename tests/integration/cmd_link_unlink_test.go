@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"os"
 	"path/filepath"
 	"time"
 
@@ -13,29 +12,23 @@ import (
 
 var _ = Describe("odo link and unlink command tests", func() {
 
-	//new clean project and context for each test
-	var project string
-	var context, frontendContext, backendContext string
+	var globals helper.Globals
+
+	var frontendContext, backendContext string
 	var oc helper.OcRunner
 
 	// Setup up state for each test spec
 	// create new project (not set as active) and new context directory for each test spec
 	// This is before every spec (It)
 	var _ = BeforeEach(func() {
-		SetDefaultEventuallyTimeout(10 * time.Minute)
-		SetDefaultConsistentlyDuration(30 * time.Second)
-		context = helper.CreateNewContext()
-		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		globals = helper.CommonBeforeEach()
 		oc = helper.NewOcRunner("oc")
-		project = helper.CreateRandProject()
 	})
 
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		helper.DeleteProject(project)
-		helper.DeleteDir(context)
-		os.Unsetenv("GLOBALODOCONFIG")
+		helper.CommonAfterEeach(globals)
 	})
 
 	Context("when running help for link command", func() {
@@ -63,10 +56,10 @@ var _ = Describe("odo link and unlink command tests", func() {
 		})
 		It("should fail", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), frontendContext)
-			helper.CmdShouldPass("odo", "create", "nodejs", "frontend", "--context", frontendContext, "--project", project)
+			helper.CmdShouldPass("odo", "create", "nodejs", "frontend", "--context", frontendContext, "--project", globals.Project)
 			helper.CmdShouldPass("odo", "push", "--context", frontendContext)
 			helper.CopyExample(filepath.Join("source", "python"), backendContext)
-			helper.CmdShouldPass("odo", "create", "python", "backend", "--context", backendContext, "--project", project)
+			helper.CmdShouldPass("odo", "create", "python", "backend", "--context", backendContext, "--project", globals.Project)
 			helper.CmdShouldPass("odo", "push", "--context", backendContext)
 			stdErr := helper.CmdShouldFail("odo", "link", "backend", "--context", frontendContext, "--port", "1234")
 			Expect(stdErr).To(ContainSubstring("Unable to properly link to component backend using port 1234"))
@@ -84,25 +77,25 @@ var _ = Describe("odo link and unlink command tests", func() {
 		})
 		It("should link the frontend application to the backend and then unlink successfully", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), frontendContext)
-			helper.CmdShouldPass("odo", "create", "nodejs", "frontend", "--context", frontendContext, "--project", project)
+			helper.CmdShouldPass("odo", "create", "nodejs", "frontend", "--context", frontendContext, "--project", globals.Project)
 			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", frontendContext)
 			helper.CmdShouldPass("odo", "push", "--context", frontendContext)
 			frontendURL := helper.DetermineRouteURL(frontendContext)
-			oc.ImportJavaIS(project)
+			oc.ImportJavaIS(globals.Project)
 			helper.CopyExample(filepath.Join("source", "openjdk"), backendContext)
-			helper.CmdShouldPass("odo", "create", "java:8", "backend", "--project", project, "--context", backendContext)
+			helper.CmdShouldPass("odo", "create", "java:8", "backend", "--project", globals.Project, "--context", backendContext)
 			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", backendContext)
 			helper.CmdShouldPass("odo", "push", "--context", backendContext)
 
 			// we link
 			helper.CmdShouldPass("odo", "link", "backend", "--context", frontendContext, "--port", "8778")
 			// ensure that the proper envFrom entry was created
-			envFromOutput := oc.GetEnvFromEntry("frontend", "app", project)
+			envFromOutput := oc.GetEnvFromEntry("frontend", "app", globals.Project)
 			Expect(envFromOutput).To(ContainSubstring("backend"))
 
-			dcName := oc.GetDcName("frontend", project)
+			dcName := oc.GetDcName("frontend", globals.Project)
 			// wait for DeploymentConfig rollout to finish, so we can check if application is successfully running
-			oc.WaitForDCRollout(dcName, project, 20*time.Second)
+			oc.WaitForDCRollout(dcName, globals.Project, 20*time.Second)
 			helper.HttpWaitFor(frontendURL, "Hello world from node.js!", 20, 1)
 
 			outputErr := helper.CmdShouldFail("odo", "link", "backend", "--port", "8778", "--context", frontendContext)
@@ -113,14 +106,14 @@ var _ = Describe("odo link and unlink command tests", func() {
 		It("Wait till frontend dc rollout properly after linking the frontend application to the backend", func() {
 			appName := helper.RandString(7)
 			helper.CopyExample(filepath.Join("source", "nodejs"), frontendContext)
-			helper.CmdShouldPass("odo", "create", "nodejs", "frontend", "--app", appName, "--context", frontendContext, "--project", project)
+			helper.CmdShouldPass("odo", "create", "nodejs", "frontend", "--app", appName, "--context", frontendContext, "--project", globals.Project)
 			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", frontendContext)
 			helper.CmdShouldPass("odo", "push", "--context", frontendContext)
 			frontendURL := helper.DetermineRouteURL(frontendContext)
 
-			oc.ImportJavaIS(project)
+			oc.ImportJavaIS(globals.Project)
 			helper.CopyExample(filepath.Join("source", "openjdk"), backendContext)
-			helper.CmdShouldPass("odo", "create", "java:8", "backend", "--app", appName, "--project", project, "--context", backendContext)
+			helper.CmdShouldPass("odo", "create", "java:8", "backend", "--app", appName, "--project", globals.Project, "--context", backendContext)
 			helper.CmdShouldPass("odo", "url", "create", "--port", "8080", "--context", backendContext)
 			helper.CmdShouldPass("odo", "push", "--context", backendContext)
 
@@ -129,7 +122,7 @@ var _ = Describe("odo link and unlink command tests", func() {
 			helper.HttpWaitFor(frontendURL, "Hello world from node.js!", 20, 1)
 
 			// ensure that the proper envFrom entry was created
-			envFromOutput := oc.GetEnvFromEntry("frontend", appName, project)
+			envFromOutput := oc.GetEnvFromEntry("frontend", appName, globals.Project)
 			Expect(envFromOutput).To(ContainSubstring("backend"))
 
 			helper.CmdShouldPass("odo", "unlink", "backend", "--port", "8080", "--context", frontendContext)
@@ -138,10 +131,10 @@ var _ = Describe("odo link and unlink command tests", func() {
 		It("should successfully delete component after linked component is deleted", func() {
 			// first create the two components
 			helper.CopyExample(filepath.Join("source", "nodejs"), frontendContext)
-			helper.CmdShouldPass("odo", "create", "nodejs", "frontend", "--context", frontendContext, "--project", project)
+			helper.CmdShouldPass("odo", "create", "nodejs", "frontend", "--context", frontendContext, "--project", globals.Project)
 			helper.CmdShouldPass("odo", "push", "--context", frontendContext)
 			helper.CopyExample(filepath.Join("source", "nodejs"), backendContext)
-			helper.CmdShouldPass("odo", "create", "nodejs", "backend", "--context", backendContext, "--project", project)
+			helper.CmdShouldPass("odo", "create", "nodejs", "backend", "--context", backendContext, "--project", globals.Project)
 			helper.CmdShouldPass("odo", "push", "--context", backendContext)
 
 			// now link frontend to the backend component

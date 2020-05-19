@@ -2,7 +2,6 @@ package integration
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"regexp"
 	"time"
@@ -15,17 +14,20 @@ import (
 var _ = Describe("odo generic", func() {
 	// TODO: A neater way to provide odo path. Currently we assume \
 	// odo and oc in $PATH already.
-	var project string
-	var context string
-	var originalDir string
+
 	var oc helper.OcRunner
 	var testPHPGitURL = "https://github.com/appuio/example-php-sti-helloworld"
 	var testLongURLName = "long-url-name-long-url-name-long-url-name-long-url-name-long-url-name"
+	var globals helper.Globals
 
 	BeforeEach(func() {
 		oc = helper.NewOcRunner("oc")
-		SetDefaultEventuallyTimeout(10 * time.Minute)
-		SetDefaultConsistentlyDuration(30 * time.Second)
+		globals = helper.CommonBeforeEach()
+	})
+
+	AfterEach(func() {
+		helper.CommonAfterEeach(globals)
+
 	})
 
 	Context("Check the help usage for odo", func() {
@@ -139,104 +141,53 @@ var _ = Describe("odo generic", func() {
 
 	Context("creating component with an application and url", func() {
 		JustBeforeEach(func() {
-			context = helper.CreateNewContext()
-			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-			project = helper.CreateRandProject()
-			originalDir = helper.Getwd()
-			helper.Chdir(context)
+			helper.Chdir(globals.Context)
 		})
 
-		JustAfterEach(func() {
-			helper.DeleteProject(project)
-			helper.Chdir(originalDir)
-			helper.DeleteDir(context)
-			os.Unsetenv("GLOBALODOCONFIG")
-		})
 		It("should create the component in default application", func() {
-			helper.CmdShouldPass("odo", "create", "php", "testcmp", "--app", "e2e-xyzk", "--project", project, "--git", testPHPGitURL)
+			helper.CmdShouldPass("odo", "create", "php", "testcmp", "--app", "e2e-xyzk", "--project", globals.Project, "--git", testPHPGitURL)
 			helper.CmdShouldPass("odo", "config", "set", "Ports", "8080/TCP", "-f")
 			helper.CmdShouldPass("odo", "push")
-			oc.VerifyCmpName("testcmp", project)
-			oc.VerifyAppNameOfComponent("testcmp", "e2e-xyzk", project)
+			oc.VerifyCmpName("testcmp", globals.Project)
+			oc.VerifyAppNameOfComponent("testcmp", "e2e-xyzk", globals.Project)
 			helper.CmdShouldPass("odo", "app", "delete", "e2e-xyzk", "-f")
 		})
 	})
 
 	Context("should list applications in other project", func() {
-		JustBeforeEach(func() {
-			context = helper.CreateNewContext()
-			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-			project = helper.CreateRandProject()
-		})
-
-		JustAfterEach(func() {
-			helper.DeleteProject(project)
-			helper.DeleteDir(context)
-			os.Unsetenv("GLOBALODOCONFIG")
-		})
 		It("should be able to create a php component with application created", func() {
-			helper.CmdShouldPass("odo", "create", "php", "testcmp", "--app", "testing", "--project", project, "--ref", "master", "--git", testPHPGitURL, "--context", context)
-			helper.CmdShouldPass("odo", "push", "--context", context)
+			helper.CmdShouldPass("odo", "create", "php", "testcmp", "--app", "testing", "--project", globals.Project, "--ref", "master", "--git", testPHPGitURL, "--context", globals.Context)
+			helper.CmdShouldPass("odo", "push", "--context", globals.Context)
 			currentProject := helper.CreateRandProject()
 			currentAppNames := helper.CmdShouldPass("odo", "app", "list", "--project", currentProject)
 			Expect(currentAppNames).To(ContainSubstring("There are no applications deployed in the project '" + currentProject + "'"))
-			appNames := helper.CmdShouldPass("odo", "app", "list", "--project", project)
+			appNames := helper.CmdShouldPass("odo", "app", "list", "--project", globals.Project)
 			Expect(appNames).To(ContainSubstring("testing"))
 			helper.DeleteProject(currentProject)
 		})
 	})
 
 	Context("when running odo push with flag --show-log", func() {
-		JustBeforeEach(func() {
-			context = helper.CreateNewContext()
-			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-			project = helper.CreateRandProject()
-		})
-
-		JustAfterEach(func() {
-			helper.DeleteProject(project)
-			os.RemoveAll(context)
-			os.Unsetenv("GLOBALODOCONFIG")
-		})
 		It("should be able to push changes", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--project", project, "--context", context)
+			helper.CopyExample(filepath.Join("source", "nodejs"), globals.Context)
+			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--project", globals.Project, "--context", globals.Context)
 
 			// Push the changes with --show-log
-			getLogging := helper.CmdShouldPass("odo", "push", "--show-log", "--context", context)
+			getLogging := helper.CmdShouldPass("odo", "push", "--show-log", "--context", globals.Context)
 			Expect(getLogging).To(ContainSubstring("Building component"))
 		})
 	})
 
 	Context("deploying a component with a specific image name", func() {
-		JustBeforeEach(func() {
-			context = helper.CreateNewContext()
-			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-			project = helper.CreateRandProject()
-		})
-
-		JustAfterEach(func() {
-			helper.DeleteProject(project)
-			os.RemoveAll(context)
-			os.Unsetenv("GLOBALODOCONFIG")
-		})
 		It("should deploy the component", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "create", "nodejs:latest", "testversioncmp", "--project", project, "--context", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "push", "--context", context+"/nodejs-ex")
-			helper.CmdShouldPass("odo", "delete", "-f", "--context", context+"/nodejs-ex")
+			helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", globals.Context+"/nodejs-ex")
+			helper.CmdShouldPass("odo", "create", "nodejs:latest", "testversioncmp", "--project", globals.Project, "--context", globals.Context+"/nodejs-ex")
+			helper.CmdShouldPass("odo", "push", "--context", globals.Context+"/nodejs-ex")
+			helper.CmdShouldPass("odo", "delete", "-f", "--context", globals.Context+"/nodejs-ex")
 		})
 	})
 
 	Context("When deleting two project one after the other", func() {
-		JustBeforeEach(func() {
-			context = helper.CreateNewContext()
-			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-		})
-
-		JustAfterEach(func() {
-			os.Unsetenv("GLOBALODOCONFIG")
-		})
 		It("should be able to delete sequentially", func() {
 			project1 := helper.CreateRandProject()
 			project2 := helper.CreateRandProject()
@@ -247,14 +198,6 @@ var _ = Describe("odo generic", func() {
 	})
 
 	Context("When deleting three project one after the other in opposite order", func() {
-		JustBeforeEach(func() {
-			context = helper.CreateNewContext()
-			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-		})
-
-		JustAfterEach(func() {
-			os.Unsetenv("GLOBALODOCONFIG")
-		})
 		It("should be able to delete", func() {
 			project1 := helper.CreateRandProject()
 			project2 := helper.CreateRandProject()
@@ -283,24 +226,11 @@ var _ = Describe("odo generic", func() {
 	})
 
 	Context("prevent the user from creating a URL with name that has more than 63 characters", func() {
-		var originalDir string
-
 		JustBeforeEach(func() {
-			context = helper.CreateNewContext()
-			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-			project = helper.CreateRandProject()
-			originalDir = helper.Getwd()
-			helper.Chdir(context)
-		})
-
-		JustAfterEach(func() {
-			helper.DeleteProject(project)
-			helper.Chdir(originalDir)
-			helper.DeleteDir(context)
-			os.Unsetenv("GLOBALODOCONFIG")
+			helper.Chdir(globals.Context)
 		})
 		It("should not allow creating a URL with long name", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", project)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", globals.Project)
 			stdOut := helper.CmdShouldFail("odo", "url", "create", testLongURLName, "--port", "8080")
 			Expect(stdOut).To(ContainSubstring("url name must be shorter than 63 characters"))
 		})
@@ -310,28 +240,18 @@ var _ = Describe("odo generic", func() {
 		var componentRandomName string
 
 		JustBeforeEach(func() {
-			context = helper.CreateNewContext()
 			componentRandomName = helper.RandString(6)
-			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-			project = helper.CreateRandProject()
-			originalDir = helper.Getwd()
-			helper.Chdir(context)
+			helper.Chdir(globals.Context)
 		})
 
-		JustAfterEach(func() {
-			helper.DeleteProject(project)
-			helper.Chdir(originalDir)
-			os.RemoveAll(context)
-			os.Unsetenv("GLOBALODOCONFIG")
-		})
 		It("should delete all OpenShift objects except the component's imagestream", func() {
-			helper.CopyExample(filepath.Join("source", "nodejs"), context)
-			helper.CmdShouldPass("odo", "create", "nodejs", componentRandomName, "--project", project)
+			helper.CopyExample(filepath.Join("source", "nodejs"), globals.Context)
+			helper.CmdShouldPass("odo", "create", "nodejs", componentRandomName, "--project", globals.Project)
 			helper.CmdShouldPass("odo", "push")
 
 			// Delete the deployment config using oc delete
-			dc := oc.GetDcName(componentRandomName, project)
-			helper.CmdShouldPass("oc", "delete", "--wait", "dc", dc, "--namespace", project)
+			dc := oc.GetDcName(componentRandomName, globals.Project)
+			helper.CmdShouldPass("oc", "delete", "--wait", "dc", dc, "--namespace", globals.Project)
 
 			// insert sleep because it takes a few seconds to delete *all*
 			// objects owned by DC but we should be able to check if a service
@@ -340,11 +260,11 @@ var _ = Describe("odo generic", func() {
 
 			// now check if the service owned by the DC exists. Service name is
 			// same as DC name for a given component.
-			stdOut := helper.CmdShouldFail("oc", "get", "svc", dc, "--namespace", project)
+			stdOut := helper.CmdShouldFail("oc", "get", "svc", dc, "--namespace", globals.Project)
 			Expect(stdOut).To(ContainSubstring("NotFound"))
 
 			// ensure that the image stream still exists
-			helper.CmdShouldPass("oc", "get", "is", dc, "--namespace", project)
+			helper.CmdShouldPass("oc", "get", "is", dc, "--namespace", globals.Project)
 		})
 	})
 })

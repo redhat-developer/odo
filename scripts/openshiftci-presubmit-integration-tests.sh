@@ -14,6 +14,11 @@ export PATH="$PATH:$(pwd):$GOPATH/bin"
 export ARTIFACTS_DIR="/tmp/artifacts"
 export CUSTOM_HOMEDIR=$ARTIFACTS_DIR
 
+
+echo $KUBECONFIG
+oc whoami
+oc config view
+
 # Integration tests
 make test-integration
 make test-integration-devfile

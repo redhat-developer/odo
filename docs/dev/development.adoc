@@ -287,27 +287,14 @@ Context("when running help for storage command", func() {
 ----
 For example:
 var _ = Describe("odo generic", func() {
-    var project string
-	var context string
-	var oc helper.OcRunner
+	var globals helper.Globals
     BeforeEach(func() {
-	    oc = helper.NewOcRunner("oc")
-	    SetDefaultEventuallyTimeout(10 * time.Minute)
-	    context = helper.CreateNewContext()
+      globals =  helperCommonBeforeEach()
     })
     AfterEach(func() {
-	    os.RemoveAll(context)
+	    os.CommonAfterEach(globals)
     })
     Context("deploying a component with a specific image name", func() {
-        JustBeforeEach(func() {
-            os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-            project = helper.CreateRandProject()
-        })
-
-        JustAfterEach(func() {
-            helper.DeleteProject(project)
-            os.Unsetenv("GLOBALODOCONFIG")
-        })
         It("should deploy the component", func() {
             helper.CmdShouldPass("git", "clone", "https://github.com/openshift/nodejs-ex", context+"/nodejs-ex")
             helper.CmdShouldPass("odo", "create", "nodejs:latest", "testversioncmp", "--project", project, "--context", context+"/nodejs-ex")

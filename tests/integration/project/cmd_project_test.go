@@ -2,10 +2,7 @@ package project
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -13,24 +10,19 @@ import (
 )
 
 var _ = Describe("odo project command tests", func() {
-	var project string
-	var context string
+	var globals helper.Globals
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
-		SetDefaultEventuallyTimeout(10 * time.Minute)
-		SetDefaultConsistentlyDuration(30 * time.Second)
-		context = helper.CreateNewContext()
-		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-		project = helper.CreateRandProject()
+		globals = helper.CommonBeforeEach()
+
 	})
 
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		helper.DeleteProject(project)
-		helper.DeleteDir(context)
-		os.Unsetenv("GLOBALODOCONFIG")
+		helper.CommonAfterEeach(globals)
+
 	})
 
 	Context("Machine readable output tests", func() {
@@ -88,12 +80,12 @@ var _ = Describe("odo project command tests", func() {
 		It("should successfully execute list along with machine readable output", func() {
 
 			helper.WaitForCmdOut("odo", []string{"project", "list"}, 1, true, func(output string) bool {
-				return strings.Contains(output, project)
+				return strings.Contains(output, globals.Project)
 			})
 
 			// project deletion doesn't happen immediately and older projects still might exist
 			// so we test subset of the string
-			expected, err := helper.Unindented(`{"kind":"Project","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"` + project + `","namespace":"` + project + `","creationTimestamp":null},"spec":{},"status":{"active":true}}`)
+			expected, err := helper.Unindented(`{"kind":"Project","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"` + globals.Project + `","namespace":"` + globals.Project + `","creationTimestamp":null},"spec":{},"status":{"active":true}}`)
 			Expect(err).Should(BeNil())
 
 			helper.WaitForCmdOut("odo", []string{"project", "list", "-o", "json"}, 1, true, func(output string) bool {

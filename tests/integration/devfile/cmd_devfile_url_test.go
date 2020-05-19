@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/openshift/odo/tests/helper"
 
@@ -14,20 +13,17 @@ import (
 )
 
 var _ = Describe("odo devfile url command tests", func() {
-	var namespace, context, componentName, currentWorkingDirectory string
+	var componentName string
+
+	var globals helper.Globals
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
-		SetDefaultEventuallyTimeout(10 * time.Minute)
-		SetDefaultConsistentlyDuration(30 * time.Second)
-		namespace = helper.CreateRandProject()
-		context = helper.CreateNewContext()
-		currentWorkingDirectory = helper.Getwd()
+		globals = helper.CommonBeforeEach()
+
 		componentName = helper.RandString(6)
 
-		helper.Chdir(context)
-
-		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		helper.Chdir(globals.Context)
 
 		// Devfile push requires experimental mode to be set
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
@@ -36,10 +32,8 @@ var _ = Describe("odo devfile url command tests", func() {
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		helper.DeleteProject(namespace)
-		helper.Chdir(currentWorkingDirectory)
-		helper.DeleteDir(context)
-		os.Unsetenv("GLOBALODOCONFIG")
+		helper.CommonAfterEeach(globals)
+
 	})
 
 	Context("Listing urls", func() {
@@ -48,10 +42,10 @@ var _ = Describe("odo devfile url command tests", func() {
 			url1 := helper.RandString(5)
 			host := helper.RandString(5) + ".com"
 
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", globals.Project, componentName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), globals.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(globals.Context, "devfile.yaml"))
 
 			stdout = helper.CmdShouldFail("odo", "url", "list")
 			Expect(stdout).To(ContainSubstring("no URLs found"))
@@ -72,7 +66,7 @@ var _ = Describe("odo devfile url command tests", func() {
 				return false
 			})
 			helper.CmdShouldPass("odo", "url", "delete", url1, "-f")
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
+			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", globals.Project)
 
 			stdout = helper.CmdShouldFail("odo", "url", "list")
 			Expect(stdout).To(ContainSubstring("no URLs found"))
@@ -82,13 +76,13 @@ var _ = Describe("odo devfile url command tests", func() {
 			url1 := helper.RandString(5)
 			host := helper.RandString(5) + ".com"
 
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", globals.Project, componentName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), globals.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(globals.Context, "devfile.yaml"))
 
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress")
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
+			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", globals.Project)
 
 			// odo url list -o json
 			helper.WaitForCmdOut("odo", []string{"url", "list", "-o", "json"}, 1, true, func(output string) bool {
@@ -108,19 +102,19 @@ var _ = Describe("odo devfile url command tests", func() {
 			url1 := helper.RandString(5)
 			host := helper.RandString(5) + ".com"
 
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", globals.Project, componentName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), globals.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(globals.Context, "devfile.yaml"))
 
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--secure", "--ingress")
 
-			stdout = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
+			stdout = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", globals.Project)
 			helper.MatchAllInOutput(stdout, []string{"https:", url1 + "." + host})
 			stdout = helper.CmdShouldPass("odo", "url", "list")
 			helper.MatchAllInOutput(stdout, []string{"https:", url1 + "." + host, "true"})
 			helper.CmdShouldPass("odo", "url", "delete", url1, "-f")
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
+			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", globals.Project)
 
 			stdout = helper.CmdShouldFail("odo", "url", "list")
 			Expect(stdout).To(ContainSubstring("no URLs found"))
@@ -131,10 +125,10 @@ var _ = Describe("odo devfile url command tests", func() {
 			url1 := helper.RandString(5)
 			host := helper.RandString(5) + ".com"
 
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", globals.Project, componentName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), globals.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(globals.Context, "devfile.yaml"))
 
 			stdout = helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--now", "--ingress", "--devfile", "devfile.yaml")
 			helper.MatchAllInOutput(stdout, []string{"URL " + url1 + " created for component", "http:", url1 + "." + host})
@@ -148,46 +142,46 @@ var _ = Describe("odo devfile url command tests", func() {
 
 			url1 := helper.RandString(5)
 
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", globals.Project, componentName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), globals.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(globals.Context, "devfile.yaml"))
 
 			helper.CmdShouldPass("odo", "url", "create", url1)
 
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
-			pushStdOut := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
+			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", globals.Project)
+			pushStdOut := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", globals.Project)
 			Expect(pushStdOut).NotTo(ContainSubstring("successfully deleted"))
 			Expect(pushStdOut).NotTo(ContainSubstring("created"))
 			Expect(pushStdOut).To(ContainSubstring("URLs are synced with the cluster, no changes are required"))
 
-			output := helper.CmdShouldPass("oc", "get", "routes", "--namespace", namespace)
+			output := helper.CmdShouldPass("oc", "get", "routes", "--namespace", globals.Project)
 			Expect(output).Should(ContainSubstring(url1))
 
 			helper.CmdShouldPass("odo", "url", "delete", url1, "-f")
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
-			pushStdOut = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
+			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", globals.Project)
+			pushStdOut = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", globals.Project)
 			Expect(pushStdOut).NotTo(ContainSubstring("successfully deleted"))
 			Expect(pushStdOut).NotTo(ContainSubstring("created"))
 			Expect(pushStdOut).To(ContainSubstring("URLs are synced with the cluster, no changes are required"))
 
-			output = helper.CmdShouldPass("oc", "get", "routes", "--namespace", namespace)
+			output = helper.CmdShouldPass("oc", "get", "routes", "--namespace", globals.Project)
 			Expect(output).ShouldNot(ContainSubstring(url1))
 		})
 
 		It("should create a url for a unsupported devfile component", func() {
 			url1 := helper.RandString(5)
 
-			helper.CopyExample(filepath.Join("source", "python"), context)
-			helper.Chdir(context)
+			helper.CopyExample(filepath.Join("source", "python"), globals.Context)
+			helper.Chdir(globals.Context)
 
-			helper.CmdShouldPass("odo", "create", "python", "--project", namespace, componentName)
+			helper.CmdShouldPass("odo", "create", "python", "--project", globals.Project, componentName)
 
 			helper.CmdShouldPass("odo", "url", "create", url1)
 
-			helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+			helper.CmdShouldPass("odo", "push", "--namespace", globals.Project)
 
-			output := helper.CmdShouldPass("oc", "get", "routes", "--namespace", namespace)
+			output := helper.CmdShouldPass("oc", "get", "routes", "--namespace", globals.Project)
 			Expect(output).Should(ContainSubstring(url1))
 		})
 
@@ -196,23 +190,23 @@ var _ = Describe("odo devfile url command tests", func() {
 			url1 := helper.RandString(5)
 			host := helper.RandString(5) + ".com"
 
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", globals.Project, componentName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), globals.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(globals.Context, "devfile.yaml"))
 
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress")
 
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
-			stdOut = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
+			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", globals.Project)
+			stdOut = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", globals.Project)
 			Expect(stdOut).NotTo(ContainSubstring("successfully deleted"))
 			Expect(stdOut).NotTo(ContainSubstring("created"))
 			Expect(stdOut).To(ContainSubstring("URLs are synced with the cluster, no changes are required"))
 
 			helper.CmdShouldPass("odo", "url", "delete", url1, "-f")
 
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
-			stdOut = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
+			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", globals.Project)
+			stdOut = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", globals.Project)
 			Expect(stdOut).NotTo(ContainSubstring("successfully deleted"))
 			Expect(stdOut).NotTo(ContainSubstring("created"))
 			Expect(stdOut).To(ContainSubstring("URLs are synced with the cluster, no changes are required"))
@@ -225,17 +219,17 @@ var _ = Describe("odo devfile url command tests", func() {
 			url1 := helper.RandString(5)
 			host := helper.RandString(5) + ".com"
 
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", globals.Project, componentName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), globals.Context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(globals.Context, "devfile.yaml"))
 
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress")
 
 			stdout = helper.CmdShouldFail("odo", "url", "describe", url1)
 			helper.MatchAllInOutput(stdout, []string{url1, "exists in local", "odo push"})
 
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
+			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", globals.Project)
 			helper.WaitForCmdOut("odo", []string{"url", "describe", url1}, 1, false, func(output string) bool {
 				if strings.Contains(output, url1) {
 					Expect(output).Should(ContainSubstring(url1 + "." + host))

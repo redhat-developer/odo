@@ -1,9 +1,7 @@
 package devfile
 
 import (
-	"os"
 	"path/filepath"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -13,18 +11,7 @@ import (
 )
 
 var _ = Describe("odo devfile watch command tests", func() {
-	var namespace string
-	var context string
-	var cmpName string
-	var currentWorkingDirectory string
-	var cliRunner helper.CliRunner
-
-	// Using program commmand according to cliRunner in devfile
-	if os.Getenv("KUBERNETES") == "true" {
-		cliRunner = helper.NewKubectlRunner("kubectl")
-	} else {
-		cliRunner = helper.NewOcRunner("oc")
-	}
+	var globals helper.Globals
 
 	var cliRunner helper.CliRunner
 
@@ -32,32 +19,17 @@ var _ = Describe("odo devfile watch command tests", func() {
 	// create new project (not set as active) and new context directory for each test spec
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
-		SetDefaultEventuallyTimeout(10 * time.Minute)
-		context = helper.CreateNewContext()
-		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 
-		if os.Getenv("KUBERNETES") == "true" {
-			helper.LocalKubeconfigSet(context)
-		}
-		namespace = cliRunner.CreateRandNamespaceProject()
-		currentWorkingDirectory = helper.Getwd()
-		cmpName = helper.RandString(6)
-		helper.Chdir(context)
+		globals = helper.CommonBeforeEach()
 
-		// Set experimental mode to true
-		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+		helper.Chdir(globals.Context)
 	})
 
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		cliRunner.DeleteNamespaceProject(namespace)
-		if os.Getenv("KUBERNETES") == "true" {
-			os.Unsetenv("KUBECONFIG")
-		}
-		helper.Chdir(currentWorkingDirectory)
-		helper.DeleteDir(context)
-		os.Unsetenv("GLOBALODOCONFIG")
+		helper.CommonAfterEeach(globals)
+
 	})
 
 	Context("when running help for watch command", func() {
@@ -70,9 +42,8 @@ var _ = Describe("odo devfile watch command tests", func() {
 	Context("when executing watch without pushing a devfile component", func() {
 		It("should fail", func() {
 			cmpName := helper.RandString(6)
-			helper.Chdir(currentWorkingDirectory)
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, "--context", context, cmpName)
-			output := helper.CmdShouldFail("odo", "watch", "--context", context)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", globals.Project, "--context", globals.Context, cmpName)
+			output := helper.CmdShouldFail("odo", "watch", "--context", globals.Context)
 			Expect(output).To(ContainSubstring("component does not exist. Please use `odo push` to create your component"))
 		})
 	})
@@ -86,10 +57,8 @@ var _ = Describe("odo devfile watch command tests", func() {
 
 	Context("when executing odo watch with devfile flag without experimental mode", func() {
 		It("should fail", func() {
-			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "false", "-f")
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
-			output := helper.CmdShouldFail("odo", "watch", "--devfile", filepath.Join(context, "devfile.yaml"))
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), globals.Context)
+			output := helper.CmdShouldFail("odo", "watch", "--devfile", filepath.Join(globals.Context, "devfile.yaml"))
 			Expect(output).To(ContainSubstring("Error: unknown flag: --devfile"))
 		})
 	})
