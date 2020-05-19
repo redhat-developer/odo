@@ -92,7 +92,6 @@ func serviceResources(m *config.Manifest, fs afero.Fs, gitRepoURL, envName, appN
 	buildParams := &BuildParameters{
 		ManifestFilename: manifest,
 		OutputPath:       outputPath,
-		RepositoryURL:    m.GitOpsURL,
 	}
 	built, err := buildResources(fs, buildParams, m)
 	if err != nil {

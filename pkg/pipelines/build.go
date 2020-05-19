@@ -16,7 +16,6 @@ import (
 type BuildParameters struct {
 	ManifestFilename string
 	OutputPath       string
-	RepositoryURL    string
 }
 
 // BuildResources builds all resources from a pipelines.
@@ -44,12 +43,13 @@ func buildResources(fs afero.Fs, o *BuildParameters, m *config.Manifest) (res.Re
 	}
 	resources = res.Merge(envs, resources)
 
-	elFiles, err := buildEventListenerResources(o.RepositoryURL, m)
+	elFiles, err := buildEventListenerResources(m.GitOpsURL, m)
 	if err != nil {
 		return nil, err
 	}
+
 	resources = res.Merge(elFiles, resources)
-	argoApps, err := argocd.Build(argocd.ArgoCDNamespace, o.RepositoryURL, m)
+	argoApps, err := argocd.Build(argocd.ArgoCDNamespace, m.GitOpsURL, m)
 	if err != nil {
 		return nil, err
 	}
