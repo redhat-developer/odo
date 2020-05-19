@@ -2,6 +2,7 @@ package common
 
 import (
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 )
 
@@ -51,4 +52,10 @@ type SyncParameters struct {
 type ComponentInfo struct {
 	PodName       string
 	ContainerName string
+}
+
+type CommandsMap map[common.DevfileCommandGroupType]common.DevfileCommand
+
+func NewCommandMap() CommandsMap {
+	return make(map[common.DevfileCommandGroupType]common.DevfileCommand)
 }
