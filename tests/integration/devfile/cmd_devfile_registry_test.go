@@ -33,8 +33,7 @@ var _ = Describe("odo devfile registry command tests", func() {
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 
-		// Skipping the KUBECONFIG set to a temporary config for prow due to https://github.com/openshift/odo/issues/3203
-		if os.Getenv("CI") != "openshift" {
+		if os.Getenv("KUBERNETES") == "true" {
 			helper.LocalKubeconfigSet(context)
 		}
 		project = cliRunner.CreateRandNamespaceProject()
@@ -45,7 +44,7 @@ var _ = Describe("odo devfile registry command tests", func() {
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
 		cliRunner.DeleteNamespaceProject(project)
-		if os.Getenv("CI") != "openshift" {
+		if os.Getenv("KUBERNETES") == "true" {
 			os.Unsetenv("KUBECONFIG")
 		}
 		helper.Chdir(currentWorkingDirectory)
