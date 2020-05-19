@@ -750,8 +750,8 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 		return errors.Wrapf(err, "Could not get the current working directory.")
 	}
 
-	if project.ClonePath != nil && *project.ClonePath != "" {
-		clonePath := *project.ClonePath
+	if project.ClonePath != "" {
+		clonePath := project.ClonePath
 		if runtime.GOOS == "windows" {
 			clonePath = strings.Replace(clonePath, "\\", "/", -1)
 		}
