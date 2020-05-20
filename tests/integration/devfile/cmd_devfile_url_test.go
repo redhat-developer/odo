@@ -15,6 +15,14 @@ import (
 
 var _ = Describe("odo devfile url command tests", func() {
 	var namespace, context, componentName, currentWorkingDirectory string
+	var cliRunner helper.CliRunner
+
+	// Using program commmand according to cliRunner in devfile
+	if os.Getenv("KUBERNETES") == "true" {
+		cliRunner = helper.NewKubectlRunner("kubectl")
+	} else {
+		cliRunner = helper.NewOcRunner("oc")
+	}
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
