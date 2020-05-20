@@ -82,3 +82,9 @@ tags
 
 # Finder Desktop Service
 .DS_Store
+
+# Jekyll / site specific
+_site/
+.sass-cache/
+.jekyll-cache/
+.jekyll-metadata

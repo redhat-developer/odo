@@ -207,14 +207,20 @@ spec:
 			Expect(stdOut).To(ContainSubstring("example"))
 			Expect(stdOut).To(ContainSubstring("EtcdCluster"))
 
+			// now check for json output
+			jsonOut := helper.CmdShouldPass("odo", "service", "list", "-o", "json")
+			helper.MatchAllInOutput(jsonOut, []string{"\"apiVersion\": \"etcd.database.coreos.com/v1beta2\"", "\"kind\": \"EtcdCluster\"", "\"name\": \"example3\""})
+
 			// Delete the pods created. This should idealy be done by `odo
 			// service delete` but that's not implemented for operator backed
 			// services yet.
 			helper.CmdShouldPass("oc", "delete", "EtcdCluster", "example3")
 
 			// Now let's check the output again to ensure expected behaviour
-			stdOut = helper.CmdShouldPass("odo", "service", "list")
+			stdOut = helper.CmdShouldFail("odo", "service", "list")
+			jsonOut = helper.CmdShouldFail("odo", "service", "list", "-o", "json")
 			Expect(stdOut).To(ContainSubstring("No operator backed services found in the namesapce"))
+			helper.MatchAllInOutput(jsonOut, []string{"No operator backed services found in the namesapce", "\"message\": \"No operator backed services found in the namesapce\""})
 		})
 	})
 })
