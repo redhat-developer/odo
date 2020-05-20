@@ -6,13 +6,14 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/openshift/odo/pkg/util"
 )
 
 // CopyKubeConfigFile copies default kubeconfig file into current context config file
 func CopyKubeConfigFile(kubeConfigFile, tempConfigFile string) string {
 	info, err := os.Stat(kubeConfigFile)
 	Expect(err).NotTo(HaveOccurred())
-	err = copyFile(kubeConfigFile, tempConfigFile, info)
+	err = util.CopyFile(kubeConfigFile, tempConfigFile, info)
 	Expect(err).NotTo(HaveOccurred())
 	os.Setenv("KUBECONFIG", tempConfigFile)
 	return tempConfigFile

@@ -1026,7 +1026,7 @@ func ValidateFile(filePath string) error {
 }
 
 // CopyFile copies file from source path to destination path
-func CopyFile(srcPath string, dstPath string) error {
+func CopyFile(srcPath string, dstPath string, info os.FileInfo) error {
 	// Check if the source file path exists
 	err := ValidateFile(srcPath)
 	if err != nil {
@@ -1046,6 +1046,12 @@ func CopyFile(srcPath string, dstPath string) error {
 		return err
 	}
 	defer dstFile.Close() // #nosec G307
+
+	// Ensure destination file has the same file mode with source file
+	err = os.Chmod(dstFile.Name(), info.Mode())
+	if err != nil {
+		return err
+	}
 
 	// Copy file
 	_, err = io.Copy(dstFile, srcFile)

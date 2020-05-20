@@ -838,7 +838,11 @@ func (co *CreateOptions) Run() (err error) {
 					}
 				} else {
 					// User specify devfile path is file system link
-					err = util.CopyFile(co.devfileMetadata.devfilePath, DevfilePath)
+					info, err := os.Stat(co.devfileMetadata.devfilePath)
+					if err != nil {
+						return err
+					}
+					err = util.CopyFile(co.devfileMetadata.devfilePath, DevfilePath, info)
 					if err != nil {
 						return errors.Wrapf(err, "failed to copy devfile from %s to %s", co.devfileMetadata.devfilePath, DevfilePath)
 					}
