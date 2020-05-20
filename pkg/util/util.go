@@ -48,11 +48,18 @@ var customHomeDir = os.Getenv("CUSTOM_HOMEDIR")
 
 const (
 	defaultGithubRef    = "master"
-	githubBranchKey     = "Branch"
-	githubTagKey        = "Tag"
-	githubCommitIDKey   = "CommitID"
-	githubStartPointKey = "StartPoint"
+	githubBranchMsg     = "Branch"
+	githubTagMsg        = "Tag"
+	githubCommitIDMsg   = "CommitID"
+	githubStartPointMsg = "StartPoint"
 )
+
+type GitRevision struct {
+	branch     string
+	commitId   string
+	tag        string
+	startpoint string
+}
 
 // ResourceRequirementInfo holds resource quantity before transformation into its appropriate form in container spec
 type ResourceRequirementInfo struct {
@@ -795,40 +802,50 @@ func GetGitHubZipURL(project common.DevfileProject) (string, error) {
 		repo = strings.TrimSuffix(repo, ".git")
 	}
 
-	// Extract reference checkout for project
-	references := make(map[string]string)
-	if project.Source.Branch != nil && *project.Source.Branch != "" {
-		references[githubBranchKey] = *project.Source.Branch
+	var ref string
+	errBool := true
+
+	branchCondition := (project.Source.Branch != nil && *project.Source.Branch != "")
+	tagCondition := (project.Source.Tag != nil && *project.Source.Tag != "")
+	commitIdCondition := (project.Source.CommitId != nil && *project.Source.CommitId != "")
+	startPointCondition := (project.Source.StartPoint != nil && *project.Source.StartPoint != "")
+
+	if branchCondition && !tagCondition && !commitIdCondition && !startPointCondition {
+		errBool = false
+		ref = *project.Source.Branch
+	} else if tagCondition && !branchCondition && !commitIdCondition && !startPointCondition {
+		errBool = false
+		ref = *project.Source.Tag
+	} else if commitIdCondition && !branchCondition && !tagCondition && !startPointCondition {
+		errBool = false
+		ref = *project.Source.CommitId
+	} else if startPointCondition && !branchCondition && !commitIdCondition && !tagCondition {
+		errBool = false
+		ref = *project.Source.StartPoint
 	}
 
-	if project.Source.CommitId != nil && *project.Source.CommitId != "" {
-		references[githubCommitIDKey] = *project.Source.CommitId
-	}
-
-	if project.Source.Tag != nil && *project.Source.Tag != "" {
-		references[githubTagKey] = *project.Source.Tag
-	}
-
-	if project.Source.StartPoint != nil && *project.Source.StartPoint != "" {
-		references[githubStartPointKey] = *project.Source.StartPoint
-	}
-
-	if len(references) > 1 {
+	if errBool {
 		errMsg := ""
-		for key, value := range references {
-			errMsg += fmt.Sprintf("%s specified with value %s\n", key, value)
+		if branchCondition {
+			errMsg += fmt.Sprintf("%s specified with value %s\n", githubBranchMsg, *project.Source.Branch)
+		}
+
+		if tagCondition {
+			errMsg += fmt.Sprintf("%s specified with value %s\n", githubTagMsg, *project.Source.Tag)
+		}
+
+		if commitIdCondition {
+			errMsg += fmt.Sprintf("%s specified with value %s\n", githubCommitIDMsg, *project.Source.CommitId)
+		}
+
+		if startPointCondition {
+			errMsg += fmt.Sprintf("%s specified with value %s\n", githubStartPointMsg, *project.Source.StartPoint)
 		}
 
 		return url, errors.Errorf("more than one source reference specified. The following were specified:\n%s", errMsg)
 	}
 
-	var ref string
-	if len(references) == 1 {
-		// Only way to get the first element of the map
-		for _, value := range references {
-			ref = value
-		}
-	} else {
+	if ref == "" {
 		// Default to master if reference is not set
 		ref = defaultGithubRef
 	}
