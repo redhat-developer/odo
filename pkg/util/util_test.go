@@ -1670,6 +1670,7 @@ func TestCopyFile(t *testing.T) {
 	srcPath := tempFile.Name()
 	fakePath := "!@#/**"
 	dstPath := filepath.Join(tempDir, "dstFile")
+	info, _ := os.Stat(srcPath)
 
 	tests := []struct {
 		name    string
@@ -1700,7 +1701,7 @@ func TestCopyFile(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gotErr := false
-			err = CopyFile(tt.srcPath, tt.dstPath)
+			err = CopyFile(tt.srcPath, tt.dstPath, info)
 			if err != nil {
 				gotErr = true
 			}
