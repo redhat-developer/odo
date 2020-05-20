@@ -2,6 +2,7 @@ package version100
 
 import (
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	"strings"
 )
 
 func (d *Devfile100) GetMetadata() common.DevfileMetadata {
@@ -176,21 +177,19 @@ func convertV1ProjectToCommon(p Project) common.DevfileProject {
 }
 
 func getGroup(name string) *common.Group {
-	var kind common.DevfileCommandGroupType
+	group := common.Group{}
 
-	switch name {
-	case "devRun":
-		kind = common.RunCommandGroupType
-	case "devBuild":
-		kind = common.BuildCommandGroupType
-	case "devInit":
-		kind = common.InitCommandGroupType
-	default:
-		kind = ""
+	switch strings.ToLower(name) {
+	case "devrun":
+		group.Kind = common.RunCommandGroupType
+		group.IsDefault = true
+	case "devbuild":
+		group.Kind = common.BuildCommandGroupType
+		group.IsDefault = true
+	case "devinit":
+		group.Kind = common.InitCommandGroupType
+		group.IsDefault = true
 	}
 
-	return &common.Group{
-		// TODO(adi): IsDefault:
-		Kind: kind,
-	}
+	return &group
 }
