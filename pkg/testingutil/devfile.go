@@ -1,13 +1,14 @@
 package testingutil
 
 import (
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 )
 
 // TestDevfileData is a convenience data type used to mock up a devfile configuration
 type TestDevfileData struct {
-	ComponentType       versionsCommon.DevfileComponentType
-	CommandActions      []versionsCommon.Exec
+	Components          []versionsCommon.DevfileComponent
+	ExecCommands        []versionsCommon.Exec
 	MissingInitCommand  bool
 	MissingBuildCommand bool
 }
@@ -17,46 +18,30 @@ func (d TestDevfileData) GetComponents() []versionsCommon.DevfileComponent {
 	return d.GetAliasedComponents()
 }
 
+func (d TestDevfileData) GetEvents() versionsCommon.DevfileEvents {
+	return d.GetEvents()
+}
+
+func (d TestDevfileData) GetMetadata() versionsCommon.DevfileMetadata {
+	return d.GetMetadata()
+}
+
+func (d TestDevfileData) GetParent() versionsCommon.DevfileParent {
+	return d.GetParent()
+}
+
 // GetAliasedComponents is a mock function to get the components that have an alias from a devfile
 func (d TestDevfileData) GetAliasedComponents() []versionsCommon.DevfileComponent {
-	name := [...]string{"alias1", "alias2"}
-	image := [...]string{"docker.io/maven:latest", "docker.io/hello-world:latest"}
-	memoryLimit := "128Mi"
-	volumeName := [...]string{"myvolume1", "myvolume2"}
-	volumePath := [...]string{"/my/volume/mount/path1", "/my/volume/mount/path2"}
+	var aliasedComponents = []common.DevfileComponent{}
 
-	component1 := versionsCommon.DevfileComponent{
-		Container: &versionsCommon.Container{
-			Name:        name[0],
-			Image:       image[0],
-			Env:         []versionsCommon.Env{},
-			MemoryLimit: memoryLimit,
-			VolumeMounts: []versionsCommon.VolumeMount{{
-				Name: volumeName[0],
-				Path: volumePath[0],
-			}},
-			MountSources: true,
-		}}
-
-	component2 := versionsCommon.DevfileComponent{
-		Container: &versionsCommon.Container{
-			Name:        name[0],
-			Image:       image[0],
-			Env:         []versionsCommon.Env{},
-			MemoryLimit: memoryLimit,
-			VolumeMounts: []versionsCommon.VolumeMount{
-				{
-					Name: volumeName[0],
-					Path: volumePath[0],
-				},
-				{
-					Name: volumeName[1],
-					Path: volumePath[1],
-				}},
-			MountSources: true,
-		}}
-
-	return []versionsCommon.DevfileComponent{component1, component2}
+	for _, comp := range d.Components {
+		if comp.Container != nil {
+			if comp.Container.Name != "" {
+				aliasedComponents = append(aliasedComponents, comp)
+			}
+		}
+	}
+	return aliasedComponents
 
 }
 
@@ -87,39 +72,71 @@ func (d TestDevfileData) GetProjects() []versionsCommon.DevfileProject {
 
 // GetCommands is a mock function to get the commands from a devfile
 func (d TestDevfileData) GetCommands() []versionsCommon.DevfileCommand {
-	commandName := [...]string{"devinit", "devbuild", "devrun", "customcommand"}
 
-	command1 := versionsCommon.DevfileCommand{
-		Exec: &versionsCommon.Exec{
-			Id: commandName[2],
-		},
-	}
+	var commands []versionsCommon.DevfileCommand
 
-	command2 := versionsCommon.DevfileCommand{
-		Exec: &versionsCommon.Exec{
-			Id: commandName[3],
-		},
-	}
+	for _, exec := range d.ExecCommands {
+		commands = append(commands, versionsCommon.DevfileCommand{Exec: &exec})
 
-	commands := []versionsCommon.DevfileCommand{command1, command2}
-
-	if !d.MissingInitCommand {
-		commands = append(commands, versionsCommon.DevfileCommand{
-			Exec: &versionsCommon.Exec{
-				Id: commandName[0],
-			}})
-	}
-	if !d.MissingBuildCommand {
-		commands = append(commands, versionsCommon.DevfileCommand{
-			Exec: &versionsCommon.Exec{
-				Id: commandName[1],
-			}})
 	}
 
 	return commands
+
+	/*
+		commandName := [...]string{"devinit", "devbuild", "devrun", "customcommand"}
+
+		command1 := versionsCommon.DevfileCommand{
+			Exec: &versionsCommon.Exec{
+				Id: commandName[2],
+			},
+		}
+
+		command2 := versionsCommon.DevfileCommand{
+			Exec: &versionsCommon.Exec{
+				Id: commandName[3],
+			},
+		}
+
+		commands := []versionsCommon.DevfileCommand{command1, command2}
+
+		if !d.MissingInitCommand {
+			commands = append(commands, versionsCommon.DevfileCommand{
+				Exec: &versionsCommon.Exec{
+					Id: commandName[0],
+				}})
+		}
+		if !d.MissingBuildCommand {
+			commands = append(commands, versionsCommon.DevfileCommand{
+				Exec: &versionsCommon.Exec{
+					Id: commandName[1],
+				}})
+		}
+
+		return commands */
 }
 
 // Validate is a mock validation that always validates without error
 func (d TestDevfileData) Validate() error {
 	return nil
+}
+
+func GetFakeComponent(name string) versionsCommon.DevfileComponent {
+	image := "docker.io/maven:latest"
+	memoryLimit := "128Mi"
+	volumeName := "myvolume1"
+	volumePath := "/my/volume/mount/path1"
+
+	return versionsCommon.DevfileComponent{
+		Container: &versionsCommon.Container{
+			Name:        name,
+			Image:       image,
+			Env:         []versionsCommon.Env{},
+			MemoryLimit: memoryLimit,
+			VolumeMounts: []versionsCommon.VolumeMount{{
+				Name: volumeName,
+				Path: volumePath,
+			}},
+			MountSources: true,
+		}}
+
 }

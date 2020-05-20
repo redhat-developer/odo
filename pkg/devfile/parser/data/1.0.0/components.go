@@ -31,8 +31,10 @@ func (d *Devfile100) GetAliasedComponents() []common.DevfileComponent {
 
 	var aliasedComponents = []common.DevfileComponent{}
 	for _, comp := range comps {
-		if comp.Container.Name != "" {
-			aliasedComponents = append(aliasedComponents, comp)
+		if comp.Container != nil {
+			if comp.Container.Name != "" {
+				aliasedComponents = append(aliasedComponents, comp)
+			}
 		}
 	}
 	return aliasedComponents

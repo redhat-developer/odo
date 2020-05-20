@@ -260,7 +260,7 @@ type Exec struct {
 	Component string `json:"component,omitempty"`
 
 	// Optional list of environment variables that have to be set before running the command
-	Env []*Env `json:"env,omitempty"`
+	Env []Env `json:"env,omitempty"`
 
 	// Defines the group this command is part of
 	Group *Group `json:"group,omitempty"`

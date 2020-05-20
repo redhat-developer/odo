@@ -100,6 +100,10 @@ func validateCommand(data data.DevfileData, command common.DevfileCommand) (err 
 		return fmt.Errorf("Exec commands must have a command")
 	}
 
+	if command.Exec.Group == nil {
+		return fmt.Errorf("Exec commands must have group")
+	}
+
 	// must map to a supported component
 	components := GetSupportedComponents(data)
 
