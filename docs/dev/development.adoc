@@ -202,7 +202,7 @@ OR
 For `crc` installation please refer https://github.com/code-ready/crc#documentation
 +
 OR
-* 4.* cluster hosted remotely
+* A 4.* cluster hosted remotely
 
 *Prerequisites for Kubernetes cluster:*
 
@@ -210,8 +210,7 @@ OR
 +
 For a single node `kubernetes` cluster install link:https://kubernetes.io/docs/tasks/tools/install-minikube/[`Minikube`]
 
-* `odo`, `oc` and `kubectl` binaries in `$PATH`.
-NOTE: Make sure that `odo` and `oc` binaries are in `$PATH`. Use the clone odo directory to launch test on 3.11 and 4.* cluster. To run test 3.11 cluster locally no cluster configuration is needed, however 4.* cluster need to be configure before launching the test against it. Make sure file `kubeadmin-password` and `kubeconfig` should be present in auth directory (create it) which resides parallel to Makefile. Then run `make configure-installer-tests-cluster` to configure the 4.* cluster.
+NOTE: Make sure that `odo`, `oc` and `kubectl` binaries are in `$PATH`. Use the clone odo directory to launch test on 3.11 and 4.* cluster. To run test 3.11 cluster locally no cluster configuration is needed, however a 4.* cluster needs to be configured before launching the test against it. The files `kubeadmin-password` and `kubeconfig` which contains cluster login details should be present in the auth directory and it should reside parallel to the `Makefile`. If it is not present in the auth directory, please create it. Then run `make configure-installer-tests-cluster` to configure the 4.* cluster.
 
 *Integration tests:*
 
