@@ -141,3 +141,70 @@ We can look at how each command should handle a temporary network disconnection:
 - If network connection is dropped during *push*: consuming tool can restart the push command from scratch. Well-written dev files should be nuking any existing build processes (for example, when running a 'build' action, that build action should look for any old maven processes and kill them, if there are any that are already running; or said another way, it is up to the build action of a devfile to ensure that container state is consistent before starting a new build)
 - If connection is dropped during *logs*: start a new tail, and then do a full 'get logs' to make sure we didn't miss anything; match up the two (the full log and the tail) as best as possible, to prevent duplicates. (The Kubernetes API may already have a better way of handling this; this is the "naive" algorithm)
 - If connection is dropped during *status*: no special behaviour is needed here.
+
+## Other solutions considered
+
+Fundamentally, this proposal needs to find a solution to this scenario:
+
+1) IDE creates a URL (calls `odo url create`) and pushes the user's code (calls `odo push`)
+2) To get the status of that app, the IDE runs `odo component status -o json` to start the long-running odo process. The status command then helpfully reports the pod/url/supervisord container status, which allows the IDE to determine when the app process is up.
+3) [some time passes]
+4) IDE creates a new URL (or performs some other action that invalidates the existing `odo status` stte, such as `odo component delete`) by calling `odo url create`.
+5) The long-running `odo status` process is still running, but somehow needs to know about the new URL from step 4 (or other events)
+
+Thus, in some way that existing long-running `odo status` process needs to be informed of the new event (a new url event, a component deletion event, etc). Since these events are generated across independent OS processes, this requires some form of [IPC](https://en.wikipedia.org/wiki/Inter-process_communication). 
+
+### Some options in how to communicate these data across independent odo processes (in ascending order of complexity)
+
+#### 1) Get the IDE/consuming tool to manage the lifeycle of `odo component status`
+
+This is the solution I propose in this proposal, and is included for contrast.
+
+Since the IDE has a lifecycle that is greater than each of the individual calls to `odo`, and the IDE is directly and solely responsible for calling odo (when the user is interacting with the IDE), it is a good fit to ensure the state of `odo component status` is up-to-date and consistent.
+
+But option this is by no means a perfect solution: 
+- this does introduce complexity on the IDE side, as the IDE needs to keep track of which `odo` processes are running for each component, and it needs to know when/how to respond to actions (delete/url create/etc). But since the IDE is a monolithic process, this is at least straightforward (I mocked up the algorithm that the IDE will use in each case, which I can share if useful.)
+- this introduces complexity for EVERY new IDE/consuming tool that uses this mechanism; rather than solving it once in ODO, it needs to be solved X times for X IDEs.
+
+#### 2) `odo component status` could monitor files under the `.odo` directory in order to detect changes; for example, if a new URL is added to `.odo/env/env.yaml`, `odo component status` would detect that and update the URLs it is checking
+
+This sounds simple, but is surprisingly difficult:
+- No way to detect a delete operation just by watching `.odo` directory: At present, `odo delete` does not delete/change any of the files under `.odo`
+- Partial file writes/atomicity/file locking: How to ensure that when `odo component status` reads a file that it has been fully written by the consuming process? One way is to use file locks, but that  means using using/testing each supported platform's file locking mechanisms. Then need to implement a cross-process polling mechanisms.
+- Or, need to implement a cross-platform filewatching mechanism: We need a way to watch the `.odo` directory and respond to I/O events to the files, either by modification. 
+- Windows: Unlike other supported platforms, Windows has a number of quirky file-system behaviours that need to be individually handled. The most relevant one here is that Windows will not let you delete/modify a file in one process if another process is holding it open (we have been bitten by this a number of times in Codewind)
+- Need to support all filesystems: some filesystems have different file write/locking/atomicity guarantees for various operations.
+
+
+#### 3) Convert odo into a multi-process client-server architecture
+
+Fundamentally this problem is about how to share state between odo processes; if odo instead used a client-server architure, odo state could be centrally/consistently managed via a single server process, and communicated piecemeal to odo clients.
+
+As one example of this, we could create a new odo process/command (`odo status --daemon`?) that would listen on some IPC mechanism (TCP/IP sockets/named pipes/etc) for events from individual odo commands:
+1) IDE runs `odo status --daemon --port=32272` as a long-running process; the daemon listens on localhost:32272 for events. The daemon will output component/build status to stdout, which the IDE can provide back to the user.
+2) IDE calls `odo url create` to create a new URL, but includes the daemon information in the request: `odo url create --port=32272 (...)`
+3) The `odo url create` process updates the `env.yaml` to include the URL, then connects to the daemon on `localhost:32272` and informs the daemon of the new url.
+4) The daemon receives the new URL event, and reconciles it with its existing state for the application, and begins watching the new URL.
+(This would be need to be implemented for every odo change event)
+
+
+Drawbacks:
+- Odo's code currently assuming that commands are a short-lived, mostly single-threaded, and compartmentalized; switching to a server would fundamentally alter this presumption of existing code
+- Much more complex to implement versus other options: requires changing the architecture of the odo tool into a multithreaded client-server model, meaning many more moving parts, and [the perils of distributed computing](https://en.wikipedia.org/wiki/Fallacies_of_distributed_computing).
+- Most be cross-platform; IPC mechanisms/behaviour are VERY platform-specific, so we probably need to use TCP/IP sockets. 
+- But, if using HTTP/S over TCP/IP socket, we need to secure endpoints; just listening on localhost [is not necessarily enough to ensure local-only access](https://bugs.chromium.org/p/project-zero/issues/detail?id=1524).
+- Plus some corporate developer environments may use strict firewall rules that prevent server sockets, even on localhost ports.
+
+Variants on this idea: 1) a new odo daemon/LSP-style server process that was responsible for running ALL odo commands; calls to the `odo` CLI would just initiate a request to the server, and the server would be responsible for performing the action and monitoring the status
+
+### Proposed option vs options 2/3
+
+Hopefully the inherent complexity in options 2-3 is clear; I can further flesh out these options if not. Likewise, if you all have another fourth option, I'm all ears.
+
+In any case, we certainly COULD go with any of these more sophisticated solutions: there are no technical impediments to doing so, and speaking personally it would be interesting/fun to implement them :). 
+
+BUT, I suspect this is a case where the perfect is the enemy of the good: it would take an order of magnitude greater time/effort to implement a more sophisticated solution, and in the mean time (with IDEs champing at the bit to add support for odo dev files) the existing requirement to provide status doesn't go away: we would still need a short-term stop-gap measure which would probably look a lot like this proposal anyways.
+
+So, ultimately, I think this proposal cleanly solves the problem, puts the complexity in the right place (the IDE), is straight-forward to implement, and is not time consuming to implement.
+
+And this proposal definitely does not in any way tie our hands in implementing a more complex solution in the future if/when they become necessary for 'day two' odo usage.
