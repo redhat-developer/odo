@@ -11,9 +11,11 @@ import (
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
+	dockercomponent "github.com/openshift/odo/pkg/devfile/adapters/docker/component"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/kclient/fake"
+	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/url/labels"
@@ -1451,6 +1453,186 @@ func TestPush(t *testing.T) {
 						t.Errorf("when urls are in snyc, total action for kubernetes client set should be less than 1")
 					}
 				}
+			}
+		})
+	}
+}
+
+func TestListDockerURL(t *testing.T) {
+	fakeClient := lclient.FakeNew()
+	fakeErrorClient := lclient.FakeErrorNew()
+	testURL1 := envinfo.EnvInfoURL{Name: "testurl1", Port: 8080, ExposedPort: 56789, Kind: "docker"}
+	testURL2 := envinfo.EnvInfoURL{Name: "testurl2", Port: 8080, ExposedPort: 54321, Kind: "docker"}
+	testURL3 := envinfo.EnvInfoURL{Name: "testurl3", Port: 8080, ExposedPort: 65432, Kind: "docker"}
+	esi := &envinfo.EnvSpecificInfo{}
+	err := esi.SetConfiguration("url", testURL1)
+	if err != nil {
+		// discard the error, since no physical file to write
+		t.Log("Expected error since no physical env file to write")
+	}
+	err = esi.SetConfiguration("url", testURL2)
+	if err != nil {
+		// discard the error, since no physical file to write
+		t.Log("Expected error since no physical env file to write")
+	}
+
+	tests := []struct {
+		name      string
+		client    *lclient.Client
+		component string
+		wantURLs  []URL
+		wantErr   bool
+	}{
+		{
+			name:      "Case 1: Successfully retrieve the URL list",
+			client:    fakeClient,
+			component: "golang",
+			wantURLs: []URL{
+				URL{
+					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
+					ObjectMeta: metav1.ObjectMeta{Name: testURL1.Name},
+					Spec:       URLSpec{Host: dockercomponent.LocalhostIP, Port: testURL1.Port, ExternalPort: testURL1.ExposedPort},
+					Status: URLStatus{
+						State: StateTypeNotPushed,
+					},
+				},
+				URL{
+					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
+					ObjectMeta: metav1.ObjectMeta{Name: testURL2.Name},
+					Spec:       URLSpec{Host: dockercomponent.LocalhostIP, Port: testURL2.Port, ExternalPort: testURL2.ExposedPort},
+					Status: URLStatus{
+						State: StateTypePushed,
+					},
+				},
+				URL{
+					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
+					ObjectMeta: metav1.ObjectMeta{Name: testURL3.Name},
+					Spec:       URLSpec{Host: dockercomponent.LocalhostIP, Port: testURL3.Port, ExternalPort: testURL3.ExposedPort},
+					Status: URLStatus{
+						State: StateTypeLocallyDeleted,
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:      "Case 2: Error retrieving the URL list",
+			client:    fakeErrorClient,
+			component: "golang",
+			wantURLs:  nil,
+			wantErr:   true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			urls, err := ListDockerURL(tt.client, tt.component, esi)
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("expected %v, got %v", tt.wantErr, err)
+			}
+
+			if len(urls.Items) != len(tt.wantURLs) {
+				t.Errorf("numbers of url listed does not match, expected %v, got %v", len(tt.wantURLs), len(urls.Items))
+			}
+			actualURLMap := make(map[string]URL)
+			for _, actualURL := range urls.Items {
+				actualURLMap[actualURL.Name] = actualURL
+			}
+			for _, wantURL := range tt.wantURLs {
+				if !reflect.DeepEqual(actualURLMap[wantURL.Name], wantURL) {
+					t.Errorf("Expected %v, got %v", wantURL, actualURLMap[wantURL.Name])
+				}
+			}
+		})
+	}
+}
+
+func TestGetContainerURL(t *testing.T) {
+	fakeClient := lclient.FakeNew()
+	fakeErrorClient := lclient.FakeErrorNew()
+	testURL1 := envinfo.EnvInfoURL{Name: "testurl1", Port: 8080, ExposedPort: 56789, Kind: "docker"}
+	testURL2 := envinfo.EnvInfoURL{Name: "testurl2", Port: 8080, ExposedPort: 54321, Kind: "docker"}
+	testURL3 := envinfo.EnvInfoURL{Name: "testurl3", Port: 8080, ExposedPort: 65432, Kind: "docker"}
+	esi := &envinfo.EnvSpecificInfo{}
+	err := esi.SetConfiguration("url", testURL1)
+	if err != nil {
+		// discard the error, since no physical file to write
+		t.Log("Expected error since no physical env file to write")
+	}
+	err = esi.SetConfiguration("url", testURL2)
+	if err != nil {
+		// discard the error, since no physical file to write
+		t.Log("Expected error since no physical env file to write")
+	}
+	tests := []struct {
+		name      string
+		client    *lclient.Client
+		component string
+		urlName   string
+		wantURL   URL
+		wantErr   bool
+	}{
+		{
+			name:      "Case 1: Successfully retrieve the not pushed URL object",
+			client:    fakeClient,
+			component: "golang",
+			urlName:   testURL1.Name,
+			wantURL: URL{
+				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
+				ObjectMeta: metav1.ObjectMeta{Name: testURL1.Name},
+				Spec:       URLSpec{Host: dockercomponent.LocalhostIP, Port: testURL1.Port, ExternalPort: testURL1.ExposedPort},
+				Status: URLStatus{
+					State: StateTypeNotPushed,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:      "Case 2: Successfully retrieve the pushed URL object",
+			client:    fakeClient,
+			component: "golang",
+			urlName:   testURL2.Name,
+			wantURL: URL{
+				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
+				ObjectMeta: metav1.ObjectMeta{Name: testURL2.Name},
+				Spec:       URLSpec{Host: dockercomponent.LocalhostIP, Port: testURL2.Port, ExternalPort: testURL2.ExposedPort},
+				Status: URLStatus{
+					State: StateTypePushed,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:      "Case 3: Successfully retrieve the locally deleted URL object",
+			client:    fakeClient,
+			component: "golang",
+			urlName:   testURL3.Name,
+			wantURL: URL{
+				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
+				ObjectMeta: metav1.ObjectMeta{Name: testURL3.Name},
+				Spec:       URLSpec{Host: dockercomponent.LocalhostIP, Port: testURL3.Port, ExternalPort: testURL3.ExposedPort},
+				Status: URLStatus{
+					State: StateTypeLocallyDeleted,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:      "Case 4: Error retrieving the URL object",
+			client:    fakeErrorClient,
+			component: "golang",
+			urlName:   "",
+			wantURL:   URL{},
+			wantErr:   true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			url, err := GetContainerURL(fakeClient, esi, tt.urlName, tt.component)
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("expected %v, got %v", tt.wantErr, err)
+			}
+			if !reflect.DeepEqual(url, tt.wantURL) {
+				t.Errorf("Expected %v, got %v", tt.wantURL, url)
 			}
 		})
 	}

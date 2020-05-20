@@ -8,6 +8,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/go-connections/nat"
 	gomock "github.com/golang/mock/gomock"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 )
@@ -162,6 +163,7 @@ func TestGetContainersList(t *testing.T) {
 			wantContainers: []types.Container{
 				{
 					Names: []string{"/node"},
+					ID:    "1",
 					Image: "node",
 					Labels: map[string]string{
 						"component": "test",
@@ -175,16 +177,40 @@ func TestGetContainersList(t *testing.T) {
 				},
 				{
 					Names: []string{"/go-test"},
+					ID:    "2",
 					Image: "golang",
 					Labels: map[string]string{
 						"component": "golang",
+						"8080":      "testurl2",
+					},
+					HostConfig: container.HostConfig{
+						PortBindings: nat.PortMap{
+							nat.Port("8080/tcp"): []nat.PortBinding{
+								nat.PortBinding{
+									HostIP:   "127.0.0.1",
+									HostPort: "54321",
+								},
+							},
+						},
 					},
 				},
 				{
 					Names: []string{"/go-test-build"},
+					ID:    "3",
 					Image: "golang",
 					Labels: map[string]string{
 						"component": "golang",
+						"8080":      "testurl3",
+					},
+					HostConfig: container.HostConfig{
+						PortBindings: nat.PortMap{
+							nat.Port("8080/tcp"): []nat.PortBinding{
+								nat.PortBinding{
+									HostIP:   "127.0.0.1",
+									HostPort: "65432",
+								},
+							},
+						},
 					},
 				},
 			},

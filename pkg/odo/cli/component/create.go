@@ -15,6 +15,7 @@ import (
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
@@ -64,10 +65,10 @@ type DevfileMetadata struct {
 	devfileSupport     bool
 	devfileLink        string
 	devfileRegistry    catalog.Registry
-	downloadSource     bool
 	// Path of user's own devfile,
 	// user specifies the path via --devfile flag
-	devfilePath string
+	devfilePath    string
+	downloadSource string
 }
 
 // CreateRecommendedCommandName is the recommended watch command name
@@ -115,7 +116,12 @@ var createExample = ktemplates.Examples(`  # Create new Node.js component with t
 %[1]s nodejs --git https://github.com/openshift/nodejs-ex.git
 
 # Create new Node.js component with custom ports, additional environment variables and memory and cpu limits
-%[1]s nodejs --port 8080,8100/tcp,9100/udp --env key=value,key1=value1 --memory 4Gi --cpu 2`)
+%[1]s nodejs --port 8080,8100/tcp,9100/udp --env key=value,key1=value1 --memory 4Gi --cpu 2
+
+# Create new Node.js component and download the sample project named nodejs-web-app
+%[1]s nodejs --downloadSource=nodejs-web-app`)
+
+const defaultProjectName = "devfile-project-name"
 
 // NewCreateOptions returns new instance of CreateOptions
 func NewCreateOptions() *CreateOptions {
@@ -494,9 +500,15 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 	// this populates the LocalConfigInfo as well
 	co.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
-
 	if err != nil {
 		return errors.Wrap(err, "failed intiating local config")
+	}
+
+	// Do not execute S2I specific code on Kubernetes Cluster
+	// return from here, if it is not an openshift cluster.
+	openshiftCluster, _ := co.Client.IsImageStreamSupported()
+	if !openshiftCluster {
+		return errors.New("component not found")
 	}
 
 	// check to see if config file exists or not, if it does that
@@ -728,7 +740,8 @@ func (co *CreateOptions) Validate() (err error) {
 
 // Downloads first project from list of projects in devfile
 // Currenty type git with a non github url is not supported
-func (co *CreateOptions) downloadProject() error {
+func (co *CreateOptions) downloadProject(projectPassed string) error {
+	var project common.DevfileProject
 	devObj, err := devfile.Parse(DevfilePath)
 	if err != nil {
 		return err
@@ -739,11 +752,24 @@ func (co *CreateOptions) downloadProject() error {
 		return errors.Errorf("No project found in devfile component.")
 	}
 
-	if nOfProjects > 1 {
-		log.Warning("Only downloading first project from list.")
-	}
+	if nOfProjects == 1 && projectPassed == defaultProjectName {
+		project = projects[0]
+	} else if nOfProjects > 1 && projectPassed == defaultProjectName {
+		project = projects[0]
+		log.Warning("There are multiple projects in this devfile but none have been specified in --downloadSource. Downloading the first: " + project.Name)
+	} else { //If the user has specified a project
+		projectFound := false
+		for indexOfProject, projectInfo := range projects {
+			if projectInfo.Name == projectPassed { //Get the index
+				project = projects[indexOfProject]
+				projectFound = true
+			}
+		}
 
-	project := projects[0]
+		if !projectFound {
+			return errors.Errorf("The project: %s specified in --downloadSource does not exist", projectPassed)
+		}
+	}
 
 	path, err := os.Getwd()
 	if err != nil {
@@ -831,8 +857,8 @@ func (co *CreateOptions) Run() (err error) {
 				}
 			}
 
-			if util.CheckPathExists(DevfilePath) && co.devfileMetadata.downloadSource {
-				err = co.downloadProject()
+			if util.CheckPathExists(DevfilePath) && co.devfileMetadata.downloadSource != "" {
+				err = co.downloadProject(co.devfileMetadata.downloadSource)
 				if err != nil {
 					return errors.Wrap(err, "failed to download project for devfile component")
 				}
@@ -952,8 +978,9 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 	componentCreateCmd.Flags().StringSliceVar(&co.componentEnvVars, "env", []string{}, "Environmental variables for the component. For example --env VariableName=Value")
 
 	if experimental.IsExperimentalModeEnabled() {
+		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.downloadSource, "downloadSource", "", "Download sample project from devfile.")
+		componentCreateCmd.Flags().Lookup("downloadSource").NoOptDefVal = defaultProjectName //Default value to pass to the flag if one is not specified.
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfileRegistry.Name, "registry", "", "Create devfile component from specific registry")
-		componentCreateCmd.Flags().BoolVar(&co.devfileMetadata.downloadSource, "downloadSource", false, "Download sample project from devfile. (ex. odo component create <component_type> [component_name] --downloadSource")
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfilePath, "devfile", "", "Path to the user specify devfile")
 	}
 

@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/docker/go-connections/nat"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
@@ -41,6 +43,7 @@ var mockContainerList = []types.Container{
 	types.Container{
 		Names: []string{"/node"},
 		Image: "node",
+		ID:    "1",
 		Labels: map[string]string{
 			"component": "test",
 			"alias":     "alias1",
@@ -54,15 +57,39 @@ var mockContainerList = []types.Container{
 	types.Container{
 		Names: []string{"/go-test"},
 		Image: "golang",
+		ID:    "2",
 		Labels: map[string]string{
 			"component": "golang",
+			"8080":      "testurl2",
+		},
+		HostConfig: container.HostConfig{
+			PortBindings: nat.PortMap{
+				nat.Port("8080/tcp"): []nat.PortBinding{
+					nat.PortBinding{
+						HostIP:   "127.0.0.1",
+						HostPort: "54321",
+					},
+				},
+			},
 		},
 	},
 	types.Container{
 		Names: []string{"/go-test-build"},
 		Image: "golang",
+		ID:    "3",
 		Labels: map[string]string{
 			"component": "golang",
+			"8080":      "testurl3",
+		},
+		HostConfig: container.HostConfig{
+			PortBindings: nat.PortMap{
+				nat.Port("8080/tcp"): []nat.PortBinding{
+					nat.PortBinding{
+						HostIP:   "127.0.0.1",
+						HostPort: "65432",
+					},
+				},
+			},
 		},
 	},
 }
@@ -110,17 +137,22 @@ func (m *mockDockerClient) ContainerRemove(ctx context.Context, containerID stri
 }
 
 func (m *mockDockerClient) ContainerInspect(ctx context.Context, containerID string) (types.ContainerJSON, error) {
-	containerConfig := container.Config{
-		Image: "someimage",
+	for _, containerElement := range mockContainerList {
+		if containerElement.ID == containerID {
+			containerConfig := container.Config{
+				Image:  containerElement.Image,
+				Labels: containerElement.Labels,
+			}
+			return types.ContainerJSON{
+				ContainerJSONBase: &types.ContainerJSONBase{
+					HostConfig: &containerElement.HostConfig,
+				},
+				Config: &containerConfig,
+			}, nil
+		}
 	}
-	return types.ContainerJSON{
-		ContainerJSONBase: &types.ContainerJSONBase{
-			HostConfig: &container.HostConfig{
-				AutoRemove: true,
-			},
-		},
-		Config: &containerConfig,
-	}, nil
+	return types.ContainerJSON{}, nil
+
 }
 
 func (m *mockDockerClient) ContainerWait(ctx context.Context, containerID string, condition container.WaitCondition) (<-chan container.ContainerWaitOKBody, <-chan error) {

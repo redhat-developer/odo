@@ -693,6 +693,11 @@ func HTTPGetRequest(url string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
+	// we have a non 1xx / 2xx status, return an error
+	if (resp.StatusCode - 300) > 0 {
+		return nil, fmt.Errorf("error retrieving %s: %s", url, http.StatusText(resp.StatusCode))
+	}
+
 	bytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
