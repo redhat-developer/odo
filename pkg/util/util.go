@@ -54,13 +54,6 @@ const (
 	githubStartPointMsg = "StartPoint"
 )
 
-type GitRevision struct {
-	branch     string
-	commitId   string
-	tag        string
-	startpoint string
-}
-
 // ResourceRequirementInfo holds resource quantity before transformation into its appropriate form in container spec
 type ResourceRequirementInfo struct {
 	ResourceType corev1.ResourceName
