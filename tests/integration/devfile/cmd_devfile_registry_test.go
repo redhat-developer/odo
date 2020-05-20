@@ -24,8 +24,9 @@ var _ = Describe("odo devfile registry command tests", func() {
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+		helper.LocalKubeconfigSet(context)
 		if os.Getenv("KUBERNETES") == "true" {
-			project = helper.CreateRandNamespace(context)
+			project = helper.CreateRandNamespace()
 		} else {
 			project = helper.CreateRandProject()
 		}

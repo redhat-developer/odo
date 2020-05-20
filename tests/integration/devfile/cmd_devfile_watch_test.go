@@ -23,10 +23,9 @@ var _ = Describe("odo devfile watch command tests", func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		helper.LocalKubeconfigSet(context)
 		if os.Getenv("KUBERNETES") == "true" {
-			homeDir := helper.GetUserHomeDir()
-			kubeConfigFile := helper.CopyKubeConfigFile(filepath.Join(homeDir, ".kube", "config"), filepath.Join(context, "config"))
-			namespace = helper.CreateRandNamespace(kubeConfigFile)
+			namespace = helper.CreateRandNamespace()
 		} else {
 			namespace = helper.CreateRandProject()
 		}
