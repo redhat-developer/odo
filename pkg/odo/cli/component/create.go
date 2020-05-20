@@ -792,7 +792,7 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 		return errors.Errorf("Project type not supported")
 	}
 
-	err = sparseCheckoutDir(project, zipUrl, path)
+	err = checkoutProject(project, zipUrl, path)
 	if err != nil {
 		return err
 	}
@@ -904,7 +904,7 @@ func ensureAndLogProperResourceUsage(resource, resourceMin, resourceMax, resourc
 	}
 }
 
-func sparseCheckoutDir(project common.DevfileProject, zipURL, path string) error {
+func checkoutProject(project common.DevfileProject, zipURL, path string) error {
 	if project.Source.SparseCheckoutDir != nil && *project.Source.SparseCheckoutDir != "" {
 		sparseCheckoutDir := *project.Source.SparseCheckoutDir
 		err := util.GetAndExtractZip(zipURL, path, sparseCheckoutDir)

@@ -854,7 +854,7 @@ func GetAndExtractZip(zipURL string, destination string, pathToUnzip string) err
 	}
 
 	if len(filenames) == 0 {
-		return errors.New("No files were unzipped, ensure that the project repo is not empty or that sparseCheckoutDir has a valid path")
+		return errors.New("no files were unzipped, ensure that the project repo is not empty or that sparseCheckoutDir has a valid path")
 	}
 
 	return nil
