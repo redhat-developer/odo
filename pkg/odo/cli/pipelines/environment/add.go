@@ -3,6 +3,7 @@ package environment
 import (
 	"fmt"
 
+	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/pipelines"
 	"github.com/openshift/odo/pkg/pipelines/ioutils"
@@ -59,7 +60,11 @@ func (eo *AddEnvParameters) Run() error {
 		EnvName:          eo.envName,
 		ManifestFilename: eo.manifest,
 	}
-	return pipelines.AddEnv(&options, ioutils.NewFilesystem())
+	err := pipelines.AddEnv(&options, ioutils.NewFilesystem())
+	if err == nil {
+		log.Successf(fmt.Sprintf("Environment %s has been created sucessfully.", eo.envName))
+	}
+	return err
 }
 
 // NewCmdAddEnv creates the project add environment command.
