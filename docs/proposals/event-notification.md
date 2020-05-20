@@ -200,12 +200,8 @@ Variants on this idea: 1) a new odo daemon/LSP-style server process that was res
 
 ### Proposed option vs options 2/3
 
-Hopefully I have sucessfully conveyed the inherent complexity of options 2-3... if not I can further flesh out these options. Likewise, if you all have another fourth option, I'm all ears.
+Hopefully I have sucessfully conveyed the inherent complexity of options 2-3. Likewise, if you all have another fourth option, let me know.
 
-In any case, we certainly COULD go with any of these more sophisticated solutions: there are no technical impediments to doing so, and speaking personally it would be interesting/fun to implement them :). 
+Ultimately, I think this proposal (option 1) cleanly solves the problem, puts the complexity in the right place (the IDE), is straight-forward to implement, is not time consuming to implement, and does not fundamentally alter the odo architecture.
 
-BUT, I suspect this is a case where the perfect is the enemy of the good: it would take an order of magnitude greater time/effort to implement a more sophisticated solution, and in the mean time (with IDEs champing at the bit to add support for odo dev files) the existing requirement to provide status doesn't go away: we would still need a short-term stop-gap measure which would probably look a lot like this proposal anyways.
-
-So, ultimately, I think this proposal cleanly solves the problem, puts the complexity in the right place (the IDE), is straight-forward to implement, and is not time consuming to implement.
-
-And this proposal definitely does not in any way tie our hands in implementing a more complex solution in the future if/when they become necessary for 'day two' odo usage.
+And this option definitely does not in any way tie our hands in implementing a more complex solution in the future if/when we our requirements demand it.
