@@ -189,13 +189,20 @@ NOTE: Refer https://github.com/golang/go/wiki/LearnTesting for Go best practices
 
 === Integration and e2e tests
 
-*Prerequisites for Openshift cluster:*
+*Prerequisites for OpenShift cluster:*
 
-* A `minishift` or OpenShift environment with Service Catalog enabled:
+* A `minishift` or OpenShift 3.11 environment with Service Catalog enabled:
 +
 ----
 $ MINISHIFT_ENABLE_EXPERIMENTAL=y minishift start --extra-clusterup-flags "--enable=*,service-catalog,automation-service-broker,template-service-broker"
 ----
+OR
+* A `crc` environment for 4.* local cluster:
++
+For `crc` installation please refer https://github.com/code-ready/crc#documentation
++
+OR
+* 4.* cluster hosted remotely
 
 *Prerequisites for Kubernetes cluster:*
 
@@ -204,6 +211,7 @@ $ MINISHIFT_ENABLE_EXPERIMENTAL=y minishift start --extra-clusterup-flags "--ena
 For a single node `kubernetes` cluster install link:https://kubernetes.io/docs/tasks/tools/install-minikube/[`Minikube`]
 
 * `odo`, `oc` and `kubectl` binaries in `$PATH`.
+NOTE: Make sure that `odo` and `oc` binaries are in `$PATH`. Use the clone odo directory to launch test on 3.11 and 4.* cluster. To run test 3.11 cluster locally no cluster configuration is needed, however 4.* cluster need to be configure before launching the test against it. Make sure file `kubeadmin-password` and `kubeconfig` should be present in auth directory (create it) which resides parallel to Makefile. Then run `make configure-installer-tests-cluster` to configure the 4.* cluster.
 
 *Integration tests:*
 
