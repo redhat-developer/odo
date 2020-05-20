@@ -16,12 +16,11 @@ var _ = Describe("odo devfile watch command tests", func() {
 	var namespace string
 	var context string
 	var cmpName string
-	var projectDirPath string
 	var currentWorkingDirectory string
 
 	// TODO: all oc commands in all devfile related test should get replaced by kubectl
 	// TODO: to goal is not to use "oc"
-	oc := helper.NewOcRunner("oc")
+	oc := helper.NewCliRunner("oc")
 
 	// Setup up state for each test spec
 	// create new project (not set as active) and new context directory for each test spec
@@ -38,8 +37,6 @@ var _ = Describe("odo devfile watch command tests", func() {
 			namespace = helper.CreateRandProject()
 		}
 		currentWorkingDirectory = helper.Getwd()
-		projectDir := "/projectDir"
-		projectDirPath = context + projectDir
 		cmpName = helper.RandString(6)
 		helper.Chdir(context)
 
@@ -87,8 +84,10 @@ var _ = Describe("odo devfile watch command tests", func() {
 
 	Context("when executing odo watch with devfile flag without experimental mode", func() {
 		It("should fail", func() {
-			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "false")
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
+			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "false", "-f")
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 			output := helper.CmdShouldFail("odo", "watch", "--devfile", filepath.Join(context, "devfile.yaml"))
 			Expect(output).To(ContainSubstring("Error: unknown flag: --devfile"))
 		})
@@ -96,35 +95,41 @@ var _ = Describe("odo devfile watch command tests", func() {
 
 	Context("when executing odo watch after odo push", func() {
 		It("should listen for file changes", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-			helper.Chdir(projectDirPath)
-
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
+			watchFlag := ""
+			odoV2Watch := utils.OdoV2Watch{
+				CmpName:            cmpName,
+				StringsToBeMatched: []string{"Executing devbuild command", "Executing devrun command"},
+			}
 			// odo watch and validate
-			utils.OdoWatch(cmpName, namespace, projectDirPath, []string{"Executing devbuild command", "Executing devrun command"}, oc, "kube")
+			utils.OdoWatch(utils.OdoV1Watch{}, odoV2Watch, namespace, context, watchFlag, oc, "kube")
 		})
 	})
 
 	Context("when executing odo watch after odo push with custom commands", func() {
 		It("should listen for file changes", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-			helper.Chdir(projectDirPath)
-
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			output := helper.CmdShouldPass("odo", "push", "--build-command", "build", "--run-command", "run", "--devfile", "devfile.yaml", "--project", namespace)
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
+			watchFlag := "--build-command build --run-command run"
+			odoV2Watch := utils.OdoV2Watch{
+				CmpName:            cmpName,
+				StringsToBeMatched: []string{"Executing build command", "Executing run command"},
+			}
 			// odo watch and validate
-			utils.OdoWatch(cmpName, namespace, projectDirPath, []string{"Executing build command", "Executing run command"}, oc, "kube")
+			utils.OdoWatch(utils.OdoV1Watch{}, odoV2Watch, namespace, context, watchFlag, oc, "kube")
 		})
 	})
 })

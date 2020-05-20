@@ -13,8 +13,7 @@ import (
 )
 
 var _ = Describe("odo docker devfile watch command tests", func() {
-	var context, currentWorkingDirectory, cmpName, projectDirPath string
-	var projectDir = "/projectDir"
+	var context, currentWorkingDirectory, cmpName string
 
 	dockerClient := helper.NewDockerRunner("docker")
 
@@ -23,7 +22,6 @@ var _ = Describe("odo docker devfile watch command tests", func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		context = helper.CreateNewContext()
 		currentWorkingDirectory = helper.Getwd()
-		projectDirPath = context + projectDir
 		cmpName = helper.RandString(6)
 		helper.Chdir(context)
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
@@ -47,35 +45,41 @@ var _ = Describe("odo docker devfile watch command tests", func() {
 
 	Context("when executing odo watch after odo push", func() {
 		It("should listen for file changes", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-			helper.Chdir(projectDirPath)
-
 			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
+			watchFlag := ""
+			odoV2Watch := utils.OdoV2Watch{
+				CmpName:            cmpName,
+				StringsToBeMatched: []string{"Executing devbuild command", "Executing devrun command"},
+			}
 			// odo watch and validate
-			utils.OdoWatch(cmpName, "", projectDirPath, []string{"Executing devbuild command", "Executing devrun command"}, dockerClient, "docker")
+			utils.OdoWatch(utils.OdoV1Watch{}, odoV2Watch, "", context, watchFlag, dockerClient, "docker")
 		})
 	})
 
 	Context("when executing odo watch after odo push with custom commands", func() {
 		It("should listen for file changes", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
-			helper.Chdir(projectDirPath)
-
 			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			output := helper.CmdShouldPass("odo", "push", "--build-command", "build", "--run-command", "run", "--devfile", "devfile.yaml")
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
+			watchFlag := "--build-command build --run-command run"
+			odoV2Watch := utils.OdoV2Watch{
+				CmpName:            cmpName,
+				StringsToBeMatched: []string{"Executing build command", "Executing run command"},
+			}
 			// odo watch and validate
-			utils.OdoWatch(cmpName, "", projectDirPath, []string{"Executing build command", "Executing run command"}, dockerClient, "docker")
+			utils.OdoWatch(utils.OdoV1Watch{}, odoV2Watch, "", context, watchFlag, dockerClient, "docker")
 		})
 	})
 

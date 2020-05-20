@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"time"
 
@@ -190,9 +191,28 @@ func ExecWithRestartAttribute(projectDirPath, cmpName, namespace string) {
 
 }
 
+type OdoV1Watch struct {
+	SrcType  string
+	RouteURL string
+	AppName  string
+}
+
+type OdoV2Watch struct {
+	CmpName            string
+	StringsToBeMatched []string
+}
+
 // OdoWatch creates files, dir in the context and watches for the changes to be pushed
-// this was taken from e2e_images_test.go and modified for devfile
-func OdoWatch(cmpName, project, context string, stringsToBeMatched []string, runner interface{}, platform string) {
+// Specify OdoV1Watch for odo version 1, OdoV2Watch for odo version 2(devfile)
+// platform is either kube or docker
+func OdoWatch(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, project, context, flag string, runner interface{}, platform string) {
+
+	isDevfileTest := false
+
+	// if the odoV2Watch object is not empty, its a devfile test
+	if !reflect.DeepEqual(odoV2Watch, OdoV2Watch{}) {
+		isDevfileTest = true
+	}
 
 	startSimulationCh := make(chan bool)
 	go func() {
@@ -209,32 +229,49 @@ func OdoWatch(cmpName, project, context string, stringsToBeMatched []string, run
 
 			helper.DeleteDir(filepath.Join(context, "abcd"))
 
-			helper.ReplaceString(filepath.Join(context, "app", "app.js"), "Hello", "Hello odo")
+			if isDevfileTest {
+				helper.ReplaceString(filepath.Join(context, "app", "app.js"), "Hello", "Hello odo")
+			} else {
+				if odoV1Watch.SrcType == "openjdk" {
+					helper.ReplaceString(filepath.Join(context, "src", "main", "java", "MessageProducer.java"), "Hello", "Hello odo")
+				} else {
+					helper.ReplaceString(filepath.Join(context, "server.js"), "Hello", "Hello odo")
+				}
+			}
 		}
 	}()
 
+	if !isDevfileTest {
+		flag = strings.TrimSpace(fmt.Sprintf("%s-app -v 4 %s", odoV1Watch.SrcType, flag))
+	}
+
 	success, err := helper.WatchNonRetCmdStdOut(
-		("odo watch --context " + context),
-		time.Duration(10)*time.Minute,
+		("odo watch " + flag + " --context " + context),
+		time.Duration(5)*time.Minute,
 		func(output string) bool {
-			sourcePath := "/projects/nodejs-web-app"
+			if isDevfileTest {
+				stringsMatched := true
 
-			stringsMatched := true
-
-			for _, stringToBeMatched := range stringsToBeMatched {
-				if !strings.Contains(output, stringToBeMatched) {
-					stringsMatched = false
+				for _, stringToBeMatched := range odoV2Watch.StringsToBeMatched {
+					if !strings.Contains(output, stringToBeMatched) {
+						stringsMatched = false
+					}
 				}
+
+				if stringsMatched {
+					// Verify delete from component pod
+					getContainerExecListdir(odoV1Watch, odoV2Watch, runner, platform, project, isDevfileTest)
+					return true
+				}
+			} else {
+				curlURL := helper.CmdShouldPass("curl", odoV1Watch.RouteURL)
+				if strings.Contains(curlURL, "Hello odo") {
+					// Verify delete from component pod
+					getContainerExecListdir(odoV1Watch, odoV2Watch, runner, platform, project, isDevfileTest)
+				}
+				return strings.Contains(curlURL, "Hello odo")
 			}
 
-			if stringsMatched {
-				// Verify delete from component pod
-				stdOut := getContainerExecListdir(runner, platform, cmpName, project, sourcePath)
-				Expect(stdOut).To(ContainSubstring(("a.txt")))
-				Expect(stdOut).To(ContainSubstring((".abc")))
-				Expect(stdOut).To(Not(ContainSubstring(("abcd"))))
-				return true
-			}
 			return false
 		},
 		startSimulationCh,
@@ -244,21 +281,41 @@ func OdoWatch(cmpName, project, context string, stringsToBeMatched []string, run
 
 	Expect(success).To(Equal(true))
 	Expect(err).To(BeNil())
+
+	if !isDevfileTest {
+		// Verify memory limits to be same as configured
+		getMemoryLimit := runner.(helper.OcRunner).MaxMemory(odoV1Watch.SrcType+"-app", odoV1Watch.AppName, project)
+		Expect(getMemoryLimit).To(ContainSubstring("700Mi"))
+		getMemoryRequest := runner.(helper.OcRunner).MinMemory(odoV1Watch.SrcType+"-app", odoV1Watch.AppName, project)
+		Expect(getMemoryRequest).To(ContainSubstring("400Mi"))
+	}
 }
 
-func getContainerExecListdir(runner interface{}, platform, cmpName, project, sourcePath string) string {
+func getContainerExecListdir(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, runner interface{}, platform, project string, isDevfileTest bool) string {
 	var stdOut string
+	sourcePath := "/projects/nodejs-web-app"
 
 	if platform == "kube" {
 		ocRunner := runner.(helper.OcRunner)
-		podName := ocRunner.GetRunningPodNameByComponent(cmpName, project)
-		stdOut = ocRunner.ExecListDir(podName, project, sourcePath)
+		if isDevfileTest {
+			podName := ocRunner.GetRunningPodNameByComponent(odoV2Watch.CmpName, project)
+			stdOut = ocRunner.ExecListDir(podName, project, sourcePath)
+		} else {
+			podName := ocRunner.GetRunningPodNameOfComp(odoV1Watch.SrcType+"-app", project)
+			envs := ocRunner.GetEnvs(odoV1Watch.SrcType+"-app", odoV1Watch.AppName, project)
+			dir := envs["ODO_S2I_SRC_BIN_PATH"]
+			stdOut = ocRunner.ExecListDir(podName, project, filepath.Join(dir, "src"))
+		}
 	} else if platform == "docker" {
 		dockerRunner := runner.(helper.DockerRunner)
-		containers := dockerRunner.GetRunningContainersByCompAlias(cmpName, "runtime")
+		containers := dockerRunner.GetRunningContainersByCompAlias(odoV2Watch.CmpName, "runtime")
 		Expect(len(containers)).To(Equal(1))
 		stdOut = dockerRunner.ExecContainer(containers[0], "ls -la "+sourcePath)
 	}
+
+	Expect(stdOut).To(ContainSubstring(("a.txt")))
+	Expect(stdOut).To(ContainSubstring((".abc")))
+	Expect(stdOut).To(Not(ContainSubstring(("abcd"))))
 
 	return stdOut
 }
