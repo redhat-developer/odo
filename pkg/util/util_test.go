@@ -1668,7 +1668,7 @@ func TestCopyFile(t *testing.T) {
 	defer tempFile.Close()
 
 	srcPath := tempFile.Name()
-	fakePath := filepath.Join(tempDir, "fakeFile")
+	fakePath := "!@#/**"
 	dstPath := filepath.Join(tempDir, "dstFile")
 
 	tests := []struct {
@@ -1684,9 +1684,15 @@ func TestCopyFile(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "Case 2: Source doesn't exist",
+			name:    "Case 2: Invalid source path",
 			srcPath: fakePath,
 			dstPath: dstPath,
+			wantErr: true,
+		},
+		{
+			name:    "Case 3: Invalid destination path",
+			srcPath: srcPath,
+			dstPath: fakePath,
 			wantErr: true,
 		},
 	}
