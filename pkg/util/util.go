@@ -971,7 +971,7 @@ func ValidateK8sResourceName(key string, value string) error {
 	_, err2 := strconv.ParseFloat(value, 64)
 
 	if err1 != nil || err2 == nil {
-		return errors.Errorf("%s is not valid, %s should conform the following requirements: %s", key, key, requirements)
+		return errors.Errorf("%s \"%s\" is not valid, %s should conform the following requirements: %s", key, value, key, requirements)
 	}
 
 	return nil
