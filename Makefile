@@ -260,7 +260,7 @@ test-cmd-docker-devfile-catalog:
 
 # Run odo url docker devfile command tests
 .PHONY: test-cmd-docker-devfile-url-pushtarget
-test-cmd-docker-devfile-url:
+test-cmd-docker-devfile-url-pushtarget:
 	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile url pushtarget command tests" tests/integration/devfile/docker/
 
 # Run odo watch command tests
