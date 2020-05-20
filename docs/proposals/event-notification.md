@@ -148,11 +148,11 @@ Fundamentally, this proposal needs to find a solution to this scenario:
 
 1) IDE creates a URL (calls `odo url create`) and pushes the user's code (calls `odo push`)
 2) To get the status of that app, the IDE runs `odo component status -o json` to start the long-running odo process. The status command then helpfully reports the pod/url/supervisord container status, which allows the IDE to determine when the app process is up.
-3) [some time passes]
-4) IDE creates a new URL (or performs some other action that invalidates the existing `odo status` stte, such as `odo component delete`) by calling `odo url create`.
-5) The long-running `odo status` process is still running, but somehow needs to know about the new URL from step 4 (or other events)
+3) *[some time passes]*
+4) IDE creates a new URL (or performs some other action that invalidates the existing `odo status` state, such as `odo component delete`) by calling `odo url create`.
+5) The long-running `odo status` process is still running, but somehow needs to know about the new URL from step 4 (or other events).
 
-Thus, in some way that existing long-running `odo status` process needs to be informed of the new event (a new url event, a component deletion event, etc). Since these events are generated across independent OS processes, this requires some form of [IPC](https://en.wikipedia.org/wiki/Inter-process_communication). 
+Thus, in some way, that existing long-running `odo status` process needs to be informed of the new event (a new url event, a component deletion event, etc). Since these events are generated across independent OS processes, this requires some form of [IPC](https://en.wikipedia.org/wiki/Inter-process_communication). 
 
 ### Some options in how to communicate these data across independent odo processes (in ascending order of complexity)
 
@@ -162,16 +162,17 @@ This is the solution I propose in this proposal, and is included for contrast.
 
 Since the IDE has a lifecycle that is greater than each of the individual calls to `odo`, and the IDE is directly and solely responsible for calling odo (when the user is interacting with the IDE), it is a good fit to ensure the state of `odo component status` is up-to-date and consistent.
 
-But option this is by no means a perfect solution: 
-- this does introduce complexity on the IDE side, as the IDE needs to keep track of which `odo` processes are running for each component, and it needs to know when/how to respond to actions (delete/url create/etc). But since the IDE is a monolithic process, this is at least straightforward (I mocked up the algorithm that the IDE will use in each case, which I can share if useful.)
-- this introduces complexity for EVERY new IDE/consuming tool that uses this mechanism; rather than solving it once in ODO, it needs to be solved X times for X IDEs.
+But this option is by no means a perfect solution: 
+- This does introduce complexity on the IDE side, as the IDE needs to keep track of which `odo` processes are running for each component, and it needs to know when/how to respond to actions (delete/url create/etc). But since the IDE is a monolithic process, this is at least straightforward (I mocked up the algorithm that the IDE will use in each case, which I can share if useful.)
+- This introduces complexity for EVERY new IDE/consuming tool that uses this mechanism; rather than solving it once in ODO, it needs to be solved X times for X IDEs.
+- Requires multiple concurrent long-running odo processes per odo-managed component
 
 #### 2) `odo component status` could monitor files under the `.odo` directory in order to detect changes; for example, if a new URL is added to `.odo/env/env.yaml`, `odo component status` would detect that and update the URLs it is checking
 
 This sounds simple, but is surprisingly difficult:
-- No way to detect a delete operation just by watching `.odo` directory: At present, `odo delete` does not delete/change any of the files under `.odo`
-- Partial file writes/atomicity/file locking: How to ensure that when `odo component status` reads a file that it has been fully written by the consuming process? One way is to use file locks, but that  means using using/testing each supported platform's file locking mechanisms. Then need to implement a cross-process polling mechanisms.
-- Or, need to implement a cross-platform filewatching mechanism: We need a way to watch the `.odo` directory and respond to I/O events to the files, either by modification. 
+- No way to detect a delete operation just by watching `.odo` directory: at present, `odo delete` does not delete/change any of the files under `.odo`
+- Partial file writes/atomicity/file locking: How to ensure that when `odo component status` reads a file that it has been fully written by the producing process? One way is to use file locks, but that means using/testing each supported platform's file locking mechanisms. Then need to implement a cross-process polling mechanism.
+- Or, need to implement a cross-platform [filewatching mechanism](https://github.com/fsnotify/fsnotify): We need a way to watch the `.odo` directory and respond to I/O events to the files, either by modification. 
 - Windows: Unlike other supported platforms, Windows has a number of quirky file-system behaviours that need to be individually handled. The most relevant one here is that Windows will not let you delete/modify a file in one process if another process is holding it open (we have been bitten by this a number of times in Codewind)
 - Need to support all filesystems: some filesystems have different file write/locking/atomicity guarantees for various operations.
 
@@ -189,7 +190,7 @@ As one example of this, we could create a new odo process/command (`odo status -
 
 
 Drawbacks:
-- Odo's code currently assuming that commands are a short-lived, mostly single-threaded, and compartmentalized; switching to a server would fundamentally alter this presumption of existing code
+- Odo's code currently assumes that commands are short-lived, mostly single-threaded, and compartmentalized; switching to a server would fundamentally alter this presumption of existing code
 - Much more complex to implement versus other options: requires changing the architecture of the odo tool into a multithreaded client-server model, meaning many more moving parts, and [the perils of distributed computing](https://en.wikipedia.org/wiki/Fallacies_of_distributed_computing).
 - Most be cross-platform; IPC mechanisms/behaviour are VERY platform-specific, so we probably need to use TCP/IP sockets. 
 - But, if using HTTP/S over TCP/IP socket, we need to secure endpoints; just listening on localhost [is not necessarily enough to ensure local-only access](https://bugs.chromium.org/p/project-zero/issues/detail?id=1524).
@@ -199,7 +200,7 @@ Variants on this idea: 1) a new odo daemon/LSP-style server process that was res
 
 ### Proposed option vs options 2/3
 
-Hopefully the inherent complexity in options 2-3 is clear; I can further flesh out these options if not. Likewise, if you all have another fourth option, I'm all ears.
+Hopefully I have sucessfully conveyed the inherent complexity of options 2-3... if not I can further flesh out these options. Likewise, if you all have another fourth option, I'm all ears.
 
 In any case, we certainly COULD go with any of these more sophisticated solutions: there are no technical impediments to doing so, and speaking personally it would be interesting/fun to implement them :). 
 
