@@ -103,6 +103,9 @@ const (
 	// timeout for getting the default service account
 	getDefaultServiceAccTimeout = 1 * time.Minute
 
+	// timeout for waiting for project deletion
+	waitForProjectDeletionTimeOut = 3 * time.Minute
+
 	// The length of the string to be generated for names of resources
 	nameLength = 5
 
@@ -2214,67 +2217,102 @@ func (c *Client) DeleteServiceInstance(labels map[string]string) error {
 }
 
 // DeleteProject deletes given project
-func (c *Client) DeleteProject(name string) error {
-	err := c.projectClient.Projects().Delete(name, &metav1.DeleteOptions{})
+//
+// NOTE:
+// There is a very specific edge case that may happen during project deletion when deleting a project and then immediately creating another.
+// Unfortunately, despite the watch interface, we cannot safely determine if the project is 100% deleted. See this link:
+// https://stackoverflow.com/questions/48208001/deleted-openshift-online-pro-project-has-left-a-trace-so-cannot-create-project-o
+// Will Gordon (Engineer @ Red Hat) describes the issue:
+//
+// "Projects are deleted asynchronously after you send the delete command. So it's possible that the deletion just hasn't been reconciled yet. It should happen within a minute or so, so try again.
+// Also, please be aware that in a multitenant environment, like OpenShift Online, you are prevented from creating a project with the same name as any other project in the cluster, even if it's not your own. So if you can't create the project, it's possible that someone has already created a project with the same name."
+func (c *Client) DeleteProject(name string, wait bool) error {
+
+	// Instantiate watcher for our "wait" function
+	var watcher watch.Interface
+	var err error
+
+	// If --wait has been passed, we will wait for the project to fully be deleted
+	if wait {
+		watcher, err = c.projectClient.Projects().Watch(metav1.ListOptions{
+			FieldSelector: fields.Set{"metadata.name": name}.AsSelector().String(),
+		})
+		if err != nil {
+			return errors.Wrapf(err, "unable to watch project")
+		}
+		defer watcher.Stop()
+	}
+
+	// Delete the project
+	err = c.projectClient.Projects().Delete(name, &metav1.DeleteOptions{})
 	if err != nil {
 		return errors.Wrap(err, "unable to delete project")
 	}
 
-	// wait for delete to complete
-	w, err := c.projectClient.Projects().Watch(metav1.ListOptions{
-		FieldSelector: fields.Set{"metadata.name": name}.AsSelector().String(),
-	})
-	if err != nil {
-		return errors.Wrapf(err, "unable to watch project")
+	// If watcher has been created (wait was passed) we will create a go routine and actually **wait**
+	// until *EVERYTHING* is successfully deleted.
+	if watcher != nil {
+
+		// Project channel
+		// Watch error channel
+		projectChannel := make(chan *projectv1.Project)
+		watchErrorChannel := make(chan error)
+
+		// Create a go routine to run in the background
+		go func() {
+
+			for {
+
+				// If watch unexpected has been closed..
+				val, ok := <-watcher.ResultChan()
+				if !ok {
+					//return fmt.Errorf("received unexpected signal %+v on project watch channel", val)
+					watchErrorChannel <- errors.Errorf("watch channel was closed unexpectedly: %+v", val)
+					break
+				}
+
+				// So we depend on val.Type as val.Object.Status.Phase is just empty string and not a mapped value constant
+				if projectStatus, ok := val.Object.(*projectv1.Project); ok {
+
+					klog.V(4).Infof("Status of delete of project %s is '%s'", name, projectStatus.Status.Phase)
+
+					switch projectStatus.Status.Phase {
+					//projectStatus.Status.Phase can only be "Terminating" or "Active" or ""
+					case "":
+						if val.Type == watch.Deleted {
+							projectChannel <- projectStatus
+							break
+						}
+						if val.Type == watch.Error {
+							watchErrorChannel <- errors.Errorf("failed watching the deletion of project %s", name)
+							break
+						}
+					}
+
+				} else {
+					watchErrorChannel <- errors.New("unable to convert event object to Project")
+					break
+				}
+
+			}
+			close(projectChannel)
+			close(watchErrorChannel)
+		}()
+
+		select {
+		case val := <-projectChannel:
+			klog.V(4).Infof("Deletion information for project: %+v", val)
+			return nil
+		case err := <-watchErrorChannel:
+			return err
+		case <-time.After(waitForProjectDeletionTimeOut):
+			return errors.Errorf("waited %s but couldn't delete project %s in time", waitForProjectDeletionTimeOut, name)
+		}
+
 	}
 
-	defer w.Stop()
-	for {
-		val, ok := <-w.ResultChan()
-		// When marked for deletion... val looks like:
-		/*
-			val: {
-				Type:MODIFIED
-				Object:&Project{
-					ObjectMeta:k8s_io_apimachinery_pkg_apis_meta_v1.ObjectMeta{...},
-					Spec:ProjectSpec{...},
-					Status:ProjectStatus{
-						Phase:Terminating,
-					},
-				}
-			}
-		*/
-		// Post deletion val will look like:
-		/*
-			val: {
-				Type:DELETED
-				Object:&Project{
-					ObjectMeta:k8s_io_apimachinery_pkg_apis_meta_v1.ObjectMeta{...},
-					Spec:ProjectSpec{...},
-					Status:ProjectStatus{
-						Phase:,
-					},
-				}
-			}
-		*/
-		if !ok {
-			return fmt.Errorf("received unexpected signal %+v on project watch channel", val)
-		}
-		// So we depend on val.Type as val.Object.Status.Phase is just empty string and not a mapped value constant
-		if prj, ok := val.Object.(*projectv1.Project); ok {
-			klog.V(4).Infof("Status of delete of project %s is %s", name, prj.Status.Phase)
-			switch prj.Status.Phase {
-			//prj.Status.Phase can only be "Terminating" or "Active" or ""
-			case "":
-				if val.Type == watch.Deleted {
-					return nil
-				}
-				if val.Type == watch.Error {
-					return fmt.Errorf("failed watching the deletion of project %s", name)
-				}
-			}
-		}
-	}
+	// Return nil since we don't bother checking for the watcher..
+	return nil
 }
 
 // GetDeploymentConfigLabelValues get label values of given label from objects in project that are matching selector
