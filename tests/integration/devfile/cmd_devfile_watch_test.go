@@ -33,9 +33,9 @@ var _ = Describe("odo devfile watch command tests", func() {
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 
-		fmt.Printf("KUBECONFIG BEFORE %v", os.Getenv("KUBECONFIG"))
+		fmt.Printf("KUBECONFIG BEFORE %v\n", os.Getenv("KUBECONFIG"))
 		helper.LocalKubeconfigSet(context)
-		fmt.Printf("KUBECONFIG AFTER %v", os.Getenv("KUBECONFIG"))
+		fmt.Printf("KUBECONFIG AFTER %v\n", os.Getenv("KUBECONFIG"))
 
 		namespace = cliRunner.CreateRandNamespaceProject()
 		currentWorkingDirectory = helper.Getwd()

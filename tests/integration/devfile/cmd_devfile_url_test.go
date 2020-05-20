@@ -20,7 +20,12 @@ var _ = Describe("odo devfile url command tests", func() {
 	var _ = BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		SetDefaultConsistentlyDuration(30 * time.Second)
-		namespace = helper.CreateRandProject()
+
+		fmt.Printf("KUBECONFIG BEFORE %v\n", os.Getenv("KUBECONFIG"))
+		helper.LocalKubeconfigSet(context)
+		fmt.Printf("KUBECONFIG AFTER %v\n", os.Getenv("KUBECONFIG"))
+
+		namespace = cliRunner.CreateRandNamespaceProject()
 		context = helper.CreateNewContext()
 		currentWorkingDirectory = helper.Getwd()
 		componentName = helper.RandString(6)
