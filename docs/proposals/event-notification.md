@@ -6,7 +6,7 @@ With this proposal and [it's related issue](https://github.com/openshift/odo/iss
 
 In short, the proposal is:
 - New flag for push command, `odo push -o json`: Outputs JSON events that correspond to what devfile actions/commands are being executed by push.
-- New odo command `odo component status -o json`: Pings the application URLs, and checks the container/pod status every X seconds (and/or a watch, for Kubernetes case). The result of both is output as JSON to be used by external tools to determine if the application is running.
+- New odo command `odo component status -o json`: Sends an HTTP/S request to the application URL, and checks the container/pod status every X seconds (and/or a watch, for Kubernetes case). The result of both is output as JSON to be used by external tools to determine if the application is running.
 - A standardized markup format for communicating detailed build status, something like: `#devfile-status# {"buildStatus":"Compiling application"}`, to be optionally included in devfile scripts that wish to provide detailed build status to consuming tools.
 
 ## Terminology
@@ -94,7 +94,7 @@ This 'detailed build status' markup text is *entirely optional*: if this markup 
 ### App status notification via `odo component status -o json` and `odo log --follow`
 
 In general, within the execution context that odo operates, there are a few ways for us to determine the application status:
-1) Can the application be pinged at its exposed URL? 
+1) Will the application respond to an HTTP/S request sent to its exposed URL? 
 2) What state is the container in? (running/container creating/restarting/etc -- different statuses between local and Kube but same general idea)
 3) In the application log, specific hardcoded text strings can be searched for (for example, OpenLiberty outputs defined status codes to its log to indicate that an app started.)
 
@@ -104,7 +104,7 @@ Ideally, we would like for odo to provide consuming tools with all 3 sets of dat
 
 The new proposed `odo component status -o json` command will:
 - Be a *long-running* command that will continue outputing status until it is aborted by the parent process.
-- Every X seconds, ping the URLs/routes of the application as they existed when the command was first executed. Output the result as a JSON string.
+- Every X seconds, send an HTTP/S request to the URLs/routes of the application as they existed when the command was first executed. Output the result as a JSON string.
 - Every X seconds (or using a Kubernetes watch, where appropriate), check the container status for the application, based on the application data that was present when the command was first issued. Output the result as a JSON string.
 
 **Note**: This command will NOT, by design, respond to route/application changes that occur during or after it is first invoked. It is up to consuming tools to ensure that the `odo component status` command is stopped/restarted as needed. 
@@ -115,8 +115,8 @@ This is an example an `odo component status -o json` command invocation look lik
 ```
 odo component status -o json
 
-{ "applicationPing" : { "url" : "https://(...)", "response" : "true", "responseCode" : 200, "timestamp" : (UTC unix epoch seconds.microseconds) } }
-{ "applicationPing" : { "url" : "https://(...)", "response" : "false", error: "host unreachable", "timestamp" : (...) } }
+{ "componentURLStatus" : { "url" : "https://(...)", "response" : "true", "responseCode" : 200, "timestamp" : (UTC unix epoch seconds.microseconds) } }
+{ "componentURLStatus" : { "url" : "https://(...)", "response" : "false", error: "host unreachable", "timestamp" : (...) } }
 { "containerStatus" : { "status" : "containercreating", "timestamp" : (...)} }
 { "containerStatus" : { "status" : "running", "timestamp" : (...)} }
 (...)
