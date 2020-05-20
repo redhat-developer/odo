@@ -96,7 +96,7 @@ This 'detailed build status' markup text is *entirely optional*: if this markup 
 In general, within the execution context that odo operates, there are a few ways for us to determine the application status:
 1) Will the application respond to an HTTP/S request sent to its exposed URL? 
 2) What state is the container in? (running/container creating/restarting/etc -- different statuses between local and Kube but same general idea)
-3) In the application log, specific hardcoded text strings can be searched for (for example, OpenLiberty outputs defined status codes to its log to indicate that an app started.)
+3) In the application log, specific hardcoded text strings can be searched for (for example, OpenLiberty outputs defined status codes to its log to indicate that an app started.) But, note that we definitely don't want to hardcode specific text strings into ODO: instead, this proposal leaves it up to the IDE to process the output from the `odo log` command. Since the `odo log` command output would contain the application text, IDEs can provide their own mechanism to determine status for supported devfiles (and in the future we may wish to add new devfile elements for these strings, to allow odo to do this as well).
 
 Ideally, we would like for odo to provide consuming tools with all 3 sets of data. Thus, as proposed:
 - 1 and 2 are handled by a new `odo component status -o json` command, described here.
