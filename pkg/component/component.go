@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
@@ -898,17 +897,7 @@ func GetComponentFromConfig(localConfig *config.LocalConfigInfo) (Component, err
 
 		urls := localConfig.GetURL()
 		if len(urls) > 0 {
-			// We will clean up the existing value of ports and re-populate it so that we don't panic in `odo describe` and don't show inconsistent info
-			// This will also help in the case where there are more URLs created than the number of ports exposed by a component #2776
-			oldPortsProtocol, err := getPortsProtocolMapping(component.Spec.Ports)
-			if err != nil {
-				return Component{}, err
-			}
-			component.Spec.Ports = []string{}
-
 			for _, url := range urls {
-				port := strconv.Itoa(url.Port)
-				component.Spec.Ports = append(component.Spec.Ports, fmt.Sprintf("%s/%s", port, oldPortsProtocol[port]))
 				component.Spec.URL = append(component.Spec.URL, url.Name)
 			}
 		}
