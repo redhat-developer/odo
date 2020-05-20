@@ -3,6 +3,7 @@ package pipelines
 import (
 	"fmt"
 
+	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/pipelines"
 	"github.com/openshift/odo/pkg/pipelines/ioutils"
@@ -55,7 +56,11 @@ func (io *BuildParameters) Run() error {
 		ManifestFilename: io.pipelines,
 		OutputPath:       io.output,
 	}
-	return pipelines.BuildResources(&options, ioutils.NewFilesystem())
+	err := pipelines.BuildResources(&options, ioutils.NewFilesystem())
+	if err == nil {
+		log.Successf("Built successfully.")
+	}
+	return err
 }
 
 // NewCmdBuild creates the pipelines build command.

@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/pipelines"
 	"github.com/openshift/odo/pkg/pipelines/ioutils"
@@ -82,7 +83,11 @@ func (io *InitParameters) Run() error {
 		ImageRepo:                io.imageRepo,
 		InternalRegistryHostname: io.internalRegistryHostname,
 	}
-	return pipelines.Init(&options, ioutils.NewFilesystem())
+	err := pipelines.Init(&options, ioutils.NewFilesystem())
+	if err == nil {
+		log.Successf(fmt.Sprintf("Intialized GitOps sucessfully."))
+	}
+	return err
 }
 
 // NewCmdInit creates the project init command.

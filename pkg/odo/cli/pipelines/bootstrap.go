@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/pipelines"
 	"github.com/openshift/odo/pkg/pipelines/ioutils"
@@ -67,7 +68,11 @@ func (io *BootstrapParameters) Validate() error {
 
 // Run runs the project bootstrap command.
 func (io *BootstrapParameters) Run() error {
-	return pipelines.Bootstrap(io.BootstrapOptions, ioutils.NewFilesystem())
+	err := pipelines.Bootstrap(io.BootstrapOptions, ioutils.NewFilesystem())
+	if err == nil {
+		log.Successf("Bootstrapped GitOps sucessfully.")
+	}
+	return err
 }
 
 // NewCmdBootstrap creates the project init command.

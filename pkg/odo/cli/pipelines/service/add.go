@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 
+	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/pipelines"
 	"github.com/openshift/odo/pkg/pipelines/ioutils"
@@ -49,7 +50,11 @@ func (o *AddOptions) Validate() error {
 // Run runs the project bootstrap command.
 func (o *AddOptions) Run() error {
 
-	return pipelines.AddService(o.gitRepoURL, o.envName, o.appName, o.serviceName, o.webhookSecret, o.manifest, ioutils.NewFilesystem())
+	err := pipelines.AddService(o.gitRepoURL, o.envName, o.appName, o.serviceName, o.webhookSecret, o.manifest, ioutils.NewFilesystem())
+	if err == nil {
+		log.Successf(fmt.Sprintf("Service %s has been created sucessfully at environment %s.", o.serviceName, o.envName))
+	}
+	return err
 }
 
 func newCmdAdd(name, fullName string) *cobra.Command {
