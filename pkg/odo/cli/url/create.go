@@ -100,25 +100,24 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 		o.Context = genericclioptions.NewContext(cmd)
 	}
 
-	o.Client = genericclioptions.Client(cmd)
-
-	routeSupported, err := o.Client.IsRouteSupported()
-	if err != nil {
-		return err
-	}
-	if routeSupported {
-		o.isRouteSupported = true
-	}
-
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
-		if o.wantIngress || (!o.isRouteSupported) {
-			o.urlType = envinfo.INGRESS
-		} else {
-			o.urlType = envinfo.ROUTE
-		}
+		if !pushtarget.IsPushTargetDocker() {
+			o.Client = genericclioptions.Client(cmd)
 
-		if o.tlsSecret != "" && (!o.wantIngress || !o.secureURL) {
-			return fmt.Errorf("tls secret is only available for secure URLs of ingress kind")
+			o.isRouteSupported, err = o.Client.IsRouteSupported()
+			if err != nil {
+				return err
+			}
+
+			if o.wantIngress || (!o.isRouteSupported) {
+				o.urlType = envinfo.INGRESS
+			} else {
+				o.urlType = envinfo.ROUTE
+			}
+
+			if o.tlsSecret != "" && (!o.wantIngress || !o.secureURL) {
+				return fmt.Errorf("tls secret is only available for secure URLs of ingress kind")
+			}
 		}
 
 		err = o.InitEnvInfoFromContext()
@@ -245,7 +244,8 @@ func (o *URLCreateOptions) Run() (err error) {
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
 		if pushtarget.IsPushTargetDocker() {
 			for _, localURL := range o.EnvSpecificInfo.GetURL() {
-				if o.urlPort == localURL.Port && localURL.ExposedPort > 0 {
+				fmt.Printf("componentPort is %v, localUrl.port is %v", o.componentPort, localURL.Port)
+				if o.componentPort == localURL.Port && localURL.ExposedPort > 0 {
 					if !o.forceFlag {
 						if !ui.Proceed(fmt.Sprintf("Port %v already has an exposed port %v set for it. Do you want to override the exposed port", localURL.Port, localURL.ExposedPort)) {
 							log.Info("Aborted by the user")

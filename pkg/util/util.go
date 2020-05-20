@@ -33,7 +33,10 @@ import (
 )
 
 // HTTPRequestTimeout configures timeout of all HTTP requests
-const HTTPRequestTimeout = 10 * time.Second
+const (
+	HTTPRequestTimeout    = 20 * time.Second // HTTPRequestTimeout configures timeout of all HTTP requests
+	ResponseHeaderTimeout = 10 * time.Second // ResponseHeaderTimeout is the timeout to retrieve the server's response headers
+)
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
 
@@ -680,12 +683,20 @@ func GetRemoteFilesMarkedForDeletion(delSrcRelPaths []string, remoteFolder strin
 
 // HTTPGetRequest uses url to get file contents
 func HTTPGetRequest(url string) ([]byte, error) {
-	var httpClient = &http.Client{Timeout: HTTPRequestTimeout}
+	var httpClient = &http.Client{Transport: &http.Transport{
+		ResponseHeaderTimeout: ResponseHeaderTimeout,
+	},
+		Timeout: HTTPRequestTimeout}
 	resp, err := httpClient.Get(url)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	// we have a non 1xx / 2xx status, return an error
+	if (resp.StatusCode - 300) > 0 {
+		return nil, fmt.Errorf("error retrieving %s: %s", url, http.StatusText(resp.StatusCode))
+	}
 
 	bytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -960,7 +971,9 @@ func DownloadFile(url string, filepath string) error {
 	defer out.Close() // #nosec G307
 
 	// Get the data
-	var httpClient = &http.Client{Timeout: HTTPRequestTimeout}
+	var httpClient = &http.Client{Transport: &http.Transport{
+		ResponseHeaderTimeout: ResponseHeaderTimeout,
+	}, Timeout: HTTPRequestTimeout}
 	resp, err := httpClient.Get(url)
 	if err != nil {
 		return err

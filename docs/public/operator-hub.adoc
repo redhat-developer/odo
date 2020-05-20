@@ -1,0 +1,136 @@
+== Introduction to Operators
+
+What is an Operator?
+
+An Operator is essentially a link:https://www.openshift.com/learn/topics/operators[custom controller]. It is a method of packaging, deploying and managing a Kubernetes-native application.
+
+With Operators, odo allows you to create a service as defined by a Custom Resource Definition (CRD).
+
+Odo utilizes Operators and link:https://operatorhub.io/[Operator Hub] in order to provide a seamless method for custom controller service installation.
+
+== Deploying your first Operator
+
+==== Prerequisites
+
+* You must have cluster permissions to install an Operator on either link:https://docs.openshift.com/container-platform/4.3/operators/olm-adding-operators-to-cluster.html[OpenShift] or link:https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/install/install.md[Kubernetes].
+* Enable experimental mode for odo. This can be done by: `odo preference set experimental true`
+
+== Creating a project
+
+Create a project to keep your source code, tests, and libraries
+organized in a separate single unit.
+
+. Log in to your cluster:
++
+[source,sh]
+----
+  $ odo login -u developer -p developer
+----
+
+. Create a project:
++
+[source,sh]
+----
+  $ odo project create myproject
+   ✓  Project 'myproject' is ready for use
+   ✓  New project created and now using project : myproject
+----
+
+== Installing an Operator
+
+In our examples, we install link:https://etcd.io/[etcd], a distributed key-value store from link:https://operatorhub.io/operator/etcd[Operator Hub].
+
+[IMPORTANT]
+====
+Each Operator we install refers to the built-in `metadata.annotations.alm-examples` annotation in order to correctly deploy. If the Operator does not contain the correct metadata, you will not be able to correctly deploy. For more information, see the the link:https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/building-your-csv.md#crd-templates[upstream CRD documentation]. 
+====
+
+
+=== Kubernetes installation
+
+For Kubernetes installation, you must install the Operator Lifecycle Manager and etcd from the link:https://operatorhub.io/operator/etcd[etcd installation guide on Operator Hub].
+
+=== OpenShift installation
+
+For OpenShift installation, the etcd Operator can be installed through the link:https://docs.openshift.com/container-platform/4.3/operators/olm-adding-operators-to-cluster.html[administrative console].
+
+=== Listing all available Operators
+
+Before deploying your first Operator, have a look at what is available:
+[source,sh]
+----
+  $ odo catalog list services
+  Operators available in the cluster
+  NAME                          CRDs
+  etcdoperator.v0.9.4           EtcdCluster, EtcdBackup, EtcdRestore
+----
+
+In above output, `etcdoperator.v0.9.4` is the Operator while `EtcdCluster`,
+`EtcdBackup` and `EtcdRestore` are the CRDs provided by this Operator.
+
+
+=== Deploying etcd to a cluster
+
+In this example, we will be deploying our link:https://operatorhub.io/operator/etcd[installed etcd Operator] to an OpenShift / Kubernetes cluster.
+
+. Create a etcd service from the `etcdoperator.v0.9.4` Operator:
++
+[source,sh]
+----
+  $ odo service create etcdoperator.v0.9.4 --crd EtcdCluster
+----
+
+. Confirm the Operator backed service was deployed:
++
+[source,sh]
+----
+  $ odo service list
+----
+
+It is important to note that `EtcdBackup` and `EtcdRestore` are **not** available for deployment as they require interactive parameters.
+
+=== Deploying etcd to a cluster via YAML
+
+
+In this example, we will be deploying our link:https://operatorhub.io/operator/etcd[installed etcd Operator] to an OpenShift / Kubernetes cluster.
+
+However, we will be using the YAML definition where we modify the `metadata.name` and `spec.size`.
+
+[IMPORTANT]
+====
+Deploying via YAML is a **temporary** feature as we add support for link:https://github.com/openshift/odo/issues/2785[passing parameters on the command line] and link:https://github.com/openshift/odo/issues/2799[interactive mode].
+====
+
+. Retrieve the YAML output of the operator:
++
+[source,shell]
+----
+  $ odo service create etcdoperator.v0.9.4 --crd EtcdCluster --dry-run > etcd.yaml
+----
+
+. Modify the YAML file by redefining the name and size:
++
+[source,yaml]
+----
+apiVersion: etcd.database.coreos.com/v1beta2
+kind: EtcdCluster
+metadata:
+  name: my-etcd-cluster // Change the name
+spec: 
+  size: 1 // Reduce the size from 3 to 1
+  version: 3.2.13
+----
+
+. Create the service from the YAML file:
++
+[source,shell]
+----
+  $ odo service create --from-file etcd.yaml
+----
+
+. Confirm that the service has been created:
++
+[source,shell]
+----
+  $ odo service list
+----

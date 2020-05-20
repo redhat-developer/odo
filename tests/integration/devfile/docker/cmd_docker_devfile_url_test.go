@@ -1,11 +1,14 @@
 package docker
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/openshift/odo/pkg/util"
 	"github.com/openshift/odo/tests/helper"
 
 	. "github.com/onsi/ginkgo"
@@ -135,7 +138,106 @@ var _ = Describe("odo docker devfile url command tests", func() {
 			stderr := string(session.Wait().Err.Contents())
 			Expect(stderr).To(ContainSubstring("Found a URL defined for Kubernetes, but no valid URLs for Docker."))
 			Expect(stdout).To(ContainSubstring("Changes successfully pushed to component"))
+		})
+	})
 
+	Context("Listing urls", func() {
+		It("should list url with appropriate state", func() {
+			var stdout string
+			url1 := helper.RandString(5)
+			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			stdout = helper.CmdShouldFail("odo", "url", "list")
+			Expect(stdout).To(ContainSubstring("no URLs found"))
+
+			helper.CmdShouldPass("odo", "url", "create", url1)
+			stdout = helper.CmdShouldPass("odo", "url", "list")
+			helper.MatchAllInOutput(stdout, []string{url1, "Not Pushed"})
+
+			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
+			stdout = helper.CmdShouldPass("odo", "url", "list")
+			helper.MatchAllInOutput(stdout, []string{url1, "Pushed"})
+			helper.CmdShouldPass("odo", "url", "delete", url1, "-f")
+
+			stdout = helper.CmdShouldPass("odo", "url", "list")
+			Expect(stdout).To(ContainSubstring("Locally Deleted"))
+		})
+
+		It("should be able to list url in machine readable json format", func() {
+			var stdout string
+			url1 := helper.RandString(5)
+
+			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			stdout = helper.CmdShouldFail("odo", "url", "list")
+			Expect(stdout).To(ContainSubstring("no URLs found"))
+
+			httpPort, err := util.HttpGetFreePort()
+			Expect(err).NotTo(HaveOccurred())
+			freePort := strconv.Itoa(httpPort)
+			helper.CmdShouldPass("odo", "url", "create", url1, "--exposed-port", freePort, "--now")
+			// odo url list -o json
+			helper.WaitForCmdOut("odo", []string{"url", "list", "-o", "json"}, 1, true, func(output string) bool {
+				desiredURLListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.dev/v1alpha1","metadata":{},"items":[{"kind":"url","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"%s","creationTimestamp":null},"spec":{"host":"127.0.0.1","port": 3000,"secure":false,"externalport":%s},"status":{"state":"Pushed"}}]}`, url1, freePort)
+				if strings.Contains(output, url1) {
+					Expect(desiredURLListJSON).Should(MatchJSON(output))
+					return true
+				}
+				return false
+			})
+		})
+	})
+
+	Context("Describing urls", func() {
+		It("should describe URL with appropriate appropriate", func() {
+			var stdout string
+			url1 := helper.RandString(5)
+			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			helper.CmdShouldPass("odo", "url", "create", url1)
+
+			stdout = helper.CmdShouldPass("odo", "url", "describe", url1)
+			helper.MatchAllInOutput(stdout, []string{url1, "Not Pushed"})
+
+			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
+			stdout = helper.CmdShouldPass("odo", "url", "describe", url1)
+			helper.MatchAllInOutput(stdout, []string{url1, "Pushed"})
+
+			helper.CmdShouldPass("odo", "url", "delete", url1, "-f")
+			stdout = helper.CmdShouldPass("odo", "url", "describe", url1)
+			helper.MatchAllInOutput(stdout, []string{url1, "Locally Deleted"})
+		})
+
+		It("should be able to describe url in machine readable json format", func() {
+			var stdout string
+			url1 := helper.RandString(5)
+
+			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			stdout = helper.CmdShouldFail("odo", "url", "describe", url1)
+			Expect(stdout).To(ContainSubstring("the url " + url1 + " does not exist"))
+
+			httpPort, err := util.HttpGetFreePort()
+			Expect(err).NotTo(HaveOccurred())
+			freePort := strconv.Itoa(httpPort)
+			helper.CmdShouldPass("odo", "url", "create", url1, "--exposed-port", freePort, "--now")
+			stdout = helper.CmdShouldPass("odo", "url", "describe", url1)
+			helper.MatchAllInOutput(stdout, []string{url1, "Pushed"})
+
+			desiredURLListJSON := fmt.Sprintf(`{"kind":"url","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"%s","creationTimestamp":null},"spec":{"host":"127.0.0.1","port": 3000,"secure":false,"externalport":%s},"status":{"state":"Pushed"}}`, url1, freePort)
+			stdout = helper.CmdShouldPass("odo", "url", "describe", url1, "-o", "json")
+			Expect(desiredURLListJSON).Should(MatchJSON(stdout))
 		})
 	})
 

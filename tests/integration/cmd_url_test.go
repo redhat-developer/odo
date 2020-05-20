@@ -131,7 +131,7 @@ var _ = Describe("odo url command tests", func() {
 			actualURLListJSON := helper.CmdShouldPass("odo", "url", "list", "-o", "json")
 			fullURLPath := helper.DetermineRouteURL("")
 			pathNoHTTP := strings.Split(fullURLPath, "//")[1]
-			desiredURLListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"url","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"host":"%s","protocol":"http","port":8080,"secure":false},"status":{"state": "Pushed"}}]}`, pathNoHTTP)
+			desiredURLListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.dev/v1alpha1","metadata":{},"items":[{"kind":"url","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"host":"%s","protocol":"http","port":8080,"secure":false},"status":{"state": "Pushed"}}]}`, pathNoHTTP)
 			Expect(desiredURLListJSON).Should(MatchJSON(actualURLListJSON))
 		})
 
@@ -144,7 +144,7 @@ var _ = Describe("odo url command tests", func() {
 			actualURLListJSON := helper.CmdShouldPass("odo", "url", "list", "-o", "json")
 			fullURLPath := helper.DetermineRouteURL("")
 			pathNoHTTP := strings.Split(fullURLPath, "//")[1]
-			desiredURLListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.openshift.io/v1alpha1","metadata":{},"items":[{"kind":"url","apiVersion":"odo.openshift.io/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"host":"%s","protocol":"https","port":8080,"secure":true},"status":{"state": "Pushed"}}]}`, pathNoHTTP)
+			desiredURLListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.dev/v1alpha1","metadata":{},"items":[{"kind":"url","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"host":"%s","protocol":"https","port":8080,"secure":true},"status":{"state": "Pushed"}}]}`, pathNoHTTP)
 			Expect(desiredURLListJSON).Should(MatchJSON(actualURLListJSON))
 		})
 	})

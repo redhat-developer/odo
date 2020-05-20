@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -84,6 +85,19 @@ func (d *DockerRunner) GetVolumesByLabel(label string) []string {
 	return containers
 }
 
+// VolumeExists returns true if a volume with the given name exists, false otherwise.
+func (d *DockerRunner) VolumeExists(name string) bool {
+	vols := d.ListVolumes()
+
+	for _, vol := range vols {
+		if vol == name {
+			return true
+		}
+	}
+	return false
+
+}
+
 // GetVolumesByCompStorageName returns the list of volumes associated with a specific devfile volume in a component
 func (d *DockerRunner) GetVolumesByCompStorageName(component string, storageName string) []string {
 	fmt.Fprintf(GinkgoWriter, "Listing Docker volumes with comp %s and storage name %s", component, storageName)
@@ -96,7 +110,20 @@ func (d *DockerRunner) GetVolumesByCompStorageName(component string, storageName
 	return containers
 }
 
-// IsVolumeMountedInContainer returns true if the specified volume is moutned in the container associated with specified component and alias
+// InspectVolume returns a map-representation of the JSON returned by the 'docker inspect volume' command
+func (d *DockerRunner) InspectVolume(volumeName string) []map[string]interface{} {
+
+	fmt.Fprintf(GinkgoWriter, "Inspecting volume %s", volumeName)
+	output := CmdShouldPass(d.path, "inspect", volumeName)
+
+	var result []map[string]interface{}
+	err := json.Unmarshal([]byte(output), &result)
+	Expect(err).NotTo(HaveOccurred())
+
+	return result
+}
+
+// IsVolumeMountedInContainer returns true if the specified volume is mounted in the container associated with specified component and alias
 func (d *DockerRunner) IsVolumeMountedInContainer(volumeName string, component string, alias string) bool {
 	// Get the container ID of the specified component and alias
 	containers := d.GetRunningContainersByCompAlias(component, alias)
@@ -108,47 +135,74 @@ func (d *DockerRunner) IsVolumeMountedInContainer(volumeName string, component s
 	return strings.Contains(mounts, volumeName)
 }
 
-// ListVolumesOfComponentAndType lists all volumes that match the expected component/type labels
-func (d *DockerRunner) ListVolumesOfComponentAndType(componentLabel string, typeLabel string) []string {
+// GetSourceAndStorageVolumesByComponent lists only the volumes that are associated with this component
+// and contain either the 'type' or 'storage-name' fields.
+func (d *DockerRunner) GetSourceAndStorageVolumesByComponent(componentLabel string) []string {
 
-	fmt.Fprintf(GinkgoWriter, "Listing volumes with component label %s and type label %s", componentLabel, typeLabel)
-	session := CmdRunner(d.path, "volume", "ls", "-q", "--filter", "label=component="+componentLabel, "--filter", "label=type="+typeLabel)
+	result := []string{}
 
-	session.Wait()
-	if session.ExitCode() == 0 {
-
-		volumes := strings.Fields(strings.TrimSpace(string(session.Out.Contents())))
-
-		return volumes
+	volumeList := d.GetVolumesByLabel("component=" + componentLabel)
+	if len(volumeList) == 0 {
+		return result
 	}
-	return []string{}
+
+	fmt.Fprintf(GinkgoWriter, "Removing volumes with component label %s", componentLabel)
+
+	for _, volumeName := range volumeList {
+
+		// Only return volumes that contain the component label, and either 'type' or 'storage-name'
+		volumeJSON := d.InspectVolume(volumeName)
+		volumeLabels := (volumeJSON[0]["Labels"]).(map[string]interface{})
+
+		match := false
+		if typeValue, ok := volumeLabels["type"]; ok {
+			match = match || typeValue == "projects"
+		}
+		if _, ok := volumeLabels["storage-name"]; ok {
+			match = true
+		}
+
+		if match {
+			result = append(result, volumeName)
+		}
+	}
+
+	return result
+
 }
 
-// RemoveVolumesByComponentAndType removes any volumes that match specified component and type labels
-func (d *DockerRunner) RemoveVolumesByComponentAndType(componentLabel string, typeLabel string) string {
+// RemoveVolumeByName removes a specific volume by name
+func (d *DockerRunner) RemoveVolumeByName(volumeName string) *gexec.Session {
+	fmt.Fprintf(GinkgoWriter, "Removing volume with ID %s", volumeName)
 
-	volumes := d.ListVolumesOfComponentAndType(componentLabel, typeLabel)
+	session := CmdRunner(d.path, "volume", "rm", "-f", volumeName)
+	session.Wait()
 
-	if len(volumes) == 0 {
+	return session
+}
+
+// RemoveVolumesByComponent removes source/storage volumes that match specified component
+func (d *DockerRunner) RemoveVolumesByComponent(componentLabel string) string {
+
+	volumeList := d.GetSourceAndStorageVolumesByComponent(componentLabel)
+	if len(volumeList) == 0 {
 		return ""
 	}
-	fmt.Fprintf(GinkgoWriter, "Removing volumes with component label %s and type label %s", componentLabel, typeLabel)
+
+	fmt.Fprintf(GinkgoWriter, "Removing volumes with component label %s", componentLabel)
 
 	output := ""
 
-	for _, volume := range volumes {
+	for _, volumeName := range volumeList {
 
-		fmt.Fprintf(GinkgoWriter, "Removing volume with ID %s", volume)
-
-		session := CmdRunner(d.path, "volume", "rm", "-f", volume)
-		session.Wait()
+		session := d.RemoveVolumeByName(volumeName)
 
 		sessionOut := strings.TrimSpace(string(session.Out.Contents()))
 
 		if session.ExitCode() == 0 {
 			output += sessionOut + " "
 		} else {
-			fmt.Fprintf(GinkgoWriter, "Non-zero error code on removing volume with component label %s and type label %s, output: %s", componentLabel, typeLabel, sessionOut)
+			fmt.Fprintf(GinkgoWriter, "Non-zero error code on removing volume with component label %s, output: %s", componentLabel, sessionOut)
 		}
 
 	}
@@ -168,5 +222,21 @@ func (d *DockerRunner) StopContainers(label string) {
 	for _, container := range containerIDs {
 		CmdShouldPass(d.path, "stop", container)
 	}
+
+}
+
+// CreateVolume creates an empty volume with the given name and labels
+func (d *DockerRunner) CreateVolume(volumeName string, labels []string) {
+	fmt.Fprintf(GinkgoWriter, "Creating volume %s with labels %v", volumeName, labels)
+
+	args := []string{"volume", "create"}
+
+	for _, label := range labels {
+		args = append(args, "--label", label)
+	}
+
+	args = append(args, volumeName)
+
+	CmdShouldPass(d.path, args...)
 
 }

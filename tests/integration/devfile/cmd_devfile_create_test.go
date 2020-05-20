@@ -149,6 +149,37 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 	})
 
+	Context("When executing odo create with devfile component and --downloadSource flag with a valid project", func() {
+		It("should succesfully create the compoment specified and download the source", func() {
+			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+			contextDevfile := helper.CreateNewContext()
+			helper.Chdir(contextDevfile)
+			devfile := "devfile.yaml"
+			helper.CmdShouldPass("odo", "create", "nodejs", "--downloadSource=nodejs-web-app")
+			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
+			Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
+			helper.DeleteDir(contextDevfile)
+			helper.Chdir(context)
+		})
+	})
+
+	Context("When executing odo create with an invalid project specified in --downloadSource", func() {
+		It("should fail with please run 'The project: invalid-project-name specified in --downloadSource does not exist'", func() {
+			invalidProjectName := "invalid-project-name"
+			output := helper.CmdShouldFail("odo", "create", "nodejs", "--downloadSource=invalid-project-name")
+			expectedString := "The project: " + invalidProjectName + " specified in --downloadSource does not exist"
+			helper.MatchAllInOutput(output, []string{expectedString})
+		})
+	})
+
+	Context("When executing odo create using --downloadSource with a devfile component that contains no projects", func() {
+		It("should fail with please run 'No project found in devfile component.'", func() {
+			output := helper.CmdShouldFail("odo", "create", "maven", "--downloadSource")
+			expectedString := "No project found in devfile component."
+			helper.MatchAllInOutput(output, []string{expectedString})
+		})
+	})
+
 	// Currently these tests need interactive mode in order to set the name of the component.
 	// Once this feature is added we can change these tests.
 	//Context("When executing odo create with devfile component and --downloadSource flag with github type", func() {
