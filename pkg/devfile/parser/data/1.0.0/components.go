@@ -104,17 +104,17 @@ func convertV1CommandToCommon(c Command) (d common.DevfileCommand) {
 
 func convertV1ComponentToCommon(c Component) (d common.DevfileComponent) {
 
-	var endpoints []*common.Endpoint
+	var endpoints []common.Endpoint
 	for _, v := range c.ComponentDockerimage.Endpoints {
 		endpoints = append(endpoints, convertV1EndpointsToCommon(v))
 	}
 
-	var envs []*common.Env
+	var envs []common.Env
 	for _, v := range c.ComponentDockerimage.Env {
 		envs = append(envs, convertV1EnvToCommon(v))
 	}
 
-	var volumes []*common.VolumeMount
+	var volumes []common.VolumeMount
 	for _, v := range c.ComponentDockerimage.Volumes {
 		volumes = append(volumes, convertV1VolumeToCommon(v))
 	}
@@ -135,8 +135,8 @@ func convertV1ComponentToCommon(c Component) (d common.DevfileComponent) {
 	return d
 }
 
-func convertV1EndpointsToCommon(e DockerimageEndpoint) *common.Endpoint {
-	return &common.Endpoint{
+func convertV1EndpointsToCommon(e DockerimageEndpoint) common.Endpoint {
+	return common.Endpoint{
 		// Attributes:
 		// Configuration:
 		Name:       e.Name,
@@ -144,15 +144,15 @@ func convertV1EndpointsToCommon(e DockerimageEndpoint) *common.Endpoint {
 	}
 }
 
-func convertV1EnvToCommon(e DockerimageEnv) *common.Env {
-	return &common.Env{
+func convertV1EnvToCommon(e DockerimageEnv) common.Env {
+	return common.Env{
 		Name:  e.Name,
 		Value: e.Value,
 	}
 }
 
-func convertV1VolumeToCommon(v DockerimageVolume) *common.VolumeMount {
-	return &common.VolumeMount{
+func convertV1VolumeToCommon(v DockerimageVolume) common.VolumeMount {
+	return common.VolumeMount{
 		Name: v.Name,
 		Path: v.ContainerPath,
 	}
