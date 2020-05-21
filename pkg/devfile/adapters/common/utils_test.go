@@ -8,75 +8,56 @@ import (
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/testingutil"
-	"github.com/openshift/odo/pkg/util"
 )
 
 func TestGetSupportedComponents(t *testing.T) {
 
 	tests := []struct {
 		name                 string
-		componentType        versionsCommon.DevfileComponentType
+		component            []versionsCommon.DevfileComponent
 		alias                []string
 		expectedMatchesCount int
 	}{
 		{
 			name:                 "Case: Invalid devfile",
-			componentType:        "",
-			expectedMatchesCount: 0,
-		},
-		{
-			name:                 "Case: Valid devfile with wrong component type (CheEditor)",
-			componentType:        versionsCommon.DevfileComponentTypeCheEditor,
-			alias:                []string{"alias1", "alias2"},
-			expectedMatchesCount: 0,
-		},
-		{
-			name:                 "Case: Valid devfile with wrong component type (ChePlugin)",
-			componentType:        versionsCommon.DevfileComponentTypeChePlugin,
-			alias:                []string{"alias1", "alias2"},
-			expectedMatchesCount: 0,
-		},
-		{
-			name:                 "Case: Valid devfile with wrong component type (Kubernetes)",
-			componentType:        versionsCommon.DevfileComponentTypeKubernetes,
-			alias:                []string{"alias1", "alias2"},
+			component:            []versionsCommon.DevfileComponent{},
 			expectedMatchesCount: 0,
 		},
 		{
 			name:                 "Case: Valid devfile with wrong component type (Openshift)",
-			componentType:        versionsCommon.DevfileComponentTypeOpenshift,
-			alias:                []string{"alias1", "alias2"},
+			component:            []versionsCommon.DevfileComponent{{Openshift: &versionsCommon.Openshift{}}},
 			expectedMatchesCount: 0,
 		},
 		{
-			name:                 "Case: Valid devfile with correct component type (Dockerimage)",
-			componentType:        versionsCommon.DevfileComponentTypeDockerimage,
-			alias:                []string{"alias1", "alias2"},
+			name:                 "Case: Valid devfile with wrong component type (Kubernetes)",
+			component:            []versionsCommon.DevfileComponent{{Kubernetes: &versionsCommon.Kubernetes{}}},
+			expectedMatchesCount: 0,
+		},
+
+		{
+			name:                 "Case: Valid devfile with correct component type (Container)",
+			component:            []versionsCommon.DevfileComponent{testingutil.GetFakeComponent("comp1"), testingutil.GetFakeComponent("comp2")},
 			expectedMatchesCount: 2,
+		},
+
+		{
+			name:                 "Case: Valid devfile with correct component type (Container) without name",
+			component:            []versionsCommon.DevfileComponent{testingutil.GetFakeComponent("comp1"), testingutil.GetFakeComponent("")},
+			expectedMatchesCount: 1,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					ComponentType: tt.componentType,
+					Components: tt.component,
 				},
 			}
 
 			devfileComponents := GetSupportedComponents(devObj.Data)
 
-			componentsMatched := 0
-			for _, component := range devfileComponents {
-				if component.Type != versionsCommon.DevfileComponentTypeDockerimage {
-					t.Errorf("TestGetSupportedComponents error: wrong component type expected %v, actual %v", versionsCommon.DevfileComponentTypeDockerimage, component.Type)
-				}
-				if util.In(tt.alias, *component.Alias) {
-					componentsMatched++
-				}
-			}
-
-			if componentsMatched != tt.expectedMatchesCount {
-				t.Errorf("TestGetSupportedComponents error: wrong number of components matched: expected %v, actual %v", tt.expectedMatchesCount, componentsMatched)
+			if len(devfileComponents) != tt.expectedMatchesCount {
+				t.Errorf("TestGetSupportedComponents error: wrong number of components matched: expected %v, actual %v", tt.expectedMatchesCount, len(devfileComponents))
 			}
 		})
 	}
@@ -88,10 +69,10 @@ func TestIsEnvPresent(t *testing.T) {
 	envName := "myenv"
 	envValue := "myenvvalue"
 
-	envVars := []common.DockerimageEnv{
+	envVars := []common.Env{
 		{
-			Name:  &envName,
-			Value: &envValue,
+			Name:  envName,
+			Value: envValue,
 		},
 	}
 
@@ -127,10 +108,10 @@ func TestIsPortPresent(t *testing.T) {
 	endpointName := "8080/tcp"
 	var endpointPort int32 = 8080
 
-	endpoints := []common.DockerimageEndpoint{
+	endpoints := []common.Endpoint{
 		{
-			Name: &endpointName,
-			Port: &endpointPort,
+			Name:       endpointName,
+			TargetPort: endpointPort,
 		},
 	}
 
@@ -204,16 +185,14 @@ func TestIsComponentSupported(t *testing.T) {
 		wantIsSupported bool
 	}{
 		{
-			name: "Case 1: Supported component",
-			component: common.DevfileComponent{
-				Type: versionsCommon.DevfileComponentTypeDockerimage,
-			},
+			name:            "Case 1: Supported component",
+			component:       testingutil.GetFakeComponent("comp1"),
 			wantIsSupported: true,
 		},
 		{
 			name: "Case 2: Unsupported component",
 			component: common.DevfileComponent{
-				Type: versionsCommon.DevfileComponentTypeCheEditor,
+				Openshift: &versionsCommon.Openshift{},
 			},
 			wantIsSupported: false,
 		},
