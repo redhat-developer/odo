@@ -103,7 +103,7 @@ func convertV1CommandToCommon(c Command) (d common.DevfileCommand) {
 	}
 }
 
-func convertV1ComponentToCommon(c Component) (d common.DevfileComponent) {
+func convertV1ComponentToCommon(c Component) (component common.DevfileComponent) {
 
 	var endpoints []*common.Endpoint
 	for _, v := range c.ComponentDockerimage.Endpoints {
@@ -131,9 +131,9 @@ func convertV1ComponentToCommon(c Component) (d common.DevfileComponent) {
 		// SourceMapping: Not present in V1
 	}
 
-	d = common.DevfileComponent{Container: &container}
+	component = common.DevfileComponent{Container: &container}
 
-	return d
+	return component
 }
 
 func convertV1EndpointsToCommon(e DockerimageEndpoint) *common.Endpoint {
@@ -169,9 +169,10 @@ func convertV1ProjectToCommon(p Project) common.DevfileProject {
 	}
 
 	return common.DevfileProject{
-		ClonePath: p.ClonePath,
-		Name:      p.Name,
-		Git:       &git,
+		ClonePath:  p.ClonePath,
+		Git:        &git,
+		Name:       p.Name,
+		SourceType: common.GitProjectSourceType,
 	}
 
 }
