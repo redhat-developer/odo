@@ -135,7 +135,7 @@ jobs:
         - ./scripts/oc-cluster.sh
         - make bin
         - sudo cp odo /usr/bin
-        - travis_wait make test-cmd-docker-devfile-url
+        - travis_wait make test-cmd-docker-devfile-url-pushtarget
         # These tests need cluster login as they will be interacting with a Kube environment
         - odo login -u developer
         - travis_wait make test-cmd-devfile-catalog
@@ -169,6 +169,7 @@ jobs:
         - travis_wait make test-cmd-docker-devfile-push
         - travis_wait make test-cmd-docker-devfile-catalog
         - travis_wait make test-cmd-docker-devfile-delete
+        - travis_wait make test-cmd-docker-devfile-url
 
     # Run devfile integration test on Kubernetes cluster    
     - <<: *base-test
