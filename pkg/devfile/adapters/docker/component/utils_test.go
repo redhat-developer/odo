@@ -22,35 +22,36 @@ func TestCreateComponent(t *testing.T) {
 	fakeErrorClient := lclient.FakeErrorNew()
 
 	tests := []struct {
-		name          string
-		componentType versionsCommon.DevfileComponentType
-		client        *lclient.Client
-		wantErr       bool
+		name       string
+		components []versionsCommon.DevfileComponent
+		client     *lclient.Client
+		wantErr    bool
 	}{
 		{
-			name:          "Case 1: Invalid devfile",
-			componentType: "",
-			client:        fakeClient,
-			wantErr:       true,
+			name:       "Case 1: Invalid devfile",
+			components: []versionsCommon.DevfileComponent{},
+			client:     fakeClient,
+			wantErr:    true,
 		},
 		{
-			name:          "Case 2: Valid devfile",
-			componentType: versionsCommon.DevfileComponentTypeDockerimage,
-			client:        fakeClient,
-			wantErr:       false,
+			name:       "Case 2: Valid devfile",
+			components: []versionsCommon.DevfileComponent{testingutil.GetFakeComponent("alias1")},
+			client:     fakeClient,
+			wantErr:    false,
 		},
 		{
-			name:          "Case 3: Valid devfile, docker client error",
-			componentType: versionsCommon.DevfileComponentTypeDockerimage,
-			client:        fakeErrorClient,
-			wantErr:       true,
+			name:       "Case 3: Valid devfile, docker client error",
+			components: []versionsCommon.DevfileComponent{testingutil.GetFakeComponent("alias1")},
+			client:     fakeErrorClient,
+			wantErr:    true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					ComponentType: tt.componentType,
+					ExecCommands: testingutil.GetFakeExecRunCommands(),
+					Components:   tt.components,
 				},
 			}
 
@@ -78,35 +79,41 @@ func TestUpdateComponent(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		componentType versionsCommon.DevfileComponentType
+		components    []versionsCommon.DevfileComponent
 		componentName string
 		client        *lclient.Client
 		wantErr       bool
 	}{
 		{
 			name:          "Case 1: Invalid devfile",
-			componentType: "",
+			components:    []versionsCommon.DevfileComponent{},
 			componentName: "",
 			client:        fakeClient,
 			wantErr:       true,
 		},
 		{
 			name:          "Case 2: Valid devfile",
-			componentType: versionsCommon.DevfileComponentTypeDockerimage,
+			components:    []versionsCommon.DevfileComponent{testingutil.GetFakeComponent("alias1")},
 			componentName: "test",
 			client:        fakeClient,
 			wantErr:       false,
 		},
 		{
 			name:          "Case 3: Valid devfile, docker client error",
-			componentType: versionsCommon.DevfileComponentTypeDockerimage,
+			components:    []versionsCommon.DevfileComponent{testingutil.GetFakeComponent("alias1")},
 			componentName: "",
 			client:        fakeErrorClient,
 			wantErr:       true,
 		},
 		{
-			name:          "Case 3: Valid devfile, missing component",
-			componentType: versionsCommon.DevfileComponentTypeDockerimage,
+			name: "Case 3: Valid devfile, missing component",
+			components: []versionsCommon.DevfileComponent{
+				{
+					Container: &versionsCommon.Container{
+						Name: "fakecomponent",
+					},
+				},
+			},
 			componentName: "fakecomponent",
 			client:        fakeClient,
 			wantErr:       true,
@@ -116,7 +123,8 @@ func TestUpdateComponent(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					ComponentType: tt.componentType,
+					Components:   tt.components,
+					ExecCommands: testingutil.GetFakeExecRunCommands(),
 				},
 			}
 
@@ -154,21 +162,21 @@ func TestPullAndStartContainer(t *testing.T) {
 	}{
 		{
 			name:          "Case 1: Successfully start container, no mount",
-			componentType: versionsCommon.DevfileComponentTypeDockerimage,
+			componentType: versionsCommon.ContainerComponentType,
 			client:        fakeClient,
 			mounts:        []mount.Mount{},
 			wantErr:       false,
 		},
 		{
 			name:          "Case 2: Docker client error",
-			componentType: versionsCommon.DevfileComponentTypeDockerimage,
+			componentType: versionsCommon.ContainerComponentType,
 			client:        fakeErrorClient,
 			mounts:        []mount.Mount{},
 			wantErr:       true,
 		},
 		{
 			name:          "Case 3: Successfully start container, one mount",
-			componentType: versionsCommon.DevfileComponentTypeDockerimage,
+			componentType: versionsCommon.ContainerComponentType,
 			client:        fakeClient,
 			mounts: []mount.Mount{
 				{
@@ -180,7 +188,7 @@ func TestPullAndStartContainer(t *testing.T) {
 		},
 		{
 			name:          "Case 4: Successfully start container, multiple mounts",
-			componentType: versionsCommon.DevfileComponentTypeDockerimage,
+			componentType: versionsCommon.ContainerComponentType,
 			client:        fakeClient,
 			mounts: []mount.Mount{
 				{
@@ -199,7 +207,10 @@ func TestPullAndStartContainer(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					ComponentType: tt.componentType,
+					Components: []versionsCommon.DevfileComponent{
+						testingutil.GetFakeComponent("alias1"),
+					},
+					ExecCommands: testingutil.GetFakeExecRunCommands(),
 				},
 			}
 
@@ -229,30 +240,26 @@ func TestStartContainer(t *testing.T) {
 	fakeErrorClient := lclient.FakeErrorNew()
 
 	tests := []struct {
-		name          string
-		componentType versionsCommon.DevfileComponentType
-		client        *lclient.Client
-		mounts        []mount.Mount
-		wantErr       bool
+		name    string
+		client  *lclient.Client
+		mounts  []mount.Mount
+		wantErr bool
 	}{
 		{
-			name:          "Case 1: Successfully start container, no mount",
-			componentType: versionsCommon.DevfileComponentTypeDockerimage,
-			client:        fakeClient,
-			mounts:        []mount.Mount{},
-			wantErr:       false,
+			name:    "Case 1: Successfully start container, no mount",
+			client:  fakeClient,
+			mounts:  []mount.Mount{},
+			wantErr: false,
 		},
 		{
-			name:          "Case 2: Docker client error",
-			componentType: versionsCommon.DevfileComponentTypeDockerimage,
-			client:        fakeErrorClient,
-			mounts:        []mount.Mount{},
-			wantErr:       true,
+			name:    "Case 2: Docker client error",
+			client:  fakeErrorClient,
+			mounts:  []mount.Mount{},
+			wantErr: true,
 		},
 		{
-			name:          "Case 3: Successfully start container, one mount",
-			componentType: versionsCommon.DevfileComponentTypeDockerimage,
-			client:        fakeClient,
+			name:   "Case 3: Successfully start container, one mount",
+			client: fakeClient,
 			mounts: []mount.Mount{
 				{
 					Source: "test-vol",
@@ -262,9 +269,8 @@ func TestStartContainer(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:          "Case 4: Successfully start container, multiple mount",
-			componentType: versionsCommon.DevfileComponentTypeDockerimage,
-			client:        fakeClient,
+			name:   "Case 4: Successfully start container, multiple mount",
+			client: fakeClient,
 			mounts: []mount.Mount{
 				{
 					Source: "test-vol",
@@ -282,7 +288,10 @@ func TestStartContainer(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					ComponentType: tt.componentType,
+					Components: []versionsCommon.DevfileComponent{
+						testingutil.GetFakeComponent("alias1"),
+					},
+					ExecCommands: testingutil.GetFakeExecRunCommands(),
 				},
 			}
 
@@ -306,7 +315,7 @@ func TestStartContainer(t *testing.T) {
 func TestGenerateAndGetHostConfig(t *testing.T) {
 	fakeClient := lclient.FakeNew()
 	testComponentName := "test"
-	componentType := versionsCommon.DevfileComponentTypeDockerimage
+	componentType := versionsCommon.ContainerComponentType
 
 	endpointName := []string{"8080/tcp", "9090/tcp", "9080/tcp"}
 	var endpointPort = []int32{8080, 9090, 9080}
@@ -321,14 +330,14 @@ func TestGenerateAndGetHostConfig(t *testing.T) {
 		urlValue     []envinfo.EnvInfoURL
 		expectResult nat.PortMap
 		client       *lclient.Client
-		endpoints    []versionsCommon.DockerimageEndpoint
+		endpoints    []versionsCommon.Endpoint
 	}{
 		{
 			name:         "Case 1: no port mappings",
 			urlValue:     []envinfo.EnvInfoURL{},
 			expectResult: nil,
 			client:       fakeClient,
-			endpoints:    []versionsCommon.DockerimageEndpoint{},
+			endpoints:    []versionsCommon.Endpoint{},
 		},
 		{
 			name: "Case 2: only one port mapping",
@@ -344,10 +353,10 @@ func TestGenerateAndGetHostConfig(t *testing.T) {
 				},
 			},
 			client: fakeClient,
-			endpoints: []versionsCommon.DockerimageEndpoint{
+			endpoints: []versionsCommon.Endpoint{
 				{
-					Name: &endpointName[0],
-					Port: &endpointPort[0],
+					Name:       endpointName[0],
+					TargetPort: endpointPort[0],
 				},
 			},
 		},
@@ -379,18 +388,18 @@ func TestGenerateAndGetHostConfig(t *testing.T) {
 				},
 			},
 			client: fakeClient,
-			endpoints: []versionsCommon.DockerimageEndpoint{
+			endpoints: []versionsCommon.Endpoint{
 				{
-					Name: &endpointName[0],
-					Port: &endpointPort[0],
+					Name:       endpointName[0],
+					TargetPort: endpointPort[0],
 				},
 				{
-					Name: &endpointName[1],
-					Port: &endpointPort[1],
+					Name:       endpointName[1],
+					TargetPort: endpointPort[1],
 				},
 				{
-					Name: &endpointName[2],
-					Port: &endpointPort[2],
+					Name:       endpointName[2],
+					TargetPort: endpointPort[2],
 				},
 			},
 		},
@@ -400,7 +409,11 @@ func TestGenerateAndGetHostConfig(t *testing.T) {
 
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					ComponentType: componentType,
+					Components: []versionsCommon.DevfileComponent{
+						{
+							Type: componentType,
+						},
+					},
 				},
 			}
 
@@ -453,11 +466,11 @@ func TestGenerateAndGetHostConfig(t *testing.T) {
 func TestExecDevfile(t *testing.T) {
 
 	testComponentName := "test"
-	componentType := versionsCommon.DevfileComponentTypeDockerimage
+	componentType := versionsCommon.ContainerComponentType
 	command := "ls -la"
 	workDir := "/tmp"
 	component := "alias1"
-	var actionType versionsCommon.DevfileCommandType = versionsCommon.DevfileCommandTypeExec
+	var actionType versionsCommon.DevfileCommandType = versionsCommon.ExecCommandType
 
 	containers := []types.Container{
 		{
@@ -480,35 +493,35 @@ func TestExecDevfile(t *testing.T) {
 	tests := []struct {
 		name                string
 		client              *lclient.Client
-		pushDevfileCommands []versionsCommon.DevfileCommand
+		pushDevfileCommands adaptersCommon.PushCommandsMap
 		componentExists     bool
 		wantErr             bool
 	}{
 		{
 			name:   "Case 1: Successful devfile command exec of devbuild and devrun",
 			client: fakeClient,
-			pushDevfileCommands: []versionsCommon.DevfileCommand{
-				{
-					Name: "devrun",
-					Actions: []versionsCommon.DevfileCommandAction{
-						{
-							Command:   &command,
-							Workdir:   &workDir,
-							Type:      &actionType,
-							Component: &component,
+			pushDevfileCommands: adaptersCommon.PushCommandsMap{
+				versionsCommon.RunCommandGroupType: versionsCommon.DevfileCommand{
+					Exec: &versionsCommon.Exec{
+						CommandLine: command,
+						WorkingDir:  workDir,
+						Component:   component,
+						Group: &versionsCommon.Group{
+							Kind: versionsCommon.RunCommandGroupType,
 						},
 					},
+					Type: actionType,
 				},
-				{
-					Name: "devbuild",
-					Actions: []versionsCommon.DevfileCommandAction{
-						{
-							Command:   &command,
-							Workdir:   &workDir,
-							Type:      &actionType,
-							Component: &component,
+				versionsCommon.BuildCommandGroupType: versionsCommon.DevfileCommand{
+					Exec: &versionsCommon.Exec{
+						CommandLine: command,
+						WorkingDir:  workDir,
+						Component:   component,
+						Group: &versionsCommon.Group{
+							Kind: versionsCommon.BuildCommandGroupType,
 						},
 					},
+					Type: actionType,
 				},
 			},
 			componentExists: false,
@@ -517,17 +530,17 @@ func TestExecDevfile(t *testing.T) {
 		{
 			name:   "Case 2: Successful devfile command exec of devrun",
 			client: fakeClient,
-			pushDevfileCommands: []versionsCommon.DevfileCommand{
-				{
-					Name: "devrun",
-					Actions: []versionsCommon.DevfileCommandAction{
-						{
-							Command:   &command,
-							Workdir:   &workDir,
-							Type:      &actionType,
-							Component: &component,
+			pushDevfileCommands: adaptersCommon.PushCommandsMap{
+				versionsCommon.RunCommandGroupType: versionsCommon.DevfileCommand{
+					Exec: &versionsCommon.Exec{
+						CommandLine: command,
+						WorkingDir:  workDir,
+						Component:   component,
+						Group: &versionsCommon.Group{
+							Kind: versionsCommon.RunCommandGroupType,
 						},
 					},
+					Type: actionType,
 				},
 			},
 			componentExists: true,
@@ -536,24 +549,24 @@ func TestExecDevfile(t *testing.T) {
 		{
 			name:                "Case 3: No devfile push commands should result in an err",
 			client:              fakeClient,
-			pushDevfileCommands: []versionsCommon.DevfileCommand{},
+			pushDevfileCommands: adaptersCommon.PushCommandsMap{},
 			componentExists:     false,
 			wantErr:             true,
 		},
 		{
 			name:   "Case 4: Unsuccessful devfile command exec of devrun",
 			client: fakeErrorClient,
-			pushDevfileCommands: []versionsCommon.DevfileCommand{
-				{
-					Name: "devrun",
-					Actions: []versionsCommon.DevfileCommandAction{
-						{
-							Command:   &command,
-							Workdir:   &workDir,
-							Type:      &actionType,
-							Component: &component,
+			pushDevfileCommands: adaptersCommon.PushCommandsMap{
+				versionsCommon.RunCommandGroupType: versionsCommon.DevfileCommand{
+					Exec: &versionsCommon.Exec{
+						CommandLine: command,
+						WorkingDir:  workDir,
+						Component:   component,
+						Group: &versionsCommon.Group{
+							Kind: versionsCommon.RunCommandGroupType,
 						},
 					},
+					Type: actionType,
 				},
 			},
 			componentExists: true,
@@ -565,7 +578,11 @@ func TestExecDevfile(t *testing.T) {
 
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					ComponentType: componentType,
+					Components: []versionsCommon.DevfileComponent{
+						{
+							Type: componentType,
+						},
+					},
 				},
 			}
 
@@ -586,7 +603,7 @@ func TestExecDevfile(t *testing.T) {
 func TestInitRunContainerSupervisord(t *testing.T) {
 
 	testComponentName := "test"
-	componentType := versionsCommon.DevfileComponentTypeDockerimage
+	componentType := versionsCommon.ContainerComponentType
 
 	containers := []types.Container{
 		{
@@ -636,7 +653,11 @@ func TestInitRunContainerSupervisord(t *testing.T) {
 
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					ComponentType: componentType,
+					Components: []versionsCommon.DevfileComponent{
+						{
+							Type: componentType,
+						},
+					},
 				},
 			}
 

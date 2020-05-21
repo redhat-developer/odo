@@ -11,7 +11,6 @@ import (
 	"github.com/golang/mock/gomock"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/testingutil"
@@ -26,7 +25,6 @@ func TestPush(t *testing.T) {
 	command := "ls -la"
 	component := "alias1"
 	workDir := "/root"
-	validCommandType := common.DevfileCommandTypeExec
 
 	// create a temp dir for the file indexer
 	directory, err := ioutil.TempDir("", "")
@@ -42,17 +40,27 @@ func TestPush(t *testing.T) {
 		ForceBuild:        false,
 	}
 
-	commandActions := []versionsCommon.DevfileCommandAction{
+	execCommands := []versionsCommon.Exec{
 		{
-			Command:   &command,
-			Component: &component,
-			Workdir:   &workDir,
-			Type:      &validCommandType,
+			CommandLine: command,
+			Component:   component,
+			Group: &versionsCommon.Group{
+				Kind: versionsCommon.RunCommandGroupType,
+			},
+			WorkingDir: workDir,
+		},
+	}
+	validComponents := []versionsCommon.DevfileComponent{
+		{
+			Container: &versionsCommon.Container{
+				Name: component,
+			},
 		},
 	}
 
 	tests := []struct {
 		name          string
+		components    []versionsCommon.DevfileComponent
 		componentType versionsCommon.DevfileComponentType
 		client        *lclient.Client
 		wantErr       bool
@@ -60,18 +68,21 @@ func TestPush(t *testing.T) {
 		{
 			name:          "Case 1: Invalid devfile",
 			componentType: "",
+			components:    []versionsCommon.DevfileComponent{},
 			client:        fakeClient,
 			wantErr:       true,
 		},
 		{
 			name:          "Case 2: Valid devfile",
-			componentType: versionsCommon.DevfileComponentTypeDockerimage,
+			components:    validComponents,
+			componentType: versionsCommon.ContainerComponentType,
 			client:        fakeClient,
 			wantErr:       false,
 		},
 		{
 			name:          "Case 3: Valid devfile, docker client error",
-			componentType: versionsCommon.DevfileComponentTypeDockerimage,
+			components:    validComponents,
+			componentType: versionsCommon.ContainerComponentType,
 			client:        fakeErrorClient,
 			wantErr:       true,
 		},
@@ -80,8 +91,8 @@ func TestPush(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					ComponentType:  tt.componentType,
-					CommandActions: commandActions,
+					Components:   tt.components,
+					ExecCommands: execCommands,
 				},
 			}
 
@@ -124,14 +135,14 @@ func TestDoesComponentExist(t *testing.T) {
 		{
 			name:             "Case 1: Valid component name",
 			client:           fakeClient,
-			componentType:    versionsCommon.DevfileComponentTypeDockerimage,
+			componentType:    versionsCommon.ContainerComponentType,
 			componentName:    "golang",
 			getComponentName: "golang",
 			want:             true,
 		},
 		{
 			name:             "Case 2: Non-existent component name",
-			componentType:    versionsCommon.DevfileComponentTypeDockerimage,
+			componentType:    versionsCommon.ContainerComponentType,
 			client:           fakeClient,
 			componentName:    "test-name",
 			getComponentName: "fake-component",
@@ -139,7 +150,7 @@ func TestDoesComponentExist(t *testing.T) {
 		},
 		{
 			name:             "Case 3: Docker client error",
-			componentType:    versionsCommon.DevfileComponentTypeDockerimage,
+			componentType:    versionsCommon.ContainerComponentType,
 			client:           fakeErrorClient,
 			componentName:    "test-name",
 			getComponentName: "fake-component",
@@ -150,7 +161,11 @@ func TestDoesComponentExist(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					ComponentType: tt.componentType,
+					Components: []versionsCommon.DevfileComponent{
+						{
+							Type: tt.componentType,
+						},
+					},
 				},
 			}
 
@@ -222,7 +237,11 @@ func TestAdapterDelete(t *testing.T) {
 
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					ComponentType: "nodejs",
+					Components: []versionsCommon.DevfileComponent{
+						{
+							Type: versionsCommon.ContainerComponentType,
+						},
+					},
 				},
 			}
 
@@ -561,7 +580,11 @@ func TestAdapterDeleteVolumes(t *testing.T) {
 
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					ComponentType: "nodejs",
+					Components: []versionsCommon.DevfileComponent{
+						{
+							Type: versionsCommon.ContainerComponentType,
+						},
+					},
 				},
 			}
 

@@ -28,15 +28,15 @@ func TestCreateComponentStorage(t *testing.T) {
 				{
 					Name: "vol1",
 					Volume: common.DevfileVolume{
-						Name: &volNames[0],
-						Size: &volSize,
+						Name: volNames[0],
+						Size: volSize,
 					},
 				},
 				{
 					Name: "vol2",
 					Volume: common.DevfileVolume{
-						Name: &volNames[1],
-						Size: &volSize,
+						Name: volNames[1],
+						Size: volSize,
 					},
 				},
 			},
@@ -49,15 +49,15 @@ func TestCreateComponentStorage(t *testing.T) {
 				{
 					Name: "vol1",
 					Volume: common.DevfileVolume{
-						Name: &volNames[0],
-						Size: &volSize,
+						Name: volNames[0],
+						Size: volSize,
 					},
 				},
 				{
 					Name: "vol2",
 					Volume: common.DevfileVolume{
-						Name: &volNames[1],
-						Size: &volSize,
+						Name: volNames[1],
+						Size: volSize,
 					},
 				},
 			},
@@ -95,8 +95,8 @@ func TestStorageCreate(t *testing.T) {
 			storage: common.Storage{
 				Name: "vol1",
 				Volume: common.DevfileVolume{
-					Name: &volNames[0],
-					Size: &volSize,
+					Name: volNames[0],
+					Size: volSize,
 				},
 			},
 			client:  fakeClient,
@@ -107,8 +107,8 @@ func TestStorageCreate(t *testing.T) {
 			storage: common.Storage{
 				Name: "vol-name",
 				Volume: common.DevfileVolume{
-					Name: &volNames[0],
-					Size: &volSize,
+					Name: volNames[0],
+					Size: volSize,
 				},
 			},
 			client:  fakeErrorClient,
@@ -119,7 +119,7 @@ func TestStorageCreate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			// Create one of the test volumes
-			_, err := Create(tt.client, *tt.storage.Volume.Name, testComponentName, tt.storage.Name)
+			_, err := Create(tt.client, tt.storage.Volume.Name, testComponentName, tt.storage.Name)
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("Docker volume create unexpected error %v, wantErr %v", err, tt.wantErr)
 			}
@@ -156,9 +156,9 @@ func TestProcessVolumes(t *testing.T) {
 			aliasVolumeMapping: map[string][]common.DevfileVolume{
 				"some-component": []common.DevfileVolume{
 					{
-						Name:          &volumeNames[0],
-						ContainerPath: &volumePaths[0],
-						Size:          &volumeSizes[0],
+						Name:          volumeNames[0],
+						ContainerPath: volumePaths[0],
+						Size:          volumeSizes[0],
 					},
 				},
 			},
@@ -166,9 +166,9 @@ func TestProcessVolumes(t *testing.T) {
 			wantStorage: []common.Storage{
 				{
 					Volume: common.DevfileVolume{
-						Name:          &volumeNames[0],
-						ContainerPath: &volumePaths[0],
-						Size:          &volumeSizes[0],
+						Name:          volumeNames[0],
+						ContainerPath: volumePaths[0],
+						Size:          volumeSizes[0],
 					},
 				},
 			},
@@ -179,19 +179,19 @@ func TestProcessVolumes(t *testing.T) {
 			aliasVolumeMapping: map[string][]common.DevfileVolume{
 				"some-component": []common.DevfileVolume{
 					{
-						Name:          &volumeNames[0],
-						ContainerPath: &volumePaths[0],
-						Size:          &volumeSizes[0],
+						Name:          volumeNames[0],
+						ContainerPath: volumePaths[0],
+						Size:          volumeSizes[0],
 					},
 					{
-						Name:          &volumeNames[1],
-						ContainerPath: &volumePaths[1],
-						Size:          &volumeSizes[1],
+						Name:          volumeNames[1],
+						ContainerPath: volumePaths[1],
+						Size:          volumeSizes[1],
 					},
 					{
-						Name:          &volumeNames[2],
-						ContainerPath: &volumePaths[2],
-						Size:          &volumeSizes[2],
+						Name:          volumeNames[2],
+						ContainerPath: volumePaths[2],
+						Size:          volumeSizes[2],
 					},
 				},
 			},
@@ -199,23 +199,23 @@ func TestProcessVolumes(t *testing.T) {
 			wantStorage: []common.Storage{
 				{
 					Volume: common.DevfileVolume{
-						Name:          &volumeNames[0],
-						ContainerPath: &volumePaths[0],
-						Size:          &volumeSizes[0],
+						Name:          volumeNames[0],
+						ContainerPath: volumePaths[0],
+						Size:          volumeSizes[0],
 					},
 				},
 				{
 					Volume: common.DevfileVolume{
-						Name:          &volumeNames[1],
-						ContainerPath: &volumePaths[1],
-						Size:          &volumeSizes[1],
+						Name:          volumeNames[1],
+						ContainerPath: volumePaths[1],
+						Size:          volumeSizes[1],
 					},
 				},
 				{
 					Volume: common.DevfileVolume{
-						Name:          &volumeNames[2],
-						ContainerPath: &volumePaths[2],
-						Size:          &volumeSizes[2],
+						Name:          volumeNames[2],
+						ContainerPath: volumePaths[2],
+						Size:          volumeSizes[2],
 					},
 				},
 			},
@@ -226,33 +226,33 @@ func TestProcessVolumes(t *testing.T) {
 			aliasVolumeMapping: map[string][]common.DevfileVolume{
 				"some-component": []common.DevfileVolume{
 					{
-						Name:          &volumeNames[0],
-						ContainerPath: &volumePaths[0],
-						Size:          &volumeSizes[0],
+						Name:          volumeNames[0],
+						ContainerPath: volumePaths[0],
+						Size:          volumeSizes[0],
 					},
 					{
-						Name:          &volumeNames[1],
-						ContainerPath: &volumePaths[1],
-						Size:          &volumeSizes[1],
+						Name:          volumeNames[1],
+						ContainerPath: volumePaths[1],
+						Size:          volumeSizes[1],
 					},
 				},
 				"second-component": []common.DevfileVolume{
 					{
-						Name:          &volumeNames[0],
-						ContainerPath: &volumePaths[0],
-						Size:          &volumeSizes[0],
+						Name:          volumeNames[0],
+						ContainerPath: volumePaths[0],
+						Size:          volumeSizes[0],
 					},
 				},
 				"third-component": []common.DevfileVolume{
 					{
-						Name:          &volumeNames[1],
-						ContainerPath: &volumePaths[1],
-						Size:          &volumeSizes[1],
+						Name:          volumeNames[1],
+						ContainerPath: volumePaths[1],
+						Size:          volumeSizes[1],
 					},
 					{
-						Name:          &volumeNames[2],
-						ContainerPath: &volumePaths[2],
-						Size:          &volumeSizes[2],
+						Name:          volumeNames[2],
+						ContainerPath: volumePaths[2],
+						Size:          volumeSizes[2],
 					},
 				},
 			},
@@ -260,23 +260,23 @@ func TestProcessVolumes(t *testing.T) {
 			wantStorage: []common.Storage{
 				{
 					Volume: common.DevfileVolume{
-						Name:          &volumeNames[0],
-						ContainerPath: &volumePaths[0],
-						Size:          &volumeSizes[0],
+						Name:          volumeNames[0],
+						ContainerPath: volumePaths[0],
+						Size:          volumeSizes[0],
 					},
 				},
 				{
 					Volume: common.DevfileVolume{
-						Name:          &volumeNames[1],
-						ContainerPath: &volumePaths[1],
-						Size:          &volumeSizes[1],
+						Name:          volumeNames[1],
+						ContainerPath: volumePaths[1],
+						Size:          volumeSizes[1],
 					},
 				},
 				{
 					Volume: common.DevfileVolume{
-						Name:          &volumeNames[2],
-						ContainerPath: &volumePaths[2],
-						Size:          &volumeSizes[2],
+						Name:          volumeNames[2],
+						ContainerPath: volumePaths[2],
+						Size:          volumeSizes[2],
 					},
 				},
 			},
@@ -287,9 +287,9 @@ func TestProcessVolumes(t *testing.T) {
 			aliasVolumeMapping: map[string][]common.DevfileVolume{
 				"some-component": []common.DevfileVolume{
 					{
-						Name:          &volumeNames[0],
-						ContainerPath: &volumePaths[0],
-						Size:          &volumeSizes[0],
+						Name:          volumeNames[0],
+						ContainerPath: volumePaths[0],
+						Size:          volumeSizes[0],
 					},
 				},
 			},
@@ -317,7 +317,7 @@ func TestProcessVolumes(t *testing.T) {
 				for i := range uniqueStorage {
 					var volExists bool
 					for j := range tt.wantStorage {
-						if *uniqueStorage[i].Volume.Name == *tt.wantStorage[j].Volume.Name && uniqueStorage[i].Volume.ContainerPath == tt.wantStorage[j].Volume.ContainerPath {
+						if uniqueStorage[i].Volume.Name == tt.wantStorage[j].Volume.Name && uniqueStorage[i].Volume.ContainerPath == tt.wantStorage[j].Volume.ContainerPath {
 							volExists = true
 						}
 					}
