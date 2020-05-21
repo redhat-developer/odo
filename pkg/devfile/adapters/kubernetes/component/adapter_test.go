@@ -8,6 +8,7 @@ import (
 
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/testingutil"
@@ -37,7 +38,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 		},
 		{
 			name:          "Case: Valid devfile",
-			componentType: versionsCommon.DevfileComponentTypeDockerimage,
+			componentType: versionsCommon.ContainerComponentType,
 			running:       false,
 			wantErr:       false,
 		},
@@ -49,16 +50,21 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 		},
 		{
 			name:          "Case: Valid devfile, already running component",
-			componentType: versionsCommon.DevfileComponentTypeDockerimage,
+			componentType: versionsCommon.ContainerComponentType,
 			running:       true,
 			wantErr:       false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			var comp versionsCommon.DevfileComponent
+			if tt.componentType != "" {
+				comp = testingutil.GetFakeComponent("component")
+			}
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					ComponentType: tt.componentType,
+					Components:   []versionsCommon.DevfileComponent{comp},
+					ExecCommands: []versionsCommon.Exec{getExecCommand("run", versionsCommon.RunCommandGroupType)},
 				},
 			}
 
@@ -218,14 +224,12 @@ func TestDoesComponentExist(t *testing.T) {
 	}{
 		{
 			name:             "Case 1: Valid component name",
-			componentType:    versionsCommon.DevfileComponentTypeDockerimage,
 			componentName:    "test-name",
 			getComponentName: "test-name",
 			want:             true,
 		},
 		{
 			name:             "Case 2: Non-existent component name",
-			componentType:    versionsCommon.DevfileComponentTypeDockerimage,
 			componentName:    "test-name",
 			getComponentName: "fake-component",
 			want:             false,
@@ -235,7 +239,8 @@ func TestDoesComponentExist(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					ComponentType: tt.componentType,
+					Components:   []versionsCommon.DevfileComponent{testingutil.GetFakeComponent("component")},
+					ExecCommands: []versionsCommon.Exec{getExecCommand("run", versionsCommon.RunCommandGroupType)},
 				},
 			}
 
@@ -282,29 +287,26 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 		wantErr       bool
 	}{
 		{
-			name:          "Case 1: Running",
-			componentType: versionsCommon.DevfileComponentTypeDockerimage,
-			status:        corev1.PodRunning,
-			wantErr:       false,
+			name:    "Case 1: Running",
+			status:  corev1.PodRunning,
+			wantErr: false,
 		},
 		{
-			name:          "Case 2: Failed pod",
-			componentType: versionsCommon.DevfileComponentTypeDockerimage,
-			status:        corev1.PodFailed,
-			wantErr:       true,
+			name:    "Case 2: Failed pod",
+			status:  corev1.PodFailed,
+			wantErr: true,
 		},
 		{
-			name:          "Case 3: Unknown pod",
-			componentType: versionsCommon.DevfileComponentTypeDockerimage,
-			status:        corev1.PodUnknown,
-			wantErr:       true,
+			name:    "Case 3: Unknown pod",
+			status:  corev1.PodUnknown,
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					ComponentType: tt.componentType,
+					Components: []versionsCommon.DevfileComponent{testingutil.GetFakeComponent("component")},
 				},
 			}
 
@@ -382,7 +384,7 @@ func TestAdapterDelete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					ComponentType: "nodejs",
+					// ComponentType: "nodejs",
 				},
 			}
 
@@ -421,4 +423,20 @@ func TestAdapterDelete(t *testing.T) {
 			}
 		})
 	}
+}
+
+func getExecCommand(id string, group common.DevfileCommandGroupType) versionsCommon.Exec {
+
+	commands := [...]string{"ls -la", "pwd"}
+	component := "component"
+	workDir := [...]string{"/", "/root"}
+
+	return versionsCommon.Exec{
+		Id:          id,
+		CommandLine: commands[0],
+		Component:   component,
+		WorkingDir:  workDir[0],
+		Group:       &common.Group{Kind: group},
+	}
+
 }
