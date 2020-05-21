@@ -199,7 +199,7 @@ $ MINISHIFT_ENABLE_EXPERIMENTAL=y minishift start --extra-clusterup-flags "--ena
 OR
 * A `crc` environment for 4.* local cluster:
 +
-For `crc` installation please refer https://github.com/code-ready/crc#documentation
+Follow link:https://github.com/code-ready/crc#documentation[crc] installation guide.
 +
 OR
 * A 4.* cluster hosted remotely
@@ -357,7 +357,7 @@ There are some test environment variable that helps to get more control over the
 
 *Running integration tests on Openshift:*
 
-Login to the cluster using cluster credentials for running tests on 3.11 cluster. For example `odo login -u <user_name> -p <password> <server_URL>`. However `make configure-installer-tests-cluster` does login for running the tests on 4.* cluster. By default, tests are run against the `odo` binary placed in the PATH which is created by command `make`. Integration tests can be run in two (parallel and sequential) ways. To control the parallel run use environment variable `TEST_EXEC_NODES`. For example component test can be run
+For running tests on a 3.11 cluster, login to the cluster using the required credentials. For example `odo login -u <user_name> -p <password> <server_URL>`. However `make configure-installer-tests-cluster` performs the login operation required to run the tests on a 4.* cluster. By default, tests are run against the `odo` binary placed in the PATH which is created by the command `make`. Integration tests can be run in two (parallel and sequential) ways. To control the parallel run use the environment variable `TEST_EXEC_NODES`. For example the component test can be run
 
 * To run the test in parallel, on a test cluster (By default the test will run in parallel on two ginkgo test node):
 
