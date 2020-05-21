@@ -29,6 +29,9 @@ const (
 	// DefaultPushTimeout is the default timeout for pods (in seconds)
 	DefaultPushTimeout = 240
 
+	// DefaultBuildTimeout is the default build timeout for pods (in seconds)
+	DefaultBuildTimeout = 240
+
 	// UpdateNotificationSetting is the name of the setting controlling update notification
 	UpdateNotificationSetting = "UpdateNotification"
 
@@ -43,6 +46,9 @@ const (
 
 	// TimeoutSetting is the name of the setting controlling timeout for connection check
 	TimeoutSetting = "Timeout"
+
+	// BuildTimeoutSetting is the name of the setting controlling BuildTimeout
+	BuildTimeoutSetting = "BuildTimeout"
 
 	// PushTimeoutSetting is the name of the setting controlling PushTimeout
 	PushTimeoutSetting = "PushTimeout"
@@ -80,6 +86,9 @@ var TimeoutSettingDescription = fmt.Sprintf("Timeout (in seconds) for OpenShift 
 // PushTimeoutSettingDescription adds a description for PushTimeout
 var PushTimeoutSettingDescription = fmt.Sprintf("PushTimeout (in seconds) for waiting for a Pod to come up (Default: %d)", DefaultPushTimeout)
 
+// BuildTimeoutSettingDescription adds a description for BuildTimeout
+var BuildTimeoutSettingDescription = fmt.Sprintf("BuildTimeout (in seconds) for waiting for a build to complete (Default: %d)", DefaultBuildTimeout)
+
 // This value can be provided to set a seperate directory for users 'homedir' resolution
 // note for mocking purpose ONLY
 var customHomeDir = os.Getenv("CUSTOM_HOMEDIR")
@@ -90,6 +99,7 @@ var (
 		UpdateNotificationSetting: UpdateNotificationSettingDescription,
 		NamePrefixSetting:         NamePrefixSettingDescription,
 		TimeoutSetting:            TimeoutSettingDescription,
+		BuildTimeoutSetting:       BuildTimeoutSettingDescription,
 		PushTimeoutSetting:        PushTimeoutSettingDescription,
 		ExperimentalSetting:       ExperimentalDescription,
 		PushTargetSetting:         PushTargetDescription,
@@ -116,6 +126,9 @@ type OdoSettings struct {
 
 	// Timeout for OpenShift server connection check
 	Timeout *int `yaml:"Timeout,omitempty"`
+
+	// BuildTimeout for OpenShift build timeout check
+	BuildTimeout *int `yaml:"BuildTimeout,omitempty"`
 
 	// PushTimeout for OpenShift pod timeout check
 	PushTimeout *int `yaml:"PushTimeout,omitempty"`
@@ -334,6 +347,16 @@ func (c *PreferenceInfo) SetConfiguration(parameter string, value string) error 
 			}
 			c.OdoSettings.Timeout = &typedval
 
+		case "buildtimeout":
+			typedval, err := strconv.Atoi(value)
+			if err != nil {
+				return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
+			}
+			if typedval < 0 {
+				return errors.Errorf("cannot set timeout to less than 0")
+			}
+			c.OdoSettings.BuildTimeout = &typedval
+
 		case "pushtimeout":
 			typedval, err := strconv.Atoi(value)
 			if err != nil {
@@ -412,6 +435,15 @@ func (c *PreferenceInfo) GetTimeout() int {
 		return DefaultTimeout
 	}
 	return *c.OdoSettings.Timeout
+}
+
+// GetBuildTimeout gets the value set by BuildTimeout
+func (c *PreferenceInfo) GetBuildTimeout() int {
+	// default timeout value is 1
+	if c.OdoSettings.BuildTimeout == nil {
+		return DefaultBuildTimeout
+	}
+	return *c.OdoSettings.BuildTimeout
 }
 
 // GetPushTimeout gets the value set by PushTimeout

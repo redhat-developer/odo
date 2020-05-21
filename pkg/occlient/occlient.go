@@ -1890,13 +1890,14 @@ func (c *Client) CollectEvents(selector string, events map[string]corev1.Event, 
 func (c *Client) WaitAndGetPod(selector string, desiredPhase corev1.PodPhase, waitMessage string) (*corev1.Pod, error) {
 
 	// Try to grab the preference in order to set a timeout.. but if not, we'll use the default.
+	buildTimeout := preference.DefaultBuildTimeout * time.Second
 	pushTimeout := preference.DefaultPushTimeout * time.Second
 	cfg, configReadErr := preference.New()
 	if configReadErr != nil {
 		klog.V(4).Info(errors.Wrap(configReadErr, "unable to read config file"))
-	} else {
-		pushTimeout = time.Duration(cfg.GetPushTimeout()) * time.Second
 	}
+	buildTimeout = time.Duration(cfg.GetBuildTimeout()) * time.Second
+	pushTimeout = time.Duration(cfg.GetPushTimeout()) * time.Second
 
 	klog.V(4).Infof("Waiting for %s pod", selector)
 	spinner := log.Spinner(waitMessage)
@@ -1983,6 +1984,39 @@ func (c *Client) WaitAndGetPod(selector string, desiredPhase corev1.PodPhase, wa
 For more information to help determine the cause of the error, re-run with '-v'.
 See below for a list of failed events that occured more than %d times during deployment:
 %s`, pushTimeout, selector, failedEventCount, tableString)
+		}
+
+		return nil, errors.Errorf(errorMessage)
+	case <-time.After(buildTimeout):
+
+		// Create a useful error if there are any failed events
+		errorMessage := fmt.Sprintf(`waited %s but couldn't find running pod matching selector: '%s'`, buildTimeout, selector)
+
+		if len(failedEvents) != 0 {
+
+			// Create an output table
+			tableString := &strings.Builder{}
+			table := tablewriter.NewWriter(tableString)
+			table.SetAlignment(tablewriter.ALIGN_LEFT)
+			table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
+			table.SetCenterSeparator("")
+			table.SetColumnSeparator("")
+			table.SetRowSeparator("")
+
+			// Header
+			table.SetHeader([]string{"Name", "Count", "Reason", "Message"})
+
+			// List of events
+			for name, event := range failedEvents {
+				table.Append([]string{name, strconv.Itoa(int(event.Count)), event.Reason, event.Message})
+			}
+
+			// Here we render the table as well as a helpful error message
+			table.Render()
+			errorMessage = fmt.Sprintf(`waited %s but was unable to find a running pod matching selector: '%s'
+	For more information to help determine the cause of the error, re-run with '-v'.
+	See below for a list of failed events that occured more than %d times during deployment:
+	%s`, buildTimeout, selector, failedEventCount, tableString)
 		}
 
 		return nil, errors.Errorf(errorMessage)

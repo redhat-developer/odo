@@ -56,6 +56,62 @@ func TestNew(t *testing.T) {
 	}
 }
 
+func TestGetBuildTimeout(t *testing.T) {
+	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tempConfigFile.Close()
+	os.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
+	zeroValue := 0
+	nonzeroValue := 5
+	tests := []struct {
+		name           string
+		existingConfig Preference
+		want           int
+	}{
+		{
+			name:           "Case 1: Validating default value from test case",
+			existingConfig: Preference{},
+			want:           240,
+		},
+
+		{
+			name: "Case 2: Validating value 0 from configuration",
+			existingConfig: Preference{
+				OdoSettings: OdoSettings{
+					BuildTimeout: &zeroValue,
+				},
+			},
+			want: 0,
+		},
+
+		{
+			name: "Case 3: Validating value 5 from configuration",
+			existingConfig: Preference{
+				OdoSettings: OdoSettings{
+					BuildTimeout: &nonzeroValue,
+				},
+			},
+			want: 5,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := NewPreferenceInfo()
+			if err != nil {
+				t.Error(err)
+			}
+			cfg.Preference = tt.existingConfig
+
+			output := cfg.GetBuildTimeout()
+			if output != tt.want {
+				t.Errorf("GetBuildTimeout returned unexpeced value expected \ngot: %d \nexpected: %d\n", output, tt.want)
+			}
+		})
+	}
+}
+
 func TestGetPushTimeout(t *testing.T) {
 	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
 	if err != nil {
@@ -606,11 +662,13 @@ Available Parameters:
 %s - %s
 %s - %s
 %s - %s
+%s - %s
 `
 	expected = fmt.Sprintf(expected,
 		ExperimentalSetting, ExperimentalDescription,
 		NamePrefixSetting, NamePrefixSettingDescription,
 		PushTargetSetting, PushTargetDescription,
+		BuildTimeoutSetting, BuildTimeoutSettingDescription,
 		PushTimeoutSetting, PushTimeoutSettingDescription,
 		TimeoutSetting, TimeoutSettingDescription,
 		UpdateNotificationSetting, UpdateNotificationSettingDescription)
@@ -621,7 +679,7 @@ Available Parameters:
 }
 
 func TestLowerCaseParameters(t *testing.T) {
-	expected := map[string]bool{"nameprefix": true, "pushtimeout": true, "timeout": true, "updatenotification": true, "experimental": true, "pushtarget": true}
+	expected := map[string]bool{"nameprefix": true, "buildtimeout": true, "pushtimeout": true, "timeout": true, "updatenotification": true, "experimental": true, "pushtarget": true}
 	actual := util.GetLowerCaseParameters(GetSupportedParameters())
 	if !reflect.DeepEqual(expected, actual) {
 		t.Errorf("expected '%v', got '%v'", expected, actual)
