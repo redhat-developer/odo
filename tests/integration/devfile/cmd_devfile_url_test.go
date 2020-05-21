@@ -161,6 +161,20 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.MatchAllInOutput(stdout, []string{"URL " + url1 + " created for component", "http:", url1 + "." + host})
 		})
 
+		It("delete with now flag should pass", func() {
+			var stdout string
+			url1 := helper.RandString(5)
+			host := helper.RandString(5) + ".com"
+
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress", "--devfile", "devfile.yaml")
+			helper.CmdShouldPass("odo", "push")
+			stdout = helper.CmdShouldPass("odo", "url", "delete", url1, "--now")
+			helper.MatchAllInOutput(stdout, []string{"URL " + url1 + " successfully deleted", "Applying URL changes"})
+		})
+
 		It("should create a automatically route on a openShift cluster", func() {
 
 			if os.Getenv("KUBERNETES") == "true" {
