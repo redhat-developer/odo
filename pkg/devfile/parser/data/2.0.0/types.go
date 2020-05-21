@@ -126,7 +126,7 @@ type Component struct {
 	Openshift *Openshift `json:"openshift,omitempty"`
 
 	// Type of project source
-	Type CommandType `json:"type,omitempty"`
+	Type ComponentType `json:"type,omitempty"`
 
 	// Volume component
 	Volume *Volume `json:"volume,omitempty"`
