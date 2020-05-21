@@ -771,8 +771,7 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 	}
 
 	var url string
-	switch project.SourceType {
-	case common.GitProjectSourceType:
+	if project.Git != nil {
 		if strings.Contains(project.Git.Location, "github.com") {
 			url, err = util.GetGitHubZipURL(project.Git.Location)
 			if err != nil {
@@ -781,14 +780,14 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 		} else {
 			return errors.Errorf("Project type git with non github url not supported")
 		}
-	case common.GitHubProjectSourceType:
+	} else if project.Github != nil {
 		url, err = util.GetGitHubZipURL(project.Github.Location)
 		if err != nil {
 			return err
 		}
-	case common.ZipProjectSourceType:
+	} else if project.Zip != nil {
 		url = project.Zip.Location
-	default:
+	} else {
 		return errors.Errorf("Project type not supported")
 	}
 

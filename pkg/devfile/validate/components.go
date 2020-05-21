@@ -23,7 +23,7 @@ func ValidateComponents(components []common.DevfileComponent) error {
 	// Check weather component of type container  is present
 	isContainerComponentPresent := false
 	for _, component := range components {
-		if component.Type == common.ContainerComponentType {
+		if component.Container != nil {
 			isContainerComponentPresent = true
 			break
 		}
