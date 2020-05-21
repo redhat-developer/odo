@@ -103,6 +103,7 @@ func (o *URLDescribeOptions) Run() (err error) {
 				}
 			}
 		} else {
+			componentName := o.EnvSpecificInfo.GetName()
 			u, err := url.GetIngress(o.KClient, o.EnvSpecificInfo, o.url, o.EnvSpecificInfo.GetName())
 			if err != nil {
 				return err
@@ -115,14 +116,13 @@ func (o *URLDescribeOptions) Run() (err error) {
 
 				// are there changes between local and cluster states?
 				outOfSync := false
-				fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, url.ConvertIngressURLToIngress(u), experimental.IsExperimentalModeEnabled()), "", u.Spec.Rules[0].Host, experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Backend.ServicePort.IntVal, "\t", u.Spec.TLS != nil)
+				fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, url.ConvertIngressURLToIngress(u, componentName), experimental.IsExperimentalModeEnabled()), "", u.Spec.Host, experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Port, "\t", u.Spec.Secure)
 				if u.Status.State != url.StateTypePushed {
 					outOfSync = true
 				}
 				tabWriterURL.Flush()
 				if outOfSync {
-					fmt.Fprintf(os.Stdout, "\n")
-					fmt.Fprintf(os.Stdout, "There are local changes. Please run 'odo push'.\n")
+					log.Info("There are local changes. Please run 'odo push'.")
 				}
 			}
 		}

@@ -114,13 +114,10 @@ func (o *URLListOptions) Run() (err error) {
 			}
 		} else {
 			componentName := o.EnvSpecificInfo.GetName()
-			// TODO: Need to list all local and pushed ingresses
-			//		 issue to track: https://github.com/openshift/odo/issues/2787
 			urls, err := url.ListIngressURL(o.KClient, o.EnvSpecificInfo, componentName)
 			if err != nil {
 				return err
 			}
-			// localUrls := o.EnvSpecificInfo.GetURL()
 			if log.IsJSON() {
 				machineoutput.OutputSuccess(urls)
 			} else {
@@ -134,7 +131,7 @@ func (o *URLListOptions) Run() (err error) {
 				// are there changes between local and cluster states?
 				outOfSync := false
 				for _, u := range urls.Items {
-					fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, url.ConvertIngressURLToIngress(u), experimental.IsExperimentalModeEnabled()), "", u.Spec.Rules[0].Host, experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Backend.ServicePort.IntVal, "\t", u.Spec.TLS != nil)
+					fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, url.ConvertIngressURLToIngress(u, componentName), experimental.IsExperimentalModeEnabled()), "", u.Spec.Host, experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Port, "\t", u.Spec.Secure)
 					if u.Status.State != url.StateTypePushed {
 						outOfSync = true
 					}

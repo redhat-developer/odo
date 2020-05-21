@@ -29,8 +29,8 @@ type URLSpec struct {
 	Port         int    `json:"port,omitempty"`
 	Secure       bool   `json:"secure"`
 	urlKind      envinfo.URLKind
-	tLSSecret    string
-	ExternalPort int `json:"externalport,omitempty"`
+	TLSSecret    string `json:"tlssecret,omitempty"`
+	ExternalPort int    `json:"externalport,omitempty"`
 }
 
 // AppList is a list of applications

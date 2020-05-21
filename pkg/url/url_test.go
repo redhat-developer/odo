@@ -1126,7 +1126,7 @@ func TestPush(t *testing.T) {
 						Port:      8080,
 						Secure:    true,
 						Host:      "com",
-						tLSSecret: "secret",
+						TLSSecret: "secret",
 						urlKind:   envinfo.INGRESS,
 					},
 				},
@@ -1293,7 +1293,7 @@ func TestPush(t *testing.T) {
 						Port:      8080,
 						Secure:    true,
 						Host:      "com",
-						tLSSecret: "secret",
+						TLSSecret: "secret",
 						urlKind:   envinfo.INGRESS,
 					},
 				},
@@ -1397,8 +1397,8 @@ func TestPush(t *testing.T) {
 
 									if url.Spec.Secure {
 										secretName := tt.componentName + "-tlssecret"
-										if url.Spec.tLSSecret != "" {
-											secretName = url.Spec.tLSSecret
+										if url.Spec.TLSSecret != "" {
+											secretName = url.Spec.TLSSecret
 										}
 										if createdObject.Spec.TLS[0].SecretName == secretName {
 											found = true
