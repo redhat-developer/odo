@@ -13,6 +13,7 @@ import (
 func getCommand(data data.DevfileData, commandName string, groupType common.DevfileCommandGroupType) (supportedCommand common.DevfileCommand, err error) {
 
 	for _, command := range data.GetCommands() {
+
 		// validate command
 		err = validateCommand(data, command)
 
@@ -27,7 +28,7 @@ func getCommand(data data.DevfileData, commandName string, groupType common.Devf
 
 			if command.Exec.Id == commandName {
 
-				if supportedCommand.Exec.Group.Kind == "" {
+				if command.Exec.Group.Kind == "" {
 					// Devfile V1 for commands passed from flags
 					// Group type is not updated during conversion
 					command.Exec.Group.Kind = groupType

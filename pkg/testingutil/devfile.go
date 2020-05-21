@@ -7,10 +7,8 @@ import (
 
 // TestDevfileData is a convenience data type used to mock up a devfile configuration
 type TestDevfileData struct {
-	Components          []versionsCommon.DevfileComponent
-	ExecCommands        []versionsCommon.Exec
-	MissingInitCommand  bool
-	MissingBuildCommand bool
+	Components   []versionsCommon.DevfileComponent
+	ExecCommands []versionsCommon.Exec
 }
 
 // GetComponents is a mock function to get the components from a devfile
@@ -18,14 +16,17 @@ func (d TestDevfileData) GetComponents() []versionsCommon.DevfileComponent {
 	return d.GetAliasedComponents()
 }
 
+// GetEvents is a mock function to get events from devfile
 func (d TestDevfileData) GetEvents() versionsCommon.DevfileEvents {
 	return d.GetEvents()
 }
 
+// GetMetadata is a mock function to get metadata from devfile
 func (d TestDevfileData) GetMetadata() versionsCommon.DevfileMetadata {
 	return d.GetMetadata()
 }
 
+// GetParent is a mock function to get parent from devfile
 func (d TestDevfileData) GetParent() versionsCommon.DevfileParent {
 	return d.GetParent()
 }
@@ -75,44 +76,12 @@ func (d TestDevfileData) GetCommands() []versionsCommon.DevfileCommand {
 
 	var commands []versionsCommon.DevfileCommand
 
-	for _, exec := range d.ExecCommands {
-		commands = append(commands, versionsCommon.DevfileCommand{Exec: &exec})
-
+	for i := range d.ExecCommands {
+		commands = append(commands, versionsCommon.DevfileCommand{Exec: &d.ExecCommands[i]})
 	}
 
 	return commands
 
-	/*
-		commandName := [...]string{"devinit", "devbuild", "devrun", "customcommand"}
-
-		command1 := versionsCommon.DevfileCommand{
-			Exec: &versionsCommon.Exec{
-				Id: commandName[2],
-			},
-		}
-
-		command2 := versionsCommon.DevfileCommand{
-			Exec: &versionsCommon.Exec{
-				Id: commandName[3],
-			},
-		}
-
-		commands := []versionsCommon.DevfileCommand{command1, command2}
-
-		if !d.MissingInitCommand {
-			commands = append(commands, versionsCommon.DevfileCommand{
-				Exec: &versionsCommon.Exec{
-					Id: commandName[0],
-				}})
-		}
-		if !d.MissingBuildCommand {
-			commands = append(commands, versionsCommon.DevfileCommand{
-				Exec: &versionsCommon.Exec{
-					Id: commandName[1],
-				}})
-		}
-
-		return commands */
 }
 
 // Validate is a mock validation that always validates without error
@@ -120,6 +89,7 @@ func (d TestDevfileData) Validate() error {
 	return nil
 }
 
+// GetFakeComponent returns fake component for testing
 func GetFakeComponent(name string) versionsCommon.DevfileComponent {
 	image := "docker.io/maven:latest"
 	memoryLimit := "128Mi"

@@ -37,7 +37,7 @@ func TestGetSupportedComponents(t *testing.T) {
 		{
 			name:                 "Case: Valid devfile with correct component type (Container)",
 			component:            []versionsCommon.DevfileComponent{testingutil.GetFakeComponent("comp1"), testingutil.GetFakeComponent("comp2")},
-			expectedMatchesCount: 1,
+			expectedMatchesCount: 2,
 		},
 
 		{
