@@ -130,7 +130,7 @@ func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume 
 }
 
 // IsEnvPresent checks if the env variable is present in an array of env variables
-func IsEnvPresent(envVars []*common.Env, envVarName string) bool {
+func IsEnvPresent(envVars []common.Env, envVarName string) bool {
 	for _, envVar := range envVars {
 		if envVar.Name == envVarName {
 			return true
@@ -141,7 +141,7 @@ func IsEnvPresent(envVars []*common.Env, envVarName string) bool {
 }
 
 // IsPortPresent checks if the port is present in the endpoints array
-func IsPortPresent(endpoints []*common.Endpoint, port int) bool {
+func IsPortPresent(endpoints []common.Endpoint, port int) bool {
 	for _, endpoint := range endpoints {
 		if endpoint.TargetPort == int32(port) {
 			return true
