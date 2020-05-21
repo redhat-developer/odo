@@ -323,7 +323,23 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			return errors.New("This directory already contains a component")
 		}
 
-		if util.CheckPathExists(DevfilePath) && co.devfileMetadata.devfilePath != "" {
+		// Validate user specify devfile path
+		if co.devfileMetadata.devfilePath != "" {
+			fileErr := util.ValidateFile(co.devfileMetadata.devfilePath)
+			urlErr := util.ValidateURL(co.devfileMetadata.devfilePath)
+			if fileErr != nil && urlErr != nil {
+				return errors.Errorf("The devfile path you specify is invalid with either file error \"%v\" or url error \"%v\"", fileErr, urlErr)
+			}
+		}
+
+		// Configure the context
+		if co.componentContext != "" {
+			DevfilePath = filepath.Join(co.componentContext, devFile)
+			EnvFilePath = filepath.Join(co.componentContext, envFile)
+			co.CommonPushOptions.componentContext = co.componentContext
+		}
+
+		if util.CheckPathExists(DevfilePath) && co.devfileMetadata.devfilePath != "" && !util.PathEqual(DevfilePath, co.devfileMetadata.devfilePath) {
 			return errors.New("This directory already contains a devfile, you can't specify devfile via --devfile")
 		}
 
@@ -342,22 +358,6 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 				return err
 			}
 			defaultComponentNamespace = client.Namespace
-		}
-
-		// Configure the context
-		if co.componentContext != "" {
-			DevfilePath = filepath.Join(co.componentContext, devFile)
-			EnvFilePath = filepath.Join(co.componentContext, envFile)
-			co.CommonPushOptions.componentContext = co.componentContext
-		}
-
-		// Validate user specify devfile path
-		if co.devfileMetadata.devfilePath != "" {
-			fileErr := util.ValidateFile(co.devfileMetadata.devfilePath)
-			urlErr := util.ValidateURL(co.devfileMetadata.devfilePath)
-			if fileErr != nil && urlErr != nil {
-				return errors.Errorf("The devfile path you specify is invalid with either file error \"%v\" or url error \"%v\"", fileErr, urlErr)
-			}
 		}
 
 		var catalogDevfileList catalog.DevfileComponentTypeList
@@ -588,7 +588,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		}
 		componentName := ui.EnterComponentName(defaultComponentName, co.Context)
 
-		appName := ui.EnterOpenshiftName(co.Context.Application, "Which application do you want the commponent to be associated with", co.Context)
+		appName := ui.EnterOpenshiftName(co.Context.Application, "Which application do you want the component to be associated with", co.Context)
 		co.componentSettings.Application = &appName
 
 		projectName := ui.EnterOpenshiftName(co.Context.Project, "Which project go you want the component to be created in", co.Context)

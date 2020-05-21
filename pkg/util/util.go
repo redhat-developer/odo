@@ -1061,3 +1061,13 @@ func CopyFile(srcPath string, dstPath string, info os.FileInfo) error {
 
 	return nil
 }
+
+// PathEqual compare the paths to determine if they are equal
+func PathEqual(firstPath string, secondPath string) bool {
+	firstAbsPath, _ := GetAbsPath(firstPath)
+	secondAbsPath, _ := GetAbsPath(secondPath)
+	if firstAbsPath == secondAbsPath {
+		return true
+	}
+	return false
+}

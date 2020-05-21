@@ -1653,6 +1653,49 @@ func TestValidateURL(t *testing.T) {
 	}
 }
 
+func TestValidateFile(t *testing.T) {
+	// Create temp dir and temp file
+	tempDir, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Errorf("Failed to create temp dir: %s, error: %v", tempDir, err)
+	}
+	tempFile, err := ioutil.TempFile(tempDir, "")
+	if err != nil {
+		t.Errorf("Failed to create temp file: %s, error: %v", tempFile.Name(), err)
+	}
+	defer tempFile.Close()
+
+	tests := []struct {
+		name     string
+		filePath string
+		wantErr  bool
+	}{
+		{
+			name:     "Case 1: Valid file path",
+			filePath: tempFile.Name(),
+			wantErr:  false,
+		},
+		{
+			name:     "Case 2: Invalid file path",
+			filePath: "!@#",
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotErr := false
+			err := ValidateFile(tt.filePath)
+			if err != nil {
+				gotErr = true
+			}
+			if !reflect.DeepEqual(gotErr, tt.wantErr) {
+				t.Errorf("Got error: %t, want error: %t", gotErr, tt.wantErr)
+			}
+		})
+	}
+}
+
 func TestCopyFile(t *testing.T) {
 	// Create temp dir
 	tempDir, err := ioutil.TempDir("", "")
@@ -1708,6 +1751,50 @@ func TestCopyFile(t *testing.T) {
 
 			if !reflect.DeepEqual(gotErr, tt.wantErr) {
 				t.Errorf("Got error: %t, want error: %t", gotErr, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestPathEqual(t *testing.T) {
+	currentDir, err := os.Getwd()
+	if err != nil {
+		t.Errorf("Can't get absolute path of current working directory with error: %v", err)
+	}
+	fileAbsPath := filepath.Join(currentDir, "file")
+	fileRelPath := filepath.Join(".", "file")
+
+	tests := []struct {
+		name       string
+		firstPath  string
+		secondPath string
+		want       bool
+	}{
+		{
+			name:       "Case 1: Two paths (two absolute paths) are equal",
+			firstPath:  fileAbsPath,
+			secondPath: fileAbsPath,
+			want:       true,
+		},
+		{
+			name:       "Case 2: Two paths (one absolute path, one relative path) are equal",
+			firstPath:  fileAbsPath,
+			secondPath: fileRelPath,
+			want:       true,
+		},
+		{
+			name:       "Case 3: Two paths are not equal",
+			firstPath:  fileAbsPath,
+			secondPath: filepath.Join(fileAbsPath, "file"),
+			want:       false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := PathEqual(tt.firstPath, tt.secondPath)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Got: %t, want %t", got, tt.want)
 			}
 		})
 	}
