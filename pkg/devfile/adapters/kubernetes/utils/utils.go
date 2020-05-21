@@ -22,7 +22,7 @@ func ComponentExists(client kclient.Client, name string) bool {
 }
 
 // ConvertEnvs converts environment variables from the devfile structure to kubernetes structure
-func ConvertEnvs(vars []*common.Env) []corev1.EnvVar {
+func ConvertEnvs(vars []common.Env) []corev1.EnvVar {
 	kVars := []corev1.EnvVar{}
 	for _, env := range vars {
 		kVars = append(kVars, corev1.EnvVar{
@@ -34,7 +34,7 @@ func ConvertEnvs(vars []*common.Env) []corev1.EnvVar {
 }
 
 // ConvertPorts converts endpoint variables from the devfile structure to kubernetes ContainerPort
-func ConvertPorts(endpoints []*common.Endpoint) ([]corev1.ContainerPort, error) {
+func ConvertPorts(endpoints []common.Endpoint) ([]corev1.ContainerPort, error) {
 	containerPorts := []corev1.ContainerPort{}
 	for _, endpoint := range endpoints {
 		name := strings.TrimSpace(util.GetDNS1123Name(strings.ToLower(endpoint.Name)))

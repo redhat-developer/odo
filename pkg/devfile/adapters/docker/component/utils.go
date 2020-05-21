@@ -240,7 +240,7 @@ func (a Adapter) startComponent(mounts []mount.Mount, projectVolumeName string, 
 		if !common.IsEnvPresent(comp.Container.Env, common.EnvCheProjectsRoot) {
 			envName := common.EnvCheProjectsRoot
 			envValue := lclient.OdoSourceVolumeMount
-			comp.Container.Env = append(comp.Container.Env, &versionsCommon.Env{
+			comp.Container.Env = append(comp.Container.Env, versionsCommon.Env{
 				Name:  envName,
 				Value: envValue,
 			})
@@ -276,7 +276,7 @@ func (a Adapter) generateAndGetContainerConfig(componentName string, comp versio
 	return containerConfig
 }
 
-func (a Adapter) generateAndGetHostConfig(endpoints []*versionsCommon.Endpoint) (container.HostConfig, map[nat.Port]string, error) {
+func (a Adapter) generateAndGetHostConfig(endpoints []versionsCommon.Endpoint) (container.HostConfig, map[nat.Port]string, error) {
 	// Convert the port bindings from env.yaml and generate docker host config
 	portMap, namePortMapping, err := getPortMap(a.Context, endpoints, true)
 	if err != nil {
@@ -291,7 +291,7 @@ func (a Adapter) generateAndGetHostConfig(endpoints []*versionsCommon.Endpoint) 
 	return hostConfig, namePortMapping, nil
 }
 
-func getPortMap(context string, endpoints []*versionsCommon.Endpoint, show bool) (nat.PortMap, map[nat.Port]string, error) {
+func getPortMap(context string, endpoints []versionsCommon.Endpoint, show bool) (nat.PortMap, map[nat.Port]string, error) {
 	// Convert the exposed and internal port pairs saved in env.yaml file to PortMap
 	// Todo: Use context to get the approraite envinfo after context is supported in experimental mode
 	portmap := nat.PortMap{}

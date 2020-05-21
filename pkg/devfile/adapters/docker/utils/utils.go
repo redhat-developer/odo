@@ -60,7 +60,7 @@ func GetContainerIDForAlias(containers []types.Container, alias string) string {
 }
 
 // ConvertEnvs converts environment variables from the devfile structure to an array of strings, as expected by Docker
-func ConvertEnvs(vars []*common.Env) []string {
+func ConvertEnvs(vars []common.Env) []string {
 	dockerVars := []string{}
 	for _, env := range vars {
 		envString := fmt.Sprintf("%s=%s", env.Name, env.Value)
@@ -70,7 +70,7 @@ func ConvertEnvs(vars []*common.Env) []string {
 }
 
 // ConvertPorts converts endpoints from the devfile structure to PortSet, which is expected by Docker
-func ConvertPorts(endpoints []*common.Endpoint) nat.PortSet {
+func ConvertPorts(endpoints []common.Endpoint) nat.PortSet {
 	portSet := nat.PortSet{}
 	for _, endpoint := range endpoints {
 		port := nat.Port(strconv.Itoa(int(endpoint.TargetPort)) + "/tcp")
@@ -220,7 +220,7 @@ func UpdateComponentWithSupervisord(comp *common.DevfileComponent, runCommand co
 		if !adaptersCommon.IsEnvPresent(comp.Container.Env, adaptersCommon.EnvOdoCommandRun) {
 			envName := adaptersCommon.EnvOdoCommandRun
 			envValue := runCommand.Exec.CommandLine
-			comp.Container.Env = append(comp.Container.Env, &common.Env{
+			comp.Container.Env = append(comp.Container.Env, common.Env{
 				Name:  envName,
 				Value: envValue,
 			})
@@ -229,7 +229,7 @@ func UpdateComponentWithSupervisord(comp *common.DevfileComponent, runCommand co
 		if !adaptersCommon.IsEnvPresent(comp.Container.Env, adaptersCommon.EnvOdoCommandRunWorkingDir) && runCommand.Exec.WorkingDir != "" {
 			envName := adaptersCommon.EnvOdoCommandRunWorkingDir
 			envValue := runCommand.Exec.WorkingDir
-			comp.Container.Env = append(comp.Container.Env, &common.Env{
+			comp.Container.Env = append(comp.Container.Env, common.Env{
 				Name:  envName,
 				Value: envValue,
 			})
