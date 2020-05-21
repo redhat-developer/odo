@@ -28,6 +28,7 @@ func TestGetCommand(t *testing.T) {
 		requestedType []common.DevfileCommandGroupType
 		execCommands  []common.Exec
 		groupType     []common.DevfileCommandGroupType
+		commandName   string
 		wantErr       bool
 	}{
 		{
@@ -107,6 +108,19 @@ func TestGetCommand(t *testing.T) {
 			requestedType: []common.DevfileCommandGroupType{runGroup},
 			wantErr:       true,
 		},
+		{
+			name: "Case 8: Mismatched command type",
+			execCommands: []common.Exec{
+				{Id: "build command",
+					CommandLine: commands[0],
+					Component:   invalidComponent,
+					Group:       &versionsCommon.Group{Kind: runGroup},
+				},
+			},
+			commandName:   "build command",
+			requestedType: []common.DevfileCommandGroupType{buildGroup},
+			wantErr:       true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -122,7 +136,7 @@ func TestGetCommand(t *testing.T) {
 			}
 
 			for _, gtype := range tt.requestedType {
-				_, err := getCommand(devObj.Data, "", gtype)
+				_, err := getCommand(devObj.Data, tt.commandName, gtype)
 				if !tt.wantErr == (err != nil) {
 					t.Errorf("TestGetCommand unexpected error for command: %v wantErr: %v err: %v", gtype, tt.wantErr, err)
 					return
