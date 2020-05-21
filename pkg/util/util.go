@@ -798,40 +798,42 @@ func GetGitHubZipURL(project common.DevfileProject) (string, error) {
 	var ref string
 	errBool := true
 
-	branchCondition := (project.Source.Branch != nil && *project.Source.Branch != "")
-	tagCondition := (project.Source.Tag != nil && *project.Source.Tag != "")
-	commitIdCondition := (project.Source.CommitId != nil && *project.Source.CommitId != "")
-	startPointCondition := (project.Source.StartPoint != nil && *project.Source.StartPoint != "")
+	branchExists := (project.Source.Branch != nil && *project.Source.Branch != "")
+	tagExists := (project.Source.Tag != nil && *project.Source.Tag != "")
+	commitIdExists := (project.Source.CommitId != nil && *project.Source.CommitId != "")
+	startPointExists := (project.Source.StartPoint != nil && *project.Source.StartPoint != "")
 
-	if branchCondition && !tagCondition && !commitIdCondition && !startPointCondition {
+	if branchExists && !tagExists && !commitIdExists && !startPointExists {
 		errBool = false
 		ref = *project.Source.Branch
-	} else if tagCondition && !branchCondition && !commitIdCondition && !startPointCondition {
+	} else if tagExists && !branchExists && !commitIdExists && !startPointExists {
 		errBool = false
 		ref = *project.Source.Tag
-	} else if commitIdCondition && !branchCondition && !tagCondition && !startPointCondition {
+	} else if commitIdExists && !branchExists && !tagExists && !startPointExists {
 		errBool = false
 		ref = *project.Source.CommitId
-	} else if startPointCondition && !branchCondition && !commitIdCondition && !tagCondition {
+	} else if startPointExists && !branchExists && !commitIdExists && !tagExists {
 		errBool = false
 		ref = *project.Source.StartPoint
+	} else if !branchExists && !commitIdExists && !tagExists && !startPointExists {
+		errBool = false
 	}
 
 	if errBool {
 		errMsg := ""
-		if branchCondition {
+		if branchExists {
 			errMsg += fmt.Sprintf("%s specified with value %s\n", githubBranchMsg, *project.Source.Branch)
 		}
 
-		if tagCondition {
+		if tagExists {
 			errMsg += fmt.Sprintf("%s specified with value %s\n", githubTagMsg, *project.Source.Tag)
 		}
 
-		if commitIdCondition {
+		if commitIdExists {
 			errMsg += fmt.Sprintf("%s specified with value %s\n", githubCommitIDMsg, *project.Source.CommitId)
 		}
 
-		if startPointCondition {
+		if startPointExists {
 			errMsg += fmt.Sprintf("%s specified with value %s\n", githubStartPointMsg, *project.Source.StartPoint)
 		}
 
