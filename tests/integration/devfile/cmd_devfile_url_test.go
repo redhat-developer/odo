@@ -171,7 +171,7 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress", "--devfile", "devfile.yaml")
 			helper.CmdShouldPass("odo", "push")
-			stdout = helper.CmdShouldPass("odo", "url", "delete", url1, "--now")
+			stdout = helper.CmdShouldPass("odo", "url", "delete", url1, "--now", "-f")
 			helper.MatchAllInOutput(stdout, []string{"URL " + url1 + " successfully deleted", "Applying URL changes"})
 		})
 
