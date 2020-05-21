@@ -13,6 +13,7 @@ import (
 func getCommand(data data.DevfileData, commandName string, groupType common.DevfileCommandGroupType) (supportedCommand common.DevfileCommand, err error) {
 
 	for _, command := range data.GetCommands() {
+
 		// validate command
 		err = validateCommand(data, command)
 
@@ -27,7 +28,7 @@ func getCommand(data data.DevfileData, commandName string, groupType common.Devf
 
 			if command.Exec.Id == commandName {
 
-				if supportedCommand.Exec.Group.Kind == "" {
+				if command.Exec.Group.Kind == "" {
 					// Devfile V1 for commands passed from flags
 					// Group type is not updated during conversion
 					command.Exec.Group.Kind = groupType
@@ -50,15 +51,21 @@ func getCommand(data data.DevfileData, commandName string, groupType common.Devf
 		}
 
 		// if not command specified via flag, default command has the highest priority
+		// We need to scan all the commands to find default command
 		if command.Exec.Group.Kind == groupType && command.Exec.Group.IsDefault {
 			supportedCommand = command
 			return supportedCommand, nil
 		}
+	}
 
-		// return the first command found for the matching type.
-		if command.Exec.Group.Kind == groupType {
-			supportedCommand = command
-			return supportedCommand, nil
+	if commandName == "" {
+		// if default command is not found return the first command found for the matching type.
+		for _, command := range data.GetCommands() {
+			if command.Exec.Group.Kind == groupType {
+				supportedCommand = command
+				return supportedCommand, nil
+			}
+
 		}
 	}
 
@@ -98,6 +105,10 @@ func validateCommand(data data.DevfileData, command common.DevfileCommand) (err 
 	// must specify a command
 	if command.Exec.CommandLine == "" {
 		return fmt.Errorf("Exec commands must have a command")
+	}
+
+	if command.Exec.Group == nil {
+		return fmt.Errorf("Exec commands must have group")
 	}
 
 	// must map to a supported component

@@ -190,10 +190,10 @@ type Configuration struct {
 
 // Container Container component
 type Container struct {
-	Endpoints []*Endpoint `json:"endpoints,omitempty"`
+	Endpoints []Endpoint `json:"endpoints,omitempty"`
 
 	// Environment variables used in this container
-	Env          []*Env `json:"env,omitempty"`
+	Env          []Env  `json:"env,omitempty"`
 	Image        string `json:"image"`
 	MemoryLimit  string `json:"memoryLimit,omitempty"`
 	MountSources bool   `json:"mountSources,omitempty"`
@@ -203,7 +203,7 @@ type Container struct {
 	SourceMapping string `json:"sourceMapping,omitempty"`
 
 	// List of volumes mounts that should be mounted is this container.
-	VolumeMounts []*VolumeMount `json:"volumeMounts,omitempty"`
+	VolumeMounts []VolumeMount `json:"volumeMounts,omitempty"`
 }
 
 // Custom Custom component
@@ -260,7 +260,7 @@ type Exec struct {
 	Component string `json:"component,omitempty"`
 
 	// Optional list of environment variables that have to be set before running the command
-	Env []*Env `json:"env,omitempty"`
+	Env []Env `json:"env,omitempty"`
 
 	// Defines the group this command is part of
 	Group *Group `json:"group,omitempty"`
