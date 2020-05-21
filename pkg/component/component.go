@@ -914,22 +914,6 @@ func GetComponentFromConfig(localConfig *config.LocalConfigInfo) (Component, err
 	return Component{}, nil
 }
 
-// This function returns a mapping of port and protocol.
-// So for a value of ports {"8080/TCP", "45/UDP"} it will return a map {"8080":
-// "TCP", "45": "UDP"}
-func getPortsProtocolMapping(ports []string) (map[string]string, error) {
-	oldPortsProtocol := make(map[string]string, len(ports))
-	for _, port := range ports {
-		portProtocol := strings.Split(port, "/")
-		if len(portProtocol) != 2 {
-			// this will be the case if value of a port is something like 8080/TCP/something-else or simply 8080
-			return nil, errors.New("invalid <port/protocol> mapping. Please update the component configuration")
-		}
-		oldPortsProtocol[portProtocol[0]] = portProtocol[1]
-	}
-	return oldPortsProtocol, nil
-}
-
 // ListIfPathGiven lists all available component in given path directory
 func ListIfPathGiven(client *occlient.Client, paths []string) (ComponentList, error) {
 	var components []Component
