@@ -35,6 +35,10 @@ type ProjectDeleteOptions struct {
 
 	// generic context options common to all commands
 	*genericclioptions.Context
+
+	// wait is a boolean value to choose if we wait or not for
+	// our project to be deleted
+	wait bool
 }
 
 // NewProjectDeleteOptions creates a ProjectDeleteOptions instance
@@ -62,6 +66,9 @@ func (pdo *ProjectDeleteOptions) Validate() (err error) {
 // Run runs the project delete command
 func (pdo *ProjectDeleteOptions) Run() (err error) {
 
+	// Create the "spinner"
+	s := &log.Status{}
+
 	// This to set the project in the file and runtime
 	err = project.SetCurrent(pdo.Context.Client, pdo.projectName)
 	if err != nil {
@@ -77,15 +84,23 @@ func (pdo *ProjectDeleteOptions) Run() (err error) {
 	if log.IsJSON() || (pdo.projectForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete project %v", pdo.projectName))) {
 		successMessage := fmt.Sprintf("Deleted project : %v", pdo.projectName)
 
-		err := project.Delete(pdo.Context.Client, pdo.projectName)
+		// If the --wait parameter has been passed, we add a spinner..
+		if pdo.wait {
+			s = log.Spinner("Waiting for project to be deleted")
+			defer s.End(false)
+		}
+
+		err := project.Delete(pdo.Context.Client, pdo.projectName, pdo.wait)
 		if err != nil {
 			return err
 		}
+		s.End(true)
 
 		if log.IsJSON() {
 			project.MachineReadableSuccessOutput(pdo.projectName, successMessage)
 		} else {
 			log.Success(successMessage)
+			log.Warning("Warning! Projects are deleted from the cluster asynchronously. Odo does its best to delete the project. Due to multi-tenant clusters, the project may still exist on a different node.")
 		}
 		return nil
 	}
@@ -109,6 +124,7 @@ func NewCmdProjectDelete(name, fullName string) *cobra.Command {
 		},
 	}
 
+	projectDeleteCmd.Flags().BoolVarP(&o.wait, "wait", "w", false, "Wait until the project has been completely deleted")
 	projectDeleteCmd.Flags().BoolVarP(&o.projectForceDeleteFlag, "force", "f", false, "Delete project without prompting")
 
 	return projectDeleteCmd
