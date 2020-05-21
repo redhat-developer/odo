@@ -16,7 +16,7 @@ jobs:
     - &base-test
       stage: test
       go_import_path: github.com/openshift/odo
-      go: "1.13.1"
+      go: "1.12.x"
       install:
         - make goget-tools
       script:
@@ -38,7 +38,7 @@ jobs:
       init:
       - git config --system core.longpaths true
       go_import_path: github.com/openshift/odo
-      go: "1.13.1"
+      go: "1.12.x"
       install:
         - systeminfo.exe | grep '^OS'
         - choco install make
@@ -57,7 +57,7 @@ jobs:
       os:
         - osx
       go_import_path: github.com/openshift/odo
-      go: "1.13.1"
+      go: "1.12.x"
       install:
         - make goget-tools
       script:
