@@ -15,6 +15,7 @@ import (
 	"runtime"
 	"sort"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -1343,7 +1344,13 @@ func TestDownloadFile(t *testing.T) {
 		{
 			name:     "Case 2: Input url is invalid",
 			url:      "invalid",
-			filepath: "invalid",
+			filepath: "./test.yaml",
+			want:     []byte{},
+		},
+		{
+			name:     "Case 3: Input url is an empty string",
+			url:      "",
+			filepath: "./test.yaml",
 			want:     []byte{},
 		},
 	}
@@ -1351,7 +1358,12 @@ func TestDownloadFile(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := DownloadFile(tt.url, tt.filepath)
-			if tt.url != "invalid" && err != nil {
+
+			if tt.url == "" && err != nil {
+				if !strings.Contains(err.Error(), "Get : unsupported protocol scheme") {
+					t.Errorf("Did not get expected error %s", err)
+				}
+			} else if tt.url != "invalid" && err != nil {
 				t.Errorf("Failed to download file with error %s", err)
 			}
 

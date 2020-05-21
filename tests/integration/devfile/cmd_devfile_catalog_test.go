@@ -78,22 +78,28 @@ var _ = Describe("odo devfile catalog command tests", func() {
 		})
 	})
 
-	Context("When executing catalog describe component with a component name with a single component", func() {
-		It("should only give information about one component", func() {
+	Context("When executing catalog describe component with a component name with a single project", func() {
+		It("should only give information about one project", func() {
+			output := helper.CmdShouldPass("odo", "catalog", "describe", "component", "openLiberty")
+			helper.MatchAllInOutput(output, []string{"location: https://github.com/odo-devfiles/openliberty-ex.git"})
+		})
+	})
+	Context("When executing catalog describe component with a component name with no starter projects", func() {
+		It("should print message that the component has no starter projects", func() {
 			output := helper.CmdShouldPass("odo", "catalog", "describe", "component", "maven")
-			helper.MatchAllInOutput(output, []string{"generateName: maven-", "- command: java -jar target/*.jar"})
+			helper.MatchAllInOutput(output, []string{"The Odo devfile component \"maven\" has no starter projects."})
 		})
 	})
 	Context("When executing catalog describe component with a component name with multiple components", func() {
 		It("should print multiple devfiles from different registries", func() {
 			output := helper.CmdShouldPass("odo", "catalog", "describe", "component", "nodejs")
-			helper.MatchAllInOutput(output, []string{"Registry: DefaultDevfileRegistry", "Registry: CheDevfileRegistry"})
+			helper.MatchAllInOutput(output, []string{"name: nodejs-web-app", "location: https://github.com/odo-devfiles/nodejs-ex.git", "location: https://github.com/che-samples/web-nodejs-sample.git"})
 		})
 	})
 	Context("When executing catalog describe component with a component name that does not have a devfile component", func() {
-		It("should return the component name and say there is no Odo devfile component available", func() {
+		It("should print message that there is no Odo devfile component available", func() {
 			output := helper.CmdShouldPass("odo", "catalog", "describe", "component", "java")
-			helper.MatchAllInOutput(output, []string{"There are no Odo devfile components with the name \"java\"", "S2I Based Components:", "-java"})
+			helper.MatchAllInOutput(output, []string{"There are no Odo devfile components with the name \"java\""})
 		})
 	})
 	Context("When executing catalog describe component with more than one argument", func() {

@@ -50,9 +50,9 @@ func NewDescribeComponentOptions() *DescribeComponentOptions {
 
 // Complete completes DescribeComponentOptions after they've been created
 func (o *DescribeComponentOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	o.componentName = args[0]
 	if !pushtarget.IsPushTargetDocker() {
 		o.Context = genericclioptions.NewContext(cmd, true)
-		o.componentName = args[0]
 		catalogList, err := catalog.ListComponents(o.Client)
 		if err != nil {
 			if experimental.IsExperimentalModeEnabled() {
@@ -94,56 +94,70 @@ func (o *DescribeComponentOptions) Validate() (err error) {
 
 // Run contains the logic for the command associated with DescribeComponentOptions
 func (o *DescribeComponentOptions) Run() (err error) {
-	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-	if log.IsJSON() {
-		if len(o.devfileComponents) > 0 {
-			for _, devfileComponent := range o.devfileComponents {
-				data, err := pkgUtil.DownloadFileInMemory(devfileComponent.Registry.URL + devfileComponent.Link)
-				if err != nil {
-					return errors.Wrapf(err, "Failed to download devfile.yaml for devfile component: %s", devfileComponent.Name)
-				}
-				devObj, err := devfile.ParseInMemory(data)
-				if err != nil {
-					return err
-				}
+	if experimental.IsExperimentalModeEnabled() {
+		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+		if log.IsJSON() {
+			if len(o.devfileComponents) > 0 {
+				for _, devfileComponent := range o.devfileComponents {
+					data, err := pkgUtil.DownloadFileInMemory(devfileComponent.Registry.URL + devfileComponent.Link)
+					if err != nil {
+						return errors.Wrapf(err, "Failed to download devfile.yaml for devfile component: %s", devfileComponent.Name)
+					}
+					devObj, err := devfile.ParseInMemory(data)
+					if err != nil {
+						return err
+					}
 
-				machineoutput.OutputSuccess(devObj)
-			}
-		}
-	} else {
-		if len(o.devfileComponents) > 1 {
-			log.Warningf("There are multiple components named \"%s\" in different multiple devfile registries.\n", o.componentName)
-		}
-		if len(o.devfileComponents) > 0 {
-			fmt.Fprintln(w, "Devfile Component(s):")
-
-			for _, devfileComponent := range o.devfileComponents {
-				fmt.Fprintln(w, "\n* Registry: "+devfileComponent.Registry.Name)
-
-				data, err := pkgUtil.DownloadFileInMemory(devfileComponent.Registry.URL + devfileComponent.Link)
-				if err != nil {
-					return errors.Wrapf(err, "Failed to download devfile.yaml for devfile component: %s", devfileComponent.Name)
+					machineoutput.OutputSuccess(devObj)
 				}
-
-				devObj, err := devfile.ParseInMemory(data)
-				if err != nil {
-					return err
-				}
-
-				yamlData, err := yaml.Marshal(devObj)
-				if err != nil {
-					return errors.Wrapf(err, "Failed to marshal devfile object into yaml")
-				}
-				fmt.Printf("---\n%s", string(yamlData))
 			}
 		} else {
-			fmt.Fprintln(w, "There are no Odo devfile components with the name \""+o.componentName+"\"")
+			if len(o.devfileComponents) > 1 {
+				log.Warningf("There are multiple components named \"%s\" in different multiple devfile registries.\n", o.componentName)
+			}
+			if len(o.devfileComponents) > 0 {
+				fmt.Fprintln(w, "Devfile Component(s):")
+
+				for _, devfileComponent := range o.devfileComponents {
+					fmt.Fprintln(w, "\n* Registry: "+devfileComponent.Registry.Name)
+
+					data, err := pkgUtil.DownloadFileInMemory(devfileComponent.Registry.URL + devfileComponent.Link)
+					if err != nil {
+						return errors.Wrapf(err, "Failed to download devfile.yaml for devfile component: %s", devfileComponent.Name)
+					}
+					devObj, err := devfile.ParseInMemory(data)
+					if err != nil {
+						return err
+					}
+					projects := devObj.Data.GetProjects()
+					// only print project info if there is at least one project in the devfile
+					if len(projects) > 0 {
+						fmt.Fprintln(w, "\nStarter Projects:")
+						for _, project := range projects {
+							yamlData, err := yaml.Marshal(project)
+							if err != nil {
+								return errors.Wrapf(err, "Failed to marshal devfile object into yaml")
+							}
+							fmt.Printf("---\n%s", string(yamlData))
+						}
+					} else {
+						fmt.Fprintln(w, "The Odo devfile component \""+o.componentName+"\" has no starter projects.")
+						yamlData, err := yaml.Marshal(devObj)
+						if err != nil {
+							return errors.Wrapf(err, "Failed to marshal devfile object into yaml")
+						}
+						fmt.Printf("---\n%s", string(yamlData))
+					}
+				}
+			} else {
+				fmt.Fprintln(w, "There are no Odo devfile components with the name \""+o.componentName+"\"")
+			}
+			if o.component != "" {
+				fmt.Fprintln(w, "\nS2I Based Components:")
+				fmt.Fprintln(w, "-"+o.component)
+			}
+			fmt.Fprintln(w)
 		}
-		if o.component != "" {
-			fmt.Fprintln(w, "\nS2I Based Components:")
-			fmt.Fprintln(w, "-"+o.component)
-		}
-		fmt.Fprintln(w)
 	}
 
 	return nil
