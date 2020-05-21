@@ -24,12 +24,13 @@ func TestGetCommand(t *testing.T) {
 	emptyString := ""
 
 	tests := []struct {
-		name          string
-		requestedType []common.DevfileCommandGroupType
-		execCommands  []common.Exec
-		groupType     []common.DevfileCommandGroupType
-		commandName   string
-		wantErr       bool
+		name           string
+		requestedType  []common.DevfileCommandGroupType
+		execCommands   []common.Exec
+		groupType      []common.DevfileCommandGroupType
+		reqCommandName string
+		retCommandName string
+		wantErr        bool
 	}{
 		{
 			name: "Case 1: Valid devfile",
@@ -111,15 +112,36 @@ func TestGetCommand(t *testing.T) {
 		{
 			name: "Case 8: Mismatched command type",
 			execCommands: []common.Exec{
-				{Id: "build command",
+				{
+					Id:          "build command",
 					CommandLine: commands[0],
-					Component:   invalidComponent,
+					Component:   components[0],
 					Group:       &versionsCommon.Group{Kind: runGroup},
 				},
 			},
-			commandName:   "build command",
-			requestedType: []common.DevfileCommandGroupType{buildGroup},
-			wantErr:       true,
+			reqCommandName: "build command",
+			requestedType:  []common.DevfileCommandGroupType{buildGroup},
+			wantErr:        true,
+		},
+		{
+			name: "Case 9: Default command is returned",
+			execCommands: []common.Exec{
+				{
+					Id:          "defaultRunCommand",
+					CommandLine: commands[0],
+					Component:   components[0],
+					Group:       &versionsCommon.Group{Kind: runGroup, IsDefault: true},
+				},
+				{
+					Id:          "runCommand",
+					CommandLine: commands[0],
+					Component:   components[0],
+					Group:       &versionsCommon.Group{Kind: runGroup},
+				},
+			},
+			retCommandName: "defaultRunCommand",
+			requestedType:  []common.DevfileCommandGroupType{runGroup},
+			wantErr:        false,
 		},
 	}
 	for _, tt := range tests {
@@ -136,7 +158,7 @@ func TestGetCommand(t *testing.T) {
 			}
 
 			for _, gtype := range tt.requestedType {
-				_, err := getCommand(devObj.Data, tt.commandName, gtype)
+				cmd, err := getCommand(devObj.Data, tt.reqCommandName, gtype)
 				if !tt.wantErr == (err != nil) {
 					t.Errorf("TestGetCommand unexpected error for command: %v wantErr: %v err: %v", gtype, tt.wantErr, err)
 					return
@@ -144,6 +166,11 @@ func TestGetCommand(t *testing.T) {
 					return
 				}
 
+				if cmd.Exec != nil {
+					if cmd.Exec.Id != tt.retCommandName {
+						t.Errorf("TestGetCommand error: command names do not match expected: %v actual: %v", tt.retCommandName, cmd.Exec.Id)
+					}
+				}
 			}
 		})
 	}

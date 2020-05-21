@@ -51,15 +51,21 @@ func getCommand(data data.DevfileData, commandName string, groupType common.Devf
 		}
 
 		// if not command specified via flag, default command has the highest priority
+		// We need to scan all the commands to find default command
 		if command.Exec.Group.Kind == groupType && command.Exec.Group.IsDefault {
 			supportedCommand = command
 			return supportedCommand, nil
 		}
+	}
 
-		// return the first command found for the matching type.
-		if command.Exec.Group.Kind == groupType {
-			supportedCommand = command
-			return supportedCommand, nil
+	if commandName == "" {
+		// if default command is not found return the first command found for the matching type.
+		for _, command := range data.GetCommands() {
+			if command.Exec.Group.Kind == groupType {
+				supportedCommand = command
+				return supportedCommand, nil
+			}
+
 		}
 	}
 
