@@ -9,10 +9,21 @@ toc::[]
 
 Requires *Go 1.12*
 
-**WARNING**: If you are adding any features that require a higher version of golang, such as golang 1.13
-for example, please contact maintainers to check of the releasing systems can handle the newer versions.
+Testing and release builds happen with the above version. Developers are advised to stick to this version if they can but it is not compulsory.
 
-If that is ok, please ensure you update the required golang version, both here and in the file link:/scripts/rpm-prepare.sh[`scripts/rpm-prepare.sh`]
+
+[WARNING]
+====
+If you are adding any features that require a higher version of golang, than the one mentioned above, please contact the maintainers in order to check if the releasing systems can handle the newer version. If that is ok, please ensure you update the required golang version, both here and in the files below, in your PR.
+
+.List of files to update for golang version
+ * link:/scripts/rpm-prepare.sh[`scripts/rpm-prepare.sh`]
+ * link:/.travis.yml[`.travis.yml`]
+ * link:/Dockerfile.rhel[`Dockerfile.rhel`]
+ * link:/openshift-ci/build-root/Dockerfile[`openshift-ci/build-root/Dockerfile`]
+====
+
+First setup your fork of the odo project, following the steps below
 
  . link:https://help.github.com/en/articles/fork-a-repo[Fork] the link:https://github.com/openshift/odo[`odo`] repository.
 

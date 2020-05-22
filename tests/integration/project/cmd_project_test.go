@@ -1,6 +1,7 @@
 package project
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -45,6 +46,41 @@ var _ = Describe("odo project command tests", func() {
 		It("should display the help", func() {
 			appHelp := helper.CmdShouldPass("odo", "project", "-h")
 			Expect(appHelp).To(ContainSubstring("Perform project operations"))
+		})
+	})
+
+	Context("Should be able to delete a project with --wait", func() {
+		var projectName string
+		JustBeforeEach(func() {
+			projectName = helper.RandString(6)
+		})
+
+		It("--wait should work with deleting a project", func() {
+
+			// Create the project
+			helper.CmdShouldPass("odo", "project", "create", projectName)
+
+			// Delete with --wait
+			output := helper.CmdShouldPass("odo", "project", "delete", projectName, "-f", "--wait")
+			Expect(output).To(ContainSubstring("Waiting for project to be deleted"))
+
+		})
+
+	})
+
+	Context("Delete the project with flag -o json", func() {
+		var projectName string
+		JustBeforeEach(func() {
+			projectName = helper.RandString(6)
+		})
+
+		// odo project delete foobar -o json
+		It("should be able to delete project and show output in json format", func() {
+			helper.CmdShouldPass("odo", "project", "create", projectName, "-o", "json")
+
+			actual := helper.CmdShouldPass("odo", "project", "delete", projectName, "-o", "json")
+			desired := fmt.Sprintf(`{"kind":"Project","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"%s","namespace":"%s","creationTimestamp":null},"message":"Deleted project : %s"}`, projectName, projectName, projectName)
+			Expect(desired).Should(MatchJSON(actual))
 		})
 	})
 
