@@ -30,13 +30,12 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 		// wait till oc can see the all operators installed by setup script in the namespace
 		ocArgs := []string{"get", "csv"}
-		helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
-			return strings.Contains(output, "etcd")
-		})
-
-		helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
-			return strings.Contains(output, "mongo")
-		})
+		operators := []string{"etcd", "mongodb"}
+		for _, operator := range operators {
+			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+				return strings.Contains(output, operator)
+			})
+		}
 	}
 
 	cleanPreSetup := func() {
