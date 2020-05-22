@@ -20,7 +20,6 @@ func TestBuildEnvironmentFiles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	want := res.Resources{
 		"environments/test-dev/apps/my-app-1/base/kustomization.yaml": &res.Kustomization{Bases: []string{
 			"../../../services/service-http",
