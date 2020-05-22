@@ -13,12 +13,16 @@ import (
 	"github.com/openshift/odo/pkg/pipelines/config"
 	"github.com/openshift/odo/pkg/pipelines/eventlisteners"
 	"github.com/spf13/afero"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
 	"github.com/openshift/odo/pkg/pipelines/ioutils"
 	"github.com/openshift/odo/pkg/pipelines/meta"
 	res "github.com/openshift/odo/pkg/pipelines/resources"
 	"github.com/openshift/odo/pkg/pipelines/secrets"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha2"
+	triggersv1 "github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
 )
 
 func TestServiceResourcesWithCICD(t *testing.T) {
@@ -86,7 +90,14 @@ func TestServiceResourcesWithCICD(t *testing.T) {
 		},
 	}
 
-	got, err := serviceResources(m, fakeFs, "http://github.com/org/test", "test-dev", "test-app", "test", "123", pipelinesFile)
+	got, err := serviceResources(m, fakeFs, &AddServiceParameters{
+		AppName:       "test-app",
+		EnvName:       "test-dev",
+		GitRepoURL:    "http://github.com/org/test",
+		Manifest:      pipelinesFile,
+		WebhookSecret: "123",
+		ServiceName:   "test",
+	})
 	assertNoError(t, err)
 	if diff := cmp.Diff(got, want, cmpopts.IgnoreMapEntries(func(k string, v interface{}) bool {
 		_, ok := want[k]
@@ -136,7 +147,14 @@ func TestServiceResourcesWithoutCICD(t *testing.T) {
 		},
 	}
 
-	got, err := serviceResources(m, fakeFs, "http://github.com/org/test", "test-dev", "test-app", "test", "123", pipelinesFile)
+	got, err := serviceResources(m, fakeFs, &AddServiceParameters{
+		AppName:       "test-app",
+		EnvName:       "test-dev",
+		GitRepoURL:    "http://github.com/org/test",
+		Manifest:      pipelinesFile,
+		WebhookSecret: "123",
+		ServiceName:   "test",
+	})
 	assertNoError(t, err)
 	if diff := cmp.Diff(got, want, cmpopts.IgnoreMapEntries(func(k string, v interface{}) bool {
 		_, ok := want[k]
@@ -190,7 +208,14 @@ func TestAddServiceWithoutApp(t *testing.T) {
 		},
 	}
 
-	got, err := serviceResources(m, fakeFs, "http://github.com/org/test", "test-dev", "new-app", "test", "123", pipelinesFile)
+	got, err := serviceResources(m, fakeFs, &AddServiceParameters{
+		AppName:       "new-app",
+		EnvName:       "test-dev",
+		GitRepoURL:    "http://github.com/org/test",
+		Manifest:      pipelinesFile,
+		WebhookSecret: "123",
+		ServiceName:   "test",
+	})
 	assertNoError(t, err)
 	for w := range want {
 		if diff := cmp.Diff(got[w], want[w]); diff != "" {
@@ -233,7 +258,14 @@ func TestAddService(t *testing.T) {
 		"environments/argocd/config/test-dev-test-app-app.yaml",
 		"environments/argocd/config/test-dev-new-app-app.yaml",
 	}
-	err = AddService("http://github.com/org/test", "test-dev", "new-app", "test", "123", manifestPath, fakeFs)
+	err = AddService(&AddServiceParameters{
+		AppName:       "new-app",
+		EnvName:       "test-dev",
+		GitRepoURL:    "http://github.com/org/test",
+		Manifest:      manifestPath,
+		WebhookSecret: "123",
+		ServiceName:   "test",
+	}, fakeFs)
 	assertNoError(t, err)
 	for _, path := range wantedPaths {
 		t.Run(fmt.Sprintf("checking path %s already exists", path), func(rt *testing.T) {
@@ -300,7 +332,14 @@ func TestServiceWithArgoCD(t *testing.T) {
 	argo, err := argocd.Build("argocd", "http://github.com/org/test", m)
 	assertNoError(t, err)
 	want = res.Merge(argo, want)
-	got, err := serviceResources(m, fakeFs, "http://github.com/org/test", "test-dev", "test-app", "test", "123", pipelinesFile)
+	got, err := serviceResources(m, fakeFs, &AddServiceParameters{
+		AppName:       "test-app",
+		EnvName:       "test-dev",
+		GitRepoURL:    "http://github.com/org/test",
+		Manifest:      pipelinesFile,
+		WebhookSecret: "123",
+		ServiceName:   "test",
+	})
 	assertNoError(t, err)
 	if diff := cmp.Diff(got, want, cmpopts.IgnoreMapEntries(func(k string, v interface{}) bool {
 		_, ok := want[k]
@@ -352,4 +391,45 @@ func buildManifest(withCICD, withArgoCD bool) *config.Manifest {
 		})
 	}
 	return cfg
+}
+
+func TestCreateSvcImageBinding(t *testing.T) {
+	cicdEnv := &config.Environment{
+		Name: "cicd",
+	}
+	env := &config.Environment{
+		Name: "new-env",
+	}
+	bindingName, bindingFilename, resources := createSvcImageBinding(cicdEnv, env, "new-svc", "quay.io/user/app", false)
+
+	if diff := cmp.Diff(bindingName, "new-env-new-svc-binding"); diff != "" {
+		t.Errorf("bindingName failed: %v", diff)
+	}
+
+	if diff := cmp.Diff(bindingFilename, "06-bindings/new-env-new-svc-binding.yaml"); diff != "" {
+		t.Errorf("bindingFilename failed: %v", diff)
+	}
+
+	triggerBinding := triggersv1.TriggerBinding{
+		TypeMeta:   v1.TypeMeta{Kind: "TriggerBinding", APIVersion: "tekton.dev/v1alpha1"},
+		ObjectMeta: v1.ObjectMeta{Name: "new-env-new-svc-binding", Namespace: "cicd"},
+		Spec: triggersv1.TriggerBindingSpec{
+			Params: []pipelinev1.Param{
+				{
+					Name:  "imageRepo",
+					Value: v1alpha2.ArrayOrString{Type: "string", StringVal: "quay.io/user/app"},
+				},
+				{
+					Name:  "tlsVerify",
+					Value: v1alpha2.ArrayOrString{Type: "string", StringVal: "false"},
+				},
+			},
+		},
+	}
+
+	wantResources := res.Resources{"environments/cicd/base/pipelines/06-bindings/new-env-new-svc-binding.yaml": triggerBinding}
+	if diff := cmp.Diff(resources, wantResources); diff != "" {
+		t.Errorf("resources failed: %v", diff)
+	}
+
 }

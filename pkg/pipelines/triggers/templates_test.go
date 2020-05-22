@@ -72,6 +72,10 @@ func TestCreateDevCIBuildPRTemplate(t *testing.T) {
 					Name:        "imageRepo",
 					Description: "The repository to push built images to.",
 				},
+				{
+					Name:        "tlsVerify",
+					Description: "Enable image repostiory TLS certification verification.",
+				},
 			},
 			ResourceTemplates: []triggersv1.TriggerResourceTemplate{
 				{

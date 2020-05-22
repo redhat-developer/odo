@@ -84,10 +84,11 @@ func (io *InitParameters) Run() error {
 		InternalRegistryHostname: io.internalRegistryHostname,
 	}
 	err := pipelines.Init(&options, ioutils.NewFilesystem())
-	if err == nil {
-		log.Successf(fmt.Sprintf("Intialized GitOps sucessfully."))
+	if err != nil {
+		return err
 	}
-	return err
+	log.Successf("Intialized GitOps sucessfully.")
+	return nil
 }
 
 // NewCmdInit creates the project init command.

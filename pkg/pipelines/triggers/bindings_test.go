@@ -39,10 +39,17 @@ func TestCreateImageRepoBinding(t *testing.T) {
 						Type:      pipelinev1.ParamTypeString,
 					},
 				},
+				{
+					Name: "tlsVerify",
+					Value: pipelinev1.ArrayOrString{
+						StringVal: "true",
+						Type:      pipelinev1.ParamTypeString,
+					},
+				},
 			},
 		},
 	}
-	binding := CreateImageRepoBinding("testns", "test-binding", "quay.io/user/testing")
+	binding := CreateImageRepoBinding("testns", "test-binding", "quay.io/user/testing", "true")
 	if diff := cmp.Diff(imageRepoBinding, binding); diff != "" {
 		t.Fatalf("CreateImageRepoBinding() failed:\n%s", diff)
 	}

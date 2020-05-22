@@ -57,10 +57,11 @@ func (io *BuildParameters) Run() error {
 		OutputPath:       io.output,
 	}
 	err := pipelines.BuildResources(&options, ioutils.NewFilesystem())
-	if err == nil {
-		log.Successf("Built successfully.")
+	if err != nil {
+		return err
 	}
-	return err
+	log.Success("Built successfully.")
+	return nil
 }
 
 // NewCmdBuild creates the pipelines build command.

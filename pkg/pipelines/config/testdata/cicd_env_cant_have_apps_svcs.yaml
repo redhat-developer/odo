@@ -1,0 +1,10 @@
+environments:
+- apps:
+  - name: bus    # cicd can't have apps
+    services:
+    - bus-svc
+  cicd: true
+  name: test-cicd
+  services:
+  - name: bus-svc  # cicd can't have services
+

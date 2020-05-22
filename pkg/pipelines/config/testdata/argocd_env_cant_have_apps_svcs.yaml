@@ -1,0 +1,9 @@
+environments:
+- apps:
+  - name: bus       # argocd env can't have apps
+    services:
+    - bus-svc
+  argo: true
+  name: test-argocd
+  services:
+  - name: bus-svc    # argocd env can't have servcies

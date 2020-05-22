@@ -12,7 +12,7 @@ var (
 )
 
 // CreateAppCIPipeline creates AppCIPipeline
-func CreateAppCIPipeline(name types.NamespacedName, isInternalRegistry bool) *pipelinev1.Pipeline {
+func CreateAppCIPipeline(name types.NamespacedName) *pipelinev1.Pipeline {
 	return &pipelinev1.Pipeline{
 		TypeMeta:   pipelineTypeMeta,
 		ObjectMeta: meta.ObjectMeta(name),
@@ -20,6 +20,7 @@ func CreateAppCIPipeline(name types.NamespacedName, isInternalRegistry bool) *pi
 			Params: []pipelinev1.ParamSpec{
 				createParamSpec("REPO", "string"),
 				createParamSpec("COMMIT_SHA", "string"),
+				createParamSpec("TLSVERIFY", "string"),
 			},
 			Resources: []pipelinev1.PipelineDeclaredResource{
 				createPipelineDeclaredResource("source-repo", "git"),
@@ -27,7 +28,7 @@ func CreateAppCIPipeline(name types.NamespacedName, isInternalRegistry bool) *pi
 			},
 
 			Tasks: []pipelinev1.PipelineTask{
-				createBuildImageTask("build-image", isInternalRegistry),
+				createBuildImageTask("build-image"),
 			},
 		},
 	}
@@ -37,7 +38,7 @@ func createParamSpec(name string, paramType pipelinev1.ParamType) pipelinev1.Par
 	return pipelinev1.ParamSpec{Name: name, Type: paramType}
 }
 
-func createBuildImageTask(name string, isInternalRegistry bool) pipelinev1.PipelineTask {
+func createBuildImageTask(name string) pipelinev1.PipelineTask {
 	return pipelinev1.PipelineTask{
 		Name:    name,
 		TaskRef: createTaskRef("buildah", pipelinev1.ClusterTaskKind),
@@ -46,7 +47,7 @@ func createBuildImageTask(name string, isInternalRegistry bool) pipelinev1.Pipel
 			Outputs: []pipelinev1.PipelineTaskOutputResource{createOutputTaskResource("image", "runtime-image")},
 		},
 		Params: []pipelinev1.Param{
-			createTaskParam("TLSVERIFY", getTLSVerify(isInternalRegistry)),
+			createTaskParam("TLSVERIFY", "$(params.TLSVERIFY)"),
 		},
 	}
 
@@ -166,7 +167,7 @@ func createDevCDBuildImageTask(name string, isInternalRegistry bool) pipelinev1.
 			Outputs: []pipelinev1.PipelineTaskOutputResource{createOutputTaskResource("image", "runtime-image")},
 		},
 		Params: []pipelinev1.Param{
-			createTaskParam("TLSVERIFY", getTLSVerify(isInternalRegistry)),
+			createTaskParam("TLSVERIFY", "true"),
 		},
 	}
 }
@@ -194,15 +195,6 @@ func createTaskParam(name, value string) pipelinev1.Param {
 			StringVal: value,
 		},
 	}
-}
-
-// Returns string value for TLSVERIFY parameter based on usingInternalRegistry boolean
-// If internal registry is used, we need to disable TLS verification
-func getTLSVerify(usingInternalRegistry bool) string {
-	if usingInternalRegistry {
-		return "false"
-	}
-	return "true"
 }
 
 func createPipelineDeclaredResource(name string, resourceType string) pipelinev1.PipelineDeclaredResource {

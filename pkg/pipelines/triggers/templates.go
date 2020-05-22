@@ -14,16 +14,6 @@ var (
 	triggerTemplateTypeMeta = meta.TypeMeta("TriggerTemplate", "tekton.dev/v1alpha1")
 )
 
-// GenerateTemplates will return a slice of trigger templates
-func GenerateTemplates(ns, saName string) []triggersv1.TriggerTemplate {
-	return []triggersv1.TriggerTemplate{
-		CreateDevCDDeployTemplate(ns, saName),
-		CreateDevCIBuildPRTemplate(ns, saName),
-		CreateCDPushTemplate(ns, saName),
-		CreateCIDryRunTemplate(ns, saName),
-	}
-}
-
 // CreateDevCDDeployTemplate creates DevCDDeployTemplate
 func CreateDevCDDeployTemplate(ns, saName string) triggersv1.TriggerTemplate {
 	return triggersv1.TriggerTemplate{
@@ -57,6 +47,7 @@ func CreateDevCIBuildPRTemplate(ns, saName string) triggersv1.TriggerTemplate {
 				createTemplateParamSpec("gitrepositoryurl", "The git repository URL."),
 				createTemplateParamSpec("fullname", "The GitHub repository for this PullRequest."),
 				createTemplateParamSpec("imageRepo", "The repository to push built images to."),
+				createTemplateParamSpec("tlsVerify", "Enable image repostiory TLS certification verification."),
 			},
 			ResourceTemplates: []triggersv1.TriggerResourceTemplate{
 				{
