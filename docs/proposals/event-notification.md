@@ -6,7 +6,7 @@ With this proposal and [it's related issue](https://github.com/openshift/odo/iss
 
 In short, the proposal is:
 - New flag for push command, `odo push -o json`: Outputs JSON events that correspond to what devfile actions/commands are being executed by push.
-- New odo command `odo component status -o json`: Sends an HTTP/S request to the application URL, and checks the container/pod status every X seconds (and/or a watch, for Kubernetes case). The result of both is output as JSON to be used by external tools to determine if the application is running.
+- New odo command `odo component status -o json`: Calls `supervisord ctl status` to check the running container processes, checks the container/pod status every X seconds (and/or a watch, for Kubernetes case), and sends an HTTP/S request to the application URL. The result of those is output as JSON to be used by external tools to determine if the application is running.
 - A standardized markup format for communicating detailed build status, something like: `#devfile-status# {"buildStatus":"Compiling application"}`, to be optionally included in devfile scripts that wish to provide detailed build status to consuming tools.
 
 ## Terminology
@@ -17,7 +17,7 @@ With this issue, we are looking at adding odo support for allowing external tool
 
 **Detailed build status**: An indication of which step in the build process the build is in. For example: are we 'Compiling application', or are we 'Running unit tests'?
 
-**App status**: Determine if an application is running, using container status (for both local and Kubernetes, various status: containercreating, started, restarting, etc), or whether an HTTP/S request to the root application URL returns an HTTP response with any status code.
+**App status**: Determine if an application is running, using container status (for both local and Kubernetes, various status: containercreating, started, restarting, etc), `supervisord ctl status`, or whether an HTTP/S request to the root application URL returns an HTTP response with any status code.
 
 **Detailed application status**: 
 - While app status works well for standalone application frameworks (Go, Node Express, Spring Boot), it works less well for full server runtimes such as Java EE application servers like OpenLiberty/WildFly that may begin responding to Web requests before the user's deployed WAR/EAR application has finished startup. 
@@ -25,7 +25,7 @@ With this issue, we are looking at adding odo support for allowing external tool
 - Fortunately, in these cases the IDE/consuming tool can use the console logs (from `odo log`) from the runtime container to determine a more detailed application status.
 - For example, OpenLiberty (as an example of an application-server-style container) prints a specific code when an application is starting  `CWWKZ0018I: Starting application {0}.`, and another when it has started. `CWWKZ0001I: Application {0} started in {1} seconds.`
 - Odo itself should NOT know anything about these specific application codes; knowing how these translate into a detailed application status would be the responsibility of the IDE/consuming tool. Odo's role here is only to provide the console output log. 
-- In the future, we could add these codes into the devfile to give Odo itself some agency over determining the detailed application status, but for this proposal I am leaving this responsibility with the consuming tool.
+- In the future, we could add these codes into the devfile to give Odo itself some agency over determining the detailed application status, but for this proposal responsibility is left with the consuming tool.
 
 **Devfile writer**: A devfile writer may be a runtime developer (for example, a Red-Hatter working on WildFly or an IBMer working on OpenLibery) creating a devfile for their organization's runtime (for example 'OpenLiberty w/ Maven' dev file), or an application developer creating/customizing a dev file for use with their own application. In either case, the devfile writer must be familiar with the semantics of both odo and the devfile.
 
@@ -96,20 +96,23 @@ This 'detailed build status' markup text is *entirely optional*: if this markup 
 In general, within the execution context that odo operates, there are a few ways for us to determine the application status:
 1) Will the application respond to an HTTP/S request sent to its exposed URL? 
 2) What state is the container in? (running/container creating/restarting/etc -- different statuses between local and Kube but same general idea)
-3) In the application log, specific hardcoded text strings can be searched for (for example, OpenLiberty outputs defined status codes to its log to indicate that an app started.) But, note that we definitely don't want to hardcode specific text strings into ODO: instead, this proposal leaves it up to the IDE to process the output from the `odo log` command. Since the `odo log` command output would contain the application text, IDEs can provide their own mechanism to determine status for supported devfiles (and in the future we may wish to add new devfile elements for these strings, to allow odo to do this as well).
+3) Are the container processes running that are managed by supervisord? We check this by calling `supervisord ctl status`.
+4) In the application log, specific hardcoded text strings can be searched for (for example, OpenLiberty outputs defined status codes to its log to indicate that an app started.) But, note that we definitely don't want to hardcode specific text strings into ODO: instead, this proposal leaves it up to the IDE to process the output from the `odo log` command. Since the `odo log` command output would contain the application text, IDEs can provide their own mechanism to determine status for supported devfiles (and in the future we may wish to add new devfile elements for these strings, to allow odo to do this as well).
 
-Ideally, we would like for odo to provide consuming tools with all 3 sets of data. Thus, as proposed:
-- 1 and 2 are handled by a new `odo component status -o json` command, described here.
-- 3 is handled by the existing unmodified `odo log --follow` command.
+Ideally, we would like for odo to provide consuming tools with all 4 sets of data. Thus, as proposed:
+- 1, 2 and 3 are handled by a new `odo component status -o json` command, described here.
+- 4 is handled by the existing unmodified `odo log --follow` command.
 
 The new proposed `odo component status -o json` command will:
 - Be a *long-running* command that will continue outputing status until it is aborted by the parent process.
 - Every X seconds, send an HTTP/S request to the URLs/routes of the application as they existed when the command was first executed. Output the result as a JSON string.
 - Every X seconds (or using a Kubernetes watch, where appropriate), check the container status for the application, based on the application data that was present when the command was first issued. Output the result as a JSON string.
+- Every X seconds call `supervisord ctl status` within the container and report the status of supervisord's managed processes.
 
 **Note**: This command will NOT, by design, respond to route/application changes that occur during or after it is first invoked. It is up to consuming tools to ensure that the `odo component status` command is stopped/restarted as needed. 
   - For example, if the user tells the IDE to delete their application with the IDE UI, the IDE will call `odo delete (component)`; at the same time, the IDE should also abort any existing `odo component status` commands that are running (as these are no longer guaranteed to return a valid status now that the application itself no longer exists). `odo component status` will not automatically abort when the application is deleted (because it has no reliable way to detect this in all cases).
   - Another example: if the IDE adds a new URL via `odo url create [...]`, any existing `odo component status` commands that are running should be aborted, as these commands would still only be checking the URLs that existed when the command was first invoked (eg there is intentionally no cross-process notification mechanism for created/updated/deleted URLs implemented as part of this command.)
+  - See discussion of this design descision in 'Other solutions considered' below
 
 This is an example an `odo component status -o json` command invocation look like:
 ```
@@ -158,7 +161,7 @@ Thus, in some way, that existing long-running `odo status` process needs to be i
 
 #### 1) Get the IDE/consuming tool to manage the lifeycle of `odo component status`
 
-This is the solution I propose in this proposal, and is included for contrast.
+This is the solution proposed in this proposal, and is included for contrast.
 
 Since the IDE has a lifecycle that is greater than each of the individual calls to `odo`, and the IDE is directly and solely responsible for calling odo (when the user is interacting with the IDE), it is a good fit to ensure the state of `odo component status` is up-to-date and consistent.
 
@@ -200,8 +203,8 @@ Variants on this idea: 1) a new odo daemon/LSP-style server process that was res
 
 ### Proposed option vs options 2/3
 
-Hopefully I have sucessfully conveyed the inherent complexity of options 2-3. Likewise, if you all have another fourth option, let me know.
+Hopefully the inherent complexity of options 2-3 is fully conveyed above, but if you all have another fourth option, let me know.
 
-Ultimately, I think this proposal (option 1) cleanly solves the problem, puts the complexity in the right place (the IDE), is straight-forward to implement, is not time consuming to implement, and does not fundamentally alter the odo architecture.
+Ultimately, this proposal (option 1) cleanly solves the problem, puts the complexity in the right place (the IDE), is straight-forward to implement, is not time consuming to implement, and does not fundamentally alter the odo architecture.
 
 And this option definitely does not in any way tie our hands in implementing a more complex solution in the future if/when we our requirements demand it.
