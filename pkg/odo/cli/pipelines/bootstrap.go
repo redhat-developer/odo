@@ -69,10 +69,11 @@ func (io *BootstrapParameters) Validate() error {
 // Run runs the project bootstrap command.
 func (io *BootstrapParameters) Run() error {
 	err := pipelines.Bootstrap(io.BootstrapOptions, ioutils.NewFilesystem())
-	if err == nil {
-		log.Successf("Bootstrapped GitOps sucessfully.")
+	if err != nil {
+		return err
 	}
-	return err
+	log.Success("Bootstrapped GitOps sucessfully.")
+	return nil
 }
 
 // NewCmdBootstrap creates the project init command.

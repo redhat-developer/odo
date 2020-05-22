@@ -40,6 +40,7 @@ func TestCreateDevCIPipelineRun(t *testing.T) {
 			Params: []pipelinev1.Param{
 				createBindingParam("REPO", "$(params.fullname)"),
 				createBindingParam("COMMIT_SHA", "$(params.gitsha)"),
+				createBindingParam("TLSVERIFY", "$(params.tlsVerify)"),
 			},
 			Resources: createDevResource("$(params.gitref)"),
 		},

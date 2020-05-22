@@ -61,10 +61,11 @@ func (eo *AddEnvParameters) Run() error {
 		ManifestFilename: eo.manifest,
 	}
 	err := pipelines.AddEnv(&options, ioutils.NewFilesystem())
-	if err == nil {
-		log.Successf(fmt.Sprintf("Environment %s has been created sucessfully.", eo.envName))
+	if err != nil {
+		return nil
 	}
-	return err
+	log.Successf("Environment %s has been created sucessfully.", eo.envName)
+	return nil
 }
 
 // NewCmdAddEnv creates the project add environment command.

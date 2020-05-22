@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"sort"
-	"strings"
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/openshift/odo/pkg/pipelines/config"
@@ -203,7 +202,7 @@ func createCICDResources(fs afero.Fs, repo scm.Repository, cicdEnv *config.Envir
 	outputs[appTaskPath] = tasks.CreateDeployUsingKubectlTask(cicdNamespace)
 	outputs[ciPipelinesPath] = pipelines.CreateCIPipeline(meta.NamespacedName(cicdNamespace, "ci-dryrun-from-pr-pipeline"), cicdNamespace)
 	outputs[cdPipelinesPath] = pipelines.CreateCDPipeline(meta.NamespacedName(cicdNamespace, "cd-deploy-from-push-pipeline"), cicdNamespace)
-	outputs[appCiPipelinesPath] = pipelines.CreateAppCIPipeline(meta.NamespacedName(cicdNamespace, "app-ci-pipeline"), false)
+	outputs[appCiPipelinesPath] = pipelines.CreateAppCIPipeline(meta.NamespacedName(cicdNamespace, "app-ci-pipeline"))
 	outputs[prBindingPath], _ = repo.CreatePRBinding(cicdNamespace)
 	outputs[pushBindingPath], _ = repo.CreatePushBinding(cicdNamespace)
 	outputs[prTemplatePath] = triggers.CreateCIDryRunTemplate(cicdNamespace, saName)
@@ -263,48 +262,4 @@ func getResourceFiles(res res.Resources) []string {
 	}
 	sort.Strings(files)
 	return files
-}
-
-// validateImageRepo validates the input image repo.  It determines if it is
-// for internal registry and prepend internal registry hostname if neccessary.
-func validateImageRepo(imageRepo, registryURL string) (bool, string, error) {
-	components := strings.Split(imageRepo, "/")
-
-	// repo url has minimum of 2 components
-	if len(components) < 2 {
-		return false, "", imageRepoValidationErrors(imageRepo)
-	}
-
-	for _, v := range components {
-		// check for empty components
-		if strings.TrimSpace(v) == "" {
-			return false, "", imageRepoValidationErrors(imageRepo)
-		}
-		// check for white spaces
-		if len(v) > len(strings.TrimSpace(v)) {
-			return false, "", imageRepoValidationErrors(imageRepo)
-		}
-	}
-
-	if len(components) == 2 {
-		if components[0] == "docker.io" || components[0] == "quay.io" {
-			// we recognize docker.io and quay.io.  It is missing one component
-			return false, "", imageRepoValidationErrors(imageRepo)
-		}
-		// We have format like <project>/<app> which is an internal registry.
-		// We prepend the internal registry hostname.
-		return true, registryURL + "/" + imageRepo, nil
-	}
-
-	// Check the first component to see if it is an internal registry
-	if len(components) == 3 {
-		return components[0] == registryURL, imageRepo, nil
-	}
-
-	// > 3 components.  invalid repo
-	return false, "", imageRepoValidationErrors(imageRepo)
-}
-
-func imageRepoValidationErrors(imageRepo string) error {
-	return fmt.Errorf("failed to parse image repo:%s, expected image repository in the form <registry>/<username>/<repository> or <project>/<app> for internal registry", imageRepo)
 }
