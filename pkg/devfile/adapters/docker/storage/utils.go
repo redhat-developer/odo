@@ -18,7 +18,7 @@ const volNameMaxLength = 45
 func CreateComponentStorage(Client *lclient.Client, storages []common.Storage, componentName string) (err error) {
 
 	for _, storage := range storages {
-		volumeName := *storage.Volume.Name
+		volumeName := storage.Volume.Name
 		dockerVolName := storage.Name
 
 		existingDockerVolName, err := GetExistingVolume(Client, volumeName, componentName)
@@ -109,23 +109,23 @@ func ProcessVolumes(client *lclient.Client, componentName string, componentAlias
 	// Get a list of all the unique volume names and generate their Docker volume names
 	for _, volumes := range componentAliasToVolumes {
 		for _, vol := range volumes {
-			if _, ok := processedVolumes[*vol.Name]; !ok {
-				processedVolumes[*vol.Name] = true
+			if _, ok := processedVolumes[vol.Name]; !ok {
+				processedVolumes[vol.Name] = true
 
 				// Generate the volume Names
-				klog.V(3).Infof("Generating Docker volumes name for %v", *vol.Name)
-				generatedDockerVolName, err := GenerateVolName(*vol.Name, componentName)
+				klog.V(3).Infof("Generating Docker volumes name for %v", vol.Name)
+				generatedDockerVolName, err := GenerateVolName(vol.Name, componentName)
 				if err != nil {
 					return nil, nil, err
 				}
 
 				// Check if we have an existing volume with the labels, overwrite the generated name with the existing name if present
-				existingVolName, err := GetExistingVolume(client, *vol.Name, componentName)
+				existingVolName, err := GetExistingVolume(client, vol.Name, componentName)
 				if err != nil {
 					return nil, nil, err
 				}
 				if len(existingVolName) > 0 {
-					klog.V(3).Infof("Found an existing Docker volume for %v, volume %v will be re-used", *vol.Name, existingVolName)
+					klog.V(3).Infof("Found an existing Docker volume for %v, volume %v will be re-used", vol.Name, existingVolName)
 					generatedDockerVolName = existingVolName
 				}
 
@@ -134,7 +134,7 @@ func ProcessVolumes(client *lclient.Client, componentName string, componentAlias
 					Volume: vol,
 				}
 				uniqueStorages = append(uniqueStorages, dockerVol)
-				volumeNameToDockerVolName[*vol.Name] = generatedDockerVolName
+				volumeNameToDockerVolName[vol.Name] = generatedDockerVolName
 			}
 		}
 	}

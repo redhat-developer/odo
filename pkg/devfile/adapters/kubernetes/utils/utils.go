@@ -62,7 +62,7 @@ func GetContainers(devfileObj devfileParser.DevfileObj) ([]corev1.Container, err
 		if err != nil {
 			return nil, err
 		}
-		container := kclient.GenerateContainer(comp.Container.Name, comp.Container.Image, false, envVars, resourceReqs, ports)
+		container := kclient.GenerateContainer(comp.Container.Name, comp.Container.Image, false, comp.Container.Command, comp.Container.Args, envVars, resourceReqs, ports)
 		for _, c := range containers {
 			for _, containerPort := range c.Ports {
 				for _, curPort := range container.Ports {

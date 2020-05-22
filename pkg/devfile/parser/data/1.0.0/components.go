@@ -133,7 +133,8 @@ func convertV1ComponentToCommon(c Component) (component common.DevfileComponent)
 		MemoryLimit:  c.ComponentDockerimage.MemoryLimit,
 		MountSources: c.MountSources,
 		VolumeMounts: volumes,
-		// SourceMapping: Not present in V1
+		Command:      c.Command,
+		Args:         c.Args,
 	}
 
 	component = common.DevfileComponent{Container: &container}

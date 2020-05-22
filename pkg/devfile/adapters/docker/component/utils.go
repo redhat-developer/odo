@@ -73,10 +73,11 @@ func (a Adapter) createComponent() (err error) {
 	for _, comp := range supportedComponents {
 		var dockerVolumeMounts []mount.Mount
 		for _, vol := range a.componentAliasToVolumes[comp.Container.Name] {
+
 			volMount := mount.Mount{
 				Type:   mount.TypeVolume,
-				Source: a.volumeNameToDockerVolName[*vol.Name],
-				Target: *vol.ContainerPath,
+				Source: a.volumeNameToDockerVolName[vol.Name],
+				Target: vol.ContainerPath,
 			}
 			dockerVolumeMounts = append(dockerVolumeMounts, volMount)
 		}
@@ -129,8 +130,8 @@ func (a Adapter) updateComponent() (componentExists bool, err error) {
 		for _, vol := range a.componentAliasToVolumes[comp.Container.Name] {
 			volMount := mount.Mount{
 				Type:   mount.TypeVolume,
-				Source: a.volumeNameToDockerVolName[*vol.Name],
-				Target: *vol.ContainerPath,
+				Source: a.volumeNameToDockerVolName[vol.Name],
+				Target: vol.ContainerPath,
 			}
 			dockerVolumeMounts = append(dockerVolumeMounts, volMount)
 		}
@@ -248,7 +249,7 @@ func (a Adapter) startComponent(mounts []mount.Mount, projectVolumeName string, 
 	}
 
 	// Generate the container config after updating the component with the necessary data
-	containerConfig := a.generateAndGetContainerConfig(a.ComponentName, comp, runCommand.Exec.Component)
+	containerConfig := a.generateAndGetContainerConfig(a.ComponentName, comp)
 	for port, urlName := range namePortMapping {
 		containerConfig.Labels[port.Port()] = urlName
 	}
@@ -265,24 +266,12 @@ func (a Adapter) startComponent(mounts []mount.Mount, projectVolumeName string, 
 	return nil
 }
 
-func (a Adapter) generateAndGetContainerConfig(componentName string, comp versionsCommon.DevfileComponent, runCommandComponent string) container.Config {
+func (a Adapter) generateAndGetContainerConfig(componentName string, comp versionsCommon.DevfileComponent) container.Config {
 	// Convert the env vars in the Devfile to the format expected by Docker
 	envVars := utils.ConvertEnvs(comp.Container.Env)
 	ports := utils.ConvertPorts(comp.Container.Endpoints)
 	containerLabels := utils.GetContainerLabels(componentName, comp.Container.Name)
-
-	var cmd []string
-	var args []string
-
-	if comp.Container.Name == runCommandComponent {
-		cmd = append(cmd, common.SupervisordBinaryPath)
-		args = append(args, "-c", common.SupervisordConfFile)
-	} else {
-		cmd = append(cmd, "tail")
-		args = append(args, "-f", "/dev/null")
-	}
-
-	containerConfig := a.Client.GenerateContainerConfig(comp.Container.Image, cmd, args, envVars, containerLabels, ports)
+	containerConfig := a.Client.GenerateContainerConfig(comp.Container.Image, comp.Container.Command, comp.Container.Args, envVars, containerLabels, ports)
 
 	return containerConfig
 }

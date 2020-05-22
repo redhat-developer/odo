@@ -118,9 +118,9 @@ func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume 
 		if len(comp.Container.VolumeMounts) != 0 {
 			for _, volume := range comp.Container.VolumeMounts {
 				vol := DevfileVolume{
-					Name:          &volume.Name,
-					ContainerPath: &volume.Path,
-					Size:          &size,
+					Name:          volume.Name,
+					ContainerPath: volume.Path,
+					Size:          size,
 				}
 				componentAliasToVolumes[comp.Container.Name] = append(componentAliasToVolumes[comp.Container.Name], vol)
 			}
