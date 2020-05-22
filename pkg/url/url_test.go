@@ -22,6 +22,7 @@ import (
 	"github.com/openshift/odo/pkg/util"
 	v1 "k8s.io/api/core/v1"
 	extensionsv1 "k8s.io/api/extensions/v1beta1"
+	iextensionsv1 "k8s.io/api/extensions/v1beta1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -1630,6 +1631,318 @@ func TestGetContainerURL(t *testing.T) {
 			url, err := GetContainerURL(fakeClient, esi, tt.urlName, tt.component)
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("expected %v, got %v", tt.wantErr, err)
+			}
+			if !reflect.DeepEqual(url, tt.wantURL) {
+				t.Errorf("Expected %v, got %v", tt.wantURL, url)
+			}
+		})
+	}
+}
+
+func TestListIngressURL(t *testing.T) {
+	// initialising the fakeclient
+	componentName := "testcomponent"
+	componentLabel := componentlabels.ComponentLabel
+	urlNameLabel := "odo.openshift.io/url-name"
+	port := intstr.IntOrString{
+		Type:   intstr.Int,
+		IntVal: int32(8080),
+	}
+	pushedIngress := []extensionsv1.Ingress{
+		extensionsv1.Ingress{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "ingressurl1",
+				Labels: map[string]string{
+					componentLabel: componentName,
+					urlNameLabel:   "ingressurl1",
+				},
+			},
+			Spec: iextensionsv1.IngressSpec{
+				Rules: []iextensionsv1.IngressRule{
+					{
+						Host: "ingressurl1.com",
+						IngressRuleValue: iextensionsv1.IngressRuleValue{
+							HTTP: &iextensionsv1.HTTPIngressRuleValue{
+								Paths: []iextensionsv1.HTTPIngressPath{
+									{
+										Path: "/",
+										Backend: iextensionsv1.IngressBackend{
+											ServiceName: componentName,
+											ServicePort: port,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		extensionsv1.Ingress{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "ingressurl2",
+				Labels: map[string]string{
+					componentLabel: componentName,
+					urlNameLabel:   "ingressurl2",
+				},
+			},
+			Spec: iextensionsv1.IngressSpec{
+				Rules: []iextensionsv1.IngressRule{
+					{
+						Host: "ingressurl2.com",
+						IngressRuleValue: iextensionsv1.IngressRuleValue{
+							HTTP: &iextensionsv1.HTTPIngressRuleValue{
+								Paths: []iextensionsv1.HTTPIngressPath{
+									{
+										Path: "/",
+										Backend: iextensionsv1.IngressBackend{
+											ServiceName: componentName,
+											ServicePort: port,
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	testURL1 := envinfo.EnvInfoURL{Name: "ingressurl1", Port: 8080, Host: "com", Kind: "ingress"}
+	testURL2 := envinfo.EnvInfoURL{Name: "ingressurl2", Port: 8080, Host: "com", Kind: "ingress"}
+	testURL3 := envinfo.EnvInfoURL{Name: "ingressurl3", Port: 8080, Host: "com", Secure: true, Kind: "ingress"}
+	esi := &envinfo.EnvSpecificInfo{}
+	err := esi.SetConfiguration("url", testURL2)
+	if err != nil {
+		// discard the error, since no physical file to write
+		t.Log("Expected error since no physical env file to write")
+	}
+	err = esi.SetConfiguration("url", testURL3)
+	if err != nil {
+		// discard the error, since no physical file to write
+		t.Log("Expected error since no physical env file to write")
+	}
+	fkclient, fkclientset := kclient.FakeNew()
+	fkclient.Namespace = "default"
+	fkclientset.Kubernetes.PrependReactor("list", "ingresses", func(action ktesting.Action) (bool, runtime.Object, error) {
+		ingress := extensionsv1.IngressList{
+			Items: pushedIngress,
+		}
+		return true, &ingress, nil
+	})
+
+	tests := []struct {
+		name      string
+		component string
+		client    *kclient.Client
+		wantURLs  []URL
+	}{
+		{
+			name:      "Should retrieve the URL list",
+			component: componentName,
+			client:    fkclient,
+			wantURLs: []URL{
+				URL{
+					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
+					ObjectMeta: metav1.ObjectMeta{Name: testURL1.Name},
+					Spec:       URLSpec{Host: "ingressurl1.com", Port: testURL1.Port, Secure: testURL1.Secure},
+					Status: URLStatus{
+						State: StateTypeLocallyDeleted,
+					},
+				},
+				URL{
+					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
+					ObjectMeta: metav1.ObjectMeta{Name: testURL2.Name},
+					Spec:       URLSpec{Host: "ingressurl2.com", Port: testURL2.Port, Secure: testURL2.Secure},
+					Status: URLStatus{
+						State: StateTypePushed,
+					},
+				},
+				URL{
+					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
+					ObjectMeta: metav1.ObjectMeta{Name: testURL3.Name},
+					Spec:       URLSpec{Host: "ingressurl3.com", Port: testURL3.Port, Secure: testURL3.Secure, TLSSecret: componentName + "-tlssecret"},
+					Status: URLStatus{
+						State: StateTypeNotPushed,
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			urls, err := ListIngressURL(tt.client, esi, componentName)
+			if err != nil {
+				t.Errorf("unexpected error %v", err)
+			}
+
+			if len(urls.Items) != len(tt.wantURLs) {
+				t.Errorf("numbers of url listed does not match, expected %v, got %v", len(tt.wantURLs), len(urls.Items))
+			}
+			actualURLMap := make(map[string]URL)
+			for _, actualURL := range urls.Items {
+				actualURLMap[actualURL.Name] = actualURL
+			}
+			for _, wantURL := range tt.wantURLs {
+				if !reflect.DeepEqual(actualURLMap[wantURL.Name], wantURL) {
+					t.Errorf("Expected %v, got %v", wantURL, actualURLMap[wantURL.Name])
+				}
+			}
+		})
+	}
+
+}
+
+func TestGetIngress(t *testing.T) {
+	// initialising the fakeclient
+	componentName := "testcomponent"
+	componentLabel := componentlabels.ComponentLabel
+	urlNameLabel := "odo.openshift.io/url-name"
+	port := intstr.IntOrString{
+		Type:   intstr.Int,
+		IntVal: int32(8080),
+	}
+	ingressURL1 := extensionsv1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "ingressurl1",
+			Labels: map[string]string{
+				componentLabel: componentName,
+				urlNameLabel:   "ingressurl1",
+			},
+		},
+		Spec: iextensionsv1.IngressSpec{
+			Rules: []iextensionsv1.IngressRule{
+				{
+					Host: "ingressurl1.com",
+					IngressRuleValue: iextensionsv1.IngressRuleValue{
+						HTTP: &iextensionsv1.HTTPIngressRuleValue{
+							Paths: []iextensionsv1.HTTPIngressPath{
+								{
+									Path: "/",
+									Backend: iextensionsv1.IngressBackend{
+										ServiceName: componentName,
+										ServicePort: port,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	ingressURL2 := extensionsv1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "ingressurl2",
+			Labels: map[string]string{
+				componentLabel: componentName,
+				urlNameLabel:   "ingressurl2",
+			},
+		},
+		Spec: iextensionsv1.IngressSpec{
+			Rules: []iextensionsv1.IngressRule{
+				{
+					Host: "ingressurl2.com",
+					IngressRuleValue: iextensionsv1.IngressRuleValue{
+						HTTP: &iextensionsv1.HTTPIngressRuleValue{
+							Paths: []iextensionsv1.HTTPIngressPath{
+								{
+									Path: "/",
+									Backend: iextensionsv1.IngressBackend{
+										ServiceName: componentName,
+										ServicePort: port,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	testURL1 := envinfo.EnvInfoURL{Name: "ingressurl1", Port: 8080, Host: "com", Kind: "ingress"}
+	testURL2 := envinfo.EnvInfoURL{Name: "ingressurl2", Port: 8080, Host: "com", Kind: "ingress"}
+	testURL3 := envinfo.EnvInfoURL{Name: "ingressurl3", Port: 8080, Host: "com", Secure: true, Kind: "ingress"}
+	esi := &envinfo.EnvSpecificInfo{}
+	err := esi.SetConfiguration("url", testURL2)
+	if err != nil {
+		// discard the error, since no physical file to write
+		t.Log("Expected error since no physical env file to write")
+	}
+	err = esi.SetConfiguration("url", testURL3)
+	if err != nil {
+		// discard the error, since no physical file to write
+		t.Log("Expected error since no physical env file to write")
+	}
+
+	tests := []struct {
+		name          string
+		component     string
+		urlName       string
+		pushedIngress *extensionsv1.Ingress
+		wantURL       URL
+		wantErr       bool
+	}{
+		{
+			name:          "Case 1: Successfully retrieve the locally deleted URL object",
+			component:     componentName,
+			urlName:       testURL1.Name,
+			pushedIngress: &ingressURL1,
+			wantURL: URL{
+				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
+				ObjectMeta: metav1.ObjectMeta{Name: testURL1.Name},
+				Spec:       URLSpec{Host: "ingressurl1.com", Port: testURL1.Port, Secure: testURL1.Secure},
+				Status: URLStatus{
+					State: StateTypeLocallyDeleted,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:          "Case 2: Successfully retrieve the pushed URL object",
+			component:     componentName,
+			urlName:       testURL2.Name,
+			pushedIngress: &ingressURL2,
+			wantURL: URL{
+				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
+				ObjectMeta: metav1.ObjectMeta{Name: testURL2.Name},
+				Spec:       URLSpec{Host: "ingressurl2.com", Port: testURL2.Port, Secure: testURL2.Secure},
+				Status: URLStatus{
+					State: StateTypePushed,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:          "Case 3: Successfully retrieve the not pushed object",
+			component:     componentName,
+			urlName:       testURL3.Name,
+			pushedIngress: nil,
+			wantURL: URL{
+				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
+				ObjectMeta: metav1.ObjectMeta{Name: testURL3.Name},
+				Spec:       URLSpec{Host: "ingressurl3.com", Port: testURL3.Port, Secure: testURL3.Secure, TLSSecret: componentName + "-tlssecret"},
+				Status: URLStatus{
+					State: StateTypeNotPushed,
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fkclient, fkclientset := kclient.FakeNew()
+			fkclient.Namespace = "default"
+			if tt.pushedIngress != nil {
+				fkclientset.Kubernetes.PrependReactor("get", "ingresses", func(action ktesting.Action) (bool, runtime.Object, error) {
+					return true, tt.pushedIngress, nil
+				})
+			}
+			url, err := GetIngress(fkclient, esi, tt.urlName, tt.component)
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("unexpected error %v", err)
 			}
 			if !reflect.DeepEqual(url, tt.wantURL) {
 				t.Errorf("Expected %v, got %v", tt.wantURL, url)

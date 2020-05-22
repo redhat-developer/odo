@@ -624,10 +624,9 @@ func ConvertEnvinfoURL(envinfoURL envinfo.EnvInfoURL, serviceName string) URL {
 			Name: envinfoURL.Name,
 		},
 		Spec: URLSpec{
-			Port:    envinfoURL.Port,
-			Host:    hostString,
-			Secure:  envinfoURL.Secure,
-			urlKind: envinfoURL.Kind,
+			Port:   envinfoURL.Port,
+			Host:   hostString,
+			Secure: envinfoURL.Secure,
 		},
 	}
 	if envinfoURL.Secure && len(envinfoURL.TLSSecret) > 0 {
@@ -751,7 +750,7 @@ func getMachineReadableFormatIngress(i iextensionsv1.Ingress) URL {
 	url := URL{
 		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: apiVersion},
 		ObjectMeta: metav1.ObjectMeta{Name: i.Labels[urlLabels.URLLabel]},
-		Spec:       URLSpec{Host: i.Spec.Rules[0].Host, Port: int(i.Spec.Rules[0].HTTP.Paths[0].Backend.ServicePort.IntVal), Secure: i.Spec.TLS != nil, urlKind: envinfo.INGRESS},
+		Spec:       URLSpec{Host: i.Spec.Rules[0].Host, Port: int(i.Spec.Rules[0].HTTP.Paths[0].Backend.ServicePort.IntVal), Secure: i.Spec.TLS != nil},
 	}
 	if i.Spec.TLS != nil {
 		url.Spec.TLSSecret = i.Spec.TLS[0].SecretName
