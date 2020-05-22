@@ -1930,6 +1930,13 @@ func TestGetIngress(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name:          "Case 4: Should show error if the url does not exist",
+			component:     componentName,
+			urlName:       "notExistURL",
+			pushedIngress: nil,
+			wantErr:       true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1944,6 +1951,72 @@ func TestGetIngress(t *testing.T) {
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("unexpected error %v", err)
 			}
+			if !reflect.DeepEqual(url, tt.wantURL) {
+				t.Errorf("Expected %v, got %v", tt.wantURL, url)
+			}
+		})
+	}
+}
+
+func TestConvertEnvinfoURL(t *testing.T) {
+	serviceName := "testService"
+	urlName := "testURL"
+	host := "com"
+	secretName := "test-tls-secret"
+	tests := []struct {
+		name       string
+		envInfoURL envinfo.EnvInfoURL
+		wantURL    URL
+	}{
+		{
+			name: "Case 1: insecure URL",
+			envInfoURL: envinfo.EnvInfoURL{
+				Name:   urlName,
+				Host:   host,
+				Port:   8080,
+				Secure: false,
+			},
+			wantURL: URL{
+				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
+				ObjectMeta: metav1.ObjectMeta{Name: urlName},
+				Spec:       URLSpec{Host: fmt.Sprintf("%s.%s", urlName, host), Port: 8080, Secure: false},
+			},
+		},
+		{
+			name: "Case 2: secure Ingress URL without tls secret defined",
+			envInfoURL: envinfo.EnvInfoURL{
+				Name:   urlName,
+				Host:   host,
+				Port:   8080,
+				Secure: true,
+				Kind:   envinfo.INGRESS,
+			},
+			wantURL: URL{
+				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
+				ObjectMeta: metav1.ObjectMeta{Name: urlName},
+				Spec:       URLSpec{Host: fmt.Sprintf("%s.%s", urlName, host), Port: 8080, Secure: true, TLSSecret: fmt.Sprintf("%s-tlssecret", serviceName)},
+			},
+		},
+		{
+			name: "Case 3: secure Ingress URL with tls secret defined",
+			envInfoURL: envinfo.EnvInfoURL{
+				Name:      urlName,
+				Host:      host,
+				Port:      8080,
+				Secure:    true,
+				TLSSecret: secretName,
+				Kind:      envinfo.INGRESS,
+			},
+			wantURL: URL{
+				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
+				ObjectMeta: metav1.ObjectMeta{Name: urlName},
+				Spec:       URLSpec{Host: fmt.Sprintf("%s.%s", urlName, host), Port: 8080, Secure: true, TLSSecret: secretName},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			url := ConvertEnvinfoURL(tt.envInfoURL, serviceName)
 			if !reflect.DeepEqual(url, tt.wantURL) {
 				t.Errorf("Expected %v, got %v", tt.wantURL, url)
 			}

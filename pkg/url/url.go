@@ -631,7 +631,7 @@ func ConvertEnvinfoURL(envinfoURL envinfo.EnvInfoURL, serviceName string) URL {
 	}
 	if envinfoURL.Secure && len(envinfoURL.TLSSecret) > 0 {
 		url.Spec.TLSSecret = envinfoURL.TLSSecret
-	} else if envinfoURL.Secure {
+	} else if envinfoURL.Secure && envinfoURL.Kind == envinfo.INGRESS {
 		url.Spec.TLSSecret = fmt.Sprintf("%s-tlssecret", serviceName)
 	}
 	return url

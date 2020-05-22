@@ -99,6 +99,28 @@ var _ = Describe("odo devfile url command tests", func() {
 				return false
 			})
 		})
+
+		It("should list url with appropriate state", func() {
+			url1 := helper.RandString(5)
+			host := helper.RandString(5) + ".com"
+
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress")
+			stdout := helper.CmdShouldPass("odo", "url", "list")
+			helper.MatchAllInOutput(stdout, []string{url1, "Not Pushed"})
+
+			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
+			stdout = helper.CmdShouldPass("odo", "url", "list")
+			helper.MatchAllInOutput(stdout, []string{url1, "Pushed"})
+
+			helper.CmdShouldPass("odo", "url", "delete", url1, "-f")
+			stdout = helper.CmdShouldPass("odo", "url", "list")
+			helper.MatchAllInOutput(stdout, []string{url1, "Locally Deleted"})
+		})
 	})
 
 	Context("Creating urls", func() {
@@ -235,6 +257,8 @@ var _ = Describe("odo devfile url command tests", func() {
 			stdout = helper.CmdShouldPass("odo", "url", "describe", url1)
 			helper.MatchAllInOutput(stdout, []string{url1 + "." + host, "Pushed"})
 			helper.CmdShouldPass("odo", "url", "delete", url1, "-f")
+			stdout = helper.CmdShouldPass("odo", "url", "describe", url1)
+			helper.MatchAllInOutput(stdout, []string{url1 + "." + host, "Locally Deleted"})
 		})
 	})
 
