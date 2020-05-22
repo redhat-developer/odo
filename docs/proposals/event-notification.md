@@ -122,6 +122,7 @@ odo component status -o json
 { "componentURLStatus" : { "url" : "https://(...)", "response" : "false", error: "host unreachable", "timestamp" : (...) } }
 { "containerStatus" : { "status" : "containercreating", "timestamp" : (...)} }
 { "containerStatus" : { "status" : "running", "timestamp" : (...)} }
+{ "supervisordCtlStatus" : { "name": "devrun", "status" : "STARTED", "timestamp" : (...)} }
 (...)
 
 (Exact details on event name, and JSON format are TBD; feedback welcome!)
