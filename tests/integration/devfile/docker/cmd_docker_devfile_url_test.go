@@ -119,7 +119,7 @@ var _ = Describe("odo docker devfile url command tests", func() {
 			stdout = helper.CmdShouldPass("odo", "url", "list")
 			helper.MatchAllInOutput(stdout, []string{url1, "Not Pushed"})
 
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
+			helper.CmdShouldPass("odo", "push")
 			stdout = helper.CmdShouldPass("odo", "url", "list")
 			helper.MatchAllInOutput(stdout, []string{url1, "Pushed"})
 			helper.CmdShouldPass("odo", "url", "delete", url1, "-f")
@@ -169,7 +169,7 @@ var _ = Describe("odo docker devfile url command tests", func() {
 			stdout = helper.CmdShouldPass("odo", "url", "describe", url1)
 			helper.MatchAllInOutput(stdout, []string{url1, "Not Pushed"})
 
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
+			helper.CmdShouldPass("odo", "push")
 			stdout = helper.CmdShouldPass("odo", "url", "describe", url1)
 			helper.MatchAllInOutput(stdout, []string{url1, "Pushed"})
 
