@@ -1066,8 +1066,5 @@ func CopyFile(srcPath string, dstPath string, info os.FileInfo) error {
 func PathEqual(firstPath string, secondPath string) bool {
 	firstAbsPath, _ := GetAbsPath(firstPath)
 	secondAbsPath, _ := GetAbsPath(secondPath)
-	if firstAbsPath == secondAbsPath {
-		return true
-	}
-	return false
+	return firstAbsPath == secondAbsPath
 }
