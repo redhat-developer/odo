@@ -363,21 +363,21 @@ NOTE: To see the number of available integration test file for validation, press
 
 *Running integration tests on Kubernetes:*
 
-By default, the link:https://github.com/openshift/odo/tree/master/tests/integration/devfile[`tests`] in `odo` which are under experimental mode run against `kubernetes` cluster. For more information on Experimental mode, please read link:https://github.com/openshift/odo/blob/master/docs/dev/experimental-mode.adoc:[`odo experimental mode`] document.
+By default, the link:https://github.com/openshift/odo/tree/master/tests/integration/devfile[`integration tests`] for devfile feature, which is in experimental mode, run against `kubernetes` cluster. For more information on Experimental mode, please read link:https://github.com/openshift/odo/blob/master/docs/dev/experimental-mode.adoc:[`odo experimental mode`] document.
 
 The tests are run against the `odo` binary placed in the PATH which is created by command `make`. Integration tests can be run in two (parallel and sequential) ways. To control the parallel run use environment variable `TEST_EXEC_NODES`. For example devfile tests can be run
 
-* To run the tests on `kubernetes` cluster:
+* To run the tests on Kubernetes cluster:
 
 +
-Enable `KUBERNETES` environment variable
+Set the `KUBERNETES` environment variable
 +
 ----
 $ export KUBERNETES=true
 ----
 
 +
-Enable `Experimental` mode
+Enable the experimental mode
 +
 ----
 $ export ODO_EXPERIMENTAL=true
@@ -407,7 +407,7 @@ Run catalog command integration tests
 $ TEST_EXEC_NODES=1 make test-cmd-devfile-catalog
 ----
 
-NOTE: To see the number of available integration test file for validation, press `tab` just after writing `make test-cmd-devfile-`. By calling `make test-integration-devfile`, the whole suite can run all the spec in parallel on two ginkgo test node.
+NOTE: To see the number of available integration test files for validation, press `tab` keb just after writing `make test-cmd-devfile-`. By calling `make test-integration-devfile`, the suite will run all test specs in parallel on two ginkgo test nodes.
 
 *Running e2e tests:*
 
