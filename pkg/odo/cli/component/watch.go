@@ -3,6 +3,7 @@ package component
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters"
@@ -71,7 +72,7 @@ func NewWatchOptions() *WatchOptions {
 
 // Complete completes watch args
 func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	wo.devfilePath = DevfilePath
+	wo.devfilePath = filepath.Join(wo.componentContext, DevfilePath)
 
 	// if experimental mode is enabled and devfile is present
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(wo.devfilePath) {

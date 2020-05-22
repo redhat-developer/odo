@@ -57,7 +57,7 @@ func NewDeleteOptions() *DeleteOptions {
 
 // Complete completes log args
 func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	do.devfilePath = DevfilePath
+	do.devfilePath = filepath.Join(do.componentContext, DevfilePath)
 
 	// if experimental mode is enabled and devfile is present
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(do.devfilePath) {

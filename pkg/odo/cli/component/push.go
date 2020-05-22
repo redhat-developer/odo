@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
@@ -53,12 +54,12 @@ type PushOptions struct {
 func NewPushOptions() *PushOptions {
 	return &PushOptions{
 		CommonPushOptions: NewCommonPushOptions(),
-		DevfilePath:       DevfilePath,
 	}
 }
 
 // Complete completes push args
 func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	po.DevfilePath = filepath.Join(po.componentContext, DevfilePath)
 	// if experimental mode is enabled and devfile is present
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.DevfilePath) {
 		envinfo, err := envinfo.NewEnvSpecificInfo(po.componentContext)
