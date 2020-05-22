@@ -53,8 +53,8 @@ var (
 	# Create a URL of ingress kind for the current component with a host (using CRC as an example)
 	%[1]s --host apps-crc.testing --ingress
 
-	# Create a secured URL for the current component with a specific host (using CRC as an example)
-	%[1]s --host apps-crc.testing --secured
+	# Create a secure URL for the current component with a specific host (using CRC as an example)
+	%[1]s --host apps-crc.testing --secure
 	  `)
 
 	urlCreateExampleDocker = ktemplates.Examples(`  # Create a URL with a specific name by automatically detecting the port used by the component
