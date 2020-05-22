@@ -12,19 +12,23 @@ import (
 	"github.com/openshift/odo/pkg/pipelines/config"
 	"github.com/openshift/odo/pkg/pipelines/ioutils"
 	res "github.com/openshift/odo/pkg/pipelines/resources"
+	"github.com/openshift/odo/pkg/pipelines/scm"
 	"github.com/openshift/odo/pkg/pipelines/secrets"
 )
 
 var testCICDEnv = &config.Environment{Name: "tst-cicd", IsCICD: true}
 
 func TestCreateManifest(t *testing.T) {
+	repoURL := "https://github.com/foo/bar.git"
+	repo, err := scm.NewRepository(repoURL)
+	assertNoError(t, err)
 	want := &config.Manifest{
-		GitOpsURL: "https://github.com/foo/bar.git",
+		GitOpsURL: repoURL,
 		Environments: []*config.Environment{
 			testCICDEnv,
 		},
 	}
-	got := createManifest("https://github.com/foo/bar.git", testCICDEnv)
+	got := createManifest(repo, testCICDEnv)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Fatalf("pipelines didn't match: %s\n", diff)
 	}
@@ -32,7 +36,7 @@ func TestCreateManifest(t *testing.T) {
 
 func TestInitialFiles(t *testing.T) {
 	prefix := "tst-"
-	gitOpsURL := "https://gibhub.com/foo/test-repo"
+	gitOpsURL := "https://github.com/foo/test-repo"
 	gitOpsWebhook := "123"
 	defer func(f secrets.PublicKeyFunc) {
 		secrets.DefaultPublicKeyFunc = f
@@ -46,20 +50,17 @@ func TestInitialFiles(t *testing.T) {
 		return &key.PublicKey, nil
 	}
 	fakeFs := ioutils.NewMapFilesystem()
-
-	got, err := createInitialFiles(fakeFs, prefix, gitOpsURL, gitOpsWebhook, "")
+	repo, err := scm.NewRepository(gitOpsURL)
+	assertNoError(t, err)
+	got, err := createInitialFiles(fakeFs, repo, prefix, gitOpsWebhook, "")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	want := res.Resources{
-		pipelinesFile: createManifest(gitOpsURL, testCICDEnv),
+		pipelinesFile: createManifest(repo, testCICDEnv),
 	}
-	gitOpsRepo, err := orgRepoFromURL(gitOpsURL)
-	if err != nil {
-		t.Fatal(err)
-	}
-	resources, err := createCICDResources(fakeFs, testCICDEnv, gitOpsRepo, gitOpsWebhook, "")
+	resources, err := createCICDResources(fakeFs, repo, testCICDEnv, gitOpsWebhook, "")
 	if err != nil {
 		t.Fatalf("CreatePipelineResources() failed due to :%s\n", err)
 	}

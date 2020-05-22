@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/openshift/odo/pkg/pipelines/scm"
 	triggersv1 "github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -23,7 +24,7 @@ func TestGenerateEventListener(t *testing.T) {
 					Interceptors: []*triggersv1.EventInterceptor{
 						{
 							CEL: &triggersv1.CELInterceptor{
-								Filter: "(header.match('X-GitHub-Event', 'pull_request') && body.action == 'opened' || body.action == 'synchronize') && body.pull_request.head.repo.full_name == 'sample'",
+								Filter: "(header.match('X-GitHub-Event', 'pull_request') && body.action == 'opened' || body.action == 'synchronize') && body.pull_request.head.repo.full_name == 'org/test'",
 							},
 						},
 						{
@@ -50,7 +51,7 @@ func TestGenerateEventListener(t *testing.T) {
 					Interceptors: []*triggersv1.EventInterceptor{
 						{
 							CEL: &triggersv1.CELInterceptor{
-								Filter: "(header.match('X-GitHub-Event', 'push') && body.repository.full_name == 'sample') && body.ref.startsWith('refs/heads/master')",
+								Filter: "(header.match('X-GitHub-Event', 'push') && body.repository.full_name == 'org/test') && body.ref.startsWith('refs/heads/master')",
 							},
 						},
 						{
@@ -75,8 +76,11 @@ func TestGenerateEventListener(t *testing.T) {
 			},
 		},
 	}
-
-	eventListener := Generate("sample", "testing", "pipeline", "test")
+	repo, err := scm.NewRepository("http://github.com/org/test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	eventListener := Generate(repo, "testing", "pipeline", "test")
 	if diff := cmp.Diff(validEventListener, eventListener); diff != "" {
 		t.Fatalf("Generate() failed:\n%s", diff)
 	}
@@ -90,85 +94,5 @@ func TestCreateListenerObjectMeta(t *testing.T) {
 	objectMeta := createListenerObjectMeta("sample", "testing")
 	if diff := cmp.Diff(validObjectMeta, objectMeta); diff != "" {
 		t.Fatalf("createListenerObjectMeta() failed:\n%s", diff)
-	}
-}
-
-func TestCreateListenerBinding(t *testing.T) {
-	validListenerBinding := triggersv1.EventListenerBinding{
-		Name: "sample",
-	}
-	listenerBinding := createListenerBinding("sample")
-	if diff := cmp.Diff(validListenerBinding, *listenerBinding); diff != "" {
-		t.Fatalf("createListenerBinding() failed:\n%s", diff)
-	}
-}
-
-func TestCreateListenerTemplate(t *testing.T) {
-	validListenerTemplate := triggersv1.EventListenerTemplate{
-		Name: "sample",
-	}
-	listenerTemplate := createListenerTemplate("sample")
-	if diff := cmp.Diff(validListenerTemplate, listenerTemplate); diff != "" {
-		t.Fatalf("createListenerTemplate() failed:\n%s", diff)
-	}
-}
-
-func TestCreateListenerTrigger(t *testing.T) {
-	validListenerTrigger := triggersv1.EventListenerTrigger{
-		Name: "sampleName",
-		Interceptors: []*triggersv1.EventInterceptor{
-			{
-				CEL: &triggersv1.CELInterceptor{
-					Filter: "sampleFilter sample",
-				},
-			},
-			{
-				GitHub: &triggersv1.GitHubInterceptor{
-					SecretRef: &triggersv1.SecretRef{
-						SecretName: "test",
-						SecretKey:  WebhookSecretKey,
-					},
-				},
-			},
-		},
-		Bindings: []*triggersv1.EventListenerBinding{
-			{
-				Name: "sampleBindingName",
-			},
-		},
-		Template: triggersv1.EventListenerTemplate{
-			Name: "sampleTemplateName",
-		},
-	}
-	listenerTrigger := CreateListenerTrigger("sampleName", "sampleFilter %s", "sample", "test", "", "sampleTemplateName", []string{"sampleBindingName"})
-	if diff := cmp.Diff(validListenerTrigger, listenerTrigger); diff != "" {
-		t.Fatalf("createListenerTrigger() failed:\n%s", diff)
-	}
-}
-
-func TestCreateEventInterceptor(t *testing.T) {
-	validEventInterceptor := triggersv1.EventInterceptor{
-		CEL: &triggersv1.CELInterceptor{
-			Filter: "sampleFilter sample",
-		},
-	}
-	eventInterceptor := createEventInterceptor("sampleFilter %s", "sample")
-	if diff := cmp.Diff(validEventInterceptor, *eventInterceptor); diff != "" {
-		t.Fatalf("createEventInterceptor() failed:\n%s", diff)
-	}
-}
-
-func TestCreateGitHubInterceptor(t *testing.T) {
-	validGitHubInterceptor := triggersv1.EventInterceptor{
-		GitHub: &triggersv1.GitHubInterceptor{
-			SecretRef: &triggersv1.SecretRef{
-				SecretName: "test",
-				SecretKey:  WebhookSecretKey,
-			},
-		},
-	}
-	githubInterceptor := createGitHubInterceptor("test", "")
-	if diff := cmp.Diff(validGitHubInterceptor, *githubInterceptor); diff != "" {
-		t.Fatalf("createEventInterceptor() failed:\n%s", diff)
 	}
 }

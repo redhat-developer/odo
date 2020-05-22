@@ -18,6 +18,7 @@ import (
 	res "github.com/openshift/odo/pkg/pipelines/resources"
 	"github.com/openshift/odo/pkg/pipelines/roles"
 	"github.com/openshift/odo/pkg/pipelines/routes"
+	"github.com/openshift/odo/pkg/pipelines/scm"
 	"github.com/openshift/odo/pkg/pipelines/secrets"
 	"github.com/openshift/odo/pkg/pipelines/tasks"
 	"github.com/openshift/odo/pkg/pipelines/triggers"
@@ -104,12 +105,17 @@ const (
 
 // Init bootstraps a GitOps pipelines and repository structure.
 func Init(o *InitParameters, fs afero.Fs) error {
+
 	exists, err := ioutils.IsExisting(fs, o.OutputPath)
 	if exists {
 		return err
 	}
+	gitOpsRepo, err := scm.NewRepository(o.GitOpsRepoURL)
+	if err != nil {
+		return err
+	}
 
-	outputs, err := createInitialFiles(fs, o.Prefix, o.GitOpsRepoURL, o.GitOpsWebhookSecret, o.DockerConfigJSONFilename)
+	outputs, err := createInitialFiles(fs, gitOpsRepo, o.Prefix, o.GitOpsWebhookSecret, o.DockerConfigJSONFilename)
 	if err != nil {
 		return err
 	}
@@ -142,17 +148,13 @@ func CreateDockerSecret(fs afero.Fs, dockerConfigJSONFilename, ns string) (*ssv1
 
 }
 
-func createInitialFiles(fs afero.Fs, prefix, gitOpsURL, gitOpsWebhookSecret, dockerConfigPath string) (res.Resources, error) {
+func createInitialFiles(fs afero.Fs, repo scm.Repository, prefix, gitOpsWebhookSecret, dockerConfigPath string) (res.Resources, error) {
 	cicdEnv := &config.Environment{Name: prefix + "cicd", IsCICD: true}
-	pipelines := createManifest(gitOpsURL, cicdEnv)
+	pipelines := createManifest(repo, cicdEnv)
 	initialFiles := res.Resources{
 		pipelinesFile: pipelines,
 	}
-	orgRepo, err := orgRepoFromURL(gitOpsURL)
-	if err != nil {
-		return nil, err
-	}
-	resources, err := createCICDResources(fs, cicdEnv, orgRepo, gitOpsWebhookSecret, dockerConfigPath)
+	resources, err := createCICDResources(fs, repo, cicdEnv, gitOpsWebhookSecret, dockerConfigPath)
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +170,7 @@ func createInitialFiles(fs afero.Fs, prefix, gitOpsURL, gitOpsWebhookSecret, doc
 }
 
 // createCICDResources creates resources assocated to pipelines.
-func createCICDResources(fs afero.Fs, cicdEnv *config.Environment, gitOpsRepo, gitOpsWebhookSecret, dockerConfigJSONPath string) (res.Resources, error) {
+func createCICDResources(fs afero.Fs, repo scm.Repository, cicdEnv *config.Environment, gitOpsWebhookSecret, dockerConfigJSONPath string) (res.Resources, error) {
 	cicdNamespace := cicdEnv.Name
 	// key: path of the resource
 	// value: YAML content of the resource
@@ -202,20 +204,19 @@ func createCICDResources(fs afero.Fs, cicdEnv *config.Environment, gitOpsRepo, g
 	outputs[ciPipelinesPath] = pipelines.CreateCIPipeline(meta.NamespacedName(cicdNamespace, "ci-dryrun-from-pr-pipeline"), cicdNamespace)
 	outputs[cdPipelinesPath] = pipelines.CreateCDPipeline(meta.NamespacedName(cicdNamespace, "cd-deploy-from-push-pipeline"), cicdNamespace)
 	outputs[appCiPipelinesPath] = pipelines.CreateAppCIPipeline(meta.NamespacedName(cicdNamespace, "app-ci-pipeline"), false)
-	outputs[prBindingPath] = triggers.CreatePRBinding(cicdNamespace)
-	outputs[pushBindingPath] = triggers.CreatePushBinding(cicdNamespace)
+	outputs[prBindingPath], _ = repo.CreatePRBinding(cicdNamespace)
+	outputs[pushBindingPath], _ = repo.CreatePushBinding(cicdNamespace)
 	outputs[prTemplatePath] = triggers.CreateCIDryRunTemplate(cicdNamespace, saName)
 	outputs[pushTemplatePath] = triggers.CreateCDPushTemplate(cicdNamespace, saName)
 	outputs[appCIBuildPRTemplatePath] = triggers.CreateDevCIBuildPRTemplate(cicdNamespace, saName)
-	outputs[eventListenerPath] = eventlisteners.Generate(gitOpsRepo, cicdNamespace, saName, eventlisteners.GitOpsWebhookSecret)
-
+	outputs[eventListenerPath] = eventlisteners.Generate(repo, cicdNamespace, saName, eventlisteners.GitOpsWebhookSecret)
 	outputs[routePath] = routes.Generate(cicdNamespace)
 	return outputs, nil
 }
 
-func createManifest(gitOpsURL string, envs ...*config.Environment) *config.Manifest {
+func createManifest(gitOpsRepo scm.Repository, envs ...*config.Environment) *config.Manifest {
 	return &config.Manifest{
-		GitOpsURL:    gitOpsURL,
+		GitOpsURL:    gitOpsRepo.URL(),
 		Environments: envs,
 	}
 }
