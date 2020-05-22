@@ -94,6 +94,15 @@ type DevfileComponent struct {
 
 	// Volume component
 	Volume *Volume `json:"volume,omitempty"`
+
+	// Dockerfile component
+	Dockerfile *Dockerfile `json:"dockerfile,omitempty"`
+}
+
+// Dockerfile cmponent
+type Dockerfile struct {
+	Path string   `json:"path"`
+	Args []string `json:"args,omitempty"`
 }
 
 // DevfileProject project defined in devfile
