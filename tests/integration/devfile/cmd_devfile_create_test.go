@@ -149,6 +149,14 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 	})
 
+	Context("When executing odo create with component with no devBuild command", func() {
+		It("should successfully create the devfile component", func() {
+			// Quarkus devfile has no devBuild command
+			output := helper.CmdShouldPass("odo", "create", "quarkus")
+			helper.MatchAllInOutput(output, []string{"Please use `odo push` command to create the component with source deployed"})
+		})
+	})
+
 	Context("When executing odo create with devfile component and --downloadSource flag with a valid project", func() {
 		It("should succesfully create the compoment specified and download the source", func() {
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
