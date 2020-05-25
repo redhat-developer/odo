@@ -10,8 +10,10 @@ import (
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
-	"github.com/openshift/odo/pkg/odo/cli/catalog/util"
+	catalogutil "github.com/openshift/odo/pkg/odo/cli/catalog/util"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/pkg/odo/util/experimental"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
 )
@@ -41,33 +43,38 @@ func NewListComponentsOptions() *ListComponentsOptions {
 // Complete completes ListComponentsOptions after they've been created
 func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.Context = genericclioptions.NewDevfileContext(cmd)
-	if !o.IsPushTargetDocker {
-		// If pushtarget not set to Docker, need to try initalizing a regular context w/ oc-client
-		o.Context = genericclioptions.NewContext(cmd)
-		o.catalogList, err = catalog.ListComponents(o.Client)
-		if err != nil {
-			if o.ExperimentalModeEnabled {
-				klog.V(4).Info("Please log in to an OpenShift cluster to list OpenShift/s2i components")
-			} else {
-				return err
-			}
-		}
+	tasks := util.NewConcurrentTasks(2)
 
-		o.catalogList.Items = util.FilterHiddenComponents(o.catalogList.Items)
+	if !o.IsPushTargetDocker {
+		o.Context = genericclioptions.NewContext(cmd)
+
+		tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
+			o.catalogList, err = catalog.ListComponents(o.Client)
+			if err != nil {
+				if experimental.IsExperimentalModeEnabled() {
+					klog.V(4).Info("Please log in to an OpenShift cluster to list OpenShift/s2i components")
+				} else {
+					errChannel <- err
+				}
+			} else {
+				o.catalogList.Items = catalogutil.FilterHiddenComponents(o.catalogList.Items)
+			}
+		}})
 	}
 
 	if o.ExperimentalModeEnabled {
-		o.catalogDevfileList, err = catalog.ListDevfileComponents("")
-		if err != nil {
-			return err
-		}
-
-		if o.catalogDevfileList.DevfileRegistries == nil {
-			log.Warning("Please run 'odo registry add <registry name> <registry URL>' to add registry for listing devfile components\n")
-		}
+		tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
+			o.catalogDevfileList, err = catalog.ListDevfileComponents("")
+			if o.catalogDevfileList.DevfileRegistries == nil {
+				log.Warning("Please run 'odo registry add <registry name> <registry URL>' to add registry for listing devfile components\n")
+			}
+			if err != nil {
+				errChannel <- err
+			}
+		}})
 	}
 
-	return
+	return tasks.Run()
 }
 
 // Validate validates the ListComponentsOptions based on completed values

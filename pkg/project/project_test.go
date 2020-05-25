@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"testing"
 
+	projectv1 "github.com/openshift/api/project/v1"
 	v1 "github.com/openshift/api/project/v1"
 
 	"github.com/openshift/odo/pkg/occlient"
@@ -108,16 +109,19 @@ func TestDelete(t *testing.T) {
 	tests := []struct {
 		name        string
 		wantErr     bool
+		wait        bool
 		projectName string
 	}{
 		{
-			name:        "Test project delete for multiple projects",
+			name:        "Case 1: Test project delete for multiple projects",
 			wantErr:     false,
+			wait:        false,
 			projectName: "prj2",
 		},
 		{
-			name:        "Test delete the only remaining project",
+			name:        "Case 2: Test delete the only remaining project",
 			wantErr:     false,
+			wait:        false,
 			projectName: "testing",
 		},
 	}
@@ -162,19 +166,22 @@ func TestDelete(t *testing.T) {
 				return true, nil, nil
 			})
 
-			go func() {
-				fkWatch.Delete(testingutil.FakeProjectStatus(corev1.NamespacePhase(""), tt.projectName))
-			}()
+			// We pass in the fakeProject in order to avoid race conditions with multiple go routines
+			fakeProject := testingutil.FakeProjectStatus(corev1.NamespacePhase(""), tt.projectName)
+			go func(project *projectv1.Project) {
+				fkWatch.Delete(project)
+			}(fakeProject)
+
 			fakeClientSet.ProjClientset.PrependWatchReactor("projects", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
 				return true, fkWatch, nil
 			})
 
 			// The function we are testing
-			err := Delete(client, tt.projectName)
+			err := Delete(client, tt.projectName, tt.wait)
 
 			if err == nil && !tt.wantErr {
-				if len(fakeClientSet.ProjClientset.Actions()) != 2 {
-					t.Errorf("expected 2 ProjClientSet.Actions() in Project Delete, got: %v", len(fakeClientSet.ProjClientset.Actions()))
+				if len(fakeClientSet.ProjClientset.Actions()) != 1 {
+					t.Errorf("expected 1 ProjClientSet.Actions() in Project Delete, got: %v", len(fakeClientSet.ProjClientset.Actions()))
 				}
 			}
 

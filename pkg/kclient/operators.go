@@ -35,3 +35,9 @@ func (c *Client) GetClusterServiceVersion(name string) (olm.ClusterServiceVersio
 	}
 	return olm.ClusterServiceVersion{}, ErrNoSuchOperator
 }
+
+// GetCustomResourcesFromCSV returns a list of CRs provided by an operator/CSV.
+func (c *Client) GetCustomResourcesFromCSV(csv olm.ClusterServiceVersion) []olm.CRDDescription {
+	// we will return a list of CRs owned by the csv
+	return csv.Spec.CustomResourceDefinitions.Owned
+}

@@ -103,44 +103,6 @@ var _ = Describe("odo docker devfile url command tests", func() {
 		})
 	})
 
-	Context("Switching pushtarget", func() {
-		It("switch from docker to kube, odo push should display warning", func() {
-			var stdout string
-
-			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
-
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
-
-			helper.CmdShouldPass("odo", "url", "create")
-
-			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "kube", "-f")
-			session := helper.CmdRunner("odo", "push", "--devfile", "devfile.yaml")
-			stdout = string(session.Wait().Out.Contents())
-			stderr := string(session.Wait().Err.Contents())
-			Expect(stderr).To(ContainSubstring("Found a URL defined for Docker, but no valid URLs for Kubernetes."))
-			Expect(stdout).To(ContainSubstring("Changes successfully pushed to component"))
-		})
-
-		It("switch from kube to docker, odo push should display warning", func() {
-			var stdout string
-			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "kube", "-f")
-			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
-
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
-
-			helper.CmdShouldPass("odo", "url", "create", "--host", "1.2.3.4.com", "--ingress")
-
-			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "docker", "-f")
-			session := helper.CmdRunner("odo", "push", "--devfile", "devfile.yaml")
-			stdout = string(session.Wait().Out.Contents())
-			stderr := string(session.Wait().Err.Contents())
-			Expect(stderr).To(ContainSubstring("Found a URL defined for Kubernetes, but no valid URLs for Docker."))
-			Expect(stdout).To(ContainSubstring("Changes successfully pushed to component"))
-		})
-	})
-
 	Context("Listing urls", func() {
 		It("should list url with appropriate state", func() {
 			var stdout string

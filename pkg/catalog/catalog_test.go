@@ -199,21 +199,30 @@ OdoSettings:
 	tests := []struct {
 		name         string
 		registryName string
-		want         map[string]string
+		want         map[string]Registry
 	}{
 		{
 			name:         "Case 1: Test get all devfile registries",
 			registryName: "",
-			want: map[string]string{
-				"CheDevfileRegistry":     "https://che-devfile-registry.openshift.io/",
-				"DefaultDevfileRegistry": "https://raw.githubusercontent.com/elsony/devfile-registry/master",
+			want: map[string]Registry{
+				"CheDevfileRegistry": {
+					Name: "CheDevfileRegistry",
+					URL:  "https://che-devfile-registry.openshift.io/",
+				},
+				"DefaultDevfileRegistry": {
+					Name: "DefaultDevfileRegistry",
+					URL:  "https://raw.githubusercontent.com/elsony/devfile-registry/master",
+				},
 			},
 		},
 		{
 			name:         "Case 2: Test get specific devfile registry",
 			registryName: "CheDevfileRegistry",
-			want: map[string]string{
-				"CheDevfileRegistry": "https://che-devfile-registry.openshift.io/",
+			want: map[string]Registry{
+				"CheDevfileRegistry": {
+					Name: "CheDevfileRegistry",
+					URL:  "https://che-devfile-registry.openshift.io/",
+				},
 			},
 		},
 	}
@@ -232,7 +241,7 @@ OdoSettings:
 	}
 }
 
-func TestGetDevfileIndex(t *testing.T) {
+func TestGetDevfileIndexEntries(t *testing.T) {
 	// Start a local HTTP server
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		// Send response to be tested
@@ -263,14 +272,15 @@ func TestGetDevfileIndex(t *testing.T) {
 	// Close the server when test finishes
 	defer server.Close()
 
+	const registryName = "some registry"
 	tests := []struct {
-		name             string
-		devfileIndexLink string
-		want             []DevfileIndexEntry
+		name     string
+		registry Registry
+		want     []DevfileIndexEntry
 	}{
 		{
-			name:             "Test NodeJS devfile index",
-			devfileIndexLink: server.URL,
+			name:     "Test NodeJS devfile index",
+			registry: Registry{Name: registryName, URL: server.URL},
 			want: []DevfileIndexEntry{
 				{
 					DisplayName: "NodeJS Angular Web Application",
@@ -282,6 +292,10 @@ func TestGetDevfileIndex(t *testing.T) {
 					},
 					Icon:              "/images/angular.svg",
 					GlobalMemoryLimit: "2686Mi",
+					Registry: Registry{
+						Name: registryName,
+						URL:  server.URL,
+					},
 					Links: struct {
 						Link string `json:"self"`
 					}{
@@ -294,7 +308,7 @@ func TestGetDevfileIndex(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetDevfileIndex(tt.devfileIndexLink)
+			got, err := getDevfileIndexEntries(tt.registry)
 
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Got: %v, want: %v", got, tt.want)
