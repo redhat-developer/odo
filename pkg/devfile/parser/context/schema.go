@@ -36,7 +36,7 @@ func (d *DevfileCtx) ValidateDevfileSchema() error {
 	}
 
 	if !result.Valid() {
-		errMsg := fmt.Sprintf("invalid devfile schema. errors :\n")
+		errMsg := fmt.Sprintln("invalid devfile schema. errors :")
 		for _, desc := range result.Errors() {
 			errMsg = errMsg + fmt.Sprintf("- %s\n", desc)
 		}

@@ -430,7 +430,8 @@ func NewCmdServiceCreate(name, fullName string) *cobra.Command {
 
 	if experimental.IsExperimentalModeEnabled() {
 		serviceCreateCmd.Use += fmt.Sprintf(" [flags]\n  %s <operator_type> --crd <crd_name> [service_name] [flags]", o.CmdFullName)
-		serviceCreateCmd.Example += fmt.Sprintf("\n\n") + fmt.Sprintf(createOperatorExample, fullName)
+		//nolint:gosimple // otherwise gosimple complains about use of Sprint and double new line
+		serviceCreateCmd.Example += fmt.Sprint("\n\n") + fmt.Sprintf(createOperatorExample, fullName)
 		serviceCreateCmd.Flags().StringVar(&o.CustomResource, "crd", "", "The name of the CRD of the operator to be used to create the service")
 		serviceCreateCmd.Flags().BoolVar(&o.DryRun, "dry-run", false, "Print the yaml specificiation that will be used to create the service")
 		// remove this feature after enabling service create interactive mode for operator backed services

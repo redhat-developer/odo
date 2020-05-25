@@ -209,7 +209,7 @@ func (do *DeleteOptions) DevFileRun() (err error) {
 	}
 
 	if do.componentDeleteAllFlag {
-		if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete env folder?")) {
+		if do.componentForceDeleteFlag || ui.Proceed("Are you sure you want to delete env folder?") {
 			if !do.EnvSpecificInfo.EnvInfoFileExists() {
 				return fmt.Errorf("env folder doesn't exist for the component")
 			}

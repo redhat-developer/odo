@@ -308,7 +308,7 @@ func (a Adapter) waitAndGetComponentPod(hideSpinner bool) (*corev1.Pod, error) {
 func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand, componentExists, show bool, podName string, containers []corev1.Container) (err error) {
 	// If nothing has been passed, then the devfile is missing the required run command
 	if len(pushDevfileCommands) == 0 {
-		return errors.New(fmt.Sprint("error executing devfile commands - there should be at least 1 command"))
+		return errors.New("error executing devfile commands - there should be at least 1 command")
 	}
 
 	commandOrder := []common.CommandNames{}

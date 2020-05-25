@@ -325,7 +325,7 @@ func getPortMap(context string, endpoints []versionsCommon.DockerimageEndpoint, 
 				return nil, nil, err
 			}
 			portmap[port] = []nat.PortBinding{
-				nat.PortBinding{
+				{
 					HostIP:   LocalhostIP,
 					HostPort: strconv.Itoa(url.ExposedPort),
 				},
@@ -347,7 +347,7 @@ func getPortMap(context string, endpoints []versionsCommon.DockerimageEndpoint, 
 func (a Adapter) execDevfile(pushDevfileCommands []versionsCommon.DevfileCommand, componentExists, show bool, containers []types.Container) (err error) {
 	// If nothing has been passed, then the devfile is missing the required run command
 	if len(pushDevfileCommands) == 0 {
-		return errors.New(fmt.Sprint("error executing devfile commands - there should be at least 1 command"))
+		return errors.New("error executing devfile commands - there should be at least 1 command")
 	}
 
 	commandOrder := []common.CommandNames{}
