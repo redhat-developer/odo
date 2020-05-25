@@ -464,6 +464,9 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		spinner.End(false)
 		registrySpinner.End(false)
 		log.Italic("\nPlease run `odo catalog list components` for a list of supported devfile component types")
+		if co.IsPushTargetDocker {
+			return errors.New("component not found")
+		}
 	}
 
 	if len(args) == 0 || !cmd.HasFlags() {
