@@ -12,7 +12,6 @@ import (
 	"github.com/openshift/odo/pkg/machineoutput"
 	catalogutil "github.com/openshift/odo/pkg/odo/cli/catalog/util"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
@@ -51,7 +50,7 @@ func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args [
 		tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
 			o.catalogList, err = catalog.ListComponents(o.Client)
 			if err != nil {
-				if experimental.IsExperimentalModeEnabled() {
+				if o.ExperimentalModeEnabled {
 					klog.V(4).Info("Please log in to an OpenShift cluster to list OpenShift/s2i components")
 				} else {
 					errChannel <- err
