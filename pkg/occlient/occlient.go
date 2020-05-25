@@ -376,7 +376,7 @@ func (c *Client) GetPortsFromBuilderImage(componentType string) ([]string, error
 	imageStream, err := c.GetImageStream(imageNS, imageName, imageTag)
 	if err != nil {
 		if experimental.IsExperimentalModeEnabled() {
-			return []string{}, fmt.Errorf("component %s not found", componentType)
+			return []string{}, fmt.Errorf("component \"%s\" not found", componentType)
 		}
 		return []string{}, err
 	}
