@@ -20,7 +20,7 @@ var _ = Describe("odo docker devfile url command tests", func() {
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
-		globals = helper.CommonBeforeEach()
+		globals = helper.CommonBeforeEachDocker()
 		cmpName = helper.RandString(6)
 		fmt.Fprintf(GinkgoWriter, "XXX: Using cmpName %s", cmpName)
 
@@ -36,7 +36,7 @@ var _ = Describe("odo docker devfile url command tests", func() {
 		label := "component=" + cmpName
 		dockerClient.StopContainers(label)
 
-		helper.CommonAfterEeach(globals)
+		helper.CommonAfterEeachDocker(globals)
 
 	})
 
