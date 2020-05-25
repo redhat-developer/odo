@@ -23,6 +23,7 @@ import (
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/util"
 
@@ -374,6 +375,9 @@ func (c *Client) GetPortsFromBuilderImage(componentType string) ([]string, error
 	}
 	imageStream, err := c.GetImageStream(imageNS, imageName, imageTag)
 	if err != nil {
+		if experimental.IsExperimentalModeEnabled() {
+			return []string{}, fmt.Errorf("component %s not found", componentType)
+		}
 		return []string{}, err
 	}
 	imageStreamImage, err := c.GetImageStreamImage(imageStream, imageTag)
