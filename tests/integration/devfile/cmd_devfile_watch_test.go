@@ -18,9 +18,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 	var cmpName string
 	var currentWorkingDirectory string
 
-	// TODO: all oc commands in all devfile related test should get replaced by kubectl
-	// TODO: to goal is not to use "oc"
-	oc := helper.NewCliRunner("oc")
+	var cliRunner helper.CliRunner
 
 	// Setup up state for each test spec
 	// create new project (not set as active) and new context directory for each test spec
@@ -33,8 +31,10 @@ var _ = Describe("odo devfile watch command tests", func() {
 			homeDir := helper.GetUserHomeDir()
 			kubeConfigFile := helper.CopyKubeConfigFile(filepath.Join(homeDir, ".kube", "config"), filepath.Join(context, "config"))
 			namespace = helper.CreateRandNamespace(kubeConfigFile)
+			cliRunner = helper.NewKubectlRunner("kubectl")
 		} else {
 			namespace = helper.CreateRandProject()
+			cliRunner = helper.NewOcRunner("oc")
 		}
 		currentWorkingDirectory = helper.Getwd()
 		cmpName = helper.RandString(6)
@@ -85,7 +85,6 @@ var _ = Describe("odo devfile watch command tests", func() {
 	Context("when executing odo watch with devfile flag without experimental mode", func() {
 		It("should fail", func() {
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "false", "-f")
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 			output := helper.CmdShouldFail("odo", "watch", "--devfile", filepath.Join(context, "devfile.yaml"))
@@ -109,7 +108,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 				StringsToBeMatched: []string{"Executing devbuild command", "Executing devrun command"},
 			}
 			// odo watch and validate
-			utils.OdoWatch(utils.OdoV1Watch{}, odoV2Watch, namespace, context, watchFlag, oc, "kube")
+			utils.OdoWatch(utils.OdoV1Watch{}, odoV2Watch, namespace, context, watchFlag, cliRunner, "kube")
 		})
 	})
 
@@ -129,7 +128,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 				StringsToBeMatched: []string{"Executing build command", "Executing run command"},
 			}
 			// odo watch and validate
-			utils.OdoWatch(utils.OdoV1Watch{}, odoV2Watch, namespace, context, watchFlag, oc, "kube")
+			utils.OdoWatch(utils.OdoV1Watch{}, odoV2Watch, namespace, context, watchFlag, cliRunner, "kube")
 		})
 	})
 })

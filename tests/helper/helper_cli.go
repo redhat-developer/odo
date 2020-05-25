@@ -13,16 +13,3 @@ type CliRunner interface {
 	WaitAndCheckForExistence(resourceType, namespace string, timeoutMinutes int) bool
 	GetServices(namespace string) string
 }
-
-// NewCliRunner initializes new NewCliRunner with the appropriate platform
-func NewCliRunner(cli string) CliRunner {
-	var clirunner CliRunner
-	switch cli {
-	case "oc":
-		clirunner = OcRunner{
-			path: cli,
-		}
-	}
-
-	return clirunner
-}

@@ -260,16 +260,18 @@ func OdoWatch(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, project, context, fl
 
 				if stringsMatched {
 					// Verify delete from component pod
-					getContainerExecListdir(odoV1Watch, odoV2Watch, runner, platform, project, isDevfileTest)
+					err := validateContainerExecListDir(odoV1Watch, odoV2Watch, runner, platform, project, isDevfileTest)
+					Expect(err).To(BeNil())
 					return true
 				}
 			} else {
 				curlURL := helper.CmdShouldPass("curl", odoV1Watch.RouteURL)
 				if strings.Contains(curlURL, "Hello odo") {
 					// Verify delete from component pod
-					getContainerExecListdir(odoV1Watch, odoV2Watch, runner, platform, project, isDevfileTest)
+					err := validateContainerExecListDir(odoV1Watch, odoV2Watch, runner, platform, project, isDevfileTest)
+					Expect(err).To(BeNil())
+					return true
 				}
-				return strings.Contains(curlURL, "Hello odo")
 			}
 
 			return false
@@ -291,31 +293,33 @@ func OdoWatch(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, project, context, fl
 	}
 }
 
-func getContainerExecListdir(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, runner interface{}, platform, project string, isDevfileTest bool) string {
+func validateContainerExecListDir(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, runner interface{}, platform, project string, isDevfileTest bool) error {
 	var stdOut string
-	sourcePath := "/projects/nodejs-web-app"
 
-	if platform == "kube" {
-		ocRunner := runner.(helper.OcRunner)
+	switch platform {
+	case "kube":
 		if isDevfileTest {
-			podName := ocRunner.GetRunningPodNameByComponent(odoV2Watch.CmpName, project)
-			stdOut = ocRunner.ExecListDir(podName, project, sourcePath)
+			cliRunner := runner.(helper.CliRunner)
+			podName := cliRunner.GetRunningPodNameByComponent(odoV2Watch.CmpName, project)
+			stdOut = cliRunner.ExecListDir(podName, project, "/projects/nodejs-web-app")
 		} else {
+			ocRunner := runner.(helper.OcRunner)
 			podName := ocRunner.GetRunningPodNameOfComp(odoV1Watch.SrcType+"-app", project)
 			envs := ocRunner.GetEnvs(odoV1Watch.SrcType+"-app", odoV1Watch.AppName, project)
 			dir := envs["ODO_S2I_SRC_BIN_PATH"]
 			stdOut = ocRunner.ExecListDir(podName, project, filepath.Join(dir, "src"))
 		}
-	} else if platform == "docker" {
+	case "docker":
 		dockerRunner := runner.(helper.DockerRunner)
 		containers := dockerRunner.GetRunningContainersByCompAlias(odoV2Watch.CmpName, "runtime")
 		Expect(len(containers)).To(Equal(1))
-		stdOut = dockerRunner.ExecContainer(containers[0], "ls -la "+sourcePath)
+		stdOut = dockerRunner.ExecContainer(containers[0], "ls -la /projects/nodejs-web-app")
+	default:
+		return fmt.Errorf("Platform %s is not supported", platform)
 	}
 
-	Expect(stdOut).To(ContainSubstring(("a.txt")))
-	Expect(stdOut).To(ContainSubstring((".abc")))
-	Expect(stdOut).To(Not(ContainSubstring(("abcd"))))
+	helper.MatchAllInOutput(stdOut, []string{"a.txt", ".abc"})
+	helper.DontMatchAllInOutput(stdOut, []string{"abcd"})
 
-	return stdOut
+	return nil
 }

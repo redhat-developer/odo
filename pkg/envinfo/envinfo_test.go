@@ -281,7 +281,76 @@ func TestGetPushCommand(t *testing.T) {
 			},
 		},
 		{
-			name: "Case 3: No commands present",
+			name: "Case 3: Build & Init commands present",
+			existingEnvInfo: EnvInfo{
+				componentSettings: ComponentSettings{
+					PushCommand: &EnvInfoPushCommand{
+						Build: "mybuild",
+						Init:  "myinit",
+					},
+				},
+			},
+			wantPushCommand: EnvInfoPushCommand{
+				Init:  "myinit",
+				Build: "mybuild",
+			},
+		},
+		{
+			name: "Case 4: Init & Run commands present",
+			existingEnvInfo: EnvInfo{
+				componentSettings: ComponentSettings{
+					PushCommand: &EnvInfoPushCommand{
+						Init: "myinit",
+						Run:  "myrun",
+					},
+				},
+			},
+			wantPushCommand: EnvInfoPushCommand{
+				Run:  "myrun",
+				Init: "myinit",
+			},
+		},
+		{
+			name: "Case 5: Build command present",
+			existingEnvInfo: EnvInfo{
+				componentSettings: ComponentSettings{
+					PushCommand: &EnvInfoPushCommand{
+						Build: "mybuild",
+					},
+				},
+			},
+			wantPushCommand: EnvInfoPushCommand{
+				Build: "mybuild",
+			},
+		},
+		{
+			name: "Case 6: Run command present",
+			existingEnvInfo: EnvInfo{
+				componentSettings: ComponentSettings{
+					PushCommand: &EnvInfoPushCommand{
+						Run: "myrun",
+					},
+				},
+			},
+			wantPushCommand: EnvInfoPushCommand{
+				Run: "myrun",
+			},
+		},
+		{
+			name: "Case 7: Init command present",
+			existingEnvInfo: EnvInfo{
+				componentSettings: ComponentSettings{
+					PushCommand: &EnvInfoPushCommand{
+						Init: "myinit",
+					},
+				},
+			},
+			wantPushCommand: EnvInfoPushCommand{
+				Init: "myinit",
+			},
+		},
+		{
+			name: "Case 8: No commands present",
 			existingEnvInfo: EnvInfo{
 				componentSettings: ComponentSettings{
 					PushCommand: &EnvInfoPushCommand{},

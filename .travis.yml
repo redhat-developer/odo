@@ -191,3 +191,4 @@ jobs:
         - sudo cp odo /usr/bin
         - export KUBERNETES=true
         - travis_wait make test-cmd-devfile-catalog
+        - travis_wait make test-cmd-devfile-watch
