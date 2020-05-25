@@ -18,7 +18,7 @@ import (
 
 func TestPush(t *testing.T) {
 
-	testComponentName := "test"
+	testComponentName := "golang"
 	fakeClient := lclient.FakeNew()
 	fakeErrorClient := lclient.FakeErrorNew()
 
@@ -570,6 +570,44 @@ func TestAdapterDeleteVolumes(t *testing.T) {
 				},
 			},
 			expectToDelete: []string{},
+		},
+		{
+			name: "Case 7: Should delete both storage and supervisord mount",
+			containers: []types.Container{
+				containerWithMount(componentName,
+					[]types.MountPoint{
+						{
+							Name: "my-supervisord-mount",
+							Type: mount.TypeVolume,
+						},
+						{
+							Name: "my-storage-mount",
+							Type: mount.TypeVolume,
+						},
+					}),
+			},
+			volumes: []*types.Volume{
+				{
+					Name: "my-supervisord-mount",
+					Labels: map[string]string{
+						"component": componentName,
+						"type":      "supervisord",
+						"image":     "supervisordimage",
+						"version":   "supervisordversion",
+					},
+				},
+				{
+					Name: "my-storage-mount",
+					Labels: map[string]string{
+						"component":    componentName,
+						"storage-name": "anyval",
+					},
+				},
+			},
+			expectToDelete: []string{
+				"my-supervisord-mount",
+				"my-storage-mount",
+			},
 		},
 	}
 

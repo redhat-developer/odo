@@ -26,32 +26,63 @@ func TestComponentExists(t *testing.T) {
 		name          string
 		componentName string
 		client        *lclient.Client
+		componentType common.DevfileComponentType
 		want          bool
+		wantErr       bool
 	}{
 		{
 			name:          "Case 1: Component exists",
 			componentName: "golang",
 			client:        fakeClient,
+			componentType: common.DevfileComponentTypeDockerimage,
 			want:          true,
+			wantErr:       false,
 		},
 		{
 			name:          "Case 2: Component doesn't exist",
 			componentName: "fakecomponent",
 			client:        fakeClient,
+			componentType: common.DevfileComponentTypeDockerimage,
 			want:          false,
+			wantErr:       false,
 		},
 		{
 			name:          "Case 3: Error with docker client",
 			componentName: "golang",
 			client:        fakeErrorClient,
+			componentType: common.DevfileComponentTypeDockerimage,
 			want:          false,
+			wantErr:       true,
+		},
+		{
+			name:          "Case 4: Container and devfile component mismatch",
+			componentName: "test",
+			client:        fakeClient,
+			componentType: common.DevfileComponentTypeDockerimage,
+			want:          false,
+			wantErr:       true,
+		},
+		{
+			name:          "Case 5: Devfile does not have supported components",
+			componentName: "golang",
+			client:        fakeClient,
+			componentType: common.DevfileComponentTypeCheEditor,
+			want:          false,
+			wantErr:       true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cmpExists := ComponentExists(*tt.client, tt.componentName)
-			if tt.want != cmpExists {
+			devObj := devfileParser.DevfileObj{
+				Data: testingutil.TestDevfileData{
+					ComponentType: tt.componentType,
+				},
+			}
+			cmpExists, err := ComponentExists(*tt.client, devObj.Data, tt.componentName)
+			if !tt.wantErr && err != nil {
+				t.Errorf("TestComponentExists error, unexpected error - %v", err)
+			} else if !tt.wantErr && tt.want != cmpExists {
 				t.Errorf("expected %v, wanted %v", cmpExists, tt.want)
 			}
 		})
@@ -566,7 +597,7 @@ func TestGetProjectVolumeLabels(t *testing.T) {
 			componentName: "some-component",
 			want: map[string]string{
 				"component": "some-component",
-				"type":      "projects",
+				"type":      ProjectsVolume,
 			},
 		},
 		{
@@ -574,7 +605,7 @@ func TestGetProjectVolumeLabels(t *testing.T) {
 			componentName: "",
 			want: map[string]string{
 				"component": "",
-				"type":      "projects",
+				"type":      ProjectsVolume,
 			},
 		},
 	}
@@ -628,25 +659,30 @@ func TestGetContainerLabels(t *testing.T) {
 
 func TestGetSupervisordVolumeLabels(t *testing.T) {
 
+	componentNameArr := []string{"myComponent1", "myComponent2"}
+
 	tests := []struct {
-		name        string
-		customImage bool
-		want        map[string]string
+		name          string
+		componentName string
+		customImage   bool
+		want          map[string]string
 	}{
 		{
-			name:        "Case 1: Default supervisord image",
-			customImage: false,
+			name:          "Case 1: Default supervisord image",
+			componentName: componentNameArr[0],
+			customImage:   false,
 			want: map[string]string{
-				"name": adaptersCommon.SupervisordVolumeName,
-				"type": supervisordVolume,
+				"component": componentNameArr[0],
+				"type":      SupervisordVolume,
 			},
 		},
 		{
-			name:        "Case 2: Custom supervisord image",
-			customImage: true,
+			name:          "Case 2: Custom supervisord image",
+			componentName: componentNameArr[1],
+			customImage:   true,
 			want: map[string]string{
-				"name": adaptersCommon.SupervisordVolumeName,
-				"type": supervisordVolume,
+				"component": componentNameArr[1],
+				"type":      SupervisordVolume,
 			},
 		},
 	}
@@ -656,11 +692,12 @@ func TestGetSupervisordVolumeLabels(t *testing.T) {
 				os.Setenv("ODO_BOOTSTRAPPER_IMAGE", "customimage:customtag")
 			}
 			image := adaptersCommon.GetBootstrapperImage()
-			_, _, _, imageTag := util.ParseComponentImageName(image)
+			_, imageWithoutTag, _, imageTag := util.ParseComponentImageName(image)
 
 			tt.want["version"] = imageTag
+			tt.want["image"] = imageWithoutTag
 
-			labels := GetSupervisordVolumeLabels()
+			labels := GetSupervisordVolumeLabels(tt.componentName)
 			if !reflect.DeepEqual(tt.want, labels) {
 				t.Errorf("expected %v, actual %v", tt.want, labels)
 			}

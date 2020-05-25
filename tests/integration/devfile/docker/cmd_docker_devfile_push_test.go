@@ -39,6 +39,8 @@ var _ = Describe("odo docker devfile push command tests", func() {
 		label := "component=" + cmpName
 		dockerClient.StopContainers(label)
 
+		dockerClient.RemoveVolumesByComponent(cmpName)
+
 		helper.Chdir(currentWorkingDirectory)
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
@@ -83,7 +85,7 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			// Verify the volumes got created successfully (and 3 volumes exist: one source and two defined in devfile)
 			label := "component=" + cmpName
 			volumes := dockerClient.GetVolumesByLabel(label)
-			Expect(len(volumes)).To(Equal(3))
+			Expect(len(volumes)).To(Equal(4))
 		})
 
 		It("Check that odo push mounts the docker volumes in the container", func() {

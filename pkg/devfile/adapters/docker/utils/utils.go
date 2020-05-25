@@ -13,6 +13,7 @@ import (
 
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
+	"github.com/openshift/odo/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/log"
@@ -22,20 +23,35 @@ import (
 )
 
 const (
-	supervisordVolume = "supervisord"
-	projectsVolume    = "projects"
-	volume            = "vol"
+	// SupervisordVolume is supervisord volume type
+	SupervisordVolume = "supervisord"
+
+	// ProjectsVolume is project source volume type
+	ProjectsVolume = "projects"
 )
 
-// ComponentExists checks if Docker containers labeled with the specified component name exists
-func ComponentExists(client lclient.Client, name string) bool {
+// ComponentExists checks if a component exist
+// returns true, if the number of containers equals the number of unique devfile components
+// returns false, if number of containers is zero
+// returns an error, if number of containers is more than zero but does not equal the number of unique devfile components
+func ComponentExists(client lclient.Client, data data.DevfileData, name string) (bool, error) {
 	containers, err := GetComponentContainers(client, name)
 	if err != nil {
-		// log the error since this function basically returns a bool
-		log.Error(err)
-		return false
+		return false, errors.Wrapf(err, "unable to get the containers for component %s", name)
 	}
-	return len(containers) != 0
+
+	supportedComponents := adaptersCommon.GetSupportedComponents(data)
+
+	var componentExists bool
+	if len(containers) == 0 {
+		componentExists = false
+	} else if len(containers) == len(supportedComponents) {
+		componentExists = true
+	} else if len(containers) > 0 && len(containers) != len(supportedComponents) {
+		return false, errors.New(fmt.Sprintf("component %s is in an invalid state, please execute odo delete and retry odo push", name))
+	}
+
+	return componentExists, nil
 }
 
 // GetComponentContainers returns a list of the running component containers
@@ -147,7 +163,7 @@ func AddVolumeToContainer(volumeName, volumeMount string, hostConfig *container.
 func GetProjectVolumeLabels(componentName string) map[string]string {
 	volumeLabels := map[string]string{
 		"component": componentName,
-		"type":      projectsVolume,
+		"type":      ProjectsVolume,
 	}
 	return volumeLabels
 }
@@ -162,14 +178,15 @@ func GetContainerLabels(componentName, alias string) map[string]string {
 }
 
 // GetSupervisordVolumeLabels returns the label selectors used to retrieve the supervisord volume
-func GetSupervisordVolumeLabels() map[string]string {
+func GetSupervisordVolumeLabels(componentName string) map[string]string {
 	image := adaptersCommon.GetBootstrapperImage()
-	_, _, _, imageTag := util.ParseComponentImageName(image)
+	_, imageWithoutTag, _, imageTag := util.ParseComponentImageName(image)
 
 	supervisordLabels := map[string]string{
-		"name":    adaptersCommon.SupervisordVolumeName,
-		"type":    supervisordVolume,
-		"version": imageTag,
+		"component": componentName,
+		"type":      SupervisordVolume,
+		"image":     imageWithoutTag,
+		"version":   imageTag,
 	}
 	return supervisordLabels
 }
