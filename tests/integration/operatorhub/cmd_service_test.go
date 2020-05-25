@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -14,14 +13,21 @@ import (
 )
 
 var _ = Describe("odo service command tests for OperatorHub", func() {
+	var globals helper.Globals
 
 	var project string
 
 	BeforeEach(func() {
-		SetDefaultEventuallyTimeout(10 * time.Minute)
-		SetDefaultConsistentlyDuration(30 * time.Second)
+		globals = helper.CommonBeforeEachDocker()
+
+		helper.CmdShouldPass("odo", "project", "set", CI_OPERATOR_HUB_PROJECT)
+
 		// TODO: remove this when OperatorHub integration is fully baked into odo
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+	})
+
+	var _ = AfterEach(func() {
+		helper.CommonAfterEeachDocker(globals)
 	})
 
 	preSetup := func() {
