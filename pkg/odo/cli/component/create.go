@@ -370,7 +370,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 			// Component namespace: User needs to specify component namespace,
 			// by default it is the current active namespace if it can't get from --project flag or --namespace flag
-			if len(co.devfileMetadata.componentNamespace) == 0 {
+			if len(co.devfileMetadata.componentNamespace) == 0 && !co.IsPushTargetDocker {
 				if cmd.Flags().Changed("project") {
 					componentNamespace, err = cmd.Flags().GetString("project")
 					if err != nil {
