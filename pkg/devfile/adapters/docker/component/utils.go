@@ -73,10 +73,11 @@ func (a Adapter) createComponent() (err error) {
 	for _, comp := range supportedComponents {
 		var dockerVolumeMounts []mount.Mount
 		for _, vol := range a.componentAliasToVolumes[comp.Container.Name] {
+
 			volMount := mount.Mount{
 				Type:   mount.TypeVolume,
-				Source: a.volumeNameToDockerVolName[*vol.Name],
-				Target: *vol.ContainerPath,
+				Source: a.volumeNameToDockerVolName[vol.Name],
+				Target: vol.ContainerPath,
 			}
 			dockerVolumeMounts = append(dockerVolumeMounts, volMount)
 		}
@@ -129,8 +130,8 @@ func (a Adapter) updateComponent() (componentExists bool, err error) {
 		for _, vol := range a.componentAliasToVolumes[comp.Container.Name] {
 			volMount := mount.Mount{
 				Type:   mount.TypeVolume,
-				Source: a.volumeNameToDockerVolName[*vol.Name],
-				Target: *vol.ContainerPath,
+				Source: a.volumeNameToDockerVolName[vol.Name],
+				Target: vol.ContainerPath,
 			}
 			dockerVolumeMounts = append(dockerVolumeMounts, volMount)
 		}
@@ -270,8 +271,7 @@ func (a Adapter) generateAndGetContainerConfig(componentName string, comp versio
 	envVars := utils.ConvertEnvs(comp.Container.Env)
 	ports := utils.ConvertPorts(comp.Container.Endpoints)
 	containerLabels := utils.GetContainerLabels(componentName, comp.Container.Name)
-
-	containerConfig := a.Client.GenerateContainerConfig(comp.Container.Image, []string{}, []string{}, envVars, containerLabels, ports)
+	containerConfig := a.Client.GenerateContainerConfig(comp.Container.Image, comp.Container.Command, comp.Container.Args, envVars, containerLabels, ports)
 
 	return containerConfig
 }

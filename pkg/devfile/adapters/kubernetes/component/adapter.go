@@ -175,23 +175,23 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 	// Get a list of all the unique volume names and generate their PVC names
 	for _, volumes := range componentAliasToVolumes {
 		for _, vol := range volumes {
-			if _, ok := processedVolumes[*vol.Name]; !ok {
-				processedVolumes[*vol.Name] = true
+			if _, ok := processedVolumes[vol.Name]; !ok {
+				processedVolumes[vol.Name] = true
 
 				// Generate the PVC Names
-				klog.V(3).Infof("Generating PVC name for %v", *vol.Name)
-				generatedPVCName, err := storage.GeneratePVCNameFromDevfileVol(*vol.Name, componentName)
+				klog.V(3).Infof("Generating PVC name for %v", vol.Name)
+				generatedPVCName, err := storage.GeneratePVCNameFromDevfileVol(vol.Name, componentName)
 				if err != nil {
 					return err
 				}
 
 				// Check if we have an existing PVC with the labels, overwrite the generated name with the existing name if present
-				existingPVCName, err := storage.GetExistingPVC(&a.Client, *vol.Name, componentName)
+				existingPVCName, err := storage.GetExistingPVC(&a.Client, vol.Name, componentName)
 				if err != nil {
 					return err
 				}
 				if len(existingPVCName) > 0 {
-					klog.V(3).Infof("Found an existing PVC for %v, PVC %v will be re-used", *vol.Name, existingPVCName)
+					klog.V(3).Infof("Found an existing PVC for %v, PVC %v will be re-used", vol.Name, existingPVCName)
 					generatedPVCName = existingPVCName
 				}
 
@@ -200,7 +200,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 					Volume: vol,
 				}
 				uniqueStorages = append(uniqueStorages, pvc)
-				volumeNameToPVCName[*vol.Name] = generatedPVCName
+				volumeNameToPVCName[vol.Name] = generatedPVCName
 			}
 		}
 	}
