@@ -14,6 +14,8 @@ func getCommand(data data.DevfileData, commandName string, groupType common.Devf
 
 	for _, command := range data.GetCommands() {
 
+		command = updateGroupforCustomCommand(commandName, groupType, command)
+
 		// validate command
 		err = validateCommand(data, command)
 
@@ -203,4 +205,16 @@ func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileInitCmd, de
 	}
 
 	return commandMap, nil
+}
+
+// Need to update group on custom commands specified by odo flags
+func updateGroupforCustomCommand(commandName string, groupType common.DevfileCommandGroupType, command common.DevfileCommand) common.DevfileCommand {
+	// Update Group only for exec commands
+	// Update Group only custom commands (specified by odo flags)
+	// Update Group only when Group is not nil, devfile v2 might contain group for custom commands.
+	if command.Exec != nil && commandName != "" && command.Exec.Group == nil {
+		command.Exec.Group = &common.Group{Kind: groupType}
+		return command
+	}
+	return command
 }
