@@ -1,8 +1,9 @@
 package version100
 
 import (
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"strings"
+
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 )
 
 func (d *Devfile100) GetMetadata() common.DevfileMetadata {
@@ -81,6 +82,8 @@ func (d *Devfile100) GetEvents() common.DevfileEvents {
 func convertV1CommandToCommon(c Command) (d common.DevfileCommand) {
 	var exec common.Exec
 
+	name := strings.ToLower(c.Name)
+
 	for _, action := range c.Actions {
 
 		if action.Type == DevfileCommandTypeExec {
@@ -88,8 +91,8 @@ func convertV1CommandToCommon(c Command) (d common.DevfileCommand) {
 				Attributes:  c.Attributes,
 				CommandLine: action.Command,
 				Component:   action.Component,
-				Group:       getGroup(c.Name),
-				Id:          c.Name,
+				Group:       getGroup(name),
+				Id:          name,
 				WorkingDir:  action.Workdir,
 				// Env:
 				// Label:
@@ -130,7 +133,8 @@ func convertV1ComponentToCommon(c Component) (component common.DevfileComponent)
 		MemoryLimit:  c.ComponentDockerimage.MemoryLimit,
 		MountSources: c.MountSources,
 		VolumeMounts: volumes,
-		// SourceMapping: Not present in V1
+		Command:      c.Command,
+		Args:         c.Args,
 	}
 
 	component = common.DevfileComponent{Container: &container}
@@ -182,7 +186,7 @@ func convertV1ProjectToCommon(p Project) common.DevfileProject {
 func getGroup(name string) *common.Group {
 	group := common.Group{}
 
-	switch strings.ToLower(name) {
+	switch name {
 	case "devrun":
 		group.Kind = common.RunCommandGroupType
 		group.IsDefault = true
