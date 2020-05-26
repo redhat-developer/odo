@@ -104,7 +104,7 @@ func (o *URLDescribeOptions) Run() (err error) {
 			}
 		} else {
 			componentName := o.EnvSpecificInfo.GetName()
-			u, err := url.GetIngress(o.KClient, o.EnvSpecificInfo, o.url, o.EnvSpecificInfo.GetName())
+			u, err := url.GetIngress(o.KClient, o.EnvSpecificInfo, o.url, componentName)
 			if err != nil {
 				return err
 			}

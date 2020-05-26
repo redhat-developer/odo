@@ -454,40 +454,36 @@ func ListIngressURL(client *kclient.Client, envSpecificInfo *envinfo.EnvSpecific
 	localEnvinfoURLs := envSpecificInfo.GetURL()
 
 	var urls []URL
-
+	ingressMap := make(map[string]URL)
+	localMap := make(map[string]URL)
 	for _, i := range ingresses {
 		clusterURL := getMachineReadableFormatIngress(i)
-		var found bool = false
-		for _, envinfoURL := range localEnvinfoURLs {
-			localURL := ConvertEnvinfoURL(envinfoURL, componentName)
-			if localURL.Name == clusterURL.Name {
-				// URL is in both local env file and cluster
-				clusterURL.Status.State = StateTypePushed
-				urls = append(urls, clusterURL)
-				found = true
-			}
-		}
-
-		if !found {
-			// URL is on the cluster but not in local env file
-			clusterURL.Status.State = StateTypeLocallyDeleted
-			urls = append(urls, clusterURL)
-		}
+		ingressMap[clusterURL.Name] = clusterURL
 	}
-
 	for _, envinfoURL := range localEnvinfoURLs {
 		// only checks for Ingress URLs
 		if envinfoURL.Kind != envinfo.INGRESS {
 			continue
 		}
 		localURL := ConvertEnvinfoURL(envinfoURL, componentName)
-		var found bool = false
-		for _, i := range ingresses {
-			clusterURL := getMachineReadableFormatIngress(i)
-			if localURL.Name == clusterURL.Name {
-				found = true
-			}
+		localMap[localURL.Name] = localURL
+	}
+
+	for ingressName, ingressURL := range ingressMap {
+		_, found := localMap[ingressName]
+		if found {
+			// URL is in both local env file and cluster
+			ingressURL.Status.State = StateTypePushed
+			urls = append(urls, ingressURL)
+		} else {
+			// URL is on the cluster but not in local env file
+			ingressURL.Status.State = StateTypeLocallyDeleted
+			urls = append(urls, ingressURL)
 		}
+	}
+
+	for localName, localURL := range localMap {
+		_, found := ingressMap[localName]
 		if !found {
 			// URL is in the local env file but not pushed to Docker container
 			localURL.Status.State = StateTypeNotPushed

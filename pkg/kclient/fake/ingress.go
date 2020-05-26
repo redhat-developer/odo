@@ -1,6 +1,8 @@
 package fake
 
 import (
+	"fmt"
+
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/kclient"
@@ -25,7 +27,7 @@ func GetIngressListWithMultiple(componentName string) *extensionsv1.IngressList 
 						labels.URLLabel:                "example-0",
 					},
 				},
-				Spec: *kclient.GenerateIngressSpec(kclient.IngressParameter{ServiceName: "example-0", PortNumber: intstr.FromInt(8080)}),
+				Spec: *kclient.GenerateIngressSpec(kclient.IngressParameter{IngressDomain: "example-0.com", ServiceName: "example-0", PortNumber: intstr.FromInt(8080)}),
 			},
 			{
 				ObjectMeta: metav1.ObjectMeta{
@@ -38,7 +40,7 @@ func GetIngressListWithMultiple(componentName string) *extensionsv1.IngressList 
 						labels.URLLabel:                "example-1",
 					},
 				},
-				Spec: *kclient.GenerateIngressSpec(kclient.IngressParameter{ServiceName: "example-1", PortNumber: intstr.FromInt(9090)}),
+				Spec: *kclient.GenerateIngressSpec(kclient.IngressParameter{IngressDomain: "example-1.com", ServiceName: "example-1", PortNumber: intstr.FromInt(9090)}),
 			},
 		},
 	}
@@ -57,6 +59,6 @@ func GetSingleIngress(urlName, componentName string) *extensionsv1.Ingress {
 				applabels.App:                  "",
 			},
 		},
-		Spec: *kclient.GenerateIngressSpec(kclient.IngressParameter{ServiceName: urlName, PortNumber: intstr.FromInt(8080)}),
+		Spec: *kclient.GenerateIngressSpec(kclient.IngressParameter{IngressDomain: fmt.Sprintf("%s.com", urlName), ServiceName: urlName, PortNumber: intstr.FromInt(8080)}),
 	}
 }

@@ -22,7 +22,6 @@ import (
 	"github.com/openshift/odo/pkg/util"
 	v1 "k8s.io/api/core/v1"
 	extensionsv1 "k8s.io/api/extensions/v1beta1"
-	iextensionsv1 "k8s.io/api/extensions/v1beta1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -1642,75 +1641,9 @@ func TestGetContainerURL(t *testing.T) {
 func TestListIngressURL(t *testing.T) {
 	// initialising the fakeclient
 	componentName := "testcomponent"
-	componentLabel := componentlabels.ComponentLabel
-	urlNameLabel := "odo.openshift.io/url-name"
-	port := intstr.IntOrString{
-		Type:   intstr.Int,
-		IntVal: int32(8080),
-	}
-	pushedIngress := []extensionsv1.Ingress{
-		extensionsv1.Ingress{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "ingressurl1",
-				Labels: map[string]string{
-					componentLabel: componentName,
-					urlNameLabel:   "ingressurl1",
-				},
-			},
-			Spec: iextensionsv1.IngressSpec{
-				Rules: []iextensionsv1.IngressRule{
-					{
-						Host: "ingressurl1.com",
-						IngressRuleValue: iextensionsv1.IngressRuleValue{
-							HTTP: &iextensionsv1.HTTPIngressRuleValue{
-								Paths: []iextensionsv1.HTTPIngressPath{
-									{
-										Path: "/",
-										Backend: iextensionsv1.IngressBackend{
-											ServiceName: componentName,
-											ServicePort: port,
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		extensionsv1.Ingress{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "ingressurl2",
-				Labels: map[string]string{
-					componentLabel: componentName,
-					urlNameLabel:   "ingressurl2",
-				},
-			},
-			Spec: iextensionsv1.IngressSpec{
-				Rules: []iextensionsv1.IngressRule{
-					{
-						Host: "ingressurl2.com",
-						IngressRuleValue: iextensionsv1.IngressRuleValue{
-							HTTP: &iextensionsv1.HTTPIngressRuleValue{
-								Paths: []iextensionsv1.HTTPIngressPath{
-									{
-										Path: "/",
-										Backend: iextensionsv1.IngressBackend{
-											ServiceName: componentName,
-											ServicePort: port,
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
 
-	testURL1 := envinfo.EnvInfoURL{Name: "ingressurl1", Port: 8080, Host: "com", Kind: "ingress"}
-	testURL2 := envinfo.EnvInfoURL{Name: "ingressurl2", Port: 8080, Host: "com", Kind: "ingress"}
+	testURL1 := envinfo.EnvInfoURL{Name: "example-0", Port: 8080, Host: "com", Kind: "ingress"}
+	testURL2 := envinfo.EnvInfoURL{Name: "example-1", Port: 9090, Host: "com", Kind: "ingress"}
 	testURL3 := envinfo.EnvInfoURL{Name: "ingressurl3", Port: 8080, Host: "com", Secure: true, Kind: "ingress"}
 	esi := &envinfo.EnvSpecificInfo{}
 	err := esi.SetConfiguration("url", testURL2)
@@ -1726,10 +1659,7 @@ func TestListIngressURL(t *testing.T) {
 	fkclient, fkclientset := kclient.FakeNew()
 	fkclient.Namespace = "default"
 	fkclientset.Kubernetes.PrependReactor("list", "ingresses", func(action ktesting.Action) (bool, runtime.Object, error) {
-		ingress := extensionsv1.IngressList{
-			Items: pushedIngress,
-		}
-		return true, &ingress, nil
+		return true, fake.GetIngressListWithMultiple(componentName), nil
 	})
 
 	tests := []struct {
@@ -1746,7 +1676,7 @@ func TestListIngressURL(t *testing.T) {
 				URL{
 					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 					ObjectMeta: metav1.ObjectMeta{Name: testURL1.Name},
-					Spec:       URLSpec{Host: "ingressurl1.com", Port: testURL1.Port, Secure: testURL1.Secure},
+					Spec:       URLSpec{Host: "example-0.com", Port: testURL1.Port, Secure: testURL1.Secure},
 					Status: URLStatus{
 						State: StateTypeLocallyDeleted,
 					},
@@ -1754,7 +1684,7 @@ func TestListIngressURL(t *testing.T) {
 				URL{
 					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 					ObjectMeta: metav1.ObjectMeta{Name: testURL2.Name},
-					Spec:       URLSpec{Host: "ingressurl2.com", Port: testURL2.Port, Secure: testURL2.Secure},
+					Spec:       URLSpec{Host: "example-1.com", Port: testURL2.Port, Secure: testURL2.Secure},
 					Status: URLStatus{
 						State: StateTypePushed,
 					},
@@ -1795,72 +1725,7 @@ func TestListIngressURL(t *testing.T) {
 }
 
 func TestGetIngress(t *testing.T) {
-	// initialising the fakeclient
 	componentName := "testcomponent"
-	componentLabel := componentlabels.ComponentLabel
-	urlNameLabel := "odo.openshift.io/url-name"
-	port := intstr.IntOrString{
-		Type:   intstr.Int,
-		IntVal: int32(8080),
-	}
-	ingressURL1 := extensionsv1.Ingress{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "ingressurl1",
-			Labels: map[string]string{
-				componentLabel: componentName,
-				urlNameLabel:   "ingressurl1",
-			},
-		},
-		Spec: iextensionsv1.IngressSpec{
-			Rules: []iextensionsv1.IngressRule{
-				{
-					Host: "ingressurl1.com",
-					IngressRuleValue: iextensionsv1.IngressRuleValue{
-						HTTP: &iextensionsv1.HTTPIngressRuleValue{
-							Paths: []iextensionsv1.HTTPIngressPath{
-								{
-									Path: "/",
-									Backend: iextensionsv1.IngressBackend{
-										ServiceName: componentName,
-										ServicePort: port,
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-	ingressURL2 := extensionsv1.Ingress{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "ingressurl2",
-			Labels: map[string]string{
-				componentLabel: componentName,
-				urlNameLabel:   "ingressurl2",
-			},
-		},
-		Spec: iextensionsv1.IngressSpec{
-			Rules: []iextensionsv1.IngressRule{
-				{
-					Host: "ingressurl2.com",
-					IngressRuleValue: iextensionsv1.IngressRuleValue{
-						HTTP: &iextensionsv1.HTTPIngressRuleValue{
-							Paths: []iextensionsv1.HTTPIngressPath{
-								{
-									Path: "/",
-									Backend: iextensionsv1.IngressBackend{
-										ServiceName: componentName,
-										ServicePort: port,
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
 
 	testURL1 := envinfo.EnvInfoURL{Name: "ingressurl1", Port: 8080, Host: "com", Kind: "ingress"}
 	testURL2 := envinfo.EnvInfoURL{Name: "ingressurl2", Port: 8080, Host: "com", Kind: "ingress"}
@@ -1889,7 +1754,7 @@ func TestGetIngress(t *testing.T) {
 			name:          "Case 1: Successfully retrieve the locally deleted URL object",
 			component:     componentName,
 			urlName:       testURL1.Name,
-			pushedIngress: &ingressURL1,
+			pushedIngress: fake.GetSingleIngress(testURL1.Name, componentName),
 			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 				ObjectMeta: metav1.ObjectMeta{Name: testURL1.Name},
@@ -1904,7 +1769,7 @@ func TestGetIngress(t *testing.T) {
 			name:          "Case 2: Successfully retrieve the pushed URL object",
 			component:     componentName,
 			urlName:       testURL2.Name,
-			pushedIngress: &ingressURL2,
+			pushedIngress: fake.GetSingleIngress(testURL2.Name, componentName),
 			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 				ObjectMeta: metav1.ObjectMeta{Name: testURL2.Name},
