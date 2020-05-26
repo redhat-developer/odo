@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/docker/go-connections/nat"
+	"k8s.io/klog"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -211,11 +212,11 @@ func UpdateComponentWithSupervisord(comp *common.DevfileComponent, runCommand co
 	if runCommand.Exec.Component == comp.Container.Name {
 		AddVolumeToContainer(supervisordVolumeName, adaptersCommon.SupervisordMountPath, hostConfig)
 
-		//if len(comp.Command) == 0 && len(comp.Args) == 0 {
-		//	klog.V(4).Infof("Updating container %v entrypoint with supervisord", *comp.Alias)
-		//	comp.Command = append(comp.Command, adaptersCommon.SupervisordBinaryPath)
-		//	comp.Args = append(comp.Args, "-c", adaptersCommon.SupervisordConfFile)
-		//}
+		if len(comp.Container.Command) == 0 && len(comp.Container.Args) == 0 {
+			klog.V(4).Infof("Updating container %v entrypoint with supervisord", comp.Container.Name)
+			comp.Container.Command = append(comp.Container.Command, adaptersCommon.SupervisordBinaryPath)
+			comp.Container.Args = append(comp.Container.Args, "-c", adaptersCommon.SupervisordConfFile)
+		}
 
 		if !adaptersCommon.IsEnvPresent(comp.Container.Env, adaptersCommon.EnvOdoCommandRun) {
 			envName := adaptersCommon.EnvOdoCommandRun

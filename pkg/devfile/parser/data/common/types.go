@@ -204,6 +204,9 @@ type Container struct {
 
 	// List of volumes mounts that should be mounted is this container.
 	VolumeMounts []VolumeMount `json:"volumeMounts,omitempty"`
+
+	Command []string `json:"command,omitempty"`
+	Args    []string `json:"args,omitempty"`
 }
 
 // Custom Custom component

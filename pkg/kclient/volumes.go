@@ -88,8 +88,8 @@ func AddPVCAndVolumeMount(podTemplateSpec *corev1.PodTemplateSpec, volumeNameToP
 		componentAliasToMountPaths := make(map[string][]string)
 		for containerName, volumes := range componentAliasToVolumes {
 			for _, volume := range volumes {
-				if volName == *volume.Name {
-					componentAliasToMountPaths[containerName] = append(componentAliasToMountPaths[containerName], *volume.ContainerPath)
+				if volName == volume.Name {
+					componentAliasToMountPaths[containerName] = append(componentAliasToMountPaths[containerName], volume.ContainerPath)
 				}
 			}
 		}
