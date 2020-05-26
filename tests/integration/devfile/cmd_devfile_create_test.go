@@ -178,6 +178,10 @@ var _ = Describe("odo devfile create command tests", func() {
 			It("should fail to create the devfile component with more than 1 arguments are passed in", func() {
 				helper.CmdShouldFail("odo", "create", "nodejs", "nodejs", "--devfile", devfilePath)
 			})
+
+			It("should fail to create the devfile component with --registry specified", func() {
+				helper.CmdShouldFail("odo", "create", "nodejs", "--devfile", devfilePath, "--registry", "DefaultDevfileRegistry")
+			})
 		})
 	})
 

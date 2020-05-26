@@ -81,6 +81,7 @@ const LocalDirectoryDefaultLocation = "./"
 // Constants for devfile component
 const devFile = "devfile.yaml"
 const envFile = ".odo/env/env.yaml"
+const configFile = ".odo/config.yaml"
 
 // DevfilePath is the path devfile that is used by odo,
 // which means odo can:
@@ -93,7 +94,7 @@ var DevfilePath = filepath.Join(LocalDirectoryDefaultLocation, devFile)
 var EnvFilePath = filepath.Join(LocalDirectoryDefaultLocation, envFile)
 
 // ConfigFilePath is the path of config.yaml for s2i component
-const ConfigFilePath = "./.odo/config.yaml"
+var ConfigFilePath = filepath.Join(LocalDirectoryDefaultLocation, configFile)
 
 var createLongDesc = ktemplates.LongDesc(`Create a configuration describing a component.
 
@@ -319,6 +320,14 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		// Add a disclaimer that we are in *experimental mode*
 		log.Experimental("Experimental mode is enabled, use at your own risk")
 
+		// Configure the context
+		if co.componentContext != "" {
+			DevfilePath = filepath.Join(co.componentContext, devFile)
+			EnvFilePath = filepath.Join(co.componentContext, envFile)
+			ConfigFilePath = filepath.Join(co.componentContext, configFile)
+			co.CommonPushOptions.componentContext = co.componentContext
+		}
+
 		if util.CheckPathExists(ConfigFilePath) || util.CheckPathExists(EnvFilePath) {
 			return errors.New("This directory already contains a component")
 		}
@@ -332,15 +341,16 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			}
 		}
 
-		// Configure the context
-		if co.componentContext != "" {
-			DevfilePath = filepath.Join(co.componentContext, devFile)
-			EnvFilePath = filepath.Join(co.componentContext, envFile)
-			co.CommonPushOptions.componentContext = co.componentContext
-		}
-
 		if util.CheckPathExists(DevfilePath) && co.devfileMetadata.devfilePath != "" && !util.PathEqual(DevfilePath, co.devfileMetadata.devfilePath) {
 			return errors.New("This directory already contains a devfile, you can't specify devfile via --devfile")
+		}
+
+		// Validate user specify registry
+		if co.devfileMetadata.devfileRegistry.Name != "" {
+			// TODO: We should add more validations here to validate registry existence and correctness
+			if co.devfileMetadata.devfilePath != "" {
+				return errors.New("You can specify registry via --registry if you want to use the devfile that is specified via --devfile")
+			}
 		}
 
 		// Can't use the existing devfile or download devfile from registry, go to interactive mode
