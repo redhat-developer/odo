@@ -190,7 +190,7 @@ $ MINISHIFT_ENABLE_EXPERIMENTAL=y minishift start --extra-clusterup-flags "--ena
 
 * A `kubernetes` environment set up with single node cluster:
 +
-For `kubernetes` single node cluster install link:https://kubernetes.io/docs/tasks/tools/install-minikube/[`Minikube`]
+For a single node `kubernetes` cluster install link:https://kubernetes.io/docs/tasks/tools/install-minikube/[`Minikube`]
 
 * `odo`, `oc` and `kubectl` binaries in `$PATH`.
 
@@ -359,13 +359,13 @@ Run component command integration tests
 $ TEST_EXEC_NODES=1 make test-cmd-cmp
 ----
 
-NOTE: To see the number of available integration test file for validation, press `tab` just after writing `make test-cmd-`. However there is a test file `generic_test.go` which handles certain test spec easily and can run the spec in parallel by calling `make test-generic`. By calling `make test-integration`, the whole suite can run all the spec in parallel on two ginkgo test node except `service` and `link` irrespective of service catalog status in the cluster. However `make test-integration-service-catalog` runs all spec of service and link tests successfully in parallel on cluster having service catalog enabled. `make test-odo-login-e2e` doesn't honour environment variable `TEST_EXEC_NODES`. So by default it runs login and logout command integration test suite on a single ginkgo test node sequentially to avoid race conditions in a parallel run.
+NOTE: To see the number of available integration test file for validation, press `tab` just after writing `make test-cmd-`. However there is a test file `generic_test.go` which handles certain test specs easily and we can run it parallelly by calling `make test-generic`. By calling `make test-integration`, the whole suite will run all the specs in parallel on two ginkgo test node except `service` and `link` irrespective of service catalog status in the cluster. However `make test-integration-service-catalog` runs all specs of service and link tests in parallel on a cluster having service catalog enabled. `make test-odo-login-e2e` doesn't honour environment variable `TEST_EXEC_NODES`. So by default it runs login and logout command integration test suites on a single ginkgo test node sequentially to avoid race conditions during a parallel run.
 
 *Running integration tests on Kubernetes:*
 
 By default, the link:https://github.com/openshift/odo/tree/master/tests/integration/devfile[`integration tests`] for devfile feature, which is in experimental mode, run against `kubernetes` cluster. For more information on Experimental mode, please read link:https://github.com/openshift/odo/blob/master/docs/dev/experimental-mode.adoc:[`odo experimental mode`] document.
 
-The tests are run against the `odo` binary placed in the PATH which is created by command `make`. Integration tests can be run in two (parallel and sequential) ways. To control the parallel run use environment variable `TEST_EXEC_NODES`. For example devfile tests can be run
+The tests are run against the `odo` binary placed in the PATH which is created by the command `make`. Integration tests can be run in two ways (parallel and sequential). To control the parallel run use environment variable `TEST_EXEC_NODES`. For example, the devfile tests can be run
 
 * To run the tests on Kubernetes cluster:
 
