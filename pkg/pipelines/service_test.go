@@ -409,7 +409,7 @@ func TestCreateSvcImageBinding(t *testing.T) {
 	}
 
 	triggerBinding := triggersv1.TriggerBinding{
-		TypeMeta:   v1.TypeMeta{Kind: "TriggerBinding", APIVersion: "tekton.dev/v1alpha1"},
+		TypeMeta:   v1.TypeMeta{Kind: "TriggerBinding", APIVersion: "triggers.tekton.dev/v1alpha1"},
 		ObjectMeta: v1.ObjectMeta{Name: "new-env-new-svc-binding", Namespace: "cicd"},
 		Spec: triggersv1.TriggerBindingSpec{
 			Params: []triggersv1.Param{

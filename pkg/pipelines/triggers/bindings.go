@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	triggerBindingTypeMeta = meta.TypeMeta("TriggerBinding", "tekton.dev/v1alpha1")
+	triggerBindingTypeMeta = meta.TypeMeta("TriggerBinding", "triggers.tekton.dev/v1alpha1")
 )
 
 // CreateImageRepoBinding returns a TriggerBinding with the imageRepo.

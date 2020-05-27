@@ -17,7 +17,7 @@ const (
 )
 
 var (
-	eventListenerTypeMeta = meta.TypeMeta("EventListener", "tekton.dev/v1alpha1")
+	eventListenerTypeMeta = meta.TypeMeta("EventListener", "triggers.tekton.dev/v1alpha1")
 )
 
 // Generate will create the required eventlisteners.

@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	triggerBindingTypeMeta = meta.TypeMeta("TriggerBinding", "tekton.dev/v1alpha1")
+	triggerBindingTypeMeta = meta.TypeMeta("TriggerBinding", "triggers.tekton.dev/v1alpha1")
 )
 
 // Filters for interceptors
