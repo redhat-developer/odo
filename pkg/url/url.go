@@ -90,8 +90,10 @@ func GetIngress(kClient *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInf
 	remoteExist := true
 	// Check whether remote already created the ingress
 	ingress, err := kClient.GetIngress(urlName)
-	if err != nil {
+	if kerrors.IsNotFound(err) {
 		remoteExist = false
+	} else if err != nil {
+		return URL{}, errors.Wrap(err, "unable to get ingress on cluster")
 	}
 	envinfoURLs := envSpecificInfo.GetURL()
 	for _, url := range envinfoURLs {
