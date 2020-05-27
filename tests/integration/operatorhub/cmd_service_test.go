@@ -54,9 +54,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 		It("should list operators installed in the namespace", func() {
 			stdOut := helper.CmdShouldPass("odo", "catalog", "list", "services")
-			Expect(stdOut).To(ContainSubstring("Operators available in the cluster"))
-			Expect(stdOut).To(ContainSubstring("mongodb-enterprise"))
-			Expect(stdOut).To(ContainSubstring("etcdoperator"))
+			helper.MatchAllInOutput(stdOut, []string{"Operators available in the cluster", "mongodb-enterprise", "etcdoperator"})
 		})
 	})
 
@@ -108,8 +106,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
 
 			stdOut := helper.CmdShouldPass("odo", "service", "create", etcdOperator, "--crd", "EtcdCluster", "--dry-run")
-			Expect(stdOut).To(ContainSubstring("apiVersion"))
-			Expect(stdOut).To(ContainSubstring("kind"))
+			helper.MatchAllInOutput(stdOut, []string{"apiVersion", "kind"})
 		})
 	})
 
@@ -221,8 +218,7 @@ spec:
 
 		It("listing catalog of services", func() {
 			jsonOut := helper.CmdShouldPass("odo", "catalog", "list", "services", "-o", "json")
-			Expect(jsonOut).To(ContainSubstring("mongodb-enterprise"))
-			Expect(jsonOut).To(ContainSubstring("etcdoperator"))
+			helper.MatchAllInOutput(jsonOut, []string{"mongodb-enterprise", "etcdoperator"})
 		})
 	})
 
@@ -251,9 +247,8 @@ spec:
 				return strings.Contains(output, "Running")
 			})
 
-			stdOut := helper.CmdShouldPass("odo", "service", "list")
-			Expect(stdOut).To(ContainSubstring("example"))
-			Expect(stdOut).To(ContainSubstring("EtcdCluster"))
+			stdOut = helper.CmdShouldPass("odo", "service", "list")
+			helper.MatchAllInOutput(stdOut, []string{"example", "EtcdCluster"})
 
 			// now check for json output
 			jsonOut := helper.CmdShouldPass("odo", "service", "list", "-o", "json")
