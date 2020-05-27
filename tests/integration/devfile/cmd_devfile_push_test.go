@@ -14,7 +14,7 @@ import (
 )
 
 var _ = Describe("odo devfile push command tests", func() {
-	var namespace, context, cmpName, currentWorkingDirectory string
+	var namespace, context, cmpName, currentWorkingDirectory, originalKubeconfig string
 	var sourcePath = "/projects/nodejs-web-app"
 	var cliRunner helper.CliRunner
 
@@ -34,9 +34,8 @@ var _ = Describe("odo devfile push command tests", func() {
 		// Devfile push requires experimental mode to be set
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 
-		if os.Getenv("KUBERNETES") == "true" {
-			helper.LocalKubeconfigSet(context)
-		}
+		originalKubeconfig = os.Getenv("KUBECONFIG")
+		helper.LocalKubeconfigSet(context)
 		namespace = cliRunner.CreateRandNamespaceProject()
 		currentWorkingDirectory = helper.Getwd()
 		cmpName = helper.RandString(6)
@@ -47,10 +46,9 @@ var _ = Describe("odo devfile push command tests", func() {
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
 		cliRunner.DeleteNamespaceProject(namespace)
-		if os.Getenv("KUBERNETES") == "true" {
-			os.Unsetenv("KUBECONFIG")
-		}
 		helper.Chdir(currentWorkingDirectory)
+		err := os.Setenv("KUBECONFIG", originalKubeconfig)
+		Expect(err).NotTo(HaveOccurred())
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
 	})

@@ -11,9 +11,7 @@ import (
 )
 
 var _ = Describe("odo devfile catalog command tests", func() {
-	var project string
-	var context string
-	var currentWorkingDirectory string
+	var project, context, currentWorkingDirectory, originalKubeconfig string
 	var cliRunner helper.CliRunner
 
 	// Using program commmand according to cliRunner in devfile
@@ -30,9 +28,8 @@ var _ = Describe("odo devfile catalog command tests", func() {
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 
-		if os.Getenv("KUBERNETES") == "true" {
-			helper.LocalKubeconfigSet(context)
-		}
+		originalKubeconfig = os.Getenv("KUBECONFIG")
+		helper.LocalKubeconfigSet(context)
 		project = cliRunner.CreateRandNamespaceProject()
 		currentWorkingDirectory = helper.Getwd()
 		helper.Chdir(context)
@@ -41,10 +38,9 @@ var _ = Describe("odo devfile catalog command tests", func() {
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
 		cliRunner.DeleteNamespaceProject(project)
-		if os.Getenv("KUBERNETES") == "true" {
-			os.Unsetenv("KUBECONFIG")
-		}
 		helper.Chdir(currentWorkingDirectory)
+		err := os.Setenv("KUBECONFIG", originalKubeconfig)
+		Expect(err).NotTo(HaveOccurred())
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
 	})
