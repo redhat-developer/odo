@@ -380,26 +380,26 @@ func TestAddPVCAndVolumeMount(t *testing.T) {
 			componentAliasToVolumes: map[string][]common.DevfileVolume{
 				"container1": []common.DevfileVolume{
 					{
-						Name:          &volNames[0],
-						ContainerPath: &volContainerPath[0],
+						Name:          volNames[0],
+						ContainerPath: volContainerPath[0],
 					},
 					{
-						Name:          &volNames[0],
-						ContainerPath: &volContainerPath[1],
+						Name:          volNames[0],
+						ContainerPath: volContainerPath[1],
 					},
 					{
-						Name:          &volNames[1],
-						ContainerPath: &volContainerPath[2],
+						Name:          volNames[1],
+						ContainerPath: volContainerPath[2],
 					},
 				},
 				"container2": []common.DevfileVolume{
 					{
-						Name:          &volNames[1],
-						ContainerPath: &volContainerPath[1],
+						Name:          volNames[1],
+						ContainerPath: volContainerPath[1],
 					},
 					{
-						Name:          &volNames[2],
-						ContainerPath: &volContainerPath[2],
+						Name:          volNames[2],
+						ContainerPath: volContainerPath[2],
 					},
 				},
 			},
@@ -421,12 +421,12 @@ func TestAddPVCAndVolumeMount(t *testing.T) {
 			componentAliasToVolumes: map[string][]common.DevfileVolume{
 				"container2": []common.DevfileVolume{
 					{
-						Name:          &volNames[1],
-						ContainerPath: &volContainerPath[1],
+						Name:          volNames[1],
+						ContainerPath: volContainerPath[1],
 					},
 					{
-						Name:          &volNames[2],
-						ContainerPath: &volContainerPath[2],
+						Name:          volNames[2],
+						ContainerPath: volContainerPath[2],
 					},
 				},
 			},
@@ -474,8 +474,8 @@ func TestAddPVCAndVolumeMount(t *testing.T) {
 						volumeMatched := 0
 						for _, volumeMount := range container.VolumeMounts {
 							for _, testVolume := range testContainerVolumes {
-								testVolumeName := *testVolume.Name
-								testVolumePath := *testVolume.ContainerPath
+								testVolumeName := testVolume.Name
+								testVolumePath := testVolume.ContainerPath
 								if strings.Contains(volumeMount.Name, testVolumeName) && volumeMount.MountPath == testVolumePath {
 									volumeMatched++
 								}
