@@ -12,6 +12,7 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
+	"github.com/openshift/odo/pkg/exec"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/sync"
@@ -116,6 +117,30 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	execRequired, err := syncAdapter.SyncFiles(syncParams)
 	if err != nil {
 		return errors.Wrapf(err, "failed to sync to component with name %s", a.ComponentName)
+	}
+
+	if !componentExists {
+		events := a.Devfile.Data.GetEvents()
+		if len(events.PostStart) > 0 {
+			for _, postCommand := range events.PostStart {
+				// Get command
+				command, err := common.GetCommandByName(a.Devfile.Data, postCommand)
+				if err != nil {
+
+				}
+				// Get container for command
+				containerID := utils.GetContainerIDForAlias(containers, command.Exec.Component)
+				compInfo := common.ComponentInfo{ContainerName: containerID}
+				// Execute command in container
+
+				// If composite would go here & recursive loop
+
+				err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, false)
+				if err != nil {
+					return err
+				}
+			}
+		}
 	}
 
 	if execRequired {

@@ -248,6 +248,17 @@ var _ = Describe("odo devfile push command tests", func() {
 			})
 		})
 
+		It("should execute PostStart and devrun commands if present", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileV2-with-post-start.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
+			Expect(output).To(ContainSubstring("Executing plastic command \"echo hello"))
+			Expect(output).To(ContainSubstring("Executing devrun command \"/artifacts/bin/start-server.sh\""))
+		})
+
 		It("should be able to handle a missing devbuild command", func() {
 			utils.ExecWithMissingBuildCommand(context, cmpName, namespace)
 		})
