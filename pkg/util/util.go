@@ -1019,7 +1019,7 @@ func ValidateFile(filePath string) error {
 	}
 
 	if file.IsDir() {
-		return errors.Errorf("%s exists but it's not file", filePath)
+		return errors.Errorf("%s exists but it's not a file", filePath)
 	}
 
 	return nil
