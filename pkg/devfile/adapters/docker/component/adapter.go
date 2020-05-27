@@ -49,6 +49,8 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	if err != nil {
 		return errors.Wrapf(err, "Unable to process volumes for component %s", a.ComponentName)
 	}
+
+	a.devfileInitCmd = parameters.DevfileInitCmd
 	a.devfileBuildCmd = parameters.DevfileBuildCmd
 	a.devfileRunCmd = parameters.DevfileRunCmd
 

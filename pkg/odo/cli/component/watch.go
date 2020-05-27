@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters"
@@ -38,6 +39,9 @@ var watchExampleWithComponentName = ktemplates.Examples(`  # Watch for changes i
 
 # Watch for changes in directory for component called frontend 
 %[1]s frontend
+
+# Watch source code changes with custom devfile commands using --build-command and --run-command for experimental mode
+%[1]s --build-command="mybuild" --run-command="myrun"
   `)
 
 var watchExample = ktemplates.Examples(`  # Watch for changes in directory for current component
@@ -61,6 +65,11 @@ type WatchOptions struct {
 	devfileHandler adapters.PlatformAdapter
 
 	EnvSpecificInfo *envinfo.EnvSpecificInfo
+
+	// devfile commands
+	devfileInitCommand  string
+	devfileBuildCommand string
+	devfileRunCommand   string
 
 	*genericclioptions.Context
 }
@@ -207,6 +216,10 @@ func (wo *WatchOptions) Run() (err error) {
 				ExtChan:             make(chan bool),
 				DevfileWatchHandler: wo.devfileHandler.Push,
 				Show:                wo.show,
+				DevfileInitCmd:      strings.ToLower(wo.devfileInitCommand),
+				DevfileBuildCmd:     strings.ToLower(wo.devfileBuildCommand),
+				DevfileRunCmd:       strings.ToLower(wo.devfileRunCommand),
+				EnvSpecificInfo:     wo.EnvSpecificInfo,
 			},
 		)
 		if err != nil {
@@ -269,6 +282,9 @@ func NewCmdWatch(name, fullName string) *cobra.Command {
 	// enable devfile flag if experimental mode is enabled
 	if experimental.IsExperimentalModeEnabled() {
 		watchCmd.Flags().StringVar(&wo.devfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
+		watchCmd.Flags().StringVar(&wo.devfileInitCommand, "init-command", "", "Devfile Init Command to execute")
+		watchCmd.Flags().StringVar(&wo.devfileBuildCommand, "build-command", "", "Devfile Build Command to execute")
+		watchCmd.Flags().StringVar(&wo.devfileRunCommand, "run-command", "", "Devfile Run Command to execute")
 	}
 
 	// Adding context flag

@@ -162,11 +162,12 @@ jobs:
     
     - <<: *base-test
       stage: test
-      name: "docker devfile push, url, catalog, delete command integration tests"
+      name: "docker devfile push, watch, catalog and delete command integration tests"
       script:
         - make bin
         - sudo cp odo /usr/bin
         - travis_wait make test-cmd-docker-devfile-push
+        - travis_wait make test-cmd-docker-devfile-watch
         - travis_wait make test-cmd-docker-devfile-catalog
         - travis_wait make test-cmd-docker-devfile-delete
         - travis_wait make test-cmd-docker-devfile-url
