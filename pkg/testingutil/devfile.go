@@ -18,17 +18,17 @@ func (d TestDevfileData) GetComponents() []versionsCommon.DevfileComponent {
 
 // GetEvents is a mock function to get events from devfile
 func (d TestDevfileData) GetEvents() versionsCommon.DevfileEvents {
-	return d.GetEvents()
+	return versionsCommon.DevfileEvents{}
 }
 
 // GetMetadata is a mock function to get metadata from devfile
 func (d TestDevfileData) GetMetadata() versionsCommon.DevfileMetadata {
-	return d.GetMetadata()
+	return versionsCommon.DevfileMetadata{}
 }
 
 // GetParent is a mock function to get parent from devfile
 func (d TestDevfileData) GetParent() versionsCommon.DevfileParent {
-	return d.GetParent()
+	return versionsCommon.DevfileParent{}
 }
 
 // GetAliasedComponents is a mock function to get the components that have an alias from a devfile
@@ -109,4 +109,17 @@ func GetFakeComponent(name string) versionsCommon.DevfileComponent {
 			MountSources: true,
 		}}
 
+}
+
+func GetFakeExecRunCommands() []versionsCommon.Exec {
+	return []versionsCommon.Exec{
+		{
+			CommandLine: "ls -a",
+			Component:   "alias1",
+			Group: &versionsCommon.Group{
+				Kind: versionsCommon.RunCommandGroupType,
+			},
+			WorkingDir: "/root",
+		},
+	}
 }

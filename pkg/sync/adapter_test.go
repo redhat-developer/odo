@@ -40,8 +40,7 @@ func TestGetSyncFolder(t *testing.T) {
 			projects: []versionsCommon.DevfileProject{
 				{
 					Name: projectNames[0],
-					Source: versionsCommon.DevfileProjectSource{
-						Type:     versionsCommon.DevfileProjectTypeGit,
+					Git: &versionsCommon.Git{
 						Location: projectRepos[0],
 					},
 				},
@@ -54,15 +53,19 @@ func TestGetSyncFolder(t *testing.T) {
 			projects: []versionsCommon.DevfileProject{
 				{
 					Name: projectNames[0],
-					Source: versionsCommon.DevfileProjectSource{
-						Type:     versionsCommon.DevfileProjectTypeGit,
+					Git: &versionsCommon.Git{
 						Location: projectRepos[0],
 					},
 				},
 				{
 					Name: projectNames[1],
-					Source: versionsCommon.DevfileProjectSource{
-						Type:     versionsCommon.DevfileProjectTypeGit,
+					Github: &versionsCommon.Github{
+						Location: projectRepos[1],
+					},
+				},
+				{
+					Name: projectNames[1],
+					Zip: &versionsCommon.Zip{
 						Location: projectRepos[1],
 					},
 				},
@@ -74,10 +77,9 @@ func TestGetSyncFolder(t *testing.T) {
 			name: "Case 4: Clone path set",
 			projects: []versionsCommon.DevfileProject{
 				{
-					ClonePath: &projectClonePath,
+					ClonePath: projectClonePath,
 					Name:      projectNames[0],
-					Source: versionsCommon.DevfileProjectSource{
-						Type:     versionsCommon.DevfileProjectTypeGit,
+					Zip: &versionsCommon.Zip{
 						Location: projectRepos[0],
 					},
 				},
@@ -89,10 +91,9 @@ func TestGetSyncFolder(t *testing.T) {
 			name: "Case 5: Invalid clone path, set with absolute path",
 			projects: []versionsCommon.DevfileProject{
 				{
-					ClonePath: &invalidClonePaths[0],
+					ClonePath: invalidClonePaths[0],
 					Name:      projectNames[0],
-					Source: versionsCommon.DevfileProjectSource{
-						Type:     versionsCommon.DevfileProjectTypeGit,
+					Github: &versionsCommon.Github{
 						Location: projectRepos[0],
 					},
 				},
@@ -104,10 +105,9 @@ func TestGetSyncFolder(t *testing.T) {
 			name: "Case 6: Invalid clone path, starts with ..",
 			projects: []versionsCommon.DevfileProject{
 				{
-					ClonePath: &invalidClonePaths[1],
+					ClonePath: invalidClonePaths[1],
 					Name:      projectNames[0],
-					Source: versionsCommon.DevfileProjectSource{
-						Type:     versionsCommon.DevfileProjectTypeGit,
+					Git: &versionsCommon.Git{
 						Location: projectRepos[0],
 					},
 				},
@@ -119,10 +119,9 @@ func TestGetSyncFolder(t *testing.T) {
 			name: "Case 7: Invalid clone path, contains ..",
 			projects: []versionsCommon.DevfileProject{
 				{
-					ClonePath: &invalidClonePaths[2],
+					ClonePath: invalidClonePaths[2],
 					Name:      projectNames[0],
-					Source: versionsCommon.DevfileProjectSource{
-						Type:     versionsCommon.DevfileProjectTypeGit,
+					Zip: &versionsCommon.Zip{
 						Location: projectRepos[0],
 					},
 				},
@@ -208,7 +207,7 @@ func TestGetCmdToDeleteFiles(t *testing.T) {
 func TestSyncFiles(t *testing.T) {
 
 	testComponentName := "test"
-	componentType := versionsCommon.DevfileComponentTypeDockerimage
+	componentType := versionsCommon.ContainerComponentType
 
 	fakeClient := lclient.FakeNew()
 	fakeErrorClient := lclient.FakeErrorNew()
@@ -308,7 +307,11 @@ func TestSyncFiles(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := parser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					ComponentType: componentType,
+					Components: []versionsCommon.DevfileComponent{
+						{
+							Type: componentType,
+						},
+					},
 				},
 			}
 
@@ -337,7 +340,7 @@ func TestSyncFiles(t *testing.T) {
 func TestPushLocal(t *testing.T) {
 
 	testComponentName := "test"
-	componentType := versionsCommon.DevfileComponentTypeDockerimage
+	componentType := versionsCommon.ContainerComponentType
 
 	// create a temp dir for the file indexer
 	directory, err := ioutil.TempDir("", "")
@@ -429,7 +432,11 @@ func TestPushLocal(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := parser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					ComponentType: componentType,
+					Components: []versionsCommon.DevfileComponent{
+						{
+							Type: componentType,
+						},
+					},
 				},
 			}
 
