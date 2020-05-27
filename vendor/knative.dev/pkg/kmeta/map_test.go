@@ -25,39 +25,52 @@ import (
 func TestUnion(t *testing.T) {
 	tests := []struct {
 		name string
-		in   map[string]string
-		add  map[string]string
+		in   []map[string]string
 		want map[string]string
 	}{{
-		name: "nil all",
+		name: "nothing at all",
 		want: map[string]string{},
 	}, {
 		name: "empty in",
-		in:   map[string]string{},
+		in:   []map[string]string{},
 		want: map[string]string{},
 	}, {
-		name: "no in, only additions",
-		add:  map[string]string{"wish": "you", "were": "here"},
+		name: "nil in list",
+		in:   []map[string]string{nil},
+		want: map[string]string{},
+	}, {
+		name: "empty in recursive",
+		in:   []map[string]string{{}},
+		want: map[string]string{},
+	}, {
+		name: "nil and something",
+		in:   []map[string]string{nil, {"wish": "you", "were": "here"}},
 		want: map[string]string{"wish": "you", "were": "here"},
 	}, {
-		name: "in, no add",
-		in:   map[string]string{"the-dark": "side"},
+		name: "something and nil",
+		in:   []map[string]string{{"the-dark": "side"}},
 		want: map[string]string{"the-dark": "side"},
 	}, {
-		name: "all together now",
-		in:   map[string]string{"another": "brick"},
-		add:  map[string]string{"in": "the-wall"},
+		name: "2 in",
+		in:   []map[string]string{{"another": "brick"}, {"in": "the-wall"}},
 		want: map[string]string{"in": "the-wall", "another": "brick"},
 	}, {
-		name: "merge wins",
-		in:   map[string]string{"another": "brick", "in": "the-wall-pt-I"},
-		add:  map[string]string{"in": "the-wall-pt-II"},
+		name: "2 in, latter wins",
+		in:   []map[string]string{{"another": "brick", "in": "the-wall-pt-I"}, {"in": "the-wall-pt-II"}},
 		want: map[string]string{"in": "the-wall-pt-II", "another": "brick"},
+	}, {
+		name: "3 in, latter wins",
+		in: []map[string]string{
+			{"another": "brick", "in": "the-wall-pt-I"},
+			{"in": "the-wall-pt-II"},
+			{"in": "the-wall-pt-III", "hey": "you"},
+		},
+		want: map[string]string{"in": "the-wall-pt-III", "another": "brick", "hey": "you"},
 	}}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := UnionMaps(test.in, test.add)
+			got := UnionMaps(test.in...)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("MakeLabels (-want, +got) = %v", diff)
 			}

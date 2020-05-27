@@ -1,5 +1,5 @@
 hash: b1492b21a92932c9bdf9d95cf067bd92eff40f53558a3bb32f986ec0d84b9b80
-updated: 2020-05-26T22:19:06.324093584-04:00
+updated: 2020-05-26T23:50:18.644175535-04:00
 imports:
 - name: cloud.google.com/go
   version: 8c41231e01b2085512d98153bcffb847ff9b4b9f
@@ -1008,7 +1008,7 @@ imports:
   - integer
   - trace
 - name: knative.dev/pkg
-  version: 7893fe6758a4211943c3d462f4e5e84001aedb8e
+  version: 495174c9665196c489566f097099162653a8d49c
   subpackages:
   - apis
   - apis/duck
