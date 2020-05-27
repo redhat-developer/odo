@@ -7,6 +7,8 @@ import (
 
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -73,11 +75,7 @@ func (o *DescribeComponentOptions) Complete(name string, cmd *cobra.Command, arg
 		if err != nil {
 			return err
 		}
-		for _, devfileComponent := range catalogDevfileList.Items {
-			if devfileComponent.Name == o.componentName {
-				o.devfileComponents = append(o.devfileComponents, devfileComponent)
-			}
-		}
+		o.GetDevfileComponentsByName(catalogDevfileList)
 	}
 
 	return nil
@@ -99,11 +97,7 @@ func (o *DescribeComponentOptions) Run() (err error) {
 		if log.IsJSON() {
 			if len(o.devfileComponents) > 0 {
 				for _, devfileComponent := range o.devfileComponents {
-					data, err := pkgUtil.DownloadFileInMemory(devfileComponent.Registry.URL + devfileComponent.Link)
-					if err != nil {
-						return errors.Wrapf(err, "Failed to download devfile.yaml for devfile component: %s", devfileComponent.Name)
-					}
-					devObj, err := devfile.ParseInMemory(data)
+					devObj, err := GetDevfile(devfileComponent)
 					if err != nil {
 						return err
 					}
@@ -121,32 +115,16 @@ func (o *DescribeComponentOptions) Run() (err error) {
 				for _, devfileComponent := range o.devfileComponents {
 					fmt.Fprintln(w, "\n* Registry: "+devfileComponent.Registry.Name)
 
-					data, err := pkgUtil.DownloadFileInMemory(devfileComponent.Registry.URL + devfileComponent.Link)
-					if err != nil {
-						return errors.Wrapf(err, "Failed to download devfile.yaml for devfile component: %s", devfileComponent.Name)
-					}
-					devObj, err := devfile.ParseInMemory(data)
+					devObj, err := GetDevfile(devfileComponent)
 					if err != nil {
 						return err
 					}
+
 					projects := devObj.Data.GetProjects()
 					// only print project info if there is at least one project in the devfile
-					if len(projects) > 0 {
-						fmt.Fprintln(w, "\nStarter Projects:")
-						for _, project := range projects {
-							yamlData, err := yaml.Marshal(project)
-							if err != nil {
-								return errors.Wrapf(err, "Failed to marshal devfile object into yaml")
-							}
-							fmt.Printf("---\n%s", string(yamlData))
-						}
-					} else {
-						fmt.Fprintln(w, "The Odo devfile component \""+o.componentName+"\" has no starter projects.")
-						yamlData, err := yaml.Marshal(devObj)
-						if err != nil {
-							return errors.Wrapf(err, "Failed to marshal devfile object into yaml")
-						}
-						fmt.Printf("---\n%s", string(yamlData))
+					err = o.PrintDevfileProjects(w, projects, devObj)
+					if err != nil {
+						return err
 					}
 				}
 			} else {
@@ -179,4 +157,51 @@ func NewCmdCatalogDescribeComponent(name, fullName string) *cobra.Command {
 	}
 
 	return command
+}
+
+// GetDevfileComponentsByName gets all the devfiles that have the same name as the specified components
+func (o *DescribeComponentOptions) GetDevfileComponentsByName(catalogDevfileList catalog.DevfileComponentTypeList) {
+	for _, devfileComponent := range catalogDevfileList.Items {
+		if devfileComponent.Name == o.componentName {
+			o.devfileComponents = append(o.devfileComponents, devfileComponent)
+		}
+	}
+}
+
+// GetDevfile downloads the devfile in memory and return the devfile object
+func GetDevfile(devfileComponent catalog.DevfileComponentType) (parser.DevfileObj, error) {
+	var devObj parser.DevfileObj
+
+	data, err := pkgUtil.DownloadFileInMemory(devfileComponent.Registry.URL + devfileComponent.Link)
+	if err != nil {
+		return devObj, errors.Wrapf(err, "Failed to download devfile.yaml for devfile component: %s", devfileComponent.Name)
+	}
+	devObj, err = devfile.ParseInMemory(data)
+	if err != nil {
+		return devObj, err
+	}
+	return devObj, nil
+}
+
+// PrintDevfileProjects prints all the starter projects in a devfile
+// If no starter projects exists in the devfile, it prints the whole devfile
+func (o *DescribeComponentOptions) PrintDevfileProjects(w *tabwriter.Writer, projects []common.DevfileProject, devObj parser.DevfileObj) error {
+	if len(projects) > 0 {
+		fmt.Fprintln(w, "\nStarter Projects:")
+		for _, project := range projects {
+			yamlData, err := yaml.Marshal(project)
+			if err != nil {
+				return errors.Wrapf(err, "Failed to marshal devfile object into yaml")
+			}
+			fmt.Printf("---\n%s", string(yamlData))
+		}
+	} else {
+		fmt.Fprintln(w, "The Odo devfile component \""+o.componentName+"\" has no starter projects.")
+		yamlData, err := yaml.Marshal(devObj)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to marshal devfile object into yaml")
+		}
+		fmt.Printf("---\n%s", string(yamlData))
+	}
+	return nil
 }
