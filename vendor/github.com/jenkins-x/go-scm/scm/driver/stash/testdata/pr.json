@@ -122,7 +122,23 @@
         "approved": false,
         "status": "UNAPPROVED"
     },
-    "reviewers": [],
+    "reviewers": [
+        {
+            "user": {
+                "name": "tom",
+                "emailAddress": "tom@example.com",
+                "id": 115026,
+                "displayName": "Tom",
+                "active": true,
+                "slug": "tom",
+                "type": "NORMAL"
+            },
+            "lastReviewedCommit": "7549846524f8aed2bd1c0249993ae1bf9d3c9998",
+            "role": "REVIEWER",
+            "approved": true,
+            "status": "APPROVED"
+        }
+    ],
     "participants": [],
     "links": {
         "self": [

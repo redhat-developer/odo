@@ -1,4 +1,4 @@
-apiVersion: tekton.dev/v1alpha1
+apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerTemplate
 metadata:
   name: getting-started-triggertemplate
@@ -13,7 +13,7 @@ spec:
     - name: namespace
       description: The namespace to create the resources
   resourcetemplates:
-    - apiVersion: tekton.dev/v1alpha1
+    - apiVersion: tekton.dev/v1beta1
       kind: PipelineRun
       metadata:
         name: getting-started-pipeline-run-$(uid)
@@ -36,7 +36,7 @@ spec:
               type: image
               params:
                 - name: url
-                  value: DOCKERREPO-REPLACEME # docker-repo-location.com/repo:getting-started
+                  value: DOCKERREPO-REPLACEME  # docker-repo-location.com/repo:getting-started
           - name: event-to-sink
             resourceSpec:
               type: cloudEvent
@@ -44,7 +44,7 @@ spec:
                 - name: targetURI
                   value: http://event-display.getting-started.svc.cluster.local
 ---
-apiVersion: tekton.dev/v1alpha1
+apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerBinding
 metadata:
   name: getting-started-pipelinebinding
@@ -58,7 +58,7 @@ spec:
     - name: gitrepositoryurl
       value: "https://github.com/$(body.repository.full_name)"
 ---
-apiVersion: tekton.dev/v1alpha1
+apiVersion: triggers.tekton.dev/v1alpha1
 kind: EventListener
 metadata:
   name: getting-started-listener

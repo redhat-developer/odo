@@ -64,7 +64,7 @@ function dump_extra_cluster_state() {
 
 function validate_run() {
   local tests_finished=0
-  for i in {1..60}; do
+  for i in {1..90}; do
     local finished="$(kubectl get $1.tekton.dev --output=jsonpath='{.items[*].status.conditions[*].status}')"
     if [[ ! "$finished" == *"Unknown"* ]]; then
       tests_finished=1
@@ -119,9 +119,9 @@ function run_tests() {
 }
 
 function run_yaml_tests() {
-  echo ">> Starting tests for the resource ${1}"
-  create_resources ${1} || fail_test "Could not create ${1} from the examples"
-  if ! run_tests ${1}; then
+  echo ">> Starting tests for the resource ${1}/${2}"
+  create_resources ${1}/${2} || fail_test "Could not create ${2}/${1} from the examples"
+  if ! run_tests ${2}; then
     return 1
   fi
   return 0
@@ -129,7 +129,11 @@ function run_yaml_tests() {
 
 function install_pipeline_crd() {
   echo ">> Deploying Tekton Pipelines"
-  ko apply -f config/ || fail_test "Build pipeline installation failed"
+  ko resolve -f config/ \
+      | sed -e 's%"level": "info"%"level": "debug"%' \
+      | sed -e 's%loglevel.controller: "info"%loglevel.controller: "debug"%' \
+      | sed -e 's%loglevel.webhook: "info"%loglevel.webhook: "debug"%' \
+      | kubectl apply -f - || fail_test "Build pipeline installation failed"
   verify_pipeline_installation
 }
 
@@ -142,9 +146,7 @@ function install_pipeline_crd_version() {
 
 function verify_pipeline_installation() {
   # Make sure that everything is cleaned up in the current namespace.
-  for res in conditions pipelineresources tasks pipelines taskruns pipelineruns; do
-    kubectl delete --ignore-not-found=true ${res}.tekton.dev --all
-  done
+  delete_pipeline_resources
 
   # Wait for pods to be running in the namespaces we are deploying to
   wait_until_pods_running tekton-pipelines || fail_test "Tekton Pipeline did not come up"
@@ -155,9 +157,7 @@ function uninstall_pipeline_crd() {
   ko delete --ignore-not-found=true -f config/
 
   # Make sure that everything is cleaned up in the current namespace.
-  for res in conditions pipelineresources tasks pipelines taskruns pipelineruns; do
-    kubectl delete --ignore-not-found=true ${res}.tekton.dev --all
-  done
+  delete_pipeline_resources
 }
 
 function uninstall_pipeline_crd_version() {
@@ -165,7 +165,11 @@ function uninstall_pipeline_crd_version() {
   kubectl delete --ignore-not-found=true -f "https://github.com/tektoncd/pipeline/releases/download/$1/release.yaml"
 
   # Make sure that everything is cleaned up in the current namespace.
-  for res in conditions pipelineresources tasks pipelines taskruns pipelineruns; do
+  delete_pipeline_resources
+}
+
+function delete_pipeline_resources() {
+  for res in conditions pipelineresources tasks clustertasks pipelines taskruns pipelineruns; do
     kubectl delete --ignore-not-found=true ${res}.tekton.dev --all
   done
 }

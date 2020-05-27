@@ -22,15 +22,15 @@ import (
 	"testing"
 )
 
-func TestConvertUpViaProxy(t *testing.T) {
+func TestConvertToViaProxy(t *testing.T) {
 	sink := &testResource{}
 	proxy := &testResource{}
 	source := &testResource{proxy: proxy}
 
-	err := ConvertUpViaProxy(context.Background(), source, proxy, sink)
+	err := ConvertToViaProxy(context.Background(), source, proxy, sink)
 
 	if err != nil {
-		t.Errorf("ConvertUpViaProxy returned unexpected err: %s", err)
+		t.Errorf("ConvertToViaProxy returned unexpected err: %s", err)
 	}
 
 	if source.to != proxy {
@@ -42,7 +42,7 @@ func TestConvertUpViaProxy(t *testing.T) {
 	}
 }
 
-func TestConvertUpViaProxyError(t *testing.T) {
+func TestConvertToViaProxyError(t *testing.T) {
 	tests := []struct {
 		name          string
 		source, proxy testResource
@@ -62,7 +62,7 @@ func TestConvertUpViaProxyError(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := ConvertUpViaProxy(context.Background(),
+			err := ConvertToViaProxy(context.Background(),
 				&test.source,
 				&test.proxy,
 				nil, /* sink */
@@ -75,15 +75,15 @@ func TestConvertUpViaProxyError(t *testing.T) {
 	}
 }
 
-func TestConvertDownViaProxy(t *testing.T) {
+func TestConvertFromViaProxy(t *testing.T) {
 	proxy := &testResource{}
 	sink := &testResource{}
 	source := &testResource{}
 
-	err := ConvertDownViaProxy(context.Background(), source, proxy, sink)
+	err := ConvertFromViaProxy(context.Background(), source, proxy, sink)
 
 	if err != nil {
-		t.Errorf("ConvertDownViaProxy returned unexpected err: %s", err)
+		t.Errorf("ConvertFromViaProxy returned unexpected err: %s", err)
 	}
 
 	if proxy.from != source {
@@ -95,7 +95,7 @@ func TestConvertDownViaProxy(t *testing.T) {
 	}
 }
 
-func TestConvertDownViaProxyError(t *testing.T) {
+func TestConvertFromViaProxyError(t *testing.T) {
 	tests := []struct {
 		name        string
 		sink, proxy testResource
@@ -116,7 +116,7 @@ func TestConvertDownViaProxyError(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 
-			err := ConvertDownViaProxy(context.Background(),
+			err := ConvertFromViaProxy(context.Background(),
 				nil, /* source */
 				&test.proxy,
 				&test.sink,
@@ -135,12 +135,12 @@ type testResource struct {
 
 var _ Convertible = (*testResource)(nil)
 
-func (r *testResource) ConvertUp(ctx context.Context, to Convertible) error {
+func (r *testResource) ConvertTo(ctx context.Context, to Convertible) error {
 	r.to = to
 	return r.err
 }
 
-func (r *testResource) ConvertDown(ctx context.Context, from Convertible) error {
+func (r *testResource) ConvertFrom(ctx context.Context, from Convertible) error {
 	r.from = from
 	return r.err
 }

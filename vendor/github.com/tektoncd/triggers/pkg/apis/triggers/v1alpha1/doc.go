@@ -19,5 +19,5 @@ limitations under the License.
 // +k8s:deepcopy-gen=package,register
 // +k8s:conversion-gen=github.com/tektoncd/triggers/pkg/apis/triggers
 // +k8s:defaulter-gen=TypeMeta
-// +groupName=tekton.dev
+// +groupName=triggers.tekton.dev
 package v1alpha1

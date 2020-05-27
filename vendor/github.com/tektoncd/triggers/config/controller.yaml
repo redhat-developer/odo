@@ -18,19 +18,35 @@ metadata:
   name: tekton-triggers-controller
   namespace: tekton-pipelines
   labels:
-    app.kubernetes.io/name: tekton-triggers
+    app.kubernetes.io/name: controller
     app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/version: devel
+    app.kubernetes.io/part-of: tekton-triggers
+    # tekton.dev/release value replaced with inputs.params.versionTag in triggers/tekton/publish.yaml
+    triggers.tekton.dev/release: "devel"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: tekton-triggers-controller
+      app.kubernetes.io/name: controller
+      app.kubernetes.io/component: controller
+      app.kubernetes.io/instance: default
+      app.kubernetes.io/part-of: tekton-triggers
   template:
     metadata:
       annotations:
         cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
       labels:
+        app.kubernetes.io/name: controller
+        app.kubernetes.io/component: controller
+        app.kubernetes.io/instance: default
+        app.kubernetes.io/version: devel
+        app.kubernetes.io/part-of: tekton-triggers
         app: tekton-triggers-controller
+        triggers.tekton.dev/release: "devel"
+        # version value replaced with inputs.params.versionTag in triggers/tekton/publish.yaml
+        version: "devel"
     spec:
       serviceAccountName: tekton-triggers-controller
       containers:
@@ -40,11 +56,10 @@ spec:
           "-logtostderr",
           "-stderrthreshold", "INFO",
           "-el-image", "github.com/tektoncd/triggers/cmd/eventlistenersink",
-          "-el-port", "8080"
+          "-el-port", "8080",
+          "-period-seconds", "10",
+          "-failure-threshold", "1"
         ]
-        volumeMounts:
-        - name: config-logging
-          mountPath: /etc/config-logging
         env:
         - name: SYSTEM_NAMESPACE
           valueFrom:
@@ -56,7 +71,3 @@ spec:
           value: config-observability-triggers
         - name: METRICS_DOMAIN
           value: tekton.dev/triggers
-      volumes:
-        - name: config-logging
-          configMap:
-            name: config-logging-triggers

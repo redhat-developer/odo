@@ -1,5 +1,5 @@
 ---
-apiVersion: tekton.dev/v1alpha1
+apiVersion: triggers.tekton.dev/v1alpha1
 kind: EventListener
 metadata:
   name: listener-multiinterceptor
@@ -12,7 +12,6 @@ spec:
             secretRef:
               secretName: foo
               secretKey: bar
-              namespace: baz
             eventTypes:
               - pull_request
         - webhook:
@@ -29,6 +28,6 @@ spec:
               apiVersion: v1
               namespace: default
       bindings:
-        - name: pipeline-binding
+        - ref: pipeline-binding
       template:
         name: pipeline-template

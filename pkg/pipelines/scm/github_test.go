@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	triggersv1 "github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -22,34 +21,22 @@ func TestCreatePRBindingForGithub(t *testing.T) {
 			Namespace: "testns",
 		},
 		Spec: triggersv1.TriggerBindingSpec{
-			Params: []pipelinev1.Param{
+			Params: []triggersv1.Param{
 				{
-					Name: "gitref",
-					Value: pipelinev1.ArrayOrString{
-						StringVal: "$(body.pull_request.head.ref)",
-						Type:      pipelinev1.ParamTypeString,
-					},
+					Name:  "gitref",
+					Value: "$(body.pull_request.head.ref)",
 				},
 				{
-					Name: "gitsha",
-					Value: pipelinev1.ArrayOrString{
-						StringVal: "$(body.pull_request.head.sha)",
-						Type:      pipelinev1.ParamTypeString,
-					},
+					Name:  "gitsha",
+					Value: "$(body.pull_request.head.sha)",
 				},
 				{
-					Name: "gitrepositoryurl",
-					Value: pipelinev1.ArrayOrString{
-						StringVal: "$(body.repository.clone_url)",
-						Type:      pipelinev1.ParamTypeString,
-					},
+					Name:  "gitrepositoryurl",
+					Value: "$(body.repository.clone_url)",
 				},
 				{
-					Name: "fullname",
-					Value: pipelinev1.ArrayOrString{
-						StringVal: "$(body.repository.full_name)",
-						Type:      pipelinev1.ParamTypeString,
-					},
+					Name:  "fullname",
+					Value: "$(body.repository.full_name)",
 				},
 			},
 		},
@@ -73,27 +60,18 @@ func TestCreatePushBindingForGithub(t *testing.T) {
 			Namespace: "testns",
 		},
 		Spec: triggersv1.TriggerBindingSpec{
-			Params: []pipelinev1.Param{
+			Params: []triggersv1.Param{
 				{
-					Name: "gitref",
-					Value: pipelinev1.ArrayOrString{
-						StringVal: "$(body.ref)",
-						Type:      pipelinev1.ParamTypeString,
-					},
+					Name:  "gitref",
+					Value: "$(body.ref)",
 				},
 				{
-					Name: "gitsha",
-					Value: pipelinev1.ArrayOrString{
-						StringVal: "$(body.head_commit.id)",
-						Type:      pipelinev1.ParamTypeString,
-					},
+					Name:  "gitsha",
+					Value: "$(body.head_commit.id)",
 				},
 				{
-					Name: "gitrepositoryurl",
-					Value: pipelinev1.ArrayOrString{
-						StringVal: "$(body.repository.clone_url)",
-						Type:      pipelinev1.ParamTypeString,
-					},
+					Name:  "gitrepositoryurl",
+					Value: "$(body.repository.clone_url)",
 				},
 			},
 		},
@@ -113,16 +91,16 @@ func TestCreateCITriggerForGithub(t *testing.T) {
 	want := triggersv1.EventListenerTrigger{
 		Name: "test",
 		Bindings: []*triggersv1.EventListenerBinding{
-			&triggersv1.EventListenerBinding{Name: "test-binding"},
+			{Name: "test-binding"},
 		},
 		Template: triggersv1.EventListenerTemplate{Name: "test-template"},
 		Interceptors: []*triggersv1.EventInterceptor{
-			&triggersv1.EventInterceptor{
+			{
 				CEL: &triggersv1.CELInterceptor{
 					Filter: fmt.Sprintf(githubCIDryRunFilters, "org/test"),
 				},
 			},
-			&triggersv1.EventInterceptor{
+			{
 				GitHub: &triggersv1.GitHubInterceptor{
 					SecretRef: &triggersv1.SecretRef{SecretKey: "webhook-secret-key", SecretName: "secret", Namespace: "ns"},
 				},
@@ -141,16 +119,16 @@ func TestCreateCDTriggersForGithub(t *testing.T) {
 	want := triggersv1.EventListenerTrigger{
 		Name: "test",
 		Bindings: []*triggersv1.EventListenerBinding{
-			&triggersv1.EventListenerBinding{Name: "test-binding"},
+			{Name: "test-binding"},
 		},
 		Template: triggersv1.EventListenerTemplate{Name: "test-template"},
 		Interceptors: []*triggersv1.EventInterceptor{
-			&triggersv1.EventInterceptor{
+			{
 				CEL: &triggersv1.CELInterceptor{
 					Filter: fmt.Sprintf(githubCDDeployFilters, "org/test"),
 				},
 			},
-			&triggersv1.EventInterceptor{
+			{
 				GitHub: &triggersv1.GitHubInterceptor{
 					SecretRef: &triggersv1.SecretRef{SecretKey: "webhook-secret-key", SecretName: "secret", Namespace: "ns"},
 				},

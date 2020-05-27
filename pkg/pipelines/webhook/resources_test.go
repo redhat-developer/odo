@@ -19,9 +19,8 @@ import (
 )
 
 func TestGetRouteHost(t *testing.T) {
-
-	reouteClientset := fakeRouteClientset.NewSimpleClientset()
-	reouteClientset.PrependReactor("get", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
+	routeClientset := fakeRouteClientset.NewSimpleClientset()
+	routeClientset.PrependReactor("get", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
 		if action.GetNamespace() != "tst-cicd" {
 			return true, nil, fmt.Errorf("'get' called with a different namespace %s", action.GetNamespace())
 		}
@@ -43,7 +42,7 @@ func TestGetRouteHost(t *testing.T) {
 		}
 		return true, route, nil
 	})
-	resources := fakeNewResources(reouteClientset.Route(), nil)
+	resources := fakeNewResources(routeClientset.RouteV1(), nil)
 
 	hasTLS, host, err := resources.getListenerAddress("tst-cicd", "gitops-webhook-event-listener-route")
 	if err != nil {

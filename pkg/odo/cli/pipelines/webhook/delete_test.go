@@ -12,7 +12,7 @@ func TestMissingRequiredFlagsForDelete(t *testing.T) {
 		wantErr string
 	}{
 		{[]keyValuePair{flag("cicd", "true")},
-			"Required flag(s) \"access-token\" have/has not been set",
+			`required flag(s) "access-token" not set`,
 		},
 	}
 

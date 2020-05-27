@@ -23,15 +23,15 @@ func TestAddCommandWithMissingParams(t *testing.T) {
 		{"Missing app-name flag",
 			[]keyValuePair{
 				flag("service-name", "sample"), flag("git-repo-url", "example/repo"), flag("webhook-secret", "abc123"), flag("env-name", "test")},
-			`Required flag(s) "app-name" have/has not been set`},
+			`required flag(s) "app-name" not set`},
 		{"Missing service-name flag",
 			[]keyValuePair{flag("app-name", "app"),
 				flag("git-repo-url", "example/repo"), flag("webhook-secret", "abc123"), flag("env-name", "test")},
-			`Required flag(s) "service-name" have/has not been set`},
+			`required flag(s) "service-name" not set`},
 		{"Missing env-name flag",
 			[]keyValuePair{flag("app-name", "app"),
 				flag("service-name", "sample"), flag("git-repo-url", "sample/repo"), flag("webhook-secret", "abc123")},
-			`Required flag(s) "env-name" have/has not been set`},
+			`required flag(s) "env-name" not set`},
 	}
 	for _, tt := range cmdTests {
 		t.Run(tt.desc, func(t *testing.T) {

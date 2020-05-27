@@ -17,9 +17,9 @@ func TestCreateBindingParam(t *testing.T) {
 			Type:      pipelinev1.ParamTypeString,
 		},
 	}
-	bindingParam := createBindingParam("gitref", "$(body.ref)")
+	bindingParam := createPipelineBindingParam("gitref", "$(body.ref)")
 	if diff := cmp.Diff(validParam, bindingParam); diff != "" {
-		t.Fatalf("createBindingParam() failed\n%s", diff)
+		t.Fatalf("createPipelineBindingParam() failed\n%s", diff)
 	}
 }
 
@@ -31,20 +31,14 @@ func TestCreateImageRepoBinding(t *testing.T) {
 			Namespace: "testns",
 		},
 		Spec: triggersv1.TriggerBindingSpec{
-			Params: []pipelinev1.Param{
+			Params: []triggersv1.Param{
 				{
-					Name: "imageRepo",
-					Value: pipelinev1.ArrayOrString{
-						StringVal: "quay.io/user/testing",
-						Type:      pipelinev1.ParamTypeString,
-					},
+					Name:  "imageRepo",
+					Value: "quay.io/user/testing",
 				},
 				{
-					Name: "tlsVerify",
-					Value: pipelinev1.ArrayOrString{
-						StringVal: "true",
-						Type:      pipelinev1.ParamTypeString,
-					},
+					Name:  "tlsVerify",
+					Value: "true",
 				},
 			},
 		},

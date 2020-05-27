@@ -24,7 +24,7 @@ import (
 	// Injection stuff
 	_ "knative.dev/pkg/client/injection/kube/client/fake"
 	_ "knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1beta1/mutatingwebhookconfiguration/fake"
-	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/secret/fake"
+	_ "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret/fake"
 
 	jsonpatch "gomodules.xyz/jsonpatch/v2"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
@@ -501,28 +501,6 @@ func createInnerDefaultResourceWithoutSpec(t *testing.T) []byte {
 	b, err := json.Marshal(q)
 	if err != nil {
 		t.Fatalf("Error marshaling q: %v", err)
-	}
-	return b
-}
-
-func createInnerDefaultResourceWithSpecAndStatus(t *testing.T, spec *InnerDefaultSpec, status *InnerDefaultStatus) []byte {
-	t.Helper()
-	r := InnerDefaultResource{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: system.Namespace(),
-			Name:      "a name",
-		},
-	}
-	if spec != nil {
-		r.Spec = *spec
-	}
-	if status != nil {
-		r.Status = *status
-	}
-
-	b, err := json.Marshal(r)
-	if err != nil {
-		t.Fatalf("Error marshaling bytes: %v", err)
 	}
 	return b
 }

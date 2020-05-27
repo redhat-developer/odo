@@ -30,13 +30,13 @@ import (
 
 // FakeTriggerBindings implements TriggerBindingInterface
 type FakeTriggerBindings struct {
-	Fake *FakeTektonV1alpha1
+	Fake *FakeTriggersV1alpha1
 	ns   string
 }
 
-var triggerbindingsResource = schema.GroupVersionResource{Group: "tekton.dev", Version: "v1alpha1", Resource: "triggerbindings"}
+var triggerbindingsResource = schema.GroupVersionResource{Group: "triggers.tekton.dev", Version: "v1alpha1", Resource: "triggerbindings"}
 
-var triggerbindingsKind = schema.GroupVersionKind{Group: "tekton.dev", Version: "v1alpha1", Kind: "TriggerBinding"}
+var triggerbindingsKind = schema.GroupVersionKind{Group: "triggers.tekton.dev", Version: "v1alpha1", Kind: "TriggerBinding"}
 
 // Get takes name of the triggerBinding, and returns the corresponding triggerBinding object, and an error if there is any.
 func (c *FakeTriggerBindings) Get(name string, options v1.GetOptions) (result *v1alpha1.TriggerBinding, err error) {

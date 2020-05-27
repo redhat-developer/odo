@@ -1,0 +1,18 @@
+{
+  "State": "success",
+  "Sha": "b02e90353e4c94cda868dbcdb2301c5691a78b6c",
+  "Statuses": [
+    {
+      "State": "success",
+      "Label": "first-key",
+      "Desc": "This commit looks good.",
+      "Target": "http://example.com/master-1/job/kyounger/job/repo-1/job/master/23/display/redirect"
+    },
+    {
+      "State": "success",
+      "Label": "second-key",
+      "Desc": "This commit looks good.",
+      "Target": "http://example.com/master-1/job/kyounger/job/repo-1/job/master/22something/display/redirect"
+    }
+  ]
+}

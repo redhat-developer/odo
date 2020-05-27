@@ -29,6 +29,7 @@ import (
 	"testing"
 
 	pipelineclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
+	resourceclientset "github.com/tektoncd/pipeline/pkg/client/resource/clientset/versioned"
 	triggersclientset "github.com/tektoncd/triggers/pkg/client/clientset/versioned"
 	"k8s.io/client-go/kubernetes"
 	knativetest "knative.dev/pkg/test"
@@ -39,6 +40,7 @@ type clients struct {
 	KubeClient kubernetes.Interface
 
 	PipelineClient pipelineclientset.Interface
+	ResourceClient resourceclientset.Interface
 	TriggersClient triggersclientset.Interface
 }
 
@@ -62,6 +64,11 @@ func newClients(t *testing.T, configPath, clusterName string) *clients {
 	c.PipelineClient, err = pipelineclientset.NewForConfig(cfg)
 	if err != nil {
 		t.Fatalf("Failed to create pipeline clientset from config file at %s: %s", configPath, err)
+	}
+
+	c.ResourceClient, err = resourceclientset.NewForConfig(cfg)
+	if err != nil {
+		t.Fatalf("Failed to create resource clientset from config file at %s: %s", configPath, err)
 	}
 
 	c.TriggersClient, err = triggersclientset.NewForConfig(cfg)

@@ -21,9 +21,12 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	"github.com/tektoncd/pipeline/pkg/apis/resource"
+	resourcev1alpha1 "github.com/tektoncd/pipeline/pkg/apis/resource/v1alpha1"
 	"github.com/tektoncd/pipeline/pkg/artifacts"
 	"github.com/tektoncd/pipeline/pkg/logging"
+	"github.com/tektoncd/pipeline/test/diff"
 	"github.com/tektoncd/pipeline/test/names"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
@@ -44,88 +47,76 @@ var (
 		PRImage:                  "override-with-pr:latest",
 		ImageDigestExporterImage: "override-with-imagedigest-exporter-image:latest",
 	}
-	inputResourceInterfaces map[string]v1alpha1.PipelineResourceInterface
+	inputResourceInterfaces map[string]v1beta1.PipelineResourceInterface
 	logger                  *zap.SugaredLogger
 
-	gitInputs = &v1alpha1.Inputs{
-		Resources: []v1alpha1.TaskResource{{
-			ResourceDeclaration: v1alpha1.ResourceDeclaration{
-				Name: "gitspace",
-				Type: "git",
-			}}},
+	gitInputs = []v1beta1.TaskResource{{
+		ResourceDeclaration: v1beta1.ResourceDeclaration{
+			Name: "gitspace",
+			Type: "git",
+		}}}
+	multipleGitInputs = []v1beta1.TaskResource{{
+		ResourceDeclaration: v1beta1.ResourceDeclaration{
+			Name: "gitspace",
+			Type: "git",
+		}}, {
+		ResourceDeclaration: v1beta1.ResourceDeclaration{
+			Name: "git-duplicate-space",
+			Type: "git",
+		}},
 	}
-	multipleGitInputs = &v1alpha1.Inputs{
-		Resources: []v1alpha1.TaskResource{{
-			ResourceDeclaration: v1alpha1.ResourceDeclaration{
-				Name: "gitspace",
-				Type: "git",
-			}}, {
-			ResourceDeclaration: v1alpha1.ResourceDeclaration{
-				Name: "git-duplicate-space",
-				Type: "git",
-			}},
-		},
-	}
-	gcsInputs = &v1alpha1.Inputs{
-		Resources: []v1alpha1.TaskResource{{
-			ResourceDeclaration: v1alpha1.ResourceDeclaration{
+	gcsInputs = []v1beta1.TaskResource{{
+		ResourceDeclaration: v1beta1.ResourceDeclaration{
+			Name:       "workspace",
+			Type:       "gcs",
+			TargetPath: "gcs-dir",
+		}}}
+	multipleGcsInputs = []v1beta1.TaskResource{
+		{
+			ResourceDeclaration: v1beta1.ResourceDeclaration{
 				Name:       "workspace",
 				Type:       "gcs",
 				TargetPath: "gcs-dir",
-			}}},
-	}
-	multipleGcsInputs = &v1alpha1.Inputs{
-		Resources: []v1alpha1.TaskResource{
-			{
-				ResourceDeclaration: v1alpha1.ResourceDeclaration{
-					Name:       "workspace",
-					Type:       "gcs",
-					TargetPath: "gcs-dir",
-				},
 			},
-			{
-				ResourceDeclaration: v1alpha1.ResourceDeclaration{
-					Name:       "workspace2",
-					Type:       "gcs",
-					TargetPath: "gcs-dir",
-				},
+		},
+		{
+			ResourceDeclaration: v1beta1.ResourceDeclaration{
+				Name:       "workspace2",
+				Type:       "gcs",
+				TargetPath: "gcs-dir",
 			},
 		},
 	}
-	clusterInputs = &v1alpha1.Inputs{
-		Resources: []v1alpha1.TaskResource{{
-			ResourceDeclaration: v1alpha1.ResourceDeclaration{
-				Name: "target-cluster",
-				Type: "cluster",
-			}}},
-	}
-	optionalGitInputs = &v1alpha1.Inputs{
-		Resources: []v1alpha1.TaskResource{{
-			ResourceDeclaration: v1alpha1.ResourceDeclaration{
-				Name:     "gitspace",
-				Type:     "git",
-				Optional: false,
-			}}, {
-			ResourceDeclaration: v1alpha1.ResourceDeclaration{
-				Name:     "git-optional-space",
-				Type:     "git",
-				Optional: true,
-			}},
-		},
+	clusterInputs = []v1beta1.TaskResource{{
+		ResourceDeclaration: v1beta1.ResourceDeclaration{
+			Name: "target-cluster",
+			Type: "cluster",
+		}}}
+	optionalGitInputs = []v1beta1.TaskResource{{
+		ResourceDeclaration: v1beta1.ResourceDeclaration{
+			Name:     "gitspace",
+			Type:     "git",
+			Optional: false,
+		}}, {
+		ResourceDeclaration: v1beta1.ResourceDeclaration{
+			Name:     "git-optional-space",
+			Type:     "git",
+			Optional: true,
+		}},
 	}
 )
 
 func setUp() {
 	logger, _ = logging.NewLogger("", "")
 
-	rs := []*v1alpha1.PipelineResource{{
+	rs := []*resourcev1alpha1.PipelineResource{{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "the-git",
 			Namespace: "marshmallow",
 		},
-		Spec: v1alpha1.PipelineResourceSpec{
+		Spec: resourcev1alpha1.PipelineResourceSpec{
 			Type: "git",
-			Params: []v1alpha1.ResourceParam{{
+			Params: []resourcev1alpha1.ResourceParam{{
 				Name:  "Url",
 				Value: "https://github.com/grafeas/kritis",
 			}},
@@ -135,9 +126,9 @@ func setUp() {
 			Name:      "the-git-with-branch",
 			Namespace: "marshmallow",
 		},
-		Spec: v1alpha1.PipelineResourceSpec{
+		Spec: resourcev1alpha1.PipelineResourceSpec{
 			Type: "git",
-			Params: []v1alpha1.ResourceParam{{
+			Params: []resourcev1alpha1.ResourceParam{{
 				Name:  "Url",
 				Value: "https://github.com/grafeas/kritis",
 			}, {
@@ -150,9 +141,9 @@ func setUp() {
 			Name:      "the-git-with-sslVerify-false",
 			Namespace: "marshmallow",
 		},
-		Spec: v1alpha1.PipelineResourceSpec{
+		Spec: resourcev1alpha1.PipelineResourceSpec{
 			Type: "git",
-			Params: []v1alpha1.ResourceParam{{
+			Params: []resourcev1alpha1.ResourceParam{{
 				Name:  "Url",
 				Value: "https://github.com/grafeas/kritis",
 			}, {
@@ -168,16 +159,16 @@ func setUp() {
 			Name:      "cluster2",
 			Namespace: "marshmallow",
 		},
-		Spec: v1alpha1.PipelineResourceSpec{
+		Spec: resourcev1alpha1.PipelineResourceSpec{
 			Type: "cluster",
-			Params: []v1alpha1.ResourceParam{{
+			Params: []resourcev1alpha1.ResourceParam{{
 				Name:  "Name",
 				Value: "cluster2",
 			}, {
 				Name:  "Url",
 				Value: "http://10.10.10.10",
 			}},
-			SecretParams: []v1alpha1.SecretParam{{
+			SecretParams: []resourcev1alpha1.SecretParam{{
 				FieldName:  "cadata",
 				SecretKey:  "cadatakey",
 				SecretName: "secret1",
@@ -188,9 +179,9 @@ func setUp() {
 			Name:      "cluster3",
 			Namespace: "marshmallow",
 		},
-		Spec: v1alpha1.PipelineResourceSpec{
+		Spec: resourcev1alpha1.PipelineResourceSpec{
 			Type: "cluster",
-			Params: []v1alpha1.ResourceParam{{
+			Params: []resourcev1alpha1.ResourceParam{{
 				Name:  "name",
 				Value: "cluster3",
 			}, {
@@ -203,6 +194,14 @@ func setUp() {
 				Name: "CAdata",
 				// echo "my-ca-cert" | base64
 				Value: "bXktY2EtY2VydAo=",
+			}, {
+				Name: "clientKeyData",
+				// echo "my-ca-cert" | base64
+				Value: "Y2xpZW50LWtleS1kYXRh",
+			}, {
+				Name: "clientCertificateData",
+				// echo "my-ca-cert" | base64
+				Value: "Y2xpZW50LWNlcnRpZmljYXRlLWRhdGE=",
 			}},
 		},
 	}, {
@@ -210,9 +209,9 @@ func setUp() {
 			Name:      "storage1",
 			Namespace: "marshmallow",
 		},
-		Spec: v1alpha1.PipelineResourceSpec{
+		Spec: resourcev1alpha1.PipelineResourceSpec{
 			Type: "storage",
-			Params: []v1alpha1.ResourceParam{{
+			Params: []resourcev1alpha1.ResourceParam{{
 				Name:  "Location",
 				Value: "gs://fake-bucket/rules.zip",
 			}, {
@@ -225,9 +224,9 @@ func setUp() {
 			Name:      "storage2",
 			Namespace: "marshmallow",
 		},
-		Spec: v1alpha1.PipelineResourceSpec{
+		Spec: resourcev1alpha1.PipelineResourceSpec{
 			Type: "storage",
-			Params: []v1alpha1.ResourceParam{{
+			Params: []resourcev1alpha1.ResourceParam{{
 				Name:  "Location",
 				Value: "gs://fake-bucket/other.zip",
 			}, {
@@ -240,9 +239,9 @@ func setUp() {
 			Name:      "storage-gcs-keys",
 			Namespace: "marshmallow",
 		},
-		Spec: v1alpha1.PipelineResourceSpec{
+		Spec: resourcev1alpha1.PipelineResourceSpec{
 			Type: "storage",
-			Params: []v1alpha1.ResourceParam{{
+			Params: []resourcev1alpha1.ResourceParam{{
 				Name:  "Location",
 				Value: "gs://fake-bucket/rules.zip",
 			}, {
@@ -252,7 +251,7 @@ func setUp() {
 				Name:  "Dir",
 				Value: "true",
 			}},
-			SecretParams: []v1alpha1.SecretParam{{
+			SecretParams: []resourcev1alpha1.SecretParam{{
 				SecretKey:  "key.json",
 				SecretName: "secret-name",
 				FieldName:  "GOOGLE_APPLICATION_CREDENTIALS",
@@ -267,9 +266,9 @@ func setUp() {
 			Name:      "storage-gcs-invalid",
 			Namespace: "marshmallow",
 		},
-		Spec: v1alpha1.PipelineResourceSpec{
+		Spec: resourcev1alpha1.PipelineResourceSpec{
 			Type: "storage",
-			Params: []v1alpha1.ResourceParam{{
+			Params: []resourcev1alpha1.ResourceParam{{
 				Name:  "Location",
 				Value: "gs://fake-bucket/rules",
 			}, {
@@ -278,65 +277,72 @@ func setUp() {
 			}},
 		},
 	}}
-	inputResourceInterfaces = make(map[string]v1alpha1.PipelineResourceInterface)
+	inputResourceInterfaces = make(map[string]v1beta1.PipelineResourceInterface)
 	for _, r := range rs {
-		ri, _ := v1alpha1.ResourceFromType(r, images)
+		ri, _ := resource.FromType(r, images)
 		inputResourceInterfaces[r.Name] = ri
 	}
 }
 
-func TestAddResourceToTask(t *testing.T) {
-
-	task := &v1alpha1.Task{
+func TestAddInputResourceToTask(t *testing.T) {
+	task := &v1beta1.Task{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "build-from-repo",
 			Namespace: "marshmallow",
 		},
-		Spec: v1alpha1.TaskSpec{
-			Inputs: gitInputs,
+		Spec: v1beta1.TaskSpec{
+			Resources: &v1beta1.TaskResources{
+				Inputs: gitInputs,
+			},
 		},
 	}
-	taskWithMultipleGitSources := &v1alpha1.Task{
+	taskWithMultipleGitSources := &v1beta1.Task{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "build-from-repo",
 			Namespace: "marshmallow",
 		},
-		Spec: v1alpha1.TaskSpec{
-			Inputs: multipleGitInputs,
+		Spec: v1beta1.TaskSpec{
+			Resources: &v1beta1.TaskResources{
+				Inputs: multipleGitInputs,
+			},
 		},
 	}
-	taskWithTargetPath := &v1alpha1.Task{
+	taskWithTargetPath := &v1beta1.Task{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "task-with-targetpath",
 			Namespace: "marshmallow",
 		},
-		Spec: v1alpha1.TaskSpec{
-			Inputs: gcsInputs,
+		Spec: v1beta1.TaskSpec{
+			Resources: &v1beta1.TaskResources{
+				Inputs: gcsInputs,
+			},
 		},
 	}
-	taskWithOptionalGitSources := &v1alpha1.Task{
+	taskWithOptionalGitSources := &v1beta1.Task{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "build-from-repo-with-optional-source",
 			Namespace: "marshmallow",
 		},
-		Spec: v1alpha1.TaskSpec{
-			Inputs: optionalGitInputs,
+		Spec: v1beta1.TaskSpec{
+			Resources: &v1beta1.TaskResources{
+				Inputs: optionalGitInputs,
+			},
 		},
 	}
 
-	taskRun := &v1alpha1.TaskRun{
+	taskRun := &v1beta1.TaskRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "build-from-repo-run",
 			Namespace: "marshmallow",
 		},
-		Spec: v1alpha1.TaskRunSpec{
-			TaskRef: &v1alpha1.TaskRef{
+		Spec: v1beta1.TaskRunSpec{
+			TaskRef: &v1beta1.TaskRef{
 				Name: "simpleTask",
 			},
-			Inputs: v1alpha1.TaskRunInputs{
-				Resources: []v1alpha1.TaskResourceBinding{{
-					PipelineResourceBinding: v1alpha1.PipelineResourceBinding{
-						ResourceRef: &v1alpha1.PipelineResourceRef{
+			Resources: &v1beta1.TaskRunResources{
+				Inputs: []v1beta1.TaskResourceBinding{{
+					PipelineResourceBinding: v1beta1.PipelineResourceBinding{
+						ResourceRef: &v1beta1.PipelineResourceRef{
 							Name: "the-git",
 						},
 						Name: "gitspace",
@@ -348,42 +354,47 @@ func TestAddResourceToTask(t *testing.T) {
 
 	for _, c := range []struct {
 		desc    string
-		task    *v1alpha1.Task
-		taskRun *v1alpha1.TaskRun
+		task    *v1beta1.Task
+		taskRun *v1beta1.TaskRun
 		wantErr bool
-		want    *v1alpha1.TaskSpec
+		want    *v1beta1.TaskSpec
 	}{{
 		desc:    "simple with default revision",
 		task:    task,
 		taskRun: taskRun,
 		wantErr: false,
-		want: &v1alpha1.TaskSpec{
-			Inputs: gitInputs,
-			Steps: []v1alpha1.Step{{Container: corev1.Container{
+		want: &v1beta1.TaskSpec{
+			Steps: []v1beta1.Step{{Container: corev1.Container{
 				Name:       "git-source-the-git-9l9zj",
 				Image:      "override-with-git:latest",
 				Command:    []string{"/ko-app/git-init"},
 				Args:       []string{"-url", "https://github.com/grafeas/kritis", "-revision", "master", "-path", "/workspace/gitspace"},
 				WorkingDir: "/workspace",
-				Env:        []corev1.EnvVar{{Name: "TEKTON_RESOURCE_NAME", Value: "the-git"}},
+				Env: []corev1.EnvVar{
+					{Name: "TEKTON_RESOURCE_NAME", Value: "the-git"},
+					{Name: "HOME", Value: pipeline.HomeDir},
+				},
 			}}},
+			Resources: &v1beta1.TaskResources{
+				Inputs: gitInputs,
+			},
 		},
 	}, {
 		desc: "simple with branch",
 		task: task,
-		taskRun: &v1alpha1.TaskRun{
+		taskRun: &v1beta1.TaskRun{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "build-from-repo-run",
 				Namespace: "marshmallow",
 			},
-			Spec: v1alpha1.TaskRunSpec{
-				TaskRef: &v1alpha1.TaskRef{
+			Spec: v1beta1.TaskRunSpec{
+				TaskRef: &v1beta1.TaskRef{
 					Name: "simpleTask",
 				},
-				Inputs: v1alpha1.TaskRunInputs{
-					Resources: []v1alpha1.TaskResourceBinding{{
-						PipelineResourceBinding: v1alpha1.PipelineResourceBinding{
-							ResourceRef: &v1alpha1.PipelineResourceRef{
+				Resources: &v1beta1.TaskRunResources{
+					Inputs: []v1beta1.TaskResourceBinding{{
+						PipelineResourceBinding: v1beta1.PipelineResourceBinding{
+							ResourceRef: &v1beta1.PipelineResourceRef{
 								Name: "the-git-with-branch",
 							},
 							Name: "gitspace",
@@ -393,40 +404,45 @@ func TestAddResourceToTask(t *testing.T) {
 			},
 		},
 		wantErr: false,
-		want: &v1alpha1.TaskSpec{
-			Inputs: gitInputs,
-			Steps: []v1alpha1.Step{{Container: corev1.Container{
+		want: &v1beta1.TaskSpec{
+			Steps: []v1beta1.Step{{Container: corev1.Container{
 				Name:       "git-source-the-git-with-branch-9l9zj",
 				Image:      "override-with-git:latest",
 				Command:    []string{"/ko-app/git-init"},
 				Args:       []string{"-url", "https://github.com/grafeas/kritis", "-revision", "branch", "-path", "/workspace/gitspace"},
 				WorkingDir: "/workspace",
-				Env:        []corev1.EnvVar{{Name: "TEKTON_RESOURCE_NAME", Value: "the-git-with-branch"}},
+				Env: []corev1.EnvVar{
+					{Name: "TEKTON_RESOURCE_NAME", Value: "the-git-with-branch"},
+					{Name: "HOME", Value: pipeline.HomeDir},
+				},
 			}}},
+			Resources: &v1beta1.TaskResources{
+				Inputs: gitInputs,
+			},
 		},
 	}, {
 		desc: "reuse git input resource and verify order",
 		task: taskWithMultipleGitSources,
-		taskRun: &v1alpha1.TaskRun{
+		taskRun: &v1beta1.TaskRun{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "build-from-repo-run",
 				Namespace: "marshmallow",
 			},
-			Spec: v1alpha1.TaskRunSpec{
-				TaskRef: &v1alpha1.TaskRef{
+			Spec: v1beta1.TaskRunSpec{
+				TaskRef: &v1beta1.TaskRef{
 					Name: "simpleTask",
 				},
-				Inputs: v1alpha1.TaskRunInputs{
-					Resources: []v1alpha1.TaskResourceBinding{{
-						PipelineResourceBinding: v1alpha1.PipelineResourceBinding{
-							ResourceRef: &v1alpha1.PipelineResourceRef{
+				Resources: &v1beta1.TaskRunResources{
+					Inputs: []v1beta1.TaskResourceBinding{{
+						PipelineResourceBinding: v1beta1.PipelineResourceBinding{
+							ResourceRef: &v1beta1.PipelineResourceRef{
 								Name: "the-git-with-branch",
 							},
 							Name: "gitspace",
 						},
 					}, {
-						PipelineResourceBinding: v1alpha1.PipelineResourceBinding{
-							ResourceRef: &v1alpha1.PipelineResourceRef{
+						PipelineResourceBinding: v1beta1.PipelineResourceBinding{
+							ResourceRef: &v1beta1.PipelineResourceRef{
 								Name: "the-git-with-branch",
 							},
 							Name: "git-duplicate-space",
@@ -436,40 +452,48 @@ func TestAddResourceToTask(t *testing.T) {
 			},
 		},
 		wantErr: false,
-		want: &v1alpha1.TaskSpec{
-			Inputs: multipleGitInputs,
-			Steps: []v1alpha1.Step{{Container: corev1.Container{
+		want: &v1beta1.TaskSpec{
+			Steps: []v1beta1.Step{{Container: corev1.Container{
 				Name:       "git-source-the-git-with-branch-mz4c7",
 				Image:      "override-with-git:latest",
 				Command:    []string{"/ko-app/git-init"},
 				Args:       []string{"-url", "https://github.com/grafeas/kritis", "-revision", "branch", "-path", "/workspace/gitspace"},
 				WorkingDir: "/workspace",
-				Env:        []corev1.EnvVar{{Name: "TEKTON_RESOURCE_NAME", Value: "the-git-with-branch"}},
+				Env: []corev1.EnvVar{
+					{Name: "TEKTON_RESOURCE_NAME", Value: "the-git-with-branch"},
+					{Name: "HOME", Value: pipeline.HomeDir},
+				},
 			}}, {Container: corev1.Container{
 				Name:       "git-source-the-git-with-branch-9l9zj",
 				Image:      "override-with-git:latest",
 				Command:    []string{"/ko-app/git-init"},
 				Args:       []string{"-url", "https://github.com/grafeas/kritis", "-revision", "branch", "-path", "/workspace/git-duplicate-space"},
 				WorkingDir: "/workspace",
-				Env:        []corev1.EnvVar{{Name: "TEKTON_RESOURCE_NAME", Value: "the-git-with-branch"}},
+				Env: []corev1.EnvVar{
+					{Name: "TEKTON_RESOURCE_NAME", Value: "the-git-with-branch"},
+					{Name: "HOME", Value: pipeline.HomeDir},
+				},
 			}}},
+			Resources: &v1beta1.TaskResources{
+				Inputs: multipleGitInputs,
+			},
 		},
 	}, {
 		desc: "set revision to default value 1",
 		task: task,
-		taskRun: &v1alpha1.TaskRun{
+		taskRun: &v1beta1.TaskRun{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "build-from-repo-run",
 				Namespace: "marshmallow",
 			},
-			Spec: v1alpha1.TaskRunSpec{
-				TaskRef: &v1alpha1.TaskRef{
+			Spec: v1beta1.TaskRunSpec{
+				TaskRef: &v1beta1.TaskRef{
 					Name: "simpleTask",
 				},
-				Inputs: v1alpha1.TaskRunInputs{
-					Resources: []v1alpha1.TaskResourceBinding{{
-						PipelineResourceBinding: v1alpha1.PipelineResourceBinding{
-							ResourceRef: &v1alpha1.PipelineResourceRef{
+				Resources: &v1beta1.TaskRunResources{
+					Inputs: []v1beta1.TaskResourceBinding{{
+						PipelineResourceBinding: v1beta1.PipelineResourceBinding{
+							ResourceRef: &v1beta1.PipelineResourceRef{
 								Name: "the-git",
 							},
 							Name: "gitspace",
@@ -479,33 +503,38 @@ func TestAddResourceToTask(t *testing.T) {
 			},
 		},
 		wantErr: false,
-		want: &v1alpha1.TaskSpec{
-			Inputs: gitInputs,
-			Steps: []v1alpha1.Step{{Container: corev1.Container{
+		want: &v1beta1.TaskSpec{
+			Steps: []v1beta1.Step{{Container: corev1.Container{
 				Name:       "git-source-the-git-9l9zj",
 				Image:      "override-with-git:latest",
 				Command:    []string{"/ko-app/git-init"},
 				Args:       []string{"-url", "https://github.com/grafeas/kritis", "-revision", "master", "-path", "/workspace/gitspace"},
 				WorkingDir: "/workspace",
-				Env:        []corev1.EnvVar{{Name: "TEKTON_RESOURCE_NAME", Value: "the-git"}},
+				Env: []corev1.EnvVar{
+					{Name: "TEKTON_RESOURCE_NAME", Value: "the-git"},
+					{Name: "HOME", Value: pipeline.HomeDir},
+				},
 			}}},
+			Resources: &v1beta1.TaskResources{
+				Inputs: gitInputs,
+			},
 		},
 	}, {
-		desc: "set revision to provdided branch",
+		desc: "set revision to provided branch",
 		task: task,
-		taskRun: &v1alpha1.TaskRun{
+		taskRun: &v1beta1.TaskRun{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "build-from-repo-run",
 				Namespace: "marshmallow",
 			},
-			Spec: v1alpha1.TaskRunSpec{
-				TaskRef: &v1alpha1.TaskRef{
+			Spec: v1beta1.TaskRunSpec{
+				TaskRef: &v1beta1.TaskRef{
 					Name: "simpleTask",
 				},
-				Inputs: v1alpha1.TaskRunInputs{
-					Resources: []v1alpha1.TaskResourceBinding{{
-						PipelineResourceBinding: v1alpha1.PipelineResourceBinding{
-							ResourceRef: &v1alpha1.PipelineResourceRef{
+				Resources: &v1beta1.TaskRunResources{
+					Inputs: []v1beta1.TaskResourceBinding{{
+						PipelineResourceBinding: v1beta1.PipelineResourceBinding{
+							ResourceRef: &v1beta1.PipelineResourceRef{
 								Name: "the-git-with-branch",
 							},
 							Name: "gitspace",
@@ -515,21 +544,26 @@ func TestAddResourceToTask(t *testing.T) {
 			},
 		},
 		wantErr: false,
-		want: &v1alpha1.TaskSpec{
-			Inputs: gitInputs,
-			Steps: []v1alpha1.Step{{Container: corev1.Container{
+		want: &v1beta1.TaskSpec{
+			Steps: []v1beta1.Step{{Container: corev1.Container{
 				Name:       "git-source-the-git-with-branch-9l9zj",
 				Image:      "override-with-git:latest",
 				Command:    []string{"/ko-app/git-init"},
 				Args:       []string{"-url", "https://github.com/grafeas/kritis", "-revision", "branch", "-path", "/workspace/gitspace"},
 				WorkingDir: "/workspace",
-				Env:        []corev1.EnvVar{{Name: "TEKTON_RESOURCE_NAME", Value: "the-git-with-branch"}},
+				Env: []corev1.EnvVar{
+					{Name: "TEKTON_RESOURCE_NAME", Value: "the-git-with-branch"},
+					{Name: "HOME", Value: pipeline.HomeDir},
+				},
 			}}},
+			Resources: &v1beta1.TaskResources{
+				Inputs: gitInputs,
+			},
 		},
 	}, {
 		desc: "git resource as input from previous task",
 		task: task,
-		taskRun: &v1alpha1.TaskRun{
+		taskRun: &v1beta1.TaskRun{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "get-from-git",
 				Namespace: "marshmallow",
@@ -538,11 +572,11 @@ func TestAddResourceToTask(t *testing.T) {
 					Name: "pipelinerun",
 				}},
 			},
-			Spec: v1alpha1.TaskRunSpec{
-				Inputs: v1alpha1.TaskRunInputs{
-					Resources: []v1alpha1.TaskResourceBinding{{
-						PipelineResourceBinding: v1alpha1.PipelineResourceBinding{
-							ResourceRef: &v1alpha1.PipelineResourceRef{
+			Spec: v1beta1.TaskRunSpec{
+				Resources: &v1beta1.TaskRunResources{
+					Inputs: []v1beta1.TaskResourceBinding{{
+						PipelineResourceBinding: v1beta1.PipelineResourceBinding{
+							ResourceRef: &v1beta1.PipelineResourceRef{
 								Name: "the-git",
 							},
 							Name: "gitspace",
@@ -553,9 +587,8 @@ func TestAddResourceToTask(t *testing.T) {
 			},
 		},
 		wantErr: false,
-		want: &v1alpha1.TaskSpec{
-			Inputs: gitInputs,
-			Steps: []v1alpha1.Step{{Container: corev1.Container{
+		want: &v1beta1.TaskSpec{
+			Steps: []v1beta1.Step{{Container: corev1.Container{
 				Name:    "create-dir-gitspace-mz4c7",
 				Image:   "busybox",
 				Command: []string{"mkdir", "-p", "/workspace/gitspace"},
@@ -571,23 +604,26 @@ func TestAddResourceToTask(t *testing.T) {
 					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{ClaimName: "pipelinerun-pvc"},
 				},
 			}},
+			Resources: &v1beta1.TaskResources{
+				Inputs: gitInputs,
+			},
 		},
 	}, {
 		desc: "simple with sslVerify false",
 		task: task,
-		taskRun: &v1alpha1.TaskRun{
+		taskRun: &v1beta1.TaskRun{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "build-from-repo-run",
 				Namespace: "marshmallow",
 			},
-			Spec: v1alpha1.TaskRunSpec{
-				TaskRef: &v1alpha1.TaskRef{
+			Spec: v1beta1.TaskRunSpec{
+				TaskRef: &v1beta1.TaskRef{
 					Name: "simpleTask",
 				},
-				Inputs: v1alpha1.TaskRunInputs{
-					Resources: []v1alpha1.TaskResourceBinding{{
-						PipelineResourceBinding: v1alpha1.PipelineResourceBinding{
-							ResourceRef: &v1alpha1.PipelineResourceRef{
+				Resources: &v1beta1.TaskRunResources{
+					Inputs: []v1beta1.TaskResourceBinding{{
+						PipelineResourceBinding: v1beta1.PipelineResourceBinding{
+							ResourceRef: &v1beta1.PipelineResourceRef{
 								Name: "the-git-with-sslVerify-false",
 							},
 							Name: "gitspace",
@@ -597,30 +633,35 @@ func TestAddResourceToTask(t *testing.T) {
 			},
 		},
 		wantErr: false,
-		want: &v1alpha1.TaskSpec{
-			Inputs: gitInputs,
-			Steps: []v1alpha1.Step{{Container: corev1.Container{
+		want: &v1beta1.TaskSpec{
+			Steps: []v1beta1.Step{{Container: corev1.Container{
 				Name:       "git-source-the-git-with-sslVerify-false-9l9zj",
 				Image:      "override-with-git:latest",
 				Command:    []string{"/ko-app/git-init"},
 				Args:       []string{"-url", "https://github.com/grafeas/kritis", "-revision", "branch", "-path", "/workspace/gitspace", "-sslVerify=false"},
 				WorkingDir: "/workspace",
-				Env:        []corev1.EnvVar{{Name: "TEKTON_RESOURCE_NAME", Value: "the-git-with-sslVerify-false"}},
+				Env: []corev1.EnvVar{
+					{Name: "TEKTON_RESOURCE_NAME", Value: "the-git-with-sslVerify-false"},
+					{Name: "HOME", Value: pipeline.HomeDir},
+				},
 			}}},
+			Resources: &v1beta1.TaskResources{
+				Inputs: gitInputs,
+			},
 		},
 	}, {
 		desc: "storage resource as input with target path",
 		task: taskWithTargetPath,
-		taskRun: &v1alpha1.TaskRun{
+		taskRun: &v1beta1.TaskRun{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "get-from-gcs",
 				Namespace: "marshmallow",
 			},
-			Spec: v1alpha1.TaskRunSpec{
-				Inputs: v1alpha1.TaskRunInputs{
-					Resources: []v1alpha1.TaskResourceBinding{{
-						PipelineResourceBinding: v1alpha1.PipelineResourceBinding{
-							ResourceRef: &v1alpha1.PipelineResourceRef{
+			Spec: v1beta1.TaskRunSpec{
+				Resources: &v1beta1.TaskRunResources{
+					Inputs: []v1beta1.TaskResourceBinding{{
+						PipelineResourceBinding: v1beta1.PipelineResourceBinding{
+							ResourceRef: &v1beta1.PipelineResourceRef{
 								Name: "storage1",
 							},
 							Name: "workspace",
@@ -630,9 +671,8 @@ func TestAddResourceToTask(t *testing.T) {
 			},
 		},
 		wantErr: false,
-		want: &v1alpha1.TaskSpec{
-			Inputs: gcsInputs,
-			Steps: []v1alpha1.Step{{Container: corev1.Container{
+		want: &v1beta1.TaskSpec{
+			Steps: []v1beta1.Step{{Container: corev1.Container{
 				Name:    "create-dir-storage1-9l9zj",
 				Image:   "busybox",
 				Command: []string{"mkdir", "-p", "/workspace/gcs-dir"},
@@ -649,11 +689,14 @@ gsutil cp gs://fake-bucket/rules.zip /workspace/gcs-dir
 					Image: "google/cloud-sdk",
 				},
 			}},
+			Resources: &v1beta1.TaskResources{
+				Inputs: gcsInputs,
+			},
 		},
 	}, {
 		desc: "storage resource as input from previous task",
 		task: taskWithTargetPath,
-		taskRun: &v1alpha1.TaskRun{
+		taskRun: &v1beta1.TaskRun{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "get-from-gcs",
 				Namespace: "marshmallow",
@@ -662,11 +705,11 @@ gsutil cp gs://fake-bucket/rules.zip /workspace/gcs-dir
 					Name: "pipelinerun",
 				}},
 			},
-			Spec: v1alpha1.TaskRunSpec{
-				Inputs: v1alpha1.TaskRunInputs{
-					Resources: []v1alpha1.TaskResourceBinding{{
-						PipelineResourceBinding: v1alpha1.PipelineResourceBinding{
-							ResourceRef: &v1alpha1.PipelineResourceRef{
+			Spec: v1beta1.TaskRunSpec{
+				Resources: &v1beta1.TaskRunResources{
+					Inputs: []v1beta1.TaskResourceBinding{{
+						PipelineResourceBinding: v1beta1.PipelineResourceBinding{
+							ResourceRef: &v1beta1.PipelineResourceRef{
 								Name: "storage1",
 							},
 							Name: "workspace",
@@ -677,9 +720,8 @@ gsutil cp gs://fake-bucket/rules.zip /workspace/gcs-dir
 			},
 		},
 		wantErr: false,
-		want: &v1alpha1.TaskSpec{
-			Inputs: gcsInputs,
-			Steps: []v1alpha1.Step{{Container: corev1.Container{
+		want: &v1beta1.TaskSpec{
+			Steps: []v1beta1.Step{{Container: corev1.Container{
 				Name:    "create-dir-workspace-mz4c7",
 				Image:   "busybox",
 				Command: []string{"mkdir", "-p", "/workspace/gcs-dir"},
@@ -695,20 +737,23 @@ gsutil cp gs://fake-bucket/rules.zip /workspace/gcs-dir
 					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{ClaimName: "pipelinerun-pvc"},
 				},
 			}},
+			Resources: &v1beta1.TaskResources{
+				Inputs: gcsInputs,
+			},
 		},
 	}, {
 		desc: "invalid gcs resource type name",
 		task: task,
-		taskRun: &v1alpha1.TaskRun{
+		taskRun: &v1beta1.TaskRun{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "get-from-invalid-gcs",
 				Namespace: "marshmallow",
 			},
-			Spec: v1alpha1.TaskRunSpec{
-				Inputs: v1alpha1.TaskRunInputs{
-					Resources: []v1alpha1.TaskResourceBinding{{
-						PipelineResourceBinding: v1alpha1.PipelineResourceBinding{
-							ResourceRef: &v1alpha1.PipelineResourceRef{
+			Spec: v1beta1.TaskRunSpec{
+				Resources: &v1beta1.TaskRunResources{
+					Inputs: []v1beta1.TaskResourceBinding{{
+						PipelineResourceBinding: v1beta1.PipelineResourceBinding{
+							ResourceRef: &v1beta1.PipelineResourceRef{
 								Name: "storage-gcs-invalid",
 							},
 							Name: "workspace",
@@ -721,16 +766,16 @@ gsutil cp gs://fake-bucket/rules.zip /workspace/gcs-dir
 	}, {
 		desc: "invalid gcs resource type name",
 		task: task,
-		taskRun: &v1alpha1.TaskRun{
+		taskRun: &v1beta1.TaskRun{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "get-from-invalid-gcs",
 				Namespace: "marshmallow",
 			},
-			Spec: v1alpha1.TaskRunSpec{
-				Inputs: v1alpha1.TaskRunInputs{
-					Resources: []v1alpha1.TaskResourceBinding{{
-						PipelineResourceBinding: v1alpha1.PipelineResourceBinding{
-							ResourceRef: &v1alpha1.PipelineResourceRef{
+			Spec: v1beta1.TaskRunSpec{
+				Resources: &v1beta1.TaskRunResources{
+					Inputs: []v1beta1.TaskResourceBinding{{
+						PipelineResourceBinding: v1beta1.PipelineResourceBinding{
+							ResourceRef: &v1beta1.PipelineResourceRef{
 								Name: "storage-gcs-invalid",
 							},
 							Name: "workspace",
@@ -742,15 +787,15 @@ gsutil cp gs://fake-bucket/rules.zip /workspace/gcs-dir
 		wantErr: true,
 	}, {
 		desc: "invalid resource name",
-		task: &v1alpha1.Task{
+		task: &v1beta1.Task{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "build-from-repo",
 				Namespace: "marshmallow",
 			},
-			Spec: v1alpha1.TaskSpec{
-				Inputs: &v1alpha1.Inputs{
-					Resources: []v1alpha1.TaskResource{{
-						ResourceDeclaration: v1alpha1.ResourceDeclaration{
+			Spec: v1beta1.TaskSpec{
+				Resources: &v1beta1.TaskResources{
+					Inputs: []v1beta1.TaskResource{{
+						ResourceDeclaration: v1beta1.ResourceDeclaration{
 							Name: "workspace-invalid",
 							Type: "git",
 						}}},
@@ -761,29 +806,31 @@ gsutil cp gs://fake-bucket/rules.zip /workspace/gcs-dir
 		wantErr: true,
 	}, {
 		desc: "cluster resource with plain text",
-		task: &v1alpha1.Task{
+		task: &v1beta1.Task{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "build-from-repo",
 				Namespace: "marshmallow",
 			},
-			Spec: v1alpha1.TaskSpec{
-				Inputs: clusterInputs,
+			Spec: v1beta1.TaskSpec{
+				Resources: &v1beta1.TaskResources{
+					Inputs: clusterInputs,
+				},
 			},
 		},
-		taskRun: &v1alpha1.TaskRun{
+		taskRun: &v1beta1.TaskRun{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "build-from-repo-run",
 				Namespace: "marshmallow",
 			},
-			Spec: v1alpha1.TaskRunSpec{
-				TaskRef: &v1alpha1.TaskRef{
+			Spec: v1beta1.TaskRunSpec{
+				TaskRef: &v1beta1.TaskRef{
 					Name: "build-from-repo",
 				},
-				Inputs: v1alpha1.TaskRunInputs{
-					Resources: []v1alpha1.TaskResourceBinding{{
-						PipelineResourceBinding: v1alpha1.PipelineResourceBinding{
+				Resources: &v1beta1.TaskRunResources{
+					Inputs: []v1beta1.TaskResourceBinding{{
+						PipelineResourceBinding: v1beta1.PipelineResourceBinding{
 							Name: "target-cluster",
-							ResourceRef: &v1alpha1.PipelineResourceRef{
+							ResourceRef: &v1beta1.PipelineResourceRef{
 								Name: "cluster3",
 							},
 						},
@@ -792,42 +839,46 @@ gsutil cp gs://fake-bucket/rules.zip /workspace/gcs-dir
 			},
 		},
 		wantErr: false,
-		want: &v1alpha1.TaskSpec{
-			Inputs: clusterInputs,
-			Steps: []v1alpha1.Step{{Container: corev1.Container{
+		want: &v1beta1.TaskSpec{
+			Steps: []v1beta1.Step{{Container: corev1.Container{
 				Name:    "kubeconfig-9l9zj",
 				Image:   "override-with-kubeconfig-writer:latest",
 				Command: []string{"/ko-app/kubeconfigwriter"},
 				Args: []string{
-					"-clusterConfig", `{"name":"cluster3","type":"cluster","url":"http://10.10.10.10","revision":"","username":"","password":"","namespace":"namespace1","token":"","Insecure":false,"cadata":"bXktY2EtY2VydAo=","secrets":null}`,
+					"-clusterConfig", `{"name":"cluster3","type":"cluster","url":"http://10.10.10.10","revision":"","username":"","password":"","namespace":"namespace1","token":"","Insecure":false,"cadata":"bXktY2EtY2VydAo=","clientKeyData":"Y2xpZW50LWtleS1kYXRh","clientCertificateData":"Y2xpZW50LWNlcnRpZmljYXRlLWRhdGE=","secrets":null}`,
 				},
 			}}},
+			Resources: &v1beta1.TaskResources{
+				Inputs: clusterInputs,
+			},
 		},
 	}, {
 		desc: "cluster resource with secrets",
-		task: &v1alpha1.Task{
+		task: &v1beta1.Task{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "build-from-repo",
 				Namespace: "marshmallow",
 			},
-			Spec: v1alpha1.TaskSpec{
-				Inputs: clusterInputs,
+			Spec: v1beta1.TaskSpec{
+				Resources: &v1beta1.TaskResources{
+					Inputs: clusterInputs,
+				},
 			},
 		},
-		taskRun: &v1alpha1.TaskRun{
+		taskRun: &v1beta1.TaskRun{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "build-from-repo-run",
 				Namespace: "marshmallow",
 			},
-			Spec: v1alpha1.TaskRunSpec{
-				TaskRef: &v1alpha1.TaskRef{
+			Spec: v1beta1.TaskRunSpec{
+				TaskRef: &v1beta1.TaskRef{
 					Name: "build-from-repo",
 				},
-				Inputs: v1alpha1.TaskRunInputs{
-					Resources: []v1alpha1.TaskResourceBinding{{
-						PipelineResourceBinding: v1alpha1.PipelineResourceBinding{
+				Resources: &v1beta1.TaskRunResources{
+					Inputs: []v1beta1.TaskResourceBinding{{
+						PipelineResourceBinding: v1beta1.PipelineResourceBinding{
 							Name: "target-cluster",
-							ResourceRef: &v1alpha1.PipelineResourceRef{
+							ResourceRef: &v1beta1.PipelineResourceRef{
 								Name: "cluster2",
 							},
 						},
@@ -836,14 +887,13 @@ gsutil cp gs://fake-bucket/rules.zip /workspace/gcs-dir
 			},
 		},
 		wantErr: false,
-		want: &v1alpha1.TaskSpec{
-			Inputs: clusterInputs,
-			Steps: []v1alpha1.Step{{Container: corev1.Container{
+		want: &v1beta1.TaskSpec{
+			Steps: []v1beta1.Step{{Container: corev1.Container{
 				Name:    "kubeconfig-9l9zj",
 				Image:   "override-with-kubeconfig-writer:latest",
 				Command: []string{"/ko-app/kubeconfigwriter"},
 				Args: []string{
-					"-clusterConfig", `{"name":"cluster2","type":"cluster","url":"http://10.10.10.10","revision":"","username":"","password":"","namespace":"","token":"","Insecure":false,"cadata":null,"secrets":[{"fieldName":"cadata","secretKey":"cadatakey","secretName":"secret1"}]}`,
+					"-clusterConfig", `{"name":"cluster2","type":"cluster","url":"http://10.10.10.10","revision":"","username":"","password":"","namespace":"","token":"","Insecure":false,"cadata":null,"clientKeyData":null,"clientCertificateData":null,"secrets":[{"fieldName":"cadata","secretKey":"cadatakey","secretName":"secret1"}]}`,
 				},
 				Env: []corev1.EnvVar{{
 					ValueFrom: &corev1.EnvVarSource{
@@ -857,23 +907,26 @@ gsutil cp gs://fake-bucket/rules.zip /workspace/gcs-dir
 					Name: "CADATA",
 				}},
 			}}},
+			Resources: &v1beta1.TaskResources{
+				Inputs: clusterInputs,
+			},
 		},
 	}, {
 		desc: "optional git input resource",
 		task: taskWithOptionalGitSources,
-		taskRun: &v1alpha1.TaskRun{
+		taskRun: &v1beta1.TaskRun{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "build-from-repo-with-optional-git",
 				Namespace: "marshmallow",
 			},
-			Spec: v1alpha1.TaskRunSpec{
-				TaskRef: &v1alpha1.TaskRef{
+			Spec: v1beta1.TaskRunSpec{
+				TaskRef: &v1beta1.TaskRef{
 					Name: "simpleTask",
 				},
-				Inputs: v1alpha1.TaskRunInputs{
-					Resources: []v1alpha1.TaskResourceBinding{{
-						PipelineResourceBinding: v1alpha1.PipelineResourceBinding{
-							ResourceRef: &v1alpha1.PipelineResourceRef{
+				Resources: &v1beta1.TaskRunResources{
+					Inputs: []v1beta1.TaskResourceBinding{{
+						PipelineResourceBinding: v1beta1.PipelineResourceBinding{
+							ResourceRef: &v1beta1.PipelineResourceRef{
 								Name: "the-git-with-branch",
 							},
 							Name: "gitspace",
@@ -883,16 +936,21 @@ gsutil cp gs://fake-bucket/rules.zip /workspace/gcs-dir
 			},
 		},
 		wantErr: false,
-		want: &v1alpha1.TaskSpec{
-			Inputs: optionalGitInputs,
-			Steps: []v1alpha1.Step{{Container: corev1.Container{
+		want: &v1beta1.TaskSpec{
+			Steps: []v1beta1.Step{{Container: corev1.Container{
 				Name:       "git-source-the-git-with-branch-9l9zj",
 				Image:      "override-with-git:latest",
 				Command:    []string{"/ko-app/git-init"},
 				Args:       []string{"-url", "https://github.com/grafeas/kritis", "-revision", "branch", "-path", "/workspace/gitspace"},
 				WorkingDir: "/workspace",
-				Env:        []corev1.EnvVar{{Name: "TEKTON_RESOURCE_NAME", Value: "the-git-with-branch"}},
+				Env: []corev1.EnvVar{
+					{Name: "TEKTON_RESOURCE_NAME", Value: "the-git-with-branch"},
+					{Name: "HOME", Value: pipeline.HomeDir},
+				},
 			}}},
+			Resources: &v1beta1.TaskResources{
+				Inputs: optionalGitInputs,
+			},
 		},
 	}} {
 		t.Run(c.desc, func(t *testing.T) {
@@ -905,7 +963,7 @@ gsutil cp gs://fake-bucket/rules.zip /workspace/gcs-dir
 			}
 			if got != nil {
 				if d := cmp.Diff(got, c.want); d != "" {
-					t.Errorf("Diff:\n%s", d)
+					t.Errorf("Diff:\n%s", diff.PrintWantGot(d))
 				}
 			}
 		})
@@ -913,50 +971,48 @@ gsutil cp gs://fake-bucket/rules.zip /workspace/gcs-dir
 }
 
 func TestStorageInputResource(t *testing.T) {
-	gcsStorageInputs := &v1alpha1.Inputs{
-		Resources: []v1alpha1.TaskResource{{
-			ResourceDeclaration: v1alpha1.ResourceDeclaration{
-				Name: "gcs-input-resource",
-				Type: "storage",
-			}}},
+	gcsStorageInputs := []v1beta1.TaskResource{{
+		ResourceDeclaration: v1beta1.ResourceDeclaration{
+			Name: "gcs-input-resource",
+			Type: "storage",
+		}},
 	}
-	optionalStorageInputs := &v1alpha1.Inputs{
-		Resources: []v1alpha1.TaskResource{{
-			ResourceDeclaration: v1alpha1.ResourceDeclaration{
-				Name:     "gcs-input-resource",
-				Type:     "storage",
-				Optional: true,
-			}}},
+	optionalStorageInputs := []v1beta1.TaskResource{{
+		ResourceDeclaration: v1beta1.ResourceDeclaration{
+			Name:     "gcs-input-resource",
+			Type:     "storage",
+			Optional: true,
+		}},
 	}
 
 	for _, c := range []struct {
 		desc    string
-		task    *v1alpha1.Task
-		taskRun *v1alpha1.TaskRun
+		task    *v1beta1.Task
+		taskRun *v1beta1.TaskRun
 		wantErr bool
-		want    *v1alpha1.TaskSpec
+		want    *v1beta1.TaskSpec
 	}{{
 		desc: "inputs with no resource spec and resource ref",
-		task: &v1alpha1.Task{
-			Spec: v1alpha1.TaskSpec{
-				Inputs: &v1alpha1.Inputs{
-					Resources: []v1alpha1.TaskResource{{
-						ResourceDeclaration: v1alpha1.ResourceDeclaration{
+		task: &v1beta1.Task{
+			Spec: v1beta1.TaskSpec{
+				Resources: &v1beta1.TaskResources{
+					Inputs: []v1beta1.TaskResource{{
+						ResourceDeclaration: v1beta1.ResourceDeclaration{
 							Name: "gcs-input-resource",
 							Type: "storage",
 						}}},
 				},
 			},
 		},
-		taskRun: &v1alpha1.TaskRun{
+		taskRun: &v1beta1.TaskRun{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "get-storage-run",
 				Namespace: "marshmallow",
 			},
-			Spec: v1alpha1.TaskRunSpec{
-				Inputs: v1alpha1.TaskRunInputs{
-					Resources: []v1alpha1.TaskResourceBinding{{
-						PipelineResourceBinding: v1alpha1.PipelineResourceBinding{
+			Spec: v1beta1.TaskRunSpec{
+				Resources: &v1beta1.TaskRunResources{
+					Inputs: []v1beta1.TaskResourceBinding{{
+						PipelineResourceBinding: v1beta1.PipelineResourceBinding{
 							Name: "gcs-input-resource",
 						},
 					}},
@@ -966,24 +1022,26 @@ func TestStorageInputResource(t *testing.T) {
 		wantErr: true,
 	}, {
 		desc: "inputs with resource spec and no resource ref",
-		task: &v1alpha1.Task{
-			Spec: v1alpha1.TaskSpec{
-				Inputs: gcsStorageInputs,
+		task: &v1beta1.Task{
+			Spec: v1beta1.TaskSpec{
+				Resources: &v1beta1.TaskResources{
+					Inputs: gcsStorageInputs,
+				},
 			},
 		},
-		taskRun: &v1alpha1.TaskRun{
+		taskRun: &v1beta1.TaskRun{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "get-storage-run",
 				Namespace: "marshmallow",
 			},
-			Spec: v1alpha1.TaskRunSpec{
-				Inputs: v1alpha1.TaskRunInputs{
-					Resources: []v1alpha1.TaskResourceBinding{{
-						PipelineResourceBinding: v1alpha1.PipelineResourceBinding{
+			Spec: v1beta1.TaskRunSpec{
+				Resources: &v1beta1.TaskRunResources{
+					Inputs: []v1beta1.TaskResourceBinding{{
+						PipelineResourceBinding: v1beta1.PipelineResourceBinding{
 							Name: "gcs-input-resource",
-							ResourceSpec: &v1alpha1.PipelineResourceSpec{
-								Type: v1alpha1.PipelineResourceTypeStorage,
-								Params: []v1alpha1.ResourceParam{{
+							ResourceSpec: &resourcev1alpha1.PipelineResourceSpec{
+								Type: resourcev1alpha1.PipelineResourceTypeStorage,
+								Params: []resourcev1alpha1.ResourceParam{{
 									Name:  "Location",
 									Value: "gs://fake-bucket/rules.zip",
 								}, {
@@ -997,9 +1055,8 @@ func TestStorageInputResource(t *testing.T) {
 			},
 		},
 		wantErr: false,
-		want: &v1alpha1.TaskSpec{
-			Inputs: gcsStorageInputs,
-			Steps: []v1alpha1.Step{{Container: corev1.Container{
+		want: &v1beta1.TaskSpec{
+			Steps: []v1beta1.Step{{Container: corev1.Container{
 				Name:    "create-dir-gcs-input-resource-9l9zj",
 				Image:   "busybox",
 				Command: []string{"mkdir", "-p", "/workspace/gcs-input-resource"},
@@ -1016,45 +1073,50 @@ gsutil cp gs://fake-bucket/rules.zip /workspace/gcs-input-resource
 					Image: "google/cloud-sdk",
 				},
 			}},
+			Resources: &v1beta1.TaskResources{
+				Inputs: gcsStorageInputs,
+			},
 		},
 	}, {
 		desc: "no inputs",
-		task: &v1alpha1.Task{
+		task: &v1beta1.Task{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "get-storage",
 				Namespace: "marshmallow",
 			},
 		},
-		taskRun: &v1alpha1.TaskRun{
+		taskRun: &v1beta1.TaskRun{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "get-storage-run",
 				Namespace: "marshmallow",
 			},
 		},
 		wantErr: false,
-		want:    &v1alpha1.TaskSpec{},
+		want:    &v1beta1.TaskSpec{},
 	}, {
 		desc: "storage resource as input",
-		task: &v1alpha1.Task{
+		task: &v1beta1.Task{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "get-storage",
 				Namespace: "marshmallow",
 			},
-			Spec: v1alpha1.TaskSpec{
-				Inputs: gcsStorageInputs,
+			Spec: v1beta1.TaskSpec{
+				Resources: &v1beta1.TaskResources{
+					Inputs: gcsStorageInputs,
+				},
 			},
 		},
-		taskRun: &v1alpha1.TaskRun{
+		taskRun: &v1beta1.TaskRun{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "get-storage-run",
 				Namespace: "marshmallow",
 			},
-			Spec: v1alpha1.TaskRunSpec{
-				Inputs: v1alpha1.TaskRunInputs{
-					Resources: []v1alpha1.TaskResourceBinding{{
-						PipelineResourceBinding: v1alpha1.PipelineResourceBinding{
+			Spec: v1beta1.TaskRunSpec{
+				Resources: &v1beta1.TaskRunResources{
+					Inputs: []v1beta1.TaskResourceBinding{{
+						PipelineResourceBinding: v1beta1.PipelineResourceBinding{
 							Name: "gcs-input-resource",
-							ResourceRef: &v1alpha1.PipelineResourceRef{
+							ResourceRef: &v1beta1.PipelineResourceRef{
 								Name: "storage-gcs-keys",
 							},
 						},
@@ -1063,9 +1125,8 @@ gsutil cp gs://fake-bucket/rules.zip /workspace/gcs-input-resource
 			},
 		},
 		wantErr: false,
-		want: &v1alpha1.TaskSpec{
-			Inputs: gcsStorageInputs,
-			Steps: []v1alpha1.Step{{Container: corev1.Container{
+		want: &v1beta1.TaskSpec{
+			Steps: []v1beta1.Step{{Container: corev1.Container{
 				Name:    "create-dir-storage-gcs-keys-9l9zj",
 				Image:   "busybox",
 				Command: []string{"mkdir", "-p", "/workspace/gcs-input-resource"},
@@ -1088,6 +1149,9 @@ gsutil rsync -d -r gs://fake-bucket/rules.zip /workspace/gcs-input-resource
 					},
 				},
 			}},
+			Resources: &v1beta1.TaskResources{
+				Inputs: gcsStorageInputs,
+			},
 			Volumes: []corev1.Volume{{
 				Name:         "volume-storage-gcs-keys-secret-name",
 				VolumeSource: corev1.VolumeSource{Secret: &corev1.SecretVolumeSource{SecretName: "secret-name"}},
@@ -1098,27 +1162,31 @@ gsutil rsync -d -r gs://fake-bucket/rules.zip /workspace/gcs-input-resource
 		},
 	}, {
 		desc: "optional inputs with no resource spec and no resource ref",
-		task: &v1alpha1.Task{
-			Spec: v1alpha1.TaskSpec{
-				Inputs: optionalStorageInputs,
+		task: &v1beta1.Task{
+			Spec: v1beta1.TaskSpec{
+				Resources: &v1beta1.TaskResources{
+					Inputs: optionalStorageInputs,
+				},
 			},
 		},
-		taskRun: &v1alpha1.TaskRun{
+		taskRun: &v1beta1.TaskRun{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "get-storage-run-with-optional-inputs",
 				Namespace: "marshmallow",
 			},
-			Spec: v1alpha1.TaskRunSpec{
-				Inputs: v1alpha1.TaskRunInputs{
-					Resources: nil,
-					Params:    nil,
+			Spec: v1beta1.TaskRunSpec{
+				Params: nil,
+				Resources: &v1beta1.TaskRunResources{
+					Inputs: nil,
 				},
 			},
 		},
 		wantErr: false,
-		want: &v1alpha1.TaskSpec{
-			Inputs: optionalStorageInputs,
-			Steps:  nil,
+		want: &v1beta1.TaskSpec{
+			Steps: nil,
+			Resources: &v1beta1.TaskResources{
+				Inputs: optionalStorageInputs,
+			},
 		},
 	}} {
 		t.Run(c.desc, func(t *testing.T) {
@@ -1130,38 +1198,44 @@ gsutil rsync -d -r gs://fake-bucket/rules.zip /workspace/gcs-input-resource
 				t.Errorf("Test: %q; AddInputResource() error = %v, WantErr %v", c.desc, err, c.wantErr)
 			}
 			if d := cmp.Diff(c.want, got); d != "" {
-				t.Errorf("Didn't get expected Task spec (-want, +got): %s", d)
+				t.Errorf("Didn't get expected Task spec %s", diff.PrintWantGot(d))
 			}
 		})
 	}
 }
 
 func TestAddStepsToTaskWithBucketFromConfigMap(t *testing.T) {
-	task := &v1alpha1.Task{
+	task := &v1beta1.Task{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "build-from-repo",
 			Namespace: "marshmallow",
 		},
-		Spec: v1alpha1.TaskSpec{
-			Inputs: gitInputs,
+		Spec: v1beta1.TaskSpec{
+			Resources: &v1beta1.TaskResources{
+				Inputs: gitInputs,
+			},
 		},
 	}
-	taskWithTargetPath := &v1alpha1.Task{
+	taskWithTargetPath := &v1beta1.Task{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "task-with-targetpath",
 			Namespace: "marshmallow",
 		},
-		Spec: v1alpha1.TaskSpec{
-			Inputs: gcsInputs,
+		Spec: v1beta1.TaskSpec{
+			Resources: &v1beta1.TaskResources{
+				Inputs: gcsInputs,
+			},
 		},
 	}
-	taskWithMultipleGcsInputs := &v1alpha1.Task{
+	taskWithMultipleGcsInputs := &v1beta1.Task{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "task-with-multiple-gcs-inputs",
 			Namespace: "marshmallow",
 		},
-		Spec: v1alpha1.TaskSpec{
-			Inputs: multipleGcsInputs,
+		Spec: v1beta1.TaskSpec{
+			Resources: &v1beta1.TaskResources{
+				Inputs: multipleGcsInputs,
+			},
 		},
 	}
 
@@ -1185,13 +1259,13 @@ func TestAddStepsToTaskWithBucketFromConfigMap(t *testing.T) {
 
 	for _, c := range []struct {
 		desc    string
-		task    *v1alpha1.Task
-		taskRun *v1alpha1.TaskRun
-		want    *v1alpha1.TaskSpec
+		task    *v1beta1.Task
+		taskRun *v1beta1.TaskRun
+		want    *v1beta1.TaskSpec
 	}{{
 		desc: "git resource as input from previous task - copy to bucket",
 		task: task,
-		taskRun: &v1alpha1.TaskRun{
+		taskRun: &v1beta1.TaskRun{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "get-from-git",
 				Namespace: "marshmallow",
@@ -1200,11 +1274,11 @@ func TestAddStepsToTaskWithBucketFromConfigMap(t *testing.T) {
 					Name: "pipelinerun",
 				}},
 			},
-			Spec: v1alpha1.TaskRunSpec{
-				Inputs: v1alpha1.TaskRunInputs{
-					Resources: []v1alpha1.TaskResourceBinding{{
-						PipelineResourceBinding: v1alpha1.PipelineResourceBinding{
-							ResourceRef: &v1alpha1.PipelineResourceRef{
+			Spec: v1beta1.TaskRunSpec{
+				Resources: &v1beta1.TaskRunResources{
+					Inputs: []v1beta1.TaskResourceBinding{{
+						PipelineResourceBinding: v1beta1.PipelineResourceBinding{
+							ResourceRef: &v1beta1.PipelineResourceRef{
 								Name: "the-git",
 							},
 							Name: "gitspace",
@@ -1214,9 +1288,8 @@ func TestAddStepsToTaskWithBucketFromConfigMap(t *testing.T) {
 				},
 			},
 		},
-		want: &v1alpha1.TaskSpec{
-			Inputs: gitInputs,
-			Steps: []v1alpha1.Step{{Container: corev1.Container{
+		want: &v1beta1.TaskSpec{
+			Steps: []v1beta1.Step{{Container: corev1.Container{
 				Name:    "artifact-dest-mkdir-gitspace-9l9zj",
 				Image:   "busybox",
 				Command: []string{"mkdir", "-p", "/workspace/gitspace"},
@@ -1228,12 +1301,15 @@ func TestAddStepsToTaskWithBucketFromConfigMap(t *testing.T) {
 				Env:          gcsEnv,
 				VolumeMounts: gcsVolumeMounts,
 			}}},
+			Resources: &v1beta1.TaskResources{
+				Inputs: gitInputs,
+			},
 			Volumes: gcsVolumes,
 		},
 	}, {
 		desc: "storage resource as input from previous task - copy from bucket",
 		task: taskWithTargetPath,
-		taskRun: &v1alpha1.TaskRun{
+		taskRun: &v1beta1.TaskRun{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "get-from-gcs",
 				Namespace: "marshmallow",
@@ -1242,11 +1318,11 @@ func TestAddStepsToTaskWithBucketFromConfigMap(t *testing.T) {
 					Name: "pipelinerun",
 				}},
 			},
-			Spec: v1alpha1.TaskRunSpec{
-				Inputs: v1alpha1.TaskRunInputs{
-					Resources: []v1alpha1.TaskResourceBinding{{
-						PipelineResourceBinding: v1alpha1.PipelineResourceBinding{
-							ResourceRef: &v1alpha1.PipelineResourceRef{
+			Spec: v1beta1.TaskRunSpec{
+				Resources: &v1beta1.TaskRunResources{
+					Inputs: []v1beta1.TaskResourceBinding{{
+						PipelineResourceBinding: v1beta1.PipelineResourceBinding{
+							ResourceRef: &v1beta1.PipelineResourceRef{
 								Name: "storage1",
 							},
 							Name: "workspace",
@@ -1256,9 +1332,8 @@ func TestAddStepsToTaskWithBucketFromConfigMap(t *testing.T) {
 				},
 			},
 		},
-		want: &v1alpha1.TaskSpec{
-			Inputs: gcsInputs,
-			Steps: []v1alpha1.Step{{Container: corev1.Container{
+		want: &v1beta1.TaskSpec{
+			Steps: []v1beta1.Step{{Container: corev1.Container{
 				Name:    "artifact-dest-mkdir-workspace-mssqb",
 				Image:   "busybox",
 				Command: []string{"mkdir", "-p", "/workspace/gcs-dir"},
@@ -1270,12 +1345,15 @@ func TestAddStepsToTaskWithBucketFromConfigMap(t *testing.T) {
 				Env:          gcsEnv,
 				VolumeMounts: gcsVolumeMounts,
 			}}},
+			Resources: &v1beta1.TaskResources{
+				Inputs: gcsInputs,
+			},
 			Volumes: gcsVolumes,
 		},
 	}, {
 		desc: "storage resource with multiple inputs from previous task - copy from bucket",
 		task: taskWithMultipleGcsInputs,
-		taskRun: &v1alpha1.TaskRun{
+		taskRun: &v1beta1.TaskRun{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "get-from-gcs",
 				Namespace: "marshmallow",
@@ -1284,19 +1362,19 @@ func TestAddStepsToTaskWithBucketFromConfigMap(t *testing.T) {
 					Name: "pipelinerun",
 				}},
 			},
-			Spec: v1alpha1.TaskRunSpec{
-				Inputs: v1alpha1.TaskRunInputs{
-					Resources: []v1alpha1.TaskResourceBinding{{
-						PipelineResourceBinding: v1alpha1.PipelineResourceBinding{
-							ResourceRef: &v1alpha1.PipelineResourceRef{
+			Spec: v1beta1.TaskRunSpec{
+				Resources: &v1beta1.TaskRunResources{
+					Inputs: []v1beta1.TaskResourceBinding{{
+						PipelineResourceBinding: v1beta1.PipelineResourceBinding{
+							ResourceRef: &v1beta1.PipelineResourceRef{
 								Name: "storage1",
 							},
 							Name: "workspace",
 						},
 						Paths: []string{"prev-task-path"},
 					}, {
-						PipelineResourceBinding: v1alpha1.PipelineResourceBinding{
-							ResourceRef: &v1alpha1.PipelineResourceRef{
+						PipelineResourceBinding: v1beta1.PipelineResourceBinding{
+							ResourceRef: &v1beta1.PipelineResourceRef{
 								Name: "storage2",
 							},
 							Name: "workspace2",
@@ -1306,9 +1384,8 @@ func TestAddStepsToTaskWithBucketFromConfigMap(t *testing.T) {
 				},
 			},
 		},
-		want: &v1alpha1.TaskSpec{
-			Inputs: multipleGcsInputs,
-			Steps: []v1alpha1.Step{{Container: corev1.Container{
+		want: &v1beta1.TaskSpec{
+			Steps: []v1beta1.Step{{Container: corev1.Container{
 				Name:    "artifact-dest-mkdir-workspace-vr6ds",
 				Image:   "busybox",
 				Command: []string{"mkdir", "-p", "/workspace/gcs-dir"},
@@ -1331,6 +1408,9 @@ func TestAddStepsToTaskWithBucketFromConfigMap(t *testing.T) {
 				Env:          gcsEnv,
 				VolumeMounts: gcsVolumeMounts,
 			}}},
+			Resources: &v1beta1.TaskResources{
+				Inputs: multipleGcsInputs,
+			},
 			Volumes: gcsVolumes,
 		},
 	}} {
@@ -1354,22 +1434,25 @@ func TestAddStepsToTaskWithBucketFromConfigMap(t *testing.T) {
 				t.Errorf("Test: %q; AddInputResource() error = %v", c.desc, err)
 			}
 			if d := cmp.Diff(c.want, got); d != "" {
-				t.Errorf("Didn't get expected TaskSpec (-want, +got): %s", d)
+				t.Errorf("Didn't get expected TaskSpec %s", diff.PrintWantGot(d))
 			}
 		})
 	}
 }
 
-func mockResolveTaskResources(taskRun *v1alpha1.TaskRun) map[string]v1alpha1.PipelineResourceInterface {
-	resolved := make(map[string]v1alpha1.PipelineResourceInterface)
-	for _, r := range taskRun.Spec.Inputs.Resources {
-		var i v1alpha1.PipelineResourceInterface
+func mockResolveTaskResources(taskRun *v1beta1.TaskRun) map[string]v1beta1.PipelineResourceInterface {
+	resolved := make(map[string]v1beta1.PipelineResourceInterface)
+	if taskRun.Spec.Resources == nil {
+		return resolved
+	}
+	for _, r := range taskRun.Spec.Resources.Inputs {
+		var i v1beta1.PipelineResourceInterface
 		switch {
 		case r.ResourceRef != nil && r.ResourceRef.Name != "":
 			i = inputResourceInterfaces[r.ResourceRef.Name]
 			resolved[r.Name] = i
 		case r.ResourceSpec != nil:
-			i, _ = v1alpha1.ResourceFromType(&v1alpha1.PipelineResource{
+			i, _ = resource.FromType(&resourcev1alpha1.PipelineResource{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: r.Name,
 				},

@@ -30,7 +30,6 @@ func TestTypesImplements(t *testing.T) {
 	}{
 		{instance: &AddressableType{}, iface: &Addressable{}},
 		{instance: &AddressableType{}, iface: &v1beta1.Addressable{}},
-		{instance: &KResource{}, iface: &Conditions{}},
 		{instance: &LegacyTarget{}, iface: &LegacyTargetable{}},
 		{instance: &Target{}, iface: &Targetable{}},
 		{instance: &Binding{}, iface: &Binding{}},

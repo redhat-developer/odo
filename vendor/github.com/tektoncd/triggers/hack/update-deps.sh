@@ -13,16 +13,45 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 set -o errexit
 set -o nounset
 set -o pipefail
 
-source $(dirname $0)/../vendor/github.com/tektoncd/plumbing/scripts/library.sh
+source $(git rev-parse --show-toplevel)/vendor/github.com/tektoncd/plumbing/scripts/library.sh
 
 cd ${REPO_ROOT_DIR}
 
-# Ensure we have everything we need under vendor/
-dep ensure
+VERSION="master"
 
-update_licenses third_party/VENDOR-LICENSE "./cmd/*"
+# The list of dependencies that we track at HEAD and periodically
+# float forward in this repository.
+FLOATING_DEPS=(
+  "knative.dev/pkg@${VERSION}"
+  "knative.dev/caching@${VERSION}"
+  "knative.dev/serving@${VERSION}"
+  "knative.dev/eventing@${VERSION}"
+  "knative.dev/eventing-contrib@${VERSION}"
+)
+
+# Parse flags to determine any we should pass to dep.
+GO_GET=0
+while [[ $# -ne 0 ]]; do
+  parameter=$1
+  case ${parameter} in
+    --upgrade) GO_GET=1 ;;
+    *) abort "unknown option ${parameter}" ;;
+  esac
+  shift
+done
+readonly GO_GET
+
+if (( GO_GET )); then
+  go get -d ${FLOATING_DEPS[@]}
+fi
+
+
+# Prune modules.
+go mod tidy
+go mod vendor
+
+update_licenses third_party/

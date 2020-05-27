@@ -18,12 +18,11 @@ limitations under the License.
 package client
 
 import (
-	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
-	"reflect"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 const (
@@ -33,80 +32,76 @@ const (
 
 func TestNewClient(t *testing.T) {
 	datas := []struct {
+		name      string
 		customDir string
 		expPath   string
 		expErr    bool
 	}{
-		{ // default dir
-			"", "mockArtifactDir/metadata.json", false,
-		}, { // custom dir
-			"a", "a/metadata.json", false,
-		},
+		{"default dir", "", "mockArtifactDir/metadata.json", false},
+		{"custom dir", "a", "a/metadata.json", false},
 	}
 
 	for _, data := range datas {
-		dir := data.customDir
-		if data.customDir == "" { // use env var
-			oriArtifactDir := os.Getenv("ARTIFACTS")
-			defer os.Setenv("ARTIFACTS", oriArtifactDir)
-			os.Setenv("ARTIFACTS", mockArtifactEnv)
-			dir = mockArtifactEnv
-		}
-		os.RemoveAll(dir)
-		defer os.RemoveAll(dir)
-		c, err := NewClient(data.customDir)
-		errMsg := fmt.Sprintf("Testing new client with dir: %q", data.customDir)
-		if (err == nil && data.expErr) || (err != nil && !data.expErr) {
-			log.Fatalf("%s\ngot: '%v', want: '%v'", errMsg, err, data.expErr)
-		}
-		if c.Path != data.expPath {
-			log.Fatalf("%s\ngot: %q, want: %q", errMsg, c.Path, data.expPath)
-		}
-		if _, err := os.Stat(dir); os.IsNotExist(err) {
-			log.Fatalf("%s\nDirectory %q wasn't created", errMsg, dir)
-		}
-
+		t.Run(data.name, func(t *testing.T) {
+			dir := data.customDir
+			if data.customDir == "" { // use env var
+				oriArtifactDir := os.Getenv("ARTIFACTS")
+				defer os.Setenv("ARTIFACTS", oriArtifactDir)
+				os.Setenv("ARTIFACTS", mockArtifactEnv)
+				dir = mockArtifactEnv
+			}
+			os.RemoveAll(dir)
+			defer os.RemoveAll(dir)
+			c, err := New(data.customDir)
+			if (err == nil && data.expErr) || (err != nil && !data.expErr) {
+				t.Errorf("Err = %v; want?: %v", err, data.expErr)
+			}
+			if c.Path != data.expPath {
+				t.Errorf("Path = %q, want: %q", c.Path, data.expPath)
+			}
+			if _, err := os.Stat(dir); os.IsNotExist(err) {
+				t.Errorf("Directory %q wasn't created", dir)
+			}
+		})
 	}
 }
 
 func TestSync(t *testing.T) {
 	datas := []struct {
+		name        string
 		fileExist   bool
 		content     string
 		expMetadata map[string]string
 		expErr      bool
 	}{
-		{ // file not exist
-			false, "", make(map[string]string), false,
-		}, { // file exist but empty
-			true, "", make(map[string]string), true,
-		}, { // file exist, invalid
-			true, "{", make(map[string]string), true,
-		}, { // file exist valid
-			true, "{}", make(map[string]string), false,
-		},
+		{"file not exist", false, "", make(map[string]string), false},
+		{"file exist but empty", true, "", make(map[string]string), true},
+		{"file exist, invalid", true, "{", make(map[string]string), true},
+		{"file exist valid", true, "{}", make(map[string]string), false},
 	}
 
 	for _, data := range datas {
-		c, _ := NewClient(fakeArtifactDir)
-		os.Remove(c.Path)
-		if data.fileExist {
-			defer os.Remove(c.Path)
-			ioutil.WriteFile(c.Path, []byte(data.content), 0644)
-		}
-		err := c.sync()
-		errMsg := fmt.Sprintf("Testing syncing with file exist: %v, content: %q", data.fileExist, data.content)
-		if (err == nil && data.expErr) || (err != nil && !data.expErr) {
-			log.Fatalf("%s\ngot: '%v', want: '%v'", errMsg, err, data.expErr)
-		}
-		if !reflect.DeepEqual(c.MetaData, data.expMetadata) {
-			log.Fatalf("%s\ngot: '%v', want: '%v'", errMsg, c.MetaData, data.expMetadata)
-		}
+		t.Run(data.name, func(t *testing.T) {
+			c, _ := New(fakeArtifactDir)
+			os.Remove(c.Path)
+			if data.fileExist {
+				defer os.Remove(c.Path)
+				ioutil.WriteFile(c.Path, []byte(data.content), 0644)
+			}
+			err := c.sync()
+			if (err == nil && data.expErr) || (err != nil && !data.expErr) {
+				t.Errorf("Err = %v, want?: %v", err, data.expErr)
+			}
+			if got, want := c.metadata, data.expMetadata; !cmp.Equal(got, want) {
+				t.Error("Metadata diff(-want,+got):\n", cmp.Diff(want, got))
+			}
+		})
 	}
 }
 
 func TestSet(t *testing.T) {
 	datas := []struct {
+		name        string
 		metadata    map[string]string
 		content     string
 		setKey      string
@@ -114,36 +109,32 @@ func TestSet(t *testing.T) {
 		expMetadata map[string]string
 		expErr      bool
 	}{
-		{ // sync failed
-			make(map[string]string), "", "", "", make(map[string]string), true,
-		}, { // set normal key
-			make(map[string]string), "{}", "a", "b", map[string]string{"a": "b"}, false,
-		}, { // override
-			make(map[string]string), "{\"a\":\"b\"}", "a", "c", map[string]string{"a": "c"}, false,
-		}, { // ignore old client val
-			map[string]string{"a": "b"}, "{}", "c", "d", map[string]string{"c": "d"}, false,
-		},
+		{"sync failed", make(map[string]string), "", "", "", make(map[string]string), true},
+		{"set normal key", make(map[string]string), "{}", "a", "b", map[string]string{"a": "b"}, false},
+		{"override", make(map[string]string), `{"a":"b"}`, "a", "c", map[string]string{"a": "c"}, false},
+		{"ignore old client val", map[string]string{"a": "b"}, "{}", "c", "d", map[string]string{"c": "d"}, false},
 	}
 
 	for _, data := range datas {
-		c, _ := NewClient(fakeArtifactDir)
-		defer os.Remove(c.Path)
-		ioutil.WriteFile(c.Path, []byte(data.content), 0644)
+		t.Run(data.name, func(t *testing.T) {
+			c, _ := New(fakeArtifactDir)
+			defer os.Remove(c.Path)
+			ioutil.WriteFile(c.Path, []byte(data.content), 0644)
 
-		err := c.Set(data.setKey, data.setVal)
-		errMsg := fmt.Sprintf("Testing set %q:%q, with metadata: %v, content: %q",
-			data.setKey, data.setVal, data.metadata, data.content)
-		if (err == nil && data.expErr) || (err != nil && !data.expErr) {
-			log.Fatalf("%s\ngot: '%v', want: '%v'", errMsg, err, data.expErr)
-		}
-		if !reflect.DeepEqual(c.MetaData, data.expMetadata) {
-			log.Fatalf("%s\ngot: '%v', want: '%v'", errMsg, c.MetaData, data.expMetadata)
-		}
+			err := c.Set(data.setKey, data.setVal)
+			if (err == nil && data.expErr) || (err != nil && !data.expErr) {
+				t.Errorf("Error = %v, want?: %v", err, data.expErr)
+			}
+			if got, want := c.metadata, data.expMetadata; !cmp.Equal(got, want) {
+				t.Error("Metadata mismatch(-want,+got):\n", cmp.Diff(want, got))
+			}
+		})
 	}
 }
 
 func TestGet(t *testing.T) {
 	datas := []struct {
+		name        string
 		metadata    map[string]string
 		content     string
 		getKey      string
@@ -151,33 +142,28 @@ func TestGet(t *testing.T) {
 		expVal      string
 		expErr      bool
 	}{
-		{ // sync failed
-			make(map[string]string), "", "", make(map[string]string), "", true,
-		}, { // get normal key
-			make(map[string]string), "{\"a\":\"b\"}", "a", map[string]string{"a": "b"}, "b", false,
-		}, { // key not exist
-			make(map[string]string), "{\"a\":\"b\"}", "c", map[string]string{"a": "b"}, "", true,
-		}, { // ignore old client val
-			map[string]string{"a": "c"}, "{\"a\":\"b\"}", "a", map[string]string{"a": "b"}, "b", false,
-		},
+		{"sync failed", make(map[string]string), "", "", make(map[string]string), "", true},
+		{"get normal key", make(map[string]string), `{"a":"b"}`, "a", map[string]string{"a": "b"}, "b", false},
+		{"key not exist", make(map[string]string), `{"a":"b"}`, "c", map[string]string{"a": "b"}, "", true},
+		{"ignore old client val", map[string]string{"a": "c"}, `{"a":"b"}`, "a", map[string]string{"a": "b"}, "b", false},
 	}
 
 	for _, data := range datas {
-		c, _ := NewClient(fakeArtifactDir)
-		defer os.Remove(c.Path)
-		ioutil.WriteFile(c.Path, []byte(data.content), 0644)
+		t.Run(data.name, func(t *testing.T) {
+			c, _ := New(fakeArtifactDir)
+			defer os.Remove(c.Path)
+			ioutil.WriteFile(c.Path, []byte(data.content), 0644)
 
-		val, err := c.Get(data.getKey)
-		errMsg := fmt.Sprintf("Testing get %q, with metadata: %v, content: %q",
-			data.getKey, data.metadata, data.content)
-		if (err == nil && data.expErr) || (err != nil && !data.expErr) {
-			log.Fatalf("%s\ngot: '%v', want: '%v'", errMsg, err, data.expErr)
-		}
-		if !reflect.DeepEqual(c.MetaData, data.expMetadata) {
-			log.Fatalf("%s\ngot: '%v', want: '%v'", errMsg, c.MetaData, data.expMetadata)
-		}
-		if val != data.expVal {
-			log.Fatalf("%s\ngot: %q, want: %q", errMsg, val, data.expVal)
-		}
+			val, err := c.Get(data.getKey)
+			if (err == nil && data.expErr) || (err != nil && !data.expErr) {
+				t.Errorf("Error = %v, want?: %v", err, data.expErr)
+			}
+			if got, want := c.metadata, data.expMetadata; !cmp.Equal(got, want) {
+				t.Error("Metadata mismatch (-want,+got):\n", cmp.Diff(want, got))
+			}
+			if got, want := val, data.expVal; got != want {
+				t.Errorf("Value = %q, want: %q", got, want)
+			}
+		})
 	}
 }

@@ -1,0 +1,10 @@
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: pipeline-binding-with-cel-extensions
+spec:
+  params:
+  - name: gitrevision
+    value: $(body.extensions.branch_name)
+  - name: branch
+    value: $(body.pull_request.head.short_sha)

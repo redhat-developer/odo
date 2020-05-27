@@ -3,6 +3,7 @@
         "Number": 1,
         "Title": "Ut commodi ullam eos dolores perferendis nihil sunt.",
         "Body": "Omnis vero earum sunt corporis dolor et placeat.",
+        "State": "closed",
         "Link": "http://example.com/example/example/issues/1",
         "Labels": [],
         "Closed": true,

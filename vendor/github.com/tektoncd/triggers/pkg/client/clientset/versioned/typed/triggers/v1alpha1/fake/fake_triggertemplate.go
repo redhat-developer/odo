@@ -30,13 +30,13 @@ import (
 
 // FakeTriggerTemplates implements TriggerTemplateInterface
 type FakeTriggerTemplates struct {
-	Fake *FakeTektonV1alpha1
+	Fake *FakeTriggersV1alpha1
 	ns   string
 }
 
-var triggertemplatesResource = schema.GroupVersionResource{Group: "tekton.dev", Version: "v1alpha1", Resource: "triggertemplates"}
+var triggertemplatesResource = schema.GroupVersionResource{Group: "triggers.tekton.dev", Version: "v1alpha1", Resource: "triggertemplates"}
 
-var triggertemplatesKind = schema.GroupVersionKind{Group: "tekton.dev", Version: "v1alpha1", Kind: "TriggerTemplate"}
+var triggertemplatesKind = schema.GroupVersionKind{Group: "triggers.tekton.dev", Version: "v1alpha1", Kind: "TriggerTemplate"}
 
 // Get takes name of the triggerTemplate, and returns the corresponding triggerTemplate object, and an error if there is any.
 func (c *FakeTriggerTemplates) Get(name string, options v1.GetOptions) (result *v1alpha1.TriggerTemplate, err error) {

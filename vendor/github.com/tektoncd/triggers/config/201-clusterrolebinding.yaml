@@ -16,6 +16,9 @@ apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
   name: tekton-triggers-controller-admin
+  labels:
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-triggers
 subjects:
   - kind: ServiceAccount
     name: tekton-triggers-controller

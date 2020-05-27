@@ -8,21 +8,21 @@ spec:
   - name: url
     value: https://github.com/tektoncd/triggers
   - name: revision
-    value:  master # REPLACE with the commit you want to release
+    value: v0.X.Y  # REPLACE with the commit you want to release
 ---
 apiVersion: tekton.dev/v1alpha1
 kind: PipelineResource
 metadata:
-  name: tekton-bucket
+  name: tekton-triggers-bucket
 spec:
   type: storage
   params:
-   - name: type
-     value: gcs
-   - name: location
-     value: gs://tekton-releases
-   - name: dir
-     value: "y"
+  - name: type
+    value: gcs
+  - name: location
+    value: gs://tekton-releases/triggers
+  - name: dir
+    value: "y"
 ---
 apiVersion: tekton.dev/v1alpha1
 kind: PipelineResource
@@ -31,8 +31,8 @@ metadata:
 spec:
   type: image
   params:
-   - name: url
-     value: cmd/controller # Registry is provided via parameter, this is a hack see #569
+  - name: url
+    value: cmd/controller  # Registry is provided via parameter, this is a hack see #569
 ---
 apiVersion: tekton.dev/v1alpha1
 kind: PipelineResource
@@ -41,8 +41,8 @@ metadata:
 spec:
   type: image
   params:
-   - name: url
-     value: cmd/webhook # Registry is provided via parameter, this is a hack see #569
+  - name: url
+    value: cmd/webhook  # Registry is provided via parameter, this is a hack see #569
 ---
 apiVersion: tekton.dev/v1alpha1
 kind: PipelineResource
@@ -51,5 +51,15 @@ metadata:
 spec:
   type: image
   params:
-   - name: url
-     value: cmd/eventlistenersink # Registry is provided via parameter, this is a hack see #569
+  - name: url
+    value: cmd/eventlistenersink  # Registry is provided via parameter, this is a hack see #569
+# ---
+# apiVersion: tekton.dev/v1alpha1
+# kind: PipelineResource
+# metadata:
+#   name: post-release-trigger
+# spec:
+#   type: cloudEvent
+#   params:
+#   - name: targetURI
+#     value: http://post-release-trigger-sink  # This has to be changed to a valid URL

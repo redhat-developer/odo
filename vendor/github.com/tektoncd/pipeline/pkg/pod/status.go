@@ -23,9 +23,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
-	"github.com/tektoncd/pipeline/pkg/logging"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	"github.com/tektoncd/pipeline/pkg/names"
 	"github.com/tektoncd/pipeline/pkg/termination"
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
@@ -63,12 +64,19 @@ const (
 	// config error of container
 	ReasonCreateContainerConfigError = "CreateContainerConfigError"
 
+	// ReasonPodCreationFailed indicates that the reason for the current condition
+	// is that the creation of the pod backing the TaskRun failed
+	ReasonPodCreationFailed = "PodCreationFailed"
+
 	// ReasonSucceeded indicates that the reason for the finished status is that all of the steps
 	// completed successfully
 	ReasonSucceeded = "Succeeded"
 
 	// ReasonFailed indicates that the reason for the failure status is unknown or that one of the steps failed
 	ReasonFailed = "Failed"
+
+	//timeFormat is RFC3339 with millisecond
+	timeFormat = "2006-01-02T15:04:05.000Z07:00"
 )
 
 const oomKilled = "OOMKilled"
@@ -84,7 +92,7 @@ func SidecarsReady(podStatus corev1.PodStatus) bool {
 		// An injected sidecar might not have the "sidecar-" prefix, so
 		// we can't just look for that prefix, we need to look at any
 		// non-step container.
-		if isContainerStep(s.Name) {
+		if IsContainerStep(s.Name) {
 			continue
 		}
 		if s.State.Running != nil && s.Ready {
@@ -99,7 +107,7 @@ func SidecarsReady(podStatus corev1.PodStatus) bool {
 }
 
 // MakeTaskRunStatus returns a TaskRunStatus based on the Pod's status.
-func MakeTaskRunStatus(tr v1alpha1.TaskRun, pod *corev1.Pod, taskSpec v1alpha1.TaskSpec) v1alpha1.TaskRunStatus {
+func MakeTaskRunStatus(logger *zap.SugaredLogger, tr v1beta1.TaskRun, pod *corev1.Pod, taskSpec v1beta1.TaskSpec) v1beta1.TaskRunStatus {
 	trs := &tr.Status
 	if trs.GetCondition(apis.ConditionSucceeded) == nil || trs.GetCondition(apis.ConditionSucceeded).Status == corev1.ConditionUnknown {
 		// If the taskRunStatus doesn't exist yet, it's because we just started running
@@ -112,54 +120,28 @@ func MakeTaskRunStatus(tr v1alpha1.TaskRun, pod *corev1.Pod, taskSpec v1alpha1.T
 	}
 
 	trs.PodName = pod.Name
-
-	trs.Steps = []v1alpha1.StepState{}
-	trs.Sidecars = []v1alpha1.SidecarState{}
-	logger, _ := logging.NewLogger("", "status")
-	defer func() {
-		_ = logger.Sync()
-	}()
+	trs.Steps = []v1beta1.StepState{}
+	trs.Sidecars = []v1beta1.SidecarState{}
 
 	for _, s := range pod.Status.ContainerStatuses {
-		if isContainerStep(s.Name) {
+		if IsContainerStep(s.Name) {
 			if s.State.Terminated != nil && len(s.State.Terminated.Message) != 0 {
-				msg := s.State.Terminated.Message
-				r, err := termination.ParseMessage(msg)
-				if err != nil {
-					logger.Errorf("Could not parse json message %q because of %w", msg, err)
-					break
-				}
-				for index, result := range r {
-					if result.Key == "StartedAt" {
-						t, err := time.Parse(time.RFC3339, result.Value)
-						if err != nil {
-							logger.Errorf("Could not parse time: %q: %w", result.Value, err)
-							break
-						}
-						s.State.Terminated.StartedAt = metav1.NewTime(t)
-						// remove the entry for the starting time
-						r = append(r[:index], r[index+1:]...)
-						if len(r) == 0 {
-							s.State.Terminated.Message = ""
-						} else if bytes, err := json.Marshal(r); err != nil {
-							logger.Errorf("Error marshalling remaining results: %w", err)
-						} else {
-							s.State.Terminated.Message = string(bytes)
-						}
-						break
-					}
+				if err := updateStatusStartTime(&s); err != nil {
+					logger.Errorf("error setting the start time of step %q in taskrun %q: %w", s.Name, tr.Name, err)
 				}
 			}
-			trs.Steps = append(trs.Steps, v1alpha1.StepState{
+			trs.Steps = append(trs.Steps, v1beta1.StepState{
 				ContainerState: *s.State.DeepCopy(),
 				Name:           trimStepPrefix(s.Name),
 				ContainerName:  s.Name,
 				ImageID:        s.ImageID,
 			})
 		} else if isContainerSidecar(s.Name) {
-			trs.Sidecars = append(trs.Sidecars, v1alpha1.SidecarState{
-				Name:    trimSidecarPrefix(s.Name),
-				ImageID: s.ImageID,
+			trs.Sidecars = append(trs.Sidecars, v1beta1.SidecarState{
+				ContainerState: *s.State.DeepCopy(),
+				Name:           TrimSidecarPrefix(s.Name),
+				ContainerName:  s.Name,
+				ImageID:        s.ImageID,
 			})
 		}
 	}
@@ -179,8 +161,38 @@ func MakeTaskRunStatus(tr v1alpha1.TaskRun, pod *corev1.Pod, taskSpec v1alpha1.T
 	return *trs
 }
 
-func updateCompletedTaskRun(trs *v1alpha1.TaskRunStatus, pod *corev1.Pod) {
-	if didTaskRunFail(pod) {
+// updateStatusStartTime searches for a result called "StartedAt" in the JSON-formatted termination message
+// of a step and sets the State.Terminated.StartedAt field to this time if it's found. The "StartedAt" result
+// is also removed from the list of results in the container status.
+func updateStatusStartTime(s *corev1.ContainerStatus) error {
+	r, err := termination.ParseMessage(s.State.Terminated.Message)
+	if err != nil {
+		return fmt.Errorf("termination message could not be parsed as JSON: %w", err)
+	}
+	for index, result := range r {
+		if result.Key == "StartedAt" {
+			t, err := time.Parse(timeFormat, result.Value)
+			if err != nil {
+				return fmt.Errorf("could not parse time value %q in StartedAt field: %w", result.Value, err)
+			}
+			s.State.Terminated.StartedAt = metav1.NewTime(t)
+			// remove the entry for the starting time
+			r = append(r[:index], r[index+1:]...)
+			if len(r) == 0 {
+				s.State.Terminated.Message = ""
+			} else if bytes, err := json.Marshal(r); err != nil {
+				return fmt.Errorf("error marshalling remaining results back into termination message: %w", err)
+			} else {
+				s.State.Terminated.Message = string(bytes)
+			}
+			break
+		}
+	}
+	return nil
+}
+
+func updateCompletedTaskRun(trs *v1beta1.TaskRunStatus, pod *corev1.Pod) {
+	if DidTaskRunFail(pod) {
 		msg := getFailureMessage(pod)
 		trs.SetCondition(&apis.Condition{
 			Type:    apis.ConditionSucceeded,
@@ -196,11 +208,12 @@ func updateCompletedTaskRun(trs *v1alpha1.TaskRunStatus, pod *corev1.Pod) {
 			Message: "All Steps have completed executing",
 		})
 	}
+
 	// update tr completed time
 	trs.CompletionTime = &metav1.Time{Time: time.Now()}
 }
 
-func updateIncompleteTaskRun(trs *v1alpha1.TaskRunStatus, pod *corev1.Pod) {
+func updateIncompleteTaskRun(trs *v1beta1.TaskRunStatus, pod *corev1.Pod) {
 	switch pod.Status.Phase {
 	case corev1.PodRunning:
 		trs.SetCondition(&apis.Condition{
@@ -231,10 +244,11 @@ func updateIncompleteTaskRun(trs *v1alpha1.TaskRunStatus, pod *corev1.Pod) {
 	}
 }
 
-func didTaskRunFail(pod *corev1.Pod) bool {
+// DidTaskRunFail check the status of pod to decide if related taskrun is failed
+func DidTaskRunFail(pod *corev1.Pod) bool {
 	f := pod.Status.Phase == corev1.PodFailed
 	for _, s := range pod.Status.ContainerStatuses {
-		if isContainerStep(s.Name) {
+		if IsContainerStep(s.Name) {
 			if s.State.Terminated != nil {
 				f = f || s.State.Terminated.ExitCode != 0 || isOOMKilled(s)
 			}
@@ -246,7 +260,7 @@ func didTaskRunFail(pod *corev1.Pod) bool {
 func areStepsComplete(pod *corev1.Pod) bool {
 	stepsComplete := len(pod.Status.ContainerStatuses) > 0 && pod.Status.Phase == corev1.PodRunning
 	for _, s := range pod.Status.ContainerStatuses {
-		if isContainerStep(s.Name) {
+		if IsContainerStep(s.Name) {
 			if s.State.Terminated == nil {
 				stepsComplete = false
 			}
@@ -257,12 +271,18 @@ func areStepsComplete(pod *corev1.Pod) bool {
 
 func sortContainerStatuses(podInstance *corev1.Pod) {
 	sort.Slice(podInstance.Status.ContainerStatuses, func(i, j int) bool {
-		var ifinish, jfinish time.Time
+		var ifinish, istart, jfinish, jstart time.Time
 		if term := podInstance.Status.ContainerStatuses[i].State.Terminated; term != nil {
 			ifinish = term.FinishedAt.Time
+			istart = term.StartedAt.Time
 		}
 		if term := podInstance.Status.ContainerStatuses[j].State.Terminated; term != nil {
 			jfinish = term.FinishedAt.Time
+			jstart = term.StartedAt.Time
+		}
+
+		if ifinish.Equal(jfinish) {
+			return istart.Before(jstart)
 		}
 		return ifinish.Before(jfinish)
 	})
@@ -275,7 +295,8 @@ func getFailureMessage(pod *corev1.Pod) string {
 	for _, status := range pod.Status.ContainerStatuses {
 		term := status.State.Terminated
 		if term != nil && term.ExitCode != 0 {
-			return fmt.Sprintf("%q exited with code %d (image: %q); for logs run: kubectl -n %s logs %s -c %s",
+			// Newline required at end to prevent yaml parser from breaking the log help text at 80 chars
+			return fmt.Sprintf("%q exited with code %d (image: %q); for logs run: kubectl -n %s logs %s -c %s\n",
 				status.Name, term.ExitCode, status.ImageID,
 				pod.Namespace, pod.Name, status.Name)
 		}
@@ -286,7 +307,7 @@ func getFailureMessage(pod *corev1.Pod) string {
 	}
 
 	for _, s := range pod.Status.ContainerStatuses {
-		if isContainerStep(s.Name) {
+		if IsContainerStep(s.Name) {
 			if s.State.Terminated != nil {
 				if isOOMKilled(s) {
 					return oomKilled
@@ -349,7 +370,7 @@ func getWaitingMessage(pod *corev1.Pod) string {
 
 // sortTaskRunStepOrder sorts the StepStates in the same order as the original
 // TaskSpec steps.
-func sortTaskRunStepOrder(taskRunSteps []v1alpha1.StepState, taskSpecSteps []v1alpha1.Step) []v1alpha1.StepState {
+func sortTaskRunStepOrder(taskRunSteps []v1beta1.StepState, taskSpecSteps []v1beta1.Step) []v1beta1.StepState {
 	trt := &stepStateSorter{
 		taskRunSteps: taskRunSteps,
 	}
@@ -361,16 +382,20 @@ func sortTaskRunStepOrder(taskRunSteps []v1alpha1.StepState, taskSpecSteps []v1a
 // stepStateSorter implements a sorting mechanism to align the order of the steps in TaskRun
 // with the spec steps in Task.
 type stepStateSorter struct {
-	taskRunSteps []v1alpha1.StepState
+	taskRunSteps []v1beta1.StepState
 	mapForSort   map[string]int
 }
 
 // constructTaskStepsSorter constructs a map matching the names of
 // the steps to their indices for a task.
-func (trt *stepStateSorter) constructTaskStepsSorter(taskSpecSteps []v1alpha1.Step) map[string]int {
+func (trt *stepStateSorter) constructTaskStepsSorter(taskSpecSteps []v1beta1.Step) map[string]int {
 	sorter := make(map[string]int)
 	for index, step := range taskSpecSteps {
-		sorter[step.Name] = index
+		stepName := step.Name
+		if stepName == "" {
+			stepName = names.SimpleNameGenerator.RestrictLength(fmt.Sprintf("unnamed-%d", index))
+		}
+		sorter[stepName] = index
 	}
 	return sorter
 }

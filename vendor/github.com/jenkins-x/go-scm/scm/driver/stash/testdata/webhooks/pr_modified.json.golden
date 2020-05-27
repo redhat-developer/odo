@@ -1,0 +1,78 @@
+{
+  "Action": "updated",
+  "Repo": {
+    "ID": "12087",
+    "Namespace": "~ADMIN",
+    "Name": "example",
+    "Perm": null,
+    "Branch": "master",
+    "Private": true,
+    "Clone": "",
+    "CloneSSH": "",
+    "Link": "",
+    "Created": "0001-01-01T00:00:00Z",
+    "Updated": "0001-01-01T00:00:00Z"
+  },
+  "PullRequest": {
+    "Number": 1,
+    "Title": "A new title",
+    "Body": "A new description",
+    "Sha": "5a705e60111a4213da46839d9cbf4fc43639b771",
+    "Ref": "refs/pull-requests/1/from",
+    "Source": "new-branch",
+    "Target": "master",
+    "Fork": "~ADMIN/example",
+    "Link": "",
+    "Closed": false,
+    "Merged": false,
+    "State": "open",
+    "Base": {
+      "Ref": "master",
+      "Sha": "5a705e60111a4213da46839d9cbf4fc43639b771",
+      "Repo": {
+        "ID": "12087",
+        "Namespace": "~ADMIN",
+        "Name": "example",
+        "Perm": null,
+        "Branch": "master",
+        "Private": true,
+        "Clone": "",
+        "CloneSSH": "",
+        "Link": "",
+        "Created": "0001-01-01T00:00:00Z",
+        "Updated": "0001-01-01T00:00:00Z"
+      }
+    },
+    "Head": {
+      "Ref": "master",
+      "Sha": "5a705e60111a4213da46839d9cbf4fc43639b771",
+      "Repo": {
+        "ID": "12087",
+        "Namespace": "~ADMIN",
+        "Name": "example",
+        "Perm": null,
+        "Branch": "master",
+        "Private": true,
+        "Clone": "",
+        "CloneSSH": "",
+        "Link": "",
+        "Created": "0001-01-01T00:00:00Z",
+        "Updated": "0001-01-01T00:00:00Z"
+      }
+    },
+    "Author": {
+      "Login": "admin",
+      "Name": "Administrator",
+      "Email": "example@atlassian.com",
+      "Avatar": "https://www.gravatar.com/avatar/bc97e632e510fdc3083c85e99f7fe231.jpg"
+    },
+    "Created": "2018-04-23T20:14:39-04:00",
+    "Updated": "2018-04-23T20:15:30-04:00"
+  },
+  "Sender": {
+    "Login": "pathompson",
+    "Name": "Administrator",
+    "Email": "example@atlassian.com",
+    "Avatar": "https://www.gravatar.com/avatar/bc97e632e510fdc3083c85e99f7fe231.jpg"
+  }
+}

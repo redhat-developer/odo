@@ -7,6 +7,7 @@ package stash
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -81,14 +82,14 @@ func (s *pullService) ListComments(ctx context.Context, repo string, number int,
 	// GET /rest/api/1.0/projects/PRJ/repos/my-repo/pull-requests/1/activities
 
 	projectName, repoName := scm.Split(repo)
-	out := new(pullRequestComments)
+	out := new(pullRequestActivities)
 	path := fmt.Sprintf("rest/api/1.0/projects/%s/repos/%s/pull-requests/%d/activities", projectName, repoName, number)
 	res, err := s.client.do(ctx, "GET", path, nil, out)
 	if !out.pagination.LastPage.Bool {
 		res.Page.First = 1
 		res.Page.Next = opts.Page + 1
 	}
-	return convertPullRequestComments(out), res, err
+	return convertPullRequestActivities(out), res, err
 }
 
 func (s *pullService) Merge(ctx context.Context, repo string, number int, options *scm.PullRequestMergeOptions) (*scm.Response, error) {
@@ -98,9 +99,44 @@ func (s *pullService) Merge(ctx context.Context, repo string, number int, option
 	return res, err
 }
 
+type prUpdateInput struct {
+	ID          int    `json:"id"`
+	Version     int    `json:"version"`
+	Title       string `json:"title,omitempty"`
+	Description string `json:"description,omitempty"`
+}
+
+func (s *pullService) Update(ctx context.Context, repo string, number int, prInput *scm.PullRequestInput) (*scm.PullRequest, *scm.Response, error) {
+	// TODO: Figure out how to handle updating the destination branch, because I can't find the syntax currently (apb)
+	namespace, name := scm.Split(repo)
+	getPath := fmt.Sprintf("rest/api/1.0/projects/%s/repos/%s/pull-requests/%d", namespace, name, number)
+	getOut := new(pullRequest)
+	res, err := s.client.do(ctx, "GET", getPath, nil, getOut)
+	if err != nil {
+		return nil, res, err
+	}
+	input := &prUpdateInput{
+		ID:          getOut.ID,
+		Version:     getOut.Version,
+		Title:       prInput.Title,
+		Description: prInput.Body,
+	}
+	out := new(pullRequest)
+	path := fmt.Sprintf("rest/api/1.0/projects/%s/repos/%s/pull-requests/%d", namespace, name, number)
+	res, err = s.client.do(ctx, "PUT", path, input, out)
+	return convertPullRequest(out), res, err
+}
+
 func (s *pullService) Close(ctx context.Context, repo string, number int) (*scm.Response, error) {
 	namespace, name := scm.Split(repo)
 	path := fmt.Sprintf("rest/api/1.0/projects/%s/repos/%s/pull-requests/%d/decline", namespace, name, number)
+	res, err := s.client.do(ctx, "POST", path, nil, nil)
+	return res, err
+}
+
+func (s *pullService) Reopen(ctx context.Context, repo string, number int) (*scm.Response, error) {
+	namespace, name := scm.Split(repo)
+	path := fmt.Sprintf("rest/api/1.0/projects/%s/repos/%s/pull-requests/%d/reopen", namespace, name, number)
 	res, err := s.client.do(ctx, "POST", path, nil, nil)
 	return res, err
 }
@@ -114,29 +150,100 @@ func (s *pullService) CreateComment(ctx context.Context, repo string, number int
 	return convertPullRequestComment(out), res, err
 }
 
-func (s *pullService) DeleteComment(context.Context, string, int, int) (*scm.Response, error) {
-	// TODO(bradrydzewski) the challenge with deleting comments is that we need to specify
-	// the comment version number. The proposal is to use 0 as the initial version number,
-	// and then to use expectedVersion on error and re-attempt the API call.
-
-	// DELETE /rest/api/1.0/projects/PRJ/repos/my-repo/pull-requests/1/comments/1?version=0
-	return nil, scm.ErrNotSupported
+func (s *pullService) DeleteComment(ctx context.Context, repo string, number int, id int) (*scm.Response, error) {
+	namespace, name := scm.Split(repo)
+	existingComment, res, err := s.FindComment(ctx, repo, number, id)
+	if err != nil {
+		if res != nil && res.Status == http.StatusNotFound {
+			return res, nil
+		}
+		return res, err
+	}
+	if existingComment == nil {
+		return res, nil
+	}
+	path := fmt.Sprintf("rest/api/1.0/projects/%s/repos/%s/pull-requests/%d/comments/%d?version=%d", namespace, name, number, id, existingComment.Version)
+	return s.client.do(ctx, "DELETE", path, nil, nil)
 }
 
-func (s *pullService) EditComment(ctx context.Context, repo string, number int, id int, input *scm.CommentInput) (*scm.Comment, *scm.Response, error) {
-	return nil, nil, scm.ErrNotSupported
+func (s *pullService) EditComment(ctx context.Context, repo string, number int, id int, in *scm.CommentInput) (*scm.Comment, *scm.Response, error) {
+	input := pullRequestCommentInput{Text: in.Body}
+	namespace, name := scm.Split(repo)
+	existingComment, res, err := s.FindComment(ctx, repo, number, id)
+	if err != nil {
+		if res != nil && res.Status == http.StatusNotFound {
+			return nil, res, nil
+		}
+		return nil, res, err
+	}
+	if existingComment == nil {
+		return nil, res, nil
+	}
+	input.Version = existingComment.Version
+	path := fmt.Sprintf("rest/api/1.0/projects/%s/repos/%s/pull-requests/%d/comments/%d", namespace, name, number, id)
+	out := new(pullRequestComment)
+	res, err = s.client.do(ctx, "PUT", path, &input, out)
+	return convertPullRequestComment(out), res, err
 }
 
 func (s *pullService) AssignIssue(ctx context.Context, repo string, number int, logins []string) (*scm.Response, error) {
-	return nil, scm.ErrNotSupported
+	return s.RequestReview(ctx, repo, number, logins)
 }
 
 func (s *pullService) UnassignIssue(ctx context.Context, repo string, number int, logins []string) (*scm.Response, error) {
-	return nil, scm.ErrNotSupported
+	return s.UnrequestReview(ctx, repo, number, logins)
 }
 
 func (s *pullService) Create(ctx context.Context, repo string, input *scm.PullRequestInput) (*scm.PullRequest, *scm.Response, error) {
 	return nil, nil, scm.ErrNotSupported
+}
+
+func (s *pullService) RequestReview(ctx context.Context, repo string, number int, logins []string) (*scm.Response, error) {
+	namespace, name := scm.Split(repo)
+	missing := scm.MissingUsers{
+		Action: "request a PR review from",
+	}
+
+	var res *scm.Response
+	var err error
+
+	for _, l := range logins {
+		input := pullRequestAssignInput{
+			User: struct {
+				Name string `json:"name"`
+			}{
+				Name: l,
+			},
+			Approved: false,
+			Status:   "UNAPPROVED",
+		}
+		path := fmt.Sprintf("rest/api/1.0/projects/%s/repos/%s/pull-requests/%d/participants/%s", namespace, name, number, l)
+		res, err = s.client.do(ctx, "PUT", path, &input, nil)
+		if err != nil && res != nil {
+			missing.Users = append(missing.Users, l)
+		} else if err != nil {
+			return nil, fmt.Errorf("failed to add reviewer to PR. errmsg: %v", err)
+		}
+		if len(missing.Users) > 0 {
+			return nil, missing
+		}
+	}
+	return res, err
+}
+
+func (s *pullService) UnrequestReview(ctx context.Context, repo string, number int, logins []string) (*scm.Response, error) {
+	namespace, name := scm.Split(repo)
+	var res *scm.Response
+	var err error
+
+	for _, l := range logins {
+		path := fmt.Sprintf("rest/api/1.0/projects/%s/repos/%s/pull-requests/%d/participants/%s", namespace, name, number, l)
+		res, err = s.client.do(ctx, "DELETE", path, nil, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to add reviewer to PR. errmsg: %v", err)
+		}
+	}
+	return res, err
 }
 
 type pullRequest struct {
@@ -161,31 +268,21 @@ type pullRequest struct {
 		LatestCommit string     `json:"latestCommit"`
 		Repository   repository `json:"repository"`
 	} `json:"toRef"`
-	Locked bool `json:"locked"`
-	Author struct {
-		User struct {
-			Name         string `json:"name"`
-			EmailAddress string `json:"emailAddress"`
-			ID           int    `json:"id"`
-			DisplayName  string `json:"displayName"`
-			Active       bool   `json:"active"`
-			Slug         string `json:"slug"`
-			Type         string `json:"type"`
-			Links        struct {
-				Self []struct {
-					Href string `json:"href"`
-				} `json:"self"`
-			} `json:"links"`
-		} `json:"user"`
-		Role     string `json:"role"`
-		Approved bool   `json:"approved"`
-		Status   string `json:"status"`
-	} `json:"author"`
-	Reviewers    []interface{} `json:"reviewers"`
+	Locked       bool          `json:"locked"`
+	Author       prUser        `json:"author"`
+	Reviewers    []prUser      `json:"reviewers"`
 	Participants []interface{} `json:"participants"`
 	Links        struct {
 		Self []link `json:"self"`
 	} `json:"links"`
+}
+
+type prUser struct {
+	User               user   `json:"user"`
+	LastReviewedCommit string `json:"lastReviewedCommit"`
+	Role               string `json:"role"`
+	Approved           bool   `json:"approved"`
+	Status             string `json:"status"`
 }
 
 type pullRequests struct {
@@ -221,12 +318,13 @@ func convertPullRequest(from *pullRequest) *scm.PullRequest {
 		Head: scm.PullRequestBranch{
 			Sha: from.FromRef.LatestCommit,
 		},
-		Link:    extractSelfLink(from.Links.Self),
-		State:   strings.ToLower(from.State),
-		Closed:  from.Closed,
-		Merged:  from.State == "MERGED",
-		Created: time.Unix(from.CreatedDate/1000, 0),
-		Updated: time.Unix(from.UpdatedDate/1000, 0),
+		Link:      extractSelfLink(from.Links.Self),
+		State:     strings.ToLower(from.State),
+		Closed:    from.Closed,
+		Merged:    from.State == "MERGED",
+		Reviewers: convertReviewers(from.Reviewers),
+		Created:   time.Unix(from.CreatedDate/1000, 0),
+		Updated:   time.Unix(from.UpdatedDate/1000, 0),
 		Author: scm.User{
 			Login:  from.Author.User.Slug,
 			Name:   from.Author.User.DisplayName,
@@ -240,23 +338,10 @@ type pullRequestComment struct {
 	Properties struct {
 		RepositoryID int `json:"repositoryId"`
 	} `json:"properties"`
-	ID      int    `json:"id"`
-	Version int    `json:"version"`
-	Text    string `json:"text"`
-	Author  struct {
-		Name         string `json:"name"`
-		EmailAddress string `json:"emailAddress"`
-		ID           int    `json:"id"`
-		DisplayName  string `json:"displayName"`
-		Active       bool   `json:"active"`
-		Slug         string `json:"slug"`
-		Type         string `json:"type"`
-		Links        struct {
-			Self []struct {
-				Href string `json:"href"`
-			} `json:"self"`
-		} `json:"links"`
-	} `json:"author"`
+	ID                  int                  `json:"id"`
+	Version             int                  `json:"version"`
+	Text                string               `json:"text"`
+	Author              user                 `json:"author"`
 	CreatedDate         int64                `json:"createdDate"`
 	UpdatedDate         int64                `json:"updatedDate"`
 	Comments            []pullRequestComment `json:"comments"`
@@ -273,7 +358,42 @@ type pullRequestComments struct {
 }
 
 type pullRequestCommentInput struct {
-	Text string `json:"text"`
+	Text    string `json:"text"`
+	Version int    `json:"version"`
+}
+
+type pullRequestAssignInput struct {
+	User struct {
+		Name string `json:"name"`
+	}
+	Approved bool   `json:"approved"`
+	Status   string `json:"status"`
+}
+
+type pullRequestActivities struct {
+	pagination
+	Values []*pullRequestActivity `json:"values"`
+}
+
+type pullRequestActivity struct {
+	ID            int                 `json:"id"`
+	CreatedDate   int64               `json:"createdDate"`
+	User          user                `json:"user"`
+	Action        string              `json:"action"`
+	CommentAction string              `json:"commentAction"`
+	Comment       *pullRequestComment `json:"comment"`
+	CommentAnchor interface{}         `json:"commentAnchor"`
+}
+
+func convertPullRequestActivities(from *pullRequestActivities) []*scm.Comment {
+	var to []*scm.Comment
+
+	for _, v := range from.Values {
+		if v.Comment != nil && v.Action == "COMMENTED" {
+			to = append(to, convertPullRequestComment(v.Comment))
+		}
+	}
+	return to
 }
 
 func convertPullRequestComments(from *pullRequestComments) []*scm.Comment {
@@ -288,6 +408,7 @@ func convertPullRequestComment(from *pullRequestComment) *scm.Comment {
 	return &scm.Comment{
 		ID:      from.ID,
 		Body:    from.Text,
+		Version: from.Version,
 		Created: time.Unix(from.CreatedDate/1000, 0),
 		Updated: time.Unix(from.UpdatedDate/1000, 0),
 		Author: scm.User{
@@ -297,4 +418,14 @@ func convertPullRequestComment(from *pullRequestComment) *scm.Comment {
 			Avatar: avatarLink(from.Author.EmailAddress),
 		},
 	}
+}
+
+func convertReviewers(from []prUser) []scm.User {
+	var answer []scm.User
+
+	for _, u := range from {
+		answer = append(answer, *convertUser(&u.User))
+	}
+
+	return answer
 }

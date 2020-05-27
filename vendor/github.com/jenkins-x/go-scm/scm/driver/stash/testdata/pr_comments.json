@@ -4,133 +4,165 @@
     "isLastPage": true,
     "values": [
         {
-            "id": 14,
-            "createdDate": 1530770330632,
+            "id": 101,
+            "createdDate": 1359065920,
             "user": {
                 "name": "jcitizen",
                 "emailAddress": "jane@example.com",
-                "id": 1,
+                "id": 101,
                 "displayName": "Jane Citizen",
                 "active": true,
                 "slug": "jcitizen",
-                "type": "NORMAL",
-                "links": {
-                    "self": [
-                        {
-                            "href": "http://example.com:7990/users/jcitizen"
-                        }
-                    ]
-                }
+                "type": "NORMAL"
             },
             "action": "COMMENTED",
             "commentAction": "ADDED",
             "comment": {
                 "properties": {
-                    "repositoryId": 1
+                    "key": "value"
                 },
-                "id": 2,
-                "version": 0,
-                "text": "this is a second comment",
+                "id": 1,
+                "version": 1,
+                "text": "A measured reply.",
                 "author": {
                     "name": "jcitizen",
                     "emailAddress": "jane@example.com",
-                    "id": 1,
+                    "id": 101,
                     "displayName": "Jane Citizen",
                     "active": true,
                     "slug": "jcitizen",
-                    "type": "NORMAL",
-                    "links": {
-                        "self": [
-                            {
-                                "href": "http://example.com:7990/users/jcitizen"
-                            }
-                        ]
-                    }
-                },
-                "createdDate": 1530770330632,
-                "updatedDate": 1530770330632,
-                "comments": [],
-                "tasks": [],
-                "permittedOperations": {
-                    "editable": true,
-                    "deletable": true
-                }
-            }
-        },
-        {
-            "id": 13,
-            "createdDate": 1530770325043,
-            "user": {
-                "name": "jcitizen",
-                "emailAddress": "jane@example.com",
-                "id": 1,
-                "displayName": "Jane Citizen",
-                "active": true,
-                "slug": "jcitizen",
-                "type": "NORMAL",
-                "links": {
-                    "self": [
-                        {
-                            "href": "http://example.com:7990/users/jcitizen"
-                        }
-                    ]
-                }
-            },
-            "action": "COMMENTED",
-            "commentAction": "ADDED",
-            "comment": {
-                "properties": {
-                    "repositoryId": 1
-                },
-                "id": 1,
-                "version": 0,
-                "text": "this is a comment",
-                "author": {
-                    "name": "jcitizen",
-                    "emailAddress": "jane@example.com",
-                    "id": 1,
-                    "displayName": "Jane Citizen",
-                    "active": true,
-                    "slug": "jcitizen",
-                    "type": "NORMAL",
-                    "links": {
-                        "self": [
-                            {
-                                "href": "http://example.com:7990/users/jcitizen"
-                            }
-                        ]
-                    }
+                    "type": "NORMAL"
                 },
                 "createdDate": 1530770325043,
                 "updatedDate": 1530770325043,
-                "comments": [],
+                "comments": [
+                    {
+                        "properties": {
+                            "key": "value"
+                        },
+                        "id": 1,
+                        "version": 1,
+                        "text": "An insightful comment.",
+                        "author": {
+                            "name": "jcitizen",
+                            "emailAddress": "jane@example.com",
+                            "id": 101,
+                            "displayName": "Jane Citizen",
+                            "active": true,
+                            "slug": "jcitizen",
+                            "type": "NORMAL"
+                        },
+                        "createdDate": 1589428281471,
+                        "updatedDate": 1589428281471,
+                        "comments": [],
+                        "tasks": [],
+                        "severity": "NORMAL",
+                        "state": "OPEN",
+                        "permittedOperations": {
+                            "editable": true,
+                            "deletable": true
+                        }
+                    }
+                ],
                 "tasks": [],
+                "severity": "NORMAL",
+                "state": "OPEN",
                 "permittedOperations": {
                     "editable": true,
                     "deletable": true
                 }
+            },
+            "commentAnchor": {
+                "line": 1,
+                "lineType": "CONTEXT",
+                "fileType": "FROM",
+                "path": "path/to/file",
+                "srcPath": "path/to/file"
             }
         },
         {
-            "id": 12,
-            "createdDate": 1530766871157,
+            "id": 101,
+            "createdDate": 1359065920,
             "user": {
                 "name": "jcitizen",
                 "emailAddress": "jane@example.com",
-                "id": 1,
+                "id": 101,
                 "displayName": "Jane Citizen",
                 "active": true,
                 "slug": "jcitizen",
-                "type": "NORMAL",
-                "links": {
-                    "self": [
-                        {
-                            "href": "http://example.com:7990/users/jcitizen"
-                        }
-                    ]
-                }
+                "type": "NORMAL"
             },
-            "action": "OPENED"
+            "action": "RESCOPED",
+            "fromHash": "abcdeabcdeabcdeabcdeabcdeabcdeabcdeabcde",
+            "previousFromHash": "bcdeabcdeabcdeabcdeabcdeabcdeabcdeabcdea",
+            "previousToHash": "cdeabcdeabcdeabcdeabcdeabcdeabcdeabcdeab",
+            "toHash": "ddeabcdeabcdeabcdeabcdeabcdeabcdeabcdeabc",
+            "added": {
+                "commits": [
+                    {
+                        "id": "abcdef0123abcdef4567abcdef8987abcdef6543",
+                        "displayId": "abcdef0123a",
+                        "author": {
+                            "name": "charlie",
+                            "emailAddress": "charlie@example.com"
+                        },
+                        "authorTimestamp": 1589428281693,
+                        "committer": {
+                            "name": "charlie",
+                            "emailAddress": "charlie@example.com"
+                        },
+                        "committerTimestamp": 1589428281693,
+                        "message": "WIP on feature 1",
+                        "parents": [
+                            {
+                                "id": "abcdef0123abcdef4567abcdef8987abcdef6543",
+                                "displayId": "abcdef0"
+                            }
+                        ]
+                    }
+                ],
+                "total": 1
+            },
+            "removed": {
+                "commits": [
+                    {
+                        "id": "def0123abcdef4567abcdef8987abcdef6543abc",
+                        "displayId": "def0123abcd",
+                        "author": {
+                            "name": "charlie",
+                            "emailAddress": "charlie@example.com"
+                        },
+                        "authorTimestamp": 1589428281693,
+                        "committer": {
+                            "name": "charlie",
+                            "emailAddress": "charlie@example.com"
+                        },
+                        "committerTimestamp": 1589428281693,
+                        "message": "More work on feature 1",
+                        "parents": [
+                            {
+                                "id": "abcdef0123abcdef4567abcdef8987abcdef6543",
+                                "displayId": "abcdef0"
+                            }
+                        ]
+                    }
+                ],
+                "total": 1
+            }
+        },
+        {
+            "id": 101,
+            "createdDate": 1359085920,
+            "user": {
+                "name": "jcitizen",
+                "emailAddress": "jane@example.com",
+                "id": 101,
+                "displayName": "Jane Citizen",
+                "active": true,
+                "slug": "jcitizen",
+                "type": "NORMAL"
+            },
+            "action": "MERGED"
         }
     ],
     "start": 0

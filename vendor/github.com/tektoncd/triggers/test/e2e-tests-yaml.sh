@@ -24,6 +24,11 @@ for op in apply delete;do
         kubectl ${op} -f ${file}
     done
 
+    # Apply ClusterTriggerBindings
+    for file in $(find ${REPO_ROOT_DIR}/examples/clustertriggerbindings/ -name *.yaml | sort); do
+        kubectl ${op} -f ${file}
+    done
+
 # Apply docs disabled - pending deletion
 # See https://github.com/tektoncd/triggers/issues/164
 #    for file in $(find ${REPO_ROOT_DIR}/docs -name *.yaml | sort); do

@@ -164,6 +164,15 @@ func TestHappyPathsExact(t *testing.T) {
 		}
 	}
 
+	// Stops tracking explicitly
+	{
+		trk.OnDeletedObserver(thing2)
+		trk.OnChanged(thing1)
+		if got, want := calls, 6; got != want {
+			t.Fatalf("OnChanged() = %v, wanted %v", got, want)
+		}
+	}
+
 	// Track bad object
 	{
 		if err := trk.Track(ref.ObjectReference(), struct{}{}); err == nil {
@@ -631,6 +640,15 @@ func TestHappyPathsInexact(t *testing.T) {
 		}
 	}
 
+	// Stops tracking explicitly
+	{
+		trk.OnDeletedObserver(thing2)
+		trk.OnChanged(thing1)
+		if got, want := calls, 7; got != want {
+			t.Fatalf("OnChanged() = %v, wanted %v", got, want)
+		}
+	}
+
 	// Track bad object
 	{
 		if err := trk.TrackReference(ref, struct{}{}); err == nil {
@@ -718,6 +736,15 @@ func TestHappyPathsByBoth(t *testing.T) {
 		}
 
 		// The callback should be called for each of the tracks (exact and inexact)
+		trk.OnChanged(thing1)
+		if got, want := calls, 4; got != want {
+			t.Fatalf("OnChanged() = %v, wanted %v", got, want)
+		}
+	}
+
+	// Stops tracking explicitly
+	{
+		trk.OnDeletedObserver(thing2)
 		trk.OnChanged(thing1)
 		if got, want := calls, 4; got != want {
 			t.Fatalf("OnChanged() = %v, wanted %v", got, want)

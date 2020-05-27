@@ -22,14 +22,14 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"knative.dev/pkg/apis"
-
+	tb "github.com/tektoncd/pipeline/internal/builder/v1alpha1"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
-	tb "github.com/tektoncd/pipeline/test/builder"
+	"github.com/tektoncd/pipeline/test/diff"
+	"knative.dev/pkg/apis"
 )
 
 func TestCondition_Validate(t *testing.T) {
-	c := tb.Condition("condname", "foo",
+	c := tb.Condition("condname",
 		tb.ConditionSpec(
 			tb.ConditionSpecCheck("cname", "ubuntu"),
 			tb.ConditionParamSpec("paramname", v1alpha1.ParamTypeString),
@@ -47,14 +47,14 @@ func TestCondition_Invalidate(t *testing.T) {
 		expectedError apis.FieldError
 	}{{
 		name: "invalid meta",
-		cond: tb.Condition("invalid.,name", ""),
+		cond: tb.Condition("invalid.,name"),
 		expectedError: apis.FieldError{
 			Message: "Invalid resource name: special character . must not be present",
 			Paths:   []string{"metadata.name"},
 		},
 	}, {
 		name: "no image",
-		cond: tb.Condition("cond", "foo", tb.ConditionSpec(
+		cond: tb.Condition("cond", tb.ConditionSpec(
 			tb.ConditionSpecCheck("", ""),
 		)),
 		expectedError: apis.FieldError{
@@ -63,7 +63,7 @@ func TestCondition_Invalidate(t *testing.T) {
 		},
 	}, {
 		name: "condition with script and command",
-		cond: tb.Condition("cond", "foo",
+		cond: tb.Condition("cond",
 			tb.ConditionSpec(
 				tb.ConditionSpecCheck("cname", "image", tb.Command("exit 0")),
 				tb.ConditionSpecCheckScript("echo foo"),
@@ -71,6 +71,18 @@ func TestCondition_Invalidate(t *testing.T) {
 		expectedError: apis.FieldError{
 			Message: "step 0 script cannot be used with command",
 			Paths:   []string{"Spec.Check.script"},
+		},
+	}, {
+		name: "condition with invalid check name",
+		cond: tb.Condition("cond",
+			tb.ConditionSpec(
+				tb.ConditionSpecCheck("Cname", "image", tb.Command("exit 0")),
+				tb.ConditionSpecCheckScript("echo foo"),
+			)),
+		expectedError: apis.FieldError{
+			Message: "invalid value \"Cname\"",
+			Paths:   []string{"Spec.Check.name"},
+			Details: "Condition check name must be a valid DNS Label, For more info refer to https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names",
 		},
 	}}
 
@@ -81,7 +93,7 @@ func TestCondition_Invalidate(t *testing.T) {
 				t.Fatalf("Expected an Error, got nothing for %v", tc)
 			}
 			if d := cmp.Diff(tc.expectedError, *err, cmpopts.IgnoreUnexported(apis.FieldError{})); d != "" {
-				t.Errorf("Condition.Validate() errors diff -want, +got: %v", d)
+				t.Errorf("Condition.Validate() errors diff %s", diff.PrintWantGot(d))
 			}
 		})
 	}

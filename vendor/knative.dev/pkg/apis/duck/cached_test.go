@@ -29,17 +29,22 @@ import (
 )
 
 type BlockingInformerFactory struct {
-	block   chan struct{}
-	getting int32
+	block  chan struct{}
+	nCalls int32
 }
 
 var _ InformerFactory = (*BlockingInformerFactory)(nil)
 
 func (bif *BlockingInformerFactory) Get(gvr schema.GroupVersionResource) (cache.SharedIndexInformer, cache.GenericLister, error) {
-	atomic.AddInt32(&bif.getting, 1)
-	// Wait here until we can acquire the lock!
+	atomic.AddInt32(&bif.nCalls, 1)
+	// Wait here until we can acquire the lock
 	<-bif.block
-	return nil, nil, nil
+
+	// return dummies to avoid subsequent calls to informerCache.init
+	inf := &fakeSharedIndexInformer{}
+	lister := fakeGenericLister(gvr.GroupResource())
+
+	return inf, lister, nil
 }
 
 func TestSameGVR(t *testing.T) {
@@ -49,21 +54,25 @@ func TestSameGVR(t *testing.T) {
 		Delegate: bif,
 	}
 
-	grp, _ := errgroup.WithContext(context.TODO())
-	returned := int32(0)
+	// counts the number of calls to cif.Get that returned
+	retGetCount := int32(0)
 
-	// Use the same GVR each iteration to ensure we hit the cache
-	// and don't initialize too many InformerFactory's thru our
+	errGrp, _ := errgroup.WithContext(context.Background())
+
+	// Use the same GVR each iteration to ensure we hit the cache and don't
+	// initialize the informerCache for that GVR multiple times through our
 	// Delegate.
 	gvr := schema.GroupVersionResource{
 		Group:    "testing.knative.dev",
 		Version:  "v3",
 		Resource: "caches",
 	}
-	for i := 0; i < 10; i++ {
-		grp.Go(func() error {
+
+	const iter = 10
+	for i := 0; i < iter; i++ {
+		errGrp.Go(func() error {
 			_, _, err := cif.Get(gvr)
-			atomic.AddInt32(&returned, 1)
+			atomic.AddInt32(&retGetCount, 1)
 			return err
 		})
 	}
@@ -71,19 +80,29 @@ func TestSameGVR(t *testing.T) {
 	// Give the goroutines time to make progress.
 	time.Sleep(100 * time.Millisecond)
 
-	// Check that none have returned and we have one Get in progress.
-	if got, want := atomic.LoadInt32(&returned), int32(0); got != want {
-		t.Errorf("Got %v returned, wanted %v", got, want)
+	// Check that no call to cif.Get have returned and bif.Get was called
+	// only once.
+	if got, want := atomic.LoadInt32(&retGetCount), int32(0); got != want {
+		t.Errorf("Got %d returned call(s) to cif.Get, wanted %d", got, want)
 	}
-	if got, want := atomic.LoadInt32(&bif.getting), int32(1); got != want {
-		t.Errorf("Got %v calls to bif.Get, wanted %v", got, want)
+	if got, want := atomic.LoadInt32(&bif.nCalls), int32(1); got != want {
+		t.Errorf("Got %d call(s) to bif.Get, wanted %d", got, want)
 	}
 
 	// Allow the Get calls to proceed.
 	close(bif.block)
 
-	if err := grp.Wait(); err != nil {
-		t.Errorf("Wait() = %v", err)
+	if err := errGrp.Wait(); err != nil {
+		t.Fatalf("Error while calling cif.Get: %v", err)
+	}
+
+	// Check that all calls to cif.Get have returned and calls to bif.Get
+	// didn't increase.
+	if got, want := atomic.LoadInt32(&retGetCount), int32(iter); got != want {
+		t.Errorf("Got %d returned call(s) to cif.Get, wanted %d", got, want)
+	}
+	if got, want := atomic.LoadInt32(&bif.nCalls), int32(1); got != want {
+		t.Errorf("Got %d call(s) to bif.Get, wanted %d", got, want)
 	}
 }
 
@@ -94,9 +113,13 @@ func TestDifferentGVRs(t *testing.T) {
 		Delegate: bif,
 	}
 
-	grp, _ := errgroup.WithContext(context.TODO())
-	returned := int32(0)
-	for i := 0; i < 10; i++ {
+	// counts the number of calls to cif.Get that returned
+	retGetCount := int32(0)
+
+	errGrp, _ := errgroup.WithContext(context.Background())
+
+	const iter = 10
+	for i := 0; i < iter; i++ {
 		// Use a different GVR each iteration to check that calls
 		// to bif.Get can proceed even if a call is in progress
 		// for another GVR.
@@ -105,9 +128,10 @@ func TestDifferentGVRs(t *testing.T) {
 			Version:  fmt.Sprintf("v%d", i),
 			Resource: "caches",
 		}
-		grp.Go(func() error {
+
+		errGrp.Go(func() error {
 			_, _, err := cif.Get(gvr)
-			atomic.AddInt32(&returned, 1)
+			atomic.AddInt32(&retGetCount, 1)
 			return err
 		})
 	}
@@ -115,18 +139,38 @@ func TestDifferentGVRs(t *testing.T) {
 	// Give the goroutines time to make progress.
 	time.Sleep(100 * time.Millisecond)
 
-	// Check that none have returned and we have 10 Gets in progress.
-	if got, want := atomic.LoadInt32(&returned), int32(0); got != want {
-		t.Errorf("Got %v returned, wanted %v", got, want)
+	// Check that no call to cif.Get have returned and bif.Get was called
+	// once per iteration.
+	if got, want := atomic.LoadInt32(&retGetCount), int32(0); got != want {
+		t.Errorf("Got %d returned call(s) to cif.Get, wanted %d", got, want)
 	}
-	if got, want := atomic.LoadInt32(&bif.getting), int32(10); got != want {
-		t.Errorf("Got %v calls to bif.Get, wanted %v", got, want)
+	if got, want := atomic.LoadInt32(&bif.nCalls), int32(iter); got != want {
+		t.Errorf("Got %d call(s) to bif.Get, wanted %d", got, want)
 	}
 
 	// Allow the Get calls to proceed.
 	close(bif.block)
 
-	if err := grp.Wait(); err != nil {
-		t.Errorf("Wait() = %v", err)
+	if err := errGrp.Wait(); err != nil {
+		t.Fatalf("Error while calling cif.Get: %v", err)
 	}
+
+	// Check that all calls to cif.Get have returned and the number of
+	// calls to bif.Get didn't increase.
+	if got, want := atomic.LoadInt32(&retGetCount), int32(iter); got != want {
+		t.Errorf("Got %d returned call(s) to cif.Get, wanted %d", got, want)
+	}
+	if got, want := atomic.LoadInt32(&bif.nCalls), int32(iter); got != want {
+		t.Errorf("Got %d call(s) to bif.Get, wanted %d", got, want)
+	}
+}
+
+// fakeGenericLister returns a dummy cache.GenericLister.
+func fakeGenericLister(gr schema.GroupResource) cache.GenericLister {
+	var dummyKeyFunc cache.KeyFunc = func(interface{}) (string, error) {
+		return "", nil
+	}
+
+	dummyIndexer := cache.NewIndexer(dummyKeyFunc, cache.Indexers{})
+	return cache.NewGenericLister(dummyIndexer, gr)
 }

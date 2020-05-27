@@ -17,7 +17,9 @@ kind: ConfigMap
 metadata:
   name: config-observability-triggers
   namespace: tekton-pipelines
-
+  labels:
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-triggers
 data:
   _example: |
     ################################

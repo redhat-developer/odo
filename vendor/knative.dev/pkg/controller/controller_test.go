@@ -685,6 +685,16 @@ func TestEnqueues(t *testing.T) {
 		},
 		wantQueue: []types.NamespacedName{{Namespace: "", Name: "baz"}},
 	}, {
+		name: "enqueue namespace of object",
+		work: func(impl *Impl) {
+			impl.EnqueueNamespaceOf(&Resource{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "bar",
+				}})
+		},
+		wantQueue: []types.NamespacedName{{Name: "bar"}},
+	}, {
 		name: "enqueue label of deleted bad cluster scoped resource",
 		work: func(impl *Impl) {
 			impl.EnqueueLabelOfClusterScopedResource("name-key")(cache.DeletedFinalStateUnknown{
@@ -786,21 +796,21 @@ func TestStartAndShutdown(t *testing.T) {
 	r := &CountingReconciler{}
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", &FakeStatsReporter{})
 
-	stopCh := make(chan struct{})
+	ctx, cancel := context.WithCancel(context.Background())
 	doneCh := make(chan struct{})
 
 	go func() {
 		defer close(doneCh)
-		StartAll(stopCh, impl)
+		StartAll(ctx, impl)
 	}()
 
 	select {
 	case <-time.After(10 * time.Millisecond):
-		// We don't expect completion before the stopCh closes.
+		// We don't expect completion before the context is cancelled.
 	case <-doneCh:
 		t.Error("StartAll finished early.")
 	}
-	close(stopCh)
+	cancel()
 
 	select {
 	case <-time.After(1 * time.Second):
@@ -820,23 +830,23 @@ func TestStartAndShutdownWithWork(t *testing.T) {
 	reporter := &FakeStatsReporter{}
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", reporter)
 
-	stopCh := make(chan struct{})
+	ctx, cancel := context.WithCancel(context.Background())
 	doneCh := make(chan struct{})
 
 	impl.EnqueueKey(types.NamespacedName{Namespace: "foo", Name: "bar"})
 
 	go func() {
 		defer close(doneCh)
-		StartAll(stopCh, impl)
+		StartAll(ctx, impl)
 	}()
 
 	select {
 	case <-time.After(10 * time.Millisecond):
-		// We don't expect completion before the stopCh closes.
+		// We don't expect completion before the context is cancelled.
 	case <-doneCh:
 		t.Error("StartAll finished early.")
 	}
-	close(stopCh)
+	cancel()
 
 	select {
 	case <-time.After(1 * time.Second):
@@ -867,7 +877,7 @@ func TestStartAndShutdownWithErroringWork(t *testing.T) {
 	reporter := &FakeStatsReporter{}
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", reporter)
 
-	stopCh := make(chan struct{})
+	ctx, cancel := context.WithCancel(context.Background())
 	doneCh := make(chan struct{})
 
 	impl.EnqueueKey(types.NamespacedName{Namespace: "", Name: "bar"})
@@ -875,22 +885,22 @@ func TestStartAndShutdownWithErroringWork(t *testing.T) {
 	go func() {
 		defer close(doneCh)
 		// StartAll blocks until all the worker threads finish, which shouldn't
-		// be until we close stopCh.
-		StartAll(stopCh, impl)
+		// be until we cancel the context.
+		StartAll(ctx, impl)
 	}()
 
 	select {
 	case <-time.After(1 * time.Second):
-		// We don't expect completion before the stopCh closes,
+		// We don't expect completion before the context is cancelled,
 		// but the workers should spin on the erroring work.
 
 	case <-doneCh:
 		t.Error("StartAll finished early.")
 	}
 
-	// By closing the stopCh all the workers should complete and
+	// By cancelling the context all the workers should complete and
 	// we should close the doneCh.
-	close(stopCh)
+	cancel()
 
 	select {
 	case <-time.After(1 * time.Second):
@@ -922,23 +932,23 @@ func TestStartAndShutdownWithPermanentErroringWork(t *testing.T) {
 	reporter := &FakeStatsReporter{}
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", reporter)
 
-	stopCh := make(chan struct{})
+	ctx, cancel := context.WithCancel(context.Background())
 	doneCh := make(chan struct{})
 
 	impl.EnqueueKey(types.NamespacedName{Namespace: "foo", Name: "bar"})
 
 	go func() {
 		defer close(doneCh)
-		StartAll(stopCh, impl)
+		StartAll(ctx, impl)
 	}()
 
 	select {
 	case <-time.After(20 * time.Millisecond):
-		// We don't expect completion before the stopCh closes.
+		// We don't expect completion before the context is cancelled.
 	case <-doneCh:
 		t.Error("StartAll finished early.")
 	}
-	close(stopCh)
+	cancel()
 
 	select {
 	case <-time.After(1 * time.Second):
@@ -1013,12 +1023,12 @@ func TestImplGlobalResync(t *testing.T) {
 	r := &CountingReconciler{}
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", &FakeStatsReporter{})
 
-	stopCh := make(chan struct{})
+	ctx, cancel := context.WithCancel(context.Background())
 	doneCh := make(chan struct{})
 
 	go func() {
 		defer close(doneCh)
-		StartAll(stopCh, impl)
+		StartAll(ctx, impl)
 	}()
 
 	impl.GlobalResync(&dummyInformer{})
@@ -1027,11 +1037,11 @@ func TestImplGlobalResync(t *testing.T) {
 	// goes up to len(dummyObjs) times a second.
 	select {
 	case <-time.After((1 + 3) * time.Second):
-		// We don't expect completion before the stopCh closes.
+		// We don't expect completion before the context is cancelled.
 	case <-doneCh:
 		t.Error("StartAll finished early.")
 	}
-	close(stopCh)
+	cancel()
 
 	select {
 	case <-time.After(1 * time.Second):

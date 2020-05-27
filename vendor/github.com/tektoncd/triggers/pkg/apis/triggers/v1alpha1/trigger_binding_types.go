@@ -17,18 +17,30 @@ limitations under the License.
 package v1alpha1
 
 import (
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 )
 
 // Check that TriggerBinding may be validated and defaulted.
 var _ apis.Validatable = (*TriggerBinding)(nil)
+var _ apis.Defaultable = (*TriggerBinding)(nil)
+
+func (tb *TriggerBinding) TriggerBindingSpec() TriggerBindingSpec {
+	return tb.Spec
+}
+
+func (tb *TriggerBinding) TriggerBindingMetadata() metav1.ObjectMeta {
+	return tb.ObjectMeta
+}
+
+func (tb *TriggerBinding) Copy() TriggerBindingInterface {
+	return tb.DeepCopy()
+}
 
 // TriggerBindingSpec defines the desired state of the TriggerBinding.
 type TriggerBindingSpec struct {
 	// Params defines the parameter mapping from the given input event.
-	Params []pipelinev1.Param `json:"params,omitempty"`
+	Params []Param `json:"params,omitempty"`
 }
 
 // TriggerBindingStatus defines the observed state of TriggerBinding.
@@ -49,7 +61,7 @@ type TriggerBinding struct {
 	// +optional
 	Spec TriggerBindingSpec `json:"spec"`
 	// +optional
-	Status TriggerBindingStatus `json:"status"`
+	Status TriggerBindingStatus `json:"status,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

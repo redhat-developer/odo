@@ -1,14 +1,20 @@
 [
   {
-    "State": "success",
-    "Label": "team-bb-server » repo-1 » master #23",
-    "Desc": "This commit looks good.",
-    "Target": "http://example.com/master-1/job/kyounger/job/repo-1/job/master/21/display/redirect"
+    "State": "failure",
+    "Label": "first-key",
+    "Desc": "This commit looks bad.",
+    "Target": "http://example.com/master-1/job/kyounger/job/repo-1/job/master/22/display/redirect"
   },
   {
     "State": "success",
-    "Label": "team-bb-server » repo-1 » master #22",
+    "Label": "second-key",
     "Desc": "This commit looks good.",
-    "Target": "http://example.com/master-1/job/kyounger/job/repo-1/job/master/22/display/redirect"
+    "Target": "http://example.com/master-1/job/kyounger/job/repo-1/job/master/22something/display/redirect"
+  },
+  {
+    "State": "success",
+    "Label": "first-key",
+    "Desc": "This commit looks good.",
+    "Target": "http://example.com/master-1/job/kyounger/job/repo-1/job/master/23/display/redirect"
   }
 ]

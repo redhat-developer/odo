@@ -31,7 +31,7 @@ source $(dirname $0)/../vendor/github.com/tektoncd/plumbing/scripts/presubmit-te
 
 function post_build_tests() {
     return_code=0
-    golangci-lint run --deadline=2m || return_code=1
+    golangci-lint run --deadline=5m || return_code=1
     echo "Diffing against the documentation yaml"
     ${REPO_ROOT_DIR}/hack/update-docs.sh -d || return_code=1
     return ${return_code}

@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -147,6 +148,12 @@ func (s *pullService) Close(ctx context.Context, repo string, number int) (*scm.
 	return res, err
 }
 
+func (s *pullService) Reopen(ctx context.Context, repo string, number int) (*scm.Response, error) {
+	path := fmt.Sprintf("api/v4/projects/%s/merge_requests/%d?state_event=reopen", encode(repo), number)
+	res, err := s.client.do(ctx, "PUT", path, nil, nil)
+	return res, err
+}
+
 func (s *pullService) AssignIssue(ctx context.Context, repo string, number int, logins []string) (*scm.Response, error) {
 	pr, _, err := s.Find(ctx, repo, number)
 	if err != nil {
@@ -174,6 +181,9 @@ func (s *pullService) AssignIssue(ctx context.Context, repo string, number int, 
 }
 
 func (s *pullService) setAssignees(ctx context.Context, repo string, number int, ids []int) (*scm.Response, error) {
+	if len(ids) == 0 {
+		ids = append(ids, 0)
+	}
 	in := &updateMergeRequestOptions{
 		AssigneeIDs: ids,
 	}
@@ -203,6 +213,14 @@ func (s *pullService) UnassignIssue(ctx context.Context, repo string, number int
 	return s.setAssignees(ctx, repo, number, assignees)
 }
 
+func (s *pullService) RequestReview(ctx context.Context, repo string, number int, logins []string) (*scm.Response, error) {
+	return s.AssignIssue(ctx, repo, number, logins)
+}
+
+func (s *pullService) UnrequestReview(ctx context.Context, repo string, number int, logins []string) (*scm.Response, error) {
+	return s.UnassignIssue(ctx, repo, number, logins)
+}
+
 func (s *pullService) Create(ctx context.Context, repo string, input *scm.PullRequestInput) (*scm.PullRequest, *scm.Response, error) {
 	path := fmt.Sprintf("api/v4/projects/%s/merge_requests", encode(repo))
 	in := &prInput{
@@ -215,6 +233,20 @@ func (s *pullService) Create(ctx context.Context, repo string, input *scm.PullRe
 	out := new(pr)
 	res, err := s.client.do(ctx, "POST", path, in, out)
 	return convertPullRequest(out), res, err
+}
+
+func (s *pullService) Update(ctx context.Context, repo string, number int, input *scm.PullRequestInput) (*scm.PullRequest, *scm.Response, error) {
+	updateOpts := &updateMergeRequestOptions{}
+	if input.Title != "" {
+		updateOpts.Title = &input.Title
+	}
+	if input.Body != "" {
+		updateOpts.Description = &input.Body
+	}
+	if input.Base != "" {
+		updateOpts.TargetBranch = &input.Base
+	}
+	return s.updateMergeRequestField(ctx, repo, number, updateOpts)
 }
 
 type updateMergeRequestOptions struct {
@@ -241,29 +273,29 @@ func (s *pullService) updateMergeRequestField(ctx context.Context, repo string, 
 }
 
 type pr struct {
-	Number int       `json:"iid"`
-	Sha    string    `json:"sha"`
-	Title  string    `json:"title"`
-	Desc   string    `json:"description"`
-	State  string    `json:"state"`
-	Labels []*string `json:"labels"`
-	Link   string    `json:"web_url"`
-	Author struct {
-		Username string `json:"username"`
-		Email    string `json:"email"`
-		Name     string `json:"name"`
-		Avatar   string `json:"avatar_url"`
-	}
-	MergeStatus  string    `json:"merge_status"`
-	SourceBranch string    `json:"source_branch"`
-	TargetBranch string    `json:"target_branch"`
-	Created      time.Time `json:"created_at"`
-	Updated      time.Time `json:"updated_at"`
-	Closed       time.Time
-	DiffRefs     struct {
+	Number          int       `json:"iid"`
+	Sha             string    `json:"sha"`
+	Title           string    `json:"title"`
+	Desc            string    `json:"description"`
+	State           string    `json:"state"`
+	SourceProjectID int       `json:"source_project_id"`
+	TargetProjectID int       `json:"target_project_id"`
+	Labels          []*string `json:"labels"`
+	Link            string    `json:"web_url"`
+	WIP             bool      `json:"work_in_progress"`
+	Author          user      `json:"author"`
+	MergeStatus     string    `json:"merge_status"`
+	SourceBranch    string    `json:"source_branch"`
+	TargetBranch    string    `json:"target_branch"`
+	Created         time.Time `json:"created_at"`
+	Updated         time.Time `json:"updated_at"`
+	Closed          time.Time
+	DiffRefs        struct {
 		BaseSHA string `json:"base_sha"`
 		HeadSHA string `json:"head_sha"`
 	} `json:"diff_refs"`
+	Assignee  *user   `json:"assignee"`
+	Assignees []*user `json:"assignees"`
 }
 
 type changes struct {
@@ -301,32 +333,44 @@ func convertPullRequest(from *pr) *scm.PullRequest {
 	if headSHA == "" && from.DiffRefs.HeadSHA != "" {
 		headSHA = from.DiffRefs.HeadSHA
 	}
+	var assignees []scm.User
+	if from.Assignee != nil {
+		assignees = append(assignees, *convertUser(from.Assignee))
+	}
+	for _, a := range from.Assignees {
+		assignees = append(assignees, *convertUser(a))
+	}
 	return &scm.PullRequest{
 		Number:         from.Number,
 		Title:          from.Title,
 		Body:           from.Desc,
+		State:          gitlabStateToSCMState(from.State),
 		Labels:         convertPullRequestLabels(from.Labels),
 		Sha:            from.Sha,
 		Ref:            fmt.Sprintf("refs/merge-requests/%d/head", from.Number),
 		Source:         from.SourceBranch,
 		Target:         from.TargetBranch,
 		Link:           from.Link,
+		Draft:          from.WIP,
 		Closed:         from.State != "opened",
 		Merged:         from.State == "merged",
 		Mergeable:      scm.ToMergeableState(from.MergeStatus) == scm.MergeableStateMergeable,
 		MergeableState: scm.ToMergeableState(from.MergeStatus),
-		Author: scm.User{
-			Name:   from.Author.Name,
-			Login:  from.Author.Username,
-			Avatar: from.Author.Avatar,
-		},
+		Author:         *convertUser(&from.Author),
+		Assignees:      assignees,
 		Head: scm.PullRequestBranch{
-			Ref: fmt.Sprintf("refs/heads/%s", from.SourceBranch),
+			Ref: from.SourceBranch,
 			Sha: headSHA,
+			Repo: scm.Repository{
+				ID: strconv.Itoa(from.SourceProjectID),
+			},
 		},
 		Base: scm.PullRequestBranch{
-			Ref: fmt.Sprintf("refs/heads/%s", from.TargetBranch),
+			Ref: from.TargetBranch,
 			Sha: from.DiffRefs.BaseSHA,
+			Repo: scm.Repository{
+				ID: strconv.Itoa(from.TargetProjectID),
+			},
 		},
 		Created: from.Created,
 		Updated: from.Updated,

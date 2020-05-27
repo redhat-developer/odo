@@ -43,6 +43,30 @@ func (s *gitService) FindRef(ctx context.Context, repo, ref string) (string, *sc
 	return out.Object["sha"], res, err
 }
 
+// CreateRef creates a new ref
+func (s *gitService) CreateRef(ctx context.Context, repo, ref, sha string) (*scm.Reference, *scm.Response, error) {
+	path := fmt.Sprintf("repos/%s/git/refs", repo)
+	in := &struct {
+		Ref string `json:"ref"`
+		Sha string `json:"sha"`
+	}{Ref: ref, Sha: sha}
+
+	out := &struct {
+		Ref    string `json:"ref"`
+		Object struct {
+			Sha string
+		} `json:"object"`
+	}{}
+
+	res, err := s.client.do(ctx, http.MethodPost, path, in, out)
+	scmRef := &scm.Reference{
+		Name: out.Ref,
+		Sha:  out.Object.Sha,
+		Path: out.Ref,
+	}
+	return scmRef, res, err
+}
+
 // DeleteRef deletes the given ref
 //
 // See https://developer.github.com/v3/git/refs/#delete-a-reference

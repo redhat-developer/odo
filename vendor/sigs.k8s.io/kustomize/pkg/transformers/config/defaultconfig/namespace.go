@@ -21,9 +21,5 @@ const (
 namespace:
 - path: metadata/namespace
   create: true
-- path: subjects
-  kind: RoleBinding
-- path: subjects
-  kind: ClusterRoleBinding
 `
 )

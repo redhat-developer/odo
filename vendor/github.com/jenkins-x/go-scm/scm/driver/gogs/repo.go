@@ -33,7 +33,7 @@ func (s *repositoryService) IsCollaborator(ctx context.Context, repo, user strin
 	return false, nil, scm.ErrNotSupported
 }
 
-func (s *repositoryService) ListCollaborators(ctx context.Context, repo string) ([]scm.User, *scm.Response, error) {
+func (s *repositoryService) ListCollaborators(ctx context.Context, repo string, ops scm.ListOptions) ([]scm.User, *scm.Response, error) {
 	return nil, nil, scm.ErrNotSupported
 }
 

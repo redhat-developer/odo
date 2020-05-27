@@ -18,7 +18,6 @@ package types
 
 import (
 	"fmt"
-	"reflect"
 	"sort"
 	"strings"
 
@@ -55,7 +54,6 @@ type Target struct {
 	APIVersion string `json:"apiVersion,omitempty" yaml:"apiVersion,omitempty"`
 	gvk.Gvk    `json:",inline,omitempty" yaml:",inline,omitempty"`
 	Name       string `json:"name" yaml:"name"`
-	Namespace  string `json:"namespace,omitempty" yaml:"namespace,omitempty"`
 }
 
 // FieldSelector contains the fieldPath to an object field.
@@ -66,127 +64,53 @@ type FieldSelector struct {
 }
 
 // defaulting sets reference to field used by default.
-func (v *Var) Defaulting() {
+func (v *Var) defaulting() {
 	if v.FieldRef.FieldPath == "" {
 		v.FieldRef.FieldPath = defaultFieldPath
 	}
-	v.ObjRef.GVK()
 }
 
-// DeepEqual returns true if var a and b are Equals.
-// Note 1: The objects are unchanged by the VarEqual
-// Note 2: Should be normalize be FieldPath before doing
-// the DeepEqual. spec.a[b] is supposed to be the same
-// as spec.a.b
-func (v Var) DeepEqual(other Var) bool {
-	v.Defaulting()
-	other.Defaulting()
-	return reflect.DeepEqual(v, other)
-}
-
-// VarSet is a set of Vars where no var.Name is repeated.
+// VarSet is a slice of Vars where no var.Name is repeated.
 type VarSet struct {
-	set map[string]Var
+	set []Var
 }
 
-// NewVarSet returns an initialized VarSet
-func NewVarSet() VarSet {
-	return VarSet{set: map[string]Var{}}
-}
-
-// AsSlice returns the vars as a slice.
-func (vs *VarSet) AsSlice() []Var {
+// Set returns a copy of the var set.
+func (vs *VarSet) Set() []Var {
 	s := make([]Var, len(vs.set))
-	i := 0
-	for _, v := range vs.set {
-		s[i] = v
-		i++
-	}
-	sort.Sort(ByName(s))
+	copy(s, vs.set)
 	return s
 }
 
-// Copy returns a copy of the var set.
-func (vs *VarSet) Copy() VarSet {
-	newSet := make(map[string]Var, len(vs.set))
-	for k, v := range vs.set {
-		newSet[k] = v
-	}
-	return VarSet{set: newSet}
-}
-
 // MergeSet absorbs other vars with error on name collision.
-func (vs *VarSet) MergeSet(incoming VarSet) error {
-	for _, incomingVar := range incoming.set {
-		if err := vs.Merge(incomingVar); err != nil {
-			return err
-		}
-	}
-	return nil
+func (vs *VarSet) MergeSet(incoming *VarSet) error {
+	return vs.MergeSlice(incoming.set)
 }
 
-// MergeSlice absorbs a Var slice with error on name collision.
+// MergeSlice absorbs other vars with error on name collision.
 // Empty fields in incoming vars are defaulted.
 func (vs *VarSet) MergeSlice(incoming []Var) error {
 	for _, v := range incoming {
-		if err := vs.Merge(v); err != nil {
-			return err
+		if vs.Contains(v) {
+			return fmt.Errorf(
+				"var %s already encountered", v.Name)
 		}
+		v.defaulting()
+		vs.insert(v)
 	}
 	return nil
 }
 
-// Merge absorbs another Var with error on name collision.
-// Empty fields in incoming Var is defaulted.
-func (vs *VarSet) Merge(v Var) error {
-	if vs.Contains(v) {
-		return fmt.Errorf(
-			"var '%s' already encountered", v.Name)
-	}
-	v.Defaulting()
-	vs.set[v.Name] = v
-	return nil
-}
-
-// AbsorbSet absorbs other vars with error on (name,value) collision.
-func (vs *VarSet) AbsorbSet(incoming VarSet) error {
-	for _, v := range incoming.set {
-		if err := vs.Absorb(v); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// AbsorbSlice absorbs a Var slice with error on (name,value) collision.
-// Empty fields in incoming vars are defaulted.
-func (vs *VarSet) AbsorbSlice(incoming []Var) error {
-	for _, v := range incoming {
-		if err := vs.Absorb(v); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// Absorb absorbs another Var with error on (name,value) collision.
-// Empty fields in incoming Var is defaulted.
-func (vs *VarSet) Absorb(v Var) error {
-	conflicting := vs.Get(v.Name)
-	if conflicting == nil {
-		// no conflict. The var is valid.
-		v.Defaulting()
-		vs.set[v.Name] = v
-		return nil
-	}
-
-	if !reflect.DeepEqual(v, *conflicting) {
-		// two vars with the same name are pointing at two
-		// different resources.
-		return fmt.Errorf(
-			"var '%s' already encountered", v.Name)
-	}
-	return nil
+func (vs *VarSet) insert(v Var) {
+	index := sort.Search(
+		len(vs.set),
+		func(i int) bool { return vs.set[i].Name > v.Name })
+	// make room
+	vs.set = append(vs.set, Var{})
+	// shift right at index.
+	// copy will not increase size of destination.
+	copy(vs.set[index+1:], vs.set[index:])
+	vs.set[index] = v
 }
 
 // Contains is true if the set has the other var.
@@ -196,8 +120,10 @@ func (vs *VarSet) Contains(other Var) bool {
 
 // Get returns the var with the given name, else nil.
 func (vs *VarSet) Get(name string) *Var {
-	if v, found := vs.set[name]; found {
-		return &v
+	for _, v := range vs.set {
+		if v.Name == name {
+			return &v
+		}
 	}
 	return nil
 }
@@ -217,10 +143,3 @@ func (t *Target) GVK() gvk.Gvk {
 	}
 	return t.Gvk
 }
-
-// ByName is a sort interface which sorts Vars by name alphabetically
-type ByName []Var
-
-func (v ByName) Len() int           { return len(v) }
-func (v ByName) Swap(i, j int)      { v[i], v[j] = v[j], v[i] }
-func (v ByName) Less(i, j int) bool { return v[i].Name < v[j].Name }

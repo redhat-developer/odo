@@ -4,6 +4,9 @@ run:
   skip-dirs:
   - vendor
   - pkg/client/clientset/(.*)/fake
+linters-settings:
+  errcheck:
+    exclude: .errcheck.txt
 linters:
   enable:
   - errcheck

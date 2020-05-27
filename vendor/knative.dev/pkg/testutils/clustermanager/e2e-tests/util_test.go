@@ -17,8 +17,10 @@ limitations under the License.
 package clustermanager
 
 import (
+	"strings"
 	"testing"
 
+	"knative.dev/pkg/test/cmd"
 	"knative.dev/pkg/testutils/clustermanager/e2e-tests/common"
 )
 
@@ -56,7 +58,44 @@ func TestGetResourceName(t *testing.T) {
 			t.Fatalf("getting resource name for cluster, want: 'no error', got: '%v'", err)
 		}
 		if out != data.exp {
-			t.Fatalf("getting resource name for cluster, want: '%s', got: '%s'", data.exp, out)
+			t.Fatalf("getting resource name for cluster, want: %q, got: %q", data.exp, out)
+		}
+	}
+}
+
+func TestResolveGKEVersion(t *testing.T) {
+	datas := []struct {
+		raw      string
+		location string
+		expect   string
+	}{
+		{defaultGKEVersion, "us-west1", "1.2.3"},
+		{latestGKEVersion, "us-central1", "4.5.6"},
+		{"1.1.1", "us-west1-c", "1.1.1"},
+	}
+
+	oldFunc := cmd.RunCommand
+	defer func() {
+		cmd.RunCommand = oldFunc
+	}()
+
+	cmd.RunCommand = func(cmdLine string, options ...cmd.Option) (string, error) {
+		if strings.Contains(cmdLine, "defaultClusterVersion") {
+			return "1.2.3", nil
+		}
+		if strings.Contains(cmdLine, "validMasterVersions") {
+			return "4.5.6;2.3.4;1.2.3", nil
+		}
+		return "", nil
+	}
+
+	for _, data := range datas {
+		out, err := resolveGKEVersion(data.raw, data.location)
+		if err != nil {
+			t.Fatalf("resolving GKE version for %q, want: 'no error', got: '%v'", data.raw, err)
+		}
+		if out != data.expect {
+			t.Fatalf("resolving GKE version for %q, want: %q, got: %q", data.raw, data.expect, out)
 		}
 	}
 }

@@ -118,7 +118,7 @@ EVENTLISTENER_NAME="ingress-test-eventlistener"
 
 # Create EventListener
 cat << DONE | kubectl apply -f -
-apiVersion: tekton.dev/v1alpha1
+apiVersion: triggers.tekton.dev/v1alpha1
 kind: EventListener
 metadata:
   name: ${EVENTLISTENER_NAME}
@@ -140,29 +140,28 @@ EXTERNAL_DOMAIN="${SERVICE_NAME}.192.168.0.1.nip.io"
 
 # Create Ingress using Ingress Task
 cat << DONE | kubectl apply -f -
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: TaskRun
 metadata:
   name: ${INGRESS_TASKRUN_NAME}
 spec:
   taskRef:
     name: create-ingress
-  inputs:
-    params:
-    - name: CertificateKeyPassphrase
-      value: ${CERTIFICATE_KEY_PASSPHRASE}
-    - name: CertificateSecretName
-      value: ${CERTIFICATE_SECRET_NAME}
-    - name: ExternalDomain
-      value: ${EXTERNAL_DOMAIN}
-    - name: Service
-      value: ${SERVICE_NAME}
-    - name: ServicePort
-      value: "8080"
-    - name: ServiceUID
-      value: ${SERVICE_UID}
+  params:
+  - name: CertificateKeyPassphrase
+    value: ${CERTIFICATE_KEY_PASSPHRASE}
+  - name: CertificateSecretName
+    value: ${CERTIFICATE_SECRET_NAME}
+  - name: ExternalDomain
+    value: ${EXTERNAL_DOMAIN}
+  - name: Service
+    value: ${SERVICE_NAME}
+  - name: ServicePort
+    value: "8080"
+  - name: ServiceUID
+    value: ${SERVICE_UID}
   timeout: 1000s
-  serviceAccount: default
+  serviceAccountName: default
 DONE
 wait_until_taskrun_completed ${INGRESS_TASKRUN_NAME}
 
@@ -188,5 +187,3 @@ matchOrFail "Checking the Ingress Rules Host" ${EXTERNAL_DOMAIN} ${ingress_rules
 matchOrFail "Checking the Ingress TLS Host" ${EXTERNAL_DOMAIN} ${ingress_tls_host}
 matchOrFail "Checking the Ingress TLS Secret" ${CERTIFICATE_SECRET_NAME} ${ingress_tls_secret}
 matchOrFail "Checking the Ingress OwnerReference" ${SERVICE_UID} ${ingress_owner_reference_uid}
-
-

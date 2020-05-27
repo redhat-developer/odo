@@ -214,7 +214,7 @@ func convertTagHook(src *pushHook) *scm.TagHook {
 }
 
 func convertPullRequestHook(src *pullRequestHook) *scm.PullRequestHook {
-	action := scm.ActionSync
+	action := scm.ActionUpdate
 	switch src.ObjectAttributes.Action {
 	case "open":
 		action = scm.ActionOpen
@@ -225,7 +225,7 @@ func convertPullRequestHook(src *pullRequestHook) *scm.PullRequestHook {
 	case "merge":
 		action = scm.ActionMerge
 	case "update":
-		action = scm.ActionSync
+		action = scm.ActionUpdate
 	}
 	fork := scm.Join(
 		src.ObjectAttributes.Source.Namespace,
@@ -238,6 +238,7 @@ func convertPullRequestHook(src *pullRequestHook) *scm.PullRequestHook {
 		Number: src.ObjectAttributes.Iid,
 		Title:  src.ObjectAttributes.Title,
 		Body:   src.ObjectAttributes.Description,
+		State:  gitlabStateToSCMState(src.ObjectAttributes.State),
 		Sha:    sha,
 		Ref:    ref,
 		Base: scm.PullRequestBranch{
@@ -261,8 +262,8 @@ func convertPullRequestHook(src *pullRequestHook) *scm.PullRequestHook {
 			Avatar: src.User.AvatarURL,
 		},
 	}
-	pr.Base.Repo = repo
-	pr.Head.Repo = repo
+	pr.Base.Repo = *convertRepositoryHook(src.ObjectAttributes.Target)
+	pr.Head.Repo = *convertRepositoryHook(src.ObjectAttributes.Source)
 	return &scm.PullRequestHook{
 		Action:      action,
 		PullRequest: pr,
@@ -302,6 +303,7 @@ func convertMergeRequestCommentHook(src *commentHook) *scm.PullRequestCommentHoo
 		Number: src.MergeRequest.Iid,
 		Title:  src.MergeRequest.Title,
 		Body:   src.MergeRequest.Description,
+		State:  gitlabStateToSCMState(src.MergeRequest.State),
 		Sha:    sha,
 		Ref:    ref,
 		Base: scm.PullRequestBranch{
@@ -321,8 +323,8 @@ func convertMergeRequestCommentHook(src *commentHook) *scm.PullRequestCommentHoo
 		Updated: updated_pr_at, // 2017-12-10 17:01:11 UTC
 		Author:  user,
 	}
-	pr.Base.Repo = repo
-	pr.Head.Repo = repo
+	pr.Base.Repo = *convertRepositoryHook(src.MergeRequest.Target)
+	pr.Head.Repo = *convertRepositoryHook(src.MergeRequest.Source)
 
 	created_at, _ := time.Parse("2006-01-02 15:04:05 MST", src.ObjectAttributes.CreatedAt)
 	updated_at, _ := time.Parse("2006-01-02 15:04:05 MST", src.ObjectAttributes.UpdatedAt)
@@ -514,43 +516,9 @@ type (
 			UpdatedAt                 string      `json:"updated_at"`
 			UpdatedByID               interface{} `json:"updated_by_id"`
 			URL                       string      `json:"url"`
-			Source                    struct {
-				ID                int         `json:"id"`
-				Name              string      `json:"name"`
-				Description       string      `json:"description"`
-				WebURL            string      `json:"web_url"`
-				AvatarURL         interface{} `json:"avatar_url"`
-				GitSSHURL         string      `json:"git_ssh_url"`
-				GitHTTPURL        string      `json:"git_http_url"`
-				Namespace         string      `json:"namespace"`
-				VisibilityLevel   int         `json:"visibility_level"`
-				PathWithNamespace string      `json:"path_with_namespace"`
-				DefaultBranch     string      `json:"default_branch"`
-				CiConfigPath      interface{} `json:"ci_config_path"`
-				Homepage          string      `json:"homepage"`
-				URL               string      `json:"url"`
-				SSHURL            string      `json:"ssh_url"`
-				HTTPURL           string      `json:"http_url"`
-			} `json:"source"`
-			Target struct {
-				ID                int         `json:"id"`
-				Name              string      `json:"name"`
-				Description       string      `json:"description"`
-				WebURL            string      `json:"web_url"`
-				AvatarURL         interface{} `json:"avatar_url"`
-				GitSSHURL         string      `json:"git_ssh_url"`
-				GitHTTPURL        string      `json:"git_http_url"`
-				Namespace         string      `json:"namespace"`
-				VisibilityLevel   int         `json:"visibility_level"`
-				PathWithNamespace string      `json:"path_with_namespace"`
-				DefaultBranch     string      `json:"default_branch"`
-				CiConfigPath      interface{} `json:"ci_config_path"`
-				Homepage          string      `json:"homepage"`
-				URL               string      `json:"url"`
-				SSHURL            string      `json:"ssh_url"`
-				HTTPURL           string      `json:"http_url"`
-			} `json:"target"`
-			LastCommit struct {
+			Source                    *project    `json:"source"`
+			Target                    *project    `json:"target"`
+			LastCommit                struct {
 				ID        string `json:"id"`
 				Message   string `json:"message"`
 				Timestamp string `json:"timestamp"`
@@ -720,43 +688,9 @@ type (
 			UpdatedAt                 string      `json:"updated_at"`
 			UpdatedByID               interface{} `json:"updated_by_id"`
 			URL                       string      `json:"url"`
-			Source                    struct {
-				ID                int         `json:"id"`
-				Name              string      `json:"name"`
-				Description       string      `json:"description"`
-				WebURL            string      `json:"web_url"`
-				AvatarURL         interface{} `json:"avatar_url"`
-				GitSSHURL         string      `json:"git_ssh_url"`
-				GitHTTPURL        string      `json:"git_http_url"`
-				Namespace         string      `json:"namespace"`
-				VisibilityLevel   int         `json:"visibility_level"`
-				PathWithNamespace string      `json:"path_with_namespace"`
-				DefaultBranch     string      `json:"default_branch"`
-				CiConfigPath      interface{} `json:"ci_config_path"`
-				Homepage          string      `json:"homepage"`
-				URL               string      `json:"url"`
-				SSHURL            string      `json:"ssh_url"`
-				HTTPURL           string      `json:"http_url"`
-			} `json:"source"`
-			Target struct {
-				ID                int         `json:"id"`
-				Name              string      `json:"name"`
-				Description       string      `json:"description"`
-				WebURL            string      `json:"web_url"`
-				AvatarURL         interface{} `json:"avatar_url"`
-				GitSSHURL         string      `json:"git_ssh_url"`
-				GitHTTPURL        string      `json:"git_http_url"`
-				Namespace         string      `json:"namespace"`
-				VisibilityLevel   int         `json:"visibility_level"`
-				PathWithNamespace string      `json:"path_with_namespace"`
-				DefaultBranch     string      `json:"default_branch"`
-				CiConfigPath      interface{} `json:"ci_config_path"`
-				Homepage          string      `json:"homepage"`
-				URL               string      `json:"url"`
-				SSHURL            string      `json:"ssh_url"`
-				HTTPURL           string      `json:"http_url"`
-			} `json:"target"`
-			LastCommit struct {
+			Source                    *project    `json:"source"`
+			Target                    *project    `json:"target"`
+			LastCommit                struct {
 				ID        string `json:"id"`
 				Message   string `json:"message"`
 				Timestamp string `json:"timestamp"`

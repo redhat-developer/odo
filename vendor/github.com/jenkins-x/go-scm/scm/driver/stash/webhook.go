@@ -43,7 +43,7 @@ func (s *webhookService) Parse(req *http.Request, fn scm.SecretFunc) (scm.Webhoo
 	switch req.Header.Get("X-Event-Key") {
 	case "repo:refs_changed":
 		hook, err = s.parsePushHook(data)
-	case "pr:opened", "pr:declined", "pr:merged", "pr:from_ref_updated":
+	case "pr:opened", "pr:declined", "pr:merged", "pr:from_ref_updated", "pr:modified":
 		hook, err = s.parsePullRequest(data)
 	case "pr:comment:added":
 		hook, err = s.parsePullRequestComment(data)
@@ -109,6 +109,8 @@ func (s *webhookService) parsePullRequest(data []byte) (scm.Webhook, error) {
 		dst.Action = scm.ActionMerge
 	case "pr:from_ref_updated":
 		dst.Action = scm.ActionSync
+	case "pr:modified":
+		dst.Action = scm.ActionUpdate
 	default:
 		return nil, nil
 	}
@@ -138,11 +140,14 @@ type pushHook struct {
 }
 
 type pullRequestHook struct {
-	EventKey         string       `json:"eventKey"`
-	Date             string       `json:"date"`
-	Actor            *user        `json:"actor"`
-	PullRequest      *pullRequest `json:"pullRequest"`
-	PreviousFromHash string       `json:"previousFromHash"`
+	EventKey            string       `json:"eventKey"`
+	Date                string       `json:"date"`
+	Actor               *user        `json:"actor"`
+	PullRequest         *pullRequest `json:"pullRequest"`
+	PreviousFromHash    string       `json:"previousFromHash"`
+	PreviousTitle       string       `json:"previousTitle"`
+	PreviousDescription string       `json:"previousDescription"`
+	PreviousTarget      interface{}  `json:"previousTarget"`
 }
 
 type pullRequestCommentHook struct {

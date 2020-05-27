@@ -19,11 +19,11 @@ package resources
 import (
 	"fmt"
 
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )
 
 // ApplyParameters applies the params from a PipelineRun.Params to a PipelineSpec.
-func ApplyParameters(p *v1alpha1.PipelineSpec, pr *v1alpha1.PipelineRun) *v1alpha1.PipelineSpec {
+func ApplyParameters(p *v1beta1.PipelineSpec, pr *v1beta1.PipelineRun) *v1beta1.PipelineSpec {
 	// This assumes that the PipelineRun inputs have been validated against what the Pipeline requests.
 
 	// stringReplacements is used for standard single-string stringReplacements, while arrayReplacements contains arrays
@@ -34,7 +34,7 @@ func ApplyParameters(p *v1alpha1.PipelineSpec, pr *v1alpha1.PipelineRun) *v1alph
 	// Set all the default stringReplacements
 	for _, p := range p.Params {
 		if p.Default != nil {
-			if p.Default.Type == v1alpha1.ParamTypeString {
+			if p.Default.Type == v1beta1.ParamTypeString {
 				stringReplacements[fmt.Sprintf("params.%s", p.Name)] = p.Default.StringVal
 			} else {
 				arrayReplacements[fmt.Sprintf("params.%s", p.Name)] = p.Default.ArrayVal
@@ -43,7 +43,7 @@ func ApplyParameters(p *v1alpha1.PipelineSpec, pr *v1alpha1.PipelineRun) *v1alph
 	}
 	// Set and overwrite params with the ones from the PipelineRun
 	for _, p := range pr.Spec.Params {
-		if p.Value.Type == v1alpha1.ParamTypeString {
+		if p.Value.Type == v1beta1.ParamTypeString {
 			stringReplacements[fmt.Sprintf("params.%s", p.Name)] = p.Value.StringVal
 		} else {
 			arrayReplacements[fmt.Sprintf("params.%s", p.Name)] = p.Value.ArrayVal
@@ -53,8 +53,32 @@ func ApplyParameters(p *v1alpha1.PipelineSpec, pr *v1alpha1.PipelineRun) *v1alph
 	return ApplyReplacements(p, stringReplacements, arrayReplacements)
 }
 
+// ApplyTaskResults applies the ResolvedResultRef to each PipelineTask.Params in targets
+func ApplyTaskResults(targets PipelineRunState, resolvedResultRefs ResolvedResultRefs) {
+	stringReplacements := map[string]string{}
+
+	for _, resolvedResultRef := range resolvedResultRefs {
+		replaceTarget := fmt.Sprintf("%s.%s.%s.%s", v1beta1.ResultTaskPart, resolvedResultRef.ResultReference.PipelineTask, v1beta1.ResultResultPart, resolvedResultRef.ResultReference.Result)
+		stringReplacements[replaceTarget] = resolvedResultRef.Value.StringVal
+	}
+
+	for _, resolvedPipelineRunTask := range targets {
+		// also make substitution for resolved condition checks
+		for _, resolvedConditionCheck := range resolvedPipelineRunTask.ResolvedConditionChecks {
+			pipelineTaskCondition := resolvedConditionCheck.PipelineTaskCondition.DeepCopy()
+			pipelineTaskCondition.Params = replaceParamValues(pipelineTaskCondition.Params, stringReplacements, nil)
+			resolvedConditionCheck.PipelineTaskCondition = pipelineTaskCondition
+		}
+		if resolvedPipelineRunTask.PipelineTask != nil {
+			pipelineTask := resolvedPipelineRunTask.PipelineTask.DeepCopy()
+			pipelineTask.Params = replaceParamValues(pipelineTask.Params, stringReplacements, nil)
+			resolvedPipelineRunTask.PipelineTask = pipelineTask
+		}
+	}
+}
+
 // ApplyReplacements replaces placeholders for declared parameters with the specified replacements.
-func ApplyReplacements(p *v1alpha1.PipelineSpec, replacements map[string]string, arrayReplacements map[string][]string) *v1alpha1.PipelineSpec {
+func ApplyReplacements(p *v1beta1.PipelineSpec, replacements map[string]string, arrayReplacements map[string][]string) *v1beta1.PipelineSpec {
 	p = p.DeepCopy()
 
 	tasks := p.Tasks
@@ -70,7 +94,7 @@ func ApplyReplacements(p *v1alpha1.PipelineSpec, replacements map[string]string,
 	return p
 }
 
-func replaceParamValues(params []v1alpha1.Param, stringReplacements map[string]string, arrayReplacements map[string][]string) []v1alpha1.Param {
+func replaceParamValues(params []v1beta1.Param, stringReplacements map[string]string, arrayReplacements map[string][]string) []v1beta1.Param {
 	for i := range params {
 		params[i].Value.ApplyReplacements(stringReplacements, arrayReplacements)
 	}

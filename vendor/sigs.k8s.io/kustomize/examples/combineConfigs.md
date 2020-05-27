@@ -128,7 +128,7 @@ defined in the [helloworld] demo.
 
 It will all live in this work directory:
 
-<!-- @makeWorkplace @testAgainstLatestRelease -->
+<!-- @makeWorkplace @test -->
 ```
 DEMO_HOME=$(mktemp -d)
 ```
@@ -139,7 +139,7 @@ DEMO_HOME=$(mktemp -d)
 
 Make a place to put the base configuration:
 
-<!-- @baseDir @testAgainstLatestRelease -->
+<!-- @baseDir @test -->
 ```
 mkdir -p $DEMO_HOME/base
 ```
@@ -150,7 +150,7 @@ environments. Here we're only defining a java
 properties file, and a `kustomization` file that
 references it.
 
-<!-- @baseKustomization @testAgainstLatestRelease -->
+<!-- @baseKustomization @test -->
 ```
 cat <<EOF >$DEMO_HOME/base/common.properties
 color=blue
@@ -171,14 +171,14 @@ EOF
 Make an abbreviation for the parent of the overlay
 directories:
 
-<!-- @overlays @testAgainstLatestRelease -->
+<!-- @overlays @test -->
 ```
 OVERLAYS=$DEMO_HOME/overlays
 ```
 
 Create the files that define the _development_ overlay:
 
-<!-- @developmentFiles @testAgainstLatestRelease -->
+<!-- @developmentFiles @test -->
 ```
 mkdir -p $OVERLAYS/development
 
@@ -191,7 +191,7 @@ dbpassword=mothersMaidenName
 EOF
 
 cat <<EOF >$OVERLAYS/development/kustomization.yaml
-resources:
+bases:
 - ../../base
 namePrefix: dev-
 nameSuffix: -v1
@@ -206,7 +206,7 @@ EOF
 
 One can now generate the configMaps for development:
 
-<!-- @runDev @testAgainstLatestRelease -->
+<!-- @runDev @test -->
 ```
 kustomize build $OVERLAYS/development
 ```
@@ -260,7 +260,7 @@ deletes unused configMaps.
 Next, create the files for the _production_ overlay:
 
 
-<!-- @productionFiles @testAgainstLatestRelease -->
+<!-- @productionFiles @test -->
 ```
 mkdir -p $OVERLAYS/production
 
@@ -273,7 +273,7 @@ dbpassword=thisShouldProbablyBeInASecretInstead
 EOF
 
 cat <<EOF >$OVERLAYS/production/kustomization.yaml
-resources:
+bases:
 - ../../base
 namePrefix: prod-
 configMapGenerator:
@@ -287,7 +287,7 @@ EOF
 
 One can now generate the configMaps for production:
 
-<!-- @runProd @testAgainstLatestRelease -->
+<!-- @runProd @test -->
 ```
 kustomize build $OVERLAYS/production
 ```

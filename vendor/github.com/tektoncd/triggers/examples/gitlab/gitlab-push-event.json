@@ -1,0 +1,59 @@
+{
+  "object_kind": "push",
+  "event_name": "push",
+  "before": "1a1736ec3d7b03349b31218a2f2c572c7c7206d6",
+  "after": "1a1736ec3d7b03349b31218a2f2c572c7c7206d6",
+  "ref": "refs/heads/master",
+  "checkout_sha": "1a1736ec3d7b03349b31218a2f2c572c7c7206d6",
+  "message": null,
+  "user_id": 111448,
+  "user_name": "Dibyo Mukherjee",
+  "user_username": "dibyom",
+  "user_email": "",
+  "user_avatar": "https://secure.gravatar.com/avatar/1d56773f447d86b8ffa33efb7a5d0cb5?s=80&d=identicon",
+  "project_id": 16507326,
+  "project": {
+    "id": 16507326,
+    "name": "triggers",
+    "description": "",
+    "web_url": "https://gitlab.com/dibyom/triggers",
+    "avatar_url": null,
+    "git_ssh_url": "git@gitlab.com:dibyom/triggers.git",
+    "git_http_url": "https://gitlab.com/dibyom/triggers.git",
+    "namespace": "Dibyo Mukherjee",
+    "visibility_level": 20,
+    "path_with_namespace": "dibyom/triggers",
+    "default_branch": "master",
+    "ci_config_path": null,
+    "homepage": "https://gitlab.com/dibyom/triggers",
+    "url": "git@gitlab.com:dibyom/triggers.git",
+    "ssh_url": "git@gitlab.com:dibyom/triggers.git",
+    "http_url": "https://gitlab.com/dibyom/triggers.git"
+  },
+  "commits": [
+    {
+      "id": "1a1736ec3d7b03349b31218a2f2c572c7c7206d6",
+      "message": "Add new file",
+      "timestamp": "2020-01-24T17:05:48+00:00",
+      "url": "https://gitlab.com/dibyom/triggers/-/commit/1a1736ec3d7b03349b31218a2f2c572c7c7206d6",
+      "author": {
+        "name": "Dibyo Mukherjee",
+        "email": "foo@bar.com"
+      },
+      "added": ["Readme.md"],
+      "modified": [],
+      "removed": []
+    }
+  ],
+  "total_commits_count": 1,
+  "push_options": {},
+  "repository": {
+    "name": "triggers",
+    "url": "git@gitlab.com:dibyom/triggers.git",
+    "description": "",
+    "homepage": "https://gitlab.com/dibyom/triggers",
+    "git_http_url": "https://gitlab.com/dibyom/triggers.git",
+    "git_ssh_url": "git@gitlab.com:dibyom/triggers.git",
+    "visibility_level": 20
+  }
+}

@@ -25,7 +25,7 @@ func Test_GetArgs(t *testing.T) {
 	if err := flag.Set(name, "elname"); err != nil {
 		t.Errorf("Error setting flag el-name: %s", err)
 	}
-	if err := flag.Set(namespace, "elnamespace"); err != nil {
+	if err := flag.Set(elNamespace, "elnamespace"); err != nil {
 		t.Errorf("Error setting flag el-namespace: %s", err)
 	}
 	if err := flag.Set(port, "port"); err != nil {

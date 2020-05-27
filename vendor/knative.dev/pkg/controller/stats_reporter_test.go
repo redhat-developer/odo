@@ -22,6 +22,8 @@ import (
 	"time"
 
 	"go.opencensus.io/stats/view"
+	"knative.dev/pkg/metrics/metricstest"
+	_ "knative.dev/pkg/metrics/testing"
 )
 
 func TestNewStatsReporterErrors(t *testing.T) {
@@ -53,13 +55,13 @@ func TestReportQueueDepth(t *testing.T) {
 
 	// Send statistics only once and observe the results
 	expectSuccess(t, func() error { return r.ReportQueueDepth(10) })
-	checkLastValueData(t, "work_queue_depth", wantTags, 10)
+	metricstest.CheckLastValueData(t, "work_queue_depth", wantTags, 10)
 
 	// Queue depth stats is a gauge - record multiple entries - last one should stick
 	expectSuccess(t, func() error { return r.ReportQueueDepth(1) })
 	expectSuccess(t, func() error { return r.ReportQueueDepth(2) })
 	expectSuccess(t, func() error { return r.ReportQueueDepth(3) })
-	checkLastValueData(t, "work_queue_depth", wantTags, 3)
+	metricstest.CheckLastValueData(t, "work_queue_depth", wantTags, 3)
 }
 
 func TestReportReconcile(t *testing.T) {
@@ -79,84 +81,18 @@ func TestReportReconcile(t *testing.T) {
 		initialReconcileLatency = d[0].Data.(*view.DistributionData).Sum()
 	}
 
-	expectSuccess(t, func() error { return r.ReportReconcile(time.Duration(10*time.Millisecond), "test/key", "true") })
-	checkCountData(t, "reconcile_count", wantTags, initialReconcileCount+1)
-	checkDistributionData(t, "reconcile_latency", wantTags, initialReconcileLatency+10)
+	expectSuccess(t, func() error { return r.ReportReconcile(10*time.Millisecond, "test/key", "true") })
+	metricstest.CheckCountData(t, "reconcile_count", wantTags, initialReconcileCount+1)
+	metricstest.CheckDistributionData(t, "reconcile_latency", wantTags, 1, initialReconcileLatency+10, initialReconcileLatency+10)
 
-	expectSuccess(t, func() error { return r.ReportReconcile(time.Duration(15*time.Millisecond), "test/key", "true") })
-	checkCountData(t, "reconcile_count", wantTags, initialReconcileCount+2)
-	checkDistributionData(t, "reconcile_latency", wantTags, initialReconcileLatency+25)
+	expectSuccess(t, func() error { return r.ReportReconcile(15*time.Millisecond, "test/key", "true") })
+	metricstest.CheckCountData(t, "reconcile_count", wantTags, initialReconcileCount+2)
+	metricstest.CheckDistributionData(t, "reconcile_latency", wantTags, 2, initialReconcileLatency+10, initialReconcileLatency+15)
 }
 
 func expectSuccess(t *testing.T, f func() error) {
 	t.Helper()
 	if err := f(); err != nil {
 		t.Errorf("Reporter.Report() expected success but got error %v", err)
-	}
-}
-
-func checkLastValueData(t *testing.T, name string, wantTags map[string]string, wantValue float64) {
-	t.Helper()
-	if row := checkRow(t, name); row != nil {
-		checkTags(t, wantTags, row)
-		if s, ok := row.Data.(*view.LastValueData); !ok {
-			t.Error("Reporter.Report() expected a LastValueData type")
-		} else if s.Value != wantValue {
-			t.Errorf("Reporter.Report() expected %v got %v. metric: %v", s.Value, wantValue, name)
-		}
-	}
-}
-
-func checkCountData(t *testing.T, name string, wantTags map[string]string, wantValue int64) {
-	t.Helper()
-	row := checkRow(t, name)
-	if row == nil {
-		return
-	}
-
-	checkTags(t, wantTags, row)
-	if s, ok := row.Data.(*view.CountData); !ok {
-		t.Error("Reporter.Report() expected a LastValueData type")
-	} else if s.Value != wantValue {
-		t.Errorf("Reporter.Report() expected %v got %v. metric: %v", s.Value, (float64)(wantValue), name)
-	}
-}
-
-func checkDistributionData(t *testing.T, name string, wantTags map[string]string, wantValue float64) {
-	t.Helper()
-	row := checkRow(t, name)
-	if row == nil {
-		return
-	}
-
-	checkTags(t, wantTags, row)
-	if s, ok := row.Data.(*view.DistributionData); !ok {
-		t.Error("Reporter.Report() expected a LastValueData type")
-	} else if s.Sum() != wantValue {
-		t.Errorf("Reporter.Report() expected %v got %v. metric: %v", s.Sum(), wantValue, name)
-	}
-}
-
-func checkRow(t *testing.T, name string) *view.Row {
-	t.Helper()
-	d, err := view.RetrieveData(name)
-	if err != nil {
-		t.Fatalf("Reporter.Report() error = %v, wantErr %v", err, false)
-		return nil
-	}
-	if len(d) != 1 {
-		t.Errorf("Reporter.Report() len(d)=%v, want 1", len(d))
-	}
-	return d[0]
-}
-
-func checkTags(t *testing.T, wantTags map[string]string, row *view.Row) {
-	t.Helper()
-	for _, got := range row.Tags {
-		if want, ok := wantTags[got.Key.Name()]; !ok {
-			t.Errorf("Reporter.Report() got an extra tag %v: %v", got.Key.Name(), got.Value)
-		} else if got.Value != want {
-			t.Errorf("Reporter.Report() expected a different tag value. key:%v, got: %v, want: %v", got.Key.Name(), got.Value, want)
-		}
 	}
 }

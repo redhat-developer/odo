@@ -1,3 +1,9 @@
+<!--
+---
+linkTitle: "PipelineResources"
+weight: 6
+---
+-->
 # PipelineResources
 
 `PipelineResources` in a pipeline are the set of objects that are going to be
@@ -12,6 +18,19 @@ For example:
 -   A `Task`'s output can be your application container image which can be then
     deployed in a cluster.
 -   A `Task`'s output can be a jar file to be uploaded to a storage bucket.
+
+> **Note**: PipelineResources have not been promoted to Beta in tandem with Pipeline's
+> other CRDs. This means that the level of support for `PipelineResources`
+> remains Alpha and there are effectively no guarantees about the type's future.
+> There remain a lot of known issues with the type that have caused Tekton's
+> developers to reassess it.
+>
+> For Beta-supported alternatives to PipelineResources see
+> [the v1alpha1 to v1beta1 migration guide](./migrating-v1alpha1-to-v1beta1.md#pipelineresources-and-catalog-tasks)
+> which lists each PipelineResource type and a suggested option for replacing it.
+>
+> For more information on why PipelineResources are remaining alpha [see the description
+> of their problems, along with next steps, below](#why-arent-pipelineresources-in-beta).
 
 --------------------------------------------------------------------------------
 
@@ -31,6 +50,7 @@ For example:
         -   [GCS Storage Resource](#gcs-storage-resource)
         -   [BuildGCS Storage Resource](#buildgcs-storage-resource)
     -   [Cloud Event Resource](#cloud-event-resource)
+-   [Why Aren't PipelineResources in Beta?](#why-arent-pipelineresources-in-beta)
 
 ## Syntax
 
@@ -46,9 +66,10 @@ following fields:
         the `PipelineResource` object, for example a `name`.
     -   [`spec`][kubernetes-overview] - Specifies the configuration information
         for your `PipelineResource` resource object.
-    -   [`type`](#resource-types) - Specifies the `type` of the
-        `PipelineResource`
+        -   [`type`](#resource-types) - Specifies the `type` of the
+            `PipelineResource`
 -   Optional:
+    -   [`description`](#description) - Description of the Resource.
     -   [`params`](#resource-types) - Parameters which are specific to each type
         of `PipelineResource`
     -   [`optional`](#optional-resources) - Boolean flag to mark a resource
@@ -74,13 +95,13 @@ refer to the local path to the mounted resource.
 
 ### Variable substitution
 
-`Task` and `Condition` specs can refer resource params as well as pre-defined
+`Task` and `Condition` specs can refer resource params as well as predefined
 variables such as `path` using the variable substitution syntax below where
 `<name>` is the resource's `name` and `<key>` is one of the resource's `params`:
 
 #### In Task Spec:
 
-For an input resource in a `Task` spec: `shell $(inputs.resources.<name>.<key>)`
+For an input resource in a `Task` spec: `shell $(resources.inputs.<name>.<key>)`
 
 Or for an output resource:
 
@@ -98,8 +119,8 @@ $(resources.<name>.<key>)
 
 #### Accessing local path to resource
 
-The `path` key is pre-defined and refers to the local path to a resource on the
-mounted volume `shell $(inputs.resources.<name>.path)`
+The `path` key is predefined and refers to the local path to a resource on the
+mounted volume `shell $(resources.inputs.<name>.path)`
 
 ### Controlling where resources are mounted
 
@@ -110,14 +131,14 @@ will be initialized under `/workspace`. The following example demonstrates how
 git input repository could be initialized in `$GOPATH` to run tests:
 
 ```yaml
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
   name: task-with-input
   namespace: default
 spec:
-  inputs:
-    resources:
+  resources:
+    inputs:
       - name: workspace
         type: git
         targetPath: go/src/github.com/tektoncd/pipeline
@@ -160,18 +181,17 @@ resource `java-git-resource` (including the war artifact) copied to the
 destination path `/custom/workspace/`.
 
 ```yaml
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
   name: volume-task
   namespace: default
 spec:
-  inputs:
-    resources:
+  resources:
+    inputs:
       - name: workspace
         type: git
-  outputs:
-    resources:
+    outputs:
       - name: workspace
   steps:
     - name: build-war
@@ -184,7 +204,7 @@ spec:
 ```
 
 ```yaml
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: TaskRun
 metadata:
   name: volume-taskrun
@@ -192,13 +212,12 @@ metadata:
 spec:
   taskRef:
     name: volume-task
-  inputs:
-    resources:
+  resources:
+    inputs:
       - name: workspace
         resourceRef:
           name: java-git-resource
-  outputs:
-    resources:
+    outputs:
       - name: workspace
         paths:
           - /custom/workspace/
@@ -227,31 +246,54 @@ resourcesResult:
     name: skaffold-image-leeroy-web
 ```
 
+### Description
+
+The `description` field is an optional field and can be used to provide description of the Resource.
+
 ### Optional Resources
 
-By default, a resource is declared as mandatory unless `optional` is set `true`
+By default, a resource is declared as mandatory unless `optional` is set to `true`
 for that resource. Resources declared as `optional` in a `Task` does not have be
 specified in `TaskRun`.
 
 ```yaml
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
   name: task-check-optional-resources
 spec:
-  inputs:
-    resources:
+  resources:
+    inputs:
       - name: git-repo
         type: git
         optional: true
 ```
 
-You can refer to different examples demonstrating usage of optional resources in
-`Task` and `Condition`:
+Similarly, resources declared as `optional` in a `Pipeline` does not have to be
+specified in `PipelineRun`.
 
--   [Task](../examples/taskruns/optional-resources.yaml)
--   [Cluster Task](../examples/taskruns/optional-resources-with-clustertask.yaml)
--   [Condition](../examples/pipelineruns/conditional-pipelinerun-with-optional-resources.yaml)
+```yaml
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: pipeline-build-image
+spec:
+  resources:
+    - name: workspace
+      type: git
+      optional: true
+  tasks:
+    - name: check-workspace
+...
+```
+
+You can refer to different examples demonstrating usage of optional resources in
+`Task`, `Condition`, and `Pipeline`:
+
+-   [Task](../examples/v1beta1/taskruns/optional-resources.yaml)
+-   [Cluster Task](../examples/v1beta1/taskruns/optional-resources-with-clustertask.yaml)
+-   [Condition](../examples/v1beta1/pipelineruns/conditional-pipelinerun-with-optional-resources.yaml)
+-   [Pipeline](../examples/v1beta1/pipelineruns/demo-optional-resources.yaml)
 
 ## Resource Types
 
@@ -285,19 +327,53 @@ Params that can be added are the following:
     change the repo, e.g. [to use a fork](#using-a-fork)
 1.  `revision`: Git [revision][git-rev] (branch, tag, commit SHA or ref) to
     clone. You can use this to control what commit [or branch](#using-a-branch)
-    is used. _If no revision is specified, the resource will default to `latest`
-    from `master`._
+    is used. [git checkout][git-checkout] is used to switch to the
+    revision, and will result in a detached HEAD in most cases. Use refspec
+    along with revision if you want to checkout a particular branch without a
+    detached HEAD. _If no revision is specified, the resource will default to `master`._
+1.  `refspec`: (Optional) specify a git [refspec][git-refspec] to pass to git-fetch.
+     Note that if this field is specified, it must specify all refs, branches, tags,
+     or commits required to checkout the specified `revision`. An additional fetch
+     will not be run to obtain the contents of the revision field. If no refspec
+     is specified, the value of the `revision` field will be fetched directly.
+     The refspec is useful in manipulating the repository in several cases:
+     * when the server does not support fetches via the commit SHA (i.e. does
+       not have `uploadpack.allowReachableSHA1InWant` enabled) and you want
+       to fetch and checkout a specific commit hash from a ref chain.
+     * when you want to fetch several other refs alongside your revision
+       (for instance, tags)
+     * when you want to checkout a specific branch, the revision and refspec
+       fields can work together to be able to set the destination of the incoming
+       branch and switch to the branch.
+
+        Examples:
+         - Check out a specified revision commit SHA1 after fetching ref (detached) <br>
+           &nbsp;&nbsp;`revision`: cb17eba165fe7973ef9afec20e7c6971565bd72f <br>
+           &nbsp;&nbsp;`refspec`: refs/smoke/myref <br>
+         - Fetch all tags alongside refs/heads/master and switch to the master branch
+           (not detached) <br>
+           &nbsp;&nbsp;`revision`: master <br>
+           &nbsp;&nbsp;`refspec`: "refs/tags/\*:refs/tags/\* +refs/heads/master:refs/heads/master"<br>
+         - Fetch the develop branch and switch to it (not detached) <br>
+           &nbsp;&nbsp;`revision`: develop <br>
+           &nbsp;&nbsp;`refspec`: refs/heads/develop:refs/heads/develop <br>
+         - Fetch refs/pull/1009/head into the master branch and switch to it (not detached) <br>
+           &nbsp;&nbsp;`revision`: master <br>
+           &nbsp;&nbsp;`refspec`: refs/pull/1009/head:refs/heads/master <br>
+
 1.  `submodules`: defines if the resource should initialize and fetch the
     submodules, value is either `true` or `false`. _If not specified, this will
     default to true_
 1.  `depth`: performs a [shallow clone][git-depth] where only the most recent
-    commit(s) will be fetched. If set to `'0'`, all commits will be fetched. _If
-    not specified, the default depth is 1._
+    commit(s) will be fetched. This setting also applies to submodules. If set to
+     `'0'`, all commits will be fetched. _If not specified, the default depth is 1._
 1.  `sslVerify`: defines if [http.sslVerify][git-http.sslVerify] should be set
     to `true` or `false` in the global git config. _Defaults to `true` if
     omitted._
 
 [git-rev]: https://git-scm.com/docs/gitrevisions#_specifying_revisions
+[git-checkout]: https://git-scm.com/docs/git-checkout
+[git-refspec]: https://git-scm.com/book/en/v2/Git-Internals-The-Refspec
 [git-depth]: https://git-scm.com/docs/git-clone#Documentation/git-clone.txt---depthltdepthgt
 [git-http.sslVerify]: https://git-scm.com/docs/git-config#Documentation/git-config.txt-httpsslVerify
 
@@ -354,6 +430,38 @@ spec:
     - name: revision
       value: refs/pull/52525/head
 ```
+
+#### Using HTTP/HTTPS Proxy
+
+The `httpProxy` and `httpsProxy` parameter can be used to proxy non-SSL/SSL requests, for example to use an enterprise
+proxy server for SSL requests:
+
+```yaml
+spec:
+  type: git
+  params:
+    - name: url
+      value: https://github.com/bobcatfish/wizzbang.git
+    - name: httpsProxy
+      value: "my-enterprise.proxy.com"
+```
+
+#### Using No Proxy
+
+The `noProxy` parameter can be used to opt out of proxying, for example, to not proxy HTTP/HTTPS requests to
+`no.proxy.com`:
+
+```yaml
+spec:
+  type: git
+  params:
+    - name: url
+      value: https://github.com/bobcatfish/wizzbang.git
+    - name: noProxy
+      value: "no.proxy.com"
+```
+
+Note: `httpProxy`, `httpsProxy`, and `noProxy` are all optional but no validation done if all three are specified.
 
 ### Pull Request Resource
 
@@ -450,7 +558,7 @@ https://godoc.org/github.com/jenkins-x/go-scm/scm#State
 
 #### Pull Request
 
-The `pullRequest` resource will look for GitHub or Gitlab OAuth authentication
+The `pullRequest` resource will look for GitHub or GitLab OAuth authentication
 tokens in spec secrets with a field name called `authToken`.
 
 URLs should be of the form: https://github.com/tektoncd/pipeline/pull/1
@@ -459,7 +567,7 @@ URLs should be of the form: https://github.com/tektoncd/pipeline/pull/1
 
 The PullRequest resource works with self hosted or enterprise GitHub/GitLab
 instances. Simply provide the pull request URL and set the `provider` parameter.
-If you need to skip certificate validation set the `insecure-skip-tls-verify` 
+If you need to skip certificate validation set the `insecure-skip-tls-verify`
 parameter to `"true"`.
 
 ```yaml
@@ -523,17 +631,16 @@ exported. For example this build-push task defines the `outputImageDir` for the
 `builtImage` resource in `/workspace/buildImage`
 
 ```yaml
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
   name: build-push
 spec:
-  inputs:
-    resources:
+  resources:
+    inputs:
       - name: workspace
         type: git
-  outputs:
-    resources:
+    outputs:
       - name: builtImage
         type: image
         targetPath: /workspace/builtImage
@@ -555,8 +662,10 @@ for example:
 status:
     ...
     resourcesResult:
-    - digest: sha256:eed29cd0b6feeb1a92bc3c4f977fd203c63b376a638731c88cacefe3adb1c660
-      name: skaffold-image-leeroy-web
+    - key: "digest"
+      value: "sha256:eed29cd0b6feeb1a92bc3c4f977fd203c63b376a638731c88cacefe3adb1c660"
+      resourceRef:
+        name: skaffold-image-leeroy-web
     ...
 ```
 
@@ -587,10 +696,17 @@ The Cluster resource has the following parameters:
     certificate.
 -   `cadata` (required): holds PEM-encoded bytes (typically read from a root
     certificates bundle).
+-   `clientKeyData`: contains PEM-encoded data from a client key file 
+        for TLS 
+-   `clientCertificateData`: contains PEM-encoded data from a client cert file for TLS
+
 
 Note: Since only one authentication technique is allowed per user, either a
 `token` or a `password` should be provided, if both are provided, the `password`
 will be ignored.
+
+`clientKeyData` and `clientCertificateData` are only required if `token` or 
+`password` is not provided for authentication to cluster.
 
 The following example shows the syntax and structure of a `cluster` resource:
 
@@ -653,14 +769,14 @@ Example usage of the `cluster` resource in a `Task`, using
 [variable substitution](tasks.md#variable-substitution):
 
 ```yaml
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
   name: deploy-image
   namespace: default
 spec:
-  inputs:
-    resources:
+  resources:
+    inputs:
       - name: workspace
         type: git
       - name: dockerimage
@@ -674,8 +790,8 @@ spec:
       args:
         - "-c"
         - kubectl --kubeconfig
-          /workspace/$(inputs.resources.testcluster.name)/kubeconfig --context
-          $(inputs.resources.testcluster.name) apply -f /workspace/service.yaml'
+          /workspace/$(resources.inputs.testcluster.name)/kubeconfig --context
+          $(resources.inputs.testcluster.name) apply -f /workspace/service.yaml'
 ```
 
 To use the `cluster` resource with Google Kubernetes Engine, you should use the
@@ -919,7 +1035,7 @@ The content of an event is for example:
 Context Attributes,
   SpecVersion: 0.2
   Type: dev.tekton.event.task.successful
-  Source: /apis/tekton.dev/v1alpha1/namespaces/default/taskruns/pipeline-run-api-16aa55-source-to-image-task-rpndl
+  Source: /apis/tekton.dev/v1beta1/namespaces/default/taskruns/pipeline-run-api-16aa55-source-to-image-task-rpndl
   ID: pipeline-run-api-16aa55-source-to-image-task-rpndl
   Time: 2019-07-04T11:03:53.058694712Z
   ContentType: application/json
@@ -945,6 +1061,74 @@ Data,
     }
   }
 ```
+
+## Why Aren't PipelineResources in Beta?
+
+The short answer is that they're not ready to be given a Beta level of support by Tekton's developers. The long answer is, well, longer:
+
+- Their behaviour can be opaque.
+
+    They're implemented as a mixture of injected Task Steps, volume configuration and type-specific code in Tekton
+    Pipeline's controller. This means errors from `PipelineResources` can manifest in quite a few different ways
+    and it's not always obvious whether an error directly relates to `PipelineResource` behaviour. This problem
+    is compounded by the fact that, while our docs explain each Resource type's "happy path", there never seems to
+    be enough info available to explain error cases sufficiently.
+
+- When they fail they're difficult to debug.
+
+    Several PipelineResources inject their own Steps before a `Task's` Steps. It's extremely difficult to manually
+    insert Steps before them to inspect the state of a container before they run.
+
+- There aren't enough of them.
+
+    The six types of existing PipelineResources only cover a tiny subset of the possible systems and side-effects we
+    want to support with Tekton Pipelines.
+
+- Adding extensibility to them makes them really similar to `Tasks`:
+    - User-definable `Steps`? This is what `Tasks` provide.
+    - User-definable params? Tasks already have these.
+    - User-definable "resource results"? `Tasks` have `Task` Results.
+    - Sharing data between Tasks using PVCs? `workspaces` provide this for `Tasks`.
+- They make `Tasks` less reusable.
+    - A `Task` has to choose the `type` of `PipelineResource` it will accept.
+    - If a `Task` accepts a `git` `PipelineResource` then it's not able to accept a `gcs` `PipelineResource` from a
+      `TaskRun` or `PipelineRun` even though both the `git` and `gcs` `PipelineResources` fetch files. They should
+      technically be interchangeable: all they do is write files from somewhere remote onto disk. Yet with the existing
+      `PipelineResources` implementation they aren't interchangeable.
+
+They also present challenges from a documentation perspective:
+
+- Their purpose is ambiguous and it's difficult to articulate what the CRD is precisely for.
+- Four of the types interact with external systems (git, pull-request, gcs, gcs-build).
+- Five of them write files to a Task's disk (git, pull-request, gcs, gcs-build, cluster).
+- One tells the Pipelines controller to emit CloudEvents to a specific endpoint (cloudEvent).
+- One writes config to disk for a `Task` to use (cluster).
+- One writes a digest in one `Task` and then reads it back in another `Task` (image).
+- Perhaps the one thing you can say about the `PipelineResource` CRD is that it can create
+  side-effects for your `Tasks`.
+
+### What's still missing
+
+So what are PipelineResources still good for?  We think we've identified some of the most important things:
+
+1. You can augment `Task`-only workflows with `PipelineResources` that, without them, can only be done with `Pipelines`.
+    - For example, let's say you want to checkout a git repo for your Task to test. You have two options. First, you could use a `git` PipelineResource and add it directly to your test `Task`. Second, you could write a `Pipeline` that has a `git-clone` `Task` which checks out the code onto a PersistentVolumeClaim `workspace` and then passes that PVC `workspace` to your test `Task`. For a lot of users the second workflow is totally acceptable but for others it isn't. Some of the most noteable reasons we've heard are:
+      - Some users simply cannot allocate storage on their platform, meaning `PersistentVolumeClaims` are out of the question.
+      - Expanding a single `Task` workflow into a `Pipeline` is labor-intensive and feels unnecessary.
+2. Despite being difficult to explain the whole CRD clearly each individual `type` is relatively easy to explain.
+    - For example, users can build a pretty good "hunch" for what a `git` `PipelineResource` is without really reading any docs.
+3. Configuring CloudEvents to be emitted by the Tekton Pipelines controller.
+    - Work is ongoing to get notifications support into the Pipelines controller which should hopefully be able to replace the `cloudEvents` `PipelineResource`.
+
+For each of these there is some amount of ongoing work or discussion. It may be that
+`PipelineResources` can be redesigned to fix all of their problems or it could be
+that the best features of `PipelineResources` can be extracted for use everywhere in
+Tekton Pipelines. So given this state of affairs `PipelineResources` are being kept
+out of beta until those questions are resolved.
+
+For Beta-supported alternatives to PipelineResources see
+[the v1alpha1 to v1beta1 migration guide](./migrating-v1alpha1-to-v1beta1.md#pipelineresources-and-catalog-tasks)
+which lists each PipelineResource type and a suggested option for replacing it.
 
 Except as otherwise noted, the content of this page is licensed under the
 [Creative Commons Attribution 4.0 License](https://creativecommons.org/licenses/by/4.0/),

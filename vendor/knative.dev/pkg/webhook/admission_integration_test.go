@@ -26,6 +26,7 @@ import (
 	"path"
 	"strings"
 	"testing"
+	"time"
 
 	"golang.org/x/sync/errgroup"
 	jsonpatch "gomodules.xyz/jsonpatch/v2"
@@ -33,6 +34,7 @@ import (
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/metrics/metricstest"
+	_ "knative.dev/pkg/metrics/testing"
 )
 
 type fixedAdmissionController struct {
@@ -126,26 +128,51 @@ func TestAdmissionValidResponseForResource(t *testing.T) {
 	}
 	req.Header.Add("Content-Type", "application/json")
 
-	response, err := tlsClient.Do(req)
-	if err != nil {
-		t.Fatalf("Failed to get response %v", err)
+	doneCh := make(chan struct{})
+	go func() {
+		defer close(doneCh)
+		response, err := tlsClient.Do(req)
+		if err != nil {
+			t.Errorf("Failed to get response %v", err)
+			return
+		}
+
+		if got, want := response.StatusCode, http.StatusOK; got != want {
+			t.Errorf("Response status code = %v, wanted %v", got, want)
+			return
+		}
+
+		defer response.Body.Close()
+		responseBody, err := ioutil.ReadAll(response.Body)
+		if err != nil {
+			t.Errorf("Failed to read response body %v", err)
+			return
+		}
+
+		reviewResponse := admissionv1beta1.AdmissionReview{}
+
+		err = json.NewDecoder(bytes.NewReader(responseBody)).Decode(&reviewResponse)
+		if err != nil {
+			t.Errorf("Failed to decode response: %v", err)
+			return
+		}
+	}()
+
+	// Check that Admit calls block when they are initiated before informers sync.
+	select {
+	case <-time.After(5 * time.Second):
+	case <-doneCh:
+		t.Fatal("Admit was called before informers had synced.")
 	}
 
-	if got, want := response.StatusCode, http.StatusOK; got != want {
-		t.Errorf("Response status code = %v, wanted %v", got, want)
-	}
+	// Signal the webhook that informers have synced.
+	wh.InformersHaveSynced()
 
-	defer response.Body.Close()
-	responseBody, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		t.Fatalf("Failed to read response body %v", err)
-	}
-
-	reviewResponse := admissionv1beta1.AdmissionReview{}
-
-	err = json.NewDecoder(bytes.NewReader(responseBody)).Decode(&reviewResponse)
-	if err != nil {
-		t.Fatalf("Failed to decode response: %v", err)
+	// Check that after informers have synced that things start completing immediately (including outstanding requests).
+	select {
+	case <-doneCh:
+	case <-time.After(5 * time.Second):
+		t.Error("Timed out waiting on Admit to complete after informers synced.")
 	}
 
 	metricstest.CheckStatsReported(t, requestCountName, requestLatenciesName)
@@ -164,6 +191,7 @@ func TestAdmissionInvalidResponseForResource(t *testing.T) {
 
 	eg, _ := errgroup.WithContext(ctx)
 	eg.Go(func() error { return wh.Run(ctx.Done()) })
+	wh.InformersHaveSynced()
 	defer func() {
 		cancel()
 		if err := eg.Wait(); err != nil {

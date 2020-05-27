@@ -1,0 +1,7 @@
+{
+  "state": "SUCCESSFUL",
+  "name": "continuous-integration/drone",
+  "key": "continuous-integration/drone",
+  "description": "Build has completed successfully",
+  "url": "https://ci.example.com/1000/output"
+}

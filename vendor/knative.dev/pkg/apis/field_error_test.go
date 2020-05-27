@@ -595,10 +595,10 @@ not without this: bar.C`,
 
 			if test.want != "" {
 				if got, want := fe.Error(), test.want; got != want {
-					t.Errorf("%s: Error() = %v, wanted %v", test.name, got, want)
+					t.Errorf("\nGot:  %v,\nwant: %v diff(-want,+got)\n%s", got, want, cmp.Diff(want, got))
 				}
 			} else if fe != nil {
-				t.Errorf("%s: ViaField() = %v, wanted nil", test.name, fe)
+				t.Errorf("ViaField() = %v, wanted nil", fe)
 			}
 		})
 	}
@@ -611,6 +611,11 @@ func TestAlsoNil(t *testing.T) {
 	}
 	errs = errs.Also(nil)
 
+	if got, want := errs.Error(), "original: foo"; got != want {
+		t.Errorf("TestAlsoNil: Also(nil).Error() = %v, wanted %v", got, want)
+	}
+
+	errs = errs.Also([]*FieldError{nil}...)
 	if got, want := errs.Error(), "original: foo"; got != want {
 		t.Errorf("TestAlsoNil: Also(nil).Error() = %v, wanted %v", got, want)
 	}
@@ -723,23 +728,44 @@ more details`,
 
 func TestAlsoStaysNil(t *testing.T) {
 	var err *FieldError
-	if err != nil {
-		t.Errorf("expected nil, got %v, wanted nil", err)
-	}
 
 	err = err.Also(nil)
 	if err != nil {
-		t.Errorf("expected nil, got %v, wanted nil", err)
+		t.Errorf("Got: %v, want nil", err)
 	}
 
 	err = err.ViaField("nil").Also(nil)
 	if err != nil {
-		t.Errorf("expected nil, got %v, wanted nil", err)
+		t.Errorf("Got: %v, want nil", err)
 	}
 
 	err = err.Also(&FieldError{})
 	if err != nil {
 		t.Errorf("expected nil, got %v, wanted nil", err)
+	}
+}
+
+func TestAlsoMultiple(t *testing.T) {
+	var err *FieldError
+
+	errs := []*FieldError{{
+		Message: "1",
+		Paths:   []string{"bar"},
+	}, {
+		Message: "2",
+		Paths:   []string{"baz"},
+	}}
+	err = err.Also(errs...)
+	const want = "1: bar\n2: baz"
+	if got := err.Error(); got != want {
+		t.Errorf("Got = %q, want: %q", got, want)
+	}
+
+	// This shows the order of Also calls does not matter.
+	err = nil
+	err = err.Also(errs[0]).Also(errs[1])
+	if got := err.Error(); got != want {
+		t.Errorf("Got = %q, want: %q", got, want)
 	}
 }
 

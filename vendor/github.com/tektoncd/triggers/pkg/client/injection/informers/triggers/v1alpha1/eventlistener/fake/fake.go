@@ -35,6 +35,6 @@ func init() {
 
 func withInformer(ctx context.Context) (context.Context, controller.Informer) {
 	f := fake.Get(ctx)
-	inf := f.Tekton().V1alpha1().EventListeners()
+	inf := f.Triggers().V1alpha1().EventListeners()
 	return context.WithValue(ctx, eventlistener.Key{}, inf), inf.Informer()
 }

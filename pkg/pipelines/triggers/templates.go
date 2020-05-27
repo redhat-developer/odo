@@ -3,16 +3,26 @@ package triggers
 import (
 	"encoding/json"
 
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	triggersv1 "github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/openshift/odo/pkg/pipelines/meta"
 )
 
 var (
-	triggerTemplateTypeMeta = meta.TypeMeta("TriggerTemplate", "tekton.dev/v1alpha1")
+	triggerTemplateTypeMeta = meta.TypeMeta("TriggerTemplate", "triggers.tekton.dev/v1alpha1")
 )
+
+// GenerateTemplates will return a slice of trigger templates
+func GenerateTemplates(ns, saName string) []triggersv1.TriggerTemplate {
+	return []triggersv1.TriggerTemplate{
+		CreateDevCDDeployTemplate(ns, saName),
+		CreateDevCIBuildPRTemplate(ns, saName),
+		CreateCDPushTemplate(ns, saName),
+		CreateCIDryRunTemplate(ns, saName),
+	}
+}
 
 // CreateDevCDDeployTemplate creates DevCDDeployTemplate
 func CreateDevCDDeployTemplate(ns, saName string) triggersv1.TriggerTemplate {
@@ -20,13 +30,15 @@ func CreateDevCDDeployTemplate(ns, saName string) triggersv1.TriggerTemplate {
 		TypeMeta:   triggerTemplateTypeMeta,
 		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, "app-cd-template")),
 		Spec: triggersv1.TriggerTemplateSpec{
-			Params: []pipelinev1.ParamSpec{
+			Params: []triggersv1.ParamSpec{
 				createTemplateParamSpec("gitsha", "The specific commit SHA."),
 				createTemplateParamSpec("gitrepositoryurl", "The git repository url"),
 			},
 			ResourceTemplates: []triggersv1.TriggerResourceTemplate{
 				{
-					RawMessage: createDevCDResourcetemplate(saName),
+					RawExtension: runtime.RawExtension{
+						Raw: createDevCDResourceTemplate(saName),
+					},
 				},
 			},
 		},
@@ -41,7 +53,7 @@ func CreateDevCIBuildPRTemplate(ns, saName string) triggersv1.TriggerTemplate {
 			meta.NamespacedName(ns, "app-ci-template"),
 			statusTrackerAnnotations("dev-ci-build-from-pr", "Dev CI Build")),
 		Spec: triggersv1.TriggerTemplateSpec{
-			Params: []pipelinev1.ParamSpec{
+			Params: []triggersv1.ParamSpec{
 				createTemplateParamSpec("gitref", "The git branch for this PR."),
 				createTemplateParamSpec("gitsha", "the specific commit SHA."),
 				createTemplateParamSpec("gitrepositoryurl", "The git repository URL."),
@@ -51,7 +63,9 @@ func CreateDevCIBuildPRTemplate(ns, saName string) triggersv1.TriggerTemplate {
 			},
 			ResourceTemplates: []triggersv1.TriggerResourceTemplate{
 				{
-					RawMessage: createDevCIResourceTemplate(saName),
+					RawExtension: runtime.RawExtension{
+						Raw: createDevCIResourceTemplate(saName),
+					},
 				},
 			},
 		},
@@ -65,14 +79,16 @@ func CreateCDPushTemplate(ns, saName string) triggersv1.TriggerTemplate {
 		TypeMeta:   triggerTemplateTypeMeta,
 		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, "cd-deploy-from-push-template")),
 		Spec: triggersv1.TriggerTemplateSpec{
-			Params: []pipelinev1.ParamSpec{
+			Params: []triggersv1.ParamSpec{
 
 				createTemplateParamSpecDefault("gitref", "The git revision", "master"),
 				createTemplateParamSpec("gitrepositoryurl", "The git repository url"),
 			},
 			ResourceTemplates: []triggersv1.TriggerResourceTemplate{
 				{
-					RawMessage: createCDResourceTemplate(saName),
+					RawExtension: runtime.RawExtension{
+						Raw: createCDResourceTemplate(saName),
+					},
 				},
 			},
 		},
@@ -86,39 +102,37 @@ func CreateCIDryRunTemplate(ns, saName string) triggersv1.TriggerTemplate {
 		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, "ci-dryrun-from-pr-template"),
 			statusTrackerAnnotations("ci-dryrun-from-pr-pipeline", "Stage CI Dry Run")),
 		Spec: triggersv1.TriggerTemplateSpec{
-			Params: []pipelinev1.ParamSpec{
-
+			Params: []triggersv1.ParamSpec{
 				createTemplateParamSpecDefault("gitref", "The git revision", "master"),
 				createTemplateParamSpec("gitrepositoryurl", "The git repository url"),
 			},
 			ResourceTemplates: []triggersv1.TriggerResourceTemplate{
 				{
-					RawMessage: createCIResourceTemplate(saName),
+					RawExtension: runtime.RawExtension{
+						Raw: createCIResourceTemplate(saName),
+					},
 				},
 			},
 		},
 	}
 }
 
-func createTemplateParamSpecDefault(name string, description string, value string) pipelinev1.ParamSpec {
-	return pipelinev1.ParamSpec{
+func createTemplateParamSpecDefault(name string, description string, value string) triggersv1.ParamSpec {
+	return triggersv1.ParamSpec{
 		Name:        name,
 		Description: description,
-		Default: &pipelinev1.ArrayOrString{
-			StringVal: value,
-			Type:      pipelinev1.ParamTypeString,
-		},
+		Default:     strPtr(value),
 	}
 }
 
-func createTemplateParamSpec(name string, description string) pipelinev1.ParamSpec {
-	return pipelinev1.ParamSpec{
+func createTemplateParamSpec(name string, description string) triggersv1.ParamSpec {
+	return triggersv1.ParamSpec{
 		Name:        name,
 		Description: description,
 	}
 }
 
-func createDevCDResourcetemplate(saName string) []byte {
+func createDevCDResourceTemplate(saName string) []byte {
 	byteTemplate, _ := json.Marshal(createDevCDPipelineRun(saName))
 	return []byte(string(byteTemplate))
 }
@@ -152,4 +166,8 @@ func statusTrackerAnnotations(pipeline, description string) func(*v1.ObjectMeta)
 			om.Annotations[k] = v
 		}
 	}
+}
+
+func strPtr(s string) *string {
+	return &s
 }

@@ -67,7 +67,15 @@ func (s *pullService) Merge(context.Context, string, int, *scm.PullRequestMergeO
 	return nil, scm.ErrNotSupported
 }
 
+func (s *pullService) Update(ctx context.Context, repo string, number int, prInput *scm.PullRequestInput) (*scm.PullRequest, *scm.Response, error) {
+	return nil, nil, scm.ErrNotSupported
+}
+
 func (s *pullService) Close(context.Context, string, int) (*scm.Response, error) {
+	return nil, scm.ErrNotSupported
+}
+
+func (s *pullService) Reopen(context.Context, string, int) (*scm.Response, error) {
 	return nil, scm.ErrNotSupported
 }
 
@@ -81,6 +89,14 @@ func (s *pullService) UnassignIssue(ctx context.Context, repo string, number int
 
 func (s *pullService) Create(ctx context.Context, repo string, input *scm.PullRequestInput) (*scm.PullRequest, *scm.Response, error) {
 	return nil, nil, scm.ErrNotSupported
+}
+
+func (s *pullService) RequestReview(ctx context.Context, repo string, number int, logins []string) (*scm.Response, error) {
+	return nil, scm.ErrNotSupported
+}
+
+func (s *pullService) UnrequestReview(ctx context.Context, repo string, number int, logins []string) (*scm.Response, error) {
+	return nil, scm.ErrNotSupported
 }
 
 //

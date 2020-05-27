@@ -272,6 +272,33 @@ func TestStatusList(t *testing.T) {
 	}
 }
 
+func TestRepositoryService_FindCombinedStatus(t *testing.T) {
+	defer gock.Off()
+
+	gock.New("http://example.com:7990").
+		Get("/rest/build-status/1.0/commits/b02e90353e4c94cda868dbcdb2301c5691a78b6c").
+		Reply(200).
+		Type("application/json").
+		File("testdata/commit_build_status.json")
+
+	client, _ := New("http://example.com:7990")
+
+	got, _, err := client.Repositories.FindCombinedStatus(context.Background(), "", "b02e90353e4c94cda868dbcdb2301c5691a78b6c")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	want := &scm.CombinedStatus{}
+	raw, _ := ioutil.ReadFile("testdata/combined_status.json.golden")
+	json.Unmarshal(raw, &want)
+
+	if diff := cmp.Diff(got, want); diff != "" {
+		t.Errorf("Unexpected Results")
+		t.Log(diff)
+	}
+}
+
 func TestStatusCreate(t *testing.T) {
 	defer gock.Off()
 
@@ -466,5 +493,31 @@ func TestConvertState(t *testing.T) {
 		if got, want := convertState(test.src), test.dst; got != want {
 			t.Errorf("Want state %s converted to %v", test.src, test.dst)
 		}
+	}
+}
+
+func TestRepositoryService_FindUserPermission(t *testing.T) {
+	defer gock.Off()
+
+	gock.New("http://example.com:7990").
+		Get("/rest/api/1.0/projects/some-project/repos/some-repo/permissions/users").
+		MatchParam("filter", "jcitizen").
+		Reply(200).
+		Type("application/json").
+		File("testdata/find_user_permission.json")
+
+	client, _ := New("http://example.com:7990")
+
+	got, _, err := client.Repositories.FindUserPermission(context.Background(), "some-project/some-repo", "jcitizen")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	want := scm.AdminPermission
+
+	if diff := cmp.Diff(got, want); diff != "" {
+		t.Errorf("Unexpected Results")
+		t.Log(diff)
 	}
 }

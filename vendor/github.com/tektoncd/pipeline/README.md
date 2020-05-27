@@ -28,12 +28,29 @@ Tekton Pipelines are **Typed**:
 
 - [Installing Tekton Pipelines](docs/install.md)
 - Jump in with [the tutorial!](docs/tutorial.md)
+- Take a look at our [roadmap](roadmap.md)
+
+*Note that starting from the 0.11 release of Tekton, you need to have
+a cluster with **Kubernetes version 1.15 or later***.
 
 ### Read the docs
 
 | Version | Docs | Examples |
 | ------- | ---- | -------- |
 | [HEAD](DEVELOPMENT.md#install-pipeline) | [Docs @ HEAD](/docs/README.md) | [Examples @ HEAD](/examples) |
+| [v0.12.1](https://github.com/tektoncd/pipeline/releases/tag/v0.12.1) | [Docs @ v0.12.1](https://github.com/tektoncd/pipeline/tree/v0.12.1/docs#tekton-pipelines) | [Examples @ v0.12.1](https://github.com/tektoncd/pipeline/tree/v0.12.1/examples#examples) |
+| [v0.12.0](https://github.com/tektoncd/pipeline/releases/tag/v0.12.0) | [Docs @ v0.12.0](https://github.com/tektoncd/pipeline/tree/v0.12.0/docs#tekton-pipelines) | [Examples @ v0.12.0](https://github.com/tektoncd/pipeline/tree/v0.12.0/examples#examples) |
+| [v0.11.3](https://github.com/tektoncd/pipeline/releases/tag/v0.11.3) | [Docs @ v0.11.3](https://github.com/tektoncd/pipeline/tree/v0.11.3/docs#tekton-pipelines) | [Examples @ v0.11.3](https://github.com/tektoncd/pipeline/tree/v0.11.3/examples#examples) |
+| [v0.11.2](https://github.com/tektoncd/pipeline/releases/tag/v0.11.2) | [Docs @ v0.11.2](https://github.com/tektoncd/pipeline/tree/v0.11.2/docs#tekton-pipelines) | [Examples @ v0.11.2](https://github.com/tektoncd/pipeline/tree/v0.11.2/examples#examples) |
+| [v0.11.1](https://github.com/tektoncd/pipeline/releases/tag/v0.11.1) | [Docs @ v0.11.1](https://github.com/tektoncd/pipeline/tree/v0.11.1/docs#tekton-pipelines) | [Examples @ v0.11.1](https://github.com/tektoncd/pipeline/tree/v0.11.1/examples#examples) |
+| [v0.11.0](https://github.com/tektoncd/pipeline/releases/tag/v0.11.0) | [Docs @ v0.11.0](https://github.com/tektoncd/pipeline/tree/v0.11.0/docs#tekton-pipelines) | [Examples @ v0.11.0](https://github.com/tektoncd/pipeline/tree/v0.11.0/examples#examples) |
+| [v0.11.0-rc4](https://github.com/tektoncd/pipeline/releases/tag/v0.11.0-rc4) | [Docs @ v0.11.0-rc4](https://github.com/tektoncd/pipeline/tree/v0.11.0-rc4/docs#tekton-pipelines) | [Examples @ v0.11.0-rc4](https://github.com/tektoncd/pipeline/tree/v0.11.0-rc4/examples#examples) |
+| [v0.11.0-rc3](https://github.com/tektoncd/pipeline/releases/tag/v0.11.0-rc3) | [Docs @ v0.11.0-rc3](https://github.com/tektoncd/pipeline/tree/v0.11.0-rc3/docs#tekton-pipelines) | [Examples @ v0.11.0-rc3](https://github.com/tektoncd/pipeline/tree/v0.11.0-rc3/examples#examples) |
+| [v0.11.0-rc2](https://github.com/tektoncd/pipeline/releases/tag/v0.11.0-rc2) | [Docs @ v0.11.0-rc2](https://github.com/tektoncd/pipeline/tree/v0.11.0-rc2/docs#tekton-pipelines) | [Examples @ v0.11.0-rc2](https://github.com/tektoncd/pipeline/tree/v0.11.0-rc2/examples#examples) |
+| [v0.11.0-rc1](https://github.com/tektoncd/pipeline/releases/tag/v0.11.0-rc1) | [Docs @ v0.11.0-rc1](https://github.com/tektoncd/pipeline/tree/v0.11.0-rc1/docs#tekton-pipelines) | [Examples @ v0.11.0-rc1](https://github.com/tektoncd/pipeline/tree/v0.11.0-rc1/examples#examples) |
+| [v0.10.2](https://github.com/tektoncd/pipeline/releases/tag/v0.10.2) | [Docs @ v0.10.2](https://github.com/tektoncd/pipeline/tree/v0.10.2/docs#tekton-pipelines) | [Examples @ v0.10.2](https://github.com/tektoncd/pipeline/tree/v0.10.2/examples#examples) |
+| [v0.10.1](https://github.com/tektoncd/pipeline/releases/tag/v0.10.1) | [Docs @ v0.10.1](https://github.com/tektoncd/pipeline/tree/v0.10.1/docs#tekton-pipelines) | [Examples @ v0.10.1](https://github.com/tektoncd/pipeline/tree/v0.10.1/examples#examples) |
+| [v0.10.0](https://github.com/tektoncd/pipeline/releases/tag/v0.10.0) | [Docs @ v0.10.0](https://github.com/tektoncd/pipeline/tree/v0.10.0/docs#tekton-pipelines) | [Examples @ v0.10.0](https://github.com/tektoncd/pipeline/tree/v0.10.0/examples#examples) |
 | [v0.9.2](https://github.com/tektoncd/pipeline/releases/tag/v0.9.2) | [Docs @ v0.9.2](https://github.com/tektoncd/pipeline/tree/v0.9.2/docs#tekton-pipelines) | [Examples @ v0.9.2](https://github.com/tektoncd/pipeline/tree/v0.9.2/examples#examples) |
 | [v0.9.1](https://github.com/tektoncd/pipeline/releases/tag/v0.9.1) | [Docs @ v0.9.1](https://github.com/tektoncd/pipeline/tree/v0.9.1/docs#tekton-pipelines) | [Examples @ v0.9.1](https://github.com/tektoncd/pipeline/tree/v0.9.1/examples#examples) |
 | [v0.9.0](https://github.com/tektoncd/pipeline/releases/tag/v0.9.0) | [Docs @ v0.9.0](https://github.com/tektoncd/pipeline/tree/v0.9.0/docs#tekton-pipelines) | [Examples @ v0.9.0](https://github.com/tektoncd/pipeline/tree/v0.9.0/examples#examples) |
@@ -51,6 +68,19 @@ Tekton Pipelines are **Typed**:
 
 _See [our API compatibility policy](api_compatibility_policy.md) for info on the
 stability level of the API._
+
+_See [our Deprecations table](docs/deprecations.md) for features that have been
+deprecated and the earliest date they'll be removed._
+
+## Migrating
+
+### v1alpha1 to v1beta1
+
+In the move from v1alpha1 to v1beta1 several spec fields and Tekton
+CRDs were updated or removed .
+
+For users migrating their Tasks and Pipelines from v1alpha1 to v1beta1, check
+out [the spec changes and migration paths](./docs/migrating-v1alpha1-to-v1beta1.md).
 
 ## Want to contribute
 

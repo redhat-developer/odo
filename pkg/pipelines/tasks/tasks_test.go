@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -19,7 +19,8 @@ func TestDeployFromSourceTask(t *testing.T) {
 			Namespace: testNS,
 		},
 		Spec: pipelinev1.TaskSpec{
-			Inputs: createInputsForDeployFromSourceTask("test"),
+			Params:    paramsForDeploymentFromSourceTask("test"),
+			Resources: createResourcesForDeployFromSourceTask(),
 			Steps: []pipelinev1.Step{
 				{
 					Container: corev1.Container{
@@ -47,7 +48,33 @@ func TestDeployUsingKubectlTask(t *testing.T) {
 			Namespace: testNS,
 		},
 		Spec: pipelinev1.TaskSpec{
-			Inputs: createInputsForDeployKubectlTask(),
+			Params: []pipelinev1.ParamSpec{
+				{
+					Name:        "PATHTODEPLOYMENT",
+					Type:        "string",
+					Description: "Path to the pipelines to apply",
+					Default:     &pipelinev1.ArrayOrString{Type: "string", StringVal: "deploy"},
+				},
+				{Name: "NAMESPACE", Type: "string", Description: "Namespace to deploy into"},
+				{
+					Name:        "DRYRUN",
+					Type:        "string",
+					Description: "If true run a server-side dryrun.",
+					Default:     &pipelinev1.ArrayOrString{Type: "string", StringVal: "false"},
+				},
+				{
+					Name:        "YAMLPATHTOIMAGE",
+					Type:        "string",
+					Description: "The path to the image to replace in the yaml pipelines (arg to yq)",
+				},
+			},
+			Resources: &pipelinev1.TaskResources{
+				Inputs: []pipelinev1.TaskResource{
+					{ResourceDeclaration: pipelinev1.ResourceDeclaration{Name: "source", Type: "git"}},
+					{ResourceDeclaration: pipelinev1.ResourceDeclaration{Name: "image", Type: "image"}},
+				},
+			},
+
 			Steps: []pipelinev1.Step{
 				{
 					Container: corev1.Container{

@@ -9,7 +9,7 @@ import (
 	"github.com/openshift/odo/pkg/pipelines/ioutils"
 	"github.com/spf13/cobra"
 
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
 const (
@@ -64,7 +64,7 @@ func (eo *AddEnvParameters) Run() error {
 	if err != nil {
 		return nil
 	}
-	log.Successf("Environment %s has been created sucessfully.", eo.envName)
+	log.Successf("Created Environment %s sucessfully.", eo.envName)
 	return nil
 }
 

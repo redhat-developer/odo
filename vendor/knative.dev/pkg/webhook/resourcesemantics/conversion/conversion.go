@@ -22,12 +22,16 @@ import (
 	"fmt"
 
 	"go.uber.org/zap"
+
 	apixv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"knative.dev/pkg/apis"
+	"knative.dev/pkg/kmeta"
 	"knative.dev/pkg/logging"
+	"knative.dev/pkg/logging/logkey"
 )
 
 // Convert implements webhook.ConversionController
@@ -52,6 +56,7 @@ func (r *reconciler) Convert(
 	for _, obj := range req.Objects {
 		converted, err := r.convert(ctx, obj, req.DesiredAPIVersion)
 		if err != nil {
+			logging.FromContext(ctx).Errorf("Conversion failed: %v", err)
 			res.Result.Status = metav1.StatusFailure
 			res.Result.Message = err.Error()
 			break
@@ -68,50 +73,37 @@ func (r *reconciler) convert(
 	ctx context.Context,
 	inRaw runtime.RawExtension,
 	targetVersion string,
-) (outRaw runtime.RawExtension, err error) {
-
+) (runtime.RawExtension, error) {
 	logger := logging.FromContext(ctx)
-
-	defer func() {
-		if err != nil {
-			logger.Errorf("Conversion failed: %s", err)
-		}
-	}()
+	var ret runtime.RawExtension
 
 	inGVK, err := parseGVK(inRaw)
 	if err != nil {
-		return
+		return ret, err
 	}
-
-	logger.Infof("Converting %s to version %s", formatGVK(inGVK), targetVersion)
 
 	inGK := inGVK.GroupKind()
 	conv, ok := r.kinds[inGK]
 	if !ok {
-		err = fmt.Errorf("no conversion support for type %s", formatGK(inGVK.GroupKind()))
-		return
+		return ret, fmt.Errorf("no conversion support for type %s", formatGK(inGVK.GroupKind()))
 	}
 
 	outGVK, err := parseAPIVersion(targetVersion, inGK.Kind)
 	if err != nil {
-		return
+		return ret, err
 	}
 
 	inZygote, ok := conv.Zygotes[inGVK.Version]
 	if !ok {
-		err = fmt.Errorf("conversion not supported for type %s", formatGVK(inGVK))
-		return
+		return ret, fmt.Errorf("conversion not supported for type %s", formatGVK(inGVK))
 	}
 	outZygote, ok := conv.Zygotes[outGVK.Version]
 	if !ok {
-		err = fmt.Errorf("conversion not supported for type %s", formatGVK(outGVK))
-		return
+		return ret, fmt.Errorf("conversion not supported for type %s", formatGVK(outGVK))
 	}
 	hubZygote, ok := conv.Zygotes[conv.HubVersion]
 	if !ok {
-		inGK := inGVK.GroupKind()
-		err = fmt.Errorf("conversion not supported for type %s", formatGK(inGK))
-		return
+		return ret, fmt.Errorf("conversion not supported for type %s", formatGK(inGVK.GroupKind()))
 	}
 
 	in := inZygote.DeepCopyObject().(ConvertibleObject)
@@ -119,6 +111,7 @@ func (r *reconciler) convert(
 	out := outZygote.DeepCopyObject().(ConvertibleObject)
 
 	hubGVK := inGVK.GroupKind().WithVersion(conv.HubVersion)
+
 	logger = logger.With(
 		zap.String("inputType", formatGVK(inGVK)),
 		zap.String("outputType", formatGVK(outGVK)),
@@ -127,22 +120,29 @@ func (r *reconciler) convert(
 
 	// TODO(dprotaso) - potentially error on unknown fields
 	if err = json.Unmarshal(inRaw.Raw, &in); err != nil {
-		err = fmt.Errorf("unable to unmarshal input: %s", err)
-		return
+		return ret, fmt.Errorf("unable to unmarshal input: %w", err)
 	}
+
+	if acc, err := kmeta.DeletionHandlingAccessor(in); err == nil {
+		// TODO: right now we don't convert any non-namespaced objects. If we ever do that
+		// this needs to updated to deal with it.
+		logger = logger.With(zap.String(logkey.Key, acc.GetNamespace()+"/"+acc.GetName()))
+	} else {
+		logger.Infof("Could not get Accessor for %s: %v", formatGK(inGVK.GroupKind()), err)
+	}
+	logger.Infof("Converting %s to version %s", formatGVK(inGVK), targetVersion)
+	ctx = logging.WithLogger(ctx, logger)
 
 	if inGVK.Version == conv.HubVersion {
 		hub = in
-	} else if err = hub.ConvertDown(ctx, in); err != nil {
-		err = fmt.Errorf("conversion failed to version %s for type %s -  %s", outGVK.Version, formatGVK(inGVK), err)
-		return
+	} else if err = hub.ConvertFrom(ctx, in); err != nil {
+		return ret, fmt.Errorf("conversion failed to version %s for type %s -  %w", outGVK.Version, formatGVK(inGVK), err)
 	}
 
 	if outGVK.Version == conv.HubVersion {
 		out = hub
-	} else if err = hub.ConvertUp(ctx, out); err != nil {
-		err = fmt.Errorf("conversion failed to version %s for type %s -  %s", outGVK.Version, formatGVK(inGVK), err)
-		return
+	} else if err = hub.ConvertTo(ctx, out); err != nil {
+		return ret, fmt.Errorf("conversion failed to version %s for type %s -  %w", outGVK.Version, formatGVK(inGVK), err)
 	}
 
 	out.GetObjectKind().SetGroupVersionKind(outGVK)
@@ -151,31 +151,33 @@ func (r *reconciler) convert(
 		defaultable.SetDefaults(ctx)
 	}
 
-	if outRaw.Raw, err = json.Marshal(out); err != nil {
-		err = fmt.Errorf("unable to marshal output: %s", err)
-		return
+	if ret.Raw, err = json.Marshal(out); err != nil {
+		return ret, fmt.Errorf("unable to marshal output: %w", err)
 	}
-
-	return
+	return ret, nil
 }
 
-func parseGVK(in runtime.RawExtension) (gvk schema.GroupVersionKind, err error) {
-	var typeMeta metav1.TypeMeta
+func parseGVK(in runtime.RawExtension) (schema.GroupVersionKind, error) {
+	var (
+		typeMeta metav1.TypeMeta
+		gvk      schema.GroupVersionKind
+	)
 
-	if err = json.Unmarshal(in.Raw, &typeMeta); err != nil {
-		err = fmt.Errorf("error parsing type meta %q - %s", string(in.Raw), err)
-		return
+	if err := json.Unmarshal(in.Raw, &typeMeta); err != nil {
+		return gvk, fmt.Errorf("error parsing type meta %q - %w", string(in.Raw), err)
 	}
 
 	gv, err := schema.ParseGroupVersion(typeMeta.APIVersion)
+	if err != nil {
+		return gvk, fmt.Errorf("error parsing GV %q: %w", typeMeta.APIVersion, err)
+	}
 	gvk = gv.WithKind(typeMeta.Kind)
 
 	if gvk.Group == "" || gvk.Version == "" || gvk.Kind == "" {
-		err = fmt.Errorf("invalid GroupVersionKind %v", gvk)
-		return
+		return gvk, fmt.Errorf("invalid GroupVersionKind %v", gvk)
 	}
 
-	return
+	return gvk, nil
 }
 
 func parseAPIVersion(apiVersion string, kind string) (schema.GroupVersionKind, error) {

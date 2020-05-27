@@ -23,15 +23,15 @@ import (
 
 func TestInnerDefaultResource_Validate(t *testing.T) {
 	r := InnerDefaultResource{}
-	if err := r.Validate(context.TODO()); err != nil {
-		t.Fatalf("Expected no validation errors. Actual %v", err)
+	if err := r.Validate(context.Background()); err != nil {
+		t.Error("Expected no validation errors. Actual:", err)
 	}
 }
 
 func TestInnerDefaultResource_SetDefaults(t *testing.T) {
 	r := InnerDefaultResource{}
-	r.SetDefaults(context.TODO())
+	r.SetDefaults(context.Background())
 	if r.Spec.FieldWithDefault != "I'm a default." {
-		t.Fatalf("Unexpected defaulted value: %v", r.Spec.FieldWithDefault)
+		t.Errorf("Unexpected defaulted value: %v", r.Spec.FieldWithDefault)
 	}
 }

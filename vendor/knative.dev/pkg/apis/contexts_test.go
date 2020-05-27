@@ -49,6 +49,21 @@ func TestContexts(t *testing.T) {
 		check: IsInCreate,
 		want:  false,
 	}, {
+		name:  "is in delete",
+		ctx:   WithinDelete(ctx),
+		check: IsInDelete,
+		want:  true,
+	}, {
+		name:  "not in delete (bare)",
+		ctx:   ctx,
+		check: IsInDelete,
+		want:  false,
+	}, {
+		name:  "not in delete (create)",
+		ctx:   WithinCreate(ctx),
+		check: IsInDelete,
+		want:  false,
+	}, {
 		name:  "is in update",
 		ctx:   WithinUpdate(ctx, struct{}{}),
 		check: IsInUpdate,
@@ -128,13 +143,23 @@ func TestContexts(t *testing.T) {
 		ctx:   ctx,
 		check: IsDifferentNamespaceAllowed,
 		want:  false,
+	}, {
+		name:  "not in dry run",
+		ctx:   ctx,
+		check: IsDryRun,
+		want:  false,
+	}, {
+		name:  "in dry run",
+		ctx:   WithDryRun(ctx),
+		check: IsDryRun,
+		want:  true,
 	}}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			got := tc.check(tc.ctx)
 			if tc.want != got {
-				t.Errorf("check() = %v, wanted %v", tc.want, got)
+				t.Errorf("check() = %v, wanted %v", got, tc.want)
 			}
 		})
 	}

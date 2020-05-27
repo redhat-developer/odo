@@ -24,7 +24,7 @@ import (
 	"net/url"
 	"time"
 
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"github.com/tektoncd/triggers/pkg/interceptors"
 	corev1 "k8s.io/api/core/v1"
 

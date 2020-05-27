@@ -1,7 +1,7 @@
 package tasks
 
 import (
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 
 	"github.com/openshift/odo/pkg/pipelines/meta"
 )
@@ -28,8 +28,9 @@ func CreateDeployUsingKubectlTask(ns string) pipelinev1.Task {
 		TypeMeta:   taskTypeMeta,
 		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, "deploy-using-kubectl-task")),
 		Spec: pipelinev1.TaskSpec{
-			Inputs: createInputsForDeployKubectlTask(),
-			Steps:  createStepsForDeployKubectlTask(),
+			Params:    paramsForDeployKubectlTask(),
+			Resources: createResourcesForDeployKubectlTask(),
+			Steps:     createStepsForDeployKubectlTask(),
 		},
 	}
 }
@@ -57,35 +58,38 @@ func createStepsForDeployKubectlTask() []pipelinev1.Step {
 	}
 }
 
-func createInputsForDeployKubectlTask() *pipelinev1.Inputs {
-	return &pipelinev1.Inputs{
-		Resources: []pipelinev1.TaskResource{
+func paramsForDeployKubectlTask() []pipelinev1.ParamSpec {
+	return []pipelinev1.ParamSpec{
+		createTaskParamWithDefault(
+			"PATHTODEPLOYMENT",
+			"Path to the pipelines to apply",
+			"string",
+			"deploy",
+		),
+		createTaskParam(
+			"NAMESPACE",
+			"Namespace to deploy into",
+			"string",
+		),
+		createTaskParamWithDefault(
+			"DRYRUN",
+			"If true run a server-side dryrun.",
+			"string",
+			"false",
+		),
+		createTaskParam(
+			"YAMLPATHTOIMAGE",
+			"The path to the image to replace in the yaml pipelines (arg to yq)",
+			"string",
+		),
+	}
+}
+
+func createResourcesForDeployKubectlTask() *pipelinev1.TaskResources {
+	return &pipelinev1.TaskResources{
+		Inputs: []pipelinev1.TaskResource{
 			createTaskResource("source", "git"),
 			createTaskResource("image", "image"),
-		},
-		Params: []pipelinev1.ParamSpec{
-			createTaskParamWithDefault(
-				"PATHTODEPLOYMENT",
-				"Path to the pipelines to apply",
-				"string",
-				"deploy",
-			),
-			createTaskParam(
-				"NAMESPACE",
-				"Namespace to deploy into",
-				"string",
-			),
-			createTaskParamWithDefault(
-				"DRYRUN",
-				"If true run a server-side dryrun.",
-				"string",
-				"false",
-			),
-			createTaskParam(
-				"YAMLPATHTOIMAGE",
-				"The path to the image to replace in the yaml pipelines (arg to yq)",
-				"string",
-			),
 		},
 	}
 }

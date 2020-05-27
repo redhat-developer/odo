@@ -1,3 +1,9 @@
+<!--
+---
+linkTitle: "Authentication"
+weight: 7
+---
+-->
 # Authentication
 
 This document defines how authentication is provided during execution of a
@@ -68,7 +74,7 @@ aggregates them into their respective files in `$HOME`.
 1. Then use that `ServiceAccount` in your `TaskRun` (in `run.yaml`):
 
 ```yaml
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: TaskRun
 metadata:
   name: build-push-task-run-2
@@ -81,7 +87,7 @@ spec:
 1. Or use that `ServiceAccount` in your `PipelineRun` (in `run.yaml`):
 
    ```yaml
-   apiVersion: tekton.dev/v1alpha1
+   apiVersion: tekton.dev/v1beta1
    kind: PipelineRun
    metadata:
      name: demo-pipeline
@@ -101,6 +107,21 @@ spec:
 When the `Run` executes, before steps execute, a `~/.ssh/config` will be
 generated containing the key configured in the `Secret`. This key is then used
 to authenticate when retrieving any `PipelineResources`.
+
+### Using SSH authentication in your own `git` `Tasks`
+
+The SSH credentials described above can be used when invoking `git` commands
+directly in your own Task's Steps. However, a Step will first need to symlink
+`/tekton/home/.ssh` to its user home directory (e.g. `/root/.ssh` when the
+Step's container runs as `root`).
+
+This is required because while Tekton does set the $HOME environment variable
+to `/tekton/home` by default, `ssh` ignores that environment variable and only
+considers the user's home as that described in `/etc/passwd`.
+
+**Note:** This additional symlink is not required if you are using the
+[`git-clone` catalog Task](https://github.com/tektoncd/catalog/tree/v1beta1/git)
+or Git PipelineResource.
 
 ## Basic authentication (Git)
 
@@ -140,7 +161,7 @@ to authenticate when retrieving any `PipelineResources`.
 1. Then use that `ServiceAccount` in your `TaskRun` (in `run.yaml`):
 
    ```yaml
-   apiVersion: tekton.dev/v1alpha1
+   apiVersion: tekton.dev/v1beta1
    kind: TaskRun
    metadata:
      name: build-push-task-run-2
@@ -153,7 +174,7 @@ to authenticate when retrieving any `PipelineResources`.
 1. Or use that `ServiceAccount` in your `PipelineRun` (in `run.yaml`):
 
    ```yaml
-   apiVersion: tekton.dev/v1alpha1
+   apiVersion: tekton.dev/v1beta1
    kind: PipelineRun
    metadata:
      name: demo-pipeline
@@ -213,7 +234,7 @@ credentials are then used to authenticate when retrieving any
 1. Then use that `ServiceAccount` in your `TaskRun` (in `run.yaml`):
 
 ```yaml
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: TaskRun
 metadata:
   name: build-push-task-run-2
@@ -226,7 +247,7 @@ spec:
 1. Or use that `ServiceAccount` in your `PipelineRun` (in `run.yaml`):
 
    ```yaml
-   apiVersion: tekton.dev/v1alpha1
+   apiVersion: tekton.dev/v1beta1
    kind: PipelineRun
    metadata:
      name: demo-pipeline
@@ -250,7 +271,7 @@ credentials are then used to authenticate when retrieving any
 
 ## Kubernetes's Docker registry's secret
 
-Kubernetes defines two types of secrets for Docker registries : 
+Kubernetes defines two types of secrets for Docker registries :
 the old format `kubernetes.io/dockercfg` and the new
 `kubernetes.io/dockerconfigjson`. Tekton supports those secrets in
 addition to the one described above.
@@ -278,7 +299,7 @@ addition to the one described above.
 1. Use that `ServiceAccount` in your `TaskRun`:
 
    ```yaml
-   apiVersion: tetkon.dev/v1alpha1
+   apiVersion: tetkon.dev/v1beta1
    kind: TaskRun
    metadata:
      name: build-with-basic-auth

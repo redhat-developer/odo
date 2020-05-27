@@ -17,6 +17,7 @@
     "Number": 1,
     "Title": "Update readme",
     "Body": "adding build instructions to readme",
+    "State": "open",
     "Sha": "c4c79227ed610f1151f05bbc5be33b4f340d39c8",
     "Ref": "refs/merge-requests/1/head",
     "Source": "feature",

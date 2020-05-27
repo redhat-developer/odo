@@ -33,8 +33,12 @@ const (
 )
 
 var (
-	boskosURI           = "http://boskos.test-pods.svc.cluster.local."
-	defaultWaitDuration = time.Minute * 20
+	boskosURI = "http://boskos.test-pods.svc.cluster.local."
+	// Keep Boskos for 2 hours, which will be used to release Boskos resource
+	// only when a job forgot or failed to release Boskos, which shouldn't
+	// happen that often. Using this can avoid keeping "heartbeat" which is
+	// almost not doable for Go
+	defaultWaitDuration = 2 * time.Hour
 )
 
 // Operation defines actions for handling GKE resources
@@ -75,7 +79,7 @@ func (c *Client) AcquireGKEProject(resType string) (*boskoscommon.Resource, erro
 	defer cancel()
 	p, err := c.AcquireWait(ctx, resType, boskoscommon.Free, boskoscommon.Busy)
 	if err != nil {
-		return nil, fmt.Errorf("boskos failed to acquire GKE project: %v", err)
+		return nil, fmt.Errorf("boskos failed to acquire GKE project: %w", err)
 	}
 	if p == nil {
 		return nil, fmt.Errorf("boskos does not have a free %s at the moment", resType)
@@ -90,7 +94,7 @@ func (c *Client) AcquireGKEProject(resType string) (*boskoscommon.Resource, erro
 // other processes, regardless of where the other process is running.
 func (c *Client) ReleaseGKEProject(name string) error {
 	if err := c.Release(name, boskoscommon.Dirty); err != nil {
-		return fmt.Errorf("boskos failed to release GKE project '%s': %v", name, err)
+		return fmt.Errorf("boskos failed to release GKE project %q: %w", name, err)
 	}
 	return nil
 }

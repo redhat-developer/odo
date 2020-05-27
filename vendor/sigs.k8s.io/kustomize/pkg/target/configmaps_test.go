@@ -18,65 +18,56 @@ package target_test
 
 import (
 	"testing"
-
-	"sigs.k8s.io/kustomize/v3/pkg/kusttest"
 )
 
 // Generate a Secret and a ConfigMap from the same data
 // to compare the result.
 func TestGeneratorBasics(t *testing.T) {
-	th := kusttest_test.NewKustTestHarness(t, "/app")
-	th.WriteK("/app", `
+	th := NewKustTestHarness(t, "/app")
+	th.writeK("/app", `
 namePrefix: blah-
 configMapGenerator:
 - name: bob
   literals:
-  - fruit=apple
-  - vegetable=broccoli
-  envs:
-  - foo.env
+    - fruit=apple
+    - vegetable=broccoli
+  env: foo.env
   files:
-  - passphrase=phrase.dat
-  - forces.txt
+    - passphrase=phrase.dat
+    - forces.txt
 - name: json
   literals:
-  - 'v2=[{"path": "var/druid/segment-cache"}]'
-  - >- 
-    druid_segmentCache_locations=[{"path": 
-    "var/druid/segment-cache", 
-    "maxSize": 32000000000, 
-    "freeSpacePercent": 1.0}]
+    - 'v2=[{"path": "var/druid/segment-cache"}]'
 secretGenerator:
 - name: bob
   literals:
-  - fruit=apple
-  - vegetable=broccoli
-  envs:
-  - foo.env
+    - fruit=apple
+    - vegetable=broccoli
+  env: foo.env
   files:
-  - passphrase=phrase.dat
-  - forces.txt
+    - passphrase=phrase.dat
+    - forces.txt
 `)
-	th.WriteF("/app/foo.env", `
+	th.writeF("/app/foo.env", `
 MOUNTAIN=everest
 OCEAN=pacific
 `)
-	th.WriteF("/app/phrase.dat", `
+	th.writeF("/app/phrase.dat", `
 Life is short.
 But the years are long.
 Not while the evil days come not.
 `)
-	th.WriteF("/app/forces.txt", `
+	th.writeF("/app/forces.txt", `
 gravitational
 electromagnetic
 strong nuclear
 weak nuclear
 `)
-	m, err := th.MakeKustTarget().MakeCustomizedResMap()
+	m, err := th.makeKustTarget().MakeCustomizedResMap()
 	if err != nil {
 		t.Fatalf("Err: %v", err)
 	}
-	th.AssertActualEqualsExpected(m, `
+	th.assertActualEqualsExpected(m, `
 apiVersion: v1
 data:
   MOUNTAIN: everest
@@ -100,12 +91,10 @@ metadata:
 ---
 apiVersion: v1
 data:
-  druid_segmentCache_locations: '[{"path":  "var/druid/segment-cache",  "maxSize":
-    32000000000,  "freeSpacePercent": 1.0}]'
   v2: '[{"path": "var/druid/segment-cache"}]'
 kind: ConfigMap
 metadata:
-  name: blah-json-9gtcc2fgb4
+  name: blah-json-tkh79m5tbc
 ---
 apiVersion: v1
 data:
@@ -124,30 +113,30 @@ type: Opaque
 
 // TODO: These should be errors instead.
 func TestGeneratorRepeatsInKustomization(t *testing.T) {
-	th := kusttest_test.NewKustTestHarness(t, "/app")
-	th.WriteK("/app", `
+	th := NewKustTestHarness(t, "/app")
+	th.writeK("/app", `
 namePrefix: blah-
 configMapGenerator:
 - name: bob
   behavior: create
   literals:
-  - bean=pinto
-  - star=wolf-rayet
+    - bean=pinto
+    - star=wolf-rayet
   literals:
-  - fruit=apple
-  - vegetable=broccoli
+    - fruit=apple
+    - vegetable=broccoli
   files:
-  - forces.txt
+    - forces.txt
   files:
-  - nobles=nobility.txt
+    - nobles=nobility.txt
 `)
-	th.WriteF("/app/forces.txt", `
+	th.writeF("/app/forces.txt", `
 gravitational
 electromagnetic
 strong nuclear
 weak nuclear
 `)
-	th.WriteF("/app/nobility.txt", `
+	th.writeF("/app/nobility.txt", `
 helium
 neon
 argon
@@ -155,11 +144,11 @@ krypton
 xenon
 radon
 `)
-	m, err := th.MakeKustTarget().MakeCustomizedResMap()
+	m, err := th.makeKustTarget().MakeCustomizedResMap()
 	if err != nil {
 		t.Fatalf("Err: %v", err)
 	}
-	th.AssertActualEqualsExpected(m, `
+	th.assertActualEqualsExpected(m, `
 apiVersion: v1
 data:
   fruit: apple
@@ -179,57 +168,57 @@ metadata:
 }
 
 func TestGeneratorOverlays(t *testing.T) {
-	th := kusttest_test.NewKustTestHarness(t, "/app/overlay")
-	th.WriteK("/app/base1", `
+	th := NewKustTestHarness(t, "/app/overlay")
+	th.writeK("/app/base1", `
 namePrefix: p1-
 configMapGenerator:
 - name: com1
   behavior: create
   literals:
-  - from=base
+    - from=base
 `)
-	th.WriteK("/app/base2", `
+	th.writeK("/app/base2", `
 namePrefix: p2-
 configMapGenerator:
 - name: com2
   behavior: create
   literals:
-  - from=base
+    - from=base
 `)
-	th.WriteK("/app/overlay/o1", `
-resources:
+	th.writeK("/app/overlay/o1", `
+bases:
 - ../../base1
 configMapGenerator:
 - name: com1
   behavior: merge
   literals:
-  - from=overlay
+    - from=overlay
 `)
-	th.WriteK("/app/overlay/o2", `
-resources:
+	th.writeK("/app/overlay/o2", `
+bases:
 - ../../base2
 configMapGenerator:
 - name: com2
   behavior: merge
   literals:
-  - from=overlay
+    - from=overlay
 `)
-	th.WriteK("/app/overlay", `
-resources:
+	th.writeK("/app/overlay", `
+bases:
 - o1
 - o2
 configMapGenerator:
 - name: com1
   behavior: merge
   literals:
-  - foo=bar
-  - baz=qux
+    - foo=bar
+    - baz=qux
 `)
-	m, err := th.MakeKustTarget().MakeCustomizedResMap()
+	m, err := th.makeKustTarget().MakeCustomizedResMap()
 	if err != nil {
 		t.Fatalf("Err: %v", err)
 	}
-	th.AssertActualEqualsExpected(m, `
+	th.assertActualEqualsExpected(m, `
 apiVersion: v1
 data:
   baz: qux
@@ -249,65 +238,5 @@ metadata:
   annotations: {}
   labels: {}
   name: p2-com2-c4b8md75k9
-`)
-}
-
-func TestConfigMapGeneratorMergeNamePrefix(t *testing.T) {
-	th := kusttest_test.NewKustTestHarness(t, "/app")
-	th.WriteK("/app/base", `
-configMapGenerator:
-- name: cm
-  behavior: create
-  literals:
-  - foo=bar
-`)
-	th.WriteK("/app/o1", `
-resources:
-- ../base
-namePrefix: o1-
-`)
-	th.WriteK("/app/o2", `
-resources:
-- ../base
-nameSuffix: -o2
-`)
-	th.WriteK("/app", `
-resources:
-- o1
-- o2
-configMapGenerator:
-- name: o1-cm
-  behavior: merge
-  literals:
-  - big=bang
-- name: cm-o2
-  behavior: merge
-  literals:
-  - big=crunch
-`)
-	m, err := th.MakeKustTarget().MakeCustomizedResMap()
-	if err != nil {
-		t.Fatalf("Err: %v", err)
-	}
-	th.AssertActualEqualsExpected(m, `
-apiVersion: v1
-data:
-  big: bang
-  foo: bar
-kind: ConfigMap
-metadata:
-  annotations: {}
-  labels: {}
-  name: o1-cm-28g596k77k
----
-apiVersion: v1
-data:
-  big: crunch
-  foo: bar
-kind: ConfigMap
-metadata:
-  annotations: {}
-  labels: {}
-  name: cm-o2-gfcc59fg5m
 `)
 }

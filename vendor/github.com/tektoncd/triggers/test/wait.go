@@ -47,7 +47,7 @@ import (
 
 const (
 	interval = 1 * time.Second
-	timeout  = 10 * time.Second
+	timeout  = 10 * time.Minute
 )
 
 // WaitFor waits for the specified ConditionFunc every internal until the timeout.
@@ -60,7 +60,7 @@ func WaitFor(waitFunc wait.ConditionFunc) error {
 // is within this set
 func eventListenerReady(t *testing.T, c *clients, namespace, name string) wait.ConditionFunc {
 	return func() (bool, error) {
-		el, err := c.TriggersClient.TektonV1alpha1().EventListeners(namespace).Get(name, metav1.GetOptions{})
+		el, err := c.TriggersClient.TriggersV1alpha1().EventListeners(namespace).Get(name, metav1.GetOptions{})
 		if err != nil && errors.IsNotFound(err) {
 			t.Log("EventListener not found")
 			return false, nil
@@ -107,7 +107,7 @@ func serviceNotExist(t *testing.T, c *clients, namespace, name string) wait.Cond
 // pipelineResourceExist returns a function that checks if the specified PipelineResource exists
 func pipelineResourceExist(t *testing.T, c *clients, namespace, name string) wait.ConditionFunc {
 	return func() (bool, error) {
-		_, err := c.PipelineClient.TektonV1alpha1().PipelineResources(namespace).Get(name, metav1.GetOptions{})
+		_, err := c.ResourceClient.TektonV1alpha1().PipelineResources(namespace).Get(name, metav1.GetOptions{})
 		if err != nil && errors.IsNotFound(err) {
 			return false, nil
 		}

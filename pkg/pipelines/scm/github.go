@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/openshift/odo/pkg/pipelines/meta"
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	"github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
 	triggersv1 "github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
 )
@@ -57,7 +56,7 @@ func (repo *GitHubRepository) CreatePRBinding(ns string) (triggersv1.TriggerBind
 		TypeMeta:   triggerBindingTypeMeta,
 		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, githubPRBindingName)),
 		Spec: triggersv1.TriggerBindingSpec{
-			Params: []pipelinev1.Param{
+			Params: []triggersv1.Param{
 				createBindingParam("gitref", "$(body.pull_request.head.ref)"),
 				createBindingParam("gitsha", "$(body.pull_request.head.sha)"),
 				createBindingParam("gitrepositoryurl", "$(body.repository.clone_url)"),
@@ -73,7 +72,7 @@ func (repo *GitHubRepository) CreatePushBinding(ns string) (triggersv1.TriggerBi
 		TypeMeta:   triggerBindingTypeMeta,
 		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, githubPushBindingName)),
 		Spec: triggersv1.TriggerBindingSpec{
-			Params: []pipelinev1.Param{
+			Params: []triggersv1.Param{
 				createBindingParam("gitref", "$(body.ref)"),
 				createBindingParam("gitsha", "$(body.head_commit.id)"),
 				createBindingParam("gitrepositoryurl", "$(body.repository.clone_url)"),

@@ -25,6 +25,14 @@
     "Email": "jane@example.com",
     "Avatar": "https://www.gravatar.com/avatar/9e26471d35a78862c17e467d87cddedf.jpg"
   },
+  "Reviewers": [
+    {
+      "Login": "tom",
+      "Name": "Tom",
+      "Email": "tom@example.com",
+      "Avatar": "https://www.gravatar.com/avatar/e4f7cd8905e896b04425b1d08411e9fb.jpg"
+    }
+  ],
   "Created": "2018-07-04T22:01:10-07:00",
   "Updated": "2018-07-04T22:01:10-07:00"
 }

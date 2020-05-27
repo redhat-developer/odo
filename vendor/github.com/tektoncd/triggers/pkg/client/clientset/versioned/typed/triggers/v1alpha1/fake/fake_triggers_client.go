@@ -24,25 +24,29 @@ import (
 	testing "k8s.io/client-go/testing"
 )
 
-type FakeTektonV1alpha1 struct {
+type FakeTriggersV1alpha1 struct {
 	*testing.Fake
 }
 
-func (c *FakeTektonV1alpha1) EventListeners(namespace string) v1alpha1.EventListenerInterface {
+func (c *FakeTriggersV1alpha1) ClusterTriggerBindings() v1alpha1.ClusterTriggerBindingInterface {
+	return &FakeClusterTriggerBindings{c}
+}
+
+func (c *FakeTriggersV1alpha1) EventListeners(namespace string) v1alpha1.EventListenerInterface {
 	return &FakeEventListeners{c, namespace}
 }
 
-func (c *FakeTektonV1alpha1) TriggerBindings(namespace string) v1alpha1.TriggerBindingInterface {
+func (c *FakeTriggersV1alpha1) TriggerBindings(namespace string) v1alpha1.TriggerBindingInterface {
 	return &FakeTriggerBindings{c, namespace}
 }
 
-func (c *FakeTektonV1alpha1) TriggerTemplates(namespace string) v1alpha1.TriggerTemplateInterface {
+func (c *FakeTriggersV1alpha1) TriggerTemplates(namespace string) v1alpha1.TriggerTemplateInterface {
 	return &FakeTriggerTemplates{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
-func (c *FakeTektonV1alpha1) RESTClient() rest.Interface {
+func (c *FakeTriggersV1alpha1) RESTClient() rest.Interface {
 	var ret *rest.RESTClient
 	return ret
 }

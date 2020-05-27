@@ -39,7 +39,7 @@ import (
 	"k8s.io/apiserver/pkg/storage"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 	utiltrace "k8s.io/utils/trace"
 )
 
@@ -52,7 +52,9 @@ const (
 	// initial and resync watch lists to storage.
 	storageWatchListPageSize = int64(10000)
 	// defaultBookmarkFrequency defines how frequently watch bookmarks should be send
-	// in addition to sending a bookmark right before watch deadline
+	// in addition to sending a bookmark right before watch deadline.
+	//
+	// NOTE: Update `eventFreshDuration` when changing this value.
 	defaultBookmarkFrequency = time.Minute
 )
 

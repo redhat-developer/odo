@@ -66,7 +66,7 @@ To use [`tkn`](https://github.com/tektoncd/cli) to run the `publish-tekton-pipel
     service available collects the `PipelineRun` logs uploads them to the release
     bucker. To use release post-processing services, update the
     [`resources.yaml`](./resources.yaml) file to add a valid targetURL in the
-    cloud event `PipelineResoruce` named `post-release-trigger`:
+    cloud event `PipelineResource` named `post-release-trigger`:
 
     ```yaml
     apiVersion: tekton.dev/v1alpha1
@@ -119,14 +119,17 @@ To use [`tkn`](https://github.com/tektoncd/cli) to run the `publish-tekton-pipel
    export IMAGE_REGISTRY=gcr.io/tekton-releases
 
    # Double-check the git revision that is going to be used for the release:
-   kubectl get pipelineresource/tekton-pipelines-git -o=jsonpath="{'Target Revision: '}{.spec.params[?(@.name == 'revision')].value}{'\n'}"
+   kubectl get pipelineresource/tekton-pipelines-git-vX-Y-Z -o=jsonpath="{'Target Revision: '}{.spec.params[?(@.name == 'revision')].value}{'\n'}"
 
+   # Execute the release pipeline.
+   # By default this will tag the release as Pipelines' latest. If you would like to prevent
+   # this from happening add --param=releaseAsLatest="false"
    tkn pipeline start \
 		--param=versionTag=${VERSION_TAG} \
 		--param=imageRegistry=${IMAGE_REGISTRY} \
 		--serviceaccount=release-right-meow \
 		--resource=source-repo=${GIT_RESOURCE_NAME} \
-		--resource=bucket=tekton-bucket \
+		--resource=bucket=pipeline-tekton-bucket \
 		--resource=builtBaseImage=base-image \
 		--resource=builtEntrypointImage=entrypoint-image \
 		--resource=builtKubeconfigWriterImage=kubeconfigwriter-image \
@@ -183,7 +186,6 @@ Install Task from plumbing too:
 
 ```bash
 # Apply the Tasks we are using from the catalog
-kubectl apply -f https://raw.githubusercontent.com/tektoncd/catalog/master/golang/lint.yaml
 kubectl apply -f https://raw.githubusercontent.com/tektoncd/catalog/master/golang/build.yaml
 kubectl apply -f https://raw.githubusercontent.com/tektoncd/catalog/master/golang/tests.yaml
 kubectl apply -f https://raw.githubusercontent.com/tektoncd/plumbing/master/tekton/resources/release/

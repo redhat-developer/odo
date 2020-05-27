@@ -80,8 +80,8 @@ func (*Addressable) GetFullType() duck.Populatable {
 	return &AddressableType{}
 }
 
-// ConvertUp implements apis.Convertible
-func (a *Addressable) ConvertUp(ctx context.Context, to apis.Convertible) error {
+// ConvertTo implements apis.Convertible
+func (a *Addressable) ConvertTo(ctx context.Context, to apis.Convertible) error {
 	var url *apis.URL
 	if a.URL != nil {
 		url = a.URL
@@ -101,14 +101,20 @@ func (a *Addressable) ConvertUp(ctx context.Context, to apis.Convertible) error 
 	}
 }
 
-// ConvertDown implements apis.Convertible
-func (a *Addressable) ConvertDown(ctx context.Context, from apis.Convertible) error {
+// ConvertFrom implements apis.Convertible
+func (a *Addressable) ConvertFrom(ctx context.Context, from apis.Convertible) error {
 	switch source := from.(type) {
 	case *v1.Addressable:
 		a.URL = source.URL.DeepCopy()
+		if a.URL != nil {
+			a.Hostname = a.URL.Host
+		}
 		return nil
 	case *v1beta1.Addressable:
 		a.URL = source.URL.DeepCopy()
+		if a.URL != nil {
+			a.Hostname = a.URL.Host
+		}
 		return nil
 	default:
 		return fmt.Errorf("unknown version, got: %T", from)

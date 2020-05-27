@@ -5,8 +5,6 @@ import (
 	"net/url"
 	"strings"
 
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
-
 	triggersv1 "github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
 )
 
@@ -57,12 +55,9 @@ func createBindings(names []string) []*triggersv1.EventListenerBinding {
 	return bindings
 }
 
-func createBindingParam(name string, value string) pipelinev1.Param {
-	return pipelinev1.Param{
-		Name: name,
-		Value: pipelinev1.ArrayOrString{
-			StringVal: value,
-			Type:      pipelinev1.ParamTypeString,
-		},
+func createBindingParam(name string, value string) triggersv1.Param {
+	return triggersv1.Param{
+		Name:  name,
+		Value: value,
 	}
 }

@@ -46,7 +46,7 @@ func TestMessaging(t *testing.T) {
 		name string
 	}{
 		{"test name"},
-		{"special name <>&'\""},
+		{`special name <>&'"`},
 	}
 
 	for _, tc := range testCases {

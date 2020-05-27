@@ -1,5 +1,5 @@
-hash: 721bab006d880b97996f61d8060113ed2d2de9eafcdf27d48cce8e181478d99c
-updated: 2020-05-05T15:12:59.992247+02:00
+hash: b1492b21a92932c9bdf9d95cf067bd92eff40f53558a3bb32f986ec0d84b9b80
+updated: 2020-05-26T22:19:06.324093584-04:00
 imports:
 - name: cloud.google.com/go
   version: 8c41231e01b2085512d98153bcffb847ff9b4b9f
@@ -31,6 +31,12 @@ imports:
   version: 4b2b341e8d7715fae06375aa633dbb6e91b3fb46
   subpackages:
   - quantile
+- name: github.com/bitnami-labs/sealed-secrets
+  version: bfb03e8f4cd10b34c944a7fd02931fea6c4a5507
+  subpackages:
+  - pkg/apis/sealed-secrets
+  - pkg/apis/sealed-secrets/v1alpha1
+  - pkg/crypto
 - name: github.com/blang/semver
   version: 2ee87856327ba09384cabd113bc6b5d174e9ec0f
 - name: github.com/containerd/containerd
@@ -139,11 +145,12 @@ imports:
   - ptypes/duration
   - ptypes/timestamp
 - name: github.com/google/btree
-  version: 479b5e81b0a93ec038d201b0b33d17db599531d3
+  version: 4030bb1f1f0c35b30ca7009e9ebd06849dd45306
 - name: github.com/google/go-cmp
-  version: 5a6f75716e1203a923a78c9efb94089d857df0f6
+  version: 7e5cb83929c528b29e5a8ac1244eab0436f79bce
   subpackages:
   - cmp
+  - cmp/cmpopts
   - cmp/internal/diff
   - cmp/internal/flags
   - cmp/internal/function
@@ -177,6 +184,10 @@ imports:
   version: 9cad4c3443a7200dd6400aef47183728de563a38
   subpackages:
   - diskcache
+- name: github.com/h2non/gock
+  version: 3ffff9b1aa8200275a5eb219c5f9c62bd27acb31
+- name: github.com/h2non/parth
+  version: b4df798d65426f8c8ab5ca5f9987aec5575d26c9
 - name: github.com/hashicorp/errwrap
   version: 8a6fb523712970c966eefc6b39ed2c5e74880354
 - name: github.com/hashicorp/go-multierror
@@ -198,12 +209,25 @@ imports:
   version: 9316a62528ac99aaecb4e47eadd6dc8aa6533d58
 - name: github.com/inconshreveable/mousetrap
   version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
+- name: github.com/jenkins-x/go-scm
+  version: b55b8b13c094642949f9c905118c7fe765e63b55
+  subpackages:
+  - pkg/hmac
+  - scm
+  - scm/driver/bitbucket
+  - scm/driver/fake
+  - scm/driver/gitea
+  - scm/driver/github
+  - scm/driver/gitlab
+  - scm/driver/gogs
+  - scm/driver/internal/null
+  - scm/driver/stash
+  - scm/factory
+  - scm/transport
 - name: github.com/json-iterator/go
   version: 03217c3e97663914aec3faafde50d081f197a0a2
 - name: github.com/kballard/go-shellquote
   version: 95032a82bc518f77982ea72343cc1ade730072f0
-- name: github.com/konsorten/go-windows-terminal-sequences
-  version: 5c8c8bd35d3832f5d134ae1e1e375b69a4d25242
 - name: github.com/kr/pty
   version: 3a6a957789163cacdfe0e291617a1c8e80612c11
   repo: https://github.com/creack/pty
@@ -257,6 +281,8 @@ imports:
   version: af06845cf3004701891bf4fdb884bfe4920b3727
 - name: github.com/mitchellh/go-wordwrap
   version: 9e67c67572bc5dd02aef930e2b0ae3c02a4b5a5c
+- name: github.com/mkmik/multierror
+  version: a480e2c227431e66944d20e655a2660f380ca83a
 - name: github.com/modern-go/concurrent
   version: bacd9c7ef1dd9b15be4a9909b8ac7a4e313eec94
 - name: github.com/modern-go/reflect2
@@ -302,7 +328,7 @@ imports:
   - matchers/support/goraph/util
   - types
 - name: github.com/opencontainers/go-digest
-  version: 279bed98673dd5bef374d3b6e4b09e2af76183bf
+  version: ea51bea511f75cfa3ef6098cc253c5c3609b037a
 - name: github.com/opencontainers/image-spec
   version: 79b036d80240ae530a8de15e1d21c7ab9292c693
   subpackages:
@@ -357,14 +383,14 @@ imports:
   - user/clientset/versioned/scheme
   - user/clientset/versioned/typed/user/v1
 - name: github.com/openshift/library-go
-  version: 2e79bd232e72b0a2c80fce375450cc1a999aeaf4
+  version: e4959e210d3ae8807ea47c470d7afffebb546b8c
   subpackages:
   - pkg/apps/appsserialization
   - pkg/apps/appsutil
   - pkg/build/naming
   - pkg/oauth/oauthdiscovery
 - name: github.com/openshift/oc
-  version: 2576e482bf003e34e67ba3d69edcf5d411cfd6f3
+  version: 4a4cd759b616cdba344dd73386727c10d3d2dde1
   subpackages:
   - pkg/cli/login
   - pkg/helpers/errors
@@ -376,7 +402,7 @@ imports:
   - pkg/helpers/term
   - pkg/helpers/tokencmd
 - name: github.com/operator-framework/operator-lifecycle-manager
-  version: a6acf50218ed5dff731b47ec6029cc353f9cbdfe
+  version: f8ef76c241abfeeb45fa680599b9c683ec3173cf
   subpackages:
   - pkg/api/apis/operators
   - pkg/api/apis/operators/v1
@@ -428,8 +454,15 @@ imports:
   version: 05f3235734ad95d0016f6a23902f06461fcf567a
 - name: github.com/satori/go.uuid
   version: 879c5887cd475cd7864858769793b2ceb0d44feb
+- name: github.com/shurcooL/githubv4
+  version: bbc966b061dd4a1fc13fd74ac2c114c928f8c88a
+- name: github.com/shurcooL/graphql
+  version: d48a9a75455f6af30244670bc0c9d0e38e7392b5
+  subpackages:
+  - ident
+  - internal/jsonutil
 - name: github.com/sirupsen/logrus
-  version: 839c75faf7f98a33d445d181f3018b5c3409a45e
+  version: 42baed85eb233bfc674562af0ef6e99c45f5f384
 - name: github.com/spf13/afero
   version: 588a75ec4f32903aa5e39a2619ba6a4631e28424
   subpackages:
@@ -444,21 +477,21 @@ imports:
   - assert
   - require
 - name: github.com/tektoncd/pipeline
-  version: 9d40d325b27a98ec496e9d0bc4d6f28ed078d0fc
+  version: bfa9d6155161e17c105ccf14fe3ff31b510e28fe
   subpackages:
   - pkg/apis/config
   - pkg/apis/pipeline
   - pkg/apis/pipeline/pod
   - pkg/apis/pipeline/v1alpha1
+  - pkg/apis/pipeline/v1beta1
   - pkg/apis/resource/v1alpha1
   - pkg/apis/validate
   - pkg/contexts
   - pkg/list
-  - pkg/names
   - pkg/reconciler/pipeline/dag
   - pkg/substitution
 - name: github.com/tektoncd/triggers
-  version: 6fd954437e30a23124d869e0fc24673aad042af7
+  version: 8e7c4798a520fe371c815d40f8fbdb2c72604bdd
   subpackages:
   - pkg/apis/triggers/v1alpha1
 - name: github.com/xeipuuv/gojsonpointer
@@ -471,12 +504,19 @@ imports:
   version: c2843e01d9a2bc60bb26ad24e09734fdc2d9ec58
   subpackages:
   - cast5
+  - curve25519
+  - ed25519
+  - ed25519/internal/edwards25519
+  - internal/chacha20
+  - internal/subtle
   - openpgp
   - openpgp/armor
   - openpgp/elgamal
   - openpgp/errors
   - openpgp/packet
   - openpgp/s2k
+  - poly1305
+  - ssh
   - ssh/terminal
 - name: golang.org/x/net
   version: 13f9640d40b9cc418fb53703dfbd177679788ceb
@@ -500,6 +540,7 @@ imports:
 - name: golang.org/x/sys
   version: fde4db37ae7ad8191b03d30d27f258b5291ae4e3
   subpackages:
+  - cpu
   - unix
   - windows
 - name: golang.org/x/text
@@ -538,7 +579,7 @@ imports:
   subpackages:
   - internal
 - name: gomodules.xyz/jsonpatch
-  version: e8422f09d27ee2c8cfb2c7f8089eb9eeb0764849
+  version: 1c2a0262323edc27502942d9727c95646b1c3cbe
   subpackages:
   - v2
 - name: google.golang.org/appengine
@@ -622,18 +663,6 @@ imports:
   - storage/v1
   - storage/v1alpha1
   - storage/v1beta1
-- name: k8s.io/apiextensions-apiserver
-  version: 1495f70252dcec3e2289bcabc488290dc1cf1258
-  repo: https://github.com/openshift/kubernetes-apiextensions-apiserver.git
-  subpackages:
-  - pkg/apis/apiextensions
-  - pkg/apis/apiextensions/v1beta1
-  - pkg/client/clientset/clientset
-  - pkg/client/clientset/clientset/fake
-  - pkg/client/clientset/clientset/scheme
-  - pkg/client/clientset/clientset/typed/apiextensions/v1beta1
-  - pkg/client/clientset/clientset/typed/apiextensions/v1beta1/fake
-  - pkg/features
 - name: k8s.io/apimachinery
   version: 79c2a76c473a20cdc4ce59cae4b72529b5d9d16b
   repo: https://github.com/openshift/kubernetes-apimachinery.git
@@ -691,7 +720,7 @@ imports:
   - third_party/forked/golang/netutil
   - third_party/forked/golang/reflect
 - name: k8s.io/apiserver
-  version: 67a2f5bbc9d8f88bdaa7659cc0cb3307a7f9d61d
+  version: dca35a8f4279c07a791cf850649b3b025509eaf8
   subpackages:
   - pkg/authentication/authenticator
   - pkg/authentication/request/x509
@@ -723,7 +752,7 @@ imports:
   - dynamic
   - informers
   - informers/admissionregistration
-  - informers/admissionregistration/v1alpha1
+  - informers/admissionregistration/v1
   - informers/admissionregistration/v1beta1
   - informers/apps
   - informers/apps/v1
@@ -742,16 +771,26 @@ imports:
   - informers/certificates
   - informers/certificates/v1beta1
   - informers/coordination
+  - informers/coordination/v1
   - informers/coordination/v1beta1
   - informers/core
   - informers/core/v1
+  - informers/discovery
+  - informers/discovery/v1alpha1
+  - informers/discovery/v1beta1
   - informers/events
   - informers/events/v1beta1
   - informers/extensions
   - informers/extensions/v1beta1
+  - informers/flowcontrol
+  - informers/flowcontrol/v1alpha1
   - informers/internalinterfaces
   - informers/networking
   - informers/networking/v1
+  - informers/networking/v1beta1
+  - informers/node
+  - informers/node/v1alpha1
+  - informers/node/v1beta1
   - informers/policy
   - informers/policy/v1beta1
   - informers/rbac
@@ -759,6 +798,7 @@ imports:
   - informers/rbac/v1alpha1
   - informers/rbac/v1beta1
   - informers/scheduling
+  - informers/scheduling/v1
   - informers/scheduling/v1alpha1
   - informers/scheduling/v1beta1
   - informers/settings
@@ -850,7 +890,7 @@ imports:
   - kubernetes/typed/storage/v1alpha1/fake
   - kubernetes/typed/storage/v1beta1
   - kubernetes/typed/storage/v1beta1/fake
-  - listers/admissionregistration/v1alpha1
+  - listers/admissionregistration/v1
   - listers/admissionregistration/v1beta1
   - listers/apps/v1
   - listers/apps/v1beta1
@@ -863,15 +903,23 @@ imports:
   - listers/batch/v1beta1
   - listers/batch/v2alpha1
   - listers/certificates/v1beta1
+  - listers/coordination/v1
   - listers/coordination/v1beta1
   - listers/core/v1
+  - listers/discovery/v1alpha1
+  - listers/discovery/v1beta1
   - listers/events/v1beta1
   - listers/extensions/v1beta1
+  - listers/flowcontrol/v1alpha1
   - listers/networking/v1
+  - listers/networking/v1beta1
+  - listers/node/v1alpha1
+  - listers/node/v1beta1
   - listers/policy/v1beta1
   - listers/rbac/v1
   - listers/rbac/v1alpha1
   - listers/rbac/v1beta1
+  - listers/scheduling/v1
   - listers/scheduling/v1alpha1
   - listers/scheduling/v1beta1
   - listers/settings/v1alpha1
@@ -957,9 +1005,10 @@ imports:
   subpackages:
   - buffer
   - exec
-  - pointer
+  - integer
+  - trace
 - name: knative.dev/pkg
-  version: d8b36f3593257b2b39ab9bb6fbd8ad6828983755
+  version: 7893fe6758a4211943c3d462f4e5e84001aedb8e
   subpackages:
   - apis
   - apis/duck
@@ -970,6 +1019,32 @@ imports:
   - kmeta
   - kmp
   - tracker
+- name: sigs.k8s.io/kustomize
+  version: a6f65144121d1955266b0cd836ce954c04122dc8
+  subpackages:
+  - api
+  - pkg/commands/build
+  - pkg/constants
+  - pkg/expansion
+  - pkg/factory
+  - pkg/fs
+  - pkg/git
+  - pkg/gvk
+  - pkg/ifc
+  - pkg/ifc/transformer
+  - pkg/image
+  - pkg/internal/error
+  - pkg/loader
+  - pkg/patch
+  - pkg/patch/transformer
+  - pkg/resid
+  - pkg/resmap
+  - pkg/resource
+  - pkg/target
+  - pkg/transformers
+  - pkg/transformers/config
+  - pkg/transformers/config/defaultconfig
+  - pkg/types
 - name: sigs.k8s.io/yaml
   version: fd68e9863619f6ec2fdd8625fe1f02e7c877e480
 testImports: []

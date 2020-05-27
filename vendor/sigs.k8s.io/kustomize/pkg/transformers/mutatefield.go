@@ -24,7 +24,7 @@ import (
 
 type mutateFunc func(interface{}) (interface{}, error)
 
-func MutateField(
+func mutateField(
 	m map[string]interface{},
 	pathToField []string,
 	createIfNotPresent bool,
@@ -33,20 +33,18 @@ func MutateField(
 		return nil
 	}
 
-	firstPathSegment, isArray := getFirstPathSegment(pathToField)
-
-	_, found := m[firstPathSegment]
+	_, found := m[pathToField[0]]
 	if !found {
-		if !createIfNotPresent || isArray {
+		if !createIfNotPresent {
 			return nil
 		}
-		m[firstPathSegment] = map[string]interface{}{}
+		m[pathToField[0]] = map[string]interface{}{}
 	}
 
 	if len(pathToField) == 1 {
 		var err error
 		for _, fn := range fns {
-			m[firstPathSegment], err = fn(m[firstPathSegment])
+			m[pathToField[0]], err = fn(m[pathToField[0]])
 			if err != nil {
 				return err
 			}
@@ -54,7 +52,7 @@ func MutateField(
 		return nil
 	}
 
-	v := m[firstPathSegment]
+	v := m[pathToField[0]]
 	newPathToField := pathToField[1:]
 	switch typedV := v.(type) {
 	case nil:
@@ -63,7 +61,7 @@ func MutateField(
 			strings.Join(pathToField, "."))
 		return nil
 	case map[string]interface{}:
-		return MutateField(typedV, newPathToField, createIfNotPresent, fns...)
+		return mutateField(typedV, newPathToField, createIfNotPresent, fns...)
 	case []interface{}:
 		for i := range typedV {
 			item := typedV[i]
@@ -71,7 +69,7 @@ func MutateField(
 			if !ok {
 				return fmt.Errorf("%#v is expected to be %T", item, typedItem)
 			}
-			err := MutateField(typedItem, newPathToField, createIfNotPresent, fns...)
+			err := mutateField(typedItem, newPathToField, createIfNotPresent, fns...)
 			if err != nil {
 				return err
 			}
@@ -80,11 +78,4 @@ func MutateField(
 	default:
 		return fmt.Errorf("%#v is not expected to be a primitive type", typedV)
 	}
-}
-
-func getFirstPathSegment(pathToField []string) (string, bool) {
-	if strings.HasSuffix(pathToField[0], "[]") {
-		return pathToField[0][:len(pathToField[0])-2], true
-	}
-	return pathToField[0], false
 }

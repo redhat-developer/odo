@@ -30,7 +30,7 @@ spec:
       serviceAccountName: default
       containers:
         - name: validate
-          image: github.com/tektoncd/triggers/cmd/gh-validate
+          image: github.com/tektoncd/triggers/examples/event-interceptors
           env:
             - name: GITHUB_SECRET_TOKEN
               valueFrom:

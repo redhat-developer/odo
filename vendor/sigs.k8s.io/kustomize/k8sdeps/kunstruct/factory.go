@@ -1,5 +1,18 @@
-// Copyright 2019 The Kubernetes Authors.
-// SPDX-License-Identifier: Apache-2.0
+/*
+Copyright 2018 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 
 package kunstruct
 
@@ -7,32 +20,26 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"strconv"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	"sigs.k8s.io/kustomize/v3/k8sdeps/configmapandsecret"
-	"sigs.k8s.io/kustomize/v3/pkg/ifc"
-	"sigs.k8s.io/kustomize/v3/pkg/types"
+	"sigs.k8s.io/kustomize/k8sdeps/configmapandsecret"
+	"sigs.k8s.io/kustomize/pkg/ifc"
+	"sigs.k8s.io/kustomize/pkg/types"
 )
 
 // KunstructuredFactoryImpl hides construction using apimachinery types.
 type KunstructuredFactoryImpl struct {
-	hasher *kustHash
+	cmFactory     *configmapandsecret.ConfigMapFactory
+	secretFactory *configmapandsecret.SecretFactory
 }
 
 var _ ifc.KunstructuredFactory = &KunstructuredFactoryImpl{}
 
 // NewKunstructuredFactoryImpl returns a factory.
 func NewKunstructuredFactoryImpl() ifc.KunstructuredFactory {
-	return &KunstructuredFactoryImpl{hasher: NewKustHash()}
-}
-
-// Hasher returns a kunstructured hasher
-// input: kunstructured; output: string hash.
-func (kf *KunstructuredFactoryImpl) Hasher() ifc.KunstructuredHasher {
-	return kf.hasher
+	return &KunstructuredFactoryImpl{}
 }
 
 // SliceFromBytes returns a slice of Kunstructured.
@@ -72,29 +79,27 @@ func (kf *KunstructuredFactoryImpl) FromMap(
 }
 
 // MakeConfigMap returns an instance of Kunstructured for ConfigMap
-func (kf *KunstructuredFactoryImpl) MakeConfigMap(
-	ldr ifc.Loader,
-	options *types.GeneratorOptions,
-	args *types.ConfigMapArgs) (ifc.Kunstructured, error) {
-	o, err := configmapandsecret.NewFactory(
-		ldr, options).MakeConfigMap(args)
+func (kf *KunstructuredFactoryImpl) MakeConfigMap(args *types.ConfigMapArgs, options *types.GeneratorOptions) (ifc.Kunstructured, error) {
+	cm, err := kf.cmFactory.MakeConfigMap(args, options)
 	if err != nil {
 		return nil, err
 	}
-	return NewKunstructuredFromObject(o)
+	return NewKunstructuredFromObject(cm)
 }
 
 // MakeSecret returns an instance of Kunstructured for Secret
-func (kf *KunstructuredFactoryImpl) MakeSecret(
-	ldr ifc.Loader,
-	options *types.GeneratorOptions,
-	args *types.SecretArgs) (ifc.Kunstructured, error) {
-	o, err := configmapandsecret.NewFactory(
-		ldr, options).MakeSecret(args)
+func (kf *KunstructuredFactoryImpl) MakeSecret(args *types.SecretArgs, options *types.GeneratorOptions) (ifc.Kunstructured, error) {
+	sec, err := kf.secretFactory.MakeSecret(args, options)
 	if err != nil {
 		return nil, err
 	}
-	return NewKunstructuredFromObject(o)
+	return NewKunstructuredFromObject(sec)
+}
+
+// Set sets loader
+func (kf *KunstructuredFactoryImpl) Set(ldr ifc.Loader) {
+	kf.cmFactory = configmapandsecret.NewConfigMapFactory(ldr)
+	kf.secretFactory = configmapandsecret.NewSecretFactory(ldr)
 }
 
 // validate validates that u has kind and name
@@ -109,30 +114,5 @@ func (kf *KunstructuredFactoryImpl) validate(u unstructured.Unstructured) error 
 	if u.GetName() == "" {
 		return fmt.Errorf("missing metadata.name in object %v", u)
 	}
-
-	if result, path := checkListItemNil(u.Object); result {
-		return fmt.Errorf("empty item at %v in object %v", path, u)
-	}
 	return nil
-}
-
-func checkListItemNil(in interface{}) (bool, string) {
-	switch v := in.(type) {
-	case map[string]interface{}:
-		for key, s := range v {
-			if result, path := checkListItemNil(s); result {
-				return result, key + "/" + path
-			}
-		}
-	case []interface{}:
-		for index, s := range v {
-			if s == nil {
-				return true, ""
-			}
-			if result, path := checkListItemNil(s); result {
-				return result, "[" + strconv.Itoa(index) + "]/" + path
-			}
-		}
-	}
-	return false, ""
 }

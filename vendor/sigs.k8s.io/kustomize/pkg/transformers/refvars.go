@@ -1,40 +1,24 @@
-/*
-Copyright 2018 The Kubernetes Authors.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package transformers
 
 import (
 	"fmt"
-	"sigs.k8s.io/kustomize/v3/pkg/expansion"
-	"sigs.k8s.io/kustomize/v3/pkg/resmap"
-	"sigs.k8s.io/kustomize/v3/pkg/transformers/config"
+	"sigs.k8s.io/kustomize/pkg/expansion"
+	"sigs.k8s.io/kustomize/pkg/resmap"
+	"sigs.k8s.io/kustomize/pkg/transformers/config"
 )
 
 type RefVarTransformer struct {
-	varMap            map[string]interface{}
+	varMap            map[string]string
 	replacementCounts map[string]int
 	fieldSpecs        []config.FieldSpec
-	mappingFunc       func(string) interface{}
+	mappingFunc       func(string) string
 }
 
 // NewRefVarTransformer returns a new RefVarTransformer
 // that replaces $(VAR) style variables with values.
 // The fieldSpecs are the places to look for occurrences of $(VAR).
 func NewRefVarTransformer(
-	varMap map[string]interface{}, fs []config.FieldSpec) *RefVarTransformer {
+	varMap map[string]string, fs []config.FieldSpec) *RefVarTransformer {
 	return &RefVarTransformer{
 		varMap:     varMap,
 		fieldSpecs: fs,
@@ -48,7 +32,7 @@ func NewRefVarTransformer(
 func (rv *RefVarTransformer) replaceVars(in interface{}) (interface{}, error) {
 	switch vt := in.(type) {
 	case []interface{}:
-		var xs []interface{}
+		var xs []string
 		for _, a := range in.([]interface{}) {
 			xs = append(xs, expansion.Expand(a.(string), rv.mappingFunc))
 		}
@@ -59,26 +43,16 @@ func (rv *RefVarTransformer) replaceVars(in interface{}) (interface{}, error) {
 		for k, v := range inMap {
 			s, ok := v.(string)
 			if !ok {
-				// This field not contain a $(VAR) since it is not
-				// of string type. For instance .spec.replicas: 3 in
-				// a Deployment object
-				xs[k] = v
-			} else {
-				// This field can potentially contains a $(VAR) since it is
-				// of string type. For instance .spec.replicas: $(REPLICAS)
-				// in a Deployment object
-				xs[k] = expansion.Expand(s, rv.mappingFunc)
+				return nil, fmt.Errorf("%#v is expected to be %T", v, s)
 			}
+			xs[k] = expansion.Expand(s, rv.mappingFunc)
 		}
 		return xs, nil
 	case interface{}:
 		s, ok := in.(string)
 		if !ok {
-			// This field not contain a $(VAR) since it is not of string type.
-			return in, nil
+			return nil, fmt.Errorf("%#v is expected to be %T", in, s)
 		}
-		// This field can potentially contain a $(VAR) since it is
-		// of string type.
 		return expansion.Expand(s, rv.mappingFunc), nil
 	case nil:
 		return nil, nil
@@ -105,10 +79,10 @@ func (rv *RefVarTransformer) Transform(m resmap.ResMap) error {
 	rv.replacementCounts = make(map[string]int)
 	rv.mappingFunc = expansion.MappingFuncFor(
 		rv.replacementCounts, rv.varMap)
-	for _, res := range m.Resources() {
+	for id, res := range m {
 		for _, fieldSpec := range rv.fieldSpecs {
-			if res.OrgId().IsSelected(&fieldSpec.Gvk) {
-				if err := MutateField(
+			if id.Gvk().IsSelected(&fieldSpec.Gvk) {
+				if err := mutateField(
 					res.Map(), fieldSpec.PathSlice(),
 					false, rv.replaceVars); err != nil {
 					return err

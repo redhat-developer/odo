@@ -306,7 +306,7 @@ func TestGetURIDestinationV1Beta1(t *testing.T) {
 				getAddressableNilURL(),
 			},
 			dest:    duckv1beta1.Destination{Ref: getUnaddressableRef()},
-			wantErr: fmt.Sprintf("url missing in address of %+v", getUnaddressableRef()),
+			wantErr: fmt.Sprintf("URL missing in address of %+v", getUnaddressableRef()),
 		},
 		"nil address": {
 			objects: []runtime.Object{
@@ -488,7 +488,7 @@ func TestGetURIDestinationV1(t *testing.T) {
 				getAddressableNilURL(),
 			},
 			dest:    duckv1.Destination{Ref: getUnaddressableKnativeRef()},
-			wantErr: fmt.Sprintf("url missing in address of %+v", getUnaddressableRef()),
+			wantErr: fmt.Sprintf("URL missing in address of %+v", getUnaddressableRef()),
 		},
 		"nil address": {
 			objects: []runtime.Object{

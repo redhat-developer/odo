@@ -1,5 +1,18 @@
-// Copyright 2019 The Kubernetes Authors.
-// SPDX-License-Identifier: Apache-2.0
+/*
+Copyright 2018 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 
 // Package validators defines a FakeValidator that can be used in tests
 package validators
@@ -35,33 +48,13 @@ func MakeFakeValidator() *FakeValidator {
 	return &FakeValidator{}
 }
 
-// ErrIfInvalidKey returns nil
-func (v *FakeValidator) ErrIfInvalidKey(k string) error {
-	return nil
-}
-
-// IsEnvVarName returns nil
-func (v *FakeValidator) IsEnvVarName(k string) error {
-	return nil
-}
-
 // MakeAnnotationValidator returns a nil function
 func (v *FakeValidator) MakeAnnotationValidator() func(map[string]string) error {
 	return nil
 }
 
-// MakeAnnotationNameValidator returns a nil function
-func (v *FakeValidator) MakeAnnotationNameValidator() func([]string) error {
-	return nil
-}
-
 // MakeLabelValidator returns a nil function
 func (v *FakeValidator) MakeLabelValidator() func(map[string]string) error {
-	return nil
-}
-
-// MakeLabelNameValidator returns a nil function
-func (v *FakeValidator) MakeLabelNameValidator() func([]string) error {
 	return nil
 }
 
@@ -78,14 +71,6 @@ func (v *FakeValidator) ValidateNamespace(s string) []string {
 // Can be set to fail or succeed to test error handling.
 // Can confirm if run or not run by surrounding code.
 func (v *FakeValidator) Validator(_ map[string]string) error {
-	v.called = true
-	if v.happy {
-		return nil
-	}
-	return errors.New(SAD)
-}
-
-func (v *FakeValidator) ValidatorArray(_ []string) error {
 	v.called = true
 	if v.happy {
 		return nil

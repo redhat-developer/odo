@@ -58,9 +58,6 @@ func TestRecordServing(t *testing.T) {
 			stackdriverMetricTypePrefix: "knative.dev/unsupported",
 		},
 		measurement: measure.M(3),
-	}, {
-		name:        "empty metricsConfig",
-		measurement: measure.M(4),
 	}}
 	testRecord(t, measure, shouldReportCases)
 }
@@ -87,9 +84,6 @@ func TestRecordEventing(t *testing.T) {
 			stackdriverMetricTypePrefix: "knative.dev/unsupported",
 		},
 		measurement: measure.M(3),
-	}, {
-		name:        "empty metricsConfig",
-		measurement: measure.M(4),
 	}}
 	testRecord(t, measure, shouldReportCases)
 }
@@ -127,16 +121,14 @@ func testRecord(t *testing.T, measure *stats.Int64Measure, shouldReportCases []c
 	defer view.Unregister(v)
 
 	for _, test := range shouldReportCases {
-		setCurMetricsConfig(test.metricsConfig)
-		Record(ctx, test.measurement)
-		metricstest.CheckLastValueData(t, test.measurement.Measure().Name(), map[string]string{}, test.measurement.Value())
+		t.Run(test.name, func(t *testing.T) {
+			setCurMetricsConfig(test.metricsConfig)
+			Record(ctx, test.measurement)
+			metricstest.CheckLastValueData(t, test.measurement.Measure().Name(), map[string]string{}, test.measurement.Value())
+		})
 	}
 
-	shouldNotReportCases := []struct {
-		name          string
-		metricsConfig *metricsConfig
-		measurement   stats.Measurement
-	}{{ // Use a different value for the measurement other than the last one of shouldReportCases
+	shouldNotReportCases := []cases{{ // Use a different value for the measurement other than the last one of shouldReportCases
 		name: "stackdriver backend with unsupported metric but not allow custom metric",
 		metricsConfig: &metricsConfig{
 			isStackdriverBackend:        true,
@@ -151,13 +143,18 @@ func testRecord(t *testing.T, measure *stats.Int64Measure, shouldReportCases []c
 			},
 		},
 		measurement: measure.M(5),
+	}, {
+		name:        "empty metricsConfig",
+		measurement: measure.M(4),
 	}}
 
 	for _, test := range shouldNotReportCases {
-		setCurMetricsConfig(test.metricsConfig)
-		Record(ctx, test.measurement)
-		metricstest.CheckLastValueData(t, test.measurement.Measure().Name(), map[string]string{},
-			float64(len(shouldReportCases))) // The value is still the last one of shouldReportCases
+		t.Run(test.name, func(t *testing.T) {
+			setCurMetricsConfig(test.metricsConfig)
+			Record(ctx, test.measurement)
+			metricstest.CheckLastValueData(t, test.measurement.Measure().Name(), map[string]string{},
+				float64(len(shouldReportCases))) // The value is still the last one of shouldReportCases
+		})
 	}
 }
 

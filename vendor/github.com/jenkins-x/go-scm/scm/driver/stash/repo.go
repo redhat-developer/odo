@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"sort"
 	"strconv"
 
 	"github.com/jenkins-x/go-scm/scm"
@@ -116,15 +117,64 @@ func (s *repositoryService) Create(context.Context, *scm.RepositoryInput) (*scm.
 }
 
 func (s *repositoryService) FindCombinedStatus(ctx context.Context, repo, ref string) (*scm.CombinedStatus, *scm.Response, error) {
-	return nil, nil, scm.ErrNotSupported
+	path := fmt.Sprintf("rest/build-status/1.0/commits/%s?orderBy=oldest", ref)
+	out := new(statuses)
+	res, err := s.client.do(ctx, "GET", path, nil, &out)
+
+	if err != nil {
+		return nil, res, err
+	}
+
+	combinedState := scm.StateUnknown
+
+	byContext := make(map[string]*status)
+	for _, s := range out.Values {
+		byContext[s.Key] = s
+	}
+
+	keys := make([]string, 0, len(byContext))
+	for k := range byContext {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	var statuses []*scm.Status
+	for _, k := range keys {
+		s := byContext[k]
+		statuses = append(statuses, convertStatus(s))
+	}
+
+	for _, s := range statuses {
+		// If we've still got a default state, or the state of the current status is worse than the current state, set it.
+		if combinedState == scm.StateUnknown || combinedState > s.State {
+			combinedState = s.State
+		}
+	}
+
+	return &scm.CombinedStatus{
+		State:    combinedState,
+		Sha:      ref,
+		Statuses: statuses,
+	}, res, err
 }
 
 func (s *repositoryService) FindUserPermission(ctx context.Context, repo string, user string) (string, *scm.Response, error) {
-	return "", nil, scm.ErrNotSupported
+	namespace, name := scm.Split(repo)
+	path := fmt.Sprintf("rest/api/1.0/projects/%s/repos/%s/permissions/users?filter=%s", namespace, name, user)
+	out := new(participants)
+	res, err := s.client.do(ctx, "GET", path, nil, out)
+	if err != nil {
+		return "", res, err
+	}
+	for _, p := range out.Values {
+		if p.User.Name == user {
+			return permissionToString(p.Permission), res, nil
+		}
+	}
+	return "", res, nil
 }
 
 func (s *repositoryService) IsCollaborator(ctx context.Context, repo, user string) (bool, *scm.Response, error) {
-	users, resp, err := s.ListCollaborators(ctx, repo)
+	users, resp, err := s.ListCollaborators(ctx, repo, scm.ListOptions{})
 	if err != nil {
 		return false, resp, err
 	}
@@ -136,7 +186,7 @@ func (s *repositoryService) IsCollaborator(ctx context.Context, repo, user strin
 	return false, resp, err
 }
 
-func (s *repositoryService) ListCollaborators(ctx context.Context, repo string) ([]scm.User, *scm.Response, error) {
+func (s *repositoryService) ListCollaborators(ctx context.Context, repo string, ops scm.ListOptions) ([]scm.User, *scm.Response, error) {
 	namespace, name := scm.Split(repo)
 	opts := scm.ListOptions{
 		Size: 1000,
@@ -415,7 +465,7 @@ func convertStatusList(from *statuses) []*scm.Status {
 func convertStatus(from *status) *scm.Status {
 	return &scm.Status{
 		State:  convertState(from.State),
-		Label:  from.Name,
+		Label:  from.Key,
 		Desc:   from.Desc,
 		Target: from.URL,
 	}
@@ -451,4 +501,17 @@ func convertParticipants(participants *participants) []scm.User {
 		answer = append(answer, *convertUser(&p.User))
 	}
 	return answer
+}
+
+func permissionToString(perm string) string {
+	switch perm {
+	case "ADMIN", "PROJECT_ADMIN", "REPO_ADMIN":
+		return scm.AdminPermission
+	case "PROJECT_CREATE", "PROJECT_WRITE", "REPO_WRITE":
+		return scm.WritePermission
+	case "PROJECT_READ", "REPO_READ":
+		return scm.ReadPermission
+	default:
+		return scm.NoPermission
+	}
 }

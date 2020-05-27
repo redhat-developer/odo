@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -83,5 +84,15 @@ func TestVolatileTimeEquality(t *testing.T) {
 
 	if !equality.Semantic.DeepEqual(tt1, tt2) {
 		t.Error("equality.Semantic.DeepEqual() = false, wanted true")
+	}
+	if cmp.Equal(tt1, tt2) {
+		t.Error("go-cmp.Equal should have still returned false")
+	}
+
+	opt := cmp.Comparer(func(VolatileTime, VolatileTime) bool {
+		return true
+	})
+	if !cmp.Equal(tt1, tt2, opt) {
+		t.Error("go-cmp.Equal with opt should returned true")
 	}
 }

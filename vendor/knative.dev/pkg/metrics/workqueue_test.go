@@ -48,7 +48,7 @@ func TestWorkqueueMetrics(t *testing.T) {
 	workqueue.SetProvider(wp)
 
 	// Reset the metrics configuration to avoid leaked state from other tests.
-	setCurMetricsConfig(nil)
+	InitForTesting()
 
 	views := wp.DefaultViews()
 	if got, want := len(views), 7; got != want {

@@ -20,8 +20,8 @@ package fake
 
 import (
 	clientset "github.com/tektoncd/triggers/pkg/client/clientset/versioned"
-	tektonv1alpha1 "github.com/tektoncd/triggers/pkg/client/clientset/versioned/typed/triggers/v1alpha1"
-	faketektonv1alpha1 "github.com/tektoncd/triggers/pkg/client/clientset/versioned/typed/triggers/v1alpha1/fake"
+	triggersv1alpha1 "github.com/tektoncd/triggers/pkg/client/clientset/versioned/typed/triggers/v1alpha1"
+	faketriggersv1alpha1 "github.com/tektoncd/triggers/pkg/client/clientset/versioned/typed/triggers/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -41,7 +41,7 @@ func NewSimpleClientset(objects ...runtime.Object) *Clientset {
 		}
 	}
 
-	cs := &Clientset{}
+	cs := &Clientset{tracker: o}
 	cs.discovery = &fakediscovery.FakeDiscovery{Fake: &cs.Fake}
 	cs.AddReactor("*", "*", testing.ObjectReaction(o))
 	cs.AddWatchReactor("*", func(action testing.Action) (handled bool, ret watch.Interface, err error) {
@@ -63,20 +63,20 @@ func NewSimpleClientset(objects ...runtime.Object) *Clientset {
 type Clientset struct {
 	testing.Fake
 	discovery *fakediscovery.FakeDiscovery
+	tracker   testing.ObjectTracker
 }
 
 func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 	return c.discovery
 }
 
-var _ clientset.Interface = &Clientset{}
-
-// TektonV1alpha1 retrieves the TektonV1alpha1Client
-func (c *Clientset) TektonV1alpha1() tektonv1alpha1.TektonV1alpha1Interface {
-	return &faketektonv1alpha1.FakeTektonV1alpha1{Fake: &c.Fake}
+func (c *Clientset) Tracker() testing.ObjectTracker {
+	return c.tracker
 }
 
-// Tekton retrieves the TektonV1alpha1Client
-func (c *Clientset) Tekton() tektonv1alpha1.TektonV1alpha1Interface {
-	return &faketektonv1alpha1.FakeTektonV1alpha1{Fake: &c.Fake}
+var _ clientset.Interface = &Clientset{}
+
+// TriggersV1alpha1 retrieves the TriggersV1alpha1Client
+func (c *Clientset) TriggersV1alpha1() triggersv1alpha1.TriggersV1alpha1Interface {
+	return &faketriggersv1alpha1.FakeTriggersV1alpha1{Fake: &c.Fake}
 }

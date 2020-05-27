@@ -142,12 +142,34 @@ func TestPullClose(t *testing.T) {
 
 	gock.New("https://api.github.com").
 		Patch("/repos/octocat/hello-world/pulls/1347").
+		File("testdata/close.json").
 		Reply(200).
 		Type("application/json").
 		SetHeaders(mockHeaders)
 
 	client := NewDefault()
 	res, err := client.PullRequests.Close(context.Background(), "octocat/hello-world", 1347)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	t.Run("Request", testRequest(res))
+	t.Run("Rate", testRate(res))
+}
+
+func TestPullReopen(t *testing.T) {
+	defer gock.Off()
+
+	gock.New("https://api.github.com").
+		Patch("/repos/octocat/hello-world/pulls/1347").
+		File("testdata/reopen.json").
+		Reply(200).
+		Type("application/json").
+		SetHeaders(mockHeaders)
+
+	client := NewDefault()
+	res, err := client.PullRequests.Reopen(context.Background(), "octocat/hello-world", 1347)
 	if err != nil {
 		t.Error(err)
 		return
@@ -192,4 +214,88 @@ func TestPullCreate(t *testing.T) {
 
 	t.Run("Request", testRequest(res))
 	t.Run("Rate", testRate(res))
+}
+
+func TestPullUpdate(t *testing.T) {
+	defer gock.Off()
+
+	gock.New("https://api.github.com").
+		Patch("/repos/octocat/hello-world/pulls/1").
+		File("testdata/pr_update.json").
+		Reply(201).
+		Type("application/json").
+		SetHeaders(mockHeaders).
+		File("testdata/pr_create.json")
+
+	input := &scm.PullRequestInput{
+		Title: "A new title",
+		Body:  "A new description",
+	}
+
+	client := NewDefault()
+
+	got, res, err := client.PullRequests.Update(context.Background(), "octocat/hello-world", 1, input)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := new(scm.PullRequest)
+	raw, err := ioutil.ReadFile("testdata/pr_create.json.golden")
+	json.Unmarshal(raw, want)
+
+	if diff := cmp.Diff(got, want); diff != "" {
+		t.Errorf("Unexpected Results")
+		t.Log(diff)
+	}
+
+	t.Run("Request", testRequest(res))
+	t.Run("Rate", testRate(res))
+}
+
+func TestPullService_RequestReview(t *testing.T) {
+	defer gock.Off()
+
+	gock.New("https://api.github.com").
+		Post("/repos/octocat/hello-world/pulls/1/requested_reviewers").
+		File("testdata/request_reviewers.json").
+		Reply(201).
+		Type("application/json").
+		SetHeaders(mockHeaders).
+		File("testdata/pr_create.json")
+
+	logins := []string{"octocat", "hubot", "other_user", "octocat/justice-league"}
+	client := NewDefault()
+
+	res, err := client.PullRequests.RequestReview(context.Background(), "octocat/hello-world", 1, logins)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("Request", testRequest(res))
+	t.Run("Rate", testRate(res))
+
+}
+
+func TestPullService_UnrequestReview(t *testing.T) {
+	defer gock.Off()
+
+	gock.New("https://api.github.com").
+		Delete("/repos/octocat/hello-world/pulls/1/requested_reviewers").
+		File("testdata/delete_reviewers.json").
+		Reply(201).
+		Type("application/json").
+		SetHeaders(mockHeaders).
+		File("testdata/delete_reviewers_pr.json")
+
+	logins := []string{"octocat", "hubot", "other_user", "octocat/justice-league"}
+	client := NewDefault()
+
+	res, err := client.PullRequests.UnrequestReview(context.Background(), "octocat/hello-world", 1, logins)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("Request", testRequest(res))
+	t.Run("Rate", testRate(res))
+
 }

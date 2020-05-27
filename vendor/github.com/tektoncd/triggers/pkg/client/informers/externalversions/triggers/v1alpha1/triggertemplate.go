@@ -61,13 +61,13 @@ func NewFilteredTriggerTemplateInformer(client versioned.Interface, namespace st
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.TektonV1alpha1().TriggerTemplates(namespace).List(options)
+				return client.TriggersV1alpha1().TriggerTemplates(namespace).List(options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.TektonV1alpha1().TriggerTemplates(namespace).Watch(options)
+				return client.TriggersV1alpha1().TriggerTemplates(namespace).Watch(options)
 			},
 		},
 		&triggersv1alpha1.TriggerTemplate{},

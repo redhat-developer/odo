@@ -21,7 +21,9 @@ package test
 import (
 	"testing"
 
-	tb "github.com/tektoncd/pipeline/test/builder"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	knativetest "knative.dev/pkg/test"
 )
 
@@ -42,16 +44,28 @@ func TestEntrypointRunningStepsInOrder(t *testing.T) {
 	defer tearDown(t, c, namespace)
 
 	t.Logf("Creating Task and TaskRun in namespace %s", namespace)
-	task := tb.Task(epTaskName, namespace, tb.TaskSpec(
-		tb.Step("ubuntu", tb.StepArgs("-c", "sleep 3 && touch foo")),
-		tb.Step("ubuntu", tb.StepArgs("-c", "ls", "foo")),
-	))
+	task := &v1beta1.Task{
+		ObjectMeta: metav1.ObjectMeta{Name: epTaskName, Namespace: namespace},
+		Spec: v1beta1.TaskSpec{
+			Steps: []v1beta1.Step{{Container: corev1.Container{
+				Image: "ubuntu",
+				Args:  []string{"-c", "sleep 3 && touch foo"},
+			}}, {Container: corev1.Container{
+				Image: "ubuntu",
+				Args:  []string{"-c", "ls", "foo"},
+			}}},
+		},
+	}
 	if _, err := c.TaskClient.Create(task); err != nil {
 		t.Fatalf("Failed to create Task: %s", err)
 	}
-	taskRun := tb.TaskRun(epTaskRunName, namespace, tb.TaskRunSpec(
-		tb.TaskRunTaskRef(epTaskName), tb.TaskRunServiceAccountName("default"),
-	))
+	taskRun := &v1beta1.TaskRun{
+		ObjectMeta: metav1.ObjectMeta{Name: epTaskRunName, Namespace: namespace},
+		Spec: v1beta1.TaskRunSpec{
+			TaskRef:            &v1beta1.TaskRef{Name: epTaskName},
+			ServiceAccountName: "default",
+		},
+	}
 	if _, err := c.TaskRunClient.Create(taskRun); err != nil {
 		t.Fatalf("Failed to create TaskRun: %s", err)
 	}

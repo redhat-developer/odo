@@ -1,15 +1,26 @@
-apiVersion: tekton.dev/v1alpha1
+apiVersion: triggers.tekton.dev/v1alpha1
 kind: EventListener
 metadata:
   name: cel-listener-interceptor
 spec:
   serviceAccountName: tekton-triggers-example-sa
   triggers:
-    - name: cel-trig
+    - name: cel-trig-with-matches
       interceptors:
         - cel:
-            filter: "header.match('X-GitHub-Event', 'push')"
+            filter: "header.match('X-GitHub-Event', 'pull_request')"
+            overlays:
+            - key: extensions.truncated_sha
+              expression: "body.pull_request.head.sha.truncate(7)"
       bindings:
       - name: pipeline-binding
+      template:
+        name: pipeline-template
+    - name: cel-trig-with-canonical
+      interceptors:
+        - cel:
+            filter: "header.canonical('X-GitHub-Event') == 'push'"
+      bindings:
+      - ref: pipeline-binding
       template:
         name: pipeline-template

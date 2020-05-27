@@ -108,12 +108,24 @@ func TestNonTerminalCondition(t *testing.T) {
 	// Setting a "non-terminal" condition, doesn't change Ready.
 	manager.MarkUnknown("Bar", "", "")
 	if got, want := manager.GetCondition("Ready").Status, corev1.ConditionTrue; got != want {
+		t.Errorf("MarkUnknown(Bar) = %v, wanted %v", got, want)
+	}
+
+	// Setting the other "terminal" condition by Unknown makes Ready false
+	manager.MarkUnknown("Foo", "", "")
+	if got, want := manager.GetCondition("Ready").Status, corev1.ConditionUnknown; got != want {
+		t.Errorf("MarkUnknown(Foo) = %v, wanted %v", got, want)
+	}
+
+	// Setting the other "terminal" condition by True makes Ready true
+	manager.MarkTrueWithReason("Foo", "", "")
+	if got, want := manager.GetCondition("Ready").Status, corev1.ConditionTrue; got != want {
 		t.Errorf("MarkUnknown(Foo) = %v, wanted %v", got, want)
 	}
 
 	// Setting a "non-terminal" condition, doesn't change Ready.
 	manager.MarkFalse("Bar", "", "")
 	if got, want := manager.GetCondition("Ready").Status, corev1.ConditionTrue; got != want {
-		t.Errorf("MarkFalse(Foo) = %v, wanted %v", got, want)
+		t.Errorf("MarkFalse(Bar) = %v, wanted %v", got, want)
 	}
 }

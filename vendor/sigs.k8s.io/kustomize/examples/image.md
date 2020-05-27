@@ -3,14 +3,14 @@
 
 Define a place to work:
 
-<!-- @makeWorkplace @testAgainstLatestRelease -->
+<!-- @makeWorkplace @test -->
 ```
 DEMO_HOME=$(mktemp -d)
 ```
 
 Make a `kustomization` containing a pod resource
 
-<!-- @createKustomization @testAgainstLatestRelease -->
+<!-- @createKustomization @test -->
 ```
 cat <<EOF >$DEMO_HOME/kustomization.yaml
 resources:
@@ -20,7 +20,7 @@ EOF
 
 Declare the pod resource
 
-<!-- @createDeployment @testAgainstLatestRelease -->
+<!-- @createDeployment @test -->
 ```
 cat <<EOF >$DEMO_HOME/pod.yaml
 apiVersion: v1
@@ -46,7 +46,7 @@ The image `busybox` and tag `1.29.0` can be changed by adding `images` in `kusto
 
 
 Add `images`:
-<!-- @addImages @testAgainstLatestRelease -->
+<!-- @addImages @test -->
 ```
 cd $DEMO_HOME
 kustomize edit set image busybox=alpine:3.6
@@ -61,14 +61,14 @@ The following `images` will be added to `kustomization.yaml`:
 > ```
 
 Now build this `kustomization`
-<!-- @kustomizeBuild @testAgainstLatestRelease -->
+<!-- @kustomizeBuild @test -->
 ```
 kustomize build $DEMO_HOME
 ```
 
 Confirm that this replaces _both_ busybox images and tags for `alpine:3.6`:
 
-<!-- @confirmImages @testAgainstLatestRelease -->
+<!-- @confirmImages @test -->
 ```
 test 2 = \
   $(kustomize build $DEMO_HOME | grep alpine:3.6 | wc -l); \

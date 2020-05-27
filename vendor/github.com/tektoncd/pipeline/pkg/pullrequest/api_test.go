@@ -22,8 +22,10 @@ import (
 	"os"
 	"testing"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/jenkins-x/go-scm/scm"
 	"github.com/jenkins-x/go-scm/scm/driver/fake"
+	"github.com/tektoncd/pipeline/test/diff"
 
 	"github.com/google/go-cmp/cmp"
 	"go.uber.org/zap"
@@ -111,8 +113,8 @@ func TestDownload(t *testing.T) {
 	}
 	populateManifest(want)
 
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("Get PullRequest: -want +got: %s", diff)
+	if d := cmp.Diff(want, got); d != "" {
+		t.Errorf("Get PullRequest: %s", diff.PrintWantGot(d))
 	}
 }
 
@@ -162,8 +164,8 @@ func TestUpload_NewComment(t *testing.T) {
 
 	// Only compare comments since the resource manifest will change between
 	// downloads.
-	if diff := cmp.Diff(r.Comments, got.Comments); diff != "" {
-		t.Errorf("-want +got: %s", diff)
+	if d := cmp.Diff(r.Comments, got.Comments); d != "" {
+		t.Errorf(diff.PrintWantGot(d))
 	}
 }
 
@@ -183,8 +185,8 @@ func TestUpload_DeleteComment(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if diff := cmp.Diff(r.Comments, got.Comments); diff != "" {
-		t.Errorf("-want +got: %s", diff)
+	if d := cmp.Diff(r.Comments, got.Comments); d != "" {
+		t.Errorf(diff.PrintWantGot(d))
 	}
 }
 
@@ -217,8 +219,8 @@ func TestUpload_ManifestComment(t *testing.T) {
 		Author: scm.User{Login: "k8s-ci-robot"},
 	}}
 
-	if diff := cmp.Diff(r.Comments, got.Comments); diff != "" {
-		t.Errorf("-want +got: %s", diff)
+	if d := cmp.Diff(r.Comments, got.Comments); d != "" {
+		t.Errorf(diff.PrintWantGot(d))
 	}
 }
 
@@ -242,8 +244,8 @@ func TestUpload_NewStatus(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if diff := cmp.Diff(r, got); diff != "" {
-		t.Errorf("-want +got: %s", diff)
+	if d := cmp.Diff(r, got); d != "" {
+		t.Errorf(diff.PrintWantGot(d))
 	}
 }
 
@@ -263,8 +265,48 @@ func TestUpload_UpdateStatus(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if diff := cmp.Diff(r, got); diff != "" {
-		t.Errorf("-want +got: %s", diff)
+	if d := cmp.Diff(r, got); d != "" {
+		t.Errorf(diff.PrintWantGot(d))
+	}
+}
+
+func TestUpload_Invalid_Status(t *testing.T) {
+	ctx := context.Background()
+	h, _ := newHandler(t)
+
+	r := defaultResource()
+	r.Statuses = []*scm.Status{
+		{
+			Label:  "Tekton",
+			Desc:   "Status with empty State field",
+			Target: "https://tekton.dev",
+		},
+		{
+			State:  scm.StateSuccess,
+			Desc:   "Status without label",
+			Target: "https://tekton.dev",
+		},
+	}
+
+	expectedErrors := []string{
+		"invalid status: \"State\" is empty or has invalid value: {unknown Tekton Status with empty State field https://tekton.dev}",
+		"invalid status: \"Label\" should not be empty: {success  Status without label https://tekton.dev}",
+	}
+	err := h.Upload(ctx, r)
+	if err == nil {
+		t.Fatal("expected errors, got nil")
+	}
+	merr, ok := err.(*multierror.Error)
+	if !ok {
+		t.Fatalf("expected error of type multierror, got %#v", merr)
+	}
+	if len(merr.Errors) != 2 {
+		t.Fatalf("expected 2 errors, got %d", len(merr.Errors))
+	}
+	for i, err := range merr.Errors {
+		if d := cmp.Diff(expectedErrors[i], err.Error()); d != "" {
+			t.Errorf("Upload status error diff %s", diff.PrintWantGot(d))
+		}
 	}
 }
 
@@ -284,8 +326,8 @@ func TestUpload_NewLabel(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if diff := cmp.Diff(r.PR, got.PR); diff != "" {
-		t.Errorf("-want +got: %s", diff)
+	if d := cmp.Diff(r.PR, got.PR); d != "" {
+		t.Errorf(diff.PrintWantGot(d))
 	}
 }
 
@@ -305,8 +347,8 @@ func TestUpload_DeleteLabel(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if diff := cmp.Diff(r.PR, got.PR); diff != "" {
-		t.Errorf("-want +got: %s", diff)
+	if d := cmp.Diff(r.PR, got.PR); d != "" {
+		t.Errorf(diff.PrintWantGot(d))
 	}
 }
 
@@ -332,7 +374,7 @@ func TestUpload_ManifestLabel(t *testing.T) {
 	}
 	r.PR.Labels = append(r.PR.Labels, &scm.Label{Name: "z"})
 
-	if diff := cmp.Diff(r.PR, got.PR); diff != "" {
-		t.Errorf("-want +got: %s", diff)
+	if d := cmp.Diff(r.PR, got.PR); d != "" {
+		t.Errorf(diff.PrintWantGot(d))
 	}
 }

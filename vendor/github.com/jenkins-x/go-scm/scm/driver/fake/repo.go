@@ -66,7 +66,7 @@ func (s *repositoryService) IsCollaborator(ctx context.Context, repo, login stri
 	return false, nil, nil
 }
 
-func (s *repositoryService) ListCollaborators(ctx context.Context, repo string) ([]scm.User, *scm.Response, error) {
+func (s *repositoryService) ListCollaborators(ctx context.Context, repo string, ops scm.ListOptions) ([]scm.User, *scm.Response, error) {
 	f := s.data
 	result := make([]scm.User, 0, len(f.Collaborators))
 	for _, login := range f.Collaborators {

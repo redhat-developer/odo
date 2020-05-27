@@ -1,0 +1,191 @@
+# Copyright 2019 The Tekton Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This is a modified version of the Task in the tektoncd/plumbing repo:
+# https://github.com/tektoncd/plumbing/blob/master/tekton/resources/release/github_release.yaml
+apiVersion: tekton.dev/v1alpha1
+kind: Task
+metadata:
+  name: create-draft-triggers-release
+spec:
+  inputs:
+    params:
+    - name: package
+      description: package (and its children) under test
+    - name: release-tag
+      description: Release number and git tag to be applied (e.g. 0.888.1, with 'v')
+    - name: previous-release-tag
+      description: Previous release number - for author and PR list calculation
+    resources:
+    - name: source
+      type: git
+  stepTemplate:
+    env:
+      - name: GITHUB_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: github-token
+            key: GITHUB_TOKEN
+      - name: VERSION
+        value: $(inputs.params.release-tag)
+      - name: PROJECT
+        value: $(inputs.params.package)
+      - name: OLD_VERSION
+        value: $(inputs.params.previous-release-tag)
+  steps:
+    - name: header
+      image: gcr.io/tekton-releases/dogfooding/hub
+      script: |
+        #!/bin/bash
+        set -ex
+        p=$(basename $PROJECT)
+        TEKTON_PROJECT=${p^}
+
+        cat <<EOF | tee $HOME/release.md
+        Tekton $TEKTON_PROJECT ${VERSION}
+
+        -[Docs @ ${VERSION}](https://github.com/${PROJECT}/tree/${VERSION}/docs)
+        -[Examples @ ${VERSION}](https://github.com/${PROJECT}/tree/${VERSION}/examples)
+        EOF
+    - name: body
+      image: busybox
+      script: |
+        #!/bin/sh
+        set -ex
+        cat <<EOF | tee -a $HOME/release.md
+        ## Changes
+
+        ### Features
+
+        * [Feature Title] :sparkles:
+
+        [Detailed feature description] (#Number).
+
+        [Fill list here]
+
+        ### Deprecation Notices :rotating_light:
+
+        * [Deprecation Notice Title]
+
+        [Detailed deprecation notice description] (#Number).
+
+        [Fill list here]
+
+        ### Backwards incompatible changes :rotating_light:
+
+        In current release:
+
+        * [Change Title]
+
+        [Detailed change description] (#Number).
+
+        [Fill list here]
+
+        ### Fixes :bug:
+
+        * [Description (#Number)]
+
+        [Fill list here]
+
+        ### Misc :hammer:
+
+        * [Description (#Number)]
+
+        [Fill list here]
+
+        ### Docs :book:
+
+        * [Description (#Number)]
+
+        [Fill list here]
+
+        ## How to upgrade from $(inputs.params.previous-release-tag) :up_arrow:
+
+        1. [Describe required steps for user to upgrade to the latest version]
+        EOF
+    - name: filter-data
+      image: gcr.io/tekton-releases/dogfooding/hub
+      workingdir: $(inputs.resources.source.path)
+      script: |
+        #!/usr/bin/env bash
+        set -e
+
+        # Restore full git history
+        git fetch --unshallow
+
+        LOWER_THRESHOLD=$(git rev-list ${OLD_VERSION} | wc -l)
+        UPPER_THRESHOLD=$(git rev-list $(inputs.resources.source.revision) | wc -l)
+        echo "LOWER_THRESHOLD: $LOWER_THRESHOLD"
+        echo "UPPER_THRESHOLD: $UPPER_THRESHOLD"
+
+        # Save the PR data in CSV. Only consider PRs whose number of ancestors
+        # is greater than the number of ancerstors of the commit sha of the
+        # previous PR.
+        # "author;number;title"
+        hub pr list --state merged -f "%sm;%au;%i;%t%n" | \
+          while read pr; do
+            SHA=$(echo $pr | cut -d';' -f1)
+            echo "$(git rev-list $SHA | wc -l);$(echo $pr | cut -d';' -f2-)"
+          done | \
+          awk -F";" '$1 > '${LOWER_THRESHOLD}' && $1 <= '${UPPER_THRESHOLD}' { print }' |\
+          sort -n | cut -d';' -f2- > $HOME/pr.csv
+
+        echo "$(wc -l $HOME/pr.csv | awk '{ print $1}') PRs in the new release."
+        cat $HOME/pr.csv
+    - name: authors
+      image: gcr.io/tekton-releases/dogfooding/hub
+      workingdir: $(inputs.resources.source.path)
+      script: |
+        #!/usr/bin/env bash
+        set -ex
+        cat <<EOF | tee -a $HOME/release.md
+        ## Thanks
+
+        Thanks to these contributors who contributed to ${VERSION}!
+
+        EOF
+        awk -F";" '{ print "- :heart: @"$1 }' $HOME/pr.csv | sort -u | tee -a $HOME/release.md
+
+        cat <<EOF | tee -a $HOME/release.md
+
+        Extra shout-out for awesome release notes:
+        * :heart_eyes: [@GitHub Nickname] [Fill list here]
+        EOF
+    - name: pr-data
+      image: gcr.io/tekton-releases/dogfooding/hub
+      workingdir: $(inputs.resources.source.path)
+      script: |
+        #!/usr/bin/env bash
+        set -ex
+
+        cat <<EOF | tee -a $HOME/release.md
+        ## Unsorted PR List
+
+        # List of PRs merged between $OLD_VERSION and $VERSION
+
+        To Be Done: Categorize these PRs into Features, Deprecation Notices,
+        Backward Incompatible Changes, Fixes, Docs, Misc.
+
+        EOF
+        awk -F";" '{ print "- "$3" ("$2")" }' $HOME/pr.csv | tee -a $HOME/release.md
+    - name: create-draft
+      image: gcr.io/tekton-releases/dogfooding/hub
+      workingdir: $(inputs.resources.source.path)
+      script: |
+        #!/usr/bin/env bash
+        set -ex
+
+        hub release create --draft --prerelease \
+          --commitish $(inputs.resources.source.revision) \
+          --file $HOME/release.md ${VERSION}

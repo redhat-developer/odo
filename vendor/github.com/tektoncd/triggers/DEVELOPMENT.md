@@ -98,7 +98,7 @@ configuring Kubernetes resources.
 Docker for Desktop using an edge version has been proven to work for both
 developing and running Pipelines. The recommended configuration is:
 
-- Kubernetes version 1.11 or later
+- Kubernetes version 1.15 or later
 - 4 vCPU nodes (`n1-standard-4`)
 - Node autoscaling, up to 3 nodes
 - API scopes for cloud-platform
@@ -110,7 +110,7 @@ To setup a cluster with GKE:
    variable (e.g. `PROJECT_ID`).
 
 1. Create a GKE cluster (with `--cluster-version=latest` but you can use any
-   version 1.11 or later):
+   version 1.15 or later):
 
    ```bash
    export PROJECT_ID=my-gcp-project

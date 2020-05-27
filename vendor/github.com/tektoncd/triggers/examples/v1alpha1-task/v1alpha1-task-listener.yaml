@@ -1,0 +1,29 @@
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: v1alpha1-task-template
+spec:
+  resourcetemplates:
+  - apiVersion: tekton.dev/v1alpha1
+    kind: TaskRun
+    metadata:
+      generateName: v1alpha1-task-run-
+    spec:
+      taskSpec:
+        steps:
+        - name: "hellothere"
+          image: ubuntu
+          script: echo "hello there"
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: EventListener
+metadata:
+  name: v1alpha1-task-listener
+spec:
+  # from examples/role-resources/servicaccount.yaml
+  serviceAccountName: tekton-triggers-example-sa
+  triggers:
+    - name: v1alpha1-task-trigger
+      template:
+        name: v1alpha1-task-template

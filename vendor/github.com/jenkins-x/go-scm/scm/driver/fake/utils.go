@@ -2,7 +2,7 @@ package fake
 
 func paginated(page, size, items int) (start, end int) {
 	// handle the default value case for ListOptions.
-	if page == 0 && size == 0 {
+	if page == 0 || size == 0 {
 		start = 0
 		end = items
 		return

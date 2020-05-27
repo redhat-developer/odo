@@ -52,9 +52,6 @@ nameReference:
   - path: spec/initContainers/envFrom/configMapRef/name
     version: v1
     kind: Pod
-  - path: spec/volumes/projected/sources/configMap/name
-    version: v1
-    kind: Pod
   - path: spec/template/spec/volumes/configMap/name
     kind: Deployment
   - path: spec/template/spec/containers/env/valueFrom/configMapKeyRef/name
@@ -77,8 +74,6 @@ nameReference:
     kind: ReplicaSet
   - path: spec/template/spec/initContainers/envFrom/configMapRef/name
     kind: ReplicaSet
-  - path: spec/template/spec/volumes/projected/sources/configMap/name
-    kind: ReplicaSet
   - path: spec/template/spec/volumes/configMap/name
     kind: DaemonSet
   - path: spec/template/spec/containers/env/valueFrom/configMapKeyRef/name
@@ -88,8 +83,6 @@ nameReference:
   - path: spec/template/spec/containers/envFrom/configMapRef/name
     kind: DaemonSet
   - path: spec/template/spec/initContainers/envFrom/configMapRef/name
-    kind: DaemonSet
-  - path: spec/template/spec/volumes/projected/sources/configMap/name
     kind: DaemonSet
   - path: spec/template/spec/volumes/configMap/name
     kind: StatefulSet
@@ -112,12 +105,8 @@ nameReference:
   - path: spec/template/spec/containers/envFrom/configMapRef/name
     kind: Job
   - path: spec/template/spec/initContainers/envFrom/configMapRef/name
-    kind: Job
-  - path: spec/template/spec/volumes/projected/sources/configMap/name
     kind: Job
   - path: spec/jobTemplate/spec/template/spec/volumes/configMap/name
-    kind: CronJob
-  - path: spec/jobTemplate/spec/template/spec/volumes/projected/sources/configMap/name
     kind: CronJob
   - path: spec/jobTemplate/spec/template/spec/containers/env/valueFrom/configMapKeyRef/name
     kind: CronJob
@@ -125,7 +114,7 @@ nameReference:
     kind: CronJob
   - path: spec/jobTemplate/spec/template/spec/containers/envFrom/configMapRef/name
     kind: CronJob
-  - path: spec/jobTemplate/spec/template/spec/initContainers/envFrom/configMapRef/name
+  - path: spec/jobTemplate/spec/template/spec/initContainers/envFrom/configmapRef/name
     kind: CronJob
 
 - kind: Secret
@@ -149,9 +138,6 @@ nameReference:
   - path: spec/imagePullSecrets/name
     version: v1
     kind: Pod
-  - path: spec/volumes/projected/sources/secret/name
-    version: v1
-    kind: Pod
   - path: spec/template/spec/volumes/secret/secretName
     kind: Deployment
   - path: spec/template/spec/containers/env/valueFrom/secretKeyRef/name
@@ -178,8 +164,6 @@ nameReference:
     kind: ReplicaSet
   - path: spec/template/spec/imagePullSecrets/name
     kind: ReplicaSet
-  - path: spec/template/spec/volumes/projected/sources/secret/name
-    kind: ReplicaSet
   - path: spec/template/spec/volumes/secret/secretName
     kind: DaemonSet
   - path: spec/template/spec/containers/env/valueFrom/secretKeyRef/name
@@ -191,8 +175,6 @@ nameReference:
   - path: spec/template/spec/initContainers/envFrom/secretRef/name
     kind: DaemonSet
   - path: spec/template/spec/imagePullSecrets/name
-    kind: DaemonSet
-  - path: spec/template/spec/volumes/projected/sources/secret/name
     kind: DaemonSet
   - path: spec/template/spec/volumes/secret/secretName
     kind: StatefulSet
@@ -219,12 +201,8 @@ nameReference:
   - path: spec/template/spec/initContainers/envFrom/secretRef/name
     kind: Job
   - path: spec/template/spec/imagePullSecrets/name
-    kind: Job
-  - path: spec/template/spec/volumes/projected/sources/secret/name
     kind: Job
   - path: spec/jobTemplate/spec/template/spec/volumes/secret/secretName
-    kind: CronJob
-  - path: spec/jobTemplate/spec/template/spec/volumes/projected/sources/secret/name
     kind: CronJob
   - path: spec/jobTemplate/spec/template/spec/containers/env/valueFrom/secretKeyRef/name
     kind: CronJob
@@ -241,8 +219,6 @@ nameReference:
   - path: metadata/annotations/ingress.kubernetes.io\/auth-secret
     kind: Ingress
   - path: metadata/annotations/nginx.ingress.kubernetes.io\/auth-secret
-    kind: Ingress
-  - path: metadata/annotations/nginx.ingress.kubernetes.io\/auth-tls-secret
     kind: Ingress
   - path: imagePullSecrets/name
     kind: ServiceAccount
@@ -272,12 +248,6 @@ nameReference:
   - path: spec/service/name
     kind: APIService
     group: apiregistration.k8s.io
-  - path: webhooks/clientConfig/service
-    kind: ValidatingWebhookConfiguration
-    group: admissionregistration.k8s.io
-  - path: webhooks/clientConfig/service
-    kind: MutatingWebhookConfiguration
-    group: admissionregistration.k8s.io
 
 - kind: Role
   group: rbac.authorization.k8s.io
@@ -299,10 +269,10 @@ nameReference:
 - kind: ServiceAccount
   version: v1
   fieldSpecs:
-  - path: subjects
+  - path: subjects/name
     kind: RoleBinding
     group: rbac.authorization.k8s.io
-  - path: subjects
+  - path: subjects/name
     kind: ClusterRoleBinding
     group: rbac.authorization.k8s.io
   - path: spec/serviceAccountName
@@ -316,7 +286,7 @@ nameReference:
   - path: spec/jobTemplate/spec/template/spec/serviceAccountName
     kind: CronJob
   - path: spec/template/spec/serviceAccountName
-    kind: Job
+    kind: job
   - path: spec/template/spec/serviceAccountName
     kind: DaemonSet
 
@@ -343,18 +313,5 @@ nameReference:
   fieldSpecs:
   - path: spec/volumeName
     kind: PersistentVolumeClaim
-  - path: rules/resourceNames
-    kind: ClusterRole
-
-- kind: StorageClass
-  version: v1
-  group: storage.k8s.io
-  fieldSpecs:
-  - path: spec/storageClassName
-    kind: PersistentVolume
-  - path: spec/storageClassName
-    kind: PersistentVolumeClaim
-  - path: spec/volumeClaimTemplates/spec/storageClassName
-    kind: StatefulSet
 `
 )

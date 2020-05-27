@@ -7,6 +7,7 @@
         "Email": "jane@example.com",
         "Avatar": "https://www.gravatar.com/avatar/9e26471d35a78862c17e467d87cddedf.jpg"
     },
+    "Version": 5,
     "Created": "2018-07-04T22:58:45-07:00",
     "Updated": "2018-07-04T22:58:45-07:00"
 }

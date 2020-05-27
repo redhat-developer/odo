@@ -1,0 +1,154 @@
+{
+  "object_kind": "merge_request",
+  "user": {
+    "name": "Sid Sijbrandij",
+    "username": "sytses",
+    "avatar_url": "https://secure.gravatar.com/avatar/8c58a0be77ee441bb8f8595b7f1b4e87?s=80&d=identicon"
+  },
+  "project": {
+    "id": 4861503,
+    "name": "hello-world",
+    "description": "",
+    "web_url": "https://gitlab.com/gitlab-org/hello-world",
+    "avatar_url": null,
+    "git_ssh_url": "git@gitlab.com:gitlab-org/hello-world.git",
+    "git_http_url": "https://gitlab.com/gitlab-org/hello-world.git",
+    "namespace": "sytses",
+    "visibility_level": 0,
+    "path_with_namespace": "gitlab-org/hello-world",
+    "default_branch": "master",
+    "ci_config_path": null,
+    "homepage": "https://gitlab.com/gitlab-org/hello-world",
+    "url": "git@gitlab.com:gitlab-org/hello-world.git",
+    "ssh_url": "git@gitlab.com:gitlab-org/hello-world.git",
+    "http_url": "https://gitlab.com/gitlab-org/hello-world.git"
+  },
+  "object_attributes": {
+    "assignee_id": null,
+    "author_id": 51764,
+    "created_at": "2017-12-10 17:01:11 UTC",
+    "deleted_at": null,
+    "description": "adding build instructions to readme",
+    "head_pipeline_id": null,
+    "id": 6632669,
+    "iid": 1,
+    "last_edited_at": null,
+    "last_edited_by_id": null,
+    "merge_commit_sha": null,
+    "merge_error": null,
+    "merge_params": {
+      "force_remove_source_branch": "0"
+    },
+    "merge_status": "unchecked",
+    "merge_user_id": null,
+    "merge_when_pipeline_succeeds": false,
+    "milestone_id": null,
+    "source_branch": "feature",
+    "source_project_id": 4861503,
+    "state": "opened",
+    "target_branch": "master",
+    "target_project_id": 4861503,
+    "time_estimate": 0,
+    "title": "update readme",
+    "updated_at": "2017-12-10 17:01:11 UTC",
+    "updated_by_id": null,
+    "url": "https://gitlab.com/gitlab-org/hello-world/merge_requests/1",
+    "source": {
+      "id": 4861503,
+      "name": "hello-world",
+      "description": "",
+      "web_url": "https://gitlab.com/gitlab-org/hello-world",
+      "avatar_url": null,
+      "git_ssh_url": "git@gitlab.com:gitlab-org/hello-world.git",
+      "git_http_url": "https://gitlab.com/gitlab-org/hello-world.git",
+      "namespace": "sytses",
+      "visibility_level": 0,
+      "path_with_namespace": "gitlab-org/hello-world",
+      "default_branch": "master",
+      "ci_config_path": null,
+      "homepage": "https://gitlab.com/gitlab-org/hello-world",
+      "url": "git@gitlab.com:gitlab-org/hello-world.git",
+      "ssh_url": "git@gitlab.com:gitlab-org/hello-world.git",
+      "http_url": "https://gitlab.com/gitlab-org/hello-world.git"
+    },
+    "target": {
+      "id": 4861503,
+      "name": "hello-world",
+      "description": "",
+      "web_url": "https://gitlab.com/gitlab-org/hello-world",
+      "avatar_url": null,
+      "git_ssh_url": "git@gitlab.com:gitlab-org/hello-world.git",
+      "git_http_url": "https://gitlab.com/gitlab-org/hello-world.git",
+      "namespace": "sytses",
+      "visibility_level": 0,
+      "path_with_namespace": "gitlab-org/hello-world",
+      "default_branch": "master",
+      "ci_config_path": null,
+      "homepage": "https://gitlab.com/gitlab-org/hello-world",
+      "url": "git@gitlab.com:gitlab-org/hello-world.git",
+      "ssh_url": "git@gitlab.com:gitlab-org/hello-world.git",
+      "http_url": "https://gitlab.com/gitlab-org/hello-world.git"
+    },
+    "last_commit": {
+      "id": "c4c79227ed610f1151f05bbc5be33b4f340d39c8",
+      "message": "update readme\n",
+      "timestamp": "2017-12-10T08:28:36-08:00",
+      "url": "https://gitlab.com/gitlab-org/hello-world/commit/c4c79227ed610f1151f05bbc5be33b4f340d39c8",
+      "author": {
+        "name": "Sid Sijbrandij",
+        "email": "noreply@gitlab.com"
+      }
+    },
+    "work_in_progress": false,
+    "total_time_spent": 0,
+    "human_total_time_spent": null,
+    "human_time_estimate": null,
+    "action": "update"
+  },
+  "labels": [{
+    "id": 206,
+    "title": "API",
+    "color": "#ffffff",
+    "project_id": 14,
+    "created_at": "2013-12-03T17:15:43Z",
+    "updated_at": "2013-12-03T17:15:43Z",
+    "template": false,
+    "description": "API related issues",
+    "type": "ProjectLabel",
+    "group_id": 41
+  }],
+  "changes": {
+    "labels": {
+      "previous": [{
+        "id": 206,
+        "title": "API",
+        "color": "#ffffff",
+        "project_id": 14,
+        "created_at": "2013-12-03T17:15:43Z",
+        "updated_at": "2013-12-03T17:15:43Z",
+        "template": false,
+        "description": "API related issues",
+        "type": "ProjectLabel",
+        "group_id": 41
+      }],
+      "current": [{
+        "id": 205,
+        "title": "Platform",
+        "color": "#123123",
+        "project_id": 14,
+        "created_at": "2013-12-03T17:15:43Z",
+        "updated_at": "2013-12-03T17:15:43Z",
+        "template": false,
+        "description": "Platform related issues",
+        "type": "ProjectLabel",
+        "group_id": 41
+      }]
+    }
+  },
+  "repository": {
+    "name": "hello-world",
+    "url": "git@gitlab.com:gitlab-org/hello-world.git",
+    "description": "",
+    "homepage": "https://gitlab.com/gitlab-org/hello-world"
+  }
+}

@@ -12,6 +12,9 @@ spec:
     default: gcr.io/tekton-releases
   - name: versionTag
     description: The X.Y.Z version that the artifacts should be tagged with
+  - name: releaseAsLatest
+    description: Whether to tag and publish this release as Pipelines' latest
+    default: "true"
   resources:
   - name: source-repo
     type: git
@@ -54,41 +57,27 @@ spec:
             resource: bucket
           - name: source-to-release
             resource: source-repo
-    - name: lint
-      runAfter: [precheck]
-      taskRef:
-        name: golangci-lint
-      params:
-        - name: package
-          value: $(params.package)
-        - name: flags
-          value: -v
-        - name: version
-          value: v1.21
-      resources:
-        inputs:
-          - name: source
-            resource: source-repo
     - name: unit-tests
-      runAfter: [lint]
       taskRef:
         name: golang-test
       params:
         - name: package
           value: $(params.package)
+        - name: flags
+          value: -v -mod=vendor
       resources:
         inputs:
           - name: source
             resource: source-repo
     - name: build
-      runAfter: [lint]
+      runAfter: [precheck]
       taskRef:
         name: golang-build
       params:
         - name: package
           value: $(params.package)
         - name: flags
-          value: -ldflags "-X github.com/tektoncd/pipeline/pkg/version.PipelineVersion=$(params.versionTag)"
+          value: -mod=vendor -ldflags "-X github.com/tektoncd/pipeline/pkg/version.PipelineVersion=$(params.versionTag)"
       resources:
         inputs:
           - name: source
@@ -104,6 +93,8 @@ spec:
           value: $(params.versionTag)
         - name: imageRegistry
           value: $(params.imageRegistry)
+        - name: releaseAsLatest
+          value: $(params.releaseAsLatest)
       resources:
         inputs:
           - name: source

@@ -17,9 +17,8 @@ limitations under the License.
 package clustermanager
 
 import (
+	"errors"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -28,6 +27,7 @@ import (
 
 	container "google.golang.org/api/container/v1beta1"
 	boskoscommon "k8s.io/test-infra/boskos/common"
+
 	"knative.dev/pkg/test/gke"
 	gkeFake "knative.dev/pkg/test/gke/fake"
 	boskosFake "knative.dev/pkg/testutils/clustermanager/e2e-tests/boskos/fake"
@@ -36,397 +36,11 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-var (
-	fakeProj    = "b"
-	fakeCluster = "d"
-)
-
 func setupFakeGKECluster() GKECluster {
 	return GKECluster{
 		Request:    &GKERequest{},
 		operations: gkeFake.NewGKESDKClient(),
 		boskosOps:  &boskosFake.FakeBoskosClient{},
-	}
-}
-
-func TestSetup(t *testing.T) {
-	minNodesOverride := int64(2)
-	maxNodesOverride := int64(4)
-	nodeTypeOverride := "foonode"
-	regionOverride := "fooregion"
-	zoneOverride := "foozone"
-	boskosResTypeOverride := "customResType"
-	fakeAddons := "fake-addon"
-	fakeBuildID := "1234"
-	type env struct {
-		isProw          bool
-		regionEnv       string
-		backupRegionEnv string
-	}
-	tests := []struct {
-		name string
-		arg  GKERequest
-		env  env
-		want *GKECluster
-	}{
-		{
-			name: "Defaults, not running in Prow",
-			arg:  GKERequest{},
-			env:  env{false, "", ""},
-			want: &GKECluster{
-				Request: &GKERequest{
-					Request: gke.Request{
-						ClusterName: "",
-						MinNodes:    1,
-						MaxNodes:    3,
-						NodeType:    "e2-standard-4",
-						Region:      "us-central1",
-						Zone:        "",
-						Addons:      nil,
-					},
-					BackupRegions: []string{"us-west1", "us-east1"},
-					ResourceType:  DefaultResourceType,
-				},
-			},
-		}, {
-			name: "Defaults, running in Prow",
-			arg:  GKERequest{},
-			env:  env{true, "", ""},
-			want: &GKECluster{
-				Request: &GKERequest{
-					Request: gke.Request{
-						ClusterName: "",
-						MinNodes:    1,
-						MaxNodes:    3,
-						NodeType:    "e2-standard-4",
-						Region:      "us-central1",
-						Zone:        "",
-						Addons:      nil,
-					},
-					BackupRegions: []string{"us-west1", "us-east1"},
-					ResourceType:  DefaultResourceType,
-				},
-			},
-		}, {
-			name: "Custom Boskos Resource type, running in Prow",
-			arg:  GKERequest{ResourceType: boskosResTypeOverride},
-			env:  env{true, "", ""},
-			want: &GKECluster{
-				Request: &GKERequest{
-					Request: gke.Request{
-						ClusterName: "",
-						MinNodes:    1,
-						MaxNodes:    3,
-						NodeType:    "e2-standard-4",
-						Region:      "us-central1",
-						Zone:        "",
-						Addons:      nil,
-					},
-					BackupRegions: []string{"us-west1", "us-east1"},
-					ResourceType:  boskosResTypeOverride,
-				},
-			},
-		}, {
-			name: "Project provided, not running in Prow",
-			arg: GKERequest{
-				Request: gke.Request{
-					Project: fakeProj,
-				},
-			},
-			env: env{false, "", ""},
-			want: &GKECluster{
-				Request: &GKERequest{
-					Request: gke.Request{
-						ClusterName: "",
-						Project:     "b",
-						MinNodes:    1,
-						MaxNodes:    3,
-						NodeType:    "e2-standard-4",
-						Region:      "us-central1",
-						Zone:        "",
-						Addons:      nil,
-					},
-					BackupRegions: []string{"us-west1", "us-east1"},
-					ResourceType:  DefaultResourceType,
-				},
-				Project:      fakeProj,
-				NeedsCleanup: true,
-			},
-		}, {
-			name: "Project provided, running in Prow",
-			arg: GKERequest{
-				Request: gke.Request{
-					Project: fakeProj,
-				},
-			},
-			env: env{true, "", ""},
-			want: &GKECluster{
-				Request: &GKERequest{
-					Request: gke.Request{
-						ClusterName: "",
-						Project:     "b",
-						MinNodes:    1,
-						MaxNodes:    3,
-						NodeType:    "e2-standard-4",
-						Region:      "us-central1",
-						Zone:        "",
-						Addons:      nil,
-					},
-					BackupRegions: []string{"us-west1", "us-east1"},
-					ResourceType:  DefaultResourceType,
-				},
-				Project:      fakeProj,
-				NeedsCleanup: true,
-			},
-		}, {
-			name: "Cluster name provided, not running in Prow",
-			arg: GKERequest{
-				Request: gke.Request{
-					ClusterName: "predefined-cluster-name",
-				},
-			},
-			env: env{false, "", ""},
-			want: &GKECluster{
-				Request: &GKERequest{
-					Request: gke.Request{
-						ClusterName: "predefined-cluster-name",
-						MinNodes:    1,
-						MaxNodes:    3,
-						NodeType:    "e2-standard-4",
-						Region:      "us-central1",
-						Zone:        "",
-						Addons:      nil,
-					},
-					BackupRegions: []string{"us-west1", "us-east1"},
-					ResourceType:  DefaultResourceType,
-				},
-			},
-		}, {
-			name: "Cluster name provided, running in Prow",
-			arg: GKERequest{
-				Request: gke.Request{
-					ClusterName: "predefined-cluster-name",
-				},
-			},
-			env: env{false, "", ""},
-			want: &GKECluster{
-				Request: &GKERequest{
-					Request: gke.Request{
-						ClusterName: "predefined-cluster-name",
-						MinNodes:    1,
-						MaxNodes:    3,
-						NodeType:    "e2-standard-4",
-						Region:      "us-central1",
-						Zone:        "",
-						Addons:      nil,
-					},
-					BackupRegions: []string{"us-west1", "us-east1"},
-					ResourceType:  DefaultResourceType,
-				},
-			},
-		}, {
-			name: "Override other parts",
-			arg: GKERequest{
-				Request: gke.Request{
-					MinNodes: minNodesOverride,
-					MaxNodes: maxNodesOverride,
-					NodeType: nodeTypeOverride,
-					Region:   regionOverride,
-					Zone:     zoneOverride,
-				},
-			},
-			env: env{false, "", ""},
-			want: &GKECluster{
-				Request: &GKERequest{
-					Request: gke.Request{
-						ClusterName: "",
-						MinNodes:    2,
-						MaxNodes:    4,
-						NodeType:    "foonode",
-						Region:      "fooregion",
-						Zone:        "foozone",
-						Addons:      nil,
-					},
-					BackupRegions: []string{},
-					ResourceType:  DefaultResourceType,
-				},
-			},
-		}, {
-			name: "Override other parts but not zone",
-			arg: GKERequest{
-				Request: gke.Request{
-					MinNodes: minNodesOverride,
-					MaxNodes: maxNodesOverride,
-					NodeType: nodeTypeOverride,
-					Region:   regionOverride,
-				},
-			},
-			env: env{false, "", ""},
-			want: &GKECluster{
-				Request: &GKERequest{
-					Request: gke.Request{
-						ClusterName: "",
-						MinNodes:    2,
-						MaxNodes:    4,
-						NodeType:    "foonode",
-						Region:      "fooregion",
-						Zone:        "",
-						Addons:      nil,
-					},
-					BackupRegions: nil,
-					ResourceType:  DefaultResourceType,
-				},
-			},
-		}, {
-			name: "Min Nodes > Max Nodes",
-			arg: GKERequest{
-				Request: gke.Request{
-					MinNodes: 10,
-					NodeType: nodeTypeOverride,
-					Region:   regionOverride,
-				},
-			},
-			env: env{false, "", ""},
-			want: &GKECluster{
-				Request: &GKERequest{
-					Request: gke.Request{
-						ClusterName: "",
-						MinNodes:    10,
-						MaxNodes:    10,
-						NodeType:    "foonode",
-						Region:      "fooregion",
-						Zone:        "",
-						Addons:      nil,
-					},
-					BackupRegions: nil,
-					ResourceType:  DefaultResourceType,
-				},
-			},
-		}, {
-			name: "Set env Region",
-			arg:  GKERequest{},
-			env:  env{false, "customregion", ""},
-			want: &GKECluster{
-				Request: &GKERequest{
-					Request: gke.Request{
-						ClusterName: "",
-						MinNodes:    1,
-						MaxNodes:    3,
-						NodeType:    "e2-standard-4",
-						Region:      "customregion",
-						Zone:        "",
-						Addons:      nil,
-					},
-					BackupRegions: []string{"us-west1", "us-east1"},
-					ResourceType:  DefaultResourceType,
-				},
-			},
-		}, {
-			name: "Set env backupzone",
-			arg:  GKERequest{},
-			env:  env{false, "", "backupregion1 backupregion2"},
-			want: &GKECluster{
-				Request: &GKERequest{
-					Request: gke.Request{
-						ClusterName: "",
-						MinNodes:    1,
-						MaxNodes:    3,
-						NodeType:    "e2-standard-4",
-						Region:      "us-central1",
-						Zone:        "",
-						Addons:      nil,
-					},
-					BackupRegions: []string{"backupregion1", "backupregion2"},
-					ResourceType:  DefaultResourceType,
-				},
-			},
-		}, {
-			name: "Set addons",
-			arg: GKERequest{
-				Request: gke.Request{
-					Addons: []string{fakeAddons},
-				},
-			},
-			env: env{false, "", ""},
-			want: &GKECluster{
-				Request: &GKERequest{
-					Request: gke.Request{
-						ClusterName: "",
-						MinNodes:    1,
-						MaxNodes:    3,
-						NodeType:    "e2-standard-4",
-						Region:      "us-central1",
-						Zone:        "",
-						Addons:      []string{fakeAddons},
-					},
-					BackupRegions: []string{"us-west1", "us-east1"},
-					ResourceType:  DefaultResourceType,
-				},
-			},
-		},
-	}
-
-	// mock GetOSEnv for testing
-	oldEnvFunc := common.GetOSEnv
-	oldExecFunc := common.StandardExec
-	oldDefaultCred := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
-	tf, _ := ioutil.TempFile("", "foo")
-	tf.WriteString(`{"type": "service_account"}`)
-	os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", tf.Name())
-	defer func() {
-		// restore
-		common.GetOSEnv = oldEnvFunc
-		common.StandardExec = oldExecFunc
-		os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", oldDefaultCred)
-		os.Remove(tf.Name())
-	}()
-	// mock as kubectl not set and gcloud set as "b", so check environment
-	// return project as "b"
-	common.StandardExec = func(name string, args ...string) ([]byte, error) {
-		var out []byte
-		var err error
-		switch name {
-		case "gcloud":
-			out = []byte("b")
-			err = nil
-		case "kubectl":
-			out = []byte("")
-			err = fmt.Errorf("kubectl not set")
-		default:
-			out, err = oldExecFunc(name, args...)
-		}
-		return out, err
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			common.GetOSEnv = func(s string) string {
-				switch s {
-				case "E2E_CLUSTER_REGION":
-					return tt.env.regionEnv
-				case "E2E_CLUSTER_BACKUP_REGIONS":
-					return tt.env.backupRegionEnv
-				case "BUILD_NUMBER":
-					return fakeBuildID
-				case "PROW_JOB_ID": // needed to mock IsProw()
-					if tt.env.isProw {
-						return "fake_job_id"
-					}
-					return ""
-				}
-				return oldEnvFunc(s)
-			}
-			c := GKEClient{}
-			co := c.Setup(tt.arg)
-			errMsg := fmt.Sprintf("testing setup with:\n\t%+v\n\tregionEnv: %v\n\tbackupRegionEnv: %v",
-				tt.arg, tt.env.regionEnv, tt.env.backupRegionEnv)
-			gotCo := co.(*GKECluster)
-			// mock for easier comparison
-			gotCo.operations = nil
-			gotCo.boskosOps = nil
-			if dif := cmp.Diff(gotCo.Request, tt.want.Request); dif != "" {
-				t.Errorf("%s\nRequest got(+) is different from wanted(-)\n%v", errMsg, dif)
-			}
-		})
 	}
 }
 
@@ -451,7 +65,7 @@ func TestGKECheckEnvironment(t *testing.T) {
 			"", fmt.Errorf("kubectl not set"), "", nil, false, "", "", "", nil, nil,
 		}, {
 			// kubeconfig failed
-			"failed", fmt.Errorf("kubectl other err"), "", nil, false, "", "", "", nil, fmt.Errorf("failed running kubectl config current-context: 'failed'"),
+			"failed", fmt.Errorf("kubectl other err"), "", nil, false, "", "", "", nil, fmt.Errorf(`failed running kubectl config current-context: "failed"`),
 		}, {
 			// kubeconfig returned something other than "gke_PROJECT_REGION_CLUSTER"
 			"gke_b_c", nil, "", nil, false, "", "", "", nil, nil,
@@ -481,7 +95,7 @@ func TestGKECheckEnvironment(t *testing.T) {
 			"gke_b_c_d", nil, "", nil, false, "d", "", "", nil, fmt.Errorf("couldn't find cluster d in b in c, does it exist? cluster not found"),
 		}, {
 			// kubeconfig not set and gcloud failed
-			"", fmt.Errorf("kubectl not set"), "", fmt.Errorf("gcloud failed"), false, "", "", "", nil, fmt.Errorf("failed getting gcloud project: 'gcloud failed'"),
+			"", fmt.Errorf("kubectl not set"), "", fmt.Errorf("gcloud failed"), false, "", "", "", nil, fmt.Errorf("failed getting gcloud project: gcloud failed"),
 		}, {
 			// kubeconfig not set and gcloud not set
 			"", fmt.Errorf("kubectl not set"), "", nil, false, "", "", "", nil, nil,
@@ -493,7 +107,6 @@ func TestGKECheckEnvironment(t *testing.T) {
 
 	oldFunc := common.StandardExec
 	defer func() {
-		// restore
 		common.StandardExec = oldFunc
 	}()
 
@@ -531,17 +144,14 @@ func TestGKECheckEnvironment(t *testing.T) {
 			gotCluster = &fgc.Cluster.Name
 		}
 
-		errMsg := fmt.Sprintf("check environment with:\n\tkubectl output: %q\n\t\terror: '%v'\n\tgcloud output: %q\n\t\t"+
+		errMsg := fmt.Sprintf("check environment with:\n\tkubectl output: %q\n\t\terror: %v\n\tgcloud output: %q\n\t\t"+
 			"error: '%v'\n\t\tclustername requested: %q\n\t\tproject requested: %q",
 			data.kubectlOut, data.kubectlErr, data.gcloudOut, data.gcloudErr, data.requestClusterName, data.requestProject)
 
-		if !reflect.DeepEqual(err, data.expErr) || !reflect.DeepEqual(fgc.Project, data.expProj) || !reflect.DeepEqual(gotCluster, data.expCluster) {
-			t.Errorf("%s\ngot: project - %q, cluster - '%v', err - '%v'\nwant: project - '%v', cluster - '%v', err - '%v'",
-				errMsg, fgc.Project, fgc.Cluster, err, data.expProj, data.expCluster, data.expErr)
-		}
-
-		if !reflect.DeepEqual(data.expErr, err) {
-			t.Errorf("%s\nerror got: '%v'\nerror want: '%v'", errMsg, data.expErr, err)
+		if (data.expErr != nil) != (err != nil) {
+			t.Errorf("Error got = %v, want: %v", err, data.expErr)
+		} else if err != nil && err.Error() != data.expErr.Error() {
+			t.Errorf("Error got = %v, want: %v", err, data.expErr)
 		}
 		if dif := cmp.Diff(data.expCluster, gotCluster); dif != "" {
 			t.Errorf("%s\nCluster got(+) is different from wanted(-)\n%v", errMsg, dif)
@@ -583,8 +193,8 @@ func TestAcquire(t *testing.T) {
 			name: "cluster not exist, running in Prow and boskos not available",
 			td: testdata{
 				request: request{clusterName: predefinedClusterName, addons: []string{}},
-				isProw:  true, project: fakeProj, nextOpStatus: []string{}, boskosProjs: []string{}, skipCreation: false},
-			want: wantResult{expCluster: nil, expErr: fmt.Errorf("failed acquiring boskos project: 'no GKE project available'"), expPanic: false},
+				isProw:  true, nextOpStatus: []string{}, boskosProjs: []string{}, skipCreation: false},
+			want: wantResult{expCluster: nil, expErr: fmt.Errorf("failed acquiring boskos project: '%w'", errors.New("no GKE project available")), expPanic: false},
 		}, {
 			name: "cluster not exist, running in Prow and boskos available",
 			td: testdata{
@@ -599,7 +209,7 @@ func TestAcquire(t *testing.T) {
 				NodePools: []*container.NodePool{
 					{
 						Name:             "default-pool",
-						InitialNodeCount: DefaultGKEMinNodes,
+						InitialNodeCount: defaultGKEMinNodes,
 						Config:           &container.NodeConfig{MachineType: "e2-standard-4", OauthScopes: []string{container.CloudPlatformScope}},
 						Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 					},
@@ -613,7 +223,7 @@ func TestAcquire(t *testing.T) {
 			td: testdata{
 				request: request{clusterName: predefinedClusterName, addons: []string{}},
 				isProw:  true, nextOpStatus: []string{}, boskosProjs: []string{}, skipCreation: false},
-			want: wantResult{expCluster: nil, expErr: fmt.Errorf("failed acquiring boskos project: 'no GKE project available'"), expPanic: false},
+			want: wantResult{expCluster: nil, expErr: fmt.Errorf("failed acquiring boskos project: '%w'", errors.New("no GKE project available")), expPanic: false},
 		},
 		{
 			name: "cluster not exist, project not set, running in Prow and boskos available",
@@ -629,7 +239,7 @@ func TestAcquire(t *testing.T) {
 					NodePools: []*container.NodePool{
 						{
 							Name:             "default-pool",
-							InitialNodeCount: DefaultGKEMinNodes,
+							InitialNodeCount: defaultGKEMinNodes,
 							Config:           &container.NodeConfig{MachineType: "e2-standard-4", OauthScopes: []string{container.CloudPlatformScope}},
 							Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 						},
@@ -656,7 +266,7 @@ func TestAcquire(t *testing.T) {
 					NodePools: []*container.NodePool{
 						{
 							Name:             "default-pool",
-							InitialNodeCount: DefaultGKEMinNodes,
+							InitialNodeCount: defaultGKEMinNodes,
 							Config:           &container.NodeConfig{MachineType: "e2-standard-4", OauthScopes: []string{container.CloudPlatformScope}},
 							Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 						},
@@ -697,7 +307,7 @@ func TestAcquire(t *testing.T) {
 					NodePools: []*container.NodePool{
 						{
 							Name:             "default-pool",
-							InitialNodeCount: DefaultGKEMinNodes,
+							InitialNodeCount: defaultGKEMinNodes,
 							Config:           &container.NodeConfig{MachineType: "e2-standard-4", OauthScopes: []string{container.CloudPlatformScope}},
 							Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 						},
@@ -723,7 +333,7 @@ func TestAcquire(t *testing.T) {
 					NodePools: []*container.NodePool{
 						{
 							Name:             "default-pool",
-							InitialNodeCount: DefaultGKEMinNodes,
+							InitialNodeCount: defaultGKEMinNodes,
 							Config:           &container.NodeConfig{MachineType: "e2-standard-4", OauthScopes: []string{container.CloudPlatformScope}},
 							Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 						},
@@ -751,7 +361,7 @@ func TestAcquire(t *testing.T) {
 					NodePools: []*container.NodePool{
 						{
 							Name:             "default-pool",
-							InitialNodeCount: DefaultGKEMinNodes,
+							InitialNodeCount: defaultGKEMinNodes,
 							Config:           &container.NodeConfig{MachineType: "e2-standard-4", OauthScopes: []string{container.CloudPlatformScope}},
 							Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 						},
@@ -778,7 +388,7 @@ func TestAcquire(t *testing.T) {
 					NodePools: []*container.NodePool{
 						{
 							Name:             "default-pool",
-							InitialNodeCount: DefaultGKEMinNodes,
+							InitialNodeCount: defaultGKEMinNodes,
 							Config:           &container.NodeConfig{MachineType: "e2-standard-4", OauthScopes: []string{container.CloudPlatformScope}},
 							Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 						},
@@ -794,14 +404,14 @@ func TestAcquire(t *testing.T) {
 				request: request{clusterName: predefinedClusterName, addons: []string{}},
 				isProw:  false, project: fakeProj, nextOpStatus: []string{},
 				boskosProjs: []string{fakeBoskosProj}, skipCreation: true},
-			want: wantResult{nil, fmt.Errorf("cannot acquire cluster if SkipCreation is set"), false},
+			want: wantResult{nil, fmt.Errorf("failing acquiring an existing cluster"), false},
 		}, {
 			name: "cluster not exist, running in Prow and skip creation",
 			td: testdata{
 				request: request{clusterName: predefinedClusterName, addons: []string{}},
 				isProw:  true, project: fakeProj, nextOpStatus: []string{},
 				boskosProjs: []string{fakeBoskosProj}, skipCreation: true},
-			want: wantResult{nil, fmt.Errorf("cannot acquire cluster if SkipCreation is set"), false},
+			want: wantResult{nil, fmt.Errorf("failing acquiring an existing cluster"), false},
 		}, {
 			name: "skipped cluster creation as SkipCreation is requested",
 			td: testdata{
@@ -817,7 +427,7 @@ func TestAcquire(t *testing.T) {
 					NodePools: []*container.NodePool{
 						{
 							Name:             "default-pool",
-							InitialNodeCount: DefaultGKEMinNodes,
+							InitialNodeCount: defaultGKEMinNodes,
 							Config:           &container.NodeConfig{MachineType: "e2-standard-4", OauthScopes: []string{container.CloudPlatformScope}},
 							Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 						},
@@ -845,7 +455,7 @@ func TestAcquire(t *testing.T) {
 					NodePools: []*container.NodePool{
 						{
 							Name:             "default-pool",
-							InitialNodeCount: DefaultGKEMinNodes,
+							InitialNodeCount: defaultGKEMinNodes,
 							Config:           &container.NodeConfig{MachineType: "e2-standard-4", OauthScopes: []string{container.CloudPlatformScope}},
 							Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 						},
@@ -871,7 +481,7 @@ func TestAcquire(t *testing.T) {
 					NodePools: []*container.NodePool{
 						{
 							Name:             "default-pool",
-							InitialNodeCount: DefaultGKEMinNodes,
+							InitialNodeCount: defaultGKEMinNodes,
 							Config:           &container.NodeConfig{MachineType: "e2-standard-4", OauthScopes: []string{container.CloudPlatformScope}},
 							Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 						},
@@ -896,7 +506,7 @@ func TestAcquire(t *testing.T) {
 					NodePools: []*container.NodePool{
 						{
 							Name:             "default-pool",
-							InitialNodeCount: DefaultGKEMinNodes,
+							InitialNodeCount: defaultGKEMinNodes,
 							Config:           &container.NodeConfig{MachineType: "e2-standard-4", OauthScopes: []string{container.CloudPlatformScope}},
 							Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
 						},
@@ -995,15 +605,15 @@ func TestAcquire(t *testing.T) {
 			fgc.Request = &GKERequest{
 				Request: gke.Request{
 					ClusterName: tt.td.request.clusterName,
-					MinNodes:    DefaultGKEMinNodes,
-					MaxNodes:    DefaultGKEMaxNodes,
-					NodeType:    DefaultGKENodeType,
-					Region:      DefaultGKERegion,
+					MinNodes:    defaultGKEMinNodes,
+					MaxNodes:    defaultGKEMaxNodes,
+					NodeType:    defaultGKENodeType,
+					Region:      defaultGKERegion,
 					Zone:        "",
 					Addons:      tt.td.request.addons,
 				},
-				BackupRegions: DefaultGKEBackupRegions,
-				ResourceType:  DefaultResourceType,
+				BackupRegions: defaultGKEBackupRegions,
+				ResourceType:  defaultResourceType,
 			}
 			opCount := 0
 			if data.existCluster != nil {
@@ -1019,12 +629,15 @@ func TestAcquire(t *testing.T) {
 				fgc.operations.(*gkeFake.GKESDKClient).OpStatus[strconv.Itoa(opCount+i)] = status
 			}
 
+			if data.isProw && data.project == "" {
+				fgc.isBoskos = true
+			}
 			if data.skipCreation {
 				fgc.Request.SkipCreation = true
 			}
-			// Set NeedsCleanup to false for easier testing, as it launches a
+			// Set asyncCleanup to false for easier testing, as it launches a
 			// goroutine
-			fgc.NeedsCleanup = false
+			fgc.asyncCleanup = false
 			err := fgc.Acquire()
 			errMsg := fmt.Sprintf("testing acquiring cluster, with:\n\tisProw: '%v'\n\tproject: '%v'\n\texisting cluster: '%+v'\n\tSkip creation: '%+v'\n\t"+
 				"next operations outcomes: '%v'\n\taddons: '%v'\n\tboskos projects: '%v'",
@@ -1041,11 +654,10 @@ func TestAcquire(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	type testdata struct {
-		isProw         bool
-		NeedsCleanup   bool
-		requestCleanup bool
-		boskosState    []*boskoscommon.Resource
-		cluster        *container.Cluster
+		isProw      bool
+		isBoskos    bool
+		boskosState []*boskoscommon.Resource
+		cluster     *container.Cluster
 	}
 	type wantResult struct {
 		Boskos  []*boskoscommon.Resource
@@ -1058,46 +670,10 @@ func TestDelete(t *testing.T) {
 		want wantResult
 	}{
 		{
-			name: "Not in prow, NeedsCleanup is false",
+			name: "Not in prow",
 			td: testdata{
-				isProw:         false,
-				NeedsCleanup:   false,
-				requestCleanup: false,
-				boskosState:    []*boskoscommon.Resource{},
-				cluster: &container.Cluster{
-					Name:     "customcluster",
-					Location: "us-central1",
-				},
-			},
-			want: wantResult{
-				nil,
-				&container.Cluster{
-					Name:         "customcluster",
-					Location:     "us-central1",
-					Status:       "RUNNING",
-					AddonsConfig: &container.AddonsConfig{},
-					NodePools: []*container.NodePool{
-						{
-							Name:             "default-pool",
-							InitialNodeCount: DefaultGKEMinNodes,
-							Config:           &container.NodeConfig{MachineType: "e2-standard-4", OauthScopes: []string{container.CloudPlatformScope}},
-							Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
-						},
-					},
-					MasterAuth: &container.MasterAuth{
-						Username: "admin",
-					},
-				},
-				nil,
-			},
-		},
-		{
-			name: "Not in prow, NeedsCleanup is true",
-			td: testdata{
-				isProw:         false,
-				NeedsCleanup:   true,
-				requestCleanup: false,
-				boskosState:    []*boskoscommon.Resource{},
+				isProw:      false,
+				boskosState: []*boskoscommon.Resource{},
 				cluster: &container.Cluster{
 					Name:     "customcluster",
 					Location: "us-central1",
@@ -1110,31 +686,11 @@ func TestDelete(t *testing.T) {
 			},
 		},
 		{
-			name: "Not in prow, NeedsCleanup is false, requestCleanup is true",
+			name: "Not in prow, but cluster doesn't exist",
 			td: testdata{
-				isProw:         false,
-				NeedsCleanup:   false,
-				requestCleanup: true,
-				boskosState:    []*boskoscommon.Resource{},
-				cluster: &container.Cluster{
-					Name:     "customcluster",
-					Location: "us-central1",
-				},
-			},
-			want: wantResult{
-				nil,
-				nil,
-				nil,
-			},
-		},
-		{
-			name: "Not in prow, NeedsCleanup is true, but cluster doesn't exist",
-			td: testdata{
-				isProw:         false,
-				NeedsCleanup:   true,
-				requestCleanup: false,
-				boskosState:    []*boskoscommon.Resource{},
-				cluster:        nil,
+				isProw:      false,
+				boskosState: []*boskoscommon.Resource{},
+				cluster:     nil,
 			},
 			want: wantResult{
 				nil,
@@ -1143,11 +699,10 @@ func TestDelete(t *testing.T) {
 			},
 		},
 		{
-			name: "In prow, only need to release boskos",
+			name: "In prow",
 			td: testdata{
-				isProw:         true,
-				NeedsCleanup:   true,
-				requestCleanup: false,
+				isProw:   true,
+				isBoskos: true,
 				boskosState: []*boskoscommon.Resource{{
 					Name: fakeProj,
 				}},
@@ -1162,23 +717,7 @@ func TestDelete(t *testing.T) {
 					Name:  fakeProj,
 					State: boskoscommon.Free,
 				}},
-				&container.Cluster{
-					Name:         "customcluster",
-					Location:     "us-central1",
-					Status:       "RUNNING",
-					AddonsConfig: &container.AddonsConfig{},
-					NodePools: []*container.NodePool{
-						{
-							Name:             "default-pool",
-							InitialNodeCount: DefaultGKEMinNodes,
-							Config:           &container.NodeConfig{MachineType: "e2-standard-4", OauthScopes: []string{container.CloudPlatformScope}},
-							Autoscaling:      &container.NodePoolAutoscaling{Enabled: true, MaxNodeCount: 3, MinNodeCount: 1},
-						},
-					},
-					MasterAuth: &container.MasterAuth{
-						Username: "admin",
-					},
-				},
+				nil,
 				nil,
 			},
 		},
@@ -1226,13 +765,13 @@ func TestDelete(t *testing.T) {
 			}
 			fgc := setupFakeGKECluster()
 			fgc.Project = fakeProj
-			fgc.NeedsCleanup = data.NeedsCleanup
+			fgc.isBoskos = data.isBoskos
 			fgc.Request = &GKERequest{
 				Request: gke.Request{
-					MinNodes: DefaultGKEMinNodes,
-					MaxNodes: DefaultGKEMaxNodes,
-					NodeType: DefaultGKENodeType,
-					Region:   DefaultGKERegion,
+					MinNodes: defaultGKEMinNodes,
+					MaxNodes: defaultGKEMaxNodes,
+					NodeType: defaultGKENodeType,
+					Region:   defaultGKERegion,
 					Zone:     "",
 				},
 			}
@@ -1246,12 +785,7 @@ func TestDelete(t *testing.T) {
 			for _, bos := range data.boskosState {
 				fgc.boskosOps.(*boskosFake.FakeBoskosClient).NewGKEProject(bos.Name)
 				// Acquire with default user
-				fgc.boskosOps.(*boskosFake.FakeBoskosClient).AcquireGKEProject(DefaultResourceType)
-			}
-			if data.requestCleanup {
-				fgc.Request = &GKERequest{
-					NeedsCleanup: true,
-				}
+				fgc.boskosOps.(*boskosFake.FakeBoskosClient).AcquireGKEProject(defaultResourceType)
 			}
 
 			err := fgc.Delete()
@@ -1260,9 +794,9 @@ func TestDelete(t *testing.T) {
 				gotCluster, _ = fgc.operations.GetCluster(fakeProj, data.cluster.Location, "", data.cluster.Name)
 			}
 			gotBoskos := fgc.boskosOps.(*boskosFake.FakeBoskosClient).GetResources()
-			errMsg := fmt.Sprintf("testing deleting cluster, with:\n\tIs Prow: '%v'\n\tNeed cleanup: '%v'\n\t"+
-				"Request cleanup: '%v'\n\texisting cluster: '%v'\n\tboskos state: '%v'",
-				data.isProw, data.NeedsCleanup, data.requestCleanup, data.cluster, data.boskosState)
+			errMsg := fmt.Sprintf("testing deleting cluster, with:\n\tIs Prow: '%v'\n\tIs Boskos: '%v'\n\t"+
+				"existing cluster: '%v'\n\tboskos state: '%v'",
+				data.isProw, data.isBoskos, data.cluster, data.boskosState)
 			if !reflect.DeepEqual(err, tt.want.Err) {
 				t.Errorf("%s\nerror got: '%v'\nerror want: '%v'", errMsg, err, tt.want.Err)
 			}

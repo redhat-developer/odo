@@ -24,6 +24,8 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
+	// ClusterTriggerBindings returns a ClusterTriggerBindingInformer.
+	ClusterTriggerBindings() ClusterTriggerBindingInformer
 	// EventListeners returns a EventListenerInformer.
 	EventListeners() EventListenerInformer
 	// TriggerBindings returns a TriggerBindingInformer.
@@ -41,6 +43,11 @@ type version struct {
 // New returns a new Interface.
 func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
+}
+
+// ClusterTriggerBindings returns a ClusterTriggerBindingInformer.
+func (v *version) ClusterTriggerBindings() ClusterTriggerBindingInformer {
+	return &clusterTriggerBindingInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 }
 
 // EventListeners returns a EventListenerInformer.

@@ -22,6 +22,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/tektoncd/pipeline/pkg/apis/resource/v1alpha1"
+	"github.com/tektoncd/pipeline/test/diff"
 	"knative.dev/pkg/apis"
 )
 
@@ -46,6 +47,10 @@ func TestResourceValidation_Invalid(t *testing.T) {
 						Name: "username", Value: "admin",
 					}, {
 						Name: "token", Value: "my-token",
+					}, {
+						Name: "clientKeyData", Value: "Y2xpZW50LWtleS1kYXRh",
+					}, {
+						Name: "clientCertificateData", Value: "Y2xpZW50LWNlcnRpZmljYXRlLWRhdGE=",
 					}},
 				},
 			},
@@ -63,7 +68,7 @@ func TestResourceValidation_Invalid(t *testing.T) {
 					}},
 				},
 			},
-			want: apis.ErrMissingField("username or CAData  or token param"),
+			want: apis.ErrMissingField("username or CAData  or token param or clientKeyData or ClientCertificateData"),
 		}, {
 			name: "cluster with missing cadata",
 			res: &v1alpha1.PipelineResource{
@@ -135,13 +140,28 @@ func TestResourceValidation_Invalid(t *testing.T) {
 				},
 			},
 			want: apis.ErrInvalidValue("spec.type", "not-supported"),
+		}, {
+			name: "missing spec",
+			res:  &v1alpha1.PipelineResource{},
+			want: apis.ErrMissingField("spec.type"),
+		}, {
+			name: "pull request with invalid field name in secrets",
+			res: &v1alpha1.PipelineResource{
+				Spec: v1alpha1.PipelineResourceSpec{
+					Type: v1alpha1.PipelineResourceTypePullRequest,
+					SecretParams: []v1alpha1.SecretParam{{
+						FieldName: "INVALID_FIELD_NAME",
+					}},
+				},
+			},
+			want: apis.ErrInvalidValue("invalid field name \"INVALID_FIELD_NAME\" in secret parameter. Expected \"authToken\"", "spec.secrets.fieldName"),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.res.Validate(context.Background())
 			if d := cmp.Diff(tt.want.Error(), err.Error()); d != "" {
-				t.Errorf("Didn't get expected error for %s (-want, +got) = %v", tt.name, d)
+				t.Errorf("Didn't get expected error for %s %s", tt.name, diff.PrintWantGot(d))
 			}
 		})
 	}
@@ -167,6 +187,10 @@ func TestClusterResourceValidation_Valid(t *testing.T) {
 						Name: "username", Value: "admin",
 					}, {
 						Name: "token", Value: "my-token",
+					}, {
+						Name: "clientKeyData", Value: "Y2xpZW50LWtleS1kYXRh",
+					}, {
+						Name: "clientCertificateData", Value: "Y2xpZW50LWNlcnRpZmljYXRlLWRhdGE=",
 					}},
 				},
 			},
@@ -187,6 +211,14 @@ func TestClusterResourceValidation_Valid(t *testing.T) {
 					}, {
 						Name: "insecure", Value: "true",
 					}},
+				},
+			},
+		},
+		{
+			name: "specify pullrequest with no secrets",
+			res: &v1alpha1.PipelineResource{
+				Spec: v1alpha1.PipelineResourceSpec{
+					Type: v1alpha1.PipelineResourceTypePullRequest,
 				},
 			},
 		},

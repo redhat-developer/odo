@@ -22,26 +22,16 @@ package test
 import (
 	"bytes"
 	"flag"
-	"fmt"
 	"os"
 	"os/user"
 	"path"
-	"sync"
 	"text/template"
+	"time"
 
-	_ "github.com/golang/glog" // Needed if glog and klog are to coexist
-	"k8s.io/klog"
 	"knative.dev/pkg/test/logging"
 )
 
-const (
-	// The recommended default log level https://github.com/kubernetes/community/blob/master/contributors/devel/sig-instrumentation/logging.md
-	klogDefaultLogLevel = "2"
-)
-
 var (
-	flagsSetupOnce = &sync.Once{}
-	klogFlags      = flag.NewFlagSet("klog", flag.ExitOnError)
 	// Flags holds the command line flags or defaults for settings in the user's environment.
 	// See EnvironmentFlags for a list of supported fields.
 	Flags = initializeFlags()
@@ -49,14 +39,15 @@ var (
 
 // EnvironmentFlags define the flags that are needed to run the e2e tests.
 type EnvironmentFlags struct {
-	Cluster         string // K8s cluster (defaults to cluster in kubeconfig)
-	Kubeconfig      string // Path to kubeconfig (defaults to ./kube/config)
-	Namespace       string // K8s namespace (blank by default, to be overwritten by test suite)
-	IngressEndpoint string // Host to use for ingress endpoint
-	LogVerbose      bool   // Enable verbose logging
-	ImageTemplate   string // Template to build the image reference (defaults to {{.Repository}}/{{.Name}}:{{.Tag}})
-	DockerRepo      string // Docker repo (defaults to $KO_DOCKER_REPO)
-	Tag             string // Tag for test images
+	Cluster              string        // K8s cluster (defaults to cluster in kubeconfig)
+	Kubeconfig           string        // Path to kubeconfig (defaults to ./kube/config)
+	Namespace            string        // K8s namespace (blank by default, to be overwritten by test suite)
+	IngressEndpoint      string        // Host to use for ingress endpoint
+	ImageTemplate        string        // Template to build the image reference (defaults to {{.Repository}}/{{.Name}}:{{.Tag}})
+	DockerRepo           string        // Docker repo (defaults to $KO_DOCKER_REPO)
+	Tag                  string        // Tag for test images
+	SpoofRequestInterval time.Duration // SpoofRequestInterval is the interval between requests in SpoofingClient
+	SpoofRequestTimeout  time.Duration // SpoofRequestTimeout is the timeout for polling requests in SpoofingClient
 }
 
 func initializeFlags() *EnvironmentFlags {
@@ -83,11 +74,14 @@ func initializeFlags() *EnvironmentFlags {
 
 	flag.StringVar(&f.IngressEndpoint, "ingressendpoint", "", "Provide a static endpoint url to the ingress server used during tests.")
 
-	flag.BoolVar(&f.LogVerbose, "logverbose", false,
-		"Set this flag to true if you would like to see verbose logging.")
-
 	flag.StringVar(&f.ImageTemplate, "imagetemplate", "{{.Repository}}/{{.Name}}:{{.Tag}}",
 		"Provide a template to generate the reference to an image from the test. Defaults to `{{.Repository}}/{{.Name}}:{{.Tag}}`.")
+
+	flag.DurationVar(&f.SpoofRequestInterval, "spoofinterval", 1*time.Second,
+		"Provide an interval between requests for the SpoofingClient")
+
+	flag.DurationVar(&f.SpoofRequestTimeout, "spooftimeout", 5*time.Minute,
+		"Provide a request timeout for the SpoofingClient")
 
 	defaultRepo := os.Getenv("KO_DOCKER_REPO")
 	flag.StringVar(&f.DockerRepo, "dockerrepo", defaultRepo,
@@ -95,45 +89,12 @@ func initializeFlags() *EnvironmentFlags {
 
 	flag.StringVar(&f.Tag, "tag", "latest", "Provide the version tag for the test images.")
 
-	klog.InitFlags(klogFlags)
-	flag.Set("v", klogDefaultLogLevel)
-	flag.Set("alsologtostderr", "true")
-
 	return &f
 }
 
-func printFlags() {
-	fmt.Print("Test Flags: {")
-	flag.CommandLine.VisitAll(func(f *flag.Flag) {
-		fmt.Printf("'%s': '%s', ", f.Name, f.Value.String())
-	})
-	fmt.Println("}")
-}
-
-// SetupLoggingFlags initializes the logging libraries at runtime
+// TODO(coryrc): Remove once other repos are moved to call logging.InitializeLogger() directly
 func SetupLoggingFlags() {
-	flagsSetupOnce.Do(func() {
-		// Sync the glog flags to klog
-		flag.CommandLine.VisitAll(func(f1 *flag.Flag) {
-			f2 := klogFlags.Lookup(f1.Name)
-			if f2 != nil {
-				value := f1.Value.String()
-				f2.Value.Set(value)
-			}
-		})
-		if Flags.LogVerbose {
-			// If klog verbosity is not set to a non-default value (via "-args -v=X"),
-			if flag.CommandLine.Lookup("v").Value.String() == klogDefaultLogLevel {
-				// set up verbosity for klog so round_trippers.go prints:
-				//   URL, request headers, response headers, and partial response body
-				// See levels in vendor/k8s.io/client-go/transport/round_trippers.go:DebugWrappers for other options
-				klogFlags.Set("v", "8")
-				flag.Set("v", "8") // This is for glog, since glog=>klog sync is one-time
-			}
-			printFlags()
-		}
-		logging.InitializeLogger(Flags.LogVerbose)
-	})
+	logging.InitializeLogger()
 }
 
 // ImagePath is a helper function to transform an image name into an image reference that can be pulled.

@@ -19,10 +19,9 @@ package git
 import (
 	"fmt"
 	"path/filepath"
-	"regexp"
 	"strings"
 
-	"sigs.k8s.io/kustomize/v3/pkg/fs"
+	"sigs.k8s.io/kustomize/pkg/fs"
 )
 
 // Used as a temporary non-empty occupant of the cloneDir
@@ -39,36 +38,33 @@ type RepoSpec struct {
 	raw string
 
 	// Host, e.g. github.com
-	Host string
+	host string
 
 	// orgRepo name (organization/repoName),
 	// e.g. kubernetes-sigs/kustomize
-	OrgRepo string
+	orgRepo string
 
-	// Dir where the orgRepo is cloned to.
-	Dir fs.ConfirmedDir
+	// ConfirmedDir where the orgRepo is cloned to.
+	cloneDir fs.ConfirmedDir
 
 	// Relative path in the repository, and in the cloneDir,
 	// to a Kustomization.
-	Path string
+	path string
 
 	// Branch or tag reference.
-	Ref string
-
-	// e.g. .git or empty in case of _git is present
-	GitSuffix string
+	ref string
 }
 
 // CloneSpec returns a string suitable for "git clone {spec}".
 func (x *RepoSpec) CloneSpec() string {
-	if isAzureHost(x.Host) || isAWSHost(x.Host) {
-		return x.Host + x.OrgRepo
+	if isAzureHost(x.host) || isAWSHost(x.host) {
+		return x.host + x.orgRepo
 	}
-	return x.Host + x.OrgRepo + x.GitSuffix
+	return x.host + x.orgRepo + gitSuffix
 }
 
 func (x *RepoSpec) CloneDir() fs.ConfirmedDir {
-	return x.Dir
+	return x.cloneDir
 }
 
 func (x *RepoSpec) Raw() string {
@@ -76,11 +72,11 @@ func (x *RepoSpec) Raw() string {
 }
 
 func (x *RepoSpec) AbsPath() string {
-	return x.Dir.Join(x.Path)
+	return x.cloneDir.Join(x.path)
 }
 
 func (x *RepoSpec) Cleaner(fSys fs.FileSystem) func() error {
-	return func() error { return fSys.RemoveAll(x.Dir.String()) }
+	return func() error { return fSys.RemoveAll(x.cloneDir.String()) }
 }
 
 // From strings like git@github.com:someOrg/someRepo.git or
@@ -90,7 +86,7 @@ func NewRepoSpecFromUrl(n string) (*RepoSpec, error) {
 	if filepath.IsAbs(n) {
 		return nil, fmt.Errorf("uri looks like abs path: %s", n)
 	}
-	host, orgRepo, path, gitRef, gitSuffix := parseGitUrl(n)
+	host, orgRepo, path, gitRef := parseGithubUrl(n)
 	if orgRepo == "" {
 		return nil, fmt.Errorf("url lacks orgRepo: %s", n)
 	}
@@ -98,33 +94,22 @@ func NewRepoSpecFromUrl(n string) (*RepoSpec, error) {
 		return nil, fmt.Errorf("url lacks host: %s", n)
 	}
 	return &RepoSpec{
-		raw: n, Host: host, OrgRepo: orgRepo,
-		Dir: notCloned, Path: path, Ref: gitRef, GitSuffix: gitSuffix}, nil
+		raw: n, host: host, orgRepo: orgRepo,
+		cloneDir: notCloned, path: path, ref: gitRef}, nil
 }
 
 const (
-	refQuery      = "?ref="
-	refQueryRegex = "\\?(version|ref)="
-	gitSuffix     = ".git"
-	gitDelimiter  = "_git/"
+	refQuery  = "?ref="
+	gitSuffix = ".git"
 )
 
 // From strings like git@github.com:someOrg/someRepo.git or
 // https://github.com/someOrg/someRepo?ref=someHash, extract
 // the parts.
-func parseGitUrl(n string) (
-	host string, orgRepo string, path string, gitRef string, gitSuff string) {
-
-	if strings.Contains(n, gitDelimiter) {
-		index := strings.Index(n, gitDelimiter)
-		// Adding _git/ to host
-		host = normalizeGitHostSpec(n[:index+len(gitDelimiter)])
-		orgRepo = strings.Split(strings.Split(n[index+len(gitDelimiter):], "/")[0], "?")[0]
-		path, gitRef = peelQuery(n[index+len(gitDelimiter)+len(orgRepo):])
-		return
-	}
+func parseGithubUrl(n string) (
+	host string, orgRepo string, path string, gitRef string) {
 	host, n = parseHostSpec(n)
-	gitSuff = gitSuffix
+
 	if strings.Contains(n, gitSuffix) {
 		index := strings.Index(n, gitSuffix)
 		orgRepo = n[0:index]
@@ -135,27 +120,24 @@ func parseGitUrl(n string) (
 
 	i := strings.Index(n, "/")
 	if i < 1 {
-		return "", "", "", "", ""
+		return "", "", "", ""
 	}
 	j := strings.Index(n[i+1:], "/")
 	if j >= 0 {
 		j += i + 1
 		orgRepo = n[:j]
 		path, gitRef = peelQuery(n[j+1:])
-		return
+	} else {
+		path = ""
+		orgRepo, gitRef = peelQuery(n)
 	}
-	path = ""
-	orgRepo, gitRef = peelQuery(n)
-	return host, orgRepo, path, gitRef, gitSuff
+	return
 }
 
 func peelQuery(arg string) (string, string) {
-
-	r, _ := regexp.Compile(refQueryRegex)
-	j := r.FindStringIndex(arg)
-
-	if len(j) > 0 {
-		return arg[:j[0]], arg[j[0]+len(r.FindString(arg)):]
+	j := strings.Index(arg, refQuery)
+	if j >= 0 {
+		return arg[:j], arg[j+len(refQuery):]
 	}
 	return arg, ""
 }

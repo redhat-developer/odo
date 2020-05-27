@@ -20,6 +20,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	v1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	"github.com/tektoncd/pipeline/test/diff"
 )
 
 func TestParseMessage(t *testing.T) {
@@ -28,9 +29,10 @@ func TestParseMessage(t *testing.T) {
 		want      []v1alpha1.PipelineResourceResult
 	}{{
 		desc: "valid message",
-		msg:  `[{"digest":"foo"},{"key":"foo","value":"bar"}]`,
+		msg:  `[{"key": "digest","value":"hereisthedigest"},{"key":"foo","value":"bar"}]`,
 		want: []v1alpha1.PipelineResourceResult{{
-			Digest: "foo",
+			Key:   "digest",
+			Value: "hereisthedigest",
 		}, {
 			Key:   "foo",
 			Value: "bar",
@@ -72,7 +74,7 @@ func TestParseMessage(t *testing.T) {
 				t.Fatalf("ParseMessage: %v", err)
 			}
 			if d := cmp.Diff(c.want, got); d != "" {
-				t.Fatalf("ParseMessage(-want,+got): %s", d)
+				t.Fatalf("ParseMessage %s", diff.PrintWantGot(d))
 			}
 		})
 	}

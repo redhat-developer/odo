@@ -23,8 +23,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
-	tb "github.com/tektoncd/pipeline/test/builder"
+	v1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -60,26 +59,25 @@ func TestSidecarTaskSupport(t *testing.T) {
 		t.Run(test.desc, func(t *testing.T) {
 			sidecarTaskName := fmt.Sprintf("%s-%d", sidecarTaskName, i)
 			sidecarTaskRunName := fmt.Sprintf("%s-%d", sidecarTaskRunName, i)
-			task := tb.Task(sidecarTaskName, namespace,
-				tb.TaskSpec(
-					tb.Step(
-						"busybox:1.31.0-musl",
-						tb.StepName(primaryContainerName),
-						tb.StepCommand(test.stepCommand...),
-					),
-					tb.Sidecar(
-						sidecarContainerName,
-						"busybox:1.31.0-musl",
-						tb.Command(test.sidecarCommand...),
-					),
-				),
-			)
+			task := &v1beta1.Task{
+				ObjectMeta: metav1.ObjectMeta{Name: sidecarTaskName, Namespace: namespace},
+				Spec: v1beta1.TaskSpec{
+					Steps: []v1beta1.Step{{
+						Container: corev1.Container{Name: primaryContainerName, Image: "busybox:1.31.0-musl", Command: test.stepCommand},
+					}},
+					Sidecars: []v1beta1.Sidecar{{
+						Container: corev1.Container{Name: sidecarContainerName, Image: "busybox:1.31.0-musl", Command: test.sidecarCommand},
+					}},
+				},
+			}
 
-			taskRun := tb.TaskRun(sidecarTaskRunName, namespace,
-				tb.TaskRunSpec(tb.TaskRunTaskRef(sidecarTaskName),
-					tb.TaskRunTimeout(1*time.Minute),
-				),
-			)
+			taskRun := &v1beta1.TaskRun{
+				ObjectMeta: metav1.ObjectMeta{Name: sidecarTaskRunName, Namespace: namespace},
+				Spec: v1beta1.TaskRunSpec{
+					TaskRef: &v1beta1.TaskRef{Name: sidecarTaskName},
+					Timeout: &metav1.Duration{Duration: 1 * time.Minute},
+				},
+			}
 
 			t.Logf("Creating Task %q", sidecarTaskName)
 			if _, err := clients.TaskClient.Create(task); err != nil {
@@ -91,13 +89,15 @@ func TestSidecarTaskSupport(t *testing.T) {
 				t.Errorf("Failed to create TaskRun %q: %v", sidecarTaskRunName, err)
 			}
 
-			var podName string
-			if err := WaitForTaskRunState(clients, sidecarTaskRunName, func(tr *v1alpha1.TaskRun) (bool, error) {
-				podName = tr.Status.PodName
-				return TaskRunSucceed(sidecarTaskRunName)(tr)
-			}, "TaskRunSucceed"); err != nil {
+			if err := WaitForTaskRunState(clients, sidecarTaskRunName, Succeed(sidecarTaskRunName), "TaskRunSucceed"); err != nil {
 				t.Errorf("Error waiting for TaskRun %q to finish: %v", sidecarTaskRunName, err)
 			}
+
+			tr, err := clients.TaskRunClient.Get(sidecarTaskRunName, metav1.GetOptions{})
+			if err != nil {
+				t.Errorf("Error getting Taskrun: %v", err)
+			}
+			podName := tr.Status.PodName
 
 			if err := WaitForPodState(clients, podName, namespace, func(pod *corev1.Pod) (bool, error) {
 				terminatedCount := 0
@@ -138,6 +138,25 @@ func TestSidecarTaskSupport(t *testing.T) {
 
 			if !primaryTerminated || !sidecarTerminated {
 				t.Errorf("Either the primary or sidecar containers did not terminate")
+			}
+
+			trCheckSidecarStatus, err := clients.TaskRunClient.Get(sidecarTaskRunName, metav1.GetOptions{})
+			if err != nil {
+				t.Errorf("Error getting TaskRun: %v", err)
+			}
+
+			sidecarFromStatus := trCheckSidecarStatus.Status.Sidecars[0]
+
+			// Check if Sidecar ContainerName is present for SidecarStatus
+			if sidecarFromStatus.ContainerName != fmt.Sprintf("sidecar-%s", sidecarContainerName) {
+				t.Errorf("Sidecar ContainerName should be: %s", sidecarContainerName)
+			}
+
+			// Check if Terminated status is present for SidecarStatus
+			if trCheckSidecarStatus.Name == "sidecar-test-task-run-1" && sidecarFromStatus.Terminated == nil {
+				t.Errorf("TaskRunStatus: Sidecar container has a nil Terminated status but non-nil is expected.")
+			} else if trCheckSidecarStatus.Name == "sidecar-test-task-run-1" && sidecarFromStatus.Terminated.Reason != "Completed" {
+				t.Errorf("TaskRunStatus: Sidecar container has a nil Terminated reason of %s but should be Completed", sidecarFromStatus.Terminated.Reason)
 			}
 		})
 	}

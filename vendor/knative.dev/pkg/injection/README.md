@@ -15,6 +15,7 @@ import (
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
+	kindreconciler "knative.dev/<repo>/pkg/client/injection/reconciler/<clientgroup>/<version>/<resource>"
 )
 
 func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl {
@@ -22,10 +23,10 @@ func NewController(ctx context.Context, cmw configmap.Watcher) *controller.Impl 
 
 	// TODO(you): Access informers
 
-	c := &Reconciler{
+	r := &Reconciler{
 		// TODO(you): Pass listers, clients, and other stuff.
 	}
-	impl := controller.NewImpl(c, logger, "NameOfController")
+	impl := kindreconciler.NewImpl(ctx, r)
 
 	// TODO(you): Set up event handlers.
 
@@ -291,7 +292,7 @@ required = [
 
 ## Generated Reconciler Responsibilities
 
-The goal of generating the reconcilers is to provide the controller implementor
+The goal of generating the reconcilers is to provide the controller implementer
 a strongly typed interface, and ensure correct reconciler behaviour around
 status updates, Kubernetes event creation, and queue management.
 
@@ -316,8 +317,8 @@ Optionally, support for finalizers:
 ```
 
 - `ReconcileKind` is only called if the resource's deletion timestamp is empty.
-- `FinalizeKind` is optional, and if implemnted by the reconciler will be called
-  when the resource's deletion timestamp is set.
+- `FinalizeKind` is optional, and if implemented by the reconciler will be
+  called when the resource's deletion timestamp is set.
 
 The responsibility and consequences of using the generated
 `ReconcileKind(resource)` method are as follows:
@@ -351,13 +352,11 @@ The responsibility and consequences of using the generated
 
 Future features to be considered:
 
-- Leverage `configStore` and specifically `ctx = r.configStore.ToContext(ctx)`
-  inside `Reconcile`.
-- Resulting changes from `Reconcile` calling `ReconcileKind(ctx, resource)`:
-  - If `resource.metadata.labels` or `.annotations` are updated, `Reconcile`
-    will synchronize it back to the API Server.
+- Document how we leverage `configStore` and specifically
+  `ctx = r.configStore.ToContext(ctx)` inside `Reconcile`.
 - Adjust `+genreconciler` to allow for generated reconcilers to be made without
   annotating the type struct.
+- Add class-based annotation filtering.
 
 ### ConfigStore
 
@@ -398,7 +397,7 @@ kindreconciler "knative.dev/<repo>/pkg/client/injection/reconciler/<clientgroup>
 
 Controller related artifacts:
 
-- `NewImpl` - gets an injection based client and lister for <kind>, sets up
+- `NewImpl` - gets an injection based client and lister for `<kind>`, sets up
   Kubernetes Event recorders, and delegates to `controller.NewImpl` for queue
   management.
 
@@ -409,7 +408,7 @@ impl := reconciler.NewImpl(ctx, reconcilerInstance)
 Reconciler related artifacts:
 
 - `Interface` - defines the strongly typed interfaces to be implemented by a
-  controller reconciling <kind>.
+  controller reconciling `<kind>`.
 
 ```go
 // Check that our Reconciler implements Interface
@@ -417,11 +416,62 @@ var _ addressableservicereconciler.Interface = (*Reconciler)(nil)
 ```
 
 - `Finalizer` - defines the strongly typed interfaces to be implemented by a
-  controller finalizing <kind>.
+  controller finalizing `<kind>`.
 
 ```go
 // Check that our Reconciler implements Interface
 var _ addressableservicereconciler.Finalizer = (*Reconciler)(nil)
+```
+
+#### Annotation based class filters
+
+Sometimes a reconciler only wants to reconcile a class of resource identified by
+a special annotation on the Custom Resource.
+
+This behavior can be enabled in the generators by adding the annotation class
+key to the type struct:
+
+```go
+// +genreconciler:class=example.com/filter.class
+```
+
+The `genreconciler` generator code will now have the addition of
+`classValue string` to `NewImpl` and `NewReconciler` (for tests):
+
+```go
+NewImpl(ctx context.Context, r Interface, classValue string, optionsFns ...controller.OptionsFn) *controller.Impl
+```
+
+```go
+NewReconciler(ctx context.Context, logger *zap.SugaredLogger, client versioned.Interface, lister pubv1alpha1.BarLister, recorder record.EventRecorder, r Interface, classValue string, options ...controller.Options) controller.Reconciler
+```
+
+`ReconcileKind` and `FinalizeKind` will NOT be called for resources that DO NOT
+have the provided `+genreconciler:class=<key>` key annotation. Additionally the
+value of the `<key>` annotation on a resource must match the value provided to
+`NewImpl` (or `NewReconcile`) for `ReconcileKind` or `FinalizeKind` to be called
+for that resource.
+
+#### Annotation based common logic
+
+**krshaped=true may become the default if omitted in the future**
+
+Reconcilers can handle common logic for resources that conform to the KRShaped
+interface. This allows the generated code to automatically increment
+ObservedGeneration.
+
+```go
+// +genreconciler:krshapedlogic=true
+```
+
+Setting this annotation will emit the following in the generated reconciler.
+
+```go
+reconciler.PreProcessReconcile(ctx, resource)
+
+reconcileEvent = r.reconciler.ReconcileKind(ctx, resource)
+
+reconciler.PostProcessReconcile(ctx, resource)
 ```
 
 #### Stubs

@@ -83,6 +83,14 @@
       "Link": "https://github.com/hubot"
     }
   ],
+  "Reviewers": [
+    {
+      "ID": 1,
+      "Login": "other_user",
+      "Avatar": "https://github.com/images/error/other_user_happy.gif",
+      "Link": "https://github.com/other_user"
+    }
+  ],
   "Created": "2011-01-26T19:01:12Z",
   "Updated": "2011-01-26T19:01:12Z"
 }

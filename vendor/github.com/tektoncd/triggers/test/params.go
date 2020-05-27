@@ -16,12 +16,10 @@ limitations under the License.
 
 package test
 
-import (
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
-)
+import "github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
 
 // CompareParams can be used with comparison options such as `cmpopts.SortSlices`
 // so we can ignore the ordering of params.
-func CompareParams(x, y pipelinev1.Param) bool {
+func CompareParams(x, y v1alpha1.Param) bool {
 	return x.Name < y.Name
 }

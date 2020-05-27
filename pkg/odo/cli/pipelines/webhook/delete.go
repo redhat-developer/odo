@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	backend "github.com/openshift/odo/pkg/pipelines/webhook"
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
 const deleteRecommendedCommandName = "delete"

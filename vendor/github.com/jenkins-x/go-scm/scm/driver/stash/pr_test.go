@@ -41,6 +41,42 @@ func TestPullFind(t *testing.T) {
 	}
 }
 
+func TestPullUpdate(t *testing.T) {
+	defer gock.Off()
+
+	gock.New("http://example.com:7990").
+		Get("rest/api/1.0/projects/PRJ/repos/my-repo/pull-requests/1").
+		Reply(200).
+		Type("application/json").
+		File("testdata/pr.json")
+
+	gock.New("http://example.com:7990").
+		Put("rest/api/1.0/projects/PRJ/repos/my-repo/pull-requests/1").
+		File("testdata/pr_update.json").
+		Reply(200).
+		Type("application/json").
+		File("testdata/pr.json")
+
+	client, _ := New("http://example.com:7990")
+	input := &scm.PullRequestInput{
+		Title: "A new title",
+		Body:  "A new description",
+	}
+	got, _, err := client.PullRequests.Update(context.Background(), "PRJ/my-repo", 1, input)
+	if err != nil {
+		t.Error(err)
+	}
+
+	want := new(scm.PullRequest)
+	raw, _ := ioutil.ReadFile("testdata/pr.json.golden")
+	json.Unmarshal(raw, &want)
+
+	if diff := cmp.Diff(got, want); diff != "" {
+		t.Errorf("Unexpected Results")
+		t.Log(diff)
+	}
+}
+
 func TestPullFindComment(t *testing.T) {
 	defer gock.Off()
 
@@ -63,6 +99,52 @@ func TestPullFindComment(t *testing.T) {
 	if diff := cmp.Diff(got, want); diff != "" {
 		t.Errorf("Unexpected Results")
 		t.Log(diff)
+	}
+}
+
+func TestPullListComments(t *testing.T) {
+	defer gock.Off()
+
+	gock.New("http://example.com:7990").
+		Get("rest/api/1.0/projects/PRJ/repos/my-repo/pull-requests/1/activities").
+		Reply(200).
+		Type("application/json").
+		File("testdata/pr_comments.json")
+
+	client, _ := New("http://example.com:7990")
+	got, _, err := client.PullRequests.ListComments(context.Background(), "PRJ/my-repo", 1, scm.ListOptions{})
+	if err != nil {
+		t.Error(err)
+	}
+
+	want := []*scm.Comment{}
+	raw, _ := ioutil.ReadFile("testdata/pr_comments.json.golden")
+	json.Unmarshal(raw, &want)
+
+	if diff := cmp.Diff(got, want); diff != "" {
+		t.Errorf("Unexpected Results")
+		t.Log(diff)
+	}
+}
+
+func TestPullDeleteComment(t *testing.T) {
+	defer gock.Off()
+
+	gock.New("http://example.com:7990").
+		Get("rest/api/1.0/projects/PRJ/repos/my-repo/pull-requests/1/comments/1").
+		Reply(200).
+		Type("application/json").
+		File("testdata/pr_comment.json")
+
+	gock.New("http://example.com:7990").
+		Delete("rest/api/1.0/projects/PRJ/repos/my-repo/pull-requests/1/comments/1").
+		MatchParam("version", "5").
+		Reply(204)
+
+	client, _ := New("http://example.com:7990")
+	_, err := client.PullRequests.DeleteComment(context.Background(), "PRJ/my-repo", 1, 1)
+	if err != nil {
+		t.Error(err)
 	}
 }
 
@@ -150,6 +232,22 @@ func TestPullClose(t *testing.T) {
 	}
 }
 
+func TestPullReopen(t *testing.T) {
+	defer gock.Off()
+
+	gock.New("http://example.com:7990").
+		Post("rest/api/1.0/projects/PRJ/repos/my-repo/pull-requests/1/reopen").
+		Reply(200).
+		Type("application/json").
+		File("testdata/pr.json")
+
+	client, _ := New("http://example.com:7990")
+	_, err := client.PullRequests.Reopen(context.Background(), "PRJ/my-repo", 1)
+	if err != nil {
+		t.Error(err)
+	}
+}
+
 func TestPullCreateComment(t *testing.T) {
 	defer gock.Off()
 
@@ -161,6 +259,39 @@ func TestPullCreateComment(t *testing.T) {
 
 	client, _ := New("http://example.com:7990")
 	got, _, err := client.PullRequests.CreateComment(context.Background(), "PRJ/my-repo", 1, &scm.CommentInput{
+		Body: "LGTM",
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	want := new(scm.Comment)
+	raw, _ := ioutil.ReadFile("testdata/pr_comment.json.golden")
+	json.Unmarshal(raw, &want)
+
+	if diff := cmp.Diff(got, want); diff != "" {
+		t.Errorf("Unexpected Results")
+		t.Log(diff)
+	}
+}
+
+func TestPullEditComment(t *testing.T) {
+	defer gock.Off()
+
+	gock.New("http://example.com:7990").
+		Get("rest/api/1.0/projects/PRJ/repos/my-repo/pull-requests/1/comments/1").
+		Reply(200).
+		Type("application/json").
+		File("testdata/pr_comment.json")
+
+	gock.New("http://example.com:7990").
+		Put("rest/api/1.0/projects/PRJ/repos/my-repo/pull-requests/1/comments/1").
+		Reply(200).
+		Type("application/json").
+		File("testdata/pr_comment.json")
+
+	client, _ := New("http://example.com:7990")
+	got, _, err := client.PullRequests.EditComment(context.Background(), "PRJ/my-repo", 1, 1, &scm.CommentInput{
 		Body: "LGTM",
 	})
 	if err != nil {

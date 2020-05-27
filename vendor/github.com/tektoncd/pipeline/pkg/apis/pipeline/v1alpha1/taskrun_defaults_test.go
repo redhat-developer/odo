@@ -25,6 +25,7 @@ import (
 	"github.com/tektoncd/pipeline/pkg/apis/config"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	"github.com/tektoncd/pipeline/pkg/contexts"
+	"github.com/tektoncd/pipeline/test/diff"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	logtesting "knative.dev/pkg/logging/testing"
@@ -115,8 +116,8 @@ func TestTaskRunSpec_SetDefaults(t *testing.T) {
 			ctx := context.Background()
 			tc.trs.SetDefaults(ctx)
 
-			if diff := cmp.Diff(tc.want, tc.trs); diff != "" {
-				t.Errorf("Mismatch of TaskRunSpec: %s", diff)
+			if d := cmp.Diff(tc.want, tc.trs); d != "" {
+				t.Errorf("Mismatch of TaskRunSpec %s", diff.PrintWantGot(d))
 			}
 		})
 	}
@@ -192,7 +193,7 @@ func TestTaskRunDefaulting(t *testing.T) {
 			s := config.NewStore(logtesting.TestLogger(t))
 			s.OnConfigChanged(&corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: config.DefaultsConfigName,
+					Name: config.GetDefaultsConfigName(),
 				},
 				Data: map[string]string{
 					"default-timeout-minutes": "5",
@@ -221,7 +222,7 @@ func TestTaskRunDefaulting(t *testing.T) {
 			s := config.NewStore(logtesting.TestLogger(t))
 			s.OnConfigChanged(&corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: config.DefaultsConfigName,
+					Name: config.GetDefaultsConfigName(),
 				},
 				Data: map[string]string{
 					"default-timeout-minutes": "5",
@@ -250,7 +251,7 @@ func TestTaskRunDefaulting(t *testing.T) {
 			s := config.NewStore(logtesting.TestLogger(t))
 			s.OnConfigChanged(&corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: config.DefaultsConfigName,
+					Name: config.GetDefaultsConfigName(),
 				},
 				Data: map[string]string{
 					"default-timeout-minutes":        "5",
@@ -282,7 +283,7 @@ func TestTaskRunDefaulting(t *testing.T) {
 			s := config.NewStore(logtesting.TestLogger(t))
 			s.OnConfigChanged(&corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: config.DefaultsConfigName,
+					Name: config.GetDefaultsConfigName(),
 				},
 				Data: map[string]string{
 					"default-timeout-minutes":        "5",
@@ -317,7 +318,7 @@ func TestTaskRunDefaulting(t *testing.T) {
 			s := config.NewStore(logtesting.TestLogger(t))
 			s.OnConfigChanged(&corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: config.DefaultsConfigName,
+					Name: config.GetDefaultsConfigName(),
 				},
 				Data: map[string]string{
 					"default-timeout-minutes": "5",
@@ -358,7 +359,7 @@ func TestTaskRunDefaulting(t *testing.T) {
 			s := config.NewStore(logtesting.TestLogger(t))
 			s.OnConfigChanged(&corev1.ConfigMap{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: config.DefaultsConfigName,
+					Name: config.GetDefaultsConfigName(),
 				},
 				Data: map[string]string{
 					"default-timeout-minutes": "5",
@@ -378,7 +379,7 @@ func TestTaskRunDefaulting(t *testing.T) {
 			}
 			got.SetDefaults(ctx)
 			if d := cmp.Diff(tc.want, got, ignoreUnexportedResources); d != "" {
-				t.Errorf("SetDefaults (-want, +got) = %v", d)
+				t.Errorf("SetDefaults %s", diff.PrintWantGot(d))
 			}
 		})
 	}

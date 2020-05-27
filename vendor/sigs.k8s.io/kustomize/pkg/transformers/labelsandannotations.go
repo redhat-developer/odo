@@ -20,8 +20,8 @@ import (
 	"errors"
 	"fmt"
 
-	"sigs.k8s.io/kustomize/v3/pkg/resmap"
-	"sigs.k8s.io/kustomize/v3/pkg/transformers/config"
+	"sigs.k8s.io/kustomize/pkg/resmap"
+	"sigs.k8s.io/kustomize/pkg/transformers/config"
 )
 
 // mapTransformer applies a string->string map to fieldSpecs.
@@ -30,23 +30,23 @@ type mapTransformer struct {
 	fieldSpecs []config.FieldSpec
 }
 
-var _ resmap.Transformer = &mapTransformer{}
+var _ Transformer = &mapTransformer{}
 
 // NewLabelsMapTransformer constructs a mapTransformer.
 func NewLabelsMapTransformer(
-	m map[string]string, fs []config.FieldSpec) (resmap.Transformer, error) {
+	m map[string]string, fs []config.FieldSpec) (Transformer, error) {
 	return NewMapTransformer(fs, m)
 }
 
 // NewAnnotationsMapTransformer construct a mapTransformer.
 func NewAnnotationsMapTransformer(
-	m map[string]string, fs []config.FieldSpec) (resmap.Transformer, error) {
+	m map[string]string, fs []config.FieldSpec) (Transformer, error) {
 	return NewMapTransformer(fs, m)
 }
 
 // NewMapTransformer construct a mapTransformer.
 func NewMapTransformer(
-	pc []config.FieldSpec, m map[string]string) (resmap.Transformer, error) {
+	pc []config.FieldSpec, m map[string]string) (Transformer, error) {
 	if m == nil {
 		return NewNoOpTransformer(), nil
 	}
@@ -59,14 +59,13 @@ func NewMapTransformer(
 // Transform apply each <key, value> pair in the mapTransformer to the
 // fields specified in mapTransformer.
 func (o *mapTransformer) Transform(m resmap.ResMap) error {
-	for _, r := range m.Resources() {
+	for id := range m {
+		objMap := m[id].Map()
 		for _, path := range o.fieldSpecs {
-			if !r.OrgId().IsSelected(&path.Gvk) {
+			if !id.Gvk().IsSelected(&path.Gvk) {
 				continue
 			}
-			err := MutateField(
-				r.Map(), path.PathSlice(),
-				path.CreateIfNotPresent, o.addMap)
+			err := mutateField(objMap, path.PathSlice(), path.CreateIfNotPresent, o.addMap)
 			if err != nil {
 				return err
 			}
@@ -77,9 +76,7 @@ func (o *mapTransformer) Transform(m resmap.ResMap) error {
 
 func (o *mapTransformer) addMap(in interface{}) (interface{}, error) {
 	m, ok := in.(map[string]interface{})
-	if in == nil {
-		m = map[string]interface{}{}
-	} else if !ok {
+	if !ok {
 		return nil, fmt.Errorf("%#v is expected to be %T", in, m)
 	}
 	for k, v := range o.m {

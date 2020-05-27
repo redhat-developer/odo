@@ -6,7 +6,7 @@ The example below modifies an `Ingress` object with such a patch.
 
 Make a `kustomization` containing an ingress resource.
 
-<!-- @createIngress @testAgainstLatestRelease -->
+<!-- @createIngress @test -->
 ```
 DEMO_HOME=$(mktemp -d)
 
@@ -16,7 +16,7 @@ resources:
 EOF
 
 cat <<EOF >$DEMO_HOME/ingress.yaml
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   name: my-ingress
@@ -36,7 +36,7 @@ Declare a JSON patch file to update two fields of the Ingress object:
 - change host from `foo.bar.com` to `foo.bar.io`
 - change servicePort from `80` to `8080`
 
-<!-- @addJsonPatch @testAgainstLatestRelease -->
+<!-- @addJsonPatch @test -->
 ```
 cat <<EOF >$DEMO_HOME/ingress_patch.json
 [
@@ -48,7 +48,7 @@ EOF
 
 You can also write the patch in YAML format. This example also shows the "add" operation:
 
-<!-- @addYamlPatch @testAgainstLatestRelease -->
+<!-- @addYamlPatch @test -->
 ```
 cat <<EOF >$DEMO_HOME/ingress_patch.yaml
 - op: replace
@@ -67,12 +67,12 @@ EOF
 
 Apply the patch by adding _patchesJson6902_ field in kustomization.yaml
 
-<!-- @applyJsonPatch @testAgainstLatestRelease -->
+<!-- @applyJsonPatch @test -->
 ```
 cat <<EOF >>$DEMO_HOME/kustomization.yaml
 patchesJson6902:
 - target:
-    group: networking.k8s.io
+    group: extensions
     version: v1beta1
     kind: Ingress
     name: my-ingress
@@ -81,14 +81,14 @@ EOF
 ```
 
 Running `kustomize build $DEMO_HOME`, in the output confirm that host has been updated correctly.
-<!-- @confirmHost @testAgainstLatestRelease -->
+<!-- @confirmHost @test -->
 ```
 test 1 == \
   $(kustomize build $DEMO_HOME | grep "host: foo.bar.io" | wc -l); \
   echo $?
 ```
 Running `kustomize build $DEMO_HOME`, in the output confirm that the servicePort has been updated correctly.
-<!-- @confirmServicePort @testAgainstLatestRelease -->
+<!-- @confirmServicePort @test -->
 ```
 test 1 == \
   $(kustomize build $DEMO_HOME | grep "servicePort: 8080" | wc -l); \
@@ -97,12 +97,12 @@ test 1 == \
 
 If the patch is YAML-formatted, it will be parsed correctly:
 
-<!-- @applyYamlPatch @testAgainstLatestRelease -->
+<!-- @applyYamlPatch @test -->
 ```
 cat <<EOF >>$DEMO_HOME/kustomization.yaml
 patchesJson6902:
 - target:
-    group: networking.k8s.io
+    group: extensions
     version: v1beta1
     kind: Ingress
     name: my-ingress
@@ -110,7 +110,7 @@ patchesJson6902:
 EOF
 ```
 
-<!-- @confirmYamlPatch @testAgainstLatestRelease -->
+<!-- @confirmYamlPatch @test -->
 ```
 test 1 == \
   $(kustomize build $DEMO_HOME | grep "path: /test" | wc -l); \

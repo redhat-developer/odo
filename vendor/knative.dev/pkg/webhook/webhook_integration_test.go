@@ -26,7 +26,7 @@ import (
 	"time"
 
 	kubeclient "knative.dev/pkg/client/injection/kube/client/fake"
-	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/secret/fake"
+	_ "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret/fake"
 	"knative.dev/pkg/system"
 
 	"golang.org/x/sync/errgroup"
@@ -48,7 +48,7 @@ func createResource(name string) *pkgtest.Resource {
 	}
 }
 
-const testTimeout = time.Duration(10 * time.Second)
+const testTimeout = 10 * time.Second
 
 func TestMissingContentType(t *testing.T) {
 	wh, serverURL, ctx, cancel, err := testSetup(t)
@@ -58,6 +58,7 @@ func TestMissingContentType(t *testing.T) {
 
 	eg, _ := errgroup.WithContext(ctx)
 	eg.Go(func() error { return wh.Run(ctx.Done()) })
+	wh.InformersHaveSynced()
 	defer func() {
 		cancel()
 		if err := eg.Wait(); err != nil {
@@ -111,6 +112,7 @@ func testEmptyRequestBody(t *testing.T, controller interface{}) {
 
 	eg, _ := errgroup.WithContext(ctx)
 	eg.Go(func() error { return wh.Run(ctx.Done()) })
+	wh.InformersHaveSynced()
 	defer func() {
 		cancel()
 		if err := eg.Wait(); err != nil {

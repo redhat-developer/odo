@@ -1,3 +1,19 @@
+/*
+Copyright 2019 The Tekton Authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package template
 
 import (
@@ -221,55 +237,82 @@ func TestRelaxedJSONPathExpression_Error(t *testing.T) {
 
 func TestFindTektonExpressions(t *testing.T) {
 	tcs := []struct {
-		in   string
-		want []string
+		in       string
+		want     []string
+		original []string
 	}{{
-		in:   "$(body.blah)",
-		want: []string{"$(body.blah)"},
+		in:       "$(body.blah)",
+		want:     []string{"$(body.blah)"},
+		original: []string{"$(body.blah)"},
 	}, {
-		in:   "$(body.blah)-$(header.*)",
-		want: []string{"$(body.blah)", "$(header.*)"},
+		in:       "$(body.blah)-$(header.*)",
+		want:     []string{"$(body.blah)", "$(header.*)"},
+		original: []string{"$(body.blah)", "$(header.*)"},
 	}, {
-		in:   "start:$(body.blah)//middle//$(header.one)-end",
-		want: []string{"$(body.blah)", "$(header.one)"},
+		in:       "start:$(body.blah)//middle//$(header.one)-end",
+		want:     []string{"$(body.blah)", "$(header.One)"},
+		original: []string{"$(body.blah)", "$(header.one)"},
 	}, {
-		in:   "start:$(body.[?(@.a == 'd')])-$(body.another-one)",
-		want: []string{"$(body.[?(@.a == 'd')])", "$(body.another-one)"},
+		in:       "start:$(body.blah)//middle//$(header.One)-end",
+		want:     []string{"$(body.blah)", "$(header.One)"},
+		original: []string{"$(body.blah)", "$(header.One)"},
 	}, {
-		in:   "$(this)-$(not-this",
-		want: []string{"$(this)"},
+		in:       "start:$(body.blah)//middle//$(header.ONE-TWO)-end",
+		want:     []string{"$(body.blah)", "$(header.One-Two)"},
+		original: []string{"$(body.blah)", "$(header.ONE-TWO)"},
 	}, {
-		in:   "$body.)",
-		want: []string{},
+		in:       "start:$(body.[?(@.a == 'd')])-$(body.another-one)",
+		want:     []string{"$(body.[?(@.a == 'd')])", "$(body.another-one)"},
+		original: []string{"$(body.[?(@.a == 'd')])", "$(body.another-one)"},
 	}, {
-		in:   "($(body.blah))-and-$(body.foo)",
-		want: []string{"$(body.blah)", "$(body.foo)"},
+		in:       "$(this)-$(not-this",
+		want:     []string{"$(this)"},
+		original: []string{"$(this)"},
 	}, {
-		in:   "(staticvalue)$(body.blah)",
-		want: []string{"$(body.blah)"},
+		in:       "$body.)",
+		want:     []string{},
+		original: []string{},
 	}, {
-		in:   "asd)$(asd",
-		want: []string{},
+		in:       "($(body.blah))-and-$(body.foo)",
+		want:     []string{"$(body.blah)", "$(body.foo)"},
+		original: []string{"$(body.blah)", "$(body.foo)"},
 	}, {
-		in:   "onlystatic",
-		want: []string{},
+		in:       "(staticvalue)$(body.blah)",
+		want:     []string{"$(body.blah)"},
+		original: []string{"$(body.blah)"},
 	}, {
-		in:   "",
-		want: []string{},
+		in:       "asd)$(asd",
+		want:     []string{},
+		original: []string{},
 	}, {
-		in:   "$())))",
-		want: []string{"$()"},
+		in:       "onlystatic",
+		want:     []string{},
+		original: []string{},
 	}, {
-		in:   "$($())",
-		want: []string{"$()"},
+		in:       "",
+		want:     []string{},
+		original: []string{},
 	}, {
-		in:   "$($($(blahblah)))",
-		want: []string{"$(blahblah)"},
+		in:       "$())))",
+		want:     []string{"$()"},
+		original: []string{"$()"},
+	}, {
+		in:       "$($())",
+		want:     []string{"$()"},
+		original: []string{"$()"},
+	}, {
+		in:       "$($($(blahblah)))",
+		want:     []string{"$(blahblah)"},
+		original: []string{"$(blahblah)"},
 	}}
 
 	for _, tc := range tcs {
 		t.Run(tc.in, func(t *testing.T) {
-			if diff := cmp.Diff(tc.want, findTektonExpressions(tc.in)); diff != "" {
+			results, originals := findTektonExpressions(tc.in)
+			if diff := cmp.Diff(tc.want, results); diff != "" {
+				t.Fatalf("error -want/+got: %s", diff)
+			}
+			if diff := cmp.Diff(tc.original, originals); diff != "" {
 				t.Fatalf("error -want/+got: %s", diff)
 			}
 		})

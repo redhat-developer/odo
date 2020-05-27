@@ -35,6 +35,6 @@ func init() {
 
 func withInformer(ctx context.Context) (context.Context, controller.Informer) {
 	f := fake.Get(ctx)
-	inf := f.Tekton().V1alpha1().TriggerTemplates()
+	inf := f.Triggers().V1alpha1().TriggerTemplates()
 	return context.WithValue(ctx, triggertemplate.Key{}, inf), inf.Informer()
 }

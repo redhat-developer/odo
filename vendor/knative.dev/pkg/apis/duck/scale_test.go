@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"knative.dev/pkg/apis/duck"
+	"knative.dev/pkg/ptr"
 )
 
 type Scalable struct {
@@ -68,9 +69,8 @@ func (*Scalable) GetFullType() duck.Populatable {
 
 // Populate implements duck.Populatable
 func (t *Scalable) Populate() {
-	one := int32(1)
 	t.Spec = ScalableSpec{
-		Replicas: &one,
+		Replicas: ptr.Int32(1),
 		Selector: &metav1.LabelSelector{
 			MatchLabels: map[string]string{
 				"foo": "bar",
@@ -83,7 +83,7 @@ func (t *Scalable) Populate() {
 		},
 	}
 	t.Status = ScalableStatus{
-		Replicas: one,
+		Replicas: 1,
 	}
 }
 

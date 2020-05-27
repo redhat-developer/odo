@@ -30,13 +30,13 @@ import (
 
 // FakeEventListeners implements EventListenerInterface
 type FakeEventListeners struct {
-	Fake *FakeTektonV1alpha1
+	Fake *FakeTriggersV1alpha1
 	ns   string
 }
 
-var eventlistenersResource = schema.GroupVersionResource{Group: "tekton.dev", Version: "v1alpha1", Resource: "eventlisteners"}
+var eventlistenersResource = schema.GroupVersionResource{Group: "triggers.tekton.dev", Version: "v1alpha1", Resource: "eventlisteners"}
 
-var eventlistenersKind = schema.GroupVersionKind{Group: "tekton.dev", Version: "v1alpha1", Kind: "EventListener"}
+var eventlistenersKind = schema.GroupVersionKind{Group: "triggers.tekton.dev", Version: "v1alpha1", Kind: "EventListener"}
 
 // Get takes name of the eventListener, and returns the corresponding eventListener object, and an error if there is any.
 func (c *FakeEventListeners) Get(name string, options v1.GetOptions) (result *v1alpha1.EventListener, err error) {

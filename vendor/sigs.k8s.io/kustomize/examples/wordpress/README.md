@@ -8,7 +8,7 @@ To run WordPress, it's necessary to
 - access the service name of MySQL database from WordPress container
 
 First make a place to work:
-<!-- @makeDemoHome @testAgainstLatestRelease -->
+<!-- @makeDemoHome @test -->
 ```
 DEMO_HOME=$(mktemp -d)
 MYSQL_HOME=$DEMO_HOME/mysql
@@ -21,7 +21,7 @@ mkdir -p $WORDPRESS_HOME
 
 Download the resources and `kustomization.yaml` for WordPress.
 
-<!-- @downloadResources @testAgainstLatestRelease -->
+<!-- @downloadResources @test -->
 ```
 CONTENT="https://raw.githubusercontent.com\
 /kubernetes-sigs/kustomize\
@@ -33,7 +33,7 @@ curl -s -o "$WORDPRESS_HOME/#1.yaml" \
 
 Download the resources and `kustomization.yaml` for MySQL.
 
-<!-- @downloadResources @testAgainstLatestRelease -->
+<!-- @downloadResources @test -->
 ```
 CONTENT="https://raw.githubusercontent.com\
 /kubernetes-sigs/kustomize\
@@ -44,19 +44,17 @@ curl -s -o "$MYSQL_HOME/#1.yaml" \
 ```
 
 ### Create kustomization.yaml
+Create a new kustomization with two bases:
 
-Create a new kustomization with two bases,
-`wordpress` and `mysql`:
-
-<!-- @createKustomization @testAgainstLatestRelease -->
+<!-- @createKustomization @test -->
 ```
 cat <<EOF >$DEMO_HOME/kustomization.yaml
-resources:
-- wordpress
-- mysql
+bases:
+  - wordpress
+  - mysql
 namePrefix: demo-
 patchesStrategicMerge:
-- patch.yaml
+  - patch.yaml
 EOF
 ```
 
@@ -65,7 +63,7 @@ In the new kustomization, apply a patch for wordpress deployment. The patch does
 - Add an initial container to show the mysql service name
 - Add environment variable that allow wordpress to find the mysql database
 
-<!-- @downloadPatch @testAgainstLatestRelease -->
+<!-- @downloadPatch @test -->
 ```
 CONTENT="https://raw.githubusercontent.com\
 /kubernetes-sigs/kustomize\
@@ -105,7 +103,7 @@ $(WORDPRESS_SERVICE) and $(MYSQL_SERVICE).
 
 ### Bind the Variables to k8s Object Fields
 
-<!-- @addVarRef @testAgainstLatestRelease -->
+<!-- @addVarRef @test -->
 ```
 cat <<EOF >>$DEMO_HOME/kustomization.yaml
 vars:
@@ -128,7 +126,7 @@ EOF
 ### Substitution
 Confirm the variable substitution:
 
-<!-- @kustomizeBuild @testAgainstLatestRelease -->
+<!-- @kustomizeBuild @test -->
 ```
 kustomize build $DEMO_HOME
 ```

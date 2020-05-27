@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"io/ioutil"
+	"net/http"
 	"testing"
 
 	"github.com/jenkins-x/go-scm/scm"
@@ -206,6 +207,36 @@ func TestGitListChanges(t *testing.T) {
 
 	want := []*scm.Change{}
 	raw, _ := ioutil.ReadFile("testdata/changes.json.golden")
+	json.Unmarshal(raw, &want)
+
+	if diff := cmp.Diff(got, want); diff != "" {
+		t.Errorf("Unexpected Results")
+		t.Log(diff)
+	}
+
+	t.Run("Request", testRequest(res))
+	t.Run("Rate", testRate(res))
+}
+
+func TestGitCreateRef(t *testing.T) {
+	defer gock.Off()
+
+	gock.New("https://api.github.com").
+		Post("/repos/octocat/hello-world/git/refs").
+		Reply(http.StatusCreated).
+		Type("application/json").
+		SetHeaders(mockHeaders).
+		File("testdata/ref.json")
+
+	client := NewDefault()
+	got, res, err := client.Git.CreateRef(context.Background(), "octocat/hello-world", "refs/heads/testing", "aa218f56b14c9653891f9e74264a383fa43fefbd")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	want := &scm.Reference{}
+	raw, _ := ioutil.ReadFile("testdata/ref.json.golden")
 	json.Unmarshal(raw, &want)
 
 	if diff := cmp.Diff(got, want); diff != "" {

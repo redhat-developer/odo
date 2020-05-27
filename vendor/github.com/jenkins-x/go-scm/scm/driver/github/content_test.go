@@ -6,6 +6,7 @@ package github
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"io/ioutil"
 	"testing"
@@ -93,19 +94,62 @@ func TestContentList(t *testing.T) {
 }
 
 func TestContentCreate(t *testing.T) {
-	content := new(contentService)
-	_, err := content.Create(context.Background(), "octocat/hello-world", "README", nil)
-	if err != scm.ErrNotSupported {
-		t.Errorf("Expect Not Supported error")
+	defer gock.Off()
+	message := "just a test message"
+	content := []byte("testing")
+	branch := "my-test-branch"
+
+	gock.New("https://api.github.com").
+		Put("/repos/octocat/hello-world/contents/README").
+		MatchType("json").
+		JSON(map[string]string{"message": message, "content": encode(content), "branch": branch}).
+		Reply(201).
+		Type("application/json").
+		SetHeaders(mockHeaders).
+		File("testdata/content.json")
+
+	params := &scm.ContentParams{
+		Branch:  branch,
+		Message: message,
+		Data:    content,
+	}
+
+	client := NewDefault()
+	_, err := client.Contents.Create(context.Background(), "octocat/hello-world", "README", params)
+	if err != nil {
+		t.Fatal(err)
 	}
 }
 
 func TestContentUpdate(t *testing.T) {
-	content := new(contentService)
-	_, err := content.Update(context.Background(), "octocat/hello-world", "README", nil)
-	if err != scm.ErrNotSupported {
-		t.Errorf("Expect Not Supported error")
+	defer gock.Off()
+	message := "just a test message"
+	content := []byte("testing")
+	branch := "my-test-branch"
+	previousSHA := "db4eb429f92f2620a3877cc41da49d7b6d2f92e4"
+
+	gock.New("https://api.github.com").
+		Put("/repos/octocat/hello-world/contents/README").
+		MatchType("json").
+		JSON(map[string]string{"message": message, "content": encode(content), "branch": branch, "sha": previousSHA}).
+		Reply(201).
+		Type("application/json").
+		SetHeaders(mockHeaders).
+		File("testdata/content.json")
+
+	params := &scm.ContentParams{
+		Branch:  branch,
+		Message: message,
+		Data:    content,
+		Sha:     previousSHA,
 	}
+
+	client := NewDefault()
+	_, err := client.Contents.Update(context.Background(), "octocat/hello-world", "README", params)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 }
 
 func TestContentDelete(t *testing.T) {
@@ -114,4 +158,8 @@ func TestContentDelete(t *testing.T) {
 	if err != scm.ErrNotSupported {
 		t.Errorf("Expect Not Supported error")
 	}
+}
+
+func encode(b []byte) string {
+	return base64.StdEncoding.EncodeToString([]byte(b))
 }

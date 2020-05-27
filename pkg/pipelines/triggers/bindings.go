@@ -1,7 +1,6 @@
 package triggers
 
 import (
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	triggersv1 "github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
 
 	"github.com/openshift/odo/pkg/pipelines/meta"
@@ -17,7 +16,7 @@ func CreateImageRepoBinding(ns, bindingName, imageRepo, tlsVerify string) trigge
 		TypeMeta:   triggerBindingTypeMeta,
 		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, bindingName)),
 		Spec: triggersv1.TriggerBindingSpec{
-			Params: []pipelinev1.Param{
+			Params: []triggersv1.Param{
 				createBindingParam("imageRepo", imageRepo),
 				createBindingParam("tlsVerify", tlsVerify),
 			},
@@ -25,12 +24,9 @@ func CreateImageRepoBinding(ns, bindingName, imageRepo, tlsVerify string) trigge
 	}
 }
 
-func createBindingParam(name string, value string) pipelinev1.Param {
-	return pipelinev1.Param{
-		Name: name,
-		Value: pipelinev1.ArrayOrString{
-			StringVal: value,
-			Type:      pipelinev1.ParamTypeString,
-		},
+func createBindingParam(name string, value string) triggersv1.Param {
+	return triggersv1.Param{
+		Name:  name,
+		Value: value,
 	}
 }

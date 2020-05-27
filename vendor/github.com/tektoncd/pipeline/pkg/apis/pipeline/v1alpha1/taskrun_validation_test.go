@@ -22,9 +22,10 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	tb "github.com/tektoncd/pipeline/internal/builder/v1alpha1"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
-	"github.com/tektoncd/pipeline/test/builder"
-	tb "github.com/tektoncd/pipeline/test/builder"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	"github.com/tektoncd/pipeline/test/diff"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
@@ -37,11 +38,11 @@ func TestTaskRun_Invalid(t *testing.T) {
 		want *apis.FieldError
 	}{{
 		name: "invalid taskspec",
-		task: tb.TaskRun("taskmetaname", "default"),
+		task: tb.TaskRun("taskmetaname"),
 		want: apis.ErrMissingField("spec"),
 	}, {
 		name: "invalid taskrun metadata",
-		task: tb.TaskRun("task.name", "default"),
+		task: tb.TaskRun("task.name"),
 		want: &apis.FieldError{
 			Message: "Invalid resource name: special character . must not be present",
 			Paths:   []string{"metadata.name"},
@@ -51,14 +52,14 @@ func TestTaskRun_Invalid(t *testing.T) {
 		t.Run(ts.name, func(t *testing.T) {
 			err := ts.task.Validate(context.Background())
 			if d := cmp.Diff(err.Error(), ts.want.Error()); d != "" {
-				t.Errorf("TaskRun.Validate/%s (-want, +got) = %v", ts.name, d)
+				t.Errorf("TaskRun.Validate/%s %s", ts.name, diff.PrintWantGot(d))
 			}
 		})
 	}
 }
 
 func TestTaskRun_Validate(t *testing.T) {
-	tr := tb.TaskRun("taskname", "default", tb.TaskRunSpec(
+	tr := tb.TaskRun("taskname", tb.TaskRunSpec(
 		tb.TaskRunTaskRef("taskrefname"),
 	))
 	if err := tr.Validate(context.Background()); err != nil {
@@ -73,7 +74,7 @@ func TestTaskRun_Workspaces_Invalid(t *testing.T) {
 		wantErr *apis.FieldError
 	}{{
 		name: "make sure WorkspaceBinding validation invoked",
-		tr: tb.TaskRun("taskname", "default", tb.TaskRunSpec(
+		tr: tb.TaskRun("taskname", tb.TaskRunSpec(
 			tb.TaskRunTaskRef("task"),
 			// When using PVC it's required that you provide a volume name
 			tb.TaskRunWorkspacePVC("workspace", "", ""),
@@ -81,7 +82,7 @@ func TestTaskRun_Workspaces_Invalid(t *testing.T) {
 		wantErr: apis.ErrMissingField("workspace.persistentvolumeclaim.claimname"),
 	}, {
 		name: "bind same workspace twice",
-		tr: tb.TaskRun("taskname", "default", tb.TaskRunSpec(
+		tr: tb.TaskRun("taskname", tb.TaskRunSpec(
 			tb.TaskRunTaskRef("task"),
 			tb.TaskRunWorkspaceEmptyDir("workspace", ""),
 			tb.TaskRunWorkspaceEmptyDir("workspace", ""),
@@ -95,7 +96,7 @@ func TestTaskRun_Workspaces_Invalid(t *testing.T) {
 				t.Errorf("Expected error for invalid TaskRun but got none")
 			}
 			if d := cmp.Diff(ts.wantErr.Error(), err.Error()); d != "" {
-				t.Errorf("TaskRunSpec.Validate/%s (-want, +got) = %v", ts.name, d)
+				t.Errorf("TaskRunSpec.Validate/%s %s", ts.name, diff.PrintWantGot(d))
 			}
 		})
 	}
@@ -122,12 +123,12 @@ func TestTaskRunSpec_Invalid(t *testing.T) {
 			TaskRef: &v1alpha1.TaskRef{
 				Name: "taskrefname",
 			},
-			TaskSpec: &v1alpha1.TaskSpec{
+			TaskSpec: &v1alpha1.TaskSpec{TaskSpec: v1beta1.TaskSpec{
 				Steps: []v1alpha1.Step{{Container: corev1.Container{
 					Name:  "mystep",
 					Image: "myimage",
 				}}},
-			},
+			}},
 		},
 		wantErr: apis.ErrDisallowedFields("spec.taskspec", "spec.taskref"),
 	}, {
@@ -142,12 +143,12 @@ func TestTaskRunSpec_Invalid(t *testing.T) {
 	}, {
 		name: "invalid taskspec",
 		spec: v1alpha1.TaskRunSpec{
-			TaskSpec: &v1alpha1.TaskSpec{
+			TaskSpec: &v1alpha1.TaskSpec{TaskSpec: v1beta1.TaskSpec{
 				Steps: []v1alpha1.Step{{Container: corev1.Container{
 					Name:  "invalid-name-with-$weird-char*/%",
 					Image: "myimage",
 				}}},
-			},
+			}},
 		},
 		wantErr: &apis.FieldError{
 			Message: `invalid value "invalid-name-with-$weird-char*/%"`,
@@ -159,7 +160,7 @@ func TestTaskRunSpec_Invalid(t *testing.T) {
 		t.Run(ts.name, func(t *testing.T) {
 			err := ts.spec.Validate(context.Background())
 			if d := cmp.Diff(ts.wantErr.Error(), err.Error()); d != "" {
-				t.Errorf("TaskRunSpec.Validate/%s (-want, +got) = %v", ts.name, d)
+				t.Errorf("TaskRunSpec.Validate/%s %s", ts.name, diff.PrintWantGot(d))
 			}
 		})
 	}
@@ -172,23 +173,36 @@ func TestTaskRunSpec_Validate(t *testing.T) {
 	}{{
 		name: "taskspec without a taskRef",
 		spec: v1alpha1.TaskRunSpec{
-			TaskSpec: &v1alpha1.TaskSpec{
+			TaskSpec: &v1alpha1.TaskSpec{TaskSpec: v1beta1.TaskSpec{
 				Steps: []v1alpha1.Step{{Container: corev1.Container{
 					Name:  "mystep",
 					Image: "myimage",
 				}}},
-			},
+			}},
 		},
 	}, {
 		name: "no timeout",
 		spec: v1alpha1.TaskRunSpec{
 			Timeout: &metav1.Duration{Duration: 0},
-			TaskSpec: &v1alpha1.TaskSpec{
+			TaskSpec: &v1alpha1.TaskSpec{TaskSpec: v1beta1.TaskSpec{
 				Steps: []v1alpha1.Step{{Container: corev1.Container{
 					Name:  "mystep",
 					Image: "myimage",
 				}}},
-			},
+			}},
+		},
+	}, {
+		name: "task spec with credentials.path variable",
+		spec: v1alpha1.TaskRunSpec{
+			TaskSpec: &v1alpha1.TaskSpec{TaskSpec: v1beta1.TaskSpec{
+				Steps: []v1alpha1.Step{{
+					Container: corev1.Container{
+						Name:  "mystep",
+						Image: "myimage",
+					},
+					Script: `echo "creds-init writes to $(credentials.path)"`,
+				}},
+			}},
 		},
 	}}
 	for _, ts := range tests {
@@ -204,7 +218,7 @@ func TestInput_Validate(t *testing.T) {
 	i := v1alpha1.TaskRunInputs{
 		Params: []v1alpha1.Param{{
 			Name:  "name",
-			Value: *builder.ArrayOrString("value"),
+			Value: *tb.ArrayOrString("value"),
 		}},
 		Resources: []v1alpha1.TaskResourceBinding{{
 			PipelineResourceBinding: v1alpha1.PipelineResourceBinding{
@@ -258,10 +272,10 @@ func TestInput_Invalid(t *testing.T) {
 			}},
 			Params: []v1alpha1.Param{{
 				Name:  "name",
-				Value: *builder.ArrayOrString("value"),
+				Value: *tb.ArrayOrString("value"),
 			}, {
 				Name:  "name",
-				Value: *builder.ArrayOrString("value"),
+				Value: *tb.ArrayOrString("value"),
 			}},
 		},
 		wantErr: apis.ErrMultipleOneOf("spec.inputs.params"),
@@ -309,7 +323,7 @@ func TestInput_Invalid(t *testing.T) {
 		t.Run(ts.name, func(t *testing.T) {
 			err := ts.inputs.Validate(context.Background(), "spec.Inputs")
 			if d := cmp.Diff(err.Error(), ts.wantErr.Error()); d != "" {
-				t.Errorf("TaskRunInputs.Validate/%s (-want, +got) = %v", ts.name, d)
+				t.Errorf("TaskRunInputs.Validate/%s %s", ts.name, diff.PrintWantGot(d))
 			}
 		})
 	}
@@ -370,7 +384,7 @@ func TestOutput_Invalid(t *testing.T) {
 		t.Run(ts.name, func(t *testing.T) {
 			err := ts.outputs.Validate(context.Background(), "spec.Outputs")
 			if d := cmp.Diff(err.Error(), ts.wantErr.Error()); d != "" {
-				t.Errorf("TaskRunOutputs.Validate/%s (-want, +got) = %v", ts.name, d)
+				t.Errorf("TaskRunOutputs.Validate/%s %s", ts.name, diff.PrintWantGot(d))
 			}
 		})
 	}

@@ -51,6 +51,10 @@ func (s *gitService) FindRef(ctx context.Context, repo, ref string) (string, *sc
 	*/
 }
 
+func (s *gitService) CreateRef(ctx context.Context, repo, ref, sha string) (*scm.Reference, *scm.Response, error) {
+	return nil, nil, scm.ErrNotSupported
+}
+
 func (s *gitService) DeleteRef(ctx context.Context, repo, ref string) (*scm.Response, error) {
 	return nil, scm.ErrNotSupported
 }

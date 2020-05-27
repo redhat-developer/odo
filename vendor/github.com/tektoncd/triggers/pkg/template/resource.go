@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"strings"
 
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	triggersv1 "github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -35,23 +34,44 @@ var uidMatch = []byte(`$(uid)`)
 // ResolvedTrigger contains the dereferenced TriggerBindings and
 // TriggerTemplate after resolving the k8s ObjectRef.
 type ResolvedTrigger struct {
-	TriggerBindings []*triggersv1.TriggerBinding
-	TriggerTemplate *triggersv1.TriggerTemplate
+	TriggerBindings        []*triggersv1.TriggerBinding
+	ClusterTriggerBindings []*triggersv1.ClusterTriggerBinding
+	TriggerTemplate        *triggersv1.TriggerTemplate
 }
 
 type getTriggerBinding func(name string, options metav1.GetOptions) (*triggersv1.TriggerBinding, error)
 type getTriggerTemplate func(name string, options metav1.GetOptions) (*triggersv1.TriggerTemplate, error)
+type getClusterTriggerBinding func(name string, options metav1.GetOptions) (*triggersv1.ClusterTriggerBinding, error)
 
 // ResolveTrigger takes in a trigger containing object refs to bindings and
 // templates and resolves them to their underlying values.
-func ResolveTrigger(trigger triggersv1.EventListenerTrigger, getTB getTriggerBinding, getTT getTriggerTemplate) (ResolvedTrigger, error) {
+func ResolveTrigger(trigger triggersv1.EventListenerTrigger, getTB getTriggerBinding, getCTB getClusterTriggerBinding, getTT getTriggerTemplate) (ResolvedTrigger, error) {
 	tb := make([]*triggersv1.TriggerBinding, 0, len(trigger.Bindings))
+	ctb := make([]*triggersv1.ClusterTriggerBinding, 0, len(trigger.Bindings))
 	for _, b := range trigger.Bindings {
-		tb2, err := getTB(b.Name, metav1.GetOptions{})
-		if err != nil {
-			return ResolvedTrigger{}, fmt.Errorf("error getting TriggerBinding %s: %w", b.Name, err)
+		if b.Spec != nil {
+			tb = append(tb, &triggersv1.TriggerBinding{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: b.Name,
+				},
+				Spec: *b.Spec,
+			})
+			continue
 		}
-		tb = append(tb, tb2)
+
+		if b.Kind == triggersv1.ClusterTriggerBindingKind {
+			ctb2, err := getCTB(b.Ref, metav1.GetOptions{})
+			if err != nil {
+				return ResolvedTrigger{}, fmt.Errorf("error getting ClusterTriggerBinding %s: %w", b.Name, err)
+			}
+			ctb = append(ctb, ctb2)
+		} else {
+			tb2, err := getTB(b.Ref, metav1.GetOptions{})
+			if err != nil {
+				return ResolvedTrigger{}, fmt.Errorf("error getting TriggerBinding %s: %w", b.Name, err)
+			}
+			tb = append(tb, tb2)
+		}
 	}
 
 	ttName := trigger.Template.Name
@@ -59,13 +79,13 @@ func ResolveTrigger(trigger triggersv1.EventListenerTrigger, getTB getTriggerBin
 	if err != nil {
 		return ResolvedTrigger{}, fmt.Errorf("error getting TriggerTemplate %s: %w", ttName, err)
 	}
-	return ResolvedTrigger{TriggerBindings: tb, TriggerTemplate: tt}, nil
+	return ResolvedTrigger{TriggerBindings: tb, ClusterTriggerBindings: ctb, TriggerTemplate: tt}, nil
 }
 
 // MergeInDefaultParams returns the params with the addition of all
 // paramSpecs that have default values and are already in the params list
-func MergeInDefaultParams(params []pipelinev1.Param, paramSpecs []pipelinev1.ParamSpec) []pipelinev1.Param {
-	allParamsMap := map[string]pipelinev1.ArrayOrString{}
+func MergeInDefaultParams(params []triggersv1.Param, paramSpecs []triggersv1.ParamSpec) []triggersv1.Param {
+	allParamsMap := map[string]string{}
 	for _, paramSpec := range paramSpecs {
 		if paramSpec.Default != nil {
 			allParamsMap[paramSpec.Name] = *paramSpec.Default
@@ -79,7 +99,7 @@ func MergeInDefaultParams(params []pipelinev1.Param, paramSpecs []pipelinev1.Par
 
 // ApplyParamsToResourceTemplate returns the TriggerResourceTemplate with the
 // param values substituted for all matching param variables in the template
-func ApplyParamsToResourceTemplate(params []pipelinev1.Param, rt json.RawMessage) json.RawMessage {
+func ApplyParamsToResourceTemplate(params []triggersv1.Param, rt json.RawMessage) json.RawMessage {
 	// Assume the params are valid
 	for _, param := range params {
 		rt = applyParamToResourceTemplate(param, rt)
@@ -89,12 +109,12 @@ func ApplyParamsToResourceTemplate(params []pipelinev1.Param, rt json.RawMessage
 
 // applyParamToResourceTemplate returns the TriggerResourceTemplate with the
 // param value substituted for all matching param variables in the template
-func applyParamToResourceTemplate(param pipelinev1.Param, rt json.RawMessage) json.RawMessage {
+func applyParamToResourceTemplate(param triggersv1.Param, rt json.RawMessage) json.RawMessage {
 	// Assume the param is valid
 	paramVariable := fmt.Sprintf("$(params.%s)", param.Name)
 	// Escape quotes so that that JSON strings can be appended to regular strings.
 	// See #257 for discussion on this behavior.
-	paramValue := strings.Replace(param.Value.StringVal, `"`, `\"`, -1)
+	paramValue := strings.Replace(param.Value, `"`, `\"`, -1)
 	return bytes.Replace(rt, []byte(paramVariable), []byte(paramValue), -1)
 }
 
@@ -107,19 +127,22 @@ func ApplyUIDToResourceTemplate(rt json.RawMessage, uid string) json.RawMessage 
 	return bytes.Replace(rt, uidMatch, []byte(uid), -1)
 }
 
-func convertParamMapToArray(paramMap map[string]pipelinev1.ArrayOrString) []pipelinev1.Param {
-	params := []pipelinev1.Param{}
+func convertParamMapToArray(paramMap map[string]string) []triggersv1.Param {
+	params := []triggersv1.Param{}
 	for name, value := range paramMap {
-		params = append(params, pipelinev1.Param{Name: name, Value: value})
+		params = append(params, triggersv1.Param{Name: name, Value: value})
 	}
 	return params
 }
 
 // MergeBindingParams merges params across multiple bindings.
-func MergeBindingParams(bindings []*triggersv1.TriggerBinding) ([]pipelinev1.Param, error) {
-	params := []pipelinev1.Param{}
+func MergeBindingParams(bindings []*triggersv1.TriggerBinding, clusterbindings []*triggersv1.ClusterTriggerBinding) ([]triggersv1.Param, error) {
+	params := []triggersv1.Param{}
 	for _, b := range bindings {
 		params = append(params, b.Spec.Params...)
+	}
+	for _, cb := range clusterbindings {
+		params = append(params, cb.Spec.Params...)
 	}
 	seen := make(map[string]bool, len(params))
 	for _, p := range params {

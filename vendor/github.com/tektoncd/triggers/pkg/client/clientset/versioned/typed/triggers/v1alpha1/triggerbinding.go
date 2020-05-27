@@ -56,7 +56,7 @@ type triggerBindings struct {
 }
 
 // newTriggerBindings returns a TriggerBindings
-func newTriggerBindings(c *TektonV1alpha1Client, namespace string) *triggerBindings {
+func newTriggerBindings(c *TriggersV1alpha1Client, namespace string) *triggerBindings {
 	return &triggerBindings{
 		client: c.RESTClient(),
 		ns:     namespace,

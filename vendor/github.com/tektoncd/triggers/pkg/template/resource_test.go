@@ -23,7 +23,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	triggersv1 "github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
 	"github.com/tektoncd/triggers/test"
 	bldr "github.com/tektoncd/triggers/test/builder"
@@ -32,78 +31,81 @@ import (
 
 func Test_MergeInDefaultParams(t *testing.T) {
 	var (
-		oneParam = pipelinev1.Param{
+		oneDefault   = "onedefault"
+		twoDefault   = "twodefault"
+		threeDefault = "threedefault"
+		oneParam     = triggersv1.Param{
 			Name:  "oneid",
-			Value: pipelinev1.ArrayOrString{StringVal: "onevalue"},
+			Value: "onevalue",
 		}
-		oneParamSpec = pipelinev1.ParamSpec{
+		oneParamSpec = triggersv1.ParamSpec{
 			Name:    "oneid",
-			Default: &pipelinev1.ArrayOrString{StringVal: "onedefault"},
+			Default: &oneDefault,
 		}
-		wantDefaultOneParam = pipelinev1.Param{
+		wantDefaultOneParam = triggersv1.Param{
 			Name:  "oneid",
-			Value: pipelinev1.ArrayOrString{StringVal: "onedefault"},
+			Value: "onedefault",
 		}
-		twoParamSpec = pipelinev1.ParamSpec{
+		twoParamSpec = triggersv1.ParamSpec{
 			Name:    "twoid",
-			Default: &pipelinev1.ArrayOrString{StringVal: "twodefault"},
+			Default: &twoDefault,
 		}
-		wantDefaultTwoParam = pipelinev1.Param{
+		wantDefaultTwoParam = triggersv1.Param{
 			Name:  "twoid",
-			Value: pipelinev1.ArrayOrString{StringVal: "twodefault"},
+			Value: "twodefault",
 		}
-		threeParamSpec = pipelinev1.ParamSpec{
+		threeParamSpec = triggersv1.ParamSpec{
 			Name:    "threeid",
-			Default: &pipelinev1.ArrayOrString{StringVal: "threedefault"},
+			Default: &threeDefault,
 		}
-		wantDefaultThreeParam = pipelinev1.Param{
+		wantDefaultThreeParam = triggersv1.Param{
 			Name:  "threeid",
-			Value: pipelinev1.ArrayOrString{StringVal: "threedefault"},
+			Value: "threedefault",
 		}
-		noDefaultParamSpec = pipelinev1.ParamSpec{
+		noDefaultParamSpec = triggersv1.ParamSpec{
 			Name: "nodefault",
 		}
 	)
 	type args struct {
-		params     []pipelinev1.Param
-		paramSpecs []pipelinev1.ParamSpec
+		params     []triggersv1.Param
+		paramSpecs []triggersv1.ParamSpec
 	}
 	tests := []struct {
 		name string
 		args args
-		want []pipelinev1.Param
+		want []triggersv1.Param
 	}{
 		{
 			name: "add one default param",
 			args: args{
-				params:     []pipelinev1.Param{},
-				paramSpecs: []pipelinev1.ParamSpec{oneParamSpec},
+				params:     []triggersv1.Param{},
+				paramSpecs: []triggersv1.ParamSpec{oneParamSpec},
 			},
-			want: []pipelinev1.Param{wantDefaultOneParam},
+			want: []triggersv1.Param{wantDefaultOneParam},
 		},
 		{
 			name: "add multiple default params",
 			args: args{
-				params:     []pipelinev1.Param{},
-				paramSpecs: []pipelinev1.ParamSpec{oneParamSpec, twoParamSpec, threeParamSpec},
+				params:     []triggersv1.Param{},
+				paramSpecs: []triggersv1.ParamSpec{oneParamSpec, twoParamSpec, threeParamSpec},
 			},
-			want: []pipelinev1.Param{wantDefaultOneParam, wantDefaultTwoParam, wantDefaultThreeParam},
+			want: []triggersv1.Param{wantDefaultOneParam, wantDefaultTwoParam, wantDefaultThreeParam},
 		},
 		{
 			name: "do not override existing value",
 			args: args{
-				params:     []pipelinev1.Param{oneParam},
-				paramSpecs: []pipelinev1.ParamSpec{oneParamSpec},
+				params:     []triggersv1.Param{oneParam},
+				paramSpecs: []triggersv1.ParamSpec{oneParamSpec},
 			},
-			want: []pipelinev1.Param{oneParam},
+			want: []triggersv1.Param{oneParam},
 		},
 		{
 			name: "add no default params",
 			args: args{
-				params:     []pipelinev1.Param{},
-				paramSpecs: []pipelinev1.ParamSpec{noDefaultParamSpec},
+				params:     []triggersv1.Param{},
+				paramSpecs: []triggersv1.ParamSpec{noDefaultParamSpec},
 			},
-			want: []pipelinev1.Param{},
+			want: []triggersv1.Param{},
 		},
 	}
 	for _, tt := range tests {
@@ -118,9 +120,9 @@ func Test_MergeInDefaultParams(t *testing.T) {
 
 func Test_applyParamToResourceTemplate(t *testing.T) {
 	var (
-		oneParam = pipelinev1.Param{
+		oneParam = triggersv1.Param{
 			Name:  "oneid",
-			Value: pipelinev1.ArrayOrString{StringVal: "onevalue"},
+			Value: "onevalue",
 		}
 		rtNoParamVars             = json.RawMessage(`{"foo": "bar"}`)
 		wantRtNoParamVars         = json.RawMessage(`{"foo": "bar"}`)
@@ -132,7 +134,7 @@ func Test_applyParamToResourceTemplate(t *testing.T) {
 		wantRtMultipleParamVars   = json.RawMessage(`{"onevalue": "bar-onevalue-onevalueonevalueonevalue-onevalue-bar"}`)
 	)
 	type args struct {
-		param pipelinev1.Param
+		param triggersv1.Param
 		rt    json.RawMessage
 	}
 	tests := []struct {
@@ -174,11 +176,9 @@ func Test_applyParamToResourceTemplate(t *testing.T) {
 		}, {
 			name: "espcae quotes in param val",
 			args: args{
-				param: pipelinev1.Param{
-					Name: "p1",
-					Value: pipelinev1.ArrayOrString{
-						StringVal: `{"a":"b"}`,
-					},
+				param: triggersv1.Param{
+					Name:  "p1",
+					Value: `{"a":"b"}`,
 				},
 				rt: json.RawMessage(`{"foo": "$(params.p1)"}`),
 			},
@@ -198,7 +198,7 @@ func Test_applyParamToResourceTemplate(t *testing.T) {
 func Test_ApplyParamsToResourceTemplate(t *testing.T) {
 	rt := json.RawMessage(`{"oneparam": "$(params.oneid)", "twoparam": "$(params.twoid)", "threeparam": "$(params.threeid)"`)
 	type args struct {
-		params []pipelinev1.Param
+		params []triggersv1.Param
 		rt     json.RawMessage
 	}
 	tests := []struct {
@@ -209,7 +209,7 @@ func Test_ApplyParamsToResourceTemplate(t *testing.T) {
 		{
 			name: "no params",
 			args: args{
-				params: []pipelinev1.Param{},
+				params: []triggersv1.Param{},
 				rt:     rt,
 			},
 			want: rt,
@@ -217,8 +217,8 @@ func Test_ApplyParamsToResourceTemplate(t *testing.T) {
 		{
 			name: "one param",
 			args: args{
-				params: []pipelinev1.Param{
-					{Name: "oneid", Value: pipelinev1.ArrayOrString{StringVal: "onevalue"}},
+				params: []triggersv1.Param{
+					{Name: "oneid", Value: "onevalue"},
 				},
 				rt: rt,
 			},
@@ -227,10 +227,10 @@ func Test_ApplyParamsToResourceTemplate(t *testing.T) {
 		{
 			name: "multiple params",
 			args: args{
-				params: []pipelinev1.Param{
-					{Name: "oneid", Value: pipelinev1.ArrayOrString{StringVal: "onevalue"}},
-					{Name: "twoid", Value: pipelinev1.ArrayOrString{StringVal: "twovalue"}},
-					{Name: "threeid", Value: pipelinev1.ArrayOrString{StringVal: "threevalue"}},
+				params: []triggersv1.Param{
+					{Name: "oneid", Value: "onevalue"},
+					{Name: "twoid", Value: "twovalue"},
+					{Name: "threeid", Value: "threevalue"},
 				},
 				rt: rt,
 			},
@@ -255,12 +255,9 @@ var (
 		"tb-params": {
 			ObjectMeta: metav1.ObjectMeta{Name: "tb-params"},
 			Spec: triggersv1.TriggerBindingSpec{
-				Params: []pipelinev1.Param{{
-					Name: "foo",
-					Value: pipelinev1.ArrayOrString{
-						Type:      pipelinev1.ParamTypeString,
-						StringVal: "bar",
-					},
+				Params: []triggersv1.Param{{
+					Name:  "foo",
+					Value: "bar",
 				}},
 			},
 		},
@@ -269,8 +266,29 @@ var (
 	tt = triggersv1.TriggerTemplate{
 		ObjectMeta: metav1.ObjectMeta{Name: "my-triggertemplate"},
 	}
+	clusterTriggerBindings = map[string]*triggersv1.ClusterTriggerBinding{
+		"my-clustertriggerbinding": {
+			ObjectMeta: metav1.ObjectMeta{Name: "my-clustertriggerbinding"},
+		},
+		"ctb-params": {
+			ObjectMeta: metav1.ObjectMeta{Name: "ctb-params"},
+			Spec: triggersv1.TriggerBindingSpec{
+				Params: []triggersv1.Param{{
+					Name:  "foo-ctb",
+					Value: "bar-ctb",
+				}},
+			},
+		},
+	}
+	ctb   = clusterTriggerBindings["my-clustertriggerbinding"]
 	getTB = func(name string, options metav1.GetOptions) (*triggersv1.TriggerBinding, error) {
 		if v, ok := triggerBindings[name]; ok {
+			return v, nil
+		}
+		return nil, fmt.Errorf("error invalid name: %s", name)
+	}
+	getCTB = func(name string, options metav1.GetOptions) (*triggersv1.ClusterTriggerBinding, error) {
+		if v, ok := clusterTriggerBindings[name]; ok {
 			return v, nil
 		}
 		return nil, fmt.Errorf("error invalid name: %s", name)
@@ -290,11 +308,46 @@ func Test_ResolveTrigger(t *testing.T) {
 		want    ResolvedTrigger
 	}{
 		{
-			name:    "1 binding",
-			trigger: bldr.Trigger("my-triggerbinding", "my-triggertemplate", "v1alpha1"),
+			name: "1 binding",
+			trigger: bldr.Trigger("my-triggertemplate", "v1alpha1",
+				bldr.EventListenerTriggerBinding("my-triggerbinding", "", "my-triggerbinding", "v1alpha1"),
+			),
 			want: ResolvedTrigger{
-				TriggerBindings: []*triggersv1.TriggerBinding{tb},
-				TriggerTemplate: &tt,
+				TriggerBindings:        []*triggersv1.TriggerBinding{tb},
+				ClusterTriggerBindings: []*triggersv1.ClusterTriggerBinding{},
+				TriggerTemplate:        &tt,
+			},
+		},
+		{
+			name: "1 clustertype binding",
+			trigger: bldr.Trigger("my-triggertemplate", "v1alpha1",
+				bldr.EventListenerTriggerBinding("my-clustertriggerbinding", "ClusterTriggerBinding", "my-clustertriggerbinding", "v1alpha1"),
+			),
+			want: ResolvedTrigger{
+				TriggerBindings:        []*triggersv1.TriggerBinding{},
+				ClusterTriggerBindings: []*triggersv1.ClusterTriggerBinding{ctb},
+				TriggerTemplate:        &tt,
+			},
+		},
+		{
+			name: "1 embed binding",
+			trigger: bldr.Trigger("my-triggertemplate", "v1alpha1",
+				bldr.EventListenerTriggerBinding("", "", "my-embed-binding", "v1alpha1", bldr.TriggerBindingParam("key", "value")),
+			),
+			want: ResolvedTrigger{
+				TriggerBindings: []*triggersv1.TriggerBinding{
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "my-embed-binding"},
+						Spec: triggersv1.TriggerBindingSpec{
+							Params: []triggersv1.Param{{
+								Name:  "key",
+								Value: "value",
+							}},
+						},
+					},
+				},
+				ClusterTriggerBindings: []*triggersv1.ClusterTriggerBinding{},
+				TriggerTemplate:        &tt,
 			},
 		},
 		{
@@ -305,7 +358,19 @@ func Test_ResolveTrigger(t *testing.T) {
 					APIVersion: "v1alpha1",
 				},
 			},
-			want: ResolvedTrigger{TriggerBindings: []*triggersv1.TriggerBinding{}, TriggerTemplate: &tt},
+			want: ResolvedTrigger{TriggerBindings: []*triggersv1.TriggerBinding{}, ClusterTriggerBindings: []*triggersv1.ClusterTriggerBinding{}, TriggerTemplate: &tt},
+		},
+		{
+			name: "multiple bindings with builder",
+			trigger: bldr.Trigger("my-triggertemplate", "v1alpha1",
+				bldr.EventListenerTriggerBinding("my-triggerbinding", "", "my-triggerbinding", "v1alpha1"),
+				bldr.EventListenerTriggerBinding("my-clustertriggerbinding", "ClusterTriggerBinding", "my-clustertriggerbinding", "v1alpha1"),
+			),
+			want: ResolvedTrigger{
+				TriggerBindings:        []*triggersv1.TriggerBinding{tb},
+				ClusterTriggerBindings: []*triggersv1.ClusterTriggerBinding{ctb},
+				TriggerTemplate:        &tt,
+			},
 		},
 		{
 			name: "multiple bindings",
@@ -313,10 +378,26 @@ func Test_ResolveTrigger(t *testing.T) {
 				Bindings: []*triggersv1.EventListenerBinding{
 					{
 						Name:       "my-triggerbinding",
+						Kind:       triggersv1.NamespacedTriggerBindingKind,
+						Ref:        "my-triggerbinding",
 						APIVersion: "v1alpha1",
 					},
 					{
 						Name:       "tb-params",
+						Kind:       triggersv1.NamespacedTriggerBindingKind,
+						Ref:        "tb-params",
+						APIVersion: "v1alpha1",
+					},
+					{
+						Name:       "my-clustertriggerbinding",
+						Kind:       triggersv1.ClusterTriggerBindingKind,
+						Ref:        "my-clustertriggerbinding",
+						APIVersion: "v1alpha1",
+					},
+					{
+						Name:       "ctb-params",
+						Kind:       triggersv1.ClusterTriggerBindingKind,
+						Ref:        "ctb-params",
 						APIVersion: "v1alpha1",
 					},
 				},
@@ -330,14 +411,37 @@ func Test_ResolveTrigger(t *testing.T) {
 					tb,
 					triggerBindings["tb-params"],
 				},
+				ClusterTriggerBindings: []*triggersv1.ClusterTriggerBinding{
+					ctb,
+					clusterTriggerBindings["ctb-params"],
+				},
 				TriggerTemplate: &tt,
+			},
+		},
+		{
+			name: "missing kind implies namespacedTriggerBinding",
+			trigger: triggersv1.EventListenerTrigger{
+				Bindings: []*triggersv1.EventListenerBinding{{
+					Name:       "my-triggerbinding",
+					APIVersion: "v1alpha1",
+					Ref:        "my-triggerbinding",
+				}},
+				Template: triggersv1.EventListenerTemplate{
+					Name:       "my-triggertemplate",
+					APIVersion: "v1alpha1",
+				},
+			},
+			want: ResolvedTrigger{
+				TriggerBindings:        []*triggersv1.TriggerBinding{tb},
+				ClusterTriggerBindings: []*triggersv1.ClusterTriggerBinding{},
+				TriggerTemplate:        &tt,
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := ResolveTrigger(tc.trigger, getTB, getTT)
+			got, err := ResolveTrigger(tc.trigger, getTB, getCTB, getTT)
 			if err != nil {
 				t.Errorf("ResolveTrigger() returned unexpected error: %s", err)
 			} else if diff := cmp.Diff(tc.want, got); diff != "" {
@@ -353,29 +457,48 @@ func Test_ResolveTrigger_error(t *testing.T) {
 		trigger triggersv1.EventListenerTrigger
 		getTB   getTriggerBinding
 		getTT   getTriggerTemplate
+		getCTB  getClusterTriggerBinding
 	}{
 		{
-			name:    "error triggerbinding",
-			trigger: bldr.Trigger("invalid-tb-name", "my-triggertemplate", "v1alpha1"),
-			getTB:   getTB,
-			getTT:   getTT,
+			name: "error triggerbinding",
+			trigger: bldr.Trigger("my-triggertemplate", "v1alpha1",
+				bldr.EventListenerTriggerBinding("invalid-tb-name", "", "invalid-tb-name", "v1alpha1"),
+			),
+			getTB:  getTB,
+			getCTB: getCTB,
+			getTT:  getTT,
 		},
 		{
-			name:    "error triggertemplate",
-			trigger: bldr.Trigger("my-triggerbinding", "invalid-tt-name", "v1alpha1"),
-			getTB:   getTB,
-			getTT:   getTT,
+			name: "error clustertriggerbinding",
+			trigger: bldr.Trigger("my-triggertemplate", "v1alpha1",
+				bldr.EventListenerTriggerBinding("invalid-ctb-name", "ClusterTriggerBinding", "invalid-ctb-name", "v1alpha1"),
+			),
+			getTB:  getTB,
+			getCTB: getCTB,
+			getTT:  getTT,
 		},
 		{
-			name:    "error triggerbinding and triggertemplate",
-			trigger: bldr.Trigger("invalid-tb-name", "invalid-tt-name", "v1alpha1"),
-			getTB:   getTB,
-			getTT:   getTT,
+			name: "error triggertemplate",
+			trigger: bldr.Trigger("invalid-tt-name", "v1alpha1",
+				bldr.EventListenerTriggerBinding("my-triggerbinding", "", "my-triggerbinding", "v1alpha1"),
+			),
+			getTB:  getTB,
+			getCTB: getCTB,
+			getTT:  getTT,
+		},
+		{
+			name: "error triggerbinding and triggertemplate",
+			trigger: bldr.Trigger("invalid-tt-name", "v1alpha1",
+				bldr.EventListenerTriggerBinding("invalid-tb-name", "", "invalid-tb-name", "v1alpha1"),
+			),
+			getTB:  getTB,
+			getCTB: getCTB,
+			getTT:  getTT,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := ResolveTrigger(tt.trigger, tt.getTB, tt.getTT)
+			_, err := ResolveTrigger(tt.trigger, tt.getTB, tt.getCTB, tt.getTT)
 			if err == nil {
 				t.Error("ResolveTrigger() did not return error when expected")
 			}
@@ -407,9 +530,8 @@ func Test_ApplyUIDToResourceTemplate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// This seeds UID() to return 'abcde'
-			UID = func() string { return "abcde" }
-			actualRt := ApplyUIDToResourceTemplate(tt.rt, UID())
+			// Always resolve uid to abcde for easier testing
+			actualRt := ApplyUIDToResourceTemplate(tt.rt, "abcde")
 			if diff := cmp.Diff(string(tt.expectedRt), string(actualRt)); diff != "" {
 				t.Errorf("ApplyUIDToResourceTemplate(): -want +got: %s", diff)
 			}
@@ -419,34 +541,59 @@ func Test_ApplyUIDToResourceTemplate(t *testing.T) {
 
 func TestMergeBindingParams(t *testing.T) {
 	tests := []struct {
-		name     string
-		bindings []*triggersv1.TriggerBinding
-		want     []pipelinev1.Param
-		wantErr  bool
+		name            string
+		bindings        []*triggersv1.TriggerBinding
+		clusterBindings []*triggersv1.ClusterTriggerBinding
+		want            []triggersv1.Param
+		wantErr         bool
 	}{{
-		name: "empty bindings",
+		name:            "empty bindings",
+		clusterBindings: []*triggersv1.ClusterTriggerBinding{},
 		bindings: []*triggersv1.TriggerBinding{
 			bldr.TriggerBinding("", "", bldr.TriggerBindingSpec()),
 			bldr.TriggerBinding("", "", bldr.TriggerBindingSpec()),
 		},
-		want: []pipelinev1.Param{},
+		want: []triggersv1.Param{},
 	}, {
-		name: "single binding with multiple params",
+		name:            "single binding with multiple params",
+		clusterBindings: []*triggersv1.ClusterTriggerBinding{},
 		bindings: []*triggersv1.TriggerBinding{
 			bldr.TriggerBinding("", "", bldr.TriggerBindingSpec(
 				bldr.TriggerBindingParam("param1", "value1"),
 				bldr.TriggerBindingParam("param2", "value2"),
 			)),
 		},
-		want: []pipelinev1.Param{{
+		want: []triggersv1.Param{{
 			Name:  "param1",
-			Value: pipelinev1.ArrayOrString{StringVal: "value1", Type: pipelinev1.ParamTypeString},
+			Value: "value1",
 		}, {
 			Name:  "param2",
-			Value: pipelinev1.ArrayOrString{StringVal: "value2", Type: pipelinev1.ParamTypeString},
+			Value: "value2",
+		}},
+	}, {
+		name: "single cluster type binding with multiple params",
+		clusterBindings: []*triggersv1.ClusterTriggerBinding{
+			bldr.ClusterTriggerBinding("", bldr.ClusterTriggerBindingSpec(
+				bldr.TriggerBindingParam("param1", "value1"),
+				bldr.TriggerBindingParam("param2", "value2"),
+			)),
+		},
+		bindings: []*triggersv1.TriggerBinding{},
+		want: []triggersv1.Param{{
+			Name:  "param1",
+			Value: "value1",
+		}, {
+			Name:  "param2",
+			Value: "value2",
 		}},
 	}, {
 		name: "multiple bindings each with multiple params",
+		clusterBindings: []*triggersv1.ClusterTriggerBinding{
+			bldr.ClusterTriggerBinding("", bldr.ClusterTriggerBindingSpec(
+				bldr.TriggerBindingParam("param5", "value1"),
+				bldr.TriggerBindingParam("param6", "value2"),
+			)),
+		},
 		bindings: []*triggersv1.TriggerBinding{
 			bldr.TriggerBinding("", "", bldr.TriggerBindingSpec(
 				bldr.TriggerBindingParam("param1", "value1"),
@@ -457,21 +604,28 @@ func TestMergeBindingParams(t *testing.T) {
 				bldr.TriggerBindingParam("param4", "value4"),
 			)),
 		},
-		want: []pipelinev1.Param{{
+		want: []triggersv1.Param{{
 			Name:  "param1",
-			Value: pipelinev1.ArrayOrString{StringVal: "value1", Type: pipelinev1.ParamTypeString},
+			Value: "value1",
 		}, {
 			Name:  "param2",
-			Value: pipelinev1.ArrayOrString{StringVal: "value2", Type: pipelinev1.ParamTypeString},
+			Value: "value2",
 		}, {
 			Name:  "param3",
-			Value: pipelinev1.ArrayOrString{StringVal: "value3", Type: pipelinev1.ParamTypeString},
+			Value: "value3",
 		}, {
 			Name:  "param4",
-			Value: pipelinev1.ArrayOrString{StringVal: "value4", Type: pipelinev1.ParamTypeString},
+			Value: "value4",
+		}, {
+			Name:  "param5",
+			Value: "value1",
+		}, {
+			Name:  "param6",
+			Value: "value2",
 		}},
 	}, {
-		name: "multiple bindings with duplicate params",
+		name:            "multiple bindings with duplicate params",
+		clusterBindings: []*triggersv1.ClusterTriggerBinding{},
 		bindings: []*triggersv1.TriggerBinding{
 			bldr.TriggerBinding("", "", bldr.TriggerBindingSpec(
 				bldr.TriggerBindingParam("param1", "value1"),
@@ -483,7 +637,8 @@ func TestMergeBindingParams(t *testing.T) {
 		},
 		wantErr: true,
 	}, {
-		name: "single binding with duplicate params",
+		name:            "single binding with duplicate params",
+		clusterBindings: []*triggersv1.ClusterTriggerBinding{},
 		bindings: []*triggersv1.TriggerBinding{
 			bldr.TriggerBinding("", "", bldr.TriggerBindingSpec(
 				bldr.TriggerBindingParam("param1", "value1"),
@@ -495,7 +650,7 @@ func TestMergeBindingParams(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := MergeBindingParams(tt.bindings)
+			got, err := MergeBindingParams(tt.bindings, tt.clusterBindings)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Unexpected error : %q", err)
 			}

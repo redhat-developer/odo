@@ -1,6 +1,9 @@
 buildPack: go
 buildPackGitURL: https://github.com/jenkins-x-buildpacks/jenkins-x-classic.git
 pipelineConfig:
+  env:
+  - name: GOPROXY
+    value: http://jenkins-x-athens-proxy:80
   pipelines:
     release:
       promote:

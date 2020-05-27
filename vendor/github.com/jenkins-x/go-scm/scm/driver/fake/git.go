@@ -18,6 +18,10 @@ func (s *gitService) FindRef(ctx context.Context, repo, ref string) (string, *sc
 	return f.TestRef, nil, nil
 }
 
+func (s *gitService) CreateRef(ctx context.Context, repo, ref, sha string) (*scm.Reference, *scm.Response, error) {
+	panic("implement me")
+}
+
 func (s *gitService) DeleteRef(ctx context.Context, repo, ref string) (*scm.Response, error) {
 	f := s.data
 	paths := strings.SplitN(repo, "/", 2)

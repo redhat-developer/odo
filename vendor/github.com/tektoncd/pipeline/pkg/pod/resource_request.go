@@ -21,6 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
+var emptyResourceQuantity = resource.Quantity{}
 var zeroQty = resource.MustParse("0")
 
 func allZeroQty() corev1.ResourceList {
@@ -31,7 +32,7 @@ func allZeroQty() corev1.ResourceList {
 	}
 }
 
-func resolveResourceRequests(containers []corev1.Container) []corev1.Container {
+func resolveResourceRequests(containers []corev1.Container, limitRangeMin corev1.ResourceList) []corev1.Container {
 	max := allZeroQty()
 	resourceNames := []corev1.ResourceName{corev1.ResourceCPU, corev1.ResourceMemory, corev1.ResourceEphemeralStorage}
 	maxIndicesByResource := make(map[corev1.ResourceName]int, len(resourceNames))
@@ -50,16 +51,27 @@ func resolveResourceRequests(containers []corev1.Container) []corev1.Container {
 		}
 	}
 
+	// Use zeroQty if request value is not set for min
+	if limitRangeMin[corev1.ResourceCPU] == emptyResourceQuantity {
+		limitRangeMin[corev1.ResourceCPU] = zeroQty
+	}
+	if limitRangeMin[corev1.ResourceMemory] == emptyResourceQuantity {
+		limitRangeMin[corev1.ResourceMemory] = zeroQty
+	}
+	if limitRangeMin[corev1.ResourceEphemeralStorage] == emptyResourceQuantity {
+		limitRangeMin[corev1.ResourceEphemeralStorage] = zeroQty
+	}
+
 	// Set all non max resource requests to 0. Leave max request at index
 	// originally defined to account for limit of step.
 	for i := range containers {
 		if containers[i].Resources.Requests == nil {
-			containers[i].Resources.Requests = allZeroQty()
+			containers[i].Resources.Requests = limitRangeMin
 			continue
 		}
 		for _, resourceName := range resourceNames {
 			if maxIndicesByResource[resourceName] != i {
-				containers[i].Resources.Requests[resourceName] = zeroQty
+				containers[i].Resources.Requests[resourceName] = limitRangeMin[resourceName]
 			}
 		}
 	}

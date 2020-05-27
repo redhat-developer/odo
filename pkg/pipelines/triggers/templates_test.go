@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	triggersv1 "github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/openshift/odo/pkg/pipelines/meta"
 )
@@ -20,7 +20,7 @@ func TestCreateDevCDDeployTemplate(t *testing.T) {
 		TypeMeta:   triggerTemplateTypeMeta,
 		ObjectMeta: meta.ObjectMeta(meta.NamespacedName("testns", "app-cd-template")),
 		Spec: triggersv1.TriggerTemplateSpec{
-			Params: []pipelinev1.ParamSpec{
+			Params: []triggersv1.ParamSpec{
 				{
 					Name:        "gitsha",
 					Description: "The specific commit SHA.",
@@ -33,7 +33,9 @@ func TestCreateDevCDDeployTemplate(t *testing.T) {
 
 			ResourceTemplates: []triggersv1.TriggerResourceTemplate{
 				{
-					RawMessage: createDevCDResourcetemplate(serviceAccName),
+					RawExtension: runtime.RawExtension{
+						Raw: createDevCDResourceTemplate(serviceAccName),
+					},
 				},
 			},
 		},
@@ -51,7 +53,7 @@ func TestCreateDevCIBuildPRTemplate(t *testing.T) {
 		ObjectMeta: meta.ObjectMeta(meta.NamespacedName("testns", "app-ci-template"),
 			statusTrackerAnnotations("dev-ci-build-from-pr", "Dev CI Build")),
 		Spec: triggersv1.TriggerTemplateSpec{
-			Params: []pipelinev1.ParamSpec{
+			Params: []triggersv1.ParamSpec{
 				{
 					Name:        "gitref",
 					Description: "The git branch for this PR.",
@@ -79,7 +81,9 @@ func TestCreateDevCIBuildPRTemplate(t *testing.T) {
 			},
 			ResourceTemplates: []triggersv1.TriggerResourceTemplate{
 				{
-					RawMessage: createDevCIResourceTemplate(serviceAccName),
+					RawExtension: runtime.RawExtension{
+						Raw: createDevCIResourceTemplate(serviceAccName),
+					},
 				},
 			},
 		},
@@ -95,14 +99,11 @@ func TestCreateCDPushTemplate(t *testing.T) {
 		TypeMeta:   triggerTemplateTypeMeta,
 		ObjectMeta: meta.ObjectMeta(meta.NamespacedName("testns", "cd-deploy-from-push-template")),
 		Spec: triggersv1.TriggerTemplateSpec{
-			Params: []pipelinev1.ParamSpec{
+			Params: []triggersv1.ParamSpec{
 				{
 					Name:        "gitref",
 					Description: "The git revision",
-					Default: &pipelinev1.ArrayOrString{
-						StringVal: "master",
-						Type:      pipelinev1.ParamTypeString,
-					},
+					Default:     strPtr("master"),
 				},
 				{
 					Name:        "gitrepositoryurl",
@@ -111,7 +112,9 @@ func TestCreateCDPushTemplate(t *testing.T) {
 			},
 			ResourceTemplates: []triggersv1.TriggerResourceTemplate{
 				{
-					RawMessage: createCDResourceTemplate(serviceAccName),
+					RawExtension: runtime.RawExtension{
+						Raw: createCDResourceTemplate(serviceAccName),
+					},
 				},
 			},
 		},
@@ -129,14 +132,11 @@ func TestCreateCIDryRunTemplate(t *testing.T) {
 			statusTrackerAnnotations("ci-dryrun-from-pr-pipeline", "Stage CI Dry Run")),
 
 		Spec: triggersv1.TriggerTemplateSpec{
-			Params: []pipelinev1.ParamSpec{
+			Params: []triggersv1.ParamSpec{
 				{
 					Name:        "gitref",
 					Description: "The git revision",
-					Default: &pipelinev1.ArrayOrString{
-						StringVal: "master",
-						Type:      pipelinev1.ParamTypeString,
-					},
+					Default:     strPtr("master"),
 				},
 				{
 					Name:        "gitrepositoryurl",
@@ -145,7 +145,9 @@ func TestCreateCIDryRunTemplate(t *testing.T) {
 			},
 			ResourceTemplates: []triggersv1.TriggerResourceTemplate{
 				{
-					RawMessage: createCIResourceTemplate(serviceAccName),
+					RawExtension: runtime.RawExtension{
+						Raw: createCIResourceTemplate(serviceAccName),
+					},
 				},
 			},
 		},

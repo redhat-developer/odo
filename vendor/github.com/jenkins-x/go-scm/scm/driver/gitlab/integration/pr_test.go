@@ -174,6 +174,9 @@ func testPullRequest(pr *scm.PullRequest) func(t *testing.T) {
 		if got, want := pr.Updated.Unix(), int64(1450463422); got != want {
 			t.Errorf("Want pr Updated %d, got %d", want, got)
 		}
+		if got, want := pr.State, "closed"; got != want {
+			t.Errorf("Want pr state %s, got %s", want, got)
+		}
 	}
 }
 

@@ -165,7 +165,7 @@ Now lets run our updated webhook task.
 - We can see now that our CI system is working! Images pushed to this repo
   result in a running pod in our cluster.
   - We can examine our pod like so.
-    - kubectl logs tekton-triggers-built-me -n getting-started --all-containers
+    - `kubectl logs tekton-triggers-built-me -n getting-started --all-containers`
 
 Now we can see our new image running our cluster, after having been retrieved,
 tested, vetted and built, docker pushed (and pulled) and finally ran on our

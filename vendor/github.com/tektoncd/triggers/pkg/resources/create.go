@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"strings"
 
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
+
 	"k8s.io/client-go/dynamic"
 
 	"go.uber.org/zap"
@@ -99,6 +101,9 @@ func Create(logger *zap.SugaredLogger, rt json.RawMessage, triggerName, eventID,
 	logger.Infof("For event ID %q creating resource %v", eventID, gvr)
 
 	if _, err := dc.Resource(gvr).Namespace(namespace).Create(data, metav1.CreateOptions{}); err != nil {
+		if kerrors.IsUnauthorized(err) || kerrors.IsForbidden(err) {
+			return err
+		}
 		return fmt.Errorf("couldn't create resource with group version kind %q: %v", gvr, err)
 	}
 	return nil

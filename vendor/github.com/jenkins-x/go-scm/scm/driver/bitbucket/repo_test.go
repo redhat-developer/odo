@@ -172,6 +172,7 @@ func TestStatusCreate(t *testing.T) {
 
 	gock.New("https://api.bitbucket.org").
 		Post("/2.0/repositories/atlassian/stash-example-plugin/commit/a6e5e7d797edf751cbd839d6bd4aef86c941eec9/statuses/build").
+		File("testdata/status_input.json").
 		Reply(201).
 		Type("application/json").
 		File("testdata/status.json")

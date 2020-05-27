@@ -18,13 +18,11 @@ package target_test
 
 import (
 	"testing"
-
-	"sigs.k8s.io/kustomize/v3/pkg/kusttest"
 )
 
 func TestNullValues(t *testing.T) {
-	th := kusttest_test.NewKustTestHarness(t, "/app")
-	th.WriteF("/app/deployment.yaml", `
+	th := NewKustTestHarness(t, "/app")
+	th.writeF("/app/deployment.yaml", `
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -45,18 +43,18 @@ spec:
         image: image
         name: example
 `)
-	th.WriteF("/app/kustomization.yaml", `
+	th.writeF("/app/kustomization.yaml", `
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
 - deployment.yaml
 `)
-	m, err := th.MakeKustTarget().MakeCustomizedResMap()
+	m, err := th.makeKustTarget().MakeCustomizedResMap()
 	if err != nil {
 		t.Fatalf("Err: %v", err)
 	}
 
-	th.AssertActualEqualsExpected(m, `
+	th.assertActualEqualsExpected(m, `
 apiVersion: apps/v1
 kind: Deployment
 metadata:

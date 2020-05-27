@@ -24,6 +24,7 @@ import (
 )
 
 const (
+	orgName        = "test-org"
 	repoName       = "test-repo"
 	invalidJobType = "invalid"
 	testJobName    = "job_0"
@@ -35,13 +36,13 @@ var jobPathTests = []struct {
 }{
 	{PeriodicJob, "logs/job_0"},
 	{PostsubmitJob, "logs/job_0"},
-	{PresubmitJob, "pr-logs/pull/knative_test-repo/0/job_0"},
+	{PresubmitJob, "pr-logs/pull/test-org_test-repo/0/job_0"},
 	{BatchJob, "pr-logs/pull/batch/job_0"},
 }
 
 func TestJobPath(t *testing.T) {
 	for _, testData := range jobPathTests {
-		job := NewJob(testJobName, testData.in, repoName, 0)
+		job := NewJob(testJobName, testData.in, orgName, repoName, 0)
 		if job.StoragePath != testData.out {
 			t.Errorf("Expected '%s', actual '%s'", testData.out, job.StoragePath)
 		}
@@ -58,14 +59,27 @@ func TestInvalidJobPath(t *testing.T) {
 		exitString = expectedExitString
 	}
 
-	NewJob(testJobName, invalidJobType, repoName, 0)
+	NewJob(testJobName, invalidJobType, orgName, repoName, 0)
 	if exitString != expectedExitString {
 		t.Fatalf("Expected: %s, actual: %s", exitString, expectedExitString)
 	}
 }
 
+func TestIsCI(t *testing.T) {
+	isCI := os.Getenv("CI")
+	// Set it to the original value
+	defer os.Setenv("CI", isCI)
+
+	os.Setenv("CI", "true")
+	if ic := IsCI(); !ic {
+		t.Fatal("Expected: true, actual: false")
+	}
+}
+
 func TestGetArtifacts(t *testing.T) {
 	dir := os.Getenv("ARTIFACTS")
+	// Set it to the original value
+	defer os.Setenv("ARTIFACTS", dir)
 
 	// Test we can read from the env var
 	os.Setenv("ARTIFACTS", "test")
@@ -80,7 +94,4 @@ func TestGetArtifacts(t *testing.T) {
 	if v != "artifacts" {
 		t.Fatalf("Actual artifacts dir: '%s' and Expected: 'artifacts'", v)
 	}
-
-	// Set it to the original value
-	os.Setenv("ARTIFACTS", dir)
 }

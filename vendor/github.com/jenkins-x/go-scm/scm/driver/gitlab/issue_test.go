@@ -328,6 +328,27 @@ func TestIssueClose(t *testing.T) {
 	t.Run("Rate", testRate(res))
 }
 
+func TestIssueReopen(t *testing.T) {
+	defer gock.Off()
+
+	gock.New("https://gitlab.com").
+		Put("/api/v4/projects/diaspora/diaspora/issues/1").
+		MatchParam("state_event", "reopen").
+		Reply(204).
+		Type("application/json").
+		SetHeaders(mockHeaders)
+
+	client := NewDefault()
+	res, err := client.Issues.Reopen(context.Background(), "diaspora/diaspora", 1)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	t.Run("Request", testRequest(res))
+	t.Run("Rate", testRate(res))
+}
+
 func TestIssueLock(t *testing.T) {
 	defer gock.Off()
 

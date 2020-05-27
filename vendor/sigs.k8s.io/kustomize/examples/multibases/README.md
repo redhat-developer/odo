@@ -1,32 +1,22 @@
 # Demo: multibases with a common base
 
-`kustomize` encourages defining multiple variants -
-e.g. dev, staging and prod,
-as overlays on a common base.
+`kustomize` encourages defining multiple variants - e.g. dev, staging and prod, as overlays on a common base.
 
-It's possible to create an additional overlay to
-compose these variants together - just declare the
-overlays as the bases of a new kustomization.
+It's possible to create an additional overlay to compose these variants together - just declare the overlays as the bases of a new kustomization.
 
-This is also a means to apply a common label or
-annotation across the variants, if for some reason
-the base isn't under your control. It also allows
-one to define a left-most namePrefix across the
-variants - something that cannot be
-done by modifying the common base.
+This is also a means to apply a common label or annotation across the variants, if for some reason the base isn't under your control. It also allows one to define a left-most namePrefix across the variants - something that cannot be done by modifying the common base.
 
-The following demonstrates this using a base
-that is just a single pod.
+The following demonstrates this using a base that's just one pod.
 
 Define a place to work:
 
-<!-- @makeWorkplace @testAgainstLatestRelease -->
+<!-- @makeWorkplace @test -->
 ```
 DEMO_HOME=$(mktemp -d)
 ```
 
 Define a common base:
-<!-- @makeBase @testAgainstLatestRelease -->
+<!-- @makeBase @test -->
 ```
 BASE=$DEMO_HOME/base
 mkdir $BASE
@@ -51,49 +41,49 @@ EOF
 ```
 
 Define a dev variant overlaying base:
-<!-- @makeDev @testAgainstLatestRelease -->
+<!-- @makeDev @test -->
 ```
 DEV=$DEMO_HOME/dev
 mkdir $DEV
 
 cat <<EOF >$DEV/kustomization.yaml
-resources:
+bases:
 - ./../base
 namePrefix: dev-
 EOF
 ```
 
 Define a staging variant overlaying base:
-<!-- @makeStaging @testAgainstLatestRelease -->
+<!-- @makeStaging @test -->
 ```
 STAG=$DEMO_HOME/staging
 mkdir $STAG
 
 cat <<EOF >$STAG/kustomization.yaml
-resources:
+bases:
 - ./../base
 namePrefix: stag-
 EOF
 ```
 
 Define a production variant overlaying base:
-<!-- @makeProd @testAgainstLatestRelease -->
+<!-- @makeProd @test -->
 ```
 PROD=$DEMO_HOME/production
 mkdir $PROD
 
 cat <<EOF >$PROD/kustomization.yaml
-resources:
+bases:
 - ./../base
 namePrefix: prod-
 EOF
 ```
 
 Then define a _Kustomization_ composing three variants together:
-<!-- @makeTopLayer @testAgainstLatestRelease -->
+<!-- @makeTopLayer @test -->
 ```
 cat <<EOF >$DEMO_HOME/kustomization.yaml
-resources:
+bases:
 - ./dev
 - ./staging
 - ./production
@@ -119,7 +109,7 @@ Now the workspace has following directories
 
 Confirm that the `kustomize build` output contains three pod objects from dev, staging and production variants.
 
-<!-- @confirmVariants @testAgainstLatestRelease -->
+<!-- @confirmVariants @test -->
 ```
 test 1 == \
   $(kustomize build $DEMO_HOME | grep cluster-a-dev-myapp-pod | wc -l); \

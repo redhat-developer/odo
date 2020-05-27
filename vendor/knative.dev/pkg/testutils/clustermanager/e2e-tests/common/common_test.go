@@ -17,6 +17,7 @@ limitations under the License.
 package common
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"testing"
@@ -30,23 +31,25 @@ func TestStandardExec(t *testing.T) {
 		expErr error
 	}{
 		{"bash", []string{"-c", "echo foo"}, []byte("foo\n"), nil},
-		{"cmd_not_exist", []string{"-c", "echo"}, []byte{}, fmt.Errorf("exec: \"cmd_not_exist\": executable file not found in $PATH")},
+		{"cmd_not_exist", []string{"-c", "echo"}, []byte{}, errors.New(`exec: "cmd_not_exist": executable file not found in $PATH`)},
 	}
 
 	for _, data := range datas {
-		data := data
-		out, err := StandardExec(data.cmd, data.args...)
-		if err != nil {
-			err = fmt.Errorf(err.Error())
-		}
-		errMsg := fmt.Sprintf("running cmd: '%v', args: '%v'", data.cmd, data.args)
-		if !reflect.DeepEqual(data.expErr, err) {
-			t.Errorf("%s\nerror want: '%v'\nerror got: '%v'", errMsg, err, data.expErr)
-		}
+		t.Run(data.cmd, func(t *testing.T) {
+			out, err := StandardExec(data.cmd, data.args...)
+			errMsg := fmt.Sprintf("running cmd: '%v', args: '%v'", data.cmd, data.args)
+			if (err != nil) != (data.expErr != nil) {
+				t.Fatalf("Error = %v, want: %v", err, data.expErr)
+			} else if err != nil {
+				if err.Error() != data.expErr.Error() {
+					t.Errorf("%s\nerror got:  '%v'\nerror want: '%v'", errMsg, data.expErr, err)
+				}
+			}
 
-		if !reflect.DeepEqual(string(out), string(data.expOut)) {
-			t.Errorf("%s\noutput want: '%v'\noutput got: '%v'", errMsg, string(data.expOut), string(out))
-		}
+			if got, want := string(out), string(data.expOut); got != want {
+				t.Errorf("%s\noutput got:  '%s'\noutput want: '%s'", errMsg, got, want)
+			}
+		})
 	}
 }
 
@@ -82,7 +85,7 @@ func TestGetRepoName(t *testing.T) {
 		}
 
 		out, err := GetRepoName()
-		if string(data.expOut) != out || !reflect.DeepEqual(err, data.expErr) {
+		if data.expOut != out || !reflect.DeepEqual(err, data.expErr) {
 			t.Errorf("testing getting repo name with:\n\tmocked git output: '%s'\n\tmocked git err: '%v'\nwant: out - '%s', err - '%v'\ngot: out - '%s', err - '%v'",
 				data.out, data.err, data.expOut, data.expErr, out, err)
 		}

@@ -1,5 +1,5 @@
 ---
-apiVersion: tekton.dev/v1alpha1
+apiVersion: triggers.tekton.dev/v1alpha1
 kind: EventListener
 metadata:
   name: listener
@@ -8,7 +8,7 @@ spec:
   triggers:
     - name: foo-trig
       bindings:
-        - name: pipeline-binding
-        - name: message-binding
+        - ref: pipeline-binding
+        - ref: message-binding
       template:
         name: pipeline-template

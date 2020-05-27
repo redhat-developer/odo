@@ -9,7 +9,7 @@ import (
 	"github.com/openshift/odo/pkg/pipelines/ioutils"
 	"github.com/spf13/cobra"
 
-	ktemplates "k8s.io/kubernetes/pkg/kubectl/util/templates"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
 const (
@@ -66,7 +66,7 @@ func (o *AddOptions) Run() error {
 	if err != nil {
 		return err
 	}
-	log.Successf("Service %s has been created sucessfully at environment %s.", o.serviceName, o.envName)
+	log.Successf("Created Service %s sucessfully at environment %s.", o.serviceName, o.envName)
 	return nil
 
 }

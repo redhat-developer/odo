@@ -84,6 +84,10 @@ func (s *issueService) Close(ctx context.Context, repo string, number int) (*scm
 	return nil, scm.ErrNotSupported
 }
 
+func (s *issueService) Reopen(ctx context.Context, repo string, number int) (*scm.Response, error) {
+	return nil, scm.ErrNotSupported
+}
+
 func (s *issueService) Lock(ctx context.Context, repo string, number int) (*scm.Response, error) {
 	return nil, scm.ErrNotSupported
 }

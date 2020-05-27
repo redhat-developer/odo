@@ -20,9 +20,10 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	kubeclient "knative.dev/pkg/client/injection/kube/client/fake"
-	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/secret/fake"
+	_ "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret/fake"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -63,17 +64,8 @@ func TestReconcile(t *testing.T) {
 		Key:     key,
 		Objects: []runtime.Object{secret},
 	}, {
-		Name:        "secret does not exist",
-		Key:         key,
-		WantCreates: []runtime.Object{secret},
-	}, {
-		Name:    "secret does not exist, create error",
-		Key:     key,
-		WantErr: true,
-		WithReactors: []clientgotesting.ReactionFunc{
-			InduceFailure("create", "secrets"),
-		},
-		WantCreates: []runtime.Object{secret},
+		Name: "secret does not exist",
+		Key:  key,
 	}, {
 		Name: "missing server key",
 		Key:  key,
@@ -125,6 +117,19 @@ func TestReconcile(t *testing.T) {
 		WantUpdates: []clientgotesting.UpdateActionImpl{{
 			Object: secret,
 		}},
+	}, {
+		Name: "certificate expiring soon",
+		Key:  key,
+		// 6 days falls inside of the grace period of 7 days so the secret will be updated
+		Objects: []runtime.Object{secretWithCertData(t, time.Now().Add(6*24*time.Hour))},
+		WantUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: secret,
+		}},
+	}, {
+		Name: "certificate not expiring soon",
+		Key:  key,
+		// 8 days falls outside of the grace period of 7 days so the secret will not be updated
+		Objects: []runtime.Object{secretWithCertData(t, time.Now().Add(8*24*time.Hour))},
 	}}
 
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
@@ -162,9 +167,20 @@ func TestReconcileMakeSecretFailure(t *testing.T) {
 		Key:     key,
 		Objects: []runtime.Object{secret},
 	}, {
-		Name:    "secret does not exist",
+		Name:    "malformed secret",
 		Key:     key,
 		WantErr: true,
+		Objects: []runtime.Object{&corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      secretName,
+				Namespace: system.Namespace(),
+			},
+			Data: map[string][]byte{
+				// certresources.ServerKey:  []byte("missing"),
+				certresources.ServerCert: []byte("present"),
+				certresources.CACert:     []byte("present"),
+			},
+		}},
 	}, {
 		Name: "missing server key",
 		Key:  key,
@@ -199,5 +215,24 @@ func TestNew(t *testing.T) {
 	c := NewController(ctx, configmap.NewStaticWatcher())
 	if c == nil {
 		t.Fatal("Expected NewController to return a non-nil value")
+	}
+}
+
+func secretWithCertData(t *testing.T, expiration time.Time) *corev1.Secret {
+	secretName := "webhook-secret"
+	serverKey, serverCert, caCert, err := certresources.CreateCerts(context.Background(), "webhook-service", system.Namespace(), expiration)
+	if err != nil {
+		t.Fatalf("Failed to create cert: %v", err)
+	}
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secretName,
+			Namespace: system.Namespace(),
+		},
+		Data: map[string][]byte{
+			certresources.ServerKey:  serverKey,
+			certresources.ServerCert: serverCert,
+			certresources.CACert:     caCert,
+		},
 	}
 }

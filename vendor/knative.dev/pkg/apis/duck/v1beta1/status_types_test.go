@@ -58,9 +58,15 @@ func TestStatusGetCondition(t *testing.T) {
 func TestConditionSet(t *testing.T) {
 	condSet := apis.NewLivingConditionSet("Foo")
 
-	wantGeneration := int64(42)
+	const wantGeneration = 42
 
-	s := &Status{ObservedGeneration: wantGeneration}
+	s := &Status{
+		ObservedGeneration: wantGeneration,
+		Annotations: map[string]string{
+			"burning": "the",
+			"bridges": "down",
+		},
+	}
 	mgr := condSet.Manage(s)
 
 	mgr.InitializeConditions()
@@ -82,8 +88,11 @@ func TestConditionSet(t *testing.T) {
 		t.Errorf("len(s2.Conditions) = %d, wanted %d", got, want)
 	}
 	if gotGeneration := s2.ObservedGeneration; wantGeneration != gotGeneration {
-		t.Errorf("len(s2.ObservedGeneration) = %d, wanted %d",
+		t.Errorf("s2.ObservedGeneration = %d, wanted %d",
 			gotGeneration, wantGeneration)
+	}
+	if got, want := s2.Annotations, s.Annotations; !cmp.Equal(got, want) {
+		t.Errorf("Annotations mismatch: diff(-want,+got):\n%s", cmp.Diff(want, got))
 	}
 
 	for _, c := range []apis.ConditionType{"Foo"} {
@@ -134,5 +143,11 @@ func TestConditionSet(t *testing.T) {
 	if gotGeneration := s2.ObservedGeneration; wantGeneration != gotGeneration {
 		t.Errorf("len(s2.ObservedGeneration) = %d, wanted %d",
 			gotGeneration, wantGeneration)
+	}
+	s.Annotations = nil
+	s2 = &Status{}
+	s.ConvertTo(context.Background(), s2)
+	if s2.Annotations != nil {
+		t.Error("Annotations were not nil:", s2.Annotations)
 	}
 }

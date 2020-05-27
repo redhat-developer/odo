@@ -23,7 +23,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	gh "github.com/google/go-github/github"
+	gh "github.com/google/go-github/v31/github"
 	triggersv1 "github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
 	"github.com/tektoncd/triggers/pkg/interceptors"
 	"go.uber.org/zap"

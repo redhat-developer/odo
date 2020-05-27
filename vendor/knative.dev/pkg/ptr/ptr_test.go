@@ -21,8 +21,9 @@ import (
 	"time"
 )
 
+const want = 55
+
 func TestInt32(t *testing.T) {
-	want := int32(55)
 	gotPtr := Int32(want)
 	if want != *gotPtr {
 		t.Errorf("Int32() = &%v, wanted %v", *gotPtr, want)
@@ -30,7 +31,6 @@ func TestInt32(t *testing.T) {
 }
 
 func TestInt64(t *testing.T) {
-	want := int64(55)
 	gotPtr := Int64(want)
 	if want != *gotPtr {
 		t.Errorf("Int64() = &%v, wanted %v", *gotPtr, want)
@@ -38,7 +38,7 @@ func TestInt64(t *testing.T) {
 }
 
 func TestBool(t *testing.T) {
-	want := true
+	const want = true
 	gotPtr := Bool(want)
 	if want != *gotPtr {
 		t.Errorf("Bool() = &%v, wanted %v", *gotPtr, want)
@@ -46,7 +46,7 @@ func TestBool(t *testing.T) {
 }
 
 func TestString(t *testing.T) {
-	want := "should be a pointer"
+	const want = "should be a pointer"
 	gotPtr := String(want)
 	if want != *gotPtr {
 		t.Errorf("String() = &%v, wanted %v", *gotPtr, want)
@@ -57,14 +57,6 @@ func TestTime(t *testing.T) {
 	want := time.Now().Add(time.Minute)
 	if got, want := *Time(want), want; got != want {
 		t.Errorf("got = %v, want: %v", got, want)
-	}
-}
-
-func TestDuration(t *testing.T) {
-	want := 42 * time.Second
-	gotPtr := Duration(want)
-	if want != *gotPtr {
-		t.Errorf("Duration() = &%v, wanted %v", *gotPtr, want)
 	}
 }
 

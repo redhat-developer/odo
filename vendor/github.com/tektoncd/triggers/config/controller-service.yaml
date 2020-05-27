@@ -16,7 +16,14 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
+    app.kubernetes.io/name: controller
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/version: devel
+    app.kubernetes.io/part-of: tekton-triggers
+    triggers.tekton.dev/release: "devel"
     app: tekton-triggers-controller
+    version: "devel"
   name: tekton-triggers-controller
   namespace: tekton-pipelines
 spec:
@@ -26,4 +33,7 @@ spec:
     protocol: TCP
     targetPort: 9090
   selector:
-    app: tekton-triggers-controller
+    app.kubernetes.io/name: controller
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/part-of: tekton-triggers

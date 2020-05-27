@@ -18,15 +18,17 @@ package resources
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/tektoncd/pipeline/pkg/workspace"
 
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"github.com/tektoncd/pipeline/pkg/substitution"
 )
 
 // ApplyParameters applies the params from a TaskRun.Input.Parameters to a TaskSpec
-func ApplyParameters(spec *v1alpha1.TaskSpec, tr *v1alpha1.TaskRun, defaults ...v1alpha1.ParamSpec) *v1alpha1.TaskSpec {
+func ApplyParameters(spec *v1beta1.TaskSpec, tr *v1beta1.TaskRun, defaults ...v1beta1.ParamSpec) *v1beta1.TaskSpec {
 	// This assumes that the TaskRun inputs have been validated against what the Task requests.
 
 	// stringReplacements is used for standard single-string stringReplacements, while arrayReplacements contains arrays
@@ -37,53 +39,67 @@ func ApplyParameters(spec *v1alpha1.TaskSpec, tr *v1alpha1.TaskRun, defaults ...
 	// Set all the default stringReplacements
 	for _, p := range defaults {
 		if p.Default != nil {
-			if p.Default.Type == v1alpha1.ParamTypeString {
+			if p.Default.Type == v1beta1.ParamTypeString {
+				stringReplacements[fmt.Sprintf("params.%s", p.Name)] = p.Default.StringVal
+				// FIXME(vdemeester) Remove that with deprecating v1beta1
 				stringReplacements[fmt.Sprintf("inputs.params.%s", p.Name)] = p.Default.StringVal
 			} else {
+				arrayReplacements[fmt.Sprintf("params.%s", p.Name)] = p.Default.ArrayVal
+				// FIXME(vdemeester) Remove that with deprecating v1beta1
 				arrayReplacements[fmt.Sprintf("inputs.params.%s", p.Name)] = p.Default.ArrayVal
 			}
 		}
 	}
 	// Set and overwrite params with the ones from the TaskRun
-	for _, p := range tr.Spec.Inputs.Params {
-		if p.Value.Type == v1alpha1.ParamTypeString {
+	for _, p := range tr.Spec.Params {
+		if p.Value.Type == v1beta1.ParamTypeString {
+			stringReplacements[fmt.Sprintf("params.%s", p.Name)] = p.Value.StringVal
+			// FIXME(vdemeester) Remove that with deprecating v1beta1
 			stringReplacements[fmt.Sprintf("inputs.params.%s", p.Name)] = p.Value.StringVal
 		} else {
+			arrayReplacements[fmt.Sprintf("params.%s", p.Name)] = p.Value.ArrayVal
+			// FIXME(vdemeester) Remove that with deprecating v1beta1
 			arrayReplacements[fmt.Sprintf("inputs.params.%s", p.Name)] = p.Value.ArrayVal
 		}
 	}
-
 	return ApplyReplacements(spec, stringReplacements, arrayReplacements)
 }
 
 // ApplyResources applies the substitution from values in resources which are referenced in spec as subitems
 // of the replacementStr.
-func ApplyResources(spec *v1alpha1.TaskSpec, resolvedResources map[string]v1alpha1.PipelineResourceInterface, replacementStr string) *v1alpha1.TaskSpec {
+func ApplyResources(spec *v1beta1.TaskSpec, resolvedResources map[string]v1beta1.PipelineResourceInterface, replacementStr string) *v1beta1.TaskSpec {
 	replacements := map[string]string{}
 	for name, r := range resolvedResources {
 		for k, v := range r.Replacements() {
+			replacements[fmt.Sprintf("resources.%s.%s.%s", replacementStr, name, k)] = v
+			// FIXME(vdemeester) Remove that with deprecating v1beta1
 			replacements[fmt.Sprintf("%s.resources.%s.%s", replacementStr, name, k)] = v
 		}
 	}
 
 	// We always add replacements for 'path'
-	if spec.Inputs != nil {
-		for _, r := range spec.Inputs.Resources {
-			replacements[fmt.Sprintf("inputs.resources.%s.path", r.Name)] = v1alpha1.InputResourcePath(r.ResourceDeclaration)
+	if spec.Resources != nil && spec.Resources.Inputs != nil {
+		for _, r := range spec.Resources.Inputs {
+			replacements[fmt.Sprintf("resources.inputs.%s.path", r.Name)] = v1beta1.InputResourcePath(r.ResourceDeclaration)
+			// FIXME(vdemeester) Remove that with deprecating v1beta1
+			replacements[fmt.Sprintf("inputs.resources.%s.path", r.Name)] = v1beta1.InputResourcePath(r.ResourceDeclaration)
 		}
 	}
-	if spec.Outputs != nil {
-		for _, r := range spec.Outputs.Resources {
-			replacements[fmt.Sprintf("outputs.resources.%s.path", r.Name)] = v1alpha1.OutputResourcePath(r.ResourceDeclaration)
+	if spec.Resources != nil && spec.Resources.Outputs != nil {
+		for _, r := range spec.Resources.Outputs {
+			replacements[fmt.Sprintf("resources.outputs.%s.path", r.Name)] = v1beta1.OutputResourcePath(r.ResourceDeclaration)
+			// FIXME(vdemeester) Remove that with deprecating v1beta1
+			replacements[fmt.Sprintf("outputs.resources.%s.path", r.Name)] = v1beta1.OutputResourcePath(r.ResourceDeclaration)
 		}
 	}
 
 	return ApplyReplacements(spec, replacements, map[string][]string{})
 }
 
-// ApplyWorkspaces applies the substitution from paths that the workspaces in w are mounted to and the
-// volumes that wb are realized with in the task spec ts.
-func ApplyWorkspaces(spec *v1alpha1.TaskSpec, w []v1alpha1.WorkspaceDeclaration, wb []v1alpha1.WorkspaceBinding) *v1alpha1.TaskSpec {
+// ApplyWorkspaces applies the substitution from paths that the workspaces in w are mounted to, the
+// volumes that wb are realized with in the task spec ts and the PersistentVolumeClaim names for the
+// workspaces.
+func ApplyWorkspaces(spec *v1beta1.TaskSpec, w []v1beta1.WorkspaceDeclaration, wb []v1beta1.WorkspaceBinding) *v1beta1.TaskSpec {
 	stringReplacements := map[string]string{}
 
 	for _, ww := range w {
@@ -93,22 +109,49 @@ func ApplyWorkspaces(spec *v1alpha1.TaskSpec, w []v1alpha1.WorkspaceDeclaration,
 	for name, vv := range v {
 		stringReplacements[fmt.Sprintf("workspaces.%s.volume", name)] = vv.Name
 	}
+	for _, w := range wb {
+		if w.PersistentVolumeClaim != nil {
+			stringReplacements[fmt.Sprintf("workspaces.%s.claim", w.Name)] = w.PersistentVolumeClaim.ClaimName
+		} else {
+			stringReplacements[fmt.Sprintf("workspaces.%s.claim", w.Name)] = ""
+		}
+	}
+	return ApplyReplacements(spec, stringReplacements, map[string][]string{})
+}
+
+// ApplyTaskResults applies the substitution from values in results which are referenced in spec as subitems
+// of the replacementStr.
+func ApplyTaskResults(spec *v1beta1.TaskSpec) *v1beta1.TaskSpec {
+	stringReplacements := map[string]string{}
+
+	for _, result := range spec.Results {
+		stringReplacements[fmt.Sprintf("results.%s.path", result.Name)] = filepath.Join(pipeline.DefaultResultPath, result.Name)
+	}
+	return ApplyReplacements(spec, stringReplacements, map[string][]string{})
+}
+
+// ApplyCredentialsPath applies a substitution of the key $(credentials.path) with the path that the creds-init
+// helper will write its credentials to.
+func ApplyCredentialsPath(spec *v1beta1.TaskSpec, path string) *v1beta1.TaskSpec {
+	stringReplacements := map[string]string{
+		"credentials.path": path,
+	}
 	return ApplyReplacements(spec, stringReplacements, map[string][]string{})
 }
 
 // ApplyReplacements replaces placeholders for declared parameters with the specified replacements.
-func ApplyReplacements(spec *v1alpha1.TaskSpec, stringReplacements map[string]string, arrayReplacements map[string][]string) *v1alpha1.TaskSpec {
+func ApplyReplacements(spec *v1beta1.TaskSpec, stringReplacements map[string]string, arrayReplacements map[string][]string) *v1beta1.TaskSpec {
 	spec = spec.DeepCopy()
 
 	// Apply variable expansion to steps fields.
 	steps := spec.Steps
 	for i := range steps {
-		v1alpha1.ApplyStepReplacements(&steps[i], stringReplacements, arrayReplacements)
+		v1beta1.ApplyStepReplacements(&steps[i], stringReplacements, arrayReplacements)
 	}
 
 	// Apply variable expansion to stepTemplate fields.
 	if spec.StepTemplate != nil {
-		v1alpha1.ApplyStepReplacements(&v1alpha1.Step{Container: *spec.StepTemplate}, stringReplacements, arrayReplacements)
+		v1beta1.ApplyStepReplacements(&v1beta1.Step{Container: *spec.StepTemplate}, stringReplacements, arrayReplacements)
 	}
 
 	// Apply variable expansion to the build's volumes
@@ -123,12 +166,25 @@ func ApplyReplacements(spec *v1alpha1.TaskSpec, stringReplacements map[string]st
 		if v.PersistentVolumeClaim != nil {
 			spec.Volumes[i].PersistentVolumeClaim.ClaimName = substitution.ApplyReplacements(v.PersistentVolumeClaim.ClaimName, stringReplacements)
 		}
+		if v.Projected != nil {
+			for _, s := range spec.Volumes[i].Projected.Sources {
+				if s.ConfigMap != nil {
+					s.ConfigMap.Name = substitution.ApplyReplacements(s.ConfigMap.Name, stringReplacements)
+				}
+				if s.Secret != nil {
+					s.Secret.Name = substitution.ApplyReplacements(s.Secret.Name, stringReplacements)
+				}
+				if s.ServiceAccountToken != nil {
+					s.ServiceAccountToken.Audience = substitution.ApplyReplacements(s.ServiceAccountToken.Audience, stringReplacements)
+				}
+			}
+		}
 	}
 
 	// Apply variable substitution to the sidecar definitions
 	sidecars := spec.Sidecars
 	for i := range sidecars {
-		v1alpha1.ApplyContainerReplacements(&sidecars[i], stringReplacements, arrayReplacements)
+		v1beta1.ApplyContainerReplacements(&sidecars[i].Container, stringReplacements, arrayReplacements)
 	}
 
 	return spec

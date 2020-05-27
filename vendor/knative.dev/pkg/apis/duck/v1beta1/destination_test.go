@@ -32,7 +32,7 @@ const (
 )
 
 func TestValidateDestination(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	validRef := corev1.ObjectReference{
 		Kind:       kind,
@@ -205,7 +205,7 @@ func TestValidateDestination(t *testing.T) {
 }
 
 func TestValidateDestinationDisallowDeprecated(t *testing.T) {
-	ctx := context.TODO()
+	ctx := context.Background()
 
 	validRef := corev1.ObjectReference{
 		Kind:       kind,

@@ -19,11 +19,18 @@
         "avatar_url": "https://secure.gravatar.com/avatar/b5bf44866b4eeafa2d8114bfe15da02f?s=80&d=identicon",
         "web_url": "https://gitlab.com/dblessing"
     },
-    "assignee": null,
+    "assignees": [{
+        "name": "Miss Monserrate Beier",
+        "username": "axel.block",
+        "id": 12,
+        "state": "active",
+        "avatar_url": "http://www.gravatar.com/avatar/46f6f7dc858ada7be1853f7fb96e81da?s=80&d=identicon",
+        "web_url": "https://gitlab.example.com/axel.block"
+    }],
     "source_project_id": 32732,
     "target_project_id": 32732,
     "labels": [],
-    "work_in_progress": false,
+    "work_in_progress": true,
     "milestone": null,
     "merge_when_pipeline_succeeds": false,
     "merge_status": "can_be_merged",

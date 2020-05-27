@@ -20,7 +20,7 @@ import (
 	"flag"
 	"log"
 
-	"github.com/tektoncd/pipeline/pkg/system"
+	"github.com/tektoncd/triggers/pkg/system"
 	"go.uber.org/zap"
 	"k8s.io/client-go/kubernetes"
 	"knative.dev/pkg/configmap"

@@ -16,15 +16,15 @@ limitations under the License.
 
 package transformers
 
-import "sigs.k8s.io/kustomize/v3/pkg/resmap"
+import "sigs.k8s.io/kustomize/pkg/resmap"
 
 // noOpTransformer contains a no-op transformer.
 type noOpTransformer struct{}
 
-var _ resmap.Transformer = &noOpTransformer{}
+var _ Transformer = &noOpTransformer{}
 
 // NewNoOpTransformer constructs a noOpTransformer.
-func NewNoOpTransformer() resmap.Transformer {
+func NewNoOpTransformer() Transformer {
 	return &noOpTransformer{}
 }
 

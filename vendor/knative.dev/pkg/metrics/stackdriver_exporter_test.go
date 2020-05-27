@@ -24,6 +24,8 @@ import (
 	"contrib.go.opencensus.io/exporter/stackdriver"
 	"go.opencensus.io/metric/metricdata"
 	"go.opencensus.io/stats/view"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	. "knative.dev/pkg/logging/testing"
 	"knative.dev/pkg/metrics/metricskey"
 )
@@ -471,48 +473,45 @@ func assertStringsEqual(t *testing.T, description string, expected string, actua
 }
 
 func TestSetStackdriverSecretLocation(t *testing.T) {
+	// Prevent pollution from other tests
+	useStackdriverSecretEnabled = false
 	// Reset global state after test
 	defer func() {
 		secretName = StackdriverSecretNameDefault
 		secretNamespace = StackdriverSecretNamespaceDefault
+		useStackdriverSecretEnabled = false
 	}()
 
-	sdConfig := &StackdriverClientConfig{
-		ProjectID:   "project",
-		GCPLocation: "us-west2",
-		ClusterName: "cluster",
-		UseSecret:   false,
+	const testName, testNamespace = "test-name", "test-namespace"
+	secretFetcher := func(name string) (*corev1.Secret, error) {
+		return &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      testName,
+				Namespace: testNamespace,
+			},
+		}, nil
 	}
 
 	// Sanity checks
 	assertStringsEqual(t, "DefaultSecretName", secretName, StackdriverSecretNameDefault)
 	assertStringsEqual(t, "DefaultSecretNamespace", secretNamespace, StackdriverSecretNamespaceDefault)
-	if _, err := getStackdriverExporterClientOptions(sdConfig); err != nil {
-		t.Errorf("Got unexpected error when creating exporter client options: [%v]", err)
+	sec, err := getStackdriverSecret(secretFetcher)
+	if err != nil {
+		t.Errorf("Got unexpected error when getting secret: %v", err)
+	}
+	if sec != nil {
+		t.Errorf("Stackdriver secret should not be fetched unless SetStackdriverSecretLocation has been called")
 	}
 
-	// Check configuration's UseSecret value is ignored until the consuming package calls SetStackdriverSecretLocation
-	// If an attempt to read a Secret was made, there should be an error because there's no valid in-cluster kubeclient.
-	sdConfig.UseSecret = true
-	if _, e1 := getStackdriverExporterClientOptions(sdConfig); e1 != nil {
-		t.Errorf("Got unexpected error when creating exporter client options: [%v]", e1)
+	// Once SetStackdriverSecretLocation has been called, attempts to get the secret should complete.
+	SetStackdriverSecretLocation(testName, testNamespace)
+	sec, err = getStackdriverSecret(secretFetcher)
+	if err != nil {
+		t.Errorf("Got unexpected error when getting secret: %v", err)
 	}
-
-	testName, testNamespace := "test-name", "test-namespace"
-	// SetStackdriverSecretLocation has been called & config's UseSecret value is set
-	// There should be an attempt to read the Secret, and an error because there's no valid in-cluster kubeclient.
-	SetStackdriverSecretLocation("test-name", "test-namespace")
-	if _, e1 := getStackdriverExporterClientOptions(sdConfig); e1 == nil {
-		t.Errorf("Expected a known error when getting exporter options with Secrets enabled (cannot create valid kubeclient in tests). Did the function run as expected?")
+	if sec == nil {
+		t.Error("expected secret to be non-nil if there is no error and SetStackdriverSecretLocation has been called")
 	}
 	assertStringsEqual(t, "secretName", secretName, testName)
 	assertStringsEqual(t, "secretNamespace", secretNamespace, testNamespace)
-
-	randomName, randomNamespace := "random-name", "random-namespace"
-	SetStackdriverSecretLocation(randomName, randomNamespace)
-	if _, e1 := getStackdriverExporterClientOptions(sdConfig); e1 == nil {
-		t.Errorf("Expected a known error when getting exporter options with Secrets enabled (cannot create valid kubeclient in tests). Did the function run as expected?")
-	}
-	assertStringsEqual(t, "secretName", secretName, randomName)
-	assertStringsEqual(t, "secretNamespace", secretNamespace, randomNamespace)
 }

@@ -403,7 +403,7 @@ func TestConditionSeverity(t *testing.T) {
 
 // getTypes is a small helped to strip out the used ConditionTypes from Conditions
 func getTypes(conds Conditions) []ConditionType {
-	var types []ConditionType
+	types := make([]ConditionType, 0, len(conds))
 	for _, c := range conds {
 		types = append(types, c.Type)
 	}
@@ -411,16 +411,22 @@ func getTypes(conds Conditions) []ConditionType {
 }
 
 type ConditionMarkTrueTest struct {
-	name       string
-	conditions Conditions
-	mark       ConditionType
-	happy      bool
+	name           string
+	conditions     Conditions
+	conditionTypes []ConditionType
+	mark           ConditionType
+	happy          bool
+	happyWant      *Condition
 }
 
 func doTestMarkTrueAccessor(t *testing.T, cases []ConditionMarkTrueTest) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			condSet := NewLivingConditionSet(getTypes(tc.conditions)...)
+			conditionTypes := tc.conditionTypes
+			if conditionTypes == nil {
+				conditionTypes = getTypes(tc.conditions)
+			}
+			condSet := NewLivingConditionSet(conditionTypes...)
 			status := &TestStatus{c: tc.conditions}
 			condSet.Manage(status).InitializeConditions()
 
@@ -428,11 +434,61 @@ func doTestMarkTrueAccessor(t *testing.T, cases []ConditionMarkTrueTest) {
 
 			if e, a := tc.happy, condSet.Manage(status).IsHappy(); e != a {
 				t.Errorf("%q expected: %v got: %v", tc.name, e, a)
+			} else if !e && tc.happyWant != nil {
+				e, a := tc.happyWant, condSet.Manage(status).GetTopLevelCondition()
+				if diff := cmp.Diff(e, a, ignoreFields); diff != "" {
+					t.Errorf("%s (-want, +got) = %v", tc.name, diff)
+				}
+			}
+
+			if tc.mark == condSet.happy {
+				// Skip validation the happy condition because we can't be sure
+				// marking it true was correct. Use tc.happyWant to test that case.
+				return
 			}
 
 			expected := &Condition{
 				Type:   tc.mark,
 				Status: corev1.ConditionTrue,
+			}
+
+			e, a := expected, condSet.Manage(status).GetCondition(tc.mark)
+			if diff := cmp.Diff(e, a, ignoreFields); diff != "" {
+				t.Errorf("%s (-want, +got) = %v", tc.name, diff)
+			}
+		})
+		// Run same test with MarkTrueWithReason
+		t.Run(tc.name+" with reason", func(t *testing.T) {
+			conditionTypes := tc.conditionTypes
+			if conditionTypes == nil {
+				conditionTypes = getTypes(tc.conditions)
+			}
+			condSet := NewLivingConditionSet(conditionTypes...)
+			status := &TestStatus{c: tc.conditions}
+			condSet.Manage(status).InitializeConditions()
+
+			condSet.Manage(status).MarkTrueWithReason(tc.mark, "UnitTest", "calm down, just testing")
+
+			if e, a := tc.happy, condSet.Manage(status).IsHappy(); e != a {
+				t.Errorf("%q expected: %v got: %v", tc.name, e, a)
+			} else if !e && tc.happyWant != nil {
+				e, a := tc.happyWant, condSet.Manage(status).GetTopLevelCondition()
+				if diff := cmp.Diff(e, a, ignoreFields); diff != "" {
+					t.Errorf("%s (-want, +got) = %v", tc.name, diff)
+				}
+			}
+
+			if tc.mark == condSet.happy {
+				// Skip validation the happy condition because we can't be sure
+				// marking it true was correct. Use tc.happyWant to test that case.
+				return
+			}
+
+			expected := &Condition{
+				Type:    tc.mark,
+				Status:  corev1.ConditionTrue,
+				Reason:  "UnitTest",
+				Message: "calm down, just testing",
 			}
 
 			e, a := expected, condSet.Manage(status).GetCondition(tc.mark)
@@ -470,14 +526,24 @@ func TestMarkTrue(t *testing.T) {
 	}, {
 		name: "with deps, not happy",
 		conditions: Conditions{{
-			Type:   ConditionReady,
-			Status: corev1.ConditionFalse,
+			Type:    ConditionReady,
+			Status:  corev1.ConditionFalse,
+			Reason:  "ReadyReason",
+			Message: "ReadyMsg",
 		}, {
-			Type:   "Foo",
-			Status: corev1.ConditionFalse,
+			Type:    "Foo",
+			Status:  corev1.ConditionFalse,
+			Reason:  "FooReason",
+			Message: "FooMsg",
 		}},
 		mark:  ConditionReady,
-		happy: true,
+		happy: false,
+		happyWant: &Condition{
+			Type:    ConditionReady,
+			Status:  corev1.ConditionFalse,
+			Reason:  "FooReason",
+			Message: "FooMsg",
+		},
 	}, {
 		name: "update dep, turns happy",
 		conditions: Conditions{{
@@ -503,17 +569,244 @@ func TestMarkTrue(t *testing.T) {
 	}, {
 		name: "update dep 1/2, still not happy",
 		conditions: Conditions{{
-			Type:   ConditionReady,
-			Status: corev1.ConditionFalse,
+			Type:    ConditionReady,
+			Status:  corev1.ConditionFalse,
+			Reason:  "FooReason",
+			Message: "FooMsg",
 		}, {
-			Type:   "Foo",
-			Status: corev1.ConditionFalse,
+			Type:    "Foo",
+			Status:  corev1.ConditionFalse,
+			Reason:  "FooReason",
+			Message: "FooMsg",
 		}, {
-			Type:   "Bar",
-			Status: corev1.ConditionFalse,
+			Type:    "Bar",
+			Status:  corev1.ConditionFalse,
+			Reason:  "BarReason",
+			Message: "BarMsg",
 		}},
 		mark:  "Foo",
 		happy: false,
+		happyWant: &Condition{
+			Type:    ConditionReady,
+			Status:  corev1.ConditionFalse,
+			Reason:  "BarReason",
+			Message: "BarMsg",
+		},
+	}, {
+		name: "update dep 1/3, mixed status, still not happy",
+		conditions: Conditions{{
+			Type:    ConditionReady,
+			Status:  corev1.ConditionFalse,
+			Reason:  "FooReason",
+			Message: "FooMsg",
+		}, {
+			Type:    "Foo",
+			Status:  corev1.ConditionFalse,
+			Reason:  "FooReason",
+			Message: "FooMsg",
+		}, {
+			Type:    "Bar",
+			Status:  corev1.ConditionUnknown,
+			Reason:  "BarReason",
+			Message: "BarMsg",
+		}, {
+			Type:    "Baz",
+			Status:  corev1.ConditionFalse,
+			Reason:  "BazReason",
+			Message: "BazMsg",
+		}},
+		mark:  "Foo",
+		happy: false,
+		happyWant: &Condition{
+			Type:    ConditionReady,
+			Status:  corev1.ConditionFalse,
+			Reason:  "BazReason",
+			Message: "BazMsg",
+		},
+	}, {
+		name: "update dep 1/3, unknown status, still not happy",
+		conditions: Conditions{{
+			Type:    ConditionReady,
+			Status:  corev1.ConditionFalse,
+			Reason:  "FooReason",
+			Message: "FooMsg",
+		}, {
+			Type:    "Foo",
+			Status:  corev1.ConditionFalse,
+			Reason:  "FooReason",
+			Message: "FooMsg",
+		}, {
+			Type:    "Bar",
+			Status:  corev1.ConditionUnknown,
+			Reason:  "BarReason",
+			Message: "BarMsg",
+		}, {
+			Type:    "Baz",
+			Status:  corev1.ConditionUnknown,
+			Reason:  "BazReason",
+			Message: "BazMsg",
+		}},
+		mark:  "Foo",
+		happy: false,
+		happyWant: &Condition{
+			Type:    ConditionReady,
+			Status:  corev1.ConditionUnknown,
+			Reason:  "BarReason",
+			Message: "BarMsg",
+		},
+	}, {
+		name: "update dep 1/3, unknown status because nil",
+		conditions: Conditions{{
+			Type:    ConditionReady,
+			Status:  corev1.ConditionFalse,
+			Reason:  "FooReason",
+			Message: "FooMsg",
+		}, {
+			Type:    "Foo",
+			Status:  corev1.ConditionFalse,
+			Reason:  "FooReason",
+			Message: "FooMsg",
+		}},
+		mark:           "Foo",
+		conditionTypes: []ConditionType{"Foo", "Bar", "Baz"},
+		happy:          false,
+		happyWant: &Condition{
+			Type:   ConditionReady,
+			Status: corev1.ConditionUnknown,
+		},
+	}, {
+		name: "update deps all happy with extra cruft",
+		conditions: Conditions{{
+			Type:    ConditionReady,
+			Status:  corev1.ConditionFalse,
+			Reason:  "FooReason",
+			Message: "FooMsg",
+		}, {
+			Type:    "Foo",
+			Status:  corev1.ConditionFalse,
+			Reason:  "FooReason",
+			Message: "FooMsg",
+		}, {
+			Type:     "Bar",
+			Status:   corev1.ConditionUnknown,
+			Reason:   "BarReason",
+			Message:  "BarMsg",
+			Severity: "FYI",
+		}, {
+			Type:     "Baz",
+			Status:   corev1.ConditionUnknown,
+			Reason:   "BazReason",
+			Message:  "BazMsg",
+			Severity: "LOLJK",
+		}},
+		mark:           "Foo",
+		conditionTypes: []ConditionType{"Foo"},
+		happy:          true,
+		happyWant: &Condition{
+			Type:   ConditionReady,
+			Status: corev1.ConditionTrue,
+		},
+	}, {
+		name: "with no dependents with extra cruft",
+		conditions: Conditions{{
+			Type:    ConditionReady,
+			Status:  corev1.ConditionFalse,
+			Reason:  "LongStory",
+			Message: "Set manually",
+		}, {
+			Type:    "Foo",
+			Status:  corev1.ConditionFalse,
+			Reason:  "FooReason",
+			Message: "FooMsg",
+		}, {
+			Type:     "Bar",
+			Status:   corev1.ConditionUnknown,
+			Reason:   "BarReason",
+			Message:  "BarMsg",
+			Severity: "FYI",
+		}, {
+			Type:     "Baz",
+			Status:   corev1.ConditionUnknown,
+			Reason:   "BazReason",
+			Message:  "BazMsg",
+			Severity: "LOLJK",
+		}},
+		mark:           "Foo",
+		conditionTypes: []ConditionType{},
+		happy:          true,
+		happyWant: &Condition{
+			Type:   ConditionReady,
+			Status: corev1.ConditionTrue,
+		},
+	}, {
+		name: "happy dependents with extra cruft",
+		conditions: Conditions{{
+			Type:    ConditionReady,
+			Status:  corev1.ConditionFalse,
+			Reason:  "LongStory",
+			Message: "Set manually",
+		}, {
+			Type:   "Foo",
+			Status: corev1.ConditionTrue,
+		}, {
+			Type:     "Bar",
+			Status:   corev1.ConditionUnknown,
+			Reason:   "BarReason",
+			Message:  "BarMsg",
+			Severity: "FYI",
+		}, {
+			Type:     "Baz",
+			Status:   corev1.ConditionUnknown,
+			Reason:   "BazReason",
+			Message:  "BazMsg",
+			Severity: "LOLJK",
+		}},
+		mark:           "Bar",
+		conditionTypes: []ConditionType{"Foo"},
+		happy:          true,
+		happyWant: &Condition{
+			Type:   ConditionReady,
+			Status: corev1.ConditionTrue,
+		},
+	}, {
+		name: "all happy but not cover all dependents",
+		conditions: Conditions{{
+			Type:    ConditionReady,
+			Status:  corev1.ConditionFalse,
+			Reason:  "LongStory",
+			Message: "Set manually",
+		}, {
+			Type:   "Foo",
+			Status: corev1.ConditionTrue,
+		}},
+		mark:           "Foo",
+		conditionTypes: []ConditionType{"Foo", "Bar"}, // dependents is more than conditions.
+		happy:          false,
+		happyWant: &Condition{
+			Type:   ConditionReady,
+			Status: corev1.ConditionUnknown,
+		},
+	}, {
+		name: "all happy and cover all dependents",
+		conditions: Conditions{{
+			Type:    ConditionReady,
+			Status:  corev1.ConditionFalse,
+			Reason:  "LongStory",
+			Message: "Set manually",
+		}, {
+			Type:   "Foo",
+			Status: corev1.ConditionTrue,
+		}, {
+			Type:   "NewCondition",
+			Status: corev1.ConditionTrue,
+		}},
+		mark:           "Foo",
+		conditionTypes: []ConditionType{"Foo"}, // dependents is less than conditions.
+		happy:          true,
+		happyWant: &Condition{
+			Type:   ConditionReady,
+			Status: corev1.ConditionTrue,
+		},
 	}}
 	doTestMarkTrueAccessor(t, cases)
 }
@@ -868,4 +1161,15 @@ func TestRemoveNonTerminalConditions(t *testing.T) {
 	if !manager.IsHappy() {
 		t.Error("IsHappy() = false, wanted true")
 	}
+}
+
+func TestClearConditionWithNilManager(t *testing.T) {
+	set := NewLivingConditionSet("Foo")
+	manager := set.Manage(nil)
+
+	err := manager.ClearCondition("Bar")
+	if err != nil {
+		t.Errorf("ClearCondition() expected to return nil if status is nil, got %s", err)
+	}
+
 }

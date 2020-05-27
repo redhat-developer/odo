@@ -22,7 +22,7 @@ import (
 	"strings"
 	"testing"
 
-	"sigs.k8s.io/kustomize/v3/pkg/gvk"
+	"sigs.k8s.io/kustomize/pkg/gvk"
 )
 
 func TestPathSlice(t *testing.T) {

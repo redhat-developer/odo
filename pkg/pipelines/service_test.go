@@ -20,8 +20,6 @@ import (
 	"github.com/openshift/odo/pkg/pipelines/meta"
 	res "github.com/openshift/odo/pkg/pipelines/resources"
 	"github.com/openshift/odo/pkg/pipelines/secrets"
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha2"
 	triggersv1 "github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
 )
 
@@ -414,14 +412,14 @@ func TestCreateSvcImageBinding(t *testing.T) {
 		TypeMeta:   v1.TypeMeta{Kind: "TriggerBinding", APIVersion: "tekton.dev/v1alpha1"},
 		ObjectMeta: v1.ObjectMeta{Name: "new-env-new-svc-binding", Namespace: "cicd"},
 		Spec: triggersv1.TriggerBindingSpec{
-			Params: []pipelinev1.Param{
+			Params: []triggersv1.Param{
 				{
 					Name:  "imageRepo",
-					Value: v1alpha2.ArrayOrString{Type: "string", StringVal: "quay.io/user/app"},
+					Value: "quay.io/user/app",
 				},
 				{
 					Name:  "tlsVerify",
-					Value: v1alpha2.ArrayOrString{Type: "string", StringVal: "false"},
+					Value: "false",
 				},
 			},
 		},

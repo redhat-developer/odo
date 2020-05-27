@@ -79,12 +79,12 @@ func TestWebhooks(t *testing.T) {
 			after:  "testdata/webhooks/pull_request_create.json.golden",
 			obj:    new(scm.PullRequestHook),
 		},
-		// {
-		// 	event:  "Merge Request Hook",
-		// 	before: "testdata/webhooks/pull_request_edited.json",
-		// 	after:  "testdata/webhooks/pull_request_edited.json.golden",
-		// 	obj:    new(scm.PullRequestHook),
-		// },
+		{
+			event:  "Merge Request Hook",
+			before: "testdata/webhooks/pull_request_edited.json",
+			after:  "testdata/webhooks/pull_request_edited.json.golden",
+			obj:    new(scm.PullRequestHook),
+		},
 		// {
 		// 	event:  "Merge Request Hook",
 		// 	before: "testdata/webhooks/pull_request_synchronized.json",

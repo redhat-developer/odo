@@ -8,10 +8,10 @@
   "Source": "test1",
   "Target": "master",
   "Base": {
-    "Ref": "refs/heads/master",
+    "Ref": "master",
     "Sha": "c380d3acebd181f13629a25d2e2acca46ffe1e00",
     "Repo": {
-      "ID": "",
+      "ID": "3",
       "Namespace": "",
       "Name": "",
       "FullName": "",
@@ -26,10 +26,10 @@
     }
   },
   "Head": {
-    "Ref": "refs/heads/test1",
+    "Ref": "test1",
     "Sha": "8888888888888888888888888888888888888888",
     "Repo": {
-      "ID": "",
+      "ID": "2",
       "Namespace": "",
       "Name": "",
       "FullName": "",
@@ -45,7 +45,7 @@
   },
   "Fork": "",
   "Link": "http://gitlab.example.com/my-group/my-project/merge_requests/1",
-  "State": "",
+  "State": "closed",
   "Closed": true,
   "Draft": false,
   "Merged": true,
@@ -54,6 +54,7 @@
   "MergeableState": "mergeable",
   "MergeSha": "",
   "Author": {
+    "ID": 1,
     "Login": "admin",
     "Name": "Administrator",
     "Email": "",
@@ -62,7 +63,11 @@
     "Created": "0001-01-01T00:00:00Z",
     "Updated": "0001-01-01T00:00:00Z"
   },
-  "Assignees": null,
+  "Assignees": [{
+    "ID": 1,
+    "Login": "admin",
+    "Name": "Administrator"
+  }],
   "Milestone": {
     "Number": 0,
     "ID": 0,

@@ -50,18 +50,15 @@ func TestEquals(t *testing.T) {
 	}
 }
 
-func TestNewConfigFromMap(t *testing.T) {
+func TestNewConfigSuccess(t *testing.T) {
 	tt := []struct {
 		name   string
 		input  map[string]string
-		output Config
+		output *Config
 	}{{
-		name:  "Empty map",
-		input: map[string]string{},
-		output: Config{
-			Backend:    None,
-			SampleRate: 0.1,
-		},
+		name:   "Empty map",
+		input:  map[string]string{},
+		output: defaultConfig(),
 	}, {
 		name: "Everything enabled (legacy)",
 		input: map[string]string{
@@ -70,7 +67,7 @@ func TestNewConfigFromMap(t *testing.T) {
 			debugKey:          "true",
 			sampleRateKey:     "0.5",
 		},
-		output: Config{
+		output: &Config{
 			Backend:        Zipkin,
 			Debug:          true,
 			ZipkinEndpoint: "some-endpoint",
@@ -84,7 +81,7 @@ func TestNewConfigFromMap(t *testing.T) {
 			debugKey:          "true",
 			sampleRateKey:     "0.5",
 		},
-		output: Config{
+		output: &Config{
 			Backend:        Zipkin,
 			Debug:          true,
 			ZipkinEndpoint: "some-endpoint",
@@ -99,7 +96,7 @@ func TestNewConfigFromMap(t *testing.T) {
 			debugKey:                "true",
 			sampleRateKey:           "0.5",
 		},
-		output: Config{
+		output: &Config{
 			Backend:              Stackdriver,
 			Debug:                true,
 			ZipkinEndpoint:       "some-endpoint",
@@ -116,7 +113,7 @@ func TestNewConfigFromMap(t *testing.T) {
 			debugKey:                "true",
 			sampleRateKey:           "0.5",
 		},
-		output: Config{
+		output: &Config{
 			Backend:              Stackdriver,
 			Debug:                true,
 			ZipkinEndpoint:       "some-endpoint",
@@ -127,28 +124,160 @@ func TestNewConfigFromMap(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			if cfg, err := NewTracingConfigFromMap(tc.input); err != nil {
-				t.Errorf("Failed to create tracing config: %v", err)
-			} else {
-				if diff := cmp.Diff(&tc.output, cfg); diff != "" {
-					t.Errorf("Got config from map (-want, +got) = %v", diff)
-				}
+			cfg, err := NewTracingConfigFromConfigMap(&corev1.ConfigMap{
+				Data: tc.input,
+			})
+			if err != nil {
+				t.Fatal("Failed to create tracing config:", err)
+			}
+			if diff := cmp.Diff(tc.output, cfg); diff != "" {
+				t.Errorf("Got config from map (-want, +got) = %v", diff)
 			}
 		})
 	}
 }
 
-func TestConfigFromConfigMap(t *testing.T) {
-	cfg, err := NewTracingConfigFromConfigMap(&corev1.ConfigMap{
-		Data: map[string]string{
+func TestNewConfigJson(t *testing.T) {
+	tt := []struct {
+		name   string
+		input  map[string]string
+		output *Config
+	}{{
+		name:   "Empty map",
+		input:  map[string]string{},
+		output: defaultConfig(),
+	}, {
+		name: "Everything enabled (legacy)",
+		input: map[string]string{
+			enableKey:         "true",
 			zipkinEndpointKey: "some-endpoint",
+			debugKey:          "true",
+			sampleRateKey:     "0.5",
 		},
-	})
-	if err != nil {
-		t.Errorf("failed to create config from config map: %v", err)
-	}
+		output: &Config{
+			Backend:        Zipkin,
+			Debug:          true,
+			ZipkinEndpoint: "some-endpoint",
+			SampleRate:     0.5,
+		},
+	}, {
+		name: "Everything enabled (zipkin)",
+		input: map[string]string{
+			backendKey:        "zipkin",
+			zipkinEndpointKey: "some-endpoint",
+			debugKey:          "true",
+			sampleRateKey:     "0.5",
+		},
+		output: &Config{
+			Backend:        Zipkin,
+			Debug:          true,
+			ZipkinEndpoint: "some-endpoint",
+			SampleRate:     0.5,
+		},
+	}, {
+		name: "Everything enabled (stackdriver)",
+		input: map[string]string{
+			backendKey:              "stackdriver",
+			zipkinEndpointKey:       "some-endpoint",
+			stackdriverProjectIDKey: "my-project",
+			debugKey:                "true",
+			sampleRateKey:           "0.5",
+		},
+		output: &Config{
+			Backend:              Stackdriver,
+			Debug:                true,
+			ZipkinEndpoint:       "some-endpoint",
+			StackdriverProjectID: "my-project",
+			SampleRate:           0.5,
+		},
+	}, {
+		name: "Everything enabled (stackdriver, with enabled)",
+		input: map[string]string{
+			enableKey:               "true",
+			backendKey:              "stackdriver",
+			zipkinEndpointKey:       "some-endpoint",
+			stackdriverProjectIDKey: "my-project",
+			debugKey:                "true",
+			sampleRateKey:           "0.5",
+		},
+		output: &Config{
+			Backend:              Stackdriver,
+			Debug:                true,
+			ZipkinEndpoint:       "some-endpoint",
+			StackdriverProjectID: "my-project",
+			SampleRate:           0.5,
+		},
+	}}
 
-	if cfg.ZipkinEndpoint != "some-endpoint" {
-		t.Errorf("returned config does not have matching endpoint url: %v", cfg)
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			config, err := NewTracingConfigFromMap(tc.input)
+			if err != nil {
+				t.Fatal("Failed to create tracing config:", err)
+			}
+
+			json, err := TracingConfigToJson(config)
+			if err != nil {
+				t.Fatal("Failed to create tracing config:", err)
+			}
+
+			haveConfig, err := JsonToTracingConfig(json)
+			if err != nil {
+				t.Fatal("Failed to create tracing config:", err)
+			}
+
+			if !cmp.Equal(tc.output, haveConfig) {
+				t.Error("Got config from map (-want, +got) =", cmp.Diff(tc.output, haveConfig))
+			}
+		})
+	}
+}
+
+func TestNewConfigFailures(t *testing.T) {
+	tests := []struct {
+		name  string
+		input map[string]string
+	}{{
+		name: "bad key",
+		input: map[string]string{
+			backendKey: "jaeger",
+		},
+	}, {
+		name: "bad sampling rate",
+		input: map[string]string{
+			sampleRateKey: "not a number",
+		},
+	}, {
+		name: "sampling rate too low",
+		input: map[string]string{
+			sampleRateKey: "-0.1",
+		},
+	}, {
+		name: "sampling rate too high",
+		input: map[string]string{
+			sampleRateKey: "1.01",
+		},
+	}, {
+		name: "zipkin set without backend",
+		input: map[string]string{
+			backendKey: "zipkin",
+		},
+	}, {
+		name: "zipkin set without backend legacy",
+		input: map[string]string{
+			enableKey: "true",
+		},
+	}, {
+		name: "legacy key invalid",
+		input: map[string]string{
+			enableKey: "dot dash dot",
+		},
+	}}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if _, err := NewTracingConfigFromMap(tc.input); err == nil {
+				t.Error("Expected bad input to fail")
+			}
+		})
 	}
 }

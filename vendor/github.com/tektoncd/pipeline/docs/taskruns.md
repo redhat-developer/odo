@@ -1,74 +1,72 @@
-# TaskRuns
-
-Use the `TaskRun` resource object to create and run on-cluster processes to
-completion.
-
-To create a `TaskRun`, you must first create a [`Task`](tasks.md) which
-specifies one or more container images that you have implemented to perform and
-complete a task.
-
-A `TaskRun` runs until all `steps` have completed or until a failure occurs.
-
+<!--
 ---
-
-- [Syntax](#syntax)
-  - [Specifying a `Task`](#specifying-a-task)
-  - [Input parameters](#input-parameters)
-  - [Providing resources](#providing-resources)
-  - [Overriding where resources are copied from](#overriding-where-resources-are-copied-from)
-  - [Service Account](#service-account)
-  - [Pod Template](#pod-template)
-  - [Workspaces](#workspaces)
-- [Status](#status)
-  - [Steps](#steps)
-- [Cancelling a TaskRun](#cancelling-a-taskrun)
-- [Examples](#examples)
-- [Sidecars](#sidecars)
-- [Logs](logs.md)
-
+linkTitle: "TaskRuns"
+weight: 2
 ---
+-->
 
-## Syntax
+# `TaskRuns`
 
-To define a configuration file for a `TaskRun` resource, you can specify the
-following fields:
+- [Overview](#taskruns)
+- [Configuring a `TaskRun`](#configuring-a-taskrun)
+  - [Specifying the target `Task`](#specifying-the-target-task)
+  - [Specifying `Parameters`](#specifying-parameters)
+  - [Specifying `Resources`](#specifying-resources)
+  - [Specifying `ServiceAccount` credentials](#specifying-serviceaccount-credentials)
+  - [Specifying a `Pod` template](#specifying-a-pod-template)
+  - [Specifying `Workspaces`](#specifying-workspaces)
+  - [Specifying `Sidecars`](#specifying-sidecars)
+  - [Specifying `LimitRange` values](#specifying-limitrange-values)
+  - [Configuring the failure timeout](#configuring-the-failure-timeout)
+- [Monitoring execution status](#monitoring-execution-status)
+  - [Monitoring `Steps`](#monitoring-steps)
+  - [Monitoring `Results`](#monitoring-results)
+- [Cancelling a `TaskRun`](#cancelling-a-taskrun)
+- [Events](events.md#taskruns)
+- [Code examples](#code-examples)
+  - [Example `TaskRun` with a referenced `Task`](#example-taskrun-with-a-referenced-task)
+  - [Example `TaskRun` with an embedded `Task`](#example-taskrun-with-an-embedded-task)
+  - [Reusing a `Task`](#reusing-a-task)
+  - [Using custom `ServiceAccount` credentials](#using-custom-serviceaccount-credentials)
+
+# Overview
+
+A `TaskRun` allows you to instantiate and execute a [`Task`](tasks.md) on-cluster. A `Task` specifies one or more
+`Steps` that execute container images and each container image performs a specific piece of build work. A `TaskRun` executes the
+`Steps` in the `Task` in the order they are specified until all `Steps` have executed successfully or a failure occurs.
+
+## Configuring a `TaskRun`
+
+A `TaskRun` definition supports the following fields:
 
 - Required:
   - [`apiVersion`][kubernetes-overview] - Specifies the API version, for example
-    `tekton.dev/v1alpha1`.
-  - [`kind`][kubernetes-overview] - Specify the `TaskRun` resource object.
-  - [`metadata`][kubernetes-overview] - Specifies data to uniquely identify the
-    `TaskRun` resource object, for example a `name`.
-  - [`spec`][kubernetes-overview] - Specifies the configuration information for
-    your `TaskRun` resource object.
-    - [`taskRef` or `taskSpec`](#specifying-a-task) - Specifies the details of
-      the [`Task`](tasks.md) you want to run
+    `tekton.dev/v1beta1`.
+  - [`kind`][kubernetes-overview] - Identifies this resource object as a `TaskRun` object.
+  - [`metadata`][kubernetes-overview] - Specifies the metadata that uniquely identifies the
+    `TaskRun`, such as a `name`.
+  - [`spec`][kubernetes-overview] - Specifies the configuration for the `TaskRun`.
+    - [`taskRef` or `taskSpec`](#specifying-the-target-task) - Specifies the `Tasks` that the
+    `TaskRun` will execute.
 - Optional:
-
-  - [`serviceAccountName`](#service-account) - Specifies a `ServiceAccount` resource
-    object that enables your build to run with the defined authentication
-    information. When a `ServiceAccount` isn't specified, the `default-service-account`
-    specified in the configmap - config-defaults will be applied.
-  - [`inputs`] - Specifies [input parameters](#input-parameters) and
-    [input resources](#providing-resources)
-  - [`outputs`] - Specifies [output resources](#providing-resources)
-  - [`timeout`] - Specifies timeout after which the `TaskRun` will fail. If the value of
-    `timeout` is empty, the default timeout will be applied. If the value is set to 0,
-    there is no timeout. You can also follow the instruction [here](#Configuring-default-timeout)
-    to configure the default timeout.
-  - [`podTemplate`](#pod-template) - Specifies a [pod template](./podtemplates.md) that will be used as the basis for the `Task` pod.
-  - [`workspaces`](#workspaces) - Specify the actual volumes to use for the
-    [workspaces](tasks.md#workspaces) declared by a `Task`
+  - [`serviceAccountName`](#specifying-serviceaccount-credentials) - Specifies a `ServiceAccount`
+    object that provides custom credentials for executing the `TaskRun`.
+  - [`params`](#specifying-parameters) - Specifies the desired execution parameters for the `Task`.
+  - [`resources`](#specifying-resources) - Specifies the desired `PipelineResource` values.
+    -[`inputs`](#specifying-resources) - Specifies the input resources.
+    -[`outputs`](#specifying-resources) - Specifies the output resources.
+  - [`timeout`](#configuring-the-failure-timeout) - Specifies the timeout before the `TaskRun` fails.
+  - [`podTemplate`](#specifying-a-pod-template) - Specifies a [`Pod` template](podtemplates.md) to use as
+    the starting point for configuring the `Pods` for the `Task`.
+  - [`workspaces`](#specifying-workspaces) - Specifies the physical volumes to use for the
+    [`Workspaces`](workspaces.md#using-workspaces-in-tasks) declared by a `Task`.
 
 [kubernetes-overview]:
   https://kubernetes.io/docs/concepts/overview/working-with-objects/kubernetes-objects/#required-fields
 
-### Specifying a task
+### Specifying the target `Task`
 
-Since a `TaskRun` is an invocation of a [`Task`](tasks.md), you must specify
-what `Task` to invoke.
-
-You can do this by providing a reference to an existing `Task`:
+To specify the `Task` you want to execute in your `TaskRun`, use the `taskRef` field as shown below:
 
 ```yaml
 spec:
@@ -76,18 +74,18 @@ spec:
     name: read-task
 ```
 
-Or you can embed the spec of the `Task` directly in the `TaskRun`:
+You can also embed the desired `Task` definition directly in the `TaskRun` using the `taskSpec` field:
 
 ```yaml
 spec:
   taskSpec:
-    inputs:
-      resources:
+    resources:
+      inputs:
         - name: workspace
           type: git
     steps:
       - name: build-and-push
-        image: gcr.io/kaniko-project/executor:v0.15.0
+        image: gcr.io/kaniko-project/executor:v0.17.1
         # specifying DOCKER_CONFIG is required to allow kaniko to detect docker credential
         env:
           - name: "DOCKER_CONFIG"
@@ -98,45 +96,48 @@ spec:
           - --destination=gcr.io/my-project/gohelloworld
 ```
 
-### Input parameters
+### Specifying `Parameters`
 
-If a `Task` has [`parameters`](tasks.md#parameters), you can specify values for
-them using the `input` section:
+If a `Task` has [`parameters`](tasks.md#parameters), you can use the `params` field to specify their values:
 
 ```yaml
 spec:
-  inputs:
-    params:
-      - name: flags
-        value: -someflag
+  params:
+    - name: flags
+      value: -someflag
 ```
 
-If a parameter does not have a default value, it must be specified.
+**Note:** If a parameter does not have an implicit default value, you must explicitly set its value.
 
-### Providing resources
+### Specifying `Resources`
 
-If a `Task` requires [input resources](tasks.md#input-resources) or
-[output resources](tasks.md#output-resources), they must be provided to run the
-`Task`.
+If a `Task` requires [`Resources`](tasks.md#specifying-resources) (that is, `inputs` and `outputs`) you must
+specify them in your `TaskRun` definition. You can specify `Resources` by reference to existing
+[`PipelineResource` objects](resources.md) or embed their definitions directly in the `TaskRun`.
 
-They can be provided via references to existing
-[`PipelineResources`](resources.md):
+**Note:** A `TaskRun` can use *either* a referenced *or* an embedded `Resource` but not both simultaneously.
+
+Below is an example of specifying `Resources` by reference:
 
 ```yaml
 spec:
-  inputs:
-    resources:
+  resources:
+    inputs:
       - name: workspace
         resourceRef:
           name: java-git-resource
+    outputs:
+      - name: image
+        resourceRef:
+          name: my-app-image
 ```
 
-Or by embedding the specs of the resources directly:
+And here is an example of specifing `Resources` by embedding their definitions:
 
 ```yaml
 spec:
-  inputs:
-    resources:
+  resources:
+    inputs:
       - name: workspace
         resourceSpec:
           type: git
@@ -145,59 +146,27 @@ spec:
               value: https://github.com/pivotal-nader-ziada/gohelloworld
 ```
 
-The `paths` field can be used to [override the paths to a resource](./resources.md#overriding-where-resources-are-copied-from)
+**Note:** You can use the `paths` field to [override the paths to a `Resource`](resources.md#overriding-where-resources-are-copied-from).
 
-### Configuring Default Timeout
+### Specifying a `Pod` template
 
-You can configure the default timeout by changing the value of
-`default-timeout-minutes` in
-[`config/config-defaults.yaml`](./../config/config-defaults.yaml).
+You can specify a [`Pod` template](podtemplates.md) configuration that will serve as the configuration starting
+point for the `Pod` in which the container images specified in your `Task` will execute. This allows you to
+customize the `Pod` configuration specifically for that `TaskRun`.
 
-The `timeout` format is a `duration` as validated by Go's
-[`ParseDuration`](https://golang.org/pkg/time/#ParseDuration), valid format for
-examples are :
-
-- `1h30m`
-- `1h`
-- `1m`
-- `60s`
-
-The default timeout is 60 minutes, if `default-timeout-minutes` is not
-available. There is no timeout by default, if `default-timeout-minutes` is set
-to 0.
-
-### Service Account
-
-Specifies the `name` of a `ServiceAccount` resource object. Use the
-`serviceAccountName` field to run your `Task` with the privileges of the specified
-service account. If no `serviceAccountName` field is specified, your `Task` runs
-using the service account specified in the ConfigMap `configmap-defaults`
-which if absent will default to
-[`default` service account](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#use-the-default-service-account-to-access-the-api-server)
-that is in the [namespace](https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/)
-of the `TaskRun` resource object.
-
-For examples and more information about specifying service accounts, see the
-[`ServiceAccount`](./auth.md) reference topic.
-
-## Pod Template
-
-Specifies a [pod template](./podtemplates.md) configuration that will be used as the basis for the `Task` pod. This
-allows to customize some Pod specific field per `Task` execution, aka `TaskRun`.
-
-In the following example, the Task is defined with a `volumeMount`
-(`my-cache`), that is provided by the TaskRun, using a
-PersistenceVolumeClaim. The Pod will also run as a non-root user.
+In the following example, the `Task` specifies a `volumeMount` (`my-cache`) object, also provided by the `TaskRun`,
+using a `PersistentVolumeClaim` volume. A specific scheduler is also configured in the  `SchedulerName` field. 
+The `Pod` executes with regular (non-root) user permissions.
 
 ```yaml
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
   name: mytask
   namespace: default
 spec:
   steps:
-    - name: write something
+    - name: writesomething
       image: ubuntu
       command: ["bash", "-c"]
       args: ["echo 'foo' > /my-cache/bar"]
@@ -205,108 +174,120 @@ spec:
         - name: my-cache
           mountPath: /my-cache
 ---
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: TaskRun
 metadata:
-  name: mytaskRun
+  name: mytaskrun
   namespace: default
 spec:
   taskRef:
     name: mytask
   podTemplate:
+    schedulerName: volcano
     securityContext:
       runAsNonRoot: true
+      runAsUser: 1001
     volumes:
     - name: my-cache
       persistentVolumeClaim:
         claimName: my-volume-claim
 ```
 
-## Workspaces
+### Specifying `Workspaces`
 
-For a `TaskRun` to execute [a `Task` that declares `workspaces`](tasks.md#workspaces),
-at runtime you need to map the `workspaces` to actual physical volumes with
-`workspaces`. Values in `workspaces` are
-[`Volumes`](https://kubernetes.io/docs/tasks/configure-pod-container/configure-volume-storage/), however currently we only support a subset of `VolumeSources`:
-
-* [`emptyDir`](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir)
-* [`persistentVolumeClaim`](https://kubernetes.io/docs/concepts/storage/volumes/#persistentvolumeclaim)
-* [`configMap`](https://kubernetes.io/docs/concepts/storage/volumes/#configmap)
-* [`secret`](https://kubernetes.io/docs/concepts/storage/volumes/#secret)
-
-_If you need support for a `VolumeSource` not listed here
-[please open an issue](https://github.com/tektoncd/pipeline/issues) or feel free to
-[contribute a PR](https://github.com/tektoncd/pipeline/blob/master/CONTRIBUTING.md)._
-
-If the declared `workspaces` are not provided at runtime, the `TaskRun` will fail
-with an error.
-
-For example to provide an existing PVC called `mypvc` for a `workspace` called
-`myworkspace` declared by the `Task`, using the `my-subdir` folder which already exists
-on the PVC (there will be an error if it does not exist):
+If a `Task` specifies one or more `Workspaces`, you must map those `Workspaces` to
+the corresponding physical volumes in your `TaskRun` definition. For example, you
+can map a `PersistentVolumeClaim` volume to a `Workspace` as follows:
 
 ```yaml
 workspaces:
-- name: myworkspace
+- name: myworkspace # must match workspace name in the Task
   persistentVolumeClaim:
-    claimName: mypvc
+    claimName: mypvc # this PVC must already exist
   subPath: my-subdir
 ```
 
-Or to use [`emptyDir`](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir) for the same `workspace`:
+For more information, see the following topics:
+- For information mapping `Workspaces` to `Volumes`, see [Using `Workspace` variables in `TaskRuns`](workspaces.md#using-workspace-variables-in-taskruns).
+- For a list of supported `Volume` types, see [Specifying `VolumeSources` in `Workspaces`](workspaces.md#specifying-volumesources-in-workspaces).
+- For an end-to-end example, see [`Workspaces` in a `TaskRun`](../examples/v1beta1/taskruns/workspace.yaml).
 
-```yaml
-workspaces:
-- name: myworkspace
-  emptyDir: {}
-```
+### Specifying `Sidecars`
 
-A ConfigMap can also be used as a workspace with the following caveats:
+A `Sidecar` is a container that runs alongside the containers specified
+in the `Steps` of a task to provide auxiliary support to the execution of
+those `Steps`. For example, a `Sidecar` can run a logging daemon, a service
+that updates files on a shared volume, or a network proxy.
 
-1. ConfigMap volume sources are always mounted as read-only inside a task's
-containers - tasks cannot write content to them and a step may error out
-and fail the task if a write is attempted.
-2. The ConfigMap you want to use as a workspace must already exist prior
-to the TaskRun being submitted.
-3. ConfigMaps have a [size limit of 1MB](https://github.com/kubernetes/kubernetes/blob/f16bfb069a22241a5501f6fe530f5d4e2a82cf0e/pkg/apis/core/validation/validation.go#L5042)
+Tekton supports the injection of `Sidecars` into a `Pod` belonging to
+a `TaskRun` with the condition that each `Sidecar` running inside the
+`Pod` are terminated as soon as all `Steps` in the `Task` complete execution. 
+This might result in the `Pod` including each affected `Sidecar` with a 
+retry count of 1 and a different container image than expected.
 
-To use a [`configMap`](https://kubernetes.io/docs/concepts/storage/volumes/#configmap)
-as a `workspace`:
+We are aware of the following issues affecting Tekton's implementation of `Sidecars`:
 
-```yaml
-workspaces:
-- name: myworkspace
-  configmap:
-    name: my-configmap
-```
+- The configured `nop` image **must not** provide the command that the
+`Sidecar` is expected to run, otherwise it will not exit, resulting in the `Sidecar`
+running forever and the Task eventually timing out. For more information, see the
+[associated issue](https://github.com/tektoncd/pipeline/issues/1347).
 
-A Secret can also be used as a workspace with the following caveats:
+- The `kubectl get pods` command returns the status of the `Pod` as "Completed" if a
+`Sidecar` exits successfully and as "Error" if a `Sidecar` exits with an error,
+disregarding the exit codes of the container images that actually executed the `Steps`
+inside the `Pod`. Only the above command is affected. The `Pod's` description correctly
+denotes a "Failed" status and the container statuses correctly denote their exit codes
+and reasons.
 
-1. Secret volume sources are always mounted as read-only inside a task's
-containers - tasks cannot write content to them and a step may error out
-and fail the task if a write is attempted.
-2. The Secret you want to use as a workspace must already exist prior
-to the TaskRun being submitted.
-3. Secrets have a [size limit of 1MB](https://github.com/kubernetes/kubernetes/blob/f16bfb069a22241a5501f6fe530f5d4e2a82cf0e/pkg/apis/core/validation/validation.go#L4933)
+### Specifying `LimitRange` values
 
-To use a [`secret`](https://kubernetes.io/docs/concepts/storage/volumes/#secret)
-as a `workspace`:
+In order to only consume the bare minimum amount of resources needed to execute one `Step` at a
+time from the invoked `Task`, Tekton only requests the *maximum* values for CPU, memory, and ephemeral
+storage from within each `Step`. This is sufficient as `Steps` only execute one at a time in the `Pod`.
+Requests other than the maximum values are set to zero.
 
-```yaml
-workspaces:
-- name: myworkspace
-  secret:
-    secretName: my-secret
-```
+When a [`LimitRange`](https://kubernetes.io/docs/concepts/policy/limit-range/) parameter is present in
+the namespace in which `TaskRuns` are executing and *minimum* values are specified for container resource requests,
+Tekton searches through all `LimitRange` values present in the namespace and uses the *minimums* instead of 0.
 
-_For a complete example see [workspace.yaml](../examples/taskruns/workspace.yaml)._
+For more information, see the [`LimitRange` code example](../examples/v1beta1/taskruns/no-ci/limitrange.yaml).
 
-## Status
+## Configuring the failure timeout
 
-As a TaskRun completes, its `status` field is filled in with relevant information for
-the overall run, as well as each step.
+You can use the `timeout` field to set the `TaskRun's` desired timeout value in minutes.
+If you do not specify this value in the `TaskRun`, the global default timeout value applies.
+If you set the timeout to 0, the `TaskRun` fails immediately upon encountering an error.
 
-The following example shows a completed TaskRun and its `status` field:
+The global default timeout is set to 60 minutes when you first install Tekton. You can set
+a different global default timeout value using the `default-timeout-minutes` field in
+[`config/config-defaults.yaml`](./../config/config-defaults.yaml).
+
+The `timeout` value is a `duration` conforming to Go's
+[`ParseDuration`](https://golang.org/pkg/time/#ParseDuration) format. For example, valid
+values are `1h30m`, `1h`, `1m`, and `60s`. If you set the global timeout to 0, all `TaskRuns`
+that do not have an idividual timeout set will fail immediately upon encountering an error.
+
+### Specifying `ServiceAccount' credentials
+
+You can execute the `Task` in your `TaskRun` with a specific set of credentials by 
+specifying a `ServiceAccount` object name in the `serviceAccountName` field in your `TaskRun`
+definition. If you do not explicitly specify this, the `TaskRun` executes with the credentials
+specified in the `configmap-defaults` `ConfigMap`. If this default is not specified, `TaskRuns`
+will execute with the [`default` service account](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#use-the-default-service-account-to-access-the-api-server)
+set for the target [`namespace`](https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/).
+
+For more information, see [`ServiceAccount`](auth.md).
+
+## Monitoring execution status
+
+As your `TaskRun` executes, its `status` field accumulates information on the execution of each `Step`
+as well as the `TaskRun` as a whole. This information includes start and stop times, exit codes, the 
+fully-qualified name of the container image, and the corresponding digest.
+
+**Note:** If any `Pods` have been [`OOMKilled`](https://kubernetes.io/docs/tasks/administer-cluster/out-of-resource/)
+by Kubernetes, the `TaskRun` is marked as failed even if its exit code is 0.
+
+The following example shows the `status` field of a `TaskRun` that has executed successfully:
 
 ```yaml
 completionTime: "2019-08-12T18:22:57Z"
@@ -330,23 +311,44 @@ steps:
     startedAt: "2019-08-12T18:22:54Z"
   ```
 
-Fields include start and stop times for the `TaskRun` and each `Step` and exit codes.
-For each step we also include the fully-qualified image used, with the digest.
+### Monitoring `Steps`
 
-If any pods have been [`OOMKilled`](https://kubernetes.io/docs/tasks/administer-cluster/out-of-resource/)
-by Kubernetes, the `Taskrun` will be marked as failed even if the exitcode is 0.
+If multiple `Steps` are defined in the `Task` invoked by the `TaskRun`, you can monitor their execution
+status in the `steps.results` field using the following command, where `<name>` is the name of the target
+`TaskRun`:
+
+The exact Task Spec used to instantiate the TaskRun is also included in the Status for full auditability.
 
 ### Steps
 
-If multiple `steps` are defined in the `Task` invoked by the `TaskRun`, we will see the
-`status.steps` of the `TaskRun` displayed in the same order as they are defined in
-`spec.steps` of the `Task`, when the `TaskRun` is accessed by the `get` command, e.g.
-`kubectl get taskrun <name> -o yaml`. Replace \<name\> with the name of the `TaskRun`.
+The corresponding statuses appear in the `status.steps` list in the order in which the `Steps` have been
+specified in the `Task` definition.
 
-## Cancelling a TaskRun
+### Monitoring `Results`
 
-In order to cancel a running task (`TaskRun`), you need to update its spec to
-mark it as cancelled. Running Pods will be deleted.
+If one or more `results` fields have been specified in the invoked `Task`, the `TaskRun's` execution
+status will include a `Task Results` section, in which the `Results` appear verbatim, including original
+line returns and whitespace. For example:
+
+```yaml
+Status:
+  # […]
+  Steps:
+  # […]
+  Task Results:
+    Name:   current-date-human-readable
+    Value:  Thu Jan 23 16:29:06 UTC 2020
+
+    Name:   current-date-unix-timestamp
+    Value:  1579796946
+
+```
+
+## Cancelling a `TaskRun`
+
+To cancel a `TaskRun` that's currently executing, update its definition
+to mark it as cancelled. When you do so, all running `Pods` associated with
+that `TaskRun` are deleted. For example:
 
 ```yaml
 apiVersion: tekton.dev/v1alpha1
@@ -358,18 +360,20 @@ spec:
   status: "TaskRunCancelled"
 ```
 
-## Examples
+## Code examples
 
-- [Example TaskRun](#example-taskrun)
-- [Example TaskRun with embedded specs](#example-with-embedded-specs)
-- [Example Task reuse](#example-task-reuse)
+To better understand `TaskRuns`, study the following code examples:
 
-### Example TaskRun
+- [Example `TaskRun` with a referenced `Task`](#example-taskrun-with-a-referenced-task)
+- [Example `TaskRun` with an embedded `Task`](#example-taskrun-with-an-embedded-task)
+- [Example of reusing a `Task`](#example-of-reusing-a-task)
+- [Example of specifying a `ServiceAccount`](#example-of-specifying-a-service-account)
 
-To run a `Task`, create a new `TaskRun` which defines all inputs, outputs that
-the `Task` needs to run. Below is an example where Task `read-task` is run by
-creating `read-repo-run`. Task `read-task` has git input resource and TaskRun
-`read-repo-run` includes reference to `go-example-git`.
+### Example `TaskRun` with a referenced `Task`
+
+In this example, a `TaskRun` named `read-repo-run` invokes and executes an existing
+`Task` named `read-task`. This `Task` uses a git input resource that the `TaskRun`
+references as `go-example-git`.
 
 ```yaml
 apiVersion: tekton.dev/v1alpha1
@@ -382,13 +386,13 @@ spec:
     - name: url
       value: https://github.com/pivotal-nader-ziada/gohelloworld
 ---
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
   name: read-task
 spec:
-  inputs:
-    resources:
+  resources:
+    inputs:
       - name: workspace
         type: git
   steps:
@@ -396,26 +400,24 @@ spec:
       image: ubuntu
       script: cat workspace/README.md
 ---
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: TaskRun
 metadata:
   name: read-repo-run
 spec:
   taskRef:
     name: read-task
-  inputs:
-    resources:
+  resources:
+    inputs:
       - name: workspace
         resourceRef:
           name: go-example-git
 ```
 
-### Example with embedded specs
+### Example `TaskRun` with an embedded `Task`
 
-Another way of running a Task is embedding the TaskSpec in the taskRun yaml.
-This can be useful for "one-shot" style runs, or debugging. TaskRun resource can
-include either Task reference or TaskSpec but not both. Below is an example
-where `build-push-task-run-2` includes `TaskSpec` and no reference to Task.
+In this example, a `TaskRun` named `build-push-task-run-2` directly executes
+a `Task` from its definition embedded in the `TaskRun's` `taskSpec` field:
 
 ```yaml
 apiVersion: tekton.dev/v1alpha1
@@ -428,24 +430,24 @@ spec:
     - name: url
       value: https://github.com/pivotal-nader-ziada/gohelloworld
 ---
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: TaskRun
 metadata:
   name: build-push-task-run-2
 spec:
-  inputs:
-    resources:
+  resources:
+    inputs:
       - name: workspace
         resourceRef:
           name: go-example-git
   taskSpec:
-    inputs:
-      resources:
+    resources:
+      inputs:
         - name: workspace
           type: git
     steps:
       - name: build-and-push
-        image: gcr.io/kaniko-project/executor:v0.15.0
+        image: gcr.io/kaniko-project/executor:v0.17.1
         # specifying DOCKER_CONFIG is required to allow kaniko to detect docker credential
         env:
           - name: "DOCKER_CONFIG"
@@ -456,21 +458,19 @@ spec:
           - --destination=gcr.io/my-project/gohelloworld
 ```
 
-Input and output resources can also be embedded without creating Pipeline
-Resources. TaskRun resource can include either a Pipeline Resource reference or
-a Pipeline Resource Spec but not both. Below is an example where Git Pipeline
-Resource Spec is provided as input for TaskRun `read-repo`.
+You can also embed resource definitions in your `TaskRun`. In the example below, a git resource
+definition provides input for the `TaskRun` named `read-repo`:
 
 ```yaml
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: TaskRun
 metadata:
   name: read-repo
 spec:
   taskRef:
     name: read-task
-  inputs:
-    resources:
+  resources:
+    inputs:
       - name: workspace
         resourceSpec:
           type: git
@@ -479,21 +479,18 @@ spec:
               value: https://github.com/pivotal-nader-ziada/gohelloworld
 ```
 
-**Note**: TaskRun can embed both TaskSpec and resource spec at the same time.
-The `TaskRun` will also serve as a record of the history of the invocations of
-the `Task`.
+### Reusing a `Task`
 
-### Example Task Reuse
+The following example illustrates the reuse of the same `Task`. Below, you can see
+several `TaskRuns` that instantiate a `Task` named `dockerfile-build-and-push`. The
+`TaskRuns` reference different `Resources` as their inputs.
+See [Building and pushing a Docker image](tasks.md#building-and-pushing-a-docker-image)
+for the full definition of this example `Task.`
 
-For the sake of illustrating re-use, here are several example
-[`TaskRuns`](taskruns.md) (including referenced
-[`PipelineResources`](resources.md)) instantiating the
-[`Task` (`dockerfile-build-and-push`) in the `Task` example docs](tasks.md#example-task).
-
-Build `mchmarny/rester-tester`:
+This `TaskRun` builds `mchmarny/rester-tester`:
 
 ```yaml
-# The PipelineResource
+# This is the referenced PipelineResource
 metadata:
   name: mchmarny-repo
 spec:
@@ -504,24 +501,24 @@ spec:
 ```
 
 ```yaml
-# The TaskRun
+# This is the TaskRun
 spec:
   taskRef:
     name: dockerfile-build-and-push
-  inputs:
-    resources:
+  params:
+    - name: IMAGE
+      value: gcr.io/my-project/rester-tester
+  resources:
+    inputs:
       - name: workspace
         resourceRef:
           name: mchmarny-repo
-    params:
-      - name: IMAGE
-        value: gcr.io/my-project/rester-tester
 ```
 
-Build `googlecloudplatform/cloud-builder`'s `wget` builder:
+This `TaskRun` builds the `wget` builder from `googlecloudplatform/cloud-builder`:
 
 ```yaml
-# The PipelineResource
+# This is the referenced PipelineResource
 metadata:
   name: cloud-builder-repo
 spec:
@@ -532,27 +529,27 @@ spec:
 ```
 
 ```yaml
-# The TaskRun
+# This is the TaskRun
 spec:
   taskRef:
     name: dockerfile-build-and-push
-  inputs:
-    resources:
+  params:
+    - name: IMAGE
+      value: gcr.io/my-project/wget
+    # Optional override to specify the subdirectory containing the Dockerfile
+    - name: DIRECTORY
+      value: /workspace/wget
+  resources:
+    inputs:
       - name: workspace
         resourceRef:
           name: cloud-builder-repo
-    params:
-      - name: IMAGE
-        value: gcr.io/my-project/wget
-      # Optional override to specify the subdirectory containing the Dockerfile
-      - name: DIRECTORY
-        value: /workspace/wget
 ```
 
-Build `googlecloudplatform/cloud-builder`'s `docker` builder with `17.06.1`:
+This `TaskRun` builds the `docker` builder from `googlecloudplatform/cloud-builder` with `17.06.1`:
 
 ```yaml
-# The PipelineResource
+# This is the referenced PipelineResource
 metadata:
   name: cloud-builder-repo
 spec:
@@ -563,38 +560,38 @@ spec:
 ```
 
 ```yaml
-# The TaskRun
+# This is the TaskRun
 spec:
   taskRef:
     name: dockerfile-build-and-push
-  inputs:
-    resources:
+  params:
+    - name: IMAGE
+      value: gcr.io/my-project/docker
+    # Optional overrides
+    - name: DIRECTORY
+      value: /workspace/docker
+    - name: DOCKERFILE_NAME
+      value: Dockerfile-17.06.1
+  resources:
+    inputs:
       - name: workspace
         resourceRef:
           name: cloud-builder-repo
-    params:
-      - name: IMAGE
-        value: gcr.io/my-project/docker
-      # Optional overrides
-      - name: DIRECTORY
-        value: /workspace/docker
-      - name: DOCKERFILE_NAME
-        value: Dockerfile-17.06.1
 ```
 
-#### Using a `ServiceAccount`
+### Using custom `ServiceAccount` credentials
 
-Specifying a `ServiceAccount` to access a private `git` repository:
+The example below illustrates how to specify a `ServiceAccount` to access a private `git` repository:
 
 ```yaml
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: TaskRun
 metadata:
   name: test-task-with-serviceaccount-git-ssh
 spec:
   serviceAccountName: test-task-robot-git-ssh
-  inputs:
-    resources:
+  resources:
+    inputs:
       - name: workspace
         type: git
   steps:
@@ -604,7 +601,7 @@ spec:
       args: ["-c", "cat README.md"]
 ```
 
-Where `serviceAccountName: test-build-robot-git-ssh` references the following
+In the above code snippet, `serviceAccountName: test-build-robot-git-ssh` references the following
 `ServiceAccount`:
 
 ```yaml
@@ -616,7 +613,7 @@ secrets:
   - name: test-git-ssh
 ```
 
-And `name: test-git-ssh`, references the following `Secret`:
+And `name: test-git-ssh` references the following `Secret`:
 
 ```yaml
 apiVersion: v1
@@ -635,47 +632,37 @@ data:
   known_hosts: Z2l0aHViLmNvbSBzc2g.....[example]
 ```
 
-Specifies the `name` of a `ServiceAccount` resource object. Use the
-`serviceAccountName` field to run your `Task` with the privileges of the specified
-service account. If no `serviceAccountName` field is specified, your `Task` runs
-using the
-[`default` service account](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#use-the-default-service-account-to-access-the-api-server)
-that is in the
-[namespace](https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/)
-of the `Task` resource object.
+### Running Step Containers as a Non Root User
 
-For examples and more information about specifying service accounts, see the
-[`ServiceAccount`](./auth.md) reference topic.
+All steps that do not require to be run as a root user should make use of TaskRun features to 
+designate the container for a step runs as a user without root permissions. As a best practice, 
+running containers as non root should be built into the container image to avoid any possibility 
+of the container being run as root. However, as a further measure of enforcing this practice, 
+TaskRun pod templates can be used to specify how containers should be run within a TaskRun pod. 
 
-## Sidecars
+An example of using a TaskRun pod template is shown below to specify that containers running via this 
+TaskRun's pod should run as non root and run as user 1001 if the container itself does not specify what 
+user to run as:
 
-A well-established pattern in Kubernetes is that of the "sidecar" - a
-container which runs alongside your workloads to provide ancillary support.
-Typical examples of the sidecar pattern are logging daemons, services to
-update files on a shared volume, and network proxies.
+```yaml
+apiVersion: tekton.dev/v1beta1
+kind: TaskRun
+metadata:
+  generateName: show-non-root-steps-run-
+spec:
+  taskRef:
+    name: show-non-root-steps
+  podTemplate:
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1001
+```
 
-Tekton will happily work with sidecars injected into a TaskRun's
-pods but the behaviour is a bit nuanced: When TaskRun's steps are complete
-any sidecar containers running inside the Pod will be terminated. In
-order to terminate the sidecars they will be restarted with a new
-"nop" image that quickly exits. The result will be that your TaskRun's
-Pod will include the sidecar container with a Retry Count of 1 and
-with a different container image than you might be expecting.
+If a Task step specifies that it is to run as a different user than what is specified in the pod template, 
+the step's `securityContext` will be applied instead of what is specified at the pod level. An example of 
+this is available as a [TaskRun example](../examples/v1beta1/taskruns/run-steps-as-non-root.yaml).
 
-Note: There are some known issues with the existing implementation of sidecars:
-
-- The configured "nop" image must not provide the command that the
-sidecar is expected to run. If it does provide the command then it will
-not exit. This will result in the sidecar running forever and the Task
-eventually timing out. https://github.com/tektoncd/pipeline/issues/1347
-is the issue where this bug is being tracked.
-
-- `kubectl get pods` will show a TaskRun's Pod as "Completed" if a sidecar
-exits successfully and "Error" if the sidecar exits with an error, regardless
-of how the step containers inside that pod exited. This issue only manifests
-with the `get pods` command. The Pod description will instead show a Status of
-Failed and the individual container statuses will correctly reflect how and why
-they exited.
+More information about Pod and Container Security Contexts can be found via the [Kubernetes website](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod).
 
 ---
 

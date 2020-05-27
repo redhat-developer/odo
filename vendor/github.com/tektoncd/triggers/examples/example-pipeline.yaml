@@ -1,14 +1,14 @@
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
   name: say-hello
 spec:
-  inputs:
-    params:
-    - name: contenttype
-      description: The Content-Type of the event
-      type: string
-    resources:
+  params:
+  - name: contenttype
+    description: The Content-Type of the event
+    type: string
+  resources:
+    inputs:
       - name: git-source
         type: git
   steps:
@@ -16,20 +16,20 @@ spec:
     image: bash
     command: ["bash", "-c"]
     args:
-      - echo -e 'Hello Triggers!\nContent-Type is $(inputs.params.contenttype)'
+      - echo -e 'Hello Triggers!\nContent-Type is $(params.contenttype)'
 ---
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
   name: say-message
 spec:
-  inputs:
-    params:
-    - name: message
-      description: The message to print
-      default: This is the default message
-      type: string
-    resources:
+  params:
+  - name: message
+    description: The message to print
+    default: This is the default message
+    type: string
+  resources:
+    inputs:
     - name: git-source
       type: git
   steps:
@@ -37,15 +37,15 @@ spec:
     image: bash
     command: ["bash", "-c"]
     args:
-      - echo '$(inputs.params.message)'
+      - echo '$(params.message)'
 ---
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
   name: say-bye
 spec:
-  inputs:
-    resources:
+  resources:
+    inputs:
     - name: git-source
       type: git
   steps:
@@ -55,7 +55,7 @@ spec:
     args:
     - echo 'Goodbye Triggers!'
 ---
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
   name: simple-pipeline

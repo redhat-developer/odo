@@ -20,20 +20,23 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
-	alpha1 "github.com/tektoncd/pipeline/pkg/client/informers/externalversions/pipeline/v1alpha1"
-	fakepipelineruninformer "github.com/tektoncd/pipeline/pkg/client/injection/informers/pipeline/v1alpha1/pipelinerun/fake"
-	tb "github.com/tektoncd/pipeline/test/builder"
+	tb "github.com/tektoncd/pipeline/internal/builder/v1beta1"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	pipelineinformers "github.com/tektoncd/pipeline/pkg/client/informers/externalversions/pipeline/v1beta1"
+	fakepipelineruninformer "github.com/tektoncd/pipeline/pkg/client/injection/informers/pipeline/v1beta1/pipelinerun/fake"
 	corev1 "k8s.io/api/core/v1"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/metrics/metricstest"
+
+	// Required to setup metrics env for testing
+	_ "knative.dev/pkg/metrics/testing"
 	rtesting "knative.dev/pkg/reconciler/testing"
 )
 
 func TestUninitializedMetrics(t *testing.T) {
 	metrics := Recorder{}
 
-	durationCountError := metrics.DurationAndCount(&v1alpha1.PipelineRun{})
+	durationCountError := metrics.DurationAndCount(&v1beta1.PipelineRun{})
 	prCountError := metrics.RunningPipelineRuns(nil)
 
 	assertErrNotNil(durationCountError, "DurationAndCount recording expected to return error but got nil", t)
@@ -44,14 +47,15 @@ func TestRecordPipelineRunDurationCount(t *testing.T) {
 	startTime := time.Now()
 
 	testData := []struct {
-		name             string
-		taskRun          *v1alpha1.PipelineRun
-		expectedTags     map[string]string
-		expectedDuration float64
-		expectedCount    int64
+		name              string
+		pipelineRun       *v1beta1.PipelineRun
+		expectedTags      map[string]string
+		expectedCountTags map[string]string
+		expectedDuration  float64
+		expectedCount     int64
 	}{{
 		name: "for_succeeded_pipeline",
-		taskRun: tb.PipelineRun("pipelinerun-1", "ns",
+		pipelineRun: tb.PipelineRun("pipelinerun-1", tb.PipelineRunNamespace("ns"),
 			tb.PipelineRunSpec("pipeline-1"),
 			tb.PipelineRunStatus(
 				tb.PipelineRunStartTime(startTime),
@@ -67,11 +71,14 @@ func TestRecordPipelineRunDurationCount(t *testing.T) {
 			"namespace":   "ns",
 			"status":      "success",
 		},
+		expectedCountTags: map[string]string{
+			"status": "success",
+		},
 		expectedDuration: 60,
 		expectedCount:    1,
 	}, {
 		name: "for_failed_pipeline",
-		taskRun: tb.PipelineRun("pipelinerun-1", "ns",
+		pipelineRun: tb.PipelineRun("pipelinerun-1", tb.PipelineRunNamespace("ns"),
 			tb.PipelineRunSpec("pipeline-1"),
 			tb.PipelineRunStatus(
 				tb.PipelineRunStartTime(startTime),
@@ -87,6 +94,9 @@ func TestRecordPipelineRunDurationCount(t *testing.T) {
 			"namespace":   "ns",
 			"status":      "failed",
 		},
+		expectedCountTags: map[string]string{
+			"status": "failed",
+		},
 		expectedDuration: 60,
 		expectedCount:    1,
 	}}
@@ -98,10 +108,10 @@ func TestRecordPipelineRunDurationCount(t *testing.T) {
 			metrics, err := NewRecorder()
 			assertErrIsNil(err, "Recorder initialization failed", t)
 
-			err = metrics.DurationAndCount(test.taskRun)
+			err = metrics.DurationAndCount(test.pipelineRun)
 			assertErrIsNil(err, "DurationAndCount recording recording got an error", t)
 			metricstest.CheckDistributionData(t, "pipelinerun_duration_seconds", test.expectedTags, 1, test.expectedDuration, test.expectedDuration)
-			metricstest.CheckCountData(t, "pipelinerun_count", test.expectedTags, test.expectedCount)
+			metricstest.CheckCountData(t, "pipelinerun_count", test.expectedCountTags, test.expectedCount)
 
 		})
 	}
@@ -125,10 +135,10 @@ func TestRecordRunningPipelineRunsCount(t *testing.T) {
 
 }
 
-func addPipelineRun(informer alpha1.PipelineRunInformer, run, pipeline, ns string, status corev1.ConditionStatus, t *testing.T) {
+func addPipelineRun(informer pipelineinformers.PipelineRunInformer, run, pipeline, ns string, status corev1.ConditionStatus, t *testing.T) {
 	t.Helper()
 
-	err := informer.Informer().GetIndexer().Add(tb.PipelineRun(run, ns,
+	err := informer.Informer().GetIndexer().Add(tb.PipelineRun(run, tb.PipelineRunNamespace(ns),
 		tb.PipelineRunSpec(pipeline),
 		tb.PipelineRunStatus(
 			tb.PipelineRunStatusCondition(apis.Condition{
@@ -158,5 +168,4 @@ func assertErrIsNil(err error, message string, t *testing.T) {
 
 func unregisterMetrics() {
 	metricstest.Unregister("pipelinerun_duration_seconds", "pipelinerun_count", "running_pipelineruns_count")
-
 }

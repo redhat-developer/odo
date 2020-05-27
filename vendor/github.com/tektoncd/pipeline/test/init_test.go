@@ -44,6 +44,11 @@ import (
 )
 
 var initMetrics sync.Once
+var skipRootUserTests = false
+
+func init() {
+	flag.BoolVar(&skipRootUserTests, "skipRootUserTests", false, "Skip tests that require root user")
+}
 
 func setup(t *testing.T, fn ...func(*testing.T, *clients, string)) (*clients, string) {
 	t.Helper()
@@ -97,7 +102,7 @@ func tearDown(t *testing.T, cs *clients, namespace string) {
 		}
 	}
 
-	if os.Getenv("TEST_KEEP_NAMESPACES") != "" {
+	if os.Getenv("TEST_KEEP_NAMESPACES") == "" && !t.Failed() {
 		t.Logf("Deleting namespace %s", namespace)
 		if err := cs.KubeClient.Kube.CoreV1().Namespaces().Delete(namespace, &metav1.DeleteOptions{}); err != nil {
 			t.Errorf("Failed to delete namespace %s: %s", namespace, err)
@@ -109,19 +114,23 @@ func initializeLogsAndMetrics(t *testing.T) {
 	initMetrics.Do(func() {
 		flag.Parse()
 		flag.Set("alsologtostderr", "true")
-		logging.InitializeLogger(knativetest.Flags.LogVerbose)
+		logging.InitializeLogger()
 
-		if knativetest.Flags.EmitMetrics {
-			logging.InitializeMetricExporter(t.Name())
-		}
+		//if knativetest.Flags.EmitMetrics {
+		logging.InitializeMetricExporter(t.Name())
+		//}
 	})
 }
 
 func createNamespace(t *testing.T, namespace string, kubeClient *knativetest.KubeClient) {
 	t.Logf("Create namespace %s to deploy to", namespace)
+	labels := map[string]string{
+		"tekton.dev/test-e2e": "true",
+	}
 	if _, err := kubeClient.Kube.CoreV1().Namespaces().Create(&corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: namespace,
+			Name:   namespace,
+			Labels: labels,
 		},
 	}); err != nil {
 		t.Fatalf("Failed to create namespace %s for tests: %s", namespace, err)
@@ -146,6 +155,7 @@ func verifyServiceAccountExistence(t *testing.T, namespace string, kubeClient *k
 // TestMain initializes anything global needed by the tests. Right now this is just log and metric
 // setup since the log and metric libs we're using use global state :(
 func TestMain(m *testing.M) {
+	flag.Parse()
 	c := m.Run()
 	fmt.Fprintf(os.Stderr, "Using kubeconfig at `%s` with cluster `%s`\n", knativetest.Flags.Kubeconfig, knativetest.Flags.Cluster)
 	os.Exit(c)

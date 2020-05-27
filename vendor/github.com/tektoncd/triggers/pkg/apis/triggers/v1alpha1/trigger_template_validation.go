@@ -20,9 +20,11 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
 
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	"github.com/tektoncd/pipeline/pkg/apis/validate"
 	"k8s.io/apimachinery/pkg/api/equality"
+	"k8s.io/apimachinery/pkg/runtime"
 	"knative.dev/pkg/apis"
 )
 
@@ -31,7 +33,9 @@ var paramsRegexp = regexp.MustCompile(`\$\(params.(?P<var>[_a-zA-Z][_a-zA-Z0-9.-
 
 // Validate validates a TriggerTemplate.
 func (t *TriggerTemplate) Validate(ctx context.Context) *apis.FieldError {
-	// TODO: Add metadata validation as in pipeline
+	if err := validate.ObjectMetadata(t.GetObjectMeta()); err != nil {
+		return err.ViaField("metadata")
+	}
 	return t.Spec.validate(ctx).ViaField("spec")
 }
 
@@ -54,34 +58,41 @@ func (s *TriggerTemplateSpec) validate(ctx context.Context) *apis.FieldError {
 
 func validateResourceTemplates(templates []TriggerResourceTemplate) *apis.FieldError {
 	for i, trt := range templates {
-		apiVersion, kind := trt.getAPIVersionAndKind()
-
-		if apiVersion == "" {
-			return apis.ErrMissingField(fmt.Sprintf("[%d].apiVersion", i))
-		}
-
-		if kind == "" {
-			return apis.ErrMissingField(fmt.Sprintf("[%d].kind", i))
-		}
-
-		if !trt.IsAllowedType() {
-			return apis.ErrInvalidValue(
-				fmt.Sprintf("resource type not allowed: apiVersion: %s, kind: %s", apiVersion, kind),
-				fmt.Sprintf("[%d]", i))
+		if err := trt.IsAllowedType(); err != nil {
+			if runtime.IsMissingVersion(err) {
+				return apis.ErrMissingField(fmt.Sprintf("[%d].apiVersion", i))
+			}
+			if runtime.IsMissingKind(err) {
+				return apis.ErrMissingField(fmt.Sprintf("[%d].kind", i))
+			}
+			if runtime.IsNotRegisteredError(err) {
+				errStr := err.Error()
+				if strings.Contains(errStr, "in scheme") {
+					// not registered error messages currently include the scheme variable location in your file,
+					// which can of course change if you move the location of the variable in your file.
+					// So will filter it out here to facilitate our unit testing, as the scheme location is not
+					// useful for our purposes.
+					errStr = errStr[:strings.Index(errStr, " in scheme")]
+				}
+				return apis.ErrInvalidValue(
+					errStr,
+					fmt.Sprintf("[%d]", i))
+			}
+			// we allow structural errors because of param substitution
 		}
 	}
 	return nil
 }
 
 // Verify every param in the ResourceTemplates is declared with a ParamSpec
-func verifyParamDeclarations(params []pipelinev1.ParamSpec, templates []TriggerResourceTemplate) *apis.FieldError {
+func verifyParamDeclarations(params []ParamSpec, templates []TriggerResourceTemplate) *apis.FieldError {
 	declaredParamNames := map[string]struct{}{}
 	for _, param := range params {
 		declaredParamNames[param.Name] = struct{}{}
 	}
 	for i, template := range templates {
 		// Get all params in the template $(params.NAME)
-		templateParams := paramsRegexp.FindAllSubmatch(template.RawMessage, -1)
+		templateParams := paramsRegexp.FindAllSubmatch(template.RawExtension.Raw, -1)
 		for _, templateParam := range templateParams {
 			templateParamName := string(templateParam[1])
 			if _, ok := declaredParamNames[templateParamName]; !ok {

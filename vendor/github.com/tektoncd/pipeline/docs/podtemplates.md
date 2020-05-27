@@ -1,13 +1,19 @@
-# PodTemplates
+<!--
+---
+linkTitle: "Pod templates"
+weight: 12
+---
+-->
+# Pod templates
 
 A pod template specifies a subset of
 [`PodSpec`](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.15/#pod-v1-core)
 configuration that will be used as the basis for the `Task` pod.
 
-This allows to customize some Pod specific field per `Task` execution, aka `TaskRun`.
+This allows for customizing some `Pod` specific field per `Task` execution, `TaskRun` or for all `Task` executions part of a `PipelineRun`.
 
-Alternatively, you can also define a default pod template in tekton config, see [here](./install.md)
-When a pod template is specified for a `PipelineRun` or `TaskRun`, the default pod template is ignored, ie
+Alternatively, you can also define a default pod template in Tekton config, see [Customizing basic execution parameters](./install.md#customizing-basic-execution-parameters)
+When a pod template is specified for a `PipelineRun` or `TaskRun`, the default pod template is ignored, i.e.
 both templates are **NOT** merged, it's always one or the other.
 
 ---
@@ -15,7 +21,7 @@ both templates are **NOT** merged, it's always one or the other.
 The current fields supported are:
 
 - `nodeSelector`: a selector which must be true for the pod to fit on
-  a node, see [here](https://kubernetes.io/docs/concepts/configuration/assign-pod-node/).
+  a node, see [Assigning pods to Nodes](https://kubernetes.io/docs/concepts/configuration/assign-pod-node/).
 - `tolerations`: allow (but do not require) the pods to schedule onto
   nodes with matching taints.
 - `affinity`: allow to constrain which nodes your pod is eligible to
@@ -46,10 +52,18 @@ The current fields supported are:
   [priority class](https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/)
   to use when running the pod. Use this, for example, to selectively enable
   preemption on lower priority workloads.
+- `schedulerName` the name of the 
+  [scheduler](https://kubernetes.io/docs/tasks/administer-cluster/configure-multiple-schedulers/)
+  to use when dispatching the Pod. This can be used when workloads of specific types need specific schedulers,
+  e.g.: If you are using volcano.sh for Machine Learning Workloads, you can pass the schedulerName and have Tasks be 
+  dispatched by the volcano.sh scheduler.
+- `hostNetwork`: set this to `true` if the host network namespace should be used.
+  Defaults to `false`.
 
 
-A pod template can be specified for `TaskRun` or `PipelineRun` resources.
-See [here](./taskruns.md#pod-template) or [here](./pipelineruns.md#pod-template) for examples using pod templates.
+A `Pod` template can be specified for `TaskRun` or `PipelineRun` resources.
+See [Specifying a Pod template](./taskruns.md#specifying-a-pod-template) for a `TaskRun` example or
+[Specifying a Pod template](./pipelineruns.md#specifying-a-pod-template) for a `PipelineRun` example using Pod templates.
 
 ---
 

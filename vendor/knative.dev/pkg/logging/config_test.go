@@ -133,8 +133,8 @@ func TestNewConfigNoEntry(t *testing.T) {
 }
 
 func TestNewConfig(t *testing.T) {
-	wantCfg := `{"level": "error", "outputPaths": ["stdout"], "errorOutputPaths": ["stderr"], "encoding": "json"}`
-	wantLevel := zapcore.ErrorLevel
+	const wantCfg = `{"level": "error", "outputPaths": ["stdout"], "errorOutputPaths": ["stderr"], "encoding": "json"}`
+	const wantLevel = zapcore.ErrorLevel
 	c, err := NewConfigFromConfigMap(&corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "knative-something",
@@ -159,46 +159,44 @@ func TestNewConfig(t *testing.T) {
 func TestNewLoggerFromConfig(t *testing.T) {
 	const componentName = "queueproxy"
 
-	testCases := map[string]struct {
+	testCases := []struct {
+		name       string
 		cfg        *Config
 		expectLvl  zapcore.Level
 		expectName string
-	}{
-		"Has component log level when component-specific level is defined": {
-			cfg: makeTestConfig(
-				withGlobalLevel("error"),
-				withComponentLevel(componentName, "debug"),
-			),
-			expectLvl:  zapcore.DebugLevel,
-			expectName: componentName,
-		},
+	}{{
+		name: "Has component log level when component-specific level is defined",
+		cfg: makeTestConfig(
+			withGlobalLevel("error"),
+			withComponentLevel(componentName, "debug"),
+		),
+		expectLvl:  zapcore.DebugLevel,
+		expectName: componentName,
+	}, {
+		name: "Has global log level when no component-specific level is defined",
+		cfg: makeTestConfig(
+			withGlobalLevel("error"),
+		),
+		expectLvl:  zapcore.ErrorLevel,
+		expectName: componentName,
+	}, {
+		name:       "Has default level and fallback name when config is empty",
+		cfg:        makeTestConfig(),
+		expectLvl:  zapcore.InfoLevel,
+		expectName: "fallback-logger." + componentName,
+	}}
 
-		"Has global log level when no component-specific level is defined": {
-			cfg: makeTestConfig(
-				withGlobalLevel("error"),
-			),
-			expectLvl:  zapcore.ErrorLevel,
-			expectName: componentName,
-		},
-
-		"Has default level and fallback name when config is empty": {
-			cfg:        makeTestConfig(),
-			expectLvl:  zapcore.InfoLevel,
-			expectName: "fallback-logger." + componentName,
-		},
-	}
-
-	for name, tc := range testCases {
-		t.Run(name, func(t *testing.T) {
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
 			logger, atomicLevel := NewLoggerFromConfig(tc.cfg, componentName)
 
-			if atomicLevel.Level() != tc.expectLvl {
-				t.Errorf("Expected logger level to be %q, got %q", tc.expectLvl, atomicLevel)
+			if got, want := atomicLevel.Level(), tc.expectLvl; got != want {
+				t.Errorf("Log Level = %q, want: %q", got, want)
 			}
 
 			loggerName := logger.Desugar().Check(zapcore.FatalLevel, "test").LoggerName
 			if loggerName != tc.expectName {
-				t.Errorf("Expected logger name to be %q, got %q", tc.expectName, loggerName)
+				t.Errorf("Logger Name = %q, want: %q", loggerName, tc.expectName)
 			}
 		})
 	}
@@ -250,7 +248,7 @@ func TestInvalidComponentLevel(t *testing.T) {
 		},
 	})
 	if err == nil {
-		t.Errorf("Expected errors when invalid level is present in logging config. got nothing")
+		t.Error("Expected errors when invalid level is present in logging config. got nothing")
 	}
 }
 
@@ -266,24 +264,23 @@ func TestEmptyComponentName(t *testing.T) {
 		},
 	})
 	if err != nil {
-		t.Errorf("Expected no errors. got: %v", err)
+		t.Error("Expected no errors. got:", err)
 	}
 	// The empty string component should have been ignored, so it should be the default Info, rather
 	// than Error as set in the config map.
-	if l := c.LoggingLevel[""]; l != zapcore.InfoLevel {
-		t.Errorf("Expected default Info level for LoggingLevel[\"\"]. got: %v", l)
+	if got := c.LoggingLevel[""]; got != zapcore.InfoLevel {
+		t.Errorf(`LoggingLevel[""] = %v, want: InfoLevel`, got)
 	}
 }
 
 func TestUpdateLevelFromConfigMap(t *testing.T) {
 	const (
-		componentLevel = zapcore.PanicLevel
-		globalLevel    = zapcore.WarnLevel
-		defaultLevel   = zapcore.InfoLevel
+		componentLevel  = zapcore.PanicLevel
+		globalLevel     = zapcore.WarnLevel
+		defaultLevel    = zapcore.InfoLevel
+		componentName   = "controller"
+		componentLogKey = "loglevel." + componentName
 	)
-
-	const componentName = "controller"
-	const componentLogKey = "loglevel." + componentName
 
 	testCm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -291,7 +288,7 @@ func TestUpdateLevelFromConfigMap(t *testing.T) {
 			Name:      "config-logging",
 		},
 		Data: map[string]string{
-			loggerConfigKey: fmt.Sprintf("{\"level\": %q}", globalLevel),
+			loggerConfigKey: fmt.Sprintf(`{"level": %q}`, globalLevel),
 			componentLogKey: componentLevel.String(),
 		},
 	}
@@ -321,19 +318,21 @@ func TestUpdateLevelFromConfigMap(t *testing.T) {
 		has := atomicLevel.Level()
 		want := componentLevel
 		if has != want {
-			t.Errorf("Expected initial log level to be %q, got %q", want, has)
+			t.Errorf("Initial Log Level = %q, want: %q", has, want)
 		}
 
 		// update level sequentially
-		for i, tt := range testSequence {
-			cm.Data["loglevel.controller"] = tt.setLevel
-			UpdateLevelFromConfigMap(logger, atomicLevel, componentName)(cm)
+		for _, tt := range testSequence {
+			t.Run(tt.setLevel, func(t *testing.T) {
+				cm.Data["loglevel.controller"] = tt.setLevel
+				UpdateLevelFromConfigMap(logger, atomicLevel, componentName)(cm)
 
-			has := atomicLevel.Level()
-			want := tt.wantLevel
-			if has != want {
-				t.Errorf("%d: Expected log level to be %q, got %q", i, want, has)
-			}
+				has := atomicLevel.Level()
+				want := tt.wantLevel
+				if has != want {
+					t.Errorf("Log Level = %q, want: %q", has, want)
+				}
+			})
 		}
 	})
 
@@ -346,36 +345,32 @@ func TestUpdateLevelFromConfigMap(t *testing.T) {
 		testSequence := []struct {
 			updateFn  func(*corev1.ConfigMap)
 			wantLevel zapcore.Level
-		}{
+		}{{
+
 			// Component deleted, level set to global value
-			{
-				updateFn: func(cm *corev1.ConfigMap) {
-					delete(cm.Data, componentLogKey)
-				},
-				wantLevel: globalLevel,
+			updateFn: func(cm *corev1.ConfigMap) {
+				delete(cm.Data, componentLogKey)
 			},
+			wantLevel: globalLevel,
+		}, {
 			// Updated logger config, level set to new value
-			{
-				updateFn: func(cm *corev1.ConfigMap) {
-					cm.Data[loggerConfigKey] = `{"level": "error"}`
-				},
-				wantLevel: zapcore.ErrorLevel,
+			updateFn: func(cm *corev1.ConfigMap) {
+				cm.Data[loggerConfigKey] = `{"level": "error"}`
 			},
+			wantLevel: zapcore.ErrorLevel,
+		}, {
 			// Invalid logger config, previous value retained
-			{
-				updateFn: func(cm *corev1.ConfigMap) {
-					cm.Data[loggerConfigKey] = "not_a_JSON"
-				},
-				wantLevel: zapcore.ErrorLevel,
+			updateFn: func(cm *corev1.ConfigMap) {
+				cm.Data[loggerConfigKey] = "not_a_JSON"
 			},
+			wantLevel: zapcore.ErrorLevel,
+		}, {
 			// Logger config deleted, level set to default value
-			{
-				updateFn: func(cm *corev1.ConfigMap) {
-					delete(cm.Data, loggerConfigKey)
-				},
-				wantLevel: defaultLevel,
+			updateFn: func(cm *corev1.ConfigMap) {
+				delete(cm.Data, loggerConfigKey)
 			},
-		}
+			wantLevel: defaultLevel,
+		}}
 
 		for i, tt := range testSequence {
 			tt.updateFn(cm)
@@ -387,34 +382,33 @@ func TestUpdateLevelFromConfigMap(t *testing.T) {
 				t.Errorf("%d: Expected log level to be %q, got %q", i, want, has)
 			}
 		}
-
 	})
 }
 
 func TestLoggingConfig(t *testing.T) {
-	testCases := map[string]struct {
+	testCases := []struct {
+		name    string
 		cfg     *Config
 		want    string
 		wantErr string
-	}{
-		"nil": {
-			cfg:     nil,
-			want:    "",
-			wantErr: "json logging string is empty",
+	}{{
+		name:    "nil",
+		cfg:     nil,
+		want:    "",
+		wantErr: errEmptyJSONLogginString.Error(),
+	}, {
+		name: "happy",
+		cfg: &Config{
+			LoggingConfig: "{}",
+			LoggingLevel:  map[string]zapcore.Level{},
 		},
-		"happy": {
-			cfg: &Config{
-				LoggingConfig: "{}",
-				LoggingLevel:  map[string]zapcore.Level{},
-			},
-			want: `{"zap-logger-config":"{}"}`,
-		},
-	}
-	for n, tc := range testCases {
-		t.Run(n, func(t *testing.T) {
+		want: `{"zap-logger-config":"{}"}`,
+	}}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
 			json, err := LoggingConfigToJson(tc.cfg)
 			if err != nil {
-				t.Errorf("error while converting logging config to json: %v", err)
+				t.Error("error while converting logging config to json:", err)
 			}
 			// Test to json.
 			{
@@ -422,26 +416,22 @@ func TestLoggingConfig(t *testing.T) {
 				got := json
 				if diff := cmp.Diff(want, got); diff != "" {
 					t.Errorf("unexpected (-want, +got) = %v", diff)
-					t.Log(got)
 				}
 			}
-			// Test to config.
-			if tc.cfg != nil {
-				want := tc.cfg
-				got, gotErr := JsonToLoggingConfig(json)
+			want := tc.cfg
+			got, gotErr := JsonToLoggingConfig(json)
 
-				if gotErr != nil {
-					if diff := cmp.Diff(tc.wantErr, gotErr.Error()); diff != "" {
-						t.Errorf("unexpected err (-want, +got) = %v", diff)
-					}
-				} else if tc.wantErr != "" {
-					t.Errorf("expected err %v", tc.wantErr)
+			if gotErr != nil {
+				if diff := cmp.Diff(tc.wantErr, gotErr.Error()); diff != "" {
+					t.Errorf("unexpected err (-want, +got) = %v", diff)
 				}
+			} else if tc.wantErr != "" {
+				t.Errorf("expected err %v", tc.wantErr)
+			}
 
-				if diff := cmp.Diff(want, got); diff != "" {
-					t.Errorf("unexpected (-want, +got) = %v", diff)
-					t.Log(got)
-				}
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("unexpected (-want, +got) = %v", diff)
+				t.Log(got)
 			}
 		})
 	}
@@ -462,7 +452,7 @@ type testConfigOption func(*Config) *Config
 func withGlobalLevel(lvl string) testConfigOption {
 	return func(cfg *Config) *Config {
 		cfg.LoggingConfig = fmt.Sprintf("{"+
-			"\"level\": %q, "+
+			`"level": %q, `+
 			`"outputPaths": ["stdout"], `+
 			`"errorOutputPaths": ["stderr"], `+
 			`"encoding": "json"`+

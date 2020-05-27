@@ -24,32 +24,71 @@ To start from scratch and use these Pipelines and Tasks:
 ## Create an official release
 
 Official releases are performed from
-[the `prow` cluster](https://github.com/tektoncd/plumbing#prow)
+[the `dogfooding` cluster](https://github.com/tektoncd/plumbing)
 [in the `tekton-releases` GCP project](https://github.com/tektoncd/plumbing/blob/master/gcp.md).
 This cluster
 [already has the correct version of Tekton installed](#install-tekton).
 
 To make a new release:
 
+1. [Create draft release](#create-draft-release) in GitHub with release notes
 1. (Optionally) [Apply the latest versions of the Tasks + Pipelines](#setup)
-2. (If you haven't already)
+1. (If you haven't already)
    [Install `tkn`](https://github.com/tektoncd/cli#installing-tkn)
-3. [Run the Pipeline](#run-the-pipeline)
-4. Create the new tag and release in GitHub
+1. [Run the Pipeline](#run-the-pipeline)
+1. Create the new tag and release in GitHub
    ([see one of way of doing that here](https://github.com/tektoncd/pipeline/issues/530#issuecomment-477409459)).
    _TODO(tektoncd/pipeline#530): Automate as much of this as possible with
    Tekton._
-5. Add an entry to [the README](../README.md) at `HEAD` for docs and examples
+1. Add an entry to [the README](../README.md) at `HEAD` for docs and examples
    for the new release ([README.md#read-the-docs](README.md#read-the-docs)).
-6. Update the new release in GitHub with the same links to the docs and
+1. Update the new release in GitHub with the same links to the docs and
    examples, see
    [v0.1.0](https://github.com/tektoncd/pipeline/releases/tag/v0.1.0) for
    example.
 
+### Create draft release
+
+The Task `create-draft-triggers-release` calculates the list of PRs merged
+between the previous release and a specified revision. It also builds a list of
+authors and uses PRs and authors to build a draft new release in GitHub.
+
+Running this Task multiple times will create multiple drafts; old drafts have to
+be pruned manually when needed.
+
+Once the draft release is created, the release manager needs to edit the draft,
+arrange PRs in the right category, and highlight important changes.
+
+Parameters:
+
+- `package`
+- `release-tag`
+- `previous-release-tag`
+
+Resources:
+
+- `source`, a git resource that points to the release git revision
+
+This Task expects a secret named `github-token` with a key called `GITHUB_TOKEN`
+to exist. The value should be a GitHub token with enough privileges to list PRs
+and create a draft release.
+
+```bash
+export PREV_VERSION_TAG=v0.X.Y
+export VERSION_TAG=v0.X.Y
+
+tkn task start \
+  -i source=tekton-triggers-git \
+  -p package=tektoncd/triggers \
+  -p release-tag=${VERSION_TAG} \
+  -p previous-release-tag=${PREV_VERSION_TAG} \
+  create-draft-triggers-release
+```
+
 ### Run the Pipeline
 
-To use [`tkn`](https://github.com/tektoncd/cli) to run the
-`publish-tekton-pipelines` `Task` and create a release:
+To use [`tkn`](https://github.com/tektoncd/cli) to run the `triggers-release`
+PipelineRun and create a release:
 
 1. Pick the revision you want to release and update the
    [`resources.yaml`](./resources.yaml) file to add a `PipelineResoruce` for it,
@@ -59,19 +98,19 @@ To use [`tkn`](https://github.com/tektoncd/cli) to run the
    apiVersion: tekton.dev/v1alpha1
    kind: PipelineResource
    metadata:
-     name: tekton-triggers-vX-Y-
+   name: tekton-triggers-git
    spec:
-     type: git
-     params:
-       - name: url
-         value: https://github.com/tektoncd/triggers
-       - name: revision
-         value: vX.Y.Z-invalid-tags-boouuhhh # REPLACE with the commit you'd like to build from
+   type: git
+   params:
+   - name: url
+      value: https://github.com/tektoncd/triggers
+   - name: revision
+      value: v0.X.Y  # REPLACE with the commit you want to release
    ```
 
 1. To run against your own infrastructure (if you are running
-   [in the production cluster](https://github.com/tektoncd/plumbing#prow) the
-   default account should already have these creds, this is just a bonus - plus
+   [in the dogfooding cluster](https://github.com/tektoncd/plumbing) the default
+   account should already have these creds, this is just a bonus - plus
    `release-right-meow` might already exist in the cluster!), also setup the
    required credentials for the `release-right-meow` service account, either:
 
@@ -83,32 +122,33 @@ To use [`tkn`](https://github.com/tektoncd/cli) to run the
      [your own GCP service account](https://cloud.google.com/iam/docs/creating-managing-service-accounts)
      if running against your own infrastructure
 
-1. [Connect to the production cluster](https://github.com/tektoncd/plumbing#prow):
+1. Connect to the dogfooding cluster:
 
    ```bash
-   gcloud container clusters get-credentials prow --zone us-central1-a --project tekton-releases
+   gcloud container clusters get-credentials dogfooding --zone us-central1-a --project tekton-releases
    ```
 
-1. Run the `release-pipeline` (assuming you are using the production cluster and
+1. Run the `triggers-release` (assuming you are using the dogfooding cluster and
    [all the Tasks and Pipelines already exist](#setup)):
 
    ```shell
    # Create the resoruces - i.e. set the revision that you wan to build from
    kubectl apply -f tekton/resources.yaml
 
-   # Change thie environment variable to the verison you would like to use.
+   # Change the environment variable to the version you would like to use.
    # Be careful: due to #983 it is possible to overwrite previous releases.
    export VERSION_TAG=v0.X.Y
 
    tkn pipeline start \
-   \
-   \
-   \
-   \
-   \
+    --param=versionTag=${VERSION_TAG} \
+    --serviceaccount=release-right-meow \
+    --resource=source-repo=tekton-triggers-git \
+    --resource=bucket=tekton-triggers-bucket \
+    --resource=builtEventListenerSinkImage=event-listener-sink-image \
     --resource=builtControllerImage=triggers-controller-image \
-   \
-   e
+    --resource=builtWebhookImage=triggers-webhook-image \
+    --resource=notification=post-release-trigger \
+    triggers-release
    ```
 
 _TODO(tektoncd/pipeline#569): Normally we'd use the image `PipelineResources` to

@@ -25,7 +25,7 @@ import (
 
 	// injection
 	_ "knative.dev/pkg/client/injection/apiextensions/informers/apiextensions/v1beta1/customresourcedefinition/fake"
-	_ "knative.dev/pkg/client/injection/kube/informers/core/v1/secret/fake"
+	_ "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret/fake"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -418,11 +418,11 @@ func TestConversionFailureToConvert(t *testing.T) {
 		name    string
 		errorOn string
 	}{{
-		name:    "error converting down",
-		errorOn: internal.ErrorConvertDown,
+		name:    "error converting from",
+		errorOn: internal.ErrorConvertFrom,
 	}, {
-		name:    "error converting up",
-		errorOn: internal.ErrorConvertUp,
+		name:    "error converting to",
+		errorOn: internal.ErrorConvertTo,
 	}}
 
 	for _, test := range tests {

@@ -110,6 +110,66 @@ func TestIsFalse(t *testing.T) {
 	}
 }
 
+func TestGetReason(t *testing.T) {
+	cases := []struct {
+		name      string
+		condition *Condition
+		want      string
+	}{{
+		name:      "nil should be ''",
+		condition: nil,
+		want:      "",
+	}, {
+		name:      "empty should be ''",
+		condition: &Condition{},
+		want:      "",
+	}, {
+		name: "Set should be set",
+		condition: &Condition{
+			Reason: "SomeReason",
+		},
+		want: "SomeReason",
+	}}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if e, a := tc.want, tc.condition.GetReason(); e != a {
+				t.Errorf("%q expected: %v got: %v", tc.name, e, a)
+			}
+		})
+	}
+}
+
+func TestGetMessage(t *testing.T) {
+	cases := []struct {
+		name      string
+		condition *Condition
+		want      string
+	}{{
+		name:      "nil should be ''",
+		condition: nil,
+		want:      "",
+	}, {
+		name:      "empty should be ''",
+		condition: &Condition{},
+		want:      "",
+	}, {
+		name: "Set should be set",
+		condition: &Condition{
+			Message: "SomeMessage",
+		},
+		want: "SomeMessage",
+	}}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if e, a := tc.want, tc.condition.GetMessage(); e != a {
+				t.Errorf("%q expected: %v got: %v", tc.name, e, a)
+			}
+		})
+	}
+}
+
 func TestIsUnknown(t *testing.T) {
 	cases := []struct {
 		name      string

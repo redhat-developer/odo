@@ -21,7 +21,7 @@ func TestAddCommandWithMissingParams(t *testing.T) {
 	}{
 		{"Missing env-name flag",
 			[]keyValuePair{flag("manifest", "~/pipelines.yaml")},
-			`Required flag(s) "env-name" have/has not been set`},
+			`required flag(s) "env-name" not set`},
 	}
 	for _, tt := range cmdTests {
 		t.Run(tt.desc, func(rt *testing.T) {

@@ -5,7 +5,7 @@
 # - source is built into an image by img
 # - image output is pushed to ECR
 # - cloudevent emitted
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
   name: getting-started-pipeline
@@ -50,18 +50,17 @@ spec:
           - name: event-to-sink
             resource: event-to-sink
 ---
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
   name: deploy-locally
   namespace: getting-started
 spec:
-  inputs:
-    resources:
+  resources:
+    inputs:
       - name: image-source
         type: image
-  outputs:
-    resources:
+    outputs:
     - name: event-to-sink
       type: cloudEvent
   steps:
@@ -72,26 +71,25 @@ spec:
         - "run"
         - "tekton-triggers-built-me"
         - "--image"
-        - "${inputs.resources.image-source.url}"
+        - "${resources.inputs.image-source.url}"
         - "--env=PORT=8080"
 ---
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
   name: build-docker-image
   namespace: getting-started
 spec:
-  inputs:
-    resources:
+  params:
+  - name: pathToContext
+    description:
+      The build directory used by img
+    default: /workspace/source-repo
+  resources:
+    inputs:
       - name: source-repo
         type: git
-    params:
-      - name: pathToContext
-        description:
-          The build directory used by img
-        default: /workspace/source-repo
-  outputs:
-    resources:
+    outputs:
       - name: builtImage
         type: image
   steps:
@@ -102,9 +100,9 @@ spec:
       args:
         - build
         - -t
-        - "${outputs.resources.builtImage.url}"
+        - "$(resources.outputs.builtImage.url)"
         - --no-cache
-        - "${inputs.params.pathToContext}"
+        - "$(params.pathToContext)"
 ---
 apiVersion: tekton.dev/v1alpha1
 kind: Condition
@@ -118,7 +116,7 @@ spec:
   check:
     image: golang
     command: ["go"]
-    args: ['test', "$(inputs.resources.source-repo.path)/..."]
+    args: ['test', "$(resources.source-repo.path)/..."]
 ---
 # Finally, we need something to receive our cloudevent announcing success!
 # That is this services only purpose

@@ -18,33 +18,59 @@ metadata:
   name: tekton-triggers-webhook
   namespace: tekton-pipelines
   labels:
-    app.kubernetes.io/name: tekton-triggers
-    app.kubernetes.io/component: webhook-controller
+    app.kubernetes.io/name: webhook
+    app.kubernetes.io/component: webhook
+    app.kubernetes.io/instance: default
+    app.kubernetes.io/version: devel
+    app.kubernetes.io/part-of: tekton-triggers
+    # tekton.dev/release value replaced with inputs.params.versionTag in triggers/tekton/publish.yaml
+    triggers.tekton.dev/release: "devel"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: tekton-triggers-webhook
+      app.kubernetes.io/name: webhook
+      app.kubernetes.io/component: webhook
+      app.kubernetes.io/instance: default
+      app.kubernetes.io/part-of: tekton-triggers
   template:
     metadata:
       annotations:
         cluster-autoscaler.kubernetes.io/safe-to-evict: "false"
       labels:
+        app.kubernetes.io/name: webhook
+        app.kubernetes.io/component: webhook
+        app.kubernetes.io/instance: default
+        app.kubernetes.io/version: devel
+        app.kubernetes.io/part-of: tekton-triggers
         app: tekton-triggers-webhook
+        triggers.tekton.dev/release: "devel"
+        # version value replaced with inputs.params.versionTag in triggers/tekton/publish.yaml
+        version: "devel"
     spec:
       serviceAccountName: tekton-triggers-controller
       containers:
       - name: webhook
+        # This is the Go import path for the binary that is containerized
+        # and substituted here.
         image: github.com/tektoncd/triggers/cmd/webhook
         env:
         - name: SYSTEM_NAMESPACE
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        volumeMounts:
-        - name: config-logging
-          mountPath: /etc/config-logging
-      volumes:
-        - name: config-logging
-          configMap:
-            name: config-logging-triggers
+        - name: CONFIG_LOGGING_NAME
+          value: config-logging-triggers
+        - name: WEBHOOK_SERVICE_NAME
+          value: tekton-triggers-webhook
+        - name: WEBHOOK_SECRET_NAME
+          value: triggers-webhook-certs
+        - name: METRICS_DOMAIN
+          value: tekton.dev/triggers
+        ports:
+        - name: metrics
+          containerPort: 9090
+        - name: profiling
+          containerPort: 8008
+        - name: https-webhook
+          containerPort: 8443

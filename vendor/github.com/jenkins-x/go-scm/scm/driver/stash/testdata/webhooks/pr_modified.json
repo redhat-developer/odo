@@ -1,0 +1,110 @@
+{
+  "eventKey": "pr:modified",
+  "date": "2018-04-24T10:15:30+1000",
+  "actor": {
+    "name": "Administrator",
+    "emailAddress": "example@atlassian.com",
+    "id": 110653,
+    "displayName": "Administrator",
+    "active": true,
+    "slug": "pathompson",
+    "type": "NORMAL"
+  },
+  "pullRequest": {
+    "id": 1,
+    "version": 1,
+    "title": "A new title",
+    "description": "A new description",
+    "state": "OPEN",
+    "open": true,
+    "closed": false,
+    "createdDate": 1524528879329,
+    "updatedDate": 1524528930110,
+    "fromRef": {
+      "id": "refs/heads/new-branch",
+      "displayId": "new-branch",
+      "latestCommit": "5a705e60111a4213da46839d9cbf4fc43639b771",
+      "repository": {
+        "slug": "example",
+        "id": 12087,
+        "name": "example",
+        "scmId": "git",
+        "state": "AVAILABLE",
+        "statusMessage": "Available",
+        "forkable": true,
+        "project": {
+          "key": "~ADMIN",
+          "id": 8504,
+          "name": "Administrator",
+          "type": "PERSONAL",
+          "owner": {
+            "name": "Administrator",
+            "emailAddress": "example@atlassian.com",
+            "id": 110653,
+            "displayName": "Administrator",
+            "active": true,
+            "slug": "admin",
+            "type": "NORMAL"
+          }
+        },
+        "public": false
+      }
+    },
+    "toRef": {
+      "id": "refs/heads/master",
+      "displayId": "master",
+      "latestCommit": "860c4eb4ed0f969b47144234ba13c31c498cca69",
+      "repository": {
+        "slug": "example",
+        "id": 12087,
+        "name": "example",
+        "scmId": "git",
+        "state": "AVAILABLE",
+        "statusMessage": "Available",
+        "forkable": true,
+        "project": {
+          "key": "~ADMIN",
+          "id": 8504,
+          "name": "Administrator",
+          "type": "PERSONAL",
+          "owner": {
+            "name": "Administrator",
+            "emailAddress": "example@atlassian.com",
+            "id": 110653,
+            "displayName": "Administrator",
+            "active": true,
+            "slug": "admin",
+            "type": "NORMAL"
+          }
+        },
+        "public": false
+      }
+    },
+    "locked": false,
+    "author": {
+      "user": {
+        "name": "Administrator",
+        "emailAddress": "example@atlassian.com",
+        "id": 110653,
+        "displayName": "Administrator",
+        "active": true,
+        "slug": "admin",
+        "type": "NORMAL"
+      },
+      "role": "AUTHOR",
+      "approved": false,
+      "status": "UNAPPROVED"
+    },
+    "reviewers": [],
+    "participants": []
+  },
+  "previousTitle": "A cool PR",
+  "previousDescription": "A neat description",
+  "previousTarget": {
+    "id": "refs\/heads\/master",
+    "displayId": "master",
+    "type": "BRANCH",
+    "latestCommit": "860c4eb4ed0f969b47144234ba13c31c498cca69",
+    "latestChangeset": "860c4eb4ed0f969b47144234ba13c31c498cca69"
+  }
+}
