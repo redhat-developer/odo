@@ -50,11 +50,7 @@ var _ = Describe("odo generic", func() {
 	Context("When executing catalog list without component directory", func() {
 		It("should list all component catalogs", func() {
 			stdOut := helper.CmdShouldPass("odo", "catalog", "list", "components")
-			Expect(stdOut).To(ContainSubstring("dotnet"))
-			Expect(stdOut).To(ContainSubstring("nginx"))
-			Expect(stdOut).To(ContainSubstring("php"))
-			Expect(stdOut).To(ContainSubstring("ruby"))
-			Expect(stdOut).To(ContainSubstring("wildfly"))
+			helper.MatchAllInOutput(stdOut, []string{"dotnet", "nginx", "php", "ruby", "wildfly"})
 		})
 
 	})

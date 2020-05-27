@@ -247,7 +247,7 @@ spec:
 				return strings.Contains(output, "Running")
 			})
 
-			stdOut = helper.CmdShouldPass("odo", "service", "list")
+			stdOut := helper.CmdShouldPass("odo", "service", "list")
 			helper.MatchAllInOutput(stdOut, []string{"example", "EtcdCluster"})
 
 			// now check for json output
