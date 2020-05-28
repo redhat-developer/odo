@@ -19,20 +19,8 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 	BeforeEach(func() {
 		globals = helper.CommonBeforeEachDocker()
-
-		helper.CmdShouldPass("odo", "project", "set", CI_OPERATOR_HUB_PROJECT)
-
 		// TODO: remove this when OperatorHub integration is fully baked into odo
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
-	})
-
-	var _ = AfterEach(func() {
-		helper.CommonAfterEeachDocker(globals)
-	})
-
-	preSetup := func() {
-		project = helper.CreateRandProject()
-		helper.CmdShouldPass("odo", "project", "set", project)
 
 		// wait till oc can see the all operators installed by setup script in the namespace
 		ocArgs := []string{"get", "csv"}
@@ -42,21 +30,13 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 				return strings.Contains(output, operator)
 			})
 		}
-	}
+	})
 
-	cleanPreSetup := func() {
-		helper.DeleteProject(project)
-	}
+	var _ = AfterEach(func() {
+		helper.CommonAfterEeachDocker(globals)
+	})
 
 	Context("When experimental mode is enabled", func() {
-
-		JustBeforeEach(func() {
-			preSetup()
-		})
-
-		JustAfterEach(func() {
-			cleanPreSetup()
-		})
 
 		It("should list operators installed in the namespace", func() {
 			stdOut := helper.CmdShouldPass("odo", "catalog", "list", "services")
@@ -67,14 +47,6 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 	})
 
 	Context("When creating an operator backed service", func() {
-
-		JustBeforeEach(func() {
-			preSetup()
-		})
-
-		JustAfterEach(func() {
-			cleanPreSetup()
-		})
 
 		It("should be able to create EtcdCluster from its alm example", func() {
 			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
@@ -100,14 +72,6 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 	Context("When using dry-run option to create operator backed service", func() {
 
-		JustBeforeEach(func() {
-			preSetup()
-		})
-
-		JustAfterEach(func() {
-			cleanPreSetup()
-		})
-
 		It("should only output the definition of the CR that will be used to start service", func() {
 			// First let's grab the etcd operator's name from "odo catalog list services" output
 			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
@@ -120,14 +84,6 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 	})
 
 	Context("When using from-file option", func() {
-
-		JustBeforeEach(func() {
-			preSetup()
-		})
-
-		JustAfterEach(func() {
-			cleanPreSetup()
-		})
 
 		It("should be able to create a service", func() {
 			// First let's grab the etcd operator's name from "odo catalog list services" output
@@ -164,14 +120,6 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 	})
 
 	Context("When using from-file option", func() {
-
-		JustBeforeEach(func() {
-			preSetup()
-		})
-
-		JustAfterEach(func() {
-			cleanPreSetup()
-		})
 
 		It("should fail to create service if metadata doesn't exist or is invalid", func() {
 			noMetadata := `
@@ -217,14 +165,6 @@ spec:
 
 	Context("JSON output", func() {
 
-		JustBeforeEach(func() {
-			preSetup()
-		})
-
-		JustAfterEach(func() {
-			cleanPreSetup()
-		})
-
 		It("listing catalog of services", func() {
 			jsonOut := helper.CmdShouldPass("odo", "catalog", "list", "services", "-o", "json")
 			Expect(jsonOut).To(ContainSubstring("mongodb-enterprise"))
@@ -233,14 +173,6 @@ spec:
 	})
 
 	Context("When operator backed services are created", func() {
-
-		JustBeforeEach(func() {
-			preSetup()
-		})
-
-		JustAfterEach(func() {
-			cleanPreSetup()
-		})
 
 		It("should list the services if they exist", func() {
 			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")

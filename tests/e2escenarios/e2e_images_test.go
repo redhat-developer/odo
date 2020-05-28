@@ -1,9 +1,7 @@
 package e2escenarios
 
 import (
-	"os"
 	"path/filepath"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
