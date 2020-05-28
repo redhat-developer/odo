@@ -792,7 +792,7 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 		return errors.Errorf("Project type not supported")
 	}
 
-	err = util.GetAndExtractZip(zipUrl, path)
+	err = checkoutProject(project, zipUrl, path)
 	if err != nil {
 		return err
 	}
@@ -902,6 +902,23 @@ func ensureAndLogProperResourceUsage(resource, resourceMin, resourceMax, resourc
 		log.Errorf("`--min-%s` should accompany `--max-%s` or pass `--%s` to use same value for both min and max or try not passing any of them\n", resourceName, resourceName, resourceName)
 		os.Exit(1)
 	}
+}
+
+func checkoutProject(project common.DevfileProject, zipURL, path string) error {
+	if project.Source.SparseCheckoutDir != nil && *project.Source.SparseCheckoutDir != "" {
+		sparseCheckoutDir := *project.Source.SparseCheckoutDir
+		err := util.GetAndExtractZip(zipURL, path, sparseCheckoutDir)
+		if err != nil {
+			return errors.Wrap(err, "failed to download and extract project zip folder")
+		}
+	} else {
+		// extract project to current working directory
+		err := util.GetAndExtractZip(zipURL, path, "/")
+		if err != nil {
+			return errors.Wrap(err, "failed to download and extract project zip folder")
+		}
+	}
+	return nil
 }
 
 // NewCmdCreate implements the create odo command
