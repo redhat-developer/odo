@@ -192,7 +192,11 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
-			helper.MatchAllInOutput(output, []string{"Executing devinit command \"echo hello", "Executing devbuild command \"/artifacts/bin/build-container-full.sh\"", "Executing devrun command \"/artifacts/bin/start-server.sh\""})
+			helper.MatchAllInOutput(output, []string{
+				"Executing devinit command \"echo hello",
+				"Executing devbuild command \"/artifacts/bin/build-container-full.sh\"",
+				"Executing devrun command \"/artifacts/bin/start-server.sh\"",
+			})
 		})
 
 		It("should execute devinit and devrun commands if present", func() {
@@ -202,7 +206,10 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile-init-without-build.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
-			helper.MatchAllInOutput(output, []string{"Executing devinit command \"echo hello", "Executing devrun command \"/artifacts/bin/start-server.sh\""})
+			helper.MatchAllInOutput(output, []string{
+				"Executing devinit command \"echo hello",
+				"Executing devrun command \"/artifacts/bin/start-server.sh\"",
+			})
 		})
 
 		It("should only execute devinit command once if component is already created", func() {
@@ -212,12 +219,19 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
-			helper.MatchAllInOutput(output, []string{"Executing devinit command \"echo hello", "Executing devbuild command \"/artifacts/bin/build-container-full.sh\"", "Executing devrun command \"/artifacts/bin/start-server.sh\""})
+			helper.MatchAllInOutput(output, []string{
+				"Executing devinit command \"echo hello",
+				"Executing devbuild command \"/artifacts/bin/build-container-full.sh\"",
+				"Executing devrun command \"/artifacts/bin/start-server.sh\"",
+			})
 
 			// Need to force so build and run get triggered again with the component already created.
 			output = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace, "-f")
 			Expect(output).NotTo(ContainSubstring("Executing devinit command \"echo hello"))
-			helper.MatchAllInOutput(output, []string{"Executing devbuild command \"/artifacts/bin/build-container-full.sh\"", "Executing devrun command \"/artifacts/bin/start-server.sh\""})
+			helper.MatchAllInOutput(output, []string{
+				"Executing devbuild command \"/artifacts/bin/build-container-full.sh\"",
+				"Executing devrun command \"/artifacts/bin/start-server.sh\"",
+			})
 		})
 
 		It("should be able to handle a missing devinit command", func() {
@@ -228,7 +242,10 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 			Expect(output).NotTo(ContainSubstring("Executing devinit command"))
-			helper.MatchAllInOutput(output, []string{"Executing devbuild command \"npm install\"", "Executing devrun command \"nodemon app.js\""})
+			helper.MatchAllInOutput(output, []string{
+				"Executing devbuild command \"npm install\"",
+				"Executing devrun command \"nodemon app.js\"",
+			})
 		})
 
 		It("should be able to handle a missing devbuild command", func() {
@@ -258,7 +275,11 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-volumes.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
-			helper.MatchAllInOutput(output, []string{"Executing devinit command", "Executing devbuild command", "Executing devrun command"})
+			helper.MatchAllInOutput(output, []string{
+				"Executing devinit command",
+				"Executing devbuild command",
+				"Executing devrun command",
+			})
 
 			// Check to see if it's been pushed (foobar.txt abd directory testdir)
 			podName := oc.GetRunningPodNameByComponent(cmpName, namespace)

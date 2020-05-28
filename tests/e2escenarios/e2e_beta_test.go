@@ -75,7 +75,13 @@ var _ = Describe("odo core beta flow", func() {
 		helper.CmdShouldPass(odo, append([]string{"push"}, extraArgs...)...)
 
 		dcSession := oc.GetComponentDC("mycomponent", "myapp", project)
-		helper.MatchAllInOutput(dcSession, []string{"app.kubernetes.io/instance: mycomponent", "app.kubernetes.io/component-source-type: local", "app.kubernetes.io/name: java", "app.kubernetes.io/part-of: myapp", "name: mycomponent-myapp"})
+		helper.MatchAllInOutput(dcSession, []string{
+			"app.kubernetes.io/instance: mycomponent",
+			"app.kubernetes.io/component-source-type: local",
+			"app.kubernetes.io/name: java",
+			"app.kubernetes.io/part-of: myapp",
+			"name: mycomponent-myapp",
+		})
 
 		// DC should have env variable
 		helper.MatchAllInOutput(dcSession, []string{"name: FOO", "value: bar"})

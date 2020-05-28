@@ -29,7 +29,10 @@ func ExecDefaultDevfileCommands(projectDirPath, cmpName, namespace string) {
 	args = []string{"push", "--devfile", "devfile.yaml"}
 	args = useProjectIfAvailable(args, namespace)
 	output := helper.CmdShouldPass("odo", args...)
-	helper.MatchAllInOutput(output, []string{"Executing devbuild command \"/artifacts/bin/build-container-full.sh\"", "Executing devrun command \"/artifacts/bin/start-server.sh\""})
+	helper.MatchAllInOutput(output, []string{
+		"Executing devbuild command \"/artifacts/bin/build-container-full.sh\"",
+		"Executing devrun command \"/artifacts/bin/start-server.sh\"",
+	})
 }
 
 // ExecWithMissingBuildCommand executes odo push with a missing build command
@@ -79,7 +82,10 @@ func ExecWithCustomCommand(projectDirPath, cmpName, namespace string) {
 	args = []string{"push", "--devfile", "devfile.yaml", "--build-command", "build", "--run-command", "run"}
 	args = useProjectIfAvailable(args, namespace)
 	output := helper.CmdShouldPass("odo", args...)
-	helper.MatchAllInOutput(output, []string{"Executing build command \"npm install\"", "Executing run command \"nodemon app.js\""})
+	helper.MatchAllInOutput(output, []string{
+		"Executing build command \"npm install\"",
+		"Executing run command \"nodemon app.js\"",
+	})
 }
 
 // ExecWithWrongCustomCommand executes odo push with a wrong custom command

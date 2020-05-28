@@ -237,7 +237,14 @@ func componentTests(args ...string) {
 			helper.CmdShouldPass("odo", "storage", "create", "storage-1", "--size", "1Gi", "--path", "/data1", "--context", context)
 			helper.ValidateLocalCmpExist(context, "Type,nodejs", "Name,cmp-git", "Application,testing", "URL,0,Name,url-1")
 			cmpDescribe := helper.CmdShouldPass("odo", append(args, "describe", "--context", context)...)
-			helper.MatchAllInOutput(cmpDescribe, []string{"cmp-git", "nodejs", "url-1", "url-2", "https://github.com/openshift/nodejs-ex", "storage-1"})
+			helper.MatchAllInOutput(cmpDescribe, []string{
+				"cmp-git",
+				"nodejs",
+				"url-1",
+				"url-2",
+				"https://github.com/openshift/nodejs-ex",
+				"storage-1",
+			})
 
 			cmpDescribeJSON, err := helper.Unindented(helper.CmdShouldPass("odo", append(args, "describe", "-o", "json", "--context", context)...))
 			Expect(err).Should(BeNil())

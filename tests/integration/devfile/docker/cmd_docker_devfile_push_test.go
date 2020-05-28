@@ -154,7 +154,11 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
-			helper.MatchAllInOutput(output, []string{"Executing devinit command \"echo hello", "Executing devbuild command \"/artifacts/bin/build-container-full.sh\"", "Executing devrun command \"/artifacts/bin/start-server.sh\""})
+			helper.MatchAllInOutput(output, []string{
+				"Executing devinit command \"echo hello",
+				"Executing devbuild command \"/artifacts/bin/build-container-full.sh\"",
+				"Executing devrun command \"/artifacts/bin/start-server.sh\"",
+			})
 
 			// Check to see if it's been pushed (foobar.txt abd directory testdir)
 			containers := dockerClient.GetRunningContainersByCompAlias(cmpName, "runtime")
@@ -171,7 +175,10 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile-init-without-build.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
-			helper.MatchAllInOutput(output, []string{"Executing devinit command \"echo hello", "Executing devrun command \"/artifacts/bin/start-server.sh\""})
+			helper.MatchAllInOutput(output, []string{
+				"Executing devinit command \"echo hello",
+				"Executing devrun command \"/artifacts/bin/start-server.sh\"",
+			})
 
 			// Check to see if it's been pushed (foobar.txt abd directory testdir)
 			containers := dockerClient.GetRunningContainersByCompAlias(cmpName, "runtime")
