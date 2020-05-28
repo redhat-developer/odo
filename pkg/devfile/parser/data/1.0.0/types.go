@@ -26,7 +26,9 @@ type Devfile100 struct {
 type ProjectType string
 
 const (
-	ProjectTypeGit ProjectType = "git"
+	ProjectTypeGit    ProjectType = "git"
+	ProjectTypeGitHub ProjectType = "github"
+	ProjectTypeZip    ProjectType = "zip"
 )
 
 var SupportedProjectTypes = []ProjectType{ProjectTypeGit}
