@@ -198,6 +198,14 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 	})
 
+	Context("When executing odo create with component with no devBuild command", func() {
+		It("should successfully create the devfile component", func() {
+			// Quarkus devfile has no devBuild command
+			output := helper.CmdShouldPass("odo", "create", "quarkus")
+			helper.MatchAllInOutput(output, []string{"Please use `odo push` command to create the component with source deployed"})
+		})
+	})
+
 	Context("When executing odo create with devfile component and --downloadSource flag with a valid project", func() {
 		It("should successfully create the component specified and download the source", func() {
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
@@ -270,4 +278,36 @@ var _ = Describe("odo devfile create command tests", func() {
 	//		helper.DeleteDir(contextDevfile)
 	//	})
 	//})
+
+	// Context("When executing odo create with devfile component, --downloadSource flag and sparseContextDir has a valid value", func() {
+	// 	It("should only extract the specified path in the sparseContextDir field", func() {
+	// 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+	// 		contextDevfile := helper.CreateNewContext()
+	// 		helper.Chdir(contextDevfile)
+	// 		devfile := "devfile.yaml"
+	// 		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-sparseCheckoutDir"), filepath.Join(contextDevfile, devfile))
+	// 		componentNamespace := helper.RandString(6)
+	// 		helper.CmdShouldPass("odo", "create", "--downloadSource", "--project", componentNamespace)
+	// 		expectedFiles := []string{"app.js", devfile}
+	// 		Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
+	// 		helper.DeleteDir(contextDevfile)
+	// 	})
+	// })
+
+	// Context("When executing odo create with devfile component, --downloadSource flag and sparseContextDir has an invalid value", func() {
+	// 	It("should fail and alert the user that the specified path in sparseContextDir does not exist", func() {
+	// 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+	// 		contextDevfile := helper.CreateNewContext()
+	// 		helper.Chdir(contextDevfile)
+	// 		devfile := "devfile.yaml"
+	// 		devfilePath := filepath.Join(contextDevfile, devfile)
+	// 		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-sparseCheckoutDir"), devfilePath)
+	// 		helper.ReplaceDevfileField(devfilePath, "sparseCheckoutDir", "/invalid/")
+	// 		componentNamespace := helper.RandString(6)
+	// 		output := helper.CmdShouldFail("odo", "create", "--downloadSource", "--project", componentNamespace)
+	// 		expectedString := "no files were unzipped, ensure that the project repo is not empty or that sparseCheckoutDir has a valid path"
+	// 		helper.MatchAllInOutput(output, []string{expectedString})
+	// 		helper.DeleteDir(contextDevfile)
+	// 	})
+	// })
 })

@@ -812,8 +812,9 @@ func GetGitHubZipURL(repoURL string) (string, error) {
 }
 
 // GetAndExtractZip downloads a zip file from a URL with a http prefix or
-// takes an absolute path prefixed with file:// and extracts it to a destination
-func GetAndExtractZip(zipURL string, destination string) error {
+// takes an absolute path prefixed with file:// and extracts it to a destination.
+// pathToUnzip specifies the path within the zip folder to extract
+func GetAndExtractZip(zipURL string, destination string, pathToUnzip string) error {
 	if zipURL == "" {
 		return errors.Errorf("Empty zip url: %s", zipURL)
 	}
@@ -847,18 +848,23 @@ func GetAndExtractZip(zipURL string, destination string) error {
 		return errors.Errorf("Invalid Zip URL: %s . Should either be prefixed with file://, http:// or https://", zipURL)
 	}
 
-	_, err := Unzip(pathToZip, destination)
+	filenames, err := Unzip(pathToZip, destination, pathToUnzip)
 	if err != nil {
 		return err
+	}
+
+	if len(filenames) == 0 {
+		return errors.New("no files were unzipped, ensure that the project repo is not empty or that sparseCheckoutDir has a valid path")
 	}
 
 	return nil
 }
 
-// Unzip will decompress a zip archive, moving all files and folders
-// within the zip file (parameter 1) to an output directory (parameter 2).
+// Unzip will decompress a zip archive, moving specified files and folders
+// within the zip file (parameter 1) to an output directory (parameter 2)
 // Source: https://golangcode.com/unzip-files-in-go/
-func Unzip(src, dest string) ([]string, error) {
+// pathToUnzip (parameter 3) is the path within the zip folder to extract
+func Unzip(src, dest, pathToUnzip string) ([]string, error) {
 	var filenames []string
 
 	r, err := zip.OpenReader(src)
@@ -867,16 +873,46 @@ func Unzip(src, dest string) ([]string, error) {
 	}
 	defer r.Close()
 
-	for _, f := range r.File {
+	// change path separator to correct character
+	pathToUnzip = filepath.FromSlash(pathToUnzip)
 
+	for _, f := range r.File {
 		// Store filename/path for returning and using later on
-		index := strings.Index(f.Name, "/")
+		index := strings.Index(f.Name, string(os.PathSeparator))
 		filename := f.Name[index+1:]
 		if filename == "" {
 			continue
 		}
+
+		// if sparseCheckoutDir has a pattern
+		match, err := filepath.Match(pathToUnzip, filename)
+		if err != nil {
+			return filenames, err
+		}
+
+		// removes first slash of pathToUnzip if present, adds trailing slash
+		pathToUnzip = strings.TrimPrefix(pathToUnzip, string(os.PathSeparator))
+		if pathToUnzip != "" && !strings.HasSuffix(pathToUnzip, string(os.PathSeparator)) {
+			pathToUnzip = pathToUnzip + string(os.PathSeparator)
+		}
+		// destination filepath before trim
 		fpath := filepath.Join(dest, filename)
 
+		// used for pattern matching
+		fpathDir := filepath.Dir(fpath)
+
+		// check for prefix or match
+		if strings.HasPrefix(filename, pathToUnzip) {
+			filename = strings.TrimPrefix(filename, pathToUnzip)
+		} else if !strings.HasPrefix(filename, pathToUnzip) && !match && !sliceContainsString(fpathDir, filenames) {
+			continue
+		}
+		// adds trailing slash to destination if needed as filepath.Join removes it
+		if (len(filename) == 1 && os.IsPathSeparator(filename[0])) || filename == "" {
+			fpath = dest + string(os.PathSeparator)
+		} else {
+			fpath = filepath.Join(dest, filename)
+		}
 		// Check for ZipSlip. More Info: http://bit.ly/2MsjAWE
 		if !strings.HasPrefix(fpath, filepath.Clean(dest)+string(os.PathSeparator)) {
 			return filenames, fmt.Errorf("%s: illegal file path", fpath)
@@ -1067,4 +1103,14 @@ func PathEqual(firstPath string, secondPath string) bool {
 	firstAbsPath, _ := GetAbsPath(firstPath)
 	secondAbsPath, _ := GetAbsPath(secondPath)
 	return firstAbsPath == secondAbsPath
+}
+
+// sliceContainsString checks for existence of given string in given slice
+func sliceContainsString(str string, slice []string) bool {
+	for _, b := range slice {
+		if b == str {
+			return true
+		}
+	}
+	return false
 }

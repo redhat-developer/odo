@@ -1799,3 +1799,41 @@ func TestPathEqual(t *testing.T) {
 		})
 	}
 }
+
+func TestSliceContainsString(t *testing.T) {
+	tests := []struct {
+		name      string
+		stringVal string
+		slice     []string
+		wantVal   bool
+	}{
+		{
+			name:      "Case 1: string in valid slice",
+			stringVal: "string",
+			slice:     []string{"string", "string2"},
+			wantVal:   true,
+		},
+		{
+			name:      "Case 2: string not in valid slice",
+			stringVal: "string3",
+			slice:     []string{"string", "string2"},
+			wantVal:   false,
+		},
+		{
+			name:      "Case 3: string not in empty slice",
+			stringVal: "string",
+			slice:     []string{},
+			wantVal:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotVal := sliceContainsString(tt.stringVal, tt.slice)
+
+			if !reflect.DeepEqual(gotVal, tt.wantVal) {
+				t.Errorf("Got %v, want %v", gotVal, tt.wantVal)
+			}
+		})
+	}
+}

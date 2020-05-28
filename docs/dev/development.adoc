@@ -189,15 +189,28 @@ NOTE: Refer https://github.com/golang/go/wiki/LearnTesting for Go best practices
 
 === Integration and e2e tests
 
-*Prerequisites:*
+*Prerequisites for OpenShift cluster:*
 
-* A `minishift` or OpenShift environment with Service Catalog enabled:
+* A `minishift` or OpenShift 3.11 environment with Service Catalog enabled:
 +
 ----
 $ MINISHIFT_ENABLE_EXPERIMENTAL=y minishift start --extra-clusterup-flags "--enable=*,service-catalog,automation-service-broker,template-service-broker"
 ----
+OR
+* A `crc` environment for 4.* local cluster:
++
+Follow link:https://github.com/code-ready/crc#documentation[`crc`] installation guide.
++
+OR
+* A 4.* cluster hosted remotely
 
-* `odo` and `oc` binaries in `$PATH`.
+*Prerequisites for Kubernetes cluster:*
+
+* A `kubernetes` environment set up with single node cluster:
++
+For a single node `kubernetes` cluster install link:https://kubernetes.io/docs/tasks/tools/install-minikube/[`Minikube`]
+
+NOTE: Make sure that `odo` and `oc` binaries are in `$PATH`. Use the cloned odo directory to launch tests on 3.11 and 4.* clusters. To communicate with `Kubernetes` cluster use `kubectl`. No cluster configuration is needed to run tests on a 3.11 cluster spun up by `Minishift` or `oc cluster up` locally. However a 4.* cluster needs to be configured before launching the tests against it. The files `kubeadmin-password` and `kubeconfig` which contain cluster login details should be present in the `auth` directory and it should reside in the same directory as `Makefile`. If it is not present in the auth directory, please create it. Then run `make configure-installer-tests-cluster` to configure the 4.* cluster.
 
 *Integration tests:*
 
@@ -342,9 +355,9 @@ There are some test environment variable that helps to get more control over the
 
 * UNIT_TEST_ARGS: Env variable UNIT_TEST_ARGS is used to get control over enabling test flags along with go test. For example, To enable verbosity export or set env UNIT_TEST_ARGS like `UNIT_TEST_ARGS=-v`.
 
-*Running integration tests:*
+*Running integration tests on Openshift:*
 
-By default, tests are run against the `odo` binary placed in the PATH which is created by command `make`. Integration tests can be run in two (parallel and sequential) ways. To control the parallel run use environment variable `TEST_EXEC_NODES`. For example component test can be run
+For running tests on a 3.11 cluster, login to the cluster using the required credentials. For example `odo login -u <user_name> -p <password> <server_URL>`. In case of 4.* cluster, `make configure-installer-tests-cluster` performs the login operation required to run the test. By default, the tests are run against the `odo` binary placed in the $PATH which is created by the command `make`. Integration tests can be run in two ways, parallel and sequential. To control the parallel run, use the environment variable `TEST_EXEC_NODES`. For example, the component test can be run as following:
 
 * To run the test in parallel, on a test cluster (By default the test will run in parallel on two ginkgo test node):
 
@@ -364,7 +377,55 @@ Run component command integration tests
 $ TEST_EXEC_NODES=1 make test-cmd-cmp
 ----
 
-NOTE: To see the number of available integration test file for validation, press `tab` just after writing `make test-cmd-`. However there is a test file `generic_test.go` which handles certain test spec easily and can run the spec in parallel by calling `make test-generic`. By calling make `test-integration`, the whole suite can run all the spec in parallel on two ginkgo test node except `service` and `link` irrespective of service catalog status in the cluster. However `make test-integration-service-catalog` runs all spec of service and link tests successfully in parallel on cluster having service catalog enabled. `make test-odo-login-e2e` doesn't honour environment variable `TEST_EXEC_NODES`. So by default it runs login and logout command integration test suite on a single ginkgo test node sequentially to avoid race conditions in a parallel run.
+NOTE: To see the number of available integration test file for validation, press `tab` just after writing `make test-cmd-`. However there is a test file `generic_test.go` which handles certain test specs easily and we can run it parallelly by calling `make test-generic`. By calling `make test-integration`, the whole suite will run all the specs in parallel on two ginkgo test node except `service` and `link` irrespective of service catalog status in the cluster. However `make test-integration-service-catalog` runs all specs of service and link tests in parallel on a cluster having service catalog enabled. `make test-odo-login-e2e` doesn't honour environment variable `TEST_EXEC_NODES`. So by default it runs login and logout command integration test suites on a single ginkgo test node sequentially to avoid race conditions during a parallel run.
+
+*Running integration tests on Kubernetes:*
+
+By default, the link:https://github.com/openshift/odo/tree/master/tests/integration/devfile[`integration tests`] for devfile feature, which is in experimental mode, run against `kubernetes` cluster. For more information on Experimental mode, please read link:https://github.com/openshift/odo/blob/master/docs/dev/experimental-mode.adoc:[`odo experimental mode`] document.
+
+The tests are run against the `odo` binary placed in the PATH which is created by the command `make`. Integration tests can be run in two ways (parallel and sequential). To control the parallel run use environment variable `TEST_EXEC_NODES`. For example, the devfile tests can be run
+
+* To run the tests on Kubernetes cluster:
+
++
+Set the `KUBERNETES` environment variable
++
+----
+$ export KUBERNETES=true
+----
+
++
+Enable the experimental mode
++
+----
+$ export ODO_EXPERIMENTAL=true
+----
++
+OR
++
+----
+$ odo preference set Experimental true -f
+----
+
+* To run the test in parallel, on a test cluster (By default the test will run in parallel on two ginkgo test node):
+
++
+Run catalog command integration tests
++
+----
+$ make test-cmd-devfile-catalog
+----
++
+
+* To run the catalog command integration tests sequentially or on single ginkgo test node:
++
+Run catalog command integration tests
++
+----
+$ TEST_EXEC_NODES=1 make test-cmd-devfile-catalog
+----
+
+NOTE: To see the number of available integration test files for validation, press `tab` keb just after writing `make test-cmd-devfile-`. By calling `make test-integration-devfile`, the suite will run all test specs in parallel on two ginkgo test nodes.
 
 *Running e2e tests:*
 
