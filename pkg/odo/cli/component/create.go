@@ -482,7 +482,6 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	} else {
 		openshiftCluster = false
 	}
-	openshiftCluster, _ = co.Client.IsImageStreamSupported()
 	if !openshiftCluster {
 		return errors.New("component not found")
 	}
