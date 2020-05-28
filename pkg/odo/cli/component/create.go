@@ -770,13 +770,14 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 		return err
 	}
 
-	var url string
+	var url, sparseDir string
 	if project.Git != nil {
 		if strings.Contains(project.Git.Location, "github.com") {
 			url, err = util.GetGitHubZipURL(project.Git.Location)
 			if err != nil {
 				return err
 			}
+			sparseDir = project.Git.SparseCheckoutDir
 		} else {
 			return errors.Errorf("Project type git with non github url not supported")
 		}
@@ -785,13 +786,15 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 		if err != nil {
 			return err
 		}
+		sparseDir = project.Github.SparseCheckoutDir
 	} else if project.Zip != nil {
 		url = project.Zip.Location
+		sparseDir = project.Github.SparseCheckoutDir
 	} else {
 		return errors.Errorf("Project type not supported")
 	}
 
-	err = checkoutProject(project, url, path)
+	err = checkoutProject(sparseDir, url, path)
 
 	if err != nil {
 		return err
@@ -904,15 +907,8 @@ func ensureAndLogProperResourceUsage(resource, resourceMin, resourceMax, resourc
 	}
 }
 
-func checkoutProject(project common.DevfileProject, zipURL, path string) error {
-	var sparseCheckoutDir string
-	if project.Git.SparseCheckoutDir != "" {
-		sparseCheckoutDir = project.Git.SparseCheckoutDir
-	} else if project.Github.SparseCheckoutDir != "" {
-		sparseCheckoutDir = project.Github.SparseCheckoutDir
-	} else if project.Zip.SparseCheckoutDir != "" {
-		sparseCheckoutDir = project.Zip.SparseCheckoutDir
-	}
+func checkoutProject(sparseCheckoutDir, zipURL, path string) error {
+
 	if sparseCheckoutDir != "" {
 		err := util.GetAndExtractZip(zipURL, path, sparseCheckoutDir)
 		if err != nil {

@@ -47,10 +47,8 @@ func (d *Devfile100) GetProjects() []common.DevfileProject {
 
 	var projects []common.DevfileProject
 	for _, v := range d.Projects {
-		// We are only supporting ProjectType git in V1
-		if v.Source.Type == ProjectTypeGit {
-			projects = append(projects, convertV1ProjectToCommon(v))
-		}
+		projects = append(projects, convertV1ProjectToCommon(v))
+
 	}
 
 	return projects
@@ -166,20 +164,41 @@ func convertV1VolumeToCommon(v DockerimageVolume) common.VolumeMount {
 }
 
 func convertV1ProjectToCommon(p Project) common.DevfileProject {
-
-	git := common.Git{
-		Branch:            p.Source.Branch,
-		Location:          p.Source.Location,
-		SparseCheckoutDir: p.Source.SparseCheckoutDir,
-		StartPoint:        p.Source.StartPoint,
+	var project = common.DevfileProject{
+		ClonePath: p.ClonePath,
+		Name:      p.Name,
 	}
 
-	return common.DevfileProject{
-		ClonePath:  p.ClonePath,
-		Git:        &git,
-		Name:       p.Name,
-		SourceType: common.GitProjectSourceType,
+	switch p.Source.Type {
+	case ProjectTypeGit:
+		git := common.Git{
+			Branch:            p.Source.Branch,
+			Location:          p.Source.Location,
+			SparseCheckoutDir: p.Source.SparseCheckoutDir,
+			StartPoint:        p.Source.StartPoint,
+		}
+
+		project.Git = &git
+
+	case ProjectTypeGitHub:
+		github := common.Github{
+			Branch:            p.Source.Branch,
+			Location:          p.Source.Location,
+			SparseCheckoutDir: p.Source.SparseCheckoutDir,
+			StartPoint:        p.Source.StartPoint,
+		}
+		project.Github = &github
+
+	case ProjectTypeZip:
+		zip := common.Zip{
+			Location:          p.Source.Location,
+			SparseCheckoutDir: p.Source.SparseCheckoutDir,
+		}
+		project.Zip = &zip
+
 	}
+
+	return project
 
 }
 
