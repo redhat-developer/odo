@@ -2,6 +2,11 @@ package list
 
 import (
 	"fmt"
+	"io"
+	"os"
+	"strings"
+	"text/tabwriter"
+
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
@@ -11,11 +16,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
-	"io"
 	"k8s.io/klog"
-	"os"
-	"strings"
-	"text/tabwriter"
 )
 
 const componentsRecommendedCommandName = "components"
@@ -95,6 +96,7 @@ func (o *ListComponentsOptions) Run() (err error) {
 			o.catalogList.Items[i].Spec.SupportedTags = supported
 		}
 		machineoutput.OutputSuccess(o.catalogList)
+		machineoutput.OutputSuccess(o.catalogDevfileList)
 	} else {
 		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 		var supCatalogList, unsupCatalogList []catalog.ComponentType
