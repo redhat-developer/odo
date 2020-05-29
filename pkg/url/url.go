@@ -408,7 +408,7 @@ func List(client *occlient.Client, localConfig *config.LocalConfigInfo, componen
 
 	for _, configURL := range localConfigURLs {
 		localURL := ConvertConfigURL(configURL)
-		var found bool = false
+		var found = false
 		for _, r := range routes {
 			clusterURL := getMachineReadableFormat(r)
 			if localURL.Name == clusterURL.Name {
@@ -536,7 +536,8 @@ func ConvertConfigURL(configURL config.ConfigURL) URL {
 			Name: configURL.Name,
 		},
 		Spec: URLSpec{
-			Port: configURL.Port,
+			Port:   configURL.Port,
+			Secure: configURL.Secure,
 		},
 	}
 }
