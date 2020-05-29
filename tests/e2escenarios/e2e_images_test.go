@@ -86,6 +86,11 @@ var _ = Describe("odo supported images e2e tests", func() {
 			verifySupportedImage(filepath.Join("redhat-openjdk-18", "openjdk18-openshift:latest"), "openjdk", "java:8", project, appName, context)
 		})
 
+		It("Should be able to verify the openjdk-11-rhel8 image", func() {
+			oc.ImportImageFromRegistry("registry.redhat.io", filepath.Join("openjdk", "openjdk-11-rhel8:latest"), "java:8", project)
+			verifySupportedImage(filepath.Join("openjdk", "openjdk-11-rhel8:latest"), "openjdk", "java:8", project, appName, context)
+		})
+
 		It("Should be able to verify the openjdk-11-rhel7 image", func() {
 			oc.ImportImageFromRegistry("registry.access.redhat.com", filepath.Join("openjdk", "openjdk-11-rhel7:latest"), "java:8", project)
 			verifySupportedImage(filepath.Join("openjdk", "openjdk-11-rhel7:latest"), "openjdk", "java:8", project, appName, context)

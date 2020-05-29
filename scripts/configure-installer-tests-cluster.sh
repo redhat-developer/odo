@@ -10,11 +10,34 @@ SETUP_OPERATORS="./scripts/setup-operators.sh"
 DEFAULT_INSTALLER_ASSETS_DIR=${DEFAULT_INSTALLER_ASSETS_DIR:-$(pwd)}
 KUBEADMIN_USER=${KUBEADMIN_USER:-"kubeadmin"}
 KUBEADMIN_PASSWORD_FILE=${KUBEADMIN_PASSWORD_FILE:-"${DEFAULT_INSTALLER_ASSETS_DIR}/auth/kubeadmin-password"}
+
+# Registry.redhat.io username and password for local testing
+REGISTRY_UN=""
+REGISTRY_PASS=""
+
 # Default values
 OC_STABLE_LOGIN="false"
 CI_OPERATOR_HUB_PROJECT="ci-operator-hub-project"
 # Exported to current env
 export KUBECONFIG=${KUBECONFIG:-"${DEFAULT_INSTALLER_ASSETS_DIR}/auth/kubeconfig"}
+
+# Mount path of odo secret directory
+oc get secret -n odo
+cd /tmp/secret | oc extract secret/odo-secret
+ls -la /tmp/secret
+# Environment variable path for registry.redhat.io
+ENV_VAR_UN_FILE=${ENV_VAR_UN_FILE:-"/tmp/secret/username.txt"}
+ENV_VAR_PASS_FILE=${ENV_VAR_PASS_FILE:-"/tmp/secret/password.txt"}
+SECRET_REGISTRY_NAME="openshift-private-registry"
+
+# create_secret creates secrete in cluster to pull image from private registry registry.redhat.io
+create_secret () {
+    ENV_VAR_UN=$1
+    ENV_VAR_PASS=$2
+    oc create secret docker-registry --docker-server=registry.redhat.io --docker-username=$ENV_VAR_UN --docker-password=$ENV_VAR_PASS --docker-email=unused $SECRET_REGISTRY_NAME
+    oc secrets link default $SECRET_REGISTRY_NAME --for=pull
+    oc secrets link builder $SECRET_REGISTRY_NAME
+}
 
 # List of users to create
 USERS="developer odonoprojectattemptscreate odosingleprojectattemptscreate odologinnoproject odologinsingleproject1"
@@ -48,6 +71,37 @@ oc adm policy add-role-to-user edit developer
 
 sh $SETUP_OPERATORS
 # OperatorHub setup complete
+
+# Set environment Variables for creating secret in cluster to pull image from private registry registry.redhat.io
+if [ "$CI" == "openshift" ]; then
+
+    # Check if environment variable files exist
+    if [ ! -f $ENV_VAR_UN_FILE ]; then
+        echo "Could not find environment variable username file for regidtry.redhat.io"
+        exit 1
+    fi
+
+    if [ ! -f $ENV_VAR_PASS_FILE ]; then
+        echo "Could not find environment variable password file for regidtry.redhat.io"
+        exit 1
+    fi
+
+    # Get environment variable username from file
+    ENV_VAR_UN=`cat $ENV_VAR_UN_FILE`
+
+    # Get environment variable password from file
+    ENV_VAR_PASS=`cat $ENV_VAR_PASS_FILE`
+    create_secret $ENV_VAR_UN $ENV_VAR_PASS
+
+else
+    if [ -z $REGISTRY_UN ]; then
+        echo "Please set environment variable REGISTRY_UN and REGISTRY_PASS for registry.redhat.io otherwise e2e supported image test won't work"
+        exit 0
+    fi
+    ENV_VAR_UN=$REGISTRY_UN
+    ENV_VAR_PASS=$REGISTRY_PASS
+    create_secret $ENV_VAR_UN $ENV_VAR_PASS
+fi
 
 # Remove existing htpasswd file, if any
 if [ -f $HTPASSWD_FILE ]; then
