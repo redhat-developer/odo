@@ -64,25 +64,13 @@ func CreateInternalRegistryResources(env *config.Environment, sa *corev1.Service
 	// Provide access to service account for using internal registry
 	namespace := strings.Split(imageRepo, "/")[1]
 
-	clientSet, err := namespaces.GetClientSet()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	namespaceExists, err := namespaces.Exists(clientSet, namespace)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	resources := res.Resources{}
 	filenames := []string{}
 
-	if !namespaceExists {
-		filename := filepath.Join("01-namespaces", fmt.Sprintf("%s.yaml", namespace))
-		namespacePath := filepath.Join(config.PathForEnvironment(env), "base", "pipelines", filename)
-		resources[namespacePath] = namespaces.Create(namespace)
-		filenames = append(filenames, filename)
-	}
+	filename := filepath.Join("01-namespaces", fmt.Sprintf("%s.yaml", namespace))
+	namespacePath := filepath.Join(config.PathForEnvironment(env), "base", "pipelines", filename)
+	resources[namespacePath] = namespaces.Create(namespace)
+	filenames = append(filenames, filename)
 
 	filename, roleBinding := createInternalRegistryRoleBinding(env, namespace, sa)
 	return append(filenames, filename), res.Merge(roleBinding, resources), nil
