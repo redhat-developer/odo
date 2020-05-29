@@ -178,8 +178,7 @@ var _ = Describe("odo devfile url command tests", func() {
 
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 			pushStdOut := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
-			Expect(pushStdOut).NotTo(ContainSubstring("successfully deleted"))
-			Expect(pushStdOut).NotTo(ContainSubstring("created"))
+			helper.DontMatchAllInOutput(pushStdOut, []string{"successfully deleted", "created"})
 			Expect(pushStdOut).To(ContainSubstring("URLs are synced with the cluster, no changes are required"))
 
 			output := helper.CmdShouldPass("oc", "get", "routes", "--namespace", namespace)
@@ -188,8 +187,7 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.CmdShouldPass("odo", "url", "delete", url1, "-f")
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 			pushStdOut = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
-			Expect(pushStdOut).NotTo(ContainSubstring("successfully deleted"))
-			Expect(pushStdOut).NotTo(ContainSubstring("created"))
+			helper.DontMatchAllInOutput(pushStdOut, []string{"successfully deleted", "created"})
 			Expect(pushStdOut).To(ContainSubstring("URLs are synced with the cluster, no changes are required"))
 
 			output = helper.CmdShouldPass("oc", "get", "routes", "--namespace", namespace)
@@ -213,6 +211,7 @@ var _ = Describe("odo devfile url command tests", func() {
 		})
 
 		It("should be able to push again twice after creating and deleting a url", func() {
+			var stdOut string
 			url1 := helper.RandString(5)
 			host := helper.RandString(5) + ".com"
 
@@ -224,18 +223,16 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--ingress")
 
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
-			stdout := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
-			Expect(stdout).NotTo(ContainSubstring("successfully deleted"))
-			Expect(stdout).NotTo(ContainSubstring("created"))
-			Expect(stdout).To(ContainSubstring("URLs are synced with the cluster, no changes are required"))
+			stdOut = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
+			helper.DontMatchAllInOutput(stdOut, []string{"successfully deleted", "created"})
+			Expect(stdOut).To(ContainSubstring("URLs are synced with the cluster, no changes are required"))
 
 			helper.CmdShouldPass("odo", "url", "delete", url1, "-f")
 
 			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
-			stdout = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
-			Expect(stdout).NotTo(ContainSubstring("successfully deleted"))
-			Expect(stdout).NotTo(ContainSubstring("created"))
-			Expect(stdout).To(ContainSubstring("URLs are synced with the cluster, no changes are required"))
+			stdOut = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
+			helper.DontMatchAllInOutput(stdOut, []string{"successfully deleted", "created"})
+			Expect(stdOut).To(ContainSubstring("URLs are synced with the cluster, no changes are required"))
 		})
 	})
 
