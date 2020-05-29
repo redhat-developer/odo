@@ -375,9 +375,6 @@ func (c *Client) GetPortsFromBuilderImage(componentType string) ([]string, error
 	}
 	imageStream, err := c.GetImageStream(imageNS, imageName, imageTag)
 	if err != nil {
-		if experimental.IsExperimentalModeEnabled() {
-			return []string{}, fmt.Errorf("component \"%s\" not found", componentType)
-		}
 		return []string{}, err
 	}
 	imageStreamImage, err := c.GetImageStreamImage(imageStream, imageTag)
@@ -757,6 +754,9 @@ func (c *Client) GetImageStream(imageNS string, imageName string, imageTag strin
 		}
 		if e != nil && err != nil {
 			// Imagestream not found in openshift and current namespaces
+			if experimental.IsExperimentalModeEnabled() {
+				return nil, fmt.Errorf("component \"%s\" not found", imageName)
+			}
 			return nil, err
 		}
 
