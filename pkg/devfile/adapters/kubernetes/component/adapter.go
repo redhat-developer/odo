@@ -315,8 +315,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 		PodName: podName,
 	}
 
-	// Only add runinit to the expected commands if the component doesn't already exist
-	// This would be the case when first running the container
+	// only execute Init command, if it is first run of container.
 	if !componentExists {
 		// Get Init Command
 		command, ok := commandsMap[versionsCommon.InitCommandGroupType]

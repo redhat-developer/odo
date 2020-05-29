@@ -54,7 +54,7 @@ type ComponentInfo struct {
 	ContainerName string
 }
 
-// PushCommandsMap stores the commands to be executed as per there types.
+// PushCommandsMap stores the commands to be executed as per their types.
 type PushCommandsMap map[common.DevfileCommandGroupType]common.DevfileCommand
 
 // NewPushCommandMap returns the instance of PushCommandsMap
