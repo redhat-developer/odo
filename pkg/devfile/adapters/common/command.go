@@ -12,7 +12,9 @@ import (
 // GetCommand iterates through the devfile commands and returns the associated devfile command
 func getCommand(data data.DevfileData, commandName string, groupType common.DevfileCommandGroupType) (supportedCommand common.DevfileCommand, err error) {
 
-	for _, command := range data.GetCommands() {
+	commands := data.GetCommands()
+
+	for _, command := range commands {
 
 		command = updateGroupforCustomCommand(commandName, groupType, command)
 
@@ -43,7 +45,7 @@ func getCommand(data data.DevfileData, commandName string, groupType common.Devf
 				// group:
 				//   kind: build
 				if command.Exec.Group.Kind != groupType {
-					return supportedCommand, fmt.Errorf("mismatched type, command %s is of type %v groupType in devfile", commandName, groupType)
+					return supportedCommand, fmt.Errorf("mismatched group kind, command %s is of group kind %v groupType in devfile", commandName, groupType)
 
 				}
 				supportedCommand = command
@@ -62,7 +64,7 @@ func getCommand(data data.DevfileData, commandName string, groupType common.Devf
 
 	if commandName == "" {
 		// if default command is not found return the first command found for the matching type.
-		for _, command := range data.GetCommands() {
+		for _, command := range commands {
 			if command.Exec.Group.Kind == groupType {
 				supportedCommand = command
 				return supportedCommand, nil
@@ -92,6 +94,7 @@ func getCommand(data data.DevfileData, commandName string, groupType common.Devf
 // 1. command has to be of type exec
 // 2. component should be present
 // 3. command should be present
+// 4. command must have group
 func validateCommand(data data.DevfileData, command common.DevfileCommand) (err error) {
 
 	// type must be exec
@@ -116,13 +119,13 @@ func validateCommand(data data.DevfileData, command common.DevfileCommand) (err 
 	// must map to a supported component
 	components := GetSupportedComponents(data)
 
-	isActionValid := false
+	isComponentValid := false
 	for _, component := range components {
 		if command.Exec.Component == component.Container.Name {
-			isActionValid = true
+			isComponentValid = true
 		}
 	}
-	if !isActionValid {
+	if !isComponentValid {
 		return fmt.Errorf("the command does not map to a supported component")
 	}
 

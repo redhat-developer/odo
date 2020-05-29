@@ -1,6 +1,6 @@
 package common
 
-// ProjectSourceType describes the type of Project sources.
+// DevfileProjectSourceType describes the type of Project sources.
 // Only one of the following project sources may be specified.
 type DevfileProjectSourceType string
 
@@ -11,6 +11,8 @@ const (
 	CustomProjectSourceType DevfileProjectSourceType = "Custom"
 )
 
+// DevfileComponentType describes the type of component.
+// Only one of the following component type may be specified
 type DevfileComponentType string
 
 const (
@@ -22,6 +24,8 @@ const (
 	CustomComponentType     DevfileComponentType = "Custom"
 )
 
+// DevfileCommandType describes the type of command.
+// Only one of the following command type may be specified.
 type DevfileCommandType string
 
 const (
@@ -32,8 +36,7 @@ const (
 	CustomCommandType       DevfileCommandType = "Custom"
 )
 
-// CommandGroupType describes the kind of command group.
-// +kubebuilder:validation:Enum=build;run;test;debug
+// DevfileCommandGroupType describes the kind of command group.
 type DevfileCommandGroupType string
 
 const (
@@ -45,17 +48,17 @@ const (
 	InitCommandGroupType DevfileCommandGroupType = "init"
 )
 
-// Metadata Optional metadata
+// DevfileMetadata metadata for devfile
 type DevfileMetadata struct {
 
-	// Optional devfile name
+	// Name Optional devfile name
 	Name string `json:"name,omitempty"`
 
-	// Optional semver-compatible version
+	// Version Optional semver-compatible version
 	Version string `json:"version,omitempty"`
 }
 
-// CommandsItems
+// DevfileCommand command specified in devfile
 type DevfileCommand struct {
 
 	// Exec command
@@ -65,7 +68,7 @@ type DevfileCommand struct {
 	Type DevfileCommandType `json:"type,omitempty"`
 }
 
-// ComponentsItems
+// DevfileComponent component specified in devfile
 type DevfileComponent struct {
 
 	// CheEditor component
@@ -86,14 +89,14 @@ type DevfileComponent struct {
 	// Openshift component
 	Openshift *Openshift `json:"openshift,omitempty"`
 
-	// Type of project source
+	// Type of component
 	Type DevfileComponentType `json:"type,omitempty"`
 
 	// Volume component
 	Volume *Volume `json:"volume,omitempty"`
 }
 
-// ProjectsItems
+// DevfileProject project defined in devfile
 type DevfileProject struct {
 
 	// Path relative to the root of the projects to which this project should be cloned into. This is a unix-style relative path (i.e. uses forward slashes). The path is invalid if it is absolute or tries to escape the project root through the usage of '..'. If not specified, defaults to the project name.
@@ -234,7 +237,7 @@ type Env struct {
 	Value string `json:"value"`
 }
 
-// Events Bindings of commands to events. Each command is referred-to by its name.
+// DevfileEvents events Bindings of commands to events. Each command is referred-to by its name.
 type DevfileEvents struct {
 
 	// Names of commands that should be executed after the workspace is completely started. In the case of Che-Theia, these commands should be executed after all plugins and extensions have started, including project cloning. This means that those commands are not triggered until the user opens the IDE in his browser.
@@ -352,7 +355,7 @@ type Openshift struct {
 	Url string `json:"url,omitempty"`
 }
 
-// Parent Parent workspace template
+// DevfileParent Parent workspace template
 type DevfileParent struct {
 
 	// Reference to a Kubernetes CRD of type DevWorkspaceTemplate
@@ -384,7 +387,7 @@ type Volume struct {
 	Size string `json:"size,omitempty"`
 }
 
-// VolumeMountsItems Volume that should be mounted to a component container
+// VolumeMount Volume that should be mounted to a component container
 type VolumeMount struct {
 
 	// The volume mount name is the name of an existing `Volume` component. If no corresponding `Volume` component exist it is implicitly added. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files.
