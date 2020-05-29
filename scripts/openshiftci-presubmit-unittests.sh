@@ -12,6 +12,15 @@ export PATH=$PATH:$GOPATH/bin
 # otherwise /.cache is used, and it fails on permission denied
 export GOLANGCI_LINT_CACHE="/tmp/.cache"
 
+echo $PULL_SECRET_PATH
+echo "==============="
+echo $JOB_SPEC
+echo "==============="
+pr_num="$( jq .refs.pulls[0].num <<<"${JOB_SPEC}" )"
+echo $pr_num
+echo "==============="
+echo $JOB_SPEC
+
 make goget-tools
 make validate
 make test

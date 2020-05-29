@@ -19,5 +19,5 @@ RUN rvm requirements run \
 
 RUN ruby --version
 
-RUN gem install travis --no-document
+RUN gem install travis --pre --no-document
 

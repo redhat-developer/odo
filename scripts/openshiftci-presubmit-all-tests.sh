@@ -25,6 +25,21 @@ TMP_DIR=$(mktemp -d)
 cp $KUBECONFIG $TMP_DIR/kubeconfig
 chmod 640 $TMP_DIR/kubeconfig
 export KUBECONFIG=$TMP_DIR/kubeconfig
+echo $PULL_SECRET_PATH
+echo "==============="
+echo $JOB_SPEC
+echo "==============="
+pr_num="$( jq .refs.pulls[0].num <<<"${JOB_SPEC}" )"
+echo $pr_num
+echo "==============="
+echo $JOB_SPEC
+
+# Integration tests
+make test-integration
+make test-integration-devfile
+make test-cmd-login-logout
+make test-cmd-project
+make test-operator-hub
 
 # Login as developer
 odo login -u developer -p developer
