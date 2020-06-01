@@ -340,6 +340,57 @@ var _ = Describe("odo devfile push command tests", func() {
 			}
 			Expect(volumesMatched).To(Equal(true))
 		})
+
+		// Devfile V2 Test nodejs
+		It("checks that odo push works with a devfile V2", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfilesv2", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
+			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+
+			// update devfile and push again
+			helper.ReplaceString("devfile.yaml", "name: FOO", "name: BAR")
+			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
+		})
+
+		// Devfile V2 Test java-spring-boot
+		It("should execute the default devbuild and devrun commands if present", func() {
+			utils.ExecDefaultDevfileCommands(context, cmpName, namespace)
+
+			helper.CmdShouldPass("odo", "create", "java-spring-boot", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfilesv2", "springboot", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
+			helper.MatchAllInOutput(output, []string{
+				"Executing devbuild command \"/artifacts/bin/build-container-full.sh\"",
+				"Executing devrun command \"/artifacts/bin/start-server.sh\"",
+			})
+
+			// Check to see if it's been pushed (foobar.txt abd directory testdir)
+			podName := oc.GetRunningPodNameByComponent(cmpName, namespace)
+
+			var statErr error
+			var cmdOutput string
+			oc.CheckCmdOpInRemoteDevfilePod(
+				podName,
+				"runtime",
+				namespace,
+				[]string{"ps", "-ef"},
+				func(cmdOp string, err error) bool {
+					cmdOutput = cmdOp
+					statErr = err
+					return true
+				},
+			)
+			Expect(statErr).ToNot(HaveOccurred())
+			Expect(cmdOutput).To(ContainSubstring("/myproject/app.jar"))
+		})
+
 	})
 
 })
