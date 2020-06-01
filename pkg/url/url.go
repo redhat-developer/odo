@@ -86,24 +86,42 @@ func Get(client *occlient.Client, localConfig *config.LocalConfigInfo, urlName s
 }
 
 // GetIngress returns ingress spec for given URL name
-func GetIngress(kClient *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, urlName string) (iextensionsv1.Ingress, error) {
-
+func GetIngress(kClient *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, urlName string, componentName string) (URL, error) {
+	remoteExist := true
 	// Check whether remote already created the ingress
 	ingress, err := kClient.GetIngress(urlName)
-	if err == nil {
-		return *ingress, nil
+	if kerrors.IsNotFound(err) {
+		remoteExist = false
+	} else if err != nil {
+		return URL{}, errors.Wrap(err, "unable to get ingress on cluster")
 	}
-
-	ingresses := envSpecificInfo.GetURL()
-	for _, envIngress := range ingresses {
-		// search local URL check if it exist in local envinfo
-		if envIngress.Name == urlName {
-			return iextensionsv1.Ingress{}, errors.New(fmt.Sprintf("the url %v is not created, but exists in local envinfo file. Please run 'odo push'.", urlName))
+	envinfoURLs := envSpecificInfo.GetURL()
+	for _, url := range envinfoURLs {
+		// only checks for Ingress URLs
+		if url.Kind != envinfo.INGRESS {
+			continue
+		}
+		localURL := ConvertEnvinfoURL(url, componentName)
+		// search local URL, if it exist in local, update state with remote status
+		if localURL.Name == urlName {
+			if remoteExist {
+				localURL.Status.State = StateTypePushed
+			} else {
+				localURL.Status.State = StateTypeNotPushed
+			}
+			return localURL, nil
 		}
 	}
 
+	if err == nil && remoteExist {
+		// Remote exist, but not in local, so it's deleted status
+		clusterURL := getMachineReadableFormatIngress(*ingress)
+		clusterURL.Status.State = StateTypeLocallyDeleted
+		return clusterURL, nil
+	}
+
 	// can't find the URL in local and remote
-	return iextensionsv1.Ingress{}, errors.New(fmt.Sprintf("the url %v does not exist", urlName))
+	return URL{}, errors.New(fmt.Sprintf("the url %v does not exist", urlName))
 }
 
 // GetContainer returns Docker URL definition for given URL name
@@ -348,22 +366,22 @@ func ListPushed(client *occlient.Client, componentName string, applicationName s
 
 }
 
-// ListPushedIngress lists the ingress URLs for the given component
-func ListPushedIngress(client *kclient.Client, componentName string) (iextensionsv1.IngressList, error) {
+// ListPushedIngress lists the ingress URLs on cluster for the given component
+func ListPushedIngress(client *kclient.Client, componentName string) (URLList, error) {
 	labelSelector := fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, componentName)
 	klog.V(4).Infof("Listing ingresses with label selector: %v", labelSelector)
 	ingresses, err := client.ListIngresses(labelSelector)
 	if err != nil {
-		return iextensionsv1.IngressList{}, errors.Wrap(err, "unable to list ingress names")
+		return URLList{}, errors.Wrap(err, "unable to list ingress names")
 	}
 
-	var urls []iextensionsv1.Ingress
+	var urls []URL
 	for _, i := range ingresses {
 		a := getMachineReadableFormatIngress(i)
 		urls = append(urls, a)
 	}
 
-	urlList := getMachineReadableFormatForIngressList(urls)
+	urlList := getMachineReadableFormatForList(urls)
 	return urlList, nil
 }
 
@@ -422,6 +440,58 @@ func List(client *occlient.Client, localConfig *config.LocalConfigInfo, componen
 		}
 	}
 
+	urlList := getMachineReadableFormatForList(urls)
+	return urlList, nil
+}
+
+// ListIngressURL returns all Ingress URLs for given component.
+func ListIngressURL(client *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, componentName string) (URLList, error) {
+	labelSelector := fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, componentName)
+	klog.V(4).Infof("Listing ingresses with label selector: %v", labelSelector)
+	ingresses, err := client.ListIngresses(labelSelector)
+	if err != nil {
+		return URLList{}, errors.Wrap(err, "unable to list ingress names")
+	}
+
+	localEnvinfoURLs := envSpecificInfo.GetURL()
+
+	var urls []URL
+	ingressMap := make(map[string]URL)
+	localMap := make(map[string]URL)
+	for _, i := range ingresses {
+		clusterURL := getMachineReadableFormatIngress(i)
+		ingressMap[clusterURL.Name] = clusterURL
+	}
+	for _, envinfoURL := range localEnvinfoURLs {
+		// only checks for Ingress URLs
+		if envinfoURL.Kind != envinfo.INGRESS {
+			continue
+		}
+		localURL := ConvertEnvinfoURL(envinfoURL, componentName)
+		localMap[localURL.Name] = localURL
+	}
+
+	for ingressName, ingressURL := range ingressMap {
+		_, found := localMap[ingressName]
+		if found {
+			// URL is in both local env file and cluster
+			ingressURL.Status.State = StateTypePushed
+			urls = append(urls, ingressURL)
+		} else {
+			// URL is on the cluster but not in local env file
+			ingressURL.Status.State = StateTypeLocallyDeleted
+			urls = append(urls, ingressURL)
+		}
+	}
+
+	for localName, localURL := range localMap {
+		_, found := ingressMap[localName]
+		if !found {
+			// URL is in the local env file but not pushed to Docker container
+			localURL.Status.State = StateTypeNotPushed
+			urls = append(urls, localURL)
+		}
+	}
 	urlList := getMachineReadableFormatForList(urls)
 	return urlList, nil
 }
@@ -506,7 +576,6 @@ func ListDockerURL(client *lclient.Client, componentName string, envSpecificInfo
 			urls = append(urls, localURL)
 		}
 	}
-
 	urlList := getMachineReadableFormatForList(urls)
 	return urlList, nil
 }
@@ -539,6 +608,31 @@ func ConvertConfigURL(configURL config.ConfigURL) URL {
 			Port: configURL.Port,
 		},
 	}
+}
+
+// ConvertEnvinfoURL converts EnvinfoURL to URL
+func ConvertEnvinfoURL(envinfoURL envinfo.EnvInfoURL, serviceName string) URL {
+	hostString := fmt.Sprintf("%s.%s", envinfoURL.Name, envinfoURL.Host)
+	url := URL{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "url",
+			APIVersion: apiVersion,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: envinfoURL.Name,
+		},
+		Spec: URLSpec{
+			Port:   envinfoURL.Port,
+			Host:   hostString,
+			Secure: envinfoURL.Secure,
+		},
+	}
+	if envinfoURL.Secure && len(envinfoURL.TLSSecret) > 0 {
+		url.Spec.TLSSecret = envinfoURL.TLSSecret
+	} else if envinfoURL.Secure && envinfoURL.Kind == envinfo.INGRESS {
+		url.Spec.TLSSecret = fmt.Sprintf("%s-tlssecret", serviceName)
+	}
+	return url
 }
 
 // GetURLString returns a string representation of given url
@@ -650,24 +744,65 @@ func getMachineReadableFormatForList(urls []URL) URLList {
 	}
 }
 
-func getMachineReadableFormatIngress(i iextensionsv1.Ingress) iextensionsv1.Ingress {
-	return iextensionsv1.Ingress{
-		TypeMeta:   metav1.TypeMeta{Kind: "Ingress", APIVersion: "extensions/v1beta1"},
+func getMachineReadableFormatIngress(i iextensionsv1.Ingress) URL {
+	url := URL{
+		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: apiVersion},
 		ObjectMeta: metav1.ObjectMeta{Name: i.Labels[urlLabels.URLLabel]},
-		Spec:       iextensionsv1.IngressSpec{TLS: i.Spec.TLS, Rules: i.Spec.Rules},
+		Spec:       URLSpec{Host: i.Spec.Rules[0].Host, Port: int(i.Spec.Rules[0].HTTP.Paths[0].Backend.ServicePort.IntVal), Secure: i.Spec.TLS != nil},
 	}
+	if i.Spec.TLS != nil {
+		url.Spec.TLSSecret = i.Spec.TLS[0].SecretName
+	}
+	return url
 
 }
 
-func getMachineReadableFormatForIngressList(ingresses []iextensionsv1.Ingress) iextensionsv1.IngressList {
-	return iextensionsv1.IngressList{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "List",
-			APIVersion: apiVersion,
-		},
-		ListMeta: metav1.ListMeta{},
-		Items:    ingresses,
+// ConvertIngressURLToIngress converts IngressURL to Ingress
+func ConvertIngressURLToIngress(ingressURL URL, serviceName string) iextensionsv1.Ingress {
+	port := intstr.IntOrString{
+		Type:   intstr.Int,
+		IntVal: int32(ingressURL.Spec.Port),
 	}
+	ingress := iextensionsv1.Ingress{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Ingress",
+			APIVersion: "extensions/v1beta1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: ingressURL.Name,
+		},
+		Spec: iextensionsv1.IngressSpec{
+			Rules: []iextensionsv1.IngressRule{
+				{
+					Host: ingressURL.Spec.Host,
+					IngressRuleValue: iextensionsv1.IngressRuleValue{
+						HTTP: &iextensionsv1.HTTPIngressRuleValue{
+							Paths: []iextensionsv1.HTTPIngressPath{
+								{
+									Path: "/",
+									Backend: iextensionsv1.IngressBackend{
+										ServiceName: serviceName,
+										ServicePort: port,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	if len(ingressURL.Spec.TLSSecret) > 0 {
+		ingress.Spec.TLS = []iextensionsv1.IngressTLS{
+			{
+				Hosts: []string{
+					ingressURL.Spec.Host,
+				},
+				SecretName: ingressURL.Spec.TLSSecret,
+			},
+		}
+	}
+	return ingress
 }
 
 func getMachineReadableFormatDocker(internalPort int, externalPort int, hostIP string, urlName string) URL {
@@ -702,7 +837,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 						Host:      url.Host,
 						Port:      url.Port,
 						Secure:    url.Secure,
-						tLSSecret: url.TLSSecret,
+						TLSSecret: url.TLSSecret,
 						urlKind:   url.Kind,
 					},
 				}
@@ -730,8 +865,8 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 		for _, url := range urlList.Items {
 			urlCLUSTER[url.Name] = URL{
 				Spec: URLSpec{
-					Host:    url.Spec.Rules[0].Host,
-					Port:    int(url.Spec.Rules[0].HTTP.Paths[0].Backend.ServicePort.IntVal),
+					Host:    url.Spec.Host,
+					Port:    url.Spec.Port,
 					urlKind: envinfo.INGRESS,
 				},
 			}
@@ -804,7 +939,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 				componentName:   parameters.ComponentName,
 				applicationName: parameters.ApplicationName,
 				host:            urlInfo.Spec.Host,
-				secretName:      urlInfo.Spec.tLSSecret,
+				secretName:      urlInfo.Spec.TLSSecret,
 				urlKind:         urlInfo.Spec.urlKind,
 			}
 			host, err := Create(client, kClient, createParameters, parameters.IsRouteSupported, parameters.IsExperimentalModeEnabled)
