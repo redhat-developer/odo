@@ -156,7 +156,7 @@ var _ = Describe("odo docker devfile url command tests", func() {
 	})
 
 	Context("Describing urls", func() {
-		It("should describe URL with appropriate appropriate", func() {
+		It("should describe URL with appropriate state", func() {
 			var stdout string
 			url1 := helper.RandString(5)
 			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
@@ -202,5 +202,4 @@ var _ = Describe("odo docker devfile url command tests", func() {
 			Expect(desiredURLListJSON).Should(MatchJSON(stdout))
 		})
 	})
-
 })

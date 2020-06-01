@@ -410,7 +410,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			componentName = ui.EnterDevfileComponentName(componentType)
 
 			// Component namespace: User needs to specify component namespace, by default it is the current active namespace
-			if cmd.Flags().Changed("project") {
+			if cmd.Flags().Changed("project") && !pushtarget.IsPushTargetDocker() {
 				componentNamespace, err = cmd.Flags().GetString("project")
 				if err != nil {
 					return err
@@ -465,7 +465,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			}
 
 			// Component namespace: Get from --project flag, by default it is the current active namespace
-			if cmd.Flags().Changed("project") {
+			if cmd.Flags().Changed("project") && !pushtarget.IsPushTargetDocker() {
 				componentNamespace, err = cmd.Flags().GetString("project")
 				if err != nil {
 					return err
