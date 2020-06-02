@@ -71,7 +71,7 @@ func ExecWithMissingRunCommand(projectDirPath, cmpName, namespace string) {
 	args = useProjectIfAvailable(args, namespace)
 	output := helper.CmdShouldFail("odo", args...)
 	Expect(output).NotTo(ContainSubstring("Executing devrun command"))
-	Expect(output).To(ContainSubstring("The command type \"run\" is not found in the devfile"))
+	Expect(output).To(ContainSubstring("the command type \"run\" is not found in the devfile"))
 }
 
 // ExecWithCustomCommand executes odo push with a custom command
@@ -107,7 +107,7 @@ func ExecWithWrongCustomCommand(projectDirPath, cmpName, namespace string) {
 	args = useProjectIfAvailable(args, namespace)
 	output := helper.CmdShouldFail("odo", args...)
 	Expect(output).NotTo(ContainSubstring("Executing buildgarbage command"))
-	Expect(output).To(ContainSubstring("The command \"%v\" is not found in the devfile", garbageCommand))
+	Expect(output).To(ContainSubstring("the command \"%v\" is not found in the devfile", garbageCommand))
 }
 
 // ExecPushToTestFileChanges executes odo push with and without a file change

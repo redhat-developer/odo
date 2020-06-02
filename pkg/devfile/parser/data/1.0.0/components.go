@@ -204,19 +204,24 @@ func convertV1ProjectToCommon(p Project) common.DevfileProject {
 }
 
 func getGroup(name string) *common.Group {
-	group := common.Group{}
 
 	switch name {
 	case "devrun":
-		group.Kind = common.RunCommandGroupType
-		group.IsDefault = true
+		return &common.Group{
+			Kind:      common.RunCommandGroupType,
+			IsDefault: true,
+		}
 	case "devbuild":
-		group.Kind = common.BuildCommandGroupType
-		group.IsDefault = true
+		return &common.Group{
+			Kind:      common.BuildCommandGroupType,
+			IsDefault: true,
+		}
 	case "devinit":
-		group.Kind = common.InitCommandGroupType
-		group.IsDefault = true
+		return &common.Group{
+			Kind:      common.InitCommandGroupType,
+			IsDefault: true,
+		}
 	}
 
-	return &group
+	return nil
 }
