@@ -42,11 +42,10 @@ func getCommand(data data.DevfileData, commandName string, groupType common.Devf
 				// e.g --build-command "mybuild"
 				// exec:
 				//   id: mybuild
-				// group:
-				//   kind: build
+				//   group:
+				//     kind: build
 				if command.Exec.Group.Kind != groupType {
-					return supportedCommand, fmt.Errorf("mismatched group kind, command %s is of group kind %v groupType in devfile", commandName, groupType)
-
+					return supportedCommand, fmt.Errorf("command group mismatched, command %s is of group %v in devfile.yaml", commandName, command.Exec.Group.Kind)
 				}
 				supportedCommand = command
 				return supportedCommand, nil
@@ -54,7 +53,7 @@ func getCommand(data data.DevfileData, commandName string, groupType common.Devf
 			continue
 		}
 
-		// if not command specified via flag, default command has the highest priority
+		// if no command specified via flag, default command has the highest priority
 		// We need to scan all the commands to find default command
 		if command.Exec.Group.Kind == groupType && command.Exec.Group.IsDefault {
 			supportedCommand = command
@@ -75,9 +74,9 @@ func getCommand(data data.DevfileData, commandName string, groupType common.Devf
 
 	// if any command specified via flag is not found in devfile then it is an error.
 	if commandName != "" {
-		err = fmt.Errorf("The command \"%v\" is not found in the devfile", commandName)
+		err = fmt.Errorf("the command \"%v\" is not found in the devfile", commandName)
 	} else {
-		msg := fmt.Sprintf("The command type \"%v\" is not found in the devfile", groupType)
+		msg := fmt.Sprintf("the command type \"%v\" is not found in the devfile", groupType)
 		// if run command is not found in devfile then it is an error
 		if groupType == common.RunCommandGroupType {
 			err = fmt.Errorf(msg)
@@ -99,21 +98,21 @@ func validateCommand(data data.DevfileData, command common.DevfileCommand) (err 
 
 	// type must be exec
 	if command.Exec == nil {
-		return fmt.Errorf("Command must be of type \"exec\"")
+		return fmt.Errorf("command must be of type \"exec\"")
 	}
 
 	// component must be specified
 	if command.Exec.Component == "" {
-		return fmt.Errorf("Exec commands must reference a component")
+		return fmt.Errorf("exec commands must reference a component")
 	}
 
 	// must specify a command
 	if command.Exec.CommandLine == "" {
-		return fmt.Errorf("Exec commands must have a command")
+		return fmt.Errorf("exec commands must have a command")
 	}
 
 	if command.Exec.Group == nil {
-		return fmt.Errorf("Exec commands must have group")
+		return fmt.Errorf("exec commands must have group")
 	}
 
 	// must map to a supported component
@@ -165,11 +164,11 @@ func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileInitCmd, de
 	if isInitCmdEmpty && initCmdErr == nil {
 		// If there was no init command specified through odo push and no default init command in the devfile, default validate to true since the init command is optional
 		isInitCommandValid = true
-		klog.V(3).Infof("No init command was provided")
+		klog.V(4).Infof("No init command was provided")
 	} else if !isInitCmdEmpty && initCmdErr == nil {
 		isInitCommandValid = true
 		commandMap[common.InitCommandGroupType] = initCommand
-		klog.V(3).Infof("Init command: %v", initCommand.Exec.Id)
+		klog.V(4).Infof("Init command: %v", initCommand.Exec.Id)
 	}
 
 	buildCommand, buildCmdErr := GetBuildCommand(data, devfileBuildCmd)
@@ -178,18 +177,18 @@ func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileInitCmd, de
 	if isBuildCmdEmpty && buildCmdErr == nil {
 		// If there was no build command specified through odo push and no default build command in the devfile, default validate to true since the build command is optional
 		isBuildCommandValid = true
-		klog.V(3).Infof("No build command was provided")
+		klog.V(4).Infof("No build command was provided")
 	} else if !reflect.DeepEqual(emptyCommand, buildCommand) && buildCmdErr == nil {
 		isBuildCommandValid = true
 		commandMap[common.BuildCommandGroupType] = buildCommand
-		klog.V(3).Infof("Build command: %v", buildCommand.Exec.Id)
+		klog.V(4).Infof("Build command: %v", buildCommand.Exec.Id)
 	}
 
 	runCommand, runCmdErr := GetRunCommand(data, devfileRunCmd)
 	if runCmdErr == nil && !reflect.DeepEqual(emptyCommand, runCommand) {
 		isRunCommandValid = true
 		commandMap[common.RunCommandGroupType] = runCommand
-		klog.V(3).Infof("Run command: %v", runCommand.Exec.Id)
+		klog.V(4).Infof("Run command: %v", runCommand.Exec.Id)
 	}
 
 	// If either command had a problem, return an empty list of commands and an error

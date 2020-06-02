@@ -20,7 +20,7 @@ func ValidateComponents(components []common.DevfileComponent) error {
 		return fmt.Errorf(ErrorNoComponents)
 	}
 
-	// Check weather component of type container  is present
+	// Check if component of type container  is present
 	isContainerComponentPresent := false
 	for _, component := range components {
 		if component.Container != nil {
