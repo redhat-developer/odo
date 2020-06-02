@@ -278,7 +278,6 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--namespace", namespace)
 			helper.MatchAllInOutput(output, []string{
-				"Executing devinit command",
 				"Executing devbuild command",
 				"Executing devrun command",
 			})
@@ -288,19 +287,6 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			var statErr error
 			var cmdOutput string
-			cliRunner.CheckCmdOpInRemoteDevfilePod(
-				podName,
-				"runtime",
-				namespace,
-				[]string{"cat", "/data/myfile-init.log"},
-				func(cmdOp string, err error) bool {
-					cmdOutput = cmdOp
-					statErr = err
-					return true
-				},
-			)
-			Expect(statErr).ToNot(HaveOccurred())
-			Expect(cmdOutput).To(ContainSubstring("init"))
 
 			cliRunner.CheckCmdOpInRemoteDevfilePod(
 				podName,

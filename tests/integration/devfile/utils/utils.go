@@ -64,8 +64,8 @@ func ExecWithMissingRunCommand(projectDirPath, cmpName, namespace string) {
 	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
 
-	// Rename the devrun command
-	helper.ReplaceString(filepath.Join(projectDirPath, "devfile.yaml"), "devrun", "randomcommand")
+	// Remove the run commands
+	helper.ReplaceString(filepath.Join(projectDirPath, "devfile.yaml"), "kind: run", "kind: debug")
 
 	args = []string{"push", "--devfile", "devfile.yaml"}
 	args = useProjectIfAvailable(args, namespace)

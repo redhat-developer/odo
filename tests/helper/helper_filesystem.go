@@ -107,7 +107,7 @@ func ReplaceString(filename string, oldString string, newString string) {
 	f, err := ioutil.ReadFile(filename)
 	Expect(err).NotTo(HaveOccurred())
 
-	newContent := strings.Replace(string(f), oldString, newString, 1)
+	newContent := strings.ReplaceAll(string(f), oldString, newString)
 
 	err = ioutil.WriteFile(filename, []byte(newContent), 0600)
 	Expect(err).NotTo(HaveOccurred())
