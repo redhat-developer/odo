@@ -29,7 +29,7 @@ components:
       memoryLimit: 1024Mi
 commands:
   - exec:
-      id: plastic
+      id: myPostStart
       commandLine: echo I am a PostStart
       component: tools
       workingDir: ${CHE_PROJECTS_ROOT}/
@@ -51,4 +51,4 @@ commands:
         kind: run                              
 events:
   postStart:
-   - "plastic" 
+   - "myPostStart" 
