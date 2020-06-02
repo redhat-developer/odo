@@ -25,15 +25,11 @@ import (
 	"github.com/openshift/odo/pkg/pipelines/yaml"
 )
 
-const pipelinesFile = "pipelines.yaml"
-const bootstrapImage = "nginxinc/nginx-unprivileged:latest"
-
-var defaultPipelines = &config.Pipelines{
-	Integration: &config.TemplateBinding{
-		Template: "app-ci-template",
-		Bindings: []string{"github-pr-binding"},
-	},
-}
+const (
+	pipelinesFile     = "pipelines.yaml"
+	bootstrapImage    = "nginxinc/nginx-unprivileged:latest"
+	appCITemplateName = "app-ci-template"
+)
 
 // BootstrapOptions is a struct that provides the optional flags
 type BootstrapOptions struct {
@@ -95,8 +91,8 @@ func bootstrapResources(o *BootstrapOptions, appFs afero.Fs) (res.Resources, err
 
 	ns := namespaces.NamesWithPrefix(o.Prefix)
 	serviceName := repoToServiceName(repoName)
-	secretName := secrets.MakeServiceWebhookSecretName(serviceName)
-	envs, err := bootstrapEnvironments(o.Prefix, appRepo.URL(), secretName, ns)
+	secretName := secrets.MakeServiceWebhookSecretName(ns["dev"], serviceName)
+	envs, err := bootstrapEnvironments(appRepo, o.Prefix, secretName, ns)
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +166,7 @@ func bootstrapServiceDeployment(dev *config.Environment) (res.Resources, error) 
 	return resources, nil
 }
 
-func bootstrapEnvironments(prefix, repoURL, secretName string, ns map[string]string) ([]*config.Environment, error) {
+func bootstrapEnvironments(repo scm.Repository, prefix, secretName string, ns map[string]string) ([]*config.Environment, error) {
 	envs := []*config.Environment{}
 	for k, v := range ns {
 		env := &config.Environment{Name: v}
@@ -178,17 +174,17 @@ func bootstrapEnvironments(prefix, repoURL, secretName string, ns map[string]str
 			env.IsCICD = true
 		}
 		if k == "dev" {
-			svc, err := serviceFromRepo(repoURL, secretName, ns["cicd"])
+			svc, err := serviceFromRepo(repo.URL(), secretName, ns["cicd"])
 			if err != nil {
 				return nil, err
 			}
-			app, err := applicationFromRepo(repoURL, svc.Name)
+			app, err := applicationFromRepo(repo.URL(), svc.Name)
 			if err != nil {
 				return nil, err
 			}
 			env.Apps = []*config.Application{app}
 			env.Services = []*config.Service{svc}
-			env.Pipelines = defaultPipelines
+			env.Pipelines = defaultPipelines(repo)
 		}
 		envs = append(envs, env)
 	}
@@ -268,4 +264,13 @@ func createBootstrapService(ns, name string) *corev1.Service {
 
 func repoToServiceName(repoName string) string {
 	return repoName + "-svc"
+}
+
+func defaultPipelines(r scm.Repository) *config.Pipelines {
+	return &config.Pipelines{
+		Integration: &config.TemplateBinding{
+			Template: appCITemplateName,
+			Bindings: []string{r.PRBindingName()},
+		},
+	}
 }

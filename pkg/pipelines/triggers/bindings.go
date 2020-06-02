@@ -7,13 +7,13 @@ import (
 )
 
 var (
-	triggerBindingTypeMeta = meta.TypeMeta("TriggerBinding", "triggers.tekton.dev/v1alpha1")
+	TriggerBindingTypeMeta = meta.TypeMeta("TriggerBinding", "triggers.tekton.dev/v1alpha1")
 )
 
 // CreateImageRepoBinding returns a TriggerBinding with the imageRepo.
 func CreateImageRepoBinding(ns, bindingName, imageRepo, tlsVerify string) triggersv1.TriggerBinding {
 	return triggersv1.TriggerBinding{
-		TypeMeta:   triggerBindingTypeMeta,
+		TypeMeta:   TriggerBindingTypeMeta,
 		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, bindingName)),
 		Spec: triggersv1.TriggerBindingSpec{
 			Params: []triggersv1.Param{

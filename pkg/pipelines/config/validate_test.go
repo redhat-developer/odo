@@ -22,6 +22,15 @@ func TestValidate(t *testing.T) {
 		wantErr  error
 	}{
 		{
+			"service repo URL must be the same Git type as the GitOps URL",
+			"testdata/svc_git_type_mismatch.yaml",
+			multierror.Join(
+				[]error{
+					inconsistentGitTypeError("github", "https://gitlab.com/myproject/myservice.git", []string{"environments.test-dev.services.bus-svc"}),
+				},
+			),
+		},
+		{
 			"cicd environment cannot contain applications and services",
 			"testdata/cicd_env_cant_have_apps_svcs.yaml",
 			multierror.Join(

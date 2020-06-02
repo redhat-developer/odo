@@ -86,8 +86,6 @@ const (
 	appCiPipelinesPath       = "05-pipelines/app-ci-pipeline.yaml"
 	appCdPipelinesPath       = "05-pipelines/app-cd-pipeline.yaml"
 	cdPipelinesPath          = "05-pipelines/cd-deploy-from-push-pipeline.yaml"
-	prBindingPath            = "06-bindings/github-pr-binding.yaml"
-	pushBindingPath          = "06-bindings/github-push-binding.yaml"
 	prTemplatePath           = "07-templates/ci-dryrun-from-pr-template.yaml"
 	pushTemplatePath         = "07-templates/cd-deploy-from-push-template.yaml"
 	appCIBuildPRTemplatePath = "07-templates/app-ci-build-pr-template.yaml"
@@ -203,14 +201,21 @@ func createCICDResources(fs afero.Fs, repo scm.Repository, cicdEnv *config.Envir
 	outputs[ciPipelinesPath] = pipelines.CreateCIPipeline(meta.NamespacedName(cicdNamespace, "ci-dryrun-from-pr-pipeline"), cicdNamespace)
 	outputs[cdPipelinesPath] = pipelines.CreateCDPipeline(meta.NamespacedName(cicdNamespace, "cd-deploy-from-push-pipeline"), cicdNamespace)
 	outputs[appCiPipelinesPath] = pipelines.CreateAppCIPipeline(meta.NamespacedName(cicdNamespace, "app-ci-pipeline"))
-	outputs[prBindingPath], _ = repo.CreatePRBinding(cicdNamespace)
-	outputs[pushBindingPath], _ = repo.CreatePushBinding(cicdNamespace)
+	createTriggerBindings(repo, outputs, cicdNamespace)
 	outputs[prTemplatePath] = triggers.CreateCIDryRunTemplate(cicdNamespace, saName)
 	outputs[pushTemplatePath] = triggers.CreateCDPushTemplate(cicdNamespace, saName)
 	outputs[appCIBuildPRTemplatePath] = triggers.CreateDevCIBuildPRTemplate(cicdNamespace, saName)
 	outputs[eventListenerPath] = eventlisteners.Generate(repo, cicdNamespace, saName, eventlisteners.GitOpsWebhookSecret)
 	outputs[routePath] = routes.Generate(cicdNamespace)
 	return outputs, nil
+}
+
+// Trigger bindings for repository types will be created during bootstrap
+func createTriggerBindings(r scm.Repository, outputs res.Resources, ns string) {
+	prBinding, prBindingName := r.CreatePRBinding(ns)
+	outputs[filepath.Join("06-bindings", prBindingName+".yaml")] = prBinding
+	pushBinding, pushBindingName := r.CreatePushBinding(ns)
+	outputs[filepath.Join("06-bindings", pushBindingName+".yaml")] = pushBinding
 }
 
 func createManifest(gitOpsRepo scm.Repository, envs ...*config.Environment) *config.Manifest {

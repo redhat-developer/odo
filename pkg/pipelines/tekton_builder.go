@@ -56,7 +56,7 @@ func (tk *tektonBuilder) Service(env *config.Environment, svc *config.Service) e
 	if err != nil {
 		return err
 	}
-	pipelines := getPipelines(env, svc)
+	pipelines := getPipelines(env, svc, repo)
 	ciTrigger := repo.CreateCITrigger(triggerName(svc.Name), svc.Webhook.Secret.Name, svc.Webhook.Secret.Namespace, pipelines.Integration.Template, pipelines.Integration.Bindings)
 	tk.triggers = append(tk.triggers, ciTrigger)
 	return nil
@@ -85,16 +85,14 @@ func createTriggersForCICD(gitOpsRepo string, env *config.Environment) ([]v1alph
 	if err != nil {
 		return []v1alpha1.EventListenerTrigger{}, err
 	}
-	_, prBindingName := repo.CreatePRBinding(env.Name)
-	ciTrigger := repo.CreateCITrigger("ci-dryrun-from-pr", eventlisteners.GitOpsWebhookSecret, env.Name, "ci-dry-run-from-pr-template", []string{prBindingName})
-	_, pushBindingName := repo.CreatePushBinding(env.Name)
-	cdTrigger := repo.CreateCDTrigger("cd-deploy-from-push", eventlisteners.GitOpsWebhookSecret, env.Name, "cd-deploy-from-push-template", []string{pushBindingName})
+	ciTrigger := repo.CreateCITrigger("ci-dryrun-from-pr", eventlisteners.GitOpsWebhookSecret, env.Name, "ci-dryrun-from-pr-template", []string{repo.PRBindingName()})
+	cdTrigger := repo.CreateCDTrigger("cd-deploy-from-push", eventlisteners.GitOpsWebhookSecret, env.Name, "cd-deploy-from-push-template", []string{repo.PushBindingName()})
 	triggers = append(triggers, ciTrigger, cdTrigger)
 	return triggers, nil
 }
 
-func getPipelines(env *config.Environment, svc *config.Service) *config.Pipelines {
-	pipelines := clonePipelines(defaultPipelines)
+func getPipelines(env *config.Environment, svc *config.Service, r scm.Repository) *config.Pipelines {
+	pipelines := defaultPipelines(r)
 	if env.Pipelines != nil {
 		pipelines = clonePipelines(env.Pipelines)
 	}

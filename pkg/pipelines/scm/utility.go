@@ -8,7 +8,8 @@ import (
 	triggersv1 "github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
 )
 
-func getDriverName(rawURL string) (string, error) {
+// GetDriverName gets Driver name from URL
+func GetDriverName(rawURL string) (string, error) {
 	u, err := url.Parse(rawURL)
 	if err != nil {
 		return "", err
@@ -23,8 +24,16 @@ func invalidRepoTypeError(repoURL string) error {
 	return fmt.Errorf("unable to determine type of Git host from: %s", repoURL)
 }
 
-func invalidRepoPathError(repoURL string) error {
-	return fmt.Errorf("unable to determine repo path from: %s", repoURL)
+func invalidRepoPathError(gitType, path string) error {
+	return fmt.Errorf("invalid repository path for %s: %s", gitType, path)
+}
+
+func unsupportedGitTypeError(gitType string) error {
+	return fmt.Errorf("unsupported Git repository type: %s", gitType)
+}
+
+func invalidRepoURLError(repoURL, reason string) error {
+	return fmt.Errorf("invalid repository URL %s: %s", repoURL, reason)
 }
 
 func createEventInterceptor(filter string, repoName string) *triggersv1.EventInterceptor {
@@ -60,4 +69,30 @@ func createBindingParam(name string, value string) triggersv1.Param {
 		Name:  name,
 		Value: value,
 	}
+}
+
+func processRawURL(rawURL string, processPath func(*url.URL) (string, error)) (string, error) {
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		return "", err
+	}
+	path, err := processPath(parsedURL)
+	if err != nil {
+		return "", err
+	}
+	return path, nil
+}
+
+func splitRepositoryPath(parsedURL *url.URL) ([]string, error) {
+	var components []string
+	for _, s := range strings.Split(parsedURL.Path, "/") {
+		if s != "" {
+			components = append(components, s)
+		}
+	}
+	if len(components) < 1 {
+		return nil, invalidRepoURLError(parsedURL.String(), "path is empty")
+	}
+	components[len(components)-1] = strings.TrimSuffix(components[len(components)-1], ".git")
+	return components, nil
 }

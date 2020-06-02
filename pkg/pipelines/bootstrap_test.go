@@ -47,13 +47,13 @@ func TestBootstrapManifest(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	hookSecret, err := secrets.CreateSealedSecret(meta.NamespacedName("tst-cicd", "github-webhook-secret-http-api-svc"), "456", eventlisteners.WebhookSecretKey)
+	hookSecret, err := secrets.CreateSealedSecret(meta.NamespacedName("tst-cicd", "webhook-secret-tst-dev-http-api-svc"), "456", eventlisteners.WebhookSecretKey)
 	if err != nil {
 		t.Fatal(err)
 	}
 	want := res.Resources{
-		"environments/tst-cicd/base/pipelines/03-secrets/github-webhook-secret-http-api-svc.yaml": hookSecret,
-		"environments/tst-dev/services/http-api-svc/base/config/100-deployment.yaml":              deployment.Create("tst-dev", "http-api-svc", bootstrapImage, deployment.ContainerPort(8080)),
+		"environments/tst-cicd/base/pipelines/03-secrets/webhook-secret-tst-dev-http-api-svc.yaml": hookSecret,
+		"environments/tst-dev/services/http-api-svc/base/config/100-deployment.yaml":               deployment.Create("tst-dev", "http-api-svc", bootstrapImage, deployment.ContainerPort(8080)),
 
 		"environments/tst-dev/services/http-api-svc/base/config/200-service.yaml":   createBootstrapService("tst-dev", "http-api-svc"),
 		"environments/tst-dev/services/http-api-svc/base/config/kustomization.yaml": &res.Kustomization{Resources: []string{"100-deployment.yaml", "200-service.yaml"}},
@@ -61,15 +61,20 @@ func TestBootstrapManifest(t *testing.T) {
 			GitOpsURL: "https://github.com/my-org/gitops.git",
 			Environments: []*config.Environment{
 				{
-					Pipelines: defaultPipelines,
-					Name:      "tst-dev",
+					Pipelines: &config.Pipelines{
+						Integration: &config.TemplateBinding{
+							Template: "app-ci-template",
+							Bindings: []string{"github-pr-binding"},
+						},
+					},
+					Name: "tst-dev",
 					Services: []*config.Service{
 						{
 							Name:      "http-api-svc",
 							SourceURL: testSvcRepo,
 							Webhook: &config.Webhook{
 								Secret: &config.Secret{
-									Name:      "github-webhook-secret-http-api-svc",
+									Name:      "webhook-secret-tst-dev-http-api-svc",
 									Namespace: "tst-cicd",
 								},
 							},
@@ -105,8 +110,8 @@ func TestBootstrapManifest(t *testing.T) {
 		"02-rolebindings/internal-registry-image-binding.yaml",
 		"02-rolebindings/pipeline-service-role.yaml",
 		"02-rolebindings/pipeline-service-rolebinding.yaml",
-		"03-secrets/github-webhook-secret-http-api-svc.yaml",
 		"03-secrets/gitops-webhook-secret.yaml",
+		"03-secrets/webhook-secret-tst-dev-http-api-svc.yaml",
 		"04-tasks/deploy-from-source-task.yaml",
 		"04-tasks/deploy-using-kubectl-task.yaml",
 		"05-pipelines/app-ci-pipeline.yaml",

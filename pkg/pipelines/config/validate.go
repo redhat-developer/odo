@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/mkmik/multierror"
+	"github.com/openshift/odo/pkg/pipelines/scm"
 	"k8s.io/apimachinery/pkg/api/validation"
 	"knative.dev/pkg/apis"
 )
@@ -27,7 +28,7 @@ func (m *Manifest) Validate() error {
 	}
 	m.Walk(vv)
 
-	vv.errs = append(vv.errs, vv.validateServiceURLs()...)
+	vv.errs = append(vv.errs, vv.validateServiceURLs(m.GitOpsURL)...)
 
 	if len(vv.errs) == 0 {
 		return nil
@@ -35,9 +36,31 @@ func (m *Manifest) Validate() error {
 	return multierror.Join(vv.errs)
 }
 
-func (vv *validateVisitor) validateServiceURLs() []error {
+func (vv *validateVisitor) validateServiceURLs(gitOpsURL string) []error {
 	errs := []error{}
+
+	// all services must be the same git type as the gitops repo
+	var gitType string
+
+	if gitOpsURL != "" {
+		gitOpsDriver, err := scm.GetDriverName(gitOpsURL)
+		if err != nil {
+			errs = append(errs, err)
+		}
+		gitType = gitOpsDriver
+	}
+
 	for url, paths := range vv.serviceURLs {
+		if gitType != "" {
+			serviceDriver, err := scm.GetDriverName(url)
+			if err != nil {
+				errs = append(errs, err)
+			} else {
+				if gitType != serviceDriver {
+					errs = append(errs, inconsistentGitTypeError(gitType, url, paths))
+				}
+			}
+		}
 		if len(paths) > 1 {
 			errs = append(errs, duplicateSourceError(url, paths))
 		}
@@ -233,6 +256,13 @@ func missingServiceRefError(svc, app string, paths []string) *apis.FieldError {
 func duplicateSourceError(url string, paths []string) *apis.FieldError {
 	return &apis.FieldError{
 		Message: fmt.Sprintf("duplicate source %v", url),
+		Paths:   paths,
+	}
+}
+
+func inconsistentGitTypeError(gitType, serviceURL string, paths []string) *apis.FieldError {
+	return &apis.FieldError{
+		Message: fmt.Sprintf("service URL must be a %s repository: %v", gitType, serviceURL),
 		Paths:   paths,
 	}
 }

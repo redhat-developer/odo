@@ -113,7 +113,12 @@ func TestGetPipelines(t *testing.T) {
 			&config.Service{
 				Name: "test-service",
 			},
-			defaultPipelines,
+			&config.Pipelines{
+				Integration: &config.TemplateBinding{
+					Template: "app-ci-template",
+					Bindings: []string{"github-pr-binding"},
+				},
+			},
 		},
 		{
 			"Only override the bindings in the service",
@@ -164,7 +169,8 @@ func TestGetPipelines(t *testing.T) {
 			if test.env.Pipelines != nil {
 				envPipelines = clonePipelines(test.env.Pipelines)
 			}
-			got := getPipelines(test.env, test.svc)
+			repo, _ := scm.NewRepository("https://github.com/foo/bar")
+			got := getPipelines(test.env, test.svc, repo)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				rt.Errorf("getPipelines() failed:\n%v", diff)
 			}
@@ -181,9 +187,9 @@ func fakeTiggers(t *testing.T, m *config.Manifest, gitOpsRepo string) []v1alpha1
 	cicdEnv, err := m.GetCICDEnvironment()
 	assertNoError(t, err)
 	svc := testService()
-	pipelines := getPipelines(devEnv, svc)
 	repo, err := scm.NewRepository(svc.SourceURL)
 	assertNoError(t, err)
+	pipelines := getPipelines(devEnv, svc, repo)
 	devCITrigger := repo.CreateCITrigger(fmt.Sprintf("app-ci-build-from-pr-%s", svc.Name), svc.Webhook.Secret.Name, svc.Webhook.Secret.Namespace, pipelines.Integration.Template, pipelines.Integration.Bindings)
 	triggers = append(triggers, devCITrigger)
 	cicdTriggers, err := createTriggersForCICD(gitOpsRepo, cicdEnv)

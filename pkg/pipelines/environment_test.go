@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/openshift/odo/pkg/pipelines/config"
 	"github.com/openshift/odo/pkg/pipelines/ioutils"
 	"github.com/spf13/afero"
 )
@@ -70,5 +72,109 @@ func assertFileExists(t *testing.T, testFs afero.Fs, path string) {
 	assertNoError(t, err)
 	if isDir {
 		t.Fatalf("%q is a directory", path)
+	}
+}
+
+func TestNewEnvironment(t *testing.T) {
+
+	tests := []struct {
+		m      *config.Manifest
+		name   string
+		errMsg string
+		want   *config.Environment
+	}{
+		{
+			m: &config.Manifest{
+				GitOpsURL: "https://github.com/foo/bar",
+				Environments: []*config.Environment{
+					{
+						IsCICD: true,
+						Name:   "my-cicd",
+					},
+				},
+			},
+			name:   "test-env",
+			errMsg: "",
+			want: &config.Environment{
+				Name: "test-env",
+				Pipelines: &config.Pipelines{
+					Integration: &config.TemplateBinding{
+						Template: appCITemplateName,
+						Bindings: []string{"github-pr-binding"},
+					},
+				},
+			},
+		},
+		{
+			m: &config.Manifest{
+				GitOpsURL: "https://gitlab.com/foo/bar",
+				Environments: []*config.Environment{
+					{
+						IsCICD: true,
+						Name:   "my-cicd",
+					},
+				},
+			},
+			name:   "test-env",
+			errMsg: "",
+			want: &config.Environment{
+				Name: "test-env",
+				Pipelines: &config.Pipelines{
+					Integration: &config.TemplateBinding{
+						Template: appCITemplateName,
+						Bindings: []string{"gitlab-pr-binding"},
+					},
+				},
+			},
+		},
+		{
+			m: &config.Manifest{
+				// no GitOpsURL -> no Pipelines
+				Environments: []*config.Environment{
+					{
+						IsCICD: true,
+						Name:   "my-cicd",
+					},
+				},
+			},
+			name:   "test-env",
+			errMsg: "",
+			want: &config.Environment{
+				Name: "test-env",
+			},
+		},
+		{
+			m: &config.Manifest{
+				GitOpsURL: "https://gitlab.com/foo/bar",
+				Environments: []*config.Environment{
+					{
+						// no CICD -> no Pipelines
+						IsCICD: false,
+						Name:   "my-cicd",
+					},
+				},
+			},
+			name:   "test-env",
+			errMsg: "",
+			want: &config.Environment{
+				Name: "test-env",
+			},
+		},
+	}
+
+	for i, test := range tests {
+		t.Run(fmt.Sprintf("Test_%d", i), func(tt *testing.T) {
+			got, err := newEnvironment(test.m, test.name)
+			gotError := ""
+			if err != nil {
+				gotError = err.Error()
+			}
+			if diff := cmp.Diff(test.errMsg, gotError); diff != "" {
+				tt.Errorf("errMsg mismatch: \n%s", diff)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				tt.Errorf("env mismatch: \n%s", diff)
+			}
+		})
 	}
 }

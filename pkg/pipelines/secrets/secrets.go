@@ -31,8 +31,8 @@ var DefaultPublicKeyFunc = getClusterPublicKey
 type PublicKeyFunc func() (*rsa.PublicKey, error)
 
 // MakeServiceWebhookSecretName common method to create service webhook secret name
-func MakeServiceWebhookSecretName(serviceName string) string {
-	return "github-webhook-secret-" + serviceName
+func MakeServiceWebhookSecretName(envName, serviceName string) string {
+	return fmt.Sprintf("webhook-secret-%s-%s", envName, serviceName)
 }
 
 // CreateSealedDockerConfigSecret creates a SealedSecret with the given name and reader

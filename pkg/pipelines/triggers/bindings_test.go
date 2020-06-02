@@ -25,7 +25,7 @@ func TestCreateBindingParam(t *testing.T) {
 
 func TestCreateImageRepoBinding(t *testing.T) {
 	imageRepoBinding := triggersv1.TriggerBinding{
-		TypeMeta: triggerBindingTypeMeta,
+		TypeMeta: TriggerBindingTypeMeta,
 		ObjectMeta: v1.ObjectMeta{
 			Name:      "test-binding",
 			Namespace: "testns",

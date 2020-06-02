@@ -90,7 +90,7 @@ func serviceResources(m *config.Manifest, fs afero.Fs, p *AddServiceParameters) 
 
 	// add the secret only if CI/CD env is present
 	if cicdEnv != nil {
-		secretName := secrets.MakeServiceWebhookSecretName(svc.Name)
+		secretName := secrets.MakeServiceWebhookSecretName(p.EnvName, svc.Name)
 		hookSecret, err := secrets.CreateSealedSecret(meta.NamespacedName(cicdEnv.Name, secretName), p.WebhookSecret, eventlisteners.WebhookSecretKey)
 		if err != nil {
 			return nil, err

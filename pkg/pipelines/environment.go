@@ -6,6 +6,7 @@ import (
 
 	"github.com/openshift/odo/pkg/pipelines/config"
 	res "github.com/openshift/odo/pkg/pipelines/resources"
+	"github.com/openshift/odo/pkg/pipelines/scm"
 	"github.com/openshift/odo/pkg/pipelines/yaml"
 	"github.com/spf13/afero"
 )
@@ -32,9 +33,9 @@ func AddEnv(o *EnvParameters, appFs afero.Fs) error {
 		return fmt.Errorf("environment %s already exists", o.EnvName)
 	}
 	files := res.Resources{}
-	newEnv := &config.Environment{
-		Name:      o.EnvName,
-		Pipelines: defaultPipelines,
+	newEnv, err := newEnvironment(m, o.EnvName)
+	if err != nil {
+		return err
 	}
 	m.Environments = append(m.Environments, newEnv)
 	files[pipelinesFile] = m
@@ -50,4 +51,26 @@ func AddEnv(o *EnvParameters, appFs afero.Fs) error {
 	files = res.Merge(built, files)
 	_, err = yaml.WriteResources(appFs, outputPath, files)
 	return err
+}
+
+func newEnvironment(m *config.Manifest, name string) (*config.Environment, error) {
+	cicd, err := m.GetCICDEnvironment()
+	if err != nil {
+		return nil, err
+	}
+
+	if cicd != nil && m.GitOpsURL != "" {
+		r, err := scm.NewRepository(m.GitOpsURL)
+		if err != nil {
+			return nil, err
+		}
+		return &config.Environment{
+			Name:      name,
+			Pipelines: defaultPipelines(r),
+		}, nil
+	}
+
+	return &config.Environment{
+		Name: name,
+	}, nil
 }

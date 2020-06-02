@@ -87,7 +87,7 @@ func TestGetDriverName(t *testing.T) {
 
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("Test %d", i), func(rt *testing.T) {
-			gotDriver, err := getDriverName(tt.url)
+			gotDriver, err := GetDriverName(tt.url)
 			if err != nil {
 				if diff := cmp.Diff(tt.driverErrMsg, err.Error()); diff != "" {
 					rt.Errorf("driver errMsg mismatch: \n%s", diff)
