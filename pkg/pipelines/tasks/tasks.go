@@ -1,14 +1,14 @@
 package tasks
 
 import (
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/openshift/odo/pkg/pipelines/meta"
 )
 
 var (
-	taskTypeMeta = meta.TypeMeta("Task", "tekton.dev/v1alpha1")
+	taskTypeMeta = meta.TypeMeta("Task", "tekton.dev/v1beta1")
 )
 
 func createTaskResource(name string, resourceType string) pipelinev1.TaskResource {

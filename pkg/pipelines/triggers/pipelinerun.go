@@ -1,13 +1,14 @@
 package triggers
 
 import (
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	pipelinev1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 
 	"github.com/openshift/odo/pkg/pipelines/meta"
 )
 
 var (
-	pipelineRunTypeMeta = meta.TypeMeta("PipelineRun", "tekton.dev/v1alpha1")
+	pipelineRunTypeMeta = meta.TypeMeta("PipelineRun", "tekton.dev/v1beta1")
 )
 
 func createDevCDPipelineRun(saName string) pipelinev1.PipelineRun {
@@ -69,7 +70,7 @@ func createDevResource(revision string) []pipelinev1.PipelineResourceBinding {
 	return []pipelinev1.PipelineResourceBinding{
 		{
 			Name: "source-repo",
-			ResourceSpec: &pipelinev1.PipelineResourceSpec{
+			ResourceSpec: &pipelinev1alpha1.PipelineResourceSpec{
 				Type: "git",
 				Params: []pipelinev1.ResourceParam{
 					createResourceParams("revision", revision),
@@ -79,7 +80,7 @@ func createDevResource(revision string) []pipelinev1.PipelineResourceBinding {
 		},
 		{
 			Name: "runtime-image",
-			ResourceSpec: &pipelinev1.PipelineResourceSpec{
+			ResourceSpec: &pipelinev1alpha1.PipelineResourceSpec{
 				Type: "image",
 				Params: []pipelinev1.ResourceParam{
 					createResourceParams("url", "$(params.imageRepo)"),
@@ -93,7 +94,7 @@ func createResources() []pipelinev1.PipelineResourceBinding {
 	return []pipelinev1.PipelineResourceBinding{
 		{
 			Name: "source-repo",
-			ResourceSpec: &pipelinev1.PipelineResourceSpec{
+			ResourceSpec: &pipelinev1alpha1.PipelineResourceSpec{
 				Type: "git",
 				Params: []pipelinev1.ResourceParam{
 					createResourceParams("revision", "$(params.gitref)"),

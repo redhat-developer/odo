@@ -4,11 +4,11 @@ import (
 	"github.com/openshift/odo/pkg/pipelines/meta"
 	"k8s.io/apimachinery/pkg/types"
 
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )
 
 var (
-	pipelineTypeMeta = meta.TypeMeta("Pipeline", "tekton.dev/v1alpha1")
+	pipelineTypeMeta = meta.TypeMeta("Pipeline", "tekton.dev/v1beta1")
 )
 
 // CreateAppCIPipeline creates AppCIPipeline
