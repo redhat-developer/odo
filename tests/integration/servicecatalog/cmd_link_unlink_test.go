@@ -210,15 +210,11 @@ var _ = Describe("odo link and unlink command tests", func() {
 
 			// tests for linking a component to a component
 			stdOut := helper.CmdShouldPass("odo", "link", "component2", "--context", context1)
-			Expect(stdOut).To(ContainSubstring("The below secret environment variables were added"))
-			Expect(stdOut).To(ContainSubstring("COMPONENT_COMPONENT2_HOST"))
-			Expect(stdOut).To(ContainSubstring("COMPONENT_COMPONENT2_PORT"))
+			helper.MatchAllInOutput(stdOut, []string{"The below secret environment variables were added", "COMPONENT_COMPONENT2_HOST", "COMPONENT_COMPONENT2_PORT"})
 
 			// tests for unlinking a component from a component
 			stdOut = helper.CmdShouldPass("odo", "unlink", "component2", "--context", context1)
-			Expect(stdOut).To(ContainSubstring("The below secret environment variables were removed"))
-			Expect(stdOut).To(ContainSubstring("COMPONENT_COMPONENT2_HOST"))
-			Expect(stdOut).To(ContainSubstring("COMPONENT_COMPONENT2_PORT"))
+			helper.MatchAllInOutput(stdOut, []string{"The below secret environment variables were removed", "COMPONENT_COMPONENT2_HOST", "COMPONENT_COMPONENT2_PORT"})
 
 			// first create a service
 			helper.CmdShouldPass("odo", "service", "create", "-w", "dh-postgresql-apb", "--project", project, "--plan", "dev",
@@ -231,15 +227,11 @@ var _ = Describe("odo link and unlink command tests", func() {
 
 			// tests for linking a service to a component
 			stdOut = helper.CmdShouldPass("odo", "link", "dh-postgresql-apb", "--context", context1)
-			Expect(stdOut).To(ContainSubstring("The below secret environment variables were added"))
-			Expect(stdOut).To(ContainSubstring("DB_PORT"))
-			Expect(stdOut).To(ContainSubstring("DB_HOST"))
+			helper.MatchAllInOutput(stdOut, []string{"The below secret environment variables were added", "DB_PORT", "DB_HOST"})
 
 			// tests for unlinking a service to a component
 			stdOut = helper.CmdShouldPass("odo", "unlink", "dh-postgresql-apb", "--context", context1)
-			Expect(stdOut).To(ContainSubstring("The below secret environment variables were removed"))
-			Expect(stdOut).To(ContainSubstring("DB_PORT"))
-			Expect(stdOut).To(ContainSubstring("DB_HOST"))
+			helper.MatchAllInOutput(stdOut, []string{"The below secret environment variables were removed", "DB_PORT", "DB_HOST"})
 		})
 	})
 })

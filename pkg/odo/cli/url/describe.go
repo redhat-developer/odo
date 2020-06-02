@@ -103,19 +103,27 @@ func (o *URLDescribeOptions) Run() (err error) {
 				}
 			}
 		} else {
-			u, err := url.GetIngress(o.KClient, o.EnvSpecificInfo, o.url)
+			componentName := o.EnvSpecificInfo.GetName()
+			u, err := url.GetIngress(o.KClient, o.EnvSpecificInfo, o.url, componentName)
 			if err != nil {
 				return err
 			}
 			if log.IsJSON() {
 				machineoutput.OutputSuccess(u)
 			} else {
-
 				tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-				fmt.Fprintln(tabWriterURL, "NAME", "\t", "URL", "\t", "PORT")
+				fmt.Fprintln(tabWriterURL, "NAME", "\t", "STATE", "\t", "URL", "\t", "PORT", "\t", "SECURE")
 
-				fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, u, experimental.IsExperimentalModeEnabled()), "", u.Spec.Rules[0].Host, experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Backend.ServicePort.IntVal)
+				// are there changes between local and cluster states?
+				outOfSync := false
+				fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, url.ConvertIngressURLToIngress(u, componentName), experimental.IsExperimentalModeEnabled()), "", u.Spec.Host, experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Port, "\t", u.Spec.Secure)
+				if u.Status.State != url.StateTypePushed {
+					outOfSync = true
+				}
 				tabWriterURL.Flush()
+				if outOfSync {
+					log.Info("There are local changes. Please run 'odo push'.")
+				}
 			}
 		}
 	} else {

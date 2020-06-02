@@ -264,8 +264,8 @@ func (oc OcRunner) SourceLocationBC(componentName string, appName string, projec
 // checkForImageStream checks if there is a ImageStram with name and tag in openshift namespace
 func (oc OcRunner) checkForImageStream(name string, tag string) bool {
 	// first check if there is ImageStream with given name
-	names := CmdShouldPass(oc.path, "get", "is", "-n", "openshift",
-		"-o", "jsonpath='{range .items[*]}{.metadata.name}{\"\\n\"}{end}'")
+	names := strings.Trim(CmdShouldPass(oc.path, "get", "is", "-n", "openshift",
+		"-o", "jsonpath='{range .items[*]}{.metadata.name}{\"\\n\"}{end}'"), "'")
 	scanner := bufio.NewScanner(strings.NewReader(names))
 	namePresent := false
 	for scanner.Scan() {
@@ -276,8 +276,8 @@ func (oc OcRunner) checkForImageStream(name string, tag string) bool {
 	tagPresent := false
 	// if there is a ImageStream check if there is a given tag
 	if namePresent {
-		tags := CmdShouldPass(oc.path, "get", "is", name, "-n", "openshift",
-			"-o", "jsonpath='{range .spec.tags[*]}{.name}{\"\\n\"}{end}'")
+		tags := strings.Trim(CmdShouldPass(oc.path, "get", "is", name, "-n", "openshift",
+			"-o", "jsonpath='{range .spec.tags[*]}{.name}{\"\\n\"}{end}'"), "'")
 		scanner := bufio.NewScanner(strings.NewReader(tags))
 		for scanner.Scan() {
 			if scanner.Text() == tag {

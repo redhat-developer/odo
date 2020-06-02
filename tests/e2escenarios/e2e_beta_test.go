@@ -75,19 +75,20 @@ var _ = Describe("odo core beta flow", func() {
 		helper.CmdShouldPass(odo, append([]string{"push"}, extraArgs...)...)
 
 		dcSession := oc.GetComponentDC("mycomponent", "myapp", project)
-		Expect(dcSession).Should(ContainSubstring("app.kubernetes.io/instance: mycomponent"))
-		Expect(dcSession).Should(ContainSubstring("app.kubernetes.io/component-source-type: local"))
-		Expect(dcSession).Should(ContainSubstring("app.kubernetes.io/name: java"))
-		Expect(dcSession).Should(ContainSubstring("app.kubernetes.io/part-of: myapp"))
-		Expect(dcSession).Should(ContainSubstring("name: mycomponent-myapp"))
+		helper.MatchAllInOutput(dcSession, []string{
+			"app.kubernetes.io/instance: mycomponent",
+			"app.kubernetes.io/component-source-type: local",
+			"app.kubernetes.io/name: java",
+			"app.kubernetes.io/part-of: myapp",
+			"name: mycomponent-myapp",
+		})
+
 		// DC should have env variable
-		Expect(dcSession).Should(ContainSubstring("name: FOO"))
-		Expect(dcSession).Should(ContainSubstring("value: bar"))
+		helper.MatchAllInOutput(dcSession, []string{"name: FOO", "value: bar"})
 
 		routeSession := oc.GetComponentRoutes("mycomponent", "myapp", project)
 		// check that route is pointing gto right port and component
-		Expect(routeSession).Should(ContainSubstring("targetPort: 8080"))
-		Expect(routeSession).Should(ContainSubstring("name: mycomponent-myapp"))
+		helper.MatchAllInOutput(routeSession, []string{"targetPort: 8080", "name: mycomponent-myapp"})
 		url := oc.GetFirstURL("mycomponent", "myapp", project)
 		helper.HttpWaitFor("http://"+url, "Hello World from Javalin!", 10, 5)
 	}
