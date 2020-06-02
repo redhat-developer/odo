@@ -39,10 +39,10 @@ func GenerateContainer(name, image string, isPrivileged bool, command, args []st
 		Image:           image,
 		ImagePullPolicy: corev1.PullAlways,
 		Resources:       resourceReqs,
-		Command:         command,
-		Args:            args,
 		Env:             envVars,
 		Ports:           ports,
+		Command:         command,
+		Args:            args,
 	}
 
 	if isPrivileged {

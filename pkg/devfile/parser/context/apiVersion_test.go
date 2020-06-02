@@ -32,7 +32,7 @@ func TestSetDevfileAPIVersion(t *testing.T) {
 			name:    "apiVersion not present",
 			rawJson: []byte(emptyJson),
 			want:    "",
-			wantErr: fmt.Errorf("apiVersion not present in devfile"),
+			wantErr: fmt.Errorf("apiVersion or schemaVersion not present in devfile"),
 		},
 		{
 			name:    "apiVersion empty",

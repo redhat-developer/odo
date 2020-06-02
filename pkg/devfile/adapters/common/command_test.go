@@ -10,314 +10,167 @@ import (
 	"github.com/openshift/odo/pkg/testingutil"
 )
 
+var buildGroup = common.BuildCommandGroupType
+var runGroup = common.RunCommandGroupType
+var initGroup = common.InitCommandGroupType
+
 func TestGetCommand(t *testing.T) {
 
 	commands := [...]string{"ls -la", "pwd"}
 	components := [...]string{"alias1", "alias2"}
 	invalidComponent := "garbagealias"
 	workDir := [...]string{"/", "/root"}
-	validCommandType := common.DevfileCommandTypeExec
-	invalidCommandType := common.DevfileCommandType("garbage")
+
 	emptyString := ""
 
 	tests := []struct {
-		name              string
-		requestedCommands []string
-		commandActions    []common.DevfileCommandAction
-		isCommandRequired []bool
-		wantErr           bool
+		name           string
+		requestedType  []common.DevfileCommandGroupType
+		execCommands   []common.Exec
+		groupType      []common.DevfileCommandGroupType
+		reqCommandName string
+		retCommandName string
+		wantErr        bool
 	}{
 		{
-			name:              "Case 1: Valid devfile",
-			requestedCommands: []string{"devbuild", "devrun"},
-			commandActions: []common.DevfileCommandAction{
-				{
-					Command:   &commands[0],
-					Component: &components[0],
-					Workdir:   &workDir[0],
-					Type:      &validCommandType,
-				},
+			name: "Case 1: Valid devfile",
+			execCommands: []versionsCommon.Exec{
+				getExecCommand("", buildGroup),
+				getExecCommand("", runGroup),
 			},
-			isCommandRequired: []bool{false, false, true},
-			wantErr:           false,
+			requestedType: []common.DevfileCommandGroupType{buildGroup, runGroup},
+			wantErr:       false,
 		},
 		{
-			name:              "Case 2: Valid devfile with devinit and devbuild",
-			requestedCommands: []string{"devinit", "devbuild", "devrun"},
-			commandActions: []versionsCommon.DevfileCommandAction{
-				{
-					Command:   &commands[0],
-					Component: &components[0],
-					Workdir:   &workDir[0],
-					Type:      &validCommandType,
-				},
+			name: "Case 2: Valid devfile with devinit and devbuild",
+			execCommands: []versionsCommon.Exec{
+				getExecCommand("", buildGroup),
+				getExecCommand("", runGroup),
 			},
-			isCommandRequired: []bool{false, false, true},
-			wantErr:           false,
+			requestedType: []common.DevfileCommandGroupType{initGroup, buildGroup, runGroup},
+			wantErr:       false,
 		},
 		{
-			name:              "Case 3: Valid devfile with devinit and devrun",
-			requestedCommands: []string{"devinit", "devrun"},
-			commandActions: []versionsCommon.DevfileCommandAction{
-				{
-					Command:   &commands[0],
-					Component: &components[0],
-					Workdir:   &workDir[0],
-					Type:      &validCommandType,
-				},
+			name: "Case 3: Valid devfile with devinit and devrun",
+			execCommands: []versionsCommon.Exec{
+				getExecCommand("", initGroup),
+				getExecCommand("", runGroup),
 			},
-			isCommandRequired: []bool{false, false, true},
-			wantErr:           false,
+			requestedType: []common.DevfileCommandGroupType{initGroup, runGroup},
+			wantErr:       false,
 		},
 		{
-			name:              "Case 4: Wrong command requested",
-			requestedCommands: []string{"garbage1"},
-			commandActions: []common.DevfileCommandAction{
+			name: "Case 4: Invalid devfile with empty component",
+			execCommands: []versionsCommon.Exec{
 				{
-					Command:   &commands[0],
-					Component: &components[0],
-					Workdir:   &workDir[0],
-					Type:      &validCommandType,
+					CommandLine: commands[0],
+					Component:   emptyString,
+					WorkingDir:  workDir[0],
+					Group:       &versionsCommon.Group{Kind: initGroup},
 				},
 			},
-			isCommandRequired: []bool{true},
-			wantErr:           true,
+			requestedType: []common.DevfileCommandGroupType{initGroup},
+			wantErr:       true,
 		},
 		{
-			name:              "Case 5: Invalid devfile with wrong devinit command type",
-			requestedCommands: []string{"devinit"},
-			commandActions: []versionsCommon.DevfileCommandAction{
+			name: "Case 5: Invalid devfile with empty devinit command",
+			execCommands: []versionsCommon.Exec{
 				{
-					Command:   &commands[0],
-					Component: &components[0],
-					Workdir:   &workDir[0],
-					Type:      &invalidCommandType,
+					CommandLine: emptyString,
+					Component:   components[0],
+					WorkingDir:  workDir[0],
+					Group:       &versionsCommon.Group{Kind: initGroup},
 				},
 			},
-			isCommandRequired: []bool{true},
-			wantErr:           true,
+			requestedType: []common.DevfileCommandGroupType{initGroup},
+			wantErr:       true,
 		},
 		{
-			name:              "Case 6: Invalid devfile with empty devinit component",
-			requestedCommands: []string{"devinit"},
-			commandActions: []versionsCommon.DevfileCommandAction{
+			name: "Case 6: Valid devfile with empty workdir",
+			execCommands: []common.Exec{
 				{
-					Command:   &commands[0],
-					Component: &emptyString,
-					Workdir:   &workDir[0],
-					Type:      &validCommandType,
+					CommandLine: commands[0],
+					Component:   components[0],
+					Group:       &versionsCommon.Group{Kind: runGroup},
 				},
 			},
-			isCommandRequired: []bool{false},
-			wantErr:           true,
+			requestedType: []common.DevfileCommandGroupType{runGroup},
+			wantErr:       false,
 		},
 		{
-			name:              "Case 7: Invalid devfile with empty devinit command",
-			requestedCommands: []string{"devinit"},
-			commandActions: []versionsCommon.DevfileCommandAction{
+			name: "Case 7: Invalid command referencing an absent component",
+			execCommands: []common.Exec{
 				{
-					Command:   &emptyString,
-					Component: &components[0],
-					Workdir:   &workDir[0],
-					Type:      &validCommandType,
+					CommandLine: commands[0],
+					Component:   invalidComponent,
+					Group:       &versionsCommon.Group{Kind: runGroup},
 				},
 			},
-			isCommandRequired: []bool{false},
-			wantErr:           true,
+			requestedType: []common.DevfileCommandGroupType{runGroup},
+			wantErr:       true,
 		},
 		{
-			name:              "Case 8: Invalid devfile with wrong devbuild command type",
-			requestedCommands: []string{"devbuild"},
-			commandActions: []common.DevfileCommandAction{
+			name: "Case 8: Mismatched command type",
+			execCommands: []common.Exec{
 				{
-					Command:   &commands[0],
-					Component: &components[0],
-					Workdir:   &workDir[0],
-					Type:      &invalidCommandType,
+					Id:          "build command",
+					CommandLine: commands[0],
+					Component:   components[0],
+					Group:       &versionsCommon.Group{Kind: runGroup},
 				},
 			},
-			isCommandRequired: []bool{true},
-			wantErr:           true,
+			reqCommandName: "build command",
+			requestedType:  []common.DevfileCommandGroupType{buildGroup},
+			wantErr:        true,
 		},
 		{
-			name:              "Case 9: Invalid devfile with empty devbuild component",
-			requestedCommands: []string{"devbuild"},
-			commandActions: []common.DevfileCommandAction{
+			name: "Case 9: Default command is returned",
+			execCommands: []common.Exec{
 				{
-					Command:   &commands[0],
-					Component: &emptyString,
-					Workdir:   &workDir[0],
-					Type:      &validCommandType,
+					Id:          "defaultRunCommand",
+					CommandLine: commands[0],
+					Component:   components[0],
+					Group:       &versionsCommon.Group{Kind: runGroup, IsDefault: true},
+				},
+				{
+					Id:          "runCommand",
+					CommandLine: commands[0],
+					Component:   components[0],
+					Group:       &versionsCommon.Group{Kind: runGroup},
 				},
 			},
-			isCommandRequired: []bool{false},
-			wantErr:           true,
-		},
-		{
-			name:              "Case 10: Invalid devfile with empty devbuild command",
-			requestedCommands: []string{"devbuild"},
-			commandActions: []common.DevfileCommandAction{
-				{
-					Command:   &emptyString,
-					Component: &components[0],
-					Workdir:   &workDir[0],
-					Type:      &validCommandType,
-				},
-			},
-			isCommandRequired: []bool{false},
-			wantErr:           true,
-		},
-		{
-			name:              "Case 11: Valid devfile with empty workdir",
-			requestedCommands: []string{"devrun"},
-			commandActions: []common.DevfileCommandAction{
-				{
-					Command:   &commands[0],
-					Component: &components[0],
-					Type:      &validCommandType,
-				},
-			},
-			isCommandRequired: []bool{true},
-			wantErr:           false,
-		},
-		{
-			name:              "Case 12: Invalid command referencing an absent component",
-			requestedCommands: []string{"devrun"},
-			commandActions: []common.DevfileCommandAction{
-				{
-					Command:   &commands[0],
-					Component: &invalidComponent,
-					Type:      &validCommandType,
-				},
-			},
-			isCommandRequired: []bool{true},
-			wantErr:           true,
+			retCommandName: "defaultRunCommand",
+			requestedType:  []common.DevfileCommandGroupType{runGroup},
+			wantErr:        false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			components := []common.DevfileComponent{testingutil.GetFakeComponent(tt.execCommands[0].Component)}
+			if tt.execCommands[0].Component == invalidComponent {
+				components = []common.DevfileComponent{testingutil.GetFakeComponent("randomComponent")}
+			}
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					CommandActions: tt.commandActions,
-					ComponentType:  common.DevfileComponentTypeDockerimage,
+					ExecCommands: tt.execCommands,
+					Components:   components,
 				},
 			}
 
-			for i, commandName := range tt.requestedCommands {
-				command, err := getCommand(devObj.Data, commandName, tt.isCommandRequired[i])
+			for _, gtype := range tt.requestedType {
+				cmd, err := getCommand(devObj.Data, tt.reqCommandName, gtype)
 				if !tt.wantErr == (err != nil) {
-					t.Errorf("TestGetCommand unexpected error for command: %v wantErr: %v err: %v", commandName, tt.wantErr, err)
+					t.Errorf("TestGetCommand unexpected error for command: %v wantErr: %v err: %v", gtype, tt.wantErr, err)
 					return
 				} else if tt.wantErr {
 					return
 				}
 
-				if command.Name != commandName {
-					t.Errorf("TestGetCommand error: command names do not match expected: %v actual: %v", commandName, command.Name)
+				if cmd.Exec != nil {
+					if cmd.Exec.Id != tt.retCommandName {
+						t.Errorf("TestGetCommand error: command names do not match expected: %v actual: %v", tt.retCommandName, cmd.Exec.Id)
+					}
 				}
-
-				if len(command.Actions) != 1 {
-					t.Errorf("TestGetCommand error: command %v do not have the correct number of actions actual: %v", commandName, len(command.Actions))
-				}
-			}
-		})
-	}
-
-}
-
-func TestGetSupportedCommandActions(t *testing.T) {
-
-	command := "ls -la"
-	component := "alias1"
-	workDir := "/"
-	validCommandType := common.DevfileCommandTypeExec
-	invalidCommandType := common.DevfileCommandType("garbage")
-	emptyString := ""
-
-	tests := []struct {
-		name    string
-		command common.DevfileCommand
-		wantErr bool
-	}{
-		{
-			name: "Case: Valid Command Action",
-			command: common.DevfileCommand{
-				Name: "testCommand",
-				Actions: []common.DevfileCommandAction{
-					{
-						Command:   &command,
-						Component: &component,
-						Workdir:   &workDir,
-						Type:      &validCommandType,
-					},
-				},
-			},
-			wantErr: false,
-		},
-		{
-			name: "Case: Invalid Command Action with empty command",
-			command: common.DevfileCommand{
-				Name: "testCommand",
-				Actions: []common.DevfileCommandAction{
-					{
-						Command:   &emptyString,
-						Component: &component,
-						Workdir:   &workDir,
-						Type:      &validCommandType,
-					},
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "Case: Invalid Command Action with missing component",
-			command: common.DevfileCommand{
-				Name: "testCommand",
-				Actions: []common.DevfileCommandAction{
-					{
-						Command: &command,
-						Workdir: &workDir,
-						Type:    &validCommandType,
-					},
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "Case: Invalid Command Action with wrong type",
-			command: common.DevfileCommand{
-				Name: "testCommand",
-				Actions: []common.DevfileCommandAction{
-					{
-						Command:   &command,
-						Component: &component,
-						Workdir:   &workDir,
-						Type:      &invalidCommandType,
-					},
-				},
-			},
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		devObj := devfileParser.DevfileObj{
-			Data: testingutil.TestDevfileData{
-				CommandActions: []common.DevfileCommandAction{
-					{
-						Command:   &command,
-						Component: &component,
-						Type:      &validCommandType,
-					},
-				},
-				ComponentType: common.DevfileComponentTypeDockerimage,
-			},
-		}
-		t.Run(tt.name, func(t *testing.T) {
-			supportedCommandActions, _ := getSupportedCommandActions(devObj.Data, tt.command)
-			if !tt.wantErr && len(supportedCommandActions) != len(tt.command.Actions) {
-				t.Errorf("TestGetSupportedCommandActions error: incorrect number of command actions expected: %v actual: %v", len(tt.command.Actions), len(supportedCommandActions))
-			} else if tt.wantErr && len(supportedCommandActions) != 0 {
-				t.Errorf("TestGetSupportedCommandActions error: incorrect number of command actions expected: %v actual: %v", 0, len(supportedCommandActions))
 			}
 		})
 	}
@@ -329,70 +182,63 @@ func TestValidateAction(t *testing.T) {
 	command := "ls -la"
 	component := "alias1"
 	workDir := "/"
-	validCommandType := common.DevfileCommandTypeExec
-	invalidCommandType := common.DevfileCommandType("garbage")
+
 	emptyString := ""
 
 	tests := []struct {
 		name    string
-		action  common.DevfileCommandAction
+		exec    common.Exec
 		wantErr bool
 	}{
 		{
-			name: "Case: Valid Command Action",
-			action: common.DevfileCommandAction{
-				Command:   &command,
-				Component: &component,
-				Workdir:   &workDir,
-				Type:      &validCommandType,
+			name: "Case: Valid Exec Command",
+			exec: common.Exec{
+				CommandLine: command,
+				Component:   component,
+				WorkingDir:  workDir,
+				Group:       &versionsCommon.Group{Kind: runGroup},
 			},
 			wantErr: false,
 		},
 		{
-			name: "Case: Invalid Command Action with empty command",
-			action: common.DevfileCommandAction{
-				Command:   &emptyString,
-				Component: &component,
-				Workdir:   &workDir,
-				Type:      &validCommandType,
+			name: "Case: Invalid Exec Command with empty command",
+			exec: common.Exec{
+				CommandLine: emptyString,
+				Component:   component,
+				WorkingDir:  workDir,
+				Group:       &versionsCommon.Group{Kind: runGroup},
 			},
 			wantErr: true,
 		},
 		{
-			name: "Case: Invalid Command Action with missing component",
-			action: common.DevfileCommandAction{
-				Command: &command,
-				Workdir: &workDir,
-				Type:    &validCommandType,
+			name: "Case: Invalid Exec Command with missing component",
+			exec: common.Exec{
+				CommandLine: command,
+				WorkingDir:  workDir,
+				Group:       &versionsCommon.Group{Kind: runGroup},
 			},
 			wantErr: true,
 		},
 		{
-			name: "Case: Invalid Command Action with wrong type",
-			action: common.DevfileCommandAction{
-				Command:   &command,
-				Component: &component,
-				Workdir:   &workDir,
-				Type:      &invalidCommandType,
+			name: "Case: valid Exec Command with Group nil",
+			exec: common.Exec{
+				CommandLine: command,
+				Component:   component,
+				WorkingDir:  workDir,
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		devObj := devfileParser.DevfileObj{
 			Data: testingutil.TestDevfileData{
-				CommandActions: []common.DevfileCommandAction{
-					{
-						Command:   &command,
-						Component: &component,
-						Type:      &validCommandType,
-					},
-				},
-				ComponentType: common.DevfileComponentTypeDockerimage,
+				ExecCommands: []common.Exec{tt.exec},
+				Components:   []common.DevfileComponent{testingutil.GetFakeComponent(component)},
 			},
 		}
 		t.Run(tt.name, func(t *testing.T) {
-			err := validateAction(devObj.Data, tt.action)
+			cmd := common.DevfileCommand{Exec: &tt.exec}
+			err := validateCommand(devObj.Data, cmd)
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("TestValidateAction unexpected error: %v", err)
 				return
@@ -407,39 +253,46 @@ func TestGetInitCommand(t *testing.T) {
 	command := "ls -la"
 	component := "alias1"
 	workDir := "/"
-	validCommandType := common.DevfileCommandTypeExec
 	emptyString := ""
 
 	var emptyCommand common.DevfileCommand
 
 	tests := []struct {
-		name           string
-		commandName    string
-		commandActions []common.DevfileCommandAction
-		wantErr        bool
+		name         string
+		commandName  string
+		execCommands []common.Exec
+		wantErr      bool
 	}{
 		{
 			name:        "Case: Default Init Command",
 			commandName: emptyString,
-			commandActions: []versionsCommon.DevfileCommandAction{
+			execCommands: []versionsCommon.Exec{
 				{
-					Command:   &command,
-					Component: &component,
-					Workdir:   &workDir,
-					Type:      &validCommandType,
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group:       &versionsCommon.Group{Kind: initGroup, IsDefault: true},
 				},
 			},
 			wantErr: false,
 		},
 		{
-			name:        "Case: Custom Init Command",
-			commandName: "customcommand",
-			commandActions: []versionsCommon.DevfileCommandAction{
+			name:        "Case: Init Command passed through odo flag",
+			commandName: "flagcommand",
+			execCommands: []versionsCommon.Exec{
 				{
-					Command:   &command,
-					Component: &component,
-					Workdir:   &workDir,
-					Type:      &validCommandType,
+					Id:          "flagcommand",
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group:       &versionsCommon.Group{Kind: initGroup},
+				},
+				{
+					Id:          "init command",
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group:       &versionsCommon.Group{Kind: initGroup},
 				},
 			},
 			wantErr: false,
@@ -447,12 +300,12 @@ func TestGetInitCommand(t *testing.T) {
 		{
 			name:        "Case: Missing Init Command",
 			commandName: "customcommand123",
-			commandActions: []versionsCommon.DevfileCommandAction{
+			execCommands: []versionsCommon.Exec{
 				{
-					Command:   &command,
-					Component: &component,
-					Workdir:   &workDir,
-					Type:      &validCommandType,
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group:       &versionsCommon.Group{Kind: initGroup},
 				},
 			},
 			wantErr: true,
@@ -463,8 +316,8 @@ func TestGetInitCommand(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					CommandActions: tt.commandActions,
-					ComponentType:  versionsCommon.DevfileComponentTypeDockerimage,
+					ExecCommands: tt.execCommands,
+					Components:   []common.DevfileComponent{testingutil.GetFakeComponent(component)},
 				},
 			}
 
@@ -486,52 +339,60 @@ func TestGetBuildCommand(t *testing.T) {
 	command := "ls -la"
 	component := "alias1"
 	workDir := "/"
-	validCommandType := common.DevfileCommandTypeExec
 	emptyString := ""
 
 	var emptyCommand common.DevfileCommand
 
 	tests := []struct {
-		name           string
-		commandName    string
-		commandActions []common.DevfileCommandAction
-		wantErr        bool
+		name         string
+		commandName  string
+		execCommands []common.Exec
+		wantErr      bool
 	}{
 		{
-			name:        "Case: Default Build Command",
+			name:        "Case 1: Default Build Command",
 			commandName: emptyString,
-			commandActions: []common.DevfileCommandAction{
+			execCommands: []common.Exec{
 				{
-					Command:   &command,
-					Component: &component,
-					Workdir:   &workDir,
-					Type:      &validCommandType,
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group:       &versionsCommon.Group{Kind: buildGroup, IsDefault: true},
 				},
 			},
 			wantErr: false,
 		},
 		{
-			name:        "Case: Custom Build Command",
-			commandName: "customcommand",
-			commandActions: []common.DevfileCommandAction{
+			name:        "Case 2: Build Command passed through the odo flag",
+			commandName: "flagcommand",
+			execCommands: []common.Exec{
 				{
-					Command:   &command,
-					Component: &component,
-					Workdir:   &workDir,
-					Type:      &validCommandType,
+					Id:          "flagcommand",
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group:       &versionsCommon.Group{Kind: buildGroup},
+				},
+				{
+					Id:          "build command",
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group:       &versionsCommon.Group{Kind: buildGroup},
 				},
 			},
 			wantErr: false,
 		},
 		{
-			name:        "Case: Missing Build Command",
+			name:        "Case 3: Missing Build Command",
 			commandName: "customcommand123",
-			commandActions: []common.DevfileCommandAction{
+			execCommands: []common.Exec{
 				{
-					Command:   &command,
-					Component: &component,
-					Workdir:   &workDir,
-					Type:      &validCommandType,
+					Id:          "build command",
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group:       &versionsCommon.Group{Kind: buildGroup},
 				},
 			},
 			wantErr: true,
@@ -542,8 +403,8 @@ func TestGetBuildCommand(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					CommandActions: tt.commandActions,
-					ComponentType:  common.DevfileComponentTypeDockerimage,
+					ExecCommands: tt.execCommands,
+					Components:   []common.DevfileComponent{testingutil.GetFakeComponent(component)},
 				},
 			}
 
@@ -565,52 +426,59 @@ func TestGetRunCommand(t *testing.T) {
 	command := "ls -la"
 	component := "alias1"
 	workDir := "/"
-	validCommandType := common.DevfileCommandTypeExec
 	emptyString := ""
 
 	var emptyCommand common.DevfileCommand
 
 	tests := []struct {
-		name           string
-		commandName    string
-		commandActions []common.DevfileCommandAction
-		wantErr        bool
+		name         string
+		commandName  string
+		execCommands []common.Exec
+		wantErr      bool
 	}{
 		{
-			name:        "Case: Default Run Command",
+			name:        "Case 1: Default Run Command",
 			commandName: emptyString,
-			commandActions: []common.DevfileCommandAction{
+			execCommands: []common.Exec{
 				{
-					Command:   &command,
-					Component: &component,
-					Workdir:   &workDir,
-					Type:      &validCommandType,
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group:       &versionsCommon.Group{Kind: runGroup, IsDefault: true},
 				},
 			},
 			wantErr: false,
 		},
 		{
-			name:        "Case: Custom Run Command",
-			commandName: "customcommand",
-			commandActions: []common.DevfileCommandAction{
+			name:        "Case 2: Run Command passed through odo flag",
+			commandName: "flagcommand",
+			execCommands: []common.Exec{
 				{
-					Command:   &command,
-					Component: &component,
-					Workdir:   &workDir,
-					Type:      &validCommandType,
+					Id:          "flagcommand",
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group:       &versionsCommon.Group{Kind: runGroup},
+				},
+				{
+					Id:          "run command",
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group:       &versionsCommon.Group{Kind: runGroup},
 				},
 			},
 			wantErr: false,
 		},
 		{
-			name:        "Case: Missing Run Command",
-			commandName: "customcommand123",
-			commandActions: []common.DevfileCommandAction{
+			name:        "Case 3: Missing Run Command",
+			commandName: "",
+			execCommands: []common.Exec{
 				{
-					Command:   &command,
-					Component: &component,
-					Workdir:   &workDir,
-					Type:      &validCommandType,
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group:       &versionsCommon.Group{Kind: initGroup},
 				},
 			},
 			wantErr: true,
@@ -621,8 +489,8 @@ func TestGetRunCommand(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					CommandActions: tt.commandActions,
-					ComponentType:  common.DevfileComponentTypeDockerimage,
+					ExecCommands: tt.execCommands,
+					Components:   []common.DevfileComponent{testingutil.GetFakeComponent(component)},
 				},
 			}
 
@@ -643,16 +511,48 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 	command := "ls -la"
 	component := "alias1"
 	workDir := "/"
-	validCommandType := common.DevfileCommandTypeExec
 	emptyString := ""
 
-	actions := []common.DevfileCommandAction{
+	execCommands := []common.Exec{
 		{
-			Command:   &command,
-			Component: &component,
-			Workdir:   &workDir,
-			Type:      &validCommandType,
+			Id:          "run command",
+			CommandLine: command,
+			Component:   component,
+			WorkingDir:  workDir,
+			Group:       &versionsCommon.Group{Kind: runGroup},
 		},
+
+		{
+			Id:          "build command",
+			CommandLine: command,
+			Component:   component,
+			WorkingDir:  workDir,
+			Group:       &versionsCommon.Group{Kind: buildGroup},
+		},
+
+		{
+			Id:          "init command",
+			CommandLine: command,
+			Component:   component,
+			WorkingDir:  workDir,
+			Group:       &versionsCommon.Group{Kind: initGroup},
+		},
+		{
+			Id:          "customcommand",
+			CommandLine: command,
+			Component:   component,
+			WorkingDir:  workDir,
+			Group:       &versionsCommon.Group{Kind: runGroup},
+		},
+	}
+
+	wrongCompTypeCmd := common.Exec{
+
+		Id:          "run command",
+		CommandLine: command,
+		Component:   "",
+		WorkingDir:  workDir,
+		Group:       &versionsCommon.Group{Kind: runGroup},
 	}
 
 	tests := []struct {
@@ -660,95 +560,125 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 		initCommand         string
 		buildCommand        string
 		runCommand          string
+		execCommands        []common.Exec
 		numberOfCommands    int
-		componentType       common.DevfileComponentType
 		missingInitCommand  bool
 		missingBuildCommand bool
 		wantErr             bool
 	}{
 		{
-			name:             "Case: Default Devfile Commands",
+			name:             "Case 1: Default Devfile Commands",
 			initCommand:      emptyString,
 			buildCommand:     emptyString,
 			runCommand:       emptyString,
+			execCommands:     execCommands,
 			numberOfCommands: 3,
-			componentType:    common.DevfileComponentTypeDockerimage,
 			wantErr:          false,
 		},
 		{
-			name:             "Case: Default Init and Build Command, and Provided Run Command",
+			name:             "Case 2: Default Init and Build Command, and Provided Run Command",
 			initCommand:      emptyString,
 			buildCommand:     emptyString,
 			runCommand:       "customcommand",
+			execCommands:     execCommands,
 			numberOfCommands: 3,
-			componentType:    common.DevfileComponentTypeDockerimage,
 			wantErr:          false,
 		},
 		{
-			name:             "Case: No Dockerimage Component",
+			name:             "Case 3: Empty Component",
 			initCommand:      emptyString,
 			buildCommand:     "customcommand",
 			runCommand:       "customcommand",
+			execCommands:     append(execCommands, wrongCompTypeCmd),
 			numberOfCommands: 0,
-			componentType:    "",
 			wantErr:          true,
 		},
 		{
-			name:             "Case: Provided Wrong Build Command and Provided Run Command",
+			name:             "Case 4: Provided Wrong Build Command and Provided Run Command",
 			initCommand:      emptyString,
 			buildCommand:     "customcommand123",
 			runCommand:       "customcommand",
+			execCommands:     execCommands,
 			numberOfCommands: 1,
-			componentType:    common.DevfileComponentTypeDockerimage,
 			wantErr:          true,
 		},
 		{
-			name:             "Case: Provided Wrong Init Command and Provided Build and Run Command",
+			name:             "Case 5: Provided Wrong Init Command and Provided Build and Run Command",
 			initCommand:      "customcommand123",
 			buildCommand:     emptyString,
 			runCommand:       "customcommand",
+			execCommands:     execCommands,
 			numberOfCommands: 1,
-			componentType:    versionsCommon.DevfileComponentTypeDockerimage,
 			wantErr:          true,
 		},
 		{
-			name:                "Case: Missing Init and Build Command, and Provided Run Command",
-			initCommand:         emptyString,
-			buildCommand:        emptyString,
-			runCommand:          "customcommand",
-			numberOfCommands:    1,
-			componentType:       common.DevfileComponentTypeDockerimage,
-			missingInitCommand:  true,
-			missingBuildCommand: true,
-			wantErr:             false,
+			name:         "Case 6: Missing Init and Build Command, and Provided Run Command",
+			initCommand:  emptyString,
+			buildCommand: emptyString,
+			runCommand:   "customcommand",
+			execCommands: []common.Exec{
+				{
+					Id:          "customcommand",
+					Group:       &common.Group{Kind: runGroup},
+					Component:   component,
+					CommandLine: command,
+				},
+			},
+			numberOfCommands: 1,
+			wantErr:          false,
 		},
 		{
-			name:               "Case: Missing Init Command with provided Build and Run Command",
-			initCommand:        emptyString,
-			buildCommand:       "customcommand",
-			runCommand:         "customcommand",
+			name:         "Case 7: Missing Init Command with provided Build and Run Command",
+			initCommand:  emptyString,
+			buildCommand: "build command",
+			runCommand:   "run command",
+			execCommands: []common.Exec{
+				{
+					Id:          "build command",
+					Group:       &common.Group{Kind: buildGroup},
+					Component:   component,
+					CommandLine: command,
+				},
+				{
+					Id:          "run command",
+					Group:       &common.Group{Kind: runGroup},
+					Component:   component,
+					CommandLine: command,
+				},
+			},
 			numberOfCommands:   2,
-			componentType:      versionsCommon.DevfileComponentTypeDockerimage,
 			missingInitCommand: true,
 			wantErr:            false,
 		},
 		{
-			name:                "Case: Missing Build Command with provided Init and Run Command",
-			initCommand:         "customcommand",
-			buildCommand:        emptyString,
-			runCommand:          "customcommand",
-			numberOfCommands:    2,
-			componentType:       versionsCommon.DevfileComponentTypeDockerimage,
-			missingBuildCommand: true,
-			wantErr:             false,
+			name:         "Case 8: Missing Build Command with provided Init and Run Command",
+			initCommand:  "init command",
+			buildCommand: emptyString,
+			runCommand:   "run command",
+			execCommands: []common.Exec{
+				{
+					Id:          "init command",
+					Group:       &common.Group{Kind: initGroup},
+					Component:   component,
+					CommandLine: command,
+				},
+				{
+					Id:          "run command",
+					Group:       &common.Group{Kind: runGroup},
+					Component:   component,
+					CommandLine: command,
+				},
+			},
+			numberOfCommands: 2,
+			wantErr:          false,
 		},
 		{
-			name:             "Case: Optional Init Command with provided Build and Run Command",
-			initCommand:      "customcommand",
-			buildCommand:     "customcommand",
-			runCommand:       "customcommand",
+			name:             "Case 9: Optional Init Command with provided Build and Run Command",
+			initCommand:      "init command",
+			buildCommand:     "build command",
+			runCommand:       "run command",
+			execCommands:     execCommands,
 			numberOfCommands: 3,
-			componentType:    versionsCommon.DevfileComponentTypeDockerimage,
 			wantErr:          false,
 		},
 	}
@@ -757,10 +687,8 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					CommandActions:      actions,
-					ComponentType:       tt.componentType,
-					MissingInitCommand:  tt.missingInitCommand,
-					MissingBuildCommand: tt.missingBuildCommand,
+					ExecCommands: tt.execCommands,
+					Components:   []common.DevfileComponent{testingutil.GetFakeComponent(component)},
 				},
 			}
 
@@ -775,6 +703,22 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 				t.Errorf("TestValidateAndGetPushDevfileCommands error: wrong number of validated commands expected: %v actual :%v", tt.numberOfCommands, len(pushCommands))
 			}
 		})
+	}
+
+}
+
+func getExecCommand(id string, group common.DevfileCommandGroupType) versionsCommon.Exec {
+
+	commands := [...]string{"ls -la", "pwd"}
+	components := [...]string{"alias1", "alias2"}
+	workDir := [...]string{"/", "/root"}
+
+	return versionsCommon.Exec{
+		Id:          id,
+		CommandLine: commands[0],
+		Component:   components[0],
+		WorkingDir:  workDir[0],
+		Group:       &common.Group{Kind: group},
 	}
 
 }

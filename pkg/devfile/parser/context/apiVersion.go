@@ -19,19 +19,34 @@ func (d *DevfileCtx) SetDevfileAPIVersion() error {
 		return errors.Wrapf(err, "failed to decode devfile json")
 	}
 
-	// Get "apiVersion" value from the map
-	apiVersion, ok := r["apiVersion"]
-	if !ok {
-		return fmt.Errorf("apiVersion not present in devfile")
-	}
+	var apiVer string
 
-	// apiVersion cannot be empty
-	if apiVersion.(string) == "" {
-		return fmt.Errorf("apiVersion in devfile cannot be empty")
+	// Get "apiVersion" value from map for devfile V1
+	apiVersion, okApi := r["apiVersion"]
+
+	// Get "schemaVersion" value from map for devfile V2
+	schemaVersion, okSchema := r["schemaVersion"]
+
+	if okApi {
+		apiVer = apiVersion.(string)
+		// apiVersion cannot be empty
+		if apiVer == "" {
+			return fmt.Errorf("apiVersion in devfile cannot be empty")
+		}
+
+	} else if okSchema {
+		apiVer = schemaVersion.(string)
+		// SchemaVersion cannot be empty
+		if schemaVersion.(string) == "" {
+			return fmt.Errorf("schemaVersion in devfile cannot be empty")
+		}
+	} else {
+		return fmt.Errorf("apiVersion or schemaVersion not present in devfile")
+
 	}
 
 	// Successful
-	d.apiVersion = apiVersion.(string)
+	d.apiVersion = apiVer
 	klog.V(4).Infof("devfile apiVersion: '%s'", d.apiVersion)
 	return nil
 }
