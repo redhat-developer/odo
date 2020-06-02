@@ -220,13 +220,13 @@ func TestValidateAction(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "Case: Invalid Exec Command with Group nil",
+			name: "Case: valid Exec Command with Group nil",
 			exec: common.Exec{
 				CommandLine: command,
 				Component:   component,
 				WorkingDir:  workDir,
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {

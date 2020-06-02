@@ -16,8 +16,6 @@ func getCommand(data data.DevfileData, commandName string, groupType common.Devf
 
 	for _, command := range commands {
 
-		command = updateGroupforCustomCommand(commandName, groupType, command)
-
 		// validate command
 		err = validateCommand(data, command)
 
@@ -30,13 +28,10 @@ func getCommand(data data.DevfileData, commandName string, groupType common.Devf
 		// if not found fallback to error.
 		if commandName != "" {
 
-			if command.Exec.Id == commandName {
+			// Update Group only custom commands (specified by odo flags)
+			command = updateGroupforCommand(groupType, command)
 
-				if command.Exec.Group.Kind == "" {
-					// Devfile V1 for commands passed from flags
-					// Group type is not updated during conversion
-					command.Exec.Group.Kind = groupType
-				}
+			if command.Exec.Id == commandName {
 
 				// we have found the command with name, its groupType Should match to the flag
 				// e.g --build-command "mybuild"
@@ -55,7 +50,8 @@ func getCommand(data data.DevfileData, commandName string, groupType common.Devf
 
 		// if no command specified via flag, default command has the highest priority
 		// We need to scan all the commands to find default command
-		if command.Exec.Group.Kind == groupType && command.Exec.Group.IsDefault {
+		// exec.Group is a pointer, to avoid null pointer
+		if command.Exec.Group != nil && command.Exec.Group.Kind == groupType && command.Exec.Group.IsDefault {
 			supportedCommand = command
 			return supportedCommand, nil
 		}
@@ -64,11 +60,11 @@ func getCommand(data data.DevfileData, commandName string, groupType common.Devf
 	if commandName == "" {
 		// if default command is not found return the first command found for the matching type.
 		for _, command := range commands {
-			if command.Exec.Group.Kind == groupType {
+
+			if command.Exec.Group != nil && command.Exec.Group.Kind == groupType {
 				supportedCommand = command
 				return supportedCommand, nil
 			}
-
 		}
 	}
 
@@ -81,8 +77,7 @@ func getCommand(data data.DevfileData, commandName string, groupType common.Devf
 		if groupType == common.RunCommandGroupType {
 			err = fmt.Errorf(msg)
 		} else {
-			klog.V(3).Info(msg)
-
+			klog.V(4).Info(msg)
 		}
 	}
 
@@ -92,7 +87,6 @@ func getCommand(data data.DevfileData, commandName string, groupType common.Devf
 // validateCommand validates the given command
 // 1. command has to be of type exec
 // 2. component should be present
-// 3. command should be present
 // 4. command must have group
 func validateCommand(data data.DevfileData, command common.DevfileCommand) (err error) {
 
@@ -109,10 +103,6 @@ func validateCommand(data data.DevfileData, command common.DevfileCommand) (err 
 	// must specify a command
 	if command.Exec.CommandLine == "" {
 		return fmt.Errorf("exec commands must have a command")
-	}
-
-	if command.Exec.Group == nil {
-		return fmt.Errorf("exec commands must have group")
 	}
 
 	// must map to a supported component
@@ -210,11 +200,10 @@ func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileInitCmd, de
 }
 
 // Need to update group on custom commands specified by odo flags
-func updateGroupforCustomCommand(commandName string, groupType common.DevfileCommandGroupType, command common.DevfileCommand) common.DevfileCommand {
+func updateGroupforCommand(groupType common.DevfileCommandGroupType, command common.DevfileCommand) common.DevfileCommand {
 	// Update Group only for exec commands
-	// Update Group only custom commands (specified by odo flags)
 	// Update Group only when Group is not nil, devfile v2 might contain group for custom commands.
-	if command.Exec != nil && commandName != "" && command.Exec.Group == nil {
+	if command.Exec != nil && command.Exec.Group == nil {
 		command.Exec.Group = &common.Group{Kind: groupType}
 		return command
 	}
