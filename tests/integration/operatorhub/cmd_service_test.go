@@ -3,6 +3,7 @@ package integration
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -129,7 +130,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 			// stdOut contains the yaml specification. Store it to a file
 			randomFileName := helper.RandString(6) + ".yaml"
-			fileName := filepath.Join("/tmp", randomFileName)
+			fileName := filepath.Join(os.TempDir(), randomFileName)
 			if err := ioutil.WriteFile(fileName, []byte(stdOut), 0644); err != nil {
 				fmt.Printf("Could not write yaml spec to file %s because of the error %v", fileName, err.Error())
 			}
