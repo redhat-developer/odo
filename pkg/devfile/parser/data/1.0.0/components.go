@@ -25,7 +25,8 @@ func (d *Devfile100) GetComponents() []common.DevfileComponent {
 
 // GetAliasedComponents returns the slice of DevfileComponent objects that each have an alias
 func (d *Devfile100) GetAliasedComponents() []common.DevfileComponent {
-	// TODO(adi): we might not need this for V2 as name is a required field now.
+	// TODO(adi): All components are aliased for V2, this method should be removed from interface
+	// when we remove V1
 	var comps []common.DevfileComponent
 	for _, v := range d.Components {
 		comps = append(comps, convertV1ComponentToCommon(v))

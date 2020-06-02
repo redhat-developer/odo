@@ -113,7 +113,7 @@ func ProcessVolumes(client *lclient.Client, componentName string, componentAlias
 				processedVolumes[vol.Name] = true
 
 				// Generate the volume Names
-				klog.V(3).Infof("Generating Docker volumes name for %v", vol.Name)
+				klog.V(4).Infof("Generating Docker volumes name for %v", vol.Name)
 				generatedDockerVolName, err := GenerateVolName(vol.Name, componentName)
 				if err != nil {
 					return nil, nil, err
@@ -125,7 +125,7 @@ func ProcessVolumes(client *lclient.Client, componentName string, componentAlias
 					return nil, nil, err
 				}
 				if len(existingVolName) > 0 {
-					klog.V(3).Infof("Found an existing Docker volume for %v, volume %v will be re-used", vol.Name, existingVolName)
+					klog.V(4).Infof("Found an existing Docker volume for %v, volume %v will be re-used", vol.Name, existingVolName)
 					generatedDockerVolName = existingVolName
 				}
 

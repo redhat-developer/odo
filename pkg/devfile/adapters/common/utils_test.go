@@ -19,29 +19,29 @@ func TestGetSupportedComponents(t *testing.T) {
 		expectedMatchesCount int
 	}{
 		{
-			name:                 "Case: Invalid devfile",
+			name:                 "Case 1: Invalid devfile",
 			component:            []versionsCommon.DevfileComponent{},
 			expectedMatchesCount: 0,
 		},
 		{
-			name:                 "Case: Valid devfile with wrong component type (Openshift)",
+			name:                 "Case 2: Valid devfile with wrong component type (Openshift)",
 			component:            []versionsCommon.DevfileComponent{{Openshift: &versionsCommon.Openshift{}}},
 			expectedMatchesCount: 0,
 		},
 		{
-			name:                 "Case: Valid devfile with wrong component type (Kubernetes)",
+			name:                 "Case 3: Valid devfile with wrong component type (Kubernetes)",
 			component:            []versionsCommon.DevfileComponent{{Kubernetes: &versionsCommon.Kubernetes{}}},
 			expectedMatchesCount: 0,
 		},
 
 		{
-			name:                 "Case: Valid devfile with correct component type (Container)",
+			name:                 "Case 4 : Valid devfile with correct component type (Container)",
 			component:            []versionsCommon.DevfileComponent{testingutil.GetFakeComponent("comp1"), testingutil.GetFakeComponent("comp2")},
 			expectedMatchesCount: 2,
 		},
 
 		{
-			name:                 "Case: Valid devfile with correct component type (Container) without name",
+			name:                 "Case 5: Valid devfile with correct component type (Container) without name",
 			component:            []versionsCommon.DevfileComponent{testingutil.GetFakeComponent("comp1"), testingutil.GetFakeComponent("")},
 			expectedMatchesCount: 1,
 		},
