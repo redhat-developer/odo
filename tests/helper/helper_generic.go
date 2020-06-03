@@ -178,3 +178,11 @@ func LocalKubeconfigSet(context string) {
 	}
 	copyKubeConfigFile(originalKubeCfg, filepath.Join(context, "config"))
 }
+
+// GetCliRunner gets the running cli against Kubernetes or OpenShift
+func GetCliRunner() CliRunner {
+	if os.Getenv("KUBERNETES") == "true" {
+		return NewKubectlRunner("kubectl")
+	}
+	return NewOcRunner("oc")
+}

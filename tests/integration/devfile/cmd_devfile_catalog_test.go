@@ -12,14 +12,9 @@ import (
 
 var _ = Describe("odo devfile catalog command tests", func() {
 	var project, context, currentWorkingDirectory, originalKubeconfig string
-	var cliRunner helper.CliRunner
 
 	// Using program commmand according to cliRunner in devfile
-	if os.Getenv("KUBERNETES") == "true" {
-		cliRunner = helper.NewKubectlRunner("kubectl")
-	} else {
-		cliRunner = helper.NewOcRunner("oc")
-	}
+	cliRunner := helper.GetCliRunner()
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {

@@ -14,14 +14,9 @@ import (
 
 var _ = Describe("odo devfile watch command tests", func() {
 	var namespace, context, cmpName, currentWorkingDirectory, originalKubeconfig string
-	var cliRunner helper.CliRunner
 
 	// Using program commmand according to cliRunner in devfile
-	if os.Getenv("KUBERNETES") == "true" {
-		cliRunner = helper.NewKubectlRunner("kubectl")
-	} else {
-		cliRunner = helper.NewOcRunner("oc")
-	}
+	cliRunner := helper.GetCliRunner()
 
 	// Setup up state for each test spec
 	// create new project (not set as active) and new context directory for each test spec

@@ -12,17 +12,12 @@ import (
 
 var _ = Describe("odo devfile registry command tests", func() {
 	var project, context, currentWorkingDirectory, originalKubeconfig string
-	var cliRunner helper.CliRunner
 	const registryName string = "RegistryName"
 	const addRegistryURL string = "https://raw.githubusercontent.com/GeekArthur/registry/master"
 	const updateRegistryURL string = "http://www.example.com/update"
 
 	// Using program commmand according to cliRunner in devfile
-	if os.Getenv("KUBERNETES") == "true" {
-		cliRunner = helper.NewKubectlRunner("kubectl")
-	} else {
-		cliRunner = helper.NewOcRunner("oc")
-	}
+	cliRunner := helper.GetCliRunner()
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {

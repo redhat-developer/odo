@@ -16,14 +16,9 @@ import (
 var _ = Describe("odo devfile push command tests", func() {
 	var namespace, context, cmpName, currentWorkingDirectory, originalKubeconfig string
 	var sourcePath = "/projects/nodejs-web-app"
-	var cliRunner helper.CliRunner
 
 	// Using program commmand according to cliRunner in devfile
-	if os.Getenv("KUBERNETES") == "true" {
-		cliRunner = helper.NewKubectlRunner("kubectl")
-	} else {
-		cliRunner = helper.NewOcRunner("oc")
-	}
+	cliRunner := helper.GetCliRunner()
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
