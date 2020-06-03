@@ -7,7 +7,7 @@ set -e
 ODO_VERSION="latest"
 
 # Latest released odo version
-LATEST_VERSION="v1.2.1"
+LATEST_VERSION="v1.2.2"
 
 GITHUB_RELEASES_URL="https://github.com/openshift/odo/releases/download/${LATEST_VERSION}"
 BINTRAY_URL="https://dl.bintray.com/odo/odo/latest"
