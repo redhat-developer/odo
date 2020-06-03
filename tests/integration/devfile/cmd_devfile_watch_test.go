@@ -13,12 +13,10 @@ import (
 )
 
 var _ = Describe("odo devfile watch command tests", func() {
-	var namespace string
-	var context string
-	var cmpName string
-	var currentWorkingDirectory string
+	var namespace, context, cmpName, currentWorkingDirectory, originalKubeconfig string
 
-	var cliRunner helper.CliRunner
+	// Using program commmand according to cliRunner in devfile
+	cliRunner := helper.GetCliRunner()
 
 	// Setup up state for each test spec
 	// create new project (not set as active) and new context directory for each test spec
@@ -27,15 +25,9 @@ var _ = Describe("odo devfile watch command tests", func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-		if os.Getenv("KUBERNETES") == "true" {
-			homeDir := helper.GetUserHomeDir()
-			kubeConfigFile := helper.CopyKubeConfigFile(filepath.Join(homeDir, ".kube", "config"), filepath.Join(context, "config"))
-			namespace = helper.CreateRandNamespace(kubeConfigFile)
-			cliRunner = helper.NewKubectlRunner("kubectl")
-		} else {
-			namespace = helper.CreateRandProject()
-			cliRunner = helper.NewOcRunner("oc")
-		}
+		originalKubeconfig = os.Getenv("KUBECONFIG")
+		helper.LocalKubeconfigSet(context)
+		namespace = cliRunner.CreateRandNamespaceProject()
 		currentWorkingDirectory = helper.Getwd()
 		cmpName = helper.RandString(6)
 		helper.Chdir(context)
@@ -47,13 +39,10 @@ var _ = Describe("odo devfile watch command tests", func() {
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		if os.Getenv("KUBERNETES") == "true" {
-			helper.DeleteNamespace(namespace)
-			os.Unsetenv("KUBECONFIG")
-		} else {
-			helper.DeleteProject(namespace)
-		}
+		cliRunner.DeleteNamespaceProject(namespace)
 		helper.Chdir(currentWorkingDirectory)
+		err := os.Setenv("KUBECONFIG", originalKubeconfig)
+		Expect(err).NotTo(HaveOccurred())
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
 	})
@@ -67,7 +56,6 @@ var _ = Describe("odo devfile watch command tests", func() {
 
 	Context("when executing watch without pushing a devfile component", func() {
 		It("should fail", func() {
-			cmpName := helper.RandString(6)
 			helper.Chdir(currentWorkingDirectory)
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, "--context", context, cmpName)
 			output := helper.CmdShouldFail("odo", "watch", "--context", context)
