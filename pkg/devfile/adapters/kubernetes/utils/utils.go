@@ -74,10 +74,18 @@ func GetContainers(devfileObj devfileParser.DevfileObj) ([]corev1.Container, err
 		}
 
 		// If `mountSources: true` was set, add an empty dir volume to the container to sync the source to
+		// Sync to `Container.SourceMapping` if set
 		if comp.Container.MountSources {
+			var syncFolder string
+			if comp.Container.SourceMapping != "" {
+				syncFolder = comp.Container.SourceMapping
+			} else {
+				syncFolder = kclient.OdoSourceVolumeMount
+			}
+
 			container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
 				Name:      kclient.OdoSourceVolume,
-				MountPath: kclient.OdoSourceVolumeMount,
+				MountPath: syncFolder,
 			})
 
 			// only add the env if it is not set by the devfile
@@ -85,7 +93,7 @@ func GetContainers(devfileObj devfileParser.DevfileObj) ([]corev1.Container, err
 				container.Env = append(container.Env,
 					corev1.EnvVar{
 						Name:  adaptersCommon.EnvCheProjectsRoot,
-						Value: kclient.OdoSourceVolumeMount,
+						Value: syncFolder,
 					})
 			}
 		}

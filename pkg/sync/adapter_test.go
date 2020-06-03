@@ -427,6 +427,19 @@ func TestPushLocal(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name:        "Case 6: Source mapping folder set",
+			client:      fakeClient,
+			path:        directory,
+			files:       []string{},
+			delFiles:    []string{},
+			isForcePush: false,
+			compInfo: common.ComponentInfo{
+				ContainerName: "abcd",
+				SourceMount:   "/some/path",
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
