@@ -142,7 +142,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 
 	// Determine which folder we need to sync to
 	var syncFolder string
-	if compInfo.SourceMount != "" {
+	if compInfo.SourceMount != kclient.OdoSourceVolumeMount {
 		syncFolder = compInfo.SourceMount
 	} else {
 		// If there's only one project defined in the devfile, sync to `/projects/project-name`, otherwise sync to /projects
