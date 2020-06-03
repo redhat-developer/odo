@@ -404,7 +404,7 @@ $ export ODO_EXPERIMENTAL=true
 OR
 +
 ----
-$ odo preference set Experimental true -f
+$ odo preference set Experimental true -f 
 ----
 
 * To run the test in parallel, on a test cluster (By default the test will run in parallel on two ginkgo test node):
