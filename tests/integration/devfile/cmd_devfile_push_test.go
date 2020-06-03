@@ -14,34 +14,36 @@ import (
 )
 
 var _ = Describe("odo devfile push command tests", func() {
-	var namespace, context, cmpName, currentWorkingDirectory string
+	var namespace, context, cmpName, currentWorkingDirectory, originalKubeconfig string
 	var sourcePath = "/projects/nodejs-web-app"
 
-	// TODO: all oc commands in all devfile related test should get replaced by kubectl
-	// TODO: to goal is not to use "oc"
-	oc := helper.NewOcRunner("oc")
+	// Using program commmand according to cliRunner in devfile
+	cliRunner := helper.GetCliRunner()
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
-		namespace = helper.CreateRandProject()
 		context = helper.CreateNewContext()
-		currentWorkingDirectory = helper.Getwd()
-		cmpName = helper.RandString(6)
-
-		helper.Chdir(context)
-
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 
 		// Devfile push requires experimental mode to be set
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+
+		originalKubeconfig = os.Getenv("KUBECONFIG")
+		helper.LocalKubeconfigSet(context)
+		namespace = cliRunner.CreateRandNamespaceProject()
+		currentWorkingDirectory = helper.Getwd()
+		cmpName = helper.RandString(6)
+		helper.Chdir(context)
 	})
 
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		helper.DeleteProject(namespace)
+		cliRunner.DeleteNamespaceProject(namespace)
 		helper.Chdir(currentWorkingDirectory)
+		err := os.Setenv("KUBECONFIG", originalKubeconfig)
+		Expect(err).NotTo(HaveOccurred())
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
 	})
@@ -56,14 +58,14 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-no-endpoints.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			helper.CmdShouldPass("odo", "push", "--project", namespace)
-			output := oc.GetServices(namespace)
+			output := cliRunner.GetServices(namespace)
 			Expect(output).NotTo(ContainSubstring(cmpName))
 
 			helper.RenameFile("devfile-old.yaml", "devfile.yaml")
 			output = helper.CmdShouldPass("odo", "push", "--project", namespace)
 
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
-			output = oc.GetServices(namespace)
+			output = cliRunner.GetServices(namespace)
 			Expect(output).To(ContainSubstring(cmpName))
 		})
 
@@ -103,9 +105,9 @@ var _ = Describe("odo devfile push command tests", func() {
 			utils.ExecPushWithNewFileAndDir(context, cmpName, namespace, newFilePath, newDirPath)
 
 			// Check to see if it's been pushed (foobar.txt abd directory testdir)
-			podName := oc.GetRunningPodNameByComponent(cmpName, namespace)
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
 
-			stdOut := oc.ExecListDir(podName, namespace, sourcePath)
+			stdOut := cliRunner.ExecListDir(podName, namespace, sourcePath)
 			helper.MatchAllInOutput(stdOut, []string{"foobar.txt", "testdir"})
 
 			// Now we delete the file and dir and push
@@ -114,7 +116,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "push", "--project", namespace, "-v4")
 
 			// Then check to see if it's truly been deleted
-			stdOut = oc.ExecListDir(podName, namespace, sourcePath)
+			stdOut = cliRunner.ExecListDir(podName, namespace, sourcePath)
 			helper.DontMatchAllInOutput(stdOut, []string{"foobar.txt", "testdir"})
 		})
 
@@ -127,10 +129,10 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "push", "--project", namespace)
 
 			// Check to see if it's been pushed (foobar.txt abd directory testdir)
-			podName := oc.GetRunningPodNameByComponent(cmpName, namespace)
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
 
 			var statErr error
-			oc.CheckCmdOpInRemoteDevfilePod(
+			cliRunner.CheckCmdOpInRemoteDevfilePod(
 				podName,
 				"",
 				namespace,
@@ -144,7 +146,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(os.Remove(filepath.Join(context, "app", "app.js"))).NotTo(HaveOccurred())
 			helper.CmdShouldPass("odo", "push", "--project", namespace)
 
-			oc.CheckCmdOpInRemoteDevfilePod(
+			cliRunner.CheckCmdOpInRemoteDevfilePod(
 				podName,
 				"",
 				namespace,
@@ -166,11 +168,11 @@ var _ = Describe("odo devfile push command tests", func() {
 			utils.ExecDefaultDevfileCommands(context, cmpName, namespace)
 
 			// Check to see if it's been pushed (foobar.txt abd directory testdir)
-			podName := oc.GetRunningPodNameByComponent(cmpName, namespace)
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
 
 			var statErr error
 			var cmdOutput string
-			oc.CheckCmdOpInRemoteDevfilePod(
+			cliRunner.CheckCmdOpInRemoteDevfilePod(
 				podName,
 				"runtime",
 				namespace,
@@ -282,11 +284,11 @@ var _ = Describe("odo devfile push command tests", func() {
 			})
 
 			// Check to see if it's been pushed (foobar.txt abd directory testdir)
-			podName := oc.GetRunningPodNameByComponent(cmpName, namespace)
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
 
 			var statErr error
 			var cmdOutput string
-			oc.CheckCmdOpInRemoteDevfilePod(
+			cliRunner.CheckCmdOpInRemoteDevfilePod(
 				podName,
 				"runtime",
 				namespace,
@@ -300,7 +302,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(statErr).ToNot(HaveOccurred())
 			Expect(cmdOutput).To(ContainSubstring("init"))
 
-			oc.CheckCmdOpInRemoteDevfilePod(
+			cliRunner.CheckCmdOpInRemoteDevfilePod(
 				podName,
 				"runtime2",
 				namespace,
@@ -314,7 +316,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(statErr).ToNot(HaveOccurred())
 			Expect(cmdOutput).To(ContainSubstring("hello"))
 
-			oc.CheckCmdOpInRemoteDevfilePod(
+			cliRunner.CheckCmdOpInRemoteDevfilePod(
 				podName,
 				"runtime2",
 				namespace,
@@ -329,7 +331,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			volumesMatched := false
 
 			// check the volume name and mount paths for the containers
-			volNamesAndPaths := oc.GetVolumeMountNamesandPathsFromContainer(cmpName, "runtime", namespace)
+			volNamesAndPaths := cliRunner.GetVolumeMountNamesandPathsFromContainer(cmpName, "runtime", namespace)
 			volNamesAndPathsArr := strings.Fields(volNamesAndPaths)
 			for _, volNamesAndPath := range volNamesAndPathsArr {
 				volNamesAndPathArr := strings.Split(volNamesAndPath, ":")

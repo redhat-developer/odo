@@ -824,8 +824,8 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 		return errors.Wrapf(err, "Could not get the current working directory.")
 	}
 
-	if project.ClonePath != nil && *project.ClonePath != "" {
-		clonePath := *project.ClonePath
+	if project.ClonePath != "" {
+		clonePath := project.ClonePath
 		if runtime.GOOS == "windows" {
 			clonePath = strings.Replace(clonePath, "\\", "/", -1)
 		}
@@ -844,29 +844,32 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 		return err
 	}
 
-	var zipUrl string
-	switch project.Source.Type {
-	case "git":
-		if strings.Contains(project.Source.Location, "github.com") {
-			zipUrl, err = util.GetGitHubZipURL(project.Source.Location)
+	var url, sparseDir string
+	if project.Git != nil {
+		if strings.Contains(project.Git.Location, "github.com") {
+			url, err = util.GetGitHubZipURL(project.Git.Location)
 			if err != nil {
 				return err
 			}
+			sparseDir = project.Git.SparseCheckoutDir
 		} else {
 			return errors.Errorf("Project type git with non github url not supported")
 		}
-	case "github":
-		zipUrl, err = util.GetGitHubZipURL(project.Source.Location)
+	} else if project.Github != nil {
+		url, err = util.GetGitHubZipURL(project.Github.Location)
 		if err != nil {
 			return err
 		}
-	case "zip":
-		zipUrl = project.Source.Location
-	default:
+		sparseDir = project.Github.SparseCheckoutDir
+	} else if project.Zip != nil {
+		url = project.Zip.Location
+		sparseDir = project.Github.SparseCheckoutDir
+	} else {
 		return errors.Errorf("Project type not supported")
 	}
 
-	err = checkoutProject(project, zipUrl, path)
+	err = checkoutProject(sparseDir, url, path)
+
 	if err != nil {
 		return err
 	}
@@ -1000,9 +1003,9 @@ func ensureAndLogProperResourceUsage(resource, resourceMin, resourceMax, resourc
 	}
 }
 
-func checkoutProject(project common.DevfileProject, zipURL, path string) error {
-	if project.Source.SparseCheckoutDir != nil && *project.Source.SparseCheckoutDir != "" {
-		sparseCheckoutDir := *project.Source.SparseCheckoutDir
+func checkoutProject(sparseCheckoutDir, zipURL, path string) error {
+
+	if sparseCheckoutDir != "" {
 		err := util.GetAndExtractZip(zipURL, path, sparseCheckoutDir)
 		if err != nil {
 			return errors.Wrap(err, "failed to download and extract project zip folder")
