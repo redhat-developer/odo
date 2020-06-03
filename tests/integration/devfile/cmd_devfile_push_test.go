@@ -24,6 +24,7 @@ var _ = Describe("odo devfile push command tests", func() {
 	var _ = BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		context = helper.CreateNewContext()
+		// kubeConfigFile := helper.CopyKubeConfigFile(helper.GetExistingKubeConfigPath(), filepath.Join(context, "config"))
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 
 		// Devfile push requires experimental mode to be set
@@ -97,6 +98,23 @@ var _ = Describe("odo devfile push command tests", func() {
 
 		It("should not build when no changes are detected in the directory and build when a file change is detected", func() {
 			utils.ExecPushToTestFileChanges(context, cmpName, namespace)
+		})
+
+		It("checks that odo push with -o json displays machine readable JSON event output", func() {
+
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			output := helper.CmdShouldPass("odo", "push", "-o", "json", "--devfile", "devfile.yaml", "--project", namespace)
+			utils.AnalyzePushConsoleOutput(output)
+
+			// update devfile and push again
+			helper.ReplaceString("devfile.yaml", "name: FOO", "name: BAR")
+			output = helper.CmdShouldPass("odo", "push", "-o", "json", "--devfile", "devfile.yaml", "--project", namespace)
+			utils.AnalyzePushConsoleOutput(output)
+
 		})
 
 		It("should be able to create a file, push, delete, then push again propagating the deletions", func() {

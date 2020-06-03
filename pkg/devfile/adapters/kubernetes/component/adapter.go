@@ -2,10 +2,11 @@ package component
 
 import (
 	"fmt"
+	"reflect"
+
 	"github.com/openshift/odo/pkg/exec"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"reflect"
 
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
@@ -20,15 +21,26 @@ import (
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/sync"
 )
 
 // New instantiantes a component adapter
 func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
+
+	var loggingClient machineoutput.MachineEventLoggingClient
+
+	if log.IsJSON() {
+		loggingClient = machineoutput.NewConsoleMachineEventLoggingClient()
+	} else {
+		loggingClient = machineoutput.NewNoOpMachineEventLoggingClient()
+	}
+
 	return Adapter{
-		Client:         client,
-		AdapterContext: adapterContext,
+		Client:             client,
+		AdapterContext:     adapterContext,
+		machineEventLogger: loggingClient,
 	}
 }
 
@@ -36,11 +48,12 @@ func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
 type Adapter struct {
 	Client kclient.Client
 	common.AdapterContext
-	devfileInitCmd   string
-	devfileBuildCmd  string
-	devfileRunCmd    string
-	devfileDebugCmd  string
-	devfileDebugPort int
+	devfileInitCmd     string
+	devfileBuildCmd    string
+	devfileRunCmd      string
+	devfileDebugCmd    string
+	devfileDebugPort   int
+	machineEventLogger machineoutput.MachineEventLoggingClient
 }
 
 // Push updates the component if a matching component exists or creates one if it doesn't exist
@@ -328,14 +341,20 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 		PodName: podName,
 	}
 
+	// an io.Writer if machine readable is enabled, else nil
+	stdoutWriter := a.machineEventLogger.CreateContainerOutputWriter(false)
+	stderrWriter := a.machineEventLogger.CreateContainerOutputWriter(true)
+
 	// only execute Init command, if it is first run of container.
 	if !componentExists {
+
 		// Get Init Command
 		command, ok := commandsMap[versionsCommon.InitCommandGroupType]
 		if ok {
 			compInfo.ContainerName = command.Exec.Component
-			err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
+			err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, stdoutWriter, stderrWriter, a.machineEventLogger)
 			if err != nil {
+				// a.machineEventLogger.DevFileCommandExecutionComplete(command.Name, machineoutput.TimestampNow())
 				return err
 			}
 
@@ -347,7 +366,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 	command, ok := commandsMap[versionsCommon.BuildCommandGroupType]
 	if ok {
 		compInfo.ContainerName = command.Exec.Component
-		err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
+		err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, stdoutWriter, stderrWriter, a.machineEventLogger)
 		if err != nil {
 			return err
 		}
@@ -368,6 +387,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 		if !componentExists {
 			err = a.InitRunContainerSupervisord(command.Exec.Component, podName, containers)
 			if err != nil {
+				a.machineEventLogger.ReportError(err, machineoutput.TimestampNow())
 				return
 			}
 		}
@@ -375,16 +395,16 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 		if componentExists && !common.IsRestartRequired(command) {
 			klog.V(4).Infof("restart:false, Not restarting %v Command", command.Exec.Id)
 			if isDebug {
-				err = exec.ExecuteDevfileDebugActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
+				err = exec.ExecuteDevfileDebugActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, stdoutWriter, stderrWriter, a.machineEventLogger)
 			} else {
-				err = exec.ExecuteDevfileRunActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
+				err = exec.ExecuteDevfileRunActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, stdoutWriter, stderrWriter, a.machineEventLogger)
 			}
 			return
 		}
 		if isDebug {
-			err = exec.ExecuteDevfileDebugAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
+			err = exec.ExecuteDevfileDebugAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, stdoutWriter, stderrWriter, a.machineEventLogger)
 		} else {
-			err = exec.ExecuteDevfileRunAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
+			err = exec.ExecuteDevfileRunAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, stdoutWriter, stderrWriter, a.machineEventLogger)
 		}
 	}
 
@@ -401,7 +421,7 @@ func (a Adapter) InitRunContainerSupervisord(containerName, podName string, cont
 				ContainerName: containerName,
 				PodName:       podName,
 			}
-			err = exec.ExecuteCommand(&a.Client, compInfo, command, true)
+			err = exec.ExecuteCommand(&a.Client, compInfo, command, true, nil, nil)
 		}
 	}
 

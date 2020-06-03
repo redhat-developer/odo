@@ -2,15 +2,17 @@ package exec
 
 import (
 	"fmt"
+	"io"
 
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/pkg/errors"
 )
 
 // ExecuteDevfileBuildAction executes the devfile build command action
-func ExecuteDevfileBuildAction(client ExecClient, exec common.Exec, commandName string, compInfo adaptersCommon.ComponentInfo, show bool) error {
+func ExecuteDevfileBuildAction(client ExecClient, exec common.Exec, commandName string, compInfo adaptersCommon.ComponentInfo, show bool, stdoutWriter io.Writer, stderrWriter io.Writer, machineEventLogger machineoutput.MachineEventLoggingClient) error {
 	var s *log.Status
 
 	// Change to the workdir and execute the command
@@ -30,17 +32,20 @@ func ExecuteDevfileBuildAction(client ExecClient, exec common.Exec, commandName 
 
 	defer s.End(false)
 
-	err := ExecuteCommand(client, compInfo, cmdArr, show)
+	machineEventLogger.DevFileCommandExecutionBegin(exec.Id, machineoutput.TimestampNow())
+	err := ExecuteCommand(client, compInfo, cmdArr, show, stdoutWriter, stderrWriter)
+	machineEventLogger.DevFileCommandExecutionComplete(exec.Id, machineoutput.TimestampNow(), err)
 	if err != nil {
 		return errors.Wrapf(err, "unable to execute the build command")
 	}
+
 	s.End(true)
 
 	return nil
 }
 
 // ExecuteDevfileRunAction executes the devfile run command action using the supervisord devrun program
-func ExecuteDevfileRunAction(client ExecClient, exec common.Exec, commandName string, compInfo adaptersCommon.ComponentInfo, show bool) error {
+func ExecuteDevfileRunAction(client ExecClient, exec common.Exec, commandName string, compInfo adaptersCommon.ComponentInfo, show bool, stdoutWriter io.Writer, stderrWriter io.Writer, machineEventLogger machineoutput.MachineEventLoggingClient) error {
 	var s *log.Status
 
 	// Exec the supervisord ctl stop and start for the devrun program
@@ -61,10 +66,13 @@ func ExecuteDevfileRunAction(client ExecClient, exec common.Exec, commandName st
 
 	for _, devRunExec := range devRunExecs {
 
-		err := ExecuteCommand(client, compInfo, devRunExec.command, show)
+		machineEventLogger.DevFileCommandExecutionBegin(exec.Id, machineoutput.TimestampNow())
+		err := ExecuteCommand(client, compInfo, devRunExec.command, show, stdoutWriter, stderrWriter)
+		machineEventLogger.DevFileCommandExecutionComplete(exec.Id, machineoutput.TimestampNow(), err)
 		if err != nil {
 			return errors.Wrapf(err, "unable to execute the run command")
 		}
+
 	}
 	s.End(true)
 
@@ -72,7 +80,7 @@ func ExecuteDevfileRunAction(client ExecClient, exec common.Exec, commandName st
 }
 
 // ExecuteDevfileRunActionWithoutRestart executes devfile run command without restarting.
-func ExecuteDevfileRunActionWithoutRestart(client ExecClient, exec common.Exec, commandName string, compInfo adaptersCommon.ComponentInfo, show bool) error {
+func ExecuteDevfileRunActionWithoutRestart(client ExecClient, exec common.Exec, commandName string, compInfo adaptersCommon.ComponentInfo, show bool, stdoutWriter io.Writer, stderrWriter io.Writer, machineEventLogger machineoutput.MachineEventLoggingClient) error {
 	var s *log.Status
 
 	type devRunExecutable struct {
@@ -87,8 +95,11 @@ func ExecuteDevfileRunActionWithoutRestart(client ExecClient, exec common.Exec, 
 	s = log.Spinnerf("Executing %s command %q, if not running", commandName, exec.CommandLine)
 	defer s.End(false)
 
-	err := ExecuteCommand(client, compInfo, devRunExec.command, show)
+	machineEventLogger.DevFileCommandExecutionBegin(exec.Id, machineoutput.TimestampNow())
+	err := ExecuteCommand(client, compInfo, devRunExec.command, show, stdoutWriter, stderrWriter)
+	machineEventLogger.DevFileCommandExecutionComplete(exec.Id, machineoutput.TimestampNow(), err)
 	if err != nil {
+		machineEventLogger.ReportError(err, machineoutput.TimestampNow())
 		return errors.Wrapf(err, "unable to execute the run command")
 	}
 

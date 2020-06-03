@@ -166,17 +166,25 @@ func (po *PushOptions) Run() (err error) {
 func NewCmdPush(name, fullName string) *cobra.Command {
 	po := NewPushOptions()
 
+	annotations := map[string]string{"command": "component"}
+
+	// The '-o json' option should only appear in help output when experimental mode is enabled.
+	if experimental.IsExperimentalModeEnabled() {
+		annotations["machineoutput"] = "json"
+	}
+
 	var pushCmd = &cobra.Command{
 		Use:         fmt.Sprintf("%s [component name]", name),
 		Short:       "Push source code to a component",
 		Long:        `Push source code to a component.`,
 		Example:     fmt.Sprintf(pushCmdExample, fullName),
 		Args:        cobra.MaximumNArgs(1),
-		Annotations: map[string]string{"command": "component"},
+		Annotations: annotations,
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(po, cmd, args)
 		},
 	}
+
 	genericclioptions.AddContextFlag(pushCmd, &po.componentContext)
 	pushCmd.Flags().BoolVar(&po.show, "show-log", false, "If enabled, logs will be shown when built")
 	pushCmd.Flags().StringSliceVar(&po.ignores, "ignore", []string{}, "Files or folders to be ignored via glob expressions.")

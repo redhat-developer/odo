@@ -19,18 +19,36 @@ type ExecClient interface {
 }
 
 // ExecuteCommand executes the given command in the pod's container
-func ExecuteCommand(client ExecClient, compInfo common.ComponentInfo, command []string, show bool) (err error) {
+func ExecuteCommand(client ExecClient, compInfo common.ComponentInfo, command []string, show bool, consoleOutputStdout io.Writer, consoleOutputStderr io.Writer) (err error) {
+	stdoutReader, stdoutWriter := io.Pipe()
+	stderrReader, stderrWriter := io.Pipe()
 
-	// Create a mutex so we don't run into the issue of go routines trying to write to stdout
-	var mu sync.Mutex
-
-	reader, writer := io.Pipe()
+	// This contains both stdout and stderr lines; acquire mutex when reading/writing 'cmdOutput'
 	var cmdOutput string
+	cmdOutputMutex := &sync.Mutex{}
 
 	klog.V(4).Infof("Executing command %v for pod: %v in container: %v", command, compInfo.PodName, compInfo.ContainerName)
 
-	// This Go routine will automatically pipe the output from ExecCMDInContainer to
-	// our logger.
+	// Read stdout and stderr, store their output in cmdOutput, and also pass output to consoleOutput Writers (if non-nil)
+	startReaderGoroutine(stdoutReader, show, cmdOutputMutex, &cmdOutput, consoleOutputStdout)
+	startReaderGoroutine(stderrReader, show, cmdOutputMutex, &cmdOutput, consoleOutputStderr)
+
+	err = client.ExecCMDInContainer(compInfo, command, stdoutWriter, stderrWriter, nil, false)
+	if err != nil {
+
+		cmdOutputMutex.Lock()
+		log.Errorf("\nUnable to exec command %v: \n%v", command, cmdOutput)
+		cmdOutputMutex.Unlock()
+
+		return err
+	}
+
+	return
+}
+
+// This Go routine will automatically pipe the output from the writer (passes into ExecCMDInContainer) to
+// the loggers.
+func startReaderGoroutine(reader io.Reader, show bool, cmdOutputMutex *sync.Mutex, cmdOutput *string, consoleOutput io.Writer) {
 	go func() {
 		scanner := bufio.NewScanner(reader)
 		for scanner.Scan() {
@@ -39,23 +57,21 @@ func ExecuteCommand(client ExecClient, compInfo common.ComponentInfo, command []
 			if log.IsDebug() || show {
 				_, err := fmt.Fprintln(os.Stdout, line)
 				if err != nil {
-					log.Errorf("Unable to print to stdout: %v", err)
+					log.Errorf("Unable to print to stdout: %s", err.Error())
 				}
 			}
 
-			mu.Lock()
-			cmdOutput += fmt.Sprintln(line)
-			mu.Unlock()
+			cmdOutputMutex.Lock()
+			*cmdOutput += fmt.Sprintln(line)
+			cmdOutputMutex.Unlock()
+
+			if consoleOutput != nil {
+				_, err := consoleOutput.Write([]byte(line + "\n"))
+				if err != nil {
+					log.Errorf("Error occurred on writing string to consoleOutput writer: %s", err.Error())
+				}
+			}
 		}
 	}()
 
-	err = client.ExecCMDInContainer(compInfo, command, writer, writer, nil, false)
-	if err != nil {
-		mu.Lock()
-		log.Errorf("\nUnable to exec command %v: \n%v", command, cmdOutput)
-		mu.Unlock()
-		return err
-	}
-
-	return
 }
