@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -15,7 +16,6 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/log"
 )
 
@@ -55,7 +55,7 @@ func (po *PushOptions) DevfilePush() error {
 
 func (po *PushOptions) devfilePushInner() (err error) {
 	// Parse devfile
-	devObj, err := devfileParser.Parse(po.DevfilePath)
+	devObj, err := devfile.ParseAndValidate(po.DevfilePath)
 	if err != nil {
 		return err
 	}
@@ -147,7 +147,7 @@ func getComponentName(context string) (string, error) {
 // DevfileComponentDelete deletes the devfile component
 func (do *DeleteOptions) DevfileComponentDelete() error {
 	// Parse devfile
-	devObj, err := devfileParser.Parse(do.devfilePath)
+	devObj, err := devfile.ParseAndValidate(do.devfilePath)
 	if err != nil {
 		return err
 	}

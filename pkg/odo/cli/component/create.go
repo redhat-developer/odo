@@ -821,7 +821,7 @@ func (co *CreateOptions) Validate() (err error) {
 // Currenty type git with a non github url is not supported
 func (co *CreateOptions) downloadProject(projectPassed string) error {
 	var project common.DevfileProject
-	devObj, err := devfile.Parse(DevfilePath)
+	devObj, err := devfile.ParseAndValidate(DevfilePath)
 	if err != nil {
 		return err
 	}

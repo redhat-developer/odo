@@ -13,25 +13,38 @@ import (
 func getCommand(data data.DevfileData, commandName string, groupType common.DevfileCommandGroupType) (supportedCommand common.DevfileCommand, err error) {
 
 	commands := data.GetCommands()
+	// firstMatchedCommandFound := false
+	var firstMatchedCommand common.DevfileCommand
 
-	for _, command := range commands {
-
-		// validate command
-		err = validateCommand(data, command)
-
+	if commandName == "" {
+		// validate the command groups before searching for a command match
+		// if the command groups are invalid, err out
+		// we only validate when the push command flags are absent, as push command
+		// does not require for a group, since we know the command kind from the flag
+		err = validateCommandsForGroup(data, groupType)
 		if err != nil {
 			return common.DevfileCommand{}, err
 		}
+	}
+
+	for _, command := range commands {
+
+		// // validate command
+		// err = validateCommand(data, command)
+
+		// if err != nil {
+		// 	return common.DevfileCommand{}, err
+		// }
 
 		// if command is specified via flags, it has the highest priority
 		// search through all commands to find the specified command name
 		// if not found fallback to error.
 		if commandName != "" {
 
-			// Update Group only custom commands (specified by odo flags)
-			command = updateGroupforCommand(groupType, command)
-
 			if command.Exec.Id == commandName {
+
+				// Update Group only custom commands (specified by odo flags)
+				command = updateCommandGroupIfReqd(groupType, command)
 
 				// we have found the command with name, its groupType Should match to the flag
 				// e.g --build-command "mybuild"
@@ -40,31 +53,39 @@ func getCommand(data data.DevfileData, commandName string, groupType common.Devf
 				//   group:
 				//     kind: build
 				if command.Exec.Group.Kind != groupType {
-					return supportedCommand, fmt.Errorf("command group mismatched, command %s is of group %v in devfile.yaml", commandName, command.Exec.Group.Kind)
+					return command, fmt.Errorf("command group mismatched, command %s is of group %v in devfile.yaml", commandName, command.Exec.Group.Kind)
 				}
-				supportedCommand = command
-				return supportedCommand, nil
+				// supportedCommand = command
+				return command, validateCommand(data, command)
 			}
 			continue
 		}
 
 		// if no command specified via flag, default command has the highest priority
-		// We need to scan all the commands to find default command
 		// exec.Group is a pointer, to avoid null pointer
-		if command.Exec.Group != nil && command.Exec.Group.Kind == groupType && command.Exec.Group.IsDefault {
-			supportedCommand = command
-			return supportedCommand, nil
+		if command.Exec.Group != nil && command.Exec.Group.Kind == groupType {
+			if command.Exec.Group.IsDefault {
+				// We need to scan all the commands to find default command
+				// supportedCommand = command
+				return command, validateCommand(data, command)
+			} else if reflect.DeepEqual(firstMatchedCommand, common.DevfileCommand{}) {
+				// store the first matched command in case there is no default command
+				firstMatchedCommand = command
+			}
 		}
 	}
 
 	if commandName == "" {
 		// if default command is not found return the first command found for the matching type.
-		for _, command := range commands {
+		// for _, command := range commands {
+		// 	if command.Exec.Group != nil && command.Exec.Group.Kind == groupType {
+		// 		// supportedCommand = command
+		// 		return command, validateCommand(data, command)
+		// 	}
+		// }
 
-			if command.Exec.Group != nil && command.Exec.Group.Kind == groupType {
-				supportedCommand = command
-				return supportedCommand, nil
-			}
+		if !reflect.DeepEqual(firstMatchedCommand, common.DevfileCommand{}) {
+			return firstMatchedCommand, validateCommand(data, firstMatchedCommand)
 		}
 	}
 
@@ -72,7 +93,7 @@ func getCommand(data data.DevfileData, commandName string, groupType common.Devf
 	if commandName != "" {
 		err = fmt.Errorf("the command \"%v\" is not found in the devfile", commandName)
 	} else {
-		msg := fmt.Sprintf("the command type \"%v\" is not found in the devfile", groupType)
+		msg := fmt.Sprintf("the command group of kind \"%v\" is not found in the devfile", groupType)
 		// if run command is not found in devfile then it is an error
 		if groupType == common.RunCommandGroupType {
 			err = fmt.Errorf(msg)
@@ -82,6 +103,33 @@ func getCommand(data data.DevfileData, commandName string, groupType common.Devf
 	}
 
 	return
+}
+
+// validateCommandsForGroup validates the commands in a devfile for a group
+// 1. multiple commands belonging to a single group should have at least one default
+// 2. multiple commands belonging to a single group cannot have more than one default
+func validateCommandsForGroup(data data.DevfileData, groupType common.DevfileCommandGroupType) error {
+
+	commands := getCommandsForGroup(data, groupType)
+
+	defaultCommandCount := 0
+
+	if len(commands) > 1 {
+		for _, command := range commands {
+			if command.Exec.Group.IsDefault {
+				defaultCommandCount++
+			}
+		}
+	} else {
+		// if there is only one command, it is the default command for the group
+		defaultCommandCount = 1
+	}
+
+	if defaultCommandCount != 1 {
+		return fmt.Errorf("there should be one default command for command group %v", groupType)
+	}
+
+	return nil
 }
 
 // validateCommand validates the given command
@@ -190,13 +238,13 @@ func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileInitCmd, de
 	if !isInitCommandValid || !isBuildCommandValid || !isRunCommandValid {
 		commandErrors := ""
 		if initCmdErr != nil {
-			commandErrors += fmt.Sprintf(initCmdErr.Error(), "\n")
+			commandErrors += fmt.Sprintf("\n%s", initCmdErr.Error())
 		}
 		if buildCmdErr != nil {
-			commandErrors += fmt.Sprintf(buildCmdErr.Error(), "\n")
+			commandErrors += fmt.Sprintf("\n%s", buildCmdErr.Error())
 		}
 		if runCmdErr != nil {
-			commandErrors += fmt.Sprintf(runCmdErr.Error(), "\n")
+			commandErrors += fmt.Sprintf("\n%s", runCmdErr.Error())
 		}
 		return commandMap, fmt.Errorf(commandErrors)
 	}
@@ -205,7 +253,7 @@ func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileInitCmd, de
 }
 
 // Need to update group on custom commands specified by odo flags
-func updateGroupforCommand(groupType common.DevfileCommandGroupType, command common.DevfileCommand) common.DevfileCommand {
+func updateCommandGroupIfReqd(groupType common.DevfileCommandGroupType, command common.DevfileCommand) common.DevfileCommand {
 	// Update Group only for exec commands
 	// Update Group only when Group is not nil, devfile v2 might contain group for custom commands.
 	if command.Exec != nil && command.Exec.Group == nil {

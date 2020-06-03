@@ -5,9 +5,9 @@ import (
 	"github.com/openshift/odo/pkg/devfile/validate"
 )
 
-// Parse func parses and validates the devfile integrity.
+// ParseAndValidate func parses and validates the devfile integrity.
 // Creates devfile context and runtime objects
-func Parse(path string) (d devfileParser.DevfileObj, err error) {
+func ParseAndValidate(path string) (d devfileParser.DevfileObj, err error) {
 
 	// read and parse devfile from given path
 	d, err = devfileParser.Parse(path)

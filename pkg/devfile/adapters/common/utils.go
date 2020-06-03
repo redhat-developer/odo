@@ -121,6 +121,18 @@ func GetSupportedComponents(data data.DevfileData) []common.DevfileComponent {
 	return components
 }
 
+func getCommandsForGroup(data data.DevfileData, groupType common.DevfileCommandGroupType) []common.DevfileCommand {
+	var commands []common.DevfileCommand
+
+	for _, command := range data.GetCommands() {
+		if command.Exec != nil && command.Exec.Group != nil && command.Exec.Group.Kind == groupType {
+			commands = append(commands, command)
+		}
+	}
+
+	return commands
+}
+
 // GetVolumes iterates through the components in the devfile and returns a map of component alias to the devfile volumes
 func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume {
 	// componentAliasToVolumes is a map of the Devfile Component Alias to the Devfile Component Volumes

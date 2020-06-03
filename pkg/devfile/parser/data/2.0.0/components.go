@@ -1,6 +1,8 @@
 package version200
 
 import (
+	"strings"
+
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 )
 
@@ -11,7 +13,14 @@ func (d *Devfile200) GetComponents() []common.DevfileComponent {
 
 // GetCommands returns the slice of DevfileCommand objects parsed from the Devfile
 func (d *Devfile200) GetCommands() []common.DevfileCommand {
-	return d.Commands
+	var commands []common.DevfileCommand
+
+	for _, command := range d.Commands {
+		command.Exec.Id = strings.ToLower(command.Exec.Id)
+		commands = append(commands, command)
+	}
+
+	return commands
 }
 
 // GetParent returns the  DevfileParent object parsed from devfile
