@@ -2,6 +2,7 @@ package common
 
 import (
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 )
 
@@ -14,9 +15,9 @@ type AdapterContext struct {
 
 // DevfileVolume is a struct for Devfile volume that is common to all the adapters
 type DevfileVolume struct {
-	Name          *string
-	ContainerPath *string
-	Size          *string
+	Name          string
+	ContainerPath string
+	Size          string
 }
 
 // Storage is a struct that is common to all the adapters
@@ -51,4 +52,12 @@ type SyncParameters struct {
 type ComponentInfo struct {
 	PodName       string
 	ContainerName string
+}
+
+// PushCommandsMap stores the commands to be executed as per their types.
+type PushCommandsMap map[common.DevfileCommandGroupType]common.DevfileCommand
+
+// NewPushCommandMap returns the instance of PushCommandsMap
+func NewPushCommandMap() PushCommandsMap {
+	return make(map[common.DevfileCommandGroupType]common.DevfileCommand)
 }
