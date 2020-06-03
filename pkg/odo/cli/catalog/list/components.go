@@ -16,6 +16,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
 
@@ -87,6 +88,12 @@ func (o *ListComponentsOptions) Validate() (err error) {
 	return err
 }
 
+type registryList struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Items             []catalog.DevfileComponentType `json:"items"`
+}
+
 // Run contains the logic for the command associated with ListComponentsOptions
 func (o *ListComponentsOptions) Run() (err error) {
 	if log.IsJSON() {
@@ -96,7 +103,14 @@ func (o *ListComponentsOptions) Run() (err error) {
 			o.catalogList.Items[i].Spec.SupportedTags = supported
 		}
 		machineoutput.OutputSuccess(o.catalogList)
-		machineoutput.OutputSuccess(o.catalogDevfileList)
+		registries := registryList{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "List",
+				APIVersion: "odo.dev/v1alpha1",
+			},
+			Items: o.catalogDevfileList.Items,
+		}
+		machineoutput.OutputSuccess(registries)
 	} else {
 		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 		var supCatalogList, unsupCatalogList []catalog.ComponentType

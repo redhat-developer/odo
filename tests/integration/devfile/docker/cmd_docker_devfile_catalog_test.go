@@ -51,7 +51,7 @@ var _ = Describe("odo docker devfile catalog command tests", func() {
 		It("should list devfile components in json format", func() {
 			output := helper.CmdShouldPass("odo", "catalog", "list", "components", "-o", "json")
 			wantOutput := []string{
-				"DevfileRegistries",
+				"odo.dev/v1alpha1",
 				"openLiberty",
 				"java-spring-boot",
 				"nodejs",
