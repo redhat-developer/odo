@@ -77,7 +77,13 @@ const (
 	DefaultDevfileRegistryName = "DefaultDevfileRegistry"
 
 	// DefaultDevfileRegistryURL is the URL of default devfile registry
-	DefaultDevfileRegistryURL = "https://github.com/elsony/devfile-registry"
+	DefaultDevfileRegistryURL = "https://raw.githubusercontent.com/elsony/devfile-registry/master"
+
+	// DefaultDevfileV2RegistryName is the name of default devfile v2 registry
+	DefaultDevfileV2RegistryName = "DefaultDevfileV2Registry"
+
+	// DefaultDevfileV2RegistryURL is the URL of default devfile registry
+	DefaultDevfileV2RegistryURL = "https://raw.githubusercontent.com/elsony/devfile2-registry/master"
 )
 
 // TimeoutSettingDescription is human-readable description for the timeout setting
@@ -214,8 +220,12 @@ func NewPreferenceInfo() (*PreferenceInfo, error) {
 					URL:  CheDevfileRegistryURL,
 				},
 				{
-					Name: DefaultDevfileRegistryName,
+					Name: DefaultDevfileRegistryName, // should be removed when v1 support ends
 					URL:  DefaultDevfileRegistryURL,
+				},
+				{
+					Name: DefaultDevfileV2RegistryName,
+					URL:  DefaultDevfileV2RegistryURL,
 				},
 			}
 			c.OdoSettings.RegistryList = &defaultRegistryList

@@ -12,6 +12,7 @@ import (
 
 	imagev1 "github.com/openshift/api/image/v1"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	parserCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/util"
@@ -145,13 +146,17 @@ func GetDevfile(devfileLink string) (Devfile, error) {
 // 3. Devfile has run command
 // 4. Devfile has build command
 func IsDevfileComponentSupported(devfile Devfile) bool {
-	hasDockerImage := false
-	hasAlias := false
-	hasRunCommand := false
-	hasBuildCommand := false
+	hasDockerImage := false  // should be removed when v1 support ends
+	hasAlias := false        // should be removed when v1 support ends
+	hasRunCommand := false   // should be removed when v1 support ends
+	hasBuildCommand := false // should be removed when v1 support ends
+
+	hasComponentContainer := false
+	hasComponentContainerName := false
+	hasRunGroupCommand := false
 
 	for _, component := range devfile.Components {
-		if hasDockerImage && hasAlias {
+		if (hasDockerImage && hasAlias) || (hasComponentContainer && hasComponentContainerName) {
 			break
 		}
 
@@ -162,10 +167,18 @@ func IsDevfileComponentSupported(devfile Devfile) bool {
 		if !hasAlias {
 			hasAlias = len(component.Alias) > 0
 		}
+
+		if !hasComponentContainer {
+			hasComponentContainer = component.Container != nil
+		}
+
+		if hasComponentContainer && !hasComponentContainerName {
+			hasComponentContainerName = len(component.Container.Name) > 0
+		}
 	}
 
 	for _, command := range devfile.Commands {
-		if hasRunCommand && hasBuildCommand {
+		if (hasRunCommand && hasBuildCommand) || hasRunGroupCommand {
 			break
 		}
 
@@ -173,9 +186,12 @@ func IsDevfileComponentSupported(devfile Devfile) bool {
 			hasRunCommand = strings.Contains(strings.ToLower(command.Name), string(common.DefaultDevfileRunCommand))
 		}
 
+		if !hasRunGroupCommand {
+			hasRunGroupCommand = command.Exec != nil && command.Exec.Group != nil && command.Exec.Group.Kind == string(parserCommon.RunCommandGroupType)
+		}
 	}
 
-	if hasDockerImage && hasAlias && hasRunCommand {
+	if (hasDockerImage && hasAlias && hasRunCommand) || (hasComponentContainer && hasComponentContainerName && hasRunGroupCommand) {
 		return true
 	}
 
@@ -239,9 +255,17 @@ func ListDevfileComponents(registryName string) (DevfileComponentTypeList, error
 				return
 			}
 
+			var componentName string
+
+			if devfile.MetaData.GenerateName != "" {
+				componentName = strings.TrimSuffix(devfile.MetaData.GenerateName, "-")
+			} else if devfile.MetaData.Name != "" {
+				componentName = strings.TrimSuffix(devfile.MetaData.Name, "-")
+			}
+
 			// Populate devfile component with devfile data and form devfile component list
 			catalogDevfile := DevfileComponentType{
-				Name:        strings.TrimSuffix(devfile.MetaData.GenerateName, "-"),
+				Name:        componentName,
 				DisplayName: devfileIndex.DisplayName,
 				Description: devfileIndex.Description,
 				Link:        devfileIndex.Links.Link,

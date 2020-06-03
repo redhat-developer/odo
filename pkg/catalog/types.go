@@ -45,14 +45,23 @@ type DevfileIndexEntry struct {
 type Devfile struct {
 	APIVersion string `yaml:"apiVersion"`
 	MetaData   struct {
-		GenerateName string `yaml:"generateName"`
+		GenerateName string `yaml:"generateName"` // should be removed when v1 support ends
+		Name         string `yaml:"name"`
 	} `yaml:"metadata"`
 	Components []struct {
-		Type  string `yaml:"type"`
-		Alias string `yaml:"alias"`
+		Type      string `yaml:"type"`  // should be removed when v1 support ends
+		Alias     string `yaml:"alias"` // should be removed when v1 support ends
+		Container *struct {
+			Name string `yaml:"name"`
+		} `yaml:"container"`
 	} `yaml:"components"`
 	Commands []struct {
-		Name string `yaml:"name"`
+		Name string `yaml:"name"` // should be removed when v1 support ends
+		Exec *struct {
+			Group *struct {
+				Kind string `yaml:"kind"`
+			} `yaml:"group"`
+		} `yaml:"exec"`
 	} `yaml:"commands"`
 }
 
