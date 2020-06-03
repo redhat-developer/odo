@@ -5,15 +5,25 @@ import (
 
 	devfileCtx "github.com/openshift/odo/pkg/devfile/parser/context"
 	"github.com/openshift/odo/pkg/devfile/parser/data"
+	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/pkg/errors"
 )
 
-// ParseDevfile func validates the devfile integrity.
-// Creates devfile context and runtime objects
-func ParseDevfile(d DevfileObj) (DevfileObj, error) {
+// parse func parses and validates the devfile integrity.
+// Creates devfile context and runtime objects.
+func parse(path string) (d DevfileObj, err error) {
 
-	// Validate devfile
-	err := d.Ctx.Validate()
+	// NewDevfileCtx
+	d.Ctx = devfileCtx.NewDevfileCtx(path)
+
+	// Fill the fields of DevfileCtx struct
+	err = d.Ctx.Populate()
+	if err != nil {
+		return d, err
+	}
+
+	// Validate devfile schema
+	err = d.Ctx.Validate()
 	if err != nil {
 		return d, err
 	}
@@ -34,29 +44,24 @@ func ParseDevfile(d DevfileObj) (DevfileObj, error) {
 	return d, nil
 }
 
-// Parse func parses and validates the devfile integrity.
-// Creates devfile context and runtime objects
-func Parse(path string) (d DevfileObj, err error) {
+// ParseAndValidate func parses the devfile data
+// and validates the devfile integrity with the schema
+// and validates the devfile data.
+// Creates devfile context and runtime objects.
+func ParseAndValidate(path string) (d DevfileObj, err error) {
 
-	// NewDevfileCtx
-	d.Ctx = devfileCtx.NewDevfileCtx(path)
-
-	// Fill the fields of DevfileCtx struct
-	err = d.Ctx.Populate()
+	// read and parse devfile from given path
+	d, err = parse(path)
 	if err != nil {
 		return d, err
 	}
-	return ParseDevfile(d)
-}
 
-// ParseInMemory func parses and validates the devfile integrity.
-// Creates devfile context and runtime objects
-func ParseInMemory(bytes []byte) (d DevfileObj, err error) {
-
-	// Fill the fields of DevfileCtx struct
-	err = d.Ctx.PopulateFromBytes(bytes)
+	// odo specific validation on devfile content
+	err = validate.ValidateDevfileData(d.Data)
 	if err != nil {
 		return d, err
 	}
-	return ParseDevfile(d)
+
+	// Successful
+	return d, nil
 }

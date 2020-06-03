@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -146,8 +146,8 @@ func getComponentName(context string) (string, error) {
 
 // DevfileComponentDelete deletes the devfile component
 func (do *DeleteOptions) DevfileComponentDelete() error {
-	// Parse devfile
-	devObj, err := devfile.ParseAndValidate(do.devfilePath)
+	// Parse devfile and validate
+	devObj, err := parser.ParseAndValidate(do.devfilePath)
 	if err != nil {
 		return err
 	}
