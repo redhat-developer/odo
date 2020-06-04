@@ -790,9 +790,9 @@ func TestPush(t *testing.T) {
 						Name: "example-app",
 					},
 					Spec: URLSpec{
-						Port:    8080,
-						Secure:  false,
-						urlKind: envinfo.ROUTE,
+						Port:   8080,
+						Secure: false,
+						Kind:   envinfo.ROUTE,
 					},
 				},
 				{
@@ -800,9 +800,9 @@ func TestPush(t *testing.T) {
 						Name: "example-1-app",
 					},
 					Spec: URLSpec{
-						Port:    9090,
-						Secure:  false,
-						urlKind: envinfo.ROUTE,
+						Port:   9090,
+						Secure: false,
+						Kind:   envinfo.ROUTE,
 					},
 				},
 			},
@@ -846,9 +846,9 @@ func TestPush(t *testing.T) {
 						Name: "example-local-0-app",
 					},
 					Spec: URLSpec{
-						Port:    8080,
-						Secure:  false,
-						urlKind: envinfo.ROUTE,
+						Port:   8080,
+						Secure: false,
+						Kind:   envinfo.ROUTE,
 					},
 				},
 				{
@@ -856,9 +856,9 @@ func TestPush(t *testing.T) {
 						Name: "example-local-1-app",
 					},
 					Spec: URLSpec{
-						Port:    9090,
-						Secure:  false,
-						urlKind: envinfo.ROUTE,
+						Port:   9090,
+						Secure: false,
+						Kind:   envinfo.ROUTE,
 					},
 				},
 			},
@@ -921,10 +921,10 @@ func TestPush(t *testing.T) {
 						Name: "example",
 					},
 					Spec: URLSpec{
-						Port:    8080,
-						Secure:  false,
-						Host:    "com",
-						urlKind: envinfo.INGRESS,
+						Port:   8080,
+						Secure: false,
+						Host:   "com",
+						Kind:   envinfo.INGRESS,
 					},
 				},
 				{
@@ -932,10 +932,10 @@ func TestPush(t *testing.T) {
 						Name: "example-1",
 					},
 					Spec: URLSpec{
-						Port:    9090,
-						Secure:  false,
-						Host:    "com",
-						urlKind: envinfo.INGRESS,
+						Port:   9090,
+						Secure: false,
+						Host:   "com",
+						Kind:   envinfo.INGRESS,
 					},
 				},
 			},
@@ -988,10 +988,10 @@ func TestPush(t *testing.T) {
 						Name: "example-local-0",
 					},
 					Spec: URLSpec{
-						Port:    8080,
-						Secure:  false,
-						Host:    "com",
-						urlKind: envinfo.INGRESS,
+						Port:   8080,
+						Secure: false,
+						Host:   "com",
+						Kind:   envinfo.INGRESS,
 					},
 				},
 				{
@@ -999,10 +999,10 @@ func TestPush(t *testing.T) {
 						Name: "example-local-1",
 					},
 					Spec: URLSpec{
-						Port:    9090,
-						Secure:  false,
-						Host:    "com",
-						urlKind: envinfo.INGRESS,
+						Port:   9090,
+						Secure: false,
+						Host:   "com",
+						Kind:   envinfo.INGRESS,
 					},
 				},
 			},
@@ -1071,9 +1071,9 @@ func TestPush(t *testing.T) {
 						Name: "example-local-0",
 					},
 					Spec: URLSpec{
-						Port:    8080,
-						Secure:  false,
-						urlKind: envinfo.ROUTE,
+						Port:   8080,
+						Secure: false,
+						Kind:   envinfo.ROUTE,
 					},
 				},
 				{
@@ -1081,10 +1081,10 @@ func TestPush(t *testing.T) {
 						Name: "example-local-1",
 					},
 					Spec: URLSpec{
-						Port:    9090,
-						Secure:  false,
-						Host:    "com",
-						urlKind: envinfo.INGRESS,
+						Port:   9090,
+						Secure: false,
+						Host:   "com",
+						Kind:   envinfo.INGRESS,
 					},
 				},
 			},
@@ -1127,7 +1127,7 @@ func TestPush(t *testing.T) {
 						Secure:    true,
 						Host:      "com",
 						TLSSecret: "secret",
-						urlKind:   envinfo.INGRESS,
+						Kind:      envinfo.INGRESS,
 					},
 				},
 			},
@@ -1157,9 +1157,9 @@ func TestPush(t *testing.T) {
 						Name: "example-local-0",
 					},
 					Spec: URLSpec{
-						Port:    8080,
-						Secure:  false,
-						urlKind: envinfo.ROUTE,
+						Port:   8080,
+						Secure: false,
+						Kind:   envinfo.ROUTE,
 					},
 				},
 			},
@@ -1196,9 +1196,9 @@ func TestPush(t *testing.T) {
 						Name: "example-local-0-app",
 					},
 					Spec: URLSpec{
-						Port:    8080,
-						Secure:  false,
-						urlKind: envinfo.ROUTE,
+						Port:   8080,
+						Secure: false,
+						Kind:   envinfo.ROUTE,
 					},
 				},
 			},
@@ -1232,9 +1232,9 @@ func TestPush(t *testing.T) {
 						Name: "example",
 					},
 					Spec: URLSpec{
-						Port:    8080,
-						Secure:  true,
-						urlKind: envinfo.ROUTE,
+						Port:   8080,
+						Secure: true,
+						Kind:   envinfo.ROUTE,
 					},
 				},
 			},
@@ -1260,10 +1260,10 @@ func TestPush(t *testing.T) {
 						Name: "example",
 					},
 					Spec: URLSpec{
-						Port:    8080,
-						Secure:  true,
-						Host:    "com",
-						urlKind: envinfo.INGRESS,
+						Port:   8080,
+						Secure: true,
+						Host:   "com",
+						Kind:   envinfo.INGRESS,
 					},
 				},
 			},
@@ -1294,7 +1294,7 @@ func TestPush(t *testing.T) {
 						Secure:    true,
 						Host:      "com",
 						TLSSecret: "secret",
-						urlKind:   envinfo.INGRESS,
+						Kind:      envinfo.INGRESS,
 					},
 				},
 			},
@@ -1392,7 +1392,7 @@ func TestPush(t *testing.T) {
 								if createdObject.Name == url.Name &&
 									(createdObject.Spec.TLS != nil) == url.Spec.Secure &&
 									int(createdObject.Spec.Rules[0].HTTP.Paths[0].Backend.ServicePort.IntVal) == url.Spec.Port &&
-									envinfo.INGRESS == url.Spec.urlKind &&
+									envinfo.INGRESS == url.Spec.Kind &&
 									fmt.Sprintf("%v.%v", url.Name, url.Spec.Host) == createdObject.Spec.Rules[0].Host {
 
 									if url.Spec.Secure {
@@ -1422,7 +1422,7 @@ func TestPush(t *testing.T) {
 								if createdObject.Name == url.Name &&
 									(createdObject.Spec.TLS != nil) == url.Spec.Secure &&
 									int(createdObject.Spec.Port.TargetPort.IntVal) == url.Spec.Port &&
-									envinfo.ROUTE == url.Spec.urlKind {
+									envinfo.ROUTE == url.Spec.Kind {
 									found = true
 									break
 								}
@@ -1638,13 +1638,14 @@ func TestGetContainerURL(t *testing.T) {
 	}
 }
 
-func TestListIngressURL(t *testing.T) {
+func TestListIngressAndRoute(t *testing.T) {
 	// initialising the fakeclient
 	componentName := "testcomponent"
 
 	testURL1 := envinfo.EnvInfoURL{Name: "example-0", Port: 8080, Host: "com", Kind: "ingress"}
 	testURL2 := envinfo.EnvInfoURL{Name: "example-1", Port: 9090, Host: "com", Kind: "ingress"}
 	testURL3 := envinfo.EnvInfoURL{Name: "ingressurl3", Port: 8080, Host: "com", Secure: true, Kind: "ingress"}
+	testURL4 := envinfo.EnvInfoURL{Name: "routeurl1", Port: 8080, Kind: "route"}
 	esi := &envinfo.EnvSpecificInfo{}
 	err := esi.SetConfiguration("url", testURL2)
 	if err != nil {
@@ -1652,6 +1653,11 @@ func TestListIngressURL(t *testing.T) {
 		t.Log("Expected error since no physical env file to write")
 	}
 	err = esi.SetConfiguration("url", testURL3)
+	if err != nil {
+		// discard the error, since no physical file to write
+		t.Log("Expected error since no physical env file to write")
+	}
+	err = esi.SetConfiguration("url", testURL4)
 	if err != nil {
 		// discard the error, since no physical file to write
 		t.Log("Expected error since no physical env file to write")
@@ -1676,7 +1682,7 @@ func TestListIngressURL(t *testing.T) {
 				URL{
 					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 					ObjectMeta: metav1.ObjectMeta{Name: testURL1.Name},
-					Spec:       URLSpec{Host: "example-0.com", Port: testURL1.Port, Secure: testURL1.Secure},
+					Spec:       URLSpec{Host: "example-0.com", Port: testURL1.Port, Secure: testURL1.Secure, Kind: envinfo.INGRESS},
 					Status: URLStatus{
 						State: StateTypeLocallyDeleted,
 					},
@@ -1684,7 +1690,7 @@ func TestListIngressURL(t *testing.T) {
 				URL{
 					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 					ObjectMeta: metav1.ObjectMeta{Name: testURL2.Name},
-					Spec:       URLSpec{Host: "example-1.com", Port: testURL2.Port, Secure: testURL2.Secure},
+					Spec:       URLSpec{Host: "example-1.com", Port: testURL2.Port, Secure: testURL2.Secure, Kind: envinfo.INGRESS},
 					Status: URLStatus{
 						State: StateTypePushed,
 					},
@@ -1692,7 +1698,7 @@ func TestListIngressURL(t *testing.T) {
 				URL{
 					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 					ObjectMeta: metav1.ObjectMeta{Name: testURL3.Name},
-					Spec:       URLSpec{Host: "ingressurl3.com", Port: testURL3.Port, Secure: testURL3.Secure, TLSSecret: componentName + "-tlssecret"},
+					Spec:       URLSpec{Host: "ingressurl3.com", Port: testURL3.Port, Secure: testURL3.Secure, TLSSecret: componentName + "-tlssecret", Kind: envinfo.INGRESS},
 					Status: URLStatus{
 						State: StateTypeNotPushed,
 					},
@@ -1702,7 +1708,7 @@ func TestListIngressURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			urls, err := ListIngressURL(tt.client, esi, componentName)
+			urls, err := ListIngressAndRoute(tt.client, esi, componentName)
 			if err != nil {
 				t.Errorf("unexpected error %v", err)
 			}
@@ -1758,7 +1764,7 @@ func TestGetIngress(t *testing.T) {
 			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 				ObjectMeta: metav1.ObjectMeta{Name: testURL1.Name},
-				Spec:       URLSpec{Host: "ingressurl1.com", Port: testURL1.Port, Secure: testURL1.Secure},
+				Spec:       URLSpec{Host: "ingressurl1.com", Port: testURL1.Port, Secure: testURL1.Secure, Kind: envinfo.INGRESS},
 				Status: URLStatus{
 					State: StateTypeLocallyDeleted,
 				},
@@ -1773,7 +1779,7 @@ func TestGetIngress(t *testing.T) {
 			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 				ObjectMeta: metav1.ObjectMeta{Name: testURL2.Name},
-				Spec:       URLSpec{Host: "ingressurl2.com", Port: testURL2.Port, Secure: testURL2.Secure},
+				Spec:       URLSpec{Host: "ingressurl2.com", Port: testURL2.Port, Secure: testURL2.Secure, Kind: envinfo.INGRESS},
 				Status: URLStatus{
 					State: StateTypePushed,
 				},
@@ -1788,7 +1794,7 @@ func TestGetIngress(t *testing.T) {
 			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 				ObjectMeta: metav1.ObjectMeta{Name: testURL3.Name},
-				Spec:       URLSpec{Host: "ingressurl3.com", Port: testURL3.Port, Secure: testURL3.Secure, TLSSecret: componentName + "-tlssecret"},
+				Spec:       URLSpec{Host: "ingressurl3.com", Port: testURL3.Port, Secure: testURL3.Secure, TLSSecret: componentName + "-tlssecret", Kind: envinfo.INGRESS},
 				Status: URLStatus{
 					State: StateTypeNotPushed,
 				},
@@ -1844,7 +1850,7 @@ func TestConvertEnvinfoURL(t *testing.T) {
 			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 				ObjectMeta: metav1.ObjectMeta{Name: urlName},
-				Spec:       URLSpec{Host: fmt.Sprintf("%s.%s", urlName, host), Port: 8080, Secure: false},
+				Spec:       URLSpec{Host: fmt.Sprintf("%s.%s", urlName, host), Port: 8080, Secure: false, Kind: envinfo.INGRESS},
 			},
 		},
 		{
@@ -1859,7 +1865,7 @@ func TestConvertEnvinfoURL(t *testing.T) {
 			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 				ObjectMeta: metav1.ObjectMeta{Name: urlName},
-				Spec:       URLSpec{Host: fmt.Sprintf("%s.%s", urlName, host), Port: 8080, Secure: true, TLSSecret: fmt.Sprintf("%s-tlssecret", serviceName)},
+				Spec:       URLSpec{Host: fmt.Sprintf("%s.%s", urlName, host), Port: 8080, Secure: true, TLSSecret: fmt.Sprintf("%s-tlssecret", serviceName), Kind: envinfo.INGRESS},
 			},
 		},
 		{
@@ -1875,7 +1881,7 @@ func TestConvertEnvinfoURL(t *testing.T) {
 			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 				ObjectMeta: metav1.ObjectMeta{Name: urlName},
-				Spec:       URLSpec{Host: fmt.Sprintf("%s.%s", urlName, host), Port: 8080, Secure: true, TLSSecret: secretName},
+				Spec:       URLSpec{Host: fmt.Sprintf("%s.%s", urlName, host), Port: 8080, Secure: true, TLSSecret: secretName, Kind: envinfo.INGRESS},
 			},
 		},
 	}

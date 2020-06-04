@@ -444,27 +444,42 @@ func List(client *occlient.Client, localConfig *config.LocalConfigInfo, componen
 	return urlList, nil
 }
 
-// ListIngressURL returns all Ingress URLs for given component.
-func ListIngressURL(client *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, componentName string) (URLList, error) {
+// ListIngressAndRoute returns all Ingress and Route for given component.
+func ListIngressAndRoute(client *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, componentName string) (URLList, error) {
 	labelSelector := fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, componentName)
 	klog.V(4).Infof("Listing ingresses with label selector: %v", labelSelector)
 	ingresses, err := client.ListIngresses(labelSelector)
 	if err != nil {
-		return URLList{}, errors.Wrap(err, "unable to list ingress names")
+		return URLList{}, errors.Wrap(err, "unable to list ingress")
 	}
-
+	oclient, err := occlient.New()
+	if err != nil {
+		return URLList{}, err
+	}
+	routes, err := oclient.ListRoutes(labelSelector)
+	if err != nil {
+		return URLList{}, errors.Wrap(err, "unable to list routes")
+	}
 	localEnvinfoURLs := envSpecificInfo.GetURL()
 
 	var urls []URL
 	ingressMap := make(map[string]URL)
+	routeMap := make(map[string]URL)
 	localMap := make(map[string]URL)
 	for _, i := range ingresses {
 		clusterURL := getMachineReadableFormatIngress(i)
 		ingressMap[clusterURL.Name] = clusterURL
 	}
+	for _, r := range routes {
+		// only openshift route has host.generated=true
+		if r.Annotations["openshift.io/host.generated"] == "true" {
+			clusterURL := getMachineReadableFormat(r)
+			routeMap[clusterURL.Name] = clusterURL
+		}
+	}
 	for _, envinfoURL := range localEnvinfoURLs {
-		// only checks for Ingress URLs
-		if envinfoURL.Kind != envinfo.INGRESS {
+		// only checks for Ingress and Route URLs
+		if envinfoURL.Kind == envinfo.DOCKER {
 			continue
 		}
 		localURL := ConvertEnvinfoURL(envinfoURL, componentName)
@@ -484,9 +499,23 @@ func ListIngressURL(client *kclient.Client, envSpecificInfo *envinfo.EnvSpecific
 		}
 	}
 
+	for routeName, routeURL := range routeMap {
+		_, found := localMap[routeName]
+		if found {
+			// URL is in both local env file and cluster
+			routeURL.Status.State = StateTypePushed
+			urls = append(urls, routeURL)
+		} else {
+			// URL is on the cluster but not in local env file
+			routeURL.Status.State = StateTypeLocallyDeleted
+			urls = append(urls, routeURL)
+		}
+	}
+
 	for localName, localURL := range localMap {
-		_, found := ingressMap[localName]
-		if !found {
+		_, ingressfound := ingressMap[localName]
+		_, routefound := routeMap[localName]
+		if !ingressfound && !routefound {
 			// URL is in the local env file but not pushed to Docker container
 			localURL.Status.State = StateTypeNotPushed
 			urls = append(urls, localURL)
@@ -607,6 +636,7 @@ func ConvertConfigURL(configURL config.ConfigURL) URL {
 		Spec: URLSpec{
 			Port:   configURL.Port,
 			Secure: configURL.Secure,
+			Kind:   envinfo.ROUTE,
 		},
 	}
 }
@@ -624,14 +654,17 @@ func ConvertEnvinfoURL(envinfoURL envinfo.EnvInfoURL, serviceName string) URL {
 		},
 		Spec: URLSpec{
 			Port:   envinfoURL.Port,
-			Host:   hostString,
 			Secure: envinfoURL.Secure,
+			Kind:   envinfoURL.Kind,
 		},
 	}
-	if envinfoURL.Secure && len(envinfoURL.TLSSecret) > 0 {
-		url.Spec.TLSSecret = envinfoURL.TLSSecret
-	} else if envinfoURL.Secure && envinfoURL.Kind == envinfo.INGRESS {
-		url.Spec.TLSSecret = fmt.Sprintf("%s-tlssecret", serviceName)
+	if envinfoURL.Kind == envinfo.INGRESS {
+		url.Spec.Host = hostString
+		if envinfoURL.Secure && len(envinfoURL.TLSSecret) > 0 {
+			url.Spec.TLSSecret = envinfoURL.TLSSecret
+		} else if envinfoURL.Secure && envinfoURL.Kind == envinfo.INGRESS {
+			url.Spec.TLSSecret = fmt.Sprintf("%s-tlssecret", serviceName)
+		}
 	}
 	return url
 }
@@ -729,7 +762,7 @@ func getMachineReadableFormat(r routev1.Route) URL {
 	return URL{
 		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: apiVersion},
 		ObjectMeta: metav1.ObjectMeta{Name: r.Labels[urlLabels.URLLabel]},
-		Spec:       URLSpec{Host: r.Spec.Host, Port: r.Spec.Port.TargetPort.IntValue(), Protocol: GetProtocol(r, iextensionsv1.Ingress{}, experimental.IsExperimentalModeEnabled()), Secure: r.Spec.TLS != nil},
+		Spec:       URLSpec{Host: r.Spec.Host, Port: r.Spec.Port.TargetPort.IntValue(), Protocol: GetProtocol(r, iextensionsv1.Ingress{}, experimental.IsExperimentalModeEnabled()), Secure: r.Spec.TLS != nil, Kind: envinfo.ROUTE},
 	}
 
 }
@@ -749,7 +782,7 @@ func getMachineReadableFormatIngress(i iextensionsv1.Ingress) URL {
 	url := URL{
 		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: apiVersion},
 		ObjectMeta: metav1.ObjectMeta{Name: i.Labels[urlLabels.URLLabel]},
-		Spec:       URLSpec{Host: i.Spec.Rules[0].Host, Port: int(i.Spec.Rules[0].HTTP.Paths[0].Backend.ServicePort.IntVal), Secure: i.Spec.TLS != nil},
+		Spec:       URLSpec{Host: i.Spec.Rules[0].Host, Port: int(i.Spec.Rules[0].HTTP.Paths[0].Backend.ServicePort.IntVal), Secure: i.Spec.TLS != nil, Kind: envinfo.INGRESS},
 	}
 	if i.Spec.TLS != nil {
 		url.Spec.TLSSecret = i.Spec.TLS[0].SecretName
@@ -839,7 +872,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 						Port:      url.Port,
 						Secure:    url.Secure,
 						TLSSecret: url.TLSSecret,
-						urlKind:   url.Kind,
+						Kind:      url.Kind,
 					},
 				}
 			}
@@ -849,9 +882,9 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 		for _, url := range urls {
 			urlLOCAL[url.Name] = URL{
 				Spec: URLSpec{
-					Port:    url.Port,
-					Secure:  url.Secure,
-					urlKind: envinfo.ROUTE,
+					Port:   url.Port,
+					Secure: url.Secure,
+					Kind:   envinfo.ROUTE,
 				},
 			}
 		}
@@ -866,9 +899,10 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 		for _, url := range urlList.Items {
 			urlCLUSTER[url.Name] = URL{
 				Spec: URLSpec{
-					Host:    url.Spec.Host,
-					Port:    url.Spec.Port,
-					urlKind: envinfo.INGRESS,
+					Host:   url.Spec.Host,
+					Port:   url.Spec.Port,
+					Kind:   envinfo.INGRESS,
+					Secure: url.Spec.Secure,
 				},
 			}
 		}
@@ -882,8 +916,9 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 		for _, urlRoute := range urlPushedRoutes.Items {
 			urlCLUSTER[urlRoute.Name] = URL{
 				Spec: URLSpec{
-					Port:    urlRoute.Spec.Port,
-					urlKind: envinfo.ROUTE,
+					Port:   urlRoute.Spec.Port,
+					Kind:   envinfo.ROUTE,
+					Secure: urlRoute.Spec.Secure,
 				},
 			}
 		}
@@ -900,7 +935,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 		if ok {
 			// since the host stored in an ingress
 			// is the combination of name and host of the url
-			if val.Spec.urlKind == envinfo.INGRESS {
+			if val.Spec.Kind == envinfo.INGRESS {
 				val.Spec.Host = fmt.Sprintf("%v.%v", urlName, val.Spec.Host)
 			}
 			if !reflect.DeepEqual(val.Spec, urlSpec.Spec) {
@@ -910,11 +945,11 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 		}
 
 		if !ok || configMismatch {
-			if urlSpec.Spec.urlKind == envinfo.INGRESS && kClient == nil {
+			if urlSpec.Spec.Kind == envinfo.INGRESS && kClient == nil {
 				continue
 			}
 			// delete the url
-			err := Delete(client, kClient, urlName, parameters.ApplicationName, urlSpec.Spec.urlKind)
+			err := Delete(client, kClient, urlName, parameters.ApplicationName, urlSpec.Spec.Kind)
 			if err != nil {
 				return err
 			}
@@ -929,7 +964,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 	for urlName, urlInfo := range urlLOCAL {
 		_, ok := urlCLUSTER[urlName]
 		if !ok {
-			if urlInfo.Spec.urlKind == envinfo.INGRESS && kClient == nil {
+			if urlInfo.Spec.Kind == envinfo.INGRESS && kClient == nil {
 				continue
 			}
 
@@ -941,7 +976,7 @@ func Push(client *occlient.Client, kClient *kclient.Client, parameters PushParam
 				applicationName: parameters.ApplicationName,
 				host:            urlInfo.Spec.Host,
 				secretName:      urlInfo.Spec.TLSSecret,
-				urlKind:         urlInfo.Spec.urlKind,
+				urlKind:         urlInfo.Spec.Kind,
 			}
 			host, err := Create(client, kClient, createParameters, parameters.IsRouteSupported, parameters.IsExperimentalModeEnabled)
 			if err != nil {
