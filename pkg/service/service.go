@@ -66,6 +66,71 @@ func CreateService(client *occlient.Client, serviceName string, serviceType stri
 	return nil
 }
 
+// CheckCRExists checks if the CR provided by the user in the YAML file exists in the namesapce
+// It returns a CR (string representation) and CSV (Operator) upon successfully
+// able to find them, an error otherwise.
+func CheckCRExists(client *kclient.Client, crd map[string]interface{}) (string, olm.ClusterServiceVersion, error) {
+	cr := crd["kind"].(string)
+	csvs, err := client.GetClusterServiceVersionList()
+	if err != nil {
+		return cr, olm.ClusterServiceVersion{}, err
+	}
+
+	csv, err := doesCRExist(cr, csvs)
+	if err != nil {
+		return cr, olm.ClusterServiceVersion{},
+			fmt.Errorf("Could not find specified service/custom resource: %s\nPlease check the \"kind\" field in the yaml (it's case-sensitive)", cr)
+	}
+	return cr, csv, nil
+}
+
+// doesCRExist checks if the CR exists in the CSV
+func doesCRExist(kind string, csvs *olm.ClusterServiceVersionList) (olm.ClusterServiceVersion, error) {
+	for _, csv := range csvs.Items {
+		for _, operatorCR := range csv.Spec.CustomResourceDefinitions.Owned {
+			if kind == operatorCR.Kind {
+				return csv, nil
+			}
+		}
+	}
+	return olm.ClusterServiceVersion{}, errors.New("Could not find the requested cluster resource")
+
+}
+
+func serviceNameFromCRD(crd map[string]interface{}, serviceName string) (string, error) {
+	metadata, ok := crd["metadata"].(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("Couldn't find \"metadata\" in the yaml. Need metadata.name to start the service")
+	}
+
+	if name, ok := metadata["name"].(string); ok {
+		return name, nil
+	}
+	return "", fmt.Errorf("Couldn't find metadata.name in the yaml. Provide a name for the service")
+}
+
+// Parses group and version values from the alm-example
+func groupVersionALMExample(example map[string]interface{}) (group, version string) {
+	apiVersion := example["apiVersion"].(string)
+	// use SplitN so that if apiVersion field's value is something like
+	// etcd.coreos.com/v1/beta1 then group's value ends up being etcd.cores.com
+	// and version ends up being v1/beta1
+	gv := strings.SplitN(apiVersion, "/", 2)
+
+	group, version = gv[0], gv[1]
+	return
+}
+
+func resourceFromCSV(csv olm.ClusterServiceVersion, crdName string) (resource string) {
+	for _, crd := range csv.Spec.CustomResourceDefinitions.Owned {
+		if crd.Kind == crdName {
+			resource = strings.Split(crd.Name, ".")[0]
+			return
+		}
+	}
+	return
+}
+
 // CreateOperatorService creates new service (actually a Deployment) from OperatorHub
 func CreateOperatorService(client *kclient.Client, group, version, resource string, CustomResourceDefinition map[string]interface{}) error {
 	err := client.CreateDynamicResource(CustomResourceDefinition, group, version, resource)
@@ -140,7 +205,7 @@ func DeleteOperatorService(client *kclient.Client, serviceName string) error {
 		}
 	}
 
-	group, version, resource, err := getGVRFromCR(cr)
+	group, version, resource, err := GetGVRFromCR(cr)
 	if err != nil {
 		return err
 	}
@@ -291,10 +356,6 @@ func ListOperatorServices(client *kclient.Client) ([]unstructured.Unstructured, 
 	return allCRInstances, nil
 }
 
-func GetGVRFromCR(cr *olm.CRDDescription) (group, version, resource string, err error) {
-	return getGVRFromCR(cr)
-}
-
 // GetGVKRFromCR returns values for group, version, kind and resource for a
 // given Custom Resource (CR)
 func GetGVKRFromCR(cr olm.CRDDescription) (group, version, kind, resource string, err error) {
@@ -316,9 +377,18 @@ func getGVKRFromCR(cr olm.CRDDescription) (group, version, kind, resource string
 	return
 }
 
-// getGVRFromCR parses and returns the values for group, version and resource
+func GetGVRFromOperator(csv olm.ClusterServiceVersion, cr string) (group, version, resource string, err error) {
+	for _, customresource := range csv.Spec.CustomResourceDefinitions.Owned {
+		if customresource.Kind == cr {
+			return GetGVRFromCR(&customresource)
+		}
+	}
+	return "", "", "", fmt.Errorf("Couldn't parse group, version, resource from Operator %q\n", csv.Name)
+}
+
+// GetGVRFromCR parses and returns the values for group, version and resource
 // for a given Custom Resource (CR).
-func getGVRFromCR(cr *olm.CRDDescription) (group, version, resource string, err error) {
+func GetGVRFromCR(cr *olm.CRDDescription) (group, version, resource string, err error) {
 	version = cr.Version
 
 	gr := strings.SplitN(cr.Name, ".", 2)
@@ -352,6 +422,41 @@ func getGVKFromCR(cr *olm.CRDDescription) (group, version, kind string, err erro
 	return
 }
 
+// GetAlmExample fetches the ALM example from an Operator's definition. This
+// example contains the example yaml to be used to spin up a service for a
+// given CR in an Operator
+func GetAlmExample(csv olm.ClusterServiceVersion, cr, serviceType string) (almExample map[string]interface{}, err error) {
+	var almExamples []map[string]interface{}
+
+	val, ok := csv.Annotations["alm-examples"]
+	if ok {
+		err = json.Unmarshal([]byte(val), &almExamples)
+		if err != nil {
+			return nil, errors.Wrap(err, "unable to unmarshal alm-examples")
+		}
+	} else {
+		// There's no alm examples in the CSV's definition
+		return nil,
+			fmt.Errorf("Could not find alm-examples in %q Operator's definition.", cr)
+	}
+
+	almExample, err = getAlmExample(almExamples, cr, serviceType)
+	if err != nil {
+		return nil, err
+	}
+
+	return almExample, nil
+}
+
+func getAlmExample(almExamples []map[string]interface{}, crd, operator string) (map[string]interface{}, error) {
+	for _, example := range almExamples {
+		if example["kind"].(string) == crd {
+			return example, nil
+		}
+	}
+	return nil, errors.Errorf("Could not find example yaml definition for %q service in %q Operator's definition.\n", crd, operator)
+}
+
 // GetInstancesOfCustomResources returns active instances of given Custom Resource (service in
 // odo lingo) in the active namespace of the cluster
 func GetInstancesOfCustomResources(client *kclient.Client, customResources *[]olm.CRDDescription) ([]unstructured.Unstructured, error) {
@@ -375,7 +480,7 @@ func GetInstancesOfCustomResources(client *kclient.Client, customResources *[]ol
 func GetCRInstances(client *kclient.Client, customResource *olm.CRDDescription) (*unstructured.UnstructuredList, error) {
 	klog.V(4).Infof("Getting instances of: %s\n", customResource.Name)
 
-	group, version, resource, err := getGVRFromCR(customResource)
+	group, version, resource, err := GetGVRFromCR(customResource)
 	if err != nil {
 		return nil, err
 	}

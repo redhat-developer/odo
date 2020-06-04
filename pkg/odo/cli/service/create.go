@@ -23,7 +23,7 @@ import (
 	"github.com/spf13/cobra"
 
 	scv1beta1 "github.com/kubernetes-sigs/service-catalog/pkg/apis/servicecatalog/v1beta1"
-	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -237,31 +237,28 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 			if err != nil {
 				return err
 			}
-			// var jsonCR map[string]interface{}
+
 			err = yaml.Unmarshal(fileContents, &o.CustomResourceDefinition)
 			if err != nil {
 				return err
 			}
 
 			// Check if the operator and the CR exist on cluster
-			o.CustomResource = o.CustomResourceDefinition["kind"].(string)
-			csvs, err := o.KClient.GetClusterServiceVersionList()
+			var csv olm.ClusterServiceVersion
+			o.CustomResource, csv, err = svc.CheckCRExists(o.KClient, o.CustomResourceDefinition)
 			if err != nil {
 				return err
 			}
 
-			csv, err := doesCRExist(o.CustomResource, csvs)
+			// all is well, let's populate the fields required for creating operator backed service
+			o.group, o.version, o.resource, err = svc.GetGVRFromOperator(csv, o.CustomResource)
 			if err != nil {
-				return fmt.Errorf("Could not find specified service/custom resource: %s\nPlease check the \"kind\" field in the yaml (it's case-sensitive)", o.CustomResource)
+				return err
 			}
 
-			// all is well, let's populate the fields required for creating operator backed service
-			o.group, o.version = groupVersionALMExample(o.CustomResourceDefinition)
-			o.resource = resourceFromCSV(csv, o.CustomResource)
 			o.ServiceName, err = serviceNameFromCRD(o.CustomResourceDefinition, o.ServiceName)
 			return err
-		}
-		if o.CustomResource != "" {
+		} else if o.CustomResource != "" {
 			// make sure that CSV of the specified ServiceType exists
 			csv, err := o.KClient.GetClusterServiceVersion(o.ServiceType)
 			if err != nil {
@@ -270,43 +267,28 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 				return err
 			}
 
-			var almExamples []map[string]interface{}
-			val, ok := csv.Annotations["alm-examples"]
-			if ok {
-				err = json.Unmarshal([]byte(val), &almExamples)
-				if err != nil {
-					return errors.Wrap(err, "unable to unmarshal alm-examples")
-				}
-			} else {
-				// There's no alm examples in the CSV's definition
-				return fmt.Errorf("Could not find alm-examples in operator's definition.\nPlease provide a file containing yaml specification to start the %s service from %s operator", o.CustomResource, o.ServiceName)
-			}
-
-			almExample, err := getAlmExample(almExamples, o.CustomResource, o.ServiceType)
+			almExample, err := svc.GetAlmExample(csv, o.CustomResource, o.ServiceType)
 			if err != nil {
 				return err
 			}
+
 			o.CustomResourceDefinition = almExample
-			o.group, o.version = groupVersionALMExample(almExample)
-			o.resource = resourceFromCSV(csv, o.CustomResource)
+
+			o.group, o.version, o.resource, err = svc.GetGVRFromOperator(csv, o.CustomResource)
+			if err != nil {
+				return err
+			}
+
 			o.ServiceName, err = serviceNameFromCRD(o.CustomResourceDefinition, o.ServiceName)
 			return err
 		} else {
-			// prevent user from executing `odo service create <operator-name>`
-			// because the correct way is to execute `odo service
-			// <operator-name> --crd <crd-name>`
-			csvs, err := o.KClient.GetClusterServiceVersionList()
-			if err != nil {
-				return err
-			}
+			// This block is executed only when user has neither provided a
+			// file nor a valid `odo service create <operator-name>` to start
+			// the service from an Operator. So we raise and error because the
+			// correct way is to execute:
+			// `odo service create <operator-name> --crd <crd-name>`
 
-			for _, csv := range csvs.Items {
-				if csv.Name == o.ServiceType {
-					// this is satisfied if user has specified operator but not
-					// a CRD name
-					return errors.New("Please specify service name along with the operator name")
-				}
-			}
+			return fmt.Errorf("Please use a valid command to start an Operator backed service. Desired format: %q", "odo service create <operator-name> --crd <crd-name>")
 		}
 	}
 	// make sure the service type exists
@@ -445,49 +427,6 @@ func NewCmdServiceCreate(name, fullName string) *cobra.Command {
 	completion.RegisterCommandFlagHandler(serviceCreateCmd, "plan", completion.ServicePlanCompletionHandler)
 	completion.RegisterCommandFlagHandler(serviceCreateCmd, "parameters", completion.ServiceParameterCompletionHandler)
 	return serviceCreateCmd
-}
-
-// Parses group and version values from the alm-example
-func groupVersionALMExample(example map[string]interface{}) (group, version string) {
-	apiVersion := example["apiVersion"].(string)
-	// use SplitN so that if apiVersion field's value is something like
-	// etcd.coreos.com/v1/beta1 then group's value ends up being etcd.cores.com
-	// and version ends up being v1/beta1
-	gv := strings.SplitN(apiVersion, "/", 2)
-
-	group, version = gv[0], gv[1]
-	return
-}
-
-func resourceFromCSV(csv olmv1alpha1.ClusterServiceVersion, crdName string) (resource string) {
-	for _, crd := range csv.Spec.CustomResourceDefinitions.Owned {
-		if crd.Kind == crdName {
-			resource = strings.Split(crd.Name, ".")[0]
-			return
-		}
-	}
-	return
-}
-
-func getAlmExample(almExamples []map[string]interface{}, crd, operator string) (map[string]interface{}, error) {
-	for _, example := range almExamples {
-		if example["kind"].(string) == crd {
-			return example, nil
-		}
-	}
-	return nil, errors.Errorf("Could not find example yaml definition for %q service in %q operator's definition.\nPlease provide a file containing yaml specification to start the service from operator\n", crd, operator)
-}
-
-func doesCRExist(kind string, csvs *olmv1alpha1.ClusterServiceVersionList) (olmv1alpha1.ClusterServiceVersion, error) {
-	for _, csv := range csvs.Items {
-		for _, operatorCR := range csv.Spec.CustomResourceDefinitions.Owned {
-			if kind == operatorCR.Kind {
-				return csv, nil
-			}
-		}
-	}
-	return olmv1alpha1.ClusterServiceVersion{}, errors.New("Could not find the requested cluster resource")
-
 }
 
 func serviceNameFromCRD(crd map[string]interface{}, serviceName string) (string, error) {
