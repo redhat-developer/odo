@@ -42,6 +42,64 @@ type Adapter struct {
 	devfileRunCmd   string
 }
 
+// Build image for devfile project
+func (a Adapter) Build(parameters common.BuildParameters) (err error) {
+	containerName := "build"
+	buildImage := "quay.io/buildah/stable:latest"
+	command := []string{"buildah"}
+	commandArgs := []string{"bud"}
+	envVars := []corev1.EnvVar{{Name: "Dockerfile", Value: "/projects/Dockerfile"}}
+	volumeMounts := []corev1.VolumeMount{{Name: "varlibcontainers", MountPath: "/var/lib/containers"}}
+
+	container := corev1.Container{
+		Name:            containerName,
+		Image:           buildImage,
+		ImagePullPolicy: corev1.PullAlways,
+		Command:         command,
+		Args:            commandArgs,
+		Env:             envVars,
+		VolumeMounts:    volumeMounts,
+	}
+
+	isPrivileged := true
+
+	container.SecurityContext = &corev1.SecurityContext{
+		Privileged: &isPrivileged,
+	}
+
+	// TODO: Pass namespace from buildParameters
+	objectMeta := metav1.ObjectMeta{Name: "build", Labels: map[string]string{"Luke": "Hello"}}
+
+	podTemplateSpec := kclient.GeneratePodTemplateSpec(objectMeta, []corev1.Container{container})
+
+	libContainersVolume := corev1.Volume{
+		Name: "varlibcontainers",
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{},
+		},
+	}
+
+	podTemplateSpec.Spec.Volumes = append(podTemplateSpec.Spec.Volumes, libContainersVolume)
+
+	deploymentSpec := kclient.GenerateDeploymentSpec(*podTemplateSpec)
+	klog.V(3).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
+
+	_, err = a.Client.CreateDeployment(*deploymentSpec)
+	if err != nil {
+		return err
+	}
+	klog.V(3).Infof("Successfully created component %v", deploymentSpec.Template.GetName())
+
+	_, err = a.Client.WaitForDeploymentRollout("build")
+	if err != nil {
+		return errors.Wrap(err, "error while waiting for deployment rollout")
+	}
+	// TODO: SyncFiles
+
+	// Delete container
+	return
+}
+
 // Push updates the component if a matching component exists or creates one if it doesn't exist
 // Once the component has started, it will sync the source code to it.
 func (a Adapter) Push(parameters common.PushParameters) (err error) {

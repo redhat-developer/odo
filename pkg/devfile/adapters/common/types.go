@@ -26,6 +26,12 @@ type Storage struct {
 	Volume DevfileVolume
 }
 
+// BuildParameters is a struct containing the parameters to be used when building the image for a devfile component
+type BuildParameters struct {
+	Path            string                  // Path refers to the parent folder containing the source code to push up to a component
+	EnvSpecificInfo envinfo.EnvSpecificInfo // EnvSpecificInfo contains infomation of env.yaml file
+}
+
 // PushParameters is a struct containing the parameters to be used when pushing to a devfile component
 type PushParameters struct {
 	Path              string                  // Path refers to the parent folder containing the source code to push up to a component

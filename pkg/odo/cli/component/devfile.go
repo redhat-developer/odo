@@ -101,6 +101,72 @@ func (po *PushOptions) DevfilePush() (err error) {
 	return
 }
 
+// DevfileBuild build an image of my application in the cluster
+func (do *DeployOptions) DevfileBuild() (err error) {
+	//dockerfilePath := extractDockerfileFromDevfile(devObj)
+
+	// Parse devfile
+	devObj, err := devfileParser.Parse(do.DevfilePath)
+	if err != nil {
+		return err
+	}
+
+	componentName, err := getComponentName(do.componentContext)
+	if err != nil {
+		return errors.Wrap(err, "unable to get component name")
+	}
+	// TODO: Change name, append -deploy ?
+
+	// Set the source path to either the context or current working directory (if context not set)
+	do.sourcePath, err = util.GetAbsPath(do.componentContext)
+	if err != nil {
+		return errors.Wrap(err, "unable to get source path")
+	}
+
+	// Apply ignore information
+	err = genericclioptions.ApplyIgnore(&do.ignores, do.sourcePath)
+	if err != nil {
+		return errors.Wrap(err, "unable to apply ignore information")
+	}
+
+	kubeContext := kubernetes.KubernetesContext{
+		Namespace: do.namespace,
+	}
+
+	devfileHandler, err := adapters.NewPlatformAdapter(componentName, do.componentContext, devObj, kubeContext)
+
+	if err != nil {
+		return err
+	}
+
+	buildParams := common.BuildParameters{
+		Path:            do.sourcePath,
+		EnvSpecificInfo: *do.EnvSpecificInfo,
+	}
+
+	warnIfURLSInvalid(do.EnvSpecificInfo.GetURL())
+
+	// Build image for the component
+	err = devfileHandler.Build(buildParams)
+	if err != nil {
+		log.Errorf(
+			"Failed to build component with name %s.\nError: %v",
+			componentName,
+			err,
+		)
+		os.Exit(1)
+	}
+
+	log.Infof("\nBuilding devfile component %s", componentName)
+	log.Success("Changes successfully build image for component")
+
+	return nil
+}
+
+func (do *DeployOptions) DevfileDeploy() (err error) {
+	return nil
+}
+
 // Get component name from env.yaml file
 func getComponentName(context string) (string, error) {
 	var dir string
