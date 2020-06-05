@@ -50,6 +50,7 @@ var mockContainerList = []types.Container{
 		},
 		Mounts: []types.MountPoint{
 			{
+				Name:        "odo-project-source",
 				Destination: OdoSourceVolumeMount,
 			},
 		},
