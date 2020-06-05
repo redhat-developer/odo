@@ -77,7 +77,6 @@ func (c *ConsoleMachineEventLoggingClient) DevFileCommandExecutionBegin(commandI
 			ComponentName:    componentName,
 			CommandLine:      commandLine,
 			GroupKind:        groupKind,
-			Timestamp:        timestamp,
 			AbstractLogEvent: AbstractLogEvent{Timestamp: timestamp},
 		},
 	}
@@ -100,7 +99,6 @@ func (c *ConsoleMachineEventLoggingClient) DevFileCommandExecutionComplete(comma
 			ComponentName:    componentName,
 			CommandLine:      commandLine,
 			GroupKind:        groupKind,
-			Timestamp:        timestamp,
 			AbstractLogEvent: AbstractLogEvent{Timestamp: timestamp},
 			Error:            errorStr,
 		},

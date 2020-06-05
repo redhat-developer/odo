@@ -33,7 +33,6 @@ type DevFileCommandExecutionBegin struct {
 	ComponentName string `json:"componentName"`
 	CommandLine   string `json:"commandLine"`
 	GroupKind     string `json:"groupKind"`
-	Timestamp     string `json:"timestamp"`
 	AbstractLogEvent
 }
 
@@ -43,7 +42,6 @@ type DevFileCommandExecutionComplete struct {
 	ComponentName string `json:"componentName"`
 	CommandLine   string `json:"commandLine"`
 	GroupKind     string `json:"groupKind"`
-	Timestamp     string `json:"timestamp"`
 	Error         string `json:"error,omitempty"`
 	AbstractLogEvent
 }
