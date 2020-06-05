@@ -41,7 +41,6 @@ var _ = Describe("odo devfile create command tests", func() {
 
 	Context("Enabling experimental preference should show a disclaimer", func() {
 		It("checks that the experimental warning appears for create", func() {
-			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 
 			// Check that it will contain the experimental mode output
@@ -187,7 +186,6 @@ var _ = Describe("odo devfile create command tests", func() {
 
 	Context("When executing odo create with devfile component and --downloadSource flag", func() {
 		It("should successfully create the component and download the source", func() {
-			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 			contextDevfile := helper.CreateNewContext()
 			helper.Chdir(contextDevfile)
 			helper.CmdShouldPass("odo", "create", "nodejs", "--downloadSource")
@@ -208,7 +206,6 @@ var _ = Describe("odo devfile create command tests", func() {
 
 	Context("When executing odo create with devfile component and --downloadSource flag with a valid project", func() {
 		It("should successfully create the component specified and download the source", func() {
-			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 			contextDevfile := helper.CreateNewContext()
 			helper.Chdir(contextDevfile)
 			helper.CmdShouldPass("odo", "create", "nodejs", "--downloadSource=nodejs-web-app")
@@ -239,8 +236,7 @@ var _ = Describe("odo devfile create command tests", func() {
 	// Currently these tests need interactive mode in order to set the name of the component.
 	// Once this feature is added we can change these tests.
 	//Context("When executing odo create with devfile component and --downloadSource flag with github type", func() {
-	//	It("should succesfully create the compoment and download the source", func() {
-	//		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+	//	It("should successfully create the component and download the source", func() {
 	//		contextDevfile := helper.CreateNewContext()
 	//		helper.Chdir(contextDevfile)
 	//		devfile := "devfile.yaml"
@@ -258,8 +254,7 @@ var _ = Describe("odo devfile create command tests", func() {
 	//})
 
 	//Context("When executing odo create with devfile component and --downloadSource flag with zip type", func() {
-	//	It("should create the compoment and download the source", func() {
-	//		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+	//	It("should create the component and download the source", func() {
 	//		contextDevfile := helper.CreateNewContext()
 	//		helper.Chdir(contextDevfile)
 	//		devfile := "devfile.yaml"
@@ -281,7 +276,6 @@ var _ = Describe("odo devfile create command tests", func() {
 
 	// Context("When executing odo create with devfile component, --downloadSource flag and sparseContextDir has a valid value", func() {
 	// 	It("should only extract the specified path in the sparseContextDir field", func() {
-	// 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 	// 		contextDevfile := helper.CreateNewContext()
 	// 		helper.Chdir(contextDevfile)
 	// 		devfile := "devfile.yaml"
@@ -296,7 +290,6 @@ var _ = Describe("odo devfile create command tests", func() {
 
 	// Context("When executing odo create with devfile component, --downloadSource flag and sparseContextDir has an invalid value", func() {
 	// 	It("should fail and alert the user that the specified path in sparseContextDir does not exist", func() {
-	// 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 	// 		contextDevfile := helper.CreateNewContext()
 	// 		helper.Chdir(contextDevfile)
 	// 		devfile := "devfile.yaml"

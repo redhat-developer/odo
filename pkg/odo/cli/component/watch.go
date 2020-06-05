@@ -190,6 +190,10 @@ func (wo *WatchOptions) Validate() (err error) {
 
 	cmpName := wo.LocalConfigInfo.GetName()
 	appName := wo.LocalConfigInfo.GetApplication()
+	if len(wo.Application) != 0 {
+		appName = wo.Application
+	}
+
 	exists, err := component.Exists(wo.Client, cmpName, appName)
 	if err != nil {
 		return
