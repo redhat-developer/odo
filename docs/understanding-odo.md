@@ -39,8 +39,8 @@ features:
   - Simple syntax and design centered around concepts familiar to
     developers, such as projects, applications, and components.
 
-  - Completely client based. No server is required within the cluster
-    for deployment.
+  - Completely client based. No additional server other than OpenShift
+    is required for deployment.
 
   - Official support for Node.js and Java components.
 

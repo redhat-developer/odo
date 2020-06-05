@@ -132,11 +132,14 @@ In this example we will be deploying an [example Spring Boot®
 component](https://github.com/odo-devfiles/springboot-ex) that uses
 [Maven](https://maven.apache.org/install.html) and Java 8 JDK.
 
-1.  Download the example Spring Boot® component
+1.  Download the example Spring Boot® component.
     
     ``` sh
      $ git clone https://github.com/odo-devfiles/springboot-ex
     ```
+    
+    Alternatively, you can pass in `--downloadSource` to `odo create` to
+    have odo download a sample project.
 
 2.  Change the current directory to the component directory:
     
@@ -144,15 +147,7 @@ component](https://github.com/odo-devfiles/springboot-ex) that uses
      $ cd <directory-name>
     ```
 
-3.  List the contents of the directory to confirm that the front end is
-    indeed a Java application:
-    
-    ``` sh
-     $ ls
-     chart  Dockerfile  Dockerfile-build  Dockerfile-tools  Jenkinsfile  pom.xml  README.md  src
-    ```
-
-4.  Create a component configuration using the `java-spring-boot`
+3.  Create a component configuration using the `java-spring-boot`
     component-type named `myspring`:
     
     ``` sh
@@ -160,10 +155,19 @@ component](https://github.com/odo-devfiles/springboot-ex) that uses
        Experimental mode is enabled, use at your own risk
     
        Validation
-        ✓  Checking devfile compatibility [71105ns]
-        ✓  Validating devfile component [153481ns]
+        ✓  Checking devfile compatibility [195728ns]
+        ✓  Creating a devfile component from registry: DefaultDevfileRegistry [170275ns]
+        ✓  Validating devfile component [281940ns]
     
-       Please use odo push command to create the component with source deployed
+        Please use odo push command to create the component with source deployed
+    ```
+
+4.  List the contents of the directory to see the devfile and sample
+    Java application source code:
+    
+    ``` sh
+      $ ls
+      README.md devfile.yaml    pom.xml     src
     ```
 
 5.  Create a URL in order to access the deployed component:
@@ -182,18 +186,27 @@ component](https://github.com/odo-devfiles/springboot-ex) that uses
 6.  Push the component to the cluster:
     
     ``` sh
-       $ odo push
-        •  Push devfile component myspring  ...
-        ✓  Waiting for component to start [30s]
+      $ odo push
     
-       Applying URL changes
-        ✓  URL myspring-8080: http://myspring-8080.apps-crc.testing created
-        ✓  Checking files for pushing [752719ns]
-        ✓  Syncing files to the component [887ms]
-        ✓  Executing devbuild command "/artifacts/bin/build-container-full.sh" [23s]
-        ✓  Executing devrun command "/artifacts/bin/start-server.sh" [2s]
-        ✓  Push devfile component myspring [57s]
-        ✓  Changes successfully pushed to component
+      Validation
+       ✓  Validating the devfile [81808ns]
+    
+      Creating Kubernetes resources for component myspring
+       ✓  Waiting for component to start [5s]
+    
+      Applying URL changes
+       ✓  URL myspring-8080: http://myspring-8080.apps-crc.testing created
+    
+      Syncing to component myspring
+       ✓  Checking files for pushing [2ms]
+       ✓  Syncing files to the component [1s]
+    
+      Executing devfile commands for component myspring
+       ✓  Executing devbuild command "/artifacts/bin/build-container-full.sh" [1m]
+       ✓  Executing devrun command "/artifacts/bin/start-server.sh" [2s]
+    
+      Pushing devfile component myspring
+       ✓  Changes successfully pushed to component
     ```
 
 7.  List the URLs of the component:
@@ -209,6 +222,15 @@ component](https://github.com/odo-devfiles/springboot-ex) that uses
     
     ``` sh
       $ curl http://myspring-8080.apps-crc.testing
+    ```
+
+9.  To delete your deployed application:
+    
+    ``` sh
+      $ odo delete
+      ? Are you sure you want to delete the devfile component: myspring? Yes
+       ✓  Deleting devfile component myspring [152ms]
+       ✓  Successfully deleted component
     ```
 
 # Deploying a Node.js® component to an OpenShift cluster
@@ -245,8 +267,9 @@ component](https://github.com/odo-devfiles/nodejs-ex) that uses
      Experimental mode is enabled, use at your own risk
     
      Validation
-     ✓  Checking devfile compatibility [106956ns]
-     ✓  Validating devfile component [250318ns]
+      ✓  Checking devfile compatibility [111738ns]
+      ✓  Creating a devfile component from registry: DefaultDevfileRegistry [89567ns]
+      ✓  Validating devfile component [186982ns]
     
      Please use odo push command to create the component with source deployed
     ```
@@ -267,18 +290,27 @@ component](https://github.com/odo-devfiles/nodejs-ex) that uses
 6.  Push the component to the cluster:
     
     ``` sh
-     $ odo push
-      •  Push devfile component mynodejs  ...
-      ✓  Waiting for component to start [27s]
+      $ odo push
     
-     Applying URL changes
-      ✓  URL mynodejs-3000: http://mynodejs-3000.apps-crc.testing created
-      ✓  Checking files for pushing [1ms]
-      ✓  Syncing files to the component [839ms]
-      ✓  Executing devbuild command "npm install" [3s]
-      ✓  Executing devrun command "nodemon app.js" [2s]
-      ✓  Push devfile component mynodejs [33s]
-      ✓  Changes successfully pushed to component
+      Validation
+       ✓  Validating the devfile [89380ns]
+    
+      Creating Kubernetes resources for component mynodejs
+       ✓  Waiting for component to start [3s]
+    
+      Applying URL changes
+       ✓  URL mynodejs-3000: http://mynodejs-3000.apps-crc.testing created
+    
+      Syncing to component mynodejs
+       ✓  Checking files for pushing [2ms]
+       ✓  Syncing files to the component [1s]
+    
+      Executing devfile commands for component mynodejs
+       ✓  Executing devbuild command "npm install" [3s]
+       ✓  Executing devrun command "nodemon app.js" [2s]
+    
+      Pushing devfile component mynodejs
+       ✓  Changes successfully pushed to component
     ```
 
 7.  List the URLs of the component:
@@ -296,6 +328,15 @@ component](https://github.com/odo-devfiles/nodejs-ex) that uses
        $ curl http://mynodejs-8080.apps-crc.testing
     ```
 
+9.  To delete your deployed application:
+    
+    ``` sh
+       $ odo delete
+       ? Are you sure you want to delete the devfile component: mynodejs? Yes
+        ✓  Deleting devfile component mynodejs [139ms]
+        ✓  Successfully deleted component
+    ```
+
 # Deploying a Java Spring Boot® component locally to Docker
 
 In this example, we will be deploying the same Java Spring Boot®
@@ -310,25 +351,41 @@ component we did earlier, but to a locally running Docker instance.
      Global preference was successfully updated
     ```
 
-2.  Create a component configuration using the `java-spring-boot`
+2.  Download the example Spring Boot® component.
+    
+    ``` sh
+     $ git clone https://github.com/odo-devfiles/springboot-ex
+    ```
+    
+    Alternatively, you can pass in `--downloadSource` to `odo create` to
+    have odo download a sample project.
+
+3.  Change the current directory to the component directory:
+    
+    ``` sh
+     $ cd <directory-name>
+    ```
+
+4.  Create a component configuration using the `java-spring-boot`
     component-type named `mydockerspringboot`:
     
     ``` sh
-      $ odo create java-spring-boot mydockerspringboot
-      Experimental mode is enabled, use at your own risk
+       $ odo create java-spring-boot mydockerspringboot
+       Experimental mode is enabled, use at your own risk
     
-      Validation
-       ✓  Checking devfile compatibility [26759ns]
-       ✓  Validating devfile component [75889ns]
+       Validation
+        ✓  Checking devfile compatibility [195728ns]
+        ✓  Creating a devfile component from registry: DefaultDevfileRegistry [170275ns]
+        ✓  Validating devfile component [281940ns]
     
-      Please use odo push command to create the component with source deployed
+        Please use odo push command to create the component with source deployed
     ```
 
-3.  Create a URL in order to access the deployed component:
+5.  Create a URL in order to access the deployed component:
     
     ``` sh
      $ odo url create --port 8080
-      ✓  URL local-mydockerspringboot-8080 created for component: mydockerspringboot with exposed port: 37833
+      ✓  URL java-spring-boot-8080 created for component: java-spring-boot with exposed port: 59382
     
      To apply the URL configuration changes, please use odo push
     ```
@@ -336,22 +393,30 @@ component we did earlier, but to a locally running Docker instance.
     In order to access the docker application, exposed ports are
     required and automatically generated by odo.
 
-4.  Deploy the Spring Boot® devfile component to Docker:
+6.  Deploy the Spring Boot® devfile component to Docker:
     
     ``` sh
       $ odo push
-       •  Push devfile component mydockerspringboot  ...
-       ✓  Pulling image maysunfaisal/springbootbuild [601ms]
     
-      Applying URL configuration
-       ✓  URL 127.0.0.1:37833 created
-       ✓  Starting container for maysunfaisal/springbootbuild [550ms]
-       ✓  Pulling image maysunfaisal/springbootruntime [581ms]
+      Validation
+       ✓  Validating the devfile [52685ns]
     
-      Applying URL configuration
-       ✓  URL 127.0.0.1:37833 created
-       ✓  Starting container for maysunfaisal/springbootruntime [505ms]
-       ✓  Push devfile component mydockerspringboot [2s]
+      Creating Docker resources for component java-spring-boot
+       ✓  Pulling image maysunfaisal/springbootbuild [879ms]
+       ✓  Starting container for maysunfaisal/springbootbuild [397ms]
+       ✓  Pulling image maysunfaisal/springbootruntime [1s]
+       ✓  URL 127.0.0.1:59382 created
+       ✓  Starting container for maysunfaisal/springbootruntime [380ms]
+    
+      Syncing to component java-spring-boot
+       ✓  Checking files for pushing [2ms]
+       ✓  Syncing files to the component [231ms]
+    
+      Executing devfile commands for component java-spring-boot
+       ✓  Executing devbuild command "/artifacts/bin/build-container-full.sh" [1m]
+       ✓  Executing devrun command "/artifacts/bin/start-server.sh" [1s]
+    
+      Pushing devfile component java-spring-boot
        ✓  Changes successfully pushed to component
     ```
     
@@ -364,3 +429,18 @@ component we did earlier, but to a locally running Docker instance.
     Docker volumes are created for the project source, and any other
     volumes defined in the devfile and mounted to the necessary
     containers.
+
+7.  View your deployed application using the generated URL:
+    
+    ``` sh
+       $ curl http://127.0.0.1:59382
+    ```
+
+8.  To delete your deployed application:
+    
+    ``` sh
+       $ odo delete
+       ? Are you sure you want to delete the devfile component: java-spring-boot? Yes
+        ✓  Deleting devfile component java-spring-boot [139ms]
+        ✓  Successfully deleted component
+    ```
