@@ -28,17 +28,33 @@ func NewNoOpMachineEventLoggingClient() *NoOpMachineEventLoggingClient {
 	return &NoOpMachineEventLoggingClient{}
 }
 
+var _ MachineEventLoggingClient = &NoOpMachineEventLoggingClient{}
+
 // DevFileCommandExecutionBegin ignores the provided event.
-func (c *NoOpMachineEventLoggingClient) DevFileCommandExecutionBegin(commandName string, timestamp string) {
+func (c *NoOpMachineEventLoggingClient) DevFileCommandExecutionBegin(commandID string, componentName string, commandLine string, groupKind string, timestamp string) {
 }
 
 // DevFileCommandExecutionComplete ignores the provided event.
-func (c *NoOpMachineEventLoggingClient) DevFileCommandExecutionComplete(commandName string, timestamp string, errorVal error) {
+func (c *NoOpMachineEventLoggingClient) DevFileCommandExecutionComplete(commandID string, componentName string, commandLine string, groupKind string, timestamp string, errorVal error) {
 }
 
 // CreateContainerOutputWriter ignores the provided event.
-func (c *NoOpMachineEventLoggingClient) CreateContainerOutputWriter(stderr bool) io.Writer {
-	return nil
+func (c *NoOpMachineEventLoggingClient) CreateContainerOutputWriter() (*io.PipeWriter, chan interface{}, *io.PipeWriter, chan interface{}) {
+
+	channels := []chan interface{}{make(chan interface{}), make(chan interface{})}
+
+	// Ensure there is always a result waiting on each of the channels
+	for _, channelPtr := range channels {
+		channelVal := channelPtr
+
+		go func(channel chan interface{}) {
+			for {
+				channel <- nil
+			}
+		}(channelVal)
+	}
+
+	return nil, channels[0], nil, channels[1]
 }
 
 // ReportError ignores the provided event.
@@ -50,12 +66,18 @@ func NewConsoleMachineEventLoggingClient() *ConsoleMachineEventLoggingClient {
 	return &ConsoleMachineEventLoggingClient{}
 }
 
+var _ MachineEventLoggingClient = &ConsoleMachineEventLoggingClient{}
+
 // DevFileCommandExecutionBegin outputs the provided event as JSON to the console.
-func (c *ConsoleMachineEventLoggingClient) DevFileCommandExecutionBegin(commandName string, timestamp string) {
+func (c *ConsoleMachineEventLoggingClient) DevFileCommandExecutionBegin(commandID string, componentName string, commandLine string, groupKind string, timestamp string) {
 
 	json := MachineEventWrapper{
 		DevFileCommandExecutionBegin: &DevFileCommandExecutionBegin{
-			CommandName:      commandName,
+			CommandID:        commandID,
+			ComponentName:    componentName,
+			CommandLine:      commandLine,
+			GroupKind:        groupKind,
+			Timestamp:        timestamp,
 			AbstractLogEvent: AbstractLogEvent{Timestamp: timestamp},
 		},
 	}
@@ -64,9 +86,9 @@ func (c *ConsoleMachineEventLoggingClient) DevFileCommandExecutionBegin(commandN
 }
 
 // DevFileCommandExecutionComplete outputs the provided event as JSON to the console.
-func (c *ConsoleMachineEventLoggingClient) DevFileCommandExecutionComplete(commandName string, timestamp string, errorVal error) {
+func (c *ConsoleMachineEventLoggingClient) DevFileCommandExecutionComplete(commandID string, componentName string, commandLine string, groupKind string, timestamp string, errorVal error) {
 
-	var errorStr string
+	errorStr := ""
 
 	if errorVal != nil {
 		errorStr = errorVal.Error()
@@ -74,7 +96,11 @@ func (c *ConsoleMachineEventLoggingClient) DevFileCommandExecutionComplete(comma
 
 	json := MachineEventWrapper{
 		DevFileCommandExecutionComplete: &DevFileCommandExecutionComplete{
-			CommandName:      commandName,
+			CommandID:        commandID,
+			ComponentName:    componentName,
+			CommandLine:      commandLine,
+			GroupKind:        groupKind,
+			Timestamp:        timestamp,
 			AbstractLogEvent: AbstractLogEvent{Timestamp: timestamp},
 			Error:            errorStr,
 		},
@@ -83,12 +109,25 @@ func (c *ConsoleMachineEventLoggingClient) DevFileCommandExecutionComplete(comma
 	OutputSuccessUnindented(json)
 }
 
-// CreateContainerOutputWriter returns an io.Writer for which the devfile command/action process output should be
-// written (for example by passing the io.Writer to exec.ExecuteCommand).
+// CreateContainerOutputWriter returns an io.PipeWriter for which the devfile command/action process output should be
+// written (for example by passing the io.PipeWriter to exec.ExecuteCommand), and a channel for communicating when the last data
+// has been received on the reader.
 //
 // All text written to the returned object will be output as a log text event.
-func (c *ConsoleMachineEventLoggingClient) CreateContainerOutputWriter(stderr bool) io.Writer {
+// Returned channels will each contain a single nil entry once the underlying reader has closed.
+func (c *ConsoleMachineEventLoggingClient) CreateContainerOutputWriter() (*io.PipeWriter, chan interface{}, *io.PipeWriter, chan interface{}) {
+
+	stdoutWriter, stdoutChannel := createWriterAndChannel(false)
+	stderrWriter, stderrChannel := createWriterAndChannel(true)
+
+	return stdoutWriter, stdoutChannel, stderrWriter, stderrChannel
+
+}
+
+func createWriterAndChannel(stderr bool) (*io.PipeWriter, chan interface{}) {
 	reader, writer := io.Pipe()
+
+	closeChannel := make(chan interface{})
 
 	stream := "stdout"
 	if stderr {
@@ -102,7 +141,7 @@ func (c *ConsoleMachineEventLoggingClient) CreateContainerOutputWriter(stderr bo
 			line, _, err := bufReader.ReadLine()
 			if err != nil {
 				klog.V(4).Infof("Unexpected error on reading container output reader: %v", err)
-				return
+				break
 			}
 
 			json := MachineEventWrapper{
@@ -115,9 +154,12 @@ func (c *ConsoleMachineEventLoggingClient) CreateContainerOutputWriter(stderr bo
 			OutputSuccessUnindented(json)
 		}
 
+		// Output a single nil event on the channel to inform that the last line of text has been
+		// received from the writer.
+		closeChannel <- nil
 	}()
 
-	return writer
+	return writer, closeChannel
 }
 
 // ReportError ignores the provided event.
@@ -191,9 +233,9 @@ const (
 func GetCommandName(entry MachineEventLogEntry) string {
 
 	if entry.GetType() == TypeDevFileCommandExecutionBegin {
-		return entry.(*DevFileCommandExecutionBegin).CommandName
+		return entry.(*DevFileCommandExecutionBegin).CommandID
 	} else if entry.GetType() == TypeDevFileCommandExecutionComplete {
-		return entry.(*DevFileCommandExecutionComplete).CommandName
+		return entry.(*DevFileCommandExecutionComplete).CommandID
 	} else {
 		return ""
 	}

@@ -341,10 +341,6 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 		PodName: podName,
 	}
 
-	// an io.Writer if machine readable is enabled, else nil
-	stdoutWriter := a.machineEventLogger.CreateContainerOutputWriter(false)
-	stderrWriter := a.machineEventLogger.CreateContainerOutputWriter(true)
-
 	// only execute Init command, if it is first run of container.
 	if !componentExists {
 
@@ -352,9 +348,8 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 		command, ok := commandsMap[versionsCommon.InitCommandGroupType]
 		if ok {
 			compInfo.ContainerName = command.Exec.Component
-			err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, stdoutWriter, stderrWriter, a.machineEventLogger)
+			err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 			if err != nil {
-				// a.machineEventLogger.DevFileCommandExecutionComplete(command.Name, machineoutput.TimestampNow())
 				return err
 			}
 
@@ -366,7 +361,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 	command, ok := commandsMap[versionsCommon.BuildCommandGroupType]
 	if ok {
 		compInfo.ContainerName = command.Exec.Component
-		err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, stdoutWriter, stderrWriter, a.machineEventLogger)
+		err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 		if err != nil {
 			return err
 		}
@@ -394,17 +389,18 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 
 		if componentExists && !common.IsRestartRequired(command) {
 			klog.V(4).Infof("restart:false, Not restarting %v Command", command.Exec.Id)
+
 			if isDebug {
-				err = exec.ExecuteDevfileDebugActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, stdoutWriter, stderrWriter, a.machineEventLogger)
+				err = exec.ExecuteDevfileDebugActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
 			} else {
-				err = exec.ExecuteDevfileRunActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, stdoutWriter, stderrWriter, a.machineEventLogger)
+				err = exec.ExecuteDevfileRunActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 			}
 			return
 		}
 		if isDebug {
-			err = exec.ExecuteDevfileDebugAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, stdoutWriter, stderrWriter, a.machineEventLogger)
+			err = exec.ExecuteDevfileDebugAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
 		} else {
-			err = exec.ExecuteDevfileRunAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, stdoutWriter, stderrWriter, a.machineEventLogger)
+			err = exec.ExecuteDevfileRunAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 		}
 	}
 

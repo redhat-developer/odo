@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"sync"
 
 	"k8s.io/klog"
 
@@ -19,26 +18,29 @@ type ExecClient interface {
 }
 
 // ExecuteCommand executes the given command in the pod's container
-func ExecuteCommand(client ExecClient, compInfo common.ComponentInfo, command []string, show bool, consoleOutputStdout io.Writer, consoleOutputStderr io.Writer) (err error) {
+func ExecuteCommand(client ExecClient, compInfo common.ComponentInfo, command []string, show bool, consoleOutputStdout *io.PipeWriter, consoleOutputStderr *io.PipeWriter) (err error) {
 	stdoutReader, stdoutWriter := io.Pipe()
 	stderrReader, stderrWriter := io.Pipe()
 
-	// This contains both stdout and stderr lines; acquire mutex when reading/writing 'cmdOutput'
 	var cmdOutput string
-	cmdOutputMutex := &sync.Mutex{}
 
 	klog.V(4).Infof("Executing command %v for pod: %v in container: %v", command, compInfo.PodName, compInfo.ContainerName)
 
 	// Read stdout and stderr, store their output in cmdOutput, and also pass output to consoleOutput Writers (if non-nil)
-	startReaderGoroutine(stdoutReader, show, cmdOutputMutex, &cmdOutput, consoleOutputStdout)
-	startReaderGoroutine(stderrReader, show, cmdOutputMutex, &cmdOutput, consoleOutputStderr)
+	stdoutCompleteChannel := startReaderGoroutine(stdoutReader, show, &cmdOutput, consoleOutputStdout)
+	stderrCompleteChannel := startReaderGoroutine(stderrReader, show, &cmdOutput, consoleOutputStderr)
 
 	err = client.ExecCMDInContainer(compInfo, command, stdoutWriter, stderrWriter, nil, false)
-	if err != nil {
 
-		cmdOutputMutex.Lock()
+	// Block until we have received all the container output from each stream
+	_ = stdoutWriter.Close()
+	<-stdoutCompleteChannel
+	_ = stderrWriter.Close()
+	<-stderrCompleteChannel
+
+	if err != nil {
+		// It is safe to read from cmdOutput here, as the goroutines are guaranteed to have terminated at this point.
 		log.Errorf("\nUnable to exec command %v: \n%v", command, cmdOutput)
-		cmdOutputMutex.Unlock()
 
 		return err
 	}
@@ -46,9 +48,13 @@ func ExecuteCommand(client ExecClient, compInfo common.ComponentInfo, command []
 	return
 }
 
-// This Go routine will automatically pipe the output from the writer (passes into ExecCMDInContainer) to
+// This goroutine will automatically pipe the output from the writer (passed into ExecCMDInContainer) to
 // the loggers.
-func startReaderGoroutine(reader io.Reader, show bool, cmdOutputMutex *sync.Mutex, cmdOutput *string, consoleOutput io.Writer) {
+// The returned channel will contain a single nil entry once the reader has closed.
+func startReaderGoroutine(reader io.Reader, show bool, cmdOutput *string, consoleOutput *io.PipeWriter) chan interface{} {
+
+	result := make(chan interface{})
+
 	go func() {
 		scanner := bufio.NewScanner(reader)
 		for scanner.Scan() {
@@ -61,9 +67,7 @@ func startReaderGoroutine(reader io.Reader, show bool, cmdOutputMutex *sync.Mute
 				}
 			}
 
-			cmdOutputMutex.Lock()
 			*cmdOutput += fmt.Sprintln(line)
-			cmdOutputMutex.Unlock()
 
 			if consoleOutput != nil {
 				_, err := consoleOutput.Write([]byte(line + "\n"))
@@ -72,6 +76,9 @@ func startReaderGoroutine(reader io.Reader, show bool, cmdOutputMutex *sync.Mute
 				}
 			}
 		}
+		result <- nil
 	}()
+
+	return result
 
 }

@@ -4,15 +4,18 @@ import (
 	"io"
 )
 
-// MachineEventLoggingClient is an interface which is used by consuming code to
-// output machine-readable event JSON to the console. Both no-op and non-no-op
-// implementations of this interface exist.
+// MachineEventLoggingClient is an interface which is used by consuming code to output machine-readable
+// event JSON to the console. Both no-op and non-no-op implementations of this interface exist.
 type MachineEventLoggingClient interface {
-	DevFileCommandExecutionBegin(commandName string, timestamp string)
-	DevFileCommandExecutionComplete(commandName string, timestamp string, errorVal error)
+
+	// These functions output the corresponding eponymous JSON event to the console
+
+	DevFileCommandExecutionBegin(commandID string, componentName string, commandLine string, groupKind string, timestamp string)
+	DevFileCommandExecutionComplete(commandID string, componentName string, commandLine string, groupKind string, timestamp string, errorVal error)
 	ReportError(errorVal error, timestamp string)
 
-	CreateContainerOutputWriter(stderr bool) io.Writer
+	// CreateContainerOutputWriter is used to capture output from container processes, and synchronously write it to the screen as LogText. See implementation comments for details.
+	CreateContainerOutputWriter() (*io.PipeWriter, chan interface{}, *io.PipeWriter, chan interface{})
 }
 
 // MachineEventWrapper - a single line of machine-readable event console output must contain only one
@@ -26,14 +29,22 @@ type MachineEventWrapper struct {
 
 // DevFileCommandExecutionBegin is the JSON event that is emitted when a dev file command begins execution.
 type DevFileCommandExecutionBegin struct {
-	CommandName string `json:"commandName"`
+	CommandID     string `json:"commandId"`
+	ComponentName string `json:"componentName"`
+	CommandLine   string `json:"commandLine"`
+	GroupKind     string `json:"groupKind"`
+	Timestamp     string `json:"timestamp"`
 	AbstractLogEvent
 }
 
 // DevFileCommandExecutionComplete is the JSON event that is emitted when a dev file command completes execution.
 type DevFileCommandExecutionComplete struct {
-	CommandName string `json:"commandName"`
-	Error       string `json:"error,omitempty"`
+	CommandID     string `json:"commandId"`
+	ComponentName string `json:"componentName"`
+	CommandLine   string `json:"commandLine"`
+	GroupKind     string `json:"groupKind"`
+	Timestamp     string `json:"timestamp"`
+	Error         string `json:"error,omitempty"`
 	AbstractLogEvent
 }
 
@@ -67,10 +78,6 @@ type MachineEventLogEntry interface {
 	GetTimestamp() string
 	GetType() MachineEventLogEntryType
 }
-
-// Ensure these clients are interface compatible
-var _ MachineEventLoggingClient = &NoOpMachineEventLoggingClient{}
-var _ MachineEventLoggingClient = &ConsoleMachineEventLoggingClient{}
 
 // NoOpMachineEventLoggingClient will ignore (eg not output) all events passed to it
 type NoOpMachineEventLoggingClient struct {

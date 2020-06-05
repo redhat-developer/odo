@@ -318,9 +318,6 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 		return errors.New(fmt.Sprint("error executing devfile commands - there should be at least 1 command"))
 	}
 
-	stdoutWriter := a.machineEventLogger.CreateContainerOutputWriter(false)
-	stderrWriter := a.machineEventLogger.CreateContainerOutputWriter(true)
-
 	// Only add runinit to the expected commands if the component doesn't already exist
 	// This would be the case when first running the container
 	if !componentExists {
@@ -330,7 +327,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 
 			containerID := utils.GetContainerIDForAlias(containers, command.Exec.Component)
 			compInfo := common.ComponentInfo{ContainerName: containerID}
-			err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, stdoutWriter, stderrWriter, a.machineEventLogger)
+			err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 			if err != nil {
 				return err
 			}
@@ -342,7 +339,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 	if ok {
 		containerID := utils.GetContainerIDForAlias(containers, command.Exec.Component)
 		compInfo := common.ComponentInfo{ContainerName: containerID}
-		err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, stdoutWriter, stderrWriter, a.machineEventLogger)
+		err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 		if err != nil {
 			return err
 		}
@@ -367,10 +364,10 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 		compInfo := common.ComponentInfo{ContainerName: containerID}
 		if componentExists && !common.IsRestartRequired(command) {
 			klog.V(4).Info("restart:false, Not restarting DevRun Command")
-			err = exec.ExecuteDevfileRunActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, stdoutWriter, stderrWriter, a.machineEventLogger)
+			err = exec.ExecuteDevfileRunActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 			return
 		}
-		err = exec.ExecuteDevfileRunAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, stdoutWriter, stderrWriter, a.machineEventLogger)
+		err = exec.ExecuteDevfileRunAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 	}
 
 	return
