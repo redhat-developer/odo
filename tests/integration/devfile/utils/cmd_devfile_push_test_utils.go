@@ -39,11 +39,12 @@ func AnalyzePushConsoleOutput(pushConsoleOutput string) {
 
 	}
 
+	// Ensure we pass a sanity test on the minimum expected entries
 	if len(entries) < 4 {
 		Fail("Expected at least 4 entries, corresponding to command/action execution.")
 	}
 
-	// Timestamps should be monotonically increasing
+	// Ensure that timestamps are monotonically increasing
 	mostRecentTimestamp := float64(-1)
 	for _, entry := range entries {
 		timestamp, err := strconv.ParseFloat(entry.GetTimestamp(), 64)
@@ -56,7 +57,26 @@ func AnalyzePushConsoleOutput(pushConsoleOutput string) {
 		mostRecentTimestamp = timestamp
 	}
 
-	// First look for the expected devbuild events, then look for the expected devrun events.
+	// Ensure that all logText entries are wrapped inside commandExecutionBegin and commandExecutionComplete entries (e.g. no floating logTexts)
+	insideCommandExecution := false
+	for _, entry := range entries {
+
+		if entry.GetType() == machineoutput.TypeDevFileCommandExecutionBegin {
+			insideCommandExecution = true
+		}
+
+		if entry.GetType() == machineoutput.TypeDevFileCommandExecutionComplete {
+			insideCommandExecution = false
+		}
+
+		if entry.GetType() == machineoutput.TypeLogText {
+			Expect(insideCommandExecution).To(Equal(true))
+		}
+
+	}
+
+	// Ensure that the log output has the given structure:
+	// - look for the expected devbuild events, then look for the expected devrun events.
 	expectedEventOrder := []struct {
 		entryType   machineoutput.MachineEventLogEntryType
 		commandName string
@@ -66,19 +86,11 @@ func AnalyzePushConsoleOutput(pushConsoleOutput string) {
 			machineoutput.TypeDevFileCommandExecutionBegin,
 			"devbuild",
 		},
-		// {
-		// 	machineoutput.TypeDevFileActionExecutionBegin,
-		// 	"devbuild",
-		// },
 		{
 			// at least one logged line of text
 			machineoutput.TypeLogText,
 			"",
 		},
-		// {
-		// 	machineoutput.TypeDevFileActionExecutionComplete,
-		// 	"devbuild",
-		// },
 		{
 			machineoutput.TypeDevFileCommandExecutionComplete,
 			"devbuild",
@@ -88,27 +100,16 @@ func AnalyzePushConsoleOutput(pushConsoleOutput string) {
 			machineoutput.TypeDevFileCommandExecutionBegin,
 			"devrun",
 		},
-		// ,
-		// {
-		// 	machineoutput.TypeDevFileActionExecutionBegin,
-		// 	"devrun",
-		// },
 		{
 			// at least one logged line of text
 			machineoutput.TypeLogText,
 			"",
 		},
-		// ,
-		// {
-		// 	machineoutput.TypeDevFileActionExecutionComplete,
-		// 	"devrun",
-		// },
 		{
 			machineoutput.TypeDevFileCommandExecutionComplete,
 			"devrun",
 		},
 	}
-
 	currIndex := -1
 	for _, nextEventOrder := range expectedEventOrder {
 		entry, newIndex := machineoutput.FindNextEntryByType(currIndex, nextEventOrder.entryType, entries)
