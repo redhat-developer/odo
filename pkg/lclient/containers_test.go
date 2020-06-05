@@ -171,6 +171,7 @@ func TestGetContainersList(t *testing.T) {
 					},
 					Mounts: []types.MountPoint{
 						{
+							Name:        ProjectSourceVolumeName,
 							Destination: OdoSourceVolumeMount,
 						},
 					},

@@ -25,8 +25,7 @@ import (
 )
 
 const (
-	LocalhostIP             = "127.0.0.1"
-	projectSourceVolumeName = "odo-project-source"
+	LocalhostIP = "127.0.0.1"
 )
 
 func (a Adapter) createComponent() (err error) {
@@ -43,7 +42,7 @@ func (a Adapter) createComponent() (err error) {
 	}
 	if len(projectVols) == 0 {
 		// A source volume needs to be created
-		projectVolumeName, err = storage.GenerateVolName(projectSourceVolumeName, a.ComponentName)
+		projectVolumeName, err = storage.GenerateVolName(lclient.ProjectSourceVolumeName, a.ComponentName)
 		if err != nil {
 			return errors.Wrapf(err, "Unable to generate project source volume name for component %s", componentName)
 		}
