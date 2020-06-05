@@ -48,7 +48,7 @@ type SyncParameters struct {
 	ComponentExists bool
 }
 
-// ComponentInfo is a struct that holds information about a component i.e.; pod name, container name, and sync folder (if applicable)
+// ComponentInfo is a struct that holds information about a component i.e.; pod name, container name, and source mount (if applicable)
 type ComponentInfo struct {
 	PodName       string
 	ContainerName string
