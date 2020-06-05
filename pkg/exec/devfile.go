@@ -40,7 +40,7 @@ func ExecuteDevfileBuildAction(client ExecClient, exec common.Exec, commandName 
 
 	err := ExecuteCommand(client, compInfo, cmdArr, show, stdoutWriter, stderrWriter)
 
-	// Close the writers and wait for an acknowledgement that the reader loop has exitted (to ensure we get ALL container output)
+	// Close the writers and wait for an acknowledgement that the reader loop has exited (to ensure we get ALL container output)
 	closeWriterAndWaitForAck(stdoutWriter, stdoutChannel, stderrWriter, stderrChannel)
 
 	// Emit close event
@@ -76,12 +76,18 @@ func ExecuteDevfileRunAction(client ExecClient, exec common.Exec, commandName st
 
 	for _, devRunExec := range devRunExecs {
 
+		// Emit DevFileCommandExecutionBegin JSON event (if machine output logging is enabled)
 		machineEventLogger.DevFileCommandExecutionBegin(exec.Id, exec.Component, exec.CommandLine, convertGroupKindToString(exec), machineoutput.TimestampNow())
+
+		// Capture container text and log to the screen as JSON events (machine output only)
 		stdoutWriter, stdoutChannel, stderrWriter, stderrChannel := machineEventLogger.CreateContainerOutputWriter()
 
 		err := ExecuteCommand(client, compInfo, devRunExec.command, show, stdoutWriter, stderrWriter)
 
+		// Close the writers and wait for an acknowledgement that the reader loop has exited (to ensure we get ALL container output)
 		closeWriterAndWaitForAck(stdoutWriter, stdoutChannel, stderrWriter, stderrChannel)
+
+		// Emit close event
 		machineEventLogger.DevFileCommandExecutionComplete(exec.Id, exec.Component, exec.CommandLine, convertGroupKindToString(exec), machineoutput.TimestampNow(), err)
 		if err != nil {
 			return errors.Wrapf(err, "unable to execute the run command")
@@ -109,12 +115,18 @@ func ExecuteDevfileRunActionWithoutRestart(client ExecClient, exec common.Exec, 
 	s = log.Spinnerf("Executing %s command %q, if not running", commandName, exec.CommandLine)
 	defer s.End(false)
 
+	// Emit DevFileCommandExecutionBegin JSON event (if machine output logging is enabled)
 	machineEventLogger.DevFileCommandExecutionBegin(exec.Id, exec.Component, exec.CommandLine, convertGroupKindToString(exec), machineoutput.TimestampNow())
+
+	// Capture container text and log to the screen as JSON events (machine output only)
 	stdoutWriter, stdoutChannel, stderrWriter, stderrChannel := machineEventLogger.CreateContainerOutputWriter()
 
 	err := ExecuteCommand(client, compInfo, devRunExec.command, show, stdoutWriter, stderrWriter)
 
+	// Close the writers and wait for an acknowledgement that the reader loop has exited (to ensure we get ALL container output)
 	closeWriterAndWaitForAck(stdoutWriter, stdoutChannel, stderrWriter, stderrChannel)
+
+	// Emit close event
 	machineEventLogger.DevFileCommandExecutionComplete(exec.Id, exec.Component, exec.CommandLine, convertGroupKindToString(exec), machineoutput.TimestampNow(), err)
 	if err != nil {
 		return errors.Wrapf(err, "unable to execute the run command")

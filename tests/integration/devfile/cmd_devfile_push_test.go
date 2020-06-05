@@ -24,7 +24,6 @@ var _ = Describe("odo devfile push command tests", func() {
 	var _ = BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		context = helper.CreateNewContext()
-		// kubeConfigFile := helper.CopyKubeConfigFile(helper.GetExistingKubeConfigPath(), filepath.Join(context, "config"))
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 
 		// Devfile push requires experimental mode to be set
