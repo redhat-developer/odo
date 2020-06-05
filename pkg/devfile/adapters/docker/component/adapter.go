@@ -142,7 +142,7 @@ func (a Adapter) DoesComponentExist(cmpName string) bool {
 func getFirstContainerWithSourceVolume(containers []types.Container) (string, string, error) {
 	for _, c := range containers {
 		for _, mount := range c.Mounts {
-			if mount.Destination == lclient.OdoSourceVolumeMount {
+			if strings.Contains(mount.Name, projectSourceVolumeName) {
 				return c.ID, mount.Destination, nil
 			}
 		}
