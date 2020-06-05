@@ -47,31 +47,38 @@ grid_navigation:
       excerpt: Get started deploying your first component
       cta: Read more
       url: 'docs/creating-a-single-component-application-with-odo'
+      openshift: true
 
     - title: Creating a multicomponent application with odo
       excerpt: Deploy a multicomponent application
       cta: Read more
       url: 'docs/creating-a-multicomponent-application-with-odo'
+      openshift: true
 
     - title: Creating an application with a database
       excerpt: This example describes how to deploy and connect a database to a front-end application
       cta: Read more
       url: 'docs/creating-an-application-with-a-database'
+      openshift: true
 
     - title: Using sample applications
       excerpt: A list of sample applications to be used with odo
       cta: Read more
       url: 'docs/using-sample-applications'
+      openshift: true
 
     - title: Debugging applications in odo
       excerpt: Learn how to debug an application in odo
       cta: Read more
       url: 'docs/debugging-applications-in-odo'
+      openshift: true
 
     - title: Managing environment variables
       excerpt: Manipulate both config and preference files to your liking
       cta: Read more
       url: 'docs/managing-environment-variables-in-odo'
+      openshift: true
+      kubernetes: true
 
     - title: Configuring the odo CLI
       excerpt: Configure your terminal for autocompletion
@@ -92,9 +99,14 @@ grid_navigation:
       excerpt: Deploying a portable devfile that decribes your development environment
       cta: Read more
       url: 'docs/deploying-a-devfile-using-odo'
+      openshift: true
+      kubernetes: true
+      docker: true
 
     - title: Introduction to Operators
       excerpt: Deploying an Operator from Operator Hub using odo.
       cta: Read more
       url: 'docs/operator-hub'
+      openshift: true
+      kubernetes: true
 ---
