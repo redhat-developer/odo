@@ -58,6 +58,14 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 	})
 
+	Context("When executing odo create with incorrect devfile component", func() {
+		It("should should throw error of component not found", func() {
+			output := helper.CmdShouldPass("odo", "create", "incorrect")
+			expectedString := "component \"incorrect\" not found"
+			helper.MatchAllInOutput(output, []string{expectedString})
+		})
+	})
+
 	Context("When executing odo create with devfile component type argument", func() {
 		It("should successfully create the devfile component", func() {
 			helper.CmdShouldPass("odo", "create", "java-openliberty")
