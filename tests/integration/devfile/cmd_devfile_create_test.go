@@ -40,7 +40,6 @@ var _ = Describe("odo devfile create command tests", func() {
 
 	Context("Enabling experimental preference should show a disclaimer", func() {
 		It("checks that the experimental warning appears for create", func() {
-			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 
 			// Check that it will contain the experimental mode output
@@ -61,28 +60,28 @@ var _ = Describe("odo devfile create command tests", func() {
 
 	Context("When executing odo create with devfile component type argument", func() {
 		It("should successfully create the devfile component", func() {
-			helper.CmdShouldPass("odo", "create", "openLiberty")
+			helper.CmdShouldPass("odo", "create", "java-openliberty")
 		})
 	})
 
 	Context("When executing odo create with devfile component type and component name arguments", func() {
 		It("should successfully create the devfile component", func() {
 			componentName := helper.RandString(6)
-			helper.CmdShouldPass("odo", "create", "openLiberty", componentName)
+			helper.CmdShouldPass("odo", "create", "java-openliberty", componentName)
 		})
 	})
 
 	Context("When executing odo create with devfile component type argument and --project flag", func() {
 		It("should successfully create the devfile component", func() {
 			componentNamespace := helper.RandString(6)
-			helper.CmdShouldPass("odo", "create", "openLiberty", "--project", componentNamespace)
+			helper.CmdShouldPass("odo", "create", "java-openliberty", "--project", componentNamespace)
 		})
 	})
 
 	Context("When executing odo create with devfile component type argument and --registry flag", func() {
 		It("should successfully create the devfile component", func() {
 			componentRegistry := "DefaultDevfileRegistry"
-			helper.CmdShouldPass("odo", "create", "openLiberty", "--registry", componentRegistry)
+			helper.CmdShouldPass("odo", "create", "java-openliberty", "--registry", componentRegistry)
 		})
 	})
 
@@ -93,7 +92,7 @@ var _ = Describe("odo devfile create command tests", func() {
 			envFilePath := filepath.Join(newContext, envFile)
 			helper.MakeDir(newContext)
 
-			helper.CmdShouldPass("odo", "create", "openLiberty", "--context", newContext)
+			helper.CmdShouldPass("odo", "create", "java-openliberty", "--context", newContext)
 			output := util.CheckPathExists(devfilePath)
 			Expect(output).Should(BeTrue())
 			output = util.CheckPathExists(envFilePath)
@@ -105,7 +104,7 @@ var _ = Describe("odo devfile create command tests", func() {
 	Context("When executing odo create with devfile component name that contains unsupported character", func() {
 		It("should failed with devfile component name is not valid and prompt supported character", func() {
 			componentName := "BAD@123"
-			output := helper.CmdShouldFail("odo", "create", "openLiberty", componentName)
+			output := helper.CmdShouldFail("odo", "create", "java-openliberty", componentName)
 			helper.MatchAllInOutput(output, []string{"Contain only lowercase alphanumeric characters or ‘-’"})
 		})
 	})
@@ -113,7 +112,7 @@ var _ = Describe("odo devfile create command tests", func() {
 	Context("When executing odo create with devfile component name that contains all numeric values", func() {
 		It("should failed with devfile component name is not valid and prompt container name must not contain all numeric values", func() {
 			componentName := "123456"
-			output := helper.CmdShouldFail("odo", "create", "openLiberty", componentName)
+			output := helper.CmdShouldFail("odo", "create", "java-openliberty", componentName)
 			helper.MatchAllInOutput(output, []string{"Must not contain all numeric values"})
 		})
 	})
@@ -121,7 +120,7 @@ var _ = Describe("odo devfile create command tests", func() {
 	Context("When executing odo create with devfile component name that contains more than 63 characters", func() {
 		It("should failed with devfile component name is not valid and prompt container name contains at most 63 characters", func() {
 			componentName := helper.RandString(64)
-			output := helper.CmdShouldFail("odo", "create", "openLiberty", componentName)
+			output := helper.CmdShouldFail("odo", "create", "java-openliberty", componentName)
 			helper.MatchAllInOutput(output, []string{"Contain at most 63 characters"})
 		})
 	})
@@ -137,7 +136,6 @@ var _ = Describe("odo devfile create command tests", func() {
 
 	Context("When executing odo create with devfile component and --downloadSource flag", func() {
 		It("should succesfully create the compoment and download the source", func() {
-			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 			contextDevfile := helper.CreateNewContext()
 			helper.Chdir(contextDevfile)
 			devfile := "devfile.yaml"
@@ -159,7 +157,6 @@ var _ = Describe("odo devfile create command tests", func() {
 
 	Context("When executing odo create with devfile component and --downloadSource flag with a valid project", func() {
 		It("should succesfully create the compoment specified and download the source", func() {
-			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 			contextDevfile := helper.CreateNewContext()
 			helper.Chdir(contextDevfile)
 			devfile := "devfile.yaml"
@@ -192,7 +189,6 @@ var _ = Describe("odo devfile create command tests", func() {
 	// Once this feature is added we can change these tests.
 	//Context("When executing odo create with devfile component and --downloadSource flag with github type", func() {
 	//	It("should succesfully create the compoment and download the source", func() {
-	//		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 	//		contextDevfile := helper.CreateNewContext()
 	//		helper.Chdir(contextDevfile)
 	//		devfile := "devfile.yaml"
@@ -211,7 +207,6 @@ var _ = Describe("odo devfile create command tests", func() {
 
 	//Context("When executing odo create with devfile component and --downloadSource flag with zip type", func() {
 	//	It("should create the compoment and download the source", func() {
-	//		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 	//		contextDevfile := helper.CreateNewContext()
 	//		helper.Chdir(contextDevfile)
 	//		devfile := "devfile.yaml"
@@ -233,7 +228,6 @@ var _ = Describe("odo devfile create command tests", func() {
 
 	// Context("When executing odo create with devfile component, --downloadSource flag and sparseContextDir has a valid value", func() {
 	// 	It("should only extract the specified path in the sparseContextDir field", func() {
-	// 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 	// 		contextDevfile := helper.CreateNewContext()
 	// 		helper.Chdir(contextDevfile)
 	// 		devfile := "devfile.yaml"
@@ -248,7 +242,6 @@ var _ = Describe("odo devfile create command tests", func() {
 
 	// Context("When executing odo create with devfile component, --downloadSource flag and sparseContextDir has an invalid value", func() {
 	// 	It("should fail and alert the user that the specified path in sparseContextDir does not exist", func() {
-	// 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 	// 		contextDevfile := helper.CreateNewContext()
 	// 		helper.Chdir(contextDevfile)
 	// 		devfile := "devfile.yaml"
