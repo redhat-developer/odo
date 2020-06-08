@@ -95,12 +95,14 @@ func (c *ConsoleMachineEventLoggingClient) DevFileCommandExecutionComplete(comma
 
 	json := MachineEventWrapper{
 		DevFileCommandExecutionComplete: &DevFileCommandExecutionComplete{
-			CommandID:        commandID,
-			ComponentName:    componentName,
-			CommandLine:      commandLine,
-			GroupKind:        groupKind,
-			AbstractLogEvent: AbstractLogEvent{Timestamp: timestamp},
-			Error:            errorStr,
+			DevFileCommandExecutionBegin: DevFileCommandExecutionBegin{
+				CommandID:        commandID,
+				ComponentName:    componentName,
+				CommandLine:      commandLine,
+				GroupKind:        groupKind,
+				AbstractLogEvent: AbstractLogEvent{Timestamp: timestamp},
+			},
+			Error: errorStr,
 		},
 	}
 
@@ -173,6 +175,7 @@ func (c *ConsoleMachineEventLoggingClient) ReportError(errorVal error, timestamp
 }
 
 // GetEntry will return the JSON event parsed from a single line of '-o json' machine readable console output.
+// Currently used for test purposes only.
 func (w MachineEventWrapper) GetEntry() (MachineEventLogEntry, error) {
 
 	if w.DevFileCommandExecutionBegin != nil {
@@ -237,22 +240,5 @@ func GetCommandName(entry MachineEventLogEntry) string {
 	} else {
 		return ""
 	}
-
-}
-
-// FindNextEntryByType locates the next entry of a given type within a slice. Currently used for test purposes only.
-func FindNextEntryByType(initialIndex int, typeToFind MachineEventLogEntryType, entries []MachineEventLogEntry) (MachineEventLogEntry, int) {
-
-	for index, entry := range entries {
-		if index < initialIndex {
-			continue
-		}
-
-		if entry.GetType() == typeToFind {
-			return entry, index
-		}
-	}
-
-	return nil, -1
 
 }

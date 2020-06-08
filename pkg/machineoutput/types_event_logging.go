@@ -38,12 +38,8 @@ type DevFileCommandExecutionBegin struct {
 
 // DevFileCommandExecutionComplete is the JSON event that is emitted when a dev file command completes execution.
 type DevFileCommandExecutionComplete struct {
-	CommandID     string `json:"commandId"`
-	ComponentName string `json:"componentName"`
-	CommandLine   string `json:"commandLine"`
-	GroupKind     string `json:"groupKind"`
-	Error         string `json:"error,omitempty"`
-	AbstractLogEvent
+	DevFileCommandExecutionBegin
+	Error string `json:"error,omitempty"`
 }
 
 // ReportError is the JSON event that is emitted when an error occurs during push command

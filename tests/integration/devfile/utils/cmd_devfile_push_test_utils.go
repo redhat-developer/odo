@@ -112,7 +112,7 @@ func AnalyzePushConsoleOutput(pushConsoleOutput string) {
 	}
 	currIndex := -1
 	for _, nextEventOrder := range expectedEventOrder {
-		entry, newIndex := machineoutput.FindNextEntryByType(currIndex, nextEventOrder.entryType, entries)
+		entry, newIndex := findNextEntryByType(currIndex, nextEventOrder.entryType, entries)
 		Expect(entry).NotTo(BeNil())
 		Expect(newIndex).To(BeNumerically(">=", 0))
 		Expect(newIndex).To(BeNumerically(">", currIndex)) // monotonically increasing index
@@ -123,5 +123,22 @@ func AnalyzePushConsoleOutput(pushConsoleOutput string) {
 
 		currIndex = newIndex
 	}
+
+}
+
+// findNextEntryByType locates the next entry of a given type within a slice. Currently used for test purposes only.
+func findNextEntryByType(initialIndex int, typeToFind machineoutput.MachineEventLogEntryType, entries []machineoutput.MachineEventLogEntry) (machineoutput.MachineEventLogEntry, int) {
+
+	for index, entry := range entries {
+		if index < initialIndex {
+			continue
+		}
+
+		if entry.GetType() == typeToFind {
+			return entry, index
+		}
+	}
+
+	return nil, -1
 
 }
