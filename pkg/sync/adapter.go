@@ -31,6 +31,48 @@ type Adapter struct {
 	common.AdapterContext
 }
 
+// SyncsFilesBuild sync the local files to build container volume
+func (a Adapter) SyncFilesBuild(buildParameters common.BuildParameters, compInfo common.ComponentInfo) (err error) {
+
+	// If we want to ignore any files
+	absIgnoreRules := []string{}
+	if len(buildParameters.IgnoredFiles) > 0 {
+		absIgnoreRules = util.GetAbsGlobExps(buildParameters.Path, buildParameters.IgnoredFiles)
+	}
+
+	var s *log.Status
+	syncFolder := "/projects"
+
+	s = log.Spinner("Checking files for deploy")
+	// run the indexer and find the modified/added/deleted/renamed files
+	files, _, err := util.RunIndexer(buildParameters.Path, absIgnoreRules)
+
+	if len(files) > 0 {
+		klog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
+		err = CopyFile(a.Client, buildParameters.Path, compInfo, syncFolder, files, absIgnoreRules)
+		if err != nil {
+			s.End(false)
+			return errors.Wrap(err, "unable push files to pod")
+		}
+	}
+
+	// TODO: We may want to be using push local for consistency and because it has a delete path incase the volume remains in the cluster.
+	// We could also change the SyncFiles function directly with a build setting.
+	// err = a.pushLocal(pushParameters.Path,
+	// 	changedFiles,
+	// 	deletedFiles,
+	// 	isForcePush,
+	// 	globExps,
+	// 	compInfo,
+	// )
+	// if err != nil {
+	// 	return false, errors.Wrapf(err, "failed to sync to component with name %s", a.ComponentName)
+	// }
+	s.End(true)
+
+	return nil
+}
+
 // SyncFiles does a couple of things:
 // if files changed/deleted are passed in from watch, it syncs them to the component
 // otherwise, it checks which files have changed and syncs the delta

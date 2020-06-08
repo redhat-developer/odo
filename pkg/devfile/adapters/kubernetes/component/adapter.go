@@ -44,10 +44,16 @@ type Adapter struct {
 
 // Build image for devfile project
 func (a Adapter) Build(parameters common.BuildParameters) (err error) {
-	containerName := "build"
+	// TODO: Create a nicer name withe project name
+	containerName := fmt.Sprintf("build-deploy")
 	buildImage := "quay.io/buildah/stable:latest"
-	command := []string{"buildah"}
-	commandArgs := []string{"bud"}
+	// TODO(Optional): Init container before the buildah bud to copy over the files.
+	//command := []string{"buildah"}
+	//commandArgs := []string{"bud"}
+	command := []string{"tail"}
+	commandArgs := []string{"-f", "/dev/null"}
+
+	// TODO: Pass tag from user as ENV to container.
 	envVars := []corev1.EnvVar{{Name: "Dockerfile", Value: "/projects/Dockerfile"}}
 	volumeMounts := []corev1.VolumeMount{{Name: "varlibcontainers", MountPath: "/var/lib/containers"}}
 
@@ -67,10 +73,20 @@ func (a Adapter) Build(parameters common.BuildParameters) (err error) {
 		Privileged: &isPrivileged,
 	}
 
-	// TODO: Pass namespace from buildParameters
-	objectMeta := metav1.ObjectMeta{Name: "build", Labels: map[string]string{"Luke": "Hello"}}
+	container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
+		Name:      kclient.OdoSourceVolume,
+		MountPath: kclient.OdoSourceVolumeMount,
+	})
 
+	// TODO: Pass namespace from buildParameters
+	labels := map[string]string{
+		"component": a.ComponentName,
+	}
+	objectMeta := kclient.CreateObjectMeta(a.ComponentName, a.Client.Namespace, labels, nil)
 	podTemplateSpec := kclient.GeneratePodTemplateSpec(objectMeta, []corev1.Container{container})
+
+	// TODO: For openshift, meed to specify a service account that allows priviledged containers
+	//podTemplateSpec.Spec.ServiceAccountName = "privileged"
 
 	libContainersVolume := corev1.Volume{
 		Name: "varlibcontainers",
@@ -90,13 +106,37 @@ func (a Adapter) Build(parameters common.BuildParameters) (err error) {
 	}
 	klog.V(3).Infof("Successfully created component %v", deploymentSpec.Template.GetName())
 
-	_, err = a.Client.WaitForDeploymentRollout("build")
+	_, err = a.Client.WaitForDeploymentRollout(a.ComponentName)
 	if err != nil {
 		return errors.Wrap(err, "error while waiting for deployment rollout")
 	}
+
 	// TODO: SyncFiles
 
-	// Delete container
+	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
+	pod, err := a.waitAndGetComponentPod(true)
+	if err != nil {
+		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
+	}
+
+	log.Infof("\nSyncing to component %s", a.ComponentName)
+	// Get a sync adapter. Check if project files have changed and sync accordingly
+	syncAdapter := sync.New(a.AdapterContext, &a.Client)
+	compInfo := common.ComponentInfo{
+		ContainerName: containerName,
+		PodName:       pod.GetName(),
+	}
+
+	err = syncAdapter.SyncFilesBuild(parameters, compInfo)
+
+	if err != nil {
+		return errors.Wrapf(err, "Failed to sync to component with name %s", a.ComponentName)
+	}
+
+	// TODO: Exec run buildah bud and buildah push
+
+	// TODO: Delete pod and deployment
+
 	return
 }
 

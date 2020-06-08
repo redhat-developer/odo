@@ -58,6 +58,7 @@ func (do *DeployOptions) Complete(name string, cmd *cobra.Command, args []string
 
 // Validate validates the push parameters
 func (do *DeployOptions) Validate() (err error) {
+	// TODO: Validate the value of tag and any user parameteres.
 	return
 }
 

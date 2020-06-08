@@ -103,7 +103,7 @@ func (po *PushOptions) DevfilePush() (err error) {
 
 // DevfileBuild build an image of my application in the cluster
 func (do *DeployOptions) DevfileBuild() (err error) {
-	//dockerfilePath := extractDockerfileFromDevfile(devObj)
+	// TODO: dockerfilePath := extractDockerfileFromDevfile(devObj)
 
 	// Parse devfile
 	devObj, err := devfileParser.Parse(do.DevfilePath)
@@ -134,7 +134,6 @@ func (do *DeployOptions) DevfileBuild() (err error) {
 	}
 
 	devfileHandler, err := adapters.NewPlatformAdapter(componentName, do.componentContext, devObj, kubeContext)
-
 	if err != nil {
 		return err
 	}
@@ -144,6 +143,7 @@ func (do *DeployOptions) DevfileBuild() (err error) {
 		EnvSpecificInfo: *do.EnvSpecificInfo,
 	}
 
+	// TODO: I don't think we need to check this here, we could check this on the deploy if we want to expose a URL (odo url create)
 	warnIfURLSInvalid(do.EnvSpecificInfo.GetURL())
 
 	// Build image for the component
@@ -164,6 +164,9 @@ func (do *DeployOptions) DevfileBuild() (err error) {
 }
 
 func (do *DeployOptions) DevfileDeploy() (err error) {
+	// TODO:
+
+	// TODO:
 	return nil
 }
 
