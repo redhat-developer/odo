@@ -36,7 +36,7 @@ var _ = Describe("odo docker devfile catalog command tests", func() {
 	Context("When executing catalog list components on Docker", func() {
 		It("should list all supported devfile components", func() {
 			output := helper.CmdShouldPass("odo", "catalog", "list", "components")
-			helper.MatchAllInOutput(output, []string{"Odo Devfile Components", "java-spring-boot", "openLiberty"})
+			helper.MatchAllInOutput(output, []string{"Odo Devfile Components", "java-spring-boot", "java-openliberty"})
 		})
 	})
 
