@@ -30,8 +30,10 @@ type DevfileComponentType struct {
 
 // DevfileIndexEntry is the main struct of index.json from devfile registry
 type DevfileIndexEntry struct {
+	Name              string   `json:"name"`
 	DisplayName       string   `json:"displayName"`
 	Description       string   `json:"description"`
+	Supported         bool     `json:"supported"`
 	Tags              []string `json:"tags"`
 	Icon              string   `json:"icon"`
 	GlobalMemoryLimit string   `json:"globalMemoryLimit"`
@@ -39,30 +41,6 @@ type DevfileIndexEntry struct {
 	Links             struct {
 		Link string `json:"self"`
 	} `json:"links"`
-}
-
-// Devfile is the main structure of devfile from devfile registry
-type Devfile struct {
-	APIVersion string `yaml:"apiVersion"`
-	MetaData   struct {
-		GenerateName string `yaml:"generateName"` // should be removed when v1 support ends
-		Name         string `yaml:"name"`
-	} `yaml:"metadata"`
-	Components []struct {
-		Type      string `yaml:"type"`  // should be removed when v1 support ends
-		Alias     string `yaml:"alias"` // should be removed when v1 support ends
-		Container *struct {
-			Name string `yaml:"name"`
-		} `yaml:"container"`
-	} `yaml:"components"`
-	Commands []struct {
-		Name string `yaml:"name"` // should be removed when v1 support ends
-		Exec *struct {
-			Group *struct {
-				Kind string `yaml:"kind"`
-			} `yaml:"group"`
-		} `yaml:"exec"`
-	} `yaml:"commands"`
 }
 
 // ComponentSpec is the spec for ComponentType

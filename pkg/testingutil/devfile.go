@@ -111,6 +111,7 @@ func GetFakeComponent(name string) versionsCommon.DevfileComponent {
 
 }
 
+// GetFakeExecRunCommands returns fake commands for testing
 func GetFakeExecRunCommands() []versionsCommon.Exec {
 	return []versionsCommon.Exec{
 		{

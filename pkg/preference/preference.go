@@ -83,7 +83,7 @@ const (
 	DefaultDevfileV2RegistryName = "DefaultDevfileV2Registry"
 
 	// DefaultDevfileV2RegistryURL is the URL of default devfile registry
-	DefaultDevfileV2RegistryURL = "https://raw.githubusercontent.com/elsony/devfile2-registry/master"
+	DefaultDevfileV2RegistryURL = "https://raw.githubusercontent.com/odo-devfiles/registry/master"
 )
 
 // TimeoutSettingDescription is human-readable description for the timeout setting

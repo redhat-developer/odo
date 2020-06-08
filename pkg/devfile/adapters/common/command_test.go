@@ -12,6 +12,8 @@ import (
 
 var buildGroup = common.BuildCommandGroupType
 var runGroup = common.RunCommandGroupType
+var testGroup = common.TestCommandGroupType
+var debugGroup = common.DebugCommandGroupType
 var initGroup = common.InitCommandGroupType
 
 func TestGetCommand(t *testing.T) {
@@ -177,7 +179,113 @@ func TestGetCommand(t *testing.T) {
 
 }
 
-func TestValidateAction(t *testing.T) {
+func TestValidateCommandsForGroup(t *testing.T) {
+
+	componentName := "alias1"
+	command := "ls -la"
+	workDir := "/"
+	execCommands := []common.Exec{
+		{
+			Id:          "run command",
+			CommandLine: command,
+			Component:   componentName,
+			WorkingDir:  workDir,
+			Group: &versionsCommon.Group{
+				Kind:      runGroup,
+				IsDefault: true,
+			},
+		},
+		{
+			Id:          "build command",
+			CommandLine: command,
+			Component:   componentName,
+			WorkingDir:  workDir,
+			Group:       &versionsCommon.Group{Kind: buildGroup},
+		},
+		{
+			Id:          "build command 2",
+			CommandLine: command,
+			Component:   componentName,
+			WorkingDir:  workDir,
+			Group:       &versionsCommon.Group{Kind: buildGroup},
+		},
+		{
+			Id:          "test command",
+			CommandLine: command,
+			Component:   componentName,
+			WorkingDir:  workDir,
+			Group:       &versionsCommon.Group{Kind: testGroup},
+		},
+		{
+			Id:          "debug command",
+			CommandLine: command,
+			Component:   componentName,
+			WorkingDir:  workDir,
+			Group: &versionsCommon.Group{
+				Kind:      debugGroup,
+				IsDefault: true,
+			},
+		},
+		{
+			Id:          "customcommand",
+			CommandLine: command,
+			Component:   componentName,
+			WorkingDir:  workDir,
+			Group: &versionsCommon.Group{
+				Kind:      runGroup,
+				IsDefault: true,
+			},
+		},
+	}
+
+	devObj := devfileParser.DevfileObj{
+		Data: testingutil.TestDevfileData{
+			Components: []versionsCommon.DevfileComponent{
+				testingutil.GetFakeComponent("alias1"),
+			},
+			ExecCommands: execCommands,
+		},
+	}
+
+	tests := []struct {
+		name      string
+		groupType common.DevfileCommandGroupType
+		wantErr   bool
+	}{
+		{
+			name:      "Case 1: Two default run commands",
+			groupType: runGroup,
+			wantErr:   true,
+		},
+		{
+			name:      "Case 2: No default for more than one build commands",
+			groupType: buildGroup,
+			wantErr:   true,
+		},
+		{
+			name:      "Case 3: One command does not need default",
+			groupType: testGroup,
+			wantErr:   false,
+		},
+		{
+			name:      "Case 4: One command can have default",
+			groupType: debugGroup,
+			wantErr:   false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			err := validateCommandsForGroup(devObj.Data, tt.groupType)
+			if !tt.wantErr && err != nil {
+				t.Errorf("TestValidateCommandsForGroup unexpected error: %v", err)
+			}
+		})
+	}
+
+}
+
+func TestValidateCommand(t *testing.T) {
 
 	command := "ls -la"
 	component := "alias1"
@@ -694,7 +802,10 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 			CommandLine: command,
 			Component:   component,
 			WorkingDir:  workDir,
-			Group:       &versionsCommon.Group{Kind: runGroup},
+			Group: &versionsCommon.Group{
+				Kind:      runGroup,
+				IsDefault: true,
+			},
 		},
 
 		{

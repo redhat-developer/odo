@@ -13,14 +13,13 @@ import (
 func getCommand(data data.DevfileData, commandName string, groupType common.DevfileCommandGroupType) (supportedCommand common.DevfileCommand, err error) {
 
 	commands := data.GetCommands()
-	// firstMatchedCommandFound := false
 	var firstMatchedCommand common.DevfileCommand
 
 	if commandName == "" {
 		// validate the command groups before searching for a command match
 		// if the command groups are invalid, err out
-		// we only validate when the push command flags are absent, as push command
-		// does not require for a group, since we know the command kind from the flag
+		// we only validate when the push command flags are absent,
+		// since we know the command kind from the push flags
 		err = validateCommandsForGroup(data, groupType)
 		if err != nil {
 			return common.DevfileCommand{}, err
@@ -28,14 +27,6 @@ func getCommand(data data.DevfileData, commandName string, groupType common.Devf
 	}
 
 	for _, command := range commands {
-
-		// // validate command
-		// err = validateCommand(data, command)
-
-		// if err != nil {
-		// 	return common.DevfileCommand{}, err
-		// }
-
 		// if command is specified via flags, it has the highest priority
 		// search through all commands to find the specified command name
 		// if not found fallback to error.
@@ -55,7 +46,7 @@ func getCommand(data data.DevfileData, commandName string, groupType common.Devf
 				if command.Exec.Group.Kind != groupType {
 					return command, fmt.Errorf("command group mismatched, command %s is of group %v in devfile.yaml", commandName, command.Exec.Group.Kind)
 				}
-				// supportedCommand = command
+
 				return command, validateCommand(data, command)
 			}
 			continue
@@ -66,7 +57,6 @@ func getCommand(data data.DevfileData, commandName string, groupType common.Devf
 		if command.Exec.Group != nil && command.Exec.Group.Kind == groupType {
 			if command.Exec.Group.IsDefault {
 				// We need to scan all the commands to find default command
-				// supportedCommand = command
 				return command, validateCommand(data, command)
 			} else if reflect.DeepEqual(firstMatchedCommand, common.DevfileCommand{}) {
 				// store the first matched command in case there is no default command
@@ -77,13 +67,6 @@ func getCommand(data data.DevfileData, commandName string, groupType common.Devf
 
 	if commandName == "" {
 		// if default command is not found return the first command found for the matching type.
-		// for _, command := range commands {
-		// 	if command.Exec.Group != nil && command.Exec.Group.Kind == groupType {
-		// 		// supportedCommand = command
-		// 		return command, validateCommand(data, command)
-		// 	}
-		// }
-
 		if !reflect.DeepEqual(firstMatchedCommand, common.DevfileCommand{}) {
 			return firstMatchedCommand, validateCommand(data, firstMatchedCommand)
 		}
