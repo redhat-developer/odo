@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 
 	corev1 "k8s.io/api/core/v1"
@@ -86,7 +87,10 @@ func (a Adapter) Build(parameters common.BuildParameters) (err error) {
 	podTemplateSpec := kclient.GeneratePodTemplateSpec(objectMeta, []corev1.Container{container})
 
 	// TODO: For openshift, meed to specify a service account that allows priviledged containers
-	//podTemplateSpec.Spec.ServiceAccountName = "privileged"
+	saEnv := os.Getenv("BUILD_SERVICE_ACCOUNT")
+	if saEnv != "" {
+		podTemplateSpec.Spec.ServiceAccountName = saEnv
+	}
 
 	libContainersVolume := corev1.Volume{
 		Name: "varlibcontainers",
