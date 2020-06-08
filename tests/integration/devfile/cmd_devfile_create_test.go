@@ -58,14 +58,6 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 	})
 
-	Context("When executing odo create with invalid devfile component name", func() {
-		It("should should throw error of component not found", func() {
-			output := helper.CmdShouldPass("odo", "create", "invalid")
-			expectedString := "component \"invalid\" not found"
-			helper.MatchAllInOutput(output, []string{expectedString})
-		})
-	})
-
 	Context("When executing odo create with devfile component type argument", func() {
 		It("should successfully create the devfile component", func() {
 			helper.CmdShouldPass("odo", "create", "java-openliberty")
@@ -133,11 +125,11 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 	})
 
-	Context("When executing odo create with an invalid devfile component", func() {
+	Context("When executing odo create with an invalid devfile component type", func() {
 		It("should fail with please run 'odo catalog list components'", func() {
 			fakeComponentName := "fake-component"
 			output := helper.CmdShouldFail("odo", "create", fakeComponentName)
-			expectedString := "\"" + fakeComponentName + "\" not found"
+			expectedString := "component \"" + fakeComponentName + "\" not found"
 			helper.MatchAllInOutput(output, []string{expectedString})
 		})
 	})
