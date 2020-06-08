@@ -47,7 +47,7 @@ var _ = Describe("odo devfile catalog command tests", func() {
 				"Odo Devfile Components",
 				"NAME",
 				"java-spring-boot",
-				"openLiberty",
+				"java-openliberty",
 				"quarkus",
 				"DESCRIPTION",
 				"REGISTRY",
