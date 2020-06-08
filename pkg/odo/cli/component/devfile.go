@@ -62,7 +62,7 @@ func (po *PushOptions) DevfilePush() (err error) {
 		platformContext = nil
 	} else {
 		kc := kubernetes.KubernetesContext{
-			Namespace: po.namespace,
+			Namespace: po.KClient.Namespace,
 		}
 		platformContext = kc
 	}
