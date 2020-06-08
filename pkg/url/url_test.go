@@ -1645,7 +1645,8 @@ func TestListIngressAndRoute(t *testing.T) {
 	testURL1 := envinfo.EnvInfoURL{Name: "example-0", Port: 8080, Host: "com", Kind: "ingress"}
 	testURL2 := envinfo.EnvInfoURL{Name: "example-1", Port: 9090, Host: "com", Kind: "ingress"}
 	testURL3 := envinfo.EnvInfoURL{Name: "ingressurl3", Port: 8080, Host: "com", Secure: true, Kind: "ingress"}
-	testURL4 := envinfo.EnvInfoURL{Name: "routeurl1", Port: 8080, Kind: "route"}
+	testURL4 := envinfo.EnvInfoURL{Name: "example", Port: 8080, Kind: "route"}
+	testURL5 := envinfo.EnvInfoURL{Name: "routeurl2", Port: 8080, Kind: "route"}
 	esi := &envinfo.EnvSpecificInfo{}
 	err := esi.SetConfiguration("url", testURL2)
 	if err != nil {
@@ -1662,22 +1663,35 @@ func TestListIngressAndRoute(t *testing.T) {
 		// discard the error, since no physical file to write
 		t.Log("Expected error since no physical env file to write")
 	}
+	err = esi.SetConfiguration("url", testURL5)
+	if err != nil {
+		// discard the error, since no physical file to write
+		t.Log("Expected error since no physical env file to write")
+	}
+
 	fkclient, fkclientset := kclient.FakeNew()
 	fkclient.Namespace = "default"
 	fkclientset.Kubernetes.PrependReactor("list", "ingresses", func(action ktesting.Action) (bool, runtime.Object, error) {
 		return true, fake.GetIngressListWithMultiple(componentName), nil
 	})
+	fakeoclient, fakeoclientSet := occlient.FakeNew()
+	fakeoclientSet.RouteClientset.PrependReactor("list", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
+		routeList := &routev1.RouteList{
+			Items: []routev1.Route{
+				testingutil.GetSingleRoute("example", 8080, componentName, ""),
+			},
+		}
+		return true, routeList, nil
+	})
 
 	tests := []struct {
 		name      string
 		component string
-		client    *kclient.Client
 		wantURLs  []URL
 	}{
 		{
 			name:      "Should retrieve the URL list",
 			component: componentName,
-			client:    fkclient,
 			wantURLs: []URL{
 				URL{
 					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
@@ -1703,12 +1717,29 @@ func TestListIngressAndRoute(t *testing.T) {
 						State: StateTypeNotPushed,
 					},
 				},
+				URL{
+					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
+					ObjectMeta: metav1.ObjectMeta{Name: testURL4.Name},
+					Spec:       URLSpec{Protocol: "http", Port: testURL4.Port, Secure: testURL4.Secure, Kind: envinfo.ROUTE},
+					Status: URLStatus{
+						State: StateTypePushed,
+					},
+				},
+				URL{
+					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
+					ObjectMeta: metav1.ObjectMeta{Name: testURL5.Name},
+					Spec:       URLSpec{Port: testURL5.Port, Secure: testURL5.Secure, Kind: envinfo.ROUTE},
+					Status: URLStatus{
+						State: StateTypeNotPushed,
+					},
+				},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			urls, err := ListIngressAndRoute(tt.client, esi, componentName)
+
+			urls, err := ListIngressAndRoute(fakeoclient, fkclient, esi, componentName)
 			if err != nil {
 				t.Errorf("unexpected error %v", err)
 			}
@@ -1846,6 +1877,7 @@ func TestConvertEnvinfoURL(t *testing.T) {
 				Host:   host,
 				Port:   8080,
 				Secure: false,
+				Kind:   envinfo.INGRESS,
 			},
 			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
@@ -1882,6 +1914,19 @@ func TestConvertEnvinfoURL(t *testing.T) {
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 				ObjectMeta: metav1.ObjectMeta{Name: urlName},
 				Spec:       URLSpec{Host: fmt.Sprintf("%s.%s", urlName, host), Port: 8080, Secure: true, TLSSecret: secretName, Kind: envinfo.INGRESS},
+			},
+		},
+		{
+			name: "Case 4: Insecure route URL",
+			envInfoURL: envinfo.EnvInfoURL{
+				Name: urlName,
+				Port: 8080,
+				Kind: envinfo.ROUTE,
+			},
+			wantURL: URL{
+				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
+				ObjectMeta: metav1.ObjectMeta{Name: urlName},
+				Spec:       URLSpec{Port: 8080, Secure: false, Kind: envinfo.ROUTE},
 			},
 		},
 	}

@@ -8,6 +8,7 @@ import (
 
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/occlient"
 
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 
@@ -114,7 +115,11 @@ func (o *URLListOptions) Run() (err error) {
 			}
 		} else {
 			componentName := o.EnvSpecificInfo.GetName()
-			urls, err := url.ListIngressAndRoute(o.KClient, o.EnvSpecificInfo, componentName)
+			oclient, err := occlient.New()
+			if err != nil {
+				return err
+			}
+			urls, err := url.ListIngressAndRoute(oclient, o.KClient, o.EnvSpecificInfo, componentName)
 			if err != nil {
 				return err
 			}

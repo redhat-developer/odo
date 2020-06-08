@@ -445,16 +445,12 @@ func List(client *occlient.Client, localConfig *config.LocalConfigInfo, componen
 }
 
 // ListIngressAndRoute returns all Ingress and Route for given component.
-func ListIngressAndRoute(client *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, componentName string) (URLList, error) {
+func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, componentName string) (URLList, error) {
 	labelSelector := fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, componentName)
 	klog.V(4).Infof("Listing ingresses with label selector: %v", labelSelector)
 	ingresses, err := client.ListIngresses(labelSelector)
 	if err != nil {
 		return URLList{}, errors.Wrap(err, "unable to list ingress")
-	}
-	oclient, err := occlient.New()
-	if err != nil {
-		return URLList{}, err
 	}
 	routes, err := oclient.ListRoutes(labelSelector)
 	if err != nil {
@@ -610,15 +606,20 @@ func ListDockerURL(client *lclient.Client, componentName string, envSpecificInfo
 }
 
 // GetProtocol returns the protocol string
-func GetProtocol(route routev1.Route, ingress iextensionsv1.Ingress, isExperimental bool) string {
-	if isExperimental {
-		if ingress.Spec.TLS != nil {
-			return "https"
-		}
-	} else {
-		if route.Spec.TLS != nil {
-			return "https"
-		}
+func GetProtocol(route routev1.Route, ingress iextensionsv1.Ingress) string {
+	// if isExperimental {
+	// 	if ingress.Spec.TLS != nil {
+	// 		return "https"
+	// 	}
+	// } else {
+	// 	if route.Spec.TLS != nil {
+	// 		return "https"
+	// 	}
+	// }
+	if !reflect.DeepEqual(ingress, iextensionsv1.Ingress{}) && ingress.Spec.TLS != nil {
+		return "https"
+	} else if !reflect.DeepEqual(route, routev1.Route{}) && route.Spec.TLS != nil {
+		return "https"
 	}
 	return "http"
 }
