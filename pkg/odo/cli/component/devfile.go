@@ -43,8 +43,11 @@ func (po *PushOptions) DevfilePush() error {
 		eventLoggingClient := machineoutput.NewConsoleMachineEventLoggingClient()
 		eventLoggingClient.ReportError(err, machineoutput.TimestampNow())
 
-		// Supress the error to prevent it from being output by the generic machine-readable handler
+		// Suppress the error to prevent it from being output by the generic machine-readable handler (which will produce invalid JSON for our purposes)
 		err = nil
+
+		// os.Exit(1) since we are suppressing the generic machine-readable handler's exit code logic
+		os.Exit(1)
 	}
 
 	return err
