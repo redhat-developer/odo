@@ -121,14 +121,14 @@ var _ = Describe("odo url command tests", func() {
 			helper.CmdShouldPass("odo", "url", "create", "myurl", "--secure", "--context", context)
 
 			actualURLDescribeJSON := helper.CmdShouldPass("odo", "url", "describe", "myurl", "-o", "json", "--context", context)
-			desiredURLDescribeJSON := fmt.Sprintf(`{"kind":"url","apiVersion":"odo.dev/v1alpha1","metadata":{ "name": "myurl","creationTimestamp": null},"spec":{ "port": 8080,"secure": true},"status": {"state": "Not Pushed"}}`)
+			desiredURLDescribeJSON := fmt.Sprintf(`{"kind":"url","apiVersion":"odo.dev/v1alpha1","metadata":{ "name": "myurl","creationTimestamp": null},"spec":{ "port": 8080,"secure": true,"kind": "route"},"status": {"state": "Not Pushed"}}`)
 			Expect(desiredURLDescribeJSON).Should(MatchJSON(actualURLDescribeJSON))
 
 			helper.CmdShouldPass("odo", "push", "--context", context)
 
 			// odo url describe -o json
 			actualURLDescribeJSON = helper.CmdShouldPass("odo", "url", "describe", "myurl", "-o", "json", "--context", context)
-			desiredURLDescribeJSON = fmt.Sprintf(`{"kind":"url","apiVersion":"odo.dev/v1alpha1","metadata":{ "name": "myurl","creationTimestamp": null},"spec":{ "port": 8080,"secure": true},"status": {"state": "Pushed"}}`)
+			desiredURLDescribeJSON = fmt.Sprintf(`{"kind":"url","apiVersion":"odo.dev/v1alpha1","metadata":{ "name": "myurl","creationTimestamp": null},"spec":{ "port": 8080,"secure": true,"kind": "route"},"status": {"state": "Pushed"}}`)
 			Expect(desiredURLDescribeJSON).Should(MatchJSON(actualURLDescribeJSON))
 		})
 	})
@@ -151,7 +151,7 @@ var _ = Describe("odo url command tests", func() {
 			actualURLListJSON := helper.CmdShouldPass("odo", "url", "list", "-o", "json")
 			fullURLPath := helper.DetermineRouteURL("")
 			pathNoHTTP := strings.Split(fullURLPath, "//")[1]
-			desiredURLListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.dev/v1alpha1","metadata":{},"items":[{"kind":"url","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"host":"%s","protocol":"http","port":8080,"secure":false},"status":{"state": "Pushed"}}]}`, pathNoHTTP)
+			desiredURLListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.dev/v1alpha1","metadata":{},"items":[{"kind":"url","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"host":"%s","protocol":"http","port":8080,"secure":false,"kind": "route"},"status":{"state": "Pushed"}}]}`, pathNoHTTP)
 			Expect(desiredURLListJSON).Should(MatchJSON(actualURLListJSON))
 		})
 
@@ -159,7 +159,7 @@ var _ = Describe("odo url command tests", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--app", "myapp", "--project", project, "--git", "https://github.com/openshift/nodejs-ex")
 			helper.CmdShouldPass("odo", "url", "create", "myurl", "--secure")
 			actualURLListJSON := helper.CmdShouldPass("odo", "url", "list", "-o", "json")
-			desiredURLListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.dev/v1alpha1","metadata":{},"items":[{"kind":"url","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"port":8080,"secure":true},"status":{"state": "Not Pushed"}}]}`)
+			desiredURLListJSON := fmt.Sprintf(`{"kind":"List","apiVersion":"odo.dev/v1alpha1","metadata":{},"items":[{"kind":"url","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"port":8080,"secure":true,"kind": "route"},"status":{"state": "Not Pushed"}}]}`)
 			Expect(desiredURLListJSON).Should(MatchJSON(actualURLListJSON))
 
 			helper.CmdShouldPass("odo", "push")
@@ -168,7 +168,7 @@ var _ = Describe("odo url command tests", func() {
 			actualURLListJSON = helper.CmdShouldPass("odo", "url", "list", "-o", "json")
 			fullURLPath := helper.DetermineRouteURL("")
 			pathNoHTTP := strings.Split(fullURLPath, "//")[1]
-			desiredURLListJSON = fmt.Sprintf(`{"kind":"List","apiVersion":"odo.dev/v1alpha1","metadata":{},"items":[{"kind":"url","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"host":"%s","protocol":"https","port":8080,"secure":true},"status":{"state": "Pushed"}}]}`, pathNoHTTP)
+			desiredURLListJSON = fmt.Sprintf(`{"kind":"List","apiVersion":"odo.dev/v1alpha1","metadata":{},"items":[{"kind":"url","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"myurl","creationTimestamp":null},"spec":{"host":"%s","protocol":"https","port":8080,"secure":true,"kind": "route"},"status":{"state": "Pushed"}}]}`, pathNoHTTP)
 			Expect(desiredURLListJSON).Should(MatchJSON(actualURLListJSON))
 		})
 	})

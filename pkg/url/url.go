@@ -20,7 +20,6 @@ import (
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	urlLabels "github.com/openshift/odo/pkg/url/labels"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
@@ -85,22 +84,21 @@ func Get(client *occlient.Client, localConfig *config.LocalConfigInfo, urlName s
 	return URL{}, errors.New(fmt.Sprintf("the url %v does not exist", urlName))
 }
 
-// GetIngress returns ingress spec for given URL name
-func GetIngress(kClient *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, urlName string, componentName string) (URL, error) {
+// GetIngressOrRoute returns ingress/route spec for given URL name
+func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, urlName string, componentName string) (URL, error) {
 	remoteExist := true
 	// Check whether remote already created the ingress
-	ingress, err := kClient.GetIngress(urlName)
-	if kerrors.IsNotFound(err) {
+	ingress, getIngressErr := kClient.GetIngress(urlName)
+	// Check whether remote already created the route
+	route, getRouteErr := client.GetRoute(urlName)
+	if kerrors.IsNotFound(getIngressErr) && kerrors.IsNotFound(getRouteErr) {
 		remoteExist = false
-	} else if err != nil {
-		return URL{}, errors.Wrap(err, "unable to get ingress on cluster")
+	} else if getIngressErr != nil && getRouteErr != nil {
+		return URL{}, errors.Wrap(getIngressErr, "unable to get URL on cluster")
 	}
+
 	envinfoURLs := envSpecificInfo.GetURL()
 	for _, url := range envinfoURLs {
-		// only checks for Ingress URLs
-		if url.Kind != envinfo.INGRESS {
-			continue
-		}
 		localURL := ConvertEnvinfoURL(url, componentName)
 		// search local URL, if it exist in local, update state with remote status
 		if localURL.Name == urlName {
@@ -113,11 +111,17 @@ func GetIngress(kClient *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInf
 		}
 	}
 
-	if err == nil && remoteExist {
-		// Remote exist, but not in local, so it's deleted status
-		clusterURL := getMachineReadableFormatIngress(*ingress)
-		clusterURL.Status.State = StateTypeLocallyDeleted
-		return clusterURL, nil
+	if remoteExist {
+		if ingress.Spec.Rules != nil {
+			// Remote exist, but not in local, so it's deleted status
+			clusterURL := getMachineReadableFormatIngress(*ingress)
+			clusterURL.Status.State = StateTypeLocallyDeleted
+			return clusterURL, nil
+		} else if route.Annotations != nil && route.Annotations["openshift.io/host.generated"] == "true" {
+			clusterURL := getMachineReadableFormat(*route)
+			clusterURL.Status.State = StateTypeLocallyDeleted
+			return clusterURL, nil
+		}
 	}
 
 	// can't find the URL in local and remote
@@ -288,7 +292,7 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 		if err != nil {
 			return "", errors.Wrap(err, "unable to create ingress")
 		}
-		return GetURLString(GetProtocol(routev1.Route{}, *ingress, isExperimental), "", ingressDomain, isExperimental), nil
+		return GetURLString(GetProtocol(routev1.Route{}, *ingress), "", ingressDomain, isExperimental), nil
 	} else {
 		if !isRouteSupported {
 			return "", errors.Errorf("routes are not available on non OpenShift clusters")
@@ -330,7 +334,7 @@ func Create(client *occlient.Client, kClient *kclient.Client, parameters CreateP
 		if err != nil {
 			return "", errors.Wrap(err, "unable to create route")
 		}
-		return GetURLString(GetProtocol(*route, iextensionsv1.Ingress{}, isExperimental), route.Spec.Host, "", isExperimental), nil
+		return GetURLString(GetProtocol(*route, iextensionsv1.Ingress{}), route.Spec.Host, "", isExperimental), nil
 	}
 
 }
@@ -468,7 +472,7 @@ func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSp
 	}
 	for _, r := range routes {
 		// only openshift route has host.generated=true
-		if r.Annotations["openshift.io/host.generated"] == "true" {
+		if r.Annotations != nil && r.Annotations["openshift.io/host.generated"] == "true" {
 			clusterURL := getMachineReadableFormat(r)
 			routeMap[clusterURL.Name] = clusterURL
 		}
@@ -607,15 +611,6 @@ func ListDockerURL(client *lclient.Client, componentName string, envSpecificInfo
 
 // GetProtocol returns the protocol string
 func GetProtocol(route routev1.Route, ingress iextensionsv1.Ingress) string {
-	// if isExperimental {
-	// 	if ingress.Spec.TLS != nil {
-	// 		return "https"
-	// 	}
-	// } else {
-	// 	if route.Spec.TLS != nil {
-	// 		return "https"
-	// 	}
-	// }
 	if !reflect.DeepEqual(ingress, iextensionsv1.Ingress{}) && ingress.Spec.TLS != nil {
 		return "https"
 	} else if !reflect.DeepEqual(route, routev1.Route{}) && route.Spec.TLS != nil {
@@ -763,7 +758,7 @@ func getMachineReadableFormat(r routev1.Route) URL {
 	return URL{
 		TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: apiVersion},
 		ObjectMeta: metav1.ObjectMeta{Name: r.Labels[urlLabels.URLLabel]},
-		Spec:       URLSpec{Host: r.Spec.Host, Port: r.Spec.Port.TargetPort.IntValue(), Protocol: GetProtocol(r, iextensionsv1.Ingress{}, experimental.IsExperimentalModeEnabled()), Secure: r.Spec.TLS != nil, Kind: envinfo.ROUTE},
+		Spec:       URLSpec{Host: r.Spec.Host, Port: r.Spec.Port.TargetPort.IntValue(), Protocol: GetProtocol(r, iextensionsv1.Ingress{}), Secure: r.Spec.TLS != nil, Kind: envinfo.ROUTE},
 	}
 
 }
