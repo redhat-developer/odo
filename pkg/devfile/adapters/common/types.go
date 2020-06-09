@@ -30,6 +30,7 @@ type Storage struct {
 type BuildParameters struct {
 	Path            string                  // Path refers to the parent folder containing the source code to push up to a component
 	EnvSpecificInfo envinfo.EnvSpecificInfo // EnvSpecificInfo contains infomation of env.yaml file
+	Tag             string                  // Tag refers to the image tag of the image being built
 	IgnoredFiles    []string                // IgnoredFiles is the list of files to not push up to a component
 }
 

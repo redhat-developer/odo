@@ -32,7 +32,7 @@ type Adapter struct {
 }
 
 // SyncsFilesBuild sync the local files to build container volume
-func (a Adapter) SyncFilesBuild(buildParameters common.BuildParameters, compInfo common.ComponentInfo) (err error) {
+func (a Adapter) SyncFilesBuild(buildParameters common.BuildParameters, compInfo common.ComponentInfo) (syncFolder string, err error) {
 
 	// If we want to ignore any files
 	absIgnoreRules := []string{}
@@ -41,7 +41,7 @@ func (a Adapter) SyncFilesBuild(buildParameters common.BuildParameters, compInfo
 	}
 
 	var s *log.Status
-	syncFolder := "/projects"
+	syncFolder = "/projects"
 
 	s = log.Spinner("Checking files for deploy")
 	// run the indexer and find the modified/added/deleted/renamed files
@@ -52,7 +52,7 @@ func (a Adapter) SyncFilesBuild(buildParameters common.BuildParameters, compInfo
 		err = CopyFile(a.Client, buildParameters.Path, compInfo, syncFolder, files, absIgnoreRules)
 		if err != nil {
 			s.End(false)
-			return errors.Wrap(err, "unable push files to pod")
+			return syncFolder, errors.Wrap(err, "unable push files to pod")
 		}
 	}
 
@@ -70,7 +70,7 @@ func (a Adapter) SyncFilesBuild(buildParameters common.BuildParameters, compInfo
 	// }
 	s.End(true)
 
-	return nil
+	return syncFolder, nil
 }
 
 // SyncFiles does a couple of things:

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strings"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,50 +45,40 @@ type Adapter struct {
 	devfileRunCmd   string
 }
 
-// Build image for devfile project
-func (a Adapter) Build(parameters common.BuildParameters) (err error) {
-	// TODO: Create a nicer name withe project name
-	containerName := fmt.Sprintf("build-deploy")
+func (a Adapter) generateBuildContainer(containerName string, imageTag string) corev1.Container {
 	buildImage := "quay.io/buildah/stable:latest"
+
 	// TODO(Optional): Init container before the buildah bud to copy over the files.
 	//command := []string{"buildah"}
 	//commandArgs := []string{"bud"}
 	command := []string{"tail"}
 	commandArgs := []string{"-f", "/dev/null"}
 
-	// TODO: Pass tag from user as ENV to container.
-	envVars := []corev1.EnvVar{{Name: "Dockerfile", Value: "/projects/Dockerfile"}}
-	volumeMounts := []corev1.VolumeMount{{Name: "varlibcontainers", MountPath: "/var/lib/containers"}}
-
-	container := corev1.Container{
-		Name:            containerName,
-		Image:           buildImage,
-		ImagePullPolicy: corev1.PullAlways,
-		Command:         command,
-		Args:            commandArgs,
-		Env:             envVars,
-		VolumeMounts:    volumeMounts,
+	// TODO: Edit dockerfile env value if mounting it sometwhere else
+	envVars := []corev1.EnvVar{
+		{Name: "Dockerfile", Value: "/projects/Dockerfile"},
+		{Name: "Tag", Value: imageTag},
 	}
 
 	isPrivileged := true
+	resourceReqs := corev1.ResourceRequirements{}
 
-	container.SecurityContext = &corev1.SecurityContext{
-		Privileged: &isPrivileged,
+	container := kclient.GenerateContainer(containerName, buildImage, isPrivileged, command, commandArgs, envVars, resourceReqs, nil)
+
+	container.VolumeMounts = []corev1.VolumeMount{
+		{Name: "varlibcontainers", MountPath: "/var/lib/containers"},
+		{Name: kclient.OdoSourceVolume, MountPath: kclient.OdoSourceVolumeMount},
 	}
 
-	container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
-		Name:      kclient.OdoSourceVolume,
-		MountPath: kclient.OdoSourceVolumeMount,
-	})
+	return *container
+}
 
-	// TODO: Pass namespace from buildParameters
-	labels := map[string]string{
-		"component": a.ComponentName,
-	}
+func (a Adapter) createBuildDeployment(labels map[string]string, container corev1.Container) (err error) {
+
 	objectMeta := kclient.CreateObjectMeta(a.ComponentName, a.Client.Namespace, labels, nil)
 	podTemplateSpec := kclient.GeneratePodTemplateSpec(objectMeta, []corev1.Container{container})
 
-	// TODO: For openshift, meed to specify a service account that allows priviledged containers
+	// TODO: For openshift, need to specify a service account that allows priviledged containers
 	saEnv := os.Getenv("BUILD_SERVICE_ACCOUNT")
 	if saEnv != "" {
 		podTemplateSpec.Spec.ServiceAccountName = saEnv
@@ -110,19 +102,80 @@ func (a Adapter) Build(parameters common.BuildParameters) (err error) {
 	}
 	klog.V(3).Infof("Successfully created component %v", deploymentSpec.Template.GetName())
 
+	return nil
+}
+
+func (a Adapter) executeBuildAndPush(syncFolder string, imageTag string, compInfo common.ComponentInfo) (err error) {
+	// Running buildah bud and buildah push
+	buildahBud := "buildah bud -f ./Dockerfile -t $Tag ."
+	command := []string{adaptersCommon.ShellExecutable, "-c", "cd " + syncFolder + " && " + buildahBud}
+
+	// TODO: Add spinner
+	err = exec.ExecuteCommand(&a.Client, compInfo, command, false)
+	if err != nil {
+		return errors.Wrapf(err, "failed to build image for component with name: %s", a.ComponentName)
+	}
+
+	values := strings.Split(imageTag, "/")
+	tag := imageTag
+	buildahPush := "buildah push "
+
+	// Need to change this IF to be more robust
+	if len(values) == 3 && strings.Contains(values[0], "openshift") {
+		// This needs a valid service account: e.g builder for openshift
+		// --creds flag arg has the format username:password
+		// we want to use serviceaccount:token
+		buildahPush += "--creds "
+		saEnv := os.Getenv("BUILD_SERVICE_ACCOUNT")
+		if saEnv != "" {
+			buildahPush += saEnv
+		} else {
+			buildahBud += "dummy-username"
+		}
+		buildahPush += ":$(cat /var/run/secrets/kubernetes.io/serviceaccount/token) "
+	}
+
+	//TODO: handle dockerhub case and creds!!
+	buildahPush += "--tls-verify=false " + tag + " docker://" + tag
+	command = []string{adaptersCommon.ShellExecutable, "-c", buildahPush}
+
+	//TODO: Add Spinner
+	err = exec.ExecuteCommand(&a.Client, compInfo, command, false)
+	if err != nil {
+		return errors.Wrapf(err, "failed to push build image to the registry for component with name: %s", a.ComponentName)
+	}
+
+	return nil
+}
+
+// Build image for devfile project
+func (a Adapter) Build(parameters common.BuildParameters) (err error) {
+	containerName := a.ComponentName + "-container"
+	buildContainer := a.generateBuildContainer(containerName, parameters.Tag)
+	labels := map[string]string{
+		"component": a.ComponentName,
+	}
+
+	err = a.createBuildDeployment(labels, buildContainer)
+	if err != nil {
+		return errors.Wrap(err, "error while creating buildah deployment")
+	}
+
 	_, err = a.Client.WaitForDeploymentRollout(a.ComponentName)
 	if err != nil {
 		return errors.Wrap(err, "error while waiting for deployment rollout")
 	}
 
-	// TODO: SyncFiles
-
 	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
-	pod, err := a.waitAndGetComponentPod(true)
+	pod, err := a.waitAndGetComponentPod(false)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
 	}
 
+	// Need to wait for container to start
+	time.Sleep(5 * time.Second)
+
+	// Sync files to volume
 	log.Infof("\nSyncing to component %s", a.ComponentName)
 	// Get a sync adapter. Check if project files have changed and sync accordingly
 	syncAdapter := sync.New(a.AdapterContext, &a.Client)
@@ -131,15 +184,22 @@ func (a Adapter) Build(parameters common.BuildParameters) (err error) {
 		PodName:       pod.GetName(),
 	}
 
-	err = syncAdapter.SyncFilesBuild(parameters, compInfo)
+	syncFolder, err := syncAdapter.SyncFilesBuild(parameters, compInfo)
 
 	if err != nil {
-		return errors.Wrapf(err, "Failed to sync to component with name %s", a.ComponentName)
+		return errors.Wrapf(err, "failed to sync to component with name %s", a.ComponentName)
 	}
 
-	// TODO: Exec run buildah bud and buildah push
+	err = a.executeBuildAndPush(syncFolder, parameters.Tag, compInfo)
+	if err != nil {
+		return err
+	}
 
-	// TODO: Delete pod and deployment
+	// Delete deployment
+	err = a.Delete(labels)
+	if err != nil {
+		return errors.Wrapf(err, "failed to delete build step for component with name: %s", a.ComponentName)
+	}
 
 	return
 }

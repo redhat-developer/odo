@@ -115,7 +115,7 @@ func (do *DeployOptions) DevfileBuild() (err error) {
 	if err != nil {
 		return errors.Wrap(err, "unable to get component name")
 	}
-	// TODO: Change name, append -deploy ?
+	componentName = "build-" + componentName
 
 	// Set the source path to either the context or current working directory (if context not set)
 	do.sourcePath, err = util.GetAbsPath(do.componentContext)
@@ -140,6 +140,7 @@ func (do *DeployOptions) DevfileBuild() (err error) {
 
 	buildParams := common.BuildParameters{
 		Path:            do.sourcePath,
+		Tag:             do.tag,
 		EnvSpecificInfo: *do.EnvSpecificInfo,
 	}
 
