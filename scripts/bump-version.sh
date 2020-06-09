@@ -30,10 +30,6 @@ echo "* Bumping version in scripts/rpm-prepare.sh"
 sed -i "s/\(ODO_VERSION:=\)[0-9]*\.[0-9]*\.[0-9]*/\1${NEW_VERSION}/g" scripts/rpm-prepare.sh
 check_version scripts/rpm-prepare.sh
 
-echo "* Bumping version in scripts/installer.sh"
-sed -i "s/\(LATEST_VERSION=\)\"v[0-9]*\.[0-9]*\.[0-9]*\(?:-\w+\)\?\"/\1\"v${NEW_VERSION}\"/g" scripts/installer.sh
-check_version scripts/installer.sh
-
 echo "* Bumping version in Dockerfile.rhel"
 sed -i "s/\(version=\)[0-9]*\.[0-9]*\.[0-9]*/\1${NEW_VERSION}/g" Dockerfile.rhel
 check_version Dockerfile.rhel
