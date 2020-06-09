@@ -303,7 +303,7 @@ func Spinnerf(format string, a ...interface{}) *Status {
 
 // SpinnerNoSpin is the same as the "Spinner" function but forces no spinning
 func SpinnerNoSpin(status string) *Status {
-	s := NewStatus(os.Stdout)
+	s := NewStatus(GetStdout())
 	s.Start(status, true)
 	return s
 }
