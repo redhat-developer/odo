@@ -67,7 +67,7 @@ var _ = Describe("odo devfile create command tests", func() {
 		It("should fail to create the devfile componet with invalid component type", func() {
 			fakeComponentName := "fake-component"
 			output := helper.CmdShouldFail("odo", "create", fakeComponentName)
-			expectedString := "\"" + fakeComponentName + "\" not found"
+			expectedString := "component type \"" + fakeComponentName + "\" not found"
 			helper.MatchAllInOutput(output, []string{expectedString})
 		})
 	})
