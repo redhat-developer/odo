@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"os"
 	"path/filepath"
 	"strings"
@@ -62,7 +63,7 @@ type WatchOptions struct {
 	componentName  string
 	devfilePath    string
 	namespace      string
-	devfileHandler adapters.PlatformAdapter
+	devfileHandler common.ComponentAdapter
 
 	EnvSpecificInfo *envinfo.EnvSpecificInfo
 
@@ -126,7 +127,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 		} else {
 			platformContext = nil
 		}
-		wo.devfileHandler, err = adapters.NewPlatformAdapter(wo.componentName, wo.componentContext, devObj, platformContext)
+		wo.devfileHandler, err = adapters.NewComponentAdapter(wo.componentName, wo.componentContext, devObj, platformContext)
 
 		return err
 	}

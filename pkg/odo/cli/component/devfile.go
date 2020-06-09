@@ -67,7 +67,7 @@ func (po *PushOptions) DevfilePush() (err error) {
 		platformContext = kc
 	}
 
-	devfileHandler, err := adapters.NewPlatformAdapter(componentName, po.componentContext, devObj, platformContext)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, po.componentContext, devObj, platformContext)
 
 	if err != nil {
 		return err
@@ -142,7 +142,7 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 	labels := map[string]string{
 		"component": componentName,
 	}
-	devfileHandler, err := adapters.NewPlatformAdapter(componentName, do.componentContext, devObj, kc)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, do.componentContext, devObj, kc)
 	if err != nil {
 		return err
 	}
