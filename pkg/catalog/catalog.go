@@ -166,7 +166,6 @@ func ListDevfileComponents(registryName string) (DevfileComponentTypeList, error
 			DisplayName: devfileIndex.DisplayName,
 			Description: devfileIndex.Description,
 			Link:        devfileIndex.Links.Link,
-			Support:     devfileIndex.Supported,
 			Registry:    devfileIndex.Registry,
 		}
 		catalogDevfileList.Items = append(catalogDevfileList.Items, catalogDevfile)

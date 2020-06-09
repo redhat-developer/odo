@@ -24,7 +24,6 @@ type DevfileComponentType struct {
 	DisplayName string
 	Description string
 	Link        string
-	Support     bool
 	Registry    Registry
 }
 

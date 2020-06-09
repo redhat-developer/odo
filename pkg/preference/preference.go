@@ -67,23 +67,11 @@ const (
 	// KubePushTarget represents the value of the push target when it's set to Kube
 	KubePushTarget = "kube"
 
-	// CheDevfileRegistryName is the name of Che devfile registry
-	CheDevfileRegistryName = "CheDevfileRegistry"
-
-	// CheDevfileRegistryURL is the URL of Che devfile registry
-	CheDevfileRegistryURL = "https://che-devfile-registry.openshift.io"
-
 	// DefaultDevfileRegistryName is the name of default devfile registry
 	DefaultDevfileRegistryName = "DefaultDevfileRegistry"
 
 	// DefaultDevfileRegistryURL is the URL of default devfile registry
-	DefaultDevfileRegistryURL = "https://raw.githubusercontent.com/elsony/devfile-registry/master"
-
-	// DefaultDevfileV2RegistryName is the name of default devfile v2 registry
-	DefaultDevfileV2RegistryName = "DefaultDevfileV2Registry"
-
-	// DefaultDevfileV2RegistryURL is the URL of default devfile registry
-	DefaultDevfileV2RegistryURL = "https://raw.githubusercontent.com/odo-devfiles/registry/master"
+	DefaultDevfileRegistryURL = "https://raw.githubusercontent.com/odo-devfiles/registry/master"
 )
 
 // TimeoutSettingDescription is human-readable description for the timeout setting
@@ -216,16 +204,8 @@ func NewPreferenceInfo() (*PreferenceInfo, error) {
 			// Handle user has preference file but doesn't use dynamic registry before
 			defaultRegistryList := []Registry{
 				{
-					Name: CheDevfileRegistryName,
-					URL:  CheDevfileRegistryURL,
-				},
-				{
-					Name: DefaultDevfileRegistryName, // should be removed when v1 support ends
+					Name: DefaultDevfileRegistryName,
 					URL:  DefaultDevfileRegistryURL,
-				},
-				{
-					Name: DefaultDevfileV2RegistryName,
-					URL:  DefaultDevfileV2RegistryURL,
 				},
 			}
 			c.OdoSettings.RegistryList = &defaultRegistryList

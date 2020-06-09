@@ -397,7 +397,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		if co.interactive {
 			// Interactive mode
 
-			// Component type: We provide supported devfile component list to let user choose
+			// Component type: We provide devfile component list to let user choose
 			catalogDevfileList, err := catalog.ListDevfileComponents(co.devfileMetadata.devfileRegistry.Name)
 			if err != nil {
 				return err
@@ -405,13 +405,8 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			if catalogDevfileList.DevfileRegistries == nil {
 				log.Warning("Registry is empty, please run `odo registry add <registry name> <registry URL>` to add a registry\n")
 			}
-			var supDevfileCatalogList []catalog.DevfileComponentType
-			for _, devfileComponent := range catalogDevfileList.Items {
-				if devfileComponent.Support {
-					supDevfileCatalogList = append(supDevfileCatalogList, devfileComponent)
-				}
-			}
-			componentType = ui.SelectDevfileComponentType(supDevfileCatalogList)
+
+			componentType = ui.SelectDevfileComponentType(catalogDevfileList.Items)
 
 			// Component name: User needs to specify the componet name, by default it is component type that user chooses
 			componentName = ui.EnterDevfileComponentName(componentType)
@@ -526,12 +521,10 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			for _, devfileComponent := range catalogDevfileList.Items {
 				if co.devfileMetadata.componentType == devfileComponent.Name {
 					hasComponent = true
-					if devfileComponent.Support {
-						co.devfileMetadata.devfileSupport = true
-						co.devfileMetadata.devfileLink = devfileComponent.Link
-						co.devfileMetadata.devfileRegistry = devfileComponent.Registry
-						break
-					}
+					co.devfileMetadata.devfileSupport = true
+					co.devfileMetadata.devfileLink = devfileComponent.Link
+					co.devfileMetadata.devfileRegistry = devfileComponent.Registry
+					break
 				}
 			}
 
