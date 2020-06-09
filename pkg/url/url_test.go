@@ -1647,6 +1647,7 @@ func TestListIngressAndRoute(t *testing.T) {
 	testURL3 := envinfo.EnvInfoURL{Name: "ingressurl3", Port: 8080, Host: "com", Secure: true, Kind: "ingress"}
 	testURL4 := envinfo.EnvInfoURL{Name: "example", Port: 8080, Kind: "route"}
 	testURL5 := envinfo.EnvInfoURL{Name: "routeurl2", Port: 8080, Kind: "route"}
+	testURL6 := envinfo.EnvInfoURL{Name: "routeurl3", Port: 8080, Kind: "route"}
 	esi := &envinfo.EnvSpecificInfo{}
 	err := esi.SetConfiguration("url", testURL2)
 	if err != nil {
@@ -1678,7 +1679,8 @@ func TestListIngressAndRoute(t *testing.T) {
 	fakeoclientSet.RouteClientset.PrependReactor("list", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
 		routeList := &routev1.RouteList{
 			Items: []routev1.Route{
-				testingutil.GetSingleRoute("example", 8080, componentName, ""),
+				testingutil.GetSingleRoute(testURL4.Name, testURL4.Port, componentName, ""),
+				testingutil.GetSingleRoute(testURL6.Name, testURL6.Port, componentName, ""),
 			},
 		}
 		return true, routeList, nil
@@ -1733,6 +1735,14 @@ func TestListIngressAndRoute(t *testing.T) {
 						State: StateTypeNotPushed,
 					},
 				},
+				URL{
+					TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
+					ObjectMeta: metav1.ObjectMeta{Name: testURL6.Name},
+					Spec:       URLSpec{Protocol: "http", Port: testURL6.Port, Secure: testURL6.Secure, Kind: envinfo.ROUTE},
+					Status: URLStatus{
+						State: StateTypeLocallyDeleted,
+					},
+				},
 			},
 		},
 	}
@@ -1761,12 +1771,15 @@ func TestListIngressAndRoute(t *testing.T) {
 
 }
 
-func TestGetIngress(t *testing.T) {
+func TestGetIngressOrRoute(t *testing.T) {
 	componentName := "testcomponent"
 
 	testURL1 := envinfo.EnvInfoURL{Name: "ingressurl1", Port: 8080, Host: "com", Kind: "ingress"}
 	testURL2 := envinfo.EnvInfoURL{Name: "ingressurl2", Port: 8080, Host: "com", Kind: "ingress"}
 	testURL3 := envinfo.EnvInfoURL{Name: "ingressurl3", Port: 8080, Host: "com", Secure: true, Kind: "ingress"}
+	testURL4 := envinfo.EnvInfoURL{Name: "example", Port: 8080, Kind: "route"}
+	testURL5 := envinfo.EnvInfoURL{Name: "routeurl2", Port: 8080, Kind: "route"}
+	testURL6 := envinfo.EnvInfoURL{Name: "routeurl3", Port: 8080, Kind: "route"}
 	esi := &envinfo.EnvSpecificInfo{}
 	err := esi.SetConfiguration("url", testURL2)
 	if err != nil {
@@ -1778,20 +1791,32 @@ func TestGetIngress(t *testing.T) {
 		// discard the error, since no physical file to write
 		t.Log("Expected error since no physical env file to write")
 	}
+	err = esi.SetConfiguration("url", testURL4)
+	if err != nil {
+		// discard the error, since no physical file to write
+		t.Log("Expected error since no physical env file to write")
+	}
+	err = esi.SetConfiguration("url", testURL5)
+	if err != nil {
+		// discard the error, since no physical file to write
+		t.Log("Expected error since no physical env file to write")
+	}
 
 	tests := []struct {
 		name          string
 		component     string
 		urlName       string
 		pushedIngress *extensionsv1.Ingress
+		pushedRoute   routev1.Route
 		wantURL       URL
 		wantErr       bool
 	}{
 		{
-			name:          "Case 1: Successfully retrieve the locally deleted URL object",
+			name:          "Case 1: Successfully retrieve the locally deleted Ingress URL object",
 			component:     componentName,
 			urlName:       testURL1.Name,
 			pushedIngress: fake.GetSingleIngress(testURL1.Name, componentName),
+			pushedRoute:   routev1.Route{},
 			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 				ObjectMeta: metav1.ObjectMeta{Name: testURL1.Name},
@@ -1803,10 +1828,11 @@ func TestGetIngress(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:          "Case 2: Successfully retrieve the pushed URL object",
+			name:          "Case 2: Successfully retrieve the pushed Ingress URL object",
 			component:     componentName,
 			urlName:       testURL2.Name,
 			pushedIngress: fake.GetSingleIngress(testURL2.Name, componentName),
+			pushedRoute:   routev1.Route{},
 			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 				ObjectMeta: metav1.ObjectMeta{Name: testURL2.Name},
@@ -1818,10 +1844,11 @@ func TestGetIngress(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:          "Case 3: Successfully retrieve the not pushed object",
+			name:          "Case 3: Successfully retrieve the not pushed Ingress URL object",
 			component:     componentName,
 			urlName:       testURL3.Name,
 			pushedIngress: nil,
+			pushedRoute:   routev1.Route{},
 			wantURL: URL{
 				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
 				ObjectMeta: metav1.ObjectMeta{Name: testURL3.Name},
@@ -1837,7 +1864,56 @@ func TestGetIngress(t *testing.T) {
 			component:     componentName,
 			urlName:       "notExistURL",
 			pushedIngress: nil,
+			pushedRoute:   routev1.Route{},
 			wantErr:       true,
+		},
+		{
+			name:          "Case 4: Successfully retrieve the pushed Route URL object",
+			component:     componentName,
+			urlName:       testURL4.Name,
+			pushedIngress: nil,
+			pushedRoute:   testingutil.GetSingleRoute(testURL4.Name, testURL4.Port, componentName, ""),
+			wantURL: URL{
+				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
+				ObjectMeta: metav1.ObjectMeta{Name: testURL4.Name},
+				Spec:       URLSpec{Protocol: "http", Port: testURL4.Port, Secure: testURL4.Secure, Kind: envinfo.ROUTE},
+				Status: URLStatus{
+					State: StateTypePushed,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:          "Case 5: Successfully retrieve the not pushed Route URL object",
+			component:     componentName,
+			urlName:       testURL5.Name,
+			pushedIngress: nil,
+			pushedRoute:   routev1.Route{},
+			wantURL: URL{
+				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
+				ObjectMeta: metav1.ObjectMeta{Name: testURL5.Name},
+				Spec:       URLSpec{Port: testURL5.Port, Secure: testURL5.Secure, Kind: envinfo.ROUTE},
+				Status: URLStatus{
+					State: StateTypeNotPushed,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:          "Case 6: Successfully retrieve the locally deleted Route URL object",
+			component:     componentName,
+			urlName:       testURL6.Name,
+			pushedIngress: nil,
+			pushedRoute:   testingutil.GetSingleRoute(testURL6.Name, testURL6.Port, componentName, ""),
+			wantURL: URL{
+				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
+				ObjectMeta: metav1.ObjectMeta{Name: testURL6.Name},
+				Spec:       URLSpec{Protocol: "http", Port: testURL6.Port, Secure: testURL6.Secure, Kind: envinfo.ROUTE},
+				Status: URLStatus{
+					State: StateTypeLocallyDeleted,
+				},
+			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
@@ -1849,7 +1925,13 @@ func TestGetIngress(t *testing.T) {
 					return true, tt.pushedIngress, nil
 				})
 			}
-			url, err := GetIngress(fkclient, esi, tt.urlName, tt.component)
+			client, fakeClientSet := occlient.FakeNew()
+			if !reflect.DeepEqual(tt.pushedRoute, routev1.Route{}) {
+				fakeClientSet.RouteClientset.PrependReactor("get", "routes", func(action ktesting.Action) (bool, runtime.Object, error) {
+					return true, &tt.pushedRoute, nil
+				})
+			}
+			url, err := GetIngressOrRoute(client, fkclient, esi, tt.urlName, tt.component)
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("unexpected error %v", err)
 			}

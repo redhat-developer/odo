@@ -65,11 +65,13 @@ func Get(client *occlient.Client, localConfig *config.LocalConfigInfo, urlName s
 		// search local URL, if it exist in local, update state with remote status
 		if localURL.Name == urlName {
 			if remoteExist {
-				localURL.Status.State = StateTypePushed
+				clusterURL := getMachineReadableFormat(*route)
+				clusterURL.Status.State = StateTypePushed
+				return clusterURL, nil
 			} else {
 				localURL.Status.State = StateTypeNotPushed
+				return localURL, nil
 			}
-			return localURL, nil
 		}
 	}
 
@@ -103,7 +105,16 @@ func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpec
 		// search local URL, if it exist in local, update state with remote status
 		if localURL.Name == urlName {
 			if remoteExist {
-				localURL.Status.State = StateTypePushed
+				if ingress != nil && ingress.Spec.Rules != nil {
+					// Remote exist, but not in local, so it's deleted status
+					clusterURL := getMachineReadableFormatIngress(*ingress)
+					clusterURL.Status.State = StateTypePushed
+					return clusterURL, nil
+				} else if route != nil && route.Annotations != nil && route.Annotations["openshift.io/host.generated"] == "true" {
+					clusterURL := getMachineReadableFormat(*route)
+					clusterURL.Status.State = StateTypePushed
+					return clusterURL, nil
+				}
 			} else {
 				localURL.Status.State = StateTypeNotPushed
 			}
@@ -112,12 +123,12 @@ func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpec
 	}
 
 	if remoteExist {
-		if ingress.Spec.Rules != nil {
+		if ingress != nil && ingress.Spec.Rules != nil {
 			// Remote exist, but not in local, so it's deleted status
 			clusterURL := getMachineReadableFormatIngress(*ingress)
 			clusterURL.Status.State = StateTypeLocallyDeleted
 			return clusterURL, nil
-		} else if route.Annotations != nil && route.Annotations["openshift.io/host.generated"] == "true" {
+		} else if route != nil && route.Annotations != nil && route.Annotations["openshift.io/host.generated"] == "true" {
 			clusterURL := getMachineReadableFormat(*route)
 			clusterURL.Status.State = StateTypeLocallyDeleted
 			return clusterURL, nil
