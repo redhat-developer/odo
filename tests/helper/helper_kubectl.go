@@ -107,7 +107,7 @@ func (kubectl KubectlRunner) GetServices(namespace string) string {
 
 // CreateRandNamespaceProject create new project with random name in kubernetes cluster (10 letters)
 func (kubectl KubectlRunner) CreateRandNamespaceProject() string {
-	projectName := RandString(10)
+	projectName := UniqueRandString(10)
 	fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
 	CmdShouldPass("kubectl", "create", "namespace", projectName)
 	CmdShouldPass("kubectl", "config", "set-context", "--current", "--namespace", projectName)
