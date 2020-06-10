@@ -53,7 +53,7 @@ var _ = Describe("odo docker devfile url pushtarget command tests", func() {
 			helper.CmdShouldPass("odo", "url", "create")
 
 			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "kube", "-f")
-			session := helper.CmdRunner("odo", "push", "--devfile", "devfile.yaml")
+			session := helper.CmdRunner("odo", "push")
 			stdout = string(session.Wait().Out.Contents())
 			stderr := string(session.Wait().Err.Contents())
 			Expect(stderr).To(ContainSubstring("Found a URL defined for Docker, but no valid URLs for Kubernetes."))
@@ -71,7 +71,7 @@ var _ = Describe("odo docker devfile url pushtarget command tests", func() {
 			helper.CmdShouldPass("odo", "url", "create", "--host", "1.2.3.4.com", "--ingress")
 
 			helper.CmdShouldPass("odo", "preference", "set", "pushtarget", "docker", "-f")
-			session := helper.CmdRunner("odo", "push", "--devfile", "devfile.yaml")
+			session := helper.CmdRunner("odo", "push")
 			stdout = string(session.Wait().Out.Contents())
 			stderr := string(session.Wait().Err.Contents())
 			Expect(stderr).To(ContainSubstring("Found a URL defined for Kubernetes, but no valid URLs for Docker."))

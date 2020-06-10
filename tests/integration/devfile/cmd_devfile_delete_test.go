@@ -53,9 +53,10 @@ var _ = Describe("odo devfile delete command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io")
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
 
-			helper.CmdShouldPass("odo", "delete", "--devfile", "devfile.yaml", "--project", namespace, "-f")
+			helper.CmdShouldPass("odo", "push", "--project", namespace)
+
+			helper.CmdShouldPass("odo", "delete", "--project", namespace, "-f")
 
 			resourceTypes := []string{"deployments", "pods", "services", "ingress"}
 			for _, resourceType := range resourceTypes {
@@ -72,11 +73,11 @@ var _ = Describe("odo devfile delete command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--project", namespace)
+			helper.CmdShouldPass("odo", "push", "--project", namespace)
 
 			helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io", "--context", context)
 
-			helper.CmdShouldPass("odo", "delete", "--devfile", "devfile.yaml", "--project", namespace, "-f", "--all")
+			helper.CmdShouldPass("odo", "delete", "--project", namespace, "-f", "--all")
 
 			cliRunner.WaitAndCheckForExistence("deployments", namespace, 1)
 

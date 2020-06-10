@@ -25,8 +25,8 @@ use of Che devfiles in odo for performing various odo operations.
 The devfile support progress can be tracked by:
 https://github.com/openshift/odo/issues/2467
 
-Please note that this feature is currently under development and the "--devfile"
-flag is exposed only if the experimental mode in odo is enabled.
+Please note that this feature is currently under development,
+the feature will be available with experimental mode enabled.
 
 The behaviour of this feature is subject to change as development for this
 feature progresses.

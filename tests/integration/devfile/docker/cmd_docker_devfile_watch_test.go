@@ -50,7 +50,7 @@ var _ = Describe("odo docker devfile watch command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
+			output := helper.CmdShouldPass("odo", "push")
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
 			watchFlag := ""
@@ -70,7 +70,7 @@ var _ = Describe("odo docker devfile watch command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			output := helper.CmdShouldPass("odo", "push", "--build-command", "build", "--run-command", "run", "--devfile", "devfile.yaml")
+			output := helper.CmdShouldPass("odo", "push", "--build-command", "build", "--run-command", "run")
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
 			watchFlag := "--build-command build --run-command run"
