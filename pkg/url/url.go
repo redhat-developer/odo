@@ -89,18 +89,34 @@ func Get(client *occlient.Client, localConfig *config.LocalConfigInfo, urlName s
 // GetIngressOrRoute returns ingress/route spec for given URL name
 func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, urlName string, componentName string) (URL, error) {
 	remoteExist := true
+	var ingress *iextensionsv1.Ingress
+	var route *routev1.Route
+	var getRouteErr error
 	// Check whether remote already created the ingress
 	ingress, getIngressErr := kClient.GetIngress(urlName)
-	// Check whether remote already created the route
-	route, getRouteErr := client.GetRoute(urlName)
+	routeSupported, err := client.IsRouteSupported()
+	if err != nil {
+		return URL{}, errors.Wrap(err, "unable to verify if route is supported")
+	}
+	if kerrors.IsNotFound(getIngressErr) && routeSupported {
+		// Check whether remote already created the route
+		route, getRouteErr = client.GetRoute(urlName)
+	}
 	if kerrors.IsNotFound(getIngressErr) && kerrors.IsNotFound(getRouteErr) {
 		remoteExist = false
-	} else if getIngressErr != nil && getRouteErr != nil {
-		return URL{}, errors.Wrap(getIngressErr, "unable to get URL on cluster")
+	} else if (getIngressErr != nil && !kerrors.IsNotFound(getIngressErr)) || (getRouteErr != nil && !kerrors.IsNotFound(getRouteErr)) {
+		if getIngressErr != nil {
+			errors.Wrap(getIngressErr, "unable to get ingress")
+		}
+		return URL{}, errors.Wrap(getRouteErr, "unable to get route")
 	}
 
 	envinfoURLs := envSpecificInfo.GetURL()
 	for _, url := range envinfoURLs {
+		// ignore Docker URLs
+		if url.Kind == envinfo.DOCKER {
+			continue
+		}
 		localURL := ConvertEnvinfoURL(url, componentName)
 		// search local URL, if it exist in local, update state with remote status
 		if localURL.Name == urlName {
@@ -467,9 +483,16 @@ func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSp
 	if err != nil {
 		return URLList{}, errors.Wrap(err, "unable to list ingress")
 	}
-	routes, err := oclient.ListRoutes(labelSelector)
+	routes := []routev1.Route{}
+	routeSupported, err := oclient.IsRouteSupported()
 	if err != nil {
-		return URLList{}, errors.Wrap(err, "unable to list routes")
+		return URLList{}, errors.Wrap(err, "unable to verify if route is supported")
+	}
+	if routeSupported {
+		routes, err = oclient.ListRoutes(labelSelector)
+		if err != nil {
+			return URLList{}, errors.Wrap(err, "unable to list routes")
+		}
 	}
 	localEnvinfoURLs := envSpecificInfo.GetURL()
 
