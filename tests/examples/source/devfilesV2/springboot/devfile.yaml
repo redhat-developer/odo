@@ -1,0 +1,56 @@
+schemaVersion: 2.0.0
+metadata:
+  name: java-spring-boot
+  version: 1.0.0
+projects:
+  - name: springbootproject
+    git:
+      location: "https://github.com/odo-devfiles/springboot-ex.git"
+components:
+  - chePlugin:
+      id: redhat/java/latest
+      memoryLimit: 1512Mi
+  - container:
+      name: tools
+      image: maysunfaisal/springbootbuild
+      memoryLimit: 768Mi
+      command: ['tail']
+      args: [ '-f', '/dev/null']
+      mountSources: true
+      volumeMounts:
+        - name: springbootpvc
+          path: /data
+  - container:
+      name: runtime
+      image: maysunfaisal/springbootruntime
+      memoryLimit: 768Mi
+      command: ['tail']
+      args: [ '-f', '/dev/null']
+      endpoints:
+        - name: '8080/tcp'
+          targetPort: 8080
+          configuration:
+            discoverable: false
+            public: true
+            protocol: http
+      mountSources: false
+      volumeMounts:
+        - name: springbootpvc
+          path: /data
+commands:
+  - exec:
+      id: devBuild
+      component: tools
+      commandLine: "/artifacts/bin/build-container-full.sh"
+      workingDir: /projects/springbootproject
+      group:
+        kind: build
+        isDefault: true
+  - exec:
+      id: devRun
+      component: runtime
+      commandLine: "/artifacts/bin/start-server.sh"
+      workingDir: /
+      group:
+        kind: run
+        isDefault: true

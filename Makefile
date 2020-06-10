@@ -243,6 +243,11 @@ test-cmd-devfile-url:
 test-cmd-docker-devfile-push:
 	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile push command tests" tests/integration/devfile/docker/
 
+# Run odo watch docker devfile command tests
+.PHONY: test-cmd-docker-devfile-watch
+test-cmd-docker-devfile-watch:
+	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile watch command tests" tests/integration/devfile/docker/
+
 # Run odo url docker devfile command tests
 .PHONY: test-cmd-docker-devfile-url
 test-cmd-docker-devfile-url:
@@ -257,6 +262,11 @@ test-cmd-docker-devfile-delete:
 .PHONY: test-cmd-docker-devfile-catalog
 test-cmd-docker-devfile-catalog:
 	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile catalog command tests" tests/integration/devfile/docker/
+
+# Run odo url docker devfile command tests
+.PHONY: test-cmd-docker-devfile-url-pushtarget
+test-cmd-docker-devfile-url-pushtarget:
+	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile url pushtarget command tests" tests/integration/devfile/docker/
 
 # Run odo watch command tests
 .PHONY: test-cmd-watch
@@ -334,4 +344,4 @@ openshiftci-presubmit-unittests:
 # Run OperatorHub tests
 .PHONY: test-operator-hub
 test-operator-hub:
-	ginkgo $(GINKGO_FLAGS) -focus="odo service command tests" tests/integration/operatorhub/
+	ginkgo $(GINKGO_FLAGS_SERIAL) -focus="odo service command tests" tests/integration/operatorhub/

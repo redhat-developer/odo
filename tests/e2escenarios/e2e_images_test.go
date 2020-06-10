@@ -3,12 +3,12 @@ package e2escenarios
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/openshift/odo/tests/helper"
+	"github.com/openshift/odo/tests/integration/devfile/utils"
 )
 
 var _ = Describe("odo supported images e2e tests", func() {
@@ -32,66 +32,6 @@ var _ = Describe("odo supported images e2e tests", func() {
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
 	})
-
-	OdoWatch := func(srcType, routeURL, project, appName, context string) {
-
-		startSimulationCh := make(chan bool)
-		go func() {
-			startMsg := <-startSimulationCh
-			if startMsg {
-				err := os.MkdirAll(filepath.Join(context, ".abc"), 0755)
-				if err != nil {
-					panic(err)
-				}
-				err = os.MkdirAll(filepath.Join(context, "abcd"), 0755)
-				if err != nil {
-					panic(err)
-				}
-				_, err = os.Create(filepath.Join(context, "a.txt"))
-				if err != nil {
-					panic(err)
-				}
-
-				helper.DeleteDir(filepath.Join(context, "abcd"))
-
-				if srcType == "openjdk" {
-					helper.ReplaceString(filepath.Join(context, "src", "main", "java", "MessageProducer.java"), "Hello", "Hello odo")
-				} else {
-					helper.ReplaceString(filepath.Join(context, "server.js"), "Hello", "Hello odo")
-				}
-			}
-		}()
-
-		success, err := helper.WatchNonRetCmdStdOut(
-			("odo watch " + srcType + "-app" + " -v 4 " + "--context " + context),
-			time.Duration(5)*time.Minute,
-			func(output string) bool {
-				curlURL := helper.CmdShouldPass("curl", routeURL)
-				if strings.Contains(curlURL, "Hello odo") {
-					// Verify delete from component pod
-					podName := oc.GetRunningPodNameOfComp(srcType+"-app", project)
-					envs := oc.GetEnvs(srcType+"-app", appName, project)
-					dir := envs["ODO_S2I_SRC_BIN_PATH"]
-					stdOut := oc.ExecListDir(podName, project, filepath.Join(dir, "src"))
-					Expect(stdOut).To(ContainSubstring(("a.txt")))
-					Expect(stdOut).To(Not(ContainSubstring("abcd")))
-				}
-				return strings.Contains(curlURL, "Hello odo")
-			},
-			startSimulationCh,
-			func(output string) bool {
-				return strings.Contains(output, "Waiting for something to change")
-			})
-
-		Expect(success).To(Equal(true))
-		Expect(err).To(BeNil())
-
-		// Verify memory limits to be same as configured
-		getMemoryLimit := oc.MaxMemory(srcType+"-app", appName, project)
-		Expect(getMemoryLimit).To(ContainSubstring("700Mi"))
-		getMemoryRequest := oc.MinMemory(srcType+"-app", appName, project)
-		Expect(getMemoryRequest).To(ContainSubstring("400Mi"))
-	}
 
 	// verifySupportedImage takes arguments supported images, source type, image type, namespace and application name.
 	// Also verify the flow of odo commands with respect to supported images only.
@@ -125,8 +65,14 @@ var _ = Describe("odo supported images e2e tests", func() {
 			helper.HttpWaitFor(routeURL, "Hello nodejs UPDATED", 90, 1)
 		}
 
+		watchFlag := ""
+		odoV1Watch := utils.OdoV1Watch{
+			SrcType:  srcType,
+			RouteURL: routeURL,
+			AppName:  appName,
+		}
 		// odo watch and validate
-		OdoWatch(srcType, routeURL, project, appName, context)
+		utils.OdoWatch(odoV1Watch, utils.OdoV2Watch{}, project, context, watchFlag, oc, "kube")
 
 		// delete the component and validate
 		helper.CmdShouldPass("odo", "app", "delete", "app", "--project", project, "-f")

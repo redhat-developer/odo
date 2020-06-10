@@ -1,8 +1,5 @@
-+++
-<img align="right" role="right" width="180" src="/docs/img/openshift.png?raw=true"/>
-+++
 [id="readme"]
-= `odo` - Developer-focused CLI for OpenShift
+= `odo` - Developer-focused CLI for OpenShift and Kubernetes
 :toc: macro
 :toc-title:
 :toclevels: 1
@@ -15,7 +12,7 @@ image:https://img.shields.io/github/license/openshift/odo?style=for-the-badge[Li
 [[overview]]
 == Overview
 
-`odo` is a fast, iterative, and straightforward CLI tool for developers who write, build, and deploy applications on OpenShift.
+`odo` is a fast, iterative, and straightforward CLI tool for developers who write, build, and deploy applications on OpenShift and Kubernetes.
 
 Existing tools such as `oc` are more operations-focused and require a deep-understanding of Kubernetes and OpenShift concepts. `odo` abstracts away complex Kubernetes and OpenShift concepts for the developer.
 
@@ -25,11 +22,11 @@ Existing tools such as `oc` are more operations-focused and require a deep-under
 `odo` is designed to be simple and concise with the following key features:
 
 * Simple syntax and design centered around concepts familiar to developers, such as projects, applications, and components.
-* Completely client based. No server is required within the OpenShift cluster for deployment.
+* Completely client based. No server is required within the cluster for deployment.
 * Official support for Node.js and Java components.
 * Partial compatibility with languages and frameworks such as Ruby, Perl, PHP, and Python. 
 * Detects changes to local code and deploys it to the cluster automatically, giving instant feedback to validate changes in real time.
-* Lists all the available components and services from the {product-title} cluster.
+* Lists all the available components and services from the cluster.
 
 [id="odo-supported-languages-and-images"]
 === Officially supported languages and corresponding container images
@@ -80,13 +77,13 @@ The list of available container images is sourced from the cluster's internal co
 
 To list the available components and associated container images for your cluster:
 
-. Log in to the {product-title} cluster with {odo-title}:
+. Access your cluster. Authentication with `odo login` for Kubernetes clusters is currently not supported. For OpenShift cluster, you can authenticate with `odo login`: 
 +
 ----
 $ odo login -u developer -p developer
 ----
 
-. List the available {odo-title} supported and unsupported components and corresponding container images:
+. List the available `odo` supported and unsupported components and corresponding container images:
 +
 ----------------------------------------------------
 $ odo catalog list components
@@ -184,8 +181,7 @@ Want to try out the odo experimental mode? Please read the link:https://github.c
 
 *Application:* An application consists of multiple microservices or components that work individually to build the entire application.
 
-*Component:* A component is similar to a microservice. Multiple
-components make up an application. A component has different attributes like storage. `odo` supports multiple component types like nodejs, perl, php, python, and ruby.
+*Component:* A component is similar to a microservice. Multiple components make up an application. A component has different attributes like storage. `odo` supports multiple component types like nodejs, perl, php, python, and ruby.
 
 *Service:* Typically a service is a database or a service that a
 component links to or depends on. For example: MariaDB, Jenkins, MySQL.

@@ -28,9 +28,9 @@ install_etcd_operator(){
   kind: Subscription
   metadata:
     name: etcd
-    namespace: ${OPERATOR_HUB_PROJECT}
+    namespace: openshift-operators
   spec:
-    channel: singlenamespace-alpha
+    channel: clusterwide-alpha
     installPlanApproval: Automatic
     name: etcd
     source: community-operators
@@ -51,25 +51,11 @@ do
     fi
 done
 
-# Now onto namespace bound operator
-# Create OperatorGroup
-oc create -f - <<EOF
-apiVersion: operators.coreos.com/v1
-kind: OperatorGroup
-metadata:
-  generateName: ${CI_OPERATOR_HUB_PROJECT}-
-  generation: 1
-  namespace: ${CI_OPERATOR_HUB_PROJECT}
-spec:
-  targetNamespaces:
-  - ${CI_OPERATOR_HUB_PROJECT}
-EOF
-
 # install etcd operator
 count=0
 while [ "$count" -lt "5" ];
 do
-    if oc get csv -n ${CI_OPERATOR_HUB_PROJECT} | grep etcd; then
+    if oc get csv -n openshift-operators | grep etcd; then
         break
     else
         install_etcd_operator

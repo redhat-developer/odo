@@ -40,3 +40,18 @@ func (dc *Client) GetVolumesByLabel(labels map[string]string) ([]types.Volume, e
 
 	return volumes, nil
 }
+
+// GetVolumes returns the list of all volumes
+func (dc *Client) GetVolumes() ([]types.Volume, error) {
+	var volumes []types.Volume
+	volumeList, err := dc.Client.VolumeList(dc.Context, filters.Args{})
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to get list of docker volumes")
+	}
+
+	for _, vol := range volumeList.Volumes {
+		volumes = append(volumes, *vol)
+	}
+
+	return volumes, nil
+}

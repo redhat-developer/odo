@@ -2,7 +2,6 @@ package helper
 
 import (
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -11,6 +10,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/openshift/odo/pkg/util"
 )
 
 // CreateNewContext create new empty temporary directory
@@ -89,7 +89,7 @@ func CopyExampleDevFile(devfilePath, targetDst string) {
 	info, err := os.Stat(src)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = copyFile(src, targetDst, info)
+	err = util.CopyFile(src, targetDst, info)
 	Expect(err).NotTo(HaveOccurred())
 }
 
@@ -137,29 +137,7 @@ func copyDir(src string, dst string, info os.FileInfo) error {
 		return err
 	}
 
-	return copyFile(src, dst, info)
-}
-
-// copyFile copy one file to another location
-func copyFile(src, dst string, info os.FileInfo) error {
-	dFile, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	defer dFile.Close() // #nosec G307
-
-	sFile, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer sFile.Close() // #nosec G307
-
-	if err = os.Chmod(dFile.Name(), info.Mode()); err != nil {
-		return err
-	}
-
-	_, err = io.Copy(dFile, sFile)
-	return err
+	return util.CopyFile(src, dst, info)
 }
 
 // CreateFileWithContent creates a file at the given path and writes the given content

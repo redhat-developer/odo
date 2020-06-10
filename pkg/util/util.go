@@ -34,7 +34,10 @@ import (
 )
 
 // HTTPRequestTimeout configures timeout of all HTTP requests
-const HTTPRequestTimeout = 10 * time.Second
+const (
+	HTTPRequestTimeout    = 20 * time.Second // HTTPRequestTimeout configures timeout of all HTTP requests
+	ResponseHeaderTimeout = 10 * time.Second // ResponseHeaderTimeout is the timeout to retrieve the server's response headers
+)
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
 
@@ -689,12 +692,20 @@ func GetRemoteFilesMarkedForDeletion(delSrcRelPaths []string, remoteFolder strin
 
 // HTTPGetRequest uses url to get file contents
 func HTTPGetRequest(url string) ([]byte, error) {
-	var httpClient = &http.Client{Timeout: HTTPRequestTimeout}
+	var httpClient = &http.Client{Transport: &http.Transport{
+		ResponseHeaderTimeout: ResponseHeaderTimeout,
+	},
+		Timeout: HTTPRequestTimeout}
 	resp, err := httpClient.Get(url)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	// we have a non 1xx / 2xx status, return an error
+	if (resp.StatusCode - 300) > 0 {
+		return nil, fmt.Errorf("error retrieving %s: %s", url, http.StatusText(resp.StatusCode))
+	}
 
 	bytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -858,8 +869,9 @@ func GetGitHubZipURL(project common.DevfileProject) (string, error) {
 }
 
 // GetAndExtractZip downloads a zip file from a URL with a http prefix or
-// takes an absolute path prefixed with file:// and extracts it to a destination
-func GetAndExtractZip(zipURL string, destination string) error {
+// takes an absolute path prefixed with file:// and extracts it to a destination.
+// pathToUnzip specifies the path within the zip folder to extract
+func GetAndExtractZip(zipURL string, destination string, pathToUnzip string) error {
 	if zipURL == "" {
 		return errors.Errorf("Empty zip url: %s", zipURL)
 	}
@@ -893,18 +905,23 @@ func GetAndExtractZip(zipURL string, destination string) error {
 		return errors.Errorf("Invalid Zip URL: %s . Should either be prefixed with file://, http:// or https://", zipURL)
 	}
 
-	_, err := Unzip(pathToZip, destination)
+	filenames, err := Unzip(pathToZip, destination, pathToUnzip)
 	if err != nil {
 		return err
+	}
+
+	if len(filenames) == 0 {
+		return errors.New("no files were unzipped, ensure that the project repo is not empty or that sparseCheckoutDir has a valid path")
 	}
 
 	return nil
 }
 
-// Unzip will decompress a zip archive, moving all files and folders
-// within the zip file (parameter 1) to an output directory (parameter 2).
+// Unzip will decompress a zip archive, moving specified files and folders
+// within the zip file (parameter 1) to an output directory (parameter 2)
 // Source: https://golangcode.com/unzip-files-in-go/
-func Unzip(src, dest string) ([]string, error) {
+// pathToUnzip (parameter 3) is the path within the zip folder to extract
+func Unzip(src, dest, pathToUnzip string) ([]string, error) {
 	var filenames []string
 
 	r, err := zip.OpenReader(src)
@@ -913,16 +930,46 @@ func Unzip(src, dest string) ([]string, error) {
 	}
 	defer r.Close()
 
-	for _, f := range r.File {
+	// change path separator to correct character
+	pathToUnzip = filepath.FromSlash(pathToUnzip)
 
+	for _, f := range r.File {
 		// Store filename/path for returning and using later on
-		index := strings.Index(f.Name, "/")
+		index := strings.Index(f.Name, string(os.PathSeparator))
 		filename := f.Name[index+1:]
 		if filename == "" {
 			continue
 		}
+
+		// if sparseCheckoutDir has a pattern
+		match, err := filepath.Match(pathToUnzip, filename)
+		if err != nil {
+			return filenames, err
+		}
+
+		// removes first slash of pathToUnzip if present, adds trailing slash
+		pathToUnzip = strings.TrimPrefix(pathToUnzip, string(os.PathSeparator))
+		if pathToUnzip != "" && !strings.HasSuffix(pathToUnzip, string(os.PathSeparator)) {
+			pathToUnzip = pathToUnzip + string(os.PathSeparator)
+		}
+		// destination filepath before trim
 		fpath := filepath.Join(dest, filename)
 
+		// used for pattern matching
+		fpathDir := filepath.Dir(fpath)
+
+		// check for prefix or match
+		if strings.HasPrefix(filename, pathToUnzip) {
+			filename = strings.TrimPrefix(filename, pathToUnzip)
+		} else if !strings.HasPrefix(filename, pathToUnzip) && !match && !sliceContainsString(fpathDir, filenames) {
+			continue
+		}
+		// adds trailing slash to destination if needed as filepath.Join removes it
+		if (len(filename) == 1 && os.IsPathSeparator(filename[0])) || filename == "" {
+			fpath = dest + string(os.PathSeparator)
+		} else {
+			fpath = filepath.Join(dest, filename)
+		}
 		// Check for ZipSlip. More Info: http://bit.ly/2MsjAWE
 		if !strings.HasPrefix(fpath, filepath.Clean(dest)+string(os.PathSeparator)) {
 			return filenames, fmt.Errorf("%s: illegal file path", fpath)
@@ -981,7 +1028,9 @@ func DownloadFile(url string, filepath string) error {
 	defer out.Close() // #nosec G307
 
 	// Get the data
-	var httpClient = &http.Client{Timeout: HTTPRequestTimeout}
+	var httpClient = &http.Client{Transport: &http.Transport{
+		ResponseHeaderTimeout: ResponseHeaderTimeout,
+	}, Timeout: HTTPRequestTimeout}
 	resp, err := httpClient.Get(url)
 	if err != nil {
 		return err
@@ -1015,7 +1064,7 @@ func ValidateK8sResourceName(key string, value string) error {
 	_, err2 := strconv.ParseFloat(value, 64)
 
 	if err1 != nil || err2 == nil {
-		return errors.Errorf("%s is not valid, %s should conform the following requirements: %s", key, key, requirements)
+		return errors.Errorf("%s \"%s\" is not valid, %s should conform the following requirements: %s", key, value, key, requirements)
 	}
 
 	return nil
@@ -1052,4 +1101,73 @@ func ValidateURL(sourceURL string) error {
 	}
 
 	return nil
+}
+
+// ValidateFile validates the file
+func ValidateFile(filePath string) error {
+	// Check if the file path exist
+	file, err := os.Stat(filePath)
+	if err != nil {
+		return err
+	}
+
+	if file.IsDir() {
+		return errors.Errorf("%s exists but it's not a file", filePath)
+	}
+
+	return nil
+}
+
+// CopyFile copies file from source path to destination path
+func CopyFile(srcPath string, dstPath string, info os.FileInfo) error {
+	// Check if the source file path exists
+	err := ValidateFile(srcPath)
+	if err != nil {
+		return err
+	}
+
+	// Open source file
+	srcFile, err := os.Open(srcPath)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close() // #nosec G307
+
+	// Create destination file
+	dstFile, err := os.Create(dstPath)
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close() // #nosec G307
+
+	// Ensure destination file has the same file mode with source file
+	err = os.Chmod(dstFile.Name(), info.Mode())
+	if err != nil {
+		return err
+	}
+
+	// Copy file
+	_, err = io.Copy(dstFile, srcFile)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// PathEqual compare the paths to determine if they are equal
+func PathEqual(firstPath string, secondPath string) bool {
+	firstAbsPath, _ := GetAbsPath(firstPath)
+	secondAbsPath, _ := GetAbsPath(secondPath)
+	return firstAbsPath == secondAbsPath
+}
+
+// sliceContainsString checks for existence of given string in given slice
+func sliceContainsString(str string, slice []string) bool {
+	for _, b := range slice {
+		if b == str {
+			return true
+		}
+	}
+	return false
 }

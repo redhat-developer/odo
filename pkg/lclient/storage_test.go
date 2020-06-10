@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/docker/docker/api/types"
+	volume "github.com/docker/docker/api/types/volume"
+	gomock "github.com/golang/mock/gomock"
 )
 
 func TestCreateVolume(t *testing.T) {
@@ -149,4 +151,64 @@ func TestGetVolumesByLabel(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetVolumes(t *testing.T) {
+
+	// removePointer is a utility function to convert []*types.Volume to []types.Volume, to allow use of reflect.DeepEqual
+	removePointer := func(input []*types.Volume) []types.Volume {
+		var result []types.Volume
+
+		for _, ptr := range input {
+			if ptr != nil {
+				result = append(result, *ptr)
+			}
+		}
+
+		return result
+	}
+
+	tests := []struct {
+		name        string
+		wantVolumes []*types.Volume
+	}{
+		{
+			name:        "GetVolumes should return empty volume list",
+			wantVolumes: []*types.Volume{},
+		},
+		{
+			name:        "GetVolume should return a single volume",
+			wantVolumes: []*types.Volume{{Name: "One"}},
+		},
+		{
+			name:        "GetVolume should return multiple volumes",
+			wantVolumes: []*types.Volume{{Name: "Multiple-1"}, {Name: "Multiple-2"}},
+		},
+	}
+
+	for _, tt := range tests {
+
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			client, mockDockerClient := FakeNewMockClient(ctrl)
+
+			mockDockerClient.EXPECT().VolumeList(gomock.Any(), gomock.Any()).Return(volume.VolumeListOKBody{
+				Volumes: tt.wantVolumes,
+			}, nil)
+
+			vols, err := client.GetVolumes()
+			if err != nil {
+				t.Errorf("GetVolumes returned an unexpected error %v", err)
+			}
+
+			wanted := removePointer(tt.wantVolumes)
+			if !reflect.DeepEqual(vols, wanted) {
+				t.Errorf("expected %v, wanted %v", vols, wanted)
+			}
+
+		})
+	}
+
 }

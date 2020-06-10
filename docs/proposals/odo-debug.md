@@ -32,7 +32,7 @@ Odo sets up port-forwarding to allow a debugger to connect to the running proces
 
 ```yaml
 kind: LocalConfig
-apiversion: odo.openshift.io/v1alpha1
+apiversion: odo.dev
 ComponentSettings:
   Type: nodejs
   SourceLocation: ./
@@ -72,7 +72,7 @@ Optional flag, that controls the number of the local port. The value is not stor
 ##### The `DebugPort` is set in the LocalConfig:
 ```yaml
 kind: LocalConfig
-apiversion: odo.openshift.io/v1alpha1
+apiversion: odo.dev
 ComponentSettings:
   Type: nodejs
   SourceLocation: ./
@@ -89,7 +89,7 @@ ComponentSettings:
 ##### If the `DebugPort` is NOT set in the LocalConfig:
 ```yaml
 kind: LocalConfig
-apiversion: odo.openshift.io/v1alpha1
+apiversion: odo.dev
 ComponentSettings:
   Type: nodejs
   SourceLocation: ./

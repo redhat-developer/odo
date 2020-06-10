@@ -20,8 +20,8 @@ const pvcNameMaxLen = 45
 func CreateComponentStorage(Client *kclient.Client, storages []common.Storage, componentName string) (err error) {
 
 	for _, storage := range storages {
-		volumeName := *storage.Volume.Name
-		volumeSize := *storage.Volume.Size
+		volumeName := storage.Volume.Name
+		volumeSize := storage.Volume.Size
 		pvcName := storage.Name
 
 		existingPVCName, err := GetExistingPVC(Client, volumeName, componentName)

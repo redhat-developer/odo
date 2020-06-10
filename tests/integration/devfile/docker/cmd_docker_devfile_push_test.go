@@ -50,24 +50,24 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
 
-			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
+			output := helper.CmdShouldPass("odo", "push")
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
 			// update devfile and push again
 			helper.ReplaceString("devfile.yaml", "name: FOO", "name: BAR")
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
+			helper.CmdShouldPass("odo", "push")
 		})
 
 		It("Check that odo push works with a devfile that has multiple containers", func() {
 			// Springboot devfile references multiple containers
 			helper.CmdShouldPass("odo", "create", "java-spring-boot", "--context", context, cmpName)
 
-			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
+			output := helper.CmdShouldPass("odo", "push")
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
 			// update devfile and push again
 			helper.ReplaceString("devfile.yaml", "name: FOO", "name: BAR")
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
+			helper.CmdShouldPass("odo", "push")
 		})
 
 		It("Check that odo push works with a devfile that has volumes defined", func() {
@@ -77,7 +77,7 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			helper.RenameFile("devfile.yaml", "devfile-old.yaml")
 			helper.RenameFile("devfile-with-volumes.yaml", "devfile.yaml")
 
-			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
+			output := helper.CmdShouldPass("odo", "push")
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
 			// Verify the volumes got created successfully (and 3 volumes exist: one source and two defined in devfile)
@@ -93,7 +93,7 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			helper.RenameFile("devfile.yaml", "devfile-old.yaml")
 			helper.RenameFile("devfile-with-volumes.yaml", "devfile.yaml")
 
-			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
+			output := helper.CmdShouldPass("odo", "push")
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
 			// Retrieve the volume from one of the aliases in the devfile
@@ -120,18 +120,16 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			Expect(len(containers)).To(Equal(1))
 
 			stdOut := dockerClient.ExecContainer(containers[0], "ls -la "+sourcePath)
-			Expect(stdOut).To(ContainSubstring(("foobar.txt")))
-			Expect(stdOut).To(ContainSubstring(("testdir")))
+			helper.MatchAllInOutput(stdOut, []string{"foobar.txt", "testdir"})
 
 			// Now we delete the file and dir and push
 			helper.DeleteDir(newFilePath)
 			helper.DeleteDir(newDirPath)
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
+			helper.CmdShouldPass("odo", "push")
 
 			// Then check to see if it's truly been deleted
 			stdOut = dockerClient.ExecContainer(containers[0], "ls -la "+sourcePath)
-			Expect(stdOut).To(Not(ContainSubstring(("foobar.txt"))))
-			Expect(stdOut).To(Not(ContainSubstring(("testdir"))))
+			helper.DontMatchAllInOutput(stdOut, []string{"foobar.txt", "testdir"})
 		})
 
 		It("should build when no changes are detected in the directory and force flag is enabled", func() {
@@ -155,10 +153,12 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
-			Expect(output).To(ContainSubstring("Executing devinit command \"echo hello"))
-			Expect(output).To(ContainSubstring("Executing devbuild command \"/artifacts/bin/build-container-full.sh\""))
-			Expect(output).To(ContainSubstring("Executing devrun command \"/artifacts/bin/start-server.sh\""))
+			output := helper.CmdShouldPass("odo", "push")
+			helper.MatchAllInOutput(output, []string{
+				"Executing devinit command \"echo hello",
+				"Executing devbuild command \"/artifacts/bin/build-container-full.sh\"",
+				"Executing devrun command \"/artifacts/bin/start-server.sh\"",
+			})
 
 			// Check to see if it's been pushed (foobar.txt abd directory testdir)
 			containers := dockerClient.GetRunningContainersByCompAlias(cmpName, "runtime")
@@ -174,9 +174,11 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile-init-without-build.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
-			Expect(output).To(ContainSubstring("Executing devinit command \"echo hello"))
-			Expect(output).To(ContainSubstring("Executing devrun command \"/artifacts/bin/start-server.sh\""))
+			output := helper.CmdShouldPass("odo", "push")
+			helper.MatchAllInOutput(output, []string{
+				"Executing devinit command \"echo hello",
+				"Executing devrun command \"/artifacts/bin/start-server.sh\"",
+			})
 
 			// Check to see if it's been pushed (foobar.txt abd directory testdir)
 			containers := dockerClient.GetRunningContainersByCompAlias(cmpName, "runtime")

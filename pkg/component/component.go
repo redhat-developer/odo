@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
@@ -44,6 +43,8 @@ const ComponentSourceTypeAnnotation = "app.kubernetes.io/component-source-type"
 const componentRandomNamePartsMaxLen = 12
 const componentNameMaxRetries = 3
 const componentNameMaxLen = -1
+
+const apiVersion = "odo.dev/v1alpha1"
 
 // GetComponentDir returns source repo name
 // Parameters:
@@ -896,17 +897,7 @@ func GetComponentFromConfig(localConfig *config.LocalConfigInfo) (Component, err
 
 		urls := localConfig.GetURL()
 		if len(urls) > 0 {
-			// We will clean up the existing value of ports and re-populate it so that we don't panic in `odo describe` and don't show inconsistent info
-			// This will also help in the case where there are more URLs created than the number of ports exposed by a component #2776
-			oldPortsProtocol, err := getPortsProtocolMapping(component.Spec.Ports)
-			if err != nil {
-				return Component{}, err
-			}
-			component.Spec.Ports = []string{}
-
 			for _, url := range urls {
-				port := strconv.Itoa(url.Port)
-				component.Spec.Ports = append(component.Spec.Ports, fmt.Sprintf("%s/%s", port, oldPortsProtocol[port]))
 				component.Spec.URL = append(component.Spec.URL, url.Name)
 			}
 		}
@@ -921,22 +912,6 @@ func GetComponentFromConfig(localConfig *config.LocalConfigInfo) (Component, err
 		return component, nil
 	}
 	return Component{}, nil
-}
-
-// This function returns a mapping of port and protocol.
-// So for a value of ports {"8080/TCP", "45/UDP"} it will return a map {"8080":
-// "TCP", "45": "UDP"}
-func getPortsProtocolMapping(ports []string) (map[string]string, error) {
-	oldPortsProtocol := make(map[string]string, len(ports))
-	for _, port := range ports {
-		portProtocol := strings.Split(port, "/")
-		if len(portProtocol) != 2 {
-			// this will be the case if value of a port is something like 8080/TCP/something-else or simply 8080
-			return nil, errors.New("invalid <port/protocol> mapping. Please update the component configuration")
-		}
-		oldPortsProtocol[portProtocol[0]] = portProtocol[1]
-	}
-	return oldPortsProtocol, nil
 }
 
 // ListIfPathGiven lists all available component in given path directory
@@ -1426,7 +1401,7 @@ func getMachineReadableFormat(componentName, componentType string) Component {
 	return Component{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Component",
-			APIVersion: "odo.openshift.io/v1alpha1",
+			APIVersion: apiVersion,
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: componentName,
@@ -1447,7 +1422,7 @@ func GetMachineReadableFormatForList(components []Component) ComponentList {
 	return ComponentList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "List",
-			APIVersion: "odo.openshift.io/v1alpha1",
+			APIVersion: apiVersion,
 		},
 		ListMeta: metav1.ListMeta{},
 		Items:    components,

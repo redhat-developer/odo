@@ -4,11 +4,12 @@ import (
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/pkg/errors"
 
-	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+const apiVersion = "odo.dev/v1alpha1"
 
 // GetCurrent return current project
 func GetCurrent(client *occlient.Client) string {
@@ -43,18 +44,16 @@ func Create(client *occlient.Client, projectName string, wait bool) error {
 }
 
 // Delete deletes the project with name projectName and returns errors if any
-func Delete(client *occlient.Client, projectName string) error {
-	// Loading spinner
-	s := log.Spinnerf("Deleting project %s", projectName)
-	defer s.End(false)
+func Delete(client *occlient.Client, projectName string, wait bool) error {
+	if projectName == "" {
+		return errors.Errorf("no project name given")
+	}
 
 	// Delete the requested project
-	err := client.DeleteProject(projectName)
+	err := client.DeleteProject(projectName, wait)
 	if err != nil {
 		return errors.Wrap(err, "unable to delete project")
 	}
-
-	s.End(true)
 	return nil
 }
 
@@ -98,7 +97,7 @@ func GetMachineReadableFormat(projectName string, isActive bool) Project {
 	return Project{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Project",
-			APIVersion: "odo.openshift.io/v1alpha1",
+			APIVersion: apiVersion,
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      projectName,
@@ -117,7 +116,7 @@ func MachineReadableSuccessOutput(projectName string, message string) {
 	machineOutput := machineoutput.GenericSuccess{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Project",
-			APIVersion: "odo.openshift.io/v1alpha1",
+			APIVersion: apiVersion,
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      projectName,
@@ -134,7 +133,7 @@ func getMachineReadableFormatForList(projects []Project) ProjectList {
 	return ProjectList{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "List",
-			APIVersion: "odo.openshift.io/v1alpha1",
+			APIVersion: apiVersion,
 		},
 		ListMeta: metav1.ListMeta{},
 		Items:    projects,
