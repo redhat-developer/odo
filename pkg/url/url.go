@@ -87,17 +87,13 @@ func Get(client *occlient.Client, localConfig *config.LocalConfigInfo, urlName s
 }
 
 // GetIngressOrRoute returns ingress/route spec for given URL name
-func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, urlName string, componentName string) (URL, error) {
+func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, urlName string, componentName string, routeSupported bool) (URL, error) {
 	remoteExist := true
 	var ingress *iextensionsv1.Ingress
 	var route *routev1.Route
 	var getRouteErr error
 	// Check whether remote already created the ingress
 	ingress, getIngressErr := kClient.GetIngress(urlName)
-	routeSupported, err := client.IsRouteSupported()
-	if err != nil {
-		return URL{}, errors.Wrap(err, "unable to verify if route is supported")
-	}
 	if kerrors.IsNotFound(getIngressErr) && routeSupported {
 		// Check whether remote already created the route
 		route, getRouteErr = client.GetRoute(urlName)
@@ -115,6 +111,9 @@ func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpec
 	for _, url := range envinfoURLs {
 		// ignore Docker URLs
 		if url.Kind == envinfo.DOCKER {
+			continue
+		}
+		if !routeSupported && url.Kind == envinfo.ROUTE {
 			continue
 		}
 		localURL := ConvertEnvinfoURL(url, componentName)
@@ -476,7 +475,7 @@ func List(client *occlient.Client, localConfig *config.LocalConfigInfo, componen
 }
 
 // ListIngressAndRoute returns all Ingress and Route for given component.
-func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, componentName string) (URLList, error) {
+func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSpecificInfo *envinfo.EnvSpecificInfo, componentName string, routeSupported bool) (URLList, error) {
 	labelSelector := fmt.Sprintf("%v=%v", componentlabels.ComponentLabel, componentName)
 	klog.V(4).Infof("Listing ingresses with label selector: %v", labelSelector)
 	ingresses, err := client.ListIngresses(labelSelector)
@@ -484,10 +483,6 @@ func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSp
 		return URLList{}, errors.Wrap(err, "unable to list ingress")
 	}
 	routes := []routev1.Route{}
-	routeSupported, err := oclient.IsRouteSupported()
-	if err != nil {
-		return URLList{}, errors.Wrap(err, "unable to verify if route is supported")
-	}
 	if routeSupported {
 		routes, err = oclient.ListRoutes(labelSelector)
 		if err != nil {
@@ -514,6 +509,9 @@ func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSp
 	for _, envinfoURL := range localEnvinfoURLs {
 		// only checks for Ingress and Route URLs
 		if envinfoURL.Kind == envinfo.DOCKER {
+			continue
+		}
+		if !routeSupported && envinfoURL.Kind == envinfo.ROUTE {
 			continue
 		}
 		localURL := ConvertEnvinfoURL(envinfoURL, componentName)

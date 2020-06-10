@@ -110,7 +110,11 @@ func (o *URLDescribeOptions) Run() (err error) {
 				return err
 			}
 			oclient.Namespace = o.KClient.Namespace
-			u, err := url.GetIngressOrRoute(oclient, o.KClient, o.EnvSpecificInfo, o.url, componentName)
+			routeSupported, err := oclient.IsRouteSupported()
+			if err != nil {
+				return err
+			}
+			u, err := url.GetIngressOrRoute(oclient, o.KClient, o.EnvSpecificInfo, o.url, componentName, routeSupported)
 			if err != nil {
 				return err
 			}

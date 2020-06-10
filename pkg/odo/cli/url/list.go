@@ -120,7 +120,11 @@ func (o *URLListOptions) Run() (err error) {
 				return err
 			}
 			oclient.Namespace = o.KClient.Namespace
-			urls, err := url.ListIngressAndRoute(oclient, o.KClient, o.EnvSpecificInfo, componentName)
+			routeSupported, err := oclient.IsRouteSupported()
+			if err != nil {
+				return err
+			}
+			urls, err := url.ListIngressAndRoute(oclient, o.KClient, o.EnvSpecificInfo, componentName, routeSupported)
 			if err != nil {
 				return err
 			}

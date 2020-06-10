@@ -33,6 +33,7 @@ func GetSingleRoute(urlName string, port int, componentName, applicationName str
 				labels.URLLabel:                urlName,
 			},
 			Annotations: map[string]string{
+				// this annotation distinguish routes from ingresses.
 				"openshift.io/host.generated": "true",
 			},
 		},
