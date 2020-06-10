@@ -14,6 +14,9 @@ sudo cat /etc/docker/daemon.json
 sudo service docker start
 sudo service docker status
 
+# Docker version that oc cluster up uses
+docker version
+
 ## download oc binaries
 sudo wget $OPENSHIFT_CLIENT_BINARY_URL -O /tmp/openshift-origin-client-tools.tar.gz 2> /dev/null > /dev/null
 

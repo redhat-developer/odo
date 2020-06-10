@@ -3,13 +3,6 @@ sudo: required
 
 language: go
 
-env:
-  global:
-    - MINIKUBE_WANTUPDATENOTIFICATION=false
-    - MINIKUBE_WANTREPORTERRORPROMPT=false
-    - MINIKUBE_HOME=$HOME
-    - CHANGE_MINIKUBE_NONE_USER=true
-    - KUBECONFIG=$HOME/.kube/config
 jobs:
   include:
     # YAML alias, for settings shared across the tests
@@ -176,6 +169,12 @@ jobs:
     - <<: *base-test
       stage: test
       name: "devfile catalog, watch, push and delete command integration tests on kubernetes cluster"
+      env:
+        - MINIKUBE_WANTUPDATENOTIFICATION=false
+        - MINIKUBE_WANTREPORTERRORPROMPT=false
+        - MINIKUBE_HOME=$HOME
+        - CHANGE_MINIKUBE_NONE_USER=true
+        - KUBECONFIG=$HOME/.kube/config
       before_script:
         # Download kubectl, a cli tool for accessing Kubernetes cluster
         - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.16.0/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
