@@ -53,7 +53,7 @@ var _ = Describe("odo docker devfile url command tests", func() {
 
 			stdout = helper.CmdShouldPass("odo", "url", "create")
 			helper.MatchAllInOutput(stdout, []string{cmpName + "-3000", "created for component"})
-			stdout = helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
+			stdout = helper.CmdShouldPass("odo", "push")
 			Expect(stdout).To(ContainSubstring("Changes successfully pushed to component"))
 		})
 
@@ -94,7 +94,7 @@ var _ = Describe("odo docker devfile url command tests", func() {
 
 			helper.CmdShouldPass("odo", "url", "create", cmpName)
 
-			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
+			output := helper.CmdShouldPass("odo", "push")
 			helper.MatchAllInOutput(output, []string{"Executing devbuild command", "Executing devrun command"})
 
 			url := strings.TrimSpace(helper.ExtractSubString(output, "127.0.0.1", "created"))
@@ -119,7 +119,7 @@ var _ = Describe("odo docker devfile url command tests", func() {
 			stdout = helper.CmdShouldPass("odo", "url", "list")
 			helper.MatchAllInOutput(stdout, []string{url1, "Not Pushed"})
 
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
+			helper.CmdShouldPass("odo", "push")
 			stdout = helper.CmdShouldPass("odo", "url", "list")
 			helper.MatchAllInOutput(stdout, []string{url1, "Pushed"})
 			helper.CmdShouldPass("odo", "url", "delete", url1, "-f")
@@ -169,7 +169,7 @@ var _ = Describe("odo docker devfile url command tests", func() {
 			stdout = helper.CmdShouldPass("odo", "url", "describe", url1)
 			helper.MatchAllInOutput(stdout, []string{url1, "Not Pushed"})
 
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
+			helper.CmdShouldPass("odo", "push")
 			stdout = helper.CmdShouldPass("odo", "url", "describe", url1)
 			helper.MatchAllInOutput(stdout, []string{url1, "Pushed"})
 

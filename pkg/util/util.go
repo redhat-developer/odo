@@ -1007,7 +1007,7 @@ func ValidateK8sResourceName(key string, value string) error {
 	_, err2 := strconv.ParseFloat(value, 64)
 
 	if err1 != nil || err2 == nil {
-		return errors.Errorf("%s is not valid, %s should conform the following requirements: %s", key, key, requirements)
+		return errors.Errorf("%s \"%s\" is not valid, %s should conform the following requirements: %s", key, value, key, requirements)
 	}
 
 	return nil
@@ -1044,6 +1044,65 @@ func ValidateURL(sourceURL string) error {
 	}
 
 	return nil
+}
+
+// ValidateFile validates the file
+func ValidateFile(filePath string) error {
+	// Check if the file path exist
+	file, err := os.Stat(filePath)
+	if err != nil {
+		return err
+	}
+
+	if file.IsDir() {
+		return errors.Errorf("%s exists but it's not a file", filePath)
+	}
+
+	return nil
+}
+
+// CopyFile copies file from source path to destination path
+func CopyFile(srcPath string, dstPath string, info os.FileInfo) error {
+	// Check if the source file path exists
+	err := ValidateFile(srcPath)
+	if err != nil {
+		return err
+	}
+
+	// Open source file
+	srcFile, err := os.Open(srcPath)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close() // #nosec G307
+
+	// Create destination file
+	dstFile, err := os.Create(dstPath)
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close() // #nosec G307
+
+	// Ensure destination file has the same file mode with source file
+	err = os.Chmod(dstFile.Name(), info.Mode())
+	if err != nil {
+		return err
+	}
+
+	// Copy file
+	_, err = io.Copy(dstFile, srcFile)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// PathEqual compare the paths to determine if they are equal
+func PathEqual(firstPath string, secondPath string) bool {
+	firstAbsPath, _ := GetAbsPath(firstPath)
+	secondAbsPath, _ := GetAbsPath(secondPath)
+	return firstAbsPath == secondAbsPath
 }
 
 // sliceContainsString checks for existence of given string in given slice
