@@ -84,7 +84,7 @@ func (o *URLListOptions) Run() (err error) {
 				machineoutput.OutputSuccess(urls)
 			} else {
 				if len(urls.Items) == 0 {
-					return fmt.Errorf("no URLs found for component %v", componentName)
+					return fmt.Errorf("no URLs found for component %v. Refer `odo url create -h` to add one", componentName)
 				}
 
 				log.Infof("Found the following URLs for component %v", componentName)
@@ -122,7 +122,7 @@ func (o *URLListOptions) Run() (err error) {
 				machineoutput.OutputSuccess(urls)
 			} else {
 				if len(urls.Items) == 0 {
-					return fmt.Errorf("no URLs found for component %v", componentName)
+					return fmt.Errorf("no URLs found for component %v. Refer `odo url create -h` to add one", componentName)
 				}
 				log.Infof("Found the following URLs for component %v", componentName)
 				tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)

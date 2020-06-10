@@ -53,7 +53,10 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			stdout := helper.CmdShouldFail("odo", "url", "list")
-			Expect(stdout).To(ContainSubstring("no URLs found"))
+			helper.MatchAllInOutput(stdout, []string{
+				"no URLs found",
+				"Refer `odo url create -h` to add one",
+			})
 
 			stdout = helper.CmdShouldFail("odo", "url", "create", url1, "--port", "8080")
 			Expect(stdout).To(ContainSubstring("is not exposed"))
