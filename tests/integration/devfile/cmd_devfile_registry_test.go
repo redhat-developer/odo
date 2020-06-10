@@ -45,7 +45,7 @@ var _ = Describe("odo devfile registry command tests", func() {
 	Context("When executing registry list", func() {
 		It("Should list all default registries", func() {
 			output := helper.CmdShouldPass("odo", "registry", "list")
-			helper.MatchAllInOutput(output, []string{"CheDevfileRegistry", "DefaultDevfileRegistry"})
+			helper.MatchAllInOutput(output, []string{"DefaultDevfileRegistry"})
 		})
 
 		It("Should fail with an error with no registries", func() {

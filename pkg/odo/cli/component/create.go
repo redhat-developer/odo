@@ -821,6 +821,7 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 	}
 	projects := devObj.Data.GetProjects()
 	nOfProjects := len(projects)
+	klog.V(4).Infof(">>>> MJF here 1 projects: %v", projects)
 	if nOfProjects == 0 {
 		return errors.Errorf("No project found in devfile component.")
 	}
@@ -868,6 +869,8 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 	if err != nil {
 		return err
 	}
+
+	klog.V(4).Infof(">>>> MJF here 1 projectPassed: %s", projectPassed)
 
 	var url, sparseDir string
 	if project.Git != nil {

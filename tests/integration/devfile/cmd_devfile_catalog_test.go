@@ -46,8 +46,8 @@ var _ = Describe("odo devfile catalog command tests", func() {
 			wantOutput := []string{
 				"Odo Devfile Components",
 				"NAME",
-				"java-spring-boot",
-				"java-openliberty",
+				"springBoot",
+				"openLiberty",
 				"quarkus",
 				"DESCRIPTION",
 				"REGISTRY",
@@ -57,23 +57,23 @@ var _ = Describe("odo devfile catalog command tests", func() {
 		})
 	})
 
-	Context("When executing catalog list components with -a flag", func() {
-		It("should list all supported and unsupported devfile components", func() {
-			output := helper.CmdShouldPass("odo", "catalog", "list", "components", "-a")
-			wantOutput := []string{
-				"Odo Devfile Components",
-				"NAME",
-				"java-spring-boot",
-				"java-maven",
-				"quarkus",
-				"php-mysql",
-				"DESCRIPTION",
-				"REGISTRY",
-				"SUPPORTED",
-			}
-			helper.MatchAllInOutput(output, wantOutput)
-		})
-	})
+	// Context("When executing catalog list components with -a flag", func() {
+	// 	It("should list all supported and unsupported devfile components", func() {
+	// 		output := helper.CmdShouldPass("odo", "catalog", "list", "components", "-a")
+	// 		wantOutput := []string{
+	// 			"Odo Devfile Components",
+	// 			"NAME",
+	// 			"java-spring-boot",
+	// 			"java-maven",
+	// 			"quarkus",
+	// 			"php-mysql",
+	// 			"DESCRIPTION",
+	// 			"REGISTRY",
+	// 			"SUPPORTED",
+	// 		}
+	// 		helper.MatchAllInOutput(output, wantOutput)
+	// 	})
+	// })
 
 	Context("When executing catalog list components with -o json flag", func() {
 		It("should list devfile components in json format", func() {
