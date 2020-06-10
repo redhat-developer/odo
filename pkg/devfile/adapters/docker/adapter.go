@@ -35,6 +35,8 @@ func (d Adapter) Push(parameters common.PushParameters) error {
 
 func (k Adapter) Build(parameters common.BuildParameters) error { return nil }
 
+func (k Adapter) Deploy(parameters common.DeployParameters) error { return nil }
+
 // DoesComponentExist returns true if a component with the specified name exists
 func (d Adapter) DoesComponentExist(cmpName string) bool {
 	return d.componentAdapter.DoesComponentExist(cmpName)

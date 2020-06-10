@@ -5,16 +5,16 @@ import (
 	"os"
 	"strings"
 
+	"github.com/openshift/odo/pkg/devfile/adapters"
+	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
+	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 
-	"github.com/openshift/odo/pkg/devfile/adapters"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/log"
 )
 
@@ -166,9 +166,59 @@ func (do *DeployOptions) DevfileBuild() (err error) {
 }
 
 func (do *DeployOptions) DevfileDeploy() (err error) {
-	// TODO:
+	// Parse devfile
+	devObj, err := devfileParser.Parse(do.DevfilePath)
+	if err != nil {
+		return err
+	}
 
-	// TODO:
+	componentName, err := getComponentName(do.componentContext)
+	if err != nil {
+		return errors.Wrap(err, "unable to get component name")
+	}
+
+	// Set the source path to either the context or current working directory (if context not set)
+	do.sourcePath, err = util.GetAbsPath(do.componentContext)
+	if err != nil {
+		return errors.Wrap(err, "unable to get source path")
+	}
+
+	// Apply ignore information
+	err = genericclioptions.ApplyIgnore(&do.ignores, do.sourcePath)
+	if err != nil {
+		return errors.Wrap(err, "unable to apply ignore information")
+	}
+
+	kubeContext := kubernetes.KubernetesContext{
+		Namespace: do.namespace,
+	}
+
+	devfileHandler, err := adapters.NewPlatformAdapter(componentName, do.componentContext, devObj, kubeContext)
+	if err != nil {
+		return err
+	}
+
+	deployParams := common.DeployParameters{
+		Path:            do.sourcePath,
+		EnvSpecificInfo: *do.EnvSpecificInfo,
+		Tag:             do.tag,
+	}
+
+	// Deploy the application
+	err = devfileHandler.Deploy(deployParams)
+	if err != nil {
+		log.Errorf(
+			"Failed to deploy application with name %s.\nError: %v",
+			componentName,
+			err,
+		)
+		os.Exit(1)
+	}
+
+	log.Infof("\nDeploying application %s", componentName)
+	log.Success("Successfully deployed application")
+
+	return nil
 	return nil
 }
 

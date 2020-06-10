@@ -1,14 +1,24 @@
 package component
 
 import (
+	"bytes"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
+
+	"k8s.io/client-go/dynamic"
 
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
@@ -21,6 +31,7 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
+	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/exec"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
@@ -215,6 +226,111 @@ func (a Adapter) Build(parameters common.BuildParameters) (err error) {
 	if err != nil {
 		return err
 	}
+
+	return
+}
+
+func determinePort(parameters common.DeployParameters) string {
+	// TODO: Determine port to use (from env.yaml or other location!!)
+	deploymentPort := ""
+	for _, localURL := range parameters.EnvSpecificInfo.GetURL() {
+		if localURL.Kind != envinfo.DOCKER {
+			deploymentPort = strconv.Itoa(localURL.Port)
+			break
+		}
+	}
+	return deploymentPort
+}
+
+func substitueYamlVariables(baseYaml []byte, yamlSubstitutions map[string]string) []byte {
+	// TODO: Provide a better way to do the substitution in the manifest file(s)
+	for key, value := range yamlSubstitutions {
+		if value != "" && bytes.Contains(baseYaml, []byte(key)) {
+			klog.V(3).Infof("Replacing %s with %s", key, value)
+			tempYaml := bytes.ReplaceAll(baseYaml, []byte(key), []byte(value))
+			baseYaml = tempYaml
+		}
+	}
+	return baseYaml
+}
+
+// Build image for devfile project
+func (a Adapter) Deploy(parameters common.DeployParameters) (err error) {
+
+	namespace := a.Client.Namespace
+	deploymentManifest := &unstructured.Unstructured{}
+
+	log.Info("\nDeploying manifest")
+	// TODO: Work out how to correctly handle spinners
+	//s := log.Spinner("Deploying the manifest")
+
+	// TODO: Get manifest file. Location should be provided from devfile.yaml
+	// currently deploy.yaml required in base project directory
+	deployPath := filepath.Join(parameters.Path, "/deploy.yaml")
+	klog.V(3).Infof("Using deployment from %s", deployPath)
+
+	baseYaml, err := ioutil.ReadFile(deployPath)
+	if err != nil {
+		return errors.Wrap(err, "failed to get "+deployPath)
+	}
+
+	// Specify the substitution keys and values
+	yamlSubstitutions := map[string]string{
+		"CONTAINER_IMAGE": parameters.Tag,
+		"PROJECT_NAME":    a.ComponentName,
+		"PORT":            determinePort(parameters),
+	}
+
+	// Substitute the values in the manifest file
+	deployYaml := substitueYamlVariables(baseYaml, yamlSubstitutions)
+	klog.V(3).Infof("Deploy manifest:\n\n%s", string(deployYaml))
+
+	// Build a yaml decoder with the unstructured Scheme
+	yamlDecoder := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
+
+	_, gvk, err := yamlDecoder.Decode([]byte(deployYaml), nil, deploymentManifest)
+	gvr := schema.GroupVersionResource{Group: gvk.Group, Version: gvk.Version, Resource: strings.ToLower(gvk.Kind + "s")}
+	klog.V(3).Infof("Manifest type: %s", gvr.String())
+
+	// TODO: Determine why using a.Client.DynamicClient doesnt work
+	// Need to create my own client in order to get the dynamic parts working
+	myclient, err := dynamic.NewForConfig(a.Client.KubeClientConfig)
+	if err != nil {
+		panic(err)
+	}
+
+	// Check to see whether deployed resource already exists. If not, create else update
+	instanceFound := false
+	list, err := myclient.Resource(gvr).Namespace(namespace).List(metav1.ListOptions{})
+	if len(list.Items) > 0 {
+		for _, item := range list.Items {
+			klog.V(3).Infof("Found %s %s with resourceVersion: %s.\n", gvk.Kind, item.GetName(), item.GetResourceVersion())
+			if item.GetName() == a.ComponentName {
+				deploymentManifest.SetResourceVersion(item.GetResourceVersion())
+				instanceFound = true
+			}
+		}
+	}
+
+	result := &unstructured.Unstructured{}
+	if !instanceFound {
+		// Create Deployment
+		log.Infof("Creating %s...", gvk.Kind)
+		result, err = myclient.Resource(gvr).Namespace(namespace).Create(deploymentManifest, metav1.CreateOptions{})
+		//	result, err := a.Client.DynamicClient.Resource(gvr).Namespace(namespace).Create(deploymentManifest, metav1.CreateOptions{})
+	} else {
+		// Update Deployment
+		log.Infof("Updating %s...", gvk.Kind)
+		result, err = myclient.Resource(gvr).Namespace(namespace).Update(deploymentManifest, metav1.UpdateOptions{})
+	}
+
+	if err != nil {
+		//s.End(false)
+		return errors.Wrap(err, "failed to deploy "+gvk.Kind)
+	}
+
+	//s.End(true)
+	log.Infof("Deployed %s %s.\n", gvk.Kind, result.GetName())
 
 	return
 }

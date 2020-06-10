@@ -35,6 +35,13 @@ type BuildParameters struct {
 	IgnoredFiles    []string                // IgnoredFiles is the list of files to not push up to a component
 }
 
+// DeployParameters is a struct containing the parameters to be used when building the image for a devfile component
+type DeployParameters struct {
+	Path            string                  // Path refers to the parent folder containing the source code to push up to a component
+	EnvSpecificInfo envinfo.EnvSpecificInfo // EnvSpecificInfo contains infomation of env.yaml file
+	Tag             string                  // Tag refers to the image tag of the image being built
+}
+
 // PushParameters is a struct containing the parameters to be used when pushing to a devfile component
 type PushParameters struct {
 	Path              string                  // Path refers to the parent folder containing the source code to push up to a component
