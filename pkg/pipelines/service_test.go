@@ -42,11 +42,16 @@ func TestServiceResourcesWithCICD(t *testing.T) {
 	assertNoError(t, err)
 
 	want := res.Resources{
-		"environments/cicd/base/pipelines/03-secrets/webhook-secret-test-dev-test.yaml": hookSecret,
-		"environments/test-dev/apps/test-app/base/kustomization.yaml":                   &res.Kustomization{Bases: []string{"../../../services/test-svc", "../../../services/test"}},
-		"environments/test-dev/apps/test-app/kustomization.yaml":                        &res.Kustomization{Bases: []string{"overlays"}},
-		"environments/test-dev/apps/test-app/overlays/kustomization.yaml":               &res.Kustomization{Bases: []string{"../base"}},
+		"config/cicd/base/pipelines/03-secrets/webhook-secret-test-dev-test.yaml": hookSecret,
+		"environments/test-dev/apps/test-app/base/kustomization.yaml":             &res.Kustomization{Bases: []string{"../../../services/test-svc", "../../../services/test"}},
+		"environments/test-dev/apps/test-app/kustomization.yaml":                  &res.Kustomization{Bases: []string{"overlays"}},
+		"environments/test-dev/apps/test-app/overlays/kustomization.yaml":         &res.Kustomization{Bases: []string{"../base"}},
 		"pipelines.yaml": &config.Manifest{
+			Config: &config.Config{
+				Pipelines: &config.PipelinesConfig{
+					Name: "cicd",
+				},
+			},
 			GitOpsURL: "http://github.com/org/test",
 			Environments: []*config.Environment{
 				{
@@ -83,7 +88,6 @@ func TestServiceResourcesWithCICD(t *testing.T) {
 						},
 					},
 				},
-				{Name: "cicd", IsCICD: true},
 			},
 		},
 	}
@@ -105,15 +109,32 @@ func TestServiceResourcesWithCICD(t *testing.T) {
 	}
 }
 
-func TestServiceResourcesWithoutCICD(t *testing.T) {
+func TestServiceResourcesWithArgoCD(t *testing.T) {
+	defer func(f secrets.PublicKeyFunc) {
+		secrets.DefaultPublicKeyFunc = f
+	}(secrets.DefaultPublicKeyFunc)
+
+	secrets.DefaultPublicKeyFunc = func() (*rsa.PublicKey, error) {
+		key, err := rsa.GenerateKey(rand.Reader, 1024)
+		if err != nil {
+			t.Fatalf("failed to generate a private RSA key: %s", err)
+		}
+		return &key.PublicKey, nil
+	}
+
 	fakeFs := ioutils.NewMapFilesystem()
-	m := buildManifest(false, false)
+	m := buildManifest(false, true)
+
 	want := res.Resources{
-		"environments/test-dev/apps/test-app/base/kustomization.yaml":     &res.Kustomization{Bases: []string{"../../../services/test-svc", "../../../services/test"}},
+		"environments/test-dev/apps/test-app/base/kustomization.yaml":     &res.Kustomization{Bases: []string{"../../../services/test-svc", "../../../services/test", "../../../env/base"}},
 		"environments/test-dev/apps/test-app/kustomization.yaml":          &res.Kustomization{Bases: []string{"overlays"}},
 		"environments/test-dev/apps/test-app/overlays/kustomization.yaml": &res.Kustomization{Bases: []string{"../base"}},
-		"environments/test-dev/env/base/kustomization.yaml":               &res.Kustomization{Resources: []string{"test-dev-environment.yaml"}},
 		"pipelines.yaml": &config.Manifest{
+			Config: &config.Config{
+				ArgoCD: &config.ArgoCDConfig{
+					Namespace: "argocd",
+				},
+			},
 			GitOpsURL: "http://github.com/org/test",
 			Environments: []*config.Environment{
 				{
@@ -131,9 +152,6 @@ func TestServiceResourcesWithoutCICD(t *testing.T) {
 						{
 							Name:      "test-svc",
 							SourceURL: "https://github.com/myproject/test-svc",
-							Webhook: &config.Webhook{
-								Secret: &config.Secret{Name: "webhook-secret-test-dev-test-svc", Namespace: "cicd"},
-							},
 						},
 						{
 							Name:      "test",
@@ -155,6 +173,60 @@ func TestServiceResourcesWithoutCICD(t *testing.T) {
 	})
 	assertNoError(t, err)
 	if diff := cmp.Diff(got, want, cmpopts.IgnoreMapEntries(func(k string, v interface{}) bool {
+		_, ok := want[k]
+		return !ok
+	})); diff != "" {
+		t.Fatalf("serviceResources() failed: %v", diff)
+	}
+}
+
+func TestServiceResourcesWithoutArgoCD(t *testing.T) {
+	fakeFs := ioutils.NewMapFilesystem()
+	m := buildManifest(false, false)
+	want := res.Resources{
+		"environments/test-dev/apps/test-app/base/kustomization.yaml":     &res.Kustomization{Bases: []string{"../../../services/test-svc", "../../../services/test"}},
+		"environments/test-dev/apps/test-app/kustomization.yaml":          &res.Kustomization{Bases: []string{"overlays"}},
+		"environments/test-dev/apps/test-app/overlays/kustomization.yaml": &res.Kustomization{Bases: []string{"../base"}},
+		"environments/test-dev/env/base/kustomization.yaml":               &res.Kustomization{Resources: []string{"test-dev-environment.yaml"}, Bases: []string{"../../apps/test-app/overlays"}},
+		"pipelines.yaml": &config.Manifest{
+			GitOpsURL: "http://github.com/org/test",
+			Environments: []*config.Environment{
+				{
+					Name: "test-dev",
+					Apps: []*config.Application{
+						{
+							Name: "test-app",
+							ServiceRefs: []string{
+								"test-svc",
+								"test",
+							},
+						},
+					},
+					Services: []*config.Service{
+						{
+							Name:      "test-svc",
+							SourceURL: "https://github.com/myproject/test-svc",
+						},
+						{
+							Name:      "test",
+							SourceURL: "http://github.com/org/test",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	got, err := serviceResources(m, fakeFs, &AddServiceParameters{
+		AppName:       "test-app",
+		EnvName:       "test-dev",
+		GitRepoURL:    "http://github.com/org/test",
+		Manifest:      pipelinesFile,
+		WebhookSecret: "123",
+		ServiceName:   "test",
+	})
+	assertNoError(t, err)
+	if diff := cmp.Diff(want, got, cmpopts.IgnoreMapEntries(func(k string, v interface{}) bool {
 		_, ok := want[k]
 		return !ok
 	})); diff != "" {
@@ -192,12 +264,6 @@ func TestAddServiceWithoutApp(t *testing.T) {
 						{
 							Name:      "test-svc",
 							SourceURL: "https://github.com/myproject/test-svc",
-							Webhook: &config.Webhook{
-								Secret: &config.Secret{
-									Name:      "webhook-secret-test-dev-test-svc",
-									Namespace: "cicd",
-								},
-							},
 						},
 						{Name: "test", SourceURL: "http://github.com/org/test"},
 					},
@@ -250,11 +316,11 @@ func TestAddService(t *testing.T) {
 		"environments/test-dev/services/test/base/kustomization.yaml",
 		"environments/test-dev/services/test/overlays/kustomization.yaml",
 		"environments/test-dev/services/test/kustomization.yaml",
-		"environments/cicd/base/pipelines/03-secrets/webhook-secret-test-dev-test.yaml",
-		"environments/cicd/base/pipelines/kustomization.yaml",
+		"config/cicd/base/pipelines/03-secrets/webhook-secret-test-dev-test.yaml",
+		"config/cicd/base/pipelines/kustomization.yaml",
 		"pipelines.yaml",
-		"environments/argocd/config/test-dev-test-app-app.yaml",
-		"environments/argocd/config/test-dev-new-app-app.yaml",
+		"config/argocd/config/test-dev-test-app-app.yaml",
+		"config/argocd/config/test-dev-new-app-app.yaml",
 	}
 	err = AddService(&AddServiceParameters{
 		AppName:       "new-app",
@@ -289,6 +355,14 @@ func TestServiceWithArgoCD(t *testing.T) {
 	m := buildManifest(true, true)
 	want := res.Resources{
 		"pipelines.yaml": &config.Manifest{
+			Config: &config.Config{
+				Pipelines: &config.PipelinesConfig{
+					Name: "cicd",
+				},
+				ArgoCD: &config.ArgoCDConfig{
+					Namespace: "argocd",
+				},
+			},
 			GitOpsURL: "http://github.com/org/test",
 			Environments: []*config.Environment{
 				{
@@ -322,8 +396,6 @@ func TestServiceWithArgoCD(t *testing.T) {
 						},
 					},
 				},
-				{Name: "cicd", IsCICD: true},
-				{Name: "argocd", IsArgoCD: true},
 			},
 		},
 	}
@@ -347,63 +419,78 @@ func TestServiceWithArgoCD(t *testing.T) {
 	}
 }
 
-func buildManifest(withCICD, withArgoCD bool) *config.Manifest {
-	cfg := &config.Manifest{
+func buildManifest(withPipelines, withArgoCD bool) *config.Manifest {
+
+	m := config.Manifest{
 		GitOpsURL: "http://github.com/org/test",
-		Environments: []*config.Environment{
-			{
-				Name: "test-dev",
-				Apps: []*config.Application{
-					{
-						Name: "test-app",
-						ServiceRefs: []string{
-							"test-svc",
-						},
+	}
+
+	m.Environments = environment(withPipelines)
+
+	if withArgoCD {
+		m.Config = &config.Config{
+			ArgoCD: &config.ArgoCDConfig{
+				Namespace: "argocd",
+			},
+		}
+	}
+
+	if withPipelines {
+		if m.Config == nil {
+			m.Config = &config.Config{}
+		}
+		m.Config.Pipelines = &config.PipelinesConfig{
+			Name: "cicd",
+		}
+	}
+
+	return &m
+}
+
+func environment(withPipelinesConfig bool) []*config.Environment {
+	env := []*config.Environment{
+		{
+			Name: "test-dev",
+			Apps: []*config.Application{
+				{
+					Name: "test-app",
+					ServiceRefs: []string{
+						"test-svc",
 					},
 				},
-				Services: []*config.Service{
-					{
-						Name:      "test-svc",
-						SourceURL: "https://github.com/myproject/test-svc",
-						Webhook: &config.Webhook{
-							Secret: &config.Secret{
-								Name:      "webhook-secret-test-dev-test-svc",
-								Namespace: "cicd",
-							},
-						},
-					},
+			},
+			Services: []*config.Service{
+				{
+					Name:      "test-svc",
+					SourceURL: "https://github.com/myproject/test-svc",
 				},
 			},
 		},
 	}
-	if withCICD == true {
-		cfg.Environments = append(cfg.Environments, &config.Environment{
-			Name:   "cicd",
-			IsCICD: true,
-		})
+
+	if withPipelinesConfig {
+		env[0].Services[0].Webhook = &config.Webhook{
+			Secret: &config.Secret{
+				Name:      "webhook-secret-test-dev-test-svc",
+				Namespace: "cicd",
+			},
+		}
 	}
-	if withArgoCD == true {
-		cfg.Environments = append(cfg.Environments, &config.Environment{
-			Name:     "argocd",
-			IsArgoCD: true,
-		})
-	}
-	return cfg
+
+	return env
 }
 
 func TestCreateSvcImageBinding(t *testing.T) {
-	cicdEnv := &config.Environment{
+	cfg := &config.PipelinesConfig{
 		Name: "cicd",
 	}
 	env := &config.Environment{
 		Name: "new-env",
 	}
-	bindingName, bindingFilename, resources := createSvcImageBinding(cicdEnv, env, "new-svc", "quay.io/user/app", false)
-
+	bindingName, bindingFilename, resources := createSvcImageBinding(cfg, env, "new-svc", "quay.io/user/app", false)
 	if diff := cmp.Diff(bindingName, "new-env-new-svc-binding"); diff != "" {
 		t.Errorf("bindingName failed: %v", diff)
 	}
-
 	if diff := cmp.Diff(bindingFilename, "06-bindings/new-env-new-svc-binding.yaml"); diff != "" {
 		t.Errorf("bindingFilename failed: %v", diff)
 	}
@@ -425,7 +512,7 @@ func TestCreateSvcImageBinding(t *testing.T) {
 		},
 	}
 
-	wantResources := res.Resources{"environments/cicd/base/pipelines/06-bindings/new-env-new-svc-binding.yaml": triggerBinding}
+	wantResources := res.Resources{"config/cicd/base/pipelines/06-bindings/new-env-new-svc-binding.yaml": triggerBinding}
 	if diff := cmp.Diff(resources, wantResources); diff != "" {
 		t.Errorf("resources failed: %v", diff)
 	}

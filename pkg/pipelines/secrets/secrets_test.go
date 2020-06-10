@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"regexp"
 	"strings"
 	"testing"
 
@@ -15,8 +14,9 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/openshift/odo/pkg/pipelines/meta"
 	corev1 "k8s.io/api/core/v1"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/openshift/odo/tests/helper"
 )
 
 func init() {
@@ -272,9 +272,7 @@ func TestCreateOpaqueSecret(t *testing.T) {
 func TestCreateDockerConfigSecretWithErrorReading(t *testing.T) {
 	testErr := errors.New("test failure")
 	_, err := createDockerConfigSecret(meta.NamespacedName("cici", "github-auth"), errorReader{testErr})
-	if !matchError(t, "failed to read .* test failure", err) {
-		t.Fatalf("got an unexpected error: %#v", err)
-	}
+	helper.AssertErrorMatch(t, "failed to read .* test failure", err)
 }
 
 func TestCreateDockerConfigSecret(t *testing.T) {
@@ -307,21 +305,6 @@ type errorReader struct {
 
 func (e errorReader) Read(p []byte) (int, error) {
 	return 0, e.err
-}
-
-func matchError(t *testing.T, s string, e error) bool {
-	t.Helper()
-	if s == "" && e == nil {
-		return true
-	}
-	if s != "" && e == nil {
-		return false
-	}
-	match, err := regexp.MatchString(s, e.Error())
-	if err != nil {
-		t.Fatal(err)
-	}
-	return match
 }
 
 func TestParseKey(t *testing.T) {

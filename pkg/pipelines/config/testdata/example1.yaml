@@ -1,3 +1,8 @@
+config:
+  argocd:
+    namespace: test-argocd
+  pipelines:
+    name: test-pipelines
 environments:
   - name: development
     services:

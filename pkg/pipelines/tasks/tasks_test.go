@@ -19,7 +19,7 @@ func TestDeployFromSourceTask(t *testing.T) {
 			Namespace: testNS,
 		},
 		Spec: pipelinev1.TaskSpec{
-			Params:    paramsForDeploymentFromSourceTask("test"),
+			Params:    paramsForDeploymentFromSourceTask(),
 			Resources: createResourcesForDeployFromSourceTask(),
 			Steps: []pipelinev1.Step{
 				{
@@ -27,9 +27,8 @@ func TestDeployFromSourceTask(t *testing.T) {
 						Name:       "run-kubectl",
 						Image:      "quay.io/redhat-developer/k8s-kubectl",
 						WorkingDir: "/workspace/source",
-						Command:    []string{"kubectl"},
-						Args:       argsForRunKubectlStep,
 					},
+					Script: "test",
 				},
 			},
 		},

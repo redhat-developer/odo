@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"testing"
 
@@ -12,6 +11,14 @@ import (
 
 func TestManifestWalk(t *testing.T) {
 	m := &Manifest{
+		Config: &Config{
+			Pipelines: &PipelinesConfig{
+				Name: "cicd",
+			},
+			ArgoCD: &ArgoCDConfig{
+				Namespace: "argocd",
+			},
+		},
 		Environments: []*Environment{
 			{
 				Name: "development",
@@ -76,13 +83,9 @@ func TestManifestWalk(t *testing.T) {
 	}
 }
 
-func TestManifestWalkCallsCICDEnvironmentLast(t *testing.T) {
+func TestManifestWalkCalls(t *testing.T) {
 	m := &Manifest{
 		Environments: []*Environment{
-			{
-				Name:   "cicd",
-				IsCICD: true,
-			},
 			{
 				Name: "development",
 
@@ -137,11 +140,6 @@ func TestManifestWalkCallsCICDEnvironmentLast(t *testing.T) {
 		"staging/app-1-service-user",
 		"staging/my-app-1",
 		"envs/staging",
-		"cicd/development/app-1-service-http",
-		"cicd/development/app-1-service-test",
-		"cicd/development/app-2-service",
-		"cicd/staging/app-1-service-user",
-		"envs/cicd",
 	}
 
 	if diff := cmp.Diff(want, v.paths); diff != "" {
@@ -149,56 +147,70 @@ func TestManifestWalkCallsCICDEnvironmentLast(t *testing.T) {
 	}
 }
 
-func TestEnviromentSorting(t *testing.T) {
-	envNames := func(envs []*Environment) []string {
-		n := make([]string, len(envs))
-		for i, v := range envs {
-			n[i] = v.Name
-		}
-		return n
-	}
-	envTests := []struct {
-		names []testEnv
-		want  []string
-	}{
-		{[]testEnv{{"prod", false, false}, {"staging", false, false}, {"dev", false, false}}, []string{"dev", "prod", "staging"}},
-		{[]testEnv{{"cicd", true, false}, {"staging", false, false}, {"dev", false, false}}, []string{"dev", "staging", "cicd"}},
-		{[]testEnv{{"m-cicd", true, false}, {"staging", false, false}, {"dev", false, false}}, []string{"dev", "staging", "m-cicd"}},
-		{[]testEnv{{"m-cicd", true, false}, {"argo", false, true}, {"dev", false, false}}, []string{"dev", "m-cicd", "argo"}},
-		{[]testEnv{{"m-argo", false, true}, {"testing", false, false}, {"dev", false, false}}, []string{"dev", "testing", "m-argo"}},
+func TestGetPipelinesConfig(t *testing.T) {
+	cfg := &Config{
+		Pipelines: &PipelinesConfig{
+			Name: "cicd",
+		},
 	}
 
-	for _, tt := range envTests {
-		envs := makeEnvs(tt.names)
-		sort.Sort(ByName(envs))
-		if diff := cmp.Diff(tt.want, envNames(envs)); diff != "" {
-			t.Errorf("sort(%#v): %s", envs, diff)
-		}
-	}
-}
-
-func TestFindCICDEnviroment(t *testing.T) {
 	envTests := []struct {
-		names []testEnv
-		want  string
-		err   string
+		name     string
+		manifest *Manifest
+		want     *PipelinesConfig
 	}{
-		{[]testEnv{{"prod", false, false}, {"staging", false, false}, {"dev", false, false}}, "", ""},
-		{[]testEnv{{"test-cicd", true, false}, {"staging", false, false}, {"dev", false, false}}, "test-cicd", ""},
-		{[]testEnv{{"test-cicd", true, false}, {"oc-cicd", true, false}, {"dev", false, false}}, "", "found multiple CI/CD environments"},
+		{
+			name:     "manifest with configuration",
+			manifest: &Manifest{Config: cfg},
+			want:     cfg.Pipelines,
+		},
+		{
+			name:     "manifest with no configuration",
+			manifest: &Manifest{},
+			want:     nil,
+		},
 	}
 
 	for i, tt := range envTests {
 		t.Run(fmt.Sprintf("test %d", i), func(rt *testing.T) {
-			m := &Manifest{Environments: makeEnvs(tt.names)}
-			env, err := m.GetCICDEnvironment()
-			if !matchErrorString(t, tt.err, err) {
-				rt.Errorf("did not match error, got %s, want %s", err, tt.err)
-				return
+			m := tt.manifest
+			got := m.GetPipelinesConfig()
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("%s: configuration did not match:\n%s", tt.name, diff)
 			}
+		})
+	}
+}
+func TestGetArgoCDConfig(t *testing.T) {
+	cfg := &Config{
+		ArgoCD: &ArgoCDConfig{
+			Namespace: "argocd",
+		},
+	}
 
-			if tt.want != "" && (env.Name != tt.want) {
-				rt.Errorf("found incorrect CICD environment, got %s, want %s", env.Name, tt.want)
+	envTests := []struct {
+		name     string
+		manifest *Manifest
+		want     *ArgoCDConfig
+	}{
+		{
+			name:     "manifest with configuration",
+			manifest: &Manifest{Config: cfg},
+			want:     cfg.ArgoCD,
+		},
+		{
+			name:     "manifest with no configuration",
+			manifest: &Manifest{},
+			want:     nil,
+		},
+	}
+
+	for i, tt := range envTests {
+		t.Run(fmt.Sprintf("test %d", i), func(rt *testing.T) {
+			m := tt.manifest
+			got := m.GetArgoCDConfig()
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("%s: configuration did not match:\n%s", tt.name, diff)
 			}
 		})
 	}
@@ -220,16 +232,14 @@ func TestGetEnvironment(t *testing.T) {
 func makeEnvs(ns []testEnv) []*Environment {
 	n := make([]*Environment, len(ns))
 	for i, v := range ns {
-		n[i] = &Environment{Name: v.name, IsCICD: v.cicd, IsArgoCD: v.argocd}
+		n[i] = &Environment{Name: v.name}
 	}
 	return n
 
 }
 
 type testEnv struct {
-	name   string
-	cicd   bool
-	argocd bool
+	name string
 }
 
 type testVisitor struct {
@@ -254,27 +264,4 @@ func (v *testVisitor) Environment(env *Environment) error {
 	}
 	v.paths = append(v.paths, filepath.Join("envs", env.Name))
 	return nil
-}
-
-// MatchErrorString takes a string and matches on the error and returns true if
-// the
-// string matches the error.
-//
-// This is useful in table tests.
-//
-// If the string can't be compiled as an regexp, then this will fail with a
-// Fatal error.
-func matchErrorString(t *testing.T, s string, e error) bool {
-	t.Helper()
-	if s == "" && e == nil {
-		return true
-	}
-	if s != "" && e == nil {
-		return false
-	}
-	match, err := regexp.MatchString(s, e.Error())
-	if err != nil {
-		t.Fatal(err)
-	}
-	return match
 }

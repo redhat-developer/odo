@@ -16,6 +16,7 @@ type validateVisitor struct {
 	appNames     map[string]bool
 	serviceNames map[string]bool
 	serviceURLs  map[string][]string
+	configNames  map[string]bool
 }
 
 func (m *Manifest) Validate() error {
@@ -25,9 +26,14 @@ func (m *Manifest) Validate() error {
 		appNames:     map[string]bool{},
 		serviceNames: map[string]bool{},
 		serviceURLs:  map[string][]string{},
+		configNames:  map[string]bool{},
 	}
-	m.Walk(vv)
 
+	vv.errs = append(vv.errs, vv.validateConfig(m)...)
+	err := m.Walk(vv)
+	if err != nil {
+		vv.errs = append(vv.errs, err)
+	}
 	vv.errs = append(vv.errs, vv.validateServiceURLs(m.GitOpsURL)...)
 
 	if len(vv.errs) == 0 {
@@ -70,6 +76,9 @@ func (vv *validateVisitor) validateServiceURLs(gitOpsURL string) []error {
 
 func (vv *validateVisitor) Environment(env *Environment) error {
 	envPath := yamlPath(PathForEnvironment(env))
+	if _, ok := vv.configNames[env.Name]; ok {
+		vv.errs = append(vv.errs, invalidEnvironment(env.Name, "Environment name cannot be the same as a config name.", []string{envPath}))
+	}
 	if err := checkDuplicate(env.Name, envPath, vv.envNames); err != nil {
 		vv.errs = append(vv.errs, err)
 	}
@@ -84,9 +93,6 @@ func (vv *validateVisitor) Environment(env *Environment) error {
 
 func (vv *validateVisitor) Application(env *Environment, app *Application) error {
 	appPath := yamlPath(PathForApplication(env, app))
-	if env.IsSpecial() {
-		vv.errs = append(vv.errs, invalidEnvironment(env.Name, "A special environment cannot contain applications.", []string{appPath}))
-	}
 	if err := checkDuplicate(app.Name, appPath, vv.appNames); err != nil {
 		vv.errs = append(vv.errs, err)
 	}
@@ -112,15 +118,11 @@ func (vv *validateVisitor) Application(env *Environment, app *Application) error
 			}
 		}
 	}
-
 	return nil
 }
 
 func (vv *validateVisitor) Service(env *Environment, svc *Service) error {
 	svcPath := yamlPath(PathForService(env, svc.Name))
-	if env.IsSpecial() {
-		vv.errs = append(vv.errs, invalidEnvironment(env.Name, "A special environment cannot contain services.", []string{svcPath}))
-	}
 	if svc.SourceURL != "" {
 		previous, ok := vv.serviceURLs[svc.SourceURL]
 		if !ok {
@@ -188,6 +190,24 @@ func validatePipelines(pipelines *Pipelines, path string) []error {
 	for _, name := range pipelines.Integration.Bindings {
 		if err := validateName(name, yamlJoin(path, "pipelines", "integration", "binding")); err != nil {
 			errs = append(errs, err)
+		}
+	}
+	return errs
+}
+func (vv *validateVisitor) validateConfig(manifest *Manifest) []error {
+	errs := []error{}
+	if manifest.Config != nil {
+		if manifest.Config.ArgoCD != nil {
+			if err := validateName(manifest.Config.ArgoCD.Namespace, yamlPath(PathForArgoCD())); err != nil {
+				errs = append(errs, err)
+			}
+			vv.configNames[manifest.Config.ArgoCD.Namespace] = true
+		}
+		if manifest.Config.Pipelines != nil {
+			if err := validateName(manifest.Config.Pipelines.Name, yamlPath(PathForPipelines(manifest.Config.Pipelines))); err != nil {
+				errs = append(errs, err)
+			}
+			vv.configNames[manifest.Config.Pipelines.Name] = true
 		}
 	}
 	return errs

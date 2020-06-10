@@ -2,9 +2,7 @@ package pipelines
 
 import (
 	"fmt"
-	"net/url"
 	"path/filepath"
-	"strings"
 
 	"github.com/openshift/odo/pkg/pipelines/config"
 	"github.com/openshift/odo/pkg/pipelines/eventlisteners"
@@ -12,18 +10,6 @@ import (
 	"github.com/openshift/odo/pkg/pipelines/scm"
 	"github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
 )
-
-const (
-	elPatchFile     = "eventlistener_patch.yaml"
-	elPatchDir      = "eventlistener_patches"
-	rolebindingFile = "edit-rolebinding.yaml"
-)
-
-type patchStringValue struct {
-	Op    string      `json:"op"`
-	Path  string      `json:"path"`
-	Value interface{} `json:"value"`
-}
 
 type tektonBuilder struct {
 	files      res.Resources
@@ -35,20 +21,27 @@ func buildEventListenerResources(gitOpsRepo string, m *config.Manifest) (res.Res
 	if gitOpsRepo == "" {
 		return res.Resources{}, nil
 	}
-	cicd, err := m.GetCICDEnvironment()
-	if err != nil {
-		return nil, err
-	}
-	if cicd == nil {
+	cfg := m.GetPipelinesConfig()
+	if cfg == nil {
 		return nil, nil
 	}
 	files := make(res.Resources)
 	tb := &tektonBuilder{files: files, gitOpsRepo: gitOpsRepo}
+	triggers, err := createTriggersForCICD(tb.gitOpsRepo, cfg)
+	if err != nil {
+		return nil, err
+	}
+	tb.triggers = append(tb.triggers, triggers...)
 	err = m.Walk(tb)
-	return tb.files, err
+	if err != nil {
+		return nil, err
+	}
+	cicdPath := config.PathForPipelines(cfg)
+	files[getEventListenerPath(cicdPath)] = eventlisteners.CreateELFromTriggers(cfg.Name, saName, tb.triggers)
+	return files, nil
 }
 
-func (tk *tektonBuilder) Service(env *config.Environment, svc *config.Service) error {
+func (tb *tektonBuilder) Service(env *config.Environment, svc *config.Service) error {
 	if svc.SourceURL == "" {
 		return nil
 	}
@@ -58,20 +51,7 @@ func (tk *tektonBuilder) Service(env *config.Environment, svc *config.Service) e
 	}
 	pipelines := getPipelines(env, svc, repo)
 	ciTrigger := repo.CreateCITrigger(triggerName(svc.Name), svc.Webhook.Secret.Name, svc.Webhook.Secret.Namespace, pipelines.Integration.Template, pipelines.Integration.Bindings)
-	tk.triggers = append(tk.triggers, ciTrigger)
-	return nil
-}
-
-func (tk *tektonBuilder) Environment(env *config.Environment) error {
-	if env.IsCICD {
-		triggers, err := createTriggersForCICD(tk.gitOpsRepo, env)
-		if err != nil {
-			return err
-		}
-		tk.triggers = append(tk.triggers, triggers...)
-		cicdPath := config.PathForEnvironment(env)
-		tk.files[getEventListenerPath(cicdPath)] = eventlisteners.CreateELFromTriggers(env.Name, saName, tk.triggers)
-	}
+	tb.triggers = append(tb.triggers, ciTrigger)
 	return nil
 }
 
@@ -79,14 +59,14 @@ func getEventListenerPath(cicdPath string) string {
 	return filepath.Join(cicdPath, "base", "pipelines", eventListenerPath)
 }
 
-func createTriggersForCICD(gitOpsRepo string, env *config.Environment) ([]v1alpha1.EventListenerTrigger, error) {
+func createTriggersForCICD(gitOpsRepo string, cfg *config.PipelinesConfig) ([]v1alpha1.EventListenerTrigger, error) {
 	triggers := []v1alpha1.EventListenerTrigger{}
 	repo, err := scm.NewRepository(gitOpsRepo)
 	if err != nil {
 		return []v1alpha1.EventListenerTrigger{}, err
 	}
-	ciTrigger := repo.CreateCITrigger("ci-dryrun-from-pr", eventlisteners.GitOpsWebhookSecret, env.Name, "ci-dryrun-from-pr-template", []string{repo.PRBindingName()})
-	cdTrigger := repo.CreateCDTrigger("cd-deploy-from-push", eventlisteners.GitOpsWebhookSecret, env.Name, "cd-deploy-from-push-template", []string{repo.PushBindingName()})
+	ciTrigger := repo.CreateCITrigger("ci-dryrun-from-pr", eventlisteners.GitOpsWebhookSecret, cfg.Name, "ci-dryrun-from-pr-template", []string{repo.PRBindingName()})
+	cdTrigger := repo.CreateCDTrigger("cd-deploy-from-push", eventlisteners.GitOpsWebhookSecret, cfg.Name, "cd-deploy-from-push-template", []string{repo.PushBindingName()})
 	triggers = append(triggers, ciTrigger, cdTrigger)
 	return triggers, nil
 }
@@ -114,15 +94,6 @@ func clonePipelines(p *config.Pipelines) *config.Pipelines {
 			Template: p.Integration.Template,
 		},
 	}
-}
-
-func extractRepo(u string) (string, error) {
-	parsed, err := url.Parse(u)
-	if err != nil {
-		return "", err
-	}
-	parts := strings.Split(parsed.Path, "/")
-	return fmt.Sprintf("%s/%s", parts[1], strings.TrimSuffix(parts[2], ".git")), nil
 }
 
 func triggerName(svc string) string {

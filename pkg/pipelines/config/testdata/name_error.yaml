@@ -1,3 +1,8 @@
+config:
+  argocd:
+    namespace: argo.cd  # invalid name
+  pipelines:
+    name: tst!cicd  # invalid name
 environments:
   - name: develo.pment      # invalid name
     pipelines:
@@ -16,13 +21,10 @@ environments:
         pipelines:
               integration:
                 template: dev-ci-template
-                bindings:    # invalid name
-                 - 
+                bindings:  
+                -  # invalid name
     apps:
       - name: app-1$.       # invalid name
         services:
           - testing
-  - name: test)cicd     # invalid name
-    cicd: true
-  - name: test-argocd
-    argo: true
+ 

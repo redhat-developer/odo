@@ -1,0 +1,8 @@
+config:
+  argocd:
+    namespace: argocd   
+  pipelines:
+    name: tst-cicd   
+environments:
+  - name: tst-cicd  # can't be the same as a config name
+  - name: argocd  # can't be the same as a config name

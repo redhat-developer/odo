@@ -8,6 +8,7 @@ import (
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/openshift/odo/pkg/pipelines/config"
+	"github.com/openshift/odo/pkg/pipelines/dryrun"
 	"github.com/openshift/odo/pkg/pipelines/eventlisteners"
 	"github.com/openshift/odo/pkg/pipelines/ioutils"
 	"github.com/openshift/odo/pkg/pipelines/meta"
@@ -45,8 +46,8 @@ var (
 	Rules = []v1rbac.PolicyRule{
 		{
 			APIGroups: []string{""},
-			Resources: []string{"namespaces"},
-			Verbs:     []string{"patch"},
+			Resources: []string{"namespaces", "services"},
+			Verbs:     []string{"patch", "get", "create"},
 		},
 		{
 			APIGroups: []string{"rbac.authorization.k8s.io"},
@@ -63,14 +64,20 @@ var (
 			Resources: []string{"sealedsecrets"},
 			Verbs:     []string{"get", "patch", "create"},
 		},
+		{
+			APIGroups: []string{"apps"},
+			Resources: []string{"deployments"},
+			Verbs:     []string{"get", "create", "patch"},
+		},
+		{
+			APIGroups: []string{"argoproj.io"},
+			Resources: []string{"applications"},
+			Verbs:     []string{"get", "create", "patch"},
+		},
 	}
 )
 
 const (
-	pipelineDir = "pipelines"
-
-	baseDir = "base"
-
 	// Kustomize constants for kustomization.yaml
 	Kustomize = "kustomization.yaml"
 
@@ -84,19 +91,16 @@ const (
 	appTaskPath              = "04-tasks/deploy-using-kubectl-task.yaml"
 	ciPipelinesPath          = "05-pipelines/ci-dryrun-from-pr-pipeline.yaml"
 	appCiPipelinesPath       = "05-pipelines/app-ci-pipeline.yaml"
-	appCdPipelinesPath       = "05-pipelines/app-cd-pipeline.yaml"
 	cdPipelinesPath          = "05-pipelines/cd-deploy-from-push-pipeline.yaml"
 	prTemplatePath           = "07-templates/ci-dryrun-from-pr-template.yaml"
 	pushTemplatePath         = "07-templates/cd-deploy-from-push-template.yaml"
 	appCIBuildPRTemplatePath = "07-templates/app-ci-build-pr-template.yaml"
-	appCDBuildPRTemplatePath = "07-templates/app-cd-build-pr-template.yaml"
 	eventListenerPath        = "08-eventlisteners/cicd-event-listener.yaml"
 	routePath                = "09-routes/gitops-webhook-event-listener.yaml"
 
 	dockerSecretName = "regcred"
 
 	saName          = "pipeline"
-	roleName        = "pipelines-service-role"
 	roleBindingName = "pipelines-service-role-binding"
 )
 
@@ -146,29 +150,30 @@ func CreateDockerSecret(fs afero.Fs, dockerConfigJSONFilename, ns string) (*ssv1
 }
 
 func createInitialFiles(fs afero.Fs, repo scm.Repository, prefix, gitOpsWebhookSecret, dockerConfigPath string) (res.Resources, error) {
-	cicdEnv := &config.Environment{Name: prefix + "cicd", IsCICD: true}
-	pipelines := createManifest(repo, cicdEnv)
+	cicd := &config.PipelinesConfig{Name: prefix + "cicd"}
+	pipelineConfig := &config.Config{Pipelines: cicd}
+	pipelines := createManifest(repo.URL(), pipelineConfig)
 	initialFiles := res.Resources{
 		pipelinesFile: pipelines,
 	}
-	resources, err := createCICDResources(fs, repo, cicdEnv, gitOpsWebhookSecret, dockerConfigPath)
+	resources, err := createCICDResources(fs, repo, cicd, gitOpsWebhookSecret, dockerConfigPath)
 	if err != nil {
 		return nil, err
 	}
 
 	files := getResourceFiles(resources)
-	prefixedResources := addPrefixToResources(pipelinesPath(pipelines), resources)
+	prefixedResources := addPrefixToResources(pipelinesPath(pipelines.Config), resources)
 	initialFiles = res.Merge(prefixedResources, initialFiles)
 
-	cicdKustomizations := addPrefixToResources(cicdEnvironmentPath(pipelines), getCICDKustomization(files))
-	initialFiles = res.Merge(cicdKustomizations, initialFiles)
+	pipelinesConfigKustomizations := addPrefixToResources(config.PathForPipelines(pipelines.Config.Pipelines), getCICDKustomization(files))
+	initialFiles = res.Merge(pipelinesConfigKustomizations, initialFiles)
 
 	return initialFiles, nil
 }
 
 // createCICDResources creates resources assocated to pipelines.
-func createCICDResources(fs afero.Fs, repo scm.Repository, cicdEnv *config.Environment, gitOpsWebhookSecret, dockerConfigJSONPath string) (res.Resources, error) {
-	cicdNamespace := cicdEnv.Name
+func createCICDResources(fs afero.Fs, repo scm.Repository, pipelineConfig *config.PipelinesConfig, gitOpsWebhookSecret, dockerConfigJSONPath string) (res.Resources, error) {
+	cicdNamespace := pipelineConfig.Name
 	// key: path of the resource
 	// value: YAML content of the resource
 	outputs := map[string]interface{}{}
@@ -196,7 +201,11 @@ func createCICDResources(fs afero.Fs, repo scm.Repository, cicdEnv *config.Envir
 	}
 
 	outputs[rolebindingsPath] = roles.CreateClusterRoleBinding(meta.NamespacedName("", roleBindingName), sa, "ClusterRole", roles.ClusterRoleName)
-	outputs[gitopsTasksPath] = tasks.CreateDeployFromSourceTask(cicdNamespace, filepath.Join(config.PathForEnvironment(cicdEnv), "base"))
+	script, err := dryrun.MakeScript("kubectl", cicdNamespace)
+	if err != nil {
+		return nil, err
+	}
+	outputs[gitopsTasksPath] = tasks.CreateDeployFromSourceTask(cicdNamespace, script)
 	outputs[appTaskPath] = tasks.CreateDeployUsingKubectlTask(cicdNamespace)
 	outputs[ciPipelinesPath] = pipelines.CreateCIPipeline(meta.NamespacedName(cicdNamespace, "ci-dryrun-from-pr-pipeline"), cicdNamespace)
 	outputs[cdPipelinesPath] = pipelines.CreateCDPipeline(meta.NamespacedName(cicdNamespace, "cd-deploy-from-push-pipeline"), cicdNamespace)
@@ -218,10 +227,11 @@ func createTriggerBindings(r scm.Repository, outputs res.Resources, ns string) {
 	outputs[filepath.Join("06-bindings", pushBindingName+".yaml")] = pushBinding
 }
 
-func createManifest(gitOpsRepo scm.Repository, envs ...*config.Environment) *config.Manifest {
+func createManifest(gitOpsRepoURL string, configEnv *config.Config, envs ...*config.Environment) *config.Manifest {
 	return &config.Manifest{
-		GitOpsURL:    gitOpsRepo.URL(),
+		GitOpsURL:    gitOpsRepoURL,
 		Environments: envs,
+		Config:       configEnv,
 	}
 }
 
@@ -239,12 +249,8 @@ func getCICDKustomization(files []string) res.Resources {
 	}
 }
 
-func pathForEnvironment(env *config.Environment) string {
-	return filepath.Join("environments", env.Name)
-}
-
-func pipelinesPath(m *config.Manifest) string {
-	return filepath.Join(cicdEnvironmentPath(m), "base/pipelines")
+func pipelinesPath(m *config.Config) string {
+	return filepath.Join(config.PathForPipelines(m.Pipelines), "base/pipelines")
 }
 
 func addPrefixToResources(prefix string, files res.Resources) map[string]interface{} {
@@ -253,11 +259,6 @@ func addPrefixToResources(prefix string, files res.Resources) map[string]interfa
 		updated[filepath.Join(prefix, k)] = v
 	}
 	return updated
-}
-
-// TODO: this should probably use the .FindCICDEnvironment on the pipelines.
-func cicdEnvironmentPath(m *config.Manifest) string {
-	return pathForEnvironment(m.Environments[0])
 }
 
 func getResourceFiles(res res.Resources) []string {

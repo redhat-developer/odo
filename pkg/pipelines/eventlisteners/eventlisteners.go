@@ -36,6 +36,8 @@ func Generate(repo scm.Repository, ns, saName, secretName string) triggersv1.Eve
 	}
 }
 
+// CreateELFromTriggers creates an EventListener from a supplied set of
+// trigger, with the provided namespace and name.
 func CreateELFromTriggers(cicdNS, saName string, triggers []triggersv1.EventListenerTrigger) *triggersv1.EventListener {
 	return &v1alpha1.EventListener{
 		TypeMeta: eventListenerTypeMeta,

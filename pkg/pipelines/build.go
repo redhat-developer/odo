@@ -37,7 +37,14 @@ func BuildResources(o *BuildParameters, appFs afero.Fs) error {
 
 func buildResources(fs afero.Fs, o *BuildParameters, m *config.Manifest) (res.Resources, error) {
 	resources := res.Resources{}
-	envs, err := environments.Build(fs, m, saName)
+
+	argoCD := m.GetArgoCDConfig()
+	appLinks := environments.EnvironmentsToApps
+	if argoCD != nil {
+		appLinks = environments.AppsToEnvironments
+	}
+
+	envs, err := environments.Build(fs, m, saName, appLinks)
 	if err != nil {
 		return nil, err
 	}

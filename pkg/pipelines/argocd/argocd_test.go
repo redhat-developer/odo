@@ -40,7 +40,9 @@ func TestBuildCreatesArgoCD(t *testing.T) {
 	m := &config.Manifest{
 		Environments: []*config.Environment{
 			testEnv,
-			{Name: "argocd", IsArgoCD: true},
+		},
+		Config: &config.Config{
+			ArgoCD: &config.ArgoCDConfig{Namespace: "argocd"},
 		},
 	}
 
@@ -50,7 +52,7 @@ func TestBuildCreatesArgoCD(t *testing.T) {
 	}
 
 	want := res.Resources{
-		"environments/argocd/config/test-dev-http-api-app.yaml": &argoappv1.Application{
+		"config/argocd/config/test-dev-http-api-app.yaml": &argoappv1.Application{
 			TypeMeta:   applicationTypeMeta,
 			ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ArgoCDNamespace, "test-dev-http-api")),
 			Spec: argoappv1.ApplicationSpec{
@@ -63,7 +65,7 @@ func TestBuildCreatesArgoCD(t *testing.T) {
 				SyncPolicy: syncPolicy,
 			},
 		},
-		"environments/argocd/config/kustomization.yaml": &res.Kustomization{Resources: []string{"test-dev-http-api-app.yaml"}},
+		"config/argocd/config/kustomization.yaml": &res.Kustomization{Resources: []string{"test-dev-http-api-app.yaml"}},
 	}
 
 	if diff := cmp.Diff(want, files); diff != "" {
@@ -82,7 +84,9 @@ func TestBuildCreatesArgoCDWithMultipleApps(t *testing.T) {
 		Environments: []*config.Environment{
 			prodEnv,
 			testEnv,
-			&config.Environment{Name: "argocd", IsArgoCD: true},
+		},
+		Config: &config.Config{
+			ArgoCD: &config.ArgoCDConfig{Namespace: "argocd"},
 		},
 	}
 
@@ -95,7 +99,7 @@ func TestBuildCreatesArgoCDWithMultipleApps(t *testing.T) {
 		t.Fatalf("got %d files, want 3\n", len(files))
 	}
 	want := &res.Kustomization{Resources: []string{"test-dev-http-api-app.yaml", "test-production-http-api-app.yaml"}}
-	if diff := cmp.Diff(want, files["environments/argocd/config/kustomization.yaml"]); diff != "" {
+	if diff := cmp.Diff(want, files["config/argocd/config/kustomization.yaml"]); diff != "" {
 		t.Fatalf("files didn't match: %s\n", diff)
 	}
 }
@@ -104,7 +108,9 @@ func TestBuildWithNoRepoURL(t *testing.T) {
 	m := &config.Manifest{
 		Environments: []*config.Environment{
 			testEnv,
-			&config.Environment{Name: "argocd", IsArgoCD: true},
+		},
+		Config: &config.Config{
+			ArgoCD: &config.ArgoCDConfig{Namespace: "argocd"},
 		},
 	}
 
@@ -118,7 +124,7 @@ func TestBuildWithNoRepoURL(t *testing.T) {
 	}
 }
 
-func TestBuildWithNoArgoCDEnv(t *testing.T) {
+func TestBuildWithNoArgoCDConfig(t *testing.T) {
 	m := &config.Manifest{
 		Environments: []*config.Environment{
 			testEnv,
@@ -146,7 +152,9 @@ func TestBuildWithRepoConfig(t *testing.T) {
 	m := &config.Manifest{
 		Environments: []*config.Environment{
 			prodEnv,
-			&config.Environment{Name: "argocd", IsArgoCD: true},
+		},
+		Config: &config.Config{
+			ArgoCD: &config.ArgoCDConfig{Namespace: "argocd"},
 		},
 	}
 
@@ -156,7 +164,7 @@ func TestBuildWithRepoConfig(t *testing.T) {
 	}
 
 	want := res.Resources{
-		"environments/argocd/config/test-production-prod-api-app.yaml": &argoappv1.Application{
+		"config/argocd/config/test-production-prod-api-app.yaml": &argoappv1.Application{
 			TypeMeta:   applicationTypeMeta,
 			ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ArgoCDNamespace, "test-production-prod-api")),
 			Spec: argoappv1.ApplicationSpec{
@@ -169,7 +177,7 @@ func TestBuildWithRepoConfig(t *testing.T) {
 				SyncPolicy: syncPolicy,
 			},
 		},
-		"environments/argocd/config/kustomization.yaml": &res.Kustomization{Resources: []string{"test-production-prod-api-app.yaml"}},
+		"config/argocd/config/kustomization.yaml": &res.Kustomization{Resources: []string{"test-production-prod-api-app.yaml"}},
 	}
 
 	if diff := cmp.Diff(want, files); diff != "" {

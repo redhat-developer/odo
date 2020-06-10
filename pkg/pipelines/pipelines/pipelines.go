@@ -1,10 +1,10 @@
 package pipelines
 
 import (
-	"github.com/openshift/odo/pkg/pipelines/meta"
+	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"k8s.io/apimachinery/pkg/types"
 
-	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	"github.com/openshift/odo/pkg/pipelines/meta"
 )
 
 var (
@@ -76,9 +76,6 @@ func createCDPipelineTask(taskName, stageNamespace string) pipelinev1.PipelineTa
 		Resources: &pipelinev1.PipelineTaskResources{
 			Inputs: []pipelinev1.PipelineTaskInputResource{createInputTaskResource("source", "source-repo")},
 		},
-		Params: []pipelinev1.Param{
-			createTaskParam("NAMESPACE", stageNamespace),
-		},
 	}
 }
 
@@ -126,7 +123,6 @@ func createCIPipelineTask(taskName, stageNamespace string) pipelinev1.PipelineTa
 			Inputs: []pipelinev1.PipelineTaskInputResource{createInputTaskResource("source", "source-repo")},
 		},
 		Params: []pipelinev1.Param{
-			createTaskParam("NAMESPACE", stageNamespace),
 			createTaskParam("DRYRUN", "true"),
 		},
 	}

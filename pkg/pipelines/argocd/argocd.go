@@ -38,27 +38,34 @@ func Build(argoNS, repoURL string, m *config.Manifest) (res.Resources, error) {
 	if repoURL == "" {
 		return res.Resources{}, nil
 	}
-	argoEnv, err := m.GetArgoCDEnvironment()
-	// If there's no ArgoCD environment, then we don't need to do anything.
-	if err != nil {
+	argoCDConfig := m.GetArgoCDConfig()
+	if argoCDConfig == nil {
 		return res.Resources{}, nil
 	}
 
 	files := make(res.Resources)
-	eb := &argocdBuilder{repoURL: repoURL, files: files, argoEnv: argoEnv, argoNS: argoNS}
-	err = m.Walk(eb)
+	eb := &argocdBuilder{repoURL: repoURL, files: files, argoCDConfig: argoCDConfig, argoNS: argoNS}
+	err := m.Walk(eb)
+	if err != nil {
+		return nil, err
+	}
+
+	err = argoCDConfigResources(eb.argoCDConfig, eb.files)
+	if err != nil {
+		return nil, err
+	}
 	return eb.files, err
 }
 
 type argocdBuilder struct {
-	repoURL string
-	argoEnv *config.Environment
-	files   res.Resources
-	argoNS  string
+	repoURL      string
+	argoCDConfig *config.ArgoCDConfig
+	files        res.Resources
+	argoNS       string
 }
 
 func (b *argocdBuilder) Application(env *config.Environment, app *config.Application) error {
-	basePath := filepath.Join(config.PathForEnvironment(b.argoEnv), "config")
+	basePath := filepath.Join(config.PathForArgoCD(), "config")
 	argoFiles := res.Resources{}
 	filename := filepath.Join(basePath, env.Name+"-"+app.Name+"-app.yaml")
 	argoFiles[filename] = makeApplication(env.Name+"-"+app.Name, b.argoNS, defaultProject, env.Name, defaultServer, makeSource(env, app, b.repoURL))
@@ -66,18 +73,18 @@ func (b *argocdBuilder) Application(env *config.Environment, app *config.Applica
 	return nil
 }
 
-func (b *argocdBuilder) Environment(env *config.Environment) error {
-	if !env.IsArgoCD {
+func argoCDConfigResources(argoCDConfig *config.ArgoCDConfig, files res.Resources) error {
+	if argoCDConfig.Namespace == "" {
 		return nil
 	}
-	basePath := filepath.Join(config.PathForEnvironment(b.argoEnv), "config")
+	basePath := filepath.Join(config.PathForArgoCD(), "config")
 	filename := filepath.Join(basePath, "kustomization.yaml")
 	resourceNames := []string{}
-	for k, _ := range b.files {
+	for k := range files {
 		resourceNames = append(resourceNames, filepath.Base(k))
 	}
 	sort.Strings(resourceNames)
-	b.files[filename] = &res.Kustomization{Resources: resourceNames}
+	files[filename] = &res.Kustomization{Resources: resourceNames}
 	return nil
 }
 

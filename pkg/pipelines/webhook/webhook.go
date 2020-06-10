@@ -90,11 +90,11 @@ func newWebhookInfo(accessToken, pipelinesFile string, serviceName *QualifiedSer
 		return nil, errors.New("failed to find Git repostory URL in manifest")
 	}
 
-	cicdEnv, err := manifest.GetCICDEnvironment()
-	if err != nil {
+	cfg := manifest.GetPipelinesConfig()
+	if cfg == nil {
 		return nil, fmt.Errorf("failed to get CICD environment: %w", err)
 	}
-	cicdNamepace := cicdEnv.Name
+	cicdNamepace := cfg.Name
 
 	clusterResources, err := newResources()
 	if err != nil {

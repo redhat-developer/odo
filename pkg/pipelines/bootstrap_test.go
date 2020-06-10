@@ -52,11 +52,10 @@ func TestBootstrapManifest(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := res.Resources{
-		"environments/tst-cicd/base/pipelines/03-secrets/webhook-secret-tst-dev-http-api-svc.yaml": hookSecret,
-		"environments/tst-dev/services/http-api-svc/base/config/100-deployment.yaml":               deployment.Create("tst-dev", "http-api-svc", bootstrapImage, deployment.ContainerPort(8080)),
-
-		"environments/tst-dev/services/http-api-svc/base/config/200-service.yaml":   createBootstrapService("tst-dev", "http-api-svc"),
-		"environments/tst-dev/services/http-api-svc/base/config/kustomization.yaml": &res.Kustomization{Resources: []string{"100-deployment.yaml", "200-service.yaml"}},
+		"config/tst-cicd/base/pipelines/03-secrets/webhook-secret-tst-dev-http-api-svc.yaml": hookSecret,
+		"environments/tst-dev/services/http-api-svc/base/config/100-deployment.yaml":         deployment.Create("tst-dev", "http-api-svc", bootstrapImage, deployment.ContainerPort(8080)),
+		"environments/tst-dev/services/http-api-svc/base/config/200-service.yaml":            createBootstrapService("tst-dev", "http-api-svc"),
+		"environments/tst-dev/services/http-api-svc/base/config/kustomization.yaml":          &res.Kustomization{Resources: []string{"100-deployment.yaml", "200-service.yaml"}},
 		pipelinesFile: &config.Manifest{
 			GitOpsURL: "https://github.com/my-org/gitops.git",
 			Environments: []*config.Environment{
@@ -92,8 +91,10 @@ func TestBootstrapManifest(t *testing.T) {
 					},
 				},
 				{Name: "tst-stage"},
-				{Name: "tst-cicd", IsCICD: true},
-				{Name: "tst-argocd", IsArgoCD: true},
+			},
+			Config: &config.Config{
+				Pipelines: &config.PipelinesConfig{Name: "tst-cicd"},
+				ArgoCD:    &config.ArgoCDConfig{Namespace: "argocd"},
 			},
 		},
 	}
@@ -126,7 +127,7 @@ func TestBootstrapManifest(t *testing.T) {
 		"08-eventlisteners/cicd-event-listener.yaml",
 		"09-routes/gitops-webhook-event-listener.yaml",
 	}
-	k := r["environments/tst-cicd/base/pipelines/kustomization.yaml"].(res.Kustomization)
+	k := r["config/tst-cicd/base/pipelines/kustomization.yaml"].(res.Kustomization)
 	if diff := cmp.Diff(wantResources, k.Resources); diff != "" {
 		t.Fatalf("did not add the secret to the base kustomization: %s\n", diff)
 	}

@@ -31,22 +31,12 @@ func TestValidate(t *testing.T) {
 			),
 		},
 		{
-			"cicd environment cannot contain applications and services",
-			"testdata/cicd_env_cant_have_apps_svcs.yaml",
+			"Environment Duplicate Name entry",
+			"testdata/environment_config_name.yaml",
 			multierror.Join(
 				[]error{
-					invalidEnvironment("test-cicd", "A special environment cannot contain services.", []string{"environments.test-cicd.services.bus-svc"}),
-					invalidEnvironment("test-cicd", "A special environment cannot contain applications.", []string{"environments.test-cicd.apps.bus"}),
-				},
-			),
-		},
-		{
-			"argocd environment cannot contain applications and services",
-			"testdata/argocd_env_cant_have_apps_svcs.yaml",
-			multierror.Join(
-				[]error{
-					invalidEnvironment("test-argocd", "A special environment cannot contain services.", []string{"environments.test-argocd.services.bus-svc"}),
-					invalidEnvironment("test-argocd", "A special environment cannot contain applications.", []string{"environments.test-argocd.apps.bus"}),
+					invalidEnvironment("argocd", "Environment name cannot be the same as a config name.", []string{"environments.argocd"}),
+					invalidEnvironment("tst-cicd", "Environment name cannot be the same as a config name.", []string{"environments.tst-cicd"}),
 				},
 			),
 		},
@@ -55,11 +45,12 @@ func TestValidate(t *testing.T) {
 			"testdata/name_error.yaml",
 			multierror.Join(
 				[]error{
+					invalidNameError("argo.cd", DNS1035Error, []string{"config.argocd"}),
+					invalidNameError("tst!cicd", DNS1035Error, []string{"config.tst!cicd"}),
 					invalidNameError("", DNS1035Error, []string{"environments.develo.pment.services"}),
 					invalidNameError("", DNS1035Error, []string{"environments.develo.pment.services.pipelines.integration.binding"}),
 					invalidNameError("app-1$.", DNS1035Error, []string{"environments.develo.pment.apps.app-1$."}),
 					invalidNameError("develo.pment", DNS1035Error, []string{"environments.develo.pment"}),
-					invalidNameError("test)cicd", DNS1035Error, []string{"environments.test)cicd"}),
 				},
 			),
 		},
