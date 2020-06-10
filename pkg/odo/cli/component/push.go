@@ -71,7 +71,6 @@ func (po *PushOptions) CompleteDevfilePath() {
 
 // Complete completes push args
 func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	po.DevfilePath = filepath.Join(po.componentContext, DevfilePath)
 	po.CompleteDevfilePath()
 
 	// if experimental mode is enabled and devfile is present
