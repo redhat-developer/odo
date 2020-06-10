@@ -102,7 +102,7 @@ func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpec
 		remoteExist = false
 	} else if (getIngressErr != nil && !kerrors.IsNotFound(getIngressErr)) || (getRouteErr != nil && !kerrors.IsNotFound(getRouteErr)) {
 		if getIngressErr != nil {
-			errors.Wrap(getIngressErr, "unable to get ingress")
+			return URL{}, errors.Wrap(getIngressErr, "unable to get ingress")
 		}
 		return URL{}, errors.Wrap(getRouteErr, "unable to get route")
 	}
