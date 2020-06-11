@@ -9,10 +9,12 @@ import (
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
 	// api resource types
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -171,4 +173,60 @@ func (c *Client) GetOnePodFromSelector(selector string) (*corev1.Pod, error) {
 	}
 
 	return &pods.Items[0], nil
+}
+
+// DisplayPodLog prints the log from pod to stdout
+func (c *Client) DisplayPodLog(podName, containerName string, followLog bool) error {
+
+	// Set standard log options
+	podLogOptions := corev1.PodLogOptions{Follow: false}
+
+	// If the log is being followed, set it to follow / don't wait
+	if followLog {
+		// TODO: https://github.com/kubernetes/kubernetes/pull/60696
+		// Unable to set to 0, until openshift/client-go updates their Kubernetes vendoring to 1.11.0
+		// Set to 1 for now.
+		tailLines := int64(1)
+		podLogOptions = corev1.PodLogOptions{
+			Follow:    true,
+			Previous:  false,
+			TailLines: &tailLines,
+			Container: containerName,
+		}
+	}
+
+	// RESTClient call to kubernetes
+	rd, err := c.KubeClient.CoreV1().RESTClient().Get().
+		Namespace(c.Namespace).
+		Name(podName).
+		Resource("pods").
+		SubResource("log").
+		VersionedParams(&podLogOptions, scheme.ParameterCodec).
+		Stream()
+	if err != nil {
+		return errors.Wrapf(err, "unable get pod log %s", podName)
+	}
+	if rd == nil {
+		return errors.New("unable to retrieve pod from kubernetes, does your component exist?")
+	}
+
+	return util.DisplayLog(followLog, rd, podName)
+}
+
+// GetPodFromSelector returns an array of pods
+// resources which match the given selector
+func (c *Client) GetPodFromSelector(selector string) (*corev1.PodList, error) {
+	var podList *corev1.PodList
+	var err error
+
+	if selector != "" {
+		listOptions := metav1.ListOptions{LabelSelector: selector}
+		podList, err = c.KubeClient.CoreV1().Pods(c.Namespace).List(listOptions)
+	}
+
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to list pods")
+	}
+
+	return podList, nil
 }

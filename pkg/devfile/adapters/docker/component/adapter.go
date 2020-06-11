@@ -272,3 +272,7 @@ func (a Adapter) Delete(labels map[string]string) error {
 	return nil
 
 }
+
+func (a Adapter) Log(follow bool) error {
+	return nil
+}

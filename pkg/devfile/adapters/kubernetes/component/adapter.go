@@ -450,3 +450,27 @@ func (a Adapter) Delete(labels map[string]string) error {
 
 	return a.Client.DeleteDeployment(labels)
 }
+
+func (a Adapter) Log(follow bool) error {
+
+	if !utils.ComponentExists(a.Client, a.ComponentName) {
+		return errors.Errorf("the component %s doesn't exist on the cluster", a.ComponentName)
+	}
+
+	runCommand, err := adaptersCommon.GetRunCommand(a.Devfile.Data, "")
+
+	if err != nil {
+		return err
+	}
+
+	containerName := runCommand.Exec.Component
+
+	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
+	pod, err := a.waitAndGetComponentPod(true)
+	if err != nil {
+		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
+	}
+
+	return a.Client.DisplayPodLog(pod.Name, containerName, follow)
+
+}

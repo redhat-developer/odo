@@ -52,3 +52,8 @@ func (k Adapter) Delete(labels map[string]string) error {
 
 	return nil
 }
+
+// Log shows log from component
+func (k Adapter) Log(follow bool) error {
+	return k.componentAdapter.Log(follow)
+}

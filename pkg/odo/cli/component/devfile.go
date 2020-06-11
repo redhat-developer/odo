@@ -123,6 +123,47 @@ func (po *PushOptions) devfilePushInner() (err error) {
 	return
 }
 
+func (lo LogOptions) DevfileComponentLog() error {
+	// Parse devfile
+	devObj, err := devfileParser.Parse(lo.devfilePath)
+	if err != nil {
+		return err
+	}
+
+	componentName, err := getComponentName(lo.componentContext)
+	if err != nil {
+		return errors.Wrap(err, "unable to get component name")
+	}
+
+	var platformContext interface{}
+	if pushtarget.IsPushTargetDocker() {
+		platformContext = nil
+	} else {
+		kc := kubernetes.KubernetesContext{
+			Namespace: lo.KClient.Namespace,
+		}
+		platformContext = kc
+	}
+
+	devfileHandler, err := adapters.NewPlatformAdapter(componentName, lo.componentContext, devObj, platformContext)
+
+	if err != nil {
+		return err
+	}
+
+	// Start or update the component
+	err = devfileHandler.Log(lo.logFollow)
+	if err != nil {
+		log.Errorf(
+			"Failed to log component with name %s.\nError: %v",
+			componentName,
+			err,
+		)
+		os.Exit(1)
+	}
+	return nil
+}
+
 // Get component name from env.yaml file
 func getComponentName(context string) (string, error) {
 	var dir string

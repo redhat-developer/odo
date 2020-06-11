@@ -3,6 +3,7 @@ package util
 import (
 	"archive/zip"
 	"bufio"
+	"bytes"
 	"context"
 	"crypto/rand"
 	"fmt"
@@ -14,6 +15,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"os/signal"
 	"os/user"
 	"path"
 	"path/filepath"
@@ -22,8 +24,10 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/gobwas/glob"
 	"github.com/google/go-github/github"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
@@ -1155,4 +1159,47 @@ func addFileToIgnoreFile(gitIgnoreFile, filename string, fs filesystem.Filesyste
 		}
 	}
 	return nil
+}
+
+func DisplayLog(followLog bool, rd io.ReadCloser, compName string) (err error) {
+
+	defer rd.Close()
+
+	// Copy to stdout (in yellow)
+	color.Set(color.FgYellow)
+	defer color.Unset()
+
+	// If we are going to followLog, we'll be copying it to stdout
+	// else, we copy it to a buffer
+	if followLog {
+
+		c := make(chan os.Signal)
+		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+		go func() {
+			<-c
+			color.Unset()
+			os.Exit(1)
+		}()
+
+		if _, err = io.Copy(os.Stdout, rd); err != nil {
+			return errors.Wrapf(err, "error followLoging logs for %s", compName)
+		}
+
+	} else {
+
+		// Copy to buffer (we aren't going to be followLoging the logs..)
+		buf := new(bytes.Buffer)
+		_, err = io.Copy(buf, rd)
+		if err != nil {
+			return errors.Wrapf(err, "unable to copy followLog to buffer")
+		}
+
+		// Copy to stdout
+		if _, err = io.Copy(os.Stdout, buf); err != nil {
+			return errors.Wrapf(err, "error copying logs to stdout")
+		}
+
+	}
+	return
+
 }

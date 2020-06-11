@@ -42,3 +42,8 @@ func (d Adapter) DoesComponentExist(cmpName string) bool {
 func (d Adapter) Delete(labels map[string]string) error {
 	return d.componentAdapter.Delete(labels)
 }
+
+// Log show logs from component
+func (d Adapter) Log(follow bool) error {
+	return d.componentAdapter.Log(follow)
+}
