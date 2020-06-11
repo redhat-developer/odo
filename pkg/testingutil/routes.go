@@ -32,10 +32,6 @@ func GetSingleRoute(urlName string, port int, componentName, applicationName str
 				applabels.OdoVersion:           version.VERSION,
 				labels.URLLabel:                urlName,
 			},
-			Annotations: map[string]string{
-				// this annotation distinguish routes from ingresses.
-				"openshift.io/host.generated": "true",
-			},
 		},
 		Spec: routev1.RouteSpec{
 			To: routev1.RouteTargetReference{

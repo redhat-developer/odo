@@ -125,7 +125,7 @@ func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpec
 					clusterURL := getMachineReadableFormatIngress(*ingress)
 					clusterURL.Status.State = StateTypePushed
 					return clusterURL, nil
-				} else if route != nil && route.Annotations != nil && route.Annotations["openshift.io/host.generated"] == "true" {
+				} else if route != nil {
 					clusterURL := getMachineReadableFormat(*route)
 					clusterURL.Status.State = StateTypePushed
 					return clusterURL, nil
@@ -143,7 +143,7 @@ func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpec
 			clusterURL := getMachineReadableFormatIngress(*ingress)
 			clusterURL.Status.State = StateTypeLocallyDeleted
 			return clusterURL, nil
-		} else if route != nil && route.Annotations != nil && route.Annotations["openshift.io/host.generated"] == "true" {
+		} else if route != nil {
 			clusterURL := getMachineReadableFormat(*route)
 			clusterURL.Status.State = StateTypeLocallyDeleted
 			return clusterURL, nil
@@ -500,11 +500,11 @@ func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSp
 		ingressMap[clusterURL.Name] = clusterURL
 	}
 	for _, r := range routes {
-		// only openshift route has host.generated=true
-		if r.Annotations != nil && r.Annotations["openshift.io/host.generated"] == "true" {
-			clusterURL := getMachineReadableFormat(r)
-			routeMap[clusterURL.Name] = clusterURL
+		if r.OwnerReferences != nil && r.OwnerReferences[0].Kind == "Ingress" {
+			continue
 		}
+		clusterURL := getMachineReadableFormat(r)
+		routeMap[clusterURL.Name] = clusterURL
 	}
 	for _, envinfoURL := range localEnvinfoURLs {
 		// only checks for Ingress and Route URLs
