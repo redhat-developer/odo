@@ -57,6 +57,12 @@ type CreateOptions struct {
 	devfileMetadata DevfileMetadata
 }
 
+// Path of user's own devfile, user specifies the path via --devfile flag
+type devfilePath struct {
+	protocol string
+	value    string
+}
+
 // DevfileMetadata includes devfile component metadata
 type DevfileMetadata struct {
 	componentType      string
@@ -65,6 +71,7 @@ type DevfileMetadata struct {
 	devfileSupport     bool
 	devfileLink        string
 	devfileRegistry    catalog.Registry
+	devfilePath        devfilePath
 	downloadSource     string
 }
 
@@ -78,15 +85,20 @@ const LocalDirectoryDefaultLocation = "./"
 // Constants for devfile component
 const devFile = "devfile.yaml"
 const envFile = ".odo/env/env.yaml"
+const configFile = ".odo/config.yaml"
 
-// DevfilePath is the path of devfile.yaml, the default path is "./devfile.yaml"
+// DevfilePath is the devfile path that is used by odo,
+// which means odo can:
+// 1. Directly use the devfile in DevfilePath
+// 2. Download devfile from registry to DevfilePath then use the devfile in DevfilePath
+// 3. Copy user's own devfile (path is specified via --devfile flag) to DevfilePath then use the devfile in DevfilePath
 var DevfilePath = filepath.Join(LocalDirectoryDefaultLocation, devFile)
 
-// EnvFilePath is the path of env.yaml for devfile component, the defult path is "./.odo/env/env.yaml"
+// EnvFilePath is the path of env file for devfile component
 var EnvFilePath = filepath.Join(LocalDirectoryDefaultLocation, envFile)
 
-// ConfigFilePath is the default path of config.yaml for s2i component
-const ConfigFilePath = "./.odo/config.yaml"
+// ConfigFilePath is the path of config.yaml for s2i component
+var ConfigFilePath = filepath.Join(LocalDirectoryDefaultLocation, configFile)
 
 var createLongDesc = ktemplates.LongDesc(`Create a configuration describing a component.
 
@@ -98,6 +110,14 @@ By default, builder images (component type) will be used from the current namesp
 If version is not specified by default, latest will be chosen as the version.`)
 
 var createExample = ktemplates.Examples(`  # Create new Node.js component with the source in current directory.
+
+Note: When you use odo with experimental mode enabled and create devfile component, if you want to use existing devfile the first argument will be the component name
+# Create new Node.js component with existing devfile
+%[1]s mynodejs (devfile exists in current working directory)
+%[1]s mynodejs --devfile ./devfile.yaml (devfile exists in any other directory)
+%[1]s mynodejs --devfile https://raw.githubusercontent.com/elsony/devfile-registry/master/devfiles/nodejs/devfile.yaml (devfile exists in network)
+
+# Create new Node.js component
 %[1]s nodejs
 
 # Create new Node.js component named 'frontend' with the source in './frontend' directory
@@ -308,15 +328,49 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		// Add a disclaimer that we are in *experimental mode*
 		log.Experimental("Experimental mode is enabled, use at your own risk")
 
-		if util.CheckPathExists(ConfigFilePath) {
+		// Configure the context
+		if co.componentContext != "" {
+			DevfilePath = filepath.Join(co.componentContext, devFile)
+			EnvFilePath = filepath.Join(co.componentContext, envFile)
+			ConfigFilePath = filepath.Join(co.componentContext, configFile)
+			co.CommonPushOptions.componentContext = co.componentContext
+		}
+
+		if util.CheckPathExists(ConfigFilePath) || util.CheckPathExists(EnvFilePath) {
 			return errors.New("This directory already contains a component")
 		}
 
-		if len(args) == 0 {
+		if util.CheckPathExists(DevfilePath) && co.devfileMetadata.devfilePath.value != "" && !util.PathEqual(DevfilePath, co.devfileMetadata.devfilePath.value) {
+			return errors.New("This directory already contains a devfile, you can't specify devfile via --devfile")
+		}
+
+		// Validate user specify devfile path
+		if co.devfileMetadata.devfilePath.value != "" {
+			fileErr := util.ValidateFile(co.devfileMetadata.devfilePath.value)
+			urlErr := util.ValidateURL(co.devfileMetadata.devfilePath.value)
+			if fileErr != nil && urlErr != nil {
+				return errors.Errorf("The devfile path you specify is invalid with either file error \"%v\" or url error \"%v\"", fileErr, urlErr)
+			} else if fileErr == nil {
+				co.devfileMetadata.devfilePath.protocol = "file"
+			} else if urlErr == nil {
+				co.devfileMetadata.devfilePath.protocol = "http(s)"
+			}
+		}
+
+		// Validate user specify registry
+		if co.devfileMetadata.devfileRegistry.Name != "" {
+			// TODO: We should add more validations here to validate registry existence and correctness
+			if co.devfileMetadata.devfilePath.value != "" {
+				return errors.New("You can specify registry via --registry if you want to use the devfile that is specified via --devfile")
+			}
+		}
+
+		// Can't use the existing devfile or download devfile from registry, go to interactive mode
+		if len(args) == 0 && !util.CheckPathExists(DevfilePath) && co.devfileMetadata.devfilePath.value == "" {
 			co.interactive = true
 		}
 
-		// Default namespace setup
+		// Configure the default namespace
 		var defaultComponentNamespace string
 		// If the push target is set to Docker, we can't assume we have an active Kube context
 		if !pushtarget.IsPushTargetDocker() {
@@ -328,88 +382,96 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			defaultComponentNamespace = client.Namespace
 		}
 
-		// Configure the context
-		if len(co.componentContext) != 0 {
-			DevfilePath = filepath.Join(co.componentContext, devFile)
-			EnvFilePath = filepath.Join(co.componentContext, envFile)
-			co.CommonPushOptions.componentContext = co.componentContext
-		}
-
-		catalogDevfileList, err := catalog.ListDevfileComponents(co.devfileMetadata.devfileRegistry.Name)
-		if err != nil {
-			return err
-		}
-		if catalogDevfileList.DevfileRegistries == nil {
-			log.Warning("Please run `odo registry add <registry name> <registry URL>` to add a registry then create a devfile components\n")
-		}
-
+		var catalogDevfileList catalog.DevfileComponentTypeList
 		var componentType string
 		var componentName string
 		var componentNamespace string
 
 		if co.interactive {
 			// Interactive mode
-			// Get component type, name and namespace from user's choice via interactive mode
 
-			// devfile.yaml is not present, user has to specify the component type
-			// Component type: We provide supported devfile component list then let you choose
-			if !util.CheckPathExists(DevfilePath) {
-				var supDevfileCatalogList []catalog.DevfileComponentType
-				for _, devfileComponent := range catalogDevfileList.Items {
-					if devfileComponent.Support {
-						supDevfileCatalogList = append(supDevfileCatalogList, devfileComponent)
-					}
-				}
-				componentType = ui.SelectDevfileComponentType(supDevfileCatalogList)
+			// Component type: We provide supported devfile component list to let user choose
+			catalogDevfileList, err := catalog.ListDevfileComponents(co.devfileMetadata.devfileRegistry.Name)
+			if err != nil {
+				return err
 			}
+			if catalogDevfileList.DevfileRegistries == nil {
+				log.Warning("Registry is empty, please run `odo registry add <registry name> <registry URL>` to add a registry\n")
+			}
+			var supDevfileCatalogList []catalog.DevfileComponentType
+			for _, devfileComponent := range catalogDevfileList.Items {
+				if devfileComponent.Support {
+					supDevfileCatalogList = append(supDevfileCatalogList, devfileComponent)
+				}
+			}
+			componentType = ui.SelectDevfileComponentType(supDevfileCatalogList)
 
 			// Component name: User needs to specify the componet name, by default it is component type that user chooses
 			componentName = ui.EnterDevfileComponentName(componentType)
 
-			// Component namespace: User needs to specify component namespace,
-			// by default it is the current active namespace if it can't get from --project flag or --namespace flag
-			if len(co.devfileMetadata.componentNamespace) == 0 && !pushtarget.IsPushTargetDocker() {
-				if cmd.Flags().Changed("project") {
-					componentNamespace, err = cmd.Flags().GetString("project")
-					if err != nil {
-						return err
-					}
-				} else {
-					componentNamespace = ui.EnterDevfileComponentNamespace(defaultComponentNamespace)
+			// Component namespace: User needs to specify component namespace, by default it is the current active namespace
+			if cmd.Flags().Changed("project") && !pushtarget.IsPushTargetDocker() {
+				componentNamespace, err = cmd.Flags().GetString("project")
+				if err != nil {
+					return err
 				}
 			} else {
-				componentNamespace = co.devfileMetadata.componentNamespace
+				componentNamespace = ui.EnterDevfileComponentNamespace(defaultComponentNamespace)
 			}
 		} else {
 			// Direct mode (User enters the full command)
-			// Get component type, name and namespace from user's full command
 
-			if util.CheckPathExists(DevfilePath) {
-				return errors.New("This directory already contains a devfile.yaml, please delete it and run the component creation command again")
-			}
+			if util.CheckPathExists(DevfilePath) || co.devfileMetadata.devfilePath.value != "" {
+				// Use existing devfile directly
 
-			// Component type: Get from full command's first argument (mandatory in direct mode)
-			componentType = args[0]
+				if len(args) > 1 {
+					return errors.Errorf("Accepts between 0 and 1 arg when using existing devfile, received %d", len(args))
+				}
 
-			// Component name: Get from full command's second argument (optional in direct mode), by default it is component type from first argument
-			if len(args) == 2 {
-				componentName = args[1]
-			} else {
-				componentName = args[0]
-			}
-
-			// Component namespace: Get from --project flag or --namespace flag, by default it is the current active namespace
-			if len(co.devfileMetadata.componentNamespace) == 0 && !pushtarget.IsPushTargetDocker() {
-				if cmd.Flags().Changed("project") {
-					componentNamespace, err = cmd.Flags().GetString("project")
+				// If user can use existing devfile directly, the first arg is component name instead of component type
+				if len(args) == 1 {
+					componentName = args[0]
+				} else {
+					currentDirPath, err := os.Getwd()
 					if err != nil {
 						return err
 					}
+					currentDirName := filepath.Base(currentDirPath)
+					componentName = currentDirName
+				}
+
+				co.devfileMetadata.devfileSupport = true
+			} else {
+				// Download devfile from registry
+
+				// Component type: Get from full command's first argument (mandatory in direct mode)
+				componentType = args[0]
+
+				// Component name: Get from full command's second argument (optional in direct mode), by default it is component type from first argument
+				if len(args) == 2 {
+					componentName = args[1]
 				} else {
-					componentNamespace = defaultComponentNamespace
+					componentName = args[0]
+				}
+
+				// Get available devfile components for checking devfile compatibility
+				catalogDevfileList, err = catalog.ListDevfileComponents(co.devfileMetadata.devfileRegistry.Name)
+				if err != nil {
+					return err
+				}
+				if catalogDevfileList.DevfileRegistries == nil {
+					log.Warning("Registry is empty, please run `odo registry add <registry name> <registry URL>` to add a registry\n")
+				}
+			}
+
+			// Component namespace: Get from --project flag, by default it is the current active namespace
+			if cmd.Flags().Changed("project") && !pushtarget.IsPushTargetDocker() {
+				componentNamespace, err = cmd.Flags().GetString("project")
+				if err != nil {
+					return err
 				}
 			} else {
-				componentNamespace = co.devfileMetadata.componentNamespace
+				componentNamespace = defaultComponentNamespace
 			}
 		}
 
@@ -418,50 +480,66 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		co.devfileMetadata.componentName = strings.ToLower(componentName)
 		co.devfileMetadata.componentNamespace = strings.ToLower(componentNamespace)
 
-		// If devfile.yaml is present, we don't need to download the devfile.yaml later
-		if util.CheckPathExists(DevfilePath) {
-			co.devfileMetadata.devfileSupport = true
-
-			err = co.InitEnvInfoFromContext()
-			if err != nil {
-				return err
-			}
-
-			return nil
-		}
-
 		// Categorize the sections
 		log.Info("Validation")
 
-		// Since we need to support both devfile and s2i, so we have to check if the component type is
-		// supported by devfile, if it is supported we return and will download the corresponding devfile.yaml later,
-		// but if it is not supported we still need to run all codes related with s2i
-		spinner := log.Spinner("Checking devfile compatibility")
-
-		for _, devfileComponent := range catalogDevfileList.Items {
-			if co.devfileMetadata.componentType == devfileComponent.Name && devfileComponent.Support {
-				co.devfileMetadata.devfileSupport = true
-				co.devfileMetadata.devfileLink = devfileComponent.Link
-				co.devfileMetadata.devfileRegistry = devfileComponent.Registry
+		if util.CheckPathExists(DevfilePath) || co.devfileMetadata.devfilePath.value != "" {
+			var devfileAbsolutePath string
+			if util.CheckPathExists(DevfilePath) || co.devfileMetadata.devfilePath.protocol == "file" {
+				var devfilePath string
+				if util.CheckPathExists(DevfilePath) {
+					devfilePath = DevfilePath
+				} else {
+					devfilePath = co.devfileMetadata.devfilePath.value
+				}
+				devfileAbsolutePath, err = filepath.Abs(devfilePath)
+				if err != nil {
+					return err
+				}
+			} else if co.devfileMetadata.devfilePath.protocol == "http(s)" {
+				devfileAbsolutePath = co.devfileMetadata.devfilePath.value
 			}
-		}
+			devfileSpinner := log.Spinnerf("Creating a devfile component from devfile path: %s", devfileAbsolutePath)
+			defer devfileSpinner.End(true)
 
-		registrySpinner := log.Spinnerf("Creating a devfile component from registry: %s", co.devfileMetadata.devfileRegistry.Name)
-
-		if co.devfileMetadata.devfileSupport {
+			// Initialize envinfo
 			err = co.InitEnvInfoFromContext()
 			if err != nil {
 				return err
 			}
 
-			spinner.End(true)
-			registrySpinner.End(true)
 			return nil
-		}
+		} else {
+			// Since we need to support both devfile and s2i, so we have to check if the component type is
+			// supported by devfile, if it is supported we return and will download the corresponding devfile later,
+			// if it is not supported we still need to run all the codes related with s2i after devfile compatibility check
+			spinner := log.Spinner("Checking devfile compatibility")
 
-		spinner.End(false)
-		registrySpinner.End(false)
-		log.Italic("\nPlease run `odo catalog list components` for a list of supported devfile component types")
+			for _, devfileComponent := range catalogDevfileList.Items {
+				if co.devfileMetadata.componentType == devfileComponent.Name && devfileComponent.Support {
+					co.devfileMetadata.devfileSupport = true
+					co.devfileMetadata.devfileLink = devfileComponent.Link
+					co.devfileMetadata.devfileRegistry = devfileComponent.Registry
+				}
+			}
+
+			if co.devfileMetadata.devfileSupport {
+				registrySpinner := log.Spinnerf("Creating a devfile component from registry: %s", co.devfileMetadata.devfileRegistry.Name)
+
+				// Initialize envinfo
+				err = co.InitEnvInfoFromContext()
+				if err != nil {
+					return err
+				}
+
+				spinner.End(true)
+				registrySpinner.End(true)
+				return nil
+			}
+
+			spinner.End(false)
+			log.Warning("\nDevfile component type is not supported, please run `odo catalog list components` for a list of supported devfile component types")
+		}
 	}
 
 	if len(args) == 0 || !cmd.HasFlags() {
@@ -471,14 +549,19 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	// this populates the LocalConfigInfo as well
 	co.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 	if err != nil {
-		return errors.Wrap(err, "failed intiating local config")
+		return errors.Wrap(err, "failed initiating local config")
 	}
 
-	// Do not execute S2I specific code on Kubernetes Cluster
+	// Do not execute S2I specific code on Kubernetes Cluster or Docker
 	// return from here, if it is not an openshift cluster.
-	openshiftCluster, _ := co.Client.IsImageStreamSupported()
+	var openshiftCluster bool
+	if !pushtarget.IsPushTargetDocker() {
+		openshiftCluster, _ = co.Client.IsImageStreamSupported()
+	} else {
+		openshiftCluster = false
+	}
 	if !openshiftCluster {
-		return errors.New("component not found")
+		return errors.New("component type not found")
 	}
 
 	// check to see if config file exists or not, if it does that
@@ -560,7 +643,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		}
 		componentName := ui.EnterComponentName(defaultComponentName, co.Context)
 
-		appName := ui.EnterOpenshiftName(co.Context.Application, "Which application do you want the commponent to be associated with", co.Context)
+		appName := ui.EnterOpenshiftName(co.Context.Application, "Which application do you want the component to be associated with", co.Context)
 		co.componentSettings.Application = &appName
 
 		projectName := ui.EnterOpenshiftName(co.Context.Project, "Which project go you want the component to be created in", co.Context)
@@ -667,10 +750,6 @@ func (co *CreateOptions) Validate() (err error) {
 			// Validate if the devfile component that user wants to create already exists
 			spinner := log.Spinner("Validating devfile component")
 			defer spinner.End(false)
-
-			if util.CheckPathExists(EnvFilePath) {
-				return errors.New("This workspace directory already contains a devfile component")
-			}
 
 			err = util.ValidateK8sResourceName("component name", co.devfileMetadata.componentName)
 			if err != nil {
@@ -806,25 +885,47 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 // Run has the logic to perform the required actions as part of command
 func (co *CreateOptions) Run() (err error) {
 	if experimental.IsExperimentalModeEnabled() {
-		// Download devfile.yaml file and create env.yaml file
 		if co.devfileMetadata.devfileSupport {
+			// Use existing devfile directly from --devfile flag
+			if co.devfileMetadata.devfilePath.value != "" {
+				if co.devfileMetadata.devfilePath.protocol == "http(s)" {
+					// User specify devfile path is http(s) URL
+					err = util.DownloadFile(co.devfileMetadata.devfilePath.value, DevfilePath)
+					if err != nil {
+						return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfilePath.value)
+					}
+				} else if co.devfileMetadata.devfilePath.protocol == "file" {
+					// User specify devfile path is file system link
+					info, err := os.Stat(co.devfileMetadata.devfilePath.value)
+					if err != nil {
+						return err
+					}
+					err = util.CopyFile(co.devfileMetadata.devfilePath.value, DevfilePath, info)
+					if err != nil {
+						return errors.Wrapf(err, "failed to copy devfile from %s to %s", co.devfileMetadata.devfilePath, DevfilePath)
+					}
+				}
+			}
+
 			if !util.CheckPathExists(DevfilePath) {
+				// Download devfile from registry
 				err := util.DownloadFile(co.devfileMetadata.devfileRegistry.URL+co.devfileMetadata.devfileLink, DevfilePath)
 				if err != nil {
-					return errors.Wrap(err, "Faile to download devfile.yaml for devfile component")
+					return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfileRegistry.URL+co.devfileMetadata.devfileLink)
 				}
 			}
 
 			if util.CheckPathExists(DevfilePath) && co.devfileMetadata.downloadSource != "" {
 				err = co.downloadProject(co.devfileMetadata.downloadSource)
 				if err != nil {
-					return errors.Wrap(err, "Failed to download project for devfile component")
+					return errors.Wrap(err, "failed to download project for devfile component")
 				}
 			}
 
-			err := co.EnvSpecificInfo.SetConfiguration("create", envinfo.ComponentSettings{Name: co.devfileMetadata.componentName, Namespace: co.devfileMetadata.componentNamespace})
+			// Generate env file
+			err = co.EnvSpecificInfo.SetConfiguration("create", envinfo.ComponentSettings{Name: co.devfileMetadata.componentName, Namespace: co.devfileMetadata.componentNamespace})
 			if err != nil {
-				return errors.Wrap(err, "Failed to create env.yaml for devfile component")
+				return errors.Wrap(err, "failed to create env file for devfile component")
 			}
 
 			log.Italic("\nPlease use `odo push` command to create the component with source deployed")
@@ -955,6 +1056,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.downloadSource, "downloadSource", "", "Download sample project from devfile.")
 		componentCreateCmd.Flags().Lookup("downloadSource").NoOptDefVal = defaultProjectName //Default value to pass to the flag if one is not specified.
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfileRegistry.Name, "registry", "", "Create devfile component from specific registry")
+		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfilePath.value, "devfile", "", "Path to the user specify devfile")
 	}
 
 	componentCreateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)

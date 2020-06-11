@@ -57,7 +57,7 @@ func NewDeleteOptions() *DeleteOptions {
 
 // Complete completes log args
 func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	do.devfilePath = filepath.Join(do.componentContext, do.devfilePath)
+	do.devfilePath = filepath.Join(do.componentContext, DevfilePath)
 
 	// if experimental mode is enabled and devfile is present
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(do.devfilePath) {
@@ -258,11 +258,6 @@ func NewCmdDelete(name, fullName string) *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(do, cmd, args)
 		},
-	}
-
-	// enable devfile flag if experimental mode is enabled
-	if experimental.IsExperimentalModeEnabled() {
-		componentDeleteCmd.Flags().StringVar(&do.devfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
 	}
 
 	componentDeleteCmd.Flags().BoolVarP(&do.componentForceDeleteFlag, "force", "f", false, "Delete component without prompting")

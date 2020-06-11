@@ -1,6 +1,3 @@
-+++
-<img align="right" role="right" width="180" src="/docs/img/openshift.png?raw=true"/>
-+++
 [id="readme"]
 = `odo` - Developer-focused CLI for OpenShift and Kubernetes
 :toc: macro
