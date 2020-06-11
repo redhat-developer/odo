@@ -164,6 +164,7 @@ func NewCmdURLDelete(name, fullName string) *cobra.Command {
 	}
 	urlDeleteCmd.Flags().BoolVarP(&o.urlForceDeleteFlag, "force", "f", false, "Delete url without prompting")
 	o.AddContextFlag(urlDeleteCmd)
+	urlDeleteCmd.Flags().StringVar(&o.DevfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
 	genericclioptions.AddNowFlag(urlDeleteCmd, &o.now)
 	completion.RegisterCommandHandler(urlDeleteCmd, completion.URLCompletionHandler)
 	completion.RegisterCommandFlagHandler(urlDeleteCmd, "context", completion.FileCompletionHandler)
