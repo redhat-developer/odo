@@ -60,6 +60,7 @@ func (a Adapter) generateBuildContainer(containerName string, imageTag string) c
 		{Name: "Tag", Value: imageTag},
 	}
 
+
 	isPrivileged := true
 	resourceReqs := corev1.ResourceRequirements{}
 
@@ -67,7 +68,7 @@ func (a Adapter) generateBuildContainer(containerName string, imageTag string) c
 
 	container.VolumeMounts = []corev1.VolumeMount{
 		{Name: "varlibcontainers", MountPath: "/var/lib/containers"},
-		{Name: kclient.OdoSourceVolume, MountPath: kclient.OdoSourceVolumeMount},
+		{Name:      kclient.OdoSourceVolume, MountPath: kclient.OdoSourceVolumeMount}
 	}
 
 	return *container
@@ -161,6 +162,14 @@ func (a Adapter) Build(parameters common.BuildParameters) (err error) {
 		return errors.Wrap(err, "error while creating buildah deployment")
 	}
 
+	// Delete deployment
+	defer func() {
+		err = a.Delete(labels)
+		if err != nil {
+			return errors.Wrapf(err, "failed to delete build step for component with name: %s", a.ComponentName)
+		}
+	}()
+
 	_, err = a.Client.WaitForDeploymentRollout(a.ComponentName)
 	if err != nil {
 		return errors.Wrap(err, "error while waiting for deployment rollout")
@@ -195,11 +204,7 @@ func (a Adapter) Build(parameters common.BuildParameters) (err error) {
 		return err
 	}
 
-	// Delete deployment
-	err = a.Delete(labels)
-	if err != nil {
-		return errors.Wrapf(err, "failed to delete build step for component with name: %s", a.ComponentName)
-	}
+
 
 	return
 }
