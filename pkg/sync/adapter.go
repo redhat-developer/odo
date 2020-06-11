@@ -47,6 +47,11 @@ func (a Adapter) SyncFilesBuild(buildParameters common.BuildParameters, compInfo
 	// run the indexer and find the modified/added/deleted/renamed files
 	files, _, err := util.RunIndexer(buildParameters.Path, absIgnoreRules)
 
+	// We will also need to copy the dockerfile if we are using one specified in the devfile
+	if buildParameters.DockerfilePath != "" {
+		files = append(files, ".odo/Dockerfile")
+	}
+
 	if len(files) > 0 {
 		klog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
 		err = CopyFile(a.Client, buildParameters.Path, compInfo, syncFolder, files, absIgnoreRules)

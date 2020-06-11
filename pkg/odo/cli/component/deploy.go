@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
@@ -16,6 +17,7 @@ import (
 
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 
+	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
@@ -32,9 +34,10 @@ type DeployOptions struct {
 	*CommonPushOptions
 
 	// devfile path
-	DevfilePath string
-	namespace   string
-	tag         string
+	DevfilePath    string
+	DockerfilePath string
+	namespace      string
+	tag            string
 }
 
 // NewDeployOptions returns new instance of BuildOptions
@@ -72,11 +75,31 @@ func (do *DeployOptions) Run() (err error) {
 	}
 	metadata := devObj.Data.GetMetadata()
 	dockerfileURL := metadata.Dockerfile
-
-	// TODO: check for Dockerfile present
-	err = util.DownloadFile(dockerfileURL, "Dockerfile")
+	dockerfilePath := "./Dockerfile"
+	localDir, err := os.Getwd()
 	if err != nil {
 		return err
+	}
+
+	//Download Dockerfile to .odo, build, then delete from .odo dir
+	//If Dockerfile is present in the project already, use that for the build
+	//If Dockerfile is present in the project and field is in devfile, build the one already in the project and warn the user.
+	if dockerfileURL != "" && util.CheckPathExists(filepath.Join(localDir, "Dockerfile")) {
+		// TODO: make clearer more visible output
+		klog.Warning("Dockerfile already exists in project directory and one is specified in Devfile.")
+		klog.Warningf("Using Dockerfile specified in devfile from %s", dockerfileURL)
+	}
+
+	if !util.CheckPathExists(filepath.Join(localDir, ".odo")) {
+		return errors.Wrap(err, ".odo folder not found")
+	}
+
+	if dockerfileURL != "" {
+		err = util.DownloadFile(dockerfileURL, filepath.Join(localDir, ".odo", "Dockerfile"))
+		if err != nil {
+			return err
+		}
+		dockerfilePath = filepath.Join(".odo", "Dockerfile")
 	}
 
 	// TODO:
@@ -84,6 +107,7 @@ func (do *DeployOptions) Run() (err error) {
 	//    - Pull dockerfile into memory
 	//	  - Common parsing here
 
+	do.DockerfilePath = dockerfilePath
 	err = do.DevfileBuild()
 	if err != nil {
 		return err

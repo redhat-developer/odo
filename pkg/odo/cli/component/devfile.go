@@ -140,6 +140,7 @@ func (do *DeployOptions) DevfileBuild() (err error) {
 
 	buildParams := common.BuildParameters{
 		Path:            do.sourcePath,
+		DockerfilePath:  do.DockerfilePath,
 		Tag:             do.tag,
 		EnvSpecificInfo: *do.EnvSpecificInfo,
 	}
@@ -159,7 +160,7 @@ func (do *DeployOptions) DevfileBuild() (err error) {
 	}
 
 	log.Infof("\nBuilding devfile component %s", componentName)
-	log.Success("Changes successfully build image for component")
+	log.Success("Changes successfully built image for component")
 
 	return nil
 }

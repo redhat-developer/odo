@@ -45,7 +45,7 @@ type Adapter struct {
 	devfileRunCmd   string
 }
 
-func (a Adapter) generateBuildContainer(containerName string, imageTag string) corev1.Container {
+func (a Adapter) generateBuildContainer(containerName, dockerfilePath, imageTag string) corev1.Container {
 	buildImage := "quay.io/buildah/stable:latest"
 
 	// TODO(Optional): Init container before the buildah bud to copy over the files.
@@ -54,12 +54,15 @@ func (a Adapter) generateBuildContainer(containerName string, imageTag string) c
 	command := []string{"tail"}
 	commandArgs := []string{"-f", "/dev/null"}
 
-	// TODO: Edit dockerfile env value if mounting it sometwhere else
-	envVars := []corev1.EnvVar{
-		{Name: "Dockerfile", Value: "/projects/Dockerfile"},
-		{Name: "Tag", Value: imageTag},
+	if dockerfilePath == "" {
+		dockerfilePath = "./Dockerfile"
 	}
 
+	// TODO: Edit dockerfile env value if mounting it sometwhere else
+	envVars := []corev1.EnvVar{
+		{Name: "Dockerfile", Value: dockerfilePath},
+		{Name: "Tag", Value: imageTag},
+	}
 
 	isPrivileged := true
 	resourceReqs := corev1.ResourceRequirements{}
@@ -68,7 +71,7 @@ func (a Adapter) generateBuildContainer(containerName string, imageTag string) c
 
 	container.VolumeMounts = []corev1.VolumeMount{
 		{Name: "varlibcontainers", MountPath: "/var/lib/containers"},
-		{Name:      kclient.OdoSourceVolume, MountPath: kclient.OdoSourceVolumeMount}
+		{Name: kclient.OdoSourceVolume, MountPath: kclient.OdoSourceVolumeMount},
 	}
 
 	return *container
@@ -108,7 +111,7 @@ func (a Adapter) createBuildDeployment(labels map[string]string, container corev
 
 func (a Adapter) executeBuildAndPush(syncFolder string, imageTag string, compInfo common.ComponentInfo) (err error) {
 	// Running buildah bud and buildah push
-	buildahBud := "buildah bud -f ./Dockerfile -t $Tag ."
+	buildahBud := "buildah bud -f $Dockerfile -t $Tag ."
 	command := []string{adaptersCommon.ShellExecutable, "-c", "cd " + syncFolder + " && " + buildahBud}
 
 	// TODO: Add spinner
@@ -152,7 +155,7 @@ func (a Adapter) executeBuildAndPush(syncFolder string, imageTag string, compInf
 // Build image for devfile project
 func (a Adapter) Build(parameters common.BuildParameters) (err error) {
 	containerName := a.ComponentName + "-container"
-	buildContainer := a.generateBuildContainer(containerName, parameters.Tag)
+	buildContainer := a.generateBuildContainer(containerName, parameters.DockerfilePath, parameters.Tag)
 	labels := map[string]string{
 		"component": a.ComponentName,
 	}
@@ -163,11 +166,18 @@ func (a Adapter) Build(parameters common.BuildParameters) (err error) {
 	}
 
 	// Delete deployment
-	defer func() {
+	defer func() error {
 		err = a.Delete(labels)
 		if err != nil {
 			return errors.Wrapf(err, "failed to delete build step for component with name: %s", a.ComponentName)
 		}
+		err = os.Remove(parameters.DockerfilePath)
+		if err != nil {
+			return errors.Wrapf(err, "failed to delete %s", parameters.DockerfilePath)
+		}
+		// TODO: I am pretty sure this would return a nil from the function even if the return statement from the main function is an err
+		// I remember talking to Kyle about it during the Sandboxing
+		return nil
 	}()
 
 	_, err = a.Client.WaitForDeploymentRollout(a.ComponentName)
@@ -203,8 +213,6 @@ func (a Adapter) Build(parameters common.BuildParameters) (err error) {
 	if err != nil {
 		return err
 	}
-
-
 
 	return
 }
