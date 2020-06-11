@@ -11,6 +11,7 @@ import (
 	"github.com/golang/mock/gomock"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/testingutil"
@@ -18,7 +19,7 @@ import (
 
 func TestPush(t *testing.T) {
 
-	testComponentName := "golang"
+	testComponentName := "test"
 	fakeClient := lclient.FakeNew()
 	fakeErrorClient := lclient.FakeErrorNew()
 
@@ -127,32 +128,39 @@ func TestDoesComponentExist(t *testing.T) {
 	tests := []struct {
 		name             string
 		client           *lclient.Client
-		componentType    versionsCommon.DevfileComponentType
+		components       []common.DevfileComponent
 		componentName    string
 		getComponentName string
 		want             bool
 	}{
 		{
-			name:             "Case 1: Valid component name",
-			client:           fakeClient,
-			componentType:    versionsCommon.ContainerComponentType,
+			name:   "Case 1: Valid component name",
+			client: fakeClient,
+			components: []common.DevfileComponent{
+				testingutil.GetFakeComponent("alias1"),
+				testingutil.GetFakeComponent("alias2"),
+			},
 			componentName:    "golang",
 			getComponentName: "golang",
 			want:             true,
 		},
 		{
-			name:             "Case 2: Non-existent component name",
-			componentType:    versionsCommon.ContainerComponentType,
-			client:           fakeClient,
-			componentName:    "test-name",
+			name:   "Case 2: Non-existent component name",
+			client: fakeClient,
+			components: []common.DevfileComponent{
+				testingutil.GetFakeComponent("alias1"),
+			},
+			componentName:    "test",
 			getComponentName: "fake-component",
 			want:             false,
 		},
 		{
-			name:             "Case 3: Docker client error",
-			componentType:    versionsCommon.ContainerComponentType,
-			client:           fakeErrorClient,
-			componentName:    "test-name",
+			name:   "Case 3: Docker client error",
+			client: fakeErrorClient,
+			components: []common.DevfileComponent{
+				testingutil.GetFakeComponent("alias1"),
+			},
+			componentName:    "test",
 			getComponentName: "fake-component",
 			want:             false,
 		},
@@ -161,11 +169,7 @@ func TestDoesComponentExist(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					Components: []versionsCommon.DevfileComponent{
-						{
-							Type: tt.componentType,
-						},
-					},
+					Components: tt.components,
 				},
 			}
 

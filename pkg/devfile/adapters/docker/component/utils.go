@@ -519,39 +519,37 @@ func (a Adapter) startBootstrapSupervisordInitContainer(supervisordVolumeName st
 	return nil
 }
 
-// updateComponentWithSupervisord updates the devfile component's
+// UpdateComponentWithSupervisord updates the devfile component's
 // 1. command and args with supervisord, if absent
 // 2. env with ODO_COMMAND_RUN and ODO_COMMAND_RUN_WORKING_DIR, if absent
 func updateComponentWithSupervisord(comp *versionsCommon.DevfileComponent, runCommand versionsCommon.DevfileCommand, supervisordVolumeName string, hostConfig *container.HostConfig) {
 
 	// Mount the supervisord volume for the run command container
-	for _, action := range runCommand.Actions {
-		if *action.Component == *comp.Alias {
-			utils.AddVolumeToContainer(supervisordVolumeName, common.SupervisordMountPath, hostConfig)
+	if runCommand.Exec.Component == comp.Container.Name {
+		utils.AddVolumeToContainer(supervisordVolumeName, common.SupervisordMountPath, hostConfig)
 
-			if len(comp.Command) == 0 && len(comp.Args) == 0 {
-				klog.V(4).Infof("Updating container %v entrypoint with supervisord", *comp.Alias)
-				comp.Command = append(comp.Command, common.SupervisordBinaryPath)
-				comp.Args = append(comp.Args, "-c", common.SupervisordConfFile)
-			}
+		if len(comp.Container.Command) == 0 && len(comp.Container.Args) == 0 {
+			klog.V(4).Infof("Updating container %v entrypoint with supervisord", comp.Container.Name)
+			comp.Container.Command = append(comp.Container.Command, common.SupervisordBinaryPath)
+			comp.Container.Args = append(comp.Container.Args, "-c", common.SupervisordConfFile)
+		}
 
-			if !common.IsEnvPresent(comp.Env, common.EnvOdoCommandRun) {
-				envName := common.EnvOdoCommandRun
-				envValue := *action.Command
-				comp.Env = append(comp.Env, versionsCommon.DockerimageEnv{
-					Name:  &envName,
-					Value: &envValue,
-				})
-			}
+		if !common.IsEnvPresent(comp.Container.Env, common.EnvOdoCommandRun) {
+			envName := common.EnvOdoCommandRun
+			envValue := runCommand.Exec.CommandLine
+			comp.Container.Env = append(comp.Container.Env, versionsCommon.Env{
+				Name:  envName,
+				Value: envValue,
+			})
+		}
 
-			if !common.IsEnvPresent(comp.Env, common.EnvOdoCommandRunWorkingDir) && action.Workdir != nil {
-				envName := common.EnvOdoCommandRunWorkingDir
-				envValue := *action.Workdir
-				comp.Env = append(comp.Env, versionsCommon.DockerimageEnv{
-					Name:  &envName,
-					Value: &envValue,
-				})
-			}
+		if !common.IsEnvPresent(comp.Container.Env, common.EnvOdoCommandRunWorkingDir) && runCommand.Exec.WorkingDir != "" {
+			envName := common.EnvOdoCommandRunWorkingDir
+			envValue := runCommand.Exec.WorkingDir
+			comp.Container.Env = append(comp.Container.Env, versionsCommon.Env{
+				Name:  envName,
+				Value: envValue,
+			})
 		}
 	}
 }
