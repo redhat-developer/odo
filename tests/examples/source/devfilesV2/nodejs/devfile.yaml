@@ -1,6 +1,7 @@
 schemaVersion: "2.0.0"
 metadata:
   name: test-devfile
+  dockerfile: "https://raw.githubusercontent.com/neeraj-laad/nodejs-stack-registry/build-deploy/devfiles/nodejs-basic/build/Dockerfile"
 projects:
   - name: nodejs-web-app
     git: 

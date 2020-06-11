@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"path/filepath"
 
+	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/envinfo"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -64,6 +66,19 @@ func (do *DeployOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (do *DeployOptions) Run() (err error) {
+	devObj, err := devfileParser.Parse(do.DevfilePath)
+	if err != nil {
+		return err
+	}
+	metadata := devObj.Data.GetMetadata()
+	dockerfileURL := metadata.Dockerfile
+
+	// TODO: check for Dockerfile present
+	err = util.DownloadFile(dockerfileURL, "Dockerfile")
+	if err != nil {
+		return err
+	}
+
 	// TODO:
 	//    - Parse devfile and extract Dockerfile and manifest information
 	//    - Pull dockerfile into memory

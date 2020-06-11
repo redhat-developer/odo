@@ -56,6 +56,12 @@ type DevfileMetadata struct {
 
 	// Version Optional semver-compatible version
 	Version string `json:"version,omitempty"`
+
+	// Dockerfile optional URL to remote Dockerfile
+	Dockerfile string `json:"dockerfile,omitempty"`
+
+	// Manifest optional URL to remote Deployment Manifest
+	Manifest string `json:"deployment-manifest,omitempty"`
 }
 
 // DevfileCommand command specified in devfile
