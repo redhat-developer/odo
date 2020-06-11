@@ -91,8 +91,8 @@ func (o *ListComponentsOptions) Validate() (err error) {
 type combinedCatalogList struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	S2iItems          []catalog.ComponentType        `json:"s2iItems"`
-	DevfileItems      []catalog.DevfileComponentType `json:"devfileItems"`
+	S2iItems          []catalog.ComponentType        `json:"s2iItems,omitempty"`
+	DevfileItems      []catalog.DevfileComponentType `json:"devfileItems,omitempty"`
 }
 
 // Run contains the logic for the command associated with ListComponentsOptions
@@ -103,7 +103,6 @@ func (o *ListComponentsOptions) Run() (err error) {
 			supported, _ := catalog.SliceSupportedTags(image)
 			o.catalogList.Items[i].Spec.SupportedTags = supported
 		}
-		// machineoutput.OutputSuccess(o.catalogList)
 		combinedList := combinedCatalogList{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "List",
