@@ -53,7 +53,7 @@ func (k Adapter) Deploy(parameters common.DeployParameters) error {
 
 	err := k.componentAdapter.Deploy(parameters)
 	if err != nil {
-		return errors.Wrap(err, "Failed to build image for the component")
+		return errors.Wrap(err, "Failed to deploy the application")
 	}
 
 	return nil

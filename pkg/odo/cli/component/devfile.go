@@ -219,7 +219,6 @@ func (do *DeployOptions) DevfileDeploy() (err error) {
 	log.Success("Successfully deployed application")
 
 	return nil
-	return nil
 }
 
 // Get component name from env.yaml file

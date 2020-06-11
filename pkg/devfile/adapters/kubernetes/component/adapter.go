@@ -258,6 +258,7 @@ func substitueYamlVariables(baseYaml []byte, yamlSubstitutions map[string]string
 func (a Adapter) Deploy(parameters common.DeployParameters) (err error) {
 
 	namespace := a.Client.Namespace
+	applicationName := a.ComponentName+"-deploy"
 	deploymentManifest := &unstructured.Unstructured{}
 
 	log.Info("\nDeploying manifest")
@@ -277,7 +278,7 @@ func (a Adapter) Deploy(parameters common.DeployParameters) (err error) {
 	// Specify the substitution keys and values
 	yamlSubstitutions := map[string]string{
 		"CONTAINER_IMAGE": parameters.Tag,
-		"PROJECT_NAME":    a.ComponentName,
+		"PROJECT_NAME":    applicationName,
 		"PORT":            determinePort(parameters),
 	}
 
@@ -305,7 +306,7 @@ func (a Adapter) Deploy(parameters common.DeployParameters) (err error) {
 	if len(list.Items) > 0 {
 		for _, item := range list.Items {
 			klog.V(3).Infof("Found %s %s with resourceVersion: %s.\n", gvk.Kind, item.GetName(), item.GetResourceVersion())
-			if item.GetName() == a.ComponentName {
+			if item.GetName() == applicationName {
 				deploymentManifest.SetResourceVersion(item.GetResourceVersion())
 				instanceFound = true
 			}
