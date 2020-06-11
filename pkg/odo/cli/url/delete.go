@@ -48,9 +48,7 @@ func (o *URLDeleteOptions) Complete(name string, cmd *cobra.Command, args []stri
 		if err != nil {
 			return err
 		}
-		if o.now {
-			o.CompleteDevfilePath()
-		}
+		o.CompleteDevfilePath()
 	} else {
 		if o.now {
 			o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
