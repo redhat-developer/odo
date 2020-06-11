@@ -60,7 +60,7 @@ func (o *ListOptions) Run() (err error) {
 	}
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 	fmt.Fprintln(w, "NAME", "\t", "URL")
-	o.printRegistryList(w, cfg.OdoSettings.RegistryList)
+	o.printRegistryList(w, registryList)
 	w.Flush()
 	return
 }
