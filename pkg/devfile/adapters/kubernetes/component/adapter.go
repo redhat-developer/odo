@@ -171,12 +171,14 @@ func (a Adapter) Build(parameters common.BuildParameters) (err error) {
 		if err != nil {
 			return errors.Wrapf(err, "failed to delete build step for component with name: %s", a.ComponentName)
 		}
+
 		err = os.Remove(parameters.DockerfilePath)
 		if err != nil {
 			return errors.Wrapf(err, "failed to delete %s", parameters.DockerfilePath)
 		}
 		// TODO: I am pretty sure this would return a nil from the function even if the return statement from the main function is an err
 		// I remember talking to Kyle about it during the Sandboxing
+
 		return nil
 	}()
 
