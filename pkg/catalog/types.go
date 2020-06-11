@@ -58,10 +58,10 @@ type Devfile struct {
 
 // ComponentSpec is the spec for ComponentType
 type ComponentSpec struct {
-	AllTags        []string            `json:"allTags"`
-	NonHiddenTags  []string            `json:"nonHiddenTags"`
-	SupportedTags  []string            `json:"supportedTags"`
-	ImageStreamRef imagev1.ImageStream `json:"-"`
+	AllTags         []string               `json:"allTags"`
+	NonHiddenTags   []string               `json:"nonHiddenTags"`
+	SupportedTags   []string               `json:"supportedTags"`
+	ImageStreamTags []imagev1.TagReference `json:"imageStreamTags"`
 }
 
 // ComponentTypeList lists all the ComponentType's

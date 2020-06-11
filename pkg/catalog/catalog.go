@@ -443,7 +443,7 @@ func SliceSupportedTags(component ComponentType) ([]string, []string) {
 
 	// this makes sure that json marshal shows these lists as [] instead of null
 	supTag, unSupTag := []string{}, []string{}
-	tagMap := createImageTagMap(component.Spec.ImageStreamRef.Spec.Tags)
+	tagMap := createImageTagMap(component.Spec.ImageStreamTags)
 
 	for _, tag := range component.Spec.NonHiddenTags {
 		imageName := tagMap[tag]
@@ -586,9 +586,9 @@ func getBuildersFromImageStreams(imageStreams []imagev1.ImageStream, imageStream
 					Namespace: imageStream.Namespace,
 				},
 				Spec: ComponentSpec{
-					AllTags:        allTags,
-					NonHiddenTags:  getAllNonHiddenTags(allTags, hiddenTags),
-					ImageStreamRef: imageStream,
+					AllTags:         allTags,
+					NonHiddenTags:   getAllNonHiddenTags(allTags, hiddenTags),
+					ImageStreamTags: imageStream.Spec.Tags,
 				},
 			}
 			builderImages = append(builderImages, catalogImage)

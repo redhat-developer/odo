@@ -159,7 +159,7 @@ func TestSliceSupportedTags(t *testing.T) {
 			NonHiddenTags: []string{
 				"12", "10", "8", "6", "latest",
 			},
-			ImageStreamRef: *imageStream,
+			ImageStreamTags: (*imageStream).Spec.Tags,
 		},
 	}
 
