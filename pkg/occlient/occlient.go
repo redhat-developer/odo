@@ -755,7 +755,7 @@ func (c *Client) GetImageStream(imageNS string, imageName string, imageTag strin
 		if e != nil && err != nil {
 			// Imagestream not found in openshift and current namespaces
 			if experimental.IsExperimentalModeEnabled() {
-				return nil, fmt.Errorf("component %q not found", imageName)
+				return nil, fmt.Errorf("component type %q not found", imageName)
 			}
 			return nil, err
 		}
