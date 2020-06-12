@@ -389,36 +389,40 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			defaultComponentNamespace = client.Namespace
 		}
 
-		var catalogDevfileList catalog.DevfileComponentTypeList
 		var componentType string
 		var componentName string
 		var componentNamespace string
+		isDevfileRegistryPresent := true // defaulted to true since odo ships with a default registry set
+
+		// Component type: We provide devfile component list to let user choose
+		catalogDevfileList, err := catalog.ListDevfileComponents(co.devfileMetadata.devfileRegistry.Name)
+		if err != nil {
+			return err
+		}
 
 		if co.interactive {
 			// Interactive mode
 
-			// Component type: We provide devfile component list to let user choose
-			catalogDevfileList, err := catalog.ListDevfileComponents(co.devfileMetadata.devfileRegistry.Name)
-			if err != nil {
-				return err
-			}
-			if catalogDevfileList.DevfileRegistries == nil {
+			if len(catalogDevfileList.DevfileRegistries) == 0 {
+				isDevfileRegistryPresent = false
 				log.Warning("Registry is empty, please run `odo registry add <registry name> <registry URL>` to add a registry\n")
 			}
 
-			componentType = ui.SelectDevfileComponentType(catalogDevfileList.Items)
+			if isDevfileRegistryPresent {
+				componentType = ui.SelectDevfileComponentType(catalogDevfileList.Items)
 
-			// Component name: User needs to specify the componet name, by default it is component type that user chooses
-			componentName = ui.EnterDevfileComponentName(componentType)
+				// Component name: User needs to specify the componet name, by default it is component type that user chooses
+				componentName = ui.EnterDevfileComponentName(componentType)
 
-			// Component namespace: User needs to specify component namespace, by default it is the current active namespace
-			if cmd.Flags().Changed("project") && !pushtarget.IsPushTargetDocker() {
-				componentNamespace, err = cmd.Flags().GetString("project")
-				if err != nil {
-					return err
+				// Component namespace: User needs to specify component namespace, by default it is the current active namespace
+				if cmd.Flags().Changed("project") && !pushtarget.IsPushTargetDocker() {
+					componentNamespace, err = cmd.Flags().GetString("project")
+					if err != nil {
+						return err
+					}
+				} else {
+					componentNamespace = ui.EnterDevfileComponentNamespace(defaultComponentNamespace)
 				}
-			} else {
-				componentNamespace = ui.EnterDevfileComponentNamespace(defaultComponentNamespace)
 			}
 		} else {
 			// Direct mode (User enters the full command)
@@ -456,12 +460,8 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 					componentName = args[0]
 				}
 
-				// Get available devfile components for checking devfile compatibility
-				catalogDevfileList, err = catalog.ListDevfileComponents(co.devfileMetadata.devfileRegistry.Name)
-				if err != nil {
-					return err
-				}
-				if catalogDevfileList.DevfileRegistries == nil {
+				if len(catalogDevfileList.DevfileRegistries) == 0 {
+					isDevfileRegistryPresent = false
 					log.Warning("Registry is empty, please run `odo registry add <registry name> <registry URL>` to add a registry\n")
 				}
 			}
@@ -477,41 +477,42 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			}
 		}
 
-		// Set devfileMetadata struct
-		co.devfileMetadata.componentType = componentType
-		co.devfileMetadata.componentName = strings.ToLower(componentName)
-		co.devfileMetadata.componentNamespace = strings.ToLower(componentNamespace)
+		if isDevfileRegistryPresent {
+			// Set devfileMetadata struct
+			co.devfileMetadata.componentType = componentType
+			co.devfileMetadata.componentName = strings.ToLower(componentName)
+			co.devfileMetadata.componentNamespace = strings.ToLower(componentNamespace)
 
-		// Categorize the sections
-		log.Info("Validation")
+			// Categorize the sections
+			log.Info("Validation")
 
-		if util.CheckPathExists(DevfilePath) || co.devfileMetadata.devfilePath.value != "" {
-			var devfileAbsolutePath string
-			if util.CheckPathExists(DevfilePath) || co.devfileMetadata.devfilePath.protocol == "file" {
-				var devfilePath string
-				if util.CheckPathExists(DevfilePath) {
-					devfilePath = DevfilePath
-				} else {
-					devfilePath = co.devfileMetadata.devfilePath.value
+			if util.CheckPathExists(DevfilePath) || co.devfileMetadata.devfilePath.value != "" {
+				var devfileAbsolutePath string
+				if util.CheckPathExists(DevfilePath) || co.devfileMetadata.devfilePath.protocol == "file" {
+					var devfilePath string
+					if util.CheckPathExists(DevfilePath) {
+						devfilePath = DevfilePath
+					} else {
+						devfilePath = co.devfileMetadata.devfilePath.value
+					}
+					devfileAbsolutePath, err = filepath.Abs(devfilePath)
+					if err != nil {
+						return err
+					}
+				} else if co.devfileMetadata.devfilePath.protocol == "http(s)" {
+					devfileAbsolutePath = co.devfileMetadata.devfilePath.value
 				}
-				devfileAbsolutePath, err = filepath.Abs(devfilePath)
+				devfileSpinner := log.Spinnerf("Creating a devfile component from devfile path: %s", devfileAbsolutePath)
+				defer devfileSpinner.End(true)
+
+				// Initialize envinfo
+				err = co.InitEnvInfoFromContext()
 				if err != nil {
 					return err
 				}
-			} else if co.devfileMetadata.devfilePath.protocol == "http(s)" {
-				devfileAbsolutePath = co.devfileMetadata.devfilePath.value
-			}
-			devfileSpinner := log.Spinnerf("Creating a devfile component from devfile path: %s", devfileAbsolutePath)
-			defer devfileSpinner.End(true)
 
-			// Initialize envinfo
-			err = co.InitEnvInfoFromContext()
-			if err != nil {
-				return err
+				return nil
 			}
-
-			return nil
-		} else {
 			// Since we need to support both devfile and s2i, so we have to check if the component type is
 			// supported by devfile, if it is supported we return and will download the corresponding devfile later,
 			// if it is not supported we still need to run all the codes related with s2i after devfile compatibility check
@@ -821,7 +822,6 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 	}
 	projects := devObj.Data.GetProjects()
 	nOfProjects := len(projects)
-	klog.V(4).Infof(">>>> MJF here 1 projects: %v", projects)
 	if nOfProjects == 0 {
 		return errors.Errorf("No project found in devfile component.")
 	}
@@ -869,8 +869,6 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 	if err != nil {
 		return err
 	}
-
-	klog.V(4).Infof(">>>> MJF here 1 projectPassed: %s", projectPassed)
 
 	var url, sparseDir string
 	if project.Git != nil {
