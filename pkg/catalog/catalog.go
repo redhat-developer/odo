@@ -3,10 +3,11 @@ package catalog
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/openshift/odo/pkg/preference"
 	"sort"
 	"strings"
 	"sync"
+
+	"github.com/openshift/odo/pkg/preference"
 
 	imagev1 "github.com/openshift/api/image/v1"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
