@@ -2,6 +2,11 @@ package list
 
 import (
 	"fmt"
+	"io"
+	"os"
+	"strings"
+	"text/tabwriter"
+
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
@@ -11,11 +16,8 @@ import (
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
-	"io"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
-	"os"
-	"strings"
-	"text/tabwriter"
 )
 
 const componentsRecommendedCommandName = "components"
@@ -86,6 +88,13 @@ func (o *ListComponentsOptions) Validate() (err error) {
 	return err
 }
 
+type combinedCatalogList struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	S2iItems          []catalog.ComponentType        `json:"s2iItems,omitempty"`
+	DevfileItems      []catalog.DevfileComponentType `json:"devfileItems,omitempty"`
+}
+
 // Run contains the logic for the command associated with ListComponentsOptions
 func (o *ListComponentsOptions) Run() (err error) {
 	if log.IsJSON() {
@@ -94,7 +103,15 @@ func (o *ListComponentsOptions) Run() (err error) {
 			supported, _ := catalog.SliceSupportedTags(image)
 			o.catalogList.Items[i].Spec.SupportedTags = supported
 		}
-		machineoutput.OutputSuccess(o.catalogList)
+		combinedList := combinedCatalogList{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "List",
+				APIVersion: "odo.dev/v1alpha1",
+			},
+			S2iItems:     o.catalogList.Items,
+			DevfileItems: o.catalogDevfileList.Items,
+		}
+		machineoutput.OutputSuccess(combinedList)
 	} else {
 		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 		var supCatalogList, unsupCatalogList []catalog.ComponentType

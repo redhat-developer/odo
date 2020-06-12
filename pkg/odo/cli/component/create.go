@@ -587,7 +587,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		openshiftCluster = false
 	}
 	if !openshiftCluster {
-		return errors.New("component not found")
+		return errors.New("component type not found")
 	}
 
 	// check to see if config file exists or not, if it does that
