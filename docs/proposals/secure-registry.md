@@ -66,6 +66,10 @@ Work flow to access secure registry:
 
     If multiple secure registries share the same credential, `odo registry delete <registry name>` will delete the credential from keyring instance once the last secure registry using that credential has been deleted.
 
+Create devfile component from secure registry:
+
+When downloading devfile from secure registry, we validate if the credential is valid by adding token to the request header and checking the response.
+
 ## Related issues
 - Dynamic registry support: https://github.com/openshift/odo/pull/2940
 - Performance improvement for `odo catalog list components`: https://github.com/openshift/odo/pull/3112
