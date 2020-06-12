@@ -150,8 +150,7 @@ var _ = Describe("odo push command tests", func() {
 			dir := envs["ODO_S2I_DEPLOYMENT_DIR"]
 
 			stdOut := oc.ExecListDir(podName, project, dir)
-			Expect(stdOut).To(ContainSubstring(("foobar.txt")))
-			Expect(stdOut).To(ContainSubstring(("testdir")))
+			helper.MatchAllInOutput(stdOut, []string{"foobar.txt", "testdir"})
 
 			// Now we delete the file and dir and push
 			helper.DeleteDir(newFilePath)
@@ -160,8 +159,7 @@ var _ = Describe("odo push command tests", func() {
 
 			// Then check to see if it's truly been deleted
 			stdOut = oc.ExecListDir(podName, project, dir)
-			Expect(stdOut).To(Not(ContainSubstring(("foobar.txt"))))
-			Expect(stdOut).To(Not(ContainSubstring(("testdir"))))
+			helper.DontMatchAllInOutput(stdOut, []string{"foobar.txt", "testdir"})
 		})
 
 		It("should build when a new file and a new folder is added in the directory", func() {

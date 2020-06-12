@@ -5,7 +5,6 @@ import (
 
 	devfileCtx "github.com/openshift/odo/pkg/devfile/parser/context"
 	v100 "github.com/openshift/odo/pkg/devfile/parser/data/1.0.0"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 )
 
@@ -23,9 +22,9 @@ func TestWriteJsonDevfile(t *testing.T) {
 		devfileObj := DevfileObj{
 			Ctx: devfileCtx.NewDevfileCtx(devfileTempPath),
 			Data: &v100.Devfile100{
-				ApiVersion: common.ApiVersion(apiVersion),
-				Metadata: common.DevfileMetadata{
-					Name: &testName,
+				ApiVersion: v100.ApiVersion(apiVersion),
+				Metadata: v100.Metadata{
+					Name: testName,
 				},
 			},
 		}
@@ -51,9 +50,9 @@ func TestWriteJsonDevfile(t *testing.T) {
 		devfileObj := DevfileObj{
 			Ctx: devfileCtx.NewDevfileCtx(devfileTempPath),
 			Data: &v100.Devfile100{
-				ApiVersion: common.ApiVersion(apiVersion),
-				Metadata: common.DevfileMetadata{
-					Name: &testName,
+				ApiVersion: v100.ApiVersion(apiVersion),
+				Metadata: v100.Metadata{
+					Name: testName,
 				},
 			},
 		}

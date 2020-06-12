@@ -3,20 +3,13 @@ sudo: required
 
 language: go
 
-env:
-  global:
-    - MINIKUBE_WANTUPDATENOTIFICATION=false
-    - MINIKUBE_WANTREPORTERRORPROMPT=false
-    - MINIKUBE_HOME=$HOME
-    - CHANGE_MINIKUBE_NONE_USER=true
-    - KUBECONFIG=$HOME/.kube/config
 jobs:
   include:
     # YAML alias, for settings shared across the tests
     - &base-test
       stage: test
       go_import_path: github.com/openshift/odo
-      go: "1.13.1"
+      go: "1.12.x"
       install:
         - make goget-tools
       script:
@@ -38,7 +31,7 @@ jobs:
       init:
       - git config --system core.longpaths true
       go_import_path: github.com/openshift/odo
-      go: "1.13.1"
+      go: "1.12.x"
       install:
         - systeminfo.exe | grep '^OS'
         - choco install make
@@ -57,7 +50,7 @@ jobs:
       os:
         - osx
       go_import_path: github.com/openshift/odo
-      go: "1.13.1"
+      go: "1.12.x"
       install:
         - make goget-tools
       script:
@@ -135,7 +128,7 @@ jobs:
         - ./scripts/oc-cluster.sh
         - make bin
         - sudo cp odo /usr/bin
-        - travis_wait make test-cmd-docker-devfile-url
+        - travis_wait make test-cmd-docker-devfile-url-pushtarget
         # These tests need cluster login as they will be interacting with a Kube environment
         - odo login -u developer
         - travis_wait make test-cmd-devfile-catalog
@@ -162,18 +155,26 @@ jobs:
     
     - <<: *base-test
       stage: test
-      name: "docker devfile push, url, catalog, delete command integration tests"
+      name: "docker devfile push, watch, catalog and delete command integration tests"
       script:
         - make bin
         - sudo cp odo /usr/bin
         - travis_wait make test-cmd-docker-devfile-push
+        - travis_wait make test-cmd-docker-devfile-watch
         - travis_wait make test-cmd-docker-devfile-catalog
         - travis_wait make test-cmd-docker-devfile-delete
+        - travis_wait make test-cmd-docker-devfile-url
 
     # Run devfile integration test on Kubernetes cluster    
     - <<: *base-test
       stage: test
-      name: "devfile catalog and watch command integration tests on kubernetes cluster"
+      name: "devfile catalog, watch, push, delete and create command integration tests on kubernetes cluster"
+      env:
+        - MINIKUBE_WANTUPDATENOTIFICATION=false
+        - MINIKUBE_WANTREPORTERRORPROMPT=false
+        - MINIKUBE_HOME=$HOME
+        - CHANGE_MINIKUBE_NONE_USER=true
+        - KUBECONFIG=$HOME/.kube/config
       before_script:
         # Download kubectl, a cli tool for accessing Kubernetes cluster
         - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.16.0/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
@@ -190,3 +191,6 @@ jobs:
         - export KUBERNETES=true
         - travis_wait make test-cmd-devfile-catalog
         - travis_wait make test-cmd-devfile-watch
+        - travis_wait make test-cmd-devfile-push
+        - travis_wait make test-cmd-devfile-delete
+        - travis_wait make test-cmd-devfile-create

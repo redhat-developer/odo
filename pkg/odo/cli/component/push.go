@@ -25,11 +25,14 @@ import (
 var pushCmdExample = ktemplates.Examples(`  # Push source code to the current component
 %[1]s
 
-# Push data to the current component from the original source.
+# Push data to the current component from the original source
 %[1]s
 
 # Push source code in ~/mycode to component called my-component
 %[1]s my-component --context ~/mycode
+
+# Push source code with custom devfile commands using --build-command and --run-command for experimental mode
+%[1]s --build-command="mybuild" --run-command="myrun"
   `)
 
 // PushRecommendedCommandName is the recommended push command name
@@ -57,17 +60,26 @@ func NewPushOptions() *PushOptions {
 	}
 }
 
+// CompleteDevfilePath completes the devfile path from context
+func (po *PushOptions) CompleteDevfilePath() {
+	if len(po.DevfilePath) > 0 {
+		po.DevfilePath = filepath.Join(po.componentContext, po.DevfilePath)
+	} else {
+		po.DevfilePath = filepath.Join(po.componentContext, "devfile.yaml")
+	}
+}
+
 // Complete completes push args
 func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	po.DevfilePath = filepath.Join(po.componentContext, po.DevfilePath)
+	po.CompleteDevfilePath()
 
 	// if experimental mode is enabled and devfile is present
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.DevfilePath) {
-		envinfo, err := envinfo.NewEnvSpecificInfo(po.componentContext)
+		envInfo, err := envinfo.NewEnvSpecificInfo(po.componentContext)
 		if err != nil {
 			return errors.Wrap(err, "unable to retrieve configuration information")
 		}
-		po.EnvSpecificInfo = envinfo
+		po.EnvSpecificInfo = envInfo
 		po.Context = genericclioptions.NewDevfileContext(cmd)
 
 		if !pushtarget.IsPushTargetDocker() {
@@ -171,7 +183,6 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 
 	// enable devfile flag if experimental mode is enabled
 	if experimental.IsExperimentalModeEnabled() {
-		pushCmd.Flags().StringVar(&po.DevfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
 		pushCmd.Flags().StringVar(&po.namespace, "namespace", "", "Namespace to push the component to")
 		pushCmd.Flags().StringVar(&po.devfileInitCommand, "init-command", "", "Devfile Init Command to execute")
 		pushCmd.Flags().StringVar(&po.devfileBuildCommand, "build-command", "", "Devfile Build Command to execute")

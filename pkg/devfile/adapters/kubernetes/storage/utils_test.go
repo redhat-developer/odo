@@ -33,15 +33,15 @@ func TestCreateComponentStorage(t *testing.T) {
 				{
 					Name: "vol1-pvc",
 					Volume: common.DevfileVolume{
-						Name: &volNames[0],
-						Size: &volSize,
+						Name: volNames[0],
+						Size: volSize,
 					},
 				},
 				{
 					Name: "vol2-pvc",
 					Volume: common.DevfileVolume{
-						Name: &volNames[1],
-						Size: &volSize,
+						Name: volNames[1],
+						Size: volSize,
 					},
 				},
 			},
@@ -66,7 +66,7 @@ func TestCreateComponentStorage(t *testing.T) {
 			})
 
 			// Create one of the test volumes
-			createdPVC, err := Create(fkclient, *tt.storages[0].Volume.Name, *tt.storages[0].Volume.Size, testComponentName, tt.storages[0].Name)
+			createdPVC, err := Create(fkclient, tt.storages[0].Volume.Name, tt.storages[0].Volume.Size, testComponentName, tt.storages[0].Name)
 			if err != nil {
 				t.Errorf("Error creating PVC %v: %v", tt.storages[0].Name, err)
 			}
@@ -78,9 +78,9 @@ func TestCreateComponentStorage(t *testing.T) {
 			fkclientset.Kubernetes.PrependReactor("create", "persistentvolumeclaims", func(action ktesting.Action) (bool, runtime.Object, error) {
 				labels := map[string]string{
 					"component":    testComponentName,
-					"storage-name": *tt.storages[1].Volume.Name,
+					"storage-name": tt.storages[1].Volume.Name,
 				}
-				PVC := testingutil.FakePVC(tt.storages[1].Name, *tt.storages[1].Volume.Size, labels)
+				PVC := testingutil.FakePVC(tt.storages[1].Name, tt.storages[1].Volume.Size, labels)
 				return true, PVC, nil
 			})
 
@@ -114,8 +114,8 @@ func TestStorageCreate(t *testing.T) {
 			storage: common.Storage{
 				Name: "vol1-pvc",
 				Volume: common.DevfileVolume{
-					Name: &volNames[0],
-					Size: &volSize,
+					Name: volNames[0],
+					Size: volSize,
 				},
 			},
 			wantErr: false,
@@ -126,8 +126,8 @@ func TestStorageCreate(t *testing.T) {
 			storage: common.Storage{
 				Name: "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz",
 				Volume: common.DevfileVolume{
-					Name: &volNames[0],
-					Size: &volSize,
+					Name: volNames[0],
+					Size: volSize,
 				},
 			},
 			wantErr: true,
@@ -138,8 +138,8 @@ func TestStorageCreate(t *testing.T) {
 			storage: common.Storage{
 				Name: "",
 				Volume: common.DevfileVolume{
-					Name: &volNames[0],
-					Size: &volSize,
+					Name: volNames[0],
+					Size: volSize,
 				},
 			},
 			wantErr: true,
@@ -150,8 +150,8 @@ func TestStorageCreate(t *testing.T) {
 			storage: common.Storage{
 				Name: "vol1-pvc",
 				Volume: common.DevfileVolume{
-					Name: &volNames[0],
-					Size: &garbageVolSize,
+					Name: volNames[0],
+					Size: garbageVolSize,
 				},
 			},
 			wantErr: true,
@@ -179,17 +179,17 @@ func TestStorageCreate(t *testing.T) {
 			fkclientset.Kubernetes.PrependReactor("create", "persistentvolumeclaims", func(action ktesting.Action) (bool, runtime.Object, error) {
 				labels := map[string]string{
 					"component":    testComponentName,
-					"storage-name": *tt.storage.Volume.Name,
+					"storage-name": tt.storage.Volume.Name,
 				}
 				if tt.wantErr {
 					return true, nil, tt.err
 				}
-				PVC := testingutil.FakePVC(tt.storage.Name, *tt.storage.Volume.Size, labels)
+				PVC := testingutil.FakePVC(tt.storage.Name, tt.storage.Volume.Size, labels)
 				return true, PVC, nil
 			})
 
 			// Create one of the test volumes
-			createdPVC, err := Create(fkclient, *tt.storage.Volume.Name, *tt.storage.Volume.Size, testComponentName, tt.storage.Name)
+			createdPVC, err := Create(fkclient, tt.storage.Volume.Name, tt.storage.Volume.Size, testComponentName, tt.storage.Name)
 			if !tt.wantErr && err != nil {
 				t.Errorf("Error creating PVC %v: %v", tt.storage.Name, err)
 			} else if tt.wantErr && err != nil {
