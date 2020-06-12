@@ -3,9 +3,7 @@ package component
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
-	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -258,22 +256,12 @@ func substitueYamlVariables(baseYaml []byte, yamlSubstitutions map[string]string
 func (a Adapter) Deploy(parameters common.DeployParameters) (err error) {
 
 	namespace := a.Client.Namespace
-	applicationName := a.ComponentName+"-deploy"
+	applicationName := a.ComponentName + "-deploy"
 	deploymentManifest := &unstructured.Unstructured{}
 
 	log.Info("\nDeploying manifest")
 	// TODO: Work out how to correctly handle spinners
-	//s := log.Spinner("Deploying the manifest")
-
-	// TODO: Get manifest file. Location should be provided from devfile.yaml
-	// currently deploy.yaml required in base project directory
-	deployPath := filepath.Join(parameters.Path, "/deploy.yaml")
-	klog.V(3).Infof("Using deployment from %s", deployPath)
-
-	baseYaml, err := ioutil.ReadFile(deployPath)
-	if err != nil {
-		return errors.Wrap(err, "failed to get "+deployPath)
-	}
+	s := log.Spinner("Deploying the manifest")
 
 	// Specify the substitution keys and values
 	yamlSubstitutions := map[string]string{
@@ -283,7 +271,7 @@ func (a Adapter) Deploy(parameters common.DeployParameters) (err error) {
 	}
 
 	// Substitute the values in the manifest file
-	deployYaml := substitueYamlVariables(baseYaml, yamlSubstitutions)
+	deployYaml := substitueYamlVariables(parameters.ManifestSource, yamlSubstitutions)
 	klog.V(3).Infof("Deploy manifest:\n\n%s", string(deployYaml))
 
 	// Build a yaml decoder with the unstructured Scheme
@@ -326,11 +314,11 @@ func (a Adapter) Deploy(parameters common.DeployParameters) (err error) {
 	}
 
 	if err != nil {
-		//s.End(false)
+		s.End(false)
 		return errors.Wrap(err, "failed to deploy "+gvk.Kind)
 	}
 
-	//s.End(true)
+	s.End(true)
 	log.Infof("Deployed %s %s.\n", gvk.Kind, result.GetName())
 
 	return

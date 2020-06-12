@@ -199,9 +199,9 @@ func (do *DeployOptions) DevfileDeploy() (err error) {
 	}
 
 	deployParams := common.DeployParameters{
-		Path:            do.sourcePath,
 		EnvSpecificInfo: *do.EnvSpecificInfo,
 		Tag:             do.tag,
+		ManifestSource:  do.ManifestSource,
 	}
 
 	// Deploy the application
