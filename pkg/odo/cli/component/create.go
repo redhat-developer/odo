@@ -360,15 +360,15 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		// Validate user specify registry
 		if co.devfileMetadata.devfileRegistry.Name != "" {
 			if co.devfileMetadata.devfilePath.value != "" {
-				return errors.New("You can't download devfile from registry by specifying --registry if you want to use the devfile that is specified via --devfile")
+				return errors.New("You can't specify registry via --registry if you want to use the devfile that is specified via --devfile")
 			}
 
 			registryList, err := catalog.GetDevfileRegistries(co.devfileMetadata.devfileRegistry.Name)
 			if err != nil {
-				return err
+				return errors.Wrap(err, "Failed to get registry")
 			}
 			if len(registryList) == 0 {
-				return errors.Errorf("Registry %s doesn't exist, please specify the valid registry via --registry", co.devfileMetadata.devfileRegistry.Name)
+				return errors.Errorf("Registry %s doesn't exist, please specify a valid registry via --registry", co.devfileMetadata.devfileRegistry.Name)
 			}
 		}
 
