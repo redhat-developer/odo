@@ -105,9 +105,14 @@ var _ = Describe("odo devfile create command tests", func() {
 	})
 
 	Context("When executing odo create with devfile component type argument and --registry flag", func() {
-		It("should successfully create the devfile component", func() {
+		It("should successfully create the devfile component if specified registry is valid", func() {
 			componentRegistry := "DefaultDevfileRegistry"
 			helper.CmdShouldPass("odo", "create", "java-openliberty", "--registry", componentRegistry)
+		})
+
+		It("should fail to create the devfile component if specified registry is invalid", func() {
+			componentRegistry := "fake"
+			helper.CmdShouldFail("odo", "create", "java-openliberty", "--registry", componentRegistry)
 		})
 	})
 

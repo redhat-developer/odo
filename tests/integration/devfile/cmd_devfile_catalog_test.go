@@ -74,4 +74,18 @@ var _ = Describe("odo devfile catalog command tests", func() {
 			helper.MatchAllInOutput(output, wantOutput)
 		})
 	})
+
+	Context("When executing catalog list components with registry that is not set up properly", func() {
+		It("should list components from valid registry", func() {
+			helper.CmdShouldPass("odo", "registry", "add", "fake", "http://fake")
+			output := helper.CmdShouldPass("odo", "catalog", "list", "components")
+			wantOutput := []string{
+				"Odo Devfile Components",
+				"java-spring-boot",
+				"quarkus",
+			}
+			helper.MatchAllInOutput(output, wantOutput)
+			helper.CmdShouldPass("odo", "registry", "delete", "fake", "-f")
+		})
+	})
 })

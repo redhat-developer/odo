@@ -3,10 +3,11 @@ package catalog
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/openshift/odo/pkg/preference"
 	"sort"
 	"strings"
 	"sync"
+
+	"github.com/openshift/odo/pkg/preference"
 
 	imagev1 "github.com/openshift/api/image/v1"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
@@ -171,10 +172,9 @@ func ListDevfileComponents(registryName string) (DevfileComponentTypeList, error
 		// Load the devfile registry index.json
 		registry := reg // needed to prevent the lambda from capturing the value
 		retrieveRegistryIndices.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
-			indexEntries, e := getDevfileIndexEntries(registry)
-			if e != nil {
-				log.Warningf("Registry %s is not set up properly with error: %v", registryName, err)
-				errChannel <- e
+			indexEntries, err := getDevfileIndexEntries(registry)
+			if err != nil {
+				log.Warningf("Registry %s is not set up properly with error: %v", registry.Name, err)
 				return
 			}
 
@@ -203,7 +203,6 @@ func ListDevfileComponents(registryName string) (DevfileComponentTypeList, error
 			devfile, err := GetDevfile(link)
 			if err != nil {
 				log.Warningf("Registry %s is not set up properly with error: %v", devfileIndex.Registry.Name, err)
-				errChannel <- err
 				return
 			}
 
