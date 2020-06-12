@@ -41,6 +41,8 @@ type Adapter struct {
 
 func (a Adapter) Build(parameters common.BuildParameters) (err error) { return nil }
 
+func (a Adapter) Deploy(parameters common.DeployParameters) (err error) { return nil }
+
 // Push updates the component if a matching component exists or creates one if it doesn't exist
 func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	componentExists := utils.ComponentExists(a.Client, a.ComponentName)

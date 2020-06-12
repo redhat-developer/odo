@@ -29,9 +29,17 @@ type Storage struct {
 // BuildParameters is a struct containing the parameters to be used when building the image for a devfile component
 type BuildParameters struct {
 	Path            string                  // Path refers to the parent folder containing the source code to push up to a component
+	DockerfilePath  string                  // DockerfilePath is the path to the Dockerfile downloaded, if one was provided by the devfile
 	EnvSpecificInfo envinfo.EnvSpecificInfo // EnvSpecificInfo contains infomation of env.yaml file
 	Tag             string                  // Tag refers to the image tag of the image being built
 	IgnoredFiles    []string                // IgnoredFiles is the list of files to not push up to a component
+}
+
+// DeployParameters is a struct containing the parameters to be used when building the image for a devfile component
+type DeployParameters struct {
+	EnvSpecificInfo envinfo.EnvSpecificInfo // EnvSpecificInfo contains infomation of env.yaml file
+	Tag             string                  // Tag refers to the image tag of the image being built
+	ManifestSource  []byte                  // Source of the manifest file
 }
 
 // PushParameters is a struct containing the parameters to be used when pushing to a devfile component

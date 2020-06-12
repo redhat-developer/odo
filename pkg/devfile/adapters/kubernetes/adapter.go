@@ -48,6 +48,17 @@ func (k Adapter) Build(parameters common.BuildParameters) error {
 	return nil
 }
 
+// Build creates Kubernetes resources to build an image for the component
+func (k Adapter) Deploy(parameters common.DeployParameters) error {
+
+	err := k.componentAdapter.Deploy(parameters)
+	if err != nil {
+		return errors.Wrap(err, "Failed to deploy the application")
+	}
+
+	return nil
+}
+
 func (k Adapter) DoesComponentExist(cmpName string) bool {
 	return k.componentAdapter.DoesComponentExist(cmpName)
 }

@@ -989,6 +989,18 @@ func DownloadFile(url string, filepath string) error {
 	return nil
 }
 
+// DownloadFileInMemory uses the url to download the file and return bytes
+func DownloadFileInMemory(url string) ([]byte, error) {
+	var httpClient = &http.Client{Timeout: HTTPRequestTimeout}
+	resp, err := httpClient.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return ioutil.ReadAll(resp.Body)
+}
+
 // ValidateK8sResourceName sanitizes kubernetes resource name with the following requirements:
 // - Contain at most 63 characters
 // - Contain only lowercase alphanumeric characters or ‘-’

@@ -2,18 +2,22 @@ package component
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
+	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/envinfo"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 
+	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
@@ -30,9 +34,11 @@ type DeployOptions struct {
 	*CommonPushOptions
 
 	// devfile path
-	DevfilePath string
-	namespace   string
-	tag         string
+	DevfilePath    string
+	DockerfilePath string
+	namespace      string
+	tag            string
+	ManifestSource []byte
 }
 
 // NewDeployOptions returns new instance of BuildOptions
@@ -64,11 +70,46 @@ func (do *DeployOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (do *DeployOptions) Run() (err error) {
-	// TODO:
-	//    - Parse devfile and extract Dockerfile and manifest information
-	//    - Pull dockerfile into memory
-	//	  - Common parsing here
+	devObj, err := devfileParser.Parse(do.DevfilePath)
+	if err != nil {
+		return err
+	}
+	metadata := devObj.Data.GetMetadata()
+	dockerfileURL := metadata.Dockerfile
+	dockerfilePath := "./Dockerfile"
+	localDir, err := os.Getwd()
+	if err != nil {
+		return err
+	}
 
+	manifestURL := metadata.Manifest
+	do.ManifestSource, err = util.DownloadFileInMemory(manifestURL)
+	if err != nil {
+		return errors.Wrap(err, "Unable to download manifest "+manifestURL)
+	}
+
+	//Download Dockerfile to .odo, build, then delete from .odo dir
+	//If Dockerfile is present in the project already, use that for the build
+	//If Dockerfile is present in the project and field is in devfile, build the one already in the project and warn the user.
+	if dockerfileURL != "" && util.CheckPathExists(filepath.Join(localDir, "Dockerfile")) {
+		// TODO: make clearer more visible output
+		klog.Warning("Dockerfile already exists in project directory and one is specified in Devfile.")
+		klog.Warningf("Using Dockerfile specified in devfile from %s", dockerfileURL)
+	}
+
+	if !util.CheckPathExists(filepath.Join(localDir, ".odo")) {
+		return errors.Wrap(err, ".odo folder not found")
+	}
+
+	if dockerfileURL != "" {
+		err = util.DownloadFile(dockerfileURL, filepath.Join(localDir, ".odo", "Dockerfile"))
+		if err != nil {
+			return err
+		}
+		dockerfilePath = filepath.Join(".odo", "Dockerfile")
+	}
+
+	do.DockerfilePath = dockerfilePath
 	err = do.DevfileBuild()
 	if err != nil {
 		return err
