@@ -56,8 +56,8 @@ var (
 		},
 		{
 			APIGroups: []string{"rbac.authorization.k8s.io"},
-			Resources: []string{"clusterrolebindings"},
-			Verbs:     []string{"get", "patch"},
+			Resources: []string{"clusterrolebindings", "rolebindings"},
+			Verbs:     []string{"get", "create", "patch"},
 		},
 		{
 			APIGroups: []string{"bitnami.com"},

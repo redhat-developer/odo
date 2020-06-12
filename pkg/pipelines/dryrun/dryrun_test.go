@@ -97,17 +97,18 @@ func executeScript(t *testing.T, fs afero.Fs, baseDir, script string) string {
 	assertNoError(t, err)
 	return string(out)
 }
+
 func tempDir(t *testing.T) (string, func()) {
 	t.Helper()
 	dir, err := ioutil.TempDir(os.TempDir(), "gnome")
 	assertNoError(t, err)
 	return dir, func() {
-		err := os.RemoveAll(dir)
-		assertNoError(t, err)
+		assertNoError(t, os.RemoveAll(dir))
 	}
 }
 
 func assertNoError(t *testing.T, err error) {
+	t.Helper()
 	if err != nil {
 		t.Fatal(err)
 	}
