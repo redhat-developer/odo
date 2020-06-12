@@ -128,7 +128,8 @@ var _ = Describe("odo devfile create command tests", func() {
 
 		It("should fail to create the devfile component if specified registry is invalid", func() {
 			componentRegistry := "fake"
-			helper.CmdShouldFail("odo", "create", "java-openliberty", "--registry", componentRegistry)
+			output := helper.CmdShouldFail("odo", "create", "java-openliberty", "--registry", componentRegistry)
+			helper.MatchAllInOutput(output, []string{"Registry fake doesn't exist, please specify a valid registry via --registry"})
 		})
 	})
 
