@@ -28,7 +28,7 @@ func TestGetMachineReadableFormat(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want App
+	
 	}{
 		{
 
