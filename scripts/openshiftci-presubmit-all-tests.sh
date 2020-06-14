@@ -22,6 +22,7 @@ export CUSTOM_HOMEDIR=$ARTIFACTS_DIR
 # make test-operator-hub
 
 # E2e tests
-GINKGO_TEST_ARGS=-v make test-e2e-images
+GINKGO_TEST_ARGS=-v TEST_EXEC_NODES=4 make test-e2e-images
+
 
 odo logout

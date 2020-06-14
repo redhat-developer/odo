@@ -153,6 +153,7 @@ func WatchNonRetCmdStdOut(cmdStr string, timeout time.Duration, check func(outpu
 				startSimulationCh <- true
 			}
 			if check(buf.String()) {
+				buf.Reset()
 				if err := cmd.Process.Kill(); err != nil {
 					return true, err
 				}
