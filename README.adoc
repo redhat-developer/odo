@@ -105,26 +105,25 @@ The `TAGS` column represents the available image versions, for example, `10` rep
 [[official-documentation]]
 == Official documentation
 
-* link:https://docs.openshift.com/container-platform/4.2/cli_reference/openshift_developer_cli/installing-odo.html[Installing odo]
-* link:https://docs.openshift.com/container-platform/4.2/cli_reference/openshift_developer_cli/creating-a-single-component-application-with-odo.html[Creating a single-component application with odo]
-* link:https://docs.openshift.com/container-platform/4.2/cli_reference/openshift_developer_cli/creating-a-multicomponent-application-with-odo.html[Creating a multicomponent application with odo]
-* link:https://docs.openshift.com/container-platform/4.2/cli_reference/openshift_developer_cli/creating-an-application-with-a-database.html[Creating an application with a database]
-* link:https://docs.openshift.com/container-platform/4.2/cli_reference/openshift_developer_cli/configuring-the-odo-cli.html[Configuring the odo CLI]
-* link:https://docs.openshift.com/container-platform/4.2/cli_reference/openshift_developer_cli/odo-cli-reference.html[odo CLI reference]
-* link:https://docs.openshift.com/container-platform/4.2/cli_reference/openshift_developer_cli/odo-release-notes.html[odo release notes]
+* link:https://odo.dev/docs/installing-odo/[Installing odo]
+* link:https://odo.dev/docs/creating-a-single-component-application-with-odo/[Creating a single-component application with odo]
+* link:https://odo.dev/docs/creating-a-multicomponent-application-with-odo/[Creating a multicomponent application with odo]
+* link:https://odo.dev/docs/creating-an-application-with-a-database/[Creating an application with a database]
+* link:https://odo.dev/docs/configuring-the-odo-cli/[Configuring the odo CLI]
+* link:https://odo.dev/docs/odo-cli-reference/[odo CLI reference]
+* link:https://github.com/openshift/odo/releases[odo release notes]
 
 [[installing-odo]]
 == Installing `odo`
 
-To install on Linux / Windows / macOS follow our guide located on link:https://docs.openshift.com/container-platform/4.2/cli_reference/openshift_developer_cli/installing-odo.html[docs.openshift.com]. All binaries and tarballs are synced between our link:https://github.com/openshift/odo/releases[GitHub releases] and link:https://mirror.openshift.com/pub/openshift-v4/clients/odo/[OpenShift mirrors].
+To install on Linux / Windows / macOS follow our guide located on link:https://odo.dev/docs/installing-odo/[https://odo.dev/]. All binaries and tarballs are synced between our link:https://github.com/openshift/odo/releases[GitHub releases] and link:https://mirror.openshift.com/pub/openshift-v4/clients/odo/[OpenShift mirrors].
 
 [[deploying-your-first-application]]
 == Deploying your first application
 
 Click on the tutorial below to deploy your first `odo` application:
 
-link:https://docs.openshift.com/container-platform/4.2/cli_reference/openshift_developer_cli/creating-a-single-component-application-with-odo.html[Creating a single-component application with odo]
-
+link:https://odo.dev/docs/creating-a-single-component-application-with-odo/[Creating a single-component application with odo]
 The following demonstration provides an overview of `odo`:
 
 https://asciinema.org/a/wVkVgUrO7PGR5CYBFbHB5fFDn[image:https://asciinema.org/a/wVkVgUrO7PGR5CYBFbHB5fFDn.svg[asciicast]]
@@ -144,7 +143,7 @@ https://asciinema.org/a/wVkVgUrO7PGR5CYBFbHB5fFDn[image:https://asciinema.org/a/
 
 *Issues:* If you have an issue with `odo`, please link:https://github.com/openshift/odo/issues[file it].
 
-*Documentation Issues*: If you have any documentation issues related to the link:https://docs.openshift.com[docs.openshift.com] site, file an issue in link:https://bugzilla.redhat.com/[Bugzilla]. Choose the OpenShift Container Platform product type and the Documentation component type.
+*Documentation Issues*: If you have any documentation issues related to the link:https://odo.dev/docs/installing-odo/[https://odo.dev/] site, file an issue in link:https://bugzilla.redhat.com/[Bugzilla]. Choose the OpenShift Container Platform product type and the Documentation component type.
 
 === Contributing
 Want to become a contributor and submit your code?
