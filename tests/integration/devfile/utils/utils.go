@@ -222,16 +222,6 @@ func OdoWatch(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, project, context, fl
 	go func() {
 		startMsg := <-startSimulationCh
 		if startMsg {
-			err := os.MkdirAll(filepath.Join(context, ".abc"), 0750)
-			Expect(err).To(BeNil())
-
-			err = os.MkdirAll(filepath.Join(context, "abcd"), 0750)
-			Expect(err).To(BeNil())
-
-			_, err = os.Create(filepath.Join(context, "a.txt"))
-			Expect(err).To(BeNil())
-
-			helper.DeleteDir(filepath.Join(context, "abcd"))
 
 			if isDevfileTest {
 				helper.ReplaceString(filepath.Join(context, "app", "app.js"), "Hello", "Hello odo")
@@ -242,6 +232,16 @@ func OdoWatch(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, project, context, fl
 					helper.ReplaceString(filepath.Join(context, "server.js"), "Hello", "Hello odo")
 				}
 			}
+			err := os.MkdirAll(filepath.Join(context, ".abc"), 0750)
+			Expect(err).To(BeNil())
+
+			err = os.MkdirAll(filepath.Join(context, "abcd"), 0750)
+			Expect(err).To(BeNil())
+
+			_, err = os.Create(filepath.Join(context, "a.txt"))
+			Expect(err).To(BeNil())
+
+			helper.DeleteDir(filepath.Join(context, "abcd"))
 		}
 	}()
 
