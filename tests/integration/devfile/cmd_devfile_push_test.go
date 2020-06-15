@@ -106,12 +106,12 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			output := helper.CmdShouldPass("odo", "push", "-o", "json", "--devfile", "devfile.yaml", "--project", namespace)
+			output := helper.CmdShouldPass("odo", "push", "-o", "json", "--project", namespace)
 			utils.AnalyzePushConsoleOutput(output)
 
 			// update devfile and push again
 			helper.ReplaceString("devfile.yaml", "name: FOO", "name: BAR")
-			output = helper.CmdShouldPass("odo", "push", "-o", "json", "--devfile", "devfile.yaml", "--project", namespace)
+			output = helper.CmdShouldPass("odo", "push", "-o", "json", "--project", namespace)
 			utils.AnalyzePushConsoleOutput(output)
 
 		})

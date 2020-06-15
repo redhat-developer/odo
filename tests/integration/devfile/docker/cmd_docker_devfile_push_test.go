@@ -113,12 +113,12 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
 
-			output := helper.CmdShouldPass("odo", "push", "-o", "json", "--devfile", "devfile.yaml")
+			output := helper.CmdShouldPass("odo", "push", "-o", "json")
 			utils.AnalyzePushConsoleOutput(output)
 
 			// update devfile and push again
 			helper.ReplaceString("devfile.yaml", "name: FOO", "name: BAR")
-			output = helper.CmdShouldPass("odo", "push", "-o", "json", "--devfile", "devfile.yaml")
+			output = helper.CmdShouldPass("odo", "push", "-o", "json")
 			utils.AnalyzePushConsoleOutput(output)
 
 		})
