@@ -51,7 +51,6 @@ var _ = Describe("odo devfile catalog command tests", func() {
 				"quarkus",
 				"DESCRIPTION",
 				"REGISTRY",
-				"SUPPORTED",
 				"DefaultDevfileRegistry",
 			}
 			helper.MatchAllInOutput(output, wantOutput)
@@ -69,7 +68,6 @@ var _ = Describe("odo devfile catalog command tests", func() {
 				"nodejs",
 				"quarkus",
 				"maven",
-				"golang",
 			}
 			helper.MatchAllInOutput(output, wantOutput)
 		})
