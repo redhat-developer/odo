@@ -52,42 +52,24 @@ var _ = Describe("odo devfile catalog command tests", func() {
 				"DESCRIPTION",
 				"REGISTRY",
 				"SUPPORTED",
+				"DefaultDevfileRegistry",
 			}
 			helper.MatchAllInOutput(output, wantOutput)
 		})
 	})
-
-	// Context("When executing catalog list components with -a flag", func() {
-	// 	It("should list all supported and unsupported devfile components", func() {
-	// 		output := helper.CmdShouldPass("odo", "catalog", "list", "components", "-a")
-	// 		wantOutput := []string{
-	// 			"Odo Devfile Components",
-	// 			"NAME",
-	// 			"java-spring-boot",
-	// 			"java-maven",
-	// 			"quarkus",
-	// 			"php-mysql",
-	// 			"DESCRIPTION",
-	// 			"REGISTRY",
-	// 			"SUPPORTED",
-	// 		}
-	// 		helper.MatchAllInOutput(output, wantOutput)
-	// 	})
-	// })
 
 	Context("When executing catalog list components with -o json flag", func() {
 		It("should list devfile components in json format", func() {
 			output := helper.CmdShouldPass("odo", "catalog", "list", "components", "-o", "json")
 			wantOutput := []string{
 				"odo.dev/v1alpha1",
-				"java-openliberty",
-				"java-spring-boot",
+				"devfileItems",
+				"openLiberty",
+				"springBoot",
 				"nodejs",
 				"quarkus",
-				"php-mysql",
 				"maven",
 				"golang",
-				"java-maven",
 			}
 			helper.MatchAllInOutput(output, wantOutput)
 		})

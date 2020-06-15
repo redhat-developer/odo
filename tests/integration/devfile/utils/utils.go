@@ -23,7 +23,7 @@ func useProjectIfAvailable(args []string, project string) []string {
 
 // ExecDefaultDevfileCommands executes the default devfile commands
 func ExecDefaultDevfileCommands(projectDirPath, cmpName, namespace string) {
-	args := []string{"create", "java-spring-boot", cmpName}
+	args := []string{"create", "springBoot", cmpName}
 	args = useProjectIfAvailable(args, namespace)
 	helper.CmdShouldPass("odo", args...)
 
@@ -34,8 +34,8 @@ func ExecDefaultDevfileCommands(projectDirPath, cmpName, namespace string) {
 	args = useProjectIfAvailable(args, namespace)
 	output := helper.CmdShouldPass("odo", args...)
 	helper.MatchAllInOutput(output, []string{
-		"Executing devbuild command \"/artifacts/bin/build-container-full.sh\"",
-		"Executing devrun command \"/artifacts/bin/start-server.sh\"",
+		"Executing defaultbuild command \"/artifacts/bin/build-container-full.sh\"",
+		"Executing defaultrun command \"/artifacts/bin/start-server.sh\"",
 	})
 }
 
@@ -71,7 +71,7 @@ func ExecWithMissingRunCommand(projectDirPath, cmpName, namespace string) {
 	args = useProjectIfAvailable(args, namespace)
 	output := helper.CmdShouldFail("odo", args...)
 	Expect(output).NotTo(ContainSubstring("Executing devrun command"))
-	Expect(output).To(ContainSubstring("the command type \"run\" is not found in the devfile"))
+	Expect(output).To(ContainSubstring("the command group of kind \"run\" is not found in the devfile"))
 }
 
 // ExecWithCustomCommand executes odo push with a custom command
@@ -108,6 +108,78 @@ func ExecWithWrongCustomCommand(projectDirPath, cmpName, namespace string) {
 	output := helper.CmdShouldFail("odo", args...)
 	Expect(output).NotTo(ContainSubstring("Executing buildgarbage command"))
 	Expect(output).To(ContainSubstring("the command \"%v\" is not found in the devfile", garbageCommand))
+}
+
+// ExecWithMultipleDefaults executes odo push with multiple default commands
+func ExecWithMultipleDefaults(projectDirPath, cmpName, namespace string) {
+	args := []string{"create", "nodejs", cmpName}
+	args = useProjectIfAvailable(args, namespace)
+	helper.CmdShouldPass("odo", args...)
+
+	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-defaults.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
+
+	args = []string{"push"}
+	args = useProjectIfAvailable(args, namespace)
+	output := helper.CmdShouldFail("odo", args...)
+	helper.MatchAllInOutput(output, []string{
+		"there should be one default command for command group build",
+		"there should be one default command for command group run",
+	})
+}
+
+// ExecMultipleDefaultsWithFlags executes odo push with multiple default commands using flags
+func ExecMultipleDefaultsWithFlags(projectDirPath, cmpName, namespace string) {
+	args := []string{"create", "nodejs", cmpName}
+	args = useProjectIfAvailable(args, namespace)
+	helper.CmdShouldPass("odo", args...)
+
+	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-defaults.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
+
+	args = []string{"push", "--build-command", "firstbuild", "--run-command", "secondrun"}
+	args = useProjectIfAvailable(args, namespace)
+	output := helper.CmdShouldPass("odo", args...)
+	helper.MatchAllInOutput(output, []string{
+		"Executing firstbuild command \"npm install\"",
+		"Executing secondrun command \"nodemon app.js\"",
+	})
+}
+
+// ExecCommandWithoutGroupUsingFlags executes odo push with no command group using flags
+func ExecCommandWithoutGroupUsingFlags(projectDirPath, cmpName, namespace string) {
+	args := []string{"create", "nodejs", cmpName}
+	args = useProjectIfAvailable(args, namespace)
+	helper.CmdShouldPass("odo", args...)
+
+	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-defaults.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
+
+	args = []string{"push", "--build-command", "thirdbuild", "--run-command", "secondrun"}
+	args = useProjectIfAvailable(args, namespace)
+	output := helper.CmdShouldPass("odo", args...)
+	helper.MatchAllInOutput(output, []string{
+		"Executing thirdbuild command \"npm install\"",
+		"Executing secondrun command \"nodemon app.js\"",
+	})
+}
+
+// ExecWithInvalidCommandGroup executes odo push with an invalid command group
+func ExecWithInvalidCommandGroup(projectDirPath, cmpName, namespace string) {
+	args := []string{"create", "springBoot", cmpName}
+	args = useProjectIfAvailable(args, namespace)
+	helper.CmdShouldPass("odo", args...)
+
+	helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), projectDirPath)
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
+
+	// Remove the run commands
+	helper.ReplaceString(filepath.Join(projectDirPath, "devfile.yaml"), "kind: build", "kind: init")
+
+	args = []string{"push"}
+	args = useProjectIfAvailable(args, namespace)
+	output := helper.CmdShouldFail("odo", args...)
+	Expect(output).To(ContainSubstring("must be one of the following: \"build\", \"run\", \"test\", \"debug\""))
 }
 
 // ExecPushToTestFileChanges executes odo push with and without a file change

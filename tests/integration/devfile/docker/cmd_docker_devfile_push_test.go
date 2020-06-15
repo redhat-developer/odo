@@ -62,7 +62,7 @@ var _ = Describe("odo docker devfile push command tests", func() {
 
 		It("Check that odo push works with a devfile that has multiple containers", func() {
 			// Springboot devfile references multiple containers
-			helper.CmdShouldPass("odo", "create", "java-spring-boot", "--context", context, cmpName)
+			helper.CmdShouldPass("odo", "create", "springBoot", "--context", context, cmpName)
 
 			output := helper.CmdShouldPass("odo", "push")
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
@@ -153,7 +153,7 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			utils.ExecPushWithForceFlag(context, cmpName, "")
 		})
 
-		It("should execute the default devbuild and devrun commands if present", func() {
+		It("should execute the default build and run command groups if present", func() {
 			utils.ExecDefaultDevfileCommands(context, cmpName, "")
 
 			// Check to see if it's been pushed (foobar.txt abd directory testdir)
@@ -164,8 +164,9 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			Expect(stdOut).To(ContainSubstring(("/myproject/app.jar")))
 		})
 
+		// v1 devfile test
 		It("should execute the optional devinit, and devrun commands if present", func() {
-			helper.CmdShouldPass("odo", "create", "java-spring-boot", cmpName)
+			helper.CmdShouldPass("odo", "create", "springBoot", cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
@@ -185,8 +186,9 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			Expect(stdOut).To(ContainSubstring(("/myproject/app.jar")))
 		})
 
+		// v1 devfile test
 		It("should execute devinit and devrun commands if present", func() {
-			helper.CmdShouldPass("odo", "create", "java-spring-boot", cmpName)
+			helper.CmdShouldPass("odo", "create", "springBoot", cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init-without-build.yaml"), filepath.Join(context, "devfile.yaml"))
@@ -205,11 +207,11 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			Expect(stdOut).To(ContainSubstring(("afile.txt")))
 		})
 
-		It("should be able to handle a missing devbuild command", func() {
+		It("should be able to handle a missing build command group", func() {
 			utils.ExecWithMissingBuildCommand(context, cmpName, "")
 		})
 
-		It("should error out on a missing devrun command", func() {
+		It("should error out on a missing run command group", func() {
 			utils.ExecWithMissingRunCommand(context, cmpName, "")
 		})
 
@@ -219,6 +221,22 @@ var _ = Describe("odo docker devfile push command tests", func() {
 
 		It("should error out on a wrong custom commands", func() {
 			utils.ExecWithWrongCustomCommand(context, cmpName, "")
+		})
+
+		It("should error out on multiple default commands", func() {
+			utils.ExecWithMultipleDefaults(context, cmpName, "")
+		})
+
+		It("should execute commands with flags if there are more than one default command", func() {
+			utils.ExecMultipleDefaultsWithFlags(context, cmpName, "")
+		})
+
+		It("should execute commands with flags if the command has no group kind", func() {
+			utils.ExecCommandWithoutGroupUsingFlags(context, cmpName, "")
+		})
+
+		It("should error out if the devfile has an invalid command group", func() {
+			utils.ExecWithInvalidCommandGroup(context, cmpName, "")
 		})
 
 	})

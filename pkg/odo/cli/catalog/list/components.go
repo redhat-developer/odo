@@ -27,8 +27,6 @@ var componentsExample = `  # Get the supported components
 
 // ListComponentsOptions encapsulates the options for the odo catalog list components command
 type ListComponentsOptions struct {
-	// display both supported and unsupported devfile components
-	listAllDevfileComponents bool
 	// list of known images
 	catalogList catalog.ComponentTypeList
 	// list of known devfiles
@@ -179,8 +177,6 @@ func NewCmdCatalogListComponents(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-
-	componentListCmd.Flags().BoolVarP(&o.listAllDevfileComponents, "all", "a", false, "List both supported and unsupported devfile components.")
 
 	return componentListCmd
 }

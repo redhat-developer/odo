@@ -96,19 +96,19 @@ var _ = Describe("odo devfile create command tests", func() {
 
 		It("should fail to create the devfile component with component name that contains invalid character", func() {
 			componentName := "BAD@123"
-			output := helper.CmdShouldFail("odo", "create", "java-openliberty", componentName)
+			output := helper.CmdShouldFail("odo", "create", "openLiberty", componentName)
 			helper.MatchAllInOutput(output, []string{"Contain only lowercase alphanumeric characters or ‘-’"})
 		})
 
 		It("should fail to create the devfile component with component name that contains all numeric values", func() {
 			componentName := "123456"
-			output := helper.CmdShouldFail("odo", "create", "java-openliberty", componentName)
+			output := helper.CmdShouldFail("odo", "create", "openLiberty", componentName)
 			helper.MatchAllInOutput(output, []string{"Must not contain all numeric values"})
 		})
 
 		It("should fail to create the devfile component with componet name contains more than 63 characters", func() {
 			componentName := helper.RandString(64)
-			output := helper.CmdShouldFail("odo", "create", "java-openliberty", componentName)
+			output := helper.CmdShouldFail("odo", "create", "openLiberty", componentName)
 			helper.MatchAllInOutput(output, []string{"Contain at most 63 characters"})
 		})
 	})
