@@ -83,7 +83,7 @@ func createDevResource(revision string) []pipelinev1.PipelineResourceBinding {
 			ResourceSpec: &pipelinev1alpha1.PipelineResourceSpec{
 				Type: "image",
 				Params: []pipelinev1.ResourceParam{
-					createResourceParams("url", "$(params.imageRepo)"),
+					createResourceParams("url", "$(params.imageRepo):$(params.gitref)-$(params.gitsha)"),
 				},
 			},
 		},

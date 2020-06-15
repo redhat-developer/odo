@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	pipelinev1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	pipelinev1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 
 	"github.com/openshift/odo/pkg/pipelines/meta"
@@ -80,5 +81,33 @@ func TestCreateStageCIPipelineRun(t *testing.T) {
 	template := createCIPipelineRun(sName)
 	if diff := cmp.Diff(validStageCIPipeline, template); diff != "" {
 		t.Fatalf("createCIPipelineRun failed:\n%s", diff)
+	}
+}
+
+func TestCreateDevResource(t *testing.T) {
+	want := []pipelinev1.PipelineResourceBinding{
+		{
+			Name: "source-repo",
+			ResourceSpec: &pipelinev1alpha1.PipelineResourceSpec{
+				Type: "git",
+				Params: []pipelinev1.ResourceParam{
+					createResourceParams("revision", "test"),
+					createResourceParams("url", "$(params.gitrepositoryurl)"),
+				},
+			},
+		},
+		{
+			Name: "runtime-image",
+			ResourceSpec: &pipelinev1alpha1.PipelineResourceSpec{
+				Type: "image",
+				Params: []pipelinev1.ResourceParam{
+					createResourceParams("url", "$(params.imageRepo):$(params.gitref)-$(params.gitsha)"),
+				},
+			},
+		},
+	}
+	got := createDevResource("test")
+	if diff := cmp.Diff(got, want); diff != "" {
+		t.Fatalf("createDevResource() failed: \n%s", diff)
 	}
 }
