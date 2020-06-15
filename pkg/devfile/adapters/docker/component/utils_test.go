@@ -321,7 +321,6 @@ func TestStartContainer(t *testing.T) {
 func TestGenerateAndGetHostConfig(t *testing.T) {
 	fakeClient := lclient.FakeNew()
 	testComponentName := "test"
-	componentType := versionsCommon.ContainerComponentType
 
 	endpointName := []string{"8080/tcp", "9090/tcp", "9080/tcp"}
 	var endpointPort = []int32{8080, 9090, 9080}
@@ -415,11 +414,7 @@ func TestGenerateAndGetHostConfig(t *testing.T) {
 
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					Components: []versionsCommon.DevfileComponent{
-						{
-							Type: componentType,
-						},
-					},
+					Components: []versionsCommon.DevfileComponent{},
 				},
 			}
 
@@ -472,11 +467,9 @@ func TestGenerateAndGetHostConfig(t *testing.T) {
 func TestExecDevfile(t *testing.T) {
 
 	testComponentName := "test"
-	componentType := versionsCommon.ContainerComponentType
 	command := "ls -la"
 	workDir := "/tmp"
 	component := "alias1"
-	var actionType versionsCommon.DevfileCommandType = versionsCommon.ExecCommandType
 
 	containers := []types.Container{
 		{
@@ -516,7 +509,6 @@ func TestExecDevfile(t *testing.T) {
 							Kind: versionsCommon.RunCommandGroupType,
 						},
 					},
-					Type: actionType,
 				},
 				versionsCommon.BuildCommandGroupType: versionsCommon.DevfileCommand{
 					Exec: &versionsCommon.Exec{
@@ -527,7 +519,6 @@ func TestExecDevfile(t *testing.T) {
 							Kind: versionsCommon.BuildCommandGroupType,
 						},
 					},
-					Type: actionType,
 				},
 			},
 			componentExists: false,
@@ -546,7 +537,6 @@ func TestExecDevfile(t *testing.T) {
 							Kind: versionsCommon.RunCommandGroupType,
 						},
 					},
-					Type: actionType,
 				},
 			},
 			componentExists: true,
@@ -572,7 +562,6 @@ func TestExecDevfile(t *testing.T) {
 							Kind: versionsCommon.RunCommandGroupType,
 						},
 					},
-					Type: actionType,
 				},
 			},
 			componentExists: true,
@@ -584,11 +573,7 @@ func TestExecDevfile(t *testing.T) {
 
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					Components: []versionsCommon.DevfileComponent{
-						{
-							Type: componentType,
-						},
-					},
+					Components: []versionsCommon.DevfileComponent{},
 				},
 			}
 
@@ -609,7 +594,6 @@ func TestExecDevfile(t *testing.T) {
 func TestInitRunContainerSupervisord(t *testing.T) {
 
 	testComponentName := "test"
-	componentType := versionsCommon.ContainerComponentType
 
 	containers := []types.Container{
 		{
@@ -659,11 +643,7 @@ func TestInitRunContainerSupervisord(t *testing.T) {
 
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					Components: []versionsCommon.DevfileComponent{
-						{
-							Type: componentType,
-						},
-					},
+					Components: []versionsCommon.DevfileComponent{},
 				},
 			}
 
@@ -726,11 +706,7 @@ func TestCreateProjectVolumeIfReqd(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					Components: []versionsCommon.DevfileComponent{
-						{
-							Type: versionsCommon.ContainerComponentType,
-						},
-					},
+					Components: []versionsCommon.DevfileComponent{},
 				},
 			}
 
@@ -778,11 +754,7 @@ func TestStartBootstrapSupervisordInitContainer(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					Components: []versionsCommon.DevfileComponent{
-						{
-							Type: versionsCommon.ContainerComponentType,
-						},
-					},
+					Components: []versionsCommon.DevfileComponent{},
 				},
 			}
 
@@ -828,11 +800,7 @@ func TestCreateAndInitSupervisordVolumeIfReqd(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					Components: []versionsCommon.DevfileComponent{
-						{
-							Type: versionsCommon.ContainerComponentType,
-						},
-					},
+					Components: []versionsCommon.DevfileComponent{},
 				},
 			}
 
