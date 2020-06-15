@@ -80,6 +80,12 @@ var mockContainerList = []types.Container{
 		Labels: map[string]string{
 			"component": "golang",
 			"8080":      "testurl3",
+			"alias":     "alias1",
+		},
+		Mounts: []types.MountPoint{
+			{
+				Destination: OdoSourceVolumeMount,
+			},
 		},
 		HostConfig: container.HostConfig{
 			PortBindings: nat.PortMap{
@@ -157,6 +163,15 @@ func (m *mockDockerClient) ContainerInspect(ctx context.Context, containerID str
 
 func (m *mockDockerClient) ContainerWait(ctx context.Context, containerID string, condition container.WaitCondition) (<-chan container.ContainerWaitOKBody, <-chan error) {
 	resultC := make(chan container.ContainerWaitOKBody)
+	go func() {
+		res := container.ContainerWaitOKBody{
+			StatusCode: 0,
+			Error: &container.ContainerWaitOKBodyError{
+				Message: "",
+			},
+		}
+		resultC <- res
+	}()
 	return resultC, nil
 }
 
@@ -195,6 +210,21 @@ func (m *mockDockerClient) VolumeList(ctx context.Context, filter filters.Args) 
 					"component": "test",
 					"type":      "projects",
 				},
+				Name: "odo-project-source-test",
+			},
+			{
+				Labels: map[string]string{
+					"component": "duplicate",
+					"type":      "projects",
+				},
+				Name: "odo-project-source-duplicate1",
+			},
+			{
+				Labels: map[string]string{
+					"component": "duplicate",
+					"type":      "projects",
+				},
+				Name: "odo-project-source-duplicate2",
 			},
 		},
 	}, nil
@@ -246,7 +276,7 @@ var errContainerStart = errors.New("error starting containers")
 var errContainerStop = errors.New("error stopping container")
 var errContainerRemove = errors.New("error removing container")
 var errContainerInspect = errors.New("error inspecting container")
-var errContainerWait = errors.New("error timeout waiting for container")
+var errContainerWait = errors.New("error waiting for container")
 var errDistributionInspect = errors.New("error inspecting distribution")
 var errVolumeCreate = errors.New("error creating volume")
 var errVolumeList = errors.New("error listing volume")
@@ -289,8 +319,23 @@ func (m *mockDockerErrorClient) ContainerInspect(ctx context.Context, containerI
 }
 
 func (m *mockDockerErrorClient) ContainerWait(ctx context.Context, containerID string, condition container.WaitCondition) (<-chan container.ContainerWaitOKBody, <-chan error) {
+	resultC := make(chan container.ContainerWaitOKBody)
 	err := make(chan error)
-	err <- errContainerWait
+	go func() {
+		if condition == container.WaitConditionNextExit {
+			res := container.ContainerWaitOKBody{
+				StatusCode: 1,
+				Error: &container.ContainerWaitOKBodyError{
+					Message: "bad status code",
+				},
+			}
+			resultC <- res
+		}
+		err <- errContainerWait
+	}()
+	if condition == container.WaitConditionNextExit {
+		return resultC, nil
+	}
 	return nil, err
 }
 

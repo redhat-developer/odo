@@ -5,37 +5,50 @@ import (
 	"strconv"
 
 	"github.com/docker/go-connections/nat"
-	"k8s.io/klog"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
+	"github.com/openshift/odo/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/lclient"
-	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/util"
 
 	"github.com/pkg/errors"
 )
 
 const (
-	supervisordVolume = "supervisord"
-	projectsVolume    = "projects"
-	volume            = "vol"
+	// SupervisordVolume is supervisord volume type
+	SupervisordVolume = "supervisord"
+
+	// ProjectsVolume is project source volume type
+	ProjectsVolume = "projects"
 )
 
-// ComponentExists checks if Docker containers labeled with the specified component name exists
-func ComponentExists(client lclient.Client, name string) bool {
+// ComponentExists checks if a component exist
+// returns true, if the number of containers equals the number of unique devfile components
+// returns false, if number of containers is zero
+// returns an error, if number of containers is more than zero but does not equal the number of unique devfile components
+func ComponentExists(client lclient.Client, data data.DevfileData, name string) (bool, error) {
 	containers, err := GetComponentContainers(client, name)
 	if err != nil {
-		// log the error since this function basically returns a bool
-		log.Error(err)
-		return false
+		return false, errors.Wrapf(err, "unable to get the containers for component %s", name)
 	}
-	return len(containers) != 0
+
+	supportedComponents := adaptersCommon.GetSupportedComponents(data)
+
+	var componentExists bool
+	if len(containers) == 0 {
+		componentExists = false
+	} else if len(containers) == len(supportedComponents) {
+		componentExists = true
+	} else if len(containers) > 0 && len(containers) != len(supportedComponents) {
+		return false, errors.New(fmt.Sprintf("component %s is in an invalid state, please execute odo delete and retry odo push", name))
+	}
+
+	return componentExists, nil
 }
 
 // GetComponentContainers returns a list of the running component containers
@@ -147,7 +160,7 @@ func AddVolumeToContainer(volumeName, volumeMount string, hostConfig *container.
 func GetProjectVolumeLabels(componentName string) map[string]string {
 	volumeLabels := map[string]string{
 		"component": componentName,
-		"type":      projectsVolume,
+		"type":      ProjectsVolume,
 	}
 	return volumeLabels
 }
@@ -162,14 +175,15 @@ func GetContainerLabels(componentName, alias string) map[string]string {
 }
 
 // GetSupervisordVolumeLabels returns the label selectors used to retrieve the supervisord volume
-func GetSupervisordVolumeLabels() map[string]string {
+func GetSupervisordVolumeLabels(componentName string) map[string]string {
 	image := adaptersCommon.GetBootstrapperImage()
-	_, _, _, imageTag := util.ParseComponentImageName(image)
+	_, imageWithoutTag, _, imageTag := util.ParseComponentImageName(image)
 
 	supervisordLabels := map[string]string{
-		"name":    adaptersCommon.SupervisordVolumeName,
-		"type":    supervisordVolume,
-		"version": imageTag,
+		"component": componentName,
+		"type":      SupervisordVolume,
+		"image":     imageWithoutTag,
+		"version":   imageTag,
 	}
 	return supervisordLabels
 }
@@ -201,114 +215,4 @@ func containerHasPort(devfilePort nat.Port, exposedPorts nat.PortSet) bool {
 		}
 	}
 	return false
-}
-
-// UpdateComponentWithSupervisord updates the devfile component's
-// 1. command and args with supervisord, if absent
-// 2. env with ODO_COMMAND_RUN and ODO_COMMAND_RUN_WORKING_DIR, if absent
-func UpdateComponentWithSupervisord(comp *common.DevfileComponent, runCommand common.DevfileCommand, supervisordVolumeName string, hostConfig *container.HostConfig) {
-
-	// Mount the supervisord volume for the run command container
-	if runCommand.Exec.Component == comp.Container.Name {
-		AddVolumeToContainer(supervisordVolumeName, adaptersCommon.SupervisordMountPath, hostConfig)
-
-		if len(comp.Container.Command) == 0 && len(comp.Container.Args) == 0 {
-			klog.V(4).Infof("Updating container %v entrypoint with supervisord", comp.Container.Name)
-			comp.Container.Command = append(comp.Container.Command, adaptersCommon.SupervisordBinaryPath)
-			comp.Container.Args = append(comp.Container.Args, "-c", adaptersCommon.SupervisordConfFile)
-		}
-
-		if !adaptersCommon.IsEnvPresent(comp.Container.Env, adaptersCommon.EnvOdoCommandRun) {
-			envName := adaptersCommon.EnvOdoCommandRun
-			envValue := runCommand.Exec.CommandLine
-			comp.Container.Env = append(comp.Container.Env, common.Env{
-				Name:  envName,
-				Value: envValue,
-			})
-		}
-
-		if !adaptersCommon.IsEnvPresent(comp.Container.Env, adaptersCommon.EnvOdoCommandRunWorkingDir) && runCommand.Exec.WorkingDir != "" {
-			envName := adaptersCommon.EnvOdoCommandRunWorkingDir
-			envValue := runCommand.Exec.WorkingDir
-			comp.Container.Env = append(comp.Container.Env, common.Env{
-				Name:  envName,
-				Value: envValue,
-			})
-		}
-	}
-}
-
-// CreateAndInitSupervisordVolume creates the supervisord volume and initializes
-// it with supervisord bootstrap image - assembly files and supervisord binary
-func CreateAndInitSupervisordVolume(client lclient.Client) (string, error) {
-	log.Info("\nInitialization")
-	s := log.Spinner("Initializing the component")
-	defer s.End(false)
-
-	supervisordVolumeName, err := storage.GenerateVolName(adaptersCommon.SupervisordVolumeName, volume)
-	if err != nil {
-		return "", errors.Wrapf(err, "unable to generate volume name for supervisord")
-	}
-
-	supervisordLabels := GetSupervisordVolumeLabels()
-	_, err = client.CreateVolume(supervisordVolumeName, supervisordLabels)
-	if err != nil {
-		return "", errors.Wrapf(err, "Unable to create supervisord volume for component")
-	}
-
-	err = StartBootstrapSupervisordInitContainer(client, supervisordVolumeName)
-	if err != nil {
-		return "", errors.Wrapf(err, "Unable to start supervisord container for component")
-	}
-	s.End(true)
-
-	return supervisordVolumeName, nil
-}
-
-// StartBootstrapSupervisordInitContainer pulls the supervisord bootstrap image, mounts the supervisord
-// volume, starts the bootstrap container and initializes the supervisord volume via its entrypoint
-func StartBootstrapSupervisordInitContainer(client lclient.Client, supervisordVolumeName string) error {
-	supervisordLabels := GetSupervisordVolumeLabels()
-
-	image := adaptersCommon.GetBootstrapperImage()
-	command := []string{"/usr/bin/cp"}
-	args := []string{
-		"-r",
-		adaptersCommon.OdoInitImageContents,
-		adaptersCommon.SupervisordMountPath,
-	}
-
-	var s *log.Status
-	if log.IsDebug() {
-		s = log.Spinnerf("Pulling image %s", image)
-		defer s.End(false)
-	}
-
-	err := client.PullImage(image)
-	if err != nil {
-		return errors.Wrapf(err, "unable to pull %s image", image)
-	}
-	if log.IsDebug() {
-		s.End(true)
-	}
-
-	containerConfig := client.GenerateContainerConfig(image, command, args, nil, supervisordLabels, nil)
-	hostConfig := container.HostConfig{}
-
-	AddVolumeToContainer(supervisordVolumeName, adaptersCommon.SupervisordMountPath, &hostConfig)
-
-	// Create the docker container
-	if log.IsDebug() {
-		s = log.Spinnerf("Starting container for %s", image)
-		defer s.End(false)
-	}
-	err = client.StartContainer(&containerConfig, &hostConfig, nil)
-	if err != nil {
-		return err
-	}
-	if log.IsDebug() {
-		s.End(true)
-	}
-
-	return nil
 }

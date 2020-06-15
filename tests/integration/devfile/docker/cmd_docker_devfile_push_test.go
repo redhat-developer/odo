@@ -39,6 +39,8 @@ var _ = Describe("odo docker devfile push command tests", func() {
 		label := "component=" + cmpName
 		dockerClient.StopContainers(label)
 
+		dockerClient.RemoveVolumesByComponent(cmpName)
+
 		helper.Chdir(currentWorkingDirectory)
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
@@ -83,7 +85,7 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			// Verify the volumes got created successfully (and 3 volumes exist: one source and two defined in devfile)
 			label := "component=" + cmpName
 			volumes := dockerClient.GetVolumesByLabel(label)
-			Expect(len(volumes)).To(Equal(3))
+			Expect(len(volumes)).To(Equal(4))
 		})
 
 		It("Check that odo push mounts the docker volumes in the container", func() {
@@ -151,7 +153,7 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "create", "java-spring-boot", cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			output := helper.CmdShouldPass("odo", "push")
 			helper.MatchAllInOutput(output, []string{
@@ -172,7 +174,7 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "create", "java-spring-boot", cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile-init-without-build.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init-without-build.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			output := helper.CmdShouldPass("odo", "push")
 			helper.MatchAllInOutput(output, []string{

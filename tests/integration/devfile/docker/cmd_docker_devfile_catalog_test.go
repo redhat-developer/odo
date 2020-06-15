@@ -46,4 +46,22 @@ var _ = Describe("odo docker devfile catalog command tests", func() {
 			helper.MatchAllInOutput(output, []string{"Odo Devfile Components", "java-spring-boot", "java-maven", "php-mysql"})
 		})
 	})
+
+	Context("When executing catalog list components with -o json flag", func() {
+		It("should list devfile components in json format", func() {
+			output := helper.CmdShouldPass("odo", "catalog", "list", "components", "-o", "json")
+			wantOutput := []string{
+				"odo.dev/v1alpha1",
+				"openLiberty",
+				"java-spring-boot",
+				"nodejs",
+				"quarkus",
+				"php-mysql",
+				"maven",
+				"golang",
+				"java-maven",
+			}
+			helper.MatchAllInOutput(output, wantOutput)
+		})
+	})
 })

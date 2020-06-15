@@ -37,16 +37,24 @@ components:
       - name: springbootpvc
         containerPath: /data
 commands:
-  - 
-    name: devInit
+  -
+    name: devinit
     actions:
-      - 
+      -
         type: exec
         component: tools
-        command: "echo hello; touch /data/afile.txt"
+        command: "echo hello"
         workdir: /projects/springbootproject
   -
-    name: devRun
+    name: devbuild
+    actions:
+      -
+        type: exec
+        component: tools
+        command: "/artifacts/bin/build-container-full.sh"
+        workdir: /projects/springbootproject
+  -
+    name: devrun
     actions:
       -
         type: exec

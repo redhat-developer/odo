@@ -200,6 +200,7 @@ func TestGetContainersList(t *testing.T) {
 					Image: "golang",
 					Labels: map[string]string{
 						"component": "golang",
+						"alias":     "alias1",
 						"8080":      "testurl3",
 					},
 					HostConfig: container.HostConfig{
@@ -210,6 +211,11 @@ func TestGetContainersList(t *testing.T) {
 									HostPort: "65432",
 								},
 							},
+						},
+					},
+					Mounts: []types.MountPoint{
+						{
+							Destination: OdoSourceVolumeMount,
 						},
 					},
 				},
@@ -244,26 +250,31 @@ func TestStartContainer(t *testing.T) {
 
 	fakeContainer := container.Config{}
 	tests := []struct {
-		name    string
-		client  *Client
-		wantErr bool
+		name            string
+		client          *Client
+		wantContainerID string
+		wantErr         bool
 	}{
 		{
-			name:    "Case 1: Successfully start container",
-			client:  fakeClient,
-			wantErr: false,
+			name:            "Case 1: Successfully start container",
+			client:          fakeClient,
+			wantContainerID: "golang",
+			wantErr:         false,
 		},
 		{
-			name:    "Case 2: Fail to start",
-			client:  fakeErrorClient,
-			wantErr: true,
+			name:            "Case 2: Fail to start",
+			client:          fakeErrorClient,
+			wantContainerID: "",
+			wantErr:         true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.client.StartContainer(&fakeContainer, nil, nil)
+			containerID, err := tt.client.StartContainer(&fakeContainer, nil, nil)
 			if !tt.wantErr == (err != nil) {
-				t.Errorf("expected %v, wanted %v", err, tt.wantErr)
+				t.Errorf("TestStartContainer error: expected %v, wanted %v", err, tt.wantErr)
+			} else if !tt.wantErr && containerID != tt.wantContainerID {
+				t.Errorf("TestStartContainer error: container id of start container did not match: got %v, wanted %v", containerID, tt.wantContainerID)
 			}
 		})
 	}
@@ -405,6 +416,45 @@ func TestExecCMDInContainer(t *testing.T) {
 			err := tt.client.ExecCMDInContainer(compInfo, cmd, writer, writer, nil, false)
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("got %v, wanted %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestWaitForContainer(t *testing.T) {
+	fakeClient := FakeNew()
+	fakeErrorClient := FakeErrorNew()
+
+	tests := []struct {
+		name      string
+		client    *Client
+		condition container.WaitCondition
+		wantErr   bool
+	}{
+		{
+			name:      "Case 1: Successfully wait for a condition",
+			client:    fakeClient,
+			condition: container.WaitConditionNotRunning,
+			wantErr:   false,
+		},
+		{
+			name:      "Case 2: Failed to wait for a condition with error channel",
+			client:    fakeErrorClient,
+			condition: container.WaitConditionNotRunning,
+			wantErr:   true,
+		},
+		{
+			name:      "Case 3: Failed to wait for a condition with bad exit code",
+			client:    fakeErrorClient,
+			condition: container.WaitConditionNextExit,
+			wantErr:   true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.client.WaitForContainer("id", tt.condition)
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("got: %v, wanted: %v", err, tt.wantErr)
 			}
 		})
 	}

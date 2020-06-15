@@ -191,7 +191,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "create", "java-spring-boot", "--project", namespace, cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
 			helper.MatchAllInOutput(output, []string{
@@ -205,7 +205,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "create", "java-spring-boot", "--project", namespace, cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile-init-without-build.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init-without-build.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
 			helper.MatchAllInOutput(output, []string{
@@ -218,7 +218,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "create", "java-spring-boot", "--project", namespace, cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
 			helper.MatchAllInOutput(output, []string{
@@ -278,7 +278,6 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
 			helper.MatchAllInOutput(output, []string{
-				"Executing devinit command",
 				"Executing devbuild command",
 				"Executing devrun command",
 			})
@@ -288,19 +287,6 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			var statErr error
 			var cmdOutput string
-			cliRunner.CheckCmdOpInRemoteDevfilePod(
-				podName,
-				"runtime",
-				namespace,
-				[]string{"cat", "/data/myfile-init.log"},
-				func(cmdOp string, err error) bool {
-					cmdOutput = cmdOp
-					statErr = err
-					return true
-				},
-			)
-			Expect(statErr).ToNot(HaveOccurred())
-			Expect(cmdOutput).To(ContainSubstring("init"))
 
 			cliRunner.CheckCmdOpInRemoteDevfilePod(
 				podName,
