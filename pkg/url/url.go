@@ -492,19 +492,19 @@ func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSp
 	localEnvinfoURLs := envSpecificInfo.GetURL()
 
 	var urls []URL
-	ingressMap := make(map[string]URL)
-	routeMap := make(map[string]URL)
+
+	clusterURLMap := make(map[string]URL)
 	localMap := make(map[string]URL)
 	for _, i := range ingresses {
 		clusterURL := getMachineReadableFormatIngress(i)
-		ingressMap[clusterURL.Name] = clusterURL
+		clusterURLMap[clusterURL.Name] = clusterURL
 	}
 	for _, r := range routes {
 		if r.OwnerReferences != nil && r.OwnerReferences[0].Kind == "Ingress" {
 			continue
 		}
 		clusterURL := getMachineReadableFormat(r)
-		routeMap[clusterURL.Name] = clusterURL
+		clusterURLMap[clusterURL.Name] = clusterURL
 	}
 	for _, envinfoURL := range localEnvinfoURLs {
 		// only checks for Ingress and Route URLs
@@ -518,37 +518,23 @@ func ListIngressAndRoute(oclient *occlient.Client, client *kclient.Client, envSp
 		localMap[localURL.Name] = localURL
 	}
 
-	for ingressName, ingressURL := range ingressMap {
-		_, found := localMap[ingressName]
+	for URLName, clusterURL := range clusterURLMap {
+		_, found := localMap[URLName]
 		if found {
 			// URL is in both local env file and cluster
-			ingressURL.Status.State = StateTypePushed
-			urls = append(urls, ingressURL)
+			clusterURL.Status.State = StateTypePushed
+			urls = append(urls, clusterURL)
 		} else {
 			// URL is on the cluster but not in local env file
-			ingressURL.Status.State = StateTypeLocallyDeleted
-			urls = append(urls, ingressURL)
-		}
-	}
-
-	for routeName, routeURL := range routeMap {
-		_, found := localMap[routeName]
-		if found {
-			// URL is in both local env file and cluster
-			routeURL.Status.State = StateTypePushed
-			urls = append(urls, routeURL)
-		} else {
-			// URL is on the cluster but not in local env file
-			routeURL.Status.State = StateTypeLocallyDeleted
-			urls = append(urls, routeURL)
+			clusterURL.Status.State = StateTypeLocallyDeleted
+			urls = append(urls, clusterURL)
 		}
 	}
 
 	for localName, localURL := range localMap {
-		_, ingressfound := ingressMap[localName]
-		_, routefound := routeMap[localName]
-		if !ingressfound && !routefound {
-			// URL is in the local env file but not pushed to Docker container
+		_, remoteURLFound := clusterURLMap[localName]
+		if !remoteURLFound {
+			// URL is in the local env file but not pushed to cluster
 			localURL.Status.State = StateTypeNotPushed
 			urls = append(urls, localURL)
 		}

@@ -128,6 +128,7 @@ var _ = Describe("odo url command tests", func() {
 
 			// odo url describe -o json
 			actualURLDescribeJSON = helper.CmdShouldPass("odo", "url", "describe", "myurl", "-o", "json", "--context", context)
+			// get the route URL
 			fullURLPath := helper.DetermineRouteURL(context)
 			pathNoHTTP := strings.Split(fullURLPath, "//")[1]
 			desiredURLDescribeJSON = fmt.Sprintf(`{"kind":"url","apiVersion":"odo.dev/v1alpha1","metadata":{ "name": "myurl","creationTimestamp": null},"spec":{"host":"%s","protocol": "https","port": 8080,"secure": true,"kind": "route"},"status": {"state": "Pushed"}}`, pathNoHTTP)
