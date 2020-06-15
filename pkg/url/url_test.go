@@ -2035,7 +2035,7 @@ func TestGetIngressOrRoute(t *testing.T) {
 			wantErr:        true,
 		},
 		{
-			name:           "Case 7: If route is not supported, should retrieve not pushed ingress",
+			name:           "Case 8: If route is not supported, should retrieve not pushed ingress",
 			component:      componentName,
 			urlName:        testURL3.Name,
 			routeSupported: false,
@@ -2047,6 +2047,40 @@ func TestGetIngressOrRoute(t *testing.T) {
 				Spec:       URLSpec{Host: "ingressurl3.com", Port: testURL3.Port, Secure: testURL3.Secure, TLSSecret: componentName + "-tlssecret", Kind: envinfo.INGRESS},
 				Status: URLStatus{
 					State: StateTypeNotPushed,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:           "Case 9: If route is not supported, should retrieve pushed ingress",
+			component:      componentName,
+			urlName:        testURL2.Name,
+			routeSupported: false,
+			pushedIngress:  fake.GetSingleIngress(testURL2.Name, componentName),
+			pushedRoute:    routev1.Route{},
+			wantURL: URL{
+				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
+				ObjectMeta: metav1.ObjectMeta{Name: testURL2.Name},
+				Spec:       URLSpec{Host: "ingressurl2.com", Port: testURL2.Port, Secure: testURL2.Secure, Kind: envinfo.INGRESS},
+				Status: URLStatus{
+					State: StateTypePushed,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:           "Case 10: If route is not supported, should retrieve locally deleted ingress",
+			component:      componentName,
+			urlName:        testURL1.Name,
+			routeSupported: false,
+			pushedIngress:  fake.GetSingleIngress(testURL1.Name, componentName),
+			pushedRoute:    routev1.Route{},
+			wantURL: URL{
+				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
+				ObjectMeta: metav1.ObjectMeta{Name: testURL1.Name},
+				Spec:       URLSpec{Host: "ingressurl1.com", Port: testURL1.Port, Secure: testURL1.Secure, Kind: envinfo.INGRESS},
+				Status: URLStatus{
+					State: StateTypeLocallyDeleted,
 				},
 			},
 			wantErr: false,
