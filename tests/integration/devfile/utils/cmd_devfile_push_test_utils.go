@@ -2,7 +2,6 @@ package utils
 
 import (
 	"encoding/json"
-	"strconv"
 	"strings"
 
 	"github.com/openshift/odo/pkg/machineoutput"
@@ -42,19 +41,6 @@ func AnalyzePushConsoleOutput(pushConsoleOutput string) {
 	// Ensure we pass a sanity test on the minimum expected entries
 	if len(entries) < 4 {
 		Fail("Expected at least 4 entries, corresponding to command/action execution.")
-	}
-
-	// Ensure that timestamps are monotonically increasing
-	mostRecentTimestamp := float64(-1)
-	for _, entry := range entries {
-		timestamp, err := strconv.ParseFloat(entry.GetTimestamp(), 64)
-		Expect(err).NotTo(HaveOccurred())
-
-		if timestamp < mostRecentTimestamp {
-			Fail("Timestamp was not monotonically increasing " + entry.GetTimestamp() + " " + strconv.FormatFloat(mostRecentTimestamp, 'E', -1, 64))
-		}
-
-		mostRecentTimestamp = timestamp
 	}
 
 	// Ensure that all logText entries are wrapped inside commandExecutionBegin and commandExecutionComplete entries (e.g. no floating logTexts)
