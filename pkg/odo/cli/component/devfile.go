@@ -103,8 +103,6 @@ func (po *PushOptions) DevfilePush() (err error) {
 
 // DevfileBuild build an image of my application in the cluster
 func (do *DeployOptions) DevfileBuild() (err error) {
-	// TODO: dockerfilePath := extractDockerfileFromDevfile(devObj)
-
 	// Parse devfile
 	devObj, err := devfileParser.Parse(do.DevfilePath)
 	if err != nil {

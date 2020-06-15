@@ -175,20 +175,16 @@ func (a Adapter) Build(parameters common.BuildParameters) (err error) {
 	}
 
 	// Delete deployment
-	defer func() error {
-		err = a.Delete(labels)
-		if err != nil {
-			return errors.Wrapf(err, "failed to delete build step for component with name: %s", a.ComponentName)
+	defer func() {
+		derr := a.Delete(labels)
+		if err == nil {
+			err = errors.Wrapf(derr, "failed to delete build step for component with name: %s", a.ComponentName)
 		}
 
-		err = os.Remove(parameters.DockerfilePath)
-		if err != nil {
-			return errors.Wrapf(err, "failed to delete %s", parameters.DockerfilePath)
+		rerr := os.Remove(parameters.DockerfilePath)
+		if err == nil {
+			err = errors.Wrapf(rerr, "failed to delete %s", parameters.DockerfilePath)
 		}
-		// TODO: I am pretty sure this would return a nil from the function even if the return statement from the main function is an err
-		// I remember talking to Kyle about it during the Sandboxing
-
-		return nil
 	}()
 
 	_, err = a.Client.WaitForDeploymentRollout(a.ComponentName)
@@ -291,7 +287,7 @@ func (a Adapter) Deploy(parameters common.DeployParameters) (err error) {
 	// Check to see whether deployed resource already exists. If not, create else update
 	instanceFound := false
 	list, err := myclient.Resource(gvr).Namespace(namespace).List(metav1.ListOptions{})
-	if len(list.Items) > 0 {
+	if list != nil && len(list.Items) > 0 {
 		for _, item := range list.Items {
 			klog.V(3).Infof("Found %s %s with resourceVersion: %s.\n", gvk.Kind, item.GetName(), item.GetResourceVersion())
 			if item.GetName() == applicationName {
