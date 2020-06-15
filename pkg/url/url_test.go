@@ -2034,6 +2034,23 @@ func TestGetIngressOrRoute(t *testing.T) {
 			wantURL:        URL{},
 			wantErr:        true,
 		},
+		{
+			name:           "Case 7: If route is not supported, should retrieve not pushed ingress",
+			component:      componentName,
+			urlName:        testURL3.Name,
+			routeSupported: false,
+			pushedIngress:  nil,
+			pushedRoute:    routev1.Route{},
+			wantURL: URL{
+				TypeMeta:   metav1.TypeMeta{Kind: "url", APIVersion: "odo.dev/v1alpha1"},
+				ObjectMeta: metav1.ObjectMeta{Name: testURL3.Name},
+				Spec:       URLSpec{Host: "ingressurl3.com", Port: testURL3.Port, Secure: testURL3.Secure, TLSSecret: componentName + "-tlssecret", Kind: envinfo.INGRESS},
+				Status: URLStatus{
+					State: StateTypeNotPushed,
+				},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

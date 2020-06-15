@@ -98,7 +98,7 @@ func GetIngressOrRoute(client *occlient.Client, kClient *kclient.Client, envSpec
 		// Check whether remote already created the route
 		route, getRouteErr = client.GetRoute(urlName)
 	}
-	if kerrors.IsNotFound(getIngressErr) && kerrors.IsNotFound(getRouteErr) {
+	if kerrors.IsNotFound(getIngressErr) && (!routeSupported || kerrors.IsNotFound(getRouteErr)) {
 		remoteExist = false
 	} else if (getIngressErr != nil && !kerrors.IsNotFound(getIngressErr)) || (getRouteErr != nil && !kerrors.IsNotFound(getRouteErr)) {
 		if getIngressErr != nil {
