@@ -297,7 +297,7 @@ func TestGetCommandsForGroup(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			commands := getCommandsForGroup(devObj.Data, tt.groupType)
+			commands := getCommandsByGroup(devObj.Data, tt.groupType)
 
 			if len(commands) != tt.numberOfCommands {
 				t.Errorf("TestGetCommandsForGroup error: number of commands mismatch for group %v, expected: %v got: %v", string(tt.groupType), tt.numberOfCommands, len(commands))

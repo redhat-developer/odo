@@ -121,7 +121,8 @@ func GetSupportedComponents(data data.DevfileData) []common.DevfileComponent {
 	return components
 }
 
-func getCommandsForGroup(data data.DevfileData, groupType common.DevfileCommandGroupType) []common.DevfileCommand {
+// getCommandsByGroup gets commands by the group kind
+func getCommandsByGroup(data data.DevfileData, groupType common.DevfileCommandGroupType) []common.DevfileCommand {
 	var commands []common.DevfileCommand
 
 	for _, command := range data.GetCommands() {

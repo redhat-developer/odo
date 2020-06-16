@@ -13,7 +13,7 @@ import (
 func getCommand(data data.DevfileData, commandName string, groupType common.DevfileCommandGroupType) (supportedCommand common.DevfileCommand, err error) {
 
 	commands := data.GetCommands()
-	var firstMatchedCommand common.DevfileCommand
+	var onlyCommand common.DevfileCommand
 
 	if commandName == "" {
 		// validate the command groups before searching for a command match
@@ -58,17 +58,17 @@ func getCommand(data data.DevfileData, commandName string, groupType common.Devf
 			if command.Exec.Group.IsDefault {
 				// We need to scan all the commands to find default command
 				return command, validateCommand(data, command)
-			} else if reflect.DeepEqual(firstMatchedCommand, common.DevfileCommand{}) {
+			} else if reflect.DeepEqual(onlyCommand, common.DevfileCommand{}) {
 				// store the first matched command in case there is no default command
-				firstMatchedCommand = command
+				onlyCommand = command
 			}
 		}
 	}
 
 	if commandName == "" {
 		// if default command is not found return the first command found for the matching type.
-		if !reflect.DeepEqual(firstMatchedCommand, common.DevfileCommand{}) {
-			return firstMatchedCommand, validateCommand(data, firstMatchedCommand)
+		if !reflect.DeepEqual(onlyCommand, common.DevfileCommand{}) {
+			return onlyCommand, validateCommand(data, onlyCommand)
 		}
 	}
 
@@ -93,7 +93,7 @@ func getCommand(data data.DevfileData, commandName string, groupType common.Devf
 // 2. multiple commands belonging to a single group cannot have more than one default
 func validateCommandsForGroup(data data.DevfileData, groupType common.DevfileCommandGroupType) error {
 
-	commands := getCommandsForGroup(data, groupType)
+	commands := getCommandsByGroup(data, groupType)
 
 	defaultCommandCount := 0
 
@@ -109,7 +109,7 @@ func validateCommandsForGroup(data data.DevfileData, groupType common.DevfileCom
 	}
 
 	if defaultCommandCount != 1 {
-		return fmt.Errorf("there should be one default command for command group %v", groupType)
+		return fmt.Errorf("there should be at most one default command for command group %v", groupType)
 	}
 
 	return nil

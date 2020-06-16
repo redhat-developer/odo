@@ -123,8 +123,8 @@ func ExecWithMultipleDefaults(projectDirPath, cmpName, namespace string) {
 	args = useProjectIfAvailable(args, namespace)
 	output := helper.CmdShouldFail("odo", args...)
 	helper.MatchAllInOutput(output, []string{
-		"there should be one default command for command group build",
-		"there should be one default command for command group run",
+		"there should be at most one default command for command group build",
+		"there should be at most one default command for command group run",
 	})
 }
 
