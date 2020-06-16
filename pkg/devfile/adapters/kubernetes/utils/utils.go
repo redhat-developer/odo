@@ -122,14 +122,13 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 		return nil, err
 	}
 
-	for i, container := range containers {
+	for i := range containers {
+		container := &containers[i]
 		// Check if the container belongs to a run command component
 		if container.Name == runCommand.Exec.Component {
 			// If the run component container has no entrypoint and arguments, override the entrypoint with supervisord
 			if len(container.Command) == 0 && len(container.Args) == 0 {
-				klog.V(3).Infof("Updating container %v entrypoint with supervisord", container.Name)
-				container.Command = append(container.Command, adaptersCommon.SupervisordBinaryPath)
-				container.Args = append(container.Args, "-c", adaptersCommon.SupervisordConfFile)
+				overrideContainerArgs(container)
 			}
 
 			// Always mount the supervisord volume in the run component container
@@ -159,18 +158,13 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 						Value: runCommand.Exec.WorkingDir,
 					})
 			}
-
-			// Update the containers array since the array is not a pointer to the container
-			containers[i] = container
 		}
 
 		// Check if the container belongs to a debug command component
 		if debugCommand.Exec != nil && container.Name == debugCommand.Exec.Component {
-			// If the run component container has no entrypoint and arguments, override the entrypoint with supervisord
+			// If the debug component container has no entrypoint and arguments, override the entrypoint with supervisord
 			if len(container.Command) == 0 && len(container.Args) == 0 {
-				klog.V(3).Infof("Updating container %v entrypoint with supervisord", container.Name)
-				container.Command = append(container.Command, adaptersCommon.SupervisordBinaryPath)
-				container.Args = append(container.Args, "-c", adaptersCommon.SupervisordConfFile)
+				overrideContainerArgs(container)
 			}
 
 			foundMountPath := false
@@ -193,7 +187,7 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 			// only if the env var is not set in the devfile
 			// This is done, so supervisord can use it in it's program
 			if !isEnvPresent(container.Env, adaptersCommon.EnvOdoCommandDebug) {
-				klog.V(3).Infof("Updating container %v env with run command", container.Name)
+				klog.V(3).Infof("Updating container %v env with debug command", container.Name)
 				container.Env = append(container.Env,
 					corev1.EnvVar{
 						Name:  adaptersCommon.EnvOdoCommandDebug,
@@ -218,9 +212,6 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 						Value: strconv.Itoa(devfileDebugPort),
 					})
 			}
-
-			// Update the containers array since the array is not a pointer to the container
-			containers[i] = container
 		}
 	}
 
@@ -240,4 +231,11 @@ func GetResourceReqs(comp common.DevfileComponent) corev1.ResourceRequirements {
 		reqs.Limits = limits
 	}
 	return reqs
+}
+
+// overrideContainerArgs overrides the container's entrypoint with supervisord
+func overrideContainerArgs(container *corev1.Container) {
+	klog.V(3).Infof("Updating container %v entrypoint with supervisord", container.Name)
+	container.Command = append(container.Command, adaptersCommon.SupervisordBinaryPath)
+	container.Args = append(container.Args, "-c", adaptersCommon.SupervisordConfFile)
 }
