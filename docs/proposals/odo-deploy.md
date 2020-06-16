@@ -126,9 +126,9 @@ spec:
 
 ## Future evolution
 
-Devfile 2.1.0 should broaden the scope for the outer-loop support in devfiles. For example: 
-- Support multiple build strategies - buildah, s2i, build v3 etc.
-- Support multiple deployment strategies - k8s manifest, native service, pod spec etc.
-- Any referenced assets should be immutable to ensure reproducible builds/deployments.
+- Devfile 2.1.0 should broaden the scope for the outer-loop support in devfiles. For example:
+    - Support multiple build strategies - buildah, s2i, build v3 etc.
+    - Support multiple deployment strategies - k8s manifest, native service, pod spec etc.
+    - Any referenced assets should be immutable to ensure reproducible builds/deployments.
 
-When adding support for devfile 2.1.0, odo will implement several build/deployment strategies, and if the strategy is not supported by odo then display a meaningful error message to the user.
+- If a devfile does not provide deployment manifest, odo can perhaps create a manifest in the way it does for inner-loop. This will mean devfile creators do not need to provide a deployment manifest if they do not care so much about the deployment aspect.
