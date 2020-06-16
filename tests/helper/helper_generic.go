@@ -2,9 +2,10 @@ package helper
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
-	"math/rand"
+	"math/big"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -16,16 +17,15 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
-func init() {
-	rand.Seed(time.Now().UTC().UnixNano())
-}
-
 // RandString returns a random string of given length
 func RandString(n int) string {
 	const letterBytes = "abcdefghijklmnopqrstuvwxyz"
 	b := make([]byte, n)
 	for i := range b {
-		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+		// this error is ignored because it fails only when the 2nd arg of Int() is less then 0.
+		// which wont happen
+		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(letterBytes))))
+		b[i] = letterBytes[n.Int64()]
 	}
 	return string(b)
 }
