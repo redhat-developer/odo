@@ -15,6 +15,7 @@ import (
 type EnvParameters struct {
 	ManifestFilename string
 	EnvName          string
+	Cluster          string
 }
 
 // AddEnv adds a new environment to the manifest.
@@ -31,6 +32,9 @@ func AddEnv(o *EnvParameters, appFs afero.Fs) error {
 	newEnv, err := newEnvironment(m, o.EnvName)
 	if err != nil {
 		return err
+	}
+	if o.Cluster != "" {
+		newEnv.Cluster = o.Cluster
 	}
 	m.Environments = append(m.Environments, newEnv)
 	files[pipelinesFile] = m

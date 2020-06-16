@@ -105,6 +105,7 @@ func (m *Manifest) GetArgoCDConfig() *ArgoCDConfig {
 //
 type Environment struct {
 	Name      string         `json:"name,omitempty"`
+	Cluster   string         `json:"cluster,omitempty"`
 	Pipelines *Pipelines     `json:"pipelines,omitempty"`
 	Services  []*Service     `json:"services,omitempty"`
 	Apps      []*Application `json:"apps,omitempty"`

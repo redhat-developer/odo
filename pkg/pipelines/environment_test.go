@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/spf13/afero"
+	"sigs.k8s.io/yaml"
 
 	"github.com/openshift/odo/pkg/pipelines/config"
 	"github.com/openshift/odo/pkg/pipelines/ioutils"
@@ -16,7 +17,6 @@ import (
 func TestAddEnv(t *testing.T) {
 	fakeFs := ioutils.NewMapFilesystem()
 	gitopsPath := afero.GetTempDir(fakeFs, "test")
-
 	manifestFile := filepath.Join(gitopsPath, pipelinesFile)
 	envParameters := EnvParameters{
 		ManifestFilename: manifestFile,
@@ -37,6 +37,60 @@ func TestAddEnv(t *testing.T) {
 		t.Run(fmt.Sprintf("checking path %s already exists", path), func(rt *testing.T) {
 			assertFileExists(rt, fakeFs, filepath.Join(gitopsPath, path))
 		})
+	}
+
+	got := mustReadFileAsMap(t, fakeFs, manifestFile)
+	want := map[string]interface{}{
+		"environments": []interface{}{
+			map[string]interface{}{
+				"name": "dev",
+			},
+		},
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Fatalf("written environments failed:\n%s", diff)
+	}
+
+}
+
+func TestAddEnvWithClusterProvided(t *testing.T) {
+	fakeFs := ioutils.NewMapFilesystem()
+	gitopsPath := afero.GetTempDir(fakeFs, "test")
+	manifestFile := filepath.Join(gitopsPath, pipelinesFile)
+	envParameters := EnvParameters{
+		ManifestFilename: manifestFile,
+		EnvName:          "dev",
+		Cluster:          "testing.cluster",
+	}
+	_ = afero.WriteFile(fakeFs, manifestFile, []byte("environments:"), 0644)
+
+	if err := AddEnv(&envParameters, fakeFs); err != nil {
+		t.Fatalf("AddEnv() failed :%s", err)
+	}
+
+	wantedPaths := []string{
+		"environments/dev/env/base/kustomization.yaml",
+		"environments/dev/env/base/dev-environment.yaml",
+		"environments/dev/env/overlays/kustomization.yaml",
+	}
+	for _, path := range wantedPaths {
+		t.Run(fmt.Sprintf("checking path %s already exists", path), func(rt *testing.T) {
+			assertFileExists(rt, fakeFs, filepath.Join(gitopsPath, path))
+		})
+	}
+
+	got := mustReadFileAsMap(t, fakeFs, manifestFile)
+	want := map[string]interface{}{
+		"environments": []interface{}{
+			map[string]interface{}{
+				"cluster": "testing.cluster",
+				"name":    "dev",
+			},
+		},
+	}
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Fatalf("written environments failed:\n%s", diff)
 	}
 }
 
@@ -182,4 +236,19 @@ func assertFileExists(t *testing.T, testFs afero.Fs, path string) {
 	if isDir {
 		t.Fatalf("%q is a directory", path)
 	}
+}
+
+func mustReadFileAsMap(t *testing.T, fs afero.Fs, filename string) map[string]interface{} {
+	t.Helper()
+	b, err := afero.ReadFile(fs, filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := map[string]interface{}{}
+	err = yaml.Unmarshal(b, &m)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return m
+
 }

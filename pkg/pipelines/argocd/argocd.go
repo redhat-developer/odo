@@ -68,7 +68,12 @@ func (b *argocdBuilder) Application(env *config.Environment, app *config.Applica
 	basePath := filepath.Join(config.PathForArgoCD(), "config")
 	argoFiles := res.Resources{}
 	filename := filepath.Join(basePath, env.Name+"-"+app.Name+"-app.yaml")
-	argoFiles[filename] = makeApplication(env.Name+"-"+app.Name, b.argoNS, defaultProject, env.Name, defaultServer, makeSource(env, app, b.repoURL))
+
+	argoFiles[filename] = makeApplication(env.Name+"-"+app.Name, b.argoNS,
+		defaultProject,
+		env.Name,
+		clusterForEnv(env),
+		makeSource(env, app, b.repoURL))
 	b.files = res.Merge(argoFiles, b.files)
 	return nil
 }
@@ -116,4 +121,11 @@ func makeApplication(appName, argoNS, project, ns, server string, source argoapp
 			SyncPolicy: syncPolicy,
 		},
 	}
+}
+
+func clusterForEnv(env *config.Environment) string {
+	if env.Cluster != "" {
+		return env.Cluster
+	}
+	return defaultServer
 }

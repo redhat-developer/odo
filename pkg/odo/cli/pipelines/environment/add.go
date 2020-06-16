@@ -32,6 +32,7 @@ type AddEnvParameters struct {
 	envName  string
 	output   string
 	manifest string
+	cluster  string
 	// generic context options common to all commands
 	*genericclioptions.Context
 }
@@ -59,6 +60,7 @@ func (eo *AddEnvParameters) Run() error {
 	options := pipelines.EnvParameters{
 		EnvName:          eo.envName,
 		ManifestFilename: eo.manifest,
+		Cluster:          eo.cluster,
 	}
 	err := pipelines.AddEnv(&options, ioutils.NewFilesystem())
 	if err != nil {
@@ -85,5 +87,6 @@ func NewCmdAddEnv(name, fullName string) *cobra.Command {
 	addEnvCmd.Flags().StringVar(&o.envName, "env-name", "", "name of the environment/namespace")
 	addEnvCmd.MarkFlagRequired("env-name")
 	addEnvCmd.Flags().StringVar(&o.manifest, "manifest", "pipelines.yaml", "path to manifest file")
+	addEnvCmd.Flags().StringVar(&o.cluster, "cluster", "", "deployment cluster e.g. https://kubernetes.local.svc")
 	return addEnvCmd
 }

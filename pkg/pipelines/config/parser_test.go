@@ -112,6 +112,21 @@ func TestParse(t *testing.T) {
 			},
 		},
 		},
+		{"testdata/example-with-cluster.yaml", &Manifest{
+			Environments: []*Environment{
+				{
+					Name:    "development",
+					Cluster: "testing.cluster",
+					Services: []*Service{
+						{Name: "service-http", SourceURL: "https://github.com/myproject/myservice.git"},
+					},
+					Apps: []*Application{
+						{Name: "my-app-1", ServiceRefs: []string{"service-http"}},
+					},
+				},
+			},
+		},
+		},
 	}
 
 	for _, tt := range parseTests {
