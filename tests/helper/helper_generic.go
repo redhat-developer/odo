@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -185,4 +186,16 @@ func GetCliRunner() CliRunner {
 		return NewKubectlRunner("kubectl")
 	}
 	return NewOcRunner("oc")
+}
+
+// PlatformSpecificSourcePath handles the file:///./ and file://./ as per the host platform
+// and returns the sourcePath
+func PlatformSpecificSourcePath() string {
+	var sourcePath string
+	if runtime.GOOS == "windows" {
+		sourcePath = "file:///./"
+		return sourcePath
+	}
+	sourcePath = "file://./"
+	return sourcePath
 }
