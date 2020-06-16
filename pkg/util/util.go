@@ -85,8 +85,8 @@ func GenerateRandomString(n int) string {
 	b := make([]rune, n)
 
 	for i := range b {
-		// this error is ignored because it fails only when the 2nd arg of Int() is less then 0.
-		// which wont happend
+		// this error is ignored because it fails only when the 2nd arg of Int() is less then 0
+		// which wont happen
 		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(letterRunes))))
 		b[i] = letterRunes[n.Int64()]
 	}
