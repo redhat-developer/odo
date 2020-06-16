@@ -2,10 +2,8 @@ package helper
 
 import (
 	"bytes"
-	"crypto/rand"
 	"encoding/json"
 	"fmt"
-	"math/big"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -15,19 +13,12 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
+	"github.com/openshift/odo/pkg/util"
 )
 
 // RandString returns a random string of given length
 func RandString(n int) string {
-	const letterBytes = "abcdefghijklmnopqrstuvwxyz"
-	b := make([]byte, n)
-	for i := range b {
-		// this error is ignored because it fails only when the 2nd arg of Int() is less then 0.
-		// which wont happen
-		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(letterBytes))))
-		b[i] = letterBytes[n.Int64()]
-	}
-	return string(b)
+	return util.GenerateRandomString(n)
 }
 
 // WaitForCmdOut runs a command until it gets
