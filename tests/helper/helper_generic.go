@@ -25,7 +25,7 @@ func RandString(n int) string {
 	const letterBytes = "abcdefghijklmnopqrstuvwxyz"
 	b := make([]byte, n)
 	for i := range b {
-		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+		b[i] = letterBytes[rand.Intn(len(letterBytes))] // #nosec G404
 	}
 	return string(b)
 }

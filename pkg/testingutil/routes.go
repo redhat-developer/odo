@@ -2,7 +2,6 @@ package testingutil
 
 import (
 	"fmt"
-
 	routev1 "github.com/openshift/api/route/v1"
 	applabels "github.com/openshift/odo/pkg/application/labels"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
