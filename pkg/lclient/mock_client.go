@@ -6,6 +6,9 @@ package lclient
 
 import (
 	context "context"
+	io "io"
+	reflect "reflect"
+
 	types "github.com/docker/docker/api/types"
 	container "github.com/docker/docker/api/types/container"
 	filters "github.com/docker/docker/api/types/filters"
@@ -13,8 +16,6 @@ import (
 	registry "github.com/docker/docker/api/types/registry"
 	volume "github.com/docker/docker/api/types/volume"
 	gomock "github.com/golang/mock/gomock"
-	io "io"
-	reflect "reflect"
 )
 
 // MockDockerClient is a mock of DockerClient interface
@@ -288,4 +289,8 @@ func (m *MockDockerClient) CopyToContainer(ctx context.Context, container, path 
 func (mr *MockDockerClientMockRecorder) CopyToContainer(ctx, container, path, content, options interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CopyToContainer", reflect.TypeOf((*MockDockerClient)(nil).CopyToContainer), ctx, container, path, content, options)
+}
+
+func (m *MockDockerClient) ContainerLogs(ctx context.Context, container string, options types.ContainerLogsOptions) (io.ReadCloser, error) {
+	return nil, nil
 }

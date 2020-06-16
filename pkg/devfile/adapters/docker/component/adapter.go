@@ -274,5 +274,24 @@ func (a Adapter) Delete(labels map[string]string) error {
 }
 
 func (a Adapter) Log(follow bool) error {
-	return nil
+
+	exists := utils.ComponentExists(a.Client, a.ComponentName)
+
+	if !exists {
+		return errors.Errorf("the component %s doesn't exist on the cluster", a.ComponentName)
+	}
+
+	containers, err := utils.GetComponentContainers(a.Client, a.ComponentName)
+	if err != nil {
+		return errors.Wrapf(err, "error while retrieving container for odo component %s", a.ComponentName)
+	}
+
+	runCommand, err := common.GetRunCommand(a.Devfile.Data, "")
+	if err != nil {
+		return err
+	}
+
+	containerID := utils.GetContainerIDForAlias(containers, runCommand.Exec.Component)
+
+	return a.Client.DisplayContainerLog(containerID, follow)
 }

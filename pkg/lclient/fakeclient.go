@@ -427,3 +427,11 @@ func (m *mockDockerErrorClient) ContainerExecAttach(ctx context.Context, execID 
 func (m *mockDockerErrorClient) CopyToContainer(ctx context.Context, container, path string, content io.Reader, options types.CopyToContainerOptions) error {
 	return errCopyToContainer
 }
+
+func (m *mockDockerClient) ContainerLogs(ctx context.Context, container string, options types.ContainerLogsOptions) (io.ReadCloser, error) {
+	return nil, nil
+}
+
+func (m *mockDockerErrorClient) ContainerLogs(ctx context.Context, container string, options types.ContainerLogsOptions) (io.ReadCloser, error) {
+	return nil, nil
+}
