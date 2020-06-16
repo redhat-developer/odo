@@ -265,6 +265,7 @@ var _ = Describe("odo generic", func() {
 
 	Context("when executing odo version command", func() {
 		It("should show the version of odo major components including server login URL", func() {
+			serverURL := oc.GetCurrentServerURL()
 			odoVersion := helper.CmdShouldPass("odo", "version")
 			reOdoVersion := regexp.MustCompile(`^odo\s*v[0-9]+.[0-9]+.[0-9]+(?:-\w+)?\s*\(\w+\)`)
 			odoVersionStringMatch := reOdoVersion.MatchString(odoVersion)
@@ -275,6 +276,7 @@ var _ = Describe("odo generic", func() {
 			Expect(odoVersionStringMatch).Should(BeTrue())
 			Expect(kubernetesVersionStringMatch).Should(BeTrue())
 			Expect(serverURLStringMatch).Should(BeTrue())
+			Expect(odoVersion).Should(ContainSubstring(serverURL))
 		})
 	})
 
