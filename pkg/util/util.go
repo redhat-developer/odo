@@ -4,10 +4,11 @@ import (
 	"archive/zip"
 	"bufio"
 	"context"
+	"crypto/rand"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"math/rand"
+	"math/big"
 	"net"
 	"net/http"
 	"net/url"
@@ -81,10 +82,13 @@ func ConvertLabelsToSelector(labels map[string]string) string {
 // GenerateRandomString generates a random string of lower case characters of
 // the given size
 func GenerateRandomString(n int) string {
-	rand.Seed(time.Now().UnixNano())
 	b := make([]rune, n)
+
 	for i := range b {
-		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+		// this error is ignored because it fails only when the 2nd arg of Int() is less then 0
+		// which wont happen
+		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(letterRunes))))
+		b[i] = letterRunes[n.Int64()]
 	}
 	return string(b)
 }
