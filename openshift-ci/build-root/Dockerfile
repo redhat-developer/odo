@@ -4,3 +4,4 @@ FROM registry.svc.ci.openshift.org/openshift/release:golang-1.12
 
 RUN yum -y install make wget gcc git httpd-tools
 
+ADD oc /usr/bin/oc
