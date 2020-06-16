@@ -133,7 +133,7 @@ func GetBuildCommand(data data.DevfileData, devfileBuildCmd string) (buildComman
 	return getCommand(data, devfileBuildCmd, common.BuildCommandGroupType)
 }
 
-// GetDebugCommand iterates through the components in the devfile and returns the build command
+// GetDebugCommand iterates through the components in the devfile and returns the debug command
 func GetDebugCommand(data data.DevfileData, devfileDebugCmd string) (debugCommand common.DevfileCommand, err error) {
 	return getCommand(data, devfileDebugCmd, common.DebugCommandGroupType)
 }

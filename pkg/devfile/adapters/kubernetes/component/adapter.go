@@ -84,9 +84,6 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 			return fmt.Errorf("debug command is not valid")
 		}
 		pushDevfileCommands[versionsCommon.DebugCommandGroupType] = pushDevfileDebugCommands
-	}
-
-	if parameters.Debug {
 		parameters.ForceBuild = true
 	}
 
@@ -397,7 +394,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 
 		if componentExists && !common.IsRestartRequired(command) {
 			klog.V(4).Infof("restart:false, Not restarting debugRun Command")
-			err = exec.ExecuteDevfileRunActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
+			err = exec.ExecuteDevfileDebugActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
 			return
 		}
 		err = exec.ExecuteDevfileDebugAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
