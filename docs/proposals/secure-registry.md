@@ -40,7 +40,9 @@ Work flow to access secure registry:
 
     Currently we have `odo registry add <registry name> <registry URL>` and `odo registry update <registry name> <registry URL>` to add and update registry accordingly. Regarding the CLI design, we can implement the following CLI design to support collecting credential:
     - `odo registry add <registry name> <registry URL> --token <token>`
-    -  `odo registry update <registry name> <registry URL> --token <token>`
+    - `odo registry add <registry name> <registry URL> --user <user> --password <password>`
+    - `odo registry update <registry name> <registry URL> --token <token>`
+    - `odo registry update <registry name> <registry URL> --user <user> --password <password>`
 
 2. Store Credential
 
