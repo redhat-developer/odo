@@ -169,7 +169,7 @@ jobs:
     # Run devfile integration test on Kubernetes cluster    
     - <<: *base-test
       stage: test
-      name: "devfile catalog, watch, push, delete and create command integration tests on kubernetes cluster"
+      name: "devfile catalog, watch, push, debug, delete and create command integration tests on kubernetes cluster"
       env:
         - MINIKUBE_WANTUPDATENOTIFICATION=false
         - MINIKUBE_WANTREPORTERRORPROMPT=false
@@ -193,5 +193,6 @@ jobs:
         - travis_wait make test-cmd-devfile-catalog
         - travis_wait make test-cmd-devfile-watch
         - travis_wait make test-cmd-devfile-push
+        - travis_wait make test-cmd-devfile-debug
         - travis_wait make test-cmd-devfile-delete
         - travis_wait make test-cmd-devfile-create

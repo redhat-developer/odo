@@ -242,6 +242,7 @@ test-cmd-devfile-url:
 .PHONY: test-cmd-devfile-debug
 test-cmd-devfile-debug:
 	ginkgo $(GINKGO_FLAGS) -focus="odo devfile debug command tests" tests/integration/devfile/
+	ginkgo $(GINKGO_FLAGS_SERIAL) -focus="odo devfile debug command serial tests" tests/integration/devfile/debug
 
 # Run odo push docker devfile command tests
 .PHONY: test-cmd-docker-devfile-push

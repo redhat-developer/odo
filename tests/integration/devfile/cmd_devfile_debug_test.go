@@ -16,32 +16,37 @@ import (
 )
 
 var _ = Describe("odo devfile debug command tests", func() {
-	var namespace, context, componentName, currentWorkingDirectory, projectDirPath string
+	var namespace, context, componentName, currentWorkingDirectory, projectDirPath, originalKubeconfig string
 	var projectDir = "/projectDir"
+
+	// Using program command according to cliRunner in devfile
+	cliRunner := helper.GetCliRunner()
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
-		SetDefaultConsistentlyDuration(30 * time.Second)
-		namespace = helper.CreateRandProject()
 		context = helper.CreateNewContext()
-		currentWorkingDirectory = helper.Getwd()
-		projectDirPath = context + projectDir
-		componentName = helper.RandString(6)
-
-		helper.Chdir(context)
-
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 
 		// Devfile push requires experimental mode to be set
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+
+		originalKubeconfig = os.Getenv("KUBECONFIG")
+		helper.LocalKubeconfigSet(context)
+		namespace = cliRunner.CreateRandNamespaceProject()
+		currentWorkingDirectory = helper.Getwd()
+		componentName = helper.RandString(6)
+		helper.Chdir(context)
+		projectDirPath = context + projectDir
 	})
 
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		helper.DeleteProject(namespace)
+		cliRunner.DeleteNamespaceProject(namespace)
 		helper.Chdir(currentWorkingDirectory)
+		err := os.Setenv("KUBECONFIG", originalKubeconfig)
+		Expect(err).NotTo(HaveOccurred())
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
 	})
@@ -53,7 +58,8 @@ var _ = Describe("odo devfile debug command tests", func() {
 
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile-with-debugrun.yaml", "--debug")
+			helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
+			helper.CmdShouldPass("odo", "push", "--debug")
 
 			httpPort, err := util.HttpGetFreePort()
 			Expect(err).NotTo(HaveOccurred())
@@ -83,8 +89,9 @@ var _ = Describe("odo devfile debug command tests", func() {
 
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile-with-debugrun.yaml")
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile-with-debugrun.yaml", "--debug")
+			helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
+			helper.CmdShouldPass("odo", "push")
+			helper.CmdShouldPass("odo", "push", "--debug")
 
 			stopChannel := make(chan bool)
 			go func() {
@@ -106,7 +113,8 @@ var _ = Describe("odo devfile debug command tests", func() {
 
 			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs-cmp-"+namespace, "--project", namespace)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile-with-debugrun.yaml", "--debug")
+			helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
+			helper.CmdShouldPass("odo", "push", "--debug")
 
 			httpPort, err := util.HttpGetFreePort()
 			Expect(err).NotTo(HaveOccurred())
@@ -132,7 +140,8 @@ var _ = Describe("odo devfile debug command tests", func() {
 
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile-with-debugrun.yaml", "--debug")
+			helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
+			helper.CmdShouldPass("odo", "push", "--debug")
 
 			httpPort, err := util.HttpGetFreePort()
 			Expect(err).NotTo(HaveOccurred())
