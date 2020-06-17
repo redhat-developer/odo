@@ -68,12 +68,12 @@ This command will delete any resources created by odo deploy.
 
 ### Devfile
 
-For the initial implementation, we could use devfile v2.0.0 and capture basic outer-loop information as `metadata` on the devfile. `odo` could look for  specific keys, while other tools like Che could ignore them.
+For the initial implementation, we could use devfile v2.0.0 and capture basic outer-loop information as `attributes` on the devfile. `odo` could look for  specific keys, while other tools like Che could ignore them.
 
 For example: 
 ```
-metadata:
- dockerfile: <URI>
+attributes:
+ build-dockerfile: <URI>
  deployment-manifest: <URI>
 ```
 
@@ -109,7 +109,7 @@ spec:
 This command will perform the following actions:
 
 #### Input validation
-- Check if the devfile  is v2.0.0 and that it specifies the expected outer-loop metadata. 
+- Check if the devfile  is v2.0.0 and that it specifies the expected outer-loop attributes. 
     - If not provided, display a meaningful error message.
 - Validate all arguments passed by the user. 
     - If argument values are invalid, display a meaningful error message.
@@ -118,14 +118,14 @@ This command will perform the following actions:
 - Start a new pod with a build container (privileged container with `buildah:stable` image).
 - Mount the image registry credentials passed by the user.
 - Copy the application source code into the build container.
-- Fetch the dockerfile using URI in the metadata of the devfile and make it available in the container.
+- Fetch the dockerfile using URI in the attributes of the devfile and make it available in the container.
 - Execute `buildah bud` command using src code, dockerfile and tag information.
 - Push the built image using the tag and credentials.
 - Delete the build container and the pod.
 
 #### Deploy
 - Delete any existing deployments (if the user runs `odo deploy` multiple times).
-- Fetch the deployment manifest using URI in the metadata of the devfile and make it available in the container.
+- Fetch the deployment manifest using URI in the attributes of the devfile. and make it available in the container.
 - Replace templated text in the deployment manifest with relevant values:
     - PROJECT_NAME: name of odo project
     - CONTAINER_IMAGE: `tag` for the built image
