@@ -11,8 +11,10 @@ import (
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
+	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
+	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/spf13/cobra"
@@ -29,6 +31,7 @@ type TestOptions struct {
 	namespace        string
 	devfilePath      string
 	testCommand      common.DevfileCommand
+	EnvSpecificInfo  *envinfo.EnvSpecificInfo
 	*genericclioptions.Context
 }
 
@@ -85,9 +88,7 @@ func (to *TestOptions) Validate() (err error) {
 
 // Run contains the logic for the odo command
 func (to *TestOptions) Run() (err error) {
-	// err = a.execDevfile(pushDevfileCommands, componentExists, parameters.Show, containers)
-	to.RunTestCommand()
-	return
+	return to.RunTestCommand()
 }
 
 // NewCmdTest implements the odo tets command
@@ -98,7 +99,7 @@ func NewCmdTest(name, fullName string) *cobra.Command {
 		Short:   "Run test command defined in devfile",
 		Long:    "Run test command defined in devfile",
 		Example: fmt.Sprintf(testExample, fullName),
-		Args:    cobra.MaximumNArgs(0),
+		Args:    cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(to, cmd, args)
 		},
@@ -110,5 +111,8 @@ func NewCmdTest(name, fullName string) *cobra.Command {
 	testCmd.Flags().StringVar(&to.commandName, "test-command", "", "command name to run")
 	//Adding `--context` flag
 	genericclioptions.AddContextFlag(testCmd, &to.componentContext)
+	//Adding `--project` flag
+	projectCmd.AddProjectFlag(testCmd)
+	completion.RegisterCommandHandler(testCmd, completion.ComponentNameCompletionHandler)
 	return testCmd
 }

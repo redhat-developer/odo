@@ -186,8 +186,7 @@ func (to *TestOptions) RunTestCommand() error {
 	if err != nil {
 		return err
 	}
-	devfileHandler.Test(to.testCommand, true)
-	return nil
+	return devfileHandler.Test(to.testCommand, true)
 }
 
 func warnIfURLSInvalid(url []envinfo.EnvInfoURL) {
