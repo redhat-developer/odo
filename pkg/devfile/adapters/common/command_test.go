@@ -498,12 +498,15 @@ func TestGetDebugCommand(t *testing.T) {
 
 			command, err := GetDebugCommand(devObj.Data, tt.commandName)
 
-			if !tt.wantErr == (err != nil) {
-				t.Errorf("TestGetDebugCommand: unexpected error for command \"%v\" expected: %v actual: %v", tt.commandName, tt.wantErr, err)
-			} else if !tt.wantErr && reflect.DeepEqual(emptyCommand, command) {
-				t.Errorf("TestGetDebugCommand: unexpected empty command returned for command: %v", tt.commandName)
+			if tt.wantErr && err == nil {
+				t.Errorf("Error was expected but got no error")
+			} else if !tt.wantErr {
+				if err != nil {
+					t.Errorf("TestGetDebugCommand: unexpected error for command \"%v\" expected: %v actual: %v", tt.commandName, tt.wantErr, err)
+				} else if reflect.DeepEqual(emptyCommand, command) {
+					t.Errorf("TestGetDebugCommand: unexpected empty command returned for command: %v", tt.commandName)
+				}
 			}
-
 		})
 	}
 }
