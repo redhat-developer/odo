@@ -64,6 +64,10 @@ func (lo *ListOptions) Validate() (err error) {
 
 	var project, app string
 
+	if len(lo.Application) != 0 && lo.allAppsFlag {
+		klog.V(4).Infof("either --app and --all-apps both provided or provided --all-apps in a folder has app, use --all-apps anyway")
+	}
+
 	if !util.CheckKubeConfigExist() {
 		project = lo.LocalConfigInfo.GetProject()
 		app = lo.LocalConfigInfo.GetApplication()
