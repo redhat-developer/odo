@@ -811,22 +811,22 @@ func GetGitHubZipURL(project common.DevfileProject) (string, error) {
 
 	branchExists := (project.Source.Branch != nil && *project.Source.Branch != "")
 	tagExists := (project.Source.Tag != nil && *project.Source.Tag != "")
-	commitIdExists := (project.Source.CommitId != nil && *project.Source.CommitId != "")
+	commitIDExists := (project.Source.CommitId != nil && *project.Source.CommitId != "")
 	startPointExists := (project.Source.StartPoint != nil && *project.Source.StartPoint != "")
 
-	if branchExists && !tagExists && !commitIdExists && !startPointExists {
+	if branchExists && !tagExists && !commitIDExists && !startPointExists {
 		errBool = false
 		ref = *project.Source.Branch
-	} else if tagExists && !branchExists && !commitIdExists && !startPointExists {
+	} else if tagExists && !branchExists && !commitIDExists && !startPointExists {
 		errBool = false
 		ref = *project.Source.Tag
-	} else if commitIdExists && !branchExists && !tagExists && !startPointExists {
+	} else if commitIDExists && !branchExists && !tagExists && !startPointExists {
 		errBool = false
 		ref = *project.Source.CommitId
-	} else if startPointExists && !branchExists && !commitIdExists && !tagExists {
+	} else if startPointExists && !branchExists && !commitIDExists && !tagExists {
 		errBool = false
 		ref = *project.Source.StartPoint
-	} else if !branchExists && !commitIdExists && !tagExists && !startPointExists {
+	} else if !branchExists && !commitIDExists && !tagExists && !startPointExists {
 		errBool = false
 	}
 
@@ -840,7 +840,7 @@ func GetGitHubZipURL(project common.DevfileProject) (string, error) {
 			errMsg += fmt.Sprintf("%s specified with value %s\n", githubTagMsg, *project.Source.Tag)
 		}
 
-		if commitIdExists {
+		if commitIDExists {
 			errMsg += fmt.Sprintf("%s specified with value %s\n", githubCommitIDMsg, *project.Source.CommitId)
 		}
 
@@ -857,6 +857,7 @@ func GetGitHubZipURL(project common.DevfileProject) (string, error) {
 	}
 
 	client := github.NewClient(nil)
+
 	opt := &github.RepositoryContentGetOptions{Ref: ref}
 
 	URL, response, err := client.Repositories.GetArchiveLink(context.Background(), owner, repo, "zipball", opt, true)
