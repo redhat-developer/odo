@@ -41,7 +41,7 @@ User flow:
 ## Design overview
 `odo deploy` could provide developers with a way to build a container image for their application and deploy it on a target Kubernetes deployment using the build/deploy guidance provided by the devfile.
 
-This deployment is equivalent to a development version of your production and will be using the namespace, service binding, URL information from the inner-loop. This will ensure that it is not seen as a way to deploy real workloads in production.
+This deployment is equivalent to a development version of your production and will be using the namespace and URL information from the inner-loop. This will ensure that it is not seen as a way to deploy real workloads in production.
 
 `odo deploy delete` could provide developers with a way to clean up any existing deployment of the application. 
 
