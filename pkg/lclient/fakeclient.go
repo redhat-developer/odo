@@ -39,6 +39,82 @@ var mockImageSummary = []types.ImageSummary{
 	},
 }
 
+var mockContainerJSONList = []types.ContainerJSON{
+	types.ContainerJSON{
+		ContainerJSONBase: &types.ContainerJSONBase{
+			Name:  "/node",
+			Image: "node",
+			ID:    "1",
+		},
+		Mounts: []types.MountPoint{
+			{
+				Destination: OdoSourceVolumeMount,
+			},
+		},
+		Config: &container.Config{
+			Image: "node",
+			Labels: map[string]string{
+				"component": "test",
+				"alias":     "alias1",
+			},
+		},
+	},
+	types.ContainerJSON{
+		ContainerJSONBase: &types.ContainerJSONBase{
+			Name:  "/go-test",
+			Image: "golang",
+			ID:    "2",
+			HostConfig: &container.HostConfig{
+				PortBindings: nat.PortMap{
+					nat.Port("8080/tcp"): []nat.PortBinding{
+						nat.PortBinding{
+							HostIP:   "127.0.0.1",
+							HostPort: "54321",
+						},
+					},
+				},
+			},
+		},
+		Config: &container.Config{
+			Image: "golang",
+			Labels: map[string]string{
+				"component": "golang",
+				"8080":      "testurl2",
+			},
+		},
+	},
+	types.ContainerJSON{
+		ContainerJSONBase: &types.ContainerJSONBase{
+			Name:  "/go-test-build",
+			Image: "golang",
+			ID:    "3",
+			HostConfig: &container.HostConfig{
+				PortBindings: nat.PortMap{
+					nat.Port("8080/tcp"): []nat.PortBinding{
+						nat.PortBinding{
+							HostIP:   "127.0.0.1",
+							HostPort: "65432",
+						},
+					},
+				},
+			},
+		},
+		Mounts: []types.MountPoint{
+			{
+				Destination: OdoSourceVolumeMount,
+			},
+		},
+		Config: &container.Config{
+			Image: "golang",
+			Labels: map[string]string{
+				"component": "test",
+				"alias":     "alias1",
+				"8080":      "testurl3",
+			},
+		},
+	},
+}
+
 var mockContainerList = []types.Container{
 	types.Container{
 		Names: []string{"/node"},
@@ -62,16 +138,6 @@ var mockContainerList = []types.Container{
 			"component": "golang",
 			"8080":      "testurl2",
 		},
-		HostConfig: container.HostConfig{
-			PortBindings: nat.PortMap{
-				nat.Port("8080/tcp"): []nat.PortBinding{
-					nat.PortBinding{
-						HostIP:   "127.0.0.1",
-						HostPort: "54321",
-					},
-				},
-			},
-		},
 	},
 	types.Container{
 		Names: []string{"/go-test-build"},
@@ -85,16 +151,6 @@ var mockContainerList = []types.Container{
 		Mounts: []types.MountPoint{
 			{
 				Destination: OdoSourceVolumeMount,
-			},
-		},
-		HostConfig: container.HostConfig{
-			PortBindings: nat.PortMap{
-				nat.Port("8080/tcp"): []nat.PortBinding{
-					nat.PortBinding{
-						HostIP:   "127.0.0.1",
-						HostPort: "65432",
-					},
-				},
 			},
 		},
 	},
@@ -143,18 +199,9 @@ func (m *mockDockerClient) ContainerRemove(ctx context.Context, containerID stri
 }
 
 func (m *mockDockerClient) ContainerInspect(ctx context.Context, containerID string) (types.ContainerJSON, error) {
-	for _, containerElement := range mockContainerList {
+	for _, containerElement := range mockContainerJSONList {
 		if containerElement.ID == containerID {
-			containerConfig := container.Config{
-				Image:  containerElement.Image,
-				Labels: containerElement.Labels,
-			}
-			return types.ContainerJSON{
-				ContainerJSONBase: &types.ContainerJSONBase{
-					HostConfig: &containerElement.HostConfig,
-				},
-				Config: &containerConfig,
-			}, nil
+			return containerElement, nil
 		}
 	}
 	return types.ContainerJSON{}, nil
