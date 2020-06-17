@@ -165,10 +165,8 @@ func (o ProjectOptions) Run() error {
 			}
 
 			switch err := ConfirmProjectAccess(currentProject, client, kubeclient); {
-			case kapierrors.IsForbidden(err):
-				return fmt.Errorf("you do not have rights to view project %q.", currentProject)
-			case kapierrors.IsNotFound(err):
-				return fmt.Errorf("the project %q specified in your config does not exist.", currentProject)
+			case kapierrors.IsForbidden(err), kapierrors.IsNotFound(err):
+				return fmt.Errorf("you do not have rights to view project %q specified in your config or the project doesn't exist", currentProject)
 			case err != nil:
 				return err
 			}

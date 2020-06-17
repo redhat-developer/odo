@@ -2,34 +2,46 @@ package release
 
 import (
 	"archive/tar"
+	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
+	"path"
+	"path/filepath"
+	"strings"
 	"time"
 
 	digest "github.com/opencontainers/go-digest"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	kcmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/openshift/library-go/pkg/image/dockerv1client"
+	"github.com/openshift/library-go/pkg/manifest"
 	"github.com/openshift/oc/pkg/cli/image/extract"
 	"github.com/openshift/oc/pkg/cli/image/imagesource"
 	imagemanifest "github.com/openshift/oc/pkg/cli/image/manifest"
+	"github.com/pkg/errors"
 )
 
-func NewExtractOptions(streams genericclioptions.IOStreams) *ExtractOptions {
+// NewExtractOptions is also used internally as part of image mirroring. For image mirroring
+// internal use, extractManifests is set to true so image manifest files are searched for
+// signature information to be returned for use by mirroring.
+func NewExtractOptions(streams genericclioptions.IOStreams, extractManifests bool) *ExtractOptions {
 	return &ExtractOptions{
-		IOStreams: streams,
-		Directory: ".",
+		IOStreams:        streams,
+		Directory:        ".",
+		ExtractManifests: extractManifests,
 	}
 }
 
 func NewExtract(f kcmdutil.Factory, parentName string, streams genericclioptions.IOStreams) *cobra.Command {
-	o := NewExtractOptions(streams)
+	o := NewExtractOptions(streams, false)
 	cmd := &cobra.Command{
 		Use:   "extract",
 		Short: "Extract the contents of an update payload to disk",
@@ -88,7 +100,8 @@ type ExtractOptions struct {
 	SecurityOptions imagemanifest.SecurityOptions
 	ParallelOptions imagemanifest.ParallelOptions
 
-	From string
+	FromDir string
+	From    string
 
 	Tools                  bool
 	Command                string
@@ -101,6 +114,9 @@ type ExtractOptions struct {
 	Directory string
 	File      string
 	FileDir   string
+
+	ExtractManifests bool
+	Manifests        []manifest.Manifest
 
 	ImageMetadataCallback func(m *extract.Mapping, dgst, contentDigest digest.Digest, config *dockerv1client.DockerImageConfig)
 }
@@ -167,6 +183,7 @@ func (o *ExtractOptions) Run() error {
 		return err
 	}
 	opts := extract.NewOptions(genericclioptions.IOStreams{Out: o.Out, ErrOut: o.ErrOut})
+	opts.ParallelOptions = o.ParallelOptions
 	opts.SecurityOptions = o.SecurityOptions
 	opts.FileDir = o.FileDir
 
@@ -184,22 +201,85 @@ func (o *ExtractOptions) Run() error {
 				To:   dir,
 			},
 		}
+		var manifestErrs []error
 		found := false
 		opts.TarEntryCallback = func(hdr *tar.Header, _ extract.LayerInfo, r io.Reader) (bool, error) {
-			if hdr.Name != o.File {
+			if !o.ExtractManifests {
+				if hdr.Name != o.File {
+					return true, nil
+				}
+				if _, err := io.Copy(o.Out, r); err != nil {
+					return false, err
+				}
+				found = true
+				return false, nil
+			} else {
+				switch hdr.Name {
+				case o.File:
+					if _, err := io.Copy(o.Out, r); err != nil {
+						return false, err
+					}
+					found = true
+				case "image-references":
+					return true, nil
+				case "release-metadata":
+					return true, nil
+				default:
+					if ext := path.Ext(hdr.Name); len(ext) > 0 && (ext == ".yaml" || ext == ".yml" || ext == ".json") {
+						klog.V(4).Infof("Found manifest %s", hdr.Name)
+						raw, err := ioutil.ReadAll(r)
+						if err != nil {
+							manifestErrs = append(manifestErrs, errors.Wrapf(err, "error reading file %s", hdr.Name))
+							return true, nil
+						}
+						ms, err := manifest.ParseManifests(bytes.NewReader(raw))
+						if err != nil {
+							manifestErrs = append(manifestErrs, errors.Wrapf(err, "error parsing %s", hdr.Name))
+							return true, nil
+						}
+						for i := range ms {
+							ms[i].OriginalFilename = filepath.Base(hdr.Name)
+							src := fmt.Sprintf("the config map %s/%s", ms[i].Obj.GetNamespace(), ms[i].Obj.GetName())
+							data, _, err := unstructured.NestedStringMap(ms[i].Obj.Object, "data")
+							if err != nil {
+								manifestErrs = append(manifestErrs, errors.Wrapf(err, "%s is not valid", src))
+								continue
+							}
+							for k, v := range data {
+								switch {
+								case strings.HasPrefix(k, "verifier-public-key-"):
+									klog.V(2).Infof("Found in %s:\n%s %s", hdr.Name, k, v)
+								case strings.HasPrefix(k, "store-"):
+									klog.V(2).Infof("Found in %s:\n%s\n%s", hdr.Name, k, v)
+								}
+							}
+						}
+						o.Manifests = append(o.Manifests, ms...)
+					}
+				}
 				return true, nil
 			}
-			if _, err := io.Copy(o.Out, r); err != nil {
-				return false, err
-			}
-			found = true
-			return false, nil
 		}
 		if err := opts.Run(); err != nil {
 			return err
 		}
 		if !found {
 			return fmt.Errorf("image did not contain %s", o.File)
+		}
+
+		// Only output manifest errors if manifests were being extracted and we didn't find the expected signature
+		// manifests. We don't care about errors in other manifests and they will only confuse/alarm the user.
+		// Do not return an error so current operation, e.g. mirroring, continues.
+		if len(manifestErrs) > 0 {
+			if o.ExtractManifests && len(o.Manifests) == 0 {
+				fmt.Fprintf(o.ErrOut, "Errors: %s\n", errorList(manifestErrs))
+			}
+		}
+
+		// Output an error if manifests were being extracted and we didn't find the expected signature
+		// manifests. Do not return an error so current operation, e.g. mirroring, continues.
+		if o.ExtractManifests && len(o.Manifests) == 0 {
+			fmt.Fprintf(o.ErrOut, "No manifests found\n")
 		}
 		return nil
 

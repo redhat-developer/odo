@@ -7,6 +7,7 @@ import (
 	"github.com/gonum/graph/encoding/dot"
 	"github.com/spf13/cobra"
 
+	kapierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/kubernetes"
@@ -153,6 +154,13 @@ func (o *StatusOptions) Complete(f kcmdutil.Factory, cmd *cobra.Command, baseCLI
 	} else {
 		namespace, _, err := f.ToRawKubeConfigLoader().Namespace()
 		if err != nil {
+			return err
+		}
+		_, err = projectClient.Projects().Get(namespace, metav1.GetOptions{})
+		switch {
+		case kapierrors.IsForbidden(err), kapierrors.IsNotFound(err):
+			return fmt.Errorf("you do not have rights to view project %q specified in your config or the project doesn't exist", namespace)
+		case err != nil:
 			return err
 		}
 		o.namespace = namespace
