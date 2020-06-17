@@ -73,8 +73,8 @@ For the initial implementation, we could use devfile v2.0.0 and capture basic ou
 For example: 
 ```
 attributes:
- build-dockerfile: <URI>
- deployment-manifest: <URI>
+    build-dockerfile: <URI>
+    deployment-manifest: <URI>
 ```
 
 This should not need any change to the devfile v2 schema or the parser.
