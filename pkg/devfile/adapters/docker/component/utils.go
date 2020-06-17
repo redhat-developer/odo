@@ -370,6 +370,16 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 	return
 }
 
+func (a Adapter) execTestCmd(testcmd versionsCommon.DevfileCommand, containers []types.Container, show bool) (err error) {
+	containerID := utils.GetContainerIDForAlias(containers, testcmd.Exec.Component)
+	compInfo := common.ComponentInfo{ContainerName: containerID}
+	err = exec.ExecuteDevfileBuildAction(&a.Client, *testcmd.Exec, testcmd.Exec.Id, compInfo, show)
+	if err != nil {
+		return err
+	}
+	return
+}
+
 // initRunContainerSupervisord initializes the supervisord in the container if
 // the container has entrypoint that is not supervisord
 func (a Adapter) initRunContainerSupervisord(component string, containers []types.Container) (err error) {

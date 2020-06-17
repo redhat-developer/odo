@@ -3,6 +3,7 @@ package docker
 import (
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/component"
+	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/pkg/errors"
 )
@@ -41,4 +42,9 @@ func (d Adapter) DoesComponentExist(cmpName string) bool {
 // Delete attempts to delete the component with the specified labels, returning an error if it fails
 func (d Adapter) Delete(labels map[string]string) error {
 	return d.componentAdapter.Delete(labels)
+}
+
+// Test runs devfile test command
+func (d Adapter) Test(testcmd versionsCommon.DevfileCommand, show bool) error {
+	return d.componentAdapter.Test(testcmd, show)
 }

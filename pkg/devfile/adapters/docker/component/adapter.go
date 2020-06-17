@@ -12,6 +12,7 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
+	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/sync"
@@ -125,6 +126,27 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		}
 	}
 
+	return nil
+}
+
+func (a Adapter) Test(testcmd versionsCommon.DevfileCommand, show bool) (err error) {
+	componentExists, err := utils.ComponentExists(a.Client, a.Devfile.Data, a.ComponentName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to determine if component %s exists", a.ComponentName)
+	}
+	if !componentExists {
+		return fmt.Errorf("component does not exist, a valid component is required to run 'odo test'")
+	}
+
+	containers, err := utils.GetComponentContainers(a.Client, a.ComponentName)
+	if err != nil {
+		return errors.Wrapf(err, "error while retrieving container for odo component %s", a.ComponentName)
+	}
+
+	err = a.execTestCmd(testcmd, containers, show)
+	if err != nil {
+		return errors.Wrapf(err, "failed to execute devfile commands for component %s", a.ComponentName)
+	}
 	return nil
 }
 

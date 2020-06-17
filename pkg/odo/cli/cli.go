@@ -19,7 +19,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/registry"
 	"github.com/openshift/odo/pkg/odo/cli/service"
 	"github.com/openshift/odo/pkg/odo/cli/storage"
-	testcmd "github.com/openshift/odo/pkg/odo/cli/test"
 	"github.com/openshift/odo/pkg/odo/cli/url"
 	"github.com/openshift/odo/pkg/odo/cli/utils"
 	"github.com/openshift/odo/pkg/odo/cli/version"
@@ -203,7 +202,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 	if experimental.IsExperimentalModeEnabled() {
 		rootCmd.AddCommand(
 			registry.NewCmdRegistry(registry.RecommendedCommandName, util.GetFullName(fullName, registry.RecommendedCommandName)),
-			testcmd.NewCmdTest(testcmd.RecommendedCommandName, util.GetFullName(fullName, testcmd.RecommendedCommandName)),
+			component.NewCmdTest(component.TestRecommendedCommandName, util.GetFullName(fullName, component.TestRecommendedCommandName)),
 		)
 	}
 

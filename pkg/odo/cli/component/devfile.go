@@ -159,6 +159,37 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 	return nil
 }
 
+// RunTestCommand runs the specific command in devfile
+func (to *TestOptions) RunTestCommand() error {
+	// Parse devfile
+	devObj, err := devfileParser.Parse(to.devfilePath)
+	if err != nil {
+		return err
+	}
+
+	componentName, err := getComponentName(to.componentContext)
+	if err != nil {
+		return err
+	}
+
+	var platformContext interface{}
+	if pushtarget.IsPushTargetDocker() {
+		platformContext = nil
+	} else {
+		kc := kubernetes.KubernetesContext{
+			Namespace: to.KClient.Namespace,
+		}
+		platformContext = kc
+	}
+
+	devfileHandler, err := adapters.NewPlatformAdapter(componentName, to.componentContext, devObj, platformContext)
+	if err != nil {
+		return err
+	}
+	devfileHandler.Test(to.testCommand, true)
+	return nil
+}
+
 func warnIfURLSInvalid(url []envinfo.EnvInfoURL) {
 	// warnIfURLSInvalid checks if env.yaml contains a valide URL for the current pushtarget
 	// display a warning if no url(s) found for the current push target, but found url(s) for another push target

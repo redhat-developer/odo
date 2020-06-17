@@ -135,6 +135,25 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	return nil
 }
 
+// Test runs the devfile test command
+func (a Adapter) Test(testcmd versionsCommon.DevfileCommand, show bool) (err error) {
+	componentExists := utils.ComponentExists(a.Client, a.ComponentName)
+	if !componentExists {
+		return fmt.Errorf("component does not exist, a valid component is required to run 'odo test'")
+	}
+	pod, err := a.waitAndGetComponentPod(true)
+	if err != nil {
+		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
+	}
+
+	log.Infof("\nExecuting devfile test command for component %s", a.ComponentName)
+	err = a.execTestCmd(testcmd, pod.GetName(), pod.Spec.Containers, show)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // DoesComponentExist returns true if a component with the specified name exists, false otherwise
 func (a Adapter) DoesComponentExist(cmpName string) bool {
 	return utils.ComponentExists(a.Client, cmpName)
@@ -364,6 +383,18 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 
 	}
 
+	return
+}
+
+func (a Adapter) execTestCmd(testcmd versionsCommon.DevfileCommand, podName string, containers []corev1.Container, show bool) (err error) {
+	compInfo := common.ComponentInfo{
+		PodName: podName,
+	}
+	compInfo.ContainerName = testcmd.Exec.Component
+	err = exec.ExecuteDevfileBuildAction(&a.Client, *testcmd.Exec, testcmd.Exec.Id, compInfo, show)
+	if err != nil {
+		return err
+	}
 	return
 }
 

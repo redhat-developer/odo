@@ -3,6 +3,7 @@ package kubernetes
 import (
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/component"
+	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/pkg/errors"
 )
@@ -51,4 +52,9 @@ func (k Adapter) Delete(labels map[string]string) error {
 	}
 
 	return nil
+}
+
+// Test runs the devfile test command
+func (k Adapter) Test(testcmd versionsCommon.DevfileCommand, show bool) error {
+	return k.componentAdapter.Test(testcmd, show)
 }
