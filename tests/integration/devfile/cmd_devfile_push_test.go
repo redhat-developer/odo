@@ -272,8 +272,8 @@ var _ = Describe("odo devfile push command tests", func() {
 			utils.ExecWithWrongCustomCommand(context, cmpName, namespace)
 		})
 
-		It("should error out on multiple default commands", func() {
-			utils.ExecWithMultipleDefaults(context, cmpName, namespace)
+		It("should error out on multiple or no default commands", func() {
+			utils.ExecWithMultipleOrNoDefaults(context, cmpName, namespace)
 		})
 
 		It("should execute commands with flags if there are more than one default command", func() {

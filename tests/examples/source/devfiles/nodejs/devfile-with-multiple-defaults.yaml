@@ -46,7 +46,6 @@ commands:
       workingDir: ${CHE_PROJECTS_ROOT}/nodejs-web-app/app
       group:
         kind: run
-        isDefault: true
   - exec:
       id: secondrun
       component: runtime
@@ -54,4 +53,3 @@ commands:
       workingDir: ${CHE_PROJECTS_ROOT}/nodejs-web-app/app
       group:
         kind: run
-        isDefault: true

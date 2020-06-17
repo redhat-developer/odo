@@ -223,8 +223,8 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			utils.ExecWithWrongCustomCommand(context, cmpName, "")
 		})
 
-		It("should error out on multiple default commands", func() {
-			utils.ExecWithMultipleDefaults(context, cmpName, "")
+		It("should error out on multiple or no default commands", func() {
+			utils.ExecWithMultipleOrNoDefaults(context, cmpName, "")
 		})
 
 		It("should execute commands with flags if there are more than one default command", func() {

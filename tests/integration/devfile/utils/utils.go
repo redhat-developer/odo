@@ -110,8 +110,8 @@ func ExecWithWrongCustomCommand(projectDirPath, cmpName, namespace string) {
 	Expect(output).To(ContainSubstring("the command \"%v\" is not found in the devfile", garbageCommand))
 }
 
-// ExecWithMultipleDefaults executes odo push with multiple default commands
-func ExecWithMultipleDefaults(projectDirPath, cmpName, namespace string) {
+// ExecWithMultipleOrNoDefaults executes odo push with multiple or no default commands
+func ExecWithMultipleOrNoDefaults(projectDirPath, cmpName, namespace string) {
 	args := []string{"create", "nodejs", cmpName}
 	args = useProjectIfAvailable(args, namespace)
 	helper.CmdShouldPass("odo", args...)
@@ -123,8 +123,8 @@ func ExecWithMultipleDefaults(projectDirPath, cmpName, namespace string) {
 	args = useProjectIfAvailable(args, namespace)
 	output := helper.CmdShouldFail("odo", args...)
 	helper.MatchAllInOutput(output, []string{
-		"there should be at most one default command for command group build",
-		"there should be at most one default command for command group run",
+		"there should be exactly one default command for command group build, currently there is more than one default command",
+		"there should be exactly one default command for command group run, currently there is no default command",
 	})
 }
 
