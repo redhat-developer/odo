@@ -241,11 +241,7 @@ func TestAdapterDelete(t *testing.T) {
 
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					Components: []versionsCommon.DevfileComponent{
-						{
-							Type: versionsCommon.ContainerComponentType,
-						},
-					},
+					Components: []versionsCommon.DevfileComponent{},
 				},
 			}
 
@@ -622,11 +618,7 @@ func TestAdapterDeleteVolumes(t *testing.T) {
 
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					Components: []versionsCommon.DevfileComponent{
-						{
-							Type: versionsCommon.ContainerComponentType,
-						},
-					},
+					Components: []versionsCommon.DevfileComponent{},
 				},
 			}
 
