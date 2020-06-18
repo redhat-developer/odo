@@ -103,15 +103,19 @@ func (o *ListComponentsOptions) Run() (err error) {
 			supported, _ := catalog.SliceSupportedTags(image)
 			o.catalogList.Items[i].Spec.SupportedTags = supported
 		}
-		combinedList := combinedCatalogList{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "List",
-				APIVersion: "odo.dev/v1alpha1",
-			},
-			S2iItems:     o.catalogList.Items,
-			DevfileItems: o.catalogDevfileList.Items,
+		if experimental.IsExperimentalModeEnabled() {
+			combinedList := combinedCatalogList{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "List",
+					APIVersion: "odo.dev/v1alpha1",
+				},
+				S2iItems:     o.catalogList.Items,
+				DevfileItems: o.catalogDevfileList.Items,
+			}
+			machineoutput.OutputSuccess(combinedList)
+		} else {
+			machineoutput.OutputSuccess(o.catalogList)
 		}
-		machineoutput.OutputSuccess(combinedList)
 	} else {
 		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 		var supCatalogList, unsupCatalogList []catalog.ComponentType
