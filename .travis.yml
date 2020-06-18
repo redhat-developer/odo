@@ -185,6 +185,8 @@ jobs:
         - touch $KUBECONFIG
         - sudo minikube start --vm-driver=none --kubernetes-version=v1.16.0
         - "sudo chown -R travis: /home/travis/.minikube/"
+        - sudo apt-get -qq update
+        - sudo apt-get install -y socat
       script:
         - kubectl cluster-info
         - make bin
