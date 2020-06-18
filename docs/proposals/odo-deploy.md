@@ -58,7 +58,7 @@ This command will build a container image for the application and deploy it on t
 Flags:
  - `--tag`: The tag to be used for the built application container image - `<registry>/<org>/<name>:<tag>` (mandatory).
  - `--service-account`: The service account for running privileged containers and push access to the image registry.
- - `--credentials`: The credentials needed to push the image to the container image registry (mandatory).
+ - `--credentials`: The credentials needed to push the image to the container image registry (optional).
 
 #### odo deploy delete
 This command will delete any resources created by odo deploy.
