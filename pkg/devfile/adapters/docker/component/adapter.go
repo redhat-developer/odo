@@ -273,7 +273,7 @@ func (a Adapter) Delete(labels map[string]string) error {
 
 }
 
-func (a Adapter) Log(follow bool) error {
+func (a Adapter) Log(follow, debug bool) error {
 
 	exists := utils.ComponentExists(a.Client, a.ComponentName)
 

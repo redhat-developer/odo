@@ -152,7 +152,7 @@ func (lo LogOptions) DevfileComponentLog() error {
 	}
 
 	// Start or update the component
-	err = devfileHandler.Log(lo.logFollow)
+	err = devfileHandler.Log(lo.logFollow, lo.debug)
 	if err != nil {
 		log.Errorf(
 			"Failed to log component with name %s.\nError: %v",

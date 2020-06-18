@@ -44,6 +44,6 @@ func (d Adapter) Delete(labels map[string]string) error {
 }
 
 // Log show logs from component
-func (d Adapter) Log(follow bool) error {
-	return d.componentAdapter.Log(follow)
+func (d Adapter) Log(follow, debug bool) error {
+	return d.componentAdapter.Log(follow, debug)
 }

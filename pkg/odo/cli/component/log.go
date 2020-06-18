@@ -30,6 +30,7 @@ var logExample = ktemplates.Examples(`  # Get the logs for the nodejs component
 // LogOptions contains log options
 type LogOptions struct {
 	logFollow        bool
+	debug            bool
 	componentContext string
 	*ComponentOptions
 	// EnvSpecificInfo *envinfo.EnvSpecificInfo
@@ -40,7 +41,7 @@ type LogOptions struct {
 // NewLogOptions returns new instance of LogOptions
 func NewLogOptions() *LogOptions {
 	//return &LogOptions{false, "", &ComponentOptions{}, &envinfo.EnvSpecificInfo{}, ""}
-	return &LogOptions{false, "", &ComponentOptions{}, ""}
+	return &LogOptions{false, false, "", &ComponentOptions{}, ""}
 }
 
 // Complete completes log args
@@ -55,10 +56,7 @@ func (lo *LogOptions) Complete(name string, cmd *cobra.Command, args []string) (
 		return nil
 	}
 
-	err = lo.ComponentOptions.Complete(name, cmd, args)
-
-	return err
-
+	return lo.ComponentOptions.Complete(name, cmd, args)
 }
 
 // Validate validates the log parameters
@@ -97,6 +95,7 @@ func NewCmdLog(name, fullName string) *cobra.Command {
 	}
 
 	logCmd.Flags().BoolVarP(&o.logFollow, "follow", "f", false, "Follow logs")
+	logCmd.Flags().BoolVar(&o.debug, "debug", false, "Show logs for debug commmand")
 
 	logCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(logCmd, completion.ComponentNameCompletionHandler)

@@ -451,7 +451,7 @@ func (a Adapter) Delete(labels map[string]string) error {
 	return a.Client.DeleteDeployment(labels)
 }
 
-func (a Adapter) Log(follow bool) error {
+func (a Adapter) Log(follow, debug bool) error {
 
 	if !utils.ComponentExists(a.Client, a.ComponentName) {
 		return errors.Errorf("the component %s doesn't exist on the cluster", a.ComponentName)
