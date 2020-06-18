@@ -17,14 +17,14 @@ It would be useful to start the design/development of a simpler version of `odo 
 
 It is not meant to replace GitOps/pipeline-based deployments for governed environments (test, stage, production). However, both `odo deploy` and `odo pipelines` must honour the build and deployment information provided by the application stack (devfile).
 
-## User Flow
+## User flow
 
 This command will allow a user to perform inner-loop and then test the outer-loop, so the application is truly ready for checking into git and for pipelines to take over. Here's how a typical application development flow might look like: 
 
 User flow: 
 1. `odo create <component> <mycomponent>` - This initializes odo component in the current directory.
 1. Edit the project source code to develop the application.
-1. `odo URL create` - This stores URL information (host, port etc.) for accessing the application on the cluster (if not done already).
+1. `odo url create` - This stores URL information (host, port etc.) for accessing the application on the cluster (if not done already).
 1. `odo push` - This runs the application source code using inner-loop instructions from devfile.
 1. Validate the running application is working as intended.
 1. Iterate over steps 2 and beyond (as needed). 
@@ -34,7 +34,7 @@ User flow:
 1. Optionally, run `odo deploy delete` to clean up resources created with `odo deploy`.
 1. Push your code to Git - ready for sharing with your team and for CI/CD pipelines to take over.
 
-## User Stories
+## User stories
 
 ### Initial build and deploy support to odo - https://github.com/openshift/odo/issues/3300
 
@@ -47,18 +47,17 @@ This deployment is equivalent to a development version of your production and wi
 
 ### High-level design:
 
-#### Technical considerations:
+#### Pre-requisites:
 - The implementation would be under the experimental flag.
 - Only supported for Devfile v2.0.0 components.
 - Only supported for Kubernetes/ OpenShift targets.
-- `odo deploy` will not make any changes to the user's project.
 
 #### odo deploy 
 This command will build a container image for the application and deploy it on the target Kubernetes environment. 
 
 Flags:
  - `--tag`: The tag to be used for the built application container image - `<registry>/<org>/<name>:<tag>` (mandatory).
- - `service-account`: The service account for running privileged containers and push access to the image registry.
+ - `--service-account`: The service account for running privileged containers and push access to the image registry.
  - `--credentials`: The credentials needed to push the image to the container image registry (mandatory).
 
 #### odo deploy delete
@@ -77,12 +76,10 @@ attributes:
     deployment-manifest: <URI>
 ```
 
-This should not need any change to the devfile v2 schema or the parser.
-
 ### Dockerfile
 This could be any valid dockerfile.
 
-### Deployment Manifest
+### Deployment manifest
 The deployment manifest could be templated to help with replacing key bits of information:
 - PROJECT_NAME
 - CONTAINER_IMAGE
@@ -124,13 +121,12 @@ This command will perform the following actions:
 - Delete the build container and the pod.
 
 #### Deploy
-- Delete any existing deployments (if the user runs `odo deploy` multiple times).
 - Fetch the deployment manifest using URI in the attributes of the devfile. and make it available in the container.
 - Replace templated text in the deployment manifest with relevant values:
     - PROJECT_NAME: name of odo project
     - CONTAINER_IMAGE: `tag` for the built image
     - PORT: URL information in env.yaml
-- Apply the new deployment manifest.
+- Apply the new deployment manifest create/update the application deployment.
 - Save the deployment manifest in `.odo` folder.
 - Provide the user with a URL for accessing the deployed application. 
 
