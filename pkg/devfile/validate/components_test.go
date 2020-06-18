@@ -30,7 +30,6 @@ func TestValidateComponents(t *testing.T) {
 				Container: &common.Container{
 					Name: "container",
 				},
-				Type: common.ContainerComponentType,
 			},
 		}
 
@@ -38,25 +37,6 @@ func TestValidateComponents(t *testing.T) {
 
 		if got != nil {
 			t.Errorf("Not expecting an error: '%v'", got)
-		}
-	})
-
-	t.Run("Container type of component NOT present", func(t *testing.T) {
-
-		components := []common.DevfileComponent{
-			{
-				Type: common.PluginComponentType,
-			},
-			{
-				Type: common.KubernetesComponentType,
-			},
-		}
-
-		got := ValidateComponents(components)
-		want := fmt.Errorf(ErrorNoContainerComponent)
-
-		if !reflect.DeepEqual(got, want) {
-			t.Errorf("Incorrect error; want: '%v', got: '%v'", want, got)
 		}
 	})
 }

@@ -75,7 +75,7 @@ func TestComponentExists(t *testing.T) {
 			client:        fakeClient,
 			components: []common.DevfileComponent{
 				{
-					CheEditor: &common.CheEditor{},
+					Kubernetes: &common.Kubernetes{},
 				},
 			},
 			want:    false,

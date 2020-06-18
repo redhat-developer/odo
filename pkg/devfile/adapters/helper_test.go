@@ -31,11 +31,7 @@ func TestNewPlatformAdapter(t *testing.T) {
 		t.Run("get platform adapter", func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					Components: []versionsCommon.DevfileComponent{
-						{
-							Type: tt.componentType,
-						},
-					},
+					Components: []versionsCommon.DevfileComponent{},
 				},
 			}
 
