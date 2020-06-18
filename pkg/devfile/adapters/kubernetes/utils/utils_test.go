@@ -302,13 +302,17 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 
 			containers, err := UpdateContainersWithSupervisord(devObj, tt.containers, tt.runCommand, tt.debugCommand, tt.debugPort)
 
-			if !tt.wantErr && err != nil {
-				t.Errorf("TestUpdateContainersWithSupervisord unxpected error: %v", err)
-			} else if tt.wantErr && err != nil {
-				// return since we dont want to test anything further
-				return
-			} else if tt.wantErr && err == nil {
-				t.Error("wanted error but got not error")
+			if tt.wantErr {
+				if err == nil {
+					t.Error("wanted error but got no error")
+				} else {
+					// return since we dont want to test anything further
+					return
+				}
+			} else if !tt.wantErr {
+				if err != nil {
+					t.Errorf("TestUpdateContainersWithSupervisord: unexpected error %v", err)
+				}
 			}
 
 			// Check if the supervisord volume has been mounted
