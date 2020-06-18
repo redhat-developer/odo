@@ -245,7 +245,7 @@ The example below customizes the following:
 - the default timeout from 60 minutes to 20 minutes.
 - the default `app.kubernetes.io/managed-by` label is applied to all Pods created to execute `TaskRuns`.
 - the default Pod template to include a node selector to select the node where the Pod will be scheduled by default.
-  For more information, see [`PodTemplate` in `TaskRuns`](./taskruns.md#pod-template) or [`PodTemplate` in `PipelineRuns`](./pipelineruns.md#pod-template).
+  For more information, see [`PodTemplate` in `TaskRuns`](./taskruns.md#specifying-a-pod-template) or [`PodTemplate` in `PipelineRuns`](./pipelineruns.md#specifying-a-pod-template).
 
 ```yaml
 apiVersion: v1
@@ -268,6 +268,19 @@ file lists the keys you can customize along with their default values.
 
 To customize the behavior of the Pipelines Controller, modify the ConfigMap `feature-flags` as follows:
 
+- `disable-affinity-assistant` - set this flag to disable the [Affinity Assistant](./workspaces.md#affinity-assistant-and-specifying-workspace-order-in-a-pipeline)
+  that is used to provide Node Affinity for `TaskRun` pods that share workspace volume. 
+  The Affinity Assistant is incompatible with other affinity rules
+  configured for `TaskRun` pods.
+
+  **Note:** Affinity Assistant use [Inter-pod affinity and anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#inter-pod-affinity-and-anti-affinity)
+  that require substantial amount of processing which can slow down scheduling in large clusters
+  significantly. We do not recommend using them in clusters larger than several hundred nodes
+
+  **Note:** Pod anti-affinity requires nodes to be consistently labelled, in other words every
+  node in the cluster must have an appropriate label matching `topologyKey`. If some or all nodes
+  are missing the specified `topologyKey` label, it can lead to unintended behavior.
+
 - `disable-home-env-overwrite` - set this flag to `true` to prevent Tekton
 from overriding the `$HOME` environment variable for the containers executing your `Steps`.
 The default is `false`. For more information, see the [associated issue](https://github.com/tektoncd/pipeline/issues/2013).
@@ -277,6 +290,12 @@ from overriding the working directory for the containers executing your `Steps`.
 The default value is `false`, which causes Tekton to override the working directory
 for each `Step` that does not have its working directory explicitly set with `/workspace`.
 For more information, see the [associated issue](https://github.com/tektoncd/pipeline/issues/1836).
+
+- `running-in-environment-with-injected-sidecars`: set this flag to `"true"` to allow the
+Tekton controller to set the `tekton.dev/ready` annotation at pod creation time for 
+TaskRuns with no Sidecars specified. Enabling this option should decrease the time it takes for a TaskRun to
+start running. However, for clusters that use injected sidecars e.g. istio
+enabling this option can lead to unexpected behavior.
 
 For example:
 

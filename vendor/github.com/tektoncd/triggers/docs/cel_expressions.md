@@ -196,7 +196,7 @@ interceptor.
       truncate
     </th>
     <td>
-      <string>.truncate(uint) -> string
+      <pre>&lt;string&gt;.truncate(uint) -> string</pre>
     </td>
     <td>
       Truncates a string to no more than the specified length.
@@ -210,7 +210,7 @@ interceptor.
       split
     </th>
     <td>
-      <string>.split(string) -> string(dyn)
+      <pre>&lt;string&gt;.split(string) -> string(dyn)</pre>
     </td>
     <td>
       Splits a string on the provided separator value.
@@ -224,7 +224,7 @@ interceptor.
       decodeb64
     </th>
     <td>
-      <string>.decodeb64() -> string
+      <pre>&lt;string&gt;.decodeb64() -> string</pre>
     </td>
     <td>
       Decodes a base64 encoded string.
@@ -238,7 +238,7 @@ interceptor.
      compareSecret
     </th>
     <td>
-      <string>.compareSecret(string, string, string) -> bool
+      <pre>&lt;string&gt;.compareSecret(string, string, string) -> bool</pre>
     </td>
     <td>
       Constant-time comparison of strings against secrets, this will fetch the secret using the combination of namespace/name and compare the token key to the string using a cryptographic constant-time comparison..<p>
@@ -253,7 +253,7 @@ interceptor.
      compareSecret
     </th>
     <td>
-      <string>.compareSecret(string, string) -> bool
+      <pre>&lt;string&gt;.compareSecret(string, string) -> bool</pre>
     </td>
     <td>
      This is almost identical to the version above, but only requires two arguments, the namespace is assumed to be the namespace for the event-listener.
@@ -267,13 +267,44 @@ interceptor.
      parseJSON()
     </th>
     <td>
-     <string>.parseJSON() -> map
+     <pre>&lt;string&gt;.parseJSON() -> map&lt;string, dyn&gt;</pre>
     </td>
     <td>
      This parses a string that contains a JSON body into a map which which can be subsequently used in other expressions.
     </td>
     <td>
-     <pre>parseJSON('{"testing":"value"}').testing == "value"</pre>
+     <pre>'{"testing":"value"}'.parseJSON().testing == "value"</pre>
+    </td>
+  </tr>
+  <tr>
+    <th>
+     parseURL()
+    </th>
+    <td>
+     <pre>&lt;string&gt;.parseURL() -> map&lt;string, dyn&gt;</pre>
+    </td>
+    <td>
+     This parses a string that contains a URL into a map with keys for the elements of the URL.<br />
+     The resulting map will contain the following keys for this URL "https://user:pass@example.com/test/path?s=testing#first"<br />
+     <table>
+      <tr><th>Field</th><th>Example</th>
+      <tr><td>scheme</td><td>https</td></tr>
+      <tr><td>host</td><td>example.com</td></tr>
+      <tr><td>path</td><td>/test/path</td></tr>
+      <tr><td>rawQuery</td><td>s=testing</td></tr>
+      <tr><td>fragment</td><td>first</td></tr>
+      <tr><td>query</td><td>{"s": "testing"}</td></tr>
+      <tr><td>queryStrings</td><td>{"s": ["testing"]}</td></tr>
+      <tr><td>auth</td><td>{"username": "user", "password": "pass"}</td></tr>
+     </table>
+     Note the difference between <b>query</b> and <b>queryStrings</b>, in
+<b>query</b>, multiple query params with the same name would be comma separated, for
+the case where a single string is provided, this will just be the single string
+value.  For <b>queryString</b> the query param values are provided as a list,
+which can be accessed by indexing.
+    </td>
+    <td>
+     <pre>'https://example.com/test?query=testing'.parseURL().query['query'] == "testing"</pre>
     </td>
   </tr>
 </table>

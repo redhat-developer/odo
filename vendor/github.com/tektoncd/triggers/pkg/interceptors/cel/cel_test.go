@@ -21,13 +21,14 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"reflect"
+	"net/url"
 	"regexp"
 	"strings"
 	"testing"
 
 	"github.com/google/cel-go/common/types"
 	"github.com/google/cel-go/common/types/ref"
+	"github.com/google/go-cmp/cmp"
 	"github.com/tektoncd/pipeline/pkg/logging"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -119,14 +120,34 @@ func TestInterceptor_ExecuteTrigger(t *testing.T) {
 			want:    []byte(`{"replaced":"testing","new":"master","ref":"refs/head/master","name":"testing"}`),
 		},
 		{
-			name: "update with base64 decoding",
+			name: "decodeB64 with parseJSON",
+			CEL: &triggersv1.CELInterceptor{
+				Overlays: []triggersv1.CELOverlay{
+					{Key: "value", Expression: "body.value.decodeb64().parseJSON().test"},
+				},
+			},
+			payload: ioutil.NopCloser(bytes.NewBufferString(`{"value":"eyJ0ZXN0IjoiZGVjb2RlIn0="}`)),
+			want:    []byte(`{"value":"decode"}`),
+		},
+		{
+			name: "decodeB64 to a field",
 			CEL: &triggersv1.CELInterceptor{
 				Overlays: []triggersv1.CELOverlay{
 					{Key: "value", Expression: "body.value.decodeb64()"},
 				},
 			},
 			payload: ioutil.NopCloser(bytes.NewBufferString(`{"value":"eyJ0ZXN0IjoiZGVjb2RlIn0="}`)),
-			want:    []byte(`{"value":{"test":"decode"}}`),
+			want:    []byte(`{"value":"{\"test\":\"decode\"}"}`),
+		},
+		{
+			name: "decode base64 string",
+			CEL: &triggersv1.CELInterceptor{
+				Overlays: []triggersv1.CELOverlay{
+					{Key: "value", Expression: "body.value.decodeb64()"},
+				},
+			},
+			payload: ioutil.NopCloser(bytes.NewBufferString(`{"value":"dGVzdGluZw=="}`)),
+			want:    []byte(`{"value":"testing"}`),
 		},
 		{
 			name: "multiple overlays",
@@ -203,8 +224,8 @@ func TestInterceptor_ExecuteTrigger(t *testing.T) {
 				rt.Fatalf("error reading response body: %v", err)
 			}
 			defer resp.Body.Close()
-			if !reflect.DeepEqual(got, tt.want) {
-				rt.Errorf("Interceptor.ExecuteTrigger() = %s, want %s", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				rt.Errorf("Interceptor.ExecuteTrigger (-want, +got) = %s", diff)
 			}
 		})
 	}
@@ -296,6 +317,7 @@ func TestInterceptor_ExecuteTrigger_Errors(t *testing.T) {
 }
 
 func TestExpressionEvaluation(t *testing.T) {
+	reg := types.NewRegistry()
 	testSHA := "ec26c3e57ca3a959ca5aad62de7213c562f8c821"
 	testRef := "refs/heads/master"
 	jsonMap := map[string]interface{}{
@@ -307,7 +329,10 @@ func TestExpressionEvaluation(t *testing.T) {
 		},
 		"b64value":  "ZXhhbXBsZQ==",
 		"json_body": `{"testing": "value"}`,
+		"testURL":   "https://user:password@site.example.com/path/to?query=search#first",
+		"multiURL":  "https://user:password@site.example.com/path/to?query=search&query=results",
 	}
+
 	refParts := strings.Split(testRef, "/")
 	header := http.Header{}
 	header.Add("X-Test-Header", "value")
@@ -371,7 +396,7 @@ func TestExpressionEvaluation(t *testing.T) {
 		{
 			name: "decode a base64 value",
 			expr: "body.b64value.decodeb64()",
-			want: types.Bytes("example"),
+			want: types.String("example"),
 		},
 		{
 			name: "increment an integer",
@@ -401,6 +426,21 @@ func TestExpressionEvaluation(t *testing.T) {
 			expr: "body.json_body.parseJSON().testing == 'value'",
 			want: types.Bool(true),
 		},
+		{
+			name: "parse URL",
+			expr: "body.testURL.parseURL().path == '/path/to'",
+			want: types.Bool(true),
+		},
+		{
+			name: "parse URL and extract single string",
+			expr: "body.testURL.parseURL().query['query'] == 'search'",
+			want: types.Bool(true),
+		},
+		{
+			name: "parse URL and extract multiple strings",
+			expr: "body.multiURL.parseURL().queryStrings['query']",
+			want: types.NewStringList(reg, []string{"search", "results"}),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(rt *testing.T) {
@@ -411,7 +451,7 @@ func TestExpressionEvaluation(t *testing.T) {
 					rt.Error(err)
 				}
 			}
-			env, err := makeCelEnv(testNS, kubeClient)
+			env, err := makeCelEnv(&http.Request{}, testNS, kubeClient)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -520,7 +560,7 @@ func TestExpressionEvaluation_Error(t *testing.T) {
 				}
 				ns = tt.secretNS
 			}
-			env, err := makeCelEnv(ns, kubeClient)
+			env, err := makeCelEnv(&http.Request{}, ns, kubeClient)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -529,6 +569,31 @@ func TestExpressionEvaluation_Error(t *testing.T) {
 				rt.Errorf("evaluate() got %s, wanted %s", err, tt.want)
 			}
 		})
+	}
+}
+
+func TestURLToMap(t *testing.T) {
+	u, err := url.Parse("https://user:testing@example.com/search?q=dotnet#first")
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := urlToMap(u)
+	want := map[string]interface{}{
+		"scheme": "https",
+		"auth": map[string]string{
+			"username": "user",
+			"password": "testing",
+		},
+		"host":         "example.com",
+		"path":         "/search",
+		"rawQuery":     "q=dotnet",
+		"fragment":     "first",
+		"query":        map[string]string{"q": "dotnet"},
+		"queryStrings": url.Values{"q": {"dotnet"}},
+	}
+
+	if diff := cmp.Diff(want, m); diff != "" {
+		t.Fatalf("urlToMap failed:\n%s", diff)
 	}
 }
 

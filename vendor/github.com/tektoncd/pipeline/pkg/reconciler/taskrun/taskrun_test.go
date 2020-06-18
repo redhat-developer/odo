@@ -32,8 +32,10 @@ import (
 	resourcev1alpha1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	podconvert "github.com/tektoncd/pipeline/pkg/pod"
+	"github.com/tektoncd/pipeline/pkg/reconciler"
 	"github.com/tektoncd/pipeline/pkg/reconciler/events/cloudevent"
 	ttesting "github.com/tektoncd/pipeline/pkg/reconciler/testing"
+	"github.com/tektoncd/pipeline/pkg/reconciler/volumeclaim"
 	"github.com/tektoncd/pipeline/pkg/system"
 	test "github.com/tektoncd/pipeline/test"
 	"github.com/tektoncd/pipeline/test/diff"
@@ -46,11 +48,12 @@ import (
 	k8sruntimeschema "k8s.io/apimachinery/pkg/runtime/schema"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	ktesting "k8s.io/client-go/testing"
-	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"knative.dev/pkg/apis"
 	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 	"knative.dev/pkg/configmap"
+	"knative.dev/pkg/controller"
+	"knative.dev/pkg/logging"
 )
 
 const (
@@ -67,6 +70,7 @@ var (
 	images    = pipeline.Images{
 		EntrypointImage:          "override-with-entrypoint:latest",
 		NopImage:                 "tianon/true",
+		AffinityAssistantImage:   "nginx",
 		GitImage:                 "override-with-git:latest",
 		CredsImage:               "override-with-creds:latest",
 		KubeconfigWriterImage:    "override-with-kubeconfig-writer:latest",
@@ -209,6 +213,12 @@ var (
 			},
 		},
 	}
+	credsVolume = corev1.Volume{
+		Name: "tekton-creds-init-home",
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{Medium: corev1.StorageMediumMemory},
+		},
+	}
 
 	getMkdirResourceContainer = func(name, dir, suffix string, ops ...tb.ContainerOp) tb.PodSpecOp {
 		actualOps := []tb.ContainerOp{
@@ -255,21 +265,51 @@ func getRunName(tr *v1beta1.TaskRun) string {
 	return strings.Join([]string{tr.Namespace, tr.Name}, "/")
 }
 
+func ensureConfigurationConfigMapsExist(d *test.Data) {
+	var defaultsExists, featureFlagsExists bool
+	for _, cm := range d.ConfigMaps {
+		if cm.Name == config.GetDefaultsConfigName() {
+			defaultsExists = true
+		}
+		if cm.Name == config.GetFeatureFlagsConfigName() {
+			featureFlagsExists = true
+		}
+	}
+	if !defaultsExists {
+		d.ConfigMaps = append(d.ConfigMaps, &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{Name: config.GetDefaultsConfigName(), Namespace: system.GetNamespace()},
+			Data:       map[string]string{},
+		})
+	}
+	if !featureFlagsExists {
+		d.ConfigMaps = append(d.ConfigMaps, &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{Name: config.GetFeatureFlagsConfigName(), Namespace: system.GetNamespace()},
+			Data:       map[string]string{},
+		})
+	}
+}
+
 // getTaskRunController returns an instance of the TaskRun controller/reconciler that has been seeded with
 // d, where d represents the state of the system (existing resources) needed for the test.
 func getTaskRunController(t *testing.T, d test.Data) (test.Assets, func()) {
 	//unregisterMetrics()
 	ctx, _ := ttesting.SetupFakeContext(t)
 	ctx, cancel := context.WithCancel(ctx)
-	cloudEventClientBehaviour := cloudevent.FakeClientBehaviour{
-		SendSuccessfully: true,
-	}
-	ctx = cloudevent.WithClient(ctx, &cloudEventClientBehaviour)
-	c, _ := test.SeedTestData(t, ctx, d)
+	ensureConfigurationConfigMapsExist(&d)
+	c, informers := test.SeedTestData(t, ctx, d)
 	configMapWatcher := configmap.NewInformedWatcher(c.Kube, system.GetNamespace())
+
+	ctl := NewController(namespace, images)(ctx, configMapWatcher)
+	if err := configMapWatcher.Start(ctx.Done()); err != nil {
+		t.Fatalf("error starting configmap watcher: %v", err)
+	}
+
 	return test.Assets{
-		Controller: NewController(namespace, images)(ctx, configMapWatcher),
+		Logger:     logging.FromContext(ctx),
+		Controller: ctl,
 		Clients:    c,
+		Informers:  informers,
+		Recorder:   controller.GetEventRecorder(ctx).(*record.FakeRecorder),
 	}, cancel
 }
 
@@ -313,20 +353,21 @@ func TestReconcile_ExplicitDefaultSA(t *testing.T) {
 		tb.TaskRunServiceAccountName("test-sa"),
 	))
 	taskruns := []*v1beta1.TaskRun{taskRunSuccess, taskRunWithSaSuccess}
+	defaultSAName := "pipelines"
 	d := test.Data{
 		TaskRuns: taskruns,
 		Tasks:    []*v1beta1.Task{simpleTask, saTask},
-	}
-
-	defaultSAName := "pipelines"
-	defaultCfg := &config.Config{
-		Defaults: &config.Defaults{
-			DefaultServiceAccount:      defaultSAName,
-			DefaultTimeoutMinutes:      60,
-			DefaultManagedByLabelValue: "tekton-pipelines",
+		ConfigMaps: []*corev1.ConfigMap{
+			{
+				ObjectMeta: metav1.ObjectMeta{Name: config.GetDefaultsConfigName(), Namespace: system.GetNamespace()},
+				Data: map[string]string{
+					"default-service-account":        defaultSAName,
+					"default-timeout-minutes":        "60",
+					"default-managed-by-label-value": "tekton-pipelines",
+				},
+			},
 		},
 	}
-
 	for _, tc := range []struct {
 		name    string
 		taskRun *v1beta1.TaskRun
@@ -422,6 +463,7 @@ func TestReconcile_ExplicitDefaultSA(t *testing.T) {
 			if saName == "" {
 				saName = defaultSAName
 			}
+			t.Logf("Creating SA %s in %s", saName, tc.taskRun.Namespace)
 			if _, err := clients.Kube.CoreV1().ServiceAccounts(tc.taskRun.Namespace).Create(&corev1.ServiceAccount{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      saName,
@@ -431,20 +473,14 @@ func TestReconcile_ExplicitDefaultSA(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			ctx := config.ToContext(context.Background(), defaultCfg)
-			if err := c.Reconciler.Reconcile(ctx, getRunName(tc.taskRun)); err != nil {
+			if err := c.Reconciler.Reconcile(context.Background(), getRunName(tc.taskRun)); err != nil {
 				t.Errorf("expected no error. Got error %v", err)
 			}
 			if len(clients.Kube.Actions()) == 0 {
 				t.Errorf("Expected actions to be logged in the kubeclient, got none")
 			}
 
-			namespace, name, err := cache.SplitMetaNamespaceKey(tc.taskRun.Name)
-			if err != nil {
-				t.Errorf("Invalid resource key: %v", err)
-			}
-
-			tr, err := clients.Pipeline.TektonV1beta1().TaskRuns(namespace).Get(name, metav1.GetOptions{})
+			tr, err := clients.Pipeline.TektonV1beta1().TaskRuns(tc.taskRun.Namespace).Get(tc.taskRun.Name, metav1.GetOptions{})
 			if err != nil {
 				t.Fatalf("getting updated taskrun: %v", err)
 			}
@@ -452,8 +488,8 @@ func TestReconcile_ExplicitDefaultSA(t *testing.T) {
 			if condition == nil || condition.Status != corev1.ConditionUnknown {
 				t.Errorf("Expected invalid TaskRun to have in progress status, but had %v", condition)
 			}
-			if condition != nil && condition.Reason != podconvert.ReasonRunning {
-				t.Errorf("Expected reason %q but was %s", podconvert.ReasonRunning, condition.Reason)
+			if condition != nil && condition.Reason != v1beta1.TaskRunReasonRunning.String() {
+				t.Errorf("Expected reason %q but was %s", v1beta1.TaskRunReasonRunning.String(), condition.Reason)
 			}
 
 			if tr.Status.PodName == "" {
@@ -479,6 +515,181 @@ func TestReconcile_ExplicitDefaultSA(t *testing.T) {
 	}
 }
 
+// TestReconcile_FeatureFlags tests taskruns with and without feature flags set
+// to ensure the 'feature-flags' config map can be used to disable the
+// corresponding behavior.
+func TestReconcile_FeatureFlags(t *testing.T) {
+	taskWithEnvVar := tb.Task("test-task-with-env-var",
+		tb.TaskSpec(tb.Step("foo",
+			tb.StepName("simple-step"), tb.StepCommand("/mycmd"), tb.StepEnvVar("foo", "bar"),
+		)),
+		tb.TaskNamespace("foo"),
+	)
+	taskRunWithDisableHomeEnv := tb.TaskRun("test-taskrun-run-home-env",
+		tb.TaskRunNamespace("foo"),
+		tb.TaskRunSpec(tb.TaskRunTaskRef(taskWithEnvVar.Name)),
+	)
+	taskRunWithDisableWorkingDirOverwrite := tb.TaskRun("test-taskrun-run-working-dir",
+		tb.TaskRunNamespace("foo"),
+		tb.TaskRunSpec(tb.TaskRunTaskRef(simpleTask.Name)),
+	)
+	d := test.Data{
+		TaskRuns: []*v1beta1.TaskRun{taskRunWithDisableHomeEnv, taskRunWithDisableWorkingDirOverwrite},
+		Tasks:    []*v1beta1.Task{simpleTask, taskWithEnvVar},
+	}
+	for _, tc := range []struct {
+		name        string
+		taskRun     *v1beta1.TaskRun
+		featureFlag string
+		wantPod     *corev1.Pod
+	}{{
+		name:        "disable-home-env-overwrite",
+		taskRun:     taskRunWithDisableHomeEnv,
+		featureFlag: "disable-home-env-overwrite",
+		wantPod: tb.Pod("test-taskrun-run-home-env-pod-abcde",
+			tb.PodNamespace("foo"),
+			tb.PodAnnotation(podconvert.ReleaseAnnotation, podconvert.ReleaseAnnotationValue),
+			tb.PodLabel(taskNameLabelKey, "test-task-with-env-var"),
+			tb.PodLabel(taskRunNameLabelKey, "test-taskrun-run-home-env"),
+			tb.PodLabel("app.kubernetes.io/managed-by", "tekton-pipelines"),
+			tb.PodOwnerReference("TaskRun", "test-taskrun-run-home-env",
+				tb.OwnerReferenceAPIVersion(currentAPIVersion)),
+			tb.PodSpec(
+				tb.PodVolumes(workspaceVolume, homeVolume, resultsVolume, credsVolume, toolsVolume, downwardVolume),
+				tb.PodRestartPolicy(corev1.RestartPolicyNever),
+				getPlaceToolsInitContainer(),
+				tb.PodContainer("step-simple-step", "foo",
+					tb.Command(entrypointLocation),
+					tb.Args("-wait_file",
+						"/tekton/downward/ready",
+						"-wait_file_content",
+						"-post_file",
+						"/tekton/tools/0",
+						"-termination_path",
+						"/tekton/termination",
+						"-entrypoint",
+						"/mycmd",
+						"--",
+					),
+					tb.WorkingDir(workspaceDir),
+					tb.EnvVar("foo", "bar"),
+					tb.VolumeMount("tekton-internal-tools", "/tekton/tools"),
+					tb.VolumeMount("tekton-internal-downward", "/tekton/downward"),
+					tb.VolumeMount("tekton-internal-workspace", workspaceDir),
+					tb.VolumeMount("tekton-internal-home", "/tekton/home"),
+					tb.VolumeMount("tekton-internal-results", "/tekton/results"),
+					tb.VolumeMount("tekton-creds-init-home", "/tekton/creds"),
+					tb.TerminationMessagePath("/tekton/termination"),
+				),
+			),
+		),
+	}, {
+		name:        "disable-working-dir-overwrite",
+		taskRun:     taskRunWithDisableWorkingDirOverwrite,
+		featureFlag: "disable-working-directory-overwrite",
+		wantPod: tb.Pod("test-taskrun-run-working-dir-pod-abcde",
+			tb.PodNamespace("foo"),
+			tb.PodAnnotation(podconvert.ReleaseAnnotation, podconvert.ReleaseAnnotationValue),
+			tb.PodLabel(taskNameLabelKey, "test-task"),
+			tb.PodLabel(taskRunNameLabelKey, "test-taskrun-run-working-dir"),
+			tb.PodLabel("app.kubernetes.io/managed-by", "tekton-pipelines"),
+			tb.PodOwnerReference("TaskRun", "test-taskrun-run-working-dir",
+				tb.OwnerReferenceAPIVersion(currentAPIVersion)),
+			tb.PodSpec(
+				tb.PodVolumes(workspaceVolume, homeVolume, resultsVolume, toolsVolume, downwardVolume),
+				tb.PodRestartPolicy(corev1.RestartPolicyNever),
+				getPlaceToolsInitContainer(),
+				tb.PodContainer("step-simple-step", "foo",
+					tb.Command(entrypointLocation),
+					tb.Args("-wait_file",
+						"/tekton/downward/ready",
+						"-wait_file_content",
+						"-post_file",
+						"/tekton/tools/0",
+						"-termination_path",
+						"/tekton/termination",
+						"-entrypoint",
+						"/mycmd",
+						"--",
+					),
+					tb.EnvVar("HOME", "/tekton/home"),
+					tb.VolumeMount("tekton-internal-tools", "/tekton/tools"),
+					tb.VolumeMount("tekton-internal-downward", "/tekton/downward"),
+					tb.VolumeMount("tekton-internal-workspace", workspaceDir),
+					tb.VolumeMount("tekton-internal-home", "/tekton/home"),
+					tb.VolumeMount("tekton-internal-results", "/tekton/results"),
+					tb.TerminationMessagePath("/tekton/termination"),
+				),
+			),
+		),
+	}} {
+		t.Run(tc.name, func(t *testing.T) {
+			names.TestingSeed()
+			d.ConfigMaps = []*corev1.ConfigMap{
+				{
+					ObjectMeta: metav1.ObjectMeta{Name: config.GetFeatureFlagsConfigName(), Namespace: system.GetNamespace()},
+					Data: map[string]string{
+						tc.featureFlag: "true",
+					},
+				},
+			}
+			testAssets, cancel := getTaskRunController(t, d)
+			defer cancel()
+			c := testAssets.Controller
+			clients := testAssets.Clients
+			saName := tc.taskRun.Spec.ServiceAccountName
+			if saName == "" {
+				saName = "default"
+			}
+			if _, err := clients.Kube.CoreV1().ServiceAccounts(tc.taskRun.Namespace).Create(&corev1.ServiceAccount{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      saName,
+					Namespace: tc.taskRun.Namespace,
+				},
+			}); err != nil {
+				t.Fatal(err)
+			}
+			if err := c.Reconciler.Reconcile(context.Background(), getRunName(tc.taskRun)); err != nil {
+				t.Errorf("expected no error. Got error %v", err)
+			}
+			if len(clients.Kube.Actions()) == 0 {
+				t.Errorf("Expected actions to be logged in the kubeclient, got none")
+			}
+
+			tr, err := clients.Pipeline.TektonV1beta1().TaskRuns(tc.taskRun.Namespace).Get(tc.taskRun.Name, metav1.GetOptions{})
+			if err != nil {
+				t.Fatalf("getting updated taskrun: %v", err)
+			}
+			condition := tr.Status.GetCondition(apis.ConditionSucceeded)
+			if condition == nil || condition.Status != corev1.ConditionUnknown {
+				t.Errorf("Expected invalid TaskRun to have in progress status, but had %v", condition)
+			}
+			if condition != nil && condition.Reason != v1beta1.TaskRunReasonRunning.String() {
+				t.Errorf("Expected reason %q but was %s", v1beta1.TaskRunReasonRunning.String(), condition.Reason)
+			}
+
+			if tr.Status.PodName == "" {
+				t.Fatalf("Reconcile didn't set pod name")
+			}
+
+			pod, err := clients.Kube.CoreV1().Pods(tr.Namespace).Get(tr.Status.PodName, metav1.GetOptions{})
+			if err != nil {
+				t.Fatalf("Failed to fetch build pod: %v", err)
+			}
+
+			if d := cmp.Diff(tc.wantPod.ObjectMeta, pod.ObjectMeta, ignoreRandomPodNameSuffix); d != "" {
+				t.Errorf("Pod metadata doesn't match %s", diff.PrintWantGot(d))
+			}
+
+			if d := cmp.Diff(tc.wantPod.Spec, pod.Spec, resourceQuantityCmp); d != "" {
+				t.Errorf("Pod spec doesn't match, %s", diff.PrintWantGot(d))
+			}
+			if len(clients.Kube.Actions()) == 0 {
+				t.Fatalf("Expected actions to be logged in the kubeclient, got none")
+			}
+		})
+	}
+}
 func TestReconcile(t *testing.T) {
 	taskRunSuccess := tb.TaskRun("test-taskrun-run-success", tb.TaskRunNamespace("foo"), tb.TaskRunSpec(
 		tb.TaskRunTaskRef(simpleTask.Name, tb.TaskRefAPIVersion("a1")),
@@ -725,14 +936,14 @@ func TestReconcile(t *testing.T) {
 				tb.PodRestartPolicy(corev1.RestartPolicyNever),
 				getPlaceToolsInitContainer(),
 				getMkdirResourceContainer("myimage", "/workspace/output/myimage", "mssqb"),
-				tb.PodContainer("step-git-source-git-resource-mz4c7", "override-with-git:latest",
+				tb.PodContainer("step-git-source-workspace-mz4c7", "override-with-git:latest",
 					tb.Command(entrypointLocation),
 					tb.Args("-wait_file", "/tekton/tools/0", "-post_file", "/tekton/tools/1", "-termination_path",
 						"/tekton/termination", "-entrypoint", "/ko-app/git-init", "--", "-url", "https://foo.git",
 						"-revision", "master", "-path", "/workspace/workspace"),
 					tb.WorkingDir(workspaceDir),
 					tb.EnvVar("HOME", "/tekton/home"),
-					tb.EnvVar("TEKTON_RESOURCE_NAME", "git-resource"),
+					tb.EnvVar("TEKTON_RESOURCE_NAME", "workspace"),
 					tb.EnvVar("HOME", "/tekton/home"),
 					tb.VolumeMount("tekton-internal-tools", "/tekton/tools"),
 					tb.VolumeMount("tekton-internal-workspace", workspaceDir),
@@ -769,7 +980,7 @@ func TestReconcile(t *testing.T) {
 					tb.Command(entrypointLocation),
 					tb.Args("-wait_file", "/tekton/tools/3", "-post_file", "/tekton/tools/4", "-termination_path",
 						"/tekton/termination", "-entrypoint", "/ko-app/imagedigestexporter", "--",
-						"-images", "[{\"name\":\"image-resource\",\"type\":\"image\",\"url\":\"gcr.io/kristoff/sven\",\"digest\":\"\",\"OutputImageDir\":\"/workspace/output/myimage\"}]"),
+						"-images", "[{\"name\":\"myimage\",\"type\":\"image\",\"url\":\"gcr.io/kristoff/sven\",\"digest\":\"\",\"OutputImageDir\":\"/workspace/output/myimage\"}]"),
 					tb.WorkingDir(workspaceDir),
 					tb.EnvVar("HOME", "/tekton/home"),
 					tb.VolumeMount("tekton-internal-tools", "/tekton/tools"),
@@ -798,7 +1009,7 @@ func TestReconcile(t *testing.T) {
 				tb.PodVolumes(workspaceVolume, homeVolume, resultsVolume, toolsVolume, downwardVolume),
 				tb.PodRestartPolicy(corev1.RestartPolicyNever),
 				getPlaceToolsInitContainer(),
-				tb.PodContainer("step-git-source-git-resource-9l9zj", "override-with-git:latest",
+				tb.PodContainer("step-git-source-workspace-9l9zj", "override-with-git:latest",
 					tb.Command(entrypointLocation),
 					tb.Args("-wait_file",
 						"/tekton/downward/ready",
@@ -822,7 +1033,7 @@ func TestReconcile(t *testing.T) {
 					// adds it first and the git pipelineresource adds its own to ensure that HOME
 					// is set even when disable-home-env-overwrite feature flag is "true".
 					tb.EnvVar("HOME", "/tekton/home"),
-					tb.EnvVar("TEKTON_RESOURCE_NAME", "git-resource"),
+					tb.EnvVar("TEKTON_RESOURCE_NAME", "workspace"),
 					tb.EnvVar("HOME", "/tekton/home"),
 					tb.VolumeMount("tekton-internal-tools", "/tekton/tools"),
 					tb.VolumeMount("tekton-internal-downward", "/tekton/downward"),
@@ -1057,22 +1268,14 @@ func TestReconcile(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			reconciler := c.Reconciler.(*Reconciler)
-			fr := reconciler.Recorder.(*record.FakeRecorder)
-
-			if err := reconciler.Reconcile(context.Background(), getRunName(tc.taskRun)); err != nil {
+			if err := c.Reconciler.Reconcile(context.Background(), getRunName(tc.taskRun)); err != nil {
 				t.Errorf("expected no error. Got error %v", err)
 			}
 			if len(clients.Kube.Actions()) == 0 {
 				t.Errorf("Expected actions to be logged in the kubeclient, got none")
 			}
 
-			namespace, name, err := cache.SplitMetaNamespaceKey(tc.taskRun.Name)
-			if err != nil {
-				t.Errorf("Invalid resource key: %v", err)
-			}
-
-			tr, err := clients.Pipeline.TektonV1beta1().TaskRuns(namespace).Get(name, metav1.GetOptions{})
+			tr, err := clients.Pipeline.TektonV1beta1().TaskRuns(tc.taskRun.Namespace).Get(tc.taskRun.Name, metav1.GetOptions{})
 			if err != nil {
 				t.Fatalf("getting updated taskrun: %v", err)
 			}
@@ -1080,8 +1283,8 @@ func TestReconcile(t *testing.T) {
 			if condition == nil || condition.Status != corev1.ConditionUnknown {
 				t.Errorf("Expected invalid TaskRun to have in progress status, but had %v", condition)
 			}
-			if condition != nil && condition.Reason != podconvert.ReasonRunning {
-				t.Errorf("Expected reason %q but was %s", podconvert.ReasonRunning, condition.Reason)
+			if condition != nil && condition.Reason != v1beta1.TaskRunReasonRunning.String() {
+				t.Errorf("Expected reason %q but was %s", v1beta1.TaskRunReasonRunning.String(), condition.Reason)
 			}
 
 			if tr.Status.PodName == "" {
@@ -1105,7 +1308,7 @@ func TestReconcile(t *testing.T) {
 				t.Fatalf("Expected actions to be logged in the kubeclient, got none")
 			}
 
-			err = checkEvents(fr, tc.name, tc.wantEvents)
+			err = checkEvents(testAssets.Recorder, tc.name, tc.wantEvents)
 			if !(err == nil) {
 				t.Errorf(err.Error())
 			}
@@ -1128,8 +1331,12 @@ func TestReconcile_SetsStartTime(t *testing.T) {
 		t.Errorf("expected no error reconciling valid TaskRun but got %v", err)
 	}
 
-	if taskRun.Status.StartTime == nil || taskRun.Status.StartTime.IsZero() {
-		t.Errorf("expected startTime to be set by reconcile but was %q", taskRun.Status.StartTime)
+	newTr, err := testAssets.Clients.Pipeline.TektonV1beta1().TaskRuns(taskRun.Namespace).Get(taskRun.Name, metav1.GetOptions{})
+	if err != nil {
+		t.Fatalf("Expected TaskRun %s to exist but instead got error when getting it: %v", taskRun.Name, err)
+	}
+	if newTr.Status.StartTime == nil || newTr.Status.StartTime.IsZero() {
+		t.Errorf("expected startTime to be set by reconcile but was %q", newTr.Status.StartTime)
 	}
 }
 
@@ -1191,7 +1398,12 @@ func TestReconcile_SortTaskRunStatusSteps(t *testing.T) {
 	if err := testAssets.Controller.Reconciler.Reconcile(context.Background(), getRunName(taskRun)); err != nil {
 		t.Errorf("expected no error reconciling valid TaskRun but got %v", err)
 	}
-	verifyTaskRunStatusStep(t, taskRun)
+
+	newTr, err := testAssets.Clients.Pipeline.TektonV1beta1().TaskRuns(taskRun.Namespace).Get(taskRun.Name, metav1.GetOptions{})
+	if err != nil {
+		t.Fatalf("Expected TaskRun %s to exist but instead got error when getting it: %v", taskRun.Name, err)
+	}
+	verifyTaskRunStatusStep(t, newTr)
 }
 
 func verifyTaskRunStatusStep(t *testing.T, taskRun *v1beta1.TaskRun) {
@@ -1283,9 +1495,7 @@ func TestReconcileInvalidTaskRuns(t *testing.T) {
 			defer cancel()
 			c := testAssets.Controller
 			clients := testAssets.Clients
-			reconciler := c.Reconciler.(*Reconciler)
-			fr := reconciler.Recorder.(*record.FakeRecorder)
-			err := reconciler.Reconcile(context.Background(), getRunName(tc.taskRun))
+			err := c.Reconciler.Reconcile(context.Background(), getRunName(tc.taskRun))
 
 			// When a TaskRun is invalid and can't run, we don't want to return an error because
 			// an error will tell the Reconciler to keep trying to reconcile; instead we want to stop
@@ -1296,17 +1506,21 @@ func TestReconcileInvalidTaskRuns(t *testing.T) {
 
 			// Check actions and events
 			actions := clients.Kube.Actions()
-			if len(actions) != 1 || actions[0].Matches("namespaces", "list") {
-				t.Errorf("expected one action (list namespaces) created by the reconciler, got %d. Actions: %#v", len(actions), actions)
+			if len(actions) != 3 || actions[0].Matches("namespaces", "list") {
+				t.Errorf("expected 3 actions (first: list namespaces) created by the reconciler, got %d. Actions: %#v", len(actions), actions)
 			}
 
-			err = checkEvents(fr, tc.name, tc.wantEvents)
+			err = checkEvents(testAssets.Recorder, tc.name, tc.wantEvents)
 			if !(err == nil) {
 				t.Errorf(err.Error())
 			}
 
+			newTr, err := testAssets.Clients.Pipeline.TektonV1beta1().TaskRuns(tc.taskRun.Namespace).Get(tc.taskRun.Name, metav1.GetOptions{})
+			if err != nil {
+				t.Fatalf("Expected TaskRun %s to exist but instead got error when getting it: %v", tc.taskRun.Name, err)
+			}
 			// Since the TaskRun is invalid, the status should say it has failed
-			condition := tc.taskRun.Status.GetCondition(apis.ConditionSucceeded)
+			condition := newTr.Status.GetCondition(apis.ConditionSucceeded)
 			if condition == nil || condition.Status != corev1.ConditionFalse {
 				t.Errorf("Expected invalid TaskRun to have failed status, but had %v", condition)
 			}
@@ -1363,7 +1577,7 @@ func makePod(taskRun *v1beta1.TaskRun, task *v1beta1.Task) (*corev1.Pod, error) 
 		return nil, err
 	}
 
-	return podconvert.MakePod(images, taskRun, task.Spec, kubeclient, entrypointCache, true)
+	return podconvert.MakePod(context.Background(), images, taskRun, task.Spec, kubeclient, entrypointCache, true)
 }
 
 func TestReconcilePodUpdateStatus(t *testing.T) {
@@ -1388,10 +1602,8 @@ func TestReconcilePodUpdateStatus(t *testing.T) {
 	defer cancel()
 	c := testAssets.Controller
 	clients := testAssets.Clients
-	reconciler := c.Reconciler.(*Reconciler)
-	fr := reconciler.Recorder.(*record.FakeRecorder)
 
-	if err := reconciler.Reconcile(context.Background(), getRunName(taskRun)); err != nil {
+	if err := c.Reconciler.Reconcile(context.Background(), getRunName(taskRun)); err != nil {
 		t.Fatalf("Unexpected error when Reconcile() : %v", err)
 	}
 	newTr, err := clients.Pipeline.TektonV1beta1().TaskRuns(taskRun.Namespace).Get(taskRun.Name, metav1.GetOptions{})
@@ -1401,7 +1613,7 @@ func TestReconcilePodUpdateStatus(t *testing.T) {
 	if d := cmp.Diff(&apis.Condition{
 		Type:    apis.ConditionSucceeded,
 		Status:  corev1.ConditionUnknown,
-		Reason:  "Running",
+		Reason:  v1beta1.TaskRunReasonRunning.String(),
 		Message: "Not all Steps in the Task have finished executing",
 	}, newTr.Status.GetCondition(apis.ConditionSucceeded), ignoreLastTransitionTime); d != "" {
 		t.Fatalf("Did not get expected condition %s", diff.PrintWantGot(d))
@@ -1414,6 +1626,11 @@ func TestReconcilePodUpdateStatus(t *testing.T) {
 	if _, err := clients.Kube.CoreV1().Pods(taskRun.Namespace).UpdateStatus(pod); err != nil {
 		t.Errorf("Unexpected error while updating build: %v", err)
 	}
+
+	// Before calling Reconcile again, we need to ensure that the informer's
+	// lister cache is update to reflect the result of the previous Reconcile.
+	testAssets.Informers.TaskRun.Informer().GetIndexer().Add(newTr)
+
 	if err := c.Reconciler.Reconcile(context.Background(), getRunName(taskRun)); err != nil {
 		t.Fatalf("Unexpected error when Reconcile(): %v", err)
 	}
@@ -1425,7 +1642,7 @@ func TestReconcilePodUpdateStatus(t *testing.T) {
 	if d := cmp.Diff(&apis.Condition{
 		Type:    apis.ConditionSucceeded,
 		Status:  corev1.ConditionTrue,
-		Reason:  podconvert.ReasonSucceeded,
+		Reason:  v1beta1.TaskRunReasonSuccessful.String(),
 		Message: "All Steps have completed executing",
 	}, newTr.Status.GetCondition(apis.ConditionSucceeded), ignoreLastTransitionTime); d != "" {
 		t.Errorf("Did not get expected condition %s", diff.PrintWantGot(d))
@@ -1436,7 +1653,7 @@ func TestReconcilePodUpdateStatus(t *testing.T) {
 		"Normal Running Not all Steps",
 		"Normal Succeeded",
 	}
-	err = checkEvents(fr, "test-reconcile-pod-updateStatus", wantEvents)
+	err = checkEvents(testAssets.Recorder, "test-reconcile-pod-updateStatus", wantEvents)
 	if !(err == nil) {
 		t.Errorf(err.Error())
 	}
@@ -1495,10 +1712,8 @@ func TestReconcileOnCancelledTaskRun(t *testing.T) {
 	defer cancel()
 	c := testAssets.Controller
 	clients := testAssets.Clients
-	reconciler := c.Reconciler.(*Reconciler)
-	fr := reconciler.Recorder.(*record.FakeRecorder)
 
-	if err := reconciler.Reconcile(context.Background(), getRunName(taskRun)); err != nil {
+	if err := c.Reconciler.Reconcile(context.Background(), getRunName(taskRun)); err != nil {
 		t.Fatalf("Unexpected error when reconciling completed TaskRun : %v", err)
 	}
 	newTr, err := clients.Pipeline.TektonV1beta1().TaskRuns(taskRun.Namespace).Get(taskRun.Name, metav1.GetOptions{})
@@ -1520,7 +1735,7 @@ func TestReconcileOnCancelledTaskRun(t *testing.T) {
 		"Normal Started",
 		"Warning Failed TaskRun \"test-taskrun-run-cancelled\" was cancelled",
 	}
-	err = checkEvents(fr, "test-reconcile-on-cancelled-taskrun", wantEvents)
+	err = checkEvents(testAssets.Recorder, "test-reconcile-on-cancelled-taskrun", wantEvents)
 	if !(err == nil) {
 		t.Errorf(err.Error())
 	}
@@ -1607,8 +1822,6 @@ func TestReconcileTimeouts(t *testing.T) {
 		defer cancel()
 		c := testAssets.Controller
 		clients := testAssets.Clients
-		reconciler := c.Reconciler.(*Reconciler)
-		fr := reconciler.Recorder.(*record.FakeRecorder)
 
 		if err := c.Reconciler.Reconcile(context.Background(), getRunName(tc.taskRun)); err != nil {
 			t.Fatalf("Unexpected error when reconciling completed TaskRun : %v", err)
@@ -1621,7 +1834,7 @@ func TestReconcileTimeouts(t *testing.T) {
 		if d := cmp.Diff(tc.expectedStatus, condition, ignoreLastTransitionTime); d != "" {
 			t.Fatalf("Did not get expected condition %s", diff.PrintWantGot(d))
 		}
-		err = checkEvents(fr, tc.taskRun.Name, tc.wantEvents)
+		err = checkEvents(testAssets.Recorder, tc.taskRun.Name, tc.wantEvents)
 		if !(err == nil) {
 			t.Errorf(err.Error())
 		}
@@ -1644,10 +1857,23 @@ func TestHandlePodCreationError(t *testing.T) {
 	}
 	testAssets, cancel := getTaskRunController(t, d)
 	defer cancel()
-	c, ok := testAssets.Controller.Reconciler.(*Reconciler)
-	if !ok {
-		t.Errorf("failed to construct instance of taskrun reconciler")
-		return
+
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
+
+	// Use the test assets to create a *Reconciler directly for focused testing.
+	c := &Reconciler{
+		KubeClientSet:     testAssets.Clients.Kube,
+		PipelineClientSet: testAssets.Clients.Pipeline,
+		taskRunLister:     testAssets.Informers.TaskRun.Lister(),
+		taskLister:        testAssets.Informers.Task.Lister(),
+		clusterTaskLister: testAssets.Informers.ClusterTask.Lister(),
+		resourceLister:    testAssets.Informers.PipelineResource.Lister(),
+		timeoutHandler:    reconciler.NewTimeoutHandler(ctx.Done(), testAssets.Logger),
+		cloudEventClient:  testAssets.Clients.CloudEvents,
+		metrics:           nil, // Not used
+		entrypointCache:   nil, // Not used
+		pvcHandler:        volumeclaim.NewPVCHandler(testAssets.Clients.Kube, testAssets.Logger),
 	}
 
 	// Prevent backoff timer from starting
@@ -1674,7 +1900,7 @@ func TestHandlePodCreationError(t *testing.T) {
 	}}
 	for _, tc := range testcases {
 		t.Run(tc.description, func(t *testing.T) {
-			c.handlePodCreationError(taskRun, tc.err)
+			c.handlePodCreationError(ctx, taskRun, tc.err)
 			foundCondition := false
 			for _, cond := range taskRun.Status.Conditions {
 				if cond.Type == tc.expectedType && cond.Status == tc.expectedStatus && cond.Reason == tc.expectedReason {
@@ -1856,12 +2082,8 @@ func TestReconcileCloudEvents(t *testing.T) {
 			if err := c.Reconciler.Reconcile(context.Background(), getRunName(tc.taskRun)); err != nil {
 				t.Errorf("expected no error. Got error %v", err)
 			}
-			namespace, name, err := cache.SplitMetaNamespaceKey(tc.taskRun.Name)
-			if err != nil {
-				t.Errorf("Invalid resource key: %v", err)
-			}
 
-			tr, err := clients.Pipeline.TektonV1beta1().TaskRuns(namespace).Get(name, metav1.GetOptions{})
+			tr, err := clients.Pipeline.TektonV1beta1().TaskRuns(tc.taskRun.Namespace).Get(tc.taskRun.Name, metav1.GetOptions{})
 			if err != nil {
 				t.Fatalf("getting updated taskrun: %v", err)
 			}
@@ -1877,19 +2099,21 @@ func TestReconcileCloudEvents(t *testing.T) {
 func TestUpdateTaskRunResourceResult(t *testing.T) {
 	for _, c := range []struct {
 		desc          string
-		podStatus     corev1.PodStatus
+		pod           corev1.Pod
 		taskRunStatus *v1beta1.TaskRunStatus
 		want          []resourcev1alpha1.PipelineResourceResult
 	}{{
 		desc: "image resource updated",
-		podStatus: corev1.PodStatus{
-			ContainerStatuses: []corev1.ContainerStatus{{
-				State: corev1.ContainerState{
-					Terminated: &corev1.ContainerStateTerminated{
-						Message: `[{"key":"digest","value":"sha256:1234","resourceRef":{"name":"source-image"}}]`,
+		pod: corev1.Pod{
+			Status: corev1.PodStatus{
+				ContainerStatuses: []corev1.ContainerStatus{{
+					State: corev1.ContainerState{
+						Terminated: &corev1.ContainerStateTerminated{
+							Message: `[{"key":"digest","value":"sha256:1234","resourceRef":{"name":"source-image"}}]`,
+						},
 					},
-				},
-			}},
+				}},
+			},
 		},
 		want: []resourcev1alpha1.PipelineResourceResult{{
 			Key:         "digest",
@@ -1904,7 +2128,7 @@ func TestUpdateTaskRunResourceResult(t *testing.T) {
 				Type:   apis.ConditionSucceeded,
 				Status: corev1.ConditionTrue,
 			})
-			if err := updateTaskRunResourceResult(tr, c.podStatus); err != nil {
+			if err := updateTaskRunResourceResult(tr, c.pod); err != nil {
 				t.Errorf("updateTaskRunResourceResult: %s", err)
 			}
 			if d := cmp.Diff(c.want, tr.Status.ResourcesResult); d != "" {
@@ -1917,20 +2141,22 @@ func TestUpdateTaskRunResourceResult(t *testing.T) {
 func TestUpdateTaskRunResult(t *testing.T) {
 	for _, c := range []struct {
 		desc          string
-		podStatus     corev1.PodStatus
+		pod           corev1.Pod
 		taskRunStatus *v1beta1.TaskRunStatus
 		wantResults   []v1beta1.TaskRunResult
 		want          []resourcev1alpha1.PipelineResourceResult
 	}{{
 		desc: "test result with pipeline result",
-		podStatus: corev1.PodStatus{
-			ContainerStatuses: []corev1.ContainerStatus{{
-				State: corev1.ContainerState{
-					Terminated: &corev1.ContainerStateTerminated{
-						Message: `[{"key":"resultName","value":"resultValue", "type": "TaskRunResult"}, {"key":"digest","value":"sha256:1234","resourceRef":{"name":"source-image"}, "type": "PipelineResourceResult"}]`,
+		pod: corev1.Pod{
+			Status: corev1.PodStatus{
+				ContainerStatuses: []corev1.ContainerStatus{{
+					State: corev1.ContainerState{
+						Terminated: &corev1.ContainerStateTerminated{
+							Message: `[{"key":"resultName","value":"resultValue", "type": "TaskRunResult"}, {"key":"digest","value":"sha256:1234","resourceRef":{"name":"source-image"}, "type": "PipelineResourceResult"}]`,
+						},
 					},
-				},
-			}},
+				}},
+			},
 		},
 		wantResults: []v1beta1.TaskRunResult{{
 			Name:  "resultName",
@@ -1950,7 +2176,7 @@ func TestUpdateTaskRunResult(t *testing.T) {
 				Type:   apis.ConditionSucceeded,
 				Status: corev1.ConditionTrue,
 			})
-			if err := updateTaskRunResourceResult(tr, c.podStatus); err != nil {
+			if err := updateTaskRunResourceResult(tr, c.pod); err != nil {
 				t.Errorf("updateTaskRunResourceResult: %s", err)
 			}
 			if d := cmp.Diff(c.wantResults, tr.Status.TaskRunResults); d != "" {
@@ -1966,20 +2192,22 @@ func TestUpdateTaskRunResult(t *testing.T) {
 func TestUpdateTaskRunResult2(t *testing.T) {
 	for _, c := range []struct {
 		desc          string
-		podStatus     corev1.PodStatus
+		pod           corev1.Pod
 		taskRunStatus *v1beta1.TaskRunStatus
 		wantResults   []v1beta1.TaskRunResult
 		want          []resourcev1alpha1.PipelineResourceResult
 	}{{
 		desc: "test result with pipeline result - no result type",
-		podStatus: corev1.PodStatus{
-			ContainerStatuses: []corev1.ContainerStatus{{
-				State: corev1.ContainerState{
-					Terminated: &corev1.ContainerStateTerminated{
-						Message: `[{"key":"resultName","value":"resultValue", "type": "TaskRunResult"}, {"key":"digest","value":"sha256:1234","resourceRef":{"name":"source-image"}}]`,
+		pod: corev1.Pod{
+			Status: corev1.PodStatus{
+				ContainerStatuses: []corev1.ContainerStatus{{
+					State: corev1.ContainerState{
+						Terminated: &corev1.ContainerStateTerminated{
+							Message: `[{"key":"resultName","value":"resultValue", "type": "TaskRunResult"}, {"key":"digest","value":"sha256:1234","resourceRef":{"name":"source-image"}}]`,
+						},
 					},
-				},
-			}},
+				}},
+			},
 		},
 		wantResults: []v1beta1.TaskRunResult{{
 			Name:  "resultName",
@@ -1998,7 +2226,7 @@ func TestUpdateTaskRunResult2(t *testing.T) {
 				Type:   apis.ConditionSucceeded,
 				Status: corev1.ConditionTrue,
 			})
-			if err := updateTaskRunResourceResult(tr, c.podStatus); err != nil {
+			if err := updateTaskRunResourceResult(tr, c.pod); err != nil {
 				t.Errorf("updateTaskRunResourceResult: %s", err)
 			}
 			if d := cmp.Diff(c.wantResults, tr.Status.TaskRunResults); d != "" {
@@ -2014,23 +2242,31 @@ func TestUpdateTaskRunResult2(t *testing.T) {
 func TestUpdateTaskRunResultTwoResults(t *testing.T) {
 	for _, c := range []struct {
 		desc          string
-		podStatus     corev1.PodStatus
+		pod           corev1.Pod
 		taskRunStatus *v1beta1.TaskRunStatus
 		want          []v1beta1.TaskRunResult
 	}{{
 		desc: "two test results",
-		podStatus: corev1.PodStatus{
-			ContainerStatuses: []corev1.ContainerStatus{{
-				State: corev1.ContainerState{
-					Terminated: &corev1.ContainerStateTerminated{
-						Message: `[{"key":"resultNameOne","value":"resultValueOne", "type": "TaskRunResult"},{"key":"resultNameTwo","value":"resultValueTwo", "type": "TaskRunResult"}]`,
+		pod: corev1.Pod{
+			Status: corev1.PodStatus{
+				ContainerStatuses: []corev1.ContainerStatus{{
+					State: corev1.ContainerState{
+						Terminated: &corev1.ContainerStateTerminated{
+							Message: `[{"key":"resultNameOne","value":"resultValueOne", "type": "TaskRunResult"},{"key":"resultNameTwo","value":"resultValueTwo", "type": "TaskRunResult"}]`,
+						},
 					},
-				},
-			}},
+				}, {
+					State: corev1.ContainerState{
+						Terminated: &corev1.ContainerStateTerminated{
+							Message: `[{"key":"resultNameOne","value":"resultValueThree", "type": "TaskRunResult"},{"key":"resultNameTwo","value":"resultValueTwo", "type": "TaskRunResult"}]`,
+						},
+					},
+				}},
+			},
 		},
 		want: []v1beta1.TaskRunResult{{
 			Name:  "resultNameOne",
-			Value: "resultValueOne",
+			Value: "resultValueThree",
 		}, {
 			Name:  "resultNameTwo",
 			Value: "resultValueTwo",
@@ -2043,7 +2279,7 @@ func TestUpdateTaskRunResultTwoResults(t *testing.T) {
 				Type:   apis.ConditionSucceeded,
 				Status: corev1.ConditionTrue,
 			})
-			if err := updateTaskRunResourceResult(tr, c.podStatus); err != nil {
+			if err := updateTaskRunResourceResult(tr, c.pod); err != nil {
 				t.Errorf("updateTaskRunResourceResult: %s", err)
 			}
 			if d := cmp.Diff(c.want, tr.Status.TaskRunResults); d != "" {
@@ -2095,19 +2331,21 @@ func TestUpdateTaskRunResultWhenTaskFailed(t *testing.T) {
 func TestUpdateTaskRunResourceResult_Errors(t *testing.T) {
 	for _, c := range []struct {
 		desc          string
-		podStatus     corev1.PodStatus
+		pod           corev1.Pod
 		taskRunStatus *v1beta1.TaskRunStatus
 		want          []resourcev1alpha1.PipelineResourceResult
 	}{{
 		desc: "image resource exporter with malformed json output",
-		podStatus: corev1.PodStatus{
-			ContainerStatuses: []corev1.ContainerStatus{{
-				State: corev1.ContainerState{
-					Terminated: &corev1.ContainerStateTerminated{
-						Message: `MALFORMED JSON{"digest":"sha256:1234"}`,
+		pod: corev1.Pod{
+			Status: corev1.PodStatus{
+				ContainerStatuses: []corev1.ContainerStatus{{
+					State: corev1.ContainerState{
+						Terminated: &corev1.ContainerStateTerminated{
+							Message: `MALFORMED JSON{"digest":"sha256:1234"}`,
+						},
 					},
-				},
-			}},
+				}},
+			},
 		},
 		taskRunStatus: &v1beta1.TaskRunStatus{
 			Status: duckv1beta1.Status{Conditions: []apis.Condition{{
@@ -2119,7 +2357,7 @@ func TestUpdateTaskRunResourceResult_Errors(t *testing.T) {
 	}} {
 		t.Run(c.desc, func(t *testing.T) {
 			names.TestingSeed()
-			if err := updateTaskRunResourceResult(&v1beta1.TaskRun{Status: *c.taskRunStatus}, c.podStatus); err == nil {
+			if err := updateTaskRunResourceResult(&v1beta1.TaskRun{Status: *c.taskRunStatus}, c.pod); err == nil {
 				t.Error("Expected error, got nil")
 			}
 			if d := cmp.Diff(c.want, c.taskRunStatus.ResourcesResult); d != "" {
@@ -2346,10 +2584,9 @@ func TestReconcileTaskResourceResolutionAndValidation(t *testing.T) {
 			testAssets, cancel := getTaskRunController(t, tt.d)
 			defer cancel()
 			clients := testAssets.Clients
-			reconciler := testAssets.Controller.Reconciler.(*Reconciler)
-			fr := reconciler.Recorder.(*record.FakeRecorder)
+			c := testAssets.Controller
 
-			if err := reconciler.Reconcile(context.Background(), getRunName(tt.d.TaskRuns[0])); err != nil {
+			if err := c.Reconciler.Reconcile(context.Background(), getRunName(tt.d.TaskRuns[0])); err != nil {
 				t.Errorf("expected no error reconciling valid TaskRun but got %v", err)
 			}
 
@@ -2364,7 +2601,7 @@ func TestReconcileTaskResourceResolutionAndValidation(t *testing.T) {
 				}
 			}
 
-			err = checkEvents(fr, tt.desc, tt.wantEvents)
+			err = checkEvents(testAssets.Recorder, tt.desc, tt.wantEvents)
 			if !(err == nil) {
 				t.Errorf(err.Error())
 			}
@@ -2428,7 +2665,7 @@ func TestFailTaskRun(t *testing.T) {
 		name           string
 		taskRun        *v1beta1.TaskRun
 		pod            *corev1.Pod
-		reason         string
+		reason         v1beta1.TaskRunReason
 		message        string
 		expectedStatus apis.Condition
 	}{{
@@ -2482,12 +2719,23 @@ func TestFailTaskRun(t *testing.T) {
 
 			testAssets, cancel := getTaskRunController(t, d)
 			defer cancel()
-			c, ok := testAssets.Controller.Reconciler.(*Reconciler)
-			if !ok {
-				t.Errorf("failed to construct instance of taskrun reconciler")
-				return
+
+			// Use the test assets to create a *Reconciler directly for focused testing.
+			c := &Reconciler{
+				KubeClientSet:     testAssets.Clients.Kube,
+				PipelineClientSet: testAssets.Clients.Pipeline,
+				taskRunLister:     testAssets.Informers.TaskRun.Lister(),
+				taskLister:        testAssets.Informers.Task.Lister(),
+				clusterTaskLister: testAssets.Informers.ClusterTask.Lister(),
+				resourceLister:    testAssets.Informers.PipelineResource.Lister(),
+				timeoutHandler:    nil, // Not used
+				cloudEventClient:  testAssets.Clients.CloudEvents,
+				metrics:           nil, // Not used
+				entrypointCache:   nil, // Not used
+				pvcHandler:        volumeclaim.NewPVCHandler(testAssets.Clients.Kube, testAssets.Logger),
 			}
-			err := c.failTaskRun(tc.taskRun, tc.reason, tc.message)
+
+			err := c.failTaskRun(context.Background(), tc.taskRun, tc.reason, tc.message)
 			if err != nil {
 				t.Fatal(err)
 			}

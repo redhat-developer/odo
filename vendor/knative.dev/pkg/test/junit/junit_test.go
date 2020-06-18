@@ -19,6 +19,9 @@ limitations under the License.
 package junit
 
 import (
+	"io/ioutil"
+	"os"
+	"path"
 	"testing"
 )
 
@@ -146,5 +149,26 @@ func TestAddTestSuite(t *testing.T) {
 
 	if len(testSuites.Suites) != 2 {
 		t.Fatalf("Expected 2, actual %d", len(testSuites.Suites))
+	}
+}
+
+func TestCreateXMLErrorMsg(t *testing.T) {
+	testDir := "test_output"
+	os.RemoveAll(testDir) // clean up in case there were stale side-effects from previous runs
+	if err := os.Mkdir(testDir, 0777); err != nil {
+		t.Fatalf("cannot create directory %q", testDir)
+	}
+	defer os.RemoveAll(testDir) // clean up
+	dest := path.Join(testDir, "TestCreateXMLErrorTestFile")
+	CreateXMLErrorMsg("dummySuite", "dummyTest", "dummyError has occurred", dest)
+	expected := `<testsuites><testsuite name="dummySuite" time="0" failures="1" tests="1"><testcase name="dummyTest" time="0" classname=""><failure>dummyError has occurred</failure><properties></properties></testcase><properties></properties></testsuite></testsuites>`
+
+	got, err := ioutil.ReadFile(dest)
+	if err != nil {
+		t.Fatalf("cannot read %q, error %v", dest, err)
+	}
+
+	if string(got) != expected {
+		t.Fatalf("expected:\n%q\n, got:\n%q", expected, got)
 	}
 }

@@ -23,8 +23,8 @@ import (
 
 	"knative.dev/pkg/testutils/clustermanager/e2e-tests/common"
 
-	boskosclient "k8s.io/test-infra/boskos/client"
-	boskoscommon "k8s.io/test-infra/boskos/common"
+	boskosclient "sigs.k8s.io/boskos/client"
+	boskoscommon "sigs.k8s.io/boskos/common"
 )
 
 const (

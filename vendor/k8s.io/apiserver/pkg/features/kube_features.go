@@ -59,13 +59,6 @@ const (
 	// audited.
 	AdvancedAuditing featuregate.Feature = "AdvancedAuditing"
 
-	// owner: @pbarker
-	// alpha: v1.13
-	//
-	// DynamicAuditing enables configuration of audit policy and webhook backends through an
-	// AuditSink API object.
-	DynamicAuditing featuregate.Feature = "DynamicAuditing"
-
 	// owner: @ilackams
 	// alpha: v1.7
 	//
@@ -150,6 +143,12 @@ const (
 	//
 	// Allows label and field based indexes in apiserver watch cache to accelerate list operations.
 	SelectorIndex featuregate.Feature = "SelectorIndex"
+
+	// owner: @liggitt
+	// beta: v1.19
+	//
+	// Allows sending warning headers in API responses.
+	WarningHeaders featuregate.Feature = "WarningHeaders"
 )
 
 func init() {
@@ -163,7 +162,6 @@ var defaultKubernetesFeatureGates = map[featuregate.Feature]featuregate.FeatureS
 	StreamingProxyRedirects: {Default: true, PreRelease: featuregate.Deprecated},
 	ValidateProxyRedirects:  {Default: true, PreRelease: featuregate.Beta},
 	AdvancedAuditing:        {Default: true, PreRelease: featuregate.GA},
-	DynamicAuditing:         {Default: false, PreRelease: featuregate.Alpha},
 	APIResponseCompression:  {Default: true, PreRelease: featuregate.Beta},
 	APIListChunking:         {Default: true, PreRelease: featuregate.Beta},
 	DryRun:                  {Default: true, PreRelease: featuregate.GA},
@@ -176,4 +174,5 @@ var defaultKubernetesFeatureGates = map[featuregate.Feature]featuregate.FeatureS
 	APIPriorityAndFairness:  {Default: false, PreRelease: featuregate.Alpha},
 	RemoveSelfLink:          {Default: false, PreRelease: featuregate.Alpha},
 	SelectorIndex:           {Default: false, PreRelease: featuregate.Alpha},
+	WarningHeaders:          {Default: true, PreRelease: featuregate.Beta},
 }

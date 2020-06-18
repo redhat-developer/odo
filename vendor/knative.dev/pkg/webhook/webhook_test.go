@@ -47,11 +47,6 @@ const (
 	user1            = "brutto@knative.dev"
 )
 
-func init() {
-	// Don't hang forever when running tests.
-	GracePeriod = 100 * time.Millisecond
-}
-
 func newNonRunningTestWebhook(t *testing.T, options Options, acs ...interface{}) (
 	ctx context.Context, ac *Webhook, cancel context.CancelFunc) {
 	t.Helper()
@@ -73,6 +68,7 @@ func newNonRunningTestWebhook(t *testing.T, options Options, acs ...interface{})
 	if err != nil {
 		t.Fatalf("Failed to create new admission controller: %v", err)
 	}
+	ac.gracePeriod = 100 * time.Millisecond
 	return
 }
 

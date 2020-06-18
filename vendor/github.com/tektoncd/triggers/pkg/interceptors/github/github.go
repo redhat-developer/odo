@@ -64,7 +64,7 @@ func (w *Interceptor) ExecuteTrigger(request *http.Request) (*http.Response, err
 		if header == "" {
 			return nil, errors.New("no X-Hub-Signature header set")
 		}
-		secretToken, err := interceptors.GetSecretToken(w.KubeClientSet, w.GitHub.SecretRef, w.EventListenerNamespace)
+		secretToken, err := interceptors.GetSecretToken(request, w.KubeClientSet, w.GitHub.SecretRef, w.EventListenerNamespace)
 		if err != nil {
 			return nil, err
 		}

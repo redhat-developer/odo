@@ -26,8 +26,6 @@ func (el *EventListener) SetDefaults(ctx context.Context) {
 		// set defaults
 		for i := range el.Spec.Triggers {
 			defaultBindings(&el.Spec.Triggers[i])
-			// TODO: Remove this in future release #564.
-			defaultMandatoryRef((&el.Spec.Triggers[i]))
 		}
 	}
 }
@@ -38,17 +36,6 @@ func defaultBindings(t *EventListenerTrigger) {
 		for _, b := range t.Bindings {
 			if b.Kind == "" {
 				b.Kind = NamespacedTriggerBindingKind
-			}
-		}
-	}
-}
-
-// set default TriggerBinding kind for Bindings
-func defaultMandatoryRef(t *EventListenerTrigger) {
-	if len(t.Bindings) > 0 {
-		for _, b := range t.Bindings {
-			if b.Ref == "" && b.Spec == nil && b.Name != "" {
-				b.Ref = b.Name
 			}
 		}
 	}

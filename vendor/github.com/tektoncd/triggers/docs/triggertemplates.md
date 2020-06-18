@@ -52,6 +52,17 @@ spec:
             value: $(params.gitrepositoryurl)
 ```
 
+`TriggerTemplates` currently support the following [Tekton Pipelines](https://github.com/tektoncd/pipelines) resources:
+
+v1alpha1          | v1beta1
+------------------|---------
+pipelines         | pipelines
+pipelineruns      | pipelineruns
+tasks             | tasks
+taskruns          | taskruns
+clustertasks      | clustertasks
+conditions        |
+pipelineresources |
 
 Similar to
 [Pipelines](https://github.com/tektoncd/pipeline/blob/master/docs/pipelines.md),`TriggerTemplate`s

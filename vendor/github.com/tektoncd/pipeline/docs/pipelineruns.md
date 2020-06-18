@@ -10,14 +10,15 @@ weight: 4
 - [Configuring a `PipelineRun`](#configuring-a-pipelinerun)
   - [Specifying the target `Pipeline`](#specifying-the-target-pipeline)
   - [Specifying `Resources`](#specifying-resources)
-  - [Speciying `Parameters`](#specifying-parameters)
+  - [Specifying `Parameters`](#specifying-parameters)
   - [Specifying custom `ServiceAccount` credentials](#specifying-custom-serviceaccount-credentials)
   - [Mapping `ServiceAccount` credentials to `Tasks`](#mapping-serviceaccount-credentials-to-tasks)
-  - [Specifying `TaskRunSpecs`](#specifying-task-run-specs)
   - [Specifying a `Pod` template](#specifying-a-pod-template)
+  - [Specifying `TaskRunSpecs`](#specifying-taskrunspecs)
   - [Specifying `Workspaces`](#specifying-workspaces)
   - [Specifying `LimitRange` values](#specifying-limitrange-values)
   - [Configuring a failure timeout](#configuring-a-failure-timeout)
+- [Monitoring execution status](#monitoring-execution-status)
 - [Cancelling a `PipelineRun`](#cancelling-a-pipelinerun)
 - [Events](events.md#pipelineruns)
 
@@ -81,7 +82,7 @@ spec:
 
 ```
 
-To embed a `Pipeline` definition in the `PiepelineRun`, use the `pipelineSpec` field:
+To embed a `Pipeline` definition in the `PipelineRun`, use the `pipelineSpec` field:
 
 ```yaml
 spec:
@@ -185,6 +186,9 @@ to all `persistentVolumeClaims` generated internally.
 You can specify `Parameters` that you want to pass to the `Pipeline` during execution,
 including different values of the same parameter for different `Tasks` in the `Pipeline`.
 
+**Note:** You must specify all the `Parameters` that the `Pipeline` expects. Parameters 
+that have default values specified in Pipeline are not required to be provided by PipelineRun.
+
 For example:
 
 ```yaml
@@ -195,6 +199,10 @@ spec:
   - name: pl-param-y
     value: "500"
 ```
+You can pass in extra `Parameters` if needed depending on your use cases. An example use 
+case is when your CI system autogenerates `PipelineRuns` and it has `Parameters` it wants to 
+provide to all `PipelineRuns`. Because you can pass in extra `Parameters`, you don't have to 
+go through the complexity of checking each `Pipeline` and providing only the required params.
 
 ### Specifying custom `ServiceAccount` credentials
 
@@ -209,7 +217,7 @@ For more information, see [`ServiceAccount`](auth.md).
 
 ### Mapping `ServiceAccount` credentials to `Tasks`
 
-If you require more granularity in specifying execution credentials, use the `serviceAccounNames` field to
+If you require more granularity in specifying execution credentials, use the `serviceAccountNames` field to
 map a specific `serviceAccountName` value to a specific `Task` in the `Pipeline`. This overrides the global
 `serviceAccountName` you may have set for the `Pipeline` as described in the previous section. 
 
@@ -290,7 +298,32 @@ spec:
         claimName: my-volume-claim
 ```
 
-## Specifying `Workspaces`
+### Specifying taskRunSpecs
+
+Specifies a list of `PipelineTaskRunSpec` which contains `TaskServiceAccountName`, `TaskPodTemplate`
+and `PipelineTaskName`. Mapping the specs to the corresponding `Task` based upon the `TaskName` a PipelineTask
+will run with the configured  `TaskServiceAccountName` and `TaskPodTemplate` overwriting the pipeline
+wide `ServiceAccountName`  and [`podTemplate`](./podtemplates.md) configuration,
+for example:
+
+```yaml
+spec:
+   podTemplate:
+    securityContext:
+      runAsUser: 1000
+      runAsGroup: 2000
+      fsGroup: 3000
+  taskRunSpecs:
+    - pipelineTaskName: build-task
+      taskServiceAccountName: sa-for-build
+      taskPodTemplate:
+        nodeSelector:
+          disktype: ssd
+```
+
+If used with this `Pipeline`,  `build-task` will use the task specific `PodTemplate` (where `nodeSelector` has `disktype` equal to `ssd`). 
+
+### Specifying `Workspaces`
 
 If your `Pipeline` specifies one or more `Workspaces`, you must map those `Workspaces` to
 the corresponding physical volumes in your `PipelineRun` definition. For example, you
@@ -335,12 +368,77 @@ a different global default timeout value using the `default-timeout-minutes` fie
 The `timeout` value is a `duration` conforming to Go's
 [`ParseDuration`](https://golang.org/pkg/time/#ParseDuration) format. For example, valid
 values are `1h30m`, `1h`, `1m`, and `60s`. If you set the global timeout to 0, all `PipelineRuns`
-that do not have an idividual timeout set will fail immediately upon encountering an error.
+that do not have an individual timeout set will fail immediately upon encountering an error.
+
+## Monitoring execution status
+
+As your `PipelineRun` executes, its `status` field accumulates information on the execution of each `TaskRun`
+as well as the `PipelineRun` as a whole. This information includes the name of the pipeline `Task` associated
+to a `TaskRun`, the complete [status of the `TaskRun`](taskruns.md#monitoring-execution-status) and details
+about `Conditions` that may be associated to a `TaskRun`.
+
+The following example shows an extract from the `status` field of a `PipelineRun` that has executed successfully:
+
+```yaml
+completionTime: "2020-05-04T02:19:14Z"
+conditions:
+- lastTransitionTime: "2020-05-04T02:19:14Z"
+  message: 'Tasks Completed: 4, Skipped: 0'
+  reason: Succeeded
+  status: "True"
+  type: Succeeded
+startTime: "2020-05-04T02:00:11Z"
+taskRuns:
+  triggers-release-nightly-frwmw-build-ng2qk:
+    pipelineTaskName: build
+    status:
+      completionTime: "2020-05-04T02:10:49Z"
+      conditions:
+      - lastTransitionTime: "2020-05-04T02:10:49Z"
+        message: All Steps have completed executing
+        reason: Succeeded
+        status: "True"
+        type: Succeeded
+      podName: triggers-release-nightly-frwmw-build-ng2qk-pod-8vj99
+      resourcesResult:
+      - key: commit
+        resourceRef:
+          name: git-source-triggers-frwmw
+        value: 9ab5a1234166a89db352afa28f499d596ebb48db
+      startTime: "2020-05-04T02:05:07Z"
+      steps:
+      - container: step-build
+        imageID: docker-pullable://golang@sha256:a90f2671330831830e229c3554ce118009681ef88af659cd98bfafd13d5594f9
+        name: build
+        terminated:
+          containerID: docker://6b6471f501f59dbb7849f5cdde200f4eeb64302b862a27af68821a7fb2c25860
+          exitCode: 0
+          finishedAt: "2020-05-04T02:10:45Z"
+          reason: Completed
+          startedAt: "2020-05-04T02:06:24Z"
+  ```
+
+The following tables shows how to read the overall status of a `PipelineRun`:
+
+`status`|`reason`|`completionTime` is set|Description
+:-------|:-------|:---------------------:|--------------:
+Unknown|Started|No|The `PipelineRun` has just been picked up by the controller.
+Unknown|Running|No|The `PipelineRun` has been validate and started to perform its work.
+Unknown|PipelineRunCancelled|No|The user requested the PipelineRun to be cancelled. Cancellation has not be done yet.
+True|Succeeded|Yes|The `PipelineRun` completed successfully.
+True|Completed|Yes|The `PipelineRun` completed successfully, one or more Tasks were skipped.
+False|Failed|Yes|The `PipelineRun` failed because one of the `TaskRuns` failed.
+False|\[Error message\]|No|The `PipelineRun` encountered an non-permanent error, but it's still running and it may ultimately succeed.
+False|\[Error message\]|Yes|The `PipelineRun` failed with a permanent error (usually validation).
+False|PipelineRunCancelled|Yes|The `PipelineRun` was cancelled successfully.
+False|PipelineRunTimeout|Yes|The `PipelineRun` timed out.
+
+When a `PipelineRun` changes status, [events](events.md#pipelineruns) are triggered accordingly.
 
 ## Cancelling a `PipelineRun`
 
 To cancel a `PipelineRun` that's currently executing, update its definition
-to mark it as cancelled. When you do so, the spanwed `TaskRuns` are also marked
+to mark it as cancelled. When you do so, the spawned `TaskRuns` are also marked
 as cancelled and all associated `Pods` are deleted. For example:
 
 ```yaml
@@ -352,27 +450,6 @@ spec:
   # […]
   status: "PipelineRunCancelled"
 ```
-
-## Specifying task run specs
-
-Specifies a list of  `PipelineRunTaskSpec` which contains `TaskServiceAccountName`,`TaskPodTemplate` and `TaskName`. Mapping the specs to the corresponding `Task` based upon the `TaskName` a PipelineTask will run with the configured  `TaskServiceAccountName` and `TaskPodTemplate` overwriting the pipeline wide [`ServiceAccountName`](#service-account)  and [`podTemplate`](#pod-template) configuration, for example:
-
-```yaml
-spec:
-   podTemplate:
-    securityContext:
-      runAsUser: 1000
-      runAsGroup: 2000
-      fsGroup: 3000
-  taskRunSpecs:
-    - taskName: build-task
-      taskServiceAccountName: sa-for-build
-      taskPodTemplate:
-        nodeSelector:
-          disktype: ssd
-```
-
-If used with this `Pipeline`,  `build-task` will use the task specific pod template (where `nodeSelector` has `disktype` equal to `ssd`). 
 
 ---
 

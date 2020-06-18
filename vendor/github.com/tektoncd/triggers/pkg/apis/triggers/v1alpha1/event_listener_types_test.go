@@ -267,7 +267,7 @@ func TestSetDeploymentConditions(t *testing.T) {
 			if !equality.Semantic.DeepEqual(tests[i].expectedStatus, tests[i].initialStatus) {
 				t.Error("SetDeploymentConditions() equality mismatch. Ignore semantic time mismatch")
 				diff := cmp.Diff(tests[i].expectedStatus, tests[i].initialStatus)
-				t.Errorf("Diff request body: -want +got: %s", diff)
+				t.Errorf("Diff request body (-want +got) = %s", diff)
 			}
 		})
 	}

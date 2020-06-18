@@ -24,7 +24,9 @@ import (
 	"testing"
 
 	"go.opencensus.io/stats/view"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/metrics"
 
@@ -37,16 +39,16 @@ type clientFunc struct {
 	do func(*http.Request) (*http.Response, error)
 }
 
-var _ rest.HTTPClient = (*clientFunc)(nil)
+var _ http.RoundTripper = (*clientFunc)(nil)
 
 // Do implements rest.HTTPClient
-func (cf *clientFunc) Do(req *http.Request) (*http.Response, error) {
+func (cf *clientFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 	return cf.do(req)
 }
 
 // ClientFunc turns a method matching the signature of rest.HTTPClient's
 // Do() method into an implementation of rest.HTTPClient.
-func ClientFunc(f func(*http.Request) (*http.Response, error)) rest.HTTPClient {
+func ClientFunc(f func(*http.Request) (*http.Response, error)) http.RoundTripper {
 	return &clientFunc{do: f}
 }
 
@@ -76,24 +78,31 @@ func TestClientMetrics(t *testing.T) {
 		Scheme: "http",
 		Host:   "api.mattmoor.dev",
 	}
-	config := rest.ContentConfig{
-		ContentType: "application/json",
-		GroupVersion: &schema.GroupVersion{
-			Group:   "testing.knative.dev",
-			Version: "v1alpha1",
-		},
+	gv := schema.GroupVersion{
+		Group:   "testing.knative.dev",
+		Version: "v1alpha1",
 	}
-	client := ClientFunc(func(req *http.Request) (*http.Response, error) {
+	config := rest.ClientContentConfig{
+		ContentType:  "application/json",
+		GroupVersion: gv,
+		Negotiator:   runtime.NewClientNegotiator(scheme.Codecs, gv),
+	}
+
+	stub := ClientFunc(func(req *http.Request) (*http.Response, error) {
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       ioutil.NopCloser(bytes.NewBufferString("hi")),
 		}, nil
 	})
 
+	client := rest.NewRequestWithClient(
+		base,
+		"/testing.knative.dev/v1alpha1",
+		config,
+		&http.Client{Transport: stub})
+
 	// When we send rest requests, we should trigger the metrics setup above.
-	req := rest.NewRequest(client, http.MethodGet, base, "/testing.knative.dev/v1alpha1",
-		config, rest.Serializers{}, nil, nil, 0)
-	result := req.Do()
+	result := client.Verb(http.MethodGet).Do()
 	if err := result.Error(); err != nil {
 		t.Errorf("Do() = %v", err)
 	}

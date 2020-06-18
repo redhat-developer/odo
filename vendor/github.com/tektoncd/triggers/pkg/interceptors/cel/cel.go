@@ -60,7 +60,7 @@ func NewInterceptor(cel *triggersv1.CELInterceptor, k kubernetes.Interface, ns s
 
 // ExecuteTrigger is an implementation of the Interceptor interface.
 func (w *Interceptor) ExecuteTrigger(request *http.Request) (*http.Response, error) {
-	env, err := makeCelEnv(w.EventListenerNamespace, w.KubeClientSet)
+	env, err := makeCelEnv(request, w.EventListenerNamespace, w.KubeClientSet)
 	if err != nil {
 		return nil, fmt.Errorf("error creating cel environment: %w", err)
 	}
@@ -153,10 +153,10 @@ func evaluate(expr string, env *cel.Env, data map[string]interface{}) (ref.Val, 
 	return out, err
 }
 
-func makeCelEnv(ns string, k kubernetes.Interface) (*cel.Env, error) {
+func makeCelEnv(request *http.Request, ns string, k kubernetes.Interface) (*cel.Env, error) {
 	mapStrDyn := decls.NewMapType(decls.String, decls.Dyn)
 	return cel.NewEnv(
-		Triggers(ns, k),
+		Triggers(request, ns, k),
 		celext.Strings(),
 		cel.Declarations(
 			decls.NewIdent("body", mapStrDyn, nil),

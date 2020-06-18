@@ -125,3 +125,5 @@ import:
   version: v1.0.15
 - package: github.com/h2non/parth
   version: v2.0.1
+- package: gomodules.xyz/jsonpatch/v2
+  version: ~2.0.1

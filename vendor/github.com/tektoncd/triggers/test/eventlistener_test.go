@@ -24,11 +24,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os/exec"
+	"net/url"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
-	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -43,6 +43,9 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/tools/portforward"
+	"k8s.io/client-go/transport/spdy"
 	knativetest "knative.dev/pkg/test"
 )
 
@@ -302,21 +305,51 @@ func TestEventListenerCreate(t *testing.T) {
 	// ElPort forward sink pod for http request
 	portString := strconv.Itoa(*eventReconciler.ElPort)
 	podName := sinkPods.Items[0].Name
-	cmd := exec.Command("kubectl", "port-forward", podName, "-n", namespace, fmt.Sprintf("%s:%s", portString, portString))
-	err = cmd.Start()
-	if err != nil {
-		t.Fatalf("Error starting port-forward command: %s", err)
-	}
-	if cmd.Process == nil {
-		t.Fatalf("Error starting command. Process is nil")
-	}
+	stopChan, errChan := make(chan struct{}, 1), make(chan error, 1)
+
 	defer func() {
-		if err = cmd.Process.Kill(); err != nil {
-			t.Fatalf("Error killing port-forward process: %s", err)
-		}
+		close(stopChan)
 	}()
-	// Wait for port forward to take effect
-	time.Sleep(5 * time.Second)
+	go func(stopChan chan struct{}, errChan chan error) {
+		config, err := clientcmd.BuildConfigFromFlags("", knativetest.Flags.Kubeconfig)
+		if err != nil {
+			errChan <- err
+			return
+		}
+		roundTripper, upgrader, err := spdy.RoundTripperFor(config)
+		if err != nil {
+			errChan <- err
+			return
+		}
+
+		path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward", namespace, podName)
+		hostIP := strings.TrimPrefix(config.Host, "https://")
+		serverURL := url.URL{Scheme: "https", Path: path, Host: hostIP}
+		dialer := spdy.NewDialer(upgrader, &http.Client{Transport: roundTripper}, http.MethodPost, &serverURL)
+		out, errOut := new(bytes.Buffer), new(bytes.Buffer)
+		readyChan := make(chan struct{}, 1)
+		forwarder, err := portforward.New(dialer, []string{portString}, stopChan, readyChan, out, errOut)
+		if err != nil {
+			errChan <- err
+			return
+		}
+		go func() {
+			for range readyChan {
+			}
+			if len(errOut.String()) != 0 {
+				errChan <- fmt.Errorf("%s", errOut)
+			}
+			close(errChan)
+		}()
+		if err = forwarder.ForwardPorts(); err != nil { // This locks until stopChan is closed.
+			errChan <- err
+			return
+		}
+	}(stopChan, errChan)
+
+	if err := <-errChan; err != nil {
+		t.Fatalf("Forwarding stream of data failed:: %v", err)
+	}
 
 	// Send POST request to EventListener sink
 	req, err := http.NewRequest("POST", fmt.Sprintf("http://127.0.0.1:%s", portString), bytes.NewBuffer(eventBodyJSON))

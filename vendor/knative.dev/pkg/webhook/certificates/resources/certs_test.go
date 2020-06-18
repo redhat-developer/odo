@@ -59,6 +59,13 @@ func TestCreateCerts(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Verify common name
+	const expectedCommonName = "got-the-hook.knative-webhook.svc"
+
+	if caParsedCert.Subject.CommonName != expectedCommonName {
+		t.Fatalf("Unexpected Cert Common Name %q, wanted %q", caParsedCert.Subject.CommonName, expectedCommonName)
+	}
+
 	// Verify domain names
 	expectedDNSNames := []string{
 		"got-the-hook",
@@ -68,6 +75,10 @@ func TestCreateCerts(t *testing.T) {
 	}
 	if diff := cmp.Diff(caParsedCert.DNSNames, expectedDNSNames); diff != "" {
 		t.Fatalf("Unexpected CA Cert DNS Name (-want +got) : %v", diff)
+	}
+
+	if diff := cmp.Diff(caParsedCert.DNSNames, expectedDNSNames); diff != "" {
+		t.Fatalf("Unexpected CA Cert DNS Name (-want +got): %s", diff)
 	}
 
 	// Verify Server Cert is Signed by CA Cert

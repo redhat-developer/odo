@@ -46,7 +46,7 @@ This project extends Kubernetes (aka `k8s`) with Custom Resource Definitions
   Some of the terms here may make more sense!
 - Install via
   [official installation docs](https://github.com/tektoncd/pipeline/blob/master/docs/install.md)
-  or continue though [getting started for development](#getting-started)
+  or continue through [getting started for development](#getting-started)
 - [Tekton Pipeline "Hello World" tutorial](https://github.com/tektoncd/pipeline/blob/master/docs/tutorial.md) -
   Define `Tasks`, `Pipelines`, and `PipelineResources`, see what happens when
   they are run
@@ -105,7 +105,7 @@ developing and running Pipelines. The recommended configuration is:
 
 To setup a cluster with GKE:
 
-1. [Install required tools and setup GCP project](https://github.com/knative/docs/blob/master/docs/install/Knative-with-GKE.md#before-you-begin)
+1. [Install required tools and setup GCP project](https://cloud.google.com/resource-manager/docs/creating-managing-projects)
    (You may find it useful to save the ID of the project in an environment
    variable (e.g. `PROJECT_ID`).
 

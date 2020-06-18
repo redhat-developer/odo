@@ -57,6 +57,14 @@ func TestReconcile(t *testing.T) {
 		},
 	}
 
+	// This is the namespace selector setup
+	namespaceSelector := &metav1.LabelSelector{
+		MatchExpressions: []metav1.LabelSelectorRequirement{{
+			Key:      "webhooks.knative.dev/exclude",
+			Operator: metav1.LabelSelectorOpDoesNotExist,
+		}},
+	}
+
 	// These are the rules we expect given the context of "handlers".
 	expectedRules := []admissionregistrationv1beta1.RuleWithOperations{{
 		Operations: []admissionregistrationv1beta1.OperationType{"CREATE", "UPDATE", "DELETE"},
@@ -167,7 +175,8 @@ func TestReconcile(t *testing.T) {
 						CABundle: []byte("present"),
 					},
 					// Rules are added.
-					Rules: expectedRules,
+					Rules:             expectedRules,
+					NamespaceSelector: namespaceSelector,
 				}},
 			},
 		}},
@@ -221,7 +230,8 @@ func TestReconcile(t *testing.T) {
 						CABundle: []byte("present"),
 					},
 					// Rules are fixed.
-					Rules: expectedRules,
+					Rules:             expectedRules,
+					NamespaceSelector: namespaceSelector,
 				}},
 			},
 		}},
@@ -279,7 +289,8 @@ func TestReconcile(t *testing.T) {
 						CABundle: []byte("present"),
 					},
 					// Rules are fixed.
-					Rules: expectedRules,
+					Rules:             expectedRules,
+					NamespaceSelector: namespaceSelector,
 				}},
 			},
 		}},
@@ -304,7 +315,8 @@ func TestReconcile(t *testing.T) {
 						CABundle: []byte("present"),
 					},
 					// Rules are fine.
-					Rules: expectedRules,
+					Rules:             expectedRules,
+					NamespaceSelector: namespaceSelector,
 				}},
 			},
 		},

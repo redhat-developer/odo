@@ -13,7 +13,7 @@ spec:
             - key: extensions.truncated_sha
               expression: "body.pull_request.head.sha.truncate(7)"
       bindings:
-      - name: pipeline-binding
+      - ref: pipeline-binding
       template:
         name: pipeline-template
     - name: cel-trig-with-canonical

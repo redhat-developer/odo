@@ -18,8 +18,6 @@ package main
 
 import (
 	"flag"
-	"io/ioutil"
-	"log"
 
 	"knative.dev/pkg/test/junit"
 )
@@ -38,20 +36,5 @@ func main() {
 	flag.StringVar(&dest, "dest", "junit_result.xml", "Where junit xml writes to")
 	flag.Parse()
 
-	suites := junit.TestSuites{}
-	suite := junit.TestSuite{Name: suite}
-	var errP *string
-	if errMsg != "" {
-		errP = &errMsg
-	}
-	suite.AddTestCase(junit.TestCase{
-		Name:    name,
-		Failure: errP,
-	})
-	suites.AddTestSuite(&suite)
-	contents, err := suites.ToBytes("", "")
-	if err != nil {
-		log.Fatal(err)
-	}
-	ioutil.WriteFile(dest, contents, 0644)
+	junit.CreateXMLErrorMsg(suite, name, errMsg, dest)
 }

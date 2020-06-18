@@ -71,15 +71,17 @@ spec:
       # Change to directory with our .ko.yaml
       cd /workspace/go/src/github.com/tektoncd/triggers
       # Rewrite "devel" to inputs.params.versionTag
-      sed -i 's/devel/$(inputs.params.versionTag)/g' /workspace/go/src/github.com/tektoncd/triggers/config/controller.yaml
-      sed -i 's/devel/$(inputs.params.versionTag)/g' /workspace/go/src/github.com/tektoncd/triggers/config/controller-service.yaml
-      sed -i 's/devel/$(inputs.params.versionTag)/g' /workspace/go/src/github.com/tektoncd/triggers/config/webhook.yaml
-      sed -i 's/devel/$(inputs.params.versionTag)/g' /workspace/go/src/github.com/tektoncd/triggers/config/webhook-service.yaml
+      sed -i -e 's/\(triggers.tekton.dev\/release\): "devel"/\1: "$(inputs.params.versionTag)"/g' -e 's/\(version\): "devel"/\1: "$(inputs.params.versionTag)"/g' /workspace/go/src/github.com/tektoncd/triggers/config/*.yaml
 
       OUTPUT_BUCKET_RELEASE_DIR="/workspace/output/bucket/previous/$(inputs.params.versionTag)"
 
       # Publish images and create release.yaml
-      ko resolve --preserve-import-paths -f /workspace/go/src/github.com/tektoncd/triggers/config/ > $OUTPUT_BUCKET_RELEASE_DIR/release.yaml
+      ko resolve --preserve-import-paths -t $(inputs.params.versionTag) -f /workspace/go/src/github.com/tektoncd/triggers/config/ > $OUTPUT_BUCKET_RELEASE_DIR/release.yaml
+
+      # Publish images and create release.notags.yaml
+      # This is useful if your container runtime doesn't support the `image-reference:tag@digest` notation
+      # This is currently the case for `cri-o` (and most likely others)
+      ko resolve --preserve-import-paths -f /workspace/go/src/github.com/tektoncd/triggers/config/ > $OUTPUT_BUCKET_RELEASE_DIR/release.notags.yaml
     volumeMounts:
       - name: gcp-secret
         mountPath: /secret
@@ -97,6 +99,7 @@ spec:
         OUTPUT_BUCKET_RELEASE_DIR="/workspace/output/bucket/previous/$(inputs.params.versionTag)"
         OUTPUT_BUCKET_LATEST_DIR="/workspace/output/bucket/latest"
         cp "$OUTPUT_BUCKET_RELEASE_DIR/release.yaml" "$OUTPUT_BUCKET_LATEST_DIR/release.yaml"
+        cp "$OUTPUT_BUCKET_RELEASE_DIR/release.notags.yaml" "$OUTPUT_BUCKET_LATEST_DIR/release.notags.yaml"
       fi
 
   - name: tag-images

@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
@@ -32,9 +33,11 @@ type testConfig struct {
 	f64 float64
 	dur time.Duration
 	set sets.String
+	qua *resource.Quantity
 }
 
 func TestParse(t *testing.T) {
+	fiveHundredM := resource.MustParse("500m")
 	tests := []struct {
 		name      string
 		conf      testConfig
@@ -51,6 +54,7 @@ func TestParse(t *testing.T) {
 			"test-float64":  "1.0",
 			"test-duration": "1m",
 			"test-set":      "a,b,c",
+			"test-quantity": "500m",
 		},
 		want: testConfig{
 			str: "foo.bar",
@@ -60,6 +64,7 @@ func TestParse(t *testing.T) {
 			f64: 1.0,
 			dur: time.Minute,
 			set: sets.NewString("a", "b", "c"),
+			qua: &fiveHundredM,
 		},
 	}, {
 		name: "respect defaults",
@@ -70,6 +75,7 @@ func TestParse(t *testing.T) {
 			i64: 2,
 			f64: 1.0,
 			dur: time.Minute,
+			qua: &fiveHundredM,
 		},
 		want: testConfig{
 			str: "foo.bar",
@@ -78,6 +84,7 @@ func TestParse(t *testing.T) {
 			i64: 2,
 			f64: 1.0,
 			dur: time.Minute,
+			qua: &fiveHundredM,
 		},
 	}, {
 		name: "bool defaults to false",
@@ -111,6 +118,12 @@ func TestParse(t *testing.T) {
 			"test-duration": "foo",
 		},
 		expectErr: true,
+	}, {
+		name: "quantity error",
+		data: map[string]string{
+			"test-quantity": "foo",
+		},
+		expectErr: true,
 	}}
 
 	for _, test := range tests {
@@ -123,6 +136,7 @@ func TestParse(t *testing.T) {
 				AsFloat64("test-float64", &test.conf.f64),
 				AsDuration("test-duration", &test.conf.dur),
 				AsStringSet("test-set", &test.conf.set),
+				AsQuantity("test-quantity", &test.conf.qua),
 			); (err == nil) == test.expectErr {
 				t.Fatal("Failed to parse data:", err)
 			}

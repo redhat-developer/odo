@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -865,10 +866,39 @@ func TestStartAndShutdownWithWork(t *testing.T) {
 	checkStats(t, reporter, 1, 0, 1, trueString)
 }
 
+type fakeError struct{}
+
+var _ error = (*fakeError)(nil)
+
+func (*fakeError) Error() string {
+	return "I always error"
+}
+
+func TestPermanentError(t *testing.T) {
+	err := new(fakeError)
+	permErr := NewPermanentError(err)
+	if !IsPermanentError(permErr) {
+		t.Errorf("Expected type %T to be a permanentError", permErr)
+	}
+	if IsPermanentError(err) {
+		t.Errorf("Expected type %T to not be a permanentError", err)
+	}
+
+	wrapPermErr := fmt.Errorf("wrapped: %w", permErr)
+	if !IsPermanentError(wrapPermErr) {
+		t.Error("Expected wrapped permanentError to be equivalent to a permanentError")
+	}
+
+	unwrapErr := new(fakeError)
+	if !errors.As(permErr, &unwrapErr) {
+		t.Errorf("Could not unwrap %T from permanentError", unwrapErr)
+	}
+}
+
 type ErrorReconciler struct{}
 
 func (er *ErrorReconciler) Reconcile(context.Context, string) error {
-	return errors.New("I always error")
+	return new(fakeError)
 }
 
 func TestStartAndShutdownWithErroringWork(t *testing.T) {
@@ -922,8 +952,7 @@ func TestStartAndShutdownWithErroringWork(t *testing.T) {
 type PermanentErrorReconciler struct{}
 
 func (er *PermanentErrorReconciler) Reconcile(context.Context, string) error {
-	err := errors.New("I always error")
-	return NewPermanentError(err)
+	return NewPermanentError(new(fakeError))
 }
 
 func TestStartAndShutdownWithPermanentErroringWork(t *testing.T) {

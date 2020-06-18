@@ -89,7 +89,7 @@ func TestWebHookInterceptor(t *testing.T) {
 	resPayload, _ := ioutil.ReadAll(resp.Body)
 	defer resp.Body.Close()
 	if diff := cmp.Diff(wantPayload, resPayload); diff != "" {
-		t.Errorf("response payload: %s", diff)
+		t.Errorf("response payload (-want, +got) = %s", diff)
 	}
 
 	// Check headers.
@@ -269,7 +269,7 @@ func Test_addInterceptorHeaders(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			addInterceptorHeaders(tt.args.header, tt.args.headerParams)
 			if diff := cmp.Diff(tt.want, tt.args.header); diff != "" {
-				t.Errorf("addInterceptorHeaders() Diff: -want +got: %s", diff)
+				t.Errorf("addInterceptorHeaders (-want, +got) = %s", diff)
 			}
 		})
 	}

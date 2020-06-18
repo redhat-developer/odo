@@ -193,28 +193,27 @@ type watchCache struct {
 }
 
 func newWatchCache(
-	capacity int,
 	keyFunc func(runtime.Object) (string, error),
 	eventHandler func(*watchCacheEvent),
 	getAttrsFunc func(runtime.Object) (labels.Set, fields.Set, error),
 	versioner storage.Versioner,
 	indexers *cache.Indexers,
+	clock clock.Clock,
 	objectType reflect.Type) *watchCache {
 	wc := &watchCache{
-		capacity:     capacity,
-		keyFunc:      keyFunc,
-		getAttrsFunc: getAttrsFunc,
-		cache:        make([]*watchCacheEvent, capacity),
-		// TODO get rid of them once we stop passing capacity as a parameter to watch cache.
-		lowerBoundCapacity:  min(capacity, defaultLowerBoundCapacity),
-		upperBoundCapacity:  max(capacity, defaultUpperBoundCapacity),
+		capacity:            defaultLowerBoundCapacity,
+		keyFunc:             keyFunc,
+		getAttrsFunc:        getAttrsFunc,
+		cache:               make([]*watchCacheEvent, defaultLowerBoundCapacity),
+		lowerBoundCapacity:  defaultLowerBoundCapacity,
+		upperBoundCapacity:  defaultUpperBoundCapacity,
 		startIndex:          0,
 		endIndex:            0,
 		store:               cache.NewIndexer(storeElementKey, storeElementIndexers(indexers)),
 		resourceVersion:     0,
 		listResourceVersion: 0,
 		eventHandler:        eventHandler,
-		clock:               clock.RealClock{},
+		clock:               clock,
 		versioner:           versioner,
 		objectType:          objectType,
 	}

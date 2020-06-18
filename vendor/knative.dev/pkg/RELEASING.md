@@ -1,120 +1,186 @@
-# Releasing knative/pkg
+# Releasing Knative
 
 We release the components of Knative every 6 weeks. All of these components must
-be moved to the latest "release" of the knative/pkg shared library prior to each
-release, but likely this should happen incrementally over each milestone.
+be moved to the latest "release" of all shared dependencies prior to each
+release.
 
-## Release Process.
+---
 
-### Step #1: 7 days prior to each release.
+## 14 days prior to the release
 
-7 days prior to the Knative release, each of the downstream repositories should
-stage a `[WIP]` Pull Request that advances the knative/pkg dependency to the
-latest commit.
+### Announce the imminent `pkg` cut
 
-At present, these downstream repositories include:
+Announce on **#general** that `pkg` will be cut in a week.
 
-1. knative/serving
-1. knative/eventing
-1. knative/eventing-contrib
-1. knative/sample-controller
-1. knative/sample-source
+---
 
-> The automation that auto-bumps these lives
-> [here](https://github.com/mattmoor/knobots/tree/knative/cmd/periodic/kodata).
+## 7 days prior to the release
 
-`Gopkg.toml` should look like:
+### Announce the imminent release cut
 
-```toml
-[[override]]
-  name = "knative.dev/pkg"
-  branch = "master"
+Announce on **#general** that the release will be cut in a week and that
+additional caution should be used when merging big changes.
+
+### Collect release-notes
+
+Make a copy of the
+[last release notes document](https://docs.google.com/document/d/1zQYVA4IorYFsIONpY8Hb5H6gU-ND1BWfm2nOdN7jJk0/edit),
+empty it out and send it to the WG leads of the respective project (serving or
+eventing) to fill in. Coordinate with both serving and eventing leads.
+
+### Cut `release-x.y` in `pkg` and `test-infra` libraries
+
+Shared dependencies like `knative/pkg` and `knative/test-infra` are kept
+up-to-date nightly in each of the releasing repositories. To stabilize things
+shortly before the release we cut the `release-x.y` branches on those 7 days
+prior to the main release.
+
+Both `pkg` and `test-infra` also need to pin each other's release branch. To do
+that, edit `hack/update-deps.sh` in the respective repo **on the newly created
+branch** to pin the respective branch. Then run
+`./hack/update-deps.sh --upgrade` and commit the changes.
+
+The change to `hack/update-deps.sh` will look like this:
+
+```diff
+diff --git a/hack/update-deps.sh b/hack/update-deps.sh
+index a39fc858..0634362f 100755
+--- a/hack/update-deps.sh
++++ b/hack/update-deps.sh
+@@ -26,7 +26,7 @@ cd ${ROOT_DIR}
+ # The list of dependencies that we track at HEAD and periodically
+ # float forward in this repository.
+ FLOATING_DEPS=(
+-  "knative.dev/test-infra@master"
++  "knative.dev/test-infra@release-x.y"
+ )
+
+ # Parse flags to determine any we should pass to dep.
 ```
 
-Then the following is run:
+PR the changes to each repository respectively, prepending the PR title with
+`[RELEASE]`.
 
-```shell
-dep ensure -update knative.dev/pkg
-./hack/update-codegen.sh
+### Pin `pkg` and `test-infra` in downstream repositories
+
+Similar to how the pin between `pkg` and `test-infra` themselves work, all
+downstream users must be pinned to the newly cut `release-x.y` branches on those
+libraries. The changes to `hack/update-deps.sh` look similar to above, but in
+most cases both dependencies will need to be pinned.
+
+```diff
+diff --git a/hack/update-deps.sh b/hack/update-deps.sh
+index b277dd3ff..1989885ce 100755
+--- a/hack/update-deps.sh
++++ b/hack/update-deps.sh
+@@ -32,8 +32,8 @@ VERSION="master"
+ # The list of dependencies that we track at HEAD and periodically
+ # float forward in this repository.
+ FLOATING_DEPS=(
+-  "knative.dev/test-infra@${VERSION}"
+-  "knative.dev/pkg@${VERSION}"
++  "knative.dev/test-infra@release-x.y"
++  "knative.dev/pkg@release-x.y"
+   "knative.dev/caching@${VERSION}"
+ )
 ```
 
-If problems are found, they are addressed and the update is merged, and this
-process repeats until knative/pkg can be cleanly updated without any changes.
+The downstream repositories this needs to happen on are:
 
-> If by mid-week, we do not have a clean PR in each repository, the person
-> driving the update should escalate to avoid delaying the release.
+- [knative/caching](https://github.com/knative/caching)
+- [knative/eventing-contrib](https://github.com/knative/eventing-contrib)
+- [knative/eventing](https://github.com/knative/eventing)
+- [knative/net-certmanager](https://github.com/knative/net-certmanager)
+- [knative/net-contour](https://github.com/knative/net-contour)
+- [knative/net-http01](https://github.com/knative/net-http01)
+- [knative/net-istio](https://github.com/knative/net-istio)
+- [knative/net-kourier](https://github.com/knative/net-kourier)
+- [knative/operator](https://github.com/knative/operator)
+- [knative/serving](https://github.com/knative/serving)
 
-### Step #2: Friday the week prior to each release.
+Apply the changes the the **master branches**, run
+`hack/update-deps.sh --upgrade` (and potentially `hack/update-codegen.sh` if
+necessary) and PR the changes to the **master branch**. Don't cut the release
+branch yet.
 
-A release branch is snapped on knative/pkg with the form `release-0.X` where `X`
-reflects the forthcoming Knative release.
+### Cut and pin `caching`
 
-Any releaseable components inside of `knative/pkg` also need to be set to their
-release branch to avoid trivial point releases during the next release. At the
-moment we have the following Knative dependecies inside of `pkg`:
+`caching` sees very little traffic, so we cut it 1 week prior to the actual
+release to unblock the `serving` release (it depends on caching). Cut a
+`release-x.y` branch and pin it in `serving` as shown above. You can potentially
+collapse this pin with the `pkg`/`test-infra` pin to `serving` per step 2.
 
-- knative.dev/test-infra
+### Verify nightly release automation is intact
 
-Update these to point to a release branch for the current release and update the
-toml entry on the `knative.dev/pkg:release-0.X` branch, like:
+The automation used to cut the actual releases is the very same as the
+automation used to cut nightly releases. Verify via testgrid that all relevant
+nightly releases are passing. If they are not coordinate with the relevant WG
+leads to fix them.
 
-```toml
-[[constraint]]
-  name = "knative.dev/test-infra"
-  branch = "release-0.14"
-```
+---
 
-After this updated in the `pkg` release branch, apply this commit at which this
-branch is snapped will be the version that has been staged into `[WIP]` PRs in
-every repository.
+## 1 day prior to the release
 
-These staging PRs are then updated to:
+### Confirm readiness
 
-```toml
-[[override]]
-  name = "knative.dev/pkg"
-  # The 0.X release branch.
-  branch = "release-0.X"
-```
+Confirm with the respective WG leads that the release is imminent and obtain
+green light.
 
-The `[WIP]` is removed, and the PRs are reviewed and merged.
+---
 
-> Note: a simple tool has been written to help with the
-> [toml editing](https://github.com/n3wscott/tomles).
+## Day of the release
 
-## Backporting Fixes
+### Cut `release-x.y` branches of `serving` and `eventing`
 
-If a problem is found in knative/pkg in an older release and a fix must be
-backported then it should first be fixed at HEAD (if still relevant). It should
-be called out and likely discussed (with a lead) in the original PR whether the
-fix is desired and eligible for back-porting to a release branch. This may raise
-the review bar, or lead to trade-offs in design; it is better to front-load this
-consideration to avoid delaying a cherry-pick.
+Create a `release-x.y` branch from master in both repositories. Wait for release
+automation to kick in (runs on a 2 hour interval). Once the release automation
+passed, it will create a release tag in both repositories. Enhance the
+respective tags with the collected release-notes using the Github UI.
 
-Once that PR has merged (if still relevant), the same commit should be
-cherry-picked onto `release-0.Y` and any merge problems fixed up.
+### Pin `serving` and `eventing` releases in dependent repositories
 
-Once the change is ready, a PR should be sent against `release-0.Y` with the
-prefix `[RELEASE-0.Y] Your PR Title` to clearly designate this PR as targeting
-the release branch. A lead will review and make a ruling on the PR, but if this
-consideration was front-loaded, it should be a short review.
+**After** the tags for `serving` and `eventing` are created, their version needs
+to be pinned in all repositories that depend on them.
 
-### Picking up fixes
+For **serving** that is:
 
-Downstream repositories should reference `knative/pkg` release branches from
-their own release branches, so to update the `knative/pkg` dependency we run:
+- [knative/eventing-contrib](https://github.com/knative/eventing-contrib)
+- [knative/net-certmanager](https://github.com/knative/net-certmanager)
+- [knative/net-contour](https://github.com/knative/net-contour)
+- [knative/net-http01](https://github.com/knative/net-http01)
+- [knative/net-istio](https://github.com/knative/net-istio)
+- [knative/net-kourier](https://github.com/knative/net-kourier)
 
-```shell
-dep ensure -update knative.dev/pkg
-./hack/update-deps.sh
-```
+For **eventing** that is:
 
-## Revert to Master
+- [knative/eventing-contrib](https://github.com/knative/eventing-contrib)
 
-Post release, reverse the process. `Gopkg.toml` should look like:
+The pins are similar to step 5 above, but now we're pinning `serving` and
+`eventing` respectively. Again, the pin PRs are sent against the **master**
+branch of each repository respectively.
 
-```toml
-[[override]]
-  name = "knative.dev/pkg"
-  branch = "master"
-```
+### Cut `release-x.y` branches of all remaining repositories
+
+After the pin PRs are merged, cut the `release-x.y` branch in each of the
+remaining repositories (except `operator`):
+
+- [knative/eventing-contrib](https://github.com/knative/eventing-contrib)
+- [knative/net-certmanager](https://github.com/knative/net-certmanager)
+- [knative/net-contour](https://github.com/knative/net-contour)
+- [knative/net-http01](https://github.com/knative/net-http01)
+- [knative/net-istio](https://github.com/knative/net-istio)
+- [knative/net-kourier](https://github.com/knative/net-kourier)
+
+Release automation will automatically pick up the branches and will likewise
+create the respective tags.
+
+---
+
+## After the release
+
+### Revert all pins to pin master branches again
+
+Revert all pins in all repositories to pin the **master** branches again, run
+`hack/update-deps.sh --upgrade` and PR the changes.
+
+---

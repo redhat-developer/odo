@@ -15,7 +15,7 @@ weight: 1
   - [Specifying `Parameters`](#specifying-parameters)
   - [Specifying `Resources`](#specifying-resources)
   - [Specifying `Workspaces`](#specifying-workspaces)
-  - [Storing execution results](#storing-execution-results)
+  - [Emitting `results`](#emitting-results)
   - [Specifying `Volumes`](#specifying-volumes)
   - [Specifying a `Step` template](#specifying-a-step-template)
   - [Specifying `Sidecars`](#specifying-sidecars)
@@ -71,10 +71,10 @@ A `Task` definition supports the following fields:
     - [`inputs`](#specifying-resources) - Specifies the resources ingested by the `Task`.
     - [`outputs`](#specifying-resources) - Specifies the resources produced by the `Task`.
   - [`workspaces`](#specifying-workspaces) - Specifies paths to volumes required by the `Task`.
-  - [`results`](#storing-execution-results) - Specifies the file to which the `Tasks` writes its execution results.
+  - [`results`](#emitting-results) - Specifies the file to which the `Tasks` writes its execution results.
   - [`volumes`](#specifying-volumes) - Specifies one or more volumes that will be available available to the `Steps` in the `Task`.
   - [`stepTemplate`](#specifying-a-step-template) - Specifies a `Container` step definition to use as the basis for all `Steps` in the `Task`.
-  - [`sidecars`](#specifying-sidecars) - Specifies `Sidecar` containers to run alongside the `Steps` in the `Task.
+  - [`sidecars`](#specifying-sidecars) - Specifies `Sidecar` containers to run alongside the `Steps` in the `Task`.
 
 [kubernetes-overview]:
   https://kubernetes.io/docs/concepts/overview/working-with-objects/kubernetes-objects/#required-fields
@@ -255,7 +255,7 @@ Parameter names:
 For example, `fooIs-Bar_` is a valid parameter name, but `barIsBa$` or `0banana` are not.
 
 Each declared parameter has a `type` field, which can be set to either `array` or `string`. `array` is useful in cases where the number
-of compiliation flags being supplied to a task varies throughout the `Task's` execution. If not specified, the `type` field defaults to
+of compilation flags being supplied to a task varies throughout the `Task's` execution. If not specified, the `type` field defaults to
 `string`. When the actual parameter value is supplied, its parsed type is validated against the `type` field.
 
 The following example illustrates the use of `Parameters` in a `Task`. The `Task` declares two input parameters named `flags`
@@ -364,7 +364,8 @@ steps:
 ### Specifying `Workspaces`
 
 [`Workspaces`](workspaces.md#using-workspaces-in-tasks) allow you to specify
-one or more volumes that your `Task` requires during execution. For example:
+one or more volumes that your `Task` requires during execution. It is recommended that `Tasks` uses **at most**
+one writeable `Workspace`. For example:
 
 ```yaml
 spec:
@@ -384,7 +385,7 @@ spec:
 For more information, see [Using `Workspaces` in `Tasks`](workspaces.md#using-workspaces-in-tasks)
 and the [`Workspaces` in a `TaskRun`](../examples/v1beta1/taskruns/workspace.yaml) example YAML file.
 
-### Storing execution results
+### Emitting results
 
 Use the `results` field to specify one or more files in which the `Task` stores its execution results. These files are
 stored in the `/tekton/results` directory. This directory is created automatically at execution time if at least one file
@@ -413,7 +414,7 @@ spec:
       script: |
         #!/usr/bin/env bash
         date +%s | tee /tekton/results/current-date-unix-timestamp
-    - name: print-date-humman-readable
+    - name: print-date-human-readable
       image: bash:latest
       script: |
         #!/usr/bin/env bash
@@ -423,16 +424,16 @@ spec:
 The stored results can be used [at the `Task` level](./pipelines.md#configuring-execution-results-at-the-task-level)
 or [at the `Pipeline` level](./pipelines.md#configuring-execution-results-at-the-pipeline-level).
 
-**Note:** The maximum size of a `Task's` results is limited by the container termination log feature of Kubernetes,
+**Note:** The maximum size of a `Task's` results is limited by the container termination message feature of Kubernetes,
 as results are passed back to the controller via this mechanism. At present, the limit is
-["2048 bytes or 80 lines, whichever is smaller."](https://kubernetes.io/docs/tasks/debug-application-cluster/determine-reason-pod-failure/#customizing-the-termination-message).
-Results are written to the termination log encoded as JSON objects and Tekton uses those objects
+["4096 bytes"](https://github.com/kubernetes/kubernetes/blob/96e13de777a9eb57f87889072b68ac40467209ac/pkg/kubelet/container/runtime.go#L632).
+Results are written to the termination message encoded as JSON objects and Tekton uses those objects
 to pass additional information to the controller. As such, `Task` results are best suited for holding
 small amounts of data, such as commit SHAs, branch names, ephemeral namespaces, and so on.
 
 If your `Task` writes a large number of small results, you can work around this limitation
-by writing each result from a separate `Step` so that each `Step` has its own termination log.
-However, for results larger than a kilobyte, use a [`Workspace`](#specifying-workspaces) to
+by writing each result from a separate `Step` so that each `Step` has its own termination message.
+About size limitation, there is validation for it, will raise exception: `Termination message is above max allowed size 4096, caused by large task result`. Since Tekton also uses the termination message for some internal information, so the real available size will less than 4096 bytes. For results larger than a kilobyte, use a [`Workspace`](#specifying-workspaces) to
 shuttle data between `Tasks` within a `Pipeline`.
 
 ### Specifying `Volumes`
@@ -484,7 +485,7 @@ The `sidecars` field specifies a list of [`Containers`](https://kubernetes.io/do
 to run alongside the `Steps` in your `Task`. You can use `Sidecars` to provide auxiliary functionality, such as
 [Docker in Docker](https://hub.docker.com/_/docker) or running a mock API server that your app can hit during testing.
 `Sidecars` spin up before your `Task` executes and are deleted after the `Task` execution completes.
-For further information, see [`Sidecars` in `TaskRuns`](taskruns.md#sidecars).
+For further information, see [`Sidecars` in `TaskRuns`](taskruns.md#specifying-sidecars).
 
 In the example below, a `Step` uses a Docker-in-Docker `Sidecar` to build a Docker image:
 
@@ -566,7 +567,7 @@ variable values as follows:
 
 #### Substituting `Array` parameters
 
-You can expand referenced paramters of type `array` using the star operator. To do so, add the operator (`[*]`)
+You can expand referenced parameters of type `array` using the star operator. To do so, add the operator (`[*]`)
 to the named parameter to insert the array elements in the spot of the reference string.
 
 For example, given a `params` field with the contents listed below, you can expand
@@ -604,7 +605,7 @@ A valid reference to the `build-args` parameter is isolated and in an eligible f
 ```yaml
  - name: build-step
       image: gcr.io/cloud-builders/some-image
-      args: ["build", "$(params.build-args[*])", "additonalArg"]
+      args: ["build", "$(params.build-args[*])", "additionalArg"]
 ```
 
 #### Substituting `Workspace` paths

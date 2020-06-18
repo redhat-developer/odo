@@ -36,6 +36,7 @@ var (
 	images = pipeline.Images{
 		EntrypointImage:          "override-with-entrypoint:latest",
 		NopImage:                 "tianon/true",
+		AffinityAssistantImage:   "nginx",
 		GitImage:                 "override-with-git:latest",
 		CredsImage:               "override-with-creds:latest",
 		KubeconfigWriterImage:    "override-with-kubeconfig-writer-image:latest",
@@ -345,7 +346,7 @@ var (
 		"bucket":     gcsResource,
 	}
 
-	gitResource, _ = resource.FromType(&resourcev1alpha1.PipelineResource{
+	gitResource, _ = resource.FromType("git-resource", &resourcev1alpha1.PipelineResource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "git-resource",
 		},
@@ -358,7 +359,7 @@ var (
 		},
 	}, images)
 
-	imageResource, _ = resource.FromType(&resourcev1alpha1.PipelineResource{
+	imageResource, _ = resource.FromType("image-resource", &resourcev1alpha1.PipelineResource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "image-resource",
 		},
@@ -371,7 +372,7 @@ var (
 		},
 	}, images)
 
-	gcsResource, _ = resource.FromType(&resourcev1alpha1.PipelineResource{
+	gcsResource, _ = resource.FromType("gcs-resource", &resourcev1alpha1.PipelineResource{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "gcs-resource",
 		},
@@ -480,7 +481,7 @@ func TestApplyArrayParameters(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := resources.ApplyParameters(tt.args.ts, tt.args.tr, tt.args.dp...)
-			if d := cmp.Diff(got, tt.want); d != "" {
+			if d := cmp.Diff(tt.want, got); d != "" {
 				t.Errorf("ApplyParameters() got diff %s", diff.PrintWantGot(d))
 			}
 		})
@@ -544,7 +545,7 @@ func TestApplyParameters(t *testing.T) {
 		spec.Sidecars[0].Container.Env[0].Value = "world"
 	})
 	got := resources.ApplyParameters(simpleTaskSpec, tr, dp...)
-	if d := cmp.Diff(got, want); d != "" {
+	if d := cmp.Diff(want, got); d != "" {
 		t.Errorf("ApplyParameters() got diff %s", diff.PrintWantGot(d))
 	}
 }
@@ -616,7 +617,7 @@ func TestApplyResources(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := resources.ApplyResources(tt.args.ts, tt.args.r, tt.args.rStr)
-			if d := cmp.Diff(got, tt.want); d != "" {
+			if d := cmp.Diff(tt.want, got); d != "" {
 				t.Errorf("ApplyResources() %s", diff.PrintWantGot(d))
 			}
 		})
@@ -737,7 +738,7 @@ func TestApplyWorkspaces(t *testing.T) {
 		EmptyDir: &corev1.EmptyDirVolumeSource{},
 	}}
 	got := resources.ApplyWorkspaces(ts, w, wb)
-	if d := cmp.Diff(got, want); d != "" {
+	if d := cmp.Diff(want, got); d != "" {
 		t.Errorf("TestApplyWorkspaces() got diff %s", diff.PrintWantGot(d))
 	}
 }
@@ -761,7 +762,7 @@ func TestTaskResults(t *testing.T) {
 			Script: "#!/usr/bin/env bash\ndate +%s | tee $(results.current-date-unix-timestamp.path)",
 		}, {
 			Container: corev1.Container{
-				Name:  "print-date-humman-readable",
+				Name:  "print-date-human-readable",
 				Image: "bash:latest",
 			},
 			Script: "#!/usr/bin/env bash\ndate | tee $(results.current-date-human-readable.path)",
@@ -773,7 +774,7 @@ func TestTaskResults(t *testing.T) {
 		spec.Steps[1].Script = "#!/usr/bin/env bash\ndate | tee /tekton/results/current-date-human-readable"
 	})
 	got := resources.ApplyTaskResults(ts)
-	if d := cmp.Diff(got, want); d != "" {
+	if d := cmp.Diff(want, got); d != "" {
 		t.Errorf("ApplyTaskResults() got diff %s", diff.PrintWantGot(d))
 	}
 }

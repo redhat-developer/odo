@@ -17,36 +17,25 @@ limitations under the License.
 package pod
 
 import (
+	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 
+	"github.com/tektoncd/pipeline/pkg/apis/config"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"github.com/tektoncd/pipeline/pkg/names"
-	"github.com/tektoncd/pipeline/pkg/system"
 	"github.com/tektoncd/pipeline/pkg/version"
+	"github.com/tektoncd/pipeline/pkg/workspace"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes"
 )
 
-// GetFeatureFlagsConfigName returns the name of the configmap containing all
-// customizations for the feature flags.
-func GetFeatureFlagsConfigName() string {
-	if e := os.Getenv("CONFIG_FEATURE_FLAGS_NAME"); e != "" {
-		return e
-	}
-	return "feature-flags"
-}
-
 const (
 	// ResultsDir is the folder used by default to create the results file
 	ResultsDir = "/tekton/results"
-
-	featureFlagDisableHomeEnvKey    = "disable-home-env-overwrite"
-	featureFlagDisableWorkingDirKey = "disable-working-directory-overwrite"
 
 	taskRunLabelKey = pipeline.GroupName + pipeline.TaskRunLabelKey
 )
@@ -86,7 +75,7 @@ var (
 
 // MakePod converts TaskRun and TaskSpec objects to a Pod which implements the taskrun specified
 // by the supplied CRD.
-func MakePod(images pipeline.Images, taskRun *v1beta1.TaskRun, taskSpec v1beta1.TaskSpec, kubeclient kubernetes.Interface, entrypointCache EntrypointCache, overrideHomeEnv bool) (*corev1.Pod, error) {
+func MakePod(ctx context.Context, images pipeline.Images, taskRun *v1beta1.TaskRun, taskSpec v1beta1.TaskSpec, kubeclient kubernetes.Interface, entrypointCache EntrypointCache, overrideHomeEnv bool) (*corev1.Pod, error) {
 	var initContainers []corev1.Container
 	var volumes []corev1.Volume
 	var volumeMounts []corev1.VolumeMount
@@ -190,7 +179,7 @@ func MakePod(images pipeline.Images, taskRun *v1beta1.TaskRun, taskSpec v1beta1.
 	// - sets container name to add "step-" prefix or "step-unnamed-#" if not specified.
 	// TODO(#1605): Remove this loop and make each transformation in
 	// isolation.
-	shouldOverrideWorkingDir := shouldOverrideWorkingDir(kubeclient)
+	shouldOverrideWorkingDir := shouldOverrideWorkingDir(ctx)
 	for i, s := range stepContainers {
 		if s.WorkingDir == "" && shouldOverrideWorkingDir {
 			stepContainers[i].WorkingDir = pipeline.WorkspaceDir
@@ -217,6 +206,17 @@ func MakePod(images pipeline.Images, taskRun *v1beta1.TaskRun, taskSpec v1beta1.
 		return nil, err
 	}
 
+	// Using node affinity on taskRuns sharing PVC workspace, with an Affinity Assistant
+	// is mutually exclusive with other affinity on taskRun pods. If other
+	// affinity is wanted, that should be added on the Affinity Assistant pod unless
+	// assistant is disabled. When Affinity Assistant is disabled, an affinityAssistantName is not set.
+	var affinity *corev1.Affinity
+	if affinityAssistantName := taskRun.Annotations[workspace.AnnotationAffinityAssistantName]; affinityAssistantName != "" {
+		affinity = nodeAffinityUsingAffinityAssistant(affinityAssistantName)
+	} else {
+		affinity = podTemplate.Affinity
+	}
+
 	mergedPodContainers := stepContainers
 
 	// Merge sidecar containers with step containers.
@@ -237,6 +237,10 @@ func MakePod(images pipeline.Images, taskRun *v1beta1.TaskRun, taskSpec v1beta1.
 
 	podAnnotations := taskRun.Annotations
 	podAnnotations[ReleaseAnnotation] = ReleaseAnnotationValue
+
+	if shouldAddReadyAnnotationOnPodCreate(ctx, taskSpec.Sidecars) {
+		podAnnotations[readyAnnotation] = readyAnnotationValue
+	}
 
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -263,7 +267,7 @@ func MakePod(images pipeline.Images, taskRun *v1beta1.TaskRun, taskSpec v1beta1.
 			Volumes:                      volumes,
 			NodeSelector:                 podTemplate.NodeSelector,
 			Tolerations:                  podTemplate.Tolerations,
-			Affinity:                     podTemplate.Affinity,
+			Affinity:                     affinity,
 			SecurityContext:              podTemplate.SecurityContext,
 			RuntimeClassName:             podTemplate.RuntimeClassName,
 			AutomountServiceAccountToken: podTemplate.AutomountServiceAccountToken,
@@ -273,6 +277,7 @@ func MakePod(images pipeline.Images, taskRun *v1beta1.TaskRun, taskSpec v1beta1.
 			DNSConfig:                    podTemplate.DNSConfig,
 			EnableServiceLinks:           podTemplate.EnableServiceLinks,
 			PriorityClassName:            priorityClassName,
+			ImagePullSecrets:             podTemplate.ImagePullSecrets,
 		},
 	}, nil
 }
@@ -292,6 +297,25 @@ func MakeLabels(s *v1beta1.TaskRun) map[string]string {
 	// specifies this label, it should be overridden by this value.
 	labels[taskRunLabelKey] = s.Name
 	return labels
+}
+
+// nodeAffinityUsingAffinityAssistant achieves Node Affinity for taskRun pods
+// sharing PVC workspace by setting PodAffinity so that taskRuns is
+// scheduled to the Node were the Affinity Assistant pod is scheduled.
+func nodeAffinityUsingAffinityAssistant(affinityAssistantName string) *corev1.Affinity {
+	return &corev1.Affinity{
+		PodAffinity: &corev1.PodAffinity{
+			RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{{
+				LabelSelector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{
+						workspace.LabelInstance:  affinityAssistantName,
+						workspace.LabelComponent: workspace.ComponentNameAffinityAssistant,
+					},
+				},
+				TopologyKey: "kubernetes.io/hostname",
+			}},
+		},
+	}
 }
 
 // getLimitRangeMinimum gets all LimitRanges in a namespace and
@@ -330,12 +354,9 @@ func getLimitRangeMinimum(namespace string, kubeclient kubernetes.Interface) (co
 // but this is planned to change in an upcoming release.
 //
 // For further reference see https://github.com/tektoncd/pipeline/issues/2013
-func ShouldOverrideHomeEnv(kubeclient kubernetes.Interface) bool {
-	configMap, err := kubeclient.CoreV1().ConfigMaps(system.GetNamespace()).Get(GetFeatureFlagsConfigName(), metav1.GetOptions{})
-	if err == nil && configMap != nil && configMap.Data != nil && configMap.Data[featureFlagDisableHomeEnvKey] == "true" {
-		return false
-	}
-	return true
+func ShouldOverrideHomeEnv(ctx context.Context) bool {
+	cfg := config.FromContextOrDefaults(ctx)
+	return !cfg.FeatureFlags.DisableHomeEnvOverwrite
 }
 
 // shouldOverrideWorkingDir returns a bool indicating whether a Pod should have its
@@ -344,10 +365,22 @@ func ShouldOverrideHomeEnv(kubeclient kubernetes.Interface) bool {
 // if not specified by the user,  but this is planned to change in an upcoming release.
 //
 // For further reference see https://github.com/tektoncd/pipeline/issues/1836
-func shouldOverrideWorkingDir(kubeclient kubernetes.Interface) bool {
-	configMap, err := kubeclient.CoreV1().ConfigMaps(system.GetNamespace()).Get(GetFeatureFlagsConfigName(), metav1.GetOptions{})
-	if err == nil && configMap != nil && configMap.Data != nil && configMap.Data[featureFlagDisableWorkingDirKey] == "true" {
+func shouldOverrideWorkingDir(ctx context.Context) bool {
+	cfg := config.FromContextOrDefaults(ctx)
+	return !cfg.FeatureFlags.DisableWorkingDirOverwrite
+}
+
+// shouldAddReadyAnnotationonPodCreate returns a bool indicating whether the
+// controller should add the `Ready` annotation when creating the Pod. We cannot
+// add the annotation if Tekton is running in a cluster with injected sidecars
+// or if the Task specifies any sidecars.
+func shouldAddReadyAnnotationOnPodCreate(ctx context.Context, sidecars []v1beta1.Sidecar) bool {
+	// If the TaskRun has sidecars, we cannot set the READY annotation early
+	if len(sidecars) > 0 {
 		return false
 	}
-	return true
+	// If the TaskRun has no sidecars, check if we are running in a cluster where sidecars can be injected by other
+	// controllers.
+	cfg := config.FromContextOrDefaults(ctx)
+	return !cfg.FeatureFlags.RunningInEnvWithInjectedSidecars
 }

@@ -26,7 +26,7 @@ import (
 	"time"
 
 	container "google.golang.org/api/container/v1beta1"
-	boskoscommon "k8s.io/test-infra/boskos/common"
+	boskoscommon "sigs.k8s.io/boskos/common"
 
 	"knative.dev/pkg/test/gke"
 	gkeFake "knative.dev/pkg/test/gke/fake"

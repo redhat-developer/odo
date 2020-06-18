@@ -190,6 +190,25 @@ func TestSendMessage(t *testing.T) {
 	}
 }
 
+func TestSendRawMessage(t *testing.T) {
+	spy := &inspectableConnection{
+		writeMessageCalls: make(chan struct{}, 1),
+	}
+	conn := newConnection(staticConnFactory(spy), nil)
+	conn.connect()
+
+	if got := conn.Status(); got != nil {
+		t.Errorf("Status() = %v, wanted nil", got)
+	}
+
+	if got := conn.SendRaw(websocket.BinaryMessage, []byte("test")); got != nil {
+		t.Fatalf("Expected no error but got: %+v", got)
+	}
+	if len(spy.writeMessageCalls) != 1 {
+		t.Fatalf("Expected 'WriteMessage' to be called once, but was called %v times", spy.writeMessageCalls)
+	}
+}
+
 func TestReceiveMessage(t *testing.T) {
 	testMessage := "testmessage"
 

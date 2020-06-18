@@ -1,0 +1,11 @@
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: bitbucket-binding
+spec:
+  params:
+    - name: gitrevision
+      value: $(body.changes[0].ref.displayId)
+    - name: gitrepositoryurl
+      value: $(body.repository.links.clone[1].href)

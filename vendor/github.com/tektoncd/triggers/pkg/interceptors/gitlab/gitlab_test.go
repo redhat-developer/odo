@@ -20,11 +20,11 @@ import (
 	"bytes"
 	"io/ioutil"
 	"net/http"
-	"reflect"
 	"testing"
 
-	"github.com/tektoncd/pipeline/pkg/logging"
+	"github.com/google/go-cmp/cmp"
 
+	"github.com/tektoncd/pipeline/pkg/logging"
 	triggersv1 "github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -241,8 +241,8 @@ func TestInterceptor_ExecuteTrigger(t *testing.T) {
 				t.Fatalf("error reading response: %v", err)
 			}
 			defer resp.Body.Close()
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Interceptor.ExecuteTrigger() = %v, want %v", got, tt.want)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("Interceptor.ExecuteTrigger (-want, +got) = %s", diff)
 			}
 		})
 	}

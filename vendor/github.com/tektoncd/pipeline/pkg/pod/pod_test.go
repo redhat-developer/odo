@@ -17,14 +17,17 @@ limitations under the License.
 package pod
 
 import (
+	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/tektoncd/pipeline/pkg/apis/config"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline"
+	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	"github.com/tektoncd/pipeline/pkg/system"
 	"github.com/tektoncd/pipeline/test/diff"
@@ -33,6 +36,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	fakek8s "k8s.io/client-go/kubernetes/fake"
+	logtesting "knative.dev/pkg/logging/testing"
 )
 
 var (
@@ -41,11 +45,17 @@ var (
 		CredsImage:      "override-with-creds:latest",
 		ShellImage:      "busybox",
 	}
+
+	ignoreReleaseAnnotation = func(k string, v string) bool {
+		return k == ReleaseAnnotation
+	}
+	featureInjectedSidecar                   = "running-in-environment-with-injected-sidecars"
+	featureFlagDisableHomeEnvKey             = "disable-home-env-overwrite"
+	featureFlagDisableWorkingDirKey          = "disable-working-directory-overwrite"
+	featureFlagSetReadyAnnotationOnPodCreate = "enable-ready-annotation-on-pod-create"
 )
 
 func TestMakePod(t *testing.T) {
-	names.TestingSeed()
-
 	implicitEnvVars := []corev1.EnvVar{{
 		Name:  "HOME",
 		Value: pipeline.HomeDir,
@@ -58,14 +68,12 @@ func TestMakePod(t *testing.T) {
 		Name:         "tekton-internal-secret-volume-multi-creds-9l9zj",
 		VolumeSource: corev1.VolumeSource{Secret: &corev1.SecretVolumeSource{SecretName: "multi-creds"}},
 	}
-
 	placeToolsInit := corev1.Container{
 		Name:         "place-tools",
 		Image:        images.EntrypointImage,
 		Command:      []string{"cp", "/ko-app/entrypoint", "/tekton/tools/entrypoint"},
 		VolumeMounts: []corev1.VolumeMount{toolsMount},
 	}
-
 	runtimeClassName := "gvisor"
 	automountServiceAccountToken := false
 	dnsPolicy := corev1.DNSNone
@@ -75,7 +83,9 @@ func TestMakePod(t *testing.T) {
 	for _, c := range []struct {
 		desc            string
 		trs             v1beta1.TaskRunSpec
+		trAnnotation    map[string]string
 		ts              v1beta1.TaskSpec
+		featureFlags    map[string]string
 		want            *corev1.PodSpec
 		wantAnnotations map[string]string
 	}{{
@@ -113,6 +123,48 @@ func TestMakePod(t *testing.T) {
 				TerminationMessagePath: "/tekton/termination",
 			}},
 			Volumes: append(implicitVolumes, toolsVolume, downwardVolume),
+		},
+	}, {
+		desc: "simple with running-in-environment-with-injected-sidecar set to false",
+		ts: v1beta1.TaskSpec{
+			Steps: []v1alpha1.Step{{Container: corev1.Container{
+				Name:    "name",
+				Image:   "image",
+				Command: []string{"cmd"}, // avoid entrypoint lookup.
+			}}},
+		},
+		featureFlags: map[string]string{
+			featureInjectedSidecar: "false",
+		},
+		want: &corev1.PodSpec{
+			RestartPolicy:  corev1.RestartPolicyNever,
+			InitContainers: []corev1.Container{placeToolsInit},
+			Containers: []corev1.Container{{
+				Name:    "step-name",
+				Image:   "image",
+				Command: []string{"/tekton/tools/entrypoint"},
+				Args: []string{
+					"-wait_file",
+					"/tekton/downward/ready",
+					"-wait_file_content",
+					"-post_file",
+					"/tekton/tools/0",
+					"-termination_path",
+					"/tekton/termination",
+					"-entrypoint",
+					"cmd",
+					"--",
+				},
+				Env:                    implicitEnvVars,
+				VolumeMounts:           append([]corev1.VolumeMount{toolsMount, downwardMount}, implicitVolumeMounts...),
+				WorkingDir:             pipeline.WorkspaceDir,
+				Resources:              corev1.ResourceRequirements{Requests: allZeroQty()},
+				TerminationMessagePath: "/tekton/termination",
+			}},
+			Volumes: append(implicitVolumes, toolsVolume, downwardVolume),
+		},
+		wantAnnotations: map[string]string{
+			readyAnnotation: readyAnnotationValue,
 		},
 	}, {
 		desc: "with service account",
@@ -473,6 +525,58 @@ sidecar-script-heredoc-randomly-generated-mz4c7
 			Volumes: append(implicitVolumes, scriptsVolume, toolsVolume, downwardVolume),
 		},
 	}, {
+		desc: "sidecar container with enable-ready-annotation-on-pod-create",
+		ts: v1beta1.TaskSpec{
+			Steps: []v1alpha1.Step{{Container: corev1.Container{
+				Name:    "primary-name",
+				Image:   "primary-image",
+				Command: []string{"cmd"}, // avoid entrypoint lookup.
+			}}},
+			Sidecars: []v1alpha1.Sidecar{{
+				Container: corev1.Container{
+					Name:  "sc-name",
+					Image: "sidecar-image",
+				},
+			}},
+		},
+		featureFlags: map[string]string{
+			featureFlagSetReadyAnnotationOnPodCreate: "true",
+		},
+		wantAnnotations: map[string]string{}, // no ready annotations on pod create since sidecars are present
+		want: &corev1.PodSpec{
+			RestartPolicy:  corev1.RestartPolicyNever,
+			InitContainers: []corev1.Container{placeToolsInit},
+			Containers: []corev1.Container{{
+				Name:    "step-primary-name",
+				Image:   "primary-image",
+				Command: []string{"/tekton/tools/entrypoint"},
+				Args: []string{
+					"-wait_file",
+					"/tekton/downward/ready",
+					"-wait_file_content",
+					"-post_file",
+					"/tekton/tools/0",
+					"-termination_path",
+					"/tekton/termination",
+					"-entrypoint",
+					"cmd",
+					"--",
+				},
+				Env:                    implicitEnvVars,
+				VolumeMounts:           append([]corev1.VolumeMount{toolsMount, downwardMount}, implicitVolumeMounts...),
+				WorkingDir:             pipeline.WorkspaceDir,
+				Resources:              corev1.ResourceRequirements{Requests: allZeroQty()},
+				TerminationMessagePath: "/tekton/termination",
+			}, {
+				Name:  "sidecar-sc-name",
+				Image: "sidecar-image",
+				Resources: corev1.ResourceRequirements{
+					Requests: nil,
+				},
+			}},
+			Volumes: append(implicitVolumes, toolsVolume, downwardVolume),
+		},
+	}, {
 		desc: "resource request",
 		ts: v1beta1.TaskSpec{
 			Steps: []v1beta1.Step{{Container: corev1.Container{
@@ -730,6 +834,51 @@ script-heredoc-randomly-generated-78c5n
 			}},
 		},
 	}, {
+		desc: "setting image pull secret",
+		ts: v1beta1.TaskSpec{
+			Steps: []v1alpha1.Step{
+				{
+					Container: corev1.Container{
+						Name:    "image-pull",
+						Image:   "image",
+						Command: []string{"cmd"}, // avoid entrypoint lookup.
+					},
+				},
+			},
+		},
+		trs: v1beta1.TaskRunSpec{
+			PodTemplate: &v1alpha1.PodTemplate{
+				ImagePullSecrets: []corev1.LocalObjectReference{{Name: "imageSecret"}},
+			},
+		},
+		want: &corev1.PodSpec{
+			RestartPolicy:  corev1.RestartPolicyNever,
+			InitContainers: []corev1.Container{placeToolsInit},
+			Volumes:        append(implicitVolumes, toolsVolume, downwardVolume),
+			Containers: []corev1.Container{{
+				Name:    "step-image-pull",
+				Image:   "image",
+				Command: []string{"/tekton/tools/entrypoint"},
+				Args: []string{
+					"-wait_file",
+					"/tekton/downward/ready",
+					"-wait_file_content",
+					"-post_file",
+					"/tekton/tools/0",
+					"-termination_path",
+					"/tekton/termination",
+					"-entrypoint",
+					"cmd",
+					"--",
+				},
+				Env:                    implicitEnvVars,
+				VolumeMounts:           append([]corev1.VolumeMount{toolsMount, downwardMount}, implicitVolumeMounts...),
+				WorkingDir:             pipeline.WorkspaceDir,
+				Resources:              corev1.ResourceRequirements{Requests: allZeroQty()},
+				TerminationMessagePath: "/tekton/termination",
+			}},
+			ImagePullSecrets: []corev1.LocalObjectReference{{Name: "imageSecret"}},
+		}}, {
 		desc: "using hostNetwork",
 		ts: v1beta1.TaskSpec{
 			Steps: []v1beta1.Step{
@@ -775,9 +924,75 @@ script-heredoc-randomly-generated-78c5n
 				TerminationMessagePath: "/tekton/termination",
 			}},
 		},
-	}} {
+	}, {
+		desc: "with a propagated Affinity Assistant name - expect proper affinity",
+		ts: v1beta1.TaskSpec{
+			Steps: []v1beta1.Step{
+				{
+					Container: corev1.Container{
+						Name:    "name",
+						Image:   "image",
+						Command: []string{"cmd"}, // avoid entrypoint lookup.
+					},
+				},
+			},
+		},
+		trAnnotation: map[string]string{
+			"pipeline.tekton.dev/affinity-assistant": "random-name-123",
+		},
+		trs: v1beta1.TaskRunSpec{
+			PodTemplate: &v1beta1.PodTemplate{},
+		},
+		want: &corev1.PodSpec{
+			Affinity: &corev1.Affinity{
+				PodAffinity: &corev1.PodAffinity{
+					RequiredDuringSchedulingIgnoredDuringExecution: []corev1.PodAffinityTerm{{
+						LabelSelector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"app.kubernetes.io/instance":  "random-name-123",
+								"app.kubernetes.io/component": "affinity-assistant",
+							},
+						},
+						TopologyKey: "kubernetes.io/hostname",
+					}},
+				},
+			},
+			RestartPolicy:  corev1.RestartPolicyNever,
+			InitContainers: []corev1.Container{placeToolsInit},
+			HostNetwork:    false,
+			Volumes:        append(implicitVolumes, toolsVolume, downwardVolume),
+			Containers: []corev1.Container{{
+				Name:    "step-name",
+				Image:   "image",
+				Command: []string{"/tekton/tools/entrypoint"},
+				Args: []string{
+					"-wait_file",
+					"/tekton/downward/ready",
+					"-wait_file_content",
+					"-post_file",
+					"/tekton/tools/0",
+					"-termination_path",
+					"/tekton/termination",
+					"-entrypoint",
+					"cmd",
+					"--",
+				},
+				Env:                    implicitEnvVars,
+				VolumeMounts:           append([]corev1.VolumeMount{toolsMount, downwardMount}, implicitVolumeMounts...),
+				WorkingDir:             pipeline.WorkspaceDir,
+				Resources:              corev1.ResourceRequirements{Requests: allZeroQty()},
+				TerminationMessagePath: "/tekton/termination",
+			}},
+		}}} {
 		t.Run(c.desc, func(t *testing.T) {
 			names.TestingSeed()
+			store := config.NewStore(logtesting.TestLogger(t))
+			store.OnConfigChanged(
+				&corev1.ConfigMap{
+					ObjectMeta: metav1.ObjectMeta{Name: config.GetFeatureFlagsConfigName(), Namespace: system.GetNamespace()},
+					Data:       c.featureFlags,
+				},
+			)
 			kubeclient := fakek8s.NewSimpleClientset(
 				&corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: "default", Namespace: "default"}},
 				&corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: "service-account", Namespace: "default"},
@@ -800,12 +1015,19 @@ script-heredoc-randomly-generated-78c5n
 					},
 				},
 			)
+			var trAnnotations map[string]string
+			if c.trAnnotation == nil {
+				trAnnotations = map[string]string{
+					ReleaseAnnotation: ReleaseAnnotationValue,
+				}
+			} else {
+				trAnnotations = c.trAnnotation
+				trAnnotations[ReleaseAnnotation] = ReleaseAnnotationValue
+			}
 			tr := &v1beta1.TaskRun{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "taskrun-name",
-					Annotations: map[string]string{
-						ReleaseAnnotation: ReleaseAnnotationValue,
-					},
+					Name:        "taskrun-name",
+					Annotations: trAnnotations,
 				},
 				Spec: c.trs,
 			}
@@ -813,7 +1035,7 @@ script-heredoc-randomly-generated-78c5n
 			// No entrypoints should be looked up.
 			entrypointCache := fakeCache{}
 
-			got, err := MakePod(images, tr, c.ts, kubeclient, entrypointCache, true)
+			got, err := MakePod(store.ToContext(context.Background()), images, tr, c.ts, kubeclient, entrypointCache, true)
 			if err != nil {
 				t.Fatalf("MakePod: %v", err)
 			}
@@ -824,6 +1046,12 @@ script-heredoc-randomly-generated-78c5n
 
 			if d := cmp.Diff(c.want, &got.Spec, resourceQuantityCmp); d != "" {
 				t.Errorf("Diff %s", diff.PrintWantGot(d))
+			}
+
+			if c.wantAnnotations != nil {
+				if d := cmp.Diff(c.wantAnnotations, got.ObjectMeta.Annotations, cmpopts.IgnoreMapEntries(ignoreReleaseAnnotation)); d != "" {
+					t.Errorf("Annotation Diff(-want, +got):\n%s", d)
+				}
 			}
 		})
 	}
@@ -858,14 +1086,14 @@ func TestShouldOverrideHomeEnv(t *testing.T) {
 	}{{
 		description: "Default behaviour: A missing disable-home-env-overwrite flag should result in true",
 		configMap: &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{Name: GetFeatureFlagsConfigName(), Namespace: system.GetNamespace()},
+			ObjectMeta: metav1.ObjectMeta{Name: config.GetFeatureFlagsConfigName(), Namespace: system.GetNamespace()},
 			Data:       map[string]string{},
 		},
 		expected: true,
 	}, {
 		description: "Setting disable-home-env-overwrite to false should result in true",
 		configMap: &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{Name: GetFeatureFlagsConfigName(), Namespace: system.GetNamespace()},
+			ObjectMeta: metav1.ObjectMeta{Name: config.GetFeatureFlagsConfigName(), Namespace: system.GetNamespace()},
 			Data: map[string]string{
 				featureFlagDisableHomeEnvKey: "false",
 			},
@@ -874,7 +1102,7 @@ func TestShouldOverrideHomeEnv(t *testing.T) {
 	}, {
 		description: "Setting disable-home-env-overwrite to true should result in false",
 		configMap: &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{Name: GetFeatureFlagsConfigName(), Namespace: system.GetNamespace()},
+			ObjectMeta: metav1.ObjectMeta{Name: config.GetFeatureFlagsConfigName(), Namespace: system.GetNamespace()},
 			Data: map[string]string{
 				featureFlagDisableHomeEnvKey: "true",
 			},
@@ -882,42 +1110,10 @@ func TestShouldOverrideHomeEnv(t *testing.T) {
 		expected: false,
 	}} {
 		t.Run(tc.description, func(t *testing.T) {
-			kubeclient := fakek8s.NewSimpleClientset(
-				tc.configMap,
-			)
-			if result := ShouldOverrideHomeEnv(kubeclient); result != tc.expected {
+			store := config.NewStore(logtesting.TestLogger(t))
+			store.OnConfigChanged(tc.configMap)
+			if result := ShouldOverrideHomeEnv(store.ToContext(context.Background())); result != tc.expected {
 				t.Errorf("Expected %t Received %t", tc.expected, result)
-			}
-		})
-	}
-}
-
-func TestGetFeatureFlagsConfigName(t *testing.T) {
-	for _, tc := range []struct {
-		description         string
-		featureFlagEnvValue string
-		expected            string
-	}{{
-		description:         "Feature flags config value not set",
-		featureFlagEnvValue: "",
-		expected:            "feature-flags",
-	}, {
-		description:         "Feature flags config value set",
-		featureFlagEnvValue: "feature-flags-test",
-		expected:            "feature-flags-test",
-	}} {
-		t.Run(tc.description, func(t *testing.T) {
-			original := os.Getenv("CONFIG_FEATURE_FLAGS_NAME")
-			defer t.Cleanup(func() {
-				os.Setenv("CONFIG_FEATURE_FLAGS_NAME", original)
-			})
-			if tc.featureFlagEnvValue != "" {
-				os.Setenv("CONFIG_FEATURE_FLAGS_NAME", tc.featureFlagEnvValue)
-			}
-			got := GetFeatureFlagsConfigName()
-			want := tc.expected
-			if got != want {
-				t.Errorf("GetFeatureFlagsConfigName() = %s, want %s", got, want)
 			}
 		})
 	}
@@ -931,14 +1127,14 @@ func TestShouldOverrideWorkingDir(t *testing.T) {
 	}{{
 		description: "Default behaviour: A missing disable-working-directory-overwrite flag should result in true",
 		configMap: &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{Name: GetFeatureFlagsConfigName(), Namespace: system.GetNamespace()},
+			ObjectMeta: metav1.ObjectMeta{Name: config.GetFeatureFlagsConfigName(), Namespace: system.GetNamespace()},
 			Data:       map[string]string{},
 		},
 		expected: true,
 	}, {
 		description: "Setting disable-working-directory-overwrite to false should result in true",
 		configMap: &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{Name: GetFeatureFlagsConfigName(), Namespace: system.GetNamespace()},
+			ObjectMeta: metav1.ObjectMeta{Name: config.GetFeatureFlagsConfigName(), Namespace: system.GetNamespace()},
 			Data: map[string]string{
 				featureFlagDisableWorkingDirKey: "false",
 			},
@@ -947,7 +1143,7 @@ func TestShouldOverrideWorkingDir(t *testing.T) {
 	}, {
 		description: "Setting disable-working-directory-overwrite to true should result in false",
 		configMap: &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{Name: GetFeatureFlagsConfigName(), Namespace: system.GetNamespace()},
+			ObjectMeta: metav1.ObjectMeta{Name: config.GetFeatureFlagsConfigName(), Namespace: system.GetNamespace()},
 			Data: map[string]string{
 				featureFlagDisableWorkingDirKey: "true",
 			},
@@ -955,11 +1151,91 @@ func TestShouldOverrideWorkingDir(t *testing.T) {
 		expected: false,
 	}} {
 		t.Run(tc.description, func(t *testing.T) {
-			kubeclient := fakek8s.NewSimpleClientset(
-				tc.configMap,
-			)
-			if result := shouldOverrideWorkingDir(kubeclient); result != tc.expected {
+			store := config.NewStore(logtesting.TestLogger(t))
+			store.OnConfigChanged(tc.configMap)
+			ctx := store.ToContext(context.Background())
+			if result := shouldOverrideWorkingDir(ctx); result != tc.expected {
 				t.Errorf("Expected %t Received %t", tc.expected, result)
+			}
+		})
+	}
+}
+
+func TestShouldAddReadyAnnotationonPodCreate(t *testing.T) {
+	sd := v1beta1.Sidecar{
+		Container: corev1.Container{
+			Name: "a-sidecar",
+		},
+	}
+	tcs := []struct {
+		description string
+		sidecars    []v1beta1.Sidecar
+		configMap   *corev1.ConfigMap
+		expected    bool
+	}{{
+		description: "Default behavior with sidecars present: Ready annotation not set on pod create",
+		sidecars:    []v1beta1.Sidecar{sd},
+		configMap: &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{Name: config.GetFeatureFlagsConfigName(), Namespace: system.GetNamespace()},
+			Data:       map[string]string{},
+		},
+		expected: false,
+	}, {
+		description: "Default behavior with no sidecars present: Ready annotation not set on pod create",
+		sidecars:    []v1beta1.Sidecar{},
+		configMap: &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{Name: config.GetFeatureFlagsConfigName(), Namespace: system.GetNamespace()},
+			Data:       map[string]string{},
+		},
+		expected: false,
+	}, {
+		description: "Setting running-in-environment-with-injected-sidecars to true with sidecars present results in false",
+		sidecars:    []v1beta1.Sidecar{sd},
+		configMap: &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{Name: config.GetFeatureFlagsConfigName(), Namespace: system.GetNamespace()},
+			Data: map[string]string{
+				featureInjectedSidecar: "true",
+			},
+		},
+		expected: false,
+	}, {
+		description: "Setting running-in-environment-with-injected-sidecars to true with no sidecars present results in false",
+		sidecars:    []v1beta1.Sidecar{},
+		configMap: &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{Name: config.GetFeatureFlagsConfigName(), Namespace: system.GetNamespace()},
+			Data: map[string]string{
+				featureInjectedSidecar: "true",
+			},
+		},
+		expected: false,
+	}, {
+		description: "Setting running-in-environment-with-injected-sidecars to false with sidecars present results in false",
+		sidecars:    []v1beta1.Sidecar{sd},
+		configMap: &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{Name: config.GetFeatureFlagsConfigName(), Namespace: system.GetNamespace()},
+			Data: map[string]string{
+				featureInjectedSidecar: "false",
+			},
+		},
+		expected: false,
+	}, {
+		description: "Setting running-in-environment-with-injected-sidecars to false with no sidecars present results in true",
+		sidecars:    []v1beta1.Sidecar{},
+		configMap: &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{Name: config.GetFeatureFlagsConfigName(), Namespace: system.GetNamespace()},
+			Data: map[string]string{
+				featureInjectedSidecar: "false",
+			},
+		},
+		expected: true,
+	}}
+
+	for _, tc := range tcs {
+		t.Run(tc.description, func(t *testing.T) {
+			store := config.NewStore(logtesting.TestLogger(t))
+			store.OnConfigChanged(tc.configMap)
+			if result := shouldAddReadyAnnotationOnPodCreate(store.ToContext(context.Background()), tc.sidecars); result != tc.expected {
+				t.Errorf("expected: %t Received: %t", tc.expected, result)
 			}
 		})
 	}

@@ -184,7 +184,7 @@
 		},
 		{
 			"ImportPath": "github.com/evanphx/json-patch",
-			"Rev": "v4.2.0"
+			"Rev": "e83c0a1c26c8"
 		},
 		{
 			"ImportPath": "github.com/fatih/color",
@@ -516,7 +516,7 @@
 		},
 		{
 			"ImportPath": "go.etcd.io/etcd",
-			"Rev": "e694b7bb0875"
+			"Rev": "54ba9589114f"
 		},
 		{
 			"ImportPath": "go.opencensus.io",
@@ -668,19 +668,19 @@
 		},
 		{
 			"ImportPath": "k8s.io/api",
-			"Rev": "6f652b6ce59c"
+			"Rev": "8dc28b782f8e"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery",
-			"Rev": "e0747e0da69d"
+			"Rev": "c1bd2c2a276f"
 		},
 		{
 			"ImportPath": "k8s.io/client-go",
-			"Rev": "f099a72e140a"
+			"Rev": "3c831c893e8a"
 		},
 		{
 			"ImportPath": "k8s.io/component-base",
-			"Rev": "80bc5fe191e9"
+			"Rev": "6c60a4d2ed11"
 		},
 		{
 			"ImportPath": "k8s.io/gengo",
@@ -688,7 +688,7 @@
 		},
 		{
 			"ImportPath": "k8s.io/klog/v2",
-			"Rev": "v2.0.0"
+			"Rev": "v2.1.0"
 		},
 		{
 			"ImportPath": "k8s.io/kube-openapi",
@@ -704,7 +704,7 @@
 		},
 		{
 			"ImportPath": "sigs.k8s.io/apiserver-network-proxy/konnectivity-client",
-			"Rev": "33b997865007"
+			"Rev": "v0.0.9"
 		},
 		{
 			"ImportPath": "sigs.k8s.io/structured-merge-diff/v3",

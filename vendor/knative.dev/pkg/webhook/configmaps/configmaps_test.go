@@ -48,11 +48,12 @@ import (
 const (
 	testConfigValidationName = "configmap.webhook.knative.dev"
 	testConfigValidationPath = "/cm"
+	testConfigName           = "test-config"
 )
 
 var (
 	validations = configmap.Constructors{
-		"test-config": newConfigFromConfigMap,
+		testConfigName: newConfigFromConfigMap,
 	}
 	initialConfigWebhook = &admissionregistrationv1beta1.ValidatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
@@ -83,11 +84,11 @@ func newNonRunningTestConfigValidationController(t *testing.T) (
 	// Create fake clients
 	kubeClient = fakekubeclientset.NewSimpleClientset(initialConfigWebhook)
 
-	ac = NewTestConfigValidationController(t)
+	ac = newTestConfigValidationController(t)
 	return
 }
 
-func NewTestConfigValidationController(t *testing.T) *reconciler {
+func newTestConfigValidationController(t *testing.T) *reconciler {
 	ctx, _ := SetupFakeContext(t)
 	ctx = webhook.WithOptions(ctx, webhook.Options{
 		SecretName: "webhook-secret",
@@ -202,6 +203,61 @@ func TestDenyInvalidUpdateConfigMapOutOfRange(t *testing.T) {
 	ExpectFailsWith(t, resp, "out of range")
 }
 
+func TestAllowConfigMapExample(t *testing.T) {
+	_, ac := newNonRunningTestConfigValidationController(t)
+
+	r := createValidConfigMap()
+	// Add an _example field but add no annotation.
+	r.Data[configmap.ExampleKey] = "bar"
+	ctx := TestContextWithLogger(t)
+
+	resp := ac.Admit(ctx, createCreateConfigMapRequest(ctx, t, r))
+
+	ExpectAllowed(t, resp)
+}
+
+func TestAllowUnknownConfigMapExample(t *testing.T) {
+	_, ac := newNonRunningTestConfigValidationController(t)
+
+	r := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "some-other-config",
+			Annotations: map[string]string{
+				configmap.ExampleChecksumAnnotation: "foo",
+			},
+		},
+		Data: map[string]string{
+			configmap.ExampleKey: "bar",
+		},
+	}
+	ctx := TestContextWithLogger(t)
+
+	resp := ac.Admit(ctx, createCreateConfigMapRequest(ctx, t, r))
+
+	ExpectAllowed(t, resp)
+}
+
+func TestDenyInvalidUpdateConfigMapExample(t *testing.T) {
+	_, ac := newNonRunningTestConfigValidationController(t)
+
+	r := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: testConfigName,
+			Annotations: map[string]string{
+				configmap.ExampleChecksumAnnotation: "foo",
+			},
+		},
+		Data: map[string]string{
+			configmap.ExampleKey: "bar",
+		},
+	}
+	ctx := TestContextWithLogger(t)
+
+	resp := ac.Admit(ctx, createCreateConfigMapRequest(ctx, t, r))
+
+	ExpectFailsWith(t, resp, fmt.Sprintf("%q modified", configmap.ExampleKey))
+}
+
 type config struct {
 	value float64
 }
@@ -249,7 +305,7 @@ func createConfigMap(value string) *corev1.ConfigMap {
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: system.Namespace(),
-			Name:      "test-config",
+			Name:      testConfigName,
 		},
 		Data: map[string]string{
 			"value": value,

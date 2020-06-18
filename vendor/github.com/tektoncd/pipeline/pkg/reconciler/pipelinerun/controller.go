@@ -28,6 +28,7 @@ import (
 	pipelineruninformer "github.com/tektoncd/pipeline/pkg/client/injection/informers/pipeline/v1beta1/pipelinerun"
 	taskinformer "github.com/tektoncd/pipeline/pkg/client/injection/informers/pipeline/v1beta1/task"
 	taskruninformer "github.com/tektoncd/pipeline/pkg/client/injection/informers/pipeline/v1beta1/taskrun"
+	pipelinerunreconciler "github.com/tektoncd/pipeline/pkg/client/injection/reconciler/pipeline/v1beta1/pipelinerun"
 	resourceinformer "github.com/tektoncd/pipeline/pkg/client/resource/injection/informers/resource/v1alpha1/pipelineresource"
 	"github.com/tektoncd/pipeline/pkg/reconciler"
 	"github.com/tektoncd/pipeline/pkg/reconciler/pipelinerun/config"
@@ -38,10 +39,6 @@ import (
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/tracker"
-)
-
-const (
-	resyncPeriod = 10 * time.Hour
 )
 
 // NewController instantiates a new controller.Impl from knative.dev/pkg/controller
@@ -63,16 +60,10 @@ func NewController(namespace string, images pipeline.Images) func(context.Contex
 			logger.Errorf("Failed to create pipelinerun metrics recorder %v", err)
 		}
 
-		opt := reconciler.Options{
+		c := &Reconciler{
 			KubeClientSet:     kubeclientset,
 			PipelineClientSet: pipelineclientset,
-			ConfigMapWatcher:  cmw,
-			ResyncPeriod:      resyncPeriod,
-			Logger:            logger,
-		}
-
-		c := &Reconciler{
-			Base:              reconciler.NewBase(opt, pipelineRunAgentName, images),
+			Images:            images,
 			pipelineRunLister: pipelineRunInformer.Lister(),
 			pipelineLister:    pipelineInformer.Lister(),
 			taskLister:        taskInformer.Lister(),
@@ -84,12 +75,19 @@ func NewController(namespace string, images pipeline.Images) func(context.Contex
 			metrics:           metrics,
 			pvcHandler:        volumeclaim.NewPVCHandler(kubeclientset, logger),
 		}
-		impl := controller.NewImpl(c, c.Logger, pipeline.PipelineRunControllerName)
+		impl := pipelinerunreconciler.NewImpl(ctx, c, func(impl *controller.Impl) controller.Options {
+			configStore := config.NewStore(images, logger.Named("config-store"))
+			configStore.WatchConfigs(cmw)
+			return controller.Options{
+				AgentName:   pipeline.PipelineRunControllerName,
+				ConfigStore: configStore,
+			}
+		})
 
 		timeoutHandler.SetPipelineRunCallbackFunc(impl.Enqueue)
 		timeoutHandler.CheckTimeouts(namespace, kubeclientset, pipelineclientset)
 
-		c.Logger.Info("Setting up event handlers")
+		logger.Info("Setting up event handlers")
 		pipelineRunInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    impl.Enqueue,
 			UpdateFunc: controller.PassNew(impl.Enqueue),
@@ -101,9 +99,7 @@ func NewController(namespace string, images pipeline.Images) func(context.Contex
 			UpdateFunc: controller.PassNew(impl.EnqueueControllerOf),
 		})
 
-		c.Logger.Info("Setting up ConfigMap receivers")
-		c.configStore = config.NewStore(images, c.Logger.Named("config-store"))
-		c.configStore.WatchConfigs(opt.ConfigMapWatcher)
+		go metrics.ReportRunningPipelineRuns(ctx, pipelineRunInformer.Lister())
 
 		return impl
 	}

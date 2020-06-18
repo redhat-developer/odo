@@ -18,14 +18,15 @@ package taskrun
 
 import (
 	"context"
-	"time"
 
+	"github.com/tektoncd/pipeline/pkg/apis/config"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline"
 	"github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	pipelineclient "github.com/tektoncd/pipeline/pkg/client/injection/client"
 	clustertaskinformer "github.com/tektoncd/pipeline/pkg/client/injection/informers/pipeline/v1beta1/clustertask"
 	taskinformer "github.com/tektoncd/pipeline/pkg/client/injection/informers/pipeline/v1beta1/task"
 	taskruninformer "github.com/tektoncd/pipeline/pkg/client/injection/informers/pipeline/v1beta1/taskrun"
+	taskrunreconciler "github.com/tektoncd/pipeline/pkg/client/injection/reconciler/pipeline/v1beta1/taskrun"
 	resourceinformer "github.com/tektoncd/pipeline/pkg/client/resource/injection/informers/resource/v1alpha1/pipelineresource"
 	"github.com/tektoncd/pipeline/pkg/pod"
 	"github.com/tektoncd/pipeline/pkg/reconciler"
@@ -38,10 +39,6 @@ import (
 	"knative.dev/pkg/controller"
 	"knative.dev/pkg/logging"
 	"knative.dev/pkg/tracker"
-)
-
-const (
-	resyncPeriod = 10 * time.Hour
 )
 
 // NewController instantiates a new controller.Impl from knative.dev/pkg/controller
@@ -61,22 +58,16 @@ func NewController(namespace string, images pipeline.Images) func(context.Contex
 			logger.Errorf("Failed to create taskrun metrics recorder %v", err)
 		}
 
-		opt := reconciler.Options{
-			KubeClientSet:     kubeclientset,
-			PipelineClientSet: pipelineclientset,
-			ConfigMapWatcher:  cmw,
-			ResyncPeriod:      resyncPeriod,
-			Logger:            logger,
-			Recorder:          controller.GetEventRecorder(ctx),
-		}
-
 		entrypointCache, err := pod.NewEntrypointCache(kubeclientset)
 		if err != nil {
 			logger.Fatalf("Error creating entrypoint cache: %v", err)
 		}
 
 		c := &Reconciler{
-			Base:              reconciler.NewBase(opt, taskRunAgentName, images),
+			KubeClientSet:     kubeclientset,
+			PipelineClientSet: pipelineclientset,
+			Images:            images,
+
 			taskRunLister:     taskRunInformer.Lister(),
 			taskLister:        taskInformer.Lister(),
 			clusterTaskLister: clusterTaskInformer.Lister(),
@@ -87,12 +78,20 @@ func NewController(namespace string, images pipeline.Images) func(context.Contex
 			entrypointCache:   entrypointCache,
 			pvcHandler:        volumeclaim.NewPVCHandler(kubeclientset, logger),
 		}
-		impl := controller.NewImpl(c, c.Logger, pipeline.TaskRunControllerName)
+		impl := taskrunreconciler.NewImpl(ctx, c, func(impl *controller.Impl) controller.Options {
+			configStore := config.NewStore(logger.Named("config-store"))
+			configStore.WatchConfigs(cmw)
+
+			return controller.Options{
+				AgentName:   pipeline.TaskRunControllerName,
+				ConfigStore: configStore,
+			}
+		})
 
 		timeoutHandler.SetTaskRunCallbackFunc(impl.Enqueue)
 		timeoutHandler.CheckTimeouts(namespace, kubeclientset, pipelineclientset)
 
-		c.Logger.Info("Setting up event handlers")
+		logger.Info("Setting up event handlers")
 		taskRunInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    impl.Enqueue,
 			UpdateFunc: controller.PassNew(impl.Enqueue),
@@ -104,6 +103,8 @@ func NewController(namespace string, images pipeline.Images) func(context.Contex
 			FilterFunc: controller.FilterGroupKind(v1beta1.Kind("TaskRun")),
 			Handler:    controller.HandleAll(impl.EnqueueControllerOf),
 		})
+
+		go metrics.ReportRunningTaskRuns(ctx, taskRunInformer.Lister())
 
 		return impl
 	}

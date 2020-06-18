@@ -126,7 +126,7 @@ spec:
   serviceAccountName: default
   triggers:
   - bindings:
-    - name: pipeline-binding
+    - ref: pipeline-binding
     template:
       name: pipeline-template
 DONE

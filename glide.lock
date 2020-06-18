@@ -1,5 +1,5 @@
-hash: b1492b21a92932c9bdf9d95cf067bd92eff40f53558a3bb32f986ec0d84b9b80
-updated: 2020-05-26T23:50:18.644175535-04:00
+hash: bfc9d5f9a6898813f88cb63176de326841ac3fb3a147f5a18a818cf465b25a70
+updated: 2020-06-17T08:12:19.260051505-04:00
 imports:
 - name: cloud.google.com/go
   version: 8c41231e01b2085512d98153bcffb847ff9b4b9f
@@ -80,7 +80,7 @@ imports:
   - pkg/term
   - pkg/term/windows
 - name: github.com/docker/go-connections
-  version: 7dc0a2d6ddce55257ea8851e23b4fb9ef44fd4a0
+  version: 480d0b58242613178844e8ffabde7a5d55658f0d
   subpackages:
   - nat
   - sockets
@@ -390,7 +390,7 @@ imports:
   - pkg/build/naming
   - pkg/oauth/oauthdiscovery
 - name: github.com/openshift/oc
-  version: 4a4cd759b616cdba344dd73386727c10d3d2dde1
+  version: d038424d6d4f1cc39ad586ac0d36dac3a7a37ceb
   subpackages:
   - pkg/cli/login
   - pkg/helpers/errors
@@ -402,7 +402,7 @@ imports:
   - pkg/helpers/term
   - pkg/helpers/tokencmd
 - name: github.com/operator-framework/operator-lifecycle-manager
-  version: f8ef76c241abfeeb45fa680599b9c683ec3173cf
+  version: 33671ebb9929e837d1e9f8104476bf278f203080
   subpackages:
   - pkg/api/apis/operators
   - pkg/api/apis/operators/v1
@@ -462,7 +462,7 @@ imports:
   - ident
   - internal/jsonutil
 - name: github.com/sirupsen/logrus
-  version: 42baed85eb233bfc674562af0ef6e99c45f5f384
+  version: 6699a89a232f3db797f2e280639854bbc4b89725
 - name: github.com/spf13/afero
   version: 588a75ec4f32903aa5e39a2619ba6a4631e28424
   subpackages:
@@ -477,7 +477,7 @@ imports:
   - assert
   - require
 - name: github.com/tektoncd/pipeline
-  version: bfa9d6155161e17c105ccf14fe3ff31b510e28fe
+  version: 648cff3dfe1330c5035492437adee6bf1670d941
   subpackages:
   - pkg/apis/config
   - pkg/apis/pipeline
@@ -491,7 +491,7 @@ imports:
   - pkg/reconciler/pipeline/dag
   - pkg/substitution
 - name: github.com/tektoncd/triggers
-  version: 8e7c4798a520fe371c815d40f8fbdb2c72604bdd
+  version: 9baf220e6fb5f71e70968e01b1bfaa2a12a95cb6
   subpackages:
   - pkg/apis/triggers/v1alpha1
 - name: github.com/xeipuuv/gojsonpointer
@@ -579,7 +579,7 @@ imports:
   subpackages:
   - internal
 - name: gomodules.xyz/jsonpatch
-  version: 1c2a0262323edc27502942d9727c95646b1c3cbe
+  version: e8422f09d27ee2c8cfb2c7f8089eb9eeb0764849
   subpackages:
   - v2
 - name: google.golang.org/appengine
@@ -720,7 +720,7 @@ imports:
   - third_party/forked/golang/netutil
   - third_party/forked/golang/reflect
 - name: k8s.io/apiserver
-  version: dca35a8f4279c07a791cf850649b3b025509eaf8
+  version: 65afa901f75a71453aa6efcbbc033641003bb555
   subpackages:
   - pkg/authentication/authenticator
   - pkg/authentication/request/x509
@@ -1008,7 +1008,7 @@ imports:
   - integer
   - trace
 - name: knative.dev/pkg
-  version: 495174c9665196c489566f097099162653a8d49c
+  version: ffb929374a39cc0659b18100e9e2361f5106a81f
   subpackages:
   - apis
   - apis/duck

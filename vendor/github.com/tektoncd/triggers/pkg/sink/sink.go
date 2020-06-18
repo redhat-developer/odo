@@ -27,6 +27,7 @@ import (
 	triggersv1 "github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
 	triggersclientset "github.com/tektoncd/triggers/pkg/client/clientset/versioned"
 	"github.com/tektoncd/triggers/pkg/interceptors"
+	"github.com/tektoncd/triggers/pkg/interceptors/bitbucket"
 	"github.com/tektoncd/triggers/pkg/interceptors/cel"
 	"github.com/tektoncd/triggers/pkg/interceptors/github"
 	"github.com/tektoncd/triggers/pkg/interceptors/gitlab"
@@ -186,6 +187,11 @@ func (r Sink) executeInterceptors(t *triggersv1.EventListenerTrigger, in *http.R
 		Header: in.Header,
 		Body:   ioutil.NopCloser(bytes.NewBuffer(event)),
 	}
+
+	// We create a cache against each request, so whenever we make network calls like
+	// fetching kubernetes secrets, we can do so only once per request.
+	request = interceptors.WithCache(request)
+
 	var resp *http.Response
 	for _, i := range t.Interceptors {
 		var interceptor interceptors.Interceptor
@@ -198,6 +204,8 @@ func (r Sink) executeInterceptors(t *triggersv1.EventListenerTrigger, in *http.R
 			interceptor = gitlab.NewInterceptor(i.GitLab, r.KubeClientSet, r.EventListenerNamespace, log)
 		case i.CEL != nil:
 			interceptor = cel.NewInterceptor(i.CEL, r.KubeClientSet, r.EventListenerNamespace, log)
+		case i.Bitbucket != nil:
+			interceptor = bitbucket.NewInterceptor(i.Bitbucket, r.KubeClientSet, r.EventListenerNamespace, log)
 		default:
 			return nil, nil, fmt.Errorf("unknown interceptor type: %v", i)
 		}

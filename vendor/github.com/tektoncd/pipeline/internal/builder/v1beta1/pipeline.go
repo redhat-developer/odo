@@ -428,6 +428,13 @@ func PipelineRunServiceAccountNameTask(taskName, sa string) PipelineRunSpecOp {
 	}
 }
 
+// PipelineTaskRunSpec adds customs TaskRunSpecs
+func PipelineTaskRunSpecs(taskRunSpecs []v1beta1.PipelineTaskRunSpec) PipelineRunSpecOp {
+	return func(prs *v1beta1.PipelineRunSpec) {
+		prs.TaskRunSpecs = taskRunSpecs
+	}
+}
+
 // PipelineRunParam add a param, with specified name and value, to the PipelineRunSpec.
 func PipelineRunParam(name string, value string, additionalValues ...string) PipelineRunSpecOp {
 	arrayOrString := ArrayOrString(value, additionalValues...)
@@ -541,7 +548,7 @@ func PipelineRunTaskRunsStatus(taskRunName string, status *v1beta1.PipelineRunTa
 func PipelineWorkspaceDeclaration(names ...string) PipelineSpecOp {
 	return func(spec *v1beta1.PipelineSpec) {
 		for _, name := range names {
-			spec.Workspaces = append(spec.Workspaces, v1beta1.WorkspacePipelineDeclaration{Name: name})
+			spec.Workspaces = append(spec.Workspaces, v1beta1.PipelineWorkspaceDeclaration{Name: name})
 		}
 	}
 }

@@ -347,8 +347,9 @@ func TestEventListenerValidate_error(t *testing.T) {
 					Bindings: []*v1alpha1.EventListenerBinding{{Name: "tb", Kind: v1alpha1.NamespacedTriggerBindingKind, Ref: "tb"}},
 					Template: v1alpha1.EventListenerTemplate{Name: "tt"},
 					Interceptors: []*v1alpha1.EventInterceptor{{
-						GitHub: &v1alpha1.GitHubInterceptor{},
-						GitLab: &v1alpha1.GitLabInterceptor{},
+						GitHub:    &v1alpha1.GitHubInterceptor{},
+						GitLab:    &v1alpha1.GitLabInterceptor{},
+						Bitbucket: &v1alpha1.BitBucketInterceptor{},
 					}},
 				}},
 			},

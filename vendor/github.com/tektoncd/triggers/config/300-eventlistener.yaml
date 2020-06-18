@@ -42,3 +42,13 @@ spec:
   subresources:
     status: {}
   version: v1alpha1
+  additionalPrinterColumns:
+  - name: Address
+    type: string
+    JSONPath: .status.address.url
+  - name: Available
+    type: string
+    JSONPath: ".status.conditions[?(@.type=='Available')].status"
+  - name: Reason
+    type: string
+    JSONPath: ".status.conditions[?(@.type=='Available')].reason"
