@@ -195,7 +195,7 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 					})
 			}
 
-			if !isEnvPresent(container.Env, adaptersCommon.EnvOdoCommandDebugWorkingDir) && debugCommand.Exec.WorkingDir != "" {
+			if debugCommand.Exec.WorkingDir != "" && !isEnvPresent(container.Env, adaptersCommon.EnvOdoCommandDebugWorkingDir) {
 				klog.V(3).Infof("Updating container %v env with debug command's workdir", container.Name)
 				container.Env = append(container.Env,
 					corev1.EnvVar{

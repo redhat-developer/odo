@@ -661,10 +661,17 @@ func TestValidateAndGetDebugDevfileCommands(t *testing.T) {
 			}
 
 			debugCommand, err := ValidateAndGetDebugDevfileCommands(devObj.Data, tt.debugCommand)
-			if !tt.wantErr == (err != nil) {
-				t.Errorf("TestValidateAndGetDebugDevfileCommands unexpected error when validating commands wantErr: %v err: %v", tt.wantErr, err)
-			} else if tt.wantErr && err != nil {
-				return
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Error was expected but got no error")
+				} else {
+					return
+				}
+			} else if !tt.wantErr {
+				if err != nil {
+					t.Errorf("TestValidateAndGetDebugDevfileCommands: unexpected error %v", err)
+				}
 			}
 
 			if !reflect.DeepEqual(nil, debugCommand) && debugCommand.Exec.Id != tt.debugCommand {

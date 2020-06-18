@@ -353,33 +353,13 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 		}
 	}
 
-	// Get Run Command
-	command, ok = commandsMap[versionsCommon.RunCommandGroupType]
-	if ok && !isDebug {
-		klog.V(4).Infof("Executing devfile command %v", command.Exec.Id)
-		compInfo.ContainerName = command.Exec.Component
-
-		// Check if the devfile run component containers have supervisord as the entrypoint.
-		// Start the supervisord if the odo component does not exist
-		if !componentExists {
-			err = a.InitRunContainerSupervisord(command.Exec.Component, podName, containers)
-			if err != nil {
-				return
-			}
-		}
-
-		if componentExists && !common.IsRestartRequired(command) {
-			klog.V(4).Infof("restart:false, Not restarting DevRun Command")
-			err = exec.ExecuteDevfileRunActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
-			return
-		}
-		err = exec.ExecuteDevfileRunAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
-
+	// Get Run or Debug Command
+	if isDebug {
+		command, ok = commandsMap[versionsCommon.DebugCommandGroupType]
+	} else {
+		command, ok = commandsMap[versionsCommon.RunCommandGroupType]
 	}
-
-	// Get Debug Command
-	command, ok = commandsMap[versionsCommon.DebugCommandGroupType]
-	if ok && isDebug {
+	if ok {
 		klog.V(4).Infof("Executing devfile command %v", command.Exec.Id)
 		compInfo.ContainerName = command.Exec.Component
 
@@ -393,12 +373,19 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 		}
 
 		if componentExists && !common.IsRestartRequired(command) {
-			klog.V(4).Infof("restart:false, Not restarting debugRun Command")
-			err = exec.ExecuteDevfileDebugActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
+			klog.V(4).Infof("restart:false, Not restarting %v Command", command.Exec.Id)
+			if isDebug {
+				err = exec.ExecuteDevfileDebugActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
+			} else {
+				err = exec.ExecuteDevfileRunActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
+			}
 			return
 		}
-		err = exec.ExecuteDevfileDebugAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
-
+		if isDebug {
+			err = exec.ExecuteDevfileDebugAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
+		} else {
+			err = exec.ExecuteDevfileRunAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
+		}
 	}
 
 	return

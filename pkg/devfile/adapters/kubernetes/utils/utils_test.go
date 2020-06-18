@@ -2,6 +2,7 @@ package utils
 
 import (
 	"reflect"
+	"strconv"
 	"testing"
 
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
@@ -41,6 +42,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 		name                    string
 		runCommand              string
 		debugCommand            string
+		debugPort               int
 		containers              []corev1.Container
 		execCommands            []common.Exec
 		componentType           common.DevfileComponentType
@@ -169,8 +171,9 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 
 		{
 			name:         "Case: empty debug command",
-			runCommand:   emptyString,
+			runCommand:   "customRunCommand",
 			debugCommand: emptyString,
+			debugPort:    5858,
 			containers: []corev1.Container{
 				{
 					Name:            component,
@@ -187,6 +190,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 			},
 			execCommands: []versionsCommon.Exec{
 				{
+					Id:          "customRunCommand",
 					CommandLine: command,
 					Component:   component,
 					WorkingDir:  workDir,
@@ -205,8 +209,9 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 		},
 		{
 			name:         "Case: custom debug command",
-			runCommand:   "",
+			runCommand:   emptyString,
 			debugCommand: "customdebugcommand",
+			debugPort:    3000,
 			containers: []corev1.Container{
 				{
 					Name:            component,
@@ -236,8 +241,9 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 		},
 		{
 			name:         "Case: wrong custom debug command",
-			runCommand:   "",
+			runCommand:   emptyString,
 			debugCommand: "customdebugcommand123",
+			debugPort:    9090,
 			containers: []corev1.Container{
 				{
 					Name:            component,
@@ -294,7 +300,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 				},
 			}
 
-			containers, err := UpdateContainersWithSupervisord(devObj, tt.containers, tt.runCommand, tt.debugCommand, 5858)
+			containers, err := UpdateContainersWithSupervisord(devObj, tt.containers, tt.runCommand, tt.debugCommand, tt.debugPort)
 
 			if !tt.wantErr && err != nil {
 				t.Errorf("TestUpdateContainersWithSupervisord unxpected error: %v", err)
@@ -311,6 +317,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 			envWorkDirMatched := false
 			envDebugMatched := false
 			envDebugWorkDirMatched := false
+			envDebugPortMatched := false
 
 			if tt.execCommands[0].WorkingDir == "" {
 				// if workdir is not present, dont test for matching the env
@@ -338,11 +345,21 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 							if tt.execCommands[0].WorkingDir != "" && envVar.Name == adaptersCommon.EnvOdoCommandRunWorkingDir && envVar.Value == tt.execCommands[0].WorkingDir {
 								envWorkDirMatched = true
 							}
-							if len(tt.execCommands) >= 2 && envVar.Name == adaptersCommon.EnvOdoCommandDebug && envVar.Value == tt.execCommands[1].CommandLine {
-								envDebugMatched = true
-							}
-							if len(tt.execCommands) >= 2 && tt.execCommands[1].WorkingDir != "" && envVar.Name == adaptersCommon.EnvOdoCommandDebugWorkingDir && envVar.Value == tt.execCommands[1].WorkingDir {
-								envDebugWorkDirMatched = true
+
+							// if the debug command is also present
+							if len(tt.execCommands) >= 2 {
+								// check if the debug command env was set properly
+								if envVar.Name == adaptersCommon.EnvOdoCommandDebug && envVar.Value == tt.execCommands[1].CommandLine {
+									envDebugMatched = true
+								}
+								// check if the debug command's workingDir env was set properly
+								if tt.execCommands[1].WorkingDir != "" && envVar.Name == adaptersCommon.EnvOdoCommandDebugWorkingDir && envVar.Value == tt.execCommands[1].WorkingDir {
+									envDebugWorkDirMatched = true
+								}
+								// check if the debug command's debugPort env was set properly
+								if envVar.Name == adaptersCommon.EnvDebugPort && envVar.Value == strconv.Itoa(tt.debugPort) {
+									envDebugPortMatched = true
+								}
 							}
 						}
 
@@ -361,8 +378,8 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 				t.Errorf("TestUpdateContainersWithSupervisord error: could not find env vars for supervisord in container %v, found command env: %v, found work dir env: %v", component, envRunMatched, envWorkDirMatched)
 			}
 
-			if len(tt.execCommands) >= 2 && (!envDebugMatched || !envDebugWorkDirMatched) {
-				t.Errorf("TestUpdateContainersWithSupervisord error: could not find env vars for supervisord in container %v, found debug env: %v, found work dir env: %v", component, envDebugMatched, envDebugWorkDirMatched)
+			if len(tt.execCommands) >= 2 && (!envDebugMatched || !envDebugWorkDirMatched || !envDebugPortMatched) {
+				t.Errorf("TestUpdateContainersWithSupervisord error: could not find env vars for supervisord in container %v, found debug env: %v, found work dir env: %v, found debug port env: %v", component, envDebugMatched, envDebugWorkDirMatched, envDebugPortMatched)
 			}
 		})
 	}
