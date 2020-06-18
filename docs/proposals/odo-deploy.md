@@ -86,6 +86,7 @@ The deployment manifest could be templated to help with replacing key bits of in
 - PORT
 
 For example: 
+A deployment based on Runtime component operator (https://operatorhub.io/operator/) might look like this: 
 ```
 apiVersion: app.stacks/v1beta1
 kind: RuntimeComponent
