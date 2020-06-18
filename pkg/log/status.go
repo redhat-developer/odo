@@ -87,9 +87,17 @@ func (s *Status) updateStatus() {
 	mu.Lock()
 	if s.warningStatus != "" {
 		yellow := color.New(color.FgYellow).SprintFunc()
-		s.spinner.SetSuffix(fmt.Sprintf(suffixSpacing+"%s [%s %s]", s.status, yellow(getWarningString()), yellow(s.warningStatus)))
+
+		warningSubstring := fmt.Sprintf(" [%s %s]", yellow(getWarningString()), yellow(s.warningStatus))
+
+		newSuffix := fmt.Sprintf(suffixSpacing+"%s", s.status)
+
+		newSuffix = trimSuffixIfNeeded(newSuffix, s.writer, len(warningSubstring))
+
+		s.spinner.SetSuffix(fmt.Sprintf("%s%s", newSuffix, warningSubstring))
 	} else {
-		s.spinner.SetSuffix(fmt.Sprintf(suffixSpacing+"%s", s.status))
+		newSuffix := fmt.Sprintf(suffixSpacing+"%s", s.status)
+		s.spinner.SetSuffix(trimSuffixIfNeeded(newSuffix, s.writer, 0))
 	}
 	mu.Unlock()
 }
@@ -111,11 +119,60 @@ func (s *Status) Start(status string, debug bool) {
 			fmt.Fprintf(s.writer, prefixSpacing+getSpacingString()+suffixSpacing+"%s  ...\n", s.status)
 		} else {
 			s.spinner.SetPrefix(prefixSpacing)
-			s.spinner.SetSuffix(fmt.Sprintf(suffixSpacing+"%s", s.status))
+			newSuffix := fmt.Sprintf(suffixSpacing+"%s", s.status)
+			s.spinner.SetSuffix(trimSuffixIfNeeded(newSuffix, s.writer, 0))
 			s.spinner.Start()
 		}
 	}
+}
 
+// trimSuffixIfNeeded returns a represention of the 'suffix' parameter that fits within the terminal
+// (including the extra space occupied by the padding parameter).
+func trimSuffixIfNeeded(suffix string, w io.Writer, padding int) string {
+
+	terminalWidth := getTerminalWidth(w)
+	if terminalWidth == nil {
+		return suffix
+	}
+
+	// Additional padding to account for animation widget on lefthand side, and to avoid getting too close to the righthand terminal edge
+	const additionalPadding = 10
+
+	maxWidth := *terminalWidth - padding - additionalPadding
+
+	// For VERY small terminals, or very large padding, just return the suffix unmodified
+	if maxWidth <= 20 {
+		return suffix
+	}
+
+	// If we are compliant, return the unmodified suffix...
+	if len(suffix) <= maxWidth {
+		return suffix
+	}
+
+	// Otherwise trim down to the desired length and append '...'
+	abbrevSuffix := "..."
+	maxWidth -= len(abbrevSuffix)
+
+	suffix = suffix[:maxWidth] + abbrevSuffix
+
+	return suffix
+}
+
+func getTerminalWidth(w io.Writer) *int {
+
+	if runtime.GOOS != "windows" {
+
+		if v, ok := (w).(*os.File); ok {
+			w, _, err := terminal.GetSize(int(v.Fd()))
+			if err == nil {
+				return &w
+			}
+		}
+
+	}
+
+	return nil
 }
 
 // End completes the current status, ending any previous spinning and
@@ -135,7 +192,7 @@ func (s *Status) End(success bool) {
 
 	if !IsJSON() {
 		if success {
-			// Clear the warning (uneeded now)
+			// Clear the warning (unneeded now)
 			s.WarningStatus("")
 			green := color.New(color.FgGreen).SprintFunc()
 			fmt.Fprintf(s.writer, prefixSpacing+"%s"+suffixSpacing+"%s [%s]\n", green(getSuccessString()), s.status, s.spinner.TimeSpent())
