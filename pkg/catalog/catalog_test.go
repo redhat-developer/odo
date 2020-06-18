@@ -249,6 +249,7 @@ func TestGetDevfileIndexEntries(t *testing.T) {
 			`
 			[
 				{
+					"name": "nodejs",
 					"displayName": "NodeJS Angular Web Application",
 					"description": "Stack for developing NodeJS Angular Web Application",
 					"tags": [
@@ -276,31 +277,21 @@ func TestGetDevfileIndexEntries(t *testing.T) {
 	tests := []struct {
 		name     string
 		registry Registry
-		want     []DevfileIndexEntry
+		want     []DevfileComponentType
 	}{
 		{
 			name:     "Test NodeJS devfile index",
 			registry: Registry{Name: registryName, URL: server.URL},
-			want: []DevfileIndexEntry{
+			want: []DevfileComponentType{
 				{
+					Name:        "nodejs",
 					DisplayName: "NodeJS Angular Web Application",
 					Description: "Stack for developing NodeJS Angular Web Application",
-					Tags: []string{
-						"NodeJS",
-						"Angular",
-						"Alpine",
-					},
-					Icon:              "/images/angular.svg",
-					GlobalMemoryLimit: "2686Mi",
 					Registry: Registry{
 						Name: registryName,
 						URL:  server.URL,
 					},
-					Links: struct {
-						Link string `json:"self"`
-					}{
-						Link: "/devfiles/angular/devfile.yaml",
-					},
+					Link: "/devfiles/angular/devfile.yaml",
 				},
 			},
 		},

@@ -392,16 +392,17 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		var componentType string
 		var componentName string
 		var componentNamespace string
+		var catalogDevfileList catalog.DevfileComponentTypeList
 		isDevfileRegistryPresent := true // defaulted to true since odo ships with a default registry set
-
-		// Component type: We provide devfile component list to let user choose
-		catalogDevfileList, err := catalog.ListDevfileComponents(co.devfileMetadata.devfileRegistry.Name)
-		if err != nil {
-			return err
-		}
 
 		if co.interactive {
 			// Interactive mode
+
+			// Component type: We provide devfile component list to let user choose
+			catalogDevfileList, err = catalog.ListDevfileComponents(co.devfileMetadata.devfileRegistry.Name)
+			if err != nil {
+				return err
+			}
 
 			if len(catalogDevfileList.DevfileRegistries) == 0 {
 				isDevfileRegistryPresent = false
@@ -420,7 +421,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 					if err != nil {
 						return err
 					}
-				} else {
+				} else if !pushtarget.IsPushTargetDocker() {
 					componentNamespace = ui.EnterDevfileComponentNamespace(defaultComponentNamespace)
 				}
 			}
@@ -460,6 +461,12 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 					componentName = args[0]
 				}
 
+				// Component type: We provide devfile component list to let user choose
+				catalogDevfileList, err = catalog.ListDevfileComponents(co.devfileMetadata.devfileRegistry.Name)
+				if err != nil {
+					return err
+				}
+
 				if len(catalogDevfileList.DevfileRegistries) == 0 {
 					isDevfileRegistryPresent = false
 					log.Warning("Registry is empty, please run `odo registry add <registry name> <registry URL>` to add a registry\n")
@@ -477,42 +484,46 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			}
 		}
 
-		if isDevfileRegistryPresent {
-			// Set devfileMetadata struct
-			co.devfileMetadata.componentType = componentType
-			co.devfileMetadata.componentName = strings.ToLower(componentName)
-			co.devfileMetadata.componentNamespace = strings.ToLower(componentNamespace)
+		// Set devfileMetadata struct
+		co.devfileMetadata.componentType = componentType
+		co.devfileMetadata.componentName = strings.ToLower(componentName)
+		co.devfileMetadata.componentNamespace = strings.ToLower(componentNamespace)
 
+		if util.CheckPathExists(DevfilePath) || co.devfileMetadata.devfilePath.value != "" {
 			// Categorize the sections
 			log.Info("Validation")
 
-			if util.CheckPathExists(DevfilePath) || co.devfileMetadata.devfilePath.value != "" {
-				var devfileAbsolutePath string
-				if util.CheckPathExists(DevfilePath) || co.devfileMetadata.devfilePath.protocol == "file" {
-					var devfilePath string
-					if util.CheckPathExists(DevfilePath) {
-						devfilePath = DevfilePath
-					} else {
-						devfilePath = co.devfileMetadata.devfilePath.value
-					}
-					devfileAbsolutePath, err = filepath.Abs(devfilePath)
-					if err != nil {
-						return err
-					}
-				} else if co.devfileMetadata.devfilePath.protocol == "http(s)" {
-					devfileAbsolutePath = co.devfileMetadata.devfilePath.value
+			var devfileAbsolutePath string
+			if util.CheckPathExists(DevfilePath) || co.devfileMetadata.devfilePath.protocol == "file" {
+				var devfilePath string
+				if util.CheckPathExists(DevfilePath) {
+					devfilePath = DevfilePath
+				} else {
+					devfilePath = co.devfileMetadata.devfilePath.value
 				}
-				devfileSpinner := log.Spinnerf("Creating a devfile component from devfile path: %s", devfileAbsolutePath)
-				defer devfileSpinner.End(true)
-
-				// Initialize envinfo
-				err = co.InitEnvInfoFromContext()
+				devfileAbsolutePath, err = filepath.Abs(devfilePath)
 				if err != nil {
 					return err
 				}
-
-				return nil
+			} else if co.devfileMetadata.devfilePath.protocol == "http(s)" {
+				devfileAbsolutePath = co.devfileMetadata.devfilePath.value
 			}
+			devfileSpinner := log.Spinnerf("Creating a devfile component from devfile path: %s", devfileAbsolutePath)
+			defer devfileSpinner.End(true)
+
+			// Initialize envinfo
+			err = co.InitEnvInfoFromContext()
+			if err != nil {
+				return err
+			}
+
+			return nil
+		}
+
+		if isDevfileRegistryPresent {
+			// Categorize the sections
+			log.Info("Validation")
+
 			// Since we need to support both devfile and s2i, so we have to check if the component type is
 			// supported by devfile, if it is supported we return and will download the corresponding devfile later,
 			// if it is not supported we still need to run all the codes related with s2i after devfile compatibility check

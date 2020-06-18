@@ -93,7 +93,7 @@ func convertURL(URL string) (string, error) {
 const indexPath = "/devfiles/index.json"
 
 // getDevfileIndexEntries retrieves the devfile entries associated with the specified registry
-func getDevfileIndexEntries(registry Registry) ([]DevfileIndexEntry, error) {
+func getDevfileIndexEntries(registry Registry) ([]DevfileComponentType, error) {
 	var devfileIndex []DevfileIndexEntry
 
 	URL, err := convertURL(registry.URL)
@@ -112,11 +112,21 @@ func getDevfileIndexEntries(registry Registry) ([]DevfileIndexEntry, error) {
 		return nil, errors.Wrapf(err, "Unable to unmarshal the devfile index.json from %s", indexLink)
 	}
 
+	var catalogRegistryDevfiles []DevfileComponentType
+
 	for i := range devfileIndex {
 		devfileIndex[i].Registry = registry
+		stackDevfile := DevfileComponentType{
+			Name:        devfileIndex[i].Name,
+			DisplayName: devfileIndex[i].DisplayName,
+			Description: devfileIndex[i].Description,
+			Link:        devfileIndex[i].Links.Link,
+			Registry:    devfileIndex[i].Registry,
+		}
+		catalogRegistryDevfiles = append(catalogRegistryDevfiles, stackDevfile)
 	}
 
-	return devfileIndex, nil
+	return catalogRegistryDevfiles, nil
 }
 
 // ListDevfileComponents lists all the available devfile components
@@ -135,40 +145,26 @@ func ListDevfileComponents(registryName string) (DevfileComponentTypeList, error
 	}
 
 	// first retrieve the indices for each registry, concurrently
-	registryIndices := make([]DevfileIndexEntry, 0, 20)
 	devfileIndicesMutex := &sync.Mutex{}
 	retrieveRegistryIndices := util.NewConcurrentTasks(len(catalogDevfileList.DevfileRegistries))
 	for _, reg := range catalogDevfileList.DevfileRegistries {
 		// Load the devfile registry index.json
 		registry := reg // needed to prevent the lambda from capturing the value
 		retrieveRegistryIndices.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
-			indexEntries, err := getDevfileIndexEntries(registry)
-			if err != nil {
-				log.Warningf("Registry %s is not set up properly with error: %v", registry.Name, err)
+			catalogRegistryDevfiles, e := getDevfileIndexEntries(registry)
+			if e != nil {
+				log.Warningf("Registry %s is not set up properly with error: %v", registryName, err)
+				errChannel <- e
 				return
 			}
 
 			devfileIndicesMutex.Lock()
-			registryIndices = append(registryIndices, indexEntries...)
+			catalogDevfileList.Items = append(catalogDevfileList.Items, catalogRegistryDevfiles...)
 			devfileIndicesMutex.Unlock()
 		}})
 	}
 	if err := retrieveRegistryIndices.Run(); err != nil {
 		return *catalogDevfileList, err
-	}
-
-	// Add stacks to the catalog devfile list
-	for _, index := range registryIndices {
-		// Load the devfile
-		devfileIndex := index // needed to prevent the lambda from capturing the value
-		catalogDevfile := DevfileComponentType{
-			Name:        devfileIndex.Name,
-			DisplayName: devfileIndex.DisplayName,
-			Description: devfileIndex.Description,
-			Link:        devfileIndex.Links.Link,
-			Registry:    devfileIndex.Registry,
-		}
-		catalogDevfileList.Items = append(catalogDevfileList.Items, catalogDevfile)
 	}
 
 	return *catalogDevfileList, nil
