@@ -88,12 +88,14 @@ func (s *Status) updateStatus() {
 	if s.warningStatus != "" {
 		yellow := color.New(color.FgYellow).SprintFunc()
 
+		// Determine the warning size, so that we can calculate its length and use that length as padding parameter
 		warningSubstring := fmt.Sprintf(" [%s %s]", yellow(getWarningString()), yellow(s.warningStatus))
 
+		// Combine suffix and spacing, then resize them
 		newSuffix := fmt.Sprintf(suffixSpacing+"%s", s.status)
-
 		newSuffix = trimSuffixIfNeeded(newSuffix, s.writer, len(warningSubstring))
 
+		// Combine the warning and non-warning text (since we don't want to trim the warning text)
 		s.spinner.SetSuffix(fmt.Sprintf("%s%s", newSuffix, warningSubstring))
 	} else {
 		newSuffix := fmt.Sprintf(suffixSpacing+"%s", s.status)
