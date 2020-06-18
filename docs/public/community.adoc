@@ -1,6 +1,6 @@
 == Events
 
-=== Upcoming events
+=== Past events
 
 * https://www.redhat.com/en/summit[April 28-29 2020 - Red Hat Summit]
 * https://www.ibm.com/events/think/[May 5-6 2020 - IBM Think Digital]
