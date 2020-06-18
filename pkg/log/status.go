@@ -154,8 +154,9 @@ func trimSuffixIfNeeded(suffix string, w io.Writer, padding int) string {
 
 	// Otherwise trim down to the desired length and append '...'
 	abbrevSuffix := "..."
-	maxWidth -= len(abbrevSuffix)
+	maxWidth -= len(abbrevSuffix) // maxWidth is necessarily >20 at this point
 
+	// len(suffix) is necessarily >= maxWidth at this point
 	suffix = suffix[:maxWidth] + abbrevSuffix
 
 	return suffix
