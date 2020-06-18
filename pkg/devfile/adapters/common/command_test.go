@@ -668,7 +668,7 @@ func TestValidateAndGetDebugDevfileCommands(t *testing.T) {
 				} else {
 					return
 				}
-			} else if !tt.wantErr {
+			} else {
 				if err != nil {
 					t.Errorf("TestValidateAndGetDebugDevfileCommands: unexpected error %v", err)
 				}

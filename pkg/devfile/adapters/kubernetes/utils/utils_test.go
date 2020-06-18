@@ -309,7 +309,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					// return since we dont want to test anything further
 					return
 				}
-			} else if !tt.wantErr {
+			} else {
 				if err != nil {
 					t.Errorf("TestUpdateContainersWithSupervisord: unexpected error %v", err)
 				}
