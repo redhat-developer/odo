@@ -30,7 +30,7 @@ const (
 	DefaultPushTimeout = 240
 
 	// DefaultBuildTimeout is the default build timeout for pods (in seconds)
-	DefaultBuildTimeout = 240
+	DefaultBuildTimeout = 300
 
 	// UpdateNotificationSetting is the name of the setting controlling update notification
 	UpdateNotificationSetting = "UpdateNotification"
