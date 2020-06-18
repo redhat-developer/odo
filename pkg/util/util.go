@@ -25,7 +25,6 @@ import (
 
 	"github.com/gobwas/glob"
 	"github.com/google/go-github/github"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -49,13 +48,7 @@ const maxAllowedNamespacedStringLength = 63 - len("-s2idata") - 1
 // note for mocking purpose ONLY
 var customHomeDir = os.Getenv("CUSTOM_HOMEDIR")
 
-const (
-	defaultGithubRef    = "master"
-	githubBranchMsg     = "Branch"
-	githubTagMsg        = "Tag"
-	githubCommitIDMsg   = "CommitID"
-	githubStartPointMsg = "StartPoint"
-)
+const defaultGithubRef = "master"
 
 // ResourceRequirementInfo holds resource quantity before transformation into its appropriate form in container spec
 type ResourceRequirementInfo struct {
@@ -773,9 +766,8 @@ func ConvertGitSSHRemoteToHTTPS(remote string) string {
 }
 
 // GetGitHubZipURL downloads a repo from a URL to a destination
-func GetGitHubZipURL(project common.DevfileProject) (string, error) {
+func GetGitHubZipURL(repoURL string, branch string, startPoint string) (string, error) {
 	var url string
-	repoURL := project.Source.Location
 	// Convert ssh remote to https
 	if strings.HasPrefix(repoURL, "git@") {
 		repoURL = ConvertGitSSHRemoteToHTTPS(repoURL)
@@ -807,52 +799,14 @@ func GetGitHubZipURL(project common.DevfileProject) (string, error) {
 	}
 
 	var ref string
-	errBool := true
-
-	branchExists := (project.Source.Branch != nil && *project.Source.Branch != "")
-	tagExists := (project.Source.Tag != nil && *project.Source.Tag != "")
-	commitIDExists := (project.Source.CommitId != nil && *project.Source.CommitId != "")
-	startPointExists := (project.Source.StartPoint != nil && *project.Source.StartPoint != "")
-
-	if branchExists && !tagExists && !commitIDExists && !startPointExists {
-		errBool = false
-		ref = *project.Source.Branch
-	} else if tagExists && !branchExists && !commitIDExists && !startPointExists {
-		errBool = false
-		ref = *project.Source.Tag
-	} else if commitIDExists && !branchExists && !tagExists && !startPointExists {
-		errBool = false
-		ref = *project.Source.CommitId
-	} else if startPointExists && !branchExists && !commitIDExists && !tagExists {
-		errBool = false
-		ref = *project.Source.StartPoint
-	} else if !branchExists && !commitIDExists && !tagExists && !startPointExists {
-		errBool = false
-	}
-
-	if errBool {
-		errMsg := ""
-		if branchExists {
-			errMsg += fmt.Sprintf("%s specified with value %s\n", githubBranchMsg, *project.Source.Branch)
-		}
-
-		if tagExists {
-			errMsg += fmt.Sprintf("%s specified with value %s\n", githubTagMsg, *project.Source.Tag)
-		}
-
-		if commitIDExists {
-			errMsg += fmt.Sprintf("%s specified with value %s\n", githubCommitIDMsg, *project.Source.CommitId)
-		}
-
-		if startPointExists {
-			errMsg += fmt.Sprintf("%s specified with value %s\n", githubStartPointMsg, *project.Source.StartPoint)
-		}
-
-		return url, errors.Errorf("more than one source reference specified. The following were specified:\n%s", errMsg)
-	}
-
-	if ref == "" {
-		// Default to master if reference is not set
+	if branch != "" && startPoint == "" {
+		ref = branch
+	} else if branch == "" && startPoint != "" {
+		ref = startPoint
+	} else if branch != "" && startPoint != "" {
+		return url, errors.Errorf("Branch %s and StartPoint %s specified as project reference, please only specify one", branch, startPoint)
+	} else {
+		// Default to master if branch and startpoint are not set
 		ref = defaultGithubRef
 	}
 

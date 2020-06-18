@@ -18,7 +18,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -1574,63 +1573,45 @@ func TestIsValidProjectDir(t *testing.T) {
 }
 
 func TestGetGitHubZipURL(t *testing.T) {
-	commitid := "39b5ec7833a65278012eab13a895471bba2cd03d"
-	tag := "1.0.0"
+	startPoint := "1.0.0"
+	branch := "my-branch"
 	tests := []struct {
-		name           string
-		project        common.DevfileProject
-		expectedErrors []string
+		name          string
+		location      string
+		branch        string
+		startPoint    string
+		expectedError string
 	}{
 		{
-			name: "Case 1: Invalid http request",
-			project: common.DevfileProject{
-				Source: common.DevfileProjectSource{
-					Location: "http://github.com/che-samples/web-nodejs-sample/archive/master",
-				},
-			},
-			expectedErrors: []string{"Invalid GitHub URL. Please use https://"},
+			name:          "Case 1: Invalid http request",
+			location:      "http://github.com/che-samples/web-nodejs-sample/archive/master",
+			expectedError: "Invalid GitHub URL. Please use https://",
 		},
 		{
-			name: "Case 2: Invalid owner",
-			project: common.DevfileProject{
-				Source: common.DevfileProjectSource{
-					Location: "https://github.com//web-nodejs-sample/archive/master",
-				},
-			},
-			expectedErrors: []string{"Invalid GitHub URL: owner cannot be empty. Expecting 'https://github.com/<owner>/<repo>'"},
+			name:          "Case 2: Invalid owner",
+			location:      "https://github.com//web-nodejs-sample/archive/master",
+			expectedError: "Invalid GitHub URL: owner cannot be empty. Expecting 'https://github.com/<owner>/<repo>'",
 		},
 		{
-			name: "Case 3: Invalid repo",
-			project: common.DevfileProject{
-				Source: common.DevfileProjectSource{
-					Location: "https://github.com/che-samples//archive/master",
-				},
-			},
-			expectedErrors: []string{"Invalid GitHub URL: repo cannot be empty. Expecting 'https://github.com/<owner>/<repo>'"},
+			name:          "Case 3: Invalid repo",
+			location:      "https://github.com/che-samples//archive/master",
+			expectedError: "Invalid GitHub URL: repo cannot be empty. Expecting 'https://github.com/<owner>/<repo>'",
 		},
 		{
-			name: "Case 4: Invalid HTTPS Github URL with tag and commit",
-			project: common.DevfileProject{
-				Source: common.DevfileProjectSource{
-					Location: "https://github.com/che-samples/web-nodejs-sample.git",
-					CommitId: &commitid,
-					Tag:      &tag,
-				},
-			},
-			expectedErrors: []string{"more than one source reference specified. The following were specified:\n",
-				fmt.Sprintf("CommitID specified with value %s\n", commitid),
-				fmt.Sprintf("Tag specified with value %s\n", tag)},
+			name:          "Case 4: Invalid HTTPS Github URL with tag and commit",
+			location:      "https://github.com/che-samples/web-nodejs-sample.git",
+			branch:        branch,
+			startPoint:    startPoint,
+			expectedError: fmt.Sprintf("Branch %s and StartPoint %s specified as project reference, please only specify one", branch, startPoint),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := GetGitHubZipURL(tt.project)
+			_, err := GetGitHubZipURL(tt.location, tt.branch, tt.startPoint)
 			if err != nil {
-				for _, expectedError := range tt.expectedErrors {
-					if !strings.Contains(err.Error(), expectedError) {
-						t.Errorf("Got %s,\n want %s", err.Error(), expectedError)
-					}
+				if !strings.Contains(err.Error(), tt.expectedError) {
+					t.Errorf("Got %s,\n want %s", err.Error(), tt.expectedError)
 				}
 			}
 		})
