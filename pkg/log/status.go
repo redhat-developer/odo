@@ -93,13 +93,13 @@ func (s *Status) updateStatus() {
 
 		// Combine suffix and spacing, then resize them
 		newSuffix := fmt.Sprintf(suffixSpacing+"%s", s.status)
-		newSuffix = trimSuffixIfNeeded(newSuffix, s.writer, len(warningSubstring))
+		newSuffix = truncateSuffixIfNeeded(newSuffix, s.writer, len(warningSubstring))
 
-		// Combine the warning and non-warning text (since we don't want to trim the warning text)
+		// Combine the warning and non-warning text (since we don't want to truncate the warning text)
 		s.spinner.SetSuffix(fmt.Sprintf("%s%s", newSuffix, warningSubstring))
 	} else {
 		newSuffix := fmt.Sprintf(suffixSpacing+"%s", s.status)
-		s.spinner.SetSuffix(trimSuffixIfNeeded(newSuffix, s.writer, 0))
+		s.spinner.SetSuffix(truncateSuffixIfNeeded(newSuffix, s.writer, 0))
 	}
 	mu.Unlock()
 }
@@ -122,15 +122,15 @@ func (s *Status) Start(status string, debug bool) {
 		} else {
 			s.spinner.SetPrefix(prefixSpacing)
 			newSuffix := fmt.Sprintf(suffixSpacing+"%s", s.status)
-			s.spinner.SetSuffix(trimSuffixIfNeeded(newSuffix, s.writer, 0))
+			s.spinner.SetSuffix(truncateSuffixIfNeeded(newSuffix, s.writer, 0))
 			s.spinner.Start()
 		}
 	}
 }
 
-// trimSuffixIfNeeded returns a represention of the 'suffix' parameter that fits within the terminal
+// truncateSuffixIfNeeded returns a represention of the 'suffix' parameter that fits within the terminal
 // (including the extra space occupied by the padding parameter).
-func trimSuffixIfNeeded(suffix string, w io.Writer, padding int) string {
+func truncateSuffixIfNeeded(suffix string, w io.Writer, padding int) string {
 
 	terminalWidth := getTerminalWidth(w)
 	if terminalWidth == nil {
@@ -152,7 +152,7 @@ func trimSuffixIfNeeded(suffix string, w io.Writer, padding int) string {
 		return suffix
 	}
 
-	// Otherwise trim down to the desired length and append '...'
+	// Otherwise truncate down to the desired length and append '...'
 	abbrevSuffix := "..."
 	maxWidth -= len(abbrevSuffix) // maxWidth is necessarily >20 at this point
 
