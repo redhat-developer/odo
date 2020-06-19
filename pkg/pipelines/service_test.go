@@ -93,12 +93,12 @@ func TestServiceResourcesWithCICD(t *testing.T) {
 	}
 
 	got, err := serviceResources(m, fakeFs, &AddServiceParameters{
-		AppName:       "test-app",
-		EnvName:       "test-dev",
-		GitRepoURL:    "http://github.com/org/test",
-		Manifest:      pipelinesFile,
-		WebhookSecret: "123",
-		ServiceName:   "test",
+		AppName:           "test-app",
+		EnvName:           "test-dev",
+		GitRepoURL:        "http://github.com/org/test",
+		PipelinesFilePath: pipelinesFile,
+		WebhookSecret:     "123",
+		ServiceName:       "test",
 	})
 	assertNoError(t, err)
 	if diff := cmp.Diff(got, want, cmpopts.IgnoreMapEntries(func(k string, v interface{}) bool {
@@ -164,12 +164,12 @@ func TestServiceResourcesWithArgoCD(t *testing.T) {
 	}
 
 	got, err := serviceResources(m, fakeFs, &AddServiceParameters{
-		AppName:       "test-app",
-		EnvName:       "test-dev",
-		GitRepoURL:    "http://github.com/org/test",
-		Manifest:      pipelinesFile,
-		WebhookSecret: "123",
-		ServiceName:   "test",
+		AppName:           "test-app",
+		EnvName:           "test-dev",
+		GitRepoURL:        "http://github.com/org/test",
+		PipelinesFilePath: pipelinesFile,
+		WebhookSecret:     "123",
+		ServiceName:       "test",
 	})
 	assertNoError(t, err)
 	if diff := cmp.Diff(got, want, cmpopts.IgnoreMapEntries(func(k string, v interface{}) bool {
@@ -218,12 +218,12 @@ func TestServiceResourcesWithoutArgoCD(t *testing.T) {
 	}
 
 	got, err := serviceResources(m, fakeFs, &AddServiceParameters{
-		AppName:       "test-app",
-		EnvName:       "test-dev",
-		GitRepoURL:    "http://github.com/org/test",
-		Manifest:      pipelinesFile,
-		WebhookSecret: "123",
-		ServiceName:   "test",
+		AppName:           "test-app",
+		EnvName:           "test-dev",
+		GitRepoURL:        "http://github.com/org/test",
+		PipelinesFilePath: pipelinesFile,
+		WebhookSecret:     "123",
+		ServiceName:       "test",
 	})
 	assertNoError(t, err)
 	if diff := cmp.Diff(want, got, cmpopts.IgnoreMapEntries(func(k string, v interface{}) bool {
@@ -273,12 +273,12 @@ func TestAddServiceWithoutApp(t *testing.T) {
 	}
 
 	got, err := serviceResources(m, fakeFs, &AddServiceParameters{
-		AppName:       "new-app",
-		EnvName:       "test-dev",
-		GitRepoURL:    "http://github.com/org/test",
-		Manifest:      pipelinesFile,
-		WebhookSecret: "123",
-		ServiceName:   "test",
+		AppName:           "new-app",
+		EnvName:           "test-dev",
+		GitRepoURL:        "http://github.com/org/test",
+		PipelinesFilePath: pipelinesFile,
+		WebhookSecret:     "123",
+		ServiceName:       "test",
 	})
 	assertNoError(t, err)
 	for w := range want {
@@ -303,11 +303,11 @@ func TestAddService(t *testing.T) {
 
 	fakeFs := ioutils.NewMapFilesystem()
 	outputPath := afero.GetTempDir(fakeFs, "test")
-	manifestPath := filepath.Join(outputPath, pipelinesFile)
+	pipelinesPath := filepath.Join(outputPath, pipelinesFile)
 	m := buildManifest(true, true)
 	b, err := yaml.Marshal(m)
 	assertNoError(t, err)
-	err = afero.WriteFile(fakeFs, manifestPath, b, 0644)
+	err = afero.WriteFile(fakeFs, pipelinesPath, b, 0644)
 	assertNoError(t, err)
 	wantedPaths := []string{
 		"environments/test-dev/apps/new-app/base/kustomization.yaml",
@@ -323,12 +323,12 @@ func TestAddService(t *testing.T) {
 		"config/argocd/config/test-dev-new-app-app.yaml",
 	}
 	err = AddService(&AddServiceParameters{
-		AppName:       "new-app",
-		EnvName:       "test-dev",
-		GitRepoURL:    "http://github.com/org/test",
-		Manifest:      manifestPath,
-		WebhookSecret: "123",
-		ServiceName:   "test",
+		AppName:           "new-app",
+		EnvName:           "test-dev",
+		GitRepoURL:        "http://github.com/org/test",
+		PipelinesFilePath: pipelinesPath,
+		WebhookSecret:     "123",
+		ServiceName:       "test",
 	}, fakeFs)
 	assertNoError(t, err)
 	for _, path := range wantedPaths {
@@ -403,12 +403,12 @@ func TestServiceWithArgoCD(t *testing.T) {
 	assertNoError(t, err)
 	want = res.Merge(argo, want)
 	got, err := serviceResources(m, fakeFs, &AddServiceParameters{
-		AppName:       "test-app",
-		EnvName:       "test-dev",
-		GitRepoURL:    "http://github.com/org/test",
-		Manifest:      pipelinesFile,
-		WebhookSecret: "123",
-		ServiceName:   "test",
+		AppName:           "test-app",
+		EnvName:           "test-dev",
+		GitRepoURL:        "http://github.com/org/test",
+		PipelinesFilePath: pipelinesFile,
+		WebhookSecret:     "123",
+		ServiceName:       "test",
 	})
 	assertNoError(t, err)
 	if diff := cmp.Diff(got, want, cmpopts.IgnoreMapEntries(func(k string, v interface{}) bool {

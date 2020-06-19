@@ -31,7 +31,7 @@ type AddOptions struct {
 	gitRepoURL               string
 	imageRepo                string
 	internalRegistryHostname string
-	manifest                 string
+	pipelinesFilePath        string
 	serviceName              string
 	webhookSecret            string
 
@@ -58,7 +58,7 @@ func (o *AddOptions) Run() error {
 		GitRepoURL:               o.gitRepoURL,
 		ImageRepo:                o.imageRepo,
 		InternalRegistryHostname: o.internalRegistryHostname,
-		Manifest:                 o.manifest,
+		PipelinesFilePath:        o.pipelinesFilePath,
 		ServiceName:              o.serviceName,
 		WebhookSecret:            o.webhookSecret,
 	}, ioutils.NewFilesystem())
@@ -91,7 +91,7 @@ func newCmdAdd(name, fullName string) *cobra.Command {
 	cmd.Flags().StringVar(&o.envName, "env-name", "", "the name of the environment where the service will be added")
 	cmd.Flags().StringVar(&o.imageRepo, "image-repo", "", "used to push built images")
 	cmd.Flags().StringVar(&o.internalRegistryHostname, "internal-registry-hostname", "image-registry.openshift-image-registry.svc:5000", "internal image registry hostname")
-	cmd.Flags().StringVar(&o.manifest, "manifest", "pipelines.yaml", "path to manifest file")
+	cmd.Flags().StringVar(&o.pipelinesFilePath, "pipelines-file", "pipelines.yaml", "path to pipelines file")
 
 	// required flags
 	_ = cmd.MarkFlagRequired("service-name")

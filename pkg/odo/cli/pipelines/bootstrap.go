@@ -82,9 +82,9 @@ func NewCmdBootstrap(name, fullName string) *cobra.Command {
 
 	initCmd := &cobra.Command{
 		Use:     name,
-		Short:   initShortDesc,
-		Long:    initLongDesc,
-		Example: fmt.Sprintf(initExample, fullName),
+		Short:   bootstrapShortDesc,
+		Long:    bootstrapLongDesc,
+		Example: fmt.Sprintf(bootstrapExample, fullName),
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},

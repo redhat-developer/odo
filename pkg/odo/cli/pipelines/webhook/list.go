@@ -28,7 +28,7 @@ type listOptions struct {
 // Run contains the logic for the odo command
 func (o *listOptions) Run() error {
 
-	ids, err := backend.List(o.accessToken, o.manifest, o.getAppServiceNames(), o.isCICD)
+	ids, err := backend.List(o.accessToken, o.pipelinesFilePath, o.getAppServiceNames(), o.isCICD)
 	if err != nil {
 		return fmt.Errorf("Unable to a get list of webhook IDs: %v", err)
 	}
@@ -57,7 +57,7 @@ func newCmdList(name, fullName string) *cobra.Command {
 		Use:     name,
 		Short:   "List existing webhook Ids.",
 		Long:    "List existing Git repository webhook IDs of the target repository and listener.",
-		Example: fmt.Sprintf(createExample, fullName),
+		Example: fmt.Sprintf(listExample, fullName),
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},

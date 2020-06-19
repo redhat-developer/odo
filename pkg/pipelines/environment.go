@@ -13,16 +13,16 @@ import (
 
 // EnvParameters encapsulates parameters for add env command
 type EnvParameters struct {
-	ManifestFilename string
-	EnvName          string
-	Cluster          string
+	PipelinesFilePath string
+	EnvName           string
+	Cluster           string
 }
 
-// AddEnv adds a new environment to the manifest.
+// AddEnv adds a new environment to the pipelines-file.
 func AddEnv(o *EnvParameters, appFs afero.Fs) error {
-	m, err := config.ParseFile(appFs, o.ManifestFilename)
+	m, err := config.ParseFile(appFs, o.PipelinesFilePath)
 	if err != nil {
-		return fmt.Errorf("failed to parse manifest: %v", err)
+		return fmt.Errorf("failed to parse pipeline-file: %v", err)
 	}
 	env := m.GetEnvironment(o.EnvName)
 	if env != nil {
@@ -38,10 +38,10 @@ func AddEnv(o *EnvParameters, appFs afero.Fs) error {
 	}
 	m.Environments = append(m.Environments, newEnv)
 	files[pipelinesFile] = m
-	outputPath := filepath.Dir(o.ManifestFilename)
+	outputPath := filepath.Dir(o.PipelinesFilePath)
 	buildParams := &BuildParameters{
-		ManifestFilename: o.ManifestFilename,
-		OutputPath:       outputPath,
+		PipelinesFilePath: o.PipelinesFilePath,
+		OutputPath:        outputPath,
 	}
 	built, err := buildResources(appFs, buildParams, m)
 	if err != nil {

@@ -14,13 +14,13 @@ import (
 // BuildParameters is a struct that provides flags for the BuildResources
 // command.
 type BuildParameters struct {
-	ManifestFilename string
-	OutputPath       string
+	PipelinesFilePath string
+	OutputPath        string
 }
 
 // BuildResources builds all resources from a pipelines.
 func BuildResources(o *BuildParameters, appFs afero.Fs) error {
-	m, err := config.ParseFile(appFs, o.ManifestFilename)
+	m, err := config.ParseFile(appFs, o.PipelinesFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to parse pipelines: %v", err)
 	}
