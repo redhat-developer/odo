@@ -73,7 +73,7 @@ func convertURL(URL string) (string, error) {
 	if strings.Contains(url.Host, "github") && !strings.Contains(url.Host, "raw") {
 		// Convert path part of the URL
 		URLSlice := strings.Split(URL, "/")
-		if URLSlice[len(URLSlice)-2] == "tree" {
+		if len(URLSlice) > 2 && URLSlice[len(URLSlice)-2] == "tree" {
 			// GitHub raw URL doesn't have "tree" structure in the URL, need to remove it
 			URL = strings.Replace(URL, "/tree", "", 1)
 		} else {
