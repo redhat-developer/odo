@@ -14,6 +14,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
+	"github.com/openshift/odo/pkg/util"
 	pkgUtil "github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -53,32 +54,42 @@ func NewDescribeComponentOptions() *DescribeComponentOptions {
 // Complete completes DescribeComponentOptions after they've been created
 func (o *DescribeComponentOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.componentName = args[0]
+	tasks := util.NewConcurrentTasks(2)
+
 	if !pushtarget.IsPushTargetDocker() {
 		o.Context = genericclioptions.NewContext(cmd, true)
-		catalogList, err := catalog.ListComponents(o.Client)
-		if err != nil {
-			if experimental.IsExperimentalModeEnabled() {
-				klog.V(4).Info("Please log in to an OpenShift cluster to list OpenShift/s2i components")
-			} else {
-				return err
+
+		tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
+			catalogList, err := catalog.ListComponents(o.Client)
+			if err != nil {
+				if experimental.IsExperimentalModeEnabled() {
+					klog.V(4).Info("Please log in to an OpenShift cluster to list OpenShift/s2i components")
+				} else {
+					errChannel <- err
+				}
 			}
-		}
-		for _, image := range catalogList.Items {
-			if image.Name == o.componentName {
-				o.component = image.Name
+			for _, image := range catalogList.Items {
+				if image.Name == o.componentName {
+					o.component = image.Name
+				}
 			}
-		}
+		}})
 	}
 
 	if experimental.IsExperimentalModeEnabled() {
-		catalogDevfileList, err := catalog.ListDevfileComponents("")
-		if err != nil {
-			return err
-		}
-		o.GetDevfileComponentsByName(catalogDevfileList)
+		tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
+			catalogDevfileList, err := catalog.ListDevfileComponents("")
+			if catalogDevfileList.DevfileRegistries == nil {
+				log.Warning("Please run 'odo registry add <registry name> <registry URL>' to add registry for listing devfile components\n")
+			}
+			if err != nil {
+				errChannel <- err
+			}
+			o.GetDevfileComponentsByName(catalogDevfileList)
+		}})
 	}
 
-	return nil
+	return tasks.Run()
 }
 
 // Validate validates the DescribeComponentOptions based on completed values

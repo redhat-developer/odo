@@ -46,14 +46,7 @@ func Parse(path string) (d DevfileObj, err error) {
 	if err != nil {
 		return d, err
 	}
-
-	d, err = ParseDevfile(d)
-	if err != nil {
-		return d, err
-	}
-
-	// Successful
-	return d, nil
+	return ParseDevfile(d)
 }
 
 // ParseInMemory func parses and validates the devfile integrity.
@@ -65,12 +58,5 @@ func ParseInMemory(bytes []byte) (d DevfileObj, err error) {
 	if err != nil {
 		return d, err
 	}
-
-	d, err = ParseDevfile(d)
-	if err != nil {
-		return d, err
-	}
-
-	// Successful
-	return d, nil
+	return ParseDevfile(d)
 }

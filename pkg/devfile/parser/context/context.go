@@ -38,8 +38,8 @@ func NewDevfileCtx(path string) DevfileCtx {
 	}
 }
 
-// PopulateDevfile fills the DevfileCtx struct with relevant context info
-func (d *DevfileCtx) PopulateDevfile() (err error) {
+// populateDevfile checks the API version is supported and returns the JSON schema for the given devfile API Version
+func (d *DevfileCtx) populateDevfile() (err error) {
 
 	// Get devfile APIVersion
 	if err := d.SetDevfileAPIVersion(); err != nil {
@@ -53,12 +53,7 @@ func (d *DevfileCtx) PopulateDevfile() (err error) {
 	klog.V(4).Infof("devfile apiVersion '%s' is supported in odo", d.apiVersion)
 
 	// Read and save devfile JSON schema for provided apiVersion
-	if err := d.SetDevfileJSONSchema(); err != nil {
-		return err
-	}
-
-	// Successful
-	return nil
+	return d.SetDevfileJSONSchema()
 }
 
 // Populate fills the DevfileCtx struct with relevant context info
@@ -74,13 +69,7 @@ func (d *DevfileCtx) Populate() (err error) {
 	if err := d.SetDevfileContent(); err != nil {
 		return err
 	}
-
-	if err := d.PopulateDevfile(); err != nil {
-		return err
-	}
-
-	// Successful
-	return nil
+	return d.populateDevfile()
 }
 
 // PopulateFromBytes fills the DevfileCtx struct with relevant context info
@@ -90,12 +79,7 @@ func (d *DevfileCtx) PopulateFromBytes(bytes []byte) (err error) {
 	if err := d.SetDevfileContentFromBytes(bytes); err != nil {
 		return err
 	}
-
-	if err := d.PopulateDevfile(); err != nil {
-		return err
-	}
-	// Successful
-	return nil
+	return d.populateDevfile()
 }
 
 // Validate func validates devfile JSON schema for the given apiVersion

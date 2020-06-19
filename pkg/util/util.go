@@ -971,17 +971,13 @@ func DownloadFile(url string, filepath string) error {
 	defer out.Close() // #nosec G307
 
 	// Get the data
-	var httpClient = &http.Client{Transport: &http.Transport{
-		ResponseHeaderTimeout: ResponseHeaderTimeout,
-	}, Timeout: HTTPRequestTimeout}
-	resp, err := httpClient.Get(url)
+	data, err := DownloadFileInMemory(url)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to download devfile.yaml for devfile component: %s", filepath)
 	}
-	defer resp.Body.Close()
 
-	// Write the body to file
-	_, err = io.Copy(out, resp.Body)
+	// Write the data to file
+	_, err = out.Write(data)
 	if err != nil {
 		return err
 	}
@@ -991,7 +987,9 @@ func DownloadFile(url string, filepath string) error {
 
 // DownloadFileInMemory uses the url to download the file and return bytes
 func DownloadFileInMemory(url string) ([]byte, error) {
-	var httpClient = &http.Client{Timeout: HTTPRequestTimeout}
+	var httpClient = &http.Client{Transport: &http.Transport{
+		ResponseHeaderTimeout: ResponseHeaderTimeout,
+	}, Timeout: HTTPRequestTimeout}
 	resp, err := httpClient.Get(url)
 	if err != nil {
 		return nil, err

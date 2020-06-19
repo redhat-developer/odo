@@ -55,9 +55,8 @@ func (d *DevfileCtx) SetDevfileContent() error {
 		return errors.Wrapf(err, "failed to read devfile from path '%s'", d.absPath)
 	}
 
-	// If YAML file convert it to JSON
-	d.rawContent, err = YAMLToJSON(data)
-	if err != nil {
+	// set devfile content
+	if err := d.SetDevfileContentFromBytes(data); err != nil {
 		return err
 	}
 
@@ -65,7 +64,7 @@ func (d *DevfileCtx) SetDevfileContent() error {
 	return nil
 }
 
-// SetDevfileContentFromBytes reads devfile and if devfile is in YAML format converts it to JSON
+// SetDevfileContentFromBytes sets devfile content from byte input
 func (d *DevfileCtx) SetDevfileContentFromBytes(data []byte) error {
 	// If YAML file convert it to JSON
 	var err error
