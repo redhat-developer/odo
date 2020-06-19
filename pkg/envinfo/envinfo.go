@@ -20,6 +20,9 @@ type ComponentSettings struct {
 	Namespace   string              `yaml:"Namespace,omitempty"`
 	URL         *[]EnvInfoURL       `yaml:"Url,omitempty"`
 	PushCommand *EnvInfoPushCommand `yaml:"PushCommand,omitempty"`
+
+	// DebugPort controls the port used by the pod to run the debugging agent on
+	DebugPort *int `yaml:"DebugPort,omitempty"`
 }
 
 // URLKind is an enum to indicate the type of the URL i.e ingress/route
@@ -31,6 +34,9 @@ const (
 	ROUTE           URLKind = "route"
 	envInfoEnvName          = "ENVINFO"
 	envInfoFileName         = "env.yaml"
+
+	// DefaultDebugPort is the default port used for debugging on remote pod
+	DefaultDebugPort = 5858
 )
 
 // EnvInfoURL holds URL related information
@@ -288,6 +294,14 @@ func (ei *EnvInfo) GetName() string {
 		return ""
 	}
 	return ei.componentSettings.Name
+}
+
+// GetDebugPort returns the DebugPort, returns default if nil
+func (ei *EnvInfo) GetDebugPort() int {
+	if ei.componentSettings.DebugPort == nil {
+		return DefaultDebugPort
+	}
+	return *ei.componentSettings.DebugPort
 }
 
 // GetNamespace returns component namespace
