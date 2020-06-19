@@ -75,10 +75,28 @@ var _ = Describe("odo devfile catalog command tests", func() {
 		})
 	})
 
+	Context("When executing catalog list components with -o json flag", func() {
+		It("should list devfile components in json format", func() {
+			output := helper.CmdShouldPass("odo", "catalog", "list", "components", "-o", "json")
+			wantOutput := []string{
+				"odo.dev/v1alpha1",
+				"java-openliberty",
+				"java-spring-boot",
+				"nodejs",
+				"quarkus",
+				"php-mysql",
+				"maven",
+				"golang",
+				"java-maven",
+			}
+			helper.MatchAllInOutput(output, wantOutput)
+		})
+	})
+
 	Context("When executing catalog describe component with a component name with a single project", func() {
 		It("should only give information about one project", func() {
 			output := helper.CmdShouldPass("odo", "catalog", "describe", "component", "java-openliberty")
-			helper.MatchAllInOutput(output, []string{"location: https://github.com/odo-devfiles/openliberty-ex.git"})
+			helper.MatchAllInOutput(output, []string{"location: https://github.com/OpenLiberty/application-stack.git"})
 		})
 	})
 	Context("When executing catalog describe component with a component name with no starter projects", func() {
@@ -109,24 +127,6 @@ var _ = Describe("odo devfile catalog command tests", func() {
 		It("should give an error saying it expects exactly one argument", func() {
 			output := helper.CmdShouldFail("odo", "catalog", "describe", "component")
 			helper.MatchAllInOutput(output, []string{"accepts 1 arg(s), received 0"})
-		})
-	})
-
-	Context("When executing catalog list components with -o json flag", func() {
-		It("should list devfile components in json format", func() {
-			output := helper.CmdShouldPass("odo", "catalog", "list", "components", "-o", "json")
-			wantOutput := []string{
-				"odo.dev/v1alpha1",
-				"java-openliberty",
-				"java-spring-boot",
-				"nodejs",
-				"quarkus",
-				"php-mysql",
-				"maven",
-				"golang",
-				"java-maven",
-			}
-			helper.MatchAllInOutput(output, wantOutput)
 		})
 	})
 })
