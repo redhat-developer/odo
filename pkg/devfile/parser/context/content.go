@@ -56,12 +56,7 @@ func (d *DevfileCtx) SetDevfileContent() error {
 	}
 
 	// set devfile content
-	if err := d.SetDevfileContentFromBytes(data); err != nil {
-		return err
-	}
-
-	// Successful
-	return nil
+	return d.SetDevfileContentFromBytes(data)
 }
 
 // SetDevfileContentFromBytes sets devfile content from byte input
