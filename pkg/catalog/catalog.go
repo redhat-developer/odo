@@ -25,12 +25,6 @@ const (
 	apiVersion = "odo.dev/v1alpha1"
 )
 
-// DevfileRegistries contains the links of all devfile registries
-var DevfileRegistries = []string{
-	"https://raw.githubusercontent.com/elsony/devfile-registry/master",
-	"https://che-devfile-registry.openshift.io/",
-}
-
 // GetDevfileRegistries gets devfile registries from preference file,
 // if registry name is specified return the specific registry, otherwise return all registries
 func GetDevfileRegistries(registryName string) (map[string]Registry, error) {
@@ -76,7 +70,7 @@ func convertURL(URL string) (string, error) {
 		return "", err
 	}
 
-	if strings.Contains(url.Host, "github") {
+	if strings.Contains(url.Host, "github") && !strings.Contains(url.Host, "raw") {
 		// Convert path part of the URL
 		URLSlice := strings.Split(URL, "/")
 		if URLSlice[len(URLSlice)-2] == "tree" {

@@ -187,7 +187,7 @@ OdoSettings:
   - Name: CheDevfileRegistry
     URL: https://che-devfile-registry.openshift.io/
   - Name: DefaultDevfileRegistry
-    URL: https://raw.githubusercontent.com/elsony/devfile-registry/master`,
+    URL: https://github.com/elsony/devfile-registry`,
 	))
 	if err != nil {
 		t.Error(err)
@@ -211,7 +211,7 @@ OdoSettings:
 				},
 				"DefaultDevfileRegistry": {
 					Name: "DefaultDevfileRegistry",
-					URL:  "https://raw.githubusercontent.com/elsony/devfile-registry/master",
+					URL:  "https://github.com/elsony/devfile-registry",
 				},
 			},
 		},

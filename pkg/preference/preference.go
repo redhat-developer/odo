@@ -77,7 +77,7 @@ const (
 	DefaultDevfileRegistryName = "DefaultDevfileRegistry"
 
 	// DefaultDevfileRegistryURL is the URL of default devfile registry
-	DefaultDevfileRegistryURL = "https://raw.githubusercontent.com/elsony/devfile-registry/master"
+	DefaultDevfileRegistryURL = "https://github.com/elsony/devfile-registry"
 )
 
 // TimeoutSettingDescription is human-readable description for the timeout setting
