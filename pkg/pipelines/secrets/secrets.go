@@ -68,7 +68,7 @@ func seal(secret *corev1.Secret, pubKey PublicKeyFunc) (*ssv1alpha1.SealedSecret
 
 	key, err := pubKey()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get public key from cluster (is sealed-secrets installed?): %w", err)
+		return nil, fmt.Errorf("failed to get public key from cluster (is sealed-secrets installed?): %v", err)
 	}
 
 	sealedSecret, err := ssv1alpha1.NewSealedSecret(scheme.Codecs, key, secret)
@@ -137,7 +137,7 @@ func parseKey(r io.Reader) (*rsa.PublicKey, error) {
 func getRESTClient() (*clientv1.CoreV1Client, error) {
 	config, err := clientconfig.GetRESTConfig()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get client config due to %w", err)
+		return nil, fmt.Errorf("failed to get client config due to %v", err)
 	}
 
 	config.AcceptContentTypes = "application/x-pem-file, */*"
@@ -161,7 +161,7 @@ func createDockerConfigSecret(name types.NamespacedName, in io.Reader) (*corev1.
 func createSecret(name types.NamespacedName, key string, st corev1.SecretType, in io.Reader) (*corev1.Secret, error) {
 	data, err := ioutil.ReadAll(in)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read secret data: %w", err)
+		return nil, fmt.Errorf("failed to read secret data: %v", err)
 	}
 	secret := &corev1.Secret{
 		TypeMeta:   secretTypeMeta,

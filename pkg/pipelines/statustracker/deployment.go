@@ -117,7 +117,7 @@ func Resources(ns, token string) ([]interface{}, error) {
 
 	githubAuth, err := defaultSecretSealer(meta.NamespacedName(ns, "commit-status-tracker-git-secret"), token, "token")
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate Status Tracker Secret: %w", err)
+		return nil, fmt.Errorf("failed to generate Status Tracker Secret: %v", err)
 	}
 	return []interface{}{
 		sa,

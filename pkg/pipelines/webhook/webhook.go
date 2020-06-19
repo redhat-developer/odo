@@ -78,7 +78,7 @@ func List(accessToken, pipelinesFile string, serviceName *QualifiedServiceName, 
 func newWebhookInfo(accessToken, pipelinesFile string, serviceName *QualifiedServiceName, isCICD bool) (*webhookInfo, error) {
 	manifest, err := config.ParseFile(ioutils.NewFilesystem(), pipelinesFile)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse pipelines: %w", err)
+		return nil, fmt.Errorf("failed to parse pipelines: %v", err)
 	}
 
 	if err := manifest.Validate(); err != nil {
@@ -92,7 +92,7 @@ func newWebhookInfo(accessToken, pipelinesFile string, serviceName *QualifiedSer
 
 	cfg := manifest.GetPipelinesConfig()
 	if cfg == nil {
-		return nil, fmt.Errorf("failed to get CICD environment: %w", err)
+		return nil, fmt.Errorf("failed to get CICD environment: %v", err)
 	}
 	cicdNamepace := cfg.Name
 
@@ -108,7 +108,7 @@ func newWebhookInfo(accessToken, pipelinesFile string, serviceName *QualifiedSer
 
 	listenerURL, err := getListenerURL(clusterResources, cicdNamepace)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get event listener URL: %w", err)
+		return nil, fmt.Errorf("failed to get event listener URL: %v", err)
 	}
 
 	return &webhookInfo{clusterResources, repository, gitRepoURL, cicdNamepace, listenerURL, accessToken, serviceName, isCICD}, nil
@@ -138,7 +138,7 @@ func (w *webhookInfo) create() (string, error) {
 
 	secret, err := getWebhookSecret(w.clusterResource, w.cicdNamepace, w.isCICD, w.serviceName)
 	if err != nil {
-		return "", fmt.Errorf("failed to get webhook secret: %w", err)
+		return "", fmt.Errorf("failed to get webhook secret: %v", err)
 	}
 
 	return w.repository.CreateWebhook(w.listenerURL, secret)

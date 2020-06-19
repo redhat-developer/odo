@@ -70,7 +70,7 @@ func (r *Repository) DeleteWebhooks(ids []string) ([]string, error) {
 	for _, id := range ids {
 		_, err := r.Client.Repositories.DeleteHook(context.Background(), r.name, id)
 		if err != nil {
-			return deleted, fmt.Errorf("failed to delete webhook id %s: %w", id, err)
+			return deleted, fmt.Errorf("failed to delete webhook id %s: %v", id, err)
 		}
 		deleted = append(deleted, id)
 	}

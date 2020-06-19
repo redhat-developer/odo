@@ -34,7 +34,7 @@ type AddServiceParameters struct {
 func AddService(p *AddServiceParameters, fs afero.Fs) error {
 	m, err := config.ParseFile(fs, p.Manifest)
 	if err != nil {
-		return fmt.Errorf("failed to parse manifest: %w", err)
+		return fmt.Errorf("failed to parse manifest: %v", err)
 	}
 
 	outputPath := filepath.Dir(p.Manifest)
@@ -148,7 +148,7 @@ func createImageRepoResources(m *config.Manifest, cfg *config.PipelinesConfig, e
 	if isInternalRegistry {
 		files, regRes, err := imagerepo.CreateInternalRegistryResources(cfg, roles.CreateServiceAccount(meta.NamespacedName(cfg.Name, saName)), imageRepo)
 		if err != nil {
-			return nil, nil, "", fmt.Errorf("failed to get resources for internal image repository: %w", err)
+			return nil, nil, "", fmt.Errorf("failed to get resources for internal image repository: %v", err)
 		}
 		resources = res.Merge(regRes, resources)
 		filenames = append(filenames, files...)

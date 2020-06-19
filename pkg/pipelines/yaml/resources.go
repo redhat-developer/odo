@@ -44,11 +44,11 @@ func MarshalItemToFile(fs afero.Fs, filename string, item interface{}) error {
 func MarshalOutput(out io.Writer, output interface{}) error {
 	data, err := yaml.Marshal(output)
 	if err != nil {
-		return fmt.Errorf("failed to marshal data: %w", err)
+		return fmt.Errorf("failed to marshal data: %v", err)
 	}
 	_, err = fmt.Fprintf(out, "%s", data)
 	if err != nil {
-		return fmt.Errorf("failed to write data: %w", err)
+		return fmt.Errorf("failed to write data: %v", err)
 	}
 	return nil
 }

@@ -62,7 +62,7 @@ func (io *InitParameters) Complete(name string, cmd *cobra.Command, args []strin
 func (io *InitParameters) Validate() error {
 	gr, err := url.Parse(io.gitOpsRepoURL)
 	if err != nil {
-		return fmt.Errorf("failed to parse url %s: %w", io.gitOpsRepoURL, err)
+		return fmt.Errorf("failed to parse url %s: %v", io.gitOpsRepoURL, err)
 	}
 
 	// TODO: this won't work with GitLab as the repo can have more path elements.

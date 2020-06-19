@@ -48,7 +48,7 @@ type BootstrapOptions struct {
 func Bootstrap(o *BootstrapOptions, appFs afero.Fs) error {
 	bootstrapped, err := bootstrapResources(o, appFs)
 	if err != nil {
-		return fmt.Errorf("failed to bootstrap resources: %w", err)
+		return fmt.Errorf("failed to bootstrap resources: %v", err)
 	}
 
 	buildParams := &BuildParameters{
@@ -59,7 +59,7 @@ func Bootstrap(o *BootstrapOptions, appFs afero.Fs) error {
 	m := bootstrapped[pipelinesFile].(*config.Manifest)
 	built, err := buildResources(appFs, buildParams, m)
 	if err != nil {
-		return fmt.Errorf("failed to build resources: %w", err)
+		return fmt.Errorf("failed to build resources: %v", err)
 	}
 	bootstrapped = res.Merge(built, bootstrapped)
 	_, err = yaml.WriteResources(appFs, o.OutputPath, bootstrapped)
@@ -81,7 +81,7 @@ func bootstrapResources(o *BootstrapOptions, appFs afero.Fs) (res.Resources, err
 	}
 	repoName, err := repoFromURL(appRepo.URL())
 	if err != nil {
-		return nil, fmt.Errorf("invalid app repo URL: %w", err)
+		return nil, fmt.Errorf("invalid app repo URL: %v", err)
 	}
 
 	bootstrapped, err := createInitialFiles(appFs, gitOpsRepo, o.Prefix, o.GitOpsWebhookSecret, o.DockerConfigJSONFilename)
@@ -111,7 +111,7 @@ func bootstrapResources(o *BootstrapOptions, appFs afero.Fs) (res.Resources, err
 		o.AppWebhookSecret,
 		eventlisteners.WebhookSecretKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate GitHub Webhook Secret: %w", err)
+		return nil, fmt.Errorf("failed to generate GitHub Webhook Secret: %v", err)
 	}
 	cfg := m.GetPipelinesConfig()
 	if cfg == nil {
@@ -132,7 +132,7 @@ func bootstrapResources(o *BootstrapOptions, appFs afero.Fs) (res.Resources, err
 	if isInternalRegistry {
 		filenames, resources, err := imagerepo.CreateInternalRegistryResources(cfg, roles.CreateServiceAccount(meta.NamespacedName(cfg.Name, saName)), imageRepo)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get resources for internal image repository: %w", err)
+			return nil, fmt.Errorf("failed to get resources for internal image repository: %v", err)
 		}
 		bootstrapped = res.Merge(resources, bootstrapped)
 		k.Resources = append(k.Resources, filenames...)

@@ -132,11 +132,11 @@ func CreateDockerSecret(fs afero.Fs, dockerConfigJSONFilename, ns string) (*ssv1
 
 	authJSONPath, err := homedir.Expand(dockerConfigJSONFilename)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate path to file: %w", err)
+		return nil, fmt.Errorf("failed to generate path to file: %v", err)
 	}
 	f, err := fs.Open(authJSONPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read docker file '%s' : %w", authJSONPath, err)
+		return nil, fmt.Errorf("failed to read docker file '%s' : %v", authJSONPath, err)
 	}
 	defer f.Close()
 
@@ -180,7 +180,7 @@ func createCICDResources(fs afero.Fs, repo scm.Repository, pipelineConfig *confi
 	githubSecret, err := secrets.CreateSealedSecret(meta.NamespacedName(cicdNamespace, eventlisteners.GitOpsWebhookSecret),
 		gitOpsWebhookSecret, eventlisteners.WebhookSecretKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate GitHub Webhook Secret: %w", err)
+		return nil, fmt.Errorf("failed to generate GitHub Webhook Secret: %v", err)
 	}
 
 	outputs[secretsPath] = githubSecret

@@ -22,7 +22,7 @@ type EnvParameters struct {
 func AddEnv(o *EnvParameters, appFs afero.Fs) error {
 	m, err := config.ParseFile(appFs, o.ManifestFilename)
 	if err != nil {
-		return fmt.Errorf("failed to parse manifest: %w", err)
+		return fmt.Errorf("failed to parse manifest: %v", err)
 	}
 	env := m.GetEnvironment(o.EnvName)
 	if env != nil {
@@ -45,7 +45,7 @@ func AddEnv(o *EnvParameters, appFs afero.Fs) error {
 	}
 	built, err := buildResources(appFs, buildParams, m)
 	if err != nil {
-		return fmt.Errorf("failed to build resources: %w", err)
+		return fmt.Errorf("failed to build resources: %v", err)
 	}
 	files = res.Merge(built, files)
 	_, err = yaml.WriteResources(appFs, outputPath, files)

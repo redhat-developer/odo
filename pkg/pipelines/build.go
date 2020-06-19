@@ -22,7 +22,7 @@ type BuildParameters struct {
 func BuildResources(o *BuildParameters, appFs afero.Fs) error {
 	m, err := config.ParseFile(appFs, o.ManifestFilename)
 	if err != nil {
-		return fmt.Errorf("failed to parse pipelines: %w", err)
+		return fmt.Errorf("failed to parse pipelines: %v", err)
 	}
 	if err := m.Validate(); err != nil {
 		return err
