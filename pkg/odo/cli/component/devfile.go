@@ -3,6 +3,7 @@ package component
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/openshift/odo/pkg/envinfo"
@@ -17,6 +18,8 @@ import (
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/log"
 )
+
+var envDir = filepath.Join(".odo", "env")
 
 /*
 Devfile support is an experimental feature which extends the support for the
@@ -49,6 +52,16 @@ func (po *PushOptions) DevfilePush() (err error) {
 	po.sourcePath, err = util.GetAbsPath(po.componentContext)
 	if err != nil {
 		return errors.Wrap(err, "unable to get source path")
+	}
+
+	ignoreFile, err := util.CheckGitIgnoreFile(po.sourcePath)
+	if err != nil {
+		return err
+	}
+
+	err = util.AddFileToIgnoreFile(ignoreFile, filepath.Join(po.sourcePath, envDir))
+	if err != nil {
+		return err
 	}
 
 	// Apply ignore information

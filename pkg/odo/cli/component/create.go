@@ -84,8 +84,11 @@ const LocalDirectoryDefaultLocation = "./"
 
 // Constants for devfile component
 const devFile = "devfile.yaml"
-const envFile = ".odo/env/env.yaml"
-const configFile = ".odo/config.yaml"
+
+var (
+	envFile    = filepath.Join(".odo", "env", "env.yaml")
+	configFile = filepath.Join(".odo", "config.yaml")
+)
 
 // DevfilePath is the devfile path that is used by odo,
 // which means odo can:

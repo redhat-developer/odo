@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
@@ -92,23 +91,7 @@ func AddOdoFileIndex(gitIgnoreFile string) error {
 }
 
 func addOdoFileIndex(gitIgnoreFile string, fs filesystem.Filesystem) error {
-	var data []byte
-	file, err := fs.OpenFile(gitIgnoreFile, os.O_APPEND|os.O_RDWR, 0600)
-	if err != nil {
-		return errors.Wrap(err, "failed to open .gitignore file")
-	}
-	defer file.Close()
-
-	if data, err = fs.ReadFile(gitIgnoreFile); err != nil {
-		return errors.Wrap(err, "failed reading data from .gitignore file")
-	}
-	// check whether .odo/odo-file-index.json is already in the .gitignore file
-	if !strings.Contains(string(data), filepath.Join(fileIndexDirectory, fileIndexName)) {
-		if _, err := file.WriteString("\n" + filepath.Join(fileIndexDirectory, fileIndexName)); err != nil {
-			return errors.Wrapf(err, "failed to Add %v to .gitignore file", fileIndexName)
-		}
-	}
-	return nil
+	return addFileToIgnoreFile(gitIgnoreFile, filepath.Join(fileIndexDirectory, fileIndexName), fs)
 }
 
 // CheckGitIgnoreFile checks .gitignore file exists or not, if not then create it

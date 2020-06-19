@@ -26,6 +26,7 @@ import (
 
 	"github.com/gobwas/glob"
 	"github.com/google/go-github/github"
+	"github.com/openshift/odo/pkg/testingutil/filesystem"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -1117,4 +1118,28 @@ func sliceContainsString(str string, slice []string) bool {
 		}
 	}
 	return false
+}
+
+func AddFileToIgnoreFile(gitIgnoreFile, filename string) error {
+	return addFileToIgnoreFile(gitIgnoreFile, filename, filesystem.DefaultFs{})
+}
+
+func addFileToIgnoreFile(gitIgnoreFile, filename string, fs filesystem.Filesystem) error {
+	var data []byte
+	file, err := fs.OpenFile(gitIgnoreFile, os.O_APPEND|os.O_RDWR, 0600)
+	if err != nil {
+		return errors.Wrap(err, "failed to open .gitignore file")
+	}
+	defer file.Close()
+
+	if data, err = fs.ReadFile(gitIgnoreFile); err != nil {
+		return errors.Wrap(err, "failed reading data from .gitignore file")
+	}
+	// check whether .odo/odo-file-index.json is already in the .gitignore file
+	if !strings.Contains(string(data), filename) {
+		if _, err := file.WriteString("\n" + filename); err != nil {
+			return errors.Wrapf(err, "failed to Add %v to .gitignore file", filepath.Base(filename))
+		}
+	}
+	return nil
 }
