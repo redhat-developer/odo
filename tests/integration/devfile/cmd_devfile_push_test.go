@@ -330,8 +330,8 @@ var _ = Describe("odo devfile push command tests", func() {
 		})
 	})
 
-	FContext("when .gitignore file exists", func() {
-		It("checks that odo push works with a devfile", func() {
+	Context("when .gitignore file exists", func() {
+		It("checks that .odo/env and .odo/odo-file-index.json", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
