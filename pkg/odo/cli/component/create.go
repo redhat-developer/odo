@@ -359,9 +359,16 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		// Validate user specify registry
 		if co.devfileMetadata.devfileRegistry.Name != "" {
-			// TODO: We should add more validations here to validate registry existence and correctness
 			if co.devfileMetadata.devfilePath.value != "" {
-				return errors.New("You can specify registry via --registry if you want to use the devfile that is specified via --devfile")
+				return errors.New("You can't specify registry via --registry if you want to use the devfile that is specified via --devfile")
+			}
+
+			registryList, err := catalog.GetDevfileRegistries(co.devfileMetadata.devfileRegistry.Name)
+			if err != nil {
+				return errors.Wrap(err, "Failed to get registry")
+			}
+			if len(registryList) == 0 {
+				return errors.Errorf("Registry %s doesn't exist, please specify a valid registry via --registry", co.devfileMetadata.devfileRegistry.Name)
 			}
 		}
 
@@ -513,16 +520,29 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			// Since we need to support both devfile and s2i, so we have to check if the component type is
 			// supported by devfile, if it is supported we return and will download the corresponding devfile later,
 			// if it is not supported we still need to run all the codes related with s2i after devfile compatibility check
-			spinner := log.Spinner("Checking devfile compatibility")
+
+			hasComponent := false
 
 			for _, devfileComponent := range catalogDevfileList.Items {
-				if co.devfileMetadata.componentType == devfileComponent.Name && devfileComponent.Support {
-					co.devfileMetadata.devfileSupport = true
-					co.devfileMetadata.devfileLink = devfileComponent.Link
-					co.devfileMetadata.devfileRegistry = devfileComponent.Registry
+				if co.devfileMetadata.componentType == devfileComponent.Name {
+					hasComponent = true
+					if devfileComponent.Support {
+						co.devfileMetadata.devfileSupport = true
+						co.devfileMetadata.devfileLink = devfileComponent.Link
+						co.devfileMetadata.devfileRegistry = devfileComponent.Registry
+						break
+					}
 				}
 			}
 
+			existSpinner := log.Spinner("Checking devfile existence")
+			if hasComponent {
+				existSpinner.End(true)
+			} else {
+				existSpinner.End(false)
+			}
+
+			supportSpinner := log.Spinner("Checking devfile compatibility")
 			if co.devfileMetadata.devfileSupport {
 				registrySpinner := log.Spinnerf("Creating a devfile component from registry: %s", co.devfileMetadata.devfileRegistry.Name)
 
@@ -532,13 +552,19 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 					return err
 				}
 
-				spinner.End(true)
+				supportSpinner.End(true)
 				registrySpinner.End(true)
 				return nil
 			}
+			supportSpinner.End(false)
 
-			spinner.End(false)
-			log.Warning("\nDevfile component type is not supported, please run `odo catalog list components` for a list of supported devfile component types")
+			// Currently only devfile component supports --registry flag, so if user specifies --registry when creating devfile component,
+			// we should error out instead of running s2i componet code and throw warning message
+			if co.devfileMetadata.devfileRegistry.Name != "" {
+				return errors.Errorf("Devfile component type %s is not supported, please run `odo catalog list components` for a list of supported devfile component types", co.devfileMetadata.componentType)
+			} else {
+				log.Warningf("Devfile component type %s is not supported, please run `odo catalog list components` for a list of supported devfile component types", co.devfileMetadata.componentType)
+			}
 		}
 	}
 
