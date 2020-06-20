@@ -1,8 +1,8 @@
 version: 2
 jobs:
   build:
-    machine: true
-    working_directory: ~/go/src/github.com/docker/go-connections
+    machine:
+      image: ubuntu-1604:202004-01
     steps:
       - checkout
       - run:
@@ -11,10 +11,7 @@ jobs:
       - run:
           name: Get dependencies
           command: |
-            go get -u golang.org/x/lint/golint &&
-            go get -d github.com/pkg/errors &&
-            go get -d github.com/stretchr/testify &&
-            go get -d golang.org/x/net/proxy
+            go get -u golang.org/x/lint/golint
       - run:
           name: Run analysis before tests
           command: go vet ./...
@@ -35,7 +32,6 @@ jobs:
       - run:
           name: Build for Windows
           command: |
-            go get -d github.com/Microsoft/go-winio &&
             go build ./...
           environment:
             GOOS: windows
