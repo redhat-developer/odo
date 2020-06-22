@@ -472,12 +472,12 @@ func TestGetContainerLogs(t *testing.T) {
 				t.Errorf("TestDisplayContainerLog error: expected %v, wanted %v", err, tt.wantErr)
 			}
 
-			logString := convertLogsToString(rd)
-
-			if tt.Logs != logString {
-				t.Errorf("TestDisplayContainerLog error: container id of start container did not match: got %v, wanted %v", logString, mockLogs)
+			if !tt.wantErr {
+				logString := convertLogsToString(rd)
+				if tt.Logs != logString {
+					t.Errorf("TestDisplayContainerLog error: container id of start container did not match: got %v, wanted %v", logString, mockLogs)
+				}
 			}
-
 		})
 	}
 }
@@ -487,7 +487,7 @@ func convertLogsToString(rd io.ReadCloser) string {
 	var logString string
 	for {
 		n, err := rd.Read(buf)
-		if err == io.EOF {
+		if err != nil {
 			break
 		}
 		logString = fmt.Sprintf("%s%s", logString, string(buf[:n]))

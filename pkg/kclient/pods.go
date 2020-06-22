@@ -174,7 +174,7 @@ func (c *Client) GetOnePodFromSelector(selector string) (*corev1.Pod, error) {
 	return &pods.Items[0], nil
 }
 
-// DisplayPodLog prints the log from pod to stdout
+// GetPodLogs prints the log from pod to stdout
 func (c *Client) GetPodLogs(podName, containerName string, followLog bool) (io.ReadCloser, error) {
 
 	// Set standard log options
@@ -204,22 +204,4 @@ func (c *Client) GetPodLogs(podName, containerName string, followLog bool) (io.R
 		Stream()
 
 	return rd, err
-}
-
-// GetPodFromSelector returns an array of pods
-// resources which match the given selector
-func (c *Client) GetPodFromSelector(selector string) (*corev1.PodList, error) {
-	var podList *corev1.PodList
-	var err error
-
-	if selector != "" {
-		listOptions := metav1.ListOptions{LabelSelector: selector}
-		podList, err = c.KubeClient.CoreV1().Pods(c.Namespace).List(listOptions)
-	}
-
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to list pods")
-	}
-
-	return podList, nil
 }
