@@ -398,7 +398,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		if co.interactive {
 			// Interactive mode
 
-			// Component type: We provide devfile component list to let user choose
+			// Get available devfile components for checking devfile compatibility
 			catalogDevfileList, err = catalog.ListDevfileComponents(co.devfileMetadata.devfileRegistry.Name)
 			if err != nil {
 				return err
@@ -410,6 +410,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			}
 
 			if isDevfileRegistryPresent {
+				// Component type: We provide devfile component list to let user choose
 				componentType = ui.SelectDevfileComponentType(catalogDevfileList.Items)
 
 				// Component name: User needs to specify the componet name, by default it is component type that user chooses
@@ -461,7 +462,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 					componentName = args[0]
 				}
 
-				// Component type: We provide devfile component list to let user choose
+				// Get available devfile components for checking devfile compatibility
 				catalogDevfileList, err = catalog.ListDevfileComponents(co.devfileMetadata.devfileRegistry.Name)
 				if err != nil {
 					return err

@@ -241,7 +241,7 @@ OdoSettings:
 	}
 }
 
-func TestGetDevfileIndexEntries(t *testing.T) {
+func TestGetRegistryDevfiles(t *testing.T) {
 	// Start a local HTTP server
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		// Send response to be tested
@@ -299,7 +299,7 @@ func TestGetDevfileIndexEntries(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getDevfileIndexEntries(tt.registry)
+			got, err := getRegistryDevfiles(tt.registry)
 
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Got: %v, want: %v", got, tt.want)

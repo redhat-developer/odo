@@ -63,7 +63,7 @@ var _ = Describe("odo docker devfile catalog command tests", func() {
 			output := helper.CmdShouldPass("odo", "catalog", "list", "components")
 			helper.MatchAllInOutput(output, []string{
 				"Odo Devfile Components",
-				"java-spring-boot",
+				"springBoot",
 				"quarkus",
 			})
 			helper.CmdShouldPass("odo", "registry", "delete", "fake", "-f")
