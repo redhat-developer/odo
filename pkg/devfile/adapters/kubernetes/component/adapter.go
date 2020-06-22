@@ -2,9 +2,11 @@ package component
 
 import (
 	"fmt"
+	"io"
 	"reflect"
 
 	"github.com/openshift/odo/pkg/exec"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -451,16 +453,16 @@ func (a Adapter) Delete(labels map[string]string) error {
 	return a.Client.DeleteDeployment(labels)
 }
 
-func (a Adapter) Log(follow, debug bool) error {
+func (a Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
 
 	if !utils.ComponentExists(a.Client, a.ComponentName) {
-		return errors.Errorf("the component %s doesn't exist on the cluster", a.ComponentName)
+		return nil, errors.Errorf("the component %s doesn't exist on the cluster", a.ComponentName)
 	}
 
 	runCommand, err := adaptersCommon.GetRunCommand(a.Devfile.Data, "")
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	containerName := runCommand.Exec.Component
@@ -468,9 +470,9 @@ func (a Adapter) Log(follow, debug bool) error {
 	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
 	pod, err := a.waitAndGetComponentPod(true)
 	if err != nil {
-		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
+		return nil, errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
 	}
 
-	return a.Client.DisplayPodLog(pod.Name, containerName, follow)
+	return a.Client.GetPodLogs(pod.Name, containerName, follow)
 
 }

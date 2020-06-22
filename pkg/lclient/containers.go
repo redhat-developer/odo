@@ -10,7 +10,6 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 )
 
@@ -173,7 +172,7 @@ func (dc *Client) WaitForContainer(containerID string, condition container.WaitC
 }
 
 // DisplayContainerLog prints the log from pod to stdout
-func (dc *Client) DisplayContainerLog(containerName string, followLog bool) error {
+func (dc *Client) GetContainerLogs(containerName string, followLog bool) (io.ReadCloser, error) {
 
 	// Set standard log options
 	ContainerLogOptions := types.ContainerLogsOptions{Follow: false, ShowStdout: true}
@@ -187,15 +186,5 @@ func (dc *Client) DisplayContainerLog(containerName string, followLog bool) erro
 		}
 	}
 
-	// RESTClient call to kubernetes
-	rd, err := dc.Client.ContainerLogs(dc.Context, containerName, ContainerLogOptions)
-
-	if err != nil {
-		return errors.Wrapf(err, "unable get Container log %s", containerName)
-	}
-	if rd == nil {
-		return errors.New("unable to retrieve pod from docker, does your component exist?")
-	}
-
-	return util.DisplayLog(followLog, rd, containerName)
+	return dc.Client.ContainerLogs(dc.Context, containerName, ContainerLogOptions)
 }

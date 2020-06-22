@@ -152,7 +152,7 @@ func (lo LogOptions) DevfileComponentLog() error {
 	}
 
 	// Start or update the component
-	err = devfileHandler.Log(lo.logFollow, lo.debug)
+	rd, err := devfileHandler.Log(lo.logFollow, lo.debug)
 	if err != nil {
 		log.Errorf(
 			"Failed to log component with name %s.\nError: %v",
@@ -161,7 +161,8 @@ func (lo LogOptions) DevfileComponentLog() error {
 		)
 		os.Exit(1)
 	}
-	return nil
+
+	return util.DisplayLog(lo.logFollow, rd, componentName)
 }
 
 // Get component name from env.yaml file

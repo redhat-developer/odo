@@ -9,7 +9,6 @@ import (
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
@@ -176,7 +175,7 @@ func (c *Client) GetOnePodFromSelector(selector string) (*corev1.Pod, error) {
 }
 
 // DisplayPodLog prints the log from pod to stdout
-func (c *Client) DisplayPodLog(podName, containerName string, followLog bool) error {
+func (c *Client) GetPodLogs(podName, containerName string, followLog bool) (io.ReadCloser, error) {
 
 	// Set standard log options
 	podLogOptions := corev1.PodLogOptions{Follow: false}
@@ -203,14 +202,8 @@ func (c *Client) DisplayPodLog(podName, containerName string, followLog bool) er
 		SubResource("log").
 		VersionedParams(&podLogOptions, scheme.ParameterCodec).
 		Stream()
-	if err != nil {
-		return errors.Wrapf(err, "unable get pod log %s", podName)
-	}
-	if rd == nil {
-		return errors.New("unable to retrieve pod from kubernetes, does your component exist?")
-	}
 
-	return util.DisplayLog(followLog, rd, podName)
+	return rd, err
 }
 
 // GetPodFromSelector returns an array of pods

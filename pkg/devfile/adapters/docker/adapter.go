@@ -1,6 +1,8 @@
 package docker
 
 import (
+	"io"
+
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/component"
 	"github.com/openshift/odo/pkg/lclient"
@@ -44,6 +46,6 @@ func (d Adapter) Delete(labels map[string]string) error {
 }
 
 // Log show logs from component
-func (d Adapter) Log(follow, debug bool) error {
+func (d Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
 	return d.componentAdapter.Log(follow, debug)
 }

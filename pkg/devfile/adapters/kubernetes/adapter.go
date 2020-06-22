@@ -1,6 +1,8 @@
 package kubernetes
 
 import (
+	"io"
+
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/component"
 	"github.com/openshift/odo/pkg/kclient"
@@ -54,6 +56,6 @@ func (k Adapter) Delete(labels map[string]string) error {
 }
 
 // Log shows log from component
-func (k Adapter) Log(follow, debug bool) error {
+func (k Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
 	return k.componentAdapter.Log(follow, debug)
 }
