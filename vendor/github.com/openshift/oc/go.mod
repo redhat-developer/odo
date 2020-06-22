@@ -33,10 +33,10 @@ require (
 	github.com/moby/buildkit v0.0.0-20181107081847-c3a857e3fca0
 	github.com/mtrmac/gpgme v0.1.2 // indirect
 	github.com/opencontainers/go-digest v1.0.0-rc1
-	github.com/openshift/api v0.0.0-20200205133042-34f0ec8dab87
+	github.com/openshift/api v0.0.0-20200210091934-a0e53e94816b
 	github.com/openshift/build-machinery-go v0.0.0-20200211121458-5e3d6e570160
 	github.com/openshift/client-go v0.0.0-20200116152001-92a2713fa240
-	github.com/openshift/library-go v0.0.0-20200206134157-b4c763d94dcf
+	github.com/openshift/library-go v0.0.0-20200521120150-e4959e210d3a
 	github.com/operator-framework/operator-registry v1.5.11
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v1.1.0
@@ -47,12 +47,12 @@ require (
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/xeipuuv/gojsonschema v1.1.0 // indirect
 	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
-	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553
+	golang.org/x/net v0.0.0-20200202094626-16171245cfb2
 	golang.org/x/sys v0.0.0-20190826190057-c7b8b68b1456
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4
 	gopkg.in/ldap.v2 v2.5.1
-	k8s.io/api v0.17.1
-	k8s.io/apimachinery v0.17.1
+	k8s.io/api v0.17.2
+	k8s.io/apimachinery v0.17.2
 	k8s.io/apiserver v0.17.1
 	k8s.io/cli-runtime v0.17.0
 	k8s.io/client-go v8.0.0+incompatible
@@ -84,7 +84,7 @@ replace (
 	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.17.1
 	k8s.io/kube-proxy => k8s.io/kube-proxy v0.17.1
 	k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.17.1
-	k8s.io/kubectl => github.com/openshift/kubernetes-kubectl v0.0.0-20200211153013-50adac736181
+	k8s.io/kubectl => github.com/openshift/kubernetes-kubectl v0.0.0-20200514121803-1a063728c98c
 	k8s.io/kubelet => k8s.io/kubelet v0.17.1
 	k8s.io/kubernetes => github.com/openshift/kubernetes v1.17.0-alpha.0.0.20191216151305-079984b0a154
 	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.17.1

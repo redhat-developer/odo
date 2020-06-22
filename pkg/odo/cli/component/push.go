@@ -49,7 +49,10 @@ type PushOptions struct {
 	devfileInitCommand  string
 	devfileBuildCommand string
 	devfileRunCommand   string
-	namespace           string
+	devfileDebugCommand string
+	debugRun            bool
+
+	namespace string
 }
 
 // NewPushOptions returns new instance of PushOptions
@@ -60,9 +63,18 @@ func NewPushOptions() *PushOptions {
 	}
 }
 
+// CompleteDevfilePath completes the devfile path from context
+func (po *PushOptions) CompleteDevfilePath() {
+	if len(po.DevfilePath) > 0 {
+		po.DevfilePath = filepath.Join(po.componentContext, po.DevfilePath)
+	} else {
+		po.DevfilePath = filepath.Join(po.componentContext, "devfile.yaml")
+	}
+}
+
 // Complete completes push args
 func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	po.DevfilePath = filepath.Join(po.componentContext, po.DevfilePath)
+	po.CompleteDevfilePath()
 
 	// if experimental mode is enabled and devfile is present
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.DevfilePath) {
@@ -174,11 +186,12 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 
 	// enable devfile flag if experimental mode is enabled
 	if experimental.IsExperimentalModeEnabled() {
-		pushCmd.Flags().StringVar(&po.DevfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
 		pushCmd.Flags().StringVar(&po.namespace, "namespace", "", "Namespace to push the component to")
 		pushCmd.Flags().StringVar(&po.devfileInitCommand, "init-command", "", "Devfile Init Command to execute")
 		pushCmd.Flags().StringVar(&po.devfileBuildCommand, "build-command", "", "Devfile Build Command to execute")
 		pushCmd.Flags().StringVar(&po.devfileRunCommand, "run-command", "", "Devfile Run Command to execute")
+		pushCmd.Flags().BoolVar(&po.debugRun, "debug", false, "Runs the component in debug mode")
+		pushCmd.Flags().StringVar(&po.devfileDebugCommand, "debug-command", "", "Devfile Debug Command to execute")
 	}
 
 	//Adding `--project` flag

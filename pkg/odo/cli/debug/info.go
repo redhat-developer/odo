@@ -2,12 +2,12 @@ package debug
 
 import (
 	"fmt"
-
-	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/debug"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/pkg/odo/util/experimental"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
 	k8sgenclioptions "k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/kubectl/pkg/util/templates"
@@ -15,10 +15,13 @@ import (
 
 // PortForwardOptions contains all the options for running the port-forward cli command.
 type InfoOptions struct {
-	Namespace     string
-	PortForwarder *debug.DefaultPortForwarder
+	componentName   string
+	applicationName string
+	Namespace       string
+	PortForwarder   *debug.DefaultPortForwarder
 	*genericclioptions.Context
-	contextDir string
+	contextDir  string
+	DevfilePath string
 }
 
 var (
@@ -43,12 +46,26 @@ func NewInfoOptions() *InfoOptions {
 
 // Complete completes all the required options for port-forward cmd.
 func (o *InfoOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context = genericclioptions.NewContext(cmd)
-	cfg, err := config.NewLocalConfigInfo(o.contextDir)
-	o.LocalConfigInfo = cfg
+	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
+		o.Context = genericclioptions.NewDevfileContext(cmd)
+
+		// a small shortcut
+		env := o.Context.EnvSpecificInfo
+
+		o.componentName = env.GetName()
+		o.Namespace = env.GetNamespace()
+	} else {
+		o.Context = genericclioptions.NewContext(cmd)
+		cfg := o.Context.LocalConfigInfo
+		o.LocalConfigInfo = cfg
+
+		o.componentName = cfg.GetName()
+		o.applicationName = cfg.GetApplication()
+		o.Namespace = cfg.GetProject()
+	}
 
 	// Using Discard streams because nothing important is logged
-	o.PortForwarder = debug.NewDefaultPortForwarder(cfg.GetName(), cfg.GetApplication(), o.Client, k8sgenclioptions.NewTestIOStreamsDiscard())
+	o.PortForwarder = debug.NewDefaultPortForwarder(o.componentName, o.applicationName, o.Namespace, o.Client, o.KClient, k8sgenclioptions.NewTestIOStreamsDiscard())
 
 	return err
 }
@@ -67,7 +84,7 @@ func (o InfoOptions) Run() error {
 			log.Infof("Debug is running for the component on the local port : %v", debugFileInfo.Spec.LocalPort)
 		}
 	} else {
-		return fmt.Errorf("debug is not running for the component %v", o.LocalConfigInfo.GetName())
+		return fmt.Errorf("debug is not running for the component %v", o.componentName)
 	}
 	return nil
 }
@@ -87,6 +104,9 @@ func NewCmdInfo(name, fullName string) *cobra.Command {
 		},
 	}
 	genericclioptions.AddContextFlag(cmd, &opts.contextDir)
+	if experimental.IsExperimentalModeEnabled() {
+		cmd.Flags().StringVar(&opts.DevfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
+	}
 
 	return cmd
 }

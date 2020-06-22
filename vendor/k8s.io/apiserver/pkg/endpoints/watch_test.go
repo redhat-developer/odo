@@ -17,7 +17,6 @@ limitations under the License.
 package endpoints
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -35,6 +34,7 @@ import (
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -44,7 +44,6 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	example "k8s.io/apiserver/pkg/apis/example"
 	"k8s.io/apiserver/pkg/endpoints/handlers"
-	"k8s.io/apiserver/pkg/endpoints/handlers/responsewriters"
 	apitesting "k8s.io/apiserver/pkg/endpoints/testing"
 	"k8s.io/apiserver/pkg/registry/rest"
 	"k8s.io/client-go/dynamic"
@@ -211,48 +210,6 @@ func TestWatchWebsocketClientClose(t *testing.T) {
 	err = websocket.JSON.Receive(ws, &got)
 	if err == nil {
 		t.Errorf("Unexpected non-error")
-	}
-}
-
-func TestWatchClientClose(t *testing.T) {
-	simpleStorage := &SimpleRESTStorage{}
-	_ = rest.Watcher(simpleStorage) // Give compile error if this doesn't work.
-	handler := handle(map[string]rest.Storage{"simples": simpleStorage})
-	server := httptest.NewServer(handler)
-	defer server.Close()
-
-	dest, _ := url.Parse(server.URL)
-	dest.Path = "/" + prefix + "/" + testGroupVersion.Group + "/" + testGroupVersion.Version + "/simples"
-	dest.RawQuery = "watch=1"
-
-	request, err := http.NewRequest("GET", dest.String(), nil)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	request.Header.Add("Accept", "application/json")
-
-	response, err := http.DefaultClient.Do(request)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if response.StatusCode != http.StatusOK {
-		b, _ := ioutil.ReadAll(response.Body)
-		t.Fatalf("Unexpected response: %#v\n%s", response, string(b))
-	}
-
-	// Close response to cause a cancel on the server
-	if err := response.Body.Close(); err != nil {
-		t.Fatalf("Unexpected close client err: %v", err)
-	}
-
-	select {
-	case data, ok := <-simpleStorage.fakeWatch.ResultChan():
-		if ok {
-			t.Errorf("expected a closed result channel, but got watch result %#v", data)
-		}
-	case <-time.After(5 * time.Second):
-		t.Errorf("watcher did not close when client closed")
 	}
 }
 
@@ -609,21 +566,6 @@ func (t *fakeTimeoutFactory) TimeoutCh() (<-chan time.Time, func() bool) {
 	}
 }
 
-// serveWatch will serve a watch response according to the watcher and watchServer.
-// Before watchServer.ServeHTTP, an error may occur like k8s.io/apiserver/pkg/endpoints/handlers/watch.go#serveWatch does.
-func serveWatch(watcher watch.Interface, watchServer *handlers.WatchServer, preServeErr error) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		defer watcher.Stop()
-
-		if preServeErr != nil {
-			responsewriters.ErrorNegotiated(preServeErr, watchServer.Scope.Serializer, watchServer.Scope.Kind.GroupVersion(), w, req)
-			return
-		}
-
-		watchServer.ServeHTTP(w, req)
-	}
-}
-
 func TestWatchHTTPErrors(t *testing.T) {
 	watcher := watch.NewFake()
 	timeoutCh := make(chan time.Time)
@@ -637,7 +579,6 @@ func TestWatchHTTPErrors(t *testing.T) {
 
 	// Setup a new watchserver
 	watchServer := &handlers.WatchServer{
-		Scope:    &handlers.RequestScope{},
 		Watching: watcher,
 
 		MediaType:       "testcase/json",
@@ -645,11 +586,13 @@ func TestWatchHTTPErrors(t *testing.T) {
 		Encoder:         newCodec,
 		EmbeddedEncoder: newCodec,
 
-		Fixup:          func(obj runtime.Object) runtime.Object { return obj },
+		Fixup:          func(obj runtime.Object) {},
 		TimeoutFactory: &fakeTimeoutFactory{timeoutCh, done},
 	}
 
-	s := httptest.NewServer(serveWatch(watcher, watchServer, nil))
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		watchServer.ServeHTTP(w, req)
+	}))
 	defer s.Close()
 
 	// Setup a client
@@ -660,9 +603,6 @@ func TestWatchHTTPErrors(t *testing.T) {
 	req, _ := http.NewRequest("GET", dest.String(), nil)
 	client := http.Client{}
 	resp, err := client.Do(req)
-	if err != nil {
-		t.Fatalf("Unexpected error: %v", err)
-	}
 	errStatus := errors.NewInternalError(fmt.Errorf("we got an error")).Status()
 	watcher.Error(&errStatus)
 	watcher.Stop()
@@ -686,68 +626,6 @@ func TestWatchHTTPErrors(t *testing.T) {
 	}
 }
 
-func TestWatchHTTPErrorsBeforeServe(t *testing.T) {
-	watcher := watch.NewFake()
-	timeoutCh := make(chan time.Time)
-	done := make(chan struct{})
-
-	info, ok := runtime.SerializerInfoForMediaType(codecs.SupportedMediaTypes(), runtime.ContentTypeJSON)
-	if !ok || info.StreamSerializer == nil {
-		t.Fatal(info)
-	}
-	serializer := info.StreamSerializer
-
-	// Setup a new watchserver
-	watchServer := &handlers.WatchServer{
-		Scope: &handlers.RequestScope{
-			Serializer: runtime.NewSimpleNegotiatedSerializer(info),
-			Kind:       testGroupVersion.WithKind("test"),
-		},
-		Watching: watcher,
-
-		MediaType:       "testcase/json",
-		Framer:          serializer.Framer,
-		Encoder:         newCodec,
-		EmbeddedEncoder: newCodec,
-
-		Fixup:          func(obj runtime.Object) runtime.Object { return obj },
-		TimeoutFactory: &fakeTimeoutFactory{timeoutCh, done},
-	}
-
-	errStatus := errors.NewInternalError(fmt.Errorf("we got an error"))
-
-	s := httptest.NewServer(serveWatch(watcher, watchServer, errStatus))
-	defer s.Close()
-
-	// Setup a client
-	dest, _ := url.Parse(s.URL)
-	dest.Path = "/" + prefix + "/" + newGroupVersion.Group + "/" + newGroupVersion.Version + "/simple"
-	dest.RawQuery = "watch=true"
-
-	req, _ := http.NewRequest("GET", dest.String(), nil)
-	client := http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		t.Fatalf("Unexpected error: %v", err)
-	}
-
-	// We had already got an error before watch serve started
-	decoder := json.NewDecoder(resp.Body)
-	var status *metav1.Status
-	err = decoder.Decode(&status)
-	if err != nil {
-		t.Fatalf("Unexpected error: %v", err)
-	}
-	if status.Kind != "Status" || status.APIVersion != "v1" || status.Code != 500 || status.Status != "Failure" || !strings.Contains(status.Message, "we got an error") {
-		t.Fatalf("error: %#v", status)
-	}
-
-	// check for leaks
-	if !watcher.IsStopped() {
-		t.Errorf("Leaked watcher goruntine after request done")
-	}
-}
-
 func TestWatchHTTPDynamicClientErrors(t *testing.T) {
 	watcher := watch.NewFake()
 	timeoutCh := make(chan time.Time)
@@ -761,7 +639,6 @@ func TestWatchHTTPDynamicClientErrors(t *testing.T) {
 
 	// Setup a new watchserver
 	watchServer := &handlers.WatchServer{
-		Scope:    &handlers.RequestScope{},
 		Watching: watcher,
 
 		MediaType:       "testcase/json",
@@ -769,26 +646,46 @@ func TestWatchHTTPDynamicClientErrors(t *testing.T) {
 		Encoder:         newCodec,
 		EmbeddedEncoder: newCodec,
 
-		Fixup:          func(obj runtime.Object) runtime.Object { return obj },
+		Fixup:          func(obj runtime.Object) {},
 		TimeoutFactory: &fakeTimeoutFactory{timeoutCh, done},
 	}
 
-	s := httptest.NewServer(serveWatch(watcher, watchServer, nil))
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		watchServer.ServeHTTP(w, req)
+	}))
 	defer s.Close()
-	defer s.CloseClientConnections()
 
 	client := dynamic.NewForConfigOrDie(&restclient.Config{
 		Host:    s.URL,
 		APIPath: "/" + prefix,
 	}).Resource(newGroupVersion.WithResource("simple"))
 
-	_, err := client.Watch(context.TODO(), metav1.ListOptions{})
-	if err == nil {
+	w, err := client.Watch(metav1.ListOptions{})
+	if err != nil {
 		t.Fatal(err)
 	}
-	if err.Error() != "no stream serializers registered for testcase/json" {
-		t.Fatalf("unexpected error: %v", err)
+
+	errStatus := errors.NewInternalError(fmt.Errorf("we got an error")).Status()
+	watcher.Error(&errStatus)
+	watcher.Stop()
+
+	got := <-w.ResultChan()
+	if got.Type != watch.Error {
+		t.Fatalf("unexpected watch type: %#v", got)
 	}
+	obj, ok := got.Object.(*unstructured.Unstructured)
+	if !ok {
+		t.Fatalf("not the correct object type: %#v", got)
+	}
+
+	status := &metav1.Status{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.UnstructuredContent(), status); err != nil {
+		t.Fatal(err)
+	}
+	if status.Kind != "Status" || status.APIVersion != "v1" || status.Code != 500 || status.Status != "Failure" || !strings.Contains(status.Message, "we got an error") {
+		t.Fatalf("error: %#v", status)
+	}
+	t.Logf("status: %#v", status)
 }
 
 func TestWatchHTTPTimeout(t *testing.T) {
@@ -804,7 +701,6 @@ func TestWatchHTTPTimeout(t *testing.T) {
 
 	// Setup a new watchserver
 	watchServer := &handlers.WatchServer{
-		Scope:    &handlers.RequestScope{},
 		Watching: watcher,
 
 		MediaType:       "testcase/json",
@@ -812,11 +708,13 @@ func TestWatchHTTPTimeout(t *testing.T) {
 		Encoder:         newCodec,
 		EmbeddedEncoder: newCodec,
 
-		Fixup:          func(obj runtime.Object) runtime.Object { return obj },
+		Fixup:          func(obj runtime.Object) {},
 		TimeoutFactory: &fakeTimeoutFactory{timeoutCh, done},
 	}
 
-	s := httptest.NewServer(serveWatch(watcher, watchServer, nil))
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		watchServer.ServeHTTP(w, req)
+	}))
 	defer s.Close()
 
 	// Setup a client
@@ -827,9 +725,6 @@ func TestWatchHTTPTimeout(t *testing.T) {
 	req, _ := http.NewRequest("GET", dest.String(), nil)
 	client := http.Client{}
 	resp, err := client.Do(req)
-	if err != nil {
-		t.Fatalf("Unexpected error: %v", err)
-	}
 	watcher.Add(&apitesting.Simple{TypeMeta: metav1.TypeMeta{APIVersion: newGroupVersion.String()}})
 
 	// Make sure we can actually watch an endpoint
@@ -844,7 +739,7 @@ func TestWatchHTTPTimeout(t *testing.T) {
 	close(timeoutCh)
 	select {
 	case <-done:
-		if !watcher.IsStopped() {
+		if !watcher.Stopped {
 			t.Errorf("Leaked watch on timeout")
 		}
 	case <-time.After(wait.ForeverTestTimeout):
@@ -862,30 +757,6 @@ func TestWatchHTTPTimeout(t *testing.T) {
 func BenchmarkWatchHTTP(b *testing.B) {
 	items := benchmarkItems(b)
 
-	// use ASCII names to capture the cost of handling ASCII only self-links
-	for i := range items {
-		item := &items[i]
-		item.Namespace = fmt.Sprintf("namespace-%d", i)
-		item.Name = fmt.Sprintf("reasonable-name-%d", i)
-	}
-
-	runWatchHTTPBenchmark(b, items)
-}
-
-func BenchmarkWatchHTTP_UTF8(b *testing.B) {
-	items := benchmarkItems(b)
-
-	// use UTF names to capture the cost of handling UTF-8 escaping in self-links
-	for i := range items {
-		item := &items[i]
-		item.Namespace = fmt.Sprintf("躀痢疈蜧í柢-%d", i)
-		item.Name = fmt.Sprintf("翏Ŏ熡韐-%d", i)
-	}
-
-	runWatchHTTPBenchmark(b, items)
-}
-
-func runWatchHTTPBenchmark(b *testing.B, items []example.Pod) {
 	simpleStorage := &SimpleRESTStorage{}
 	handler := handle(map[string]rest.Storage{"simples": simpleStorage})
 	server := httptest.NewServer(handler)

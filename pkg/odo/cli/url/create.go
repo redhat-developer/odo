@@ -92,6 +92,8 @@ func NewURLCreateOptions() *URLCreateOptions {
 
 // Complete completes URLCreateOptions after they've been Created
 func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	o.DevfilePath = clicomponent.DevfilePath
+
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 	} else if o.now {
@@ -321,7 +323,6 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 			urlCreateCmd.Flags().BoolVar(&o.wantIngress, "ingress", false, "Creates an ingress instead of Route on OpenShift clusters")
 			urlCreateCmd.Example = fmt.Sprintf(urlCreateExampleExperimental, fullName)
 		}
-		urlCreateCmd.Flags().StringVar(&o.DevfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
 	} else {
 		urlCreateCmd.Flags().BoolVarP(&o.secureURL, "secure", "", false, "creates a secure https url")
 		urlCreateCmd.Example = fmt.Sprintf(urlCreateExample, fullName)

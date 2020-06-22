@@ -83,13 +83,13 @@ var _ = Describe("odo docker devfile delete command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
+			helper.CmdShouldPass("odo", "push")
 
 			Expect(dockerClient.GetRunningContainersByLabel("component=" + cmpName)).To(HaveLen(1))
 
 			Expect(dockerClient.GetSourceAndStorageVolumesByComponent(cmpName)).To(HaveLen(1))
 
-			helper.CmdShouldPass("odo", "delete", "--devfile", "devfile.yaml", "-f")
+			helper.CmdShouldPass("odo", "delete", "-f")
 
 			Expect(dockerClient.GetRunningContainersByLabel("component=" + cmpName)).To(HaveLen(0))
 
@@ -105,7 +105,7 @@ var _ = Describe("odo docker devfile delete command tests", func() {
 			helper.RenameFile("devfile.yaml", "devfile-old.yaml")
 			helper.RenameFile("devfile-with-volumes.yaml", "devfile.yaml")
 
-			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
+			output := helper.CmdShouldPass("odo", "push")
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
 			// Retrieve the volume from one of the aliases in the devfile
@@ -119,7 +119,7 @@ var _ = Describe("odo docker devfile delete command tests", func() {
 
 			Expect(dockerClient.GetSourceAndStorageVolumesByComponent(cmpName)).To(HaveLen(3))
 
-			helper.CmdShouldPass("odo", "delete", "--devfile", "devfile.yaml", "-f")
+			helper.CmdShouldPass("odo", "delete", "-f")
 
 			Expect(dockerClient.GetRunningContainersByLabel("component=" + cmpName)).To(HaveLen(0))
 
@@ -137,13 +137,13 @@ var _ = Describe("odo docker devfile delete command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
+			helper.CmdShouldPass("odo", "push")
 
 			Expect(dockerClient.GetRunningContainersByLabel("component=" + cmpName)).To(HaveLen(1))
 
 			Expect(dockerClient.GetSourceAndStorageVolumesByComponent(cmpName)).To(HaveLen(1))
 
-			helper.CmdShouldPass("odo", "delete", "--devfile", "devfile.yaml", "-f", "--all")
+			helper.CmdShouldPass("odo", "delete", "-f", "--all")
 
 			Expect(dockerClient.GetRunningContainersByLabel("component=" + cmpName)).To(HaveLen(0))
 

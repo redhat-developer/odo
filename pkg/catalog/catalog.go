@@ -3,10 +3,12 @@ package catalog
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/openshift/odo/pkg/preference"
+	"net/url"
 	"sort"
 	"strings"
 	"sync"
+
+	"github.com/openshift/odo/pkg/preference"
 
 	imagev1 "github.com/openshift/api/image/v1"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
@@ -22,12 +24,6 @@ import (
 const (
 	apiVersion = "odo.dev/v1alpha1"
 )
-
-// DevfileRegistries contains the links of all devfile registries
-var DevfileRegistries = []string{
-	"https://raw.githubusercontent.com/elsony/devfile-registry/master",
-	"https://che-devfile-registry.openshift.io/",
-}
 
 // GetDevfileRegistries gets devfile registries from preference file,
 // if registry name is specified return the specific registry, otherwise return all registries
@@ -64,11 +60,49 @@ func GetDevfileRegistries(registryName string) (map[string]Registry, error) {
 	return devfileRegistries, nil
 }
 
+// convertURL converts GitHub regular URL to GitHub raw URL, do nothing if the URL is not GitHub URL
+// For example:
+// GitHub regular URL: https://github.com/elsony/devfile-registry/tree/johnmcollier-crw
+// GitHub raw URL: https://raw.githubusercontent.com/elsony/devfile-registry/johnmcollier-crw
+func convertURL(URL string) (string, error) {
+	url, err := url.Parse(URL)
+	if err != nil {
+		return "", err
+	}
+
+	if strings.Contains(url.Host, "github") && !strings.Contains(url.Host, "raw") {
+		// Convert path part of the URL
+		URLSlice := strings.Split(URL, "/")
+		if len(URLSlice) > 2 && URLSlice[len(URLSlice)-2] == "tree" {
+			// GitHub raw URL doesn't have "tree" structure in the URL, need to remove it
+			URL = strings.Replace(URL, "/tree", "", 1)
+		} else {
+			// Add "master" branch for GitHub raw URL by default if branch is not specified
+			URL = URL + "/master"
+		}
+
+		// Convert host part of the URL
+		if url.Host == "github.com" {
+			URL = strings.Replace(URL, "github.com", "raw.githubusercontent.com", 1)
+		} else {
+			URL = strings.Replace(URL, url.Host, "raw."+url.Host, 1)
+		}
+	}
+
+	return URL, nil
+}
+
 const indexPath = "/devfiles/index.json"
 
 // getDevfileIndexEntries retrieves the devfile entries associated with the specified registry
 func getDevfileIndexEntries(registry Registry) ([]DevfileIndexEntry, error) {
 	var devfileIndex []DevfileIndexEntry
+
+	URL, err := convertURL(registry.URL)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Unable to convert URL %s", registry.URL)
+	}
+	registry.URL = URL
 	indexLink := registry.URL + indexPath
 	jsonBytes, err := util.HTTPGetRequest(indexLink)
 	if err != nil {
@@ -171,10 +205,9 @@ func ListDevfileComponents(registryName string) (DevfileComponentTypeList, error
 		// Load the devfile registry index.json
 		registry := reg // needed to prevent the lambda from capturing the value
 		retrieveRegistryIndices.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
-			indexEntries, e := getDevfileIndexEntries(registry)
-			if e != nil {
-				log.Warningf("Registry %s is not set up properly with error: %v", registryName, err)
-				errChannel <- e
+			indexEntries, err := getDevfileIndexEntries(registry)
+			if err != nil {
+				log.Warningf("Registry %s is not set up properly with error: %v", registry.Name, err)
 				return
 			}
 
@@ -203,7 +236,6 @@ func ListDevfileComponents(registryName string) (DevfileComponentTypeList, error
 			devfile, err := GetDevfile(link)
 			if err != nil {
 				log.Warningf("Registry %s is not set up properly with error: %v", devfileIndex.Registry.Name, err)
-				errChannel <- err
 				return
 			}
 
