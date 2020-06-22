@@ -358,6 +358,8 @@ imports:
   - route/clientset/versioned/typed/route/v1/fake
   - user/clientset/versioned/scheme
   - user/clientset/versioned/typed/user/v1
+- name: github.com/openshift/custom-resource-status
+  version: c002fd1547caff83aeca20d1ccb94817666ae44b
 - name: github.com/openshift/library-go
   version: e4959e210d3ae8807ea47c470d7afffebb546b8c
   subpackages:
@@ -859,6 +861,8 @@ imports:
   - exec
   - integer
   - trace
+- name: sigs.k8s.io/controller-runtime/
+  version: 1c83ff6f06bc764c95dd69b0f743740c064c4bf6
 - name: sigs.k8s.io/kustomize
   version: a6f65144121d1955266b0cd836ce954c04122dc8
   subpackages:

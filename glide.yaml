@@ -102,3 +102,6 @@ import:
   version: master
 - package: github.com/redhat-developer/service-binding-operator
   version: v0.1.1
+- package: github.com/openshift/custom-resource-status
+- package: sigs.k8s.io/controller-runtime/
+  version: v0.6.0
