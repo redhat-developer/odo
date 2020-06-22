@@ -3,6 +3,7 @@ package component
 import (
 	"fmt"
 	"io"
+	"reflect"
 	"strings"
 
 	"github.com/docker/docker/api/types"
@@ -11,6 +12,8 @@ import (
 	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
+
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
 	"github.com/openshift/odo/pkg/lclient"
@@ -287,12 +290,24 @@ func (a Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
 		return nil, errors.Wrapf(err, "error while retrieving container for odo component %s", a.ComponentName)
 	}
 
-	runCommand, err := common.GetRunCommand(a.Devfile.Data, "")
-	if err != nil {
-		return nil, err
-	}
+	var command versionsCommon.DevfileCommand
+	if debug {
+		command, err = common.GetRunCommand(a.Devfile.Data, "")
+		if err != nil {
+			return nil, err
+		}
+		if reflect.DeepEqual(versionsCommon.DevfileCommand{}, command) {
+			return nil, errors.Errorf("no debug command found in devfile, please run \"odo logs\" for run command logs")
+		}
 
-	containerID := utils.GetContainerIDForAlias(containers, runCommand.Exec.Component)
+	} else {
+		command, err = common.GetRunCommand(a.Devfile.Data, "")
+		if err != nil {
+			return nil, err
+		}
+
+	}
+	containerID := utils.GetContainerIDForAlias(containers, command.Exec.Component)
 
 	return a.Client.GetContainerLogs(containerID, follow)
 }

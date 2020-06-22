@@ -17,7 +17,6 @@ import (
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
@@ -142,7 +141,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		PodName:       pod.GetName(),
 		SourceMount:   sourceMount,
 	}
-	syncParams := adaptersCommon.SyncParameters{
+	syncParams := common.SyncParameters{
 		PushParams:      parameters,
 		CompInfo:        compInfo,
 		ComponentExists: componentExists,
@@ -195,7 +194,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 
 	kclient.AddBootstrapSupervisordInitContainer(podTemplateSpec)
 
-	componentAliasToVolumes := adaptersCommon.GetVolumes(a.Devfile)
+	componentAliasToVolumes := common.GetVolumes(a.Devfile)
 
 	var uniqueStorages []common.Storage
 	volumeNameToPVCName := make(map[string]string)
@@ -459,13 +458,26 @@ func (a Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
 		return nil, errors.Errorf("the component %s doesn't exist on the cluster", a.ComponentName)
 	}
 
-	runCommand, err := adaptersCommon.GetRunCommand(a.Devfile.Data, "")
+	var command versionsCommon.DevfileCommand
+	var err error
 
-	if err != nil {
-		return nil, err
+	if debug {
+		command, err = common.GetDebugCommand(a.Devfile.Data, "")
+		if err != nil {
+			return nil, err
+		}
+		if reflect.DeepEqual(versionsCommon.DevfileCommand{}, command) {
+			return nil, errors.Errorf("no debug command found in devfile, please run \"odo logs\" for run command logs")
+		}
+
+	} else {
+		command, err = common.GetRunCommand(a.Devfile.Data, "")
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	containerName := runCommand.Exec.Component
+	containerName := command.Exec.Component
 
 	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
 	pod, err := a.waitAndGetComponentPod(true)
