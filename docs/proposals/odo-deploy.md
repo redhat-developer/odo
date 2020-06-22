@@ -7,7 +7,7 @@ There is an existing proposal for adding on outer-loop information (including su
 https://github.com/devfile/kubernetes-api/issues/49 
 
 It would be useful to start the design/development of a simpler version of `odo deploy` with devfile 2.0.0 that covers:
-- single build strategy - Dockerfile built using `buildah`
+- single build strategy - Dockerfile built using `BuildConfig` or `Kaniko`.
 - single deployment strategy - Kubernetes manifest deployed using `kubectl`.
 
 ## Motivation
@@ -19,7 +19,7 @@ It is not meant to replace GitOps/pipeline-based deployments for governed enviro
 
 ## User flow
 
-This command will allow a user to perform inner-loop and then test the outer-loop, so the application is truly ready for checking into git and for pipelines to take over. Here's how a typical application development flow might look like: 
+This command will allow a user to test the transition from inner-loop t outer-loop, so the application is truly ready for pipelines to take over. Here's how a typical application development flow might look like: 
 
 User flow: 
 1. `odo create <component> <mycomponent>` - This initializes odo component in the current directory.
@@ -50,15 +50,19 @@ This deployment is equivalent to a development version of your production and wi
 #### Pre-requisites:
 - The implementation would be under the experimental flag.
 - Only supported for Devfile v2.0.0 components.
-- Only supported for Kubernetes/ OpenShift targets.
+- Only supported for Kubernetes/OpenShift targets.
 
 #### odo deploy 
 This command will build a container image for the application and deploy it on the target Kubernetes environment. 
 
 Flags:
- - `--tag`: The tag to be used for the built application container image - `<registry>/<org>/<name>:<tag>` (mandatory).
- - `--service-account`: The service account for running privileged containers and push access to the image registry.
- - `--credentials`: The credentials needed to push the image to the container image registry (optional).
+ - `--tag`: The tag to be used for the built application container image - `<registry>/<org>/<name>:<tag>` (optional)
+    - Openshift: the tag can be generated based on project details and internal image registry can be used
+    - Kubernetes: the user must provide the fully qualified registry and tag details.
+ - `--credentials`: The credentials needed to push the image to the container image registry (optional)
+    - Openshift: default builder account for BuildConfig is used
+    - Kubernetes: the user must provide the credentials
+ - `--force`: Delete the existing deployment (if present) and re-create a new deployment.
 
 #### odo deploy delete
 This command will delete any resources created by odo deploy.
@@ -85,23 +89,12 @@ The deployment manifest could be templated to help with replacing key bits of in
 - CONTAINER_IMAGE
 - PORT
 
-For example: 
-A deployment based on Runtime component operator (https://operatorhub.io/operator/) might look like this: 
-```
-apiVersion: app.stacks/v1beta1
-kind: RuntimeComponent
-metadata:
-    name: PROJECT_NAME
-spec:
-    applicationImage: CONTAINER_IMAGE 
-    service:
-        type: ClusterIP
-        port: PORT
-    expose: true
-    storage:
-        size: 2Gi
-        mountPath: "/logs"
-```
+Examples: 
+- Standard Kubernetes resources (deployment, service, route): https://github.com/groeges/devfile-registry/blob/master/devfiles/nodejs/deploy_deployment.yaml
+
+- Operator based resources e.g. Runtime component operator (https://operatorhub.io/operator/): https://github.com/groeges/devfile-registry/blob/master/devfiles/nodejs/deploy_runtimecomponent.yaml
+
+- Knative service: https://github.com/groeges/devfile-registry/blob/master/devfiles/nodejs/deploy_knative.yaml
 
 ### odo deploy
 This command will perform the following actions:
@@ -113,27 +106,33 @@ This command will perform the following actions:
     - If argument values are invalid, display a meaningful error message.
 
 #### Build
-- Start a new pod with a build container (privileged container with `buildah:stable` image).
-- Mount the image registry credentials passed by the user.
-- Copy the application source code into the build container.
-- Fetch the dockerfile using URI in the attributes of the devfile and make it available in the container.
-- Execute `buildah bud` command using src code, dockerfile and tag information.
-- Push the built image using the tag and credentials.
-- Delete the build container and the pod.
+- If the cluster supports `BuildConfig`, use it:
+    - Use BuildConfig to build and push a container image by using:
+        - the source code in the user's workspace
+        - dockerfile specified by the devfile
+        - tag generated based on project and internal registry details
+- If the cluster does not support `BuildConfig`, switch to Kaniko:
+    - Use Kaniko to build and push a container image by using:
+        - the source code in the user's workspace
+        - dockerfile specified by the devfile
+        - tag provided by the user
+        - credentials provided by the user
+- Cleanup all build resources created above. 
 
 #### Deploy
-- Fetch the deployment manifest using URI in the attributes of the devfile. and make it available in the container.
+- Delete existing deployment, (if invoked with --force flag)
+- Fetch the deployment manifest using URI in the attributes of the devfile.
 - Replace templated text in the deployment manifest with relevant values:
     - PROJECT_NAME: name of odo project
     - CONTAINER_IMAGE: `tag` for the built image
     - PORT: URL information in env.yaml
 - Apply the new deployment manifest create/update the application deployment.
-- Save the deployment manifest in `.odo` folder.
-- Provide the user with a URL for accessing the deployed application. 
+- Save the deployment manifest in `.odo/env/` folder.
+- Provide the user with a URL for accessing the deployed application.
 
 ### odo deploy delete
 This command will perform the following actions:
-- Check if there is an existing deployment for the app (can use the saved deployment manifest in `.odo` folder)
+- Check if there is an existing deployment for the app (can use the saved deployment manifest in `.odo/env/` folder)
     - If found, delete the resources specified in the deployment manifest.
     - If not found, show a meaningful error message to the user. 
 
