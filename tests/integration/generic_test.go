@@ -270,11 +270,10 @@ var _ = Describe("odo generic", func() {
 			odoVersionStringMatch := reOdoVersion.MatchString(odoVersion)
 			rekubernetesVersion := regexp.MustCompile(`Kubernetes:\s*v[0-9]+.[0-9]+.[0-9]+((-\w+\.[0-9]+)?\+\w+)?`)
 			kubernetesVersionStringMatch := rekubernetesVersion.MatchString(odoVersion)
-			reServerURL := regexp.MustCompile(`Server:\s*http(s?):\/\/(api\..+|[a-zA-Z0-9.]+):[0-9]{4}`)
-			serverURLStringMatch := reServerURL.MatchString(odoVersion)
 			Expect(odoVersionStringMatch).Should(BeTrue())
 			Expect(kubernetesVersionStringMatch).Should(BeTrue())
-			Expect(serverURLStringMatch).Should(BeTrue())
+			serverURL := oc.GetCurrentServerURL()
+			Expect(odoVersion).Should(ContainSubstring("Server: " + serverURL))
 		})
 	})
 

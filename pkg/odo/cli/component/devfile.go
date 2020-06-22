@@ -81,6 +81,9 @@ func (po *PushOptions) DevfilePush() (err error) {
 		DevfileInitCmd:  strings.ToLower(po.devfileInitCommand),
 		DevfileBuildCmd: strings.ToLower(po.devfileBuildCommand),
 		DevfileRunCmd:   strings.ToLower(po.devfileRunCommand),
+		DevfileDebugCmd: strings.ToLower(po.devfileDebugCommand),
+		Debug:           po.debugRun,
+		DebugPort:       po.EnvSpecificInfo.GetDebugPort(),
 	}
 
 	warnIfURLSInvalid(po.EnvSpecificInfo.GetURL())

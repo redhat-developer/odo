@@ -58,6 +58,10 @@ image-ocp-deployer: image-ocp-cli
 $(call build-image,ocp-recycler,$(IMAGE_REGISTRY)/ocp/4.2:recycler,./images/recycler/Dockerfile.rhel,.)
 image-ocp-recycler: image-ocp-cli
 
+oc: GO_BUILD_PACKAGES :=./cmd/oc
+oc: build
+.PHONY: oc
+
 update: update-generated-completions
 .PHONY: update
 

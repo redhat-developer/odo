@@ -49,7 +49,10 @@ type PushOptions struct {
 	devfileInitCommand  string
 	devfileBuildCommand string
 	devfileRunCommand   string
-	namespace           string
+	devfileDebugCommand string
+	debugRun            bool
+
+	namespace string
 }
 
 // NewPushOptions returns new instance of PushOptions
@@ -187,6 +190,8 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 		pushCmd.Flags().StringVar(&po.devfileInitCommand, "init-command", "", "Devfile Init Command to execute")
 		pushCmd.Flags().StringVar(&po.devfileBuildCommand, "build-command", "", "Devfile Build Command to execute")
 		pushCmd.Flags().StringVar(&po.devfileRunCommand, "run-command", "", "Devfile Run Command to execute")
+		pushCmd.Flags().BoolVar(&po.debugRun, "debug", false, "Runs the component in debug mode")
+		pushCmd.Flags().StringVar(&po.devfileDebugCommand, "debug-command", "", "Devfile Debug Command to execute")
 	}
 
 	//Adding `--project` flag

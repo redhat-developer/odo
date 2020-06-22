@@ -2,6 +2,7 @@ package kclient
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"strings"
 	"time"
@@ -146,4 +147,28 @@ func (c *Client) ExtractProjectToComponent(compInfo common.ComponentInfo, target
 		return err
 	}
 	return nil
+}
+
+// GetPodUsingComponentName gets a pod using the component name
+func (c *Client) GetPodUsingComponentName(componentName string) (*corev1.Pod, error) {
+	podSelector := fmt.Sprintf("component=%s", componentName)
+	return c.GetOnePodFromSelector(podSelector)
+}
+
+// GetOnePodFromSelector gets a pod from the selector
+func (c *Client) GetOnePodFromSelector(selector string) (*corev1.Pod, error) {
+	pods, err := c.KubeClient.CoreV1().Pods(c.Namespace).List(metav1.ListOptions{
+		LabelSelector: selector,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to get Pod for the selector: %v", selector)
+	}
+	numPods := len(pods.Items)
+	if numPods == 0 {
+		return nil, fmt.Errorf("no Pod was found for the selector: %v", selector)
+	} else if numPods > 1 {
+		return nil, fmt.Errorf("multiple Pods exist for the selector: %v. Only one must be present", selector)
+	}
+
+	return &pods.Items[0], nil
 }

@@ -4,9 +4,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"net/http"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -15,11 +19,14 @@ import (
 	digest "github.com/opencontainers/go-digest"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/transport"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/klog"
 	kcmdutil "k8s.io/kubectl/pkg/cmd/util"
@@ -31,11 +38,25 @@ import (
 	imageclient "github.com/openshift/client-go/image/clientset/versioned"
 	"github.com/openshift/library-go/pkg/image/dockerv1client"
 	imagereference "github.com/openshift/library-go/pkg/image/reference"
+	"github.com/openshift/library-go/pkg/manifest"
 	"github.com/openshift/oc/pkg/cli/image/extract"
 	"github.com/openshift/oc/pkg/cli/image/imagesource"
 	imagemanifest "github.com/openshift/oc/pkg/cli/image/manifest"
 	"github.com/openshift/oc/pkg/cli/image/mirror"
+	"github.com/openshift/oc/pkg/helpers/release"
 )
+
+// configFilesBaseDir is created under '--to-dir', when specified, to contain release image
+// signature files. It is not used when '--release-image-signature-to-dir` is specified
+// which takes precedence over '--to-dir'.
+const configFilesBaseDir = "config"
+
+// maxDigestHashLen is used to truncate digest hash portion before using as part of
+// signature file name.
+const maxDigestHashLen = 16
+
+// signatureFileNameFmt defines format of the release image signature file name
+const signatureFileNameFmt = "signature-%s-%s.yaml"
 
 // NewMirrorOptions creates the options for mirroring a release.
 func NewMirrorOptions(streams genericclioptions.IOStreams) *MirrorOptions {
@@ -59,39 +80,61 @@ func NewMirror(f kcmdutil.Factory, parentName string, streams genericclioptions.
 		Use:   "mirror",
 		Short: "Mirror a release to a different image registry location",
 		Long: templates.LongDesc(`
-			Mirror an OpenShift release image to another registry
+			Mirror an OpenShift release image to another registry and produce a configuration
+			manifest containing the release image signature.
 
 			Copies the images and update payload for a given release from one registry to another.
 			By default this command will not alter the payload and will print out the configuration
 			that must be applied to a cluster to use the mirror, but you may opt to rewrite the
 			update to point to the new location and lose the cryptographic integrity of the update.
 
+			Creates a release image signature ConfigMap that can be saved to a directory, applied
+			directly to a connected cluster, or both.
+
 			The common use for this command is to mirror a specific OpenShift release version to
-			a private registry for use in a disconnected or offline context. The command copies all
-			images that are part of a release into the target repository and then prints the
-			correct information to give to OpenShift to use that content offline. An alternate mode
-			is to specify --to-image-stream, which imports the images directly into an OpenShift
-			image stream.
+			a private registry and create a signature ConfigMap for use in a disconnected or
+			offline context. The command copies all images that are part of a release into the
+			target repository and then prints the correct information to give to OpenShift to use
+			that content offline. An alternate mode is to specify --to-image-stream, which imports
+			the images directly into an OpenShift image stream.
 
 			You may use --to-dir to specify a directory to download release content into, and add
 			the file:// prefix to the --to flag. The command will print the 'oc image mirror' command
 			that can be used to upload the release to another registry.
+
+			You may use --apply-release-image-signature, --release-image-signature-to-dir, or both
+			to control the handling of the signature ConfigMap. Option
+			--apply-release-image-signature will apply the ConfigMap directly to a connected
+			cluster while --release-image-signature-to-dir specifies an export target directory. If
+			--release-image-signature-to-dir is not specified but --to-dir is,
+			--release-image-signature-to-dir defaults to a 'config' subdirectory of --to-dir.
+			The --overwrite option only applies when --apply-release-image-signature is specified
+			and indicates to update an exisiting ConfigMap if one is found. A ConfigMap written to a
+			directory will always replace onethat already exists.
 		`),
-		Example: templates.Examples(`
+		Example: templates.Examples(fmt.Sprintf(`
 			# Perform a dry run showing what would be mirrored, including the mirror objects
-			%[1]s 4.2.2 --to myregistry.local/openshift/release --dry-run
+			%[1]s mirror 4.3.0 --to myregistry.local/openshift/release \
+				--release-image-signature-to-dir /tmp/releases --dry-run
 
 			# Mirror a release into the current directory
-			%[1]s 4.2.2 --to file://openshift/release
+			%[1]s mirror 4.3.0 --to file://openshift/release \
+				--release-image-signature-to-dir /tmp/releases
 
 			# Mirror a release to another directory in the default location
-			%[1]s 4.2.2 --to-dir /tmp/releases
+			%[1]s mirror 4.3.0 --to-dir /tmp/releases
 
 			# Upload a release from the current directory to another server
-			%[1]s --from file://openshift/release --to myregistry.com/openshift/release
-			`),
+			%[1]s mirror --from file://openshift/release --to myregistry.com/openshift/release \
+				--release-image-signature-to-dir /tmp/releases
+
+			# Mirror the 4.3.0 release to repository registry.example.com and apply signatures to connected cluster
+			%[1]s mirror --from=quay.io/openshift-release-dev/ocp-release:4.3.0-x86_64 \
+				--to=registry.example.com/your/repository --apply-release-image-signature
+			`, parentName)),
 		Run: func(cmd *cobra.Command, args []string) {
 			kcmdutil.CheckErr(o.Complete(cmd, f, args))
+			kcmdutil.CheckErr(o.Validate())
 			kcmdutil.CheckErr(o.Run())
 		},
 	}
@@ -102,13 +145,16 @@ func NewMirror(f kcmdutil.Factory, parentName string, streams genericclioptions.
 	flags.StringVar(&o.From, "from", o.From, "Image containing the release payload.")
 	flags.StringVar(&o.To, "to", o.To, "An image repository to push to.")
 	flags.StringVar(&o.ToImageStream, "to-image-stream", o.ToImageStream, "An image stream to tag images into.")
-	flags.StringVar(&o.FromDir, "from-dir", o.ToDir, "A directory to import images from.")
+	flags.StringVar(&o.FromDir, "from-dir", o.FromDir, "A directory to import images from.")
 	flags.StringVar(&o.ToDir, "to-dir", o.ToDir, "A directory to export images to.")
 	flags.BoolVar(&o.ToMirror, "to-mirror", o.ToMirror, "Output the mirror mappings instead of mirroring.")
 	flags.BoolVar(&o.DryRun, "dry-run", o.DryRun, "Display information about the mirror without actually executing it.")
+	flags.BoolVar(&o.ApplyReleaseImageSignature, "apply-release-image-signature", o.ApplyReleaseImageSignature, "Apply release image signature to connected cluster.")
+	flags.StringVar(&o.ReleaseImageSignatureToDir, "release-image-signature-to-dir", o.ReleaseImageSignatureToDir, "A directory to export release image signature to.")
 
 	flags.BoolVar(&o.SkipRelease, "skip-release-image", o.SkipRelease, "Do not push the release image.")
-	flags.StringVar(&o.ToRelease, "to-release-image", o.ToRelease, "Specify an alternate locations for the release image instead as tag 'release' in --to")
+	flags.StringVar(&o.ToRelease, "to-release-image", o.ToRelease, "Specify an alternate locations for the release image instead as tag 'release' in --to.")
+	flags.BoolVar(&o.Overwrite, "overwrite", o.Overwrite, "Used with --apply-release-image-signature to update exisitng signature configmap.")
 	return cmd
 }
 
@@ -131,10 +177,15 @@ type MirrorOptions struct {
 	ToMirror bool
 	ToDir    string
 
+	ApplyReleaseImageSignature bool
+	ReleaseImageSignatureToDir string
+	Overwrite                  bool
+
 	DryRun                        bool
 	PrintImageContentInstructions bool
 
-	ClientFn func() (imageclient.Interface, string, error)
+	ImageClientFn  func() (imageclient.Interface, string, error)
+	CoreV1ClientFn func() (corev1client.ConfigMapInterface, error)
 
 	ImageStream *imagev1.ImageStream
 	TargetFn    func(component string) imagereference.DockerImageReference
@@ -161,7 +212,7 @@ func (o *MirrorOptions) Complete(cmd *cobra.Command, f kcmdutil.Factory, args []
 	}
 	o.From = args[0]
 
-	o.ClientFn = func() (imageclient.Interface, string, error) {
+	o.ImageClientFn = func() (imageclient.Interface, string, error) {
 		cfg, err := f.ToRESTConfig()
 		if err != nil {
 			return nil, "", err
@@ -176,14 +227,23 @@ func (o *MirrorOptions) Complete(cmd *cobra.Command, f kcmdutil.Factory, args []
 		}
 		return client, ns, nil
 	}
+	o.CoreV1ClientFn = func() (corev1client.ConfigMapInterface, error) {
+		cfg, err := f.ToRESTConfig()
+		if err != nil {
+			return nil, err
+		}
+		coreClient, err := corev1client.NewForConfig(cfg)
+		if err != nil {
+			return nil, err
+		}
+		client := coreClient.ConfigMaps(release.NamespaceLabelConfigMap)
+		return client, nil
+	}
 	o.PrintImageContentInstructions = true
 	return nil
 }
 
-const replaceComponentMarker = "X-X-X-X-X-X-X"
-const replaceVersionMarker = "V-V-V-V-V-V-V"
-
-func (o *MirrorOptions) Run() error {
+func (o *MirrorOptions) Validate() error {
 	if len(o.From) == 0 && o.ImageStream == nil {
 		return fmt.Errorf("must specify a release image with --from")
 	}
@@ -213,6 +273,111 @@ func (o *MirrorOptions) Run() error {
 		return fmt.Errorf("--skip-release-image and --to-release-image may not both be specified")
 	}
 
+	if len(o.ReleaseImageSignatureToDir) == 0 && len(o.ToDir) > 0 {
+		o.ReleaseImageSignatureToDir = filepath.Join(o.ToDir, configFilesBaseDir)
+	}
+
+	if o.Overwrite && !o.ApplyReleaseImageSignature {
+		return fmt.Errorf("--overwite is only valid when --apply-release-image-signature is specified")
+	}
+	return nil
+}
+
+const replaceComponentMarker = "X-X-X-X-X-X-X"
+const replaceVersionMarker = "V-V-V-V-V-V-V"
+
+// verifyClientBuilder is a wrapper around the operator's HTTPClient method.
+// It is used by the image verifier to get an up-to-date http client.
+type verifyClientBuilder struct {
+	builder func() (*http.Client, error)
+}
+
+func (vcb *verifyClientBuilder) HTTPClient() (*http.Client, error) {
+	return vcb.builder()
+}
+
+func createSignatureFileName(digest string) (string, error) {
+	parts := strings.SplitN(digest, ":", 3)
+	if len(parts) != 2 || len(parts[0]) == 0 || len(parts[1]) == 0 {
+		return "", fmt.Errorf("the provided digest, %s, must be of the form ALGO:HASH", digest)
+	}
+	algo, hash := parts[0], parts[1]
+
+	if len(hash) > maxDigestHashLen {
+		hash = hash[:maxDigestHashLen]
+	}
+	return fmt.Sprintf(signatureFileNameFmt, algo, hash), nil
+}
+
+// handleSignatures implements the image release signature configmap specific logic.
+// Signature configmaps may be written to a directory or applied to a cluster.
+func (o *MirrorOptions) handleSignatures(context context.Context, signaturesByDigest map[string][][]byte) error {
+	var client corev1client.ConfigMapInterface
+	if !o.DryRun && o.ApplyReleaseImageSignature {
+		var err error
+		client, err = o.CoreV1ClientFn()
+		if err != nil {
+			return fmt.Errorf("creating a Kubernetes API client: %v", err)
+		}
+	}
+	for digest, signatures := range signaturesByDigest {
+		cmData, err := release.GetSignaturesAsConfigmap(digest, signatures)
+		if err != nil {
+			return fmt.Errorf("converting signatures to a configmap: %v", err)
+		}
+		if o.ApplyReleaseImageSignature {
+			if o.DryRun {
+				fmt.Fprintf(o.Out, "info: Create or configure configmap %s\n", cmData.Name)
+			} else {
+				var create bool = true
+				if o.Overwrite {
+					// An error is returned if the configmap does not exist in which case we will
+					// attempt to create the manifest.
+					if _, err := client.Get(cmData.Name, metav1.GetOptions{}); err == nil {
+						create = false
+						if _, err := client.Update(cmData); err != nil {
+							return fmt.Errorf("updating configmap %s: %v", cmData.Name, err)
+						} else {
+							fmt.Fprintf(o.Out, "configmap/%s configured\n", cmData.Name)
+						}
+					}
+				}
+				if create {
+					if _, err := client.Create(cmData); err != nil {
+						return fmt.Errorf("creating configmap %s: %v", cmData.Name, err)
+					} else {
+						fmt.Fprintf(o.Out, "configmap/%s created\n", cmData.Name)
+					}
+				}
+			}
+		}
+		if len(o.ReleaseImageSignatureToDir) > 0 {
+			fileName, err := createSignatureFileName(digest)
+			if err != nil {
+				return fmt.Errorf("creating filename: %v", err)
+			}
+			fullName := filepath.Join(o.ReleaseImageSignatureToDir, fileName)
+			if o.DryRun {
+				fmt.Fprintf(o.Out, "info: Write configmap signature file %s\n", fullName)
+			} else {
+				cmDataBytes, err := yaml.Marshal(cmData)
+				if err != nil {
+					return fmt.Errorf("marshaling configmap YAML: %v", err)
+				}
+				if err := os.MkdirAll(filepath.Dir(fullName), 0750); err != nil {
+					return err
+				}
+				if err := ioutil.WriteFile(fullName, cmDataBytes, 0640); err != nil {
+					return err
+				}
+				fmt.Fprintf(o.Out, "Configmap signature file %s created\n", fullName)
+			}
+		}
+	}
+	return nil
+}
+
+func (o *MirrorOptions) Run() error {
 	var recreateRequired bool
 	var hasPrefix bool
 	var targetFn func(name string) imagesource.TypedImageReference
@@ -289,6 +454,8 @@ func (o *MirrorOptions) Run() error {
 		return fmt.Errorf("when mirroring to multiple repositories, use the new release command with --from-release and --mirror")
 	}
 
+	var releaseDigest string
+	var manifests []manifest.Manifest
 	verifier := imagemanifest.NewVerifier()
 	is := o.ImageStream
 	if is == nil {
@@ -296,11 +463,14 @@ func (o *MirrorOptions) Run() error {
 		is = o.ImageStream
 		// load image references
 		buf := &bytes.Buffer{}
-		extractOpts := NewExtractOptions(genericclioptions.IOStreams{Out: buf, ErrOut: o.ErrOut})
+		extractOpts := NewExtractOptions(genericclioptions.IOStreams{Out: buf, ErrOut: o.ErrOut}, true)
+		extractOpts.ParallelOptions = o.ParallelOptions
 		extractOpts.SecurityOptions = o.SecurityOptions
 		extractOpts.ImageMetadataCallback = func(m *extract.Mapping, dgst, contentDigest digest.Digest, config *dockerv1client.DockerImageConfig) {
+			releaseDigest = contentDigest.String()
 			verifier.Verify(dgst, contentDigest)
 		}
+		extractOpts.FileDir = o.FromDir
 		extractOpts.From = o.From
 		extractOpts.File = "image-references"
 		if err := extractOpts.Run(); err != nil {
@@ -319,12 +489,33 @@ func (o *MirrorOptions) Run() error {
 			}
 			fmt.Fprintf(o.ErrOut, "warning: %v\n", err)
 		}
+		manifests = extractOpts.Manifests
 	}
 	version = is.Name
 
 	// sourceFn is given a chance to rewrite source mappings
 	sourceFn := func(ref imagesource.TypedImageReference) imagesource.TypedImageReference {
 		return ref
+	}
+	// Wraps operator's HTTPClient method to allow image verifier to create http client with up-to-date config
+	clientBuilder := &verifyClientBuilder{builder: o.HTTPClient}
+
+	// Attempt to load a verifier as defined by the release being mirrored
+	imageVerifier, err := release.LoadConfigMapVerifierDataFromUpdate(manifests, clientBuilder, nil)
+	if err != nil {
+		return fmt.Errorf("Unable to load configmap verifier: %v", err)
+	}
+	if imageVerifier != nil {
+		klog.V(4).Infof("Verifying release authenticity: %v", imageVerifier)
+	} else {
+		fmt.Fprintf(o.ErrOut, "warning: No release authenticity verification is configured, all releases are considered unverified\n")
+		imageVerifier = release.Reject
+	}
+	// verify the provided payload
+	ctx, cancelFn := context.WithCancel(context.Background())
+	defer cancelFn()
+	if err := imageVerifier.Verify(ctx, releaseDigest); err != nil {
+		fmt.Fprintf(o.ErrOut, "warning: An image was retrieved that failed verification: %v\n", err)
 	}
 	var mappings []mirror.Mapping
 	if len(o.From) > 0 {
@@ -440,7 +631,7 @@ func (o *MirrorOptions) Run() error {
 		for _, mapping := range mappings {
 			remaining[mapping.Name] = mapping
 		}
-		client, ns, err := o.ClientFn()
+		client, ns, err := o.ImageClientFn()
 		if err != nil {
 			return err
 		}
@@ -505,7 +696,7 @@ func (o *MirrorOptions) Run() error {
 						delete(hasErrors, name)
 					} else {
 						delete(remaining, name)
-						err := errors.FromObject(&image.Status)
+						err := apierrors.FromObject(&image.Status)
 						hasErrors[name] = err
 						klog.V(2).Infof("Failed to import %s as tag %s: %v", remaining[name].Source, name, err)
 					}
@@ -539,6 +730,7 @@ func (o *MirrorOptions) Run() error {
 	opts.SecurityOptions = o.SecurityOptions
 	opts.ParallelOptions = o.ParallelOptions
 	opts.Mappings = mappings
+	opts.FromFileDir = o.FromDir
 	opts.FileDir = o.ToDir
 	opts.DryRun = o.DryRun
 	opts.ManifestUpdateCallback = func(registry string, manifests map[digest.Digest]digest.Digest) error {
@@ -574,6 +766,7 @@ func (o *MirrorOptions) Run() error {
 	if len(to) == 0 {
 		to = targetFn("").Ref.Exact()
 	}
+
 	fmt.Fprintf(o.Out, "\nSuccess\nUpdate image:  %s\n", to)
 	if len(o.To) > 0 {
 		if hasPrefix {
@@ -590,9 +783,28 @@ func (o *MirrorOptions) Run() error {
 		}
 	} else if len(o.To) > 0 {
 		if o.PrintImageContentInstructions {
-			if err := printImageContentInstructions(o.Out, o.From, o.To, repositories); err != nil {
+			if err := printImageContentInstructions(o.Out, o.From, o.To, o.ReleaseImageSignatureToDir, repositories); err != nil {
 				return fmt.Errorf("Error creating mirror usage instructions: %v", err)
 			}
+		}
+	}
+	if o.ApplyReleaseImageSignature || len(o.ReleaseImageSignatureToDir) > 0 {
+		signatures := imageVerifier.Signatures()
+		if signatures == nil || len(signatures) == 0 {
+			return errors.New("failed to retrieve cached signatures")
+		}
+		if _, ok := signatures[releaseDigest]; ok {
+			err := o.handleSignatures(ctx, signatures)
+			if err != nil {
+				return fmt.Errorf("handling release image signatures: %v", err)
+			}
+		} else {
+			digests := make([]string, 0, len(signatures))
+			for digest := range signatures {
+				digests = append(digests, digest)
+			}
+			sort.Strings(digests)
+			return fmt.Errorf("no cached signatures for digest %s, just:\n%s", releaseDigest, strings.Join(digests, "\n"))
 		}
 	}
 	return nil
@@ -600,7 +812,7 @@ func (o *MirrorOptions) Run() error {
 
 // printImageContentInstructions provides examples to the user for using the new repository mirror
 // https://github.com/openshift/installer/blob/master/docs/dev/alternative_release_image_sources.md
-func printImageContentInstructions(out io.Writer, from, to string, repositories map[string]struct{}) error {
+func printImageContentInstructions(out io.Writer, from, to string, signatureToDir string, repositories map[string]struct{}) error {
 	type installConfigSubsection struct {
 		ImageContentSources []operatorv1alpha1.RepositoryDigestMirrors `json:"imageContentSources"`
 	}
@@ -680,5 +892,26 @@ func printImageContentInstructions(out io.Writer, from, to string, repositories 
 	fmt.Fprintf(out, "\n\nTo use the new mirrored repository for upgrades, use the following to create an ImageContentSourcePolicy:\n\n")
 	fmt.Fprintf(out, string(icspExample))
 
+	if len(signatureToDir) != 0 {
+		fmt.Fprintf(out, "\n\nTo apply signature configmaps use 'oc apply' on files found in %s\n\n", signatureToDir)
+	}
+
 	return nil
+}
+
+// HTTPClient provides a method for generating an HTTP client
+// with the proxy and trust settings, if set in the cluster.
+func (o *MirrorOptions) HTTPClient() (*http.Client, error) {
+	transport, err := transport.HTTPWrappersForConfig(
+		&transport.Config{
+			UserAgent: rest.DefaultKubernetesUserAgent() + "(release-mirror)",
+		},
+		http.DefaultTransport,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &http.Client{
+		Transport: transport,
+	}, nil
 }
