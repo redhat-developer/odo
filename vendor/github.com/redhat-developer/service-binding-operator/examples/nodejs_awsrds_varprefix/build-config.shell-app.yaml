@@ -1,0 +1,30 @@
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: shell-app
+  namespace: service-binding-demo
+  labels:
+    name: shell-app
+spec:
+  triggers:
+    - type: ConfigChange
+  source:
+    dockerfile: |
+        FROM alpine
+        LABEL author="Pavel Macík <pavel.macik@gmail.com>"
+        RUN echo 'echo "Container started";\
+        echo "Listing all MYDB_* env variables:";\
+        echo "╭─[ MYDB_* ]";\
+        env | grep MYDB;\
+        echo "╰─]";\
+        echo "Taking a nap for 1 hour...";\
+        sleep 3600'>/run.sh && chmod +x /run.sh
+        ENV LANG=en_US.utf8
+        ENTRYPOINT [ "/bin/sh", "-c", "/run.sh" ]
+  strategy:
+    type: Docker
+  output:
+    to:
+      kind: ImageStreamTag
+      name: 'shell-app:latest'

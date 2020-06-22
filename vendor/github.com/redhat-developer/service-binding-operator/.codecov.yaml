@@ -1,0 +1,38 @@
+# See http://docs.codecov.io/docs/coverage-configuration
+coverage:
+  precision: 2 # 2 = xx.xx%, 0 = xx%
+  round: down
+  # For example: 20...60 would result in any coverage less than 20%
+  # would have a red background. The color would gradually change to
+  # green approaching 60%. Any coverage over 60% would result in a
+  # solid green color.
+  range: "20...60"
+
+  status:
+    # project will give us the diff in the total code coverage between a commit
+    # and its parent
+    project: yes
+    # Patch gives just the coverage of the patch
+    patch: yes
+    # changes tells us if there are unexpected code coverage changes in other files
+    # which were not changed by the diff
+    changes: yes
+
+  # See http://docs.codecov.io/docs/ignoring-paths
+  ignore:
+    - "assets/*"
+    - "build/*"
+    - "deploy/*"
+    - "hack/*"
+    - "manifests/*"
+    - "openshift-ci/*"
+    - "vendor/*"
+
+# See http://docs.codecov.io/docs/pull-request-comments-1
+comment:
+  layout: "diff, files"
+  behavior: ""
+            # default = posts once then update, posts new if delete
+            # once = post once then updates
+            # new = delete old, post new
+            # spammy = post new

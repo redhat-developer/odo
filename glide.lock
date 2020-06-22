@@ -378,7 +378,7 @@ imports:
   - pkg/helpers/term
   - pkg/helpers/tokencmd
 - name: github.com/operator-framework/operator-lifecycle-manager
-  version: 9f95e55cd49a63b85ab5ca5f087a9fa13af84a17
+  version: 759ff4592854c066797cac51bf8ee7f460b9a59a
   subpackages:
   - pkg/api/apis/operators
   - pkg/api/apis/operators/v1
@@ -426,6 +426,8 @@ imports:
   version: 5bd2802263f21d8788851d5305584c82a5c75d7e
 - name: github.com/RangelReale/osincli
   version: fababb0555f21315d1a34af6615a16eaab44396b
+- name: github.com/redhat-developer/service-binding-operator
+  version: c2884dd421d2caa3fa8e1946708a339a049aba87
 - name: github.com/russross/blackfriday
   version: 05f3235734ad95d0016f6a23902f06461fcf567a
 - name: github.com/satori/go.uuid
