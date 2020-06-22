@@ -47,6 +47,14 @@ var _ = Describe("odo devfile registry command tests", func() {
 			output := helper.CmdShouldPass("odo", "registry", "list")
 			helper.MatchAllInOutput(output, []string{"CheDevfileRegistry", "DefaultDevfileRegistry"})
 		})
+
+		It("Should fail with an error with no registries", func() {
+			helper.CmdShouldPass("odo", "registry", "delete", "DefaultDevfileRegistry", "-f")
+			helper.CmdShouldPass("odo", "registry", "delete", "CheDevfileRegistry", "-f")
+			output := helper.CmdShouldFail("odo", "registry", "list")
+			helper.MatchAllInOutput(output, []string{"No devfile registries added to the configuration. Refer `odo registry add -h` to add one"})
+
+		})
 	})
 
 	Context("When executing registry commands with the registry is not present", func() {
@@ -87,5 +95,6 @@ var _ = Describe("odo devfile registry command tests", func() {
 			helper.CmdShouldPass("odo", "registry", "delete", registryName, "-f")
 			helper.CmdShouldFail("odo", "create", "maven", "--registry", registryName)
 		})
+
 	})
 })

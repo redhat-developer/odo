@@ -17,7 +17,6 @@ limitations under the License.
 package authorizerfactory
 
 import (
-	"context"
 	"errors"
 
 	"k8s.io/apiserver/pkg/authentication/user"
@@ -29,7 +28,7 @@ import (
 // It is useful in tests and when using kubernetes in an open manner.
 type alwaysAllowAuthorizer struct{}
 
-func (alwaysAllowAuthorizer) Authorize(ctx context.Context, a authorizer.Attributes) (authorized authorizer.Decision, reason string, err error) {
+func (alwaysAllowAuthorizer) Authorize(a authorizer.Attributes) (authorized authorizer.Decision, reason string, err error) {
 	return authorizer.DecisionAllow, "", nil
 }
 
@@ -57,7 +56,7 @@ func NewAlwaysAllowAuthorizer() *alwaysAllowAuthorizer {
 // It is useful in unit tests to force an operation to be forbidden.
 type alwaysDenyAuthorizer struct{}
 
-func (alwaysDenyAuthorizer) Authorize(ctx context.Context, a authorizer.Attributes) (decision authorizer.Decision, reason string, err error) {
+func (alwaysDenyAuthorizer) Authorize(a authorizer.Attributes) (decision authorizer.Decision, reason string, err error) {
 	return authorizer.DecisionNoOpinion, "Everything is forbidden.", nil
 }
 
@@ -73,7 +72,7 @@ type privilegedGroupAuthorizer struct {
 	groups []string
 }
 
-func (r *privilegedGroupAuthorizer) Authorize(ctx context.Context, attr authorizer.Attributes) (authorizer.Decision, string, error) {
+func (r *privilegedGroupAuthorizer) Authorize(attr authorizer.Attributes) (authorizer.Decision, string, error) {
 	if attr.GetUser() == nil {
 		return authorizer.DecisionNoOpinion, "Error", errors.New("no user on request.")
 	}

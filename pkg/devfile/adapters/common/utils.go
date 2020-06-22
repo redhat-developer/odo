@@ -24,6 +24,9 @@ const (
 	// DefaultDevfileRunCommand is a predefined devfile command for run
 	DefaultDevfileRunCommand PredefinedDevfileCommands = "devrun"
 
+	// DefaultDevfileDebugCommand is a predefined devfile command for debug
+	DefaultDevfileDebugCommand PredefinedDevfileCommands = "debugrun"
+
 	// SupervisordInitContainerName The init container name for supervisord
 	SupervisordInitContainerName = "copy-supervisord"
 
@@ -66,6 +69,15 @@ const (
 
 	// EnvOdoCommandRun is the env defined in the runtime component container which holds the run command to be executed
 	EnvOdoCommandRun = "ODO_COMMAND_RUN"
+
+	// EnvOdoCommandDebugWorkingDir is the env defined in the runtime component container which holds the work dir for the debug command
+	EnvOdoCommandDebugWorkingDir = "ODO_COMMAND_DEBUG_WORKING_DIR"
+
+	// EnvOdoCommandDebug is the env defined in the runtime component container which holds the debug command to be executed
+	EnvOdoCommandDebug = "ODO_COMMAND_DEBUG"
+
+	// EnvDebugPort is the env defined in the runtime component container which holds the debug port for remote debugging
+	EnvDebugPort = "DEBUG_PORT"
 
 	// ShellExecutable is the shell executable
 	ShellExecutable = "/bin/sh"

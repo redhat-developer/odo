@@ -18,8 +18,12 @@ import (
 // we execute these tests serially
 var _ = Describe("odo debug command serial tests", func() {
 
-	var project string
 	var context string
+
+	var namespace string
+
+	//  current directory and project (before eny test is run) so it can restored  after all testing is done
+	var originalDir string
 
 	// Setup up state for each test spec
 	// create new project (not set as active) and new context directory for each test spec
@@ -28,21 +32,23 @@ var _ = Describe("odo debug command serial tests", func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		SetDefaultConsistentlyDuration(30 * time.Second)
 		context = helper.CreateNewContext()
-		project = helper.CreateRandProject()
+		namespace = helper.CreateRandProject()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		originalDir = helper.Getwd()
 	})
 
 	// Clean up after the test
 	// This is run after every Spec (It)
 	AfterEach(func() {
-		helper.DeleteProject(project)
+		helper.Chdir(originalDir)
+		helper.DeleteProject(namespace)
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
 	})
 
 	It("should auto-select a local debug port when the given local port is occupied", func() {
 		helper.CopyExample(filepath.Join("source", "nodejs"), context)
-		helper.CmdShouldPass("odo", "component", "create", "nodejs:latest", "nodejs-cmp-"+project, "--project", project, "--context", context)
+		helper.CmdShouldPass("odo", "component", "create", "nodejs:latest", "nodejs-cmp-"+namespace, "--project", namespace, "--context", context)
 		helper.CmdShouldPass("odo", "push", "--context", context)
 
 		stopChannel := make(chan bool)
@@ -66,7 +72,7 @@ var _ = Describe("odo debug command serial tests", func() {
 		}
 
 		freePort := ""
-		helper.WaitForCmdOut("odo", []string{"debug", "info", "--context", context}, 1, true, func(output string) bool {
+		helper.WaitForCmdOut("odo", []string{"debug", "info", "--context", context}, 1, false, func(output string) bool {
 			if strings.Contains(output, "Debug is running") {
 				splits := strings.SplitN(output, ":", 2)
 				Expect(len(splits)).To(Equal(2))

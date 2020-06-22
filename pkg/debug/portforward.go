@@ -1,16 +1,14 @@
 package debug
 
 import (
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/occlient"
-
-	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	"k8s.io/client-go/rest"
 
 	"fmt"
 	"net/http"
 
 	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/util"
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 
 	k8sgenclioptions "k8s.io/cli-runtime/pkg/genericclioptions"
@@ -20,18 +18,22 @@ import (
 
 // DefaultPortForwarder implements the SPDY based port forwarder
 type DefaultPortForwarder struct {
-	client *occlient.Client
+	client  *occlient.Client
+	kClient *kclient.Client
 	k8sgenclioptions.IOStreams
 	componentName string
 	appName       string
+	projectName   string
 }
 
-func NewDefaultPortForwarder(componentName, appName string, client *occlient.Client, streams k8sgenclioptions.IOStreams) *DefaultPortForwarder {
+func NewDefaultPortForwarder(componentName, appName string, projectName string, client *occlient.Client, kClient *kclient.Client, streams k8sgenclioptions.IOStreams) *DefaultPortForwarder {
 	return &DefaultPortForwarder{
 		client:        client,
+		kClient:       kClient,
 		IOStreams:     streams,
 		componentName: componentName,
 		appName:       appName,
+		projectName:   projectName,
 	}
 }
 
@@ -39,15 +41,31 @@ func NewDefaultPortForwarder(componentName, appName string, client *occlient.Cli
 // portPair is a pair of port in format "localPort:RemotePort" that is to be forwarded
 // stop Chan is used to stop port forwarding
 // ready Chan is used to signal failure to the channel receiver
-func (f *DefaultPortForwarder) ForwardPorts(portPair string, stopChan, readyChan chan struct{}) error {
-	conf, err := f.client.KubeConfig.ClientConfig()
-	if err != nil {
-		return err
-	}
+func (f *DefaultPortForwarder) ForwardPorts(portPair string, stopChan, readyChan chan struct{}, isExperimental bool) error {
+	var pod *corev1.Pod
+	var conf *rest.Config
+	var err error
 
-	pod, err := f.getPodUsingComponentName()
-	if err != nil {
-		return err
+	if f.kClient != nil && isExperimental {
+		conf, err = f.kClient.KubeConfig.ClientConfig()
+		if err != nil {
+			return err
+		}
+
+		pod, err = f.kClient.GetPodUsingComponentName(f.componentName)
+		if err != nil {
+			return err
+		}
+	} else {
+		conf, err = f.client.KubeConfig.ClientConfig()
+		if err != nil {
+			return err
+		}
+
+		pod, err = f.client.GetPodUsingComponentName(f.componentName, f.appName)
+		if err != nil {
+			return err
+		}
 	}
 
 	if pod.Status.Phase != corev1.PodRunning {
@@ -58,7 +76,14 @@ func (f *DefaultPortForwarder) ForwardPorts(portPair string, stopChan, readyChan
 	if err != nil {
 		return err
 	}
-	req := f.client.BuildPortForwardReq(pod.Name)
+
+	var req *rest.Request
+	if f.kClient != nil && isExperimental {
+		req = f.kClient.GeneratePortForwardReq(pod.Name)
+	} else {
+		req = f.client.BuildPortForwardReq(pod.Name)
+	}
+
 	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: transport}, "POST", req.URL())
 	fw, err := portforward.New(dialer, []string{portPair}, stopChan, readyChan, f.Out, f.ErrOut)
 	if err != nil {
@@ -66,17 +91,4 @@ func (f *DefaultPortForwarder) ForwardPorts(portPair string, stopChan, readyChan
 	}
 	log.Info("Started port forwarding at ports -", portPair)
 	return fw.ForwardPorts()
-}
-
-func (f *DefaultPortForwarder) getPodUsingComponentName() (*corev1.Pod, error) {
-	componentLabels := componentlabels.GetLabels(f.componentName, f.appName, false)
-	componentSelector := util.ConvertLabelsToSelector(componentLabels)
-	dc, err := f.client.GetOneDeploymentConfigFromSelector(componentSelector)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get deployment for component")
-	}
-	// Find Pod for component
-	podSelector := fmt.Sprintf("deploymentconfig=%s", dc.Name)
-
-	return f.client.GetOnePodFromSelector(podSelector)
 }

@@ -390,6 +390,7 @@ func (o *NewOptions) Run() error {
 
 		buf := &bytes.Buffer{}
 		extractOpts := extract.NewOptions(genericclioptions.IOStreams{Out: buf, ErrOut: o.ErrOut})
+		extractOpts.ParallelOptions = o.ParallelOptions
 		extractOpts.SecurityOptions = o.SecurityOptions
 		extractOpts.OnlyFiles = true
 		extractOpts.Mappings = []extract.Mapping{
@@ -925,9 +926,9 @@ func (o *NewOptions) extractManifests(is *imageapi.ImageStream, name string, met
 	verifier := imagemanifest.NewVerifier()
 	var lock sync.Mutex
 	opts := extract.NewOptions(genericclioptions.IOStreams{Out: o.Out, ErrOut: o.ErrOut})
+	opts.ParallelOptions = o.ParallelOptions
 	opts.SecurityOptions = o.SecurityOptions
 	opts.OnlyFiles = true
-	opts.ParallelOptions = o.ParallelOptions
 	opts.ImageMetadataCallback = func(m *extract.Mapping, dgst, contentDigest digest.Digest, config *dockerv1client.DockerImageConfig) {
 		verifier.Verify(dgst, contentDigest)
 
@@ -1052,6 +1053,7 @@ func (o *NewOptions) mirrorImages(is *imageapi.ImageStream) error {
 	opts.ImageStream = copied
 	opts.To = o.Mirror
 	opts.SkipRelease = true
+	opts.ParallelOptions = o.ParallelOptions
 	opts.SecurityOptions = o.SecurityOptions
 
 	if err := opts.Run(); err != nil {
@@ -1182,6 +1184,7 @@ func (o *NewOptions) write(r io.Reader, is *imageapi.ImageStream, now time.Time)
 
 		verifier := imagemanifest.NewVerifier()
 		options := imageappend.NewAppendImageOptions(genericclioptions.IOStreams{Out: ioutil.Discard, ErrOut: o.ErrOut})
+		options.ParallelOptions = o.ParallelOptions
 		options.SecurityOptions = o.SecurityOptions
 		options.DryRun = o.DryRun
 		options.From = toImageBase
