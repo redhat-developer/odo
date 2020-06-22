@@ -76,6 +76,9 @@ func (to *TestOptions) Validate() (err error) {
 	if err != nil {
 		return errors.Wrap(err, "fail to parse devfile")
 	}
+	if reflect.DeepEqual(devObj.Ctx.GetApiVersion(), "1.0.0") {
+		return fmt.Errorf("'odo test' is not supported in devfile 1.0.0")
+	}
 	to.testCommand, err = adaptercommon.GetTestCommand(devObj.Data, to.commandName)
 	if err != nil {
 		return errors.Wrap(err, "fail to get test command")
