@@ -2030,7 +2030,7 @@ func (c *Client) FollowBuildLog(buildName string, stdout io.Writer) error {
 	buildTimeout := preference.DefaultBuildTimeout * time.Second 	
 	cfg, configReadErr := preference.New() 	
 	if configReadErr != nil { 		
-		klog.V(4).Info(errors.Wrap(configReadErr, “unable to read config file”)) 	
+		klog.V(4).Info(errors.Wrap(configReadErr, "unable to read config file")) 	
 	} else { 		
 		buildTimeout = time.Duration(cfg.GetBuildTimeout()) * time.Second 	
 	}
