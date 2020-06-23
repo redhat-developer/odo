@@ -197,12 +197,12 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 	componentAliasToVolumes := common.GetVolumes(a.Devfile)
 
 	var uniqueStorages []common.Storage
-	volumeNameToPVCName := make(map[string]string)
+	volumeNameToPVCName := []common.VolumePVCPair{}
 	processedVolumes := make(map[string]bool)
 
 	// Get a list of all the unique volume names and generate their PVC names
 	for _, volumes := range componentAliasToVolumes {
-		for _, vol := range volumes {
+		for _, vol := range volumes.Volumes {
 			if _, ok := processedVolumes[vol.Name]; !ok {
 				processedVolumes[vol.Name] = true
 
@@ -228,7 +228,11 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 					Volume: vol,
 				}
 				uniqueStorages = append(uniqueStorages, pvc)
-				volumeNameToPVCName[vol.Name] = generatedPVCName
+				pairData := common.VolumePVCPair{
+					Volume: vol.Name,
+					PVC:    generatedPVCName,
+				}
+				volumeNameToPVCName = append(volumeNameToPVCName, pairData)
 			}
 		}
 	}

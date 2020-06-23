@@ -49,14 +49,24 @@ func (a Adapter) createComponent() (err error) {
 	// Loop over each component and start a container for it
 	for _, comp := range supportedComponents {
 		var dockerVolumeMounts []mount.Mount
-		for _, vol := range a.componentAliasToVolumes[comp.Container.Name] {
 
-			volMount := mount.Mount{
-				Type:   mount.TypeVolume,
-				Source: a.volumeNameToDockerVolName[vol.Name],
-				Target: vol.ContainerPath,
+		// Let's find the container / component alias!
+		for _, vol := range a.componentAliasToVolumes {
+
+			// If we find the container, we add all the volumes we'll be mounting.
+			if vol.ComponentAlias == comp.Container.Name {
+
+				// Iterate through each volume and add it to the list to mount.
+				for _, volToMount := range vol.Volumes {
+					volMount := mount.Mount{
+						Type:   mount.TypeVolume,
+						Source: a.volumeNameToDockerVolName[vol.ComponentAlias],
+						Target: volToMount.ContainerPath,
+					}
+					dockerVolumeMounts = append(dockerVolumeMounts, volMount)
+				}
+
 			}
-			dockerVolumeMounts = append(dockerVolumeMounts, volMount)
 		}
 		err = a.pullAndStartContainer(dockerVolumeMounts, comp)
 		if err != nil {
@@ -91,14 +101,26 @@ func (a Adapter) updateComponent() (componentExists bool, err error) {
 		}
 
 		var dockerVolumeMounts []mount.Mount
-		for _, vol := range a.componentAliasToVolumes[comp.Container.Name] {
-			volMount := mount.Mount{
-				Type:   mount.TypeVolume,
-				Source: a.volumeNameToDockerVolName[vol.Name],
-				Target: vol.ContainerPath,
+
+		// Let's find the container / component alias!
+		for _, vol := range a.componentAliasToVolumes {
+
+			// If we find the container, we add all the volumes we'll be mounting.
+			if vol.ComponentAlias == comp.Container.Name {
+
+				// Iterate through each volume and add it to the list to mount.
+				for _, volToMount := range vol.Volumes {
+					volMount := mount.Mount{
+						Type:   mount.TypeVolume,
+						Source: a.volumeNameToDockerVolName[vol.ComponentAlias],
+						Target: volToMount.ContainerPath,
+					}
+					dockerVolumeMounts = append(dockerVolumeMounts, volMount)
+				}
+
 			}
-			dockerVolumeMounts = append(dockerVolumeMounts, volMount)
 		}
+
 		if len(containers) == 0 {
 			log.Infof("\nCreating Docker resources for component %s", a.ComponentName)
 

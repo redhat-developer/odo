@@ -101,14 +101,15 @@ func GetExistingVolume(Client *lclient.Client, volumeName, componentName string)
 
 // ProcessVolumes takes in a list of component volumes and for each unique volume in the devfile, creates a Docker volume name for it
 // It returns a list of unique volumes, a mapping of devfile volume names to docker volume names, and an error if applicable
-func ProcessVolumes(client *lclient.Client, componentName string, componentAliasToVolumes map[string][]common.DevfileVolume) ([]common.Storage, map[string]string, error) {
+// we return a map since it does not matter if the volumes are out-of-order for Docker.
+func ProcessVolumes(client *lclient.Client, componentName string, componentAliasToVolumes []common.ComponentVolumesPair) ([]common.Storage, map[string]string, error) {
 	var uniqueStorages []common.Storage
 	volumeNameToDockerVolName := make(map[string]string)
 	processedVolumes := make(map[string]bool)
 
 	// Get a list of all the unique volume names and generate their Docker volume names
 	for _, volumes := range componentAliasToVolumes {
-		for _, vol := range volumes {
+		for _, vol := range volumes.Volumes {
 			if _, ok := processedVolumes[vol.Name]; !ok {
 				processedVolumes[vol.Name] = true
 

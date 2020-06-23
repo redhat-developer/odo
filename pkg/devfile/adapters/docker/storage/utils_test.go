@@ -140,7 +140,7 @@ func TestProcessVolumes(t *testing.T) {
 	tests := []struct {
 		name               string
 		client             *lclient.Client
-		aliasVolumeMapping map[string][]common.DevfileVolume
+		aliasVolumeMapping []common.ComponentVolumesPair
 		wantErr            bool
 		wantStorage        []common.Storage
 	}{
@@ -153,12 +153,15 @@ func TestProcessVolumes(t *testing.T) {
 		},
 		{
 			name: "Case 2: One volume defined, one component",
-			aliasVolumeMapping: map[string][]common.DevfileVolume{
-				"some-component": []common.DevfileVolume{
-					{
-						Name:          volumeNames[0],
-						ContainerPath: volumePaths[0],
-						Size:          volumeSizes[0],
+			aliasVolumeMapping: []common.ComponentVolumesPair{
+				common.ComponentVolumesPair{
+					ComponentAlias: "some-component",
+					Volumes: []common.DevfileVolume{
+						{
+							Name:          volumeNames[0],
+							ContainerPath: volumePaths[0],
+							Size:          volumeSizes[0],
+						},
 					},
 				},
 			},
@@ -176,22 +179,25 @@ func TestProcessVolumes(t *testing.T) {
 		},
 		{
 			name: "Case 3: Multiple volumes defined, one component",
-			aliasVolumeMapping: map[string][]common.DevfileVolume{
-				"some-component": []common.DevfileVolume{
-					{
-						Name:          volumeNames[0],
-						ContainerPath: volumePaths[0],
-						Size:          volumeSizes[0],
-					},
-					{
-						Name:          volumeNames[1],
-						ContainerPath: volumePaths[1],
-						Size:          volumeSizes[1],
-					},
-					{
-						Name:          volumeNames[2],
-						ContainerPath: volumePaths[2],
-						Size:          volumeSizes[2],
+			aliasVolumeMapping: []common.ComponentVolumesPair{
+				common.ComponentVolumesPair{
+					ComponentAlias: "some-component",
+					Volumes: []common.DevfileVolume{
+						{
+							Name:          volumeNames[0],
+							ContainerPath: volumePaths[0],
+							Size:          volumeSizes[0],
+						},
+						{
+							Name:          volumeNames[1],
+							ContainerPath: volumePaths[1],
+							Size:          volumeSizes[1],
+						},
+						{
+							Name:          volumeNames[2],
+							ContainerPath: volumePaths[2],
+							Size:          volumeSizes[2],
+						},
 					},
 				},
 			},
@@ -223,36 +229,45 @@ func TestProcessVolumes(t *testing.T) {
 		},
 		{
 			name: "Case 4: Multiple volumes defined, multiple components",
-			aliasVolumeMapping: map[string][]common.DevfileVolume{
-				"some-component": []common.DevfileVolume{
-					{
-						Name:          volumeNames[0],
-						ContainerPath: volumePaths[0],
-						Size:          volumeSizes[0],
-					},
-					{
-						Name:          volumeNames[1],
-						ContainerPath: volumePaths[1],
-						Size:          volumeSizes[1],
-					},
-				},
-				"second-component": []common.DevfileVolume{
-					{
-						Name:          volumeNames[0],
-						ContainerPath: volumePaths[0],
-						Size:          volumeSizes[0],
+			aliasVolumeMapping: []common.ComponentVolumesPair{
+				common.ComponentVolumesPair{
+					ComponentAlias: "some-component",
+					Volumes: []common.DevfileVolume{
+						{
+							Name:          volumeNames[0],
+							ContainerPath: volumePaths[0],
+							Size:          volumeSizes[0],
+						},
+						{
+							Name:          volumeNames[1],
+							ContainerPath: volumePaths[1],
+							Size:          volumeSizes[1],
+						},
 					},
 				},
-				"third-component": []common.DevfileVolume{
-					{
-						Name:          volumeNames[1],
-						ContainerPath: volumePaths[1],
-						Size:          volumeSizes[1],
+				common.ComponentVolumesPair{
+					ComponentAlias: "second-component",
+					Volumes: []common.DevfileVolume{
+						{
+							Name:          volumeNames[0],
+							ContainerPath: volumePaths[0],
+							Size:          volumeSizes[0],
+						},
 					},
-					{
-						Name:          volumeNames[2],
-						ContainerPath: volumePaths[2],
-						Size:          volumeSizes[2],
+				},
+				common.ComponentVolumesPair{
+					ComponentAlias: "third-component",
+					Volumes: []common.DevfileVolume{
+						{
+							Name:          volumeNames[1],
+							ContainerPath: volumePaths[1],
+							Size:          volumeSizes[1],
+						},
+						{
+							Name:          volumeNames[2],
+							ContainerPath: volumePaths[2],
+							Size:          volumeSizes[2],
+						},
 					},
 				},
 			},
@@ -284,12 +299,15 @@ func TestProcessVolumes(t *testing.T) {
 		},
 		{
 			name: "Case 5: Docker client error",
-			aliasVolumeMapping: map[string][]common.DevfileVolume{
-				"some-component": []common.DevfileVolume{
-					{
-						Name:          volumeNames[0],
-						ContainerPath: volumePaths[0],
-						Size:          volumeSizes[0],
+			aliasVolumeMapping: []common.ComponentVolumesPair{
+				common.ComponentVolumesPair{
+					ComponentAlias: "some-component",
+					Volumes: []common.DevfileVolume{
+						{
+							Name:          volumeNames[0],
+							ContainerPath: volumePaths[0],
+							Size:          volumeSizes[0],
+						},
 					},
 				},
 			},

@@ -76,20 +76,20 @@ func AddVolumeMountToPodTemplateSpec(podTemplateSpec *corev1.PodTemplateSpec, vo
 // AddPVCAndVolumeMount adds PVC and volume mount to the pod template spec
 // volumeNameToPVCName is a map of volume name to the PVC created
 // componentAliasToVolumes is a map of the Devfile component alias to the Devfile Volumes
-func AddPVCAndVolumeMount(podTemplateSpec *corev1.PodTemplateSpec, volumeNameToPVCName map[string]string, componentAliasToVolumes map[string][]common.DevfileVolume) error {
-	for volName, pvcName := range volumeNameToPVCName {
-		generatedVolumeName, err := generateVolumeNameFromPVC(pvcName)
+func AddPVCAndVolumeMount(podTemplateSpec *corev1.PodTemplateSpec, volumeNameToPVCName []common.VolumePVCPair, componentAliasToVolumes []common.ComponentVolumesPair) error {
+	for _, pair := range volumeNameToPVCName {
+		generatedVolumeName, err := generateVolumeNameFromPVC(pair.PVC)
 		if err != nil {
 			return errors.Wrapf(err, "Unable to generate volume name from pvc name")
 		}
-		AddPVCToPodTemplateSpec(podTemplateSpec, generatedVolumeName, pvcName)
+		AddPVCToPodTemplateSpec(podTemplateSpec, generatedVolumeName, pair.PVC)
 
 		// componentAliasToMountPaths is a map of the Devfile container alias to their Devfile Volume Mount Paths for a given Volume Name
 		componentAliasToMountPaths := make(map[string][]string)
-		for containerName, volumes := range componentAliasToVolumes {
-			for _, volume := range volumes {
-				if volName == volume.Name {
-					componentAliasToMountPaths[containerName] = append(componentAliasToMountPaths[containerName], volume.ContainerPath)
+		for _, volumeData := range componentAliasToVolumes {
+			for _, volume := range volumeData.Volumes {
+				if pair.Volume == volume.Name {
+					componentAliasToMountPaths[volumeData.ComponentAlias] = append(componentAliasToMountPaths[volumeData.ComponentAlias], volume.ContainerPath)
 				}
 			}
 		}

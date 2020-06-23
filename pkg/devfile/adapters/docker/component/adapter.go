@@ -45,7 +45,7 @@ type Adapter struct {
 	Client lclient.Client
 	common.AdapterContext
 
-	componentAliasToVolumes   map[string][]common.DevfileVolume
+	componentAliasToVolumes   []common.ComponentVolumesPair
 	uniqueStorage             []common.Storage
 	volumeNameToDockerVolName map[string]string
 	devfileInitCmd            string
