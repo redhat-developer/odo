@@ -73,7 +73,7 @@ func TestGetBuildTimeout(t *testing.T) {
 		{
 			name:           "Case 1: Validating default value from test case",
 			existingConfig: Preference{},
-			want:           240,
+			want:           300,
 		},
 
 		{
@@ -668,8 +668,8 @@ Available Parameters:
 		ExperimentalSetting, ExperimentalDescription,
 		NamePrefixSetting, NamePrefixSettingDescription,
 		PushTargetSetting, PushTargetDescription,
-		BuildTimeoutSetting, BuildTimeoutSettingDescription,
 		PushTimeoutSetting, PushTimeoutSettingDescription,
+		BuildTimeoutSetting, BuildTimeoutSettingDescription,
 		TimeoutSetting, TimeoutSettingDescription,
 		UpdateNotificationSetting, UpdateNotificationSettingDescription)
 	actual := FormatSupportedParameters()

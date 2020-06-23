@@ -1744,13 +1744,13 @@ func (c *Client) WaitForBuildToFinish(buildName string, stdout io.Writer) error 
 	// following indicates if we have already setup the following logic
 	following := false
 	klog.V(4).Infof("Waiting for %s  build to finish", buildName)
-	// Try to grab the preference in order to set a timeout.. but if not, we’ll use the default. 	
-	buildTimeout := preference.DefaultBuildTimeout * time.Second 	
-	cfg, configReadErr := preference.New() 	
-	if configReadErr != nil { 		
-		klog.V(4).Info(errors.Wrap(configReadErr, "unable to read config file")) 	
-	} else { 		
-		buildTimeout = time.Duration(cfg.GetBuildTimeout()) * time.Second 	
+	// Try to grab the preference in order to set a timeout.. but if not, we’ll use the default.
+	buildTimeout := preference.DefaultBuildTimeout * time.Second
+	cfg, configReadErr := preference.New()
+	if configReadErr != nil {
+		klog.V(4).Info(errors.Wrap(configReadErr, "unable to read config file"))
+	} else {
+		buildTimeout = time.Duration(cfg.GetBuildTimeout()) * time.Second
 	}
 	// start a watch on the build resources and look for the given build name
 	w, err := c.buildClient.Builds(c.Namespace).Watch(metav1.ListOptions{
@@ -2026,13 +2026,13 @@ func (c *Client) FollowBuildLog(buildName string, stdout io.Writer) error {
 		NoWait: false,
 	}
 
-	// Try to grab the preference in order to set a timeout.. but if not, we’ll use the default. 	
-	buildTimeout := preference.DefaultBuildTimeout * time.Second 	
-	cfg, configReadErr := preference.New() 	
-	if configReadErr != nil { 		
-		klog.V(4).Info(errors.Wrap(configReadErr, "unable to read config file")) 	
-	} else { 		
-		buildTimeout = time.Duration(cfg.GetBuildTimeout()) * time.Second 	
+	// Try to grab the preference in order to set a timeout.. but if not, we’ll use the default.
+	buildTimeout := preference.DefaultBuildTimeout * time.Second
+	cfg, configReadErr := preference.New()
+	if configReadErr != nil {
+		klog.V(4).Info(errors.Wrap(configReadErr, "unable to read config file"))
+	} else {
+		buildTimeout = time.Duration(cfg.GetBuildTimeout()) * time.Second
 	}
 
 	rd, err := c.buildClient.RESTClient().Get().
