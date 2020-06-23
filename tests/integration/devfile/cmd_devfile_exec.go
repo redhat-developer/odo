@@ -12,16 +12,14 @@ import (
 )
 
 var _ = Describe("odo devfile exec command tests", func() {
-	var namespace, context, cmpName, currentWorkingDirectory string
+	var namespace, context, cmpName, currentWorkingDirectory, originalKubeconfig string
 
-	// TODO: all oc commands in all devfile related test should get replaced by kubectl
-	// TODO: to goal is not to use "oc"
-	oc := helper.NewOcRunner("oc")
+	// Using program command according to cliRunner in devfile
+	cliRunner := helper.GetCliRunner()
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
-		namespace = helper.CreateRandProject()
 		context = helper.CreateNewContext()
 		currentWorkingDirectory = helper.Getwd()
 		cmpName = helper.RandString(6)
@@ -32,13 +30,19 @@ var _ = Describe("odo devfile exec command tests", func() {
 
 		// Devfile push requires experimental mode to be set
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+
+		originalKubeconfig = os.Getenv("KUBECONFIG")
+		helper.LocalKubeconfigSet(context)
+		namespace = cliRunner.CreateRandNamespaceProject()
 	})
 
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		helper.DeleteProject(namespace)
+		cliRunner.DeleteNamespaceProject(namespace)
 		helper.Chdir(currentWorkingDirectory)
+		err := os.Setenv("KUBECONFIG", originalKubeconfig)
+		Expect(err).NotTo(HaveOccurred())
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
 	})
@@ -47,8 +51,8 @@ var _ = Describe("odo devfile exec command tests", func() {
 
 		It("should execute the given command successfully in the container", func() {
 			utils.ExecCommand(context, cmpName)
-			podName := oc.GetRunningPodNameByComponent(cmpName, namespace)
-			listDir := oc.ExecListDir(podName, namespace, "/projects")
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+			listDir := cliRunner.ExecListDir(podName, namespace, "/projects")
 			Expect(listDir).To(ContainSubstring("blah.js"))
 		})
 
