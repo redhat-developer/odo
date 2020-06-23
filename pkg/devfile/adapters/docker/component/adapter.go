@@ -146,9 +146,9 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 }
 
 // DoesComponentExist returns true if a component with the specified name exists, false otherwise
-func (a Adapter) DoesComponentExist(cmpName string) bool {
-	componentExists, _ := utils.ComponentExists(a.Client, a.Devfile.Data, cmpName)
-	return componentExists
+func (a Adapter) DoesComponentExist(cmpName string) (bool, error) {
+	componentExists, err := utils.ComponentExists(a.Client, a.Devfile.Data, cmpName)
+	return componentExists, err
 }
 
 // getFirstContainerWithSourceVolume returns the first container that set mountSources: true

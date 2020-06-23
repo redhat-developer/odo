@@ -302,7 +302,7 @@ func TestDoesComponentExist(t *testing.T) {
 			}
 
 			// Verify that a component with the specified name exists
-			componentExists := componentAdapter.DoesComponentExist(tt.getComponentName)
+			componentExists, _ := componentAdapter.DoesComponentExist(tt.getComponentName)
 			if componentExists != tt.want {
 				t.Errorf("expected %v, actual %v", tt.want, componentExists)
 			}

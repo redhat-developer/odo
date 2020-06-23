@@ -164,8 +164,8 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 }
 
 // DoesComponentExist returns true if a component with the specified name exists, false otherwise
-func (a Adapter) DoesComponentExist(cmpName string) bool {
-	return utils.ComponentExists(a.Client, cmpName)
+func (a Adapter) DoesComponentExist(cmpName string) (bool, error) {
+	return utils.ComponentExists(a.Client, cmpName), nil
 }
 
 func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
@@ -252,7 +252,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 	klog.V(4).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
 	klog.V(4).Infof("The component name is %v", componentName)
 
-	if utils.ComponentExists(a.Client, componentName) {
+	if componentExists {
 		// If the component already exists, get the resource version of the deploy before updating
 		klog.V(4).Info("The component already exists, attempting to update it")
 		deployment, err := a.Client.UpdateDeployment(*deploymentSpec)

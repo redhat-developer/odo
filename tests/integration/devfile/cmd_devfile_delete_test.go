@@ -1,6 +1,7 @@
 package devfile
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -65,6 +66,21 @@ var _ = Describe("odo devfile delete command tests", func() {
 		})
 	})
 
+	Context("when no component exists", func() {
+
+		It("should print the information and not throw an error", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			output := helper.CmdShouldPass("odo", "delete", "--project", namespace, "-f")
+
+			helper.MatchAllInOutput(output, []string{
+				fmt.Sprintf("Component %s does not exist", componentName),
+			})
+		})
+	})
+
 	Context("when devfile delete command is executed with all flag", func() {
 
 		It("should delete the component created from the devfile and also the env and odo folders and the odo-index-file.json file", func() {
@@ -83,6 +99,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 
 			files := helper.ListFilesInDir(context)
 			Expect(files).To(Not(ContainElement(".odo")))
+			Expect(files).To(Not(ContainElement("devfile.yaml")))
 		})
 	})
 })
