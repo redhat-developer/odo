@@ -1,3 +1,5 @@
+// This test file verifies all the supported container images listed in the
+// file https://github.com/openshift/odo-init-image/blob/master/language-scripts/image-mappings.json
 package e2escenarios
 
 import (
@@ -119,6 +121,26 @@ var _ = Describe("odo supported images e2e tests", func() {
 		It("Should be able to verify the nodejs-8-centos7 image", func() {
 			oc.ImportImageFromRegistry("docker.io", filepath.Join("centos", "nodejs-8-centos7:latest"), "nodejs:latest", project)
 			verifySupportedImage(filepath.Join("centos", "nodejs-8-centos7:latest"), "nodejs", "nodejs:latest", project, appName, context)
+		})
+
+		It("Should be able to verify the nodejs-10-centos7 image", func() {
+			oc.ImportImageFromRegistry("docker.io", filepath.Join("centos", "nodejs-10-centos7:latest"), "nodejs:latest", project)
+			verifySupportedImage(filepath.Join("centos", "nodejs-10-centos7:latest"), "nodejs", "nodejs:latest", project, appName, context)
+		})
+
+		It("Should be able to verify the nodejs-12-centos7 image", func() {
+			oc.ImportImageFromRegistry("docker.io", filepath.Join("centos", "nodejs-12-centos7:latest"), "nodejs:latest", project)
+			verifySupportedImage(filepath.Join("centos", "nodejs-12-centos7:latest"), "nodejs", "nodejs:latest", project, appName, context)
+		})
+
+		It("Should be able to verify the nodejs-10-rhel7 image", func() {
+			oc.ImportImageFromRegistry("registry.access.redhat.com", filepath.Join("rhscl", "nodejs-10-rhel7:latest"), "nodejs:latest", project)
+			verifySupportedImage(filepath.Join("rhscl", "nodejs-10-rhel7:latest"), "nodejs", "nodejs:latest", project, appName, context)
+		})
+
+		It("Should be able to verify the centos7-s2i-nodejs image", func() {
+			oc.ImportImageFromRegistry("docker.io", filepath.Join("nodeshift", "centos7-s2i-nodejs:latest"), "nodejs:latest", project)
+			verifySupportedImage(filepath.Join("nodeshift", "centos7-s2i-nodejs:latest"), "nodejs", "nodejs:latest", project, appName, context)
 		})
 	})
 })

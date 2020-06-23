@@ -55,7 +55,7 @@ var _ = Describe("odo debug command tests", func() {
 
 			// Make sure that the debug information output, outputs correctly.
 			// We do *not* check the json output since the debugProcessID will be different each time.
-			helper.WaitForCmdOut("odo", []string{"debug", "info", "--context", context, "-o", "json"}, 1, true, func(output string) bool {
+			helper.WaitForCmdOut("odo", []string{"debug", "info", "--context", context, "-o", "json"}, 1, false, func(output string) bool {
 				if strings.Contains(output, `"kind": "OdoDebugInfo"`) &&
 					strings.Contains(output, `"localPort": `+freePort) {
 					return true

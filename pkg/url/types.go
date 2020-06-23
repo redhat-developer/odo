@@ -15,13 +15,13 @@ type URL struct {
 
 // URLSpec is
 type URLSpec struct {
-	Host         string `json:"host,omitempty"`
-	Protocol     string `json:"protocol,omitempty"`
-	Port         int    `json:"port,omitempty"`
-	Secure       bool   `json:"secure"`
-	urlKind      envinfo.URLKind
-	TLSSecret    string `json:"tlssecret,omitempty"`
-	ExternalPort int    `json:"externalport,omitempty"`
+	Host         string          `json:"host,omitempty"`
+	Protocol     string          `json:"protocol,omitempty"`
+	Port         int             `json:"port,omitempty"`
+	Secure       bool            `json:"secure"`
+	Kind         envinfo.URLKind `json:"kind,omitempty"`
+	TLSSecret    string          `json:"tlssecret,omitempty"`
+	ExternalPort int             `json:"externalport,omitempty"`
 }
 
 // AppList is a list of applications

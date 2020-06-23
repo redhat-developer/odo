@@ -93,6 +93,19 @@ var _ = Describe("odo devfile catalog command tests", func() {
 		})
 	})
 
+	Context("When executing catalog list components with registry that is not set up properly", func() {
+		It("should list components from valid registry", func() {
+			helper.CmdShouldPass("odo", "registry", "add", "fake", "http://fake")
+			output := helper.CmdShouldPass("odo", "catalog", "list", "components")
+			helper.MatchAllInOutput(output, []string{
+				"Odo Devfile Components",
+				"java-spring-boot",
+				"quarkus",
+			})
+			helper.CmdShouldPass("odo", "registry", "delete", "fake", "-f")
+		})
+	})
+
 	Context("When executing catalog describe component with a component name with a single project", func() {
 		It("should only give information about one project", func() {
 			output := helper.CmdShouldPass("odo", "catalog", "describe", "component", "java-openliberty")

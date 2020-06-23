@@ -6,6 +6,7 @@ import (
 
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/log"
@@ -18,11 +19,9 @@ import (
 	"github.com/spf13/cobra"
 
 	odoutil "github.com/openshift/odo/pkg/odo/util"
-
-	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
-var pushCmdExample = ktemplates.Examples(`  # Push source code to the current component
+var pushCmdExample = (`  # Push source code to the current component
 %[1]s
 
 # Push data to the current component from the original source
@@ -33,6 +32,11 @@ var pushCmdExample = ktemplates.Examples(`  # Push source code to the current co
 
 # Push source code with custom devfile commands using --build-command and --run-command for experimental mode
 %[1]s --build-command="mybuild" --run-command="myrun"
+  `)
+
+var pushCmdExampleExperimentalOnly = (`
+# Output JSON events corresponding to devfile command execution and log text
+%[1]s -o json
   `)
 
 // PushRecommendedCommandName is the recommended push command name
@@ -49,7 +53,10 @@ type PushOptions struct {
 	devfileInitCommand  string
 	devfileBuildCommand string
 	devfileRunCommand   string
-	namespace           string
+	devfileDebugCommand string
+	debugRun            bool
+
+	namespace string
 }
 
 // NewPushOptions returns new instance of PushOptions
@@ -163,17 +170,30 @@ func (po *PushOptions) Run() (err error) {
 func NewCmdPush(name, fullName string) *cobra.Command {
 	po := NewPushOptions()
 
+	annotations := map[string]string{"command": "component"}
+
+	pushCmdExampleText := pushCmdExample
+
+	if experimental.IsExperimentalModeEnabled() {
+		// The '-o json' option should only appear in help output when experimental mode is enabled.
+		annotations["machineoutput"] = "json"
+
+		// The '-o json' example should likewise only appear in experimental only.
+		pushCmdExampleText += pushCmdExampleExperimentalOnly
+	}
+
 	var pushCmd = &cobra.Command{
 		Use:         fmt.Sprintf("%s [component name]", name),
 		Short:       "Push source code to a component",
 		Long:        `Push source code to a component.`,
-		Example:     fmt.Sprintf(pushCmdExample, fullName),
+		Example:     fmt.Sprintf(ktemplates.Examples(pushCmdExampleText), fullName),
 		Args:        cobra.MaximumNArgs(1),
-		Annotations: map[string]string{"command": "component"},
+		Annotations: annotations,
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(po, cmd, args)
 		},
 	}
+
 	genericclioptions.AddContextFlag(pushCmd, &po.componentContext)
 	pushCmd.Flags().BoolVar(&po.show, "show-log", false, "If enabled, logs will be shown when built")
 	pushCmd.Flags().StringSliceVar(&po.ignores, "ignore", []string{}, "Files or folders to be ignored via glob expressions.")
@@ -187,6 +207,8 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 		pushCmd.Flags().StringVar(&po.devfileInitCommand, "init-command", "", "Devfile Init Command to execute")
 		pushCmd.Flags().StringVar(&po.devfileBuildCommand, "build-command", "", "Devfile Build Command to execute")
 		pushCmd.Flags().StringVar(&po.devfileRunCommand, "run-command", "", "Devfile Run Command to execute")
+		pushCmd.Flags().BoolVar(&po.debugRun, "debug", false, "Runs the component in debug mode")
+		pushCmd.Flags().StringVar(&po.devfileDebugCommand, "debug-command", "", "Devfile Debug Command to execute")
 	}
 
 	//Adding `--project` flag

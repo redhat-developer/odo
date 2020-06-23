@@ -39,6 +39,8 @@ var _ = Describe("odo docker devfile push command tests", func() {
 		label := "component=" + cmpName
 		dockerClient.StopContainers(label)
 
+		dockerClient.RemoveVolumesByComponent(cmpName)
+
 		helper.Chdir(currentWorkingDirectory)
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
@@ -83,7 +85,7 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			// Verify the volumes got created successfully (and 3 volumes exist: one source and two defined in devfile)
 			label := "component=" + cmpName
 			volumes := dockerClient.GetVolumesByLabel(label)
-			Expect(len(volumes)).To(Equal(3))
+			Expect(len(volumes)).To(Equal(4))
 		})
 
 		It("Check that odo push mounts the docker volumes in the container", func() {
@@ -104,6 +106,21 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			// Verify the volume is mounted
 			volMounted := dockerClient.IsVolumeMountedInContainer(vol, cmpName, "runtime")
 			Expect(volMounted).To(Equal(true))
+		})
+
+		It("checks that odo push with -o json displays machine readable JSON event output", func() {
+
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
+
+			output := helper.CmdShouldPass("odo", "push", "-o", "json")
+			utils.AnalyzePushConsoleOutput(output)
+
+			// update devfile and push again
+			helper.ReplaceString("devfile.yaml", "name: FOO", "name: BAR")
+			output = helper.CmdShouldPass("odo", "push", "-o", "json")
+			utils.AnalyzePushConsoleOutput(output)
+
 		})
 
 		It("should not build when no changes are detected in the directory and build when a file change is detected", func() {
@@ -151,7 +168,7 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "create", "java-spring-boot", cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			output := helper.CmdShouldPass("odo", "push")
 			helper.MatchAllInOutput(output, []string{
@@ -172,7 +189,7 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "create", "java-spring-boot", cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile-init-without-build.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init-without-build.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			output := helper.CmdShouldPass("odo", "push")
 			helper.MatchAllInOutput(output, []string{
