@@ -223,7 +223,7 @@ func ValidateAndGetDebugDevfileCommands(data data.DevfileData, devfileDebugCmd s
 	debugCommand, debugCmdErr := GetDebugCommand(data, devfileDebugCmd)
 	if debugCmdErr == nil && !reflect.DeepEqual(emptyCommand, debugCommand) {
 		isDebugCommandValid = true
-		klog.V(3).Infof("Debug command: %v", debugCommand.Exec.Id)
+		klog.V(4).Infof("Debug command: %v", debugCommand.Exec.Id)
 	}
 
 	if !isDebugCommandValid {

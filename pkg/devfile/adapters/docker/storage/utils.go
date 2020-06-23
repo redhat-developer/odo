@@ -27,7 +27,7 @@ func CreateComponentStorage(Client *lclient.Client, storages []common.Storage, c
 		}
 
 		if len(existingDockerVolName) == 0 {
-			klog.V(3).Infof("Creating a Docker volume for %v", volumeName)
+			klog.V(4).Infof("Creating a Docker volume for %v", volumeName)
 			_, err := Create(Client, volumeName, componentName, dockerVolName)
 			if err != nil {
 				return errors.Wrapf(err, "Error creating Docker volume for "+volumeName)
@@ -46,7 +46,7 @@ func Create(Client *lclient.Client, name, componentName, dockerVolName string) (
 		"storage-name": name,
 	}
 
-	klog.V(3).Infof("Creating a Docker volume with name %v and labels %v", dockerVolName, labels)
+	klog.V(4).Infof("Creating a Docker volume with name %v and labels %v", dockerVolName, labels)
 	vol, err := Client.CreateVolume(dockerVolName, labels)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create Docker volume")
@@ -81,14 +81,14 @@ func GetExistingVolume(Client *lclient.Client, volumeName, componentName string)
 		"storage-name": volumeName,
 	}
 
-	klog.V(3).Infof("Checking Docker volume for volume %v and labels %v\n", volumeName, volumeLabels)
+	klog.V(4).Infof("Checking Docker volume for volume %v and labels %v\n", volumeName, volumeLabels)
 
 	vols, err := Client.GetVolumesByLabel(volumeLabels)
 	if err != nil {
 		return "", errors.Wrapf(err, "Unable to get Docker volume with selectors %v", volumeLabels)
 	}
 	if len(vols) == 1 {
-		klog.V(3).Infof("Found an existing Docker volume for volume %v and labels %v\n", volumeName, volumeLabels)
+		klog.V(4).Infof("Found an existing Docker volume for volume %v and labels %v\n", volumeName, volumeLabels)
 		existingVolume := vols[0]
 		return existingVolume.Name, nil
 	} else if len(vols) == 0 {
