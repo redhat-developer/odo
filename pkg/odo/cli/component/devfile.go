@@ -54,8 +54,8 @@ func (po *PushOptions) DevfilePush() error {
 }
 
 func (po *PushOptions) devfilePushInner() (err error) {
-	// Parse devfile
-	devObj, err := devfile.ParseAndValidate(po.DevfilePath)
+	// Parse devfile and validate
+	devObj, err := parser.ParseAndValidate(po.DevfilePath)
 	if err != nil {
 		return err
 	}
