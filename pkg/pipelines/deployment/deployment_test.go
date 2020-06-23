@@ -12,20 +12,21 @@ import (
 )
 
 const (
-	testComponent = "nginx-deployment"
-	testImage     = "nginx:1.7.9"
+	testComponent       = "nginx-deployment"
+	testImage           = "nginx:1.7.9"
+	testComponentPartOf = "nginx-deployment-operator"
 )
 
 func TestCreate(t *testing.T) {
-	d := Create("", testComponent, testImage, ContainerPort(80))
+	d := Create(testComponentPartOf, "", testComponent, testImage, ContainerPort(80))
 
 	want := &appsv1.Deployment{
 		TypeMeta:   meta.TypeMeta("Deployment", "apps/v1"),
 		ObjectMeta: meta.ObjectMeta(meta.NamespacedName("", testComponent)),
 		Spec: appsv1.DeploymentSpec{
 			Replicas: ptr32(1),
-			Selector: labelSelector(KubernetesAppNameLabel, testComponent),
-			Template: podTemplate(testComponent, testImage, ContainerPort(80)),
+			Selector: LabelSelector(testComponent, testComponentPartOf),
+			Template: podTemplate(testComponentPartOf, testComponent, testImage, ContainerPort(80)),
 		},
 	}
 
@@ -40,6 +41,7 @@ func TestDefaultPodTemplate(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
 				KubernetesAppNameLabel: testComponent,
+				KubernetesPartOfLabel:  testComponentPartOf,
 			},
 		},
 		Spec: corev1.PodSpec{
@@ -54,7 +56,7 @@ func TestDefaultPodTemplate(t *testing.T) {
 		},
 	}
 
-	spec := podTemplate(testComponent, testImage)
+	spec := podTemplate(testComponentPartOf, testComponent, testImage)
 
 	if diff := cmp.Diff(want, spec); diff != "" {
 		t.Fatalf("podTemplate diff: %s", diff)
@@ -64,12 +66,13 @@ func TestDefaultPodTemplate(t *testing.T) {
 func TestPodTemplateEnv(t *testing.T) {
 	env := []corev1.EnvVar{{Name: "FOO_BAR_SERVICE_HOST", Value: "1.2.3.4"}}
 
-	spec := podTemplate(testComponent, testImage, Env(env))
+	spec := podTemplate(testComponentPartOf, testComponent, testImage, Env(env))
 
 	want := corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
 				KubernetesAppNameLabel: testComponent,
+				KubernetesPartOfLabel:  testComponentPartOf,
 			},
 		},
 		Spec: corev1.PodSpec{
@@ -90,12 +93,13 @@ func TestPodTemplateEnv(t *testing.T) {
 }
 
 func TestPodTemplateCommand(t *testing.T) {
-	spec := podTemplate(testComponent, testImage, Command([]string{"/usr/local/bin/test"}))
+	spec := podTemplate(testComponentPartOf, testComponent, testImage, Command([]string{"/usr/local/bin/test"}))
 
 	want := corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
 				KubernetesAppNameLabel: testComponent,
+				KubernetesPartOfLabel:  testComponentPartOf,
 			},
 		},
 		Spec: corev1.PodSpec{
@@ -117,12 +121,13 @@ func TestPodTemplateCommand(t *testing.T) {
 }
 
 func TestPodTemplateContainerPort(t *testing.T) {
-	spec := podTemplate(testComponent, testImage, ContainerPort(80))
+	spec := podTemplate(testComponentPartOf, testComponent, testImage, ContainerPort(80))
 
 	want := corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
 				KubernetesAppNameLabel: testComponent,
+				KubernetesPartOfLabel:  testComponentPartOf,
 			},
 		},
 		Spec: corev1.PodSpec{

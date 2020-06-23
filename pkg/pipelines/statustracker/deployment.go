@@ -7,7 +7,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/openshift/odo/pkg/pipelines/deployment"
@@ -17,8 +16,9 @@ import (
 )
 
 const (
-	operatorName   = "commit-status-tracker"
-	containerImage = "quay.io/redhat-developer/commit-status-tracker:v0.0.1"
+	operatorName         = "commit-status-tracker"
+	containerImage       = "quay.io/redhat-developer/commit-status-tracker:v0.0.1"
+	commitStatusAppLabel = "commit-status-tracker-operator"
 )
 
 type secretSealer = func(types.NamespacedName, string, string) (*ssv1alpha1.SealedSecret, error)
@@ -90,7 +90,7 @@ var (
 )
 
 func createStatusTrackerDeployment(ns string) *appsv1.Deployment {
-	return deployment.Create(ns, operatorName, containerImage,
+	return deployment.Create(commitStatusAppLabel, ns, operatorName, containerImage,
 		deployment.ServiceAccount(operatorName),
 		deployment.Env(statusTrackerEnv),
 		deployment.Command([]string{operatorName}))
@@ -130,12 +130,4 @@ func Resources(ns, token string) ([]interface{}, error) {
 
 func ptr32(i int32) *int32 {
 	return &i
-}
-
-func labelSelector(name, value string) *metav1.LabelSelector {
-	return &metav1.LabelSelector{
-		MatchLabels: map[string]string{
-			name: value,
-		},
-	}
 }

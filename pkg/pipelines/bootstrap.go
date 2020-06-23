@@ -102,7 +102,7 @@ func bootstrapResources(o *BootstrapOptions, appFs afero.Fs) (res.Resources, err
 	if devEnv == nil {
 		return nil, errors.New("unable to bootstrap without dev environment")
 	}
-	svcFiles, err := bootstrapServiceDeployment(devEnv)
+	svcFiles, err := bootstrapServiceDeployment(devEnv, repoName)
 	if err != nil {
 		return nil, err
 	}
@@ -154,14 +154,14 @@ func bootstrapResources(o *BootstrapOptions, appFs afero.Fs) (res.Resources, err
 	return bootstrapped, nil
 }
 
-func bootstrapServiceDeployment(dev *config.Environment) (res.Resources, error) {
+func bootstrapServiceDeployment(dev *config.Environment, appName string) (res.Resources, error) {
 	svc := dev.Services[0]
 	svcBase := filepath.Join(config.PathForService(dev, svc.Name), "base", "config")
 	resources := res.Resources{}
 	// TODO: This should change if we add Namespace to Environment.
 	// We'd need to create the resources in the namespace _of_ the Environment.
-	resources[filepath.Join(svcBase, "100-deployment.yaml")] = deployment.Create(dev.Name, svc.Name, bootstrapImage, deployment.ContainerPort(8080))
-	resources[filepath.Join(svcBase, "200-service.yaml")] = createBootstrapService(dev.Name, svc.Name)
+	resources[filepath.Join(svcBase, "100-deployment.yaml")] = deployment.Create(appName, dev.Name, svc.Name, bootstrapImage, deployment.ContainerPort(8080))
+	resources[filepath.Join(svcBase, "200-service.yaml")] = createBootstrapService(appName, dev.Name, svc.Name)
 	resources[filepath.Join(svcBase, "kustomization.yaml")] = &res.Kustomization{Resources: []string{"100-deployment.yaml", "200-service.yaml"}}
 	return resources, nil
 }
@@ -241,7 +241,7 @@ func orgRepoFromURL(raw string) (string, error) {
 	return strings.TrimSuffix(orgRepo, ".git"), nil
 }
 
-func createBootstrapService(ns, name string) *corev1.Service {
+func createBootstrapService(appName, ns, name string) *corev1.Service {
 	svc := &corev1.Service{
 		TypeMeta:   meta.TypeMeta("Service", "v1"),
 		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, name)),
@@ -257,6 +257,7 @@ func createBootstrapService(ns, name string) *corev1.Service {
 	}
 	labels := map[string]string{
 		deployment.KubernetesAppNameLabel: name,
+		deployment.KubernetesPartOfLabel:  appName,
 	}
 	svc.ObjectMeta.Labels = labels
 	svc.Spec.Selector = labels
