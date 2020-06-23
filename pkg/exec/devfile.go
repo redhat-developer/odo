@@ -2,15 +2,17 @@ package exec
 
 import (
 	"fmt"
+	"io"
 
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/pkg/errors"
 )
 
 // ExecuteDevfileBuildAction executes the devfile build command action
-func ExecuteDevfileBuildAction(client ExecClient, exec common.Exec, commandName string, compInfo adaptersCommon.ComponentInfo, show bool) error {
+func ExecuteDevfileBuildAction(client ExecClient, exec common.Exec, commandName string, compInfo adaptersCommon.ComponentInfo, show bool, machineEventLogger machineoutput.MachineEventLoggingClient) error {
 	var s *log.Status
 
 	// Change to the workdir and execute the command
@@ -30,17 +32,30 @@ func ExecuteDevfileBuildAction(client ExecClient, exec common.Exec, commandName 
 
 	defer s.End(false)
 
-	err := ExecuteCommand(client, compInfo, cmdArr, show)
+	// Emit DevFileCommandExecutionBegin JSON event (if machine output logging is enabled)
+	machineEventLogger.DevFileCommandExecutionBegin(exec.Id, exec.Component, exec.CommandLine, convertGroupKindToString(exec), machineoutput.TimestampNow())
+
+	// Capture container text and log to the screen as JSON events (machine output only)
+	stdoutWriter, stdoutChannel, stderrWriter, stderrChannel := machineEventLogger.CreateContainerOutputWriter()
+
+	err := ExecuteCommand(client, compInfo, cmdArr, show, stdoutWriter, stderrWriter)
+
+	// Close the writers and wait for an acknowledgement that the reader loop has exited (to ensure we get ALL container output)
+	closeWriterAndWaitForAck(stdoutWriter, stdoutChannel, stderrWriter, stderrChannel)
+
+	// Emit close event
+	machineEventLogger.DevFileCommandExecutionComplete(exec.Id, exec.Component, exec.CommandLine, convertGroupKindToString(exec), machineoutput.TimestampNow(), err)
 	if err != nil {
 		return errors.Wrapf(err, "unable to execute the build command")
 	}
+
 	s.End(true)
 
 	return nil
 }
 
 // ExecuteDevfileRunAction executes the devfile run command action using the supervisord devrun program
-func ExecuteDevfileRunAction(client ExecClient, exec common.Exec, commandName string, compInfo adaptersCommon.ComponentInfo, show bool) error {
+func ExecuteDevfileRunAction(client ExecClient, exec common.Exec, commandName string, compInfo adaptersCommon.ComponentInfo, show bool, machineEventLogger machineoutput.MachineEventLoggingClient) error {
 	var s *log.Status
 
 	// Exec the supervisord ctl stop and start for the devrun program
@@ -61,10 +76,23 @@ func ExecuteDevfileRunAction(client ExecClient, exec common.Exec, commandName st
 
 	for _, devRunExec := range devRunExecs {
 
-		err := ExecuteCommand(client, compInfo, devRunExec.command, show)
+		// Emit DevFileCommandExecutionBegin JSON event (if machine output logging is enabled)
+		machineEventLogger.DevFileCommandExecutionBegin(exec.Id, exec.Component, exec.CommandLine, convertGroupKindToString(exec), machineoutput.TimestampNow())
+
+		// Capture container text and log to the screen as JSON events (machine output only)
+		stdoutWriter, stdoutChannel, stderrWriter, stderrChannel := machineEventLogger.CreateContainerOutputWriter()
+
+		err := ExecuteCommand(client, compInfo, devRunExec.command, show, stdoutWriter, stderrWriter)
+
+		// Close the writers and wait for an acknowledgement that the reader loop has exited (to ensure we get ALL container output)
+		closeWriterAndWaitForAck(stdoutWriter, stdoutChannel, stderrWriter, stderrChannel)
+
+		// Emit close event
+		machineEventLogger.DevFileCommandExecutionComplete(exec.Id, exec.Component, exec.CommandLine, convertGroupKindToString(exec), machineoutput.TimestampNow(), err)
 		if err != nil {
 			return errors.Wrapf(err, "unable to execute the run command")
 		}
+
 	}
 	s.End(true)
 
@@ -72,7 +100,7 @@ func ExecuteDevfileRunAction(client ExecClient, exec common.Exec, commandName st
 }
 
 // ExecuteDevfileRunActionWithoutRestart executes devfile run command without restarting.
-func ExecuteDevfileRunActionWithoutRestart(client ExecClient, exec common.Exec, commandName string, compInfo adaptersCommon.ComponentInfo, show bool) error {
+func ExecuteDevfileRunActionWithoutRestart(client ExecClient, exec common.Exec, commandName string, compInfo adaptersCommon.ComponentInfo, show bool, machineEventLogger machineoutput.MachineEventLoggingClient) error {
 	var s *log.Status
 
 	type devRunExecutable struct {
@@ -87,7 +115,19 @@ func ExecuteDevfileRunActionWithoutRestart(client ExecClient, exec common.Exec, 
 	s = log.Spinnerf("Executing %s command %q, if not running", commandName, exec.CommandLine)
 	defer s.End(false)
 
-	err := ExecuteCommand(client, compInfo, devRunExec.command, show)
+	// Emit DevFileCommandExecutionBegin JSON event (if machine output logging is enabled)
+	machineEventLogger.DevFileCommandExecutionBegin(exec.Id, exec.Component, exec.CommandLine, convertGroupKindToString(exec), machineoutput.TimestampNow())
+
+	// Capture container text and log to the screen as JSON events (machine output only)
+	stdoutWriter, stdoutChannel, stderrWriter, stderrChannel := machineEventLogger.CreateContainerOutputWriter()
+
+	err := ExecuteCommand(client, compInfo, devRunExec.command, show, stdoutWriter, stderrWriter)
+
+	// Close the writers and wait for an acknowledgement that the reader loop has exited (to ensure we get ALL container output)
+	closeWriterAndWaitForAck(stdoutWriter, stdoutChannel, stderrWriter, stderrChannel)
+
+	// Emit close event
+	machineEventLogger.DevFileCommandExecutionComplete(exec.Id, exec.Component, exec.CommandLine, convertGroupKindToString(exec), machineoutput.TimestampNow(), err)
 	if err != nil {
 		return errors.Wrapf(err, "unable to execute the run command")
 	}
@@ -98,7 +138,7 @@ func ExecuteDevfileRunActionWithoutRestart(client ExecClient, exec common.Exec, 
 }
 
 // ExecuteDevfileDebugAction executes the devfile debug command action using the supervisord debugrun program
-func ExecuteDevfileDebugAction(client ExecClient, exec common.Exec, commandName string, compInfo adaptersCommon.ComponentInfo, show bool) error {
+func ExecuteDevfileDebugAction(client ExecClient, exec common.Exec, commandName string, compInfo adaptersCommon.ComponentInfo, show bool, machineEventLogger machineoutput.MachineEventLoggingClient) error {
 	var s *log.Status
 
 	// Exec the supervisord ctl stop and start for the debugRun program
@@ -119,18 +159,32 @@ func ExecuteDevfileDebugAction(client ExecClient, exec common.Exec, commandName 
 
 	for _, debugRunExec := range debugRunExecs {
 
-		err := ExecuteCommand(client, compInfo, debugRunExec.command, show)
+		// Emit DevFileCommandExecutionBegin JSON event (if machine output logging is enabled)
+		machineEventLogger.DevFileCommandExecutionBegin(exec.Id, exec.Component, exec.CommandLine, convertGroupKindToString(exec), machineoutput.TimestampNow())
+
+		// Capture container text and log to the screen as JSON events (machine output only)
+		stdoutWriter, stdoutChannel, stderrWriter, stderrChannel := machineEventLogger.CreateContainerOutputWriter()
+
+		err := ExecuteCommand(client, compInfo, debugRunExec.command, show, stdoutWriter, stderrWriter)
+
+		// Close the writers and wait for an acknowledgement that the reader loop has exited (to ensure we get ALL container output)
+		closeWriterAndWaitForAck(stdoutWriter, stdoutChannel, stderrWriter, stderrChannel)
+
+		// Emit close event
+		machineEventLogger.DevFileCommandExecutionComplete(exec.Id, exec.Component, exec.CommandLine, convertGroupKindToString(exec), machineoutput.TimestampNow(), err)
+
 		if err != nil {
 			return errors.Wrapf(err, "unable to execute the run command")
 		}
 	}
+
 	s.End(true)
 
 	return nil
 }
 
 // ExecuteDevfileDebugActionWithoutRestart executes devfile run command without restarting.
-func ExecuteDevfileDebugActionWithoutRestart(client ExecClient, exec common.Exec, commandName string, compInfo adaptersCommon.ComponentInfo, show bool) error {
+func ExecuteDevfileDebugActionWithoutRestart(client ExecClient, exec common.Exec, commandName string, compInfo adaptersCommon.ComponentInfo, show bool, machineEventLogger machineoutput.MachineEventLoggingClient) error {
 	var s *log.Status
 
 	type devDebugExecutable struct {
@@ -142,10 +196,23 @@ func ExecuteDevfileDebugActionWithoutRestart(client ExecClient, exec common.Exec
 		command: []string{adaptersCommon.SupervisordBinaryPath, adaptersCommon.SupervisordCtlSubCommand, "start", string(adaptersCommon.DefaultDevfileDebugCommand)},
 	}
 
+	// Emit DevFileCommandExecutionBegin JSON event (if machine output logging is enabled)
+	machineEventLogger.DevFileCommandExecutionBegin(exec.Id, exec.Component, exec.CommandLine, convertGroupKindToString(exec), machineoutput.TimestampNow())
+
+	// Capture container text and log to the screen as JSON events (machine output only)
+	stdoutWriter, stdoutChannel, stderrWriter, stderrChannel := machineEventLogger.CreateContainerOutputWriter()
+
 	s = log.Spinnerf("Executing %s command %q, if not running", commandName, exec.CommandLine)
 	defer s.End(false)
 
-	err := ExecuteCommand(client, compInfo, devDebugExec.command, show)
+	err := ExecuteCommand(client, compInfo, devDebugExec.command, show, stdoutWriter, stderrWriter)
+
+	// Close the writers and wait for an acknowledgement that the reader loop has exited (to ensure we get ALL container output)
+	closeWriterAndWaitForAck(stdoutWriter, stdoutChannel, stderrWriter, stderrChannel)
+
+	// Emit close event
+	machineEventLogger.DevFileCommandExecutionComplete(exec.Id, exec.Component, exec.CommandLine, convertGroupKindToString(exec), machineoutput.TimestampNow(), err)
+
 	if err != nil {
 		return errors.Wrapf(err, "unable to execute the run command")
 	}
@@ -153,4 +220,24 @@ func ExecuteDevfileDebugActionWithoutRestart(client ExecClient, exec common.Exec
 	s.End(true)
 
 	return nil
+}
+
+// closeWriterAndWaitForAck closes the PipeWriter and then waits for a channel response from the ContainerOutputWriter (indicating that the reader had closed).
+// This ensures that we always get the full stderr/stdout output from the container process BEFORE we output the devfileCommandExecution event.
+func closeWriterAndWaitForAck(stdoutWriter *io.PipeWriter, stdoutChannel chan interface{}, stderrWriter *io.PipeWriter, stderrChannel chan interface{}) {
+	if stdoutWriter != nil {
+		_ = stdoutWriter.Close()
+		<-stdoutChannel
+	}
+	if stderrWriter != nil {
+		_ = stderrWriter.Close()
+		<-stderrChannel
+	}
+}
+
+func convertGroupKindToString(exec common.Exec) string {
+	if exec.Group == nil {
+		return ""
+	}
+	return string(exec.Group.Kind)
 }

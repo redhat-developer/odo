@@ -99,6 +99,23 @@ var _ = Describe("odo devfile push command tests", func() {
 			utils.ExecPushToTestFileChanges(context, cmpName, namespace)
 		})
 
+		It("checks that odo push with -o json displays machine readable JSON event output", func() {
+
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			output := helper.CmdShouldPass("odo", "push", "-o", "json", "--project", namespace)
+			utils.AnalyzePushConsoleOutput(output)
+
+			// update devfile and push again
+			helper.ReplaceString("devfile.yaml", "name: FOO", "name: BAR")
+			output = helper.CmdShouldPass("odo", "push", "-o", "json", "--project", namespace)
+			utils.AnalyzePushConsoleOutput(output)
+
+		})
+
 		It("should be able to create a file, push, delete, then push again propagating the deletions", func() {
 			newFilePath := filepath.Join(context, "foobar.txt")
 			newDirPath := filepath.Join(context, "testdir")
