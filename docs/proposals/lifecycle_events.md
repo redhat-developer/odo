@@ -3,7 +3,7 @@
 ## Abstract
 Add support for the lifecycle events which can be defined in 2.0.0 devfiles.
 
-To be achieved by performing the PreStart and PostStart events as a part of **odo push**, and the PreStop and Poststop events as a part of **odo delete**
+Our proposed solution is to perform the PreStart and PostStart events as a part of the **odo push** command, and the PreStop and Poststop events as a part of the **odo delete** command.
 
 ## Motivation
 Devfile support commands that can be triggered based on dev lifecycle events. Odo will need to support/execute these commands at appropriate times within the flow.
