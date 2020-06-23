@@ -248,10 +248,7 @@ func (eo *ExecOptions) DevfileComponentExec(command []string) error {
 		return err
 	}
 
-	componentName, err := getComponentName(eo.componentContext)
-	if err != nil {
-		return err
-	}
+	componentName := eo.componentOptions.EnvSpecificInfo.GetName()
 
 	kc := kubernetes.KubernetesContext{
 		Namespace: eo.namespace,

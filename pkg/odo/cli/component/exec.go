@@ -2,7 +2,6 @@ package component
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/envinfo"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
@@ -10,7 +9,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/openshift/odo/pkg/util"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 	"path/filepath"
@@ -46,6 +44,7 @@ func (eo *ExecOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		return fmt.Errorf("no command was given for the exec command")
 	}
 
+	// gets the command args passed after the dash i.e `--`
 	eo.command = args[cmd.ArgsLenAtDash():]
 
 	if len(eo.command) <= 0 {
@@ -59,12 +58,7 @@ func (eo *ExecOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	eo.devfilePath = filepath.Join(eo.componentContext, eo.devfilePath)
 	// if experimental mode is enabled and devfile is present
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(eo.devfilePath) {
-		envInfo, err := envinfo.NewEnvSpecificInfo(eo.componentContext)
-		if err != nil {
-			return errors.Wrap(err, "unable to retrieve configuration information")
-		}
 		eo.componentOptions.Context = genericclioptions.NewDevfileContext(cmd)
-		eo.componentOptions.EnvSpecificInfo = envInfo
 
 		if !pushtarget.IsPushTargetDocker() {
 			// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initalizing the context
