@@ -665,11 +665,11 @@ Available Parameters:
 %s - %s
 `
 	expected = fmt.Sprintf(expected,
+		BuildTimeoutSetting, BuildTimeoutSettingDescription,
 		ExperimentalSetting, ExperimentalDescription,
 		NamePrefixSetting, NamePrefixSettingDescription,
 		PushTargetSetting, PushTargetDescription,
 		PushTimeoutSetting, PushTimeoutSettingDescription,
-		BuildTimeoutSetting, BuildTimeoutSettingDescription,
 		TimeoutSetting, TimeoutSettingDescription,
 		UpdateNotificationSetting, UpdateNotificationSettingDescription)
 	actual := FormatSupportedParameters()
