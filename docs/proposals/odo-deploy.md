@@ -71,11 +71,11 @@ This command will delete any resources created by odo deploy.
 
 ### Devfile
 
-For the initial implementation, we could use devfile v2.0.0 and capture basic outer-loop information as `attributes` on the devfile. `odo` could look for  specific keys, while other tools like Che could ignore them.
+For the initial implementation, we could use devfile v2.0.0 and capture basic outer-loop information as `metadata` on the devfile. `odo` could look for  specific keys, while other tools like Che could ignore them.
 
 For example: 
 ```
-attributes:
+metadata:
     build-dockerfile: <URI>
     deployment-manifest: <URI>
 ```
@@ -100,7 +100,7 @@ Examples:
 This command will perform the following actions:
 
 #### Input validation
-- Check if the devfile  is v2.0.0 and that it specifies the expected outer-loop attributes. 
+- Check if the devfile  is v2.0.0 and that it specifies the expected outer-loop metadata. 
     - If not provided, display a meaningful error message.
 - Validate all arguments passed by the user. 
     - If argument values are invalid, display a meaningful error message.
@@ -121,7 +121,7 @@ This command will perform the following actions:
 
 #### Deploy
 - Delete existing deployment, (if invoked with --force flag)
-- Fetch the deployment manifest using URI in the attributes of the devfile.
+- Fetch the deployment manifest using URI in the metadata of the devfile.
 - Replace templated text in the deployment manifest with relevant values:
     - PROJECT_NAME: name of odo project
     - CONTAINER_IMAGE: `tag` for the built image
