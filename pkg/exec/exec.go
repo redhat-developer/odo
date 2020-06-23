@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"sync"
 
 	"k8s.io/klog"
 
@@ -19,18 +18,43 @@ type ExecClient interface {
 }
 
 // ExecuteCommand executes the given command in the pod's container
-func ExecuteCommand(client ExecClient, compInfo common.ComponentInfo, command []string, show bool) (err error) {
+func ExecuteCommand(client ExecClient, compInfo common.ComponentInfo, command []string, show bool, consoleOutputStdout *io.PipeWriter, consoleOutputStderr *io.PipeWriter) (err error) {
+	stdoutReader, stdoutWriter := io.Pipe()
+	stderrReader, stderrWriter := io.Pipe()
 
-	// Create a mutex so we don't run into the issue of go routines trying to write to stdout
-	var mu sync.Mutex
-
-	reader, writer := io.Pipe()
 	var cmdOutput string
 
 	klog.V(4).Infof("Executing command %v for pod: %v in container: %v", command, compInfo.PodName, compInfo.ContainerName)
 
-	// This Go routine will automatically pipe the output from ExecCMDInContainer to
-	// our logger.
+	// Read stdout and stderr, store their output in cmdOutput, and also pass output to consoleOutput Writers (if non-nil)
+	stdoutCompleteChannel := startReaderGoroutine(stdoutReader, show, &cmdOutput, consoleOutputStdout)
+	stderrCompleteChannel := startReaderGoroutine(stderrReader, show, &cmdOutput, consoleOutputStderr)
+
+	err = client.ExecCMDInContainer(compInfo, command, stdoutWriter, stderrWriter, nil, false)
+
+	// Block until we have received all the container output from each stream
+	_ = stdoutWriter.Close()
+	<-stdoutCompleteChannel
+	_ = stderrWriter.Close()
+	<-stderrCompleteChannel
+
+	if err != nil {
+		// It is safe to read from cmdOutput here, as the goroutines are guaranteed to have terminated at this point.
+		log.Errorf("\nUnable to exec command %v: \n%v", command, cmdOutput)
+
+		return err
+	}
+
+	return
+}
+
+// This goroutine will automatically pipe the output from the writer (passed into ExecCMDInContainer) to
+// the loggers.
+// The returned channel will contain a single nil entry once the reader has closed.
+func startReaderGoroutine(reader io.Reader, show bool, cmdOutput *string, consoleOutput *io.PipeWriter) chan interface{} {
+
+	result := make(chan interface{})
+
 	go func() {
 		scanner := bufio.NewScanner(reader)
 		for scanner.Scan() {
@@ -39,23 +63,22 @@ func ExecuteCommand(client ExecClient, compInfo common.ComponentInfo, command []
 			if log.IsDebug() || show {
 				_, err := fmt.Fprintln(os.Stdout, line)
 				if err != nil {
-					log.Errorf("Unable to print to stdout: %v", err)
+					log.Errorf("Unable to print to stdout: %s", err.Error())
 				}
 			}
 
-			mu.Lock()
-			cmdOutput += fmt.Sprintln(line)
-			mu.Unlock()
+			*cmdOutput += fmt.Sprintln(line)
+
+			if consoleOutput != nil {
+				_, err := consoleOutput.Write([]byte(line + "\n"))
+				if err != nil {
+					log.Errorf("Error occurred on writing string to consoleOutput writer: %s", err.Error())
+				}
+			}
 		}
+		result <- nil
 	}()
 
-	err = client.ExecCMDInContainer(compInfo, command, writer, writer, nil, false)
-	if err != nil {
-		mu.Lock()
-		log.Errorf("\nUnable to exec command %v: \n%v", command, cmdOutput)
-		mu.Unlock()
-		return err
-	}
+	return result
 
-	return
 }

@@ -108,6 +108,21 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			Expect(volMounted).To(Equal(true))
 		})
 
+		It("checks that odo push with -o json displays machine readable JSON event output", func() {
+
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
+
+			output := helper.CmdShouldPass("odo", "push", "-o", "json")
+			utils.AnalyzePushConsoleOutput(output)
+
+			// update devfile and push again
+			helper.ReplaceString("devfile.yaml", "name: FOO", "name: BAR")
+			output = helper.CmdShouldPass("odo", "push", "-o", "json")
+			utils.AnalyzePushConsoleOutput(output)
+
+		})
+
 		It("should not build when no changes are detected in the directory and build when a file change is detected", func() {
 			utils.ExecPushToTestFileChanges(context, cmpName, "")
 		})
