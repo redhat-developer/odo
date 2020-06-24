@@ -98,16 +98,6 @@ var _ = Describe("odo supported images e2e tests", func() {
 			verifySupportedImage(filepath.Join("rhoar-nodejs", "nodejs-10:latest"), "nodejs", "nodejs:latest", project, appName, context)
 		})
 
-		It("Should be able to verify the centos7-s2i-nodejs image", func() {
-			oc.ImportImageFromRegistry("docker.io", filepath.Join("bucharestgold", "centos7-s2i-nodejs"), "nodejs:latest", project)
-			verifySupportedImage(filepath.Join("bucharestgold", "centos7-s2i-nodejs"), "nodejs", "nodejs:latest", project, appName, context)
-		})
-
-		It("Should be able to verify the centos7-s2i-nodejs:10.x image", func() {
-			oc.ImportImageFromRegistry("docker.io", filepath.Join("bucharestgold", "centos7-s2i-nodejs:10.x"), "nodejs:latest", project)
-			verifySupportedImage(filepath.Join("bucharestgold", "centos7-s2i-nodejs:10.x"), "nodejs", "nodejs:latest", project, appName, context)
-		})
-
 		It("Should be able to verify the nodejs-10-centos7 image", func() {
 			oc.ImportImageFromRegistry("docker.io", filepath.Join("centos", "nodejs-10-centos7:latest"), "nodejs:latest", project)
 			verifySupportedImage(filepath.Join("centos", "nodejs-10-centos7:latest"), "nodejs", "nodejs:latest", project, appName, context)
