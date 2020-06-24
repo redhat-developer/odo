@@ -6,5 +6,5 @@ RUN yum -y install make wget gcc git httpd-tools
 
 # This is a temporary change to make sure that it should run on both template based as well as multi-stage test
 # will remove this change once we completely migrate to multi-stage test infra
-COPY openshift-ci/build-root/check-oc.sh .
+COPY openshift-ci/build-root/multistage/check-oc.sh .
 RUN ./check-oc.sh
