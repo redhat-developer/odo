@@ -85,7 +85,7 @@ This could be any valid dockerfile.
 
 ### Deployment manifest
 The deployment manifest could be templated to help with replacing key bits of information:
-- PROJECT_NAME
+- COMPONENT_NAME
 - CONTAINER_IMAGE
 - PORT
 
@@ -110,7 +110,7 @@ This command will perform the following actions:
     - Use BuildConfig to build and push a container image by using:
         - the source code in the user's workspace
         - dockerfile specified by the devfile
-        - tag generated based on project and internal registry details
+        - tag generated based on component and internal registry details
 - If the cluster does not support `BuildConfig`, switch to Kaniko:
     - Use Kaniko to build and push a container image by using:
         - the source code in the user's workspace
@@ -123,7 +123,7 @@ This command will perform the following actions:
 - Delete existing deployment, (if invoked with --force flag)
 - Fetch the deployment manifest using URI in the metadata of the devfile.
 - Replace templated text in the deployment manifest with relevant values:
-    - PROJECT_NAME: name of odo project
+    - COMPONENT_NAME: name of odo component/microservice
     - CONTAINER_IMAGE: `tag` for the built image
     - PORT: URL information in env.yaml
 - Apply the new deployment manifest create/update the application deployment.
