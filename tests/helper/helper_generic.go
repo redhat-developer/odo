@@ -137,7 +137,7 @@ func WatchNonRetCmdStdOut(cmdStr string, timeout time.Duration, check func(outpu
 	for {
 		select {
 		case <-timeoutCh:
-			Fail(fmt.Sprintf("Timeout out after %.2f minutes", timeout.Minutes()))
+			Fail(fmt.Sprintf("Timeout after %.2f minutes", timeout.Minutes()))
 		case <-ticker.C:
 			if !startedFileModification && startIndicatorFunc(buf.String()) {
 				startedFileModification = true
