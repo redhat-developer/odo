@@ -3,6 +3,7 @@ package common
 import (
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/openshift/odo/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
@@ -188,17 +189,18 @@ func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileInitCmd, de
 
 	// If either command had a problem, return an empty list of commands and an error
 	if !isInitCommandValid || !isBuildCommandValid || !isRunCommandValid {
-		commandErrors := ""
+		var commandErrors strings.Builder
 		if initCmdErr != nil {
-			commandErrors += fmt.Sprintf(initCmdErr.Error(), "\n")
+			commandErrors.WriteString("for init command, " + initCmdErr.Error() + "\n")
 		}
 		if buildCmdErr != nil {
-			commandErrors += fmt.Sprintf(buildCmdErr.Error(), "\n")
+			commandErrors.WriteString("for build command, " + buildCmdErr.Error() + "\n")
 		}
 		if runCmdErr != nil {
-			commandErrors += fmt.Sprintf(runCmdErr.Error(), "\n")
+			commandErrors.WriteString("for run command, " + runCmdErr.Error() + "\n")
 		}
-		return commandMap, fmt.Errorf(commandErrors)
+
+		return commandMap, fmt.Errorf(commandErrors.String())
 	}
 
 	return commandMap, nil
