@@ -1,19 +1,26 @@
 package component
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/openshift/odo/pkg/component"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/secret"
 	svc "github.com/openshift/odo/pkg/service"
 	"github.com/openshift/odo/pkg/util"
+	sbo "github.com/redhat-developer/service-binding-operator/pkg/apis/apps/v1alpha1"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 )
+
+var sbrCRDName = "ServiceBindingRequest"
 
 type commonLinkOptions struct {
 	wait             bool
@@ -25,6 +32,10 @@ type commonLinkOptions struct {
 	operation     func(secretName, componentName, applicationName string) error
 	operationName string
 
+	// Service Binding Operator options
+	sbr         *sbo.ServiceBindingRequest
+	serviceType string
+	serviceName string
 	*genericclioptions.Context
 }
 
@@ -38,6 +49,44 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 
 	suppliedName := args[0]
 	o.suppliedName = suppliedName
+
+	if experimental.IsExperimentalModeEnabled() {
+		o.Context = genericclioptions.NewDevfileContext(cmd)
+
+		o.serviceType, o.serviceName, err = svc.IsOperatorServiceNameValid(suppliedName)
+		if err != nil {
+			return err
+		}
+
+		componentName := o.EnvSpecificInfo.GetName()
+
+		// service binding request name will be like <component-name>-<service-type>-<service-name>. For example: nodejs-etcdcluster-example
+		o.sbr.Name = strings.Join([]string{componentName, strings.ToLower(o.serviceType), o.serviceName}, "-")
+		o.sbr.Namespace = o.EnvSpecificInfo.GetNamespace()
+		o.sbr.Spec.DetectBindingResources = true // because we want the operator what to bind from the service
+
+		deployment, err := o.KClient.GetDeploymentByName(componentName)
+		if err != nil {
+			return err
+		}
+
+		// This is a really hacky way to get group, version and resource info but I couldn't find better one.
+		// A sample "deploymentSelfLinkSplit" looks like: [ apis apps v1 namespaces myproject deployments nodejs ]
+		deploymentSelfLinkSplit := strings.Split(deployment.SelfLink, "/")
+
+		// Populate the application selector field in service binding request
+		o.sbr.Spec.ApplicationSelector = sbo.ApplicationSelector{
+			GroupVersionResource: metav1.GroupVersionResource{
+				Group:    deploymentSelfLinkSplit[2], // "apps" in above example output
+				Version:  deploymentSelfLinkSplit[3], // "v1" in above example output
+				Resource: deploymentSelfLinkSplit[6], // "deployments" in above example output
+			},
+			ResourceRef: componentName,
+		}
+
+		return nil
+	}
+
 	o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 
 	svcExists, err := svc.SvcExists(o.Client, suppliedName, o.Application)
@@ -76,6 +125,41 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 }
 
 func (o *commonLinkOptions) validate(wait bool) (err error) {
+
+	if experimental.IsExperimentalModeEnabled() {
+		// let's validate if the service exists
+		svcFullName := strings.Join([]string{o.serviceType, o.serviceName}, "/")
+		_, err := svc.OperatorSvcExists(o.KClient, svcFullName)
+		if err != nil {
+			return err
+		}
+
+		// since the service exists, let's get more info to populate service binding request
+		// first get the CR itself
+		cr, err := o.KClient.GetCustomResource(o.serviceType)
+		if err != nil {
+			return err
+		}
+
+		// now get the group, version, kind information from CR
+		group, version, kind, err := svc.GetGVKFromCR(cr)
+		if err != nil {
+			return err
+		}
+
+		o.sbr.Spec.BackingServiceSelector = &sbo.BackingServiceSelector{
+			GroupVersionKind: metav1.GroupVersionKind{
+				Group:   group,
+				Version: version,
+				Kind:    kind,
+			},
+			ResourceRef: o.serviceName,
+			Namespace:   &o.KClient.Namespace,
+		}
+
+		return nil
+	}
+
 	if o.isTargetAService {
 		// if there is a ServiceBinding, then that means there is already a secret (or there will be soon)
 		// which we can link to
@@ -105,6 +189,33 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 }
 
 func (o *commonLinkOptions) run() (err error) {
+	if experimental.IsExperimentalModeEnabled() {
+		// we now need to create a "service" of type "ServiceBindingRequest" from the Operator that provides it
+		cr, err := o.KClient.GetCustomResource(sbrCRDName)
+		if err != nil {
+			return err
+		}
+
+		group, version, kind, resource, err := svc.GetGVKRFromCR(cr)
+		if err != nil {
+			return err
+		}
+
+		o.sbr.Kind = kind
+		o.sbr.APIVersion = strings.Join([]string{group, version}, "/")
+
+		sbrMap := make(map[string]interface{})
+		inrec, _ := json.Marshal(o.sbr)
+		json.Unmarshal(inrec, &sbrMap)
+
+		err = o.KClient.CreateDynamicResource(sbrMap, group, version, resource)
+		if err != nil {
+			return err
+		}
+		log.Successf("Component %q has been successfully linked to the service %q", o.sbr.Spec.ApplicationSelector.ResourceRef, o.sbr.Spec.BackingServiceSelector.ResourceRef)
+		return err
+	}
+
 	linkType := "Component"
 	if o.isTargetAService {
 		linkType = "Service"

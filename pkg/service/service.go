@@ -291,6 +291,31 @@ func ListOperatorServices(client *kclient.Client) ([]unstructured.Unstructured, 
 	return allCRInstances, nil
 }
 
+func GetGVRFromCR(cr *olm.CRDDescription) (group, version, resource string, err error) {
+	return getGVRFromCR(cr)
+}
+
+// GetGVKRFromCR returns values for group, version, kind and resource for a
+// given Custom Resource (CR)
+func GetGVKRFromCR(cr olm.CRDDescription) (group, version, kind, resource string, err error) {
+	return getGVKRFromCR(cr)
+}
+
+func getGVKRFromCR(cr olm.CRDDescription) (group, version, kind, resource string, err error) {
+	version = cr.Version
+	kind = cr.Kind
+
+	gr := strings.SplitN(cr.Name, ".", 2)
+	if len(gr) != 2 {
+		err = fmt.Errorf("Couldn't split Custom Resource's name into two: %s\n", cr.Name)
+		return
+	}
+	resource = gr[0]
+	group = gr[1]
+
+	return
+}
+
 // getGVRFromCR parses and returns the values for group, version and resource
 // for a given Custom Resource (CR).
 func getGVRFromCR(cr *olm.CRDDescription) (group, version, resource string, err error) {
@@ -302,6 +327,26 @@ func getGVRFromCR(cr *olm.CRDDescription) (group, version, resource string, err 
 		return
 	}
 	resource = gr[0]
+	group = gr[1]
+
+	return
+}
+
+func GetGVKFromCR(cr olm.CRDDescription) (group, version, kind string, err error) {
+	return getGVKFromCR(cr)
+}
+
+// getGVKFromCR parses and returns the values for group, version and resource
+// for a given Custom Resource (CR).
+func getGVKFromCR(cr olm.CRDDescription) (group, version, kind string, err error) {
+	kind = cr.Kind
+	version = cr.Version
+
+	gr := strings.SplitN(cr.Name, ".", 2)
+	if len(gr) != 2 {
+		err = fmt.Errorf("Couldn't split Custom Resource's name into two: %s\n", cr.Name)
+		return
+	}
 	group = gr[1]
 
 	return
@@ -359,6 +404,18 @@ func updateStatusIfMatchingDeploymentExists(dcs []appsv1.DeploymentConfig, secre
 			break
 		}
 	}
+}
+
+// IsValidOperatorServiceName checks if the provided name follows
+// <service-type>/<service-name> format. For example: "EtcdCluster/example" is
+// a valid servicename but "EtcdCluster/", "EtcdCluster", "example" aren't.
+func IsOperatorServiceNameValid(name string) (string, string, error) {
+	checkName := strings.SplitN(name, "/", 2)
+
+	if len(checkName) != 2 || checkName[0] == "" || checkName[1] == "" {
+		return "", "", fmt.Errorf("Invalid service name. Must adhere to <service-type>/<service-name> formatting. For example: %q. Execute %q for list of services.", "EtcdCluster/example", "odo service list")
+	}
+	return checkName[0], checkName[1], nil
 }
 
 // SvcExists Checks whether a service with the given name exists in the current application or not
