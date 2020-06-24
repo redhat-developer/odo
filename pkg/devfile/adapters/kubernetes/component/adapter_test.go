@@ -15,6 +15,7 @@ import (
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	ktesting "k8s.io/client-go/testing"
@@ -23,6 +24,15 @@ import (
 func TestCreateOrUpdateComponent(t *testing.T) {
 
 	testComponentName := "test"
+	deployment := v1.Deployment{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       kclient.DeploymentKind,
+			APIVersion: kclient.DeploymentAPIVersion,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: testComponentName,
+		},
+	}
 
 	tests := []struct {
 		name          string
@@ -31,25 +41,25 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 		wantErr       bool
 	}{
 		{
-			name:          "Case: Invalid devfile",
+			name:          "Case 1: Invalid devfile",
 			componentType: "",
 			running:       false,
 			wantErr:       true,
 		},
 		{
-			name:          "Case: Valid devfile",
+			name:          "Case 2: Valid devfile",
 			componentType: versionsCommon.ContainerComponentType,
 			running:       false,
 			wantErr:       false,
 		},
 		{
-			name:          "Case: Invalid devfile, already running component",
+			name:          "Case 3: Invalid devfile, already running component",
 			componentType: "",
 			running:       true,
 			wantErr:       true,
 		},
 		{
-			name:          "Case: Valid devfile, already running component",
+			name:          "Case 4: Valid devfile, already running component",
 			componentType: versionsCommon.ContainerComponentType,
 			running:       true,
 			wantErr:       false,
@@ -74,15 +84,16 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 			}
 
 			fkclient, fkclientset := kclient.FakeNew()
-			fkWatch := watch.NewFake()
 
-			// Change the status
-			go func() {
-				fkWatch.Modify(kclient.FakePodStatus(corev1.PodRunning, testComponentName))
-			}()
-			fkclientset.Kubernetes.PrependWatchReactor("pods", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
-				return true, fkWatch, nil
-			})
+			if tt.running {
+				fkclientset.Kubernetes.PrependReactor("update", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+					return true, &deployment, nil
+				})
+
+				fkclientset.Kubernetes.PrependReactor("get", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+					return true, &deployment, nil
+				})
+			}
 
 			componentAdapter := New(adapterCtx, *fkclient)
 			err := componentAdapter.createOrUpdateComponent(tt.running)
