@@ -3,7 +3,6 @@ package component
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/openshift/odo/pkg/envinfo"
@@ -18,8 +17,6 @@ import (
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/log"
 )
-
-var envDir = filepath.Join(".odo", "env")
 
 /*
 Devfile support is an experimental feature which extends the support for the

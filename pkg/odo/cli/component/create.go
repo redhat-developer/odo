@@ -88,6 +88,7 @@ const devFile = "devfile.yaml"
 var (
 	envFile    = filepath.Join(".odo", "env", "env.yaml")
 	configFile = filepath.Join(".odo", "config.yaml")
+	envDir     = filepath.Join(".odo", "env")
 )
 
 // DevfilePath is the devfile path that is used by odo,
