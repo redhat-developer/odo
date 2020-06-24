@@ -76,8 +76,8 @@ For the initial implementation, we could use devfile v2.0.0 and capture basic ou
 For example: 
 ```
 metadata:
-    build-dockerfile: <URI>
-    deployment-manifest: <URI>
+    alpha.build-dockerfile: <URI>
+    alpha.deployment-manifest: <URI>
 ```
 
 ### Dockerfile
