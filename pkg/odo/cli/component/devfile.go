@@ -54,16 +54,6 @@ func (po *PushOptions) DevfilePush() (err error) {
 		return errors.Wrap(err, "unable to get source path")
 	}
 
-	ignoreFile, err := util.CheckGitIgnoreFile(po.sourcePath)
-	if err != nil {
-		return err
-	}
-
-	err = util.AddFileToIgnoreFile(ignoreFile, filepath.Join(po.sourcePath, envDir))
-	if err != nil {
-		return err
-	}
-
 	// Apply ignore information
 	err = genericclioptions.ApplyIgnore(&po.ignores, po.sourcePath)
 	if err != nil {

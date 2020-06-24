@@ -334,13 +334,8 @@ var _ = Describe("odo devfile push command tests", func() {
 		It("checks that .odo/env and .odo/odo-file-index.json", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
-
-			output := helper.CmdShouldPass("odo", "push", "--project", namespace)
 			ignoreFilePath := filepath.Join(context, ".gitignore")
 
-			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 			helper.FileShouldContainSubstring(ignoreFilePath, filepath.Join(".odo", "odo-file-index.json"))
 			helper.FileShouldContainSubstring(ignoreFilePath, filepath.Join(".odo", "env"))
 
