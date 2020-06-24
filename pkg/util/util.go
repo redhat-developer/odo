@@ -38,6 +38,7 @@ import (
 const (
 	HTTPRequestTimeout    = 20 * time.Second // HTTPRequestTimeout configures timeout of all HTTP requests
 	ResponseHeaderTimeout = 10 * time.Second // ResponseHeaderTimeout is the timeout to retrieve the server's response headers
+	ModeReadWriteFile     = 0600             // default Permission for a file
 )
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
@@ -938,7 +939,7 @@ func Unzip(src, dest, pathToUnzip string) ([]string, error) {
 			return filenames, err
 		}
 
-		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, ModeReadWriteFile)
 		if err != nil {
 			return filenames, err
 		}
@@ -1126,19 +1127,19 @@ func AddFileToIgnoreFile(gitIgnoreFile, filename string) error {
 
 func addFileToIgnoreFile(gitIgnoreFile, filename string, fs filesystem.Filesystem) error {
 	var data []byte
-	file, err := fs.OpenFile(gitIgnoreFile, os.O_APPEND|os.O_RDWR, 0600)
+	file, err := fs.OpenFile(gitIgnoreFile, os.O_APPEND|os.O_RDWR, ModeReadWriteFile)
 	if err != nil {
 		return errors.Wrap(err, "failed to open .gitignore file")
 	}
 	defer file.Close()
 
 	if data, err = fs.ReadFile(gitIgnoreFile); err != nil {
-		return errors.Wrap(err, "failed reading data from .gitignore file")
+		return errors.Wrap(err, fmt.Sprintf("failed reading data from %v file", gitIgnoreFile))
 	}
 	// check whether .odo/odo-file-index.json is already in the .gitignore file
 	if !strings.Contains(string(data), filename) {
 		if _, err := file.WriteString("\n" + filename); err != nil {
-			return errors.Wrapf(err, "failed to Add %v to .gitignore file", filepath.Base(filename))
+			return errors.Wrapf(err, "failed to add %v to %v file", filepath.Base(filename), gitIgnoreFile)
 		}
 	}
 	return nil
