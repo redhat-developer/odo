@@ -10,7 +10,6 @@ import (
 	"github.com/openshift/odo/pkg/pipelines/config"
 	"github.com/openshift/odo/pkg/pipelines/dryrun"
 	"github.com/openshift/odo/pkg/pipelines/eventlisteners"
-	"github.com/openshift/odo/pkg/pipelines/ioutils"
 	"github.com/openshift/odo/pkg/pipelines/meta"
 	"github.com/openshift/odo/pkg/pipelines/namespaces"
 	"github.com/openshift/odo/pkg/pipelines/pipelines"
@@ -106,11 +105,6 @@ const (
 
 // Init bootstraps a GitOps pipelines and repository structure.
 func Init(o *InitParameters, fs afero.Fs) error {
-
-	exists, err := ioutils.IsExisting(fs, o.OutputPath)
-	if exists {
-		return err
-	}
 	gitOpsRepo, err := scm.NewRepository(o.GitOpsRepoURL)
 	if err != nil {
 		return err
