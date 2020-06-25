@@ -99,7 +99,7 @@ In this example we will be deploying an https://github.com/odo-devfiles/springbo
 ----
  $ git clone https://github.com/odo-devfiles/springboot-ex
 ----
-Alternatively, you can pass in `--downloadSource` to `odo create` to have odo download a sample project.
+Alternatively, you can pass in `--starter` to `odo create` to have odo download a sample project.
 
 . Change the current directory to the component directory:
 +
@@ -325,7 +325,7 @@ In this example, we will be deploying the same Java Spring Boot® component we d
 ----
  $ git clone https://github.com/odo-devfiles/springboot-ex
 ----
-Alternatively, you can pass in `--downloadSource` to `odo create` to have odo download a sample project.
+Alternatively, you can pass in `--starter` to `odo create` to have odo download a sample project.
 
 . Change the current directory to the component directory:
 +
