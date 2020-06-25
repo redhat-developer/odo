@@ -108,7 +108,7 @@ var createLongDesc = ktemplates.LongDesc(`Create a configuration describing a co
 
 If a component name is not provided, it'll be auto-generated.
 
-A full list of component types that can be deployed is available using: 'odo catalog list'
+A full list of component types that can be deployed is available using: 'odo catalog list components'
 
 By default, builder images (component type) will be used from the current namespace. You can explicitly supply a namespace by using: odo create namespace/name:version
 If version is not specified by default, latest will be chosen as the version.`)
