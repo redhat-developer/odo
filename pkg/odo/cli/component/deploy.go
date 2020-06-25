@@ -7,6 +7,7 @@ import (
 
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/log"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
@@ -17,7 +18,6 @@ import (
 
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 
-	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
@@ -34,11 +34,12 @@ type DeployOptions struct {
 	*CommonPushOptions
 
 	// devfile path
-	DevfilePath    string
-	DockerfilePath string
-	namespace      string
-	tag            string
-	ManifestSource []byte
+	DevfilePath     string
+	DockerfileURL   string
+	DockerfileBytes []byte
+	namespace       string
+	tag             string
+	ManifestSource  []byte
 }
 
 // NewDeployOptions returns new instance of BuildOptions
@@ -64,7 +65,17 @@ func (do *DeployOptions) Complete(name string, cmd *cobra.Command, args []string
 
 // Validate validates the push parameters
 func (do *DeployOptions) Validate() (err error) {
-	// TODO: Validate the value of tag and any user parameteres.
+
+	// Validate the --tag
+	if do.tag == "" {
+		return errors.New("odo deploy requires a tag, in the format <registry>/namespace>/<image>")
+	}
+
+	err = util.ValidateTag(do.tag)
+	if err != nil {
+		return err
+	}
+
 	return
 }
 
@@ -76,7 +87,6 @@ func (do *DeployOptions) Run() (err error) {
 	}
 	metadata := devObj.Data.GetMetadata()
 	dockerfileURL := metadata.Dockerfile
-	dockerfilePath := "./Dockerfile"
 	localDir, err := os.Getwd()
 	if err != nil {
 		return err
@@ -93,8 +103,8 @@ func (do *DeployOptions) Run() (err error) {
 	//If Dockerfile is present in the project and field is in devfile, build the one already in the project and warn the user.
 	if dockerfileURL != "" && util.CheckPathExists(filepath.Join(localDir, "Dockerfile")) {
 		// TODO: make clearer more visible output
-		klog.Warning("Dockerfile already exists in project directory and one is specified in Devfile.")
-		klog.Warningf("Using Dockerfile specified in devfile from %s", dockerfileURL)
+		log.Warning("Dockerfile already exists in project directory and one is specified in Devfile.")
+		log.Warningf("Using Dockerfile specified in devfile from '%s'", dockerfileURL)
 	}
 
 	if !util.CheckPathExists(filepath.Join(localDir, ".odo")) {
@@ -102,14 +112,23 @@ func (do *DeployOptions) Run() (err error) {
 	}
 
 	if dockerfileURL != "" {
-		err = util.DownloadFile(dockerfileURL, filepath.Join(localDir, ".odo", "Dockerfile"))
+		dockerfileBytes, err := util.DownloadFileInMemory(dockerfileURL)
+		if err != nil {
+			return errors.New("unable to download Dockerfile from URL specified in devfile")
+		}
+		// If we successfully downloaded the Dockerfile into memory, store it in the DeployOptions
+		do.DockerfileBytes = dockerfileBytes
+
+		// Validate the file that was downloaded is a Dockerfile
+		err = util.ValidateDockerfile(dockerfileBytes)
 		if err != nil {
 			return err
 		}
-		dockerfilePath = filepath.Join(".odo", "Dockerfile")
+
+	} else if !util.CheckPathExists(filepath.Join(localDir, "Dockerfile")) {
+		return errors.New("dockerfile required for build. No 'dockerfile' field found in devfile, or Dockerfile found in project directory")
 	}
 
-	do.DockerfilePath = dockerfilePath
 	err = do.DevfileBuild()
 	if err != nil {
 		return err

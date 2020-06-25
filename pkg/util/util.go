@@ -1058,6 +1058,63 @@ func ValidateURL(sourceURL string) error {
 	return nil
 }
 
+// ValidateDockerfile validates the string passed through has a FROM on it's first non-whitespace/commented line
+// This function could be expanded to be a more viable linter
+func ValidateDockerfile(contents []byte) error {
+	// Split the file downloaded line-by-line
+	splitContents := strings.Split(string(contents), "\n")
+	// The first line in a Dockerfile must be a 'FROM', whitespace, or a comment ('#')
+	// If it there is whitespace, or there are comments, keep checking until we find either a FROM, or something else
+	// If there is something other than a FROM, the file downloaded wasn't a valid Dockerfile
+	for _, line := range splitContents {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "#") {
+			continue
+		}
+		if line == "" {
+			continue
+		}
+		if strings.HasPrefix(line, "FROM") {
+			return nil
+		}
+		return errors.Errorf("dockerfile URL provided in the Devfile does not point to a valid Dockerfile")
+	}
+	// Would only reach this return statement if splitContents is 0
+	return errors.Errorf("dockerfile URL provided in the Devfile does not point to a valid Dockerfile")
+}
+
+// ValidateTag validates the string that has been passed as a tag meets the requirements of a tag
+func ValidateTag(tag string) error {
+	var splitTag = strings.Split(tag, "/")
+	if len(splitTag) != 3 {
+		return errors.New("invalid tag: odo deploy reguires a tag in the format <registry>/namespace>/<image>")
+	}
+
+	// Valid characters for the registry, namespace, and image name
+	characterMatch := regexp.MustCompile(`[a-zA-Z0-9\.\-:_]{4,128}`)
+	for _, element := range splitTag {
+		if len(element) < 4 {
+			return errors.New("invalid tag: " + element + " in the tag is too short. Each element needs to be at least 4 characters.")
+		}
+
+		if len(element) > 128 {
+			return errors.New("invalid tag: " + element + " in the tag is too long. Each element cannot be longer than 128.")
+		}
+
+		// Check that the whole string matches the regular expression
+		// Match.String was returning a match even when only part of the string is working
+		if characterMatch.FindString(element) != element {
+			return errors.New("invalid tag: " + element + " in the tag contains an illegal character. It must only contain alphanumerical values, periods, colons, underscores, and dashes.")
+		}
+
+		// The registry, namespace, and image, cannot end in '.', '-', '_',or ':'
+		if strings.HasSuffix(element, ".") || strings.HasSuffix(element, "-") || strings.HasSuffix(element, ":") || strings.HasSuffix(element, "_") {
+			return errors.New("invalid tag: " + element + " in the tag has an invalid final character. It must end in an alphanumeric value.")
+		}
+	}
+	return nil
+}
+
 // sliceContainsString checks for existence of given string in given slice
 func sliceContainsString(str string, slice []string) bool {
 	for _, b := range slice {

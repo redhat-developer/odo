@@ -266,6 +266,61 @@ func RunIndexer(directory string, ignoreRules []string) (filesChanged []string, 
 	return filesChanged, filesDeleted, nil
 }
 
+// DeployRunIndexer walks the given directory and returns all of the files that are found, that don't match the ignore criteria
+func DeployRunIndexer(directory string, ignoreRules []string) (files []string, err error) {
+	directory = filepath.FromSlash(directory)
+
+	// check for .gitignore file and add odo-file-index.json to .gitignore
+	gitIgnoreFile, err := CheckGitIgnoreFile(directory)
+	if err != nil {
+		return files, err
+	}
+
+	// add odo-file-index.json path to .gitignore
+	err = AddOdoFileIndex(gitIgnoreFile)
+	if err != nil {
+		return files, err
+	}
+
+	// Create a function to be passed as a parameter to filepath.Walk
+	walk := func(fn string, fi os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if fi.IsDir() {
+
+			// if folder is the root folder, don't add it
+			if fn == directory {
+				return nil
+			}
+
+			match, err := IsGlobExpMatch(fn, ignoreRules)
+			if err != nil {
+				return err
+			}
+			// the folder matches a glob rule and thus should be skipped
+			if match {
+				return filepath.SkipDir
+			}
+
+			if fi.Name() == fileIndexDirectory || fi.Name() == ".git" {
+				klog.V(4).Info(".odo or .git directory detected, skipping it")
+				return filepath.SkipDir
+			}
+		}
+
+		files = append(files, fn)
+		return nil
+	}
+
+	err = filepath.Walk(directory, walk)
+	if err != nil {
+		return files, err
+	}
+
+	return files, nil
+}
+
 // writes the map of walked files and info about them, in a file
 // filepath is the location of the file to which it is supposed to be written
 func write(filePath string, fi *FileIndex) error {

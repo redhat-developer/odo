@@ -54,7 +54,7 @@ type Adapter struct {
 	devfileRunCmd   string
 }
 
-func (a Adapter) generateBuildContainer(containerName, dockerfilePath, imageTag string) corev1.Container {
+func (a Adapter) generateBuildContainer(containerName, imageTag string) corev1.Container {
 	buildImage := "quay.io/buildah/stable:latest"
 
 	// TODO(Optional): Init container before the buildah bud to copy over the files.
@@ -63,13 +63,8 @@ func (a Adapter) generateBuildContainer(containerName, dockerfilePath, imageTag 
 	command := []string{"tail"}
 	commandArgs := []string{"-f", "/dev/null"}
 
-	if dockerfilePath == "" {
-		dockerfilePath = "./Dockerfile"
-	}
-
 	// TODO: Edit dockerfile env value if mounting it sometwhere else
 	envVars := []corev1.EnvVar{
-		{Name: "Dockerfile", Value: dockerfilePath},
 		{Name: "Tag", Value: imageTag},
 	}
 
@@ -120,7 +115,7 @@ func (a Adapter) createBuildDeployment(labels map[string]string, container corev
 
 func (a Adapter) executeBuildAndPush(syncFolder string, imageTag string, compInfo common.ComponentInfo) (err error) {
 	// Running buildah bud and buildah push
-	buildahBud := "buildah bud -f $Dockerfile -t $Tag ."
+	buildahBud := "buildah bud -f ./Dockerfile -t $Tag ."
 	command := []string{adaptersCommon.ShellExecutable, "-c", "cd " + syncFolder + " && " + buildahBud}
 
 	// TODO: Add spinner
@@ -164,7 +159,7 @@ func (a Adapter) executeBuildAndPush(syncFolder string, imageTag string, compInf
 // Build image for devfile project
 func (a Adapter) Build(parameters common.BuildParameters) (err error) {
 	containerName := a.ComponentName + "-container"
-	buildContainer := a.generateBuildContainer(containerName, parameters.DockerfilePath, parameters.Tag)
+	buildContainer := a.generateBuildContainer(containerName, parameters.Tag)
 	labels := map[string]string{
 		"component": a.ComponentName,
 	}
@@ -181,10 +176,6 @@ func (a Adapter) Build(parameters common.BuildParameters) (err error) {
 			err = errors.Wrapf(derr, "failed to delete build step for component with name: %s", a.ComponentName)
 		}
 
-		rerr := os.Remove(parameters.DockerfilePath)
-		if err == nil {
-			err = errors.Wrapf(rerr, "failed to delete %s", parameters.DockerfilePath)
-		}
 	}()
 
 	_, err = a.Client.WaitForDeploymentRollout(a.ComponentName)

@@ -138,8 +138,8 @@ func (do *DeployOptions) DevfileBuild() (err error) {
 
 	buildParams := common.BuildParameters{
 		Path:            do.sourcePath,
-		DockerfilePath:  do.DockerfilePath,
 		Tag:             do.tag,
+		DockerfileBytes: do.DockerfileBytes,
 		EnvSpecificInfo: *do.EnvSpecificInfo,
 	}
 
