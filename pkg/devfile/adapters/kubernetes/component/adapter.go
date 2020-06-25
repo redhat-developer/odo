@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -190,7 +191,7 @@ func (a Adapter) Build(parameters common.BuildParameters) (err error) {
 	}
 
 	// Need to wait for container to start
-	time.Sleep(5 * time.Second)
+	time.Sleep(10 * time.Second)
 
 	// Sync files to volume
 	log.Infof("\nSyncing to component %s", a.ComponentName)
@@ -215,10 +216,10 @@ func (a Adapter) Build(parameters common.BuildParameters) (err error) {
 	return
 }
 
-func determinePort(parameters common.DeployParameters) string {
+func determinePort(envSpecificInfo envinfo.EnvSpecificInfo) string {
 	// TODO: Determine port to use (from env.yaml or other location!!)
 	deploymentPort := ""
-	for _, localURL := range parameters.EnvSpecificInfo.GetURL() {
+	for _, localURL := range envSpecificInfo.GetURL() {
 		if localURL.Kind != envinfo.DOCKER {
 			deploymentPort = strconv.Itoa(localURL.Port)
 			break
@@ -241,7 +242,6 @@ func substitueYamlVariables(baseYaml []byte, yamlSubstitutions map[string]string
 
 // Build image for devfile project
 func (a Adapter) Deploy(parameters common.DeployParameters) (err error) {
-
 	namespace := a.Client.Namespace
 	applicationName := a.ComponentName + "-deploy"
 	deploymentManifest := &unstructured.Unstructured{}
@@ -252,30 +252,50 @@ func (a Adapter) Deploy(parameters common.DeployParameters) (err error) {
 
 	// Specify the substitution keys and values
 	yamlSubstitutions := map[string]string{
+		// TODO: this tag is not passed to delete, do we need to template
 		"CONTAINER_IMAGE": parameters.Tag,
 		"PROJECT_NAME":    applicationName,
-		"PORT":            determinePort(parameters),
+		"PORT":            determinePort(parameters.EnvSpecificInfo),
 	}
 
 	// Substitute the values in the manifest file
 	deployYaml := substitueYamlVariables(parameters.ManifestSource, yamlSubstitutions)
-	klog.V(3).Infof("Deploy manifest:\n\n%s", string(deployYaml))
 
 	// Build a yaml decoder with the unstructured Scheme
 	yamlDecoder := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
 
 	_, gvk, err := yamlDecoder.Decode([]byte(deployYaml), nil, deploymentManifest)
+	if err != nil {
+		return err
+	}
+
+	klog.V(3).Infof("Deploy manifest:\n\n%s", deploymentManifest)
 	gvr := schema.GroupVersionResource{Group: gvk.Group, Version: gvk.Version, Resource: strings.ToLower(gvk.Kind + "s")}
 	klog.V(3).Infof("Manifest type: %s", gvr.String())
+
+	labels := map[string]string{
+		"component": applicationName,
+	}
+
+	manifestLabels := deploymentManifest.GetLabels()
+	if manifestLabels != nil {
+		for key, value := range labels {
+			manifestLabels[key] = value
+		}
+		deploymentManifest.SetLabels(manifestLabels)
+	} else {
+		deploymentManifest.SetLabels(labels)
+	}
 
 	// TODO: Determine why using a.Client.DynamicClient doesnt work
 	// Need to create my own client in order to get the dynamic parts working
 	myclient, err := dynamic.NewForConfig(a.Client.KubeClientConfig)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	// Check to see whether deployed resource already exists. If not, create else update
+	// Get?
 	instanceFound := false
 	list, err := myclient.Resource(gvr).Namespace(namespace).List(metav1.ListOptions{})
 	if list != nil && len(list.Items) > 0 {
@@ -308,7 +328,55 @@ func (a Adapter) Deploy(parameters common.DeployParameters) (err error) {
 	s.End(true)
 	log.Infof("Deployed %s %s.\n", gvk.Kind, result.GetName())
 
-	return
+	// This will override if manifest.yaml is present
+	manifestFile, err := os.Create(filepath.Join(a.Context, ".odo", "manifest.yaml"))
+	if err != nil {
+		err = manifestFile.Close()
+		return err
+	}
+	err = yamlDecoder.Encode(result, manifestFile)
+
+	if err != nil {
+		err = manifestFile.Close()
+		return err
+	}
+
+	err = manifestFile.Close()
+	return err
+}
+
+func (a Adapter) DeployDelete(manifest []byte) (err error) {
+	deploymentManifest := &unstructured.Unstructured{}
+	// Build a yaml decoder with the unstructured Scheme
+	yamlDecoder := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
+	manifests := bytes.Split(manifest, []byte("---"))
+	for _, splitManifest := range manifests {
+		if len(manifest) > 0 {
+			_, gvk, err := yamlDecoder.Decode([]byte(splitManifest), nil, deploymentManifest)
+			if err != nil {
+				return err
+			}
+			klog.V(3).Infof("Deploy manifest:\n\n%s", deploymentManifest)
+			gvr := schema.GroupVersionResource{Group: gvk.Group, Version: gvk.Version, Resource: strings.ToLower(gvk.Kind + "s")}
+			klog.V(3).Infof("Manifest type: %s", gvr.String())
+			// TODO: Determine why using a.Client.DynamicClient doesnt work
+			// Need to create my own client in order to get the dynamic parts working
+			myclient, err := dynamic.NewForConfig(a.Client.KubeClientConfig)
+			if err != nil {
+				return err
+			}
+			_, err = myclient.Resource(gvr).Namespace(a.Client.Namespace).Get(deploymentManifest.GetName(), metav1.GetOptions{})
+			if err != nil {
+				errorMessage := "Could not delete deployment " + deploymentManifest.GetName() + " as deployment was not found"
+				return errors.New(errorMessage)
+			}
+			err = myclient.Resource(gvr).Namespace(a.Client.Namespace).Delete(deploymentManifest.GetName(), &metav1.DeleteOptions{})
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // Push updates the component if a matching component exists or creates one if it doesn't exist

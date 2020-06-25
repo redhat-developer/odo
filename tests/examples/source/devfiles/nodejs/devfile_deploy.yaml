@@ -1,0 +1,44 @@
+schemaVersion: 2.0.0
+metadata:
+  name: nodejs
+  version: 1.0.0
+  dockerfile: "https://raw.githubusercontent.com/groeges/devfile-registry/master/devfiles/nodejs/Dockerfile"
+  deployment-manifest: "https://raw.githubusercontent.com/neeraj-laad/nodejs-stack-registry/build-deploy/devfiles/nodejs-basic/deploy/k8s-deploy.yaml"
+projects:
+  - name: express
+    git:
+      location: https://github.com/neeraj-laad/nodejs-basic-starter.git
+components:
+  - container:
+      image: registry.access.redhat.com/ubi8/nodejs-12:1-36
+      mountSources: true
+      name: node12
+      memoryLimit: 1024Mi
+      endpoints:
+        - name: nodejs
+          targetPort: 3000
+          configuration:
+            protocol: tcp
+            scheme: http
+            type: terminal
+        - name: debug
+          targetPort: 9229
+          configuration:
+            protocol: tcp
+            scheme: http
+            type: terminal
+commands:
+  - exec:
+      id: download app dependencies
+      commandLine: "npm install"
+      component: node12
+      workingDir: ${CHE_PROJECTS_ROOT}/express
+      group:
+        kind: build
+  - exec:
+      id: run the app
+      commandLine: "npm start"
+      component: node12
+      workingDir: ${CHE_PROJECTS_ROOT}/express
+      group:
+        kind: run

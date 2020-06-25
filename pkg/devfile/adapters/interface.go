@@ -10,4 +10,5 @@ type PlatformAdapter interface {
 	Deploy(parameters common.DeployParameters) error
 	DoesComponentExist(cmpName string) bool
 	Delete(labels map[string]string) error
+	DeployDelete(manifest []byte) error
 }

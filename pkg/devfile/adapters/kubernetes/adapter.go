@@ -59,6 +59,17 @@ func (k Adapter) Deploy(parameters common.DeployParameters) error {
 	return nil
 }
 
+// Build creates Kubernetes resources to build an image for the component
+func (k Adapter) DeployDelete(manifest []byte) error {
+
+	err := k.componentAdapter.DeployDelete(manifest)
+	if err != nil {
+		return errors.Wrap(err, "Failed to delete the deployed application")
+	}
+
+	return nil
+}
+
 func (k Adapter) DoesComponentExist(cmpName string) bool {
 	return k.componentAdapter.DoesComponentExist(cmpName)
 }

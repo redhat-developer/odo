@@ -22,6 +22,7 @@ import (
 )
 
 // TODO: add CLI Reference doc
+// TODO: add delete example
 var deployCmdExample = ktemplates.Examples(`  # Deploys an image and deploys the application 
 %[1]s
   `)
@@ -85,17 +86,12 @@ func (do *DeployOptions) Run() (err error) {
 	if err != nil {
 		return err
 	}
+
 	metadata := devObj.Data.GetMetadata()
 	dockerfileURL := metadata.Dockerfile
 	localDir, err := os.Getwd()
 	if err != nil {
 		return err
-	}
-
-	manifestURL := metadata.Manifest
-	do.ManifestSource, err = util.DownloadFileInMemory(manifestURL)
-	if err != nil {
-		return errors.Wrap(err, "Unable to download manifest "+manifestURL)
 	}
 
 	//Download Dockerfile to .odo, build, then delete from .odo dir
@@ -134,6 +130,12 @@ func (do *DeployOptions) Run() (err error) {
 		return err
 	}
 
+	manifestURL := metadata.Manifest
+	do.ManifestSource, err = util.DownloadFileInMemory(manifestURL)
+	if err != nil {
+		return errors.Wrap(err, "Unable to download manifest "+manifestURL)
+	}
+
 	err = do.DevfileDeploy()
 	if err != nil {
 		return err
@@ -142,20 +144,27 @@ func (do *DeployOptions) Run() (err error) {
 	return nil
 }
 
+// Need to use RunE on Cobra command to allow for `odo deploy` and `odo deploy delete`
+// See reconfigureCmdWithSubCmd function in cli.go
+func (do *DeployOptions) deployRunE(cmd *cobra.Command, args []string) error {
+	genericclioptions.GenericRun(do, cmd, args)
+	return nil
+}
+
 // NewCmdDeploy implements the push odo command
 func NewCmdDeploy(name, fullName string) *cobra.Command {
 	do := NewDeployOptions()
 
+	deployDeleteCmd := NewCmdDeployDelete(DeployDeleteRecommendedCommandName, odoutil.GetFullName(fullName, DeployDeleteRecommendedCommandName))
+
 	var deployCmd = &cobra.Command{
-		Use:         fmt.Sprintf("%s [component name]", name),
+		Use:         fmt.Sprintf("%s [command] [component name]", name),
 		Short:       "Deploy image for component",
 		Long:        `Deploy image for component`,
 		Example:     fmt.Sprintf(deployCmdExample, fullName),
 		Args:        cobra.MaximumNArgs(1),
 		Annotations: map[string]string{"command": "component"},
-		Run: func(cmd *cobra.Command, args []string) {
-			genericclioptions.GenericRun(do, cmd, args)
-		},
+		RunE:        do.deployRunE,
 	}
 	genericclioptions.AddContextFlag(deployCmd, &do.componentContext)
 
@@ -168,6 +177,7 @@ func NewCmdDeploy(name, fullName string) *cobra.Command {
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(deployCmd)
 
+	deployCmd.AddCommand(deployDeleteCmd)
 	deployCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(deployCmd, completion.ComponentNameCompletionHandler)
 	completion.RegisterCommandFlagHandler(deployCmd, "context", completion.FileCompletionHandler)

@@ -7,6 +7,7 @@ type ComponentAdapter interface {
 	Deploy(parameters DeployParameters) error
 	DoesComponentExist(cmpName string) bool
 	Delete(labels map[string]string) error
+	DeployDelete(manifest []byte) error
 }
 
 // StorageAdapter defines the storage functions that platform-specific adapters must implement

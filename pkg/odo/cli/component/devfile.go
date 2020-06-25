@@ -219,6 +219,57 @@ func (do *DeployOptions) DevfileDeploy() (err error) {
 	return nil
 }
 
+// DevfileComponentDelete deletes the devfile component
+func (ddo *DeployDeleteOptions) DevfileDeployDelete() error {
+	// Parse devfile
+	devObj, err := devfileParser.Parse(ddo.DevfilePath)
+	if err != nil {
+		return err
+	}
+
+	componentName, err := getComponentName(ddo.componentContext)
+	if err != nil {
+		return err
+	}
+	componentName = componentName + "-deploy"
+
+	kc := kubernetes.KubernetesContext{
+		Namespace: ddo.namespace,
+	}
+
+	devfileHandler, err := adapters.NewPlatformAdapter(componentName, ddo.componentContext, devObj, kc)
+	if err != nil {
+		return err
+	}
+
+	spinner := log.Spinner(fmt.Sprintf("Deleting deployed devfile component %s", componentName))
+	defer spinner.End(false)
+
+	manifestErr := devfileHandler.DeployDelete(ddo.ManifestSource)
+	if manifestErr != nil && strings.Contains(manifestErr.Error(), "as deployment was not found") {
+		log.Warning(manifestErr.Error())
+		err = os.Remove(ddo.ManifestPath)
+		if err != nil {
+			return err
+		}
+		spinner.End(false)
+		log.Success(ddo.ManifestPath + " deleted. Exiting gracefully :)")
+		return nil
+	} else if manifestErr != nil {
+		err = os.Remove(ddo.ManifestPath)
+		return err
+	}
+
+	err = os.Remove(ddo.ManifestPath)
+	if err != nil {
+		return err
+	}
+
+	spinner.End(true)
+	log.Successf("Successfully deleted component")
+	return nil
+}
+
 // Get component name from env.yaml file
 func getComponentName(context string) (string, error) {
 	var dir string

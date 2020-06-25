@@ -33,10 +33,16 @@ func (d Adapter) Push(parameters common.PushParameters) error {
 	return nil
 }
 
-func (k Adapter) Build(parameters common.BuildParameters) error { return nil }
+func (k Adapter) Build(parameters common.BuildParameters) error {
+	return errors.New("Deploy command not supported when building image using pushTarget=Docker")
+}
 
 func (k Adapter) Deploy(parameters common.DeployParameters) error {
 	return errors.New("Deploy command not supported when using pushTarget=Docker")
+}
+
+func (k Adapter) DeployDelete(manifest []byte) error {
+	return errors.New("Deploy delete command not supported when using pushTarget=Docker")
 }
 
 // DoesComponentExist returns true if a component with the specified name exists
