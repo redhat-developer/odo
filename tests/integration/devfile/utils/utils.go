@@ -412,7 +412,7 @@ func ExecCommand(context, cmpName string) {
 	helper.CmdShouldPass("odo", args...)
 
 	args = []string{"exec", "--context", context}
-	args = append(args, []string{"--", "touch", "blah.js"}...)
+	args = append(args, []string{"--", "touch", "/projects/blah.js"}...)
 	helper.CmdShouldPass("odo", args...)
 }
 
