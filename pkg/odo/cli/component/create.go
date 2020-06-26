@@ -398,7 +398,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			// Interactive mode
 
 			// Component type: We provide supported devfile component list to let user choose
-			catalogDevfileList, err := catalog.ListDevfileComponents(co.devfileMetadata.devfileRegistry.Name)
+			catalogDevfileList, err = catalog.ListDevfileComponents(co.devfileMetadata.devfileRegistry.Name)
 			if err != nil {
 				return err
 			}
@@ -523,8 +523,12 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 			hasComponent := false
 
+			fmt.Println(catalogDevfileList.Items)
 			for _, devfileComponent := range catalogDevfileList.Items {
+				fmt.Println(devfileComponent.Name)
+				fmt.Println(co.devfileMetadata.componentType)
 				if co.devfileMetadata.componentType == devfileComponent.Name {
+					fmt.Println("HERE")
 					hasComponent = true
 					if devfileComponent.Support {
 						co.devfileMetadata.devfileSupport = true
