@@ -40,7 +40,7 @@ func TestEnv(t *testing.T) {
 		if !exists {
 			break
 		}
-		badName = badName + "z"
+		badName += "z"
 	}
 	err = e.PromoteFromEnv(badName)
 	if err == nil {

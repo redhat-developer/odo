@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
-	apixv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apixv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgotesting "k8s.io/client-go/testing"
@@ -82,12 +82,12 @@ func TestReconcile(t *testing.T) {
 		Key:  key,
 		Objects: []runtime.Object{
 			secret,
-			&apixv1beta1.CustomResourceDefinition{
+			&apixv1.CustomResourceDefinition{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: key,
 				},
-				Spec: apixv1beta1.CustomResourceDefinitionSpec{
-					Conversion: &apixv1beta1.CustomResourceConversion{},
+				Spec: apixv1.CustomResourceDefinitionSpec{
+					Conversion: &apixv1.CustomResourceConversion{},
 				},
 			},
 		},
@@ -97,17 +97,19 @@ func TestReconcile(t *testing.T) {
 		Key:  key,
 		Objects: []runtime.Object{
 			secret,
-			&apixv1beta1.CustomResourceDefinition{
+			&apixv1.CustomResourceDefinition{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: key,
 				},
-				Spec: apixv1beta1.CustomResourceDefinitionSpec{
-					Conversion: &apixv1beta1.CustomResourceConversion{
-						Strategy: apixv1beta1.WebhookConverter,
-						WebhookClientConfig: &apixv1beta1.WebhookClientConfig{
-							Service: &apixv1beta1.ServiceReference{
-								Namespace: system.Namespace(),
-								Name:      "webhook",
+				Spec: apixv1.CustomResourceDefinitionSpec{
+					Conversion: &apixv1.CustomResourceConversion{
+						Strategy: apixv1.WebhookConverter,
+						Webhook: &apixv1.WebhookConversion{
+							ClientConfig: &apixv1.WebhookClientConfig{
+								Service: &apixv1.ServiceReference{
+									Namespace: system.Namespace(),
+									Name:      "webhook",
+								},
 							},
 						},
 					},
@@ -115,22 +117,24 @@ func TestReconcile(t *testing.T) {
 			},
 		},
 		WantUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: &apixv1beta1.CustomResourceDefinition{
+			Object: &apixv1.CustomResourceDefinition{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: key,
 				},
-				Spec: apixv1beta1.CustomResourceDefinitionSpec{
-					Conversion: &apixv1beta1.CustomResourceConversion{
-						Strategy: apixv1beta1.WebhookConverter,
-						WebhookClientConfig: &apixv1beta1.WebhookClientConfig{
-							Service: &apixv1beta1.ServiceReference{
-								Namespace: system.Namespace(),
-								Name:      "webhook",
-								// Path is added.
-								Path: ptr.String(path),
+				Spec: apixv1.CustomResourceDefinitionSpec{
+					Conversion: &apixv1.CustomResourceConversion{
+						Strategy: apixv1.WebhookConverter,
+						Webhook: &apixv1.WebhookConversion{
+							ClientConfig: &apixv1.WebhookClientConfig{
+								Service: &apixv1.ServiceReference{
+									Namespace: system.Namespace(),
+									Name:      "webhook",
+									// Path is added.
+									Path: ptr.String(path),
+								},
+								// CABundle is added.
+								CABundle: []byte("present"),
 							},
-							// CABundle is added.
-							CABundle: []byte("present"),
 						},
 					},
 				},
@@ -141,44 +145,48 @@ func TestReconcile(t *testing.T) {
 		Key:  key,
 		Objects: []runtime.Object{
 			secret,
-			&apixv1beta1.CustomResourceDefinition{
+			&apixv1.CustomResourceDefinition{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: key,
 				},
-				Spec: apixv1beta1.CustomResourceDefinitionSpec{
-					Conversion: &apixv1beta1.CustomResourceConversion{
-						Strategy: apixv1beta1.WebhookConverter,
-						WebhookClientConfig: &apixv1beta1.WebhookClientConfig{
-							Service: &apixv1beta1.ServiceReference{
-								Namespace: system.Namespace(),
-								Name:      "webhook",
-								// Incorrect path
-								Path: ptr.String("/incorrect"),
+				Spec: apixv1.CustomResourceDefinitionSpec{
+					Conversion: &apixv1.CustomResourceConversion{
+						Strategy: apixv1.WebhookConverter,
+						Webhook: &apixv1.WebhookConversion{
+							ClientConfig: &apixv1.WebhookClientConfig{
+								Service: &apixv1.ServiceReference{
+									Namespace: system.Namespace(),
+									Name:      "webhook",
+									// Incorrect path
+									Path: ptr.String("/incorrect"),
+								},
+								// CABundle is added.
+								CABundle: []byte("incorrect"),
 							},
-							// CABundle is added.
-							CABundle: []byte("incorrect"),
 						},
 					},
 				},
 			},
 		},
 		WantUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: &apixv1beta1.CustomResourceDefinition{
+			Object: &apixv1.CustomResourceDefinition{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: key,
 				},
-				Spec: apixv1beta1.CustomResourceDefinitionSpec{
-					Conversion: &apixv1beta1.CustomResourceConversion{
-						Strategy: apixv1beta1.WebhookConverter,
-						WebhookClientConfig: &apixv1beta1.WebhookClientConfig{
-							Service: &apixv1beta1.ServiceReference{
-								Namespace: system.Namespace(),
-								Name:      "webhook",
-								// Path is added.
-								Path: ptr.String(path),
+				Spec: apixv1.CustomResourceDefinitionSpec{
+					Conversion: &apixv1.CustomResourceConversion{
+						Strategy: apixv1.WebhookConverter,
+						Webhook: &apixv1.WebhookConversion{
+							ClientConfig: &apixv1.WebhookClientConfig{
+								Service: &apixv1.ServiceReference{
+									Namespace: system.Namespace(),
+									Name:      "webhook",
+									// Path is added.
+									Path: ptr.String(path),
+								},
+								// CABundle is added.
+								CABundle: []byte("present"),
 							},
-							// CABundle is added.
-							CABundle: []byte("present"),
 						},
 					},
 				},
@@ -193,44 +201,48 @@ func TestReconcile(t *testing.T) {
 		},
 		Objects: []runtime.Object{
 			secret,
-			&apixv1beta1.CustomResourceDefinition{
+			&apixv1.CustomResourceDefinition{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: key,
 				},
-				Spec: apixv1beta1.CustomResourceDefinitionSpec{
-					Conversion: &apixv1beta1.CustomResourceConversion{
-						Strategy: apixv1beta1.WebhookConverter,
-						WebhookClientConfig: &apixv1beta1.WebhookClientConfig{
-							Service: &apixv1beta1.ServiceReference{
-								Namespace: system.Namespace(),
-								Name:      "webhook",
-								// Incorrect path
-								Path: ptr.String("/incorrect"),
+				Spec: apixv1.CustomResourceDefinitionSpec{
+					Conversion: &apixv1.CustomResourceConversion{
+						Strategy: apixv1.WebhookConverter,
+						Webhook: &apixv1.WebhookConversion{
+							ClientConfig: &apixv1.WebhookClientConfig{
+								Service: &apixv1.ServiceReference{
+									Namespace: system.Namespace(),
+									Name:      "webhook",
+									// Incorrect path
+									Path: ptr.String("/incorrect"),
+								},
+								// CABundle is added.
+								CABundle: []byte("incorrect"),
 							},
-							// CABundle is added.
-							CABundle: []byte("incorrect"),
 						},
 					},
 				},
 			},
 		},
 		WantUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: &apixv1beta1.CustomResourceDefinition{
+			Object: &apixv1.CustomResourceDefinition{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: key,
 				},
-				Spec: apixv1beta1.CustomResourceDefinitionSpec{
-					Conversion: &apixv1beta1.CustomResourceConversion{
-						Strategy: apixv1beta1.WebhookConverter,
-						WebhookClientConfig: &apixv1beta1.WebhookClientConfig{
-							Service: &apixv1beta1.ServiceReference{
-								Namespace: system.Namespace(),
-								Name:      "webhook",
-								// Path is added.
-								Path: ptr.String(path),
+				Spec: apixv1.CustomResourceDefinitionSpec{
+					Conversion: &apixv1.CustomResourceConversion{
+						Strategy: apixv1.WebhookConverter,
+						Webhook: &apixv1.WebhookConversion{
+							ClientConfig: &apixv1.WebhookClientConfig{
+								Service: &apixv1.ServiceReference{
+									Namespace: system.Namespace(),
+									Name:      "webhook",
+									// Path is added.
+									Path: ptr.String(path),
+								},
+								// CABundle is added.
+								CABundle: []byte("present"),
 							},
-							// CABundle is added.
-							CABundle: []byte("present"),
 						},
 					},
 				},
@@ -241,21 +253,23 @@ func TestReconcile(t *testing.T) {
 		Key:  key,
 		Objects: []runtime.Object{
 			secret,
-			&apixv1beta1.CustomResourceDefinition{
+			&apixv1.CustomResourceDefinition{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: key,
 				},
-				Spec: apixv1beta1.CustomResourceDefinitionSpec{
-					Conversion: &apixv1beta1.CustomResourceConversion{
-						Strategy: apixv1beta1.WebhookConverter,
-						WebhookClientConfig: &apixv1beta1.WebhookClientConfig{
-							Service: &apixv1beta1.ServiceReference{
-								Namespace: system.Namespace(),
-								Name:      "webhook",
-								Path:      ptr.String(path),
+				Spec: apixv1.CustomResourceDefinitionSpec{
+					Conversion: &apixv1.CustomResourceConversion{
+						Strategy: apixv1.WebhookConverter,
+						Webhook: &apixv1.WebhookConversion{
+							ClientConfig: &apixv1.WebhookClientConfig{
+								Service: &apixv1.ServiceReference{
+									Namespace: system.Namespace(),
+									Name:      "webhook",
+									Path:      ptr.String(path),
+								},
+								// CABundle is added.
+								CABundle: []byte("present"),
 							},
-							// CABundle is added.
-							CABundle: []byte("present"),
 						},
 					},
 				},

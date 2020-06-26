@@ -23,17 +23,6 @@ import (
 	"os"
 	"testing"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
-	"k8s.io/apiserver/pkg/features"
-	"k8s.io/apiserver/pkg/server"
-	utilfeature "k8s.io/apiserver/pkg/util/feature"
-	utilfeaturetesting "k8s.io/apiserver/pkg/util/feature/testing"
-	"k8s.io/client-go/informers"
-	"k8s.io/client-go/kubernetes/fake"
-	restclient "k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd/api/v1"
-
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -49,12 +38,6 @@ func TestAuditValidOptions(t *testing.T) {
 
 	policy := makeTmpPolicy(t)
 	defer os.Remove(policy)
-
-	defer utilfeaturetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, features.DynamicAuditing, true)()
-
-	clientConfig := &restclient.Config{}
-	informerFactory := informers.NewSharedInformerFactory(fake.NewSimpleClientset(), 0)
-	processInfo := &ProcessInfo{"test", "test"}
 
 	testCases := []struct {
 		name     string

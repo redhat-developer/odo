@@ -333,7 +333,7 @@ func (fgc *FakeGithubClient) CreatePullRequest(org, repo, head, base, title, bod
 
 // ListBranches lists branchs for given repo
 func (fgc *FakeGithubClient) ListBranches(org, repo string) ([]*github.Branch, error) {
-	var branches []*github.Branch
+	branches := make([]*github.Branch, 0, len(fgc.Branches))
 	for _, b := range fgc.Branches {
 		branches = append(branches, b...)
 	}

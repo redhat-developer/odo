@@ -64,12 +64,9 @@ func TestSetUserInfoAnnotationsWhenWithinCreate(t *testing.T) {
 			"pkg.knative.dev/lastModifier": user1,
 		},
 	}, {
-		name: "test create (should not touch annotations when no user info available)",
-		configureContext: func(ctx context.Context) context.Context {
-			return apis.WithinCreate(ctx)
-		},
-		setup: func(ctx context.Context, r *Resource) {
-		},
+		name:                "test create (should not touch annotations when no user info available)",
+		configureContext:    apis.WithinCreate,
+		setup:               func(ctx context.Context, r *Resource) {},
 		expectedAnnotations: nil,
 	}}
 

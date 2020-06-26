@@ -19,6 +19,7 @@ package reconciler
 import (
 	"context"
 	"testing"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,6 +33,10 @@ type TestResource struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Status duckv1.Status `json:"status"`
+}
+
+func (t *TestResource) SetDefaults(context.Context) {
+	t.Annotations = map[string]string{"default": "was set"}
 }
 
 func (t *TestResource) GetStatus() *duckv1.Status {
@@ -72,6 +77,10 @@ func TestPreProcess(t *testing.T) {
 
 	PreProcessReconcile(context.Background(), krShape)
 
+	if resource.Annotations["default"] != "was set" {
+		t.Errorf("Expected default annotations set got=%v", resource.Annotations)
+	}
+
 	if rc := resource.Status.GetCondition("Ready"); rc.Status != "Unknown" {
 		t.Errorf("Expected unchanged ready status got=%s want=Unknown", rc.Status)
 	}
@@ -91,13 +100,43 @@ func TestPostProcessReconcileBumpsGeneration(t *testing.T) {
 	resource := makeResource()
 
 	krShape := duckv1.KRShaped(resource)
-	PostProcessReconcile(context.Background(), krShape)
+	PostProcessReconcile(context.Background(), krShape, krShape)
 
 	if resource.Status.ObservedGeneration != resource.Generation {
-		t.Errorf("Expected observed generation bump got=%d want=%d", resource.Status.ObservedGeneration, resource.Generation)
+		t.Errorf("Expected observed generation bump got=%d want=%d",
+			resource.Status.ObservedGeneration, resource.Generation)
 	}
 
 	if krShape.GetStatus().ObservedGeneration != krShape.GetGeneration() {
-		t.Errorf("Expected observed generation bump got=%d want=%d", resource.Status.ObservedGeneration, resource.Generation)
+		t.Errorf("Expected observed generation bump got=%d want=%d",
+			resource.Status.ObservedGeneration, resource.Generation)
+	}
+}
+
+func TestPostProcessReconcileUpdatesTransitionTimes(t *testing.T) {
+	oldNow := apis.VolatileTime{Inner: metav1.NewTime(time.Now())}
+	resource := makeResource()
+	oldResource := makeResource()
+	// initialize old conditions with oldNow
+	oldResource.Status.Conditions[0].LastTransitionTime = oldNow
+	oldResource.Status.Conditions[1].LastTransitionTime = oldNow
+	// change the second condition, but keep the old timestamp.
+	resource.Status.Conditions[1].LastTransitionTime = oldNow
+	resource.Status.Conditions[1].Status = corev1.ConditionFalse
+
+	new := duckv1.KRShaped(resource)
+	old := duckv1.KRShaped(oldResource)
+	PostProcessReconcile(context.Background(), new, old)
+
+	unchangedCond := resource.Status.Conditions[0]
+	if unchangedCond.LastTransitionTime != oldNow {
+		t.Errorf("Expected unchanged condition to keep old timestamp. Got=%v Want=%v",
+			unchangedCond.LastTransitionTime, oldNow)
+	}
+
+	changedCond := resource.Status.Conditions[1]
+	if changedCond.LastTransitionTime == oldNow {
+		t.Errorf("Expected changed condition to get a new timestamp. Got=%v Want=%v",
+			changedCond.LastTransitionTime, oldNow)
 	}
 }

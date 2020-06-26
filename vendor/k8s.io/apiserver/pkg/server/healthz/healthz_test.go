@@ -23,9 +23,13 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"reflect"
+	"strings"
 	"testing"
 
 	"k8s.io/apimachinery/pkg/util/sets"
+	"k8s.io/apiserver/pkg/endpoints/metrics"
+	"k8s.io/component-base/metrics/legacyregistry"
+	"k8s.io/component-base/metrics/testutil"
 )
 
 func TestInstallHandler(t *testing.T) {
@@ -39,6 +43,10 @@ func TestInstallHandler(t *testing.T) {
 	mux.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
 		t.Errorf("expected %v, got %v", http.StatusOK, w.Code)
+	}
+	c := w.Header().Get("Content-Type")
+	if c != "text/plain; charset=utf-8" {
+		t.Errorf("expected %v, got %v", "text/plain", c)
 	}
 	if w.Body.String() != "ok" {
 		t.Errorf("expected %v, got %v", "ok", w.Body.String())
@@ -58,6 +66,10 @@ func TestInstallPathHandler(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Errorf("expected %v, got %v", http.StatusOK, w.Code)
 	}
+	c := w.Header().Get("Content-Type")
+	if c != "text/plain; charset=utf-8" {
+		t.Errorf("expected %v, got %v", "text/plain", c)
+	}
 	if w.Body.String() != "ok" {
 		t.Errorf("expected %v, got %v", "ok", w.Body.String())
 	}
@@ -70,6 +82,10 @@ func TestInstallPathHandler(t *testing.T) {
 	mux.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
 		t.Errorf("expected %v, got %v", http.StatusOK, w.Code)
+	}
+	c = w.Header().Get("Content-Type")
+	if c != "text/plain; charset=utf-8" {
+		t.Errorf("expected %v, got %v", "text/plain", c)
 	}
 	if w.Body.String() != "ok" {
 		t.Errorf("expected %v, got %v", "ok", w.Body.String())
@@ -99,7 +115,7 @@ func testMultipleChecks(path string, t *testing.T) {
 
 	for i, test := range tests {
 		mux := http.NewServeMux()
-		checks := []HealthzChecker{PingHealthz}
+		checks := []HealthChecker{PingHealthz}
 		if test.addBadCheck {
 			checks = append(checks, NamedCheck("bad", func(_ *http.Request) error {
 				return errors.New("this will fail")
@@ -119,6 +135,10 @@ func testMultipleChecks(path string, t *testing.T) {
 		mux.ServeHTTP(w, req)
 		if w.Code != test.expectedStatus {
 			t.Errorf("case[%d] Expected: %v, got: %v", i, test.expectedStatus, w.Code)
+		}
+		c := w.Header().Get("Content-Type")
+		if c != "text/plain; charset=utf-8" {
+			t.Errorf("case[%d] Expected: %v, got: %v", i, "text/plain", c)
 		}
 		if w.Body.String() != test.expectedResponse {
 			t.Errorf("case[%d] Expected:\n%v\ngot:\n%v\n", i, test.expectedResponse, w.Body.String())
@@ -142,14 +162,14 @@ func TestCheckerNames(t *testing.T) {
 
 	testCases := []struct {
 		desc string
-		have []HealthzChecker
+		have []HealthChecker
 		want []string
 	}{
-		{"no checker", []HealthzChecker{}, []string{}},
-		{"one checker", []HealthzChecker{c1}, []string{n1}},
-		{"other checker", []HealthzChecker{c2}, []string{n2}},
-		{"checker order", []HealthzChecker{c1, c2}, []string{n1, n2}},
-		{"different checker order", []HealthzChecker{c2, c1}, []string{n2, n1}},
+		{"no checker", []HealthChecker{}, []string{}},
+		{"one checker", []HealthChecker{c1}, []string{n1}},
+		{"other checker", []HealthChecker{c2}, []string{n2}},
+		{"checker order", []HealthChecker{c1, c2}, []string{n1, n2}},
+		{"different checker order", []HealthChecker{c2, c1}, []string{n2, n1}},
 	}
 
 	for _, tc := range testCases {
@@ -213,6 +233,35 @@ func TestGetExcludedChecks(t *testing.T) {
 				t.Errorf("getExcludedChecks() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestMetrics(t *testing.T) {
+	mux := http.NewServeMux()
+	InstallHandler(mux)
+	InstallLivezHandler(mux)
+	InstallReadyzHandler(mux)
+	metrics.Register()
+	metrics.Reset()
+
+	paths := []string{"/healthz", "/livez", "/readyz"}
+	for _, path := range paths {
+		req, err := http.NewRequest("GET", fmt.Sprintf("http://example.com%s", path), nil)
+		if err != nil {
+			t.Errorf("%v", err)
+		}
+		mux.ServeHTTP(httptest.NewRecorder(), req)
+	}
+
+	expected := strings.NewReader(`
+        # HELP apiserver_request_total [ALPHA] Counter of apiserver requests broken out for each verb, dry run value, group, version, resource, scope, component, and HTTP response contentType and code.
+        # TYPE apiserver_request_total counter
+        apiserver_request_total{code="200",component="",contentType="text/plain;charset=utf-8",dry_run="",group="",resource="",scope="",subresource="/healthz",verb="GET",version=""} 1
+        apiserver_request_total{code="200",component="",contentType="text/plain;charset=utf-8",dry_run="",group="",resource="",scope="",subresource="/livez",verb="GET",version=""} 1
+        apiserver_request_total{code="200",component="",contentType="text/plain;charset=utf-8",dry_run="",group="",resource="",scope="",subresource="/readyz",verb="GET",version=""} 1
+`)
+	if err := testutil.GatherAndCompare(legacyregistry.DefaultGatherer, expected, "apiserver_request_total"); err != nil {
+		t.Error(err)
 	}
 }
 

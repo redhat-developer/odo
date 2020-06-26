@@ -18,6 +18,8 @@ package leaderelection
 
 import (
 	"errors"
+	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
@@ -30,6 +32,7 @@ import (
 func okConfig() *Config {
 	return &Config{
 		ResourceLock:      "leases",
+		Buckets:           1,
 		LeaseDuration:     15 * time.Second,
 		RenewDeadline:     10 * time.Second,
 		RetryPeriod:       2 * time.Second,
@@ -40,6 +43,7 @@ func okConfig() *Config {
 func okData() map[string]string {
 	return map[string]string{
 		"resourceLock": "leases",
+		"buckets":      "1",
 		// values in this data come from the defaults suggested in the
 		// code:
 		// https://github.com/kubernetes/client-go/blob/kubernetes-1.16.0/tools/leaderelection/leaderelection.go
@@ -73,6 +77,17 @@ func TestNewConfigMapFromData(t *testing.T) {
 			return config
 		}(),
 	}, {
+		name: "OK config - controller enabled with multiple buckets",
+		data: kmeta.UnionMaps(okData(), map[string]string{
+			"buckets": "5",
+		}),
+		expected: func() *Config {
+			config := okConfig()
+			config.EnabledComponents.Insert("controller")
+			config.Buckets = 5
+			return config
+		}(),
+	}, {
 		name: "invalid resourceLock",
 		data: kmeta.UnionMaps(okData(), map[string]string{
 			"resourceLock": "flarps",
@@ -96,6 +111,24 @@ func TestNewConfigMapFromData(t *testing.T) {
 			"retryPeriod": "flops",
 		}),
 		err: errors.New(`failed to parse "retryPeriod": time: invalid duration flops`),
+	}, {
+		name: "invalid buckets - not an int",
+		data: kmeta.UnionMaps(okData(), map[string]string{
+			"buckets": "not-an-int",
+		}),
+		err: errors.New(`failed to parse "buckets": strconv.ParseUint: parsing "not-an-int": invalid syntax`),
+	}, {
+		name: "invalid buckets - too small",
+		data: kmeta.UnionMaps(okData(), map[string]string{
+			"buckets": "0",
+		}),
+		err: fmt.Errorf("buckets: value must be between 1 <= 0 <= %d", MaxBuckets),
+	}, {
+		name: "invalid buckets - too large",
+		data: kmeta.UnionMaps(okData(), map[string]string{
+			"buckets": strconv.Itoa(int(MaxBuckets + 1)),
+		}),
+		err: fmt.Errorf(`buckets: value must be between 1 <= %d <= %d`, MaxBuckets+1, MaxBuckets),
 	}}
 
 	for _, tc := range cases {

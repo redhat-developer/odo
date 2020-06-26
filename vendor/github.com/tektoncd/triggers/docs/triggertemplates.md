@@ -47,9 +47,9 @@ spec:
           type: git
           params:
           - name: revision
-            value: $(params.gitrevision)
+            value: $(tt.params.gitrevision)
           - name: url
-            value: $(params.gitrepositoryurl)
+            value: $(tt.params.gitrepositoryurl)
 ```
 
 `TriggerTemplates` currently support the following [Tekton Pipelines](https://github.com/tektoncd/pipelines) resources:
@@ -102,11 +102,11 @@ have an optional `description` and `default` value.
 substitution syntax, where `<name>` is the name of the parameter:
 
 ```YAML
-$(params.<name>)
+$(tt.params.<name>)
 ```
 
-`params` can be referenced in the `resourceTemplates` section of a
-`TriggerTemplate`. The purpose of `params` is to make `TriggerTemplates`
+`tt.params` can be referenced in the `resourceTemplates` section of a
+`TriggerTemplate`. The purpose of `tt.params` is to make `TriggerTemplates`
 reusable.
 
 ## Best Practices

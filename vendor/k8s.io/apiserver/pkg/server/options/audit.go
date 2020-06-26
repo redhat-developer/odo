@@ -28,6 +28,7 @@ import (
 	"k8s.io/klog/v2"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	utilnet "k8s.io/apimachinery/pkg/util/net"
 	auditinternal "k8s.io/apiserver/pkg/apis/audit"
 	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 	auditv1alpha1 "k8s.io/apiserver/pkg/apis/audit/v1alpha1"
@@ -35,7 +36,7 @@ import (
 	"k8s.io/apiserver/pkg/audit"
 	"k8s.io/apiserver/pkg/audit/policy"
 	"k8s.io/apiserver/pkg/server"
-	utilfeature "k8s.io/apiserver/pkg/util/feature"
+	"k8s.io/apiserver/pkg/server/egressselector"
 	pluginbuffered "k8s.io/apiserver/plugin/pkg/audit/buffered"
 	pluginlog "k8s.io/apiserver/plugin/pkg/audit/log"
 	plugintruncate "k8s.io/apiserver/plugin/pkg/audit/truncate"
@@ -139,9 +140,14 @@ type AuditWebhookOptions struct {
 	GroupVersionString string
 }
 
+// AuditDynamicOptions control the configuration of dynamic backends for audit events
 type AuditDynamicOptions struct {
 	// Enabled tells whether the dynamic audit capability is enabled.
 	Enabled bool
+
+	// Configuration for batching backend. This is currently only used as an override
+	// for integration tests
+	BatchConfig *pluginbuffered.BatchConfig
 }
 
 func NewAuditOptions() *AuditOptions {
@@ -163,9 +169,6 @@ func NewAuditOptions() *AuditOptions {
 			},
 			TruncateOptions:    NewAuditTruncateOptions(),
 			GroupVersionString: "audit.k8s.io/v1",
-		},
-		DynamicOptions: AuditDynamicOptions{
-			Enabled: false,
 		},
 	}
 }
@@ -302,7 +305,15 @@ func (o *AuditOptions) ApplyTo(
 		if checker == nil {
 			klog.V(2).Info("No audit policy file provided, no events will be recorded for webhook backend")
 		} else {
-			webhookBackend, err = o.WebhookOptions.newUntruncatedBackend()
+			if c.EgressSelector != nil {
+				egressDialer, err := c.EgressSelector.Lookup(egressselector.Master.AsNetworkContext())
+				if err != nil {
+					return err
+				}
+				webhookBackend, err = o.WebhookOptions.newUntruncatedBackend(egressDialer)
+			} else {
+				webhookBackend, err = o.WebhookOptions.newUntruncatedBackend(nil)
+			}
 			if err != nil {
 				return err
 			}
@@ -553,74 +564,14 @@ func (o *AuditWebhookOptions) enabled() bool {
 
 // newUntruncatedBackend returns a webhook backend without the truncate options applied
 // this is done so that the same trucate backend can wrap both the webhook and dynamic backends
-func (o *AuditWebhookOptions) newUntruncatedBackend() (audit.Backend, error) {
+func (o *AuditWebhookOptions) newUntruncatedBackend(customDial utilnet.DialFunc) (audit.Backend, error) {
 	groupVersion, _ := schema.ParseGroupVersion(o.GroupVersionString)
-	webhook, err := pluginwebhook.NewBackend(o.ConfigFile, groupVersion, o.InitialBackoff)
+	webhook, err := pluginwebhook.NewBackend(o.ConfigFile, groupVersion, o.InitialBackoff, customDial)
 	if err != nil {
 		return nil, fmt.Errorf("initializing audit webhook: %v", err)
 	}
 	webhook = o.BatchOptions.wrapBackend(webhook)
 	return webhook, nil
-}
-
-func (o *AuditDynamicOptions) AddFlags(fs *pflag.FlagSet) {
-	fs.BoolVar(&o.Enabled, "audit-dynamic-configuration", o.Enabled,
-		"Enables dynamic audit configuration. This feature also requires the DynamicAuditing feature flag")
-}
-
-func (o *AuditDynamicOptions) enabled() bool {
-	return o.Enabled && utilfeature.DefaultFeatureGate.Enabled(features.DynamicAuditing)
-}
-
-func (o *AuditDynamicOptions) Validate() []error {
-	var allErrors []error
-	if o.Enabled && !utilfeature.DefaultFeatureGate.Enabled(features.DynamicAuditing) {
-		allErrors = append(allErrors, fmt.Errorf("--audit-dynamic-configuration set, but DynamicAuditing feature gate is not enabled"))
-	}
-	return allErrors
-}
-
-func (o *AuditDynamicOptions) newBackend(
-	hostname string,
-	kubeClientConfig *restclient.Config,
-	informers informers.SharedInformerFactory,
-	processInfo *ProcessInfo,
-	webhookOptions *WebhookOptions,
-) (audit.Backend, policy.Checker, error) {
-	if err := validateProcessInfo(processInfo); err != nil {
-		return nil, nil, err
-	}
-	clientset, err := kubernetes.NewForConfig(kubeClientConfig)
-	if err != nil {
-		return nil, nil, err
-	}
-	if webhookOptions == nil {
-		webhookOptions = NewWebhookOptions()
-	}
-	checker := policy.NewDynamicChecker()
-	informer := informers.Auditregistration().V1alpha1().AuditSinks()
-	eventSink := &v1core.EventSinkImpl{Interface: clientset.CoreV1().Events(processInfo.Namespace)}
-
-	dc := &plugindynamic.Config{
-		Informer:       informer,
-		BufferedConfig: plugindynamic.NewDefaultWebhookBatchConfig(),
-		EventConfig: plugindynamic.EventConfig{
-			Sink: eventSink,
-			Source: corev1.EventSource{
-				Component: processInfo.Name,
-				Host:      hostname,
-			},
-		},
-		WebhookConfig: plugindynamic.WebhookConfig{
-			AuthInfoResolverWrapper: webhookOptions.AuthInfoResolverWrapper,
-			ServiceResolver:         webhookOptions.ServiceResolver,
-		},
-	}
-	backend, err := plugindynamic.NewBackend(dc)
-	if err != nil {
-		return nil, nil, fmt.Errorf("could not create dynamic audit backend: %v", err)
-	}
-	return backend, checker, nil
 }
 
 // defaultWebhookBatchConfig returns the default BatchConfig used by the Webhook backend.

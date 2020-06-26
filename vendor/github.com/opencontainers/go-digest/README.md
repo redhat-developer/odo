@@ -1,10 +1,10 @@
 # go-digest
 
-[![GoDoc](https://godoc.org/github.com/docker/go-digest?status.svg)](https://godoc.org/github.com/docker/go-digest) [![Go Report Card](https://goreportcard.com/badge/github.com/docker/go-digest)](https://goreportcard.com/report/github.com/docker/go-digest) [![Build Status](https://travis-ci.org/docker/go-digest.svg?branch=master)](https://travis-ci.org/docker/go-digest)
+[![GoDoc](https://godoc.org/github.com/opencontainers/go-digest?status.svg)](https://godoc.org/github.com/opencontainers/go-digest) [![Go Report Card](https://goreportcard.com/badge/github.com/opencontainers/go-digest)](https://goreportcard.com/report/github.com/opencontainers/go-digest) [![Build Status](https://travis-ci.org/opencontainers/go-digest.svg?branch=master)](https://travis-ci.org/opencontainers/go-digest)
 
 Common digest package used across the container ecosystem.
 
-Please see the [godoc](https://godoc.org/github.com/docker/go-digest) for more information.
+Please see the [godoc](https://godoc.org/github.com/opencontainers/go-digest) for more information.
 
 # What is a digest?
 
@@ -43,9 +43,7 @@ Using [Merkle DAGs](https://en.wikipedia.org/wiki/Merkle_tree), this can power a
 
 # Usage
 
-While the [godoc](https://godoc.org/github.com/docker/go-digest) is 
-considered the best resource, a few important items need to be called 
-out when using this package.
+While the [godoc](https://godoc.org/github.com/opencontainers/go-digest) is considered the best resource, a few important items need to be called out when using this package.
 
 1. Make sure to import the hash implementations into your application or the package will panic.
     You should have something like the following in the main (or other entrypoint) of your application:
@@ -68,7 +66,7 @@ out when using this package.
 
 The Go API, at this stage, is considered stable, unless otherwise noted.
 
-As always, before using a package export, read the [godoc](https://godoc.org/github.com/docker/go-digest).
+As always, before using a package export, read the [godoc](https://godoc.org/github.com/opencontainers/go-digest).
 
 # Contributing
 
@@ -79,16 +77,11 @@ If you think there is a missing feature, please file a bug clearly describing th
 
 ## Code of Conduct
 
-The maintainers take security seriously. If you discover a security 
-issue, please bring it to their attention right away!
+Participation in the OpenContainers community is governed by [OpenContainer's Code of Conduct][code-of-conduct].
 
-Please DO NOT file a public issue, instead send your report privately
-to security@docker.com.
+## Security
 
-Security reports are greatly appreciated and we will publicly thank you 
-for it. We also like to send gifts—if you're into Docker schwag, make 
-sure to let us know. We currently do not offer a paid security bounty 
-program, but are not ruling it out in the future.
+If you find an issue, please follow the [security][security] protocol to report it.
 
 # Copyright and license
 

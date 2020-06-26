@@ -25,15 +25,22 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	coordinationv1 "k8s.io/api/coordination/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	fakekube "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
+	"knative.dev/pkg/ptr"
+	"knative.dev/pkg/system"
+	_ "knative.dev/pkg/system/testing"
 
 	. "knative.dev/pkg/controller/testing"
+	"knative.dev/pkg/leaderelection"
 	. "knative.dev/pkg/logging/testing"
+	"knative.dev/pkg/reconciler"
 	. "knative.dev/pkg/testing"
 )
 
@@ -707,7 +714,7 @@ func TestEnqueues(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			defer ClearAll()
+			t.Cleanup(ClearAll)
 			impl := NewImplWithStats(&NopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
 			test.work(impl)
 
@@ -724,7 +731,7 @@ func TestEnqueues(t *testing.T) {
 }
 
 func TestEnqeueAfter(t *testing.T) {
-	defer ClearAll()
+	t.Cleanup(ClearAll)
 	impl := NewImplWithStats(&NopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
 	impl.EnqueueAfter(&Resource{
 		ObjectMeta: metav1.ObjectMeta{
@@ -760,7 +767,7 @@ func TestEnqeueAfter(t *testing.T) {
 }
 
 func TestEnqeueKeyAfter(t *testing.T) {
-	defer ClearAll()
+	t.Cleanup(ClearAll)
 	impl := NewImplWithStats(&NopReconciler{}, TestLogger(t), "Testing", &FakeStatsReporter{})
 	impl.EnqueueKeyAfter(types.NamespacedName{Namespace: "waiting", Name: "for"}, 5*time.Second)
 	impl.EnqueueKeyAfter(types.NamespacedName{Namespace: "the", Name: "waterfall"}, 500*time.Millisecond)
@@ -782,22 +789,23 @@ func TestEnqeueKeyAfter(t *testing.T) {
 
 type CountingReconciler struct {
 	m     sync.Mutex
-	Count int
+	count int
 }
 
 func (cr *CountingReconciler) Reconcile(context.Context, string) error {
 	cr.m.Lock()
 	defer cr.m.Unlock()
-	cr.Count++
+	cr.count++
 	return nil
 }
 
 func TestStartAndShutdown(t *testing.T) {
-	defer ClearAll()
+	t.Cleanup(ClearAll)
 	r := &CountingReconciler{}
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", &FakeStatsReporter{})
 
 	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
 	doneCh := make(chan struct{})
 
 	go func() {
@@ -820,18 +828,160 @@ func TestStartAndShutdown(t *testing.T) {
 		// We expect the work to complete.
 	}
 
-	if got, want := r.Count, 0; got != want {
-		t.Errorf("Count = %v, wanted %v", got, want)
+	if got, want := r.count, 0; got != want {
+		t.Errorf("count = %v, wanted %v", got, want)
+	}
+}
+
+type countingLeaderAwareReconciler struct {
+	reconciler.LeaderAwareFuncs
+
+	m     sync.Mutex
+	count int
+}
+
+var _ reconciler.LeaderAware = (*countingLeaderAwareReconciler)(nil)
+
+func (cr *countingLeaderAwareReconciler) Reconcile(ctx context.Context, key string) error {
+	namespace, name, err := cache.SplitMetaNamespaceKey(key)
+	if err != nil {
+		return err
+	}
+
+	if cr.IsLeaderFor(types.NamespacedName{
+		Namespace: namespace,
+		Name:      name,
+	}) {
+		cr.m.Lock()
+		defer cr.m.Unlock()
+		cr.count++
+	}
+	return nil
+}
+
+func TestStartAndShutdownWithLeaderAwareNoElection(t *testing.T) {
+	t.Cleanup(ClearAll)
+	promoted := make(chan struct{})
+	r := &countingLeaderAwareReconciler{
+		LeaderAwareFuncs: reconciler.LeaderAwareFuncs{
+			PromoteFunc: func(bkt reconciler.Bucket, enq func(reconciler.Bucket, types.NamespacedName)) error {
+				close(promoted)
+				return nil
+			},
+		},
+	}
+	impl := NewImplWithStats(r, TestLogger(t), "Testing", &FakeStatsReporter{})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	doneCh := make(chan struct{})
+
+	go func() {
+		defer close(doneCh)
+		StartAll(ctx, impl)
+	}()
+
+	select {
+	case <-promoted:
+		// We expect to be promoted immediately, since there is no
+		// ElectorBuilder attached to the context.
+	case <-doneCh:
+		t.Fatal("StartAll finished early.")
+	case <-time.After(10 * time.Second):
+		t.Error("Timed out waiting for StartAll.")
+	}
+
+	cancel()
+
+	select {
+	case <-time.After(1 * time.Second):
+		t.Error("Timed out waiting for controller to finish.")
+	case <-doneCh:
+		// We expect the work to complete.
+	}
+
+	if got, want := r.count, 0; got != want {
+		t.Errorf("reconcile count = %v, wanted %v", got, want)
+	}
+}
+
+func TestStartAndShutdownWithLeaderAwareWithLostElection(t *testing.T) {
+	t.Cleanup(ClearAll)
+	promoted := make(chan struct{})
+	r := &countingLeaderAwareReconciler{
+		LeaderAwareFuncs: reconciler.LeaderAwareFuncs{
+			PromoteFunc: func(bkt reconciler.Bucket, enq func(reconciler.Bucket, types.NamespacedName)) error {
+				close(promoted)
+				return nil
+			},
+		},
+	}
+	cc := leaderelection.ComponentConfig{
+		Component:     "component",
+		LeaderElect:   true,
+		ResourceLock:  "leases",
+		LeaseDuration: 15 * time.Second,
+		RenewDeadline: 10 * time.Second,
+		RetryPeriod:   2 * time.Second,
+	}
+	kc := fakekube.NewSimpleClientset(
+		&coordinationv1.Lease{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: system.Namespace(),
+				Name:      "component.testing.00-of-01",
+			},
+			Spec: coordinationv1.LeaseSpec{
+				HolderIdentity:       ptr.String("not-us"),
+				LeaseDurationSeconds: ptr.Int32(3000),
+				AcquireTime:          &metav1.MicroTime{Time: time.Now()},
+				RenewTime:            &metav1.MicroTime{Time: time.Now().Add(3000 * time.Second)},
+			},
+		},
+	)
+
+	impl := NewImplWithStats(r, TestLogger(t), "Testing", &FakeStatsReporter{})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	ctx = leaderelection.WithStandardLeaderElectorBuilder(ctx, kc, cc)
+	doneCh := make(chan struct{})
+
+	go func() {
+		defer close(doneCh)
+		StartAll(ctx, impl)
+	}()
+
+	select {
+	case <-promoted:
+		t.Fatal("Unexpected promotion.")
+	case <-time.After(3 * time.Second):
+		// Wait for 3 seconds for good measure.
+	case <-doneCh:
+		t.Error("StartAll finished early.")
+	}
+
+	cancel()
+
+	select {
+	case <-time.After(1 * time.Second):
+		t.Error("Timed out waiting for controller to finish.")
+	case <-doneCh:
+		// We expect the work to complete.
+	}
+
+	if got, want := r.count, 0; got != want {
+		t.Errorf("reconcile count = %v, wanted %v", got, want)
 	}
 }
 
 func TestStartAndShutdownWithWork(t *testing.T) {
-	defer ClearAll()
+	t.Cleanup(ClearAll)
 	r := &CountingReconciler{}
 	reporter := &FakeStatsReporter{}
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", reporter)
 
 	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
 	doneCh := make(chan struct{})
 
 	impl.EnqueueKey(types.NamespacedName{Namespace: "foo", Name: "bar"})
@@ -856,11 +1006,11 @@ func TestStartAndShutdownWithWork(t *testing.T) {
 		// We expect the work to complete.
 	}
 
-	if got, want := r.Count, 1; got != want {
-		t.Errorf("Count = %v, wanted %v", got, want)
+	if got, want := r.count, 1; got != want {
+		t.Errorf("reconcile count = %v, wanted %v", got, want)
 	}
 	if got, want := impl.WorkQueue.NumRequeues(types.NamespacedName{Namespace: "foo", Name: "bar"}), 0; got != want {
-		t.Errorf("Count = %v, wanted %v", got, want)
+		t.Errorf("requeues = %v, wanted %v", got, want)
 	}
 
 	checkStats(t, reporter, 1, 0, 1, trueString)
@@ -902,12 +1052,13 @@ func (er *ErrorReconciler) Reconcile(context.Context, string) error {
 }
 
 func TestStartAndShutdownWithErroringWork(t *testing.T) {
-	defer ClearAll()
+	t.Cleanup(ClearAll)
 	r := &ErrorReconciler{}
 	reporter := &FakeStatsReporter{}
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", reporter)
 
 	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
 	doneCh := make(chan struct{})
 
 	impl.EnqueueKey(types.NamespacedName{Namespace: "", Name: "bar"})
@@ -956,12 +1107,13 @@ func (er *PermanentErrorReconciler) Reconcile(context.Context, string) error {
 }
 
 func TestStartAndShutdownWithPermanentErroringWork(t *testing.T) {
-	defer ClearAll()
+	t.Cleanup(ClearAll)
 	r := &PermanentErrorReconciler{}
 	reporter := &FakeStatsReporter{}
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", reporter)
 
 	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
 	doneCh := make(chan struct{})
 
 	impl.EnqueueKey(types.NamespacedName{Namespace: "foo", Name: "bar"})
@@ -1048,11 +1200,12 @@ func (*dummyStore) List() []interface{} {
 }
 
 func TestImplGlobalResync(t *testing.T) {
-	defer ClearAll()
+	t.Cleanup(ClearAll)
 	r := &CountingReconciler{}
 	impl := NewImplWithStats(r, TestLogger(t), "Testing", &FakeStatsReporter{})
 
 	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
 	doneCh := make(chan struct{})
 
 	go func() {
@@ -1079,7 +1232,7 @@ func TestImplGlobalResync(t *testing.T) {
 		// We expect the work to complete.
 	}
 
-	if want, got := 3, r.Count; want != got {
+	if want, got := 3, r.count; want != got {
 		t.Errorf("GlobalResync: want = %v, got = %v", want, got)
 	}
 }
@@ -1319,6 +1472,7 @@ func TestRunInformersFinished(t *testing.T) {
 	}()
 
 	ctx, cancel := context.WithCancel(TestContextWithLogger(t))
+	t.Cleanup(cancel)
 
 	waitInformers, err := RunInformers(ctx.Done(), fi)
 	if err != nil {

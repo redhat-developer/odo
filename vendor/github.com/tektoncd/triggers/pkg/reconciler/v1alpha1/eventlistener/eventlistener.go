@@ -319,6 +319,7 @@ func (c *Reconciler) reconcileDeployment(el *v1alpha1.EventListener) error {
 					Labels: labels,
 				},
 				Spec: corev1.PodSpec{
+					Tolerations:        el.Spec.PodTemplate.Tolerations,
 					ServiceAccountName: el.Spec.ServiceAccountName,
 					Containers:         []corev1.Container{container},
 
@@ -356,6 +357,10 @@ func (c *Reconciler) reconcileDeployment(el *v1alpha1.EventListener) error {
 		}
 		if existingDeployment.Spec.Template.Spec.ServiceAccountName != deployment.Spec.Template.Spec.ServiceAccountName {
 			existingDeployment.Spec.Template.Spec.ServiceAccountName = deployment.Spec.Template.Spec.ServiceAccountName
+			updated = true
+		}
+		if !reflect.DeepEqual(existingDeployment.Spec.Template.Spec.Tolerations, deployment.Spec.Template.Spec.Tolerations) {
+			existingDeployment.Spec.Template.Spec.Tolerations = deployment.Spec.Template.Spec.Tolerations
 			updated = true
 		}
 		if len(existingDeployment.Spec.Template.Spec.Containers) == 0 ||

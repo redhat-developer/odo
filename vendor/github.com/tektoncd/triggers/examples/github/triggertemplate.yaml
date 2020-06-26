@@ -32,4 +32,4 @@ spec:
                   - name: revision
                     value: $(params.gitrevision)
                   - name: url
-                    value: $(params.gitrepositoryurl)
+                    value: $(tt.params.gitrepositoryurl)

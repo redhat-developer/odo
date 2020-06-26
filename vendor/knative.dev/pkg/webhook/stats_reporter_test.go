@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/metrics/metricstest"
 	_ "knative.dev/pkg/metrics/testing"
@@ -29,16 +29,16 @@ import (
 
 func TestWebhookStatsReporter(t *testing.T) {
 	setup()
-	req := &admissionv1beta1.AdmissionRequest{
+	req := &admissionv1.AdmissionRequest{
 		UID:       "705ab4f5-6393-11e8-b7cc-42010a800002",
 		Kind:      metav1.GroupVersionKind{Group: "autoscaling", Version: "v1", Kind: "Scale"},
 		Resource:  metav1.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"},
 		Name:      "my-deployment",
 		Namespace: "my-namespace",
-		Operation: admissionv1beta1.Update,
+		Operation: admissionv1.Update,
 	}
 
-	resp := &admissionv1beta1.AdmissionResponse{
+	resp := &admissionv1.AdmissionResponse{
 		UID:     req.UID,
 		Allowed: true,
 	}

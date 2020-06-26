@@ -1,5 +1,5 @@
-hash: 721bab006d880b97996f61d8060113ed2d2de9eafcdf27d48cce8e181478d99c
-updated: 2020-06-17T15:14:10.6611016+05:30
+hash: bfc9d5f9a6898813f88cb63176de326841ac3fb3a147f5a18a818cf465b25a70
+updated: 2020-06-25T23:34:06.153911702-04:00
 imports:
 - name: cloud.google.com/go
   version: 8c41231e01b2085512d98153bcffb847ff9b4b9f
@@ -328,14 +328,14 @@ imports:
   - matchers/support/goraph/util
   - types
 - name: github.com/opencontainers/go-digest
-  version: a6d0ee40d4207ea02364bd3b9e8e77b9159ba1eb
+  version: ea51bea511f75cfa3ef6098cc253c5c3609b037a
 - name: github.com/opencontainers/image-spec
   version: 79b036d80240ae530a8de15e1d21c7ab9292c693
   subpackages:
   - specs-go
   - specs-go/v1
 - name: github.com/openshift/api
-  version: 3e8f22fb0b56808d981b0a98cd2741d31368aec5
+  version: 7192180f496aab1f7659d8660fc360498bab498b
   subpackages:
   - apps/v1
   - authorization/v1
@@ -390,7 +390,7 @@ imports:
   - pkg/build/naming
   - pkg/oauth/oauthdiscovery
 - name: github.com/openshift/oc
-  version: d038424d6d4f1cc39ad586ac0d36dac3a7a37ceb
+  version: d89e458c3dff553f9a732b282830bfa9b4e0ab9b
   subpackages:
   - pkg/cli/login
   - pkg/helpers/errors
@@ -402,7 +402,7 @@ imports:
   - pkg/helpers/term
   - pkg/helpers/tokencmd
 - name: github.com/operator-framework/operator-lifecycle-manager
-  version: 33671ebb9929e837d1e9f8104476bf278f203080
+  version: 9f95e55cd49a63b85ab5ca5f087a9fa13af84a17
   subpackages:
   - pkg/api/apis/operators
   - pkg/api/apis/operators/v1
@@ -429,6 +429,7 @@ imports:
   subpackages:
   - prometheus
   - prometheus/internal
+  - prometheus/promhttp
 - name: github.com/prometheus/client_model
   version: fd36f4220a901265f90734c3183c5f0c91daa0b8
   subpackages:
@@ -461,7 +462,7 @@ imports:
   - ident
   - internal/jsonutil
 - name: github.com/sirupsen/logrus
-  version: 89742aefa4b206dcf400792f3bd35b542998eb3b
+  version: 6699a89a232f3db797f2e280639854bbc4b89725
 - name: github.com/spf13/afero
   version: 588a75ec4f32903aa5e39a2619ba6a4631e28424
   subpackages:
@@ -476,7 +477,7 @@ imports:
   - assert
   - require
 - name: github.com/tektoncd/pipeline
-  version: 648cff3dfe1330c5035492437adee6bf1670d941
+  version: 44f22a067b7576479f8d8b186e9521e9b7713be0
   subpackages:
   - pkg/apis/config
   - pkg/apis/pipeline
@@ -490,7 +491,7 @@ imports:
   - pkg/reconciler/pipeline/dag
   - pkg/substitution
 - name: github.com/tektoncd/triggers
-  version: 9baf220e6fb5f71e70968e01b1bfaa2a12a95cb6
+  version: 9c451669426843783c6a012d9437b348cebc4729
   subpackages:
   - pkg/apis/triggers/v1alpha1
 - name: github.com/xeipuuv/gojsonpointer
@@ -719,7 +720,7 @@ imports:
   - third_party/forked/golang/netutil
   - third_party/forked/golang/reflect
 - name: k8s.io/apiserver
-  version: 79427f02047f9189a75b8cdaadccaf65a126853e
+  version: b0635c302351c736bacc30717e901998c0b94c85
   subpackages:
   - pkg/authentication/authenticator
   - pkg/authentication/request/x509
@@ -976,6 +977,8 @@ imports:
 - name: k8s.io/component-base
   version: e22fc98bf46cf388fdc8cb047daf7a6b4f208954
   subpackages:
+  - metrics
+  - metrics/legacyregistry
   - version
 - name: k8s.io/klog
   version: 2ca9ad30301bf30a8a6e0fa2110db6b8df699a91
@@ -1005,7 +1008,7 @@ imports:
   - integer
   - trace
 - name: knative.dev/pkg
-  version: ffb929374a39cc0659b18100e9e2361f5106a81f
+  version: f1ee372577e156c0589dcaa8f166f84dce519f60
   subpackages:
   - apis
   - apis/duck

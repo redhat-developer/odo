@@ -33,11 +33,11 @@ import (
 type Interceptor struct {
 	KubeClientSet          kubernetes.Interface
 	Logger                 *zap.SugaredLogger
-	Bitbucket              *triggersv1.BitBucketInterceptor
+	Bitbucket              *triggersv1.BitbucketInterceptor
 	EventListenerNamespace string
 }
 
-func NewInterceptor(bh *triggersv1.BitBucketInterceptor, k kubernetes.Interface, ns string, l *zap.SugaredLogger) interceptors.Interceptor {
+func NewInterceptor(bh *triggersv1.BitbucketInterceptor, k kubernetes.Interface, ns string, l *zap.SugaredLogger) interceptors.Interceptor {
 	return &Interceptor{
 		Logger:                 l,
 		Bitbucket:              bh,

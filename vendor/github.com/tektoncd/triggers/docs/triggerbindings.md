@@ -45,14 +45,14 @@ case-insensitive.
 
 These are all valid expressions:
 
-```shell script
+```shell
 $(body.key1)
 $(.body.key)
 ```
 
 These are invalid expressions:
 
-```shell script
+```shell
 .body.key1 # INVALID - Not wrapped in $()
 $({body) # INVALID - Ending curly brace absent
 ```
@@ -76,7 +76,7 @@ $(body.tekton\.dev) -> "triggers"
 
 ### Examples
 
-```shell script
+```shell
 
 `$(body)` is replaced by the entire body.
 
@@ -161,4 +161,52 @@ spec:
         - name: staging-env
       template:
         name: pipeline-template
+```
+
+## Debugging
+
+### Evaluating TriggerBindings
+
+As a convenience, the `binding-eval` tool allows you to evaluate TriggerBindings
+for a given HTTP request to determine what the resulting parameters would be
+during trigger execution.
+
+```sh
+$ cat testdata/triggerbinding.yaml
+apiVersion: tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: pipeline-binding
+spec:
+  params:
+  - name: foo
+    value: $(body.test)
+  - name: bar
+    value: $(header.X-Header)
+
+$ cat testdata/http.txt
+POST /foo HTTP/1.1
+Content-Length: 16
+Content-Type: application/json
+X-Header: tacocat
+
+{"test": "body"}
+
+$ binding-eval -b testdata/triggerbinding.yaml -r testdata/http.txt
+[
+  {
+    "name": "foo",
+    "value": "body"
+  },
+  {
+    "name": "bar",
+    "value": "tacocat"
+  }
+]
+```
+
+To install, run:
+
+```sh
+$ go get -u github.com/tektoncd/triggers/cmd/binding-eval
 ```

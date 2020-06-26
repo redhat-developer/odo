@@ -3,5 +3,8 @@
 approvers:
 - controller-approvers
 
+reviewers:
+- controller-reviewers
+
 labels:
 - area/API

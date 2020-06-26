@@ -21,30 +21,27 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	. "knative.dev/pkg/tracing"
 	"knative.dev/pkg/tracing/config"
 	. "knative.dev/pkg/tracing/testing"
 )
 
 type fakeWriter struct {
-	lastWrite *[]byte
+	lastWrite string
 }
 
-func (fw fakeWriter) Header() http.Header {
+func (fw *fakeWriter) Header() http.Header {
 	return http.Header{}
 }
 
-func (fw fakeWriter) Write(data []byte) (int, error) {
-	*fw.lastWrite = data
+func (fw *fakeWriter) Write(data []byte) (int, error) {
+	fw.lastWrite = string(data)
 	return len(data), nil
 }
 
-func (fw fakeWriter) WriteHeader(statusCode int) {
-}
+func (fw *fakeWriter) WriteHeader(statusCode int) {}
 
-type testHandler struct {
-}
+type testHandler struct{}
 
 func (th *testHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("fake"))
@@ -58,9 +55,11 @@ func TestHTTPSpanMiddleware(t *testing.T) {
 
 	// Create tracer with reporter recorder
 	reporter, co := FakeZipkinExporter()
-	defer reporter.Close()
 	oct := NewOpenCensusTracer(co)
-	defer oct.Finish()
+	t.Cleanup(func() {
+		reporter.Close()
+		oct.Finish()
+	})
 
 	if err := oct.ApplyConfig(&cfg); err != nil {
 		t.Errorf("Failed to apply tracer config: %v", err)
@@ -69,22 +68,21 @@ func TestHTTPSpanMiddleware(t *testing.T) {
 	next := testHandler{}
 	middleware := HTTPSpanMiddleware(&next)
 
-	var lastWrite []byte
-	fw := fakeWriter{lastWrite: &lastWrite}
+	fw := &fakeWriter{}
 
 	req, err := http.NewRequest("GET", "http://test.example.com", nil)
 	if err != nil {
-		t.Errorf("Failed to make fake request: %v", err)
+		t.Fatal("Failed to make fake request:", err)
 	}
-	traceID := "821e0d50d931235a5ba3fa42eddddd8f"
+	const traceID = "821e0d50d931235a5ba3fa42eddddd8f"
 	req.Header["X-B3-Traceid"] = []string{traceID}
 	req.Header["X-B3-Spanid"] = []string{"b3bd5e1c4318c78a"}
 
 	middleware.ServeHTTP(fw, req)
 
 	// Assert our next handler was called
-	if diff := cmp.Diff([]byte("fake"), lastWrite); diff != "" {
-		t.Errorf("Got http response (-want, +got) = %v", diff)
+	if got, want := fw.lastWrite, "fake"; got != want {
+		t.Errorf("HTTP Response: %q, want: %q", got, want)
 	}
 
 	spans := reporter.Flush()
@@ -104,53 +102,54 @@ func TestHTTPSpanIgnoringPaths(t *testing.T) {
 
 	// Create tracer with reporter recorder
 	reporter, co := FakeZipkinExporter()
-	defer reporter.Close()
 	oct := NewOpenCensusTracer(co)
-	defer oct.Finish()
+	t.Cleanup(func() {
+		reporter.Close()
+		oct.Finish()
+	})
 
 	if err := oct.ApplyConfig(&cfg); err != nil {
-		t.Errorf("Failed to apply tracer config: %v", err)
+		t.Fatal("Failed to apply tracer config:", err)
 	}
 
 	paths := []string{"/readyz"}
 	middleware := HTTPSpanIgnoringPaths(paths...)(&testHandler{})
 
-	testCases := map[string]struct {
+	testCases := []struct {
+		name   string
 		path   string
 		traced bool
-	}{
-		"traced": {
-			path:   "/",
-			traced: true,
-		},
-		"ignored": {
-			path:   paths[0],
-			traced: false,
-		},
-	}
-	for n, tc := range testCases {
-		t.Run(n, func(t *testing.T) {
-			var lastWrite []byte
-			fw := fakeWriter{lastWrite: &lastWrite}
+	}{{
+		name:   "traced",
+		path:   "/",
+		traced: true,
+	}, {
+		name:   "ignored",
+		path:   paths[0],
+		traced: false,
+	}}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			fw := &fakeWriter{}
 
 			u := &url.URL{
 				Scheme: "http",
 				Host:   "test.example.com",
 				Path:   tc.path,
 			}
-			req, err := http.NewRequest("GET", u.String(), nil)
+			req, err := http.NewRequest(http.MethodGet, u.String(), nil)
 			if err != nil {
-				t.Errorf("Failed to make fake request: %v", err)
+				t.Fatal("Failed to make fake request:", err)
 			}
-			traceID := "821e0d50d931235a5ba3fa42eddddd8f"
+			const traceID = "821e0d50d931235a5ba3fa42eddddd8f"
 			req.Header.Set("X-B3-Traceid", traceID)
 			req.Header.Set("X-B3-Spanid", "b3bd5e1c4318c78a")
 
 			middleware.ServeHTTP(fw, req)
 
 			// Assert our next handler was called
-			if diff := cmp.Diff([]byte("fake"), lastWrite); diff != "" {
-				t.Errorf("Got http response (-want, +got) = %v", diff)
+			if got, want := string(fw.lastWrite), "fake"; got != want {
+				t.Errorf("HTTP response: %q, want: %q", got, want)
 			}
 
 			spans := reporter.Flush()
@@ -161,10 +160,8 @@ func TestHTTPSpanIgnoringPaths(t *testing.T) {
 				if got := spans[0].TraceID.String(); got != traceID {
 					t.Errorf("spans[0].TraceID = %s, want %s", got, traceID)
 				}
-			} else {
-				if len(spans) != 0 {
-					t.Errorf("Got %d spans, expected 0: spans = %v", len(spans), spans)
-				}
+			} else if len(spans) != 0 {
+				t.Errorf("Got %d spans, expected 0: spans = %v", len(spans), spans)
 			}
 		})
 	}

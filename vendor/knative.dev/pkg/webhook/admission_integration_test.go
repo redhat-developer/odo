@@ -28,9 +28,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"golang.org/x/sync/errgroup"
 	jsonpatch "gomodules.xyz/jsonpatch/v2"
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/metrics/metricstest"
@@ -39,7 +40,7 @@ import (
 
 type fixedAdmissionController struct {
 	path     string
-	response *admissionv1beta1.AdmissionResponse
+	response *admissionv1.AdmissionResponse
 }
 
 var _ AdmissionController = (*fixedAdmissionController)(nil)
@@ -48,14 +49,14 @@ func (fac *fixedAdmissionController) Path() string {
 	return fac.path
 }
 
-func (fac *fixedAdmissionController) Admit(ctx context.Context, req *admissionv1beta1.AdmissionRequest) *admissionv1beta1.AdmissionResponse {
+func (fac *fixedAdmissionController) Admit(ctx context.Context, req *admissionv1.AdmissionRequest) *admissionv1.AdmissionResponse {
 	return fac.response
 }
 
 func TestAdmissionEmptyRequestBody(t *testing.T) {
 	c := &fixedAdmissionController{
 		path:     "/bazinga",
-		response: &admissionv1beta1.AdmissionResponse{},
+		response: &admissionv1.AdmissionResponse{},
 	}
 
 	testEmptyRequestBody(t, c)
@@ -64,7 +65,7 @@ func TestAdmissionEmptyRequestBody(t *testing.T) {
 func TestAdmissionValidResponseForResource(t *testing.T) {
 	ac := &fixedAdmissionController{
 		path:     "/bazinga",
-		response: &admissionv1beta1.AdmissionResponse{},
+		response: &admissionv1.AdmissionResponse{},
 	}
 	wh, serverURL, ctx, cancel, err := testSetup(t, ac)
 	if err != nil {
@@ -89,8 +90,8 @@ func TestAdmissionValidResponseForResource(t *testing.T) {
 		t.Fatalf("createSecureTLSClient() = %v", err)
 	}
 
-	admissionreq := &admissionv1beta1.AdmissionRequest{
-		Operation: admissionv1beta1.Create,
+	admissionreq := &admissionv1.AdmissionRequest{
+		Operation: admissionv1.Create,
 		Kind: metav1.GroupVersionKind{
 			Group:   "pkg.knative.dev",
 			Version: "v1alpha1",
@@ -105,7 +106,7 @@ func TestAdmissionValidResponseForResource(t *testing.T) {
 
 	admissionreq.Resource.Group = "pkg.knative.dev"
 	admissionreq.Object.Raw = marshaled
-	rev := &admissionv1beta1.AdmissionReview{
+	rev := &admissionv1.AdmissionReview{
 		Request: admissionreq,
 	}
 
@@ -149,11 +150,16 @@ func TestAdmissionValidResponseForResource(t *testing.T) {
 			return
 		}
 
-		reviewResponse := admissionv1beta1.AdmissionReview{}
+		reviewResponse := admissionv1.AdmissionReview{}
 
 		err = json.NewDecoder(bytes.NewReader(responseBody)).Decode(&reviewResponse)
 		if err != nil {
 			t.Errorf("Failed to decode response: %v", err)
+			return
+		}
+
+		if diff := cmp.Diff(rev.TypeMeta, reviewResponse.TypeMeta); diff != "" {
+			t.Errorf("expected the response typeMeta to be the same as the request (-want, +got)\n%s", diff)
 			return
 		}
 	}()
@@ -216,8 +222,8 @@ func TestAdmissionInvalidResponseForResource(t *testing.T) {
 		t.Fatalf("Failed to marshal resource: %s", err)
 	}
 
-	admissionreq := &admissionv1beta1.AdmissionRequest{
-		Operation: admissionv1beta1.Create,
+	admissionreq := &admissionv1.AdmissionRequest{
+		Operation: admissionv1.Create,
 		Kind: metav1.GroupVersionKind{
 			Group:   "pkg.knative.dev",
 			Version: "v1alpha1",
@@ -231,7 +237,7 @@ func TestAdmissionInvalidResponseForResource(t *testing.T) {
 	admissionreq.Resource.Group = "pkg.knative.dev"
 	admissionreq.Object.Raw = marshaled
 
-	rev := &admissionv1beta1.AdmissionReview{
+	rev := &admissionv1.AdmissionReview{
 		Request: admissionreq,
 	}
 	reqBuf := new(bytes.Buffer)
@@ -269,7 +275,7 @@ func TestAdmissionInvalidResponseForResource(t *testing.T) {
 		t.Fatalf("Failed to read response body %v", err)
 	}
 
-	reviewResponse := admissionv1beta1.AdmissionReview{}
+	reviewResponse := admissionv1.AdmissionReview{}
 
 	err = json.NewDecoder(bytes.NewReader(respBody)).Decode(&reviewResponse)
 	if err != nil {

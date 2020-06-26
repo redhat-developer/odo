@@ -24,11 +24,12 @@ import (
 
 	// Injection stuff
 	_ "knative.dev/pkg/client/injection/kube/client/fake"
-	_ "knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1beta1/validatingwebhookconfiguration/fake"
+	_ "knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1/validatingwebhookconfiguration/fake"
 	_ "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret/fake"
+	pkgreconciler "knative.dev/pkg/reconciler"
 
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
-	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1beta1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -91,17 +92,17 @@ var (
 			Kind:    "Resource",
 		}: NewCallback(resourceCallback, webhook.Create, webhook.Update, webhook.Delete),
 	}
-	initialResourceWebhook = &admissionregistrationv1beta1.ValidatingWebhookConfiguration{
+	initialResourceWebhook = &admissionregistrationv1.ValidatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "webhook.knative.dev",
 			OwnerReferences: []metav1.OwnerReference{{
 				Name: "asdf",
 			}},
 		},
-		Webhooks: []admissionregistrationv1beta1.ValidatingWebhook{{
+		Webhooks: []admissionregistrationv1.ValidatingWebhook{{
 			Name: "webhook.knative.dev",
-			ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{
-				Service: &admissionregistrationv1beta1.ServiceReference{
+			ClientConfig: admissionregistrationv1.WebhookClientConfig{
+				Service: &admissionregistrationv1.ServiceReference{
 					Namespace: system.Namespace(),
 					Name:      "webhook",
 				},
@@ -125,8 +126,8 @@ func newNonRunningTestResourceAdmissionController(t *testing.T) (
 func TestDeleteAllowed(t *testing.T) {
 	_, ac := newNonRunningTestResourceAdmissionController(t)
 
-	req := &admissionv1beta1.AdmissionRequest{
-		Operation: admissionv1beta1.Delete,
+	req := &admissionv1.AdmissionRequest{
+		Operation: admissionv1.Delete,
 		Kind: metav1.GroupVersionKind{
 			Group:   "pkg.knative.dev",
 			Version: "v1alpha1",
@@ -142,8 +143,8 @@ func TestDeleteAllowed(t *testing.T) {
 func TestConnectAllowed(t *testing.T) {
 	_, ac := newNonRunningTestResourceAdmissionController(t)
 
-	req := &admissionv1beta1.AdmissionRequest{
-		Operation: admissionv1beta1.Connect,
+	req := &admissionv1.AdmissionRequest{
+		Operation: admissionv1.Connect,
 		Kind: metav1.GroupVersionKind{
 			Group:   "pkg.knative.dev",
 			Version: "v1alpha1",
@@ -160,8 +161,8 @@ func TestConnectAllowed(t *testing.T) {
 func TestUnknownKindFails(t *testing.T) {
 	_, ac := newNonRunningTestResourceAdmissionController(t)
 
-	req := &admissionv1beta1.AdmissionRequest{
-		Operation: admissionv1beta1.Create,
+	req := &admissionv1.AdmissionRequest{
+		Operation: admissionv1.Create,
 		Kind: metav1.GroupVersionKind{
 			Group:   "pkg.knative.dev",
 			Version: "v1alpha1",
@@ -174,8 +175,8 @@ func TestUnknownKindFails(t *testing.T) {
 
 func TestUnknownVersionFails(t *testing.T) {
 	_, ac := newNonRunningTestResourceAdmissionController(t)
-	req := &admissionv1beta1.AdmissionRequest{
-		Operation: admissionv1beta1.Create,
+	req := &admissionv1.AdmissionRequest{
+		Operation: admissionv1.Create,
 		Kind: metav1.GroupVersionKind{
 			Group:   "pkg.knative.dev",
 			Version: "v1beta2",
@@ -187,8 +188,8 @@ func TestUnknownVersionFails(t *testing.T) {
 
 func TestUnknownFieldFails(t *testing.T) {
 	_, ac := newNonRunningTestResourceAdmissionController(t)
-	req := &admissionv1beta1.AdmissionRequest{
-		Operation: admissionv1beta1.Create,
+	req := &admissionv1.AdmissionRequest{
+		Operation: admissionv1.Create,
 		Kind: metav1.GroupVersionKind{
 			Group:   "pkg.knative.dev",
 			Version: "v1alpha1",
@@ -395,10 +396,10 @@ func TestValidationDeleteCallback(t *testing.T) {
 	}
 }
 
-func createDeleteResource(ctx context.Context, t *testing.T, old *Resource) *admissionv1beta1.AdmissionRequest {
+func createDeleteResource(ctx context.Context, t *testing.T, old *Resource) *admissionv1.AdmissionRequest {
 	t.Helper()
-	req := &admissionv1beta1.AdmissionRequest{
-		Operation: admissionv1beta1.Delete,
+	req := &admissionv1.AdmissionRequest{
+		Operation: admissionv1.Delete,
 		Kind: metav1.GroupVersionKind{
 			Group:   "pkg.knative.dev",
 			Version: "v1alpha1",
@@ -415,10 +416,10 @@ func createDeleteResource(ctx context.Context, t *testing.T, old *Resource) *adm
 	return req
 }
 
-func createCreateResource(ctx context.Context, t *testing.T, r *Resource) *admissionv1beta1.AdmissionRequest {
+func createCreateResource(ctx context.Context, t *testing.T, r *Resource) *admissionv1.AdmissionRequest {
 	t.Helper()
-	req := &admissionv1beta1.AdmissionRequest{
-		Operation: admissionv1beta1.Create,
+	req := &admissionv1.AdmissionRequest{
+		Operation: admissionv1.Create,
 		Kind: metav1.GroupVersionKind{
 			Group:   "pkg.knative.dev",
 			Version: "v1alpha1",
@@ -501,10 +502,10 @@ func TestAdmitUpdates(t *testing.T) {
 	}
 }
 
-func createUpdateResource(ctx context.Context, t *testing.T, old, new *Resource) *admissionv1beta1.AdmissionRequest {
+func createUpdateResource(ctx context.Context, t *testing.T, old, new *Resource) *admissionv1.AdmissionRequest {
 	t.Helper()
-	req := &admissionv1beta1.AdmissionRequest{
-		Operation: admissionv1beta1.Update,
+	req := &admissionv1.AdmissionRequest{
+		Operation: admissionv1.Update,
 		Kind: metav1.GroupVersionKind{
 			Group:   "pkg.knative.dev",
 			Version: "v1alpha1",
@@ -634,10 +635,33 @@ func NewTestResourceAdmissionController(t *testing.T) *reconciler {
 	ctx = webhook.WithOptions(ctx, webhook.Options{
 		SecretName: "webhook-secret",
 	})
-	return NewAdmissionController(
+
+	c := NewAdmissionController(
 		ctx, testResourceValidationName, testResourceValidationPath,
 		handlers,
 		func(ctx context.Context) context.Context {
 			return ctx
-		}, true, callbacks).Reconciler.(*reconciler)
+		}, true, callbacks)
+	if c == nil {
+		t.Fatal("Expected NewController to return a non-nil value")
+	}
+
+	if want, got := 0, c.WorkQueue.Len(); want != got {
+		t.Errorf("WorkQueue.Len() = %d, wanted %d", got, want)
+	}
+
+	la, ok := c.Reconciler.(pkgreconciler.LeaderAware)
+	if !ok {
+		t.Fatalf("%T is not leader aware", c.Reconciler)
+	}
+
+	if err := la.Promote(pkgreconciler.UniversalBucket(), c.MaybeEnqueueBucketKey); err != nil {
+		t.Errorf("Promote() = %v", err)
+	}
+
+	if want, got := 1, c.WorkQueue.Len(); want != got {
+		t.Errorf("WorkQueue.Len() = %d, wanted %d", got, want)
+	}
+
+	return c.Reconciler.(*reconciler)
 }
