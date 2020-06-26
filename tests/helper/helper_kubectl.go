@@ -82,7 +82,7 @@ func (kubectl KubectlRunner) WaitAndCheckForExistence(resourceType, namespace st
 	for {
 		select {
 		case <-pingTimeout:
-			Fail(fmt.Sprintf("Timeout out after %v minutes", timeoutMinutes))
+			Fail(fmt.Sprintf("Timeout after %d minutes", timeoutMinutes))
 
 		case <-tick:
 			session := CmdRunner(kubectl.path, "get", resourceType, "--namespace", namespace)

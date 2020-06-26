@@ -28,6 +28,7 @@ To install odo, follow our installation guide at [docs.openshift.com]($INSTALLAT
 After each release, binaries are synced to [mirror.openshift.com]($MIRROR)" > /tmp/base
 
 github_changelog_generator \
+--max-issues 500 \
 --user openshift \
 --project odo \
 -t $GITHUB_TOKEN \
