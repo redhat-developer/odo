@@ -12,6 +12,8 @@ import (
 
 var _ = Describe("odo devfile catalog command tests", func() {
 	var project, context, currentWorkingDirectory, originalKubeconfig string
+	const registryName string = "RegistryName"
+	const addRegistryURL string = "https://raw.githubusercontent.com/odo-devfiles/registry/master"
 
 	// Using program commmand according to cliRunner in devfile
 	cliRunner := helper.GetCliRunner()
@@ -88,8 +90,8 @@ var _ = Describe("odo devfile catalog command tests", func() {
 
 	Context("When executing catalog describe component with a component name with a single project", func() {
 		It("should only give information about one project", func() {
-			output := helper.CmdShouldPass("odo", "catalog", "describe", "component", "java-openliberty")
-			helper.MatchAllInOutput(output, []string{"location: https://github.com/OpenLiberty/application-stack.git"})
+			output := helper.CmdShouldPass("odo", "catalog", "describe", "component", "openLiberty")
+			helper.MatchAllInOutput(output, []string{"location: https://github.com/odo-devfiles/openliberty-ex.git"})
 		})
 	})
 	Context("When executing catalog describe component with a component name with no starter projects", func() {
@@ -100,8 +102,11 @@ var _ = Describe("odo devfile catalog command tests", func() {
 	})
 	Context("When executing catalog describe component with a component name with multiple components", func() {
 		It("should print multiple devfiles from different registries", func() {
-			output := helper.CmdShouldPass("odo", "catalog", "describe", "component", "nodejs")
-			helper.MatchAllInOutput(output, []string{"name: nodejs-web-app", "location: https://github.com/odo-devfiles/nodejs-ex.git", "location: https://github.com/che-samples/web-nodejs-sample.git"})
+			helper.CmdShouldPass("odo", "registry", "add", registryName, addRegistryURL)
+			output := helper.CmdShouldPass("odo", "registry", "list")
+			helper.MatchAllInOutput(output, []string{registryName, addRegistryURL})
+			output = helper.CmdShouldPass("odo", "catalog", "describe", "component", "nodejs")
+			helper.MatchAllInOutput(output, []string{"name: nodejs-web-app", "Registry: DefaultDevfileRegistry", "Registry: " + registryName})
 		})
 	})
 	Context("When executing catalog describe component with a component name that does not have a devfile component", func() {

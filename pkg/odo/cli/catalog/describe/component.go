@@ -6,7 +6,6 @@ import (
 	"text/tabwriter"
 
 	"github.com/openshift/odo/pkg/catalog"
-	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/log"
@@ -187,7 +186,7 @@ func GetDevfile(devfileComponent catalog.DevfileComponentType) (parser.DevfileOb
 	if err != nil {
 		return devObj, errors.Wrapf(err, "Failed to download devfile.yaml for devfile component: %s", devfileComponent.Name)
 	}
-	devObj, err = devfile.ParseInMemory(data)
+	devObj, err = parser.ParseInMemoryAndValidate(data)
 	if err != nil {
 		return devObj, err
 	}
