@@ -62,7 +62,7 @@ func (po *PushOptions) DevfilePush() (err error) {
 		platformContext = nil
 	} else {
 		kc := kubernetes.KubernetesContext{
-			Namespace: po.namespace,
+			Namespace: po.KClient.Namespace,
 		}
 		platformContext = kc
 	}
@@ -184,7 +184,7 @@ func (do *DeployOptions) DevfileDeploy() (err error) {
 	// Apply ignore information
 	err = genericclioptions.ApplyIgnore(&do.ignores, do.sourcePath)
 	if err != nil {
-		return errors.Wrap(err, "unable to apply ignore information")
+		return errors.Wrap(err, "Unable to apply ignore information")
 	}
 
 	kubeContext := kubernetes.KubernetesContext{
@@ -213,8 +213,7 @@ func (do *DeployOptions) DevfileDeploy() (err error) {
 		os.Exit(1)
 	}
 
-	log.Infof("\nDeploying application %s", componentName)
-	log.Success("Successfully deployed application")
+	log.Successf("Successfully deployed application %s", componentName)
 
 	return nil
 }

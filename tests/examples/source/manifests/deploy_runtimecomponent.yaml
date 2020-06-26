@@ -1,0 +1,13 @@
+apiVersion: app.stacks/v1beta1
+kind: RuntimeComponent
+metadata:
+  name: COMPONENT_NAME
+spec:
+  applicationImage: CONTAINER_IMAGE
+  service:
+    type: ClusterIP
+    port: PORT
+  expose: true
+  storage:
+    size: 2Gi
+    mountPath: "/logs"

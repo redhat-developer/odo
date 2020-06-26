@@ -1,0 +1,36 @@
+apiVersion: appsody.dev/v1beta1
+kind: AppsodyApplication
+metadata:
+    labels:
+        app.kubernetes.io/instance: COMPONENT_NAME
+        app.kubernetes.io/name: COMPONENT_NAME
+        app.kubernetes.io/part-of: COMPONENT_NAME
+    name: COMPONENT_NAME
+spec:
+    applicationImage: CONTAINER_IMAGE
+    createKnativeService: true
+    expose: true
+    livenessProbe:
+        failureThreshold: 12
+        httpGet:
+            path: /live
+            port: 3000
+        initialDelaySeconds: 5
+        periodSeconds: 2
+    monitoring:
+        labels:
+            k8s-app: COMPONENT_NAME
+    readinessProbe:
+        failureThreshold: 12
+        httpGet:
+            path: /ready
+            port: PORT
+        initialDelaySeconds: 5
+        periodSeconds: 2
+        timeoutSeconds: 1
+    service:
+        annotations:
+            prometheus.io/scrape: "true"
+        port: PORT
+        type: NodePort
+    version: 1.0.0

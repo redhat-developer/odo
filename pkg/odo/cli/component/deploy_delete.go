@@ -72,7 +72,7 @@ func (ddo *DeployDeleteOptions) Run() (err error) {
 	// TODO: Check manifest is actually there!!!
 	// read bytes into deployDeleteOptions
 	if _, err := os.Stat(manifestFile); os.IsNotExist(err) {
-		return err
+		return errors.Wrap(err, "manifest file at "+manifestFile+" does not exist")
 	}
 
 	manifestSource, err := ioutil.ReadFile(manifestFile)

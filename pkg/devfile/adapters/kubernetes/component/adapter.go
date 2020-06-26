@@ -17,11 +17,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
-	"k8s.io/client-go/dynamic"
-
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
+
+	"github.com/openshift/odo/pkg/occlient"
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
@@ -36,6 +36,7 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/sync"
+	"github.com/openshift/odo/pkg/url"
 )
 
 // New instantiantes a component adapter
@@ -240,109 +241,222 @@ func substitueYamlVariables(baseYaml []byte, yamlSubstitutions map[string]string
 	return baseYaml
 }
 
+func getNamedCondition(route *unstructured.Unstructured, conditionTypeValue string) map[string]interface{} {
+	status := route.UnstructuredContent()["status"].(map[string]interface{})
+	conditions := status["conditions"].([]interface{})
+	for i := range conditions {
+		c := conditions[i].(map[string]interface{})
+		klog.V(4).Infof("Condition returned\n%s\n", c)
+		if c["type"] == conditionTypeValue {
+			return c
+		}
+	}
+	return nil
+}
+
+// TODO: Create a function to wait for deploment completion of any unstructured object
+func (a Adapter) waitForManifestDeployCompletion(applicationName string, gvr schema.GroupVersionResource, conditionTypeValue string) (*unstructured.Unstructured, error) {
+	klog.V(4).Infof("Waiting for %s manifest deployment completion", applicationName)
+	w, err := a.Client.DynamicClient.Resource(gvr).Namespace(a.Client.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + applicationName})
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to watch deployment")
+	}
+	defer w.Stop()
+	success := make(chan *unstructured.Unstructured)
+	failure := make(chan error)
+
+	go func() {
+		defer close(success)
+		defer close(failure)
+
+		for {
+			val, ok := <-w.ResultChan()
+			if !ok {
+				failure <- errors.New("watch channel was closed")
+				return
+			}
+			if watchObject, ok := val.Object.(*unstructured.Unstructured); ok {
+				// TODO: Add more details on what to check to see if object deployment is complete
+				// Currently only checks to see if status.conditions[] contains a condition with type = conditionTypeValue
+				condition := getNamedCondition(watchObject, conditionTypeValue)
+				if condition != nil {
+					if condition["status"] == "Fail" {
+						failure <- fmt.Errorf("manifest deployment %s failed", applicationName)
+					} else if condition["status"] == "True" {
+						success <- watchObject
+					}
+				}
+			}
+		}
+	}()
+
+	select {
+	case val := <-success:
+		return val, nil
+	case err := <-failure:
+		return nil, err
+	case <-time.After(30 * time.Second):
+		return nil, errors.Errorf("timeout while waiting for %s manifest deployment completion", applicationName)
+	}
+}
+
 // Build image for devfile project
 func (a Adapter) Deploy(parameters common.DeployParameters) (err error) {
+
 	namespace := a.Client.Namespace
 	applicationName := a.ComponentName + "-deploy"
 	deploymentManifest := &unstructured.Unstructured{}
 
 	log.Info("\nDeploying manifest")
-	// TODO: Work out how to correctly handle spinners
-	s := log.Spinner("Deploying the manifest")
 
 	// Specify the substitution keys and values
 	yamlSubstitutions := map[string]string{
-		// TODO: this tag is not passed to delete, do we need to template
 		"CONTAINER_IMAGE": parameters.Tag,
-		"PROJECT_NAME":    applicationName,
+		"COMPONENT_NAME":  applicationName,
 		"PORT":            determinePort(parameters.EnvSpecificInfo),
 	}
-
-	// Substitute the values in the manifest file
-	deployYaml := substitueYamlVariables(parameters.ManifestSource, yamlSubstitutions)
 
 	// Build a yaml decoder with the unstructured Scheme
 	yamlDecoder := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
 
-	_, gvk, err := yamlDecoder.Decode([]byte(deployYaml), nil, deploymentManifest)
-	if err != nil {
-		return err
-	}
-
-	klog.V(3).Infof("Deploy manifest:\n\n%s", deploymentManifest)
-	gvr := schema.GroupVersionResource{Group: gvk.Group, Version: gvk.Version, Resource: strings.ToLower(gvk.Kind + "s")}
-	klog.V(3).Infof("Manifest type: %s", gvr.String())
-
-	labels := map[string]string{
-		"component": applicationName,
-	}
-
-	manifestLabels := deploymentManifest.GetLabels()
-	if manifestLabels != nil {
-		for key, value := range labels {
-			manifestLabels[key] = value
-		}
-		deploymentManifest.SetLabels(manifestLabels)
-	} else {
-		deploymentManifest.SetLabels(labels)
-	}
-
-	// TODO: Determine why using a.Client.DynamicClient doesnt work
-	// Need to create my own client in order to get the dynamic parts working
-	myclient, err := dynamic.NewForConfig(a.Client.KubeClientConfig)
-	if err != nil {
-		return err
-	}
-
-	// Check to see whether deployed resource already exists. If not, create else update
-	// Get?
-	instanceFound := false
-	list, err := myclient.Resource(gvr).Namespace(namespace).List(metav1.ListOptions{})
-	if list != nil && len(list.Items) > 0 {
-		for _, item := range list.Items {
-			klog.V(3).Infof("Found %s %s with resourceVersion: %s.\n", gvk.Kind, item.GetName(), item.GetResourceVersion())
-			if item.GetName() == applicationName {
-				deploymentManifest.SetResourceVersion(item.GetResourceVersion())
-				instanceFound = true
-			}
-		}
-	}
-
-	result := &unstructured.Unstructured{}
-	if !instanceFound {
-		// Create Deployment
-		log.Infof("Creating %s...", gvk.Kind)
-		result, err = myclient.Resource(gvr).Namespace(namespace).Create(deploymentManifest, metav1.CreateOptions{})
-		//	result, err := a.Client.DynamicClient.Resource(gvr).Namespace(namespace).Create(deploymentManifest, metav1.CreateOptions{})
-	} else {
-		// Update Deployment
-		log.Infof("Updating %s...", gvk.Kind)
-		result, err = myclient.Resource(gvr).Namespace(namespace).Update(deploymentManifest, metav1.UpdateOptions{})
-	}
-
-	if err != nil {
-		s.End(false)
-		return errors.Wrap(err, "failed to deploy "+gvk.Kind)
-	}
-
-	s.End(true)
-	log.Infof("Deployed %s %s.\n", gvk.Kind, result.GetName())
-
 	// This will override if manifest.yaml is present
+	writtenToManifest := false
 	manifestFile, err := os.Create(filepath.Join(a.Context, ".odo", "manifest.yaml"))
 	if err != nil {
 		err = manifestFile.Close()
-		return err
+		return errors.Wrap(err, "Unable to create the local manifest file")
 	}
-	err = yamlDecoder.Encode(result, manifestFile)
 
+	defer func() {
+		merr := manifestFile.Close()
+		if err == nil {
+			err = merr
+		}
+	}()
+
+	manifests := bytes.Split(parameters.ManifestSource, []byte("---"))
+	for _, manifest := range manifests {
+		if len(manifest) > 0 {
+			// Substitute the values in the manifest file
+			deployYaml := substitueYamlVariables(manifest, yamlSubstitutions)
+
+			_, gvk, err := yamlDecoder.Decode([]byte(deployYaml), nil, deploymentManifest)
+			if err != nil {
+				return errors.Wrap(err, "Failed to decode the manifest yaml")
+			}
+
+			deployJSON, err := deploymentManifest.MarshalJSON()
+			if err != nil {
+				return errors.Wrap(err, "Deployment manifest is invalid")
+			}
+			klog.V(3).Infof("Deploy manifest:\n\n%s\n", deployJSON)
+
+			gvr := schema.GroupVersionResource{Group: gvk.Group, Version: gvk.Version, Resource: strings.ToLower(gvk.Kind + "s")}
+			klog.V(3).Infof("Manifest type: %s", gvr.String())
+
+			labels := map[string]string{
+				"component": applicationName,
+			}
+
+			manifestLabels := deploymentManifest.GetLabels()
+			if manifestLabels != nil {
+				for key, value := range labels {
+					manifestLabels[key] = value
+				}
+				deploymentManifest.SetLabels(manifestLabels)
+			} else {
+				deploymentManifest.SetLabels(labels)
+			}
+
+			// Check to see whether deployed resource already exists. If not, create else update
+			instanceFound := false
+			item, err := a.Client.DynamicClient.Resource(gvr).Namespace(namespace).Get(deploymentManifest.GetName(), metav1.GetOptions{})
+			if item != nil && err == nil {
+				instanceFound = true
+				deploymentManifest.SetResourceVersion(item.GetResourceVersion())
+				deploymentManifest.SetAnnotations(item.GetAnnotations())
+				if item.GetKind() == "Service" {
+					currentServiceSpec := item.UnstructuredContent()["spec"].(map[string]interface{})
+					if currentServiceSpec["type"] == "ClusterIP" {
+						newService := deploymentManifest.UnstructuredContent()
+						newService["spec"].(map[string]interface{})["clusterIP"] = currentServiceSpec["clusterIP"]
+						deploymentManifest.SetUnstructuredContent(newService)
+					}
+				}
+			}
+
+			s := log.Spinnerf("Deploying the manifest for %s", gvk.Kind)
+			result := &unstructured.Unstructured{}
+			actionType := "create"
+			if !instanceFound {
+				result, err = a.Client.DynamicClient.Resource(gvr).Namespace(namespace).Create(deploymentManifest, metav1.CreateOptions{})
+			} else {
+				actionType = "update" // Update deployment
+				result, err = a.Client.DynamicClient.Resource(gvr).Namespace(namespace).Update(deploymentManifest, metav1.UpdateOptions{})
+			}
+			if err != nil {
+				s.End(false)
+				return errors.Wrapf(err, "Failed to %s manifest %s", actionType, gvk.Kind)
+			} else {
+				s.End(true)
+				log.Successf("%sd manifest for %s (%s)", strings.Title(actionType), applicationName, gvk.Kind)
+			}
+
+			// Write the returned manifest to the local manifest file
+			if writtenToManifest {
+				_, err = manifestFile.WriteString("---\n")
+				if err != nil {
+					return errors.Wrap(err, "Unable to write to local manifest file")
+				}
+			}
+			err = yamlDecoder.Encode(result, manifestFile)
+			if err != nil {
+				return errors.Wrap(err, "Unable to write to local manifest file")
+			}
+			writtenToManifest = true
+		}
+	}
+
+	s := log.Spinner("Determining the application URL")
+
+	// TODO: Can we use a occlient created somewhere else rather than create another
+	client, err := occlient.New()
 	if err != nil {
-		err = manifestFile.Close()
 		return err
 	}
 
-	err = manifestFile.Close()
-	return err
+	// Need to wait for a second to give the server time to create the artifacts
+	// TODO: Replace wait with a wait for object to be created
+	time.Sleep(2 * time.Second)
+
+	fullURL := ""
+	urlList, err := url.List(client, &config.LocalConfigInfo{}, "", applicationName)
+	if err != nil {
+		s.End(false)
+		return errors.Wrapf(err, "Unable to determine URL for application %s", applicationName)
+	}
+	if len(urlList.Items) > 0 {
+		for _, url := range urlList.Items {
+			fullURL = fmt.Sprintf("%s://%s", url.Spec.Protocol, url.Spec.Host)
+		}
+	} else {
+		// No URL found - try looking for a knative Route therefore need to wait for Service and Route to be setup.
+		knGvr := schema.GroupVersionResource{Group: "serving.knative.dev", Version: "v1", Resource: "routes"}
+		route, err := a.waitForManifestDeployCompletion(applicationName, knGvr, "Ready")
+		if err != nil {
+			return errors.Wrap(err, "error while waiting for deployment completion")
+		}
+		fullURL = route.UnstructuredContent()["status"].(map[string]interface{})["url"].(string)
+	}
+	s.End(true)
+
+	if fullURL != "" {
+		log.Successf("URL for application %s: %s", applicationName, fullURL)
+	} else {
+		log.Errorf("URL unable to be determined for application %s", applicationName)
+	}
+
+	return nil
 }
 
 func (a Adapter) DeployDelete(manifest []byte) (err error) {
@@ -359,18 +473,14 @@ func (a Adapter) DeployDelete(manifest []byte) (err error) {
 			klog.V(3).Infof("Deploy manifest:\n\n%s", deploymentManifest)
 			gvr := schema.GroupVersionResource{Group: gvk.Group, Version: gvk.Version, Resource: strings.ToLower(gvk.Kind + "s")}
 			klog.V(3).Infof("Manifest type: %s", gvr.String())
-			// TODO: Determine why using a.Client.DynamicClient doesnt work
-			// Need to create my own client in order to get the dynamic parts working
-			myclient, err := dynamic.NewForConfig(a.Client.KubeClientConfig)
-			if err != nil {
-				return err
-			}
-			_, err = myclient.Resource(gvr).Namespace(a.Client.Namespace).Get(deploymentManifest.GetName(), metav1.GetOptions{})
+
+			_, err = a.Client.DynamicClient.Resource(gvr).Namespace(a.Client.Namespace).Get(deploymentManifest.GetName(), metav1.GetOptions{})
 			if err != nil {
 				errorMessage := "Could not delete deployment " + deploymentManifest.GetName() + " as deployment was not found"
 				return errors.New(errorMessage)
 			}
-			err = myclient.Resource(gvr).Namespace(a.Client.Namespace).Delete(deploymentManifest.GetName(), &metav1.DeleteOptions{})
+
+			err = a.Client.DynamicClient.Resource(gvr).Namespace(a.Client.Namespace).Delete(deploymentManifest.GetName(), &metav1.DeleteOptions{})
 			if err != nil {
 				return err
 			}
