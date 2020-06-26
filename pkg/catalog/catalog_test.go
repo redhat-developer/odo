@@ -187,7 +187,7 @@ OdoSettings:
   - Name: CheDevfileRegistry
     URL: https://che-devfile-registry.openshift.io/
   - Name: DefaultDevfileRegistry
-    URL: https://raw.githubusercontent.com/elsony/devfile-registry/master`,
+    URL: https://github.com/elsony/devfile-registry`,
 	))
 	if err != nil {
 		t.Error(err)
@@ -199,21 +199,30 @@ OdoSettings:
 	tests := []struct {
 		name         string
 		registryName string
-		want         map[string]string
+		want         map[string]Registry
 	}{
 		{
 			name:         "Case 1: Test get all devfile registries",
 			registryName: "",
-			want: map[string]string{
-				"CheDevfileRegistry":     "https://che-devfile-registry.openshift.io/",
-				"DefaultDevfileRegistry": "https://raw.githubusercontent.com/elsony/devfile-registry/master",
+			want: map[string]Registry{
+				"CheDevfileRegistry": {
+					Name: "CheDevfileRegistry",
+					URL:  "https://che-devfile-registry.openshift.io/",
+				},
+				"DefaultDevfileRegistry": {
+					Name: "DefaultDevfileRegistry",
+					URL:  "https://github.com/elsony/devfile-registry",
+				},
 			},
 		},
 		{
 			name:         "Case 2: Test get specific devfile registry",
 			registryName: "CheDevfileRegistry",
-			want: map[string]string{
-				"CheDevfileRegistry": "https://che-devfile-registry.openshift.io/",
+			want: map[string]Registry{
+				"CheDevfileRegistry": {
+					Name: "CheDevfileRegistry",
+					URL:  "https://che-devfile-registry.openshift.io/",
+				},
 			},
 		},
 	}
@@ -232,7 +241,7 @@ OdoSettings:
 	}
 }
 
-func TestGetDevfileIndex(t *testing.T) {
+func TestGetDevfileIndexEntries(t *testing.T) {
 	// Start a local HTTP server
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		// Send response to be tested
@@ -263,14 +272,15 @@ func TestGetDevfileIndex(t *testing.T) {
 	// Close the server when test finishes
 	defer server.Close()
 
+	const registryName = "some registry"
 	tests := []struct {
-		name             string
-		devfileIndexLink string
-		want             []DevfileIndexEntry
+		name     string
+		registry Registry
+		want     []DevfileIndexEntry
 	}{
 		{
-			name:             "Test NodeJS devfile index",
-			devfileIndexLink: server.URL,
+			name:     "Test NodeJS devfile index",
+			registry: Registry{Name: registryName, URL: server.URL},
 			want: []DevfileIndexEntry{
 				{
 					DisplayName: "NodeJS Angular Web Application",
@@ -282,6 +292,10 @@ func TestGetDevfileIndex(t *testing.T) {
 					},
 					Icon:              "/images/angular.svg",
 					GlobalMemoryLimit: "2686Mi",
+					Registry: Registry{
+						Name: registryName,
+						URL:  server.URL,
+					},
 					Links: struct {
 						Link string `json:"self"`
 					}{
@@ -294,7 +308,7 @@ func TestGetDevfileIndex(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetDevfileIndex(tt.devfileIndexLink)
+			got, err := getDevfileIndexEntries(tt.registry)
 
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Got: %v, want: %v", got, tt.want)
@@ -561,4 +575,41 @@ func MockImageStream() *imagev1.ImageStream {
 		})
 
 	return imageStream
+}
+
+func TestConvertURL(t *testing.T) {
+	tests := []struct {
+		name    string
+		URL     string
+		wantURL string
+	}{
+		{
+			name:    "Case 1: GitHub regular URL without specifying branch",
+			URL:     "https://github.com/GeekArthur/registry",
+			wantURL: "https://raw.githubusercontent.com/GeekArthur/registry/master",
+		},
+		{
+			name:    "Case 2: GitHub regular URL with master branch specified",
+			URL:     "https://github.ibm.com/Jingfu-J-Wang/registry/tree/master",
+			wantURL: "https://raw.github.ibm.com/Jingfu-J-Wang/registry/master",
+		},
+		{
+			name:    "Case 3: GitHub regular URL with non-master branch specified",
+			URL:     "https://github.com/elsony/devfile-registry/tree/johnmcollier-crw",
+			wantURL: "https://raw.githubusercontent.com/elsony/devfile-registry/johnmcollier-crw",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotURL, err := convertURL(tt.URL)
+			if err != nil {
+				t.Error(err)
+			}
+
+			if !reflect.DeepEqual(gotURL, tt.wantURL) {
+				t.Errorf("Got url: %s, want URL: %s", gotURL, tt.wantURL)
+			}
+		})
+	}
 }

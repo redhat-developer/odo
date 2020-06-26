@@ -7,6 +7,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 
 	routev1 "github.com/openshift/api/route/v1"
@@ -103,19 +104,40 @@ func (o *URLDescribeOptions) Run() (err error) {
 				}
 			}
 		} else {
-			u, err := url.GetIngress(o.KClient, o.EnvSpecificInfo, o.url)
+			componentName := o.EnvSpecificInfo.GetName()
+			oclient, err := occlient.New()
+			if err != nil {
+				return err
+			}
+			oclient.Namespace = o.KClient.Namespace
+			routeSupported, err := oclient.IsRouteSupported()
+			if err != nil {
+				return err
+			}
+			u, err := url.GetIngressOrRoute(oclient, o.KClient, o.EnvSpecificInfo, o.url, componentName, routeSupported)
 			if err != nil {
 				return err
 			}
 			if log.IsJSON() {
 				machineoutput.OutputSuccess(u)
 			} else {
-
 				tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-				fmt.Fprintln(tabWriterURL, "NAME", "\t", "URL", "\t", "PORT")
+				fmt.Fprintln(tabWriterURL, "NAME", "\t", "STATE", "\t", "URL", "\t", "PORT", "\t", "SECURE", "\t", "KIND")
 
-				fmt.Fprintln(tabWriterURL, u.Name, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, u, experimental.IsExperimentalModeEnabled()), "", u.Spec.Rules[0].Host, experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Rules[0].IngressRuleValue.HTTP.Paths[0].Backend.ServicePort.IntVal)
+				// are there changes between local and cluster states?
+				outOfSync := false
+				if u.Spec.Kind == envinfo.ROUTE {
+					fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
+				} else {
+					fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, url.ConvertIngressURLToIngress(u, componentName)), "", u.Spec.Host, experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
+				}
+				if u.Status.State != url.StateTypePushed {
+					outOfSync = true
+				}
 				tabWriterURL.Flush()
+				if outOfSync {
+					log.Info("There are local changes. Please run 'odo push'.")
+				}
 			}
 		}
 	} else {

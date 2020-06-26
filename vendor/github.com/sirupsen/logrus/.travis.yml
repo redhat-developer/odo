@@ -1,17 +1,15 @@
 language: go
-go_import_path: github.com/sirupsen/logrus
-git:
-  depth: 1
+go:
+  - 1.6.x
+  - 1.7.x
+  - 1.8.x
+  - tip
 env:
-  - GO111MODULE=on
-go: [1.13.x, 1.14.x]
-os: [linux, osx]
+  - GOMAXPROCS=4 GORACE=halt_on_error=1
 install:
-  - ./travis/install.sh
+  - go get github.com/stretchr/testify/assert
+  - go get gopkg.in/gemnasium/logrus-airbrake-hook.v2
+  - go get golang.org/x/sys/unix
+  - go get golang.org/x/sys/windows
 script:
-  - ./travis/cross_build.sh
-  - ./travis/lint.sh
-  - export GOMAXPROCS=4
-  - export GORACE=halt_on_error=1
   - go test -race -v ./...
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then go test -race -v -tags appengine ./... ; fi

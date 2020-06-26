@@ -1,5 +1,5 @@
-hash: bfc9d5f9a6898813f88cb63176de326841ac3fb3a147f5a18a818cf465b25a70
-updated: 2020-06-17T08:12:19.260051505-04:00
+hash: 721bab006d880b97996f61d8060113ed2d2de9eafcdf27d48cce8e181478d99c
+updated: 2020-06-17T15:14:10.6611016+05:30
 imports:
 - name: cloud.google.com/go
   version: 8c41231e01b2085512d98153bcffb847ff9b4b9f
@@ -328,7 +328,7 @@ imports:
   - matchers/support/goraph/util
   - types
 - name: github.com/opencontainers/go-digest
-  version: ea51bea511f75cfa3ef6098cc253c5c3609b037a
+  version: a6d0ee40d4207ea02364bd3b9e8e77b9159ba1eb
 - name: github.com/opencontainers/image-spec
   version: 79b036d80240ae530a8de15e1d21c7ab9292c693
   subpackages:
@@ -429,7 +429,6 @@ imports:
   subpackages:
   - prometheus
   - prometheus/internal
-  - prometheus/promhttp
 - name: github.com/prometheus/client_model
   version: fd36f4220a901265f90734c3183c5f0c91daa0b8
   subpackages:
@@ -462,7 +461,7 @@ imports:
   - ident
   - internal/jsonutil
 - name: github.com/sirupsen/logrus
-  version: 6699a89a232f3db797f2e280639854bbc4b89725
+  version: 89742aefa4b206dcf400792f3bd35b542998eb3b
 - name: github.com/spf13/afero
   version: 588a75ec4f32903aa5e39a2619ba6a4631e28424
   subpackages:
@@ -720,7 +719,7 @@ imports:
   - third_party/forked/golang/netutil
   - third_party/forked/golang/reflect
 - name: k8s.io/apiserver
-  version: 65afa901f75a71453aa6efcbbc033641003bb555
+  version: 79427f02047f9189a75b8cdaadccaf65a126853e
   subpackages:
   - pkg/authentication/authenticator
   - pkg/authentication/request/x509
@@ -977,8 +976,6 @@ imports:
 - name: k8s.io/component-base
   version: e22fc98bf46cf388fdc8cb047daf7a6b4f208954
   subpackages:
-  - metrics
-  - metrics/legacyregistry
   - version
 - name: k8s.io/klog
   version: 2ca9ad30301bf30a8a6e0fa2110db6b8df699a91

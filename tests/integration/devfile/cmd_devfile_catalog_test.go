@@ -11,9 +11,10 @@ import (
 )
 
 var _ = Describe("odo devfile catalog command tests", func() {
-	var project string
-	var context string
-	var currentWorkingDirectory string
+	var project, context, currentWorkingDirectory, originalKubeconfig string
+
+	// Using program commmand according to cliRunner in devfile
+	cliRunner := helper.GetCliRunner()
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
@@ -21,26 +22,20 @@ var _ = Describe("odo devfile catalog command tests", func() {
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
-		if os.Getenv("KUBERNETES") == "true" {
-			homeDir := helper.GetUserHomeDir()
-			kubeConfigFile := helper.CopyKubeConfigFile(filepath.Join(homeDir, ".kube", "config"), filepath.Join(context, "config"))
-			project = helper.CreateRandNamespace(kubeConfigFile)
-		} else {
-			project = helper.CreateRandProject()
-		}
+
+		originalKubeconfig = os.Getenv("KUBECONFIG")
+		helper.LocalKubeconfigSet(context)
+		project = cliRunner.CreateRandNamespaceProject()
 		currentWorkingDirectory = helper.Getwd()
 		helper.Chdir(context)
 	})
 
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		if os.Getenv("KUBERNETES") == "true" {
-			helper.DeleteNamespace(project)
-			os.Unsetenv("KUBECONFIG")
-		} else {
-			helper.DeleteProject(project)
-		}
+		cliRunner.DeleteNamespaceProject(project)
 		helper.Chdir(currentWorkingDirectory)
+		err := os.Setenv("KUBECONFIG", originalKubeconfig)
+		Expect(err).NotTo(HaveOccurred())
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
 	})
@@ -52,7 +47,8 @@ var _ = Describe("odo devfile catalog command tests", func() {
 				"Odo Devfile Components",
 				"NAME",
 				"java-spring-boot",
-				"openLiberty",
+				"java-openliberty",
+				"quarkus",
 				"DESCRIPTION",
 				"REGISTRY",
 				"SUPPORTED",
@@ -69,12 +65,44 @@ var _ = Describe("odo devfile catalog command tests", func() {
 				"NAME",
 				"java-spring-boot",
 				"java-maven",
+				"quarkus",
 				"php-mysql",
 				"DESCRIPTION",
 				"REGISTRY",
 				"SUPPORTED",
 			}
 			helper.MatchAllInOutput(output, wantOutput)
+		})
+	})
+
+	Context("When executing catalog list components with -o json flag", func() {
+		It("should list devfile components in json format", func() {
+			output := helper.CmdShouldPass("odo", "catalog", "list", "components", "-o", "json")
+			wantOutput := []string{
+				"odo.dev/v1alpha1",
+				"openLiberty",
+				"java-spring-boot",
+				"nodejs",
+				"quarkus",
+				"php-mysql",
+				"maven",
+				"golang",
+				"java-maven",
+			}
+			helper.MatchAllInOutput(output, wantOutput)
+		})
+	})
+
+	Context("When executing catalog list components with registry that is not set up properly", func() {
+		It("should list components from valid registry", func() {
+			helper.CmdShouldPass("odo", "registry", "add", "fake", "http://fake")
+			output := helper.CmdShouldPass("odo", "catalog", "list", "components")
+			helper.MatchAllInOutput(output, []string{
+				"Odo Devfile Components",
+				"java-spring-boot",
+				"quarkus",
+			})
+			helper.CmdShouldPass("odo", "registry", "delete", "fake", "-f")
 		})
 	})
 })

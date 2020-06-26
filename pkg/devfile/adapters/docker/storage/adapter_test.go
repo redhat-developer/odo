@@ -38,15 +38,15 @@ func TestCreate(t *testing.T) {
 				{
 					Name: "vol1",
 					Volume: common.DevfileVolume{
-						Name: &volNames[0],
-						Size: &volSize,
+						Name: volNames[0],
+						Size: volSize,
 					},
 				},
 				{
 					Name: "vol2",
 					Volume: common.DevfileVolume{
-						Name: &volNames[1],
-						Size: &volSize,
+						Name: volNames[1],
+						Size: volSize,
 					},
 				},
 			},
@@ -59,15 +59,15 @@ func TestCreate(t *testing.T) {
 				{
 					Name: "vol1",
 					Volume: common.DevfileVolume{
-						Name: &volNames[0],
-						Size: &volSize,
+						Name: volNames[0],
+						Size: volSize,
 					},
 				},
 				{
 					Name: "vol2",
 					Volume: common.DevfileVolume{
-						Name: &volNames[1],
-						Size: &volSize,
+						Name: volNames[1],
+						Size: volSize,
 					},
 				},
 			},
@@ -79,7 +79,7 @@ func TestCreate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					ComponentType: versionsCommon.DevfileComponentTypeDockerimage,
+					Components: []versionsCommon.DevfileComponent{},
 				},
 			}
 

@@ -2,6 +2,7 @@ package kclient
 
 import (
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	"k8s.io/client-go/rest"
 
 	// api resource types
 
@@ -39,10 +40,10 @@ func GenerateContainer(name, image string, isPrivileged bool, command, args []st
 		Image:           image,
 		ImagePullPolicy: corev1.PullAlways,
 		Resources:       resourceReqs,
-		Command:         command,
-		Args:            args,
 		Env:             envVars,
 		Ports:           ports,
+		Command:         command,
+		Args:            args,
 	}
 
 	if isPrivileged {
@@ -248,4 +249,14 @@ func GenerateOwnerReference(deployment *appsv1.Deployment) metav1.OwnerReference
 	}
 
 	return ownerReference
+}
+
+// GeneratePortForwardReq builds a port forward request
+func (c *Client) GeneratePortForwardReq(podName string) *rest.Request {
+	return c.KubeClient.CoreV1().RESTClient().
+		Post().
+		Resource("pods").
+		Namespace(c.Namespace).
+		Name(podName).
+		SubResource("portforward")
 }

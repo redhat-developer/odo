@@ -82,7 +82,7 @@ func (kubectl KubectlRunner) WaitAndCheckForExistence(resourceType, namespace st
 	for {
 		select {
 		case <-pingTimeout:
-			Fail(fmt.Sprintf("Timeout out after %v minutes", timeoutMinutes))
+			Fail(fmt.Sprintf("Timeout after %d minutes", timeoutMinutes))
 
 		case <-tick:
 			session := CmdRunner(kubectl.path, "get", resourceType, "--namespace", namespace)
@@ -103,4 +103,21 @@ func (kubectl KubectlRunner) GetServices(namespace string) string {
 	Eventually(session).Should(gexec.Exit(0))
 	output := string(session.Wait().Out.Contents())
 	return output
+}
+
+// CreateRandNamespaceProject create new project with random name in kubernetes cluster (10 letters)
+func (kubectl KubectlRunner) CreateRandNamespaceProject() string {
+	projectName := RandString(10)
+	fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
+	CmdShouldPass("kubectl", "create", "namespace", projectName)
+	CmdShouldPass("kubectl", "config", "set-context", "--current", "--namespace", projectName)
+	session := CmdShouldPass("kubectl", "get", "namespaces")
+	Expect(session).To(ContainSubstring(projectName))
+	return projectName
+}
+
+// DeleteNamespaceProject deletes a specified project in kubernetes cluster
+func (kubectl KubectlRunner) DeleteNamespaceProject(projectName string) {
+	fmt.Fprintf(GinkgoWriter, "Deleting project: %s\n", projectName)
+	CmdShouldPass("kubectl", "delete", "namespaces", projectName)
 }

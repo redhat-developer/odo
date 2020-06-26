@@ -65,10 +65,7 @@ var _ = Describe("odo preference and config command tests", func() {
 		})
 		It("should get the default global config keys", func() {
 			configOutput := helper.CmdShouldPass("odo", "preference", "view")
-			Expect(configOutput).To(ContainSubstring("UpdateNotification"))
-			Expect(configOutput).To(ContainSubstring("NamePrefix"))
-			Expect(configOutput).To(ContainSubstring("Timeout"))
-			Expect(configOutput).To(ContainSubstring("PushTarget"))
+			helper.MatchAllInOutput(configOutput, []string{"UpdateNotification", "NamePrefix", "Timeout", "PushTarget"})
 			updateNotificationValue := helper.GetPreferenceValue("UpdateNotification")
 			Expect(updateNotificationValue).To(BeEmpty())
 			namePrefixValue := helper.GetPreferenceValue("NamePrefix")
@@ -289,8 +286,7 @@ var _ = Describe("odo preference and config command tests", func() {
 			helper.CmdShouldPass("odo", "config", "unset", "--env", "PORT", "--context", context)
 			helper.CmdShouldPass("odo", "config", "unset", "--env", "SECRET_KEY", "--context", context)
 			configValue := helper.CmdShouldPass("odo", "config", "view", "--context", context)
-			Expect(configValue).To(Not(ContainSubstring(("PORT"))))
-			Expect(configValue).To(Not(ContainSubstring(("SECRET_KEY"))))
+			helper.DontMatchAllInOutput(configValue, []string{"PORT", "SECRET_KEY"})
 		})
 		It("should check for existence of environment variable in config before unsetting it", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", project, "--context", context)
@@ -322,8 +318,7 @@ var _ = Describe("odo preference and config command tests", func() {
 			kubeconfigOld := os.Getenv("KUBECONFIG")
 			os.Setenv("KUBECONFIG", "/no/such/path")
 			configValue := helper.CmdShouldPass("odo", "config", "view", "--context", context)
-			Expect(configValue).To(ContainSubstring("hello"))
-			Expect(configValue).To(ContainSubstring("world"))
+			helper.MatchAllInOutput(configValue, []string{"hello", "world"})
 			os.Setenv("KUBECONFIG", kubeconfigOld)
 		})
 

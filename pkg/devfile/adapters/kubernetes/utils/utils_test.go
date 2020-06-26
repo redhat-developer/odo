@@ -2,6 +2,7 @@ package utils
 
 import (
 	"reflect"
+	"strconv"
 	"testing"
 
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
@@ -17,11 +18,22 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 
 	command := "ls -la"
 	component := "alias1"
+
+	debugCommand := "nodemon --inspect={DEBUG_PORT}"
+	debugComponent := "alias2"
+
 	image := "image1"
 	workDir := "/root"
-	validCommandType := common.DevfileCommandTypeExec
 	emptyString := ""
 	defaultCommand := []string{"tail"}
+	execRunGroup := versionsCommon.Group{
+		IsDefault: true,
+		Kind:      versionsCommon.RunCommandGroupType,
+	}
+	execDebugGroup := versionsCommon.Group{
+		IsDefault: true,
+		Kind:      versionsCommon.DebugCommandGroupType,
+	}
 	defaultArgs := []string{"-f", "/dev/null"}
 	supervisordCommand := []string{adaptersCommon.SupervisordBinaryPath}
 	supervisordArgs := []string{"-c", adaptersCommon.SupervisordConfFile}
@@ -29,8 +41,10 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 	tests := []struct {
 		name                    string
 		runCommand              string
+		debugCommand            string
+		debugPort               int
 		containers              []corev1.Container
-		commandActions          []common.DevfileCommandAction
+		execCommands            []common.Exec
 		componentType           common.DevfileComponentType
 		isSupervisordEntrypoint bool
 		wantErr                 bool
@@ -48,15 +62,15 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					Env:             []corev1.EnvVar{},
 				},
 			},
-			commandActions: []versionsCommon.DevfileCommandAction{
+			execCommands: []versionsCommon.Exec{
 				{
-					Command:   &command,
-					Component: &component,
-					Workdir:   &workDir,
-					Type:      &validCommandType,
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group:       &execRunGroup,
 				},
 			},
-			componentType:           common.DevfileComponentTypeDockerimage,
+			componentType:           common.ContainerComponentType,
 			isSupervisordEntrypoint: false,
 			wantErr:                 false,
 		},
@@ -73,14 +87,14 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					Env:             []corev1.EnvVar{},
 				},
 			},
-			commandActions: []versionsCommon.DevfileCommandAction{
+			execCommands: []versionsCommon.Exec{
 				{
-					Command:   &command,
-					Component: &component,
-					Type:      &validCommandType,
+					CommandLine: command,
+					Component:   component,
+					Group:       &execRunGroup,
 				},
 			},
-			componentType:           common.DevfileComponentTypeDockerimage,
+			componentType:           common.ContainerComponentType,
 			isSupervisordEntrypoint: false,
 			wantErr:                 false,
 		},
@@ -95,15 +109,15 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					Env:             []corev1.EnvVar{},
 				},
 			},
-			commandActions: []versionsCommon.DevfileCommandAction{
+			execCommands: []versionsCommon.Exec{
 				{
-					Command:   &command,
-					Component: &component,
-					Workdir:   &workDir,
-					Type:      &validCommandType,
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group:       &execRunGroup,
 				},
 			},
-			componentType:           common.DevfileComponentTypeDockerimage,
+			componentType:           common.ContainerComponentType,
 			isSupervisordEntrypoint: true,
 			wantErr:                 false,
 		},
@@ -118,15 +132,16 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					Env:             []corev1.EnvVar{},
 				},
 			},
-			commandActions: []versionsCommon.DevfileCommandAction{
+			execCommands: []versionsCommon.Exec{
 				{
-					Command:   &command,
-					Component: &component,
-					Workdir:   &workDir,
-					Type:      &validCommandType,
+					Id:          "customcommand",
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group:       &execRunGroup,
 				},
 			},
-			componentType:           common.DevfileComponentTypeDockerimage,
+			componentType:           common.ContainerComponentType,
 			isSupervisordEntrypoint: true,
 			wantErr:                 false,
 		},
@@ -141,15 +156,126 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 					Env:             []corev1.EnvVar{},
 				},
 			},
-			commandActions: []versionsCommon.DevfileCommandAction{
+			execCommands: []versionsCommon.Exec{
 				{
-					Command:   &command,
-					Component: &component,
-					Workdir:   &workDir,
-					Type:      &validCommandType,
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group:       &execRunGroup,
 				},
 			},
-			componentType:           common.DevfileComponentTypeDockerimage,
+			componentType:           common.ContainerComponentType,
+			isSupervisordEntrypoint: true,
+			wantErr:                 true,
+		},
+
+		{
+			name:         "Case: empty debug command",
+			runCommand:   "customRunCommand",
+			debugCommand: emptyString,
+			debugPort:    5858,
+			containers: []corev1.Container{
+				{
+					Name:            component,
+					Image:           image,
+					ImagePullPolicy: corev1.PullAlways,
+					Env:             []corev1.EnvVar{},
+				},
+				{
+					Name:            debugComponent,
+					Image:           image,
+					ImagePullPolicy: corev1.PullAlways,
+					Env:             []corev1.EnvVar{},
+				},
+			},
+			execCommands: []versionsCommon.Exec{
+				{
+					Id:          "customRunCommand",
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group:       &execRunGroup,
+				},
+				{
+					CommandLine: debugCommand,
+					Component:   debugComponent,
+					WorkingDir:  workDir,
+					Group:       &execDebugGroup,
+				},
+			},
+			componentType:           common.ContainerComponentType,
+			isSupervisordEntrypoint: true,
+			wantErr:                 false,
+		},
+		{
+			name:         "Case: custom debug command",
+			runCommand:   emptyString,
+			debugCommand: "customdebugcommand",
+			debugPort:    3000,
+			containers: []corev1.Container{
+				{
+					Name:            component,
+					Image:           image,
+					ImagePullPolicy: corev1.PullAlways,
+					Env:             []corev1.EnvVar{},
+				},
+			},
+			execCommands: []versionsCommon.Exec{
+				{
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group:       &execRunGroup,
+				},
+				{
+					Id:          "customdebugcommand",
+					CommandLine: debugCommand,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group:       &execDebugGroup,
+				},
+			},
+			componentType:           common.ContainerComponentType,
+			isSupervisordEntrypoint: true,
+			wantErr:                 false,
+		},
+		{
+			name:         "Case: wrong custom debug command",
+			runCommand:   emptyString,
+			debugCommand: "customdebugcommand123",
+			debugPort:    9090,
+			containers: []corev1.Container{
+				{
+					Name:            component,
+					Image:           image,
+					ImagePullPolicy: corev1.PullAlways,
+					Env:             []corev1.EnvVar{},
+				},
+				{
+					Name:            debugComponent,
+					Image:           image,
+					ImagePullPolicy: corev1.PullAlways,
+					Env:             []corev1.EnvVar{},
+				},
+			},
+			execCommands: []versionsCommon.Exec{
+				{
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group:       &execRunGroup,
+				},
+				{
+					CommandLine: debugCommand,
+					Component:   debugComponent,
+					WorkingDir:  workDir,
+					Group: &versionsCommon.Group{
+						IsDefault: true,
+						Kind:      versionsCommon.BuildCommandGroupType,
+					},
+				},
+			},
+			componentType:           common.ContainerComponentType,
 			isSupervisordEntrypoint: true,
 			wantErr:                 true,
 		},
@@ -158,61 +284,106 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					ComponentType:  tt.componentType,
-					CommandActions: tt.commandActions,
+					Components: []versionsCommon.DevfileComponent{
+						{
+							Container: &versionsCommon.Container{
+								Name: component,
+							},
+						},
+						{
+							Container: &versionsCommon.Container{
+								Name: debugComponent,
+							},
+						},
+					},
+					ExecCommands: tt.execCommands,
 				},
 			}
 
-			containers, err := UpdateContainersWithSupervisord(devObj, tt.containers, tt.runCommand)
+			containers, err := UpdateContainersWithSupervisord(devObj, tt.containers, tt.runCommand, tt.debugCommand, tt.debugPort)
 
-			if !tt.wantErr && err != nil {
-				t.Errorf("TestUpdateContainersWithSupervisord unxpected error: %v", err)
-			} else if tt.wantErr && err != nil {
-				// return since we dont want to test anything further
-				return
+			if tt.wantErr {
+				if err == nil {
+					t.Error("wanted error but got no error")
+				} else {
+					// return since we dont want to test anything further
+					return
+				}
+			} else {
+				if err != nil {
+					t.Errorf("TestUpdateContainersWithSupervisord: unexpected error %v", err)
+				}
 			}
 
 			// Check if the supervisord volume has been mounted
 			supervisordVolumeMountMatched := false
 			envRunMatched := false
 			envWorkDirMatched := false
+			envDebugMatched := false
+			envDebugWorkDirMatched := false
+			envDebugPortMatched := false
 
-			if tt.commandActions[0].Workdir == nil {
+			if tt.execCommands[0].WorkingDir == "" {
 				// if workdir is not present, dont test for matching the env
 				envWorkDirMatched = true
 			}
 
+			if len(tt.execCommands) >= 2 && tt.execCommands[1].WorkingDir == "" {
+				// if workdir is not present, dont test for matching the env
+				envDebugWorkDirMatched = true
+			}
+
 			for _, container := range containers {
-				if container.Name == component {
-					for _, volumeMount := range container.VolumeMounts {
-						if volumeMount.Name == adaptersCommon.SupervisordVolumeName && volumeMount.MountPath == adaptersCommon.SupervisordMountPath {
-							supervisordVolumeMountMatched = true
+				for _, testContainer := range tt.containers {
+					if container.Name == testContainer.Name {
+						for _, volumeMount := range container.VolumeMounts {
+							if volumeMount.Name == adaptersCommon.SupervisordVolumeName && volumeMount.MountPath == adaptersCommon.SupervisordMountPath {
+								supervisordVolumeMountMatched = true
+							}
 						}
-					}
 
-					for _, envVar := range container.Env {
-						if envVar.Name == adaptersCommon.EnvOdoCommandRun && envVar.Value == *tt.commandActions[0].Command {
-							envRunMatched = true
+						for _, envVar := range container.Env {
+							if envVar.Name == adaptersCommon.EnvOdoCommandRun && envVar.Value == tt.execCommands[0].CommandLine {
+								envRunMatched = true
+							}
+							if tt.execCommands[0].WorkingDir != "" && envVar.Name == adaptersCommon.EnvOdoCommandRunWorkingDir && envVar.Value == tt.execCommands[0].WorkingDir {
+								envWorkDirMatched = true
+							}
+
+							// if the debug command is also present
+							if len(tt.execCommands) >= 2 {
+								// check if the debug command env was set properly
+								if envVar.Name == adaptersCommon.EnvOdoCommandDebug && envVar.Value == tt.execCommands[1].CommandLine {
+									envDebugMatched = true
+								}
+								// check if the debug command's workingDir env was set properly
+								if tt.execCommands[1].WorkingDir != "" && envVar.Name == adaptersCommon.EnvOdoCommandDebugWorkingDir && envVar.Value == tt.execCommands[1].WorkingDir {
+									envDebugWorkDirMatched = true
+								}
+								// check if the debug command's debugPort env was set properly
+								if envVar.Name == adaptersCommon.EnvDebugPort && envVar.Value == strconv.Itoa(tt.debugPort) {
+									envDebugPortMatched = true
+								}
+							}
 						}
-						if tt.commandActions[0].Workdir != nil && envVar.Name == adaptersCommon.EnvOdoCommandRunWorkingDir && envVar.Value == *tt.commandActions[0].Workdir {
-							envWorkDirMatched = true
+
+						if tt.isSupervisordEntrypoint && (!reflect.DeepEqual(container.Command, supervisordCommand) || !reflect.DeepEqual(container.Args, supervisordArgs)) {
+							t.Errorf("TestUpdateContainersWithSupervisord error: commands and args mismatched for container %v, expected command: %v actual command: %v, expected args: %v actual args: %v", component, supervisordCommand, container.Command, supervisordArgs, container.Args)
+						} else if !tt.isSupervisordEntrypoint && (!reflect.DeepEqual(container.Command, defaultCommand) || !reflect.DeepEqual(container.Args, defaultArgs)) {
+							t.Errorf("TestUpdateContainersWithSupervisord error: commands and args mismatched for container %v, expected command: %v actual command: %v, expected args: %v actual args: %v", component, defaultCommand, container.Command, defaultArgs, container.Args)
 						}
-					}
-
-					if tt.isSupervisordEntrypoint && (!reflect.DeepEqual(container.Command, supervisordCommand) || !reflect.DeepEqual(container.Args, supervisordArgs)) {
-						t.Errorf("TestUpdateContainersWithSupervisord error: commands and args mismatched for container %v, expected command: %v actual command: %v, expected args: %v actual args: %v", component, supervisordCommand, container.Command, supervisordArgs, container.Args)
-					} else if !tt.isSupervisordEntrypoint && (!reflect.DeepEqual(container.Command, defaultCommand) || !reflect.DeepEqual(container.Args, defaultArgs)) {
-						t.Errorf("TestUpdateContainersWithSupervisord error: commands and args mismatched for container %v, expected command: %v actual command: %v, expected args: %v actual args: %v", component, defaultCommand, container.Command, defaultArgs, container.Args)
-
 					}
 				}
 			}
-
 			if !supervisordVolumeMountMatched {
 				t.Errorf("TestUpdateContainersWithSupervisord error: could not find supervisord volume mounts for container %v", component)
 			}
 			if !envRunMatched || !envWorkDirMatched {
 				t.Errorf("TestUpdateContainersWithSupervisord error: could not find env vars for supervisord in container %v, found command env: %v, found work dir env: %v", component, envRunMatched, envWorkDirMatched)
+			}
+
+			if len(tt.execCommands) >= 2 && (!envDebugMatched || !envDebugWorkDirMatched || !envDebugPortMatched) {
+				t.Errorf("TestUpdateContainersWithSupervisord error: could not find env vars for supervisord in container %v, found debug env: %v, found work dir env: %v, found debug port env: %v", component, envDebugMatched, envDebugWorkDirMatched, envDebugPortMatched)
 			}
 		})
 	}

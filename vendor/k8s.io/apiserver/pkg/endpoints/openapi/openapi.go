@@ -108,18 +108,6 @@ func (s groupVersionKinds) Less(i, j int) bool {
 	return s[i].Group < s[j].Group
 }
 
-func (s groupVersionKinds) JSON() []interface{} {
-	j := []interface{}{}
-	for _, gvk := range s {
-		j = append(j, map[string]interface{}{
-			"group":   gvk.Group,
-			"version": gvk.Version,
-			"kind":    gvk.Kind,
-		})
-	}
-	return j
-}
-
 // DefinitionNamer is the type to customize OpenAPI definition name.
 type DefinitionNamer struct {
 	typeGroupVersionKinds map[string]groupVersionKinds
@@ -184,7 +172,7 @@ func NewDefinitionNamer(schemes ...*runtime.Scheme) *DefinitionNamer {
 func (d *DefinitionNamer) GetDefinitionName(name string) (string, spec.Extensions) {
 	if groupVersionKinds, ok := d.typeGroupVersionKinds[name]; ok {
 		return friendlyName(name), spec.Extensions{
-			extensionGVK: groupVersionKinds.JSON(),
+			extensionGVK: []v1.GroupVersionKind(groupVersionKinds),
 		}
 	}
 	return friendlyName(name), nil

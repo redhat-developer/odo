@@ -24,6 +24,9 @@ const (
 	// DefaultDevfileRunCommand is a predefined devfile command for run
 	DefaultDevfileRunCommand PredefinedDevfileCommands = "devrun"
 
+	// DefaultDevfileDebugCommand is a predefined devfile command for debug
+	DefaultDevfileDebugCommand PredefinedDevfileCommands = "debugrun"
+
 	// SupervisordInitContainerName The init container name for supervisord
 	SupervisordInitContainerName = "copy-supervisord"
 
@@ -67,6 +70,15 @@ const (
 	// EnvOdoCommandRun is the env defined in the runtime component container which holds the run command to be executed
 	EnvOdoCommandRun = "ODO_COMMAND_RUN"
 
+	// EnvOdoCommandDebugWorkingDir is the env defined in the runtime component container which holds the work dir for the debug command
+	EnvOdoCommandDebugWorkingDir = "ODO_COMMAND_DEBUG_WORKING_DIR"
+
+	// EnvOdoCommandDebug is the env defined in the runtime component container which holds the debug command to be executed
+	EnvOdoCommandDebug = "ODO_COMMAND_DEBUG"
+
+	// EnvDebugPort is the env defined in the runtime component container which holds the debug port for remote debugging
+	EnvDebugPort = "DEBUG_PORT"
+
 	// ShellExecutable is the shell executable
 	ShellExecutable = "/bin/sh"
 
@@ -81,8 +93,12 @@ type CommandNames struct {
 }
 
 func isComponentSupported(component common.DevfileComponent) bool {
-	// Currently odo only uses devfile components of type dockerimage, since most of the Che registry devfiles use it
-	return component.Type == common.DevfileComponentTypeDockerimage
+	// Currently odo only uses devfile components of type container, since most of the Che registry devfiles use it
+	if component.Container != nil {
+		klog.V(4).Infof("Found component \"%v\" with name \"%v\"\n", common.ContainerComponentType, component.Container.Name)
+		return true
+	}
+	return false
 }
 
 // GetBootstrapperImage returns the odo-init bootstrapper image
@@ -99,7 +115,6 @@ func GetSupportedComponents(data data.DevfileData) []common.DevfileComponent {
 	// Only components with aliases are considered because without an alias commands cannot reference them
 	for _, comp := range data.GetAliasedComponents() {
 		if isComponentSupported(comp) {
-			klog.V(3).Infof("Found component \"%v\" with alias \"%v\"\n", comp.Type, *comp.Alias)
 			components = append(components, comp)
 		}
 	}
@@ -112,14 +127,14 @@ func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume 
 	componentAliasToVolumes := make(map[string][]DevfileVolume)
 	size := volumeSize
 	for _, comp := range GetSupportedComponents(devfileObj.Data) {
-		if comp.Volumes != nil {
-			for _, volume := range comp.Volumes {
+		if len(comp.Container.VolumeMounts) != 0 {
+			for _, volume := range comp.Container.VolumeMounts {
 				vol := DevfileVolume{
 					Name:          volume.Name,
-					ContainerPath: volume.ContainerPath,
-					Size:          &size,
+					ContainerPath: volume.Path,
+					Size:          size,
 				}
-				componentAliasToVolumes[*comp.Alias] = append(componentAliasToVolumes[*comp.Alias], vol)
+				componentAliasToVolumes[comp.Container.Name] = append(componentAliasToVolumes[comp.Container.Name], vol)
 			}
 		}
 	}
@@ -127,9 +142,9 @@ func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume 
 }
 
 // IsEnvPresent checks if the env variable is present in an array of env variables
-func IsEnvPresent(envVars []common.DockerimageEnv, envVarName string) bool {
+func IsEnvPresent(envVars []common.Env, envVarName string) bool {
 	for _, envVar := range envVars {
-		if *envVar.Name == envVarName {
+		if envVar.Name == envVarName {
 			return true
 		}
 	}
@@ -138,9 +153,9 @@ func IsEnvPresent(envVars []common.DockerimageEnv, envVarName string) bool {
 }
 
 // IsPortPresent checks if the port is present in the endpoints array
-func IsPortPresent(endpoints []common.DockerimageEndpoint, port int) bool {
+func IsPortPresent(endpoints []common.Endpoint, port int) bool {
 	for _, endpoint := range endpoints {
-		if *endpoint.Port == int32(port) {
+		if endpoint.TargetPort == int32(port) {
 			return true
 		}
 	}
@@ -152,7 +167,7 @@ func IsPortPresent(endpoints []common.DockerimageEndpoint, port int) bool {
 func IsRestartRequired(command common.DevfileCommand) bool {
 	var restart = true
 	var err error
-	rs, ok := command.Attributes["restart"]
+	rs, ok := command.Exec.Attributes["restart"]
 	if ok {
 		restart, err = strconv.ParseBool(rs)
 		// Ignoring error here as restart is true for all error and default cases.

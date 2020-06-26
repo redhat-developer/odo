@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env bash -e
 
 # Copyright 2018 The Kubernetes Authors.
 #
@@ -14,16 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -e
+rm *.pem
 
-rm ./*.pem
-
-for N in $(seq 1 3); do
-    ssh-keygen -t rsa -b 2048 -f rsa_"$N".pem -N ''
+for N in `seq 1 3`; do
+    ssh-keygen -t rsa -b 2048 -f rsa_$N.pem -N ''
 done
 
-for N in $(seq 1 3); do
-    ssh-keygen -t ecdsa -b 521 -f ecdsa_"$N".pem -N ''
+for N in `seq 1 3`; do
+    ssh-keygen -t ecdsa -b 521 -f ecdsa_$N.pem -N ''
 done
 
-rm ./*.pub
+rm *.pub

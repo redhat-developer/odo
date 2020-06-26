@@ -53,8 +53,8 @@ var (
 	# Create a URL of ingress kind for the current component with a host (using CRC as an example)
 	%[1]s --host apps-crc.testing --ingress
 
-	# Create a secured URL for the current component with a specific host (using CRC as an example)
-	%[1]s --host apps-crc.testing --secured
+	# Create a secure URL for the current component with a specific host (using CRC as an example)
+	%[1]s --host apps-crc.testing --secure
 	  `)
 
 	urlCreateExampleDocker = ktemplates.Examples(`  # Create a URL with a specific name by automatically detecting the port used by the component
@@ -92,6 +92,8 @@ func NewURLCreateOptions() *URLCreateOptions {
 
 // Complete completes URLCreateOptions after they've been Created
 func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	o.DevfilePath = clicomponent.DevfilePath
+
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 	} else if o.now {
@@ -321,7 +323,6 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 			urlCreateCmd.Flags().BoolVar(&o.wantIngress, "ingress", false, "Creates an ingress instead of Route on OpenShift clusters")
 			urlCreateCmd.Example = fmt.Sprintf(urlCreateExampleExperimental, fullName)
 		}
-		urlCreateCmd.Flags().StringVar(&o.DevfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
 	} else {
 		urlCreateCmd.Flags().BoolVarP(&o.secureURL, "secure", "", false, "creates a secure https url")
 		urlCreateCmd.Example = fmt.Sprintf(urlCreateExample, fullName)

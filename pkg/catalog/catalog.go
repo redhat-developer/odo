@@ -3,13 +3,17 @@ package catalog
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"sort"
 	"strings"
+	"sync"
+
+	"github.com/openshift/odo/pkg/preference"
 
 	imagev1 "github.com/openshift/api/image/v1"
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
@@ -21,31 +25,32 @@ const (
 	apiVersion = "odo.dev/v1alpha1"
 )
 
-// DevfileRegistries contains the links of all devfile registries
-var DevfileRegistries = []string{
-	"https://raw.githubusercontent.com/elsony/devfile-registry/master",
-	"https://che-devfile-registry.openshift.io/",
-}
-
 // GetDevfileRegistries gets devfile registries from preference file,
 // if registry name is specified return the specific registry, otherwise return all registries
-func GetDevfileRegistries(registryName string) (map[string]string, error) {
-	devfileRegistries := make(map[string]string)
+func GetDevfileRegistries(registryName string) (map[string]Registry, error) {
+	devfileRegistries := make(map[string]Registry)
 
 	cfg, err := preference.New()
 	if err != nil {
 		return nil, err
 	}
 
+	hasName := len(registryName) != 0
 	if cfg.OdoSettings.RegistryList != nil {
 		for _, registry := range *cfg.OdoSettings.RegistryList {
-			if len(registryName) != 0 {
+			if hasName {
 				if registryName == registry.Name {
-					devfileRegistries[registry.Name] = registry.URL
+					devfileRegistries[registry.Name] = Registry{
+						Name: registry.Name,
+						URL:  registry.URL,
+					}
 					return devfileRegistries, nil
 				}
 			} else {
-				devfileRegistries[registry.Name] = registry.URL
+				devfileRegistries[registry.Name] = Registry{
+					Name: registry.Name,
+					URL:  registry.URL,
+				}
 			}
 		}
 	} else {
@@ -55,18 +60,62 @@ func GetDevfileRegistries(registryName string) (map[string]string, error) {
 	return devfileRegistries, nil
 }
 
-// GetDevfileIndex loads the devfile registry index.json
-func GetDevfileIndex(devfileIndexLink string) ([]DevfileIndexEntry, error) {
+// convertURL converts GitHub regular URL to GitHub raw URL, do nothing if the URL is not GitHub URL
+// For example:
+// GitHub regular URL: https://github.com/elsony/devfile-registry/tree/johnmcollier-crw
+// GitHub raw URL: https://raw.githubusercontent.com/elsony/devfile-registry/johnmcollier-crw
+func convertURL(URL string) (string, error) {
+	url, err := url.Parse(URL)
+	if err != nil {
+		return "", err
+	}
+
+	if strings.Contains(url.Host, "github") && !strings.Contains(url.Host, "raw") {
+		// Convert path part of the URL
+		URLSlice := strings.Split(URL, "/")
+		if len(URLSlice) > 2 && URLSlice[len(URLSlice)-2] == "tree" {
+			// GitHub raw URL doesn't have "tree" structure in the URL, need to remove it
+			URL = strings.Replace(URL, "/tree", "", 1)
+		} else {
+			// Add "master" branch for GitHub raw URL by default if branch is not specified
+			URL = URL + "/master"
+		}
+
+		// Convert host part of the URL
+		if url.Host == "github.com" {
+			URL = strings.Replace(URL, "github.com", "raw.githubusercontent.com", 1)
+		} else {
+			URL = strings.Replace(URL, url.Host, "raw."+url.Host, 1)
+		}
+	}
+
+	return URL, nil
+}
+
+const indexPath = "/devfiles/index.json"
+
+// getDevfileIndexEntries retrieves the devfile entries associated with the specified registry
+func getDevfileIndexEntries(registry Registry) ([]DevfileIndexEntry, error) {
 	var devfileIndex []DevfileIndexEntry
 
-	jsonBytes, err := util.HTTPGetRequest(devfileIndexLink)
+	URL, err := convertURL(registry.URL)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Unable to download the devfile index.json from %s", devfileIndexLink)
+		return nil, errors.Wrapf(err, "Unable to convert URL %s", registry.URL)
+	}
+	registry.URL = URL
+	indexLink := registry.URL + indexPath
+	jsonBytes, err := util.HTTPGetRequest(indexLink)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Unable to download the devfile index.json from %s", indexLink)
 	}
 
 	err = json.Unmarshal(jsonBytes, &devfileIndex)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Unable to unmarshal the devfile index.json from %s", devfileIndexLink)
+		return nil, errors.Wrapf(err, "Unable to unmarshal the devfile index.json from %s", indexLink)
+	}
+
+	for i := range devfileIndex {
+		devfileIndex[i].Registry = registry
 	}
 
 	return devfileIndex, nil
@@ -121,15 +170,12 @@ func IsDevfileComponentSupported(devfile Devfile) bool {
 		}
 
 		if !hasRunCommand {
-			hasRunCommand = strings.Contains(command.Name, "devRun")
+			hasRunCommand = strings.Contains(strings.ToLower(command.Name), string(common.DefaultDevfileRunCommand))
 		}
 
-		if !hasBuildCommand {
-			hasBuildCommand = strings.Contains(command.Name, "devBuild")
-		}
 	}
 
-	if hasDockerImage && hasAlias && hasBuildCommand && hasRunCommand {
+	if hasDockerImage && hasAlias && hasRunCommand {
 		return true
 	}
 
@@ -138,63 +184,81 @@ func IsDevfileComponentSupported(devfile Devfile) bool {
 
 // ListDevfileComponents lists all the available devfile components
 func ListDevfileComponents(registryName string) (DevfileComponentTypeList, error) {
-	var catalogDevfileList DevfileComponentTypeList
+	catalogDevfileList := &DevfileComponentTypeList{}
 	var err error
 
+	// TODO: consider caching registry information for better performance since it should be fairly stable over time
 	// Get devfile registries
 	catalogDevfileList.DevfileRegistries, err = GetDevfileRegistries(registryName)
 	if err != nil {
-		return catalogDevfileList, err
+		return *catalogDevfileList, err
 	}
 	if catalogDevfileList.DevfileRegistries == nil {
-		return catalogDevfileList, nil
+		return *catalogDevfileList, nil
 	}
 
-	for registryName, registryURL := range catalogDevfileList.DevfileRegistries {
+	// first retrieve the indices for each registry, concurrently
+	registryIndices := make([]DevfileIndexEntry, 0, 20)
+	devfileIndicesMutex := &sync.Mutex{}
+	retrieveRegistryIndices := util.NewConcurrentTasks(len(catalogDevfileList.DevfileRegistries))
+	for _, reg := range catalogDevfileList.DevfileRegistries {
 		// Load the devfile registry index.json
-		devfileIndexLink := registryURL + "/devfiles/index.json"
-		devfileIndex, err := GetDevfileIndex(devfileIndexLink)
-		if err != nil {
-			log.Warningf("Registry %s is not set up properly with error: %v", registryName, err)
-			break
-		}
-
-		// 1. Load devfiles that indexed in devfile registry index.json
-		// 2. Populate devfile components with devfile data
-		// 3. Form devfile component list
-		for _, devfileIndexEntry := range devfileIndex {
-			devfileIndexEntryLink := devfileIndexEntry.Links.Link
-
-			// Load the devfile
-			devfileLink := registryURL + devfileIndexEntryLink
-			// TODO: We send http get resquest in this function multiple times
-			// since devfile registry uses different links to host different devfiles,
-			// this can reduce the performance especially when we load devfiles from
-			// big registry. We may need to rethink and optimize this in the future
-			devfile, err := GetDevfile(devfileLink)
+		registry := reg // needed to prevent the lambda from capturing the value
+		retrieveRegistryIndices.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
+			indexEntries, err := getDevfileIndexEntries(registry)
 			if err != nil {
-				log.Warningf("Registry %s is not set up properly with error: %v", registryName, err)
-				break
+				log.Warningf("Registry %s is not set up properly with error: %v", registry.Name, err)
+				return
+			}
+
+			devfileIndicesMutex.Lock()
+			registryIndices = append(registryIndices, indexEntries...)
+			devfileIndicesMutex.Unlock()
+		}})
+	}
+	if err := retrieveRegistryIndices.Run(); err != nil {
+		return *catalogDevfileList, err
+	}
+
+	// 1. Load each devfile concurrently from the previously retrieved devfile index entries
+	// 2. Populate devfile components with devfile data
+	// 3. Add devfile component types to the catalog devfile list
+	retrieveDevfiles := util.NewConcurrentTasks(len(registryIndices))
+	devfileMutex := &sync.Mutex{}
+	for _, index := range registryIndices {
+		// Load the devfile
+		devfileIndex := index // needed to prevent the lambda from capturing the value
+		link := devfileIndex.Registry.URL + devfileIndex.Links.Link
+		retrieveDevfiles.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
+
+			// Note that this issues an HTTP get per devfile entry in the catalog, while doing it concurrently instead of
+			// sequentially improves the performance, caching that information would improve the performance even more
+			devfile, err := GetDevfile(link)
+			if err != nil {
+				log.Warningf("Registry %s is not set up properly with error: %v", devfileIndex.Registry.Name, err)
+				return
 			}
 
 			// Populate devfile component with devfile data and form devfile component list
 			catalogDevfile := DevfileComponentType{
 				Name:        strings.TrimSuffix(devfile.MetaData.GenerateName, "-"),
-				DisplayName: devfileIndexEntry.DisplayName,
-				Description: devfileIndexEntry.Description,
-				Link:        devfileIndexEntryLink,
+				DisplayName: devfileIndex.DisplayName,
+				Description: devfileIndex.Description,
+				Link:        devfileIndex.Links.Link,
 				Support:     IsDevfileComponentSupported(devfile),
-				Registry: Registry{
-					Name: registryName,
-					URL:  registryURL,
-				},
+				Registry:    devfileIndex.Registry,
 			}
 
+			devfileMutex.Lock()
 			catalogDevfileList.Items = append(catalogDevfileList.Items, catalogDevfile)
-		}
+			devfileMutex.Unlock()
+		}})
+	}
+	if err := retrieveDevfiles.Run(); err != nil {
+		return *catalogDevfileList, err
 	}
 
-	return catalogDevfileList, nil
+	return *catalogDevfileList, nil
 }
 
 // ListComponents lists all the available component types

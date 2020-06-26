@@ -151,7 +151,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 		klog.V(4).Infof("Creating %s on the remote container if it doesn't already exist", syncFolder)
 		cmdArr := getCmdToCreateSyncFolder(syncFolder)
 
-		err = exec.ExecuteCommand(a.Client, compInfo, cmdArr, false)
+		err = exec.ExecuteCommand(a.Client, compInfo, cmdArr, false, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -160,7 +160,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	if len(delFiles) > 0 {
 		cmdArr := getCmdToDeleteFiles(delFiles, syncFolder)
 
-		err = exec.ExecuteCommand(a.Client, compInfo, cmdArr, false)
+		err = exec.ExecuteCommand(a.Client, compInfo, cmdArr, false, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -197,14 +197,14 @@ func getSyncFolder(projects []versionsCommon.DevfileProject) (string, error) {
 		project := projects[0]
 		// If the clonepath is set to a value, set it to be the sync folder
 		// As some devfiles rely on the code being synced to the folder in the clonepath
-		if project.ClonePath != nil {
-			if strings.HasPrefix(*project.ClonePath, "/") {
+		if project.ClonePath != "" {
+			if strings.HasPrefix(project.ClonePath, "/") {
 				return "", fmt.Errorf("the clonePath in the devfile must be a relative path")
 			}
-			if strings.Contains(*project.ClonePath, "..") {
+			if strings.Contains(project.ClonePath, "..") {
 				return "", fmt.Errorf("the clonePath in the devfile cannot escape the projects root. Don't use .. to try and do that")
 			}
-			return filepath.ToSlash(filepath.Join(kclient.OdoSourceVolumeMount, *project.ClonePath)), nil
+			return filepath.ToSlash(filepath.Join(kclient.OdoSourceVolumeMount, project.ClonePath)), nil
 		}
 		return filepath.ToSlash(filepath.Join(kclient.OdoSourceVolumeMount, projects[0].Name)), nil
 	}
