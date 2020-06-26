@@ -24,6 +24,11 @@ func (d *Devfile100) GetComponents() []common.DevfileComponent {
 	return comps
 }
 
+/// GetComponents returns the slice of DevfileComponent objects parsed from the Devfile
+func (d *Devfile100) AddComponents(components []common.DevfileComponent) error { return nil }
+
+func (d *Devfile100) UpdateComponent(Name string, component common.DevfileComponent) {}
+
 // GetAliasedComponents returns the slice of DevfileComponent objects that each have an alias
 func (d *Devfile100) GetAliasedComponents() []common.DevfileComponent {
 	// TODO(adi): All components are aliased for V2, this method should be removed from interface
@@ -56,6 +61,10 @@ func (d *Devfile100) GetProjects() []common.DevfileProject {
 	return projects
 }
 
+func (d *Devfile100) AddProjects(projects []common.DevfileProject) error { return nil }
+
+func (d *Devfile100) UpdateProject(name string, project common.DevfileProject) {}
+
 // GetCommands returns the slice of DevfileCommand objects parsed from the Devfile
 func (d *Devfile100) GetCommands() []common.DevfileCommand {
 
@@ -69,15 +78,26 @@ func (d *Devfile100) GetCommands() []common.DevfileCommand {
 	return commands
 }
 
+// GetCommands returns the slice of DevfileCommand objects parsed from the Devfile
+func (d *Devfile100) AddCommands(commands []common.DevfileCommand) error { return nil }
+
+func (d *Devfile100) UpdateCommand(id string, command common.DevfileCommand) {}
+
 func (d *Devfile100) GetParent() common.DevfileParent {
 	return common.DevfileParent{}
 
 }
 
+func (d *Devfile100) SetParent(parent common.DevfileParent) {}
+
 func (d *Devfile100) GetEvents() common.DevfileEvents {
 	return common.DevfileEvents{}
 
 }
+
+func (d *Devfile100) AddEvents(events common.DevfileEvents) error { return nil }
+
+func (d *Devfile100) UpdateEvents(postStart, postStop, preStart, preStop []string) {}
 
 func convertV1CommandToCommon(c Command) (d common.DevfileCommand) {
 	var exec common.Exec

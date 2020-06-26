@@ -94,6 +94,26 @@ func (d TestDevfileData) Validate() error {
 	return nil
 }
 
+func (d TestDevfileData) AddComponents(components []common.DevfileComponent) error { return nil }
+
+func (d TestDevfileData) UpdateComponent(Name string, component common.DevfileComponent) {}
+
+func (d TestDevfileData) AddCommands(commands []common.DevfileCommand) error { return nil }
+
+func (d TestDevfileData) UpdateCommand(id string, command common.DevfileCommand) {}
+
+func (d TestDevfileData) SetEvents(events common.DevfileEvents) {}
+
+func (d TestDevfileData) AddProjects(projects []common.DevfileProject) error { return nil }
+
+func (d TestDevfileData) UpdateProject(name string, project common.DevfileProject) {}
+
+func (d TestDevfileData) AddEvents(events common.DevfileEvents) error { return nil }
+
+func (d TestDevfileData) UpdateEvents(postStart, postStop, preStart, preStop []string) {}
+
+func (d TestDevfileData) SetParent(parent common.DevfileParent) {}
+
 // GetFakeComponent returns fake component for testing
 func GetFakeComponent(name string) versionsCommon.DevfileComponent {
 	image := "docker.io/maven:latest"

@@ -660,4 +660,56 @@ var _ = Describe("odo devfile push command tests", func() {
 
 	})
 
+	Context("Handle devfiles with parent", func() {
+		It("should handle a devfile with a parent and add a extra command", func() {
+			utils.ExecPushToTestParent(context, cmpName, namespace)
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+			listDir := cliRunner.ExecListDir(podName, namespace, "/projects/nodejs-starter")
+			Expect(listDir).To(ContainSubstring("blah.js"))
+		})
+
+		It("should handle a parent and override/append it's envs", func() {
+			utils.ExecPushWithParentOverride(context, cmpName, namespace)
+
+			envMap := cliRunner.GetEnvsDevFileDeployment(cmpName, namespace)
+
+			value, ok := envMap["MODE2"]
+			Expect(ok).To(BeTrue())
+			Expect(value).To(Equal("TEST2-override"))
+
+			value, ok = envMap["myprop-3"]
+			Expect(ok).To(BeTrue())
+			Expect(value).To(Equal("myval-3"))
+
+			value, ok = envMap["myprop2"]
+			Expect(ok).To(BeTrue())
+			Expect(value).To(Equal("myval2"))
+		})
+
+		It("should handle a multi layer parent", func() {
+			utils.ExecPushWithMultiLayerParent(context, cmpName, namespace)
+
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+			listDir := cliRunner.ExecListDir(podName, namespace, "/projects/user-app")
+			helper.MatchAllInOutput(listDir, []string{"blah.js", "new-blah.js"})
+
+			envMap := cliRunner.GetEnvsDevFileDeployment(cmpName, namespace)
+
+			value, ok := envMap["MODE2"]
+			Expect(ok).To(BeTrue())
+			Expect(value).To(Equal("TEST2-override"))
+
+			value, ok = envMap["myprop3"]
+			Expect(ok).To(BeTrue())
+			Expect(value).To(Equal("myval3"))
+
+			value, ok = envMap["myprop2"]
+			Expect(ok).To(BeTrue())
+			Expect(value).To(Equal("myval2"))
+
+			value, ok = envMap["myprop4"]
+			Expect(ok).To(BeTrue())
+			Expect(value).To(Equal("myval4"))
+		})
+	})
 })

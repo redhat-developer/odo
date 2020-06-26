@@ -1,0 +1,15 @@
+schemaVersion: 2.0.0
+metadata:
+  name: openLiberty
+  version: 1.0.0
+  description: Java application stack using Open Liberty runtime
+parent:
+  uri: https://raw.githubusercontent.com/odo-devfiles/registry/master/devfiles/openLiberty/devfile.yaml
+  components:
+    - container:
+        name: appsodyrun
+        env:
+          - name: MODE2
+            value: TEST2-override
+          - name: myprop-3
+            value: myval-3

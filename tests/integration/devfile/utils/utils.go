@@ -182,6 +182,57 @@ func ExecWithInvalidCommandGroup(projectDirPath, cmpName, namespace string) {
 	Expect(output).To(ContainSubstring("must be one of the following: \"build\", \"run\", \"test\", \"debug\""))
 }
 
+func ExecPushToTestParent(projectDirPath, cmpName, namespace string) {
+	args := []string{"create", "nodejs", cmpName}
+	args = useProjectIfAvailable(args, namespace)
+	helper.CmdShouldPass("odo", args...)
+
+	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-parent.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
+
+	args = []string{"push"}
+	args = useProjectIfAvailable(args, namespace)
+	helper.CmdShouldPass("odo", args...)
+
+	args = append(args, "--build-command", "devBuild", "-f")
+	output := helper.CmdShouldPass("odo", args...)
+	helper.MatchAllInOutput(output, []string{"Executing devbuild command", "touch blah.js"})
+}
+
+func ExecPushWithParentOverride(projectDirPath, cmpName, namespace string) {
+	args := []string{"create", "openLiberty", cmpName}
+	args = useProjectIfAvailable(args, namespace)
+	helper.CmdShouldPass("odo", args...)
+
+	helper.CopyExample(filepath.Join("source", "devfiles", "openliberty", "project"), projectDirPath)
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "openliberty", "devfile-with-parent.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
+
+	args = []string{"push"}
+	args = useProjectIfAvailable(args, namespace)
+	helper.CmdShouldPass("odo", args...)
+}
+
+func ExecPushWithMultiLayerParent(projectDirPath, cmpName, namespace string) {
+	args := []string{"create", "openLiberty", cmpName}
+	args = useProjectIfAvailable(args, namespace)
+	helper.CmdShouldPass("odo", args...)
+
+	helper.CopyExample(filepath.Join("source", "devfiles", "openliberty", "project"), projectDirPath)
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "openliberty", "devfile-with-multi-layer-parent.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
+
+	args = []string{"push"}
+	args = useProjectIfAvailable(args, namespace)
+	helper.CmdShouldPass("odo", args...)
+
+	args = []string{"push", "--build-command", "devbuild", "-f"}
+	args = useProjectIfAvailable(args, namespace)
+	helper.CmdShouldPass("odo", args...)
+
+	args = []string{"push", "--build-command", "build", "-f"}
+	args = useProjectIfAvailable(args, namespace)
+	helper.CmdShouldPass("odo", args...)
+}
+
 // ExecPushToTestFileChanges executes odo push with and without a file change
 func ExecPushToTestFileChanges(projectDirPath, cmpName, namespace string) {
 	args := []string{"create", "nodejs", cmpName}

@@ -2,11 +2,11 @@ package describe
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/devfile"
 	"os"
 	"text/tabwriter"
 
 	"github.com/openshift/odo/pkg/catalog"
-	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/log"
@@ -15,7 +15,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/openshift/odo/pkg/util"
-	pkgUtil "github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
@@ -183,13 +182,9 @@ func (o *DescribeComponentOptions) GetDevfileComponentsByName(catalogDevfileList
 func GetDevfile(devfileComponent catalog.DevfileComponentType) (parser.DevfileObj, error) {
 	var devObj parser.DevfileObj
 
-	data, err := pkgUtil.DownloadFileInMemory(devfileComponent.Registry.URL + devfileComponent.Link)
+	devObj, err := devfile.ParseFromURLAndValidate(devfileComponent.Registry.URL + devfileComponent.Link)
 	if err != nil {
 		return devObj, errors.Wrapf(err, "Failed to download devfile.yaml for devfile component: %s", devfileComponent.Name)
-	}
-	devObj, err = devfile.ParseInMemoryAndValidate(data)
-	if err != nil {
-		return devObj, err
 	}
 	return devObj, nil
 }
