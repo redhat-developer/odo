@@ -9,6 +9,7 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util/completion"
+	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/url"
 	"github.com/pkg/errors"
 
@@ -70,7 +71,11 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 	// add flags from 'get' to component command
 	componentCmd.Flags().AddFlagSet(componentGetCmd.Flags())
 
-	componentCmd.AddCommand(componentGetCmd, createCmd, deleteCmd, describeCmd, deployCmd, linkCmd, unlinkCmd, listCmd, logCmd, pushCmd, updateCmd, watchCmd)
+	componentCmd.AddCommand(componentGetCmd, createCmd, deleteCmd, describeCmd, linkCmd, unlinkCmd, listCmd, logCmd, pushCmd, updateCmd, watchCmd)
+
+	if experimental.IsExperimentalModeEnabled() {
+		componentCmd.AddCommand(deployCmd)
+	}
 
 	// Add a defined annotation in order to appear in the help menu
 	componentCmd.Annotations = map[string]string{"command": "main"}

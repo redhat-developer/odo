@@ -396,6 +396,31 @@ func (c *Client) GetPortsFromBuilderImage(componentType string) ([]string, error
 	return portList, nil
 }
 
+// RunBuildConfigWithBinary
+func (c *Client) RunBuildConfigWithBinaryInput(name string, r io.Reader) (*buildv1.Build, error) {
+	// TODO: investigate this issue
+	// Error: no kind is registered for the type v1.BinaryBuildRequestOptions in scheme "k8s.io/client-go/kubernetes/scheme/register.go:69"
+	// options := &buildv1.BinaryBuildRequestOptions{
+	// 	ObjectMeta: metav1.ObjectMeta{
+	// 		Name:      name,
+	// 		Namespace: c.Namespace,
+	// 	},
+	// }
+	result := &buildv1.Build{}
+	err := c.buildClient.RESTClient().
+		Post().
+		Namespace(c.Namespace).
+		Resource("buildconfigs").
+		Name(name).
+		SubResource("instantiatebinary").
+		Body(r).
+		//VersionedParams(options, scheme.ParameterCodec).
+		Do().
+		Into(result)
+
+	return result, err
+}
+
 // RunLogout logs out the current user from cluster
 func (c *Client) RunLogout(stdout io.Writer) error {
 	output, err := c.userClient.Users().Get("~", metav1.GetOptions{})
@@ -3112,6 +3137,23 @@ func (c *Client) GetPVCFromName(pvcName string) (*corev1.PersistentVolumeClaim, 
 	return c.kubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Get(pvcName, metav1.GetOptions{})
 }
 
+// CreateDockerBuildConfigWithBinaryAndDockerfile creates a BuildConfig which accepts
+// as input a binary which contains a dockerfile at a specific location. It will build
+// the source with Dockerfile, and push the image using tag.
+// envVars is the array containing the environment variables
+func (c *Client) CreateDockerBuildConfigWithBinaryInput(commonObjectMeta metav1.ObjectMeta, dockerfilePath string, outputImageTag string, envVars []corev1.EnvVar) (bc buildv1.BuildConfig, err error) {
+	bc = generateDockerBuildConfigWithBinaryInput(commonObjectMeta, dockerfilePath, outputImageTag)
+
+	if len(envVars) > 0 {
+		bc.Spec.Strategy.SourceStrategy.Env = envVars
+	}
+	_, err = c.buildClient.BuildConfigs(c.Namespace).Create(&bc)
+	if err != nil {
+		return bc, errors.Wrapf(err, "unable to create BuildConfig for %s", commonObjectMeta.Name)
+	}
+	return bc, err
+}
+
 // CreateBuildConfig creates a buildConfig using the builderImage as well as gitURL.
 // envVars is the array containing the environment variables
 func (c *Client) CreateBuildConfig(commonObjectMeta metav1.ObjectMeta, builderImage string, gitURL string, gitRef string, envVars []corev1.EnvVar) (buildv1.BuildConfig, error) {
@@ -3296,6 +3338,12 @@ func isSubDir(baseDir, otherDir string) bool {
 	//matches, _ := filepath.Match(fmt.Sprintf("%s/*", cleanedBaseDir), cleanedOtherDir)
 	matches, _ := filepath.Match(filepath.Join(cleanedBaseDir, "*"), cleanedOtherDir)
 	return matches
+}
+
+// IsBuildConfigSupported checks if buildconfig resource type is present on the cluster
+func (c *Client) IsBuildConfigSupported() (bool, error) {
+
+	return c.isResourceSupported("build.openshift.io", "v1", "buildconfigs")
 }
 
 // IsRouteSupported checks if route resource type is present on the cluster

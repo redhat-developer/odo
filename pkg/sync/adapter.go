@@ -2,6 +2,7 @@ package sync
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -32,7 +33,7 @@ type Adapter struct {
 }
 
 // SyncFilesBuild sync the local files to build container volume
-func (a Adapter) SyncFilesBuild(buildParameters common.BuildParameters, compInfo common.ComponentInfo) (syncFolder string, err error) {
+func (a Adapter) SyncFilesBuild(buildParameters common.BuildParameters, dockerfilePath string) (reader io.Reader, err error) {
 
 	// If we want to ignore any files
 	absIgnoreRules := []string{}
@@ -41,7 +42,7 @@ func (a Adapter) SyncFilesBuild(buildParameters common.BuildParameters, compInfo
 	}
 
 	var s *log.Status
-	syncFolder = "/projects"
+	syncFolder := "/"
 
 	s = log.Spinner("Checking files for deploy")
 	// run the indexer and find the project source files
@@ -49,30 +50,15 @@ func (a Adapter) SyncFilesBuild(buildParameters common.BuildParameters, compInfo
 	if len(files) > 0 {
 		klog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
 		dockerfile := map[string][]byte{
-			"Dockerfile": buildParameters.DockerfileBytes,
+			dockerfilePath: buildParameters.DockerfileBytes,
 		}
-		err = CopyFile(a.Client, buildParameters.Path, compInfo, syncFolder, files, absIgnoreRules, dockerfile)
-		if err != nil {
-			s.End(false)
-			return syncFolder, errors.Wrap(err, "unable push files to pod")
-		}
+		reader, err = GetTarReader(buildParameters.Path, syncFolder, files, absIgnoreRules, dockerfile)
+		s.End(true)
+		return reader, err
 	}
-
-	// TODO: We may want to be using push local for consistency and because it has a delete path incase the volume remains in the cluster.
-	// We could also change the SyncFiles function directly with a build setting.
-	// err = a.pushLocal(pushParameters.Path,
-	// 	changedFiles,
-	// 	deletedFiles,
-	// 	isForcePush,
-	// 	globExps,
-	// 	compInfo,
-	// )
-	// if err != nil {
-	// 	return false, errors.Wrapf(err, "failed to sync to component with name %s", a.ComponentName)
-	// }
+	klog.V(4).Infof("No files to sync")
 	s.End(true)
-
-	return syncFolder, nil
+	return reader, nil
 }
 
 // SyncFiles does a couple of things:
@@ -220,7 +206,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 
 	if isForcePush || len(files) > 0 {
 		klog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
-		err = CopyFile(a.Client, path, compInfo, syncFolder, files, globExps, map[string][]byte{})
+		err = CopyFile(a.Client, path, compInfo, syncFolder, files, globExps)
 		if err != nil {
 			s.End(false)
 			return errors.Wrap(err, "unable push files to pod")

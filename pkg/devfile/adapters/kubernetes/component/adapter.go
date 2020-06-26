@@ -1,8 +1,10 @@
 package component
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -21,8 +23,6 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
-	"github.com/openshift/odo/pkg/occlient"
-
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
@@ -34,6 +34,7 @@ import (
 	"github.com/openshift/odo/pkg/exec"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/occlient"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/sync"
 	"github.com/openshift/odo/pkg/url"
@@ -56,165 +57,87 @@ type Adapter struct {
 	devfileRunCmd   string
 }
 
-func (a Adapter) generateBuildContainer(containerName, imageTag string) corev1.Container {
-	buildImage := "quay.io/buildah/stable:latest"
+const dockerfilePath string = "Dockerfile"
 
-	// TODO(Optional): Init container before the buildah bud to copy over the files.
-	//command := []string{"buildah"}
-	//commandArgs := []string{"bud"}
-	command := []string{"tail"}
-	commandArgs := []string{"-f", "/dev/null"}
+func (a Adapter) runBuildConfig(client *occlient.Client, parameters common.BuildParameters) (err error) {
+	buildName := a.ComponentName
 
-	// TODO: Edit dockerfile env value if mounting it sometwhere else
-	envVars := []corev1.EnvVar{
-		{Name: "Tag", Value: imageTag},
+	commonObjectMeta := metav1.ObjectMeta{
+		Name: buildName,
 	}
 
-	isPrivileged := true
-	resourceReqs := corev1.ResourceRequirements{}
-
-	container := kclient.GenerateContainer(containerName, buildImage, isPrivileged, command, commandArgs, envVars, resourceReqs, nil)
-
-	container.VolumeMounts = []corev1.VolumeMount{
-		{Name: "varlibcontainers", MountPath: "/var/lib/containers"},
-		{Name: kclient.OdoSourceVolume, MountPath: kclient.OdoSourceVolumeMount},
-	}
-
-	return *container
-}
-
-func (a Adapter) createBuildDeployment(labels map[string]string, container corev1.Container) (err error) {
-
-	objectMeta := kclient.CreateObjectMeta(a.ComponentName, a.Client.Namespace, labels, nil)
-	podTemplateSpec := kclient.GeneratePodTemplateSpec(objectMeta, []corev1.Container{container})
-
-	// TODO: For openshift, need to specify a service account that allows priviledged containers
-	saEnv := os.Getenv("BUILD_SERVICE_ACCOUNT")
-	if saEnv != "" {
-		podTemplateSpec.Spec.ServiceAccountName = saEnv
-	}
-
-	libContainersVolume := corev1.Volume{
-		Name: "varlibcontainers",
-		VolumeSource: corev1.VolumeSource{
-			EmptyDir: &corev1.EmptyDirVolumeSource{},
-		},
-	}
-
-	podTemplateSpec.Spec.Volumes = append(podTemplateSpec.Spec.Volumes, libContainersVolume)
-
-	deploymentSpec := kclient.GenerateDeploymentSpec(*podTemplateSpec)
-	klog.V(3).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
-
-	_, err = a.Client.CreateDeployment(*deploymentSpec)
+	_, err = client.CreateDockerBuildConfigWithBinaryInput(commonObjectMeta, dockerfilePath, parameters.Tag, []corev1.EnvVar{})
 	if err != nil {
 		return err
 	}
-	klog.V(3).Infof("Successfully created component %v", deploymentSpec.Template.GetName())
 
-	return nil
-}
-
-func (a Adapter) executeBuildAndPush(syncFolder string, imageTag string, compInfo common.ComponentInfo) (err error) {
-	// Running buildah bud and buildah push
-	buildahBud := "buildah bud -f ./Dockerfile -t $Tag ."
-	command := []string{adaptersCommon.ShellExecutable, "-c", "cd " + syncFolder + " && " + buildahBud}
-
-	// TODO: Add spinner
-	err = exec.ExecuteCommand(&a.Client, compInfo, command, false)
-	if err != nil {
-		return errors.Wrapf(err, "failed to build image for component with name: %s", a.ComponentName)
-	}
-
-	values := strings.Split(imageTag, "/")
-	tag := imageTag
-	buildahPush := "buildah push "
-
-	// Need to change this IF to be more robust
-	if len(values) == 3 && strings.Contains(values[0], "openshift") {
-		// This needs a valid service account: e.g builder for openshift
-		// --creds flag arg has the format username:password
-		// we want to use serviceaccount:token
-		buildahPush += "--creds "
-		saEnv := os.Getenv("BUILD_SERVICE_ACCOUNT")
-		if saEnv != "" {
-			buildahPush += saEnv
-		} else {
-			buildahBud += "dummy-username"
+	defer func() {
+		// This will delete both the BuildConfig and any builds using that BuildConfig
+		derr := client.DeleteBuildConfig(commonObjectMeta)
+		if err == nil {
+			err = derr
 		}
-		buildahPush += ":$(cat /var/run/secrets/kubernetes.io/serviceaccount/token) "
-	}
+	}()
 
-	//TODO: handle dockerhub case and creds!!
-	buildahPush += "--tls-verify=false " + tag + " docker://" + tag
-	command = []string{adaptersCommon.ShellExecutable, "-c", buildahPush}
-
-	//TODO: Add Spinner
-	err = exec.ExecuteCommand(&a.Client, compInfo, command, false)
+	syncAdapter := sync.New(a.AdapterContext, &a.Client)
+	reader, err := syncAdapter.SyncFilesBuild(parameters, dockerfilePath)
 	if err != nil {
-		return errors.Wrapf(err, "failed to push build image to the registry for component with name: %s", a.ComponentName)
+		return err
 	}
 
-	return nil
+	bc, err := client.RunBuildConfigWithBinaryInput(buildName, reader)
+	if err != nil {
+		return err
+	}
+
+	reader, writer := io.Pipe()
+	s := log.Spinner("Waiting for build to finish")
+
+	var cmdOutput string
+	// This Go routine will automatically pipe the output from WaitForBuildToFinish to
+	// our logger.
+	go func() {
+		scanner := bufio.NewScanner(reader)
+		for scanner.Scan() {
+			line := scanner.Text()
+
+			if log.IsDebug() {
+				_, err := fmt.Fprintln(os.Stdout, line)
+				if err != nil {
+					log.Errorf("Unable to print to stdout: %v", err)
+				}
+			}
+
+			cmdOutput += fmt.Sprintln(line)
+		}
+	}()
+
+	if err := client.WaitForBuildToFinish(bc.Name, writer); err != nil {
+		s.End(false)
+		return errors.Wrapf(err, "unable to build image using BuildConfig %s, error: %s", buildName, cmdOutput)
+	}
+
+	s.End(true)
+	return
 }
 
 // Build image for devfile project
 func (a Adapter) Build(parameters common.BuildParameters) (err error) {
-	containerName := a.ComponentName + "-container"
-	buildContainer := a.generateBuildContainer(containerName, parameters.Tag)
-	labels := map[string]string{
-		"component": a.ComponentName,
-	}
-
-	err = a.createBuildDeployment(labels, buildContainer)
-	if err != nil {
-		return errors.Wrap(err, "error while creating buildah deployment")
-	}
-
-	// Delete deployment
-	defer func() {
-		derr := a.Delete(labels)
-		if err == nil {
-			err = errors.Wrapf(derr, "failed to delete build step for component with name: %s", a.ComponentName)
-		}
-
-	}()
-
-	_, err = a.Client.WaitForDeploymentRollout(a.ComponentName)
-	if err != nil {
-		return errors.Wrap(err, "error while waiting for deployment rollout")
-	}
-
-	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
-	pod, err := a.waitAndGetComponentPod(false)
-	if err != nil {
-		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
-	}
-
-	// Need to wait for container to start
-	time.Sleep(10 * time.Second)
-
-	// Sync files to volume
-	log.Infof("\nSyncing to component %s", a.ComponentName)
-	// Get a sync adapter. Check if project files have changed and sync accordingly
-	syncAdapter := sync.New(a.AdapterContext, &a.Client)
-	compInfo := common.ComponentInfo{
-		ContainerName: containerName,
-		PodName:       pod.GetName(),
-	}
-
-	syncFolder, err := syncAdapter.SyncFilesBuild(parameters, compInfo)
-
-	if err != nil {
-		return errors.Wrapf(err, "failed to sync to component with name %s", a.ComponentName)
-	}
-
-	err = a.executeBuildAndPush(syncFolder, parameters.Tag, compInfo)
+	client, err := occlient.New()
 	if err != nil {
 		return err
 	}
 
-	return
+	isBuildConfigSupported, err := client.IsBuildConfigSupported()
+	if err != nil {
+		return err
+	}
+
+	if isBuildConfigSupported {
+		return a.runBuildConfig(client, parameters)
+	}
+
+	return errors.New("unable to build image, only Openshift BuildConfig build is supported")
 }
 
 func determinePort(envSpecificInfo envinfo.EnvSpecificInfo) string {
@@ -302,7 +225,6 @@ func (a Adapter) waitForManifestDeployCompletion(applicationName string, gvr sch
 
 // Build image for devfile project
 func (a Adapter) Deploy(parameters common.DeployParameters) (err error) {
-
 	namespace := a.Client.Namespace
 	applicationName := a.ComponentName + "-deploy"
 	deploymentManifest := &unstructured.Unstructured{}

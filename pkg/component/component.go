@@ -675,7 +675,7 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 		compInfo := common.ComponentInfo{
 			PodName: pod.Name,
 		}
-		err = sync.CopyFile(client, path, compInfo, targetPath, files, globExps, map[string][]byte{})
+		err = sync.CopyFile(client, path, compInfo, targetPath, files, globExps)
 		if err != nil {
 			s.End(false)
 			return errors.Wrap(err, "unable push files to pod")
