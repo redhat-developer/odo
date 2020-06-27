@@ -100,7 +100,7 @@ func getClusterPublicKey() (*rsa.PublicKey, error) {
 func openCertCluster(c clientv1.CoreV1Interface) (io.ReadCloser, error) {
 	f, err := c.
 		Services("kube-system").
-		ProxyGet("http", "sealed-secrets-controller", "", "/v1/cert.pem", nil).
+		ProxyGet("http", "sealedsecretcontroller-sealed-secrets", "", "/v1/cert.pem", nil).
 		Stream()
 	if err != nil {
 		return nil, fmt.Errorf("cannot fetch certificate: %v", err)
