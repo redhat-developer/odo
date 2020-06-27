@@ -10,7 +10,7 @@ prow-cluster-operation is a tool for creating, deleting, getting a GKE cluster
 
 This tool can be invoked from command line with following parameters:
 
-- `--min-nodes`: minumum number of nodes, default 1
+- `--min-nodes`: minimum number of nodes, default 1
 - `--max-nodes`: maximum number of nodes, default 3
 - `--node-type`: GCE node type, default "e2-standard-4"
 - `--region`: GKE region, default "us-central1"

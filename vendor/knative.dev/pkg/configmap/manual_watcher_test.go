@@ -37,6 +37,13 @@ func TestCallbackInvoked(t *testing.T) {
 		Namespace: "default",
 	}
 
+	// Verify empty works as designed.
+	watcher.OnChange(&corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      "foo",
+		},
+	})
 	observer := counter{}
 
 	watcher.Watch("foo", observer.callback)
@@ -66,27 +73,6 @@ func TestDifferentNamespace(t *testing.T) {
 			Name:      "foo",
 		},
 	})
-
-	if observer.count() != 0 {
-		t.Errorf("Expected callback to be not be invoked - got invocations %v", observer.count())
-	}
-}
-
-func TestLateRegistration(t *testing.T) {
-	watcher := ManualWatcher{
-		Namespace: "default",
-	}
-
-	observer := counter{}
-
-	watcher.OnChange(&corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "foo",
-		},
-	})
-
-	watcher.Watch("foo", observer.callback)
 
 	if observer.count() != 0 {
 		t.Errorf("Expected callback to be not be invoked - got invocations %v", observer.count())

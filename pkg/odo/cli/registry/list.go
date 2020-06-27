@@ -54,9 +54,13 @@ func (o *ListOptions) Run() (err error) {
 		util.LogErrorAndExit(err, "")
 	}
 
+	registryList := cfg.OdoSettings.RegistryList
+	if len(*registryList) == 0 {
+		return fmt.Errorf("No devfile registries added to the configuration. Refer `odo registry add -h` to add one")
+	}
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 	fmt.Fprintln(w, "NAME", "\t", "URL")
-	o.printRegistryList(w, cfg.OdoSettings.RegistryList)
+	o.printRegistryList(w, registryList)
 	w.Flush()
 	return
 }

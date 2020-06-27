@@ -134,7 +134,7 @@ func TestMultiUpdate(t *testing.T) {
 
 	updates := 0
 	h.OnUpdate(&f.Fake, "pods", func(obj runtime.Object) HookResult {
-		updates = updates + 1
+		updates++
 		switch updates {
 		case 1:
 		case 2:

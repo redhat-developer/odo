@@ -23,11 +23,13 @@ func TestValidateComponents(t *testing.T) {
 		}
 	})
 
-	t.Run("DockerImage type of component present", func(t *testing.T) {
+	t.Run("Container type of component present", func(t *testing.T) {
 
 		components := []common.DevfileComponent{
 			{
-				Type: common.DevfileComponentTypeDockerimage,
+				Container: &common.Container{
+					Name: "container",
+				},
 			},
 		}
 
@@ -35,25 +37,6 @@ func TestValidateComponents(t *testing.T) {
 
 		if got != nil {
 			t.Errorf("Not expecting an error: '%v'", got)
-		}
-	})
-
-	t.Run("DockerImage type of component NOT present", func(t *testing.T) {
-
-		components := []common.DevfileComponent{
-			{
-				Type: common.DevfileComponentTypeCheEditor,
-			},
-			{
-				Type: common.DevfileComponentTypeChePlugin,
-			},
-		}
-
-		got := ValidateComponents(components)
-		want := fmt.Errorf(ErrorNoDockerImageComponent)
-
-		if !reflect.DeepEqual(got, want) {
-			t.Errorf("Incorrect error; want: '%v', got: '%v'", want, got)
 		}
 	})
 }

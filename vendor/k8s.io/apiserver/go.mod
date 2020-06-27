@@ -2,7 +2,7 @@
 
 module k8s.io/apiserver
 
-go 1.13
+go 1.14
 
 require (
 	github.com/coreos/go-oidc v2.1.0+incompatible
@@ -30,6 +30,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.4.0
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5 // indirect
+	go.etcd.io/bbolt v1.3.5 // indirect
 	go.etcd.io/etcd v0.5.0-alpha.5.0.20200520232829-54ba9589114f
 	go.uber.org/zap v1.10.0
 	golang.org/x/crypto v0.0.0-20200220183623-bac4c82f6975
@@ -41,23 +42,22 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/square/go-jose.v2 v2.2.2
 	gopkg.in/yaml.v2 v2.2.8
-	k8s.io/api v0.0.0-20200617050422-8dc28b782f8e
-	k8s.io/apimachinery v0.0.0-20200617050244-c1bd2c2a276f
-	k8s.io/client-go v0.0.0-20200617050643-3c831c893e8a
-	k8s.io/component-base v0.0.0-20200617051220-6c60a4d2ed11
+	k8s.io/api v0.0.0-20200624085918-9a9335f05b18
+	k8s.io/apimachinery v0.0.0-20200624084815-eed6a5257d68
+	k8s.io/client-go v0.0.0-20200624090346-5fade4ec57c6
+	k8s.io/component-base v0.0.0-20200625172041-167327cfd813
 	k8s.io/klog/v2 v2.1.0
 	k8s.io/kube-openapi v0.0.0-20200427153329-656914f816f9
-	k8s.io/utils v0.0.0-20200414100711-2df71ebbae66
+	k8s.io/utils v0.0.0-20200619165400-6e3d28b6ed19
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.0.9
 	sigs.k8s.io/structured-merge-diff/v3 v3.0.0
 	sigs.k8s.io/yaml v1.2.0
 )
 
 replace (
-	golang.org/x/sys => golang.org/x/sys v0.0.0-20190813064441-fde4db37ae7a // pinned to release-branch.go1.13
-	golang.org/x/tools => golang.org/x/tools v0.0.0-20190821162956-65e3620a7ae7 // pinned to release-branch.go1.13
-	k8s.io/api => k8s.io/api v0.0.0-20200617050422-8dc28b782f8e
-	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20200617050244-c1bd2c2a276f
-	k8s.io/client-go => k8s.io/client-go v0.0.0-20200617050643-3c831c893e8a
-	k8s.io/component-base => k8s.io/component-base v0.0.0-20200617051220-6c60a4d2ed11
+	golang.org/x/sys => golang.org/x/sys v0.0.0-20200201011859-915c9c3d4ccf // pinned to release-branch.go1.14-std
+	k8s.io/api => k8s.io/api v0.0.0-20200624085918-9a9335f05b18
+	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20200624084815-eed6a5257d68
+	k8s.io/client-go => k8s.io/client-go v0.0.0-20200624090346-5fade4ec57c6
+	k8s.io/component-base => k8s.io/component-base v0.0.0-20200625172041-167327cfd813
 )

@@ -23,7 +23,7 @@ func TestNewPlatformAdapter(t *testing.T) {
 			adapterType:   "kubernetes.Adapter",
 			name:          "get platform adapter",
 			componentName: "test",
-			componentType: versionsCommon.DevfileComponentTypeDockerimage,
+			componentType: versionsCommon.ContainerComponentType,
 			wantErr:       false,
 		},
 	}
@@ -31,7 +31,7 @@ func TestNewPlatformAdapter(t *testing.T) {
 		t.Run("get platform adapter", func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					ComponentType: tt.componentType,
+					Components: []versionsCommon.DevfileComponent{},
 				},
 			}
 

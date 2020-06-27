@@ -30,7 +30,8 @@ func FakeNew() (*Client, *FakeClientset) {
 func FakePodStatus(status corev1.PodPhase, podName string) *corev1.Pod {
 	return &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: podName,
+			Name:   podName,
+			Labels: map[string]string{},
 		},
 		Status: corev1.PodStatus{
 			Phase: status,

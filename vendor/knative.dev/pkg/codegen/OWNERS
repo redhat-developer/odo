@@ -2,3 +2,6 @@
 
 approvers:
 - codegen-approvers
+
+reviewers:
+- codegen-reviewers

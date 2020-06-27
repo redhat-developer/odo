@@ -153,7 +153,7 @@ func TestHandleEvent(t *testing.T) {
 			Kind:       "PipelineResource",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "$(params.name)",
+			Name:      "$(tt.params.name)",
 			Namespace: namespace,
 			Labels: map[string]string{
 				"app":  "$(params.foo)",
@@ -273,7 +273,7 @@ func TestHandleEventWithInterceptors(t *testing.T) {
 			Type: pipelinev1alpha1.PipelineResourceTypeGit,
 			Params: []pipelinev1alpha1.ResourceParam{{
 				Name:  "url",
-				Value: "$(params.url)",
+				Value: "$(tt.params.url)",
 			}},
 		},
 	}
@@ -413,7 +413,7 @@ func TestHandleEventWithWebhookInterceptors(t *testing.T) {
 			Kind:       "PipelineResource",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "$(params.name)",
+			Name:      "$(tt.params.name)",
 			Namespace: namespace,
 		},
 		Spec: pipelinev1alpha1.PipelineResourceSpec{
@@ -898,7 +898,7 @@ func TestHandleEventWithInterceptorsAndTriggerAuth(t *testing.T) {
 
 }
 
-func TestHandleEventWithBitBucketInterceptors(t *testing.T) {
+func TestHandleEventWithBitbucketInterceptors(t *testing.T) {
 	eventBody := json.RawMessage(`{"repository": {"links": {"clone": [{"href": "testurl", "name": "ssh"}, {"href": "testurl", "name": "http"}]}}, "changes": [{"ref": {"displayId": "test-branch"}}]}`)
 	tb, tt := getResources(t, "$(body.repository.links.clone[1].href)")
 
@@ -924,7 +924,7 @@ func TestHandleEventWithBitBucketInterceptors(t *testing.T) {
 				Bindings: []*triggersv1.EventListenerBinding{{Name: "tb", Kind: "TriggerBinding"}},
 				Template: triggersv1.EventListenerTemplate{Name: "tt"},
 				Interceptors: []*triggersv1.EventInterceptor{{
-					Bitbucket: &triggersv1.BitBucketInterceptor{
+					Bitbucket: &triggersv1.BitbucketInterceptor{
 						SecretRef: &triggersv1.SecretRef{
 							SecretKey:  "secretKey",
 							SecretName: "secret",
@@ -1001,7 +1001,7 @@ func getResources(t *testing.T, triggerBindingParam string) (*v1alpha1.TriggerBi
 			Type: pipelinev1.PipelineResourceTypeGit,
 			Params: []pipelinev1.ResourceParam{{
 				Name:  "url",
-				Value: "$(params.url)",
+				Value: "$(tt.params.url)",
 			}},
 		},
 	}

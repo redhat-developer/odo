@@ -349,7 +349,7 @@ func TestEventListenerValidate_error(t *testing.T) {
 					Interceptors: []*v1alpha1.EventInterceptor{{
 						GitHub:    &v1alpha1.GitHubInterceptor{},
 						GitLab:    &v1alpha1.GitLabInterceptor{},
-						Bitbucket: &v1alpha1.BitBucketInterceptor{},
+						Bitbucket: &v1alpha1.BitbucketInterceptor{},
 					}},
 				}},
 			},

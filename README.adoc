@@ -1,6 +1,3 @@
-+++
-<img align="right" role="right" width="180" src="/docs/img/openshift.png?raw=true"/>
-+++
 [id="readme"]
 = `odo` - Developer-focused CLI for OpenShift and Kubernetes
 :toc: macro
@@ -39,21 +36,6 @@ Existing tools such as `oc` are more operations-focused and require a deep-under
 |===
 |Language |Container Image |Supported Package Manager
 |*Node.js*
-|https://github.com/sclorg/s2i-nodejs-container[centos/nodejs-8-centos7]
-|NPM
-
-| |https://access.redhat.com/articles/3376841[rhoar-nodejs/nodejs-8]
-|NPM
-
-|
-|https://www.github.com/bucharest-gold/centos7-s2i-nodejs[bucharestgold/centos7-s2i-nodejs]
-|NPM
-
-|
-|https://access.redhat.com/containers/#/registry.access.redhat.com/rhscl/nodejs-8-rhel7[rhscl/nodejs-8-rhel7]
-|NPM
-
-|
 |https://access.redhat.com/containers/#/registry.access.redhat.com/rhscl/nodejs-10-rhel7[rhscl/nodejs-10-rhel7]
 |NPM
 

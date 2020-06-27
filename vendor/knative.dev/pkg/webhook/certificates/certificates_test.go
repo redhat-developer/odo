@@ -24,10 +24,12 @@ import (
 
 	kubeclient "knative.dev/pkg/client/injection/kube/client/fake"
 	_ "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret/fake"
+	pkgreconciler "knative.dev/pkg/reconciler"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	clientgotesting "k8s.io/client-go/testing"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
@@ -136,8 +138,11 @@ func TestReconcile(t *testing.T) {
 		return &reconciler{
 			client:       kubeclient.Get(ctx),
 			secretlister: listers.GetSecretLister(),
-			secretName:   secretName,
-			serviceName:  serviceName,
+			key: types.NamespacedName{
+				Namespace: system.Namespace(),
+				Name:      secretName,
+			},
+			serviceName: serviceName,
 		}
 	}))
 }
@@ -202,8 +207,11 @@ func TestReconcileMakeSecretFailure(t *testing.T) {
 		return &reconciler{
 			client:       kubeclient.Get(ctx),
 			secretlister: listers.GetSecretLister(),
-			secretName:   secretName,
-			serviceName:  serviceName,
+			key: types.NamespacedName{
+				Namespace: system.Namespace(),
+				Name:      secretName,
+			},
+			serviceName: serviceName,
 		}
 	}))
 }
@@ -215,6 +223,23 @@ func TestNew(t *testing.T) {
 	c := NewController(ctx, configmap.NewStaticWatcher())
 	if c == nil {
 		t.Fatal("Expected NewController to return a non-nil value")
+	}
+
+	if want, got := 0, c.WorkQueue.Len(); want != got {
+		t.Errorf("WorkQueue.Len() = %d, wanted %d", got, want)
+	}
+
+	la, ok := c.Reconciler.(pkgreconciler.LeaderAware)
+	if !ok {
+		t.Fatalf("%T is not leader aware", c.Reconciler)
+	}
+
+	if err := la.Promote(pkgreconciler.UniversalBucket(), c.MaybeEnqueueBucketKey); err != nil {
+		t.Errorf("Promote() = %v", err)
+	}
+
+	if want, got := 1, c.WorkQueue.Len(); want != got {
+		t.Errorf("WorkQueue.Len() = %d, wanted %d", got, want)
 	}
 }
 

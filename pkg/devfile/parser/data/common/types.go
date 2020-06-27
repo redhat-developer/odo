@@ -1,210 +1,326 @@
 package common
 
-// -------------- Supported devfile project types ------------ //
-// DevfileProjectType store valid devfile project types
-type DevfileProjectType string
-
-const (
-	DevfileProjectTypeGit DevfileProjectType = "git"
-)
-
-var SupportedDevfileProjectTypes = []DevfileProjectType{DevfileProjectTypeGit}
-
-// -------------- Supported devfile component types ------------ //
-// DevfileComponentType stores valid devfile component types
+// DevfileComponentType describes the type of component.
+// Only one of the following component type may be specified
+// To support some print actions
 type DevfileComponentType string
 
 const (
-	DevfileComponentTypeCheEditor   DevfileComponentType = "cheEditor"
-	DevfileComponentTypeChePlugin   DevfileComponentType = "chePlugin"
-	DevfileComponentTypeDockerimage DevfileComponentType = "dockerimage"
-	DevfileComponentTypeKubernetes  DevfileComponentType = "kubernetes"
-	DevfileComponentTypeOpenshift   DevfileComponentType = "openshift"
+	ContainerComponentType  DevfileComponentType = "Container"
+	KubernetesComponentType DevfileComponentType = "Kubernetes"
+	OpenshiftComponentType  DevfileComponentType = "Openshift"
+	PluginComponentType     DevfileComponentType = "Plugin"
+	VolumeComponentType     DevfileComponentType = "Volume"
+	CustomComponentType     DevfileComponentType = "Custom"
 )
 
-// -------------- Supported devfile command types ------------ //
-type DevfileCommandType string
+// CommandGroupType describes the kind of command group.
+// +kubebuilder:validation:Enum=build;run;test;debug
+type DevfileCommandGroupType string
 
 const (
-	DevfileCommandTypeInit  DevfileCommandType = "init"
-	DevfileCommandTypeBuild DevfileCommandType = "build"
-	DevfileCommandTypeRun   DevfileCommandType = "run"
-	DevfileCommandTypeDebug DevfileCommandType = "debug"
-	DevfileCommandTypeExec  DevfileCommandType = "exec"
+	BuildCommandGroupType DevfileCommandGroupType = "build"
+	RunCommandGroupType   DevfileCommandGroupType = "run"
+	TestCommandGroupType  DevfileCommandGroupType = "test"
+	DebugCommandGroupType DevfileCommandGroupType = "debug"
+	// To Support V1
+	InitCommandGroupType DevfileCommandGroupType = "init"
 )
 
-// ----------- Devfile Schema ---------- //
-type Attributes map[string]string
-
-type ApiVersion string
-
+// DevfileMetadata metadata for devfile
 type DevfileMetadata struct {
 
-	// Workspaces created from devfile, will use it as base and append random suffix.
-	// It's used when name is not defined.
-	GenerateName *string `yaml:"generateName,omitempty" json:"generateName,omitempty"`
+	// Name Optional devfile name
+	Name string `json:"name,omitempty"`
 
-	// The name of the devfile. Workspaces created from devfile, will inherit this
-	// name
-	Name *string `yaml:"name,omitempty" json:"name,omitempty"`
+	// Version Optional semver-compatible version
+	Version string `json:"version,omitempty"`
 }
 
-// Description of the projects, containing names and sources locations
-type DevfileProject struct {
-
-	// The path relative to the root of the projects to which this project should be cloned into. This is a unix-style relative path (i.e. uses forward slashes). The path is invalid if it is absolute or tries to escape the project root through the usage of '..'. If not specified, defaults to the project name."
-	ClonePath *string `yaml:"clonePath,omitempty" json:"clonePath,omitempty"`
-
-	// The Project Name
-	Name string `yaml:"name" json:"name"`
-
-	// Describes the project's source - type and location
-	Source DevfileProjectSource `yaml:"source" json:"source"`
-}
-
-type DevfileProjectSource struct {
-	Type DevfileProjectType `yaml:"type" json:"type"`
-
-	// Project's source location address. Should be URL for git and github located projects"
-	Location string `yaml:"location" json:"location"`
-
-	// The name of the of the branch to check out after obtaining the source from the location.
-	//  The branch has to already exist in the source otherwise the default branch is used.
-	//  In case of git, this is also the name of the remote branch to push to.
-	Branch *string `yaml:"branch,omitempty" json:"branch,omitempty"`
-
-	// The id of the commit to reset the checked out branch to.
-	//  Note that this is equivalent to 'startPoint' and provided for convenience.
-	CommitId *string `yaml:"commitId,omitempty" json:"commitId,omitempty"`
-
-	// Part of project to populate in the working directory.
-	SparseCheckoutDir *string `yaml:"sparseCheckoutDir,omitempty" json:"sparseCheckoutDir,omitempty"`
-
-	// The tag or commit id to reset the checked out branch to.
-	StartPoint *string `yaml:"startPoint,omitempty" json:"startPoint,omitempty"`
-
-	// The name of the tag to reset the checked out branch to.
-	//  Note that this is equivalent to 'startPoint' and provided for convenience.
-	Tag *string `yaml:"tag,omitempty" json:"tag,omitempty"`
-}
-
+// DevfileCommand command specified in devfile
 type DevfileCommand struct {
-
-	// List of the actions of given command. Now the only one command must be
-	// specified in list but there are plans to implement supporting multiple actions
-	// commands.
-	Actions []DevfileCommandAction `yaml:"actions" json:"actions"`
-
-	// Additional command attributes
-	Attributes Attributes `yaml:"attributes,omitempty" json:"attributes,omitempty"`
-
-	// Describes the name of the command. Should be unique per commands set.
-	Name string `yaml:"name"`
-
-	// Preview url
-	PreviewUrl DevfileCommandPreviewUrl `yaml:"previewUrl,omitempty" json:"previewUrl,omitempty"`
+	// CLI Command executed in a component container
+	Exec *Exec `json:"exec,omitempty"`
 }
 
-type DevfileCommandPreviewUrl struct {
-	Port *int32  `yaml:"port,omitempty" json:"port,omitempty"`
-	Path *string `yaml:"path,omitempty" json:"path,omitempty"`
-}
-
-type DevfileCommandAction struct {
-
-	// The actual action command-line string
-	Command *string `yaml:"command,omitempty" json:"command,omitempty"`
-
-	// Describes component to which given action relates
-	Component *string `yaml:"component,omitempty" json:"component,omitempty"`
-
-	// the path relative to the location of the devfile to the configuration file
-	// defining one or more actions in the editor-specific format
-	Reference *string `yaml:"reference,omitempty" json:"reference,omitempty"`
-
-	// The content of the referenced configuration file that defines one or more
-	// actions in the editor-specific format
-	ReferenceContent *string `yaml:"referenceContent,omitempty" json:"referenceContent,omitempty"`
-
-	// Describes action type
-	Type *DevfileCommandType `yaml:"type,omitempty" json:"type,omitempty"`
-
-	// Working directory where the command should be executed
-	Workdir *string `yaml:"workdir,omitempty" json:"workdir,omitempty"`
-}
-
+// DevfileComponent component specified in devfile
 type DevfileComponent struct {
 
-	// The name using which other places of this devfile (like commands) can refer to
-	// this component. This attribute is optional but must be unique in the devfile if
-	// specified.
-	Alias *string `yaml:"alias,omitempty" json:"alias,omitempty"`
+	// Allows adding and configuring workspace-related containers
+	Container *Container `json:"container,omitempty"`
 
-	// Describes whether projects sources should be mount to the component.
-	// `CHE_PROJECTS_ROOT` environment variable should contains a path where projects
-	// sources are mount
-	MountSources bool `yaml:"mountSources,omitempty" json:"mountSources,omitempty"`
+	// Allows importing into the workspace the Kubernetes resources defined in a given manifest. For example this allows reusing the Kubernetes definitions used to deploy some runtime components in production.
+	Kubernetes *Kubernetes `json:"kubernetes,omitempty"`
 
-	// Describes type of the component, e.g. whether it is an plugin or editor or
-	// other type
-	Type DevfileComponentType `yaml:"type" json:"type"`
+	// Allows importing into the workspace the OpenShift resources defined in a given manifest. For example this allows reusing the OpenShift definitions used to deploy some runtime components in production.
+	Openshift *Openshift `json:"openshift,omitempty"`
 
-	// for type ChePlugin
-	DevfileComponentChePlugin `yaml:",inline" json:",inline"`
-
-	// for type=dockerfile
-	DevfileComponentDockerimage `yaml:",inline" json:",inline"`
+	// Allows specifying the definition of a volume shared by several other components
+	Volume *Volume `json:"volume,omitempty"`
 }
 
-type DevfileComponentChePlugin struct {
-	Id          *string `yaml:"id,omitempty" json:"id,omitempty"`
-	Reference   *string `yaml:"reference,omitempty" json:"reference,omitempty"`
-	RegistryUrl *string `yaml:"registryUrl,omitempty" json:"registryUrl,omitempty"`
+// Configuration
+type Configuration struct {
+	CookiesAuthEnabled bool   `json:"cookiesAuthEnabled,omitempty"`
+	Discoverable       bool   `json:"discoverable,omitempty"`
+	Path               string `json:"path,omitempty"`
+
+	// The is the low-level protocol of traffic coming through this endpoint. Default value is "tcp"
+	Protocol string `json:"protocol,omitempty"`
+	Public   bool   `json:"public,omitempty"`
+
+	// The is the URL scheme to use when accessing the endpoint. Default value is "http"
+	Scheme string `json:"scheme,omitempty"`
+	Secure bool   `json:"secure,omitempty"`
+	Type   string `json:"type,omitempty"`
 }
 
-type DevfileComponentCheEditor struct {
-	Id          *string `yaml:"id,omitempty" json:"id,omitempty"`
-	Reference   *string `yaml:"reference,omitempty" json:"reference,omitempty"`
-	RegistryUrl *string `yaml:"registryUrl,omitempty" json:"registryUrl,omitempty"`
+// Container Allows adding and configuring workspace-related containers
+type Container struct {
+
+	// The arguments to supply to the command running the dockerimage component. The arguments are supplied either to the default command provided in the image or to the overridden command. Defaults to an empty array, meaning use whatever is defined in the image.
+	Args []string `json:"args,omitempty"`
+
+	// The command to run in the dockerimage component instead of the default one provided in the image. Defaults to an empty array, meaning use whatever is defined in the image.
+	Command []string `json:"command,omitempty"`
+
+	Endpoints []Endpoint `json:"endpoints,omitempty"`
+
+	// Environment variables used in this container
+	Env          []Env  `json:"env,omitempty"`
+	Image        string `json:"image,omitempty"`
+	MemoryLimit  string `json:"memoryLimit,omitempty"`
+	MountSources bool   `json:"mountSources,omitempty"`
+	Name         string `json:"name"`
+
+	// Optional specification of the path in the container where project sources should be transferred/mounted when `mountSources` is `true`. When omitted, the value of the `PROJECTS_ROOT` environment variable is used.
+	SourceMapping string `json:"sourceMapping,omitempty"`
+
+	// List of volumes mounts that should be mounted is this container.
+	VolumeMounts []VolumeMount `json:"volumeMounts,omitempty"`
 }
 
-type DevfileComponentOpenshift struct {
-	Reference        *string `yaml:"reference,omitempty" json:"reference,omitempty"`
-	ReferenceContent *string `yaml:"referenceContent,omitempty" json:"referenceContent,omitempty"`
-	Selector         *string `yaml:"selector,omitempty" json:"selector,omitempty"`
-	EntryPoints      *string `yaml:"entryPoints,omitempty" json:"entryPoints,omitempty"`
-	MemoryLimit      *string `yaml:"memoryLimit,omitempty" json:"memoryLimit,omitempty"`
+// Endpoint
+type Endpoint struct {
+	Attributes    map[string]string `json:"attributes,omitempty"`
+	Configuration *Configuration    `json:"configuration,omitempty"`
+	Name          string            `json:"name"`
+	TargetPort    int32             `json:"targetPort"`
 }
 
-type DevfileComponentKubernetes struct {
-	Reference        *string `yaml:"reference,omitempty" json:"reference,omitempty"`
-	ReferenceContent *string `yaml:"referenceContent,omitempty" json:"referenceContent,omitempty"`
-	Selector         *string `yaml:"selector,omitempty" json:"selector,omitempty"`
-	EntryPoints      *string `yaml:"entryPoints,omitempty" json:"entryPoints,omitempty"`
-	MemoryLimit      *string `yaml:"memoryLimit,omitempty" json:"memoryLimit,omitempty"`
+// Env
+type Env struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
 
-type DevfileComponentDockerimage struct {
-	Image       *string               `yaml:"image,omitempty" json:"image,omitempty"`
-	MemoryLimit *string               `yaml:"memoryLimit,omitempty" json:"memoryLimit,omitempty"`
-	Command     []string              `yaml:"command,omitempty" json:"command,omitempty"`
-	Args        []string              `yaml:"args,omitempty" json:"args,omitempty"`
-	Volumes     []DockerimageVolume   `yaml:"volumes,omitempty" json:"volumes,omitempty"`
-	Env         []DockerimageEnv      `yaml:"env,omitempty" json:"env,omitempty"`
-	Endpoints   []DockerimageEndpoint `yaml:"endpoints,omitempty" json:"endpoints,omitempty"`
+// Events Bindings of commands to events. Each command is referred-to by its name.
+type DevfileEvents struct {
+
+	// Names of commands that should be executed after the workspace is completely started. In the case of Che-Theia, these commands should be executed after all plugins and extensions have started, including project cloning. This means that those commands are not triggered until the user opens the IDE in his browser.
+	PostStart []string `json:"postStart,omitempty"`
+
+	// Names of commands that should be executed after stopping the workspace.
+	PostStop []string `json:"postStop,omitempty"`
+
+	// Names of commands that should be executed before the workspace start. Kubernetes-wise, these commands would typically be executed in init containers of the workspace POD.
+	PreStart []string `json:"preStart,omitempty"`
+
+	// Names of commands that should be executed before stopping the workspace.
+	PreStop []string `json:"preStop,omitempty"`
 }
 
-type DockerimageVolume struct {
-	Name          *string `yaml:"name,omitempty" json:"name,omitempty"`
-	ContainerPath *string `yaml:"containerPath,omitempty" json:"containerPath,omitempty"`
+// Exec CLI Command executed in a component container
+type Exec struct {
+
+	// Optional map of free-form additional command attributes
+	Attributes map[string]string `json:"attributes,omitempty"`
+
+	// The actual command-line string
+	CommandLine string `json:"commandLine,omitempty"`
+
+	// Describes component to which given action relates
+	Component string `json:"component,omitempty"`
+
+	// Optional list of environment variables that have to be set before running the command
+	Env []Env `json:"env,omitempty"`
+
+	// Defines the group this command is part of
+	Group *Group `json:"group,omitempty"`
+
+	// Mandatory identifier that allows referencing this command in composite commands, or from a parent, or in events.
+	Id string `json:"id"`
+
+	// Optional label that provides a label for this command to be used in Editor UI menus for example
+	Label string `json:"label,omitempty"`
+
+	// Working directory where the command should be executed
+	WorkingDir string `json:"workingDir,omitempty"`
 }
 
-type DockerimageEnv struct {
-	Name  *string `yaml:"name,omitempty" json:"name,omitempty"`
-	Value *string `yaml:"value,omitempty" json:"value,omitempty"`
+// Git Project's Git source
+type Git struct {
+
+	// The branch to check
+	Branch string `json:"branch,omitempty"`
+
+	// Project's source location address. Should be URL for git and github located projects, or; file:// for zip
+	Location string `json:"location,omitempty"`
+
+	// Part of project to populate in the working directory.
+	SparseCheckoutDir string `json:"sparseCheckoutDir,omitempty"`
+
+	// The tag or commit id to reset the checked out branch to
+	StartPoint string `json:"startPoint,omitempty"`
 }
 
-type DockerimageEndpoint struct {
-	Name *string `yaml:"name,omitempty" json:"name,omitempty"`
-	Port *int32  `yaml:"port,omitempty" json:"port,omitempty"`
+// Github Project's GitHub source
+type Github struct {
+
+	// The branch to check
+	Branch string `json:"branch,omitempty"`
+
+	// Project's source location address. Should be URL for git and github located projects, or; file:// for zip
+	Location string `json:"location,omitempty"`
+
+	// Part of project to populate in the working directory.
+	SparseCheckoutDir string `json:"sparseCheckoutDir,omitempty"`
+
+	// The tag or commit id to reset the checked out branch to
+	StartPoint string `json:"startPoint,omitempty"`
+}
+
+// Group Defines the group this command is part of
+type Group struct {
+
+	// Identifies the default command for a given group kind
+	IsDefault bool `json:"isDefault,omitempty"`
+
+	// Kind of group the command is part of
+	Kind DevfileCommandGroupType `json:"kind"`
+}
+
+// Kubernetes Allows importing into the workspace the Kubernetes resources defined in a given manifest. For example this allows reusing the Kubernetes definitions used to deploy some runtime components in production.
+type Kubernetes struct {
+
+	// Inlined manifest
+	Inlined string `json:"inlined,omitempty"`
+
+	// Mandatory name that allows referencing the component in commands, or inside a parent
+	Name string `json:"name"`
+
+	// Location in a file fetched from a uri.
+	Uri string `json:"uri,omitempty"`
+}
+
+// Openshift Configuration overriding for an OpenShift component
+type Openshift struct {
+
+	// Inlined manifest
+	Inlined string `json:"inlined,omitempty"`
+
+	// Mandatory name that allows referencing the component in commands, or inside a parent
+	Name string `json:"name"`
+
+	// Location in a file fetched from a uri.
+	Uri string `json:"uri,omitempty"`
+}
+
+// DevfileParent Parent workspace template
+type DevfileParent struct {
+
+	// Predefined, ready-to-use, workspace-related commands
+	Commands []*DevfileCommand `json:"commands,omitempty"`
+
+	// List of the workspace components, such as editor and plugins, user-provided containers, or other types of components
+	Components []*DevfileComponent `json:"components,omitempty"`
+
+	// Bindings of commands to events. Each command is referred-to by its name.
+	Events *DevfileEvents `json:"events,omitempty"`
+
+	// Id in a registry that contains a Devfile yaml file
+	Id string `json:"id,omitempty"`
+
+	// Reference to a Kubernetes CRD of type DevWorkspaceTemplate
+	Kubernetes *Kubernetes `json:"kubernetes,omitempty"`
+
+	// Projects worked on in the workspace, containing names and sources locations
+	Projects []*DevfileProject `json:"projects,omitempty"`
+
+	RegistryUrl string `json:"registryUrl,omitempty"`
+
+	// Uri of a Devfile yaml file
+	Uri string `json:"uri,omitempty"`
+}
+
+// Plugin Allows importing a plugin. Plugins are mainly imported devfiles that contribute components, commands and events as a consistent single unit. They are defined in either YAML files following the devfile syntax, or as `DevWorkspaceTemplate` Kubernetes Custom Resources
+type Plugin struct {
+
+	// Overrides of commands encapsulated in a plugin. Overriding is done using a strategic merge
+	Commands []*DevfileCommand `json:"commands,omitempty"`
+
+	// Overrides of components encapsulated in a plugin. Overriding is done using a strategic merge
+	Components []*DevfileComponent `json:"components,omitempty"`
+
+	// Id in a registry that contains a Devfile yaml file
+	Id string `json:"id,omitempty"`
+
+	// Reference to a Kubernetes CRD of type DevWorkspaceTemplate
+	Kubernetes *Kubernetes `json:"kubernetes,omitempty"`
+
+	// Optional name that allows referencing the component in commands, or inside a parent If omitted it will be infered from the location (uri or registryEntry)
+	Name        string `json:"name,omitempty"`
+	RegistryUrl string `json:"registryUrl,omitempty"`
+
+	// Uri of a Devfile yaml file
+	Uri string `json:"uri,omitempty"`
+}
+
+// DevfileProject project defined in devfile
+type DevfileProject struct {
+
+	// Path relative to the root of the projects to which this project should be cloned into. This is a unix-style relative path (i.e. uses forward slashes). The path is invalid if it is absolute or tries to escape the project root through the usage of '..'. If not specified, defaults to the project name.
+	ClonePath string `json:"clonePath,omitempty"`
+
+	// Project's Git source
+	Git *Git `json:"git,omitempty"`
+
+	// Project's GitHub source
+	Github *Github `json:"github,omitempty"`
+
+	// Project name
+	Name string `json:"name"`
+
+	// Project's Zip source
+	Zip *Zip `json:"zip,omitempty"`
+}
+
+// Volume Allows specifying the definition of a volume shared by several other components
+type Volume struct {
+
+	// Mandatory name that allows referencing the Volume component in Container volume mounts or inside a parent
+	Name string `json:"name"`
+
+	// Size of the volume
+	Size string `json:"size,omitempty"`
+}
+
+// VolumeMountsItems Volume that should be mounted to a component container
+type VolumeMount struct {
+
+	// The volume mount name is the name of an existing `Volume` component. If no corresponding `Volume` component exist it is implicitly added. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files.
+	Name string `json:"name"`
+
+	// The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is `/<name>`.
+	Path string `json:"path,omitempty"`
+}
+
+// Zip Project's Zip source
+type Zip struct {
+
+	// Project's source location address. Should be URL for git and github located projects, or; file:// for zip
+	Location string `json:"location,omitempty"`
+
+	// Part of project to populate in the working directory.
+	SparseCheckoutDir string `json:"sparseCheckoutDir,omitempty"`
 }

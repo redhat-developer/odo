@@ -105,7 +105,7 @@ Applying URL changes
  ✓  Changes successfully pushed to component
 ```
 
-By default, `odo push` executes `devbuild` and `devrun` devfile commands. However, custom commands can be also be provided to `odo push` via flags `--build-command` & `--run-command`. `odo push` also provides a `--devfile` flag to execute push with a `devfile.yaml` in a custom path. These flags are only available in the experimental mode.
+By default, `odo push` executes `devbuild` and `devrun` devfile commands. However, custom commands can be also be provided to `odo push` via flags `--build-command` & `--run-command`. These flags are only available in the experimental mode.
 
 ##### Deleting a devfile component:
 Delete a devfile component with `odo delete`. This deletes all the Kubernetes resources created during `odo push`. Use the `-all` flag to delete the Kubernetes resources and the local config at `.odo/env/env.yaml`

@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -59,6 +58,7 @@ func Test_createDebugInfoFile(t *testing.T) {
 				defaultPortForwarder: &DefaultPortForwarder{
 					componentName: "nodejs-ex",
 					appName:       "app",
+					projectName:   "testing-1",
 				},
 				portPair: "5858:9001",
 				fs:       fs,
@@ -88,6 +88,7 @@ func Test_createDebugInfoFile(t *testing.T) {
 				defaultPortForwarder: &DefaultPortForwarder{
 					componentName: "nodejs-ex",
 					appName:       "app",
+					projectName:   "testing-1",
 				},
 				portPair: "5758:9004",
 				fs:       fs,
@@ -115,12 +116,7 @@ func Test_createDebugInfoFile(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			// Fake the client with the appropriate arguments
-			client, _ := occlient.FakeNew()
-			client.Namespace = "testing-1"
-			tt.args.defaultPortForwarder.client = client
-
-			debugFilePath := GetDebugInfoFilePath(client, tt.args.defaultPortForwarder.componentName, tt.args.defaultPortForwarder.appName)
+			debugFilePath := GetDebugInfoFilePath(tt.args.defaultPortForwarder.componentName, tt.args.defaultPortForwarder.appName, tt.args.defaultPortForwarder.projectName)
 			// create a already existing file
 			if tt.alreadyExistFile {
 				_, err := testingutil.MkFileWithContent(debugFilePath, "blah", fs)
@@ -177,6 +173,7 @@ func Test_getDebugInfo(t *testing.T) {
 				defaultPortForwarder: &DefaultPortForwarder{
 					appName:       "app",
 					componentName: "nodejs-ex",
+					projectName:   "testing-1",
 				},
 				fs: fs,
 			},
@@ -222,6 +219,7 @@ func Test_getDebugInfo(t *testing.T) {
 				defaultPortForwarder: &DefaultPortForwarder{
 					appName:       "app",
 					componentName: "nodejs-ex",
+					projectName:   "testing-1",
 				},
 				fs: fs,
 			},
@@ -237,6 +235,7 @@ func Test_getDebugInfo(t *testing.T) {
 				defaultPortForwarder: &DefaultPortForwarder{
 					appName:       "app",
 					componentName: "nodejs-ex",
+					projectName:   "testing-1",
 				},
 				fs: fs,
 			},
@@ -267,6 +266,7 @@ func Test_getDebugInfo(t *testing.T) {
 				defaultPortForwarder: &DefaultPortForwarder{
 					appName:       "app",
 					componentName: "nodejs-ex",
+					projectName:   "testing-1",
 				},
 				fs: fs,
 			},
@@ -295,11 +295,6 @@ func Test_getDebugInfo(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			// Fake the client with the appropriate arguments
-			client, _ := occlient.FakeNew()
-			client.Namespace = "testing-1"
-			tt.args.defaultPortForwarder.client = client
-
 			freePort, err := util.HttpGetFreePort()
 			if err != nil {
 				t.Errorf("error occured while getting a free port, cause: %v", err)
@@ -313,7 +308,7 @@ func Test_getDebugInfo(t *testing.T) {
 				tt.wantDebugFile.Spec.LocalPort = freePort
 			}
 
-			odoDebugFilePath := GetDebugInfoFilePath(tt.args.defaultPortForwarder.client, tt.args.defaultPortForwarder.componentName, tt.args.defaultPortForwarder.appName)
+			odoDebugFilePath := GetDebugInfoFilePath(tt.args.defaultPortForwarder.componentName, tt.args.defaultPortForwarder.appName, tt.args.defaultPortForwarder.projectName)
 			if tt.fileExists {
 				fakeString, err := fakeOdoDebugFileString(tt.readDebugFile.TypeMeta,
 					tt.readDebugFile.Spec.DebugProcessID,

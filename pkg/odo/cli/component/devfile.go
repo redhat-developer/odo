@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/openshift/odo/pkg/util"
@@ -25,15 +26,34 @@ use of Che devfiles in odo for performing various odo operations.
 The devfile support progress can be tracked by:
 https://github.com/openshift/odo/issues/2467
 
-Please note that this feature is currently under development and the "--devfile"
-flag is exposed only if the experimental mode in odo is enabled.
+Please note that this feature is currently under development,
+the feature will be available with experimental mode enabled.
 
 The behaviour of this feature is subject to change as development for this
 feature progresses.
 */
 
 // DevfilePush has the logic to perform the required actions for a given devfile
-func (po *PushOptions) DevfilePush() (err error) {
+func (po *PushOptions) DevfilePush() error {
+
+	// Wrap the push so that we can capture the error in JSON-only mode
+	err := po.devfilePushInner()
+
+	if err != nil && log.IsJSON() {
+		eventLoggingClient := machineoutput.NewConsoleMachineEventLoggingClient()
+		eventLoggingClient.ReportError(err, machineoutput.TimestampNow())
+
+		// Suppress the error to prevent it from being output by the generic machine-readable handler (which will produce invalid JSON for our purposes)
+		err = nil
+
+		// os.Exit(1) since we are suppressing the generic machine-readable handler's exit code logic
+		os.Exit(1)
+	}
+
+	return err
+}
+
+func (po *PushOptions) devfilePushInner() (err error) {
 	// Parse devfile
 	devObj, err := devfileParser.Parse(po.DevfilePath)
 	if err != nil {
@@ -62,7 +82,7 @@ func (po *PushOptions) DevfilePush() (err error) {
 		platformContext = nil
 	} else {
 		kc := kubernetes.KubernetesContext{
-			Namespace: po.namespace,
+			Namespace: po.KClient.Namespace,
 		}
 		platformContext = kc
 	}
@@ -81,22 +101,24 @@ func (po *PushOptions) DevfilePush() (err error) {
 		DevfileInitCmd:  strings.ToLower(po.devfileInitCommand),
 		DevfileBuildCmd: strings.ToLower(po.devfileBuildCommand),
 		DevfileRunCmd:   strings.ToLower(po.devfileRunCommand),
+		DevfileDebugCmd: strings.ToLower(po.devfileDebugCommand),
+		Debug:           po.debugRun,
+		DebugPort:       po.EnvSpecificInfo.GetDebugPort(),
 	}
 
 	warnIfURLSInvalid(po.EnvSpecificInfo.GetURL())
+
 	// Start or update the component
 	err = devfileHandler.Push(pushParams)
 	if err != nil {
-		log.Errorf(
-			"Failed to start component with name %s.\nError: %v",
+		err = errors.Errorf("Failed to start component with name %s. Error: %v",
 			componentName,
 			err,
 		)
-		os.Exit(1)
+	} else {
+		log.Infof("\nPushing devfile component %s", componentName)
+		log.Success("Changes successfully pushed to component")
 	}
-
-	log.Infof("\nPushing devfile component %s", componentName)
-	log.Success("Changes successfully pushed to component")
 
 	return
 }

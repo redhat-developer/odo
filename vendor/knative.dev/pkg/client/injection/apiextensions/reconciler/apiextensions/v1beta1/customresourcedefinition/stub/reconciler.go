@@ -46,6 +46,15 @@ var _ customresourcedefinition.Interface = (*Reconciler)(nil)
 // Optionally check that our Reconciler implements Finalizer
 //var _ customresourcedefinition.Finalizer = (*Reconciler)(nil)
 
+// Optionally check that our Reconciler implements ReadOnlyInterface
+// Implement this to observe resources even when we are not the leader.
+//var _ customresourcedefinition.ReadOnlyInterface = (*Reconciler)(nil)
+
+// Optionally check that our Reconciler implements ReadOnlyFinalizer
+// Implement this to observe tombstoned resources even when we are not
+// the leader (best effort).
+//var _ customresourcedefinition.ReadOnlyFinalizer = (*Reconciler)(nil)
+
 // ReconcileKind implements Interface.ReconcileKind.
 func (r *Reconciler) ReconcileKind(ctx context.Context, o *v1beta1.CustomResourceDefinition) reconciler.Event {
 	// TODO: use this if the resource implements InitializeConditions.
@@ -62,5 +71,17 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, o *v1beta1.CustomResourc
 // when the resource is deleted.
 //func (r *Reconciler) FinalizeKind(ctx context.Context, o *v1beta1.CustomResourceDefinition) reconciler.Event {
 //	// TODO: add custom finalization logic here.
+//	return nil
+//}
+
+// Optionally, use ObserveKind to observe the resource when we are not the leader.
+// func (r *Reconciler) ObserveKind(ctx context.Context, o *v1beta1.CustomResourceDefinition) reconciler.Event {
+// 	// TODO: add custom observation logic here.
+// 	return nil
+// }
+
+// Optionally, use ObserveFinalizeKind to observe resources being finalized when we are no the leader.
+//func (r *Reconciler) ObserveFinalizeKind(ctx context.Context, o *v1beta1.CustomResourceDefinition) reconciler.Event {
+// 	// TODO: add custom observation logic here.
 //	return nil
 //}

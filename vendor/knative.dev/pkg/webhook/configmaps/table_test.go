@@ -23,11 +23,13 @@ import (
 
 	kubeclient "knative.dev/pkg/client/injection/kube/client/fake"
 	_ "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret/fake"
+	pkgreconciler "knative.dev/pkg/reconciler"
 
-	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	clientgotesting "k8s.io/client-go/testing"
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
@@ -56,12 +58,12 @@ func TestReconcile(t *testing.T) {
 		},
 	}
 
-	ruleScope := admissionregistrationv1beta1.NamespacedScope
+	ruleScope := admissionregistrationv1.NamespacedScope
 
 	// These are the rules we expect given the context of "validations".
-	expectedRules := []admissionregistrationv1beta1.RuleWithOperations{{
-		Operations: []admissionregistrationv1beta1.OperationType{"CREATE", "UPDATE"},
-		Rule: admissionregistrationv1beta1.Rule{
+	expectedRules := []admissionregistrationv1.RuleWithOperations{{
+		Operations: []admissionregistrationv1.OperationType{"CREATE", "UPDATE"},
+		Rule: admissionregistrationv1.Rule{
 			APIGroups:   []string{""},
 			APIVersions: []string{"v1"},
 			Resources:   []string{"configmaps/*"},
@@ -101,11 +103,11 @@ func TestReconcile(t *testing.T) {
 		Name: "secret and VWH exist, missing service reference",
 		Key:  key,
 		Objects: []runtime.Object{secret,
-			&admissionregistrationv1beta1.ValidatingWebhookConfiguration{
+			&admissionregistrationv1.ValidatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: name,
 				},
-				Webhooks: []admissionregistrationv1beta1.ValidatingWebhook{{
+				Webhooks: []admissionregistrationv1.ValidatingWebhook{{
 					Name: name,
 				}},
 			},
@@ -115,14 +117,14 @@ func TestReconcile(t *testing.T) {
 		Name: "secret and VWH exist, missing other stuff",
 		Key:  key,
 		Objects: []runtime.Object{secret,
-			&admissionregistrationv1beta1.ValidatingWebhookConfiguration{
+			&admissionregistrationv1.ValidatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: name,
 				},
-				Webhooks: []admissionregistrationv1beta1.ValidatingWebhook{{
+				Webhooks: []admissionregistrationv1.ValidatingWebhook{{
 					Name: name,
-					ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{
-						Service: &admissionregistrationv1beta1.ServiceReference{
+					ClientConfig: admissionregistrationv1.WebhookClientConfig{
+						Service: &admissionregistrationv1.ServiceReference{
 							Namespace: system.Namespace(),
 							Name:      "webhook",
 						},
@@ -131,14 +133,14 @@ func TestReconcile(t *testing.T) {
 			},
 		},
 		WantUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: &admissionregistrationv1beta1.ValidatingWebhookConfiguration{
+			Object: &admissionregistrationv1.ValidatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: name,
 				},
-				Webhooks: []admissionregistrationv1beta1.ValidatingWebhook{{
+				Webhooks: []admissionregistrationv1.ValidatingWebhook{{
 					Name: name,
-					ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{
-						Service: &admissionregistrationv1beta1.ServiceReference{
+					ClientConfig: admissionregistrationv1.WebhookClientConfig{
+						Service: &admissionregistrationv1.ServiceReference{
 							Namespace: system.Namespace(),
 							Name:      "webhook",
 							// Path is added.
@@ -156,14 +158,14 @@ func TestReconcile(t *testing.T) {
 		Name: "secret and VWH exist, added fields are incorrect",
 		Key:  key,
 		Objects: []runtime.Object{secret,
-			&admissionregistrationv1beta1.ValidatingWebhookConfiguration{
+			&admissionregistrationv1.ValidatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: name,
 				},
-				Webhooks: []admissionregistrationv1beta1.ValidatingWebhook{{
+				Webhooks: []admissionregistrationv1.ValidatingWebhook{{
 					Name: name,
-					ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{
-						Service: &admissionregistrationv1beta1.ServiceReference{
+					ClientConfig: admissionregistrationv1.WebhookClientConfig{
+						Service: &admissionregistrationv1.ServiceReference{
 							Namespace: system.Namespace(),
 							Name:      "webhook",
 							// Incorrect
@@ -173,9 +175,9 @@ func TestReconcile(t *testing.T) {
 						CABundle: []byte("incorrect"),
 					},
 					// Incorrect
-					Rules: []admissionregistrationv1beta1.RuleWithOperations{{
-						Operations: []admissionregistrationv1beta1.OperationType{"CREATE", "UPDATE"},
-						Rule: admissionregistrationv1beta1.Rule{
+					Rules: []admissionregistrationv1.RuleWithOperations{{
+						Operations: []admissionregistrationv1.OperationType{"CREATE", "UPDATE"},
+						Rule: admissionregistrationv1.Rule{
 							APIGroups:   []string{"pkg.knative.dev"},
 							APIVersions: []string{"v1alpha1"},
 							Resources:   []string{"innerdefaultresources/*"},
@@ -185,14 +187,14 @@ func TestReconcile(t *testing.T) {
 			},
 		},
 		WantUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: &admissionregistrationv1beta1.ValidatingWebhookConfiguration{
+			Object: &admissionregistrationv1.ValidatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: name,
 				},
-				Webhooks: []admissionregistrationv1beta1.ValidatingWebhook{{
+				Webhooks: []admissionregistrationv1.ValidatingWebhook{{
 					Name: name,
-					ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{
-						Service: &admissionregistrationv1beta1.ServiceReference{
+					ClientConfig: admissionregistrationv1.WebhookClientConfig{
+						Service: &admissionregistrationv1.ServiceReference{
 							Namespace: system.Namespace(),
 							Name:      "webhook",
 							// Path is fixed.
@@ -214,14 +216,14 @@ func TestReconcile(t *testing.T) {
 			InduceFailure("update", "validatingwebhookconfigurations"),
 		},
 		Objects: []runtime.Object{secret,
-			&admissionregistrationv1beta1.ValidatingWebhookConfiguration{
+			&admissionregistrationv1.ValidatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: name,
 				},
-				Webhooks: []admissionregistrationv1beta1.ValidatingWebhook{{
+				Webhooks: []admissionregistrationv1.ValidatingWebhook{{
 					Name: name,
-					ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{
-						Service: &admissionregistrationv1beta1.ServiceReference{
+					ClientConfig: admissionregistrationv1.WebhookClientConfig{
+						Service: &admissionregistrationv1.ServiceReference{
 							Namespace: system.Namespace(),
 							Name:      "webhook",
 							// Incorrect
@@ -231,9 +233,9 @@ func TestReconcile(t *testing.T) {
 						CABundle: []byte("incorrect"),
 					},
 					// Incorrect
-					Rules: []admissionregistrationv1beta1.RuleWithOperations{{
-						Operations: []admissionregistrationv1beta1.OperationType{"CREATE", "UPDATE"},
-						Rule: admissionregistrationv1beta1.Rule{
+					Rules: []admissionregistrationv1.RuleWithOperations{{
+						Operations: []admissionregistrationv1.OperationType{"CREATE", "UPDATE"},
+						Rule: admissionregistrationv1.Rule{
 							APIGroups:   []string{"pkg.knative.dev"},
 							APIVersions: []string{"v1alpha1"},
 							Resources:   []string{"innerdefaultresources/*"},
@@ -243,14 +245,14 @@ func TestReconcile(t *testing.T) {
 			},
 		},
 		WantUpdates: []clientgotesting.UpdateActionImpl{{
-			Object: &admissionregistrationv1beta1.ValidatingWebhookConfiguration{
+			Object: &admissionregistrationv1.ValidatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: name,
 				},
-				Webhooks: []admissionregistrationv1beta1.ValidatingWebhook{{
+				Webhooks: []admissionregistrationv1.ValidatingWebhook{{
 					Name: name,
-					ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{
-						Service: &admissionregistrationv1beta1.ServiceReference{
+					ClientConfig: admissionregistrationv1.WebhookClientConfig{
+						Service: &admissionregistrationv1.ServiceReference{
 							Namespace: system.Namespace(),
 							Name:      "webhook",
 							// Path is fixed.
@@ -268,14 +270,14 @@ func TestReconcile(t *testing.T) {
 		Name: ":fire: everything is fine :fire:",
 		Key:  key,
 		Objects: []runtime.Object{secret,
-			&admissionregistrationv1beta1.ValidatingWebhookConfiguration{
+			&admissionregistrationv1.ValidatingWebhookConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: name,
 				},
-				Webhooks: []admissionregistrationv1beta1.ValidatingWebhook{{
+				Webhooks: []admissionregistrationv1.ValidatingWebhook{{
 					Name: name,
-					ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{
-						Service: &admissionregistrationv1beta1.ServiceReference{
+					ClientConfig: admissionregistrationv1.WebhookClientConfig{
+						Service: &admissionregistrationv1.ServiceReference{
 							Namespace: system.Namespace(),
 							Name:      "webhook",
 							// Path is fine.
@@ -293,7 +295,9 @@ func TestReconcile(t *testing.T) {
 
 	table.Test(t, MakeFactory(func(ctx context.Context, listers *Listers, cmw configmap.Watcher) controller.Reconciler {
 		wh := &reconciler{
-			name: name,
+			key: types.NamespacedName{
+				Name: name,
+			},
 			path: path,
 
 			client:       kubeclient.Get(ctx),
@@ -319,5 +323,22 @@ func TestNew(t *testing.T) {
 	c := NewAdmissionController(ctx, "foo", "/bar", validations)
 	if c == nil {
 		t.Fatal("Expected NewController to return a non-nil value")
+	}
+
+	if want, got := 0, c.WorkQueue.Len(); want != got {
+		t.Errorf("WorkQueue.Len() = %d, wanted %d", got, want)
+	}
+
+	la, ok := c.Reconciler.(pkgreconciler.LeaderAware)
+	if !ok {
+		t.Fatalf("%T is not leader aware", c.Reconciler)
+	}
+
+	if err := la.Promote(pkgreconciler.UniversalBucket(), c.MaybeEnqueueBucketKey); err != nil {
+		t.Errorf("Promote() = %v", err)
+	}
+
+	if want, got := 1, c.WorkQueue.Len(); want != got {
+		t.Errorf("WorkQueue.Len() = %d, wanted %d", got, want)
 	}
 }

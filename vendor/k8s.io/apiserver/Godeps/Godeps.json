@@ -512,7 +512,7 @@
 		},
 		{
 			"ImportPath": "go.etcd.io/bbolt",
-			"Rev": "v1.3.3"
+			"Rev": "v1.3.5"
 		},
 		{
 			"ImportPath": "go.etcd.io/etcd",
@@ -556,7 +556,7 @@
 		},
 		{
 			"ImportPath": "golang.org/x/mod",
-			"Rev": "v0.1.0"
+			"Rev": "c90efee705ee"
 		},
 		{
 			"ImportPath": "golang.org/x/net",
@@ -572,11 +572,11 @@
 		},
 		{
 			"ImportPath": "golang.org/x/sys",
-			"Rev": "fde4db37ae7a"
+			"Rev": "915c9c3d4ccf"
 		},
 		{
 			"ImportPath": "golang.org/x/text",
-			"Rev": "v0.3.2"
+			"Rev": "v0.3.3"
 		},
 		{
 			"ImportPath": "golang.org/x/time",
@@ -584,7 +584,7 @@
 		},
 		{
 			"ImportPath": "golang.org/x/tools",
-			"Rev": "65e3620a7ae7"
+			"Rev": "7b8e75db28f4"
 		},
 		{
 			"ImportPath": "golang.org/x/xerrors",
@@ -668,19 +668,19 @@
 		},
 		{
 			"ImportPath": "k8s.io/api",
-			"Rev": "8dc28b782f8e"
+			"Rev": "9a9335f05b18"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery",
-			"Rev": "c1bd2c2a276f"
+			"Rev": "eed6a5257d68"
 		},
 		{
 			"ImportPath": "k8s.io/client-go",
-			"Rev": "3c831c893e8a"
+			"Rev": "5fade4ec57c6"
 		},
 		{
 			"ImportPath": "k8s.io/component-base",
-			"Rev": "6c60a4d2ed11"
+			"Rev": "167327cfd813"
 		},
 		{
 			"ImportPath": "k8s.io/gengo",
@@ -696,7 +696,7 @@
 		},
 		{
 			"ImportPath": "k8s.io/utils",
-			"Rev": "2df71ebbae66"
+			"Rev": "6e3d28b6ed19"
 		},
 		{
 			"ImportPath": "rsc.io/binaryregexp",

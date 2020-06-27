@@ -395,8 +395,8 @@ func TestResolveResources(t *testing.T) {
 		template: bldr.TriggerTemplate("tt", ns, bldr.TriggerTemplateSpec(
 			bldr.TriggerTemplateParam("p1", "desc", ""),
 			bldr.TriggerTemplateParam("p2", "desc", ""),
-			bldr.TriggerResourceTemplate(runtime.RawExtension{Raw: []byte(`{"rt1": "$(params.p1)-$(params.p2)"}`)}),
-			bldr.TriggerResourceTemplate(runtime.RawExtension{Raw: []byte(`{"rt2": "$(params.p1)-$(params.p2)"}`)}),
+			bldr.TriggerResourceTemplate(runtime.RawExtension{Raw: []byte(`{"rt1": "$(tt.params.p1)-$(tt.params.p2)"}`)}),
+			bldr.TriggerResourceTemplate(runtime.RawExtension{Raw: []byte(`{"rt2": "$(tt.params.p1)-$(tt.params.p2)"}`)}),
 		)),
 		params: []triggersv1.Param{
 			bldr.Param("p1", "val1"),
@@ -410,7 +410,7 @@ func TestResolveResources(t *testing.T) {
 		name: "replace JSON string in templates",
 		template: bldr.TriggerTemplate("tt", ns, bldr.TriggerTemplateSpec(
 			bldr.TriggerTemplateParam("p1", "desc", ""),
-			bldr.TriggerResourceTemplate(runtime.RawExtension{Raw: []byte(`{"rt1": "$(params.p1)"}`)}),
+			bldr.TriggerResourceTemplate(runtime.RawExtension{Raw: []byte(`{"rt1": "$(tt.params.p1)"}`)}),
 		)),
 		params: []triggersv1.Param{
 			bldr.Param("p1", `{"a": "b"}`),
@@ -423,7 +423,7 @@ func TestResolveResources(t *testing.T) {
 		name: "replace JSON string with special chars in templates",
 		template: bldr.TriggerTemplate("tt", ns, bldr.TriggerTemplateSpec(
 			bldr.TriggerTemplateParam("p1", "desc", ""),
-			bldr.TriggerResourceTemplate(runtime.RawExtension{Raw: []byte(`{"rt1": "$(params.p1)"}`)}),
+			bldr.TriggerResourceTemplate(runtime.RawExtension{Raw: []byte(`{"rt1": "$(tt.params.p1)"}`)}),
 		)),
 		params: []triggersv1.Param{
 			bldr.Param("p1", `{"a": "v\\r\\n烈"}`),

@@ -56,8 +56,8 @@ var _ = Describe("odo app command tests", func() {
 
 			appDelete := helper.CmdShouldFail("odo", "app", "delete", "test", "--project", project, "-f")
 			Expect(appDelete).To(ContainSubstring("test app does not exists"))
-			appDescribe := helper.CmdShouldPass("odo", "app", "describe", "test", "--project", project)
-			Expect(appDescribe).To(ContainSubstring("Application test has no components or services deployed."))
+			appDescribe := helper.CmdShouldFail("odo", "app", "describe", "test", "--project", project)
+			Expect(appDescribe).To(ContainSubstring("test app does not exists"))
 		})
 	})
 
@@ -82,8 +82,8 @@ var _ = Describe("odo app command tests", func() {
 			Expect(desiredCompListJSON).Should(MatchJSON(actualCompListJSON))
 
 			helper.CmdShouldPass("odo", "app", "describe")
-			desiredDesAppJSON := fmt.Sprintf(`{"kind":"Application","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"myapp","namespace":"%s","creationTimestamp":null},"spec":{}}`, project)
-			actualDesAppJSON := helper.CmdShouldPass("odo", "app", "describe", "myapp", "-o", "json")
+			desiredDesAppJSON := fmt.Sprintf(`{"kind":"Application","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"app","namespace":"%s","creationTimestamp":null},"spec":{"components": ["nodejs"]}}`, project)
+			actualDesAppJSON := helper.CmdShouldPass("odo", "app", "describe", "app", "-o", "json")
 			Expect(desiredDesAppJSON).Should(MatchJSON(actualDesAppJSON))
 
 			helper.CmdShouldPass("odo", "app", "delete", "-f")

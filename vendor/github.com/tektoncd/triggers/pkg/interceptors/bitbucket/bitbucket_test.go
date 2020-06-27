@@ -42,14 +42,14 @@ func TestInterceptor_ExecuteTrigger_Signature(t *testing.T) {
 	}
 	tests := []struct {
 		name      string
-		Bitbucket *triggersv1.BitBucketInterceptor
+		Bitbucket *triggersv1.BitbucketInterceptor
 		args      args
 		want      []byte
 		wantErr   bool
 	}{
 		{
 			name:      "no secret",
-			Bitbucket: &triggersv1.BitBucketInterceptor{},
+			Bitbucket: &triggersv1.BitbucketInterceptor{},
 			args: args{
 				payload:   ioutil.NopCloser(bytes.NewBufferString("somepayload")),
 				signature: "foo",
@@ -59,7 +59,7 @@ func TestInterceptor_ExecuteTrigger_Signature(t *testing.T) {
 		},
 		{
 			name: "invalid header for secret",
-			Bitbucket: &triggersv1.BitBucketInterceptor{
+			Bitbucket: &triggersv1.BitbucketInterceptor{
 				SecretRef: &triggersv1.SecretRef{
 					SecretName: "mysecret",
 					SecretKey:  "token",
@@ -81,7 +81,7 @@ func TestInterceptor_ExecuteTrigger_Signature(t *testing.T) {
 		},
 		{
 			name: "valid header for secret",
-			Bitbucket: &triggersv1.BitBucketInterceptor{
+			Bitbucket: &triggersv1.BitbucketInterceptor{
 				SecretRef: &triggersv1.SecretRef{
 					SecretName: "mysecret",
 					SecretKey:  "token",
@@ -106,7 +106,7 @@ func TestInterceptor_ExecuteTrigger_Signature(t *testing.T) {
 		},
 		{
 			name: "matching event",
-			Bitbucket: &triggersv1.BitBucketInterceptor{
+			Bitbucket: &triggersv1.BitbucketInterceptor{
 				EventTypes: []string{"pr:opened", "repo:refs_changed"},
 			},
 			args: args{
@@ -118,7 +118,7 @@ func TestInterceptor_ExecuteTrigger_Signature(t *testing.T) {
 		},
 		{
 			name: "no matching event",
-			Bitbucket: &triggersv1.BitBucketInterceptor{
+			Bitbucket: &triggersv1.BitbucketInterceptor{
 				EventTypes: []string{"pr:opened", "repo:refs_changed"},
 			},
 			args: args{
@@ -129,7 +129,7 @@ func TestInterceptor_ExecuteTrigger_Signature(t *testing.T) {
 		},
 		{
 			name: "valid header for secret and matching event",
-			Bitbucket: &triggersv1.BitBucketInterceptor{
+			Bitbucket: &triggersv1.BitbucketInterceptor{
 				SecretRef: &triggersv1.SecretRef{
 					SecretName: "mysecret",
 					SecretKey:  "token",
@@ -156,7 +156,7 @@ func TestInterceptor_ExecuteTrigger_Signature(t *testing.T) {
 		},
 		{
 			name: "valid header for secret, but no matching event",
-			Bitbucket: &triggersv1.BitBucketInterceptor{
+			Bitbucket: &triggersv1.BitbucketInterceptor{
 				SecretRef: &triggersv1.SecretRef{
 					SecretName: "mysecret",
 					SecretKey:  "token",
@@ -182,7 +182,7 @@ func TestInterceptor_ExecuteTrigger_Signature(t *testing.T) {
 		},
 		{
 			name: "invalid header for secret, but matching event",
-			Bitbucket: &triggersv1.BitBucketInterceptor{
+			Bitbucket: &triggersv1.BitbucketInterceptor{
 				SecretRef: &triggersv1.SecretRef{
 					SecretName: "mysecret",
 					SecretKey:  "token",
@@ -205,7 +205,7 @@ func TestInterceptor_ExecuteTrigger_Signature(t *testing.T) {
 			wantErr: true,
 		}, {
 			name:      "nil body does not panic",
-			Bitbucket: &triggersv1.BitBucketInterceptor{},
+			Bitbucket: &triggersv1.BitbucketInterceptor{},
 			args: args{
 				payload:   nil,
 				signature: "foo",

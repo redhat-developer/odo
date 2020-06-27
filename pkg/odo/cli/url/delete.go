@@ -26,7 +26,7 @@ var (
 
 // URLDeleteOptions encapsulates the options for the odo url delete command
 type URLDeleteOptions struct {
-	*clicomponent.CommonPushOptions
+	*clicomponent.PushOptions
 	urlName            string
 	urlForceDeleteFlag bool
 	now                bool
@@ -34,18 +34,21 @@ type URLDeleteOptions struct {
 
 // NewURLDeleteOptions creates a new URLDeleteOptions instance
 func NewURLDeleteOptions() *URLDeleteOptions {
-	return &URLDeleteOptions{CommonPushOptions: clicomponent.NewCommonPushOptions()}
+	return &URLDeleteOptions{PushOptions: clicomponent.NewPushOptions()}
 }
 
 // Complete completes URLDeleteOptions after they've been Deleted
 func (o *URLDeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+
 	if experimental.IsExperimentalModeEnabled() {
+
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 		o.urlName = args[0]
 		err = o.InitEnvInfoFromContext()
 		if err != nil {
 			return err
 		}
+		o.CompleteDevfilePath()
 	} else {
 		if o.now {
 			o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
@@ -114,8 +117,15 @@ func (o *URLDeleteOptions) Run() (err error) {
 			if err != nil {
 				return err
 			}
-			log.Successf("URL %s removed from the env file", o.urlName)
-			log.Italic("\nTo delete the URL on the cluster, please use `odo push`")
+			if o.now {
+				err = o.DevfilePush()
+				if err != nil {
+					return err
+				}
+			} else {
+				log.Successf("URL %s removed from the env file", o.urlName)
+				log.Italic("\nTo delete the URL on the cluster, please use `odo push`")
+			}
 		} else {
 			err = o.LocalConfigInfo.DeleteURL(o.urlName)
 			if err != nil {
@@ -152,6 +162,7 @@ func NewCmdURLDelete(name, fullName string) *cobra.Command {
 	}
 	urlDeleteCmd.Flags().BoolVarP(&o.urlForceDeleteFlag, "force", "f", false, "Delete url without prompting")
 	o.AddContextFlag(urlDeleteCmd)
+	urlDeleteCmd.Flags().StringVar(&o.DevfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
 	genericclioptions.AddNowFlag(urlDeleteCmd, &o.now)
 	completion.RegisterCommandHandler(urlDeleteCmd, completion.URLCompletionHandler)
 	completion.RegisterCommandFlagHandler(urlDeleteCmd, "context", completion.FileCompletionHandler)

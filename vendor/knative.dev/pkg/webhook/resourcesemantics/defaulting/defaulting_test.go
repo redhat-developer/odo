@@ -23,12 +23,12 @@ import (
 
 	// Injection stuff
 	_ "knative.dev/pkg/client/injection/kube/client/fake"
-	_ "knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1beta1/mutatingwebhookconfiguration/fake"
+	_ "knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1/mutatingwebhookconfiguration/fake"
 	_ "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret/fake"
 
 	jsonpatch "gomodules.xyz/jsonpatch/v2"
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
-	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -78,17 +78,17 @@ var (
 		}: &InnerDefaultResource{},
 	}
 
-	initialResourceWebhook = &admissionregistrationv1beta1.MutatingWebhookConfiguration{
+	initialResourceWebhook = &admissionregistrationv1.MutatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "webhook.knative.dev",
 			OwnerReferences: []metav1.OwnerReference{{
 				Name: "asdf",
 			}},
 		},
-		Webhooks: []admissionregistrationv1beta1.MutatingWebhook{{
+		Webhooks: []admissionregistrationv1.MutatingWebhook{{
 			Name: "webhook.knative.dev",
-			ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{
-				Service: &admissionregistrationv1beta1.ServiceReference{
+			ClientConfig: admissionregistrationv1.WebhookClientConfig{
+				Service: &admissionregistrationv1.ServiceReference{
 					Namespace: system.Namespace(),
 					Name:      "webhook",
 				},
@@ -112,8 +112,8 @@ func newNonRunningTestResourceAdmissionController(t *testing.T) (
 func TestDeleteAllowed(t *testing.T) {
 	_, ac := newNonRunningTestResourceAdmissionController(t)
 
-	req := &admissionv1beta1.AdmissionRequest{
-		Operation: admissionv1beta1.Delete,
+	req := &admissionv1.AdmissionRequest{
+		Operation: admissionv1.Delete,
 	}
 
 	if resp := ac.Admit(TestContextWithLogger(t), req); !resp.Allowed {
@@ -124,8 +124,8 @@ func TestDeleteAllowed(t *testing.T) {
 func TestConnectAllowed(t *testing.T) {
 	_, ac := newNonRunningTestResourceAdmissionController(t)
 
-	req := &admissionv1beta1.AdmissionRequest{
-		Operation: admissionv1beta1.Connect,
+	req := &admissionv1.AdmissionRequest{
+		Operation: admissionv1.Connect,
 	}
 
 	resp := ac.Admit(TestContextWithLogger(t), req)
@@ -137,8 +137,8 @@ func TestConnectAllowed(t *testing.T) {
 func TestUnknownKindFails(t *testing.T) {
 	_, ac := newNonRunningTestResourceAdmissionController(t)
 
-	req := &admissionv1beta1.AdmissionRequest{
-		Operation: admissionv1beta1.Create,
+	req := &admissionv1.AdmissionRequest{
+		Operation: admissionv1.Create,
 		Kind: metav1.GroupVersionKind{
 			Group:   "pkg.knative.dev",
 			Version: "v1alpha1",
@@ -151,8 +151,8 @@ func TestUnknownKindFails(t *testing.T) {
 
 func TestUnknownVersionFails(t *testing.T) {
 	_, ac := newNonRunningTestResourceAdmissionController(t)
-	req := &admissionv1beta1.AdmissionRequest{
-		Operation: admissionv1beta1.Create,
+	req := &admissionv1.AdmissionRequest{
+		Operation: admissionv1.Create,
 		Kind: metav1.GroupVersionKind{
 			Group:   "pkg.knative.dev",
 			Version: "v1beta2",
@@ -164,8 +164,8 @@ func TestUnknownVersionFails(t *testing.T) {
 
 func TestUnknownFieldFails(t *testing.T) {
 	_, ac := newNonRunningTestResourceAdmissionController(t)
-	req := &admissionv1beta1.AdmissionRequest{
-		Operation: admissionv1beta1.Create,
+	req := &admissionv1.AdmissionRequest{
+		Operation: admissionv1.Create,
 		Kind: metav1.GroupVersionKind{
 			Group:   "pkg.knative.dev",
 			Version: "v1alpha1",
@@ -319,10 +319,10 @@ func TestAdmitCreates(t *testing.T) {
 	}
 }
 
-func createCreateResource(ctx context.Context, t *testing.T, r *Resource) *admissionv1beta1.AdmissionRequest {
+func createCreateResource(ctx context.Context, t *testing.T, r *Resource) *admissionv1.AdmissionRequest {
 	t.Helper()
-	req := &admissionv1beta1.AdmissionRequest{
-		Operation: admissionv1beta1.Create,
+	req := &admissionv1.AdmissionRequest{
+		Operation: admissionv1.Create,
 		Kind: metav1.GroupVersionKind{
 			Group:   "pkg.knative.dev",
 			Version: "v1alpha1",
@@ -429,10 +429,10 @@ func TestAdmitUpdates(t *testing.T) {
 	}
 }
 
-func createUpdateResource(ctx context.Context, t *testing.T, old, new *Resource) *admissionv1beta1.AdmissionRequest {
+func createUpdateResource(ctx context.Context, t *testing.T, old, new *Resource) *admissionv1.AdmissionRequest {
 	t.Helper()
-	req := &admissionv1beta1.AdmissionRequest{
-		Operation: admissionv1beta1.Update,
+	req := &admissionv1.AdmissionRequest{
+		Operation: admissionv1.Update,
 		Kind: metav1.GroupVersionKind{
 			Group:   "pkg.knative.dev",
 			Version: "v1alpha1",
@@ -455,8 +455,8 @@ func createUpdateResource(ctx context.Context, t *testing.T, old, new *Resource)
 }
 
 func TestValidCreateResourceSucceedsWithRoundTripAndDefaultPatch(t *testing.T) {
-	req := &admissionv1beta1.AdmissionRequest{
-		Operation: admissionv1beta1.Create,
+	req := &admissionv1.AdmissionRequest{
+		Operation: admissionv1.Create,
 		Kind: metav1.GroupVersionKind{
 			Group:   "pkg.knative.dev",
 			Version: "v1alpha1",

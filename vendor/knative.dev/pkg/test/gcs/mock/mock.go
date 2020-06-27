@@ -95,7 +95,7 @@ func (c *clientMocker) getError(funcName Method) (bool, error) {
 			delete(c.err, funcName)
 			return true, val.Err
 		}
-		val.NumCall = val.NumCall - 1
+		val.NumCall--
 	}
 	return false, nil
 }

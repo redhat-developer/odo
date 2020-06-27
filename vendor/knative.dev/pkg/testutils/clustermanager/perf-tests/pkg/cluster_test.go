@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	container "google.golang.org/api/container/v1beta1"
+
 	"knative.dev/pkg/test/gke"
 	gkeFake "knative.dev/pkg/test/gke/fake"
 )
@@ -291,7 +292,103 @@ func TestReconcileClusters(t *testing.T) {
 				tc.testName, fakeProject, fakeRepository, tc.benchmarkRoot, diff)
 		}
 	}
+}
 
+func TestDeleteClusters(t *testing.T) {
+	testCases := []struct {
+		testName           string
+		benchmarkRoot      string
+		precreatedClusters map[string]ClusterConfig
+		expectedClusters   map[string]ClusterConfig
+	}{
+		// nothing will be done if there is no cluster at the beginning
+		{
+			testName:           "all related clusters will be deleted",
+			benchmarkRoot:      testBenchmarkRoot,
+			precreatedClusters: make(map[string]ClusterConfig),
+			expectedClusters:   make(map[string]ClusterConfig),
+		},
+		// all clusters will be created if there is no cluster at the beginning
+		{
+			testName:      "all related clusters will be deleted",
+			benchmarkRoot: testBenchmarkRoot,
+			precreatedClusters: map[string]ClusterConfig{
+				clusterNameForBenchmark("test-benchmark1", fakeRepository): {
+					Location:  "us-central1",
+					NodeCount: 2,
+					NodeType:  "n1-standard-4",
+				},
+				clusterNameForBenchmark("test-benchmark2", fakeRepository): {
+					Location:  "us-west1",
+					NodeCount: 2,
+					NodeType:  "n1-standard-8",
+				},
+			},
+			expectedClusters: make(map[string]ClusterConfig),
+		},
+		// clusters that do not belong to this repo will not be touched
+		{
+			testName:      "clusters that do not belong to this repo will not be touched",
+			benchmarkRoot: testBenchmarkRoot,
+			precreatedClusters: map[string]ClusterConfig{
+				clusterNameForBenchmark("test-benchmark1", fakeRepository): {
+					Location:  "us-central1",
+					NodeCount: 2,
+					NodeType:  "n1-standard-4",
+				},
+				"unrelated-cluster": {
+					Location:  "us-central1",
+					NodeCount: 3,
+					NodeType:  "n1-standard-4",
+				},
+			},
+			expectedClusters: map[string]ClusterConfig{
+				"unrelated-cluster": {
+					Location:  "us-central1",
+					NodeCount: 3,
+					NodeType:  "n1-standard-4",
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		client := setupFakeGKEClient()
+		for name, config := range tc.precreatedClusters {
+			region, zone := gke.RegionZoneFromLoc(config.Location)
+			var addons []string
+			if strings.TrimSpace(config.Addons) != "" {
+				addons = strings.Split(config.Addons, ",")
+			}
+			req := &gke.Request{
+				ClusterName: name,
+				MinNodes:    config.NodeCount,
+				MaxNodes:    config.NodeCount,
+				NodeType:    config.NodeType,
+				Addons:      addons,
+			}
+			creq, _ := gke.NewCreateClusterRequest(req)
+			client.ops.CreateCluster(fakeProject, region, zone, creq)
+		}
+		err := client.DeleteClusters(fakeProject, fakeRepository, testBenchmarkRoot)
+		fmt.Println(err)
+
+		clusters, _ := client.ops.ListClustersInProject(fakeProject)
+		actual := make(map[string]ClusterConfig)
+		for _, cluster := range clusters {
+			actual[cluster.Name] = ClusterConfig{
+				Location:  cluster.Location,
+				NodeCount: cluster.NodePools[0].Autoscaling.MaxNodeCount,
+				NodeType:  cluster.NodePools[0].Config.MachineType,
+				Addons:    getAddonsForCluster(cluster),
+			}
+		}
+
+		if diff := cmp.Diff(tc.expectedClusters, actual); diff != "" {
+			t.Fatalf("Test %q fails, DeleteClusters(%q, %q, %q) returns wrong result (-want +got):\n%s",
+				tc.testName, fakeProject, fakeRepository, tc.benchmarkRoot, diff)
+		}
+	}
 }
 
 // Return addons as a string slice for the given cluster.

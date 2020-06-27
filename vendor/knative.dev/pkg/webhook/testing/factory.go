@@ -24,6 +24,7 @@ import (
 	fakeapixclient "knative.dev/pkg/client/injection/apiextensions/client/fake"
 	fakekubeclient "knative.dev/pkg/client/injection/kube/client/fake"
 	fakedynamicclient "knative.dev/pkg/injection/clients/dynamicclient/fake"
+	"knative.dev/pkg/reconciler"
 
 	"knative.dev/pkg/configmap"
 	"knative.dev/pkg/controller"
@@ -33,6 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ktesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/record"
 
@@ -98,6 +100,11 @@ func MakeFactory(ctor Ctor) rtesting.Factory {
 		c := ctor(ctx, &ls, configmap.NewStaticWatcher())
 		// Update the context with the stuff we decorated it with.
 		r.Ctx = ctx
+
+		// If the reconcilers is leader aware, then promote it.
+		if la, ok := c.(reconciler.LeaderAware); ok {
+			la.Promote(reconciler.UniversalBucket(), func(reconciler.Bucket, types.NamespacedName) {})
+		}
 
 		for _, reactor := range r.WithReactors {
 			kubeClient.PrependReactor("*", "*", reactor)

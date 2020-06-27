@@ -65,7 +65,7 @@ func TestMetricsExporter(t *testing.T) {
 		config: &metricsConfig{
 			domain:             servingDomain,
 			component:          testComponent,
-			backendDestination: None,
+			backendDestination: none,
 		},
 		expectSuccess: true,
 	}, {
@@ -73,7 +73,7 @@ func TestMetricsExporter(t *testing.T) {
 		config: &metricsConfig{
 			domain:             servingDomain,
 			component:          testComponent,
-			backendDestination: Stackdriver,
+			backendDestination: stackdriver,
 			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID: "testProj",
 			},
@@ -84,7 +84,7 @@ func TestMetricsExporter(t *testing.T) {
 		config: &metricsConfig{
 			domain:             servingDomain,
 			component:          "test-component",
-			backendDestination: Stackdriver,
+			backendDestination: stackdriver,
 			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID: "testProj",
 			},
@@ -93,7 +93,7 @@ func TestMetricsExporter(t *testing.T) {
 	}, {
 		name: "stackdriverConfigOnly",
 		config: &metricsConfig{
-			backendDestination: Stackdriver,
+			backendDestination: stackdriver,
 			stackdriverClientConfig: StackdriverClientConfig{
 				ProjectID:   "project",
 				GCPLocation: "us-west1",
@@ -107,7 +107,7 @@ func TestMetricsExporter(t *testing.T) {
 		config: &metricsConfig{
 			domain:                            servingDomain,
 			component:                         testComponent,
-			backendDestination:                Stackdriver,
+			backendDestination:                stackdriver,
 			reportingPeriod:                   60 * time.Second,
 			isStackdriverBackend:              true,
 			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
@@ -125,7 +125,7 @@ func TestMetricsExporter(t *testing.T) {
 		config: &metricsConfig{
 			domain:             servingDomain,
 			component:          testComponent,
-			backendDestination: Prometheus,
+			backendDestination: prometheus,
 			reportingPeriod:    5 * time.Second,
 			prometheusPort:     defaultPrometheusPort,
 			stackdriverClientConfig: StackdriverClientConfig{
@@ -143,7 +143,7 @@ func TestMetricsExporter(t *testing.T) {
 		config: &metricsConfig{
 			domain:                            servingDomain,
 			component:                         testComponent,
-			backendDestination:                Stackdriver,
+			backendDestination:                stackdriver,
 			reportingPeriod:                   60 * time.Second,
 			isStackdriverBackend:              true,
 			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
@@ -161,7 +161,7 @@ func TestMetricsExporter(t *testing.T) {
 		config: &metricsConfig{
 			domain:                            servingDomain,
 			component:                         testComponent,
-			backendDestination:                Stackdriver,
+			backendDestination:                stackdriver,
 			reportingPeriod:                   60 * time.Second,
 			isStackdriverBackend:              true,
 			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
@@ -178,7 +178,7 @@ func TestMetricsExporter(t *testing.T) {
 		config: &metricsConfig{
 			domain:                            servingDomain,
 			component:                         testComponent,
-			backendDestination:                Stackdriver,
+			backendDestination:                stackdriver,
 			reportingPeriod:                   60 * time.Second,
 			isStackdriverBackend:              true,
 			stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),
@@ -212,7 +212,7 @@ func TestInterlevedExporters(t *testing.T) {
 	_, err := newMetricsExporter(&metricsConfig{
 		domain:             servingDomain,
 		component:          testComponent,
-		backendDestination: Stackdriver,
+		backendDestination: stackdriver,
 		stackdriverClientConfig: StackdriverClientConfig{
 			ProjectID: testProj,
 		},
@@ -225,7 +225,7 @@ func TestInterlevedExporters(t *testing.T) {
 	_, err = newMetricsExporter(&metricsConfig{
 		domain:             servingDomain,
 		component:          testComponent,
-		backendDestination: Prometheus,
+		backendDestination: prometheus,
 		prometheusPort:     9090}, TestLogger(t))
 	if err != nil {
 		t.Error(err)
@@ -235,7 +235,7 @@ func TestInterlevedExporters(t *testing.T) {
 	_, err = newMetricsExporter(&metricsConfig{
 		domain:             servingDomain,
 		component:          testComponent,
-		backendDestination: Stackdriver,
+		backendDestination: stackdriver,
 		stackdriverClientConfig: StackdriverClientConfig{
 			ProjectID: testProj,
 		},
@@ -258,7 +258,7 @@ func TestFlushExporter(t *testing.T) {
 		domain:             servingDomain,
 		component:          testComponent,
 		reportingPeriod:    1 * time.Minute,
-		backendDestination: Prometheus,
+		backendDestination: prometheus,
 	}
 	e, err := newMetricsExporter(c, TestLogger(t))
 	if err != nil {
@@ -273,7 +273,7 @@ func TestFlushExporter(t *testing.T) {
 	c = &metricsConfig{
 		domain:                            servingDomain,
 		component:                         testComponent,
-		backendDestination:                Stackdriver,
+		backendDestination:                stackdriver,
 		isStackdriverBackend:              true,
 		reportingPeriod:                   1 * time.Minute,
 		stackdriverMetricTypePrefix:       path.Join(servingDomain, testComponent),

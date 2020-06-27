@@ -11,12 +11,13 @@ import (
 )
 
 var _ = Describe("odo devfile registry command tests", func() {
-	var project string
-	var context string
-	var currentWorkingDirectory string
+	var project, context, currentWorkingDirectory, originalKubeconfig string
 	const registryName string = "RegistryName"
 	const addRegistryURL string = "https://raw.githubusercontent.com/GeekArthur/registry/master"
 	const updateRegistryURL string = "http://www.example.com/update"
+
+	// Using program commmand according to cliRunner in devfile
+	cliRunner := helper.GetCliRunner()
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
@@ -24,23 +25,20 @@ var _ = Describe("odo devfile registry command tests", func() {
 		context = helper.CreateNewContext()
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
-		if os.Getenv("KUBERNETES") == "true" {
-			project = helper.CreateRandNamespace(context)
-		} else {
-			project = helper.CreateRandProject()
-		}
+
+		originalKubeconfig = os.Getenv("KUBECONFIG")
+		helper.LocalKubeconfigSet(context)
+		project = cliRunner.CreateRandNamespaceProject()
 		currentWorkingDirectory = helper.Getwd()
 		helper.Chdir(context)
 	})
 
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		if os.Getenv("KUBERNETES") == "true" {
-			helper.DeleteNamespace(project)
-		} else {
-			helper.DeleteProject(project)
-		}
+		cliRunner.DeleteNamespaceProject(project)
 		helper.Chdir(currentWorkingDirectory)
+		err := os.Setenv("KUBECONFIG", originalKubeconfig)
+		Expect(err).NotTo(HaveOccurred())
 		helper.DeleteDir(context)
 	})
 
@@ -48,6 +46,14 @@ var _ = Describe("odo devfile registry command tests", func() {
 		It("Should list all default registries", func() {
 			output := helper.CmdShouldPass("odo", "registry", "list")
 			helper.MatchAllInOutput(output, []string{"CheDevfileRegistry", "DefaultDevfileRegistry"})
+		})
+
+		It("Should fail with an error with no registries", func() {
+			helper.CmdShouldPass("odo", "registry", "delete", "DefaultDevfileRegistry", "-f")
+			helper.CmdShouldPass("odo", "registry", "delete", "CheDevfileRegistry", "-f")
+			output := helper.CmdShouldFail("odo", "registry", "list")
+			helper.MatchAllInOutput(output, []string{"No devfile registries added to the configuration. Refer `odo registry add -h` to add one"})
+
 		})
 	})
 
@@ -89,5 +95,6 @@ var _ = Describe("odo devfile registry command tests", func() {
 			helper.CmdShouldPass("odo", "registry", "delete", registryName, "-f")
 			helper.CmdShouldFail("odo", "create", "maven", "--registry", registryName)
 		})
+
 	})
 })

@@ -24,12 +24,12 @@ import (
 	"testing"
 
 	// injection
-	_ "knative.dev/pkg/client/injection/apiextensions/informers/apiextensions/v1beta1/customresourcedefinition/fake"
+	_ "knative.dev/pkg/client/injection/apiextensions/informers/apiextensions/v1/customresourcedefinition/fake"
 	_ "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret/fake"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	apixv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apixv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -96,7 +96,7 @@ func TestWebhookPath(t *testing.T) {
 func TestConversionToHub(t *testing.T) {
 	ctx, conversion := newConversion(t)
 
-	req := &apixv1beta1.ConversionRequest{
+	req := &apixv1.ConversionRequest{
 		UID:               "some-uid",
 		DesiredAPIVersion: testAPIVersion("v1"),
 		Objects: []runtime.RawExtension{
@@ -105,7 +105,7 @@ func TestConversionToHub(t *testing.T) {
 		},
 	}
 
-	want := &apixv1beta1.ConversionResponse{
+	want := &apixv1.ConversionResponse{
 		UID:    "some-uid",
 		Result: metav1.Status{Status: metav1.StatusSuccess},
 		ConvertedObjects: []runtime.RawExtension{
@@ -138,7 +138,7 @@ func TestConversionFromHub(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.version, func(t *testing.T) {
 			ctx, conversion := newConversion(t)
-			req := &apixv1beta1.ConversionRequest{
+			req := &apixv1.ConversionRequest{
 				UID:               "some-uid",
 				DesiredAPIVersion: testAPIVersion(test.version),
 				Objects: []runtime.RawExtension{
@@ -146,7 +146,7 @@ func TestConversionFromHub(t *testing.T) {
 				},
 			}
 
-			want := &apixv1beta1.ConversionResponse{
+			want := &apixv1.ConversionResponse{
 				UID:    "some-uid",
 				Result: metav1.Status{Status: metav1.StatusSuccess},
 				ConvertedObjects: []runtime.RawExtension{
@@ -184,7 +184,7 @@ func TestConversionThroughHub(t *testing.T) {
 		t.Run(test.version, func(t *testing.T) {
 			ctx, conversion := newConversion(t)
 
-			req := &apixv1beta1.ConversionRequest{
+			req := &apixv1.ConversionRequest{
 				UID:               "some-uid",
 				DesiredAPIVersion: testAPIVersion(test.version),
 				Objects: []runtime.RawExtension{
@@ -192,7 +192,7 @@ func TestConversionThroughHub(t *testing.T) {
 				},
 			}
 
-			want := &apixv1beta1.ConversionResponse{
+			want := &apixv1.ConversionResponse{
 				UID:    "some-uid",
 				Result: metav1.Status{Status: metav1.StatusSuccess},
 				ConvertedObjects: []runtime.RawExtension{
@@ -239,7 +239,7 @@ func TestConversionErrorBadGVK(t *testing.T) {
 
 			ctx, conversion := newConversion(t)
 
-			req := &apixv1beta1.ConversionRequest{
+			req := &apixv1.ConversionRequest{
 				UID:               "some-uid",
 				DesiredAPIVersion: testAPIVersion("v1"),
 				Objects: []runtime.RawExtension{
@@ -247,7 +247,7 @@ func TestConversionErrorBadGVK(t *testing.T) {
 				},
 			}
 
-			want := &apixv1beta1.ConversionResponse{
+			want := &apixv1.ConversionResponse{
 				UID: "some-uid",
 				Result: metav1.Status{
 					Status: metav1.StatusFailure,
@@ -281,7 +281,7 @@ func TestConversionUnknownInputGVK(t *testing.T) {
 
 	ctx, conversion := newConversion(t)
 
-	req := &apixv1beta1.ConversionRequest{
+	req := &apixv1.ConversionRequest{
 		UID:               "some-uid",
 		DesiredAPIVersion: testAPIVersion("v3"),
 		Objects: []runtime.RawExtension{
@@ -289,7 +289,7 @@ func TestConversionUnknownInputGVK(t *testing.T) {
 		},
 	}
 
-	want := &apixv1beta1.ConversionResponse{
+	want := &apixv1.ConversionResponse{
 		UID: "some-uid",
 		Result: metav1.Status{
 			Message: "no conversion support for type [kind=Resource group=some.api.group.dev]",
@@ -306,7 +306,7 @@ func TestConversionUnknownInputGVK(t *testing.T) {
 func TestConversionInvalidTypeMeta(t *testing.T) {
 	ctx, conversion := newConversionWithKinds(t, nil)
 
-	req := &apixv1beta1.ConversionRequest{
+	req := &apixv1.ConversionRequest{
 		UID:               "some-uid",
 		DesiredAPIVersion: "some-version",
 		Objects: []runtime.RawExtension{
@@ -314,7 +314,7 @@ func TestConversionInvalidTypeMeta(t *testing.T) {
 		},
 	}
 
-	want := &apixv1beta1.ConversionResponse{
+	want := &apixv1.ConversionResponse{
 		UID: "some-uid",
 		Result: metav1.Status{
 			Status: metav1.StatusFailure,
@@ -339,7 +339,7 @@ func TestConversionInvalidTypeMeta(t *testing.T) {
 func TestConversionFailureToUnmarshalInput(t *testing.T) {
 	ctx, conversion := newConversion(t)
 
-	req := &apixv1beta1.ConversionRequest{
+	req := &apixv1.ConversionRequest{
 		UID:               "some-uid",
 		DesiredAPIVersion: testAPIVersion("v1"),
 		Objects: []runtime.RawExtension{
@@ -347,7 +347,7 @@ func TestConversionFailureToUnmarshalInput(t *testing.T) {
 		},
 	}
 
-	want := &apixv1beta1.ConversionResponse{
+	want := &apixv1.ConversionResponse{
 		UID: "some-uid",
 		Result: metav1.Status{
 			Status: metav1.StatusFailure,
@@ -372,7 +372,7 @@ func TestConversionFailureToUnmarshalInput(t *testing.T) {
 func TestConversionFailureToMarshalOutput(t *testing.T) {
 	ctx, conversion := newConversion(t)
 
-	req := &apixv1beta1.ConversionRequest{
+	req := &apixv1.ConversionRequest{
 		UID:               "some-uid",
 		DesiredAPIVersion: testAPIVersion("error"),
 		Objects: []runtime.RawExtension{
@@ -382,7 +382,7 @@ func TestConversionFailureToMarshalOutput(t *testing.T) {
 		},
 	}
 
-	want := &apixv1beta1.ConversionResponse{
+	want := &apixv1.ConversionResponse{
 		UID: "some-uid",
 		Result: metav1.Status{
 			Status: metav1.StatusFailure,
@@ -428,7 +428,7 @@ func TestConversionFailureToConvert(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ctx, conversion := newConversionWithKinds(t, kinds)
-			req := &apixv1beta1.ConversionRequest{
+			req := &apixv1.ConversionRequest{
 				UID:               "some-uid",
 				DesiredAPIVersion: testAPIVersion("v3"),
 				Objects: []runtime.RawExtension{
@@ -437,7 +437,7 @@ func TestConversionFailureToConvert(t *testing.T) {
 				},
 			}
 
-			want := &apixv1beta1.ConversionResponse{
+			want := &apixv1.ConversionResponse{
 				UID: "some-uid",
 				Result: metav1.Status{
 					Status: metav1.StatusFailure,
@@ -484,7 +484,7 @@ func TestConversionFailureInvalidDesiredAPIVersion(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			ctx, conversion := newConversion(t)
 
-			req := &apixv1beta1.ConversionRequest{
+			req := &apixv1.ConversionRequest{
 				UID:               "some-uid",
 				DesiredAPIVersion: test.version,
 				Objects: []runtime.RawExtension{
@@ -492,7 +492,7 @@ func TestConversionFailureInvalidDesiredAPIVersion(t *testing.T) {
 				},
 			}
 
-			want := &apixv1beta1.ConversionResponse{
+			want := &apixv1.ConversionResponse{
 				UID: "some-uid",
 				Result: metav1.Status{
 					Message: fmt.Sprintf("desired API version %q is not valid", test.version),
@@ -546,7 +546,7 @@ func TestConversionMissingZygotes(t *testing.T) {
 
 			ctx, conversion := newConversionWithKinds(t, kinds)
 
-			req := &apixv1beta1.ConversionRequest{
+			req := &apixv1.ConversionRequest{
 				UID:               "some-uid",
 				DesiredAPIVersion: testAPIVersion("v3"),
 				Objects: []runtime.RawExtension{
@@ -554,7 +554,7 @@ func TestConversionMissingZygotes(t *testing.T) {
 				},
 			}
 
-			want := &apixv1beta1.ConversionResponse{
+			want := &apixv1.ConversionResponse{
 				UID: "some-uid",
 				Result: metav1.Status{
 					Status: metav1.StatusFailure,
@@ -592,7 +592,7 @@ func TestContextDecoration(t *testing.T) {
 
 	controller := NewConversionController(ctx, webhookPath, kinds, decorator)
 	r := controller.Reconciler.(*reconciler)
-	r.Convert(ctx, &apixv1beta1.ConversionRequest{})
+	r.Convert(ctx, &apixv1.ConversionRequest{})
 
 	if !decoratorCalled {
 		t.Errorf("context decorator was not invoked")

@@ -36,7 +36,16 @@ var v1beta1ResourceTemplate = runtime.RawExtension{
 	Raw: []byte(`{"kind":"PipelineRun","apiVersion":"tekton.dev/v1beta1","metadata":{"creationTimestamp":null},"spec":{},"status":{}}`),
 }
 var paramResourceTemplate = runtime.RawExtension{
+	Raw: []byte(`{"kind":"PipelineRun","apiVersion":"tekton.dev/v1alpha1","metadata":{"creationTimestamp":null},"spec": "$(tt.params.foo)","status":{}}`),
+}
+var deprecatedParamResourceTemplate = runtime.RawExtension{
 	Raw: []byte(`{"kind":"PipelineRun","apiVersion":"tekton.dev/v1alpha1","metadata":{"creationTimestamp":null},"spec": "$(params.foo)","status":{}}`),
+}
+var invalidParamResourceTemplate = runtime.RawExtension{
+	Raw: []byte(`{"kind":"PipelineRun","apiVersion":"tekton.dev/v1alpha1","metadata":{"creationTimestamp":null},"spec": "$(.foo)","status":{}}`),
+}
+var bothParamResourceTemplate = runtime.RawExtension{
+	Raw: []byte(`{"kind":"PipelineRun","apiVersion":"tekton.dev/v1alpha1","metadata":{"creationTimestamp":null},"spec": {"$(params1.foo)", "$(params.bar)", "$(tt.params.baz)"},"status":{}}`),
 }
 
 func TestTriggerTemplate_Validate(t *testing.T) {
@@ -130,14 +139,43 @@ func TestTriggerTemplate_Validate(t *testing.T) {
 				b.TriggerResourceTemplate(paramResourceTemplate))),
 			want: nil,
 		}, {
-			name: "params used in resource template are not declared",
+			name: "tt.params used in resource template are not declared",
 			template: b.TriggerTemplate("tt", "foo", b.TriggerTemplateSpec(
 				b.TriggerResourceTemplate(paramResourceTemplate))),
+			want: &apis.FieldError{
+				Message: "invalid value: undeclared param '$(tt.params.foo)'",
+				Paths:   []string{"spec.resourcetemplates[0]"},
+				Details: "'$(tt.params.foo)' must be declared in spec.params",
+			},
+		}, {
+			name: "params used in resource template are not declared",
+			template: b.TriggerTemplate("tt", "foo", b.TriggerTemplateSpec(
+				b.TriggerResourceTemplate(deprecatedParamResourceTemplate))),
 			want: &apis.FieldError{
 				Message: "invalid value: undeclared param '$(params.foo)'",
 				Paths:   []string{"spec.resourcetemplates[0]"},
 				Details: "'$(params.foo)' must be declared in spec.params",
 			},
+		}, {
+			name: "both params and tt.params used in resource template are not declared",
+			template: b.TriggerTemplate("tt", "foo", b.TriggerTemplateSpec(
+				b.TriggerResourceTemplate(bothParamResourceTemplate))),
+			want: &apis.FieldError{
+				Message: "invalid value: undeclared param '$(params.bar)'",
+				Paths:   []string{"spec.resourcetemplates[0]"},
+				Details: "'$(params.bar)' must be declared in spec.params",
+			},
+		}, {
+			name: "invalid params used in resource template are not declared",
+			template: b.TriggerTemplate("tt", "foo", b.TriggerTemplateSpec(
+				b.TriggerResourceTemplate(invalidParamResourceTemplate))),
+			want: nil,
+		}, {
+			name: "invalid params used in resource template are declared",
+			template: b.TriggerTemplate("tt", "foo", b.TriggerTemplateSpec(
+				b.TriggerTemplateParam("foo", "desc", "val"),
+				b.TriggerResourceTemplate(invalidParamResourceTemplate))),
+			want: nil,
 		}}
 
 	for _, tc := range tcs {

@@ -51,7 +51,7 @@ func TestOpenCensusConfig(t *testing.T) {
 		config: metricsConfig{
 			domain:             "test",
 			component:          "test",
-			backendDestination: OpenCensus,
+			backendDestination: openCensus,
 		},
 		wantFunc: func(t *testing.T, v view.Exporter) {
 			if v == nil {
@@ -64,7 +64,7 @@ func TestOpenCensusConfig(t *testing.T) {
 		config: metricsConfig{
 			domain:             "secure",
 			component:          "test",
-			backendDestination: OpenCensus,
+			backendDestination: openCensus,
 			secret: &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-opencensus",

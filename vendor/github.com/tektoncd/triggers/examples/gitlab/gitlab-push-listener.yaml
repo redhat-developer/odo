@@ -29,9 +29,9 @@ spec:
                 type: git
                 params:
                   - name: revision
-                    value: $(params.gitrevision)
+                    value: $(tt.params.gitrevision)
                   - name: url
-                    value: $(params.gitrepositoryurl)
+                    value: $(tt.params.gitrepositoryurl)
 ---
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerBinding

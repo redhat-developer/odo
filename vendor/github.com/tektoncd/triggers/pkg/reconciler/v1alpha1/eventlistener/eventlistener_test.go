@@ -50,6 +50,11 @@ func init() {
 	eventListener0 = bldr.EventListener(eventListenerName, namespace,
 		bldr.EventListenerSpec(
 			bldr.EventListenerServiceAccount("sa"),
+			bldr.EventListenerPodTemplate(
+				bldr.EventListenerPodTemplateSpec(
+					bldr.EventListenerPodTemplateTolerations(nil),
+				),
+			),
 		),
 		bldr.EventListenerStatus(
 			bldr.EventListenerConfig(generatedResourceName),
@@ -76,9 +81,17 @@ var (
 			Name: reconcilerNamespace,
 		},
 	}
-	reconcileKey                 = fmt.Sprintf("%s/%s", namespace, eventListenerName)
-	updateLabel                  = map[string]string{"update": "true"}
-	updatedSa                    = "updatedSa"
+	reconcileKey      = fmt.Sprintf("%s/%s", namespace, eventListenerName)
+	updateLabel       = map[string]string{"update": "true"}
+	updatedSa         = "updatedSa"
+	updateTolerations = []corev1.Toleration{
+		{
+			Key:      "key",
+			Operator: "Equal",
+			Value:    "value",
+			Effect:   "NoSchedule",
+		},
+	}
 	deploymentAvailableCondition = appsv1.DeploymentCondition{
 		Type:    appsv1.DeploymentAvailable,
 		Status:  corev1.ConditionTrue,
@@ -266,6 +279,9 @@ func Test_reconcileDeployment(t *testing.T) {
 	eventListener4 := eventListener1.DeepCopy()
 	eventListener4.Spec.ServiceAccountName = updatedSa
 
+	eventListener5 := eventListener1.DeepCopy()
+	eventListener5.Spec.PodTemplate.Tolerations = updateTolerations
+
 	var replicas int32 = 1
 	// deployment1 == initial deployment
 	deployment1 := &appsv1.Deployment{
@@ -280,6 +296,7 @@ func Test_reconcileDeployment(t *testing.T) {
 					Labels: generatedLabels,
 				},
 				Spec: corev1.PodSpec{
+					Tolerations:        eventListener0.Spec.PodTemplate.Tolerations,
 					ServiceAccountName: eventListener0.Spec.ServiceAccountName,
 					Containers: []corev1.Container{
 						{
@@ -373,6 +390,9 @@ func Test_reconcileDeployment(t *testing.T) {
 	deployment4 := deployment1.DeepCopy()
 	deployment4.Spec.Template.Spec.ServiceAccountName = updatedSa
 
+	deployment5 := deployment1.DeepCopy()
+	deployment5.Spec.Template.Spec.Tolerations = updateTolerations
+
 	deploymentMissingVolumes := deployment1.DeepCopy()
 	deploymentMissingVolumes.Spec.Template.Spec.Volumes = nil
 	deploymentMissingVolumes.Spec.Template.Spec.Containers[0].VolumeMounts = nil
@@ -458,7 +478,21 @@ func Test_reconcileDeployment(t *testing.T) {
 				EventListeners: []*v1alpha1.EventListener{eventListener4},
 				Deployments:    []*appsv1.Deployment{deployment4},
 			},
-		}, {
+		},
+		{
+			name: "eventlistener-tolerations-update",
+			startResources: test.Resources{
+				Namespaces:     []*corev1.Namespace{namespaceResource},
+				EventListeners: []*v1alpha1.EventListener{eventListener5},
+				Deployments:    []*appsv1.Deployment{deployment1},
+			},
+			endResources: test.Resources{
+				Namespaces:     []*corev1.Namespace{namespaceResource},
+				EventListeners: []*v1alpha1.EventListener{eventListener5},
+				Deployments:    []*appsv1.Deployment{deployment5},
+			},
+		},
+		{
 			name: "eventlistener-config-volume-mount-update",
 			startResources: test.Resources{
 				Namespaces:     []*corev1.Namespace{namespaceResource},
@@ -512,6 +546,11 @@ func TestReconcile(t *testing.T) {
 	eventListener1 := bldr.EventListener(eventListenerName, namespace,
 		bldr.EventListenerSpec(
 			bldr.EventListenerServiceAccount("sa"),
+			bldr.EventListenerPodTemplate(
+				bldr.EventListenerPodTemplateSpec(
+					bldr.EventListenerPodTemplateTolerations(nil),
+				),
+			),
 		),
 		bldr.EventListenerStatus(
 			bldr.EventListenerConfig(generatedResourceName),
@@ -550,6 +589,9 @@ func TestReconcile(t *testing.T) {
 	eventListener4 := eventListener3.DeepCopy()
 	eventListener4.Spec.ServiceType = corev1.ServiceTypeNodePort
 
+	eventListener5 := eventListener2.DeepCopy()
+	eventListener5.Spec.PodTemplate.Tolerations = updateTolerations
+
 	var replicas int32 = 1
 	deployment1 := &appsv1.Deployment{
 		ObjectMeta: generateObjectMeta(eventListener0),
@@ -563,6 +605,7 @@ func TestReconcile(t *testing.T) {
 					Labels: generatedLabels,
 				},
 				Spec: corev1.PodSpec{
+					Tolerations:        eventListener0.Spec.PodTemplate.Tolerations,
 					ServiceAccountName: eventListener0.Spec.ServiceAccountName,
 					Containers: []corev1.Container{{
 						Name:  "event-listener",
@@ -639,6 +682,9 @@ func TestReconcile(t *testing.T) {
 
 	deployment3 := deployment2.DeepCopy()
 	deployment3.Spec.Template.Spec.ServiceAccountName = updatedSa
+
+	deployment4 := deployment2.DeepCopy()
+	deployment4.Spec.Template.Spec.Tolerations = updateTolerations
 
 	service1 := &corev1.Service{
 		ObjectMeta: generateObjectMeta(eventListener0),
@@ -722,6 +768,22 @@ func TestReconcile(t *testing.T) {
 			Namespaces:     []*corev1.Namespace{namespaceResource},
 			EventListeners: []*v1alpha1.EventListener{eventListener3},
 			Deployments:    []*appsv1.Deployment{deployment3},
+			Services:       []*corev1.Service{service2},
+			ConfigMaps:     []*corev1.ConfigMap{loggingConfigMap},
+		},
+	}, {
+		name: "update-eventlistener-tolerations",
+		key:  reconcileKey,
+		startResources: test.Resources{
+			Namespaces:     []*corev1.Namespace{namespaceResource},
+			EventListeners: []*v1alpha1.EventListener{eventListener5},
+			Deployments:    []*appsv1.Deployment{deployment2},
+			Services:       []*corev1.Service{service2},
+		},
+		endResources: test.Resources{
+			Namespaces:     []*corev1.Namespace{namespaceResource},
+			EventListeners: []*v1alpha1.EventListener{eventListener5},
+			Deployments:    []*appsv1.Deployment{deployment4},
 			Services:       []*corev1.Service{service2},
 			ConfigMaps:     []*corev1.ConfigMap{loggingConfigMap},
 		},

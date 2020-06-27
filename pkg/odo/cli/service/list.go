@@ -74,9 +74,16 @@ func (o *ServiceListOptions) Run() (err error) {
 			return err
 		}
 
-		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+		if len(list) == 0 {
+			return fmt.Errorf("No operator backed services found in the namesapce")
+		}
 
-		if len(list) > 0 {
+		if log.IsJSON() {
+			machineoutput.OutputSuccess(list)
+			return
+		} else {
+			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+
 			fmt.Fprintln(w, "NAME", "\t", "TYPE", "\t", "AGE")
 
 			for _, item := range list {
@@ -84,11 +91,9 @@ func (o *ServiceListOptions) Run() (err error) {
 				fmt.Fprintln(w, item.GetName(), "\t", item.GetKind(), "\t", duration)
 			}
 
-		} else {
-			fmt.Fprintln(w, "No operator backed services found in the namesapce")
-		}
+			w.Flush()
 
-		w.Flush()
+		}
 
 		return err
 	}

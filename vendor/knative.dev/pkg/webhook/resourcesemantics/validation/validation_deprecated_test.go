@@ -19,7 +19,7 @@ package validation
 import (
 	"testing"
 
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/apis"
 	"knative.dev/pkg/ptr"
@@ -32,9 +32,9 @@ import (
 // In strict mode, you are not allowed to set a deprecated filed when doing a Create.
 func TestStrictValidation(t *testing.T) {
 
-	newCreateReq := func(new []byte) *admissionv1beta1.AdmissionRequest {
-		req := &admissionv1beta1.AdmissionRequest{
-			Operation: admissionv1beta1.Create,
+	newCreateReq := func(new []byte) *admissionv1.AdmissionRequest {
+		req := &admissionv1.AdmissionRequest{
+			Operation: admissionv1.Create,
 			Kind: metav1.GroupVersionKind{
 				Group:   "pkg.knative.dev",
 				Version: "v1alpha1",
@@ -45,9 +45,9 @@ func TestStrictValidation(t *testing.T) {
 		return req
 	}
 
-	newUpdateReq := func(old, new []byte) *admissionv1beta1.AdmissionRequest {
-		req := &admissionv1beta1.AdmissionRequest{
-			Operation: admissionv1beta1.Create,
+	newUpdateReq := func(old, new []byte) *admissionv1.AdmissionRequest {
+		req := &admissionv1.AdmissionRequest{
+			Operation: admissionv1.Create,
 			Kind: metav1.GroupVersionKind{
 				Group:   "pkg.knative.dev",
 				Version: "v1alpha1",
@@ -61,7 +61,7 @@ func TestStrictValidation(t *testing.T) {
 
 	testCases := map[string]struct {
 		strict   bool
-		req      *admissionv1beta1.AdmissionRequest
+		req      *admissionv1.AdmissionRequest
 		wantErrs []string
 	}{
 		"create, strict": {
@@ -511,8 +511,8 @@ func TestStrictValidation(t *testing.T) {
 
 // In strict mode, you are not allowed to set a deprecated filed when doing a Create.
 func TestStrictValidation_Spec_Create(t *testing.T) {
-	req := &admissionv1beta1.AdmissionRequest{
-		Operation: admissionv1beta1.Create,
+	req := &admissionv1.AdmissionRequest{
+		Operation: admissionv1.Create,
 		Kind: metav1.GroupVersionKind{
 			Group:   "pkg.knative.dev",
 			Version: "v1alpha1",

@@ -50,11 +50,7 @@ var _ = Describe("odo generic", func() {
 	Context("When executing catalog list without component directory", func() {
 		It("should list all component catalogs", func() {
 			stdOut := helper.CmdShouldPass("odo", "catalog", "list", "components")
-			Expect(stdOut).To(ContainSubstring("dotnet"))
-			Expect(stdOut).To(ContainSubstring("nginx"))
-			Expect(stdOut).To(ContainSubstring("php"))
-			Expect(stdOut).To(ContainSubstring("ruby"))
-			Expect(stdOut).To(ContainSubstring("wildfly"))
+			helper.MatchAllInOutput(stdOut, []string{"dotnet", "nginx", "php", "ruby", "wildfly"})
 		})
 
 	})
@@ -274,11 +270,10 @@ var _ = Describe("odo generic", func() {
 			odoVersionStringMatch := reOdoVersion.MatchString(odoVersion)
 			rekubernetesVersion := regexp.MustCompile(`Kubernetes:\s*v[0-9]+.[0-9]+.[0-9]+((-\w+\.[0-9]+)?\+\w+)?`)
 			kubernetesVersionStringMatch := rekubernetesVersion.MatchString(odoVersion)
-			reServerURL := regexp.MustCompile(`Server:\s*https:\/\/(.+\.com|([0-9]+.){3}[0-9]+):[0-9]{4}`)
-			serverURLStringMatch := reServerURL.MatchString(odoVersion)
 			Expect(odoVersionStringMatch).Should(BeTrue())
 			Expect(kubernetesVersionStringMatch).Should(BeTrue())
-			Expect(serverURLStringMatch).Should(BeTrue())
+			serverURL := oc.GetCurrentServerURL()
+			Expect(odoVersion).Should(ContainSubstring("Server: " + serverURL))
 		})
 	})
 

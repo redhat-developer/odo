@@ -4,11 +4,6 @@ package watch
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/testingutil"
-	"github.com/openshift/odo/pkg/util"
-	"github.com/pkg/errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -19,6 +14,13 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/occlient"
+	"github.com/openshift/odo/pkg/testingutil"
+	"github.com/openshift/odo/pkg/util"
+	"github.com/pkg/errors"
 )
 
 // setUpF8AnalyticsComponentSrc sets up a mock analytics component source base for observing changes to source files.
@@ -809,6 +811,7 @@ func TestWatchAndPush(t *testing.T) {
 
 				if tt.isExperimental {
 					watchParameters.DevfileWatchHandler = mockDevFilePush
+					watchParameters.EnvSpecificInfo = &envinfo.EnvSpecificInfo{}
 				} else {
 					watchParameters.ApplicationName = tt.applicationName
 					watchParameters.WatchHandler = mockPushLocal

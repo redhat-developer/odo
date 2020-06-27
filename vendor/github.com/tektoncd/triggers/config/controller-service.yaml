@@ -19,7 +19,7 @@ metadata:
     app.kubernetes.io/name: controller
     app.kubernetes.io/component: controller
     app.kubernetes.io/instance: default
-    app.kubernetes.io/version: devel
+    app.kubernetes.io/version: "devel"
     app.kubernetes.io/part-of: tekton-triggers
     triggers.tekton.dev/release: "devel"
     app: tekton-triggers-controller

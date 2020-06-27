@@ -29,7 +29,7 @@ func TestNewPrometheusExporter(t *testing.T) {
 		config: metricsConfig{
 			domain:             servingDomain,
 			component:          testComponent,
-			backendDestination: Prometheus,
+			backendDestination: prometheus,
 			prometheusPort:     9090,
 		},
 		expectedAddr: ":9090",
@@ -38,7 +38,7 @@ func TestNewPrometheusExporter(t *testing.T) {
 		config: metricsConfig{
 			domain:             servingDomain,
 			component:          testComponent,
-			backendDestination: Prometheus,
+			backendDestination: prometheus,
 			prometheusPort:     9091,
 		},
 		expectedAddr: ":9091",

@@ -50,6 +50,20 @@ func (oc OcRunner) GetCurrentProject() string {
 	return ""
 }
 
+// GetCurrentServerURL retrieves the URL of the server we're currently connected to
+// returns empty if not connected or an error occurred
+func (oc OcRunner) GetCurrentServerURL() string {
+	session := CmdRunner(oc.path, "project")
+	session.Wait()
+	if session.ExitCode() == 0 {
+		output := strings.TrimSpace(string(session.Out.Contents()))
+		// format is: Using project "<namespace>" on server "<url>".
+		a := strings.Split(output, "\"")
+		return a[len(a)-2] // last entry is ".", we need the one before that
+	}
+	return ""
+}
+
 // GetFirstURL returns the url of the first Route that it can find for given component
 func (oc OcRunner) GetFirstURL(component string, app string, project string) string {
 	session := CmdRunner(oc.path, "get", "route",
@@ -264,8 +278,8 @@ func (oc OcRunner) SourceLocationBC(componentName string, appName string, projec
 // checkForImageStream checks if there is a ImageStram with name and tag in openshift namespace
 func (oc OcRunner) checkForImageStream(name string, tag string) bool {
 	// first check if there is ImageStream with given name
-	names := CmdShouldPass(oc.path, "get", "is", "-n", "openshift",
-		"-o", "jsonpath='{range .items[*]}{.metadata.name}{\"\\n\"}{end}'")
+	names := strings.Trim(CmdShouldPass(oc.path, "get", "is", "-n", "openshift",
+		"-o", "jsonpath='{range .items[*]}{.metadata.name}{\"\\n\"}{end}'"), "'")
 	scanner := bufio.NewScanner(strings.NewReader(names))
 	namePresent := false
 	for scanner.Scan() {
@@ -276,8 +290,8 @@ func (oc OcRunner) checkForImageStream(name string, tag string) bool {
 	tagPresent := false
 	// if there is a ImageStream check if there is a given tag
 	if namePresent {
-		tags := CmdShouldPass(oc.path, "get", "is", name, "-n", "openshift",
-			"-o", "jsonpath='{range .spec.tags[*]}{.name}{\"\\n\"}{end}'")
+		tags := strings.Trim(CmdShouldPass(oc.path, "get", "is", name, "-n", "openshift",
+			"-o", "jsonpath='{range .spec.tags[*]}{.name}{\"\\n\"}{end}'"), "'")
 		scanner := bufio.NewScanner(strings.NewReader(tags))
 		for scanner.Scan() {
 			if scanner.Text() == tag {
@@ -475,7 +489,7 @@ func (oc OcRunner) WaitAndCheckForExistence(resourceType, namespace string, time
 	for {
 		select {
 		case <-pingTimeout:
-			Fail(fmt.Sprintf("Timeout out after %v minutes", timeoutMinutes))
+			Fail(fmt.Sprintf("Timeout after %d minutes", timeoutMinutes))
 
 		case <-tick:
 			session := CmdRunner(oc.path, "get", resourceType, "--namespace", namespace)
@@ -504,4 +518,21 @@ func (oc OcRunner) VerifyResourceDeleted(resourceType, resourceName, namespace s
 	Eventually(session).Should(gexec.Exit(0))
 	output := string(session.Wait().Out.Contents())
 	Expect(output).NotTo(ContainSubstring(resourceName))
+}
+
+// CreateRandNamespaceProject create new project with random name in oc cluster (10 letters)
+func (oc OcRunner) CreateRandNamespaceProject() string {
+	projectName := RandString(10)
+	fmt.Fprintf(GinkgoWriter, "Creating a new project: %s\n", projectName)
+	session := CmdShouldPass("odo", "project", "create", projectName, "-w", "-v4")
+	Expect(session).To(ContainSubstring("New project created"))
+	Expect(session).To(ContainSubstring(projectName))
+	return projectName
+}
+
+// DeleteNamespaceProject deletes a specified project in oc cluster
+func (oc OcRunner) DeleteNamespaceProject(projectName string) {
+	fmt.Fprintf(GinkgoWriter, "Deleting project: %s\n", projectName)
+	session := CmdShouldPass("odo", "project", "delete", projectName, "-f")
+	Expect(session).To(ContainSubstring("Deleted project : " + projectName))
 }

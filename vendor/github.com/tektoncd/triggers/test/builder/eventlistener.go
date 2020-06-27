@@ -31,6 +31,9 @@ type EventListenerOp func(*v1alpha1.EventListener)
 // EventListenerSpecOp is an operation which modifies the EventListenerSpec.
 type EventListenerSpecOp func(*v1alpha1.EventListenerSpec)
 
+// EventListenerPodTemplateOp is an operation which modifies the PodTemplate.
+type EventListenerPodTemplateOp func(*v1alpha1.PodTemplate)
+
 // EventListenerStatusOp is an operation which modifies the EventListenerStatus.
 type EventListenerStatusOp func(*v1alpha1.EventListenerStatus)
 
@@ -86,6 +89,31 @@ func EventListenerSpec(ops ...EventListenerSpecOp) EventListenerOp {
 func EventListenerServiceAccount(saName string) EventListenerSpecOp {
 	return func(spec *v1alpha1.EventListenerSpec) {
 		spec.ServiceAccountName = saName
+	}
+}
+
+// EventListenerPodTemplate sets the specified pod template of the EventListener.
+func EventListenerPodTemplate(podTemplate v1alpha1.PodTemplate) EventListenerSpecOp {
+	return func(spec *v1alpha1.EventListenerSpec) {
+		spec.PodTemplate = podTemplate
+	}
+}
+
+// EventListenerPodTemplateSpec creates an PodTemplate.
+// Any number of EventListenerPodTemplateOp modifiers can be passed to transform it.
+func EventListenerPodTemplateSpec(ops ...EventListenerPodTemplateOp) v1alpha1.PodTemplate {
+	pt := v1alpha1.PodTemplate{}
+	for _, op := range ops {
+		op(&pt)
+	}
+
+	return pt
+}
+
+// EventListenerPodTemplateTolerations sets the specified Tolerations of the EventListener PodTemplate.
+func EventListenerPodTemplateTolerations(tolerations []corev1.Toleration) EventListenerPodTemplateOp {
+	return func(pt *v1alpha1.PodTemplate) {
+		pt.Tolerations = tolerations
 	}
 }
 

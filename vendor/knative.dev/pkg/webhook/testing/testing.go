@@ -25,7 +25,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	jsonpatch "gomodules.xyz/jsonpatch/v2"
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"knative.dev/pkg/system"
 	pkgtest "knative.dev/pkg/testing"
@@ -52,7 +52,7 @@ func CreateResource(name string) *pkgtest.Resource {
 }
 
 // ExpectAllowed checks that a given admission response allows the initiating request through.
-func ExpectAllowed(t *testing.T, resp *admissionv1beta1.AdmissionResponse) {
+func ExpectAllowed(t *testing.T, resp *admissionv1.AdmissionResponse) {
 	t.Helper()
 	if !resp.Allowed {
 		t.Errorf("Expected allowed, but failed with %+v", resp.Result)
@@ -61,7 +61,7 @@ func ExpectAllowed(t *testing.T, resp *admissionv1beta1.AdmissionResponse) {
 
 // ExpectFailsWith checks that a given admission response disallows the initiating request
 // through and contains the provided string in its error message.
-func ExpectFailsWith(t *testing.T, resp *admissionv1beta1.AdmissionResponse, contains string) {
+func ExpectFailsWith(t *testing.T, resp *admissionv1.AdmissionResponse, contains string) {
 	t.Helper()
 	if resp.Allowed {
 		t.Error("Expected denial, got allowed")

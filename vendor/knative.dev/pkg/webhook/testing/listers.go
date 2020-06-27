@@ -17,15 +17,15 @@ limitations under the License.
 package testing
 
 import (
-	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2beta1 "k8s.io/api/autoscaling/v2beta1"
 	corev1 "k8s.io/api/core/v1"
-	apixv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
-	apixlisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1beta1"
+	apixv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apixlisters "k8s.io/apiextensions-apiserver/pkg/client/listers/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
-	admissionlisters "k8s.io/client-go/listers/admissionregistration/v1beta1"
+	admissionlisters "k8s.io/client-go/listers/admissionregistration/v1"
 
 	fakeapix "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
 	appsv1listers "k8s.io/client-go/listers/apps/v1"
@@ -140,14 +140,14 @@ func (l *Listers) GetNamespaceLister() corev1listers.NamespaceLister {
 
 // GetMutatingWebhookConfigurationLister gets lister for K8s MutatingWebhookConfiguration resource.
 func (l *Listers) GetMutatingWebhookConfigurationLister() admissionlisters.MutatingWebhookConfigurationLister {
-	return admissionlisters.NewMutatingWebhookConfigurationLister(l.IndexerFor(&admissionregistrationv1beta1.MutatingWebhookConfiguration{}))
+	return admissionlisters.NewMutatingWebhookConfigurationLister(l.IndexerFor(&admissionregistrationv1.MutatingWebhookConfiguration{}))
 }
 
 // GetValidatingWebhookConfigurationLister gets lister for K8s ValidatingWebhookConfiguration resource.
 func (l *Listers) GetValidatingWebhookConfigurationLister() admissionlisters.ValidatingWebhookConfigurationLister {
-	return admissionlisters.NewValidatingWebhookConfigurationLister(l.IndexerFor(&admissionregistrationv1beta1.ValidatingWebhookConfiguration{}))
+	return admissionlisters.NewValidatingWebhookConfigurationLister(l.IndexerFor(&admissionregistrationv1.ValidatingWebhookConfiguration{}))
 }
 
 func (l *Listers) GetCustomResourceDefinitionLister() apixlisters.CustomResourceDefinitionLister {
-	return apixlisters.NewCustomResourceDefinitionLister(l.IndexerFor(&apixv1beta1.CustomResourceDefinition{}))
+	return apixlisters.NewCustomResourceDefinitionLister(l.IndexerFor(&apixv1.CustomResourceDefinition{}))
 }

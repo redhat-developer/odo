@@ -8,14 +8,20 @@ aliases:
   - mattmoor
   - vaikas
   - n3wscott
+  apis-reviewers:
+  - whaught
 
   apis-duck-approvers:
   - mattmoor
   - vaikas
+  apis-duck-reviewers:
+  - whaught
 
   codegen-approvers:
   - mattmoor
   - n3wscott
+  codegen-reviewers:
+  - whaught
 
   configmap-approvers:
   - mattmoor
@@ -28,6 +34,8 @@ aliases:
   - mattmoor
   - tcnghia
   - vagababov
+  controller-reviewers:
+  - whaught
 
   kmeta-approvers:
   - mattmoor
@@ -65,4 +73,5 @@ aliases:
   - dprotaso
   - mattmoor
   - tcnghia
-
+  webhook-reviewers:
+  - whaught

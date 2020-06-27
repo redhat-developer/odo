@@ -25,11 +25,11 @@ import (
 
 	// Injection stuff
 	_ "knative.dev/pkg/client/injection/kube/client/fake"
-	_ "knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1beta1/validatingwebhookconfiguration/fake"
+	_ "knative.dev/pkg/client/injection/kube/informers/admissionregistration/v1/validatingwebhookconfiguration/fake"
 	_ "knative.dev/pkg/injection/clients/namespacedkube/informers/core/v1/secret/fake"
 
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
-	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -55,14 +55,14 @@ var (
 	validations = configmap.Constructors{
 		testConfigName: newConfigFromConfigMap,
 	}
-	initialConfigWebhook = &admissionregistrationv1beta1.ValidatingWebhookConfiguration{
+	initialConfigWebhook = &admissionregistrationv1.ValidatingWebhookConfiguration{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: testConfigValidationName,
 		},
-		Webhooks: []admissionregistrationv1beta1.ValidatingWebhook{{
+		Webhooks: []admissionregistrationv1.ValidatingWebhook{{
 			Name: testConfigValidationName,
-			ClientConfig: admissionregistrationv1beta1.WebhookClientConfig{
-				Service: &admissionregistrationv1beta1.ServiceReference{
+			ClientConfig: admissionregistrationv1.WebhookClientConfig{
+				Service: &admissionregistrationv1.ServiceReference{
 					Namespace: system.Namespace(),
 					Name:      "webhook",
 				},
@@ -100,8 +100,8 @@ func newTestConfigValidationController(t *testing.T) *reconciler {
 func TestDeleteAllowedForConfigMap(t *testing.T) {
 	_, ac := newNonRunningTestConfigValidationController(t)
 
-	req := &admissionv1beta1.AdmissionRequest{
-		Operation: admissionv1beta1.Delete,
+	req := &admissionv1.AdmissionRequest{
+		Operation: admissionv1.Delete,
 	}
 
 	if resp := ac.Admit(TestContextWithLogger(t), req); !resp.Allowed {
@@ -112,8 +112,8 @@ func TestDeleteAllowedForConfigMap(t *testing.T) {
 func TestConnectAllowedForConfigMap(t *testing.T) {
 	_, ac := newNonRunningTestConfigValidationController(t)
 
-	req := &admissionv1beta1.AdmissionRequest{
-		Operation: admissionv1beta1.Connect,
+	req := &admissionv1.AdmissionRequest{
+		Operation: admissionv1.Connect,
 	}
 
 	resp := ac.Admit(TestContextWithLogger(t), req)
@@ -125,8 +125,8 @@ func TestConnectAllowedForConfigMap(t *testing.T) {
 func TestNonConfigMapKindFails(t *testing.T) {
 	_, ac := newNonRunningTestConfigValidationController(t)
 
-	req := &admissionv1beta1.AdmissionRequest{
-		Operation: admissionv1beta1.Create,
+	req := &admissionv1.AdmissionRequest{
+		Operation: admissionv1.Create,
 		Kind: metav1.GroupVersionKind{
 			Group:   "pkg.knative.dev",
 			Version: "v1alpha1",
@@ -313,21 +313,21 @@ func createConfigMap(value string) *corev1.ConfigMap {
 	}
 }
 
-func createCreateConfigMapRequest(ctx context.Context, t *testing.T, r *corev1.ConfigMap) *admissionv1beta1.AdmissionRequest {
-	return configMapRequest(t, r, admissionv1beta1.Create)
+func createCreateConfigMapRequest(ctx context.Context, t *testing.T, r *corev1.ConfigMap) *admissionv1.AdmissionRequest {
+	return configMapRequest(t, r, admissionv1.Create)
 }
 
-func updateCreateConfigMapRequest(ctx context.Context, t *testing.T, r *corev1.ConfigMap) *admissionv1beta1.AdmissionRequest {
-	return configMapRequest(t, r, admissionv1beta1.Update)
+func updateCreateConfigMapRequest(ctx context.Context, t *testing.T, r *corev1.ConfigMap) *admissionv1.AdmissionRequest {
+	return configMapRequest(t, r, admissionv1.Update)
 }
 
 func configMapRequest(
 	t *testing.T,
 	r *corev1.ConfigMap,
-	o admissionv1beta1.Operation,
-) *admissionv1beta1.AdmissionRequest {
+	o admissionv1.Operation,
+) *admissionv1.AdmissionRequest {
 	t.Helper()
-	req := &admissionv1beta1.AdmissionRequest{
+	req := &admissionv1.AdmissionRequest{
 		Operation: o,
 		Kind: metav1.GroupVersionKind{
 			Group:   "",

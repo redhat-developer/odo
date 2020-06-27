@@ -1,0 +1,10 @@
+apiVersion: tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: pipeline-binding
+spec:
+  params:
+  - name: foo
+    value: $(body.test)
+  - name: bar
+    value: $(header.X-Header)
