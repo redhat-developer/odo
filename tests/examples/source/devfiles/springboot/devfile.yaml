@@ -35,7 +35,7 @@ components:
       mountSources: false
 commands:
   - exec:
-      id: devbuild
+      id: defaultBuild
       component: tools
       commandLine: "/artifacts/bin/build-container-full.sh"
       workingDir: /projects/springbootproject
@@ -43,7 +43,7 @@ commands:
         kind: build
         isDefault: true
   - exec:
-      id: devrun
+      id: defaultRun
       component: runtime
       commandLine: "/artifacts/bin/start-server.sh"
       workingDir: /

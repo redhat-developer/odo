@@ -27,8 +27,6 @@ var componentsExample = `  # Get the supported components
 
 // ListComponentsOptions encapsulates the options for the odo catalog list components command
 type ListComponentsOptions struct {
-	// display both supported and unsupported devfile components
-	listAllDevfileComponents bool
 	// list of known images
 	catalogList catalog.ComponentTypeList
 	// list of known devfiles
@@ -119,7 +117,6 @@ func (o *ListComponentsOptions) Run() (err error) {
 	} else {
 		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 		var supCatalogList, unsupCatalogList []catalog.ComponentType
-		var supDevfileCatalogList, unsupDevfileCatalogList []catalog.DevfileComponentType
 		var supported string
 
 		for _, image := range o.catalogList.Items {
@@ -132,14 +129,6 @@ func (o *ListComponentsOptions) Run() (err error) {
 			if len(unsupported) != 0 {
 				image.Spec.NonHiddenTags = unsupported
 				unsupCatalogList = append(unsupCatalogList, image)
-			}
-		}
-
-		for _, devfileComponent := range o.catalogDevfileList.Items {
-			if devfileComponent.Support {
-				supDevfileCatalogList = append(supDevfileCatalogList, devfileComponent)
-			} else {
-				unsupDevfileCatalogList = append(unsupDevfileCatalogList, devfileComponent)
 			}
 		}
 
@@ -160,19 +149,11 @@ func (o *ListComponentsOptions) Run() (err error) {
 			fmt.Fprintln(w)
 		}
 
-		if len(supDevfileCatalogList) != 0 || (o.listAllDevfileComponents && len(unsupDevfileCatalogList) != 0) {
+		if len(o.catalogDevfileList.Items) != 0 {
 			fmt.Fprintln(w, "Odo Devfile Components:")
-			fmt.Fprintln(w, "NAME", "\t", "DESCRIPTION", "\t", "REGISTRY", "\t", "SUPPORTED")
+			fmt.Fprintln(w, "NAME", "\t", "DESCRIPTION", "\t", "REGISTRY")
 
-			if len(supDevfileCatalogList) != 0 {
-				supported = "YES"
-				o.printDevfileCatalogList(w, supDevfileCatalogList, supported)
-			}
-
-			if o.listAllDevfileComponents && len(unsupDevfileCatalogList) != 0 {
-				supported = "NO"
-				o.printDevfileCatalogList(w, unsupDevfileCatalogList, supported)
-			}
+			o.printDevfileCatalogList(w, o.catalogDevfileList.Items, "")
 
 			fmt.Fprintln(w)
 		}
@@ -196,8 +177,6 @@ func NewCmdCatalogListComponents(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-
-	componentListCmd.Flags().BoolVarP(&o.listAllDevfileComponents, "all", "a", false, "List both supported and unsupported devfile components.")
 
 	return componentListCmd
 }
@@ -224,6 +203,11 @@ func (o *ListComponentsOptions) printCatalogList(w io.Writer, catalogList []cata
 
 func (o *ListComponentsOptions) printDevfileCatalogList(w io.Writer, catalogDevfileList []catalog.DevfileComponentType, supported string) {
 	for _, devfileComponent := range catalogDevfileList {
-		fmt.Fprintln(w, devfileComponent.Name, "\t", devfileComponent.Description, "\t", devfileComponent.Registry.Name, "\t", supported)
+		if supported != "" {
+			fmt.Fprintln(w, devfileComponent.Name, "\t", devfileComponent.Description, "\t", devfileComponent.Registry.Name, "\t", supported)
+		} else {
+			fmt.Fprintln(w, devfileComponent.Name, "\t", devfileComponent.Description, "\t", devfileComponent.Registry.Name)
+		}
+
 	}
 }
