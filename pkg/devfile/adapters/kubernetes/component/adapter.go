@@ -367,7 +367,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 		command, ok := commandsMap[versionsCommon.InitCommandGroupType]
 		if ok {
 			compInfo.ContainerName = command.Exec.Component
-			err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
+			err = exec.ExecuteDevfileBuildOrTestAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 			if err != nil {
 				return err
 			}
@@ -380,7 +380,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 	command, ok := commandsMap[versionsCommon.BuildCommandGroupType]
 	if ok {
 		compInfo.ContainerName = command.Exec.Component
-		err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
+		err = exec.ExecuteDevfileBuildOrTestAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 		if err != nil {
 			return err
 		}
@@ -431,7 +431,7 @@ func (a Adapter) execTestCmd(testcmd versionsCommon.DevfileCommand, podName stri
 		PodName: podName,
 	}
 	compInfo.ContainerName = testcmd.Exec.Component
-	err = exec.ExecuteDevfileBuildAction(&a.Client, *testcmd.Exec, testcmd.Exec.Id, compInfo, show)
+	err = exec.ExecuteDevfileBuildOrTestAction(&a.Client, *testcmd.Exec, testcmd.Exec.Id, compInfo, show, a.machineEventLogger)
 	if err != nil {
 		return err
 	}

@@ -23,7 +23,6 @@ func TestSetEnvInfo(t *testing.T) {
 	os.Setenv(envInfoEnvName, tempEnvFile.Name())
 	testURL := EnvInfoURL{Name: "testURL", Host: "1.2.3.4.nip.io", TLSSecret: "testTLSSecret"}
 	invalidParam := "invalidParameter"
-	testCreate := ComponentSettings{Name: "componentName", Namespace: "namespace"}
 	testPush := EnvInfoPushCommand{Init: "myinit", Build: "myBuild", Run: "myRun"}
 
 	tests := []struct {
@@ -53,16 +52,6 @@ func TestSetEnvInfo(t *testing.T) {
 			},
 			checkConfigSetting: []string{"URL"},
 			expectError:        true,
-		},
-		{
-			name:      "Case 3: Test fields setup from create parameter",
-			parameter: Create,
-			value:     testCreate,
-			existingEnvInfo: EnvInfo{
-				componentSettings: ComponentSettings{},
-			},
-			checkConfigSetting: []string{"Name", "Namespace"},
-			expectError:        false,
 		},
 		{
 			name:      "Case 4: Test fields setup from push parameter",
@@ -377,7 +366,7 @@ func TestGetPushCommand(t *testing.T) {
 }
 
 func TestLowerCaseParameterForLocalParameters(t *testing.T) {
-	expected := map[string]bool{"create": true, "push": true, "url": true}
+	expected := map[string]bool{"push": true, "url": true}
 	actual := util.GetLowerCaseParameters(GetLocallySupportedParameters())
 	if !reflect.DeepEqual(expected, actual) {
 		t.Errorf("expected '%v', got '%v'", expected, actual)

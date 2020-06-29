@@ -181,7 +181,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			utils.ExecPushWithForceFlag(context, cmpName, namespace)
 		})
 
-		It("should execute the default devbuild and devrun commands if present", func() {
+		It("should execute the default build and run command groups if present", func() {
 			utils.ExecDefaultDevfileCommands(context, cmpName, namespace)
 
 			// Check to see if it's been pushed (foobar.txt abd directory testdir)
@@ -204,8 +204,9 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(cmdOutput).To(ContainSubstring("/myproject/app.jar"))
 		})
 
-		It("should execute devinit command if present", func() {
-			helper.CmdShouldPass("odo", "create", "java-spring-boot", "--project", namespace, cmpName)
+		// v1 devfile test
+		It("should execute devinit command if present in v1 devfiles", func() {
+			helper.CmdShouldPass("odo", "create", "springBoot", "--project", namespace, cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
@@ -218,8 +219,9 @@ var _ = Describe("odo devfile push command tests", func() {
 			})
 		})
 
-		It("should execute devinit and devrun commands if present", func() {
-			helper.CmdShouldPass("odo", "create", "java-spring-boot", "--project", namespace, cmpName)
+		// v1 devfile test
+		It("should execute devinit and devrun commands if present in v1 devfiles", func() {
+			helper.CmdShouldPass("odo", "create", "springBoot", "--project", namespace, cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init-without-build.yaml"), filepath.Join(context, "devfile.yaml"))
@@ -231,8 +233,9 @@ var _ = Describe("odo devfile push command tests", func() {
 			})
 		})
 
-		It("should only execute devinit command once if component is already created", func() {
-			helper.CmdShouldPass("odo", "create", "java-spring-boot", "--project", namespace, cmpName)
+		// v1 devfile test
+		It("should only execute devinit command once if component is already created in v1 devfiles", func() {
+			helper.CmdShouldPass("odo", "create", "springBoot", "--project", namespace, cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
@@ -253,25 +256,11 @@ var _ = Describe("odo devfile push command tests", func() {
 			})
 		})
 
-		It("should be able to handle a missing devinit command", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
-
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-without-devinit.yaml"), filepath.Join(context, "devfile.yaml"))
-
-			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
-			Expect(output).NotTo(ContainSubstring("Executing devinit command"))
-			helper.MatchAllInOutput(output, []string{
-				"Executing devbuild command \"npm install\"",
-				"Executing devrun command \"nodemon app.js\"",
-			})
-		})
-
-		It("should be able to handle a missing devbuild command", func() {
+		It("should be able to handle a missing build command group", func() {
 			utils.ExecWithMissingBuildCommand(context, cmpName, namespace)
 		})
 
-		It("should error out on a missing devrun command", func() {
+		It("should error out on a missing run command group", func() {
 			utils.ExecWithMissingRunCommand(context, cmpName, namespace)
 		})
 
@@ -281,6 +270,22 @@ var _ = Describe("odo devfile push command tests", func() {
 
 		It("should error out on a wrong custom commands", func() {
 			utils.ExecWithWrongCustomCommand(context, cmpName, namespace)
+		})
+
+		It("should error out on multiple or no default commands", func() {
+			utils.ExecWithMultipleOrNoDefaults(context, cmpName, namespace)
+		})
+
+		It("should execute commands with flags if there are more than one default command", func() {
+			utils.ExecMultipleDefaultsWithFlags(context, cmpName, namespace)
+		})
+
+		It("should execute commands with flags if the command has no group kind", func() {
+			utils.ExecCommandWithoutGroupUsingFlags(context, cmpName, namespace)
+		})
+
+		It("should error out if the devfile has an invalid command group", func() {
+			utils.ExecWithInvalidCommandGroup(context, cmpName, namespace)
 		})
 
 		It("should not restart the application if restart is false", func() {
@@ -344,6 +349,17 @@ var _ = Describe("odo devfile push command tests", func() {
 				}
 			}
 			Expect(volumesMatched).To(Equal(true))
+		})
+	})
+
+	Context("when .gitignore file exists", func() {
+		It("checks that .odo/env exists in gitignore", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			ignoreFilePath := filepath.Join(context, ".gitignore")
+
+			helper.FileShouldContainSubstring(ignoreFilePath, filepath.Join(".odo", "env"))
+
 		})
 	})
 

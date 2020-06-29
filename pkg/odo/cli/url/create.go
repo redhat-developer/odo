@@ -6,7 +6,7 @@ import (
 
 	"github.com/openshift/odo/pkg/config"
 	adapterutils "github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/log"
 	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
@@ -127,7 +127,8 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 			return err
 		}
 
-		devObj, err := devfileParser.Parse(o.DevfilePath)
+		// Parse devfile and validate
+		devObj, err := parser.ParseAndValidate(o.DevfilePath)
 		if err != nil {
 			return fmt.Errorf("fail to parse the devfile %s, with error: %s", o.DevfilePath, err)
 		}

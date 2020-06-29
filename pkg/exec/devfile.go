@@ -11,8 +11,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ExecuteDevfileBuildAction executes the devfile build command action
-func ExecuteDevfileBuildAction(client ExecClient, exec common.Exec, commandName string, compInfo adaptersCommon.ComponentInfo, show bool, machineEventLogger machineoutput.MachineEventLoggingClient) error {
+// ExecuteDevfileBuildOrTestAction executes the devfile build command action
+func ExecuteDevfileBuildOrTestAction(client ExecClient, exec common.Exec, commandName string, compInfo adaptersCommon.ComponentInfo, show bool, machineEventLogger machineoutput.MachineEventLoggingClient) error {
 	var s *log.Status
 
 	// Change to the workdir and execute the command

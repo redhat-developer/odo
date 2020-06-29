@@ -12,6 +12,8 @@ import (
 
 var _ = Describe("odo devfile catalog command tests", func() {
 	var project, context, currentWorkingDirectory, originalKubeconfig string
+	const registryName string = "RegistryName"
+	const addRegistryURL string = "https://raw.githubusercontent.com/odo-devfiles/registry/master"
 
 	// Using program commmand according to cliRunner in devfile
 	cliRunner := helper.GetCliRunner()
@@ -46,30 +48,12 @@ var _ = Describe("odo devfile catalog command tests", func() {
 			wantOutput := []string{
 				"Odo Devfile Components",
 				"NAME",
-				"java-spring-boot",
-				"java-openliberty",
+				"springBoot",
+				"openLiberty",
 				"quarkus",
 				"DESCRIPTION",
 				"REGISTRY",
-				"SUPPORTED",
-			}
-			helper.MatchAllInOutput(output, wantOutput)
-		})
-	})
-
-	Context("When executing catalog list components with -a flag", func() {
-		It("should list all supported and unsupported devfile components", func() {
-			output := helper.CmdShouldPass("odo", "catalog", "list", "components", "-a")
-			wantOutput := []string{
-				"Odo Devfile Components",
-				"NAME",
-				"java-spring-boot",
-				"java-maven",
-				"quarkus",
-				"php-mysql",
-				"DESCRIPTION",
-				"REGISTRY",
-				"SUPPORTED",
+				"DefaultDevfileRegistry",
 			}
 			helper.MatchAllInOutput(output, wantOutput)
 		})
@@ -80,14 +64,12 @@ var _ = Describe("odo devfile catalog command tests", func() {
 			output := helper.CmdShouldPass("odo", "catalog", "list", "components", "-o", "json")
 			wantOutput := []string{
 				"odo.dev/v1alpha1",
-				"java-openliberty",
-				"java-spring-boot",
+				"devfileItems",
+				"openLiberty",
+				"springBoot",
 				"nodejs",
 				"quarkus",
-				"php-mysql",
 				"maven",
-				"golang",
-				"java-maven",
 			}
 			helper.MatchAllInOutput(output, wantOutput)
 		})
@@ -99,7 +81,7 @@ var _ = Describe("odo devfile catalog command tests", func() {
 			output := helper.CmdShouldPass("odo", "catalog", "list", "components")
 			helper.MatchAllInOutput(output, []string{
 				"Odo Devfile Components",
-				"java-spring-boot",
+				"springBoot",
 				"quarkus",
 			})
 			helper.CmdShouldPass("odo", "registry", "delete", "fake", "-f")
@@ -108,8 +90,8 @@ var _ = Describe("odo devfile catalog command tests", func() {
 
 	Context("When executing catalog describe component with a component name with a single project", func() {
 		It("should only give information about one project", func() {
-			output := helper.CmdShouldPass("odo", "catalog", "describe", "component", "java-openliberty")
-			helper.MatchAllInOutput(output, []string{"location: https://github.com/OpenLiberty/application-stack.git"})
+			output := helper.CmdShouldPass("odo", "catalog", "describe", "component", "openLiberty")
+			helper.MatchAllInOutput(output, []string{"location: https://github.com/odo-devfiles/openliberty-ex.git"})
 		})
 	})
 	Context("When executing catalog describe component with a component name with no starter projects", func() {
@@ -120,8 +102,11 @@ var _ = Describe("odo devfile catalog command tests", func() {
 	})
 	Context("When executing catalog describe component with a component name with multiple components", func() {
 		It("should print multiple devfiles from different registries", func() {
-			output := helper.CmdShouldPass("odo", "catalog", "describe", "component", "nodejs")
-			helper.MatchAllInOutput(output, []string{"name: nodejs-web-app", "location: https://github.com/odo-devfiles/nodejs-ex.git", "location: https://github.com/che-samples/web-nodejs-sample.git"})
+			helper.CmdShouldPass("odo", "registry", "add", registryName, addRegistryURL)
+			output := helper.CmdShouldPass("odo", "registry", "list")
+			helper.MatchAllInOutput(output, []string{registryName, addRegistryURL})
+			output = helper.CmdShouldPass("odo", "catalog", "describe", "component", "nodejs")
+			helper.MatchAllInOutput(output, []string{"name: nodejs-web-app", "Registry: DefaultDevfileRegistry", "Registry: " + registryName})
 		})
 	})
 	Context("When executing catalog describe component with a component name that does not have a devfile component", func() {

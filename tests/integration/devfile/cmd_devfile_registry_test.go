@@ -13,7 +13,7 @@ import (
 var _ = Describe("odo devfile registry command tests", func() {
 	var project, context, currentWorkingDirectory, originalKubeconfig string
 	const registryName string = "RegistryName"
-	const addRegistryURL string = "https://raw.githubusercontent.com/GeekArthur/registry/master"
+	const addRegistryURL string = "https://raw.githubusercontent.com/odo-devfiles/registry/master"
 	const updateRegistryURL string = "http://www.example.com/update"
 
 	// Using program commmand according to cliRunner in devfile
@@ -45,12 +45,11 @@ var _ = Describe("odo devfile registry command tests", func() {
 	Context("When executing registry list", func() {
 		It("Should list all default registries", func() {
 			output := helper.CmdShouldPass("odo", "registry", "list")
-			helper.MatchAllInOutput(output, []string{"CheDevfileRegistry", "DefaultDevfileRegistry"})
+			helper.MatchAllInOutput(output, []string{"DefaultDevfileRegistry"})
 		})
 
 		It("Should fail with an error with no registries", func() {
 			helper.CmdShouldPass("odo", "registry", "delete", "DefaultDevfileRegistry", "-f")
-			helper.CmdShouldPass("odo", "registry", "delete", "CheDevfileRegistry", "-f")
 			output := helper.CmdShouldFail("odo", "registry", "list")
 			helper.MatchAllInOutput(output, []string{"No devfile registries added to the configuration. Refer `odo registry add -h` to add one"})
 

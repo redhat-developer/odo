@@ -161,10 +161,6 @@ func newProxyEnvInfo() proxyEnvInfo {
 func (esi *EnvSpecificInfo) SetConfiguration(parameter string, value interface{}) (err error) {
 	if parameter, ok := asLocallySupportedParameter(parameter); ok {
 		switch parameter {
-		case "create":
-			createValue := value.(ComponentSettings)
-			esi.componentSettings.Name = createValue.Name
-			esi.componentSettings.Namespace = createValue.Namespace
 		case "url":
 			urlValue := value.(EnvInfoURL)
 			if esi.componentSettings.URL != nil {
@@ -290,9 +286,6 @@ func (ei *EnvInfo) GetPushCommand() EnvInfoPushCommand {
 
 // GetName returns the component name
 func (ei *EnvInfo) GetName() string {
-	if ei.componentSettings.Name == "" {
-		return ""
-	}
 	return ei.componentSettings.Name
 }
 
@@ -306,17 +299,10 @@ func (ei *EnvInfo) GetDebugPort() int {
 
 // GetNamespace returns component namespace
 func (ei *EnvInfo) GetNamespace() string {
-	if ei.componentSettings.Namespace == "" {
-		return ""
-	}
 	return ei.componentSettings.Namespace
 }
 
 const (
-	// Create parameter
-	Create = "CREATE"
-	// CreateDescription is the description of Create parameter
-	CreateDescription = "Create parameter is the action to write devfile metadata to env.yaml"
 	// URL parameter
 	URL = "URL"
 	// URLDescription is the description of URL
@@ -329,9 +315,8 @@ const (
 
 var (
 	supportedLocalParameterDescriptions = map[string]string{
-		Create: CreateDescription,
-		URL:    URLDescription,
-		Push:   PushDescription,
+		URL:  URLDescription,
+		Push: PushDescription,
 	}
 
 	lowerCaseLocalParameters = util.GetLowerCaseParameters(GetLocallySupportedParameters())

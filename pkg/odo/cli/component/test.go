@@ -72,7 +72,7 @@ func (to *TestOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 // Validate validates the TestOptions based on completed values
 func (to *TestOptions) Validate() (err error) {
-	devObj, err := devfileParser.Parse(to.devfilePath)
+	devObj, err := devfileParser.ParseAndValidate(to.devfilePath)
 	if err != nil {
 		return errors.Wrap(err, "fail to parse devfile")
 	}

@@ -1360,7 +1360,7 @@ func TestDownloadFile(t *testing.T) {
 			err := DownloadFile(tt.url, tt.filepath)
 
 			if tt.url == "" && err != nil {
-				if !strings.Contains(err.Error(), "Get : unsupported protocol scheme") {
+				if !strings.Contains(err.Error(), "unsupported protocol scheme") {
 					t.Errorf("Did not get expected error %s", err)
 				}
 			} else if tt.url != "invalid" && err != nil {

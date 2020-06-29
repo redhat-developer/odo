@@ -67,7 +67,7 @@ var _ = Describe("odo devfile test command tests", func() {
 		})
 
 		It("should show error for devfile v1", func() {
-			helper.CmdShouldPass("odo", "create", "java-spring-boot", "--context", context, cmpName)
+			helper.CmdShouldPass("odo", "create", "springBoot", "--context", context, cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
