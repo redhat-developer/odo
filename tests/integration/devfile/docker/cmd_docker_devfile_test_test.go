@@ -88,7 +88,7 @@ var _ = Describe("odo docker devfile test command tests", func() {
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-testgroup.yaml"), filepath.Join(context, "devfile.yaml"))
-			helper.CmdShouldFail("odo", "push", "--context", context)
+			helper.CmdShouldPass("odo", "push", "--context", context)
 
 			output := helper.CmdShouldPass("odo", "test", "--context", context)
 			helper.MatchAllInOutput(output, []string{"Executing test1 command", "mkdir test1"})
@@ -104,7 +104,7 @@ var _ = Describe("odo docker devfile test command tests", func() {
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-testgroup.yaml"), filepath.Join(context, "devfile.yaml"))
-			helper.CmdShouldFail("odo", "push", "--context", context)
+			helper.CmdShouldPass("odo", "push", "--context", context)
 
 			output := helper.CmdShouldPass("odo", "test", "--test-command", "test2", "--context", context)
 			helper.MatchAllInOutput(output, []string{"Executing test2 command", "mkdir test2"})
