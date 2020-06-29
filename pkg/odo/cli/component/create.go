@@ -84,8 +84,12 @@ const LocalDirectoryDefaultLocation = "./"
 
 // Constants for devfile component
 const devFile = "devfile.yaml"
-const envFile = ".odo/env/env.yaml"
-const configFile = ".odo/config.yaml"
+
+var (
+	envFile    = filepath.Join(".odo", "env", "env.yaml")
+	configFile = filepath.Join(".odo", "config.yaml")
+	envDir     = filepath.Join(".odo", "env")
+)
 
 // DevfilePath is the devfile path that is used by odo,
 // which means odo can:
@@ -956,9 +960,24 @@ func (co *CreateOptions) Run() (err error) {
 			}
 
 			// Generate env file
-			err = co.EnvSpecificInfo.SetConfiguration("create", envinfo.ComponentSettings{Name: co.devfileMetadata.componentName, Namespace: co.devfileMetadata.componentNamespace})
+			err = co.EnvSpecificInfo.SetComponentSettings(envinfo.ComponentSettings{Name: co.devfileMetadata.componentName, Namespace: co.devfileMetadata.componentNamespace})
 			if err != nil {
 				return errors.Wrap(err, "failed to create env file for devfile component")
+			}
+
+			sourcePath, err := util.GetAbsPath(co.componentContext)
+			if err != nil {
+				return errors.Wrap(err, "unable to get source path")
+			}
+
+			ignoreFile, err := util.CheckGitIgnoreFile(sourcePath)
+			if err != nil {
+				return err
+			}
+
+			err = util.AddFileToIgnoreFile(ignoreFile, filepath.Join(co.componentContext, envDir))
+			if err != nil {
+				return err
 			}
 
 			log.Italic("\nPlease use `odo push` command to create the component with source deployed")

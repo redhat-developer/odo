@@ -352,4 +352,15 @@ var _ = Describe("odo devfile push command tests", func() {
 		})
 	})
 
+	Context("when .gitignore file exists", func() {
+		It("checks that .odo/env exists in gitignore", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			ignoreFilePath := filepath.Join(context, ".gitignore")
+
+			helper.FileShouldContainSubstring(ignoreFilePath, filepath.Join(".odo", "env"))
+
+		})
+	})
+
 })
