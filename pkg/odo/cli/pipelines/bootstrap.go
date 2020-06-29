@@ -66,6 +66,7 @@ func (io *BootstrapParameters) Validate() error {
 	if len(removeEmptyStrings(strings.Split(gr.Path, "/"))) != 2 {
 		return fmt.Errorf("repo must be org/repo: %s", strings.Trim(gr.Path, ".git"))
 	}
+
 	return nil
 }
 
@@ -94,10 +95,10 @@ func NewCmdBootstrap(name, fullName string) *cobra.Command {
 	}
 
 	initCmd.Flags().StringVar(&o.GitOpsRepoURL, "gitops-repo-url", "", "GitOps repository e.g. https://github.com/organisation/repository")
-	initCmd.Flags().StringVar(&o.GitOpsWebhookSecret, "gitops-webhook-secret", "", "provide the GitHub webhook secret for GitOps repository")
+	initCmd.Flags().StringVar(&o.GitOpsWebhookSecret, "gitops-webhook-secret", "", "provide the GitHub webhook secret for GitOps repository (if not provided, it will be auto-generated)")
 
 	initCmd.Flags().StringVar(&o.AppRepoURL, "app-repo-url", "", "Application source e.g. https://github.com/organisation/application")
-	initCmd.Flags().StringVar(&o.AppWebhookSecret, "app-webhook-secret", "", "Provide the GitHub webhook secret for Application repository")
+	initCmd.Flags().StringVar(&o.AppWebhookSecret, "app-webhook-secret", "", "Provide the GitHub webhook secret for Application repository (if not provided, it will be auto-generated)")
 
 	initCmd.Flags().StringVar(&o.DockerConfigJSONFilename, "dockercfgjson", "", "provide the dockercfgjson path")
 	initCmd.Flags().StringVar(&o.InternalRegistryHostname, "internal-registry-hostname", "image-registry.openshift-image-registry.svc:5000", "internal image registry hostname")
@@ -106,9 +107,7 @@ func NewCmdBootstrap(name, fullName string) *cobra.Command {
 	initCmd.Flags().StringVarP(&o.ImageRepo, "image-repo", "", "", "used to push built images")
 
 	initCmd.MarkFlagRequired("gitops-repo-url")
-	initCmd.MarkFlagRequired("gitops-webhook-secret")
 	initCmd.MarkFlagRequired("app-repo-url")
-	initCmd.MarkFlagRequired("app-webhook-secret")
 	initCmd.MarkFlagRequired("dockercfgjson")
 	initCmd.MarkFlagRequired("image-repo")
 

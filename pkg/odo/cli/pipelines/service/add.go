@@ -87,7 +87,7 @@ func newCmdAdd(name, fullName string) *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&o.gitRepoURL, "git-repo-url", "", "source Git repository URL")
-	cmd.Flags().StringVar(&o.webhookSecret, "webhook-secret", "", "source Git repository webhook secret")
+	cmd.Flags().StringVar(&o.webhookSecret, "webhook-secret", "", "source Git repository webhook secret (if not provided, it will be auto-generated)")
 	cmd.Flags().StringVar(&o.appName, "app-name", "", "the name of the application where the service will be added")
 	cmd.Flags().StringVar(&o.serviceName, "service-name", "", "the name of the service to be added")
 	cmd.Flags().StringVar(&o.envName, "env-name", "", "the name of the environment where the service will be added")

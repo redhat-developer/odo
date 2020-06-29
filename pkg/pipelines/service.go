@@ -12,9 +12,8 @@ import (
 	"github.com/openshift/odo/pkg/pipelines/meta"
 	res "github.com/openshift/odo/pkg/pipelines/resources"
 	"github.com/openshift/odo/pkg/pipelines/roles"
-	"github.com/openshift/odo/pkg/pipelines/triggers"
-
 	"github.com/openshift/odo/pkg/pipelines/secrets"
+	"github.com/openshift/odo/pkg/pipelines/triggers"
 	"github.com/openshift/odo/pkg/pipelines/yaml"
 	"github.com/spf13/afero"
 )
@@ -69,7 +68,12 @@ func serviceResources(m *config.Manifest, fs afero.Fs, p *AddServiceParameters) 
 
 	cfg := m.GetPipelinesConfig()
 	if cfg != nil && p.WebhookSecret == "" && p.GitRepoURL != "" {
-		return nil, fmt.Errorf("The webhook secret is required")
+		gitSecret, err := secrets.GenerateString(webhookSecretLength)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate service webhook secret: %v", err)
+		}
+		p.WebhookSecret = gitSecret
+
 	}
 
 	env := m.GetEnvironment(p.EnvName)
