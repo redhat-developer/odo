@@ -154,7 +154,7 @@ func TestGetPipelines(t *testing.T) {
 				Name: "test-service",
 				Pipelines: &config.Pipelines{
 					Integration: &config.TemplateBinding{
-						Template: fmt.Sprintf("svc-ci-template"),
+						Template: "svc-ci-template",
 					},
 				},
 			},

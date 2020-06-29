@@ -6,15 +6,6 @@ import (
 	"github.com/openshift/odo/pkg/pipelines/meta"
 )
 
-var argsForRunKubectlStep = []string{
-	"apply",
-	"--dry-run=$(inputs.params.DRYRUN)",
-	"-n",
-	"$(inputs.params.NAMESPACE)",
-	"-k",
-	"$(inputs.params.PATHTODEPLOYMENT)",
-}
-
 // CreateDeployFromSourceTask creates DeployFromSourceTask
 func CreateDeployFromSourceTask(ns, script string) pipelinev1.Task {
 	task := pipelinev1.Task{

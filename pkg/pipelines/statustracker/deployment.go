@@ -96,19 +96,6 @@ func createStatusTrackerDeployment(ns string) *appsv1.Deployment {
 		deployment.Command([]string{operatorName}))
 }
 
-func createRoleBinding(ns string, roleKind, roleName string, subjects []rbacv1.Subject) *rbacv1.RoleBinding {
-	return &rbacv1.RoleBinding{
-		TypeMeta:   meta.TypeMeta("RoleBinding", "rbac.authorization.k8s.io/v1"),
-		ObjectMeta: meta.ObjectMeta(meta.NamespacedName(ns, operatorName)),
-		Subjects:   subjects,
-		RoleRef: rbacv1.RoleRef{
-			APIGroup: "rbac.authorization.k8s.io",
-			Kind:     roleKind,
-			Name:     roleName,
-		},
-	}
-}
-
 // Resources returns a list of newly created resources that are required start
 // the status-tracker service.
 func Resources(ns, token string) ([]interface{}, error) {

@@ -1,8 +1,6 @@
 package argocd
 
 import (
-	"regexp"
-
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
@@ -132,8 +130,6 @@ type HelmFileParameter struct {
 	// Path is the path value for the helm parameter
 	Path string `json:"path,omitempty" protobuf:"bytes,2,opt,name=path"`
 }
-
-var helmParameterRx = regexp.MustCompile(`([^\\]),`)
 
 type KustomizeImage string
 
@@ -836,23 +832,6 @@ type AppProject struct {
 	metav1.ObjectMeta `json:"metadata" protobuf:"bytes,1,opt,name=metadata"`
 	Spec              AppProjectSpec `json:"spec" protobuf:"bytes,2,opt,name=spec"`
 }
-
-// TODO: refactor to use rbacpolicy.ActionGet, rbacpolicy.ActionCreate, without import cycle
-var validActions = map[string]bool{
-	"get":      true,
-	"create":   true,
-	"update":   true,
-	"delete":   true,
-	"sync":     true,
-	"override": true,
-	"*":        true,
-}
-
-var validActionPatterns = []*regexp.Regexp{
-	regexp.MustCompile("action/.*"),
-}
-
-var roleNameRegexp = regexp.MustCompile(`^[a-zA-Z0-9]([-_a-zA-Z0-9]*[a-zA-Z0-9])?$`)
 
 // AppProjectSpec is the specification of an AppProject
 type AppProjectSpec struct {
