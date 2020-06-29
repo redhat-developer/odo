@@ -17,9 +17,9 @@ import (
 )
 
 // ComponentExists checks whether a deployment by the given name exists
-func ComponentExists(client kclient.Client, name string) bool {
-	_, err := client.GetDeploymentByName(name)
-	return err == nil
+func ComponentExists(client kclient.Client, name string) (bool, error) {
+	deployment, err := client.GetDeploymentByName(name)
+	return len(deployment.GetName()) != 0, err
 }
 
 // ConvertEnvs converts environment variables from the devfile structure to kubernetes structure

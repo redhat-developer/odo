@@ -244,7 +244,7 @@ func TestAdapterDelete(t *testing.T) {
 			}},
 			componentName:   "component",
 			componentExists: false,
-			wantErr:         true,
+			wantErr:         false,
 		},
 	}
 	for _, tt := range tests {

@@ -268,18 +268,28 @@ func TestDoesComponentExist(t *testing.T) {
 		componentName    string
 		getComponentName string
 		want             bool
+		wantErr          bool
 	}{
 		{
 			name:             "Case 1: Valid component name",
 			componentName:    "test-name",
 			getComponentName: "test-name",
 			want:             true,
+			wantErr:          false,
 		},
 		{
 			name:             "Case 2: Non-existent component name",
 			componentName:    "test-name",
 			getComponentName: "fake-component",
 			want:             false,
+			wantErr:          false,
+		},
+		{
+			name:             "Case 3: Error condition",
+			componentName:    "test-name",
+			getComponentName: "test-name",
+			want:             false,
+			wantErr:          true,
 		},
 	}
 	for _, tt := range tests {
@@ -312,9 +322,24 @@ func TestDoesComponentExist(t *testing.T) {
 				t.Errorf("component adapter start unexpected error %v", err)
 			}
 
+			fkclientset.Kubernetes.PrependReactor("get", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+				emptyDeployment := testingutil.CreateFakeDeployment("")
+				deployment := testingutil.CreateFakeDeployment(tt.getComponentName)
+
+				if tt.wantErr {
+					return true, emptyDeployment, errors.Errorf("deployment get error")
+				} else if tt.getComponentName == tt.componentName {
+					return true, deployment, nil
+				}
+
+				return true, emptyDeployment, nil
+			})
+
 			// Verify that a component with the specified name exists
-			componentExists, _ := componentAdapter.DoesComponentExist(tt.getComponentName)
-			if componentExists != tt.want {
+			componentExists, err := componentAdapter.DoesComponentExist(tt.getComponentName)
+			if !tt.wantErr && err != nil {
+				t.Errorf("unexpected error: %v", err)
+			} else if !tt.wantErr && componentExists != tt.want {
 				t.Errorf("expected %v, actual %v", tt.want, componentExists)
 			}
 
@@ -390,6 +415,9 @@ func TestAdapterDelete(t *testing.T) {
 	type args struct {
 		labels map[string]string
 	}
+
+	emptyDeployment := testingutil.CreateFakeDeployment("")
+
 	tests := []struct {
 		name               string
 		args               args
@@ -460,7 +488,7 @@ func TestAdapterDelete(t *testing.T) {
 
 			fkclientset.Kubernetes.PrependReactor("get", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if action.(ktesting.GetAction).GetName() != tt.componentName {
-					return true, nil, errors.Errorf("get action called with different component name, want: %s, got: %s", action.(ktesting.GetAction).GetName(), tt.componentName)
+					return true, emptyDeployment, errors.Errorf("get action called with different component name, want: %s, got: %s", action.(ktesting.GetAction).GetName(), tt.componentName)
 				}
 				return true, tt.existingDeployment, nil
 			})

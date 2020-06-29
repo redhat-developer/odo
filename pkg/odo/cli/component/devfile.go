@@ -1,7 +1,6 @@
 package component
 
 import (
-	"fmt"
 	"os"
 	"strings"
 
@@ -213,22 +212,7 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 		return err
 	}
 
-	componentExists, _ := devfileHandler.DoesComponentExist(componentName)
-	if !componentExists {
-		log.Italicf("Component %s does not exist", componentName)
-		return nil
-	}
-
-	spinner := log.Spinner(fmt.Sprintf("Deleting devfile component %s", componentName))
-	defer spinner.End(false)
-
-	err = devfileHandler.Delete(labels)
-	if err != nil {
-		return err
-	}
-	spinner.End(true)
-	log.Successf("Successfully deleted component")
-	return nil
+	return devfileHandler.Delete(labels)
 }
 
 func warnIfURLSInvalid(url []envinfo.EnvInfoURL) {

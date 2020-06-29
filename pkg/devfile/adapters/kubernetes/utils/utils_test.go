@@ -9,10 +9,76 @@ import (
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/testingutil"
+	"github.com/pkg/errors"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	ktesting "k8s.io/client-go/testing"
 )
+
+func TestComponentExists(t *testing.T) {
+
+	tests := []struct {
+		name             string
+		componentType    versionsCommon.DevfileComponentType
+		componentName    string
+		getComponentName string
+		want             bool
+		wantErr          bool
+	}{
+		{
+			name:             "Case 1: Valid component name",
+			componentName:    "test-name",
+			getComponentName: "test-name",
+			want:             true,
+			wantErr:          false,
+		},
+		{
+			name:             "Case 2: Non-existent component name",
+			componentName:    "test-name",
+			getComponentName: "fake-component",
+			want:             false,
+			wantErr:          false,
+		},
+		{
+			name:             "Case 3: Error condition",
+			componentName:    "test-name",
+			getComponentName: "test-name",
+			want:             false,
+			wantErr:          true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			fkclient, fkclientset := kclient.FakeNew()
+			fkclientset.Kubernetes.PrependReactor("get", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+				emptyDeployment := testingutil.CreateFakeDeployment("")
+				deployment := testingutil.CreateFakeDeployment(tt.getComponentName)
+
+				if tt.wantErr {
+					return true, emptyDeployment, errors.Errorf("deployment get error")
+				} else if tt.getComponentName == tt.componentName {
+					return true, deployment, nil
+				}
+
+				return true, emptyDeployment, nil
+			})
+
+			// Verify that a component with the specified name exists
+			componentExists, err := ComponentExists(*fkclient, tt.getComponentName)
+			if !tt.wantErr && err != nil {
+				t.Errorf("unexpected error: %v", err)
+			} else if !tt.wantErr && componentExists != tt.want {
+				t.Errorf("expected %v, actual %v", tt.want, componentExists)
+			}
+
+		})
+	}
+
+}
 
 func TestUpdateContainersWithSupervisord(t *testing.T) {
 

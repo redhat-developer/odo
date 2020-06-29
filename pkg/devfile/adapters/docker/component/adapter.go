@@ -200,7 +200,8 @@ func (a Adapter) Delete(labels map[string]string) error {
 	componentContainer := a.Client.GetContainersByComponent(componentName, containers)
 
 	if len(componentContainer) == 0 {
-		return errors.Errorf("the component %s doesn't exist", a.ComponentName)
+		log.Italicf("Component %s does not exist", componentName)
+		return nil
 	}
 
 	allVolumes, err := a.Client.GetVolumes()
@@ -223,6 +224,9 @@ func (a Adapter) Delete(labels map[string]string) error {
 			}
 		}
 	}
+
+	spinner := log.Spinner(fmt.Sprintf("Deleting devfile component %s", componentName))
+	defer spinner.End(false)
 
 	// A unique list of volumes to delete; map key is volume name.
 	volumesToDelete := map[string]string{}
@@ -272,6 +276,9 @@ func (a Adapter) Delete(labels map[string]string) error {
 			return errors.Wrapf(err, "Unable to remove volume %s of component %s", name, componentName)
 		}
 	}
+
+	spinner.End(true)
+	log.Successf("Successfully deleted component")
 
 	return nil
 

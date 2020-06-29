@@ -60,7 +60,10 @@ type Adapter struct {
 // Push updates the component if a matching component exists or creates one if it doesn't exist
 // Once the component has started, it will sync the source code to it.
 func (a Adapter) Push(parameters common.PushParameters) (err error) {
-	componentExists := utils.ComponentExists(a.Client, a.ComponentName)
+	componentExists, err := utils.ComponentExists(a.Client, a.ComponentName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to determine if component %s exists", a.ComponentName)
+	}
 
 	a.devfileInitCmd = parameters.DevfileInitCmd
 	a.devfileBuildCmd = parameters.DevfileBuildCmd
@@ -165,7 +168,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 // DoesComponentExist returns true if a component with the specified name exists, false otherwise
 func (a Adapter) DoesComponentExist(cmpName string) (bool, error) {
-	return utils.ComponentExists(a.Client, cmpName), nil
+	return utils.ComponentExists(a.Client, cmpName)
 }
 
 func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
@@ -445,11 +448,26 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, s
 
 // Delete deletes the component
 func (a Adapter) Delete(labels map[string]string) error {
-	if !utils.ComponentExists(a.Client, a.ComponentName) {
-		return errors.Errorf("the component %s doesn't exist on the cluster", a.ComponentName)
+	componentExists, err := utils.ComponentExists(a.Client, a.ComponentName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to determine if component %s exists", a.ComponentName)
+	}
+	if !componentExists {
+		log.Italicf("Component %s does not exist", a.ComponentName)
+		return nil
 	}
 
-	return a.Client.DeleteDeployment(labels)
+	spinner := log.Spinner(fmt.Sprintf("Deleting devfile component %s", a.ComponentName))
+	defer spinner.End(false)
+
+	err = a.Client.DeleteDeployment(labels)
+	if err != nil {
+		return err
+	}
+
+	spinner.End(true)
+	log.Successf("Successfully deleted component")
+	return nil
 }
 
 // Log returns log from component
