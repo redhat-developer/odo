@@ -1313,6 +1313,238 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 
 }
 
+func TestHasCommand(t *testing.T) {
+
+	component := "alias1"
+	id := []string{"command1", "command2", "command3", "command4"}
+
+	tests := []struct {
+		name              string
+		compositeCommands []common.Composite
+		execCommands      []common.Exec
+		command           string
+		want              bool
+	}{
+		{
+			name:              "Case 1: Command exists, only one command",
+			compositeCommands: []common.Composite{},
+			execCommands: []common.Exec{
+				{
+					Id: id[0],
+				},
+			},
+			command: id[0],
+			want:    true,
+		},
+		{
+			name: "Case 2: Exec command exists, multiple commands",
+			compositeCommands: []common.Composite{
+				{
+					Id: id[3],
+				},
+			},
+			execCommands: []common.Exec{
+				{
+					Id: id[0],
+				},
+				{
+					Id: id[1],
+				},
+				{
+					Id: id[2],
+				},
+			},
+			command: id[0],
+			want:    true,
+		},
+		{
+			name: "Case 3: Composite command exists, multiple commands",
+			compositeCommands: []common.Composite{
+				{
+					Id: id[3],
+				},
+			},
+			execCommands: []common.Exec{
+				{
+					Id: id[0],
+				},
+				{
+					Id: id[1],
+				},
+				{
+					Id: id[2],
+				},
+			},
+			command: id[3],
+			want:    true,
+		},
+		{
+			name:              "Case 4: Command does not exist",
+			compositeCommands: []common.Composite{},
+			execCommands: []common.Exec{
+				{
+					Id: id[0],
+				},
+			},
+			command: id[1],
+			want:    false,
+		},
+	}
+	for _, tt := range tests {
+		devObj := devfileParser.DevfileObj{
+			Data: testingutil.TestDevfileData{
+				ExecCommands:      tt.execCommands,
+				CompositeCommands: tt.compositeCommands,
+				Components:        []common.DevfileComponent{testingutil.GetFakeComponent(component)},
+			},
+		}
+		t.Run(tt.name, func(t *testing.T) {
+			exists := hasCommand(devObj.Data, tt.command)
+			if exists != tt.want {
+				t.Errorf("Expected %v, got %v", tt.want, exists)
+				return
+			}
+		})
+	}
+
+}
+
+func TestValidateCompositeCommand(t *testing.T) {
+
+	command := []string{"ls -la", "ps", "ls /"}
+	component := "alias1"
+	workDir := []string{"/", "/dev", "/etc"}
+	id := []string{"command1", "command2", "command3", "command4"}
+
+	tests := []struct {
+		name              string
+		compositeCommands []common.Composite
+		execCommands      []common.Exec
+		wantErr           bool
+	}{
+		{
+			name: "Case 1: Valid Composite Command",
+			compositeCommands: []common.Composite{
+				{
+					Id:       id[3],
+					Commands: []string{id[0], id[1], id[2]},
+					Group:    &versionsCommon.Group{Kind: runGroup},
+				},
+			},
+			execCommands: []common.Exec{
+				{
+					Id:          id[0],
+					CommandLine: command[0],
+					Component:   component,
+					Group:       &common.Group{Kind: runGroup},
+					WorkingDir:  workDir[0],
+				},
+				{
+					Id:          id[1],
+					CommandLine: command[1],
+					Component:   component,
+					Group:       &common.Group{Kind: buildGroup},
+					WorkingDir:  workDir[1],
+				},
+				{
+					Id:          id[2],
+					CommandLine: command[2],
+					Component:   component,
+					Group:       &common.Group{Kind: runGroup},
+					WorkingDir:  workDir[2],
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "Case 2: Invalid composite command, references non-existent command",
+			compositeCommands: []common.Composite{
+				{
+					Id:       id[3],
+					Commands: []string{id[0], "fakecommand", id[2]},
+					Group:    &versionsCommon.Group{Kind: runGroup},
+				},
+			},
+			execCommands: []common.Exec{
+				{
+					Id:          id[0],
+					CommandLine: command[0],
+					Component:   component,
+					Group:       &common.Group{Kind: runGroup},
+					WorkingDir:  workDir[0],
+				},
+				{
+					Id:          id[1],
+					CommandLine: command[1],
+					Component:   component,
+					Group:       &common.Group{Kind: buildGroup},
+					WorkingDir:  workDir[1],
+				},
+				{
+					Id:          id[2],
+					CommandLine: command[2],
+					Component:   component,
+					Group:       &common.Group{Kind: runGroup},
+					WorkingDir:  workDir[2],
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Case 3: Invalid composite command, references itself",
+			compositeCommands: []common.Composite{
+				{
+					Id:       id[3],
+					Commands: []string{id[0], id[3], id[2]},
+					Group:    &versionsCommon.Group{Kind: runGroup},
+				},
+			},
+			execCommands: []common.Exec{
+				{
+					Id:          id[0],
+					CommandLine: command[0],
+					Component:   component,
+					Group:       &common.Group{Kind: runGroup},
+					WorkingDir:  workDir[0],
+				},
+				{
+					Id:          id[1],
+					CommandLine: command[1],
+					Component:   component,
+					Group:       &common.Group{Kind: buildGroup},
+					WorkingDir:  workDir[1],
+				},
+				{
+					Id:          id[2],
+					CommandLine: command[2],
+					Component:   component,
+					Group:       &common.Group{Kind: runGroup},
+					WorkingDir:  workDir[2],
+				},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		devObj := devfileParser.DevfileObj{
+			Data: testingutil.TestDevfileData{
+				ExecCommands:      tt.execCommands,
+				CompositeCommands: tt.compositeCommands,
+				Components:        []common.DevfileComponent{testingutil.GetFakeComponent(component)},
+			},
+		}
+		t.Run(tt.name, func(t *testing.T) {
+			cmd := common.DevfileCommand{Composite: &tt.compositeCommands[0]}
+			err := validateCompositeCommand(devObj.Data, cmd.Composite)
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("TestValidateAction unexpected error: %v", err)
+				return
+			}
+		})
+	}
+
+}
+
 func getExecCommand(id string, group common.DevfileCommandGroupType) versionsCommon.Exec {
 
 	commands := [...]string{"ls -la", "pwd"}

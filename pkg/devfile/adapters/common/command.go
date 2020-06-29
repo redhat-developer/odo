@@ -134,8 +134,13 @@ func validateCommandsForGroup(data data.DevfileData, groupType common.DevfileCom
 func validateCommand(data data.DevfileData, command common.DevfileCommand) (err error) {
 
 	// type must be exec
-	if command.Exec == nil {
-		return fmt.Errorf("command must be of type \"exec\"")
+	if command.Exec == nil && command.Composite == nil {
+		return fmt.Errorf("command must be of type \"exec\" or \"composite\"")
+	}
+
+	// If the command is a composite command, need to validate that it is valid
+	if command.Composite != nil {
+		return validateCompositeCommand(data, command.Composite)
 	}
 
 	// component must be specified
@@ -162,6 +167,34 @@ func validateCommand(data data.DevfileData, command common.DevfileCommand) (err 
 	}
 
 	return
+}
+
+// validateCompositeCommand checks that the specified composite command is valid
+func validateCompositeCommand(data data.DevfileData, compositeCommand *common.Composite) error {
+	// Loop over the commands and validate that each command points to a command that's in the devfile
+	for _, command := range compositeCommand.Commands {
+		if command == compositeCommand.Id {
+			return fmt.Errorf("the composite command %q cannot reference itself", compositeCommand.Id)
+		}
+
+		if !hasCommand(data, command) {
+			return fmt.Errorf("the command %q does not exist in the devfile", command)
+		}
+	}
+	return nil
+}
+
+// hasCommand returns true if the devfile contains the specified command
+func hasCommand(data data.DevfileData, command string) bool {
+	for _, devfileCommand := range data.GetCommands() {
+		if devfileCommand.Exec != nil && command == devfileCommand.Exec.Id {
+			return true
+		}
+		if devfileCommand.Composite != nil && command == devfileCommand.Composite.Id {
+			return true
+		}
+	}
+	return false
 }
 
 // GetInitCommand iterates through the components in the devfile and returns the init command
