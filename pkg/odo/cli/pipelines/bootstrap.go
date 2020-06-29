@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/odo/cli/pipelines/utility"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/pipelines"
 	"github.com/openshift/odo/pkg/pipelines/ioutils"
@@ -49,6 +50,8 @@ func (io *BootstrapParameters) Complete(name string, cmd *cobra.Command, args []
 	if io.Prefix != "" && !strings.HasSuffix(io.Prefix, "-") {
 		io.Prefix = io.Prefix + "-"
 	}
+	io.GitOpsRepoURL = utility.AddGitSuffixIfNecessary(io.GitOpsRepoURL)
+	io.AppRepoURL = utility.AddGitSuffixIfNecessary(io.AppRepoURL)
 	return nil
 }
 

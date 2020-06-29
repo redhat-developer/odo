@@ -39,6 +39,32 @@ func TestCompleteInitParameters(t *testing.T) {
 	}
 }
 
+func TestAddSuffixWithInit(t *testing.T) {
+	tt := []struct {
+		name string
+		url  string
+		want string
+	}{
+		{"suffix for GitLab URL", "https://gitlab.com/test/org", "https://gitlab.com/test/org.git"},
+		{"suffix for GitHub URL", "https://github.com/test/org", "https://github.com/test/org.git"},
+		{"suffix for empty string", "", ""},
+		{"suffix already present", "https://github.com/test/org.git", "https://github.com/test/org.git"},
+	}
+
+	for _, test := range tt {
+		t.Run(test.name, func(rt *testing.T) {
+			o := InitParameters{gitOpsRepoURL: test.url}
+			err := o.Complete("test", &cobra.Command{}, []string{"test", "test/repo"})
+			if err != nil {
+				rt.Fatal(err)
+			}
+			if test.want != o.gitOpsRepoURL {
+				rt.Fatalf("URL mismatch: got %s, want %s", o.gitOpsRepoURL, test.want)
+			}
+		})
+	}
+}
+
 func TestValidateInitParameters(t *testing.T) {
 	optionTests := []struct {
 		name       string
