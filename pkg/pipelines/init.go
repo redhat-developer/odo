@@ -209,7 +209,11 @@ func createCICDResources(fs afero.Fs, repo scm.Repository, pipelineConfig *confi
 	outputs[pushTemplatePath] = triggers.CreateCDPushTemplate(cicdNamespace, saName)
 	outputs[appCIBuildPRTemplatePath] = triggers.CreateDevCIBuildPRTemplate(cicdNamespace, saName)
 	outputs[eventListenerPath] = eventlisteners.Generate(repo, cicdNamespace, saName, eventlisteners.GitOpsWebhookSecret)
-	outputs[routePath] = routes.Generate(cicdNamespace)
+	route, err := routes.Generate(cicdNamespace)
+	if err != nil {
+		return nil, err
+	}
+	outputs[routePath] = route
 	return outputs, nil
 }
 
