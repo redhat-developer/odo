@@ -12,6 +12,32 @@ type keyValuePair struct {
 	value string
 }
 
+func TestCompleteAddOptions(t *testing.T) {
+	tt := []struct {
+		name string
+		url  string
+		want string
+	}{
+		{"service on GitLab", "https://gitlab.com/test/org", "https://gitlab.com/test/org.git"},
+		{"service on GitHub", "https://github.com/test/org", "https://github.com/test/org.git"},
+		{"service with no URL", "", ""},
+		{"suffix already present", "https://github.com/test/org.git", "https://github.com/test/org.git"},
+	}
+
+	for _, test := range tt {
+		t.Run(test.name, func(rt *testing.T) {
+			o := AddOptions{gitRepoURL: test.url}
+			err := o.Complete("test", &cobra.Command{}, []string{"test", "test/repo"})
+			if err != nil {
+				rt.Fatal(err)
+			}
+			if test.want != o.gitRepoURL {
+				rt.Fatalf("URL mismatch: got %s, want %s", o.gitRepoURL, test.want)
+			}
+		})
+	}
+}
+
 func TestAddCommandWithMissingParams(t *testing.T) {
 
 	// manifestFile := "~/pipelines.yaml"

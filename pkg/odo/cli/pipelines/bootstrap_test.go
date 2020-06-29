@@ -34,6 +34,42 @@ func TestCompleteBootstrapParameters(t *testing.T) {
 	}
 }
 
+func TestAddSuffixWithBootstrap(t *testing.T) {
+	gitOpsURL := "https://github.com/org/gitops"
+	appURL := "https://github.com/org/app"
+	tt := []struct {
+		name           string
+		gitOpsURL      string
+		appURL         string
+		validGitOpsURL string
+		validAppURL    string
+	}{
+		{"empty string", "", "", "", ""},
+		{"suffix already exists", gitOpsURL + ".git", appURL + ".git", gitOpsURL + ".git", appURL + ".git"},
+		{"misssing suffix", gitOpsURL, appURL, gitOpsURL + ".git", appURL + ".git"},
+	}
+
+	for _, test := range tt {
+		t.Run(test.name, func(rt *testing.T) {
+			o := BootstrapParameters{&pipelines.BootstrapOptions{
+				GitOpsRepoURL: test.gitOpsURL, AppRepoURL: test.appURL},
+				&genericclioptions.Context{}}
+
+			err := o.Complete("test", &cobra.Command{}, []string{"test", "test/repo"})
+			if err != nil {
+				t.Errorf("Complete() %#v failed: ", err)
+			}
+
+			if o.GitOpsRepoURL != test.validGitOpsURL {
+				rt.Fatalf("URL mismatch: got %s, want %s", o.GitOpsRepoURL, test.validAppURL)
+			}
+			if o.AppRepoURL != test.validAppURL {
+				rt.Fatalf("URL mismatch: got %s, want %s", o.GitOpsRepoURL, test.validAppURL)
+			}
+		})
+	}
+}
+
 func TestValidateBootstrapParameters(t *testing.T) {
 	optionTests := []struct {
 		name    string

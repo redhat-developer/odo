@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/odo/cli/pipelines/utility"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/pipelines"
 	"github.com/openshift/odo/pkg/pipelines/ioutils"
@@ -41,6 +42,7 @@ type AddOptions struct {
 
 // Complete is called when the command is completed
 func (o *AddOptions) Complete(name string, cmd *cobra.Command, args []string) error {
+	o.gitRepoURL = utility.AddGitSuffixIfNecessary(o.gitRepoURL)
 	return nil
 }
 
