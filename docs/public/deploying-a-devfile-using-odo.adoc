@@ -81,10 +81,10 @@ organized in a separate single unit.
 
   Odo Devfile Components:
   NAME                 DESCRIPTION                           SUPPORTED
-  maven                Upstream Maven and OpenJDK 11         YES
+  java-maven           Upstream Maven and OpenJDK 11         YES
   nodejs               Stack with NodeJS 10                  YES
-  openLiberty          Open Liberty microservice in Java     YES
-  java-spring-boot     Spring Boot® using Java               YES
+  java-openliberty     Open Liberty microservice in Java     YES
+  java-springboot      Spring Boot® using Java               YES
 ----
 
 In our example, we will be using `java-spring-boot` to deploy a sample https://spring.io/projects/spring-boot[Springboot] component.

@@ -62,7 +62,7 @@ var _ = Describe("odo docker devfile push command tests", func() {
 
 		It("Check that odo push works with a devfile that has multiple containers", func() {
 			// Springboot devfile references multiple containers
-			helper.CmdShouldPass("odo", "create", "springBoot", "--context", context, cmpName)
+			helper.CmdShouldPass("odo", "create", "java-springboot", "--context", context, cmpName)
 
 			output := helper.CmdShouldPass("odo", "push")
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
@@ -166,7 +166,7 @@ var _ = Describe("odo docker devfile push command tests", func() {
 
 		// v1 devfile test
 		It("should execute the optional devinit, and devrun commands if present", func() {
-			helper.CmdShouldPass("odo", "create", "springBoot", cmpName)
+			helper.CmdShouldPass("odo", "create", "java-springboot", cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
@@ -188,7 +188,7 @@ var _ = Describe("odo docker devfile push command tests", func() {
 
 		// v1 devfile test
 		It("should execute devinit and devrun commands if present", func() {
-			helper.CmdShouldPass("odo", "create", "springBoot", cmpName)
+			helper.CmdShouldPass("odo", "create", "java-springboot", cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init-without-build.yaml"), filepath.Join(context, "devfile.yaml"))

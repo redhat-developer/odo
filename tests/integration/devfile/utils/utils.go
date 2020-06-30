@@ -23,7 +23,7 @@ func useProjectIfAvailable(args []string, project string) []string {
 
 // ExecDefaultDevfileCommands executes the default devfile commands
 func ExecDefaultDevfileCommands(projectDirPath, cmpName, namespace string) {
-	args := []string{"create", "springBoot", cmpName}
+	args := []string{"create", "java-springboot", cmpName}
 	args = useProjectIfAvailable(args, namespace)
 	helper.CmdShouldPass("odo", args...)
 
@@ -166,7 +166,7 @@ func ExecCommandWithoutGroupUsingFlags(projectDirPath, cmpName, namespace string
 
 // ExecWithInvalidCommandGroup executes odo push with an invalid command group
 func ExecWithInvalidCommandGroup(projectDirPath, cmpName, namespace string) {
-	args := []string{"create", "springBoot", cmpName}
+	args := []string{"create", "java-springboot", cmpName}
 	args = useProjectIfAvailable(args, namespace)
 	helper.CmdShouldPass("odo", args...)
 

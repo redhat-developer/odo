@@ -72,7 +72,7 @@ var _ = Describe("odo devfile create command tests", func() {
 
 	Context("When executing odo create with devfile component type argument", func() {
 		It("should successfully create the devfile component", func() {
-			helper.CmdShouldPass("odo", "create", "openLiberty")
+			helper.CmdShouldPass("odo", "create", "java-openliberty")
 		})
 
 		It("should fail to create the devfile componet with invalid component type", func() {
@@ -91,24 +91,24 @@ var _ = Describe("odo devfile create command tests", func() {
 	Context("When executing odo create with devfile component type and component name arguments", func() {
 		It("should successfully create the devfile component with valid component name", func() {
 			componentName := helper.RandString(6)
-			helper.CmdShouldPass("odo", "create", "openLiberty", componentName)
+			helper.CmdShouldPass("odo", "create", "java-openliberty", componentName)
 		})
 
 		It("should fail to create the devfile component with component name that contains invalid character", func() {
 			componentName := "BAD@123"
-			output := helper.CmdShouldFail("odo", "create", "openLiberty", componentName)
+			output := helper.CmdShouldFail("odo", "create", "java-openliberty", componentName)
 			helper.MatchAllInOutput(output, []string{"Contain only lowercase alphanumeric characters or ‘-’"})
 		})
 
 		It("should fail to create the devfile component with component name that contains all numeric values", func() {
 			componentName := "123456"
-			output := helper.CmdShouldFail("odo", "create", "openLiberty", componentName)
+			output := helper.CmdShouldFail("odo", "create", "java-openliberty", componentName)
 			helper.MatchAllInOutput(output, []string{"Must not contain all numeric values"})
 		})
 
 		It("should fail to create the devfile component with componet name contains more than 63 characters", func() {
 			componentName := helper.RandString(64)
-			output := helper.CmdShouldFail("odo", "create", "openLiberty", componentName)
+			output := helper.CmdShouldFail("odo", "create", "java-openliberty", componentName)
 			helper.MatchAllInOutput(output, []string{"Contain at most 63 characters"})
 		})
 	})
@@ -116,14 +116,14 @@ var _ = Describe("odo devfile create command tests", func() {
 	Context("When executing odo create with devfile component type argument and --project flag", func() {
 		It("should successfully create the devfile component", func() {
 			componentNamespace := helper.RandString(6)
-			helper.CmdShouldPass("odo", "create", "openLiberty", "--project", componentNamespace)
+			helper.CmdShouldPass("odo", "create", "java-openliberty", "--project", componentNamespace)
 		})
 	})
 
 	Context("When executing odo create with devfile component type argument and --registry flag", func() {
 		It("should successfully create the devfile component if specified registry is valid", func() {
 			componentRegistry := "DefaultDevfileRegistry"
-			helper.CmdShouldPass("odo", "create", "openLiberty", "--registry", componentRegistry)
+			helper.CmdShouldPass("odo", "create", "java-openliberty", "--registry", componentRegistry)
 		})
 
 		It("should fail to create the devfile component if specified registry is invalid", func() {
@@ -140,7 +140,7 @@ var _ = Describe("odo devfile create command tests", func() {
 			envFilePath := filepath.Join(newContext, envFile)
 			helper.MakeDir(newContext)
 
-			helper.CmdShouldPass("odo", "create", "openLiberty", "--context", newContext)
+			helper.CmdShouldPass("odo", "create", "java-openliberty", "--context", newContext)
 			output := util.CheckPathExists(devfilePath)
 			Expect(output).Should(BeTrue())
 			output = util.CheckPathExists(envFilePath)
@@ -221,7 +221,7 @@ var _ = Describe("odo devfile create command tests", func() {
 	Context("When executing odo create with component with no devBuild command", func() {
 		It("should successfully create the devfile component", func() {
 			// Quarkus devfile has no devBuild command
-			output := helper.CmdShouldPass("odo", "create", "quarkus")
+			output := helper.CmdShouldPass("odo", "create", "java-quarkus")
 			helper.MatchAllInOutput(output, []string{"Please use `odo push` command to create the component with source deployed"})
 		})
 	})
@@ -249,7 +249,7 @@ var _ = Describe("odo devfile create command tests", func() {
 
 	Context("When executing odo create using --downloadSource with a devfile component that contains no projects", func() {
 		It("should fail with please run 'No project found in devfile component.'", func() {
-			output := helper.CmdShouldFail("odo", "create", "maven", "--downloadSource")
+			output := helper.CmdShouldFail("odo", "create", "java-maven", "--downloadSource")
 			expectedString := "No project found in devfile component."
 			helper.MatchAllInOutput(output, []string{expectedString})
 		})
