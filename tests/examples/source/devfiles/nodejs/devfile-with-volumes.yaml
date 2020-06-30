@@ -2,13 +2,13 @@ schemaVersion: 2.0.0
 metadata:
   name: test-devfile
 projects:
-  - name: nodejs-web-app
+  - name: nodejs-starter
     git:
-      location: "https://github.com/che-samples/web-nodejs-sample.git"
+      location: "https://github.com/odo-devfiles/nodejs-ex.git"
 components:
   - container:
       name: runtime
-      image: quay.io/eclipse/che-nodejs10-ubi:nightly
+      image: registry.access.redhat.com/ubi8/nodejs-12:1-36
       memoryLimit: 1024Mi
       env:
         - name: FOO
@@ -25,7 +25,7 @@ components:
           path: /data
   - container:
       name: runtime2
-      image: quay.io/eclipse/che-nodejs10-ubi:nightly
+      image: registry.access.redhat.com/ubi8/nodejs-12:1-36
       memoryLimit: 1024Mi
       mountSources: false
       volumeMounts:

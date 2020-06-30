@@ -377,7 +377,7 @@ func validateContainerExecListDir(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, 
 		if isDevfileTest {
 			cliRunner := runner.(helper.CliRunner)
 			podName := cliRunner.GetRunningPodNameByComponent(odoV2Watch.CmpName, project)
-			stdOut = cliRunner.ExecListDir(podName, project, "/projects/nodejs-web-app")
+			stdOut = cliRunner.ExecListDir(podName, project, "/projects/nodejs-starter")
 		} else {
 			ocRunner := runner.(helper.OcRunner)
 			podName := ocRunner.GetRunningPodNameOfComp(odoV1Watch.SrcType+"-app", project)
@@ -389,7 +389,7 @@ func validateContainerExecListDir(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, 
 		dockerRunner := runner.(helper.DockerRunner)
 		containers := dockerRunner.GetRunningContainersByCompAlias(odoV2Watch.CmpName, "runtime")
 		Expect(len(containers)).To(Equal(1))
-		stdOut = dockerRunner.ExecContainer(containers[0], "ls -la /projects/nodejs-web-app")
+		stdOut = dockerRunner.ExecContainer(containers[0], "ls -la /projects/nodejs-starter")
 	default:
 		return fmt.Errorf("Platform %s is not supported", platform)
 	}

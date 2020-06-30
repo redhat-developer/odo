@@ -3,14 +3,14 @@ metadata:
   name: test-devfile
 projects:
   -
-    name: nodejs-web-app
+    name: nodejs-starter
     source:
       type: git
       location: "https://github.com/che-samples/web-nodejs-sample.git"
       sparseCheckoutDir: /app/
 components:
   - type: dockerimage
-    image: quay.io/eclipse/che-nodejs10-ubi:nightly
+    image: registry.access.redhat.com/ubi8/nodejs-12:1-36
     endpoints:
       - name: "3000/tcp"
         port: 3000
@@ -25,23 +25,23 @@ commands:
     actions:
       - type: exec
         component: runtime
-        command: "npm install"
-        workdir: ${CHE_PROJECTS_ROOT}/nodejs-web-app/app
+        command: npm install
+        workdir: ${CHE_PROJECTS_ROOT}/nodejs-starter
   - name: devbuild
     actions:
       - type: exec
         component: runtime
-        command: "npm install"
-        workdir: ${CHE_PROJECTS_ROOT}/nodejs-web-app/app
+        command: npm install
+        workdir: ${CHE_PROJECTS_ROOT}/nodejs-starter
   - name: run
     actions:
       - type: exec
         component: runtime
-        command: "nodemon app.js"
-        workdir: ${CHE_PROJECTS_ROOT}/nodejs-web-app/app
+        command: npm start
+        workdir: ${CHE_PROJECTS_ROOT}/nodejs-starter
   - name: devrun
     actions:
       - type: exec
         component: runtime
-        command: "nodemon app.js"
-        workdir: ${CHE_PROJECTS_ROOT}/nodejs-web-app/app
+        command: npm start
+        workdir: ${CHE_PROJECTS_ROOT}/nodejs-starter

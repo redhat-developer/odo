@@ -136,8 +136,8 @@ Note: When you use odo with experimental mode enabled and create devfile compone
 # Create new Node.js component with custom ports, additional environment variables and memory and cpu limits
 %[1]s nodejs --port 8080,8100/tcp,9100/udp --env key=value,key1=value1 --memory 4Gi --cpu 2
 
-# Create new Node.js component and download the sample project named nodejs-web-app
-%[1]s nodejs --downloadSource=nodejs-web-app`)
+# Create new Node.js component and download the sample project named nodejs-starter
+%[1]s nodejs --downloadSource=nodejs-starter`)
 
 const defaultProjectName = "devfile-project-name"
 
