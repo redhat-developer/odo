@@ -32,7 +32,7 @@ Our proposal is that the postStart event will run as a part of **odo push**, and
 
 
 **Starting the container(s)**
- - The containers specified in the Devfile are initialised and created if the component doesn’t already exist.
+ - The containers specified in the Devfile are initialized and created if the component doesn’t already exist.
 
 **postStart**
  - If the component is newly created, the postStart events are executed sequentially within the containers given in the Devfile. 
@@ -41,6 +41,8 @@ Our proposal is that the postStart event will run as a part of **odo push**, and
 
 **Command Execution**
  - After postStart, we’d run the usual build/run/test/debug commands (depending on what sort of odo push parameters the user has provided) as usual.
+
+ This flow relies on the assumption that all of the postCommands will only be required to run on the first `odo push` of the given odo project. A more in-depth description of a potential further developed approach is documented in the Future Evolution section of the proposal.
 
 
 ### The flow for **odo delete** including the *preStop* lifecycle event will be as follows:
@@ -127,6 +129,15 @@ The example flow for **odo push** in this case would be:
  
  ## Future Evolution
 
- - *preStop* and *postStop* events are supported in Devfile 2.0, but aren't currently applicable to odo. In the future, a reason could arise where would benefit from these events.
+The above proposed implementation of postStart events could be further improved upon in future developments. There is potential to be more granular by identifying which specific container we are initializing, and whether or not there is a postStart command associated with it. With this, we could better utilize the postStart commands and use them in cases where only some of the containers are being initialized.
+
+
+A potential flow could be to check for postStart commands associated with a specific container when inititializing it, storing those commands in an Object(?) and then executing only those postStart commands when the containers have all finished initializing (in the order that they have been defined within the devfile). This would benefit cases where an individual container has been re-initialized, but not the whole component. For example, if a build container has been restarted as a part of **odo push --force** and there is a postStart command associated with the build container in the devfile that is required to re-run, that single postStart command would be executed before continuing to the build/run phase of the push command.
+
+
+There could be room for such a feature, and a case could be presented to argue the validity of changing the flow of **odo push** in order to accommodate such cases in a future implementation.
+
+
+Additionally, *preStop* and *postStop* events are supported in Devfile 2.0, but aren't currently applicable to odo. In the future, a reason could arise where would benefit from these events.
  
 
