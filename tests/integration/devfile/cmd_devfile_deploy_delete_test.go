@@ -50,7 +50,7 @@ var _ = Describe("odo devfile deploy delete command tests", func() {
 
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV2", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			output := helper.CmdShouldFail("odo", "deploy", "delete")
 			expectedString := "stat .odo/manifest.yaml: no such file or directory"
@@ -65,13 +65,32 @@ var _ = Describe("odo devfile deploy delete command tests", func() {
 
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile_deploy.yaml"), filepath.Join(context, "devfile.yaml"))
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "manifest.yaml"), filepath.Join(context, ".odo", "manifest.yaml"))
+			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV2", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV2", "nodejs", "manifest.yaml"), filepath.Join(context, ".odo", "manifest.yaml"))
 
 			output := helper.CmdShouldFail("odo", "deploy", "delete")
 			expectedString := "Could not delete deployment nodejs-deploy as deployment was not found"
 
 			helper.MatchAllInOutput(output, []string{expectedString})
+			Expect(helper.VerifyFileExists(filepath.Join(context, ".odo", "manifest.yaml"))).To(Equal(false))
+		})
+
+	})
+
+	Context("when manifest.yaml is present, and deployment exists", func() {
+		It("should pass, by deleting the manifest.yaml, and deleting deployment in cluster", func() {
+
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV2", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CmdShouldPass("odo", "url", "create", "--port", "3000")
+			helper.CmdShouldPass("odo", "deploy", "--tag", "image-registry.openshift-image-registry.svc:5000/"+namespace+"/my-nodejs:1.0", "--devfile", "devfile.yaml")
+
+			helper.CmdShouldPass("odo", "deploy", "delete")
+			cliRunner.WaitAndCheckForExistence("deployments", namespace, 1)
+			cliRunner.WaitAndCheckForExistence("services", namespace, 1)
+			cliRunner.WaitAndCheckForExistence("routes", namespace, 1)
+			Expect(helper.VerifyFileExists(filepath.Join(context, ".odo", "manifest.yaml"))).To(Equal(false))
 		})
 
 	})
