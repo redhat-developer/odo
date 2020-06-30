@@ -54,7 +54,7 @@ var _ = Describe("odo devfile debug command tests", func() {
 
 	Context("odo debug on a nodejs:latest component", func() {
 		It("check that machine output debug information works", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
+			helper.MakeDir(projectDirPath)
 			helper.Chdir(projectDirPath)
 
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
@@ -86,7 +86,7 @@ var _ = Describe("odo devfile debug command tests", func() {
 		})
 
 		It("should expect a ws connection when tried to connect on default debug port locally", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
+			helper.MakeDir(projectDirPath)
 			helper.Chdir(projectDirPath)
 
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
@@ -111,7 +111,7 @@ var _ = Describe("odo devfile debug command tests", func() {
 
 	Context("odo debug info should work on a odo component", func() {
 		It("should start a debug session and run debug info on a running debug session", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
+			helper.MakeDir(projectDirPath)
 			helper.Chdir(projectDirPath)
 
 			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs-cmp-"+namespace, "--project", namespace)
@@ -139,7 +139,7 @@ var _ = Describe("odo devfile debug command tests", func() {
 		})
 
 		It("should start a debug session and run debug info on a closed debug session", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
+			helper.MakeDir(projectDirPath)
 			helper.Chdir(projectDirPath)
 
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
