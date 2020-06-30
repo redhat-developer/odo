@@ -44,10 +44,6 @@ func (o *URLDeleteOptions) Complete(name string, cmd *cobra.Command, args []stri
 
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 		o.urlName = args[0]
-		err = o.InitEnvInfoFromContext()
-		if err != nil {
-			return err
-		}
 		o.CompleteDevfilePath()
 	} else {
 		if o.now {
@@ -78,14 +74,13 @@ func (o *URLDeleteOptions) Validate() (err error) {
 	var exists bool
 	if experimental.IsExperimentalModeEnabled() {
 		urls := o.EnvSpecificInfo.GetURL()
-		componentName := o.EnvSpecificInfo.GetName()
 		for _, url := range urls {
 			if url.Name == o.urlName {
 				exists = true
 			}
 		}
 		if !exists {
-			return fmt.Errorf("the URL %s does not exist within the component %s", o.urlName, componentName)
+			return fmt.Errorf("the URL %s does not exist within the component %s", o.urlName, o.EnvSpecificInfo.GetName())
 		}
 	} else {
 		urls := o.LocalConfigInfo.GetURL()

@@ -471,12 +471,13 @@ func newDevfileContext(command *cobra.Command) *Context {
 		util.LogErrorAndExit(err, "")
 	}
 
+	internalCxt.EnvSpecificInfo = envInfo
+
 	if !pushtarget.IsPushTargetDocker() {
 		// create a new kclient
 		kClient := kClient(command)
 		internalCxt.KClient = kClient
 
-		internalCxt.EnvSpecificInfo = envInfo
 		resolveNamespace(command, kClient, envInfo)
 	}
 	// create a context from the internal representation

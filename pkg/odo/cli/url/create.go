@@ -122,11 +122,7 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 			}
 		}
 
-		err = o.InitEnvInfoFromContext()
-		if err != nil {
-			return err
-		}
-
+		componentName := o.EnvSpecificInfo.GetName()
 		// Parse devfile and validate
 		devObj, err := parser.ParseAndValidate(o.DevfilePath)
 		if err != nil {
@@ -155,7 +151,6 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 		if compWithEndpoint == 0 {
 			return fmt.Errorf("No valid component with an endpoint found in the devfile")
 		}
-		componentName := o.EnvSpecificInfo.GetName()
 		o.componentPort, err = url.GetValidPortNumber(componentName, o.urlPort, postList)
 		if err != nil {
 			return err

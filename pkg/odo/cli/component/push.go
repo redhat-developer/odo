@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
@@ -47,7 +46,8 @@ type PushOptions struct {
 	*CommonPushOptions
 
 	// devfile path
-	DevfilePath string
+	DevfilePath   string
+	componentName string
 
 	// devfile commands
 	devfileInitCommand  string
@@ -82,12 +82,8 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 	// if experimental mode is enabled and devfile is present
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.DevfilePath) {
-		envInfo, err := envinfo.NewEnvSpecificInfo(po.componentContext)
-		if err != nil {
-			return errors.Wrap(err, "unable to retrieve configuration information")
-		}
-		po.EnvSpecificInfo = envInfo
 		po.Context = genericclioptions.NewDevfileContext(cmd)
+		po.componentName = po.EnvSpecificInfo.GetName()
 
 		if !pushtarget.IsPushTargetDocker() {
 			// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initalizing the context

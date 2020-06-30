@@ -60,11 +60,7 @@ func (po *PushOptions) devfilePushInner() (err error) {
 		return err
 	}
 
-	componentName, err := getComponentName(po.componentContext)
-	if err != nil {
-		return errors.Wrap(err, "unable to get component name")
-	}
-
+	po.componentName = po.EnvSpecificInfo.GetName()
 	// Set the source path to either the context or current working directory (if context not set)
 	po.sourcePath, err = util.GetAbsPath(po.componentContext)
 	if err != nil {
@@ -87,7 +83,7 @@ func (po *PushOptions) devfilePushInner() (err error) {
 		platformContext = kc
 	}
 
-	devfileHandler, err := adapters.NewPlatformAdapter(componentName, po.componentContext, devObj, platformContext)
+	devfileHandler, err := adapters.NewPlatformAdapter(po.componentName, po.componentContext, devObj, platformContext)
 
 	if err != nil {
 		return err
@@ -112,11 +108,11 @@ func (po *PushOptions) devfilePushInner() (err error) {
 	err = devfileHandler.Push(pushParams)
 	if err != nil {
 		err = errors.Errorf("Failed to start component with name %s. Error: %v",
-			componentName,
+			po.componentName,
 			err,
 		)
 	} else {
-		log.Infof("\nPushing devfile component %s", componentName)
+		log.Infof("\nPushing devfile component %s", po.componentName)
 		log.Success("Changes successfully pushed to component")
 	}
 
@@ -152,24 +148,19 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 		return err
 	}
 
-	componentName, err := getComponentName(do.componentContext)
-	if err != nil {
-		return err
-	}
-
 	kc := kubernetes.KubernetesContext{
 		Namespace: do.namespace,
 	}
 
 	labels := map[string]string{
-		"component": componentName,
+		"component": do.componentName,
 	}
-	devfileHandler, err := adapters.NewPlatformAdapter(componentName, do.componentContext, devObj, kc)
+	devfileHandler, err := adapters.NewPlatformAdapter(do.componentName, do.componentContext, devObj, kc)
 	if err != nil {
 		return err
 	}
 
-	spinner := log.Spinner(fmt.Sprintf("Deleting devfile component %s", componentName))
+	spinner := log.Spinner(fmt.Sprintf("Deleting devfile component %s", do.componentName))
 	defer spinner.End(false)
 
 	err = devfileHandler.Delete(labels)

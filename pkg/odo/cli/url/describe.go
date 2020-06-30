@@ -49,7 +49,6 @@ func NewURLDescribeOptions() *URLDescribeOptions {
 func (o *URLDescribeOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	if experimental.IsExperimentalModeEnabled() {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
-		o.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(o.componentContext)
 	} else {
 		o.Context = genericclioptions.NewContext(cmd)
 		o.localConfigInfo, err = config.NewLocalConfigInfo(o.componentContext)
