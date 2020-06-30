@@ -10,11 +10,9 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/occlient"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
-	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/pkg/errors"
@@ -34,11 +32,8 @@ import (
 const WatchRecommendedCommandName = "watch"
 
 var watchLongDesc = ktemplates.LongDesc(`Watch for changes, update component on change.`)
-var watchExampleWithComponentName = ktemplates.Examples(`  # Watch for changes in directory for current component
+var watchExampleWithDevfile = ktemplates.Examples(`  # Watch for changes in directory for current component
 %[1]s
-
-# Watch for changes in directory for component called frontend 
-%[1]s frontend
 
 # Watch source code changes with custom devfile commands using --build-command and --run-command for experimental mode
 %[1]s --build-command="mybuild" --run-command="myrun"
@@ -64,8 +59,6 @@ type WatchOptions struct {
 	namespace      string
 	devfileHandler adapters.PlatformAdapter
 
-	EnvSpecificInfo *envinfo.EnvSpecificInfo
-
 	// devfile commands
 	devfileInitCommand  string
 	devfileBuildCommand string
@@ -85,11 +78,6 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 
 	// if experimental mode is enabled and devfile is present
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(wo.devfilePath) {
-		envinfo, err := envinfo.NewEnvSpecificInfo(wo.componentContext)
-		if err != nil {
-			return errors.Wrap(err, "unable to retrieve configuration information")
-		}
-		wo.EnvSpecificInfo = envinfo
 		wo.Context = genericclioptions.NewDevfileContext(cmd)
 
 		// Set the source path to either the context or current working directory (if context not set)
@@ -105,7 +93,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 		}
 
 		// Get the component name
-		wo.componentName, err = getComponentName(wo.componentContext)
+		wo.componentName = wo.EnvSpecificInfo.GetName()
 		if err != nil {
 			return err
 		}
@@ -261,8 +249,7 @@ func NewCmdWatch(name, fullName string) *cobra.Command {
 	usage := name
 
 	if experimental.IsExperimentalModeEnabled() {
-		example = fmt.Sprintf(watchExampleWithComponentName, fullName)
-		usage = fmt.Sprintf("%s [component name]", name)
+		example = fmt.Sprintf(watchExampleWithDevfile, fullName)
 	}
 
 	var watchCmd = &cobra.Command{
@@ -270,7 +257,7 @@ func NewCmdWatch(name, fullName string) *cobra.Command {
 		Short:       "Watch for changes, update component on change",
 		Long:        watchLongDesc,
 		Example:     example,
-		Args:        cobra.MaximumNArgs(1),
+		Args:        cobra.NoArgs,
 		Annotations: map[string]string{"command": "component"},
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(wo, cmd, args)
@@ -298,8 +285,6 @@ func NewCmdWatch(name, fullName string) *cobra.Command {
 
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(watchCmd)
-
-	completion.RegisterCommandHandler(watchCmd, completion.ComponentNameCompletionHandler)
 
 	return watchCmd
 }
