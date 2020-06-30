@@ -102,4 +102,43 @@ var _ = Describe("odo devfile delete command tests", func() {
 			Expect(files).To(Not(ContainElement("devfile.yaml")))
 		})
 	})
+
+	Context("when the project doesn't exist", func() {
+
+		It("should let the user delete the local config files with -a flag", func() {
+			newNamespace := cliRunner.CreateRandNamespaceProject()
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", newNamespace, componentName)
+			cliRunner.DeleteNamespaceProject(newNamespace)
+
+			output := helper.CmdShouldFail("odo", "delete")
+			helper.MatchAllInOutput(output, []string{
+				fmt.Sprint("the namespace doesn't exist"),
+			})
+
+			output = helper.CmdShouldPass("odo", "delete", "-af")
+			helper.MatchAllInOutput(output, []string{
+				fmt.Sprintf("Component %s does not exist", componentName),
+				"Successfully deleted env file",
+				"Successfully deleted devfile.yaml file",
+			})
+		})
+
+		It("should let the user delete the local config files with -a and -project flags", func() {
+			newNamespace := cliRunner.CreateRandNamespaceProject()
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", newNamespace, componentName)
+			cliRunner.DeleteNamespaceProject(newNamespace)
+
+			output := helper.CmdShouldFail("odo", "delete", "--project", newNamespace)
+			helper.MatchAllInOutput(output, []string{
+				fmt.Sprintf("namespaces \"%s\" not found", newNamespace),
+			})
+
+			output = helper.CmdShouldPass("odo", "delete", "--project", newNamespace, "-af")
+			helper.MatchAllInOutput(output, []string{
+				fmt.Sprintf("Component %s does not exist", componentName),
+				"Successfully deleted env file",
+				"Successfully deleted devfile.yaml file",
+			})
+		})
+	})
 })

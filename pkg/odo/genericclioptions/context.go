@@ -99,6 +99,7 @@ func kClient(command *cobra.Command) *kclient.Client {
 // checkProjectCreateOrDeleteOnlyOnInvalidNamespace errors out if user is trying to create or delete something other than project
 // errFormatforCommand must contain one %s
 func checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command *cobra.Command, errFormatForCommand string) {
+	// do not error out when its odo delete -a, so that we let users delete the local config on missing namespace
 	if command.HasParent() && command.Parent().Name() != "project" && (command.Name() == "create" || (command.Name() == "delete" && !command.Flags().Changed("all"))) {
 		err := fmt.Errorf(errFormatForCommand, command.Root().Name())
 		util.LogErrorAndExit(err, "")
@@ -242,7 +243,10 @@ func resolveNamespace(command *cobra.Command, client *kclient.Client, envSpecifi
 	if len(projectFlag) > 0 {
 		// if namespace flag was set, check that the specified namespace exists and use it
 		_, err := client.KubeClient.CoreV1().Namespaces().Get(projectFlag, metav1.GetOptions{})
-		util.LogErrorAndExit(err, "")
+		// do not error out when its odo delete -a, so that we let users delete the local config on missing namespace
+		if command.HasParent() && command.Parent().Name() != "project" && !(command.Name() == "delete" && command.Flags().Changed("all")) {
+			util.LogErrorAndExit(err, "")
+		}
 		namespace = projectFlag
 	} else {
 		namespace = envSpecificInfo.GetNamespace()
