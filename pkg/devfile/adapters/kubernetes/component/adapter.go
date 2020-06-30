@@ -3,6 +3,7 @@ package component
 import (
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/openshift/odo/pkg/exec"
 	corev1 "k8s.io/api/core/v1"
@@ -148,6 +149,15 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	execRequired, err := syncAdapter.SyncFiles(syncParams)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to sync to component with name %s", a.ComponentName)
+	}
+
+	// PostStart events from the devfile will only be executed when the component
+	// didn't previously exist
+	if !componentExists {
+		err = a.execDevfileEvent(a.Devfile.Data.GetEvents().PostStart, compInfo)
+		if err != nil {
+			return err
+		}
 	}
 
 	if execRequired {
@@ -405,6 +415,27 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 	}
 
 	return
+}
+
+func (a Adapter) execDevfileEvent(events []string, compInfo common.ComponentInfo) error {
+	if len(events) > 0 {
+		for _, commandName := range events {
+			// Convert commandName to lower because GetCommands converts Command.Exec.Id's to lower
+			command, err := adaptersCommon.GetCommandByName(a.Devfile.Data, strings.ToLower(commandName))
+			if err != nil {
+				return err
+			}
+
+			// If composite would go here & recursive loop
+
+			// Execute command in pod
+			err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, false, a.machineEventLogger)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // InitRunContainerSupervisord initializes the supervisord in the container if

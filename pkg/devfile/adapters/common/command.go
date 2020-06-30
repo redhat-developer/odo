@@ -78,14 +78,28 @@ func getCommandFromFlag(data data.DevfileData, groupType common.DevfileCommandGr
 			// Update Group only custom commands (specified by odo flags)
 			command = updateCommandGroupIfReqd(groupType, command)
 
-			// we have found the command with name, its groupType Should match to the flag
-			// e.g --build-command "mybuild"
-			// exec:
-			//   id: mybuild
-			//   group:
-			//     kind: build
-			if command.Exec.Group.Kind != groupType {
-				return command, fmt.Errorf("command group mismatched, command %s is of group %v in devfile.yaml", commandName, command.Exec.Group.Kind)
+			if command.Exec.Id == commandName {
+
+				// In the case of lifecycle events, we don't have the type, only the name
+				// This will verify that if a groupType is passed, the command extracted matches that groupType
+				if groupType != "" {
+
+					if command.Exec.Group.Kind == "" {
+						// Devfile V1 for commands passed from flags
+						// Group type is not updated during conversion
+						command.Exec.Group.Kind = groupType
+					}
+
+					// we have found the command with name, its groupType Should match to the flag
+					// e.g --build-command "mybuild"
+					// exec:
+					//   id: mybuild
+					// group:
+					//   kind: build
+					if command.Exec.Group.Kind != groupType {
+						return command, fmt.Errorf("mismatched type, command %s is of type %v groupType in devfile", commandName, groupType)
+					}
+				}
 			}
 
 			return command, validateCommand(data, command)
@@ -170,6 +184,11 @@ func GetInitCommand(data data.DevfileData, devfileInitCmd string) (initCommand c
 	return getCommand(data, devfileInitCmd, common.InitCommandGroupType)
 }
 
+// GetCommandByName iterates through the components in the devfile and returns the command with the given name
+func GetCommandByName(data data.DevfileData, desiredCommand string) (command common.DevfileCommand, err error) {
+	return getCommand(data, desiredCommand, "")
+}
+
 // GetBuildCommand iterates through the components in the devfile and returns the build command
 func GetBuildCommand(data data.DevfileData, devfileBuildCmd string) (buildCommand common.DevfileCommand, err error) {
 
@@ -251,7 +270,7 @@ func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileInitCmd, de
 func updateCommandGroupIfReqd(groupType common.DevfileCommandGroupType, command common.DevfileCommand) common.DevfileCommand {
 	// Update Group only for exec commands
 	// Update Group only when Group is not nil, devfile v2 might contain group for custom commands.
-	if command.Exec != nil && command.Exec.Group == nil {
+	if command.Exec != nil && command.Exec.Group == nil && groupType != "" {
 		command.Exec.Group = &common.Group{Kind: groupType}
 		return command
 	}

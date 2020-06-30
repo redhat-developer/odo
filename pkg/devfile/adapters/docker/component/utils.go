@@ -373,6 +373,31 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 	return
 }
 
+func (a Adapter) execDevfileEvent(events []string, containers []types.Container) error {
+	if len(events) > 0 {
+		for _, commandName := range events {
+			// Convert commandName to lower because GetCommands converts Command.Exec.Id's to lower
+			command, err := common.GetCommandByName(a.Devfile.Data, strings.ToLower(commandName))
+			if err != nil {
+				return err
+			}
+
+			// If composite would go here & recursive loop
+
+			// Get container for command
+			containerID := utils.GetContainerIDForAlias(containers, command.Exec.Component)
+			compInfo := common.ComponentInfo{ContainerName: containerID}
+
+			// Execute command in container
+			err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, false, a.machineEventLogger)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 // initRunContainerSupervisord initializes the supervisord in the container if
 // the container has entrypoint that is not supervisord
 func (a Adapter) initRunContainerSupervisord(component string, containers []types.Container) (err error) {

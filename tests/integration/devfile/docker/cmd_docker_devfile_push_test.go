@@ -207,6 +207,18 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			Expect(stdOut).To(ContainSubstring(("afile.txt")))
 		})
 
+		It("should execute PostStart commands if present", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-post-start.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			output := helper.CmdShouldPass("odo", "push")
+			Expect(output).To(ContainSubstring("Executing mypoststart command \"I am a PostStart"))
+			Expect(output).To(ContainSubstring("Executing secondpoststart command \"I am also a PostStart"))
+			Expect(output).To(ContainSubstring("Executing devrun command \"/artifacts/bin/start-server.sh\""))
+		})
+
 		It("should be able to handle a missing build command group", func() {
 			utils.ExecWithMissingBuildCommand(context, cmpName, "")
 		})
