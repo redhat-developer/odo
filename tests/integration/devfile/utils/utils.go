@@ -52,7 +52,7 @@ func ExecWithMissingBuildCommand(projectDirPath, cmpName, namespace string) {
 	args = useProjectIfAvailable(args, namespace)
 	output := helper.CmdShouldPass("odo", args...)
 	Expect(output).NotTo(ContainSubstring("Executing devbuild command"))
-	Expect(output).To(ContainSubstring("Executing devrun command \"npm install && nodemon app.js\""))
+	Expect(output).To(ContainSubstring("Executing devrun command \"npm install && npm start\""))
 }
 
 // ExecWithMissingRunCommand executes odo push with a missing run command
@@ -88,7 +88,7 @@ func ExecWithCustomCommand(projectDirPath, cmpName, namespace string) {
 	output := helper.CmdShouldPass("odo", args...)
 	helper.MatchAllInOutput(output, []string{
 		"Executing build command \"npm install\"",
-		"Executing run command \"nodemon app.js\"",
+		"Executing run command \"npm start\"",
 	})
 }
 
@@ -142,7 +142,7 @@ func ExecMultipleDefaultsWithFlags(projectDirPath, cmpName, namespace string) {
 	output := helper.CmdShouldPass("odo", args...)
 	helper.MatchAllInOutput(output, []string{
 		"Executing firstbuild command \"npm install\"",
-		"Executing secondrun command \"nodemon app.js\"",
+		"Executing secondrun command \"npm start\"",
 	})
 }
 
@@ -160,7 +160,7 @@ func ExecCommandWithoutGroupUsingFlags(projectDirPath, cmpName, namespace string
 	output := helper.CmdShouldPass("odo", args...)
 	helper.MatchAllInOutput(output, []string{
 		"Executing thirdbuild command \"npm install\"",
-		"Executing secondrun command \"nodemon app.js\"",
+		"Executing secondrun command \"npm start\"",
 	})
 }
 
@@ -198,7 +198,7 @@ func ExecPushToTestFileChanges(projectDirPath, cmpName, namespace string) {
 	output := helper.CmdShouldPass("odo", args...)
 	Expect(output).To(ContainSubstring("No file changes detected, skipping build"))
 
-	helper.ReplaceString(filepath.Join(projectDirPath, "app", "app.js"), "Hello World!", "UPDATED!")
+	helper.ReplaceString(filepath.Join(projectDirPath, "server.js"), "Hello from Node.js", "UPDATED!")
 	output = helper.CmdShouldPass("odo", args...)
 	Expect(output).To(ContainSubstring("Syncing files to the component"))
 }
@@ -258,7 +258,7 @@ func ExecWithRestartAttribute(projectDirPath, cmpName, namespace string) {
 	args = []string{"push"}
 	args = useProjectIfAvailable(args, namespace)
 	output := helper.CmdShouldPass("odo", args...)
-	Expect(output).To(ContainSubstring("Executing devrun command \"nodemon app.js\""))
+	Expect(output).To(ContainSubstring("Executing devrun command \"npm start\""))
 
 	args = []string{"push", "-f"}
 	args = useProjectIfAvailable(args, namespace)
@@ -306,7 +306,7 @@ func OdoWatch(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, project, context, fl
 			helper.DeleteDir(filepath.Join(context, "abcd"))
 
 			if isDevfileTest {
-				helper.ReplaceString(filepath.Join(context, "app", "app.js"), "Hello", "Hello odo")
+				helper.ReplaceString(filepath.Join(context, "server.js"), "Hello", "Hello odo")
 			} else {
 				if odoV1Watch.SrcType == "openjdk" {
 					helper.ReplaceString(filepath.Join(context, "src", "main", "java", "MessageProducer.java"), "Hello", "Hello odo")
