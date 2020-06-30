@@ -143,10 +143,15 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 			// This is done, so supervisord can use it in it's program
 			if !isEnvPresent(container.Env, adaptersCommon.EnvOdoCommandRun) {
 				klog.V(4).Infof("Updating container %v env with run command", container.Name)
+				var setEnvVariable string
+				for _, envVar := range runCommand.Exec.Env {
+					setEnvVariable = setEnvVariable + fmt.Sprintf("%v=\"%v\" ", envVar.Name, envVar.Value)
+				}
+				command := setEnvVariable + " && " + runCommand.Exec.CommandLine
 				container.Env = append(container.Env,
 					corev1.EnvVar{
 						Name:  adaptersCommon.EnvOdoCommandRun,
-						Value: runCommand.Exec.CommandLine,
+						Value: command,
 					})
 			}
 
@@ -188,10 +193,15 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 			// This is done, so supervisord can use it in it's program
 			if !isEnvPresent(container.Env, adaptersCommon.EnvOdoCommandDebug) {
 				klog.V(4).Infof("Updating container %v env with debug command", container.Name)
+				var setEnvVariable string
+				for _, envVar := range debugCommand.Exec.Env {
+					setEnvVariable = setEnvVariable + fmt.Sprintf("%v=\"%v\" ", envVar.Name, envVar.Value)
+				}
+				command := setEnvVariable + " && " + debugCommand.Exec.CommandLine
 				container.Env = append(container.Env,
 					corev1.EnvVar{
 						Name:  adaptersCommon.EnvOdoCommandDebug,
-						Value: debugCommand.Exec.CommandLine,
+						Value: command,
 					})
 			}
 
