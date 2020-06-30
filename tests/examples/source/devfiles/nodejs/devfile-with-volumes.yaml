@@ -4,11 +4,11 @@ metadata:
 projects:
   - name: nodejs-starter
     git:
-      location: "https://github.com/odo-devfiles/nodejs-ex.git"
+      location: "https://github.com/che-samples/web-nodejs-sample.git"
 components:
   - container:
       name: runtime
-      image: registry.access.redhat.com/ubi8/nodejs-12:1-36
+      image: quay.io/eclipse/che-nodejs10-ubi:nightly
       memoryLimit: 1024Mi
       env:
         - name: FOO
@@ -25,7 +25,7 @@ components:
           path: /data
   - container:
       name: runtime2
-      image: registry.access.redhat.com/ubi8/nodejs-12:1-36
+      image: quay.io/eclipse/che-nodejs10-ubi:nightly
       memoryLimit: 1024Mi
       mountSources: false
       volumeMounts:
