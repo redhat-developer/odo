@@ -58,10 +58,10 @@ type DevfileMetadata struct {
 	Version string `json:"version,omitempty"`
 
 	// Dockerfile optional URL to remote Dockerfile
-	Dockerfile string `json:"dockerfile,omitempty"`
+	Dockerfile string `json:"alpha.build-dockerfile,omitempty"`
 
 	// Manifest optional URL to remote Deployment Manifest
-	Manifest string `json:"deployment-manifest,omitempty"`
+	Manifest string `json:"alpha.deployment-manifest,omitempty"`
 }
 
 // DevfileCommand command specified in devfile

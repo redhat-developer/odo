@@ -2,8 +2,8 @@ schemaVersion: 2.0.0
 metadata:
   name: nodejs
   version: 1.0.0
-  dockerfile: "https://raw.githubusercontent.com/groeges/devfile-registry/master/devfiles/nodejs/Dockerfile"
-  deployment-manifest: "https://raw.githubusercontent.com/neeraj-laad/nodejs-stack-registry/build-deploy/devfiles/nodejs-basic/deploy/k8s-deploy.yaml"
+  alpha.build-dockerfile: "https://raw.githubusercontent.com/groeges/devfile-registry/master/devfiles/nodejs/Dockerfile"
+  alpha.deployment-manifest: "https://raw.githubusercontent.com/neeraj-laad/nodejs-stack-registry/build-deploy/devfiles/nodejs-basic/deploy/k8s-deploy.yaml"
 projects:
   - name: express
     git:

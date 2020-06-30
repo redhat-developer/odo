@@ -996,7 +996,12 @@ func DownloadFileInMemory(url string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		return nil, errors.New(http.StatusText(resp.StatusCode))
+	}
 
 	return ioutil.ReadAll(resp.Body)
 }

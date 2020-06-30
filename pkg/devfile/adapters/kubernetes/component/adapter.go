@@ -40,6 +40,10 @@ import (
 	"github.com/openshift/odo/pkg/url"
 )
 
+const (
+	DeployWaitTimeout = 30 * time.Second
+)
+
 // New instantiantes a component adapter
 func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
 	return Adapter{
@@ -141,7 +145,7 @@ func (a Adapter) Build(parameters common.BuildParameters) (err error) {
 }
 
 func determinePort(envSpecificInfo envinfo.EnvSpecificInfo) string {
-	// TODO: Determine port to use (from env.yaml or other location!!)
+	// Determine port to use from first non-Docker route in env.yaml)
 	deploymentPort := ""
 	for _, localURL := range envSpecificInfo.GetURL() {
 		if localURL.Kind != envinfo.DOCKER {
@@ -205,8 +209,10 @@ func (a Adapter) waitForManifestDeployCompletion(applicationName string, gvr sch
 				if condition != nil {
 					if condition["status"] == "Fail" {
 						failure <- fmt.Errorf("manifest deployment %s failed", applicationName)
+						return
 					} else if condition["status"] == "True" {
 						success <- watchObject
+						return
 					}
 				}
 			}
@@ -218,7 +224,7 @@ func (a Adapter) waitForManifestDeployCompletion(applicationName string, gvr sch
 		return val, nil
 	case err := <-failure:
 		return nil, err
-	case <-time.After(30 * time.Second):
+	case <-time.After(DeployWaitTimeout):
 		return nil, errors.Errorf("timeout while waiting for %s manifest deployment completion", applicationName)
 	}
 }
@@ -267,12 +273,6 @@ func (a Adapter) Deploy(parameters common.DeployParameters) (err error) {
 				return errors.Wrap(err, "Failed to decode the manifest yaml")
 			}
 
-			deployJSON, err := deploymentManifest.MarshalJSON()
-			if err != nil {
-				return errors.Wrap(err, "Deployment manifest is invalid")
-			}
-			klog.V(3).Infof("Deploy manifest:\n\n%s\n", deployJSON)
-
 			gvr := schema.GroupVersionResource{Group: gvk.Group, Version: gvk.Version, Resource: strings.ToLower(gvk.Kind + "s")}
 			klog.V(3).Infof("Manifest type: %s", gvr.String())
 
@@ -297,6 +297,9 @@ func (a Adapter) Deploy(parameters common.DeployParameters) (err error) {
 				instanceFound = true
 				deploymentManifest.SetResourceVersion(item.GetResourceVersion())
 				deploymentManifest.SetAnnotations(item.GetAnnotations())
+				// If deployment is a `Service` of type `ClusterIP` then the service in the manifest will probably not
+				// have a ClusterIP defined, as this is determined when the manifest is applied. When updating the Service
+				// the manifest cannot have an empty `ClusterIP` defintion, so we need to copy this from the existing definition.
 				if item.GetKind() == "Service" {
 					currentServiceSpec := item.UnstructuredContent()["spec"].(map[string]interface{})
 					if currentServiceSpec["type"] == "ClusterIP" {

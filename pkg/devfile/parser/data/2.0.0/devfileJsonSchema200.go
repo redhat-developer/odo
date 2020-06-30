@@ -849,11 +849,11 @@ const JsonSchema200 = `{
 			"type": "string",
 			"description": "Optional devfile name"
 		  },
-		  "dockerfile": {
+		  "alpha.build-dockerfile": {
 			  "type":"string",
 			  "description": "Optional URL to remote Dockerfile"
 		  },
-		  "deployment-manifest":  {
+		  "alpha.deployment-manifest":  {
 			  "type":"string",
 			  "description": "Optional URL to remote Deployment Manifest"
 		  }

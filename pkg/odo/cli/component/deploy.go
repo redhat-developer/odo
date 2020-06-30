@@ -95,7 +95,6 @@ func (do *DeployOptions) Run() (err error) {
 		return err
 	}
 
-	// TODO Remove this as it was only put in for testing
 	if !do.deployOnly {
 		//Download Dockerfile to .odo, build, then delete from .odo dir
 		//If Dockerfile is present in the project already, use that for the build
@@ -135,9 +134,18 @@ func (do *DeployOptions) Run() (err error) {
 	}
 
 	manifestURL := metadata.Manifest
+	if manifestURL == "" {
+		return errors.New("Unable to deploy as alpha.deployment-manifest is not defined in devfile.yaml")
+	}
+
+	err = util.ValidateURL(manifestURL)
+	if err != nil {
+		return errors.New(fmt.Sprintf("Invalid manifest url: %s, %s", manifestURL, err))
+	}
+
 	do.ManifestSource, err = util.DownloadFileInMemory(manifestURL)
 	if err != nil {
-		return errors.Wrap(err, "Unable to download manifest "+manifestURL)
+		return errors.New(fmt.Sprintf("Unable to download manifest: %s, %s", manifestURL, err))
 	}
 
 	err = do.DevfileDeploy()
