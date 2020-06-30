@@ -19,7 +19,12 @@ func (d *Devfile200) GetCommands() []common.DevfileCommand {
 		// we convert devfile command id to lowercase so that we can handle
 		// cases efficiently without being error prone
 		// we also convert the odo push commands from build-command and run-command flags
-		command.Exec.Id = strings.ToLower(command.Exec.Id)
+		if command.Exec != nil {
+			command.Exec.Id = strings.ToLower(command.Exec.Id)
+		} else if command.Composite != nil {
+			command.Composite.Id = strings.ToLower(command.Composite.Id)
+		}
+
 		commands = append(commands, command)
 	}
 

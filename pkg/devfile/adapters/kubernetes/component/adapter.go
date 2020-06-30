@@ -347,10 +347,18 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 		// Get Init Command
 		command, ok := commandsMap[versionsCommon.InitCommandGroupType]
 		if ok {
-			compInfo.ContainerName = command.Exec.Component
-			err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
-			if err != nil {
-				return err
+			if command.Composite != nil {
+				fmt.Println("Composite detected")
+				err = a.execCompositeCommand(command.Composite, show, podName, containers)
+				if err != nil {
+					return err
+				}
+			} else {
+				compInfo.ContainerName = command.Exec.Component
+				err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
+				if err != nil {
+					return err
+				}
 			}
 
 		}
@@ -360,10 +368,18 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 	// Get Build Command
 	command, ok := commandsMap[versionsCommon.BuildCommandGroupType]
 	if ok {
-		compInfo.ContainerName = command.Exec.Component
-		err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
-		if err != nil {
-			return err
+		if command.Composite != nil {
+			compInfo.ContainerName = command.Exec.Component
+			err = a.execCompositeCommand(command.Composite, show, podName, containers)
+			if err != nil {
+				return err
+			}
+		} else {
+			compInfo.ContainerName = command.Exec.Component
+			err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -405,6 +421,19 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 	}
 
 	return
+}
+
+// execCompositeCommand executes the specified composite command
+// If the command sets parallel: true, the commands are execute asynchronously, otherwise they are executed in order
+func (a Adapter) execCompositeCommand(compositeCommand *versionsCommon.Composite, show bool, podName string, containers []corev1.Container) error {
+	//devfileCommands := a.Devfile.Data.GetCommands()
+
+	if compositeCommand.Parallel {
+		fmt.Println("Parallel")
+	} else {
+		fmt.Println("Not Parallel")
+	}
+	return nil
 }
 
 // InitRunContainerSupervisord initializes the supervisord in the container if
