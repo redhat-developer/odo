@@ -35,8 +35,8 @@ const (
 type BootstrapOptions struct {
 	GitOpsRepoURL            string // This is where the pipelines and configuration are.
 	GitOpsWebhookSecret      string // This is the secret for authenticating hooks from your GitOps repo.
-	AppRepoURL               string // This is the full URL to your GitHub repository for your app source.
-	AppWebhookSecret         string // This is the secret for authenticating hooks from your app source.
+	ServiceRepoURL           string // This is the full URL to your GitHub repository for your service source.
+	ServiceWebhookSecret     string // This is the secret for authenticating hooks from your service source.
 	InternalRegistryHostname string // This is the internal registry hostname used for pushing images.
 	ImageRepo                string // This is where built images are pushed to.
 	Prefix                   string // Used to prefix generated environment names in a shared cluster.
@@ -53,12 +53,12 @@ func Bootstrap(o *BootstrapOptions, appFs afero.Fs) error {
 		}
 		o.GitOpsWebhookSecret = gitopsSecret
 	}
-	if o.AppWebhookSecret == "" {
+	if o.ServiceWebhookSecret == "" {
 		appSecret, err := secrets.GenerateString(webhookSecretLength)
 		if err != nil {
 			return fmt.Errorf("failed to generate application webhook secret: %v", err)
 		}
-		o.AppWebhookSecret = appSecret
+		o.ServiceWebhookSecret = appSecret
 	}
 	bootstrapped, err := bootstrapResources(o, appFs)
 	if err != nil {
@@ -89,7 +89,7 @@ func bootstrapResources(o *BootstrapOptions, appFs afero.Fs) (res.Resources, err
 	if err != nil {
 		return nil, err
 	}
-	appRepo, err := scm.NewRepository(o.AppRepoURL)
+	appRepo, err := scm.NewRepository(o.ServiceRepoURL)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +104,8 @@ func bootstrapResources(o *BootstrapOptions, appFs afero.Fs) (res.Resources, err
 	}
 
 	ns := namespaces.NamesWithPrefix(o.Prefix)
-	serviceName := repoToServiceName(repoName)
+	appName := repoToAppName(repoName)
+	serviceName := repoName
 	secretName := secrets.MakeServiceWebhookSecretName(ns["dev"], serviceName)
 	envs, configEnv, err := bootstrapEnvironments(appRepo, o.Prefix, secretName, ns)
 	if err != nil {
@@ -116,13 +117,13 @@ func bootstrapResources(o *BootstrapOptions, appFs afero.Fs) (res.Resources, err
 	if devEnv == nil {
 		return nil, errors.New("unable to bootstrap without dev environment")
 	}
-	svcFiles, err := bootstrapServiceDeployment(devEnv, repoName)
+	svcFiles, err := bootstrapServiceDeployment(devEnv, appName)
 	if err != nil {
 		return nil, err
 	}
 	hookSecret, err := secrets.CreateSealedSecret(
 		meta.NamespacedName(ns["cicd"], secretName),
-		o.AppWebhookSecret,
+		o.ServiceWebhookSecret,
 		eventlisteners.WebhookSecretKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate GitHub Webhook Secret: %v", err)
@@ -214,7 +215,7 @@ func serviceFromRepo(repoURL, secretName, secretNS string) (*config.Service, err
 		return nil, err
 	}
 	return &config.Service{
-		Name:      repoToServiceName(repo),
+		Name:      repo,
 		SourceURL: repoURL,
 		Webhook: &config.Webhook{
 			Secret: &config.Secret{
@@ -231,7 +232,7 @@ func applicationFromRepo(repoURL, serviceName string) (*config.Application, erro
 		return nil, err
 	}
 	return &config.Application{
-		Name:        repo,
+		Name:        repoToAppName(repo),
 		ServiceRefs: []string{serviceName},
 	}, nil
 }
@@ -278,8 +279,8 @@ func createBootstrapService(appName, ns, name string) *corev1.Service {
 	return svc
 }
 
-func repoToServiceName(repoName string) string {
-	return repoName + "-svc"
+func repoToAppName(repoName string) string {
+	return "app-" + repoName
 }
 
 func defaultPipelines(r scm.Repository) *config.Pipelines {

@@ -51,7 +51,7 @@ func (io *BootstrapParameters) Complete(name string, cmd *cobra.Command, args []
 		io.Prefix = io.Prefix + "-"
 	}
 	io.GitOpsRepoURL = utility.AddGitSuffixIfNecessary(io.GitOpsRepoURL)
-	io.AppRepoURL = utility.AddGitSuffixIfNecessary(io.AppRepoURL)
+	io.ServiceRepoURL = utility.AddGitSuffixIfNecessary(io.ServiceRepoURL)
 	return nil
 }
 
@@ -97,8 +97,8 @@ func NewCmdBootstrap(name, fullName string) *cobra.Command {
 	initCmd.Flags().StringVar(&o.GitOpsRepoURL, "gitops-repo-url", "", "GitOps repository e.g. https://github.com/organisation/repository")
 	initCmd.Flags().StringVar(&o.GitOpsWebhookSecret, "gitops-webhook-secret", "", "provide the GitHub webhook secret for GitOps repository (if not provided, it will be auto-generated)")
 
-	initCmd.Flags().StringVar(&o.AppRepoURL, "app-repo-url", "", "Application source e.g. https://github.com/organisation/application")
-	initCmd.Flags().StringVar(&o.AppWebhookSecret, "app-webhook-secret", "", "Provide the GitHub webhook secret for Application repository (if not provided, it will be auto-generated)")
+	initCmd.Flags().StringVar(&o.ServiceRepoURL, "service-repo-url", "", "Service source e.g. https://github.com/organisation/service")
+	initCmd.Flags().StringVar(&o.ServiceWebhookSecret, "service-webhook-secret", "", "Provide the GitHub webhook secret for Service repository (if not provided, it will be auto-generated)")
 
 	initCmd.Flags().StringVar(&o.DockerConfigJSONFilename, "dockercfgjson", "", "provide the dockercfgjson path")
 	initCmd.Flags().StringVar(&o.InternalRegistryHostname, "internal-registry-hostname", "image-registry.openshift-image-registry.svc:5000", "internal image registry hostname")
