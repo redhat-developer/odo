@@ -13,8 +13,13 @@ KUBEADMIN_PASSWORD_FILE=${KUBEADMIN_PASSWORD_FILE:-"${DEFAULT_INSTALLER_ASSETS_D
 # Default values
 OC_STABLE_LOGIN="false"
 CI_OPERATOR_HUB_PROJECT="ci-operator-hub-project"
+# Copy kubeconfig to temporary kubeconfig file
+# Read, Write and Execute permission to temporary kubeconfig file
+mkdir -p ${DEFAULT_INSTALLER_ASSETS_DIR}/tmp/kubeconfig
+cp ${DEFAULT_INSTALLER_ASSETS_DIR}/auth/kubeconfig ${DEFAULT_INSTALLER_ASSETS_DIR}/tmp/kubeconfig
+chmod 764 ${DEFAULT_INSTALLER_ASSETS_DIR}/tmp/kubeconfig
 # Exported to current env
-export KUBECONFIG=${KUBECONFIG:-"${DEFAULT_INSTALLER_ASSETS_DIR}/auth/kubeconfig"}
+export KUBECONFIG=${KUBECONFIG:-"${DEFAULT_INSTALLER_ASSETS_DIR}/tmp/kubeconfig"}
 
 # List of users to create
 USERS="developer odonoprojectattemptscreate odosingleprojectattemptscreate odologinnoproject odologinsingleproject1"
