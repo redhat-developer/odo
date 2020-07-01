@@ -1,0 +1,40 @@
+schemaVersion: "2.0.0"
+metadata:
+  name: test-devfile
+  alpha.build-dockerfile: "https://raw.githubusercontent.com/neeraj-laad/nodejs-stack-registry/build-deploy/devfiles/nodejs-basic/build/Dockerfile"
+projects:
+  - name: nodejs-web-app
+    git: 
+      location: "https://github.com/che-samples/web-nodejs-sample.git"
+components:
+  - container:
+      image: quay.io/eclipse/che-nodejs10-ubi:nightly
+      mountSources: true
+      name: "runtime"
+      memoryLimit: 1024Mi
+      env:
+      - name: FOO
+        value: "bar"
+      endpoints:
+        - name: '3000/tcp'
+          targetPort: 3000
+          # odo not using currently, added to validate JSON Schema
+          configuration:
+            protocol: tcp
+            scheme: http
+            type: terminal
+commands:
+  - exec:
+      id: download dependencies
+      commandLine: "npm install"
+      component: runtime
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-web-app/app
+      group:
+        kind: build
+  - exec:
+      id: run the app
+      commandLine: "nodemon app.js"
+      component: runtime
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-web-app/app 
+      group:
+        kind: run                              

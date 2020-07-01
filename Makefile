@@ -208,6 +208,11 @@ test-cmd-devfile-create:
 test-cmd-devfile-push:
 	ginkgo $(GINKGO_FLAGS) -focus="odo devfile push command tests" tests/integration/devfile/
 
+# Run odo deploy devfile command tests
+.PHONY: test-cmd-devfile-deploy
+test-cmd-devfile-deploy:     	
+	ginkgo $(GINKGO_FLAGS) -focus="odo devfile deploy command tests" tests/integration/devfile/
+
 # Run odo push devfile command tests
 .PHONY: test-cmd-devfile-deploy-delete
 test-cmd-devfile-deploy-delete:

@@ -1,6 +1,7 @@
 package devfile
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -25,9 +26,9 @@ var _ = Describe("odo devfile deploy command tests", func() {
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
 
 		originalKubeconfig = os.Getenv("KUBECONFIG")
-		imageTag = "image-registry.openshift-image-registry.svc:5000/default/my-nodejs:1.0"
 		helper.LocalKubeconfigSet(context)
 		namespace = cliRunner.CreateRandNamespaceProject()
+		imageTag = fmt.Sprintf("image-registry.openshift-image-registry.svc:5000/%s/my-nodejs:1.0", namespace)
 		currentWorkingDirectory = helper.Getwd()
 		cmpName = helper.RandString(6)
 		helper.Chdir(context)
@@ -48,7 +49,7 @@ var _ = Describe("odo devfile deploy command tests", func() {
 			helper.CmdShouldPass("odo", "url", "create", "--port", "3000")
 
 			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV2", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
-			output := helper.CmdShouldPass("odo", "deploy", "--tag", imageTag, "--devfile", "devfile.yaml")
+			output := helper.CmdShouldPass("odo", "deploy", "--tag", imageTag)
 			Expect(output).NotTo(ContainSubstring("does not point to a valid Dockerfile"))
 		})
 	})
@@ -59,10 +60,10 @@ var _ = Describe("odo devfile deploy command tests", func() {
 			helper.CmdShouldPass("odo", "url", "create", "--port", "3000")
 			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV2", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			err := helper.ReplaceDevfileField("devfile.yaml", "dockerfile", "https://google.com")
+			err := helper.ReplaceDevfileField("devfile.yaml", "alpha.build-dockerfile", "https://google.com")
 			Expect(err).To(BeNil())
 
-			cmdOutput := helper.CmdShouldFail("odo", "deploy", "--tag", imageTag, "--devfile", "devfile.yaml")
+			cmdOutput := helper.CmdShouldFail("odo", "deploy", "--tag", imageTag)
 			Expect(cmdOutput).To(ContainSubstring("does not point to a valid Dockerfile"))
 		})
 	})
@@ -71,8 +72,59 @@ var _ = Describe("odo devfile deploy command tests", func() {
 		It("Should error out with 'dockerfile required for build.'", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 			helper.CmdShouldPass("odo", "url", "create", "--port", "3000")
-			cmdOutput := helper.CmdShouldFail("odo", "deploy", "--tag", imageTag, "--devfile", "devfile.yaml")
+			cmdOutput := helper.CmdShouldFail("odo", "deploy", "--tag", imageTag)
 			Expect(cmdOutput).To(ContainSubstring("dockerfile required for build. No 'dockerfile' field found in devfile, or Dockerfile found in project directory"))
+		})
+	})
+
+	Context("Verify error when no manifest definition exists in devfile", func() {
+		It("Should error out with 'Unable to deploy as alpha.deployment-manifest is not defined in devfile.yaml'", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+			helper.CmdShouldPass("odo", "url", "create", "--port", "3000")
+			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV2", "nodejs", "devfile-no-manifest.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			cmdOutput := helper.CmdShouldFail("odo", "deploy", "--tag", imageTag)
+			Expect(cmdOutput).To(ContainSubstring("Unable to deploy as alpha.deployment-manifest is not defined in devfile.yaml"))
+		})
+	})
+
+	Context("Verify error when invalid manifest definition exists in devfile", func() {
+		It("Should error out with 'Invalid manifest url'", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+			helper.CmdShouldPass("odo", "url", "create", "--port", "3000")
+			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV2", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			err := helper.ReplaceDevfileField("devfile.yaml", "alpha.deployment-manifest", "google.com")
+			Expect(err).To(BeNil())
+
+			cmdOutput := helper.CmdShouldFail("odo", "deploy", "--tag", imageTag)
+			Expect(cmdOutput).To(ContainSubstring("Invalid manifest url"))
+		})
+	})
+
+	Context("Verify error when manifest file doesnt exist on web", func() {
+		It("Should error out with 'Unable to download manifest'", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+			helper.CmdShouldPass("odo", "url", "create", "--port", "3000")
+			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV2", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			err := helper.ReplaceDevfileField("devfile.yaml", "alpha.deployment-manifest", "http://github.com/myfile.yaml")
+			Expect(err).To(BeNil())
+
+			cmdOutput := helper.CmdShouldFail("odo", "deploy", "--tag", imageTag)
+			Expect(cmdOutput).To(ContainSubstring("Unable to download manifest"))
+		})
+	})
+
+	Context("Verify deploy completes when using manifest with deployment/service/route", func() {
+		It("Should successfully deploy the application and return a URL", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+			helper.CmdShouldPass("odo", "url", "create", "--port", "3000")
+			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV2", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			err := helper.ReplaceDevfileField("devfile.yaml", "alpha.deployment-manifest",
+				"https://raw.githubusercontent.com/groeges/devfile-registry/master/devfiles/nodejs/deploy_deployment.yaml")
+			Expect(err).To(BeNil())
+
+			cmdOutput := helper.CmdShouldPass("odo", "deploy", "--tag", imageTag)
+			Expect(cmdOutput).To(ContainSubstring(fmt.Sprintf("URL for application %s-deploy: http://%s-deploy-%s", cmpName, cmpName, namespace)))
 		})
 	})
 })

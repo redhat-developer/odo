@@ -41,7 +41,7 @@ import (
 )
 
 const (
-	DeployWaitTimeout = 30 * time.Second
+	DeployWaitTimeout = 60 * time.Second
 )
 
 // New instantiantes a component adapter
