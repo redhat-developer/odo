@@ -143,16 +143,16 @@ func WatchNonRetCmdStdOut(cmdStr string, timeout time.Duration, check func(outpu
 	if err := cmd.Start(); err != nil {
 		return false, err
 	}
-
 	startedFileModification := false
 	for {
 		select {
 		case <-timeoutCh:
+			errBufStr := errBuf.String()
+			if errBufStr != "" {
+				fmt.Println(errBufStr)
+			}
 			Fail(fmt.Sprintf("Timeout after %.2f minutes", timeout.Minutes()))
 		case <-ticker.C:
-			if len(strings.TrimSpace(errBuf.String())) > 0 {
-				Fail(errBuf.String())
-			}
 			if !startedFileModification && startIndicatorFunc(buf.String()) {
 				startedFileModification = true
 				startSimulationCh <- true
