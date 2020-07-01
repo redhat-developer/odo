@@ -108,8 +108,18 @@ func ExtractSubString(output, start, end string) string {
 func WatchNonRetCmdStdOut(cmdStr string, timeout time.Duration, check func(output string) bool, startSimulationCh chan bool, startIndicatorFunc func(output string) bool) (bool, error) {
 	var cmd *exec.Cmd
 	var buf bytes.Buffer
-
-	cmdStrParts := strings.Split(cmdStr, " ")
+	var errBuf bytes.Buffer
+	var cmdStrParts []string
+	// interestingly "odo watch  --context" ( observe the 2 spaces between watch and --context ) becomes ["odo", "watch", "", "--context"] which falls
+	// apart with Error: unknown command "" for "odo watch" on cobra when used "cobra.NoArgs".
+	tmpParts := strings.Split(cmdStr, " ")
+	for i := 0; i < len(tmpParts); i++ {
+		trimedPart := strings.TrimSpace(tmpParts[i])
+		if trimedPart == "" {
+			continue
+		}
+		cmdStrParts = append(cmdStrParts, trimedPart)
+	}
 	cmdName := cmdStrParts[0]
 	fmt.Println("Running command: ", cmdStrParts)
 	if len(cmdStrParts) > 1 {
@@ -119,6 +129,7 @@ func WatchNonRetCmdStdOut(cmdStr string, timeout time.Duration, check func(outpu
 		cmd = exec.Command(cmdName)
 	}
 	cmd.Stdout = &buf
+	cmd.Stderr = &errBuf
 
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
@@ -139,6 +150,9 @@ func WatchNonRetCmdStdOut(cmdStr string, timeout time.Duration, check func(outpu
 		case <-timeoutCh:
 			Fail(fmt.Sprintf("Timeout after %.2f minutes", timeout.Minutes()))
 		case <-ticker.C:
+			if len(strings.TrimSpace(errBuf.String())) > 0 {
+				Fail(errBuf.String())
+			}
 			if !startedFileModification && startIndicatorFunc(buf.String()) {
 				startedFileModification = true
 				startSimulationCh <- true
