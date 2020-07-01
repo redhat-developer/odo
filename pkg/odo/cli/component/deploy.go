@@ -2,7 +2,6 @@ package component
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
@@ -11,7 +10,6 @@ import (
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -21,10 +19,11 @@ import (
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
-// TODO: add CLI Reference doc
-// TODO: add delete example
-var deployCmdExample = ktemplates.Examples(`  # Deploys an image and deploys the application 
+var deployCmdExample = ktemplates.Examples(`  # Build and Deploy the current component 
 %[1]s
+
+# Specify the tag for the image by calling
+%[1]s --tag <registry>/<namespace>/<image>:<tag>
   `)
 
 // DeployRecommendedCommandName is the recommended build command name
@@ -32,28 +31,40 @@ const DeployRecommendedCommandName = "deploy"
 
 // DeployOptions encapsulates options that build command uses
 type DeployOptions struct {
-	*CommonPushOptions
+	componentContext string
+	sourcePath       string
+	ignores          []string
+	EnvSpecificInfo  *envinfo.EnvSpecificInfo
 
-	// devfile path
 	DevfilePath     string
+	devObj          devfileParser.DevfileObj
 	DockerfileURL   string
 	DockerfileBytes []byte
 	namespace       string
 	tag             string
 	ManifestSource  []byte
+
+	*genericclioptions.Context
 }
 
 // NewDeployOptions returns new instance of BuildOptions
 // with "default" values for certain values, for example, show is "false"
 func NewDeployOptions() *DeployOptions {
-	return &DeployOptions{
-		CommonPushOptions: NewCommonPushOptions(),
+	return &DeployOptions{}
+}
+
+// CompleteDevfilePath completes the devfile path from context
+func (do *DeployOptions) CompleteDevfilePath() {
+	if len(do.DevfilePath) > 0 {
+		do.DevfilePath = filepath.Join(do.componentContext, do.DevfilePath)
+	} else {
+		do.DevfilePath = filepath.Join(do.componentContext, "devfile.yaml")
 	}
 }
 
-// Complete completes push args
+// Complete completes deploy args
 func (do *DeployOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	do.DevfilePath = filepath.Join(do.componentContext, do.DevfilePath)
+	do.CompleteDevfilePath()
 	envInfo, err := envinfo.NewEnvSpecificInfo(do.componentContext)
 	if err != nil {
 		return errors.Wrap(err, "unable to retrieve configuration information")
@@ -67,49 +78,42 @@ func (do *DeployOptions) Complete(name string, cmd *cobra.Command, args []string
 // Validate validates the push parameters
 func (do *DeployOptions) Validate() (err error) {
 
+	log.Infof("\nValidation")
 	// Validate the --tag
 	if do.tag == "" {
 		return errors.New("odo deploy requires a tag, in the format <registry>/namespace>/<image>")
 	}
 
+	s := log.Spinner("Validating arguments")
 	err = util.ValidateTag(do.tag)
 	if err != nil {
+		s.End(false)
 		return err
 	}
+	s.End(true)
 
-	return
-}
-
-// Run has the logic to perform the required actions as part of command
-func (do *DeployOptions) Run() (err error) {
-	devObj, err := devfileParser.Parse(do.DevfilePath)
+	do.devObj, err = devfileParser.Parse(do.DevfilePath)
 	if err != nil {
 		return err
 	}
 
-	metadata := devObj.Data.GetMetadata()
+	s = log.Spinner("Validating build information")
+	metadata := do.devObj.Data.GetMetadata()
 	dockerfileURL := metadata.Dockerfile
-	localDir, err := os.Getwd()
-	if err != nil {
-		return err
-	}
 
 	//Download Dockerfile to .odo, build, then delete from .odo dir
 	//If Dockerfile is present in the project already, use that for the build
 	//If Dockerfile is present in the project and field is in devfile, build the one already in the project and warn the user.
-	if dockerfileURL != "" && util.CheckPathExists(filepath.Join(localDir, "Dockerfile")) {
+	if dockerfileURL != "" && util.CheckPathExists(filepath.Join(do.componentContext, "Dockerfile")) {
 		// TODO: make clearer more visible output
 		log.Warning("Dockerfile already exists in project directory and one is specified in Devfile.")
 		log.Warningf("Using Dockerfile specified in devfile from '%s'", dockerfileURL)
 	}
 
-	if !util.CheckPathExists(filepath.Join(localDir, ".odo")) {
-		return errors.Wrap(err, ".odo folder not found")
-	}
-
 	if dockerfileURL != "" {
 		dockerfileBytes, err := util.DownloadFileInMemory(dockerfileURL)
 		if err != nil {
+			s.End(false)
 			return errors.New("unable to download Dockerfile from URL specified in devfile")
 		}
 		// If we successfully downloaded the Dockerfile into memory, store it in the DeployOptions
@@ -118,33 +122,42 @@ func (do *DeployOptions) Run() (err error) {
 		// Validate the file that was downloaded is a Dockerfile
 		err = util.ValidateDockerfile(dockerfileBytes)
 		if err != nil {
+			s.End(false)
 			return err
 		}
 
-	} else if !util.CheckPathExists(filepath.Join(localDir, "Dockerfile")) {
+	} else if !util.CheckPathExists(filepath.Join(do.componentContext, "Dockerfile")) {
+		s.End(false)
 		return errors.New("dockerfile required for build. No 'dockerfile' field found in devfile, or Dockerfile found in project directory")
 	}
 
-	err = do.DevfileBuild()
-	if err != nil {
-		return err
-	}
+	s.End(true)
 
+	s = log.Spinner("Validating deployment information")
 	manifestURL := metadata.Manifest
 	if manifestURL == "" {
+		s.End(false)
 		return errors.New("Unable to deploy as alpha.deployment-manifest is not defined in devfile.yaml")
 	}
 
 	err = util.ValidateURL(manifestURL)
 	if err != nil {
+		s.End(false)
 		return errors.New(fmt.Sprintf("Invalid manifest url: %s, %s", manifestURL, err))
 	}
 
 	do.ManifestSource, err = util.DownloadFileInMemory(manifestURL)
 	if err != nil {
+		s.End(false)
 		return errors.New(fmt.Sprintf("Unable to download manifest: %s, %s", manifestURL, err))
 	}
+	s.End(true)
 
+	return
+}
+
+// Run has the logic to perform the required actions as part of command
+func (do *DeployOptions) Run() (err error) {
 	err = do.DevfileDeploy()
 	if err != nil {
 		return err
@@ -178,10 +191,8 @@ func NewCmdDeploy(name, fullName string) *cobra.Command {
 	genericclioptions.AddContextFlag(deployCmd, &do.componentContext)
 
 	// enable devfile flag if experimental mode is enabled
-	if experimental.IsExperimentalModeEnabled() {
-		deployCmd.Flags().StringVar(&do.DevfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
-		deployCmd.Flags().StringVar(&do.tag, "tag", "", "Tag used to build the image")
-	}
+	deployCmd.Flags().StringVar(&do.tag, "tag", "", "Tag used to build the image")
+	deployCmd.Flags().StringSliceVar(&do.ignores, "ignore", []string{}, "Files or folders to be ignored via glob expressions.")
 
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(deployCmd)

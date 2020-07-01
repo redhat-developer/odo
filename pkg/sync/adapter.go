@@ -44,7 +44,7 @@ func (a Adapter) SyncFilesBuild(buildParameters common.BuildParameters, dockerfi
 	var s *log.Status
 	syncFolder := "/"
 
-	s = log.Spinner("Checking files for deploy")
+	s = log.Spinner("Preparing files for building image")
 	// run the indexer and find the project source files
 	files, err := util.DeployRunIndexer(buildParameters.Path, absIgnoreRules)
 	if len(files) > 0 {

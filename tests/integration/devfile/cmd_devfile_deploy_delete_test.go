@@ -1,6 +1,7 @@
 package devfile
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -12,7 +13,7 @@ import (
 )
 
 var _ = Describe("odo devfile deploy delete command tests", func() {
-	var namespace, context, currentWorkingDirectory, componentName, originalKubeconfig string
+	var namespace, context, currentWorkingDirectory, componentName, originalKubeconfig, imageTag string
 
 	// Using program commmand according to cliRunner in devfile
 	cliRunner := helper.GetCliRunner()
@@ -29,6 +30,7 @@ var _ = Describe("odo devfile deploy delete command tests", func() {
 		originalKubeconfig = os.Getenv("KUBECONFIG")
 		helper.LocalKubeconfigSet(context)
 		namespace = cliRunner.CreateRandNamespaceProject()
+		imageTag = fmt.Sprintf("image-registry.openshift-image-registry.svc:5000/%s/my-nodejs:1.0", namespace)
 		currentWorkingDirectory = helper.Getwd()
 		componentName = helper.RandString(6)
 		helper.Chdir(context)
@@ -84,7 +86,7 @@ var _ = Describe("odo devfile deploy delete command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV2", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 			helper.CmdShouldPass("odo", "url", "create", "--port", "3000")
-			helper.CmdShouldPass("odo", "deploy", "--tag", "image-registry.openshift-image-registry.svc:5000/"+namespace+"/my-nodejs:1.0", "--devfile", "devfile.yaml")
+			helper.CmdShouldPass("odo", "deploy", "--tag", imageTag)
 
 			helper.CmdShouldPass("odo", "deploy", "delete")
 			cliRunner.WaitAndCheckForExistence("deployments", namespace, 1)

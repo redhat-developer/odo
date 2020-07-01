@@ -50,7 +50,10 @@ var _ = Describe("odo devfile deploy command tests", func() {
 
 			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV2", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 			output := helper.CmdShouldPass("odo", "deploy", "--tag", imageTag)
+			cliRunner.WaitAndCheckForExistence("buildconfig", namespace, 1)
 			Expect(output).NotTo(ContainSubstring("does not point to a valid Dockerfile"))
+			Expect(output).To(ContainSubstring("Successfully built image"))
+			Expect(output).To(ContainSubstring("Successfully deployed application"))
 		})
 	})
 
@@ -68,6 +71,8 @@ var _ = Describe("odo devfile deploy command tests", func() {
 		})
 	})
 
+	// This test depends on the nodejs stack to no have a alpha.build-dockerfile field.
+	// This may not be the case in the future when the stack gets updated.
 	Context("Verify error when no Dockerfile exists in project and no 'dockerfile' specified in devfile", func() {
 		It("Should error out with 'dockerfile required for build.'", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)

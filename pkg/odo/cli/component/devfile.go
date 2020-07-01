@@ -101,19 +101,12 @@ func (po *PushOptions) DevfilePush() (err error) {
 	return
 }
 
-// DevfileBuild build an image of my application in the cluster
-func (do *DeployOptions) DevfileBuild() (err error) {
-	// Parse devfile
-	devObj, err := devfileParser.Parse(do.DevfilePath)
-	if err != nil {
-		return err
-	}
-
+//DevfileDeploy
+func (do *DeployOptions) DevfileDeploy() (err error) {
 	componentName, err := getComponentName(do.componentContext)
 	if err != nil {
 		return errors.Wrap(err, "unable to get component name")
 	}
-	componentName = "build-" + componentName
 
 	// Set the source path to either the context or current working directory (if context not set)
 	do.sourcePath, err = util.GetAbsPath(do.componentContext)
@@ -131,7 +124,7 @@ func (do *DeployOptions) DevfileBuild() (err error) {
 		Namespace: do.namespace,
 	}
 
-	devfileHandler, err := adapters.NewPlatformAdapter(componentName, do.componentContext, devObj, kubeContext)
+	devfileHandler, err := adapters.NewPlatformAdapter(componentName, do.componentContext, do.devObj, kubeContext)
 	if err != nil {
 		return err
 	}
@@ -143,9 +136,7 @@ func (do *DeployOptions) DevfileBuild() (err error) {
 		EnvSpecificInfo: *do.EnvSpecificInfo,
 	}
 
-	// TODO: I don't think we need to check this here, we could check this on the deploy if we want to expose a URL (odo url create)
-	warnIfURLSInvalid(do.EnvSpecificInfo.GetURL())
-
+	log.Infof("\nBuilding component %s", componentName)
 	// Build image for the component
 	err = devfileHandler.Build(buildParams)
 	if err != nil {
@@ -156,45 +147,7 @@ func (do *DeployOptions) DevfileBuild() (err error) {
 		)
 		os.Exit(1)
 	}
-
-	log.Infof("\nBuilding devfile component %s", componentName)
-	log.Success("Changes successfully built image for component")
-
-	return nil
-}
-
-func (do *DeployOptions) DevfileDeploy() (err error) {
-	// Parse devfile
-	devObj, err := devfileParser.Parse(do.DevfilePath)
-	if err != nil {
-		return err
-	}
-
-	componentName, err := getComponentName(do.componentContext)
-	if err != nil {
-		return errors.Wrap(err, "unable to get component name")
-	}
-
-	// Set the source path to either the context or current working directory (if context not set)
-	do.sourcePath, err = util.GetAbsPath(do.componentContext)
-	if err != nil {
-		return errors.Wrap(err, "unable to get source path")
-	}
-
-	// Apply ignore information
-	err = genericclioptions.ApplyIgnore(&do.ignores, do.sourcePath)
-	if err != nil {
-		return errors.Wrap(err, "Unable to apply ignore information")
-	}
-
-	kubeContext := kubernetes.KubernetesContext{
-		Namespace: do.namespace,
-	}
-
-	devfileHandler, err := adapters.NewPlatformAdapter(componentName, do.componentContext, devObj, kubeContext)
-	if err != nil {
-		return err
-	}
+	log.Successf("Successfully built container image: %s", do.tag)
 
 	deployParams := common.DeployParameters{
 		EnvSpecificInfo: *do.EnvSpecificInfo,
@@ -202,6 +155,9 @@ func (do *DeployOptions) DevfileDeploy() (err error) {
 		ManifestSource:  do.ManifestSource,
 	}
 
+	warnIfURLSInvalid(do.EnvSpecificInfo.GetURL())
+
+	log.Infof("\nDeploying component %s", componentName)
 	// Deploy the application
 	err = devfileHandler.Deploy(deployParams)
 	if err != nil {
@@ -212,8 +168,6 @@ func (do *DeployOptions) DevfileDeploy() (err error) {
 		)
 		os.Exit(1)
 	}
-
-	log.Successf("Successfully deployed application %s", componentName)
 
 	return nil
 }

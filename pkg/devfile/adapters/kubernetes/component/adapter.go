@@ -93,9 +93,9 @@ func (a Adapter) runBuildConfig(client *occlient.Client, parameters common.Build
 	if err != nil {
 		return err
 	}
+	log.Successf("Started build %s using BuildConfig", bc.Name)
 
 	reader, writer := io.Pipe()
-	s := log.Spinner("Waiting for build to finish")
 
 	var cmdOutput string
 	// This Go routine will automatically pipe the output from WaitForBuildToFinish to
@@ -116,6 +116,7 @@ func (a Adapter) runBuildConfig(client *occlient.Client, parameters common.Build
 		}
 	}()
 
+	s := log.Spinner("Waiting for build to complete")
 	if err := client.WaitForBuildToFinish(bc.Name, writer); err != nil {
 		s.End(false)
 		return errors.Wrapf(err, "unable to build image using BuildConfig %s, error: %s", buildName, cmdOutput)
@@ -235,8 +236,6 @@ func (a Adapter) Deploy(parameters common.DeployParameters) (err error) {
 	applicationName := a.ComponentName + "-deploy"
 	deploymentManifest := &unstructured.Unstructured{}
 
-	log.Info("\nDeploying manifest")
-
 	// Specify the substitution keys and values
 	yamlSubstitutions := map[string]string{
 		"CONTAINER_IMAGE": parameters.Tag,
@@ -310,22 +309,22 @@ func (a Adapter) Deploy(parameters common.DeployParameters) (err error) {
 				}
 			}
 
-			s := log.Spinnerf("Deploying the manifest for %s", gvk.Kind)
+			actionType := "Creating"
+			if instanceFound {
+				actionType = "Updating" // Update deployment
+			}
+			s := log.Spinnerf("%s resource of kind %s", strings.Title(actionType), gvk.Kind)
 			result := &unstructured.Unstructured{}
-			actionType := "create"
 			if !instanceFound {
 				result, err = a.Client.DynamicClient.Resource(gvr).Namespace(namespace).Create(deploymentManifest, metav1.CreateOptions{})
 			} else {
-				actionType = "update" // Update deployment
 				result, err = a.Client.DynamicClient.Resource(gvr).Namespace(namespace).Update(deploymentManifest, metav1.UpdateOptions{})
 			}
 			if err != nil {
 				s.End(false)
-				return errors.Wrapf(err, "Failed to %s manifest %s", actionType, gvk.Kind)
-			} else {
-				s.End(true)
-				log.Successf("%sd manifest for %s (%s)", strings.Title(actionType), applicationName, gvk.Kind)
+				return errors.Wrapf(err, "Failed when %s manifest %s", actionType, gvk.Kind)
 			}
+			s.End(true)
 
 			// Write the returned manifest to the local manifest file
 			if writtenToManifest {
@@ -369,16 +368,18 @@ func (a Adapter) Deploy(parameters common.DeployParameters) (err error) {
 		knGvr := schema.GroupVersionResource{Group: "serving.knative.dev", Version: "v1", Resource: "routes"}
 		route, err := a.waitForManifestDeployCompletion(applicationName, knGvr, "Ready")
 		if err != nil {
+			s.End(false)
 			return errors.Wrap(err, "error while waiting for deployment completion")
 		}
 		fullURL = route.UnstructuredContent()["status"].(map[string]interface{})["url"].(string)
 	}
-	s.End(true)
 
 	if fullURL != "" {
-		log.Successf("URL for application %s: %s", applicationName, fullURL)
+		s.End(true)
+		log.Successf("Successfully deployed component: %s", fullURL)
 	} else {
-		log.Errorf("URL unable to be determined for application %s", applicationName)
+		s.End(false)
+		log.Errorf("URL unable to be determined for component %s", a.ComponentName)
 	}
 
 	return nil

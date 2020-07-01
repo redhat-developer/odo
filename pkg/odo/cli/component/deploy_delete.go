@@ -10,7 +10,6 @@ import (
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -23,7 +22,8 @@ import (
 const manifestFile = ".odo/manifest.yaml"
 
 // TODO: add CLI Reference doc
-var deployDeleteCmdExample = ktemplates.Examples(`  # Deletes deployment from Kubernetes cluster
+var deployDeleteCmdExample = ktemplates.Examples(`  # Delete deployed component 
+%[1]s
   `)
 
 // DeployDeleteRecommendedCommandName is the recommended build command name
@@ -31,26 +31,35 @@ const DeployDeleteRecommendedCommandName = "delete"
 
 // DeployDeleteOptions encapsulates options that deploy delete command uses
 type DeployDeleteOptions struct {
-	*CommonPushOptions
+	componentContext string
+	EnvSpecificInfo  *envinfo.EnvSpecificInfo
 
-	// devfile path
 	DevfilePath    string
 	namespace      string
 	ManifestPath   string
 	ManifestSource []byte
+
+	*genericclioptions.Context
 }
 
 // NewDeployDeleteOptions returns new instance of DeployDeleteOptions
 // with "default" values for certain values, for example, show is "false"
 func NewDeployDeleteOptions() *DeployDeleteOptions {
-	return &DeployDeleteOptions{
-		CommonPushOptions: NewCommonPushOptions(),
+	return &DeployDeleteOptions{}
+}
+
+// CompleteDevfilePath completes the devfile path from context
+func (ddo *DeployDeleteOptions) CompleteDevfilePath() {
+	if len(ddo.DevfilePath) > 0 {
+		ddo.DevfilePath = filepath.Join(ddo.componentContext, ddo.DevfilePath)
+	} else {
+		ddo.DevfilePath = filepath.Join(ddo.componentContext, "devfile.yaml")
 	}
 }
 
 // Complete completes push args
 func (ddo *DeployDeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	ddo.DevfilePath = filepath.Join(ddo.componentContext, ddo.DevfilePath)
+	ddo.CompleteDevfilePath()
 	envInfo, err := envinfo.NewEnvSpecificInfo(ddo.componentContext)
 	if err != nil {
 		return errors.Wrap(err, "unable to retrieve configuration information")
@@ -63,11 +72,6 @@ func (ddo *DeployDeleteOptions) Complete(name string, cmd *cobra.Command, args [
 
 // Validate validates the push parameters
 func (ddo *DeployDeleteOptions) Validate() (err error) {
-	return
-}
-
-// Run has the logic to perform the required actions as part of command
-func (ddo *DeployDeleteOptions) Run() (err error) {
 	// ddo.componentContext, .odo, manifest.yaml
 	// TODO: Check manifest is actually there!!!
 	// read bytes into deployDeleteOptions
@@ -75,13 +79,16 @@ func (ddo *DeployDeleteOptions) Run() (err error) {
 		return errors.Wrap(err, "manifest file at "+manifestFile+" does not exist")
 	}
 
-	manifestSource, err := ioutil.ReadFile(manifestFile)
+	ddo.ManifestSource, err = ioutil.ReadFile(manifestFile)
 	if err != nil {
 		return err
 	}
 	ddo.ManifestPath = manifestFile
-	ddo.ManifestSource = manifestSource
+	return
+}
 
+// Run has the logic to perform the required actions as part of command
+func (ddo *DeployDeleteOptions) Run() (err error) {
 	err = ddo.DevfileDeployDelete()
 	if err != nil {
 		return err
@@ -105,11 +112,6 @@ func NewCmdDeployDelete(name, fullName string) *cobra.Command {
 		},
 	}
 	genericclioptions.AddContextFlag(deployDeleteCmd, &ddo.componentContext)
-
-	// enable devfile flag if experimental mode is enabled
-	if experimental.IsExperimentalModeEnabled() {
-		deployDeleteCmd.Flags().StringVar(&ddo.DevfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
-	}
 
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(deployDeleteCmd)
