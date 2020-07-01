@@ -4,15 +4,22 @@ Creates an EventListener that listens for Gitlab webhook events.
 
 ### Try it out locally:
 
-1. To create the GitLab trigger and all related resources, run:
+1. Create the service account:
 
-   ```bash
-   kubectl apply -f examples/gitlab/
+   ```shell script
+   kubectl apply -f examples/role-resources/triggerbinding-roles
+   kubectl apply -f examples/role-resources/
+   ```
+
+1. Create the Gitlab EventListener:
+
+   ```shell script
+   kubectl apply -f examples/gitlab/gitlab-push-listener.yaml
    ```
 
 1. Port forward:
 
-   ```bash
+   ```shell script
    kubectl port-forward \
     "$(kubectl get pod --selector=eventlistener=gitlab-listener -oname)" \
      8080
@@ -24,7 +31,7 @@ Creates an EventListener that listens for Gitlab webhook events.
 
 1. Test by sending the sample payload.
 
-   ```bash
+   ```shell script
    curl -v \
    -H 'X-GitLab-Token: abcde' \
    -H 'X-Gitlab-Event: Push Hook' \
@@ -37,6 +44,6 @@ Creates an EventListener that listens for Gitlab webhook events.
 
 1. You should see a new TaskRun that got created:
 
-   ```bash
+   ```shell script
    kubectl get taskruns | grep gitlab-run-
    ```

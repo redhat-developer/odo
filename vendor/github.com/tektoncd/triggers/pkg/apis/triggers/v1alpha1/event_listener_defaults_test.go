@@ -37,13 +37,16 @@ func TestEventListenerSetDefaults(t *testing.T) {
 				Triggers: []v1alpha1.EventListenerTrigger{{
 					Bindings: []*v1alpha1.EventListenerBinding{
 						{
-							Ref: "binding",
+							Name: "binding",
+							Ref:  "binding",
 						},
 						{
+							Name: "namespace-binding",
 							Kind: v1alpha1.NamespacedTriggerBindingKind,
 							Ref:  "namespace-binding",
 						},
 						{
+							Name: "cluster-binding",
 							Kind: v1alpha1.ClusterTriggerBindingKind,
 							Ref:  "cluster-binding",
 						},
@@ -57,14 +60,17 @@ func TestEventListenerSetDefaults(t *testing.T) {
 				Triggers: []v1alpha1.EventListenerTrigger{{
 					Bindings: []*v1alpha1.EventListenerBinding{
 						{
+							Name: "binding",
 							Kind: v1alpha1.NamespacedTriggerBindingKind,
 							Ref:  "binding",
 						},
 						{
+							Name: "namespace-binding",
 							Kind: v1alpha1.NamespacedTriggerBindingKind,
 							Ref:  "namespace-binding",
 						},
 						{
+							Name: "cluster-binding",
 							Kind: v1alpha1.ClusterTriggerBindingKind,
 							Ref:  "cluster-binding",
 						},

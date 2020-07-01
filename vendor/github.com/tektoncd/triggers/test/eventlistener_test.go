@@ -24,11 +24,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
+	"os/exec"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -43,9 +43,6 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/tools/portforward"
-	"k8s.io/client-go/transport/spdy"
 	knativetest "knative.dev/pkg/test"
 )
 
@@ -85,7 +82,7 @@ func TestEventListenerCreate(t *testing.T) {
 			Name:      "pr1",
 			Namespace: namespace,
 			Labels: map[string]string{
-				"$(tt.params.oneparam)": "$(tt.params.oneparam)",
+				"$(params.oneparam)": "$(params.oneparam)",
 			},
 		},
 		Spec: v1alpha1.PipelineResourceSpec{
@@ -107,15 +104,15 @@ func TestEventListenerCreate(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "pr2",
 			Labels: map[string]string{
-				"$(tt.params.twoparamname)": "$(tt.params.twoparamvalue)",
+				"$(params.twoparamname)": "$(params.twoparamvalue)",
 			},
 		},
 		Spec: v1alpha1.PipelineResourceSpec{
 			Type: "git",
 			Params: []v1alpha1.ResourceParam{
-				{Name: "license", Value: "$(tt.params.license)"},
-				{Name: "header", Value: "$(tt.params.header)"},
-				{Name: "prmessage", Value: "$(tt.params.prmessage)"},
+				{Name: "license", Value: "$(params.license)"},
+				{Name: "header", Value: "$(params.header)"},
+				{Name: "prmessage", Value: "$(params.prmessage)"},
 			},
 		},
 	}
@@ -230,18 +227,6 @@ func TestEventListenerCreate(t *testing.T) {
 			),
 			bldr.EventListenerSpec(
 				bldr.EventListenerServiceAccount(sa.Name),
-				bldr.EventListenerPodTemplate(
-					bldr.EventListenerPodTemplateSpec(
-						bldr.EventListenerPodTemplateTolerations([]corev1.Toleration{
-							{
-								Key:      "key",
-								Operator: "Equal",
-								Value:    "value",
-								Effect:   "NoSchedule",
-							},
-						}),
-					),
-				),
 				bldr.EventListenerTrigger(tt.Name, "",
 					bldr.EventListenerTriggerBinding(tb.Name, "", tb.Name, "v1alpha1"),
 					bldr.EventListenerTriggerBinding(ctb.Name, "ClusterTriggerBinding", ctb.Name, "v1alpha1"),
@@ -317,51 +302,21 @@ func TestEventListenerCreate(t *testing.T) {
 	// ElPort forward sink pod for http request
 	portString := strconv.Itoa(*eventReconciler.ElPort)
 	podName := sinkPods.Items[0].Name
-	stopChan, errChan := make(chan struct{}, 1), make(chan error, 1)
-
-	defer func() {
-		close(stopChan)
-	}()
-	go func(stopChan chan struct{}, errChan chan error) {
-		config, err := clientcmd.BuildConfigFromFlags("", knativetest.Flags.Kubeconfig)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		roundTripper, upgrader, err := spdy.RoundTripperFor(config)
-		if err != nil {
-			errChan <- err
-			return
-		}
-
-		path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward", namespace, podName)
-		hostIP := strings.TrimPrefix(config.Host, "https://")
-		serverURL := url.URL{Scheme: "https", Path: path, Host: hostIP}
-		dialer := spdy.NewDialer(upgrader, &http.Client{Transport: roundTripper}, http.MethodPost, &serverURL)
-		out, errOut := new(Buffer), new(Buffer)
-		readyChan := make(chan struct{}, 1)
-		forwarder, err := portforward.New(dialer, []string{portString}, stopChan, readyChan, out, errOut)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		go func() {
-			for range readyChan {
-			}
-			if len(errOut.String()) != 0 {
-				errChan <- fmt.Errorf("%s", errOut)
-			}
-			close(errChan)
-		}()
-		if err = forwarder.ForwardPorts(); err != nil { // This locks until stopChan is closed.
-			errChan <- err
-			return
-		}
-	}(stopChan, errChan)
-
-	if err := <-errChan; err != nil {
-		t.Fatalf("Forwarding stream of data failed:: %v", err)
+	cmd := exec.Command("kubectl", "port-forward", podName, "-n", namespace, fmt.Sprintf("%s:%s", portString, portString))
+	err = cmd.Start()
+	if err != nil {
+		t.Fatalf("Error starting port-forward command: %s", err)
 	}
+	if cmd.Process == nil {
+		t.Fatalf("Error starting command. Process is nil")
+	}
+	defer func() {
+		if err = cmd.Process.Kill(); err != nil {
+			t.Fatalf("Error killing port-forward process: %s", err)
+		}
+	}()
+	// Wait for port forward to take effect
+	time.Sleep(5 * time.Second)
 
 	// Send POST request to EventListener sink
 	req, err := http.NewRequest("POST", fmt.Sprintf("http://127.0.0.1:%s", portString), bytes.NewBuffer(eventBodyJSON))

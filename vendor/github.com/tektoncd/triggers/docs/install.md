@@ -83,7 +83,7 @@ To add the Tekton Triggers component to an existing cluster:
 
 You are now ready to create and run Tekton Triggers:
 
-- See [Tekton Triggers Getting Started Guide](./getting-started/) to
+- See [Tekton Triggers Getting Started Guide](./getting-started/README.md) to
   get started.
 - Look at the
   [examples](https://github.com/tektoncd/triggers/tree/master/examples)

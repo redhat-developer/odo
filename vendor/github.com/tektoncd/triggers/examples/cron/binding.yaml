@@ -1,11 +1,1 @@
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: tekton-triggers-cron-binding
-subjects:
-  - kind: ServiceAccount
-    name: tekton-triggers-cron-sa
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: tekton-triggers-cron-minimal
+../role-resources/triggerbinding-roles/binding.yaml

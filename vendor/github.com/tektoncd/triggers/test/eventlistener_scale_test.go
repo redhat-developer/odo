@@ -47,20 +47,8 @@ func TestEventListenerScale(t *testing.T) {
 	// Create an EventListener with 1000 Triggers
 	var err error
 	el := bldr.EventListener("my-eventlistener", namespace, bldr.EventListenerSpec(
-		bldr.EventListenerServiceAccount(saName),
-		bldr.EventListenerPodTemplate(
-			bldr.EventListenerPodTemplateSpec(
-				bldr.EventListenerPodTemplateTolerations([]corev1.Toleration{
-					{
-						Key:      "key",
-						Operator: "Equal",
-						Value:    "value",
-						Effect:   "NoSchedule",
-					},
-				}),
-			),
-		),
-	))
+		bldr.EventListenerServiceAccount(saName)),
+	)
 
 	for i := 0; i < 1000; i++ {
 		trigger := bldr.Trigger("my-triggertemplate", "v1alpha1",

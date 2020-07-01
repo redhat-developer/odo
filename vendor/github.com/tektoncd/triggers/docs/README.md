@@ -5,8 +5,6 @@ linkTitle: "Triggers"
 weight: 3
 description: >
   Event Triggers
-cascade:
-  github_project_repo: https://github.com/tektoncd/triggers
 ---
 -->
 # Tekton Triggers
