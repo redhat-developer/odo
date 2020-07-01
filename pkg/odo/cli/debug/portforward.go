@@ -2,17 +2,18 @@ package debug
 
 import (
 	"fmt"
+	"net"
+	"os"
+	"os/signal"
+	"strconv"
+	"syscall"
+
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/debug"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/util"
-	"net"
-	"os"
-	"os/signal"
-	"strconv"
-	"syscall"
 
 	"github.com/spf13/cobra"
 
@@ -109,7 +110,7 @@ func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []st
 		}
 		// else display a error message and auto select a new free port
 		log.Errorf("the local debug port %v is not free, cause: %v", o.localPort, err)
-		o.localPort, err = util.HttpGetFreePort()
+		o.localPort, err = util.HTTPGetFreePort()
 		if err != nil {
 			return err
 		}

@@ -95,7 +95,7 @@ type Composite struct {
 	Parallel bool `json:"parallel,omitempty"`
 }
 
-// Configuration
+// Configuration holds configuration for an endpoint
 type Configuration struct {
 	CookiesAuthEnabled bool   `json:"cookiesAuthEnabled,omitempty"`
 	Discoverable       bool   `json:"discoverable,omitempty"`
@@ -136,7 +136,7 @@ type Container struct {
 	VolumeMounts []*VolumeMount `json:"volumeMounts,omitempty"`
 }
 
-// Endpoint
+// Endpoint is how an application is exposed
 type Endpoint struct {
 	Attributes    map[string]string `json:"attributes,omitempty"`
 	Configuration *Configuration    `json:"configuration,omitempty"`
@@ -144,7 +144,7 @@ type Endpoint struct {
 	TargetPort    int32             `json:"targetPort"`
 }
 
-// Env
+// Env is the key value pair representing an Enivronment variable
 type Env struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
@@ -322,7 +322,7 @@ type Plugin struct {
 	Uri string `json:"uri,omitempty"`
 }
 
-// ProjectsItems
+// Project holds details of a starter project that can be downloaded by the user
 type Project struct {
 
 	// Path relative to the root of the projects to which this project should be cloned into. This is a unix-style relative path (i.e. uses forward slashes). The path is invalid if it is absolute or tries to escape the project root through the usage of '..'. If not specified, defaults to the project name.
