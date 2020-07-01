@@ -15,7 +15,7 @@ import (
 
 var _ = Describe("odo devfile push command tests", func() {
 	var namespace, context, cmpName, currentWorkingDirectory, originalKubeconfig string
-	var sourcePath = "/projects/nodejs-web-app"
+	var sourcePath = "/projects/nodejs-starter"
 
 	// Using program commmand according to cliRunner in devfile
 	cliRunner := helper.GetCliRunner()
@@ -153,28 +153,28 @@ var _ = Describe("odo devfile push command tests", func() {
 				podName,
 				"",
 				namespace,
-				[]string{"stat", "/projects/nodejs-web-app/app/app.js"},
+				[]string{"stat", "/projects/nodejs-starter/server.js"},
 				func(cmdOp string, err error) bool {
 					statErr = err
 					return true
 				},
 			)
 			Expect(statErr).ToNot(HaveOccurred())
-			Expect(os.Remove(filepath.Join(context, "app", "app.js"))).NotTo(HaveOccurred())
+			Expect(os.Remove(filepath.Join(context, "server.js"))).NotTo(HaveOccurred())
 			helper.CmdShouldPass("odo", "push", "--project", namespace)
 
 			cliRunner.CheckCmdOpInRemoteDevfilePod(
 				podName,
 				"",
 				namespace,
-				[]string{"stat", "/projects/nodejs-web-app/app/app.js"},
+				[]string{"stat", "/projects/nodejs-starter/server.js"},
 				func(cmdOp string, err error) bool {
 					statErr = err
 					return true
 				},
 			)
 			Expect(statErr).To(HaveOccurred())
-			Expect(statErr.Error()).To(ContainSubstring("cannot stat '/projects/nodejs-web-app/app/app.js': No such file or directory"))
+			Expect(statErr.Error()).To(ContainSubstring("cannot stat '/projects/nodejs-starter/server.js': No such file or directory"))
 		})
 
 		It("should build when no changes are detected in the directory and force flag is enabled", func() {
