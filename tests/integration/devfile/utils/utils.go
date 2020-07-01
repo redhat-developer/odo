@@ -318,7 +318,7 @@ func OdoWatch(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, project, context, fl
 	}()
 
 	if !isDevfileTest {
-		flag = strings.TrimSpace(fmt.Sprintf("%s-app -v 4 %s", odoV1Watch.SrcType, flag))
+		flag = strings.TrimSpace(fmt.Sprintf("-v 4 %s", flag))
 	}
 
 	success, err := helper.WatchNonRetCmdStdOut(
