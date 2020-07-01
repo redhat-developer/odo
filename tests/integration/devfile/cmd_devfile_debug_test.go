@@ -1,13 +1,14 @@
 package devfile
 
 import (
-	"github.com/openshift/odo/pkg/util"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/openshift/odo/pkg/util"
 
 	"github.com/openshift/odo/tests/helper"
 
@@ -53,11 +54,12 @@ var _ = Describe("odo devfile debug command tests", func() {
 
 	Context("odo debug on a nodejs:latest component", func() {
 		It("check that machine output debug information works", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
+			helper.MakeDir(projectDirPath)
 			helper.Chdir(projectDirPath)
 
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"))
 			helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
 			helper.CmdShouldPass("odo", "push", "--debug")
 
@@ -84,11 +86,12 @@ var _ = Describe("odo devfile debug command tests", func() {
 		})
 
 		It("should expect a ws connection when tried to connect on default debug port locally", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
+			helper.MakeDir(projectDirPath)
 			helper.Chdir(projectDirPath)
 
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"))
 			helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
 			helper.CmdShouldPass("odo", "push")
 			helper.CmdShouldPass("odo", "push", "--debug")
@@ -108,11 +111,12 @@ var _ = Describe("odo devfile debug command tests", func() {
 
 	Context("odo debug info should work on a odo component", func() {
 		It("should start a debug session and run debug info on a running debug session", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
+			helper.MakeDir(projectDirPath)
 			helper.Chdir(projectDirPath)
 
 			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs-cmp-"+namespace, "--project", namespace)
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"))
 			helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
 			helper.CmdShouldPass("odo", "push", "--debug")
 
@@ -135,11 +139,12 @@ var _ = Describe("odo devfile debug command tests", func() {
 		})
 
 		It("should start a debug session and run debug info on a closed debug session", func() {
-			helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
+			helper.MakeDir(projectDirPath)
 			helper.Chdir(projectDirPath)
 
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"))
 			helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
 			helper.CmdShouldPass("odo", "push", "--debug")
 

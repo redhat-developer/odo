@@ -230,7 +230,7 @@ var _ = Describe("odo devfile create command tests", func() {
 		It("should successfully create the component specified and download the source", func() {
 			contextDevfile := helper.CreateNewContext()
 			helper.Chdir(contextDevfile)
-			helper.CmdShouldPass("odo", "create", "nodejs", "--downloadSource=nodejs-web-app")
+			helper.CmdShouldPass("odo", "create", "nodejs", "--downloadSource=nodejs-starter")
 			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
 			Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
 			helper.DeleteDir(contextDevfile)
