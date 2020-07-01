@@ -33,6 +33,6 @@ spec:
           type: git
           params:
           - name: revision
-            value: $(tt.params.gitrevision)
+            value: $(params.gitrevision)
           - name: url
-            value: $(tt.params.gitrepositoryurl)
+            value: $(params.gitrepositoryurl)

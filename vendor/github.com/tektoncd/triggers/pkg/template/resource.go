@@ -110,17 +110,12 @@ func ApplyParamsToResourceTemplate(params []triggersv1.Param, rt json.RawMessage
 // applyParamToResourceTemplate returns the TriggerResourceTemplate with the
 // param value substituted for all matching param variables in the template
 func applyParamToResourceTemplate(param triggersv1.Param, rt json.RawMessage) json.RawMessage {
-	// The changes are for backward compatibility with both $(params) and $(tt.params)
-	// TODO(#606)
-	for _, tag := range []string{"params", "tt.params"} {
-		// Assume the param is valid
-		paramVariable := fmt.Sprintf("$(%s.%s)", tag, param.Name)
-		// Escape quotes so that that JSON strings can be appended to regular strings.
-		// See #257 for discussion on this behavior.
-		paramValue := strings.Replace(param.Value, `"`, `\"`, -1)
-		rt = bytes.Replace(rt, []byte(paramVariable), []byte(paramValue), -1)
-	}
-	return rt
+	// Assume the param is valid
+	paramVariable := fmt.Sprintf("$(params.%s)", param.Name)
+	// Escape quotes so that that JSON strings can be appended to regular strings.
+	// See #257 for discussion on this behavior.
+	paramValue := strings.Replace(param.Value, `"`, `\"`, -1)
+	return bytes.Replace(rt, []byte(paramVariable), []byte(paramValue), -1)
 }
 
 // UID generates a random string like the Kubernetes apiserver generateName metafield postfix.

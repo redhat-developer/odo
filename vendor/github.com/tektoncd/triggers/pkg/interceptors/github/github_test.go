@@ -21,9 +21,8 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"reflect"
 	"testing"
-
-	"github.com/google/go-cmp/cmp"
 
 	"github.com/tektoncd/pipeline/pkg/logging"
 	triggersv1 "github.com/tektoncd/triggers/pkg/apis/triggers/v1alpha1"
@@ -257,8 +256,8 @@ func TestInterceptor_ExecuteTrigger_Signature(t *testing.T) {
 			if err != nil {
 				t.Fatalf("error reading response body %v", err)
 			}
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("Interceptor.ExecuteTrigger (-want, +got) = %s", diff)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Interceptor.ExecuteTrigger() = %v, want %v", got, tt.want)
 			}
 		})
 	}

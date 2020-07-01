@@ -92,7 +92,7 @@ func TestNewConfigMapFromData(t *testing.T) {
 		data: kmeta.UnionMaps(okData(), map[string]string{
 			"resourceLock": "flarps",
 		}),
-		err: errors.New(`resourceLock: invalid value "flarps": valid values are "leases","configmaps","endpoints"`),
+		err: errors.New(`resourceLock: invalid value "flarps": valid values are "leases"`),
 	}, {
 		name: "invalid leaseDuration",
 		data: kmeta.UnionMaps(okData(), map[string]string{

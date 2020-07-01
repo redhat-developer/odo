@@ -40,12 +40,11 @@ func FindAPIResource(apiVersion, kind string, c discoveryclient.ServerResourcesI
 	if err != nil {
 		return nil, fmt.Errorf("error getting kubernetes server resources for apiVersion %s: %s", apiVersion, err)
 	}
-	for i := range resourceList.APIResources {
-		r := &resourceList.APIResources[i]
-		if r.Kind != kind {
+	for _, apiResource := range resourceList.APIResources {
+		if apiResource.Kind != kind {
 			continue
 		}
-
+		r := &apiResource
 		// Resolve GroupVersion from parent list to have consistent resource identifiers.
 		if r.Version == "" || r.Group == "" {
 			gv, err := schema.ParseGroupVersion(resourceList.GroupVersion)

@@ -17,35 +17,39 @@ limitations under the License.
 package leaderelection
 
 import (
-	"fmt"
 	"os"
 	"testing"
 )
 
+const controllerOrdinalEnv = "STATEFUL_CONTROLLER_ORDINAL"
+
 func TestControllerOrdinal(t *testing.T) {
 	testCases := []struct {
-		testname string
-		podName  string
-		want     uint64
-		err      error
+		testname    string
+		podName     string
+		wantName    string
+		wantOrdinal int
+		wantErr     bool
 	}{{
 		testname: "NotSet",
-		err:      fmt.Errorf("ordinal not found in %s=", controllerOrdinalEnv),
+		wantErr:  true,
 	}, {
 		testname: "NoHyphen",
 		podName:  "as",
-		err:      fmt.Errorf("ordinal not found in %s=as", controllerOrdinalEnv),
+		wantErr:  true,
 	}, {
 		testname: "InvalidOrdinal",
 		podName:  "as-invalid",
-		err:      fmt.Errorf(`strconv.ParseUint: parsing "invalid": invalid syntax`),
+		wantErr:  true,
 	}, {
 		testname: "ValidName",
 		podName:  "as-0",
+		wantName: "as",
 	}, {
-		testname: "ValidName",
-		podName:  "as-1",
-		want:     1,
+		testname:    "ValidName",
+		podName:     "as-1",
+		wantName:    "as",
+		wantOrdinal: 1,
 	}}
 
 	defer os.Unsetenv(controllerOrdinalEnv)
@@ -55,17 +59,17 @@ func TestControllerOrdinal(t *testing.T) {
 				if os.Setenv(controllerOrdinalEnv, tt.podName) != nil {
 					t.Fatalf("fail to set env var %s=%s", controllerOrdinalEnv, tt.podName)
 				}
+				os.Setenv("STATEFUL_SERVICE_NAME", "n'importe quoi")
+				os.Setenv("STATEFUL_SERVICE_PORT", "1299")
+				os.Setenv("STATEFUL_SERVICE_PROTOCOL", "n'importe quoi")
 			}
 
-			got, gotErr := ControllerOrdinal()
-			if tt.err != nil {
-				if gotErr == nil || gotErr.Error() != tt.err.Error() {
-					t.Errorf("got %v, want = %v, ", gotErr, tt.err)
-				}
-			} else if gotErr != nil {
-				t.Error("ControllerOrdinal() =", gotErr)
-			} else if got != tt.want {
-				t.Errorf("ControllerOrdinal() = %d, want = %d", got, tt.want)
+			gotOrdinal, gotOrdinalErr := ControllerOrdinal()
+			if (gotOrdinalErr != nil) != tt.wantErr {
+				t.Fatalf("Err = %v, wantErr = %v", gotOrdinalErr, tt.wantErr)
+			}
+			if gotOrdinal != tt.wantOrdinal {
+				t.Errorf("ControllerOrdinal() = %d, want = %d", gotOrdinal, tt.wantOrdinal)
 			}
 		})
 	}

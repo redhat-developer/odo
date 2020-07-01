@@ -2,19 +2,19 @@
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: EventListener
 metadata:
-  name: listener-tolerations
+  name: github-listener-interceptor
 spec:
   serviceAccountName: tekton-triggers-example-sa
-  podTemplate:
-    tolerations:
-    - key: key
-      value: value
-      operator: Equal
-      effect: NoSchedule
   triggers:
     - name: foo-trig
+      interceptors:
+        - github:
+            secretRef:
+              secretName: foo
+              secretKey: bar
+            eventTypes:
+              - pull_request
       bindings:
         - ref: pipeline-binding
-        - ref: message-binding
       template:
         name: pipeline-template

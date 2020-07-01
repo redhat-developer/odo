@@ -38,12 +38,7 @@ func ResolveParams(rt ResolvedTrigger, body []byte, header http.Header) ([]trigg
 		return nil, fmt.Errorf("failed to ApplyEventValuesToParams: %w", err)
 	}
 
-	var ttParams []triggersv1.ParamSpec
-	if rt.TriggerTemplate != nil {
-		ttParams = rt.TriggerTemplate.Spec.Params
-	}
-
-	return MergeInDefaultParams(out, ttParams), nil
+	return MergeInDefaultParams(out, rt.TriggerTemplate.Spec.Params), nil
 }
 
 // ResolveResources resolves a templated resource by replacing params with their values.

@@ -356,7 +356,7 @@
 		},
 		{
 			"ImportPath": "github.com/konsorten/go-windows-terminal-sequences",
-			"Rev": "v1.0.2"
+			"Rev": "v1.0.3"
 		},
 		{
 			"ImportPath": "github.com/kr/logfmt",
@@ -472,7 +472,7 @@
 		},
 		{
 			"ImportPath": "github.com/sirupsen/logrus",
-			"Rev": "v1.4.2"
+			"Rev": "v1.6.0"
 		},
 		{
 			"ImportPath": "github.com/soheilhy/cmux",
@@ -572,7 +572,7 @@
 		},
 		{
 			"ImportPath": "golang.org/x/sys",
-			"Rev": "915c9c3d4ccf"
+			"Rev": "ed371f2e16b4"
 		},
 		{
 			"ImportPath": "golang.org/x/text",
@@ -600,15 +600,15 @@
 		},
 		{
 			"ImportPath": "google.golang.org/genproto",
-			"Rev": "ca5a22157cba"
+			"Rev": "cb27e3aa2013"
 		},
 		{
 			"ImportPath": "google.golang.org/grpc",
-			"Rev": "v1.26.0"
+			"Rev": "v1.27.0"
 		},
 		{
 			"ImportPath": "google.golang.org/protobuf",
-			"Rev": "v1.23.0"
+			"Rev": "v1.24.0"
 		},
 		{
 			"ImportPath": "gopkg.in/alecthomas/kingpin.v2",
@@ -668,19 +668,19 @@
 		},
 		{
 			"ImportPath": "k8s.io/api",
-			"Rev": "9a9335f05b18"
+			"Rev": "3b5342aabbeb"
 		},
 		{
 			"ImportPath": "k8s.io/apimachinery",
-			"Rev": "eed6a5257d68"
+			"Rev": "640343330969"
 		},
 		{
 			"ImportPath": "k8s.io/client-go",
-			"Rev": "5fade4ec57c6"
+			"Rev": "db5293afc7bf"
 		},
 		{
 			"ImportPath": "k8s.io/component-base",
-			"Rev": "167327cfd813"
+			"Rev": "f52a9b7250e8"
 		},
 		{
 			"ImportPath": "k8s.io/gengo",

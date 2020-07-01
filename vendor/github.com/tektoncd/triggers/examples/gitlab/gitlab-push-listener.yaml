@@ -29,9 +29,9 @@ spec:
                 type: git
                 params:
                   - name: revision
-                    value: $(tt.params.gitrevision)
+                    value: $(params.gitrevision)
                   - name: url
-                    value: $(tt.params.gitrepositoryurl)
+                    value: $(params.gitrepositoryurl)
 ---
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerBinding
@@ -44,19 +44,28 @@ spec:
     - name: gitrepositoryurl
       value: $(body.repository.git_http_url)
 ---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: gitlab-secret
+type: Opaque
+stringData:
+  gitlabToken: abcde
+---
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: EventListener
 metadata:
   name: gitlab-listener
 spec:
-  serviceAccountName: tekton-triggers-gitlab-sa
+  # from examples/role-resources/servicaccount.yaml
+  serviceAccountName: tekton-triggers-example-sa
   triggers:
     - name: gitlab-push-events-trigger
       interceptors:
         - gitlab:
             secretRef:
               secretName: gitlab-secret
-              secretKey: secretToken
+              secretKey: gitlabToken
             eventTypes:
               - Push Hook  # Only push events
       bindings:

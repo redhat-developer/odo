@@ -1,5 +1,5 @@
-hash: bfc9d5f9a6898813f88cb63176de326841ac3fb3a147f5a18a818cf465b25a70
-updated: 2020-06-25T23:34:06.153911702-04:00
+hash: ba2600fa5ac2c7ece870fb72c57fc62370b8824668b10f36f836534f0843709e
+updated: 2020-07-01T00:46:07.99923034-04:00
 imports:
 - name: cloud.google.com/go
   version: 8c41231e01b2085512d98153bcffb847ff9b4b9f
@@ -455,7 +455,7 @@ imports:
 - name: github.com/satori/go.uuid
   version: 879c5887cd475cd7864858769793b2ceb0d44feb
 - name: github.com/shurcooL/githubv4
-  version: bbc966b061dd4a1fc13fd74ac2c114c928f8c88a
+  version: e003124d66e430e2f6b853080a90ddbc280a159b
 - name: github.com/shurcooL/graphql
   version: d48a9a75455f6af30244670bc0c9d0e38e7392b5
   subpackages:
@@ -477,7 +477,7 @@ imports:
   - assert
   - require
 - name: github.com/tektoncd/pipeline
-  version: 44f22a067b7576479f8d8b186e9521e9b7713be0
+  version: 4142eb6662df9b9d0921af541ae6c8940fa47090
   subpackages:
   - pkg/apis/config
   - pkg/apis/pipeline
@@ -491,7 +491,7 @@ imports:
   - pkg/reconciler/pipeline/dag
   - pkg/substitution
 - name: github.com/tektoncd/triggers
-  version: 9c451669426843783c6a012d9437b348cebc4729
+  version: 454c8e0151f188288ae98c44688bbd0c8a182e25
   subpackages:
   - pkg/apis/triggers/v1alpha1
 - name: github.com/xeipuuv/gojsonpointer
@@ -720,7 +720,7 @@ imports:
   - third_party/forked/golang/netutil
   - third_party/forked/golang/reflect
 - name: k8s.io/apiserver
-  version: b0635c302351c736bacc30717e901998c0b94c85
+  version: 1723c05a3e736f78ceda6a0d27993f1baafda4c1
   subpackages:
   - pkg/authentication/authenticator
   - pkg/authentication/request/x509
@@ -1008,7 +1008,7 @@ imports:
   - integer
   - trace
 - name: knative.dev/pkg
-  version: f1ee372577e156c0589dcaa8f166f84dce519f60
+  version: 2c1a029eb97fcdcb759d6d053eea45d30ae0590e
   subpackages:
   - apis
   - apis/duck
