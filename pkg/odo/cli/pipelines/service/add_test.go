@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/openshift/odo/pkg/pipelines"
 	"github.com/spf13/cobra"
 )
 
@@ -13,7 +14,7 @@ type keyValuePair struct {
 }
 
 func TestCompleteAddOptions(t *testing.T) {
-	tt := []struct {
+	completeTests := []struct {
 		name string
 		url  string
 		want string
@@ -24,23 +25,21 @@ func TestCompleteAddOptions(t *testing.T) {
 		{"suffix already present", "https://github.com/test/org.git", "https://github.com/test/org.git"},
 	}
 
-	for _, test := range tt {
-		t.Run(test.name, func(rt *testing.T) {
-			o := AddOptions{gitRepoURL: test.url}
+	for _, tt := range completeTests {
+		t.Run(tt.name, func(rt *testing.T) {
+			o := AddServiceOptions{AddServiceOptions: &pipelines.AddServiceOptions{GitRepoURL: tt.url}}
 			err := o.Complete("test", &cobra.Command{}, []string{"test", "test/repo"})
 			if err != nil {
 				rt.Fatal(err)
 			}
-			if test.want != o.gitRepoURL {
-				rt.Fatalf("URL mismatch: got %s, want %s", o.gitRepoURL, test.want)
+			if tt.want != o.GitRepoURL {
+				rt.Fatalf("URL mismatch: got %s, want %s", o.GitRepoURL, tt.want)
 			}
 		})
 	}
 }
 
 func TestAddCommandWithMissingParams(t *testing.T) {
-
-	// manifestFile := "~/pipelines.yaml"
 	cmdTests := []struct {
 		desc    string
 		flags   []keyValuePair

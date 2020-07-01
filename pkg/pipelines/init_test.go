@@ -1,8 +1,6 @@
 package pipelines
 
 import (
-	"crypto/rand"
-	"crypto/rsa"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -12,7 +10,6 @@ import (
 	"github.com/openshift/odo/pkg/pipelines/ioutils"
 	res "github.com/openshift/odo/pkg/pipelines/resources"
 	"github.com/openshift/odo/pkg/pipelines/scm"
-	"github.com/openshift/odo/pkg/pipelines/secrets"
 )
 
 var testpipelineConfig = &config.PipelinesConfig{Name: "tst-cicd"}
@@ -35,21 +32,11 @@ func TestInitialFiles(t *testing.T) {
 	prefix := "tst-"
 	gitOpsURL := "https://github.com/foo/test-repo"
 	gitOpsWebhook := "123"
-	defer func(f secrets.PublicKeyFunc) {
-		secrets.DefaultPublicKeyFunc = f
-	}(secrets.DefaultPublicKeyFunc)
-
-	secrets.DefaultPublicKeyFunc = func() (*rsa.PublicKey, error) {
-		key, err := rsa.GenerateKey(rand.Reader, 1024)
-		if err != nil {
-			t.Fatalf("failed to generate a private RSA key: %s", err)
-		}
-		return &key.PublicKey, nil
-	}
+	stubDefaultPublicKeyFunc(t)
 	fakeFs := ioutils.NewMapFilesystem()
 	repo, err := scm.NewRepository(gitOpsURL)
 	assertNoError(t, err)
-	got, err := createInitialFiles(fakeFs, repo, prefix, gitOpsWebhook, "")
+	got, err := createInitialFiles(fakeFs, repo, prefix, gitOpsWebhook, "", "test-ns")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,7 +44,7 @@ func TestInitialFiles(t *testing.T) {
 	want := res.Resources{
 		pipelinesFile: createManifest(gitOpsURL, &config.Config{Pipelines: testpipelineConfig}),
 	}
-	resources, err := createCICDResources(fakeFs, repo, testpipelineConfig, gitOpsWebhook, "")
+	resources, err := createCICDResources(fakeFs, repo, testpipelineConfig, gitOpsWebhook, "", "test-ns")
 	if err != nil {
 		t.Fatalf("CreatePipelineResources() failed due to :%s\n", err)
 	}

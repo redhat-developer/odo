@@ -30,15 +30,16 @@ import (
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 )
 
-// InitParameters is a struct that provides flags for the Init command.
-type InitParameters struct {
-	DockerConfigJSONFilename string
-	GitOpsRepoURL            string
-	GitOpsWebhookSecret      string
-	ImageRepo                string
-	InternalRegistryHostname string
-	OutputPath               string
+// InitOptions is a struct that provides flags for the Init command.
+type InitOptions struct {
+	GitOpsRepoURL            string // This is where the pipelines and configuration are.
+	GitOpsWebhookSecret      string // This is the secret for authenticating hooks from your GitOps repo.
 	Prefix                   string
+	DockerConfigJSONFilename string
+	InternalRegistryHostname string // This is the internal registry hostname used for pushing images.
+	ImageRepo                string // This is where built images are pushed to.
+	OutputPath               string // Where to write the bootstrapped files to?
+	SealedSecretsNamespace   string // Where do we find the SealedSecrets service?
 }
 
 // PolicyRules to be bound to service account
@@ -105,8 +106,7 @@ const (
 )
 
 // Init bootstraps a GitOps pipelines and repository structure.
-func Init(o *InitParameters, fs afero.Fs) error {
-
+func Init(o *InitOptions, fs afero.Fs) error {
 	exists, err := ioutils.IsExisting(fs, o.OutputPath)
 	if exists {
 		return err
@@ -116,7 +116,7 @@ func Init(o *InitParameters, fs afero.Fs) error {
 		return err
 	}
 
-	outputs, err := createInitialFiles(fs, gitOpsRepo, o.Prefix, o.GitOpsWebhookSecret, o.DockerConfigJSONFilename)
+	outputs, err := createInitialFiles(fs, gitOpsRepo, o.Prefix, o.GitOpsWebhookSecret, o.DockerConfigJSONFilename, o.SealedSecretsNamespace)
 	if err != nil {
 		return err
 	}
@@ -124,39 +124,14 @@ func Init(o *InitParameters, fs afero.Fs) error {
 	return err
 }
 
-// CreateDockerSecret creates Docker secret
-func CreateDockerSecret(fs afero.Fs, dockerConfigJSONFilename, ns string) (*ssv1alpha1.SealedSecret, error) {
-	if dockerConfigJSONFilename == "" {
-		return nil, errors.New("failed to generate path to file: --dockerconfigjson flag is not provided")
-	}
-
-	authJSONPath, err := homedir.Expand(dockerConfigJSONFilename)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate path to file: %v", err)
-	}
-	f, err := fs.Open(authJSONPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read docker file '%s' : %v", authJSONPath, err)
-	}
-	defer f.Close()
-
-	dockerSecret, err := secrets.CreateSealedDockerConfigSecret(meta.NamespacedName(ns, dockerSecretName), f)
-	if err != nil {
-		return nil, err
-	}
-
-	return dockerSecret, nil
-
-}
-
-func createInitialFiles(fs afero.Fs, repo scm.Repository, prefix, gitOpsWebhookSecret, dockerConfigPath string) (res.Resources, error) {
+func createInitialFiles(fs afero.Fs, repo scm.Repository, prefix, gitOpsWebhookSecret, dockerConfigPath, sealedSecretsNS string) (res.Resources, error) {
 	cicd := &config.PipelinesConfig{Name: prefix + "cicd"}
 	pipelineConfig := &config.Config{Pipelines: cicd}
 	pipelines := createManifest(repo.URL(), pipelineConfig)
 	initialFiles := res.Resources{
 		pipelinesFile: pipelines,
 	}
-	resources, err := createCICDResources(fs, repo, cicd, gitOpsWebhookSecret, dockerConfigPath)
+	resources, err := createCICDResources(fs, repo, cicd, gitOpsWebhookSecret, dockerConfigPath, sealedSecretsNS)
 	if err != nil {
 		return nil, err
 	}
@@ -165,20 +140,46 @@ func createInitialFiles(fs afero.Fs, repo scm.Repository, prefix, gitOpsWebhookS
 	prefixedResources := addPrefixToResources(pipelinesPath(pipelines.Config), resources)
 	initialFiles = res.Merge(prefixedResources, initialFiles)
 
-	pipelinesConfigKustomizations := addPrefixToResources(config.PathForPipelines(pipelines.Config.Pipelines), getCICDKustomization(files))
+	pipelinesConfigKustomizations := addPrefixToResources(
+		config.PathForPipelines(pipelines.Config.Pipelines),
+		getCICDKustomization(files))
 	initialFiles = res.Merge(pipelinesConfigKustomizations, initialFiles)
 
 	return initialFiles, nil
 }
 
+// createDockerSecret creates a secret that allows pushing images to upstream
+// repositories.
+func createDockerSecret(fs afero.Fs, dockerConfigJSONFilename, secretNS, sealedSecretsNS string) (*ssv1alpha1.SealedSecret, error) {
+	if dockerConfigJSONFilename == "" {
+		return nil, errors.New("failed to generate path to file: --dockerconfigjson flag is not provided")
+	}
+	authJSONPath, err := homedir.Expand(dockerConfigJSONFilename)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate path to file: %v", err)
+	}
+	f, err := fs.Open(authJSONPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read Docker config %#v : %s", authJSONPath, err)
+	}
+	defer f.Close()
+
+	dockerSecret, err := secrets.CreateSealedDockerConfigSecret(meta.NamespacedName(secretNS, dockerSecretName), f, sealedSecretsNS)
+	if err != nil {
+		return nil, err
+	}
+
+	return dockerSecret, nil
+}
+
 // createCICDResources creates resources assocated to pipelines.
-func createCICDResources(fs afero.Fs, repo scm.Repository, pipelineConfig *config.PipelinesConfig, gitOpsWebhookSecret, dockerConfigJSONPath string) (res.Resources, error) {
+func createCICDResources(fs afero.Fs, repo scm.Repository, pipelineConfig *config.PipelinesConfig, gitOpsWebhookSecret, dockerConfigJSONPath, sealedSecretsNS string) (res.Resources, error) {
 	cicdNamespace := pipelineConfig.Name
 	// key: path of the resource
 	// value: YAML content of the resource
 	outputs := map[string]interface{}{}
 	githubSecret, err := secrets.CreateSealedSecret(meta.NamespacedName(cicdNamespace, eventlisteners.GitOpsWebhookSecret),
-		gitOpsWebhookSecret, eventlisteners.WebhookSecretKey)
+		gitOpsWebhookSecret, eventlisteners.WebhookSecretKey, sealedSecretsNS)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate GitHub Webhook Secret: %v", err)
 	}
@@ -190,7 +191,7 @@ func createCICDResources(fs afero.Fs, repo scm.Repository, pipelineConfig *confi
 	sa := roles.CreateServiceAccount(meta.NamespacedName(cicdNamespace, saName))
 
 	if dockerConfigJSONPath != "" {
-		dockerSecret, err := CreateDockerSecret(fs, dockerConfigJSONPath, cicdNamespace)
+		dockerSecret, err := createDockerSecret(fs, dockerConfigJSONPath, cicdNamespace, sealedSecretsNS)
 		if err != nil {
 			return nil, err
 		}

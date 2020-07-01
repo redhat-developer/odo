@@ -26,7 +26,7 @@ func TestBootstrapManifest(t *testing.T) {
 		secrets.DefaultPublicKeyFunc = f
 	}(secrets.DefaultPublicKeyFunc)
 
-	secrets.DefaultPublicKeyFunc = func() (*rsa.PublicKey, error) {
+	secrets.DefaultPublicKeyFunc = func(ns string) (*rsa.PublicKey, error) {
 		key, err := rsa.GenerateKey(rand.Reader, 1024)
 		if err != nil {
 			t.Fatalf("failed to generate a private RSA key: %s", err)
@@ -35,19 +35,21 @@ func TestBootstrapManifest(t *testing.T) {
 	}
 
 	params := &BootstrapOptions{
-		Prefix:              "tst-",
-		GitOpsRepoURL:       testGitOpsRepo,
-		GitOpsWebhookSecret: "123",
-		AppRepoURL:          testSvcRepo,
-		ImageRepo:           "image/repo",
-		AppWebhookSecret:    "456",
+		InitOptions: InitOptions{
+			Prefix:              "tst-",
+			GitOpsRepoURL:       testGitOpsRepo,
+			GitOpsWebhookSecret: "123",
+			ImageRepo:           "image/repo",
+		},
+		AppRepoURL:       testSvcRepo,
+		AppWebhookSecret: "456",
 	}
 
 	r, err := bootstrapResources(params, ioutils.NewMapFilesystem())
 	if err != nil {
 		t.Fatal(err)
 	}
-	hookSecret, err := secrets.CreateSealedSecret(meta.NamespacedName("tst-cicd", "webhook-secret-tst-dev-http-api-svc"), "456", eventlisteners.WebhookSecretKey)
+	hookSecret, err := secrets.CreateSealedSecret(meta.NamespacedName("tst-cicd", "webhook-secret-tst-dev-http-api-svc"), "456", eventlisteners.WebhookSecretKey, "test-ns")
 	if err != nil {
 		t.Fatal(err)
 	}

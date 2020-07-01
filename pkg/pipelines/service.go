@@ -19,8 +19,8 @@ import (
 	"github.com/spf13/afero"
 )
 
-// AddServiceParameters are parameters passed to AddSerice function
-type AddServiceParameters struct {
+// AddServiceOptions control how new services are added to the configuration.
+type AddServiceOptions struct {
 	AppName                  string
 	EnvName                  string
 	GitRepoURL               string
@@ -29,9 +29,10 @@ type AddServiceParameters struct {
 	PipelinesFilePath        string
 	ServiceName              string
 	WebhookSecret            string
+	SealedSecretsNamespace   string // Where do we find the SealedSecrets service?
 }
 
-func AddService(p *AddServiceParameters, fs afero.Fs) error {
+func AddService(p *AddServiceOptions, fs afero.Fs) error {
 	m, err := config.ParseFile(fs, p.PipelinesFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to parse pipelines-file: %v", err)
@@ -59,28 +60,30 @@ func AddService(p *AddServiceParameters, fs afero.Fs) error {
 	return nil
 }
 
-func serviceResources(m *config.Manifest, fs afero.Fs, p *AddServiceParameters) (res.Resources, error) {
+func serviceResources(m *config.Manifest, fs afero.Fs, o *AddServiceOptions) (res.Resources, error) {
 	files := res.Resources{}
 
-	svc, err := createService(p.ServiceName, p.GitRepoURL)
+	svc, err := createService(o.ServiceName, o.GitRepoURL)
 	if err != nil {
 		return nil, err
 	}
 
 	cfg := m.GetPipelinesConfig()
-	if cfg != nil && p.WebhookSecret == "" && p.GitRepoURL != "" {
+	if cfg != nil && o.WebhookSecret == "" && o.GitRepoURL != "" {
 		return nil, fmt.Errorf("The webhook secret is required")
 	}
 
-	env := m.GetEnvironment(p.EnvName)
+	env := m.GetEnvironment(o.EnvName)
 	if env == nil {
-		return nil, fmt.Errorf("environment %s does not exist", p.EnvName)
+		return nil, fmt.Errorf("environment %s does not exist", o.EnvName)
 	}
 
 	// add the secret only if CI/CD env is present
 	if cfg != nil {
-		secretName := secrets.MakeServiceWebhookSecretName(p.EnvName, svc.Name)
-		hookSecret, err := secrets.CreateSealedSecret(meta.NamespacedName(cfg.Name, secretName), p.WebhookSecret, eventlisteners.WebhookSecretKey)
+		secretName := secrets.MakeServiceWebhookSecretName(o.EnvName, svc.Name)
+		hookSecret, err := secrets.CreateSealedSecret(
+			meta.NamespacedName(cfg.Name, secretName), o.WebhookSecret,
+			eventlisteners.WebhookSecretKey, o.SealedSecretsNamespace)
 		if err != nil {
 			return nil, err
 		}
@@ -95,8 +98,8 @@ func serviceResources(m *config.Manifest, fs afero.Fs, p *AddServiceParameters) 
 		secretsPath := filepath.Join(config.PathForPipelines(cfg), "base", "pipelines", secretFilename)
 		files[secretsPath] = hookSecret
 
-		if p.ImageRepo != "" {
-			_, resources, bindingName, err := createImageRepoResources(m, cfg, env, p)
+		if o.ImageRepo != "" {
+			_, resources, bindingName, err := createImageRepoResources(m, cfg, env, o)
 			if err != nil {
 				return nil, err
 			}
@@ -110,7 +113,7 @@ func serviceResources(m *config.Manifest, fs afero.Fs, p *AddServiceParameters) 
 		}
 	}
 
-	err = m.AddService(p.EnvName, p.AppName, svc)
+	err = m.AddService(o.EnvName, o.AppName, svc)
 	if err != nil {
 		return nil, err
 	}
@@ -119,10 +122,10 @@ func serviceResources(m *config.Manifest, fs afero.Fs, p *AddServiceParameters) 
 		return nil, err
 	}
 
-	files[filepath.Base(p.PipelinesFilePath)] = m
-	outputPath := filepath.Dir(p.PipelinesFilePath)
+	files[filepath.Base(o.PipelinesFilePath)] = m
+	outputPath := filepath.Dir(o.PipelinesFilePath)
 	buildParams := &BuildParameters{
-		PipelinesFilePath: p.PipelinesFilePath,
+		PipelinesFilePath: o.PipelinesFilePath,
 		OutputPath:        outputPath,
 	}
 	built, err := buildResources(fs, buildParams, m)
@@ -132,7 +135,7 @@ func serviceResources(m *config.Manifest, fs afero.Fs, p *AddServiceParameters) 
 	return res.Merge(built, files), nil
 }
 
-func createImageRepoResources(m *config.Manifest, cfg *config.PipelinesConfig, env *config.Environment, p *AddServiceParameters) ([]string, res.Resources, string, error) {
+func createImageRepoResources(m *config.Manifest, cfg *config.PipelinesConfig, env *config.Environment, p *AddServiceOptions) ([]string, res.Resources, string, error) {
 	isInternalRegistry, imageRepo, err := imagerepo.ValidateImageRepo(p.ImageRepo, p.InternalRegistryHostname)
 	if err != nil {
 		return nil, nil, "", err

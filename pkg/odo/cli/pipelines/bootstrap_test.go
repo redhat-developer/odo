@@ -20,7 +20,10 @@ func TestCompleteBootstrapParameters(t *testing.T) {
 	}
 
 	for _, tt := range completeTests {
-		o := BootstrapParameters{&pipelines.BootstrapOptions{Prefix: tt.prefix}, &genericclioptions.Context{}}
+		o := BootstrapParameters{
+			&pipelines.BootstrapOptions{InitOptions: pipelines.InitOptions{Prefix: tt.prefix}},
+			&genericclioptions.Context{},
+		}
 
 		err := o.Complete("test", &cobra.Command{}, []string{"test", "test/repo"})
 
@@ -51,8 +54,10 @@ func TestAddSuffixWithBootstrap(t *testing.T) {
 
 	for _, test := range tt {
 		t.Run(test.name, func(rt *testing.T) {
-			o := BootstrapParameters{&pipelines.BootstrapOptions{
-				GitOpsRepoURL: test.gitOpsURL, AppRepoURL: test.appURL},
+			o := BootstrapParameters{
+				&pipelines.BootstrapOptions{
+					InitOptions: pipelines.InitOptions{GitOpsRepoURL: test.gitOpsURL},
+					AppRepoURL:  test.appURL},
 				&genericclioptions.Context{}}
 
 			err := o.Complete("test", &cobra.Command{}, []string{"test", "test/repo"})
@@ -83,9 +88,7 @@ func TestValidateBootstrapParameters(t *testing.T) {
 	for _, tt := range optionTests {
 		o := BootstrapParameters{
 			&pipelines.BootstrapOptions{
-				GitOpsRepoURL: tt.gitRepo,
-				Prefix:        "test",
-			},
+				InitOptions: pipelines.InitOptions{GitOpsRepoURL: tt.gitRepo, Prefix: "test"}},
 			&genericclioptions.Context{},
 		}
 		err := o.Validate()

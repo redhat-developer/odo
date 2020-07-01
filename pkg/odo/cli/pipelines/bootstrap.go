@@ -47,9 +47,7 @@ func NewBootstrapParameters() *BootstrapParameters {
 // If the prefix provided doesn't have a "-" then one is added, this makes the
 // generated environment names nicer to read.
 func (io *BootstrapParameters) Complete(name string, cmd *cobra.Command, args []string) error {
-	if io.Prefix != "" && !strings.HasSuffix(io.Prefix, "-") {
-		io.Prefix = io.Prefix + "-"
-	}
+	io.Prefix = utility.MaybeCompletePrefix(io.Prefix)
 	io.GitOpsRepoURL = utility.AddGitSuffixIfNecessary(io.GitOpsRepoURL)
 	io.AppRepoURL = utility.AddGitSuffixIfNecessary(io.AppRepoURL)
 	return nil
@@ -63,7 +61,7 @@ func (io *BootstrapParameters) Validate() error {
 	}
 
 	// TODO: this won't work with GitLab as the repo can have more path elements.
-	if len(removeEmptyStrings(strings.Split(gr.Path, "/"))) != 2 {
+	if len(utility.RemoveEmptyStrings(strings.Split(gr.Path, "/"))) != 2 {
 		return fmt.Errorf("repo must be org/repo: %s", strings.Trim(gr.Path, ".git"))
 	}
 	return nil
@@ -83,7 +81,7 @@ func (io *BootstrapParameters) Run() error {
 func NewCmdBootstrap(name, fullName string) *cobra.Command {
 	o := NewBootstrapParameters()
 
-	initCmd := &cobra.Command{
+	bootstrapCmd := &cobra.Command{
 		Use:     name,
 		Short:   bootstrapShortDesc,
 		Long:    bootstrapLongDesc,
@@ -93,34 +91,27 @@ func NewCmdBootstrap(name, fullName string) *cobra.Command {
 		},
 	}
 
-	initCmd.Flags().StringVar(&o.GitOpsRepoURL, "gitops-repo-url", "", "GitOps repository e.g. https://github.com/organisation/repository")
-	initCmd.Flags().StringVar(&o.GitOpsWebhookSecret, "gitops-webhook-secret", "", "provide the GitHub webhook secret for GitOps repository")
+	bootstrapCmd.Flags().StringVar(&o.GitOpsRepoURL, "gitops-repo-url", "", "GitOps repository e.g. https://github.com/organisation/repository")
+	bootstrapCmd.Flags().StringVar(&o.GitOpsWebhookSecret, "gitops-webhook-secret", "", "provide the GitHub webhook secret for GitOps repository")
 
-	initCmd.Flags().StringVar(&o.AppRepoURL, "app-repo-url", "", "Application source e.g. https://github.com/organisation/application")
-	initCmd.Flags().StringVar(&o.AppWebhookSecret, "app-webhook-secret", "", "Provide the GitHub webhook secret for Application repository")
+	bootstrapCmd.Flags().StringVar(&o.AppRepoURL, "app-repo-url", "", "Application source e.g. https://github.com/organisation/application")
+	bootstrapCmd.Flags().StringVar(&o.AppWebhookSecret, "app-webhook-secret", "", "Provide the GitHub webhook secret for Application repository")
 
-	initCmd.Flags().StringVar(&o.DockerConfigJSONFilename, "dockercfgjson", "", "provide the dockercfgjson path")
-	initCmd.Flags().StringVar(&o.InternalRegistryHostname, "internal-registry-hostname", "image-registry.openshift-image-registry.svc:5000", "internal image registry hostname")
-	initCmd.Flags().StringVar(&o.OutputPath, "output", ".", "folder path to add Gitops resources")
-	initCmd.Flags().StringVarP(&o.Prefix, "prefix", "p", "", "add a prefix to the environment names")
-	initCmd.Flags().StringVarP(&o.ImageRepo, "image-repo", "", "", "used to push built images")
+	bootstrapCmd.Flags().StringVar(&o.DockerConfigJSONFilename, "dockercfgjson", "", "provide the dockercfgjson path")
+	bootstrapCmd.Flags().StringVar(&o.InternalRegistryHostname, "internal-registry-hostname", "image-registry.openshift-image-registry.svc:5000", "internal image registry hostname")
+	bootstrapCmd.Flags().StringVar(&o.OutputPath, "output", ".", "Folder path to add Gitops resources")
+	bootstrapCmd.Flags().StringVarP(&o.Prefix, "prefix", "p", "", "Add a prefix to the environment names")
+	bootstrapCmd.Flags().StringVarP(&o.ImageRepo, "image-repo", "", "", "Used to push built images")
 
-	initCmd.MarkFlagRequired("gitops-repo-url")
-	initCmd.MarkFlagRequired("gitops-webhook-secret")
-	initCmd.MarkFlagRequired("app-repo-url")
-	initCmd.MarkFlagRequired("app-webhook-secret")
-	initCmd.MarkFlagRequired("dockercfgjson")
-	initCmd.MarkFlagRequired("image-repo")
+	bootstrapCmd.Flags().StringVarP(&o.SealedSecretsNamespace, "sealed-secrets-ns", "", "", "namespace in which the Sealed Secrets operator is installed, automatically generated secrets are encrypted with this operator")
 
-	return initCmd
-}
+	bootstrapCmd.MarkFlagRequired("gitops-repo-url")
+	bootstrapCmd.MarkFlagRequired("gitops-webhook-secret")
+	bootstrapCmd.MarkFlagRequired("app-repo-url")
+	bootstrapCmd.MarkFlagRequired("app-webhook-secret")
+	bootstrapCmd.MarkFlagRequired("dockercfgjson")
+	bootstrapCmd.MarkFlagRequired("image-repo")
+	bootstrapCmd.MarkFlagRequired("sealed-secrets-ns")
 
-func removeEmptyStrings(s []string) []string {
-	nonempty := []string{}
-	for _, v := range s {
-		if v != "" {
-			nonempty = append(nonempty, v)
-		}
-	}
-	return nonempty
+	return bootstrapCmd
 }

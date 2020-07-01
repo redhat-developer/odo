@@ -33,15 +33,9 @@ const (
 
 // BootstrapOptions is a struct that provides the optional flags
 type BootstrapOptions struct {
-	GitOpsRepoURL            string // This is where the pipelines and configuration are.
-	GitOpsWebhookSecret      string // This is the secret for authenticating hooks from your GitOps repo.
-	AppRepoURL               string // This is the full URL to your GitHub repository for your app source.
-	AppWebhookSecret         string // This is the secret for authenticating hooks from your app source.
-	InternalRegistryHostname string // This is the internal registry hostname used for pushing images.
-	ImageRepo                string // This is where built images are pushed to.
-	Prefix                   string // Used to prefix generated environment names in a shared cluster.
-	OutputPath               string // Where to write the bootstrapped files to?
-	DockerConfigJSONFilename string
+	InitOptions
+	AppRepoURL       string // This is the full URL to your GitHub repository for your app source.
+	AppWebhookSecret string // This is the secret for authenticating hooks from your app source.
 }
 
 // Bootstrap bootstraps a GitOps pipelines and repository structure.
@@ -84,7 +78,9 @@ func bootstrapResources(o *BootstrapOptions, appFs afero.Fs) (res.Resources, err
 		return nil, fmt.Errorf("invalid app repo URL: %v", err)
 	}
 
-	bootstrapped, err := createInitialFiles(appFs, gitOpsRepo, o.Prefix, o.GitOpsWebhookSecret, o.DockerConfigJSONFilename)
+	bootstrapped, err := createInitialFiles(
+		appFs, gitOpsRepo, o.Prefix, o.GitOpsWebhookSecret,
+		o.DockerConfigJSONFilename, o.SealedSecretsNamespace)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +105,7 @@ func bootstrapResources(o *BootstrapOptions, appFs afero.Fs) (res.Resources, err
 	hookSecret, err := secrets.CreateSealedSecret(
 		meta.NamespacedName(ns["cicd"], secretName),
 		o.AppWebhookSecret,
-		eventlisteners.WebhookSecretKey)
+		eventlisteners.WebhookSecretKey, o.SealedSecretsNamespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate GitHub Webhook Secret: %v", err)
 	}

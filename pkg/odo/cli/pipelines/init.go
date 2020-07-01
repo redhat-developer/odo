@@ -32,20 +32,14 @@ var (
 
 // InitParameters encapsulates the parameters for the odo pipelines init command.
 type InitParameters struct {
-	dockercfgjson            string // filepath name to dockerconfigjson file
-	gitOpsRepoURL            string // This is where the pipelines and configuration are.
-	gitOpsWebhookSecret      string // used to create Github's shared webhook secret for gitops repo
-	output                   string // path to add Gitops resources
-	prefix                   string // used to generate the environments in a shared cluster
-	imageRepo                string
-	internalRegistryHostname string
+	*pipelines.InitOptions
 	// generic context options common to all commands
 	*genericclioptions.Context
 }
 
 // NewInitParameters bootstraps a InitParameters instance.
 func NewInitParameters() *InitParameters {
-	return &InitParameters{}
+	return &InitParameters{InitOptions: &pipelines.InitOptions{}}
 }
 
 // Complete completes InitParameters after they've been created.
@@ -53,22 +47,20 @@ func NewInitParameters() *InitParameters {
 // If the prefix provided doesn't have a "-" then one is added, this makes the
 // generated environment names nicer to read.
 func (io *InitParameters) Complete(name string, cmd *cobra.Command, args []string) error {
-	if io.prefix != "" && !strings.HasSuffix(io.prefix, "-") {
-		io.prefix = io.prefix + "-"
-	}
-	io.gitOpsRepoURL = utility.AddGitSuffixIfNecessary(io.gitOpsRepoURL)
+	io.Prefix = utility.MaybeCompletePrefix(io.Prefix)
+	io.GitOpsRepoURL = utility.AddGitSuffixIfNecessary(io.GitOpsRepoURL)
 	return nil
 }
 
 // Validate validates the parameters of the InitParameters.
 func (io *InitParameters) Validate() error {
-	gr, err := url.Parse(io.gitOpsRepoURL)
+	gr, err := url.Parse(io.GitOpsRepoURL)
 	if err != nil {
-		return fmt.Errorf("failed to parse url %s: %v", io.gitOpsRepoURL, err)
+		return fmt.Errorf("failed to parse url %s: %v", io.GitOpsRepoURL, err)
 	}
 
 	// TODO: this won't work with GitLab as the repo can have more path elements.
-	if len(removeEmptyStrings(strings.Split(gr.Path, "/"))) != 2 {
+	if len(utility.RemoveEmptyStrings(strings.Split(gr.Path, "/"))) != 2 {
 		return fmt.Errorf("repo must be org/repo: %s", strings.Trim(gr.Path, ".git"))
 	}
 	return nil
@@ -76,16 +68,7 @@ func (io *InitParameters) Validate() error {
 
 // Run runs the project bootstrap command.
 func (io *InitParameters) Run() error {
-	options := pipelines.InitParameters{
-		DockerConfigJSONFilename: io.dockercfgjson,
-		GitOpsWebhookSecret:      io.gitOpsWebhookSecret,
-		GitOpsRepoURL:            io.gitOpsRepoURL,
-		OutputPath:               io.output,
-		Prefix:                   io.prefix,
-		ImageRepo:                io.imageRepo,
-		InternalRegistryHostname: io.internalRegistryHostname,
-	}
-	err := pipelines.Init(&options, ioutils.NewFilesystem())
+	err := pipelines.Init(io.InitOptions, ioutils.NewFilesystem())
 	if err != nil {
 		return err
 	}
@@ -107,15 +90,17 @@ func NewCmdInit(name, fullName string) *cobra.Command {
 		},
 	}
 
-	initCmd.Flags().StringVar(&o.gitOpsRepoURL, "gitops-repo-url", "", "GitOps repository e.g. https://github.com/organisation/repository")
+	initCmd.Flags().StringVar(&o.GitOpsRepoURL, "gitops-repo-url", "", "GitOps repository e.g. https://github.com/organisation/repository")
 	initCmd.MarkFlagRequired("gitops-repo-url")
-	initCmd.Flags().StringVar(&o.gitOpsWebhookSecret, "gitops-webhook-secret", "", "provide the GitHub webhook secret for GitOps repository")
+	initCmd.Flags().StringVar(&o.GitOpsWebhookSecret, "gitops-webhook-secret", "", "provide the GitHub webhook secret for GitOps repository")
 	initCmd.MarkFlagRequired("gitops-webhook-secret")
-	initCmd.Flags().StringVar(&o.output, "output", ".", "folder path to add GitOps resources")
-	initCmd.Flags().StringVarP(&o.prefix, "prefix", "p", "", "add a prefix to the environment names")
-	initCmd.Flags().StringVar(&o.dockercfgjson, "dockercfgjson", "", "dockercfg json pathname")
-	initCmd.Flags().StringVar(&o.internalRegistryHostname, "internal-registry-hostname", "image-registry.openshift-image-registry.svc:5000", "internal image registry hostname")
-	initCmd.Flags().StringVar(&o.imageRepo, "image-repo", "", "image repository in this form <registry>/<username>/<repository> or <project>/<app> for internal registry")
+	initCmd.Flags().StringVar(&o.OutputPath, "output", ".", "folder path to add GitOps resources")
+	initCmd.Flags().StringVarP(&o.Prefix, "prefix", "p", "", "add a prefix to the environment names")
+	initCmd.Flags().StringVar(&o.DockerConfigJSONFilename, "dockercfgjson", "", "dockercfg json pathname")
+	initCmd.Flags().StringVar(&o.InternalRegistryHostname, "internal-registry-hostname", "image-registry.openshift-image-registry.svc:5000", "internal image registry hostname")
+	initCmd.Flags().StringVar(&o.ImageRepo, "image-repo", "", "image repository in this form <registry>/<username>/<repository> or <project>/<app> for internal registry")
+	initCmd.Flags().StringVarP(&o.SealedSecretsNamespace, "sealed-secrets-ns", "", "", "namespace in which the Sealed Secrets operator is installed, automatically generated secrets are encrypted with this operator")
+	initCmd.MarkFlagRequired("sealed-secrets-ns")
 
 	return initCmd
 }

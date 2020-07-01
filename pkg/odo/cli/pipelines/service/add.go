@@ -25,56 +25,38 @@ var (
 	addShortDesc = `Add a new service`
 )
 
-// AddOptions encapsulates the parameters for service add command
-type AddOptions struct {
-	appName                  string
-	envName                  string
-	gitRepoURL               string
-	imageRepo                string
-	internalRegistryHostname string
-	pipelinesFilePath        string
-	serviceName              string
-	webhookSecret            string
-
+// AddServiceOptions encapsulates the parameters for service add command
+type AddServiceOptions struct {
+	*pipelines.AddServiceOptions
 	// generic context options common to all commands
 	*genericclioptions.Context
 }
 
 // Complete is called when the command is completed
-func (o *AddOptions) Complete(name string, cmd *cobra.Command, args []string) error {
-	o.gitRepoURL = utility.AddGitSuffixIfNecessary(o.gitRepoURL)
+func (o *AddServiceOptions) Complete(name string, cmd *cobra.Command, args []string) error {
+	o.GitRepoURL = utility.AddGitSuffixIfNecessary(o.GitRepoURL)
 	return nil
 }
 
 // Validate validates the parameters of the EnvParameters.
-func (o *AddOptions) Validate() error {
+func (o *AddServiceOptions) Validate() error {
 	return nil
 }
 
 // Run runs the project bootstrap command.
-func (o *AddOptions) Run() error {
-
-	err := pipelines.AddService(&pipelines.AddServiceParameters{
-		AppName:                  o.appName,
-		EnvName:                  o.envName,
-		GitRepoURL:               o.gitRepoURL,
-		ImageRepo:                o.imageRepo,
-		InternalRegistryHostname: o.internalRegistryHostname,
-		PipelinesFilePath:        o.pipelinesFilePath,
-		ServiceName:              o.serviceName,
-		WebhookSecret:            o.webhookSecret,
-	}, ioutils.NewFilesystem())
+func (o *AddServiceOptions) Run() error {
+	err := pipelines.AddService(o.AddServiceOptions, ioutils.NewFilesystem())
 
 	if err != nil {
 		return err
 	}
-	log.Successf("Created Service %s sucessfully at environment %s.", o.serviceName, o.envName)
+	log.Successf("Created Service %s sucessfully at environment %s.", o.ServiceName, o.EnvName)
 	return nil
 
 }
 
 func newCmdAdd(name, fullName string) *cobra.Command {
-	o := &AddOptions{}
+	o := &AddServiceOptions{AddServiceOptions: &pipelines.AddServiceOptions{}}
 
 	cmd := &cobra.Command{
 		Use:     name,
@@ -86,14 +68,14 @@ func newCmdAdd(name, fullName string) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&o.gitRepoURL, "git-repo-url", "", "source Git repository URL")
-	cmd.Flags().StringVar(&o.webhookSecret, "webhook-secret", "", "source Git repository webhook secret")
-	cmd.Flags().StringVar(&o.appName, "app-name", "", "the name of the application where the service will be added")
-	cmd.Flags().StringVar(&o.serviceName, "service-name", "", "the name of the service to be added")
-	cmd.Flags().StringVar(&o.envName, "env-name", "", "the name of the environment where the service will be added")
-	cmd.Flags().StringVar(&o.imageRepo, "image-repo", "", "used to push built images")
-	cmd.Flags().StringVar(&o.internalRegistryHostname, "internal-registry-hostname", "image-registry.openshift-image-registry.svc:5000", "internal image registry hostname")
-	cmd.Flags().StringVar(&o.pipelinesFilePath, "pipelines-file", "pipelines.yaml", "path to pipelines file")
+	cmd.Flags().StringVar(&o.GitRepoURL, "git-repo-url", "", "source Git repository URL")
+	cmd.Flags().StringVar(&o.WebhookSecret, "webhook-secret", "", "source Git repository webhook secret")
+	cmd.Flags().StringVar(&o.AppName, "app-name", "", "the name of the application where the service will be added")
+	cmd.Flags().StringVar(&o.ServiceName, "service-name", "", "the name of the service to be added")
+	cmd.Flags().StringVar(&o.EnvName, "env-name", "", "the name of the environment where the service will be added")
+	cmd.Flags().StringVar(&o.ImageRepo, "image-repo", "", "used to push built images")
+	cmd.Flags().StringVar(&o.InternalRegistryHostname, "internal-registry-hostname", "image-registry.openshift-image-registry.svc:5000", "internal image registry hostname")
+	cmd.Flags().StringVar(&o.PipelinesFilePath, "pipelines-file", "pipelines.yaml", "path to pipelines file")
 
 	// required flags
 	_ = cmd.MarkFlagRequired("service-name")

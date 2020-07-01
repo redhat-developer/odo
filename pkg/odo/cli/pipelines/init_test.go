@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/openshift/odo/pkg/pipelines"
 	"github.com/spf13/cobra"
 )
 
@@ -25,22 +26,21 @@ func TestCompleteInitParameters(t *testing.T) {
 	}
 
 	for _, tt := range completeTests {
-		o := InitParameters{prefix: tt.prefix}
+		o := InitParameters{InitOptions: &pipelines.InitOptions{Prefix: tt.prefix}}
 
 		err := o.Complete("test", &cobra.Command{}, []string{"test", "test/repo"})
 
 		if err != nil {
 			t.Errorf("Complete() %#v failed: ", err)
 		}
-
-		if o.prefix != tt.wantPrefix {
-			t.Errorf("Complete() %#v prefix: got %s, want %s", tt.name, o.prefix, tt.wantPrefix)
+		if o.Prefix != tt.wantPrefix {
+			t.Errorf("Complete() %#v prefix: got %s, want %s", tt.name, o.Prefix, tt.wantPrefix)
 		}
 	}
 }
 
 func TestAddSuffixWithInit(t *testing.T) {
-	tt := []struct {
+	suffixTests := []struct {
 		name string
 		url  string
 		want string
@@ -51,15 +51,15 @@ func TestAddSuffixWithInit(t *testing.T) {
 		{"suffix already present", "https://github.com/test/org.git", "https://github.com/test/org.git"},
 	}
 
-	for _, test := range tt {
-		t.Run(test.name, func(rt *testing.T) {
-			o := InitParameters{gitOpsRepoURL: test.url}
+	for _, tt := range suffixTests {
+		t.Run(tt.name, func(rt *testing.T) {
+			o := InitParameters{InitOptions: &pipelines.InitOptions{GitOpsRepoURL: tt.url}}
 			err := o.Complete("test", &cobra.Command{}, []string{"test", "test/repo"})
 			if err != nil {
 				rt.Fatal(err)
 			}
-			if test.want != o.gitOpsRepoURL {
-				rt.Fatalf("URL mismatch: got %s, want %s", o.gitOpsRepoURL, test.want)
+			if tt.want != o.GitOpsRepoURL {
+				rt.Fatalf("URL mismatch: got %s, want %s", o.GitOpsRepoURL, tt.want)
 			}
 		})
 	}
@@ -76,8 +76,7 @@ func TestValidateInitParameters(t *testing.T) {
 	}
 
 	for _, tt := range optionTests {
-		o := InitParameters{gitOpsRepoURL: tt.gitRepoURL, prefix: "test"}
-
+		o := InitParameters{InitOptions: &pipelines.InitOptions{GitOpsRepoURL: tt.gitRepoURL, Prefix: "test"}}
 		err := o.Validate()
 
 		if err != nil && tt.errMsg == "" {
@@ -98,13 +97,17 @@ func TestInitCommandWithMissingParams(t *testing.T) {
 		wantErr string
 	}{
 		{"Missing gitops-repo-url flag",
-			[]keyValuePair{flag("output", "~/output"),
+			[]keyValuePair{flag("output", "~/output"), flag("sealed-secrets-ns", "testing"),
 				flag("gitops-webhook-secret", "123"), flag("skip-checks", "true")},
 			`required flag(s) "gitops-repo-url" not set`},
 		{"Missing gitops-webhook-secret flag",
 			[]keyValuePair{flag("gitops-repo-url", "https://github.com/org/sample"), flag("output", "~/output"),
-				flag("skip-checks", "true")},
+				flag("skip-checks", "true"), flag("sealed-secrets-ns", "testing")},
 			`required flag(s) "gitops-webhook-secret" not set`},
+		{"Missing sealed-secrets-ns flag",
+			[]keyValuePair{flag("gitops-repo-url", "https://github.com/org/sample"), flag("output", "~/output"),
+				flag("skip-checks", "true"), flag("gitops-webhook-secret", "123")},
+			`required flag(s) "sealed-secrets-ns" not set`},
 	}
 	for _, tt := range cmdTests {
 		t.Run(tt.desc, func(t *testing.T) {
