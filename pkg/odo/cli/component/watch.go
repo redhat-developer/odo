@@ -6,10 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/openshift/odo/pkg/devfile/adapters/common"
-
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters"
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
 	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/occlient"
@@ -33,8 +32,8 @@ import (
 // WatchRecommendedCommandName is the recommended watch command name
 const WatchRecommendedCommandName = "watch"
 
-var watchLongDesc = ktemplates.LongDesc(`Watch for changes, update component on change. Watch doesn't provide support for git component.`)
-var watchExampleWithComponentName = ktemplates.Examples(`  # Watch for changes in directory for current component
+var watchLongDesc = ktemplates.LongDesc(`Watch for changes, update component on change. Watch doesn't support git components.`)
+var watchExampleWithDevfile = ktemplates.Examples(`  # Watch for changes in directory for current component
 %[1]s
 
 # Watch source code changes with custom devfile commands using --build-command and --run-command for experimental mode
@@ -251,12 +250,12 @@ func NewCmdWatch(name, fullName string) *cobra.Command {
 	usage := name
 
 	if experimental.IsExperimentalModeEnabled() {
-		example = fmt.Sprintf(watchExampleWithComponentName, fullName)
+		example = fmt.Sprintf(watchExampleWithDevfile, fullName)
 	}
 
 	var watchCmd = &cobra.Command{
 		Use:         usage,
-		Short:       "Watch for changes, update component on change. Watch doesn't provide support for git component.",
+		Short:       "Watch for changes, update component on change. Watch doesn't support git components.",
 		Long:        watchLongDesc,
 		Example:     example,
 		Args:        cobra.NoArgs,
