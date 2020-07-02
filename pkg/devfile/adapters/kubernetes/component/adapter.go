@@ -403,19 +403,28 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 			}
 		}
 
-		if componentExists && !common.IsRestartRequired(command) {
-			klog.V(4).Infof("restart:false, Not restarting %v Command", command.Exec.Id)
-			if isDebug {
-				err = exec.ExecuteDevfileDebugActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
-			} else {
-				err = exec.ExecuteDevfileRunActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
+		if command.Composite != nil {
+			compInfo.ContainerName = command.Exec.Component
+			err = a.execCompositeCommand(command.Composite, show, podName, containers)
+			if err != nil {
+				return err
 			}
-			return
-		}
-		if isDebug {
-			err = exec.ExecuteDevfileDebugAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 		} else {
-			err = exec.ExecuteDevfileRunAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
+			if componentExists && !common.IsRestartRequired(command) {
+				klog.V(4).Infof("restart:false, Not restarting %v Command", command.Exec.Id)
+
+				if isDebug {
+					err = exec.ExecuteDevfileDebugActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
+				} else {
+					err = exec.ExecuteDevfileRunActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
+				}
+				return
+			}
+			if isDebug {
+				err = exec.ExecuteDevfileDebugAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
+			} else {
+				err = exec.ExecuteDevfileRunAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
+			}
 		}
 
 	}
