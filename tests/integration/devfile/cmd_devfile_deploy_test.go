@@ -52,8 +52,8 @@ var _ = Describe("odo devfile deploy command tests", func() {
 			output := helper.CmdShouldPass("odo", "deploy", "--tag", imageTag)
 			cliRunner.WaitAndCheckForExistence("buildconfig", namespace, 1)
 			Expect(output).NotTo(ContainSubstring("does not point to a valid Dockerfile"))
-			Expect(output).To(ContainSubstring("Successfully built image"))
-			Expect(output).To(ContainSubstring("Successfully deployed application"))
+			Expect(output).To(ContainSubstring("Successfully built container image"))
+			Expect(output).To(ContainSubstring("Successfully deployed component"))
 		})
 	})
 
@@ -129,7 +129,7 @@ var _ = Describe("odo devfile deploy command tests", func() {
 			Expect(err).To(BeNil())
 
 			cmdOutput := helper.CmdShouldPass("odo", "deploy", "--tag", imageTag)
-			Expect(cmdOutput).To(ContainSubstring(fmt.Sprintf("URL for application %s-deploy: http://%s-deploy-%s", cmpName, cmpName, namespace)))
+			Expect(cmdOutput).To(ContainSubstring(fmt.Sprintf("Successfully deployed component: http://%s-deploy-%s", cmpName, namespace)))
 		})
 	})
 })
