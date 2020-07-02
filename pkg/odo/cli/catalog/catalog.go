@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"fmt"
+
 	"github.com/openshift/odo/pkg/odo/cli/catalog/describe"
 	"github.com/openshift/odo/pkg/odo/cli/catalog/list"
 	"github.com/openshift/odo/pkg/odo/cli/catalog/search"
@@ -10,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// RecommendedCatalogCommandName is the recommended catalog command name
+// RecommendedCommandName is the recommended catalog command name
 const RecommendedCommandName = "catalog"
 
 // NewCmdCatalog implements the odo catalog command

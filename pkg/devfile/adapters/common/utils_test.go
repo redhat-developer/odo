@@ -207,3 +207,108 @@ func TestIsComponentSupported(t *testing.T) {
 	}
 
 }
+
+func TestGetCommandsForGroup(t *testing.T) {
+
+	component := []versionsCommon.DevfileComponent{
+		testingutil.GetFakeComponent("alias1"),
+	}
+	componentName := "alias1"
+	command := "ls -la"
+	workDir := "/"
+	execCommands := []common.Exec{
+		{
+			Id:          "run command",
+			CommandLine: command,
+			Component:   componentName,
+			WorkingDir:  workDir,
+			Group: &versionsCommon.Group{
+				Kind:      runGroup,
+				IsDefault: true,
+			},
+		},
+		{
+			Id:          "build command",
+			CommandLine: command,
+			Component:   componentName,
+			WorkingDir:  workDir,
+			Group:       &versionsCommon.Group{Kind: buildGroup},
+		},
+		{
+			Id:          "test command",
+			CommandLine: command,
+			Component:   componentName,
+			WorkingDir:  workDir,
+			Group:       &versionsCommon.Group{Kind: testGroup},
+		},
+		{
+			Id:          "debug command",
+			CommandLine: command,
+			Component:   componentName,
+			WorkingDir:  workDir,
+			Group:       &versionsCommon.Group{Kind: debugGroup},
+		},
+		{
+			Id:          "customcommand",
+			CommandLine: command,
+			Component:   componentName,
+			WorkingDir:  workDir,
+			Group:       &versionsCommon.Group{Kind: runGroup},
+		},
+	}
+
+	devObj := devfileParser.DevfileObj{
+		Data: testingutil.TestDevfileData{
+			Components:   component,
+			ExecCommands: execCommands,
+		},
+	}
+
+	tests := []struct {
+		name             string
+		groupType        common.DevfileCommandGroupType
+		numberOfCommands int
+	}{
+		{
+			name:             "Case 1: Build Group Command",
+			groupType:        buildGroup,
+			numberOfCommands: 1,
+		},
+		{
+			name:             "Case 2: Run Group Command",
+			groupType:        runGroup,
+			numberOfCommands: 2,
+		},
+		{
+			name:             "Case 3: Test Group Command",
+			groupType:        testGroup,
+			numberOfCommands: 1,
+		},
+		{
+			name:             "Case 4: Debug Group Command",
+			groupType:        debugGroup,
+			numberOfCommands: 1,
+		},
+		{
+			name:             "Case 5: Wrong Group Command",
+			groupType:        initGroup,
+			numberOfCommands: 0,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			commands := getCommandsByGroup(devObj.Data, tt.groupType)
+
+			if len(commands) != tt.numberOfCommands {
+				t.Errorf("TestGetCommandsForGroup error: number of commands mismatch for group %v, expected: %v got: %v", string(tt.groupType), tt.numberOfCommands, len(commands))
+			}
+
+			for _, command := range commands {
+				if command.Exec.Group.Kind != tt.groupType {
+					t.Errorf("TestGetCommandsForGroup error: command group mismatch, expected: %v got: %v", string(tt.groupType), string(command.Exec.Group.Kind))
+				}
+			}
+		})
+	}
+
+}

@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -15,7 +16,6 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/log"
 )
 
@@ -54,8 +54,8 @@ func (po *PushOptions) DevfilePush() error {
 }
 
 func (po *PushOptions) devfilePushInner() (err error) {
-	// Parse devfile
-	devObj, err := devfileParser.Parse(po.DevfilePath)
+	// Parse devfile and validate
+	devObj, err := parser.ParseAndValidate(po.DevfilePath)
 	if err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ func (po *PushOptions) devfilePushInner() (err error) {
 		platformContext = kc
 	}
 
-	devfileHandler, err := adapters.NewPlatformAdapter(componentName, po.componentContext, devObj, platformContext)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, po.componentContext, devObj, platformContext)
 
 	if err != nil {
 		return err
@@ -146,8 +146,8 @@ func getComponentName(context string) (string, error) {
 
 // DevfileComponentDelete deletes the devfile component
 func (do *DeleteOptions) DevfileComponentDelete() error {
-	// Parse devfile
-	devObj, err := devfileParser.Parse(do.devfilePath)
+	// Parse devfile and validate
+	devObj, err := parser.ParseAndValidate(do.devfilePath)
 	if err != nil {
 		return err
 	}
@@ -164,7 +164,7 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 	labels := map[string]string{
 		"component": componentName,
 	}
-	devfileHandler, err := adapters.NewPlatformAdapter(componentName, do.componentContext, devObj, kc)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, do.componentContext, devObj, kc)
 	if err != nil {
 		return err
 	}

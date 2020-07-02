@@ -83,7 +83,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 		})
 	})
 
-	Context("when executing odo watch after odo push with custom commands", func() {
+	Context("when executing odo watch after odo push with flag commands", func() {
 		It("should listen for file changes", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 

@@ -2,9 +2,9 @@ schemaVersion: 2.0.0
 metadata:
   name: test-devfile
 projects:
-  - name: nodejs-web-app
+  - name: nodejs-starter
     git:
-      location: "https://github.com/che-samples/web-nodejs-sample.git"
+      location: "https://github.com/odo-devfiles/nodejs-ex.git"
 components:
   - container:
       name: runtime
@@ -24,16 +24,16 @@ commands:
   - exec:
       id: devbuild
       component: runtime
-      commandLine: "npm install"
-      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-web-app/app
+      commandLine: npm install
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
       group:
         kind: build
         isDefault: true
   - exec:
       id: devrun
       component: runtime
-      commandLine: "nodemon app.js"
-      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-web-app/app
+      commandLine: npm start
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
       group:
         kind: run
         isDefault: true

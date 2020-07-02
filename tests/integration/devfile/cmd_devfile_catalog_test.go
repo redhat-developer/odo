@@ -12,6 +12,8 @@ import (
 
 var _ = Describe("odo devfile catalog command tests", func() {
 	var project, context, currentWorkingDirectory, originalKubeconfig string
+	const registryName string = "RegistryName"
+	const addRegistryURL string = "https://raw.githubusercontent.com/odo-devfiles/registry/master"
 
 	// Using program commmand according to cliRunner in devfile
 	cliRunner := helper.GetCliRunner()
@@ -46,30 +48,12 @@ var _ = Describe("odo devfile catalog command tests", func() {
 			wantOutput := []string{
 				"Odo Devfile Components",
 				"NAME",
-				"java-spring-boot",
-				"java-openliberty",
+				"springBoot",
+				"openLiberty",
 				"quarkus",
 				"DESCRIPTION",
 				"REGISTRY",
-				"SUPPORTED",
-			}
-			helper.MatchAllInOutput(output, wantOutput)
-		})
-	})
-
-	Context("When executing catalog list components with -a flag", func() {
-		It("should list all supported and unsupported devfile components", func() {
-			output := helper.CmdShouldPass("odo", "catalog", "list", "components", "-a")
-			wantOutput := []string{
-				"Odo Devfile Components",
-				"NAME",
-				"java-spring-boot",
-				"java-maven",
-				"quarkus",
-				"php-mysql",
-				"DESCRIPTION",
-				"REGISTRY",
-				"SUPPORTED",
+				"DefaultDevfileRegistry",
 			}
 			helper.MatchAllInOutput(output, wantOutput)
 		})
@@ -80,14 +64,12 @@ var _ = Describe("odo devfile catalog command tests", func() {
 			output := helper.CmdShouldPass("odo", "catalog", "list", "components", "-o", "json")
 			wantOutput := []string{
 				"odo.dev/v1alpha1",
+				"devfileItems",
 				"openLiberty",
-				"java-spring-boot",
+				"springBoot",
 				"nodejs",
 				"quarkus",
-				"php-mysql",
 				"maven",
-				"golang",
-				"java-maven",
 			}
 			helper.MatchAllInOutput(output, wantOutput)
 		})
@@ -99,10 +81,50 @@ var _ = Describe("odo devfile catalog command tests", func() {
 			output := helper.CmdShouldPass("odo", "catalog", "list", "components")
 			helper.MatchAllInOutput(output, []string{
 				"Odo Devfile Components",
-				"java-spring-boot",
+				"springBoot",
 				"quarkus",
 			})
 			helper.CmdShouldPass("odo", "registry", "delete", "fake", "-f")
+		})
+	})
+
+	Context("When executing catalog describe component with a component name with a single project", func() {
+		It("should only give information about one project", func() {
+			output := helper.CmdShouldPass("odo", "catalog", "describe", "component", "openLiberty")
+			helper.MatchAllInOutput(output, []string{"location: https://github.com/odo-devfiles/openliberty-ex.git"})
+		})
+	})
+	Context("When executing catalog describe component with a component name with no starter projects", func() {
+		It("should print message that the component has no starter projects", func() {
+			output := helper.CmdShouldPass("odo", "catalog", "describe", "component", "maven")
+			helper.MatchAllInOutput(output, []string{"The Odo devfile component \"maven\" has no starter projects."})
+		})
+	})
+	Context("When executing catalog describe component with a component name with multiple components", func() {
+		It("should print multiple devfiles from different registries", func() {
+			helper.CmdShouldPass("odo", "registry", "add", registryName, addRegistryURL)
+			output := helper.CmdShouldPass("odo", "registry", "list")
+			helper.MatchAllInOutput(output, []string{registryName, addRegistryURL})
+			output = helper.CmdShouldPass("odo", "catalog", "describe", "component", "nodejs")
+			helper.MatchAllInOutput(output, []string{"name: nodejs-starter", "Registry: DefaultDevfileRegistry", "Registry: " + registryName})
+		})
+	})
+	Context("When executing catalog describe component with a component name that does not have a devfile component", func() {
+		It("should print message that there is no Odo devfile component available", func() {
+			output := helper.CmdShouldPass("odo", "catalog", "describe", "component", "java")
+			helper.MatchAllInOutput(output, []string{"There are no Odo devfile components with the name \"java\""})
+		})
+	})
+	Context("When executing catalog describe component with more than one argument", func() {
+		It("should give an error saying it received too many arguments", func() {
+			output := helper.CmdShouldFail("odo", "catalog", "describe", "component", "too", "many", "args")
+			helper.MatchAllInOutput(output, []string{"accepts 1 arg(s), received 3"})
+		})
+	})
+	Context("When executing catalog describe component with no arguments", func() {
+		It("should give an error saying it expects exactly one argument", func() {
+			output := helper.CmdShouldFail("odo", "catalog", "describe", "component")
+			helper.MatchAllInOutput(output, []string{"accepts 1 arg(s), received 0"})
 		})
 	})
 })

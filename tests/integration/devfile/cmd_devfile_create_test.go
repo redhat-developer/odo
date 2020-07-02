@@ -72,7 +72,7 @@ var _ = Describe("odo devfile create command tests", func() {
 
 	Context("When executing odo create with devfile component type argument", func() {
 		It("should successfully create the devfile component", func() {
-			helper.CmdShouldPass("odo", "create", "java-openliberty")
+			helper.CmdShouldPass("odo", "create", "openLiberty")
 		})
 
 		It("should fail to create the devfile componet with invalid component type", func() {
@@ -91,24 +91,24 @@ var _ = Describe("odo devfile create command tests", func() {
 	Context("When executing odo create with devfile component type and component name arguments", func() {
 		It("should successfully create the devfile component with valid component name", func() {
 			componentName := helper.RandString(6)
-			helper.CmdShouldPass("odo", "create", "java-openliberty", componentName)
+			helper.CmdShouldPass("odo", "create", "openLiberty", componentName)
 		})
 
 		It("should fail to create the devfile component with component name that contains invalid character", func() {
 			componentName := "BAD@123"
-			output := helper.CmdShouldFail("odo", "create", "java-openliberty", componentName)
+			output := helper.CmdShouldFail("odo", "create", "openLiberty", componentName)
 			helper.MatchAllInOutput(output, []string{"Contain only lowercase alphanumeric characters or ‘-’"})
 		})
 
 		It("should fail to create the devfile component with component name that contains all numeric values", func() {
 			componentName := "123456"
-			output := helper.CmdShouldFail("odo", "create", "java-openliberty", componentName)
+			output := helper.CmdShouldFail("odo", "create", "openLiberty", componentName)
 			helper.MatchAllInOutput(output, []string{"Must not contain all numeric values"})
 		})
 
 		It("should fail to create the devfile component with componet name contains more than 63 characters", func() {
 			componentName := helper.RandString(64)
-			output := helper.CmdShouldFail("odo", "create", "java-openliberty", componentName)
+			output := helper.CmdShouldFail("odo", "create", "openLiberty", componentName)
 			helper.MatchAllInOutput(output, []string{"Contain at most 63 characters"})
 		})
 	})
@@ -116,14 +116,14 @@ var _ = Describe("odo devfile create command tests", func() {
 	Context("When executing odo create with devfile component type argument and --project flag", func() {
 		It("should successfully create the devfile component", func() {
 			componentNamespace := helper.RandString(6)
-			helper.CmdShouldPass("odo", "create", "java-openliberty", "--project", componentNamespace)
+			helper.CmdShouldPass("odo", "create", "openLiberty", "--project", componentNamespace)
 		})
 	})
 
 	Context("When executing odo create with devfile component type argument and --registry flag", func() {
 		It("should successfully create the devfile component if specified registry is valid", func() {
 			componentRegistry := "DefaultDevfileRegistry"
-			helper.CmdShouldPass("odo", "create", "java-openliberty", "--registry", componentRegistry)
+			helper.CmdShouldPass("odo", "create", "openLiberty", "--registry", componentRegistry)
 		})
 
 		It("should fail to create the devfile component if specified registry is invalid", func() {
@@ -140,7 +140,7 @@ var _ = Describe("odo devfile create command tests", func() {
 			envFilePath := filepath.Join(newContext, envFile)
 			helper.MakeDir(newContext)
 
-			helper.CmdShouldPass("odo", "create", "java-openliberty", "--context", newContext)
+			helper.CmdShouldPass("odo", "create", "openLiberty", "--context", newContext)
 			output := util.CheckPathExists(devfilePath)
 			Expect(output).Should(BeTrue())
 			output = util.CheckPathExists(envFilePath)
@@ -230,7 +230,7 @@ var _ = Describe("odo devfile create command tests", func() {
 		It("should successfully create the component specified and download the source", func() {
 			contextDevfile := helper.CreateNewContext()
 			helper.Chdir(contextDevfile)
-			helper.CmdShouldPass("odo", "create", "nodejs", "--starter=nodejs-web-app")
+			helper.CmdShouldPass("odo", "create", "nodejs", "--starter=nodejs-starter")
 			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
 			Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
 			helper.DeleteDir(contextDevfile)

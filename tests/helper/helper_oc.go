@@ -489,7 +489,7 @@ func (oc OcRunner) WaitAndCheckForExistence(resourceType, namespace string, time
 	for {
 		select {
 		case <-pingTimeout:
-			Fail(fmt.Sprintf("Timeout out after %v minutes", timeoutMinutes))
+			Fail(fmt.Sprintf("Timeout after %d minutes", timeoutMinutes))
 
 		case <-tick:
 			session := CmdRunner(oc.path, "get", resourceType, "--namespace", namespace)

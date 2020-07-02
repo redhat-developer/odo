@@ -19,7 +19,7 @@ components:
       mountSources: true
 commands:
   - exec:
-      id: devbuild
+      id: firstbuild
       component: runtime
       commandLine: npm install
       workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
@@ -27,22 +27,27 @@ commands:
         kind: build
         isDefault: true
   - exec:
-      id: build
+      id: secondbuild
       component: runtime
       commandLine: npm install
       workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
       group:
         kind: build
+        isDefault: true
   - exec:
-      id: devrun
+      id: thirdbuild
+      component: runtime
+      commandLine: npm install
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+  - exec:
+      id: firstrun
       component: runtime
       commandLine: npm start
       workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
       group:
         kind: run
-        isDefault: true
   - exec:
-      id: run
+      id: secondrun
       component: runtime
       commandLine: npm start
       workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
