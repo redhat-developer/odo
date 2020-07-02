@@ -35,10 +35,10 @@ type Devfile200 struct {
 	Projects []common.DevfileProject `json:"projects,omitempty"`
 
 	// Devfile schema version
-	SchemaVersion string `json:"schemaVersion"`
+	SchemaVersion string `json:"schemaVersion" yaml:"schemaVersion"`
 
 	// StarterProjects is a project that can be used as a starting point when bootstrapping new projects
-	StarterProjects []StarterProject `json:"starterProjects,omitempty"`
+	StarterProjects []StarterProject `json:"starterProjects, yaml:"schemaVersion", "omitempty"`
 }
 
 // Command

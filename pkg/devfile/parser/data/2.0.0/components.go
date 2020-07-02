@@ -197,3 +197,14 @@ func (d *Devfile200) GetAliasedComponents() []common.DevfileComponent {
 	// V2 has name required in jsonSchema
 	return d.Components
 }
+
+func (d *Devfile200) SetMetadata(name, version string) {
+	d.Metadata = common.DevfileMetadata{
+		Name:    name,
+		Version: version,
+	}
+}
+
+func (d *Devfile200) SetComponent(c common.DevfileComponent) {
+	d.Components = append(d.Components, c)
+}

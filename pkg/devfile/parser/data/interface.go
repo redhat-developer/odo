@@ -7,6 +7,7 @@ import (
 // DevfileData is an interface that defines functions for Devfile data operations
 type DevfileData interface {
 	GetMetadata() common.DevfileMetadata
+	SetMetadata(name, version string)
 
 	// parent related methods
 	GetParent() common.DevfileParent
@@ -21,6 +22,7 @@ type DevfileData interface {
 	GetComponents() []common.DevfileComponent
 	AddComponents(components []common.DevfileComponent) error
 	UpdateComponent(component common.DevfileComponent)
+	SetComponent(c common.DevfileComponent)
 	GetAliasedComponents() []common.DevfileComponent
 
 	// project related methods

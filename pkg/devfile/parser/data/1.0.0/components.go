@@ -251,3 +251,11 @@ func getGroup(name string) *common.Group {
 
 	return nil
 }
+
+func (d *Devfile100) SetMetadata(name, version string) {
+
+}
+
+func SetComponent(c common.DevfileComponent) {
+
+}
