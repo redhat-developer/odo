@@ -26,15 +26,15 @@ commands:
       id: devBuild
       component: runtime
       commandLine: npm install
-      workingDir: /test/app
+      workingDir: /test
       group:
         kind: build
         isDefault: true
   - exec:
       id: devRun
       component: runtime
-      commandLine: nodemon app.js
-      workingDir: /test/app
+      commandLine: npm start
+      workingDir: /test
       group:
         kind: run
         isDefault: true

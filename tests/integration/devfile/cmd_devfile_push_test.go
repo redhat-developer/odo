@@ -99,7 +99,7 @@ var _ = Describe("odo devfile push command tests", func() {
 				podName,
 				"runtime",
 				namespace,
-				[]string{"stat", "/test/app"},
+				[]string{"stat", "/test/server.js"},
 				func(cmdOp string, err error) bool {
 					statErr = err
 					return true

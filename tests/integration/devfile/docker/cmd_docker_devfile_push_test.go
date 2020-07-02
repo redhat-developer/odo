@@ -88,7 +88,7 @@ var _ = Describe("odo docker devfile push command tests", func() {
 
 			sourceMapping := "/test"
 			stdOut := dockerClient.ExecContainer(containers[0], "ls -la "+sourceMapping)
-			helper.MatchAllInOutput(stdOut, []string{"app"})
+			helper.MatchAllInOutput(stdOut, []string{"server.js"})
 		})
 
 		It("Check that odo push works with a devfile that has volumes defined", func() {
