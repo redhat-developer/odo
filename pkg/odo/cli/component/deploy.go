@@ -128,7 +128,7 @@ func (do *DeployOptions) Validate() (err error) {
 
 	} else if !util.CheckPathExists(filepath.Join(do.componentContext, "Dockerfile")) {
 		s.End(false)
-		return errors.New("dockerfile required for build. No 'dockerfile' field found in devfile, or Dockerfile found in project directory")
+		return errors.New("dockerfile required for build. No 'alpha.build-dockerfile' field found in devfile, or Dockerfile found in project directory")
 	}
 
 	s.End(true)
