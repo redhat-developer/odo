@@ -9,6 +9,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/cli/service/ui"
 	commonui "github.com/openshift/odo/pkg/odo/cli/ui"
@@ -96,6 +97,8 @@ type ServiceCreateOptions struct {
 	// Location of the file in which yaml specification of CR is stored.
 	// TODO: remove this after service create's interactive mode supports creating operator backed services
 	fromFile string
+	// For accessing information from Devfile
+	EnvSpecificInfo *envinfo.EnvSpecificInfo
 }
 
 // NewServiceCreateOptions creates a new ServiceCreateOptions instance
@@ -109,7 +112,15 @@ func (o *ServiceCreateOptions) Complete(name string, cmd *cobra.Command, args []
 		o.interactive = true
 	}
 
-	if o.componentContext != "" {
+	if experimental.IsExperimentalModeEnabled() {
+		envInfo, err := envinfo.NewEnvSpecificInfo(o.componentContext)
+		if err != nil {
+			return errors.Wrap(err, "unable to retrieve configuration information")
+		}
+
+		o.EnvSpecificInfo = envInfo
+		o.Context = genericclioptions.NewDevfileContext(cmd)
+	} else if o.componentContext != "" {
 		o.Context = genericclioptions.NewContext(cmd)
 	} else {
 		o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
