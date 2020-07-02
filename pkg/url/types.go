@@ -24,7 +24,7 @@ type URLSpec struct {
 	ExternalPort int             `json:"externalport,omitempty"`
 }
 
-// AppList is a list of applications
+// URLList is a list of applications
 type URLList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
