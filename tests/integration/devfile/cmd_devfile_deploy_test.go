@@ -78,7 +78,7 @@ var _ = Describe("odo devfile deploy command tests", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 			helper.CmdShouldPass("odo", "url", "create", "--port", "3000")
 			cmdOutput := helper.CmdShouldFail("odo", "deploy", "--tag", imageTag)
-			Expect(cmdOutput).To(ContainSubstring("dockerfile required for build. No 'dockerfile' field found in devfile, or Dockerfile found in project directory"))
+			Expect(cmdOutput).To(ContainSubstring("dockerfile required for build. No 'alpha.build-dockerfile' field found in devfile, or Dockerfile found in project directory"))
 		})
 	})
 
