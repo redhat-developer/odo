@@ -38,26 +38,26 @@ func TestBootstrapManifest(t *testing.T) {
 		InitOptions: InitOptions{
 			Prefix:              "tst-",
 			GitOpsRepoURL:       testGitOpsRepo,
-			GitOpsWebhookSecret: "123",
 			ImageRepo:           "image/repo",
+			GitOpsWebhookSecret: "123",
 		},
-		AppRepoURL:       testSvcRepo,
-		AppWebhookSecret: "456",
+		ServiceRepoURL:       testSvcRepo,
+		ServiceWebhookSecret: "456",
 	}
 
 	r, err := bootstrapResources(params, ioutils.NewMapFilesystem())
 	if err != nil {
 		t.Fatal(err)
 	}
-	hookSecret, err := secrets.CreateSealedSecret(meta.NamespacedName("tst-cicd", "webhook-secret-tst-dev-http-api-svc"), "456", eventlisteners.WebhookSecretKey, "test-ns")
+	hookSecret, err := secrets.CreateSealedSecret(meta.NamespacedName("tst-cicd", "webhook-secret-tst-dev-http-api"), "456", eventlisteners.WebhookSecretKey, "test-ns")
 	if err != nil {
 		t.Fatal(err)
 	}
 	want := res.Resources{
-		"config/tst-cicd/base/pipelines/03-secrets/webhook-secret-tst-dev-http-api-svc.yaml": hookSecret,
-		"environments/tst-dev/services/http-api-svc/base/config/100-deployment.yaml":         deployment.Create("tst-dev", "http-api-svc", bootstrapImage, deployment.ContainerPort(8080)),
-		"environments/tst-dev/services/http-api-svc/base/config/200-service.yaml":            createBootstrapService("tst-dev", "http-api-svc"),
-		"environments/tst-dev/services/http-api-svc/base/config/kustomization.yaml":          &res.Kustomization{Resources: []string{"100-deployment.yaml", "200-service.yaml"}},
+		"config/tst-cicd/base/pipelines/03-secrets/webhook-secret-tst-dev-http-api.yaml": hookSecret,
+		"environments/tst-dev/services/http-api/base/config/100-deployment.yaml":         deployment.Create("app-taxi", "tst-dev", "http-api", bootstrapImage, deployment.ContainerPort(8080)),
+		"environments/tst-dev/services/http-api/base/config/200-service.yaml":            createBootstrapService("app-taxi", "tst-dev", "http-api"),
+		"environments/tst-dev/services/http-api/base/config/kustomization.yaml":          &res.Kustomization{Resources: []string{"100-deployment.yaml", "200-service.yaml"}},
 		pipelinesFile: &config.Manifest{
 			GitOpsURL: "https://github.com/my-org/gitops.git",
 			Environments: []*config.Environment{
@@ -71,24 +71,24 @@ func TestBootstrapManifest(t *testing.T) {
 					Name: "tst-dev",
 					Services: []*config.Service{
 						{
-							Name:      "http-api-svc",
+							Name:      "http-api",
 							SourceURL: testSvcRepo,
 							Webhook: &config.Webhook{
 								Secret: &config.Secret{
-									Name:      "webhook-secret-tst-dev-http-api-svc",
+									Name:      "webhook-secret-tst-dev-http-api",
 									Namespace: "tst-cicd",
 								},
 							},
 							Pipelines: &config.Pipelines{
-								Integration: &config.TemplateBinding{Bindings: []string{"tst-dev-http-api-svc-binding", "github-pr-binding"}},
+								Integration: &config.TemplateBinding{Bindings: []string{"tst-dev-http-api-binding", "github-pr-binding"}},
 							},
 						},
 					},
 
 					Apps: []*config.Application{
 						{
-							Name:        "http-api",
-							ServiceRefs: []string{"http-api-svc"},
+							Name:        "app-http-api",
+							ServiceRefs: []string{"http-api"},
 						},
 					},
 				},
@@ -114,7 +114,7 @@ func TestBootstrapManifest(t *testing.T) {
 		"02-rolebindings/pipeline-service-role.yaml",
 		"02-rolebindings/pipeline-service-rolebinding.yaml",
 		"03-secrets/gitops-webhook-secret.yaml",
-		"03-secrets/webhook-secret-tst-dev-http-api-svc.yaml",
+		"03-secrets/webhook-secret-tst-dev-http-api.yaml",
 		"04-tasks/deploy-from-source-task.yaml",
 		"04-tasks/deploy-using-kubectl-task.yaml",
 		"05-pipelines/app-ci-pipeline.yaml",
@@ -122,7 +122,7 @@ func TestBootstrapManifest(t *testing.T) {
 		"05-pipelines/ci-dryrun-from-pr-pipeline.yaml",
 		"06-bindings/github-pr-binding.yaml",
 		"06-bindings/github-push-binding.yaml",
-		"06-bindings/tst-dev-http-api-svc-binding.yaml",
+		"06-bindings/tst-dev-http-api-binding.yaml",
 		"07-templates/app-ci-build-pr-template.yaml",
 		"07-templates/cd-deploy-from-push-template.yaml",
 		"07-templates/ci-dryrun-from-pr-template.yaml",
@@ -148,16 +148,15 @@ func TestOrgRepoFromURL(t *testing.T) {
 
 func TestApplicationFromRepo(t *testing.T) {
 	want := &config.Application{
-		Name:        "http-api",
-		ServiceRefs: []string{"http-api-svc"},
+		Name:        "app-http-api",
+		ServiceRefs: []string{"http-api"},
 	}
 
-	got, err := applicationFromRepo(testSvcRepo, "http-api-svc")
+	got, err := applicationFromRepo(testSvcRepo, "http-api")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Fatalf("bootstrapped resources:\n%s", diff)
 	}
-
 }

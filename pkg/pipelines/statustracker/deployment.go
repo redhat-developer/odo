@@ -7,7 +7,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/openshift/odo/pkg/pipelines/deployment"
@@ -17,11 +16,12 @@ import (
 )
 
 const (
-	operatorName   = "commit-status-tracker"
-	containerImage = "quay.io/redhat-developer/commit-status-tracker:v0.0.1"
+	operatorName         = "commit-status-tracker"
+	containerImage       = "quay.io/redhat-developer/commit-status-tracker:v0.0.1"
+	commitStatusAppLabel = "commit-status-tracker-operator"
 )
 
-type secretSealer = func(types.NamespacedName, string, string) (*ssv1alpha1.SealedSecret, error)
+type secretSealer = func(types.NamespacedName, string, string, string) (*ssv1alpha1.SealedSecret, error)
 
 var defaultSecretSealer secretSealer = secrets.CreateSealedSecret
 
@@ -90,7 +90,7 @@ var (
 )
 
 func createStatusTrackerDeployment(ns string) *appsv1.Deployment {
-	return deployment.Create(ns, operatorName, containerImage,
+	return deployment.Create(commitStatusAppLabel, ns, operatorName, containerImage,
 		deployment.ServiceAccount(operatorName),
 		deployment.Env(statusTrackerEnv),
 		deployment.Command([]string{operatorName}))
@@ -98,11 +98,11 @@ func createStatusTrackerDeployment(ns string) *appsv1.Deployment {
 
 // Resources returns a list of newly created resources that are required start
 // the status-tracker service.
-func Resources(ns, token string) ([]interface{}, error) {
+func Resources(ns, token, sealedSecretsNS string) ([]interface{}, error) {
 	name := meta.NamespacedName(ns, operatorName)
 	sa := roles.CreateServiceAccount(name)
 
-	githubAuth, err := defaultSecretSealer(meta.NamespacedName(ns, "commit-status-tracker-git-secret"), token, "token")
+	githubAuth, err := defaultSecretSealer(meta.NamespacedName(ns, "commit-status-tracker-git-secret"), token, "token", sealedSecretsNS)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate Status Tracker Secret: %v", err)
 	}
@@ -117,12 +117,4 @@ func Resources(ns, token string) ([]interface{}, error) {
 
 func ptr32(i int32) *int32 {
 	return &i
-}
-
-func labelSelector(name, value string) *metav1.LabelSelector {
-	return &metav1.LabelSelector{
-		MatchLabels: map[string]string{
-			name: value,
-		},
-	}
 }

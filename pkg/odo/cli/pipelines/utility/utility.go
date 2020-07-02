@@ -27,6 +27,8 @@ func RemoveEmptyStrings(s []string) []string {
 	return nonempty
 }
 
+// MaybeCompletePrefix adds a hyphen on the end of the prefix if it doesn't have
+// one to make prefix-generated names look a bit nicer.
 func MaybeCompletePrefix(s string) string {
 	if s != "" && !strings.HasSuffix(s, "-") {
 		return s + "-"

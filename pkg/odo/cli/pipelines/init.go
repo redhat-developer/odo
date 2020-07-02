@@ -63,6 +63,7 @@ func (io *InitParameters) Validate() error {
 	if len(utility.RemoveEmptyStrings(strings.Split(gr.Path, "/"))) != 2 {
 		return fmt.Errorf("repo must be org/repo: %s", strings.Trim(gr.Path, ".git"))
 	}
+
 	return nil
 }
 
@@ -92,7 +93,7 @@ func NewCmdInit(name, fullName string) *cobra.Command {
 
 	initCmd.Flags().StringVar(&o.GitOpsRepoURL, "gitops-repo-url", "", "GitOps repository e.g. https://github.com/organisation/repository")
 	initCmd.MarkFlagRequired("gitops-repo-url")
-	initCmd.Flags().StringVar(&o.GitOpsWebhookSecret, "gitops-webhook-secret", "", "provide the GitHub webhook secret for GitOps repository")
+	initCmd.Flags().StringVar(&o.GitOpsWebhookSecret, "gitops-webhook-secret", "", "provide the GitHub webhook secret for GitOps repository (if not provided, it will be auto-generated)")
 	initCmd.MarkFlagRequired("gitops-webhook-secret")
 	initCmd.Flags().StringVar(&o.OutputPath, "output", ".", "folder path to add GitOps resources")
 	initCmd.Flags().StringVarP(&o.Prefix, "prefix", "p", "", "add a prefix to the environment names")

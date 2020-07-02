@@ -310,21 +310,8 @@ func TestAddService(t *testing.T) {
 	}
 }
 
-func stubDefaultPublicKeyFunc(t *testing.T) {
-	origDefaultPublicKeyFunc := secrets.DefaultPublicKeyFunc
-	t.Cleanup(func() {
-		secrets.DefaultPublicKeyFunc = origDefaultPublicKeyFunc
-	})
-	secrets.DefaultPublicKeyFunc = func(string) (*rsa.PublicKey, error) {
-		key, err := rsa.GenerateKey(rand.Reader, 1024)
-		if err != nil {
-			t.Fatalf("failed to generate a private RSA key: %s", err)
-		}
-		return &key.PublicKey, nil
-	}
-}
-
 func TestServiceWithArgoCD(t *testing.T) {
+	stubDefaultPublicKeyFunc(t)
 	fakeFs := ioutils.NewMapFilesystem()
 	m := buildManifest(true, true)
 	want := res.Resources{
@@ -490,5 +477,18 @@ func TestCreateSvcImageBinding(t *testing.T) {
 	if diff := cmp.Diff(resources, wantResources); diff != "" {
 		t.Errorf("resources failed: %v", diff)
 	}
+}
 
+func stubDefaultPublicKeyFunc(t *testing.T) {
+	origDefaultPublicKeyFunc := secrets.DefaultPublicKeyFunc
+	t.Cleanup(func() {
+		secrets.DefaultPublicKeyFunc = origDefaultPublicKeyFunc
+	})
+	secrets.DefaultPublicKeyFunc = func(string) (*rsa.PublicKey, error) {
+		key, err := rsa.GenerateKey(rand.Reader, 1024)
+		if err != nil {
+			t.Fatalf("failed to generate a private RSA key: %s", err)
+		}
+		return &key.PublicKey, nil
+	}
 }

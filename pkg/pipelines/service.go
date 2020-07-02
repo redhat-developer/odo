@@ -12,9 +12,8 @@ import (
 	"github.com/openshift/odo/pkg/pipelines/meta"
 	res "github.com/openshift/odo/pkg/pipelines/resources"
 	"github.com/openshift/odo/pkg/pipelines/roles"
-	"github.com/openshift/odo/pkg/pipelines/triggers"
-
 	"github.com/openshift/odo/pkg/pipelines/secrets"
+	"github.com/openshift/odo/pkg/pipelines/triggers"
 	"github.com/openshift/odo/pkg/pipelines/yaml"
 	"github.com/spf13/afero"
 )
@@ -62,15 +61,17 @@ func AddService(p *AddServiceOptions, fs afero.Fs) error {
 
 func serviceResources(m *config.Manifest, fs afero.Fs, o *AddServiceOptions) (res.Resources, error) {
 	files := res.Resources{}
-
 	svc, err := createService(o.ServiceName, o.GitRepoURL)
 	if err != nil {
 		return nil, err
 	}
-
 	cfg := m.GetPipelinesConfig()
 	if cfg != nil && o.WebhookSecret == "" && o.GitRepoURL != "" {
-		return nil, fmt.Errorf("The webhook secret is required")
+		gitSecret, err := secrets.GenerateString(webhookSecretLength)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate service webhook secret: %v", err)
+		}
+		o.WebhookSecret = gitSecret
 	}
 
 	env := m.GetEnvironment(o.EnvName)

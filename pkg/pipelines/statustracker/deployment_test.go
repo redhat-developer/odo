@@ -17,17 +17,17 @@ import (
 
 func TestCreateStatusTrackerDeployment(t *testing.T) {
 	deploy := createStatusTrackerDeployment("dana-cicd")
-
 	want := &appsv1.Deployment{
 		TypeMeta:   meta.TypeMeta("Deployment", "apps/v1"),
 		ObjectMeta: meta.ObjectMeta(meta.NamespacedName("dana-cicd", operatorName)),
 		Spec: appsv1.DeploymentSpec{
 			Replicas: ptr32(1),
-			Selector: labelSelector(deployment.KubernetesAppNameLabel, operatorName),
+			Selector: deployment.LabelSelector(operatorName, commitStatusAppLabel),
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
 						deployment.KubernetesAppNameLabel: operatorName,
+						deployment.KubernetesPartOfLabel:  commitStatusAppLabel,
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -78,12 +78,12 @@ func TestResource(t *testing.T) {
 	}(defaultSecretSealer)
 
 	testSecret := &ssv1alpha1.SealedSecret{}
-	defaultSecretSealer = func(ns types.NamespacedName, data, secretKey string) (*ssv1alpha1.SealedSecret, error) {
+	defaultSecretSealer = func(ns types.NamespacedName, data, secretKey, _ string) (*ssv1alpha1.SealedSecret, error) {
 		return testSecret, nil
 	}
 
 	ns := "my-test-ns"
-	res, err := Resources(ns, "test-token")
+	res, err := Resources(ns, "test-token", "sealed-secrets-ns")
 	if err != nil {
 		t.Fatal(err)
 	}

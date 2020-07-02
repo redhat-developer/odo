@@ -49,7 +49,9 @@ func NewBootstrapParameters() *BootstrapParameters {
 func (io *BootstrapParameters) Complete(name string, cmd *cobra.Command, args []string) error {
 	io.Prefix = utility.MaybeCompletePrefix(io.Prefix)
 	io.GitOpsRepoURL = utility.AddGitSuffixIfNecessary(io.GitOpsRepoURL)
-	io.AppRepoURL = utility.AddGitSuffixIfNecessary(io.AppRepoURL)
+	io.ServiceRepoURL = utility.AddGitSuffixIfNecessary(io.ServiceRepoURL)
+	io.GitOpsRepoURL = utility.AddGitSuffixIfNecessary(io.GitOpsRepoURL)
+	io.ServiceRepoURL = utility.AddGitSuffixIfNecessary(io.ServiceRepoURL)
 	return nil
 }
 
@@ -64,6 +66,7 @@ func (io *BootstrapParameters) Validate() error {
 	if len(utility.RemoveEmptyStrings(strings.Split(gr.Path, "/"))) != 2 {
 		return fmt.Errorf("repo must be org/repo: %s", strings.Trim(gr.Path, ".git"))
 	}
+
 	return nil
 }
 
@@ -92,10 +95,10 @@ func NewCmdBootstrap(name, fullName string) *cobra.Command {
 	}
 
 	bootstrapCmd.Flags().StringVar(&o.GitOpsRepoURL, "gitops-repo-url", "", "GitOps repository e.g. https://github.com/organisation/repository")
-	bootstrapCmd.Flags().StringVar(&o.GitOpsWebhookSecret, "gitops-webhook-secret", "", "provide the GitHub webhook secret for GitOps repository")
+	bootstrapCmd.Flags().StringVar(&o.GitOpsWebhookSecret, "gitops-webhook-secret", "", "provide the GitHub webhook secret for GitOps repository (if not provided, it will be auto-generated)")
 
-	bootstrapCmd.Flags().StringVar(&o.AppRepoURL, "app-repo-url", "", "Application source e.g. https://github.com/organisation/application")
-	bootstrapCmd.Flags().StringVar(&o.AppWebhookSecret, "app-webhook-secret", "", "Provide the GitHub webhook secret for Application repository")
+	bootstrapCmd.Flags().StringVar(&o.ServiceRepoURL, "service-repo-url", "", "Service source e.g. https://github.com/organisation/service")
+	bootstrapCmd.Flags().StringVar(&o.ServiceWebhookSecret, "service-webhook-secret", "", "Provide the GitHub webhook secret for Service repository (if not provided, it will be auto-generated)")
 
 	bootstrapCmd.Flags().StringVar(&o.DockerConfigJSONFilename, "dockercfgjson", "", "provide the dockercfgjson path")
 	bootstrapCmd.Flags().StringVar(&o.InternalRegistryHostname, "internal-registry-hostname", "image-registry.openshift-image-registry.svc:5000", "internal image registry hostname")
@@ -104,6 +107,10 @@ func NewCmdBootstrap(name, fullName string) *cobra.Command {
 	bootstrapCmd.Flags().StringVarP(&o.ImageRepo, "image-repo", "", "", "Used to push built images")
 
 	bootstrapCmd.Flags().StringVarP(&o.SealedSecretsNamespace, "sealed-secrets-ns", "", "", "namespace in which the Sealed Secrets operator is installed, automatically generated secrets are encrypted with this operator")
+	bootstrapCmd.MarkFlagRequired("gitops-repo-url")
+	bootstrapCmd.MarkFlagRequired("app-repo-url")
+	bootstrapCmd.MarkFlagRequired("dockercfgjson")
+	bootstrapCmd.MarkFlagRequired("image-repo")
 
 	bootstrapCmd.MarkFlagRequired("gitops-repo-url")
 	bootstrapCmd.MarkFlagRequired("gitops-webhook-secret")

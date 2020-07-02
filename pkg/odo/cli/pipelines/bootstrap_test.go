@@ -56,8 +56,8 @@ func TestAddSuffixWithBootstrap(t *testing.T) {
 		t.Run(test.name, func(rt *testing.T) {
 			o := BootstrapParameters{
 				&pipelines.BootstrapOptions{
-					InitOptions: pipelines.InitOptions{GitOpsRepoURL: test.gitOpsURL},
-					AppRepoURL:  test.appURL},
+					InitOptions:    pipelines.InitOptions{GitOpsRepoURL: test.gitOpsURL},
+					ServiceRepoURL: test.appURL},
 				&genericclioptions.Context{}}
 
 			err := o.Complete("test", &cobra.Command{}, []string{"test", "test/repo"})
@@ -68,7 +68,7 @@ func TestAddSuffixWithBootstrap(t *testing.T) {
 			if o.GitOpsRepoURL != test.validGitOpsURL {
 				rt.Fatalf("URL mismatch: got %s, want %s", o.GitOpsRepoURL, test.validAppURL)
 			}
-			if o.AppRepoURL != test.validAppURL {
+			if o.ServiceRepoURL != test.validAppURL {
 				rt.Fatalf("URL mismatch: got %s, want %s", o.GitOpsRepoURL, test.validAppURL)
 			}
 		})

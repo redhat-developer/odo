@@ -101,8 +101,9 @@ const (
 
 	dockerSecretName = "regcred"
 
-	saName          = "pipeline"
-	roleBindingName = "pipelines-service-role-binding"
+	saName              = "pipeline"
+	roleBindingName     = "pipelines-service-role-binding"
+	webhookSecretLength = 20
 )
 
 // Init bootstraps a GitOps pipelines and repository structure.
@@ -110,6 +111,13 @@ func Init(o *InitOptions, fs afero.Fs) error {
 	exists, err := ioutils.IsExisting(fs, o.OutputPath)
 	if exists {
 		return err
+	}
+	if o.GitOpsWebhookSecret == "" {
+		gitSecret, err := secrets.GenerateString(webhookSecretLength)
+		if err != nil {
+			return fmt.Errorf("failed to generate GitOps webhook secret: %v", err)
+		}
+		o.GitOpsWebhookSecret = gitSecret
 	}
 	gitOpsRepo, err := scm.NewRepository(o.GitOpsRepoURL)
 	if err != nil {
