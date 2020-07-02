@@ -10,7 +10,7 @@ metadata:
   name: test-devfile
 projects:
   -
-    name: nodejs-web-app
+    name: nodejs-starter
     source:
       type: git
       location: "https://github.com/che-samples/web-nodejs-sample.git"
@@ -32,19 +32,19 @@ commands:
       - type: exec
         component: runtime
         command: "npm install"
-        workdir: ${CHE_PROJECTS_ROOT}/nodejs-web-app/app
+        workdir: ${CHE_PROJECTS_ROOT}/nodejs-starter/app
   - name: devrun
     actions:
       - type: exec
         component: runtime
         command: "nodemon app.js"
-        workdir: ${CHE_PROJECTS_ROOT}/nodejs-web-app/app
+        workdir: ${CHE_PROJECTS_ROOT}/nodejs-starter/app
   - name: debugrun
     actions:
       - type: exec
         component: runtime
         command: "nodemon --inspect=${DEBUG_PORT}"
-        workdir: ${CHE_PROJECTS_ROOT}/nodejs-web-app/
+        workdir: ${CHE_PROJECTS_ROOT}/nodejs-starter/
 ```
 
 - Now we need to create the component using `odo create nodejs`

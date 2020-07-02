@@ -257,7 +257,7 @@ var _ = Describe("odo service command tests", func() {
 
 			// Check json output
 			stdOut = helper.CmdShouldPass("odo", "service", "list", "-o", "json")
-			helper.MatchAllInOutput(stdOut, []string{"dh-prometheus-apb", "ServiceList"})
+			helper.MatchAllInOutput(stdOut, []string{"dh-prometheus-apb", "List"})
 
 			// cd to a non-component directory and list services
 			helper.Chdir(originalDir)
@@ -267,8 +267,7 @@ var _ = Describe("odo service command tests", func() {
 			// Check json output
 			helper.Chdir(originalDir)
 			stdOut = helper.CmdShouldPass("odo", "service", "list", "--app", app, "--project", project, "-o", "json")
-			helper.MatchAllInOutput(stdOut, []string{"dh-prometheus-apb", "ServiceList"})
-
+			helper.MatchAllInOutput(stdOut, []string{"dh-prometheus-apb", "List"})
 		})
 
 		It("should be able to create, list and delete services without a context and using --app and --project flags instaed", func() {

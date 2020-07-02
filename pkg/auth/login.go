@@ -129,6 +129,7 @@ func filteredInformation(s []byte) []byte {
 	s = bytes.Replace(s, []byte("new-project"), []byte("project create"), -1)
 	s = bytes.Replace(s, []byte("<projectname>"), []byte("<project-name>"), -1)
 	s = bytes.Replace(s, []byte("project <project-name>"), []byte("project set <project-name>"), -1)
+	s = bytes.Replace(s, []byte("odo projects"), []byte("odo project list"), -1)
 
 	return s
 }

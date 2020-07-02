@@ -187,7 +187,7 @@ OdoSettings:
   - Name: CheDevfileRegistry
     URL: https://che-devfile-registry.openshift.io/
   - Name: DefaultDevfileRegistry
-    URL: https://raw.githubusercontent.com/elsony/devfile-registry/master`,
+    URL: https://github.com/elsony/devfile-registry`,
 	))
 	if err != nil {
 		t.Error(err)
@@ -211,7 +211,7 @@ OdoSettings:
 				},
 				"DefaultDevfileRegistry": {
 					Name: "DefaultDevfileRegistry",
-					URL:  "https://raw.githubusercontent.com/elsony/devfile-registry/master",
+					URL:  "https://github.com/elsony/devfile-registry",
 				},
 			},
 		},
@@ -241,7 +241,7 @@ OdoSettings:
 	}
 }
 
-func TestGetDevfileIndexEntries(t *testing.T) {
+func TestGetRegistryDevfiles(t *testing.T) {
 	// Start a local HTTP server
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		// Send response to be tested
@@ -249,6 +249,7 @@ func TestGetDevfileIndexEntries(t *testing.T) {
 			`
 			[
 				{
+					"name": "nodejs",
 					"displayName": "NodeJS Angular Web Application",
 					"description": "Stack for developing NodeJS Angular Web Application",
 					"tags": [
@@ -276,31 +277,21 @@ func TestGetDevfileIndexEntries(t *testing.T) {
 	tests := []struct {
 		name     string
 		registry Registry
-		want     []DevfileIndexEntry
+		want     []DevfileComponentType
 	}{
 		{
 			name:     "Test NodeJS devfile index",
 			registry: Registry{Name: registryName, URL: server.URL},
-			want: []DevfileIndexEntry{
+			want: []DevfileComponentType{
 				{
+					Name:        "nodejs",
 					DisplayName: "NodeJS Angular Web Application",
 					Description: "Stack for developing NodeJS Angular Web Application",
-					Tags: []string{
-						"NodeJS",
-						"Angular",
-						"Alpine",
-					},
-					Icon:              "/images/angular.svg",
-					GlobalMemoryLimit: "2686Mi",
 					Registry: Registry{
 						Name: registryName,
 						URL:  server.URL,
 					},
-					Links: struct {
-						Link string `json:"self"`
-					}{
-						Link: "/devfiles/angular/devfile.yaml",
-					},
+					Link: "/devfiles/angular/devfile.yaml",
 				},
 			},
 		},
@@ -308,228 +299,11 @@ func TestGetDevfileIndexEntries(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getDevfileIndexEntries(tt.registry)
+			got, err := getRegistryDevfiles(tt.registry)
 
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Got: %v, want: %v", got, tt.want)
 				t.Logf("Error message is: %v", err)
-			}
-		})
-	}
-}
-
-func TestGetDevfile(t *testing.T) {
-	// Start a local HTTP server
-	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		// Send response to be tested
-		// Note: Yaml file uses indentation to represent relationships between data layers,
-		// so we need to use the following Yaml format to obey the rule
-		_, err := rw.Write([]byte(
-			`apiVersion: 1.0.0
-metadata:
-  generateName: angular-
-  projects:
-  -
-    name: angular-realworld-example-app
-    source:
-      type: git
-      location: "https://github.com/gothinkster/angular-realworld-example-app"
-components:
-  -
-    type: chePlugin
-    id: che-incubator/typescript/latest
-  -
-    type: dockerimage
-    alias: nodejs
-    image: quay.io/eclipse/che-nodejs10-community:nightly
-    memoryLimit: 1Gi
-    endpoints:
-      - name: 'angular'
-        port: 4200
-    mountSources: true
-commands:
-  - name: yarn install
-    actions:
-      - type: exec
-        component: nodejs
-        command: yarn install
-        workdir: ${CHE_PROJECTS_ROOT}/angular-realworld-example-app
-  -
-    name: build
-    actions:
-      - type: exec
-        component: nodejs
-        command: yarn run build
-        workdir: ${CHE_PROJECTS_ROOT}/angular-realworld-example-app
-  -
-    name: start
-    actions:
-      - type: exec
-        component: nodejs
-        command: yarn run start --host 0.0.0.0 --disableHostCheck true
-        workdir: ${CHE_PROJECTS_ROOT}/angular-realworld-example-app
-  -
-    name: lint
-    actions:
-      - type: exec
-        component: nodejs
-        command: yarn run lint
-        workdir: ${CHE_PROJECTS_ROOT}/angular-realworld-example-app`,
-		))
-		if err != nil {
-			t.Error(err)
-		}
-	}))
-	// Close the server when test finishes
-	defer server.Close()
-
-	tests := []struct {
-		name        string
-		devfileLink string
-		want        Devfile
-	}{
-		{
-			name:        "Test NodeJS devfile",
-			devfileLink: server.URL,
-			want: Devfile{
-				APIVersion: "1.0.0",
-				MetaData: struct {
-					GenerateName string `yaml:"generateName"`
-				}{
-					GenerateName: "angular-",
-				},
-				Components: []struct {
-					Type  string `yaml:"type"`
-					Alias string `yaml:"alias"`
-				}{
-					{
-						Type: "chePlugin",
-					},
-					{
-						Type:  "dockerimage",
-						Alias: "nodejs",
-					},
-				},
-				Commands: []struct {
-					Name string `yaml:"name"`
-				}{
-					{
-						Name: "yarn install",
-					},
-					{
-						Name: "build",
-					},
-					{
-						Name: "start",
-					},
-					{
-						Name: "lint",
-					},
-				},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetDevfile(tt.devfileLink)
-
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Got: %v, want: %v", got, tt.want)
-				t.Logf("Error message is: %v", err)
-			}
-		})
-	}
-}
-
-func TestIsDevfileComponentSupported(t *testing.T) {
-	tests := []struct {
-		name    string
-		devfile Devfile
-		want    bool
-	}{
-		{
-			name: "Case 1: Test unsupported devfile",
-			devfile: Devfile{
-				APIVersion: "1.0.0",
-				MetaData: struct {
-					GenerateName string `yaml:"generateName"`
-				}{
-					GenerateName: "angular-",
-				},
-				Components: []struct {
-					Type  string `yaml:"type"`
-					Alias string `yaml:"alias"`
-				}{
-					{
-						Type: "chePlugin",
-					},
-					{
-						Type:  "dockerimage",
-						Alias: "nodejs",
-					},
-				},
-				Commands: []struct {
-					Name string `yaml:"name"`
-				}{
-					{
-						Name: "yarn install",
-					},
-					{
-						Name: "build",
-					},
-					{
-						Name: "start",
-					},
-					{
-						Name: "lint",
-					},
-				},
-			},
-			want: false,
-		},
-		{
-			name: "Case 2: Test supported devfile",
-			devfile: Devfile{
-				APIVersion: "1.0.0",
-				MetaData: struct {
-					GenerateName string `yaml:"generateName"`
-				}{
-					GenerateName: "openLiberty",
-				},
-				Components: []struct {
-					Type  string `yaml:"type"`
-					Alias string `yaml:"alias"`
-				}{
-					{
-						Type: "chePlugin",
-					},
-					{
-						Type:  "dockerimage",
-						Alias: "runtime",
-					},
-				},
-				Commands: []struct {
-					Name string `yaml:"name"`
-				}{
-					{
-						Name: "devBuild",
-					},
-					{
-						Name: "devRun",
-					},
-				},
-			},
-			want: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := IsDevfileComponentSupported(tt.devfile)
-
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Got: %v, want: %v", got, tt.want)
 			}
 		})
 	}
@@ -575,4 +349,41 @@ func MockImageStream() *imagev1.ImageStream {
 		})
 
 	return imageStream
+}
+
+func TestConvertURL(t *testing.T) {
+	tests := []struct {
+		name    string
+		URL     string
+		wantURL string
+	}{
+		{
+			name:    "Case 1: GitHub regular URL without specifying branch",
+			URL:     "https://github.com/GeekArthur/registry",
+			wantURL: "https://raw.githubusercontent.com/GeekArthur/registry/master",
+		},
+		{
+			name:    "Case 2: GitHub regular URL with master branch specified",
+			URL:     "https://github.ibm.com/Jingfu-J-Wang/registry/tree/master",
+			wantURL: "https://raw.github.ibm.com/Jingfu-J-Wang/registry/master",
+		},
+		{
+			name:    "Case 3: GitHub regular URL with non-master branch specified",
+			URL:     "https://github.com/elsony/devfile-registry/tree/johnmcollier-crw",
+			wantURL: "https://raw.githubusercontent.com/elsony/devfile-registry/johnmcollier-crw",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotURL, err := convertURL(tt.URL)
+			if err != nil {
+				t.Error(err)
+			}
+
+			if !reflect.DeepEqual(gotURL, tt.wantURL) {
+				t.Errorf("Got url: %s, want URL: %s", gotURL, tt.wantURL)
+			}
+		})
+	}
 }

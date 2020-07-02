@@ -14,6 +14,7 @@ import (
 var _ = Describe("odo watch command tests", func() {
 	var project string
 	var context string
+	var currentWorkingDirectory string
 
 	// Setup up state for each test spec
 	// create new project (not set as active) and new context directory for each test spec
@@ -47,6 +48,22 @@ var _ = Describe("odo watch command tests", func() {
 			helper.CmdShouldPass("odo", "component", "create", "nodejs", "--project", project, "--context", context)
 			output := helper.CmdShouldFail("odo", "watch", "--context", context)
 			Expect(output).To(ContainSubstring("component does not exist. Please use `odo push` to create your component"))
+		})
+	})
+
+	Context("when executing odo watch against an app that doesn't exist", func() {
+		JustBeforeEach(func() {
+			currentWorkingDirectory = helper.Getwd()
+			helper.Chdir(context)
+		})
+		JustAfterEach(func() {
+			helper.Chdir(currentWorkingDirectory)
+		})
+		It("should fail with proper error", func() {
+			helper.CopyExample(filepath.Join("source", "nodejs"), context)
+			helper.CmdShouldPass("odo", "component", "create", "nodejs", "--project", project)
+			output := helper.CmdShouldFail("odo", "watch", "--app", "dummy")
+			Expect(output).To(ContainSubstring("component does not exist"))
 		})
 	})
 

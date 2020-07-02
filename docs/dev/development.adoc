@@ -521,7 +521,6 @@ To release a new version on GitHub:
 * Updates the version in the following files:
 
 ** link:/pkg/version/version.go[`pkg/version/version.go`]
-** link:/scripts/installer.sh[`scripts/installer.sh`]
 ** link:/Dockerfile.rhel[`Dockerfile.rhel`]
 ** link:/scripts/rpm-prepare.sh[`scripts/rpm-prepare.sh`]
 

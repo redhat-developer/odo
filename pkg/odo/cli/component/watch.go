@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"os"
 	"path/filepath"
 	"strings"
@@ -9,7 +10,7 @@ import (
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/occlient"
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
@@ -62,7 +63,7 @@ type WatchOptions struct {
 	componentName  string
 	devfilePath    string
 	namespace      string
-	devfileHandler adapters.PlatformAdapter
+	devfileHandler common.ComponentAdapter
 
 	EnvSpecificInfo *envinfo.EnvSpecificInfo
 
@@ -81,7 +82,7 @@ func NewWatchOptions() *WatchOptions {
 
 // Complete completes watch args
 func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	wo.devfilePath = filepath.Join(wo.componentContext, wo.devfilePath)
+	wo.devfilePath = filepath.Join(wo.componentContext, DevfilePath)
 
 	// if experimental mode is enabled and devfile is present
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(wo.devfilePath) {
@@ -110,8 +111,8 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 			return err
 		}
 
-		// Parse devfile
-		devObj, err := devfileParser.Parse(wo.devfilePath)
+		// Parse devfile and validate
+		devObj, err := parser.ParseAndValidate(wo.devfilePath)
 		if err != nil {
 			return err
 		}
@@ -126,7 +127,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 		} else {
 			platformContext = nil
 		}
-		wo.devfileHandler, err = adapters.NewPlatformAdapter(wo.componentName, wo.componentContext, devObj, platformContext)
+		wo.devfileHandler, err = adapters.NewComponentAdapter(wo.componentName, wo.componentContext, devObj, platformContext)
 
 		return err
 	}
@@ -190,6 +191,10 @@ func (wo *WatchOptions) Validate() (err error) {
 
 	cmpName := wo.LocalConfigInfo.GetName()
 	appName := wo.LocalConfigInfo.GetApplication()
+	if len(wo.Application) != 0 {
+		appName = wo.Application
+	}
+
 	exists, err := component.Exists(wo.Client, cmpName, appName)
 	if err != nil {
 		return
@@ -281,7 +286,6 @@ func NewCmdWatch(name, fullName string) *cobra.Command {
 
 	// enable devfile flag if experimental mode is enabled
 	if experimental.IsExperimentalModeEnabled() {
-		watchCmd.Flags().StringVar(&wo.devfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
 		watchCmd.Flags().StringVar(&wo.devfileInitCommand, "init-command", "", "Devfile Init Command to execute")
 		watchCmd.Flags().StringVar(&wo.devfileBuildCommand, "build-command", "", "Devfile Build Command to execute")
 		watchCmd.Flags().StringVar(&wo.devfileRunCommand, "run-command", "", "Devfile Run Command to execute")

@@ -14,14 +14,25 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/sync"
 )
 
 // New instantiantes a component adapter
 func New(adapterContext common.AdapterContext, client lclient.Client) Adapter {
+
+	var loggingClient machineoutput.MachineEventLoggingClient
+
+	if log.IsJSON() {
+		loggingClient = machineoutput.NewConsoleMachineEventLoggingClient()
+	} else {
+		loggingClient = machineoutput.NewNoOpMachineEventLoggingClient()
+	}
+
 	return Adapter{
-		Client:         client,
-		AdapterContext: adapterContext,
+		Client:             client,
+		AdapterContext:     adapterContext,
+		machineEventLogger: loggingClient,
 	}
 }
 
@@ -37,6 +48,8 @@ type Adapter struct {
 	devfileBuildCmd           string
 	devfileRunCmd             string
 	supervisordVolumeName     string
+	projectVolumeName         string
+	machineEventLogger        machineoutput.MachineEventLoggingClient
 }
 
 func (a Adapter) Build(parameters common.BuildParameters) (err error) { return nil }
@@ -47,13 +60,16 @@ func (a Adapter) DeployDelete(manifest []byte) (err error) { return nil }
 
 // Push updates the component if a matching component exists or creates one if it doesn't exist
 func (a Adapter) Push(parameters common.PushParameters) (err error) {
-	componentExists := utils.ComponentExists(a.Client, a.ComponentName)
+	componentExists, err := utils.ComponentExists(a.Client, a.Devfile.Data, a.ComponentName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to determine if component %s exists", a.ComponentName)
+	}
 
 	// Process the volumes defined in the devfile
 	a.componentAliasToVolumes = common.GetVolumes(a.Devfile)
 	a.uniqueStorage, a.volumeNameToDockerVolName, err = storage.ProcessVolumes(&a.Client, a.ComponentName, a.componentAliasToVolumes)
 	if err != nil {
-		return errors.Wrapf(err, "Unable to process volumes for component %s", a.ComponentName)
+		return errors.Wrapf(err, "unable to process volumes for component %s", a.ComponentName)
 	}
 
 	a.devfileInitCmd = parameters.DevfileInitCmd
@@ -70,19 +86,14 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 	s.End(true)
 
-	// Get the supervisord volume
-	supervisordLabels := utils.GetSupervisordVolumeLabels()
-	supervisordVolumes, err := a.Client.GetVolumesByLabel(supervisordLabels)
+	a.supervisordVolumeName, err = a.createAndInitSupervisordVolumeIfReqd(componentExists)
 	if err != nil {
-		return errors.Wrapf(err, "unable to retrieve supervisord volume for component %s", a.ComponentName)
+		return errors.Wrapf(err, "unable to create supervisord volume for component %s", a.ComponentName)
 	}
-	if len(supervisordVolumes) == 0 {
-		a.supervisordVolumeName, err = utils.CreateAndInitSupervisordVolume(a.Client)
-		if err != nil {
-			return errors.Wrapf(err, "unable to create supervisord volume for component %s", a.ComponentName)
-		}
-	} else {
-		a.supervisordVolumeName = supervisordVolumes[0].Name
+
+	a.projectVolumeName, err = a.createProjectVolumeIfReqd()
+	if err != nil {
+		return errors.Wrapf(err, "unable to determine the project source volume for component %s", a.ComponentName)
 	}
 
 	if componentExists {
@@ -137,7 +148,8 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 // DoesComponentExist returns true if a component with the specified name exists, false otherwise
 func (a Adapter) DoesComponentExist(cmpName string) bool {
-	return utils.ComponentExists(a.Client, cmpName)
+	componentExists, _ := utils.ComponentExists(a.Client, a.Devfile.Data, cmpName)
+	return componentExists
 }
 
 // getFirstContainerWithSourceVolume returns the first container that set mountSources: true
@@ -205,10 +217,10 @@ func (a Adapter) Delete(labels map[string]string) error {
 
 			if snVal := vol.Labels["storage-name"]; len(strings.TrimSpace(snVal)) > 0 {
 				vols = append(vols, vol)
-			} else {
-				if typeVal := vol.Labels["type"]; typeVal == "projects" {
-					vols = append(vols, vol)
-				}
+			} else if typeVal := vol.Labels["type"]; typeVal == utils.ProjectsVolume {
+				vols = append(vols, vol)
+			} else if typeVal := vol.Labels["type"]; typeVal == utils.SupervisordVolume {
+				vols = append(vols, vol)
 			}
 		}
 	}

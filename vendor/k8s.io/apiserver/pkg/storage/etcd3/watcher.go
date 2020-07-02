@@ -25,13 +25,13 @@ import (
 	"strings"
 	"sync"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/apiserver/pkg/storage"
 	"k8s.io/apiserver/pkg/storage/value"
 
-	"go.etcd.io/etcd/clientv3"
+	"github.com/coreos/etcd/clientv3"
 	"k8s.io/klog"
 )
 
@@ -56,13 +56,7 @@ func testingDeferOnDecodeError() {
 
 func init() {
 	// check to see if we are running in a test environment
-	TestOnlySetFatalOnDecodeError(true)
 	fatalOnDecodeError, _ = strconv.ParseBool(os.Getenv("KUBE_PANIC_WATCH_DECODE_ERROR"))
-}
-
-// TestOnlySetFatalOnDecodeError should only be used for cases where decode errors are expected and need to be tested. e.g. conversion webhooks.
-func TestOnlySetFatalOnDecodeError(b bool) {
-	fatalOnDecodeError = b
 }
 
 type watcher struct {
@@ -126,15 +120,7 @@ func (w *watcher) createWatchChan(ctx context.Context, key string, rev int64, re
 		// The filter doesn't filter out any object.
 		wc.internalPred = storage.Everything
 	}
-
-	// The etcd server waits until it cannot find a leader for 3 election
-	// timeouts to cancel existing streams. 3 is currently a hard coded
-	// constant. The election timeout defaults to 1000ms. If the cluster is
-	// healthy, when the leader is stopped, the leadership transfer should be
-	// smooth. (leader transfers its leadership before stopping). If leader is
-	// hard killed, other servers will take an election timeout to realize
-	// leader lost and start campaign.
-	wc.ctx, wc.cancel = context.WithCancel(clientv3.WithRequireLeader(ctx))
+	wc.ctx, wc.cancel = context.WithCancel(ctx)
 	return wc
 }
 
@@ -199,15 +185,6 @@ func (wc *watchChan) sync() error {
 	return nil
 }
 
-// logWatchChannelErr checks whether the error is about mvcc revision compaction which is regarded as warning
-func logWatchChannelErr(err error) {
-	if !strings.Contains(err.Error(), "mvcc: required revision has been compacted") {
-		klog.Errorf("watch chan error: %v", err)
-	} else {
-		klog.Warningf("watch chan error: %v", err)
-	}
-}
-
 // startWatching does:
 // - get current objects if initialRev=0; set initialRev to current rev
 // - watch on given key and send events to process.
@@ -228,18 +205,12 @@ func (wc *watchChan) startWatching(watchClosedCh chan struct{}) {
 		if wres.Err() != nil {
 			err := wres.Err()
 			// If there is an error on server (e.g. compaction), the channel will return it before closed.
-			logWatchChannelErr(err)
+			klog.Errorf("watch chan error: %v", err)
 			wc.sendError(err)
 			return
 		}
 		for _, e := range wres.Events {
-			parsedEvent, err := parseEvent(e)
-			if err != nil {
-				logWatchChannelErr(err)
-				wc.sendError(err)
-				return
-			}
-			wc.sendEvent(parsedEvent)
+			wc.sendEvent(parseEvent(e))
 		}
 	}
 	// When we come to this point, it's only possible that client side ends the watch.
@@ -349,10 +320,10 @@ func (wc *watchChan) transform(e *event) (res *watch.Event) {
 
 func transformErrorToEvent(err error) *watch.Event {
 	err = interpretWatchError(err)
-	if _, ok := err.(apierrors.APIStatus); !ok {
-		err = apierrors.NewInternalError(err)
+	if _, ok := err.(apierrs.APIStatus); !ok {
+		err = apierrs.NewInternalError(err)
 	}
-	status := err.(apierrors.APIStatus).Status()
+	status := err.(apierrs.APIStatus).Status()
 	return &watch.Event{
 		Type:   watch.Error,
 		Object: &status,

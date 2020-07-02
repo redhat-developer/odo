@@ -181,7 +181,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 		klog.V(4).Infof("Creating %s on the remote container if it doesn't already exist", syncFolder)
 		cmdArr := getCmdToCreateSyncFolder(syncFolder)
 
-		err = exec.ExecuteCommand(a.Client, compInfo, cmdArr, false)
+		err = exec.ExecuteCommand(a.Client, compInfo, cmdArr, false, nil, nil)
 		if err != nil {
 			return err
 		}
@@ -190,7 +190,7 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	if len(delFiles) > 0 {
 		cmdArr := getCmdToDeleteFiles(delFiles, syncFolder)
 
-		err = exec.ExecuteCommand(a.Client, compInfo, cmdArr, false)
+		err = exec.ExecuteCommand(a.Client, compInfo, cmdArr, false, nil, nil)
 		if err != nil {
 			return err
 		}

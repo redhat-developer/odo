@@ -6,7 +6,7 @@ import (
 
 	"github.com/openshift/odo/pkg/config"
 	adapterutils "github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/log"
 	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
@@ -92,6 +92,8 @@ func NewURLCreateOptions() *URLCreateOptions {
 
 // Complete completes URLCreateOptions after they've been Created
 func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	o.DevfilePath = clicomponent.DevfilePath
+
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 	} else if o.now {
@@ -125,7 +127,8 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 			return err
 		}
 
-		devObj, err := devfileParser.Parse(o.DevfilePath)
+		// Parse devfile and validate
+		devObj, err := parser.ParseAndValidate(o.DevfilePath)
 		if err != nil {
 			return fmt.Errorf("fail to parse the devfile %s, with error: %s", o.DevfilePath, err)
 		}
@@ -321,7 +324,6 @@ func NewCmdURLCreate(name, fullName string) *cobra.Command {
 			urlCreateCmd.Flags().BoolVar(&o.wantIngress, "ingress", false, "Creates an ingress instead of Route on OpenShift clusters")
 			urlCreateCmd.Example = fmt.Sprintf(urlCreateExampleExperimental, fullName)
 		}
-		urlCreateCmd.Flags().StringVar(&o.DevfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
 	} else {
 		urlCreateCmd.Flags().BoolVarP(&o.secureURL, "secure", "", false, "creates a secure https url")
 		urlCreateCmd.Example = fmt.Sprintf(urlCreateExample, fullName)

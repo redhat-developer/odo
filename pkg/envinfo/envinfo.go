@@ -20,6 +20,9 @@ type ComponentSettings struct {
 	Namespace   string              `yaml:"Namespace,omitempty"`
 	URL         *[]EnvInfoURL       `yaml:"Url,omitempty"`
 	PushCommand *EnvInfoPushCommand `yaml:"PushCommand,omitempty"`
+
+	// DebugPort controls the port used by the pod to run the debugging agent on
+	DebugPort *int `yaml:"DebugPort,omitempty"`
 }
 
 // URLKind is an enum to indicate the type of the URL i.e ingress/route
@@ -31,6 +34,9 @@ const (
 	ROUTE           URLKind = "route"
 	envInfoEnvName          = "ENVINFO"
 	envInfoFileName         = "env.yaml"
+
+	// DefaultDebugPort is the default port used for debugging on remote pod
+	DefaultDebugPort = 5858
 )
 
 // EnvInfoURL holds URL related information
@@ -155,10 +161,6 @@ func newProxyEnvInfo() proxyEnvInfo {
 func (esi *EnvSpecificInfo) SetConfiguration(parameter string, value interface{}) (err error) {
 	if parameter, ok := asLocallySupportedParameter(parameter); ok {
 		switch parameter {
-		case "create":
-			createValue := value.(ComponentSettings)
-			esi.componentSettings.Name = createValue.Name
-			esi.componentSettings.Namespace = createValue.Namespace
 		case "url":
 			urlValue := value.(EnvInfoURL)
 			if esi.componentSettings.URL != nil {
@@ -284,25 +286,23 @@ func (ei *EnvInfo) GetPushCommand() EnvInfoPushCommand {
 
 // GetName returns the component name
 func (ei *EnvInfo) GetName() string {
-	if ei.componentSettings.Name == "" {
-		return ""
-	}
 	return ei.componentSettings.Name
+}
+
+// GetDebugPort returns the DebugPort, returns default if nil
+func (ei *EnvInfo) GetDebugPort() int {
+	if ei.componentSettings.DebugPort == nil {
+		return DefaultDebugPort
+	}
+	return *ei.componentSettings.DebugPort
 }
 
 // GetNamespace returns component namespace
 func (ei *EnvInfo) GetNamespace() string {
-	if ei.componentSettings.Namespace == "" {
-		return ""
-	}
 	return ei.componentSettings.Namespace
 }
 
 const (
-	// Create parameter
-	Create = "CREATE"
-	// CreateDescription is the description of Create parameter
-	CreateDescription = "Create parameter is the action to write devfile metadata to env.yaml"
 	// URL parameter
 	URL = "URL"
 	// URLDescription is the description of URL
@@ -315,9 +315,8 @@ const (
 
 var (
 	supportedLocalParameterDescriptions = map[string]string{
-		Create: CreateDescription,
-		URL:    URLDescription,
-		Push:   PushDescription,
+		URL:  URLDescription,
+		Push: PushDescription,
 	}
 
 	lowerCaseLocalParameters = util.GetLowerCaseParameters(GetLocallySupportedParameters())

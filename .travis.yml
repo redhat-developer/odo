@@ -3,13 +3,6 @@ sudo: required
 
 language: go
 
-env:
-  global:
-    - MINIKUBE_WANTUPDATENOTIFICATION=false
-    - MINIKUBE_WANTREPORTERRORPROMPT=false
-    - MINIKUBE_HOME=$HOME
-    - CHANGE_MINIKUBE_NONE_USER=true
-    - KUBECONFIG=$HOME/.kube/config
 jobs:
   include:
     # YAML alias, for settings shared across the tests
@@ -93,6 +86,7 @@ jobs:
         - travis_wait make test-cmd-url
         - travis_wait make test-cmd-devfile-url
         - travis_wait make test-cmd-debug
+        - travis_wait make test-cmd-devfile-debug
         - odo logout
 
     # Run service-catalog e2e tests
@@ -175,7 +169,13 @@ jobs:
     # Run devfile integration test on Kubernetes cluster    
     - <<: *base-test
       stage: test
-      name: "devfile catalog, watch and push command integration tests on kubernetes cluster"
+      name: "devfile catalog, watch, push, debug, delete and create command integration tests on kubernetes cluster"
+      env:
+        - MINIKUBE_WANTUPDATENOTIFICATION=false
+        - MINIKUBE_WANTREPORTERRORPROMPT=false
+        - MINIKUBE_HOME=$HOME
+        - CHANGE_MINIKUBE_NONE_USER=true
+        - KUBECONFIG=$HOME/.kube/config
       before_script:
         # Download kubectl, a cli tool for accessing Kubernetes cluster
         - curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.16.0/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
@@ -185,6 +185,8 @@ jobs:
         - touch $KUBECONFIG
         - sudo minikube start --vm-driver=none --kubernetes-version=v1.16.0
         - "sudo chown -R travis: /home/travis/.minikube/"
+        - sudo apt-get -qq update
+        - sudo apt-get install -y socat
       script:
         - kubectl cluster-info
         - make bin
@@ -193,3 +195,6 @@ jobs:
         - travis_wait make test-cmd-devfile-catalog
         - travis_wait make test-cmd-devfile-watch
         - travis_wait make test-cmd-devfile-push
+        - travis_wait make test-cmd-devfile-debug
+        - travis_wait make test-cmd-devfile-delete
+        - travis_wait make test-cmd-devfile-create

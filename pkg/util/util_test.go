@@ -15,6 +15,7 @@ import (
 	"runtime"
 	"sort"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -1343,7 +1344,13 @@ func TestDownloadFile(t *testing.T) {
 		{
 			name:     "Case 2: Input url is invalid",
 			url:      "invalid",
-			filepath: "invalid",
+			filepath: "./test.yaml",
+			want:     []byte{},
+		},
+		{
+			name:     "Case 3: Input url is an empty string",
+			url:      "",
+			filepath: "./test.yaml",
 			want:     []byte{},
 		},
 	}
@@ -1351,7 +1358,12 @@ func TestDownloadFile(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := DownloadFile(tt.url, tt.filepath)
-			if tt.url != "invalid" && err != nil {
+
+			if tt.url == "" && err != nil {
+				if !strings.Contains(err.Error(), "unsupported protocol scheme") {
+					t.Errorf("Did not get expected error %s", err)
+				}
+			} else if tt.url != "invalid" && err != nil {
 				t.Errorf("Failed to download file with error %s", err)
 			}
 
@@ -1571,6 +1583,49 @@ func TestIsValidProjectDir(t *testing.T) {
 	}
 }
 
+func TestDownloadFileInMemory(t *testing.T) {
+	// Start a local HTTP server
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		// Send response to be tested
+		_, err := rw.Write([]byte("OK"))
+		if err != nil {
+			t.Error(err)
+		}
+	}))
+	// Close the server when test finishes
+	defer server.Close()
+
+	tests := []struct {
+		name string
+		url  string
+		want []byte
+	}{
+		{
+			name: "Case 1: Input url is valid",
+			url:  server.URL,
+			want: []byte{79, 75},
+		},
+		{
+			name: "Case 2: Input url is invalid",
+			url:  "invalid",
+			want: []byte(nil),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data, err := DownloadFileInMemory(tt.url)
+			if tt.url != "invalid" && err != nil {
+				t.Errorf("Failed to download file with error %s", err)
+			}
+
+			if !reflect.DeepEqual(data, tt.want) {
+				t.Errorf("Got: %v, want: %v", data, tt.want)
+			}
+		})
+	}
+}
+
 /*
 func TestGetGitHubZipURL(t *testing.T) {
 	tests := []struct {
@@ -1648,6 +1703,153 @@ func TestValidateURL(t *testing.T) {
 
 			if !reflect.DeepEqual(gotErr, tt.wantErr) {
 				t.Errorf("Got %v, want %v", got, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestValidateFile(t *testing.T) {
+	// Create temp dir and temp file
+	tempDir, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Errorf("Failed to create temp dir: %s, error: %v", tempDir, err)
+	}
+	tempFile, err := ioutil.TempFile(tempDir, "")
+	if err != nil {
+		t.Errorf("Failed to create temp file: %s, error: %v", tempFile.Name(), err)
+	}
+	defer tempFile.Close()
+
+	tests := []struct {
+		name     string
+		filePath string
+		wantErr  bool
+	}{
+		{
+			name:     "Case 1: Valid file path",
+			filePath: tempFile.Name(),
+			wantErr:  false,
+		},
+		{
+			name:     "Case 2: Invalid file path",
+			filePath: "!@#",
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotErr := false
+			err := ValidateFile(tt.filePath)
+			if err != nil {
+				gotErr = true
+			}
+			if !reflect.DeepEqual(gotErr, tt.wantErr) {
+				t.Errorf("Got error: %t, want error: %t", gotErr, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestCopyFile(t *testing.T) {
+	// Create temp dir
+	tempDir, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Errorf("Failed to create temp dir: %s, error: %v", tempDir, err)
+	}
+
+	// Create temp file under temp dir as source file
+	tempFile, err := ioutil.TempFile(tempDir, "")
+	if err != nil {
+		t.Errorf("Failed to create temp file: %s, error: %v", tempFile.Name(), err)
+	}
+	defer tempFile.Close()
+
+	srcPath := tempFile.Name()
+	fakePath := "!@#/**"
+	dstPath := filepath.Join(tempDir, "dstFile")
+	info, _ := os.Stat(srcPath)
+
+	tests := []struct {
+		name    string
+		srcPath string
+		dstPath string
+		wantErr bool
+	}{
+		{
+			name:    "Case 1: Copy successfully",
+			srcPath: srcPath,
+			dstPath: dstPath,
+			wantErr: false,
+		},
+		{
+			name:    "Case 2: Invalid source path",
+			srcPath: fakePath,
+			dstPath: dstPath,
+			wantErr: true,
+		},
+		{
+			name:    "Case 3: Invalid destination path",
+			srcPath: srcPath,
+			dstPath: fakePath,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotErr := false
+			err = CopyFile(tt.srcPath, tt.dstPath, info)
+			if err != nil {
+				gotErr = true
+			}
+
+			if !reflect.DeepEqual(gotErr, tt.wantErr) {
+				t.Errorf("Got error: %t, want error: %t", gotErr, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestPathEqual(t *testing.T) {
+	currentDir, err := os.Getwd()
+	if err != nil {
+		t.Errorf("Can't get absolute path of current working directory with error: %v", err)
+	}
+	fileAbsPath := filepath.Join(currentDir, "file")
+	fileRelPath := filepath.Join(".", "file")
+
+	tests := []struct {
+		name       string
+		firstPath  string
+		secondPath string
+		want       bool
+	}{
+		{
+			name:       "Case 1: Two paths (two absolute paths) are equal",
+			firstPath:  fileAbsPath,
+			secondPath: fileAbsPath,
+			want:       true,
+		},
+		{
+			name:       "Case 2: Two paths (one absolute path, one relative path) are equal",
+			firstPath:  fileAbsPath,
+			secondPath: fileRelPath,
+			want:       true,
+		},
+		{
+			name:       "Case 3: Two paths are not equal",
+			firstPath:  fileAbsPath,
+			secondPath: filepath.Join(fileAbsPath, "file"),
+			want:       false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := PathEqual(tt.firstPath, tt.secondPath)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Got: %t, want %t", got, tt.want)
 			}
 		})
 	}

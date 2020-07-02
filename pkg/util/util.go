@@ -4,10 +4,11 @@ import (
 	"archive/zip"
 	"bufio"
 	"context"
+	"crypto/rand"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"math/rand"
+	"math/big"
 	"net"
 	"net/http"
 	"net/url"
@@ -25,6 +26,7 @@ import (
 
 	"github.com/gobwas/glob"
 	"github.com/google/go-github/github"
+	"github.com/openshift/odo/pkg/testingutil/filesystem"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -36,6 +38,7 @@ import (
 const (
 	HTTPRequestTimeout    = 20 * time.Second // HTTPRequestTimeout configures timeout of all HTTP requests
 	ResponseHeaderTimeout = 10 * time.Second // ResponseHeaderTimeout is the timeout to retrieve the server's response headers
+	ModeReadWriteFile     = 0600             // default Permission for a file
 )
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
@@ -81,10 +84,13 @@ func ConvertLabelsToSelector(labels map[string]string) string {
 // GenerateRandomString generates a random string of lower case characters of
 // the given size
 func GenerateRandomString(n int) string {
-	rand.Seed(time.Now().UnixNano())
 	b := make([]rune, n)
+
 	for i := range b {
-		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+		// this error is ignored because it fails only when the 2nd arg of Int() is less then 0
+		// which wont happen
+		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(letterRunes))))
+		b[i] = letterRunes[n.Int64()]
 	}
 	return string(b)
 }
@@ -933,7 +939,7 @@ func Unzip(src, dest, pathToUnzip string) ([]string, error) {
 			return filenames, err
 		}
 
-		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, ModeReadWriteFile)
 		if err != nil {
 			return filenames, err
 		}
@@ -971,17 +977,13 @@ func DownloadFile(url string, filepath string) error {
 	defer out.Close() // #nosec G307
 
 	// Get the data
-	var httpClient = &http.Client{Transport: &http.Transport{
-		ResponseHeaderTimeout: ResponseHeaderTimeout,
-	}, Timeout: HTTPRequestTimeout}
-	resp, err := httpClient.Get(url)
+	data, err := DownloadFileInMemory(url)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to download devfile.yaml for devfile component: %s", filepath)
 	}
-	defer resp.Body.Close()
 
-	// Write the body to file
-	_, err = io.Copy(out, resp.Body)
+	// Write the data to file
+	_, err = out.Write(data)
 	if err != nil {
 		return err
 	}
@@ -1024,7 +1026,7 @@ func ValidateK8sResourceName(key string, value string) error {
 	_, err2 := strconv.ParseFloat(value, 64)
 
 	if err1 != nil || err2 == nil {
-		return errors.Errorf("%s is not valid, %s should conform the following requirements: %s", key, key, requirements)
+		return errors.Errorf("%s \"%s\" is not valid, %s should conform the following requirements: %s", key, value, key, requirements)
 	}
 
 	return nil
@@ -1123,6 +1125,65 @@ func ValidateTag(tag string) error {
 	return nil
 }
 
+// ValidateFile validates the file
+func ValidateFile(filePath string) error {
+	// Check if the file path exist
+	file, err := os.Stat(filePath)
+	if err != nil {
+		return err
+	}
+
+	if file.IsDir() {
+		return errors.Errorf("%s exists but it's not a file", filePath)
+	}
+
+	return nil
+}
+
+// CopyFile copies file from source path to destination path
+func CopyFile(srcPath string, dstPath string, info os.FileInfo) error {
+	// Check if the source file path exists
+	err := ValidateFile(srcPath)
+	if err != nil {
+		return err
+	}
+
+	// Open source file
+	srcFile, err := os.Open(srcPath)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close() // #nosec G307
+
+	// Create destination file
+	dstFile, err := os.Create(dstPath)
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close() // #nosec G307
+
+	// Ensure destination file has the same file mode with source file
+	err = os.Chmod(dstFile.Name(), info.Mode())
+	if err != nil {
+		return err
+	}
+
+	// Copy file
+	_, err = io.Copy(dstFile, srcFile)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// PathEqual compare the paths to determine if they are equal
+func PathEqual(firstPath string, secondPath string) bool {
+	firstAbsPath, _ := GetAbsPath(firstPath)
+	secondAbsPath, _ := GetAbsPath(secondPath)
+	return firstAbsPath == secondAbsPath
+}
+
 // sliceContainsString checks for existence of given string in given slice
 func sliceContainsString(str string, slice []string) bool {
 	for _, b := range slice {
@@ -1131,4 +1192,28 @@ func sliceContainsString(str string, slice []string) bool {
 		}
 	}
 	return false
+}
+
+func AddFileToIgnoreFile(gitIgnoreFile, filename string) error {
+	return addFileToIgnoreFile(gitIgnoreFile, filename, filesystem.DefaultFs{})
+}
+
+func addFileToIgnoreFile(gitIgnoreFile, filename string, fs filesystem.Filesystem) error {
+	var data []byte
+	file, err := fs.OpenFile(gitIgnoreFile, os.O_APPEND|os.O_RDWR, ModeReadWriteFile)
+	if err != nil {
+		return errors.Wrap(err, "failed to open .gitignore file")
+	}
+	defer file.Close()
+
+	if data, err = fs.ReadFile(gitIgnoreFile); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("failed reading data from %v file", gitIgnoreFile))
+	}
+	// check whether .odo/odo-file-index.json is already in the .gitignore file
+	if !strings.Contains(string(data), filename) {
+		if _, err := file.WriteString("\n" + filename); err != nil {
+			return errors.Wrapf(err, "failed to add %v to %v file", filepath.Base(filename), gitIgnoreFile)
+		}
+	}
+	return nil
 }

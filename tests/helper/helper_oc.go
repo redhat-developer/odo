@@ -50,6 +50,20 @@ func (oc OcRunner) GetCurrentProject() string {
 	return ""
 }
 
+// GetCurrentServerURL retrieves the URL of the server we're currently connected to
+// returns empty if not connected or an error occurred
+func (oc OcRunner) GetCurrentServerURL() string {
+	session := CmdRunner(oc.path, "project")
+	session.Wait()
+	if session.ExitCode() == 0 {
+		output := strings.TrimSpace(string(session.Out.Contents()))
+		// format is: Using project "<namespace>" on server "<url>".
+		a := strings.Split(output, "\"")
+		return a[len(a)-2] // last entry is ".", we need the one before that
+	}
+	return ""
+}
+
 // GetFirstURL returns the url of the first Route that it can find for given component
 func (oc OcRunner) GetFirstURL(component string, app string, project string) string {
 	session := CmdRunner(oc.path, "get", "route",
@@ -475,7 +489,7 @@ func (oc OcRunner) WaitAndCheckForExistence(resourceType, namespace string, time
 	for {
 		select {
 		case <-pingTimeout:
-			Fail(fmt.Sprintf("Timeout out after %v minutes", timeoutMinutes))
+			Fail(fmt.Sprintf("Timeout after %d minutes", timeoutMinutes))
 
 		case <-tick:
 			session := CmdRunner(oc.path, "get", resourceType, "--namespace", namespace)

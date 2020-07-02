@@ -9,79 +9,122 @@ import (
 	"k8s.io/klog"
 )
 
-// GetCommand iterates through the devfile commands and returns the associated devfile command
+// getCommand iterates through the devfile commands and returns the devfile command associated with the group
+// commands mentioned via the flags are passed via commandName, empty otherwise
 func getCommand(data data.DevfileData, commandName string, groupType common.DevfileCommandGroupType) (supportedCommand common.DevfileCommand, err error) {
 
+	var command common.DevfileCommand
+
+	if commandName == "" {
+		command, err = getCommandFromDevfile(data, groupType)
+	} else if commandName != "" {
+		command, err = getCommandFromFlag(data, groupType, commandName)
+	}
+
+	return command, err
+}
+
+// getCommandFromDevfile iterates through the devfile commands and returns the command associated with the group
+func getCommandFromDevfile(data data.DevfileData, groupType common.DevfileCommandGroupType) (supportedCommand common.DevfileCommand, err error) {
 	commands := data.GetCommands()
+	var onlyCommand common.DevfileCommand
+
+	// validate the command groups before searching for a command match
+	// if the command groups are invalid, err out
+	// we only validate when the push command flags are absent,
+	// since we know the command kind from the push flags
+	err = validateCommandsForGroup(data, groupType)
+	if err != nil {
+		return common.DevfileCommand{}, err
+	}
 
 	for _, command := range commands {
-
-		// validate command
-		err = validateCommand(data, command)
-
-		if err != nil {
-			return common.DevfileCommand{}, err
-		}
-
-		// if command is specified via flags, it has the highest priority
-		// search through all commands to find the specified command name
-		// if not found fallback to error.
-		if commandName != "" {
-
-			// Update Group only custom commands (specified by odo flags)
-			command = updateGroupforCommand(groupType, command)
-
-			if command.Exec.Id == commandName {
-
-				// we have found the command with name, its groupType Should match to the flag
-				// e.g --build-command "mybuild"
-				// exec:
-				//   id: mybuild
-				//   group:
-				//     kind: build
-				if command.Exec.Group.Kind != groupType {
-					return supportedCommand, fmt.Errorf("command group mismatched, command %s is of group %v in devfile.yaml", commandName, command.Exec.Group.Kind)
-				}
-				supportedCommand = command
-				return supportedCommand, nil
-			}
-			continue
-		}
-
-		// if no command specified via flag, default command has the highest priority
-		// We need to scan all the commands to find default command
 		// exec.Group is a pointer, to avoid null pointer
-		if command.Exec.Group != nil && command.Exec.Group.Kind == groupType && command.Exec.Group.IsDefault {
-			supportedCommand = command
-			return supportedCommand, nil
+		if command.Exec.Group != nil && command.Exec.Group.Kind == groupType {
+			if command.Exec.Group.IsDefault {
+				// We need to scan all the commands to find default command
+				return command, validateCommand(data, command)
+			} else if reflect.DeepEqual(onlyCommand, common.DevfileCommand{}) {
+				// return the only remaining command for the group if there is no default command
+				// NOTE: we return outside the for loop since the next iteration can have a default command
+				onlyCommand = command
+			}
 		}
 	}
 
-	if commandName == "" {
-		// if default command is not found return the first command found for the matching type.
-		for _, command := range commands {
+	// if default command is not found return the first command found for the matching type.
+	if !reflect.DeepEqual(onlyCommand, common.DevfileCommand{}) {
+		return onlyCommand, validateCommand(data, onlyCommand)
+	}
 
-			if command.Exec.Group != nil && command.Exec.Group.Kind == groupType {
-				supportedCommand = command
-				return supportedCommand, nil
+	msg := fmt.Sprintf("the command group of kind \"%v\" is not found in the devfile", groupType)
+	// if run command is not found in devfile then it is an error
+	if groupType == common.RunCommandGroupType {
+		err = fmt.Errorf(msg)
+	} else {
+		klog.V(4).Info(msg)
+	}
+
+	return
+}
+
+// getCommandFromFlag iterates through the devfile commands and returns the command specified associated with the group
+func getCommandFromFlag(data data.DevfileData, groupType common.DevfileCommandGroupType, commandName string) (supportedCommand common.DevfileCommand, err error) {
+	commands := data.GetCommands()
+
+	for _, command := range commands {
+		if command.Exec.Id == commandName {
+
+			// Update Group only custom commands (specified by odo flags)
+			command = updateCommandGroupIfReqd(groupType, command)
+
+			// we have found the command with name, its groupType Should match to the flag
+			// e.g --build-command "mybuild"
+			// exec:
+			//   id: mybuild
+			//   group:
+			//     kind: build
+			if command.Exec.Group.Kind != groupType {
+				return command, fmt.Errorf("command group mismatched, command %s is of group %v in devfile.yaml", commandName, command.Exec.Group.Kind)
 			}
+
+			return command, validateCommand(data, command)
 		}
 	}
 
 	// if any command specified via flag is not found in devfile then it is an error.
-	if commandName != "" {
-		err = fmt.Errorf("the command \"%v\" is not found in the devfile", commandName)
-	} else {
-		msg := fmt.Sprintf("the command type \"%v\" is not found in the devfile", groupType)
-		// if run command is not found in devfile then it is an error
-		if groupType == common.RunCommandGroupType {
-			err = fmt.Errorf(msg)
-		} else {
-			klog.V(4).Info(msg)
-		}
-	}
+	err = fmt.Errorf("the command \"%v\" is not found in the devfile", commandName)
 
 	return
+}
+
+// validateCommandsForGroup validates the commands in a devfile for a group
+// 1. multiple commands belonging to a single group should have at least one default
+// 2. multiple commands belonging to a single group cannot have more than one default
+func validateCommandsForGroup(data data.DevfileData, groupType common.DevfileCommandGroupType) error {
+
+	commands := getCommandsByGroup(data, groupType)
+
+	defaultCommandCount := 0
+
+	if len(commands) > 1 {
+		for _, command := range commands {
+			if command.Exec.Group.IsDefault {
+				defaultCommandCount++
+			}
+		}
+	} else {
+		// if there is only one command, it is the default command for the group
+		defaultCommandCount = 1
+	}
+
+	if defaultCommandCount == 0 {
+		return fmt.Errorf("there should be exactly one default command for command group %v, currently there is no default command", groupType)
+	} else if defaultCommandCount > 1 {
+		return fmt.Errorf("there should be exactly one default command for command group %v, currently there is more than one default command", groupType)
+	}
+
+	return nil
 }
 
 // validateCommand validates the given command
@@ -131,6 +174,11 @@ func GetInitCommand(data data.DevfileData, devfileInitCmd string) (initCommand c
 func GetBuildCommand(data data.DevfileData, devfileBuildCmd string) (buildCommand common.DevfileCommand, err error) {
 
 	return getCommand(data, devfileBuildCmd, common.BuildCommandGroupType)
+}
+
+// GetDebugCommand iterates through the components in the devfile and returns the debug command
+func GetDebugCommand(data data.DevfileData, devfileDebugCmd string) (debugCommand common.DevfileCommand, err error) {
+	return getCommand(data, devfileDebugCmd, common.DebugCommandGroupType)
 }
 
 // GetRunCommand iterates through the components in the devfile and returns the run command
@@ -185,13 +233,13 @@ func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileInitCmd, de
 	if !isInitCommandValid || !isBuildCommandValid || !isRunCommandValid {
 		commandErrors := ""
 		if initCmdErr != nil {
-			commandErrors += fmt.Sprintf(initCmdErr.Error(), "\n")
+			commandErrors += fmt.Sprintf("\n%s", initCmdErr.Error())
 		}
 		if buildCmdErr != nil {
-			commandErrors += fmt.Sprintf(buildCmdErr.Error(), "\n")
+			commandErrors += fmt.Sprintf("\n%s", buildCmdErr.Error())
 		}
 		if runCmdErr != nil {
-			commandErrors += fmt.Sprintf(runCmdErr.Error(), "\n")
+			commandErrors += fmt.Sprintf("\n%s", runCmdErr.Error())
 		}
 		return commandMap, fmt.Errorf(commandErrors)
 	}
@@ -200,7 +248,7 @@ func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileInitCmd, de
 }
 
 // Need to update group on custom commands specified by odo flags
-func updateGroupforCommand(groupType common.DevfileCommandGroupType, command common.DevfileCommand) common.DevfileCommand {
+func updateCommandGroupIfReqd(groupType common.DevfileCommandGroupType, command common.DevfileCommand) common.DevfileCommand {
 	// Update Group only for exec commands
 	// Update Group only when Group is not nil, devfile v2 might contain group for custom commands.
 	if command.Exec != nil && command.Exec.Group == nil {
@@ -208,4 +256,26 @@ func updateGroupforCommand(groupType common.DevfileCommandGroupType, command com
 		return command
 	}
 	return command
+}
+
+// ValidateAndGetDebugDevfileCommands validates the debug command
+func ValidateAndGetDebugDevfileCommands(data data.DevfileData, devfileDebugCmd string) (pushDebugCommand common.DevfileCommand, err error) {
+	var emptyCommand common.DevfileCommand
+
+	isDebugCommandValid := false
+	debugCommand, debugCmdErr := GetDebugCommand(data, devfileDebugCmd)
+	if debugCmdErr == nil && !reflect.DeepEqual(emptyCommand, debugCommand) {
+		isDebugCommandValid = true
+		klog.V(4).Infof("Debug command: %v", debugCommand.Exec.Id)
+	}
+
+	if !isDebugCommandValid {
+		commandErrors := ""
+		if debugCmdErr != nil {
+			commandErrors += debugCmdErr.Error()
+		}
+		return common.DevfileCommand{}, fmt.Errorf(commandErrors)
+	}
+
+	return debugCommand, nil
 }

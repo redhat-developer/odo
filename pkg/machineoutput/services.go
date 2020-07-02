@@ -17,7 +17,8 @@ type CatalogListOutput struct {
 func NewCatalogListOutput(services *catalog.ServiceTypeList, operators *olm.ClusterServiceVersionList) CatalogListOutput {
 	return CatalogListOutput{
 		TypeMeta: metav1.TypeMeta{
-			Kind: "CatalogListOutput",
+			Kind:       "List",
+			APIVersion: APIVersion,
 		},
 		Services:  services,
 		Operators: operators,

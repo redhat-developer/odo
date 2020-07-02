@@ -14,7 +14,7 @@ import (
 
 var _ = Describe("odo docker devfile push command tests", func() {
 	var context, currentWorkingDirectory, cmpName string
-	var sourcePath = "/projects/nodejs-web-app"
+	var sourcePath = "/projects/nodejs-starter"
 
 	dockerClient := helper.NewDockerRunner("docker")
 
@@ -39,6 +39,8 @@ var _ = Describe("odo docker devfile push command tests", func() {
 		label := "component=" + cmpName
 		dockerClient.StopContainers(label)
 
+		dockerClient.RemoveVolumesByComponent(cmpName)
+
 		helper.Chdir(currentWorkingDirectory)
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
@@ -50,24 +52,24 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
 
-			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
+			output := helper.CmdShouldPass("odo", "push")
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
 			// update devfile and push again
 			helper.ReplaceString("devfile.yaml", "name: FOO", "name: BAR")
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
+			helper.CmdShouldPass("odo", "push")
 		})
 
 		It("Check that odo push works with a devfile that has multiple containers", func() {
 			// Springboot devfile references multiple containers
-			helper.CmdShouldPass("odo", "create", "java-spring-boot", "--context", context, cmpName)
+			helper.CmdShouldPass("odo", "create", "springBoot", "--context", context, cmpName)
 
-			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
+			output := helper.CmdShouldPass("odo", "push")
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
 			// update devfile and push again
 			helper.ReplaceString("devfile.yaml", "name: FOO", "name: BAR")
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
+			helper.CmdShouldPass("odo", "push")
 		})
 
 		It("Check that odo push works with a devfile that has volumes defined", func() {
@@ -77,13 +79,13 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			helper.RenameFile("devfile.yaml", "devfile-old.yaml")
 			helper.RenameFile("devfile-with-volumes.yaml", "devfile.yaml")
 
-			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
+			output := helper.CmdShouldPass("odo", "push")
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
 			// Verify the volumes got created successfully (and 3 volumes exist: one source and two defined in devfile)
 			label := "component=" + cmpName
 			volumes := dockerClient.GetVolumesByLabel(label)
-			Expect(len(volumes)).To(Equal(3))
+			Expect(len(volumes)).To(Equal(4))
 		})
 
 		It("Check that odo push mounts the docker volumes in the container", func() {
@@ -93,7 +95,7 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			helper.RenameFile("devfile.yaml", "devfile-old.yaml")
 			helper.RenameFile("devfile-with-volumes.yaml", "devfile.yaml")
 
-			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
+			output := helper.CmdShouldPass("odo", "push")
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
 			// Retrieve the volume from one of the aliases in the devfile
@@ -104,6 +106,21 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			// Verify the volume is mounted
 			volMounted := dockerClient.IsVolumeMountedInContainer(vol, cmpName, "runtime")
 			Expect(volMounted).To(Equal(true))
+		})
+
+		It("checks that odo push with -o json displays machine readable JSON event output", func() {
+
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), context)
+
+			output := helper.CmdShouldPass("odo", "push", "-o", "json")
+			utils.AnalyzePushConsoleOutput(output)
+
+			// update devfile and push again
+			helper.ReplaceString("devfile.yaml", "name: FOO", "name: BAR")
+			output = helper.CmdShouldPass("odo", "push", "-o", "json")
+			utils.AnalyzePushConsoleOutput(output)
+
 		})
 
 		It("should not build when no changes are detected in the directory and build when a file change is detected", func() {
@@ -125,7 +142,7 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			// Now we delete the file and dir and push
 			helper.DeleteDir(newFilePath)
 			helper.DeleteDir(newDirPath)
-			helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
+			helper.CmdShouldPass("odo", "push")
 
 			// Then check to see if it's truly been deleted
 			stdOut = dockerClient.ExecContainer(containers[0], "ls -la "+sourcePath)
@@ -136,7 +153,7 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			utils.ExecPushWithForceFlag(context, cmpName, "")
 		})
 
-		It("should execute the default devbuild and devrun commands if present", func() {
+		It("should execute the default build and run command groups if present", func() {
 			utils.ExecDefaultDevfileCommands(context, cmpName, "")
 
 			// Check to see if it's been pushed (foobar.txt abd directory testdir)
@@ -147,13 +164,14 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			Expect(stdOut).To(ContainSubstring(("/myproject/app.jar")))
 		})
 
+		// v1 devfile test
 		It("should execute the optional devinit, and devrun commands if present", func() {
-			helper.CmdShouldPass("odo", "create", "java-spring-boot", cmpName)
+			helper.CmdShouldPass("odo", "create", "springBoot", cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
+			output := helper.CmdShouldPass("odo", "push")
 			helper.MatchAllInOutput(output, []string{
 				"Executing devinit command \"echo hello",
 				"Executing devbuild command \"/artifacts/bin/build-container-full.sh\"",
@@ -168,13 +186,14 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			Expect(stdOut).To(ContainSubstring(("/myproject/app.jar")))
 		})
 
+		// v1 devfile test
 		It("should execute devinit and devrun commands if present", func() {
-			helper.CmdShouldPass("odo", "create", "java-spring-boot", cmpName)
+			helper.CmdShouldPass("odo", "create", "springBoot", cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile-init-without-build.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init-without-build.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml")
+			output := helper.CmdShouldPass("odo", "push")
 			helper.MatchAllInOutput(output, []string{
 				"Executing devinit command \"echo hello",
 				"Executing devrun command \"/artifacts/bin/start-server.sh\"",
@@ -188,11 +207,11 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			Expect(stdOut).To(ContainSubstring(("afile.txt")))
 		})
 
-		It("should be able to handle a missing devbuild command", func() {
+		It("should be able to handle a missing build command group", func() {
 			utils.ExecWithMissingBuildCommand(context, cmpName, "")
 		})
 
-		It("should error out on a missing devrun command", func() {
+		It("should error out on a missing run command group", func() {
 			utils.ExecWithMissingRunCommand(context, cmpName, "")
 		})
 
@@ -202,6 +221,22 @@ var _ = Describe("odo docker devfile push command tests", func() {
 
 		It("should error out on a wrong custom commands", func() {
 			utils.ExecWithWrongCustomCommand(context, cmpName, "")
+		})
+
+		It("should error out on multiple or no default commands", func() {
+			utils.ExecWithMultipleOrNoDefaults(context, cmpName, "")
+		})
+
+		It("should execute commands with flags if there are more than one default command", func() {
+			utils.ExecMultipleDefaultsWithFlags(context, cmpName, "")
+		})
+
+		It("should execute commands with flags if the command has no group kind", func() {
+			utils.ExecCommandWithoutGroupUsingFlags(context, cmpName, "")
+		})
+
+		It("should error out if the devfile has an invalid command group", func() {
+			utils.ExecWithInvalidCommandGroup(context, cmpName, "")
 		})
 
 	})

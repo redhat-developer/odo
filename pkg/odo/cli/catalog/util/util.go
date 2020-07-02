@@ -44,9 +44,9 @@ func FilterHiddenServices(input catalog.ServiceTypeList) catalog.ServiceTypeList
 	}
 
 	return catalog.ServiceTypeList{
-		TypeMeta:   input.TypeMeta,
-		ObjectMeta: input.ObjectMeta,
-		Items:      filteredServices,
+		TypeMeta: input.TypeMeta,
+		ListMeta: input.ListMeta,
+		Items:    filteredServices,
 	}
 }
 
