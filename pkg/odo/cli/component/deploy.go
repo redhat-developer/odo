@@ -92,7 +92,7 @@ func (do *DeployOptions) Validate() (err error) {
 	}
 	s.End(true)
 
-	do.devObj, err = devfileParser.Parse(do.DevfilePath)
+	do.devObj, err = devfileParser.ParseAndValidate(do.DevfilePath)
 	if err != nil {
 		return err
 	}

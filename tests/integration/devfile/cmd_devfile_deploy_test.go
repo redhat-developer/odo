@@ -67,7 +67,7 @@ var _ = Describe("odo devfile deploy command tests", func() {
 			Expect(err).To(BeNil())
 
 			cmdOutput := helper.CmdShouldFail("odo", "deploy", "--tag", imageTag)
-			Expect(cmdOutput).To(ContainSubstring("does not point to a valid Dockerfile"))
+			Expect(cmdOutput).To(ContainSubstring("does not reference a valid Dockerfile"))
 		})
 	})
 
