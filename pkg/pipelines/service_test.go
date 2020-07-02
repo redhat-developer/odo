@@ -24,7 +24,7 @@ import (
 )
 
 func TestServiceResourcesWithCICD(t *testing.T) {
-	stubDefaultPublicKeyFunc(t)
+	defer stubDefaultPublicKeyFunc(t)()
 	fakeFs := ioutils.NewMapFilesystem()
 	m := buildManifest(true, false)
 	hookSecret, err := secrets.CreateSealedSecret(
@@ -103,7 +103,7 @@ func TestServiceResourcesWithCICD(t *testing.T) {
 }
 
 func TestServiceResourcesWithArgoCD(t *testing.T) {
-	stubDefaultPublicKeyFunc(t)
+	defer stubDefaultPublicKeyFunc(t)()
 	fakeFs := ioutils.NewMapFilesystem()
 	m := buildManifest(false, true)
 
@@ -271,7 +271,7 @@ func TestAddServiceWithoutApp(t *testing.T) {
 }
 
 func TestAddService(t *testing.T) {
-	stubDefaultPublicKeyFunc(t)
+	defer stubDefaultPublicKeyFunc(t)()
 
 	fakeFs := ioutils.NewMapFilesystem()
 	outputPath := afero.GetTempDir(fakeFs, "test")
@@ -311,7 +311,7 @@ func TestAddService(t *testing.T) {
 }
 
 func TestServiceWithArgoCD(t *testing.T) {
-	stubDefaultPublicKeyFunc(t)
+	defer stubDefaultPublicKeyFunc(t)()
 	fakeFs := ioutils.NewMapFilesystem()
 	m := buildManifest(true, true)
 	want := res.Resources{
@@ -479,16 +479,17 @@ func TestCreateSvcImageBinding(t *testing.T) {
 	}
 }
 
-func stubDefaultPublicKeyFunc(t *testing.T) {
+func stubDefaultPublicKeyFunc(t *testing.T) func() {
 	origDefaultPublicKeyFunc := secrets.DefaultPublicKeyFunc
-	t.Cleanup(func() {
-		secrets.DefaultPublicKeyFunc = origDefaultPublicKeyFunc
-	})
 	secrets.DefaultPublicKeyFunc = func(string) (*rsa.PublicKey, error) {
 		key, err := rsa.GenerateKey(rand.Reader, 1024)
 		if err != nil {
 			t.Fatalf("failed to generate a private RSA key: %s", err)
 		}
 		return &key.PublicKey, nil
+	}
+
+	return func() {
+		secrets.DefaultPublicKeyFunc = origDefaultPublicKeyFunc
 	}
 }

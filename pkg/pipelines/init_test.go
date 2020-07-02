@@ -32,7 +32,7 @@ func TestInitialFiles(t *testing.T) {
 	prefix := "tst-"
 	gitOpsURL := "https://github.com/foo/test-repo"
 	gitOpsWebhook := "123"
-	stubDefaultPublicKeyFunc(t)
+	defer stubDefaultPublicKeyFunc(t)()
 	fakeFs := ioutils.NewMapFilesystem()
 	repo, err := scm.NewRepository(gitOpsURL)
 	assertNoError(t, err)
