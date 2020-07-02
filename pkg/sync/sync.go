@@ -45,7 +45,7 @@ func GetTarReader(localPath string, targetPath string, copyFiles []string, globE
 		for name, content := range copyBytes {
 			hdr := &tar.Header{
 				Name: name,
-				Mode: 7770,
+				Mode: 421,
 				Size: int64(len(content)),
 			}
 			err = tarWriter.WriteHeader(hdr)
