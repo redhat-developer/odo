@@ -31,9 +31,7 @@ func TestFilterHiddenServices(t *testing.T) {
 					Kind:       "List",
 					APIVersion: "odo.dev/v1alpha1",
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "foobar",
-				},
+				ListMeta: metav1.ListMeta{},
 				Items: []catalog.ServiceType{
 					{
 						ObjectMeta: metav1.ObjectMeta{
@@ -74,9 +72,7 @@ func TestFilterHiddenServices(t *testing.T) {
 					Kind:       "List",
 					APIVersion: "odo.dev/v1alpha1",
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "foobar",
-				},
+				ListMeta: metav1.ListMeta{},
 				Items: []catalog.ServiceType{
 					{
 						ObjectMeta: metav1.ObjectMeta{

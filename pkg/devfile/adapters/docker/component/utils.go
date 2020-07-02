@@ -22,6 +22,7 @@ import (
 	"github.com/openshift/odo/pkg/exec"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 )
 
 const (
@@ -62,13 +63,13 @@ func (a Adapter) createComponent() (err error) {
 			return errors.Wrapf(err, "unable to pull and start container %s for component %s", comp.Container.Name, componentName)
 		}
 	}
-	klog.V(3).Infof("Successfully created all containers for component %s", componentName)
+	klog.V(4).Infof("Successfully created all containers for component %s", componentName)
 
 	return nil
 }
 
 func (a Adapter) updateComponent() (componentExists bool, err error) {
-	klog.V(3).Info("The component already exists, attempting to update it")
+	klog.V(4).Info("The component already exists, attempting to update it")
 	componentExists = true
 	componentName := a.ComponentName
 
@@ -146,7 +147,7 @@ func (a Adapter) updateComponent() (componentExists bool, err error) {
 					return false, errors.Wrapf(err, "unable to start container for devfile component %s", comp.Container.Name)
 				}
 
-				klog.V(3).Infof("Successfully created container %s for component %s", comp.Container.Image, componentName)
+				klog.V(4).Infof("Successfully created container %s for component %s", comp.Container.Image, componentName)
 				s.End(true)
 
 				// Update componentExists so that we re-sync project and initialize supervisord if required
@@ -179,7 +180,7 @@ func (a Adapter) pullAndStartContainer(mounts []mount.Mount, comp versionsCommon
 		return errors.Wrapf(err, "unable to start container for devfile component %s", comp.Container.Name)
 	}
 
-	klog.V(3).Infof("Successfully created container %s for component %s", comp.Container.Image, a.ComponentName)
+	klog.V(4).Infof("Successfully created container %s for component %s", comp.Container.Image, a.ComponentName)
 	return nil
 }
 
@@ -312,6 +313,7 @@ func getPortMap(context string, endpoints []versionsCommon.Endpoint, show bool) 
 // Executes all the commands from the devfile in order: init and build - which are both optional, and a compulsary run.
 // Init only runs once when the component is created.
 func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists, show bool, containers []types.Container) (err error) {
+
 	// If nothing has been passed, then the devfile is missing the required run command
 	if len(commandsMap) == 0 {
 		return errors.New(fmt.Sprint("error executing devfile commands - there should be at least 1 command"))
@@ -326,7 +328,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 
 			containerID := utils.GetContainerIDForAlias(containers, command.Exec.Component)
 			compInfo := common.ComponentInfo{ContainerName: containerID}
-			err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
+			err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 			if err != nil {
 				return err
 			}
@@ -338,7 +340,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 	if ok {
 		containerID := utils.GetContainerIDForAlias(containers, command.Exec.Component)
 		compInfo := common.ComponentInfo{ContainerName: containerID}
-		err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
+		err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 		if err != nil {
 			return err
 		}
@@ -354,6 +356,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 		if !componentExists {
 			err = a.initRunContainerSupervisord(command.Exec.Component, containers)
 			if err != nil {
+				a.machineEventLogger.ReportError(err, machineoutput.TimestampNow())
 				return
 			}
 		}
@@ -362,10 +365,10 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 		compInfo := common.ComponentInfo{ContainerName: containerID}
 		if componentExists && !common.IsRestartRequired(command) {
 			klog.V(4).Info("restart:false, Not restarting DevRun Command")
-			err = exec.ExecuteDevfileRunActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
+			err = exec.ExecuteDevfileRunActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 			return
 		}
-		err = exec.ExecuteDevfileRunAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
+		err = exec.ExecuteDevfileRunAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 	}
 
 	return
@@ -380,7 +383,7 @@ func (a Adapter) initRunContainerSupervisord(component string, containers []type
 			compInfo := common.ComponentInfo{
 				ContainerName: container.ID,
 			}
-			err = exec.ExecuteCommand(&a.Client, compInfo, command, true)
+			err = exec.ExecuteCommand(&a.Client, compInfo, command, true, nil, nil)
 		}
 	}
 

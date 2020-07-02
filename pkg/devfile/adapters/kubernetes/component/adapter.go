@@ -2,10 +2,11 @@ package component
 
 import (
 	"fmt"
+	"reflect"
+
 	"github.com/openshift/odo/pkg/exec"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"reflect"
 
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
@@ -20,15 +21,26 @@ import (
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/sync"
 )
 
 // New instantiantes a component adapter
 func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
+
+	var loggingClient machineoutput.MachineEventLoggingClient
+
+	if log.IsJSON() {
+		loggingClient = machineoutput.NewConsoleMachineEventLoggingClient()
+	} else {
+		loggingClient = machineoutput.NewNoOpMachineEventLoggingClient()
+	}
+
 	return Adapter{
-		Client:         client,
-		AdapterContext: adapterContext,
+		Client:             client,
+		AdapterContext:     adapterContext,
+		machineEventLogger: loggingClient,
 	}
 }
 
@@ -36,11 +48,12 @@ func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
 type Adapter struct {
 	Client kclient.Client
 	common.AdapterContext
-	devfileInitCmd   string
-	devfileBuildCmd  string
-	devfileRunCmd    string
-	devfileDebugCmd  string
-	devfileDebugPort int
+	devfileInitCmd     string
+	devfileBuildCmd    string
+	devfileRunCmd      string
+	devfileDebugCmd    string
+	devfileDebugPort   int
+	machineEventLogger machineoutput.MachineEventLoggingClient
 }
 
 // Push updates the component if a matching component exists or creates one if it doesn't exist
@@ -193,7 +206,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 				processedVolumes[vol.Name] = true
 
 				// Generate the PVC Names
-				klog.V(3).Infof("Generating PVC name for %v", vol.Name)
+				klog.V(4).Infof("Generating PVC name for %v", vol.Name)
 				generatedPVCName, err := storage.GeneratePVCNameFromDevfileVol(vol.Name, componentName)
 				if err != nil {
 					return err
@@ -205,7 +218,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 					return err
 				}
 				if len(existingPVCName) > 0 {
-					klog.V(3).Infof("Found an existing PVC for %v, PVC %v will be re-used", vol.Name, existingPVCName)
+					klog.V(4).Infof("Found an existing PVC for %v, PVC %v will be re-used", vol.Name, existingPVCName)
 					generatedPVCName = existingPVCName
 				}
 
@@ -235,17 +248,17 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 		}
 	}
 	serviceSpec := kclient.GenerateServiceSpec(objectMeta.Name, containerPorts)
-	klog.V(3).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
-	klog.V(3).Infof("The component name is %v", componentName)
+	klog.V(4).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
+	klog.V(4).Infof("The component name is %v", componentName)
 
 	if utils.ComponentExists(a.Client, componentName) {
 		// If the component already exists, get the resource version of the deploy before updating
-		klog.V(3).Info("The component already exists, attempting to update it")
+		klog.V(4).Info("The component already exists, attempting to update it")
 		deployment, err := a.Client.UpdateDeployment(*deploymentSpec)
 		if err != nil {
 			return err
 		}
-		klog.V(3).Infof("Successfully updated component %v", componentName)
+		klog.V(4).Infof("Successfully updated component %v", componentName)
 		oldSvc, err := a.Client.KubeClient.CoreV1().Services(a.Client.Namespace).Get(componentName, metav1.GetOptions{})
 		objectMetaTemp := objectMeta
 		ownerReference := kclient.GenerateOwnerReference(deployment)
@@ -257,7 +270,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 				if err != nil {
 					return err
 				}
-				klog.V(3).Infof("Successfully created Service for component %s", componentName)
+				klog.V(4).Infof("Successfully created Service for component %s", componentName)
 			}
 		} else {
 			if len(serviceSpec.Ports) > 0 {
@@ -267,7 +280,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 				if err != nil {
 					return err
 				}
-				klog.V(3).Infof("Successfully update Service for component %s", componentName)
+				klog.V(4).Infof("Successfully update Service for component %s", componentName)
 			} else {
 				err = a.Client.KubeClient.CoreV1().Services(a.Client.Namespace).Delete(componentName, &metav1.DeleteOptions{})
 				if err != nil {
@@ -280,7 +293,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 		if err != nil {
 			return err
 		}
-		klog.V(3).Infof("Successfully created component %v", componentName)
+		klog.V(4).Infof("Successfully created component %v", componentName)
 		ownerReference := kclient.GenerateOwnerReference(deployment)
 		objectMetaTemp := objectMeta
 		objectMetaTemp.OwnerReferences = append(objectMeta.OwnerReferences, ownerReference)
@@ -289,7 +302,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 			if err != nil {
 				return err
 			}
-			klog.V(3).Infof("Successfully created Service for component %s", componentName)
+			klog.V(4).Infof("Successfully created Service for component %s", componentName)
 		}
 
 	}
@@ -331,11 +344,12 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 
 	// only execute Init command, if it is first run of container.
 	if !componentExists {
+
 		// Get Init Command
 		command, ok := commandsMap[versionsCommon.InitCommandGroupType]
 		if ok {
 			compInfo.ContainerName = command.Exec.Component
-			err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
+			err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 			if err != nil {
 				return err
 			}
@@ -348,7 +362,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 	command, ok := commandsMap[versionsCommon.BuildCommandGroupType]
 	if ok {
 		compInfo.ContainerName = command.Exec.Component
-		err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
+		err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 		if err != nil {
 			return err
 		}
@@ -369,6 +383,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 		if !componentExists {
 			err = a.InitRunContainerSupervisord(command.Exec.Component, podName, containers)
 			if err != nil {
+				a.machineEventLogger.ReportError(err, machineoutput.TimestampNow())
 				return
 			}
 		}
@@ -376,17 +391,18 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 		if componentExists && !common.IsRestartRequired(command) {
 			klog.V(4).Infof("restart:false, Not restarting %v Command", command.Exec.Id)
 			if isDebug {
-				err = exec.ExecuteDevfileDebugActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
+				err = exec.ExecuteDevfileDebugActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 			} else {
-				err = exec.ExecuteDevfileRunActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
+				err = exec.ExecuteDevfileRunActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 			}
 			return
 		}
 		if isDebug {
-			err = exec.ExecuteDevfileDebugAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
+			err = exec.ExecuteDevfileDebugAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 		} else {
-			err = exec.ExecuteDevfileRunAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show)
+			err = exec.ExecuteDevfileRunAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 		}
+
 	}
 
 	return
@@ -402,7 +418,7 @@ func (a Adapter) InitRunContainerSupervisord(containerName, podName string, cont
 				ContainerName: containerName,
 				PodName:       podName,
 			}
-			err = exec.ExecuteCommand(&a.Client, compInfo, command, true)
+			err = exec.ExecuteCommand(&a.Client, compInfo, command, true, nil, nil)
 		}
 	}
 

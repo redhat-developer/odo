@@ -14,7 +14,7 @@ import (
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
@@ -84,8 +84,12 @@ const LocalDirectoryDefaultLocation = "./"
 
 // Constants for devfile component
 const devFile = "devfile.yaml"
-const envFile = ".odo/env/env.yaml"
-const configFile = ".odo/config.yaml"
+
+var (
+	envFile    = filepath.Join(".odo", "env", "env.yaml")
+	configFile = filepath.Join(".odo", "config.yaml")
+	envDir     = filepath.Join(".odo", "env")
+)
 
 // DevfilePath is the devfile path that is used by odo,
 // which means odo can:
@@ -132,8 +136,8 @@ Note: When you use odo with experimental mode enabled and create devfile compone
 # Create new Node.js component with custom ports, additional environment variables and memory and cpu limits
 %[1]s nodejs --port 8080,8100/tcp,9100/udp --env key=value,key1=value1 --memory 4Gi --cpu 2
 
-# Create new Node.js component and download the sample project named nodejs-web-app
-%[1]s nodejs --downloadSource=nodejs-web-app`)
+# Create new Node.js component and download the sample project named nodejs-starter
+%[1]s nodejs --downloadSource=nodejs-starter`)
 
 const defaultProjectName = "devfile-project-name"
 
@@ -389,41 +393,42 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			defaultComponentNamespace = client.Namespace
 		}
 
-		var catalogDevfileList catalog.DevfileComponentTypeList
 		var componentType string
 		var componentName string
 		var componentNamespace string
+		var catalogDevfileList catalog.DevfileComponentTypeList
+		isDevfileRegistryPresent := true // defaulted to true since odo ships with a default registry set
 
 		if co.interactive {
 			// Interactive mode
 
-			// Component type: We provide supported devfile component list to let user choose
-			catalogDevfileList, err := catalog.ListDevfileComponents(co.devfileMetadata.devfileRegistry.Name)
+			// Get available devfile components for checking devfile compatibility
+			catalogDevfileList, err = catalog.ListDevfileComponents(co.devfileMetadata.devfileRegistry.Name)
 			if err != nil {
 				return err
 			}
-			if catalogDevfileList.DevfileRegistries == nil {
+
+			if len(catalogDevfileList.DevfileRegistries) == 0 {
+				isDevfileRegistryPresent = false
 				log.Warning("Registry is empty, please run `odo registry add <registry name> <registry URL>` to add a registry\n")
 			}
-			var supDevfileCatalogList []catalog.DevfileComponentType
-			for _, devfileComponent := range catalogDevfileList.Items {
-				if devfileComponent.Support {
-					supDevfileCatalogList = append(supDevfileCatalogList, devfileComponent)
-				}
-			}
-			componentType = ui.SelectDevfileComponentType(supDevfileCatalogList)
 
-			// Component name: User needs to specify the componet name, by default it is component type that user chooses
-			componentName = ui.EnterDevfileComponentName(componentType)
+			if isDevfileRegistryPresent {
+				// Component type: We provide devfile component list to let user choose
+				componentType = ui.SelectDevfileComponentType(catalogDevfileList.Items)
 
-			// Component namespace: User needs to specify component namespace, by default it is the current active namespace
-			if cmd.Flags().Changed("project") && !pushtarget.IsPushTargetDocker() {
-				componentNamespace, err = cmd.Flags().GetString("project")
-				if err != nil {
-					return err
+				// Component name: User needs to specify the componet name, by default it is component type that user chooses
+				componentName = ui.EnterDevfileComponentName(componentType)
+
+				// Component namespace: User needs to specify component namespace, by default it is the current active namespace
+				if cmd.Flags().Changed("project") && !pushtarget.IsPushTargetDocker() {
+					componentNamespace, err = cmd.Flags().GetString("project")
+					if err != nil {
+						return err
+					}
+				} else if !pushtarget.IsPushTargetDocker() {
+					componentNamespace = ui.EnterDevfileComponentNamespace(defaultComponentNamespace)
 				}
-			} else {
-				componentNamespace = ui.EnterDevfileComponentNamespace(defaultComponentNamespace)
 			}
 		} else {
 			// Direct mode (User enters the full command)
@@ -466,7 +471,9 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 				if err != nil {
 					return err
 				}
-				if catalogDevfileList.DevfileRegistries == nil {
+
+				if len(catalogDevfileList.DevfileRegistries) == 0 {
+					isDevfileRegistryPresent = false
 					log.Warning("Registry is empty, please run `odo registry add <registry name> <registry URL>` to add a registry\n")
 				}
 			}
@@ -487,10 +494,10 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		co.devfileMetadata.componentName = strings.ToLower(componentName)
 		co.devfileMetadata.componentNamespace = strings.ToLower(componentNamespace)
 
-		// Categorize the sections
-		log.Info("Validation")
-
 		if util.CheckPathExists(DevfilePath) || co.devfileMetadata.devfilePath.value != "" {
+			// Categorize the sections
+			log.Info("Validation")
+
 			var devfileAbsolutePath string
 			if util.CheckPathExists(DevfilePath) || co.devfileMetadata.devfilePath.protocol == "file" {
 				var devfilePath string
@@ -516,7 +523,12 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			}
 
 			return nil
-		} else {
+		}
+
+		if isDevfileRegistryPresent {
+			// Categorize the sections
+			log.Info("Validation")
+
 			// Since we need to support both devfile and s2i, so we have to check if the component type is
 			// supported by devfile, if it is supported we return and will download the corresponding devfile later,
 			// if it is not supported we still need to run all the codes related with s2i after devfile compatibility check
@@ -526,12 +538,10 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			for _, devfileComponent := range catalogDevfileList.Items {
 				if co.devfileMetadata.componentType == devfileComponent.Name {
 					hasComponent = true
-					if devfileComponent.Support {
-						co.devfileMetadata.devfileSupport = true
-						co.devfileMetadata.devfileLink = devfileComponent.Link
-						co.devfileMetadata.devfileRegistry = devfileComponent.Registry
-						break
-					}
+					co.devfileMetadata.devfileSupport = true
+					co.devfileMetadata.devfileLink = devfileComponent.Link
+					co.devfileMetadata.devfileRegistry = devfileComponent.Registry
+					break
 				}
 			}
 
@@ -821,7 +831,8 @@ func (co *CreateOptions) Validate() (err error) {
 // Currenty type git with a non github url is not supported
 func (co *CreateOptions) downloadProject(projectPassed string) error {
 	var project common.DevfileProject
-	devObj, err := devfile.Parse(DevfilePath)
+	// Parse devfile and validate
+	devObj, err := parser.ParseAndValidate(DevfilePath)
 	if err != nil {
 		return err
 	}
@@ -949,9 +960,24 @@ func (co *CreateOptions) Run() (err error) {
 			}
 
 			// Generate env file
-			err = co.EnvSpecificInfo.SetConfiguration("create", envinfo.ComponentSettings{Name: co.devfileMetadata.componentName, Namespace: co.devfileMetadata.componentNamespace})
+			err = co.EnvSpecificInfo.SetComponentSettings(envinfo.ComponentSettings{Name: co.devfileMetadata.componentName, Namespace: co.devfileMetadata.componentNamespace})
 			if err != nil {
 				return errors.Wrap(err, "failed to create env file for devfile component")
+			}
+
+			sourcePath, err := util.GetAbsPath(co.componentContext)
+			if err != nil {
+				return errors.Wrap(err, "unable to get source path")
+			}
+
+			ignoreFile, err := util.CheckGitIgnoreFile(sourcePath)
+			if err != nil {
+				return err
+			}
+
+			err = util.AddFileToIgnoreFile(ignoreFile, filepath.Join(co.componentContext, envDir))
+			if err != nil {
+				return err
 			}
 
 			log.Italic("\nPlease use `odo push` command to create the component with source deployed")

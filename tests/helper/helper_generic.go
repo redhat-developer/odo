@@ -38,7 +38,7 @@ func WaitForCmdOut(program string, args []string, timeout int, errOnFail bool, c
 	for {
 		select {
 		case <-pingTimeout:
-			Fail(fmt.Sprintf("Timeout out after %v minutes", timeout))
+			Fail(fmt.Sprintf("Timeout after %v minutes", timeout))
 
 		case <-tick:
 			session := CmdRunner(program, args...)
@@ -137,7 +137,7 @@ func WatchNonRetCmdStdOut(cmdStr string, timeout time.Duration, check func(outpu
 	for {
 		select {
 		case <-timeoutCh:
-			Fail("Timeout out after " + string(timeout) + " minutes")
+			Fail(fmt.Sprintf("Timeout after %.2f minutes", timeout.Minutes()))
 		case <-ticker.C:
 			if !startedFileModification && startIndicatorFunc(buf.String()) {
 				startedFileModification = true

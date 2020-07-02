@@ -1,0 +1,55 @@
+schemaVersion: 2.0.0
+metadata:
+  name: test-devfile
+projects:
+  - name: nodejs-starter
+    git:
+      location: "https://github.com/odo-devfiles/nodejs-ex.git"
+components:
+  - container:
+      name: runtime
+      image: registry.access.redhat.com/ubi8/nodejs-12:1-36
+      memoryLimit: 1024Mi
+      endpoints:
+        - name: "3000/tcp"
+          configuration:
+            protocol: tcp
+            scheme: http
+          targetPort: 3000
+      mountSources: true
+commands:
+  - exec:
+      id: firstbuild
+      component: runtime
+      commandLine: npm install
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      group:
+        kind: build
+        isDefault: true
+  - exec:
+      id: secondbuild
+      component: runtime
+      commandLine: npm install
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      group:
+        kind: build
+        isDefault: true
+  - exec:
+      id: thirdbuild
+      component: runtime
+      commandLine: npm install
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+  - exec:
+      id: firstrun
+      component: runtime
+      commandLine: npm start
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      group:
+        kind: run
+  - exec:
+      id: secondrun
+      component: runtime
+      commandLine: npm start
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      group:
+        kind: run
