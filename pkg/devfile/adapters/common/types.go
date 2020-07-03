@@ -51,10 +51,11 @@ type SyncParameters struct {
 	ComponentExists bool
 }
 
-// ComponentInfo is a struct that holds information about a component i.e.; pod name, container name
+// ComponentInfo is a struct that holds information about a component i.e.; pod name, container name, and source mount (if applicable)
 type ComponentInfo struct {
 	PodName       string
 	ContainerName string
+	SourceMount   string
 }
 
 // PushCommandsMap stores the commands to be executed as per their types.

@@ -98,10 +98,11 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 
 func TestGetFirstContainerWithSourceVolume(t *testing.T) {
 	tests := []struct {
-		name       string
-		containers []corev1.Container
-		want       string
-		wantErr    bool
+		name           string
+		containers     []corev1.Container
+		want           string
+		wantSourcePath string
+		wantErr        bool
 	}{
 		{
 			name: "Case: One container, no volumes",
@@ -110,8 +111,9 @@ func TestGetFirstContainerWithSourceVolume(t *testing.T) {
 					Name: "test",
 				},
 			},
-			want:    "",
-			wantErr: true,
+			want:           "",
+			wantSourcePath: "",
+			wantErr:        true,
 		},
 		{
 			name: "Case: One container, no source volume",
@@ -125,8 +127,9 @@ func TestGetFirstContainerWithSourceVolume(t *testing.T) {
 					},
 				},
 			},
-			want:    "",
-			wantErr: true,
+			want:           "",
+			wantSourcePath: "",
+			wantErr:        true,
 		},
 		{
 			name: "Case: One container, source volume",
@@ -135,13 +138,15 @@ func TestGetFirstContainerWithSourceVolume(t *testing.T) {
 					Name: "test",
 					VolumeMounts: []corev1.VolumeMount{
 						{
-							Name: kclient.OdoSourceVolume,
+							Name:      kclient.OdoSourceVolume,
+							MountPath: kclient.OdoSourceVolumeMount,
 						},
 					},
 				},
 			},
-			want:    "test",
-			wantErr: false,
+			want:           "test",
+			wantSourcePath: kclient.OdoSourceVolumeMount,
+			wantErr:        false,
 		},
 		{
 			name: "Case: One container, multiple volumes",
@@ -153,13 +158,15 @@ func TestGetFirstContainerWithSourceVolume(t *testing.T) {
 							Name: "test",
 						},
 						{
-							Name: kclient.OdoSourceVolume,
+							Name:      kclient.OdoSourceVolume,
+							MountPath: kclient.OdoSourceVolumeMount,
 						},
 					},
 				},
 			},
-			want:    "test",
-			wantErr: false,
+			want:           "test",
+			wantSourcePath: kclient.OdoSourceVolumeMount,
+			wantErr:        false,
 		},
 		{
 			name: "Case: Multiple containers, no source volumes",
@@ -176,8 +183,9 @@ func TestGetFirstContainerWithSourceVolume(t *testing.T) {
 					},
 				},
 			},
-			want:    "",
-			wantErr: true,
+			want:           "",
+			wantSourcePath: "",
+			wantErr:        true,
 		},
 		{
 			name: "Case: Multiple containers, multiple volumes",
@@ -192,21 +200,49 @@ func TestGetFirstContainerWithSourceVolume(t *testing.T) {
 							Name: "test",
 						},
 						{
-							Name: kclient.OdoSourceVolume,
+							Name:      kclient.OdoSourceVolume,
+							MountPath: kclient.OdoSourceVolumeMount,
 						},
 					},
 				},
 			},
-			want:    "container-two",
-			wantErr: false,
+			want:           "container-two",
+			wantSourcePath: kclient.OdoSourceVolumeMount,
+			wantErr:        false,
+		},
+		{
+			name: "Case: Multiple volumes, different source volume path",
+			containers: []corev1.Container{
+				{
+					Name: "test",
+				},
+				{
+					Name: "container-two",
+					VolumeMounts: []corev1.VolumeMount{
+						{
+							Name: "test",
+						},
+						{
+							Name:      kclient.OdoSourceVolume,
+							MountPath: "/some/path",
+						},
+					},
+				},
+			},
+			want:           "container-two",
+			wantSourcePath: "/some/path",
+			wantErr:        false,
 		},
 	}
 	for _, tt := range tests {
-		container, err := getFirstContainerWithSourceVolume(tt.containers)
+		container, sourcePath, err := getFirstContainerWithSourceVolume(tt.containers)
 		if container != tt.want {
 			t.Errorf("expected %s, actual %s", tt.want, container)
 		}
 
+		if sourcePath != tt.wantSourcePath {
+			t.Errorf("expected %s, actual %s", tt.wantSourcePath, sourcePath)
+		}
 		if !tt.wantErr == (err != nil) {
 			t.Errorf("expected %v, actual %v", tt.wantErr, err)
 		}

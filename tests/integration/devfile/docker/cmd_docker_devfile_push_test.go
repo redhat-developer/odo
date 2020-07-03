@@ -72,6 +72,25 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "push")
 		})
 
+		It("Check that odo push works with a devfile that has sourcemapping set", func() {
+			// Springboot devfile references multiple containers
+			helper.CmdShouldPass("odo", "create", "springBoot", "--context", context, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileSourceMapping.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			output := helper.CmdShouldPass("odo", "push")
+			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+
+			// Verify source code was synced to /test
+			containers := dockerClient.GetRunningContainersByCompAlias(cmpName, "runtime")
+			Expect(len(containers)).To(Equal(1))
+
+			sourceMapping := "/test"
+			stdOut := dockerClient.ExecContainer(containers[0], "ls -la "+sourceMapping)
+			helper.MatchAllInOutput(stdOut, []string{"server.js"})
+		})
+
 		It("Check that odo push works with a devfile that has volumes defined", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
 
