@@ -7,6 +7,7 @@ import (
 
 	"github.com/openshift/odo/pkg/component"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
@@ -66,6 +67,13 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 		o.sbr.Spec.DetectBindingResources = true // because we want the operator what to bind from the service
 
 		deployment, err := o.KClient.GetDeploymentByName(componentName)
+		if err != nil {
+			return err
+		}
+
+		// make this deployment the owner of the link we're creating so that link gets deleted upon doing "odo delete"
+		ownerReference := kclient.GenerateOwnerReference(deployment)
+		o.sbr.SetOwnerReferences(append(o.sbr.GetOwnerReferences(), ownerReference))
 		if err != nil {
 			return err
 		}
@@ -204,10 +212,13 @@ func (o *commonLinkOptions) run() (err error) {
 		o.sbr.Kind = kind
 		o.sbr.APIVersion = strings.Join([]string{group, version}, "/")
 
+		// create a YAML of the service binding request
 		sbrMap := make(map[string]interface{})
 		inrec, _ := json.Marshal(o.sbr)
 		json.Unmarshal(inrec, &sbrMap)
 
+		// this creates a link by creating a service of type
+		// "ServiceBindingRequest" from the Operator "ServiceBindingOperator".
 		err = o.KClient.CreateDynamicResource(sbrMap, group, version, resource)
 		if err != nil {
 			return err
