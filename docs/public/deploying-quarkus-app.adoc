@@ -1,4 +1,4 @@
-== Deploying a Quarkus Application to Kubernetes/Openshift cluster
+== Deploying a Quarkus Application on Kubernetes/Openshift cluster
 
 In this example we will be deploying a https://github.com/odo-devfiles/quarkus-ex[quarkus component] that uses GraalVM and JDK1.8+.
 
@@ -8,15 +8,7 @@ Before you start make sure you have running openshift/kubernetes cluster and do 
 +
 [source,sh]
 ----
- $ git clone https://github.com/odo-devfiles/quarkus-ex
-----
-Alternatively, you can pass in `--downloadSource` to `odo create` to have odo download a sample project.
-
-. Change the current directory to the application directory:
-+
-[source,sh]
-----
- $ cd <directory-name>
+ $ git clone https://github.com/odo-devfiles/quarkus-ex && cd quarkus-ex
 ----
 
 . Create an quarkus odo component 
@@ -84,8 +76,9 @@ Pushing devfile component myquarkus
  myquarkus-8080     http://myquarkus-8080.apps-crc.testing     8080     false
 ----
 
+
 Continue devloping your application and just run `odo push`, refresh your browser to view the latest changes. 
 You can also run `odo watch` to watch changes in the source code, just refreshing the browser will render the source code changes.
-Run `odo delete` to delete the application from cluster
+Run `odo delete` to delete the application from cluster.
   
 
