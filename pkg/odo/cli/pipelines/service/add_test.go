@@ -14,11 +14,7 @@ type keyValuePair struct {
 }
 
 func TestCompleteAddOptions(t *testing.T) {
-<<<<<<< HEAD
 	completeTests := []struct {
-=======
-	tt := []struct {
->>>>>>> pipelines_feature_dev
 		name string
 		url  string
 		want string
@@ -29,35 +25,19 @@ func TestCompleteAddOptions(t *testing.T) {
 		{"suffix already present", "https://github.com/test/org.git", "https://github.com/test/org.git"},
 	}
 
-<<<<<<< HEAD
 	for _, tt := range completeTests {
 		t.Run(tt.name, func(rt *testing.T) {
 			o := AddServiceOptions{AddServiceOptions: &pipelines.AddServiceOptions{GitRepoURL: tt.url}}
-=======
-	for _, test := range tt {
-		t.Run(test.name, func(rt *testing.T) {
-			o := AddOptions{gitRepoURL: test.url}
->>>>>>> pipelines_feature_dev
 			err := o.Complete("test", &cobra.Command{}, []string{"test", "test/repo"})
 			if err != nil {
 				rt.Fatal(err)
 			}
-<<<<<<< HEAD
 			if tt.want != o.GitRepoURL {
 				rt.Fatalf("URL mismatch: got %s, want %s", o.GitRepoURL, tt.want)
-=======
-			if test.want != o.gitRepoURL {
-				rt.Fatalf("URL mismatch: got %s, want %s", o.gitRepoURL, test.want)
->>>>>>> pipelines_feature_dev
 			}
 		})
 	}
 }
-<<<<<<< HEAD
-=======
-
-func TestAddCommandWithMissingParams(t *testing.T) {
->>>>>>> pipelines_feature_dev
 
 func TestAddCommandWithMissingParams(t *testing.T) {
 	cmdTests := []struct {

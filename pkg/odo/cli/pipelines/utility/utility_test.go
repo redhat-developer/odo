@@ -1,6 +1,5 @@
 package utility
 
-<<<<<<< HEAD
 import (
 	"testing"
 
@@ -9,12 +8,6 @@ import (
 
 func TestAddGitSuffix(t *testing.T) {
 	addSuffixTests := []struct {
-=======
-import "testing"
-
-func TestAddGitSuffix(t *testing.T) {
-	tt := []struct {
->>>>>>> pipelines_feature_dev
 		name string
 		url  string
 		want string
@@ -25,7 +18,6 @@ func TestAddGitSuffix(t *testing.T) {
 		{"suffix with a different case", "https://github.com/test/org.GIT", "https://github.com/test/org.GIT"},
 	}
 
-<<<<<<< HEAD
 	for _, tt := range addSuffixTests {
 		t.Run(tt.name, func(rt *testing.T) {
 			got := AddGitSuffixIfNecessary(tt.url)
@@ -72,13 +64,6 @@ func TestMaybeCompletePrefix(t *testing.T) {
 			got := MaybeCompletePrefix(tt.prefix)
 			if tt.want != got {
 				rt.Fatalf("prefixing failed, got %#v, want %#v", got, tt.want)
-=======
-	for _, test := range tt {
-		t.Run(test.name, func(rt *testing.T) {
-			got := AddGitSuffixIfNecessary(test.url)
-			if test.want != got {
-				rt.Fatalf("URL mismatch: got %s, want %s", got, test.want)
->>>>>>> pipelines_feature_dev
 			}
 		})
 	}
