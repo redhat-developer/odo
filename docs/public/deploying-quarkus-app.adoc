@@ -1,9 +1,6 @@
-== Deploying a Quarkus Application
+== Deploying a Quarkus Application to Kubernetes/Openshift/Docker cluster
 
-
-== Deploying a quarkus component to an Kubernetes/Openshift/Docker cluster
-
-In this example we will be deploying an https://github.com/odo-devfiles/springboot-ex[example Spring Boot® component] that uses https://maven.apache.org/install.html[Maven] and Java 8 JDK.
+In this example we will be deploying a https://github.com/odo-devfiles/quarkus-ex[quarkus component] that uses GraalVM and JDK1.8+.
 
 . Download the example quarkus component. 
 +
@@ -13,14 +10,14 @@ In this example we will be deploying an https://github.com/odo-devfiles/springbo
 ----
 Alternatively, you can pass in `--downloadSource` to `odo create` to have odo download a sample project.
 
-. Change the current directory to the component directory:
+. Change the current directory to the application directory:
 +
 [source,sh]
 ----
  $ cd <directory-name>
 ----
 
-. Create a component configuration using the `java-spring-boot` component-type named `myspring`:
+. Create an quarkus odo component 
 +
 [source,sh]
 ----
@@ -33,14 +30,6 @@ Alternatively, you can pass in `--downloadSource` to `odo create` to have odo do
     ✓  Validating devfile component [281940ns]
 
     Please use odo push command to create the component with source deployed
-----
-
-. List the contents of the directory to see the devfile and sample Java application source code:
-+
-[source,sh]
-----
-  $ ls
-  mvnw  mvnw.cmd  pom.xml  README.md  src
 ----
 
 . Create a URL in order to access the deployed component:
@@ -83,7 +72,7 @@ Pushing devfile component myquarkus
 
 ----
 
-. List the URLs of the component:
+. View your deployed application in a browser using the generated url
 +
 [source,sh]
 ----
@@ -93,20 +82,24 @@ Pushing devfile component myquarkus
  myquarkus-8080     http://myquarkus-8080.apps-crc.testing     8080     false
 ----
 
-. View your deployed application using the generated URL:
-+
+. Run odo watch in application source directory, it would watch the directory for any file changes and push the changes to the cluster. We are running quarkus in https://quarkus.io/guides/getting-started#development-mode[development mode], just refreshing your browser will render the source code changes
 [source,sh]
 ----
-  $ curl http://myspring-8080.apps-crc.testing
+  $ odo watch
+  Waiting for something to change in ~/myquarkus
+  File ~/myquarkus/src/main/resources/META-INF/resources/.index.html changed
+  Pushing files...
+
 ----
+  
+  If you do not want to use`odo watch`, just run `odo push` and referesh your browser to render the changes.
 
 . To delete your deployed application:
 +
 [source,sh]
 ----
   $ odo delete
-  ? Are you sure you want to delete the devfile component: myspring? Yes
-   ✓  Deleting devfile component myspring [152ms]
+  ? Are you sure you want to delete the devfile component: myquarkus? Yes
+   ✓  Deleting devfile component myquarkus [152ms]
    ✓  Successfully deleted component
 ----
-
