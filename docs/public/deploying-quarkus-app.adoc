@@ -1,0 +1,112 @@
+== Deploying a Quarkus Application
+
+
+== Deploying a quarkus component to an Kubernetes/Openshift/Docker cluster
+
+In this example we will be deploying an https://github.com/odo-devfiles/springboot-ex[example Spring Boot® component] that uses https://maven.apache.org/install.html[Maven] and Java 8 JDK.
+
+. Download the example quarkus component. 
++
+[source,sh]
+----
+ $ git clone https://github.com/odo-devfiles/quarkus-ex
+----
+Alternatively, you can pass in `--downloadSource` to `odo create` to have odo download a sample project.
+
+. Change the current directory to the component directory:
++
+[source,sh]
+----
+ $ cd <directory-name>
+----
+
+. Create a component configuration using the `java-spring-boot` component-type named `myspring`:
++
+[source,sh]
+----
+   $ odo create quarkus myquarkus
+   Experimental mode is enabled, use at your own risk
+
+   Validation
+    ✓  Checking devfile compatibility [195728ns]
+    ✓  Creating a devfile component from registry: DefaultDevfileRegistry [170275ns]
+    ✓  Validating devfile component [281940ns]
+
+    Please use odo push command to create the component with source deployed
+----
+
+. List the contents of the directory to see the devfile and sample Java application source code:
++
+[source,sh]
+----
+  $ ls
+  mvnw  mvnw.cmd  pom.xml  README.md  src
+----
+
+. Create a URL in order to access the deployed component:
++
+[source,sh]
+----
+ $ odo url create --host apps-crc.testing
+  ✓  URL myquarkus-8080 created for component: myquarkus
+
+ To apply the URL configuration changes, please use odo push
+----
++
+NOTE: You must use your cluster host domain name when creating your URL.
+
+. Push the component to the cluster:
++
+[source,sh]
+----
+  $ odo push
+
+Validation
+ ✓  Validating the devfile [44008ns]
+
+Creating Kubernetes resources for component myquarkus
+ ✓  Waiting for component to start [10s]
+
+Applying URL changes
+ ✓  URLs are synced with the cluster, no changes are required.
+
+Syncing to component quarkus-july
+ ✓  Checking files for pushing [951138ns]
+ ✓  Syncing files to the component [204ms]
+
+Executing devfile commands for component myquarkus
+ ✓  Executing init-compile command "mvn compile" [3m]
+ ✓  Executing dev-run command "mvn quarkus:dev" [1s]
+
+Pushing devfile component myquarkus
+ ✓  Changes successfully pushed to component
+
+----
+
+. List the URLs of the component:
++
+[source,sh]
+----
+ $ odo url list
+ Found the following URLs for component myspring
+ NAME              URL                                       PORT     SECURE
+ myquarkus-8080     http://myquarkus-8080.apps-crc.testing     8080     false
+----
+
+. View your deployed application using the generated URL:
++
+[source,sh]
+----
+  $ curl http://myspring-8080.apps-crc.testing
+----
+
+. To delete your deployed application:
++
+[source,sh]
+----
+  $ odo delete
+  ? Are you sure you want to delete the devfile component: myspring? Yes
+   ✓  Deleting devfile component myspring [152ms]
+   ✓  Successfully deleted component
+----
+
