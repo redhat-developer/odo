@@ -1,6 +1,8 @@
-== Deploying a Quarkus Application to Kubernetes/Openshift/Docker cluster
+== Deploying a Quarkus Application to Kubernetes/Openshift cluster
 
 In this example we will be deploying a https://github.com/odo-devfiles/quarkus-ex[quarkus component] that uses GraalVM and JDK1.8+.
+
+Before you start make sure you have running openshift/kubernetes cluster and do not forget to login if it is openshift cluster.
 
 . Download the example quarkus component. 
 +
@@ -82,24 +84,8 @@ Pushing devfile component myquarkus
  myquarkus-8080     http://myquarkus-8080.apps-crc.testing     8080     false
 ----
 
-. Run odo watch in application source directory, it would watch the directory for any file changes and push the changes to the cluster. We are running quarkus in https://quarkus.io/guides/getting-started#development-mode[development mode], just refreshing your browser will render the source code changes
-[source,sh]
-----
-  $ odo watch
-  Waiting for something to change in ~/myquarkus
-  File ~/myquarkus/src/main/resources/META-INF/resources/.index.html changed
-  Pushing files...
-
-----
+Continue devloping your application and just run `odo push`, refresh your browser to view the latest changes. 
+You can also run `odo watch` to watch changes in the source code, just refreshing the browser will render the source code changes.
+Run `odo delete` to delete the application from cluster
   
-  If you do not want to use`odo watch`, just run `odo push` and referesh your browser to render the changes.
 
-. To delete your deployed application:
-+
-[source,sh]
-----
-  $ odo delete
-  ? Are you sure you want to delete the devfile component: myquarkus? Yes
-   ✓  Deleting devfile component myquarkus [152ms]
-   ✓  Successfully deleted component
-----
