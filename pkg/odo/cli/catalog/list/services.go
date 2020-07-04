@@ -37,7 +37,7 @@ func NewListServicesOptions() *ListServicesOptions {
 func (o *ListServicesOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	if experimental.IsExperimentalModeEnabled() {
 		var noCsvs, noServices bool
-		o.Context = genericclioptions.NewContext(cmd)
+		o.Context = genericclioptions.NewDevfileContext(cmd)
 		o.csvs, err = o.KClient.GetClusterServiceVersionList()
 		if err != nil {
 			// Error only occurs when OperatorHub is not installed/enabled on the
