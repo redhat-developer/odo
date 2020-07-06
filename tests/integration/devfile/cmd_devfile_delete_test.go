@@ -106,9 +106,8 @@ var _ = Describe("odo devfile delete command tests", func() {
 	Context("when the project doesn't exist", func() {
 
 		It("should let the user delete the local config files with -a flag", func() {
-			newNamespace := "garbage"
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", newNamespace, componentName)
-			// cliRunner.DeleteNamespaceProject(newNamespace)
+			invalidNamespace := "garbage"
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", invalidNamespace, componentName)
 
 			output := helper.CmdShouldFail("odo", "delete")
 			helper.MatchAllInOutput(output, []string{
@@ -124,16 +123,12 @@ var _ = Describe("odo devfile delete command tests", func() {
 		})
 
 		It("should let the user delete the local config files with -a and -project flags", func() {
-			newNamespace := "garbage"
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", newNamespace, componentName)
-			// cliRunner.DeleteNamespaceProject(newNamespace)
+			invalidNamespace := "garbage"
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", invalidNamespace, componentName)
 
-			output := helper.CmdShouldFail("odo", "delete", "--project", newNamespace)
-			helper.MatchAllInOutput(output, []string{
-				fmt.Sprintf("namespaces \"%s\" not found", newNamespace),
-			})
+			helper.CmdShouldFail("odo", "delete", "--project", invalidNamespace)
 
-			output = helper.CmdShouldPass("odo", "delete", "--project", newNamespace, "-af")
+			output := helper.CmdShouldPass("odo", "delete", "--project", invalidNamespace, "-af")
 			helper.MatchAllInOutput(output, []string{
 				fmt.Sprintf("Component %s does not exist", componentName),
 				"Successfully deleted env file",

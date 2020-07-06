@@ -454,7 +454,7 @@ func TestAdapterDelete(t *testing.T) {
 			existingDeployment: testingutil.CreateFakeDeployment("fronted"),
 			componentName:      "component",
 			componentExists:    false,
-			wantErr:            true,
+			wantErr:            false,
 		},
 	}
 	for _, tt := range tests {

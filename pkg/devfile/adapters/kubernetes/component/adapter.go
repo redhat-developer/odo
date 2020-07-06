@@ -452,11 +452,16 @@ func (a Adapter) Delete(labels map[string]string) error {
 	defer spinner.End(false)
 
 	componentExists, err := utils.ComponentExists(a.Client, a.ComponentName)
-	if err != nil {
-		return errors.Wrapf(err, "unable to determine if component %s exists", a.ComponentName)
-	}
-	if !componentExists {
-		log.Infof("Component %s does not exist", a.ComponentName)
+	if !componentExists || err != nil {
+		msg := fmt.Sprintf("Component %s does not exist", a.ComponentName)
+
+		// log the error if it failed to determine if the component exists
+		if err != nil {
+			msg = fmt.Sprintf("%s: %v", msg, err)
+		}
+
+		log.Infof(msg)
+
 		spinner.End(true)
 		return nil
 	}
