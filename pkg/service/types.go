@@ -48,9 +48,9 @@ type ServicePlanParameter struct {
 }
 
 type ServiceList struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Items             []Service `json:"items"`
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []Service `json:"items"`
 }
 
 // ServicePlan holds the information about service catalog plans associated to service classes

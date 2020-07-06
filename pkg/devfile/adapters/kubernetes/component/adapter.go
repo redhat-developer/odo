@@ -127,7 +127,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	// Find at least one pod with the source volume mounted, error out if none can be found
-	containerName, err := getFirstContainerWithSourceVolume(pod.Spec.Containers)
+	containerName, sourceMount, err := getFirstContainerWithSourceVolume(pod.Spec.Containers)
 	if err != nil {
 		return errors.Wrapf(err, "error while retrieving container from pod %s with a mounted project volume", podName)
 	}
@@ -138,6 +138,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	compInfo := common.ComponentInfo{
 		ContainerName: containerName,
 		PodName:       pod.GetName(),
+		SourceMount:   sourceMount,
 	}
 	syncParams := adaptersCommon.SyncParameters{
 		PushParams:      parameters,
@@ -367,7 +368,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 		command, ok := commandsMap[versionsCommon.InitCommandGroupType]
 		if ok {
 			compInfo.ContainerName = command.Exec.Component
-			err = exec.ExecuteDevfileBuildOrTestAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
+			err = exec.ExecuteDevfileCommands(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 			if err != nil {
 				return err
 			}
@@ -380,7 +381,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 	command, ok := commandsMap[versionsCommon.BuildCommandGroupType]
 	if ok {
 		compInfo.ContainerName = command.Exec.Component
-		err = exec.ExecuteDevfileBuildOrTestAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
+		err = exec.ExecuteDevfileCommands(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 		if err != nil {
 			return err
 		}
@@ -431,7 +432,7 @@ func (a Adapter) execTestCmd(testcmd versionsCommon.DevfileCommand, podName stri
 		PodName: podName,
 	}
 	compInfo.ContainerName = testcmd.Exec.Component
-	err = exec.ExecuteDevfileBuildOrTestAction(&a.Client, *testcmd.Exec, testcmd.Exec.Id, compInfo, show, a.machineEventLogger)
+	err = exec.ExecuteDevfileCommands(&a.Client, *testcmd.Exec, testcmd.Exec.Id, compInfo, show, a.machineEventLogger)
 	if err != nil {
 		return err
 	}
@@ -455,20 +456,21 @@ func (a Adapter) InitRunContainerSupervisord(containerName, podName string, cont
 	return
 }
 
-// getFirstContainerWithSourceVolume returns the first container that set mountSources: true
+// getFirstContainerWithSourceVolume returns the first container that set mountSources: true as well
+// as the path to the source volume inside the container.
 // Because the source volume is shared across all components that need it, we only need to sync once,
 // so we only need to find one container. If no container was found, that means there's no
 // container to sync to, so return an error
-func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, error) {
+func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, string, error) {
 	for _, c := range containers {
 		for _, vol := range c.VolumeMounts {
 			if vol.Name == kclient.OdoSourceVolume {
-				return c.Name, nil
+				return c.Name, vol.MountPath, nil
 			}
 		}
 	}
 
-	return "", fmt.Errorf("In order to sync files, odo requires at least one component in a devfile to set 'mountSources: true'")
+	return "", "", fmt.Errorf("In order to sync files, odo requires at least one component in a devfile to set 'mountSources: true'")
 }
 
 // Delete deletes the component

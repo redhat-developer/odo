@@ -140,10 +140,16 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	s := log.Spinner("Syncing files to the component")
 	defer s.End(false)
 
-	// If there's only one project defined in the devfile, sync to `/projects/project-name`, otherwise sync to /projects
-	syncFolder, err := getSyncFolder(a.Devfile.Data.GetProjects())
-	if err != nil {
-		return errors.Wrapf(err, "unable to sync the files to the component")
+	// Determine which folder we need to sync to
+	var syncFolder string
+	if compInfo.SourceMount != kclient.OdoSourceVolumeMount {
+		syncFolder = compInfo.SourceMount
+	} else {
+		// If there's only one project defined in the devfile, sync to `/projects/project-name`, otherwise sync to /projects
+		syncFolder, err = getSyncFolder(a.Devfile.Data.GetProjects())
+		if err != nil {
+			return errors.Wrapf(err, "unable to determine sync folder")
+		}
 	}
 
 	if syncFolder != kclient.OdoSourceVolumeMount {

@@ -26,10 +26,7 @@ import (
 )
 
 const (
-	// LocalhostIP is the IP address for localhost
 	LocalhostIP = "127.0.0.1"
-
-	projectSourceVolumeName = "odo-project-source"
 )
 
 func (a Adapter) createComponent() (err error) {
@@ -203,7 +200,11 @@ func (a Adapter) startComponent(mounts []mount.Mount, comp versionsCommon.Devfil
 
 	// If the component set `mountSources` to true, add the source volume and env CHE_PROJECTS_ROOT to it
 	if comp.Container.MountSources {
-		utils.AddVolumeToContainer(a.projectVolumeName, lclient.OdoSourceVolumeMount, &hostConfig)
+		if comp.Container.SourceMapping != "" {
+			utils.AddVolumeToContainer(a.projectVolumeName, comp.Container.SourceMapping, &hostConfig)
+		} else {
+			utils.AddVolumeToContainer(a.projectVolumeName, lclient.OdoSourceVolumeMount, &hostConfig)
+		}
 
 		if !common.IsEnvPresent(comp.Container.Env, common.EnvCheProjectsRoot) {
 			envName := common.EnvCheProjectsRoot
@@ -327,7 +328,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 
 			containerID := utils.GetContainerIDForAlias(containers, command.Exec.Component)
 			compInfo := common.ComponentInfo{ContainerName: containerID}
-			err = exec.ExecuteDevfileBuildOrTestAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
+			err = exec.ExecuteDevfileCommands(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 			if err != nil {
 				return err
 			}
@@ -339,7 +340,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 	if ok {
 		containerID := utils.GetContainerIDForAlias(containers, command.Exec.Component)
 		compInfo := common.ComponentInfo{ContainerName: containerID}
-		err = exec.ExecuteDevfileBuildOrTestAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
+		err = exec.ExecuteDevfileCommands(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 		if err != nil {
 			return err
 		}
@@ -376,7 +377,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 func (a Adapter) execTestCmd(testcmd versionsCommon.DevfileCommand, containers []types.Container, show bool) (err error) {
 	containerID := utils.GetContainerIDForAlias(containers, testcmd.Exec.Component)
 	compInfo := common.ComponentInfo{ContainerName: containerID}
-	err = exec.ExecuteDevfileBuildOrTestAction(&a.Client, *testcmd.Exec, testcmd.Exec.Id, compInfo, show, a.machineEventLogger)
+	err = exec.ExecuteDevfileCommands(&a.Client, *testcmd.Exec, testcmd.Exec.Id, compInfo, show, a.machineEventLogger)
 	if err != nil {
 		return err
 	}
@@ -414,7 +415,7 @@ func (a Adapter) createProjectVolumeIfReqd() (string, error) {
 
 	if len(projectVols) == 0 {
 		// A source volume needs to be created
-		projectVolumeName, err = storage.GenerateVolName(projectSourceVolumeName, componentName)
+		projectVolumeName, err = storage.GenerateVolName(lclient.ProjectSourceVolumeName, componentName)
 		if err != nil {
 			return "", errors.Wrapf(err, "unable to generate project source volume name for component %s", componentName)
 		}

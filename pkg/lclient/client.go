@@ -21,9 +21,10 @@ Please ensure that Docker is currently running on your machine.
 // MinDockerAPIVersion is the minimum Docker API version to use
 // 1.30 corresponds to Docker 17.05, which should be sufficiently old enough
 const (
-	MinDockerAPIVersion  = "1.30" // MinDockerAPIVersion is the minimum Docker API version to use 1.30 corresponds to Docker 17.05, which should be sufficiently old enough to support most systems
-	DockerStorageDriver  = ""
-	OdoSourceVolumeMount = "/projects"
+	MinDockerAPIVersion     = "1.30" // MinDockerAPIVersion is the minimum Docker API version to use 1.30 corresponds to Docker 17.05, which should be sufficiently old enough to support most systems
+	DockerStorageDriver     = ""
+	OdoSourceVolumeMount    = "/projects"
+	ProjectSourceVolumeName = "odo-project-source"
 )
 
 // DockerClient requires functions called on the docker client package

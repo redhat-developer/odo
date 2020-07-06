@@ -12,7 +12,7 @@ import (
 
 var _ = Describe("odo devfile test command tests", func() {
 	var namespace, context, cmpName, currentWorkingDirectory, originalKubeconfig string
-	var sourcePath = "/projects/nodejs-web-app"
+	var sourcePath = "/projects/nodejs-starter"
 
 	// Using program commmand according to cliRunner in devfile
 	cliRunner := helper.GetCliRunner()

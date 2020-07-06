@@ -99,7 +99,7 @@ var _ = Describe("odo docker devfile url command tests", func() {
 
 			url := strings.TrimSpace(helper.ExtractSubString(output, "127.0.0.1", "created"))
 
-			helper.HttpWaitFor("http://"+url, "Hello World!", 30, 1)
+			helper.HttpWaitFor("http://"+url, "Hello from Node.js Starter Application!", 30, 1)
 		})
 	})
 

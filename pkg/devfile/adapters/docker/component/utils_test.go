@@ -676,14 +676,14 @@ func TestCreateProjectVolumeIfReqd(t *testing.T) {
 			name:           "Case 1: Volume does not exist",
 			componentName:  "somecomponent",
 			client:         fakeClient,
-			wantVolumeName: projectSourceVolumeName + "-somecomponent",
+			wantVolumeName: lclient.ProjectSourceVolumeName + "-somecomponent",
 			wantErr:        false,
 		},
 		{
 			name:           "Case 2: Volume exist",
 			componentName:  "test",
 			client:         fakeClient,
-			wantVolumeName: projectSourceVolumeName + "-test",
+			wantVolumeName: lclient.ProjectSourceVolumeName + "-test",
 			wantErr:        false,
 		},
 		{

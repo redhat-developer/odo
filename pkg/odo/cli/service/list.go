@@ -75,7 +75,7 @@ func (o *ServiceListOptions) Run() (err error) {
 		}
 
 		if len(list) == 0 {
-			return fmt.Errorf("No operator backed services found in the namesapce")
+			return fmt.Errorf("No operator backed services found in namespace: %s", o.KClient.Namespace)
 		}
 
 		if log.IsJSON() {
