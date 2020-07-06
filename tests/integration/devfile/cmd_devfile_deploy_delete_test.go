@@ -70,7 +70,7 @@ var _ = Describe("odo devfile deploy delete command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV2", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV2", "nodejs", "manifest.yaml"), filepath.Join(context, ".odo", "manifest.yaml"))
 
-			output := helper.CmdShouldPass("odo", "deploy", "delete")
+			helper.CmdShouldPass("odo", "deploy", "delete")
 			Expect(helper.VerifyFileExists(filepath.Join(context, ".odo", "manifest.yaml"))).To(Equal(false))
 		})
 
