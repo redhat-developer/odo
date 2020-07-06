@@ -416,7 +416,7 @@ func (a Adapter) DeployDelete(manifest []byte) (err error) {
 
 			_, err = a.Client.DynamicClient.Resource(gvr).Namespace(a.Client.Namespace).Get(deploymentManifest.GetName(), metav1.GetOptions{})
 			if err != nil {
-				errorMessage := "Could not delete deployment " + deploymentManifest.GetName() + " as deployment was not found"
+				errorMessage := "Could not delete component " + deploymentManifest.GetName() + " as component was not found"
 				return errors.New(errorMessage)
 			}
 

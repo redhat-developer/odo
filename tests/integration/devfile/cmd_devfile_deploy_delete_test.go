@@ -70,9 +70,10 @@ var _ = Describe("odo devfile deploy delete command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV2", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV2", "nodejs", "manifest.yaml"), filepath.Join(context, ".odo", "manifest.yaml"))
 
-			output := helper.CmdShouldFail("odo", "deploy", "delete")
-			expectedString := "Could not delete deployment nodejs-deploy as deployment was not found"
+			output := helper.CmdShouldPass("odo", "deploy", "delete")
+			expectedString := "Could not delete component nodejs-deploy as component was not found"
 
+			Could not delete deployment nodejs-deploy as deployment was not found
 			helper.MatchAllInOutput(output, []string{expectedString})
 			Expect(helper.VerifyFileExists(filepath.Join(context, ".odo", "manifest.yaml"))).To(Equal(false))
 		})

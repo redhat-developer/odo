@@ -221,7 +221,7 @@ func (ddo *DeployDeleteOptions) DevfileDeployDelete() error {
 	defer spinner.End(false)
 
 	manifestErr := devfileHandler.DeployDelete(ddo.ManifestSource)
-	if manifestErr != nil && strings.Contains(manifestErr.Error(), "as deployment was not found") {
+	if manifestErr != nil && strings.Contains(manifestErr.Error(), "as component was not found") {
 		log.Warning(manifestErr.Error())
 		err = os.Remove(ddo.ManifestPath)
 		if err != nil {
