@@ -136,7 +136,7 @@ type Container struct {
 	VolumeMounts []*VolumeMount `json:"volumeMounts,omitempty"`
 }
 
-// Endpoint is how an application is exposed
+// Endpoint holds information about how an application is exposed
 type Endpoint struct {
 	Attributes    map[string]string `json:"attributes,omitempty"`
 	Configuration *Configuration    `json:"configuration,omitempty"`
