@@ -73,7 +73,6 @@ var _ = Describe("odo devfile deploy delete command tests", func() {
 			output := helper.CmdShouldPass("odo", "deploy", "delete")
 			expectedString := "Could not delete component nodejs-deploy as component was not found"
 
-			Could not delete deployment nodejs-deploy as deployment was not found
 			helper.MatchAllInOutput(output, []string{expectedString})
 			Expect(helper.VerifyFileExists(filepath.Join(context, ".odo", "manifest.yaml"))).To(Equal(false))
 		})
