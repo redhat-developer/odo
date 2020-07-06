@@ -125,6 +125,7 @@ func TestGetComponentContainers(t *testing.T) {
 				},
 				Mounts: []types.MountPoint{
 					{
+						Name:        lclient.ProjectSourceVolumeName,
 						Destination: lclient.OdoSourceVolumeMount,
 					},
 				},

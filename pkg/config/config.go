@@ -200,7 +200,7 @@ func newProxyLocalConfig() proxyLocalConfig {
 func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}) (err error) {
 	// getting the second arg makes sure that this never panics
 	strValue, _ := value.(string)
-	if parameter, ok := asLocallySupportedParameter(parameter); ok {
+	if parameter, ok := AsLocallySupportedParameter(parameter); ok {
 		switch parameter {
 		case "type":
 			lci.componentSettings.Type = &strValue
@@ -326,7 +326,7 @@ func (lci *LocalConfigInfo) ConfigFileExists() bool {
 
 // DeleteConfiguration is used to delete config from local odo config
 func (lci *LocalConfigInfo) DeleteConfiguration(parameter string) error {
-	if parameter, ok := asLocallySupportedParameter(parameter); ok {
+	if parameter, ok := AsLocallySupportedParameter(parameter); ok {
 
 		switch parameter {
 		case "cpu":
@@ -362,7 +362,7 @@ func (lci *LocalConfigInfo) DeleteURL(parameter string) error {
 // parameter is the name of the config parameter
 // value is the value to be deleted
 func (lci *LocalConfigInfo) DeleteFromConfigurationList(parameter string, value string) error {
-	if parameter, ok := asLocallySupportedParameter(parameter); ok {
+	if parameter, ok := AsLocallySupportedParameter(parameter); ok {
 		switch parameter {
 		case "storage":
 			for i, storage := range lci.GetStorage() {
@@ -653,7 +653,8 @@ func FormatLocallySupportedParameters() (result string) {
 	return "\nAvailable Local Parameters:\n" + result
 }
 
-func asLocallySupportedParameter(param string) (string, bool) {
+// AsLocallySupportedParameter returns the parameter in lower case and a boolean indicating if it is a supported parameter
+func AsLocallySupportedParameter(param string) (string, bool) {
 	lower := strings.ToLower(param)
 	return lower, lowerCaseLocalParameters[lower]
 }

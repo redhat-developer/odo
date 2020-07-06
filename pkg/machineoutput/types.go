@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/openshift/odo/pkg/log"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -53,7 +52,7 @@ func OutputSuccessUnindented(machineOutput interface{}) {
 
 // OutputSuccess outputs a "successful" machine-readable output format in json
 func OutputSuccess(machineOutput interface{}) {
-	printableOutput, err := MarshalJSONIndented(machineOutput)
+	printableOutput, err := marshalJSONIndented(machineOutput)
 
 	// If we error out... there's no way to output it (since we disable logging when using -o json)
 	if err != nil {
@@ -65,7 +64,7 @@ func OutputSuccess(machineOutput interface{}) {
 
 // OutputError outputs a "successful" machine-readable output format in json
 func OutputError(machineOutput interface{}) {
-	printableOutput, err := MarshalJSONIndented(machineOutput)
+	printableOutput, err := marshalJSONIndented(machineOutput)
 
 	// If we error out... there's no way to output it (since we disable logging when using -o json)
 	if err != nil {
@@ -75,7 +74,7 @@ func OutputError(machineOutput interface{}) {
 	}
 }
 
-// MarshalJSONIndented returns indented json representation of obj
-func MarshalJSONIndented(obj interface{}) ([]byte, error) {
-	return json.MarshalIndent(obj, "", "    ")
+// marshalJSONIndented returns indented json representation of obj
+func marshalJSONIndented(obj interface{}) ([]byte, error) {
+	return json.MarshalIndent(obj, "", "	")
 }

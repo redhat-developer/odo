@@ -52,9 +52,9 @@ type ComponentSpec struct {
 
 // ComponentTypeList lists all the ComponentType's
 type ComponentTypeList struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Items             []ComponentType `json:"items"`
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []ComponentType `json:"items"`
 }
 
 // DevfileComponentTypeList lists all the DevfileComponentType's
@@ -78,7 +78,7 @@ type ServiceSpec struct {
 
 // ServiceTypeList lists all the ServiceType's
 type ServiceTypeList struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Items             []ServiceType `json:"items"`
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []ServiceType `json:"items"`
 }

@@ -26,10 +26,7 @@ import (
 )
 
 const (
-	// LocalhostIP is the IP address for localhost
 	LocalhostIP = "127.0.0.1"
-
-	projectSourceVolumeName = "odo-project-source"
 )
 
 func (a Adapter) createComponent() (err error) {
@@ -203,7 +200,11 @@ func (a Adapter) startComponent(mounts []mount.Mount, comp versionsCommon.Devfil
 
 	// If the component set `mountSources` to true, add the source volume and env CHE_PROJECTS_ROOT to it
 	if comp.Container.MountSources {
-		utils.AddVolumeToContainer(a.projectVolumeName, lclient.OdoSourceVolumeMount, &hostConfig)
+		if comp.Container.SourceMapping != "" {
+			utils.AddVolumeToContainer(a.projectVolumeName, comp.Container.SourceMapping, &hostConfig)
+		} else {
+			utils.AddVolumeToContainer(a.projectVolumeName, lclient.OdoSourceVolumeMount, &hostConfig)
+		}
 
 		if !common.IsEnvPresent(comp.Container.Env, common.EnvCheProjectsRoot) {
 			envName := common.EnvCheProjectsRoot
@@ -404,7 +405,7 @@ func (a Adapter) createProjectVolumeIfReqd() (string, error) {
 
 	if len(projectVols) == 0 {
 		// A source volume needs to be created
-		projectVolumeName, err = storage.GenerateVolName(projectSourceVolumeName, componentName)
+		projectVolumeName, err = storage.GenerateVolName(lclient.ProjectSourceVolumeName, componentName)
 		if err != nil {
 			return "", errors.Wrapf(err, "unable to generate project source volume name for component %s", componentName)
 		}

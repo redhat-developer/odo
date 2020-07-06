@@ -2,7 +2,7 @@ schemaVersion: 2.0.0
 metadata:
   name: test-devfile
 projects:
-  - name: nodejs-web-app
+  - name: nodejs-starter
     git:
       location: "https://github.com/che-samples/web-nodejs-sample.git"
 components:

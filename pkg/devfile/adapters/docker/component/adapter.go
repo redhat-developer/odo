@@ -106,7 +106,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	// Find at least one container with the source volume mounted, error out if none can be found
-	containerID, err := getFirstContainerWithSourceVolume(containers)
+	containerID, sourceMount, err := getFirstContainerWithSourceVolume(containers)
 	if err != nil {
 		return errors.Wrapf(err, "error while retrieving container for odo component %s with a mounted project volume", a.ComponentName)
 	}
@@ -118,6 +118,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// podChanged is defaulted to false, since docker volume is always present even if container goes down
 	compInfo := common.ComponentInfo{
 		ContainerName: containerID,
+		SourceMount:   sourceMount,
 	}
 	syncParams := common.SyncParameters{
 		PushParams:      parameters,
@@ -150,16 +151,16 @@ func (a Adapter) DoesComponentExist(cmpName string) bool {
 // Because the source volume is shared across all components that need it, we only need to sync once,
 // so we only need to find one container. If no container was found, that means there's no
 // container to sync to, so return an error
-func getFirstContainerWithSourceVolume(containers []types.Container) (string, error) {
+func getFirstContainerWithSourceVolume(containers []types.Container) (string, string, error) {
 	for _, c := range containers {
 		for _, mount := range c.Mounts {
-			if mount.Destination == lclient.OdoSourceVolumeMount {
-				return c.ID, nil
+			if strings.Contains(mount.Name, lclient.ProjectSourceVolumeName) {
+				return c.ID, mount.Destination, nil
 			}
 		}
 	}
 
-	return "", fmt.Errorf("in order to sync files, odo requires at least one component in a devfile to set 'mountSources: true'")
+	return "", "", fmt.Errorf("in order to sync files, odo requires at least one component in a devfile to set 'mountSources: true'")
 }
 
 // Delete attempts to delete the component with the specified labels, returning an error if it fails

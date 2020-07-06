@@ -206,11 +206,11 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 	})
 
-	Context("When executing odo create with devfile component and --downloadSource flag", func() {
+	Context("When executing odo create with devfile component and --starter flag", func() {
 		It("should successfully create the component and download the source", func() {
 			contextDevfile := helper.CreateNewContext()
 			helper.Chdir(contextDevfile)
-			helper.CmdShouldPass("odo", "create", "nodejs", "--downloadSource")
+			helper.CmdShouldPass("odo", "create", "nodejs", "--starter")
 			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
 			Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
 			helper.DeleteDir(contextDevfile)
@@ -226,11 +226,11 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 	})
 
-	Context("When executing odo create with devfile component and --downloadSource flag with a valid project", func() {
+	Context("When executing odo create with devfile component and --starter flag with a valid project", func() {
 		It("should successfully create the component specified and download the source", func() {
 			contextDevfile := helper.CreateNewContext()
 			helper.Chdir(contextDevfile)
-			helper.CmdShouldPass("odo", "create", "nodejs", "--downloadSource=nodejs-web-app")
+			helper.CmdShouldPass("odo", "create", "nodejs", "--starter=nodejs-starter")
 			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
 			Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
 			helper.DeleteDir(contextDevfile)
@@ -238,18 +238,18 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 	})
 
-	Context("When executing odo create with an invalid project specified in --downloadSource", func() {
-		It("should fail with please run 'The project: invalid-project-name specified in --downloadSource does not exist'", func() {
+	Context("When executing odo create with an invalid project specified in --starter", func() {
+		It("should fail with please run 'The project: invalid-project-name specified in --starter does not exist'", func() {
 			invalidProjectName := "invalid-project-name"
-			output := helper.CmdShouldFail("odo", "create", "nodejs", "--downloadSource=invalid-project-name")
-			expectedString := "The project: " + invalidProjectName + " specified in --downloadSource does not exist"
+			output := helper.CmdShouldFail("odo", "create", "nodejs", "--starter=invalid-project-name")
+			expectedString := "The project: " + invalidProjectName + " specified in --starter does not exist"
 			helper.MatchAllInOutput(output, []string{expectedString})
 		})
 	})
 
-	Context("When executing odo create using --downloadSource with a devfile component that contains no projects", func() {
+	Context("When executing odo create using --starter with a devfile component that contains no projects", func() {
 		It("should fail with please run 'No project found in devfile component.'", func() {
-			output := helper.CmdShouldFail("odo", "create", "maven", "--downloadSource")
+			output := helper.CmdShouldFail("odo", "create", "maven", "--starter")
 			expectedString := "No project found in devfile component."
 			helper.MatchAllInOutput(output, []string{expectedString})
 		})
