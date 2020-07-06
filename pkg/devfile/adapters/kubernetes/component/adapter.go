@@ -349,7 +349,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 		if ok {
 			if command.Composite != nil {
 				fmt.Println("Composite detected")
-				err = a.execCompositeCommand(command.Composite, show, podName, containers)
+				err = a.execCompositeCommand(command.Composite, compInfo, show, podName, containers)
 				if err != nil {
 					return err
 				}
@@ -369,8 +369,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 	command, ok := commandsMap[versionsCommon.BuildCommandGroupType]
 	if ok {
 		if command.Composite != nil {
-			compInfo.ContainerName = command.Exec.Component
-			err = a.execCompositeCommand(command.Composite, show, podName, containers)
+			err = a.execCompositeCommand(command.Composite, compInfo, show, podName, containers)
 			if err != nil {
 				return err
 			}
@@ -390,12 +389,11 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 		command, ok = commandsMap[versionsCommon.RunCommandGroupType]
 	}
 	if ok {
-		klog.V(4).Infof("Executing devfile command %v", command.Exec.Id)
-		compInfo.ContainerName = command.Exec.Component
+		klog.V(4).Infof("Executing devfile command %v", command.GetID())
 
 		// Check if the devfile debug component containers have supervisord as the entrypoint.
 		// Start the supervisord if the odo component does not exist
-		if !componentExists {
+		if !componentExists && command.Exec != nil {
 			err = a.InitRunContainerSupervisord(command.Exec.Component, podName, containers)
 			if err != nil {
 				a.machineEventLogger.ReportError(err, machineoutput.TimestampNow())
@@ -404,12 +402,12 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 		}
 
 		if command.Composite != nil {
-			compInfo.ContainerName = command.Exec.Component
-			err = a.execCompositeCommand(command.Composite, show, podName, containers)
+			err = a.execCompositeCommand(command.Composite, compInfo, show, podName, containers)
 			if err != nil {
 				return err
 			}
 		} else {
+			compInfo.ContainerName = command.Exec.Component
 			if componentExists && !common.IsRestartRequired(command) {
 				klog.V(4).Infof("restart:false, Not restarting %v Command", command.Exec.Id)
 
@@ -434,13 +432,47 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 
 // execCompositeCommand executes the specified composite command
 // If the command sets parallel: true, the commands are execute asynchronously, otherwise they are executed in order
-func (a Adapter) execCompositeCommand(compositeCommand *versionsCommon.Composite, show bool, podName string, containers []corev1.Container) error {
-	//devfileCommands := a.Devfile.Data.GetCommands()
-
+func (a Adapter) execCompositeCommand(compositeCommand *versionsCommon.Composite, compInfo common.ComponentInfo, show bool, podName string, containers []corev1.Container) (err error) {
+	// Need to get mapping of all commands in the devfile since the composite command may reference any exec or composite command in the devfile
+	commandsMap := a.getCommandsMap()
 	if compositeCommand.Parallel {
-		fmt.Println("Parallel")
+		fmt.Println("ToDo: Parallel")
 	} else {
 		fmt.Println("Not Parallel")
+		for _, command := range compositeCommand.Commands {
+			if devfileCommand, ok := commandsMap[command]; ok {
+				if devfileCommand.Composite != nil {
+					err = a.execCompositeCommand(devfileCommand.Composite, compInfo, show, podName, containers)
+				} else {
+					compInfo.ContainerName = devfileCommand.Exec.Component
+
+					// Execute the command in the devfile
+					switch devfileCommand.Exec.Group.Kind {
+					case versionsCommon.InitCommandGroupType:
+					case versionsCommon.BuildCommandGroupType:
+						err = exec.ExecuteDevfileBuildAction(&a.Client, *devfileCommand.Exec, devfileCommand.Exec.Id, compInfo, show, a.machineEventLogger)
+					case versionsCommon.RunCommandGroupType:
+						// Run commands are special in composite commands
+						// Because of the current supervisord integration in odo, only one run command can be long-running (denoted by attribute ...)
+						// Otherwise, we treat the run command like an ordinary build command
+						err = exec.ExecuteDevfileBuildAction(&a.Client, *devfileCommand.Exec, devfileCommand.Exec.Id, compInfo, show, a.machineEventLogger)
+					case versionsCommon.DebugCommandGroupType:
+						// Like run commands, debug commands in composite commands are also special
+						// Because of the current supervisord integration in odo, only one debug command can be long-running (denoted by attribute ...)
+						// Otherwise, we treat the debug command like an ordinary build command
+						err = exec.ExecuteDevfileBuildAction(&a.Client, *devfileCommand.Exec, devfileCommand.Exec.Id, compInfo, show, a.machineEventLogger)
+					}
+
+					if err != nil {
+						return err
+					}
+				}
+
+			} else {
+				// Devfile validation should have caught a missing command earlier, but should include error handling here as well
+				return fmt.Errorf("command %q not found in devfile", command)
+			}
+		}
 	}
 	return nil
 }
@@ -476,6 +508,15 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, e
 	}
 
 	return "", fmt.Errorf("In order to sync files, odo requires at least one component in a devfile to set 'mountSources: true'")
+}
+
+func (a Adapter) getCommandsMap() map[string]versionsCommon.DevfileCommand {
+	commandsMap := make(map[string]versionsCommon.DevfileCommand)
+
+	for _, command := range a.Devfile.Data.GetCommands() {
+		commandsMap[command.GetID()] = command
+	}
+	return commandsMap
 }
 
 // Delete deletes the component

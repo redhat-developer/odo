@@ -116,7 +116,9 @@ func validateCommandsForGroup(data data.DevfileData, groupType common.DevfileCom
 
 	if len(commands) > 1 {
 		for _, command := range commands {
-			if command.Exec.Group.IsDefault {
+			if command.Composite != nil && command.Composite.Group.IsDefault {
+				defaultCommandCount++
+			} else if command.Exec != nil && command.Exec.Group.IsDefault {
 				defaultCommandCount++
 			}
 		}
