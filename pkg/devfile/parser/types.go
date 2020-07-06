@@ -27,6 +27,8 @@ type DevfileObj struct {
 	Data data.DevfileData
 }
 
+// OverrideComponents overrides the components of the parent devfile
+// overridePatch contains the patches to be applied to the parent's components
 func (d DevfileObj) OverrideComponents(overridePatch []common.DevfileComponent) error {
 	for _, patchComponent := range overridePatch {
 		found := false
@@ -56,6 +58,8 @@ func (d DevfileObj) OverrideComponents(overridePatch []common.DevfileComponent) 
 	return nil
 }
 
+// OverrideCommands overrides the commands of the parent devfile
+// overridePatch contains the patches to be applied to the parent's commands
 func (d DevfileObj) OverrideCommands(overridePatch []common.DevfileCommand) error {
 	for _, patchCommand := range overridePatch {
 		found := false
@@ -84,6 +88,8 @@ func (d DevfileObj) OverrideCommands(overridePatch []common.DevfileCommand) erro
 	return nil
 }
 
+// OverrideEvents overrides the events of the parent devfile
+// overridePatch contains the patches to be applied to the parent's events
 func (d DevfileObj) OverrideEvents(overridePatch common.DevfileEvents) error {
 	var updatedEvents common.DevfileEvents
 
@@ -104,6 +110,8 @@ func (d DevfileObj) OverrideEvents(overridePatch common.DevfileEvents) error {
 	return nil
 }
 
+// OverrideProjects overrides the projects of the parent devfile
+// overridePatch contains the patches to be applied to the parent's projects
 func (d DevfileObj) OverrideProjects(overridePatch []common.DevfileProject) error {
 	for _, patchProject := range overridePatch {
 		found := false
@@ -132,6 +140,8 @@ func (d DevfileObj) OverrideProjects(overridePatch []common.DevfileProject) erro
 	return nil
 }
 
+// handleMerge merges the patch to the original data
+// dataStruct is the type of the original and the patch data
 func handleMerge(original, patch, dataStruct interface{}) ([]byte, error) {
 	if reflect.TypeOf(original) != reflect.TypeOf(patch) {
 		return nil, fmt.Errorf("type of original and patch doesn't match")

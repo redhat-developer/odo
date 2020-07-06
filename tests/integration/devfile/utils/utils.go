@@ -200,7 +200,7 @@ func ExecPushToTestParent(projectDirPath, cmpName, namespace string) {
 }
 
 func ExecPushWithParentOverride(projectDirPath, cmpName, namespace string) {
-	args := []string{"create", "openLiberty", cmpName}
+	args := []string{"create", "java-openliberty", cmpName}
 	args = useProjectIfAvailable(args, namespace)
 	helper.CmdShouldPass("odo", args...)
 
@@ -213,7 +213,7 @@ func ExecPushWithParentOverride(projectDirPath, cmpName, namespace string) {
 }
 
 func ExecPushWithMultiLayerParent(projectDirPath, cmpName, namespace string) {
-	args := []string{"create", "openLiberty", cmpName}
+	args := []string{"create", "java-openliberty", cmpName}
 	args = useProjectIfAvailable(args, namespace)
 	helper.CmdShouldPass("odo", args...)
 

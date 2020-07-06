@@ -7,6 +7,7 @@ import (
 
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 	"reflect"
 )
 
@@ -32,7 +33,7 @@ func parseDevfile(d DevfileObj) (DevfileObj, error) {
 		return d, errors.Wrapf(err, "failed to decode devfile content")
 	}
 
-	if !reflect.DeepEqual(d.Data.GetParent(), common.DevfileParent{}) {
+	if !reflect.DeepEqual(d.Data.GetParent(), common.DevfileParent{}) && d.Data.GetParent().Uri != "" {
 		err = parseParent(d)
 		if err != nil {
 			return DevfileObj{}, err
@@ -79,6 +80,9 @@ func parseParent(d DevfileObj) error {
 		return err
 	}
 
+	klog.V(4).Infof("overriding data of devfile with URI: %v", parent.Uri)
+
+	// override the parent's components, commands, projects and events
 	err = parentData.OverrideComponents(d.Data.GetParent().Components)
 	if err != nil {
 		return err
@@ -99,6 +103,11 @@ func parseParent(d DevfileObj) error {
 		return err
 	}
 
+	klog.V(4).Infof("adding data of devfile with URI: %v", parent.Uri)
+
+	// since the parent's data has been overriden
+	// add the items back to the current devfile
+	// error indicates that the item has been defined again in the current devfile
 	err = d.Data.AddCommands(parentData.Data.GetCommands())
 	if err != nil {
 		return errors.Wrapf(err, "error while adding commands from the parent devfiles")

@@ -4,7 +4,7 @@ metadata:
   version: 1.0.0
   description: Java application stack using Open Liberty runtime
 parent:
-  uri: https://gist.githubusercontent.com/mik-dass/6f88d133b73e90bc52ffcda92833b625/raw/73ca496dd25c3aa35993dc6380a8b9392a0f7705/devfile-middle.yaml
+  uri: https://gist.githubusercontent.com/mik-dass/6f88d133b73e90bc52ffcda92833b625/raw/cc46d1ba348cd085855f163b269c0f1be87226c4/devfile-middle.yaml
   components:
     - container:
         name: appsodyrun

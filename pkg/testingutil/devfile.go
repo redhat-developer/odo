@@ -149,3 +149,19 @@ func GetFakeExecRunCommands() []versionsCommon.Exec {
 		},
 	}
 }
+
+// GetFakeExecRunCommands returns a fake env for testing
+func GetFakeEnv(name, value string) versionsCommon.Env {
+	return versionsCommon.Env{
+		Name:  name,
+		Value: value,
+	}
+}
+
+// GetFakeVolumeMount returns a fake volume mount for testing
+func GetFakeVolumeMount(name, path string) versionsCommon.VolumeMount {
+	return versionsCommon.VolumeMount{
+		Name: name,
+		Path: path,
+	}
+}

@@ -5,6 +5,7 @@ import (
 	devfileCtx "github.com/openshift/odo/pkg/devfile/parser/context"
 	v200 "github.com/openshift/odo/pkg/devfile/parser/data/2.0.0"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	"github.com/openshift/odo/pkg/testingutil"
 	"reflect"
 	"testing"
 )
@@ -102,10 +103,7 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 									"key-0": "value-0",
 								},
 								Env: []common.Env{
-									{
-										Name:  "env-0",
-										Value: "value-0",
-									},
+									testingutil.GetFakeEnv("env-0", "value-0"),
 								},
 								Id: "devbuild",
 							},
@@ -121,14 +119,8 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 								"key-1": "value-1",
 							},
 							Env: []common.Env{
-								{
-									Name:  "env-0",
-									Value: "value-0-0",
-								},
-								{
-									Name:  "env-1",
-									Value: "value-1",
-								},
+								testingutil.GetFakeEnv("env-0", "value-0-0"),
+								testingutil.GetFakeEnv("env-1", "value-1"),
 							},
 							Id: "devbuild",
 						},
@@ -147,14 +139,8 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 									"key-1": "value-1",
 								},
 								Env: []common.Env{
-									{
-										Name:  "env-0",
-										Value: "value-0-0",
-									},
-									{
-										Name:  "env-1",
-										Value: "value-1",
-									},
+									testingutil.GetFakeEnv("env-0", "value-0-0"),
+									testingutil.GetFakeEnv("env-1", "value-1"),
 								},
 							},
 						},
@@ -223,10 +209,7 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 						{
 							Exec: &common.Exec{
 								Env: []common.Env{
-									{
-										Name:  "env-0",
-										Value: "value-0",
-									},
+									testingutil.GetFakeEnv("env-0", "value-0"),
 								},
 								Id: "devbuild",
 							},
@@ -239,14 +222,8 @@ func TestDevfileObj_OverrideCommands(t *testing.T) {
 					{
 						Exec: &common.Exec{
 							Env: []common.Env{
-								{
-									Name:  "env-0",
-									Value: "value-0-0",
-								},
-								{
-									Name:  "env-1",
-									Value: "value-1",
-								},
+								testingutil.GetFakeEnv("env-0", "value-0-0"),
+								testingutil.GetFakeEnv("env-1", "value-1"),
 							},
 							Id: "devbuild-custom",
 						},
@@ -374,17 +351,11 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 									},
 								},
 								Env: []common.Env{
-									{
-										Name:  "env-0",
-										Value: "value-0",
-									},
+									testingutil.GetFakeEnv("env-0", "value-0"),
 								},
 								Name: "nodejs",
 								VolumeMounts: []common.VolumeMount{
-									{
-										Name: "volume-0",
-										Path: "path-0",
-									},
+									testingutil.GetFakeVolumeMount("volume-0", "path-0"),
 								},
 							},
 						},
@@ -413,25 +384,13 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 								},
 							},
 							Env: []common.Env{
-								{
-									Name:  "env-0",
-									Value: "value-0-0",
-								},
-								{
-									Name:  "env-1",
-									Value: "value-1",
-								},
+								testingutil.GetFakeEnv("env-0", "value-0-0"),
+								testingutil.GetFakeEnv("env-1", "value-1"),
 							},
 							Name: "nodejs",
 							VolumeMounts: []common.VolumeMount{
-								{
-									Name: "volume-0",
-									Path: "path-0-0",
-								},
-								{
-									Name: "volume-1",
-									Path: "path-1",
-								},
+								testingutil.GetFakeVolumeMount("volume-0", "path-0-0"),
+								testingutil.GetFakeVolumeMount("volume-1", "path-1"),
 							},
 						},
 					},
@@ -444,25 +403,13 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 						{
 							Container: &common.Container{
 								Env: []common.Env{
-									{
-										Name:  "env-0",
-										Value: "value-0-0",
-									},
-									{
-										Name:  "env-1",
-										Value: "value-1",
-									},
+									testingutil.GetFakeEnv("env-0", "value-0-0"),
+									testingutil.GetFakeEnv("env-1", "value-1"),
 								},
 								Name: "nodejs",
 								VolumeMounts: []common.VolumeMount{
-									{
-										Name: "volume-0",
-										Path: "path-0-0",
-									},
-									{
-										Name: "volume-1",
-										Path: "path-1",
-									},
+									testingutil.GetFakeVolumeMount("volume-0", "path-0-0"),
+									testingutil.GetFakeVolumeMount("volume-1", "path-1"),
 								},
 								Endpoints: []common.Endpoint{
 									{
@@ -548,7 +495,7 @@ func TestDevfileObj_OverrideComponents(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "case 4: throw error if command to override is not found",
+			name: "case 4: throw error if component to override is not found",
 			devFileObj: DevfileObj{
 				Ctx: devfileCtx.NewDevfileCtx(devfileTempPath),
 				Data: &v200.Devfile200{

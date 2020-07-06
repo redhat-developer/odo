@@ -281,7 +281,7 @@ var _ = Describe("odo docker devfile push command tests", func() {
 			Expect(stdOut).To(ContainSubstring(("blah.js")))
 		})
 
-		It("should handle add a parent and override/append it's envs", func() {
+		It("should handle a parent and override/append it's envs", func() {
 			utils.ExecPushWithParentOverride(context, cmpName, "")
 			// Check to see if it's been pushed (foobar.txt abd directory testdir)
 			containers := dockerClient.GetRunningContainersByCompAlias(cmpName, "appsodyrun")

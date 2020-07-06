@@ -12,7 +12,8 @@ func (d *Devfile200) GetComponents() []common.DevfileComponent {
 	return d.Components
 }
 
-// AddComponents returns the slice of DevfileComponent objects parsed from the Devfile
+// AddComponents adds the slice of DevfileComponent objects to the devfile's components
+// if a component is already defined, error out
 func (d *Devfile200) AddComponents(components []common.DevfileComponent) error {
 	componentMap := make(map[string]bool)
 	for _, component := range d.Components {
@@ -23,12 +24,13 @@ func (d *Devfile200) AddComponents(components []common.DevfileComponent) error {
 		if _, ok := componentMap[component.Container.Name]; !ok {
 			d.Components = append(d.Components, component)
 		} else {
-			return fmt.Errorf("component %v is already present", component.Container.Name)
+			return fmt.Errorf("component %v is already present in the devfile", component.Container.Name)
 		}
 	}
 	return nil
 }
 
+// UpdateComponent updates the component with the given name
 func (d *Devfile200) UpdateComponent(Name string, component common.DevfileComponent) {
 	for i := range d.Components {
 		if d.Components[i].Container.Name == strings.ToLower(Name) {
@@ -57,7 +59,8 @@ func (d *Devfile200) GetCommands() []common.DevfileCommand {
 	return commands
 }
 
-// AddCommands returns the slice of DevfileCommand objects parsed from the Devfile
+// AddCommands adds the slice of DevfileCommand objects to the Devfile's commands
+// if a command is already defined, error out
 func (d *Devfile200) AddCommands(commands []common.DevfileCommand) error {
 	commandsMap := make(map[string]bool)
 	for _, command := range d.Commands {
@@ -68,12 +71,13 @@ func (d *Devfile200) AddCommands(commands []common.DevfileCommand) error {
 		if _, ok := commandsMap[command.Exec.Id]; !ok {
 			d.Commands = append(d.Commands, command)
 		} else {
-			return fmt.Errorf("command %v is already present", command.Exec.Id)
+			return fmt.Errorf("command %v is already present in the devfile", command.Exec.Id)
 		}
 	}
 	return nil
 }
 
+// UpdateCommand updates the command with the given id
 func (d *Devfile200) UpdateCommand(id string, command common.DevfileCommand) {
 	for i := range d.Commands {
 		if d.Commands[i].Exec.Id == strings.ToLower(id) {
@@ -82,11 +86,12 @@ func (d *Devfile200) UpdateCommand(id string, command common.DevfileCommand) {
 	}
 }
 
-// GetParent returns the  DevfileParent object parsed from devfile
+// GetParent returns the DevfileParent object parsed from devfile
 func (d *Devfile200) GetParent() common.DevfileParent {
 	return d.Parent
 }
 
+// SetParent sets the parent for the devfile
 func (d *Devfile200) SetParent(parent common.DevfileParent) {
 	d.Parent = parent
 }
@@ -96,7 +101,8 @@ func (d *Devfile200) GetProjects() []common.DevfileProject {
 	return d.Projects
 }
 
-// AddProjects appends the slice of DevfileCommand projects parsed from the Devfile
+// AddProjects adss the slice of Devfile projects to the Devfile's project list
+// if a project is already defined, error out
 func (d *Devfile200) AddProjects(projects []common.DevfileProject) error {
 	projectsMap := make(map[string]bool)
 	for _, project := range d.Projects {
@@ -107,7 +113,7 @@ func (d *Devfile200) AddProjects(projects []common.DevfileProject) error {
 		if _, ok := projectsMap[project.Name]; !ok {
 			d.Projects = append(d.Projects, project)
 		} else {
-			return fmt.Errorf("project %v is already present", project.Name)
+			return fmt.Errorf("project %v is already present in the devfile", project.Name)
 		}
 	}
 	return nil
@@ -132,11 +138,12 @@ func (d *Devfile200) GetEvents() common.DevfileEvents {
 	return d.Events
 }
 
-// AddEvents sets the Events Object parsed from devfile
+// AddEvents adds the Events Object to the devfile's events
+// if the event is already defined in the devfile, error out
 func (d *Devfile200) AddEvents(events common.DevfileEvents) error {
 	if len(events.PreStop) > 0 {
 		if len(d.Events.PreStop) > 0 {
-			return fmt.Errorf("pre stop event is already defined")
+			return fmt.Errorf("pre stop event is already defined in the devfile")
 		} else {
 			d.Events.PreStop = events.PreStop
 		}
@@ -144,7 +151,7 @@ func (d *Devfile200) AddEvents(events common.DevfileEvents) error {
 
 	if len(events.PreStart) > 0 {
 		if len(d.Events.PreStart) > 0 {
-			return fmt.Errorf("pre start event is already defined")
+			return fmt.Errorf("pre start event is already defined in the devfile")
 		} else {
 			d.Events.PreStart = events.PreStart
 		}
@@ -152,7 +159,7 @@ func (d *Devfile200) AddEvents(events common.DevfileEvents) error {
 
 	if len(events.PostStop) > 0 {
 		if len(d.Events.PostStop) > 0 {
-			return fmt.Errorf("post stop event is already defined")
+			return fmt.Errorf("post stop event is already defined in the devfile")
 		} else {
 			d.Events.PostStop = events.PostStop
 		}
@@ -160,7 +167,7 @@ func (d *Devfile200) AddEvents(events common.DevfileEvents) error {
 
 	if len(events.PostStart) > 0 {
 		if len(d.Events.PostStart) > 0 {
-			return fmt.Errorf("post start event is already defined")
+			return fmt.Errorf("post start event is already defined in the devfile")
 		} else {
 			d.Events.PostStart = events.PostStart
 		}
@@ -168,6 +175,8 @@ func (d *Devfile200) AddEvents(events common.DevfileEvents) error {
 	return nil
 }
 
+// UpdateEvents updates the devfile's events
+// it only updates the events passed to it
 func (d *Devfile200) UpdateEvents(postStart, postStop, preStart, preStop []string) {
 	if len(postStart) != 0 {
 		d.Events.PostStart = postStart
