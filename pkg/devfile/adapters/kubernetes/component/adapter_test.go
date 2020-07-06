@@ -15,8 +15,10 @@ import (
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
 	ktesting "k8s.io/client-go/testing"
 )
@@ -332,7 +334,7 @@ func TestDoesComponentExist(t *testing.T) {
 					return true, deployment, nil
 				}
 
-				return true, emptyDeployment, nil
+				return true, emptyDeployment, kerrors.NewNotFound(schema.GroupResource{}, "")
 			})
 
 			// Verify that a component with the specified name exists

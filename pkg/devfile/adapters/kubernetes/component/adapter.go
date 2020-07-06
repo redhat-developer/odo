@@ -448,17 +448,18 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, s
 
 // Delete deletes the component
 func (a Adapter) Delete(labels map[string]string) error {
+	spinner := log.Spinner(fmt.Sprintf("Deleting devfile component %s", a.ComponentName))
+	defer spinner.End(false)
+
 	componentExists, err := utils.ComponentExists(a.Client, a.ComponentName)
 	if err != nil {
 		return errors.Wrapf(err, "unable to determine if component %s exists", a.ComponentName)
 	}
 	if !componentExists {
-		log.Italicf("Component %s does not exist", a.ComponentName)
+		log.Infof("Component %s does not exist", a.ComponentName)
+		spinner.End(true)
 		return nil
 	}
-
-	spinner := log.Spinner(fmt.Sprintf("Deleting devfile component %s", a.ComponentName))
-	defer spinner.End(false)
 
 	err = a.Client.DeleteDeployment(labels)
 	if err != nil {

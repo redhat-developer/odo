@@ -8,7 +8,6 @@ import (
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -28,10 +27,6 @@ const (
 // GetDeploymentByName gets a deployment by querying by name
 func (c *Client) GetDeploymentByName(name string) (*appsv1.Deployment, error) {
 	deployment, err := c.KubeClient.AppsV1().Deployments(c.Namespace).Get(name, metav1.GetOptions{})
-	if kerrors.IsNotFound(err) {
-		klog.V(4).Infof("Deployment %s not found", name)
-		return deployment, nil
-	}
 	return deployment, err
 }
 

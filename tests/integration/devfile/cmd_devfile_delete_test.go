@@ -106,9 +106,9 @@ var _ = Describe("odo devfile delete command tests", func() {
 	Context("when the project doesn't exist", func() {
 
 		It("should let the user delete the local config files with -a flag", func() {
-			newNamespace := cliRunner.CreateRandNamespaceProject()
+			newNamespace := "garbage"
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", newNamespace, componentName)
-			cliRunner.DeleteNamespaceProject(newNamespace)
+			// cliRunner.DeleteNamespaceProject(newNamespace)
 
 			output := helper.CmdShouldFail("odo", "delete")
 			helper.MatchAllInOutput(output, []string{
@@ -124,9 +124,9 @@ var _ = Describe("odo devfile delete command tests", func() {
 		})
 
 		It("should let the user delete the local config files with -a and -project flags", func() {
-			newNamespace := cliRunner.CreateRandNamespaceProject()
+			newNamespace := "garbage"
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", newNamespace, componentName)
-			cliRunner.DeleteNamespaceProject(newNamespace)
+			// cliRunner.DeleteNamespaceProject(newNamespace)
 
 			output := helper.CmdShouldFail("odo", "delete", "--project", newNamespace)
 			helper.MatchAllInOutput(output, []string{
