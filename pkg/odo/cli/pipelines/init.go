@@ -94,14 +94,12 @@ func NewCmdInit(name, fullName string) *cobra.Command {
 	initCmd.Flags().StringVar(&o.GitOpsRepoURL, "gitops-repo-url", "", "GitOps repository e.g. https://github.com/organisation/repository")
 	initCmd.MarkFlagRequired("gitops-repo-url")
 	initCmd.Flags().StringVar(&o.GitOpsWebhookSecret, "gitops-webhook-secret", "", "provide the GitHub webhook secret for GitOps repository (if not provided, it will be auto-generated)")
-	initCmd.MarkFlagRequired("gitops-webhook-secret")
 	initCmd.Flags().StringVar(&o.OutputPath, "output", ".", "folder path to add GitOps resources")
 	initCmd.Flags().StringVarP(&o.Prefix, "prefix", "p", "", "add a prefix to the environment names")
 	initCmd.Flags().StringVar(&o.DockerConfigJSONFilename, "dockercfgjson", "", "dockercfg json pathname")
 	initCmd.Flags().StringVar(&o.InternalRegistryHostname, "internal-registry-hostname", "image-registry.openshift-image-registry.svc:5000", "internal image registry hostname")
 	initCmd.Flags().StringVar(&o.ImageRepo, "image-repo", "", "image repository in this form <registry>/<username>/<repository> or <project>/<app> for internal registry")
-	initCmd.Flags().StringVarP(&o.SealedSecretsNamespace, "sealed-secrets-ns", "", "", "namespace in which the Sealed Secrets operator is installed, automatically generated secrets are encrypted with this operator")
-	initCmd.MarkFlagRequired("sealed-secrets-ns")
+	initCmd.Flags().StringVarP(&o.SealedSecretsNamespace, "sealed-secrets-ns", "", "kube-system", "namespace in which the Sealed Secrets operator is installed, automatically generated secrets are encrypted with this operator")
 
 	return initCmd
 }
