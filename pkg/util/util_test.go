@@ -1144,7 +1144,7 @@ func TestRemoveRelativePathFromFiles(t *testing.T) {
 	}
 }
 
-func TestHttpGetFreePort(t *testing.T) {
+func TestHTTPGetFreePort(t *testing.T) {
 	tests := []struct {
 		name    string
 		wantErr bool
@@ -1156,9 +1156,9 @@ func TestHttpGetFreePort(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := HttpGetFreePort()
+			got, err := HTTPGetFreePort()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("HttpGetFreePort() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("HTTPGetFreePort() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			addressLook := "localhost:" + strconv.Itoa(got)
