@@ -74,7 +74,7 @@ var _ = Describe("odo docker devfile push command tests", func() {
 
 		It("Check that odo push works with a devfile that has sourcemapping set", func() {
 			// Springboot devfile references multiple containers
-			helper.CmdShouldPass("odo", "create", "springBoot", "--context", context, cmpName)
+			helper.CmdShouldPass("odo", "create", "java-springboot", "--context", context, cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileSourceMapping.yaml"), filepath.Join(context, "devfile.yaml"))
