@@ -138,8 +138,8 @@ component](https://github.com/odo-devfiles/springboot-ex) that uses
      $ git clone https://github.com/odo-devfiles/springboot-ex
     ```
     
-    Alternatively, you can pass in `--downloadSource` to `odo create` to
-    have odo download a sample project.
+    Alternatively, you can pass in `--starter` to `odo create` to have
+    odo download a project specified in the devfile.
 
 2.  Change the current directory to the component directory:
     
@@ -357,8 +357,8 @@ component we did earlier, but to a locally running Docker instance.
      $ git clone https://github.com/odo-devfiles/springboot-ex
     ```
     
-    Alternatively, you can pass in `--downloadSource` to `odo create` to
-    have odo download a sample project.
+    Alternatively, you can pass in `--starter` to `odo create` to have
+    odo download a project specified in the devfile.
 
 3.  Change the current directory to the component directory:
     
