@@ -33,14 +33,11 @@ type LogOptions struct {
 	debug            bool
 	componentContext string
 	*ComponentOptions
-	// EnvSpecificInfo *envinfo.EnvSpecificInfo
-	// devfile path
 	devfilePath string
 }
 
 // NewLogOptions returns new instance of LogOptions
 func NewLogOptions() *LogOptions {
-	//return &LogOptions{false, "", &ComponentOptions{}, &envinfo.EnvSpecificInfo{}, ""}
 	return &LogOptions{false, false, "", &ComponentOptions{}, ""}
 }
 

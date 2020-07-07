@@ -182,9 +182,6 @@ func (c *Client) GetPodLogs(podName, containerName string, followLog bool) (io.R
 
 	// If the log is being followed, set it to follow / don't wait
 	if followLog {
-		// TODO: https://github.com/kubernetes/kubernetes/pull/60696
-		// Unable to set to 0, until openshift/client-go updates their Kubernetes vendoring to 1.11.0
-		// Set to 1 for now.
 		tailLines := int64(1)
 		podLogOptions = corev1.PodLogOptions{
 			Follow:    true,

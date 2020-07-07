@@ -291,6 +291,17 @@ func (mr *MockDockerClientMockRecorder) CopyToContainer(ctx, container, path, co
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CopyToContainer", reflect.TypeOf((*MockDockerClient)(nil).CopyToContainer), ctx, container, path, content, options)
 }
 
+// ContainerLogs mocks base method
 func (m *MockDockerClient) ContainerLogs(ctx context.Context, container string, options types.ContainerLogsOptions) (io.ReadCloser, error) {
-	return nil, nil
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ContainerLogs", ctx, container, options)
+	ret0, _ := ret[0].(io.ReadCloser)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ContainerLogs indicates an expected call of ContainerLogs
+func (mr *MockDockerClientMockRecorder) ContainerLogs(ctx, container, options interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ContainerLogs", reflect.TypeOf((*MockDockerClient)(nil).ContainerLogs), ctx, container, options)
 }

@@ -1161,6 +1161,7 @@ func addFileToIgnoreFile(gitIgnoreFile, filename string, fs filesystem.Filesyste
 	return nil
 }
 
+// DisplayLog displays logs to user stdout with some color formatting
 func DisplayLog(followLog bool, rd io.ReadCloser, compName string) (err error) {
 
 	defer rd.Close()
