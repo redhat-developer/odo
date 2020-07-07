@@ -3,6 +3,8 @@ package exec
 import (
 	"fmt"
 	"io"
+	"strings"
+	"sync"
 
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
@@ -220,6 +222,85 @@ func ExecuteDevfileDebugActionWithoutRestart(client ExecClient, exec common.Exec
 	s.End(true)
 
 	return nil
+}
+
+// ExecuteCompositeDevfileAction executes a given composite command in a devfile
+// The composite command may reference exec commands, composite commands, or both
+func ExecuteCompositeDevfileAction(client ExecClient, composite common.Composite, commandsMap map[string]common.DevfileCommand, compInfo adaptersCommon.ComponentInfo, show bool, machineEventLogger machineoutput.MachineEventLoggingClient) (err error) {
+	if composite.Parallel {
+		fmt.Println("ToDo: Parallel")
+		var wg sync.WaitGroup
+		errChan := make(chan error)
+
+		// Loop over each command and execute it in parallel
+		for _, command := range composite.Commands {
+			if devfileCommand, ok := commandsMap[strings.ToLower(command)]; ok {
+				wg.Add(1)
+				go func(client ExecClient, command common.DevfileCommand, commandsMap map[string]common.DevfileCommand, compInfo adaptersCommon.ComponentInfo, show bool, machineEventLogger machineoutput.MachineEventLoggingClient) {
+					defer wg.Done()
+					err := execCommandFromComposite(client, devfileCommand, commandsMap, compInfo, show, machineEventLogger)
+					if err != nil {
+						errChan <- err
+					}
+				}(client, devfileCommand, commandsMap, compInfo, show, machineEventLogger)
+			} else {
+				return fmt.Errorf("command %q not found in devfile", command)
+			}
+		}
+
+		// Wait for all parallel commands to finish
+		wg.Wait()
+		close(errChan)
+
+		// Check the error channel, if any commands exited with an error
+		err = <-errChan
+		if err != nil {
+			return fmt.Errorf("command execution failed: %v", err)
+		}
+	} else {
+		fmt.Println("Non-parallel")
+
+		for _, command := range composite.Commands {
+			if devfileCommand, ok := commandsMap[strings.ToLower(command)]; ok {
+				err = execCommandFromComposite(client, devfileCommand, commandsMap, compInfo, show, machineEventLogger)
+				if err != nil {
+					return fmt.Errorf("command execution failed: %v", err)
+				}
+			} else {
+				// Devfile validation should have caught a missing command earlier, but should include error handling here as well
+				return fmt.Errorf("command %q not found in devfile", command)
+			}
+		}
+	}
+
+	return nil
+}
+
+// execCommandFromComposite takes a command in a composite command and executes it.
+// Any non-long running command (init, build, run, or debug) are treated the same
+// Long-running run/debug commands, or run/debug commands that don't restart, need special handling
+func execCommandFromComposite(client ExecClient, command common.DevfileCommand, commandsMap map[string]common.DevfileCommand, compInfo adaptersCommon.ComponentInfo, show bool, machineEventLogger machineoutput.MachineEventLoggingClient) (err error) {
+	if command.Composite != nil {
+		err = ExecuteCompositeDevfileAction(client, *command.Composite, commandsMap, compInfo, show, machineEventLogger)
+	} else {
+		switch command.Exec.Group.Kind {
+		case common.InitCommandGroupType:
+		case common.BuildCommandGroupType:
+			err = ExecuteDevfileBuildAction(client, *command.Exec, command.Exec.Id, compInfo, show, machineEventLogger)
+		case common.RunCommandGroupType:
+			// Run commands are special in composite commands
+			// Because of the current supervisord integration in odo, only one run command can be long-running (denoted by attribute ...)
+			// Otherwise, we treat the run command like an ordinary build command
+			err = ExecuteDevfileBuildAction(client, *command.Exec, command.Exec.Id, compInfo, show, machineEventLogger)
+		case common.DebugCommandGroupType:
+			// Like run commands, debug commands in composite commands are also special
+			// Because of the current supervisord integration in odo, only one debug command can be long-running (denoted by attribute ...)
+			// Otherwise, we treat the debug command like an ordinary build command
+			err = ExecuteDevfileBuildAction(client, *command.Exec, command.Exec.Id, compInfo, show, machineEventLogger)
+		}
+	}
+
+	return
 }
 
 // closeWriterAndWaitForAck closes the PipeWriter and then waits for a channel response from the ContainerOutputWriter (indicating that the reader had closed).

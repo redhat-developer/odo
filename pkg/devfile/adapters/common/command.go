@@ -3,6 +3,7 @@ package common
 import (
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/openshift/odo/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
@@ -196,10 +197,7 @@ func validateCompositeCommand(data data.DevfileData, compositeCommand *common.Co
 // hasCommand returns true if the devfile contains the specified command
 func hasCommand(data data.DevfileData, command string) bool {
 	for _, devfileCommand := range data.GetCommands() {
-		if devfileCommand.Exec != nil && command == devfileCommand.Exec.Id {
-			return true
-		}
-		if devfileCommand.Composite != nil && command == devfileCommand.Composite.Id {
+		if strings.ToLower(command) == devfileCommand.GetID() {
 			return true
 		}
 	}
