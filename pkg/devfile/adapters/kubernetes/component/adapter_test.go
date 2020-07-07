@@ -456,6 +456,26 @@ func TestAdapterDelete(t *testing.T) {
 			componentExists:    false,
 			wantErr:            false,
 		},
+		{
+			name: "case 4: resource forbidden",
+			args: args{labels: map[string]string{
+				"component": "component",
+			}},
+			existingDeployment: testingutil.CreateFakeDeployment("fronted"),
+			componentName:      "resourceforbidden",
+			componentExists:    false,
+			wantErr:            false,
+		},
+		{
+			name: "case 5: component check error",
+			args: args{labels: map[string]string{
+				"component": "component",
+			}},
+			existingDeployment: testingutil.CreateFakeDeployment("fronted"),
+			componentName:      "componenterror",
+			componentExists:    true,
+			wantErr:            true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -490,7 +510,11 @@ func TestAdapterDelete(t *testing.T) {
 
 			fkclientset.Kubernetes.PrependReactor("get", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if action.(ktesting.GetAction).GetName() != tt.componentName {
-					return true, emptyDeployment, errors.Errorf("get action called with different component name, want: %s, got: %s", action.(ktesting.GetAction).GetName(), tt.componentName)
+					return true, emptyDeployment, kerrors.NewNotFound(schema.GroupResource{}, "")
+				} else if tt.componentName == "resourceforbidden" {
+					return true, emptyDeployment, kerrors.NewForbidden(schema.GroupResource{}, "", nil)
+				} else if tt.componentName == "componenterror" {
+					return true, emptyDeployment, errors.Errorf("component check error")
 				}
 				return true, tt.existingDeployment, nil
 			})

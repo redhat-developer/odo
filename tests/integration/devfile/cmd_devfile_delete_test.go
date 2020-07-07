@@ -115,11 +115,12 @@ var _ = Describe("odo devfile delete command tests", func() {
 			})
 
 			output = helper.CmdShouldPass("odo", "delete", "-af")
-			helper.MatchAllInOutput(output, []string{
-				fmt.Sprintf("Component %s does not exist", componentName),
+			expectedOutput := []string{
 				"Successfully deleted env file",
 				"Successfully deleted devfile.yaml file",
-			})
+				fmt.Sprintf("Component %s does not exist", componentName),
+			}
+			helper.MatchAllInOutput(output, expectedOutput)
 		})
 
 		It("should let the user delete the local config files with -a and -project flags", func() {
@@ -129,11 +130,12 @@ var _ = Describe("odo devfile delete command tests", func() {
 			helper.CmdShouldFail("odo", "delete", "--project", invalidNamespace)
 
 			output := helper.CmdShouldPass("odo", "delete", "--project", invalidNamespace, "-af")
-			helper.MatchAllInOutput(output, []string{
-				fmt.Sprintf("Component %s does not exist", componentName),
+			expectedOutput := []string{
 				"Successfully deleted env file",
 				"Successfully deleted devfile.yaml file",
-			})
+				fmt.Sprintf("Component %s does not exist", componentName),
+			}
+			helper.MatchAllInOutput(output, expectedOutput)
 		})
 	})
 })

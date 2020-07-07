@@ -25,6 +25,7 @@ import (
 	"github.com/openshift/odo/pkg/machineoutput"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/sync"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 // New instantiantes a component adapter
@@ -451,17 +452,21 @@ func (a Adapter) Delete(labels map[string]string) error {
 	spinner := log.Spinner(fmt.Sprintf("Deleting devfile component %s", a.ComponentName))
 	defer spinner.End(false)
 
+	errorMsg := fmt.Sprintf("Component %s does not exist", a.ComponentName)
+
 	componentExists, err := utils.ComponentExists(a.Client, a.ComponentName)
-	if !componentExists || err != nil {
-		msg := fmt.Sprintf("Component %s does not exist", a.ComponentName)
+	if kerrors.IsForbidden(err) {
+		klog.V(4).Infof("Resource for %s forbidden", a.ComponentName)
+		// log the error if it failed to determine if the component exists due to insufficient RBACs
+		log.Infof("%s: %v", errorMsg, err)
+		spinner.End(true)
+		return nil
+	} else if err != nil {
+		return errors.Wrapf(err, "unable to determine if component %s exists", a.ComponentName)
+	}
 
-		// log the error if it failed to determine if the component exists
-		if err != nil {
-			msg = fmt.Sprintf("%s: %v", msg, err)
-		}
-
-		log.Infof(msg)
-
+	if !componentExists {
+		log.Infof(errorMsg)
 		spinner.End(true)
 		return nil
 	}
