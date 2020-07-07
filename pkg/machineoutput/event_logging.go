@@ -11,8 +11,8 @@ import (
 	"k8s.io/klog"
 )
 
-// formatTime returns time in UTC Unix Epoch Seconds and then the microsecond portion of that time.
-func formatTime(time time.Time) string {
+// FormatTime returns time in UTC Unix Epoch Seconds and then the microsecond portion of that time.
+func FormatTime(time time.Time) string {
 	result := fmt.Sprintf("%d.%06d", time.Unix(), time.Nanosecond()/1000)
 	return result
 
@@ -20,7 +20,7 @@ func formatTime(time time.Time) string {
 
 // TimestampNow returns timestamp in format of (seconds since UTC Unix epoch).(microseconds time component)
 func TimestampNow() string {
-	return formatTime(time.Now())
+	return FormatTime(time.Now())
 }
 
 func NewMachineEventLoggingClient() MachineEventLoggingClient {
@@ -68,6 +68,24 @@ func (c *NoOpMachineEventLoggingClient) CreateContainerOutputWriter() (*io.PipeW
 
 // ReportError ignores the provided event.
 func (c *NoOpMachineEventLoggingClient) ReportError(errorVal error, timestamp string) {}
+
+// SupervisordStatus ignores the provided event.
+func (c *NoOpMachineEventLoggingClient) SupervisordStatus(statuses []SupervisordStatusEntry, timestamp string) {
+}
+
+// ContainerStatus ignores the provided event.
+func (c *NoOpMachineEventLoggingClient) ContainerStatus(statuses []ContainerStatusEntry, timestamp string) {
+}
+
+// URLReachable ignores the provided event.
+func (c *NoOpMachineEventLoggingClient) URLReachable(name string, url string, port int, secure bool, kind string, reachable bool, timestamp string) {
+
+}
+
+// KubernetesPodStatus ignores the provided event.
+func (c *NoOpMachineEventLoggingClient) KubernetesPodStatus(pods []KubernetesPodStatusEntry, timestamp string) {
+
+}
 
 // NewConsoleMachineEventLoggingClient creates a new instance of ConsoleMachineEventLoggingClient,
 // which will output events as JSON to the console.
@@ -133,45 +151,7 @@ func (c *ConsoleMachineEventLoggingClient) CreateContainerOutputWriter() (*io.Pi
 
 }
 
-func createWriterAndChannel(stderr bool) (*io.PipeWriter, chan interface{}) {
-	reader, writer := io.Pipe()
-
-	closeChannel := make(chan interface{})
-
-	stream := "stdout"
-	if stderr {
-		stream = "stderr"
-	}
-
-	go func() {
-
-		bufReader := bufio.NewReader(reader)
-		for {
-			line, _, err := bufReader.ReadLine()
-			if err != nil {
-				klog.V(4).Infof("Unexpected error on reading container output reader: %v", err)
-				break
-			}
-
-			json := MachineEventWrapper{
-				LogText: &LogText{
-					AbstractLogEvent: AbstractLogEvent{Timestamp: TimestampNow()},
-					Text:             string(line),
-					Stream:           stream,
-				},
-			}
-			OutputSuccessUnindented(json)
-		}
-
-		// Output a single nil event on the channel to inform that the last line of text has been
-		// received from the writer.
-		closeChannel <- nil
-	}()
-
-	return writer, closeChannel
-}
-
-// ReportError ignores the provided event.
+// ReportError outputs the provided event as JSON to the console.
 func (c *ConsoleMachineEventLoggingClient) ReportError(errorVal error, timestamp string) {
 	json := MachineEventWrapper{
 		ReportError: &ReportError{
@@ -180,6 +160,60 @@ func (c *ConsoleMachineEventLoggingClient) ReportError(errorVal error, timestamp
 		},
 	}
 
+	OutputSuccessUnindented(json)
+}
+
+// SupervisordStatus outputs the provided event as JSON to the console.
+func (c *ConsoleMachineEventLoggingClient) SupervisordStatus(statuses []SupervisordStatusEntry, timestamp string) {
+	json := MachineEventWrapper{
+		SupervisordStatus: &SupervisordStatus{
+			ProgramStatus:    statuses,
+			AbstractLogEvent: AbstractLogEvent{Timestamp: timestamp},
+		},
+	}
+
+	OutputSuccessUnindented(json)
+}
+
+// ContainerStatus outputs the provided event as JSON to the console.
+func (c *ConsoleMachineEventLoggingClient) ContainerStatus(statuses []ContainerStatusEntry, timestamp string) {
+	json := MachineEventWrapper{
+		ContainerStatus: &ContainerStatus{
+			Status: statuses,
+			AbstractLogEvent: AbstractLogEvent{
+				Timestamp: timestamp,
+			},
+		},
+	}
+	OutputSuccessUnindented(json)
+}
+
+// URLReachable outputs the provided event as JSON to the console.
+func (c *ConsoleMachineEventLoggingClient) URLReachable(name string, url string, port int, secure bool, kind string, reachable bool, timestamp string) {
+	json := MachineEventWrapper{
+		URLReachable: &URLReachable{
+			Name:             name,
+			URL:              url,
+			Port:             port,
+			Secure:           secure,
+			Kind:             kind,
+			Reachable:        reachable,
+			AbstractLogEvent: AbstractLogEvent{Timestamp: timestamp},
+		},
+	}
+	OutputSuccessUnindented(json)
+}
+
+// KubernetesPodStatus outputs the provided event as JSON to the console.
+func (c *ConsoleMachineEventLoggingClient) KubernetesPodStatus(pods []KubernetesPodStatusEntry, timestamp string) {
+	json := MachineEventWrapper{
+		KubernetesPodStatus: &KubernetesPodStatus{
+			Pods: pods,
+			AbstractLogEvent: AbstractLogEvent{
+				Timestamp: timestamp,
+			},
+		},
+	}
 	OutputSuccessUnindented(json)
 }
 
@@ -198,6 +232,18 @@ func (w MachineEventWrapper) GetEntry() (MachineEventLogEntry, error) {
 
 	} else if w.ReportError != nil {
 		return w.ReportError, nil
+
+	} else if w.KubernetesPodStatus != nil {
+		return w.KubernetesPodStatus, nil
+
+	} else if w.ContainerStatus != nil {
+		return w.ContainerStatus, nil
+
+	} else if w.SupervisordStatus != nil {
+		return w.SupervisordStatus, nil
+
+	} else if w.URLReachable != nil {
+		return w.URLReachable, nil
 
 	} else {
 		return nil, errors.New("unexpected machine event log entry")
@@ -224,6 +270,18 @@ func (c LogText) GetType() MachineEventLogEntryType { return TypeLogText }
 // GetType returns the event type for this event.
 func (c ReportError) GetType() MachineEventLogEntryType { return TypeReportError }
 
+// GetType returns the event type for this event.
+func (c SupervisordStatus) GetType() MachineEventLogEntryType { return TypeSupervisordStatus }
+
+// GetType returns the event type for this event.
+func (c ContainerStatus) GetType() MachineEventLogEntryType { return TypeContainerStatus }
+
+// GetType returns the event type for this event.
+func (c URLReachable) GetType() MachineEventLogEntryType { return TypeURLReachable }
+
+// GetType returns the event type for this event.
+func (c KubernetesPodStatus) GetType() MachineEventLogEntryType { return TypeKubernetesPodStatus }
+
 // MachineEventLogEntryType indicates the machine-readable event type from an ODO operation
 type MachineEventLogEntryType int
 
@@ -236,6 +294,14 @@ const (
 	TypeLogText MachineEventLogEntryType = 2
 	// TypeReportError is the entry type for that event.
 	TypeReportError MachineEventLogEntryType = 3
+	// TypeSupervisordStatus is the entry type for that event.
+	TypeSupervisordStatus MachineEventLogEntryType = 4
+	// TypeContainerStatus is the entry type for that event.
+	TypeContainerStatus MachineEventLogEntryType = 5
+	// TypeURLReachable is the entry type for that event.
+	TypeURLReachable MachineEventLogEntryType = 6
+	// TypeKubernetesPodStatus is the entry type for that event.
+	TypeKubernetesPodStatus MachineEventLogEntryType = 7
 )
 
 // GetCommandName returns a command if the MLE supports that field (otherwise empty string is returned).
@@ -250,4 +316,46 @@ func GetCommandName(entry MachineEventLogEntry) string {
 		return ""
 	}
 
+}
+
+// createWriterAndChannel is similar to the exec.CreateConsoleOutputWriterAndChannel(); see that function's comment for details.
+func createWriterAndChannel(stderr bool) (*io.PipeWriter, chan interface{}) {
+	reader, writer := io.Pipe()
+
+	closeChannel := make(chan interface{})
+
+	stream := "stdout"
+	if stderr {
+		stream = "stderr"
+	}
+
+	go func() {
+
+		bufReader := bufio.NewReader(reader)
+		for {
+			line, _, err := bufReader.ReadLine()
+			if err != nil {
+				if err != io.EOF {
+					klog.V(4).Infof("Unexpected error on reading container output reader: %v", err)
+				}
+				break
+			}
+
+			// Output log text event for each line we receive
+			json := MachineEventWrapper{
+				LogText: &LogText{
+					AbstractLogEvent: AbstractLogEvent{Timestamp: TimestampNow()},
+					Text:             string(line),
+					Stream:           stream,
+				},
+			}
+			OutputSuccessUnindented(json)
+		}
+
+		// Output a single nil event on the channel to inform that the last line of text has been
+		// received from the writer.
+		closeChannel <- nil
+	}()
+
+	return writer, closeChannel
 }

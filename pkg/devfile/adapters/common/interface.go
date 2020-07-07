@@ -11,6 +11,8 @@ type ComponentAdapter interface {
 	DoesComponentExist(cmpName string) (bool, error)
 	Delete(labels map[string]string, show bool) error
 	Test(testCmd string, show bool) error
+	StartContainerStatusWatch()
+	StartSupervisordCtlStatusWatch()
 	Log(follow, debug bool) (io.ReadCloser, error)
 	Exec(command []string) error
 }

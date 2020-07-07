@@ -2,6 +2,8 @@ package machineoutput
 
 import (
 	"io"
+
+	corev1 "k8s.io/api/core/v1"
 )
 
 // MachineEventLoggingClient is an interface which is used by consuming code to output machine-readable
@@ -14,6 +16,13 @@ type MachineEventLoggingClient interface {
 	DevFileCommandExecutionComplete(commandID string, componentName string, commandLine string, groupKind string, timestamp string, errorVal error)
 	ReportError(errorVal error, timestamp string)
 
+	SupervisordStatus(statuses []SupervisordStatusEntry, timestamp string)
+	ContainerStatus(statuses []ContainerStatusEntry, timestamp string)
+
+	URLReachable(name string, url string, port int, secure bool, kind string, reachable bool, timestamp string)
+
+	KubernetesPodStatus(pods []KubernetesPodStatusEntry, timestamp string)
+
 	// CreateContainerOutputWriter is used to capture output from container processes, and synchronously write it to the screen as LogText. See implementation comments for details.
 	CreateContainerOutputWriter() (*io.PipeWriter, chan interface{}, *io.PipeWriter, chan interface{})
 }
@@ -25,6 +34,10 @@ type MachineEventWrapper struct {
 	DevFileCommandExecutionComplete *DevFileCommandExecutionComplete `json:"devFileCommandExecutionComplete,omitempty"`
 	LogText                         *LogText                         `json:"logText,omitempty"`
 	ReportError                     *ReportError                     `json:"reportError,omitempty"`
+	SupervisordStatus               *SupervisordStatus               `json:"supervisordStatus,omitempty"`
+	ContainerStatus                 *ContainerStatus                 `json:"containerStatus,omitempty"`
+	URLReachable                    *URLReachable                    `json:"urlReachable,omitempty"`
+	KubernetesPodStatus             *KubernetesPodStatus             `json:"kubernetesPodStatus,omitempty"`
 }
 
 // DevFileCommandExecutionBegin is the JSON event that is emitted when a dev file command begins execution.
@@ -55,6 +68,62 @@ type LogText struct {
 	AbstractLogEvent
 }
 
+// ContainerStatus is the JSON event that is emitted to indicate odo-managed Docker container status
+type ContainerStatus struct {
+	Status []ContainerStatusEntry `json:"status"`
+	AbstractLogEvent
+}
+
+// ContainerStatusEntry is an individual container's status
+type ContainerStatusEntry struct {
+	ID     string `json:"id"`
+	Status string `json:"status"`
+}
+
+// SupervisordStatus is the JSON event that is emitted to indicate odo-managed component's supervisord program status
+type SupervisordStatus struct {
+	ProgramStatus []SupervisordStatusEntry `json:"programStatus"`
+	AbstractLogEvent
+}
+
+// SupervisordStatusEntry is an individual program's status
+type SupervisordStatusEntry struct {
+	Program string `json:"program"`
+	Status  string `json:"status"`
+}
+
+// URLReachable is the JSON event that is emitted to indicate whether one of the component's URL's could be reached.
+type URLReachable struct {
+	Name      string `json:"name"`
+	URL       string `json:"url"`
+	Port      int    `json:"port"`
+	Secure    bool   `json:"secure"`
+	Kind      string `json:"kind"`
+	Reachable bool   `json:"reachable"`
+	AbstractLogEvent
+}
+
+// KubernetesPodStatus is the JSON event that emitted to indicate the status of pods in an odo-managed deployment
+type KubernetesPodStatus struct {
+	Pods []KubernetesPodStatusEntry `json:"pods"`
+	AbstractLogEvent
+}
+
+// KubernetesPodStatusEntry is an individual pod's information
+type KubernetesPodStatusEntry struct {
+	Name           string                   `json:"name"`
+	UID            string                   `json:"uid"`
+	Phase          string                   `json:"phase"`
+	Labels         map[string]string        `json:"labels,omitempty"`
+	StartTime      string                   `json:"startTime,omitempty"`
+	Containers     []corev1.ContainerStatus `json:"containers"`
+	InitContainers []corev1.ContainerStatus `json:"initContainers"`
+	// This embeds the K8s ContainerStatus API into the log output; further experimentation is required by
+	// consuming tools to determine which fields from this struct are useful/reliable, at which point this should
+	// be replaceble with a pared-down version containing only those fields. My early analysis is that the
+	// vast majority are useful.
+}
+
 // AbstractLogEvent is the base struct for all events; all events must at a minimum contain a timestamp.
 type AbstractLogEvent struct {
 	Timestamp string `json:"timestamp"`
@@ -65,6 +134,10 @@ var _ MachineEventLogEntry = &DevFileCommandExecutionBegin{}
 var _ MachineEventLogEntry = &DevFileCommandExecutionComplete{}
 var _ MachineEventLogEntry = &LogText{}
 var _ MachineEventLogEntry = &ReportError{}
+var _ MachineEventLogEntry = &SupervisordStatus{}
+var _ MachineEventLogEntry = &ContainerStatus{}
+var _ MachineEventLogEntry = &URLReachable{}
+var _ MachineEventLogEntry = &KubernetesPodStatus{}
 
 // MachineEventLogEntry contains the expected methods for every event that is emitted.
 // (This is mainly used for test purposes.)

@@ -25,6 +25,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/version"
 	"github.com/openshift/odo/pkg/odo/util"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
+	"github.com/openshift/odo/pkg/odo/util/experimental"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -176,9 +177,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 	cobra.AddTemplateFunc("CapitalizeFlagDescriptions", odoutil.CapitalizeFlagDescriptions)
 	cobra.AddTemplateFunc("ModifyAdditionalFlags", odoutil.ModifyAdditionalFlags)
 
-	// Add all subcommands to base commands
-	rootCmd.AddCommand(
-		application.NewCmdApplication(application.RecommendedCommandName, util.GetFullName(fullName, application.RecommendedCommandName)),
+	rootCmdList := append([]*cobra.Command{}, application.NewCmdApplication(application.RecommendedCommandName, util.GetFullName(fullName, application.RecommendedCommandName)),
 		catalog.NewCmdCatalog(catalog.RecommendedCommandName, util.GetFullName(fullName, catalog.RecommendedCommandName)),
 		component.NewCmdComponent(component.RecommendedCommandName, util.GetFullName(fullName, component.RecommendedCommandName)),
 		component.NewCmdCreate(component.CreateRecommendedCommandName, util.GetFullName(fullName, component.CreateRecommendedCommandName)),
@@ -207,6 +206,13 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 		component.NewCmdTest(component.TestRecommendedCommandName, util.GetFullName(fullName, component.TestRecommendedCommandName)),
 		env.NewCmdEnv(env.RecommendedCommandName, util.GetFullName(fullName, env.RecommendedCommandName)),
 	)
+
+	if experimental.IsExperimentalModeEnabled() {
+		rootCmdList = append(rootCmdList, component.NewCmdStatus(component.StatusRecommendedCommandName, util.GetFullName(fullName, component.StatusRecommendedCommandName)))
+	}
+
+	// Add all subcommands to base commands
+	rootCmd.AddCommand(rootCmdList...)
 
 	odoutil.VisitCommands(rootCmd, reconfigureCmdWithSubcmd)
 

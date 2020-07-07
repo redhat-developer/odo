@@ -26,9 +26,9 @@ func (dc *Client) GetContainersByComponent(componentName string, containers []ty
 	return containerList
 }
 
-// GetContainersByComponentAndAlias returns the list of Docker containers that have the same component and alias labeled
+// GetContainersByComponentAndAlias returns the list of running Docker containers that have the same component and alias labeled
 func (dc *Client) GetContainersByComponentAndAlias(componentName string, alias string) ([]types.Container, error) {
-	containerList, err := dc.GetContainerList()
+	containerList, err := dc.GetContainerList(false)
 	if err != nil {
 		return nil, err
 	}
@@ -41,9 +41,11 @@ func (dc *Client) GetContainersByComponentAndAlias(componentName string, alias s
 	return labeledContainers, nil
 }
 
-// GetContainerList returns a list of all of the running containers on the user's system
-func (dc *Client) GetContainerList() ([]types.Container, error) {
-	containers, err := dc.Client.ContainerList(dc.Context, types.ContainerListOptions{})
+// GetContainerList returns a list of the containers on the user's system (all containers if 'all' is true, otherwise running containers only)
+func (dc *Client) GetContainerList(all bool) ([]types.Container, error) {
+	containers, err := dc.Client.ContainerList(dc.Context, types.ContainerListOptions{
+		All: all,
+	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "Unable to retrieve Docker containers")
 	}

@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+
 	"github.com/openshift/odo/pkg/util"
 
 	"github.com/openshift/odo/pkg/storage"
@@ -10,6 +11,7 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util/completion"
+	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/url"
 	"github.com/pkg/errors"
 
@@ -54,6 +56,7 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 	watchCmd := NewCmdWatch(WatchRecommendedCommandName, odoutil.GetFullName(fullName, WatchRecommendedCommandName))
 	testCmd := NewCmdTest(TestRecommendedCommandName, odoutil.GetFullName(fullName, TestRecommendedCommandName))
 	execCmd := NewCmdExec(ExecRecommendedCommandName, odoutil.GetFullName(fullName, ExecRecommendedCommandName))
+	statusCmd := NewCmdStatus(StatusRecommendedCommandName, odoutil.GetFullName(fullName, StatusRecommendedCommandName))
 
 	// componentCmd represents the component command
 	var componentCmd = &cobra.Command{
@@ -71,6 +74,10 @@ func NewCmdComponent(name, fullName string) *cobra.Command {
 
 	componentCmd.AddCommand(componentGetCmd, createCmd, deleteCmd, describeCmd, linkCmd, unlinkCmd, listCmd, logCmd, pushCmd, updateCmd, watchCmd, execCmd)
 	componentCmd.AddCommand(testCmd)
+
+	if experimental.IsExperimentalModeEnabled() {
+		componentCmd.AddCommand(statusCmd)
+	}
 
 	// Add a defined annotation in order to appear in the help menu
 	componentCmd.Annotations = map[string]string{"command": "main"}

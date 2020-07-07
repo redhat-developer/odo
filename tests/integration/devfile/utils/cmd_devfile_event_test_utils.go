@@ -2,45 +2,22 @@ package utils
 
 import (
 	"encoding/json"
+	"fmt"
+	"runtime"
 	"strings"
 
 	"github.com/openshift/odo/pkg/machineoutput"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gexec"
 )
 
 // AnalyzePushConsoleOutput analyzes the output of 'odo push -o json' for the machine readable event push test above.
 func AnalyzePushConsoleOutput(pushConsoleOutput string) {
 
-	lines := strings.Split(strings.Replace(pushConsoleOutput, "\r\n", "\n", -1), "\n")
-
-	var entries []machineoutput.MachineEventLogEntry
-
-	// Ensure that all lines can be correctly parsed into their expected JSON structure
-	for _, line := range lines {
-
-		if len(strings.TrimSpace(line)) == 0 {
-			continue
-		}
-
-		if !strings.HasPrefix(line, "{") {
-			continue
-		}
-
-		// fmt.Println("Processing output line: " + line)
-
-		lineWrapper := machineoutput.MachineEventWrapper{}
-
-		err := json.Unmarshal([]byte(line), &lineWrapper)
-		Expect(err).NotTo(HaveOccurred())
-
-		entry, err := lineWrapper.GetEntry()
-		Expect(err).NotTo(HaveOccurred())
-
-		entries = append(entries, entry)
-
-	}
+	entries, err := ParseMachineEventJSONLines(pushConsoleOutput)
+	Expect(err).NotTo(HaveOccurred())
 
 	// Ensure we pass a sanity test on the minimum expected entries
 	if len(entries) < 4 {
@@ -116,6 +93,43 @@ func AnalyzePushConsoleOutput(pushConsoleOutput string) {
 
 }
 
+// ParseMachineEventJSONLines parses console output into machine event log entries
+func ParseMachineEventJSONLines(consoleOutput string) ([]machineoutput.MachineEventLogEntry, error) {
+
+	lines := strings.Split(strings.Replace(consoleOutput, "\r\n", "\n", -1), "\n")
+
+	entries := []machineoutput.MachineEventLogEntry{}
+
+	// Ensure that all lines can be correctly parsed into their expected JSON structure
+	for _, line := range lines {
+
+		if len(strings.TrimSpace(line)) == 0 {
+			continue
+		}
+
+		if !strings.HasPrefix(line, "{") {
+			continue
+		}
+
+		lineWrapper := machineoutput.MachineEventWrapper{}
+
+		err := json.Unmarshal([]byte(line), &lineWrapper)
+		if err != nil {
+			return nil, err
+		}
+
+		entry, err := lineWrapper.GetEntry()
+		if err != nil {
+			return nil, err
+		}
+
+		entries = append(entries, entry)
+
+	}
+
+	return entries, nil
+}
+
 // findNextEntryByType locates the next entry of a given type within a slice. Currently used for test purposes only.
 func findNextEntryByType(initialIndex int, typeToFind machineoutput.MachineEventLogEntryType, entries []machineoutput.MachineEventLogEntry) (machineoutput.MachineEventLogEntry, int) {
 
@@ -130,5 +144,41 @@ func findNextEntryByType(initialIndex int, typeToFind machineoutput.MachineEvent
 	}
 
 	return nil, -1
+
+}
+
+func TerminateSession(session *gexec.Session) {
+	if runtime.GOOS == "windows" {
+		session.Kill()
+	} else {
+		session.Terminate()
+	}
+}
+
+// Given a list of entries, find the most recent one of the given type
+func GetMostRecentEventOfType(entryType machineoutput.MachineEventLogEntryType, entries []machineoutput.MachineEventLogEntry, required bool) machineoutput.MachineEventLogEntry {
+
+	for index := len(entries) - 1; index >= 0; index-- {
+
+		if entries[index].GetType() == entryType {
+			return entries[index]
+		}
+	}
+
+	// Fail the test if we were expecting at least one event of the type
+	if required {
+		Fail(fmt.Sprintf("Unable to locate any entries with the required type %v", entryType))
+	}
+
+	return nil
+}
+
+// Wait for the session stdout output to container a particular string
+func WaitForOutputToContain(substring string, session *gexec.Session) {
+
+	Eventually(func() string {
+		contents := string(session.Out.Contents())
+		return contents
+	}, 180, 10).Should(ContainSubstring(substring))
 
 }

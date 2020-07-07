@@ -47,12 +47,25 @@ func (d *DockerRunner) GetRunningContainersByLabel(label string) []string {
 	return containers
 }
 
-// GetRunningContainersByCompAlias returns the list of containers labeled with the specified component and alias
+// GetRunningContainersByCompAlias returns the list of running containers labeled with the specified component and alias
 func (d *DockerRunner) GetRunningContainersByCompAlias(comp string, alias string) []string {
 	fmt.Fprintf(GinkgoWriter, "Listing locally running Docker images with comp %s and alias %s\n", comp, alias)
+	return d.GetContainersByCompAlias(comp, alias, true)
+}
+
+// GetContainersByCompAlias returns the list of containers labeled with the specified component and alias
+func (d *DockerRunner) GetContainersByCompAlias(comp string, alias string, runningOnly bool) []string {
+	fmt.Fprintf(GinkgoWriter, "Listing locally running Docker images with comp %s and alias %s", comp, alias)
 	compLabel := "label=component=" + comp
 	aliasLabel := "label=alias=" + alias
-	output := strings.TrimSpace(CmdShouldPass(d.path, "ps", "-q", "--filter", compLabel, "--filter", aliasLabel))
+
+	args := []string{"ps", "-q", "--filter", compLabel, "--filter", aliasLabel}
+
+	if !runningOnly {
+		args = append(args, "--all")
+	}
+
+	output := strings.TrimSpace(CmdShouldPass(d.path, args...))
 
 	containers := strings.Fields(output)
 	return containers
@@ -141,7 +154,7 @@ func (d *DockerRunner) InspectVolume(volumeName string) []map[string]interface{}
 // IsVolumeMountedInContainer returns true if the specified volume is mounted in the container associated with specified component and alias
 func (d *DockerRunner) IsVolumeMountedInContainer(volumeName string, component string, alias string) bool {
 	// Get the container ID of the specified component and alias
-	containers := d.GetRunningContainersByCompAlias(component, alias)
+	containers := d.GetContainersByCompAlias(component, alias, true)
 	Expect(len(containers)).To(Equal(1))
 
 	containerID := containers[0]
