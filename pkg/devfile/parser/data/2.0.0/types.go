@@ -144,7 +144,7 @@ type Endpoint struct {
 	TargetPort    int32             `json:"targetPort"`
 }
 
-// Env is the key value pair representing an Enivronment variable
+// Env is the key value pair representing an Environment variable
 type Env struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
