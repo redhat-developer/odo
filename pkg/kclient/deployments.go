@@ -44,6 +44,7 @@ func getDeploymentCondition(status appsv1.DeploymentStatus, condType appsv1.Depl
 	return nil
 }
 
+// ListDeployments lists all deployments by application name
 func (c *Client) ListDeployments(appName string) (*appsv1.DeploymentList, error) {
 	applicationSelector := fmt.Sprintf("%s=%s", applabels.ApplicationLabel, appName)
 
@@ -52,6 +53,7 @@ func (c *Client) ListDeployments(appName string) (*appsv1.DeploymentList, error)
 	})
 }
 
+// ListAllDeployments lists all deployments in a namespace
 func (c *Client) ListAllDeployments() (*appsv1.DeploymentList, error) {
 	return c.KubeClient.AppsV1().Deployments(c.Namespace).List(metav1.ListOptions{})
 }

@@ -228,11 +228,9 @@ func (lo *ListOptions) Run() (err error) {
 
 			components, err = component.List(lo.Client, lo.Application, lo.LocalConfigInfo)
 			if err != nil {
-				return errors.Wrapf(err, "failed to fetch components list")
+				return errors.Wrapf(err, "failed to fetch component list")
 			}
 		}
-
-		klog.V(4).Infof("the components are %+v", components)
 
 		if log.IsJSON() {
 			machineoutput.OutputSuccess(components)
