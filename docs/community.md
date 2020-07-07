@@ -14,7 +14,7 @@ micro_nav: true
 ---
 # Events
 
-## Upcoming events
+## Past events
 
   - [April 28-29 2020 - Red Hat
     Summit](https://www.redhat.com/en/summit)
