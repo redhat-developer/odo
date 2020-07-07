@@ -13,11 +13,12 @@ import (
 )
 
 // NewComponentAdapter returns a Devfile adapter for the targeted platform
-func NewComponentAdapter(componentName string, context string, devObj devfileParser.DevfileObj, platformContext interface{}) (common.ComponentAdapter, error) {
+func NewComponentAdapter(componentName string, context string, appName string, devObj devfileParser.DevfileObj, platformContext interface{}) (common.ComponentAdapter, error) {
 
 	adapterContext := common.AdapterContext{
 		ComponentName: componentName,
 		Context:       context,
+		AppName:       appName,
 		Devfile:       devObj,
 	}
 

@@ -16,10 +16,14 @@ import (
 
 // ComponentSettings holds all component related information
 type ComponentSettings struct {
-	Name        string              `yaml:"Name,omitempty"`
+	Name string `yaml:"Name,omitempty"`
+
 	Namespace   string              `yaml:"Namespace,omitempty"`
 	URL         *[]EnvInfoURL       `yaml:"Url,omitempty"`
 	PushCommand *EnvInfoPushCommand `yaml:"PushCommand,omitempty"`
+	// AppName is the application name. Application is a virtual concept present in odo used
+	// for grouping of components. A namespace can contain multiple applications
+	AppName string `yaml:"AppName,omitempty" json:"AppName,omitempty"`
 
 	// DebugPort controls the port used by the pod to run the debugging agent on
 	DebugPort *int `yaml:"DebugPort,omitempty"`
@@ -64,7 +68,17 @@ type EnvInfoPushCommand struct {
 	Run   string `yaml:"Run,omitempty"`
 }
 
-// EnvInfo holds all the env specific information relevant to a specific Component.
+// LocalConfigProvider is an interface which all local config providers need to implement
+// currently for openshift there is localConfigInfo and for devfile its EnvInfo.
+// The reason this interface is declared here instead of config package is because
+// some day local config would get deprecated and hence to keep the interfaces in the new package
+type LocalConfigProvider interface {
+	GetApplication() string
+}
+
+
+
+// EnvInfo holds all the env specific information relavent to a specific Component.
 type EnvInfo struct {
 	componentSettings ComponentSettings `yaml:"ComponentSettings,omitempty"`
 }
@@ -180,6 +194,8 @@ func (esi *EnvSpecificInfo) SetConfiguration(parameter string, value interface{}
 		case "push":
 			pushCommandValue := value.(EnvInfoPushCommand)
 			esi.componentSettings.PushCommand = &pushCommandValue
+		case "appname":
+			esi.componentSettings.AppName = parameter
 		}
 
 		return esi.writeToFile()
@@ -309,6 +325,11 @@ func (ei *EnvInfo) GetDebugPort() int {
 // GetNamespace returns component namespace
 func (ei *EnvInfo) GetNamespace() string {
 	return ei.componentSettings.Namespace
+}
+
+// GetApplication returns the application name
+func (ei *EnvInfo) GetApplication() string {
+	return ei.componentSettings.AppName
 }
 
 const (
