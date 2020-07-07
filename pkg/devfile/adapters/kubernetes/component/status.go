@@ -53,7 +53,7 @@ func (a Adapter) getDeploymentStatus() (*KubernetesDeploymentStatus, error) {
 
 	deploymentUID := deployment.UID
 
-	// 2) Retrieve the replicate set that is owned by the deployment
+	// 2) Retrieve the replica set that is owned by the deployment
 	replicaSetList, err := a.Client.KubeClient.AppsV1().ReplicaSets(a.Client.Namespace).List(metav1.ListOptions{})
 
 	if err != nil {

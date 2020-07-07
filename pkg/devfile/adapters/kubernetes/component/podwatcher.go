@@ -50,7 +50,8 @@ type statusReconcilerChannelEntry struct {
 	// If isCompleteListOfPods is true: a list of all component pods in the workspace
 	// If isCompleteListOfPods is false: a single component pod in the workspace
 	pods []*corev1.Pod
-	err  error
+
+	err error
 
 	// isCompleteListOfPods is true if the pods came from getLatestContainerStatus(), false otherwise
 	isCompleteListOfPods bool

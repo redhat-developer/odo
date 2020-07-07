@@ -134,12 +134,9 @@ var _ = Describe("odo docker devfile status command tests", func() {
 					dockerClient.ExecContainer(containers[0], "kill -9 "+pid)
 				}
 
-				if len(pids) == 1 {
-					// Return true if we found and killed it
-					return true
-				}
+				// Return true if we found and killed it
+				return len(pids) == 1
 
-				return false
 			}, 180, 10).Should(Equal(true))
 
 			// Wait for 'odo component status' to report that the programs are no longer RUNNING (EXITED or STOPPED)
