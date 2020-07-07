@@ -94,7 +94,7 @@ var _ = Describe("odo devfile status command tests", func() {
 				pids := []string{}
 				for _, str := range strings.Split(contents, "\n") {
 
-					if strings.Contains(str, "/usr/bin/node") {
+					if strings.Contains(str, "node") || strings.Contains(str, "npm") {
 
 						fields := strings.Fields(str)
 						if len(fields) >= 2 {
