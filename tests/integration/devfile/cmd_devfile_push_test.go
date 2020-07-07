@@ -461,6 +461,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.MatchAllInOutput(output, []string{"env with space"})
 
 		})
+	})
 
 	Context("push with listing the devfile component", func() {
 
@@ -502,7 +503,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--context", context)
+			output := helper.CmdShouldPass("odo", "push", "--context", context)
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
 			// component created in different application
@@ -515,10 +516,11 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context2)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context2, "devfile.yaml"))
 
-			output2 := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--context", context2)
+			output2 := helper.CmdShouldPass("odo", "push", "--context", context2)
 			Expect(output2).To(ContainSubstring("Changes successfully pushed to component"))
 
 			output = helper.CmdShouldPass("odo", "list", "--all-apps", "--project", namespace)
+
 			Expect(output).To(ContainSubstring(cmpName))
 			Expect(output).To(ContainSubstring(cmpName2))
 		})
