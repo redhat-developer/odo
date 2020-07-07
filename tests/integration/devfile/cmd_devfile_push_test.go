@@ -40,12 +40,12 @@ var _ = Describe("odo devfile push command tests", func() {
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		cliRunner.DeleteNamespaceProject(namespace)
-		helper.Chdir(currentWorkingDirectory)
+		// cliRunner.DeleteNamespaceProject(namespace)
+		// helper.Chdir(currentWorkingDirectory)
 		err := os.Setenv("KUBECONFIG", originalKubeconfig)
 		Expect(err).NotTo(HaveOccurred())
-		helper.DeleteDir(context)
-		os.Unsetenv("GLOBALODOCONFIG")
+		// helper.DeleteDir(context)
+		// os.Unsetenv("GLOBALODOCONFIG")
 	})
 
 	Context("Pushing devfile without an .odo folder", func() {
@@ -493,6 +493,40 @@ var _ = Describe("odo devfile push command tests", func() {
 			output = helper.CmdShouldPass("odo", "list", "--project", namespace)
 			Expect(output).To(ContainSubstring(cmpName))
 			Expect(output).ToNot(ContainSubstring(cmpName2))
+
+			output = helper.CmdShouldPass("odo", "list", "--all-apps", "--project", namespace)
+
+			Expect(output).To(ContainSubstring(cmpName))
+			Expect(output).To(ContainSubstring(cmpName2))
+
+			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "false")
+
+		})
+
+		It("checks devfile and s2i components together", func() {
+			helper.Chdir(currentWorkingDirectory)
+
+			// component created in "app" application
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, "--context", context, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			output := helper.CmdShouldPass("odo", "push", "--context", context)
+			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+
+			// component created in different application
+			context2 := helper.CreateNewContext()
+			cmpName2 := cmpName + "2"
+			appName := helper.RandString(6)
+			helper.CmdShouldPass("odo", "preference", "set", "--force", "Experimental", "false")
+			helper.CopyExample(filepath.Join("source", "nodejs"), context2)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, "--app", appName, "--context", context2, cmpName2)
+
+			output2 := helper.CmdShouldPass("odo", "push", "--context", context2)
+			Expect(output2).To(ContainSubstring("Changes successfully pushed to component"))
+
+			helper.CmdShouldPass("odo", "preference", "set", "--force", "Experimental", "true")
 
 			output = helper.CmdShouldPass("odo", "list", "--all-apps", "--project", namespace)
 
