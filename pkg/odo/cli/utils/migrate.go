@@ -51,12 +51,17 @@ func (o *MigrateOptions) Complete(name string, cmd *cobra.Command, args []string
 		return errors.Wrap(err, "unable to set source information")
 	}
 
-	imageNS, imageName, imageTag, _, err := occlient.ParseImageName(compType)
+	imageNS, imageName, imageTag, digest, err := occlient.ParseImageName(compType)
+	fmt.Println(imageNS, imageName, imageTag, digest)
+	fmt.Println("-------------------------------------------------------------------------------------------")
+
+	fmt.Println("-------------------------------------------------------------------------------------------")
 
 	if err != nil {
 		return errors.Wrap(err, "unable to create new s2i git build ")
 	}
 	imageStream, err := context.Client.GetImageStream(imageNS, imageName, imageTag)
+	fmt.Println(imageStream)
 	if err != nil {
 		return errors.Wrap(err, "Failed to bootstrap supervisored")
 	}
@@ -64,6 +69,8 @@ func (o *MigrateOptions) Complete(name string, cmd *cobra.Command, args []string
 	imageNS = imageStream.ObjectMeta.Namespace
 
 	_, err = context.Client.GetImageStreamImage(imageStream, imageTag)
+	fmt.Println("-------------------------------------------------------------------------------------------")
+	fmt.Println(imageStream)
 	if err != nil {
 		return errors.Wrap(err, "unable to bootstrap supervisord")
 	}
