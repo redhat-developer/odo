@@ -59,7 +59,7 @@ type CreateOptions struct {
 	cpu         string
 	interactive bool
 	now         bool
-	*CommonPushOptions
+	*PushOptions
 	devfileMetadata DevfileMetadata
 }
 
@@ -153,7 +153,7 @@ const defaultProjectName = "devfile-project-name"
 // NewCreateOptions returns new instance of CreateOptions
 func NewCreateOptions() *CreateOptions {
 	return &CreateOptions{
-		CommonPushOptions: NewCommonPushOptions(),
+		PushOptions: NewPushOptions(),
 	}
 }
 
@@ -1029,7 +1029,14 @@ func (co *CreateOptions) Run() (err error) {
 				return err
 			}
 
-			log.Italic("\nPlease use `odo push` command to create the component with source deployed")
+			if co.now {
+				err = co.DevfilePush()
+				if err != nil {
+					return errors.Wrapf(err, "failed to push the changes")
+				}
+			} else {
+				log.Italic("\nPlease use `odo push` command to create the component with source deployed")
+			}
 			return nil
 		}
 	}

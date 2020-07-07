@@ -107,6 +107,17 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CmdShouldPass("odo", "push", "--project", namespace)
 		})
 
+		It("checks that odo push works with a devfile with now flag", func() {
+			originalDir := helper.Getwd()
+			context2 := helper.CreateNewContext()
+			helper.Chdir(context2)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context2, "devfile.yaml"))
+			output := helper.CmdShouldPass("odo", "create", "--starter", "nodejs", "--now")
+			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+			helper.Chdir(originalDir)
+			helper.DeleteDir(context2)
+		})
+
 		It("checks that odo push works with a devfile with sourcemapping set", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 
