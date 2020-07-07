@@ -11,8 +11,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ExecuteDevfileCommands executes the devfile init, build and test command actions
-func ExecuteDevfileCommands(client ExecClient, exec common.Exec, commandName string, compInfo adaptersCommon.ComponentInfo, show bool, machineEventLogger machineoutput.MachineEventLoggingClient) error {
+// ExecuteDevfileCommandSynchronously executes the devfile init, build and test command actions synchronously
+func ExecuteDevfileCommandSynchronously(client ExecClient, exec common.Exec, commandName string, compInfo adaptersCommon.ComponentInfo, show bool, machineEventLogger machineoutput.MachineEventLoggingClient) error {
 	var s *log.Status
 
 	// Change to the workdir and execute the command

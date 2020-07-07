@@ -3,7 +3,6 @@ package docker
 import (
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/component"
-	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/pkg/errors"
 )
@@ -45,6 +44,6 @@ func (d Adapter) Delete(labels map[string]string) error {
 }
 
 // Test runs devfile test command
-func (d Adapter) Test(testcmd versionsCommon.DevfileCommand, show bool) error {
+func (d Adapter) Test(testcmd string, show bool) error {
 	return d.componentAdapter.Test(testcmd, show)
 }

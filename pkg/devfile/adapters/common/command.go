@@ -285,3 +285,24 @@ func ValidateAndGetDebugDevfileCommands(data data.DevfileData, devfileDebugCmd s
 
 	return debugCommand, nil
 }
+
+// ValidateAndGetTestDevfileCommands validates the test command
+func ValidateAndGetTestDevfileCommands(data data.DevfileData, devfileTestCmd string) (testCommand common.DevfileCommand, err error) {
+	var emptyCommand common.DevfileCommand
+	isTestCommandValid := false
+	testCommand, testCmdErr := GetTestCommand(data, devfileTestCmd)
+	if testCmdErr == nil && !reflect.DeepEqual(emptyCommand, testCommand) {
+		isTestCommandValid = true
+		klog.V(4).Infof("Test command: %v", testCommand.Exec.Id)
+	}
+
+	if !isTestCommandValid {
+		commandErrors := ""
+		if testCmdErr != nil {
+			commandErrors += testCmdErr.Error()
+		}
+		return common.DevfileCommand{}, fmt.Errorf(commandErrors)
+	}
+
+	return testCommand, nil
+}

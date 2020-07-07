@@ -47,17 +47,6 @@ var _ = Describe("odo docker devfile test command tests", func() {
 
 	Context("Should show proper errors", func() {
 
-		It("should show error if no test group is defined", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
-
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
-
-			output := helper.CmdShouldFail("odo", "test", "--context", context)
-
-			Expect(output).To(ContainSubstring("the test command is empty"))
-		})
-
 		It("should show error if component is not pushed", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
 
@@ -78,6 +67,17 @@ var _ = Describe("odo docker devfile test command tests", func() {
 			output := helper.CmdShouldFail("odo", "test", "--context", context)
 
 			Expect(output).To(ContainSubstring("'odo test' is not supported in devfile 1.0.0"))
+		})
+
+		It("should show error if no test group is defined", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CmdShouldPass("odo", "push", "--context", context)
+			output := helper.CmdShouldFail("odo", "test", "--context", context)
+
+			Expect(output).To(ContainSubstring("the command group of kind \"test\" is not found in the devfile"))
 		})
 	})
 

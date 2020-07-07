@@ -163,7 +163,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 }
 
 // Test runs the devfile test command
-func (a Adapter) Test(testcmd versionsCommon.DevfileCommand, show bool) (err error) {
+func (a Adapter) Test(testcmd string, show bool) (err error) {
 	componentExists := utils.ComponentExists(a.Client, a.ComponentName)
 	if !componentExists {
 		return fmt.Errorf("component does not exist, a valid component is required to run 'odo test'")
@@ -174,7 +174,12 @@ func (a Adapter) Test(testcmd versionsCommon.DevfileCommand, show bool) (err err
 	}
 
 	log.Infof("\nExecuting devfile test command for component %s", a.ComponentName)
-	err = a.execTestCmd(testcmd, pod.GetName(), pod.Spec.Containers, show)
+
+	testCommand, err := common.ValidateAndGetTestDevfileCommands(a.Devfile.Data, testcmd)
+	if err != nil {
+		return errors.Wrap(err, "failed to validate devfile test command")
+	}
+	err = a.execTestCmd(testCommand, pod.GetName(), pod.Spec.Containers, show)
 	if err != nil {
 		return err
 	}
@@ -368,7 +373,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 		command, ok := commandsMap[versionsCommon.InitCommandGroupType]
 		if ok {
 			compInfo.ContainerName = command.Exec.Component
-			err = exec.ExecuteDevfileCommands(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
+			err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 			if err != nil {
 				return err
 			}
@@ -381,7 +386,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 	command, ok := commandsMap[versionsCommon.BuildCommandGroupType]
 	if ok {
 		compInfo.ContainerName = command.Exec.Component
-		err = exec.ExecuteDevfileCommands(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
+		err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 		if err != nil {
 			return err
 		}
@@ -432,10 +437,7 @@ func (a Adapter) execTestCmd(testcmd versionsCommon.DevfileCommand, podName stri
 		PodName: podName,
 	}
 	compInfo.ContainerName = testcmd.Exec.Component
-	err = exec.ExecuteDevfileCommands(&a.Client, *testcmd.Exec, testcmd.Exec.Id, compInfo, show, a.machineEventLogger)
-	if err != nil {
-		return err
-	}
+	err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *testcmd.Exec, testcmd.Exec.Id, compInfo, show, a.machineEventLogger)
 	return
 }
 

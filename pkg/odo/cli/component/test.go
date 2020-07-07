@@ -7,14 +7,11 @@ import (
 
 	"github.com/pkg/errors"
 
-	adaptercommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/spf13/cobra"
 	"k8s.io/kubectl/pkg/util/templates"
 )
@@ -26,9 +23,9 @@ const TestRecommendedCommandName = "test"
 type TestOptions struct {
 	commandName      string
 	componentContext string
-	namespace        string
 	devfilePath      string
-	testCommand      common.DevfileCommand
+	// testCommand      common.DevfileCommand
+	show bool
 	*genericclioptions.Context
 }
 
@@ -50,10 +47,6 @@ func NewTestOptions() *TestOptions {
 func (to *TestOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	to.devfilePath = filepath.Join(to.componentContext, DevfilePath)
 	to.Context = genericclioptions.NewDevfileContext(cmd)
-	if !pushtarget.IsPushTargetDocker() {
-		// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initalizing the context
-		to.namespace = to.KClient.Namespace
-	}
 
 	return
 }
@@ -67,13 +60,13 @@ func (to *TestOptions) Validate() (err error) {
 	if reflect.DeepEqual(devObj.Ctx.GetApiVersion(), "1.0.0") {
 		return fmt.Errorf("'odo test' is not supported in devfile 1.0.0")
 	}
-	to.testCommand, err = adaptercommon.GetTestCommand(devObj.Data, to.commandName)
-	if err != nil {
-		return errors.Wrap(err, "fail to get test command")
-	}
-	if reflect.DeepEqual(common.DevfileCommand{}, to.testCommand) {
-		return fmt.Errorf("the test command is empty")
-	}
+	// to.testCommand, err = adaptercommon.GetTestCommand(devObj.Data, to.commandName)
+	// if err != nil {
+	// 	return errors.Wrap(err, "fail to get test command")
+	// }
+	// if reflect.DeepEqual(common.DevfileCommand{}, to.testCommand) {
+	// 	return fmt.Errorf("the test command is empty")
+	// }
 	return
 }
 
@@ -100,6 +93,7 @@ func NewCmdTest(name, fullName string) *cobra.Command {
 	testCmd.Annotations = map[string]string{"command": "main"}
 	testCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	testCmd.Flags().StringVar(&to.commandName, "test-command", "", "command name to run")
+	testCmd.Flags().BoolVar(&to.show, "show-log", false, "If enabled, logs will be shown when running test command")
 	//Adding `--context` flag
 	genericclioptions.AddContextFlag(testCmd, &to.componentContext)
 	//Adding `--project` flag
