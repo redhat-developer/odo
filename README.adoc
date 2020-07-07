@@ -95,6 +95,7 @@ The `TAGS` column represents the available image versions, for example, `10` rep
 * link:https://docs.openshift.com/container-platform/latest/cli_reference/openshift_developer_cli/configuring-the-odo-cli.html[Configuring the odo CLI]
 * link:https://docs.openshift.com/container-platform/latest/cli_reference/openshift_developer_cli/odo-cli-reference.html[odo CLI reference]
 * link:https://docs.openshift.com/container-platform/latest/cli_reference/openshift_developer_cli/odo-release-notes.html[odo release notes]
+* link:https://deck-ci.apps.ci.l2s4.p1.openshiftapps.com/?type=periodic&job=periodic-\*odo\*[odo periodic job dashboard]
 
 [[installing-odo]]
 == Installing `odo`
