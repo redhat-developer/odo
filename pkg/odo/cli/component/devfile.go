@@ -125,7 +125,7 @@ func (po *PushOptions) devfilePushInner() (err error) {
 
 func (lo LogOptions) DevfileComponentLog() error {
 	// Parse devfile
-	devObj, err := devfileParser.Parse(lo.devfilePath)
+	devObj, err := parser.ParseAndValidate(lo.devfilePath)
 	if err != nil {
 		return err
 	}
@@ -145,7 +145,7 @@ func (lo LogOptions) DevfileComponentLog() error {
 		platformContext = kc
 	}
 
-	devfileHandler, err := adapters.NewPlatformAdapter(componentName, lo.componentContext, devObj, platformContext)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, lo.componentContext, devObj, platformContext)
 
 	if err != nil {
 		return err

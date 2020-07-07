@@ -279,7 +279,11 @@ func (a Adapter) Delete(labels map[string]string) error {
 
 func (a Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
 
-	exists, _ := utils.ComponentExists(a.Client, a.Devfile.Data, a.ComponentName)
+	exists, err := utils.ComponentExists(a.Client, a.Devfile.Data, a.ComponentName)
+
+	if err != nil {
+		return nil, err
+	}
 
 	if !exists {
 		return nil, errors.Errorf("the component %s doesn't exist on the cluster", a.ComponentName)
@@ -292,7 +296,7 @@ func (a Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
 
 	var command versionsCommon.DevfileCommand
 	if debug {
-		command, err = common.GetRunCommand(a.Devfile.Data, "")
+		command, err = common.GetDebugCommand(a.Devfile.Data, "")
 		if err != nil {
 			return nil, err
 		}
