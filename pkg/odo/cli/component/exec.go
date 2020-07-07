@@ -8,7 +8,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/util/completion"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
-	"github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 	"path/filepath"
@@ -18,7 +17,7 @@ import (
 const ExecRecommendedCommandName = "exec"
 
 var execExample = ktemplates.Examples(`  # Executes a command inside the component
-%[1]s
+%[1]s -- ls -a
 `)
 
 // ExecOptions contains exec options
@@ -41,23 +40,26 @@ func NewExecOptions() *ExecOptions {
 // Complete completes exec args
 func (eo *ExecOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	if cmd.ArgsLenAtDash() <= -1 {
-		return fmt.Errorf("no command was given for the exec command")
+		return fmt.Errorf(`no command was given for the exec command
+Please provide a command to execute, odo exec -- <command to be execute>`)
 	}
 
 	// gets the command args passed after the dash i.e `--`
 	eo.command = args[cmd.ArgsLenAtDash():]
 
 	if len(eo.command) <= 0 {
-		return fmt.Errorf("no command was given for the exec command")
+		return fmt.Errorf(`no command was given for the exec command.
+Please provide a command to execute, odo exec -- <command to be execute>`)
 	}
 
+	// checks if something is passed between `odo exec` and the dash `--`
 	if len(eo.command) != len(args) {
 		return fmt.Errorf("no parameter is expected for the command")
 	}
 
 	eo.devfilePath = filepath.Join(eo.componentContext, eo.devfilePath)
 	// if experimental mode is enabled and devfile is present
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(eo.devfilePath) {
+	if experimental.IsExperimentalModeEnabled() {
 		eo.componentOptions.Context = genericclioptions.NewDevfileContext(cmd)
 
 		if !pushtarget.IsPushTargetDocker() {
