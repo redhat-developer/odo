@@ -421,6 +421,7 @@ var _ = Describe("odo devfile push command tests", func() {
 		})
 	})
 
+
 	Context("exec commands with environment variables", func() {
 		It("Should be able to exec command with single environment variable", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
@@ -460,6 +461,68 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.MatchAllInOutput(output, []string{"env with space"})
 
 		})
+
+	Context("push with listing the devfile component", func() {
+
+		It("checks components of default app", func() {
+			helper.Chdir(currentWorkingDirectory)
+
+			// component created in "app" application
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, "--context", context, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			output := helper.CmdShouldPass("odo", "push", "--context", context)
+			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+
+			// component created in different application
+			context2 := helper.CreateNewContext()
+			cmpName2 := cmpName + "2"
+			appName := helper.RandString(6)
+
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, "--app", appName, "--context", context2, cmpName2)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context2)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context2, "devfile.yaml"))
+
+			output2 := helper.CmdShouldPass("odo", "push", "--context", context2)
+			Expect(output2).To(ContainSubstring("Changes successfully pushed to component"))
+
+			output = helper.CmdShouldPass("odo", "list", "--project", namespace)
+			Expect(output).To(ContainSubstring(cmpName))
+			Expect(output).ToNot(ContainSubstring(cmpName2))
+
+		})
+
+		It("checks components of all app", func() {
+			// component created in "app" application
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, "--context", context, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			output := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--context", context)
+			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+
+			// component created in different application
+			context2 := helper.CreateNewContext()
+			cmpName2 := cmpName + "2"
+			appName := helper.RandString(6)
+
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, "--app", appName, "--context", context2, cmpName2)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context2)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context2, "devfile.yaml"))
+
+			output2 := helper.CmdShouldPass("odo", "push", "--devfile", "devfile.yaml", "--context", context2)
+			Expect(output2).To(ContainSubstring("Changes successfully pushed to component"))
+
+			output = helper.CmdShouldPass("odo", "list", "--all-apps", "--project", namespace)
+			Expect(output).To(ContainSubstring(cmpName))
+			Expect(output).To(ContainSubstring(cmpName2))
+		})
+
 	})
 
 })
