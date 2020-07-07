@@ -40,12 +40,12 @@ var _ = Describe("odo devfile push command tests", func() {
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		// cliRunner.DeleteNamespaceProject(namespace)
-		// helper.Chdir(currentWorkingDirectory)
+		cliRunner.DeleteNamespaceProject(namespace)
+		helper.Chdir(currentWorkingDirectory)
 		err := os.Setenv("KUBECONFIG", originalKubeconfig)
 		Expect(err).NotTo(HaveOccurred())
-		// helper.DeleteDir(context)
-		// os.Unsetenv("GLOBALODOCONFIG")
+		helper.DeleteDir(context)
+		os.Unsetenv("GLOBALODOCONFIG")
 	})
 
 	Context("Pushing devfile without an .odo folder", func() {
