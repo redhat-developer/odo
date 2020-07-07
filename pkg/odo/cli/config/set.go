@@ -9,6 +9,7 @@ import (
 	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/pkg/odo/util/validation"
 	"github.com/pkg/errors"
 
 	"github.com/spf13/cobra"
@@ -62,6 +63,7 @@ func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (e
 		o.paramName = args[0]
 		o.paramValue = args[1]
 	}
+
 	// we initialize the context irrespective of --now flag being provided
 	if o.now {
 		o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
@@ -152,6 +154,33 @@ func (o *SetOptions) Run() (err error) {
 	return nil
 }
 
+func isValidArgumentList(args []string) error {
+
+	if len(args) < 2 {
+		return fmt.Errorf("please provide a parameter name and value")
+	} else if len(args) > 2 {
+		return fmt.Errorf("only one value per parameter is allowed")
+	}
+
+	var err error
+	param, ok := config.AsLocallySupportedParameter(args[0])
+
+	if !ok {
+		err = errors.Errorf("the provided parameter is not supported, %v", args[0])
+	}
+
+	switch param {
+	case "ports", "debugport":
+		err = validation.PortsValidator(args[1])
+	}
+
+	if err != nil {
+		err = errors.Errorf("validation failed for the provided arguments, %v", err)
+	}
+
+	return err
+}
+
 // NewCmdSet implements the config set odo command
 func NewCmdSet(name, fullName string) *cobra.Command {
 	o := NewSetOptions()
@@ -169,15 +198,7 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 				}
 				return nil
 			}
-
-			if len(args) < 2 {
-				return fmt.Errorf("please provide a parameter name and value")
-			} else if len(args) > 2 {
-				return fmt.Errorf("only one value per parameter is allowed")
-			} else {
-				return nil
-			}
-
+			return isValidArgumentList(args)
 		}, Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
