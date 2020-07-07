@@ -2,10 +2,11 @@ package debug
 
 import (
 	"encoding/json"
-	"github.com/openshift/odo/pkg/util"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/openshift/odo/pkg/util"
 
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
@@ -295,7 +296,7 @@ func Test_getDebugInfo(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			freePort, err := util.HttpGetFreePort()
+			freePort, err := util.HTTPGetFreePort()
 			if err != nil {
 				t.Errorf("error occured while getting a free port, cause: %v", err)
 			}
