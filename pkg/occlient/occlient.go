@@ -3261,7 +3261,7 @@ func (c *Client) IsDeploymentConfigSupported() (bool, error) {
 	const Group = "apps.openshift.io"
 	const Version = "v1"
 
-	return c.isResourceSupported(Group, Version, "DeploymentConfig")
+	return c.isResourceSupported(Group, Version, "deploymentconfigs")
 }
 
 func isSubDir(baseDir, otherDir string) bool {

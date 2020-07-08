@@ -77,10 +77,8 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		}
 	}
 
+	lo.Client = genericclioptions.Client(cmd)
 	lo.hasDCSupport, err = lo.Client.IsDeploymentConfigSupported()
-	if lo.hasDCSupport {
-		lo.Client = genericclioptions.Client(cmd)
-	}
 	return
 
 }
