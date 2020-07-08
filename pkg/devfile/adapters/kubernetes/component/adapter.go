@@ -452,22 +452,26 @@ func (a Adapter) Delete(labels map[string]string) error {
 	return a.Client.DeleteDeployment(labels)
 }
 
+// Log returns log from component
 func (a Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
 
-	if !utils.ComponentExists(a.Client, a.ComponentName) {
+	pod, err := a.Client.GetPodUsingComponentName(a.ComponentName)
+	if err != nil {
 		return nil, errors.Errorf("the component %s doesn't exist on the cluster", a.ComponentName)
 	}
 
-	var command versionsCommon.DevfileCommand
-	var err error
+	if pod.Status.Phase != corev1.PodRunning {
+		return nil, errors.Errorf("unable to show logs, component is not in running state. current status=%v", pod.Status.Phase)
+	}
 
+	var command versionsCommon.DevfileCommand
 	if debug {
 		command, err = common.GetDebugCommand(a.Devfile.Data, "")
 		if err != nil {
 			return nil, err
 		}
 		if reflect.DeepEqual(versionsCommon.DevfileCommand{}, command) {
-			return nil, errors.Errorf("no debug command found in devfile, please run \"odo logs\" for run command logs")
+			return nil, errors.Errorf("no debug command found in devfile, please run \"odo log\" for run command logs")
 		}
 
 	} else {
@@ -479,12 +483,5 @@ func (a Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
 
 	containerName := command.Exec.Component
 
-	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
-	pod, err := a.waitAndGetComponentPod(true)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
-	}
-
 	return a.Client.GetPodLogs(pod.Name, containerName, follow)
-
 }

@@ -482,6 +482,7 @@ func TestGetContainerLogs(t *testing.T) {
 	}
 }
 
+// convertLogsToString converts logs from io.ReadCloser to string
 func convertLogsToString(rd io.ReadCloser) string {
 	buf := make([]byte, 4)
 	var logString string

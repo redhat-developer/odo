@@ -123,6 +123,7 @@ func (po *PushOptions) devfilePushInner() (err error) {
 	return
 }
 
+// DevfileComponentLog fetch and display log from devfile components
 func (lo LogOptions) DevfileComponentLog() error {
 	// Parse devfile
 	devObj, err := parser.ParseAndValidate(lo.devfilePath)

@@ -277,6 +277,7 @@ func (a Adapter) Delete(labels map[string]string) error {
 
 }
 
+// Log returns log from component
 func (a Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
 
 	exists, err := utils.ComponentExists(a.Client, a.Devfile.Data, a.ComponentName)
@@ -301,7 +302,7 @@ func (a Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
 			return nil, err
 		}
 		if reflect.DeepEqual(versionsCommon.DevfileCommand{}, command) {
-			return nil, errors.Errorf("no debug command found in devfile, please run \"odo logs\" for run command logs")
+			return nil, errors.Errorf("no debug command found in devfile, please run \"odo log\" for run command logs")
 		}
 
 	} else {
