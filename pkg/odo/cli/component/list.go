@@ -20,6 +20,7 @@ import (
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/odo/util/completion"
+	"github.com/openshift/odo/pkg/odo/util/experimental"
 
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -33,9 +34,12 @@ var listExample = ktemplates.Examples(`  # List all components in the applicatio
 
 // ListOptions is a dummy container to attach complete, validate and run pattern
 type ListOptions struct {
-	pathFlag         string
-	allAppsFlag      bool
-	componentContext string
+	pathFlag           string
+	allAppsFlag        bool
+	componentContext   string
+	isExperimentalMode bool
+	hasDCSupport       bool
+	devfilePath        string
 	*genericclioptions.Context
 }
 
@@ -47,14 +51,29 @@ func NewListOptions() *ListOptions {
 // Complete completes log args
 func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 
-	if util.CheckKubeConfigExist() {
-		klog.V(4).Infof("New Context")
-		lo.Context = genericclioptions.NewContext(cmd)
+	lo.devfilePath = filepath.Join(lo.componentContext, DevfilePath)
+
+	lo.isExperimentalMode = experimental.IsExperimentalModeEnabled()
+	if lo.isExperimentalMode && util.CheckPathExists(lo.devfilePath) {
+		// Add a disclaimer that we are in *experimental mode*
+		log.Experimental("Experimental mode is enabled, use at your own risk")
+
+		lo.Context = genericclioptions.NewDevfileContext(cmd)
+		lo.Client = genericclioptions.Client(cmd)
+
 	} else {
-		klog.V(4).Infof("New Config Context")
-		lo.Context = genericclioptions.NewConfigContext(cmd)
+
+		if util.CheckKubeConfigExist() {
+			klog.V(4).Infof("New Context")
+			lo.Context = genericclioptions.NewContext(cmd)
+		} else {
+			klog.V(4).Infof("New Config Context")
+			lo.Context = genericclioptions.NewConfigContext(cmd)
+
+		}
 
 	}
+	lo.hasDCSupport, err = lo.Client.IsDeploymentConfigSupported()
 	return
 
 }
@@ -87,6 +106,11 @@ func (lo *ListOptions) Validate() (err error) {
 func (lo *ListOptions) Run() (err error) {
 
 	if len(lo.pathFlag) != 0 {
+
+		if lo.isExperimentalMode && util.CheckPathExists(lo.devfilePath) {
+			log.Experimental("--path flag is not supported for devfile components")
+		}
+
 		components, err := component.ListIfPathGiven(lo.Context.Client, filepath.SplitList(lo.pathFlag))
 		if err != nil {
 			return err
