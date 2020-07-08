@@ -50,6 +50,7 @@ type CreateOptions struct {
 	appName           string
 	interactive       bool
 	now               bool
+	forceS2i          bool
 	*CommonPushOptions
 	devfileMetadata DevfileMetadata
 }
@@ -295,12 +296,46 @@ func createDefaultComponentName(context *genericclioptions.Context, componentTyp
 	return componentName, nil
 }
 
+func (co *CreateOptions) checkConflictingFlags() error {
+	errorString := "flag %s, requires --s2i flag to be set, when in experimental mode."
+
+	if !co.forceS2i {
+		if co.now {
+			return errors.New(fmt.Sprintf(errorString, "--now"))
+		}
+
+		if len(co.componentBinary) != 0 {
+			return errors.New(fmt.Sprintf(errorString, "--binary"))
+		}
+
+		if len(co.componentGit) != 0 {
+			return errors.New(fmt.Sprintf(errorString, "--git"))
+		}
+
+		if len(co.componentEnvVars) != 0 {
+			return errors.New(fmt.Sprintf(errorString, "--env"))
+		}
+
+		if len(co.componentPorts) != 0 {
+			return errors.New(fmt.Sprintf(errorString, "--port"))
+		}
+	}
+	return nil
+}
+
 // Complete completes create args
 func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+	// this populates the LocalConfigInfo as well
+	co.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 
 	if experimental.IsExperimentalModeEnabled() {
 		// Add a disclaimer that we are in *experimental mode*
 		log.Experimental("Experimental mode is enabled, use at your own risk")
+
+		err = co.checkConflictingFlags()
+		if err != nil {
+			return
+		}
 
 		// Configure the context
 		if co.componentContext != "" {
@@ -320,8 +355,20 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		co.appName = genericclioptions.ResolveAppFlag(cmd)
 
+		var catalogList catalog.ComponentTypeList
+		if co.forceS2i {
+			client := co.Client
+			catalogList, err = catalog.ListComponents(client)
+			if err != nil {
+				return err
+			}
+		}
+
 		// Validate user specify devfile path
 		if co.devfileMetadata.devfilePath.value != "" {
+			if co.forceS2i {
+				return errors.New("You can't set --s2i flag as true if you want to use the devfile that is specified via --devfile")
+			}
 			fileErr := util.ValidateFile(co.devfileMetadata.devfilePath.value)
 			urlErr := util.ValidateURL(co.devfileMetadata.devfilePath.value)
 			if fileErr != nil && urlErr != nil {
@@ -335,6 +382,10 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		// Validate user specify registry
 		if co.devfileMetadata.devfileRegistry.Name != "" {
+			if co.forceS2i {
+				return errors.New("You can't specify registry via --registry if you want to force the S2I build with --s2i")
+			}
+
 			if co.devfileMetadata.devfilePath.value != "" {
 				return errors.New("You can't specify registry via --registry if you want to use the devfile that is specified via --devfile")
 			}
@@ -371,7 +422,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		var catalogDevfileList catalog.DevfileComponentTypeList
 		isDevfileRegistryPresent := true // defaulted to true since odo ships with a default registry set
 
-		if co.interactive {
+		if co.interactive && !co.forceS2i {
 			// Interactive mode
 
 			// Get available devfile components for checking devfile compatibility
@@ -409,6 +460,10 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			if util.CheckPathExists(DevfilePath) || co.devfileMetadata.devfilePath.value != "" {
 				// Use existing devfile directly
 
+				if co.forceS2i {
+					return errors.Errorf("Existing devfile component detected. Please remove the devfile component before creating an s2i component")
+				}
+
 				if len(args) > 1 {
 					return errors.Errorf("Accepts between 0 and 1 arg when using existing devfile, received %d", len(args))
 				}
@@ -426,7 +481,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 				}
 
 				co.devfileMetadata.devfileSupport = true
-			} else {
+			} else if len(args) > 0 {
 				// Download devfile from registry
 
 				// Component type: Get from full command's first argument (mandatory in direct mode)
@@ -504,7 +559,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			return nil
 		}
 
-		if isDevfileRegistryPresent {
+		if isDevfileRegistryPresent && !co.forceS2i {
 			// Categorize the sections
 			log.Info("Validation")
 
@@ -521,6 +576,19 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 					co.devfileMetadata.devfileLink = devfileComponent.Link
 					co.devfileMetadata.devfileRegistry = devfileComponent.Registry
 					break
+				}
+			}
+
+			if co.forceS2i && hasComponent {
+				s2iOverride := false
+				for _, item := range catalogList.Items {
+					if item.Name == co.devfileMetadata.componentType {
+						s2iOverride = true
+						break
+					}
+				}
+				if !s2iOverride {
+					return errors.New("Cannot select this component with --s2i flag")
 				}
 			}
 
@@ -551,20 +619,14 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			// we should error out instead of running s2i componet code and throw warning message
 			if co.devfileMetadata.devfileRegistry.Name != "" {
 				return errors.Errorf("Devfile component type %s is not supported, please run `odo catalog list components` for a list of supported devfile component types", co.devfileMetadata.componentType)
-			} else {
-				log.Warningf("Devfile component type %s is not supported, please run `odo catalog list components` for a list of supported devfile component types", co.devfileMetadata.componentType)
 			}
+
+			log.Warningf("Devfile component type %s is not supported, please run `odo catalog list components` for a list of supported devfile component types", co.devfileMetadata.componentType)
 		}
 	}
 
 	if len(args) == 0 || !cmd.HasFlags() {
 		co.interactive = true
-	}
-
-	// this populates the LocalConfigInfo as well
-	co.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
-	if err != nil {
-		return errors.Wrap(err, "failed initiating local config")
 	}
 
 	// Do not execute S2I specific code on Kubernetes Cluster or Docker
@@ -586,8 +648,6 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 	}
 
 	co.componentSettings = co.LocalConfigInfo.GetComponentSettings()
-
-	co.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 
 	// Below code is for INTERACTIVE mode
 	if co.interactive {
@@ -757,7 +817,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 func (co *CreateOptions) Validate() (err error) {
 
 	if experimental.IsExperimentalModeEnabled() {
-		if co.devfileMetadata.devfileSupport {
+		if !co.forceS2i && co.devfileMetadata.devfileSupport {
 			// Validate if the devfile component that user wants to create already exists
 			spinner := log.Spinner("Validating devfile component")
 			defer spinner.End(false)
@@ -911,7 +971,7 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 // Run has the logic to perform the required actions as part of command
 func (co *CreateOptions) Run() (err error) {
 	if experimental.IsExperimentalModeEnabled() {
-		if co.devfileMetadata.devfileSupport {
+		if !co.forceS2i && co.devfileMetadata.devfileSupport {
 			// Use existing devfile directly from --devfile flag
 			if co.devfileMetadata.devfilePath.value != "" {
 				if co.devfileMetadata.devfilePath.protocol == "http(s)" {
@@ -1090,6 +1150,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfileRegistry.Name, "registry", "", "Create devfile component from specific registry")
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfilePath.value, "devfile", "", "Path to the user specify devfile")
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.token, "token", "", "Token to be used when downloading devfile from the devfile path that is specified via --devfile")
+		componentCreateCmd.Flags().BoolVar(&co.forceS2i, "s2i", false, "Path to the user specify devfile")
 	}
 
 	componentCreateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
