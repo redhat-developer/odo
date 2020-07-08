@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"text/tabwriter"
 
+	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/preference"
@@ -49,6 +51,13 @@ func (o *ViewOptions) Run() (err error) {
 	if err != nil {
 		util.LogErrorAndExit(err, "")
 	}
+
+	if log.IsJSON() {
+		prefDef := preference.NewPreferenceList(*cfg)
+		machineoutput.OutputSuccess(prefDef)
+
+		return
+	}
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 2, ' ', tabwriter.TabIndent)
 	fmt.Fprintln(w, "PARAMETER", "\t", "CURRENT_VALUE")
 	fmt.Fprintln(w, "UpdateNotification", "\t", showBlankIfNil(cfg.OdoSettings.UpdateNotification))
@@ -81,11 +90,13 @@ func showBlankIfNil(intf interface{}) interface{} {
 func NewCmdView(name, fullName string) *cobra.Command {
 	o := NewViewOptions()
 	preferenceViewCmd := &cobra.Command{
-		Use:     name,
-		Short:   "View current preference values",
-		Long:    "View current preference values",
-		Example: fmt.Sprintf(fmt.Sprint("\n", viewExample), fullName),
-		Args:    cobra.ExactArgs(0),
+		Use:         name,
+		Short:       "View current preference values",
+		Long:        "View current preference values",
+		Example:     fmt.Sprintf(fmt.Sprint("\n", viewExample), fullName),
+		Annotations: map[string]string{"machineoutput": "json"},
+
+		Args: cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
