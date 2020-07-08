@@ -474,7 +474,7 @@ func setServiceName(crd interface{}, name string) (map[string]interface{}, error
 		if k == "metadata" {
 			n := v.(map[string]interface{})
 
-			for k1, _ := range n {
+			for k1 := range n {
 				if k1 == "name" {
 					n[k1] = name
 					return m, nil

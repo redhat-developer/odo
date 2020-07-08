@@ -97,40 +97,6 @@ func doesCRExist(kind string, csvs *olm.ClusterServiceVersionList) (olm.ClusterS
 
 }
 
-func serviceNameFromCRD(crd map[string]interface{}, serviceName string) (string, error) {
-	metadata, ok := crd["metadata"].(map[string]interface{})
-	if !ok {
-		return "", fmt.Errorf("Couldn't find \"metadata\" in the yaml. Need metadata.name to start the service")
-	}
-
-	if name, ok := metadata["name"].(string); ok {
-		return name, nil
-	}
-	return "", fmt.Errorf("Couldn't find metadata.name in the yaml. Provide a name for the service")
-}
-
-// Parses group and version values from the alm-example
-func groupVersionALMExample(example map[string]interface{}) (group, version string) {
-	apiVersion := example["apiVersion"].(string)
-	// use SplitN so that if apiVersion field's value is something like
-	// etcd.coreos.com/v1/beta1 then group's value ends up being etcd.cores.com
-	// and version ends up being v1/beta1
-	gv := strings.SplitN(apiVersion, "/", 2)
-
-	group, version = gv[0], gv[1]
-	return
-}
-
-func resourceFromCSV(csv olm.ClusterServiceVersion, crdName string) (resource string) {
-	for _, crd := range csv.Spec.CustomResourceDefinitions.Owned {
-		if crd.Kind == crdName {
-			resource = strings.Split(crd.Name, ".")[0]
-			return
-		}
-	}
-	return
-}
-
 // CreateOperatorService creates new service (actually a Deployment) from OperatorHub
 func CreateOperatorService(client *kclient.Client, group, version, resource string, CustomResourceDefinition map[string]interface{}) error {
 	err := client.CreateDynamicResource(CustomResourceDefinition, group, version, resource)
