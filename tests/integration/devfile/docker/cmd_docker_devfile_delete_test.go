@@ -1,7 +1,6 @@
 package docker
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -137,11 +136,7 @@ var _ = Describe("odo docker devfile delete command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			output := helper.CmdShouldPass("odo", "delete", "-f")
-
-			helper.MatchAllInOutput(output, []string{
-				fmt.Sprintf("Component %s does not exist", cmpName),
-			})
+			helper.CmdShouldPass("odo", "delete", "-f")
 		})
 	})
 

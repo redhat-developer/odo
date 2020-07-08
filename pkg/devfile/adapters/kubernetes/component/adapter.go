@@ -458,16 +458,16 @@ func (a Adapter) Delete(labels map[string]string) error {
 	if kerrors.IsForbidden(err) {
 		klog.V(4).Infof("Resource for %s forbidden", a.ComponentName)
 		// log the error if it failed to determine if the component exists due to insufficient RBACs
-		log.Infof("%s: %v", errorMsg, err)
-		spinner.End(true)
+		spinner.End(false)
+		log.Warningf("%s: %v", errorMsg, err)
 		return nil
 	} else if err != nil {
 		return errors.Wrapf(err, "unable to determine if component %s exists", a.ComponentName)
 	}
 
 	if !componentExists {
-		log.Infof(errorMsg)
-		spinner.End(true)
+		spinner.End(false)
+		log.Warningf(errorMsg)
 		return nil
 	}
 

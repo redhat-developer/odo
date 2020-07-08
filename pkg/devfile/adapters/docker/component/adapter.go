@@ -203,8 +203,8 @@ func (a Adapter) Delete(labels map[string]string) error {
 	componentContainer := a.Client.GetContainersByComponent(componentName, containers)
 
 	if len(componentContainer) == 0 {
-		log.Infof("Component %s does not exist", componentName)
-		spinner.End(true)
+		spinner.End(false)
+		log.Warningf("Component %s does not exist", componentName)
 		return nil
 	}
 

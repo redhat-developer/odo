@@ -73,11 +73,7 @@ var _ = Describe("odo devfile delete command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			output := helper.CmdShouldPass("odo", "delete", "--project", namespace, "-f")
-
-			helper.MatchAllInOutput(output, []string{
-				fmt.Sprintf("Component %s does not exist", componentName),
-			})
+			helper.CmdShouldPass("odo", "delete", "--project", namespace, "-f")
 		})
 	})
 
@@ -118,7 +114,6 @@ var _ = Describe("odo devfile delete command tests", func() {
 			expectedOutput := []string{
 				"Successfully deleted env file",
 				"Successfully deleted devfile.yaml file",
-				fmt.Sprintf("Component %s does not exist", componentName),
 			}
 			helper.MatchAllInOutput(output, expectedOutput)
 		})
@@ -133,7 +128,6 @@ var _ = Describe("odo devfile delete command tests", func() {
 			expectedOutput := []string{
 				"Successfully deleted env file",
 				"Successfully deleted devfile.yaml file",
-				fmt.Sprintf("Component %s does not exist", componentName),
 			}
 			helper.MatchAllInOutput(output, expectedOutput)
 		})
