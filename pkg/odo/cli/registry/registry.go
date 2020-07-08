@@ -12,8 +12,11 @@ import (
 	"github.com/openshift/odo/pkg/odo/util"
 )
 
-// RecommendedCommandName is the recommended registry command name
-const RecommendedCommandName = "registry"
+const (
+	// RecommendedCommandName is the recommended registry command name
+	RecommendedCommandName = "registry"
+	credentialPrefix       = "odo-"
+)
 
 var registryDesc = ktemplates.LongDesc(`Configure devfile registry`)
 

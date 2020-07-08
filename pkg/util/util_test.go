@@ -1247,7 +1247,7 @@ func TestHTTPGetRequest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := HTTPGetRequest(tt.url)
+			got, err := HTTPGetRequest(tt.url, "")
 
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Got: %v, want: %v", got, tt.want)
@@ -1357,7 +1357,7 @@ func TestDownloadFile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := DownloadFile(tt.url, tt.filepath)
+			err := DownloadFile(tt.url, "", tt.filepath)
 
 			if tt.url == "" && err != nil {
 				if !strings.Contains(err.Error(), "unsupported protocol scheme") {

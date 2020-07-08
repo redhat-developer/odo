@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/zalando/go-keyring"
 	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/catalog"
@@ -73,6 +74,7 @@ type DevfileMetadata struct {
 	devfileRegistry    catalog.Registry
 	devfilePath        devfilePath
 	starter            string
+	token              string
 }
 
 // CreateRecommendedCommandName is the recommended watch command name
@@ -83,7 +85,10 @@ const CreateRecommendedCommandName = "create"
 const LocalDirectoryDefaultLocation = "./"
 
 // Constants for devfile component
-const devFile = "devfile.yaml"
+const (
+	devFile          = "devfile.yaml"
+	credentialPrefix = "odo-"
+)
 
 var (
 	envFile    = filepath.Join(".odo", "env", "env.yaml")
@@ -470,6 +475,9 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 				catalogDevfileList, err = catalog.ListDevfileComponents(co.devfileMetadata.devfileRegistry.Name)
 				if err != nil {
 					return err
+				}
+				if co.devfileMetadata.devfileRegistry.Name != "" && catalogDevfileList.Items == nil {
+					return errors.Errorf("Can't create devfile component from registry %s", co.devfileMetadata.devfileRegistry.Name)
 				}
 
 				if len(catalogDevfileList.DevfileRegistries) == 0 {
@@ -927,7 +935,7 @@ func (co *CreateOptions) Run() (err error) {
 			if co.devfileMetadata.devfilePath.value != "" {
 				if co.devfileMetadata.devfilePath.protocol == "http(s)" {
 					// User specify devfile path is http(s) URL
-					err = util.DownloadFile(co.devfileMetadata.devfilePath.value, DevfilePath)
+					err = util.DownloadFile(co.devfileMetadata.devfilePath.value, co.devfileMetadata.token, DevfilePath)
 					if err != nil {
 						return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfilePath.value)
 					}
@@ -946,7 +954,8 @@ func (co *CreateOptions) Run() (err error) {
 
 			if !util.CheckPathExists(DevfilePath) {
 				// Download devfile from registry
-				err := util.DownloadFile(co.devfileMetadata.devfileRegistry.URL+co.devfileMetadata.devfileLink, DevfilePath)
+				token, _ := keyring.Get(credentialPrefix+co.devfileMetadata.devfileRegistry.Name, "default")
+				err := util.DownloadFile(co.devfileMetadata.devfileRegistry.URL+co.devfileMetadata.devfileLink, token, DevfilePath)
 				if err != nil {
 					return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfileRegistry.URL+co.devfileMetadata.devfileLink)
 				}
@@ -1109,6 +1118,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 		componentCreateCmd.Flags().Lookup("starter").NoOptDefVal = defaultProjectName //Default value to pass to the flag if one is not specified.
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfileRegistry.Name, "registry", "", "Create devfile component from specific registry")
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfilePath.value, "devfile", "", "Path to the user specify devfile")
+		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.token, "token", "", "Token to be used when downloading devfile from the devfile path that is specified via --devfile")
 	}
 
 	componentCreateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)

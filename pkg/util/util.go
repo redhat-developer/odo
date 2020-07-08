@@ -688,23 +688,37 @@ func GetRemoteFilesMarkedForDeletion(delSrcRelPaths []string, remoteFolder strin
 	return rmPaths
 }
 
-// HTTPGetRequest uses url to get file contents
-func HTTPGetRequest(url string) ([]byte, error) {
-	var httpClient = &http.Client{Transport: &http.Transport{
-		ResponseHeaderTimeout: ResponseHeaderTimeout,
-	},
-		Timeout: HTTPRequestTimeout}
-	resp, err := httpClient.Get(url)
+// HTTPGetRequest gets resource contents given URL and token (if applicable)
+func HTTPGetRequest(url string, token string) ([]byte, error) {
+	// Build http request
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	if token != "" {
+		bearer := "Bearer " + token
+		req.Header.Add("Authorization", bearer)
+	}
+
+	// Initialize http client and send http request
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			ResponseHeaderTimeout: ResponseHeaderTimeout,
+		},
+		Timeout: HTTPRequestTimeout,
+	}
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	// we have a non 1xx / 2xx status, return an error
+	// We have a non 1xx / 2xx status, return an error
 	if (resp.StatusCode - 300) > 0 {
-		return nil, fmt.Errorf("error retrieving %s: %s", url, http.StatusText(resp.StatusCode))
+		return nil, errors.Errorf("fail to retrive %s: %s", url, http.StatusText(resp.StatusCode))
 	}
 
+	// Process http response
 	bytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -841,7 +855,7 @@ func GetAndExtractZip(zipURL string, destination string, pathToUnzip string) err
 		time = strings.Replace(time, ":", "-", -1) // ":" is illegal char in windows
 		pathToZip = path.Join(os.TempDir(), "_"+time+".zip")
 
-		err := DownloadFile(zipURL, pathToZip)
+		err := DownloadFile(zipURL, "", pathToZip)
 		if err != nil {
 			return err
 		}
@@ -968,20 +982,20 @@ func Unzip(src, dest, pathToUnzip string) ([]string, error) {
 	return filenames, nil
 }
 
-// DownloadFile uses the url to download the file to the filepath
-func DownloadFile(url string, filepath string) error {
+// DownloadFile downloads the file to the filepath given URL and token (if applicable)
+func DownloadFile(url string, token string, filepath string) error {
+	// Get the data
+	data, err := HTTPGetRequest(url, token)
+	if err != nil {
+		return err
+	}
+
 	// Create the file
 	out, err := os.Create(filepath)
 	if err != nil {
 		return err
 	}
 	defer out.Close() // #nosec G307
-
-	// Get the data
-	data, err := DownloadFileInMemory(url)
-	if err != nil {
-		return errors.Wrapf(err, "Failed to download devfile.yaml for devfile component: %s", filepath)
-	}
 
 	// Write the data to file
 	_, err = out.Write(data)

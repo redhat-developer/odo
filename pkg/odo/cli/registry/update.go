@@ -7,6 +7,7 @@ import (
 	// Third-party packages
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/zalando/go-keyring"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	// odo packages
@@ -31,6 +32,8 @@ type UpdateOptions struct {
 	operation    string
 	registryName string
 	registryURL  string
+	user         string
+	token        string
 	forceFlag    bool
 }
 
@@ -44,6 +47,7 @@ func (o *UpdateOptions) Complete(name string, cmd *cobra.Command, args []string)
 	o.operation = "update"
 	o.registryName = args[0]
 	o.registryURL = args[1]
+	o.user = "default"
 	return
 }
 
@@ -69,6 +73,21 @@ func (o *UpdateOptions) Run() (err error) {
 		return err
 	}
 
+	if o.token != "" {
+		err = keyring.Set(credentialPrefix+o.registryName, o.user, o.token)
+		if err != nil {
+			return errors.Wrap(err, "unable to store credential to keyring")
+		}
+	} else {
+		token, _ := keyring.Get(credentialPrefix+o.registryName, o.user)
+		if token != "" {
+			err = keyring.Delete(credentialPrefix+o.registryName, o.user)
+			if err != nil {
+				return errors.Wrap(err, "unable to delete credential from keyring")
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -86,6 +105,7 @@ func NewCmdUpdate(name, fullName string) *cobra.Command {
 		},
 	}
 
+	registryUpdateCmd.Flags().StringVar(&o.token, "token", "", "Token to be used to access secure registry")
 	registryUpdateCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Don't ask for confirmation, update the registry directly")
 
 	return registryUpdateCmd

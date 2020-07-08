@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/openshift/odo/pkg/preference"
+	"github.com/zalando/go-keyring"
 
 	imagev1 "github.com/openshift/api/image/v1"
 	"github.com/openshift/odo/pkg/log"
@@ -20,7 +21,8 @@ import (
 )
 
 const (
-	apiVersion = "odo.dev/v1alpha1"
+	apiVersion       = "odo.dev/v1alpha1"
+	credentialPrefix = "odo-"
 )
 
 // GetDevfileRegistries gets devfile registries from preference file,
@@ -102,9 +104,10 @@ func getRegistryDevfiles(registry Registry) ([]DevfileComponentType, error) {
 	}
 	registry.URL = URL
 	indexLink := registry.URL + indexPath
-	jsonBytes, err := util.HTTPGetRequest(indexLink)
+	token, _ := keyring.Get(credentialPrefix+registry.Name, "default")
+	jsonBytes, err := util.HTTPGetRequest(indexLink, token)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Unable to download the devfile index.json from %s", indexLink)
+		return nil, err
 	}
 
 	err = json.Unmarshal(jsonBytes, &devfileIndex)
@@ -152,7 +155,7 @@ func ListDevfileComponents(registryName string) (DevfileComponentTypeList, error
 		retrieveRegistryIndices.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
 			registryDevfiles, err := getRegistryDevfiles(registry)
 			if err != nil {
-				log.Warningf("Registry %s is not set up properly with error: %v", registry.Name, err)
+				log.Warningf("Registry %s is not set up properly with error: %v, please check the registry URL and credential (run `odo registry update <registry name> <registry URL> --token <token>` to update registry credential)\n", registry.Name, err)
 				return
 			}
 

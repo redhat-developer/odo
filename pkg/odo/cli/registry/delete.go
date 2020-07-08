@@ -7,6 +7,7 @@ import (
 	// Third-party packages
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/zalando/go-keyring"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	// odo packages
@@ -30,6 +31,7 @@ type DeleteOptions struct {
 	operation    string
 	registryName string
 	registryURL  string
+	user         string
 	forceFlag    bool
 }
 
@@ -43,6 +45,7 @@ func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string)
 	o.operation = "delete"
 	o.registryName = args[0]
 	o.registryURL = ""
+	o.user = "default"
 	return
 }
 
@@ -53,6 +56,14 @@ func (o *DeleteOptions) Validate() (err error) {
 
 // Run contains the logic for "odo registry delete" command
 func (o *DeleteOptions) Run() (err error) {
+	token, _ := keyring.Get(credentialPrefix+o.registryName, o.user)
+	if token != "" {
+		err = keyring.Delete(credentialPrefix+o.registryName, o.user)
+		if err != nil {
+			return errors.Wrap(err, "unable to delete credential from keyring")
+		}
+	}
+
 	cfg, err := preference.New()
 	if err != nil {
 		return errors.Wrap(err, "unable to delete registry")

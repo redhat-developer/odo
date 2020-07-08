@@ -1,5 +1,5 @@
-hash: 721bab006d880b97996f61d8060113ed2d2de9eafcdf27d48cce8e181478d99c
-updated: 2020-06-17T15:14:10.6611016+05:30
+hash: 60adf31ea26eb09b6013c642d5c131ca356ce94384eadb96d2b7a7bad3b487c6
+updated: 2020-07-08T12:05:39.384756-04:00
 imports:
 - name: cloud.google.com/go
   version: 8c41231e01b2085512d98153bcffb847ff9b4b9f
@@ -37,6 +37,8 @@ imports:
   version: d76c121f76a5fc8a462dc64594aea72fe18e1178
   subpackages:
   - errdefs
+- name: github.com/danieljoos/wincred
+  version: 78f93c1f8b99b0c2f6e7f3d2bdc4993cf87bddff
 - name: github.com/davecgh/go-spew
   version: 8991bc29aa16c548c550c7ff78260e27b9ab7c73
   subpackages:
@@ -74,7 +76,7 @@ imports:
   - pkg/term
   - pkg/term/windows
 - name: github.com/docker/go-connections
-  version: 480d0b58242613178844e8ffabde7a5d55658f0d
+  version: 7dc0a2d6ddce55257ea8851e23b4fb9ef44fd4a0
   subpackages:
   - nat
   - sockets
@@ -117,6 +119,8 @@ imports:
   - syntax/lexer
   - util/runes
   - util/strings
+- name: github.com/godbus/dbus
+  version: efee8394fa9a426004eb24eed1dee80f5efd90af
 - name: github.com/gogo/protobuf
   version: 65acae22fc9d1fe290b33faa2bd64cdc20a463a0
   subpackages:
@@ -202,6 +206,8 @@ imports:
   version: 03217c3e97663914aec3faafde50d081f197a0a2
 - name: github.com/kballard/go-shellquote
   version: 95032a82bc518f77982ea72343cc1ade730072f0
+- name: github.com/konsorten/go-windows-terminal-sequences
+  version: 5c8c8bd35d3832f5d134ae1e1e375b69a4d25242
 - name: github.com/kr/pty
   version: 3a6a957789163cacdfe0e291617a1c8e80612c11
   repo: https://github.com/creack/pty
@@ -298,14 +304,14 @@ imports:
   - matchers/support/goraph/util
   - types
 - name: github.com/opencontainers/go-digest
-  version: a6d0ee40d4207ea02364bd3b9e8e77b9159ba1eb
+  version: 279bed98673dd5bef374d3b6e4b09e2af76183bf
 - name: github.com/opencontainers/image-spec
   version: 79b036d80240ae530a8de15e1d21c7ab9292c693
   subpackages:
   - specs-go
   - specs-go/v1
 - name: github.com/openshift/api
-  version: 3e8f22fb0b56808d981b0a98cd2741d31368aec5
+  version: 7192180f496aab1f7659d8660fc360498bab498b
   subpackages:
   - apps/v1
   - authorization/v1
@@ -360,7 +366,7 @@ imports:
   - pkg/build/naming
   - pkg/oauth/oauthdiscovery
 - name: github.com/openshift/oc
-  version: d038424d6d4f1cc39ad586ac0d36dac3a7a37ceb
+  version: d89e458c3dff553f9a732b282830bfa9b4e0ab9b
   subpackages:
   - pkg/cli/login
   - pkg/helpers/errors
@@ -372,7 +378,7 @@ imports:
   - pkg/helpers/term
   - pkg/helpers/tokencmd
 - name: github.com/operator-framework/operator-lifecycle-manager
-  version: 33671ebb9929e837d1e9f8104476bf278f203080
+  version: 9f95e55cd49a63b85ab5ca5f087a9fa13af84a17
   subpackages:
   - pkg/api/apis/operators
   - pkg/api/apis/operators/v1
@@ -399,6 +405,7 @@ imports:
   subpackages:
   - prometheus
   - prometheus/internal
+  - prometheus/promhttp
 - name: github.com/prometheus/client_model
   version: fd36f4220a901265f90734c3183c5f0c91daa0b8
   subpackages:
@@ -424,7 +431,7 @@ imports:
 - name: github.com/satori/go.uuid
   version: 879c5887cd475cd7864858769793b2ceb0d44feb
 - name: github.com/sirupsen/logrus
-  version: 89742aefa4b206dcf400792f3bd35b542998eb3b
+  version: 839c75faf7f98a33d445d181f3018b5c3409a45e
 - name: github.com/spf13/afero
   version: 588a75ec4f32903aa5e39a2619ba6a4631e28424
   subpackages:
@@ -444,6 +451,10 @@ imports:
   version: bd5ef7bd5415a7ac448318e64f11a24cd21e594b
 - name: github.com/xeipuuv/gojsonschema
   version: 82fcdeb203eb6ab2a67d0a623d9c19e5e5a64927
+- name: github.com/zalando/go-keyring
+  version: 6675570187178a8a2d025e6e00ea70a89ccc9578
+  subpackages:
+  - secret_service
 - name: golang.org/x/crypto
   version: c2843e01d9a2bc60bb26ad24e09734fdc2d9ec58
   subpackages:
@@ -652,7 +663,7 @@ imports:
   - third_party/forked/golang/netutil
   - third_party/forked/golang/reflect
 - name: k8s.io/apiserver
-  version: 79427f02047f9189a75b8cdaadccaf65a126853e
+  version: 67a2f5bbc9d8f88bdaa7659cc0cb3307a7f9d61d
   subpackages:
   - pkg/authentication/authenticator
   - pkg/authentication/request/x509
@@ -816,6 +827,8 @@ imports:
 - name: k8s.io/component-base
   version: e22fc98bf46cf388fdc8cb047daf7a6b4f208954
   subpackages:
+  - metrics
+  - metrics/legacyregistry
   - version
 - name: k8s.io/klog
   version: 2ca9ad30301bf30a8a6e0fa2110db6b8df699a91
