@@ -179,10 +179,14 @@ func (cpo *CommonPushOptions) Push() (err error) {
 	isForcePush := false
 
 	stdout := color.Output
+	// Ret from Indexer function
+	var ret util.IndexerRet
 
 	cmpName := cpo.LocalConfigInfo.GetName()
 	appName := cpo.LocalConfigInfo.GetApplication()
 	cpo.sourceType = cpo.LocalConfigInfo.GetSourceType()
+	// force write the content to resolvePath
+	forceWrite := false
 
 	if cpo.componentContext == "" {
 		cpo.componentContext = strings.TrimSuffix(filepath.Dir(cpo.LocalConfigInfo.Filename), ".odo")
@@ -214,17 +218,20 @@ func (cpo *CommonPushOptions) Push() (err error) {
 		}
 
 		// run the indexer and find the modified/added/deleted/renamed files
-		filesChanged, filesDeleted, err := util.RunIndexer(cpo.componentContext, absIgnoreRules)
+		ret, err = util.RunIndexer(cpo.componentContext, absIgnoreRules)
 		spinner.End(true)
 
 		if err != nil {
 			return errors.Wrap(err, "unable to run indexer")
 		}
+		if len(ret.FilesChanged) > 0 || len(ret.FilesDeleted) > 0 {
+			forceWrite = true
+		}
 
 		if cpo.doesComponentExist {
 			// apply the glob rules from the .gitignore/.odo file
 			// and ignore the files on which the rules apply and filter them out
-			filesChangedFiltered, filesDeletedFiltered := filterIgnores(filesChanged, filesDeleted, absIgnoreRules)
+			filesChangedFiltered, filesDeletedFiltered := filterIgnores(ret.FilesChanged, ret.FilesDeleted, absIgnoreRules)
 
 			// Remove the relative file directory from the list of deleted files
 			// in order to make the changes correctly within the OpenShift pod
@@ -300,6 +307,12 @@ func (cpo *CommonPushOptions) Push() (err error) {
 		// the build happens before deployment
 
 		return errors.Wrapf(err, fmt.Sprintf("failed to push component: %v", cmpName))
+	}
+	if forceWrite {
+		err = util.WriteFile(ret.NewFileMap, ret.ResolvedPath)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to write file")
+		}
 	}
 
 	log.Success("Changes successfully pushed to component")

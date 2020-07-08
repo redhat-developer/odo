@@ -36,7 +36,7 @@ var _ = Describe("odo docker devfile catalog command tests", func() {
 	Context("When executing catalog list components on Docker", func() {
 		It("should list all supported devfile components", func() {
 			output := helper.CmdShouldPass("odo", "catalog", "list", "components")
-			helper.MatchAllInOutput(output, []string{"Odo Devfile Components", "springBoot", "openLiberty", "DefaultDevfileRegistry"})
+			helper.MatchAllInOutput(output, []string{"Odo Devfile Components", "java-springboot", "java-openliberty", "DefaultDevfileRegistry"})
 			helper.DontMatchAllInOutput(output, []string{"SUPPORTED", "Odo OpenShift Components"})
 		})
 	})
@@ -47,11 +47,11 @@ var _ = Describe("odo docker devfile catalog command tests", func() {
 			wantOutput := []string{
 				"odo.dev/v1alpha1",
 				"devfileItems",
-				"openLiberty",
-				"springBoot",
+				"java-openliberty",
+				"java-springboot",
 				"nodejs",
-				"quarkus",
-				"maven",
+				"java-quarkus",
+				"java-maven",
 			}
 			helper.MatchAllInOutput(output, wantOutput)
 		})
@@ -63,8 +63,8 @@ var _ = Describe("odo docker devfile catalog command tests", func() {
 			output := helper.CmdShouldPass("odo", "catalog", "list", "components")
 			helper.MatchAllInOutput(output, []string{
 				"Odo Devfile Components",
-				"springBoot",
-				"quarkus",
+				"java-springboot",
+				"java-quarkus",
 			})
 			helper.CmdShouldPass("odo", "registry", "delete", "fake", "-f")
 		})
