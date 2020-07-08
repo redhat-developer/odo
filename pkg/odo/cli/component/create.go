@@ -86,8 +86,7 @@ const LocalDirectoryDefaultLocation = "./"
 
 // Constants for devfile component
 const (
-	devFile          = "devfile.yaml"
-	credentialPrefix = "odo-"
+	devFile = "devfile.yaml"
 )
 
 var (
@@ -954,7 +953,7 @@ func (co *CreateOptions) Run() (err error) {
 
 			if !util.CheckPathExists(DevfilePath) {
 				// Download devfile from registry
-				token, _ := keyring.Get(credentialPrefix+co.devfileMetadata.devfileRegistry.Name, "default")
+				token, _ := keyring.Get(util.CredentialPrefix+co.devfileMetadata.devfileRegistry.Name, "default")
 				err := util.DownloadFile(co.devfileMetadata.devfileRegistry.URL+co.devfileMetadata.devfileLink, token, DevfilePath)
 				if err != nil {
 					return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfileRegistry.URL+co.devfileMetadata.devfileLink)

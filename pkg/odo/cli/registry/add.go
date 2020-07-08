@@ -77,7 +77,7 @@ func (o *AddOptions) Run() (err error) {
 	}
 
 	if o.token != "" {
-		err = keyring.Set(credentialPrefix+o.registryName, o.user, o.token)
+		err = keyring.Set(util.CredentialPrefix+o.registryName, o.user, o.token)
 		if err != nil {
 			return errors.Wrap(err, "unable to store credential to keyring")
 		}

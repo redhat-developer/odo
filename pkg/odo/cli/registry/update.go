@@ -74,14 +74,14 @@ func (o *UpdateOptions) Run() (err error) {
 	}
 
 	if o.token != "" {
-		err = keyring.Set(credentialPrefix+o.registryName, o.user, o.token)
+		err = keyring.Set(util.CredentialPrefix+o.registryName, o.user, o.token)
 		if err != nil {
 			return errors.Wrap(err, "unable to store credential to keyring")
 		}
 	} else {
-		token, _ := keyring.Get(credentialPrefix+o.registryName, o.user)
+		token, _ := keyring.Get(util.CredentialPrefix+o.registryName, o.user)
 		if token != "" {
-			err = keyring.Delete(credentialPrefix+o.registryName, o.user)
+			err = keyring.Delete(util.CredentialPrefix+o.registryName, o.user)
 			if err != nil {
 				return errors.Wrap(err, "unable to delete credential from keyring")
 			}

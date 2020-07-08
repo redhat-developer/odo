@@ -13,6 +13,7 @@ import (
 	// odo packages
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/preference"
+	"github.com/openshift/odo/pkg/util"
 )
 
 const deleteCommandName = "delete"
@@ -56,9 +57,9 @@ func (o *DeleteOptions) Validate() (err error) {
 
 // Run contains the logic for "odo registry delete" command
 func (o *DeleteOptions) Run() (err error) {
-	token, _ := keyring.Get(credentialPrefix+o.registryName, o.user)
+	token, _ := keyring.Get(util.CredentialPrefix+o.registryName, o.user)
 	if token != "" {
-		err = keyring.Delete(credentialPrefix+o.registryName, o.user)
+		err = keyring.Delete(util.CredentialPrefix+o.registryName, o.user)
 		if err != nil {
 			return errors.Wrap(err, "unable to delete credential from keyring")
 		}

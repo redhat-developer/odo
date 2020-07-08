@@ -21,8 +21,7 @@ import (
 )
 
 const (
-	apiVersion       = "odo.dev/v1alpha1"
-	credentialPrefix = "odo-"
+	apiVersion = "odo.dev/v1alpha1"
 )
 
 // GetDevfileRegistries gets devfile registries from preference file,
@@ -104,7 +103,7 @@ func getRegistryDevfiles(registry Registry) ([]DevfileComponentType, error) {
 	}
 	registry.URL = URL
 	indexLink := registry.URL + indexPath
-	token, _ := keyring.Get(credentialPrefix+registry.Name, "default")
+	token, _ := keyring.Get(util.CredentialPrefix+registry.Name, "default")
 	jsonBytes, err := util.HTTPGetRequest(indexLink, token)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Unable to download the devfile index.json from %s", indexLink)
