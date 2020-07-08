@@ -47,18 +47,9 @@ type CreateOptions struct {
 	componentContext  string
 	componentPorts    []string
 	componentEnvVars  []string
-	memoryMax         string
-
-	memoryMin string
-
-	appName string
-
-	memory      string
-	cpuMax      string
-	cpuMin      string
-	cpu         string
-	interactive bool
-	now         bool
+	appName           string
+	interactive       bool
+	now               bool
 	*CommonPushOptions
 	devfileMetadata DevfileMetadata
 }
@@ -142,8 +133,8 @@ Note: When you use odo with experimental mode enabled and create devfile compone
 # Create new Node.js component with source from remote git repository
 %[1]s nodejs --git https://github.com/openshift/nodejs-ex.git
 
-# Create new Node.js component with custom ports, additional environment variables and memory and cpu limits
-%[1]s nodejs --port 8080,8100/tcp,9100/udp --env key=value,key1=value1 --memory 4Gi --cpu 2
+# Create new Node.js component with custom ports and environment variables
+%[1]s nodejs --port 8080,8100/tcp,9100/udp --env key=value,key1=value1
 
 # Create new Node.js component and download the sample project named nodejs-starter
 %[1]s nodejs --starter=nodejs-starter`)
@@ -302,36 +293,6 @@ func createDefaultComponentName(context *genericclioptions.Context, componentTyp
 	}
 
 	return componentName, nil
-}
-
-func (co *CreateOptions) setResourceLimits() error {
-	ensureAndLogProperResourceUsage(co.memory, co.memoryMin, co.memoryMax, "memory")
-
-	ensureAndLogProperResourceUsage(co.cpu, co.cpuMin, co.cpuMax, "cpu")
-
-	memoryQuantity, err := util.FetchResourceQuantity(corev1.ResourceMemory, co.memoryMin, co.memoryMax, co.memory)
-	if err != nil {
-		return err
-	}
-	if memoryQuantity != nil {
-		minMemory := memoryQuantity.MinQty.String()
-		maxMemory := memoryQuantity.MaxQty.String()
-		co.componentSettings.MinMemory = &minMemory
-		co.componentSettings.MaxMemory = &maxMemory
-	}
-
-	cpuQuantity, err := util.FetchResourceQuantity(corev1.ResourceCPU, co.cpuMin, co.cpuMax, co.cpu)
-	if err != nil {
-		return err
-	}
-	if cpuQuantity != nil {
-		minCPU := cpuQuantity.MinQty.String()
-		maxCPU := cpuQuantity.MaxQty.String()
-		co.componentSettings.MinCPU = &minCPU
-		co.componentSettings.MaxCPU = &maxCPU
-	}
-
-	return nil
 }
 
 // Complete completes create args
@@ -761,10 +722,6 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		if err != nil {
 			return err
 		}
-		err = co.setResourceLimits()
-		if err != nil {
-			return err
-		}
 
 		var portList []string
 		if len(co.componentPorts) > 0 {
@@ -1082,33 +1039,6 @@ func (co *CreateOptions) Run() (err error) {
 	return
 }
 
-// The general cpu/memory is used as a fallback when it's set and both min-cpu/memory max-cpu/memory are not set
-// when the only thing specified is the min or max value, we exit the application
-func ensureAndLogProperResourceUsage(resource, resourceMin, resourceMax, resourceName string) {
-	if strings.HasPrefix(resourceMin, "-") {
-		log.Errorf("min-%s cannot be negative", resource)
-		os.Exit(1)
-	}
-	if strings.HasPrefix(resourceMax, "-") {
-		log.Errorf("max-%s cannot be negative", resource)
-		os.Exit(1)
-	}
-	if strings.HasPrefix(resource, "-") {
-		log.Errorf("%s cannot be negative", resource)
-		os.Exit(1)
-	}
-	if resourceMin != "" && resourceMax != "" && resource != "" {
-		log.Infof("`--%s` will be ignored as `--min-%s` and `--max-%s` has been passed\n", resourceName, resourceName, resourceName)
-	}
-	if (resourceMin == "") != (resourceMax == "") && resource != "" {
-		log.Infof("Using `--%s` %s for min and max limits.\n", resourceName, resource)
-	}
-	if (resourceMin == "") != (resourceMax == "") && resource == "" {
-		log.Errorf("`--min-%s` should accompany `--max-%s` or pass `--%s` to use same value for both min and max or try not passing any of them\n", resourceName, resourceName, resourceName)
-		os.Exit(1)
-	}
-}
-
 func checkoutProject(sparseCheckoutDir, zipURL, path string) error {
 
 	if sparseCheckoutDir != "" {
@@ -1144,12 +1074,6 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 	componentCreateCmd.Flags().StringVarP(&co.componentGit, "git", "g", "", "Create a git component using this repository.")
 	componentCreateCmd.Flags().StringVarP(&co.componentGitRef, "ref", "r", "", "Use a specific ref e.g. commit, branch or tag of the git repository (only valid for --git components)")
 	genericclioptions.AddContextFlag(componentCreateCmd, &co.componentContext)
-	componentCreateCmd.Flags().StringVar(&co.memory, "memory", "", "Amount of memory to be allocated to the component. ex. 100Mi (sets min-memory and max-memory to this value)")
-	componentCreateCmd.Flags().StringVar(&co.memoryMin, "min-memory", "", "Limit minimum amount of memory to be allocated to the component. ex. 100Mi")
-	componentCreateCmd.Flags().StringVar(&co.memoryMax, "max-memory", "", "Limit maximum amount of memory to be allocated to the component. ex. 100Mi")
-	componentCreateCmd.Flags().StringVar(&co.cpu, "cpu", "", "Amount of cpu to be allocated to the component. ex. 100m or 0.1 (sets min-cpu and max-cpu to this value)")
-	componentCreateCmd.Flags().StringVar(&co.cpuMin, "min-cpu", "", "Limit minimum amount of cpu to be allocated to the component. ex. 100m")
-	componentCreateCmd.Flags().StringVar(&co.cpuMax, "max-cpu", "", "Limit maximum amount of cpu to be allocated to the component. ex. 1")
 	componentCreateCmd.Flags().StringSliceVarP(&co.componentPorts, "port", "p", []string{}, "Ports to be used when the component is created (ex. 8080,8100/tcp,9100/udp)")
 	componentCreateCmd.Flags().StringSliceVar(&co.componentEnvVars, "env", []string{}, "Environmental variables for the component. For example --env VariableName=Value")
 

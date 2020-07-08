@@ -41,7 +41,7 @@ var _ = Describe("odo supported images e2e tests", func() {
 
 		// create the component
 		helper.CopyExample(filepath.Join("source", srcType), context)
-		helper.CmdShouldPass("odo", "create", cmpType, srcType+"-app", "--project", project, "--context", context, "--app", appName, "--min-memory", "400Mi", "--max-memory", "700Mi")
+		helper.CmdShouldPass("odo", "create", cmpType, srcType+"-app", "--project", project, "--context", context, "--app", appName)
 
 		// push component and validate
 		helper.CmdShouldPass("odo", "push", "--context", context)
