@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"time"
 
+	"strings"
+
 	"github.com/openshift/odo/tests/helper"
 
 	. "github.com/onsi/ginkgo"
@@ -286,7 +288,7 @@ var _ = Describe("odo push command tests", func() {
 				cmpName,
 				appName,
 				project,
-				[]string{"stat", filepath.Join(dir, "src", "server.js")},
+				[]string{"stat", strings.TrimSuffix(dir, "/") + "/src/server.js"}, // this doesn't use filepath.Join for a reason as this commands needs to run on linux, but the host machine can be windows
 				func(cmdOp string, err error) bool {
 					earlierCatServerFile = cmdOp
 					return true
@@ -298,7 +300,7 @@ var _ = Describe("odo push command tests", func() {
 				cmpName,
 				appName,
 				project,
-				[]string{"stat", filepath.Join(dir, "src", "views", "index.html")},
+				[]string{"stat", strings.TrimSuffix(dir, "/") + "/src/views/index.html"}, // this doesn't use filepath.Join for a reason as this commands needs to run on linux, but the host machine can be windows
 				func(cmdOp string, err error) bool {
 					earlierCatViewFile = cmdOp
 					return true
@@ -314,7 +316,7 @@ var _ = Describe("odo push command tests", func() {
 				cmpName,
 				appName,
 				project,
-				[]string{"stat", filepath.Join(dir, "src", "views", "index.html")},
+				[]string{"stat", strings.TrimSuffix(dir, "/") + "/src/views/index.html"}, // this doesn't use filepath.Join for a reason as this commands needs to run on linux, but the host machine can be windows
 				func(cmdOp string, err error) bool {
 					modifiedCatViewFile = cmdOp
 					return true
@@ -326,7 +328,7 @@ var _ = Describe("odo push command tests", func() {
 				cmpName,
 				appName,
 				project,
-				[]string{"stat", filepath.Join(dir, "src", "server.js")},
+				[]string{"stat", strings.TrimSuffix(dir, "/"), "/src/server.js"}, // this doesn't use filepath.Join for a reason as this commands needs to run on linux, but the host machine can be windows
 				func(cmdOp string, err error) bool {
 					modifiedCatServerFile = cmdOp
 					return true
@@ -353,7 +355,7 @@ var _ = Describe("odo push command tests", func() {
 				"backend",
 				appName,
 				project,
-				[]string{"stat", filepath.Join(dir, "src", "src", "main", "java", "AnotherMessageProducer.java")},
+				[]string{"stat", strings.TrimSuffix(dir, "/") + "/src/src/main/java/AnotherMessageProducer.java"}, // this doesn't use filepath.Join for a reason as this commands needs to run on linux, but the host machine can be windows
 				func(cmdOp string, err error) bool {
 					statErr = err
 					return true
@@ -367,7 +369,7 @@ var _ = Describe("odo push command tests", func() {
 				"backend",
 				appName,
 				project,
-				[]string{"stat", filepath.Join(dir, "src", "src", "main", "java", "AnotherMessageProducer.java")},
+				[]string{"stat", strings.TrimSuffix(dir, "/") + "/src/src/main/java/AnotherMessageProducer.java"}, // this doesn't use filepath.Join for a reason as this commands needs to run on linux, but the host machine can be windows
 				func(cmdOp string, err error) bool {
 					statErr = err
 					return true
