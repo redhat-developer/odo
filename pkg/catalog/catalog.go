@@ -107,7 +107,7 @@ func getRegistryDevfiles(registry Registry) ([]DevfileComponentType, error) {
 	token, _ := keyring.Get(credentialPrefix+registry.Name, "default")
 	jsonBytes, err := util.HTTPGetRequest(indexLink, token)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "Unable to download the devfile index.json from %s", indexLink)
 	}
 
 	err = json.Unmarshal(jsonBytes, &devfileIndex)
@@ -155,7 +155,7 @@ func ListDevfileComponents(registryName string) (DevfileComponentTypeList, error
 		retrieveRegistryIndices.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
 			registryDevfiles, err := getRegistryDevfiles(registry)
 			if err != nil {
-				log.Warningf("Registry %s is not set up properly with error: %v, please check the registry URL and credential (run `odo registry update <registry name> <registry URL> --token <token>` to update registry credential)\n", registry.Name, err)
+				log.Warningf("Registry %s is not set up properly with error: %v, please check the registry URL and credential (refer `odo registry update --help`)\n", registry.Name, err)
 				return
 			}
 

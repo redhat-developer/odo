@@ -99,3 +99,4 @@ import:
 - package: github.com/hashicorp/go-multierror
   version: v1.0.0
 - package: github.com/zalando/go-keyring
+  version: master
