@@ -66,20 +66,25 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 		lo.Context = genericclioptions.NewDevfileContext(cmd)
 		lo.Client = genericclioptions.Client(cmd)
+		lo.hasDCSupport, err = lo.Client.IsDeploymentConfigSupported()
 
 	} else {
+		// here we use the config.yaml derived context if its present, else we use information from user's kubeconfig
+		// as odo list should work in a non-component directory too
 
 		if util.CheckKubeConfigExist() {
 			klog.V(4).Infof("New Context")
 			lo.Context = genericclioptions.NewContext(cmd)
+			lo.hasDCSupport, err = lo.Client.IsDeploymentConfigSupported()
+
 		} else {
 			klog.V(4).Infof("New Config Context")
 			lo.Context = genericclioptions.NewConfigContext(cmd)
+			// for disconnected situation we just assume we have DC support
+			lo.hasDCSupport = true
 
 		}
-
 	}
-	lo.hasDCSupport, err = lo.Client.IsDeploymentConfigSupported()
 	return
 
 }
