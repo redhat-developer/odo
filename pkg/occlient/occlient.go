@@ -3258,24 +3258,10 @@ func injectS2IPaths(existingVars []corev1.EnvVar, s2iPaths S2IPaths) []corev1.En
 
 // IsDeploymentConfigSupported checks if DeploymentConfig type is present on the cluster
 func (c *Client) IsDeploymentConfigSupported() (bool, error) {
-	const ClusterVersionGroup = "apps.openshift.io"
-	const ClusterVersionVersion = "v1"
-	groupVersion := metav1.GroupVersion{Group: ClusterVersionGroup, Version: ClusterVersionVersion}.String()
+	const Group = "apps.openshift.io"
+	const Version = "v1"
 
-	list, err := c.discoveryClient.ServerResourcesForGroupVersion(groupVersion)
-	if kerrors.IsNotFound(err) {
-		return false, nil
-	} else if err != nil {
-		return false, err
-	}
-
-	for _, resources := range list.APIResources {
-
-		if resources.Kind == "DeploymentConfig" {
-			return true, nil
-		}
-	}
-	return false, nil
+	return c.isResourceSupported(Group, Version, "DeploymentConfig")
 }
 
 func isSubDir(baseDir, otherDir string) bool {

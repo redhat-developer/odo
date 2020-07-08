@@ -466,7 +466,6 @@ var _ = Describe("odo devfile push command tests", func() {
 	Context("push with listing the devfile component", func() {
 
 		It("checks components in a specific app and all apps", func() {
-			helper.Chdir(currentWorkingDirectory)
 
 			// component created in "app" application
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, "--context", context, cmpName)
@@ -507,7 +506,6 @@ var _ = Describe("odo devfile push command tests", func() {
 			if os.Getenv("KUBERNETES") == "true" {
 				Skip("Skipping test because s2i image is not supported on Kubernetes cluster")
 			}
-			helper.Chdir(currentWorkingDirectory)
 
 			// component created in "app" application
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, "--context", context, cmpName)

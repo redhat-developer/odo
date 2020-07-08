@@ -45,6 +45,7 @@ type ListOptions struct {
 	hasDCSupport         bool
 	hasDevfileComponents bool
 	hasS2IComponents     bool
+	isExperimentalMode   bool
 	*genericclioptions.Context
 }
 
@@ -55,14 +56,17 @@ func NewListOptions() *ListOptions {
 
 // Complete completes log args
 func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-
-	if experimental.IsExperimentalModeEnabled() {
+	lo.isExperimentalMode = experimental.IsExperimentalModeEnabled()
+	if lo.isExperimentalMode {
 		// Add a disclaimer that we are in *experimental mode*
 		log.Experimental("Experimental mode is enabled, use at your own risk")
 
 		lo.Context = genericclioptions.NewDevfileContext(cmd)
 
 	} else {
+		// here we use the config.yaml derived context if its present, else we use information from user's kubeconfig
+		// as odo list should work in a non-component directory too
+
 		if util.CheckKubeConfigExist() {
 			klog.V(4).Infof("New Context")
 			lo.Context = genericclioptions.NewContext(cmd)
@@ -73,15 +77,10 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		}
 	}
 
-	lo.Client = genericclioptions.Client(cmd)
-	dcSupport, err := lo.Client.IsDeploymentConfigSupported()
-
-	if err != nil {
-		return err
+	lo.hasDCSupport, err = lo.Client.IsDeploymentConfigSupported()
+	if lo.hasDCSupport {
+		lo.Client = genericclioptions.Client(cmd)
 	}
-
-	lo.hasDCSupport = dcSupport
-
 	return
 
 }
@@ -93,7 +92,7 @@ func (lo *ListOptions) Validate() (err error) {
 		klog.V(4).Infof("either --app and --all-apps both provided or provided --all-apps in a folder has app, use --all-apps anyway")
 	}
 
-	if experimental.IsExperimentalModeEnabled() {
+	if lo.isExperimentalMode {
 		if lo.Context.Application == "" && lo.Context.Project == "" {
 			return odoutil.ThrowContextError()
 		}
@@ -124,7 +123,7 @@ func (lo *ListOptions) Run() (err error) {
 
 	if len(lo.pathFlag) != 0 {
 
-		if experimental.IsExperimentalModeEnabled() {
+		if lo.isExperimentalMode {
 			log.Experimental("--path flag is not supported for devfile components")
 		}
 		components, err := component.ListIfPathGiven(lo.Context.Client, filepath.SplitList(lo.pathFlag))
@@ -156,29 +155,29 @@ func (lo *ListOptions) Run() (err error) {
 
 	// experimental workflow
 
-	if experimental.IsExperimentalModeEnabled() {
+	if lo.isExperimentalMode {
 
-		var dpl *appsv1.DeploymentList
+		var deploymentList *appsv1.DeploymentList
 		var err error
 
 		// TODO: wrap this into a component list for docker support
 		if lo.allAppsFlag {
-			dpl, err = lo.KClient.ListAllDeployments()
+			deploymentList, err = lo.KClient.ListAllDeployments()
 
 		} else {
-			dpl, err = lo.KClient.ListDeployments(lo.Application)
+			deploymentList, err = lo.KClient.ListDeployments(lo.Application)
 		}
 
 		if err != nil {
 			return err
 		}
 
-		if len(dpl.Items) != 0 {
+		if len(deploymentList.Items) != 0 {
 			lo.hasDevfileComponents = true
 			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 			fmt.Fprintln(w, "Devfile Components: ")
 			fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "REVISION")
-			for _, comp := range dpl.Items {
+			for _, comp := range deploymentList.Items {
 				app := comp.Labels[applabels.ApplicationLabel]
 				cmpType := comp.Labels[componentlabels.ComponentTypeLabel]
 				revision := comp.Annotations["deployment.kubernetes.io/revision"]

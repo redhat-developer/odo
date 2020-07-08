@@ -271,7 +271,7 @@ func resolveNamespace(command *cobra.Command, client *kclient.Client, envSpecifi
 }
 
 // ResolveApp resolves the app
-func ResolveApp(command *cobra.Command, createAppIfNeeded bool, localConfiguration envinfo.LocalConfigProvider) string {
+func resolveApp(command *cobra.Command, createAppIfNeeded bool, localConfiguration envinfo.LocalConfigProvider) string {
 	var app string
 	appFlag := FlagValueIfSet(command, ApplicationFlagName)
 	if len(appFlag) > 0 {
@@ -339,7 +339,7 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 
 
 	// resolve application
-	app := ResolveApp(command, createAppIfNeeded, localConfiguration)
+	app := resolveApp(command, createAppIfNeeded, localConfiguration)
 
 	// Resolve output flag
 	outputFlag := FlagValueIfSet(command, OutputFlagName)
@@ -386,7 +386,7 @@ func newDevfileContext(command *cobra.Command) *Context {
 	}
 
 	internalCxt.EnvSpecificInfo = envInfo
-	internalCxt.Application = ResolveApp(command, true, envInfo)
+	internalCxt.Application = resolveApp(command, true, envInfo)
 
 	// If the push target is NOT Docker we will set the client to Kubernetes.
 	if !pushtarget.IsPushTargetDocker() {
