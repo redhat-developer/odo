@@ -247,11 +247,14 @@ func ExecuteCompositeDevfileAction(client ExecClient, composite common.Composite
 				return fmt.Errorf("command %q not found in devfile", command)
 			}
 		}
+
+		// Need to wait for all of the commands in the wait group to finish and to close the corresponding channel
 		go func() {
 			wg.Wait()
 			close(wgDone)
 		}()
 
+		// Wait til the wait group's channel is closed and check for any errors
 		select {
 		case <-wgDone:
 			break
