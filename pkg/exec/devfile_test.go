@@ -10,6 +10,7 @@ import (
 	"github.com/openshift/odo/pkg/machineoutput"
 )
 
+// Create a simple mock client for the ExecClient interface for the devfile exec unit tests.
 type mockExecClient struct {
 }
 
