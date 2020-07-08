@@ -397,6 +397,9 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		// Validate user specify devfile path
 		if co.devfileMetadata.devfilePath.value != "" {
+			if co.forceS2i {
+				return errors.New("You can't set --s2i flag as true if you want to use the devfile that is specified via --devfile")
+			}
 			fileErr := util.ValidateFile(co.devfileMetadata.devfilePath.value)
 			urlErr := util.ValidateURL(co.devfileMetadata.devfilePath.value)
 			if fileErr != nil && urlErr != nil {
@@ -410,6 +413,10 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 
 		// Validate user specify registry
 		if co.devfileMetadata.devfileRegistry.Name != "" {
+
+			if co.forceS2i {
+				return errors.New("You can't specify registry via --registry if you want to force the S2I build with --s2i")
+			}
 
 			if co.devfileMetadata.devfilePath.value != "" {
 				return errors.New("you can't specify registry via --registry if you want to use the devfile that is specified via --devfile")
