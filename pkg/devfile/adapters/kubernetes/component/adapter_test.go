@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
-	devfileCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
@@ -88,108 +87,6 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 			componentAdapter := New(adapterCtx, *fkclient)
 			err := componentAdapter.createOrUpdateComponent(tt.running)
 
-			// Checks for unexpected error cases
-			if !tt.wantErr == (err != nil) {
-				t.Errorf("component adapter create unexpected error %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-
-}
-
-func TestExecCompositeCommand(t *testing.T) {
-
-	testComponentName := "test"
-
-	command := []string{"ls -la", "ps", "ls /"}
-	workDir := []string{"/", "/dev", "/etc"}
-	id := []string{"command1", "command2", "command3", "command4"}
-
-	tests := []struct {
-		name             string
-		componentType    versionsCommon.DevfileComponentType
-		compositeCommand versionsCommon.Composite
-		execCommands     []versionsCommon.Exec
-		running          bool
-		wantErr          bool
-	}{
-		{
-			name: "Case 1: Valid composite command",
-			compositeCommand: common.Composite{
-				Id:       id[3],
-				Commands: []string{id[0], id[1], id[2]},
-				Group:    &versionsCommon.Group{Kind: versionsCommon.RunCommandGroupType},
-			},
-			componentType: "",
-			execCommands: []common.Exec{
-				{
-					Id:          id[0],
-					CommandLine: command[0],
-					Component:   testComponentName,
-					Group:       &common.Group{Kind: versionsCommon.RunCommandGroupType},
-					WorkingDir:  workDir[0],
-				},
-				{
-					Id:          id[1],
-					CommandLine: command[1],
-					Component:   testComponentName,
-					Group:       &common.Group{Kind: versionsCommon.BuildCommandGroupType},
-					WorkingDir:  workDir[1],
-				},
-				{
-					Id:          id[2],
-					CommandLine: command[2],
-					Component:   testComponentName,
-					Group:       &common.Group{Kind: versionsCommon.RunCommandGroupType},
-					WorkingDir:  workDir[2],
-				},
-			},
-			running: false,
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var comp versionsCommon.DevfileComponent
-			if tt.componentType != "" {
-				comp = testingutil.GetFakeComponent("component")
-			}
-			devObj := devfileParser.DevfileObj{
-				Data: testingutil.TestDevfileData{
-					Components:        []versionsCommon.DevfileComponent{comp},
-					ExecCommands:      tt.execCommands,
-					CompositeCommands: []versionsCommon.Composite{tt.compositeCommand},
-				},
-			}
-
-			adapterCtx := adaptersCommon.AdapterContext{
-				ComponentName: testComponentName,
-				Devfile:       devObj,
-			}
-
-			fkclient, fkclientset := kclient.FakeNew()
-			fkWatch := watch.NewFake()
-
-			// Change the status
-			go func() {
-				fkWatch.Modify(kclient.FakePodStatus(corev1.PodRunning, testComponentName))
-			}()
-			fkclientset.Kubernetes.PrependWatchReactor("pods", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
-				return true, fkWatch, nil
-			})
-
-			// Exec code requires an already running component
-			componentAdapter := New(adapterCtx, *fkclient)
-			err := componentAdapter.createOrUpdateComponent(tt.running)
-
-			// Checks for unexpected error cases
-			if !tt.wantErr == (err != nil) {
-				t.Errorf("component adapter create unexpected error %v, wantErr %v", err, tt.wantErr)
-			}
-			compInfo := devfileCommon.ComponentInfo{
-				PodName: testComponentName,
-			}
-			err = componentAdapter.execCompositeCommand(&tt.compositeCommand, compInfo, true, testComponentName)
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("component adapter create unexpected error %v, wantErr %v", err, tt.wantErr)

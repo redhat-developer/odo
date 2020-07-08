@@ -3,7 +3,6 @@ package component
 import (
 	"fmt"
 	"reflect"
-	gosync "sync"
 
 	"github.com/openshift/odo/pkg/exec"
 	corev1 "k8s.io/api/core/v1"
@@ -432,85 +431,6 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 			}
 		}
 
-	}
-
-	return
-}
-
-// execCompositeCommand executes the specified composite command
-// If the command sets parallel: true, the commands are execute asynchronously, otherwise they are executed in order
-func (a Adapter) execCompositeCommand(compositeCommand *versionsCommon.Composite, compInfo common.ComponentInfo, show bool, podName string) (err error) {
-	// Need to get mapping of all commands in the devfile since the composite command may reference any exec or composite command in the devfile
-	commandsMap := a.getCommandsMap()
-	if compositeCommand.Parallel {
-		fmt.Println("ToDo: Parallel")
-		var wg gosync.WaitGroup
-		errChan := make(chan error)
-
-		// Loop over each command and execute it in parallel
-		for _, command := range compositeCommand.Commands {
-			if devfileCommand, ok := commandsMap[command]; ok {
-				wg.Add(1)
-				go func(command versionsCommon.DevfileCommand, compInfo common.ComponentInfo, show bool, podName string) {
-					defer wg.Done()
-					err := a.execCommandFromComposite(devfileCommand, compInfo, show, podName)
-					if err != nil {
-						errChan <- err
-					}
-				}(devfileCommand, compInfo, show, podName)
-			} else {
-				return fmt.Errorf("command %q not found in devfile", command)
-			}
-		}
-
-		// Wait for all parallel commands to finish
-		wg.Wait()
-
-		// Check the error channel, if any commands exited with an error
-		err = <-errChan
-		if err != nil {
-			return fmt.Errorf("command execution failed: %v", err)
-		}
-	} else {
-		// Loop over each command and execute in order
-		// Error out if any commands fail or if the command doesn't exist
-		for _, command := range compositeCommand.Commands {
-			if devfileCommand, ok := commandsMap[command]; ok {
-				err = a.execCommandFromComposite(devfileCommand, compInfo, show, podName)
-				if err != nil {
-					return fmt.Errorf("command execution failed: %v", err)
-				}
-			} else {
-				// Devfile validation should have caught a missing command earlier, but should include error handling here as well
-				return fmt.Errorf("command %q not found in devfile", command)
-			}
-		}
-	}
-	return nil
-}
-
-// execCommandFromComposite takes a command in a composite command and executes it.
-// Any non-long running command (init, build, run, or debug) are treated the same
-// Long-running run/debug commands, or run/debug commands that don't restart, need special handling
-func (a Adapter) execCommandFromComposite(command versionsCommon.DevfileCommand, compInfo common.ComponentInfo, show bool, podName string) (err error) {
-	if command.Composite != nil {
-		err = a.execCompositeCommand(command.Composite, compInfo, show, podName)
-	} else {
-		switch command.Exec.Group.Kind {
-		case versionsCommon.InitCommandGroupType:
-		case versionsCommon.BuildCommandGroupType:
-			err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
-		case versionsCommon.RunCommandGroupType:
-			// Run commands are special in composite commands
-			// Because of the current supervisord integration in odo, only one run command can be long-running (denoted by attribute ...)
-			// Otherwise, we treat the run command like an ordinary build command
-			err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
-		case versionsCommon.DebugCommandGroupType:
-			// Like run commands, debug commands in composite commands are also special
-			// Because of the current supervisord integration in odo, only one debug command can be long-running (denoted by attribute ...)
-			// Otherwise, we treat the debug command like an ordinary build command
-			err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
-		}
 	}
 
 	return
