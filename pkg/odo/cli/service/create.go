@@ -267,8 +267,12 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 				return err
 			}
 
-			o.ServiceName, err = serviceNameFromCRD(o.CustomResourceDefinition, o.ServiceName)
-			return err
+			o.ServiceName, err = getServiceNameFromCRD(o.CustomResourceDefinition)
+			if err != nil {
+				return err
+			}
+
+			return validateMetadataInCRD(o.CustomResourceDefinition, o.ServiceName)
 		} else if o.CustomResource != "" {
 			// make sure that CSV of the specified ServiceType exists
 			csv, err := o.KClient.GetClusterServiceVersion(o.ServiceType)
@@ -290,8 +294,14 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 				return err
 			}
 
-			o.ServiceName, err = serviceNameFromCRD(o.CustomResourceDefinition, o.ServiceName)
-			return err
+			if o.ServiceName != "" {
+				o.CustomResourceDefinition, err = setServiceName(o.CustomResourceDefinition, o.ServiceName)
+				if err != nil {
+					return err
+				}
+			}
+
+			return validateMetadataInCRD(o.CustomResourceDefinition, o.ServiceName)
 		} else {
 			// This block is executed only when user has neither provided a
 			// file nor a valid `odo service create <operator-name>` to start
@@ -440,13 +450,57 @@ func NewCmdServiceCreate(name, fullName string) *cobra.Command {
 	return serviceCreateCmd
 }
 
-func serviceNameFromCRD(crd map[string]interface{}, serviceName string) (string, error) {
+// validateMetadataInCRD validates if the CRD has metadata.name field and returns an error
+func validateMetadataInCRD(crd map[string]interface{}, serviceName string) error {
 	metadata, ok := crd["metadata"].(map[string]interface{})
 	if !ok {
+		// this condition is satisfied if there's no metadata at all in the provided CRD
+		return fmt.Errorf("Couldn't find \"metadata\" in the yaml. Need metadata.name to start the service")
+	}
+
+	if _, ok := metadata["name"].(string); ok {
+		// found the metadata.name; no error
+		return nil
+	}
+	return fmt.Errorf("Couldn't find metadata.name in the yaml. Provide a name for the service")
+}
+
+// setServiceName modifies the CRD to contain user provided name on the CLI
+// instead of using the default one in almExample
+func setServiceName(crd interface{}, name string) (map[string]interface{}, error) {
+	m := crd.(map[string]interface{})
+
+	for k, v := range m {
+		if k == "metadata" {
+			n := v.(map[string]interface{})
+
+			for k1, _ := range n {
+				if k1 == "name" {
+					n[k1] = name
+					return m, nil
+				}
+			}
+
+			// if metadata doesn't have 'name' field, we set it up
+			n["name"] = name
+		}
+	}
+
+	// if we reach this point, it's likely becuase the CRD doesn't have
+	// metadata or doesn't have metadata.name
+	return nil, fmt.Errorf("Couldn't set the provided service name.")
+}
+
+// getServiceNameFromCRD fetches the service name from metadata.name field of the CRD
+func getServiceNameFromCRD(crd map[string]interface{}) (string, error) {
+	metadata, ok := crd["metadata"].(map[string]interface{})
+	if !ok {
+		// this condition is satisfied if there's no metadata at all in the provided CRD
 		return "", fmt.Errorf("Couldn't find \"metadata\" in the yaml. Need metadata.name to start the service")
 	}
 
 	if name, ok := metadata["name"].(string); ok {
+		// found the metadata.name; no error
 		return name, nil
 	}
 	return "", fmt.Errorf("Couldn't find metadata.name in the yaml. Provide a name for the service")
