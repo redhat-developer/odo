@@ -6,6 +6,11 @@ import (
 	"path/filepath"
 	"text/tabwriter"
 
+	applabels "github.com/openshift/odo/pkg/application/labels"
+	componentlabels "github.com/openshift/odo/pkg/component/labels"
+
+	appsv1 "k8s.io/api/apps/v1"
+
 	"github.com/openshift/odo/pkg/application"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/util"
@@ -34,12 +39,13 @@ var listExample = ktemplates.Examples(`  # List all components in the applicatio
 
 // ListOptions is a dummy container to attach complete, validate and run pattern
 type ListOptions struct {
-	pathFlag           string
-	allAppsFlag        bool
-	componentContext   string
-	isExperimentalMode bool
-	hasDCSupport       bool
-	devfilePath        string
+	pathFlag             string
+	allAppsFlag          bool
+	componentContext     string
+	isExperimentalMode   bool
+	hasDCSupport         bool
+	devfilePath          string
+	hasDevfileComponents bool
 	*genericclioptions.Context
 }
 
@@ -130,57 +136,95 @@ func (lo *ListOptions) Run() (err error) {
 	}
 	var components component.ComponentList
 
-	if lo.allAppsFlag {
-		// retrieve list of application
-		apps, err := application.List(lo.Client)
+	// experimental
+
+	if lo.isExperimentalMode && util.CheckPathExists(lo.devfilePath) {
+
+		var deploymentList *appsv1.DeploymentList
+		var err error
+
+		// TODO: wrap this into a component list for docker support
+		if lo.allAppsFlag {
+			deploymentList, err = lo.KClient.ListAllDeployments()
+
+		} else {
+			deploymentList, err = lo.KClient.ListDeployments(lo.Application)
+		}
+
 		if err != nil {
 			return err
 		}
 
-		var componentList []component.Component
+		if len(deploymentList.Items) != 0 {
+			lo.hasDevfileComponents = true
+			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+			fmt.Fprintln(w, "Devfile Components: ")
+			fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "REVISION")
+			for _, comp := range deploymentList.Items {
+				app := comp.Labels[applabels.ApplicationLabel]
+				cmpType := comp.Labels[componentlabels.ComponentTypeLabel]
+				revision := comp.Annotations["deployment.kubernetes.io/revision"]
+				fmt.Fprintln(w, app, "\t", comp.Name, "\t", comp.Namespace, "\t", cmpType, "\t", revision)
+			}
+			w.Flush()
 
-		if len(apps) == 0 && lo.LocalConfigInfo.ConfigFileExists() {
-			comps, err := component.List(lo.Client, lo.LocalConfigInfo.GetApplication(), lo.LocalConfigInfo)
+		}
+
+	} else {
+
+		if lo.allAppsFlag {
+			// retrieve list of application
+			apps, err := application.List(lo.Client)
 			if err != nil {
 				return err
 			}
-			componentList = append(componentList, comps.Items...)
-		}
 
-		// interating over list of application and get list of all components
-		for _, app := range apps {
-			comps, err := component.List(lo.Client, app, lo.LocalConfigInfo)
-			if err != nil {
-				return err
+			var componentList []component.Component
+
+			if len(apps) == 0 && lo.LocalConfigInfo.ConfigFileExists() {
+				comps, err := component.List(lo.Client, lo.LocalConfigInfo.GetApplication(), lo.LocalConfigInfo)
+				if err != nil {
+					return err
+				}
+				componentList = append(componentList, comps.Items...)
 			}
-			componentList = append(componentList, comps.Items...)
-		}
-		// Get machine readable component list format
-		components = component.GetMachineReadableFormatForList(componentList)
-	} else {
 
-		components, err = component.List(lo.Client, lo.Application, lo.LocalConfigInfo)
-		if err != nil {
-			return errors.Wrapf(err, "failed to fetch components list")
+			// interating over list of application and get list of all components
+			for _, app := range apps {
+				comps, err := component.List(lo.Client, app, lo.LocalConfigInfo)
+				if err != nil {
+					return err
+				}
+				componentList = append(componentList, comps.Items...)
+			}
+			// Get machine readable component list format
+			components = component.GetMachineReadableFormatForList(componentList)
+		} else {
+
+			components, err = component.List(lo.Client, lo.Application, lo.LocalConfigInfo)
+			if err != nil {
+				return errors.Wrapf(err, "failed to fetch components list")
+			}
+		}
+		klog.V(4).Infof("the components are %+v", components)
+
+		if log.IsJSON() {
+			machineoutput.OutputSuccess(components)
+		} else {
+			if len(components.Items) == 0 {
+				log.Errorf("There are no components deployed.")
+				return
+			}
+			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+			fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "SOURCETYPE", "\t", "STATE")
+			for _, comp := range components.Items {
+				fmt.Fprintln(w, comp.Spec.App, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Spec.Type, "\t", comp.Spec.SourceType, "\t", comp.Status.State)
+			}
+			w.Flush()
 		}
 	}
-	klog.V(4).Infof("the components are %+v", components)
+	return nil
 
-	if log.IsJSON() {
-		machineoutput.OutputSuccess(components)
-	} else {
-		if len(components.Items) == 0 {
-			log.Errorf("There are no components deployed.")
-			return
-		}
-		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-		fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "SOURCETYPE", "\t", "STATE")
-		for _, comp := range components.Items {
-			fmt.Fprintln(w, comp.Spec.App, "\t", comp.Name, "\t", comp.Namespace, "\t", comp.Spec.Type, "\t", comp.Spec.SourceType, "\t", comp.Status.State)
-		}
-		w.Flush()
-	}
-	return
 }
 
 // NewCmdList implements the list odo command
