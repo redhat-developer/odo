@@ -49,10 +49,11 @@ var _ = Describe("odo devfile log command tests", func() {
 	Context("Verify odo log for devfile works", func() {
 
 		It("should log run command output", func() {
+			helper.MakeDir(projectDirPath)
+			helper.Chdir(projectDirPath)
+
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
-
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
 			helper.CmdShouldPass("odo", "push", "--project", namespace)
 			output := helper.CmdShouldPass("odo", "log")
 			Expect(output).To(ContainSubstring("ODO_COMMAND_RUN"))
@@ -91,10 +92,8 @@ var _ = Describe("odo devfile log command tests", func() {
 		// if there is no run command in devfile.
 		It("should give error if no debug command in devfile", func() {
 
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
-
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace)
 			helper.CmdShouldPass("odo", "push", "--project", namespace)
 			helper.CmdShouldFail("odo", "log", "--debug")
 		})
