@@ -176,20 +176,28 @@ func (lo *ListOptions) Run() (err error) {
 			return err
 		}
 
-		if len(deploymentList.Items) != 0 {
-			lo.hasDevfileComponents = true
-			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-			fmt.Fprintln(w, "Devfile Components: ")
-			fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "REVISION")
-			for _, comp := range deploymentList.Items {
-				app := comp.Labels[applabels.ApplicationLabel]
-				cmpType := comp.Labels[componentlabels.ComponentTypeLabel]
-				revision := comp.Annotations["deployment.kubernetes.io/revision"]
-				fmt.Fprintln(w, app, "\t", comp.Name, "\t", comp.Namespace, "\t", cmpType, "\t", revision)
+		envinfo := lo.EnvSpecificInfo.EnvInfo
+		currentComponentState := "Unpushed"
+		currentComponentName := envinfo.GetName()
+		lo.hasDevfileComponents = true
+		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+		fmt.Fprintln(w, "Devfile Components: ")
+		fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "STATE")
+		for _, comp := range deploymentList.Items {
+			app := comp.Labels[applabels.ApplicationLabel]
+			cmpType := comp.Labels[componentlabels.ComponentTypeLabel]
+			if comp.Name == currentComponentName && app == lo.Application && comp.Namespace == envinfo.GetNamespace() {
+				currentComponentState = "Pushed"
 			}
-			w.Flush()
-
+			fmt.Fprintln(w, app, "\t", comp.Name, "\t", comp.Namespace, "\t", cmpType, "\t", "Pushed")
 		}
+
+		// if the currentComponentState is unpushed that means it didn't show up in the list above
+		if currentComponentState == "Unpushed" {
+			fmt.Fprintln(w, envinfo.GetApplication(), "\t", currentComponentName, "\t", envinfo.GetNamespace(), "\t", envinfo.GetComponentType(), "\t", currentComponentState)
+		}
+
+		w.Flush()
 
 	}
 

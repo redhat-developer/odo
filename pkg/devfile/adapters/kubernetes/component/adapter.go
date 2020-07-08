@@ -280,7 +280,9 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 		return err
 	}
 
-	deploymentSpec := kclient.GenerateDeploymentSpec(*podTemplateSpec)
+	deploymentSpec := kclient.GenerateDeploymentSpec(*podTemplateSpec, map[string]string{
+		"component": componentName,
+	})
 	var containerPorts []corev1.ContainerPort
 	for _, c := range deploymentSpec.Template.Spec.Containers {
 		if len(containerPorts) == 0 {

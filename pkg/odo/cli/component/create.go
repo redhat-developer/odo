@@ -1004,8 +1004,9 @@ func (co *CreateOptions) Run() (err error) {
 
 			// Generate env file
 			err = co.EnvSpecificInfo.SetComponentSettings(envinfo.ComponentSettings{Name: co.devfileMetadata.componentName,
-				Namespace: co.devfileMetadata.componentNamespace,
-				AppName:   co.AppName,
+				Namespace:     co.devfileMetadata.componentNamespace,
+				AppName:       co.AppName,
+				ComponentType: co.devfileMetadata.componentType,
 			})
 			if err != nil {
 				return errors.Wrap(err, "failed to create env file for devfile component")
