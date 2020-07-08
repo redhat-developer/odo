@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
+	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/exec"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -170,9 +171,11 @@ func (a Adapter) DoesComponentExist(cmpName string) bool {
 func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 	componentName := a.ComponentName
 
-	labels := map[string]string{
-		"component": componentName,
-	}
+	componentType := a.AdapterContext.Devfile.Data.GetMetadata().Name
+
+	labels := componentlabels.GetLabels(componentName, a.AppName, true)
+	labels["component"] = componentName
+	labels[componentlabels.ComponentTypeLabel] = componentType
 
 	containers, err := utils.GetContainers(a.Devfile)
 	if err != nil {
@@ -238,7 +241,9 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 		return err
 	}
 
-	deploymentSpec := kclient.GenerateDeploymentSpec(*podTemplateSpec)
+	deploymentSpec := kclient.GenerateDeploymentSpec(*podTemplateSpec, map[string]string{
+		"component": componentName,
+	})
 	var containerPorts []corev1.ContainerPort
 	for _, c := range deploymentSpec.Template.Spec.Containers {
 		if len(containerPorts) == 0 {

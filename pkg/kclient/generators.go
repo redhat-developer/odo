@@ -81,14 +81,13 @@ func GeneratePodTemplateSpec(objectMeta metav1.ObjectMeta, containers []corev1.C
 }
 
 // GenerateDeploymentSpec creates a deployment spec
-func GenerateDeploymentSpec(podTemplateSpec corev1.PodTemplateSpec) *appsv1.DeploymentSpec {
-	labels := podTemplateSpec.ObjectMeta.Labels
+func GenerateDeploymentSpec(podTemplateSpec corev1.PodTemplateSpec, podLabelSelectors map[string]string) *appsv1.DeploymentSpec {
 	deploymentSpec := &appsv1.DeploymentSpec{
 		Strategy: appsv1.DeploymentStrategy{
 			Type: appsv1.RecreateDeploymentStrategyType,
 		},
 		Selector: &metav1.LabelSelector{
-			MatchLabels: labels,
+			MatchLabels: podLabelSelectors,
 		},
 		Template: podTemplateSpec,
 	}

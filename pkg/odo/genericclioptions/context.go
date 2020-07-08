@@ -370,8 +370,8 @@ func resolveNamespace(command *cobra.Command, client *kclient.Client, envSpecifi
 	return namespace
 }
 
-// resolveApp resolves the app
-func resolveApp(command *cobra.Command, createAppIfNeeded bool, localConfiguration *config.LocalConfigInfo) string {
+// ResolveApp resolves the app
+func ResolveApp(command *cobra.Command, createAppIfNeeded bool, localConfiguration envinfo.LocalConfigProvider) string {
 	var app string
 	appFlag := FlagValueIfSet(command, ApplicationFlagName)
 	if len(appFlag) > 0 {
@@ -385,6 +385,15 @@ func resolveApp(command *cobra.Command, createAppIfNeeded bool, localConfigurati
 		}
 	}
 	return app
+}
+
+// ResolveAppFlag resolves the app from the flag
+func ResolveAppFlag(command *cobra.Command) string {
+	appFlag := FlagValueIfSet(command, ApplicationFlagName)
+	if len(appFlag) > 0 {
+		return appFlag
+	}
+	return DefaultAppName
 }
 
 // resolveComponent resolves component
@@ -429,7 +438,7 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 	namespace := resolveProject(command, client, localConfiguration)
 
 	// resolve application
-	app := resolveApp(command, createAppIfNeeded, localConfiguration)
+	app := ResolveApp(command, createAppIfNeeded, localConfiguration)
 
 	// resolve output flag
 	outputFlag := FlagValueIfSet(command, OutputFlagName)
@@ -464,6 +473,8 @@ func newDevfileContext(command *cobra.Command) *Context {
 	internalCxt := internalCxt{
 		OutputFlag: outputFlag,
 		command:    command,
+		// this is only so we can make devfile and s2i work together for certain cases
+		LocalConfigInfo: &config.LocalConfigInfo{},
 	}
 
 	envInfo, err := getValidEnvinfo(command)
@@ -472,6 +483,7 @@ func newDevfileContext(command *cobra.Command) *Context {
 	}
 
 	internalCxt.EnvSpecificInfo = envInfo
+	internalCxt.Application = ResolveApp(command, true, envInfo)
 
 	if !pushtarget.IsPushTargetDocker() {
 		// create a new kclient
