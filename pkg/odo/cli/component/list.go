@@ -46,6 +46,7 @@ type ListOptions struct {
 	hasDevfileComponents bool
 	hasS2IComponents     bool
 	isExperimentalMode   bool
+	devfilePath          string
 	*genericclioptions.Context
 }
 
@@ -57,11 +58,14 @@ func NewListOptions() *ListOptions {
 // Complete completes log args
 func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	lo.isExperimentalMode = experimental.IsExperimentalModeEnabled()
-	if lo.isExperimentalMode {
+	lo.devfilePath = filepath.Join(lo.componentContext, DevfilePath)
+	if lo.isExperimentalMode && util.CheckPathExists(lo.devfilePath) {
 		// Add a disclaimer that we are in *experimental mode*
 		log.Experimental("Experimental mode is enabled, use at your own risk")
 
 		lo.Context = genericclioptions.NewDevfileContext(cmd)
+		lo.Client = genericclioptions.Client(cmd)
+		lo.hasDCSupport, err = lo.Client.IsDeploymentConfigSupported()
 
 	} else {
 		// here we use the config.yaml derived context if its present, else we use information from user's kubeconfig
@@ -70,15 +74,17 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		if util.CheckKubeConfigExist() {
 			klog.V(4).Infof("New Context")
 			lo.Context = genericclioptions.NewContext(cmd)
+			lo.hasDCSupport, err = lo.Client.IsDeploymentConfigSupported()
+
 		} else {
 			klog.V(4).Infof("New Config Context")
 			lo.Context = genericclioptions.NewConfigContext(cmd)
+			// for disconnected situation we just assume we have DC support
+			lo.hasDCSupport = true
 
 		}
 	}
 
-	lo.Client = genericclioptions.Client(cmd)
-	lo.hasDCSupport, err = lo.Client.IsDeploymentConfigSupported()
 	return
 
 }
@@ -121,7 +127,7 @@ func (lo *ListOptions) Run() (err error) {
 
 	if len(lo.pathFlag) != 0 {
 
-		if lo.isExperimentalMode {
+		if lo.isExperimentalMode && util.CheckPathExists(lo.devfilePath) {
 			log.Experimental("--path flag is not supported for devfile components")
 		}
 		components, err := component.ListIfPathGiven(lo.Context.Client, filepath.SplitList(lo.pathFlag))
@@ -153,7 +159,7 @@ func (lo *ListOptions) Run() (err error) {
 
 	// experimental workflow
 
-	if lo.isExperimentalMode {
+	if lo.isExperimentalMode && util.CheckPathExists(lo.devfilePath) {
 
 		var deploymentList *appsv1.DeploymentList
 		var err error
