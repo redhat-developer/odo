@@ -53,7 +53,7 @@ var _ = Describe("odo docker devfile status command tests", func() {
 
 		It("Verify that odo component status correctly reports supervisord status", func() {
 
-			helper.CmdShouldPass("odo", "create", "springBoot", cmpName)
+			helper.CmdShouldPass("odo", "create", "java-springboot", cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
@@ -171,7 +171,7 @@ var _ = Describe("odo docker devfile status command tests", func() {
 
 		It("Verify that odo component status correctly detects containers", func() {
 
-			helper.CmdShouldPass("odo", "create", "springBoot", cmpName)
+			helper.CmdShouldPass("odo", "create", "java-springboot", cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
@@ -241,7 +241,7 @@ var _ = Describe("odo docker devfile status command tests", func() {
 
 		It("Verify that odo component status detects the URL status", func() {
 
-			helper.CmdShouldPass("odo", "create", "springBoot", cmpName)
+			helper.CmdShouldPass("odo", "create", "java-springboot", cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
