@@ -29,7 +29,7 @@ type ComponentSettings struct {
 	DebugPort *int `yaml:"DebugPort,omitempty"`
 
 	// ComponentType stores the type of component - this information is available in devfile as well
-	ComponentType string `yaml: "ComponentType, omitempty"`
+	ComponentType string `yaml:"ComponentType,omitempty"`
 }
 
 // URLKind is an enum to indicate the type of the URL i.e ingress/route
