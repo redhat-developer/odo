@@ -56,57 +56,56 @@ The flow for initializing and deleting components should be updated to add execu
 ```
 schemaVersion: "2.0.0"
 metadata:
- name: test-devfile
+  name: test-devfile
 projects:
- - name: nodejs-web-app
- git: 
- location: "https://github.com/che-samples/web-nodejs-sample.git"
+  - name: nodejs-web-app
+    git: 
+      location: "https://github.com/che-samples/web-nodejs-sample.git"
 components:
- - container:
- id: tools
- image: quay.io/eclipse/che-nodejs10-ubi:nightly
- name: "tools"
- - container:
- id: runtime
- image: quay.io/eclipse/che-nodejs10-ubi:nightly
- name: "runtime"
+  - container:
+    id: tools
+    image: quay.io/eclipse/che-nodejs10-ubi:nightly
+    name: "tools"
+  - container:
+    id: runtime
+    image: quay.io/eclipse/che-nodejs10-ubi:nightly
+    name: "runtime"
 commands:
- - exec:
- id: download dependencies
- commandLine: "npm install"
- component: tools
- workingDir: ${CHE_PROJECTS_ROOT}/nodejs-web-app/app
- group:
- kind: build
- - exec:
- id: run the app
- commandLine: "nodemon app.js"
- component: runtime
- workingDir: ${CHE_PROJECTS_ROOT}/nodejs-web-app/app 
- group:
- kind: run 
- - exec:
- id: firstPostStartCmd
- commandLine: echo I am the first PostStart
- component: tools
- workingDir: ${CHE_PROJECTS_ROOT}/
- - exec:
- id: secondPostStartCmd
- commandLine: echo I am the second PostStart
- component: tools
- workingDir: ${CHE_PROJECTS_ROOT}/
- - exec:
- id: disconnectDatabase
- commandLine: echo disconnecting from the database
- component: tools
- workingDir: ${CHE_PROJECTS_ROOT}/
+  - exec:
+    id: download dependencies
+    commandLine: "npm install"
+    component: tools
+    workingDir: ${CHE_PROJECTS_ROOT}/nodejs-web-app/app
+    group:
+      kind: build
+  - exec:
+    id: run the app
+    commandLine: "nodemon app.js"
+    component: runtime
+    workingDir: ${CHE_PROJECTS_ROOT}/nodejs-web-app/app 
+    group:
+      kind: run 
+  - exec:
+    id: firstPostStartCmd
+    commandLine: echo I am the first PostStart
+    component: tools
+    workingDir: ${CHE_PROJECTS_ROOT}/
+  - exec:
+    id: secondPostStartCmd
+    commandLine: echo I am the second PostStart
+    component: tools
+    workingDir: ${CHE_PROJECTS_ROOT}/
+  - exec:
+    id: disconnectDatabase
+    commandLine: echo disconnecting from the database
+    component: tools
+    workingDir: ${CHE_PROJECTS_ROOT}/
 events:
- postStart:
- - "firstPostStartCmd"
- - "secondPostStartCmd"
- preStop:
- - "disconnectDatabase"
- 
+  postStart:
+    - "firstPostStartCmd"
+    - "secondPostStartCmd"
+  preStop:
+    - "disconnectDatabase"
 ```
 
 The example flow for **odo push** in this case would be:
