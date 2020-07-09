@@ -170,3 +170,21 @@ func (dc *Client) WaitForContainer(containerID string, condition container.WaitC
 		}
 	}
 }
+
+// DisplayContainerLog prints the log from pod to stdout
+func (dc *Client) GetContainerLogs(containerName string, followLog bool) (io.ReadCloser, error) {
+
+	// Set standard log options
+	ContainerLogOptions := types.ContainerLogsOptions{Follow: false, ShowStdout: true}
+
+	// If the log is being followed, set it to follow / don't wait
+	if followLog {
+		ContainerLogOptions = types.ContainerLogsOptions{
+			Follow:     true,
+			Tail:       "1",
+			ShowStdout: true,
+		}
+	}
+
+	return dc.Client.ContainerLogs(dc.Context, containerName, ContainerLogOptions)
+}

@@ -13,6 +13,7 @@ import (
 	"k8s.io/klog"
 
 	// api resource types
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -171,4 +172,33 @@ func (c *Client) GetOnePodFromSelector(selector string) (*corev1.Pod, error) {
 	}
 
 	return &pods.Items[0], nil
+}
+
+// GetPodLogs prints the log from pod to stdout
+func (c *Client) GetPodLogs(podName, containerName string, followLog bool) (io.ReadCloser, error) {
+
+	// Set standard log options
+	podLogOptions := corev1.PodLogOptions{Follow: false}
+
+	// If the log is being followed, set it to follow / don't wait
+	if followLog {
+		tailLines := int64(1)
+		podLogOptions = corev1.PodLogOptions{
+			Follow:    true,
+			Previous:  false,
+			TailLines: &tailLines,
+			Container: containerName,
+		}
+	}
+
+	// RESTClient call to kubernetes
+	rd, err := c.KubeClient.CoreV1().RESTClient().Get().
+		Namespace(c.Namespace).
+		Name(podName).
+		Resource("pods").
+		SubResource("log").
+		VersionedParams(&podLogOptions, scheme.ParameterCodec).
+		Stream()
+
+	return rd, err
 }
