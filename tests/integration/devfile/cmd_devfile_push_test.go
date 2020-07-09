@@ -263,9 +263,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-post-start.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
-			Expect(output).To(ContainSubstring("Executing mypoststart command \"I am a PostStart"))
-			Expect(output).To(ContainSubstring("Executing secondpoststart command \"I am also a PostStart"))
-			Expect(output).To(ContainSubstring("Executing devrun command \"/artifacts/bin/start-server.sh\""))
+			helper.MatchAllInOutput(output, []string{"Executing mypoststart command \"echo I am a PostStart\"", "Executing secondpoststart command \"echo I am also a PostStart\""})
 		})
 
 		It("should be able to handle a missing build command group", func() {

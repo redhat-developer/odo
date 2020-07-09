@@ -36,7 +36,7 @@ commands:
   - exec:
       id: secondPostStart
       commandLine: echo I am also a PostStart
-      component: tools
+      component: runtime
       workingDir: ${CHE_PROJECTS_ROOT}/
   - exec:
       id: download dependencies

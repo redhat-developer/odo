@@ -373,6 +373,10 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 	return
 }
 
+// TODO: Support Composite
+// execDevfileEvent receives a Devfile Event (PostStart, PreStop etc.) and loops through them
+// Each Devfile Command associated with the given event is retrieved, and executed in the container specified
+// in the command
 func (a Adapter) execDevfileEvent(events []string, containers []types.Container) error {
 	if len(events) > 0 {
 		for _, commandName := range events {
