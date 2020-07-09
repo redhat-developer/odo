@@ -112,7 +112,8 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			// now verify if the pods for the operator have started
 			pods := helper.CmdShouldPass("oc", "get", "pods", "-n", project)
 			// Look for pod with custom name because that's the name etcd will give to the pods.
-			etcdPod := regexp.MustCompile(name).FindString(pods)
+			compileString := name + `-.[a-z0-9]*`
+			etcdPod := regexp.MustCompile(compileString).FindString(pods)
 
 			ocArgs := []string{"get", "pods", etcdPod, "-o", "template=\"{{.status.phase}}\"", "-n", project}
 			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
