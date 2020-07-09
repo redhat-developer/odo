@@ -97,11 +97,24 @@ type ServiceCreateOptions struct {
 	// TODO: remove this after service create's interactive mode supports creating operator backed services
 	fromFile string
 }
-}
 
 // NewServiceCreateOptions creates a new ServiceCreateOptions instance
 func NewServiceCreateOptions() *ServiceCreateOptions {
 	return &ServiceCreateOptions{}
+}
+
+// DynamicCRD holds the original CR obtained from the Operator (a CSV), or user
+// (when they use --from-file flag), and few other attributes that are likely
+// to be used to validate a CRD before creating a service from it
+type DynamicCRD struct {
+	// contains the CR as obtained from CSV or user
+	OriginalCRD map[string]interface{}
+	// contains the metadata of the provided CR
+	metadata map[string]interface{}
+}
+
+func NewDynamicCRD() *DynamicCRD {
+	return &DynamicCRD{}
 }
 
 // Complete completes ServiceCreateOptions after they've been created
@@ -227,6 +240,7 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 
 	// we want to find an Operator only if something's passed to the crd flag on CLI
 	if experimental.IsExperimentalModeEnabled() {
+		d := NewDynamicCRD()
 		// if the user wants to create service from a file, we check for
 		// existence of file and validate if the requested operator and CR
 		// exist on the cluster
@@ -241,14 +255,14 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 				return err
 			}
 
-			err = yaml.Unmarshal(fileContents, &o.CustomResourceDefinition)
+			err = yaml.Unmarshal(fileContents, &d.OriginalCRD)
 			if err != nil {
 				return err
 			}
 
 			// Check if the operator and the CR exist on cluster
 			var csv olm.ClusterServiceVersion
-			o.CustomResource, csv, err = svc.CheckCRExists(o.KClient, o.CustomResourceDefinition)
+			o.CustomResource, csv, err = svc.CheckCRExists(o.KClient, d.OriginalCRD)
 			if err != nil {
 				return err
 			}
@@ -259,12 +273,20 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 				return err
 			}
 
-			o.ServiceName, err = getServiceNameFromCRD(o.CustomResourceDefinition)
+			o.ServiceName, err = d.getServiceNameFromCRD()
 			if err != nil {
 				return err
 			}
 
-			return validateMetadataInCRD(o.CustomResourceDefinition, o.ServiceName)
+			err = d.validateMetadataInCRD()
+			if err != nil {
+				return err
+			}
+
+			// CRD is valid. We can use it further to create a service from it.
+			o.CustomResourceDefinition = d.OriginalCRD
+
+			return nil
 		} else if o.CustomResource != "" {
 			// make sure that CSV of the specified ServiceType exists
 			csv, err := o.KClient.GetClusterServiceVersion(o.ServiceType)
@@ -279,7 +301,7 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 				return err
 			}
 
-			o.CustomResourceDefinition = almExample
+			d.OriginalCRD = almExample
 
 			o.group, o.version, o.resource, err = svc.GetGVRFromOperator(csv, o.CustomResource)
 			if err != nil {
@@ -287,13 +309,24 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 			}
 
 			if o.ServiceName != "" {
-				o.CustomResourceDefinition, err = setServiceName(o.CustomResourceDefinition, o.ServiceName)
+				exists, err := svc.OperatorSvcExists(o.KClient, o.CustomResource, o.ServiceName)
+				fmt.Println(exists, err)
+
+				err = d.setServiceName(o.ServiceName)
 				if err != nil {
 					return err
 				}
 			}
 
-			return validateMetadataInCRD(o.CustomResourceDefinition, o.ServiceName)
+			err = d.validateMetadataInCRD()
+			if err != nil {
+				return err
+			}
+
+			// CRD is valid. We can use it further to create a service from it.
+			o.CustomResourceDefinition = d.OriginalCRD
+
+			return nil
 		} else {
 			// This block is executed only when user has neither provided a
 			// file nor a valid `odo service create <operator-name>` to start
@@ -443,8 +476,8 @@ func NewCmdServiceCreate(name, fullName string) *cobra.Command {
 }
 
 // validateMetadataInCRD validates if the CRD has metadata.name field and returns an error
-func validateMetadataInCRD(crd map[string]interface{}, serviceName string) error {
-	metadata, ok := crd["metadata"].(map[string]interface{})
+func (d *DynamicCRD) validateMetadataInCRD() error {
+	metadata, ok := d.OriginalCRD["metadata"].(map[string]interface{})
 	if !ok {
 		// this condition is satisfied if there's no metadata at all in the provided CRD
 		return fmt.Errorf("Couldn't find \"metadata\" in the yaml. Need metadata.name to start the service")
@@ -459,33 +492,26 @@ func validateMetadataInCRD(crd map[string]interface{}, serviceName string) error
 
 // setServiceName modifies the CRD to contain user provided name on the CLI
 // instead of using the default one in almExample
-func setServiceName(crd interface{}, name string) (map[string]interface{}, error) {
-	m := crd.(map[string]interface{})
+func (d *DynamicCRD) setServiceName(name string) error {
+	m := d.OriginalCRD["metadata"].(map[string]interface{})
 
-	for k, v := range m {
-		if k == "metadata" {
-			n := v.(map[string]interface{})
-
-			for k1 := range n {
-				if k1 == "name" {
-					n[k1] = name
-					return m, nil
-				}
-			}
-
-			// if metadata doesn't have 'name' field, we set it up
-			n["name"] = name
+	for k := range m {
+		if k == "name" {
+			m[k] = name
+			return nil
 		}
+		// if metadata doesn't have 'name' field, we set it up
+		m["name"] = name
 	}
 
 	// if we reach this point, it's likely becuase the CRD doesn't have
 	// metadata or doesn't have metadata.name
-	return nil, fmt.Errorf("Couldn't set the provided service name.")
+	return fmt.Errorf("Couldn't set the provided service name.")
 }
 
 // getServiceNameFromCRD fetches the service name from metadata.name field of the CRD
-func getServiceNameFromCRD(crd map[string]interface{}) (string, error) {
-	metadata, ok := crd["metadata"].(map[string]interface{})
+func (d *DynamicCRD) getServiceNameFromCRD() (string, error) {
+	metadata, ok := d.OriginalCRD["metadata"].(map[string]interface{})
 	if !ok {
 		// this condition is satisfied if there's no metadata at all in the provided CRD
 		return "", fmt.Errorf("Couldn't find \"metadata\" in the yaml. Need metadata.name to start the service")
