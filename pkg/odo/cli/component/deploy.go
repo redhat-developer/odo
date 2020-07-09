@@ -111,7 +111,7 @@ func (do *DeployOptions) Validate() (err error) {
 	}
 
 	if dockerfileURL != "" {
-		dockerfileBytes, err := util.DownloadFileInMemory(dockerfileURL)
+		dockerfileBytes, err := util.LoadFileIntoMemory(dockerfileURL)
 		if err != nil {
 			s.End(false)
 			return errors.New("unable to download Dockerfile from URL specified in devfile")
@@ -135,22 +135,19 @@ func (do *DeployOptions) Validate() (err error) {
 
 	s = log.Spinner("Validating deployment information")
 	manifestURL := metadata.Manifest
+
 	if manifestURL == "" {
 		s.End(false)
 		return errors.New("Unable to deploy as alpha.deployment-manifest is not defined in devfile.yaml")
 	}
 
-	err = util.ValidateURL(manifestURL)
+	manifestBytes, err := util.LoadFileIntoMemory(manifestURL)
 	if err != nil {
 		s.End(false)
-		return errors.New(fmt.Sprintf("Invalid manifest url: %s, %s", manifestURL, err))
+		return errors.Wrap(err, "unable to download manifest from URL specified in devfile")
 	}
+	do.ManifestSource = manifestBytes
 
-	do.ManifestSource, err = util.DownloadFileInMemory(manifestURL)
-	if err != nil {
-		s.End(false)
-		return errors.New(fmt.Sprintf("Unable to download manifest: %s, %s", manifestURL, err))
-	}
 	s.End(true)
 
 	return

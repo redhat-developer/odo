@@ -102,7 +102,7 @@ var _ = Describe("odo devfile deploy command tests", func() {
 			Expect(err).To(BeNil())
 
 			cmdOutput := helper.CmdShouldFail("odo", "deploy", "--tag", imageTag)
-			Expect(cmdOutput).To(ContainSubstring("Invalid manifest url"))
+			Expect(cmdOutput).To(ContainSubstring("invalid url"))
 		})
 	})
 
@@ -115,7 +115,7 @@ var _ = Describe("odo devfile deploy command tests", func() {
 			Expect(err).To(BeNil())
 
 			cmdOutput := helper.CmdShouldFail("odo", "deploy", "--tag", imageTag)
-			Expect(cmdOutput).To(ContainSubstring("Unable to download manifest"))
+			Expect(cmdOutput).To(ContainSubstring("unable to download url"))
 		})
 	})
 
@@ -125,7 +125,7 @@ var _ = Describe("odo devfile deploy command tests", func() {
 			helper.CmdShouldPass("odo", "url", "create", "--port", "3000")
 			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV2", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 			err := helper.ReplaceDevfileField("devfile.yaml", "alpha.deployment-manifest",
-				"https://raw.githubusercontent.com/groeges/devfile-registry/master/devfiles/nodejs/deploy_deployment.yaml")
+				fmt.Sprintf("file://%s/../../examples/source/manifests/deploy_deployment_clusterip.yaml", currentWorkingDirectory))
 			Expect(err).To(BeNil())
 
 			cmdOutput := helper.CmdShouldPass("odo", "deploy", "--tag", imageTag)
