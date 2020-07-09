@@ -1,6 +1,8 @@
 package docker
 
 import (
+	"io"
+
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/component"
 	"github.com/openshift/odo/pkg/lclient"
@@ -41,4 +43,9 @@ func (d Adapter) DoesComponentExist(cmpName string) bool {
 // Delete attempts to delete the component with the specified labels, returning an error if it fails
 func (d Adapter) Delete(labels map[string]string) error {
 	return d.componentAdapter.Delete(labels)
+}
+
+// Log show logs from component
+func (d Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
+	return d.componentAdapter.Log(follow, debug)
 }

@@ -10,7 +10,9 @@ import (
 	"github.com/fatih/color"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
+	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
@@ -179,10 +181,14 @@ func (cpo *CommonPushOptions) Push() (err error) {
 	isForcePush := false
 
 	stdout := color.Output
+	// Ret from Indexer function
+	var ret util.IndexerRet
 
 	cmpName := cpo.LocalConfigInfo.GetName()
 	appName := cpo.LocalConfigInfo.GetApplication()
 	cpo.sourceType = cpo.LocalConfigInfo.GetSourceType()
+	// force write the content to resolvePath
+	forceWrite := false
 
 	if cpo.componentContext == "" {
 		cpo.componentContext = strings.TrimSuffix(filepath.Dir(cpo.LocalConfigInfo.Filename), ".odo")
@@ -214,17 +220,20 @@ func (cpo *CommonPushOptions) Push() (err error) {
 		}
 
 		// run the indexer and find the modified/added/deleted/renamed files
-		filesChanged, filesDeleted, err := util.RunIndexer(cpo.componentContext, absIgnoreRules)
+		ret, err = util.RunIndexer(cpo.componentContext, absIgnoreRules)
 		spinner.End(true)
 
 		if err != nil {
 			return errors.Wrap(err, "unable to run indexer")
 		}
+		if len(ret.FilesChanged) > 0 || len(ret.FilesDeleted) > 0 {
+			forceWrite = true
+		}
 
 		if cpo.doesComponentExist {
 			// apply the glob rules from the .gitignore/.odo file
 			// and ignore the files on which the rules apply and filter them out
-			filesChangedFiltered, filesDeletedFiltered := filterIgnores(filesChanged, filesDeleted, absIgnoreRules)
+			filesChangedFiltered, filesDeletedFiltered := filterIgnores(ret.FilesChanged, ret.FilesDeleted, absIgnoreRules)
 
 			// Remove the relative file directory from the list of deleted files
 			// in order to make the changes correctly within the OpenShift pod
@@ -301,6 +310,12 @@ func (cpo *CommonPushOptions) Push() (err error) {
 
 		return errors.Wrapf(err, fmt.Sprintf("failed to push component: %v", cmpName))
 	}
+	if forceWrite {
+		err = util.WriteFile(ret.NewFileMap, ret.ResolvedPath)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to write file")
+		}
+	}
 
 	log.Success("Changes successfully pushed to component")
 	return
@@ -329,4 +344,71 @@ func filterIgnores(filesChanged, filesDeleted, absIgnoreRules []string) (filesCh
 		}
 	}
 	return filesChangedFiltered, filesDeletedFiltered
+}
+
+// retrieveKubernetesDefaultNamespace tries to retrieve the current active namespace
+// to set as a default namespace
+func retrieveKubernetesDefaultNamespace() (string, error) {
+	// Get current active namespace
+	client, err := kclient.New()
+	if err != nil {
+		return "", err
+	}
+	return client.Namespace, nil
+}
+
+// retrieveCmdNamespace retrieves the namespace from project or namespace, if neither of those are available
+// we revert to the default namespace available from Kubernetes
+func retrieveCmdNamespace(cmd *cobra.Command) (string, error) {
+	var componentNamespace string
+	var err error
+
+	// For "odo create" check to see if --project has been passed.
+	if cmd.Flags().Changed("project") {
+		componentNamespace, err = cmd.Flags().GetString("project")
+		if err != nil {
+			return "", err
+		}
+	} else if cmd.Flags().Changed("namespace") {
+		// For "odo push" check to see if project has been passed
+		componentNamespace, err = cmd.Flags().GetString("namespace")
+		if err != nil {
+			return "", err
+		}
+	} else {
+		componentNamespace, err = retrieveKubernetesDefaultNamespace()
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return componentNamespace, nil
+}
+
+// gatherName parses the Devfile retrieves an appropriate name in two ways.
+// 1. If metadata.name exists, we use it
+// 2. If metadata.name does NOT exist, we use the folder name where the devfile.yaml is located
+func gatherName(devObj parser.DevfileObj, devfilePath string) (string, error) {
+
+	metadata := devObj.Data.GetMetadata()
+
+	klog.V(4).Infof("metadata.Name: %s", metadata.Name)
+
+	// 1. Use metadata.name if it exists
+	if metadata.Name != "" {
+
+		// Remove any suffix's that end with `-`. This is because many Devfile's use the original v1 Devfile pattern of
+		// having names such as "foo-bar-" in order to prepend container names such as "foo-bar-container1"
+		return strings.TrimSuffix(metadata.Name, "-"), nil
+	}
+
+	// 2. Use the folder name as a last resort if nothing else exists
+	sourcePath, err := util.GetAbsPath(devfilePath)
+	if err != nil {
+		return "", errors.Wrap(err, "unable to get source path")
+	}
+	klog.V(4).Infof("Source path: %s", sourcePath)
+	klog.V(4).Infof("devfile dir: %s", filepath.Dir(sourcePath))
+
+	return filepath.Base(filepath.Dir(sourcePath)), nil
 }

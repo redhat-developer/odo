@@ -6,6 +6,7 @@ import (
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 )
 
+// GetMetadata returns the struct of DevfileMetadata objects parsed from the Devfile
 func (d *Devfile100) GetMetadata() common.DevfileMetadata {
 	// No GenerateName field in V2
 	return common.DevfileMetadata{

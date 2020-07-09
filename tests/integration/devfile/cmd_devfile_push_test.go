@@ -48,6 +48,29 @@ var _ = Describe("odo devfile push command tests", func() {
 		os.Unsetenv("GLOBALODOCONFIG")
 	})
 
+	Context("Pushing devfile without an .odo folder", func() {
+
+		It("should be able to push based on metadata.name in devfile WITH a dash in the name", func() {
+			// This is the name that's contained within `devfile-with-metadataname-foobar.yaml`
+			name := "foobar"
+			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile-with-metadataname-foobar.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+			Expect(output).To(ContainSubstring("Executing devfile commands for component " + name))
+		})
+
+		It("should be able to push based on name passed", func() {
+			name := "springboot"
+			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "springboot", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace, name)
+			Expect(output).To(ContainSubstring("Executing devfile commands for component " + name))
+		})
+
+	})
+
 	Context("Verify devfile push works", func() {
 
 		It("should have no errors when no endpoints within the devfile, should create a service when devfile has endpoints", func() {
@@ -231,7 +254,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 		// v1 devfile test
 		It("should execute devinit command if present in v1 devfiles", func() {
-			helper.CmdShouldPass("odo", "create", "springBoot", "--project", namespace, cmpName)
+			helper.CmdShouldPass("odo", "create", "java-springboot", "--project", namespace, cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
@@ -246,7 +269,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 		// v1 devfile test
 		It("should execute devinit and devrun commands if present in v1 devfiles", func() {
-			helper.CmdShouldPass("odo", "create", "springBoot", "--project", namespace, cmpName)
+			helper.CmdShouldPass("odo", "create", "java-springboot", "--project", namespace, cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init-without-build.yaml"), filepath.Join(context, "devfile.yaml"))
@@ -260,7 +283,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 		// v1 devfile test
 		It("should only execute devinit command once if component is already created in v1 devfiles", func() {
-			helper.CmdShouldPass("odo", "create", "springBoot", "--project", namespace, cmpName)
+			helper.CmdShouldPass("odo", "create", "java-springboot", "--project", namespace, cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
