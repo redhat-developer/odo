@@ -1748,9 +1748,9 @@ func (c *Client) WaitForBuildToFinish(buildName string, stdout io.Writer) error 
 	buildTimeout := preference.DefaultBuildTimeout * time.Second
 	cfg, configReadErr := preference.New()
 	if configReadErr != nil {
-		klog.V(4).Info(errors.Wrap(configReadErr, "unable to read preference file"))
+		klog.V(4).Info(errors.Wrap(configReadErr, "unable to read config file"))
 	} else {
-		buildTimeout = time.Duration(cfg.GetBuildTimeout()) * time.Second
+		buildTimeout = time.Duration(cfg.GetTimeout()) * time.Second
 	}
 	// start a watch on the build resources and look for the given build name
 	w, err := c.buildClient.Builds(c.Namespace).Watch(metav1.ListOptions{
@@ -1901,7 +1901,7 @@ func (c *Client) WaitAndGetPod(selector string, desiredPhase corev1.PodPhase, wa
 	if configReadErr != nil {
 		klog.V(4).Info(errors.Wrap(configReadErr, "unable to read config file"))
 	} else {
-		pushTimeout = time.Duration(cfg.GetPushTimeout()) * time.Second
+		pushTimeout = time.Duration(cfg.GetTimeout()) * time.Second
 	}
 
 	klog.V(4).Infof("Waiting for %s pod", selector)
@@ -2032,7 +2032,7 @@ func (c *Client) FollowBuildLog(buildName string, stdout io.Writer) error {
 	if configReadErr != nil {
 		klog.V(4).Info(errors.Wrap(configReadErr, "unable to read config file"))
 	} else {
-		buildTimeout = time.Duration(cfg.GetBuildTimeout()) * time.Second
+		buildTimeout = time.Duration(cfg.GetTimeout()) * time.Second
 	}
 
 	rd, err := c.buildClient.RESTClient().Get().
