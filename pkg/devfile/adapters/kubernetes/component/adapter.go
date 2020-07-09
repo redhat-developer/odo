@@ -449,17 +449,15 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, s
 
 // Delete deletes the component
 func (a Adapter) Delete(labels map[string]string) error {
-	spinner := log.Spinner(fmt.Sprintf("Deleting devfile component %s", a.ComponentName))
+	spinner := log.Spinnerf("Deleting devfile component %s", a.ComponentName)
 	defer spinner.End(false)
-
-	errorMsg := fmt.Sprintf("Component %s does not exist", a.ComponentName)
 
 	componentExists, err := utils.ComponentExists(a.Client, a.ComponentName)
 	if kerrors.IsForbidden(err) {
 		klog.V(4).Infof("Resource for %s forbidden", a.ComponentName)
 		// log the error if it failed to determine if the component exists due to insufficient RBACs
 		spinner.End(false)
-		log.Warningf("%s: %v", errorMsg, err)
+		log.Warningf("%v", err)
 		return nil
 	} else if err != nil {
 		return errors.Wrapf(err, "unable to determine if component %s exists", a.ComponentName)
@@ -467,7 +465,7 @@ func (a Adapter) Delete(labels map[string]string) error {
 
 	if !componentExists {
 		spinner.End(false)
-		log.Warningf(errorMsg)
+		log.Warningf("Component %s does not exist", a.ComponentName)
 		return nil
 	}
 

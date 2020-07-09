@@ -175,7 +175,7 @@ func (a Adapter) Delete(labels map[string]string) error {
 		return errors.New("unable to delete component without a component label")
 	}
 
-	spinner := log.Spinner(fmt.Sprintf("Deleting devfile component %s", componentName))
+	spinner := log.Spinnerf("Deleting devfile component %s", componentName)
 	defer spinner.End(false)
 
 	containers, err := a.Client.GetContainerList()

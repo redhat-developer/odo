@@ -131,7 +131,7 @@ var _ = Describe("odo docker devfile delete command tests", func() {
 
 	Context("when no component exists", func() {
 
-		It("should print the information and not throw an error", func() {
+		It("should not throw an error", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
