@@ -430,6 +430,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 					componentNamespace = ui.EnterDevfileComponentNamespace(defaultComponentNamespace)
 				}
 			}
+
 		} else {
 			// Direct mode (User enters the full command)
 
@@ -478,12 +479,15 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 				}
 			}
 
-			// Component namespace: Get from --project flag, by default it is the current active namespace
-			if cmd.Flags().Changed("project") && !pushtarget.IsPushTargetDocker() {
-				componentNamespace, err = cmd.Flags().GetString("project")
+			// Component namespace: Get from --project flag or --namespace flag, by default it is the current active namespace
+			if co.devfileMetadata.componentNamespace == "" && !pushtarget.IsPushTargetDocker() {
+
+				// Check to see if we've passed in "project", if not, default to the standard Kubernetes namespace
+				componentNamespace, err = retrieveCmdNamespace(cmd)
 				if err != nil {
 					return err
 				}
+
 			} else {
 				componentNamespace = defaultComponentNamespace
 			}
@@ -836,12 +840,15 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 	if err != nil {
 		return err
 	}
+
+	// Retrieve projects
 	projects := devObj.Data.GetProjects()
 	nOfProjects := len(projects)
 	if nOfProjects == 0 {
 		return errors.Errorf("No project found in devfile component.")
 	}
 
+	// Determine what project to be used
 	if nOfProjects == 1 && projectPassed == defaultProjectName {
 		project = projects[0]
 	} else if nOfProjects > 1 && projectPassed == defaultProjectName {
@@ -861,6 +868,7 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 		}
 	}
 
+	// Retrieve the working directory in order to clone correctly
 	path, err := os.Getwd()
 	if err != nil {
 		return errors.Wrapf(err, "Could not get the current working directory.")
@@ -869,6 +877,8 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 	if project.ClonePath != "" {
 		clonePath := project.ClonePath
 		if runtime.GOOS == "windows" {
+			//TODO: This is a bad implementation.. we should be using FromSlash
+			// https://golang.org/pkg/path/filepath/#FromSlash
 			clonePath = strings.Replace(clonePath, "\\", "/", -1)
 		}
 
@@ -876,11 +886,12 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 		if _, err := os.Stat(path); os.IsNotExist(err) {
 			err = os.MkdirAll(path, os.FileMode(0755))
 			if err != nil {
-				return errors.Wrap(err, "Failed creating folder with path: "+path)
+				return errors.Wrap(err, "failed creating folder with path: "+path)
 			}
 		}
 	}
 
+	// We will check to see if the project has a valid directory
 	err = util.IsValidProjectDir(path, DevfilePath)
 	if err != nil {
 		return err
@@ -895,7 +906,7 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 			}
 			sparseDir = project.Git.SparseCheckoutDir
 		} else {
-			return errors.Errorf("Project type git with non github url not supported")
+			return errors.Errorf("project type git with non github url not supported")
 		}
 	} else if project.Github != nil {
 		url, err = util.GetGitHubZipURL(project.Github.Location)

@@ -2,10 +2,12 @@ package component
 
 import (
 	"fmt"
+	"io"
 	"reflect"
 	"strings"
 
 	"github.com/openshift/odo/pkg/exec"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -484,4 +486,38 @@ func (a Adapter) Delete(labels map[string]string) error {
 	}
 
 	return a.Client.DeleteDeployment(labels)
+}
+
+// Log returns log from component
+func (a Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
+
+	pod, err := a.Client.GetPodUsingComponentName(a.ComponentName)
+	if err != nil {
+		return nil, errors.Errorf("the component %s doesn't exist on the cluster", a.ComponentName)
+	}
+
+	if pod.Status.Phase != corev1.PodRunning {
+		return nil, errors.Errorf("unable to show logs, component is not in running state. current status=%v", pod.Status.Phase)
+	}
+
+	var command versionsCommon.DevfileCommand
+	if debug {
+		command, err = common.GetDebugCommand(a.Devfile.Data, "")
+		if err != nil {
+			return nil, err
+		}
+		if reflect.DeepEqual(versionsCommon.DevfileCommand{}, command) {
+			return nil, errors.Errorf("no debug command found in devfile, please run \"odo log\" for run command logs")
+		}
+
+	} else {
+		command, err = common.GetRunCommand(a.Devfile.Data, "")
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	containerName := command.Exec.Component
+
+	return a.Client.GetPodLogs(pod.Name, containerName, follow)
 }
