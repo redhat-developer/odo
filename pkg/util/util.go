@@ -59,6 +59,18 @@ type ResourceRequirementInfo struct {
 	MaxQty       resource.Quantity
 }
 
+// HTTPRequestParams holds parameters of forming http request
+type HTTPRequestParams struct {
+	URL   string
+	Token string
+}
+
+// DownloadParams holds parameters of forming file download request
+type DownloadParams struct {
+	Request  HTTPRequestParams
+	Filepath string
+}
+
 // ConvertLabelsToSelector converts the given labels to selector
 func ConvertLabelsToSelector(labels map[string]string) string {
 	var selector string
@@ -690,14 +702,14 @@ func GetRemoteFilesMarkedForDeletion(delSrcRelPaths []string, remoteFolder strin
 }
 
 // HTTPGetRequest gets resource contents given URL and token (if applicable)
-func HTTPGetRequest(url string, token string) ([]byte, error) {
+func HTTPGetRequest(request HTTPRequestParams) ([]byte, error) {
 	// Build http request
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", request.URL, nil)
 	if err != nil {
 		return nil, err
 	}
-	if token != "" {
-		bearer := "Bearer " + token
+	if request.Token != "" {
+		bearer := "Bearer " + request.Token
 		req.Header.Add("Authorization", bearer)
 	}
 
@@ -716,7 +728,7 @@ func HTTPGetRequest(url string, token string) ([]byte, error) {
 
 	// We have a non 1xx / 2xx status, return an error
 	if (resp.StatusCode - 300) > 0 {
-		return nil, errors.Errorf("fail to retrive %s: %s", url, http.StatusText(resp.StatusCode))
+		return nil, errors.Errorf("fail to retrive %s: %s", request.URL, http.StatusText(resp.StatusCode))
 	}
 
 	// Process http response
@@ -856,7 +868,13 @@ func GetAndExtractZip(zipURL string, destination string, pathToUnzip string) err
 		time = strings.Replace(time, ":", "-", -1) // ":" is illegal char in windows
 		pathToZip = path.Join(os.TempDir(), "_"+time+".zip")
 
-		err := DownloadFile(zipURL, "", pathToZip)
+		params := DownloadParams{
+			Request: HTTPRequestParams{
+				URL: zipURL,
+			},
+			Filepath: pathToZip,
+		}
+		err := DownloadFile(params)
 		if err != nil {
 			return err
 		}
@@ -984,15 +1002,15 @@ func Unzip(src, dest, pathToUnzip string) ([]string, error) {
 }
 
 // DownloadFile downloads the file to the filepath given URL and token (if applicable)
-func DownloadFile(url string, token string, filepath string) error {
+func DownloadFile(params DownloadParams) error {
 	// Get the data
-	data, err := HTTPGetRequest(url, token)
+	data, err := HTTPGetRequest(params.Request)
 	if err != nil {
 		return err
 	}
 
 	// Create the file
-	out, err := os.Create(filepath)
+	out, err := os.Create(params.Filepath)
 	if err != nil {
 		return err
 	}

@@ -935,7 +935,14 @@ func (co *CreateOptions) Run() (err error) {
 			if co.devfileMetadata.devfilePath.value != "" {
 				if co.devfileMetadata.devfilePath.protocol == "http(s)" {
 					// User specify devfile path is http(s) URL
-					err = util.DownloadFile(co.devfileMetadata.devfilePath.value, co.devfileMetadata.token, DevfilePath)
+					params := util.DownloadParams{
+						Request: util.HTTPRequestParams{
+							URL:   co.devfileMetadata.devfilePath.value,
+							Token: co.devfileMetadata.token,
+						},
+						Filepath: DevfilePath,
+					}
+					err = util.DownloadFile(params)
 					if err != nil {
 						return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfilePath.value)
 					}
@@ -961,7 +968,14 @@ func (co *CreateOptions) Run() (err error) {
 						return errors.Wrap(err, "unable to get secure registry credential from keyring")
 					}
 				}
-				err := util.DownloadFile(co.devfileMetadata.devfileRegistry.URL+co.devfileMetadata.devfileLink, token, DevfilePath)
+				params := util.DownloadParams{
+					Request: util.HTTPRequestParams{
+						URL:   co.devfileMetadata.devfileRegistry.URL + co.devfileMetadata.devfileLink,
+						Token: token,
+					},
+					Filepath: DevfilePath,
+				}
+				err := util.DownloadFile(params)
 				if err != nil {
 					return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfileRegistry.URL+co.devfileMetadata.devfileLink)
 				}

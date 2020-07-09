@@ -1246,7 +1246,10 @@ func TestHTTPGetRequest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := HTTPGetRequest(tt.url, "")
+			request := HTTPRequestParams{
+				URL: tt.url,
+			}
+			got, err := HTTPGetRequest(request)
 
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Got: %v, want: %v", got, tt.want)
@@ -1361,7 +1364,13 @@ func TestDownloadFile(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			gotErr := false
-			err := DownloadFile(tt.url, "", tt.filepath)
+			params := DownloadParams{
+				Request: HTTPRequestParams{
+					URL: tt.url,
+				},
+				Filepath: tt.filepath,
+			}
+			err := DownloadFile(params)
 			if err != nil {
 				gotErr = true
 			}

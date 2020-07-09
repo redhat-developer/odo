@@ -112,7 +112,11 @@ func getRegistryDevfiles(registry Registry) ([]DevfileComponentType, error) {
 			return nil, errors.Wrap(err, "Unable to get secure registry credential from keyring")
 		}
 	}
-	jsonBytes, err := util.HTTPGetRequest(indexLink, token)
+	request := util.HTTPRequestParams{
+		URL:   indexLink,
+		Token: token,
+	}
+	jsonBytes, err := util.HTTPGetRequest(request)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Unable to download the devfile index.json from %s", indexLink)
 	}
