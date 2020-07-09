@@ -13,8 +13,8 @@ export ODO_RPM_VERSION=${ODO_VERSION//-}
 
 # Golang version variables, if you are bumping this, please contact redhat maintainers to ensure that internal
 # build systems can handle these versions
-export GOLANG_VERSION=${GOLANG_VERSION:-1.12}
-export GOLANG_VERSION_NODOT=${GOLANG_VERSION_NODOT:-112}
+export GOLANG_VERSION=${GOLANG_VERSION:-1.13}
+export GOLANG_VERSION_NODOT=${GOLANG_VERSION_NODOT:-113}
 
 # Print env for verifcation
 echo "Printing envs for verification"

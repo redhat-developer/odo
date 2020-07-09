@@ -32,7 +32,7 @@ var describeExample = ktemplates.Examples(`  # Describe a URL
 %[1]s myurl
 `)
 
-// URLListOptions encapsulates the options for the odo url list command
+// URLDescribeOptions encapsulates the options for the odo url describe command
 type URLDescribeOptions struct {
 	localConfigInfo  *config.LocalConfigInfo
 	componentContext string
@@ -40,7 +40,7 @@ type URLDescribeOptions struct {
 	*genericclioptions.Context
 }
 
-// NewURLDescribeOptions creates a new URLCreateOptions instance
+// NewURLDescribeOptions creates a new NewURLDescribeOptions instance
 func NewURLDescribeOptions() *URLDescribeOptions {
 	return &URLDescribeOptions{&config.LocalConfigInfo{}, "", "", &genericclioptions.Context{}}
 }
@@ -66,7 +66,7 @@ func (o *URLDescribeOptions) Validate() (err error) {
 	return util.CheckOutputFlag(o.OutputFlag)
 }
 
-// Run contains the logic for the odo url list command
+// Run contains the logic for the odo url describe command
 func (o *URLDescribeOptions) Run() (err error) {
 	if experimental.IsExperimentalModeEnabled() {
 		if pushtarget.IsPushTargetDocker() {

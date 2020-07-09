@@ -4,7 +4,7 @@ import (
 	"sync"
 )
 
-// A task to execute in a go-routine
+// ConcurrentTask is a task to execute in a go-routine
 type ConcurrentTask struct {
 	ToRun func(errChannel chan error)
 }
@@ -15,7 +15,7 @@ func (ct ConcurrentTask) run(errChannel chan error, wg *sync.WaitGroup) {
 	ct.ToRun(errChannel)
 }
 
-// Records tasks to be run concurrently with go-routines
+// ConcurrentTasks records tasks to be run concurrently with go-routines
 type ConcurrentTasks struct {
 	tasks []ConcurrentTask
 }
