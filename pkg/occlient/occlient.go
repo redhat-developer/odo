@@ -16,7 +16,6 @@ import (
 
 	"github.com/olekukonko/tablewriter"
 
-	"github.com/fatih/color"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
@@ -2071,37 +2070,8 @@ func (c *Client) DisplayDeploymentConfigLog(deploymentConfigName string, followL
 	if rd == nil {
 		return errors.New("unable to retrieve DeploymentConfig from OpenShift, does your component exist?")
 	}
-	defer rd.Close()
 
-	// Copy to stdout (in yellow)
-	color.Set(color.FgYellow)
-	defer color.Unset()
-
-	// If we are going to followLog, we'll be copying it to stdout
-	// else, we copy it to a buffer
-	if followLog {
-
-		if _, err = io.Copy(stdout, rd); err != nil {
-			return errors.Wrapf(err, "error followLoging logs for %s", deploymentConfigName)
-		}
-
-	} else {
-
-		// Copy to buffer (we aren't going to be followLoging the logs..)
-		buf := new(bytes.Buffer)
-		_, err = io.Copy(buf, rd)
-		if err != nil {
-			return errors.Wrapf(err, "unable to copy followLog to buffer")
-		}
-
-		// Copy to stdout
-		if _, err = io.Copy(stdout, buf); err != nil {
-			return errors.Wrapf(err, "error copying logs to stdout")
-		}
-
-	}
-
-	return nil
+	return util.DisplayLog(followLog, rd, deploymentConfigName)
 }
 
 // Delete takes labels as a input and based on it, deletes respective resource

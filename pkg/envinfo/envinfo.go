@@ -84,6 +84,8 @@ type EnvSpecificInfo struct {
 	envinfoFileExists bool
 }
 
+// getEnvInfoFile first checks for the ENVINFO variable
+// then we check for directory and eventually the file (which we return as a string)
 func getEnvInfoFile(envDir string) (string, error) {
 	if env, ok := os.LookupEnv(envInfoEnvName); ok {
 		return env, nil
@@ -105,17 +107,21 @@ func New() (*EnvSpecificInfo, error) {
 	return NewEnvSpecificInfo("")
 }
 
-// NewEnvSpecificInfo gets the EnvSpecificInfo from envinfo file and creates the envinfo file in case it's
-// not present then it
+// NewEnvSpecificInfo retrieves the environment file. If it does not exist, it returns *blank*
 func NewEnvSpecificInfo(envDir string) (*EnvSpecificInfo, error) {
 	return newEnvSpecificInfo(envDir, filesystem.DefaultFs{})
 }
 
+// newEnvSpecificInfo retrieves the env.yaml file, if it does not exist, we return a *BLANK* environment file.
 func newEnvSpecificInfo(envDir string, fs filesystem.Filesystem) (*EnvSpecificInfo, error) {
+
+	// Retrieve the environment file
 	envInfoFile, err := getEnvInfoFile(envDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get odo envinfo file")
 	}
+
+	// Organize that information into a struct
 	e := EnvSpecificInfo{
 		EnvInfo:           NewEnvInfo(),
 		Filename:          envInfoFile,
@@ -123,16 +129,18 @@ func newEnvSpecificInfo(envDir string, fs filesystem.Filesystem) (*EnvSpecificIn
 		fs:                fs,
 	}
 
-	// if the env.yaml file doesn't exist then we dont worry about it and return
+	// If the env.yaml file does not exist then we simply return and set e.envinfoFileExists as false
 	if _, err = e.fs.Stat(envInfoFile); os.IsNotExist(err) {
 		e.envinfoFileExists = false
 		return &e, nil
 	}
 
+	// Retrieve the environment file
 	err = getFromFile(&e.EnvInfo, e.Filename)
 	if err != nil {
 		return nil, err
 	}
+
 	return &e, nil
 }
 
@@ -157,7 +165,8 @@ func newProxyEnvInfo() proxyEnvInfo {
 	return proxyEnvInfo{}
 }
 
-// SetConfiguration sets the environment specific info like cluster host etc.
+// SetConfiguration sets the environment specific info such as the Cluster Host, Name, etc.
+// we then **write** this data to the environment yaml file (see envInfoFileName const)
 func (esi *EnvSpecificInfo) SetConfiguration(parameter string, value interface{}) (err error) {
 	if parameter, ok := asLocallySupportedParameter(parameter); ok {
 		switch parameter {

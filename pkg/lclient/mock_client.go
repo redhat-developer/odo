@@ -6,6 +6,9 @@ package lclient
 
 import (
 	context "context"
+	io "io"
+	reflect "reflect"
+
 	types "github.com/docker/docker/api/types"
 	container "github.com/docker/docker/api/types/container"
 	filters "github.com/docker/docker/api/types/filters"
@@ -13,8 +16,6 @@ import (
 	registry "github.com/docker/docker/api/types/registry"
 	volume "github.com/docker/docker/api/types/volume"
 	gomock "github.com/golang/mock/gomock"
-	io "io"
-	reflect "reflect"
 )
 
 // MockDockerClient is a mock of DockerClient interface
@@ -288,4 +289,19 @@ func (m *MockDockerClient) CopyToContainer(ctx context.Context, container, path 
 func (mr *MockDockerClientMockRecorder) CopyToContainer(ctx, container, path, content, options interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CopyToContainer", reflect.TypeOf((*MockDockerClient)(nil).CopyToContainer), ctx, container, path, content, options)
+}
+
+// ContainerLogs mocks base method
+func (m *MockDockerClient) ContainerLogs(ctx context.Context, container string, options types.ContainerLogsOptions) (io.ReadCloser, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ContainerLogs", ctx, container, options)
+	ret0, _ := ret[0].(io.ReadCloser)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ContainerLogs indicates an expected call of ContainerLogs
+func (mr *MockDockerClientMockRecorder) ContainerLogs(ctx, container, options interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ContainerLogs", reflect.TypeOf((*MockDockerClient)(nil).ContainerLogs), ctx, container, options)
 }
