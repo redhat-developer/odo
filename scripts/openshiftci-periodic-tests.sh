@@ -21,6 +21,10 @@ chmod 640 $TMP_DIR/kubeconfig
 export KUBECONFIG=$TMP_DIR/kubeconfig
 oc whoami
 
+oc login -u developer -p developer
+
+oc whoami
+
 # Integration tests
 # make test-integration
 # make test-integration-devfile
