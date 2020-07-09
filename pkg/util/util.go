@@ -810,12 +810,12 @@ func GetGitHubZipURL(repoURL string, branch string, startPoint string) (string, 
 	}
 
 	var ref string
-	if branch != "" && startPoint == "" {
-		ref = branch
-	} else if branch == "" && startPoint != "" {
-		ref = startPoint
-	} else if branch != "" && startPoint != "" {
+	if branch != "" && startPoint != "" {
 		return url, errors.Errorf("Branch %s and StartPoint %s specified as project reference, please only specify one", branch, startPoint)
+	} else if branch != "" {
+		ref = branch
+	} else if startPoint != "" {
+		ref = startPoint
 	} else {
 		// Default to master if branch and startpoint are not set
 		ref = defaultGithubRef

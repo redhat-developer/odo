@@ -1672,6 +1672,7 @@ func TestGetGitHubZipURL(t *testing.T) {
 		})
 	}
 }
+*/
 
 func TestValidateURL(t *testing.T) {
 	tests := []struct {
