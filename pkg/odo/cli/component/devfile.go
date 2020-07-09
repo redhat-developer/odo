@@ -181,14 +181,8 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 	return nil
 }
 
-// RunTestCommand runs the specific command in devfile
+// RunTestCommand runs the specific test command in devfile
 func (to *TestOptions) RunTestCommand() error {
-	// Parse devfile
-	devObj, err := parser.ParseAndValidate(to.devfilePath)
-	if err != nil {
-		return err
-	}
-
 	componentName, err := getComponentName(to.componentContext)
 	if err != nil {
 		return err
@@ -204,7 +198,7 @@ func (to *TestOptions) RunTestCommand() error {
 		platformContext = kc
 	}
 
-	devfileHandler, err := adapters.NewComponentAdapter(componentName, to.componentContext, devObj, platformContext)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, to.componentContext, to.devObj, platformContext)
 	if err != nil {
 		return err
 	}

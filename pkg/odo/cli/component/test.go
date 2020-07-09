@@ -24,8 +24,8 @@ type TestOptions struct {
 	commandName      string
 	componentContext string
 	devfilePath      string
-	// testCommand      common.DevfileCommand
-	show bool
+	show             bool
+	devObj           devfileParser.DevfileObj
 	*genericclioptions.Context
 }
 
@@ -60,6 +60,7 @@ func (to *TestOptions) Validate() (err error) {
 	if reflect.DeepEqual(devObj.Ctx.GetApiVersion(), "1.0.0") {
 		return fmt.Errorf("'odo test' is not supported in devfile 1.0.0")
 	}
+	to.devObj = devObj
 	return
 }
 
@@ -68,7 +69,7 @@ func (to *TestOptions) Run() (err error) {
 	return to.RunTestCommand()
 }
 
-// NewCmdTest implements the odo tets command
+// NewCmdTest implements the odo test command
 func NewCmdTest(name, fullName string) *cobra.Command {
 	to := NewTestOptions()
 	testCmd := &cobra.Command{
@@ -85,7 +86,7 @@ func NewCmdTest(name, fullName string) *cobra.Command {
 	// Add a defined annotation in order to appear in the help menu
 	testCmd.Annotations = map[string]string{"command": "main"}
 	testCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
-	testCmd.Flags().StringVar(&to.commandName, "test-command", "", "command name to run")
+	testCmd.Flags().StringVar(&to.commandName, "test-command", "", "Devfile Test Command to execute")
 	testCmd.Flags().BoolVar(&to.show, "show-log", false, "If enabled, logs will be shown when running test command")
 	//Adding `--context` flag
 	genericclioptions.AddContextFlag(testCmd, &to.componentContext)

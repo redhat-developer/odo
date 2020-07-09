@@ -59,7 +59,7 @@ var _ = Describe("odo docker devfile test command tests", func() {
 		})
 
 		It("should show error for devfile v1", func() {
-			helper.CmdShouldPass("odo", "create", "springBoot", "--context", context, cmpName)
+			helper.CmdShouldPass("odo", "create", "java-springboot", "--context", context, cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
@@ -78,6 +78,47 @@ var _ = Describe("odo docker devfile test command tests", func() {
 			output := helper.CmdShouldFail("odo", "test", "--context", context)
 
 			Expect(output).To(ContainSubstring("the command group of kind \"test\" is not found in the devfile"))
+		})
+
+		It("should show error if specify non-exist command", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-testgroup.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CmdShouldPass("odo", "push", "--context", context)
+			output := helper.CmdShouldFail("odo", "test", "--test-command", "invalidcmd", "--context", context)
+
+			Expect(output).To(ContainSubstring("not found in the devfile"))
+		})
+
+		It("should show error if command from another group", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-testgroup.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CmdShouldPass("odo", "push", "--context", context)
+			output := helper.CmdShouldFail("odo", "test", "--test-command", "devrun", "--context", context)
+
+			Expect(output).To(ContainSubstring("command devrun is of group run in devfile.yaml"))
+		})
+
+		It("should show error if devfile has multiple default test command", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-testgroup.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.ReplaceString("devfile.yaml", "isDefault: true", "")
+			helper.CmdShouldPass("odo", "push", "--context", context)
+			output := helper.CmdShouldFail("odo", "test", "--context", context)
+			Expect(output).To(ContainSubstring("there should be exactly one default command for command group test, currently there is no default command"))
+		})
+
+		It("should show error if devfile has multiple default test command", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-defaults.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CmdShouldPass("odo", "push", "--build-command", "firstbuild", "--run-command", "secondrun", "--context", context)
+			output := helper.CmdShouldFail("odo", "test", "--context", context)
+			Expect(output).To(ContainSubstring("there should be exactly one default command for command group test, currently there is more than one default command"))
 		})
 	})
 
@@ -106,6 +147,35 @@ var _ = Describe("odo docker devfile test command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-testgroup.yaml"), filepath.Join(context, "devfile.yaml"))
 			helper.CmdShouldPass("odo", "push", "--context", context)
 
+			output := helper.CmdShouldPass("odo", "test", "--test-command", "test2", "--context", context)
+			helper.MatchAllInOutput(output, []string{"Executing test2 command", "mkdir test2"})
+
+			containers := dockerClient.GetRunningContainersByCompAlias(cmpName, "runtime")
+			Expect(len(containers)).To(Equal(1))
+			output = dockerClient.ExecContainer(containers[0], "ls -la "+sourcePath)
+			Expect(output).To(ContainSubstring("test2"))
+		})
+
+		It("should run test command successfully with test-command specified if devfile has no default test command", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-testgroup.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.ReplaceString("devfile.yaml", "isDefault: true", "")
+			helper.CmdShouldPass("odo", "push", "--context", context)
+			output := helper.CmdShouldPass("odo", "test", "--test-command", "test2", "--context", context)
+			helper.MatchAllInOutput(output, []string{"Executing test2 command", "mkdir test2"})
+
+			containers := dockerClient.GetRunningContainersByCompAlias(cmpName, "runtime")
+			Expect(len(containers)).To(Equal(1))
+			output = dockerClient.ExecContainer(containers[0], "ls -la "+sourcePath)
+			Expect(output).To(ContainSubstring("test2"))
+		})
+
+		It("should run test command successfully with test-command specified if devfile has multiple default test command", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-defaults.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CmdShouldPass("odo", "push", "--build-command", "firstbuild", "--run-command", "secondrun", "--context", context)
 			output := helper.CmdShouldPass("odo", "test", "--test-command", "test2", "--context", context)
 			helper.MatchAllInOutput(output, []string{"Executing test2 command", "mkdir test2"})
 

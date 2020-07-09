@@ -59,7 +59,7 @@ func getCommandFromDevfile(data data.DevfileData, groupType common.DevfileComman
 
 	msg := fmt.Sprintf("the command group of kind \"%v\" is not found in the devfile", groupType)
 	// if run command is not found in devfile then it is an error
-	if groupType == common.RunCommandGroupType {
+	if groupType == common.RunCommandGroupType || groupType == common.TestCommandGroupType {
 		err = fmt.Errorf(msg)
 	} else {
 		klog.V(4).Info(msg)
@@ -297,9 +297,9 @@ func ValidateAndGetTestDevfileCommands(data data.DevfileData, devfileTestCmd str
 	}
 
 	if !isTestCommandValid {
-		commandErrors := ""
+		var commandErrors string
 		if testCmdErr != nil {
-			commandErrors += testCmdErr.Error()
+			commandErrors = testCmdErr.Error()
 		}
 		return common.DevfileCommand{}, fmt.Errorf(commandErrors)
 	}

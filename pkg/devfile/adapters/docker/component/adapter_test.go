@@ -121,6 +121,153 @@ func TestPush(t *testing.T) {
 
 }
 
+func TestTest(t *testing.T) {
+
+	testComponentName := "test"
+	fakeClient := lclient.FakeNew()
+	fakeErrorClient := lclient.FakeErrorNew()
+
+	command := "ls -la"
+	component := "alias1"
+	workDir := "/root"
+	id := "testCmd"
+
+	// create a temp dir for the file indexer
+	directory, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Errorf("TestPush error: error creating temporary directory for the indexer: %v", err)
+	}
+
+	validComponents := []versionsCommon.DevfileComponent{
+		{
+			Container: &versionsCommon.Container{
+				Name: component,
+			},
+		},
+	}
+
+	tests := []struct {
+		name          string
+		components    []versionsCommon.DevfileComponent
+		componentType versionsCommon.DevfileComponentType
+		client        *lclient.Client
+		execCommands  []versionsCommon.Exec
+		wantErr       bool
+	}{
+		{
+			name:         "Case 1: Invalid devfile",
+			components:   validComponents,
+			execCommands: []versionsCommon.Exec{},
+			client:       fakeClient,
+			wantErr:      true,
+		},
+		{
+			name:       "Case 2: Valid devfile",
+			components: validComponents,
+			client:     fakeClient,
+			execCommands: []versionsCommon.Exec{
+				{
+					Id:          id,
+					CommandLine: command,
+					Component:   component,
+					Group: &versionsCommon.Group{
+						Kind: versionsCommon.TestCommandGroupType,
+					},
+					WorkingDir: workDir,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:       "Case 3: Valid devfile, docker client error",
+			components: validComponents,
+			client:     fakeErrorClient,
+			wantErr:    true,
+		},
+		{
+			name:       "Case 4: No valid containers",
+			components: []versionsCommon.DevfileComponent{},
+			execCommands: []versionsCommon.Exec{
+				{
+					Id:          id,
+					CommandLine: command,
+					Component:   component,
+					Group: &versionsCommon.Group{
+						Kind: versionsCommon.TestCommandGroupType,
+					},
+					WorkingDir: workDir,
+				},
+			},
+			client:  fakeClient,
+			wantErr: true,
+		},
+		{
+			name:       "Case 5: Invalid command",
+			components: []versionsCommon.DevfileComponent{},
+			execCommands: []versionsCommon.Exec{
+				{
+					Id:          id,
+					CommandLine: "",
+					Component:   component,
+					Group: &versionsCommon.Group{
+						Kind: versionsCommon.TestCommandGroupType,
+					},
+					WorkingDir: workDir,
+				},
+			},
+			client:  fakeClient,
+			wantErr: true,
+		},
+		{
+			name:       "Case 5: No valid command group",
+			components: []versionsCommon.DevfileComponent{},
+			execCommands: []versionsCommon.Exec{
+				{
+					Id:          id,
+					CommandLine: command,
+					Component:   component,
+					Group: &versionsCommon.Group{
+						Kind: versionsCommon.RunCommandGroupType,
+					},
+					WorkingDir: workDir,
+				},
+			},
+			client:  fakeClient,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			devObj := devfileParser.DevfileObj{
+				Data: testingutil.TestDevfileData{
+					Components:   tt.components,
+					ExecCommands: tt.execCommands,
+				},
+			}
+
+			adapterCtx := adaptersCommon.AdapterContext{
+				ComponentName: testComponentName,
+				Devfile:       devObj,
+			}
+
+			componentAdapter := New(adapterCtx, *tt.client)
+			err := componentAdapter.Test(id, false)
+
+			// Checks for unexpected error cases
+			if !tt.wantErr == (err != nil) {
+				t.Errorf("component adapter create unexpected error %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+
+	// Remove the temp dir created for the file indexer
+	err = os.RemoveAll(directory)
+	if err != nil {
+		t.Errorf("TestTest error: error deleting the temp dir %s", directory)
+	}
+
+}
+
 func TestDoesComponentExist(t *testing.T) {
 	fakeClient := lclient.FakeNew()
 	fakeErrorClient := lclient.FakeErrorNew()

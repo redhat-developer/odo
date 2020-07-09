@@ -163,25 +163,33 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 }
 
 // Test runs the devfile test command
-func (a Adapter) Test(testcmd string, show bool) (err error) {
-	componentExists := utils.ComponentExists(a.Client, a.ComponentName)
-	if !componentExists {
-		return fmt.Errorf("component does not exist, a valid component is required to run 'odo test'")
-	}
-	pod, err := a.waitAndGetComponentPod(true)
+func (a Adapter) Test(testCmd string, show bool) (err error) {
+	// componentExists := utils.ComponentExists(a.Client, a.ComponentName)
+	// if !componentExists {
+	// 	return fmt.Errorf("component does not exist, a valid component is required to run 'odo test'")
+	// }
+	// pod, err := a.waitAndGetComponentPod(true)
+	// if err != nil {
+	// 	return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
+	// }
+
+	pod, err := a.Client.GetPodUsingComponentName(a.ComponentName)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
+	}
+	if pod.Status.Phase != corev1.PodRunning {
+		return fmt.Errorf("pod for component %s is not running", a.ComponentName)
 	}
 
 	log.Infof("\nExecuting devfile test command for component %s", a.ComponentName)
 
-	testCommand, err := common.ValidateAndGetTestDevfileCommands(a.Devfile.Data, testcmd)
+	testCommand, err := common.ValidateAndGetTestDevfileCommands(a.Devfile.Data, testCmd)
 	if err != nil {
 		return errors.Wrap(err, "failed to validate devfile test command")
 	}
 	err = a.execTestCmd(testCommand, pod.GetName(), pod.Spec.Containers, show)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to execute devfile commands for component %s", a.ComponentName)
 	}
 	return nil
 }
@@ -432,12 +440,12 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 	return
 }
 
-func (a Adapter) execTestCmd(testcmd versionsCommon.DevfileCommand, podName string, containers []corev1.Container, show bool) (err error) {
+func (a Adapter) execTestCmd(testCmd versionsCommon.DevfileCommand, podName string, containers []corev1.Container, show bool) (err error) {
 	compInfo := common.ComponentInfo{
 		PodName: podName,
 	}
-	compInfo.ContainerName = testcmd.Exec.Component
-	err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *testcmd.Exec, testcmd.Exec.Id, compInfo, show, a.machineEventLogger)
+	compInfo.ContainerName = testCmd.Exec.Component
+	err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *testCmd.Exec, testCmd.Exec.Id, compInfo, show, a.machineEventLogger)
 	return
 }
 

@@ -44,6 +44,6 @@ func (d Adapter) Delete(labels map[string]string) error {
 }
 
 // Test runs devfile test command
-func (d Adapter) Test(testcmd string, show bool) error {
-	return d.componentAdapter.Test(testcmd, show)
+func (d Adapter) Test(testCmd string, show bool) error {
+	return d.componentAdapter.Test(testCmd, show)
 }

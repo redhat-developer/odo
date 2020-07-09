@@ -142,7 +142,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 }
 
 // Test runs the devfile test command
-func (a Adapter) Test(testcmd string, show bool) (err error) {
+func (a Adapter) Test(testCmd string, show bool) (err error) {
 	componentExists, err := utils.ComponentExists(a.Client, a.Devfile.Data, a.ComponentName)
 	if err != nil {
 		return errors.Wrapf(err, "unable to determine if component %s exists", a.ComponentName)
@@ -155,8 +155,8 @@ func (a Adapter) Test(testcmd string, show bool) (err error) {
 	if err != nil {
 		return errors.Wrapf(err, "error while retrieving container for odo component %s", a.ComponentName)
 	}
-
-	testCommand, err := common.ValidateAndGetTestDevfileCommands(a.Devfile.Data, testcmd)
+	log.Infof("\nExecuting devfile test command for component %s", a.ComponentName)
+	testCommand, err := common.ValidateAndGetTestDevfileCommands(a.Devfile.Data, testCmd)
 	if err != nil {
 		return errors.Wrap(err, "failed to validate devfile test command")
 	}
