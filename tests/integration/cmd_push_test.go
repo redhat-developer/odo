@@ -328,7 +328,7 @@ var _ = Describe("odo push command tests", func() {
 				cmpName,
 				appName,
 				project,
-				[]string{"stat", strings.TrimSuffix(dir, "/"), "/src/server.js"}, // this doesn't use filepath.Join for a reason as this commands needs to run on linux, but the host machine can be windows
+				[]string{"stat", strings.TrimSuffix(dir, "/") + "/src/server.js"}, // this doesn't use filepath.Join for a reason as this commands needs to run on linux, but the host machine can be windows
 				func(cmdOp string, err error) bool {
 					modifiedCatServerFile = cmdOp
 					return true
