@@ -87,7 +87,7 @@ var TimeoutSettingDescription = fmt.Sprintf("Timeout (in seconds) for OpenShift 
 var PushTimeoutSettingDescription = fmt.Sprintf("PushTimeout (in seconds) for waiting for a Pod to come up (Default: %d)", DefaultPushTimeout)
 
 // BuildTimeoutSettingDescription adds a description for BuildTimeout
-var BuildTimeoutSettingDescription = fmt.Sprintf("BuildTimeout (in seconds) for waiting for a build to complete (Default: %d)", DefaultBuildTimeout)
+var BuildTimeoutSettingDescription = fmt.Sprintf("BuildTimeout (in seconds) for waiting for a build of the git component to complete (Default: %d)", DefaultBuildTimeout)
 
 // This value can be provided to set a seperate directory for users 'homedir' resolution
 // note for mocking purpose ONLY
@@ -439,7 +439,7 @@ func (c *PreferenceInfo) GetTimeout() int {
 
 // GetBuildTimeout gets the value set by BuildTimeout
 func (c *PreferenceInfo) GetBuildTimeout() int {
-	// default timeout value is 1
+	// default timeout value is 300
 	if c.OdoSettings.BuildTimeout == nil {
 		return DefaultBuildTimeout
 	}
