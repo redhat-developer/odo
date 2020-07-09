@@ -25,6 +25,7 @@ import (
 	catalogutil "github.com/openshift/odo/pkg/odo/cli/catalog/util"
 	"github.com/openshift/odo/pkg/odo/cli/component/ui"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
+	registryUtil "github.com/openshift/odo/pkg/odo/cli/registry/util"
 	commonui "github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
@@ -953,7 +954,13 @@ func (co *CreateOptions) Run() (err error) {
 
 			if !util.CheckPathExists(DevfilePath) {
 				// Download devfile from registry
-				token, _ := keyring.Get(util.CredentialPrefix+co.devfileMetadata.devfileRegistry.Name, "default")
+				token := ""
+				if registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name) {
+					token, err = keyring.Get(util.CredentialPrefix+co.devfileMetadata.devfileRegistry.Name, "default")
+					if err != nil {
+						return errors.Wrap(err, "unable to get secure registry credential from keyring")
+					}
+				}
 				err := util.DownloadFile(co.devfileMetadata.devfileRegistry.URL+co.devfileMetadata.devfileLink, token, DevfilePath)
 				if err != nil {
 					return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfileRegistry.URL+co.devfileMetadata.devfileLink)

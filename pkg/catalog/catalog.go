@@ -14,6 +14,8 @@ import (
 	imagev1 "github.com/openshift/api/image/v1"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
+
+	registryUtil "github.com/openshift/odo/pkg/odo/cli/registry/util"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -103,7 +105,13 @@ func getRegistryDevfiles(registry Registry) ([]DevfileComponentType, error) {
 	}
 	registry.URL = URL
 	indexLink := registry.URL + indexPath
-	token, _ := keyring.Get(util.CredentialPrefix+registry.Name, "default")
+	token := ""
+	if registryUtil.IsSecure(registry.Name) {
+		token, err = keyring.Get(util.CredentialPrefix+registry.Name, "default")
+		if err != nil {
+			return nil, errors.Wrap(err, "Unable to get secure registry credential from keyring")
+		}
+	}
 	jsonBytes, err := util.HTTPGetRequest(indexLink, token)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Unable to download the devfile index.json from %s", indexLink)

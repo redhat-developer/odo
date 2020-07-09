@@ -11,6 +11,7 @@ import (
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	// odo packages
+	registryUtil "github.com/openshift/odo/pkg/odo/cli/registry/util"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/util"
@@ -63,28 +64,33 @@ func (o *UpdateOptions) Validate() (err error) {
 
 // Run contains the logic for "odo registry update" command
 func (o *UpdateOptions) Run() (err error) {
+	secureBeforeUpdate := false
+	secureAfterUpdate := false
+	if registryUtil.IsSecure(o.registryName) {
+		secureBeforeUpdate = true
+	}
+	if o.token != "" {
+		secureAfterUpdate = true
+	}
+
 	cfg, err := preference.New()
 	if err != nil {
 		return errors.Wrap(err, "unable to update registry")
 	}
-
-	err = cfg.RegistryHandler(o.operation, o.registryName, o.registryURL, o.forceFlag)
+	err = cfg.RegistryHandler(o.operation, o.registryName, o.registryURL, o.forceFlag, secureAfterUpdate)
 	if err != nil {
 		return err
 	}
 
-	if o.token != "" {
+	if secureAfterUpdate {
 		err = keyring.Set(util.CredentialPrefix+o.registryName, o.user, o.token)
 		if err != nil {
-			return errors.Wrap(err, "unable to store credential to keyring")
+			return errors.Wrap(err, "unable to store registry credential to keyring")
 		}
-	} else {
-		token, _ := keyring.Get(util.CredentialPrefix+o.registryName, o.user)
-		if token != "" {
-			err = keyring.Delete(util.CredentialPrefix+o.registryName, o.user)
-			if err != nil {
-				return errors.Wrap(err, "unable to delete credential from keyring")
-			}
+	} else if secureBeforeUpdate && !secureAfterUpdate {
+		err = keyring.Delete(util.CredentialPrefix+o.registryName, o.user)
+		if err != nil {
+			return errors.Wrap(err, "unable to delete registry credential from keyring")
 		}
 	}
 

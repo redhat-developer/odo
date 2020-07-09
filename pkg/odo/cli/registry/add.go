@@ -66,12 +66,16 @@ func (o *AddOptions) Validate() (err error) {
 
 // Run contains the logic for "odo registry add" command
 func (o *AddOptions) Run() (err error) {
+	isSecure := false
+	if o.token != "" {
+		isSecure = true
+	}
+
 	cfg, err := preference.New()
 	if err != nil {
 		return errors.Wrap(err, "unable to add registry")
 	}
-
-	err = cfg.RegistryHandler(o.operation, o.registryName, o.registryURL, o.forceFlag)
+	err = cfg.RegistryHandler(o.operation, o.registryName, o.registryURL, o.forceFlag, isSecure)
 	if err != nil {
 		return err
 	}
@@ -79,7 +83,7 @@ func (o *AddOptions) Run() (err error) {
 	if o.token != "" {
 		err = keyring.Set(util.CredentialPrefix+o.registryName, o.user, o.token)
 		if err != nil {
-			return errors.Wrap(err, "unable to store credential to keyring")
+			return errors.Wrap(err, "unable to store registry credential to keyring")
 		}
 	}
 
