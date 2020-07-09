@@ -59,7 +59,10 @@ An example deployment scenario:
 
 * Enable experimental mode for odo. This can be done by: `odo preference set experimental true`
 
-* Before proceeding, you must know your ingress domain name to specify host for url.
+* Before proceeding, you must know your ingress domain name or ingress ip to specify `--host` for `odo url create`.
++
+Ingress ip is usually the external ip of ingress controller service, for minikube or crc clusters running in a virtual machine you can get it by
+`minikube ip` or `crc ip`. Checkout this https://kubernetes.io/docs/concepts/services-networking/ingress/[document] to know more about ingress.
 
 
 == Listing all available devfile components
