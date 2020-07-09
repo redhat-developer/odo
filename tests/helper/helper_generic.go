@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,20 +13,12 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
+	"github.com/openshift/odo/pkg/util"
 )
-
-func init() {
-	rand.Seed(time.Now().UTC().UnixNano())
-}
 
 // RandString returns a random string of given length
 func RandString(n int) string {
-	const letterBytes = "abcdefghijklmnopqrstuvwxyz"
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = letterBytes[rand.Intn(len(letterBytes))]
-	}
-	return string(b)
+	return util.GenerateRandomString(n)
 }
 
 // WaitForCmdOut runs a command until it gets
@@ -47,7 +38,7 @@ func WaitForCmdOut(program string, args []string, timeout int, errOnFail bool, c
 	for {
 		select {
 		case <-pingTimeout:
-			Fail(fmt.Sprintf("Timeout out after %v minutes", timeout))
+			Fail(fmt.Sprintf("Timeout after %v minutes", timeout))
 
 		case <-tick:
 			session := CmdRunner(program, args...)
@@ -117,8 +108,18 @@ func ExtractSubString(output, start, end string) string {
 func WatchNonRetCmdStdOut(cmdStr string, timeout time.Duration, check func(output string) bool, startSimulationCh chan bool, startIndicatorFunc func(output string) bool) (bool, error) {
 	var cmd *exec.Cmd
 	var buf bytes.Buffer
-
-	cmdStrParts := strings.Split(cmdStr, " ")
+	var errBuf bytes.Buffer
+	var cmdStrParts []string
+	// interestingly "odo watch  --context" ( observe the 2 spaces between watch and --context ) becomes ["odo", "watch", "", "--context"] which falls
+	// apart with Error: unknown command "" for "odo watch" on cobra when used "cobra.NoArgs".
+	tmpParts := strings.Split(cmdStr, " ")
+	for i := 0; i < len(tmpParts); i++ {
+		trimedPart := strings.TrimSpace(tmpParts[i])
+		if trimedPart == "" {
+			continue
+		}
+		cmdStrParts = append(cmdStrParts, trimedPart)
+	}
 	cmdName := cmdStrParts[0]
 	fmt.Println("Running command: ", cmdStrParts)
 	if len(cmdStrParts) > 1 {
@@ -128,6 +129,7 @@ func WatchNonRetCmdStdOut(cmdStr string, timeout time.Duration, check func(outpu
 		cmd = exec.Command(cmdName)
 	}
 	cmd.Stdout = &buf
+	cmd.Stderr = &errBuf
 
 	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
@@ -141,12 +143,15 @@ func WatchNonRetCmdStdOut(cmdStr string, timeout time.Duration, check func(outpu
 	if err := cmd.Start(); err != nil {
 		return false, err
 	}
-
 	startedFileModification := false
 	for {
 		select {
 		case <-timeoutCh:
-			Fail("Timeout out after " + string(timeout) + " minutes")
+			errBufStr := errBuf.String()
+			if errBufStr != "" {
+				fmt.Println(errBufStr)
+			}
+			Fail(fmt.Sprintf("Timeout after %.2f minutes", timeout.Minutes()))
 		case <-ticker.C:
 			if !startedFileModification && startIndicatorFunc(buf.String()) {
 				startedFileModification = true

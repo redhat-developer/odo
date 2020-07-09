@@ -3,16 +3,19 @@ package util
 import (
 	"archive/zip"
 	"bufio"
+	"bytes"
 	"context"
+	"crypto/rand"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"math/rand"
+	"math/big"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"os/exec"
+	"os/signal"
 	"os/user"
 	"path"
 	"path/filepath"
@@ -21,10 +24,13 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/gobwas/glob"
 	"github.com/google/go-github/github"
+	"github.com/openshift/odo/pkg/testingutil/filesystem"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -36,6 +42,7 @@ import (
 const (
 	HTTPRequestTimeout    = 20 * time.Second // HTTPRequestTimeout configures timeout of all HTTP requests
 	ResponseHeaderTimeout = 10 * time.Second // ResponseHeaderTimeout is the timeout to retrieve the server's response headers
+	ModeReadWriteFile     = 0600             // default Permission for a file
 )
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
@@ -83,10 +90,13 @@ func ConvertLabelsToSelector(labels map[string]string) string {
 // GenerateRandomString generates a random string of lower case characters of
 // the given size
 func GenerateRandomString(n int) string {
-	rand.Seed(time.Now().UnixNano())
 	b := make([]rune, n)
+
 	for i := range b {
-		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+		// this error is ignored because it fails only when the 2nd arg of Int() is less then 0
+		// which wont happen
+		n, _ := rand.Int(rand.Reader, big.NewInt(int64(len(letterRunes))))
+		b[i] = letterRunes[n.Int64()]
 	}
 	return string(b)
 }
@@ -101,7 +111,7 @@ func In(arr []string, value string) bool {
 	return false
 }
 
-// Hyphenate applicationName and componentName
+// NamespaceOpenShiftObject hyphenates applicationName and componentName
 func NamespaceOpenShiftObject(componentName string, applicationName string) (string, error) {
 
 	// Error if it's blank
@@ -164,6 +174,7 @@ func ParseComponentImageName(imageName string) (string, string, string, string) 
 	return componentImageName, componentType, componentName, componentVersion
 }
 
+// WIN represent the windows OS
 const WIN = "windows"
 
 // ReadFilePath Reads file path form URL file:///C:/path/to/file to C:\path\to\file
@@ -499,7 +510,7 @@ func GetSortedKeys(mapping map[string]string) []string {
 	return keys
 }
 
-//returns a slice containing the split string, using ',' as a separator
+// GetSplitValuesFromStr returns a slice containing the split string, using ',' as a separator
 func GetSplitValuesFromStr(inputStr string) []string {
 	if len(inputStr) == 0 {
 		return []string{}
@@ -641,8 +652,8 @@ func DeletePath(path string) error {
 	return nil
 }
 
-// HttpGetFreePort gets a free port from the system
-func HttpGetFreePort() (int, error) {
+// HTTPGetFreePort gets a free port from the system
+func HTTPGetFreePort() (int, error) {
 	listener, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		return -1, err
@@ -708,7 +719,7 @@ func HTTPGetRequest(url string) ([]byte, error) {
 	return bytes, err
 }
 
-// filterIgnores applies the glob rules on the filesChanged and filesDeleted and filters them
+// FilterIgnores applies the glob rules on the filesChanged and filesDeleted and filters them
 // returns the filtered results which match any of the glob rules
 func FilterIgnores(filesChanged, filesDeleted, absIgnoreRules []string) (filesChangedFiltered, filesDeletedFiltered []string) {
 	for _, file := range filesChanged {
@@ -733,7 +744,7 @@ func FilterIgnores(filesChanged, filesDeleted, absIgnoreRules []string) (filesCh
 	return filesChangedFiltered, filesDeletedFiltered
 }
 
-// Checks that the folder to download the project from devfile is
+// IsValidProjectDir checks that the folder to download the project from devfile is
 // either empty or only contains the devfile used.
 func IsValidProjectDir(path string, devfilePath string) error {
 	files, err := ioutil.ReadDir(path)
@@ -945,7 +956,7 @@ func Unzip(src, dest, pathToUnzip string) ([]string, error) {
 			return filenames, err
 		}
 
-		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, ModeReadWriteFile)
 		if err != nil {
 			return filenames, err
 		}
@@ -983,22 +994,32 @@ func DownloadFile(url string, filepath string) error {
 	defer out.Close() // #nosec G307
 
 	// Get the data
-	var httpClient = &http.Client{Transport: &http.Transport{
-		ResponseHeaderTimeout: ResponseHeaderTimeout,
-	}, Timeout: HTTPRequestTimeout}
-	resp, err := httpClient.Get(url)
+	data, err := DownloadFileInMemory(url)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "Failed to download devfile.yaml for devfile component: %s", filepath)
 	}
-	defer resp.Body.Close()
 
-	// Write the body to file
-	_, err = io.Copy(out, resp.Body)
+	// Write the data to file
+	_, err = out.Write(data)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+// DownloadFileInMemory uses the url to download the file and return bytes
+func DownloadFileInMemory(url string) ([]byte, error) {
+	var httpClient = &http.Client{Transport: &http.Transport{
+		ResponseHeaderTimeout: ResponseHeaderTimeout,
+	}, Timeout: HTTPRequestTimeout}
+	resp, err := httpClient.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return ioutil.ReadAll(resp.Body)
 }
 
 // ValidateK8sResourceName sanitizes kubernetes resource name with the following requirements:
@@ -1125,4 +1146,73 @@ func sliceContainsString(str string, slice []string) bool {
 		}
 	}
 	return false
+}
+
+// AddFileToIgnoreFile adds a file to the gitignore file. It only does that if the file doesn't exist
+func AddFileToIgnoreFile(gitIgnoreFile, filename string) error {
+	return addFileToIgnoreFile(gitIgnoreFile, filename, filesystem.DefaultFs{})
+}
+
+func addFileToIgnoreFile(gitIgnoreFile, filename string, fs filesystem.Filesystem) error {
+	var data []byte
+	file, err := fs.OpenFile(gitIgnoreFile, os.O_APPEND|os.O_RDWR, ModeReadWriteFile)
+	if err != nil {
+		return errors.Wrap(err, "failed to open .gitignore file")
+	}
+	defer file.Close()
+
+	if data, err = fs.ReadFile(gitIgnoreFile); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("failed reading data from %v file", gitIgnoreFile))
+	}
+	// check whether .odo/odo-file-index.json is already in the .gitignore file
+	if !strings.Contains(string(data), filename) {
+		if _, err := file.WriteString("\n" + filename); err != nil {
+			return errors.Wrapf(err, "failed to add %v to %v file", filepath.Base(filename), gitIgnoreFile)
+		}
+	}
+	return nil
+}
+
+// DisplayLog displays logs to user stdout with some color formatting
+func DisplayLog(followLog bool, rd io.ReadCloser, compName string) (err error) {
+
+	defer rd.Close()
+
+	// Copy to stdout (in yellow)
+	color.Set(color.FgYellow)
+	defer color.Unset()
+
+	// If we are going to followLog, we'll be copying it to stdout
+	// else, we copy it to a buffer
+	if followLog {
+
+		c := make(chan os.Signal)
+		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+		go func() {
+			<-c
+			color.Unset()
+			os.Exit(1)
+		}()
+
+		if _, err = io.Copy(os.Stdout, rd); err != nil {
+			return errors.Wrapf(err, "error followLoging logs for %s", compName)
+		}
+
+	} else {
+
+		// Copy to buffer (we aren't going to be followLoging the logs..)
+		buf := new(bytes.Buffer)
+		_, err = io.Copy(buf, rd)
+		if err != nil {
+			return errors.Wrapf(err, "unable to copy followLog to buffer")
+		}
+
+		// Copy to stdout
+		if _, err = io.Copy(os.Stdout, buf); err != nil {
+			return errors.Wrapf(err, "error copying logs to stdout")
+		}
+
+	}
+	return
+
 }

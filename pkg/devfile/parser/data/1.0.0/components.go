@@ -6,6 +6,7 @@ import (
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 )
 
+// GetMetadata returns the struct of DevfileMetadata objects parsed from the Devfile
 func (d *Devfile100) GetMetadata() common.DevfileMetadata {
 	// No GenerateName field in V2
 	return common.DevfileMetadata{
@@ -219,6 +220,11 @@ func getGroup(name string) *common.Group {
 	case "devinit":
 		return &common.Group{
 			Kind:      common.InitCommandGroupType,
+			IsDefault: true,
+		}
+	case "debugrun":
+		return &common.Group{
+			Kind:      common.DebugCommandGroupType,
 			IsDefault: true,
 		}
 	}

@@ -5,7 +5,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/openshift/odo/pkg/util"
@@ -14,7 +16,6 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/log"
 )
 
@@ -33,9 +34,29 @@ feature progresses.
 */
 
 // DevfilePush has the logic to perform the required actions for a given devfile
-func (po *PushOptions) DevfilePush() (err error) {
-	// Parse devfile
-	devObj, err := devfileParser.Parse(po.DevfilePath)
+func (po *PushOptions) DevfilePush() error {
+
+	// Wrap the push so that we can capture the error in JSON-only mode
+	err := po.devfilePushInner()
+
+	if err != nil && log.IsJSON() {
+		eventLoggingClient := machineoutput.NewConsoleMachineEventLoggingClient()
+		eventLoggingClient.ReportError(err, machineoutput.TimestampNow())
+
+		// Suppress the error to prevent it from being output by the generic machine-readable handler (which will produce invalid JSON for our purposes)
+		err = nil
+
+		// os.Exit(1) since we are suppressing the generic machine-readable handler's exit code logic
+		os.Exit(1)
+	}
+
+	return err
+}
+
+func (po *PushOptions) devfilePushInner() (err error) {
+
+	// Parse devfile and validate
+	devObj, err := parser.ParseAndValidate(po.DevfilePath)
 	if err != nil {
 		return err
 	}
@@ -67,7 +88,7 @@ func (po *PushOptions) DevfilePush() (err error) {
 		platformContext = kc
 	}
 
-	devfileHandler, err := adapters.NewPlatformAdapter(componentName, po.componentContext, devObj, platformContext)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, po.componentContext, devObj, platformContext)
 
 	if err != nil {
 		return err
@@ -81,24 +102,69 @@ func (po *PushOptions) DevfilePush() (err error) {
 		DevfileInitCmd:  strings.ToLower(po.devfileInitCommand),
 		DevfileBuildCmd: strings.ToLower(po.devfileBuildCommand),
 		DevfileRunCmd:   strings.ToLower(po.devfileRunCommand),
+		DevfileDebugCmd: strings.ToLower(po.devfileDebugCommand),
+		Debug:           po.debugRun,
+		DebugPort:       po.EnvSpecificInfo.GetDebugPort(),
 	}
 
 	warnIfURLSInvalid(po.EnvSpecificInfo.GetURL())
+
 	// Start or update the component
 	err = devfileHandler.Push(pushParams)
 	if err != nil {
+		err = errors.Errorf("Failed to start component with name %s. Error: %v",
+			componentName,
+			err,
+		)
+	} else {
+		log.Infof("\nPushing devfile component %s", componentName)
+		log.Success("Changes successfully pushed to component")
+	}
+
+	return
+}
+
+// DevfileComponentLog fetch and display log from devfile components
+func (lo LogOptions) DevfileComponentLog() error {
+	// Parse devfile
+	devObj, err := parser.ParseAndValidate(lo.devfilePath)
+	if err != nil {
+		return err
+	}
+
+	componentName, err := getComponentName(lo.componentContext)
+	if err != nil {
+		return errors.Wrap(err, "unable to get component name")
+	}
+
+	var platformContext interface{}
+	if pushtarget.IsPushTargetDocker() {
+		platformContext = nil
+	} else {
+		kc := kubernetes.KubernetesContext{
+			Namespace: lo.KClient.Namespace,
+		}
+		platformContext = kc
+	}
+
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, lo.componentContext, devObj, platformContext)
+
+	if err != nil {
+		return err
+	}
+
+	// Start or update the component
+	rd, err := devfileHandler.Log(lo.logFollow, lo.debug)
+	if err != nil {
 		log.Errorf(
-			"Failed to start component with name %s.\nError: %v",
+			"Failed to log component with name %s.\nError: %v",
 			componentName,
 			err,
 		)
 		os.Exit(1)
 	}
 
-	log.Infof("\nPushing devfile component %s", componentName)
-	log.Success("Changes successfully pushed to component")
-
-	return
+	return util.DisplayLog(lo.logFollow, rd, componentName)
 }
 
 // Get component name from env.yaml file
@@ -124,8 +190,8 @@ func getComponentName(context string) (string, error) {
 
 // DevfileComponentDelete deletes the devfile component
 func (do *DeleteOptions) DevfileComponentDelete() error {
-	// Parse devfile
-	devObj, err := devfileParser.Parse(do.devfilePath)
+	// Parse devfile and validate
+	devObj, err := parser.ParseAndValidate(do.devfilePath)
 	if err != nil {
 		return err
 	}
@@ -142,7 +208,7 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 	labels := map[string]string{
 		"component": componentName,
 	}
-	devfileHandler, err := adapters.NewPlatformAdapter(componentName, do.componentContext, devObj, kc)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, do.componentContext, devObj, kc)
 	if err != nil {
 		return err
 	}

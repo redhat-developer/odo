@@ -6,8 +6,10 @@ import (
 
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
+	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/openshift/odo/pkg/component"
+	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/log"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -18,11 +20,10 @@ import (
 	"github.com/spf13/cobra"
 
 	odoutil "github.com/openshift/odo/pkg/odo/util"
-
-	ktemplates "k8s.io/kubectl/pkg/util/templates"
+	"k8s.io/klog"
 )
 
-var pushCmdExample = ktemplates.Examples(`  # Push source code to the current component
+var pushCmdExample = (`  # Push source code to the current component
 %[1]s
 
 # Push data to the current component from the original source
@@ -35,6 +36,11 @@ var pushCmdExample = ktemplates.Examples(`  # Push source code to the current co
 %[1]s --build-command="mybuild" --run-command="myrun"
   `)
 
+var pushCmdExampleExperimentalOnly = (`
+# Output JSON events corresponding to devfile command execution and log text
+%[1]s -o json
+  `)
+
 // PushRecommendedCommandName is the recommended push command name
 const PushRecommendedCommandName = "push"
 
@@ -44,12 +50,16 @@ type PushOptions struct {
 
 	// devfile path
 	DevfilePath string
+	Devfile     parser.DevfileObj
 
 	// devfile commands
 	devfileInitCommand  string
 	devfileBuildCommand string
 	devfileRunCommand   string
-	namespace           string
+	devfileDebugCommand string
+	debugRun            bool
+
+	namespace string
 }
 
 // NewPushOptions returns new instance of PushOptions
@@ -60,20 +70,75 @@ func NewPushOptions() *PushOptions {
 	}
 }
 
+// CompleteDevfilePath completes the devfile path from context
+func (po *PushOptions) CompleteDevfilePath() {
+	if len(po.DevfilePath) > 0 {
+		po.DevfilePath = filepath.Join(po.componentContext, po.DevfilePath)
+	} else {
+		po.DevfilePath = filepath.Join(po.componentContext, "devfile.yaml")
+	}
+}
+
 // Complete completes push args
 func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	po.DevfilePath = filepath.Join(po.componentContext, DevfilePath)
+	po.CompleteDevfilePath()
+
 	// if experimental mode is enabled and devfile is present
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.DevfilePath) {
-		envInfo, err := envinfo.NewEnvSpecificInfo(po.componentContext)
+
+		po.Devfile, err = parser.ParseAndValidate(po.DevfilePath)
+		if err != nil {
+			return errors.Wrap(err, "unable to parse devfile")
+		}
+
+		// We retrieve the configuration information. If this does not exist, then BLANK is returned (important!).
+		envFileInfo, err := envinfo.NewEnvSpecificInfo(po.componentContext)
 		if err != nil {
 			return errors.Wrap(err, "unable to retrieve configuration information")
 		}
-		po.EnvSpecificInfo = envInfo
+
+		// If the file does not exist, we should populate the environment file with the correct env.yaml information
+		// such as name and namespace.
+		if !envFileInfo.EnvInfoFileExists() {
+			klog.V(4).Info("Environment file does not exist, creating the env.yaml file in order to use 'odo push'")
+
+			// Since the environment file does not exist, we will retrieve a correct namespace from
+			// either cmd commands or the current default kubernetes namespace
+			namespace, err := retrieveCmdNamespace(cmd)
+			if err != nil {
+				return errors.Wrap(err, "unable to determine target namespace for devfile")
+			}
+
+			// Retrieve a default name
+			// 1. Use args[0] if the user has supplied a name to be used
+			// 2. If the user did not provide a name, use gatherName to retrieve a name from the devfile.Metadata
+			// 3. Use the folder name that we are pushing from as a default name if none of the above exist
+
+			var name string
+			if len(args) == 1 {
+				name = args[0]
+			} else {
+				name, err = gatherName(po.Devfile, po.DevfilePath)
+				if err != nil {
+					return errors.Wrap(err, "unable to gather a name to apply to the env.yaml file")
+				}
+			}
+
+			// Create the environment file. This will actually *create* the env.yaml file in your context directory.
+			err = envFileInfo.SetComponentSettings(envinfo.ComponentSettings{Name: name, Namespace: namespace})
+			if err != nil {
+				return errors.Wrap(err, "failed to create env.yaml for devfile component")
+			}
+
+		}
+
+		po.EnvSpecificInfo = envFileInfo
+
 		po.Context = genericclioptions.NewDevfileContext(cmd)
 
+		// If the push target has been set to Docker, we will have to change the current namespace.
+		// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initalizing the context
 		if !pushtarget.IsPushTargetDocker() {
-			// The namespace was retrieved from the --project flag (or from the kube client if not set) and stored in kclient when initalizing the context
 			po.namespace = po.KClient.Namespace
 		}
 
@@ -82,24 +147,26 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 	// Set the correct context, which also sets the LocalConfigInfo
 	po.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
-
 	err = po.SetSourceInfo()
 	if err != nil {
 		return errors.Wrap(err, "unable to set source information")
 	}
+
 	// Apply ignore information
 	err = genericclioptions.ApplyIgnore(&po.ignores, po.sourcePath)
 	if err != nil {
 		return errors.Wrap(err, "unable to apply ignore information")
 	}
 
+	// Get the project information and resolve it.
 	prjName := po.LocalConfigInfo.GetProject()
 	po.ResolveSrcAndConfigFlags()
 	err = po.ResolveProject(prjName)
 	if err != nil {
 		return err
 	}
-	return
+
+	return nil
 }
 
 // Validate validates the push parameters
@@ -153,17 +220,30 @@ func (po *PushOptions) Run() (err error) {
 func NewCmdPush(name, fullName string) *cobra.Command {
 	po := NewPushOptions()
 
+	annotations := map[string]string{"command": "component"}
+
+	pushCmdExampleText := pushCmdExample
+
+	if experimental.IsExperimentalModeEnabled() {
+		// The '-o json' option should only appear in help output when experimental mode is enabled.
+		annotations["machineoutput"] = "json"
+
+		// The '-o json' example should likewise only appear in experimental only.
+		pushCmdExampleText += pushCmdExampleExperimentalOnly
+	}
+
 	var pushCmd = &cobra.Command{
 		Use:         fmt.Sprintf("%s [component name]", name),
 		Short:       "Push source code to a component",
 		Long:        `Push source code to a component.`,
-		Example:     fmt.Sprintf(pushCmdExample, fullName),
-		Args:        cobra.MaximumNArgs(1),
-		Annotations: map[string]string{"command": "component"},
+		Example:     fmt.Sprintf(ktemplates.Examples(pushCmdExampleText), fullName),
+		Args:        cobra.MaximumNArgs(2),
+		Annotations: annotations,
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(po, cmd, args)
 		},
 	}
+
 	genericclioptions.AddContextFlag(pushCmd, &po.componentContext)
 	pushCmd.Flags().BoolVar(&po.show, "show-log", false, "If enabled, logs will be shown when built")
 	pushCmd.Flags().StringSliceVar(&po.ignores, "ignore", []string{}, "Files or folders to be ignored via glob expressions.")
@@ -177,6 +257,8 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 		pushCmd.Flags().StringVar(&po.devfileInitCommand, "init-command", "", "Devfile Init Command to execute")
 		pushCmd.Flags().StringVar(&po.devfileBuildCommand, "build-command", "", "Devfile Build Command to execute")
 		pushCmd.Flags().StringVar(&po.devfileRunCommand, "run-command", "", "Devfile Run Command to execute")
+		pushCmd.Flags().BoolVar(&po.debugRun, "debug", false, "Runs the component in debug mode")
+		pushCmd.Flags().StringVar(&po.devfileDebugCommand, "debug-command", "", "Devfile Debug Command to execute")
 	}
 
 	//Adding `--project` flag

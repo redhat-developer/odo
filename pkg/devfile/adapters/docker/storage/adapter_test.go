@@ -79,11 +79,7 @@ func TestCreate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					Components: []versionsCommon.DevfileComponent{
-						{
-							Type: versionsCommon.ContainerComponentType,
-						},
-					},
+					Components: []versionsCommon.DevfileComponent{},
 				},
 			}
 

@@ -20,6 +20,9 @@ type ComponentSettings struct {
 	Namespace   string              `yaml:"Namespace,omitempty"`
 	URL         *[]EnvInfoURL       `yaml:"Url,omitempty"`
 	PushCommand *EnvInfoPushCommand `yaml:"PushCommand,omitempty"`
+
+	// DebugPort controls the port used by the pod to run the debugging agent on
+	DebugPort *int `yaml:"DebugPort,omitempty"`
 }
 
 // URLKind is an enum to indicate the type of the URL i.e ingress/route
@@ -31,6 +34,9 @@ const (
 	ROUTE           URLKind = "route"
 	envInfoEnvName          = "ENVINFO"
 	envInfoFileName         = "env.yaml"
+
+	// DefaultDebugPort is the default port used for debugging on remote pod
+	DefaultDebugPort = 5858
 )
 
 // EnvInfoURL holds URL related information
@@ -78,6 +84,8 @@ type EnvSpecificInfo struct {
 	envinfoFileExists bool
 }
 
+// getEnvInfoFile first checks for the ENVINFO variable
+// then we check for directory and eventually the file (which we return as a string)
 func getEnvInfoFile(envDir string) (string, error) {
 	if env, ok := os.LookupEnv(envInfoEnvName); ok {
 		return env, nil
@@ -99,17 +107,21 @@ func New() (*EnvSpecificInfo, error) {
 	return NewEnvSpecificInfo("")
 }
 
-// NewEnvSpecificInfo gets the EnvSpecificInfo from envinfo file and creates the envinfo file in case it's
-// not present then it
+// NewEnvSpecificInfo retrieves the environment file. If it does not exist, it returns *blank*
 func NewEnvSpecificInfo(envDir string) (*EnvSpecificInfo, error) {
 	return newEnvSpecificInfo(envDir, filesystem.DefaultFs{})
 }
 
+// newEnvSpecificInfo retrieves the env.yaml file, if it does not exist, we return a *BLANK* environment file.
 func newEnvSpecificInfo(envDir string, fs filesystem.Filesystem) (*EnvSpecificInfo, error) {
+
+	// Retrieve the environment file
 	envInfoFile, err := getEnvInfoFile(envDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get odo envinfo file")
 	}
+
+	// Organize that information into a struct
 	e := EnvSpecificInfo{
 		EnvInfo:           NewEnvInfo(),
 		Filename:          envInfoFile,
@@ -117,16 +129,18 @@ func newEnvSpecificInfo(envDir string, fs filesystem.Filesystem) (*EnvSpecificIn
 		fs:                fs,
 	}
 
-	// if the env.yaml file doesn't exist then we dont worry about it and return
+	// If the env.yaml file does not exist then we simply return and set e.envinfoFileExists as false
 	if _, err = e.fs.Stat(envInfoFile); os.IsNotExist(err) {
 		e.envinfoFileExists = false
 		return &e, nil
 	}
 
+	// Retrieve the environment file
 	err = getFromFile(&e.EnvInfo, e.Filename)
 	if err != nil {
 		return nil, err
 	}
+
 	return &e, nil
 }
 
@@ -151,14 +165,11 @@ func newProxyEnvInfo() proxyEnvInfo {
 	return proxyEnvInfo{}
 }
 
-// SetConfiguration sets the environment specific info like cluster host etc.
+// SetConfiguration sets the environment specific info such as the Cluster Host, Name, etc.
+// we then **write** this data to the environment yaml file (see envInfoFileName const)
 func (esi *EnvSpecificInfo) SetConfiguration(parameter string, value interface{}) (err error) {
 	if parameter, ok := asLocallySupportedParameter(parameter); ok {
 		switch parameter {
-		case "create":
-			createValue := value.(ComponentSettings)
-			esi.componentSettings.Name = createValue.Name
-			esi.componentSettings.Namespace = createValue.Namespace
 		case "url":
 			urlValue := value.(EnvInfoURL)
 			if esi.componentSettings.URL != nil {
@@ -284,25 +295,23 @@ func (ei *EnvInfo) GetPushCommand() EnvInfoPushCommand {
 
 // GetName returns the component name
 func (ei *EnvInfo) GetName() string {
-	if ei.componentSettings.Name == "" {
-		return ""
-	}
 	return ei.componentSettings.Name
+}
+
+// GetDebugPort returns the DebugPort, returns default if nil
+func (ei *EnvInfo) GetDebugPort() int {
+	if ei.componentSettings.DebugPort == nil {
+		return DefaultDebugPort
+	}
+	return *ei.componentSettings.DebugPort
 }
 
 // GetNamespace returns component namespace
 func (ei *EnvInfo) GetNamespace() string {
-	if ei.componentSettings.Namespace == "" {
-		return ""
-	}
 	return ei.componentSettings.Namespace
 }
 
 const (
-	// Create parameter
-	Create = "CREATE"
-	// CreateDescription is the description of Create parameter
-	CreateDescription = "Create parameter is the action to write devfile metadata to env.yaml"
 	// URL parameter
 	URL = "URL"
 	// URLDescription is the description of URL
@@ -315,9 +324,8 @@ const (
 
 var (
 	supportedLocalParameterDescriptions = map[string]string{
-		Create: CreateDescription,
-		URL:    URLDescription,
-		Push:   PushDescription,
+		URL:  URLDescription,
+		Push: PushDescription,
 	}
 
 	lowerCaseLocalParameters = util.GetLowerCaseParameters(GetLocallySupportedParameters())

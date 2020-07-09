@@ -24,6 +24,9 @@ const (
 	// DefaultDevfileRunCommand is a predefined devfile command for run
 	DefaultDevfileRunCommand PredefinedDevfileCommands = "devrun"
 
+	// DefaultDevfileDebugCommand is a predefined devfile command for debug
+	DefaultDevfileDebugCommand PredefinedDevfileCommands = "debugrun"
+
 	// SupervisordInitContainerName The init container name for supervisord
 	SupervisordInitContainerName = "copy-supervisord"
 
@@ -67,6 +70,15 @@ const (
 	// EnvOdoCommandRun is the env defined in the runtime component container which holds the run command to be executed
 	EnvOdoCommandRun = "ODO_COMMAND_RUN"
 
+	// EnvOdoCommandDebugWorkingDir is the env defined in the runtime component container which holds the work dir for the debug command
+	EnvOdoCommandDebugWorkingDir = "ODO_COMMAND_DEBUG_WORKING_DIR"
+
+	// EnvOdoCommandDebug is the env defined in the runtime component container which holds the debug command to be executed
+	EnvOdoCommandDebug = "ODO_COMMAND_DEBUG"
+
+	// EnvDebugPort is the env defined in the runtime component container which holds the debug port for remote debugging
+	EnvDebugPort = "DEBUG_PORT"
+
 	// ShellExecutable is the shell executable
 	ShellExecutable = "/bin/sh"
 
@@ -107,6 +119,19 @@ func GetSupportedComponents(data data.DevfileData) []common.DevfileComponent {
 		}
 	}
 	return components
+}
+
+// getCommandsByGroup gets commands by the group kind
+func getCommandsByGroup(data data.DevfileData, groupType common.DevfileCommandGroupType) []common.DevfileCommand {
+	var commands []common.DevfileCommand
+
+	for _, command := range data.GetCommands() {
+		if command.Exec != nil && command.Exec.Group != nil && command.Exec.Group.Kind == groupType {
+			commands = append(commands, command)
+		}
+	}
+
+	return commands
 }
 
 // GetVolumes iterates through the components in the devfile and returns a map of component alias to the devfile volumes

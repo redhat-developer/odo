@@ -7,6 +7,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 
 	routev1 "github.com/openshift/api/route/v1"
@@ -31,7 +32,7 @@ var describeExample = ktemplates.Examples(`  # Describe a URL
 %[1]s myurl
 `)
 
-// URLListOptions encapsulates the options for the odo url list command
+// URLDescribeOptions encapsulates the options for the odo url describe command
 type URLDescribeOptions struct {
 	localConfigInfo  *config.LocalConfigInfo
 	componentContext string
@@ -39,7 +40,7 @@ type URLDescribeOptions struct {
 	*genericclioptions.Context
 }
 
-// NewURLDescribeOptions creates a new URLCreateOptions instance
+// NewURLDescribeOptions creates a new NewURLDescribeOptions instance
 func NewURLDescribeOptions() *URLDescribeOptions {
 	return &URLDescribeOptions{&config.LocalConfigInfo{}, "", "", &genericclioptions.Context{}}
 }
@@ -65,7 +66,7 @@ func (o *URLDescribeOptions) Validate() (err error) {
 	return util.CheckOutputFlag(o.OutputFlag)
 }
 
-// Run contains the logic for the odo url list command
+// Run contains the logic for the odo url describe command
 func (o *URLDescribeOptions) Run() (err error) {
 	if experimental.IsExperimentalModeEnabled() {
 		if pushtarget.IsPushTargetDocker() {
@@ -104,7 +105,16 @@ func (o *URLDescribeOptions) Run() (err error) {
 			}
 		} else {
 			componentName := o.EnvSpecificInfo.GetName()
-			u, err := url.GetIngress(o.KClient, o.EnvSpecificInfo, o.url, componentName)
+			oclient, err := occlient.New()
+			if err != nil {
+				return err
+			}
+			oclient.Namespace = o.KClient.Namespace
+			routeSupported, err := oclient.IsRouteSupported()
+			if err != nil {
+				return err
+			}
+			u, err := url.GetIngressOrRoute(oclient, o.KClient, o.EnvSpecificInfo, o.url, componentName, routeSupported)
 			if err != nil {
 				return err
 			}
@@ -112,11 +122,15 @@ func (o *URLDescribeOptions) Run() (err error) {
 				machineoutput.OutputSuccess(u)
 			} else {
 				tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-				fmt.Fprintln(tabWriterURL, "NAME", "\t", "STATE", "\t", "URL", "\t", "PORT", "\t", "SECURE")
+				fmt.Fprintln(tabWriterURL, "NAME", "\t", "STATE", "\t", "URL", "\t", "PORT", "\t", "SECURE", "\t", "KIND")
 
 				// are there changes between local and cluster states?
 				outOfSync := false
-				fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, url.ConvertIngressURLToIngress(u, componentName), experimental.IsExperimentalModeEnabled()), "", u.Spec.Host, experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Port, "\t", u.Spec.Secure)
+				if u.Spec.Kind == envinfo.ROUTE {
+					fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
+				} else {
+					fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, url.ConvertIngressURLToIngress(u, componentName)), "", u.Spec.Host, experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
+				}
 				if u.Status.State != url.StateTypePushed {
 					outOfSync = true
 				}

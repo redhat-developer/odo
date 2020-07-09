@@ -24,14 +24,15 @@ type DevfileComponentType struct {
 	DisplayName string
 	Description string
 	Link        string
-	Support     bool
 	Registry    Registry
 }
 
 // DevfileIndexEntry is the main struct of index.json from devfile registry
 type DevfileIndexEntry struct {
+	Name              string   `json:"name"`
 	DisplayName       string   `json:"displayName"`
 	Description       string   `json:"description"`
+	Supported         bool     `json:"supported"`
 	Tags              []string `json:"tags"`
 	Icon              string   `json:"icon"`
 	GlobalMemoryLimit string   `json:"globalMemoryLimit"`
@@ -41,34 +42,19 @@ type DevfileIndexEntry struct {
 	} `json:"links"`
 }
 
-// Devfile is the main structure of devfile from devfile registry
-type Devfile struct {
-	APIVersion string `yaml:"apiVersion"`
-	MetaData   struct {
-		GenerateName string `yaml:"generateName"`
-	} `yaml:"metadata"`
-	Components []struct {
-		Type  string `yaml:"type"`
-		Alias string `yaml:"alias"`
-	} `yaml:"components"`
-	Commands []struct {
-		Name string `yaml:"name"`
-	} `yaml:"commands"`
-}
-
 // ComponentSpec is the spec for ComponentType
 type ComponentSpec struct {
-	AllTags        []string            `json:"allTags"`
-	NonHiddenTags  []string            `json:"nonHiddenTags"`
-	SupportedTags  []string            `json:"supportedTags"`
-	ImageStreamRef imagev1.ImageStream `json:"-"`
+	AllTags         []string               `json:"allTags"`
+	NonHiddenTags   []string               `json:"nonHiddenTags"`
+	SupportedTags   []string               `json:"supportedTags"`
+	ImageStreamTags []imagev1.TagReference `json:"imageStreamTags"`
 }
 
 // ComponentTypeList lists all the ComponentType's
 type ComponentTypeList struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Items             []ComponentType `json:"items"`
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []ComponentType `json:"items"`
 }
 
 // DevfileComponentTypeList lists all the DevfileComponentType's
@@ -92,7 +78,7 @@ type ServiceSpec struct {
 
 // ServiceTypeList lists all the ServiceType's
 type ServiceTypeList struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Items             []ServiceType `json:"items"`
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []ServiceType `json:"items"`
 }

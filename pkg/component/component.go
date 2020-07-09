@@ -694,7 +694,7 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 	compInfo := common.ComponentInfo{
 		PodName: pod.Name,
 	}
-	err = exec.ExecuteCommand(client, compInfo, cmdArr, show)
+	err = exec.ExecuteCommand(client, compInfo, cmdArr, show, nil, nil)
 
 	if err != nil {
 		s.End(false)

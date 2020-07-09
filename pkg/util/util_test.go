@@ -1144,7 +1144,7 @@ func TestRemoveRelativePathFromFiles(t *testing.T) {
 	}
 }
 
-func TestHttpGetFreePort(t *testing.T) {
+func TestHTTPGetFreePort(t *testing.T) {
 	tests := []struct {
 		name    string
 		wantErr bool
@@ -1156,9 +1156,9 @@ func TestHttpGetFreePort(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := HttpGetFreePort()
+			got, err := HTTPGetFreePort()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("HttpGetFreePort() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("HTTPGetFreePort() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			addressLook := "localhost:" + strconv.Itoa(got)
@@ -1344,7 +1344,13 @@ func TestDownloadFile(t *testing.T) {
 		{
 			name:     "Case 2: Input url is invalid",
 			url:      "invalid",
-			filepath: "invalid",
+			filepath: "./test.yaml",
+			want:     []byte{},
+		},
+		{
+			name:     "Case 3: Input url is an empty string",
+			url:      "",
+			filepath: "./test.yaml",
 			want:     []byte{},
 		},
 	}
@@ -1352,7 +1358,12 @@ func TestDownloadFile(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := DownloadFile(tt.url, tt.filepath)
-			if tt.url != "invalid" && err != nil {
+
+			if tt.url == "" && err != nil {
+				if !strings.Contains(err.Error(), "unsupported protocol scheme") {
+					t.Errorf("Did not get expected error %s", err)
+				}
+			} else if tt.url != "invalid" && err != nil {
 				t.Errorf("Failed to download file with error %s", err)
 			}
 
@@ -1572,6 +1583,50 @@ func TestIsValidProjectDir(t *testing.T) {
 	}
 }
 
+func TestDownloadFileInMemory(t *testing.T) {
+	// Start a local HTTP server
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		// Send response to be tested
+		_, err := rw.Write([]byte("OK"))
+		if err != nil {
+			t.Error(err)
+		}
+	}))
+	// Close the server when test finishes
+	defer server.Close()
+
+	tests := []struct {
+		name string
+		url  string
+		want []byte
+	}{
+		{
+			name: "Case 1: Input url is valid",
+			url:  server.URL,
+			want: []byte{79, 75},
+		},
+		{
+			name: "Case 2: Input url is invalid",
+			url:  "invalid",
+			want: []byte(nil),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data, err := DownloadFileInMemory(tt.url)
+			if tt.url != "invalid" && err != nil {
+				t.Errorf("Failed to download file with error %s", err)
+			}
+
+			if !reflect.DeepEqual(data, tt.want) {
+				t.Errorf("Got: %v, want: %v", data, tt.want)
+			}
+		})
+	}
+}
+
+/*
 func TestGetGitHubZipURL(t *testing.T) {
 	startPoint := "1.0.0"
 	branch := "my-branch"

@@ -26,32 +26,74 @@ func TestComponentExists(t *testing.T) {
 		name          string
 		componentName string
 		client        *lclient.Client
+		components    []common.DevfileComponent
 		want          bool
+		wantErr       bool
 	}{
 		{
 			name:          "Case 1: Component exists",
 			componentName: "golang",
 			client:        fakeClient,
-			want:          true,
+			components: []common.DevfileComponent{
+				testingutil.GetFakeComponent("alias1"),
+				testingutil.GetFakeComponent("alias2"),
+			},
+			want:    true,
+			wantErr: false,
 		},
 		{
 			name:          "Case 2: Component doesn't exist",
 			componentName: "fakecomponent",
 			client:        fakeClient,
-			want:          false,
+			components: []common.DevfileComponent{
+				testingutil.GetFakeComponent("alias1"),
+			},
+			want:    false,
+			wantErr: false,
 		},
 		{
 			name:          "Case 3: Error with docker client",
 			componentName: "golang",
 			client:        fakeErrorClient,
+			components: []common.DevfileComponent{
+				testingutil.GetFakeComponent("alias1"),
+			},
+			want:    false,
+			wantErr: true,
+		},
+		{
+			name:          "Case 4: Container and devfile component mismatch",
+			componentName: "test",
+			client:        fakeClient,
+			components:    []common.DevfileComponent{},
 			want:          false,
+			wantErr:       true,
+		},
+		{
+			name:          "Case 5: Devfile does not have supported components",
+			componentName: "golang",
+			client:        fakeClient,
+			components: []common.DevfileComponent{
+				{
+					Kubernetes: &common.Kubernetes{},
+				},
+			},
+			want:    false,
+			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cmpExists := ComponentExists(*tt.client, tt.componentName)
-			if tt.want != cmpExists {
+			devObj := devfileParser.DevfileObj{
+				Data: testingutil.TestDevfileData{
+					Components: tt.components,
+				},
+			}
+			cmpExists, err := ComponentExists(*tt.client, devObj.Data, tt.componentName)
+			if !tt.wantErr && err != nil {
+				t.Errorf("TestComponentExists error, unexpected error - %v", err)
+			} else if !tt.wantErr && tt.want != cmpExists {
 				t.Errorf("expected %v, wanted %v", cmpExists, tt.want)
 			}
 		})
@@ -83,6 +125,7 @@ func TestGetComponentContainers(t *testing.T) {
 				},
 				Mounts: []types.MountPoint{
 					{
+						Name:        lclient.ProjectSourceVolumeName,
 						Destination: lclient.OdoSourceVolumeMount,
 					},
 				},
@@ -566,7 +609,7 @@ func TestGetProjectVolumeLabels(t *testing.T) {
 			componentName: "some-component",
 			want: map[string]string{
 				"component": "some-component",
-				"type":      "projects",
+				"type":      ProjectsVolume,
 			},
 		},
 		{
@@ -574,7 +617,7 @@ func TestGetProjectVolumeLabels(t *testing.T) {
 			componentName: "",
 			want: map[string]string{
 				"component": "",
-				"type":      "projects",
+				"type":      ProjectsVolume,
 			},
 		},
 	}
@@ -628,25 +671,30 @@ func TestGetContainerLabels(t *testing.T) {
 
 func TestGetSupervisordVolumeLabels(t *testing.T) {
 
+	componentNameArr := []string{"myComponent1", "myComponent2"}
+
 	tests := []struct {
-		name        string
-		customImage bool
-		want        map[string]string
+		name          string
+		componentName string
+		customImage   bool
+		want          map[string]string
 	}{
 		{
-			name:        "Case 1: Default supervisord image",
-			customImage: false,
+			name:          "Case 1: Default supervisord image",
+			componentName: componentNameArr[0],
+			customImage:   false,
 			want: map[string]string{
-				"name": adaptersCommon.SupervisordVolumeName,
-				"type": supervisordVolume,
+				"component": componentNameArr[0],
+				"type":      SupervisordVolume,
 			},
 		},
 		{
-			name:        "Case 2: Custom supervisord image",
-			customImage: true,
+			name:          "Case 2: Custom supervisord image",
+			componentName: componentNameArr[1],
+			customImage:   true,
 			want: map[string]string{
-				"name": adaptersCommon.SupervisordVolumeName,
-				"type": supervisordVolume,
+				"component": componentNameArr[1],
+				"type":      SupervisordVolume,
 			},
 		},
 	}
@@ -656,426 +704,14 @@ func TestGetSupervisordVolumeLabels(t *testing.T) {
 				os.Setenv("ODO_BOOTSTRAPPER_IMAGE", "customimage:customtag")
 			}
 			image := adaptersCommon.GetBootstrapperImage()
-			_, _, _, imageTag := util.ParseComponentImageName(image)
+			_, imageWithoutTag, _, imageTag := util.ParseComponentImageName(image)
 
 			tt.want["version"] = imageTag
+			tt.want["image"] = imageWithoutTag
 
-			labels := GetSupervisordVolumeLabels()
+			labels := GetSupervisordVolumeLabels(tt.componentName)
 			if !reflect.DeepEqual(tt.want, labels) {
 				t.Errorf("expected %v, actual %v", tt.want, labels)
-			}
-		})
-	}
-
-}
-
-func TestUpdateComponentWithSupervisord(t *testing.T) {
-
-	command := "ls -la"
-	component := "alias1"
-	workDir := "/"
-	emptyString := ""
-	garbageString := "garbageString"
-	supervisordVolumeName := "supervisordVolumeName"
-	defaultWorkDirEnv := adaptersCommon.EnvOdoCommandRunWorkingDir
-	defaultCommandEnv := adaptersCommon.EnvOdoCommandRun
-
-	tests := []struct {
-		name                  string
-		commandExecs          []common.Exec
-		commandName           string
-		comp                  common.DevfileComponent
-		supervisordVolumeName string
-		hostConfig            container.HostConfig
-		wantHostConfig        container.HostConfig
-		wantCommand           []string
-		wantArgs              []string
-		wantEnv               []common.Env
-	}{
-		{
-			name: "Case 1: No component commands, args, env",
-			commandExecs: []common.Exec{
-				{
-					CommandLine: command,
-					Component:   component,
-					Group: &common.Group{
-						Kind: common.RunCommandGroupType,
-					},
-					WorkingDir: workDir,
-				},
-			},
-			commandName: emptyString,
-			comp: common.DevfileComponent{
-				Container: &common.Container{
-					Command: []string{},
-					Args:    []string{},
-					Env:     []common.Env{},
-					Name:    component,
-				},
-			},
-			supervisordVolumeName: supervisordVolumeName,
-			hostConfig:            container.HostConfig{},
-			wantHostConfig: container.HostConfig{
-				Mounts: []mount.Mount{
-					{
-						Type:   mount.TypeVolume,
-						Source: supervisordVolumeName,
-						Target: adaptersCommon.SupervisordMountPath,
-					},
-				},
-			},
-			wantCommand: []string{adaptersCommon.SupervisordBinaryPath},
-			wantArgs:    []string{"-c", adaptersCommon.SupervisordConfFile},
-			wantEnv: []common.Env{
-				{
-					Name:  defaultWorkDirEnv,
-					Value: workDir,
-				},
-				{
-					Name:  defaultCommandEnv,
-					Value: command,
-				},
-			},
-		},
-		{
-			name: "Case 2: Existing component command and no args, env",
-			commandExecs: []common.Exec{
-				{
-					CommandLine: command,
-					Component:   component,
-					Group: &common.Group{
-						Kind: common.RunCommandGroupType,
-					},
-					WorkingDir: workDir,
-				},
-			},
-			commandName: emptyString,
-			comp: common.DevfileComponent{
-				Container: &common.Container{
-					Command: []string{"some", "command"},
-					Args:    []string{},
-					Env:     []common.Env{},
-					Name:    component,
-				},
-			},
-			supervisordVolumeName: supervisordVolumeName,
-			hostConfig:            container.HostConfig{},
-			wantHostConfig: container.HostConfig{
-				Mounts: []mount.Mount{
-					{
-						Type:   mount.TypeVolume,
-						Source: supervisordVolumeName,
-						Target: adaptersCommon.SupervisordMountPath,
-					},
-				},
-			},
-			wantCommand: []string{"some", "command"},
-			wantArgs:    []string{},
-			wantEnv: []common.Env{
-				{
-					Name:  defaultWorkDirEnv,
-					Value: workDir,
-				},
-				{
-					Name:  defaultCommandEnv,
-					Value: command,
-				},
-			},
-		},
-		{
-			name: "Case 3: Existing component command and args and no env",
-			commandExecs: []common.Exec{
-				{
-					CommandLine: command,
-					Component:   component,
-					Group: &common.Group{
-						Kind: common.RunCommandGroupType,
-					},
-					WorkingDir: workDir,
-				},
-			},
-			commandName: emptyString,
-			comp: common.DevfileComponent{
-				Container: &common.Container{
-					Command: []string{"some", "command"},
-					Args:    []string{"some", "args"},
-					Env:     []common.Env{},
-					Name:    component,
-				},
-			},
-			supervisordVolumeName: supervisordVolumeName,
-			hostConfig:            container.HostConfig{},
-			wantHostConfig: container.HostConfig{
-				Mounts: []mount.Mount{
-					{
-						Type:   mount.TypeVolume,
-						Source: supervisordVolumeName,
-						Target: adaptersCommon.SupervisordMountPath,
-					},
-				},
-			},
-			wantCommand: []string{"some", "command"},
-			wantArgs:    []string{"some", "args"},
-			wantEnv: []common.Env{
-				{
-					Name:  defaultWorkDirEnv,
-					Value: workDir,
-				},
-				{
-					Name:  defaultCommandEnv,
-					Value: command,
-				},
-			},
-		},
-		{
-			name: "Case 4: Existing component command, args and env",
-			commandExecs: []common.Exec{
-				{
-					CommandLine: command,
-					Component:   component,
-					Group: &common.Group{
-						Kind: common.RunCommandGroupType,
-					},
-					WorkingDir: workDir,
-				},
-			},
-			commandName: emptyString,
-			comp: common.DevfileComponent{
-				Container: &common.Container{
-					Command: []string{"some", "command"},
-					Args:    []string{"some", "args"},
-					Env: []common.Env{
-						{
-							Name:  defaultWorkDirEnv,
-							Value: garbageString,
-						},
-						{
-							Name:  defaultCommandEnv,
-							Value: garbageString,
-						},
-					},
-					Name: component,
-				},
-			},
-			supervisordVolumeName: supervisordVolumeName,
-			hostConfig:            container.HostConfig{},
-			wantHostConfig: container.HostConfig{
-				Mounts: []mount.Mount{
-					{
-						Type:   mount.TypeVolume,
-						Source: supervisordVolumeName,
-						Target: adaptersCommon.SupervisordMountPath,
-					},
-				},
-			},
-			wantCommand: []string{"some", "command"},
-			wantArgs:    []string{"some", "args"},
-			wantEnv: []common.Env{
-				{
-					Name:  defaultWorkDirEnv,
-					Value: garbageString,
-				},
-				{
-					Name:  defaultCommandEnv,
-					Value: garbageString,
-				},
-			},
-		},
-		{
-			name: "Case 5: Existing host config, should append to it",
-			commandExecs: []common.Exec{
-				{
-					CommandLine: command,
-					Component:   component,
-					Group: &common.Group{
-						Kind: common.RunCommandGroupType,
-					},
-					WorkingDir: workDir,
-				},
-			},
-			commandName: emptyString,
-			comp: common.DevfileComponent{
-				Container: &common.Container{
-					Command: []string{"some", "command"},
-					Args:    []string{"some", "args"},
-					Env: []common.Env{
-						{
-							Name:  defaultWorkDirEnv,
-							Value: garbageString,
-						},
-						{
-							Name:  defaultCommandEnv,
-							Value: garbageString,
-						},
-					},
-					Name: component,
-				},
-			},
-			supervisordVolumeName: supervisordVolumeName,
-			hostConfig: container.HostConfig{
-				Mounts: []mount.Mount{
-					{
-						Type:   mount.TypeVolume,
-						Source: garbageString,
-						Target: garbageString,
-					},
-				},
-			},
-			wantHostConfig: container.HostConfig{
-				Mounts: []mount.Mount{
-					{
-						Type:   mount.TypeVolume,
-						Source: supervisordVolumeName,
-						Target: adaptersCommon.SupervisordMountPath,
-					},
-					{
-						Type:   mount.TypeVolume,
-						Source: garbageString,
-						Target: garbageString,
-					},
-				},
-			},
-			wantCommand: []string{"some", "command"},
-			wantArgs:    []string{"some", "args"},
-			wantEnv: []common.Env{
-				{
-					Name:  defaultWorkDirEnv,
-					Value: garbageString,
-				},
-				{
-					Name:  defaultCommandEnv,
-					Value: garbageString,
-				},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			devObj := devfileParser.DevfileObj{
-				Data: testingutil.TestDevfileData{
-					ExecCommands: tt.commandExecs,
-					Components: []common.DevfileComponent{
-						{
-							Container: &common.Container{
-								Name: tt.comp.Container.Name,
-							},
-						},
-					},
-				},
-			}
-
-			runCommand, err := adaptersCommon.GetRunCommand(devObj.Data, tt.commandName)
-			if err != nil {
-				t.Errorf("TestUpdateComponentWithSupervisord: error getting the run command")
-			}
-
-			UpdateComponentWithSupervisord(&tt.comp, runCommand, tt.supervisordVolumeName, &tt.hostConfig)
-
-			// Check the container host config
-			for _, containerHostConfigMount := range tt.hostConfig.Mounts {
-				matched := false
-				for _, wantHostConfigMount := range tt.wantHostConfig.Mounts {
-					if reflect.DeepEqual(wantHostConfigMount, containerHostConfigMount) {
-						matched = true
-					}
-				}
-
-				if !matched {
-					t.Errorf("TestUpdateComponentWithSupervisord: host configs source: %v target:%v do not match wanted host config", containerHostConfigMount.Source, containerHostConfigMount.Target)
-				}
-			}
-
-			// Check the component command
-			if !reflect.DeepEqual(tt.comp.Container.Command, tt.wantCommand) {
-				t.Errorf("TestUpdateComponentWithSupervisord: component commands dont match actual: %v wanted: %v", tt.comp.Container.Command, tt.wantCommand)
-			}
-
-			// Check the component args
-			if !reflect.DeepEqual(tt.comp.Container.Args, tt.wantArgs) {
-				t.Errorf("TestUpdateComponentWithSupervisord: component args dont match actual: %v wanted: %v", tt.comp.Container.Args, tt.wantArgs)
-			}
-
-			// Check the component env
-			for _, compEnv := range tt.comp.Container.Env {
-				matched := false
-				for _, wantEnv := range tt.wantEnv {
-					if reflect.DeepEqual(wantEnv, compEnv) {
-						matched = true
-					}
-				}
-
-				if !matched {
-					t.Errorf("TestUpdateComponentWithSupervisord: component env dont match env: %v:%v not present in wanted list", compEnv.Name, compEnv.Value)
-				}
-			}
-
-		})
-	}
-
-}
-
-func TestStartBootstrapSupervisordInitContainer(t *testing.T) {
-
-	supervisordVolumeName := supervisordVolume
-
-	fakeClient := lclient.FakeNew()
-	fakeErrorClient := lclient.FakeErrorNew()
-
-	tests := []struct {
-		name    string
-		client  *lclient.Client
-		wantErr bool
-	}{
-		{
-			name:    "Case 1: Successfully create a bootstrap container",
-			client:  fakeClient,
-			wantErr: false,
-		},
-		{
-			name:    "Case 2: Failed to create a bootstrap container ",
-			client:  fakeErrorClient,
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := StartBootstrapSupervisordInitContainer(*tt.client, supervisordVolumeName)
-			if !tt.wantErr && err != nil {
-				t.Errorf("TestStartBootstrapSupervisordInitContainer: unexpected error got: %v wanted: %v", err, tt.wantErr)
-			}
-		})
-	}
-
-}
-
-func TestCreateAndInitSupervisordVolume(t *testing.T) {
-
-	fakeClient := lclient.FakeNew()
-	fakeErrorClient := lclient.FakeErrorNew()
-
-	tests := []struct {
-		name    string
-		client  *lclient.Client
-		wantErr bool
-	}{
-		{
-			name:    "Case 1: Successfully create a bootstrap vol and container",
-			client:  fakeClient,
-			wantErr: false,
-		},
-		{
-			name:    "Case 2: Failed to create a bootstrap vol and container ",
-			client:  fakeErrorClient,
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			volName, err := CreateAndInitSupervisordVolume(*tt.client)
-			if !tt.wantErr && err != nil {
-				t.Logf("TestCreateAndInitSupervisordVolume: unexpected error %v, wanted %v", err, tt.wantErr)
-			} else if !tt.wantErr && volName != adaptersCommon.SupervisordVolumeName {
-				t.Logf("TestCreateAndInitSupervisordVolume: unexpected supervisord vol name, expected: %v got: %v", adaptersCommon.SupervisordVolumeName, volName)
 			}
 		})
 	}

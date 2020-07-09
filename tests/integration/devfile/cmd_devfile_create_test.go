@@ -15,26 +15,30 @@ import (
 var _ = Describe("odo devfile create command tests", func() {
 	const devfile = "devfile.yaml"
 	const envFile = ".odo/env/env.yaml"
-	var namespace string
-	var context string
-	var currentWorkingDirectory string
-	var devfilePath string
+	var namespace, context, currentWorkingDirectory, devfilePath, originalKubeconfig string
+
+	// Using program commmand according to cliRunner in devfile
+	cliRunner := helper.GetCliRunner()
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
-		namespace = helper.CreateRandProject()
 		context = helper.CreateNewContext()
-		currentWorkingDirectory = helper.Getwd()
-		helper.Chdir(context)
 		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+		originalKubeconfig = os.Getenv("KUBECONFIG")
+		helper.LocalKubeconfigSet(context)
+		namespace = cliRunner.CreateRandNamespaceProject()
+		currentWorkingDirectory = helper.Getwd()
+		helper.Chdir(context)
 	})
 
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		helper.DeleteProject(namespace)
+		cliRunner.DeleteNamespaceProject(namespace)
 		helper.Chdir(currentWorkingDirectory)
+		err := os.Setenv("KUBECONFIG", originalKubeconfig)
+		Expect(err).NotTo(HaveOccurred())
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
 	})
@@ -48,7 +52,14 @@ var _ = Describe("odo devfile create command tests", func() {
 			Expect(helper.CmdShouldPass("odo", "create", "nodejs")).To(ContainSubstring(experimentalOutputMsg))
 
 		})
+	})
 
+	Context("Disabling experimental preference should show a disclaimer", func() {
+		JustBeforeEach(func() {
+			if os.Getenv("KUBERNETES") == "true" {
+				Skip("Skipping test because s2i image is not supported on Kubernetes cluster")
+			}
+		})
 		It("checks that the experimental warning does *not* appear when Experimental is set to false for create", func() {
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "false", "-f")
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
@@ -67,7 +78,12 @@ var _ = Describe("odo devfile create command tests", func() {
 		It("should fail to create the devfile componet with invalid component type", func() {
 			fakeComponentName := "fake-component"
 			output := helper.CmdShouldFail("odo", "create", fakeComponentName)
-			expectedString := "\"" + fakeComponentName + "\" not found"
+			var expectedString string
+			if os.Getenv("KUBERNETES") == "true" {
+				expectedString = "component type not found"
+			} else {
+				expectedString = "component type \"" + fakeComponentName + "\" not found"
+			}
 			helper.MatchAllInOutput(output, []string{expectedString})
 		})
 	})
@@ -105,9 +121,15 @@ var _ = Describe("odo devfile create command tests", func() {
 	})
 
 	Context("When executing odo create with devfile component type argument and --registry flag", func() {
-		It("should successfully create the devfile component", func() {
+		It("should successfully create the devfile component if specified registry is valid", func() {
 			componentRegistry := "DefaultDevfileRegistry"
 			helper.CmdShouldPass("odo", "create", "java-openliberty", "--registry", componentRegistry)
+		})
+
+		It("should fail to create the devfile component if specified registry is invalid", func() {
+			componentRegistry := "fake"
+			output := helper.CmdShouldFail("odo", "create", "java-openliberty", "--registry", componentRegistry)
+			helper.MatchAllInOutput(output, []string{"Registry fake doesn't exist, please specify a valid registry via --registry"})
 		})
 	})
 
@@ -184,11 +206,11 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 	})
 
-	Context("When executing odo create with devfile component and --downloadSource flag", func() {
+	Context("When executing odo create with devfile component and --starter flag", func() {
 		It("should successfully create the component and download the source", func() {
 			contextDevfile := helper.CreateNewContext()
 			helper.Chdir(contextDevfile)
-			helper.CmdShouldPass("odo", "create", "nodejs", "--downloadSource")
+			helper.CmdShouldPass("odo", "create", "nodejs", "--starter")
 			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
 			Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
 			helper.DeleteDir(contextDevfile)
@@ -199,16 +221,16 @@ var _ = Describe("odo devfile create command tests", func() {
 	Context("When executing odo create with component with no devBuild command", func() {
 		It("should successfully create the devfile component", func() {
 			// Quarkus devfile has no devBuild command
-			output := helper.CmdShouldPass("odo", "create", "quarkus")
+			output := helper.CmdShouldPass("odo", "create", "java-quarkus")
 			helper.MatchAllInOutput(output, []string{"Please use `odo push` command to create the component with source deployed"})
 		})
 	})
 
-	Context("When executing odo create with devfile component and --downloadSource flag with a valid project", func() {
+	Context("When executing odo create with devfile component and --starter flag with a valid project", func() {
 		It("should successfully create the component specified and download the source", func() {
 			contextDevfile := helper.CreateNewContext()
 			helper.Chdir(contextDevfile)
-			helper.CmdShouldPass("odo", "create", "nodejs", "--downloadSource=nodejs-web-app")
+			helper.CmdShouldPass("odo", "create", "nodejs", "--starter=nodejs-starter")
 			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
 			Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
 			helper.DeleteDir(contextDevfile)
@@ -216,18 +238,18 @@ var _ = Describe("odo devfile create command tests", func() {
 		})
 	})
 
-	Context("When executing odo create with an invalid project specified in --downloadSource", func() {
-		It("should fail with please run 'The project: invalid-project-name specified in --downloadSource does not exist'", func() {
+	Context("When executing odo create with an invalid project specified in --starter", func() {
+		It("should fail with please run 'The project: invalid-project-name specified in --starter does not exist'", func() {
 			invalidProjectName := "invalid-project-name"
-			output := helper.CmdShouldFail("odo", "create", "nodejs", "--downloadSource=invalid-project-name")
-			expectedString := "The project: " + invalidProjectName + " specified in --downloadSource does not exist"
+			output := helper.CmdShouldFail("odo", "create", "nodejs", "--starter=invalid-project-name")
+			expectedString := "The project: " + invalidProjectName + " specified in --starter does not exist"
 			helper.MatchAllInOutput(output, []string{expectedString})
 		})
 	})
 
-	Context("When executing odo create using --downloadSource with a devfile component that contains no projects", func() {
+	Context("When executing odo create using --starter with a devfile component that contains no projects", func() {
 		It("should fail with please run 'No project found in devfile component.'", func() {
-			output := helper.CmdShouldFail("odo", "create", "maven", "--downloadSource")
+			output := helper.CmdShouldFail("odo", "create", "java-maven", "--starter")
 			expectedString := "No project found in devfile component."
 			helper.MatchAllInOutput(output, []string{expectedString})
 		})

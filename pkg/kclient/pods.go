@@ -2,6 +2,7 @@ package kclient
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"strings"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"k8s.io/klog"
 
 	// api resource types
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -146,4 +148,57 @@ func (c *Client) ExtractProjectToComponent(compInfo common.ComponentInfo, target
 		return err
 	}
 	return nil
+}
+
+// GetPodUsingComponentName gets a pod using the component name
+func (c *Client) GetPodUsingComponentName(componentName string) (*corev1.Pod, error) {
+	podSelector := fmt.Sprintf("component=%s", componentName)
+	return c.GetOnePodFromSelector(podSelector)
+}
+
+// GetOnePodFromSelector gets a pod from the selector
+func (c *Client) GetOnePodFromSelector(selector string) (*corev1.Pod, error) {
+	pods, err := c.KubeClient.CoreV1().Pods(c.Namespace).List(metav1.ListOptions{
+		LabelSelector: selector,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to get Pod for the selector: %v", selector)
+	}
+	numPods := len(pods.Items)
+	if numPods == 0 {
+		return nil, fmt.Errorf("no Pod was found for the selector: %v", selector)
+	} else if numPods > 1 {
+		return nil, fmt.Errorf("multiple Pods exist for the selector: %v. Only one must be present", selector)
+	}
+
+	return &pods.Items[0], nil
+}
+
+// GetPodLogs prints the log from pod to stdout
+func (c *Client) GetPodLogs(podName, containerName string, followLog bool) (io.ReadCloser, error) {
+
+	// Set standard log options
+	podLogOptions := corev1.PodLogOptions{Follow: false}
+
+	// If the log is being followed, set it to follow / don't wait
+	if followLog {
+		tailLines := int64(1)
+		podLogOptions = corev1.PodLogOptions{
+			Follow:    true,
+			Previous:  false,
+			TailLines: &tailLines,
+			Container: containerName,
+		}
+	}
+
+	// RESTClient call to kubernetes
+	rd, err := c.KubeClient.CoreV1().RESTClient().Get().
+		Namespace(c.Namespace).
+		Name(podName).
+		Resource("pods").
+		SubResource("log").
+		VersionedParams(&podLogOptions, scheme.ParameterCodec).
+		Stream()
+
+	return rd, err
 }

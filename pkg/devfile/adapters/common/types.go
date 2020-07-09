@@ -37,7 +37,10 @@ type PushParameters struct {
 	DevfileInitCmd    string                  // DevfileInitCmd takes the init command through the command line and overwrites devfile init command
 	DevfileBuildCmd   string                  // DevfileBuildCmd takes the build command through the command line and overwrites devfile build command
 	DevfileRunCmd     string                  // DevfileRunCmd takes the run command through the command line and overwrites devfile run command
+	DevfileDebugCmd   string                  // DevfileDebugCmd takes the debug command through the command line and overwrites the devfile debug command
 	EnvSpecificInfo   envinfo.EnvSpecificInfo // EnvSpecificInfo contains infomation of env.yaml file
+	Debug             bool                    // Runs the component in debug mode
+	DebugPort         int                     // Port used for remote debugging
 }
 
 // SyncParameters is a struct containing the parameters to be used when syncing a devfile component
@@ -48,10 +51,11 @@ type SyncParameters struct {
 	ComponentExists bool
 }
 
-// ComponentInfo is a struct that holds information about a component i.e.; pod name, container name
+// ComponentInfo is a struct that holds information about a component i.e.; pod name, container name, and source mount (if applicable)
 type ComponentInfo struct {
 	PodName       string
 	ContainerName string
+	SourceMount   string
 }
 
 // PushCommandsMap stores the commands to be executed as per their types.

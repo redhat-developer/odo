@@ -207,7 +207,6 @@ func TestGetCmdToDeleteFiles(t *testing.T) {
 func TestSyncFiles(t *testing.T) {
 
 	testComponentName := "test"
-	componentType := versionsCommon.ContainerComponentType
 
 	fakeClient := lclient.FakeNew()
 	fakeErrorClient := lclient.FakeErrorNew()
@@ -307,11 +306,7 @@ func TestSyncFiles(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := parser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					Components: []versionsCommon.DevfileComponent{
-						{
-							Type: componentType,
-						},
-					},
+					Components: []versionsCommon.DevfileComponent{},
 				},
 			}
 
@@ -340,7 +335,6 @@ func TestSyncFiles(t *testing.T) {
 func TestPushLocal(t *testing.T) {
 
 	testComponentName := "test"
-	componentType := versionsCommon.ContainerComponentType
 
 	// create a temp dir for the file indexer
 	directory, err := ioutil.TempDir("", "")
@@ -427,16 +421,25 @@ func TestPushLocal(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name:        "Case 6: Source mapping folder set",
+			client:      fakeClient,
+			path:        directory,
+			files:       []string{},
+			delFiles:    []string{},
+			isForcePush: false,
+			compInfo: common.ComponentInfo{
+				ContainerName: "abcd",
+				SourceMount:   "/some/path",
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := parser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					Components: []versionsCommon.DevfileComponent{
-						{
-							Type: componentType,
-						},
-					},
+					Components: []versionsCommon.DevfileComponent{},
 				},
 			}
 

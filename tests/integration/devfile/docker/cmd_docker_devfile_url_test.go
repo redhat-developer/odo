@@ -99,7 +99,7 @@ var _ = Describe("odo docker devfile url command tests", func() {
 
 			url := strings.TrimSpace(helper.ExtractSubString(output, "127.0.0.1", "created"))
 
-			helper.HttpWaitFor("http://"+url, "Hello World!", 30, 1)
+			helper.HttpWaitFor("http://"+url, "Hello from Node.js Starter Application!", 30, 1)
 		})
 	})
 
@@ -139,7 +139,7 @@ var _ = Describe("odo docker devfile url command tests", func() {
 			stdout = helper.CmdShouldFail("odo", "url", "list")
 			Expect(stdout).To(ContainSubstring("no URLs found"))
 
-			httpPort, err := util.HttpGetFreePort()
+			httpPort, err := util.HTTPGetFreePort()
 			Expect(err).NotTo(HaveOccurred())
 			freePort := strconv.Itoa(httpPort)
 			helper.CmdShouldPass("odo", "url", "create", url1, "--exposed-port", freePort, "--now")
@@ -190,7 +190,7 @@ var _ = Describe("odo docker devfile url command tests", func() {
 			stdout = helper.CmdShouldFail("odo", "url", "describe", url1)
 			Expect(stdout).To(ContainSubstring("the url " + url1 + " does not exist"))
 
-			httpPort, err := util.HttpGetFreePort()
+			httpPort, err := util.HTTPGetFreePort()
 			Expect(err).NotTo(HaveOccurred())
 			freePort := strconv.Itoa(httpPort)
 			helper.CmdShouldPass("odo", "url", "create", url1, "--exposed-port", freePort, "--now")

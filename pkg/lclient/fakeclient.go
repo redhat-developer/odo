@@ -39,6 +39,83 @@ var mockImageSummary = []types.ImageSummary{
 	},
 }
 
+var mockContainerJSONList = []types.ContainerJSON{
+	types.ContainerJSON{
+		ContainerJSONBase: &types.ContainerJSONBase{
+			Name:  "/node",
+			Image: "node",
+			ID:    "1",
+		},
+		Mounts: []types.MountPoint{
+			{
+				Destination: OdoSourceVolumeMount,
+			},
+		},
+		Config: &container.Config{
+			Image: "node",
+			Labels: map[string]string{
+				"component": "test",
+				"alias":     "alias1",
+			},
+		},
+	},
+	types.ContainerJSON{
+		ContainerJSONBase: &types.ContainerJSONBase{
+			Name:  "/go-test",
+			Image: "golang",
+			ID:    "2",
+			HostConfig: &container.HostConfig{
+				PortBindings: nat.PortMap{
+					nat.Port("8080/tcp"): []nat.PortBinding{
+						nat.PortBinding{
+							HostIP:   "127.0.0.1",
+							HostPort: "54321",
+						},
+					},
+				},
+			},
+		},
+		Config: &container.Config{
+			Image: "golang",
+			Labels: map[string]string{
+				"component": "golang",
+				"8080":      "testurl2",
+			},
+		},
+	},
+	types.ContainerJSON{
+		ContainerJSONBase: &types.ContainerJSONBase{
+			Name:  "/go-test-build",
+			Image: "golang",
+			ID:    "3",
+			HostConfig: &container.HostConfig{
+				PortBindings: nat.PortMap{
+					nat.Port("8080/tcp"): []nat.PortBinding{
+						nat.PortBinding{
+							HostIP:   "127.0.0.1",
+							HostPort: "65432",
+						},
+					},
+				},
+			},
+		},
+		Mounts: []types.MountPoint{
+			{
+				Destination: OdoSourceVolumeMount,
+			},
+		},
+		Config: &container.Config{
+			Image: "golang",
+			Labels: map[string]string{
+				"component": "test",
+				"alias":     "alias1",
+				"8080":      "testurl3",
+			},
+		},
+	},
+}
+var mockLogs = "My container Logs are here."
+
 var mockContainerList = []types.Container{
 	types.Container{
 		Names: []string{"/node"},
@@ -50,6 +127,7 @@ var mockContainerList = []types.Container{
 		},
 		Mounts: []types.MountPoint{
 			{
+				Name:        "odo-project-source",
 				Destination: OdoSourceVolumeMount,
 			},
 		},
@@ -62,16 +140,6 @@ var mockContainerList = []types.Container{
 			"component": "golang",
 			"8080":      "testurl2",
 		},
-		HostConfig: container.HostConfig{
-			PortBindings: nat.PortMap{
-				nat.Port("8080/tcp"): []nat.PortBinding{
-					nat.PortBinding{
-						HostIP:   "127.0.0.1",
-						HostPort: "54321",
-					},
-				},
-			},
-		},
 	},
 	types.Container{
 		Names: []string{"/go-test-build"},
@@ -80,15 +148,11 @@ var mockContainerList = []types.Container{
 		Labels: map[string]string{
 			"component": "golang",
 			"8080":      "testurl3",
+			"alias":     "alias1",
 		},
-		HostConfig: container.HostConfig{
-			PortBindings: nat.PortMap{
-				nat.Port("8080/tcp"): []nat.PortBinding{
-					nat.PortBinding{
-						HostIP:   "127.0.0.1",
-						HostPort: "65432",
-					},
-				},
+		Mounts: []types.MountPoint{
+			{
+				Destination: OdoSourceVolumeMount,
 			},
 		},
 	},
@@ -137,18 +201,9 @@ func (m *mockDockerClient) ContainerRemove(ctx context.Context, containerID stri
 }
 
 func (m *mockDockerClient) ContainerInspect(ctx context.Context, containerID string) (types.ContainerJSON, error) {
-	for _, containerElement := range mockContainerList {
+	for _, containerElement := range mockContainerJSONList {
 		if containerElement.ID == containerID {
-			containerConfig := container.Config{
-				Image:  containerElement.Image,
-				Labels: containerElement.Labels,
-			}
-			return types.ContainerJSON{
-				ContainerJSONBase: &types.ContainerJSONBase{
-					HostConfig: &containerElement.HostConfig,
-				},
-				Config: &containerConfig,
-			}, nil
+			return containerElement, nil
 		}
 	}
 	return types.ContainerJSON{}, nil
@@ -157,6 +212,15 @@ func (m *mockDockerClient) ContainerInspect(ctx context.Context, containerID str
 
 func (m *mockDockerClient) ContainerWait(ctx context.Context, containerID string, condition container.WaitCondition) (<-chan container.ContainerWaitOKBody, <-chan error) {
 	resultC := make(chan container.ContainerWaitOKBody)
+	go func() {
+		res := container.ContainerWaitOKBody{
+			StatusCode: 0,
+			Error: &container.ContainerWaitOKBodyError{
+				Message: "",
+			},
+		}
+		resultC <- res
+	}()
 	return resultC, nil
 }
 
@@ -195,6 +259,21 @@ func (m *mockDockerClient) VolumeList(ctx context.Context, filter filters.Args) 
 					"component": "test",
 					"type":      "projects",
 				},
+				Name: "odo-project-source-test",
+			},
+			{
+				Labels: map[string]string{
+					"component": "duplicate",
+					"type":      "projects",
+				},
+				Name: "odo-project-source-duplicate1",
+			},
+			{
+				Labels: map[string]string{
+					"component": "duplicate",
+					"type":      "projects",
+				},
+				Name: "odo-project-source-duplicate2",
 			},
 		},
 	}, nil
@@ -246,7 +325,7 @@ var errContainerStart = errors.New("error starting containers")
 var errContainerStop = errors.New("error stopping container")
 var errContainerRemove = errors.New("error removing container")
 var errContainerInspect = errors.New("error inspecting container")
-var errContainerWait = errors.New("error timeout waiting for container")
+var errContainerWait = errors.New("error waiting for container")
 var errDistributionInspect = errors.New("error inspecting distribution")
 var errVolumeCreate = errors.New("error creating volume")
 var errVolumeList = errors.New("error listing volume")
@@ -254,6 +333,7 @@ var errRemoveVolume = errors.New("error removing volume")
 var errContainerExecCreate = errors.New("error creating container exec")
 var errContainerExecAttach = errors.New("error attach container exec")
 var errCopyToContainer = errors.New("error copying to container")
+var errContainerLogs = errors.New("error showing log from container")
 
 func (m *mockDockerErrorClient) ImageList(ctx context.Context, imageListOptions types.ImageListOptions) ([]types.ImageSummary, error) {
 	return nil, errImageList
@@ -289,8 +369,23 @@ func (m *mockDockerErrorClient) ContainerInspect(ctx context.Context, containerI
 }
 
 func (m *mockDockerErrorClient) ContainerWait(ctx context.Context, containerID string, condition container.WaitCondition) (<-chan container.ContainerWaitOKBody, <-chan error) {
+	resultC := make(chan container.ContainerWaitOKBody)
 	err := make(chan error)
-	err <- errContainerWait
+	go func() {
+		if condition == container.WaitConditionNextExit {
+			res := container.ContainerWaitOKBody{
+				StatusCode: 1,
+				Error: &container.ContainerWaitOKBodyError{
+					Message: "bad status code",
+				},
+			}
+			resultC <- res
+		}
+		err <- errContainerWait
+	}()
+	if condition == container.WaitConditionNextExit {
+		return resultC, nil
+	}
 	return nil, err
 }
 
@@ -333,4 +428,13 @@ func (m *mockDockerErrorClient) ContainerExecAttach(ctx context.Context, execID 
 
 func (m *mockDockerErrorClient) CopyToContainer(ctx context.Context, container, path string, content io.Reader, options types.CopyToContainerOptions) error {
 	return errCopyToContainer
+}
+
+func (m *mockDockerClient) ContainerLogs(ctx context.Context, container string, options types.ContainerLogsOptions) (io.ReadCloser, error) {
+	stringReader := strings.NewReader(mockLogs)
+	return ioutil.NopCloser(stringReader), nil
+}
+
+func (m *mockDockerErrorClient) ContainerLogs(ctx context.Context, container string, options types.ContainerLogsOptions) (io.ReadCloser, error) {
+	return nil, errContainerLogs
 }

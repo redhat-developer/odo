@@ -1,13 +1,14 @@
 package integration
 
 import (
-	"github.com/openshift/odo/pkg/util"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/openshift/odo/pkg/util"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -44,7 +45,7 @@ var _ = Describe("odo debug command tests", func() {
 			helper.CmdShouldPass("odo", "component", "create", "nodejs:latest", "--project", project, "--context", context)
 			helper.CmdShouldPass("odo", "push", "--context", context)
 
-			httpPort, err := util.HttpGetFreePort()
+			httpPort, err := util.HTTPGetFreePort()
 			Expect(err).NotTo(HaveOccurred())
 			freePort := strconv.Itoa(httpPort)
 
@@ -55,7 +56,7 @@ var _ = Describe("odo debug command tests", func() {
 
 			// Make sure that the debug information output, outputs correctly.
 			// We do *not* check the json output since the debugProcessID will be different each time.
-			helper.WaitForCmdOut("odo", []string{"debug", "info", "--context", context, "-o", "json"}, 1, true, func(output string) bool {
+			helper.WaitForCmdOut("odo", []string{"debug", "info", "--context", context, "-o", "json"}, 1, false, func(output string) bool {
 				if strings.Contains(output, `"kind": "OdoDebugInfo"`) &&
 					strings.Contains(output, `"localPort": `+freePort) {
 					return true
@@ -109,7 +110,7 @@ var _ = Describe("odo debug command tests", func() {
 			helper.CmdShouldPass("odo", "component", "create", "nodejs:latest", "nodejs-cmp-"+project, "--project", project, "--context", context)
 			helper.CmdShouldPass("odo", "push", "--context", context)
 
-			httpPort, err := util.HttpGetFreePort()
+			httpPort, err := util.HTTPGetFreePort()
 			Expect(err).NotTo(HaveOccurred())
 			freePort := strconv.Itoa(httpPort)
 
@@ -132,7 +133,7 @@ var _ = Describe("odo debug command tests", func() {
 			helper.CmdShouldPass("odo", "component", "create", "nodejs:latest", "nodejs-cmp-"+project, "--project", project, "--context", context)
 			helper.CmdShouldPass("odo", "push", "--context", context)
 
-			httpPort, err := util.HttpGetFreePort()
+			httpPort, err := util.HTTPGetFreePort()
 			Expect(err).NotTo(HaveOccurred())
 			freePort := strconv.Itoa(httpPort)
 

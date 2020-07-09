@@ -160,7 +160,7 @@ func (c *Client) DeleteDeployment(labels map[string]string) error {
 	return c.KubeClient.AppsV1().Deployments(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
 }
 
-// CreateDynamicDeployment creates a dynamic deployment for Operator backed service
+// CreateDynamicResource creates a dynamic custom resource
 func (c *Client) CreateDynamicResource(exampleCustomResource map[string]interface{}, group, version, resource string) error {
 	deploymentRes := schema.GroupVersionResource{Group: group, Version: version, Resource: resource}
 

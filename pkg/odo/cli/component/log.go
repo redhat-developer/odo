@@ -3,12 +3,15 @@ package component
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/pkg/util"
 
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/util/completion"
+	"github.com/openshift/odo/pkg/odo/util/experimental"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	odoutil "github.com/openshift/odo/pkg/odo/util"
@@ -27,19 +30,30 @@ var logExample = ktemplates.Examples(`  # Get the logs for the nodejs component
 // LogOptions contains log options
 type LogOptions struct {
 	logFollow        bool
+	debug            bool
 	componentContext string
 	*ComponentOptions
+	devfilePath string
 }
 
 // NewLogOptions returns new instance of LogOptions
 func NewLogOptions() *LogOptions {
-	return &LogOptions{false, "", &ComponentOptions{}}
+	return &LogOptions{false, false, "", &ComponentOptions{}, ""}
 }
 
 // Complete completes log args
 func (lo *LogOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	err = lo.ComponentOptions.Complete(name, cmd, args)
-	return
+
+	lo.devfilePath = "devfile.yaml"
+	lo.devfilePath = filepath.Join(lo.componentContext, lo.devfilePath)
+
+	// if experimental mode is enabled and devfile is present
+	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(lo.devfilePath) {
+		lo.ComponentOptions.Context = genericclioptions.NewDevfileContext(cmd)
+		return nil
+	}
+
+	return lo.ComponentOptions.Complete(name, cmd, args)
 }
 
 // Validate validates the log parameters
@@ -51,8 +65,13 @@ func (lo *LogOptions) Validate() (err error) {
 func (lo *LogOptions) Run() (err error) {
 	stdout := os.Stdout
 
-	// Retrieve the log
-	err = component.GetLogs(lo.Context.Client, lo.componentName, lo.Context.Application, lo.logFollow, stdout)
+	// If experimental mode is enabled, use devfile push
+	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(lo.devfilePath) {
+		err = lo.DevfileComponentLog()
+	} else {
+		// Retrieve the log
+		err = component.GetLogs(lo.Context.Client, lo.componentName, lo.Context.Application, lo.logFollow, stdout)
+	}
 	return
 }
 
@@ -73,6 +92,7 @@ func NewCmdLog(name, fullName string) *cobra.Command {
 	}
 
 	logCmd.Flags().BoolVarP(&o.logFollow, "follow", "f", false, "Follow logs")
+	logCmd.Flags().BoolVar(&o.debug, "debug", false, "Show logs for debug commmand")
 
 	logCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	completion.RegisterCommandHandler(logCmd, completion.ComponentNameCompletionHandler)
