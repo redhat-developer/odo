@@ -131,6 +131,16 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(statErr).ToNot(HaveOccurred())
 		})
 
+		It("checks that odo push works with a devfile with composite commands", func() {
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeCommands.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			helper.CmdShouldPass("odo", "create", "--devfile", "devfile.yaml", "--project", namespace, cmpName)
+
+			output := helper.CmdShouldPass("odo", "push", "--project", namespace)
+			Expect(output).To(ContainSubstring("Executing echo command"))
+		})
+
 		It("checks that odo push works outside of the context directory", func() {
 			helper.Chdir(currentWorkingDirectory)
 
