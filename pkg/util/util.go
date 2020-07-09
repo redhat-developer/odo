@@ -3,6 +3,7 @@ package util
 import (
 	"archive/zip"
 	"bufio"
+	"bytes"
 	"context"
 	"crypto/rand"
 	"fmt"
@@ -14,6 +15,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"os/signal"
 	"os/user"
 	"path"
 	"path/filepath"
@@ -22,8 +24,10 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/gobwas/glob"
 	"github.com/google/go-github/github"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
@@ -105,7 +109,7 @@ func In(arr []string, value string) bool {
 	return false
 }
 
-// Hyphenate applicationName and componentName
+// NamespaceOpenShiftObject hyphenates applicationName and componentName
 func NamespaceOpenShiftObject(componentName string, applicationName string) (string, error) {
 
 	// Error if it's blank
@@ -168,6 +172,7 @@ func ParseComponentImageName(imageName string) (string, string, string, string) 
 	return componentImageName, componentType, componentName, componentVersion
 }
 
+// WIN represent the windows OS
 const WIN = "windows"
 
 // ReadFilePath Reads file path form URL file:///C:/path/to/file to C:\path\to\file
@@ -503,7 +508,7 @@ func GetSortedKeys(mapping map[string]string) []string {
 	return keys
 }
 
-//returns a slice containing the split string, using ',' as a separator
+// GetSplitValuesFromStr returns a slice containing the split string, using ',' as a separator
 func GetSplitValuesFromStr(inputStr string) []string {
 	if len(inputStr) == 0 {
 		return []string{}
@@ -645,8 +650,8 @@ func DeletePath(path string) error {
 	return nil
 }
 
-// HttpGetFreePort gets a free port from the system
-func HttpGetFreePort() (int, error) {
+// HTTPGetFreePort gets a free port from the system
+func HTTPGetFreePort() (int, error) {
 	listener, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		return -1, err
@@ -712,7 +717,7 @@ func HTTPGetRequest(url string) ([]byte, error) {
 	return bytes, err
 }
 
-// filterIgnores applies the glob rules on the filesChanged and filesDeleted and filters them
+// FilterIgnores applies the glob rules on the filesChanged and filesDeleted and filters them
 // returns the filtered results which match any of the glob rules
 func FilterIgnores(filesChanged, filesDeleted, absIgnoreRules []string) (filesChangedFiltered, filesDeletedFiltered []string) {
 	for _, file := range filesChanged {
@@ -737,7 +742,7 @@ func FilterIgnores(filesChanged, filesDeleted, absIgnoreRules []string) (filesCh
 	return filesChangedFiltered, filesDeletedFiltered
 }
 
-// Checks that the folder to download the project from devfile is
+// IsValidProjectDir checks that the folder to download the project from devfile is
 // either empty or only contains the devfile used.
 func IsValidProjectDir(path string, devfilePath string) error {
 	files, err := ioutil.ReadDir(path)
@@ -1131,6 +1136,7 @@ func sliceContainsString(str string, slice []string) bool {
 	return false
 }
 
+// AddFileToIgnoreFile adds a file to the gitignore file. It only does that if the file doesn't exist
 func AddFileToIgnoreFile(gitIgnoreFile, filename string) error {
 	return addFileToIgnoreFile(gitIgnoreFile, filename, filesystem.DefaultFs{})
 }
@@ -1153,4 +1159,48 @@ func addFileToIgnoreFile(gitIgnoreFile, filename string, fs filesystem.Filesyste
 		}
 	}
 	return nil
+}
+
+// DisplayLog displays logs to user stdout with some color formatting
+func DisplayLog(followLog bool, rd io.ReadCloser, compName string) (err error) {
+
+	defer rd.Close()
+
+	// Copy to stdout (in yellow)
+	color.Set(color.FgYellow)
+	defer color.Unset()
+
+	// If we are going to followLog, we'll be copying it to stdout
+	// else, we copy it to a buffer
+	if followLog {
+
+		c := make(chan os.Signal)
+		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+		go func() {
+			<-c
+			color.Unset()
+			os.Exit(1)
+		}()
+
+		if _, err = io.Copy(os.Stdout, rd); err != nil {
+			return errors.Wrapf(err, "error followLoging logs for %s", compName)
+		}
+
+	} else {
+
+		// Copy to buffer (we aren't going to be followLoging the logs..)
+		buf := new(bytes.Buffer)
+		_, err = io.Copy(buf, rd)
+		if err != nil {
+			return errors.Wrapf(err, "unable to copy followLog to buffer")
+		}
+
+		// Copy to stdout
+		if _, err = io.Copy(os.Stdout, buf); err != nil {
+			return errors.Wrapf(err, "error copying logs to stdout")
+		}
+
+	}
+	return
+
 }

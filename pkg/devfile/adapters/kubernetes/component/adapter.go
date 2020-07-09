@@ -2,9 +2,11 @@ package component
 
 import (
 	"fmt"
+	"io"
 	"reflect"
 
 	"github.com/openshift/odo/pkg/exec"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -15,7 +17,6 @@ import (
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
@@ -127,7 +128,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	// Find at least one pod with the source volume mounted, error out if none can be found
-	containerName, err := getFirstContainerWithSourceVolume(pod.Spec.Containers)
+	containerName, sourceMount, err := getFirstContainerWithSourceVolume(pod.Spec.Containers)
 	if err != nil {
 		return errors.Wrapf(err, "error while retrieving container from pod %s with a mounted project volume", podName)
 	}
@@ -138,8 +139,9 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	compInfo := common.ComponentInfo{
 		ContainerName: containerName,
 		PodName:       pod.GetName(),
+		SourceMount:   sourceMount,
 	}
-	syncParams := adaptersCommon.SyncParameters{
+	syncParams := common.SyncParameters{
 		PushParams:      parameters,
 		CompInfo:        compInfo,
 		ComponentExists: componentExists,
@@ -192,7 +194,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 
 	kclient.AddBootstrapSupervisordInitContainer(podTemplateSpec)
 
-	componentAliasToVolumes := adaptersCommon.GetVolumes(a.Devfile)
+	componentAliasToVolumes := common.GetVolumes(a.Devfile)
 
 	var uniqueStorages []common.Storage
 	volumeNameToPVCName := make(map[string]string)
@@ -453,20 +455,21 @@ func (a Adapter) InitRunContainerSupervisord(containerName, podName string, cont
 	return
 }
 
-// getFirstContainerWithSourceVolume returns the first container that set mountSources: true
+// getFirstContainerWithSourceVolume returns the first container that set mountSources: true as well
+// as the path to the source volume inside the container.
 // Because the source volume is shared across all components that need it, we only need to sync once,
 // so we only need to find one container. If no container was found, that means there's no
 // container to sync to, so return an error
-func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, error) {
+func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, string, error) {
 	for _, c := range containers {
 		for _, vol := range c.VolumeMounts {
 			if vol.Name == kclient.OdoSourceVolume {
-				return c.Name, nil
+				return c.Name, vol.MountPath, nil
 			}
 		}
 	}
 
-	return "", fmt.Errorf("In order to sync files, odo requires at least one component in a devfile to set 'mountSources: true'")
+	return "", "", fmt.Errorf("In order to sync files, odo requires at least one component in a devfile to set 'mountSources: true'")
 }
 
 // getCommandsMap returns a mapping of all of devfile command names to their corresponding DevfileCommand struct
@@ -487,4 +490,38 @@ func (a Adapter) Delete(labels map[string]string) error {
 	}
 
 	return a.Client.DeleteDeployment(labels)
+}
+
+// Log returns log from component
+func (a Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
+
+	pod, err := a.Client.GetPodUsingComponentName(a.ComponentName)
+	if err != nil {
+		return nil, errors.Errorf("the component %s doesn't exist on the cluster", a.ComponentName)
+	}
+
+	if pod.Status.Phase != corev1.PodRunning {
+		return nil, errors.Errorf("unable to show logs, component is not in running state. current status=%v", pod.Status.Phase)
+	}
+
+	var command versionsCommon.DevfileCommand
+	if debug {
+		command, err = common.GetDebugCommand(a.Devfile.Data, "")
+		if err != nil {
+			return nil, err
+		}
+		if reflect.DeepEqual(versionsCommon.DevfileCommand{}, command) {
+			return nil, errors.Errorf("no debug command found in devfile, please run \"odo log\" for run command logs")
+		}
+
+	} else {
+		command, err = common.GetRunCommand(a.Devfile.Data, "")
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	containerName := command.Exec.Component
+
+	return a.Client.GetPodLogs(pod.Name, containerName, follow)
 }

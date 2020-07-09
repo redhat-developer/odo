@@ -19,7 +19,7 @@ export KUBECONFIG=${KUBECONFIG:-"${DEFAULT_INSTALLER_ASSETS_DIR}/auth/kubeconfig
 # List of users to create
 USERS="developer odonoprojectattemptscreate odosingleprojectattemptscreate odologinnoproject odologinsingleproject1"
 
-# Attempt resolution of kubeadmin, only if a CI is set
+# Attempt resolution of kubeadmin, only if a CI is not set
 if [ -z $CI ]; then
     # Check if nessasary files exist
     if [ ! -f $KUBEADMIN_PASSWORD_FILE ]; then
@@ -37,6 +37,13 @@ if [ -z $CI ]; then
 
     # Login as admin user
     oc login -u $KUBEADMIN_USER -p $KUBEADMIN_PASSWORD
+else
+    # Copy kubeconfig to temporary kubeconfig file
+    # Read and Write permission to temporary kubeconfig file
+    TMP_DIR=$(mktemp -d)
+    cp $KUBECONFIG $TMP_DIR/kubeconfig
+    chmod 640 $TMP_DIR/kubeconfig
+    export KUBECONFIG=$TMP_DIR/kubeconfig
 fi
 
 # Setup the cluster for Operator tests

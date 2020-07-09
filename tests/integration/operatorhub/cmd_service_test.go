@@ -263,8 +263,11 @@ spec:
 			// Now let's check the output again to ensure expected behaviour
 			stdOut = helper.CmdShouldFail("odo", "service", "list")
 			jsonOut = helper.CmdShouldFail("odo", "service", "list", "-o", "json")
-			Expect(stdOut).To(ContainSubstring("No operator backed services found in the namesapce"))
-			helper.MatchAllInOutput(jsonOut, []string{"No operator backed services found in the namesapce", "\"message\": \"No operator backed services found in the namesapce\""})
+
+			msg := fmt.Sprintf("No operator backed services found in namespace: %s", project)
+			msgWithQuote := fmt.Sprintf("\"message\": \"No operator backed services found in namespace: %s\"", project)
+			Expect(stdOut).To(ContainSubstring(msg))
+			helper.MatchAllInOutput(jsonOut, []string{msg, msgWithQuote})
 		})
 	})
 })

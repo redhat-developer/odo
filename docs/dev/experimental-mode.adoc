@@ -44,10 +44,10 @@ wildfly                    openshift     10.0,10.1,11.0,12.0,13.0,8.1,9.0,latest
 
 Odo Devfile Components:
 NAME                 DESCRIPTION                           SUPPORTED
-maven                Upstream Maven and OpenJDK 11         YES
+java-maven           Upstream Maven and OpenJDK 11         YES
 nodejs               Stack with NodeJS 10                  YES
-openLiberty          Open Liberty microservice in Java     YES
-java-spring-boot     Spring Boot® using IBM Java           YES
+java-openliberty     Open Liberty microservice in Java     YES
+java-springboot      Spring Boot® using IBM Java           YES
 ```
 
 ##### Creating a devfile component:

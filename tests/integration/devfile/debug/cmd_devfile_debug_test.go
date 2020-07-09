@@ -1,14 +1,15 @@
 package debug
 
 import (
-	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/testingutil"
-	"github.com/openshift/odo/tests/helper"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/testingutil"
+	"github.com/openshift/odo/tests/helper"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -64,11 +65,12 @@ var _ = Describe("odo devfile debug command serial tests", func() {
 		// Devfile push requires experimental mode to be set
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true", "-f")
 
-		helper.CmdShouldPass("git", "clone", "https://github.com/che-samples/web-nodejs-sample.git", projectDirPath)
+		helper.MakeDir(projectDirPath)
 		helper.Chdir(projectDirPath)
 
 		helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
-		helper.CopyExample(filepath.Join("source", "devfiles", "nodejs"), projectDirPath)
+		helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
+		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(projectDirPath, "devfile-with-debugrun.yaml"))
 		helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
 		helper.CmdShouldPass("odo", "push", "--debug")
 

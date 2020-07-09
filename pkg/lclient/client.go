@@ -21,9 +21,10 @@ Please ensure that Docker is currently running on your machine.
 // MinDockerAPIVersion is the minimum Docker API version to use
 // 1.30 corresponds to Docker 17.05, which should be sufficiently old enough
 const (
-	MinDockerAPIVersion  = "1.30" // MinDockerAPIVersion is the minimum Docker API version to use 1.30 corresponds to Docker 17.05, which should be sufficiently old enough to support most systems
-	DockerStorageDriver  = ""
-	OdoSourceVolumeMount = "/projects"
+	MinDockerAPIVersion     = "1.30" // MinDockerAPIVersion is the minimum Docker API version to use 1.30 corresponds to Docker 17.05, which should be sufficiently old enough to support most systems
+	DockerStorageDriver     = ""
+	OdoSourceVolumeMount    = "/projects"
+	ProjectSourceVolumeName = "odo-project-source"
 )
 
 // DockerClient requires functions called on the docker client package
@@ -44,6 +45,7 @@ type DockerClient interface {
 	ContainerExecCreate(ctx context.Context, container string, config types.ExecConfig) (types.IDResponse, error)
 	ContainerExecAttach(ctx context.Context, execID string, config types.ExecStartCheck) (types.HijackedResponse, error)
 	CopyToContainer(ctx context.Context, container, path string, content io.Reader, options types.CopyToContainerOptions) error
+	ContainerLogs(ctx context.Context, container string, options types.ContainerLogsOptions) (io.ReadCloser, error)
 }
 
 // Client is a collection of fields used for client configuration and interaction

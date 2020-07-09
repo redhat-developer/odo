@@ -17,6 +17,7 @@ type ProjectStatus struct {
 	Active bool `json:"active"`
 }
 
+// ProjectList holds a list of Project
 type ProjectList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

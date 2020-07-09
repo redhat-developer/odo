@@ -72,7 +72,7 @@ type DevfileMetadata struct {
 	devfileLink        string
 	devfileRegistry    catalog.Registry
 	devfilePath        devfilePath
-	downloadSource     string
+	starter            string
 }
 
 // CreateRecommendedCommandName is the recommended watch command name
@@ -108,7 +108,7 @@ var createLongDesc = ktemplates.LongDesc(`Create a configuration describing a co
 
 If a component name is not provided, it'll be auto-generated.
 
-A full list of component types that can be deployed is available using: 'odo catalog list'
+A full list of component types that can be deployed is available using: 'odo catalog list components'
 
 By default, builder images (component type) will be used from the current namespace. You can explicitly supply a namespace by using: odo create namespace/name:version
 If version is not specified by default, latest will be chosen as the version.`)
@@ -136,8 +136,8 @@ Note: When you use odo with experimental mode enabled and create devfile compone
 # Create new Node.js component with custom ports, additional environment variables and memory and cpu limits
 %[1]s nodejs --port 8080,8100/tcp,9100/udp --env key=value,key1=value1 --memory 4Gi --cpu 2
 
-# Create new Node.js component and download the sample project named nodejs-web-app
-%[1]s nodejs --downloadSource=nodejs-web-app`)
+# Create new Node.js component and download the sample project named nodejs-starter
+%[1]s nodejs --starter=nodejs-starter`)
 
 const defaultProjectName = "devfile-project-name"
 
@@ -430,6 +430,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 					componentNamespace = ui.EnterDevfileComponentNamespace(defaultComponentNamespace)
 				}
 			}
+
 		} else {
 			// Direct mode (User enters the full command)
 
@@ -478,12 +479,15 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 				}
 			}
 
-			// Component namespace: Get from --project flag, by default it is the current active namespace
-			if cmd.Flags().Changed("project") && !pushtarget.IsPushTargetDocker() {
-				componentNamespace, err = cmd.Flags().GetString("project")
+			// Component namespace: Get from --project flag or --namespace flag, by default it is the current active namespace
+			if co.devfileMetadata.componentNamespace == "" && !pushtarget.IsPushTargetDocker() {
+
+				// Check to see if we've passed in "project", if not, default to the standard Kubernetes namespace
+				componentNamespace, err = retrieveCmdNamespace(cmd)
 				if err != nil {
 					return err
 				}
+
 			} else {
 				componentNamespace = defaultComponentNamespace
 			}
@@ -836,17 +840,20 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 	if err != nil {
 		return err
 	}
+
+	// Retrieve projects
 	projects := devObj.Data.GetProjects()
 	nOfProjects := len(projects)
 	if nOfProjects == 0 {
 		return errors.Errorf("No project found in devfile component.")
 	}
 
+	// Determine what project to be used
 	if nOfProjects == 1 && projectPassed == defaultProjectName {
 		project = projects[0]
 	} else if nOfProjects > 1 && projectPassed == defaultProjectName {
 		project = projects[0]
-		log.Warning("There are multiple projects in this devfile but none have been specified in --downloadSource. Downloading the first: " + project.Name)
+		log.Warning("There are multiple projects in this devfile but none have been specified in --starter. Downloading the first: " + project.Name)
 	} else { //If the user has specified a project
 		projectFound := false
 		for indexOfProject, projectInfo := range projects {
@@ -857,10 +864,11 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 		}
 
 		if !projectFound {
-			return errors.Errorf("The project: %s specified in --downloadSource does not exist", projectPassed)
+			return errors.Errorf("The project: %s specified in --starter does not exist", projectPassed)
 		}
 	}
 
+	// Retrieve the working directory in order to clone correctly
 	path, err := os.Getwd()
 	if err != nil {
 		return errors.Wrapf(err, "Could not get the current working directory.")
@@ -869,6 +877,8 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 	if project.ClonePath != "" {
 		clonePath := project.ClonePath
 		if runtime.GOOS == "windows" {
+			//TODO: This is a bad implementation.. we should be using FromSlash
+			// https://golang.org/pkg/path/filepath/#FromSlash
 			clonePath = strings.Replace(clonePath, "\\", "/", -1)
 		}
 
@@ -876,11 +886,12 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 		if _, err := os.Stat(path); os.IsNotExist(err) {
 			err = os.MkdirAll(path, os.FileMode(0755))
 			if err != nil {
-				return errors.Wrap(err, "Failed creating folder with path: "+path)
+				return errors.Wrap(err, "failed creating folder with path: "+path)
 			}
 		}
 	}
 
+	// We will check to see if the project has a valid directory
 	err = util.IsValidProjectDir(path, DevfilePath)
 	if err != nil {
 		return err
@@ -895,7 +906,7 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 			}
 			sparseDir = project.Git.SparseCheckoutDir
 		} else {
-			return errors.Errorf("Project type git with non github url not supported")
+			return errors.Errorf("project type git with non github url not supported")
 		}
 	} else if project.Github != nil {
 		url, err = util.GetGitHubZipURL(project.Github.Location)
@@ -952,8 +963,8 @@ func (co *CreateOptions) Run() (err error) {
 				}
 			}
 
-			if util.CheckPathExists(DevfilePath) && co.devfileMetadata.downloadSource != "" {
-				err = co.downloadProject(co.devfileMetadata.downloadSource)
+			if util.CheckPathExists(DevfilePath) && co.devfileMetadata.starter != "" {
+				err = co.downloadProject(co.devfileMetadata.starter)
 				if err != nil {
 					return errors.Wrap(err, "failed to download project for devfile component")
 				}
@@ -1105,8 +1116,8 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 	componentCreateCmd.Flags().StringSliceVar(&co.componentEnvVars, "env", []string{}, "Environmental variables for the component. For example --env VariableName=Value")
 
 	if experimental.IsExperimentalModeEnabled() {
-		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.downloadSource, "downloadSource", "", "Download sample project from devfile.")
-		componentCreateCmd.Flags().Lookup("downloadSource").NoOptDefVal = defaultProjectName //Default value to pass to the flag if one is not specified.
+		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.starter, "starter", "", "Download a project specified in the devfile")
+		componentCreateCmd.Flags().Lookup("starter").NoOptDefVal = defaultProjectName //Default value to pass to the flag if one is not specified.
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfileRegistry.Name, "registry", "", "Create devfile component from specific registry")
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfilePath.value, "devfile", "", "Path to the user specify devfile")
 	}

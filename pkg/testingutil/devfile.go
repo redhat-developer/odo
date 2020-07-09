@@ -17,14 +17,14 @@ func (d TestDevfileData) GetComponents() []versionsCommon.DevfileComponent {
 	return d.GetAliasedComponents()
 }
 
-// GetEvents is a mock function to get events from devfile
-func (d TestDevfileData) GetEvents() versionsCommon.DevfileEvents {
-	return versionsCommon.DevfileEvents{}
-}
-
 // GetMetadata is a mock function to get metadata from devfile
 func (d TestDevfileData) GetMetadata() versionsCommon.DevfileMetadata {
 	return versionsCommon.DevfileMetadata{}
+}
+
+// GetEvents is a mock function to get events from devfile
+func (d TestDevfileData) GetEvents() versionsCommon.DevfileEvents {
+	return versionsCommon.DevfileEvents{}
 }
 
 // GetParent is a mock function to get parent from devfile

@@ -159,7 +159,7 @@ func List(client *occlient.Client, applicationName string) (ServiceList, error) 
 
 	return ServiceList{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "ServiceList",
+			Kind:       "List",
 			APIVersion: apiVersion,
 		},
 		Items: services,
@@ -215,7 +215,7 @@ func ListWithDetailedStatus(client *occlient.Client, applicationName string) (Se
 
 	return ServiceList{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       "ServiceList",
+			Kind:       "List",
 			APIVersion: apiVersion,
 		},
 		Items: services.Items,

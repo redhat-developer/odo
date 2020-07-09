@@ -81,10 +81,10 @@ organized in a separate single unit.
 
   Odo Devfile Components:
   NAME                 DESCRIPTION                           SUPPORTED
-  maven                Upstream Maven and OpenJDK 11         YES
+  java-maven           Upstream Maven and OpenJDK 11         YES
   nodejs               Stack with NodeJS 10                  YES
-  openLiberty          Open Liberty microservice in Java     YES
-  java-spring-boot     Spring Boot® using Java               YES
+  java-openliberty     Open Liberty microservice in Java     YES
+  java-springboot      Spring Boot® using Java               YES
 ----
 
 In our example, we will be using `java-spring-boot` to deploy a sample https://spring.io/projects/spring-boot[Springboot] component.
@@ -99,7 +99,7 @@ In this example we will be deploying an https://github.com/odo-devfiles/springbo
 ----
  $ git clone https://github.com/odo-devfiles/springboot-ex
 ----
-Alternatively, you can pass in `--downloadSource` to `odo create` to have odo download a sample project.
+Alternatively, you can pass in `--starter` to `odo create` to have odo download a project specified in the devfile.
 
 . Change the current directory to the component directory:
 +
@@ -325,7 +325,7 @@ In this example, we will be deploying the same Java Spring Boot® component we d
 ----
  $ git clone https://github.com/odo-devfiles/springboot-ex
 ----
-Alternatively, you can pass in `--downloadSource` to `odo create` to have odo download a sample project.
+Alternatively, you can pass in `--starter` to `odo create` to have odo download a project specified in the devfile.
 
 . Change the current directory to the component directory:
 +

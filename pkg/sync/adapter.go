@@ -38,6 +38,11 @@ type Adapter struct {
 // changed and devfile execution is required
 func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired bool, err error) {
 
+	// force write the content to resolvePath
+	forceWrite := false
+	// Ret from Indexer function
+	var ret util.IndexerRet
+
 	deletedFiles := []string{}
 	changedFiles := []string{}
 	isForcePush := false
@@ -72,18 +77,22 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 		}
 
 		// run the indexer and find the modified/added/deleted/renamed files
-		filesChanged, filesDeleted, err := util.RunIndexer(pushParameters.Path, absIgnoreRules)
+		ret, err = util.RunIndexer(pushParameters.Path, absIgnoreRules)
 		s.End(true)
 
 		if err != nil {
 			return false, errors.Wrap(err, "unable to run indexer")
 		}
 
+		if len(ret.FilesChanged) > 0 || len(ret.FilesDeleted) > 0 {
+			forceWrite = true
+		}
+
 		// If the component already exists, sync only the files that changed
 		if syncParameters.ComponentExists {
 			// apply the glob rules from the .gitignore/.odo file
 			// and ignore the files on which the rules apply and filter them out
-			filesChangedFiltered, filesDeletedFiltered := util.FilterIgnores(filesChanged, filesDeleted, absIgnoreRules)
+			filesChangedFiltered, filesDeletedFiltered := util.FilterIgnores(ret.FilesChanged, ret.FilesDeleted, absIgnoreRules)
 
 			// Remove the relative file directory from the list of deleted files
 			// in order to make the changes correctly within the Kubernetes pod
@@ -120,6 +129,12 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to sync to component with name %s", a.ComponentName)
 	}
+	if forceWrite {
+		err = util.WriteFile(ret.NewFileMap, ret.ResolvedPath)
+		if err != nil {
+			return false, errors.Wrapf(err, "Failed to write file")
+		}
+	}
 
 	return true, nil
 }
@@ -140,10 +155,16 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	s := log.Spinner("Syncing files to the component")
 	defer s.End(false)
 
-	// If there's only one project defined in the devfile, sync to `/projects/project-name`, otherwise sync to /projects
-	syncFolder, err := getSyncFolder(a.Devfile.Data.GetProjects())
-	if err != nil {
-		return errors.Wrapf(err, "unable to sync the files to the component")
+	// Determine which folder we need to sync to
+	var syncFolder string
+	if compInfo.SourceMount != kclient.OdoSourceVolumeMount {
+		syncFolder = compInfo.SourceMount
+	} else {
+		// If there's only one project defined in the devfile, sync to `/projects/project-name`, otherwise sync to /projects
+		syncFolder, err = getSyncFolder(a.Devfile.Data.GetProjects())
+		if err != nil {
+			return errors.Wrapf(err, "unable to determine sync folder")
+		}
 	}
 
 	if syncFolder != kclient.OdoSourceVolumeMount {
