@@ -45,8 +45,8 @@ var _ = Describe("odo devfile debug command serial tests", func() {
 		helper.LocalKubeconfigSet(context)
 		namespace = cliRunner.CreateRandNamespaceProject()
 		componentName = helper.RandString(6)
-		helper.Chdir(context)
 		originalDir = helper.Getwd()
+		helper.Chdir(context)
 		projectDirPath = context + projectDir
 	})
 
@@ -62,9 +62,6 @@ var _ = Describe("odo devfile debug command serial tests", func() {
 	})
 
 	It("should auto-select a local debug port when the given local port is occupied for a devfile component", func() {
-		// Devfile push requires experimental mode to be set
-		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true", "-f")
-
 		helper.MakeDir(projectDirPath)
 		helper.Chdir(projectDirPath)
 
