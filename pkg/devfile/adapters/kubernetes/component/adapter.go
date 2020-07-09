@@ -16,7 +16,6 @@ import (
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
-	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
@@ -141,7 +140,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		PodName:       pod.GetName(),
 		SourceMount:   sourceMount,
 	}
-	syncParams := adaptersCommon.SyncParameters{
+	syncParams := common.SyncParameters{
 		PushParams:      parameters,
 		CompInfo:        compInfo,
 		ComponentExists: componentExists,
@@ -203,7 +202,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 
 	kclient.AddBootstrapSupervisordInitContainer(podTemplateSpec)
 
-	componentAliasToVolumes := adaptersCommon.GetVolumes(a.Devfile)
+	componentAliasToVolumes := common.GetVolumes(a.Devfile)
 
 	var uniqueStorages []common.Storage
 	volumeNameToPVCName := make(map[string]string)
@@ -426,7 +425,7 @@ func (a Adapter) execDevfileEvent(events []string, compInfo common.ComponentInfo
 	if len(events) > 0 {
 		for _, commandName := range events {
 			// Convert commandName to lower because GetCommands converts Command.Exec.Id's to lower
-			command, err := adaptersCommon.GetCommandByName(a.Devfile.Data, strings.ToLower(commandName))
+			command, err := common.GetCommandByName(a.Devfile.Data, strings.ToLower(commandName))
 			if err != nil {
 				return err
 			}
