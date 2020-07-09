@@ -34,23 +34,24 @@ The flow for initializing and deleting components should be updated to add execu
 ### Initialize containers
 - Identify which containers have been created as part of creating/updating the component deployment
   - Initial implementation can assume containers are only initialised during the component creation (first push). We can improve this in future to allow execution of postStart commands at a more granular level.
+- Sync the source code to the containers
 - Iterate over the list of `postStart` commands and identify the ones that are associated with newly started containers
-- execute the identified commands one by one
+- Execute the identified commands one by one
   - execute the command in the container
     - on failure, display a meaningful error message and stop
     - on success, execute next command in the list (if any)
-- consider the component has been successfully initialised and continue as usual
+- Consider the component has been successfully initialised and continue as usual (e.g. execute build command)
 
   Note: This functionality would act as a replacement for `devInit` in devfile v1.0.
 
 ### Destroy containers
 - Identify which containers will be deleted as of a result of deleting the component deployment
-- prepare a list of `preStop` commands that are associated with the containers being destroyed
-- execute the preStop commands one by one
+- Prepare a list of `preStop` commands that are associated with the containers being destroyed
+- Execute the preStop commands one by one
   - execute the command in the container
     - on failure, display a meaningful error message and stop
     - on success, execute next command in the list (if any)
-- destroy/delete the component and continue as usual
+- Destroy/delete the component and continue as usual
 
 ## Example devfile with lifecycle binding:
 ```
