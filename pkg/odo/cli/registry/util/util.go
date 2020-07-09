@@ -19,10 +19,12 @@ func IsSecure(registryName string) bool {
 	}
 
 	isSecure := false
-	for _, registry := range *cfg.OdoSettings.RegistryList {
-		if registry.Name == registryName && registry.Secure {
-			isSecure = true
-			break
+	if cfg.OdoSettings.RegistryList != nil {
+		for _, registry := range *cfg.OdoSettings.RegistryList {
+			if registry.Name == registryName && registry.Secure {
+				isSecure = true
+				break
+			}
 		}
 	}
 
