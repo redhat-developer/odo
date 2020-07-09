@@ -469,6 +469,8 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, e
 	return "", fmt.Errorf("In order to sync files, odo requires at least one component in a devfile to set 'mountSources: true'")
 }
 
+// getCommandsMap returns a mapping of all of devfile command names to their corresponding DevfileCommand struct
+// Allowing us to easily retrieve the DevfileCommand of any command listed in a composite command
 func (a Adapter) getCommandsMap() map[string]versionsCommon.DevfileCommand {
 	commandsMap := make(map[string]versionsCommon.DevfileCommand)
 

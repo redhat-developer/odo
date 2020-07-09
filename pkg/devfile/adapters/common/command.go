@@ -81,7 +81,7 @@ func getCommandFromFlag(data data.DevfileData, groupType common.DevfileCommandGr
 	commands := data.GetCommands()
 
 	for _, command := range commands {
-		if command.Exec.Id == commandName {
+		if command.GetID() == commandName {
 
 			// Update Group only custom commands (specified by odo flags)
 			command = updateCommandGroupIfReqd(groupType, command)
@@ -92,7 +92,7 @@ func getCommandFromFlag(data data.DevfileData, groupType common.DevfileCommandGr
 			//   id: mybuild
 			//   group:
 			//     kind: build
-			if command.Exec.Group.Kind != groupType {
+			if command.GetKind() != groupType {
 				return command, fmt.Errorf("command group mismatched, command %s is of group %v in devfile.yaml", commandName, command.Exec.Group.Kind)
 			}
 
