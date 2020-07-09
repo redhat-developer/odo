@@ -14,11 +14,15 @@ import (
 // ExecuteDevfileBuildAction executes the devfile build command action
 func ExecuteDevfileBuildAction(client ExecClient, exec common.Exec, commandName string, compInfo adaptersCommon.ComponentInfo, show bool, machineEventLogger machineoutput.MachineEventLoggingClient) error {
 	var s *log.Status
-	var setEnvVariable string
+	var setEnvVariable, command string
 	for _, envVar := range exec.Env {
 		setEnvVariable = setEnvVariable + fmt.Sprintf("%v=\"%v\" ", envVar.Name, envVar.Value)
 	}
-	command := setEnvVariable + " && " + exec.CommandLine
+	if setEnvVariable == "" {
+		command = exec.CommandLine
+	} else {
+		command = setEnvVariable + " && " + exec.CommandLine
+	}
 	// Change to the workdir and execute the command
 	var cmdArr []string
 	if exec.WorkingDir != "" {

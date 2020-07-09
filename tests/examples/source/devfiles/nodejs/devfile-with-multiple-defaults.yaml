@@ -53,3 +53,25 @@ commands:
       workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
       group:
         kind: run
+  - exec:
+      id: singleenv
+      component: runtime
+      commandLine: "mkdir $ENV1"
+      env:
+       - name: ENV1
+         value: "test_env_variable"
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      group:
+        kind: run
+  - exec:
+      id: multipleenv
+      component: runtime
+      commandLine: "mkdir $ENV1 $ENV2"
+      env:
+       - name: ENV1
+         value: "test_env_variable1"
+       - name: ENV2
+         value: "test_env_variable2"
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      group:
+        kind: run
