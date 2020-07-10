@@ -21,7 +21,14 @@ import (
 	"k8s.io/klog"
 )
 
-var sbrCRDName = "ServiceBindingRequest"
+var (
+	// Hardcoded variables since we can't install SBO on k8s using OLM
+	// (https://github.com/redhat-developer/service-binding-operator/issues/536)
+	sbrGroup    = "apps.openshift.io"
+	sbrVersion  = "v1alpha1"
+	sbrKind     = "ServiceBindingRequest"
+	sbrResource = "servicebindingrequests"
+)
 
 type commonLinkOptions struct {
 	wait             bool
@@ -60,6 +67,10 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 		}
 
 		componentName := o.EnvSpecificInfo.GetName()
+
+		// Assign static/hardcoded values to SBR
+		o.sbr.Kind = sbrKind
+		o.sbr.APIVersion = strings.Join([]string{sbrGroup, sbrVersion}, "/")
 
 		// service binding request name will be like <component-name>-<service-type>-<service-name>. For example: nodejs-etcdcluster-example
 		o.sbr.Name = strings.Join([]string{componentName, strings.ToLower(o.serviceType), o.serviceName}, "-")
@@ -198,32 +209,22 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 
 func (o *commonLinkOptions) run() (err error) {
 	if experimental.IsExperimentalModeEnabled() {
-		// we now need to create a "service" of type "ServiceBindingRequest" from the Operator that provides it
-		cr, err := o.KClient.GetCustomResource(sbrCRDName)
-		if err != nil {
-			return err
-		}
-
-		group, version, kind, resource, err := svc.GetGVKRFromCR(cr)
-		if err != nil {
-			return err
-		}
-
-		o.sbr.Kind = kind
-		o.sbr.APIVersion = strings.Join([]string{group, version}, "/")
-
 		// create a YAML of the service binding request
 		sbrMap := make(map[string]interface{})
 		inrec, _ := json.Marshal(o.sbr)
-		json.Unmarshal(inrec, &sbrMap)
-
-		// this creates a link by creating a service of type
-		// "ServiceBindingRequest" from the Operator "ServiceBindingOperator".
-		err = o.KClient.CreateDynamicResource(sbrMap, group, version, resource)
+		err = json.Unmarshal(inrec, &sbrMap)
 		if err != nil {
 			return err
 		}
-		log.Successf("Component %q has been successfully linked to the service %q", o.sbr.Spec.ApplicationSelector.ResourceRef, o.sbr.Spec.BackingServiceSelector.ResourceRef)
+
+		// this creates a link by creating a service of type
+		// "ServiceBindingRequest" from the Operator "ServiceBindingOperator".
+		err = o.KClient.CreateDynamicResource(sbrMap, sbrGroup, sbrVersion, sbrResource)
+		if err != nil {
+			return err
+		}
+		log.Successf("Successfully created link between component %q and service %q\n", o.Context.EnvSpecificInfo.GetName(), o.suppliedName)
+		log.Italic("To apply the link, please use `odo push`")
 		return err
 	}
 
