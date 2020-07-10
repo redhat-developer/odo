@@ -55,6 +55,8 @@ const maxAllowedNamespacedStringLength = 63 - len("-s2idata") - 1
 // note for mocking purpose ONLY
 var customHomeDir = os.Getenv("CUSTOM_HOMEDIR")
 
+const defaultGithubRef = "master"
+
 // ResourceRequirementInfo holds resource quantity before transformation into its appropriate form in container spec
 type ResourceRequirementInfo struct {
 	ResourceType corev1.ResourceName
@@ -775,7 +777,7 @@ func ConvertGitSSHRemoteToHTTPS(remote string) string {
 }
 
 // GetGitHubZipURL downloads a repo from a URL to a destination
-func GetGitHubZipURL(repoURL string) (string, error) {
+func GetGitHubZipURL(repoURL string, branch string, startPoint string) (string, error) {
 	var url string
 	// Convert ssh remote to https
 	if strings.HasPrefix(repoURL, "git@") {
@@ -807,11 +809,21 @@ func GetGitHubZipURL(repoURL string) (string, error) {
 		repo = strings.TrimSuffix(repo, ".git")
 	}
 
-	// TODO: pass branch or tag from devfile
-	branch := "master"
+	var ref string
+	if branch != "" && startPoint != "" {
+		return url, errors.Errorf("Branch %s and StartPoint %s specified as project reference, please only specify one", branch, startPoint)
+	} else if branch != "" {
+		ref = branch
+	} else if startPoint != "" {
+		ref = startPoint
+	} else {
+		// Default to master if branch and startpoint are not set
+		ref = defaultGithubRef
+	}
 
 	client := github.NewClient(nil)
-	opt := &github.RepositoryContentGetOptions{Ref: branch}
+
+	opt := &github.RepositoryContentGetOptions{Ref: ref}
 
 	URL, response, err := client.Repositories.GetArchiveLink(context.Background(), owner, repo, "zipball", opt, true)
 	if err != nil {

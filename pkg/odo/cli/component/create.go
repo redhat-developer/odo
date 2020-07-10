@@ -900,7 +900,7 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 	var url, sparseDir string
 	if project.Git != nil {
 		if strings.Contains(project.Git.Location, "github.com") {
-			url, err = util.GetGitHubZipURL(project.Git.Location)
+			url, err = util.GetGitHubZipURL(project.Git.Location, project.Git.Branch, project.Git.StartPoint)
 			if err != nil {
 				return err
 			}
@@ -909,14 +909,14 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 			return errors.Errorf("project type git with non github url not supported")
 		}
 	} else if project.Github != nil {
-		url, err = util.GetGitHubZipURL(project.Github.Location)
+		url, err = util.GetGitHubZipURL(project.Github.Location, project.Github.Branch, project.Github.StartPoint)
 		if err != nil {
 			return err
 		}
 		sparseDir = project.Github.SparseCheckoutDir
 	} else if project.Zip != nil {
 		url = project.Zip.Location
-		sparseDir = project.Github.SparseCheckoutDir
+		sparseDir = project.Zip.SparseCheckoutDir
 	} else {
 		return errors.Errorf("Project type not supported")
 	}
