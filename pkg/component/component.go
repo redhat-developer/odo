@@ -719,7 +719,7 @@ func Build(client *occlient.Client, componentName string, applicationName string
 	if configReadErr != nil {
 		klog.V(4).Info(errors.Wrap(configReadErr, "unable to read config file"))
 	} else {
-		buildTimeout = time.Duration(cfg.GetTimeout()) * time.Second
+		buildTimeout = time.Duration(cfg.GetBuildTimeout()) * time.Second
 	}
 
 	// Loading spinner
