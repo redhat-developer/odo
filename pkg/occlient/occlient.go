@@ -1740,18 +1740,11 @@ func (c *Client) StartBuild(name string) (string, error) {
 }
 
 // WaitForBuildToFinish block and waits for build to finish. Returns error if build failed or was canceled.
-func (c *Client) WaitForBuildToFinish(buildName string, stdout io.Writer) error {
+func (c *Client) WaitForBuildToFinish(buildName string, stdout io.Writer, buildTimeout time.Duration) error {
 	// following indicates if we have already setup the following logic
 	following := false
 	klog.V(4).Infof("Waiting for %s  build to finish", buildName)
-	// Try to grab the preference in order to set a timeout.. but if not, we’ll use the default.
-	buildTimeout := preference.DefaultBuildTimeout * time.Second
-	cfg, configReadErr := preference.New()
-	if configReadErr != nil {
-		klog.V(4).Info(errors.Wrap(configReadErr, "unable to read config file"))
-	} else {
-		buildTimeout = time.Duration(cfg.GetTimeout()) * time.Second
-	}
+
 	// start a watch on the build resources and look for the given build name
 	w, err := c.buildClient.Builds(c.Namespace).Watch(metav1.ListOptions{
 		FieldSelector: fields.Set{"metadata.name": buildName}.AsSelector().String(),
@@ -1784,7 +1777,7 @@ func (c *Client) WaitForBuildToFinish(buildName string, stdout io.Writer) error 
 					if !following {
 						// setting following to true as we need to set it up only once
 						following = true
-						err := c.FollowBuildLog(buildName, stdout)
+						err := c.FollowBuildLog(buildName, stdout, buildTimeout)
 						if err != nil {
 							return err
 						}
@@ -2020,19 +2013,10 @@ func (c *Client) WaitAndGetSecret(name string, namespace string) (*corev1.Secret
 }
 
 // FollowBuildLog stream build log to stdout
-func (c *Client) FollowBuildLog(buildName string, stdout io.Writer) error {
+func (c *Client) FollowBuildLog(buildName string, stdout io.Writer, buildTimeout time.Duration) error {
 	buildLogOptions := buildv1.BuildLogOptions{
 		Follow: true,
 		NoWait: false,
-	}
-
-	// Try to grab the preference in order to set a timeout.. but if not, we’ll use the default.
-	buildTimeout := preference.DefaultBuildTimeout * time.Second
-	cfg, configReadErr := preference.New()
-	if configReadErr != nil {
-		klog.V(4).Info(errors.Wrap(configReadErr, "unable to read config file"))
-	} else {
-		buildTimeout = time.Duration(cfg.GetTimeout()) * time.Second
 	}
 
 	rd, err := c.buildClient.RESTClient().Get().
