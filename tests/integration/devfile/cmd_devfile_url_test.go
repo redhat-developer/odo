@@ -229,6 +229,23 @@ var _ = Describe("odo devfile url command tests", func() {
 			Expect(output).ShouldNot(ContainSubstring(url1))
 		})
 
+		It("should error out when a host is provided with a route on a openShift cluster", func() {
+
+			if os.Getenv("KUBERNETES") == "true" {
+				Skip("This is a OpenShift specific scenario, skipping")
+			}
+
+			url1 := helper.RandString(5)
+
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			output := helper.CmdShouldFail("odo", "url", "create", url1, "--host", "com")
+			Expect(output).To(ContainSubstring("host is not supported"))
+		})
+
 		It("should create a url for a unsupported devfile component", func() {
 			url1 := helper.RandString(5)
 
