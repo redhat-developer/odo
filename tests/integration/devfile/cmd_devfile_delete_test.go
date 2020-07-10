@@ -48,17 +48,23 @@ var _ = Describe("odo devfile delete command tests", func() {
 	Context("when devfile delete command is executed", func() {
 
 		It("should delete the component created from the devfile and also the owned resources", func() {
+			resourceTypes := []string{"deployments", "pods", "services", "ingress"}
+
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io")
+			helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io", "--ingress", "--context", context)
+
+			if os.Getenv("KUBERNETES") != "true" {
+				helper.CmdShouldPass("odo", "url", "create", "example-1", "--context", context)
+				resourceTypes = append(resourceTypes, "routes")
+			}
 
 			helper.CmdShouldPass("odo", "push", "--project", namespace)
 
 			helper.CmdShouldPass("odo", "delete", "--project", namespace, "-f")
 
-			resourceTypes := []string{"deployments", "pods", "services", "ingress"}
 			for _, resourceType := range resourceTypes {
 				cliRunner.WaitAndCheckForExistence(resourceType, namespace, 1)
 			}
@@ -75,7 +81,11 @@ var _ = Describe("odo devfile delete command tests", func() {
 
 			helper.CmdShouldPass("odo", "push", "--project", namespace)
 
-			helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io", "--context", context)
+			helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io", "--ingress", "--context", context)
+
+			if os.Getenv("KUBERNETES") != "true" {
+				helper.CmdShouldPass("odo", "url", "create", "example-1")
+			}
 
 			helper.CmdShouldPass("odo", "delete", "--project", namespace, "-f", "--all")
 
