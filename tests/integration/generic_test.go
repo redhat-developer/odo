@@ -114,25 +114,6 @@ var _ = Describe("odo generic", func() {
 		})
 	})
 
-	// Uncomment once https://github.com/openshift/odo/issues/1708 is fixed
-	/*Context("odo machine readable output on empty project", func() {
-		JustBeforeEach(func() {
-			project = helper.CreateRandProject()
-			context = helper.CreateNewContext()
-			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-		})
-		JustAfterEach(func() {
-			helper.DeleteProject(project)
-			helper.DeleteDir(context)
-			os.Unsetenv("GLOBALODOCONFIG")
-		})
-		It("should be able to return project list", func() {
-			actualProjectListJSON := helper.CmdShouldPass("odo", "project", "list", "-o", "json")
-			partOfProjectListJSON := fmt.Sprintf(`{"kind":"Project","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"%s","creationTimestamp":null},`, project)
-			Expect(actualProjectListJSON).To(ContainSubstring(partOfProjectListJSON))
-		})
-	})*/
-
 	Context("creating component with an application and url", func() {
 		JustBeforeEach(func() {
 			context = helper.CreateNewContext()
