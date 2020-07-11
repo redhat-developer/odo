@@ -111,6 +111,28 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 		})
 	})
 
+	Context("Should be able to search from catalog", func() {
+
+		JustBeforeEach(func() {
+			preSetup()
+		})
+
+		JustAfterEach(func() {
+			cleanPreSetup()
+		})
+
+		It("should only output the definition of the CR that will be used to start service", func() {
+			stdOut := helper.CmdShouldPass("odo", "catalog", "search", "service", "etcd")
+			helper.MatchAllInOutput(stdOut, []string{"etcdoperator", "EtcdCluster"})
+
+			stdOut = helper.CmdShouldPass("odo", "catalog", "search", "service", "EtcdCluster")
+			helper.MatchAllInOutput(stdOut, []string{"etcdoperator", "EtcdCluster"})
+
+			stdOut = helper.CmdShouldFail("odo", "catalog", "search", "service", "dummy")
+			Expect(stdOut).To(ContainSubstring("no service matched the query: dummy"))
+		})
+	})
+
 	Context("When using from-file option", func() {
 
 		JustBeforeEach(func() {
