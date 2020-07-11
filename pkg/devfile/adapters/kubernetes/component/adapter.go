@@ -25,6 +25,7 @@ import (
 	"github.com/openshift/odo/pkg/machineoutput"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/sync"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 // New instantiantes a component adapter
@@ -60,7 +61,10 @@ type Adapter struct {
 // Push updates the component if a matching component exists or creates one if it doesn't exist
 // Once the component has started, it will sync the source code to it.
 func (a Adapter) Push(parameters common.PushParameters) (err error) {
-	componentExists := utils.ComponentExists(a.Client, a.ComponentName)
+	componentExists, err := utils.ComponentExists(a.Client, a.ComponentName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to determine if component %s exists", a.ComponentName)
+	}
 
 	a.devfileInitCmd = parameters.DevfileInitCmd
 	a.devfileBuildCmd = parameters.DevfileBuildCmd
@@ -164,7 +168,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 }
 
 // DoesComponentExist returns true if a component with the specified name exists, false otherwise
-func (a Adapter) DoesComponentExist(cmpName string) bool {
+func (a Adapter) DoesComponentExist(cmpName string) (bool, error) {
 	return utils.ComponentExists(a.Client, cmpName)
 }
 
@@ -252,7 +256,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 	klog.V(4).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
 	klog.V(4).Infof("The component name is %v", componentName)
 
-	if utils.ComponentExists(a.Client, componentName) {
+	if componentExists {
 		// If the component already exists, get the resource version of the deploy before updating
 		klog.V(4).Info("The component already exists, attempting to update it")
 		deployment, err := a.Client.UpdateDeployment(*deploymentSpec)
@@ -445,11 +449,34 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, s
 
 // Delete deletes the component
 func (a Adapter) Delete(labels map[string]string) error {
-	if !utils.ComponentExists(a.Client, a.ComponentName) {
-		return errors.Errorf("the component %s doesn't exist on the cluster", a.ComponentName)
+	spinner := log.Spinnerf("Deleting devfile component %s", a.ComponentName)
+	defer spinner.End(false)
+
+	componentExists, err := utils.ComponentExists(a.Client, a.ComponentName)
+	if kerrors.IsForbidden(err) {
+		klog.V(4).Infof("Resource for %s forbidden", a.ComponentName)
+		// log the error if it failed to determine if the component exists due to insufficient RBACs
+		spinner.End(false)
+		log.Warningf("%v", err)
+		return nil
+	} else if err != nil {
+		return errors.Wrapf(err, "unable to determine if component %s exists", a.ComponentName)
 	}
 
-	return a.Client.DeleteDeployment(labels)
+	if !componentExists {
+		spinner.End(false)
+		log.Warningf("Component %s does not exist", a.ComponentName)
+		return nil
+	}
+
+	err = a.Client.DeleteDeployment(labels)
+	if err != nil {
+		return err
+	}
+
+	spinner.End(true)
+	log.Successf("Successfully deleted component")
+	return nil
 }
 
 // Log returns log from component
