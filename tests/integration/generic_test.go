@@ -20,6 +20,7 @@ var _ = Describe("odo generic", func() {
 	var originalDir string
 	var oc helper.OcRunner
 	var testPHPGitURL = "https://github.com/appuio/example-php-sti-helloworld"
+	var testNodejsGitURL = "https://github.com/sclorg/nodejs-ex"
 	var testLongURLName = "long-url-name-long-url-name-long-url-name-long-url-name-long-url-name"
 
 	BeforeEach(func() {
@@ -155,6 +156,29 @@ var _ = Describe("odo generic", func() {
 			oc.VerifyCmpName("testcmp", project)
 			oc.VerifyAppNameOfComponent("testcmp", "e2e-xyzk", project)
 			helper.CmdShouldPass("odo", "app", "delete", "e2e-xyzk", "-f")
+		})
+	})
+
+	Context("Over writing build timeout for git component", func() {
+		JustBeforeEach(func() {
+			context = helper.CreateNewContext()
+			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+			project = helper.CreateRandProject()
+			originalDir = helper.Getwd()
+			helper.Chdir(context)
+		})
+
+		JustAfterEach(func() {
+			helper.DeleteProject(project)
+			helper.Chdir(originalDir)
+			helper.DeleteDir(context)
+			os.Unsetenv("GLOBALODOCONFIG")
+		})
+		It("should fail to build component if build timeout is pretty less", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--project", project, "--git", testNodejsGitURL)
+			helper.CmdShouldPass("odo", "preference", "set", "BuildTimeout", "2")
+			stdOut := helper.CmdShouldFail("odo", "push")
+			helper.MatchAllInOutput(stdOut, []string{"Failed to create component", "timeout waiting for build"})
 		})
 	})
 
