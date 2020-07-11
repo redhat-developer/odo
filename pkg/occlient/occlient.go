@@ -1894,7 +1894,7 @@ func (c *Client) WaitAndGetPod(selector string, desiredPhase corev1.PodPhase, wa
 	if configReadErr != nil {
 		klog.V(4).Info(errors.Wrap(configReadErr, "unable to read config file"))
 	} else {
-		pushTimeout = time.Duration(cfg.GetTimeout()) * time.Second
+		pushTimeout = time.Duration(cfg.GetPushTimeout()) * time.Second
 	}
 
 	klog.V(4).Infof("Waiting for %s pod", selector)
