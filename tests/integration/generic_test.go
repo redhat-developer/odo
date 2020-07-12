@@ -159,7 +159,7 @@ var _ = Describe("odo generic", func() {
 		})
 	})
 
-	Context("Over writing build timeout for git component", func() {
+	Context("Overwriting build timeout for git component", func() {
 		JustBeforeEach(func() {
 			context = helper.CreateNewContext()
 			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
@@ -174,9 +174,19 @@ var _ = Describe("odo generic", func() {
 			helper.DeleteDir(context)
 			os.Unsetenv("GLOBALODOCONFIG")
 		})
-		It("should fail to build component if build timeout is pretty less", func() {
+		It("should pass to build component if the given build timeout is more than the default(300s) value", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--project", project, "--git", testNodejsGitURL)
+			helper.CmdShouldPass("odo", "preference", "set", "BuildTimeout", "600")
+			buildTimeout := helper.GetPreferenceValue("BuildTimeout")
+			helper.MatchAllInOutput(buildTimeout, []string{"600"})
+			helper.CmdShouldPass("odo", "push")
+		})
+
+		It("should fail to build component if the given build timeout is pretty less(2s)", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--project", project, "--git", testNodejsGitURL)
 			helper.CmdShouldPass("odo", "preference", "set", "BuildTimeout", "2")
+			buildTimeout := helper.GetPreferenceValue("BuildTimeout")
+			helper.MatchAllInOutput(buildTimeout, []string{"2"})
 			stdOut := helper.CmdShouldFail("odo", "push")
 			helper.MatchAllInOutput(stdOut, []string{"Failed to create component", "timeout waiting for build"})
 		})
