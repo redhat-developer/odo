@@ -181,7 +181,6 @@ func (a Adapter) Test(testCmd string, show bool) (err error) {
 
 	testCommand, err := common.ValidateAndGetTestDevfileCommands(a.Devfile.Data, testCmd)
 	if err != nil {
-		err.Error()
 		return errors.Wrap(err, "failed to validate devfile test command")
 	}
 	err = a.execTestCmd(testCommand, pod.GetName(), pod.Spec.Containers, show)
