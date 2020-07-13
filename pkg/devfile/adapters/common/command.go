@@ -143,7 +143,7 @@ func validateCommandsForGroup(data data.DevfileData, groupType common.DevfileCom
 // 4. command must have group
 func validateCommand(data data.DevfileData, command common.DevfileCommand) (err error) {
 
-	// type must be exec
+	// type must be exec or composite
 	if command.Exec == nil && command.Composite == nil {
 		return fmt.Errorf("command must be of type \"exec\" or \"composite\"")
 	}
@@ -181,6 +181,10 @@ func validateCommand(data data.DevfileData, command common.DevfileCommand) (err 
 
 // validateCompositeCommand checks that the specified composite command is valid
 func validateCompositeCommand(data data.DevfileData, compositeCommand *common.Composite) error {
+	if compositeCommand.Group.Kind == common.RunCommandGroupType {
+		return fmt.Errorf("compoosite commands cannot belong to the run grouop")
+	}
+
 	// Loop over the commands and validate that each command points to a command that's in the devfile
 	for _, command := range compositeCommand.Commands {
 		if command == compositeCommand.Id {

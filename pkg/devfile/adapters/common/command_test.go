@@ -1428,7 +1428,7 @@ func TestValidateCompositeCommand(t *testing.T) {
 				{
 					Id:       id[3],
 					Commands: []string{id[0], id[1], id[2]},
-					Group:    &versionsCommon.Group{Kind: runGroup},
+					Group:    &versionsCommon.Group{Kind: buildGroup},
 				},
 			},
 			execCommands: []common.Exec{
@@ -1462,7 +1462,7 @@ func TestValidateCompositeCommand(t *testing.T) {
 				{
 					Id:       id[3],
 					Commands: []string{id[0], "fakecommand", id[2]},
-					Group:    &versionsCommon.Group{Kind: runGroup},
+					Group:    &versionsCommon.Group{Kind: buildGroup},
 				},
 			},
 			execCommands: []common.Exec{
@@ -1492,6 +1492,40 @@ func TestValidateCompositeCommand(t *testing.T) {
 		},
 		{
 			name: "Case 3: Invalid composite command, references itself",
+			compositeCommands: []common.Composite{
+				{
+					Id:       id[3],
+					Commands: []string{id[0], id[3], id[2]},
+					Group:    &versionsCommon.Group{Kind: buildGroup},
+				},
+			},
+			execCommands: []common.Exec{
+				{
+					Id:          id[0],
+					CommandLine: command[0],
+					Component:   component,
+					Group:       &common.Group{Kind: runGroup},
+					WorkingDir:  workDir[0],
+				},
+				{
+					Id:          id[1],
+					CommandLine: command[1],
+					Component:   component,
+					Group:       &common.Group{Kind: buildGroup},
+					WorkingDir:  workDir[1],
+				},
+				{
+					Id:          id[2],
+					CommandLine: command[2],
+					Component:   component,
+					Group:       &common.Group{Kind: runGroup},
+					WorkingDir:  workDir[2],
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "Case 4: Invalid composite run command",
 			compositeCommands: []common.Composite{
 				{
 					Id:       id[3],
