@@ -36,7 +36,7 @@ func (d Adapter) Push(parameters common.PushParameters) error {
 }
 
 // DoesComponentExist returns true if a component with the specified name exists
-func (d Adapter) DoesComponentExist(cmpName string) bool {
+func (d Adapter) DoesComponentExist(cmpName string) (bool, error) {
 	return d.componentAdapter.DoesComponentExist(cmpName)
 }
 

@@ -173,9 +173,9 @@ func (a Adapter) Test(testCmd string, show bool) (err error) {
 }
 
 // DoesComponentExist returns true if a component with the specified name exists, false otherwise
-func (a Adapter) DoesComponentExist(cmpName string) bool {
-	componentExists, _ := utils.ComponentExists(a.Client, a.Devfile.Data, cmpName)
-	return componentExists
+func (a Adapter) DoesComponentExist(cmpName string) (bool, error) {
+	componentExists, err := utils.ComponentExists(a.Client, a.Devfile.Data, cmpName)
+	return componentExists, err
 }
 
 // getFirstContainerWithSourceVolume returns the first container that set mountSources: true
@@ -202,6 +202,9 @@ func (a Adapter) Delete(labels map[string]string) error {
 		return errors.New("unable to delete component without a component label")
 	}
 
+	spinner := log.Spinnerf("Deleting devfile component %s", componentName)
+	defer spinner.End(false)
+
 	containers, err := a.Client.GetContainerList()
 	if err != nil {
 		return errors.Wrap(err, "unable to retrieve container list for delete operation")
@@ -227,7 +230,9 @@ func (a Adapter) Delete(labels map[string]string) error {
 	componentContainer := a.Client.GetContainersByComponent(componentName, containers)
 
 	if len(componentContainer) == 0 {
-		return errors.Errorf("the component %s doesn't exist", a.ComponentName)
+		spinner.End(false)
+		log.Warningf("Component %s does not exist", componentName)
+		return nil
 	}
 
 	allVolumes, err := a.Client.GetVolumes()
@@ -299,6 +304,9 @@ func (a Adapter) Delete(labels map[string]string) error {
 			return errors.Wrapf(err, "Unable to remove volume %s of component %s", name, componentName)
 		}
 	}
+
+	spinner.End(true)
+	log.Successf("Successfully deleted component")
 
 	return nil
 

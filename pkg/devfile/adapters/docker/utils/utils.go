@@ -45,7 +45,7 @@ func ComponentExists(client lclient.Client, data data.DevfileData, name string) 
 	} else if len(containers) == len(supportedComponents) {
 		componentExists = true
 	} else if len(containers) > 0 && len(containers) != len(supportedComponents) {
-		return false, errors.New(fmt.Sprintf("component %s is in an invalid state, please execute odo delete and retry odo push", name))
+		return true, errors.New(fmt.Sprintf("component %s is in an invalid state, please execute odo delete and retry odo push", name))
 	}
 
 	return componentExists, nil

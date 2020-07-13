@@ -1,7 +1,6 @@
 package component
 
 import (
-	"fmt"
 	"os"
 	"strings"
 
@@ -213,16 +212,7 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 		return err
 	}
 
-	spinner := log.Spinner(fmt.Sprintf("Deleting devfile component %s", componentName))
-	defer spinner.End(false)
-
-	err = devfileHandler.Delete(labels)
-	if err != nil {
-		return err
-	}
-	spinner.End(true)
-	log.Successf("Successfully deleted component")
-	return nil
+	return devfileHandler.Delete(labels)
 }
 
 // RunTestCommand runs the specific test command in devfile
