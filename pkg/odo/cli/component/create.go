@@ -961,19 +961,18 @@ func (co *CreateOptions) Run() (err error) {
 
 			if !util.CheckPathExists(DevfilePath) {
 				// Download devfile from registry
-				token := ""
+				params := util.DownloadParams{
+					Request: util.HTTPRequestParams{
+						URL: co.devfileMetadata.devfileRegistry.URL + co.devfileMetadata.devfileLink,
+					},
+					Filepath: DevfilePath,
+				}
 				if registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name) {
-					token, err = keyring.Get(util.CredentialPrefix+co.devfileMetadata.devfileRegistry.Name, "default")
+					token, err := keyring.Get(util.CredentialPrefix+co.devfileMetadata.devfileRegistry.Name, "default")
 					if err != nil {
 						return errors.Wrap(err, "unable to get secure registry credential from keyring")
 					}
-				}
-				params := util.DownloadParams{
-					Request: util.HTTPRequestParams{
-						URL:   co.devfileMetadata.devfileRegistry.URL + co.devfileMetadata.devfileLink,
-						Token: token,
-					},
-					Filepath: DevfilePath,
+					params.Request.Token = token
 				}
 				err := util.DownloadFile(params)
 				if err != nil {
