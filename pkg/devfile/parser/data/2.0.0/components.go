@@ -198,6 +198,7 @@ func (d *Devfile200) GetAliasedComponents() []common.DevfileComponent {
 	return d.Components
 }
 
+// SetMetadata sets the metadata for devfile
 func (d *Devfile200) SetMetadata(name, version string) {
 	d.Metadata = common.DevfileMetadata{
 		Name:    name,
@@ -205,6 +206,17 @@ func (d *Devfile200) SetMetadata(name, version string) {
 	}
 }
 
-func (d *Devfile200) SetComponent(c common.DevfileComponent) {
-	d.Components = append(d.Components, c)
+// AddComponent adds component to devfile
+func (d *Devfile200) AddComponent(component common.DevfileComponent) {
+	d.Components = append(d.Components, component)
+}
+
+//AddCommand adds command to devfie
+func (d *Devfile200) AddCommand(command common.DevfileCommand) {
+	d.Commands = append(d.Commands, command)
+}
+
+//SetSchemaVersion sets devfile schema version
+func (d *Devfile200) SetSchemaVersion(version string) {
+	d.SchemaVersion = version
 }

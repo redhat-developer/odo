@@ -252,10 +252,22 @@ func getGroup(name string) *common.Group {
 	return nil
 }
 
+// SetMetadata sets the metadata for devfile
 func (d *Devfile100) SetMetadata(name, version string) {
 
 }
 
-func SetComponent(c common.DevfileComponent) {
+// AddComponent adds component to devfile
+func (d *Devfile100) AddComponent(Component common.DevfileComponent) {
 
+}
+
+//AddCommand adds command to devfie
+func (d *Devfile100) AddCommand(command common.DevfileCommand) {
+
+}
+
+//SetSchemaVersion sets devfile api version
+func (d *Devfile100) SetSchemaVersion(version string) {
+	d.ApiVersion = ApiVersion(version)
 }
