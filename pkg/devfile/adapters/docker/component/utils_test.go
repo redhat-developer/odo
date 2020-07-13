@@ -639,7 +639,7 @@ func TestExecTestCmd(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:   "Case 3: No devfile test commands should result in an err",
+			name:   "Case 2: No devfile test commands should result in an err",
 			client: fakeClient,
 			testDevfileCommand: versionsCommon.DevfileCommand{
 				Exec: &versionsCommon.Exec{
@@ -654,7 +654,7 @@ func TestExecTestCmd(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:   "Case 4: Unsuccessful exec test command",
+			name:   "Case 3: Unsuccessful exec test command",
 			client: fakeErrorClient,
 			testDevfileCommand: versionsCommon.DevfileCommand{
 				Exec: &versionsCommon.Exec{

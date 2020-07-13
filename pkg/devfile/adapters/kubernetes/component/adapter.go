@@ -165,18 +165,9 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 // Test runs the devfile test command
 func (a Adapter) Test(testCmd string, show bool) (err error) {
-	// componentExists := utils.ComponentExists(a.Client, a.ComponentName)
-	// if !componentExists {
-	// 	return fmt.Errorf("component does not exist, a valid component is required to run 'odo test'")
-	// }
-	// pod, err := a.waitAndGetComponentPod(true)
-	// if err != nil {
-	// 	return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
-	// }
-
 	pod, err := a.Client.GetPodUsingComponentName(a.ComponentName)
 	if err != nil {
-		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
+		return err
 	}
 	if pod.Status.Phase != corev1.PodRunning {
 		return fmt.Errorf("pod for component %s is not running", a.ComponentName)
@@ -186,6 +177,7 @@ func (a Adapter) Test(testCmd string, show bool) (err error) {
 
 	testCommand, err := common.ValidateAndGetTestDevfileCommands(a.Devfile.Data, testCmd)
 	if err != nil {
+		err.Error()
 		return errors.Wrap(err, "failed to validate devfile test command")
 	}
 	err = a.execTestCmd(testCommand, pod.GetName(), pod.Spec.Containers, show)

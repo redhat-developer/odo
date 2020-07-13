@@ -121,7 +121,7 @@ func TestPush(t *testing.T) {
 
 }
 
-func TestTest(t *testing.T) {
+func TestDockerTest(t *testing.T) {
 
 	testComponentName := "test"
 	fakeClient := lclient.FakeNew()
@@ -219,7 +219,7 @@ func TestTest(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:       "Case 5: No valid command group",
+			name:       "Case 6: No valid command group",
 			components: []versionsCommon.DevfileComponent{},
 			execCommands: []versionsCommon.Exec{
 				{

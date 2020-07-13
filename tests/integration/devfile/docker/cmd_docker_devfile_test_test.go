@@ -102,7 +102,7 @@ var _ = Describe("odo docker devfile test command tests", func() {
 			Expect(output).To(ContainSubstring("command devrun is of group run in devfile.yaml"))
 		})
 
-		It("should show error if devfile has multiple default test command", func() {
+		It("should show error if devfile has no default test command", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-testgroup.yaml"), filepath.Join(context, "devfile.yaml"))
