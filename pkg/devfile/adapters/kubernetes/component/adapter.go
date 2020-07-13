@@ -171,7 +171,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 func (a Adapter) Test(testCmd string, show bool) (err error) {
 	pod, err := a.Client.GetPodUsingComponentName(a.ComponentName)
 	if err != nil {
-		return err
+		return fmt.Errorf("no valid pod can be found to run 'odo test': %w", err)
 	}
 	if pod.Status.Phase != corev1.PodRunning {
 		return fmt.Errorf("pod for component %s is not running", a.ComponentName)
