@@ -13,7 +13,7 @@ func TestNewDevfileData(t *testing.T) {
 	t.Run("valid devfile apiVersion", func(t *testing.T) {
 
 		var (
-			version  = apiVersion100
+			version  = APIVersion100
 			want     = reflect.TypeOf(&v100.Devfile100{})
 			obj, err = NewDevfileData(string(version))
 			got      = reflect.TypeOf(obj)
@@ -49,7 +49,7 @@ func TestGetDevfileJSONSchema(t *testing.T) {
 	t.Run("valid devfile apiVersion", func(t *testing.T) {
 
 		var (
-			version  = apiVersion100
+			version  = APIVersion100
 			want     = v100.JsonSchema100
 			got, err = GetDevfileJSONSchema(string(version))
 		)
@@ -81,7 +81,7 @@ func TestIsApiVersionSupported(t *testing.T) {
 	t.Run("valid devfile apiVersion", func(t *testing.T) {
 
 		var (
-			version = apiVersion100
+			version = APIVersion100
 			want    = true
 			got     = IsApiVersionSupported(string(version))
 		)

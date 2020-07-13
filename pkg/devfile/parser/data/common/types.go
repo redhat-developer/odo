@@ -74,7 +74,7 @@ type Configuration struct {
 
 	// The is the URL scheme to use when accessing the endpoint. Default value is "http"
 	Scheme string `json:"scheme,omitempty" yaml:"scheme,omitempty"`
-	Secure bool   `json:"secure,omitempty yaml:"secure,omitempty" `
+	Secure bool   `json:"secure,omitempty" yaml:"secure,omitempty" `
 	Type   string `json:"type,omitempty" yaml:"type,omitempty"`
 }
 

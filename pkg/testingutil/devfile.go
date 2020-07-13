@@ -47,6 +47,26 @@ func (d TestDevfileData) GetAliasedComponents() []versionsCommon.DevfileComponen
 
 }
 
+// SetMetadata sets metadata for devfile
+func (d TestDevfileData) SetMetadata(name, version string) {
+
+}
+
+// SetSchemaVersion sets schema version for devfile
+func (d TestDevfileData) SetSchemaVersion(version string) {
+
+}
+
+// AddComponent add component
+func (d TestDevfileData) AddComponent(component common.DevfileComponent) {
+
+}
+
+// AddCommand adds command to devfile
+func (d TestDevfileData) AddCommand(command common.DevfileCommand) {
+
+}
+
 // GetProjects is a mock function to get the components that have an alias from a devfile
 func (d TestDevfileData) GetProjects() []versionsCommon.DevfileProject {
 	projectName := [...]string{"test-project", "anotherproject"}
