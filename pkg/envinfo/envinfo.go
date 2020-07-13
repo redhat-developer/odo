@@ -23,7 +23,8 @@ type ComponentSettings struct {
 	PushCommand *EnvInfoPushCommand `yaml:"PushCommand,omitempty"`
 	// AppName is the application name. Application is a virtual concept present in odo used
 	// for grouping of components. A namespace can contain multiple applications
-	AppName string `yaml:"AppName,omitempty" json:"AppName,omitempty"`
+	AppName string         `yaml:"AppName,omitempty" json:"AppName,omitempty"`
+	Link    *[]EnvInfoLink `yaml:"Link,omitempty"`
 
 	// DebugPort controls the port used by the pod to run the debugging agent on
 	DebugPort *int `yaml:"DebugPort,omitempty"`
@@ -94,6 +95,15 @@ type EnvSpecificInfo struct {
 	fs                filesystem.Filesystem
 	EnvInfo           `yaml:",omitempty"`
 	envinfoFileExists bool
+}
+
+type EnvInfoLink struct {
+	// Name of link (same as name of k8s secret)
+	Name string
+	// Kind of service with which the component is linked
+	ServiceKind string
+	// Name of the instance of the ServiceKind that component is linked with
+	ServiceName string
 }
 
 // getEnvInfoFile first checks for the ENVINFO variable
@@ -192,6 +202,13 @@ func (esi *EnvSpecificInfo) SetConfiguration(parameter string, value interface{}
 		case "push":
 			pushCommandValue := value.(EnvInfoPushCommand)
 			esi.componentSettings.PushCommand = &pushCommandValue
+		case "link":
+			linkValue := value.(EnvInfoLink)
+			if esi.componentSettings.Link != nil {
+				*esi.componentSettings.Link = append(*esi.componentSettings.Link, linkValue)
+			} else {
+				esi.componentSettings.Link = &[]EnvInfoLink{linkValue}
+			}
 		}
 
 		return esi.writeToFile()
@@ -328,6 +345,14 @@ func (ei *EnvInfo) GetApplication() string {
 	return ei.componentSettings.AppName
 }
 
+// GetLink returns the EnvInfoLink, returns default if nil
+func (ei *EnvInfo) GetLink() []EnvInfoLink {
+	if ei.componentSettings.Link == nil {
+		return []EnvInfoLink{}
+	}
+	return *ei.componentSettings.Link
+}
+
 const (
 	// URL parameter
 	URL = "URL"
@@ -337,12 +362,17 @@ const (
 	Push = "PUSH"
 	// PushDescription is the description of URL
 	PushDescription = "Push parameter is the action to write devfile commands to env.yaml"
+	// Link parameter
+	Link = "LINK"
+	// LinkDescription is the description of Link
+	LinkDescription = "Link to an Operator backed service"
 )
 
 var (
 	supportedLocalParameterDescriptions = map[string]string{
 		URL:  URLDescription,
 		Push: PushDescription,
+		Link: LinkDescription,
 	}
 
 	lowerCaseLocalParameters = util.GetLowerCaseParameters(GetLocallySupportedParameters())

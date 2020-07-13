@@ -7,6 +7,7 @@ import (
 
 	"github.com/openshift/odo/pkg/component"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -223,6 +224,15 @@ func (o *commonLinkOptions) run() (err error) {
 		if err != nil {
 			return err
 		}
+
+		// once the link is created, we need to store the information in
+		// env.yaml so that subsequent odo push can create a new deployment
+		// based on it
+		err = o.Context.EnvSpecificInfo.SetConfiguration("link", envinfo.EnvInfoLink{Name: o.sbr.Name, ServiceKind: o.serviceType, ServiceName: o.serviceName})
+		if err != nil {
+			return err
+		}
+
 		log.Successf("Successfully created link between component %q and service %q\n", o.Context.EnvSpecificInfo.GetName(), o.suppliedName)
 		log.Italic("To apply the link, please use `odo push`")
 		return err
