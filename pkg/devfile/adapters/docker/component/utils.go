@@ -380,12 +380,12 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 // in the command
 func (a Adapter) execDevfileEvent(events []string, containers []types.Container) error {
 	if len(events) > 0 {
+
+		commandMap := common.GetCommandMap(a.Devfile.Data)
+
 		for _, commandName := range events {
 			// Convert commandName to lower because GetCommands converts Command.Exec.Id's to lower
-			command, err := common.GetCommandByName(a.Devfile.Data, strings.ToLower(commandName))
-			if err != nil {
-				return err
-			}
+			command := commandMap[strings.ToLower(commandName)]
 
 			// If composite would go here & recursive loop
 
@@ -394,9 +394,9 @@ func (a Adapter) execDevfileEvent(events []string, containers []types.Container)
 			compInfo := common.ComponentInfo{ContainerName: containerID}
 
 			// Execute command in container
-			err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, false, a.machineEventLogger)
+			err := exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, false, a.machineEventLogger)
 			if err != nil {
-				return err
+				return errors.Wrapf(err, "unable to execute devfile command "+commandName)
 			}
 		}
 	}

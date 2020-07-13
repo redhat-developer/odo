@@ -80,25 +80,14 @@ func getCommandFromFlag(data data.DevfileData, groupType common.DevfileCommandGr
 
 			if command.Exec.Id == commandName {
 
-				// In the case of lifecycle events, we don't have the type, only the name
-				// This will verify that if a groupType is passed, the command extracted matches that groupType
-				if groupType != "" {
-
-					if command.Exec.Group.Kind == "" {
-						// Devfile V1 for commands passed from flags
-						// Group type is not updated during conversion
-						command.Exec.Group.Kind = groupType
-					}
-
-					// we have found the command with name, its groupType Should match to the flag
-					// e.g --build-command "mybuild"
-					// exec:
-					//   id: mybuild
-					// group:
-					//   kind: build
-					if command.Exec.Group.Kind != groupType {
-						return command, fmt.Errorf("mismatched type, command %s is of type %v groupType in devfile", commandName, groupType)
-					}
+				// we have found the command with name, its groupType Should match to the flag
+				// e.g --build-command "mybuild"
+				// exec:
+				//   id: mybuild
+				// group:
+				//   kind: build
+				if groupType != "" && command.Exec.Group.Kind != groupType {
+					return command, fmt.Errorf("mismatched type, command %s is of type %v groupType in devfile", commandName, groupType)
 				}
 			}
 
@@ -178,15 +167,21 @@ func validateCommand(data data.DevfileData, command common.DevfileCommand) (err 
 	return
 }
 
+// GetCommandMap returns a mapping of all of devfile command names to their corresponding DevfileCommand struct
+// Allowing us to easily retrieve the DevfileCommand of any command listed in a composite command
+func GetCommandMap(data data.DevfileData) map[string]common.DevfileCommand {
+	commandMap := make(map[string]common.DevfileCommand)
+
+	for _, command := range data.GetCommands() {
+		commandMap[command.Exec.Id] = command
+	}
+	return commandMap
+}
+
 // GetInitCommand iterates through the components in the devfile and returns the init command
 func GetInitCommand(data data.DevfileData, devfileInitCmd string) (initCommand common.DevfileCommand, err error) {
 
 	return getCommand(data, devfileInitCmd, common.InitCommandGroupType)
-}
-
-// GetCommandByName iterates through the components in the devfile and returns the command with the given name
-func GetCommandByName(data data.DevfileData, desiredCommand string) (command common.DevfileCommand, err error) {
-	return getCommand(data, desiredCommand, "")
 }
 
 // GetBuildCommand iterates through the components in the devfile and returns the build command
