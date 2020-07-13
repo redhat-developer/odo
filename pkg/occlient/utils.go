@@ -93,12 +93,14 @@ func IsDCRolledOut(config *appsv1.DeploymentConfig, desiredRevision int64) bool 
 func GetS2IEnvForDevfile(sourceType string, env config.EnvVarList, imageStreamImage imagev1.ImageStreamImage) (config.EnvVarList, error) {
 
 	s2iPaths, err := GetS2IMetaInfoFromBuilderImg(&imageStreamImage)
-
 	if err != nil {
 		return nil, err
 	}
 
 	inputEnvs, err := GetInputEnvVarsFromStrings(env.ToStringSlice())
+	if err != nil {
+		return nil, err
+	}
 	// Append s2i related parameters extracted above to env
 	inputEnvs = injectS2IPaths(inputEnvs, s2iPaths)
 

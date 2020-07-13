@@ -67,7 +67,7 @@ func NewMigrateOptions() *MigrateOptions {
 func (mo *MigrateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 
 	if !util.CheckPathExists(component.ConfigFilePath) {
-		return errors.New("This directory does not contain an odo s2i component, Please run the command from odo component directory to migrate s2i component to devfile")
+		return errors.New("this directory does not contain an odo s2i component, Please run the command from odo component directory to migrate s2i component to devfile")
 	}
 
 	mo.context = genericclioptions.NewContext(cmd)
@@ -79,6 +79,9 @@ func (mo *MigrateOptions) Complete(name string, cmd *cobra.Command, args []strin
 
 // Validate validates the MigrateOptions based on completed values
 func (mo *MigrateOptions) Validate() (err error) {
+	if mo.context.LocalConfigInfo.GetSourceType() == config.GIT {
+		return errors.New("migration of git type s2i components to devfile not supported by odo")
+	}
 
 	return nil
 }
@@ -89,7 +92,7 @@ func (mo *MigrateOptions) Run() (err error) {
 	/*  This data is yet to be converted
 
 	// git url or local source code location
-	sourceLocation := context.LocalConfigInfo.GetSourceLocation()
+
 	// Absolute path
 	sourcePath, _ := context.LocalConfigInfo.GetOSSourcePath()
 	minMemory := context.LocalConfigInfo.GetMinMemory()
@@ -167,8 +170,7 @@ func generateDevfileYaml(m *MigrateOptions) error {
 		Data: s2iDevfile,
 	}
 
-	devObj.WriteYamlDevfile()
-	return nil
+	return devObj.WriteYamlDevfile()
 
 }
 
@@ -200,8 +202,6 @@ func generateEnvYaml(m *MigrateOptions) (err error) {
 
 		urlList = append(urlList, urlEnv)
 
-		m.context.EnvSpecificInfo.SetConfiguration("url", urlEnv)
-
 	}
 
 	componentSettings := envinfo.ComponentSettings{
@@ -214,9 +214,7 @@ func generateEnvYaml(m *MigrateOptions) (err error) {
 		componentSettings.DebugPort = &debugPort
 	}
 
-	m.context.EnvSpecificInfo.SetComponentSettings(componentSettings)
-
-	return nil
+	return m.context.EnvSpecificInfo.SetComponentSettings(componentSettings)
 }
 
 func getImageforDevfile(client *occlient.Client, componentType string) (*imagev1.ImageStreamImage, string, error) {
