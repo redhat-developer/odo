@@ -132,6 +132,7 @@ func TestDoesComponentExist(t *testing.T) {
 		componentName    string
 		getComponentName string
 		want             bool
+		wantErr          bool
 	}{
 		{
 			name:   "Case 1: Valid component name",
@@ -143,6 +144,7 @@ func TestDoesComponentExist(t *testing.T) {
 			componentName:    "golang",
 			getComponentName: "golang",
 			want:             true,
+			wantErr:          false,
 		},
 		{
 			name:   "Case 2: Non-existent component name",
@@ -153,9 +155,19 @@ func TestDoesComponentExist(t *testing.T) {
 			componentName:    "test",
 			getComponentName: "fake-component",
 			want:             false,
+			wantErr:          false,
 		},
 		{
-			name:   "Case 3: Docker client error",
+			name:             "Case 3: Container and devfile component mismatch",
+			componentName:    "test",
+			getComponentName: "golang",
+			client:           fakeClient,
+			components:       []common.DevfileComponent{},
+			want:             true,
+			wantErr:          true,
+		},
+		{
+			name:   "Case 4: Docker client error",
 			client: fakeErrorClient,
 			components: []common.DevfileComponent{
 				testingutil.GetFakeComponent("alias1"),
@@ -163,6 +175,7 @@ func TestDoesComponentExist(t *testing.T) {
 			componentName:    "test",
 			getComponentName: "fake-component",
 			want:             false,
+			wantErr:          true,
 		},
 	}
 	for _, tt := range tests {
@@ -181,9 +194,13 @@ func TestDoesComponentExist(t *testing.T) {
 			componentAdapter := New(adapterCtx, *tt.client)
 
 			// Verify that a component with the specified name exists
-			componentExists := componentAdapter.DoesComponentExist(tt.getComponentName)
-			if componentExists != tt.want {
+			componentExists, err := componentAdapter.DoesComponentExist(tt.getComponentName)
+			if !tt.wantErr && err != nil {
+				t.Errorf("TestDoesComponentExist error, unexpected error - %v", err)
+			} else if !tt.wantErr && componentExists != tt.want {
 				t.Errorf("expected %v, actual %v", tt.want, componentExists)
+			} else if tt.wantErr && tt.want != componentExists {
+				t.Errorf("expected %v, wanted %v, err %v", componentExists, tt.want, err)
 			}
 
 		})
@@ -227,7 +244,7 @@ func TestAdapterDelete(t *testing.T) {
 			}},
 			componentName:   "component",
 			componentExists: false,
-			wantErr:         true,
+			wantErr:         false,
 		},
 	}
 	for _, tt := range tests {

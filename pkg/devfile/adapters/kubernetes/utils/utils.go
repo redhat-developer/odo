@@ -12,14 +12,19 @@ import (
 	"github.com/openshift/odo/pkg/util"
 
 	corev1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/klog"
 )
 
 // ComponentExists checks whether a deployment by the given name exists
-func ComponentExists(client kclient.Client, name string) bool {
-	_, err := client.GetDeploymentByName(name)
-	return err == nil
+func ComponentExists(client kclient.Client, name string) (bool, error) {
+	deployment, err := client.GetDeploymentByName(name)
+	if kerrors.IsNotFound(err) {
+		klog.V(4).Infof("Deployment %s not found", name)
+		return false, nil
+	}
+	return deployment != nil, err
 }
 
 // ConvertEnvs converts environment variables from the devfile structure to kubernetes structure

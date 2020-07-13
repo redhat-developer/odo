@@ -158,7 +158,10 @@ func (wo *WatchOptions) Validate() (err error) {
 
 	// if experimental mode is enabled and devfile is present, return. The rest of the validation is for non-devfile components
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(wo.devfilePath) {
-		exists := wo.devfileHandler.DoesComponentExist(wo.componentName)
+		exists, err := wo.devfileHandler.DoesComponentExist(wo.componentName)
+		if err != nil {
+			return err
+		}
 		if !exists {
 			return fmt.Errorf("component does not exist. Please use `odo push` to create your component")
 		}

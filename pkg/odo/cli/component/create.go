@@ -900,7 +900,7 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 	var url, sparseDir string
 	if project.Git != nil {
 		if strings.Contains(project.Git.Location, "github.com") {
-			url, err = util.GetGitHubZipURL(project.Git.Location)
+			url, err = util.GetGitHubZipURL(project.Git.Location, project.Git.Branch, project.Git.StartPoint)
 			if err != nil {
 				return err
 			}
@@ -909,14 +909,14 @@ func (co *CreateOptions) downloadProject(projectPassed string) error {
 			return errors.Errorf("project type git with non github url not supported")
 		}
 	} else if project.Github != nil {
-		url, err = util.GetGitHubZipURL(project.Github.Location)
+		url, err = util.GetGitHubZipURL(project.Github.Location, project.Github.Branch, project.Github.StartPoint)
 		if err != nil {
 			return err
 		}
 		sparseDir = project.Github.SparseCheckoutDir
 	} else if project.Zip != nil {
 		url = project.Zip.Location
-		sparseDir = project.Github.SparseCheckoutDir
+		sparseDir = project.Zip.SparseCheckoutDir
 	} else {
 		return errors.Errorf("Project type not supported")
 	}
@@ -1104,7 +1104,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 	}
 	componentCreateCmd.Flags().StringVarP(&co.componentBinary, "binary", "b", "", "Create a binary file component component using given artifact. Works only with Java components. File needs to be in the context directory.")
 	componentCreateCmd.Flags().StringVarP(&co.componentGit, "git", "g", "", "Create a git component using this repository.")
-	componentCreateCmd.Flags().StringVarP(&co.componentGitRef, "ref", "r", "", "Use a specific ref e.g. commit, branch or tag of the git repository")
+	componentCreateCmd.Flags().StringVarP(&co.componentGitRef, "ref", "r", "", "Use a specific ref e.g. commit, branch or tag of the git repository (only valid for --git components)")
 	genericclioptions.AddContextFlag(componentCreateCmd, &co.componentContext)
 	componentCreateCmd.Flags().StringVar(&co.memory, "memory", "", "Amount of memory to be allocated to the component. ex. 100Mi (sets min-memory and max-memory to this value)")
 	componentCreateCmd.Flags().StringVar(&co.memoryMin, "min-memory", "", "Limit minimum amount of memory to be allocated to the component. ex. 100Mi")
