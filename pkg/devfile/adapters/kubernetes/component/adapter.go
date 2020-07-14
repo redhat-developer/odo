@@ -156,7 +156,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// PostStart events from the devfile will only be executed when the component
 	// didn't previously exist
 	if !componentExists {
-		err = a.execDevfileEvent(a.Devfile.Data.GetEvents().PostStart, compInfo)
+		err = a.execDevfileEvent(a.Devfile.Data.GetEvents().PostStart, pod.GetName())
 		if err != nil {
 			return err
 		}
@@ -423,14 +423,18 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 // execDevfileEvent receives a Devfile Event (PostStart, PreStop etc.) and loops through them
 // Each Devfile Command associated with the given event is retrieved, and executed in the container specified
 // in the command
-func (a Adapter) execDevfileEvent(events []string, compInfo common.ComponentInfo) error {
+func (a Adapter) execDevfileEvent(events []string, podName string) error {
 	if len(events) > 0 {
 		commandMap := common.GetCommandMap(a.Devfile.Data)
 		for _, commandName := range events {
 			// Convert commandName to lower because GetCommands converts Command.Exec.Id's to lower
 			command := commandMap[strings.ToLower(commandName)]
 
-			compInfo.ContainerName = command.Exec.Component
+			compInfo := common.ComponentInfo{
+				ContainerName: command.Exec.Component,
+				PodName:       podName,
+			}
+
 			// If composite would go here & recursive loop
 
 			// Execute command in pod

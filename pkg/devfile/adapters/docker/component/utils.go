@@ -385,7 +385,10 @@ func (a Adapter) execDevfileEvent(events []string, containers []types.Container)
 
 		for _, commandName := range events {
 			// Convert commandName to lower because GetCommands converts Command.Exec.Id's to lower
-			command := commandMap[strings.ToLower(commandName)]
+			command, ok := commandMap[strings.ToLower(commandName)]
+			if !ok {
+				return errors.New("unable to find devfile command " + commandName)
+			}
 
 			// If composite would go here & recursive loop
 

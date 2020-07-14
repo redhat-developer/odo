@@ -78,17 +78,14 @@ func getCommandFromFlag(data data.DevfileData, groupType common.DevfileCommandGr
 			// Update Group only custom commands (specified by odo flags)
 			command = updateCommandGroupIfReqd(groupType, command)
 
-			if command.Exec.Id == commandName {
-
-				// we have found the command with name, its groupType Should match to the flag
-				// e.g --build-command "mybuild"
-				// exec:
-				//   id: mybuild
-				// group:
-				//   kind: build
-				if groupType != "" && command.Exec.Group.Kind != groupType {
-					return command, fmt.Errorf("mismatched type, command %s is of type %v groupType in devfile", commandName, groupType)
-				}
+			// we have found the command with name, its groupType Should match to the flag
+			// e.g --build-command "mybuild"
+			// exec:
+			//   id: mybuild
+			// group:
+			//   kind: build
+			if command.Exec.Group.Kind != groupType {
+				return command, fmt.Errorf("mismatched type, command %s is of type %v groupType in devfile", commandName, groupType)
 			}
 
 			return command, validateCommand(data, command)
