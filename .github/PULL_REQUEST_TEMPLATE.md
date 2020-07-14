@@ -22,4 +22,12 @@
 
 Fixes #?
 
+**PR acceptance criteria**:
+
+Unit test (Yes/No): 
+
+Integration test (Yes/No): 
+
+Documentation (Yes/No): 
+
 **How to test changes / Special notes to the reviewer**:
