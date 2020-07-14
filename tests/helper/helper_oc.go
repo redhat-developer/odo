@@ -143,6 +143,8 @@ func (oc OcRunner) CheckCmdOpInRemoteCmpPod(cmpName string, appName string, prjN
 		"-c", cmpDCName, "--"}, cmd...)...)
 	stdOut := string(session.Wait().Out.Contents())
 	stdErr := string(session.Wait().Err.Contents())
+	fmt.Println("exec output for s2i image package", stdOut)
+	fmt.Println("exec error for s2i image package", stdErr)
 	if stdErr != "" {
 		return checkOp(stdOut, fmt.Errorf("cmd %s failed with error %s on pod %s", cmd, stdErr, podName))
 	}
