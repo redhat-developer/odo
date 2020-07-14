@@ -57,6 +57,20 @@ func NewDeleteOptions() *DeleteOptions {
 
 // Complete completes log args
 func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+
+	if do.componentContext == "" {
+		do.componentContext = LocalDirectoryDefaultLocation
+	}
+
+	// to facilitate migrate checking if s2i component present then delete that first
+	ConfigFilePath = filepath.Join(do.componentContext, configFile)
+	if util.CheckPathExists(ConfigFilePath) {
+		do.Context = genericclioptions.NewContext(cmd)
+		err = do.ComponentOptions.Complete(name, cmd, args)
+
+		return
+	}
+
 	do.devfilePath = filepath.Join(do.componentContext, DevfilePath)
 
 	// if experimental mode is enabled and devfile is present
@@ -75,36 +89,34 @@ func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string
 		return nil
 	}
 
-	do.Context = genericclioptions.NewContext(cmd)
-	err = do.ComponentOptions.Complete(name, cmd, args)
-
-	if do.componentContext == "" {
-		do.componentContext = LocalDirectoryDefaultLocation
-	}
 	return
 }
 
 // Validate validates the list parameters
 func (do *DeleteOptions) Validate() (err error) {
+	if util.CheckPathExists(ConfigFilePath) {
+		if do.Context.Project == "" || do.Application == "" {
+			return odoutil.ThrowContextError()
+		}
+		do.isCmpExists, err = component.Exists(do.Client, do.componentName, do.Application)
+		if err != nil {
+			return err
+		}
+		if !do.isCmpExists {
+			log.Errorf("Component %s does not exist on the cluster", do.ComponentOptions.componentName)
+			// If request is to delete non existing component without all flag, exit with exit code 1
+			if !do.componentDeleteAllFlag {
+				os.Exit(1)
+			}
+		}
+		return
+	}
+
 	// if experimental mode is enabled and devfile is present
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(do.devfilePath) {
 		return nil
 	}
 
-	if do.Context.Project == "" || do.Application == "" {
-		return odoutil.ThrowContextError()
-	}
-	do.isCmpExists, err = component.Exists(do.Client, do.componentName, do.Application)
-	if err != nil {
-		return err
-	}
-	if !do.isCmpExists {
-		log.Errorf("Component %s does not exist on the cluster", do.ComponentOptions.componentName)
-		// If request is to delete non existing component without all flag, exit with exit code 1
-		if !do.componentDeleteAllFlag {
-			os.Exit(1)
-		}
-	}
 	return
 }
 
@@ -113,10 +125,19 @@ func (do *DeleteOptions) Run() (err error) {
 	klog.V(4).Infof("component delete called")
 	klog.V(4).Infof("args: %#v", do)
 
+	if util.CheckPathExists(ConfigFilePath) {
+		return do.s2iRun()
+	}
+
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(do.devfilePath) {
 		return do.DevFileRun()
 	}
 
+	return
+}
+
+// s2iRun implements delete Run for s2i components
+func (do *DeleteOptions) s2iRun() (err error) {
 	if do.isCmpExists {
 		err = printDeleteComponentInfo(do.Client, do.componentName, do.Context.Application, do.Context.Project)
 		if err != nil {
@@ -192,7 +213,6 @@ func (do *DeleteOptions) Run() (err error) {
 			return fmt.Errorf("Aborting deletion of config for component: %s", do.componentName)
 		}
 	}
-
 	return
 }
 

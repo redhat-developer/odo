@@ -13,6 +13,7 @@ import (
 	"github.com/openshift/odo/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/cli/component"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -24,7 +25,6 @@ import (
 
 // TODO
 // lables and annotations that are added on s2i components
-// difference in git, local, binary type components
 
 const (
 	migrateCommandName = "migrate-to-devfile"
@@ -90,8 +90,6 @@ func (mo *MigrateOptions) Validate() (err error) {
 func (mo *MigrateOptions) Run() (err error) {
 
 	/*  This data is yet to be converted
-
-	// git url or local source code location
 
 	// Absolute path
 	sourcePath, _ := context.LocalConfigInfo.GetOSSourcePath()
@@ -170,8 +168,12 @@ func generateDevfileYaml(m *MigrateOptions) error {
 		Data: s2iDevfile,
 	}
 
-	return devObj.WriteYamlDevfile()
-
+	err = devObj.WriteYamlDevfile()
+	if err != nil {
+		return err
+	}
+	log.Italic("devfile.yaml is available in current directory, run `odo push` to deploy devfile component and `odo delete` to delete s2i component.\n")
+	return nil
 }
 
 func generateEnvYaml(m *MigrateOptions) (err error) {
