@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"os"
+	"strings"
 	"text/tabwriter"
 	"time"
 
@@ -84,11 +85,11 @@ func (o *ServiceListOptions) Run() (err error) {
 		} else {
 			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 
-			fmt.Fprintln(w, "NAME", "\t", "TYPE", "\t", "AGE")
+			fmt.Fprintln(w, "NAME", "\t", "AGE")
 
 			for _, item := range list {
 				duration := time.Since(item.GetCreationTimestamp().Time).Truncate(time.Second).String()
-				fmt.Fprintln(w, item.GetName(), "\t", item.GetKind(), "\t", duration)
+				fmt.Fprintln(w, strings.Join([]string{item.GetKind(), item.GetName()}, "/"), "\t", duration)
 			}
 
 			w.Flush()
