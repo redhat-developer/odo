@@ -59,6 +59,13 @@ func toPreferenceItems(prefInfo PreferenceInfo) []PreferenceItem {
 			Description: TimeoutSettingDescription,
 		},
 		{
+			Name:        BuildTimeoutSetting,
+			Value:       odoSettings.BuildTimeout,
+			Default:     DefaultBuildTimeout,
+			Type:        getType(prefInfo.GetBuildTimeout()),
+			Description: BuildTimeoutSettingDescription,
+		},
+		{
 			Name:        PushTimeoutSetting,
 			Value:       odoSettings.PushTimeout,
 			Default:     DefaultPushTimeout,
