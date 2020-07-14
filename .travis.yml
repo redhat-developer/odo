@@ -124,7 +124,7 @@ jobs:
       # scenario of docker devfile url testing needs only Kube config file. So the test has been
       # added here just to make sure docker devfile url command test gets a proper kube config file.
       # without creating a separate OpenShift cluster.
-      name: "devfile catalog, create, push, delete, registry, log and docker devfile url command integration tests"
+      name: "devfile catalog, create, push, delete, registry, test, log and docker devfile url command integration tests"
       script:
         - ./scripts/oc-cluster.sh
         - make bin
