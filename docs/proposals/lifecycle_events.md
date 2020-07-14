@@ -19,10 +19,10 @@ Some of the events might not be useful for `odo` to adopt. We should only suppor
 
 For odo, the most important events are the `postStart`, and the `preStop` because they have clear, reasonable use case within odo’s flow. There is no clear use case within odo for `preStart` and `postStop` today.
 
-- `preStart` - Do not support in odo
+- `preStart` - support executing these commands via init containers
 - `postStart` - support executing these commands as part of component initialization
 - `preStop` - support executing these commands as part of the component delete
-- `postStop` - Do not support in odo
+- `postStop` - support executing these commands via standalone pod or job and delete it once complete
 
 As per the Devfile 2.0.0 design specification: 
 - Commands associated with a lifecycle binding should provide a mechanism to figure out when they have completed. That means that the command should be terminating or having a readiness probe.
