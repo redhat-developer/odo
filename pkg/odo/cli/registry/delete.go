@@ -7,11 +7,14 @@ import (
 	// Third-party packages
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/zalando/go-keyring"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	// odo packages
+	registryUtil "github.com/openshift/odo/pkg/odo/cli/registry/util"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/preference"
+	"github.com/openshift/odo/pkg/util"
 )
 
 const deleteCommandName = "delete"
@@ -30,6 +33,7 @@ type DeleteOptions struct {
 	operation    string
 	registryName string
 	registryURL  string
+	user         string
 	forceFlag    bool
 }
 
@@ -43,6 +47,7 @@ func (o *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string)
 	o.operation = "delete"
 	o.registryName = args[0]
 	o.registryURL = ""
+	o.user = "default"
 	return
 }
 
@@ -53,14 +58,22 @@ func (o *DeleteOptions) Validate() (err error) {
 
 // Run contains the logic for "odo registry delete" command
 func (o *DeleteOptions) Run() (err error) {
+	isSecure := registryUtil.IsSecure(o.registryName)
+
 	cfg, err := preference.New()
 	if err != nil {
 		return errors.Wrap(err, "unable to delete registry")
 	}
-
-	err = cfg.RegistryHandler(o.operation, o.registryName, o.registryURL, o.forceFlag)
+	err = cfg.RegistryHandler(o.operation, o.registryName, o.registryURL, o.forceFlag, false)
 	if err != nil {
 		return err
+	}
+
+	if isSecure {
+		err = keyring.Delete(util.CredentialPrefix+o.registryName, o.user)
+		if err != nil {
+			return errors.Wrap(err, "unable to delete registry credential from keyring")
+		}
 	}
 
 	return nil

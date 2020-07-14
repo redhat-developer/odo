@@ -746,7 +746,7 @@ func TestHandleWithoutRegistryExist(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := handleWithoutRegistryExist(tt.registryList, tt.operation, tt.registryName, tt.registryURL)
+			got, err := handleWithoutRegistryExist(tt.registryList, tt.operation, tt.registryName, tt.registryURL, false)
 			if err != nil {
 				t.Logf("Error message is %v", err)
 			}
@@ -822,7 +822,7 @@ func TestHandleWithRegistryExist(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		got, err := handleWithRegistryExist(tt.index, tt.registryList, tt.operation, tt.registryName, tt.registryURL, tt.forceFlag)
+		got, err := handleWithRegistryExist(tt.index, tt.registryList, tt.operation, tt.registryName, tt.registryURL, tt.forceFlag, false)
 		if err != nil {
 			t.Logf("Error message is %v", err)
 		}
