@@ -11,7 +11,8 @@ import (
 )
 
 var (
-	ErrNoSuchOperator = errors.New("Could not find specified operator")
+	ErrNoSuchOperator        = errors.New("Could not find specified operator")
+	ErrNoOperatorWithGivenCR = errors.New("Could not find any Operator containing requested CR")
 )
 
 const (
@@ -74,4 +75,21 @@ func (c *Client) SearchClusterServiceVersionList(name string) (*olm.ClusterServi
 		},
 		Items: result,
 	}, nil
+}
+
+// GetCSVWithCR returns the CSV (Operator) that contains the CR (service)
+func (c *Client) GetCSVWithCR(name string) (olm.ClusterServiceVersion, error) {
+	csvs, err := c.GetClusterServiceVersionList()
+	if err != nil {
+		return olm.ClusterServiceVersion{}, errors.Wrap(err, "unable to list services")
+	}
+
+	for _, csv := range csvs.Items {
+		for _, cr := range c.GetCustomResourcesFromCSV(csv) {
+			if cr.Kind == name {
+				return csv, nil
+			}
+		}
+	}
+	return olm.ClusterServiceVersion{}, ErrNoOperatorWithGivenCR
 }

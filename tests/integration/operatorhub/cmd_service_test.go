@@ -292,4 +292,37 @@ spec:
 			helper.MatchAllInOutput(jsonOut, []string{msg, msgWithQuote})
 		})
 	})
+
+	Context("When deleting Operator backed service", func() {
+		It("should be able to delete a service existing on the cluster and fail otherwise", func() {
+			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
+			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
+			helper.CmdShouldPass("odo", "service", "create", etcdOperator, "--crd", "EtcdCluster")
+
+			// now verify if the pods for the operator have started
+			pods := helper.CmdShouldPass("oc", "get", "pods", "-n", project)
+			// Look for pod with example name because that's the name etcd will give to the pods.
+			etcdPod := regexp.MustCompile(`example-.[a-z0-9]*`).FindString(pods)
+
+			ocArgs := []string{"get", "pods", etcdPod, "-o", "template=\"{{.status.phase}}\"", "-n", project}
+			helper.WaitForCmdOut("oc", ocArgs, 1, true, func(output string) bool {
+				return strings.Contains(output, "Running")
+			})
+
+			helper.CmdShouldPass("odo", "service", "delete", "EtcdCluster/example", "-f")
+
+			// now try deleting the same service again. It should fail with error message
+			stdOut := helper.CmdShouldFail("odo", "service", "delete", "EtcdCluster/example", "-f")
+			Expect(stdOut).To(ContainSubstring("Couldn't find service named"))
+		})
+
+		It("should correctly detect invalid service names", func() {
+			names := []string{"EtcdCluster", "EtcdCluster/", "/example"}
+
+			for _, name := range names {
+				stdOut := helper.CmdShouldFail("odo", "service", "delete", name, "-f")
+				Expect(stdOut).To(ContainSubstring("Invalid service name"))
+			}
+		})
+	})
 })

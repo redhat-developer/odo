@@ -110,6 +110,46 @@ func DeleteServiceAndUnlinkComponents(client *occlient.Client, serviceName strin
 	return nil
 }
 
+// DeleteOperatorService deletes an Operator backed service
+// TODO: make it unlink the service from component as a part of
+// https://github.com/openshift/odo/issues/3563
+func DeleteOperatorService(client *kclient.Client, serviceName string) error {
+	serviceList, err := ListOperatorServices(client)
+	if err != nil {
+		return errors.Wrap(err, "unable to get the service list")
+	}
+
+	kind, name, err := splitServiceKindName(serviceName)
+	if err != nil {
+		return err
+	}
+
+	var csv olm.ClusterServiceVersion
+
+	for _, s := range serviceList {
+		if s.GetKind() == kind && s.GetName() == name {
+			csv, err = client.GetCSVWithCR(kind)
+			break
+		}
+		return fmt.Errorf("Unable to find any Operator providing the service %q", kind)
+	}
+
+	crs := client.GetCustomResourcesFromCSV(csv)
+	var cr olm.CRDDescription
+
+	for _, c := range crs {
+		if c.Kind == kind {
+			cr = c
+			break
+		}
+		return fmt.Errorf("Unable to find any Operator providing the service %q", kind)
+	}
+
+	group, version, resource, err := getGVRFromCR(cr)
+
+	return client.DeleteDynamicResource(name, group, version, resource)
+}
+
 // List lists all the deployed services
 func List(client *occlient.Client, applicationName string) (ServiceList, error) {
 	labels := map[string]string{
@@ -326,6 +366,41 @@ func SvcExists(client *occlient.Client, serviceName, applicationName string) (bo
 		}
 	}
 	return false, nil
+}
+
+// OperatorSvcExists checks whether an Operator backed service with given name
+// exists or not. It doesn't bother about application since
+// https://github.com/openshift/odo/issues/2801 is blocked
+func OperatorSvcExists(client *kclient.Client, serviceName string) (bool, error) {
+	serviceList, err := ListOperatorServices(client)
+	if err != nil {
+		return false, errors.Wrap(err, "unable to get the service list")
+	}
+
+	kind, name, err := splitServiceKindName(serviceName)
+	if err != nil {
+		return false, err
+	}
+
+	for _, s := range serviceList {
+		if s.GetKind() == kind && s.GetName() == name {
+			return true, nil
+		}
+	}
+
+	return false, fmt.Errorf("Couldn't find service named %q. Refer %q to see list of running services", serviceName, "odo service list")
+}
+
+func splitServiceKindName(serviceName string) (string, string, error) {
+	sn := strings.SplitN(serviceName, "/", 2)
+	if len(sn) != 2 || sn[0] == "" || sn[1] == "" {
+		return "", "", fmt.Errorf("Invalid service name. Refer %q to see list of running services", "odo service list")
+	}
+
+	kind := sn[0]
+	name := sn[1]
+
+	return kind, name, nil
 }
 
 // GetServiceClassAndPlans returns the service class details with the associated plans

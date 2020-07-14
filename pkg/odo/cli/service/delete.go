@@ -9,6 +9,7 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
+	"github.com/openshift/odo/pkg/odo/util/experimental"
 	svc "github.com/openshift/odo/pkg/service"
 	"github.com/spf13/cobra"
 	"k8s.io/klog"
@@ -42,7 +43,11 @@ func NewServiceDeleteOptions() *ServiceDeleteOptions {
 
 // Complete completes ServiceDeleteOptions after they've been created
 func (o *ServiceDeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context = genericclioptions.NewContext(cmd)
+	if experimental.IsExperimentalModeEnabled() {
+		o.Context = genericclioptions.NewDevfileContext(cmd)
+	} else {
+		o.Context = genericclioptions.NewContext(cmd)
+	}
 	o.serviceName = args[0]
 
 	return
@@ -50,6 +55,14 @@ func (o *ServiceDeleteOptions) Complete(name string, cmd *cobra.Command, args []
 
 // Validate validates the ServiceDeleteOptions based on completed values
 func (o *ServiceDeleteOptions) Validate() (err error) {
+	if experimental.IsExperimentalModeEnabled() {
+		_, err := svc.OperatorSvcExists(o.KClient, o.serviceName)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
 	exists, err := svc.SvcExists(o.Client, o.serviceName, o.Application)
 	if err != nil {
 		return fmt.Errorf("unable to delete service because Service Catalog is not enabled in your cluster:\n%v", err)
@@ -62,6 +75,17 @@ func (o *ServiceDeleteOptions) Validate() (err error) {
 
 // Run contains the logic for the odo service delete command
 func (o *ServiceDeleteOptions) Run() (err error) {
+	if experimental.IsExperimentalModeEnabled() {
+		if o.serviceForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %v", o.serviceName)) {
+			err = svc.DeleteOperatorService(o.KClient, o.serviceName)
+			if err != nil {
+				return err
+			}
+			log.Infof("Service %q has been successfully deleted", o.serviceName)
+		}
+		return nil
+	}
+
 	if o.serviceForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %v from %v", o.serviceName, o.Application)) {
 		err = svc.DeleteServiceAndUnlinkComponents(o.Client, o.serviceName, o.Application)
 		if err != nil {
