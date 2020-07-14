@@ -74,8 +74,8 @@ func NewCmdTest(name, fullName string) *cobra.Command {
 	to := NewTestOptions()
 	testCmd := &cobra.Command{
 		Use:     name,
-		Short:   "Run the test command defined in devfile",
-		Long:    "Run the test command defined in devfile",
+		Short:   "Run the test command defined in the devfile",
+		Long:    "Run the test command defined in the devfile",
 		Example: fmt.Sprintf(testExample, fullName),
 		Args:    cobra.MaximumNArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
@@ -87,7 +87,7 @@ func NewCmdTest(name, fullName string) *cobra.Command {
 	testCmd.Annotations = map[string]string{"command": "main"}
 	testCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)
 	testCmd.Flags().StringVar(&to.commandName, "test-command", "", "Devfile Test Command to execute")
-	testCmd.Flags().BoolVar(&to.show, "show-log", false, "If enabled, logs will be shown when running test command")
+	testCmd.Flags().BoolVar(&to.show, "show-log", false, "If enabled, logs will be shown when running the test command")
 	//Adding `--context` flag
 	genericclioptions.AddContextFlag(testCmd, &to.componentContext)
 	//Adding `--project` flag

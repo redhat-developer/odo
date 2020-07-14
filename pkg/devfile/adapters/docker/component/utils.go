@@ -374,6 +374,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 	return
 }
 
+// Executes the test command in the container
 func (a Adapter) execTestCmd(testCmd versionsCommon.DevfileCommand, containers []types.Container, show bool) (err error) {
 	containerID := utils.GetContainerIDForAlias(containers, testCmd.Exec.Component)
 	compInfo := common.ComponentInfo{ContainerName: containerID}

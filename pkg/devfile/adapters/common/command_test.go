@@ -1451,7 +1451,7 @@ func TestValidateAndGetTestDevfileCommands(t *testing.T) {
 			wantErr:       false,
 		},
 		{
-			name:          "Case: invalid debug Command",
+			name:          "Case: invalid test Command",
 			testCommand:   "invalidtestcommand",
 			componentType: versionsCommon.ContainerComponentType,
 			wantErr:       true,

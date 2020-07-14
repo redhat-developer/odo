@@ -171,7 +171,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 func (a Adapter) Test(testCmd string, show bool) (err error) {
 	pod, err := a.Client.GetPodUsingComponentName(a.ComponentName)
 	if err != nil {
-		return fmt.Errorf("no valid pod can be found to run 'odo test': %w", err)
+		return fmt.Errorf("error occurred while getting the pod: %w", err)
 	}
 	if pod.Status.Phase != corev1.PodRunning {
 		return fmt.Errorf("pod for component %s is not running", a.ComponentName)
@@ -183,7 +183,7 @@ func (a Adapter) Test(testCmd string, show bool) (err error) {
 	if err != nil {
 		return errors.Wrap(err, "failed to validate devfile test command")
 	}
-	err = a.execTestCmd(testCommand, pod.GetName(), pod.Spec.Containers, show)
+	err = a.execTestCmd(testCommand, pod.GetName(), show)
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute devfile commands for component %s", a.ComponentName)
 	}
@@ -436,7 +436,8 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 	return
 }
 
-func (a Adapter) execTestCmd(testCmd versionsCommon.DevfileCommand, podName string, containers []corev1.Container, show bool) (err error) {
+// Executes the test command in the pod
+func (a Adapter) execTestCmd(testCmd versionsCommon.DevfileCommand, podName string, show bool) (err error) {
 	compInfo := common.ComponentInfo{
 		PodName: podName,
 	}

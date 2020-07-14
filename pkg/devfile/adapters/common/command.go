@@ -58,7 +58,7 @@ func getCommandFromDevfile(data data.DevfileData, groupType common.DevfileComman
 	}
 
 	msg := fmt.Sprintf("the command group of kind \"%v\" is not found in the devfile", groupType)
-	// if run command is not found in devfile then it is an error
+	// if run command or test command is not found in devfile then it is an error
 	if groupType == common.RunCommandGroupType || groupType == common.TestCommandGroupType {
 		err = fmt.Errorf(msg)
 	} else {
