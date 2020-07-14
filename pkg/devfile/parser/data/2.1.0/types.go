@@ -1,58 +1,61 @@
-package common
+package version210
 
-// DevfileComponentType describes the type of component.
-// Only one of the following component type may be specified
-// To support some print actions
-type DevfileComponentType string
-
-const (
-	ContainerComponentType  DevfileComponentType = "Container"
-	KubernetesComponentType DevfileComponentType = "Kubernetes"
-	OpenshiftComponentType  DevfileComponentType = "Openshift"
-	PluginComponentType     DevfileComponentType = "Plugin"
-	VolumeComponentType     DevfileComponentType = "Volume"
-	CustomComponentType     DevfileComponentType = "Custom"
-
-	DockerfileComponentType DevfileComponentType = "Dockerfile"
-)
+import "github.com/openshift/odo/pkg/devfile/parser/data/common"
 
 // CommandGroupType describes the kind of command group.
 // +kubebuilder:validation:Enum=build;run;test;debug
-type DevfileCommandGroupType string
+type CommandGroupType string
 
 const (
-	BuildCommandGroupType DevfileCommandGroupType = "build"
-	RunCommandGroupType   DevfileCommandGroupType = "run"
-	TestCommandGroupType  DevfileCommandGroupType = "test"
-	DebugCommandGroupType DevfileCommandGroupType = "debug"
-	// To Support V1
-	InitCommandGroupType DevfileCommandGroupType = "init"
+	BuildCommandGroupType CommandGroupType = "build"
+	RunCommandGroupType   CommandGroupType = "run"
+	TestCommandGroupType  CommandGroupType = "test"
+	DebugCommandGroupType CommandGroupType = "debug"
 )
 
-// DevfileMetadata metadata for devfile
-type DevfileMetadata struct {
+// Devfile210 Devfile schema.
+type Devfile210 struct {
 
-	// Name Optional devfile name
-	Name string `json:"name,omitempty"`
+	// Predefined, ready-to-use, workspace-related commands
+	Commands []common.DevfileCommand `json:"commands,omitempty"`
 
-	// Version Optional semver-compatible version
-	Version string `json:"version,omitempty"`
+	// List of the workspace components, such as editor and plugins, user-provided containers, or other types of components
+	Components []common.DevfileComponent `json:"components,omitempty"`
 
-	// Dockerfile optional URL to remote Dockerfile
-	Dockerfile string `json:"alpha.build-dockerfile,omitempty"`
+	// Bindings of commands to events. Each command is referred-to by its name.
+	Events common.DevfileEvents `json:"events,omitempty"`
 
-	// Manifest optional URL to remote Deployment Manifest
-	Manifest string `json:"alpha.deployment-manifest,omitempty"`
+	// Optional metadata
+	Metadata common.DevfileMetadata `json:"metadata,omitempty"`
+
+	// Parent workspace template
+	Parent common.DevfileParent `json:"parent,omitempty"`
+
+	// Projects worked on in the workspace, containing names and sources locations
+	Projects []common.DevfileProject `json:"projects,omitempty"`
+
+	// Devfile schema version
+	SchemaVersion string `json:"schemaVersion"`
 }
 
-// DevfileCommand command specified in devfile
-type DevfileCommand struct {
+// CommandsItems
+type Command struct {
+
+	// Composite command that allows executing several sub-commands either sequentially or concurrently
+	Composite *Composite `json:"composite,omitempty"`
+
 	// CLI Command executed in a component container
 	Exec *Exec `json:"exec,omitempty"`
+
+	// Command providing the definition of a VsCode launch action
+	VscodeLaunch *VscodeLaunch `json:"vscodeLaunch,omitempty"`
+
+	// Command providing the definition of a VsCode Task
+	VscodeTask *VscodeTask `json:"vscodeTask,omitempty"`
 }
 
-// DevfileComponent component specified in devfile
-type DevfileComponent struct {
+// ComponentsItems
+type Component struct {
 
 	// Allows adding and configuring workspace-related containers
 	Container *Container `json:"container,omitempty"`
@@ -63,11 +66,36 @@ type DevfileComponent struct {
 	// Allows importing into the workspace the OpenShift resources defined in a given manifest. For example this allows reusing the OpenShift definitions used to deploy some runtime components in production.
 	Openshift *Openshift `json:"openshift,omitempty"`
 
+	// Allows importing a plugin. Plugins are mainly imported devfiles that contribute components, commands and events as a consistent single unit. They are defined in either YAML files following the devfile syntax, or as `DevWorkspaceTemplate` Kubernetes Custom Resources
+	Plugin *Plugin `json:"plugin,omitempty"`
+
 	// Allows specifying the definition of a volume shared by several other components
 	Volume *Volume `json:"volume,omitempty"`
 
 	//Allows specifying a dockerfile to initiate build
 	Dockerfile *Dockerfile `json:"dockerfile,omitempty"`
+}
+
+// Composite Composite command that allows executing several sub-commands either sequentially or concurrently
+type Composite struct {
+
+	// Optional map of free-form additional command attributes
+	Attributes map[string]string `json:"attributes,omitempty"`
+
+	// The commands that comprise this composite command
+	Commands []string `json:"commands,omitempty"`
+
+	// Defines the group this command is part of
+	Group *Group `json:"group,omitempty"`
+
+	// Mandatory identifier that allows referencing this command in composite commands, or from a parent, or in events.
+	Id string `json:"id"`
+
+	// Optional label that provides a label for this command to be used in Editor UI menus for example
+	Label string `json:"label,omitempty"`
+
+	// Indicates if the sub-commands should be executed concurrently
+	Parallel bool `json:"parallel,omitempty"`
 }
 
 // Configuration
@@ -95,10 +123,10 @@ type Container struct {
 	// The command to run in the dockerimage component instead of the default one provided in the image. Defaults to an empty array, meaning use whatever is defined in the image.
 	Command []string `json:"command,omitempty"`
 
-	Endpoints []Endpoint `json:"endpoints,omitempty"`
+	Endpoints []*Endpoint `json:"endpoints,omitempty"`
 
 	// Environment variables used in this container
-	Env          []Env  `json:"env,omitempty"`
+	Env          []*Env `json:"env,omitempty"`
 	Image        string `json:"image,omitempty"`
 	MemoryLimit  string `json:"memoryLimit,omitempty"`
 	MountSources bool   `json:"mountSources,omitempty"`
@@ -108,7 +136,7 @@ type Container struct {
 	SourceMapping string `json:"sourceMapping,omitempty"`
 
 	// List of volumes mounts that should be mounted is this container.
-	VolumeMounts []VolumeMount `json:"volumeMounts,omitempty"`
+	VolumeMounts []*VolumeMount `json:"volumeMounts,omitempty"`
 }
 
 // Endpoint
@@ -126,7 +154,7 @@ type Env struct {
 }
 
 // Events Bindings of commands to events. Each command is referred-to by its name.
-type DevfileEvents struct {
+type Events struct {
 
 	// Names of commands that should be executed after the workspace is completely started. In the case of Che-Theia, these commands should be executed after all plugins and extensions have started, including project cloning. This means that those commands are not triggered until the user opens the IDE in his browser.
 	PostStart []string `json:"postStart,omitempty"`
@@ -154,7 +182,7 @@ type Exec struct {
 	Component string `json:"component,omitempty"`
 
 	// Optional list of environment variables that have to be set before running the command
-	Env []Env `json:"env,omitempty"`
+	Env []*Env `json:"env,omitempty"`
 
 	// Defines the group this command is part of
 	Group *Group `json:"group,omitempty"`
@@ -208,7 +236,7 @@ type Group struct {
 	IsDefault bool `json:"isDefault,omitempty"`
 
 	// Kind of group the command is part of
-	Kind DevfileCommandGroupType `json:"kind"`
+	Kind CommandGroupType `json:"kind"`
 }
 
 // Kubernetes Allows importing into the workspace the Kubernetes resources defined in a given manifest. For example this allows reusing the Kubernetes definitions used to deploy some runtime components in production.
@@ -224,6 +252,16 @@ type Kubernetes struct {
 	Uri string `json:"uri,omitempty"`
 }
 
+// Metadata Optional metadata
+type Metadata struct {
+
+	// Optional devfile name
+	Name string `json:"name,omitempty"`
+
+	// Optional semver-compatible version
+	Version string `json:"version,omitempty"`
+}
+
 // Openshift Configuration overriding for an OpenShift component
 type Openshift struct {
 
@@ -237,17 +275,17 @@ type Openshift struct {
 	Uri string `json:"uri,omitempty"`
 }
 
-// DevfileParent Parent workspace template
-type DevfileParent struct {
+// Parent Parent workspace template
+type Parent struct {
 
 	// Predefined, ready-to-use, workspace-related commands
-	Commands []*DevfileCommand `json:"commands,omitempty"`
+	Commands []*Command `json:"commands,omitempty"`
 
 	// List of the workspace components, such as editor and plugins, user-provided containers, or other types of components
-	Components []*DevfileComponent `json:"components,omitempty"`
+	Components []*Component `json:"components,omitempty"`
 
 	// Bindings of commands to events. Each command is referred-to by its name.
-	Events *DevfileEvents `json:"events,omitempty"`
+	Events *Events `json:"events,omitempty"`
 
 	// Id in a registry that contains a Devfile yaml file
 	Id string `json:"id,omitempty"`
@@ -256,7 +294,7 @@ type DevfileParent struct {
 	Kubernetes *Kubernetes `json:"kubernetes,omitempty"`
 
 	// Projects worked on in the workspace, containing names and sources locations
-	Projects []*DevfileProject `json:"projects,omitempty"`
+	Projects []*Project `json:"projects,omitempty"`
 
 	RegistryUrl string `json:"registryUrl,omitempty"`
 
@@ -268,10 +306,10 @@ type DevfileParent struct {
 type Plugin struct {
 
 	// Overrides of commands encapsulated in a plugin. Overriding is done using a strategic merge
-	Commands []*DevfileCommand `json:"commands,omitempty"`
+	Commands []*Command `json:"commands,omitempty"`
 
 	// Overrides of components encapsulated in a plugin. Overriding is done using a strategic merge
-	Components []*DevfileComponent `json:"components,omitempty"`
+	Components []*Component `json:"components,omitempty"`
 
 	// Id in a registry that contains a Devfile yaml file
 	Id string `json:"id,omitempty"`
@@ -287,8 +325,8 @@ type Plugin struct {
 	Uri string `json:"uri,omitempty"`
 }
 
-// DevfileProject project defined in devfile
-type DevfileProject struct {
+// ProjectsItems
+type Project struct {
 
 	// Path relative to the root of the projects to which this project should be cloned into. This is a unix-style relative path (i.e. uses forward slashes). The path is invalid if it is absolute or tries to escape the project root through the usage of '..'. If not specified, defaults to the project name.
 	ClonePath string `json:"clonePath,omitempty"`
@@ -324,6 +362,44 @@ type VolumeMount struct {
 
 	// The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is `/<name>`.
 	Path string `json:"path,omitempty"`
+}
+
+// VscodeLaunch Command providing the definition of a VsCode launch action
+type VscodeLaunch struct {
+
+	// Optional map of free-form additional command attributes
+	Attributes map[string]string `json:"attributes,omitempty"`
+
+	// Defines the group this command is part of
+	Group *Group `json:"group,omitempty"`
+
+	// Mandatory identifier that allows referencing this command in composite commands, or from a parent, or in events.
+	Id string `json:"id"`
+
+	// Inlined content of the VsCode configuration
+	Inlined string `json:"inlined,omitempty"`
+
+	// Location as an absolute of relative URI the VsCode configuration will be fetched from
+	Uri string `json:"uri,omitempty"`
+}
+
+// VscodeTask Command providing the definition of a VsCode Task
+type VscodeTask struct {
+
+	// Optional map of free-form additional command attributes
+	Attributes map[string]string `json:"attributes,omitempty"`
+
+	// Defines the group this command is part of
+	Group *Group `json:"group,omitempty"`
+
+	// Mandatory identifier that allows referencing this command in composite commands, or from a parent, or in events.
+	Id string `json:"id"`
+
+	// Inlined content of the VsCode configuration
+	Inlined string `json:"inlined,omitempty"`
+
+	// Location as an absolute of relative URI the VsCode configuration will be fetched from
+	Uri string `json:"uri,omitempty"`
 }
 
 // Zip Project's Zip source

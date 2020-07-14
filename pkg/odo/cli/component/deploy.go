@@ -98,8 +98,16 @@ func (do *DeployOptions) Validate() (err error) {
 	}
 
 	s = log.Spinner("Validating build information")
+
 	metadata := do.devObj.Data.GetMetadata()
-	dockerfileURL := metadata.Dockerfile
+	// dockerfileURL := metadata.Dockerfile
+	var dockerfileURL string
+	components := do.devObj.Data.GetAliasedComponents()
+	for _, component := range components {
+		if component.Dockerfile != nil {
+			dockerfileURL = component.Dockerfile.DockerfilePath
+		}
+	}
 
 	//Download Dockerfile to .odo, build, then delete from .odo dir
 	//If Dockerfile is present in the project already, use that for the build
