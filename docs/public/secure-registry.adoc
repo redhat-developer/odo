@@ -1,0 +1,35 @@
+== Introduction to secure registry
+
+=== What is a secure registry?
+
+A secure registry is a registry that user can only use credential to access.
+
+=== Where to host secure registry?
+
+User can host secure registry on private GitHub repository, Enterprise GtiHub repository and cluster.
+
+== Steps for adding secure registry when registry is hosted on GitHub repository
+
+=== Step 1: Creating a new GitHub repository to host the registry
+
+Please follow https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/creating-a-new-repository[this instruction] to create a new GitHub repository and push the registry to the repository. The sample GitHub-hosted registry can be found https://github.com/odo-devfiles/registry/[here].
+
+=== Step 2: Creating a personal access token 
+
+Please follow https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token[this instruction] to create a personal access token, select `repo` as token scope.
+
+=== Step 3: Keyring setup
+
+There is no specific keyring setup for secure registry, you only need to ensure the keyring is working properly on your system, if you hit issues please follow the following instructions to troubleshoot the issues of your keyring with respective to the corresponding platforms.
+
+- https://support.apple.com/en-ca/guide/keychain-access/welcome/mac[Mac keychain]
+- https://help.gnome.org/users/seahorse/stable/index.html.en[Linux GNOME keyring]
+- https://support.microsoft.com/en-ca/help/4026814/windows-accessing-credential-manager[Windows credential manager]
+
+=== Step 4: Adding secure registry
+
+Please run `odo registry add <registry name> <registry URL> --token <token>` to add secure registry, for more registry related commands please refer to `odo registry --help`.
+
+- <registry name>: user-defined registry name.
+- <registry URL>: the URL of GitHub repository that you create on step 1.
+- <token>: the personal access token that you create on step 2.
