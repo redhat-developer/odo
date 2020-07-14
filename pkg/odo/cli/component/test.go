@@ -77,7 +77,7 @@ func NewCmdTest(name, fullName string) *cobra.Command {
 		Short:   "Run the test command defined in the devfile",
 		Long:    "Run the test command defined in the devfile",
 		Example: fmt.Sprintf(testExample, fullName),
-		Args:    cobra.MaximumNArgs(1),
+		Args:    cobra.MaximumNArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(to, cmd, args)
 		},
