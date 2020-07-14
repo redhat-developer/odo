@@ -375,7 +375,7 @@ var _ = Describe("odo push command tests", func() {
 			)
 
 			Expect(statErr).To(HaveOccurred())
-			path := filepath.Join(dir, "src", "src", "main", "java", "AnotherMessageProducer.java")
+			path := filepath.ToSlash(filepath.Join(dir, "src", "src", "main", "java", "AnotherMessageProducer.java"))
 			Expect(statErr.Error()).To(ContainSubstring("cannot stat '" + path + "': No such file or directory"))
 		})
 
