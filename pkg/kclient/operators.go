@@ -78,12 +78,12 @@ func (c *Client) SearchClusterServiceVersionList(name string) (*olm.ClusterServi
 	}, nil
 }
 
-// GetCustomResourceFrom returns the CR matching the name
-func (c *Client) GetCustomResource(customResource string) (olm.CRDDescription, error) {
+// GetCustomResource returns the CR matching the name
+func (c *Client) GetCustomResource(customResource string) (*olm.CRDDescription, error) {
 	// Get all csvs in the namespace
 	csvs, err := c.GetClusterServiceVersionList()
 	if err != nil {
-		return olm.CRDDescription{}, err
+		return &olm.CRDDescription{}, err
 	}
 
 	// iterate of csvs to find if CR of our interest is provided by any of those
@@ -93,12 +93,12 @@ func (c *Client) GetCustomResource(customResource string) (olm.CRDDescription, e
 
 		for _, cr := range *crs {
 			if cr.Kind == customResource {
-				return cr, nil
+				return &cr, nil
 			}
 		}
 	}
 
-	return olm.CRDDescription{}, fmt.Errorf("Couldn't find a Custom Resource named %q in the namespace", customResource)
+	return &olm.CRDDescription{}, fmt.Errorf("Couldn't find a Custom Resource named %q in the namespace", customResource)
 }
 
 // GetCSVWithCR returns the CSV (Operator) that contains the CR (service)

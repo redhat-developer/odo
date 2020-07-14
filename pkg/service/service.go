@@ -332,13 +332,13 @@ func getGVRFromCR(cr *olm.CRDDescription) (group, version, resource string, err 
 	return
 }
 
-func GetGVKFromCR(cr olm.CRDDescription) (group, version, kind string, err error) {
+func GetGVKFromCR(cr *olm.CRDDescription) (group, version, kind string, err error) {
 	return getGVKFromCR(cr)
 }
 
 // getGVKFromCR parses and returns the values for group, version and resource
 // for a given Custom Resource (CR).
-func getGVKFromCR(cr olm.CRDDescription) (group, version, kind string, err error) {
+func getGVKFromCR(cr *olm.CRDDescription) (group, version, kind string, err error) {
 	kind = cr.Kind
 	version = cr.Version
 

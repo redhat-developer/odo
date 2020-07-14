@@ -222,6 +222,9 @@ func (o *commonLinkOptions) run() (err error) {
 		// "ServiceBindingRequest" from the Operator "ServiceBindingOperator".
 		err = o.KClient.CreateDynamicResource(sbrMap, sbrGroup, sbrVersion, sbrResource)
 		if err != nil {
+			if strings.Contains(err.Error(), "already exists") {
+				return fmt.Errorf("Component %q is already linked with the service %q\n", o.Context.EnvSpecificInfo.GetName(), o.suppliedName)
+			}
 			return err
 		}
 
