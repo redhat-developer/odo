@@ -296,12 +296,8 @@ func ValidateAndGetTestDevfileCommands(data data.DevfileData, devfileTestCmd str
 		klog.V(4).Infof("Test command: %v", testCommand.Exec.Id)
 	}
 
-	if !isTestCommandValid {
-		var commandErrors string
-		if testCmdErr != nil {
-			commandErrors = testCmdErr.Error()
-		}
-		return common.DevfileCommand{}, fmt.Errorf(commandErrors)
+	if !isTestCommandValid && testCmdErr != nil {
+		return common.DevfileCommand{}, testCmdErr
 	}
 
 	return testCommand, nil
