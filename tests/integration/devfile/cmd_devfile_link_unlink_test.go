@@ -12,7 +12,7 @@ import (
 	"github.com/openshift/odo/tests/helper"
 )
 
-var _ = Describe("odo devfile create command tests", func() {
+var _ = Describe("odo link command tests", func() {
 	const devfile = "devfile.yaml"
 	const envFile = ".odo/env/env.yaml"
 	var namespace, context, currentWorkingDirectory string

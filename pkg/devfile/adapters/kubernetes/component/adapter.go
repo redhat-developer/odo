@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/exec"
 
 	corev1 "k8s.io/api/core/v1"
@@ -107,7 +108,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		parameters.ForceBuild = true
 	}
 
-	err = a.createOrUpdateComponent(componentExists)
+	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo)
 	if err != nil {
 		return errors.Wrap(err, "unable to create or update component")
 	}
@@ -211,7 +212,7 @@ func (a Adapter) DoesComponentExist(cmpName string) (bool, error) {
 	return utils.ComponentExists(a.Client, cmpName)
 }
 
-func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
+func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo) (err error) {
 	componentName := a.ComponentName
 
 	componentType := strings.TrimSuffix(a.AdapterContext.Devfile.Data.GetMetadata().Name, "-")
@@ -230,6 +231,12 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 	}
 
 	containers, err = utils.UpdateContainersWithSupervisord(a.Devfile, containers, a.devfileRunCmd, a.devfileDebugCmd, a.devfileDebugPort)
+	if err != nil {
+		return err
+	}
+
+	// set EnvFrom to the container that's supposed to have link to the Operator backed service
+	containers, err = utils.UpdateContainerWithEnvFrom(containers, a.Devfile, a.devfileRunCmd, ei)
 	if err != nil {
 		return err
 	}
