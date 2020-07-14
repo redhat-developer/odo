@@ -24,10 +24,10 @@ Fixes #?
 
 **PR acceptance criteria**:
 
-Unit test (Yes/No): 
+- [ ] Unit test 
 
-Integration test (Yes/No): 
+- [ ] Integration test 
 
-Documentation (Yes/No): 
+- [ ] Documentation 
 
 **How to test changes / Special notes to the reviewer**:
