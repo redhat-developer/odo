@@ -1,6 +1,6 @@
 = Logging in `odo`
 
-https://godoc.org/k8s.io/klog[Glog] is used for V style logging in `odo`.
+https://github.com/kubernetes/klog[Klog] is used for V style logging in `odo`.
 
 == Working
 
@@ -12,7 +12,7 @@ All ERROR severity level log messages will always be logged regardless of the va
 
 == Usage
 
-Every source file that requires logging will need to import glog:
+Every source file that requires logging will need to import klog:
 
 ----
 $ import "k8s.io/klog"
@@ -42,11 +42,16 @@ $ klog.Warningf(msg, args...)
 In addition to the above logging, the following hidden flags are available for debugging:
 
 ----
-      --alsologtostderr                  log to standard error as well as files
-      --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
+      --add_dir_header                   If true, adds the file directory to the header
+      --alsologtostderr                  Log to standard error as well as files
+      --log_backtrace_at traceLocation   When logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
-      --logtostderr                      log to standard error instead of files (default false)
-      --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
-  -v, --v Level                          log level for V logs. Level varies from 0 to 9 (default 0).
-      --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
+      --log_file string                  If non-empty, use this log file
+      --log_file_max_size uint           Defines the maximum size a log file can grow to. Unit is megabytes. If the value is 0, the maximum file size is unlimited. (default 1800)
+      --logtostderr                      Log to standard error instead of files (default true)
+      --skip_headers                     If true, avoid header prefixes in the log messages
+      --skip_log_headers                 If true, avoid headers when opening log files
+      --stderrthreshold severity         Logs at or above this threshold go to stderr (default 2)
+  -v, --v Level                          Number for the log level verbosity. Level varies from 0 to 9 (default 0).
+      --vmodule moduleSpec               Comma-separated list of pattern=N settings for file-filtered logging
 ----
