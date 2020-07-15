@@ -30,7 +30,7 @@ func TestCreatePVC(t *testing.T) {
 		wantErr   bool
 	}{
 		{
-			name:      "Case: Valid pvc name",
+			name:      "Case 1: Valid pvc name",
 			pvcName:   "mypvc",
 			size:      "1Gi",
 			namespace: "default",
@@ -40,9 +40,19 @@ func TestCreatePVC(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:      "Case: Invalid pvc name",
+			name:      "Case 2: Invalid pvc name",
 			pvcName:   "",
 			size:      "1Gi",
+			namespace: "default",
+			labels: map[string]string{
+				"testpvc": "testpvc",
+			},
+			wantErr: true,
+		},
+		{
+			name:      "Case 3: Invalid pvc size",
+			pvcName:   "mypvc",
+			size:      "garbage",
 			namespace: "default",
 			labels: map[string]string{
 				"testpvc": "testpvc",
@@ -58,8 +68,10 @@ func TestCreatePVC(t *testing.T) {
 			fkclient.Namespace = tt.namespace
 
 			quantity, err := resource.ParseQuantity(tt.size)
-			if err != nil {
+			if err != nil && tt.size != "garbage" {
 				t.Errorf("resource.ParseQuantity unexpected error %v", err)
+			} else if err != nil && tt.size == "garbage" {
+				return
 			}
 			pvcSpec := GeneratePVCSpec(quantity)
 

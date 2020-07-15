@@ -520,6 +520,61 @@ var _ = Describe("odo devfile push command tests", func() {
 		})
 	})
 
+	Context("Verify devfile volume components work", func() {
+
+		It("should error out when duplicate volume components exist", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.RenameFile("devfile.yaml", "devfile-old.yaml")
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-volume-components.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			helper.ReplaceString("devfile.yaml", "secondvol", "firstvol")
+
+			output := helper.CmdShouldFail("odo", "push", "--project", namespace)
+			Expect(output).To(ContainSubstring("duplicate volume components present in devfile"))
+		})
+
+		It("should error out when a wrong volume size is used", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.RenameFile("devfile.yaml", "devfile-old.yaml")
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-volume-components.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			helper.ReplaceString("devfile.yaml", "3Gi", "3Garbage")
+
+			output := helper.CmdShouldFail("odo", "push", "--project", namespace)
+			Expect(output).To(ContainSubstring("quantities must match the regular expression"))
+		})
+
+		It("should successfully use the volume components in container components", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.RenameFile("devfile.yaml", "devfile-old.yaml")
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-volume-components.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			output := helper.CmdShouldPass("odo", "push", "--project", namespace)
+			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+
+			// Only testing this in Kubernetes because odo OpenShift CI
+			// sets the min pvc storage size to 100Gi
+			if os.Getenv("KUBERNETES") == "true" {
+				// Verify the pvc size for firstvol
+				storageSize := cliRunner.GetPVCSize(cmpName, "firstvol", namespace)
+				// should be the default size
+				Expect(storageSize).To(ContainSubstring("5Gi"))
+
+				// Verify the pvc size for secondvol
+				storageSize = cliRunner.GetPVCSize(cmpName, "secondvol", namespace)
+				// should be the specified size in the devfile volume component
+				Expect(storageSize).To(ContainSubstring("3Gi"))
+			}
+		})
+
+	})
+
 	Context("when .gitignore file exists", func() {
 		It("checks that .odo/env exists in gitignore", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)

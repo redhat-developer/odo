@@ -22,7 +22,6 @@ func validateComponents(components []common.DevfileComponent) error {
 	}
 
 	processedVolumes := make(map[string]bool)
-	// var containerVolumeMountNames []string
 
 	// Check if component of type container is present
 	// and if volume components are unique
