@@ -9,10 +9,13 @@ import (
 	"sync"
 
 	"github.com/openshift/odo/pkg/preference"
+	"github.com/zalando/go-keyring"
 
 	imagev1 "github.com/openshift/api/image/v1"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
+
+	registryUtil "github.com/openshift/odo/pkg/odo/cli/registry/util"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -102,7 +105,17 @@ func getRegistryDevfiles(registry Registry) ([]DevfileComponentType, error) {
 	}
 	registry.URL = URL
 	indexLink := registry.URL + indexPath
-	jsonBytes, err := util.HTTPGetRequest(indexLink)
+	request := util.HTTPRequestParams{
+		URL: indexLink,
+	}
+	if registryUtil.IsSecure(registry.Name) {
+		token, err := keyring.Get(util.CredentialPrefix+registry.Name, "default")
+		if err != nil {
+			return nil, errors.Wrap(err, "Unable to get secure registry credential from keyring")
+		}
+		request.Token = token
+	}
+	jsonBytes, err := util.HTTPGetRequest(request)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Unable to download the devfile index.json from %s", indexLink)
 	}
@@ -152,7 +165,7 @@ func ListDevfileComponents(registryName string) (DevfileComponentTypeList, error
 		retrieveRegistryIndices.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
 			registryDevfiles, err := getRegistryDevfiles(registry)
 			if err != nil {
-				log.Warningf("Registry %s is not set up properly with error: %v", registry.Name, err)
+				log.Warningf("Registry %s is not set up properly with error: %v, please check the registry URL and credential (refer `odo registry update --help`)\n", registry.Name, err)
 				return
 			}
 

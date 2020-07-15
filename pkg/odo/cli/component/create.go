@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/zalando/go-keyring"
 	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/catalog"
@@ -24,6 +25,7 @@ import (
 	catalogutil "github.com/openshift/odo/pkg/odo/cli/catalog/util"
 	"github.com/openshift/odo/pkg/odo/cli/component/ui"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
+	registryUtil "github.com/openshift/odo/pkg/odo/cli/registry/util"
 	commonui "github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
@@ -73,6 +75,7 @@ type DevfileMetadata struct {
 	devfileRegistry    catalog.Registry
 	devfilePath        devfilePath
 	starter            string
+	token              string
 }
 
 // CreateRecommendedCommandName is the recommended watch command name
@@ -83,7 +86,9 @@ const CreateRecommendedCommandName = "create"
 const LocalDirectoryDefaultLocation = "./"
 
 // Constants for devfile component
-const devFile = "devfile.yaml"
+const (
+	devFile = "devfile.yaml"
+)
 
 var (
 	envFile    = filepath.Join(".odo", "env", "env.yaml")
@@ -471,6 +476,9 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 				catalogDevfileList, err = catalog.ListDevfileComponents(co.devfileMetadata.devfileRegistry.Name)
 				if err != nil {
 					return err
+				}
+				if co.devfileMetadata.devfileRegistry.Name != "" && catalogDevfileList.Items == nil {
+					return errors.Errorf("Can't create devfile component from registry %s", co.devfileMetadata.devfileRegistry.Name)
 				}
 
 				if len(catalogDevfileList.DevfileRegistries) == 0 {
@@ -938,7 +946,14 @@ func (co *CreateOptions) Run() (err error) {
 			if co.devfileMetadata.devfilePath.value != "" {
 				if co.devfileMetadata.devfilePath.protocol == "http(s)" {
 					// User specify devfile path is http(s) URL
-					err = util.DownloadFile(co.devfileMetadata.devfilePath.value, DevfilePath)
+					params := util.DownloadParams{
+						Request: util.HTTPRequestParams{
+							URL:   co.devfileMetadata.devfilePath.value,
+							Token: co.devfileMetadata.token,
+						},
+						Filepath: DevfilePath,
+					}
+					err = util.DownloadFile(params)
 					if err != nil {
 						return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfilePath.value)
 					}
@@ -957,7 +972,20 @@ func (co *CreateOptions) Run() (err error) {
 
 			if !util.CheckPathExists(DevfilePath) {
 				// Download devfile from registry
-				err := util.DownloadFile(co.devfileMetadata.devfileRegistry.URL+co.devfileMetadata.devfileLink, DevfilePath)
+				params := util.DownloadParams{
+					Request: util.HTTPRequestParams{
+						URL: co.devfileMetadata.devfileRegistry.URL + co.devfileMetadata.devfileLink,
+					},
+					Filepath: DevfilePath,
+				}
+				if registryUtil.IsSecure(co.devfileMetadata.devfileRegistry.Name) {
+					token, err := keyring.Get(util.CredentialPrefix+co.devfileMetadata.devfileRegistry.Name, "default")
+					if err != nil {
+						return errors.Wrap(err, "unable to get secure registry credential from keyring")
+					}
+					params.Request.Token = token
+				}
+				err := util.DownloadFile(params)
 				if err != nil {
 					return errors.Wrapf(err, "failed to download devfile for devfile component from %s", co.devfileMetadata.devfileRegistry.URL+co.devfileMetadata.devfileLink)
 				}
@@ -1120,6 +1148,7 @@ func NewCmdCreate(name, fullName string) *cobra.Command {
 		componentCreateCmd.Flags().Lookup("starter").NoOptDefVal = defaultProjectName //Default value to pass to the flag if one is not specified.
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfileRegistry.Name, "registry", "", "Create devfile component from specific registry")
 		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.devfilePath.value, "devfile", "", "Path to the user specify devfile")
+		componentCreateCmd.Flags().StringVar(&co.devfileMetadata.token, "token", "", "Token to be used when downloading devfile from the devfile path that is specified via --devfile")
 	}
 
 	componentCreateCmd.SetUsageTemplate(odoutil.CmdUsageTemplate)

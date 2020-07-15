@@ -13,7 +13,7 @@ import (
 var _ = Describe("odo devfile registry command tests", func() {
 	var project, context, currentWorkingDirectory, originalKubeconfig string
 	const registryName string = "RegistryName"
-	const addRegistryURL string = "https://raw.githubusercontent.com/odo-devfiles/registry/master"
+	const addRegistryURL string = "https://github.com/odo-devfiles/registry"
 	const updateRegistryURL string = "http://www.example.com/update"
 
 	// Using program commmand according to cliRunner in devfile

@@ -54,3 +54,8 @@ func (d Adapter) Test(testCmd string, show bool) error {
 func (d Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
 	return d.componentAdapter.Log(follow, debug)
 }
+
+// Exec executes a command in the component
+func (d Adapter) Exec(command []string) error {
+	return d.componentAdapter.Exec(command)
+}

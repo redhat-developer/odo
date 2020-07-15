@@ -59,7 +59,7 @@ func (o *ListOptions) Run() (err error) {
 		return fmt.Errorf("No devfile registries added to the configuration. Refer `odo registry add -h` to add one")
 	}
 	w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-	fmt.Fprintln(w, "NAME", "\t", "URL")
+	fmt.Fprintln(w, "NAME", "\t", "URL", "\t", "SECURE")
 	o.printRegistryList(w, registryList)
 	w.Flush()
 	return
@@ -71,7 +71,11 @@ func (o *ListOptions) printRegistryList(w io.Writer, registryList *[]preference.
 	}
 
 	for _, registry := range *registryList {
-		fmt.Fprintln(w, registry.Name, "\t", registry.URL)
+		secure := "No"
+		if registry.Secure {
+			secure = "Yes"
+		}
+		fmt.Fprintln(w, registry.Name, "\t", registry.URL, "\t", secure)
 	}
 }
 

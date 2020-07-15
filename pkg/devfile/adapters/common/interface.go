@@ -9,6 +9,7 @@ type ComponentAdapter interface {
 	Delete(labels map[string]string) error
 	Test(testCmd string, show bool) error
 	Log(follow, debug bool) (io.ReadCloser, error)
+	Exec(command []string) error
 }
 
 // StorageAdapter defines the storage functions that platform-specific adapters must implement

@@ -140,6 +140,7 @@ jobs:
         - travis_wait make test-cmd-devfile-registry
         - travis_wait make test-cmd-devfile-test
         - travis_wait make test-cmd-devfile-log
+        - travis_wait make test-cmd-devfile-exec
         - odo logout
 
     - <<: *base-test
@@ -158,7 +159,7 @@ jobs:
     
     - <<: *base-test
       stage: test
-      name: "docker devfile push, watch, test, catalog and delete command integration tests"
+      name: "docker devfile push, watch, test, catalog, exec and delete command integration tests"
       script:
         - make bin
         - sudo cp odo /usr/bin
@@ -168,11 +169,12 @@ jobs:
         - travis_wait make test-cmd-docker-devfile-delete
         - travis_wait make test-cmd-docker-devfile-url
         - travis_wait make test-cmd-docker-devfile-test
+        - travis_wait make test-cmd-docker-devfile-exec
 
     # Run devfile integration test on Kubernetes cluster    
     - <<: *base-test
       stage: test
-      name: "devfile catalog, url, test, watch, push, debug, delete, log and create command integration tests on kubernetes cluster"
+      name: "devfile catalog,url, watch, push, debug, delete, exec, test, log and create command integration tests on kubernetes cluster"
       env:
         - MINIKUBE_WANTUPDATENOTIFICATION=false
         - MINIKUBE_WANTREPORTERRORPROMPT=false
@@ -199,6 +201,7 @@ jobs:
         - travis_wait make test-cmd-devfile-watch
         - travis_wait make test-cmd-devfile-push
         - travis_wait make test-cmd-devfile-debug
+        - travis_wait make test-cmd-devfile-exec
         - travis_wait make test-cmd-devfile-delete
         - travis_wait make test-cmd-devfile-create
         - travis_wait make test-cmd-devfile-url
