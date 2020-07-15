@@ -56,7 +56,6 @@ type WatchParameters struct {
 	DevfileRunCmd    string
 	DevfilePath      string
 	DevfileNamespace string
-	// IsDevfileWatchHandler bool
 }
 
 // addRecursiveWatch handles adding watches recursively for the path provided
@@ -327,7 +326,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 				}
 				if fileInfo.IsDir() {
 					klog.V(4).Infof("Copying files %s to pod", changedFiles)
-					// if parameters.IsDevfileWatchHandler /*.DevfileWatchHandler != nil*/ {
+
 					if parameters.DevfileWatchHandler != nil {
 						pushParams := common.PushParameters{
 							Path:              parameters.Path,
@@ -352,7 +351,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 				} else {
 					pathDir := filepath.Dir(parameters.Path)
 					klog.V(4).Infof("Copying file %s to pod", parameters.Path)
-					// if parameters.IsDevfileWatchHandler {
+
 					if parameters.DevfileWatchHandler != nil {
 						pushParams := common.PushParameters{
 							Path:              pathDir,
@@ -376,11 +375,10 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 				}
 				if err != nil {
 
-					fmt.Fprintf(out, "%s - %s\n\n", PushErrorString, err.Error())
-
-					// Intentionally not exiting on error here.
+					// Log and output, but intentionally not exiting on error here.
 					// We don't want to break watch when push failed, it might be fixed with the next change.
 					klog.V(4).Infof("Error from Push: %v", err)
+					fmt.Fprintf(out, "%s - %s\n\n", PushErrorString, err.Error())
 				}
 				dirty = false
 				showWaitingMessage = true
@@ -396,26 +394,6 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 		}
 	}
 }
-
-// func RegenerateComponentAdapterFromWatchParams(parameters WatchParameters) (common.ComponentAdapter, error) {
-// 	// Parse devfile and validate
-// 	devObj, err := parser.ParseAndValidate(parameters.DevfilePath)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	var platformContext interface{}
-// 	if !pushtarget.IsPushTargetDocker() {
-// 		platformContext = kubernetes.KubernetesContext{
-// 			Namespace: parameters.DevfileNamespace,
-// 		}
-// 	} else {
-// 		platformContext = nil
-// 	}
-
-// 	return adapters.NewComponentAdapter(parameters.ComponentName, parameters.Path, devObj, platformContext)
-
-// }
 
 // DevfileWatchAndPush calls out to the WatchAndPush function.
 // As an occlient instance is not needed for devfile components, it sets it to nil

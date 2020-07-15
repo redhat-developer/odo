@@ -1,3 +1,5 @@
+// +build !osx
+
 package watch
 
 import (
@@ -815,7 +817,6 @@ func TestWatchAndPush(t *testing.T) {
 					StartChan:     StartChan,
 					ExtChan:       ExtChan,
 					Show:          tt.show,
-					// IsDevfileWatchHandler: tt.isExperimental,
 				}
 
 				if tt.isExperimental {

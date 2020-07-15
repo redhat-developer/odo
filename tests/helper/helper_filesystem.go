@@ -22,39 +22,6 @@ func CreateNewContext() string {
 	return directory
 }
 
-// DeleteDir delete directory
-// func DeleteDir(dir string) {
-
-// 	expireTime := time.Now().Add(time.Minute * 2)
-// 	delayInSeconds := 1
-
-// 	err := error(nil)
-// 	attempts := 0
-
-// 	for {
-// 		fmt.Fprintf(GinkgoWriter, "Deleting dir: %s\n", dir)
-// 		err = os.RemoveAll(dir)
-
-// 		if err == nil || time.Now().After(expireTime) {
-// 			break
-// 		}
-
-// 		fmt.Printf("Unable to delete %s on attempt #%d, trying again in 5 seconds...\n", dir, attempts)
-// 		fmt.Fprintf(GinkgoWriter, "Unable to delete %s on attempt #%d, trying again in 5 seconds...\n", dir, attempts)
-
-// 		delayInSeconds *= 2 // exponential backoff
-// 		if delayInSeconds > 16 {
-// 			delayInSeconds = 16
-// 		}
-// 		time.Sleep(time.Duration(delayInSeconds) * time.Second)
-
-// 		attempts++
-
-// 	}
-// 	Expect(err).NotTo(HaveOccurred())
-
-// }
-
 func DeleteDir(dir string) {
 	attempts := 0
 
