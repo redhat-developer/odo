@@ -124,28 +124,36 @@ func DeleteOperatorService(client *kclient.Client, serviceName string) error {
 		return err
 	}
 
-	var csv olm.ClusterServiceVersion
+	var csv *olm.ClusterServiceVersion
 
 	for _, s := range serviceList {
 		if s.GetKind() == kind && s.GetName() == name {
 			csv, err = client.GetCSVWithCR(kind)
+			if err != nil {
+				return err
+			}
 			break
 		}
+	}
+
+	if csv == nil {
 		return fmt.Errorf("Unable to find any Operator providing the service %q", kind)
 	}
 
 	crs := client.GetCustomResourcesFromCSV(csv)
-	var cr olm.CRDDescription
+	var cr *olm.CRDDescription
 
-	for _, c := range crs {
+	for _, c := range *crs {
 		if c.Kind == kind {
-			cr = c
+			cr = &c
 			break
 		}
-		return fmt.Errorf("Unable to find any Operator providing the service %q", kind)
 	}
 
 	group, version, resource, err := getGVRFromCR(cr)
+	if err != nil {
+		return err
+	}
 
 	return client.DeleteDynamicResource(name, group, version, resource)
 }
@@ -277,7 +285,7 @@ func ListOperatorServices(client *kclient.Client) ([]unstructured.Unstructured, 
 	// let's get the Services a.k.a Custom Resources (CR) defined by each operator, one by one
 	for _, csv := range csvs.Items {
 		klog.V(4).Infof("Getting services started from operator: %s\n", csv.Name)
-		customResources := client.GetCustomResourcesFromCSV(csv)
+		customResources := client.GetCustomResourcesFromCSV(&csv)
 
 		// list and write active instances of each service/CR
 		instances, err := getCRInstances(client, customResources)
@@ -294,7 +302,7 @@ func ListOperatorServices(client *kclient.Client) ([]unstructured.Unstructured, 
 
 // getGVRFromCR parses and returns the values for group, version and resource
 // for a given Custom Resource (CR).
-func getGVRFromCR(cr olm.CRDDescription) (group, version, resource string, err error) {
+func getGVRFromCR(cr *olm.CRDDescription) (group, version, resource string, err error) {
 	version = cr.Version
 
 	gr := strings.SplitN(cr.Name, ".", 2)
@@ -310,12 +318,12 @@ func getGVRFromCR(cr olm.CRDDescription) (group, version, resource string, err e
 
 // getCRInstances returns active instances of given Custom Resource (service in
 // odo lingo) in the active namespace of the cluster
-func getCRInstances(client *kclient.Client, customResources []olm.CRDDescription) ([]unstructured.Unstructured, error) {
+func getCRInstances(client *kclient.Client, customResources *[]olm.CRDDescription) ([]unstructured.Unstructured, error) {
 	var instances []unstructured.Unstructured
 
-	for _, cr := range customResources {
+	for _, cr := range *customResources {
 		klog.V(4).Infof("Getting instances of: %s\n", cr.Name)
-		group, version, resource, err := getGVRFromCR(cr)
+		group, version, resource, err := getGVRFromCR(&cr)
 		if err != nil {
 			return []unstructured.Unstructured{}, err
 		}
