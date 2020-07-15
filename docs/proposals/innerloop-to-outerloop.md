@@ -107,7 +107,6 @@ schemaVersion: 2.1.0
 metadata:
   name: nodejs
   version: 1.0.0
-  alpha.deployment-manifest: "https://raw.githubusercontent.com/groeges/devfile-registry/master/devfiles/nodejs/deploy_deployment.yaml"
 projects:
   - name: nodejs-starter
     git:
