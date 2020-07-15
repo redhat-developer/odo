@@ -246,14 +246,17 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 
 	kclient.AddBootstrapSupervisordInitContainer(podTemplateSpec)
 
-	componentAliasToVolumes := common.GetVolumes(a.Devfile)
+	containerNameToVolumes := common.GetVolumes(a.Devfile)
 
 	var uniqueStorages []common.Storage
 	volumeNameToPVCName := make(map[string]string)
 	processedVolumes := make(map[string]bool)
 
 	// Get a list of all the unique volume names and generate their PVC names
-	for _, volumes := range componentAliasToVolumes {
+	// we do not use the volume components which are unique here because
+	// not all volume components maybe referenced by a container component.
+	// We only want to create PVCs which are going to be used by a container
+	for _, volumes := range containerNameToVolumes {
 		for _, vol := range volumes {
 			if _, ok := processedVolumes[vol.Name]; !ok {
 				processedVolumes[vol.Name] = true
@@ -286,7 +289,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	}
 
 	// Add PVC and Volume Mounts to the podTemplateSpec
-	err = kclient.AddPVCAndVolumeMount(podTemplateSpec, volumeNameToPVCName, componentAliasToVolumes)
+	err = kclient.AddPVCAndVolumeMount(podTemplateSpec, volumeNameToPVCName, containerNameToVolumes)
 	if err != nil {
 		return err
 	}

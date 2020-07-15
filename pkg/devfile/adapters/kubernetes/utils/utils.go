@@ -62,7 +62,7 @@ func ConvertPorts(endpoints []common.Endpoint) ([]corev1.ContainerPort, error) {
 // GetContainers iterates through the components in the devfile and returns a slice of the corresponding containers
 func GetContainers(devfileObj devfileParser.DevfileObj) ([]corev1.Container, error) {
 	var containers []corev1.Container
-	for _, comp := range adaptersCommon.GetSupportedComponents(devfileObj.Data) {
+	for _, comp := range adaptersCommon.GetDevfileContainerComponents(devfileObj.Data) {
 		envVars := ConvertEnvs(comp.Container.Env)
 		resourceReqs := GetResourceReqs(comp)
 		ports, err := ConvertPorts(comp.Container.Endpoints)

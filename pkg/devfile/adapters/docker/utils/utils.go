@@ -28,23 +28,23 @@ const (
 )
 
 // ComponentExists checks if a component exist
-// returns true, if the number of containers equals the number of unique devfile components
+// returns true, if the number of containers equals the number of unique devfile container components
 // returns false, if number of containers is zero
-// returns an error, if number of containers is more than zero but does not equal the number of unique devfile components
+// returns an error, if number of containers is more than zero but does not equal the number of unique devfile container components
 func ComponentExists(client lclient.Client, data data.DevfileData, name string) (bool, error) {
 	containers, err := GetComponentContainers(client, name)
 	if err != nil {
 		return false, errors.Wrapf(err, "unable to get the containers for component %s", name)
 	}
 
-	supportedComponents := adaptersCommon.GetSupportedComponents(data)
+	containerComponents := adaptersCommon.GetDevfileContainerComponents(data)
 
 	var componentExists bool
 	if len(containers) == 0 {
 		componentExists = false
-	} else if len(containers) == len(supportedComponents) {
+	} else if len(containers) == len(containerComponents) {
 		componentExists = true
-	} else if len(containers) > 0 && len(containers) != len(supportedComponents) {
+	} else if len(containers) > 0 && len(containers) != len(containerComponents) {
 		return true, errors.New(fmt.Sprintf("component %s is in an invalid state, please execute odo delete and retry odo push", name))
 	}
 

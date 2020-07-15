@@ -92,10 +92,20 @@ type CommandNames struct {
 	AdapterName string
 }
 
-func isComponentSupported(component common.DevfileComponent) bool {
+// isComponentAContainer returns a bool if the component is a container
+func isComponentAContainer(component common.DevfileComponent) bool {
 	// Currently odo only uses devfile components of type container, since most of the Che registry devfiles use it
 	if component.Container != nil {
 		klog.V(4).Infof("Found component \"%v\" with name \"%v\"\n", common.ContainerComponentType, component.Container.Name)
+		return true
+	}
+	return false
+}
+
+// isComponentAVolume returns a bool if the component is a volume
+func isComponentAVolume(component common.DevfileComponent) bool {
+	if component.Volume != nil {
+		klog.V(4).Infof("Found component \"%v\" with name \"%v\"\n", common.VolumeComponentType, component.Volume.Name)
 		return true
 	}
 	return false
@@ -109,12 +119,24 @@ func GetBootstrapperImage() string {
 	return defaultBootstrapperImage
 }
 
-// GetSupportedComponents iterates through the components in the devfile and returns a list of odo supported components
-func GetSupportedComponents(data data.DevfileData) []common.DevfileComponent {
+// GetDevfileContainerComponents iterates through the components in the devfile and returns a list of devfile container components
+func GetDevfileContainerComponents(data data.DevfileData) []common.DevfileComponent {
 	var components []common.DevfileComponent
 	// Only components with aliases are considered because without an alias commands cannot reference them
 	for _, comp := range data.GetAliasedComponents() {
-		if isComponentSupported(comp) {
+		if isComponentAContainer(comp) {
+			components = append(components, comp)
+		}
+	}
+	return components
+}
+
+// GetDevfileVolumeComponents iterates through the components in the devfile and returns a list of devfile volume components
+func GetDevfileVolumeComponents(data data.DevfileData) []common.DevfileComponent {
+	var components []common.DevfileComponent
+	// Only components with aliases are considered because without an alias commands cannot reference them
+	for _, comp := range data.GetComponents() {
+		if isComponentAVolume(comp) {
 			components = append(components, comp)
 		}
 	}
@@ -135,24 +157,37 @@ func getCommandsByGroup(data data.DevfileData, groupType common.DevfileCommandGr
 	return commands
 }
 
-// GetVolumes iterates through the components in the devfile and returns a map of component alias to the devfile volumes
+// GetVolumes iterates through the components in the devfile and returns a map of container name to the devfile volumes
 func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume {
-	// componentAliasToVolumes is a map of the Devfile Component Alias to the Devfile Component Volumes
-	componentAliasToVolumes := make(map[string][]DevfileVolume)
-	size := volumeSize
-	for _, comp := range GetSupportedComponents(devfileObj.Data) {
-		if len(comp.Container.VolumeMounts) != 0 {
-			for _, volume := range comp.Container.VolumeMounts {
-				vol := DevfileVolume{
-					Name:          volume.Name,
-					ContainerPath: volume.Path,
-					Size:          size,
+	containerComponents := GetDevfileContainerComponents(devfileObj.Data)
+	volumeComponents := GetDevfileVolumeComponents(devfileObj.Data)
+
+	// containerNameToVolumes is a map of the Devfile container name to the Devfile container Volumes
+	containerNameToVolumes := make(map[string][]DevfileVolume)
+	for _, containerComp := range containerComponents {
+		for _, volumeMount := range containerComp.Container.VolumeMounts {
+			size := volumeSize
+
+			for _, volumeComp := range volumeComponents {
+				// compare volume component name against the container component volume mount name
+				if volumeComp.Volume.Name == volumeMount.Name {
+					// If there is a volume size mentioned in the devfile, use it
+					if len(volumeComp.Volume.Size) > 0 {
+						size = volumeComp.Volume.Size
+						break
+					}
 				}
-				componentAliasToVolumes[comp.Container.Name] = append(componentAliasToVolumes[comp.Container.Name], vol)
 			}
+
+			vol := DevfileVolume{
+				Name:          volumeMount.Name,
+				ContainerPath: volumeMount.Path,
+				Size:          size,
+			}
+			containerNameToVolumes[containerComp.Container.Name] = append(containerNameToVolumes[containerComp.Container.Name], vol)
 		}
 	}
-	return componentAliasToVolumes
+	return containerNameToVolumes
 }
 
 // IsEnvPresent checks if the env variable is present in an array of env variables
