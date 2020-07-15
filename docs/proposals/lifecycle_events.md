@@ -11,13 +11,13 @@ Devfiles support commands that can be triggered based on development lifecycle e
 ## User Stories
 Each lifecycle event would be suited to individual user stories. We propose that at least one issue is made for each of them for tracking and implementation purposes.
 
+- Add support for `preStart` commands: [preStart lifecycle event support](https://github.com/openshift/odo/issues/3565)
 - Add support for `postStart` commands: [container initialization support](https://github.com/openshift/odo/issues/2936)
-- Add support for `preStop` commands: 
+- Add support for `preStop` commands:  [preStop lifecycle event support](https://github.com/openshift/odo/issues/3566)
+- Add support for `postStop` commands: [postStop lifecycle event support](https://github.com/openshift/odo/issues/3577)
 
 ## Design overview
 Some of the events might not be useful for `odo` to adopt. We should only support the ones that have a clear use-case, and then add more as other use-cases emerge.
-
-For odo, the most important events are the `postStart`, and the `preStop` because they have clear, reasonable use case within odo’s flow. There is no clear use case within odo for `preStart` and `postStop` today.
 
 - `preStart` - support executing these commands via init containers
 - `postStart` - support executing these commands as part of component initialization
@@ -30,6 +30,10 @@ As per the Devfile 2.0.0 design specification:
 - Commands associated with the same lifecycle binding do not guarantee to be executed sequentially or in any order. To run commands in a given order a user should use a composite.
 
 The flow for initializing and deleting components should be updated to add execution of commands bound to relevant lifecycle event while initializing and destroying any containers.
+
+### preStart
+ - `preStart` command(s) that are specified in the devfile will be translated into entry points for their specified containers, and added to the pod spec as init containers. 
+ - These are commands that the stack creator intends to run before the main containers are created/initialized. 
 
 ### Initialize containers
 - Identify which containers have been created as part of creating/updating the component deployment
@@ -52,6 +56,10 @@ The flow for initializing and deleting components should be updated to add execu
     - on failure, display a meaningful error message and stop
     - on success, execute next command in the list (if any)
 - Destroy/delete the component and continue as usual
+
+### postStop
+- Execute the `postStop` commands one by one
+  - via standalone pod or job and delete it once complete
 
 ## Example devfile with lifecycle binding:
 ```
@@ -125,5 +133,3 @@ The example flow for **odo push** in this case would be:
 The initial implementation of postStart events assumes all containers are initilised during component startup (first push). In future we could make this granular and allow executing these postStart commands if containers are restarted by other commands/events too. 
 
 Example: A potential flow could be to check for postStart commands associated with a specific container when initializing it, storing those commands in an Object(?) and then executing only those postStart commands when the containers have all finished initializing (in the order that they have been defined within the devfile). This would benefit cases where an individual container has been re-initialized, but not the whole component. For example, if a build container has been restarted as a part of **odo push --force** and there is a postStart command associated with the build container in the devfile that is required to re-run, that single postStart command would be executed before continuing to the build/run phase of the push command.
-
-Today, *preStop* and *postStop* events are supported in Devfile 2.0.0, but there is no clear use case for them in odo. As and when we have a clear use case, we should consider implementing those for odo too.
