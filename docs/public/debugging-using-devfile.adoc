@@ -52,7 +52,7 @@ commands:
 - Next we port forward a local port for debugging using `odo debug port-forward`. The default local port used for debugging is 5858. If 5858 is occupied, odo will automatically pick up a local port. We can also specify the local port using, `odo debug port-forward --local-port 5858`
 - Next we need to attach the debugger to the local port. Here's a guide to do it for VS Code : https://code.visualstudio.com/docs/nodejs/nodejs-debugging#_remote-debugging[Remote Debugging]
 
-### Check if a debugging session is running
+## Check if a debugging session is running
 
 We can check if a debugging session is running for a component by using `odo debug info`
 
