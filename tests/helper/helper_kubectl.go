@@ -29,6 +29,17 @@ func (kubectl KubectlRunner) Run(cmd string) *gexec.Session {
 	return session
 }
 
+// Exec allows generic execution of commands, returning the contents of stdout
+func (kubectl KubectlRunner) Exec(podName string, projectName string, args ...string) string {
+
+	cmd := []string{"exec", podName, "--namespace", projectName}
+
+	cmd = append(cmd, args...)
+
+	stdOut := CmdShouldPass(kubectl.path, cmd...)
+	return stdOut
+}
+
 // ExecListDir returns dir list in specified location of pod
 func (kubectl KubectlRunner) ExecListDir(podName string, projectName string, dir string) string {
 	stdOut := CmdShouldPass(kubectl.path, "exec", podName, "--namespace", projectName,

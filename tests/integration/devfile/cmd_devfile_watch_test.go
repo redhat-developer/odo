@@ -1,6 +1,7 @@
 package devfile
 
 import (
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -9,9 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 
-	"github.com/openshift/odo/pkg/watch"
 	"github.com/openshift/odo/tests/helper"
-	"github.com/openshift/odo/tests/integration/devfile/utils"
 )
 
 var _ = Describe("odo devfile watch command tests", func() {
@@ -49,84 +48,126 @@ var _ = Describe("odo devfile watch command tests", func() {
 		os.Unsetenv("GLOBALODOCONFIG")
 	})
 
-	Context("when running help for watch command", func() {
-		It("should display the help", func() {
-			appHelp := helper.CmdShouldPass("odo", "watch", "-h")
-			helper.MatchAllInOutput(appHelp, []string{"Watch for changes", "git components"})
-		})
-	})
+	// Context("when running help for watch command", func() {
+	// 	It("should display the help", func() {
+	// 		appHelp := helper.CmdShouldPass("odo", "watch", "-h")
+	// 		helper.MatchAllInOutput(appHelp, []string{"Watch for changes", "git components"})
+	// 	})
+	// })
 
-	Context("when executing watch without pushing a devfile component", func() {
-		It("should fail", func() {
-			helper.Chdir(currentWorkingDirectory)
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, "--context", context, cmpName)
-			output := helper.CmdShouldFail("odo", "watch", "--context", context)
-			Expect(output).To(ContainSubstring("component does not exist. Please use `odo push` to create your component"))
-		})
-	})
+	// Context("when executing watch without pushing a devfile component", func() {
+	// 	It("should fail", func() {
+	// 		helper.Chdir(currentWorkingDirectory)
+	// 		helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, "--context", context, cmpName)
+	// 		output := helper.CmdShouldFail("odo", "watch", "--context", context)
+	// 		Expect(output).To(ContainSubstring("component does not exist. Please use `odo push` to create your component"))
+	// 	})
+	// })
 
-	Context("when executing odo watch after odo push", func() {
-		It("should listen for file changes", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+	// Context("when executing odo watch after odo push", func() {
+	// 	It("should listen for file changes", func() {
+	// 		helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+	// 		helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+	// 		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			output := helper.CmdShouldPass("odo", "push", "--project", namespace)
-			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+	// 		output := helper.CmdShouldPass("odo", "push", "--project", namespace)
+	// 		Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
-			watchFlag := ""
-			odoV2Watch := utils.OdoV2Watch{
-				CmpName:            cmpName,
-				StringsToBeMatched: []string{"Executing devbuild command", "Executing devrun command"},
-			}
-			// odo watch and validate
-			utils.OdoWatch(utils.OdoV1Watch{}, odoV2Watch, namespace, context, watchFlag, cliRunner, "kube")
-		})
-	})
+	// 		watchFlag := ""
+	// 		odoV2Watch := utils.OdoV2Watch{
+	// 			CmpName:            cmpName,
+	// 			StringsToBeMatched: []string{"Executing devbuild command", "Executing devrun command"},
+	// 		}
+	// 		// odo watch and validate
+	// 		utils.OdoWatch(utils.OdoV1Watch{}, odoV2Watch, namespace, context, watchFlag, cliRunner, "kube")
+	// 	})
+	// })
 
-	Context("when executing odo watch after odo push with flag commands", func() {
-		It("should listen for file changes", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+	// Context("when executing odo watch after odo push with flag commands", func() {
+	// 	It("should listen for file changes", func() {
+	// 		helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+	// 		helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+	// 		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			output := helper.CmdShouldPass("odo", "push", "--build-command", "build", "--run-command", "run", "--project", namespace)
-			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+	// 		output := helper.CmdShouldPass("odo", "push", "--build-command", "build", "--run-command", "run", "--project", namespace)
+	// 		Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
-			watchFlag := "--build-command build --run-command run"
-			odoV2Watch := utils.OdoV2Watch{
-				CmpName:            cmpName,
-				StringsToBeMatched: []string{"Executing build command", "Executing run command"},
-			}
-			// odo watch and validate
-			utils.OdoWatch(utils.OdoV1Watch{}, odoV2Watch, namespace, context, watchFlag, cliRunner, "kube")
-		})
-	})
+	// 		watchFlag := "--build-command build --run-command run"
+	// 		odoV2Watch := utils.OdoV2Watch{
+	// 			CmpName:            cmpName,
+	// 			StringsToBeMatched: []string{"Executing build command", "Executing run command"},
+	// 		}
+	// 		// odo watch and validate
+	// 		utils.OdoWatch(utils.OdoV1Watch{}, odoV2Watch, namespace, context, watchFlag, cliRunner, "kube")
+	// 	})
+	// })
+
+	// Context("when executing odo watch", func() {
+	// 	It("should show validation errors if the devfile is incorrect", func() {
+	// 		helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+	// 		helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+	// 		helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
+	// 		output := helper.CmdShouldPass("odo", "push", "--project", namespace)
+	// 		Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+
+	// 		session := helper.CmdRunner("odo", "watch", "--context", context)
+	// 		defer session.Kill()
+
+	// 		waitForOutputToContain("Waiting for something to change", session)
+
+	// 		helper.ReplaceString(filepath.Join(context, "devfile.yaml"), "kind: build", "kind: run")
+
+	// 		waitForOutputToContain(watch.PushErrorString, session)
+
+	// 		session.Kill()
+
+	// 		Eventually(session).Should(gexec.Exit())
+
+	// 	})
+	// })
 
 	Context("when executing odo watch", func() {
-		It("should show validation errors if the devfile is incorrect", func() {
+		It("should use index information from push", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
+			// 1) Push a generic project
 			output := helper.CmdShouldPass("odo", "push", "--project", namespace)
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
+			// 2) Change some file A
+			textFilePath := filepath.Join(context, "my-file.txt")
+			textOne := []byte("my name is my-file.txt")
+			err := ioutil.WriteFile(textFilePath, textOne, 0644)
+			Expect(err).NotTo(HaveOccurred())
+
+			// 3) Odo watch that project
 			session := helper.CmdRunner("odo", "watch", "--context", context)
 			defer session.Kill()
 
 			waitForOutputToContain("Waiting for something to change", session)
 
-			helper.ReplaceString(filepath.Join(context, "devfile.yaml"), "kind: build", "kind: run")
-
-			waitForOutputToContain(watch.PushErrorString, session)
+			// 4) Change some other file B
+			helper.ReplaceString(filepath.Join(context, "server.js"), "App started", "App is super started")
+			// helper.ReplaceString(filepath.Join(context, "devfile.yaml"), "kind: build", "kind: run")
+			waitForOutputToContain("server.js", session)
 
 			session.Kill()
-
 			Eventually(session).Should(gexec.Exit())
+
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+
+			// fmt.Println("list dir:", cliRunner.ExecListDir(podName, namespace, "/projects"))
+
+			execResult := cliRunner.Exec(podName, namespace, "cat", "/projects/nodejs-starter/my-file.txt")
+
+			Expect(execResult).To(ContainSubstring("my name is my-file.txt"))
 
 		})
 
