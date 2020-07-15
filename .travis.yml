@@ -159,7 +159,7 @@ jobs:
     
     - <<: *base-test
       stage: test
-      name: "docker devfile push, watch, test, catalog, exec and delete command integration tests"
+      name: "docker devfile push, watch, url, test, catalog, exec and delete command integration tests"
       script:
         - make bin
         - sudo cp odo /usr/bin
