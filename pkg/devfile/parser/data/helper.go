@@ -2,6 +2,7 @@ package data
 
 import (
 	"fmt"
+	"k8s.io/klog"
 	"reflect"
 )
 
@@ -31,6 +32,7 @@ func GetDevfileJSONSchema(version string) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("unable to find schema for apiVersion '%s'", version)
 	}
+	klog.V(4).Infof("devfile apiVersion '%s' is supported in odo", version)
 
 	// Successful
 	return schema, nil
