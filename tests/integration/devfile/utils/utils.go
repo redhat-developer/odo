@@ -360,6 +360,13 @@ func OdoWatch(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, project, context, fl
 	Expect(success).To(Equal(true))
 	Expect(err).To(BeNil())
 
+	if !isDevfileTest {
+		// Verify memory limits to be same as configured
+		getMemoryLimit := runner.(helper.OcRunner).MaxMemory(odoV1Watch.SrcType+"-app", odoV1Watch.AppName, project)
+		Expect(getMemoryLimit).To(ContainSubstring("700Mi"))
+		getMemoryRequest := runner.(helper.OcRunner).MinMemory(odoV1Watch.SrcType+"-app", odoV1Watch.AppName, project)
+		Expect(getMemoryRequest).To(ContainSubstring("400Mi"))
+	}
 }
 
 func validateContainerExecListDir(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, runner interface{}, platform, project string, isDevfileTest bool) error {

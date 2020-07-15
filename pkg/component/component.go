@@ -530,7 +530,29 @@ func ValidateComponentCreateRequest(client *occlient.Client, componentSettings c
 		}
 	}
 
+	if err := ensureAndLogProperResourceUsage(componentSettings.MinMemory, componentSettings.MaxMemory, "memory"); err != nil {
+		return err
+	}
+
+	if err := ensureAndLogProperResourceUsage(componentSettings.MinCPU, componentSettings.MaxCPU, "cpu"); err != nil {
+		return err
+	}
+
 	return
+}
+
+func ensureAndLogProperResourceUsage(resourceMin, resourceMax *string, resourceName string) error {
+	klog.V(4).Infof("Validating configured %v values", resourceName)
+
+	err := fmt.Errorf("`min%s` should accompany `max%s` or use `odo config set %s` to use same value for both min and max or try not passing any of them\n", resourceName, resourceName, resourceName)
+
+	if (resourceMin == nil) != (resourceMax == nil) {
+		return err
+	}
+	if (resourceMin != nil && *resourceMin == "") != (resourceMax != nil && *resourceMax == "") {
+		return err
+	}
+	return nil
 }
 
 // ApplyConfig applies the component config onto component dc
