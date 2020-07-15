@@ -201,28 +201,6 @@ func (wo *WatchOptions) Run() (err error) {
 	// if experimental mode is enabled and devfile is present
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(wo.devfilePath) {
 
-		// watchParams := watch.WatchParameters{
-		// 	ComponentName:    wo.componentName,
-		// 	Path:             wo.sourcePath,
-		// 	FileIgnores:      util.GetAbsGlobExps(wo.sourcePath, wo.ignores),
-		// 	PushDiffDelay:    wo.delay,
-		// 	StartChan:        nil,
-		// 	ExtChan:          make(chan bool),
-		// 	DevfileNamespace: wo.namespace,
-		// 	DevfilePath:      wo.devfilePath,
-		// 	// DevfileWatchHandler:   doPush, /*wo.initialDevfileHandler.Push,*/
-		// 	Show:                  wo.show,
-		// 	DevfileInitCmd:        strings.ToLower(wo.devfileInitCommand),
-		// 	DevfileBuildCmd:       strings.ToLower(wo.devfileBuildCommand),
-		// 	DevfileRunCmd:         strings.ToLower(wo.devfileRunCommand),
-		// 	EnvSpecificInfo:       wo.EnvSpecificInfo,
-		// 	IsDevfileWatchHandler: true,
-		// }
-
-		// thing := JGW{parameters: watchParams}
-
-		// watchParams.DevfileWatchHandler = thing.doPush
-
 		err = watch.DevfileWatchAndPush(
 			os.Stdout,
 			// watchParams,
@@ -235,13 +213,12 @@ func (wo *WatchOptions) Run() (err error) {
 				ExtChan:             make(chan bool),
 				DevfileNamespace:    wo.namespace,
 				DevfilePath:         wo.devfilePath,
-				DevfileWatchHandler: regenerateAdapterAndPush, /*wo.initialDevfileHandler.Push,*/
+				DevfileWatchHandler: regenerateAdapterAndPush,
 				Show:                wo.show,
 				DevfileInitCmd:      strings.ToLower(wo.devfileInitCommand),
 				DevfileBuildCmd:     strings.ToLower(wo.devfileBuildCommand),
 				DevfileRunCmd:       strings.ToLower(wo.devfileRunCommand),
 				EnvSpecificInfo:     wo.EnvSpecificInfo,
-				// IsDevfileWatchHandler: true,
 			},
 		)
 		if err != nil {
@@ -261,10 +238,9 @@ func (wo *WatchOptions) Run() (err error) {
 			PushDiffDelay:       wo.delay,
 			StartChan:           nil,
 			ExtChan:             make(chan bool),
-			DevfileWatchHandler: nil, /*wo.initialDevfileHandler.Push,*/
+			DevfileWatchHandler: nil,
 			WatchHandler:        component.PushLocal,
 			Show:                wo.show,
-			// IsDevfileWatchHandler: false,
 		},
 	)
 	if err != nil {

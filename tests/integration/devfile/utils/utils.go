@@ -392,7 +392,7 @@ func OdoWatch(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, project, context, fl
 
 				for _, stringToBeMatched := range odoV2Watch.StringsToBeMatched {
 					if !strings.Contains(output, stringToBeMatched) {
-						fmt.Fprintln(GinkgoWriter, "Missing string: "+stringToBeMatched)
+						fmt.Fprintln(GinkgoWriter, "Missing string: ", stringToBeMatched)
 						stringsMatched = false
 					}
 				}

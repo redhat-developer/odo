@@ -122,8 +122,6 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 		}
 	}
 
-	fmt.Println("isForcePush", isForcePush)
-
 	err = a.pushLocal(pushParameters.Path,
 		changedFiles,
 		deletedFiles,
