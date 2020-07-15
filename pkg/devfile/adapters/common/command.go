@@ -85,7 +85,7 @@ func getCommandFromFlag(data data.DevfileData, groupType common.DevfileCommandGr
 			// group:
 			//   kind: build
 			if command.Exec.Group.Kind != groupType {
-				return command, fmt.Errorf("mismatched type, command %s is of type %v groupType in devfile", commandName, groupType)
+				return command, fmt.Errorf("command group mismatched, command %s is of group %v in devfile.yaml", commandName, command.Exec.Group.Kind)
 			}
 
 			return command, validateCommand(data, command)
