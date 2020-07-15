@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -22,10 +23,81 @@ func CreateNewContext() string {
 }
 
 // DeleteDir delete directory
+// func DeleteDir(dir string) {
+
+// 	expireTime := time.Now().Add(time.Minute * 2)
+// 	delayInSeconds := 1
+
+// 	err := error(nil)
+// 	attempts := 0
+
+// 	for {
+// 		fmt.Fprintf(GinkgoWriter, "Deleting dir: %s\n", dir)
+// 		err = os.RemoveAll(dir)
+
+// 		if err == nil || time.Now().After(expireTime) {
+// 			break
+// 		}
+
+// 		fmt.Printf("Unable to delete %s on attempt #%d, trying again in 5 seconds...\n", dir, attempts)
+// 		fmt.Fprintf(GinkgoWriter, "Unable to delete %s on attempt #%d, trying again in 5 seconds...\n", dir, attempts)
+
+// 		delayInSeconds *= 2 // exponential backoff
+// 		if delayInSeconds > 16 {
+// 			delayInSeconds = 16
+// 		}
+// 		time.Sleep(time.Duration(delayInSeconds) * time.Second)
+
+// 		attempts++
+
+// 	}
+// 	Expect(err).NotTo(HaveOccurred())
+
+// }
+
 func DeleteDir(dir string) {
-	fmt.Fprintf(GinkgoWriter, "Deleting dir: %s\n", dir)
-	err := os.RemoveAll(dir)
+	attempts := 0
+
+	err := RunWithExponentialBackoff(func() error {
+		attempts++
+
+		fmt.Fprintf(GinkgoWriter, "Deleting dir: %s\n", dir)
+		err := os.RemoveAll(dir)
+		if err == nil {
+			return nil
+		}
+
+		fmt.Printf("Unable to delete %s on attempt #%d, trying again...\n", dir, attempts)
+		fmt.Fprintf(GinkgoWriter, "Unable to delete %s on attempt #%d, trying again...\n", dir, attempts)
+
+		return err
+	})
 	Expect(err).NotTo(HaveOccurred())
+
+}
+
+func RunWithExponentialBackoff(fxn func() error) error {
+	expireTime := time.Now().Add(time.Minute * 4)
+	delayInSeconds := 1
+
+	err := error(nil)
+
+	for {
+
+		err := fxn()
+
+		if err == nil || time.Now().After(expireTime) {
+			break
+		}
+
+		delayInSeconds *= 2 // exponential backoff
+		if delayInSeconds > 16 {
+			delayInSeconds = 16
+		}
+		time.Sleep(time.Duration(delayInSeconds) * time.Second)
+
+	}
+	return err
 
 }
 

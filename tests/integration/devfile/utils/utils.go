@@ -13,6 +13,7 @@ import (
 
 	"github.com/openshift/odo/tests/helper"
 
+	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
@@ -344,6 +345,7 @@ func OdoWatch(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, project, context, fl
 		isDevfileTest = true
 	}
 
+	// After the watch command has started (indicated via channel), simulate file system changes
 	startSimulationCh := make(chan bool)
 	go func() {
 		startMsg := <-startSimulationCh
@@ -384,17 +386,19 @@ func OdoWatch(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, project, context, fl
 			if strings.Contains(flag, "delay 0") {
 				return true
 			}
+			// Returns true if the test has succeeded, false if not yet
 			if isDevfileTest {
 				stringsMatched := true
 
 				for _, stringToBeMatched := range odoV2Watch.StringsToBeMatched {
 					if !strings.Contains(output, stringToBeMatched) {
+						fmt.Fprintln(GinkgoWriter, "Missing string: "+stringToBeMatched)
 						stringsMatched = false
 					}
 				}
 
 				if stringsMatched {
-					// Verify delete from component pod
+					// Verify directory deleted from component pod
 					err := validateContainerExecListDir(odoV1Watch, odoV2Watch, runner, platform, project, isDevfileTest)
 					Expect(err).To(BeNil())
 					return true
@@ -413,6 +417,7 @@ func OdoWatch(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, project, context, fl
 		},
 		startSimulationCh,
 		func(output string) bool {
+			// Returns true to indicate the test should begin file system file change simulation
 			return strings.Contains(output, "Waiting for something to change")
 		})
 

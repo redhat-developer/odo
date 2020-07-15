@@ -55,10 +55,10 @@ type WatchOptions struct {
 	componentContext string
 	client           *occlient.Client
 
-	componentName  string
-	devfilePath    string
-	namespace      string
-	devfileHandler common.ComponentAdapter
+	componentName         string
+	devfilePath           string
+	namespace             string
+	initialDevfileHandler common.ComponentAdapter
 
 	// devfile commands
 	devfileInitCommand  string
@@ -115,7 +115,7 @@ func (wo *WatchOptions) Complete(name string, cmd *cobra.Command, args []string)
 		} else {
 			platformContext = nil
 		}
-		wo.devfileHandler, err = adapters.NewComponentAdapter(wo.componentName, wo.componentContext, wo.Application, devObj, platformContext)
+		wo.initialDevfileHandler, err = adapters.NewComponentAdapter(wo.componentName, wo.componentContext, wo.Application, devObj, platformContext)
 
 		return err
 	}
@@ -158,7 +158,7 @@ func (wo *WatchOptions) Validate() (err error) {
 
 	// if experimental mode is enabled and devfile is present, return. The rest of the validation is for non-devfile components
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(wo.devfilePath) {
-		exists, err := wo.devfileHandler.DoesComponentExist(wo.componentName)
+		exists, err := wo.initialDevfileHandler.DoesComponentExist(wo.componentName)
 		if err != nil {
 			return err
 		}
@@ -201,8 +201,31 @@ func (wo *WatchOptions) Run() (err error) {
 	// if experimental mode is enabled and devfile is present
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(wo.devfilePath) {
 
+		// watchParams := watch.WatchParameters{
+		// 	ComponentName:    wo.componentName,
+		// 	Path:             wo.sourcePath,
+		// 	FileIgnores:      util.GetAbsGlobExps(wo.sourcePath, wo.ignores),
+		// 	PushDiffDelay:    wo.delay,
+		// 	StartChan:        nil,
+		// 	ExtChan:          make(chan bool),
+		// 	DevfileNamespace: wo.namespace,
+		// 	DevfilePath:      wo.devfilePath,
+		// 	// DevfileWatchHandler:   doPush, /*wo.initialDevfileHandler.Push,*/
+		// 	Show:                  wo.show,
+		// 	DevfileInitCmd:        strings.ToLower(wo.devfileInitCommand),
+		// 	DevfileBuildCmd:       strings.ToLower(wo.devfileBuildCommand),
+		// 	DevfileRunCmd:         strings.ToLower(wo.devfileRunCommand),
+		// 	EnvSpecificInfo:       wo.EnvSpecificInfo,
+		// 	IsDevfileWatchHandler: true,
+		// }
+
+		// thing := JGW{parameters: watchParams}
+
+		// watchParams.DevfileWatchHandler = thing.doPush
+
 		err = watch.DevfileWatchAndPush(
 			os.Stdout,
+			// watchParams,
 			watch.WatchParameters{
 				ComponentName:       wo.componentName,
 				Path:                wo.sourcePath,
@@ -210,12 +233,15 @@ func (wo *WatchOptions) Run() (err error) {
 				PushDiffDelay:       wo.delay,
 				StartChan:           nil,
 				ExtChan:             make(chan bool),
-				DevfileWatchHandler: wo.devfileHandler.Push,
+				DevfileNamespace:    wo.namespace,
+				DevfilePath:         wo.devfilePath,
+				DevfileWatchHandler: regenerateAdapterAndPush, /*wo.initialDevfileHandler.Push,*/
 				Show:                wo.show,
 				DevfileInitCmd:      strings.ToLower(wo.devfileInitCommand),
 				DevfileBuildCmd:     strings.ToLower(wo.devfileBuildCommand),
 				DevfileRunCmd:       strings.ToLower(wo.devfileRunCommand),
 				EnvSpecificInfo:     wo.EnvSpecificInfo,
+				// IsDevfileWatchHandler: true,
 			},
 		)
 		if err != nil {
@@ -228,15 +254,17 @@ func (wo *WatchOptions) Run() (err error) {
 		wo.Context.Client,
 		os.Stdout,
 		watch.WatchParameters{
-			ComponentName:   wo.LocalConfigInfo.GetName(),
-			ApplicationName: wo.Context.Application,
-			Path:            wo.sourcePath,
-			FileIgnores:     util.GetAbsGlobExps(wo.sourcePath, wo.ignores),
-			PushDiffDelay:   wo.delay,
-			StartChan:       nil,
-			ExtChan:         make(chan bool),
-			WatchHandler:    component.PushLocal,
-			Show:            wo.show,
+			ComponentName:       wo.LocalConfigInfo.GetName(),
+			ApplicationName:     wo.Context.Application,
+			Path:                wo.sourcePath,
+			FileIgnores:         util.GetAbsGlobExps(wo.sourcePath, wo.ignores),
+			PushDiffDelay:       wo.delay,
+			StartChan:           nil,
+			ExtChan:             make(chan bool),
+			DevfileWatchHandler: nil, /*wo.initialDevfileHandler.Push,*/
+			WatchHandler:        component.PushLocal,
+			Show:                wo.show,
+			// IsDevfileWatchHandler: false,
 		},
 	)
 	if err != nil {
@@ -291,4 +319,34 @@ func NewCmdWatch(name, fullName string) *cobra.Command {
 	projectCmd.AddProjectFlag(watchCmd)
 
 	return watchCmd
+}
+
+func regenerateAdapterAndPush(pushParams common.PushParameters, watchParams watch.WatchParameters) error {
+	var adapter common.ComponentAdapter
+	adapter, err := regenerateComponentAdapterFromWatchParams(watchParams)
+	if err == nil {
+		err = adapter.Push(pushParams)
+	}
+
+	return err
+}
+
+func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters) (common.ComponentAdapter, error) {
+	// Parse devfile and validate
+	devObj, err := parser.ParseAndValidate(parameters.DevfilePath)
+	if err != nil {
+		return nil, err
+	}
+
+	var platformContext interface{}
+	if !pushtarget.IsPushTargetDocker() {
+		platformContext = kubernetes.KubernetesContext{
+			Namespace: parameters.DevfileNamespace,
+		}
+	} else {
+		platformContext = nil
+	}
+
+	return adapters.NewComponentAdapter(parameters.ComponentName, parameters.Path, devObj, platformContext)
+
 }
