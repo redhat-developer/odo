@@ -16,9 +16,6 @@ const (
 	apiVersion200 supportedApiVersion = "2.0.0"
 )
 
-// List of supported devfile API versions
-var supportedApiVersionsList = []supportedApiVersion{apiVersion100, apiVersion200}
-
 // ------------- Init functions ------------- //
 
 // apiVersionToDevfileStruct maps supported devfile API versions to their corresponding devfile structs
@@ -40,5 +37,4 @@ func init() {
 	devfileApiVersionToJSONSchema = make(map[supportedApiVersion]string)
 	devfileApiVersionToJSONSchema[apiVersion100] = v100.JsonSchema100
 	devfileApiVersionToJSONSchema[apiVersion200] = v200.JsonSchema200
-
 }

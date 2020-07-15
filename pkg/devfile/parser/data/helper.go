@@ -38,10 +38,5 @@ func GetDevfileJSONSchema(version string) (string, error) {
 
 // IsApiVersionSupported returns true if the API version is supported in odo
 func IsApiVersionSupported(version string) bool {
-	for _, v := range supportedApiVersionsList {
-		if v.String() == version {
-			return true
-		}
-	}
-	return false
+	return apiVersionToDevfileStruct[supportedApiVersion(version)] != nil
 }
