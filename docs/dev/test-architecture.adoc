@@ -1,11 +1,11 @@
-= Development Guide
+= Test Guide
 :toc: macro
 :toc-title:
 :toclevels: 1
 
 toc::[]
 
-== Setting up
+== Setting up test environment
 
 Requires *Go 1.13* and *Ginkgo latest version*
 
