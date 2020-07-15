@@ -15,7 +15,6 @@ import (
 	"runtime"
 	"sort"
 	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -1247,7 +1246,10 @@ func TestHTTPGetRequest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := HTTPGetRequest(tt.url)
+			request := HTTPRequestParams{
+				URL: tt.url,
+			}
+			got, err := HTTPGetRequest(request)
 
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Got: %v, want: %v", got, tt.want)
@@ -1332,6 +1334,7 @@ func TestDownloadFile(t *testing.T) {
 		url      string
 		filepath string
 		want     []byte
+		wantErr  bool
 	}{
 		{
 			name:     "Case 1: Input url is valid",
@@ -1339,47 +1342,61 @@ func TestDownloadFile(t *testing.T) {
 			filepath: "./test.yaml",
 			// Want(Expected) result is "OK"
 			// According to Unicode table: O == 79, K == 75
-			want: []byte{79, 75},
+			want:    []byte{79, 75},
+			wantErr: false,
 		},
 		{
 			name:     "Case 2: Input url is invalid",
 			url:      "invalid",
 			filepath: "./test.yaml",
 			want:     []byte{},
+			wantErr:  true,
 		},
 		{
 			name:     "Case 3: Input url is an empty string",
 			url:      "",
 			filepath: "./test.yaml",
 			want:     []byte{},
+			wantErr:  true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := DownloadFile(tt.url, tt.filepath)
-
-			if tt.url == "" && err != nil {
-				if !strings.Contains(err.Error(), "unsupported protocol scheme") {
-					t.Errorf("Did not get expected error %s", err)
-				}
-			} else if tt.url != "invalid" && err != nil {
-				t.Errorf("Failed to download file with error %s", err)
+			gotErr := false
+			params := DownloadParams{
+				Request: HTTPRequestParams{
+					URL: tt.url,
+				},
+				Filepath: tt.filepath,
 			}
-
-			got, err := ioutil.ReadFile(tt.filepath)
-			if tt.url != "invalid" && err != nil {
-				t.Errorf("Failed to read file with error %s", err)
-			}
-
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Got: %v, want: %v", got, tt.want)
-			}
-
-			// Clean up the file that downloaded in this test case
-			err = os.Remove(tt.filepath)
+			err := DownloadFile(params)
 			if err != nil {
-				t.Errorf("Failed to delete file with error %s", err)
+				gotErr = true
+			}
+			if !reflect.DeepEqual(gotErr, tt.wantErr) {
+				t.Error("Failed to get expected error")
+			}
+
+			if !tt.wantErr {
+				if err != nil {
+					t.Errorf("Failed to download file with error %s", err)
+				}
+
+				got, err := ioutil.ReadFile(tt.filepath)
+				if err != nil {
+					t.Errorf("Failed to read file with error %s", err)
+				}
+
+				if !reflect.DeepEqual(got, tt.want) {
+					t.Errorf("Got: %v, want: %v", got, tt.want)
+				}
+
+				// Clean up the file that downloaded in this test case
+				err = os.Remove(tt.filepath)
+				if err != nil {
+					t.Errorf("Failed to delete file with error %s", err)
+				}
 			}
 		})
 	}

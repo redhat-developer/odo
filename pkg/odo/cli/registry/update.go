@@ -7,9 +7,11 @@ import (
 	// Third-party packages
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/zalando/go-keyring"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	// odo packages
+	registryUtil "github.com/openshift/odo/pkg/odo/cli/registry/util"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/util"
@@ -31,6 +33,8 @@ type UpdateOptions struct {
 	operation    string
 	registryName string
 	registryURL  string
+	user         string
+	token        string
 	forceFlag    bool
 }
 
@@ -44,6 +48,7 @@ func (o *UpdateOptions) Complete(name string, cmd *cobra.Command, args []string)
 	o.operation = "update"
 	o.registryName = args[0]
 	o.registryURL = args[1]
+	o.user = "default"
 	return
 }
 
@@ -59,14 +64,34 @@ func (o *UpdateOptions) Validate() (err error) {
 
 // Run contains the logic for "odo registry update" command
 func (o *UpdateOptions) Run() (err error) {
+	secureBeforeUpdate := false
+	secureAfterUpdate := false
+	if registryUtil.IsSecure(o.registryName) {
+		secureBeforeUpdate = true
+	}
+	if o.token != "" {
+		secureAfterUpdate = true
+	}
+
 	cfg, err := preference.New()
 	if err != nil {
 		return errors.Wrap(err, "unable to update registry")
 	}
-
-	err = cfg.RegistryHandler(o.operation, o.registryName, o.registryURL, o.forceFlag)
+	err = cfg.RegistryHandler(o.operation, o.registryName, o.registryURL, o.forceFlag, secureAfterUpdate)
 	if err != nil {
 		return err
+	}
+
+	if secureAfterUpdate {
+		err = keyring.Set(util.CredentialPrefix+o.registryName, o.user, o.token)
+		if err != nil {
+			return errors.Wrap(err, "unable to store registry credential to keyring")
+		}
+	} else if secureBeforeUpdate && !secureAfterUpdate {
+		err = keyring.Delete(util.CredentialPrefix+o.registryName, o.user)
+		if err != nil {
+			return errors.Wrap(err, "unable to delete registry credential from keyring")
+		}
 	}
 
 	return nil
@@ -86,6 +111,7 @@ func NewCmdUpdate(name, fullName string) *cobra.Command {
 		},
 	}
 
+	registryUpdateCmd.Flags().StringVar(&o.token, "token", "", "Token to be used to access secure registry")
 	registryUpdateCmd.Flags().BoolVarP(&o.forceFlag, "force", "f", false, "Don't ask for confirmation, update the registry directly")
 
 	return registryUpdateCmd

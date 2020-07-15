@@ -22,4 +22,12 @@
 
 Fixes #?
 
+**PR acceptance criteria**:
+
+- [ ] Unit test 
+
+- [ ] Integration test 
+
+- [ ] Documentation 
+
 **How to test changes / Special notes to the reviewer**:
