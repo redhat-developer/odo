@@ -262,7 +262,7 @@ func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileInitCmd, de
 func updateCommandGroupIfReqd(groupType common.DevfileCommandGroupType, command common.DevfileCommand) common.DevfileCommand {
 	// Update Group only for exec commands
 	// Update Group only when Group is not nil, devfile v2 might contain group for custom commands.
-	if command.Exec != nil && command.Exec.Group == nil && groupType != "" {
+	if command.Exec != nil && command.Exec.Group == nil {
 		command.Exec.Group = &common.Group{Kind: groupType}
 		return command
 	}
