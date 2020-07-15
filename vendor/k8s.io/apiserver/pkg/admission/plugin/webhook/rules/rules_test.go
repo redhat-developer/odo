@@ -17,14 +17,10 @@ limitations under the License.
 package rules
 
 import (
-	"fmt"
 	"testing"
 
-	adreg "k8s.io/api/admissionregistration/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	adreg "k8s.io/api/admissionregistration/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apiserver/pkg/admission"
 )
 
@@ -35,40 +31,13 @@ type ruleTest struct {
 }
 type tests map[string]ruleTest
 
-func a(group, version, resource, subresource, name string, operation admission.Operation, operationOptions runtime.Object) admission.Attributes {
+func a(group, version, resource, subresource, name string, operation admission.Operation) admission.Attributes {
 	return admission.NewAttributesRecord(
 		nil, nil,
 		schema.GroupVersionKind{Group: group, Version: version, Kind: "k" + resource},
 		"ns", name,
 		schema.GroupVersionResource{Group: group, Version: version, Resource: resource}, subresource,
 		operation,
-		operationOptions,
-		false,
-		nil,
-	)
-}
-
-func namespacedAttributes(group, version, resource, subresource, name string, operation admission.Operation, operationOptions runtime.Object) admission.Attributes {
-	return admission.NewAttributesRecord(
-		nil, nil,
-		schema.GroupVersionKind{Group: group, Version: version, Kind: "k" + resource},
-		"ns", name,
-		schema.GroupVersionResource{Group: group, Version: version, Resource: resource}, subresource,
-		operation,
-		operationOptions,
-		false,
-		nil,
-	)
-}
-
-func clusterScopedAttributes(group, version, resource, subresource, name string, operation admission.Operation, operationOptions runtime.Object) admission.Attributes {
-	return admission.NewAttributesRecord(
-		nil, nil,
-		schema.GroupVersionKind{Group: group, Version: version, Kind: "k" + resource},
-		"", name,
-		schema.GroupVersionResource{Group: group, Version: version, Resource: resource}, subresource,
-		operation,
-		operationOptions,
 		false,
 		nil,
 	)
@@ -87,7 +56,7 @@ func TestGroup(t *testing.T) {
 				},
 			},
 			match: attrList(
-				a("g", "v", "r", "", "name", admission.Create, &metav1.CreateOptions{}),
+				a("g", "v", "r", "", "name", admission.Create),
 			),
 		},
 		"exact": {
@@ -97,12 +66,12 @@ func TestGroup(t *testing.T) {
 				},
 			},
 			match: attrList(
-				a("g1", "v", "r", "", "name", admission.Create, &metav1.CreateOptions{}),
-				a("g2", "v2", "r3", "", "name", admission.Create, &metav1.CreateOptions{}),
+				a("g1", "v", "r", "", "name", admission.Create),
+				a("g2", "v2", "r3", "", "name", admission.Create),
 			),
 			noMatch: attrList(
-				a("g3", "v", "r", "", "name", admission.Create, &metav1.CreateOptions{}),
-				a("g4", "v", "r", "", "name", admission.Create, &metav1.CreateOptions{}),
+				a("g3", "v", "r", "", "name", admission.Create),
+				a("g4", "v", "r", "", "name", admission.Create),
 			),
 		},
 	}
@@ -132,7 +101,7 @@ func TestVersion(t *testing.T) {
 				},
 			},
 			match: attrList(
-				a("g", "v", "r", "", "name", admission.Create, &metav1.CreateOptions{}),
+				a("g", "v", "r", "", "name", admission.Create),
 			),
 		},
 		"exact": {
@@ -142,12 +111,12 @@ func TestVersion(t *testing.T) {
 				},
 			},
 			match: attrList(
-				a("g1", "v1", "r", "", "name", admission.Create, &metav1.CreateOptions{}),
-				a("g2", "v2", "r", "", "name", admission.Create, &metav1.CreateOptions{}),
+				a("g1", "v1", "r", "", "name", admission.Create),
+				a("g2", "v2", "r", "", "name", admission.Create),
 			),
 			noMatch: attrList(
-				a("g1", "v3", "r", "", "name", admission.Create, &metav1.CreateOptions{}),
-				a("g2", "v4", "r", "", "name", admission.Create, &metav1.CreateOptions{}),
+				a("g1", "v3", "r", "", "name", admission.Create),
+				a("g2", "v4", "r", "", "name", admission.Create),
 			),
 		},
 	}
@@ -172,65 +141,65 @@ func TestOperation(t *testing.T) {
 		"wildcard": {
 			rule: adreg.RuleWithOperations{Operations: []adreg.OperationType{adreg.OperationAll}},
 			match: attrList(
-				a("g", "v", "r", "", "name", admission.Create, &metav1.CreateOptions{}),
-				a("g", "v", "r", "", "name", admission.Update, &metav1.UpdateOptions{}),
-				a("g", "v", "r", "", "name", admission.Delete, &metav1.DeleteOptions{}),
-				a("g", "v", "r", "", "name", admission.Connect, nil),
+				a("g", "v", "r", "", "name", admission.Create),
+				a("g", "v", "r", "", "name", admission.Update),
+				a("g", "v", "r", "", "name", admission.Delete),
+				a("g", "v", "r", "", "name", admission.Connect),
 			),
 		},
 		"create": {
 			rule: adreg.RuleWithOperations{Operations: []adreg.OperationType{adreg.Create}},
 			match: attrList(
-				a("g", "v", "r", "", "name", admission.Create, &metav1.CreateOptions{}),
+				a("g", "v", "r", "", "name", admission.Create),
 			),
 			noMatch: attrList(
-				a("g", "v", "r", "", "name", admission.Update, &metav1.UpdateOptions{}),
-				a("g", "v", "r", "", "name", admission.Delete, &metav1.DeleteOptions{}),
-				a("g", "v", "r", "", "name", admission.Connect, nil),
+				a("g", "v", "r", "", "name", admission.Update),
+				a("g", "v", "r", "", "name", admission.Delete),
+				a("g", "v", "r", "", "name", admission.Connect),
 			),
 		},
 		"update": {
 			rule: adreg.RuleWithOperations{Operations: []adreg.OperationType{adreg.Update}},
 			match: attrList(
-				a("g", "v", "r", "", "name", admission.Update, &metav1.UpdateOptions{}),
+				a("g", "v", "r", "", "name", admission.Update),
 			),
 			noMatch: attrList(
-				a("g", "v", "r", "", "name", admission.Create, &metav1.CreateOptions{}),
-				a("g", "v", "r", "", "name", admission.Delete, &metav1.DeleteOptions{}),
-				a("g", "v", "r", "", "name", admission.Connect, nil),
+				a("g", "v", "r", "", "name", admission.Create),
+				a("g", "v", "r", "", "name", admission.Delete),
+				a("g", "v", "r", "", "name", admission.Connect),
 			),
 		},
 		"delete": {
 			rule: adreg.RuleWithOperations{Operations: []adreg.OperationType{adreg.Delete}},
 			match: attrList(
-				a("g", "v", "r", "", "name", admission.Delete, &metav1.DeleteOptions{}),
+				a("g", "v", "r", "", "name", admission.Delete),
 			),
 			noMatch: attrList(
-				a("g", "v", "r", "", "name", admission.Create, &metav1.CreateOptions{}),
-				a("g", "v", "r", "", "name", admission.Update, &metav1.UpdateOptions{}),
-				a("g", "v", "r", "", "name", admission.Connect, nil),
+				a("g", "v", "r", "", "name", admission.Create),
+				a("g", "v", "r", "", "name", admission.Update),
+				a("g", "v", "r", "", "name", admission.Connect),
 			),
 		},
 		"connect": {
 			rule: adreg.RuleWithOperations{Operations: []adreg.OperationType{adreg.Connect}},
 			match: attrList(
-				a("g", "v", "r", "", "name", admission.Connect, nil),
+				a("g", "v", "r", "", "name", admission.Connect),
 			),
 			noMatch: attrList(
-				a("g", "v", "r", "", "name", admission.Create, &metav1.CreateOptions{}),
-				a("g", "v", "r", "", "name", admission.Update, &metav1.UpdateOptions{}),
-				a("g", "v", "r", "", "name", admission.Delete, &metav1.DeleteOptions{}),
+				a("g", "v", "r", "", "name", admission.Create),
+				a("g", "v", "r", "", "name", admission.Update),
+				a("g", "v", "r", "", "name", admission.Delete),
 			),
 		},
 		"multiple": {
 			rule: adreg.RuleWithOperations{Operations: []adreg.OperationType{adreg.Update, adreg.Delete}},
 			match: attrList(
-				a("g", "v", "r", "", "name", admission.Update, &metav1.UpdateOptions{}),
-				a("g", "v", "r", "", "name", admission.Delete, &metav1.DeleteOptions{}),
+				a("g", "v", "r", "", "name", admission.Update),
+				a("g", "v", "r", "", "name", admission.Delete),
 			),
 			noMatch: attrList(
-				a("g", "v", "r", "", "name", admission.Create, &metav1.CreateOptions{}),
-				a("g", "v", "r", "", "name", admission.Connect, nil),
+				a("g", "v", "r", "", "name", admission.Create),
+				a("g", "v", "r", "", "name", admission.Connect),
 			),
 		},
 	}
@@ -259,12 +228,12 @@ func TestResource(t *testing.T) {
 				},
 			},
 			match: attrList(
-				a("g", "v", "r", "", "name", admission.Create, &metav1.CreateOptions{}),
-				a("2", "v", "r2", "", "name", admission.Create, &metav1.CreateOptions{}),
+				a("g", "v", "r", "", "name", admission.Create),
+				a("2", "v", "r2", "", "name", admission.Create),
 			),
 			noMatch: attrList(
-				a("g", "v", "r", "exec", "name", admission.Create, &metav1.CreateOptions{}),
-				a("2", "v", "r2", "proxy", "name", admission.Create, &metav1.CreateOptions{}),
+				a("g", "v", "r", "exec", "name", admission.Create),
+				a("2", "v", "r2", "proxy", "name", admission.Create),
 			),
 		},
 		"r & subresources": {
@@ -274,12 +243,12 @@ func TestResource(t *testing.T) {
 				},
 			},
 			match: attrList(
-				a("g", "v", "r", "", "name", admission.Create, &metav1.CreateOptions{}),
-				a("g", "v", "r", "exec", "name", admission.Create, &metav1.CreateOptions{}),
+				a("g", "v", "r", "", "name", admission.Create),
+				a("g", "v", "r", "exec", "name", admission.Create),
 			),
 			noMatch: attrList(
-				a("2", "v", "r2", "", "name", admission.Create, &metav1.CreateOptions{}),
-				a("2", "v", "r2", "proxy", "name", admission.Create, &metav1.CreateOptions{}),
+				a("2", "v", "r2", "", "name", admission.Create),
+				a("2", "v", "r2", "proxy", "name", admission.Create),
 			),
 		},
 		"r & subresources or r2": {
@@ -289,12 +258,12 @@ func TestResource(t *testing.T) {
 				},
 			},
 			match: attrList(
-				a("g", "v", "r", "", "name", admission.Create, &metav1.CreateOptions{}),
-				a("g", "v", "r", "exec", "name", admission.Create, &metav1.CreateOptions{}),
-				a("2", "v", "r2", "", "name", admission.Create, &metav1.CreateOptions{}),
+				a("g", "v", "r", "", "name", admission.Create),
+				a("g", "v", "r", "exec", "name", admission.Create),
+				a("2", "v", "r2", "", "name", admission.Create),
 			),
 			noMatch: attrList(
-				a("2", "v", "r2", "proxy", "name", admission.Create, &metav1.CreateOptions{}),
+				a("2", "v", "r2", "proxy", "name", admission.Create),
 			),
 		},
 		"proxy or exec": {
@@ -304,14 +273,14 @@ func TestResource(t *testing.T) {
 				},
 			},
 			match: attrList(
-				a("g", "v", "r", "exec", "name", admission.Create, &metav1.CreateOptions{}),
-				a("2", "v", "r2", "proxy", "name", admission.Create, &metav1.CreateOptions{}),
-				a("2", "v", "r3", "proxy", "name", admission.Create, &metav1.CreateOptions{}),
+				a("g", "v", "r", "exec", "name", admission.Create),
+				a("2", "v", "r2", "proxy", "name", admission.Create),
+				a("2", "v", "r3", "proxy", "name", admission.Create),
 			),
 			noMatch: attrList(
-				a("g", "v", "r", "", "name", admission.Create, &metav1.CreateOptions{}),
-				a("2", "v", "r2", "", "name", admission.Create, &metav1.CreateOptions{}),
-				a("2", "v", "r4", "scale", "name", admission.Create, &metav1.CreateOptions{}),
+				a("g", "v", "r", "", "name", admission.Create),
+				a("2", "v", "r2", "", "name", admission.Create),
+				a("2", "v", "r4", "scale", "name", admission.Create),
 			),
 		},
 	}
@@ -327,96 +296,6 @@ func TestResource(t *testing.T) {
 			if r.resource() {
 				t.Errorf("%v: expected no match %#v", name, m)
 			}
-		}
-	}
-}
-
-func TestScope(t *testing.T) {
-	cluster := adreg.ClusterScope
-	namespace := adreg.NamespacedScope
-	allscopes := adreg.AllScopes
-	table := tests{
-		"cluster scope": {
-			rule: adreg.RuleWithOperations{
-				Rule: adreg.Rule{
-					Resources: []string{"*"},
-					Scope:     &cluster,
-				},
-			},
-			match: attrList(
-				clusterScopedAttributes("g", "v", "r", "", "name", admission.Create, &metav1.CreateOptions{}),
-				clusterScopedAttributes("g", "v", "r", "exec", "name", admission.Create, &metav1.CreateOptions{}),
-				clusterScopedAttributes("", "v1", "namespaces", "", "ns", admission.Create, &metav1.CreateOptions{}),
-				clusterScopedAttributes("", "v1", "namespaces", "finalize", "ns", admission.Create, &metav1.CreateOptions{}),
-				namespacedAttributes("", "v1", "namespaces", "", "ns", admission.Create, &metav1.CreateOptions{}),
-				namespacedAttributes("", "v1", "namespaces", "finalize", "ns", admission.Create, &metav1.CreateOptions{}),
-			),
-			noMatch: attrList(
-				namespacedAttributes("g", "v", "r", "", "name", admission.Create, &metav1.CreateOptions{}),
-				namespacedAttributes("g", "v", "r", "exec", "name", admission.Create, &metav1.CreateOptions{}),
-			),
-		},
-		"namespace scope": {
-			rule: adreg.RuleWithOperations{
-				Rule: adreg.Rule{
-					Resources: []string{"*"},
-					Scope:     &namespace,
-				},
-			},
-			match: attrList(
-				namespacedAttributes("g", "v", "r", "", "name", admission.Create, &metav1.CreateOptions{}),
-				namespacedAttributes("g", "v", "r", "exec", "name", admission.Create, &metav1.CreateOptions{}),
-			),
-			noMatch: attrList(
-				clusterScopedAttributes("", "v1", "namespaces", "", "ns", admission.Create, &metav1.CreateOptions{}),
-				clusterScopedAttributes("", "v1", "namespaces", "finalize", "ns", admission.Create, &metav1.CreateOptions{}),
-				namespacedAttributes("", "v1", "namespaces", "", "ns", admission.Create, &metav1.CreateOptions{}),
-				namespacedAttributes("", "v1", "namespaces", "finalize", "ns", admission.Create, &metav1.CreateOptions{}),
-				clusterScopedAttributes("g", "v", "r", "", "name", admission.Create, &metav1.CreateOptions{}),
-				clusterScopedAttributes("g", "v", "r", "exec", "name", admission.Create, &metav1.CreateOptions{}),
-			),
-		},
-		"all scopes": {
-			rule: adreg.RuleWithOperations{
-				Rule: adreg.Rule{
-					Resources: []string{"*"},
-					Scope:     &allscopes,
-				},
-			},
-			match: attrList(
-				namespacedAttributes("g", "v", "r", "", "name", admission.Create, &metav1.CreateOptions{}),
-				namespacedAttributes("g", "v", "r", "exec", "name", admission.Create, &metav1.CreateOptions{}),
-				clusterScopedAttributes("g", "v", "r", "", "name", admission.Create, &metav1.CreateOptions{}),
-				clusterScopedAttributes("g", "v", "r", "exec", "name", admission.Create, &metav1.CreateOptions{}),
-				clusterScopedAttributes("", "v1", "namespaces", "", "ns", admission.Create, &metav1.CreateOptions{}),
-				clusterScopedAttributes("", "v1", "namespaces", "finalize", "ns", admission.Create, &metav1.CreateOptions{}),
-				namespacedAttributes("", "v1", "namespaces", "", "ns", admission.Create, &metav1.CreateOptions{}),
-				namespacedAttributes("", "v1", "namespaces", "finalize", "ns", admission.Create, &metav1.CreateOptions{}),
-			),
-			noMatch: attrList(),
-		},
-	}
-	keys := sets.NewString()
-	for name := range table {
-		keys.Insert(name)
-	}
-	for _, name := range keys.List() {
-		tt := table[name]
-		for i, m := range tt.match {
-			t.Run(fmt.Sprintf("%s_match_%d", name, i), func(t *testing.T) {
-				r := Matcher{tt.rule, m}
-				if !r.scope() {
-					t.Errorf("%v: expected match %#v", name, m)
-				}
-			})
-		}
-		for i, m := range tt.noMatch {
-			t.Run(fmt.Sprintf("%s_nomatch_%d", name, i), func(t *testing.T) {
-				r := Matcher{tt.rule, m}
-				if r.scope() {
-					t.Errorf("%v: expected no match %#v", name, m)
-				}
-			})
 		}
 	}
 }
