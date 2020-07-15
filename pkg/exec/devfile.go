@@ -21,7 +21,7 @@ func ExecuteDevfileBuildAction(client ExecClient, exec common.Exec, commandName 
 	if setEnvVariable == "" {
 		command = exec.CommandLine
 	} else {
-		command = setEnvVariable + " && " + exec.CommandLine
+		command = setEnvVariable + "&& " + exec.CommandLine
 	}
 	// Change to the workdir and execute the command
 	var cmdArr []string

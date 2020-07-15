@@ -437,6 +437,19 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.MatchAllInOutput(output, []string{"test_env_variable1", "test_env_variable2"})
 
 		})
+
+		It("Should be able to exec command with environment variable with spaces", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-defaults.yaml"), filepath.Join(context, "devfile.yaml"))
+			output := helper.CmdShouldPass("odo", "push", "--build-command", "firstbuild", "--run-command", "envwithspace", "--namespace", namespace, "--context", context)
+			Expect(output).To(ContainSubstring("mkdir \\\"$ENV1\\\""))
+
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+			output = cliRunner.ExecListDir(podName, namespace, sourcePath)
+			helper.MatchAllInOutput(output, []string{"env with space"})
+
+		})
 	})
 
 })

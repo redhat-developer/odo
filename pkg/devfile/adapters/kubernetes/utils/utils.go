@@ -163,7 +163,7 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 				if setEnvVariable == "" {
 					command = runCommand.Exec.CommandLine
 				} else {
-					command = setEnvVariable + " && " + runCommand.Exec.CommandLine
+					command = setEnvVariable + "&& " + runCommand.Exec.CommandLine
 				}
 				container.Env = append(container.Env,
 					corev1.EnvVar{
@@ -217,7 +217,7 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 				if setEnvVariable == "" {
 					command = debugCommand.Exec.CommandLine
 				} else {
-					command = setEnvVariable + " && " + debugCommand.Exec.CommandLine
+					command = setEnvVariable + "&& " + debugCommand.Exec.CommandLine
 				}
 				container.Env = append(container.Env,
 					corev1.EnvVar{

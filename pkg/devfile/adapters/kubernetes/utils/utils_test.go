@@ -114,6 +114,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 		containers              []corev1.Container
 		execCommands            []common.Exec
 		componentType           common.DevfileComponentType
+		expectRunCommand        string
 		isSupervisordEntrypoint bool
 		wantErr                 bool
 	}{
@@ -139,6 +140,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 				},
 			},
 			componentType:           common.ContainerComponentType,
+			expectRunCommand:        command,
 			isSupervisordEntrypoint: false,
 			wantErr:                 false,
 		},
@@ -163,6 +165,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 				},
 			},
 			componentType:           common.ContainerComponentType,
+			expectRunCommand:        command,
 			isSupervisordEntrypoint: false,
 			wantErr:                 false,
 		},
@@ -186,6 +189,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 				},
 			},
 			componentType:           common.ContainerComponentType,
+			expectRunCommand:        command,
 			isSupervisordEntrypoint: true,
 			wantErr:                 false,
 		},
@@ -210,6 +214,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 				},
 			},
 			componentType:           common.ContainerComponentType,
+			expectRunCommand:        command,
 			isSupervisordEntrypoint: true,
 			wantErr:                 false,
 		},
@@ -233,6 +238,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 				},
 			},
 			componentType:           common.ContainerComponentType,
+			expectRunCommand:        command,
 			isSupervisordEntrypoint: true,
 			wantErr:                 true,
 		},
@@ -272,6 +278,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 				},
 			},
 			componentType:           common.ContainerComponentType,
+			expectRunCommand:        command,
 			isSupervisordEntrypoint: true,
 			wantErr:                 false,
 		},
@@ -304,6 +311,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 				},
 			},
 			componentType:           common.ContainerComponentType,
+			expectRunCommand:        command,
 			isSupervisordEntrypoint: true,
 			wantErr:                 false,
 		},
@@ -344,8 +352,75 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 				},
 			},
 			componentType:           common.ContainerComponentType,
+			expectRunCommand:        command,
 			isSupervisordEntrypoint: true,
 			wantErr:                 true,
+		},
+		{
+			name:       "Case: custom command with single environment variable",
+			runCommand: "customRunCommand",
+			containers: []corev1.Container{
+				{
+					Name:            component,
+					Image:           image,
+					ImagePullPolicy: corev1.PullAlways,
+					Env:             []corev1.EnvVar{},
+				},
+			},
+			execCommands: []versionsCommon.Exec{
+				{
+					Id:          "customRunCommand",
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group:       &execRunGroup,
+					Env: []versionsCommon.Env{
+						versionsCommon.Env{
+							Name:  "env1",
+							Value: "value1",
+						},
+					},
+				},
+			},
+			componentType:           common.ContainerComponentType,
+			expectRunCommand:        "env1=\"value1\" && " + command,
+			isSupervisordEntrypoint: true,
+			wantErr:                 false,
+		},
+		{
+			name:       "Case: custom command with multiple environment variable",
+			runCommand: "customRunCommand",
+			containers: []corev1.Container{
+				{
+					Name:            component,
+					Image:           image,
+					ImagePullPolicy: corev1.PullAlways,
+					Env:             []corev1.EnvVar{},
+				},
+			},
+			execCommands: []versionsCommon.Exec{
+				{
+					Id:          "customRunCommand",
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group:       &execRunGroup,
+					Env: []versionsCommon.Env{
+						versionsCommon.Env{
+							Name:  "env1",
+							Value: "value1",
+						},
+						versionsCommon.Env{
+							Name:  "env2",
+							Value: "value2 with space",
+						},
+					},
+				},
+			},
+			componentType:           common.ContainerComponentType,
+			expectRunCommand:        "env1=\"value1\" env2=\"value2 with space\" && " + command,
+			isSupervisordEntrypoint: true,
+			wantErr:                 false,
 		},
 	}
 	for _, tt := range tests {
@@ -411,7 +486,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 						}
 
 						for _, envVar := range container.Env {
-							if envVar.Name == adaptersCommon.EnvOdoCommandRun && envVar.Value == tt.execCommands[0].CommandLine {
+							if envVar.Name == adaptersCommon.EnvOdoCommandRun && envVar.Value == tt.expectRunCommand {
 								envRunMatched = true
 							}
 							if tt.execCommands[0].WorkingDir != "" && envVar.Name == adaptersCommon.EnvOdoCommandRunWorkingDir && envVar.Value == tt.execCommands[0].WorkingDir {
