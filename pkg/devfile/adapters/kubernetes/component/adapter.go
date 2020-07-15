@@ -335,7 +335,7 @@ func (a Adapter) waitAndGetComponentPod(hideSpinner bool) (*corev1.Pod, error) {
 // Init only runs once when the component is created.
 func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists, show bool, podName string, containers []corev1.Container, isDebug bool) (err error) {
 	// Need to get mapping of all commands in the devfile since the composite command may reference any exec or composite command in the devfile
-	devfileCommandMap := a.getCommandsMap()
+	devfileCommandMap := common.GetCommandsMap(a.Devfile.Data.GetCommands())
 
 	// If nothing has been passed, then the devfile is missing the required run command
 	if len(commandsMap) == 0 {
@@ -353,8 +353,6 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 		command, ok := commandsMap[versionsCommon.InitCommandGroupType]
 		if ok {
 			if command.Composite != nil {
-				fmt.Println("Composite detected")
-				//err = a.execCompositeCommand(command.Composite, compInfo, show, podName)
 				err = exec.ExecuteCompositeDevfileAction(&a.Client, *command.Composite, devfileCommandMap, compInfo, show, a.machineEventLogger)
 				if err != nil {
 					return err
@@ -375,7 +373,6 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 	command, ok := commandsMap[versionsCommon.BuildCommandGroupType]
 	if ok {
 		if command.Composite != nil {
-			//err = a.execCompositeCommand(command.Composite, compInfo, show, podName)
 			err = exec.ExecuteCompositeDevfileAction(&a.Client, *command.Composite, devfileCommandMap, compInfo, show, a.machineEventLogger)
 			if err != nil {
 				return err
@@ -462,17 +459,6 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, s
 	}
 
 	return "", "", fmt.Errorf("In order to sync files, odo requires at least one component in a devfile to set 'mountSources: true'")
-}
-
-// getCommandsMap returns a mapping of all of devfile command names to their corresponding DevfileCommand struct
-// Allowing us to easily retrieve the DevfileCommand of any command listed in a composite command
-func (a Adapter) getCommandsMap() map[string]versionsCommon.DevfileCommand {
-	commandsMap := make(map[string]versionsCommon.DevfileCommand)
-
-	for _, command := range a.Devfile.Data.GetCommands() {
-		commandsMap[command.GetID()] = command
-	}
-	return commandsMap
 }
 
 // Delete deletes the component

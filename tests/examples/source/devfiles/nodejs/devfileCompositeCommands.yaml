@@ -29,9 +29,9 @@ commands:
         kind: build
         isDefault: false
   - exec:
-      id: echo
+      id: mkdir
       component: runtime
-      commandLine: echo hi
+      commandLine: mkdir /projects/testfolder
       workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
       group:
         kind: build
@@ -48,7 +48,7 @@ commands:
          id: buildAndEcho
          label: Build and Echo
          commands:
-           - echo
+           - mkdir
            - install
          parallel: false
          group: 

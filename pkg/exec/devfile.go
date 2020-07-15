@@ -272,6 +272,7 @@ func execCommandFromComposite(client ExecClient, command common.DevfileCommand, 
 	if command.Composite != nil {
 		err = ExecuteCompositeDevfileAction(client, *command.Composite, commandsMap, compInfo, show, machineEventLogger)
 	} else {
+		compInfo.ContainerName = command.Exec.Component
 		err = ExecuteDevfileBuildAction(client, *command.Exec, command.Exec.Id, compInfo, show, machineEventLogger)
 	}
 

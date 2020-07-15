@@ -138,7 +138,22 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeCommands.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			output := helper.CmdShouldPass("odo", "push", "--context", context)
-			Expect(output).To(ContainSubstring("Executing echo command"))
+			Expect(output).To(ContainSubstring("Executing mkdir command"))
+
+			// Verify the command executed successfully
+			var statErr error
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+			cliRunner.CheckCmdOpInRemoteDevfilePod(
+				podName,
+				"runtime",
+				namespace,
+				[]string{"stat", "/projects/testfolder"},
+				func(cmdOp string, err error) bool {
+					statErr = err
+					return true
+				},
+			)
+			Expect(statErr).ToNot(HaveOccurred())
 		})
 
 		It("checks that odo push works with a devfile with parallel composite commands", func() {
@@ -148,7 +163,22 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeCommandsParallel.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			output := helper.CmdShouldPass("odo", "push", "--context", context)
-			Expect(output).To(ContainSubstring("Executing echo command"))
+			Expect(output).To(ContainSubstring("Executing mkdir command"))
+
+			// Verify the command executed successfully
+			var statErr error
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+			cliRunner.CheckCmdOpInRemoteDevfilePod(
+				podName,
+				"runtime",
+				namespace,
+				[]string{"stat", "/projects/testfolder"},
+				func(cmdOp string, err error) bool {
+					statErr = err
+					return true
+				},
+			)
+			Expect(statErr).ToNot(HaveOccurred())
 		})
 
 		It("checks that odo push works outside of the context directory", func() {

@@ -182,8 +182,10 @@ func validateCommand(data data.DevfileData, command common.DevfileCommand) (err 
 // validateCompositeCommand checks that the specified composite command is valid
 func validateCompositeCommand(data data.DevfileData, compositeCommand *common.Composite) error {
 	if compositeCommand.Group.Kind == common.RunCommandGroupType {
-		return fmt.Errorf("compoosite commands cannot belong to the run grouop")
+		return fmt.Errorf("composite commands of run Kind are not supported currently")
 	}
+
+	commandsMap := GetCommandsMap(data.GetCommands())
 
 	// Loop over the commands and validate that each command points to a command that's in the devfile
 	for _, command := range compositeCommand.Commands {
@@ -191,7 +193,8 @@ func validateCompositeCommand(data data.DevfileData, compositeCommand *common.Co
 			return fmt.Errorf("the composite command %q cannot reference itself", compositeCommand.Id)
 		}
 
-		if !hasCommand(data, command) {
+		_, ok := commandsMap[command]
+		if !ok {
 			return fmt.Errorf("the command %q does not exist in the devfile", command)
 		}
 	}
