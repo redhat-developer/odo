@@ -208,6 +208,16 @@ test-cmd-devfile-create:
 test-cmd-devfile-push:
 	ginkgo $(GINKGO_FLAGS) -focus="odo devfile push command tests" tests/integration/devfile/
 
+# Run odo exec devfile command tests
+.PHONY: test-cmd-devfile-exec
+test-cmd-devfile-exec:
+	ginkgo $(GINKGO_FLAGS) -focus="odo devfile exec command tests" tests/integration/devfile/
+
+# Run odo exec docker devfile command tests
+.PHONY: test-cmd-docker-devfile-exec
+test-cmd-docker-devfile-exec:
+	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile exec command tests" tests/integration/devfile/docker
+
 # Run odo devfile watch command tests
 .PHONY: test-cmd-devfile-watch
 test-cmd-devfile-watch:

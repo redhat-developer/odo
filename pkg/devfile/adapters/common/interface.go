@@ -8,6 +8,7 @@ type ComponentAdapter interface {
 	DoesComponentExist(cmpName string) (bool, error)
 	Delete(labels map[string]string) error
 	Log(follow, debug bool) (io.ReadCloser, error)
+	Exec(command []string) error
 }
 
 // StorageAdapter defines the storage functions that platform-specific adapters must implement

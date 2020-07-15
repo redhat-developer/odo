@@ -512,3 +512,38 @@ func (a Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
 
 	return a.Client.GetPodLogs(pod.Name, containerName, follow)
 }
+
+// Exec executes a command in the component
+func (a Adapter) Exec(command []string) error {
+	exists, err := utils.ComponentExists(a.Client, a.ComponentName)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		return errors.Errorf("the component %s doesn't exist on the cluster", a.ComponentName)
+	}
+
+	runCommand, err := common.GetRunCommand(a.Devfile.Data, "")
+	if err != nil {
+		return err
+	}
+	containerName := runCommand.Exec.Component
+
+	// get the pod
+	pod, err := a.Client.GetPodUsingComponentName(a.ComponentName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
+	}
+
+	if pod.Status.Phase != corev1.PodRunning {
+		return fmt.Errorf("unable to exec as the component is not running. Current status=%v", pod.Status.Phase)
+	}
+
+	componentInfo := common.ComponentInfo{
+		PodName:       pod.Name,
+		ContainerName: containerName,
+	}
+
+	return exec.ExecuteCommand(&a.Client, componentInfo, command, true, nil, nil)
+}
