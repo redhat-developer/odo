@@ -346,7 +346,37 @@ func TestSetConfiguration(t *testing.T) {
 			wantErr:        true,
 		},
 		{
-			name:           fmt.Sprintf("Case 12: %s set to 300 with mixed case in parameter name", TimeoutSetting),
+			name:           fmt.Sprintf("Case 11: %s set to 50 with mixed case in parameter name", TimeoutSetting),
+			parameter:      "BuildTimeout",
+			value:          "50",
+			existingConfig: Preference{},
+			want:           50,
+			wantErr:        false,
+		},
+		{
+			name:           fmt.Sprintf("Case 12: %s set to 0", TimeoutSetting),
+			parameter:      TimeoutSetting,
+			value:          "0",
+			existingConfig: Preference{},
+			want:           0,
+			wantErr:        false,
+		},
+		{
+			name:           fmt.Sprintf("Case 13: %s set to -1 with mixed case in parameter name", TimeoutSetting),
+			parameter:      "BuildTimeout",
+			value:          "-1",
+			existingConfig: Preference{},
+			wantErr:        true,
+		},
+		{
+			name:           fmt.Sprintf("Case 14: %s invalid value", TimeoutSetting),
+			parameter:      TimeoutSetting,
+			value:          "invalid",
+			existingConfig: Preference{},
+			wantErr:        true,
+		},
+		{
+			name:           fmt.Sprintf("Case 15: %s set to 99 with mixed case in parameter name", TimeoutSetting),
 			parameter:      "PushTimeout",
 			value:          "99",
 			existingConfig: Preference{},
@@ -355,7 +385,7 @@ func TestSetConfiguration(t *testing.T) {
 		},
 		// experimental setting
 		{
-			name:           fmt.Sprintf("Case 13: %s set nil to true", ExperimentalSetting),
+			name:           fmt.Sprintf("Case 16: %s set nil to true", ExperimentalSetting),
 			parameter:      ExperimentalSetting,
 			value:          "true",
 			existingConfig: Preference{},
@@ -363,7 +393,7 @@ func TestSetConfiguration(t *testing.T) {
 			wantErr:        false,
 		},
 		{
-			name:      fmt.Sprintf("Case 14: %s set true to false", ExperimentalSetting),
+			name:      fmt.Sprintf("Case 17: %s set true to false", ExperimentalSetting),
 			parameter: ExperimentalSetting,
 			value:     "false",
 			existingConfig: Preference{
@@ -375,7 +405,7 @@ func TestSetConfiguration(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:      fmt.Sprintf("Case 15: %s set false to true", ExperimentalSetting),
+			name:      fmt.Sprintf("Case 18: %s set false to true", ExperimentalSetting),
 			parameter: ExperimentalSetting,
 			value:     "true",
 			existingConfig: Preference{
@@ -387,7 +417,7 @@ func TestSetConfiguration(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:           fmt.Sprintf("Case 16: %s invalid value", ExperimentalSetting),
+			name:           fmt.Sprintf("Case 19: %s invalid value", ExperimentalSetting),
 			parameter:      ExperimentalSetting,
 			value:          "invalid_value",
 			existingConfig: Preference{},
@@ -395,7 +425,7 @@ func TestSetConfiguration(t *testing.T) {
 		},
 		// pushtarget setting
 		{
-			name:           fmt.Sprintf("Case 17: %s set nil to docker", PushTargetSetting),
+			name:           fmt.Sprintf("Case 20: %s set nil to docker", PushTargetSetting),
 			parameter:      PushTargetSetting,
 			value:          dockerValue,
 			existingConfig: Preference{},
@@ -403,7 +433,7 @@ func TestSetConfiguration(t *testing.T) {
 			wantErr:        false,
 		},
 		{
-			name:      fmt.Sprintf("Case 18: %s set kube to docker", PushTargetSetting),
+			name:      fmt.Sprintf("Case 21: %s set kube to docker", PushTargetSetting),
 			parameter: PushTargetSetting,
 			value:     dockerValue,
 			existingConfig: Preference{
@@ -415,7 +445,7 @@ func TestSetConfiguration(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:      fmt.Sprintf("Case 19: %s set docker to kube", PushTargetSetting),
+			name:      fmt.Sprintf("Case 22: %s set docker to kube", PushTargetSetting),
 			parameter: PushTargetSetting,
 			value:     kubeValue,
 			existingConfig: Preference{
@@ -427,7 +457,7 @@ func TestSetConfiguration(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:           fmt.Sprintf("Case 20: %s invalid value", PushTargetSetting),
+			name:           fmt.Sprintf("Case 23: %s invalid value", PushTargetSetting),
 			parameter:      PushTargetSetting,
 			value:          "invalid_value",
 			existingConfig: Preference{},
