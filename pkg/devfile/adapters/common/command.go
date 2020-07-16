@@ -40,7 +40,8 @@ func getCommandFromDevfile(data data.DevfileData, groupType common.DevfileComman
 	}
 
 	for _, command := range commands {
-		if command.GetKind() == groupType {
+		cmdGroup := command.GetGroup()
+		if cmdGroup != nil && cmdGroup.Kind == groupType {
 			if command.GetGroup().IsDefault {
 				return command, validateCommand(data, command)
 			} else if reflect.DeepEqual(onlyCommand, common.DevfileCommand{}) {
