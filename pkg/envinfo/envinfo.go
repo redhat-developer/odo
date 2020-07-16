@@ -64,7 +64,7 @@ type EnvInfoPushCommand struct {
 	Run   string `yaml:"Run,omitempty"`
 }
 
-// EnvInfo holds all the env specific information relavent to a specific Component.
+// EnvInfo holds all the env specific information relevant to a specific Component.
 type EnvInfo struct {
 	componentSettings ComponentSettings `yaml:"ComponentSettings,omitempty"`
 }
