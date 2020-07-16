@@ -144,8 +144,9 @@ func DeleteOperatorService(client *kclient.Client, serviceName string) error {
 	var cr *olm.CRDDescription
 
 	for _, c := range *crs {
-		if c.Kind == kind {
-			cr = &c
+		customResource := c
+		if customResource.Kind == kind {
+			cr = &customResource
 			break
 		}
 	}
@@ -284,8 +285,9 @@ func ListOperatorServices(client *kclient.Client) ([]unstructured.Unstructured, 
 
 	// let's get the Services a.k.a Custom Resources (CR) defined by each operator, one by one
 	for _, csv := range csvs.Items {
-		klog.V(4).Infof("Getting services started from operator: %s\n", csv.Name)
-		customResources := client.GetCustomResourcesFromCSV(&csv)
+		clusterServiceVersion := csv
+		klog.V(4).Infof("Getting services started from operator: %s\n", clusterServiceVersion.Name)
+		customResources := client.GetCustomResourcesFromCSV(&clusterServiceVersion)
 
 		// list and write active instances of each service/CR
 		instances, err := getCRInstances(client, customResources)
@@ -322,8 +324,9 @@ func getCRInstances(client *kclient.Client, customResources *[]olm.CRDDescriptio
 	var instances []unstructured.Unstructured
 
 	for _, cr := range *customResources {
-		klog.V(4).Infof("Getting instances of: %s\n", cr.Name)
-		group, version, resource, err := getGVRFromCR(&cr)
+		customResource := cr
+		klog.V(4).Infof("Getting instances of: %s\n", customResource.Name)
+		group, version, resource, err := getGVRFromCR(&customResource)
 		if err != nil {
 			return []unstructured.Unstructured{}, err
 		}

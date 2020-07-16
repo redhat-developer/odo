@@ -85,7 +85,8 @@ func (c *Client) GetCSVWithCR(name string) (*olm.ClusterServiceVersion, error) {
 	}
 
 	for _, csv := range csvs.Items {
-		for _, cr := range *c.GetCustomResourcesFromCSV(&csv) {
+		clusterServiceVersion := csv
+		for _, cr := range *c.GetCustomResourcesFromCSV(&clusterServiceVersion) {
 			if cr.Kind == name {
 				return &csv, nil
 			}
