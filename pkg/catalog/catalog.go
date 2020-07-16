@@ -466,6 +466,7 @@ func isSupportedImage(imgName string) bool {
 		"centos/nodejs-12-centos7:latest",
 		"rhscl/nodejs-10-rhel7:latest",
 		"rhscl/nodejs-12-rhel7:latest",
+		"rhoar-nodejs/nodejs-10:latest",
 	}
 	for _, supImage := range supportedImages {
 		if supImage == imgName {

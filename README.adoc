@@ -44,6 +44,10 @@ Existing tools such as `oc` are more operations-focused and require a deep-under
 |NPM
 
 |
+|https://access.redhat.com/articles/3376841[rhoar-nodejs/nodejs-10]
+|NPM
+
+|
 |https://github.com/sclorg/s2i-nodejs-container[centos/nodejs-10-centos7]
 |NPM
 
