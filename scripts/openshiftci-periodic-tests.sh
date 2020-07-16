@@ -28,15 +28,13 @@ odo login -u developer -p developer
 oc whoami
 
 # Integration tests
-# make test-integration
-# make test-integration-devfile
-# make test-cmd-login-logout
-# make test-cmd-project
-# make test-operator-hub
-make test-cmd-cmp
-make test-cmd-cmp-sub
+make test-integration
+make test-integration-devfile
+make test-cmd-login-logout
+make test-cmd-project
+make test-operator-hub
 
 # E2e tests
-# make test-e2e-all
+make test-e2e-all
 
 odo logout
