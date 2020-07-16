@@ -328,7 +328,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 
 			containerID := utils.GetContainerIDForAlias(containers, command.Exec.Component)
 			compInfo := common.ComponentInfo{ContainerName: containerID}
-			err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
+			err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger, false)
 			if err != nil {
 				return err
 			}
@@ -340,7 +340,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 	if ok {
 		containerID := utils.GetContainerIDForAlias(containers, command.Exec.Component)
 		compInfo := common.ComponentInfo{ContainerName: containerID}
-		err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
+		err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger, false)
 		if err != nil {
 			return err
 		}

@@ -14,7 +14,7 @@ import (
 )
 
 // ExecuteDevfileBuildAction executes the devfile build command action
-func ExecuteDevfileBuildAction(client ExecClient, exec common.Exec, commandName string, compInfo adaptersCommon.ComponentInfo, show bool, machineEventLogger machineoutput.MachineEventLoggingClient) error {
+func ExecuteDevfileBuildAction(client ExecClient, exec common.Exec, commandName string, compInfo adaptersCommon.ComponentInfo, show bool, machineEventLogger machineoutput.MachineEventLoggingClient, noSpin bool) error {
 	var s *log.Status
 
 	// Change to the workdir and execute the command
@@ -26,7 +26,7 @@ func ExecuteDevfileBuildAction(client ExecClient, exec common.Exec, commandName 
 		cmdArr = []string{adaptersCommon.ShellExecutable, "-c", exec.CommandLine}
 	}
 
-	if show {
+	if show || noSpin {
 		s = log.SpinnerNoSpin("Executing " + commandName + " command " + fmt.Sprintf("%q", exec.CommandLine))
 	} else {
 		s = log.Spinnerf("Executing %s command %q", commandName, exec.CommandLine)
@@ -234,7 +234,7 @@ func ExecuteCompositeDevfileAction(client ExecClient, composite common.Composite
 			cmd := command // needed to prevent the lambda from capturing the value
 			if devfileCommand, ok := commandsMap[strings.ToLower(cmd)]; ok {
 				commandExecs.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
-					err := execCommandFromComposite(client, devfileCommand, commandsMap, compInfo, true, machineEventLogger)
+					err := execCommandFromComposite(client, devfileCommand, commandsMap, compInfo, show, machineEventLogger, true)
 					if err != nil {
 						errChannel <- err
 					}
@@ -253,7 +253,7 @@ func ExecuteCompositeDevfileAction(client ExecClient, composite common.Composite
 		// Execute the commands in order
 		for _, command := range composite.Commands {
 			if devfileCommand, ok := commandsMap[strings.ToLower(command)]; ok {
-				err = execCommandFromComposite(client, devfileCommand, commandsMap, compInfo, show, machineEventLogger)
+				err = execCommandFromComposite(client, devfileCommand, commandsMap, compInfo, show, machineEventLogger, false)
 				if err != nil {
 					return fmt.Errorf("command execution failed: %v", err)
 				}
@@ -268,12 +268,12 @@ func ExecuteCompositeDevfileAction(client ExecClient, composite common.Composite
 }
 
 // execCommandFromComposite takes a command in a composite command and executes it.
-func execCommandFromComposite(client ExecClient, command common.DevfileCommand, commandsMap map[string]common.DevfileCommand, compInfo adaptersCommon.ComponentInfo, show bool, machineEventLogger machineoutput.MachineEventLoggingClient) (err error) {
+func execCommandFromComposite(client ExecClient, command common.DevfileCommand, commandsMap map[string]common.DevfileCommand, compInfo adaptersCommon.ComponentInfo, show bool, machineEventLogger machineoutput.MachineEventLoggingClient, noSpin bool) (err error) {
 	if command.Composite != nil {
 		err = ExecuteCompositeDevfileAction(client, *command.Composite, commandsMap, compInfo, show, machineEventLogger)
 	} else {
 		compInfo.ContainerName = command.Exec.Component
-		err = ExecuteDevfileBuildAction(client, *command.Exec, command.Exec.Id, compInfo, show, machineEventLogger)
+		err = ExecuteDevfileBuildAction(client, *command.Exec, command.Exec.Id, compInfo, show, machineEventLogger, noSpin)
 	}
 
 	return

@@ -359,7 +359,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 				}
 			} else {
 				compInfo.ContainerName = command.Exec.Component
-				err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
+				err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger, false)
 				if err != nil {
 					return err
 				}
@@ -379,7 +379,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 			}
 		} else {
 			compInfo.ContainerName = command.Exec.Component
-			err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
+			err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger, false)
 			if err != nil {
 				return err
 			}
