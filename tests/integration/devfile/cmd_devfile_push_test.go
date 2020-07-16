@@ -213,7 +213,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeRun.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			// Verify nested command was executed
+			// Verify odo push failed
 			output := helper.CmdShouldFail("odo", "push", "--context", context)
 			Expect(output).To(ContainSubstring("composite commands of run Kind are not supported currently"))
 		})
@@ -224,7 +224,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeNonExistent.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			// Verify nested command was executed
+			// Verify odo push failed
 			output := helper.CmdShouldFail("odo", "push", "--context", context)
 			Expect(output).To(ContainSubstring("does not exist in the devfile"))
 		})
