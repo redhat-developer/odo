@@ -3,7 +3,6 @@ package common
 import (
 	"fmt"
 	"reflect"
-	"strings"
 
 	"github.com/openshift/odo/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
@@ -40,17 +39,8 @@ func getCommandFromDevfile(data data.DevfileData, groupType common.DevfileComman
 	}
 
 	for _, command := range commands {
-		if command.Composite != nil && command.Composite.Group != nil && command.Composite.Group.Kind == groupType {
-			if command.Composite.Group.IsDefault {
-				return command, validateCommand(data, command)
-			} else if reflect.DeepEqual(onlyCommand, common.DevfileCommand{}) {
-				// return the only remaining command for the group if there is no default command
-				// NOTE: we return outside the for loop since the next iteration can have a default command
-				onlyCommand = command
-			}
-		} else if command.Exec != nil && command.Exec.Group != nil && command.Exec.Group.Kind == groupType {
-			if command.Exec.Group.IsDefault {
-				// We need to scan all the commands to find default command
+		if command.GetKind() == groupType {
+			if command.GetGroup().IsDefault {
 				return command, validateCommand(data, command)
 			} else if reflect.DeepEqual(onlyCommand, common.DevfileCommand{}) {
 				// return the only remaining command for the group if there is no default command
@@ -117,9 +107,7 @@ func validateCommandsForGroup(data data.DevfileData, groupType common.DevfileCom
 
 	if len(commands) > 1 {
 		for _, command := range commands {
-			if command.Composite != nil && command.Composite.Group.IsDefault {
-				defaultCommandCount++
-			} else if command.Exec != nil && command.Exec.Group.IsDefault {
+			if command.GetGroup().IsDefault {
 				defaultCommandCount++
 			}
 		}
@@ -138,7 +126,7 @@ func validateCommandsForGroup(data data.DevfileData, groupType common.DevfileCom
 }
 
 // validateCommand validates the given command
-// 1. command has to be of type exec
+// 1. command has to be of type exec or composite
 // 2. component should be present
 // 4. command must have group
 func validateCommand(data data.DevfileData, command common.DevfileCommand) (err error) {
@@ -195,20 +183,10 @@ func validateCompositeCommand(data data.DevfileData, compositeCommand *common.Co
 
 		_, ok := commandsMap[command]
 		if !ok {
-			return fmt.Errorf("the command %q does not exist in the devfile", command)
+			return fmt.Errorf("the command %q mentioned in the composite command %q does not exist in the devfile", command, compositeCommand.Id)
 		}
 	}
 	return nil
-}
-
-// hasCommand returns true if the devfile contains the specified command
-func hasCommand(data data.DevfileData, command string) bool {
-	for _, devfileCommand := range data.GetCommands() {
-		if strings.ToLower(command) == devfileCommand.GetID() {
-			return true
-		}
-	}
-	return false
 }
 
 // GetInitCommand iterates through the components in the devfile and returns the init command
@@ -253,13 +231,7 @@ func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileInitCmd, de
 	} else if !isInitCmdEmpty && initCmdErr == nil {
 		isInitCommandValid = true
 		commandMap[common.InitCommandGroupType] = initCommand
-		var commandID string
-		if initCommand.Composite != nil {
-			commandID = initCommand.Composite.Id
-		} else {
-			commandID = initCommand.Exec.Id
-		}
-		klog.V(4).Infof("Init command: %v", commandID)
+		klog.V(4).Infof("Init command: %v", initCommand.GetID())
 	}
 
 	buildCommand, buildCmdErr := GetBuildCommand(data, devfileBuildCmd)
@@ -272,26 +244,14 @@ func ValidateAndGetPushDevfileCommands(data data.DevfileData, devfileInitCmd, de
 	} else if !reflect.DeepEqual(emptyCommand, buildCommand) && buildCmdErr == nil {
 		isBuildCommandValid = true
 		commandMap[common.BuildCommandGroupType] = buildCommand
-		var commandID string
-		if buildCommand.Composite != nil {
-			commandID = buildCommand.Composite.Id
-		} else {
-			commandID = buildCommand.Exec.Id
-		}
-		klog.V(4).Infof("Build command: %v", commandID)
+		klog.V(4).Infof("Build command: %v", buildCommand.GetID())
 	}
 
 	runCommand, runCmdErr := GetRunCommand(data, devfileRunCmd)
 	if runCmdErr == nil && !reflect.DeepEqual(emptyCommand, runCommand) {
 		isRunCommandValid = true
 		commandMap[common.RunCommandGroupType] = runCommand
-		var commandID string
-		if runCommand.Composite != nil {
-			commandID = runCommand.Composite.Id
-		} else {
-			commandID = runCommand.Exec.Id
-		}
-		klog.V(4).Infof("Run command: %v", commandID)
+		klog.V(4).Infof("Run command: %v", runCommand.GetID())
 	}
 
 	// If either command had a problem, return an empty list of commands and an error
