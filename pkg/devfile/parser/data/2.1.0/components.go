@@ -48,6 +48,6 @@ func (d *Devfile210) GetEvents() common.DevfileEvents {
 
 // GetAliasedComponents returns the slice of DevfileComponent objects that each have an alias
 func (d *Devfile210) GetAliasedComponents() []common.DevfileComponent {
-	// V2 has name required in jsonSchema
+	// V2.1.0 has name required in jsonSchema
 	return d.Components
 }

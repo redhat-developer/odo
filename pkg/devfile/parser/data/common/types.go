@@ -38,9 +38,6 @@ type DevfileMetadata struct {
 	// Version Optional semver-compatible version
 	Version string `json:"version,omitempty"`
 
-	// Dockerfile optional URL to remote Dockerfile
-	Dockerfile string `json:"alpha.build-dockerfile,omitempty"`
-
 	// Manifest optional URL to remote Deployment Manifest
 	Manifest string `json:"alpha.deployment-manifest,omitempty"`
 }
@@ -66,7 +63,7 @@ type DevfileComponent struct {
 	// Allows specifying the definition of a volume shared by several other components
 	Volume *Volume `json:"volume,omitempty"`
 
-	//Allows specifying a dockerfile to initiate build
+	// Allows specifying a dockerfile to initiate build
 	Dockerfile *Dockerfile `json:"dockerfile,omitempty"`
 }
 
@@ -343,17 +340,17 @@ type Dockerfile struct {
 	// Mandatory path to source code
 	Source *Source `json:"source"`
 
-	//Mandatory path to dockerfile
+	// Mandatory path to dockerfile
 	DockerfilePath string `json:"dockerfilePath"`
 
-	//Mandatory destination to registry to push built image
+	// Mandatory destination to registry to push built image
 	Destination string `json:"destination,omitempty"`
 }
 
 type Source struct {
-	//Mandatory path to local source directory folder
+	// Mandatory path to local source directory folder
 	SourceDir string `json:"sourceDir"`
 
-	//Mandatory path to source repository hosted locally or on cloud
+	// Mandatory path to source repository hosted locally or on cloud
 	Location string `json:"location"`
 }

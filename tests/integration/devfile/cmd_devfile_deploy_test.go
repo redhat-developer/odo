@@ -48,7 +48,7 @@ var _ = Describe("odo devfile deploy command tests", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 			helper.CmdShouldPass("odo", "url", "create", "--port", "3000")
 
-			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV2", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV2.1.0", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 			output := helper.CmdShouldPass("odo", "deploy", "--tag", imageTag)
 			cliRunner.WaitAndCheckForExistence("buildconfig", namespace, 1)
 			Expect(output).NotTo(ContainSubstring("does not point to a valid Dockerfile"))
@@ -61,9 +61,9 @@ var _ = Describe("odo devfile deploy command tests", func() {
 		It("Should error out with 'URL does not point to a valid Dockerfile'", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 			helper.CmdShouldPass("odo", "url", "create", "--port", "3000")
-			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV2", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV2.1.0", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			err := helper.ReplaceDevfileField("devfile.yaml", "alpha.build-dockerfile", "https://google.com")
+			err := helper.ReplaceDevfileField("devfile.yaml", "dockerfilePath", "https://google.com")
 			Expect(err).To(BeNil())
 
 			cmdOutput := helper.CmdShouldFail("odo", "deploy", "--tag", imageTag)
@@ -71,14 +71,14 @@ var _ = Describe("odo devfile deploy command tests", func() {
 		})
 	})
 
-	// This test depends on the nodejs stack to no have a alpha.build-dockerfile field.
+	// This test depends on the nodejs stack to no have a dockerfilePath field.
 	// This may not be the case in the future when the stack gets updated.
 	Context("Verify error when no Dockerfile exists in project and no 'dockerfile' specified in devfile", func() {
 		It("Should error out with 'dockerfile required for build.'", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 			helper.CmdShouldPass("odo", "url", "create", "--port", "3000")
 			cmdOutput := helper.CmdShouldFail("odo", "deploy", "--tag", imageTag)
-			Expect(cmdOutput).To(ContainSubstring("dockerfile required for build. No 'alpha.build-dockerfile' field found in devfile, or Dockerfile found in project directory"))
+			Expect(cmdOutput).To(ContainSubstring("dockerfile required for build. No 'dockerfilePath' field found in devfile, or Dockerfile found in project directory"))
 		})
 	})
 

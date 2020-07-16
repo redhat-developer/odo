@@ -72,7 +72,7 @@ type Component struct {
 	// Allows specifying the definition of a volume shared by several other components
 	Volume *Volume `json:"volume,omitempty"`
 
-	//Allows specifying a dockerfile to initiate build
+	// Allows specifying a dockerfile to initiate build
 	Dockerfile *Dockerfile `json:"dockerfile,omitempty"`
 }
 

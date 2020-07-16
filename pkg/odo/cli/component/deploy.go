@@ -99,13 +99,12 @@ func (do *DeployOptions) Validate() (err error) {
 
 	s = log.Spinner("Validating build information")
 
-	metadata := do.devObj.Data.GetMetadata()
-	// dockerfileURL := metadata.Dockerfile
 	var dockerfileURL string
 	components := do.devObj.Data.GetAliasedComponents()
 	for _, component := range components {
 		if component.Dockerfile != nil {
 			dockerfileURL = component.Dockerfile.DockerfilePath
+			break
 		}
 	}
 
@@ -136,12 +135,13 @@ func (do *DeployOptions) Validate() (err error) {
 
 	} else if !util.CheckPathExists(filepath.Join(do.componentContext, "Dockerfile")) {
 		s.End(false)
-		return errors.New("dockerfile required for build. No 'alpha.build-dockerfile' field found in devfile, or Dockerfile found in project directory")
+		return errors.New("dockerfile required for build. No 'DockerfilePath' field found in dockerfile component of devfile, or Dockerfile found in project directory")
 	}
 
 	s.End(true)
 
 	s = log.Spinner("Validating deployment information")
+	metadata := do.devObj.Data.GetMetadata()
 	manifestURL := metadata.Manifest
 	if manifestURL == "" {
 		s.End(false)
