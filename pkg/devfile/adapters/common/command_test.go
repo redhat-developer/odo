@@ -1775,13 +1775,3 @@ func getExecCommand(id string, group common.DevfileCommandGroupType) versionsCom
 	}
 
 }
-
-func getCompCommand(id string, commands []string, group common.DevfileCommandGroupType, isDefault bool) versionsCommon.Composite {
-
-	return versionsCommon.Composite{
-		Id:       id,
-		Commands: commands,
-		Group:    &common.Group{Kind: group, IsDefault: isDefault},
-	}
-
-}
