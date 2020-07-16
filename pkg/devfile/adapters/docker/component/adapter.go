@@ -235,7 +235,7 @@ func (a Adapter) Delete(labels map[string]string, show bool) error {
 	spinner := log.Spinnerf("Deleting devfile component %s", componentName)
 	defer spinner.End(false)
 
-	containers, err := a.Client.GetContainerList()
+	containers, err := a.Client.GetContainerList(true)
 	if err != nil {
 		return errors.Wrap(err, "unable to retrieve container list for delete operation")
 	}
