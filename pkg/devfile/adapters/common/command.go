@@ -84,7 +84,8 @@ func getCommandFromFlag(data data.DevfileData, groupType common.DevfileCommandGr
 			//   id: mybuild
 			//   group:
 			//     kind: build
-			if command.GetKind() != groupType {
+			cmdGroup := command.GetGroup()
+			if cmdGroup != nil && cmdGroup.Kind != groupType {
 				return command, fmt.Errorf("command group mismatched, command %s is of group %v in devfile.yaml", commandName, command.Exec.Group.Kind)
 			}
 
@@ -171,7 +172,7 @@ func validateCommand(data data.DevfileData, command common.DevfileCommand) (err 
 
 // validateCompositeCommand checks that the specified composite command is valid
 func validateCompositeCommand(data data.DevfileData, compositeCommand *common.Composite) error {
-	if compositeCommand.Group.Kind == common.RunCommandGroupType {
+	if compositeCommand.Group != nil && compositeCommand.Group.Kind == common.RunCommandGroupType {
 		return fmt.Errorf("composite commands of run Kind are not supported currently")
 	}
 
