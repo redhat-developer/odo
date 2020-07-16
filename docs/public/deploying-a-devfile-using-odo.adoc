@@ -36,7 +36,7 @@ An example deployment scenario:
 
 * Enable experimental mode for odo. This can be done by: `odo preference set experimental true`
 
-* Creating a project to keep your source code, tests, and libraries organized in a separate single unit.
+* Create a project to keep your source code, tests, and libraries organized in a separate single unit.
 
 . Log in to an OpenShift cluster:
 +
@@ -59,9 +59,9 @@ An example deployment scenario:
 
 * Enable experimental mode for odo. This can be done by: `odo preference set experimental true`
 
-* Before proceeding, you must know your ingress domain name or ingress ip to specify `--host` for `odo url create`.
+* Before proceeding, you must know your ingress domain name or ingress IP to specify `--host` for `odo url create`.
 +
-Ingress ip is usually the external ip of ingress controller service, for minikube or crc clusters running in a virtual machine you can get it by
+Ingress IP is usually the external IP of ingress controller service, for Minikube or CRC clusters running in a virtual machine you can get it by
 `minikube ip` or `crc ip`. Checkout this https://kubernetes.io/docs/concepts/services-networking/ingress/[document] to know more about ingress.
 
 
@@ -140,7 +140,7 @@ Alternatively, you can pass in `--starter` to `odo create` to have odo download 
   README.md	devfile.yaml	pom.xml		src
 ----
 
-. Create an URL in order to access the deployed component:
+. Create a URL in order to access the deployed component:
 +
 [source,sh]
 ----
@@ -150,7 +150,7 @@ Alternatively, you can pass in `--starter` to `odo create` to have odo download 
  To apply the URL configuration changes, please use odo push
 ----
 +
-NOTE: If deploying on kubernetes, you need to pass ingress domain name via `--host` flag.
+NOTE: If deploying on Kubernetes, you need to pass ingress domain name via `--host` flag.
 
 . Push the component to the cluster:
 +
@@ -247,7 +247,7 @@ In this example we will be deploying an https://github.com/odo-devfiles/nodejs-e
  Please use odo push command to create the component with source deployed
 ----
 
-. Create an URL in order to access the deployed component:
+. Create a URL in order to access the deployed component:
 +
 [source,sh]
 ----
@@ -257,7 +257,7 @@ In this example we will be deploying an https://github.com/odo-devfiles/nodejs-e
  To apply the URL configuration changes, please use odo push
 ----
 +
-NOTE: If deploying on kubernetes, you need to pass ingress domain name via `--host` flag.
+NOTE: If deploying on Kubernetes, you need to pass ingress domain name via `--host` flag.
 
 . Push the component to the cluster:
 +
@@ -313,7 +313,7 @@ NOTE: If deploying on kubernetes, you need to pass ingress domain name via `--ho
     ✓  Successfully deleted component
 ----
 
-== Deploying a Quarkus Application on OpenShift / Kubernetes cluster
+== Deploying a Quarkus Application to an OpenShift / Kubernetes cluster
 
 In this example we will be deploying a https://github.com/odo-devfiles/quarkus-ex[Quarkus component] that uses GraalVM and JDK1.8+.
 
@@ -324,7 +324,7 @@ In this example we will be deploying a https://github.com/odo-devfiles/quarkus-e
  $ git clone https://github.com/odo-devfiles/quarkus-ex && cd quarkus-ex
 ----
 
-. Create a Quarkus odo component 
+. Create a Quarkus odo component
 +
 [source,sh]
 ----
@@ -339,7 +339,7 @@ In this example we will be deploying a https://github.com/odo-devfiles/quarkus-e
     Please use odo push command to create the component with source deployed
 ----
 
-. Create an URL in order to access the deployed component:
+. Create a URL in order to access the deployed component:
 +
 [source,sh]
 ----
@@ -349,7 +349,7 @@ In this example we will be deploying a https://github.com/odo-devfiles/quarkus-e
  To apply the URL configuration changes, please use odo push
 ----
 +
-NOTE: If deploying on kubernetes, you need to pass ingress domain name via `--host` flag.
+NOTE: If deploying on Kubernetes, you need to pass ingress domain name via `--host` flag.
 
 . Push the component to the cluster:
 +
