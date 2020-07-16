@@ -133,7 +133,7 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 	for i := range containers {
 		container := &containers[i]
 		// Check if the container belongs to a run command component
-		if runCommand.Exec != nil && container.Name == runCommand.Exec.Component {
+		if container.Name == runCommand.Exec.Component {
 			// If the run component container has no entrypoint and arguments, override the entrypoint with supervisord
 			if len(container.Command) == 0 && len(container.Args) == 0 {
 				overrideContainerArgs(container)

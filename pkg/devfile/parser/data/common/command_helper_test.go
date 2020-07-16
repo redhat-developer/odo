@@ -47,57 +47,12 @@ func TestGetID(t *testing.T) {
 
 }
 
-func TestGetKind(t *testing.T) {
-
-	tests := []struct {
-		name    string
-		command DevfileCommand
-		want    DevfileCommandGroupType
-	}{
-		{
-			name: "Case 1: Exec command kind",
-			command: DevfileCommand{
-				Exec: &Exec{
-					Id: "exec1",
-					Group: &Group{
-						IsDefault: true,
-						Kind:      RunCommandGroupType,
-					},
-				},
-			},
-			want: RunCommandGroupType,
-		},
-		{
-			name: "Case 2: Composite command kind",
-			command: DevfileCommand{
-				Composite: &Composite{
-					Id: "composite1",
-					Group: &Group{
-						IsDefault: true,
-						Kind:      BuildCommandGroupType,
-					},
-				},
-			},
-			want: BuildCommandGroupType,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			commandKind := tt.command.GetKind()
-			if commandKind != tt.want {
-				t.Errorf("expected %v, actual %v", tt.want, commandKind)
-			}
-		})
-	}
-
-}
-
 func TestGetGroup(t *testing.T) {
 
 	tests := []struct {
 		name    string
 		command DevfileCommand
-		want    Group
+		want    *Group
 	}{
 		{
 			name: "Case 1: Exec command group",
@@ -110,7 +65,7 @@ func TestGetGroup(t *testing.T) {
 					},
 				},
 			},
-			want: Group{
+			want: &Group{
 				IsDefault: true,
 				Kind:      RunCommandGroupType,
 			},
@@ -126,16 +81,21 @@ func TestGetGroup(t *testing.T) {
 					},
 				},
 			},
-			want: Group{
+			want: &Group{
 				IsDefault: true,
 				Kind:      BuildCommandGroupType,
 			},
+		},
+		{
+			name:    "Case 3: Empty command",
+			command: DevfileCommand{},
+			want:    nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			commandGroup := tt.command.GetGroup()
-			if !reflect.DeepEqual(*commandGroup, tt.want) {
+			if !reflect.DeepEqual(commandGroup, tt.want) {
 				t.Errorf("expected %v, actual %v", tt.want, commandGroup)
 			}
 		})

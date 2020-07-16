@@ -240,13 +240,13 @@ func ExecuteCompositeDevfileAction(client ExecClient, composite common.Composite
 					}
 				}})
 			} else {
-				return fmt.Errorf("command %q not found in devfile", command)
+				return fmt.Errorf("composite command %q has command %q not found in devfile", composite.Id, command)
 			}
 		}
 
 		err := commandExecs.Run()
 		if err != nil {
-			return errors.Wrap(err, "command exec failed")
+			return errors.Wrap(err, "parallel command execution failed")
 		}
 
 	} else {
@@ -259,7 +259,7 @@ func ExecuteCompositeDevfileAction(client ExecClient, composite common.Composite
 				}
 			} else {
 				// Devfile validation should have caught a missing command earlier, but should include error handling here as well
-				return fmt.Errorf("command %q not found in devfile", command)
+				return fmt.Errorf("composite command %q has command %q not found in devfile", composite.Id, command)
 			}
 		}
 	}
