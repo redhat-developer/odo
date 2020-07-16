@@ -45,12 +45,9 @@ commands:
         kind: run
         isDefault: true
   - composite:
-         id: buildAndEcho
-         label: Build and Echo
+         id: buildAndMkdir
+         label: Build and Mkdir
          commands:
            - mkdir
            - install
          parallel: true
-         group: 
-            kind: build
-            isDefault: true

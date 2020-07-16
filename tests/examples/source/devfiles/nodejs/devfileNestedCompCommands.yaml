@@ -55,8 +55,8 @@ commands:
             kind: build
             isDefault: true
   - composite:
-         id: buildAndEcho
-         label: Build and Echo
+         id: buildAndMkdir
+         label: Build and Mkdir
          commands:
            - mkdir
            - install

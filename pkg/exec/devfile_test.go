@@ -191,7 +191,7 @@ func TestExecuteCompositeDevfileAction(t *testing.T) {
 			wantErr:    false,
 		},
 		{
-			name: "Case 7: Nested composite commands",
+			name: "Case 8: Nested parallel composite commands",
 			commandsMap: map[string]common.DevfileCommand{
 				commands[0]: {
 					Exec: &common.Exec{Id: commands[0]},

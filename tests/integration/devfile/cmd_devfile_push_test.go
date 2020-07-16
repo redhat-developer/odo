@@ -162,7 +162,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeCommandsParallel.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			output := helper.CmdShouldPass("odo", "push", "--context", context)
+			output := helper.CmdShouldPass("odo", "push", "--build-command", "buildAndMkdir", "--context", context)
 			Expect(output).To(ContainSubstring("Executing mkdir command"))
 
 			// Verify the command executed successfully
