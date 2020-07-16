@@ -234,7 +234,7 @@ func ExecuteCompositeDevfileAction(client ExecClient, composite common.Composite
 			cmd := command // needed to prevent the lambda from capturing the value
 			if devfileCommand, ok := commandsMap[strings.ToLower(cmd)]; ok {
 				commandExecs.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
-					err := execCommandFromComposite(client, devfileCommand, commandsMap, compInfo, show, machineEventLogger)
+					err := execCommandFromComposite(client, devfileCommand, commandsMap, compInfo, true, machineEventLogger)
 					if err != nil {
 						errChannel <- err
 					}
