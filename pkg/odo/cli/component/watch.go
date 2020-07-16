@@ -59,7 +59,7 @@ type WatchOptions struct {
 	devfilePath   string
 	namespace     string
 
-	// initialDevfileHandler is only use to initial validation on the devfile.
+	// initialDevfileHandler is only used to do initial validation on the devfile.
 	// All subsequent uses of the devfile adapter are generated in regenerateAdapterAndPush.
 	initialDevfileHandler common.ComponentAdapter
 
