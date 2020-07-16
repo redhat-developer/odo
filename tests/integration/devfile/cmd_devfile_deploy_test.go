@@ -119,6 +119,32 @@ var _ = Describe("odo devfile deploy command tests", func() {
 		})
 	})
 
+	Context("Verify error if no port is found in env.yaml", func() {
+		It("Should error out with 'Unable to find `port` for deployment.'", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV2", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			err := helper.ReplaceDevfileField("devfile.yaml", "alpha.deployment-manifest",
+				fmt.Sprintf("file://%s/../../examples/source/manifests/deploy_deployment_clusterip.yaml", currentWorkingDirectory))
+			Expect(err).To(BeNil())
+
+			cmdOutput := helper.CmdShouldFail("odo", "deploy", "--tag", imageTag)
+			Expect(cmdOutput).To(ContainSubstring("Unable to find `port` for deployment."))
+		})
+	})
+
+	Context("Verify deploy completes when no port in env.yaml or PORT in manifest", func() {
+		It("Should successfully deploy the application and return a URL", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV2", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			err := helper.ReplaceDevfileField("devfile.yaml", "alpha.deployment-manifest",
+				fmt.Sprintf("file://%s/../../examples/source/manifests/deploy_deployment_no_port_substitution.yaml", currentWorkingDirectory))
+			Expect(err).To(BeNil())
+
+			cmdOutput := helper.CmdShouldPass("odo", "deploy", "--tag", imageTag)
+			Expect(cmdOutput).To(ContainSubstring(fmt.Sprintf("Successfully deployed component: http://%s-deploy-%s", cmpName, namespace)))
+		})
+	})
+
 	Context("Verify deploy completes when using manifest with deployment/service/route", func() {
 		It("Should successfully deploy the application and return a URL", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)

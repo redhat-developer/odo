@@ -175,6 +175,7 @@ func (do *DeployOptions) DevfileDeploy() (err error) {
 		EnvSpecificInfo: *do.EnvSpecificInfo,
 		Tag:             do.tag,
 		ManifestSource:  do.ManifestSource,
+		DeploymentPort:  do.DeploymentPort,
 	}
 
 	warnIfURLSInvalid(do.EnvSpecificInfo.GetURL())

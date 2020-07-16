@@ -33,7 +33,6 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
-	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
@@ -191,18 +190,6 @@ func (a Adapter) Build(parameters common.BuildParameters) (err error) {
 	return errors.New("unable to build image, only Openshift BuildConfig build is supported")
 }
 
-func determinePort(envSpecificInfo envinfo.EnvSpecificInfo) string {
-	// Determine port to use from first non-Docker route in env.yaml)
-	deploymentPort := ""
-	for _, localURL := range envSpecificInfo.GetURL() {
-		if localURL.Kind != envinfo.DOCKER {
-			deploymentPort = strconv.Itoa(localURL.Port)
-			break
-		}
-	}
-	return deploymentPort
-}
-
 func substitueYamlVariables(baseYaml []byte, yamlSubstitutions map[string]string) []byte {
 	// TODO: Provide a better way to do the substitution in the manifest file(s)
 	for key, value := range yamlSubstitutions {
@@ -286,7 +273,7 @@ func (a Adapter) Deploy(parameters common.DeployParameters) (err error) {
 	yamlSubstitutions := map[string]string{
 		"CONTAINER_IMAGE": parameters.Tag,
 		"COMPONENT_NAME":  applicationName,
-		"PORT":            determinePort(parameters.EnvSpecificInfo),
+		"PORT":            strconv.Itoa(parameters.DeploymentPort),
 	}
 
 	// Build a yaml decoder with the unstructured Scheme
