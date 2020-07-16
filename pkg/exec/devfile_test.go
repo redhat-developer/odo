@@ -190,6 +190,30 @@ func TestExecuteCompositeDevfileAction(t *testing.T) {
 			execClient: fakeExecClient,
 			wantErr:    false,
 		},
+		{
+			name: "Case 7: Nested composite commands",
+			commandsMap: map[string]common.DevfileCommand{
+				commands[0]: {
+					Exec: &common.Exec{Id: commands[0]},
+				},
+				commands[1]: {
+					Exec: &common.Exec{Id: commands[1]},
+				},
+				commands[2]: {
+					Composite: &common.Composite{Id: commands[2], Commands: []string{commands[0], commands[1]}},
+				},
+				commands[3]: {
+					Composite: &common.Composite{Id: commands[3]},
+				},
+			},
+			composite: common.Composite{
+				Id:       commands[3],
+				Commands: []string{commands[0], commands[2]},
+				Parallel: true,
+			},
+			execClient: fakeExecClient,
+			wantErr:    false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
