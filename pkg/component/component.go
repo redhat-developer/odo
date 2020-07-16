@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/kclient"
@@ -712,6 +713,15 @@ func PushLocal(client *occlient.Client, componentName string, applicationName st
 // 'show' will determine whether or not the log will be shown to the user (while building)
 func Build(client *occlient.Client, componentName string, applicationName string, wait bool, stdout io.Writer, show bool) error {
 
+	// Try to grab the preference in order to set a timeout.. but if not, we’ll use the default.
+	buildTimeout := preference.DefaultBuildTimeout * time.Second
+	cfg, configReadErr := preference.New()
+	if configReadErr != nil {
+		klog.V(4).Info(errors.Wrap(configReadErr, "unable to read config file"))
+	} else {
+		buildTimeout = time.Duration(cfg.GetBuildTimeout()) * time.Second
+	}
+
 	// Loading spinner
 	// No loading spinner if we're showing the logging output
 	s := log.Spinnerf("Triggering build from git")
@@ -746,7 +756,7 @@ func Build(client *occlient.Client, componentName string, applicationName string
 
 		defer s.End(false)
 
-		if err := client.WaitForBuildToFinish(buildName, stdout); err != nil {
+		if err := client.WaitForBuildToFinish(buildName, stdout, buildTimeout); err != nil {
 			return errors.Wrapf(err, "unable to build %s, error: %s", buildName, b.String())
 		}
 		s.End(true)
