@@ -36,8 +36,9 @@ type Adapter struct {
 // changed and devfile execution is required
 func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired bool, err error) {
 
-	// force write the content to resolvePath
+	// Whether to write the indexer content to the index file path (resolvePath)
 	forceWrite := false
+
 	// Ret from Indexer function
 	var ret util.IndexerRet
 
@@ -53,13 +54,7 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 	// If syncing for the first time, sync the entire source directory
 	// If syncing to an already running component, sync the deltas
 	// If syncing from an odo watch process, skip this step, as we already have the list of changed and deleted files.
-	if isWatch && !isForcePush {
-		changedFiles = pushParameters.WatchFiles
-		deletedFiles = pushParameters.WatchDeletedFiles
-	} else {
-		// Calculate the files to sync
-		// Tries to sync the deltas unless it is a forced push
-		// if it is a forced push (isForcePush) reset the index to do a full snync
+	if !syncParameters.PodChanged && !pushParameters.ForceBuild {
 		absIgnoreRules := util.GetAbsGlobExps(pushParameters.Path, pushParameters.IgnoredFiles)
 
 		var s *log.Status
@@ -122,12 +117,16 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 		}
 	}
 
+	if pushParameters.ForceBuild || !syncParameters.ComponentExists || syncParameters.PodChanged {
+		isForcePush = true
+	}
+
 	err = a.pushLocal(pushParameters.Path,
 		changedFiles,
 		deletedFiles,
 		isForcePush,
-		globExps,
-		compInfo,
+		util.GetAbsGlobExps(pushParameters.Path, pushParameters.IgnoredFiles),
+		syncParameters.CompInfo,
 	)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to sync to component with name %s", a.ComponentName)

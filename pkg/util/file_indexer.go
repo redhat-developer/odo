@@ -41,7 +41,7 @@ type FileData struct {
 
 // read tries to read the odo index file from the given location and returns the data from the file
 // if no such file is present, it means the folder hasn't been walked and thus returns a empty list
-func readFileIndex(filePath string) (*FileIndex, error) {
+func ReadFileIndex(filePath string) (*FileIndex, error) {
 	// Read operation
 	var fi FileIndex
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -166,7 +166,7 @@ func RunIndexer(directory string, ignoreRules []string) (ret IndexerRet, err err
 	}
 
 	// read the odo index file
-	existingFileIndex, err := readFileIndex(ret.ResolvedPath)
+	existingFileIndex, err := ReadFileIndex(ret.ResolvedPath)
 	if err != nil {
 		return ret, err
 	}

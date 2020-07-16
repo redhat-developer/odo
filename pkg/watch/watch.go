@@ -179,6 +179,8 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 	defer watcher.Close()
 	defer close(parameters.ExtChan)
 
+	// This goroutine listens for either file change events from fsnotify, fs errors, or a terminate signal
+	// The results are stored in the variables defined in the var( ... ) block above
 	go func() {
 		for {
 			select {
@@ -228,7 +230,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 				}
 
 				// Filter out anything in ignores list from the list of changed files
-				// This is important inspite of not watching the
+				// This is important in spite of not watching the
 				// ignores paths because, when a directory that is ignored, is deleted,
 				// because its parent is watched, the fsnotify automatically raises an event
 				// for it.
@@ -249,10 +251,11 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 				// Rename operation triggers RENAME event on old path + CREATE event for renamed path so delete old path in case of rename
 				// Also weirdly, fsnotify raises a RENAME event for deletion of files/folders with space in their name so even that should be handled here
 				if event.Op&fsnotify.Remove == fsnotify.Remove || event.Op&fsnotify.Rename == fsnotify.Rename {
+					// On remove/rename, stop watching the resource
 					if e := watcher.Remove(event.Name); e != nil {
 						klog.V(4).Infof("error removing watch for %s: %v", event.Name, e)
 					}
-					// append the file to list of deleted files
+					// Append the file to list of deleted files
 					// When a file/folder is deleted, it raises 2 events:
 					//	a. RENAME with event.Name empty
 					//	b. REMOVE with event.Name as file name
@@ -264,6 +267,7 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 						deletedPaths = append(deletedPaths, relPath)
 					}
 				} else {
+					// On other ops, recursively watch the resource (if applicable)
 					if e := addRecursiveWatch(watcher, event.Name, parameters.FileIgnores); e != nil && watchError == nil {
 						watchError = e
 					}
@@ -297,6 +301,9 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 		defer ticker.Stop()
 	}
 	showWaitingMessage := true
+
+	// This for{} loop waits for filesystem changes that are signaled by the above goroutine;
+	// - 'dirty' is used by the goroutine to indicate that at least one change has occurred
 	for {
 		changeLock.Lock()
 		if watchError != nil {
@@ -345,7 +352,8 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 						err = parameters.DevfileWatchHandler(pushParams, parameters)
 
 					} else {
-						err = parameters.WatchHandler(client, parameters.ComponentName, parameters.ApplicationName, parameters.Path, out, changedFiles, deletedPaths, false, parameters.FileIgnores, parameters.Show)
+						err = parameters.WatchHandler(client, parameters.ComponentName, parameters.ApplicationName, parameters.Path, out,
+							changedFiles, deletedPaths, false, parameters.FileIgnores, parameters.Show)
 					}
 
 				} else {
@@ -369,7 +377,8 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 
 						err = parameters.DevfileWatchHandler(pushParams, parameters)
 					} else {
-						err = parameters.WatchHandler(client, parameters.ComponentName, parameters.ApplicationName, pathDir, out, []string{parameters.Path}, deletedPaths, false, parameters.FileIgnores, parameters.Show)
+						err = parameters.WatchHandler(client, parameters.ComponentName, parameters.ApplicationName, pathDir, out,
+							[]string{parameters.Path}, deletedPaths, false, parameters.FileIgnores, parameters.Show)
 					}
 
 				}
