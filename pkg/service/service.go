@@ -399,6 +399,8 @@ func OperatorSvcExists(client *kclient.Client, serviceName string) (bool, error)
 	return false, fmt.Errorf("Couldn't find service named %q. Refer %q to see list of running services", serviceName, "odo service list")
 }
 
+// splitServiceKindName splits the service name provided for deletion by the
+// user. It has to be of the format <service-kind>/<service-name>. Example: EtcdCluster/myetcd
 func splitServiceKindName(serviceName string) (string, string, error) {
 	sn := strings.SplitN(serviceName, "/", 2)
 	if len(sn) != 2 || sn[0] == "" || sn[1] == "" {

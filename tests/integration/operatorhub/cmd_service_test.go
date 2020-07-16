@@ -84,10 +84,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 				return strings.Contains(output, "Running")
 			})
 
-			// Delete the pods created. This should idealy be done by `odo
-			// service delete` but that's not implemented for operator backed
-			// services yet.
-			helper.CmdShouldPass("oc", "delete", "EtcdCluster", "example")
+			helper.CmdShouldPass("odo", "service", "delete", "EtcdCluster/example", "-f")
 		})
 	})
 
@@ -170,10 +167,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 				return strings.Contains(output, "Running")
 			})
 
-			// Delete the pods created. This should idealy be done by `odo
-			// service delete` but that's not implemented for operator backed
-			// services yet.
-			helper.CmdShouldPass("oc", "delete", "EtcdCluster", "example")
+			helper.CmdShouldPass("odo", "service", "delete", "EtcdCluster/example", "-f")
 		})
 	})
 
@@ -277,10 +271,7 @@ spec:
 			jsonOut := helper.CmdShouldPass("odo", "service", "list", "-o", "json")
 			helper.MatchAllInOutput(jsonOut, []string{"\"apiVersion\": \"etcd.database.coreos.com/v1beta2\"", "\"kind\": \"EtcdCluster\"", "\"name\": \"example\""})
 
-			// Delete the pods created. This should idealy be done by `odo
-			// service delete` but that's not implemented for operator backed
-			// services yet.
-			helper.CmdShouldPass("oc", "delete", "EtcdCluster", "example")
+			helper.CmdShouldPass("odo", "service", "delete", "EtcdCluster/example", "-f")
 
 			// Now let's check the output again to ensure expected behaviour
 			stdOut = helper.CmdShouldFail("odo", "service", "list")
