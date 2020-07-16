@@ -328,13 +328,14 @@ var _ = Describe("odo devfile status command tests", func() {
 				helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 				helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
-				urlParams := []string{"url", "create", "my-url", "--port", "3000", "--host", urlHost}
+				urlParams := []string{"url", "create", "my-url", "--port", "3000"}
 				if secure {
 					urlParams = append(urlParams, "--secure")
 				}
 
 				if ingress {
 					urlParams = append(urlParams, "--ingress")
+					urlParams = append(urlParams, "--host", urlHost)
 				}
 
 				helper.CmdShouldPass("odo", urlParams...)
