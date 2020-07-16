@@ -126,7 +126,8 @@ func getCommandsByGroup(data data.DevfileData, groupType common.DevfileCommandGr
 	var commands []common.DevfileCommand
 
 	for _, command := range data.GetCommands() {
-		if command.GetGroup().Kind == groupType {
+		commandGroup := command.GetGroup()
+		if commandGroup != nil && commandGroup.Kind == groupType {
 			commands = append(commands, command)
 		}
 	}
