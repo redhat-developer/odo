@@ -85,9 +85,9 @@ This could be any valid dockerfile.
 
 ### Deployment manifest
 The deployment manifest could be templated to help with replacing key bits of information:
-- COMPONENT_NAME
-- CONTAINER_IMAGE
-- PORT
+- {{.COMPONENT_NAME}}
+- {{.CONTAINER_IMAGE}}
+- {{.PORT}}
 
 Examples: 
 - Standard Kubernetes resources (deployment, service, route): https://github.com/groeges/devfile-registry/blob/master/devfiles/nodejs/deploy_deployment.yaml
@@ -123,9 +123,9 @@ This command will perform the following actions:
 - Delete existing deployment, (if invoked with --force flag)
 - Fetch the deployment manifest using URI in the metadata of the devfile.
 - Replace templated text in the deployment manifest with relevant values:
-    - COMPONENT_NAME: name of odo component/microservice
-    - CONTAINER_IMAGE: `tag` for the built image
-    - PORT: URL information in env.yaml
+    - {{.COMPONENT_NAME}}: name of odo component/microservice
+    - {{.CONTAINER_IMAGE}}: `tag` for the built image
+    - {{.PORT}}: URL information in env.yaml
 - Apply the new deployment manifest create/update the application deployment.
 - Save the deployment manifest in `.odo/env/` folder.
 - Provide the user with a URL for accessing the deployed application.
