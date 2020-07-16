@@ -335,7 +335,7 @@ func TestGetBootstrapperImage(t *testing.T) {
 
 }
 
-func TestIsComponentAContainer(t *testing.T) {
+func TestIsContainer(t *testing.T) {
 
 	tests := []struct {
 		name            string
@@ -357,16 +357,16 @@ func TestIsComponentAContainer(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			isSupported := isComponentAContainer(tt.component)
+			isSupported := isContainer(tt.component)
 			if isSupported != tt.wantIsSupported {
-				t.Errorf("TestIsComponentAContainer error: component support mismatch, expected: %v got: %v", tt.wantIsSupported, isSupported)
+				t.Errorf("TestIsContainer error: component support mismatch, expected: %v got: %v", tt.wantIsSupported, isSupported)
 			}
 		})
 	}
 
 }
 
-func TestIsComponentAVolume(t *testing.T) {
+func TestIsVolume(t *testing.T) {
 
 	tests := []struct {
 		name            string
@@ -388,9 +388,9 @@ func TestIsComponentAVolume(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			isSupported := isComponentAVolume(tt.component)
+			isSupported := isVolume(tt.component)
 			if isSupported != tt.wantIsSupported {
-				t.Errorf("TestIsComponentAVolume error: component support mismatch, expected: %v got: %v", tt.wantIsSupported, isSupported)
+				t.Errorf("TestIsVolume error: component support mismatch, expected: %v got: %v", tt.wantIsSupported, isSupported)
 			}
 		})
 	}
