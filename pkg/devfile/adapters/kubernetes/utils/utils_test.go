@@ -115,6 +115,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 		execCommands            []common.Exec
 		componentType           common.DevfileComponentType
 		expectRunCommand        string
+		expectDebugCommand      string
 		isSupervisordEntrypoint bool
 		wantErr                 bool
 	}{
@@ -278,6 +279,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 				},
 			},
 			componentType:           common.ContainerComponentType,
+			expectDebugCommand:      debugCommand,
 			expectRunCommand:        command,
 			isSupervisordEntrypoint: true,
 			wantErr:                 false,
@@ -311,6 +313,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 				},
 			},
 			componentType:           common.ContainerComponentType,
+			expectDebugCommand:      debugCommand,
 			expectRunCommand:        command,
 			isSupervisordEntrypoint: true,
 			wantErr:                 false,
@@ -352,12 +355,13 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 				},
 			},
 			componentType:           common.ContainerComponentType,
+			expectDebugCommand:      debugCommand,
 			expectRunCommand:        command,
 			isSupervisordEntrypoint: true,
 			wantErr:                 true,
 		},
 		{
-			name:       "Case: custom command with single environment variable",
+			name:       "Case: custom run command with single environment variable",
 			runCommand: "customRunCommand",
 			containers: []corev1.Container{
 				{
@@ -388,7 +392,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 			wantErr:                 false,
 		},
 		{
-			name:       "Case: custom command with multiple environment variable",
+			name:       "Case: custom run command with multiple environment variable",
 			runCommand: "customRunCommand",
 			containers: []corev1.Container{
 				{
@@ -419,6 +423,90 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 			},
 			componentType:           common.ContainerComponentType,
 			expectRunCommand:        "env1=\"value1\" env2=\"value2 with space\" && " + command,
+			isSupervisordEntrypoint: true,
+			wantErr:                 false,
+		},
+		{
+			name:         "Case: custom debug command with single environment variable",
+			runCommand:   emptyString,
+			debugCommand: "customdebugcommand",
+			debugPort:    3000,
+			containers: []corev1.Container{
+				{
+					Name:            component,
+					Image:           image,
+					ImagePullPolicy: corev1.PullAlways,
+					Env:             []corev1.EnvVar{},
+				},
+			},
+			execCommands: []versionsCommon.Exec{
+				{
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group:       &execRunGroup,
+				},
+				{
+					Id:          "customdebugcommand",
+					CommandLine: debugCommand,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group:       &execDebugGroup,
+					Env: []versionsCommon.Env{
+						versionsCommon.Env{
+							Name:  "env1",
+							Value: "value1",
+						},
+					},
+				},
+			},
+			componentType:           common.ContainerComponentType,
+			expectDebugCommand:      "env1=\"value1\" && " + debugCommand,
+			expectRunCommand:        command,
+			isSupervisordEntrypoint: true,
+			wantErr:                 false,
+		},
+		{
+			name:         "Case: custom debug command with multiple environment variables",
+			runCommand:   emptyString,
+			debugCommand: "customdebugcommand",
+			debugPort:    3000,
+			containers: []corev1.Container{
+				{
+					Name:            component,
+					Image:           image,
+					ImagePullPolicy: corev1.PullAlways,
+					Env:             []corev1.EnvVar{},
+				},
+			},
+			execCommands: []versionsCommon.Exec{
+				{
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group:       &execRunGroup,
+				},
+				{
+					Id:          "customdebugcommand",
+					CommandLine: debugCommand,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group:       &execDebugGroup,
+					Env: []versionsCommon.Env{
+						versionsCommon.Env{
+							Name:  "env1",
+							Value: "value1",
+						},
+						versionsCommon.Env{
+							Name:  "env2",
+							Value: "value2 with space",
+						},
+					},
+				},
+			},
+			componentType:           common.ContainerComponentType,
+			expectDebugCommand:      "env1=\"value1\" env2=\"value2 with space\" && " + debugCommand,
+			expectRunCommand:        command,
 			isSupervisordEntrypoint: true,
 			wantErr:                 false,
 		},
@@ -496,7 +584,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 							// if the debug command is also present
 							if len(tt.execCommands) >= 2 {
 								// check if the debug command env was set properly
-								if envVar.Name == adaptersCommon.EnvOdoCommandDebug && envVar.Value == tt.execCommands[1].CommandLine {
+								if envVar.Name == adaptersCommon.EnvOdoCommandDebug && envVar.Value == tt.expectDebugCommand {
 									envDebugMatched = true
 								}
 								// check if the debug command's workingDir env was set properly
