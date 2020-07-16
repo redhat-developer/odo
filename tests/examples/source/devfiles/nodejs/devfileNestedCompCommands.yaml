@@ -48,7 +48,7 @@ commands:
          id: nestedcommand
          label: Build and Echo
          commands:
-           - buildAndEcho
+           - buildAndMkdir
            - install
          parallel: true
          group: 
