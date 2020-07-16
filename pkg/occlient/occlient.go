@@ -96,7 +96,6 @@ type CreateArgs struct {
 const (
 	failedEventCount                = 5
 	OcUpdateTimeout                 = 5 * time.Minute
-	OcBuildTimeout                  = 5 * time.Minute
 	OpenShiftNameSpace              = "openshift"
 	waitForComponentDeletionTimeout = 120 * time.Second
 
@@ -1741,7 +1740,7 @@ func (c *Client) StartBuild(name string) (string, error) {
 }
 
 // WaitForBuildToFinish block and waits for build to finish. Returns error if build failed or was canceled.
-func (c *Client) WaitForBuildToFinish(buildName string, stdout io.Writer) error {
+func (c *Client) WaitForBuildToFinish(buildName string, stdout io.Writer, buildTimeout time.Duration) error {
 	// following indicates if we have already setup the following logic
 	following := false
 	klog.V(4).Infof("Waiting for %s  build to finish", buildName)
@@ -1754,7 +1753,7 @@ func (c *Client) WaitForBuildToFinish(buildName string, stdout io.Writer) error 
 		return errors.Wrapf(err, "unable to watch build")
 	}
 	defer w.Stop()
-	timeout := time.After(OcBuildTimeout)
+	timeout := time.After(buildTimeout)
 	for {
 		select {
 		// when a event is received regarding the given buildName
@@ -1778,7 +1777,7 @@ func (c *Client) WaitForBuildToFinish(buildName string, stdout io.Writer) error 
 					if !following {
 						// setting following to true as we need to set it up only once
 						following = true
-						err := c.FollowBuildLog(buildName, stdout)
+						err := c.FollowBuildLog(buildName, stdout, buildTimeout)
 						if err != nil {
 							return err
 						}
@@ -2014,14 +2013,14 @@ func (c *Client) WaitAndGetSecret(name string, namespace string) (*corev1.Secret
 }
 
 // FollowBuildLog stream build log to stdout
-func (c *Client) FollowBuildLog(buildName string, stdout io.Writer) error {
+func (c *Client) FollowBuildLog(buildName string, stdout io.Writer, buildTimeout time.Duration) error {
 	buildLogOptions := buildv1.BuildLogOptions{
 		Follow: true,
 		NoWait: false,
 	}
 
 	rd, err := c.buildClient.RESTClient().Get().
-		Timeout(OcBuildTimeout).
+		Timeout(buildTimeout).
 		Namespace(c.Namespace).
 		Resource("builds").
 		Name(buildName).
