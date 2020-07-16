@@ -3,6 +3,7 @@ package common
 import (
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/openshift/odo/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
@@ -181,7 +182,7 @@ func validateCompositeCommand(data data.DevfileData, compositeCommand *common.Co
 			return fmt.Errorf("the composite command %q cannot reference itself", compositeCommand.Id)
 		}
 
-		_, ok := commandsMap[command]
+		_, ok := commandsMap[strings.ToLower(command)]
 		if !ok {
 			return fmt.Errorf("the command %q mentioned in the composite command %q does not exist in the devfile", command, compositeCommand.Id)
 		}
