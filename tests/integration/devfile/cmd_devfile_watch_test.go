@@ -284,7 +284,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 
 })
 
-// Wait for the session stdout output to container a particular string
+// Wait for the session stdout output to contain a particular string
 func waitForOutputToContain(substring string, session *gexec.Session) {
 
 	Eventually(func() string {

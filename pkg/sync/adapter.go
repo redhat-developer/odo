@@ -53,7 +53,6 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 	// Sync source code to the component
 	// If syncing for the first time, sync the entire source directory
 	// If syncing to an already running component, sync the deltas
-	// If syncing from an odo watch process, skip this step, as we already have the list of changed and deleted files.
 	if !syncParameters.PodChanged && !pushParameters.ForceBuild {
 		absIgnoreRules := util.GetAbsGlobExps(pushParameters.Path, pushParameters.IgnoredFiles)
 

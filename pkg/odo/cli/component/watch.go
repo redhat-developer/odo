@@ -55,9 +55,12 @@ type WatchOptions struct {
 	componentContext string
 	client           *occlient.Client
 
-	componentName         string
-	devfilePath           string
-	namespace             string
+	componentName string
+	devfilePath   string
+	namespace     string
+
+	// initialDevfileHandler is only use to initial validation on the devfile.
+	// All subsequent uses of the devfile adapter are generated in regenerateAdapterAndPush.
 	initialDevfileHandler common.ComponentAdapter
 
 	// devfile commands

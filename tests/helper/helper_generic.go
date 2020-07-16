@@ -103,7 +103,6 @@ func ExtractSubString(output, start, end string) string {
 }
 
 // WatchNonRetCmdStdOut runs an 'odo watch' command and stores the process' stdout output into buffer.
-// - 'true' is sent on the startSimulationCh when the
 // - startIndicatorFunc should check stdout output and return true when simulation is ready to begin (for example, buffer contains "Waiting for something to change")
 // - startSimulationCh will be sent a 'true' when startIndicationFunc first returns true, at which point files/directories should be created by associated goroutine
 // - success function is passed stdout buffer, and should return if the test conditions have passes
