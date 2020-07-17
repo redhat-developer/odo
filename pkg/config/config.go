@@ -411,24 +411,17 @@ func (lci *LocalConfigInfo) writeToFile() error {
 
 // GetType returns type of component (builder image name) in the config
 func (lc *LocalConfig) GetType() string {
-	return getStringOrEmpty(lc.componentSettings.Type)
-}
-
-func getStringOrEmpty(ptr *string) string {
-	if ptr == nil {
-		return ""
-	}
-	return *ptr
+	return util.GetStringOrEmpty(lc.componentSettings.Type)
 }
 
 // GetSourceLocation returns the sourcelocation, returns default if nil
 func (lc *LocalConfig) GetSourceLocation() string {
-	return getStringOrEmpty(lc.componentSettings.SourceLocation)
+	return util.GetStringOrEmpty(lc.componentSettings.SourceLocation)
 }
 
 // GetRef returns the ref, returns default if nil
 func (lc *LocalConfig) GetRef() string {
-	return getStringOrEmpty(lc.componentSettings.Ref)
+	return util.GetStringOrEmpty(lc.componentSettings.Ref)
 }
 
 // GetSourceType returns the source type, returns default if nil
@@ -449,53 +442,47 @@ func (lc *LocalConfig) GetPorts() []string {
 
 // GetApplication returns the app, returns default if nil
 func (lc *LocalConfig) GetApplication() string {
-	return getStringOrEmpty(lc.componentSettings.Application)
+	return util.GetStringOrEmpty(lc.componentSettings.Application)
 }
 
 // GetProject returns the project, returns default if nil
 func (lc *LocalConfig) GetProject() string {
-	return getStringOrEmpty(lc.componentSettings.Project)
+	return util.GetStringOrEmpty(lc.componentSettings.Project)
 }
 
 // GetName returns the Name, returns default if nil
 func (lc *LocalConfig) GetName() string {
-	return getStringOrEmpty(lc.componentSettings.Name)
+	return util.GetStringOrEmpty(lc.componentSettings.Name)
 }
 
 // GetMinMemory returns the MinMemory, returns default if nil
 func (lc *LocalConfig) GetMinMemory() string {
-	return getStringOrEmpty(lc.componentSettings.MinMemory)
+	return util.GetStringOrEmpty(lc.componentSettings.MinMemory)
 }
 
 // GetMaxMemory returns the MaxMemory, returns default if nil
 func (lc *LocalConfig) GetMaxMemory() string {
-	return getStringOrEmpty(lc.componentSettings.MaxMemory)
+	return util.GetStringOrEmpty(lc.componentSettings.MaxMemory)
 }
 
 // GetDebugPort returns the DebugPort, returns default if nil
 func (lc *LocalConfig) GetDebugPort() int {
-	if lc.componentSettings.DebugPort == nil {
-		return DefaultDebugPort
-	}
-	return *lc.componentSettings.DebugPort
+	return util.GetIntOrDefault(lc.componentSettings.DebugPort, DefaultDebugPort)
 }
 
 // GetIgnore returns the Ignore, returns default if nil
 func (lc *LocalConfig) GetIgnore() bool {
-	if lc.componentSettings.Ignore == nil {
-		return false
-	}
-	return *lc.componentSettings.Ignore
+	return util.GetBoolOrDefault(lc.componentSettings.Ignore, false)
 }
 
 // GetMinCPU returns the MinCPU, returns default if nil
 func (lc *LocalConfig) GetMinCPU() string {
-	return getStringOrEmpty(lc.componentSettings.MinCPU)
+	return util.GetStringOrEmpty(lc.componentSettings.MinCPU)
 }
 
 // GetMaxCPU returns the MaxCPU, returns default if nil
 func (lc *LocalConfig) GetMaxCPU() string {
-	return getStringOrEmpty(lc.componentSettings.MaxCPU)
+	return util.GetStringOrEmpty(lc.componentSettings.MaxCPU)
 }
 
 // GetURL returns the ConfigURL, returns default if nil
