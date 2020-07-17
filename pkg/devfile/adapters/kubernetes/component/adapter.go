@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/openshift/odo/pkg/exec"
@@ -31,7 +33,6 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
-	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
@@ -84,6 +85,10 @@ func (a Adapter) runBuildConfig(client *occlient.Client, parameters common.Build
 		Name: buildName,
 	}
 
+	controlC := make(chan os.Signal)
+	signal.Notify(controlC, os.Interrupt, syscall.SIGTERM)
+	go a.terminateBuild(controlC, client, commonObjectMeta)
+
 	_, err = client.CreateDockerBuildConfigWithBinaryInput(commonObjectMeta, dockerfilePath, parameters.Tag, []corev1.EnvVar{})
 	if err != nil {
 		return err
@@ -114,21 +119,30 @@ func (a Adapter) runBuildConfig(client *occlient.Client, parameters common.Build
 	var cmdOutput string
 	// This Go routine will automatically pipe the output from WaitForBuildToFinish to
 	// our logger.
-	go func() {
-		scanner := bufio.NewScanner(reader)
-		for scanner.Scan() {
-			line := scanner.Text()
+	// We pass the controlC os.Signal in order to output the logs within the terminateBuild
+	// function if the process is interrupted by the user performing a ^C. If we didn't pass it
+	// The Scanner would consume the log, and only output it if there was an err within this
+	// func.
+	go func(controlC chan os.Signal) {
+		select {
+		case <-controlC:
+			return
+		default:
+			scanner := bufio.NewScanner(reader)
+			for scanner.Scan() {
+				line := scanner.Text()
 
-			if log.IsDebug() {
-				_, err := fmt.Fprintln(os.Stdout, line)
-				if err != nil {
-					log.Errorf("Unable to print to stdout: %v", err)
+				if log.IsDebug() {
+					_, err := fmt.Fprintln(os.Stdout, line)
+					if err != nil {
+						log.Errorf("Unable to print to stdout: %v", err)
+					}
 				}
-			}
 
-			cmdOutput += fmt.Sprintln(line)
+				cmdOutput += fmt.Sprintln(line)
+			}
 		}
-	}()
+	}(controlC)
 
 	s := log.Spinner("Waiting for build to complete")
 	if err := client.WaitForBuildToFinish(bc.Name, writer); err != nil {
@@ -137,7 +151,24 @@ func (a Adapter) runBuildConfig(client *occlient.Client, parameters common.Build
 	}
 
 	s.End(true)
+	// Stop listening for a ^C so it doesnt perform terminateBuild during any later stages
+	signal.Stop(controlC)
 	return
+}
+
+// terminateBuild is triggered if the user performs a ^C action within the terminal during the build phase
+// of the deploy.
+// It cleans up the resources created for the build, as the defer function would not be reached.
+// The subsequent deploy would fail if these resources are not cleaned up.
+func (a Adapter) terminateBuild(c chan os.Signal, client *occlient.Client, commonObjectMeta metav1.ObjectMeta) {
+	_ = <-c
+
+	log.Info("\nBuild process interrupted, terminating build, this might take a few seconds")
+	err := client.DeleteBuildConfig(commonObjectMeta)
+	if err != nil {
+		log.Info("\n", err.Error())
+	}
+	os.Exit(0)
 }
 
 // Build image for devfile project
@@ -157,18 +188,6 @@ func (a Adapter) Build(parameters common.BuildParameters) (err error) {
 	}
 
 	return errors.New("unable to build image, only Openshift BuildConfig build is supported")
-}
-
-func determinePort(envSpecificInfo envinfo.EnvSpecificInfo) string {
-	// Determine port to use from first non-Docker route in env.yaml)
-	deploymentPort := ""
-	for _, localURL := range envSpecificInfo.GetURL() {
-		if localURL.Kind != envinfo.DOCKER {
-			deploymentPort = strconv.Itoa(localURL.Port)
-			break
-		}
-	}
-	return deploymentPort
 }
 
 func substitueYamlVariables(baseYaml []byte, yamlSubstitutions map[string]string) []byte {
@@ -254,7 +273,7 @@ func (a Adapter) Deploy(parameters common.DeployParameters) (err error) {
 	yamlSubstitutions := map[string]string{
 		"CONTAINER_IMAGE": parameters.Tag,
 		"COMPONENT_NAME":  applicationName,
-		"PORT":            determinePort(parameters.EnvSpecificInfo),
+		"PORT":            strconv.Itoa(parameters.DeploymentPort),
 	}
 
 	// Build a yaml decoder with the unstructured Scheme

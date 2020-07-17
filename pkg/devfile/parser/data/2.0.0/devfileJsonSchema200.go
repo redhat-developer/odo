@@ -614,7 +614,8 @@ const JsonSchema200 = `{
 				"CheEditor",
 				"Volume",
 				"ChePlugin",
-				"Custom"
+				"Custom",
+				"Dockerfile"
 			  ],
 			  "type": "string"
 			},
@@ -634,6 +635,40 @@ const JsonSchema200 = `{
 				"name"
 			  ],
 			  "type": "object"
+			},
+			"Dockerfile":{
+				"description":"Dockerfile component",
+				"properties":{
+					"name":{
+						"description":"Mandatory name that allows referencing the dockerfile component",
+						"type":"string"
+				   	},
+				   	"source":{
+						"sourceDir":{
+							"description":"path of source directory to establish build context",
+							"type":"string"
+						},
+						"location":{
+							"description":"location of the source code repostory",
+						 	"type":"string"
+						},
+					  	"type":"object"
+				   	},
+					"dockerfilePath":{
+						"description":"path to dockerfile",
+						"type":"string"
+					},
+					"destination":{
+						"description":"path to registry where the build image is to be pushed",
+						"type":"string"
+					}
+				},
+				"required":[
+					"name",
+					"dockerfilePath",
+					"source"
+				],
+				"type":"object"
 			}
 		  },
 		  "type": "object"
@@ -848,10 +883,6 @@ const JsonSchema200 = `{
 		  "name": {
 			"type": "string",
 			"description": "Optional devfile name"
-		  },
-		  "alpha.build-dockerfile": {
-			  "type":"string",
-			  "description": "Optional URL to remote Dockerfile"
 		  },
 		  "alpha.deployment-manifest":  {
 			  "type":"string",
