@@ -1216,6 +1216,96 @@ func TestGetDebugCommand(t *testing.T) {
 	}
 }
 
+func TestGetTestCommand(t *testing.T) {
+
+	command := "ls -la"
+	component := "alias1"
+	workDir := "/"
+	emptyString := ""
+
+	var emptyCommand common.DevfileCommand
+
+	tests := []struct {
+		name         string
+		commandName  string
+		execCommands []common.Exec
+		wantErr      bool
+	}{
+		{
+			name:        "Case: Default Test Command",
+			commandName: emptyString,
+			execCommands: []common.Exec{
+				{
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group: &versionsCommon.Group{
+						IsDefault: true,
+						Kind:      versionsCommon.TestCommandGroupType,
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:        "Case: Custom Test Command",
+			commandName: "customtestcommand",
+			execCommands: []common.Exec{
+				{
+					Id:          "customtestcommand",
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group: &versionsCommon.Group{
+						IsDefault: false,
+						Kind:      versionsCommon.TestCommandGroupType,
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:        "Case: Missing Test Command",
+			commandName: "customcommand123",
+			execCommands: []common.Exec{
+				{
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group: &versionsCommon.Group{
+						IsDefault: true,
+						Kind:      versionsCommon.BuildCommandGroupType,
+					},
+				},
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			devObj := devfileParser.DevfileObj{
+				Data: testingutil.TestDevfileData{
+					Components:   []common.DevfileComponent{testingutil.GetFakeComponent(component)},
+					ExecCommands: tt.execCommands,
+				},
+			}
+
+			command, err := GetTestCommand(devObj.Data, tt.commandName)
+
+			if tt.wantErr && err == nil {
+				t.Errorf("Error was expected but got no error")
+			} else if !tt.wantErr {
+				if err != nil {
+					t.Errorf("TestGetTestCommand: unexpected error for command \"%v\" expected: %v actual: %v", tt.commandName, tt.wantErr, err)
+				} else if reflect.DeepEqual(emptyCommand, command) {
+					t.Errorf("TestGetTestCommand: unexpected empty command returned for command: %v", tt.commandName)
+				}
+			}
+		})
+	}
+}
+
 func TestGetRunCommand(t *testing.T) {
 
 	command := "ls -la"
@@ -1757,7 +1847,91 @@ func TestValidateCompositeCommand(t *testing.T) {
 			}
 		})
 	}
+}
 
+func TestValidateAndGetTestDevfileCommands(t *testing.T) {
+
+	command := "ls -la"
+	component := "alias1"
+	workDir := "/"
+	emptyString := ""
+
+	execCommands := []common.Exec{
+		{
+			CommandLine: command,
+			Component:   component,
+			WorkingDir:  workDir,
+			Group: &common.Group{
+				IsDefault: true,
+				Kind:      common.TestCommandGroupType,
+			},
+		},
+		{
+			Id:          "customtestcommand",
+			CommandLine: command,
+			Component:   component,
+			WorkingDir:  workDir,
+			Group: &common.Group{
+				IsDefault: false,
+				Kind:      common.TestCommandGroupType,
+			},
+		},
+	}
+
+	tests := []struct {
+		name          string
+		testCommand   string
+		componentType common.DevfileComponentType
+		wantErr       bool
+	}{
+		{
+			name:          "Case: Default Devfile Commands",
+			testCommand:   emptyString,
+			componentType: common.ContainerComponentType,
+			wantErr:       false,
+		},
+		{
+			name:          "Case: provided test Command",
+			testCommand:   "customtestcommand",
+			componentType: versionsCommon.ContainerComponentType,
+			wantErr:       false,
+		},
+		{
+			name:          "Case: invalid test Command",
+			testCommand:   "invalidtestcommand",
+			componentType: versionsCommon.ContainerComponentType,
+			wantErr:       true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			devObj := devfileParser.DevfileObj{
+				Data: testingutil.TestDevfileData{
+					Components:   []common.DevfileComponent{testingutil.GetFakeComponent(component)},
+					ExecCommands: execCommands,
+				},
+			}
+
+			testCommand, err := ValidateAndGetTestDevfileCommands(devObj.Data, tt.testCommand)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Error was expected but got no error")
+				} else {
+					return
+				}
+			} else {
+				if err != nil {
+					t.Errorf("TestValidateAndGetTestDevfileCommands: unexpected error %v", err)
+				}
+			}
+
+			if !reflect.DeepEqual(nil, testCommand) && testCommand.Exec.Id != tt.testCommand {
+				t.Errorf("TestValidateAndGetTestDevfileCommands name of test command is wrong want: %v got: %v", tt.testCommand, testCommand.Exec.Id)
+			}
+		})
+	}
 }
 
 func getExecCommand(id string, group common.DevfileCommandGroupType) versionsCommon.Exec {

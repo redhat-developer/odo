@@ -40,7 +40,7 @@ func (k Adapter) Push(parameters common.PushParameters) error {
 }
 
 // DoesComponentExist returns true if a component with the specified name exists
-func (k Adapter) DoesComponentExist(cmpName string) bool {
+func (k Adapter) DoesComponentExist(cmpName string) (bool, error) {
 	return k.componentAdapter.DoesComponentExist(cmpName)
 }
 
@@ -55,7 +55,17 @@ func (k Adapter) Delete(labels map[string]string) error {
 	return nil
 }
 
+// Test runs the devfile test command
+func (k Adapter) Test(testCmd string, show bool) error {
+	return k.componentAdapter.Test(testCmd, show)
+}
+
 // Log shows log from component
 func (k Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
 	return k.componentAdapter.Log(follow, debug)
+}
+
+// Exec executes a command in the component
+func (d Adapter) Exec(command []string) error {
+	return d.componentAdapter.Exec(command)
 }

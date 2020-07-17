@@ -53,3 +53,19 @@ commands:
       workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
       group:
         kind: run
+  - exec:
+      id: test1
+      component: runtime
+      commandLine: "mkdir test1"
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      group:
+        kind: test
+        isDefault: true
+  - exec:
+      id: test2
+      component: runtime
+      commandLine: "mkdir test2"
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      group:
+        kind: test
+        isDefault: true

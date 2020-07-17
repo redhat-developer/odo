@@ -16,6 +16,7 @@ import (
 
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
+	"github.com/openshift/odo/pkg/exec"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
@@ -145,10 +146,37 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	return nil
 }
 
+// Test runs the devfile test command
+func (a Adapter) Test(testCmd string, show bool) (err error) {
+	componentExists, err := utils.ComponentExists(a.Client, a.Devfile.Data, a.ComponentName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to determine if component %s exists", a.ComponentName)
+	}
+	if !componentExists {
+		return fmt.Errorf("component does not exist, a valid component is required to run 'odo test'")
+	}
+
+	containers, err := utils.GetComponentContainers(a.Client, a.ComponentName)
+	if err != nil {
+		return errors.Wrapf(err, "error while retrieving container for odo component %s", a.ComponentName)
+	}
+	log.Infof("\nExecuting devfile test command for component %s", a.ComponentName)
+	testCommand, err := common.ValidateAndGetTestDevfileCommands(a.Devfile.Data, testCmd)
+	if err != nil {
+		return errors.Wrap(err, "failed to validate devfile test command")
+	}
+
+	err = a.execTestCmd(testCommand, containers, show)
+	if err != nil {
+		return errors.Wrapf(err, "failed to execute devfile commands for component %s", a.ComponentName)
+	}
+	return nil
+}
+
 // DoesComponentExist returns true if a component with the specified name exists, false otherwise
-func (a Adapter) DoesComponentExist(cmpName string) bool {
-	componentExists, _ := utils.ComponentExists(a.Client, a.Devfile.Data, cmpName)
-	return componentExists
+func (a Adapter) DoesComponentExist(cmpName string) (bool, error) {
+	componentExists, err := utils.ComponentExists(a.Client, a.Devfile.Data, cmpName)
+	return componentExists, err
 }
 
 // getFirstContainerWithSourceVolume returns the first container that set mountSources: true
@@ -175,6 +203,9 @@ func (a Adapter) Delete(labels map[string]string) error {
 		return errors.New("unable to delete component without a component label")
 	}
 
+	spinner := log.Spinnerf("Deleting devfile component %s", componentName)
+	defer spinner.End(false)
+
 	containers, err := a.Client.GetContainerList()
 	if err != nil {
 		return errors.Wrap(err, "unable to retrieve container list for delete operation")
@@ -200,7 +231,9 @@ func (a Adapter) Delete(labels map[string]string) error {
 	componentContainer := a.Client.GetContainersByComponent(componentName, containers)
 
 	if len(componentContainer) == 0 {
-		return errors.Errorf("the component %s doesn't exist", a.ComponentName)
+		spinner.End(false)
+		log.Warningf("Component %s does not exist", componentName)
+		return nil
 	}
 
 	allVolumes, err := a.Client.GetVolumes()
@@ -273,6 +306,9 @@ func (a Adapter) Delete(labels map[string]string) error {
 		}
 	}
 
+	spinner.End(true)
+	log.Successf("Successfully deleted component")
+
 	return nil
 
 }
@@ -315,4 +351,33 @@ func (a Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
 	containerID := utils.GetContainerIDForAlias(containers, command.Exec.Component)
 
 	return a.Client.GetContainerLogs(containerID, follow)
+}
+
+// Exec executes a command in the component
+func (a Adapter) Exec(command []string) error {
+	exists, err := utils.ComponentExists(a.Client, a.Devfile.Data, a.ComponentName)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return errors.Errorf("the component %s doesn't exist on the cluster", a.ComponentName)
+	}
+
+	containers, err := utils.GetComponentContainers(a.Client, a.ComponentName)
+	if err != nil {
+		return errors.Wrapf(err, "error while retrieving container for odo component %s", a.ComponentName)
+	}
+
+	runCommand, err := common.GetRunCommand(a.Devfile.Data, "")
+	if err != nil {
+		return err
+	}
+	containerName := runCommand.Exec.Component
+	containerID := utils.GetContainerIDForAlias(containers, containerName)
+
+	componentInfo := common.ComponentInfo{
+		ContainerName: containerID,
+	}
+
+	return exec.ExecuteCommand(&a.Client, componentInfo, command, true, nil, nil)
 }

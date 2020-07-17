@@ -13,7 +13,7 @@ import (
 var _ = Describe("odo devfile catalog command tests", func() {
 	var project, context, currentWorkingDirectory, originalKubeconfig string
 	const registryName string = "RegistryName"
-	const addRegistryURL string = "https://raw.githubusercontent.com/odo-devfiles/registry/master"
+	const addRegistryURL string = "https://github.com/odo-devfiles/registry"
 
 	// Using program commmand according to cliRunner in devfile
 	cliRunner := helper.GetCliRunner()
@@ -91,7 +91,7 @@ var _ = Describe("odo devfile catalog command tests", func() {
 	Context("When executing catalog describe component with a component name with a single project", func() {
 		It("should only give information about one project", func() {
 			output := helper.CmdShouldPass("odo", "catalog", "describe", "component", "java-openliberty")
-			helper.MatchAllInOutput(output, []string{"location: https://github.com/odo-devfiles/openliberty-ex.git"})
+			Expect(output).To(MatchRegexp("location: .+"))
 		})
 	})
 	Context("When executing catalog describe component with a component name with no starter projects", func() {

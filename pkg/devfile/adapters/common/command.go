@@ -58,8 +58,8 @@ func getCommandFromDevfile(data data.DevfileData, groupType common.DevfileComman
 	}
 
 	msg := fmt.Sprintf("the command group of kind \"%v\" is not found in the devfile", groupType)
-	// if run command is not found in devfile then it is an error
-	if groupType == common.RunCommandGroupType {
+	// if run command or test command is not found in devfile then it is an error
+	if groupType == common.RunCommandGroupType || groupType == common.TestCommandGroupType {
 		err = fmt.Errorf(msg)
 	} else {
 		klog.V(4).Info(msg)
@@ -215,6 +215,12 @@ func GetRunCommand(data data.DevfileData, devfileRunCmd string) (runCommand comm
 	return getCommand(data, devfileRunCmd, common.RunCommandGroupType)
 }
 
+// GetTestCommand iterates through the components in the devfile and returns the test command
+func GetTestCommand(data data.DevfileData, devfileTestCmd string) (runCommand common.DevfileCommand, err error) {
+
+	return getCommand(data, devfileTestCmd, common.TestCommandGroupType)
+}
+
 // ValidateAndGetPushDevfileCommands validates the build and the run command,
 // if provided through odo push or else checks the devfile for devBuild and devRun.
 // It returns the build and run commands if its validated successfully, error otherwise.
@@ -306,4 +312,21 @@ func ValidateAndGetDebugDevfileCommands(data data.DevfileData, devfileDebugCmd s
 	}
 
 	return debugCommand, nil
+}
+
+// ValidateAndGetTestDevfileCommands validates the test command
+func ValidateAndGetTestDevfileCommands(data data.DevfileData, devfileTestCmd string) (testCommand common.DevfileCommand, err error) {
+	var emptyCommand common.DevfileCommand
+	isTestCommandValid := false
+	testCommand, testCmdErr := GetTestCommand(data, devfileTestCmd)
+	if testCmdErr == nil && !reflect.DeepEqual(emptyCommand, testCommand) {
+		isTestCommandValid = true
+		klog.V(4).Infof("Test command: %v", testCommand.Exec.Id)
+	}
+
+	if !isTestCommandValid && testCmdErr != nil {
+		return common.DevfileCommand{}, testCmdErr
+	}
+
+	return testCommand, nil
 }

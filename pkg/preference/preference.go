@@ -29,6 +29,9 @@ const (
 	// DefaultPushTimeout is the default timeout for pods (in seconds)
 	DefaultPushTimeout = 240
 
+	// DefaultBuildTimeout is the default build timeout for pods (in seconds)
+	DefaultBuildTimeout = 300
+
 	// UpdateNotificationSetting is the name of the setting controlling update notification
 	UpdateNotificationSetting = "UpdateNotification"
 
@@ -43,6 +46,9 @@ const (
 
 	// TimeoutSetting is the name of the setting controlling timeout for connection check
 	TimeoutSetting = "Timeout"
+
+	// BuildTimeoutSetting is the name of the setting controlling BuildTimeout
+	BuildTimeoutSetting = "BuildTimeout"
 
 	// PushTimeoutSetting is the name of the setting controlling PushTimeout
 	PushTimeoutSetting = "PushTimeout"
@@ -71,7 +77,7 @@ const (
 	DefaultDevfileRegistryName = "DefaultDevfileRegistry"
 
 	// DefaultDevfileRegistryURL is the URL of default devfile registry
-	DefaultDevfileRegistryURL = "https://raw.githubusercontent.com/odo-devfiles/registry/master"
+	DefaultDevfileRegistryURL = "https://github.com/odo-devfiles/registry"
 )
 
 // TimeoutSettingDescription is human-readable description for the timeout setting
@@ -79,6 +85,9 @@ var TimeoutSettingDescription = fmt.Sprintf("Timeout (in seconds) for OpenShift 
 
 // PushTimeoutSettingDescription adds a description for PushTimeout
 var PushTimeoutSettingDescription = fmt.Sprintf("PushTimeout (in seconds) for waiting for a Pod to come up (Default: %d)", DefaultPushTimeout)
+
+// BuildTimeoutSettingDescription adds a description for BuildTimeout
+var BuildTimeoutSettingDescription = fmt.Sprintf("BuildTimeout (in seconds) for waiting for a build of the git component to complete (Default: %d)", DefaultBuildTimeout)
 
 // This value can be provided to set a seperate directory for users 'homedir' resolution
 // note for mocking purpose ONLY
@@ -90,6 +99,7 @@ var (
 		UpdateNotificationSetting: UpdateNotificationSettingDescription,
 		NamePrefixSetting:         NamePrefixSettingDescription,
 		TimeoutSetting:            TimeoutSettingDescription,
+		BuildTimeoutSetting:       BuildTimeoutSettingDescription,
 		PushTimeoutSetting:        PushTimeoutSettingDescription,
 		ExperimentalSetting:       ExperimentalDescription,
 		PushTargetSetting:         PushTargetDescription,
@@ -117,6 +127,9 @@ type OdoSettings struct {
 	// Timeout for OpenShift server connection check
 	Timeout *int `yaml:"Timeout,omitempty"`
 
+	// BuildTimeout for OpenShift build timeout check
+	BuildTimeout *int `yaml:"BuildTimeout,omitempty"`
+
 	// PushTimeout for OpenShift pod timeout check
 	PushTimeout *int `yaml:"PushTimeout,omitempty"`
 
@@ -132,8 +145,9 @@ type OdoSettings struct {
 
 // Registry includes the registry metadata
 type Registry struct {
-	Name string `yaml:"Name,omitempty"`
-	URL  string `yaml:"URL,omitempty"`
+	Name   string `yaml:"Name,omitempty"`
+	URL    string `yaml:"URL,omitempty"`
+	Secure bool
 }
 
 // Preference stores all the preferences related to odo
@@ -204,8 +218,9 @@ func NewPreferenceInfo() (*PreferenceInfo, error) {
 			// Handle user has preference file but doesn't use dynamic registry before
 			defaultRegistryList := []Registry{
 				{
-					Name: DefaultDevfileRegistryName,
-					URL:  DefaultDevfileRegistryURL,
+					Name:   DefaultDevfileRegistryName,
+					URL:    DefaultDevfileRegistryURL,
+					Secure: false,
 				},
 			}
 			c.OdoSettings.RegistryList = &defaultRegistryList
@@ -216,14 +231,14 @@ func NewPreferenceInfo() (*PreferenceInfo, error) {
 }
 
 // RegistryHandler handles registry add, update and delete operations
-func (c *PreferenceInfo) RegistryHandler(operation string, registryName string, registryURL string, forceFlag bool) error {
+func (c *PreferenceInfo) RegistryHandler(operation string, registryName string, registryURL string, forceFlag bool, isSecure bool) error {
 	var registryList []Registry
 	var err error
 	registryExist := false
 
 	// Registry list is empty
 	if c.OdoSettings.RegistryList == nil {
-		registryList, err = handleWithoutRegistryExist(registryList, operation, registryName, registryURL)
+		registryList, err = handleWithoutRegistryExist(registryList, operation, registryName, registryURL, isSecure)
 		if err != nil {
 			return err
 		}
@@ -233,7 +248,7 @@ func (c *PreferenceInfo) RegistryHandler(operation string, registryName string, 
 		for index, registry := range registryList {
 			if registry.Name == registryName {
 				registryExist = true
-				registryList, err = handleWithRegistryExist(index, registryList, operation, registryName, registryURL, forceFlag)
+				registryList, err = handleWithRegistryExist(index, registryList, operation, registryName, registryURL, forceFlag, isSecure)
 				if err != nil {
 					return err
 				}
@@ -242,7 +257,7 @@ func (c *PreferenceInfo) RegistryHandler(operation string, registryName string, 
 
 		// The target registry doesn't exist in the registry list
 		if !registryExist {
-			registryList, err = handleWithoutRegistryExist(registryList, operation, registryName, registryURL)
+			registryList, err = handleWithoutRegistryExist(registryList, operation, registryName, registryURL, isSecure)
 			if err != nil {
 				return err
 			}
@@ -258,13 +273,14 @@ func (c *PreferenceInfo) RegistryHandler(operation string, registryName string, 
 	return nil
 }
 
-func handleWithoutRegistryExist(registryList []Registry, operation string, registryName string, registryURL string) ([]Registry, error) {
+func handleWithoutRegistryExist(registryList []Registry, operation string, registryName string, registryURL string, isSecure bool) ([]Registry, error) {
 	switch operation {
 
 	case "add":
 		registry := Registry{
-			Name: registryName,
-			URL:  registryURL,
+			Name:   registryName,
+			URL:    registryURL,
+			Secure: isSecure,
 		}
 		registryList = append(registryList, registry)
 
@@ -278,7 +294,7 @@ func handleWithoutRegistryExist(registryList []Registry, operation string, regis
 	return registryList, nil
 }
 
-func handleWithRegistryExist(index int, registryList []Registry, operation string, registryName string, registryURL string, forceFlag bool) ([]Registry, error) {
+func handleWithRegistryExist(index int, registryList []Registry, operation string, registryName string, registryURL string, forceFlag bool, isSecure bool) ([]Registry, error) {
 	switch operation {
 
 	case "add":
@@ -293,6 +309,7 @@ func handleWithRegistryExist(index int, registryList []Registry, operation strin
 		}
 
 		registryList[index].URL = registryURL
+		registryList[index].Secure = isSecure
 		log.Info("Successfully updated registry")
 
 	case "delete":
@@ -329,6 +346,16 @@ func (c *PreferenceInfo) SetConfiguration(parameter string, value string) error 
 				return errors.Errorf("cannot set timeout to less than 0")
 			}
 			c.OdoSettings.Timeout = &typedval
+
+		case "buildtimeout":
+			typedval, err := strconv.Atoi(value)
+			if err != nil {
+				return errors.Wrapf(err, "unable to set %s to %s", parameter, value)
+			}
+			if typedval < 0 {
+				return errors.Errorf("cannot set timeout to less than 0")
+			}
+			c.OdoSettings.BuildTimeout = &typedval
 
 		case "pushtimeout":
 			typedval, err := strconv.Atoi(value)
@@ -408,6 +435,15 @@ func (c *PreferenceInfo) GetTimeout() int {
 		return DefaultTimeout
 	}
 	return *c.OdoSettings.Timeout
+}
+
+// GetBuildTimeout gets the value set by BuildTimeout
+func (c *PreferenceInfo) GetBuildTimeout() int {
+	// default timeout value is 300
+	if c.OdoSettings.BuildTimeout == nil {
+		return DefaultBuildTimeout
+	}
+	return *c.OdoSettings.BuildTimeout
 }
 
 // GetPushTimeout gets the value set by PushTimeout

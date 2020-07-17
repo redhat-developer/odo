@@ -13,8 +13,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ExecuteDevfileBuildAction executes the devfile build command action
-func ExecuteDevfileBuildAction(client ExecClient, exec common.Exec, commandName string, compInfo adaptersCommon.ComponentInfo, show bool, machineEventLogger machineoutput.MachineEventLoggingClient, noSpin bool) error {
+// ExecuteDevfileCommandSynchronously executes the devfile init, build and test command actions synchronously
+func ExecuteDevfileCommandSynchronously(client ExecClient, exec common.Exec, commandName string, compInfo adaptersCommon.ComponentInfo, show bool, machineEventLogger machineoutput.MachineEventLoggingClient, noSpin bool) error {
 	var s *log.Status
 
 	// Change to the workdir and execute the command
@@ -273,7 +273,7 @@ func execCommandFromComposite(client ExecClient, command common.DevfileCommand, 
 		err = ExecuteCompositeDevfileAction(client, *command.Composite, commandsMap, compInfo, show, machineEventLogger)
 	} else {
 		compInfo.ContainerName = command.Exec.Component
-		err = ExecuteDevfileBuildAction(client, *command.Exec, command.Exec.Id, compInfo, show, machineEventLogger, noSpin)
+		err = ExecuteDevfileCommandSynchronously(client, *command.Exec, command.Exec.Id, compInfo, show, machineEventLogger, noSpin)
 	}
 
 	return

@@ -43,6 +43,7 @@ const (
 	HTTPRequestTimeout    = 20 * time.Second // HTTPRequestTimeout configures timeout of all HTTP requests
 	ResponseHeaderTimeout = 10 * time.Second // ResponseHeaderTimeout is the timeout to retrieve the server's response headers
 	ModeReadWriteFile     = 0600             // default Permission for a file
+	CredentialPrefix      = "odo-"           // CredentialPrefix is the prefix of the credential that uses to access secure registry
 )
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
@@ -55,11 +56,25 @@ const maxAllowedNamespacedStringLength = 63 - len("-s2idata") - 1
 // note for mocking purpose ONLY
 var customHomeDir = os.Getenv("CUSTOM_HOMEDIR")
 
+const defaultGithubRef = "master"
+
 // ResourceRequirementInfo holds resource quantity before transformation into its appropriate form in container spec
 type ResourceRequirementInfo struct {
 	ResourceType corev1.ResourceName
 	MinQty       resource.Quantity
 	MaxQty       resource.Quantity
+}
+
+// HTTPRequestParams holds parameters of forming http request
+type HTTPRequestParams struct {
+	URL   string
+	Token string
+}
+
+// DownloadParams holds parameters of forming file download request
+type DownloadParams struct {
+	Request  HTTPRequestParams
+	Filepath string
 }
 
 // ConvertLabelsToSelector converts the given labels to selector
@@ -692,23 +707,37 @@ func GetRemoteFilesMarkedForDeletion(delSrcRelPaths []string, remoteFolder strin
 	return rmPaths
 }
 
-// HTTPGetRequest uses url to get file contents
-func HTTPGetRequest(url string) ([]byte, error) {
-	var httpClient = &http.Client{Transport: &http.Transport{
-		ResponseHeaderTimeout: ResponseHeaderTimeout,
-	},
-		Timeout: HTTPRequestTimeout}
-	resp, err := httpClient.Get(url)
+// HTTPGetRequest gets resource contents given URL and token (if applicable)
+func HTTPGetRequest(request HTTPRequestParams) ([]byte, error) {
+	// Build http request
+	req, err := http.NewRequest("GET", request.URL, nil)
+	if err != nil {
+		return nil, err
+	}
+	if request.Token != "" {
+		bearer := "Bearer " + request.Token
+		req.Header.Add("Authorization", bearer)
+	}
+
+	// Initialize http client and send http request
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			ResponseHeaderTimeout: ResponseHeaderTimeout,
+		},
+		Timeout: HTTPRequestTimeout,
+	}
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	// we have a non 1xx / 2xx status, return an error
+	// We have a non 1xx / 2xx status, return an error
 	if (resp.StatusCode - 300) > 0 {
-		return nil, fmt.Errorf("error retrieving %s: %s", url, http.StatusText(resp.StatusCode))
+		return nil, errors.Errorf("fail to retrive %s: %s", request.URL, http.StatusText(resp.StatusCode))
 	}
 
+	// Process http response
 	bytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -775,7 +804,7 @@ func ConvertGitSSHRemoteToHTTPS(remote string) string {
 }
 
 // GetGitHubZipURL downloads a repo from a URL to a destination
-func GetGitHubZipURL(repoURL string) (string, error) {
+func GetGitHubZipURL(repoURL string, branch string, startPoint string) (string, error) {
 	var url string
 	// Convert ssh remote to https
 	if strings.HasPrefix(repoURL, "git@") {
@@ -807,11 +836,21 @@ func GetGitHubZipURL(repoURL string) (string, error) {
 		repo = strings.TrimSuffix(repo, ".git")
 	}
 
-	// TODO: pass branch or tag from devfile
-	branch := "master"
+	var ref string
+	if branch != "" && startPoint != "" {
+		return url, errors.Errorf("Branch %s and StartPoint %s specified as project reference, please only specify one", branch, startPoint)
+	} else if branch != "" {
+		ref = branch
+	} else if startPoint != "" {
+		ref = startPoint
+	} else {
+		// Default to master if branch and startpoint are not set
+		ref = defaultGithubRef
+	}
 
 	client := github.NewClient(nil)
-	opt := &github.RepositoryContentGetOptions{Ref: branch}
+
+	opt := &github.RepositoryContentGetOptions{Ref: ref}
 
 	URL, response, err := client.Repositories.GetArchiveLink(context.Background(), owner, repo, "zipball", opt, true)
 	if err != nil {
@@ -845,7 +884,13 @@ func GetAndExtractZip(zipURL string, destination string, pathToUnzip string) err
 		time = strings.Replace(time, ":", "-", -1) // ":" is illegal char in windows
 		pathToZip = path.Join(os.TempDir(), "_"+time+".zip")
 
-		err := DownloadFile(zipURL, pathToZip)
+		params := DownloadParams{
+			Request: HTTPRequestParams{
+				URL: zipURL,
+			},
+			Filepath: pathToZip,
+		}
+		err := DownloadFile(params)
 		if err != nil {
 			return err
 		}
@@ -972,20 +1017,20 @@ func Unzip(src, dest, pathToUnzip string) ([]string, error) {
 	return filenames, nil
 }
 
-// DownloadFile uses the url to download the file to the filepath
-func DownloadFile(url string, filepath string) error {
+// DownloadFile downloads the file to the filepath given URL and token (if applicable)
+func DownloadFile(params DownloadParams) error {
+	// Get the data
+	data, err := HTTPGetRequest(params.Request)
+	if err != nil {
+		return err
+	}
+
 	// Create the file
-	out, err := os.Create(filepath)
+	out, err := os.Create(params.Filepath)
 	if err != nil {
 		return err
 	}
 	defer out.Close() // #nosec G307
-
-	// Get the data
-	data, err := DownloadFileInMemory(url)
-	if err != nil {
-		return errors.Wrapf(err, "Failed to download devfile.yaml for devfile component: %s", filepath)
-	}
 
 	// Write the data to file
 	_, err = out.Write(data)

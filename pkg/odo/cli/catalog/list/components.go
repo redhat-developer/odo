@@ -154,8 +154,6 @@ func (o *ListComponentsOptions) Run() (err error) {
 			fmt.Fprintln(w, "NAME", "\t", "DESCRIPTION", "\t", "REGISTRY")
 
 			o.printDevfileCatalogList(w, o.catalogDevfileList.Items, "")
-
-			fmt.Fprintln(w)
 		}
 
 		w.Flush()

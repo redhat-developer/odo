@@ -1,7 +1,6 @@
 package component
 
 import (
-	"fmt"
 	"os"
 	"strings"
 
@@ -213,16 +212,31 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 		return err
 	}
 
-	spinner := log.Spinner(fmt.Sprintf("Deleting devfile component %s", componentName))
-	defer spinner.End(false)
+	return devfileHandler.Delete(labels)
+}
 
-	err = devfileHandler.Delete(labels)
+// RunTestCommand runs the specific test command in devfile
+func (to *TestOptions) RunTestCommand() error {
+	componentName, err := getComponentName(to.componentContext)
 	if err != nil {
 		return err
 	}
-	spinner.End(true)
-	log.Successf("Successfully deleted component")
-	return nil
+
+	var platformContext interface{}
+	if pushtarget.IsPushTargetDocker() {
+		platformContext = nil
+	} else {
+		kc := kubernetes.KubernetesContext{
+			Namespace: to.KClient.Namespace,
+		}
+		platformContext = kc
+	}
+
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, to.componentContext, to.devObj, platformContext)
+	if err != nil {
+		return err
+	}
+	return devfileHandler.Test(to.commandName, to.show)
 }
 
 func warnIfURLSInvalid(url []envinfo.EnvInfoURL) {
@@ -248,4 +262,26 @@ func warnIfURLSInvalid(url []envinfo.EnvInfoURL) {
 	} else if !pushtarget.IsPushTargetDocker() && !kubeURLExists && dockerURLExists {
 		log.Warningf("Found %v defined for Docker, but no valid URLs for Kubernetes.", urlOutput)
 	}
+}
+
+// DevfileComponentExec executes the given user command inside the component
+func (eo *ExecOptions) DevfileComponentExec(command []string) error {
+	// Parse devfile
+	devObj, err := parser.ParseAndValidate(eo.devfilePath)
+	if err != nil {
+		return err
+	}
+
+	componentName := eo.componentOptions.EnvSpecificInfo.GetName()
+
+	kc := kubernetes.KubernetesContext{
+		Namespace: eo.namespace,
+	}
+
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, eo.componentContext, devObj, kc)
+	if err != nil {
+		return err
+	}
+
+	return devfileHandler.Exec(command)
 }
