@@ -225,3 +225,17 @@ func ReplaceDevfileField(devfileLocation, field, newValue string) error {
 	}
 	return nil
 }
+
+// FileIsEmpty checks if the file is empty
+func FileIsEmpty(filename string) (bool, error) {
+	file, err := os.Stat(filename)
+	if err != nil {
+		return false, err
+	}
+
+	if file.Size() > 0 {
+		return false, nil
+	}
+
+	return true, nil
+}
