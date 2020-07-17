@@ -3,10 +3,10 @@
 ## Abstract
 Add a new command (verb) to build a production-like/slim container image for the project and deploy the built image on the target platform.
 
-There is an existing proposal for adding on outer-loop information (including support for multiple strategies for building and deploying the projects) to Devfile 2.1.0: 
+There is an existing proposal for adding on outer-loop information (including support for multiple strategies for building and deploying the projects) to Devfile v2.0.0/v2.1.0: 
 https://github.com/devfile/kubernetes-api/issues/49 
 
-It would be useful to start the design/development of a simpler version of `odo deploy` with devfile 2.0.0 that covers:
+It would be useful to start the design/development of a simpler version of `odo deploy` with devfile v2.0.0/v2.1.0 that covers:
 - single build strategy - Dockerfile built using `BuildConfig` or `Kaniko`.
 - single deployment strategy - Kubernetes manifest deployed using `kubectl`.
 
@@ -49,7 +49,7 @@ This deployment is equivalent to a development version of your production and wi
 
 #### Pre-requisites:
 - The implementation would be under the experimental flag.
-- Only supported for Devfile v2.0.0 components.
+- Only supported for Devfile v2.0.0/v2.1.0 components.
 - Only supported for Kubernetes/OpenShift targets.
 
 #### odo deploy 
@@ -71,13 +71,15 @@ This command will delete any resources created by odo deploy.
 
 ### Devfile
 
-For the initial implementation, we could use devfile v2.0.0 and capture basic outer-loop information as `metadata` on the devfile. `odo` could look for  specific keys, while other tools like Che could ignore them.
+For the initial implementation, we could use devfile v2.0.0/v2.1.0 and capture basic outer-loop information as `metadata` on the devfile. `odo` could look for  specific keys, while other tools like Che could ignore them.
 
 For example: 
 ```
 metadata:
-    alpha.build-dockerfile: <URI>
     alpha.deployment-manifest: <URI>
+component:
+  - dockerfile:
+      dockerfilePath: <URI>
 ```
 
 ### Dockerfile
@@ -100,7 +102,7 @@ Examples:
 This command will perform the following actions:
 
 #### Input validation
-- Check if the devfile  is v2.0.0 and that it specifies the expected outer-loop metadata. 
+- Check if the devfile  is v2.0.0/v2.1.0 and that it specifies the expected outer-loop metadata. 
     - If not provided, display a meaningful error message.
 - Validate all arguments passed by the user. 
     - If argument values are invalid, display a meaningful error message.
@@ -145,4 +147,4 @@ This command will perform the following actions:
 
 - If a devfile does not provide deployment manifest, odo can perhaps create a manifest in the way it does for inner-loop. This will mean devfile creators do not need to provide a deployment manifest if they do not care so much about the deployment aspect.
 
-- Once `odo link` and service binding is supported by odo and devfiles v2, we could use the same service binding information for `odo deploy`.
+- Once `odo link` and service binding is supported by odo and devfiles v2.0.0/v2.1.0, we could use the same service binding information for `odo deploy`.

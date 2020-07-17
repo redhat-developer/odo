@@ -1,4 +1,4 @@
-package version210
+package version200
 
 import (
 	"testing"
@@ -21,7 +21,7 @@ func TestGetCommands(t *testing.T) {
 
 }
 
-func getTestDevfileData() (testDevfile Devfile210, commands []common.DevfileCommand) {
+func getTestDevfileData() (testDevfile Devfile200, commands []common.DevfileCommand) {
 
 	command := "ls -la"
 	component := "alias1"
@@ -46,7 +46,7 @@ func getTestDevfileData() (testDevfile Devfile210, commands []common.DevfileComm
 		},
 	}
 
-	testDevfileobj := Devfile210{
+	testDevfileobj := Devfile200{
 		Commands: execCommands,
 	}
 
