@@ -40,6 +40,7 @@ type DeployParameters struct {
 	EnvSpecificInfo envinfo.EnvSpecificInfo // EnvSpecificInfo contains infomation of env.yaml file
 	Tag             string                  // Tag refers to the image tag of the image being built
 	ManifestSource  []byte                  // Source of the manifest file
+	DeploymentPort  int                     // Port to be used in deployment manifest
 }
 
 // PushParameters is a struct containing the parameters to be used when pushing to a devfile component

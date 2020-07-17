@@ -991,6 +991,54 @@ func DownloadFile(url string, filepath string) error {
 	return nil
 }
 
+// Load a file into memory (http(s):// or file://)
+func LoadFileIntoMemory(URL string) (fileBytes []byte, err error) {
+	// check if we have a file url
+	if strings.HasPrefix(strings.ToLower(URL), "file://") {
+		// strip off the "file://" to get a local filepath
+		filepath := strings.Replace(URL, "file://", "", -1)
+
+		// if filepath doesn't start with a "/"" then we have a relative
+		// filepath and will need to prepend the current working directory
+		if !strings.HasPrefix(filepath, "/") {
+			// get the current working directory
+			cwd, err := os.Getwd()
+			if err != nil {
+				return nil, errors.New("unable to determine current working directory")
+			}
+			// prepend the current working directory to the relatove filepath
+			filepath = fmt.Sprintf("%s/%s", cwd, filepath)
+		}
+
+		// check to see if filepath exists
+		info, err := os.Stat(filepath)
+		if os.IsNotExist(err) || info.IsDir() {
+			return nil, errors.New(fmt.Sprintf("unable to read file: %s, %s", URL, err))
+		}
+
+		// read the bytes from the filepath
+		fileBytes, err = ioutil.ReadFile(filepath)
+		if err != nil {
+			return nil, errors.New(fmt.Sprintf("unable to read file: %s, %s", URL, err))
+		}
+
+		return fileBytes, nil
+	} else {
+		// assume we have an http:// or https:// url and validate it
+		err = ValidateURL(URL)
+		if err != nil {
+			return nil, errors.New(fmt.Sprintf("invalid url: %s, %s", URL, err))
+		}
+
+		// download the file and store the bytes
+		fileBytes, err = DownloadFileInMemory(URL)
+		if err != nil {
+			return nil, errors.New(fmt.Sprintf("unable to download url: %s, %s", URL, err))
+		}
+		return fileBytes, nil
+	}
+}
+
 // DownloadFileInMemory uses the url to download the file and return bytes
 func DownloadFileInMemory(url string) ([]byte, error) {
 	var httpClient = &http.Client{Timeout: HTTPRequestTimeout}

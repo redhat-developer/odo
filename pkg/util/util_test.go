@@ -1,6 +1,7 @@
 package util
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -1615,12 +1616,79 @@ func TestDownloadFileInMemory(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			data, err := DownloadFileInMemory(tt.url)
+
 			if tt.url != "invalid" && err != nil {
 				t.Errorf("Failed to download file with error %s", err)
 			}
 
 			if !reflect.DeepEqual(data, tt.want) {
 				t.Errorf("Got: %v, want: %v", data, tt.want)
+			}
+		})
+	}
+}
+
+func TestLoadFileIntoMemory(t *testing.T) {
+	// Start a local HTTP server
+	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		// Send response to be tested
+		_, err := rw.Write([]byte("OK"))
+		if err != nil {
+			t.Error(err)
+		}
+	}))
+
+	// Close the server when test finishes
+	defer server.Close()
+
+	tests := []struct {
+		name          string
+		url           string
+		contains      []byte
+		expectedError string
+	}{
+		{
+			name:          "Case 1: Input url is valid",
+			url:           server.URL,
+			contains:      []byte{79, 75},
+			expectedError: "",
+		},
+		{
+			name:          "Case 2: Input url is invalid",
+			url:           "invalid",
+			contains:      []byte(nil),
+			expectedError: "invalid url:",
+		},
+		{
+			name:          "Case 3: Input http:// url doesnt exist",
+			url:           "http://test.it.doesnt/exist/",
+			contains:      []byte(nil),
+			expectedError: "unable to download url",
+		},
+		{
+			name:          "Case 4: Input file:// url doesnt exist",
+			url:           "file://./notexists.txt",
+			contains:      []byte(nil),
+			expectedError: "unable to read file",
+		},
+		{
+			name:          "Case 5: Input file://./util.go exists",
+			url:           "file://./util.go",
+			contains:      []byte("Load a file into memory ("),
+			expectedError: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data, err := LoadFileIntoMemory(tt.url)
+
+			if err != nil && !strings.Contains(err.Error(), tt.expectedError) {
+				t.Errorf("Got err: %s, expected err %s", err.Error(), tt.expectedError)
+			}
+
+			if tt.expectedError == "" && !bytes.Contains(data, tt.contains) {
+				t.Errorf("Got: %w, should contain: %v", data, tt.contains)
 			}
 		})
 	}

@@ -102,7 +102,7 @@ var _ = Describe("odo devfile deploy command tests", func() {
 			Expect(err).To(BeNil())
 
 			cmdOutput := helper.CmdShouldFail("odo", "deploy", "--tag", imageTag)
-			Expect(cmdOutput).To(ContainSubstring("Invalid manifest url"))
+			Expect(cmdOutput).To(ContainSubstring("invalid url"))
 		})
 	})
 
@@ -115,7 +115,33 @@ var _ = Describe("odo devfile deploy command tests", func() {
 			Expect(err).To(BeNil())
 
 			cmdOutput := helper.CmdShouldFail("odo", "deploy", "--tag", imageTag)
-			Expect(cmdOutput).To(ContainSubstring("Unable to download manifest"))
+			Expect(cmdOutput).To(ContainSubstring("unable to download url"))
+		})
+	})
+
+	Context("Verify error if no port is found in env.yaml", func() {
+		It("Should error out with 'Unable to find `port` for deployment.'", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV2", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			err := helper.ReplaceDevfileField("devfile.yaml", "alpha.deployment-manifest",
+				fmt.Sprintf("file://%s/../../examples/source/manifests/deploy_deployment_clusterip.yaml", currentWorkingDirectory))
+			Expect(err).To(BeNil())
+
+			cmdOutput := helper.CmdShouldFail("odo", "deploy", "--tag", imageTag)
+			Expect(cmdOutput).To(ContainSubstring("Unable to find `port` for deployment."))
+		})
+	})
+
+	Context("Verify deploy completes when no port in env.yaml or PORT in manifest", func() {
+		It("Should successfully deploy the application and return a URL", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV2", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			err := helper.ReplaceDevfileField("devfile.yaml", "alpha.deployment-manifest",
+				fmt.Sprintf("file://%s/../../examples/source/manifests/deploy_deployment_no_port_substitution.yaml", currentWorkingDirectory))
+			Expect(err).To(BeNil())
+
+			cmdOutput := helper.CmdShouldPass("odo", "deploy", "--tag", imageTag)
+			Expect(cmdOutput).To(ContainSubstring(fmt.Sprintf("Successfully deployed component: http://%s-deploy-%s", cmpName, namespace)))
 		})
 	})
 
@@ -125,7 +151,7 @@ var _ = Describe("odo devfile deploy command tests", func() {
 			helper.CmdShouldPass("odo", "url", "create", "--port", "3000")
 			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV2", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 			err := helper.ReplaceDevfileField("devfile.yaml", "alpha.deployment-manifest",
-				"https://raw.githubusercontent.com/groeges/devfile-registry/master/devfiles/nodejs/deploy_deployment.yaml")
+				fmt.Sprintf("file://%s/../../examples/source/manifests/deploy_deployment_clusterip.yaml", currentWorkingDirectory))
 			Expect(err).To(BeNil())
 
 			cmdOutput := helper.CmdShouldPass("odo", "deploy", "--tag", imageTag)

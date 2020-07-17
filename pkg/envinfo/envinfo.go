@@ -1,6 +1,7 @@
 package envinfo
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -295,6 +296,16 @@ func (ei *EnvInfo) GetDebugPort() int {
 		return DefaultDebugPort
 	}
 	return *ei.componentSettings.DebugPort
+}
+
+// GetPortByURLKind returns the Port of a specific URL type, returns 0 if nil
+func (ei *EnvInfo) GetPortByURLKind(urlKind URLKind) (int, error) {
+	for _, localURL := range ei.GetURL() {
+		if localURL.Kind == urlKind {
+			return localURL.Port, nil
+		}
+	}
+	return 0, errors.New(fmt.Sprintf("unable to find port for URL of kind: '%s'", urlKind))
 }
 
 // GetNamespace returns component namespace
