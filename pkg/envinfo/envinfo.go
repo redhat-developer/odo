@@ -23,7 +23,17 @@ type ComponentSettings struct {
 
 	// DebugPort controls the port used by the pod to run the debugging agent on
 	DebugPort *int `yaml:"DebugPort,omitempty"`
+
+	// RunMode indicates the mode of run used for a successful push
+	RunMode *RUNMode `yaml:"RunMode,omitempty"`
 }
+
+type RUNMode string
+
+const (
+	RunMODE   RUNMode = "run"
+	DebugMODE RUNMode = "debug"
+)
 
 // URLKind is an enum to indicate the type of the URL i.e ingress/route
 type URLKind string
@@ -37,6 +47,9 @@ const (
 
 	// DefaultDebugPort is the default port used for debugging on remote pod
 	DefaultDebugPort = 5858
+
+	// DefaultRunMode is the default run mode of the component
+	DefaultRunMode = "run"
 )
 
 // EnvInfoURL holds URL related information
@@ -304,6 +317,20 @@ func (ei *EnvInfo) GetDebugPort() int {
 		return DefaultDebugPort
 	}
 	return *ei.componentSettings.DebugPort
+}
+
+// GetRunMode returns the RunMode, returns default if nil
+func (ei *EnvInfo) GetRunMode() RUNMode {
+	if ei.componentSettings.RunMode == nil {
+		return DefaultRunMode
+	}
+	return *ei.componentSettings.RunMode
+}
+
+// SetRunMode sets the RunMode in the env file
+func (esi *EnvSpecificInfo) SetRunMode(runMode RUNMode) error {
+	esi.componentSettings.RunMode = &runMode
+	return esi.writeToFile()
 }
 
 // GetNamespace returns component namespace

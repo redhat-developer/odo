@@ -291,6 +291,9 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 			return watchError
 		}
 		if showWaitingMessage {
+			if parameters.EnvSpecificInfo != nil && parameters.EnvSpecificInfo.GetRunMode() == envinfo.DebugMODE {
+				fmt.Fprintf(out, "Component is running in debug mode\nPlease start port-forwarding in a different terminal\n")
+			}
 			fmt.Fprintf(out, "Waiting for something to change in %s\n", parameters.Path)
 			showWaitingMessage = false
 		}
@@ -322,6 +325,8 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 							DevfileBuildCmd:   parameters.DevfileBuildCmd,
 							DevfileRunCmd:     parameters.DevfileRunCmd,
 							EnvSpecificInfo:   *parameters.EnvSpecificInfo,
+							Debug:             parameters.EnvSpecificInfo.GetRunMode() == envinfo.DebugMODE,
+							DebugPort:         parameters.EnvSpecificInfo.GetDebugPort(),
 						}
 
 						err = parameters.DevfileWatchHandler(pushParams)
@@ -343,6 +348,8 @@ func WatchAndPush(client *occlient.Client, out io.Writer, parameters WatchParame
 							DevfileBuildCmd:   parameters.DevfileBuildCmd,
 							DevfileRunCmd:     parameters.DevfileRunCmd,
 							EnvSpecificInfo:   *parameters.EnvSpecificInfo,
+							Debug:             parameters.EnvSpecificInfo.GetRunMode() == envinfo.DebugMODE,
+							DebugPort:         parameters.EnvSpecificInfo.GetDebugPort(),
 						}
 
 						err = parameters.DevfileWatchHandler(pushParams)

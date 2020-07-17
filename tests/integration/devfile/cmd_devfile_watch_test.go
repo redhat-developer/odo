@@ -102,4 +102,40 @@ var _ = Describe("odo devfile watch command tests", func() {
 			utils.OdoWatch(utils.OdoV1Watch{}, odoV2Watch, namespace, context, watchFlag, cliRunner, "kube")
 		})
 	})
+
+	Context("when executing odo watch after odo push with debug flag", func() {
+		It("should be able to start a debug session after push with debug flag using odo watch and revert back after normal push", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-debugrun.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			output := helper.CmdShouldPass("odo", "push", "--project", namespace)
+			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+
+			// push with debug flag
+			output = helper.CmdShouldPass("odo", "push", "--debug", "--project", namespace)
+			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+
+			watchFlag := ""
+			// check if the normal debugRun command was executed
+			odoV2Watch := utils.OdoV2Watch{
+				CmpName:            cmpName,
+				StringsToBeMatched: []string{"Executing devbuild command", "Executing debugrun command"},
+			}
+			// odo watch and validate if we can port forward successfully
+			utils.OdoWatchWithDebug(odoV2Watch, context, watchFlag)
+
+			// revert to normal odo push
+			output = helper.CmdShouldPass("odo", "push", "--project", namespace)
+			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+
+			// check if the normal run command was executed
+			odoV2Watch = utils.OdoV2Watch{
+				CmpName:            cmpName,
+				StringsToBeMatched: []string{"Executing devbuild command", "Executing devrun command"},
+			}
+			utils.OdoWatch(utils.OdoV1Watch{}, odoV2Watch, namespace, context, watchFlag, cliRunner, "kube")
+		})
+	})
 })

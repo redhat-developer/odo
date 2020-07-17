@@ -210,7 +210,18 @@ func (po *PushOptions) Run() (err error) {
 	// If experimental mode is enabled, use devfile push
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.DevfilePath) {
 		// Return Devfile push
-		return po.DevfilePush()
+		err := po.DevfilePush()
+		if err != nil {
+			return err
+		}
+
+		// push is successful, save the runMode used
+		runMode := envinfo.RunMODE
+		if po.debugRun {
+			runMode = envinfo.DebugMODE
+		}
+
+		return po.EnvSpecificInfo.SetRunMode(runMode)
 	} else {
 		// Legacy odo push
 		return po.Push()
