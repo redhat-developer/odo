@@ -292,7 +292,7 @@ var _ = Describe("odo generic", func() {
 		})
 	})
 
-	Context("prevent the user from creating a URL with name that has more than 63 characters", func() {
+	Context("prevent the user from creating invalid URLs", func() {
 		var originalDir string
 
 		JustBeforeEach(func() {
@@ -312,7 +312,22 @@ var _ = Describe("odo generic", func() {
 		It("should not allow creating a URL with long name", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", project)
 			stdOut := helper.CmdShouldFail("odo", "url", "create", testLongURLName, "--port", "8080")
-			Expect(stdOut).To(ContainSubstring("url name must be shorter than 63 characters"))
+			Expect(stdOut).To(ContainSubstring("must be shorter than 63 characters"))
+		})
+		It("should not allow creating an invalid host", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", project)
+			stdOut := helper.CmdShouldFail("odo", "url", "create", "--host", "https://127.0.0.1:60104", "--ingress")
+			Expect(stdOut).To(ContainSubstring("is not a valid host name"))
+		})
+		It("should not allow using tls secret if url is not secure", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", project)
+			stdOut := helper.CmdShouldFail("odo", "url", "create", "--tls-secret", "foo", "--ingress")
+			Expect(stdOut).To(ContainSubstring("TLS secret is only available for secure URLs of Ingress kind"))
+		})
+		It("should report multiple issues when it's the case", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", project)
+			stdOut := helper.CmdShouldFail("odo", "url", "create", "--host", "https://127.0.0.1:60104", "--tls-secret", "foo", "--ingress")
+			Expect(stdOut).To(And(ContainSubstring("is not a valid host name"), ContainSubstring("TLS secret is only available for secure URLs of Ingress kind")))
 		})
 	})
 
