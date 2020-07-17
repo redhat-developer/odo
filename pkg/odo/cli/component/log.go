@@ -11,7 +11,6 @@ import (
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	odoutil "github.com/openshift/odo/pkg/odo/util"
@@ -47,8 +46,8 @@ func (lo *LogOptions) Complete(name string, cmd *cobra.Command, args []string) (
 	lo.devfilePath = "devfile.yaml"
 	lo.devfilePath = filepath.Join(lo.componentContext, lo.devfilePath)
 
-	// if experimental mode is enabled and devfile is present
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(lo.devfilePath) {
+	// If devfile is present
+	if util.CheckPathExists(lo.devfilePath) {
 		lo.ComponentOptions.Context = genericclioptions.NewDevfileContext(cmd)
 		return nil
 	}
@@ -65,8 +64,8 @@ func (lo *LogOptions) Validate() (err error) {
 func (lo *LogOptions) Run() (err error) {
 	stdout := os.Stdout
 
-	// If experimental mode is enabled, use devfile push
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(lo.devfilePath) {
+	// If devfile is present
+	if util.CheckPathExists(lo.devfilePath) {
 		err = lo.DevfileComponentLog()
 	} else {
 		// Retrieve the log

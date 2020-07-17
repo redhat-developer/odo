@@ -25,7 +25,6 @@ import (
 	"github.com/openshift/odo/pkg/exec"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/validation"
 	"github.com/openshift/odo/pkg/preference"
 	"github.com/openshift/odo/pkg/storage"
@@ -545,7 +544,6 @@ func ValidateComponentCreateRequest(client *occlient.Client, componentSettings c
 // Returns:
 //	err: Errors if any else nil
 func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo, stdout io.Writer, cmpExist bool) (err error) {
-	isExperimentalModeEnabled := experimental.IsExperimentalModeEnabled()
 
 	if client == nil {
 		var err error
@@ -556,23 +554,20 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 		client.Namespace = envSpecificInfo.GetNamespace()
 	}
 
-	if !isExperimentalModeEnabled {
-		// if component exist then only call the update function
-		if cmpExist {
-			if err = Update(client, componentConfig, componentConfig.GetSourceLocation(), stdout); err != nil {
-				return err
-			}
+	// if component exist then only call the update function
+	if cmpExist {
+		if err = Update(client, componentConfig, componentConfig.GetSourceLocation(), stdout); err != nil {
+			return err
 		}
 	}
 
 	var componentName string
 	var applicationName string
-	if !isExperimentalModeEnabled || kClient == nil {
-		componentName = componentConfig.GetName()
-		applicationName = componentConfig.GetApplication()
-	} else {
-		componentName = envSpecificInfo.GetName()
-	}
+	// Devfile
+	componentName = componentConfig.GetName()
+	applicationName = componentConfig.GetApplication()
+	// NOTE: This used to be an if statement, use this for s2i only:
+	componentName = envSpecificInfo.GetName()
 
 	isRouteSupported := false
 	isRouteSupported, err = client.IsRouteSupported()
@@ -581,12 +576,11 @@ func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConf
 	}
 
 	return urlpkg.Push(client, kClient, urlpkg.PushParameters{
-		ComponentName:             componentName,
-		ApplicationName:           applicationName,
-		ConfigURLs:                componentConfig.GetURL(),
-		EnvURLS:                   envSpecificInfo.GetURL(),
-		IsRouteSupported:          isRouteSupported,
-		IsExperimentalModeEnabled: isExperimentalModeEnabled,
+		ComponentName:    componentName,
+		ApplicationName:  applicationName,
+		ConfigURLs:       componentConfig.GetURL(),
+		EnvURLS:          envSpecificInfo.GetURL(),
+		IsRouteSupported: isRouteSupported,
 	})
 }
 

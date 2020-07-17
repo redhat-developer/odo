@@ -12,9 +12,6 @@ import (
 
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 
-	"github.com/openshift/odo/pkg/odo/util/experimental"
-
-	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
@@ -50,13 +47,13 @@ func NewURLListOptions() *URLListOptions {
 
 // Complete completes URLListOptions after they've been Listed
 func (o *URLListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	if experimental.IsExperimentalModeEnabled() {
-		o.Context = genericclioptions.NewDevfileContext(cmd)
-		o.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(o.componentContext)
-	} else {
+	o.Context = genericclioptions.NewDevfileContext(cmd)
+	o.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(o.componentContext)
+	// S2I Only
+	/*
 		o.Context = genericclioptions.NewContext(cmd)
 		o.LocalConfigInfo, err = config.NewLocalConfigInfo(o.componentContext)
-	}
+	*/
 	if err != nil {
 		return errors.Wrap(err, "failed intiating local config")
 	}
@@ -70,95 +67,13 @@ func (o *URLListOptions) Validate() (err error) {
 
 // Run contains the logic for the odo url list command
 func (o *URLListOptions) Run() (err error) {
-	if experimental.IsExperimentalModeEnabled() {
-		if pushtarget.IsPushTargetDocker() {
-			componentName := o.EnvSpecificInfo.GetName()
-			client, err := lclient.New()
-			if err != nil {
-				return err
-			}
-			urls, err := url.ListDockerURL(client, componentName, o.EnvSpecificInfo)
-			if err != nil {
-				return err
-			}
-			if log.IsJSON() {
-				machineoutput.OutputSuccess(urls)
-			} else {
-				if len(urls.Items) == 0 {
-					return fmt.Errorf("no URLs found for component %v. Refer `odo url create -h` to add one", componentName)
-				}
-
-				log.Infof("Found the following URLs for component %v", componentName)
-				tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-				fmt.Fprintln(tabWriterURL, "NAME", "\t", "STATE", "\t", "URL", "\t", "PORT")
-
-				// are there changes between local and container states?
-				outOfSync := false
-				for _, u := range urls.Items {
-					var urlString string
-					if u.Status.State == url.StateTypeNotPushed {
-						// to be consistent with URL for ingress and routes
-						// if not pushed, display URl as ://
-						urlString = "://"
-					} else {
-						urlString = fmt.Sprintf("%s:%s", u.Spec.Host, strconv.Itoa(u.Spec.ExternalPort))
-					}
-					fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", urlString, "\t", u.Spec.Port)
-					if u.Status.State != url.StateTypePushed {
-						outOfSync = true
-					}
-				}
-				tabWriterURL.Flush()
-				if outOfSync {
-					log.Info("There are local changes. Please run 'odo push'.")
-				}
-			}
-		} else {
-			componentName := o.EnvSpecificInfo.GetName()
-			oclient, err := occlient.New()
-			if err != nil {
-				return err
-			}
-			oclient.Namespace = o.KClient.Namespace
-			routeSupported, err := oclient.IsRouteSupported()
-			if err != nil {
-				return err
-			}
-			urls, err := url.ListIngressAndRoute(oclient, o.KClient, o.EnvSpecificInfo, componentName, routeSupported)
-			if err != nil {
-				return err
-			}
-			if log.IsJSON() {
-				machineoutput.OutputSuccess(urls)
-			} else {
-				if len(urls.Items) == 0 {
-					return fmt.Errorf("no URLs found for component %v. Refer `odo url create -h` to add one", componentName)
-				}
-
-				log.Infof("Found the following URLs for component %v", componentName)
-				tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-				fmt.Fprintln(tabWriterURL, "NAME", "\t", "STATE", "\t", "URL", "\t", "PORT", "\t", "SECURE", "\t", "KIND")
-
-				// are there changes between local and cluster states?
-				outOfSync := false
-				for _, u := range urls.Items {
-					if u.Spec.Kind == envinfo.ROUTE {
-						fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
-					} else {
-						fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, url.ConvertIngressURLToIngress(u, o.EnvSpecificInfo.GetName())), "", u.Spec.Host, experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
-					}
-					if u.Status.State != url.StateTypePushed {
-						outOfSync = true
-					}
-				}
-				tabWriterURL.Flush()
-				if outOfSync {
-					log.Info("There are local changes. Please run 'odo push'.")
-				}
-			}
+	if pushtarget.IsPushTargetDocker() {
+		componentName := o.EnvSpecificInfo.GetName()
+		client, err := lclient.New()
+		if err != nil {
+			return err
 		}
-	} else {
-		urls, err := url.List(o.Client, o.LocalConfigInfo, o.Component(), o.Application)
+		urls, err := url.ListDockerURL(client, componentName, o.EnvSpecificInfo)
 		if err != nil {
 			return err
 		}
@@ -166,17 +81,68 @@ func (o *URLListOptions) Run() (err error) {
 			machineoutput.OutputSuccess(urls)
 		} else {
 			if len(urls.Items) == 0 {
-				return fmt.Errorf("no URLs found for component %v in application %v", o.Component(), o.Application)
+				return fmt.Errorf("no URLs found for component %v. Refer `odo url create -h` to add one", componentName)
 			}
 
-			log.Infof("Found the following URLs for component %v in application %v:", o.Component(), o.Application)
+			log.Infof("Found the following URLs for component %v", componentName)
 			tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-			fmt.Fprintln(tabWriterURL, "NAME", "\t", "STATE", "\t", "URL", "\t", "PORT", "\t", "SECURE")
+			fmt.Fprintln(tabWriterURL, "NAME", "\t", "STATE", "\t", "URL", "\t", "PORT")
+
+			// are there changes between local and container states?
+			outOfSync := false
+			for _, u := range urls.Items {
+				var urlString string
+				if u.Status.State == url.StateTypeNotPushed {
+					// to be consistent with URL for ingress and routes
+					// if not pushed, display URl as ://
+					urlString = "://"
+				} else {
+					urlString = fmt.Sprintf("%s:%s", u.Spec.Host, strconv.Itoa(u.Spec.ExternalPort))
+				}
+				fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", urlString, "\t", u.Spec.Port)
+				if u.Status.State != url.StateTypePushed {
+					outOfSync = true
+				}
+			}
+			tabWriterURL.Flush()
+			if outOfSync {
+				log.Info("There are local changes. Please run 'odo push'.")
+			}
+		}
+	} else {
+		componentName := o.EnvSpecificInfo.GetName()
+		oclient, err := occlient.New()
+		if err != nil {
+			return err
+		}
+		oclient.Namespace = o.KClient.Namespace
+		routeSupported, err := oclient.IsRouteSupported()
+		if err != nil {
+			return err
+		}
+		urls, err := url.ListIngressAndRoute(oclient, o.KClient, o.EnvSpecificInfo, componentName, routeSupported)
+		if err != nil {
+			return err
+		}
+		if log.IsJSON() {
+			machineoutput.OutputSuccess(urls)
+		} else {
+			if len(urls.Items) == 0 {
+				return fmt.Errorf("no URLs found for component %v. Refer `odo url create -h` to add one", componentName)
+			}
+
+			log.Infof("Found the following URLs for component %v", componentName)
+			tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+			fmt.Fprintln(tabWriterURL, "NAME", "\t", "STATE", "\t", "URL", "\t", "PORT", "\t", "SECURE", "\t", "KIND")
 
 			// are there changes between local and cluster states?
 			outOfSync := false
 			for _, u := range urls.Items {
-				fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Port, "\t", u.Spec.Secure)
+				if u.Spec.Kind == envinfo.ROUTE {
+					fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, ""), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
+				} else {
+					fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(url.GetProtocol(routev1.Route{}, url.ConvertIngressURLToIngress(u, o.EnvSpecificInfo.GetName())), "", u.Spec.Host), "\t", u.Spec.Port, "\t", u.Spec.Secure, "\t", u.Spec.Kind)
+				}
 				if u.Status.State != url.StateTypePushed {
 					outOfSync = true
 				}
@@ -187,7 +153,39 @@ func (o *URLListOptions) Run() (err error) {
 			}
 		}
 	}
+	// S2I Only
+	/*
+		} else {
+			urls, err := url.List(o.Client, o.LocalConfigInfo, o.Component(), o.Application)
+			if err != nil {
+				return err
+			}
+			if log.IsJSON() {
+				machineoutput.OutputSuccess(urls)
+			} else {
+				if len(urls.Items) == 0 {
+					return fmt.Errorf("no URLs found for component %v in application %v", o.Component(), o.Application)
+				}
 
+				log.Infof("Found the following URLs for component %v in application %v:", o.Component(), o.Application)
+				tabWriterURL := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+				fmt.Fprintln(tabWriterURL, "NAME", "\t", "STATE", "\t", "URL", "\t", "PORT", "\t", "SECURE")
+
+				// are there changes between local and cluster states?
+				outOfSync := false
+				for _, u := range urls.Items {
+					fmt.Fprintln(tabWriterURL, u.Name, "\t", u.Status.State, "\t", url.GetURLString(u.Spec.Protocol, u.Spec.Host, "", experimental.IsExperimentalModeEnabled()), "\t", u.Spec.Port, "\t", u.Spec.Secure)
+					if u.Status.State != url.StateTypePushed {
+						outOfSync = true
+					}
+				}
+				tabWriterURL.Flush()
+				if outOfSync {
+					log.Info("There are local changes. Please run 'odo push'.")
+				}
+			}
+		}
+	*/
 	return
 }
 

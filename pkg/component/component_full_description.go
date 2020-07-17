@@ -8,7 +8,6 @@ import (
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/storage"
 	urlpkg "github.com/openshift/odo/pkg/url"
 	corev1 "k8s.io/api/core/v1"
@@ -190,20 +189,18 @@ func (cfd *ComponentFullDescription) Print(client *occlient.Client) error {
 	if len(cfd.Spec.URL.Items) > 0 {
 		var output string
 
-		if !experimental.IsExperimentalModeEnabled() {
-			// if the component is not pushed
-			for i, componentURL := range cfd.Spec.URL.Items {
-				if componentURL.Status.State == urlpkg.StateTypePushed {
-					output += fmt.Sprintf(" · %v exposed via %v\n", urlpkg.GetURLString(componentURL.Spec.Protocol, componentURL.Spec.Host, "", experimental.IsExperimentalModeEnabled()), componentURL.Spec.Port)
+		// if the component is not pushed
+		for i, componentURL := range cfd.Spec.URL.Items {
+			if componentURL.Status.State == urlpkg.StateTypePushed {
+				output += fmt.Sprintf(" · %v exposed via %v\n", urlpkg.GetURLString(componentURL.Spec.Protocol, componentURL.Spec.Host, ""), componentURL.Spec.Port)
+			} else {
+				var p string
+				if i >= len(cfd.Spec.Ports) {
+					p = cfd.Spec.Ports[len(cfd.Spec.Ports)-1]
 				} else {
-					var p string
-					if i >= len(cfd.Spec.Ports) {
-						p = cfd.Spec.Ports[len(cfd.Spec.Ports)-1]
-					} else {
-						p = cfd.Spec.Ports[i]
-					}
-					output += fmt.Sprintf(" · URL named %s will be exposed via %v\n", componentURL.Name, p)
+					p = cfd.Spec.Ports[i]
 				}
+				output += fmt.Sprintf(" · URL named %s will be exposed via %v\n", componentURL.Name, p)
 			}
 		}
 		// Cut off the last newline and output

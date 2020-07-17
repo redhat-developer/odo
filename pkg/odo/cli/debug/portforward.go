@@ -12,7 +12,6 @@ import (
 	"github.com/openshift/odo/pkg/debug"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/util"
 
 	"github.com/spf13/cobra"
@@ -74,9 +73,8 @@ func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []st
 
 	var remotePort int
 
-	o.isExperimental = experimental.IsExperimentalModeEnabled()
-
-	if o.isExperimental && util.CheckPathExists(o.DevfilePath) {
+	// Check if Devfile exists
+	if util.CheckPathExists(o.DevfilePath) {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 
 		// a small shortcut
@@ -85,19 +83,22 @@ func (o *PortForwardOptions) Complete(name string, cmd *cobra.Command, args []st
 
 		o.componentName = env.GetName()
 		o.Namespace = env.GetNamespace()
-
-	} else {
-		// this populates the LocalConfigInfo
-		o.Context = genericclioptions.NewContext(cmd)
-
-		// a small shortcut
-		cfg := o.Context.LocalConfigInfo
-		remotePort = cfg.GetDebugPort()
-
-		o.componentName = cfg.GetName()
-		o.applicationName = cfg.GetApplication()
-		o.Namespace = cfg.GetProject()
 	}
+	// S2I Only
+	/*
+		} else {
+			// this populates the LocalConfigInfo
+			o.Context = genericclioptions.NewContext(cmd)
+
+			// a small shortcut
+			cfg := o.Context.LocalConfigInfo
+			remotePort = cfg.GetDebugPort()
+
+			o.componentName = cfg.GetName()
+			o.applicationName = cfg.GetApplication()
+			o.Namespace = cfg.GetProject()
+		}
+	*/
 
 	// try to listen on the given local port and check if the port is free or not
 	addressLook := "localhost:" + strconv.Itoa(o.localPort)
@@ -182,9 +183,7 @@ func NewCmdPortForward(name, fullName string) *cobra.Command {
 		},
 	}
 	genericclioptions.AddContextFlag(cmd, &opts.contextDir)
-	if experimental.IsExperimentalModeEnabled() {
-		cmd.Flags().StringVar(&opts.DevfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
-	}
+	cmd.Flags().StringVar(&opts.DevfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
 	cmd.Flags().IntVarP(&opts.localPort, "local-port", "l", config.DefaultDebugPort, "Set the local port")
 
 	return cmd

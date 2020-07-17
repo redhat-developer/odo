@@ -2,11 +2,12 @@ package logout
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/spf13/cobra"
 	"k8s.io/kubectl/pkg/util/templates"
-	"os"
 )
 
 // RecommendedCommandName is the recommended command name

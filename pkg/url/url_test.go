@@ -35,16 +35,15 @@ import (
 
 func TestCreate(t *testing.T) {
 	type args struct {
-		componentName             string
-		applicationName           string
-		urlName                   string
-		portNumber                int
-		secure                    bool
-		host                      string
-		urlKind                   envinfo.URLKind
-		isRouteSupported          bool
-		isExperimentalModeEnabled bool
-		tlsSecret                 string
+		componentName    string
+		applicationName  string
+		urlName          string
+		portNumber       int
+		secure           bool
+		host             string
+		urlKind          envinfo.URLKind
+		isRouteSupported bool
+		tlsSecret        string
 	}
 	tests := []struct {
 		name               string
@@ -170,13 +169,12 @@ func TestCreate(t *testing.T) {
 		{
 			name: "Case 4: Create a ingress, with same name as component,instead of route on openshift cluster",
 			args: args{
-				componentName:             "nodejs",
-				urlName:                   "nodejs",
-				portNumber:                8080,
-				host:                      "com",
-				isRouteSupported:          true,
-				isExperimentalModeEnabled: true,
-				urlKind:                   envinfo.INGRESS,
+				componentName:    "nodejs",
+				urlName:          "nodejs",
+				portNumber:       8080,
+				host:             "com",
+				isRouteSupported: true,
+				urlKind:          envinfo.INGRESS,
 			},
 			returnedIngress: fake.GetSingleIngress("nodejs", "nodejs"),
 			want:            "http://nodejs.com",
@@ -185,13 +183,12 @@ func TestCreate(t *testing.T) {
 		{
 			name: "Case 5: Create a ingress, with different name as component,instead of route on openshift cluster",
 			args: args{
-				componentName:             "nodejs",
-				urlName:                   "example",
-				portNumber:                8080,
-				host:                      "com",
-				isRouteSupported:          true,
-				isExperimentalModeEnabled: true,
-				urlKind:                   envinfo.INGRESS,
+				componentName:    "nodejs",
+				urlName:          "example",
+				portNumber:       8080,
+				host:             "com",
+				isRouteSupported: true,
+				urlKind:          envinfo.INGRESS,
 			},
 			returnedRoute: &routev1.Route{
 				ObjectMeta: metav1.ObjectMeta{
@@ -222,14 +219,13 @@ func TestCreate(t *testing.T) {
 		{
 			name: "Case 6: Create a secure ingress, instead of route on openshift cluster, default tls exists",
 			args: args{
-				componentName:             "nodejs",
-				urlName:                   "example",
-				portNumber:                8080,
-				host:                      "com",
-				isRouteSupported:          true,
-				isExperimentalModeEnabled: true,
-				secure:                    true,
-				urlKind:                   envinfo.INGRESS,
+				componentName:    "nodejs",
+				urlName:          "example",
+				portNumber:       8080,
+				host:             "com",
+				isRouteSupported: true,
+				secure:           true,
+				urlKind:          envinfo.INGRESS,
 			},
 			returnedIngress:  fake.GetSingleIngress("example", "nodejs"),
 			defaultTLSExists: true,
@@ -239,14 +235,13 @@ func TestCreate(t *testing.T) {
 		{
 			name: "Case 7: Create a secure ingress, instead of route on openshift cluster and default tls doesn't exist",
 			args: args{
-				componentName:             "nodejs",
-				urlName:                   "example",
-				portNumber:                8080,
-				host:                      "com",
-				isRouteSupported:          true,
-				isExperimentalModeEnabled: true,
-				secure:                    true,
-				urlKind:                   envinfo.INGRESS,
+				componentName:    "nodejs",
+				urlName:          "example",
+				portNumber:       8080,
+				host:             "com",
+				isRouteSupported: true,
+				secure:           true,
+				urlKind:          envinfo.INGRESS,
 			},
 			returnedIngress:  fake.GetSingleIngress("example", "nodejs"),
 			defaultTLSExists: false,
@@ -256,15 +251,14 @@ func TestCreate(t *testing.T) {
 		{
 			name: "Case 8: Fail when while creating ingress when user given tls secret doesn't exists",
 			args: args{
-				componentName:             "nodejs",
-				urlName:                   "example",
-				portNumber:                8080,
-				host:                      "com",
-				isRouteSupported:          true,
-				isExperimentalModeEnabled: true,
-				secure:                    true,
-				tlsSecret:                 "user-secret",
-				urlKind:                   envinfo.INGRESS,
+				componentName:    "nodejs",
+				urlName:          "example",
+				portNumber:       8080,
+				host:             "com",
+				isRouteSupported: true,
+				secure:           true,
+				tlsSecret:        "user-secret",
+				urlKind:          envinfo.INGRESS,
 			},
 			returnedIngress:    fake.GetSingleIngress("example", "nodejs"),
 			defaultTLSExists:   false,
@@ -275,15 +269,14 @@ func TestCreate(t *testing.T) {
 		{
 			name: "Case 9: Create a secure ingress, instead of route on openshift cluster, user tls secret does exists",
 			args: args{
-				componentName:             "nodejs",
-				urlName:                   "example",
-				portNumber:                8080,
-				host:                      "com",
-				isRouteSupported:          true,
-				isExperimentalModeEnabled: true,
-				secure:                    true,
-				tlsSecret:                 "user-secret",
-				urlKind:                   envinfo.INGRESS,
+				componentName:    "nodejs",
+				urlName:          "example",
+				portNumber:       8080,
+				host:             "com",
+				isRouteSupported: true,
+				secure:           true,
+				tlsSecret:        "user-secret",
+				urlKind:          envinfo.INGRESS,
 			},
 			returnedIngress:    fake.GetSingleIngress("example", "nodejs"),
 			defaultTLSExists:   false,
@@ -295,15 +288,14 @@ func TestCreate(t *testing.T) {
 		{
 			name: "Case 10: invalid url kind",
 			args: args{
-				componentName:             "nodejs",
-				urlName:                   "example",
-				portNumber:                8080,
-				host:                      "com",
-				isRouteSupported:          true,
-				isExperimentalModeEnabled: true,
-				secure:                    true,
-				tlsSecret:                 "user-secret",
-				urlKind:                   "blah",
+				componentName:    "nodejs",
+				urlName:          "example",
+				portNumber:       8080,
+				host:             "com",
+				isRouteSupported: true,
+				secure:           true,
+				tlsSecret:        "user-secret",
+				urlKind:          "blah",
 			},
 			returnedIngress:    fake.GetSingleIngress("example", "nodejs"),
 			defaultTLSExists:   false,
@@ -314,12 +306,11 @@ func TestCreate(t *testing.T) {
 		{
 			name: "Case 11: route is not supported on the cluster",
 			args: args{
-				componentName:             "nodejs",
-				applicationName:           "app",
-				urlName:                   "example",
-				isRouteSupported:          false,
-				isExperimentalModeEnabled: true,
-				urlKind:                   envinfo.ROUTE,
+				componentName:    "nodejs",
+				applicationName:  "app",
+				urlName:          "example",
+				isRouteSupported: false,
+				urlKind:          envinfo.ROUTE,
 			},
 			returnedIngress:    fake.GetSingleIngress("example", "nodejs"),
 			defaultTLSExists:   false,
@@ -330,13 +321,12 @@ func TestCreate(t *testing.T) {
 		{
 			name: "Case 11: secretName used without secure flag",
 			args: args{
-				componentName:             "nodejs",
-				applicationName:           "app",
-				urlName:                   "example",
-				isRouteSupported:          false,
-				isExperimentalModeEnabled: true,
-				tlsSecret:                 "secret",
-				urlKind:                   envinfo.ROUTE,
+				componentName:    "nodejs",
+				applicationName:  "app",
+				urlName:          "example",
+				isRouteSupported: false,
+				tlsSecret:        "secret",
+				urlKind:          envinfo.ROUTE,
 			},
 			returnedIngress:    fake.GetSingleIngress("example", "nodejs"),
 			defaultTLSExists:   false,
@@ -412,7 +402,7 @@ func TestCreate(t *testing.T) {
 				urlKind:         tt.args.urlKind,
 			}
 
-			got, err := Create(client, fakeKClient, urlCreateParameters, tt.args.isRouteSupported, tt.args.isExperimentalModeEnabled)
+			got, err := Create(client, fakeKClient, urlCreateParameters, tt.args.isRouteSupported)
 
 			if err == nil && !tt.wantErr {
 				if tt.args.urlKind == envinfo.INGRESS {
@@ -741,8 +731,7 @@ func TestGetValidPortNumber(t *testing.T) {
 
 func TestPush(t *testing.T) {
 	type args struct {
-		isRouteSupported          bool
-		isExperimentalModeEnabled bool
+		isRouteSupported bool
 	}
 	tests := []struct {
 		name                string
@@ -766,47 +755,50 @@ func TestPush(t *testing.T) {
 			applicationName: "app",
 			returnedRoutes:  &routev1.RouteList{},
 		},
-		{
-			name:            "2 urls on local config and 0 on openshift cluster",
-			componentName:   "nodejs",
-			applicationName: "app",
-			args:            args{isRouteSupported: true},
-			existingConfigURLs: []config.ConfigURL{
-				{
-					Name:   "example",
-					Port:   8080,
-					Secure: false,
-				},
-				{
-					Name:   "example-1",
-					Port:   9090,
-					Secure: false,
-				},
-			},
-			returnedRoutes: &routev1.RouteList{},
-			createdURLs: []URL{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-app",
-					},
-					Spec: URLSpec{
+		// THIS TESTS S2I FUNCTIONALITY. Disabled since we are no longer doing s2i by default
+		/*
+			{
+				name:            "2 urls on local config and 0 on openshift cluster",
+				componentName:   "nodejs",
+				applicationName: "app",
+				args:            args{isRouteSupported: true},
+				existingConfigURLs: []config.ConfigURL{
+					{
+						Name:   "example",
 						Port:   8080,
 						Secure: false,
-						Kind:   envinfo.ROUTE,
 					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-1-app",
-					},
-					Spec: URLSpec{
+					{
+						Name:   "example-1",
 						Port:   9090,
 						Secure: false,
-						Kind:   envinfo.ROUTE,
+					},
+				},
+				returnedRoutes: &routev1.RouteList{},
+				createdURLs: []URL{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "example-app",
+						},
+						Spec: URLSpec{
+							Port:   8080,
+							Secure: false,
+							Kind:   envinfo.ROUTE,
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "example-1-app",
+						},
+						Spec: URLSpec{
+							Port:   9090,
+							Secure: false,
+							Kind:   envinfo.ROUTE,
+						},
 					},
 				},
 			},
-		},
+		*/
 		{
 			name:            "0 url on local config and 2 on openshift cluster",
 			componentName:   "wildfly",
@@ -818,51 +810,54 @@ func TestPush(t *testing.T) {
 				getMachineReadableFormat(testingutil.GetSingleRoute("example-1-app", 9100, "nodejs", "app")),
 			},
 		},
-		{
-			name:            "2 url on local config and 2 on openshift cluster, but they are different",
-			componentName:   "nodejs",
-			applicationName: "app",
-			args:            args{isRouteSupported: true},
-			existingConfigURLs: []config.ConfigURL{
-				{
-					Name:   "example-local-0",
-					Port:   8080,
-					Secure: false,
-				},
-				{
-					Name:   "example-local-1",
-					Port:   9090,
-					Secure: false,
-				},
-			},
-			returnedRoutes: testingutil.GetRouteListWithMultiple("nodejs", "app"),
-			deletedURLs: []URL{
-				getMachineReadableFormat(testingutil.GetSingleRoute("example-app", 8080, "nodejs", "app")),
-				getMachineReadableFormat(testingutil.GetSingleRoute("example-1-app", 9100, "nodejs", "app")),
-			},
-			createdURLs: []URL{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-local-0-app",
-					},
-					Spec: URLSpec{
+		// THIS TESTS S2I FUNCTIONALITY. Disabled since we are no longer doing s2i by default
+		/*
+			{
+				name:            "2 url on local config and 2 on openshift cluster, but they are different",
+				componentName:   "nodejs",
+				applicationName: "app",
+				args:            args{isRouteSupported: true},
+				existingConfigURLs: []config.ConfigURL{
+					{
+						Name:   "example-local-0",
 						Port:   8080,
 						Secure: false,
-						Kind:   envinfo.ROUTE,
 					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-local-1-app",
-					},
-					Spec: URLSpec{
+					{
+						Name:   "example-local-1",
 						Port:   9090,
 						Secure: false,
-						Kind:   envinfo.ROUTE,
+					},
+				},
+				returnedRoutes: testingutil.GetRouteListWithMultiple("nodejs", "app"),
+				deletedURLs: []URL{
+					getMachineReadableFormat(testingutil.GetSingleRoute("example-app", 8080, "nodejs", "app")),
+					getMachineReadableFormat(testingutil.GetSingleRoute("example-1-app", 9100, "nodejs", "app")),
+				},
+				createdURLs: []URL{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "example-local-0-app",
+						},
+						Spec: URLSpec{
+							Port:   8080,
+							Secure: false,
+							Kind:   envinfo.ROUTE,
+						},
+					},
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "example-local-1-app",
+						},
+						Spec: URLSpec{
+							Port:   9090,
+							Secure: false,
+							Kind:   envinfo.ROUTE,
+						},
 					},
 				},
 			},
-		},
+		*/
 		{
 			name:            "2 url on local config and openshift cluster are in sync",
 			componentName:   "nodejs",
@@ -888,7 +883,7 @@ func TestPush(t *testing.T) {
 		{
 			name:                "0 urls on env file and cluster",
 			componentName:       "nodejs",
-			args:                args{isRouteSupported: true, isExperimentalModeEnabled: true},
+			args:                args{isRouteSupported: true},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{},
 			returnedRoutes:      &routev1.RouteList{},
 			returnedIngress:     &extensionsv1.IngressList{},
@@ -896,7 +891,7 @@ func TestPush(t *testing.T) {
 		{
 			name:          "2 urls on env file and 0 on openshift cluster",
 			componentName: "nodejs",
-			args:          args{isRouteSupported: true, isExperimentalModeEnabled: true},
+			args:          args{isRouteSupported: true},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{
 				{
 					Name:   "example",
@@ -943,7 +938,7 @@ func TestPush(t *testing.T) {
 		{
 			name:                "0 urls on env file and 2 on openshift cluster",
 			componentName:       "nodejs",
-			args:                args{isRouteSupported: true, isExperimentalModeEnabled: true},
+			args:                args{isRouteSupported: true},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{},
 			returnedRoutes:      &routev1.RouteList{},
 			returnedIngress:     fake.GetIngressListWithMultiple("nodejs"),
@@ -963,7 +958,7 @@ func TestPush(t *testing.T) {
 		{
 			name:          "2 urls on env file and 2 on openshift cluster, but they are different",
 			componentName: "wildfly",
-			args:          args{isRouteSupported: true, isExperimentalModeEnabled: true},
+			args:          args{isRouteSupported: true},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{
 				{
 					Name:   "example-local-0",
@@ -1022,7 +1017,7 @@ func TestPush(t *testing.T) {
 		{
 			name:          "2 urls on env file and openshift cluster are in sync",
 			componentName: "wildfly",
-			args:          args{isRouteSupported: true, isExperimentalModeEnabled: true},
+			args:          args{isRouteSupported: true},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{
 				{
 					Name:   "example-0",
@@ -1047,7 +1042,7 @@ func TestPush(t *testing.T) {
 		{
 			name:          "2 (1 ingress,1 route) urls on env file and 2 on openshift cluster (1 ingress,1 route), but they are different",
 			componentName: "nodejs",
-			args:          args{isRouteSupported: true, isExperimentalModeEnabled: true},
+			args:          args{isRouteSupported: true},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{
 				{
 					Name:   "example-local-0",
@@ -1104,7 +1099,7 @@ func TestPush(t *testing.T) {
 		{
 			name:          "create a ingress on a kubernetes cluster",
 			componentName: "nodejs",
-			args:          args{isRouteSupported: false, isExperimentalModeEnabled: true},
+			args:          args{isRouteSupported: false},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{
 				{
 					Name:      "example",
@@ -1136,7 +1131,7 @@ func TestPush(t *testing.T) {
 		{
 			name:          "url with same name exists on env and cluster but with different specs",
 			componentName: "nodejs",
-			args:          args{isRouteSupported: true, isExperimentalModeEnabled: true},
+			args:          args{isRouteSupported: true},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{
 				{
 					Name:   "example-local-0",
@@ -1172,50 +1167,52 @@ func TestPush(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		{
-			name:            "url with same name exists on config and cluster but with different specs",
-			componentName:   "nodejs",
-			applicationName: "app",
-			args:            args{isRouteSupported: true, isExperimentalModeEnabled: false},
-			existingConfigURLs: []config.ConfigURL{
-				{
-					Name:   "example-local-0",
-					Port:   8080,
-					Secure: false,
-				},
-			},
-			returnedRoutes: &routev1.RouteList{
-				Items: []routev1.Route{
-					testingutil.GetSingleRoute("example-local-0", 9090, "nodejs", "app"),
-				},
-			},
-			returnedIngress: &extensionsv1.IngressList{},
-			createdURLs: []URL{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-local-0-app",
-					},
-					Spec: URLSpec{
+		// S2I related test, disabling
+		/*
+			{
+				name:            "url with same name exists on config and cluster but with different specs",
+				componentName:   "nodejs",
+				applicationName: "app",
+				args:            args{isRouteSupported: true},
+				existingConfigURLs: []config.ConfigURL{
+					{
+						Name:   "example-local-0",
 						Port:   8080,
 						Secure: false,
-						Kind:   envinfo.ROUTE,
 					},
 				},
-			},
-			deletedURLs: []URL{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "example-local-0-app",
+				returnedRoutes: &routev1.RouteList{
+					Items: []routev1.Route{
+						testingutil.GetSingleRoute("example-local-0", 9090, "nodejs", "app"),
 					},
 				},
+				returnedIngress: &extensionsv1.IngressList{},
+				createdURLs: []URL{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "example-local-0-app",
+						},
+						Spec: URLSpec{
+							Port:   8080,
+							Secure: false,
+							Kind:   envinfo.ROUTE,
+						},
+					},
+				},
+				deletedURLs: []URL{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "example-local-0-app",
+						},
+					},
+				},
+				wantErr: false,
 			},
-			wantErr: false,
-		},
-
+		*/
 		{
 			name:          "create a secure route url",
 			componentName: "nodejs",
-			args:          args{isRouteSupported: true, isExperimentalModeEnabled: true},
+			args:          args{isRouteSupported: true},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{
 				{
 					Name:   "example",
@@ -1242,7 +1239,7 @@ func TestPush(t *testing.T) {
 		{
 			name:          "create a secure ingress url with empty user given tls secret",
 			componentName: "nodejs",
-			args:          args{isRouteSupported: true, isExperimentalModeEnabled: true},
+			args:          args{isRouteSupported: true},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{
 				{
 					Name:   "example",
@@ -1271,7 +1268,7 @@ func TestPush(t *testing.T) {
 		{
 			name:          "create a secure ingress url with user given tls secret",
 			componentName: "nodejs",
-			args:          args{isRouteSupported: true, isExperimentalModeEnabled: true},
+			args:          args{isRouteSupported: true},
 			existingEnvInfoURLs: []envinfo.EnvInfoURL{
 				{
 					Name:      "example",
@@ -1338,12 +1335,11 @@ func TestPush(t *testing.T) {
 			})
 
 			if err := Push(fakeClient, fakeKClient, PushParameters{
-				ComponentName:             tt.componentName,
-				ApplicationName:           tt.applicationName,
-				ConfigURLs:                tt.existingConfigURLs,
-				EnvURLS:                   tt.existingEnvInfoURLs,
-				IsRouteSupported:          tt.args.isRouteSupported,
-				IsExperimentalModeEnabled: tt.args.isExperimentalModeEnabled,
+				ComponentName:    tt.componentName,
+				ApplicationName:  tt.applicationName,
+				ConfigURLs:       tt.existingConfigURLs,
+				EnvURLS:          tt.existingEnvInfoURLs,
+				IsRouteSupported: tt.args.isRouteSupported,
 			}); (err != nil) != tt.wantErr {
 				t.Errorf("Push() error = %v, wantErr %v", err, tt.wantErr)
 			} else {

@@ -14,7 +14,6 @@ import (
 	commonui "github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/validation"
 	svc "github.com/openshift/odo/pkg/service"
 
@@ -119,7 +118,7 @@ func (o *ServiceCreateOptions) Complete(name string, cmd *cobra.Command, args []
 
 	var class scv1beta1.ClusterServiceClass
 
-	if experimental.IsExperimentalModeEnabled() && o.fromFile != "" {
+	if o.fromFile != "" {
 		o.interactive = false
 		return
 	}
@@ -222,146 +221,147 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 		return nil
 	}
 
-	// we want to find an Operator only if something's passed to the crd flag on CLI
-	if experimental.IsExperimentalModeEnabled() {
-		// if the user wants to create service from a file, we check for
-		// existence of file and validate if the requested operator and CR
-		// exist on the cluster
-		if o.fromFile != "" {
-			if _, err := os.Stat(o.fromFile); err != nil {
-				return errors.Wrap(err, "unable to find specified file")
-			}
+	// if the user wants to create service from a file, we check for
+	// existence of file and validate if the requested operator and CR
+	// exist on the cluster
+	if o.fromFile != "" {
+		if _, err := os.Stat(o.fromFile); err != nil {
+			return errors.Wrap(err, "unable to find specified file")
+		}
 
-			// Parse the file to find Operator and CR info
-			fileContents, err := ioutil.ReadFile(o.fromFile)
-			if err != nil {
-				return err
-			}
-			// var jsonCR map[string]interface{}
-			err = yaml.Unmarshal(fileContents, &o.CustomResourceDefinition)
-			if err != nil {
-				return err
-			}
-
-			// Check if the operator and the CR exist on cluster
-			o.CustomResource = o.CustomResourceDefinition["kind"].(string)
-			csvs, err := o.KClient.GetClusterServiceVersionList()
-			if err != nil {
-				return err
-			}
-
-			csv, err := doesCRExist(o.CustomResource, csvs)
-			if err != nil {
-				return fmt.Errorf("Could not find specified service/custom resource: %s\nPlease check the \"kind\" field in the yaml (it's case-sensitive)", o.CustomResource)
-			}
-
-			// all is well, let's populate the fields required for creating operator backed service
-			o.group, o.version = groupVersionALMExample(o.CustomResourceDefinition)
-			o.resource = resourceFromCSV(csv, o.CustomResource)
-			o.ServiceName, err = serviceNameFromCRD(o.CustomResourceDefinition, o.ServiceName)
+		// Parse the file to find Operator and CR info
+		fileContents, err := ioutil.ReadFile(o.fromFile)
+		if err != nil {
 			return err
 		}
-		if o.CustomResource != "" {
-			// make sure that CSV of the specified ServiceType exists
-			csv, err := o.KClient.GetClusterServiceVersion(o.ServiceType)
-			if err != nil {
-				// error only occurs when OperatorHub is not installed.
-				// k8s does't have it installed by default but OCP does
-				return err
-			}
-
-			var almExamples []map[string]interface{}
-			val, ok := csv.Annotations["alm-examples"]
-			if ok {
-				err = json.Unmarshal([]byte(val), &almExamples)
-				if err != nil {
-					return errors.Wrap(err, "unable to unmarshal alm-examples")
-				}
-			} else {
-				// There's no alm examples in the CSV's definition
-				return fmt.Errorf("Could not find alm-examples in operator's definition.\nPlease provide a file containing yaml specification to start the %s service from %s operator", o.CustomResource, o.ServiceName)
-			}
-
-			almExample, err := getAlmExample(almExamples, o.CustomResource, o.ServiceType)
-			if err != nil {
-				return err
-			}
-			o.CustomResourceDefinition = almExample
-			o.group, o.version = groupVersionALMExample(almExample)
-			o.resource = resourceFromCSV(csv, o.CustomResource)
-			o.ServiceName, err = serviceNameFromCRD(o.CustomResourceDefinition, o.ServiceName)
+		// var jsonCR map[string]interface{}
+		err = yaml.Unmarshal(fileContents, &o.CustomResourceDefinition)
+		if err != nil {
 			return err
-		} else {
-			// prevent user from executing `odo service create <operator-name>`
-			// because the correct way is to execute `odo service
-			// <operator-name> --crd <crd-name>`
-			csvs, err := o.KClient.GetClusterServiceVersionList()
-			if err != nil {
-				return err
-			}
-
-			for _, csv := range csvs.Items {
-				if csv.Name == o.ServiceType {
-					// this is satisfied if user has specified operator but not
-					// a CRD name
-					return errors.New("Please specify service name along with the operator name")
-				}
-			}
 		}
-	}
-	// make sure the service type exists
-	classPtr, err := o.Client.GetClusterServiceClass(o.ServiceType)
-	if err != nil {
-		return errors.Wrap(err, "unable to create service because Service Catalog is not enabled in your cluster")
-	}
-	if classPtr == nil {
-		return fmt.Errorf("service %v doesn't exist\nRun 'odo catalog list services' to see a list of supported services.\n", o.ServiceType)
-	}
 
-	// check plan
-	plans, err := o.Client.GetMatchingPlans(*classPtr)
-	if err != nil {
+		// Check if the operator and the CR exist on cluster
+		o.CustomResource = o.CustomResourceDefinition["kind"].(string)
+		csvs, err := o.KClient.GetClusterServiceVersionList()
+		if err != nil {
+			return err
+		}
+
+		csv, err := doesCRExist(o.CustomResource, csvs)
+		if err != nil {
+			return fmt.Errorf("Could not find specified service/custom resource: %s\nPlease check the \"kind\" field in the yaml (it's case-sensitive)", o.CustomResource)
+		}
+
+		// all is well, let's populate the fields required for creating operator backed service
+		o.group, o.version = groupVersionALMExample(o.CustomResourceDefinition)
+		o.resource = resourceFromCSV(csv, o.CustomResource)
+		o.ServiceName, err = serviceNameFromCRD(o.CustomResourceDefinition, o.ServiceName)
 		return err
 	}
-	if len(o.Plan) == 0 {
-		// when the plan has not been supplied, if there is only one available plan, we select it
-		if len(plans) == 1 {
-			for k := range plans {
-				o.Plan = k
-			}
-			klog.V(4).Infof("Plan %s was automatically selected since it's the only one available for service %s", o.Plan, o.ServiceType)
-		} else {
-			return fmt.Errorf("no plan was supplied for service %v.\nPlease select one of: %v\n", o.ServiceType, strings.Join(ui.GetServicePlanNames(plans), ","))
+	if o.CustomResource != "" {
+		// make sure that CSV of the specified ServiceType exists
+		csv, err := o.KClient.GetClusterServiceVersion(o.ServiceType)
+		if err != nil {
+			// error only occurs when OperatorHub is not installed.
+			// k8s does't have it installed by default but OCP does
+			return err
 		}
+
+		var almExamples []map[string]interface{}
+		val, ok := csv.Annotations["alm-examples"]
+		if ok {
+			err = json.Unmarshal([]byte(val), &almExamples)
+			if err != nil {
+				return errors.Wrap(err, "unable to unmarshal alm-examples")
+			}
+		} else {
+			// There's no alm examples in the CSV's definition
+			return fmt.Errorf("Could not find alm-examples in operator's definition.\nPlease provide a file containing yaml specification to start the %s service from %s operator", o.CustomResource, o.ServiceName)
+		}
+
+		almExample, err := getAlmExample(almExamples, o.CustomResource, o.ServiceType)
+		if err != nil {
+			return err
+		}
+		o.CustomResourceDefinition = almExample
+		o.group, o.version = groupVersionALMExample(almExample)
+		o.resource = resourceFromCSV(csv, o.CustomResource)
+		o.ServiceName, err = serviceNameFromCRD(o.CustomResourceDefinition, o.ServiceName)
+		return err
 	} else {
-		// when the plan has been supplied, we need to make sure it exists
-		if _, ok := plans[o.Plan]; !ok {
-			return fmt.Errorf("plan %s is invalid for service %v.\nPlease select one of: %v\n", o.Plan, o.ServiceType, strings.Join(ui.GetServicePlanNames(plans), ","))
+		// prevent user from executing `odo service create <operator-name>`
+		// because the correct way is to execute `odo service
+		// <operator-name> --crd <crd-name>`
+		csvs, err := o.KClient.GetClusterServiceVersionList()
+		if err != nil {
+			return err
+		}
+
+		for _, csv := range csvs.Items {
+			if csv.Name == o.ServiceType {
+				// this is satisfied if user has specified operator but not
+				// a CRD name
+				return errors.New("Please specify service name along with the operator name")
+			}
 		}
 	}
-	//validate service name
-	return o.validateServiceName(o.ServiceName)
+
+	return nil
+
+	// EVERYTHING BELOW is S2I only to be implemented later.
+	/*
+		// make sure the service type exists
+		classPtr, err := o.Client.GetClusterServiceClass(o.ServiceType)
+		if err != nil {
+			return errors.Wrap(err, "unable to create service because Service Catalog is not enabled in your cluster")
+		}
+		if classPtr == nil {
+			return fmt.Errorf("service %v doesn't exist\nRun 'odo catalog list services' to see a list of supported services.\n", o.ServiceType)
+		}
+
+		// check plan
+		plans, err := o.Client.GetMatchingPlans(*classPtr)
+		if err != nil {
+			return err
+		}
+		if len(o.Plan) == 0 {
+			// when the plan has not been supplied, if there is only one available plan, we select it
+			if len(plans) == 1 {
+				for k := range plans {
+					o.Plan = k
+				}
+				klog.V(4).Infof("Plan %s was automatically selected since it's the only one available for service %s", o.Plan, o.ServiceType)
+			} else {
+				return fmt.Errorf("no plan was supplied for service %v.\nPlease select one of: %v\n", o.ServiceType, strings.Join(ui.GetServicePlanNames(plans), ","))
+			}
+		} else {
+			// when the plan has been supplied, we need to make sure it exists
+			if _, ok := plans[o.Plan]; !ok {
+				return fmt.Errorf("plan %s is invalid for service %v.\nPlease select one of: %v\n", o.Plan, o.ServiceType, strings.Join(ui.GetServicePlanNames(plans), ","))
+			}
+		}
+		//validate service name
+		return o.validateServiceName(o.ServiceName)
+	*/
 }
 
 // Run contains the logic for the odo service create command
 func (o *ServiceCreateOptions) Run() (err error) {
 	s := &log.Status{}
-	if experimental.IsExperimentalModeEnabled() {
-		// in case of an opertor backed service, name of the service is
-		// provided by the yaml specification in alm-examples. It might also
-		// happen that a user spins up Service Catalog based service in
-		// experimental mode but we're taking a bet against that for now, so
-		// the user won't get to see service name in the log message
-		if !o.DryRun {
-			log.Infof("Deploying service of type: %s", o.CustomResource)
-			s = log.Spinner("Deploying service")
-			defer s.End(false)
-		}
-	} else {
-		log.Infof("Deploying service %s of type: %s", o.ServiceName, o.ServiceType)
+	// in case of an opertor backed service, name of the service is
+	// provided by the yaml specification in alm-examples. It might also
+	// happen that a user spins up Service Catalog based service in
+	// experimental mode but we're taking a bet against that for now, so
+	// the user won't get to see service name in the log message
+	if !o.DryRun {
+		log.Infof("Deploying service of type: %s", o.CustomResource)
+		s = log.Spinner("Deploying service")
+		defer s.End(false)
 	}
+	// S2I only
+	// log.Infof("Deploying service %s of type: %s", o.ServiceName, o.ServiceType)
 
-	if experimental.IsExperimentalModeEnabled() && o.CustomResource != "" {
+	if o.CustomResource != "" {
 		// if experimental mode is enabled and o.CustomResource is not empty, we're expected to create an Operator backed service
 		if o.DryRun {
 			// if it's dry run, only print the alm-example (o.CustomResourceDefinition) and exit
@@ -428,14 +428,12 @@ func NewCmdServiceCreate(name, fullName string) *cobra.Command {
 		},
 	}
 
-	if experimental.IsExperimentalModeEnabled() {
-		serviceCreateCmd.Use += fmt.Sprintf(" [flags]\n  %s <operator_type> --crd <crd_name> [service_name] [flags]", o.CmdFullName)
-		serviceCreateCmd.Example += fmt.Sprintf("\n\n") + fmt.Sprintf(createOperatorExample, fullName)
-		serviceCreateCmd.Flags().StringVar(&o.CustomResource, "crd", "", "The name of the CRD of the operator to be used to create the service")
-		serviceCreateCmd.Flags().BoolVar(&o.DryRun, "dry-run", false, "Print the yaml specificiation that will be used to create the service")
-		// remove this feature after enabling service create interactive mode for operator backed services
-		serviceCreateCmd.Flags().StringVar(&o.fromFile, "from-file", "", "Path to the file containing yaml specification to use to start operator backed service")
-	}
+	serviceCreateCmd.Use += fmt.Sprintf(" [flags]\n  %s <operator_type> --crd <crd_name> [service_name] [flags]", o.CmdFullName)
+	serviceCreateCmd.Example += fmt.Sprintf("\n\n") + fmt.Sprintf(createOperatorExample, fullName)
+	serviceCreateCmd.Flags().StringVar(&o.CustomResource, "crd", "", "The name of the CRD of the operator to be used to create the service")
+	serviceCreateCmd.Flags().BoolVar(&o.DryRun, "dry-run", false, "Print the yaml specificiation that will be used to create the service")
+	// remove this feature after enabling service create interactive mode for operator backed services
+	serviceCreateCmd.Flags().StringVar(&o.fromFile, "from-file", "", "Path to the file containing yaml specification to use to start operator backed service")
 
 	serviceCreateCmd.Flags().StringVar(&o.Plan, "plan", "", "The name of the plan of the service to be created")
 	serviceCreateCmd.Flags().StringArrayVarP(&o.parameters, "parameters", "p", []string{}, "Parameters of the plan where a parameter is expressed as <key>=<value")

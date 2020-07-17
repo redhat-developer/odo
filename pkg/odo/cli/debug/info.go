@@ -2,11 +2,11 @@ package debug
 
 import (
 	"fmt"
+
 	"github.com/openshift/odo/pkg/debug"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
 	k8sgenclioptions "k8s.io/cli-runtime/pkg/genericclioptions"
@@ -46,7 +46,9 @@ func NewInfoOptions() *InfoOptions {
 
 // Complete completes all the required options for port-forward cmd.
 func (o *InfoOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
+
+	// If devfile is present
+	if util.CheckPathExists(o.DevfilePath) {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
 
 		// a small shortcut
@@ -54,15 +56,19 @@ func (o *InfoOptions) Complete(name string, cmd *cobra.Command, args []string) (
 
 		o.componentName = env.GetName()
 		o.Namespace = env.GetNamespace()
-	} else {
-		o.Context = genericclioptions.NewContext(cmd)
-		cfg := o.Context.LocalConfigInfo
-		o.LocalConfigInfo = cfg
-
-		o.componentName = cfg.GetName()
-		o.applicationName = cfg.GetApplication()
-		o.Namespace = cfg.GetProject()
 	}
+	// S2I Only
+	/*
+		} else {
+			o.Context = genericclioptions.NewContext(cmd)
+			cfg := o.Context.LocalConfigInfo
+			o.LocalConfigInfo = cfg
+
+			o.componentName = cfg.GetName()
+			o.applicationName = cfg.GetApplication()
+			o.Namespace = cfg.GetProject()
+		}
+	*/
 
 	// Using Discard streams because nothing important is logged
 	o.PortForwarder = debug.NewDefaultPortForwarder(o.componentName, o.applicationName, o.Namespace, o.Client, o.KClient, k8sgenclioptions.NewTestIOStreamsDiscard())
@@ -104,9 +110,7 @@ func NewCmdInfo(name, fullName string) *cobra.Command {
 		},
 	}
 	genericclioptions.AddContextFlag(cmd, &opts.contextDir)
-	if experimental.IsExperimentalModeEnabled() {
-		cmd.Flags().StringVar(&opts.DevfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
-	}
+	cmd.Flags().StringVar(&opts.DevfilePath, "devfile", "./devfile.yaml", "Path to a devfile.yaml")
 
 	return cmd
 }

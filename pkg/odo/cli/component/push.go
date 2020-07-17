@@ -14,7 +14,6 @@ import (
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -83,8 +82,7 @@ func (po *PushOptions) CompleteDevfilePath() {
 func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	po.CompleteDevfilePath()
 
-	// if experimental mode is enabled and devfile is present
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.DevfilePath) {
+	if util.CheckPathExists(po.DevfilePath) {
 
 		po.Devfile, err = parser.ParseAndValidate(po.DevfilePath)
 		if err != nil {
@@ -172,10 +170,10 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 // Validate validates the push parameters
 func (po *PushOptions) Validate() (err error) {
 
-	// If the experimental flag is set and devfile is present, then we do *not* validate
+	// If devfile is present, then we do *not* validate
 	// TODO: We need to clean this section up a bit.. We should also validate Devfile here
 	// too.
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.DevfilePath) {
+	if util.CheckPathExists(po.DevfilePath) {
 		return nil
 	}
 
@@ -206,14 +204,14 @@ func (po *PushOptions) Validate() (err error) {
 
 // Run has the logic to perform the required actions as part of command
 func (po *PushOptions) Run() (err error) {
-	// If experimental mode is enabled, use devfile push
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.DevfilePath) {
+	// If Devfile exists
+	if util.CheckPathExists(po.DevfilePath) {
 		// Return Devfile push
 		return po.DevfilePush()
-	} else {
-		// Legacy odo push
-		return po.Push()
 	}
+
+	// Legacy odo push
+	return po.Push()
 }
 
 // NewCmdPush implements the push odo command
@@ -224,13 +222,11 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 
 	pushCmdExampleText := pushCmdExample
 
-	if experimental.IsExperimentalModeEnabled() {
-		// The '-o json' option should only appear in help output when experimental mode is enabled.
-		annotations["machineoutput"] = "json"
+	// The '-o json' option should only appear in help output when experimental mode is enabled.
+	annotations["machineoutput"] = "json"
 
-		// The '-o json' example should likewise only appear in experimental only.
-		pushCmdExampleText += pushCmdExampleExperimentalOnly
-	}
+	// The '-o json' example should likewise only appear in experimental only.
+	pushCmdExampleText += pushCmdExampleExperimentalOnly
 
 	var pushCmd = &cobra.Command{
 		Use:         fmt.Sprintf("%s [component name]", name),
@@ -251,15 +247,12 @@ func NewCmdPush(name, fullName string) *cobra.Command {
 	pushCmd.Flags().BoolVar(&po.pushSource, "source", false, "Use source flag to only push latest source on to cluster")
 	pushCmd.Flags().BoolVarP(&po.forceBuild, "force-build", "f", false, "Use force-build flag to force building the component")
 
-	// enable devfile flag if experimental mode is enabled
-	if experimental.IsExperimentalModeEnabled() {
-		pushCmd.Flags().StringVar(&po.namespace, "namespace", "", "Namespace to push the component to")
-		pushCmd.Flags().StringVar(&po.devfileInitCommand, "init-command", "", "Devfile Init Command to execute")
-		pushCmd.Flags().StringVar(&po.devfileBuildCommand, "build-command", "", "Devfile Build Command to execute")
-		pushCmd.Flags().StringVar(&po.devfileRunCommand, "run-command", "", "Devfile Run Command to execute")
-		pushCmd.Flags().BoolVar(&po.debugRun, "debug", false, "Runs the component in debug mode")
-		pushCmd.Flags().StringVar(&po.devfileDebugCommand, "debug-command", "", "Devfile Debug Command to execute")
-	}
+	pushCmd.Flags().StringVar(&po.namespace, "namespace", "", "Namespace to push the component to")
+	pushCmd.Flags().StringVar(&po.devfileInitCommand, "init-command", "", "Devfile Init Command to execute")
+	pushCmd.Flags().StringVar(&po.devfileBuildCommand, "build-command", "", "Devfile Build Command to execute")
+	pushCmd.Flags().StringVar(&po.devfileRunCommand, "run-command", "", "Devfile Run Command to execute")
+	pushCmd.Flags().BoolVar(&po.debugRun, "debug", false, "Runs the component in debug mode")
+	pushCmd.Flags().StringVar(&po.devfileDebugCommand, "debug-command", "", "Devfile Debug Command to execute")
 
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(pushCmd)

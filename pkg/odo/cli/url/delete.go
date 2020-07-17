@@ -8,8 +8,6 @@ import (
 	"github.com/openshift/odo/pkg/odo/cli/ui"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/completion"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -40,35 +38,37 @@ func NewURLDeleteOptions() *URLDeleteOptions {
 // Complete completes URLDeleteOptions after they've been Deleted
 func (o *URLDeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 
-	if experimental.IsExperimentalModeEnabled() {
+	o.Context = genericclioptions.NewDevfileContext(cmd)
+	o.urlName = args[0]
+	err = o.InitEnvInfoFromContext()
+	if err != nil {
+		return err
+	}
+	o.CompleteDevfilePath()
 
-		o.Context = genericclioptions.NewDevfileContext(cmd)
-		o.urlName = args[0]
-		err = o.InitEnvInfoFromContext()
-		if err != nil {
-			return err
-		}
-		o.CompleteDevfilePath()
-	} else {
-		if o.now {
-			o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+	// S2I Only
+	/*
 		} else {
-			o.Context = genericclioptions.NewContext(cmd)
-		}
-		o.urlName = args[0]
-		err = o.InitConfigFromContext()
-		if err != nil {
-			return err
-		}
-		if o.now {
-			prjName := o.LocalConfigInfo.GetProject()
-			o.ResolveSrcAndConfigFlags()
-			err = o.ResolveProject(prjName)
+			if o.now {
+				o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
+			} else {
+				o.Context = genericclioptions.NewContext(cmd)
+			}
+			o.urlName = args[0]
+			err = o.InitConfigFromContext()
 			if err != nil {
 				return err
 			}
+			if o.now {
+				prjName := o.LocalConfigInfo.GetProject()
+				o.ResolveSrcAndConfigFlags()
+				err = o.ResolveProject(prjName)
+				if err != nil {
+					return err
+				}
+			}
 		}
-	}
+	*/
 	return
 
 }
@@ -76,35 +76,38 @@ func (o *URLDeleteOptions) Complete(name string, cmd *cobra.Command, args []stri
 // Validate validates the URLDeleteOptions based on completed values
 func (o *URLDeleteOptions) Validate() (err error) {
 	var exists bool
-	if experimental.IsExperimentalModeEnabled() {
-		urls := o.EnvSpecificInfo.GetURL()
-		componentName := o.EnvSpecificInfo.GetName()
-		for _, url := range urls {
-			if url.Name == o.urlName {
-				exists = true
-			}
-		}
-		if !exists {
-			return fmt.Errorf("the URL %s does not exist within the component %s", o.urlName, componentName)
-		}
-	} else {
-		urls := o.LocalConfigInfo.GetURL()
-
-		for _, url := range urls {
-			if url.Name == o.urlName {
-				exists = true
-			}
-		}
-		if o.now {
-			err = o.ValidateComponentCreate()
-			if err != nil {
-				return err
-			}
-		}
-		if !exists {
-			return fmt.Errorf("the URL %s does not exist within the component %s", o.urlName, o.Component())
+	urls := o.EnvSpecificInfo.GetURL()
+	componentName := o.EnvSpecificInfo.GetName()
+	for _, url := range urls {
+		if url.Name == o.urlName {
+			exists = true
 		}
 	}
+	if !exists {
+		return fmt.Errorf("the URL %s does not exist within the component %s", o.urlName, componentName)
+	}
+
+	// S2I Only
+	/*
+		} else {
+			urls := o.LocalConfigInfo.GetURL()
+
+			for _, url := range urls {
+				if url.Name == o.urlName {
+					exists = true
+				}
+			}
+			if o.now {
+				err = o.ValidateComponentCreate()
+				if err != nil {
+					return err
+				}
+			}
+			if !exists {
+				return fmt.Errorf("the URL %s does not exist within the component %s", o.urlName, o.Component())
+			}
+		}
+	*/
 
 	return
 }
@@ -112,35 +115,37 @@ func (o *URLDeleteOptions) Validate() (err error) {
 // Run contains the logic for the odo url delete command
 func (o *URLDeleteOptions) Run() (err error) {
 	if o.urlForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the url %v", o.urlName)) {
-		if experimental.IsExperimentalModeEnabled() {
-			err = o.EnvSpecificInfo.DeleteURL(o.urlName)
+		err = o.EnvSpecificInfo.DeleteURL(o.urlName)
+		if err != nil {
+			return err
+		}
+		if o.now {
+			err = o.DevfilePush()
 			if err != nil {
 				return err
 			}
-			if o.now {
-				err = o.DevfilePush()
+		} else {
+			log.Successf("URL %s removed from the env file", o.urlName)
+			log.Italic("\nTo delete the URL on the cluster, please use `odo push`")
+		}
+		// S2I Only
+		/*
+			} else {
+				err = o.LocalConfigInfo.DeleteURL(o.urlName)
 				if err != nil {
 					return err
 				}
-			} else {
-				log.Successf("URL %s removed from the env file", o.urlName)
-				log.Italic("\nTo delete the URL on the cluster, please use `odo push`")
-			}
-		} else {
-			err = o.LocalConfigInfo.DeleteURL(o.urlName)
-			if err != nil {
-				return err
-			}
-			log.Successf("URL %s removed from the config file", o.urlName)
-			if o.now {
-				err = o.Push()
-				if err != nil {
-					return errors.Wrap(err, "failed to push changes")
+				log.Successf("URL %s removed from the config file", o.urlName)
+				if o.now {
+					err = o.Push()
+					if err != nil {
+						return errors.Wrap(err, "failed to push changes")
+					}
+				} else {
+					log.Italic("\nTo delete the URL on the cluster, please use `odo push`")
 				}
-			} else {
-				log.Italic("\nTo delete the URL on the cluster, please use `odo push`")
 			}
-		}
+		*/
 	} else {
 		return fmt.Errorf("aborting deletion of URL: %v", o.urlName)
 	}

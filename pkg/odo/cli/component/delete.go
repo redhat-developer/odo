@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 
 	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 
 	"github.com/openshift/odo/pkg/util"
@@ -59,8 +58,8 @@ func NewDeleteOptions() *DeleteOptions {
 func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	do.devfilePath = filepath.Join(do.componentContext, DevfilePath)
 
-	// if experimental mode is enabled and devfile is present
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(do.devfilePath) {
+	// If Devfile is present
+	if util.CheckPathExists(do.devfilePath) {
 		do.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(do.componentContext)
 		if err != nil {
 			return err
@@ -86,8 +85,8 @@ func (do *DeleteOptions) Complete(name string, cmd *cobra.Command, args []string
 
 // Validate validates the list parameters
 func (do *DeleteOptions) Validate() (err error) {
-	// if experimental mode is enabled and devfile is present
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(do.devfilePath) {
+	// If Devfile is present
+	if util.CheckPathExists(do.devfilePath) {
 		return nil
 	}
 
@@ -113,7 +112,8 @@ func (do *DeleteOptions) Run() (err error) {
 	klog.V(4).Infof("component delete called")
 	klog.V(4).Infof("args: %#v", do)
 
-	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(do.devfilePath) {
+	// If devfile is present
+	if util.CheckPathExists(do.devfilePath) {
 		return do.DevFileRun()
 	}
 

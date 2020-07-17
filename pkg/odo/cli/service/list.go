@@ -10,8 +10,7 @@ import (
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	odoutil "github.com/openshift/odo/pkg/odo/util"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
+	//odoutil "github.com/openshift/odo/pkg/odo/util"
 	svc "github.com/openshift/odo/pkg/service"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -43,61 +42,61 @@ func NewServiceListOptions() *ServiceListOptions {
 
 // Complete completes ServiceListOptions after they've been created
 func (o *ServiceListOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	if experimental.IsExperimentalModeEnabled() {
-		o.Context = genericclioptions.NewDevfileContext(cmd)
-	} else {
-		o.Context = genericclioptions.NewContext(cmd)
-	}
+	o.Context = genericclioptions.NewDevfileContext(cmd)
+	// S2I Only
+	/*
+		} else {
+			o.Context = genericclioptions.NewContext(cmd)
+		}
+	*/
 	return
 }
 
 // Validate validates the ServiceListOptions based on completed values
 func (o *ServiceListOptions) Validate() (err error) {
-	if !experimental.IsExperimentalModeEnabled() {
-		// Throw error if project and application values are not available.
-		// This will most likely be the case when user does odo service list from outside a component directory and
-		// doesn't provide --app and/or --project flags
-		if o.Context.Project == "" || o.Context.Application == "" {
-			return odoutil.ThrowContextError()
+	// S2I ONLY
+	/*
+			// Throw error if project and application values are not available.
+			// This will most likely be the case when user does odo service list from outside a component directory and
+			// doesn't provide --app and/or --project flags
+			if o.Context.Project == "" || o.Context.Application == "" {
+				return odoutil.ThrowContextError()
+			}
 		}
-	}
+	*/
 	return
 }
 
 // Run contains the logic for the odo service list command
 func (o *ServiceListOptions) Run() (err error) {
-	if experimental.IsExperimentalModeEnabled() {
-		// if experimental mode is enabled, we list only operator hub backed
-		// services and not service catalog ones
-		var list []unstructured.Unstructured
-		list, err = svc.ListOperatorServices(o.KClient)
-		if err != nil {
-			return err
-		}
-
-		if len(list) == 0 {
-			return fmt.Errorf("No operator backed services found in namespace: %s", o.KClient.Namespace)
-		}
-
-		if log.IsJSON() {
-			machineoutput.OutputSuccess(list)
-			return
-		} else {
-			w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-
-			fmt.Fprintln(w, "NAME", "\t", "AGE")
-
-			for _, item := range list {
-				duration := time.Since(item.GetCreationTimestamp().Time).Truncate(time.Second).String()
-				fmt.Fprintln(w, strings.Join([]string{item.GetKind(), item.GetName()}, "/"), "\t", duration)
-			}
-
-			w.Flush()
-
-		}
-
+	var list []unstructured.Unstructured
+	list, err = svc.ListOperatorServices(o.KClient)
+	if err != nil {
 		return err
 	}
+
+	if len(list) == 0 {
+		return fmt.Errorf("No operator backed services found in namespace: %s", o.KClient.Namespace)
+	}
+
+	if log.IsJSON() {
+		machineoutput.OutputSuccess(list)
+		return
+	} else {
+		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+
+		fmt.Fprintln(w, "NAME", "\t", "AGE")
+
+		for _, item := range list {
+			duration := time.Since(item.GetCreationTimestamp().Time).Truncate(time.Second).String()
+			fmt.Fprintln(w, strings.Join([]string{item.GetKind(), item.GetName()}, "/"), "\t", duration)
+		}
+
+		w.Flush()
+
+	}
+
+	return err
 
 	services, err := svc.ListWithDetailedStatus(o.Client, o.Application)
 	if err != nil {

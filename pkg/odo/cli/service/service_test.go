@@ -1,9 +1,10 @@
 package service
 
 import (
-	"github.com/openshift/odo/pkg/testingutil"
 	"sort"
 	"testing"
+
+	"github.com/openshift/odo/pkg/testingutil"
 
 	"github.com/kubernetes-sigs/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"

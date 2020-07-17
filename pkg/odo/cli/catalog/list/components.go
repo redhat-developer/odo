@@ -12,7 +12,6 @@ import (
 	"github.com/openshift/odo/pkg/machineoutput"
 	catalogutil "github.com/openshift/odo/pkg/odo/cli/catalog/util"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
-	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/spf13/cobra"
@@ -51,28 +50,24 @@ func (o *ListComponentsOptions) Complete(name string, cmd *cobra.Command, args [
 		tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
 			o.catalogList, err = catalog.ListComponents(o.Client)
 			if err != nil {
-				if experimental.IsExperimentalModeEnabled() {
-					klog.V(4).Info("Please log in to an OpenShift cluster to list OpenShift/s2i components")
-				} else {
-					errChannel <- err
-				}
+				klog.V(4).Info("Please log in to an OpenShift cluster to list OpenShift/s2i components")
+				// S2I Only
+				// errChannel <- err
 			} else {
 				o.catalogList.Items = catalogutil.FilterHiddenComponents(o.catalogList.Items)
 			}
 		}})
 	}
 
-	if experimental.IsExperimentalModeEnabled() {
-		tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
-			o.catalogDevfileList, err = catalog.ListDevfileComponents("")
-			if o.catalogDevfileList.DevfileRegistries == nil {
-				log.Warning("Please run 'odo registry add <registry name> <registry URL>' to add registry for listing devfile components\n")
-			}
-			if err != nil {
-				errChannel <- err
-			}
-		}})
-	}
+	tasks.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
+		o.catalogDevfileList, err = catalog.ListDevfileComponents("")
+		if o.catalogDevfileList.DevfileRegistries == nil {
+			log.Warning("Please run 'odo registry add <registry name> <registry URL>' to add registry for listing devfile components\n")
+		}
+		if err != nil {
+			errChannel <- err
+		}
+	}})
 
 	return tasks.Run()
 }
@@ -101,19 +96,17 @@ func (o *ListComponentsOptions) Run() (err error) {
 			supported, _ := catalog.SliceSupportedTags(image)
 			o.catalogList.Items[i].Spec.SupportedTags = supported
 		}
-		if experimental.IsExperimentalModeEnabled() {
-			combinedList := combinedCatalogList{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "List",
-					APIVersion: "odo.dev/v1alpha1",
-				},
-				S2iItems:     o.catalogList.Items,
-				DevfileItems: o.catalogDevfileList.Items,
-			}
-			machineoutput.OutputSuccess(combinedList)
-		} else {
-			machineoutput.OutputSuccess(o.catalogList)
+		combinedList := combinedCatalogList{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "List",
+				APIVersion: "odo.dev/v1alpha1",
+			},
+			S2iItems:     o.catalogList.Items,
+			DevfileItems: o.catalogDevfileList.Items,
 		}
+		machineoutput.OutputSuccess(combinedList)
+		// S2I Only
+		// machineoutput.OutputSuccess(o.catalogList)
 	} else {
 		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
 		var supCatalogList, unsupCatalogList []catalog.ComponentType
