@@ -341,7 +341,7 @@ type Dockerfile struct {
 	Source *Source `json:"source"`
 
 	// Mandatory path to dockerfile
-	DockerfilePath string `json:"dockerfilePath"`
+	DockerfileLocation string `json:"dockerfileLocation"`
 
 	// Mandatory destination to registry to push built image
 	Destination string `json:"destination,omitempty"`

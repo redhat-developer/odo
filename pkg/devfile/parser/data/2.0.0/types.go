@@ -412,7 +412,7 @@ type Zip struct {
 	SparseCheckoutDir string `json:"sparseCheckoutDir,omitempty"`
 }
 
-// Dockerfile Component is for dockerfile image build 
+// Dockerfile Component is for dockerfile image build
 type Dockerfile struct {
 	// Mandatory name that allows referencing the Volume component in Container volume mounts or inside a parent
 	Name string `json:"name"`
@@ -420,19 +420,18 @@ type Dockerfile struct {
 	// Mandatory path to source code
 	Source *Source `json:"source"`
 
-	//Mandatory path to dockerfile
-	DockerfilePath string `json:"dockerfilePath"`
+	// Mandatory path to dockerfile
+	DockerfileLocation string `json:"dockerfileLocation"`
 
-	//Mandatory destination to registry to push built image
+	// Mandatory destination to registry to push built image
 	Destination string `json:"destination,omitempty"`
 }
 
 // Source represents source code for Dockerfile Component
 type Source struct {
-	//Mandatory path to local source directory folder
+	// Mandatory path to local source directory folder
 	SourceDir string `json:"sourceDir"`
 
-	//Mandatory path to source repository hosted locally or on cloud
+	// Mandatory path to source repository hosted locally or on cloud
 	Location string `json:"location"`
 }
-

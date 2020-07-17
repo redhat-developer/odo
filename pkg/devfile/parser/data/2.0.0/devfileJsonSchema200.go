@@ -654,7 +654,7 @@ const JsonSchema200 = `{
 						},
 					  	"type":"object"
 				   	},
-					"dockerfilePath":{
+					"dockerfileLocation":{
 						"description":"path to dockerfile",
 						"type":"string"
 					},
@@ -665,7 +665,7 @@ const JsonSchema200 = `{
 				},
 				"required":[
 					"name",
-					"dockerfilePath",
+					"dockerfileLocation",
 					"source"
 				],
 				"type":"object"

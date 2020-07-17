@@ -31,7 +31,7 @@ components:
       source: 
          sourceDir: "src"
          location: "https://github.com/ranakan19/golang-ex.git"
-      dockerfilePath: "https://raw.githubusercontent.com/wtam2018/test/master/nodejs-dockerfiile"
+      dockerfileLocation: "https://raw.githubusercontent.com/wtam2018/test/master/nodejs-dockerfiile"
       destination: 
 commands:
   - exec:
