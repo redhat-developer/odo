@@ -177,6 +177,21 @@ var _ = Describe("odo devfile test command tests", func() {
 			output = cliRunner.ExecListDir(podName, namespace, sourcePath)
 			Expect(output).To(ContainSubstring("test2"))
 		})
+
+		It("Should run composite test command successfully", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--context", context, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-testgroup.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CmdShouldPass("odo", "push", "--context", context)
+
+			output := helper.CmdShouldPass("odo", "test", "--test-command", "compositetest", "--context", context)
+			helper.MatchAllInOutput(output, []string{"Executing test1 command", "mkdir test1", "Executing test2 command", "mkdir test2"})
+
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+			output = cliRunner.ExecListDir(podName, namespace, sourcePath)
+			helper.MatchAllInOutput(output, []string{"test1", "test2"})
+		})
 	})
 
 })

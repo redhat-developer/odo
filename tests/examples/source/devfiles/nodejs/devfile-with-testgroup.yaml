@@ -43,3 +43,12 @@ commands:
       workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
       group:
         kind: test
+  - composite:
+         id: compositetest
+         label: Build and Mkdir
+         commands:
+           - test1
+           - test2
+         parallel: false
+         group: 
+            kind: test
