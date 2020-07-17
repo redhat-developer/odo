@@ -413,7 +413,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 				}
 			} else {
 				compInfo.ContainerName = command.Exec.Component
-				err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger, false)
+				err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, compInfo, show, a.machineEventLogger, false)
 				if err != nil {
 					return err
 				}
@@ -433,7 +433,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 			}
 		} else {
 			compInfo.ContainerName = command.Exec.Component
-			err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger, false)
+			err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, compInfo, show, a.machineEventLogger, false)
 			if err != nil {
 				return err
 			}
@@ -460,22 +460,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 		}
 
 		compInfo.ContainerName = command.Exec.Component
-		if componentExists && !common.IsRestartRequired(command) {
-			klog.V(4).Infof("restart:false, Not restarting %v Command", command.Exec.Id)
-
-			if isDebug {
-				err = exec.ExecuteDevfileDebugActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
-			} else {
-				err = exec.ExecuteDevfileRunActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
-			}
-			return
-		}
-		if isDebug {
-			err = exec.ExecuteDevfileDebugAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
-		} else {
-			err = exec.ExecuteDevfileRunAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
-		}
-
+		return exec.Execute(&a.Client, *command.Exec, compInfo, show, a.machineEventLogger, exec.DefaultCommands(isDebug, common.IsRestartRequired(command)))
 	}
 
 	return
@@ -528,7 +513,7 @@ func (a Adapter) execTestCmd(testCmd versionsCommon.DevfileCommand, podName stri
 		err = exec.ExecuteCompositeDevfileAction(&a.Client, *testCmd.Composite, devfileCommandMap, compInfo, show, a.machineEventLogger)
 	} else {
 		compInfo.ContainerName = testCmd.Exec.Component
-		err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *testCmd.Exec, testCmd.Exec.Id, compInfo, show, a.machineEventLogger, false)
+		err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *testCmd.Exec, compInfo, show, a.machineEventLogger, false)
 	}
 	return
 }
