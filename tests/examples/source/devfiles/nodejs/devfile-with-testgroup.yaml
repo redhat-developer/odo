@@ -10,16 +10,10 @@ components:
       name: runtime
       image: registry.access.redhat.com/ubi8/nodejs-12:1-36
       memoryLimit: 1024Mi
-      endpoints:
-        - name: "3000/tcp"
-          configuration:
-            protocol: tcp
-            scheme: http
-          targetPort: 3000
       mountSources: true
 commands:
   - exec:
-      id: firstbuild
+      id: devbuild
       component: runtime
       commandLine: npm install
       workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
@@ -27,32 +21,13 @@ commands:
         kind: build
         isDefault: true
   - exec:
-      id: secondbuild
+      id: devrun
       component: runtime
-      commandLine: npm install
+      commandLine: npm start
       workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
       group:
-        kind: build
+        kind: run
         isDefault: true
-  - exec:
-      id: thirdbuild
-      component: runtime
-      commandLine: npm install
-      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
-  - exec:
-      id: firstrun
-      component: runtime
-      commandLine: npm start
-      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
-      group:
-        kind: run
-  - exec:
-      id: secondrun
-      component: runtime
-      commandLine: npm start
-      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
-      group:
-        kind: run
   - exec:
       id: test1
       component: runtime
@@ -68,4 +43,3 @@ commands:
       workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
       group:
         kind: test
-        isDefault: true

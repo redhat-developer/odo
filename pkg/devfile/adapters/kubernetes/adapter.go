@@ -55,6 +55,11 @@ func (k Adapter) Delete(labels map[string]string) error {
 	return nil
 }
 
+// Test runs the devfile test command
+func (k Adapter) Test(testCmd string, show bool) error {
+	return k.componentAdapter.Test(testCmd, show)
+}
+
 // Log shows log from component
 func (k Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
 	return k.componentAdapter.Log(follow, debug)

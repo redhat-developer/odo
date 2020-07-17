@@ -167,6 +167,29 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	return nil
 }
 
+// Test runs the devfile test command
+func (a Adapter) Test(testCmd string, show bool) (err error) {
+	pod, err := a.Client.GetPodUsingComponentName(a.ComponentName)
+	if err != nil {
+		return fmt.Errorf("error occurred while getting the pod: %w", err)
+	}
+	if pod.Status.Phase != corev1.PodRunning {
+		return fmt.Errorf("pod for component %s is not running", a.ComponentName)
+	}
+
+	log.Infof("\nExecuting devfile test command for component %s", a.ComponentName)
+
+	testCommand, err := common.ValidateAndGetTestDevfileCommands(a.Devfile.Data, testCmd)
+	if err != nil {
+		return errors.Wrap(err, "failed to validate devfile test command")
+	}
+	err = a.execTestCmd(testCommand, pod.GetName(), show)
+	if err != nil {
+		return errors.Wrapf(err, "failed to execute devfile commands for component %s", a.ComponentName)
+	}
+	return nil
+}
+
 // DoesComponentExist returns true if a component with the specified name exists, false otherwise
 func (a Adapter) DoesComponentExist(cmpName string) (bool, error) {
 	return utils.ComponentExists(a.Client, cmpName)
@@ -354,7 +377,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 		command, ok := commandsMap[versionsCommon.InitCommandGroupType]
 		if ok {
 			compInfo.ContainerName = command.Exec.Component
-			err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
+			err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 			if err != nil {
 				return err
 			}
@@ -367,7 +390,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 	command, ok := commandsMap[versionsCommon.BuildCommandGroupType]
 	if ok {
 		compInfo.ContainerName = command.Exec.Component
-		err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
+		err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 		if err != nil {
 			return err
 		}
@@ -410,6 +433,16 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 
 	}
 
+	return
+}
+
+// Executes the test command in the pod
+func (a Adapter) execTestCmd(testCmd versionsCommon.DevfileCommand, podName string, show bool) (err error) {
+	compInfo := common.ComponentInfo{
+		PodName: podName,
+	}
+	compInfo.ContainerName = testCmd.Exec.Component
+	err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *testCmd.Exec, testCmd.Exec.Id, compInfo, show, a.machineEventLogger)
 	return
 }
 

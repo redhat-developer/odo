@@ -146,6 +146,33 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	return nil
 }
 
+// Test runs the devfile test command
+func (a Adapter) Test(testCmd string, show bool) (err error) {
+	componentExists, err := utils.ComponentExists(a.Client, a.Devfile.Data, a.ComponentName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to determine if component %s exists", a.ComponentName)
+	}
+	if !componentExists {
+		return fmt.Errorf("component does not exist, a valid component is required to run 'odo test'")
+	}
+
+	containers, err := utils.GetComponentContainers(a.Client, a.ComponentName)
+	if err != nil {
+		return errors.Wrapf(err, "error while retrieving container for odo component %s", a.ComponentName)
+	}
+	log.Infof("\nExecuting devfile test command for component %s", a.ComponentName)
+	testCommand, err := common.ValidateAndGetTestDevfileCommands(a.Devfile.Data, testCmd)
+	if err != nil {
+		return errors.Wrap(err, "failed to validate devfile test command")
+	}
+
+	err = a.execTestCmd(testCommand, containers, show)
+	if err != nil {
+		return errors.Wrapf(err, "failed to execute devfile commands for component %s", a.ComponentName)
+	}
+	return nil
+}
+
 // DoesComponentExist returns true if a component with the specified name exists, false otherwise
 func (a Adapter) DoesComponentExist(cmpName string) (bool, error) {
 	componentExists, err := utils.ComponentExists(a.Client, a.Devfile.Data, cmpName)

@@ -203,6 +203,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 	if experimental.IsExperimentalModeEnabled() {
 		rootCmd.AddCommand(
 			registry.NewCmdRegistry(registry.RecommendedCommandName, util.GetFullName(fullName, registry.RecommendedCommandName)),
+			component.NewCmdTest(component.TestRecommendedCommandName, util.GetFullName(fullName, component.TestRecommendedCommandName)),
 		)
 	}
 
