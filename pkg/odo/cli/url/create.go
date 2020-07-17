@@ -122,10 +122,6 @@ func (o *URLCreateOptions) Complete(_ string, cmd *cobra.Command, args []string)
 			} else {
 				o.urlType = envinfo.ROUTE
 			}
-
-			if o.tlsSecret != "" && (!o.wantIngress || !o.secureURL) {
-				return fmt.Errorf("tls secret is only available for secure URLs of ingress kind")
-			}
 		}
 
 		err = o.InitEnvInfoFromContext()
@@ -217,6 +213,10 @@ func (o *URLCreateOptions) Validate() (err error) {
 	// if experimental mode is enabled, and devfile is provided.
 	errorList := make([]string, 0)
 	if o.isDevFile {
+		if !o.isDocker && o.tlsSecret != "" && (o.urlType != envinfo.INGRESS || !o.secureURL) {
+			errorList = append(errorList, "TLS secret is only available for secure URLs of Ingress kind")
+		}
+
 		// check if a host is provided for route based URLs
 		if len(o.host) > 0 {
 			if o.urlType == envinfo.ROUTE {
@@ -257,7 +257,7 @@ func (o *URLCreateOptions) Validate() (err error) {
 		for i := range errorList {
 			errorList[i] = fmt.Sprintf("\t- %s", errorList[i])
 		}
-		return fmt.Errorf("There are validation issues:\n%s", strings.Join(errorList, "\n"))
+		return fmt.Errorf("URL creation failed:\n%s", strings.Join(errorList, "\n"))
 	}
 	return
 }
