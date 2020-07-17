@@ -321,7 +321,7 @@ func ValidateAndGetTestDevfileCommands(data data.DevfileData, devfileTestCmd str
 	testCommand, testCmdErr := GetTestCommand(data, devfileTestCmd)
 	if testCmdErr == nil && !reflect.DeepEqual(emptyCommand, testCommand) {
 		isTestCommandValid = true
-		klog.V(4).Infof("Test command: %v", testCommand.Exec.Id)
+		klog.V(4).Infof("Test command: %v", testCommand.GetID())
 	}
 
 	if !isTestCommandValid && testCmdErr != nil {

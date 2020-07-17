@@ -459,8 +459,15 @@ func (a Adapter) execTestCmd(testCmd versionsCommon.DevfileCommand, podName stri
 	compInfo := common.ComponentInfo{
 		PodName: podName,
 	}
-	compInfo.ContainerName = testCmd.Exec.Component
-	err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *testCmd.Exec, testCmd.Exec.Id, compInfo, show, a.machineEventLogger, false)
+	if testCmd.Composite != nil {
+		// Need to get mapping of all commands in the devfile since the composite command may reference any exec or composite command in the devfile
+		devfileCommandMap := common.GetCommandsMap(a.Devfile.Data.GetCommands())
+
+		err = exec.ExecuteCompositeDevfileAction(&a.Client, *testCmd.Composite, devfileCommandMap, compInfo, show, a.machineEventLogger)
+	} else {
+		compInfo.ContainerName = testCmd.Exec.Component
+		err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *testCmd.Exec, testCmd.Exec.Id, compInfo, show, a.machineEventLogger, false)
+	}
 	return
 }
 
