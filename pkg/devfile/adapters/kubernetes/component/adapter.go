@@ -460,7 +460,7 @@ func (a Adapter) execTestCmd(testCmd versionsCommon.DevfileCommand, podName stri
 		PodName: podName,
 	}
 	compInfo.ContainerName = testCmd.Exec.Component
-	err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *testCmd.Exec, testCmd.Exec.Id, compInfo, show, a.machineEventLogger)
+	err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *testCmd.Exec, testCmd.Exec.Id, compInfo, show, a.machineEventLogger, false)
 	return
 }
 

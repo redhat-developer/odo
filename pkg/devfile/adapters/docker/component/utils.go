@@ -378,7 +378,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 func (a Adapter) execTestCmd(testCmd versionsCommon.DevfileCommand, containers []types.Container, show bool) (err error) {
 	containerID := utils.GetContainerIDForAlias(containers, testCmd.Exec.Component)
 	compInfo := common.ComponentInfo{ContainerName: containerID}
-	err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *testCmd.Exec, testCmd.Exec.Id, compInfo, show, a.machineEventLogger)
+	err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *testCmd.Exec, testCmd.Exec.Id, compInfo, show, a.machineEventLogger, false)
 	return
 }
 
