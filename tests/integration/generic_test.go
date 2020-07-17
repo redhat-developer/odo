@@ -314,21 +314,24 @@ var _ = Describe("odo generic", func() {
 			stdOut := helper.CmdShouldFail("odo", "url", "create", testLongURLName, "--port", "8080")
 			Expect(stdOut).To(ContainSubstring("must be shorter than 63 characters"))
 		})
-		It("should not allow creating an invalid host", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", project)
-			stdOut := helper.CmdShouldFail("odo", "url", "create", "--host", "https://127.0.0.1:60104", "--ingress")
-			Expect(stdOut).To(ContainSubstring("is not a valid host name"))
-		})
-		It("should not allow using tls secret if url is not secure", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", project)
-			stdOut := helper.CmdShouldFail("odo", "url", "create", "--tls-secret", "foo", "--ingress")
-			Expect(stdOut).To(ContainSubstring("TLS secret is only available for secure URLs of Ingress kind"))
-		})
-		It("should report multiple issues when it's the case", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", project)
-			stdOut := helper.CmdShouldFail("odo", "url", "create", "--host", "https://127.0.0.1:60104", "--tls-secret", "foo", "--ingress")
-			Expect(stdOut).To(And(ContainSubstring("is not a valid host name"), ContainSubstring("TLS secret is only available for secure URLs of Ingress kind")))
-		})
+		/*
+			// these tests only work when experimental mode is activated
+			It("should not allow creating an invalid host", func() {
+				helper.CmdShouldPass("odo", "create", "nodejs", "--project", project)
+				stdOut := helper.CmdShouldFail("odo", "url", "create", "--host", "https://127.0.0.1:60104", "--ingress")
+				Expect(stdOut).To(ContainSubstring("is not a valid host name"))
+			})
+			It("should not allow using tls secret if url is not secure", func() {
+				helper.CmdShouldPass("odo", "create", "nodejs", "--project", project)
+				stdOut := helper.CmdShouldFail("odo", "url", "create", "--tls-secret", "foo", "--ingress")
+				Expect(stdOut).To(ContainSubstring("TLS secret is only available for secure URLs of Ingress kind"))
+			})
+				It("should report multiple issues when it's the case", func() {
+					helper.CmdShouldPass("odo", "create", "nodejs", "--project", project)
+					stdOut := helper.CmdShouldFail("odo", "url", "create", "--host", "https://127.0.0.1:60104", "--tls-secret", "foo", "--ingress")
+					Expect(stdOut).To(And(ContainSubstring("is not a valid host name"), ContainSubstring("TLS secret is only available for secure URLs of Ingress kind")))
+				})
+		*/
 	})
 
 	Context("when component's deployment config is deleted with oc", func() {
