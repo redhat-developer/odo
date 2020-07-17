@@ -77,10 +77,17 @@ func (o *ServiceDeleteOptions) Validate() (err error) {
 func (o *ServiceDeleteOptions) Run() (err error) {
 	if experimental.IsExperimentalModeEnabled() {
 		if o.serviceForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete %v", o.serviceName)) {
+
+			s := log.Spinner("Waiting for service to be deleted")
+			defer s.End(false)
+
 			err = svc.DeleteOperatorService(o.KClient, o.serviceName)
 			if err != nil {
 				return err
 			}
+
+			s.End(true)
+
 			log.Infof("Service %q has been successfully deleted", o.serviceName)
 		}
 		return nil
