@@ -11,8 +11,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ExecuteDevfileBuildAction executes the devfile build command action
-func ExecuteDevfileBuildAction(client ExecClient, exec common.Exec, commandName string, compInfo adaptersCommon.ComponentInfo, show bool, machineEventLogger machineoutput.MachineEventLoggingClient) error {
+// ExecuteDevfileCommandSynchronously executes the devfile init, build and test command actions synchronously
+func ExecuteDevfileCommandSynchronously(client ExecClient, exec common.Exec, commandName string, compInfo adaptersCommon.ComponentInfo, show bool, machineEventLogger machineoutput.MachineEventLoggingClient) error {
 	var s *log.Status
 	var setEnvVariable, command string
 	for _, envVar := range exec.Env {

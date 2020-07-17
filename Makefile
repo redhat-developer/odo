@@ -232,6 +232,11 @@ test-cmd-devfile-delete:
 .PHONY: test-cmd-devfile-registry
 test-cmd-devfile-registry:
 	ginkgo $(GINKGO_FLAGS) -focus="odo devfile registry command tests" tests/integration/devfile/
+
+# Run odo devfile test command tests
+.PHONY: test-cmd-devfile-test
+test-cmd-devfile-test:
+	ginkgo $(GINKGO_FLAGS) -focus="odo devfile test command tests" tests/integration/devfile/
 	
 # Run odo storage command tests
 .PHONY: test-cmd-storage
@@ -288,6 +293,11 @@ test-cmd-docker-devfile-catalog:
 .PHONY: test-cmd-docker-devfile-url-pushtarget
 test-cmd-docker-devfile-url-pushtarget:
 	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile url pushtarget command tests" tests/integration/devfile/docker/
+
+# Run odo test docker devfile command tests
+.PHONY: test-cmd-docker-devfile-test
+test-cmd-docker-devfile-test:
+	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile test command tests" tests/integration/devfile/docker/
 
 # Run odo watch command tests
 .PHONY: test-cmd-watch
