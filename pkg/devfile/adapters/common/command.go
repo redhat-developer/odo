@@ -180,7 +180,7 @@ func validateCompositeCommand(data data.DevfileData, compositeCommand *common.Co
 
 	// Loop over the commands and validate that each command points to a command that's in the devfile
 	for _, command := range compositeCommand.Commands {
-		if command == compositeCommand.Id {
+		if strings.ToLower(command) == compositeCommand.Id {
 			return fmt.Errorf("the composite command %q cannot reference itself", compositeCommand.Id)
 		}
 
