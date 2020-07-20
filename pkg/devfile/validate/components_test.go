@@ -8,14 +8,14 @@ import (
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 )
 
-func TestValidateComponents(t *testing.T) {
+func TestvalidateComponents(t *testing.T) {
 
 	t.Run("No components present", func(t *testing.T) {
 
 		// Empty components
 		components := []common.DevfileComponent{}
 
-		got := ValidateComponents(components)
+		got := validateComponents(components)
 		want := fmt.Errorf(ErrorNoComponents)
 
 		if !reflect.DeepEqual(got, want) {
@@ -33,7 +33,7 @@ func TestValidateComponents(t *testing.T) {
 			},
 		}
 
-		got := ValidateComponents(components)
+		got := validateComponents(components)
 
 		if got != nil {
 			t.Errorf("Not expecting an error: '%v'", got)
