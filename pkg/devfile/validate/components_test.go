@@ -8,7 +8,7 @@ import (
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 )
 
-func TestvalidateComponents(t *testing.T) {
+func TestValidateComponents(t *testing.T) {
 
 	t.Run("No components present", func(t *testing.T) {
 
