@@ -141,7 +141,9 @@ func validateCommand(data data.DevfileData, command common.DevfileCommand) (err 
 
 	// If the command is a composite command, need to validate that it is valid
 	if command.Composite != nil {
-		return validateCompositeCommand(data, command.Composite)
+		parentCommands := make(map[string]string)
+		commandsMap := GetCommandsMap(data.GetCommands())
+		return validateCompositeCommand(command.Composite, parentCommands, commandsMap)
 	}
 
 	// component must be specified
@@ -171,12 +173,13 @@ func validateCommand(data data.DevfileData, command common.DevfileCommand) (err 
 }
 
 // validateCompositeCommand checks that the specified composite command is valid
-func validateCompositeCommand(data data.DevfileData, compositeCommand *common.Composite) error {
+func validateCompositeCommand(compositeCommand *common.Composite, parentCommands map[string]string, devfileCommands map[string]common.DevfileCommand) error {
 	if compositeCommand.Group != nil && compositeCommand.Group.Kind == common.RunCommandGroupType {
 		return fmt.Errorf("composite commands of run Kind are not supported currently")
 	}
 
-	commandsMap := GetCommandsMap(data.GetCommands())
+	// Store the command ID in a map of parent commands
+	parentCommands[compositeCommand.Id] = compositeCommand.Id
 
 	// Loop over the commands and validate that each command points to a command that's in the devfile
 	for _, command := range compositeCommand.Commands {
@@ -184,9 +187,25 @@ func validateCompositeCommand(data data.DevfileData, compositeCommand *common.Co
 			return fmt.Errorf("the composite command %q cannot reference itself", compositeCommand.Id)
 		}
 
-		_, ok := commandsMap[strings.ToLower(command)]
+		// Don't allow commands to indirectly reference themselves, so check if the command equals any of the parent commands in the command tree
+		_, ok := parentCommands[strings.ToLower(command)]
+		if ok {
+			return fmt.Errorf("the composite command %q cannot indirectly reference itself", compositeCommand.Id)
+		}
+
+		subCommand, ok := devfileCommands[strings.ToLower(command)]
 		if !ok {
 			return fmt.Errorf("the command %q mentioned in the composite command %q does not exist in the devfile", command, compositeCommand.Id)
+		}
+
+		if subCommand.Composite != nil {
+			// Recursively validate the composite subcommand
+			err := validateCompositeCommand(subCommand.Composite, parentCommands, devfileCommands)
+			if err != nil {
+				// Don't wrap the error message here to make the error message more readable to the user
+				return err
+			}
+
 		}
 	}
 	return nil

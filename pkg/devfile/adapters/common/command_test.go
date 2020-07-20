@@ -1685,7 +1685,7 @@ func TestValidateCompositeCommand(t *testing.T) {
 	command := []string{"ls -la", "ps", "ls /"}
 	component := "alias1"
 	workDir := []string{"/", "/dev", "/etc"}
-	id := []string{"command1", "command2", "command3", "command4"}
+	id := []string{"command1", "command2", "command3", "command4", "command5"}
 
 	tests := []struct {
 		name              string
@@ -1829,6 +1829,45 @@ func TestValidateCompositeCommand(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "Case 5: Invalid composite command, indirectly references itself",
+			compositeCommands: []common.Composite{
+				{
+					Id:       id[3],
+					Commands: []string{id[4], id[3], id[2]},
+					Group:    &versionsCommon.Group{Kind: buildGroup},
+				},
+				{
+					Id:       id[4],
+					Commands: []string{id[0], id[3], id[2]},
+					Group:    &versionsCommon.Group{Kind: buildGroup},
+				},
+			},
+			execCommands: []common.Exec{
+				{
+					Id:          id[0],
+					CommandLine: command[0],
+					Component:   component,
+					Group:       &common.Group{Kind: runGroup},
+					WorkingDir:  workDir[0],
+				},
+				{
+					Id:          id[1],
+					CommandLine: command[1],
+					Component:   component,
+					Group:       &common.Group{Kind: buildGroup},
+					WorkingDir:  workDir[1],
+				},
+				{
+					Id:          id[2],
+					CommandLine: command[2],
+					Component:   component,
+					Group:       &common.Group{Kind: runGroup},
+					WorkingDir:  workDir[2],
+				},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		devObj := devfileParser.DevfileObj{
@@ -1840,7 +1879,10 @@ func TestValidateCompositeCommand(t *testing.T) {
 		}
 		t.Run(tt.name, func(t *testing.T) {
 			cmd := common.DevfileCommand{Composite: &tt.compositeCommands[0]}
-			err := validateCompositeCommand(devObj.Data, cmd.Composite)
+			commandsMap := GetCommandsMap(devObj.Data.GetCommands())
+			parentCommands := make(map[string]string)
+
+			err := validateCompositeCommand(cmd.Composite, parentCommands, commandsMap)
 			if !tt.wantErr == (err != nil) {
 				t.Errorf("TestValidateAction unexpected error: %v", err)
 				return

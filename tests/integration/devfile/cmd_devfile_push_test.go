@@ -218,7 +218,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(output).To(ContainSubstring("composite commands of run Kind are not supported currently"))
 		})
 
-		It("should throw a validation error for composite referencing non-existent commands", func() {
+		It("should throw a validation error for composite command referencing non-existent commands", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
@@ -227,6 +227,17 @@ var _ = Describe("odo devfile push command tests", func() {
 			// Verify odo push failed
 			output := helper.CmdShouldFail("odo", "push", "--context", context)
 			Expect(output).To(ContainSubstring("does not exist in the devfile"))
+		})
+
+		It("should throw a validation error for composite command indirectly referencing itself", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileIndirectNesting.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			// Verify odo push failed
+			output := helper.CmdShouldFail("odo", "push", "--context", context)
+			Expect(output).To(ContainSubstring("cannot indirectly reference itself"))
 		})
 
 		It("checks that odo push works outside of the context directory", func() {
