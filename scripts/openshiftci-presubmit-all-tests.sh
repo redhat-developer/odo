@@ -28,7 +28,7 @@ odo login -u developer -p developer
 oc whoami
 
 # Integration tests
-GINKGO_TEST_ARGS=-v make test-integration
+make test-integration
 make test-integration-devfile
 make test-cmd-login-logout
 make test-cmd-project
