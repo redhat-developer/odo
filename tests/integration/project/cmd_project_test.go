@@ -49,6 +49,17 @@ var _ = Describe("odo project command tests", func() {
 		})
 	})
 
+	Context("odo machine readable output on empty project", func() {
+		It("should be able to list current project", func() {
+			projectListJSON := helper.CmdShouldPass("odo", "project", "list", "-o", "json")
+			listOutputJSON, err := helper.Unindented(projectListJSON)
+			Expect(err).Should(BeNil())
+			partOfProjectListJSON, err := helper.Unindented(`{"kind":"Project","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"` + project + `","namespace":"` + project + `","creationTimestamp":null},"spec":{},"status":{"active":true}}`)
+			Expect(err).Should(BeNil())
+			Expect(listOutputJSON).To(ContainSubstring(partOfProjectListJSON))
+		})
+	})
+
 	Context("Should be able to delete a project with --wait", func() {
 		var projectName string
 		JustBeforeEach(func() {

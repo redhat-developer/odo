@@ -206,6 +206,10 @@ func (o *URLCreateOptions) Complete(name string, cmd *cobra.Command, args []stri
 func (o *URLCreateOptions) Validate() (err error) {
 	// Check if exist
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(o.DevfilePath) {
+		// check if a host is provided for route based URLs
+		if o.isRouteSupported && !o.wantIngress && len(o.host) > 0 {
+			return fmt.Errorf("host is not supported for URLs of Route Kind")
+		}
 		// if experimental mode is enabled, and devfile is provided.
 		// check if valid host is provided
 		if !pushtarget.IsPushTargetDocker() && len(o.host) <= 0 && (!o.isRouteSupported || o.wantIngress) {

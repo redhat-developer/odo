@@ -36,11 +36,37 @@ If you need to run `odo` integration tests against a specific version of Openshi
 
 == Running integration tests on Prow
 
-Prow is the Kubernetes or OpenShift way of managing workflow, including tests. To get tests, you need to raise PR to `openshift/release` repository setting up appropriate ci operator config and job files. Reference for the same is available in the repository.
+Prow is the Kubernetes or OpenShift way of managing workflow, including tests. Odo integration and periodic test targets are passed through the script scripts/openshiftci-presubmit-all-tests.sh and scripts/openshiftci-periodic-tests.sh respectively available in the https://github.com/openshift/odo/tree/master/scripts[odo] repository. Prow uses the script through the command attribute of the odo job configuration file in https://github.com/openshift/release/tree/master/ci-operator/config/openshift/odo[openshift/release] repository.
 
-Note that prow gives you a bare bones cluster, so we need to pre-configure the same so that the cluster is in state expected such as auth being configured and so on.
+For running integration test on 4.x cluster, job configuration file will be
+[source,sh]
+----
+    tests:
+    - as: integration-e2e
+      commands: scripts/openshiftci-presubmit-all-tests.sh
+      openshift_installer_src:
+       cluster_profile: aws
+      secret:
+       mount_path: /tmp/secret
+       name: odo-secret
+----
 
-You can do this by running `$ make configure-installer-tests-cluster` before running actual tests. This script is configurable with environment variables as:
+Similarly for running periodic test on 4.x cluster, job configuration file will be
+[source,sh]
+----
+    tests:
+    - as: integration-e2e
+      commands: scripts/openshiftci-periodic-tests.sh
+      openshift_installer_src:
+       cluster_profile: aws
+      secret:
+       mount_path: /tmp/secret
+       name: odo-secret
+----
 
-* `CI`: If this environment is set, then initial setup is skipped in favor of only configuring authentication. Use this only with OpenShift CI.
-* `DEFAULT_INSTALLER_ASSETS_DIR`: The location where OpenShift installer creates assets such as kube admin password and the kubeconfig file.
+To generate the odo job file, run `make jobs` in https://github.com/openshift/release[openshift/release] for the odo pr and periodic tests.
+
+Job dashboard is monitored at:
+
+* link:https://deck-ci.apps.ci.l2s4.p1.openshiftapps.com/?repo=openshift%2Fodo[odo pr jobs dashboard]
+* link:https://deck-ci.apps.ci.l2s4.p1.openshiftapps.com/?type=periodic&job=periodic-\*odo*[odo periodic jobs dashboard]

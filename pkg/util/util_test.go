@@ -15,7 +15,6 @@ import (
 	"runtime"
 	"sort"
 	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -1247,7 +1246,10 @@ func TestHTTPGetRequest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := HTTPGetRequest(tt.url)
+			request := HTTPRequestParams{
+				URL: tt.url,
+			}
+			got, err := HTTPGetRequest(request)
 
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Got: %v, want: %v", got, tt.want)
@@ -1332,6 +1334,7 @@ func TestDownloadFile(t *testing.T) {
 		url      string
 		filepath string
 		want     []byte
+		wantErr  bool
 	}{
 		{
 			name:     "Case 1: Input url is valid",
@@ -1339,47 +1342,61 @@ func TestDownloadFile(t *testing.T) {
 			filepath: "./test.yaml",
 			// Want(Expected) result is "OK"
 			// According to Unicode table: O == 79, K == 75
-			want: []byte{79, 75},
+			want:    []byte{79, 75},
+			wantErr: false,
 		},
 		{
 			name:     "Case 2: Input url is invalid",
 			url:      "invalid",
 			filepath: "./test.yaml",
 			want:     []byte{},
+			wantErr:  true,
 		},
 		{
 			name:     "Case 3: Input url is an empty string",
 			url:      "",
 			filepath: "./test.yaml",
 			want:     []byte{},
+			wantErr:  true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := DownloadFile(tt.url, tt.filepath)
-
-			if tt.url == "" && err != nil {
-				if !strings.Contains(err.Error(), "unsupported protocol scheme") {
-					t.Errorf("Did not get expected error %s", err)
-				}
-			} else if tt.url != "invalid" && err != nil {
-				t.Errorf("Failed to download file with error %s", err)
+			gotErr := false
+			params := DownloadParams{
+				Request: HTTPRequestParams{
+					URL: tt.url,
+				},
+				Filepath: tt.filepath,
 			}
-
-			got, err := ioutil.ReadFile(tt.filepath)
-			if tt.url != "invalid" && err != nil {
-				t.Errorf("Failed to read file with error %s", err)
-			}
-
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Got: %v, want: %v", got, tt.want)
-			}
-
-			// Clean up the file that downloaded in this test case
-			err = os.Remove(tt.filepath)
+			err := DownloadFile(params)
 			if err != nil {
-				t.Errorf("Failed to delete file with error %s", err)
+				gotErr = true
+			}
+			if !reflect.DeepEqual(gotErr, tt.wantErr) {
+				t.Error("Failed to get expected error")
+			}
+
+			if !tt.wantErr {
+				if err != nil {
+					t.Errorf("Failed to download file with error %s", err)
+				}
+
+				got, err := ioutil.ReadFile(tt.filepath)
+				if err != nil {
+					t.Errorf("Failed to read file with error %s", err)
+				}
+
+				if !reflect.DeepEqual(got, tt.want) {
+					t.Errorf("Got: %v, want: %v", got, tt.want)
+				}
+
+				// Clean up the file that downloaded in this test case
+				err = os.Remove(tt.filepath)
+				if err != nil {
+					t.Errorf("Failed to delete file with error %s", err)
+				}
 			}
 		})
 	}
@@ -1628,42 +1645,46 @@ func TestDownloadFileInMemory(t *testing.T) {
 
 /*
 func TestGetGitHubZipURL(t *testing.T) {
+	startPoint := "1.0.0"
+	branch := "my-branch"
 	tests := []struct {
 		name          string
-		zipURL        string
+		location      string
+		branch        string
+		startPoint    string
 		expectedError string
 	}{
 		{
 			name:          "Case 1: Invalid http request",
-			zipURL:        "http://github.com/che-samples/web-nodejs-sample/archive/master",
+			location:      "http://github.com/che-samples/web-nodejs-sample/archive/master",
 			expectedError: "Invalid GitHub URL. Please use https://",
 		},
 		{
 			name:          "Case 2: Invalid owner",
-			zipURL:        "https://github.com//web-nodejs-sample/archive/master",
+			location:      "https://github.com//web-nodejs-sample/archive/master",
 			expectedError: "Invalid GitHub URL: owner cannot be empty. Expecting 'https://github.com/<owner>/<repo>'",
 		},
 		{
 			name:          "Case 3: Invalid repo",
-			zipURL:        "https://github.com/che-samples//archive/master",
+			location:      "https://github.com/che-samples//archive/master",
 			expectedError: "Invalid GitHub URL: repo cannot be empty. Expecting 'https://github.com/<owner>/<repo>'",
 		},
 		{
-			name:          "Case 4: Non-existent URL",
-			zipURL:        "https://github.com/this/does/not/exist",
-			expectedError: "Error getting zip url. Response: 404 Not Found.",
-		},
-		{
-			name:          "Case 5: Valid SSH Github URL",
-			zipURL:        "git@github.com:che-samples/web-nodejs-sample.git",
-			expectedError: "",
+			name:          "Case 4: Invalid HTTPS Github URL with tag and commit",
+			location:      "https://github.com/che-samples/web-nodejs-sample.git",
+			branch:        branch,
+			startPoint:    startPoint,
+			expectedError: fmt.Sprintf("Branch %s and StartPoint %s specified as project reference, please only specify one", branch, startPoint),
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := GetGitHubZipURL(tt.zipURL)
-			if err != nil && !reflect.DeepEqual(err.Error(), tt.expectedError) {
-				t.Errorf("Got %s, want %s", err.Error(), tt.expectedError)
+			_, err := GetGitHubZipURL(tt.location, tt.branch, tt.startPoint)
+			if err != nil {
+				if !strings.Contains(err.Error(), tt.expectedError) {
+					t.Errorf("Got %s,\n want %s", err.Error(), tt.expectedError)
+				}
 			}
 		})
 	}

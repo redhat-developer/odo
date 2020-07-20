@@ -250,7 +250,7 @@ func componentTests(args ...string) {
 			Expect(err).Should(BeNil())
 			expected, err := helper.Unindented(`{"kind": "Component","apiVersion": "odo.dev/v1alpha1","metadata": {"name": "cmp-git","namespace": "` + project + `","creationTimestamp": null},"spec":{"app": "testing","type":"nodejs","source": "https://github.com/openshift/nodejs-ex","sourceType": "git","urls": {"kind": "List", "apiVersion": "odo.dev/v1alpha1", "metadata": {}, "items": [{"kind": "url", "apiVersion": "odo.dev/v1alpha1", "metadata": {"name": "url-1", "creationTimestamp": null}, "spec": {"port": 8080, "secure": false, "kind": "route"}, "status": {"state": "Not Pushed"}}, {"kind": "url", "apiVersion": "odo.dev/v1alpha1", "metadata": {"name": "url-2", "creationTimestamp": null}, "spec": {"port": 8080, "secure": false,"kind": "route"}, "status": {"state": "Not Pushed"}}]},"storages": {"kind": "List", "apiVersion": "odo.dev/v1alpha1", "metadata": {}, "items": [{"kind": "storage", "apiVersion": "odo.dev/v1alpha1", "metadata": {"name": "storage-1", "creationTimestamp": null}, "spec": {"size": "1Gi", "path": "/data1"}}]},"ports": ["8080/TCP"]},"status": {"state": "Not Pushed"}}`)
 			Expect(err).Should(BeNil())
-			Expect(cmpDescribeJSON).To(Equal(expected))
+			Expect(cmpDescribeJSON).Should(MatchJSON(expected))
 
 			// odo should describe not pushed component if component name is given.
 			helper.CmdShouldPass("odo", append(args, "describe", "cmp-git", "--context", context)...)
@@ -265,7 +265,7 @@ func componentTests(args ...string) {
 			Expect(err).Should(BeNil())
 			expected, err := helper.Unindented(`{"kind": "Component","apiVersion": "odo.dev/v1alpha1","metadata": {"name": "cmp-git","namespace": "` + project + `","creationTimestamp": null},"spec":{"app": "testing","type":"nodejs","source": "file://./","sourceType": "local","ports": ["8080/TCP"]}, "status": {"state": "Not Pushed"}}`)
 			Expect(err).Should(BeNil())
-			Expect(cmpDescribeJSON).To(Equal(expected))
+			Expect(cmpDescribeJSON).Should(MatchJSON(expected))
 			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--all", "--context", context)...)
 		})
 
@@ -275,7 +275,7 @@ func componentTests(args ...string) {
 			Expect(err).Should(BeNil())
 			expected, err := helper.Unindented(`{"kind": "Component","apiVersion": "odo.dev/v1alpha1","metadata": {"name": "cmp-git","namespace": "` + project + `","creationTimestamp": null},"spec":{"app": "testing","type":"nodejs","sourceType": "local","env": [{"name": "DEBUG_PORT","value": "5858"}],"ports": ["8080/TCP"]}, "status": {"state": "Pushed"}}`)
 			Expect(err).Should(BeNil())
-			Expect(cmpDescribeJSON).To(Equal(expected))
+			Expect(cmpDescribeJSON).Should(MatchJSON(expected))
 			helper.CmdShouldPass("odo", append(args, "delete", "-f", "--all", "--context", context)...)
 		})
 
@@ -504,6 +504,7 @@ func componentTests(args ...string) {
 				project,
 				[]string{"sh", "-c", "ls -la $ODO_S2I_DEPLOYMENT_DIR/package.json"},
 				func(cmdOp string, err error) bool {
+					fmt.Println("cmdOp error is", err)
 					return err == nil
 				},
 			)

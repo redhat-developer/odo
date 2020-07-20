@@ -26,6 +26,7 @@ import (
 	"github.com/openshift/odo/pkg/machineoutput"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/sync"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 // New instantiantes a component adapter
@@ -61,7 +62,10 @@ type Adapter struct {
 // Push updates the component if a matching component exists or creates one if it doesn't exist
 // Once the component has started, it will sync the source code to it.
 func (a Adapter) Push(parameters common.PushParameters) (err error) {
-	componentExists := utils.ComponentExists(a.Client, a.ComponentName)
+	componentExists, err := utils.ComponentExists(a.Client, a.ComponentName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to determine if component %s exists", a.ComponentName)
+	}
 
 	a.devfileInitCmd = parameters.DevfileInitCmd
 	a.devfileBuildCmd = parameters.DevfileBuildCmd
@@ -174,8 +178,31 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	return nil
 }
 
+// Test runs the devfile test command
+func (a Adapter) Test(testCmd string, show bool) (err error) {
+	pod, err := a.Client.GetPodUsingComponentName(a.ComponentName)
+	if err != nil {
+		return fmt.Errorf("error occurred while getting the pod: %w", err)
+	}
+	if pod.Status.Phase != corev1.PodRunning {
+		return fmt.Errorf("pod for component %s is not running", a.ComponentName)
+	}
+
+	log.Infof("\nExecuting devfile test command for component %s", a.ComponentName)
+
+	testCommand, err := common.ValidateAndGetTestDevfileCommands(a.Devfile.Data, testCmd)
+	if err != nil {
+		return errors.Wrap(err, "failed to validate devfile test command")
+	}
+	err = a.execTestCmd(testCommand, pod.GetName(), show)
+	if err != nil {
+		return errors.Wrapf(err, "failed to execute devfile commands for component %s", a.ComponentName)
+	}
+	return nil
+}
+
 // DoesComponentExist returns true if a component with the specified name exists, false otherwise
-func (a Adapter) DoesComponentExist(cmpName string) bool {
+func (a Adapter) DoesComponentExist(cmpName string) (bool, error) {
 	return utils.ComponentExists(a.Client, cmpName)
 }
 
@@ -263,7 +290,7 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 	klog.V(4).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
 	klog.V(4).Infof("The component name is %v", componentName)
 
-	if utils.ComponentExists(a.Client, componentName) {
+	if componentExists {
 		// If the component already exists, get the resource version of the deploy before updating
 		klog.V(4).Info("The component already exists, attempting to update it")
 		deployment, err := a.Client.UpdateDeployment(*deploymentSpec)
@@ -361,7 +388,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 		command, ok := commandsMap[versionsCommon.InitCommandGroupType]
 		if ok {
 			compInfo.ContainerName = command.Exec.Component
-			err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
+			err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 			if err != nil {
 				return err
 			}
@@ -374,7 +401,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 	command, ok := commandsMap[versionsCommon.BuildCommandGroupType]
 	if ok {
 		compInfo.ContainerName = command.Exec.Component
-		err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
+		err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 		if err != nil {
 			return err
 		}
@@ -439,13 +466,23 @@ func (a Adapter) execDevfileEvent(events []string, podName string) error {
 			// If composite would go here & recursive loop
 
 			// Execute command in pod
-			err := exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, false, a.machineEventLogger)
+			err := exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, false, a.machineEventLogger)
 			if err != nil {
 				return errors.Wrapf(err, "unable to execute devfile command "+commandName)
 			}
 		}
 	}
 	return nil
+}
+
+// Executes the test command in the pod
+func (a Adapter) execTestCmd(testCmd versionsCommon.DevfileCommand, podName string, show bool) (err error) {
+	compInfo := common.ComponentInfo{
+		PodName: podName,
+	}
+	compInfo.ContainerName = testCmd.Exec.Component
+	err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *testCmd.Exec, testCmd.Exec.Id, compInfo, show, a.machineEventLogger)
+	return
 }
 
 // InitRunContainerSupervisord initializes the supervisord in the container if
@@ -484,11 +521,34 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, s
 
 // Delete deletes the component
 func (a Adapter) Delete(labels map[string]string) error {
-	if !utils.ComponentExists(a.Client, a.ComponentName) {
-		return errors.Errorf("the component %s doesn't exist on the cluster", a.ComponentName)
+	spinner := log.Spinnerf("Deleting devfile component %s", a.ComponentName)
+	defer spinner.End(false)
+
+	componentExists, err := utils.ComponentExists(a.Client, a.ComponentName)
+	if kerrors.IsForbidden(err) {
+		klog.V(4).Infof("Resource for %s forbidden", a.ComponentName)
+		// log the error if it failed to determine if the component exists due to insufficient RBACs
+		spinner.End(false)
+		log.Warningf("%v", err)
+		return nil
+	} else if err != nil {
+		return errors.Wrapf(err, "unable to determine if component %s exists", a.ComponentName)
 	}
 
-	return a.Client.DeleteDeployment(labels)
+	if !componentExists {
+		spinner.End(false)
+		log.Warningf("Component %s does not exist", a.ComponentName)
+		return nil
+	}
+
+	err = a.Client.DeleteDeployment(labels)
+	if err != nil {
+		return err
+	}
+
+	spinner.End(true)
+	log.Successf("Successfully deleted component")
+	return nil
 }
 
 // Log returns log from component
@@ -523,4 +583,39 @@ func (a Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
 	containerName := command.Exec.Component
 
 	return a.Client.GetPodLogs(pod.Name, containerName, follow)
+}
+
+// Exec executes a command in the component
+func (a Adapter) Exec(command []string) error {
+	exists, err := utils.ComponentExists(a.Client, a.ComponentName)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		return errors.Errorf("the component %s doesn't exist on the cluster", a.ComponentName)
+	}
+
+	runCommand, err := common.GetRunCommand(a.Devfile.Data, "")
+	if err != nil {
+		return err
+	}
+	containerName := runCommand.Exec.Component
+
+	// get the pod
+	pod, err := a.Client.GetPodUsingComponentName(a.ComponentName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
+	}
+
+	if pod.Status.Phase != corev1.PodRunning {
+		return fmt.Errorf("unable to exec as the component is not running. Current status=%v", pod.Status.Phase)
+	}
+
+	componentInfo := common.ComponentInfo{
+		PodName:       pod.Name,
+		ContainerName: containerName,
+	}
+
+	return exec.ExecuteCommand(&a.Client, componentInfo, command, true, nil, nil)
 }

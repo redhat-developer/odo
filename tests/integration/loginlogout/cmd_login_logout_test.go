@@ -38,10 +38,6 @@ var _ = Describe("odo login and logout command tests", func() {
 	})
 
 	Context("when running login tests", func() {
-		JustBeforeEach(func() {
-			// To make sure that the script is using the developer login session
-			helper.CmdShouldPass("odo", "login", "-u", "developer", "-p", "developer")
-		})
 		It("should successful with correct credentials and fails with incorrect token", func() {
 			// Current user login token
 			currentUserToken = oc.GetToken()

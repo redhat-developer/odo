@@ -20,6 +20,7 @@ var _ = Describe("odo generic", func() {
 	var originalDir string
 	var oc helper.OcRunner
 	var testPHPGitURL = "https://github.com/appuio/example-php-sti-helloworld"
+	var testNodejsGitURL = "https://github.com/sclorg/nodejs-ex"
 	var testLongURLName = "long-url-name-long-url-name-long-url-name-long-url-name-long-url-name"
 
 	BeforeEach(func() {
@@ -114,25 +115,6 @@ var _ = Describe("odo generic", func() {
 		})
 	})
 
-	// Uncomment once https://github.com/openshift/odo/issues/1708 is fixed
-	/*Context("odo machine readable output on empty project", func() {
-		JustBeforeEach(func() {
-			project = helper.CreateRandProject()
-			context = helper.CreateNewContext()
-			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
-		})
-		JustAfterEach(func() {
-			helper.DeleteProject(project)
-			helper.DeleteDir(context)
-			os.Unsetenv("GLOBALODOCONFIG")
-		})
-		It("should be able to return project list", func() {
-			actualProjectListJSON := helper.CmdShouldPass("odo", "project", "list", "-o", "json")
-			partOfProjectListJSON := fmt.Sprintf(`{"kind":"Project","apiVersion":"odo.dev/v1alpha1","metadata":{"name":"%s","creationTimestamp":null},`, project)
-			Expect(actualProjectListJSON).To(ContainSubstring(partOfProjectListJSON))
-		})
-	})*/
-
 	Context("creating component with an application and url", func() {
 		JustBeforeEach(func() {
 			context = helper.CreateNewContext()
@@ -155,6 +137,39 @@ var _ = Describe("odo generic", func() {
 			oc.VerifyCmpName("testcmp", project)
 			oc.VerifyAppNameOfComponent("testcmp", "e2e-xyzk", project)
 			helper.CmdShouldPass("odo", "app", "delete", "e2e-xyzk", "-f")
+		})
+	})
+
+	Context("Overwriting build timeout for git component", func() {
+		JustBeforeEach(func() {
+			context = helper.CreateNewContext()
+			os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+			project = helper.CreateRandProject()
+			originalDir = helper.Getwd()
+			helper.Chdir(context)
+		})
+
+		JustAfterEach(func() {
+			helper.DeleteProject(project)
+			helper.Chdir(originalDir)
+			helper.DeleteDir(context)
+			os.Unsetenv("GLOBALODOCONFIG")
+		})
+		It("should pass to build component if the given build timeout is more than the default(300s) value", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--project", project, "--git", testNodejsGitURL)
+			helper.CmdShouldPass("odo", "preference", "set", "BuildTimeout", "600")
+			buildTimeout := helper.GetPreferenceValue("BuildTimeout")
+			helper.MatchAllInOutput(buildTimeout, []string{"600"})
+			helper.CmdShouldPass("odo", "push")
+		})
+
+		It("should fail to build component if the given build timeout is pretty less(2s)", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "nodejs", "--project", project, "--git", testNodejsGitURL)
+			helper.CmdShouldPass("odo", "preference", "set", "BuildTimeout", "2")
+			buildTimeout := helper.GetPreferenceValue("BuildTimeout")
+			helper.MatchAllInOutput(buildTimeout, []string{"2"})
+			stdOut := helper.CmdShouldFail("odo", "push")
+			helper.MatchAllInOutput(stdOut, []string{"Failed to create component", "timeout waiting for build"})
 		})
 	})
 
