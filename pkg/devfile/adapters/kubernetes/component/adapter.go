@@ -483,10 +483,7 @@ func (a Adapter) execDevfileEvent(events []string, podName string) error {
 			// If composite would go here & recursive loop
 
 			if command.Composite != nil {
-				// Need to get mapping of all commands in the devfile since the composite command may reference any exec or composite command in the devfile
-				devfileCommandMap := common.GetCommandsMap(a.Devfile.Data.GetCommands())
-
-				err := exec.ExecuteCompositeDevfileAction(&a.Client, *command.Composite, devfileCommandMap, compInfo, false, a.machineEventLogger)
+				err := exec.ExecuteCompositeDevfileAction(&a.Client, *command.Composite, commandMap, compInfo, false, a.machineEventLogger)
 				if err != nil {
 					return errors.Wrapf(err, "unable to execute devfile composite command "+commandName)
 				}
