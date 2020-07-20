@@ -1,7 +1,6 @@
 schemaVersion: 2.0.0
 metadata:
-  name: nodejs
-  version: 1.0.0
+  name: test-devfile
 projects:
   - name: nodejs-starter
     git:
@@ -12,30 +11,17 @@ components:
       image: registry.access.redhat.com/ubi8/nodejs-12:1-36
       memoryLimit: 1024Mi
       mountSources: true
-      endpoints:
-        - name: http-3000
-          targetPort: 3000
-          configuration:
-            protocol: tcp
-            scheme: http
-            type: terminal
 commands:
   - exec:
       id: install
       component: runtime
       commandLine: npm install
       workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
-      group:
-        kind: build
-        isDefault: false
   - exec:
-      id: mkdir
+      id: echo1
       component: runtime
-      commandLine: mkdir /projects/testfolder
+      commandLine: echo hi
       workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
-      group:
-        kind: build
-        isDefault: false
   - exec:
       id: run
       component: runtime
@@ -45,22 +31,36 @@ commands:
         kind: run
         isDefault: true
   - composite:
-         id: nestedcommand
+         id: buildAndEcho
          label: Build and Echo
          commands:
-           - buildAndMkdir
+           - echo1
            - install
-         parallel: true
-         group: 
-            kind: build
-            isDefault: true
-  - composite:
-         id: buildAndMkdir
-         label: Build and Mkdir
-         commands:
-           - mkdir
-           - install
+           - NestedCommand
+           - echo3
          parallel: false
-         group: 
-            kind: build
-            isDefault: false
+         group:
+           kind: build
+           isDefault: true
+  - composite:
+         id: NestedCommand
+         label: Build and Echo
+         commands:
+           - buildAndEcho
+           - install
+           - echo2
+           - echo3
+         parallel: false
+         group:
+           kind: build
+           isDefault: false
+  - exec:
+      id: echo2
+      component: runtime
+      commandLine: echo hello
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+  - exec:
+      id: echo3
+      component: runtime
+      commandLine: echo hellohii
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
