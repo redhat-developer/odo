@@ -266,7 +266,7 @@ func (a Adapter) generateAndGetHostConfig(endpoints []versionsCommon.Endpoint) (
 
 func getPortMap(context string, endpoints []versionsCommon.Endpoint, show bool) (nat.PortMap, map[nat.Port]string, error) {
 	// Convert the exposed and internal port pairs saved in env.yaml file to PortMap
-	// Todo: Use context to get the approraite envinfo after context is supported in experimental mode
+	// Todo: Use context to get the appropriate envinfo after context is supported in experimental mode
 	portmap := nat.PortMap{}
 	namePortMapping := make(map[nat.Port]string)
 
@@ -333,7 +333,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 
 			containerID := utils.GetContainerIDForAlias(containers, command.Exec.Component)
 			compInfo := common.ComponentInfo{ContainerName: containerID}
-			err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, compInfo, show, a.machineEventLogger)
+			err = exec.ExecuteDevfileCommandSynchronously(a, *command.Exec, compInfo, show)
 			if err != nil {
 				return err
 			}
@@ -345,7 +345,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 	if ok {
 		containerID := utils.GetContainerIDForAlias(containers, command.Exec.Component)
 		compInfo := common.ComponentInfo{ContainerName: containerID}
-		err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, compInfo, show, a.machineEventLogger)
+		err = exec.ExecuteDevfileCommandSynchronously(a, *command.Exec, compInfo, show)
 		if err != nil {
 			return err
 		}
@@ -368,7 +368,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 
 		containerID := utils.GetContainerIDForAlias(containers, command.Exec.Component)
 		compInfo := common.ComponentInfo{ContainerName: containerID}
-		return exec.Execute(&a.Client, *command.Exec, compInfo, show, a.machineEventLogger, exec.DefaultCommands(false, common.IsRestartRequired(command)))
+		return exec.Execute(a, *command.Exec, compInfo, show, exec.DefaultCommands(false, common.IsRestartRequired(command)))
 	}
 
 	return
@@ -409,7 +409,7 @@ func (a Adapter) execDevfileEvent(events []string, containers []types.Container)
 func (a Adapter) execTestCmd(testCmd versionsCommon.DevfileCommand, containers []types.Container, show bool) (err error) {
 	containerID := utils.GetContainerIDForAlias(containers, testCmd.Exec.Component)
 	compInfo := common.ComponentInfo{ContainerName: containerID}
-	err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *testCmd.Exec, compInfo, show, a.machineEventLogger)
+	err = exec.ExecuteDevfileCommandSynchronously(a, *testCmd.Exec, compInfo, show)
 	return
 }
 
