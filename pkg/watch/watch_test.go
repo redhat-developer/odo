@@ -821,9 +821,9 @@ func TestWatchAndPush(t *testing.T) {
 
 				if tt.isExperimental {
 					watchParameters.DevfileWatchHandler = mockDevFilePush
-					runMode := envinfo.RunMODE
+					runMode := envinfo.Run
 					if tt.isDebug {
-						runMode = envinfo.DebugMODE
+						runMode = envinfo.Debug
 					}
 					watchParameters.EnvSpecificInfo = &envinfo.EnvSpecificInfo{
 						EnvInfo: *envinfo.GetFakeEnvInfo(envinfo.ComponentSettings{

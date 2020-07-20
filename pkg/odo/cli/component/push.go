@@ -216,9 +216,9 @@ func (po *PushOptions) Run() (err error) {
 		}
 
 		// push is successful, save the runMode used
-		runMode := envinfo.RunMODE
+		runMode := envinfo.Run
 		if po.debugRun {
-			runMode = envinfo.DebugMODE
+			runMode = envinfo.Debug
 		}
 
 		return po.EnvSpecificInfo.SetRunMode(runMode)

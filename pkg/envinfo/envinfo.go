@@ -31,8 +31,8 @@ type ComponentSettings struct {
 type RUNMode string
 
 const (
-	RunMODE   RUNMode = "run"
-	DebugMODE RUNMode = "debug"
+	Run   RUNMode = "run"
+	Debug RUNMode = "debug"
 )
 
 // URLKind is an enum to indicate the type of the URL i.e ingress/route
@@ -49,7 +49,7 @@ const (
 	DefaultDebugPort = 5858
 
 	// DefaultRunMode is the default run mode of the component
-	DefaultRunMode = "run"
+	DefaultRunMode = Run
 )
 
 // EnvInfoURL holds URL related information
