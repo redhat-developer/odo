@@ -27,7 +27,7 @@ func (d *Devfile100) GetComponents() []common.DevfileComponent {
 /// GetComponents returns the slice of DevfileComponent objects parsed from the Devfile
 func (d *Devfile100) AddComponents(components []common.DevfileComponent) error { return nil }
 
-func (d *Devfile100) UpdateComponent(Name string, component common.DevfileComponent) {}
+func (d *Devfile100) UpdateComponent(component common.DevfileComponent) {}
 
 // GetAliasedComponents returns the slice of DevfileComponent objects that each have an alias
 func (d *Devfile100) GetAliasedComponents() []common.DevfileComponent {
@@ -63,7 +63,7 @@ func (d *Devfile100) GetProjects() []common.DevfileProject {
 
 func (d *Devfile100) AddProjects(projects []common.DevfileProject) error { return nil }
 
-func (d *Devfile100) UpdateProject(name string, project common.DevfileProject) {}
+func (d *Devfile100) UpdateProject(project common.DevfileProject) {}
 
 // GetCommands returns the slice of DevfileCommand objects parsed from the Devfile
 func (d *Devfile100) GetCommands() []common.DevfileCommand {
@@ -81,7 +81,7 @@ func (d *Devfile100) GetCommands() []common.DevfileCommand {
 // GetCommands returns the slice of DevfileCommand objects parsed from the Devfile
 func (d *Devfile100) AddCommands(commands []common.DevfileCommand) error { return nil }
 
-func (d *Devfile100) UpdateCommand(id string, command common.DevfileCommand) {}
+func (d *Devfile100) UpdateCommand(command common.DevfileCommand) {}
 
 func (d *Devfile100) GetParent() common.DevfileParent {
 	return common.DevfileParent{}

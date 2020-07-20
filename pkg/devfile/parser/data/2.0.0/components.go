@@ -31,9 +31,9 @@ func (d *Devfile200) AddComponents(components []common.DevfileComponent) error {
 }
 
 // UpdateComponent updates the component with the given name
-func (d *Devfile200) UpdateComponent(Name string, component common.DevfileComponent) {
+func (d *Devfile200) UpdateComponent(component common.DevfileComponent) {
 	for i := range d.Components {
-		if d.Components[i].Container.Name == strings.ToLower(Name) {
+		if d.Components[i].Container.Name == strings.ToLower(component.Container.Name) {
 			d.Components[i] = component
 		}
 	}
@@ -78,9 +78,9 @@ func (d *Devfile200) AddCommands(commands []common.DevfileCommand) error {
 }
 
 // UpdateCommand updates the command with the given id
-func (d *Devfile200) UpdateCommand(id string, command common.DevfileCommand) {
+func (d *Devfile200) UpdateCommand(command common.DevfileCommand) {
 	for i := range d.Commands {
-		if d.Commands[i].Exec.Id == strings.ToLower(id) {
+		if d.Commands[i].Exec.Id == strings.ToLower(command.Exec.Id) {
 			d.Commands[i] = command
 		}
 	}
@@ -120,9 +120,9 @@ func (d *Devfile200) AddProjects(projects []common.DevfileProject) error {
 }
 
 // UpdateProject updates the slice of DevfileCommand projects parsed from the Devfile
-func (d *Devfile200) UpdateProject(name string, project common.DevfileProject) {
+func (d *Devfile200) UpdateProject(project common.DevfileProject) {
 	for i := range d.Projects {
-		if d.Projects[i].Name == strings.ToLower(name) {
+		if d.Projects[i].Name == strings.ToLower(project.Name) {
 			d.Projects[i] = project
 		}
 	}

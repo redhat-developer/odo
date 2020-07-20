@@ -48,7 +48,7 @@ func (d DevfileObj) OverrideComponents(overridePatch []common.DevfileComponent) 
 					return err
 				}
 
-				d.Data.UpdateComponent(patchComponent.Container.Name, common.DevfileComponent{Container: &updatedComponent})
+				d.Data.UpdateComponent(common.DevfileComponent{Container: &updatedComponent})
 			}
 		}
 		if !found {
@@ -78,7 +78,7 @@ func (d DevfileObj) OverrideCommands(overridePatch []common.DevfileCommand) erro
 					return err
 				}
 
-				d.Data.UpdateCommand(patchCommand.Exec.Id, common.DevfileCommand{Exec: &updatedCommand})
+				d.Data.UpdateCommand(common.DevfileCommand{Exec: &updatedCommand})
 			}
 		}
 		if !found {
@@ -130,7 +130,7 @@ func (d DevfileObj) OverrideProjects(overridePatch []common.DevfileProject) erro
 					return err
 				}
 
-				d.Data.UpdateProject(patchProject.Name, updatedProject)
+				d.Data.UpdateProject(updatedProject)
 			}
 		}
 		if !found {

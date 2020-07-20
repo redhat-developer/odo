@@ -20,16 +20,16 @@ type DevfileData interface {
 	// component related methods
 	GetComponents() []common.DevfileComponent
 	AddComponents(components []common.DevfileComponent) error
-	UpdateComponent(Name string, component common.DevfileComponent)
+	UpdateComponent(component common.DevfileComponent)
 	GetAliasedComponents() []common.DevfileComponent
 
 	// project related methods
 	GetProjects() []common.DevfileProject
 	AddProjects(projects []common.DevfileProject) error
-	UpdateProject(name string, project common.DevfileProject)
+	UpdateProject(project common.DevfileProject)
 
 	// command related methods
 	GetCommands() []common.DevfileCommand
 	AddCommands(commands []common.DevfileCommand) error
-	UpdateCommand(id string, command common.DevfileCommand)
+	UpdateCommand(command common.DevfileCommand)
 }

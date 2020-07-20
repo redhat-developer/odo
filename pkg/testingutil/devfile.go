@@ -96,17 +96,17 @@ func (d TestDevfileData) Validate() error {
 
 func (d TestDevfileData) AddComponents(components []common.DevfileComponent) error { return nil }
 
-func (d TestDevfileData) UpdateComponent(Name string, component common.DevfileComponent) {}
+func (d TestDevfileData) UpdateComponent(component common.DevfileComponent) {}
 
 func (d TestDevfileData) AddCommands(commands []common.DevfileCommand) error { return nil }
 
-func (d TestDevfileData) UpdateCommand(id string, command common.DevfileCommand) {}
+func (d TestDevfileData) UpdateCommand(command common.DevfileCommand) {}
 
 func (d TestDevfileData) SetEvents(events common.DevfileEvents) {}
 
 func (d TestDevfileData) AddProjects(projects []common.DevfileProject) error { return nil }
 
-func (d TestDevfileData) UpdateProject(name string, project common.DevfileProject) {}
+func (d TestDevfileData) UpdateProject(project common.DevfileProject) {}
 
 func (d TestDevfileData) AddEvents(events common.DevfileEvents) error { return nil }
 
