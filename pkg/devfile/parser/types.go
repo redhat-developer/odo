@@ -7,8 +7,8 @@ import (
 
 // Default filenames for create devfile
 const (
-	OutputDevfileJsonPath = "odo-devfile.json"
-	OutputDevfileYamlPath = "odo-devfile.yaml"
+	OutputDevfileJsonPath = "devfile.json"
+	OutputDevfileYamlPath = "devfile.yaml"
 )
 
 // DevfileObj is the runtime devfile object
