@@ -143,9 +143,7 @@ func (oc OcRunner) CheckCmdOpInRemoteCmpPod(cmpName string, appName string, prjN
 		"-c", cmpDCName, "--"}, cmd...)...)
 	stdOut := string(session.Wait().Out.Contents())
 	stdErr := string(session.Wait().Err.Contents())
-	fmt.Println("exec output for s2i image package", stdOut)
-	fmt.Println("exec error for s2i image package", stdErr)
-	if stdErr != "" {
+	if stdErr != "" && session.ExitCode() != 0 {
 		return checkOp(stdOut, fmt.Errorf("cmd %s failed with error %s on pod %s", cmd, stdErr, podName))
 	}
 	return checkOp(stdOut, nil)
@@ -162,7 +160,7 @@ func (oc OcRunner) CheckCmdOpInRemoteDevfilePod(podName string, containerName st
 	session := CmdRunner(oc.path, args...)
 	stdOut := string(session.Wait().Out.Contents())
 	stdErr := string(session.Wait().Err.Contents())
-	if stdErr != "" {
+	if stdErr != "" && session.ExitCode() != 0 {
 		return checkOp(stdOut, fmt.Errorf("cmd %s failed with error %s on pod %s", cmd, stdErr, podName))
 	}
 	return checkOp(stdOut, nil)
