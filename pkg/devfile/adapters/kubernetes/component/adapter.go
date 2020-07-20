@@ -61,6 +61,10 @@ type Adapter struct {
 	machineEventLogger machineoutput.MachineEventLoggingClient
 }
 
+func (a Adapter) ExecCMDInContainer(compInfo common.ComponentInfo, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+	return a.Client.ExecCMDInContainer(compInfo, cmd, stdout, stderr, stdin, tty)
+}
+
 func (a Adapter) LoggingClient() machineoutput.MachineEventLoggingClient {
 	return a.machineEventLogger
 }
@@ -410,17 +414,10 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 		// Get Init Command
 		command, ok := commandsMap[versionsCommon.InitCommandGroupType]
 		if ok {
-			if command.Composite != nil {
-				err = exec.ExecuteCompositeDevfileAction(&a.Client, *command.Composite, devfileCommandMap, compInfo, show, a.machineEventLogger)
-				if err != nil {
-					return err
-				}
-			} else {
-				compInfo.ContainerName = command.Exec.Component
-				err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, compInfo, show, a.machineEventLogger, false)
-				if err != nil {
-					return err
-				}
+			compInfo.ContainerName = command.Exec.Component
+			err = exec.ExecuteDevfileCommandSynchronously(a, *command.Exec, compInfo, show)
+			if err != nil {
+				return err
 			}
 
 		}
@@ -430,17 +427,10 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 	// Get Build Command
 	command, ok := commandsMap[versionsCommon.BuildCommandGroupType]
 	if ok {
-		if command.Composite != nil {
-			err = exec.ExecuteCompositeDevfileAction(&a.Client, *command.Composite, devfileCommandMap, compInfo, show, a.machineEventLogger)
-			if err != nil {
-				return err
-			}
-		} else {
-			compInfo.ContainerName = command.Exec.Component
-			err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, compInfo, show, a.machineEventLogger, false)
-			if err != nil {
-				return err
-			}
+		compInfo.ContainerName = command.Exec.Component
+		err = exec.ExecuteDevfileCommandSynchronously(a, *command.Exec, compInfo, show)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -464,7 +454,8 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 		}
 
 		compInfo.ContainerName = command.Exec.Component
-		return exec.Execute(&a.Client, *command.Exec, compInfo, show, a.machineEventLogger, exec.DefaultCommands(isDebug, common.IsRestartRequired(command)))
+		compInfo.ContainerName = command.Exec.Component
+		return exec.Execute(a, *command.Exec, compInfo, show, exec.DefaultCommands(isDebug, common.IsRestartRequired(command)))
 	}
 
 	return
@@ -510,15 +501,8 @@ func (a Adapter) execTestCmd(testCmd versionsCommon.DevfileCommand, podName stri
 	compInfo := common.ComponentInfo{
 		PodName: podName,
 	}
-	if testCmd.Composite != nil {
-		// Need to get mapping of all commands in the devfile since the composite command may reference any exec or composite command in the devfile
-		devfileCommandMap := common.GetCommandsMap(a.Devfile.Data.GetCommands())
-
-		err = exec.ExecuteCompositeDevfileAction(&a.Client, *testCmd.Composite, devfileCommandMap, compInfo, show, a.machineEventLogger)
-	} else {
-		compInfo.ContainerName = testCmd.Exec.Component
-		err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *testCmd.Exec, compInfo, show, a.machineEventLogger, false)
-	}
+	compInfo.ContainerName = testCmd.Exec.Component
+	err = exec.ExecuteDevfileCommandSynchronously(a, *testCmd.Exec, compInfo, show)
 	return
 }
 
@@ -532,7 +516,7 @@ func (a Adapter) InitRunContainerSupervisord(containerName, podName string, cont
 				ContainerName: containerName,
 				PodName:       podName,
 			}
-			err = exec.ExecuteCommand(&a.Client, compInfo, command, true, nil, nil)
+			err = exec.ExecuteCommand(a, compInfo, command, true, nil, nil)
 		}
 	}
 
@@ -673,5 +657,5 @@ func (a Adapter) Exec(command []string) error {
 		ContainerName: containerName,
 	}
 
-	return exec.ExecuteCommand(&a.Client, componentInfo, command, true, nil, nil)
+	return exec.ExecuteCommand(a, componentInfo, command, true, nil, nil)
 }

@@ -13,7 +13,7 @@ import (
 )
 
 // ExecuteDevfileCommandSynchronously executes the devfile init, build and test command actions synchronously
-func ExecuteDevfileCommandSynchronously(client ExecClient, exec common.Exec, compInfo adaptersCommon.ComponentInfo, show bool, machineEventLogger machineoutput.MachineEventLoggingClient) error {
+func ExecuteDevfileCommandSynchronously(adapter adaptersCommon.ComponentAdapter, exec common.Exec, compInfo adaptersCommon.ComponentInfo, show bool) error {
 	// Change to the workdir and execute the command
 	var cmd executable
 	if exec.WorkingDir != "" {
@@ -22,7 +22,7 @@ func ExecuteDevfileCommandSynchronously(client ExecClient, exec common.Exec, com
 	} else {
 		cmd = executable{adaptersCommon.ShellExecutable, "-c", exec.CommandLine}
 	}
-	return Execute(client, exec, compInfo, show, machineEventLogger, []executable{cmd})
+	return Execute(adapter, exec, compInfo, show, []executable{cmd})
 }
 
 // DefaultCommands returns the devfile commands to execute based on the specified command options
@@ -50,7 +50,7 @@ func DefaultCommands(debug, restart bool) []executable {
 type executable []string
 
 // Execute executes the specified devfile exec command appropriately wrapped into the appropriate sequence of executable, usually by calling DefaultCommands
-func Execute(client ExecClient, exec common.Exec, compInfo adaptersCommon.ComponentInfo, show bool, machineEventLogger machineoutput.MachineEventLoggingClient, subcommands []executable) error {
+func Execute(adapter adaptersCommon.ComponentAdapter, exec common.Exec, compInfo adaptersCommon.ComponentInfo, show bool, subcommands []executable) error {
 	msg := fmt.Sprintf("Executing %s command %q, if not running", exec.Id, exec.CommandLine)
 	var s *log.Status
 	if show {
@@ -63,18 +63,19 @@ func Execute(client ExecClient, exec common.Exec, compInfo adaptersCommon.Compon
 	for _, subcommand := range subcommands {
 
 		// Emit DevFileCommandExecutionBegin JSON event (if machine output logging is enabled)
-		machineEventLogger.DevFileCommandExecutionBegin(exec.Id, exec.Component, exec.CommandLine, convertGroupKindToString(exec), machineoutput.TimestampNow())
+		logger := adapter.LoggingClient()
+		logger.DevFileCommandExecutionBegin(exec.Id, exec.Component, exec.CommandLine, convertGroupKindToString(exec), machineoutput.TimestampNow())
 
 		// Capture container text and log to the screen as JSON events (machine output only)
-		stdoutWriter, stdoutChannel, stderrWriter, stderrChannel := machineEventLogger.CreateContainerOutputWriter()
+		stdoutWriter, stdoutChannel, stderrWriter, stderrChannel := logger.CreateContainerOutputWriter()
 
-		err := ExecuteCommand(client, compInfo, subcommand, show, stdoutWriter, stderrWriter)
+		err := ExecuteCommand(adapter, compInfo, subcommand, show, stdoutWriter, stderrWriter)
 
 		// Close the writers and wait for an acknowledgement that the reader loop has exited (to ensure we get ALL container output)
 		closeWriterAndWaitForAck(stdoutWriter, stdoutChannel, stderrWriter, stderrChannel)
 
 		// Emit close event
-		machineEventLogger.DevFileCommandExecutionComplete(exec.Id, exec.Component, exec.CommandLine, convertGroupKindToString(exec), machineoutput.TimestampNow(), err)
+		logger.DevFileCommandExecutionComplete(exec.Id, exec.Component, exec.CommandLine, convertGroupKindToString(exec), machineoutput.TimestampNow(), err)
 
 		if err != nil {
 			return errors.Wrapf(err, "unable to execute the run command")

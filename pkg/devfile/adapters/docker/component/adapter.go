@@ -57,6 +57,10 @@ type Adapter struct {
 	machineEventLogger        machineoutput.MachineEventLoggingClient
 }
 
+func (a Adapter) ExecCMDInContainer(compInfo common.ComponentInfo, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+	return a.Client.ExecCMDInContainer(compInfo, cmd, stdout, stderr, stdin, tty)
+}
+
 func (a Adapter) LoggingClient() machineoutput.MachineEventLoggingClient {
 	return a.machineEventLogger
 }
@@ -394,5 +398,5 @@ func (a Adapter) Exec(command []string) error {
 		ContainerName: containerID,
 	}
 
-	return exec.ExecuteCommand(&a.Client, componentInfo, command, true, nil, nil)
+	return exec.ExecuteCommand(a, componentInfo, command, true, nil, nil)
 }

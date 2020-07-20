@@ -14,6 +14,7 @@ type ComponentAdapter interface {
 	Log(follow, debug bool) (io.ReadCloser, error)
 	Exec(command []string) error
 	LoggingClient() machineoutput.MachineEventLoggingClient
+	ExecCMDInContainer(compInfo ComponentInfo, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error
 }
 
 // StorageAdapter defines the storage functions that platform-specific adapters must implement

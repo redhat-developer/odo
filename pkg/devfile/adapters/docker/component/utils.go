@@ -422,7 +422,7 @@ func (a Adapter) initRunContainerSupervisord(component string, containers []type
 			compInfo := common.ComponentInfo{
 				ContainerName: container.ID,
 			}
-			err = exec.ExecuteCommand(&a.Client, compInfo, command, true, nil, nil)
+			err = exec.ExecuteCommand(a, compInfo, command, true, nil, nil)
 		}
 	}
 

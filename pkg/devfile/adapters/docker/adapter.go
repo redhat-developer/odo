@@ -25,6 +25,10 @@ func New(adapterContext common.AdapterContext, client lclient.Client) Adapter {
 	}
 }
 
+func (d Adapter) ExecCMDInContainer(compInfo common.ComponentInfo, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
+	return d.componentAdapter.ExecCMDInContainer(compInfo, cmd, stdout, stderr, stdin, tty)
+}
+
 func (d Adapter) LoggingClient() machineoutput.MachineEventLoggingClient {
 	return d.componentAdapter.LoggingClient()
 }
