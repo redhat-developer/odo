@@ -3,6 +3,7 @@ package validate
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
@@ -98,6 +99,36 @@ func TestValidateComponents(t *testing.T) {
 
 		if got != nil {
 			t.Errorf("TestValidateComponents error - got: '%v'", got)
+		}
+	})
+
+	t.Run("Invalid volume component size", func(t *testing.T) {
+
+		components := []common.DevfileComponent{
+			{
+				Volume: &common.Volume{
+					Name: "myvol",
+					Size: "randomgarbage",
+				},
+			},
+			{
+				Container: &common.Container{
+					Name: "container",
+					VolumeMounts: []common.VolumeMount{
+						{
+							Name: "myvol",
+							Path: "/some/path/",
+						},
+					},
+				},
+			},
+		}
+
+		got := ValidateComponents(components)
+		want := "size randomgarbage for volume component myvol is invalid"
+
+		if !strings.Contains(got.Error(), want) {
+			t.Errorf("TestValidateComponents error - got: '%v', want substring: '%v'", got.Error(), want)
 		}
 	})
 }

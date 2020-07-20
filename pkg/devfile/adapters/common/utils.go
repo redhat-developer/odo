@@ -131,16 +131,16 @@ func GetDevfileContainerComponents(data data.DevfileData) []common.DevfileCompon
 	return components
 }
 
-// GetDevfileVolumeComponents iterates through the components in the devfile and returns a list of devfile volume components
-func GetDevfileVolumeComponents(data data.DevfileData) []common.DevfileComponent {
-	var components []common.DevfileComponent
+// GetDevfileVolumeComponents iterates through the components in the devfile and returns a map of devfile volume components
+func GetDevfileVolumeComponents(data data.DevfileData) map[string]common.DevfileComponent {
+	volumeNameToVolumeComponent := make(map[string]common.DevfileComponent)
 	// Only components with aliases are considered because without an alias commands cannot reference them
 	for _, comp := range data.GetComponents() {
 		if isVolume(comp) {
-			components = append(components, comp)
+			volumeNameToVolumeComponent[comp.Volume.Name] = comp
 		}
 	}
-	return components
+	return volumeNameToVolumeComponent
 }
 
 // getCommandsByGroup gets commands by the group kind
@@ -160,7 +160,7 @@ func getCommandsByGroup(data data.DevfileData, groupType common.DevfileCommandGr
 // GetVolumes iterates through the components in the devfile and returns a map of container name to the devfile volumes
 func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume {
 	containerComponents := GetDevfileContainerComponents(devfileObj.Data)
-	volumeComponents := GetDevfileVolumeComponents(devfileObj.Data)
+	volumeNameToVolumeComponent := GetDevfileVolumeComponents(devfileObj.Data)
 
 	// containerNameToVolumes is a map of the Devfile container name to the Devfile container Volumes
 	containerNameToVolumes := make(map[string][]DevfileVolume)
@@ -168,14 +168,11 @@ func GetVolumes(devfileObj devfileParser.DevfileObj) map[string][]DevfileVolume 
 		for _, volumeMount := range containerComp.Container.VolumeMounts {
 			size := volumeSize
 
-			for _, volumeComp := range volumeComponents {
-				// compare volume component name against the container component volume mount name
-				if volumeComp.Volume.Name == volumeMount.Name {
-					// If there is a volume size mentioned in the devfile, use it
-					if len(volumeComp.Volume.Size) > 0 {
-						size = volumeComp.Volume.Size
-						break
-					}
+			// check if there is a volume component name against the container component volume mount name
+			if volumeComp, ok := volumeNameToVolumeComponent[volumeMount.Name]; ok {
+				// If there is a volume size mentioned in the devfile, use it
+				if len(volumeComp.Volume.Size) > 0 {
+					size = volumeComp.Volume.Size
 				}
 			}
 
