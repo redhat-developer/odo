@@ -164,9 +164,8 @@ func TestSliceSupportedTags(t *testing.T) {
 	}
 
 	supTags, unSupTags := SliceSupportedTags(img)
-
-	if !reflect.DeepEqual(supTags, []string{"12", "10", "8", "latest"}) ||
-		!reflect.DeepEqual(unSupTags, []string{"6"}) {
+	if !reflect.DeepEqual(supTags, []string{"12", "10", "latest"}) ||
+		!reflect.DeepEqual(unSupTags, []string{"8", "6"}) {
 		t.Fatal("supported or unsupported tags are not as expected")
 	}
 }
@@ -315,6 +314,7 @@ func MockImageStream() *imagev1.ImageStream {
 		"12": "docker.io/rhscl/nodejs-12-rhel7:latest",
 		"10": "docker.io/rhscl/nodejs-10-rhel7:latest",
 		"8":  "docker.io/rhoar-nodejs/nodejs-8:latest",
+
 		// an unspported one
 		"6": "docker.io/rhoar-nodejs/nodejs-6:latest",
 	}
