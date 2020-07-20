@@ -114,26 +114,14 @@ func DeleteServiceAndUnlinkComponents(client *occlient.Client, serviceName strin
 // TODO: make it unlink the service from component as a part of
 // https://github.com/openshift/odo/issues/3563
 func DeleteOperatorService(client *kclient.Client, serviceName string) error {
-	serviceList, err := ListOperatorServices(client)
-	if err != nil {
-		return errors.Wrap(err, "unable to get the service list")
-	}
-
 	kind, name, err := splitServiceKindName(serviceName)
 	if err != nil {
 		return err
 	}
 
-	var csv *olm.ClusterServiceVersion
-
-	for _, s := range serviceList {
-		if s.GetKind() == kind && s.GetName() == name {
-			csv, err = client.GetCSVWithCR(kind)
-			if err != nil {
-				return err
-			}
-			break
-		}
+	csv, err := client.GetCSVWithCR(kind)
+	if err != nil {
+		return err
 	}
 
 	if csv == nil {
