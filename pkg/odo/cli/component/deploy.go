@@ -203,7 +203,8 @@ func NewCmdDeploy(name, fullName string) *cobra.Command {
 	genericclioptions.AddContextFlag(deployCmd, &do.componentContext)
 
 	// enable devfile flag if experimental mode is enabled
-	deployCmd.Flags().StringVar(&do.tag, "tag", "", "Tag used to build the image")
+	deployCmd.Flags().StringVar(&do.tag, "tag", "", "Tag used to build the image.  In the format <registry>/namespace>/<image>")
+
 	deployCmd.Flags().StringSliceVar(&do.ignores, "ignore", []string{}, "Files or folders to be ignored via glob expressions.")
 
 	//Adding `--project` flag
