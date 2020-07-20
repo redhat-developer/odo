@@ -171,22 +171,6 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.MatchAllInOutput(stdout, []string{"URL " + url1 + " successfully deleted", "Applying URL changes"})
 		})
 
-		It("should create a url for a unsupported devfile component", func() {
-			url1 := helper.RandString(5)
-
-			helper.CopyExample(filepath.Join("source", "python"), context)
-			helper.Chdir(context)
-
-			helper.CmdShouldPass("odo", "create", "python", "--project", namespace, componentName)
-
-			helper.CmdShouldPass("odo", "url", "create", url1)
-
-			helper.CmdShouldPass("odo", "push", "--namespace", namespace)
-
-			output := helper.CmdShouldPass("oc", "get", "routes", "--namespace", namespace)
-			Expect(output).Should(ContainSubstring(url1))
-		})
-
 		It("should be able to push again twice after creating and deleting a url", func() {
 			var stdOut string
 			url1 := helper.RandString(5)
@@ -340,6 +324,22 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.CmdShouldPass("odo", "push", "--project", namespace)
 			stdout = helper.CmdShouldPass("odo", "url", "describe", url1)
 			helper.MatchAllInOutput(stdout, []string{url1, "Pushed", "true", "route"})
+		})
+
+		It("should create a url for a unsupported devfile component", func() {
+			url1 := helper.RandString(5)
+
+			helper.CopyExample(filepath.Join("source", "python"), context)
+			helper.Chdir(context)
+
+			helper.CmdShouldPass("odo", "create", "python", "--project", namespace, componentName)
+
+			helper.CmdShouldPass("odo", "url", "create", url1)
+
+			helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+
+			output := helper.CmdShouldPass("oc", "get", "routes", "--namespace", namespace)
+			Expect(output).Should(ContainSubstring(url1))
 		})
 	})
 })
