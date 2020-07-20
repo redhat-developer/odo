@@ -71,6 +71,6 @@ func (k Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
 }
 
 // Exec executes a command in the component
-func (d Adapter) Exec(command []string) error {
-	return d.componentAdapter.Exec(command)
+func (k Adapter) Exec(command []string) error {
+	return k.componentAdapter.Exec(command)
 }
