@@ -1129,6 +1129,10 @@ func ValidateFile(filePath string) error {
 
 // CopyFile copies file from source path to destination path
 func CopyFile(srcPath string, dstPath string, info os.FileInfo) error {
+	// In order to avoid file overriding issue, do nothing if source path is equal to destination path
+	if PathEqual(srcPath, dstPath) {
+		return nil
+	}
 	// Check if the source file path exists
 	err := ValidateFile(srcPath)
 	if err != nil {

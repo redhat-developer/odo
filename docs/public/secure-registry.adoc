@@ -1,0 +1,37 @@
+== Introduction to secure devfile registry
+
+=== What is a secure devfile registry?
+
+A secure devfile registry is a devfile registry that user can only use credential to access.
+
+=== Where to host secure devfile registry?
+
+User can host secure devfile registry on private GitHub repository and Enterprise GtiHub repository.
+
+== Steps for adding secure devfile registry when the devfile registry is hosted on GitHub repository
+
+=== Step 1: Creating a new GitHub repository to host the devfile registry
+
+Please follow https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/creating-a-new-repository[this instruction] to create a new GitHub repository and push the devfile registry to the created repository. The sample GitHub-hosted devfile registry can be found https://github.com/odo-devfiles/registry/[here].
+
+=== Step 2: Creating a personal access token 
+
+Please follow https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token[this instruction] to create a personal access token, select `repo` as token scope.
+
+=== Step 3: Keyring setup
+
+There is no specific keyring setup for secure devfile registry, you only need to ensure the keyring which is working properly on your system, if you hit issues please follow the below instructions to troubleshoot the issues of your keyring with respect to the corresponding platforms.
+
+- https://support.apple.com/en-ca/guide/keychain-access/welcome/mac[Mac keychain]
+- https://nurdletech.com/linux-notes/agents/keyring.html[GNOME keyring setup on RedHat Enterprise Linux]
+- https://howtoinstall.co/en/ubuntu/xenial/gnome-keyring[GNOME keyring setup on Ubuntu Linux]
+- https://help.gnome.org/users/seahorse/stable/index.html.en[Linux GNOME keyring]
+- https://support.microsoft.com/en-ca/help/4026814/windows-accessing-credential-manager[Windows credential manager]
+
+=== Step 4: Adding secure devfile registry
+
+Please run `odo registry add <registry name> <registry URL> --token <token>` to add the secure devfile registry to odo, for more registry related commands please refer to `odo registry --help`.
+
+- <registry name>: user-defined devfile registry name.
+- <registry URL>: the URL of GitHub repository that you create on step 1.
+- <token>: the personal access token that you create on step 2.

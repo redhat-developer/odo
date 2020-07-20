@@ -161,6 +161,9 @@ var _ = Describe("odo devfile create command tests", func() {
 
 			It("should successfully create the devfile component with --devfile points to the same devfile", func() {
 				helper.CmdShouldPass("odo", "create", "nodejs", "--devfile", "./devfile.yaml")
+				fileIsEmpty, err := helper.FileIsEmpty("./devfile.yaml")
+				Expect(err).Should(BeNil())
+				Expect(fileIsEmpty).Should(BeFalse())
 			})
 
 			It("should fail to create the devfile component with more than 1 arguments are passed in", func() {

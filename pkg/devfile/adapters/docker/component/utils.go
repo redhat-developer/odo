@@ -374,6 +374,38 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 	return
 }
 
+// TODO: Support Composite
+// execDevfileEvent receives a Devfile Event (PostStart, PreStop etc.) and loops through them
+// Each Devfile Command associated with the given event is retrieved, and executed in the container specified
+// in the command
+func (a Adapter) execDevfileEvent(events []string, containers []types.Container) error {
+	if len(events) > 0 {
+
+		commandMap := common.GetCommandsMap(a.Devfile.Data.GetCommands())
+
+		for _, commandName := range events {
+			// Convert commandName to lower because GetCommands converts Command.Exec.Id's to lower
+			command, ok := commandMap[strings.ToLower(commandName)]
+			if !ok {
+				return errors.New("unable to find devfile command " + commandName)
+			}
+
+			// If composite would go here & recursive loop
+
+			// Get container for command
+			containerID := utils.GetContainerIDForAlias(containers, command.Exec.Component)
+			compInfo := common.ComponentInfo{ContainerName: containerID}
+
+			// Execute command in container
+			err := exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, false, a.machineEventLogger, false)
+			if err != nil {
+				return errors.Wrapf(err, "unable to execute devfile command "+commandName)
+			}
+		}
+	}
+	return nil
+}
+
 // Executes the test command in the container
 func (a Adapter) execTestCmd(testCmd versionsCommon.DevfileCommand, containers []types.Container, show bool) (err error) {
 	containerID := utils.GetContainerIDForAlias(containers, testCmd.Exec.Component)
