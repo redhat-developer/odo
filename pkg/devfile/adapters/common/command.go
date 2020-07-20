@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/openshift/odo/pkg/devfile/parser/data"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	"github.com/cli-playground/devfile-parser/pkg/devfile/parser/data"
+	"github.com/cli-playground/devfile-parser/pkg/devfile/parser/data/common"
 	"k8s.io/klog"
 )
 

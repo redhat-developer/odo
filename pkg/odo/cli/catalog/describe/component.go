@@ -5,9 +5,9 @@ import (
 	"os"
 	"text/tabwriter"
 
+	"github.com/cli-playground/devfile-parser/pkg/devfile/parser"
+	"github.com/cli-playground/devfile-parser/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/catalog"
-	"github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"

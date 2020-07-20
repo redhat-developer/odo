@@ -7,12 +7,12 @@ import (
 
 	"github.com/docker/go-connections/nat"
 
+	devfileParser "github.com/cli-playground/devfile-parser/pkg/devfile/parser"
+	"github.com/cli-playground/devfile-parser/pkg/devfile/parser/data/common"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/testingutil"
 	"github.com/openshift/odo/pkg/util"

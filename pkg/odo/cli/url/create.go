@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/cli-playground/devfile-parser/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/config"
 	adapterutils "github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
-	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/log"
 	clicomponent "github.com/openshift/odo/pkg/odo/cli/component"

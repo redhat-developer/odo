@@ -1,8 +1,8 @@
 package parser
 
 import (
-	devfileCtx "github.com/openshift/odo/pkg/devfile/parser/context"
-	"github.com/openshift/odo/pkg/devfile/parser/data"
+	"github.com/cli-playground/devfile-parser/pkg/devfile/parser//devfile/parser/data"
+	devfileCtx "github.com/cli-playground/devfile-parser/pkg/devfile/parser/context"
 )
 
 // Default filenames for create devfile
