@@ -25,6 +25,7 @@ import (
 const provisionedAndBoundStatus = "ProvisionedAndBound"
 const provisionedAndLinkedStatus = "ProvisionedAndLinked"
 const apiVersion = "odo.dev/v1alpha1"
+const serviceListCmd = "odo service list"
 
 // NewServicePlanParameter creates a new ServicePlanParameter instance with the specified state
 func NewServicePlanParameter(name, typeName, defaultValue string, required bool) ServicePlanParameter {
@@ -278,7 +279,7 @@ func ListOperatorServices(client *kclient.Client) ([]unstructured.Unstructured, 
 		customResources := client.GetCustomResourcesFromCSV(&clusterServiceVersion)
 
 		// list and write active instances of each service/CR
-		instances, err := getCRInstances(client, customResources)
+		instances, err := GetInstancesOfCustomResources(client, customResources)
 		if err != nil {
 			return nil, err
 		}
@@ -306,20 +307,15 @@ func getGVRFromCR(cr *olm.CRDDescription) (group, version, resource string, err 
 	return
 }
 
-// getCRInstances returns active instances of given Custom Resource (service in
+// GetInstancesOfCustomResources returns active instances of given Custom Resource (service in
 // odo lingo) in the active namespace of the cluster
-func getCRInstances(client *kclient.Client, customResources *[]olm.CRDDescription) ([]unstructured.Unstructured, error) {
+func GetInstancesOfCustomResources(client *kclient.Client, customResources *[]olm.CRDDescription) ([]unstructured.Unstructured, error) {
 	var instances []unstructured.Unstructured
 
 	for _, cr := range *customResources {
 		customResource := cr
-		klog.V(4).Infof("Getting instances of: %s\n", customResource.Name)
-		group, version, resource, err := getGVRFromCR(&customResource)
-		if err != nil {
-			return []unstructured.Unstructured{}, err
-		}
 
-		list, err := client.ListDynamicResource(group, version, resource)
+		list, err := GetCRInstances(client, &customResource)
 		if err != nil {
 			return []unstructured.Unstructured{}, err
 		}
@@ -328,6 +324,22 @@ func getCRInstances(client *kclient.Client, customResources *[]olm.CRDDescriptio
 			instances = append(instances, list.Items...)
 		}
 	}
+	return instances, nil
+}
+
+func GetCRInstances(client *kclient.Client, customResource *olm.CRDDescription) (*unstructured.UnstructuredList, error) {
+	klog.V(4).Infof("Getting instances of: %s\n", customResource.Name)
+
+	group, version, resource, err := getGVRFromCR(customResource)
+	if err != nil {
+		return nil, err
+	}
+
+	instances, err := client.ListDynamicResource(group, version, resource)
+	if err != nil {
+		return nil, err
+	}
+
 	return instances, nil
 }
 
@@ -368,26 +380,47 @@ func SvcExists(client *occlient.Client, serviceName, applicationName string) (bo
 }
 
 // OperatorSvcExists checks whether an Operator backed service with given name
-// exists or not. It doesn't bother about application since
+// exists or not. It takes 'serviceName' of the format
+// '<service-kind>/<service-name>'. For example: EtcdCluster/example.
+// It doesn't bother about application since
 // https://github.com/openshift/odo/issues/2801 is blocked
 func OperatorSvcExists(client *kclient.Client, serviceName string) (bool, error) {
-	serviceList, err := ListOperatorServices(client)
-	if err != nil {
-		return false, errors.Wrap(err, "unable to get the service list")
-	}
-
 	kind, name, err := splitServiceKindName(serviceName)
 	if err != nil {
 		return false, err
 	}
 
-	for _, s := range serviceList {
+	// Get the CSV (Operator) that provides the CR
+	csv, err := client.GetCSVWithCR(kind)
+	if err != nil {
+		return false, err
+	}
+
+	// Get the specific CR that matches "kind"
+	crs := client.GetCustomResourcesFromCSV(csv)
+
+	var cr *olm.CRDDescription
+	for _, custRes := range *crs {
+		c := custRes
+		if c.Kind == kind {
+			cr = &c
+			break
+		}
+	}
+
+	// Get instances of the specific CR
+	crInstances, err := GetCRInstances(client, cr)
+	if err != nil {
+		return false, err
+	}
+
+	for _, s := range crInstances.Items {
 		if s.GetKind() == kind && s.GetName() == name {
 			return true, nil
 		}
 	}
 
-	return false, fmt.Errorf("Couldn't find service named %q. Refer %q to see list of running services", serviceName, "odo service list")
+	return false, fmt.Errorf("Couldn't find service named %q. Refer %q to see list of running services", serviceName, serviceListCmd)
 }
 
 // splitServiceKindName splits the service name provided for deletion by the
@@ -395,7 +428,7 @@ func OperatorSvcExists(client *kclient.Client, serviceName string) (bool, error)
 func splitServiceKindName(serviceName string) (string, string, error) {
 	sn := strings.SplitN(serviceName, "/", 2)
 	if len(sn) != 2 || sn[0] == "" || sn[1] == "" {
-		return "", "", fmt.Errorf("Invalid service name. Refer %q to see list of running services", "odo service list")
+		return "", "", fmt.Errorf("Invalid service name. Refer %q to see list of running services", serviceListCmd)
 	}
 
 	kind := sn[0]

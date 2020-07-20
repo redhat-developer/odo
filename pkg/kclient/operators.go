@@ -1,6 +1,7 @@
 package kclient
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/openshift/odo/pkg/odo/cli/catalog/util"
@@ -11,8 +12,7 @@ import (
 )
 
 var (
-	ErrNoSuchOperator        = errors.New("Could not find specified operator")
-	ErrNoOperatorWithGivenCR = errors.New("Could not find any Operator containing requested CR")
+	ErrNoSuchOperator = errors.New("Could not find specified operator")
 )
 
 const (
@@ -92,5 +92,5 @@ func (c *Client) GetCSVWithCR(name string) (*olm.ClusterServiceVersion, error) {
 			}
 		}
 	}
-	return &olm.ClusterServiceVersion{}, ErrNoOperatorWithGivenCR
+	return &olm.ClusterServiceVersion{}, fmt.Errorf("Could not find any Operator containing requested CR: %s", name)
 }
