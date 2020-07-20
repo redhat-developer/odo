@@ -258,13 +258,13 @@ func (d *Devfile100) SetMetadata(name, version string) {
 }
 
 // AddComponent adds component to devfile
-func (d *Devfile100) AddComponent(Component common.DevfileComponent) {
-
+func (d *Devfile100) AddComponent(Component common.DevfileComponent) error {
+	return nil
 }
 
 //AddCommand adds command to devfie
-func (d *Devfile100) AddCommand(command common.DevfileCommand) {
-
+func (d *Devfile100) AddCommand(command common.DevfileCommand) error {
+	return nil
 }
 
 //SetSchemaVersion sets devfile api version

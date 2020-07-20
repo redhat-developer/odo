@@ -23,7 +23,7 @@ type DevfileData interface {
 	// component related methods
 	GetComponents() []common.DevfileComponent
 	AddComponents(components []common.DevfileComponent) error
-	AddComponent(component common.DevfileComponent)
+	AddComponent(component common.DevfileComponent) error
 	UpdateComponent(component common.DevfileComponent)
 	SetComponent(c common.DevfileComponent)
 	GetAliasedComponents() []common.DevfileComponent
@@ -36,6 +36,6 @@ type DevfileData interface {
 	// command related methods
 	GetCommands() []common.DevfileCommand
 	AddCommands(commands []common.DevfileCommand) error
-	AddCommand(command common.DevfileCommand)
+	AddCommand(command common.DevfileCommand) error
 	UpdateCommand(command common.DevfileCommand)
 }

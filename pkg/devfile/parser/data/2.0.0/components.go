@@ -207,13 +207,32 @@ func (d *Devfile200) SetMetadata(name, version string) {
 }
 
 // AddComponent adds component to devfile
-func (d *Devfile200) AddComponent(component common.DevfileComponent) {
+func (d *Devfile200) AddComponent(component common.DevfileComponent) error {
+	var name string
+	if component.Volume != nil {
+		name = component.Volume.Name
+	}
+	if component.Container != nil {
+		name = component.Container.Name
+	}
+	for _, comp := range d.Components {
+		if comp.Container.Name == name {
+			return &common.AlreadyExistError{Name: component.Container.Name, Field: "component"}
+		}
+	}
 	d.Components = append(d.Components, component)
+	return nil
 }
 
 //AddCommand adds command to devfie
-func (d *Devfile200) AddCommand(command common.DevfileCommand) {
+func (d *Devfile200) AddCommand(command common.DevfileCommand) error {
+	for _, comm := range d.Commands {
+		if comm.Exec.Id == command.Exec.Id {
+			return &common.AlreadyExistError{Name: command.Exec.Id, Field: "command"}
+		}
+	}
 	d.Commands = append(d.Commands, command)
+	return nil
 }
 
 //SetSchemaVersion sets devfile schema version

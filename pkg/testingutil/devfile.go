@@ -58,12 +58,13 @@ func (d TestDevfileData) SetSchemaVersion(version string) {
 }
 
 // AddComponent add component
-func (d TestDevfileData) AddComponent(component common.DevfileComponent) {
-
+func (d TestDevfileData) AddComponent(component common.DevfileComponent) error {
+	return nil
 }
 
 // AddCommand adds command to devfile
-func (d TestDevfileData) AddCommand(command common.DevfileCommand) {
+func (d TestDevfileData) AddCommand(command common.DevfileCommand) error {
+	return nil
 
 }
 
