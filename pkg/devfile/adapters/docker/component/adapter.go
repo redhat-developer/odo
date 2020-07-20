@@ -57,6 +57,10 @@ type Adapter struct {
 	machineEventLogger        machineoutput.MachineEventLoggingClient
 }
 
+func (a Adapter) LoggingClient() machineoutput.MachineEventLoggingClient {
+	return a.machineEventLogger
+}
+
 // Push updates the component if a matching component exists or creates one if it doesn't exist
 func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	componentExists, err := utils.ComponentExists(a.Client, a.Devfile.Data, a.ComponentName)

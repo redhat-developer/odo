@@ -1,6 +1,9 @@
 package common
 
-import "io"
+import (
+	"github.com/openshift/odo/pkg/machineoutput"
+	"io"
+)
 
 // ComponentAdapter defines the functions that platform-specific adapters must implement
 type ComponentAdapter interface {
@@ -10,6 +13,7 @@ type ComponentAdapter interface {
 	Test(testCmd string, show bool) error
 	Log(follow, debug bool) (io.ReadCloser, error)
 	Exec(command []string) error
+	LoggingClient() machineoutput.MachineEventLoggingClient
 }
 
 // StorageAdapter defines the storage functions that platform-specific adapters must implement
