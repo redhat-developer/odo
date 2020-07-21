@@ -1,0 +1,69 @@
+schemaVersion: 2.0.0
+metadata:
+  name: test-devfile
+projects:
+  - name: nodejs-starter
+    git:
+      location: "https://github.com/odo-devfiles/nodejs-ex.git"
+components:
+  - container:
+      name: runtime
+      image: quay.io/eclipse/che-nodejs10-ubi:nightly
+      memoryLimit: 1024Mi
+      endpoints:
+        - name: "3000/tcp"
+          configuration:
+            protocol: tcp
+            scheme: http
+          targetPort: 3000 
+      mountSources: true
+  - container:
+      name: "tools"
+      image: quay.io/eclipse/che-nodejs10-ubi:nightly
+      mountSources: true
+      memoryLimit: 1024Mi
+commands:
+  - exec:
+      id: myPostStart
+      commandLine: echo I am a PostStart
+      component: tools
+      workingDir: /
+  - exec:
+      id: secondPostStart
+      commandLine: echo I am also a PostStart
+      component: runtime
+      workingDir: /
+  - exec:
+      id: devbuild
+      component: runtime
+      commandLine: npm install
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      group:
+        kind: build
+        isDefault: true
+  - exec:
+      id: build
+      component: runtime
+      commandLine: npm install
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      group:
+        kind: build
+  - exec:
+      id: devrun
+      component: runtime
+      commandLine: npm start
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      group:
+        kind: run
+        isDefault: true
+  - exec:
+      id: run
+      component: runtime
+      commandLine: npm start
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      group:
+        kind: run
+events:
+  postStart:
+    - "myPostStart" 
+    - "secondPostStart"

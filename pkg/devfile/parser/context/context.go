@@ -1,8 +1,6 @@
 package parser
 
 import (
-	"fmt"
-
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 	"github.com/openshift/odo/pkg/util"
 	"k8s.io/klog"
@@ -45,12 +43,6 @@ func (d *DevfileCtx) populateDevfile() (err error) {
 	if err := d.SetDevfileAPIVersion(); err != nil {
 		return err
 	}
-
-	// Check if the apiVersion is supported
-	if !d.IsApiVersionSupported() {
-		return fmt.Errorf("devfile apiVersion '%s' not supported in odo", d.apiVersion)
-	}
-	klog.V(4).Infof("devfile apiVersion '%s' is supported in odo", d.apiVersion)
 
 	// Read and save devfile JSON schema for provided apiVersion
 	return d.SetDevfileJSONSchema()

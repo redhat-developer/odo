@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"strings"
 
 	"github.com/openshift/odo/pkg/exec"
 
@@ -154,6 +155,16 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	execRequired, err := syncAdapter.SyncFiles(syncParams)
 	if err != nil {
 		return errors.Wrapf(err, "Failed to sync to component with name %s", a.ComponentName)
+	}
+
+	// PostStart events from the devfile will only be executed when the component
+	// didn't previously exist
+	if !componentExists {
+		log.Infof("\nExecuting preStart lifecycle event commands for component %s", a.ComponentName)
+		err = a.execDevfileEvent(a.Devfile.Data.GetEvents().PostStart, pod.GetName())
+		if err != nil {
+			return err
+		}
 	}
 
 	if execRequired {
@@ -434,6 +445,34 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 	}
 
 	return
+}
+
+// TODO: Support Composite
+// execDevfileEvent receives a Devfile Event (PostStart, PreStop etc.) and loops through them
+// Each Devfile Command associated with the given event is retrieved, and executed in the container specified
+// in the command
+func (a Adapter) execDevfileEvent(events []string, podName string) error {
+	if len(events) > 0 {
+		commandMap := common.GetCommandMap(a.Devfile.Data)
+		for _, commandName := range events {
+			// Convert commandName to lower because GetCommands converts Command.Exec.Id's to lower
+			command := commandMap[strings.ToLower(commandName)]
+
+			compInfo := common.ComponentInfo{
+				ContainerName: command.Exec.Component,
+				PodName:       podName,
+			}
+
+			// If composite would go here & recursive loop
+
+			// Execute command in pod
+			err := exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, false, a.machineEventLogger)
+			if err != nil {
+				return errors.Wrapf(err, "unable to execute devfile command "+commandName)
+			}
+		}
+	}
+	return nil
 }
 
 // Executes the test command in the pod

@@ -304,6 +304,16 @@ var _ = Describe("odo devfile push command tests", func() {
 			})
 		})
 
+		It("should execute PostStart commands if present", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-post-start.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+			helper.MatchAllInOutput(output, []string{"Executing mypoststart command \"echo I am a PostStart\"", "Executing secondpoststart command \"echo I am also a PostStart\""})
+		})
+
 		It("should be able to handle a missing build command group", func() {
 			utils.ExecWithMissingBuildCommand(context, cmpName, namespace)
 		})

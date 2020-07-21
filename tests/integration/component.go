@@ -504,6 +504,7 @@ func componentTests(args ...string) {
 				project,
 				[]string{"sh", "-c", "ls -la $ODO_S2I_DEPLOYMENT_DIR/package.json"},
 				func(cmdOp string, err error) bool {
+					fmt.Println("cmdOp error is", err)
 					return err == nil
 				},
 			)

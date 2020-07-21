@@ -82,8 +82,8 @@ func getCommandFromFlag(data data.DevfileData, groupType common.DevfileCommandGr
 			// e.g --build-command "mybuild"
 			// exec:
 			//   id: mybuild
-			//   group:
-			//     kind: build
+			// group:
+			//   kind: build
 			if command.Exec.Group.Kind != groupType {
 				return command, fmt.Errorf("command group mismatched, command %s is of group %v in devfile.yaml", commandName, command.Exec.Group.Kind)
 			}
@@ -162,6 +162,17 @@ func validateCommand(data data.DevfileData, command common.DevfileCommand) (err 
 	}
 
 	return
+}
+
+// GetCommandMap returns a mapping of all of devfile command names to their corresponding DevfileCommand struct
+// Allowing us to easily retrieve the DevfileCommand of any command listed in a composite command
+func GetCommandMap(data data.DevfileData) map[string]common.DevfileCommand {
+	commandMap := make(map[string]common.DevfileCommand)
+
+	for _, command := range data.GetCommands() {
+		commandMap[command.Exec.Id] = command
+	}
+	return commandMap
 }
 
 // GetInitCommand iterates through the components in the devfile and returns the init command
