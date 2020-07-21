@@ -7,13 +7,12 @@ import (
 
 	"github.com/docker/go-connections/nat"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
-	envinfo "github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/testingutil"
 )
@@ -471,21 +470,6 @@ func TestExecDevfile(t *testing.T) {
 	workDir := "/tmp"
 	component := "alias1"
 
-	containers := []types.Container{
-		{
-			ID: "someid",
-			Labels: map[string]string{
-				"alias": "somealias",
-			},
-		},
-		{
-			ID: "someid2",
-			Labels: map[string]string{
-				"alias": "somealias2",
-			},
-		},
-	}
-
 	fakeClient := lclient.FakeNew()
 	fakeErrorClient := lclient.FakeErrorNew()
 
@@ -583,7 +567,7 @@ func TestExecDevfile(t *testing.T) {
 			}
 
 			componentAdapter := New(adapterCtx, *tt.client)
-			err := componentAdapter.execDevfile(tt.pushDevfileCommands, tt.componentExists, false, containers)
+			err := componentAdapter.ExecDevfile(tt.pushDevfileCommands, tt.componentExists, adaptersCommon.PushParameters{Show: false})
 			if !tt.wantErr && err != nil {
 				t.Errorf("TestExecDevfile error: unexpected error during executing devfile commands: %v", err)
 			}
@@ -602,14 +586,6 @@ func TestExecTestCmd(t *testing.T) {
 		{
 			Container: &versionsCommon.Container{
 				Name: component,
-			},
-		},
-	}
-	containers := []types.Container{
-		{
-			ID: component,
-			Labels: map[string]string{
-				"component": component,
 			},
 		},
 	}
@@ -684,79 +660,9 @@ func TestExecTestCmd(t *testing.T) {
 			}
 
 			componentAdapter := New(adapterCtx, *tt.client)
-			err := componentAdapter.execTestCmd(tt.testDevfileCommand, containers, false)
+			err := componentAdapter.ExecuteDevfileCommandSynchronously(tt.testDevfileCommand, false)
 			if !tt.wantErr && err != nil {
 				t.Errorf("TestExecTestCmd error: unexpected error during executing devfile commands: %v", err)
-			}
-		})
-	}
-}
-
-func TestInitRunContainerSupervisord(t *testing.T) {
-
-	testComponentName := "test"
-
-	containers := []types.Container{
-		{
-			ID: "someid",
-			Labels: map[string]string{
-				"alias": "somealias",
-			},
-		},
-		{
-			ID: "someid2",
-			Labels: map[string]string{
-				"alias": "somealias2",
-			},
-		},
-	}
-
-	fakeClient := lclient.FakeNew()
-	fakeErrorClient := lclient.FakeErrorNew()
-
-	tests := []struct {
-		name      string
-		client    *lclient.Client
-		component string
-		wantErr   bool
-	}{
-		{
-			name:      "Case 1: Successful initialization of supervisord",
-			client:    fakeClient,
-			component: "somealias",
-			wantErr:   false,
-		},
-		{
-			name:      "Case 2: Unsuccessful initialization of supervisord",
-			client:    fakeErrorClient,
-			component: "somealias",
-			wantErr:   true,
-		},
-		{
-			name:      "Case 3: Unsuccessful initialization of supervisord with wrong component",
-			client:    fakeErrorClient,
-			component: "somealias123",
-			wantErr:   false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			devObj := devfileParser.DevfileObj{
-				Data: testingutil.TestDevfileData{
-					Components: []versionsCommon.DevfileComponent{},
-				},
-			}
-
-			adapterCtx := adaptersCommon.AdapterContext{
-				ComponentName: testComponentName,
-				Devfile:       devObj,
-			}
-
-			componentAdapter := New(adapterCtx, *tt.client)
-			err := componentAdapter.initRunContainerSupervisord(tt.component, containers)
-			if !tt.wantErr && err != nil {
-				t.Errorf("TestInitRunContainerSupervisord error: unexpected error during init supervisord: %v", err)
 			}
 		})
 	}
