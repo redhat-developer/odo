@@ -45,15 +45,37 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 	var deletedFiles []string
 	var changedFiles []string
 	pushParameters := syncParameters.PushParams
-	isForcePush := pushParameters.ForceBuild || !syncParameters.ComponentExists || syncParameters.PodChanged
-	compInfo := syncParameters.CompInfo
-	globExps := util.GetAbsGlobExps(pushParameters.Path, pushParameters.IgnoredFiles)
-	isWatch := len(pushParameters.WatchFiles) > 0 || len(pushParameters.WatchDeletedFiles) > 0
+
+	// The logic for watch is:
+	// 1) If this is the first time that watch has called Push, then generate the file index using the file indexer, and use that to
+	//    sync files (don't use changed/deleted files from watch; they will be included in the index)
+	// 2) For every other push/sync call after the first, don't run the file indexer, instead use the watch events to determine
+	//    what changed; ensure that the index is then updated based on the watch events.
+
+	// True if the index was updated based on the deleted/changed files values from the watch (and
+	// thus the indexer doesn't need to run), false otherwise
+	indexRegeneratedByWatch := false
+
+	// If watch files are specified _and_ this is not the first call (by this process) to SyncFiles by the watch command, then insert the
+	// changed files into the existing file index, and delete removed files from the index
+	if (len(pushParameters.WatchFiles) > 0 || len(pushParameters.WatchDeletedFiles) > 0) && !syncParameters.PushParams.DevfileScanIndexForWatch {
+
+		err := updateIndexWithWatchChanges(pushParameters)
+
+		if err != nil {
+			return false, err
+		}
+
+		changedFiles = pushParameters.WatchFiles
+		deletedFiles = pushParameters.WatchDeletedFiles
+		indexRegeneratedByWatch = true
+
+	}
 
 	// Sync source code to the component
 	// If syncing for the first time, sync the entire source directory
 	// If syncing to an already running component, sync the deltas
-	if !syncParameters.PodChanged && !pushParameters.ForceBuild {
+	if !syncParameters.PodChanged && !pushParameters.ForceBuild && !indexRegeneratedByWatch {
 		absIgnoreRules := util.GetAbsGlobExps(pushParameters.Path, pushParameters.IgnoredFiles)
 
 		var s *log.Status
@@ -195,6 +217,57 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 		}
 	}
 	s.End(true)
+
+	return nil
+}
+
+func updateIndexWithWatchChanges(pushParameters common.PushParameters) error {
+	indexFilePath, err := util.ResolveIndexFilePath(pushParameters.Path)
+
+	if err != nil {
+		return errors.Wrapf(err, "unable to resolve path: %s", pushParameters.Path)
+	}
+
+	// Check that the path exists
+	_, err = os.Stat(indexFilePath)
+	if err != nil {
+		return errors.Wrapf(err, "resolved path doesn't exist: %s", indexFilePath)
+	}
+
+	// Parse the existing index
+	fileIndex, err := util.ReadFileIndex(indexFilePath)
+	if err != nil {
+		return errors.Wrapf(err, "Unable to read index from path: %s", indexFilePath)
+	}
+
+	rootDir := pushParameters.Path
+
+	// Remove deleted files from the existing index
+	for _, deletedFile := range pushParameters.WatchDeletedFiles {
+
+		relativePath, err := util.CalculateFileDataKeyFromPath(deletedFile, rootDir)
+
+		if err != nil {
+			klog.V(4).Infof("Error occurred for %s: %v", deletedFile, err)
+			continue
+		}
+		delete(fileIndex.Files, relativePath)
+		klog.V(4).Infof("Removing watch deleted file from index: %s", relativePath)
+	}
+
+	// Add changed files to the existing index
+	for _, addedOrModifiedFile := range pushParameters.WatchFiles {
+		relativePath, fileData, err := util.GenerateNewFileDataEntry(addedOrModifiedFile, rootDir)
+
+		if err != nil {
+			klog.V(4).Infof("Error occurred for %s: %v", addedOrModifiedFile, err)
+			continue
+		}
+		fileIndex.Files[relativePath] = *fileData
+		klog.V(4).Infof("Added/updated watched file in index: %s", relativePath)
+	}
+
+	util.WriteFile(fileIndex.Files, indexFilePath)
 
 	return nil
 }

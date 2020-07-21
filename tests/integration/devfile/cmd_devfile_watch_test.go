@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -145,11 +146,9 @@ var _ = Describe("odo devfile watch command tests", func() {
 			output := helper.CmdShouldPass("odo", "push", "--project", namespace)
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
-			// 2) Change some file A
-			textFilePath := filepath.Join(context, "my-file.txt")
-			textOne := []byte("my name is my-file.txt")
-			err := ioutil.WriteFile(textFilePath, textOne, 0644)
-			Expect(err).NotTo(HaveOccurred())
+			// 2) Create a new file A
+
+			fileAPath, fileAText := createSimpleFile(context)
 
 			// 3) Odo watch that project
 			session := helper.CmdRunner("odo", "watch", "--context", context)
@@ -159,7 +158,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 
 			// 4) Change some other file B
 			helper.ReplaceString(filepath.Join(context, "server.js"), "App started", "App is super started")
-			waitForOutputToContain("server.js", session)
+			waitForOutputToContain("Executing devrun command", session)
 
 			session.Kill()
 			Eventually(session).Should(gexec.Exit())
@@ -167,8 +166,8 @@ var _ = Describe("odo devfile watch command tests", func() {
 			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
 
 			// File should exist, and its content should match what we initially set it to
-			execResult := cliRunner.Exec(podName, namespace, "cat", "/projects/nodejs-starter/my-file.txt")
-			Expect(execResult).To(ContainSubstring("my name is my-file.txt"))
+			execResult := cliRunner.Exec(podName, namespace, "cat", "/projects/nodejs-starter/"+filepath.Base(fileAPath))
+			Expect(execResult).To(ContainSubstring(fileAText))
 
 		})
 
@@ -248,11 +247,59 @@ var _ = Describe("odo devfile watch command tests", func() {
 
 			waitForOutputToContain("Waiting for something to change", session)
 
-			// 3) Change server.js
+			// 3) Create a new file A
+			fileAPath, _ := createSimpleFile(context)
+
+			// 4) Wait for the new file to exist in the index
+			Eventually(func() bool {
+
+				newIndexAfterPush, err := util.ReadFileIndex(filepath.Join(context, ".odo", "odo-file-index.json"))
+				if err != nil {
+					fmt.Fprintln(GinkgoWriter, "New index not found or could not be read", err)
+					return false
+				}
+
+				_, exists := newIndexAfterPush.Files[filepath.Base(fileAPath)]
+				if !exists {
+					fmt.Fprintln(GinkgoWriter, "path", fileAPath, "not found.", err)
+				}
+				return exists
+
+			}, 180, 10).Should(Equal(true))
+
+			// 5) Delete file A and verify that it disappears from the index
+			err = os.Remove(fileAPath)
+			Expect(err).ToNot(HaveOccurred())
+			Eventually(func() bool {
+
+				newIndexAfterPush, err := util.ReadFileIndex(filepath.Join(context, ".odo", "odo-file-index.json"))
+				if err != nil {
+					fmt.Fprintln(GinkgoWriter, "New index not found or could not be read", err)
+					return false
+				}
+
+				// Santity test: at least one file should be present
+				if len(newIndexAfterPush.Files) == 0 {
+					return false
+				}
+
+				// The fileA file should NOT be found
+				match := false
+				for relativeFilePath := range newIndexAfterPush.Files {
+
+					if strings.Contains(relativeFilePath, filepath.Base(fileAPath)) {
+						match = true
+					}
+				}
+				return !match
+
+			}, 180, 10).Should(Equal(true))
+
+			// 6) Change server.js
 			helper.ReplaceString(filepath.Join(context, "server.js"), "App started", "App is super started")
 			waitForOutputToContain("server.js", session)
 
-			// 4) Wait for the size values in the old and new index files to differ, indicating that watch has updated the index
+			// 7) Wait for the size values in the old and new index files to differ, indicating that watch has updated the index
 			Eventually(func() bool {
 
 				newIndexAfterPush, err := util.ReadFileIndex(filepath.Join(context, ".odo", "odo-file-index.json"))
@@ -283,6 +330,16 @@ var _ = Describe("odo devfile watch command tests", func() {
 	})
 
 })
+
+func createSimpleFile(context string) (string, string) {
+
+	textFilePath := filepath.Join(context, "my-file-"+helper.RandString(10)+".txt")
+	textOne := []byte(helper.RandString(10))
+	err := ioutil.WriteFile(textFilePath, textOne, 0644)
+	Expect(err).NotTo(HaveOccurred())
+
+	return textFilePath, string(textOne)
+}
 
 // Wait for the session stdout output to contain a particular string
 func waitForOutputToContain(substring string, session *gexec.Session) {

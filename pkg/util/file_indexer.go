@@ -39,7 +39,7 @@ type FileData struct {
 	LastModifiedDate time.Time
 }
 
-// read tries to read the odo index file from the given location and returns the data from the file
+// ReadFileIndex tries to read the odo index file from the given location and returns the data from the file
 // if no such file is present, it means the folder hasn't been walked and thus returns a empty list
 func ReadFileIndex(filePath string) (*FileIndex, error) {
 	// Read operation
@@ -65,8 +65,8 @@ func ReadFileIndex(filePath string) (*FileIndex, error) {
 	return &fi, nil
 }
 
-// resolveIndexFilePath resolves the filepath of the odo index file in the .odo folder
-func resolveIndexFilePath(directory string) (string, error) {
+// ResolveIndexFilePath resolves the filepath of the odo index file in the .odo folder
+func ResolveIndexFilePath(directory string) (string, error) {
 	directoryFi, err := os.Stat(filepath.Join(directory))
 	if err != nil {
 		return "", err
@@ -122,7 +122,7 @@ func checkGitIgnoreFile(directory string, fs filesystem.Filesystem) (string, err
 
 // DeleteIndexFile deletes the index file. It doesn't throw error if it doesn't exist
 func DeleteIndexFile(directory string) error {
-	indexFile, err := resolveIndexFilePath(directory)
+	indexFile, err := ResolveIndexFilePath(directory)
 	if os.IsNotExist(err) {
 		return nil
 	} else if err != nil {
@@ -131,7 +131,7 @@ func DeleteIndexFile(directory string) error {
 	return DeletePath(indexFile)
 }
 
-// A struct that represent return value of RunIndexer function
+// IndexerRet is a struct that represent return value of RunIndexer function
 type IndexerRet struct {
 	FilesChanged []string
 	FilesDeleted []string
@@ -147,7 +147,7 @@ type IndexerRet struct {
 // to the files
 func RunIndexer(directory string, ignoreRules []string) (ret IndexerRet, err error) {
 	directory = filepath.FromSlash(directory)
-	ret.ResolvedPath, err = resolveIndexFilePath(directory)
+	ret.ResolvedPath, err = ResolveIndexFilePath(directory)
 
 	if err != nil {
 		return ret, err
@@ -172,18 +172,19 @@ func RunIndexer(directory string, ignoreRules []string) (ret IndexerRet, err err
 	}
 
 	ret.NewFileMap = make(map[string]FileData)
-	walk := func(fn string, fi os.FileInfo, err error) error {
+	walk := func(walkFnPath string, fi os.FileInfo, err error) error {
+
 		if err != nil {
 			return err
 		}
 		if fi.IsDir() {
 
 			// if folder is the root folder, don't add it
-			if fn == directory {
+			if walkFnPath == directory {
 				return nil
 			}
 
-			match, err := IsGlobExpMatch(fn, ignoreRules)
+			match, err := IsGlobExpMatch(walkFnPath, ignoreRules)
 			if err != nil {
 				return err
 			}
@@ -198,24 +199,20 @@ func RunIndexer(directory string, ignoreRules []string) (ret IndexerRet, err err
 			}
 		}
 
-		relativeFilename, err := filepath.Rel(directory, fn)
+		relativeFilename, err := CalculateFileDataKeyFromPath(walkFnPath, directory)
 		if err != nil {
 			return err
 		}
 
-		// Use "ToSlash" to always store the index relative filename in ONE way to be compatible
-		// accross multiple platforms
-		relativeFilename = filepath.ToSlash(relativeFilename)
-
 		if _, ok := existingFileIndex.Files[relativeFilename]; !ok {
-			ret.FilesChanged = append(ret.FilesChanged, fn)
-			klog.V(4).Infof("file added: %s", fn)
+			ret.FilesChanged = append(ret.FilesChanged, walkFnPath)
+			klog.V(4).Infof("file added: %s", walkFnPath)
 		} else if !fi.ModTime().Equal(existingFileIndex.Files[relativeFilename].LastModifiedDate) {
-			ret.FilesChanged = append(ret.FilesChanged, fn)
-			klog.V(4).Infof("last modified date changed: %s", fn)
+			ret.FilesChanged = append(ret.FilesChanged, walkFnPath)
+			klog.V(4).Infof("last modified date changed: %s", walkFnPath)
 		} else if fi.Size() != existingFileIndex.Files[relativeFilename].Size {
-			ret.FilesChanged = append(ret.FilesChanged, fn)
-			klog.V(4).Infof("size changed: %s", fn)
+			ret.FilesChanged = append(ret.FilesChanged, walkFnPath)
+			klog.V(4).Infof("size changed: %s", walkFnPath)
 		}
 
 		ret.NewFileMap[relativeFilename] = FileData{
@@ -245,6 +242,38 @@ func RunIndexer(directory string, ignoreRules []string) (ret IndexerRet, err err
 	}
 
 	return ret, nil
+}
+
+// CalculateFileDataKeyFromPath converts an absolute path to relative, and convert to OS-specific paths, for use as a map key in IndexerRet and FileIndex
+func CalculateFileDataKeyFromPath(absolutePath string, rootDirectory string) (string, error) {
+
+	rootDirectory = filepath.FromSlash(rootDirectory)
+
+	relativeFilename, err := filepath.Rel(rootDirectory, absolutePath)
+	if err != nil {
+		return "", err
+	}
+
+	return relativeFilename, nil
+}
+
+// GenerateNewFileDataEntry creates a new FileData entry for use by IndexerRet and/or FileIndex
+func GenerateNewFileDataEntry(absolutePath string, rootDirectory string) (string, *FileData, error) {
+
+	relativeFilename, err := CalculateFileDataKeyFromPath(absolutePath, rootDirectory)
+	if err != nil {
+		return "", nil, err
+	}
+
+	fi, err := os.Stat(absolutePath)
+
+	if err != nil {
+		return "", nil, err
+	}
+	return relativeFilename, &FileData{
+		Size:             fi.Size(),
+		LastModifiedDate: fi.ModTime(),
+	}, nil
 }
 
 // write writes the map of walked files and info about them, in a file
