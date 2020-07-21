@@ -100,7 +100,7 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 			forceWrite = true
 		}
 
-		// apply the glob rules from the .gitignore/.odo file
+		// apply the glob rules from the .gitignore/.odoignore file
 		// and ignore the files on which the rules apply and filter them out
 		filesChangedFiltered, filesDeletedFiltered := util.FilterIgnores(ret.FilesChanged, ret.FilesDeleted, absIgnoreRules)
 
