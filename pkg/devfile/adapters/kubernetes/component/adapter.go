@@ -547,5 +547,5 @@ func (a Adapter) Exec(command []string) error {
 		ContainerName: containerName,
 	}
 
-	return common.ExecuteCommand(a, componentInfo, command, true, nil, nil)
+	return a.ExecuteCommand(componentInfo, command, true, nil, nil)
 }
