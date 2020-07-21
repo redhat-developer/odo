@@ -41,7 +41,7 @@ func NewViewOptions() *ViewOptions {
 func (o *ViewOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.cfg, err = envinfo.NewEnvSpecificInfo(o.context)
 	if err != nil {
-		errors.Wrap(err, "failed to load environment file")
+		return errors.Wrap(err, "failed to load environment file")
 	}
 
 	return nil

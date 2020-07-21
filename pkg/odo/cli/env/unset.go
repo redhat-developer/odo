@@ -44,7 +44,7 @@ func NewUnsetOptions() *UnsetOptions {
 func (o *UnsetOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.cfg, err = envinfo.NewEnvSpecificInfo(o.context)
 	if err != nil {
-		errors.Wrap(err, "failed to load environment file")
+		return errors.Wrap(err, "failed to load environment file")
 	}
 
 	o.paramName = args[0]
@@ -90,7 +90,7 @@ func NewCmdUnset(name, fullName string) *cobra.Command {
 	envUnsetCmd := &cobra.Command{
 		Use:     name,
 		Short:   "Unset a value in odo environment file",
-		Long:    fmt.Sprintf(unsetLongDesc),
+		Long:    unsetLongDesc,
 		Example: fmt.Sprintf(fmt.Sprint(unsetExample), fullName, envinfo.DebugPort),
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {

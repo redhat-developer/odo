@@ -48,7 +48,7 @@ func NewSetOptions() *SetOptions {
 func (o *SetOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	o.cfg, err = envinfo.NewEnvSpecificInfo(o.context)
 	if err != nil {
-		errors.Wrap(err, "failed to load environment file")
+		return errors.Wrap(err, "failed to load environment file")
 	}
 
 	o.paramName = args[0]
@@ -92,7 +92,7 @@ func NewCmdSet(name, fullName string) *cobra.Command {
 	envSetCmd := &cobra.Command{
 		Use:   name,
 		Short: "Set a value in odo environment file",
-		Long:  fmt.Sprintf(setLongDesc),
+		Long:  setLongDesc,
 		Example: fmt.Sprintf(fmt.Sprint(setExample), fullName,
 			envinfo.Name, envinfo.Namespace, envinfo.DebugPort),
 		Args: func(cmd *cobra.Command, args []string) error {
