@@ -146,7 +146,7 @@ func (lo LogOptions) DevfileComponentLog() error {
 		platformContext = kc
 	}
 
-	devfileHandler, err := adapters.NewComponentAdapter(componentName, lo.componentContext, devObj, platformContext)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, lo.componentContext, lo.Application, devObj, platformContext)
 
 	if err != nil {
 		return err
@@ -232,7 +232,7 @@ func (to *TestOptions) RunTestCommand() error {
 		platformContext = kc
 	}
 
-	devfileHandler, err := adapters.NewComponentAdapter(componentName, to.componentContext, to.devObj, platformContext)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, to.componentContext, to.Application, to.devObj, platformContext)
 	if err != nil {
 		return err
 	}
@@ -278,7 +278,7 @@ func (eo *ExecOptions) DevfileComponentExec(command []string) error {
 		Namespace: eo.namespace,
 	}
 
-	devfileHandler, err := adapters.NewComponentAdapter(componentName, eo.componentContext, devObj, kc)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, eo.componentContext, eo.componentOptions.Application, devObj, kc)
 	if err != nil {
 		return err
 	}
