@@ -105,6 +105,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 		It("should be able to create service with name passed on CLI", func() {
 			name := helper.RandString(6)
+			svcFullName := strings.Join([]string{"EtcdCluster", name}, "/")
 			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
 			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
 			helper.CmdShouldPass("odo", "service", "create", etcdOperator, "--crd", "EtcdCluster", name)
@@ -120,10 +121,11 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 				return strings.Contains(output, "Running")
 			})
 
-			// Delete the pods created. This should idealy be done by `odo
-			// service delete` but that's not implemented for operator backed
-			// services yet.
-			helper.CmdShouldPass("oc", "delete", "EtcdCluster", name)
+			// now try creating service with same name again. it should fail
+			stdOut := helper.CmdShouldFail("odo", "service", "create", etcdOperator, "--crd", "EtcdCluster", name)
+			Expect(stdOut).To(ContainSubstring(fmt.Sprintf("Service %q already exists", svcFullName)))
+
+			helper.CmdShouldPass("odo", "service", "delete", svcFullName, "-f")
 		})
 	})
 

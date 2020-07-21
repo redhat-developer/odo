@@ -309,8 +309,12 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 			}
 
 			if o.ServiceName != "" {
-				exists, err := svc.OperatorSvcExists(o.KClient, o.CustomResource, o.ServiceName)
-				fmt.Println(exists, err)
+				// First check if service with provided name already exists
+				svcFullName := strings.Join([]string{o.CustomResource, o.ServiceName}, "/")
+				exists, _ := svc.OperatorSvcExists(o.KClient, svcFullName)
+				if exists {
+					return fmt.Errorf("Service %q already exists. Please provide a different name or delete the existing service first.", svcFullName)
+				}
 
 				err = d.setServiceName(o.ServiceName)
 				if err != nil {
