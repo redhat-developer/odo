@@ -157,12 +157,12 @@ func TestSyncFiles(t *testing.T) {
 			wantIsPushRequired: false,
 		},
 		{
-			name:   "Case 4: No file change",
+			name:   "Case 4: File change",
 			client: fakeClient,
 			syncParameters: common.SyncParameters{
 				PushParams: common.PushParameters{
 					Path:              directory,
-					WatchFiles:        []string{},
+					WatchFiles:        []string{path.Join(directory, "test.log")},
 					WatchDeletedFiles: []string{},
 					IgnoredFiles:      []string{},
 					ForceBuild:        false,
@@ -173,7 +173,7 @@ func TestSyncFiles(t *testing.T) {
 				ComponentExists: true,
 			},
 			wantErr:            false,
-			wantIsPushRequired: false,
+			wantIsPushRequired: true,
 		},
 	}
 	for _, tt := range tests {

@@ -47,8 +47,8 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 	pushParameters := syncParameters.PushParams
 
 	// The logic for watch is:
-	// 1) If this is the first time that watch has called Push, then generate the file index using the file indexer, and use that to
-	//    sync files (don't use changed/deleted files from watch; they will be included in the index)
+	// 1) If this is the first time that watch has called Push (in this process), then generate the file index using the file indexer, and use that to
+	//    sync files (don't use changed/deleted files list from watch at this stage; these will be found by the indexer run)
 	// 2) For every other push/sync call after the first, don't run the file indexer, instead use the watch events to determine
 	//    what changed; ensure that the index is then updated based on the watch events.
 
@@ -267,9 +267,8 @@ func updateIndexWithWatchChanges(pushParameters common.PushParameters) error {
 		klog.V(4).Infof("Added/updated watched file in index: %s", relativePath)
 	}
 
-	util.WriteFile(fileIndex.Files, indexFilePath)
+	return util.WriteFile(fileIndex.Files, indexFilePath)
 
-	return nil
 }
 
 // getCmdToCreateSyncFolder returns the command used to create the remote sync folder on the running container

@@ -147,7 +147,6 @@ var _ = Describe("odo devfile watch command tests", func() {
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
 			// 2) Create a new file A
-
 			fileAPath, fileAText := createSimpleFile(context)
 
 			// 3) Odo watch that project

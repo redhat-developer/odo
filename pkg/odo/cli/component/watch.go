@@ -206,7 +206,6 @@ func (wo *WatchOptions) Run() (err error) {
 
 		err = watch.DevfileWatchAndPush(
 			os.Stdout,
-			// watchParams,
 			watch.WatchParameters{
 				ComponentName:       wo.componentName,
 				Path:                wo.sourcePath,
