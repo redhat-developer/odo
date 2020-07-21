@@ -239,3 +239,15 @@ func overrideContainerArgs(container *corev1.Container) {
 	container.Command = append(container.Command, adaptersCommon.SupervisordBinaryPath)
 	container.Args = append(container.Args, "-c", adaptersCommon.SupervisordConfFile)
 }
+
+func PluraliseKind(gvkKind string) (kind string) {
+	// gvkKind is normally a singular noun and we need to have the kind as a plural
+	// i.e. Deploment => Deployments
+	//      Route => Routes
+	//      Ingress => Ingresses
+	kind = strings.ToLower(gvkKind + "s")
+	if strings.HasSuffix(gvkKind, "s") {
+		kind = strings.ToLower(gvkKind + "es")
+	}
+	return kind
+}

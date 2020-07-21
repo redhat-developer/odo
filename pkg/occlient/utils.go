@@ -4,7 +4,9 @@ import (
 	"fmt"
 
 	appsv1 "github.com/openshift/api/apps/v1"
+	routev1 "github.com/openshift/api/route/v1"
 	"github.com/openshift/library-go/pkg/apps/appsutil"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/klog"
 )
 
@@ -84,4 +86,27 @@ func IsDCRolledOut(config *appsv1.DeploymentConfig, desiredRevision int64) bool 
 		}
 	}
 	return false
+}
+
+// GetProtocol returns the protocol string
+func getRouteProtocol(route routev1.Route) string {
+	if route.Spec.TLS != nil {
+		return "https"
+	}
+	return "http"
+}
+
+func getNamedConditionFromObjectStatus(baseObject *unstructured.Unstructured, conditionTypeValue string) map[string]interface{} {
+	status := baseObject.UnstructuredContent()["status"].(map[string]interface{})
+	if status != nil && status["conditions"] != nil {
+		conditions := status["conditions"].([]interface{})
+		for i := range conditions {
+			c := conditions[i].(map[string]interface{})
+			klog.V(4).Infof("Condition returned\n%s\n", c)
+			if c["type"] == conditionTypeValue {
+				return c
+			}
+		}
+	}
+	return nil
 }

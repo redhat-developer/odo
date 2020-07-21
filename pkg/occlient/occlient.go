@@ -58,7 +58,10 @@ import (
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/apimachinery/pkg/watch"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -153,6 +156,8 @@ const (
 	EnvS2IWorkingDir = "ODO_S2I_WORKING_DIR"
 
 	DefaultAppRootDir = "/opt/app-root"
+
+	DeployWaitTimeout = 30 * time.Second
 )
 
 // S2IPaths is a struct that will hold path to S2I scripts and the protocol indicating access to them, component source/binary paths, artifacts deployments directory
@@ -216,6 +221,7 @@ type Client struct {
 	KubeConfig           clientcmd.ClientConfig
 	discoveryClient      discovery.DiscoveryClient
 	Namespace            string
+	dynamicClient        dynamic.Interface
 }
 
 // New creates a new client
@@ -293,6 +299,11 @@ func New() (*Client, error) {
 	}
 	client.Namespace = namespace
 
+	dynamicClient, err := dynamic.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	client.dynamicClient = dynamicClient
 	return &client, nil
 }
 
@@ -2832,6 +2843,11 @@ func (c *Client) GetDeploymentConfigsFromSelector(selector string) ([]appsv1.Dep
 	return dcList.Items, nil
 }
 
+func (c *Client) GetServiceFromName(name string) (*corev1.Service, error) {
+	service, err := c.kubeClient.CoreV1().Services(c.Namespace).Get(name, metav1.GetOptions{})
+	return service, err
+}
+
 // GetServicesFromSelector returns an array of Service resources which match the
 // given selector
 func (c *Client) GetServicesFromSelector(selector string) ([]corev1.Service, error) {
@@ -3391,4 +3407,100 @@ func (c *Client) isResourceSupported(apiGroup, apiVersion, resourceName string) 
 		}
 	}
 	return false, nil
+}
+
+func (c *Client) GetApplicationURLFromService(applicationName string) (fullURL string) {
+	service, err := c.GetServiceFromName(applicationName)
+	if err != nil {
+		return ""
+	}
+
+	if service.Status.LoadBalancer.Size() > 0 {
+		fullURL = fmt.Sprintf("http://%s:%d", service.Status.LoadBalancer.Ingress[0].Hostname, service.Spec.Ports[0].NodePort)
+	}
+
+	return fullURL
+}
+
+func (c *Client) GetApplicationURL(applicationName, labelSelector string) (fullURL string, err error) {
+	routeSupported, _ := c.IsRouteSupported()
+	if routeSupported {
+		routes, err := c.ListRoutes(labelSelector)
+		if err != nil || len(routes) <= 0 {
+			// No URL found - try looking in the Service
+			fullURL = c.GetApplicationURLFromService(applicationName)
+			if fullURL == "" {
+				// still no URL found - try looking for a knative Route therefore need to wait for Service and Route to be setup.
+				knGvr := schema.GroupVersionResource{Group: "serving.knative.dev", Version: "v1", Resource: "routes"}
+				knRoute, err := c.waitForManifestDeployCompletion(applicationName, knGvr, "Ready")
+				if err != nil {
+					return "", errors.Wrap(err, "error while waiting for deployment completion")
+				}
+				fullURL = knRoute.UnstructuredContent()["status"].(map[string]interface{})["url"].(string)
+			}
+		} else {
+			if len(routes) == 1 {
+				fullURL = fmt.Sprintf("%s://%s", getRouteProtocol(routes[0]), routes[0].Spec.Host)
+			} else {
+				return "", errors.New("multiple routes found")
+			}
+		}
+	} else {
+		// TODO: Look for other resources, ie Ingress
+		return "", errors.New("Route not supported")
+	}
+
+	if fullURL == "" {
+		return "", errors.New("URL not able to be found")
+	}
+
+	return fullURL, nil
+}
+
+// Create a function to wait for deploment completion of any unstructured object
+func (c *Client) waitForManifestDeployCompletion(applicationName string, gvr schema.GroupVersionResource, conditionTypeValue string) (*unstructured.Unstructured, error) {
+	klog.V(4).Infof("Waiting for %s manifest deployment completion", applicationName)
+	w, err := c.dynamicClient.Resource(gvr).Namespace(c.Namespace).Watch(metav1.ListOptions{FieldSelector: "metadata.name=" + applicationName})
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to watch deployment")
+	}
+	defer w.Stop()
+	success := make(chan *unstructured.Unstructured)
+	failure := make(chan error)
+
+	go func() {
+		defer close(success)
+		defer close(failure)
+
+		for {
+			val, ok := <-w.ResultChan()
+			if !ok {
+				failure <- errors.New("watch channel was closed")
+				return
+			}
+			if watchObject, ok := val.Object.(*unstructured.Unstructured); ok {
+				// TODO: Add more details on what to check to see if object deployment is complete
+				// Currently only checks to see if status.conditions[] contains a condition with type = conditionTypeValue
+				condition := getNamedConditionFromObjectStatus(watchObject, conditionTypeValue)
+				if condition != nil {
+					if condition["status"] == "Fail" {
+						failure <- fmt.Errorf("manifest deployment %s failed", applicationName)
+						return
+					} else if condition["status"] == "True" {
+						success <- watchObject
+						return
+					}
+				}
+			}
+		}
+	}()
+
+	select {
+	case val := <-success:
+		return val, nil
+	case err := <-failure:
+		return nil, err
+	case <-time.After(DeployWaitTimeout):
+		return nil, errors.Errorf("timeout while waiting for %s manifest deployment completion", applicationName)
+	}
 }
