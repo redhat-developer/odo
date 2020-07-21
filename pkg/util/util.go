@@ -932,11 +932,8 @@ func Unzip(src, dest, pathToUnzip string) ([]string, error) {
 	// change path separator to correct character
 	pathToUnzip = filepath.FromSlash(pathToUnzip)
 
-	// removes first slash of pathToUnzip if present, adds trailing slash
+	// removes first slash of pathToUnzip if present
 	pathToUnzip = strings.TrimPrefix(pathToUnzip, string(os.PathSeparator))
-	if pathToUnzip != "" && !strings.HasSuffix(pathToUnzip, string(os.PathSeparator)) {
-		pathToUnzip = pathToUnzip + string(os.PathSeparator)
-	}
 
 	for _, f := range r.File {
 		// Store filename/path for returning and using later on
