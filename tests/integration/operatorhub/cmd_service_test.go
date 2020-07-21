@@ -77,7 +77,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 		It("should be able to create, list and then delete EtcdCluster from its alm example", func() {
 			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
 			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
-			helper.CmdShouldPass("odo", "service", "create", etcdOperator, "--crd", "EtcdCluster")
+			helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator))
 
 			// now verify if the pods for the operator have started
 			pods := helper.CmdShouldPass("oc", "get", "pods", "-n", project)
@@ -106,7 +106,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			svcFullName := strings.Join([]string{"EtcdCluster", name}, "/")
 			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
 			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
-			helper.CmdShouldPass("odo", "service", "create", etcdOperator, "--crd", "EtcdCluster", name)
+			helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), name)
 
 			// now verify if the pods for the operator have started
 			pods := helper.CmdShouldPass("oc", "get", "pods", "-n", project)
@@ -120,7 +120,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			})
 
 			// now try creating service with same name again. it should fail
-			stdOut := helper.CmdShouldFail("odo", "service", "create", etcdOperator, "--crd", "EtcdCluster", name)
+			stdOut := helper.CmdShouldFail("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), name)
 			Expect(stdOut).To(ContainSubstring(fmt.Sprintf("service %q already exists", svcFullName)))
 
 			helper.CmdShouldPass("odo", "service", "delete", svcFullName, "-f")
@@ -133,7 +133,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 			for _, name := range names {
 				stdOut := helper.CmdShouldFail("odo", "service", "delete", name, "-f")
-				Expect(stdOut).To(ContainSubstring("Invalid service name"))
+				Expect(stdOut).To(ContainSubstring("couldn't split %q into exactly two", name))
 			}
 		})
 	})
@@ -153,7 +153,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
 			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
 
-			stdOut := helper.CmdShouldPass("odo", "service", "create", etcdOperator, "--crd", "EtcdCluster", "--dry-run")
+			stdOut := helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--dry-run")
 			helper.MatchAllInOutput(stdOut, []string{"apiVersion", "kind"})
 		})
 	})
@@ -195,7 +195,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
 			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
 
-			stdOut := helper.CmdShouldPass("odo", "service", "create", etcdOperator, "--crd", "EtcdCluster", "--dry-run")
+			stdOut := helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--dry-run")
 
 			// stdOut contains the yaml specification. Store it to a file
 			randomFileName := helper.RandString(6) + ".yaml"
@@ -226,7 +226,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
 			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
 
-			stdOut := helper.CmdShouldPass("odo", "service", "create", etcdOperator, "--crd", "EtcdCluster", "--dry-run")
+			stdOut := helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator), "--dry-run")
 
 			// stdOut contains the yaml specification. Store it to a file
 			randomFileName := helper.RandString(6) + ".yaml"
@@ -325,7 +325,7 @@ spec:
 		It("should list the services if they exist", func() {
 			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
 			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
-			helper.CmdShouldPass("odo", "service", "create", etcdOperator, "--crd", "EtcdCluster")
+			helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator))
 
 			// now verify if the pods for the operator have started
 			pods := helper.CmdShouldPass("oc", "get", "pods", "-n", project)
@@ -419,7 +419,7 @@ spec:
 			// start the Operator backed service first
 			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
 			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
-			helper.CmdShouldPass("odo", "service", "create", etcdOperator, "--crd", "EtcdCluster")
+			helper.CmdShouldPass("odo", "service", "create", fmt.Sprintf("%s/EtcdCluster", etcdOperator))
 
 			// now verify if the pods for the operator have started
 			pods := helper.CmdShouldPass("oc", "get", "pods", "-n", project)

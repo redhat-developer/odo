@@ -45,7 +45,7 @@ var (
 
 	createOperatorExample = ktemplates.Examples(`
 	# Create new EtcdCluster service from etcdoperator.v0.9.4 operator.
-	%[1]s etcdoperator.v0.9.4 --crd EtcdCluster`)
+	%[1]s etcdoperator.v0.9.4/EtcdCluster`)
 
 	createShortDesc = `Create a new service from service catalog using the plan defined and deploy it on OpenShift.`
 
@@ -53,6 +53,17 @@ var (
 Create a new service from service catalog using the plan defined and deploy it on OpenShift.
 
 A --plan must be passed along with the service type. Parameters to configure the service are passed as key=value pairs.
+
+For a full list of service types, use: 'odo catalog list services'`)
+
+	createShortDescExperimental = `Create a new service from Operator Hub or Service Catalog and deploy it on OpenShift.`
+
+	createLongDescExperimental = ktemplates.LongDesc(`
+Create a new service from Operator Hub or Service Catalog and deploy it on OpenShift.
+
+When creating a service using Operator Hub, provide a service name along with Operator name.
+
+When creating a service using Service Catalog, a --plan must be passed along with the service type. Parameters to configure the service are passed as key=value pairs.
 
 For a full list of service types, use: 'odo catalog list services'`)
 )
@@ -187,7 +198,15 @@ func (o *ServiceCreateOptions) Complete(name string, cmd *cobra.Command, args []
 		o.outputCLI = commonui.Proceed("Output the non-interactive version of the selected options")
 		o.wait = commonui.Proceed("Wait for the service to be ready")
 	} else {
-		o.ServiceType = args[0]
+		if experimental.IsExperimentalModeEnabled() {
+			// split the name provided on CLI and populate servicetype & customresource
+			o.ServiceType, o.CustomResource, err = svc.SplitServiceKindName(args[0])
+			if err != nil {
+				return fmt.Errorf("invalid service name, use the format <operator-type>/<crd-name>")
+			}
+		} else {
+			o.ServiceType = args[0]
+		}
 		// if only one arg is given, then it is considered as service name and service type both
 		// ONLY if not running in Experimental mode
 		if !experimental.IsExperimentalModeEnabled() {
@@ -369,9 +388,9 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 			// file nor a valid `odo service create <operator-name>` to start
 			// the service from an Operator. So we raise and error because the
 			// correct way is to execute:
-			// `odo service create <operator-name> --crd <crd-name>`
+			// `odo service create <operator-name>/<crd-name>`
 
-			return fmt.Errorf("please use a valid command to start an Operator backed service; desired format: %q", "odo service create <operator-name> --crd <crd-name>")
+			return fmt.Errorf("please use a valid command to start an Operator backed service; desired format: %q", "odo service create <operator-name>/<crd-name>")
 		}
 	}
 	// make sure the service type exists
@@ -494,9 +513,10 @@ func NewCmdServiceCreate(name, fullName string) *cobra.Command {
 	}
 
 	if experimental.IsExperimentalModeEnabled() {
-		serviceCreateCmd.Use += fmt.Sprintf(" [flags]\n  %s <operator_type> --crd <crd_name> [service_name] [flags]", o.CmdFullName)
+		serviceCreateCmd.Use += fmt.Sprintf(" [flags]\n  %s <operator_type>/<crd_name> [service_name] [flags]", o.CmdFullName)
+		serviceCreateCmd.Short = createShortDescExperimental
+		serviceCreateCmd.Long = createLongDescExperimental
 		serviceCreateCmd.Example += fmt.Sprintf("\n\n") + fmt.Sprintf(createOperatorExample, fullName)
-		serviceCreateCmd.Flags().StringVar(&o.CustomResource, "crd", "", "The name of the CRD of the operator to be used to create the service")
 		serviceCreateCmd.Flags().BoolVar(&o.DryRun, "dry-run", false, "Print the yaml specificiation that will be used to create the service")
 		// remove this feature after enabling service create interactive mode for operator backed services
 		serviceCreateCmd.Flags().StringVar(&o.fromFile, "from-file", "", "Path to the file containing yaml specification to use to start operator backed service")
