@@ -498,6 +498,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(output).To(ContainSubstring(cmpName2))
 
 			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "false")
+			helper.DeleteDir(context2)
 
 		})
 
@@ -533,6 +534,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(output).To(ContainSubstring(cmpName))
 			Expect(output).To(ContainSubstring(cmpName2))
 
+			helper.DeleteDir(context2)
 		})
 
 	})
