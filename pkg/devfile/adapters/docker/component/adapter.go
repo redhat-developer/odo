@@ -137,9 +137,10 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	// PostStart events from the devfile will only be executed when the component
 	// didn't previously exist
-	if !componentExists {
-		log.Infof("\nExecuting preStart lifecycle event commands for component %s", a.ComponentName)
-		err = a.execDevfileEvent(a.Devfile.Data.GetEvents().PostStart, containers)
+	postStartEvents := a.Devfile.Data.GetEvents().PostStart
+	if !componentExists && len(postStartEvents) > 0 {
+		log.Infof("\nExecuting postStart event commands for component %s", a.ComponentName)
+		err = a.execDevfileEvent(postStartEvents, containers)
 		if err != nil {
 			return err
 		}
