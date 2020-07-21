@@ -37,14 +37,23 @@ func (a GenericAdapter) ExecuteCommand(compInfo ComponentInfo, command []string,
 
 // ExecuteDevfileCommandSynchronously executes the devfile init, build and test command actions synchronously
 func (a GenericAdapter) ExecuteDevfileCommandSynchronously(command common.DevfileCommand, show bool) error {
+	exe := command.Exec
+	var setEnvVariable, cmdLine string
+	for _, envVar := range exe.Env {
+		setEnvVariable = setEnvVariable + fmt.Sprintf("%v=\"%v\" ", envVar.Name, envVar.Value)
+	}
+	if setEnvVariable == "" {
+		cmdLine = exe.CommandLine
+	} else {
+		cmdLine = setEnvVariable + "&& " + exe.CommandLine
+	}
 	// Change to the workdir and execute the command
 	var cmd executable
-	exe := command.Exec
 	if exe.WorkingDir != "" {
 		// since we are using /bin/sh -c, the command needs to be within a single double quote instance, for example "cd /tmp && pwd"
-		cmd = executable{ShellExecutable, "-c", "cd " + exe.WorkingDir + " && " + exe.CommandLine}
+		cmd = executable{ShellExecutable, "-c", "cd " + exe.WorkingDir + " && " + cmdLine}
 	} else {
-		cmd = executable{ShellExecutable, "-c", exe.CommandLine}
+		cmd = executable{ShellExecutable, "-c", cmdLine}
 	}
 	return a.Execute(command, show, []executable{cmd})
 }
