@@ -39,7 +39,7 @@ type PushParameters struct {
 	DevfileBuildCmd          string                  // DevfileBuildCmd takes the build command through the command line and overwrites devfile build command
 	DevfileRunCmd            string                  // DevfileRunCmd takes the run command through the command line and overwrites devfile run command
 	DevfileDebugCmd          string                  // DevfileDebugCmd takes the debug command through the command line and overwrites the devfile debug command
-	DevfileScanIndexForWatch bool                    // DevfileScanIndexForWatch is true if watch's push should regenerate the index file during SyncFiles, false otherwise. See pkg/sync/adapter.go for details
+	DevfileScanIndexForWatch bool                    // DevfileScanIndexForWatch is true if watch's push should regenerate the index file during SyncFiles, false otherwise. See 'pkg/sync/adapter.go' for details
 	EnvSpecificInfo          envinfo.EnvSpecificInfo // EnvSpecificInfo contains infomation of env.yaml file
 	Debug                    bool                    // Runs the component in debug mode
 	DebugPort                int                     // Port used for remote debugging
