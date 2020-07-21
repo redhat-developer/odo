@@ -23,7 +23,7 @@ import (
 	"github.com/openshift/odo/pkg/sync"
 )
 
-// New instantiantes a component adapter
+// New instantiates a component adapter
 func New(adapterContext common.AdapterContext, client lclient.Client) Adapter {
 
 	var loggingClient machineoutput.MachineEventLoggingClient
