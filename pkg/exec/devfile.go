@@ -14,14 +14,22 @@ import (
 // ExecuteDevfileCommandSynchronously executes the devfile init, build and test command actions synchronously
 func ExecuteDevfileCommandSynchronously(client ExecClient, exec common.Exec, commandName string, compInfo adaptersCommon.ComponentInfo, show bool, machineEventLogger machineoutput.MachineEventLoggingClient) error {
 	var s *log.Status
-
+	var setEnvVariable, command string
+	for _, envVar := range exec.Env {
+		setEnvVariable = setEnvVariable + fmt.Sprintf("%v=\"%v\" ", envVar.Name, envVar.Value)
+	}
+	if setEnvVariable == "" {
+		command = exec.CommandLine
+	} else {
+		command = setEnvVariable + "&& " + exec.CommandLine
+	}
 	// Change to the workdir and execute the command
 	var cmdArr []string
 	if exec.WorkingDir != "" {
 		// since we are using /bin/sh -c, the command needs to be within a single double quote instance, for example "cd /tmp && pwd"
-		cmdArr = []string{adaptersCommon.ShellExecutable, "-c", "cd " + exec.WorkingDir + " && " + exec.CommandLine}
+		cmdArr = []string{adaptersCommon.ShellExecutable, "-c", "cd " + exec.WorkingDir + " && " + command}
 	} else {
-		cmdArr = []string{adaptersCommon.ShellExecutable, "-c", exec.CommandLine}
+		cmdArr = []string{adaptersCommon.ShellExecutable, "-c", command}
 	}
 
 	if show {
@@ -33,7 +41,7 @@ func ExecuteDevfileCommandSynchronously(client ExecClient, exec common.Exec, com
 	defer s.End(false)
 
 	// Emit DevFileCommandExecutionBegin JSON event (if machine output logging is enabled)
-	machineEventLogger.DevFileCommandExecutionBegin(exec.Id, exec.Component, exec.CommandLine, convertGroupKindToString(exec), machineoutput.TimestampNow())
+	machineEventLogger.DevFileCommandExecutionBegin(exec.Id, exec.Component, command, convertGroupKindToString(exec), machineoutput.TimestampNow())
 
 	// Capture container text and log to the screen as JSON events (machine output only)
 	stdoutWriter, stdoutChannel, stderrWriter, stderrChannel := machineEventLogger.CreateContainerOutputWriter()
@@ -44,7 +52,7 @@ func ExecuteDevfileCommandSynchronously(client ExecClient, exec common.Exec, com
 	closeWriterAndWaitForAck(stdoutWriter, stdoutChannel, stderrWriter, stderrChannel)
 
 	// Emit close event
-	machineEventLogger.DevFileCommandExecutionComplete(exec.Id, exec.Component, exec.CommandLine, convertGroupKindToString(exec), machineoutput.TimestampNow(), err)
+	machineEventLogger.DevFileCommandExecutionComplete(exec.Id, exec.Component, command, convertGroupKindToString(exec), machineoutput.TimestampNow(), err)
 	if err != nil {
 		return errors.Wrapf(err, "unable to execute the build command")
 	}
