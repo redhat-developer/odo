@@ -1,19 +1,9 @@
 package validate
 
 import (
-	"fmt"
-
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	"k8s.io/apimachinery/pkg/api/resource"
-)
-
-// Errors
-var (
-	ErrorNoComponents              = "no components present"
-	ErrorNoContainerComponent      = fmt.Sprintf("odo requires atleast one component of type '%s' in devfile", common.ContainerComponentType)
-	ErrorDuplicateVolumeComponents = "duplicate volume components present in devfile"
-	ErrorInvalidVolumeSize         = "size %s for volume component %s is invalid: %v. Example - 2Gi, 1024Mi"
 )
 
 // validateComponents validates all the devfile components
@@ -21,7 +11,7 @@ func validateComponents(components []common.DevfileComponent) error {
 
 	// components cannot be empty
 	if len(components) < 1 {
-		return fmt.Errorf(ErrorNoComponents)
+		return &NoComponentsError{}
 	}
 
 	processedVolumes := make(map[string]bool)
@@ -43,17 +33,17 @@ func validateComponents(components []common.DevfileComponent) error {
 					// express storage in Kubernetes. For reference, you may check doc
 					// https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
 					if _, err := resource.ParseQuantity(component.Volume.Size); err != nil {
-						return fmt.Errorf(ErrorInvalidVolumeSize, component.Volume.Size, component.Volume.Name, err)
+						return &InvalidVolumeSizeError{size: component.Volume.Size, componentName: component.Volume.Name, validationError: err}
 					}
 				}
 			} else {
-				return fmt.Errorf(ErrorDuplicateVolumeComponents)
+				return &DuplicateVolumeComponentsError{}
 			}
 		}
 	}
 
 	if !isContainerComponentPresent {
-		return fmt.Errorf(ErrorNoContainerComponent)
+		return &NoContainerComponentError{}
 	}
 
 	// Successful

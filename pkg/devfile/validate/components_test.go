@@ -1,7 +1,6 @@
 package validate
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -17,7 +16,7 @@ func TestValidateComponents(t *testing.T) {
 		components := []common.DevfileComponent{}
 
 		got := validateComponents(components)
-		want := fmt.Errorf(ErrorNoComponents)
+		want := &NoComponentsError{}
 
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("TestValidateComponents error - got: '%v', want: '%v'", got, want)
@@ -56,8 +55,8 @@ func TestValidateComponents(t *testing.T) {
 			},
 		}
 
-		got := ValidateComponents(components)
-		want := fmt.Errorf(ErrorDuplicateVolumeComponents)
+		got := validateComponents(components)
+		want := &DuplicateVolumeComponentsError{}
 
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("TestValidateComponents error - got: '%v', want: '%v'", got, want)
@@ -95,7 +94,7 @@ func TestValidateComponents(t *testing.T) {
 			},
 		}
 
-		got := ValidateComponents(components)
+		got := validateComponents(components)
 
 		if got != nil {
 			t.Errorf("TestValidateComponents error - got: '%v'", got)
@@ -124,7 +123,7 @@ func TestValidateComponents(t *testing.T) {
 			},
 		}
 
-		got := ValidateComponents(components)
+		got := validateComponents(components)
 		want := "size randomgarbage for volume component myvol is invalid"
 
 		if !strings.Contains(got.Error(), want) {
