@@ -35,14 +35,6 @@ func (a GenericAdapter) ExecuteCommand(compInfo ComponentInfo, command []string,
 	return ExecuteCommand(a.client, compInfo, command, show, consoleOutputStdout, consoleOutputStderr)
 }
 
-func (a GenericAdapter) ExecCMDInContainer(compInfo ComponentInfo, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
-	return a.client.ExecCMDInContainer(compInfo, cmd, stdout, stderr, stdin, tty)
-}
-
-func (a GenericAdapter) LoggingClient() machineoutput.MachineEventLoggingClient {
-	return a.logger
-}
-
 // ExecuteDevfileCommandSynchronously executes the devfile init, build and test command actions synchronously
 func (a GenericAdapter) ExecuteDevfileCommandSynchronously(command common.DevfileCommand, show bool) error {
 	// Change to the workdir and execute the command
