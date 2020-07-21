@@ -9,7 +9,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 
 	"github.com/openshift/odo/pkg/application"
-	"github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/project"
 	"github.com/openshift/odo/pkg/util"
@@ -72,7 +72,7 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		lo.Context = genericclioptions.NewDevfileContext(cmd)
 		lo.Client = genericclioptions.Client(cmd)
 		lo.hasDCSupport, err = lo.Client.IsDeploymentConfigSupported()
-		devfile, err := parser.ParseAndValidate(lo.devfilePath)
+		devfile, err := devfile.ParseAndValidate(lo.devfilePath)
 		if err != nil {
 			return err
 		}
