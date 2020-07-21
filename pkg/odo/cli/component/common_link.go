@@ -10,6 +10,7 @@ import (
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
 	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/secret"
@@ -61,6 +62,20 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 
 	if experimental.IsExperimentalModeEnabled() {
 		o.Context = genericclioptions.NewDevfileContext(cmd)
+
+		oclient, err := occlient.New()
+		if err != nil {
+			return err
+		}
+
+		sboSupport, err := oclient.IsSBRSupported()
+		if err != nil {
+			return err
+		}
+
+		if !sboSupport {
+			return fmt.Errorf("Please install Service Binding Operator to be able to create a link")
+		}
 
 		o.serviceType, o.serviceName, err = svc.IsOperatorServiceNameValid(suppliedName)
 		if err != nil {
