@@ -27,9 +27,6 @@ type ComponentSettings struct {
 
 	// DebugPort controls the port used by the pod to run the debugging agent on
 	DebugPort *int `yaml:"DebugPort,omitempty"`
-
-	// ComponentType stores the type of component - this information is available in devfile as well
-	ComponentType string `yaml:"ComponentType,omitempty"`
 }
 
 // URLKind is an enum to indicate the type of the URL i.e ingress/route
@@ -329,11 +326,6 @@ func (ei *EnvInfo) GetNamespace() string {
 // GetApplication returns the application name
 func (ei *EnvInfo) GetApplication() string {
 	return ei.componentSettings.AppName
-}
-
-// GetComponentType returns component type
-func (ei *EnvInfo) GetComponentType() string {
-	return ei.componentSettings.ComponentType
 }
 
 const (

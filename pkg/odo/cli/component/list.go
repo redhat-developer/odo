@@ -9,6 +9,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 
 	"github.com/openshift/odo/pkg/application"
+	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/project"
 	"github.com/openshift/odo/pkg/util"
@@ -46,6 +47,7 @@ type ListOptions struct {
 	pathFlag             string
 	allAppsFlag          bool
 	componentContext     string
+	componentType        string
 	hasDCSupport         bool
 	hasDevfileComponents bool
 	hasS2IComponents     bool
@@ -70,6 +72,11 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		lo.Context = genericclioptions.NewDevfileContext(cmd)
 		lo.Client = genericclioptions.Client(cmd)
 		lo.hasDCSupport, err = lo.Client.IsDeploymentConfigSupported()
+		devfile, err := parser.ParseAndValidate(lo.devfilePath)
+		if err != nil {
+			return err
+		}
+		lo.componentType = devfile.Data.GetMetadata().Name
 
 	} else {
 		// here we use the config.yaml derived context if its present, else we use information from user's kubeconfig
@@ -206,7 +213,7 @@ func (lo *ListOptions) Run() (err error) {
 				// 1st condition - only if we are using the same application or all-apps are provided should we show the current component
 				// 2nd condition - if the currentComponentState is unpushed that means it didn't show up in the list above
 				if (envinfo.GetApplication() == lo.Application || lo.allAppsFlag) && currentComponentState == UnpushedCompState {
-					fmt.Fprintln(w, envinfo.GetApplication(), "\t", currentComponentName, "\t", envinfo.GetNamespace(), "\t", envinfo.GetComponentType(), "\t", currentComponentState)
+					fmt.Fprintln(w, envinfo.GetApplication(), "\t", currentComponentName, "\t", envinfo.GetNamespace(), "\t", lo.componentType, "\t", currentComponentState)
 				}
 
 				w.Flush()
