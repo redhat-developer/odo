@@ -337,43 +337,25 @@ const JsonSchema200 = `{
                       },
                       "type": "object"
                     },
-                    "configuration": {
-                      "properties": {
-                        "cookiesAuthEnabled": {
-                          "type": "boolean"
-                        },
-                        "discoverable": {
-                          "type": "boolean"
-                        },
-                        "path": {
-                          "type": "string"
-                        },
-                        "protocol": {
-                          "description": "The is the low-level protocol of traffic coming through this endpoint. Default value is \"tcp\"",
-                          "type": "string"
-                        },
-                        "public": {
-                          "type": "boolean"
-                        },
-                        "scheme": {
-                          "description": "The is the URL scheme to use when accessing the endpoint. Default value is \"http\"",
-                          "type": "string"
-                        },
-                        "secure": {
-                          "type": "boolean"
-                        },
-                        "type": {
-                          "enum": [
-                            "ide",
-                            "terminal",
-                            "ide-dev"
-                          ],
-                          "type": "string"
-                        }
-                      },
-                      "type": "object",
-                      "additionalProperties": false
+                    "path": {
+                      "type": "string"
                     },
+                    "protocol": {
+                      "description": "Describes the application and transport protocols of the traffic that will go through this endpoint. Default value is \"http\"",
+                      "type": "string"
+                    },
+                    "secure": {
+                      "type": "boolean"
+                    },
+                    "exposure": {
+                      "enum": [
+                        "public",
+                        "internal",
+                        "none"
+                      ],
+                      "description": "Describes how the endpoint should be exposed on the network. Default value is \"public\"",
+                      "type": "string"
+                    }
                     "name": {
                       "type": "string"
                     },

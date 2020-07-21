@@ -95,22 +95,6 @@ type Composite struct {
 	Parallel bool `json:"parallel,omitempty"`
 }
 
-// Configuration holds configuration for an endpoint
-type Configuration struct {
-	CookiesAuthEnabled bool   `json:"cookiesAuthEnabled,omitempty"`
-	Discoverable       bool   `json:"discoverable,omitempty"`
-	Path               string `json:"path,omitempty"`
-
-	// The is the low-level protocol of traffic coming through this endpoint. Default value is "tcp"
-	Protocol string `json:"protocol,omitempty"`
-	Public   bool   `json:"public,omitempty"`
-
-	// The is the URL scheme to use when accessing the endpoint. Default value is "http"
-	Scheme string `json:"scheme,omitempty"`
-	Secure bool   `json:"secure,omitempty"`
-	Type   string `json:"type,omitempty"`
-}
-
 // Container Allows adding and configuring workspace-related containers
 type Container struct {
 
@@ -138,10 +122,18 @@ type Container struct {
 
 // Endpoint holds information about how an application is exposed
 type Endpoint struct {
-	Attributes    map[string]string `json:"attributes,omitempty"`
-	Configuration *Configuration    `json:"configuration,omitempty"`
-	Name          string            `json:"name"`
-	TargetPort    int32             `json:"targetPort"`
+	Attributes map[string]string `json:"attributes,omitempty"`
+
+	// Describes how the endpoint should be exposed on the network. public|internal|none. Default value is "public"
+	Exposure string `json:"exposure,omitempty"`
+
+	Path       string `json:"path,omitempty"`
+	Secure     bool   `json:"secure,omitempty"`
+	Name       string `json:"name"`
+	TargetPort int32  `json:"targetPort"`
+
+	// Describes the application and transport protocols of the traffic that will go through this endpoint. Default value is "http"
+	Protocol string `json:"protocol,omitempty"`
 }
 
 // Env is the key value pair representing an Environment variable
