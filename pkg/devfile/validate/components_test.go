@@ -155,11 +155,11 @@ func TestValidateComponents(t *testing.T) {
 			},
 		}
 
-		got := ValidateComponents(components)
-		want := &MissingVolumeMountError{volumeName: "myinvalidvol2,myinvalidvol"}
+		got := validateComponents(components)
+		want := "unable to find volume mount"
 
-		if !reflect.DeepEqual(got, want) {
-			t.Errorf("TestValidateComponents error - got: '%v', want: '%v'", got, want)
+		if !strings.Contains(got.Error(), want) {
+			t.Errorf("TestValidateComponents error - got: '%v', want substr: '%v'", got.Error(), want)
 		}
 	})
 }
