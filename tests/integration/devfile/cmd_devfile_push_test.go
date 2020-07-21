@@ -548,6 +548,17 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(output).To(ContainSubstring("quantities must match the regular expression"))
 		})
 
+		It("should error out if a container component has volume mount that does not refer a valid volume component", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.RenameFile("devfile.yaml", "devfile-old.yaml")
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-invalid-volmount.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			output := helper.CmdShouldFail("odo", "push", "--project", namespace)
+			Expect(output).To(ContainSubstring("unable to find volume mount"))
+		})
+
 		It("should successfully use the volume components in container components", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 

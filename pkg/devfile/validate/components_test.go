@@ -130,4 +130,36 @@ func TestValidateComponents(t *testing.T) {
 			t.Errorf("TestValidateComponents error - got: '%v', want substring: '%v'", got.Error(), want)
 		}
 	})
+
+	t.Run("Invalid volume mount", func(t *testing.T) {
+
+		components := []common.DevfileComponent{
+			{
+				Volume: &common.Volume{
+					Name: "myvol",
+					Size: "2Gi",
+				},
+			},
+			{
+				Container: &common.Container{
+					Name: "container",
+					VolumeMounts: []common.VolumeMount{
+						{
+							Name: "myinvalidvol",
+						},
+						{
+							Name: "myinvalidvol2",
+						},
+					},
+				},
+			},
+		}
+
+		got := ValidateComponents(components)
+		want := &MissingVolumeMountError{volumeName: "myinvalidvol2,myinvalidvol"}
+
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("TestValidateComponents error - got: '%v', want: '%v'", got, want)
+		}
+	})
 }

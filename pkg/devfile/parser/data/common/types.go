@@ -332,7 +332,7 @@ type Volume struct {
 // VolumeMount describes a path where a volume should be mounted to a component container
 type VolumeMount struct {
 
-	// The volume mount name is the name of an existing `Volume` component. If no corresponding `Volume` component exist it is implicitly added. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files.
+	// The volume mount name is the name of an existing `Volume` component. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files.
 	Name string `json:"name"`
 
 	// The path in the component container where the volume should be mounted. If not path is mentioned, default path is the is `/<name>`.

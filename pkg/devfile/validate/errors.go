@@ -40,3 +40,12 @@ type InvalidVolumeSizeError struct {
 func (e *InvalidVolumeSizeError) Error() string {
 	return fmt.Sprintf("size %s for volume component %s is invalid: %v. Example - 2Gi, 1024Mi", e.size, e.componentName, e.validationError)
 }
+
+// MissingVolumeMountError returns an error if the container volume mount does not reference a valid volume component
+type MissingVolumeMountError struct {
+	volumeName string
+}
+
+func (e *MissingVolumeMountError) Error() string {
+	return fmt.Sprintf("unable to find volume mount %s in devfile volume components", e.volumeName)
+}
