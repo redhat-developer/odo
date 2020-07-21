@@ -86,6 +86,9 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 			klog.V(4).Infof("New Context")
 			lo.Context = genericclioptions.NewContext(cmd)
 			lo.hasDCSupport, err = lo.Client.IsDeploymentConfigSupported()
+			if err != nil {
+				return err
+			}
 
 		} else {
 			klog.V(4).Infof("New Config Context")

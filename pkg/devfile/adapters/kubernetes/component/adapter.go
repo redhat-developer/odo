@@ -210,7 +210,7 @@ func (a Adapter) DoesComponentExist(cmpName string) (bool, error) {
 func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 	componentName := a.ComponentName
 
-	componentType := a.AdapterContext.Devfile.Data.GetMetadata().Name
+	componentType := strings.TrimSuffix(a.AdapterContext.Devfile.Data.GetMetadata().Name, "-")
 
 	labels := componentlabels.GetLabels(componentName, a.AppName, true)
 	labels["component"] = componentName

@@ -1,6 +1,7 @@
 package devfile
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -471,8 +472,10 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			output := helper.CmdShouldPass("odo", "list", "--context", context)
+			Expect(helper.Suffocate(output)).To(ContainSubstring(helper.Suffocate(fmt.Sprintf("%s%s%s%sUnpushed", "app", cmpName, namespace, "nodejs"))))
 
-			output := helper.CmdShouldPass("odo", "push", "--context", context)
+			output = helper.CmdShouldPass("odo", "push", "--context", context)
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
 			// component created in different application
@@ -485,6 +488,8 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context2)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context2, "devfile.yaml"))
 
+			output = helper.CmdShouldPass("odo", "list", "--context", context2)
+			Expect(helper.Suffocate(output)).To(ContainSubstring(helper.Suffocate(fmt.Sprintf("%s%s%s%sUnpushed", appName, cmpName2, namespace, "nodejs"))))
 			output2 := helper.CmdShouldPass("odo", "push", "--context", context2)
 			Expect(output2).To(ContainSubstring("Changes successfully pushed to component"))
 
@@ -513,7 +518,10 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
-			output := helper.CmdShouldPass("odo", "push", "--context", context)
+			output := helper.CmdShouldPass("odo", "list", "--context", context)
+			Expect(helper.Suffocate(output)).To(ContainSubstring(helper.Suffocate(fmt.Sprintf("%s%s%s%sUnpushed", "app", cmpName, namespace, "nodejs"))))
+
+			output = helper.CmdShouldPass("odo", "push", "--context", context)
 			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
 
 			// component created in different application
