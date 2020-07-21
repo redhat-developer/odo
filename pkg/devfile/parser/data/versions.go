@@ -5,6 +5,7 @@ import (
 
 	v100 "github.com/openshift/odo/pkg/devfile/parser/data/1.0.0"
 	v200 "github.com/openshift/odo/pkg/devfile/parser/data/2.0.0"
+	v210 "github.com/openshift/odo/pkg/devfile/parser/data/2.1.0"
 )
 
 // SupportedApiVersions stores the supported devfile API versions
@@ -29,9 +30,8 @@ var apiVersionToDevfileStruct map[supportedApiVersion]reflect.Type
 func init() {
 	apiVersionToDevfileStruct = make(map[supportedApiVersion]reflect.Type)
 	apiVersionToDevfileStruct[apiVersion100] = reflect.TypeOf(v100.Devfile100{})
-	// 2.1.0 is backward compatible with 2.0.0. v200.Devfile200 is for 2.x
 	apiVersionToDevfileStruct[apiVersion200] = reflect.TypeOf(v200.Devfile200{})
-	apiVersionToDevfileStruct[apiVersion210] = reflect.TypeOf(v200.Devfile200{})
+	apiVersionToDevfileStruct[apiVersion210] = reflect.TypeOf(v210.Devfile210{})
 
 }
 
@@ -42,7 +42,6 @@ var devfileApiVersionToJSONSchema map[supportedApiVersion]string
 func init() {
 	devfileApiVersionToJSONSchema = make(map[supportedApiVersion]string)
 	devfileApiVersionToJSONSchema[apiVersion100] = v100.JsonSchema100
-	// 2.1.0 is backward compatible with 2.0.0.  v200.JsonSchema200 is for 2.x
 	devfileApiVersionToJSONSchema[apiVersion200] = v200.JsonSchema200
-	devfileApiVersionToJSONSchema[apiVersion210] = v200.JsonSchema200
+	devfileApiVersionToJSONSchema[apiVersion210] = v210.JsonSchema210
 }

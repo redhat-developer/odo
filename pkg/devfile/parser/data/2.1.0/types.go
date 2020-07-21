@@ -1,4 +1,4 @@
-package version200
+package version210
 
 import "github.com/openshift/odo/pkg/devfile/parser/data/common"
 
@@ -13,8 +13,8 @@ const (
 	DebugCommandGroupType CommandGroupType = "debug"
 )
 
-// Devfile200 Devfile schema.
-type Devfile200 struct {
+// Devfile210 Devfile schema.
+type Devfile210 struct {
 
 	// Predefined, ready-to-use, workspace-related commands
 	Commands []common.DevfileCommand `json:"commands,omitempty"`
@@ -71,6 +71,9 @@ type Component struct {
 
 	// Allows specifying the definition of a volume shared by several other components
 	Volume *Volume `json:"volume,omitempty"`
+
+	// Allows specifying a dockerfile to initiate build
+	Dockerfile *Dockerfile `json:"dockerfile,omitempty"`
 }
 
 // Composite Composite command that allows executing several sub-commands either sequentially or concurrently
@@ -95,7 +98,7 @@ type Composite struct {
 	Parallel bool `json:"parallel,omitempty"`
 }
 
-// Configuration holds configuration for an endpoint
+// Configuration
 type Configuration struct {
 	CookiesAuthEnabled bool   `json:"cookiesAuthEnabled,omitempty"`
 	Discoverable       bool   `json:"discoverable,omitempty"`
@@ -136,7 +139,7 @@ type Container struct {
 	VolumeMounts []*VolumeMount `json:"volumeMounts,omitempty"`
 }
 
-// Endpoint holds information about how an application is exposed
+// Endpoint
 type Endpoint struct {
 	Attributes    map[string]string `json:"attributes,omitempty"`
 	Configuration *Configuration    `json:"configuration,omitempty"`
@@ -144,7 +147,7 @@ type Endpoint struct {
 	TargetPort    int32             `json:"targetPort"`
 }
 
-// Env is the key value pair representing an Environment variable
+// Env
 type Env struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
@@ -322,7 +325,7 @@ type Plugin struct {
 	Uri string `json:"uri,omitempty"`
 }
 
-// Project holds details of a starter project that can be downloaded by the user
+// ProjectsItems
 type Project struct {
 
 	// Path relative to the root of the projects to which this project should be cloned into. This is a unix-style relative path (i.e. uses forward slashes). The path is invalid if it is absolute or tries to escape the project root through the usage of '..'. If not specified, defaults to the project name.
@@ -407,4 +410,28 @@ type Zip struct {
 
 	// Part of project to populate in the working directory.
 	SparseCheckoutDir string `json:"sparseCheckoutDir,omitempty"`
+}
+
+// Dockerfile Component is for dockerfile image build
+type Dockerfile struct {
+	// Mandatory name that allows referencing the Volume component in Container volume mounts or inside a parent
+	Name string `json:"name"`
+
+	// Mandatory path to source code
+	Source *Source `json:"source"`
+
+	// Mandatory path to dockerfile
+	DockerfileLocation string `json:"dockerfileLocation"`
+
+	// Mandatory destination to registry to push built image
+	Destination string `json:"destination,omitempty"`
+}
+
+// Source represents source code for Dockerfile Component
+type Source struct {
+	// Mandatory path to local source directory folder
+	SourceDir string `json:"sourceDir"`
+
+	// Mandatory path to source repository hosted locally or on cloud
+	Location string `json:"location"`
 }
