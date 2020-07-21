@@ -67,7 +67,7 @@ DB_USER=luke
 DB_PASSWORD=secret`
 
 	linkExampleExperimental = ktemplates.Examples(`# Link the current component to the 'EtcdCluster' named 'example'
-%[1]s link EtcdCluster/example
+%[1]s EtcdCluster/example
 	`)
 
 	linkLongDescExperimental = `Link component to an operator backed service

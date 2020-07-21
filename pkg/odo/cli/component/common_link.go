@@ -210,7 +210,8 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 
 func (o *commonLinkOptions) run() (err error) {
 	if experimental.IsExperimentalModeEnabled() {
-		// create a YAML of the service binding request
+		// convert service binding request into a ma[string]interface{} type so
+		// as to use it with dynamic client
 		sbrMap := make(map[string]interface{})
 		inrec, _ := json.Marshal(o.sbr)
 		err = json.Unmarshal(inrec, &sbrMap)
