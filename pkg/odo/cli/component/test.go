@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/openshift/odo/pkg/devfile"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -16,7 +17,7 @@ import (
 	"k8s.io/kubectl/pkg/util/templates"
 )
 
-// RecommendedCommandName is the recommended command name
+// TestRecommendedCommandName is the recommended test command name
 const TestRecommendedCommandName = "test"
 
 // TestOptions encapsulates the options for the odo command
@@ -53,7 +54,7 @@ func (to *TestOptions) Complete(name string, cmd *cobra.Command, args []string) 
 
 // Validate validates the TestOptions based on completed values
 func (to *TestOptions) Validate() (err error) {
-	devObj, err := devfileParser.ParseAndValidate(to.devfilePath)
+	devObj, err := devfile.ParseAndValidate(to.devfilePath)
 	if err != nil {
 		return errors.Wrap(err, "fail to parse devfile")
 	}

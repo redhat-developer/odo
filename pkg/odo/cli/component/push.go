@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/odo/util/pushtarget"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -86,7 +87,7 @@ func (po *PushOptions) Complete(name string, cmd *cobra.Command, args []string) 
 	// if experimental mode is enabled and devfile is present
 	if experimental.IsExperimentalModeEnabled() && util.CheckPathExists(po.DevfilePath) {
 
-		po.Devfile, err = parser.ParseAndValidate(po.DevfilePath)
+		po.Devfile, err = devfile.ParseAndValidate(po.DevfilePath)
 		if err != nil {
 			return errors.Wrap(err, "unable to parse devfile")
 		}
