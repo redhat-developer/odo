@@ -48,9 +48,11 @@ type CreateOptions struct {
 	componentPorts    []string
 	componentEnvVars  []string
 	memoryMax         string
-	AppName           string
 
-	memoryMin   string
+	memoryMin string
+
+	appName string
+
 	memory      string
 	cpuMax      string
 	cpuMin      string
@@ -355,7 +357,7 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 			return errors.New("This directory already contains a devfile, you can't specify devfile via --devfile")
 		}
 
-		co.AppName = genericclioptions.ResolveAppFlag(cmd)
+		co.appName = genericclioptions.ResolveAppFlag(cmd)
 
 		// Validate user specify devfile path
 		if co.devfileMetadata.devfilePath.value != "" {
@@ -1003,9 +1005,10 @@ func (co *CreateOptions) Run() (err error) {
 			}
 
 			// Generate env file
-			err = co.EnvSpecificInfo.SetComponentSettings(envinfo.ComponentSettings{Name: co.devfileMetadata.componentName,
+			err = co.EnvSpecificInfo.SetComponentSettings(envinfo.ComponentSettings{
+				Name:          co.devfileMetadata.componentName,
 				Namespace:     co.devfileMetadata.componentNamespace,
-				AppName:       co.AppName,
+				AppName:       co.appName,
 				ComponentType: co.devfileMetadata.componentType,
 			})
 			if err != nil {

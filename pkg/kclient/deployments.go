@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	applabels "github.com/openshift/odo/pkg/application/labels"
-
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
@@ -44,18 +42,12 @@ func getDeploymentCondition(status appsv1.DeploymentStatus, condType appsv1.Depl
 	return nil
 }
 
-// ListDeployments lists all deployments by application name
-func (c *Client) ListDeployments(appName string) (*appsv1.DeploymentList, error) {
-	applicationSelector := fmt.Sprintf("%s=%s", applabels.ApplicationLabel, appName)
+// ListDeployments lists all deployments by selector
+func (c *Client) ListDeployments(selector string) (*appsv1.DeploymentList, error) {
 
 	return c.KubeClient.AppsV1().Deployments(c.Namespace).List(metav1.ListOptions{
-		LabelSelector: applicationSelector,
+		LabelSelector: selector,
 	})
-}
-
-// ListAllDeployments lists all deployments in a namespace
-func (c *Client) ListAllDeployments() (*appsv1.DeploymentList, error) {
-	return c.KubeClient.AppsV1().Deployments(c.Namespace).List(metav1.ListOptions{})
 }
 
 // WaitForDeploymentRollout waits for deployment to finish rollout. Returns the state of the deployment after rollout.

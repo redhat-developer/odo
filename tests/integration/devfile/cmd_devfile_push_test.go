@@ -421,7 +421,6 @@ var _ = Describe("odo devfile push command tests", func() {
 		})
 	})
 
-
 	Context("exec commands with environment variables", func() {
 		It("Should be able to exec command with single environment variable", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)

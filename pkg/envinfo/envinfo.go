@@ -79,8 +79,6 @@ type LocalConfigProvider interface {
 	GetApplication() string
 }
 
-
-
 // EnvInfo holds all the env specific information relavent to a specific Component.
 type EnvInfo struct {
 	componentSettings ComponentSettings `yaml:"ComponentSettings,omitempty"`
@@ -197,8 +195,6 @@ func (esi *EnvSpecificInfo) SetConfiguration(parameter string, value interface{}
 		case "push":
 			pushCommandValue := value.(EnvInfoPushCommand)
 			esi.componentSettings.PushCommand = &pushCommandValue
-		case "appname":
-			esi.componentSettings.AppName = parameter
 		}
 
 		return esi.writeToFile()

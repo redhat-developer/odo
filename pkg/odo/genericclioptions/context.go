@@ -270,7 +270,7 @@ func resolveNamespace(command *cobra.Command, client *kclient.Client, envSpecifi
 	return namespace
 }
 
-// ResolveApp resolves the app
+// resolveApp resolves the app
 func resolveApp(command *cobra.Command, createAppIfNeeded bool, localConfiguration envinfo.LocalConfigProvider) string {
 	var app string
 	appFlag := FlagValueIfSet(command, ApplicationFlagName)
@@ -336,7 +336,6 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 
 	// Resolve project
 	namespace := resolveProject(command, client, localConfiguration)
-
 
 	// resolve application
 	app := resolveApp(command, createAppIfNeeded, localConfiguration)

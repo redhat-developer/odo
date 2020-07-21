@@ -10,6 +10,7 @@ import (
 
 	"github.com/openshift/odo/pkg/application"
 	"github.com/openshift/odo/pkg/machineoutput"
+	"github.com/openshift/odo/pkg/project"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -32,6 +33,9 @@ import (
 
 // ListRecommendedCommandName is the recommended watch command name
 const ListRecommendedCommandName = "list"
+
+const UnpushedCompState = "Unpushed"
+const PushedCompState = "Pushed"
 
 var listExample = ktemplates.Examples(`  # List all components in the application
 %[1]s
@@ -97,7 +101,7 @@ func (lo *ListOptions) Validate() (err error) {
 	}
 
 	if lo.isExperimentalMode {
-		if lo.Context.Application == "" && lo.Context.Project == "" {
+		if lo.Context.Application == "" && lo.Context.KClient.Namespace == "" {
 			return odoutil.ThrowContextError()
 		}
 		return nil
@@ -164,40 +168,51 @@ func (lo *ListOptions) Run() (err error) {
 		var deploymentList *appsv1.DeploymentList
 		var err error
 
+		var selector string
 		// TODO: wrap this into a component list for docker support
 		if lo.allAppsFlag {
-			deploymentList, err = lo.KClient.ListAllDeployments()
+			selector = project.GetSelector()
 
 		} else {
-			deploymentList, err = lo.KClient.ListDeployments(lo.Application)
+			selector = applabels.GetSelector(lo.Application)
 		}
+
+		deploymentList, err = lo.KClient.ListDeployments(selector)
 
 		if err != nil {
 			return err
 		}
 
-		envinfo := lo.EnvSpecificInfo.EnvInfo
-		currentComponentState := "Unpushed"
-		currentComponentName := envinfo.GetName()
-		lo.hasDevfileComponents = true
-		w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
-		fmt.Fprintln(w, "Devfile Components: ")
-		fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "STATE")
-		for _, comp := range deploymentList.Items {
-			app := comp.Labels[applabels.ApplicationLabel]
-			cmpType := comp.Labels[componentlabels.ComponentTypeLabel]
-			if comp.Name == currentComponentName && app == lo.Application && comp.Namespace == envinfo.GetNamespace() {
-				currentComponentState = "Pushed"
+		// Json output is not implemented yet for devfile
+		if !log.IsJSON() {
+			envinfo := lo.EnvSpecificInfo.EnvInfo
+			if len(deploymentList.Items) != 0 || envinfo.GetApplication() == lo.Application {
+
+				currentComponentState := UnpushedCompState
+				currentComponentName := envinfo.GetName()
+				lo.hasDevfileComponents = true
+				w := tabwriter.NewWriter(os.Stdout, 5, 2, 3, ' ', tabwriter.TabIndent)
+				fmt.Fprintln(w, "Devfile Components: ")
+				fmt.Fprintln(w, "APP", "\t", "NAME", "\t", "PROJECT", "\t", "TYPE", "\t", "STATE")
+				for _, comp := range deploymentList.Items {
+					app := comp.Labels[applabels.ApplicationLabel]
+					cmpType := comp.Labels[componentlabels.ComponentTypeLabel]
+					if comp.Name == currentComponentName && app == envinfo.GetApplication() && comp.Namespace == envinfo.GetNamespace() {
+						currentComponentState = PushedCompState
+					}
+					fmt.Fprintln(w, app, "\t", comp.Name, "\t", comp.Namespace, "\t", cmpType, "\t", "Pushed")
+				}
+
+				// 1st condition - only if we are using the same application or all-apps are provided should we show the current component
+				// 2nd condition - if the currentComponentState is unpushed that means it didn't show up in the list above
+				if (envinfo.GetApplication() == lo.Application || lo.allAppsFlag) && currentComponentState == UnpushedCompState {
+					fmt.Fprintln(w, envinfo.GetApplication(), "\t", currentComponentName, "\t", envinfo.GetNamespace(), "\t", envinfo.GetComponentType(), "\t", currentComponentState)
+				}
+
+				w.Flush()
 			}
-			fmt.Fprintln(w, app, "\t", comp.Name, "\t", comp.Namespace, "\t", cmpType, "\t", "Pushed")
-		}
 
-		// if the currentComponentState is unpushed that means it didn't show up in the list above
-		if currentComponentState == "Unpushed" {
-			fmt.Fprintln(w, envinfo.GetApplication(), "\t", currentComponentName, "\t", envinfo.GetNamespace(), "\t", envinfo.GetComponentType(), "\t", currentComponentState)
 		}
-
-		w.Flush()
 
 	}
 
