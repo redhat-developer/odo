@@ -1,7 +1,6 @@
 package kubernetes
 
 import (
-	"github.com/openshift/odo/pkg/machineoutput"
 	"io"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
@@ -27,14 +26,6 @@ func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
 	return Adapter{
 		componentAdapter: compAdapter,
 	}
-}
-
-func (k Adapter) ExecCMDInContainer(compInfo common.ComponentInfo, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
-	return k.componentAdapter.ExecCMDInContainer(compInfo, cmd, stdout, stderr, stdin, tty)
-}
-
-func (k Adapter) LoggingClient() machineoutput.MachineEventLoggingClient {
-	return k.componentAdapter.LoggingClient()
 }
 
 // Push creates Kubernetes resources that correspond to the devfile if they don't already exist

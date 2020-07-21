@@ -8,7 +8,6 @@ import (
 
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/envinfo"
-	"github.com/openshift/odo/pkg/exec"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -42,31 +41,46 @@ func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
 		loggingClient = machineoutput.NewNoOpMachineEventLoggingClient()
 	}
 
+	componentInfoFactory := func(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
+		pod, err := waitAndGetPod(true, adapterContext.ComponentName, client)
+		if err != nil {
+			return common.ComponentInfo{}, errors.Wrapf(err, "unable to get pod for component %s", adapterContext.ComponentName)
+		}
+		return common.ComponentInfo{
+			PodName:       pod.Name,
+			ContainerName: command.Exec.Component,
+		}, nil
+	}
+	supervisorFactory := func(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
+		pod, err := waitAndGetPod(true, adapterContext.ComponentName, client)
+		if err != nil {
+			return common.ComponentInfo{}, errors.Wrapf(err, "unable to get pod for component %s", adapterContext.ComponentName)
+		}
+		for _, container := range pod.Spec.Containers {
+			if container.Name == command.Exec.Component && !reflect.DeepEqual(container.Command, []string{common.SupervisordBinaryPath}) {
+				return common.ComponentInfo{
+					ContainerName: command.Exec.Component,
+					PodName:       pod.Name,
+				}, nil
+			}
+		}
+		return common.ComponentInfo{}, errors.Wrapf(err, "couldn't find supervisord contain for odo component %s", adapterContext.ComponentName)
+	}
 	return Adapter{
-		Client:             client,
-		AdapterContext:     adapterContext,
-		machineEventLogger: loggingClient,
+		GenericAdapter: common.NewGenericAdapter(&client, loggingClient, adapterContext, componentInfoFactory, supervisorFactory),
 	}
 }
 
 // Adapter is a component adapter implementation for Kubernetes
 type Adapter struct {
 	Client kclient.Client
-	common.AdapterContext
-	devfileInitCmd     string
-	devfileBuildCmd    string
-	devfileRunCmd      string
-	devfileDebugCmd    string
-	devfileDebugPort   int
-	machineEventLogger machineoutput.MachineEventLoggingClient
-}
+	common.GenericAdapter
 
-func (a Adapter) ExecCMDInContainer(compInfo common.ComponentInfo, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
-	return a.Client.ExecCMDInContainer(compInfo, cmd, stdout, stderr, stdin, tty)
-}
-
-func (a Adapter) LoggingClient() machineoutput.MachineEventLoggingClient {
-	return a.machineEventLogger
+	devfileInitCmd   string
+	devfileBuildCmd  string
+	devfileRunCmd    string
+	devfileDebugCmd  string
+	devfileDebugPort int
 }
 
 // Push updates the component if a matching component exists or creates one if it doesn't exist
@@ -171,7 +185,9 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// didn't previously exist
 	postStartEvents := a.Devfile.Data.GetEvents().PostStart
 	if !componentExists && len(postStartEvents) > 0 {
-		err = a.execDevfileEvent(postStartEvents, string(common.PostStart), a.ComponentName, pod.GetName(), parameters.Show)
+		// log only when there are post start events present in devfile
+		log.Infof("\nExecuting postStart event commands for component %s", a.ComponentName)
+		err = a.ExecDevfileEvent(postStartEvents)
 		if err != nil {
 			return err
 
@@ -180,7 +196,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	if execRequired {
 		log.Infof("\nExecuting devfile commands for component %s", a.ComponentName)
-		err = a.execDevfile(pushDevfileCommands, componentExists, parameters.Show, pod.GetName(), pod.Spec.Containers, parameters.Debug)
+		err = a.ExecDevfile(pushDevfileCommands, componentExists, parameters)
 		if err != nil {
 			return err
 		}
@@ -205,7 +221,7 @@ func (a Adapter) Test(testCmd string, show bool) (err error) {
 	if err != nil {
 		return errors.Wrap(err, "failed to validate devfile test command")
 	}
-	err = a.execTestCmd(testCommand, pod.GetName(), show)
+	err = a.ExecuteDevfileCommandSynchronously(testCommand, show)
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute devfile commands for component %s", a.ComponentName)
 	}
@@ -381,146 +397,20 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 }
 
 func (a Adapter) waitAndGetComponentPod(hideSpinner bool) (*corev1.Pod, error) {
-	podSelector := fmt.Sprintf("component=%s", a.ComponentName)
+	return waitAndGetPod(hideSpinner, a.ComponentName, a.Client)
+}
+
+func waitAndGetPod(hideSpinner bool, componentName string, client kclient.Client) (*corev1.Pod, error) {
+	podSelector := fmt.Sprintf("component=%s", componentName)
 	watchOptions := metav1.ListOptions{
 		LabelSelector: podSelector,
 	}
 	// Wait for Pod to be in running state otherwise we can't sync data to it.
-	pod, err := a.Client.WaitAndGetPod(watchOptions, corev1.PodRunning, "Waiting for component to start", hideSpinner)
+	pod, err := client.WaitAndGetPod(watchOptions, corev1.PodRunning, "Waiting for component to start", hideSpinner)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error while waiting for pod %s", podSelector)
 	}
 	return pod, nil
-}
-
-// Executes all the commands from the devfile in order: init and build - which are both optional, and a compulsary run.
-// Init only runs once when the component is created.
-func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists, show bool, podName string, containers []corev1.Container, isDebug bool) (err error) {
-	// Need to get mapping of all commands in the devfile since the composite command may reference any exec or composite command in the devfile
-	devfileCommandMap := common.GetCommandsMap(a.Devfile.Data.GetCommands())
-
-	// If nothing has been passed, then the devfile is missing the required run command
-	if len(commandsMap) == 0 {
-		return errors.New("error executing devfile commands - there should be at least 1 command")
-	}
-
-	compInfo := common.ComponentInfo{
-		PodName: podName,
-	}
-
-	// only execute Init command, if it is first run of container.
-	if !componentExists {
-
-		// Get Init Command
-		command, ok := commandsMap[versionsCommon.InitCommandGroupType]
-		if ok {
-			compInfo.ContainerName = command.Exec.Component
-			err = exec.ExecuteDevfileCommandSynchronously(a, *command.Exec, compInfo, show)
-			if err != nil {
-				return err
-			}
-
-		}
-
-	}
-
-	// Get Build Command
-	command, ok := commandsMap[versionsCommon.BuildCommandGroupType]
-	if ok {
-		compInfo.ContainerName = command.Exec.Component
-		err = exec.ExecuteDevfileCommandSynchronously(a, *command.Exec, compInfo, show)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Get Run or Debug Command
-	if isDebug {
-		command, ok = commandsMap[versionsCommon.DebugCommandGroupType]
-	} else {
-		command, ok = commandsMap[versionsCommon.RunCommandGroupType]
-	}
-	if ok {
-		klog.V(4).Infof("Executing devfile command %v", command.GetID())
-
-		// Check if the devfile debug component containers have supervisord as the entrypoint.
-		// Start the supervisord if the odo component does not exist
-		if !componentExists && command.Exec != nil {
-			err = a.InitRunContainerSupervisord(command.Exec.Component, podName, containers)
-			if err != nil {
-				a.machineEventLogger.ReportError(err, machineoutput.TimestampNow())
-				return
-			}
-		}
-
-		compInfo.ContainerName = command.Exec.Component
-		compInfo.ContainerName = command.Exec.Component
-		return exec.Execute(a, *command.Exec, compInfo, show, exec.DefaultCommands(isDebug, common.IsRestartRequired(command)))
-	}
-
-	return
-}
-
-// execDevfileEvent receives a Devfile Event (PostStart, PreStop etc.) and loops through them
-// Each Devfile Command associated with the given event is retrieved, and executed in the container specified
-// in the command
-func (a Adapter) execDevfileEvent(events []string, eventType, componentName, podName string, show bool) error {
-
-	log.Infof("\nExecuting %s event commands for component %s", eventType, componentName)
-
-	commandMap := common.GetCommandsMap(a.Devfile.Data.GetCommands())
-	for _, commandName := range events {
-		// Convert commandName to lower because GetCommands converts Command.Exec.Id's to lower
-		command := commandMap[strings.ToLower(commandName)]
-
-		compInfo := common.ComponentInfo{
-			PodName: podName,
-		}
-
-		if command.Composite != nil {
-			err := exec.ExecuteCompositeDevfileAction(&a.Client, *command.Composite, commandMap, compInfo, show, a.machineEventLogger)
-			if err != nil {
-				return errors.Wrapf(err, "unable to execute devfile composite command "+commandName)
-			}
-		} else {
-			compInfo.ContainerName = command.Exec.Component
-
-			// Execute command in pod
-			err := exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger, false)
-			if err != nil {
-				return errors.Wrapf(err, "unable to execute devfile command "+commandName)
-			}
-		}
-
-	}
-	return nil
-}
-
-// Executes the test command in the pod
-func (a Adapter) execTestCmd(testCmd versionsCommon.DevfileCommand, podName string, show bool) (err error) {
-	compInfo := common.ComponentInfo{
-		PodName: podName,
-	}
-	compInfo.ContainerName = testCmd.Exec.Component
-	err = exec.ExecuteDevfileCommandSynchronously(a, *testCmd.Exec, compInfo, show)
-	return
-}
-
-// InitRunContainerSupervisord initializes the supervisord in the container if
-// the container has entrypoint that is not supervisord
-func (a Adapter) InitRunContainerSupervisord(containerName, podName string, containers []corev1.Container) (err error) {
-	for _, container := range containers {
-		if container.Name == containerName && !reflect.DeepEqual(container.Command, []string{common.SupervisordBinaryPath}) {
-			command := []string{common.SupervisordBinaryPath, "-c", common.SupervisordConfFile, "-d"}
-			compInfo := common.ComponentInfo{
-				ContainerName: containerName,
-				PodName:       podName,
-			}
-			err = exec.ExecuteCommand(a, compInfo, command, true, nil, nil)
-		}
-	}
-
-	return
 }
 
 // getFirstContainerWithSourceVolume returns the first container that set mountSources: true as well
@@ -657,5 +547,5 @@ func (a Adapter) Exec(command []string) error {
 		ContainerName: containerName,
 	}
 
-	return exec.ExecuteCommand(a, componentInfo, command, true, nil, nil)
+	return common.ExecuteCommand(a, componentInfo, command, true, nil, nil)
 }

@@ -1,7 +1,6 @@
 package docker
 
 import (
-	"github.com/openshift/odo/pkg/machineoutput"
 	"io"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
@@ -23,14 +22,6 @@ func New(adapterContext common.AdapterContext, client lclient.Client) Adapter {
 	return Adapter{
 		componentAdapter: compAdapter,
 	}
-}
-
-func (d Adapter) ExecCMDInContainer(compInfo common.ComponentInfo, cmd []string, stdout io.Writer, stderr io.Writer, stdin io.Reader, tty bool) error {
-	return d.componentAdapter.ExecCMDInContainer(compInfo, cmd, stdout, stderr, stdin, tty)
-}
-
-func (d Adapter) LoggingClient() machineoutput.MachineEventLoggingClient {
-	return d.componentAdapter.LoggingClient()
 }
 
 // Push creates Docker resources that correspond to the devfile if they don't already exist
