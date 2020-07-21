@@ -135,6 +135,16 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return errors.Wrapf(err, "failed to sync to component with name %s", a.ComponentName)
 	}
 
+	// PostStart events from the devfile will only be executed when the component
+	// didn't previously exist
+	if !componentExists {
+		log.Infof("\nExecuting preStart lifecycle event commands for component %s", a.ComponentName)
+		err = a.execDevfileEvent(a.Devfile.Data.GetEvents().PostStart, containers)
+		if err != nil {
+			return err
+		}
+	}
+
 	if execRequired {
 		log.Infof("\nExecuting devfile commands for component %s", a.ComponentName)
 		err = a.execDevfile(pushDevfileCommands, componentExists, parameters.Show, containers)
