@@ -262,7 +262,7 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 
 			// Check if the operator and the CR exist on cluster
 			var csv olm.ClusterServiceVersion
-			o.CustomResource, csv, err = svc.CheckCRExists(o.KClient, d.OriginalCRD)
+			o.CustomResource, csv, err = svc.GetCSV(o.KClient, d.OriginalCRD)
 			if err != nil {
 				return err
 			}

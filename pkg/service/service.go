@@ -66,10 +66,10 @@ func CreateService(client *occlient.Client, serviceName string, serviceType stri
 	return nil
 }
 
-// CheckCRExists checks if the CR provided by the user in the YAML file exists in the namesapce
+// GetCSV checks if the CR provided by the user in the YAML file exists in the namesapce
 // It returns a CR (string representation) and CSV (Operator) upon successfully
 // able to find them, an error otherwise.
-func CheckCRExists(client *kclient.Client, crd map[string]interface{}) (string, olm.ClusterServiceVersion, error) {
+func GetCSV(client *kclient.Client, crd map[string]interface{}) (string, olm.ClusterServiceVersion, error) {
 	cr := crd["kind"].(string)
 	csvs, err := client.GetClusterServiceVersionList()
 	if err != nil {
