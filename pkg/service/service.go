@@ -345,8 +345,9 @@ func getGVKRFromCR(cr olm.CRDDescription) (group, version, kind, resource string
 
 func GetGVRFromOperator(csv olm.ClusterServiceVersion, cr string) (group, version, resource string, err error) {
 	for _, customresource := range csv.Spec.CustomResourceDefinitions.Owned {
-		if customresource.Kind == cr {
-			return GetGVRFromCR(&customresource)
+		custRes := customresource
+		if custRes.Kind == cr {
+			return GetGVRFromCR(&custRes)
 		}
 	}
 	return "", "", "", fmt.Errorf("Couldn't parse group, version, resource from Operator %q\n", csv.Name)

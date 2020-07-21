@@ -109,8 +109,6 @@ func NewServiceCreateOptions() *ServiceCreateOptions {
 type DynamicCRD struct {
 	// contains the CR as obtained from CSV or user
 	OriginalCRD map[string]interface{}
-	// contains the metadata of the provided CR
-	metadata map[string]interface{}
 }
 
 func NewDynamicCRD() *DynamicCRD {
