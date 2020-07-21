@@ -67,6 +67,7 @@ func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
 		return common.ComponentInfo{}, errors.Wrapf(err, "couldn't find supervisord contain for odo component %s", adapterContext.ComponentName)
 	}
 	return Adapter{
+		Client:         client,
 		GenericAdapter: common.NewGenericAdapter(&client, loggingClient, adapterContext, componentInfoFactory, supervisorFactory),
 	}
 }

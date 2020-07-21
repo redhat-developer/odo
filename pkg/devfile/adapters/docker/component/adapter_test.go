@@ -420,10 +420,7 @@ func TestAdapterDelete(t *testing.T) {
 
 			fkclient, mockDockerClient := lclient.FakeNewMockClient(ctrl)
 
-			a := Adapter{
-				Client:         *fkclient,
-				AdapterContext: adapterCtx,
-			}
+			a := New(adapterCtx, *fkclient)
 
 			labeledContainers := []types.Container{}
 
@@ -793,10 +790,7 @@ func TestAdapterDeleteVolumes(t *testing.T) {
 
 			fkclient, mockDockerClient := lclient.FakeNewMockClient(ctrl)
 
-			a := Adapter{
-				Client:         *fkclient,
-				AdapterContext: adapterCtx,
-			}
+			a := New(adapterCtx, *fkclient)
 
 			arg := map[string]string{
 				"component": componentName,
