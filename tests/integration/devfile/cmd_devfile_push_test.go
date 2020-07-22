@@ -542,6 +542,10 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(output).To(ContainSubstring(cmpName))
 			Expect(output).To(ContainSubstring(cmpName2))
 
+			output = helper.CmdShouldPass("odo", "list", "--app", appName, "--project", namespace)
+			Expect(output).To(Not(ContainSubstring(cmpName))) // cmpName component hasn't been created under appName
+			Expect(output).To(ContainSubstring(cmpName2))
+
 			helper.DeleteDir(context2)
 		})
 

@@ -72,6 +72,9 @@ func (lo *ListOptions) Complete(name string, cmd *cobra.Command, args []string) 
 		lo.Context = genericclioptions.NewDevfileContext(cmd)
 		lo.Client = genericclioptions.Client(cmd)
 		lo.hasDCSupport, err = lo.Client.IsDeploymentConfigSupported()
+		if err != nil {
+			return err
+		}
 		devfile, err := devfile.ParseAndValidate(lo.devfilePath)
 		if err != nil {
 			return err
