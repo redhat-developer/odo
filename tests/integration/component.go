@@ -581,6 +581,7 @@ func componentTests(args ...string) {
 		It("creates a local nodejs component and check unsupported warning hasn't occured", func() {
 			helper.CopyExample(filepath.Join("source", "nodejs"), context)
 			output := helper.CmdShouldPass("odo", append(args, "create", "nodejs:latest", componentName, "--app", appName, "--project", project, "--context", context)...)
+			helper.CmdShouldPass("odo", "catalog", "list", "components")
 			Expect(output).NotTo(ContainSubstring("Warning"))
 		})
 	})
