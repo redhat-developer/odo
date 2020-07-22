@@ -196,7 +196,7 @@ func (do *DeleteOptions) Run() (err error) {
 	return
 }
 
-// Run has the logic to perform the required actions as part of command for devfiles
+// DevFileRun has the logic to perform the required actions as part of command for devfiles
 func (do *DeleteOptions) DevFileRun() (err error) {
 	// devfile delete
 	if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the devfile component: %s?", do.EnvSpecificInfo.GetName())) {

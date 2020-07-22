@@ -3256,6 +3256,14 @@ func injectS2IPaths(existingVars []corev1.EnvVar, s2iPaths S2IPaths) []corev1.En
 
 }
 
+// IsDeploymentConfigSupported checks if DeploymentConfig type is present on the cluster
+func (c *Client) IsDeploymentConfigSupported() (bool, error) {
+	const Group = "apps.openshift.io"
+	const Version = "v1"
+
+	return c.isResourceSupported(Group, Version, "deploymentconfigs")
+}
+
 func isSubDir(baseDir, otherDir string) bool {
 	cleanedBaseDir := filepath.Clean(baseDir)
 	cleanedOtherDir := filepath.Clean(otherDir)

@@ -271,7 +271,7 @@ func resolveNamespace(command *cobra.Command, client *kclient.Client, envSpecifi
 }
 
 // resolveApp resolves the app
-func resolveApp(command *cobra.Command, createAppIfNeeded bool, localConfiguration *config.LocalConfigInfo) string {
+func resolveApp(command *cobra.Command, createAppIfNeeded bool, localConfiguration envinfo.LocalConfigProvider) string {
 	var app string
 	appFlag := FlagValueIfSet(command, ApplicationFlagName)
 	if len(appFlag) > 0 {
@@ -285,6 +285,15 @@ func resolveApp(command *cobra.Command, createAppIfNeeded bool, localConfigurati
 		}
 	}
 	return app
+}
+
+// ResolveAppFlag resolves the app from the flag
+func ResolveAppFlag(command *cobra.Command) string {
+	appFlag := FlagValueIfSet(command, ApplicationFlagName)
+	if len(appFlag) > 0 {
+		return appFlag
+	}
+	return DefaultAppName
 }
 
 // resolveComponent resolves component
@@ -328,7 +337,7 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 	// Resolve project
 	namespace := resolveProject(command, client, localConfiguration)
 
-	// Resolve application
+	// resolve application
 	app := resolveApp(command, createAppIfNeeded, localConfiguration)
 
 	// Resolve output flag
@@ -365,6 +374,8 @@ func newDevfileContext(command *cobra.Command) *Context {
 	internalCxt := internalCxt{
 		OutputFlag: outputFlag,
 		command:    command,
+		// this is only so we can make devfile and s2i work together for certain cases
+		LocalConfigInfo: &config.LocalConfigInfo{},
 	}
 
 	// Get valid env information
@@ -374,6 +385,7 @@ func newDevfileContext(command *cobra.Command) *Context {
 	}
 
 	internalCxt.EnvSpecificInfo = envInfo
+	internalCxt.Application = resolveApp(command, true, envInfo)
 
 	// If the push target is NOT Docker we will set the client to Kubernetes.
 	if !pushtarget.IsPushTargetDocker() {

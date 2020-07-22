@@ -191,3 +191,8 @@ func GetCliRunner() CliRunner {
 	}
 	return NewOcRunner("oc")
 }
+
+// Suffocate the string by removing all the space from it ;-)
+func Suffocate(s string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(s, " ", ""), "\t", "")
+}

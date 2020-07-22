@@ -1,6 +1,9 @@
 package labels
 
-import "github.com/openshift/odo/pkg/version"
+import (
+	"github.com/openshift/odo/pkg/util"
+	"github.com/openshift/odo/pkg/version"
+)
 
 // ApplicationLabel is label key that is used to group all object that belong to one application
 // It should be save to use just this label to filter application
@@ -35,4 +38,15 @@ func GetLabels(application string, additional bool) map[string]string {
 	}
 
 	return labels
+}
+
+// GetSelector are supposed to be used for selection of any resource part of an application
+func GetSelector(application string) string {
+	labels := map[string]string{
+		ApplicationLabel: application,
+		App:              application,
+		OdoManagedBy:     "odo",
+	}
+
+	return util.ConvertLabelsToSelector(labels)
 }

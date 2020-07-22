@@ -41,7 +41,7 @@ func createFakeDeployment(fkclient *Client, fkclientset *FakeClientset, podName 
 		return true, &deployment, nil
 	})
 
-	deploymentSpec := GenerateDeploymentSpec(*podTemplateSpec)
+	deploymentSpec := GenerateDeploymentSpec(*podTemplateSpec, podTemplateSpec.Labels)
 	createdDeployment, err := fkclient.CreateDeployment(*deploymentSpec)
 	if err != nil {
 		return nil, err
@@ -207,7 +207,7 @@ func TestUpdateDeployment(t *testing.T) {
 				return true, &deployment, nil
 			})
 
-			deploymentSpec := GenerateDeploymentSpec(*podTemplateSpec)
+			deploymentSpec := GenerateDeploymentSpec(*podTemplateSpec, podTemplateSpec.Labels)
 			updatedDeployment, err := fkclient.UpdateDeployment(*deploymentSpec)
 
 			// Checks for unexpected error cases
