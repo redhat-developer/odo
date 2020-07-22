@@ -66,8 +66,8 @@ Now backend has 2 ENV variables it can use:
 DB_USER=luke
 DB_PASSWORD=secret`
 
-	linkExampleExperimental = ktemplates.Examples(`# Link the current component to the 'EtcdCluster' named 'example'
-%[1]s EtcdCluster/example
+	linkExampleExperimental = ktemplates.Examples(`# Link the current component to the 'EtcdCluster' named 'myetcd'
+%[1]s EtcdCluster/myetcd
 	`)
 
 	linkLongDescExperimental = `Link component to an operator backed service
@@ -79,8 +79,8 @@ For example:
 We have created a frontend application called 'frontend' using:
 odo create nodejs frontend
 
-If you wish to connect this nodejs based component to, for example, an EtcdCluster named 'example' created from etcd Operator:
-odo link EtcdCluster/example
+If you wish to connect this nodejs based component to, for example, an EtcdCluster named 'myetcd' created from etcd Operator:
+odo link EtcdCluster/myetcd
 	`
 )
 
