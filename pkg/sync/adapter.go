@@ -216,7 +216,9 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	}
 
 	if isForcePush {
-		// if syncFolder != kclient.OdoSourceVolumeMount {
+		// If isForcePush is set, then the entire local directory contents will be copied over by CopyFile(...), thus
+		// we first need to clear the remote target folder.
+
 		err = exec.ExecuteCommand(a.Client, compInfo, []string{"rm", "-rf", syncFolder}, true, nil, nil)
 		if err != nil {
 			// This command may fail if the parent directory permissions are restrictive; since this doesn't
@@ -228,20 +230,6 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 			return err
 		}
 
-		// } else {
-
-		// 	cmdRmFiles := []string{"sh", "-c", "rm -rf '" + syncFolder + "'/*"}
-		// 	err = exec.ExecuteCommand(a.Client, compInfo, cmdRmFiles, false, nil, nil)
-		// 	if err != nil {
-		// 		klog.V(4).Infof("error on deleting sync folder, but this is most likely an expected error. cmd: %v  error: %v", cmdRmFiles, err)
-		// 	}
-
-		// 	cmdRmDotFiles := []string{"sh", "-c", "rm -rf '" + syncFolder + "'/.*"}
-		// 	err = exec.ExecuteCommand(a.Client, compInfo, cmdRmDotFiles, false, nil, nil)
-		// 	if err != nil {
-		// 		klog.V(4).Infof("error on deleting sync folder, but this is most likely an expected error. cmd: %v  error: %v", cmdRmFiles, err)
-		// 	}
-		// }
 	}
 
 	if isForcePush || len(files) > 0 {
