@@ -310,8 +310,9 @@ func regenerateAdapterAndPush(pushParams common.PushParameters, watchParams watc
 }
 
 func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters) (common.ComponentAdapter, error) {
+
 	// Parse devfile and validate
-	devObj, err := parser.ParseAndValidate(parameters.DevfilePath)
+	devObj, err := devfile.ParseAndValidate(parameters.DevfilePath)
 	if err != nil {
 		return nil, err
 	}
