@@ -347,7 +347,7 @@ spec:
 			helper.CmdShouldPass("odo", "push")
 
 			stdOut := helper.CmdShouldFail("odo", "link", "EtcdCluster/example")
-			Expect(stdOut).To(ContainSubstring("Couldn't find the requested service"))
+			Expect(stdOut).To(ContainSubstring("Couldn't find service named %q", "EtcdCluster/example"))
 		})
 
 		It("should successfully connect a component with an existing service", func() {
