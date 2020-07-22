@@ -15,7 +15,7 @@ import (
 var _ = Describe("odo devfile create command tests", func() {
 	const devfile = "devfile.yaml"
 	const envFile = ".odo/env/env.yaml"
-	var namespace, context, currentWorkingDirectory, devfilePath, originalKubeconfig string
+	var namespace, context, contextDevfile, cmpName, currentWorkingDirectory, devfilePath, originalKubeconfig string
 
 	// Using program commmand according to cliRunner in devfile
 	cliRunner := helper.GetCliRunner()
@@ -30,6 +30,7 @@ var _ = Describe("odo devfile create command tests", func() {
 		helper.LocalKubeconfigSet(context)
 		namespace = cliRunner.CreateRandNamespaceProject()
 		currentWorkingDirectory = helper.Getwd()
+		cmpName = helper.RandString(6)
 		helper.Chdir(context)
 	})
 
@@ -90,8 +91,7 @@ var _ = Describe("odo devfile create command tests", func() {
 
 	Context("When executing odo create with devfile component type and component name arguments", func() {
 		It("should successfully create the devfile component with valid component name", func() {
-			componentName := helper.RandString(6)
-			helper.CmdShouldPass("odo", "create", "java-openliberty", componentName)
+			helper.CmdShouldPass("odo", "create", "java-openliberty", cmpName)
 		})
 
 		It("should fail to create the devfile component with component name that contains invalid character", func() {
@@ -210,34 +210,24 @@ var _ = Describe("odo devfile create command tests", func() {
 	})
 
 	Context("When executing odo create with devfile component and --starter flag", func() {
+		JustBeforeEach(func() {
+			contextDevfile = helper.CreateNewContext()
+			helper.Chdir(contextDevfile)
+		})
+
+		JustAfterEach(func() {
+			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
+			Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
+			helper.DeleteDir(contextDevfile)
+			helper.Chdir(context)
+		})
+
 		It("should successfully create the component and download the source", func() {
-			contextDevfile := helper.CreateNewContext()
-			helper.Chdir(contextDevfile)
 			helper.CmdShouldPass("odo", "create", "nodejs", "--starter")
-			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
-			Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
-			helper.DeleteDir(contextDevfile)
-			helper.Chdir(context)
 		})
-	})
 
-	Context("When executing odo create with component with no devBuild command", func() {
-		It("should successfully create the devfile component", func() {
-			// Quarkus devfile has no devBuild command
-			output := helper.CmdShouldPass("odo", "create", "java-quarkus")
-			helper.MatchAllInOutput(output, []string{"Please use `odo push` command to create the component with source deployed"})
-		})
-	})
-
-	Context("When executing odo create with devfile component and --starter flag with a valid project", func() {
-		It("should successfully create the component specified and download the source", func() {
-			contextDevfile := helper.CreateNewContext()
-			helper.Chdir(contextDevfile)
+		It("should successfully create the component specified with valid project and download the source", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--starter=nodejs-starter")
-			expectedFiles := []string{"package.json", "package-lock.json", "README.md", devfile}
-			Expect(helper.VerifyFilesExist(contextDevfile, expectedFiles)).To(Equal(true))
-			helper.DeleteDir(contextDevfile)
-			helper.Chdir(context)
 		})
 	})
 
@@ -255,6 +245,14 @@ var _ = Describe("odo devfile create command tests", func() {
 			output := helper.CmdShouldFail("odo", "create", "java-maven", "--starter")
 			expectedString := "No project found in devfile component."
 			helper.MatchAllInOutput(output, []string{expectedString})
+		})
+	})
+
+	Context("When executing odo create with component with no devBuild command", func() {
+		It("should successfully create the devfile component", func() {
+			// Quarkus devfile has no devBuild command
+			output := helper.CmdShouldPass("odo", "create", "java-quarkus")
+			helper.MatchAllInOutput(output, []string{"Please use `odo push` command to create the component with source deployed"})
 		})
 	})
 
