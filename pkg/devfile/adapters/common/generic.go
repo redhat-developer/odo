@@ -11,8 +11,11 @@ import (
 	"strings"
 )
 
+// ComponentInfoFactory defines a type for a function which creates a ComponentInfo based on the information provided by the specified DevfileCommand.
+// This is used by adapters to provide the proper ComponentInfo identifying which component (including supervisor) to target when executing the command.
 type ComponentInfoFactory func(command common.DevfileCommand) (ComponentInfo, error)
 
+// GenericAdapter provides common code that can be reused by adapters allowing them to focus on more specific behavior
 type GenericAdapter struct {
 	AdapterContext
 	client                   ExecClient
@@ -21,6 +24,7 @@ type GenericAdapter struct {
 	supervisordComponentInfo ComponentInfoFactory
 }
 
+// NewGenericAdapter creates a new GenericAdapter instance based on the provided parameters
 func NewGenericAdapter(client ExecClient, logger machineoutput.MachineEventLoggingClient, context AdapterContext, ciFactory ComponentInfoFactory, supervisorFactory ComponentInfoFactory) GenericAdapter {
 	return GenericAdapter{
 		AdapterContext:           context,
@@ -31,6 +35,7 @@ func NewGenericAdapter(client ExecClient, logger machineoutput.MachineEventLoggi
 	}
 }
 
+// ExecuteCommand simply calls exec.ExecuteCommand using the GenericAdapter's client
 func (a GenericAdapter) ExecuteCommand(compInfo ComponentInfo, command []string, show bool, consoleOutputStdout *io.PipeWriter, consoleOutputStderr *io.PipeWriter) (err error) {
 	return ExecuteCommand(a.client, compInfo, command, show, consoleOutputStdout, consoleOutputStderr)
 }
@@ -80,6 +85,7 @@ func DefaultCommands(debug, restart bool) []executable {
 	return execs
 }
 
+// executable is a convenience type to wrap a string sequence forming a CLI command and its arguments
 type executable []string
 
 // Execute executes the specified devfile exec command appropriately wrapped into the appropriate sequence of executable, usually by calling DefaultCommands
