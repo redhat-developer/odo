@@ -195,6 +195,23 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.DontMatchAllInOutput(stdOut, []string{"successfully deleted", "created"})
 			Expect(stdOut).To(ContainSubstring("URLs are synced with the cluster, no changes are required"))
 		})
+
+		It("should not allow creating an invalid host", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace)
+			stdOut := helper.CmdShouldFail("odo", "url", "create", "--host", "https://127.0.0.1:60104", "--ingress")
+			Expect(stdOut).To(ContainSubstring("is not a valid host name"))
+		})
+		It("should not allow using tls secret if url is not secure", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace)
+			stdOut := helper.CmdShouldFail("odo", "url", "create", "--tls-secret", "foo", "--ingress")
+			Expect(stdOut).To(ContainSubstring("TLS secret is only available for secure URLs of Ingress kind"))
+		})
+		It("should report multiple issues when it's the case", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace)
+			stdOut := helper.CmdShouldFail("odo", "url", "create", "--host", "https://127.0.0.1:60104", "--tls-secret", "foo", "--ingress")
+			Expect(stdOut).To(And(ContainSubstring("is not a valid host name"), ContainSubstring("TLS secret is only available for secure URLs of Ingress kind")))
+		})
+
 	})
 
 	Context("Describing urls", func() {

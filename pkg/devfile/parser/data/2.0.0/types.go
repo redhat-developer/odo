@@ -54,7 +54,7 @@ type Command struct {
 	VscodeTask *VscodeTask `json:"vscodeTask,omitempty"`
 }
 
-// ComponentsItems
+// Component contains all the configuration related to component
 type Component struct {
 
 	// Allows adding and configuring workspace-related containers

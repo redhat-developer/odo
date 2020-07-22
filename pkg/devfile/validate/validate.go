@@ -2,6 +2,7 @@ package validate
 
 import (
 	"fmt"
+
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"k8s.io/klog"
 
@@ -23,7 +24,7 @@ func ValidateDevfileData(data interface{}) error {
 	}
 
 	// Validate Components
-	if err := ValidateComponents(components); err != nil {
+	if err := validateComponents(components); err != nil {
 		return err
 	}
 

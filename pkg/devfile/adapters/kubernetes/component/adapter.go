@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strings"
 
+	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/exec"
 
 	corev1 "k8s.io/api/core/v1"
@@ -159,12 +160,16 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	// PostStart events from the devfile will only be executed when the component
 	// didn't previously exist
-	if !componentExists {
-		log.Infof("\nExecuting preStart lifecycle event commands for component %s", a.ComponentName)
-		err = a.execDevfileEvent(a.Devfile.Data.GetEvents().PostStart, pod.GetName())
+	postStartEvents := a.Devfile.Data.GetEvents().PostStart
+	if !componentExists && len(postStartEvents) > 0 {
+		// log only when there are post start events present in devfile
+		log.Infof("\nExecuting postStart event commands for component %s", a.ComponentName)
+		err = a.execDevfileEvent(postStartEvents, pod.GetName())
 		if err != nil {
 			return err
+
 		}
+
 	}
 
 	if execRequired {
@@ -209,9 +214,11 @@ func (a Adapter) DoesComponentExist(cmpName string) (bool, error) {
 func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 	componentName := a.ComponentName
 
-	labels := map[string]string{
-		"component": componentName,
-	}
+	componentType := strings.TrimSuffix(a.AdapterContext.Devfile.Data.GetMetadata().Name, "-")
+
+	labels := componentlabels.GetLabels(componentName, a.AppName, true)
+	labels["component"] = componentName
+	labels[componentlabels.ComponentTypeLabel] = componentType
 
 	containers, err := utils.GetContainers(a.Devfile)
 	if err != nil {
@@ -277,7 +284,9 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 		return err
 	}
 
-	deploymentSpec := kclient.GenerateDeploymentSpec(*podTemplateSpec)
+	deploymentSpec := kclient.GenerateDeploymentSpec(*podTemplateSpec, map[string]string{
+		"component": componentName,
+	})
 	var containerPorts []corev1.ContainerPort
 	for _, c := range deploymentSpec.Template.Spec.Containers {
 		if len(containerPorts) == 0 {
@@ -452,25 +461,25 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 // Each Devfile Command associated with the given event is retrieved, and executed in the container specified
 // in the command
 func (a Adapter) execDevfileEvent(events []string, podName string) error {
-	if len(events) > 0 {
-		commandMap := common.GetCommandMap(a.Devfile.Data)
-		for _, commandName := range events {
-			// Convert commandName to lower because GetCommands converts Command.Exec.Id's to lower
-			command := commandMap[strings.ToLower(commandName)]
 
-			compInfo := common.ComponentInfo{
-				ContainerName: command.Exec.Component,
-				PodName:       podName,
-			}
+	commandMap := common.GetCommandMap(a.Devfile.Data)
+	for _, commandName := range events {
+		// Convert commandName to lower because GetCommands converts Command.Exec.Id's to lower
+		command := commandMap[strings.ToLower(commandName)]
 
-			// If composite would go here & recursive loop
-
-			// Execute command in pod
-			err := exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, false, a.machineEventLogger)
-			if err != nil {
-				return errors.Wrapf(err, "unable to execute devfile command "+commandName)
-			}
+		compInfo := common.ComponentInfo{
+			ContainerName: command.Exec.Component,
+			PodName:       podName,
 		}
+
+		// If composite would go here & recursive loop
+
+		// Execute command in pod
+		err := exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, false, a.machineEventLogger)
+		if err != nil {
+			return errors.Wrapf(err, "unable to execute devfile command "+commandName)
+		}
+
 	}
 	return nil
 }

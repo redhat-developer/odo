@@ -1,6 +1,7 @@
 package devfile
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -460,6 +461,94 @@ var _ = Describe("odo devfile push command tests", func() {
 			helper.MatchAllInOutput(output, []string{"env with space"})
 
 		})
+	})
+
+	Context("push with listing the devfile component", func() {
+
+		It("checks components in a specific app and all apps", func() {
+
+			// component created in "app" application
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, "--context", context, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			output := helper.CmdShouldPass("odo", "list", "--context", context)
+			Expect(helper.Suffocate(output)).To(ContainSubstring(helper.Suffocate(fmt.Sprintf("%s%s%s%sUnpushed", "app", cmpName, namespace, "nodejs"))))
+
+			output = helper.CmdShouldPass("odo", "push", "--context", context)
+			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+
+			// component created in different application
+			context2 := helper.CreateNewContext()
+			cmpName2 := helper.RandString(6)
+			appName := helper.RandString(6)
+
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, "--app", appName, "--context", context2, cmpName2)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context2)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context2, "devfile.yaml"))
+
+			output = helper.CmdShouldPass("odo", "list", "--context", context2)
+			Expect(helper.Suffocate(output)).To(ContainSubstring(helper.Suffocate(fmt.Sprintf("%s%s%s%sUnpushed", appName, cmpName2, namespace, "nodejs"))))
+			output2 := helper.CmdShouldPass("odo", "push", "--context", context2)
+			Expect(output2).To(ContainSubstring("Changes successfully pushed to component"))
+
+			output = helper.CmdShouldPass("odo", "list", "--project", namespace)
+			Expect(output).To(ContainSubstring(cmpName))
+			Expect(output).ToNot(ContainSubstring(cmpName2))
+
+			output = helper.CmdShouldPass("odo", "list", "--all-apps", "--project", namespace)
+
+			Expect(output).To(ContainSubstring(cmpName))
+			Expect(output).To(ContainSubstring(cmpName2))
+
+			helper.CmdShouldPass("odo", "preference", "set", "Experimental", "false")
+			helper.DeleteDir(context2)
+
+		})
+
+		It("checks devfile and s2i components together", func() {
+			if os.Getenv("KUBERNETES") == "true" {
+				Skip("Skipping test because s2i image is not supported on Kubernetes cluster")
+			}
+
+			// component created in "app" application
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, "--context", context, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			output := helper.CmdShouldPass("odo", "list", "--context", context)
+			Expect(helper.Suffocate(output)).To(ContainSubstring(helper.Suffocate(fmt.Sprintf("%s%s%s%sUnpushed", "app", cmpName, namespace, "nodejs"))))
+
+			output = helper.CmdShouldPass("odo", "push", "--context", context)
+			Expect(output).To(ContainSubstring("Changes successfully pushed to component"))
+
+			// component created in different application
+			context2 := helper.CreateNewContext()
+			cmpName2 := helper.RandString(6)
+			appName := helper.RandString(6)
+			helper.CmdShouldPass("odo", "preference", "set", "--force", "Experimental", "false")
+			helper.CopyExample(filepath.Join("source", "nodejs"), context2)
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, "--app", appName, "--context", context2, cmpName2)
+
+			output2 := helper.CmdShouldPass("odo", "push", "--context", context2)
+			Expect(output2).To(ContainSubstring("Changes successfully pushed to component"))
+
+			helper.CmdShouldPass("odo", "preference", "set", "--force", "Experimental", "true")
+
+			output = helper.CmdShouldPass("odo", "list", "--all-apps", "--project", namespace)
+
+			Expect(output).To(ContainSubstring(cmpName))
+			Expect(output).To(ContainSubstring(cmpName2))
+
+			output = helper.CmdShouldPass("odo", "list", "--app", appName, "--project", namespace)
+			Expect(output).To(Not(ContainSubstring(cmpName))) // cmpName component hasn't been created under appName
+			Expect(output).To(ContainSubstring(cmpName2))
+
+			helper.DeleteDir(context2)
+		})
+
 	})
 
 })

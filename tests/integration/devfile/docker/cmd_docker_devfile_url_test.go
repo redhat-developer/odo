@@ -82,7 +82,7 @@ var _ = Describe("odo docker devfile url command tests", func() {
 			helper.CmdShouldPass("odo", "url", "create", url1)
 
 			stdout = helper.CmdShouldFail("odo", "url", "create", url1)
-			Expect(stdout).To(ContainSubstring("the url " + url1 + " already exists"))
+			Expect(stdout).To(ContainSubstring("URL " + url1 + " already exists"))
 
 		})
 

@@ -15,7 +15,7 @@ import (
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
@@ -48,13 +48,17 @@ type CreateOptions struct {
 	componentPorts    []string
 	componentEnvVars  []string
 	memoryMax         string
-	memoryMin         string
-	memory            string
-	cpuMax            string
-	cpuMin            string
-	cpu               string
-	interactive       bool
-	now               bool
+
+	memoryMin string
+
+	appName string
+
+	memory      string
+	cpuMax      string
+	cpuMin      string
+	cpu         string
+	interactive bool
+	now         bool
 	*CommonPushOptions
 	devfileMetadata DevfileMetadata
 }
@@ -352,6 +356,8 @@ func (co *CreateOptions) Complete(name string, cmd *cobra.Command, args []string
 		if util.CheckPathExists(DevfilePath) && co.devfileMetadata.devfilePath.value != "" && !util.PathEqual(DevfilePath, co.devfileMetadata.devfilePath.value) {
 			return errors.New("This directory already contains a devfile, you can't specify devfile via --devfile")
 		}
+
+		co.appName = genericclioptions.ResolveAppFlag(cmd)
 
 		// Validate user specify devfile path
 		if co.devfileMetadata.devfilePath.value != "" {
@@ -844,7 +850,7 @@ func (co *CreateOptions) Validate() (err error) {
 func (co *CreateOptions) downloadProject(projectPassed string) error {
 	var project common.DevfileProject
 	// Parse devfile and validate
-	devObj, err := parser.ParseAndValidate(DevfilePath)
+	devObj, err := devfile.ParseAndValidate(DevfilePath)
 	if err != nil {
 		return err
 	}
@@ -999,7 +1005,11 @@ func (co *CreateOptions) Run() (err error) {
 			}
 
 			// Generate env file
-			err = co.EnvSpecificInfo.SetComponentSettings(envinfo.ComponentSettings{Name: co.devfileMetadata.componentName, Namespace: co.devfileMetadata.componentNamespace})
+			err = co.EnvSpecificInfo.SetComponentSettings(envinfo.ComponentSettings{
+				Name:      co.devfileMetadata.componentName,
+				Namespace: co.devfileMetadata.componentNamespace,
+				AppName:   co.appName,
+			})
 			if err != nil {
 				return errors.Wrap(err, "failed to create env file for devfile component")
 			}

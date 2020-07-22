@@ -43,18 +43,22 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 	// Ret from Indexer function
 	var ret util.IndexerRet
 
-	deletedFiles := []string{}
-	changedFiles := []string{}
-	isForcePush := false
+	var deletedFiles []string
+	var changedFiles []string
 	pushParameters := syncParameters.PushParams
+	isForcePush := pushParameters.ForceBuild || !syncParameters.ComponentExists || syncParameters.PodChanged
 	compInfo := syncParameters.CompInfo
 	globExps := util.GetAbsGlobExps(pushParameters.Path, pushParameters.IgnoredFiles)
+	isWatch := len(pushParameters.WatchFiles) > 0 || len(pushParameters.WatchDeletedFiles) > 0
 
-	// Sync source code to the component
-	// If syncing for the first time, sync the entire source directory
-	// If syncing to an already running component, sync the deltas
 	// If syncing from an odo watch process, skip this step, as we already have the list of changed and deleted files.
-	if !syncParameters.PodChanged && !pushParameters.ForceBuild && len(pushParameters.WatchFiles) == 0 && len(pushParameters.WatchDeletedFiles) == 0 {
+	if isWatch && !isForcePush {
+		changedFiles = pushParameters.WatchFiles
+		deletedFiles = pushParameters.WatchDeletedFiles
+	} else {
+		// Calculate the files to sync
+		// Tries to sync the deltas unless it is a forced push
+		// if it is a forced push (isForcePush) reset the index to do a full snync
 		absIgnoreRules := util.GetAbsGlobExps(pushParameters.Path, pushParameters.IgnoredFiles)
 
 		var s *log.Status
@@ -76,6 +80,14 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 			}
 		}
 
+		if isForcePush {
+			//reset the index
+			err = util.DeleteIndexFile(pushParameters.Path)
+			if err != nil {
+				return false, errors.Wrap(err, "unable to reset the index file")
+			}
+
+		}
 		// run the indexer and find the modified/added/deleted/renamed files
 		ret, err = util.RunIndexer(pushParameters.Path, absIgnoreRules)
 		s.End(true)
@@ -88,35 +100,25 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 			forceWrite = true
 		}
 
-		// If the component already exists, sync only the files that changed
-		if syncParameters.ComponentExists {
-			// apply the glob rules from the .gitignore/.odo file
-			// and ignore the files on which the rules apply and filter them out
-			filesChangedFiltered, filesDeletedFiltered := util.FilterIgnores(ret.FilesChanged, ret.FilesDeleted, absIgnoreRules)
+		// apply the glob rules from the .gitignore/.odoignore file
+		// and ignore the files on which the rules apply and filter them out
+		filesChangedFiltered, filesDeletedFiltered := util.FilterIgnores(ret.FilesChanged, ret.FilesDeleted, absIgnoreRules)
 
-			// Remove the relative file directory from the list of deleted files
-			// in order to make the changes correctly within the Kubernetes pod
-			deletedFiles, err = util.RemoveRelativePathFromFiles(filesDeletedFiltered, pushParameters.Path)
-			if err != nil {
-				return false, errors.Wrap(err, "unable to remove relative path from list of changed/deleted files")
-			}
-			klog.V(4).Infof("List of files to be deleted: +%v", deletedFiles)
-			changedFiles = filesChangedFiltered
-			klog.V(4).Infof("List of files changed: +%v", changedFiles)
-
-			if len(filesChangedFiltered) == 0 && len(filesDeletedFiltered) == 0 {
-				// no file was modified/added/deleted/renamed, thus return without building
-				log.Success("No file changes detected, skipping build. Use the '-f' flag to force the build.")
-				return false, nil
-			}
+		// Remove the relative file directory from the list of deleted files
+		// in order to make the changes correctly within the Kubernetes pod
+		deletedFiles, err = util.RemoveRelativePathFromFiles(filesDeletedFiltered, pushParameters.Path)
+		if err != nil {
+			return false, errors.Wrap(err, "unable to remove relative path from list of changed/deleted files")
 		}
-	} else if len(pushParameters.WatchFiles) > 0 || len(pushParameters.WatchDeletedFiles) > 0 {
-		changedFiles = pushParameters.WatchFiles
-		deletedFiles = pushParameters.WatchDeletedFiles
-	}
+		klog.V(4).Infof("List of files to be deleted: +%v", deletedFiles)
+		changedFiles = filesChangedFiltered
+		klog.V(4).Infof("List of files changed: +%v", changedFiles)
 
-	if pushParameters.ForceBuild || !syncParameters.ComponentExists || syncParameters.PodChanged {
-		isForcePush = true
+		if len(filesChangedFiltered) == 0 && len(filesDeletedFiltered) == 0 {
+			// no file was modified/added/deleted/renamed, thus return without synching files
+			log.Success("No file changes detected, skipping build. Use the '-f' flag to force the build.")
+			return false, nil
+		}
 	}
 
 	err = a.pushLocal(pushParameters.Path,
