@@ -480,7 +480,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			// component created in different application
 			context2 := helper.CreateNewContext()
-			cmpName2 := cmpName + "2"
+			cmpName2 := helper.RandString(6)
 			appName := helper.RandString(6)
 
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, "--app", appName, "--context", context2, cmpName2)
@@ -526,7 +526,7 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			// component created in different application
 			context2 := helper.CreateNewContext()
-			cmpName2 := cmpName + "2"
+			cmpName2 := helper.RandString(6)
 			appName := helper.RandString(6)
 			helper.CmdShouldPass("odo", "preference", "set", "--force", "Experimental", "false")
 			helper.CopyExample(filepath.Join("source", "nodejs"), context2)
