@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/fatih/color"
 	imagev1 "github.com/openshift/api/image/v1"
 
 	"github.com/openshift/odo/pkg/config"
@@ -23,11 +24,8 @@ import (
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
 
-// TODO
-// lables and annotations that are added on s2i components
-
 const (
-	migrateCommandName = "migrate-to-devfile"
+	convertCommandName = "convert-to-devfile"
 	//build command id to be used in s2i devfile
 	buildCommandID = "s2i-assemble"
 	// build command to be used in s2i devfile
@@ -47,39 +45,66 @@ const (
 	envS2iConvertedDevfile = "ODO_S2I_CONVERTED_DEVFILE"
 )
 
-var migrateLongDesc = ktemplates.LongDesc(`Migrate S2I components to devfile components`)
+var convertLongDesc = ktemplates.LongDesc(`Converts odo specifice configuration from s2i to devfile, 
+It generates devfile.yaml and env.yaml for s2i components`)
 
-var migrateExample = ktemplates.Examples(`odo utils migrate-to-devfile`)
+//var convertExample = ktemplates.Examples(`odo utils convert-to-devfile`)
 
-// MigrateOptions encapsulates the options for the command
-type MigrateOptions struct {
+var convertExample = ktemplates.Examples(`  # Convert s2i component to devfile component
+
+Note: Run all commands from  s2i component context directory
+
+1. Generate devfile.yaml and env.yaml for s2i component.
+%[1]s  
+
+2. Push the devfile component to the cluster.
+odo push
+
+3. Verify if devfile component is deployed sucessfully.
+odo list
+
+4. Jump to 'rolling back migration', if devfile component deployment failed.
+
+5. Delete the s2i component.
+odo delete --s2i -a
+
+congratualtions, you have successfully converted s2i component to devfile component.
+
+# Rolling back the conversion
+1. If devfile component deployment failed, delete the devfile component, report this to odo dev community.
+odo delete -a
+
+`)
+
+// ConvertOptions encapsulates the options for the command
+type ConvertOptions struct {
 	context          *genericclioptions.Context
 	componentContext string
 	componentName    string
 }
 
-// NewMigrateOptions creates a new MigrateOptions instance
-func NewMigrateOptions() *MigrateOptions {
-	return &MigrateOptions{}
+// NewConvertOptions creates a new ConvertOptions instance
+func NewConvertOptions() *ConvertOptions {
+	return &ConvertOptions{}
 }
 
-// Complete completes MigrateOptions after they've been created
-func (mo *MigrateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
+// Complete completes ConvertOptions after they've been created
+func (co *ConvertOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 
 	if !util.CheckPathExists(component.ConfigFilePath) {
-		return errors.New("this directory does not contain an odo s2i component, Please run the command from odo component directory to migrate s2i component to devfile")
+		return errors.New("this directory does not contain an odo s2i component, Please run the command from odo component directory to convert s2i component to devfile")
 	}
 
-	mo.context = genericclioptions.NewContext(cmd)
-	mo.componentContext = component.LocalDirectoryDefaultLocation
-	mo.componentName = mo.context.LocalConfigInfo.GetName()
+	co.context = genericclioptions.NewContext(cmd)
+	co.componentContext = component.LocalDirectoryDefaultLocation
+	co.componentName = co.context.LocalConfigInfo.GetName()
 	return nil
 
 }
 
-// Validate validates the MigrateOptions based on completed values
-func (mo *MigrateOptions) Validate() (err error) {
-	if mo.context.LocalConfigInfo.GetSourceType() == config.GIT {
+// Validate validates the ConvertOptions based on completed values
+func (co *ConvertOptions) Validate() (err error) {
+	if co.context.LocalConfigInfo.GetSourceType() == config.GIT {
 		return errors.New("migration of git type s2i components to devfile not supported by odo")
 	}
 
@@ -87,62 +112,58 @@ func (mo *MigrateOptions) Validate() (err error) {
 }
 
 // Run contains the logic for the command
-func (mo *MigrateOptions) Run() (err error) {
+func (co *ConvertOptions) Run() (err error) {
 
-	/*  This data is yet to be converted
-
-	// Absolute path
-	sourcePath, _ := context.LocalConfigInfo.GetOSSourcePath()
-	minMemory := context.LocalConfigInfo.GetMinMemory()
-	minCPU := context.LocalConfigInfo.GetMinCPU()
-	maxCPU := context.LocalConfigInfo.GetMaxCPU()
-
+	/* NOTE: This data is not used in devfile currently so cannot be converted
+	   minMemory := context.LocalConfigInfo.GetMinMemory()
+	   minCPU := context.LocalConfigInfo.GetMinCPU()
+	   maxCPU := context.LocalConfigInfo.GetMaxCPU()
 	*/
 
-	err = generateDevfileYaml(mo)
+	err = generateDevfileYaml(co)
 	if err != nil {
 		return errors.Wrap(err, "Error in generating devfile.yaml")
 	}
 
-	err = generateEnvYaml(mo)
+	err = generateEnvYaml(co)
 	if err != nil {
 		return errors.Wrap(err, "Error in generating env.yaml")
 	}
 
-	// TODO: Delete the s2i component and deploy the devfile component.
+	printOutput()
 
 	return nil
 }
 
-// NewCmdMigrate implements the odo utils migrate-to-devfile command
-func NewCmdMigrate(name, fullName string) *cobra.Command {
-	o := NewMigrateOptions()
-	migrateCmd := &cobra.Command{
+// NewCmdConvert implements the odo utils convert-to-devfile command
+func NewCmdConvert(name, fullName string) *cobra.Command {
+	o := NewConvertOptions()
+	convertCmd := &cobra.Command{
 		Use:     name,
-		Short:   "migrates s2i based components to devfile based components",
-		Long:    migrateLongDesc,
-		Example: fmt.Sprintf(migrateExample, fullName),
+		Short:   "converts s2i based components to devfile based components",
+		Long:    convertLongDesc,
+		Example: fmt.Sprintf(convertExample, fullName),
 		Args:    cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
-	return migrateCmd
+	return convertCmd
 }
 
-func generateDevfileYaml(m *MigrateOptions) error {
+func generateDevfileYaml(co *ConvertOptions) error {
 
 	// builder image to use
-	componentType := m.context.LocalConfigInfo.GetType()
+	componentType := co.context.LocalConfigInfo.GetType()
 	// git, local, binary, none
-	sourceType := m.context.LocalConfigInfo.GetSourceType()
+	sourceType := co.context.LocalConfigInfo.GetSourceType()
 
-	imageStream, imageforDevfile, err := getImageforDevfile(m.context.Client, componentType)
+	imageStream, imageforDevfile, err := getImageforDevfile(co.context.Client, componentType)
 	if err != nil {
 		return errors.Wrap(err, "Failed to get image details")
 	}
 
-	envVarList := m.context.LocalConfigInfo.GetEnvVars()
+	envVarList := co.context.LocalConfigInfo.GetEnvVars()
 	s2iEnv, err := occlient.GetS2IEnvForDevfile(string(sourceType), envVarList, *imageStream)
 	if err != nil {
 		return err
@@ -157,14 +178,14 @@ func generateDevfileYaml(m *MigrateOptions) error {
 	s2iDevfile.SetSchemaVersion(devfileVersion)
 
 	// set metadata
-	s2iDevfile.SetMetadata(m.componentName, "1.0.0")
+	s2iDevfile.SetMetadata(co.componentName, "1.0.0")
 	// set commponents
-	setDevfileComponentsForS2I(s2iDevfile, imageforDevfile, m.context.LocalConfigInfo, s2iEnv)
+	setDevfileComponentsForS2I(s2iDevfile, imageforDevfile, co.context.LocalConfigInfo, s2iEnv)
 	// set commands
 	setDevfileCommandsForS2I(s2iDevfile)
 
 	devObj := parser.DevfileObj{
-		Ctx:  devfileCtx.NewDevfileCtx(m.componentContext), //component context needs to be passed here
+		Ctx:  devfileCtx.NewDevfileCtx(co.componentContext), //component context needs to be passed here
 		Data: s2iDevfile,
 	}
 
@@ -172,21 +193,22 @@ func generateDevfileYaml(m *MigrateOptions) error {
 	if err != nil {
 		return err
 	}
-	log.Italic("devfile.yaml is available in current directory, run `odo push` to deploy devfile component and `odo delete` to delete s2i component.\n")
 	return nil
 }
 
-func generateEnvYaml(m *MigrateOptions) (err error) {
+func generateEnvYaml(co *ConvertOptions) (err error) {
 
 	// list of urls having name, ports, secure
-	urls := m.context.LocalConfigInfo.GetURL()
-	debugPort := m.context.LocalConfigInfo.GetDebugPort()
+	urls := co.context.LocalConfigInfo.GetURL()
+	debugPort := co.context.LocalConfigInfo.GetDebugPort()
 
-	// TODO(adi): Add application in env.yaml once odo list PR gets merged
+	// TODO(adi):convert lables and annotations,
+	// Add application in env.yaml once odo list PR gets merged
+	// https://github.com/openshift/odo/pull/3505
 	// application := context.LocalConfigInfo.GetApplication()
 
 	// Generate env.yaml
-	m.context.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(m.componentContext)
+	co.context.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(co.componentContext)
 	if err != nil {
 		return err
 	}
@@ -207,8 +229,8 @@ func generateEnvYaml(m *MigrateOptions) (err error) {
 	}
 
 	componentSettings := envinfo.ComponentSettings{
-		Name:      m.componentName,
-		Namespace: m.context.Project,
+		Name:      co.componentName,
+		Namespace: co.context.Project,
 		URL:       &urlList,
 	}
 
@@ -216,7 +238,7 @@ func generateEnvYaml(m *MigrateOptions) (err error) {
 		componentSettings.DebugPort = &debugPort
 	}
 
-	return m.context.EnvSpecificInfo.SetComponentSettings(componentSettings)
+	return co.context.EnvSpecificInfo.SetComponentSettings(componentSettings)
 }
 
 func getImageforDevfile(client *occlient.Client, componentType string) (*imagev1.ImageStreamImage, string, error) {
@@ -346,4 +368,33 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 	// Ignoring error here as we are writing a new file
 	_ = d.AddComponent(component)
 
+}
+
+func printOutput() {
+
+	infoMessage := "devfile.yaml is available in the current directory."
+
+	nextSteps := `
+To complete the conversion, run the following steps:
+
+NOTE: At all steps your s2i component is running, It would not be deleted until you do 'odo delete --s2i -a'
+
+1. Deploy devfile component.
+$ odo push
+
+2. Verify if the component gets deployed successfully. 
+$ odo list
+
+3. If devfile component deployed successfully, your application is up, you can safely delete the s2i component. 
+$ odo delete --s2i -a
+
+congratulations you have successfully converted s2i component to devfile component :).
+`
+
+	rollBackMessage := ` If you see an error or your application not coming up, delete the devfile component with 'odo delete -a' and report this to odo dev community.`
+
+	log.Infof(infoMessage)
+	log.Italicf(nextSteps)
+	yellow := color.New(color.FgYellow).SprintFunc()
+	log.Warning(yellow(rollBackMessage))
 }
