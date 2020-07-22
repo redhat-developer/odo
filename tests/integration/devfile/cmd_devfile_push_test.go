@@ -362,59 +362,7 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(cmdOutput).To(ContainSubstring("/myproject/app.jar"))
 		})
 
-		// v1 devfile test
-		It("should execute devinit command if present in v1 devfiles", func() {
-			helper.CmdShouldPass("odo", "create", "java-springboot", "--project", namespace, cmpName)
-
-			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
-
-			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
-			helper.MatchAllInOutput(output, []string{
-				"Executing devinit command \"echo hello",
-				"Executing devbuild command \"/artifacts/bin/build-container-full.sh\"",
-				"Executing devrun command \"/artifacts/bin/start-server.sh\"",
-			})
-		})
-
-		// v1 devfile test
-		It("should execute devinit and devrun commands if present in v1 devfiles", func() {
-			helper.CmdShouldPass("odo", "create", "java-springboot", "--project", namespace, cmpName)
-
-			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init-without-build.yaml"), filepath.Join(context, "devfile.yaml"))
-
-			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
-			helper.MatchAllInOutput(output, []string{
-				"Executing devinit command \"echo hello",
-				"Executing devrun command \"/artifacts/bin/start-server.sh\"",
-			})
-		})
-
-		// v1 devfile test
-		It("should only execute devinit command once if component is already created in v1 devfiles", func() {
-			helper.CmdShouldPass("odo", "create", "java-springboot", "--project", namespace, cmpName)
-
-			helper.CopyExample(filepath.Join("source", "devfiles", "springboot", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV1", "springboot", "devfile-init.yaml"), filepath.Join(context, "devfile.yaml"))
-
-			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
-			helper.MatchAllInOutput(output, []string{
-				"Executing devinit command \"echo hello",
-				"Executing devbuild command \"/artifacts/bin/build-container-full.sh\"",
-				"Executing devrun command \"/artifacts/bin/start-server.sh\"",
-			})
-
-			// Need to force so build and run get triggered again with the component already created.
-			output = helper.CmdShouldPass("odo", "push", "--namespace", namespace, "-f")
-			Expect(output).NotTo(ContainSubstring("Executing devinit command \"echo hello"))
-			helper.MatchAllInOutput(output, []string{
-				"Executing devbuild command \"/artifacts/bin/build-container-full.sh\"",
-				"Executing devrun command \"/artifacts/bin/start-server.sh\"",
-			})
-		})
-
-		It("should execute PostStart commands if present", func() {
+		It("should execute PostStart commands if present and not execute when component already exists", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
 
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
@@ -422,6 +370,14 @@ var _ = Describe("odo devfile push command tests", func() {
 
 			output := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
 			helper.MatchAllInOutput(output, []string{"Executing mypoststart command \"echo I am a PostStart\"", "Executing secondpoststart command \"echo I am also a PostStart\""})
+
+			// Need to force so build and run get triggered again with the component already created.
+			output = helper.CmdShouldPass("odo", "push", "--namespace", namespace, "-f")
+			helper.DontMatchAllInOutput(output, []string{"Executing mypoststart command \"echo I am a PostStart\"", "Executing secondpoststart command \"echo I am also a PostStart\""})
+			helper.MatchAllInOutput(output, []string{
+				"Executing devbuild command",
+				"Executing devrun command",
+			})
 		})
 
 		It("should be able to handle a missing build command group", func() {
