@@ -14,20 +14,23 @@ import (
 )
 
 var _ = Describe("odo devfile url command tests", func() {
-	var namespace, context, componentName, currentWorkingDirectory string
+	var namespace, context, componentName, currentWorkingDirectory, originalKubeconfig string
+
+	// Using program commmand according to cliRunner in devfile
+	cliRunner := helper.GetCliRunner()
 
 	// This is run after every Spec (It)
 	var _ = BeforeEach(func() {
 		SetDefaultEventuallyTimeout(10 * time.Minute)
 		SetDefaultConsistentlyDuration(30 * time.Second)
-		namespace = helper.CreateRandProject()
 		context = helper.CreateNewContext()
+		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
+		originalKubeconfig = os.Getenv("KUBECONFIG")
+		helper.LocalKubeconfigSet(context)
+		namespace = cliRunner.CreateRandNamespaceProject()
 		currentWorkingDirectory = helper.Getwd()
 		componentName = helper.RandString(6)
-
 		helper.Chdir(context)
-
-		os.Setenv("GLOBALODOCONFIG", filepath.Join(context, "config.yaml"))
 
 		// Devfile push requires experimental mode to be set
 		helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
@@ -36,8 +39,10 @@ var _ = Describe("odo devfile url command tests", func() {
 	// Clean up after the test
 	// This is run after every Spec (It)
 	var _ = AfterEach(func() {
-		helper.DeleteProject(namespace)
+		cliRunner.DeleteNamespaceProject(namespace)
 		helper.Chdir(currentWorkingDirectory)
+		err := os.Setenv("KUBECONFIG", originalKubeconfig)
+		Expect(err).NotTo(HaveOccurred())
 		helper.DeleteDir(context)
 		os.Unsetenv("GLOBALODOCONFIG")
 	})
@@ -125,36 +130,6 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.MatchAllInOutput(stdout, []string{url1, "Locally Deleted", "true", "ingress"})
 			helper.MatchAllInOutput(stdout, []string{url2, "Not Pushed", "false", "ingress"})
 		})
-
-		It("should list route and ingress urls with appropriate state", func() {
-			if os.Getenv("KUBERNETES") == "true" {
-				Skip("This is a OpenShift specific scenario, skipping")
-			}
-			url1 := helper.RandString(5)
-			url2 := helper.RandString(5)
-			ingressurl := helper.RandString(5)
-			host := helper.RandString(5) + ".com"
-
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
-
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
-
-			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--secure")
-			helper.CmdShouldPass("odo", "url", "create", ingressurl, "--port", "3000", "--host", host, "--ingress")
-			helper.CmdShouldPass("odo", "push", "--project", namespace)
-			helper.CmdShouldPass("odo", "url", "create", url2, "--port", "3000")
-			stdout := helper.CmdShouldPass("odo", "url", "list", "--context", context)
-			helper.MatchAllInOutput(stdout, []string{url1, "Pushed", "true", "route"})
-			helper.MatchAllInOutput(stdout, []string{url2, "Not Pushed", "false", "route"})
-			helper.MatchAllInOutput(stdout, []string{ingressurl, "Pushed", "false", "ingress"})
-
-			helper.CmdShouldPass("odo", "url", "delete", url1, "-f")
-			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", context)
-			helper.MatchAllInOutput(stdout, []string{url1, "Locally Deleted", "true", "route"})
-			helper.MatchAllInOutput(stdout, []string{url2, "Not Pushed", "false", "route"})
-			helper.MatchAllInOutput(stdout, []string{ingressurl, "Pushed", "false", "ingress"})
-		})
 	})
 
 	Context("Creating urls", func() {
@@ -196,55 +171,6 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.MatchAllInOutput(stdout, []string{"URL " + url1 + " successfully deleted", "Applying URL changes"})
 		})
 
-		It("should create a automatically route on a openShift cluster", func() {
-
-			if os.Getenv("KUBERNETES") == "true" {
-				Skip("This is a OpenShift specific scenario, skipping")
-			}
-
-			url1 := helper.RandString(5)
-
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
-
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
-
-			helper.CmdShouldPass("odo", "url", "create", url1)
-
-			helper.CmdShouldPass("odo", "push", "--namespace", namespace)
-			pushStdOut := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
-			helper.DontMatchAllInOutput(pushStdOut, []string{"successfully deleted", "created"})
-			Expect(pushStdOut).To(ContainSubstring("URLs are synced with the cluster, no changes are required"))
-
-			output := helper.CmdShouldPass("oc", "get", "routes", "--namespace", namespace)
-			Expect(output).Should(ContainSubstring(url1))
-
-			helper.CmdShouldPass("odo", "url", "delete", url1, "-f")
-			helper.CmdShouldPass("odo", "push", "--namespace", namespace)
-			pushStdOut = helper.CmdShouldPass("odo", "push", "--namespace", namespace)
-			helper.DontMatchAllInOutput(pushStdOut, []string{"successfully deleted", "created"})
-			Expect(pushStdOut).To(ContainSubstring("URLs are synced with the cluster, no changes are required"))
-
-			output = helper.CmdShouldPass("oc", "get", "routes", "--namespace", namespace)
-			Expect(output).ShouldNot(ContainSubstring(url1))
-		})
-
-		It("should create a url for a unsupported devfile component", func() {
-			url1 := helper.RandString(5)
-
-			helper.CopyExample(filepath.Join("source", "python"), context)
-			helper.Chdir(context)
-
-			helper.CmdShouldPass("odo", "create", "python", "--project", namespace, componentName)
-
-			helper.CmdShouldPass("odo", "url", "create", url1)
-
-			helper.CmdShouldPass("odo", "push", "--namespace", namespace)
-
-			output := helper.CmdShouldPass("oc", "get", "routes", "--namespace", namespace)
-			Expect(output).Should(ContainSubstring(url1))
-		})
-
 		It("should be able to push again twice after creating and deleting a url", func() {
 			var stdOut string
 			url1 := helper.RandString(5)
@@ -269,6 +195,23 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.DontMatchAllInOutput(stdOut, []string{"successfully deleted", "created"})
 			Expect(stdOut).To(ContainSubstring("URLs are synced with the cluster, no changes are required"))
 		})
+
+		It("should not allow creating an invalid host", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace)
+			stdOut := helper.CmdShouldFail("odo", "url", "create", "--host", "https://127.0.0.1:60104", "--ingress")
+			Expect(stdOut).To(ContainSubstring("is not a valid host name"))
+		})
+		It("should not allow using tls secret if url is not secure", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace)
+			stdOut := helper.CmdShouldFail("odo", "url", "create", "--tls-secret", "foo", "--ingress")
+			Expect(stdOut).To(ContainSubstring("TLS secret is only available for secure URLs of Ingress kind"))
+		})
+		It("should report multiple issues when it's the case", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace)
+			stdOut := helper.CmdShouldFail("odo", "url", "create", "--host", "https://127.0.0.1:60104", "--tls-secret", "foo", "--ingress")
+			Expect(stdOut).To(And(ContainSubstring("is not a valid host name"), ContainSubstring("TLS secret is only available for secure URLs of Ingress kind")))
+		})
+
 	})
 
 	Context("Describing urls", func() {
@@ -298,11 +241,83 @@ var _ = Describe("odo devfile url command tests", func() {
 			stdout = helper.CmdShouldPass("odo", "url", "describe", url1)
 			helper.MatchAllInOutput(stdout, []string{url1 + "." + host, "Pushed", "true", "ingress"})
 		})
+	})
 
-		It("should describe appropriate Route URLs", func() {
+	Context("Testing URLs for OpenShift specific scenarios", func() {
+		JustBeforeEach(func() {
 			if os.Getenv("KUBERNETES") == "true" {
 				Skip("This is a OpenShift specific scenario, skipping")
 			}
+		})
+
+		It("should error out when a host is provided with a route on a openShift cluster", func() {
+			url1 := helper.RandString(5)
+
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			output := helper.CmdShouldFail("odo", "url", "create", url1, "--host", "com")
+			Expect(output).To(ContainSubstring("host is not supported"))
+		})
+
+		It("should list route and ingress urls with appropriate state", func() {
+			url1 := helper.RandString(5)
+			url2 := helper.RandString(5)
+			ingressurl := helper.RandString(5)
+			host := helper.RandString(5) + ".com"
+
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--secure")
+			helper.CmdShouldPass("odo", "url", "create", ingressurl, "--port", "3000", "--host", host, "--ingress")
+			helper.CmdShouldPass("odo", "push", "--project", namespace)
+			helper.CmdShouldPass("odo", "url", "create", url2, "--port", "3000")
+			stdout := helper.CmdShouldPass("odo", "url", "list", "--context", context)
+			helper.MatchAllInOutput(stdout, []string{url1, "Pushed", "true", "route"})
+			helper.MatchAllInOutput(stdout, []string{url2, "Not Pushed", "false", "route"})
+			helper.MatchAllInOutput(stdout, []string{ingressurl, "Pushed", "false", "ingress"})
+
+			helper.CmdShouldPass("odo", "url", "delete", url1, "-f")
+			stdout = helper.CmdShouldPass("odo", "url", "list", "--context", context)
+			helper.MatchAllInOutput(stdout, []string{url1, "Locally Deleted", "true", "route"})
+			helper.MatchAllInOutput(stdout, []string{url2, "Not Pushed", "false", "route"})
+			helper.MatchAllInOutput(stdout, []string{ingressurl, "Pushed", "false", "ingress"})
+		})
+
+		It("should create a automatically route on a openShift cluster", func() {
+			url1 := helper.RandString(5)
+
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			helper.CmdShouldPass("odo", "url", "create", url1)
+
+			helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+			pushStdOut := helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+			helper.DontMatchAllInOutput(pushStdOut, []string{"successfully deleted", "created"})
+			Expect(pushStdOut).To(ContainSubstring("URLs are synced with the cluster, no changes are required"))
+
+			output := helper.CmdShouldPass("oc", "get", "routes", "--namespace", namespace)
+			Expect(output).Should(ContainSubstring(url1))
+
+			helper.CmdShouldPass("odo", "url", "delete", url1, "-f")
+			helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+			pushStdOut = helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+			helper.DontMatchAllInOutput(pushStdOut, []string{"successfully deleted", "created"})
+			Expect(pushStdOut).To(ContainSubstring("URLs are synced with the cluster, no changes are required"))
+
+			output = helper.CmdShouldPass("oc", "get", "routes", "--namespace", namespace)
+			Expect(output).ShouldNot(ContainSubstring(url1))
+		})
+
+		It("should describe appropriate Route URLs", func() {
 			url1 := helper.RandString(5)
 
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
@@ -327,6 +342,21 @@ var _ = Describe("odo devfile url command tests", func() {
 			stdout = helper.CmdShouldPass("odo", "url", "describe", url1)
 			helper.MatchAllInOutput(stdout, []string{url1, "Pushed", "true", "route"})
 		})
-	})
 
+		It("should create a url for a unsupported devfile component", func() {
+			url1 := helper.RandString(5)
+
+			helper.CopyExample(filepath.Join("source", "python"), context)
+			helper.Chdir(context)
+
+			helper.CmdShouldPass("odo", "create", "python", "--project", namespace, componentName)
+
+			helper.CmdShouldPass("odo", "url", "create", url1)
+
+			helper.CmdShouldPass("odo", "push", "--namespace", namespace)
+
+			output := helper.CmdShouldPass("oc", "get", "routes", "--namespace", namespace)
+			Expect(output).Should(ContainSubstring(url1))
+		})
+	})
 })

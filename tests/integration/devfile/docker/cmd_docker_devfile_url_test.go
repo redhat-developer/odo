@@ -82,7 +82,7 @@ var _ = Describe("odo docker devfile url command tests", func() {
 			helper.CmdShouldPass("odo", "url", "create", url1)
 
 			stdout = helper.CmdShouldFail("odo", "url", "create", url1)
-			Expect(stdout).To(ContainSubstring("the url " + url1 + " already exists"))
+			Expect(stdout).To(ContainSubstring("URL " + url1 + " already exists"))
 
 		})
 
@@ -139,7 +139,7 @@ var _ = Describe("odo docker devfile url command tests", func() {
 			stdout = helper.CmdShouldFail("odo", "url", "list")
 			Expect(stdout).To(ContainSubstring("no URLs found"))
 
-			httpPort, err := util.HttpGetFreePort()
+			httpPort, err := util.HTTPGetFreePort()
 			Expect(err).NotTo(HaveOccurred())
 			freePort := strconv.Itoa(httpPort)
 			helper.CmdShouldPass("odo", "url", "create", url1, "--exposed-port", freePort, "--now")
@@ -190,7 +190,7 @@ var _ = Describe("odo docker devfile url command tests", func() {
 			stdout = helper.CmdShouldFail("odo", "url", "describe", url1)
 			Expect(stdout).To(ContainSubstring("the url " + url1 + " does not exist"))
 
-			httpPort, err := util.HttpGetFreePort()
+			httpPort, err := util.HTTPGetFreePort()
 			Expect(err).NotTo(HaveOccurred())
 			freePort := strconv.Itoa(httpPort)
 			helper.CmdShouldPass("odo", "url", "create", url1, "--exposed-port", freePort, "--now")

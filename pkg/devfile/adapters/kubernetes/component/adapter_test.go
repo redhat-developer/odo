@@ -15,7 +15,10 @@ import (
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
 	ktesting "k8s.io/client-go/testing"
 )
@@ -23,6 +26,15 @@ import (
 func TestCreateOrUpdateComponent(t *testing.T) {
 
 	testComponentName := "test"
+	deployment := v1.Deployment{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       kclient.DeploymentKind,
+			APIVersion: kclient.DeploymentAPIVersion,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: testComponentName,
+		},
+	}
 
 	tests := []struct {
 		name          string
@@ -31,25 +43,25 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 		wantErr       bool
 	}{
 		{
-			name:          "Case: Invalid devfile",
+			name:          "Case 1: Invalid devfile",
 			componentType: "",
 			running:       false,
 			wantErr:       true,
 		},
 		{
-			name:          "Case: Valid devfile",
+			name:          "Case 2: Valid devfile",
 			componentType: versionsCommon.ContainerComponentType,
 			running:       false,
 			wantErr:       false,
 		},
 		{
-			name:          "Case: Invalid devfile, already running component",
+			name:          "Case 3: Invalid devfile, already running component",
 			componentType: "",
 			running:       true,
 			wantErr:       true,
 		},
 		{
-			name:          "Case: Valid devfile, already running component",
+			name:          "Case 4: Valid devfile, already running component",
 			componentType: versionsCommon.ContainerComponentType,
 			running:       true,
 			wantErr:       false,
@@ -74,15 +86,16 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 			}
 
 			fkclient, fkclientset := kclient.FakeNew()
-			fkWatch := watch.NewFake()
 
-			// Change the status
-			go func() {
-				fkWatch.Modify(kclient.FakePodStatus(corev1.PodRunning, testComponentName))
-			}()
-			fkclientset.Kubernetes.PrependWatchReactor("pods", func(action ktesting.Action) (handled bool, ret watch.Interface, err error) {
-				return true, fkWatch, nil
-			})
+			if tt.running {
+				fkclientset.Kubernetes.PrependReactor("update", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+					return true, &deployment, nil
+				})
+
+				fkclientset.Kubernetes.PrependReactor("get", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+					return true, &deployment, nil
+				})
+			}
 
 			componentAdapter := New(adapterCtx, *fkclient)
 			err := componentAdapter.createOrUpdateComponent(tt.running)
@@ -98,10 +111,11 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 
 func TestGetFirstContainerWithSourceVolume(t *testing.T) {
 	tests := []struct {
-		name       string
-		containers []corev1.Container
-		want       string
-		wantErr    bool
+		name           string
+		containers     []corev1.Container
+		want           string
+		wantSourcePath string
+		wantErr        bool
 	}{
 		{
 			name: "Case: One container, no volumes",
@@ -110,8 +124,9 @@ func TestGetFirstContainerWithSourceVolume(t *testing.T) {
 					Name: "test",
 				},
 			},
-			want:    "",
-			wantErr: true,
+			want:           "",
+			wantSourcePath: "",
+			wantErr:        true,
 		},
 		{
 			name: "Case: One container, no source volume",
@@ -125,8 +140,9 @@ func TestGetFirstContainerWithSourceVolume(t *testing.T) {
 					},
 				},
 			},
-			want:    "",
-			wantErr: true,
+			want:           "",
+			wantSourcePath: "",
+			wantErr:        true,
 		},
 		{
 			name: "Case: One container, source volume",
@@ -135,13 +151,15 @@ func TestGetFirstContainerWithSourceVolume(t *testing.T) {
 					Name: "test",
 					VolumeMounts: []corev1.VolumeMount{
 						{
-							Name: kclient.OdoSourceVolume,
+							Name:      kclient.OdoSourceVolume,
+							MountPath: kclient.OdoSourceVolumeMount,
 						},
 					},
 				},
 			},
-			want:    "test",
-			wantErr: false,
+			want:           "test",
+			wantSourcePath: kclient.OdoSourceVolumeMount,
+			wantErr:        false,
 		},
 		{
 			name: "Case: One container, multiple volumes",
@@ -153,13 +171,15 @@ func TestGetFirstContainerWithSourceVolume(t *testing.T) {
 							Name: "test",
 						},
 						{
-							Name: kclient.OdoSourceVolume,
+							Name:      kclient.OdoSourceVolume,
+							MountPath: kclient.OdoSourceVolumeMount,
 						},
 					},
 				},
 			},
-			want:    "test",
-			wantErr: false,
+			want:           "test",
+			wantSourcePath: kclient.OdoSourceVolumeMount,
+			wantErr:        false,
 		},
 		{
 			name: "Case: Multiple containers, no source volumes",
@@ -176,8 +196,9 @@ func TestGetFirstContainerWithSourceVolume(t *testing.T) {
 					},
 				},
 			},
-			want:    "",
-			wantErr: true,
+			want:           "",
+			wantSourcePath: "",
+			wantErr:        true,
 		},
 		{
 			name: "Case: Multiple containers, multiple volumes",
@@ -192,21 +213,49 @@ func TestGetFirstContainerWithSourceVolume(t *testing.T) {
 							Name: "test",
 						},
 						{
-							Name: kclient.OdoSourceVolume,
+							Name:      kclient.OdoSourceVolume,
+							MountPath: kclient.OdoSourceVolumeMount,
 						},
 					},
 				},
 			},
-			want:    "container-two",
-			wantErr: false,
+			want:           "container-two",
+			wantSourcePath: kclient.OdoSourceVolumeMount,
+			wantErr:        false,
+		},
+		{
+			name: "Case: Multiple volumes, different source volume path",
+			containers: []corev1.Container{
+				{
+					Name: "test",
+				},
+				{
+					Name: "container-two",
+					VolumeMounts: []corev1.VolumeMount{
+						{
+							Name: "test",
+						},
+						{
+							Name:      kclient.OdoSourceVolume,
+							MountPath: "/some/path",
+						},
+					},
+				},
+			},
+			want:           "container-two",
+			wantSourcePath: "/some/path",
+			wantErr:        false,
 		},
 	}
 	for _, tt := range tests {
-		container, err := getFirstContainerWithSourceVolume(tt.containers)
+		container, sourcePath, err := getFirstContainerWithSourceVolume(tt.containers)
 		if container != tt.want {
 			t.Errorf("expected %s, actual %s", tt.want, container)
 		}
 
+		if sourcePath != tt.wantSourcePath {
+			t.Errorf("expected %s, actual %s", tt.wantSourcePath, sourcePath)
+		}
 		if !tt.wantErr == (err != nil) {
 			t.Errorf("expected %v, actual %v", tt.wantErr, err)
 		}
@@ -221,18 +270,28 @@ func TestDoesComponentExist(t *testing.T) {
 		componentName    string
 		getComponentName string
 		want             bool
+		wantErr          bool
 	}{
 		{
 			name:             "Case 1: Valid component name",
 			componentName:    "test-name",
 			getComponentName: "test-name",
 			want:             true,
+			wantErr:          false,
 		},
 		{
 			name:             "Case 2: Non-existent component name",
 			componentName:    "test-name",
 			getComponentName: "fake-component",
 			want:             false,
+			wantErr:          false,
+		},
+		{
+			name:             "Case 3: Error condition",
+			componentName:    "test-name",
+			getComponentName: "test-name",
+			want:             false,
+			wantErr:          true,
 		},
 	}
 	for _, tt := range tests {
@@ -265,9 +324,24 @@ func TestDoesComponentExist(t *testing.T) {
 				t.Errorf("component adapter start unexpected error %v", err)
 			}
 
+			fkclientset.Kubernetes.PrependReactor("get", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+				emptyDeployment := testingutil.CreateFakeDeployment("")
+				deployment := testingutil.CreateFakeDeployment(tt.getComponentName)
+
+				if tt.wantErr {
+					return true, emptyDeployment, errors.Errorf("deployment get error")
+				} else if tt.getComponentName == tt.componentName {
+					return true, deployment, nil
+				}
+
+				return true, emptyDeployment, kerrors.NewNotFound(schema.GroupResource{}, "")
+			})
+
 			// Verify that a component with the specified name exists
-			componentExists := componentAdapter.DoesComponentExist(tt.getComponentName)
-			if componentExists != tt.want {
+			componentExists, err := componentAdapter.DoesComponentExist(tt.getComponentName)
+			if !tt.wantErr && err != nil {
+				t.Errorf("unexpected error: %v", err)
+			} else if !tt.wantErr && componentExists != tt.want {
 				t.Errorf("expected %v, actual %v", tt.want, componentExists)
 			}
 
@@ -343,6 +417,9 @@ func TestAdapterDelete(t *testing.T) {
 	type args struct {
 		labels map[string]string
 	}
+
+	emptyDeployment := testingutil.CreateFakeDeployment("")
+
 	tests := []struct {
 		name               string
 		args               args
@@ -377,6 +454,26 @@ func TestAdapterDelete(t *testing.T) {
 			existingDeployment: testingutil.CreateFakeDeployment("fronted"),
 			componentName:      "component",
 			componentExists:    false,
+			wantErr:            false,
+		},
+		{
+			name: "case 4: resource forbidden",
+			args: args{labels: map[string]string{
+				"component": "component",
+			}},
+			existingDeployment: testingutil.CreateFakeDeployment("fronted"),
+			componentName:      "resourceforbidden",
+			componentExists:    false,
+			wantErr:            false,
+		},
+		{
+			name: "case 5: component check error",
+			args: args{labels: map[string]string{
+				"component": "component",
+			}},
+			existingDeployment: testingutil.CreateFakeDeployment("fronted"),
+			componentName:      "componenterror",
+			componentExists:    true,
 			wantErr:            true,
 		},
 	}
@@ -413,7 +510,11 @@ func TestAdapterDelete(t *testing.T) {
 
 			fkclientset.Kubernetes.PrependReactor("get", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
 				if action.(ktesting.GetAction).GetName() != tt.componentName {
-					return true, nil, errors.Errorf("get action called with different component name, want: %s, got: %s", action.(ktesting.GetAction).GetName(), tt.componentName)
+					return true, emptyDeployment, kerrors.NewNotFound(schema.GroupResource{}, "")
+				} else if tt.componentName == "resourceforbidden" {
+					return true, emptyDeployment, kerrors.NewForbidden(schema.GroupResource{}, "", nil)
+				} else if tt.componentName == "componenterror" {
+					return true, emptyDeployment, errors.Errorf("component check error")
 				}
 				return true, tt.existingDeployment, nil
 			})

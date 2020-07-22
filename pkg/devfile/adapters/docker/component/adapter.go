@@ -2,6 +2,8 @@ package component
 
 import (
 	"fmt"
+	"io"
+	"reflect"
 	"strings"
 
 	"github.com/docker/docker/api/types"
@@ -10,8 +12,11 @@ import (
 	"k8s.io/klog"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
+	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
+
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
+	"github.com/openshift/odo/pkg/exec"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
@@ -112,7 +117,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	// Find at least one container with the source volume mounted, error out if none can be found
-	containerID, err := getFirstContainerWithSourceVolume(containers)
+	containerID, sourceMount, err := getFirstContainerWithSourceVolume(containers)
 	if err != nil {
 		return errors.Wrapf(err, "error while retrieving container for odo component %s with a mounted project volume", a.ComponentName)
 	}
@@ -124,6 +129,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	// podChanged is defaulted to false, since docker volume is always present even if container goes down
 	compInfo := common.ComponentInfo{
 		ContainerName: containerID,
+		SourceMount:   sourceMount,
 	}
 	syncParams := common.SyncParameters{
 		PushParams:      parameters,
@@ -133,6 +139,17 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	execRequired, err := syncAdapter.SyncFiles(syncParams)
 	if err != nil {
 		return errors.Wrapf(err, "failed to sync to component with name %s", a.ComponentName)
+	}
+
+	// PostStart events from the devfile will only be executed when the component
+	// didn't previously exist
+	postStartEvents := a.Devfile.Data.GetEvents().PostStart
+	if !componentExists && len(postStartEvents) > 0 {
+		log.Infof("\nExecuting postStart event commands for component %s", a.ComponentName)
+		err = a.execDevfileEvent(postStartEvents, containers)
+		if err != nil {
+			return err
+		}
 	}
 
 	if execRequired {
@@ -146,26 +163,53 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	return nil
 }
 
+// Test runs the devfile test command
+func (a Adapter) Test(testCmd string, show bool) (err error) {
+	componentExists, err := utils.ComponentExists(a.Client, a.Devfile.Data, a.ComponentName)
+	if err != nil {
+		return errors.Wrapf(err, "unable to determine if component %s exists", a.ComponentName)
+	}
+	if !componentExists {
+		return fmt.Errorf("component does not exist, a valid component is required to run 'odo test'")
+	}
+
+	containers, err := utils.GetComponentContainers(a.Client, a.ComponentName)
+	if err != nil {
+		return errors.Wrapf(err, "error while retrieving container for odo component %s", a.ComponentName)
+	}
+	log.Infof("\nExecuting devfile test command for component %s", a.ComponentName)
+	testCommand, err := common.ValidateAndGetTestDevfileCommands(a.Devfile.Data, testCmd)
+	if err != nil {
+		return errors.Wrap(err, "failed to validate devfile test command")
+	}
+
+	err = a.execTestCmd(testCommand, containers, show)
+	if err != nil {
+		return errors.Wrapf(err, "failed to execute devfile commands for component %s", a.ComponentName)
+	}
+	return nil
+}
+
 // DoesComponentExist returns true if a component with the specified name exists, false otherwise
-func (a Adapter) DoesComponentExist(cmpName string) bool {
-	componentExists, _ := utils.ComponentExists(a.Client, a.Devfile.Data, cmpName)
-	return componentExists
+func (a Adapter) DoesComponentExist(cmpName string) (bool, error) {
+	componentExists, err := utils.ComponentExists(a.Client, a.Devfile.Data, cmpName)
+	return componentExists, err
 }
 
 // getFirstContainerWithSourceVolume returns the first container that set mountSources: true
 // Because the source volume is shared across all components that need it, we only need to sync once,
 // so we only need to find one container. If no container was found, that means there's no
 // container to sync to, so return an error
-func getFirstContainerWithSourceVolume(containers []types.Container) (string, error) {
+func getFirstContainerWithSourceVolume(containers []types.Container) (string, string, error) {
 	for _, c := range containers {
 		for _, mount := range c.Mounts {
-			if mount.Destination == lclient.OdoSourceVolumeMount {
-				return c.ID, nil
+			if strings.Contains(mount.Name, lclient.ProjectSourceVolumeName) {
+				return c.ID, mount.Destination, nil
 			}
 		}
 	}
 
-	return "", fmt.Errorf("in order to sync files, odo requires at least one component in a devfile to set 'mountSources: true'")
+	return "", "", fmt.Errorf("in order to sync files, odo requires at least one component in a devfile to set 'mountSources: true'")
 }
 
 // Delete attempts to delete the component with the specified labels, returning an error if it fails
@@ -175,6 +219,9 @@ func (a Adapter) Delete(labels map[string]string) error {
 	if !exists {
 		return errors.New("unable to delete component without a component label")
 	}
+
+	spinner := log.Spinnerf("Deleting devfile component %s", componentName)
+	defer spinner.End(false)
 
 	containers, err := a.Client.GetContainerList()
 	if err != nil {
@@ -201,7 +248,9 @@ func (a Adapter) Delete(labels map[string]string) error {
 	componentContainer := a.Client.GetContainersByComponent(componentName, containers)
 
 	if len(componentContainer) == 0 {
-		return errors.Errorf("the component %s doesn't exist", a.ComponentName)
+		spinner.End(false)
+		log.Warningf("Component %s does not exist", componentName)
+		return nil
 	}
 
 	allVolumes, err := a.Client.GetVolumes()
@@ -274,6 +323,78 @@ func (a Adapter) Delete(labels map[string]string) error {
 		}
 	}
 
+	spinner.End(true)
+	log.Successf("Successfully deleted component")
+
 	return nil
 
+}
+
+// Log returns log from component
+func (a Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
+
+	exists, err := utils.ComponentExists(a.Client, a.Devfile.Data, a.ComponentName)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if !exists {
+		return nil, errors.Errorf("the component %s doesn't exist on the cluster", a.ComponentName)
+	}
+
+	containers, err := utils.GetComponentContainers(a.Client, a.ComponentName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "error while retrieving container for odo component %s", a.ComponentName)
+	}
+
+	var command versionsCommon.DevfileCommand
+	if debug {
+		command, err = common.GetDebugCommand(a.Devfile.Data, "")
+		if err != nil {
+			return nil, err
+		}
+		if reflect.DeepEqual(versionsCommon.DevfileCommand{}, command) {
+			return nil, errors.Errorf("no debug command found in devfile, please run \"odo log\" for run command logs")
+		}
+
+	} else {
+		command, err = common.GetRunCommand(a.Devfile.Data, "")
+		if err != nil {
+			return nil, err
+		}
+
+	}
+	containerID := utils.GetContainerIDForAlias(containers, command.Exec.Component)
+
+	return a.Client.GetContainerLogs(containerID, follow)
+}
+
+// Exec executes a command in the component
+func (a Adapter) Exec(command []string) error {
+	exists, err := utils.ComponentExists(a.Client, a.Devfile.Data, a.ComponentName)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return errors.Errorf("the component %s doesn't exist on the cluster", a.ComponentName)
+	}
+
+	containers, err := utils.GetComponentContainers(a.Client, a.ComponentName)
+	if err != nil {
+		return errors.Wrapf(err, "error while retrieving container for odo component %s", a.ComponentName)
+	}
+
+	runCommand, err := common.GetRunCommand(a.Devfile.Data, "")
+	if err != nil {
+		return err
+	}
+	containerName := runCommand.Exec.Component
+	containerID := utils.GetContainerIDForAlias(containers, containerName)
+
+	componentInfo := common.ComponentInfo{
+		ContainerName: containerID,
+	}
+
+	return exec.ExecuteCommand(&a.Client, componentInfo, command, true, nil, nil)
 }

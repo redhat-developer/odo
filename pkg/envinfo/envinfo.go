@@ -17,10 +17,14 @@ import (
 
 // ComponentSettings holds all component related information
 type ComponentSettings struct {
-	Name        string              `yaml:"Name,omitempty"`
+	Name string `yaml:"Name,omitempty"`
+
 	Namespace   string              `yaml:"Namespace,omitempty"`
 	URL         *[]EnvInfoURL       `yaml:"Url,omitempty"`
 	PushCommand *EnvInfoPushCommand `yaml:"PushCommand,omitempty"`
+	// AppName is the application name. Application is a virtual concept present in odo used
+	// for grouping of components. A namespace can contain multiple applications
+	AppName string `yaml:"AppName,omitempty" json:"AppName,omitempty"`
 
 	// DebugPort controls the port used by the pod to run the debugging agent on
 	DebugPort *int `yaml:"DebugPort,omitempty"`
@@ -65,6 +69,14 @@ type EnvInfoPushCommand struct {
 	Run   string `yaml:"Run,omitempty"`
 }
 
+// LocalConfigProvider is an interface which all local config providers need to implement
+// currently for openshift there is localConfigInfo and for devfile its EnvInfo.
+// The reason this interface is declared here instead of config package is because
+// some day local config would get deprecated and hence to keep the interfaces in the new package
+type LocalConfigProvider interface {
+	GetApplication() string
+}
+
 // EnvInfo holds all the env specific information relavent to a specific Component.
 type EnvInfo struct {
 	componentSettings ComponentSettings `yaml:"ComponentSettings,omitempty"`
@@ -85,6 +97,8 @@ type EnvSpecificInfo struct {
 	envinfoFileExists bool
 }
 
+// getEnvInfoFile first checks for the ENVINFO variable
+// then we check for directory and eventually the file (which we return as a string)
 func getEnvInfoFile(envDir string) (string, error) {
 	if env, ok := os.LookupEnv(envInfoEnvName); ok {
 		return env, nil
@@ -106,17 +120,21 @@ func New() (*EnvSpecificInfo, error) {
 	return NewEnvSpecificInfo("")
 }
 
-// NewEnvSpecificInfo gets the EnvSpecificInfo from envinfo file and creates the envinfo file in case it's
-// not present then it
+// NewEnvSpecificInfo retrieves the environment file. If it does not exist, it returns *blank*
 func NewEnvSpecificInfo(envDir string) (*EnvSpecificInfo, error) {
 	return newEnvSpecificInfo(envDir, filesystem.DefaultFs{})
 }
 
+// newEnvSpecificInfo retrieves the env.yaml file, if it does not exist, we return a *BLANK* environment file.
 func newEnvSpecificInfo(envDir string, fs filesystem.Filesystem) (*EnvSpecificInfo, error) {
+
+	// Retrieve the environment file
 	envInfoFile, err := getEnvInfoFile(envDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get odo envinfo file")
 	}
+
+	// Organize that information into a struct
 	e := EnvSpecificInfo{
 		EnvInfo:           NewEnvInfo(),
 		Filename:          envInfoFile,
@@ -124,16 +142,18 @@ func newEnvSpecificInfo(envDir string, fs filesystem.Filesystem) (*EnvSpecificIn
 		fs:                fs,
 	}
 
-	// if the env.yaml file doesn't exist then we dont worry about it and return
+	// If the env.yaml file does not exist then we simply return and set e.envinfoFileExists as false
 	if _, err = e.fs.Stat(envInfoFile); os.IsNotExist(err) {
 		e.envinfoFileExists = false
 		return &e, nil
 	}
 
+	// Retrieve the environment file
 	err = getFromFile(&e.EnvInfo, e.Filename)
 	if err != nil {
 		return nil, err
 	}
+
 	return &e, nil
 }
 
@@ -158,7 +178,8 @@ func newProxyEnvInfo() proxyEnvInfo {
 	return proxyEnvInfo{}
 }
 
-// SetConfiguration sets the environment specific info like cluster host etc.
+// SetConfiguration sets the environment specific info such as the Cluster Host, Name, etc.
+// we then **write** this data to the environment yaml file (see envInfoFileName const)
 func (esi *EnvSpecificInfo) SetConfiguration(parameter string, value interface{}) (err error) {
 	if parameter, ok := asLocallySupportedParameter(parameter); ok {
 		switch parameter {
@@ -311,6 +332,11 @@ func (ei *EnvInfo) GetPortByURLKind(urlKind URLKind) (int, error) {
 // GetNamespace returns component namespace
 func (ei *EnvInfo) GetNamespace() string {
 	return ei.componentSettings.Namespace
+}
+
+// GetApplication returns the application name
+func (ei *EnvInfo) GetApplication() string {
+	return ei.componentSettings.AppName
 }
 
 const (

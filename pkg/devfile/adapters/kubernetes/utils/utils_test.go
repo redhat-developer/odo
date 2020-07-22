@@ -9,10 +9,78 @@ import (
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/testingutil"
+	"github.com/pkg/errors"
 
 	corev1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	ktesting "k8s.io/client-go/testing"
 )
+
+func TestComponentExists(t *testing.T) {
+
+	tests := []struct {
+		name             string
+		componentType    versionsCommon.DevfileComponentType
+		componentName    string
+		getComponentName string
+		want             bool
+		wantErr          bool
+	}{
+		{
+			name:             "Case 1: Valid component name",
+			componentName:    "test-name",
+			getComponentName: "test-name",
+			want:             true,
+			wantErr:          false,
+		},
+		{
+			name:             "Case 2: Non-existent component name",
+			componentName:    "test-name",
+			getComponentName: "fake-component",
+			want:             false,
+			wantErr:          false,
+		},
+		{
+			name:             "Case 3: Error condition",
+			componentName:    "test-name",
+			getComponentName: "test-name",
+			want:             false,
+			wantErr:          true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			fkclient, fkclientset := kclient.FakeNew()
+			fkclientset.Kubernetes.PrependReactor("get", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+				emptyDeployment := testingutil.CreateFakeDeployment("")
+				deployment := testingutil.CreateFakeDeployment(tt.getComponentName)
+
+				if tt.wantErr {
+					return true, emptyDeployment, errors.Errorf("deployment get error")
+				} else if tt.getComponentName == tt.componentName {
+					return true, deployment, nil
+				}
+
+				return true, emptyDeployment, kerrors.NewNotFound(schema.GroupResource{}, "")
+			})
+
+			// Verify that a component with the specified name exists
+			componentExists, err := ComponentExists(*fkclient, tt.getComponentName)
+			if !tt.wantErr && err != nil {
+				t.Errorf("unexpected error: %v", err)
+			} else if !tt.wantErr && componentExists != tt.want {
+				t.Errorf("expected %v, actual %v", tt.want, componentExists)
+			}
+
+		})
+	}
+
+}
 
 func TestUpdateContainersWithSupervisord(t *testing.T) {
 
@@ -46,6 +114,8 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 		containers              []corev1.Container
 		execCommands            []common.Exec
 		componentType           common.DevfileComponentType
+		expectRunCommand        string
+		expectDebugCommand      string
 		isSupervisordEntrypoint bool
 		wantErr                 bool
 	}{
@@ -71,6 +141,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 				},
 			},
 			componentType:           common.ContainerComponentType,
+			expectRunCommand:        command,
 			isSupervisordEntrypoint: false,
 			wantErr:                 false,
 		},
@@ -95,6 +166,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 				},
 			},
 			componentType:           common.ContainerComponentType,
+			expectRunCommand:        command,
 			isSupervisordEntrypoint: false,
 			wantErr:                 false,
 		},
@@ -118,6 +190,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 				},
 			},
 			componentType:           common.ContainerComponentType,
+			expectRunCommand:        command,
 			isSupervisordEntrypoint: true,
 			wantErr:                 false,
 		},
@@ -142,6 +215,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 				},
 			},
 			componentType:           common.ContainerComponentType,
+			expectRunCommand:        command,
 			isSupervisordEntrypoint: true,
 			wantErr:                 false,
 		},
@@ -165,6 +239,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 				},
 			},
 			componentType:           common.ContainerComponentType,
+			expectRunCommand:        command,
 			isSupervisordEntrypoint: true,
 			wantErr:                 true,
 		},
@@ -204,6 +279,8 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 				},
 			},
 			componentType:           common.ContainerComponentType,
+			expectDebugCommand:      debugCommand,
+			expectRunCommand:        command,
 			isSupervisordEntrypoint: true,
 			wantErr:                 false,
 		},
@@ -236,6 +313,8 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 				},
 			},
 			componentType:           common.ContainerComponentType,
+			expectDebugCommand:      debugCommand,
+			expectRunCommand:        command,
 			isSupervisordEntrypoint: true,
 			wantErr:                 false,
 		},
@@ -276,8 +355,160 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 				},
 			},
 			componentType:           common.ContainerComponentType,
+			expectDebugCommand:      debugCommand,
+			expectRunCommand:        command,
 			isSupervisordEntrypoint: true,
 			wantErr:                 true,
+		},
+		{
+			name:       "Case: custom run command with single environment variable",
+			runCommand: "customRunCommand",
+			containers: []corev1.Container{
+				{
+					Name:            component,
+					Image:           image,
+					ImagePullPolicy: corev1.PullAlways,
+					Env:             []corev1.EnvVar{},
+				},
+			},
+			execCommands: []versionsCommon.Exec{
+				{
+					Id:          "customRunCommand",
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group:       &execRunGroup,
+					Env: []versionsCommon.Env{
+						versionsCommon.Env{
+							Name:  "env1",
+							Value: "value1",
+						},
+					},
+				},
+			},
+			componentType:           common.ContainerComponentType,
+			expectRunCommand:        "env1=\"value1\" && " + command,
+			isSupervisordEntrypoint: true,
+			wantErr:                 false,
+		},
+		{
+			name:       "Case: custom run command with multiple environment variable",
+			runCommand: "customRunCommand",
+			containers: []corev1.Container{
+				{
+					Name:            component,
+					Image:           image,
+					ImagePullPolicy: corev1.PullAlways,
+					Env:             []corev1.EnvVar{},
+				},
+			},
+			execCommands: []versionsCommon.Exec{
+				{
+					Id:          "customRunCommand",
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group:       &execRunGroup,
+					Env: []versionsCommon.Env{
+						versionsCommon.Env{
+							Name:  "env1",
+							Value: "value1",
+						},
+						versionsCommon.Env{
+							Name:  "env2",
+							Value: "value2 with space",
+						},
+					},
+				},
+			},
+			componentType:           common.ContainerComponentType,
+			expectRunCommand:        "env1=\"value1\" env2=\"value2 with space\" && " + command,
+			isSupervisordEntrypoint: true,
+			wantErr:                 false,
+		},
+		{
+			name:         "Case: custom debug command with single environment variable",
+			runCommand:   emptyString,
+			debugCommand: "customdebugcommand",
+			debugPort:    3000,
+			containers: []corev1.Container{
+				{
+					Name:            component,
+					Image:           image,
+					ImagePullPolicy: corev1.PullAlways,
+					Env:             []corev1.EnvVar{},
+				},
+			},
+			execCommands: []versionsCommon.Exec{
+				{
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group:       &execRunGroup,
+				},
+				{
+					Id:          "customdebugcommand",
+					CommandLine: debugCommand,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group:       &execDebugGroup,
+					Env: []versionsCommon.Env{
+						versionsCommon.Env{
+							Name:  "env1",
+							Value: "value1",
+						},
+					},
+				},
+			},
+			componentType:           common.ContainerComponentType,
+			expectDebugCommand:      "env1=\"value1\" && " + debugCommand,
+			expectRunCommand:        command,
+			isSupervisordEntrypoint: true,
+			wantErr:                 false,
+		},
+		{
+			name:         "Case: custom debug command with multiple environment variables",
+			runCommand:   emptyString,
+			debugCommand: "customdebugcommand",
+			debugPort:    3000,
+			containers: []corev1.Container{
+				{
+					Name:            component,
+					Image:           image,
+					ImagePullPolicy: corev1.PullAlways,
+					Env:             []corev1.EnvVar{},
+				},
+			},
+			execCommands: []versionsCommon.Exec{
+				{
+					CommandLine: command,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group:       &execRunGroup,
+				},
+				{
+					Id:          "customdebugcommand",
+					CommandLine: debugCommand,
+					Component:   component,
+					WorkingDir:  workDir,
+					Group:       &execDebugGroup,
+					Env: []versionsCommon.Env{
+						versionsCommon.Env{
+							Name:  "env1",
+							Value: "value1",
+						},
+						versionsCommon.Env{
+							Name:  "env2",
+							Value: "value2 with space",
+						},
+					},
+				},
+			},
+			componentType:           common.ContainerComponentType,
+			expectDebugCommand:      "env1=\"value1\" env2=\"value2 with space\" && " + debugCommand,
+			expectRunCommand:        command,
+			isSupervisordEntrypoint: true,
+			wantErr:                 false,
 		},
 	}
 	for _, tt := range tests {
@@ -343,7 +574,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 						}
 
 						for _, envVar := range container.Env {
-							if envVar.Name == adaptersCommon.EnvOdoCommandRun && envVar.Value == tt.execCommands[0].CommandLine {
+							if envVar.Name == adaptersCommon.EnvOdoCommandRun && envVar.Value == tt.expectRunCommand {
 								envRunMatched = true
 							}
 							if tt.execCommands[0].WorkingDir != "" && envVar.Name == adaptersCommon.EnvOdoCommandRunWorkingDir && envVar.Value == tt.execCommands[0].WorkingDir {
@@ -353,7 +584,7 @@ func TestUpdateContainersWithSupervisord(t *testing.T) {
 							// if the debug command is also present
 							if len(tt.execCommands) >= 2 {
 								// check if the debug command env was set properly
-								if envVar.Name == adaptersCommon.EnvOdoCommandDebug && envVar.Value == tt.execCommands[1].CommandLine {
+								if envVar.Name == adaptersCommon.EnvOdoCommandDebug && envVar.Value == tt.expectDebugCommand {
 									envDebugMatched = true
 								}
 								// check if the debug command's workingDir env was set properly

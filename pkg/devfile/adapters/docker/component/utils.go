@@ -26,10 +26,7 @@ import (
 )
 
 const (
-	// LocalhostIP is the IP address for localhost
 	LocalhostIP = "127.0.0.1"
-
-	projectSourceVolumeName = "odo-project-source"
 )
 
 func (a Adapter) createComponent() (err error) {
@@ -203,7 +200,11 @@ func (a Adapter) startComponent(mounts []mount.Mount, comp versionsCommon.Devfil
 
 	// If the component set `mountSources` to true, add the source volume and env CHE_PROJECTS_ROOT to it
 	if comp.Container.MountSources {
-		utils.AddVolumeToContainer(a.projectVolumeName, lclient.OdoSourceVolumeMount, &hostConfig)
+		if comp.Container.SourceMapping != "" {
+			utils.AddVolumeToContainer(a.projectVolumeName, comp.Container.SourceMapping, &hostConfig)
+		} else {
+			utils.AddVolumeToContainer(a.projectVolumeName, lclient.OdoSourceVolumeMount, &hostConfig)
+		}
 
 		if !common.IsEnvPresent(comp.Container.Env, common.EnvCheProjectsRoot) {
 			envName := common.EnvCheProjectsRoot
@@ -327,7 +328,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 
 			containerID := utils.GetContainerIDForAlias(containers, command.Exec.Component)
 			compInfo := common.ComponentInfo{ContainerName: containerID}
-			err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
+			err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 			if err != nil {
 				return err
 			}
@@ -339,7 +340,7 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 	if ok {
 		containerID := utils.GetContainerIDForAlias(containers, command.Exec.Component)
 		compInfo := common.ComponentInfo{ContainerName: containerID}
-		err = exec.ExecuteDevfileBuildAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
+		err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 		if err != nil {
 			return err
 		}
@@ -370,6 +371,45 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 		err = exec.ExecuteDevfileRunAction(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 	}
 
+	return
+}
+
+// TODO: Support Composite
+// execDevfileEvent receives a Devfile Event (PostStart, PreStop etc.) and loops through them
+// Each Devfile Command associated with the given event is retrieved, and executed in the container specified
+// in the command
+func (a Adapter) execDevfileEvent(events []string, containers []types.Container) error {
+
+	commandMap := common.GetCommandMap(a.Devfile.Data)
+
+	for _, commandName := range events {
+		// Convert commandName to lower because GetCommands converts Command.Exec.Id's to lower
+		command, ok := commandMap[strings.ToLower(commandName)]
+		if !ok {
+			return errors.New("unable to find devfile command " + commandName)
+		}
+
+		// If composite would go here & recursive loop
+
+		// Get container for command
+		containerID := utils.GetContainerIDForAlias(containers, command.Exec.Component)
+		compInfo := common.ComponentInfo{ContainerName: containerID}
+
+		// Execute command in container
+		err := exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, false, a.machineEventLogger)
+		if err != nil {
+			return errors.Wrapf(err, "unable to execute devfile command "+commandName)
+		}
+
+	}
+	return nil
+}
+
+// Executes the test command in the container
+func (a Adapter) execTestCmd(testCmd versionsCommon.DevfileCommand, containers []types.Container, show bool) (err error) {
+	containerID := utils.GetContainerIDForAlias(containers, testCmd.Exec.Component)
+	compInfo := common.ComponentInfo{ContainerName: containerID}
+	err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *testCmd.Exec, testCmd.Exec.Id, compInfo, show, a.machineEventLogger)
 	return
 }
 
@@ -404,7 +444,7 @@ func (a Adapter) createProjectVolumeIfReqd() (string, error) {
 
 	if len(projectVols) == 0 {
 		// A source volume needs to be created
-		projectVolumeName, err = storage.GenerateVolName(projectSourceVolumeName, componentName)
+		projectVolumeName, err = storage.GenerateVolName(lclient.ProjectSourceVolumeName, componentName)
 		if err != nil {
 			return "", errors.Wrapf(err, "unable to generate project source volume name for component %s", componentName)
 		}

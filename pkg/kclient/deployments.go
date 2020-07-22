@@ -42,6 +42,14 @@ func getDeploymentCondition(status appsv1.DeploymentStatus, condType appsv1.Depl
 	return nil
 }
 
+// ListDeployments lists all deployments by selector
+func (c *Client) ListDeployments(selector string) (*appsv1.DeploymentList, error) {
+
+	return c.KubeClient.AppsV1().Deployments(c.Namespace).List(metav1.ListOptions{
+		LabelSelector: selector,
+	})
+}
+
 // WaitForDeploymentRollout waits for deployment to finish rollout. Returns the state of the deployment after rollout.
 func (c *Client) WaitForDeploymentRollout(deploymentName string) (*appsv1.Deployment, error) {
 	klog.V(4).Infof("Waiting for %s deployment rollout", deploymentName)
@@ -160,7 +168,7 @@ func (c *Client) DeleteDeployment(labels map[string]string) error {
 	return c.KubeClient.AppsV1().Deployments(c.Namespace).DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
 }
 
-// CreateDynamicDeployment creates a dynamic deployment for Operator backed service
+// CreateDynamicResource creates a dynamic custom resource
 func (c *Client) CreateDynamicResource(exampleCustomResource map[string]interface{}, group, version, resource string) error {
 	deploymentRes := schema.GroupVersionResource{Group: group, Version: version, Resource: resource}
 
@@ -188,4 +196,11 @@ func (c *Client) ListDynamicResource(group, version, resource string) (*unstruct
 	}
 
 	return list, nil
+}
+
+// DeleteDynamicResource deletes an instance, specified by name, of a Custom Resource
+func (c *Client) DeleteDynamicResource(name, group, version, resource string) error {
+	deploymentRes := schema.GroupVersionResource{Group: group, Version: version, Resource: resource}
+
+	return c.DynamicClient.Resource(deploymentRes).Namespace(c.Namespace).Delete(name, &metav1.DeleteOptions{})
 }

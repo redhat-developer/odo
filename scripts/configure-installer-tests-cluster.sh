@@ -14,12 +14,13 @@ KUBEADMIN_PASSWORD_FILE=${KUBEADMIN_PASSWORD_FILE:-"${DEFAULT_INSTALLER_ASSETS_D
 OC_STABLE_LOGIN="false"
 CI_OPERATOR_HUB_PROJECT="ci-operator-hub-project"
 # Exported to current env
-export KUBECONFIG=${KUBECONFIG:-"${DEFAULT_INSTALLER_ASSETS_DIR}/auth/kubeconfig"}
+ORIGINAL_KUBECONFIG=${KUBECONFIG:-"${DEFAULT_INSTALLER_ASSETS_DIR}/auth/kubeconfig"}
+export KUBECONFIG=$ORIGINAL_KUBECONFIG
 
 # List of users to create
 USERS="developer odonoprojectattemptscreate odosingleprojectattemptscreate odologinnoproject odologinsingleproject1"
 
-# Attempt resolution of kubeadmin, only if a CI is set
+# Attempt resolution of kubeadmin, only if a CI is not set
 if [ -z $CI ]; then
     # Check if nessasary files exist
     if [ ! -f $KUBEADMIN_PASSWORD_FILE ]; then
@@ -37,6 +38,13 @@ if [ -z $CI ]; then
 
     # Login as admin user
     oc login -u $KUBEADMIN_USER -p $KUBEADMIN_PASSWORD
+else
+    # Copy kubeconfig to temporary kubeconfig file
+    # Read and Write permission to temporary kubeconfig file
+    TMP_DIR=$(mktemp -d)
+    cp $KUBECONFIG $TMP_DIR/kubeconfig
+    chmod 640 $TMP_DIR/kubeconfig
+    export KUBECONFIG=$TMP_DIR/kubeconfig
 fi
 
 # Setup the cluster for Operator tests
@@ -126,3 +134,9 @@ fi
 oc new-project myproject
 sleep 4
 oc version
+
+# KUBECONFIG cleanup only if CI is set
+if [ ! -f $CI ]; then
+    rm -rf $KUBECONFIG
+    export KUBECONFIG=$ORIGINAL_KUBECONFIG
+fi

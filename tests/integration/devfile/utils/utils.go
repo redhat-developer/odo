@@ -23,7 +23,7 @@ func useProjectIfAvailable(args []string, project string) []string {
 
 // ExecDefaultDevfileCommands executes the default devfile commands
 func ExecDefaultDevfileCommands(projectDirPath, cmpName, namespace string) {
-	args := []string{"create", "springBoot", cmpName}
+	args := []string{"create", "java-springboot", cmpName}
 	args = useProjectIfAvailable(args, namespace)
 	helper.CmdShouldPass("odo", args...)
 
@@ -166,7 +166,7 @@ func ExecCommandWithoutGroupUsingFlags(projectDirPath, cmpName, namespace string
 
 // ExecWithInvalidCommandGroup executes odo push with an invalid command group
 func ExecWithInvalidCommandGroup(projectDirPath, cmpName, namespace string) {
-	args := []string{"create", "springBoot", cmpName}
+	args := []string{"create", "java-springboot", cmpName}
 	args = useProjectIfAvailable(args, namespace)
 	helper.CmdShouldPass("odo", args...)
 
@@ -318,7 +318,7 @@ func OdoWatch(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, project, context, fl
 	}()
 
 	if !isDevfileTest {
-		flag = strings.TrimSpace(fmt.Sprintf("%s-app -v 4 %s", odoV1Watch.SrcType, flag))
+		flag = strings.TrimSpace(fmt.Sprintf("-v 4 %s", flag))
 	}
 
 	success, err := helper.WatchNonRetCmdStdOut(
@@ -398,4 +398,66 @@ func validateContainerExecListDir(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, 
 	helper.DontMatchAllInOutput(stdOut, []string{"abcd"})
 
 	return nil
+}
+
+// ExecCommand executes odo exec with a command
+func ExecCommand(context, cmpName string) {
+	args := []string{"create", "nodejs", cmpName, "--context", context}
+	helper.CmdShouldPass("odo", args...)
+
+	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
+	args = []string{"push", "--context", context}
+	helper.CmdShouldPass("odo", args...)
+
+	args = []string{"exec", "--context", context}
+	args = append(args, []string{"--", "touch", "/projects/blah.js"}...)
+	helper.CmdShouldPass("odo", args...)
+}
+
+//ExecWithoutCommand executes odo exec with no user command and fails
+func ExecWithoutCommand(context, cmpName string) {
+	args := []string{"create", "nodejs", cmpName, "--context", context}
+	helper.CmdShouldPass("odo", args...)
+
+	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
+	args = []string{"push", "--context", context}
+	helper.CmdShouldPass("odo", args...)
+
+	args = []string{"exec", "--context", context}
+	args = append(args, "--")
+	output := helper.CmdShouldFail("odo", args...)
+
+	Expect(output).To(ContainSubstring("no command was given"))
+
+}
+
+//ExecWithInvalidCommand executes odo exec with a invalid command
+func ExecWithInvalidCommand(context, cmpName, pushTarget string) {
+	args := []string{"create", "nodejs", cmpName, "--context", context}
+	helper.CmdShouldPass("odo", args...)
+
+	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
+	args = []string{"push", "--context", context}
+	helper.CmdShouldPass("odo", args...)
+
+	args = []string{"exec", "--context", context}
+	args = append(args, "--", "invalidCommand")
+	var output string
+
+	// since exec package for docker returns no error
+	// on execution of an invalid command
+	switch strings.ToLower(pushTarget) {
+	case "kube":
+		output = helper.CmdShouldFail("odo", args...)
+	case "docker":
+		output = helper.CmdShouldPass("odo", args...)
+	}
+
+	Expect(output).To(ContainSubstring("executable file not found in $PATH"))
 }

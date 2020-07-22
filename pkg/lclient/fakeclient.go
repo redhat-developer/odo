@@ -114,6 +114,7 @@ var mockContainerJSONList = []types.ContainerJSON{
 		},
 	},
 }
+var mockLogs = "My container Logs are here."
 
 var mockContainerList = []types.Container{
 	types.Container{
@@ -126,6 +127,7 @@ var mockContainerList = []types.Container{
 		},
 		Mounts: []types.MountPoint{
 			{
+				Name:        "odo-project-source",
 				Destination: OdoSourceVolumeMount,
 			},
 		},
@@ -331,6 +333,7 @@ var errRemoveVolume = errors.New("error removing volume")
 var errContainerExecCreate = errors.New("error creating container exec")
 var errContainerExecAttach = errors.New("error attach container exec")
 var errCopyToContainer = errors.New("error copying to container")
+var errContainerLogs = errors.New("error showing log from container")
 
 func (m *mockDockerErrorClient) ImageList(ctx context.Context, imageListOptions types.ImageListOptions) ([]types.ImageSummary, error) {
 	return nil, errImageList
@@ -425,4 +428,13 @@ func (m *mockDockerErrorClient) ContainerExecAttach(ctx context.Context, execID 
 
 func (m *mockDockerErrorClient) CopyToContainer(ctx context.Context, container, path string, content io.Reader, options types.CopyToContainerOptions) error {
 	return errCopyToContainer
+}
+
+func (m *mockDockerClient) ContainerLogs(ctx context.Context, container string, options types.ContainerLogsOptions) (io.ReadCloser, error) {
+	stringReader := strings.NewReader(mockLogs)
+	return ioutil.NopCloser(stringReader), nil
+}
+
+func (m *mockDockerErrorClient) ContainerLogs(ctx context.Context, container string, options types.ContainerLogsOptions) (io.ReadCloser, error) {
+	return nil, errContainerLogs
 }

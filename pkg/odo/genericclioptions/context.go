@@ -99,7 +99,8 @@ func kClient(command *cobra.Command) *kclient.Client {
 // checkProjectCreateOrDeleteOnlyOnInvalidNamespace errors out if user is trying to create or delete something other than project
 // errFormatforCommand must contain one %s
 func checkProjectCreateOrDeleteOnlyOnInvalidNamespace(command *cobra.Command, errFormatForCommand string) {
-	if command.HasParent() && command.Parent().Name() != "project" && (command.Name() == "create" || command.Name() == "delete") {
+	// do not error out when its odo delete -a, so that we let users delete the local config on missing namespace
+	if command.HasParent() && command.Parent().Name() != "project" && (command.Name() == "create" || (command.Name() == "delete" && !command.Flags().Changed("all"))) {
 		err := fmt.Errorf(errFormatForCommand, command.Root().Name())
 		util.LogErrorAndExit(err, "")
 	}
@@ -126,7 +127,9 @@ func getFirstChildOfCommand(command *cobra.Command) *cobra.Command {
 	return nil
 }
 
-func getValidEnvinfo(command *cobra.Command) (*envinfo.EnvSpecificInfo, error) {
+// getValidEnvInfo accesses the environment file
+func getValidEnvInfo(command *cobra.Command) (*envinfo.EnvSpecificInfo, error) {
+
 	// Get details from the env file
 	componentContext := FlagValueIfSet(command, ContextFlagName)
 
@@ -143,72 +146,21 @@ func getValidEnvinfo(command *cobra.Command) (*envinfo.EnvSpecificInfo, error) {
 		return nil, err
 	}
 
-	// Here we will check for parent commands, if the match a certain criteria, we will skip
-	// using the configuration.
-	//
-	// For example, `odo create` should NOT check to see if there is actually a configuration yet.
-	if command.HasParent() {
-
-		// Gather necessary preliminary information
-		parentCommand := command.Parent()
-		rootCommand := command.Root()
-		flagValue := FlagValueIfSet(command, ApplicationFlagName)
-
-		// Find the first child of the command, as some groups are allowed even with non existent configuration
-		firstChildCommand := getFirstChildOfCommand(command)
-
-		// This should not happen but just to be safe
-		if firstChildCommand == nil {
-			return nil, fmt.Errorf("Unable to get first child of command")
-		}
-		// Case 1 : if command is create operation just allow it
-		if command.Name() == "create" && (parentCommand.Name() == "component" || parentCommand.Name() == rootCommand.Name()) {
-			return envInfo, nil
-		}
-		// Case 2 : if command is describe or delete and app flag is used just allow it
-		if (firstChildCommand.Name() == "describe" || firstChildCommand.Name() == "delete") && len(flagValue) > 0 {
-			return envInfo, nil
-		}
-		// Case 2 : if command is list, just allow it
-		if firstChildCommand.Name() == "list" {
-			return envInfo, nil
-		}
-		// Case 3 : Check if firstChildCommand is project. If so, skip validation of context
-		if firstChildCommand.Name() == "project" {
-			return envInfo, nil
-		}
-		// Case 4 : Check if specific flags are set for specific first child commands
-		if firstChildCommand.Name() == "app" {
-			return envInfo, nil
-		}
-		// Case 5 : Check if firstChildCommand is catalog and request is to list or search
-		if firstChildCommand.Name() == "catalog" && (parentCommand.Name() == "list" || parentCommand.Name() == "search") {
-			return envInfo, nil
-		}
-		// Check if firstChildCommand is component and  request is list
-		if (firstChildCommand.Name() == "component" || firstChildCommand.Name() == "service") && command.Name() == "list" {
-			return envInfo, nil
-		}
-		// Case 6 : Check if firstChildCommand is component and app flag is used
-		if firstChildCommand.Name() == "component" && len(flagValue) > 0 {
-			return envInfo, nil
-		}
-		// Case 7 : Check if firstChildCommand is logout and app flag is used
-		if firstChildCommand.Name() == "logout" {
-			return envInfo, nil
-		}
-		// Case 8: Check if firstChildCommand is service and command is create or delete. Allow it if that's the case
-		if firstChildCommand.Name() == "service" && (command.Name() == "create" || command.Name() == "delete") {
-			return envInfo, nil
-		}
-
-	} else {
+	// Now we check to see if we can skip gathering the information.
+	// Return if we can skip gathering configuration information
+	canWeSkip, err := checkIfConfigurationNeeded(command)
+	if err != nil {
+		return nil, err
+	}
+	if canWeSkip {
 		return envInfo, nil
 	}
 
+	// Check to see if the environment file exists
 	if !envInfo.EnvInfoFileExists() {
 		return nil, fmt.Errorf("The current directory does not represent an odo component. Use 'odo create' to create component here or switch to directory with a component")
 	}
+
 	return envInfo, nil
 }
 
@@ -229,70 +181,15 @@ func getValidConfig(command *cobra.Command, ignoreMissingConfiguration bool) (*c
 		return nil, err
 	}
 
-	// Here we will check for parent commands, if the match a certain criteria, we will skip
-	// using the configuration.
-	//
-	// For example, `odo create` should NOT check to see if there is actually a configuration yet.
-	if command.HasParent() {
-
-		// Gather necessary preliminary information
-		parentCommand := command.Parent()
-		rootCommand := command.Root()
-		flagValue := FlagValueIfSet(command, ApplicationFlagName)
-
-		// Find the first child of the command, as some groups are allowed even with non existent configuration
-		firstChildCommand := getFirstChildOfCommand(command)
-
-		// This should not happen but just to be safe
-		if firstChildCommand == nil {
-			return nil, fmt.Errorf("Unable to get first child of command")
-		}
-		// Case 1 : if command is create operation just allow it
-		if command.Name() == "create" && (parentCommand.Name() == "component" || parentCommand.Name() == rootCommand.Name()) {
-			return localConfiguration, nil
-		}
-		// Case 2 : if command is describe or delete and app flag is used just allow it
-		if (firstChildCommand.Name() == "describe" || firstChildCommand.Name() == "delete") && len(flagValue) > 0 {
-			return localConfiguration, nil
-		}
-		// Case 2 : if command is list, just allow it
-		if firstChildCommand.Name() == "list" {
-			return localConfiguration, nil
-		}
-		// Case 3 : Check if firstChildCommand is project. If so, skip validation of context
-		if firstChildCommand.Name() == "project" {
-			return localConfiguration, nil
-		}
-		// Case 4 : Check if specific flags are set for specific first child commands
-		if firstChildCommand.Name() == "app" {
-			return localConfiguration, nil
-		}
-		// Case 5 : Check if firstChildCommand is catalog and request is to list or search
-		if firstChildCommand.Name() == "catalog" && (parentCommand.Name() == "list" || parentCommand.Name() == "search") {
-			return localConfiguration, nil
-		}
-		// Check if firstChildCommand is component and  request is list
-		if (firstChildCommand.Name() == "component" || firstChildCommand.Name() == "service") && command.Name() == "list" {
-			return localConfiguration, nil
-		}
-		// Case 6 : Check if firstChildCommand is component and app flag is used
-		if firstChildCommand.Name() == "component" && len(flagValue) > 0 {
-			return localConfiguration, nil
-		}
-		// Case 7 : Check if firstChildCommand is logout and app flag is used
-		if firstChildCommand.Name() == "logout" {
-			return localConfiguration, nil
-		}
-		// Case 8: Check if firstChildCommand is service and command is create or delete. Allow it if that's the case
-		if firstChildCommand.Name() == "service" && (command.Name() == "create" || command.Name() == "delete") {
-			return localConfiguration, nil
-		}
-
-	} else {
+	// Now we check to see if we can skip gathering the information.
+	// If true, we just return.
+	canWeSkip, err := checkIfConfigurationNeeded(command)
+	if err != nil {
+		return nil, err
+	}
+	if canWeSkip {
 		return localConfiguration, nil
 	}
-
-	// * Ignore error block ends
 
 	// If file does not exist at this point, raise an error
 	// HOWEVER..
@@ -346,7 +243,10 @@ func resolveNamespace(command *cobra.Command, client *kclient.Client, envSpecifi
 	if len(projectFlag) > 0 {
 		// if namespace flag was set, check that the specified namespace exists and use it
 		_, err := client.KubeClient.CoreV1().Namespaces().Get(projectFlag, metav1.GetOptions{})
-		util.LogErrorAndExit(err, "")
+		// do not error out when its odo delete -a, so that we let users delete the local config on missing namespace
+		if command.HasParent() && command.Parent().Name() != "project" && !(command.Name() == "delete" && command.Flags().Changed("all")) {
+			util.LogErrorAndExit(err, "")
+		}
 		namespace = projectFlag
 	} else {
 		namespace = envSpecificInfo.GetNamespace()
@@ -371,7 +271,7 @@ func resolveNamespace(command *cobra.Command, client *kclient.Client, envSpecifi
 }
 
 // resolveApp resolves the app
-func resolveApp(command *cobra.Command, createAppIfNeeded bool, localConfiguration *config.LocalConfigInfo) string {
+func resolveApp(command *cobra.Command, createAppIfNeeded bool, localConfiguration envinfo.LocalConfigProvider) string {
 	var app string
 	appFlag := FlagValueIfSet(command, ApplicationFlagName)
 	if len(appFlag) > 0 {
@@ -385,6 +285,15 @@ func resolveApp(command *cobra.Command, createAppIfNeeded bool, localConfigurati
 		}
 	}
 	return app
+}
+
+// ResolveAppFlag resolves the app from the flag
+func ResolveAppFlag(command *cobra.Command) string {
+	appFlag := FlagValueIfSet(command, ApplicationFlagName)
+	if len(appFlag) > 0 {
+		return appFlag
+	}
+	return DefaultAppName
 }
 
 // resolveComponent resolves component
@@ -410,10 +319,10 @@ func UpdatedContext(context *Context) (*Context, *config.LocalConfigInfo, error)
 
 // newContext creates a new context based on the command flags, creating missing app when requested
 func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingConfiguration bool) *Context {
-	// create a new occlient
+	// Create a new occlient
 	client := client(command)
 
-	// create a new kclient
+	// Create a new kclient
 	KClient, err := kclient.New()
 	if err != nil {
 		util.LogErrorAndExit(err, "")
@@ -425,16 +334,16 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 		util.LogErrorAndExit(err, "")
 	}
 
-	// resolve project
+	// Resolve project
 	namespace := resolveProject(command, client, localConfiguration)
 
 	// resolve application
 	app := resolveApp(command, createAppIfNeeded, localConfiguration)
 
-	// resolve output flag
+	// Resolve output flag
 	outputFlag := FlagValueIfSet(command, OutputFlagName)
 
-	// create the internal context representation based on calculated values
+	// Create the internal context representation based on calculated values
 	internalCxt := internalCxt{
 		Client:          client,
 		Project:         namespace,
@@ -445,11 +354,11 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 		KClient:         KClient,
 	}
 
-	// create a context from the internal representation
+	// Create a context from the internal representation
 	context := &Context{
 		internalCxt: internalCxt,
 	}
-	// once the component is resolved, add it to the context
+	// Once the component is resolved, add it to the context
 	context.cmp = resolveComponent(command, localConfiguration, context)
 
 	return context
@@ -457,29 +366,40 @@ func newContext(command *cobra.Command, createAppIfNeeded bool, ignoreMissingCon
 
 // newDevfileContext creates a new context based on command flags for devfile components
 func newDevfileContext(command *cobra.Command) *Context {
-	// resolve output flag
+
+	// Resolve output flag
 	outputFlag := FlagValueIfSet(command, OutputFlagName)
 
-	// create the internal context representation based on calculated values
+	// Create the internal context representation based on calculated values
 	internalCxt := internalCxt{
 		OutputFlag: outputFlag,
 		command:    command,
+		// this is only so we can make devfile and s2i work together for certain cases
+		LocalConfigInfo: &config.LocalConfigInfo{},
 	}
 
-	envInfo, err := getValidEnvinfo(command)
+	// Get valid env information
+	envInfo, err := getValidEnvInfo(command)
 	if err != nil {
 		util.LogErrorAndExit(err, "")
 	}
 
+	internalCxt.EnvSpecificInfo = envInfo
+	internalCxt.Application = resolveApp(command, true, envInfo)
+
+	// If the push target is NOT Docker we will set the client to Kubernetes.
 	if !pushtarget.IsPushTargetDocker() {
-		// create a new kclient
+
+		// Create a new kubernetes client
 		kClient := kClient(command)
 		internalCxt.KClient = kClient
 
+		// Gather the environment information
 		internalCxt.EnvSpecificInfo = envInfo
 		resolveNamespace(command, kClient, envInfo)
 	}
-	// create a context from the internal representation
+
+	// Create a context from the internal representation
 	context := &Context{
 		internalCxt: internalCxt,
 	}
@@ -562,4 +482,73 @@ func ApplyIgnore(ignores *[]string, sourcePath string) (err error) {
 		*ignores = append(*ignores, rules...)
 	}
 	return nil
+}
+
+// checkIfConfigurationNeeded checks against a set of commands that do *NOT* need configuration.
+func checkIfConfigurationNeeded(command *cobra.Command) (bool, error) {
+
+	// Here we will check for parent commands, if the match a certain criteria, we will skip
+	// using the configuration.
+	//
+	// For example, `odo create` should NOT check to see if there is actually a configuration yet.
+	if command.HasParent() {
+
+		// Gather necessary preliminary information
+		parentCommand := command.Parent()
+		rootCommand := command.Root()
+		flagValue := FlagValueIfSet(command, ApplicationFlagName)
+
+		// Find the first child of the command, as some groups are allowed even with non existent configuration
+		firstChildCommand := getFirstChildOfCommand(command)
+
+		// This should *never* happen, but added just to be safe
+		if firstChildCommand == nil {
+			return false, fmt.Errorf("Unable to get first child of command")
+		}
+		// Case 1 : if command is create operation just allow it
+		if command.Name() == "create" && (parentCommand.Name() == "component" || parentCommand.Name() == rootCommand.Name()) {
+			return true, nil
+		}
+		// Case 2 : if command is describe or delete and app flag is used just allow it
+		if (firstChildCommand.Name() == "describe" || firstChildCommand.Name() == "delete") && len(flagValue) > 0 {
+			return true, nil
+		}
+		// Case 3 : if command is list, just allow it
+		if firstChildCommand.Name() == "list" {
+			return true, nil
+		}
+		// Case 4 : Check if firstChildCommand is project. If so, skip validation of context
+		if firstChildCommand.Name() == "project" {
+			return true, nil
+		}
+		// Case 5 : Check if specific flags are set for specific first child commands
+		if firstChildCommand.Name() == "app" {
+			return true, nil
+		}
+		// Case 6 : Check if firstChildCommand is catalog and request is to list or search
+		if firstChildCommand.Name() == "catalog" && (parentCommand.Name() == "list" || parentCommand.Name() == "search") {
+			return true, nil
+		}
+		// Case 7: Check if firstChildCommand is component and  request is list
+		if (firstChildCommand.Name() == "component" || firstChildCommand.Name() == "service") && command.Name() == "list" {
+			return true, nil
+		}
+		// Case 8 : Check if firstChildCommand is component and app flag is used
+		if firstChildCommand.Name() == "component" && len(flagValue) > 0 {
+			return true, nil
+		}
+		// Case 9 : Check if firstChildCommand is logout and app flag is used
+		if firstChildCommand.Name() == "logout" {
+			return true, nil
+		}
+		// Case 10: Check if firstChildCommand is service and command is create or delete. Allow it if that's the case
+		if firstChildCommand.Name() == "service" && (command.Name() == "create" || command.Name() == "delete") {
+			return true, nil
+		}
+
+	} else {
+		return true, nil
+	}
+
+	return false, nil
 }

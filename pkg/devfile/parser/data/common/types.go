@@ -14,7 +14,7 @@ const (
 	CustomComponentType     DevfileComponentType = "Custom"
 )
 
-// CommandGroupType describes the kind of command group.
+// DevfileCommandGroupType describes the kind of command group.
 // +kubebuilder:validation:Enum=build;run;test;debug
 type DevfileCommandGroupType string
 
@@ -311,7 +311,7 @@ type Volume struct {
 	Size string `json:"size,omitempty"`
 }
 
-// VolumeMountsItems Volume that should be mounted to a component container
+// VolumeMount describes a path where a volume should be mounted to a component container
 type VolumeMount struct {
 
 	// The volume mount name is the name of an existing `Volume` component. If no corresponding `Volume` component exist it is implicitly added. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files.

@@ -16,7 +16,6 @@ import (
 
 	"github.com/olekukonko/tablewriter"
 
-	"github.com/fatih/color"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
@@ -100,7 +99,6 @@ type CreateArgs struct {
 const (
 	failedEventCount                = 5
 	OcUpdateTimeout                 = 5 * time.Minute
-	OcBuildTimeout                  = 5 * time.Minute
 	OpenShiftNameSpace              = "openshift"
 	waitForComponentDeletionTimeout = 120 * time.Second
 
@@ -1778,7 +1776,7 @@ func (c *Client) StartBuild(name string) (string, error) {
 }
 
 // WaitForBuildToFinish block and waits for build to finish. Returns error if build failed or was canceled.
-func (c *Client) WaitForBuildToFinish(buildName string, stdout io.Writer) error {
+func (c *Client) WaitForBuildToFinish(buildName string, stdout io.Writer, buildTimeout time.Duration) error {
 	// following indicates if we have already setup the following logic
 	following := false
 	klog.V(4).Infof("Waiting for %s  build to finish", buildName)
@@ -1791,7 +1789,7 @@ func (c *Client) WaitForBuildToFinish(buildName string, stdout io.Writer) error 
 		return errors.Wrapf(err, "unable to watch build")
 	}
 	defer w.Stop()
-	timeout := time.After(OcBuildTimeout)
+	timeout := time.After(buildTimeout)
 	for {
 		select {
 		// when a event is received regarding the given buildName
@@ -1815,7 +1813,7 @@ func (c *Client) WaitForBuildToFinish(buildName string, stdout io.Writer) error 
 					if !following {
 						// setting following to true as we need to set it up only once
 						following = true
-						err := c.FollowBuildLog(buildName, stdout)
+						err := c.FollowBuildLog(buildName, stdout, buildTimeout)
 						if err != nil {
 							return err
 						}
@@ -2051,14 +2049,14 @@ func (c *Client) WaitAndGetSecret(name string, namespace string) (*corev1.Secret
 }
 
 // FollowBuildLog stream build log to stdout
-func (c *Client) FollowBuildLog(buildName string, stdout io.Writer) error {
+func (c *Client) FollowBuildLog(buildName string, stdout io.Writer, buildTimeout time.Duration) error {
 	buildLogOptions := buildv1.BuildLogOptions{
 		Follow: true,
 		NoWait: false,
 	}
 
 	rd, err := c.buildClient.RESTClient().Get().
-		Timeout(OcBuildTimeout).
+		Timeout(buildTimeout).
 		Namespace(c.Namespace).
 		Resource("builds").
 		Name(buildName).
@@ -2107,37 +2105,8 @@ func (c *Client) DisplayDeploymentConfigLog(deploymentConfigName string, followL
 	if rd == nil {
 		return errors.New("unable to retrieve DeploymentConfig from OpenShift, does your component exist?")
 	}
-	defer rd.Close()
 
-	// Copy to stdout (in yellow)
-	color.Set(color.FgYellow)
-	defer color.Unset()
-
-	// If we are going to followLog, we'll be copying it to stdout
-	// else, we copy it to a buffer
-	if followLog {
-
-		if _, err = io.Copy(stdout, rd); err != nil {
-			return errors.Wrapf(err, "error followLoging logs for %s", deploymentConfigName)
-		}
-
-	} else {
-
-		// Copy to buffer (we aren't going to be followLoging the logs..)
-		buf := new(bytes.Buffer)
-		_, err = io.Copy(buf, rd)
-		if err != nil {
-			return errors.Wrapf(err, "unable to copy followLog to buffer")
-		}
-
-		// Copy to stdout
-		if _, err = io.Copy(stdout, buf); err != nil {
-			return errors.Wrapf(err, "error copying logs to stdout")
-		}
-
-	}
-
-	return nil
+	return util.DisplayLog(followLog, rd, deploymentConfigName)
 }
 
 // Delete takes labels as a input and based on it, deletes respective resource
@@ -3343,6 +3312,14 @@ func injectS2IPaths(existingVars []corev1.EnvVar, s2iPaths S2IPaths) []corev1.En
 		},
 	)
 
+}
+
+// IsDeploymentConfigSupported checks if DeploymentConfig type is present on the cluster
+func (c *Client) IsDeploymentConfigSupported() (bool, error) {
+	const Group = "apps.openshift.io"
+	const Version = "v1"
+
+	return c.isResourceSupported(Group, Version, "deploymentconfigs")
 }
 
 func isSubDir(baseDir, otherDir string) bool {

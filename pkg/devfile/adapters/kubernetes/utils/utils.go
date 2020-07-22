@@ -12,14 +12,19 @@ import (
 	"github.com/openshift/odo/pkg/util"
 
 	corev1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/klog"
 )
 
 // ComponentExists checks whether a deployment by the given name exists
-func ComponentExists(client kclient.Client, name string) bool {
-	_, err := client.GetDeploymentByName(name)
-	return err == nil
+func ComponentExists(client kclient.Client, name string) (bool, error) {
+	deployment, err := client.GetDeploymentByName(name)
+	if kerrors.IsNotFound(err) {
+		klog.V(4).Infof("Deployment %s not found", name)
+		return false, nil
+	}
+	return deployment != nil, err
 }
 
 // ConvertEnvs converts environment variables from the devfile structure to kubernetes structure
@@ -75,10 +80,18 @@ func GetContainers(devfileObj devfileParser.DevfileObj) ([]corev1.Container, err
 		}
 
 		// If `mountSources: true` was set, add an empty dir volume to the container to sync the source to
+		// Sync to `Container.SourceMapping` if set
 		if comp.Container.MountSources {
+			var syncFolder string
+			if comp.Container.SourceMapping != "" {
+				syncFolder = comp.Container.SourceMapping
+			} else {
+				syncFolder = kclient.OdoSourceVolumeMount
+			}
+
 			container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
 				Name:      kclient.OdoSourceVolume,
-				MountPath: kclient.OdoSourceVolumeMount,
+				MountPath: syncFolder,
 			})
 
 			// only add the env if it is not set by the devfile
@@ -86,7 +99,7 @@ func GetContainers(devfileObj devfileParser.DevfileObj) ([]corev1.Container, err
 				container.Env = append(container.Env,
 					corev1.EnvVar{
 						Name:  adaptersCommon.EnvCheProjectsRoot,
-						Value: kclient.OdoSourceVolumeMount,
+						Value: syncFolder,
 					})
 			}
 		}
@@ -143,10 +156,19 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 			// This is done, so supervisord can use it in it's program
 			if !isEnvPresent(container.Env, adaptersCommon.EnvOdoCommandRun) {
 				klog.V(4).Infof("Updating container %v env with run command", container.Name)
+				var setEnvVariable, command string
+				for _, envVar := range runCommand.Exec.Env {
+					setEnvVariable = setEnvVariable + fmt.Sprintf("%v=\"%v\" ", envVar.Name, envVar.Value)
+				}
+				if setEnvVariable == "" {
+					command = runCommand.Exec.CommandLine
+				} else {
+					command = setEnvVariable + "&& " + runCommand.Exec.CommandLine
+				}
 				container.Env = append(container.Env,
 					corev1.EnvVar{
 						Name:  adaptersCommon.EnvOdoCommandRun,
-						Value: runCommand.Exec.CommandLine,
+						Value: command,
 					})
 			}
 
@@ -188,10 +210,19 @@ func UpdateContainersWithSupervisord(devfileObj devfileParser.DevfileObj, contai
 			// This is done, so supervisord can use it in it's program
 			if !isEnvPresent(container.Env, adaptersCommon.EnvOdoCommandDebug) {
 				klog.V(4).Infof("Updating container %v env with debug command", container.Name)
+				var setEnvVariable, command string
+				for _, envVar := range debugCommand.Exec.Env {
+					setEnvVariable = setEnvVariable + fmt.Sprintf("%v=\"%v\" ", envVar.Name, envVar.Value)
+				}
+				if setEnvVariable == "" {
+					command = debugCommand.Exec.CommandLine
+				} else {
+					command = setEnvVariable + "&& " + debugCommand.Exec.CommandLine
+				}
 				container.Env = append(container.Env,
 					corev1.EnvVar{
 						Name:  adaptersCommon.EnvOdoCommandDebug,
-						Value: debugCommand.Exec.CommandLine,
+						Value: command,
 					})
 			}
 

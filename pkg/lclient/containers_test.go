@@ -1,6 +1,7 @@
 package lclient
 
 import (
+	"fmt"
 	"io"
 	"reflect"
 	"strings"
@@ -170,6 +171,7 @@ func TestGetContainersList(t *testing.T) {
 					},
 					Mounts: []types.MountPoint{
 						{
+							Name:        ProjectSourceVolumeName,
 							Destination: OdoSourceVolumeMount,
 						},
 					},
@@ -437,4 +439,59 @@ func TestWaitForContainer(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetContainerLogs(t *testing.T) {
+	fakeClient := FakeNew()
+	fakeErrorClient := FakeErrorNew()
+
+	tests := []struct {
+		name    string
+		client  *Client
+		Logs    string
+		wantErr bool
+	}{
+		{
+			name:    "Case 1: show log from container",
+			client:  fakeClient,
+			Logs:    mockLogs,
+			wantErr: false,
+		},
+		{
+			name:    "Case 2: Error in getting logs",
+			client:  fakeErrorClient,
+			Logs:    "",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rd, err := tt.client.GetContainerLogs("mycontainer", false)
+
+			if tt.wantErr && err == nil {
+				t.Errorf("TestDisplayContainerLog error: expected %v, wanted %v", err, tt.wantErr)
+			}
+
+			if !tt.wantErr {
+				logString := convertLogsToString(rd)
+				if tt.Logs != logString {
+					t.Errorf("TestDisplayContainerLog error: container id of start container did not match: got %v, wanted %v", logString, mockLogs)
+				}
+			}
+		})
+	}
+}
+
+// convertLogsToString converts logs from io.ReadCloser to string
+func convertLogsToString(rd io.ReadCloser) string {
+	buf := make([]byte, 4)
+	var logString string
+	for {
+		n, err := rd.Read(buf)
+		if err != nil {
+			break
+		}
+		logString = fmt.Sprintf("%s%s", logString, string(buf[:n]))
+	}
+	return logString
 }

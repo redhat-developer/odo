@@ -286,7 +286,7 @@ var _ = Describe("odo push command tests", func() {
 				cmpName,
 				appName,
 				project,
-				[]string{"stat", filepath.Join(dir, "src", "server.js")},
+				[]string{"stat", filepath.ToSlash(filepath.Join(dir, "src", "server.js"))},
 				func(cmdOp string, err error) bool {
 					earlierCatServerFile = cmdOp
 					return true
@@ -298,7 +298,7 @@ var _ = Describe("odo push command tests", func() {
 				cmpName,
 				appName,
 				project,
-				[]string{"stat", filepath.Join(dir, "src", "views", "index.html")},
+				[]string{"stat", filepath.ToSlash(filepath.Join(dir, "src", "views", "index.html"))},
 				func(cmdOp string, err error) bool {
 					earlierCatViewFile = cmdOp
 					return true
@@ -314,7 +314,7 @@ var _ = Describe("odo push command tests", func() {
 				cmpName,
 				appName,
 				project,
-				[]string{"stat", filepath.Join(dir, "src", "views", "index.html")},
+				[]string{"stat", filepath.ToSlash(filepath.Join(dir, "src", "views", "index.html"))},
 				func(cmdOp string, err error) bool {
 					modifiedCatViewFile = cmdOp
 					return true
@@ -326,7 +326,7 @@ var _ = Describe("odo push command tests", func() {
 				cmpName,
 				appName,
 				project,
-				[]string{"stat", filepath.Join(dir, "src", "server.js")},
+				[]string{"stat", filepath.ToSlash(filepath.Join(dir, "src", "server.js"))},
 				func(cmdOp string, err error) bool {
 					modifiedCatServerFile = cmdOp
 					return true
@@ -353,7 +353,7 @@ var _ = Describe("odo push command tests", func() {
 				"backend",
 				appName,
 				project,
-				[]string{"stat", filepath.Join(dir, "src", "src", "main", "java", "AnotherMessageProducer.java")},
+				[]string{"stat", filepath.ToSlash(filepath.Join(dir, "src", "src", "main", "java", "AnotherMessageProducer.java"))},
 				func(cmdOp string, err error) bool {
 					statErr = err
 					return true
@@ -367,7 +367,7 @@ var _ = Describe("odo push command tests", func() {
 				"backend",
 				appName,
 				project,
-				[]string{"stat", filepath.Join(dir, "src", "src", "main", "java", "AnotherMessageProducer.java")},
+				[]string{"stat", filepath.ToSlash(filepath.Join(dir, "src", "src", "main", "java", "AnotherMessageProducer.java"))},
 				func(cmdOp string, err error) bool {
 					statErr = err
 					return true
@@ -375,7 +375,7 @@ var _ = Describe("odo push command tests", func() {
 			)
 
 			Expect(statErr).To(HaveOccurred())
-			path := filepath.Join(dir, "src", "src", "main", "java", "AnotherMessageProducer.java")
+			path := filepath.ToSlash(filepath.Join(dir, "src", "src", "main", "java", "AnotherMessageProducer.java"))
 			Expect(statErr.Error()).To(ContainSubstring("cannot stat '" + path + "': No such file or directory"))
 		})
 

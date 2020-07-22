@@ -218,6 +218,16 @@ test-cmd-devfile-deploy:
 test-cmd-devfile-deploy-delete:
 	ginkgo $(GINKGO_FLAGS) -focus="odo devfile deploy delete command tests" tests/integration/devfile/
 
+# Run odo exec devfile command tests
+.PHONY: test-cmd-devfile-exec
+test-cmd-devfile-exec:
+	ginkgo $(GINKGO_FLAGS) -focus="odo devfile exec command tests" tests/integration/devfile/
+
+# Run odo exec docker devfile command tests
+.PHONY: test-cmd-docker-devfile-exec
+test-cmd-docker-devfile-exec:
+	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile exec command tests" tests/integration/devfile/docker
+
 # Run odo devfile watch command tests
 .PHONY: test-cmd-devfile-watch
 test-cmd-devfile-watch:
@@ -232,6 +242,11 @@ test-cmd-devfile-delete:
 .PHONY: test-cmd-devfile-registry
 test-cmd-devfile-registry:
 	ginkgo $(GINKGO_FLAGS) -focus="odo devfile registry command tests" tests/integration/devfile/
+
+# Run odo devfile test command tests
+.PHONY: test-cmd-devfile-test
+test-cmd-devfile-test:
+	ginkgo $(GINKGO_FLAGS) -focus="odo devfile test command tests" tests/integration/devfile/
 	
 # Run odo storage command tests
 .PHONY: test-cmd-storage
@@ -253,6 +268,11 @@ test-cmd-devfile-url:
 test-cmd-devfile-debug:
 	ginkgo $(GINKGO_FLAGS) -focus="odo devfile debug command tests" tests/integration/devfile/
 	ginkgo $(GINKGO_FLAGS_SERIAL) -focus="odo devfile debug command serial tests" tests/integration/devfile/debug
+
+# Run odo log devfile command tests
+.PHONY: test-cmd-devfile-log
+test-cmd-devfile-log:
+	ginkgo $(GINKGO_FLAGS) -focus="odo devfile log command tests" tests/integration/devfile/
 
 # Run odo push docker devfile command tests
 .PHONY: test-cmd-docker-devfile-push
@@ -283,6 +303,11 @@ test-cmd-docker-devfile-catalog:
 .PHONY: test-cmd-docker-devfile-url-pushtarget
 test-cmd-docker-devfile-url-pushtarget:
 	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile url pushtarget command tests" tests/integration/devfile/docker/
+
+# Run odo test docker devfile command tests
+.PHONY: test-cmd-docker-devfile-test
+test-cmd-docker-devfile-test:
+	ginkgo $(GINKGO_FLAGS) -focus="odo docker devfile test command tests" tests/integration/devfile/docker/
 
 # Run odo watch command tests
 .PHONY: test-cmd-watch

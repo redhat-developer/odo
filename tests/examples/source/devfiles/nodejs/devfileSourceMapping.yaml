@@ -1,0 +1,40 @@
+schemaVersion: 2.0.0
+metadata:
+  name: nodejs
+  version: 1.0.0
+projects:
+  - name: nodejs-web-app
+    git:
+      location: "https://github.com/odo-devfiles/nodejs-ex.git"
+components:
+  - container:
+      name: runtime
+      image: quay.io/eclipse/che-nodejs10-ubi:nightly
+      memoryLimit: 1024Mi
+      mountSources: true
+      sourceMapping: /test
+      endpoints:
+        - name: "nodejs"
+          configuration:
+            discoverable: false
+            public: true
+            protocol: tcp
+            scheme: http
+          targetPort: 3000
+commands:
+  - exec:
+      id: devBuild
+      component: runtime
+      commandLine: npm install
+      workingDir: /test
+      group:
+        kind: build
+        isDefault: true
+  - exec:
+      id: devRun
+      component: runtime
+      commandLine: npm start
+      workingDir: /test
+      group:
+        kind: run
+        isDefault: true

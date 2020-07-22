@@ -59,7 +59,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 		})
 	})
 
-	Context("When creating an operator backed service", func() {
+	Context("When creating and deleting an operator backed service", func() {
 
 		JustBeforeEach(func() {
 			preSetup()
@@ -69,7 +69,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			cleanPreSetup()
 		})
 
-		It("should be able to create EtcdCluster from its alm example", func() {
+		It("should be able to create and then delete EtcdCluster from its alm example", func() {
 			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
 			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
 			helper.CmdShouldPass("odo", "service", "create", etcdOperator, "--crd", "EtcdCluster")
@@ -84,10 +84,23 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 				return strings.Contains(output, "Running")
 			})
 
-			// Delete the pods created. This should idealy be done by `odo
-			// service delete` but that's not implemented for operator backed
-			// services yet.
-			helper.CmdShouldPass("oc", "delete", "EtcdCluster", "example")
+			// now test the deletion of the service using odo
+			helper.CmdShouldPass("odo", "service", "delete", "EtcdCluster/example", "-f")
+
+			// now try deleting the same service again. It should fail with error message
+			stdOut := helper.CmdShouldFail("odo", "service", "delete", "EtcdCluster/example", "-f")
+			Expect(stdOut).To(ContainSubstring("Couldn't find service named"))
+		})
+	})
+
+	Context("When deleting an invalid operator backed service", func() {
+		It("should correctly detect invalid service names", func() {
+			names := []string{"EtcdCluster", "EtcdCluster/", "/example"}
+
+			for _, name := range names {
+				stdOut := helper.CmdShouldFail("odo", "service", "delete", name, "-f")
+				Expect(stdOut).To(ContainSubstring("Invalid service name"))
+			}
 		})
 	})
 
@@ -108,6 +121,28 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 			stdOut := helper.CmdShouldPass("odo", "service", "create", etcdOperator, "--crd", "EtcdCluster", "--dry-run")
 			helper.MatchAllInOutput(stdOut, []string{"apiVersion", "kind"})
+		})
+	})
+
+	Context("Should be able to search from catalog", func() {
+
+		JustBeforeEach(func() {
+			preSetup()
+		})
+
+		JustAfterEach(func() {
+			cleanPreSetup()
+		})
+
+		It("should only output the definition of the CR that will be used to start service", func() {
+			stdOut := helper.CmdShouldPass("odo", "catalog", "search", "service", "etcd")
+			helper.MatchAllInOutput(stdOut, []string{"etcdoperator", "EtcdCluster"})
+
+			stdOut = helper.CmdShouldPass("odo", "catalog", "search", "service", "EtcdCluster")
+			helper.MatchAllInOutput(stdOut, []string{"etcdoperator", "EtcdCluster"})
+
+			stdOut = helper.CmdShouldFail("odo", "catalog", "search", "service", "dummy")
+			Expect(stdOut).To(ContainSubstring("no service matched the query: dummy"))
 		})
 	})
 
@@ -148,10 +183,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 				return strings.Contains(output, "Running")
 			})
 
-			// Delete the pods created. This should idealy be done by `odo
-			// service delete` but that's not implemented for operator backed
-			// services yet.
-			helper.CmdShouldPass("oc", "delete", "EtcdCluster", "example")
+			helper.CmdShouldPass("odo", "service", "delete", "EtcdCluster/example", "-f")
 		})
 	})
 
@@ -255,10 +287,7 @@ spec:
 			jsonOut := helper.CmdShouldPass("odo", "service", "list", "-o", "json")
 			helper.MatchAllInOutput(jsonOut, []string{"\"apiVersion\": \"etcd.database.coreos.com/v1beta2\"", "\"kind\": \"EtcdCluster\"", "\"name\": \"example\""})
 
-			// Delete the pods created. This should idealy be done by `odo
-			// service delete` but that's not implemented for operator backed
-			// services yet.
-			helper.CmdShouldPass("oc", "delete", "EtcdCluster", "example")
+			helper.CmdShouldPass("odo", "service", "delete", "EtcdCluster/example", "-f")
 
 			// Now let's check the output again to ensure expected behaviour
 			stdOut = helper.CmdShouldFail("odo", "service", "list")

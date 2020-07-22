@@ -69,12 +69,13 @@ func DisplayClusterServiceVersions(csvs *olm.ClusterServiceVersionList) {
 	log.Info("Operators available in the cluster")
 	fmt.Fprintln(w, "NAME", "\t", "CRDs")
 	for _, csv := range csvs.Items {
-		fmt.Fprintln(w, csv.ObjectMeta.Name, "\t", csvOperators(csv.Spec.CustomResourceDefinitions))
+		fmt.Fprintln(w, csv.ObjectMeta.Name, "\t", CsvOperators(csv.Spec.CustomResourceDefinitions))
 	}
 	w.Flush()
 }
 
-func csvOperators(crds olm.CustomResourceDefinitions) string {
+// CsvOperators returns a string contains all the Kind from the input crds
+func CsvOperators(crds olm.CustomResourceDefinitions) string {
 	var crdsSlice []string
 	for _, crd := range crds.Owned {
 		crdsSlice = append(crdsSlice, crd.Kind)

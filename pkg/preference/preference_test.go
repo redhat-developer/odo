@@ -56,6 +56,62 @@ func TestNew(t *testing.T) {
 	}
 }
 
+func TestGetBuildTimeout(t *testing.T) {
+	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tempConfigFile.Close()
+	os.Setenv(GlobalConfigEnvName, tempConfigFile.Name())
+	zeroValue := 0
+	nonzeroValue := 5
+	tests := []struct {
+		name           string
+		existingConfig Preference
+		want           int
+	}{
+		{
+			name:           "Case 1: Validating default value from test case",
+			existingConfig: Preference{},
+			want:           300,
+		},
+
+		{
+			name: "Case 2: Validating value 0 from configuration",
+			existingConfig: Preference{
+				OdoSettings: OdoSettings{
+					BuildTimeout: &zeroValue,
+				},
+			},
+			want: 0,
+		},
+
+		{
+			name: "Case 3: Validating value 5 from configuration",
+			existingConfig: Preference{
+				OdoSettings: OdoSettings{
+					BuildTimeout: &nonzeroValue,
+				},
+			},
+			want: 5,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := NewPreferenceInfo()
+			if err != nil {
+				t.Error(err)
+			}
+			cfg.Preference = tt.existingConfig
+
+			output := cfg.GetBuildTimeout()
+			if output != tt.want {
+				t.Errorf("GetBuildTimeout returned unexpeced value expected \ngot: %d \nexpected: %d\n", output, tt.want)
+			}
+		})
+	}
+}
+
 func TestGetPushTimeout(t *testing.T) {
 	tempConfigFile, err := ioutil.TempFile("", "odoconfig")
 	if err != nil {
@@ -290,7 +346,37 @@ func TestSetConfiguration(t *testing.T) {
 			wantErr:        true,
 		},
 		{
-			name:           fmt.Sprintf("Case 12: %s set to 300 with mixed case in parameter name", TimeoutSetting),
+			name:           fmt.Sprintf("Case 12: %s set to 50 with mixed case in parameter name", TimeoutSetting),
+			parameter:      "BuildTimeout",
+			value:          "50",
+			existingConfig: Preference{},
+			want:           50,
+			wantErr:        false,
+		},
+		{
+			name:           fmt.Sprintf("Case 13: %s set to 0", TimeoutSetting),
+			parameter:      TimeoutSetting,
+			value:          "0",
+			existingConfig: Preference{},
+			want:           0,
+			wantErr:        false,
+		},
+		{
+			name:           fmt.Sprintf("Case 14: %s set to -1 with mixed case in parameter name", TimeoutSetting),
+			parameter:      "BuildTimeout",
+			value:          "-1",
+			existingConfig: Preference{},
+			wantErr:        true,
+		},
+		{
+			name:           fmt.Sprintf("Case 15: %s invalid value", TimeoutSetting),
+			parameter:      TimeoutSetting,
+			value:          "invalid",
+			existingConfig: Preference{},
+			wantErr:        true,
+		},
+		{
+			name:           fmt.Sprintf("Case 16: %s set to 99 with mixed case in parameter name", TimeoutSetting),
 			parameter:      "PushTimeout",
 			value:          "99",
 			existingConfig: Preference{},
@@ -299,7 +385,7 @@ func TestSetConfiguration(t *testing.T) {
 		},
 		// experimental setting
 		{
-			name:           fmt.Sprintf("Case 13: %s set nil to true", ExperimentalSetting),
+			name:           fmt.Sprintf("Case 17: %s set nil to true", ExperimentalSetting),
 			parameter:      ExperimentalSetting,
 			value:          "true",
 			existingConfig: Preference{},
@@ -307,7 +393,7 @@ func TestSetConfiguration(t *testing.T) {
 			wantErr:        false,
 		},
 		{
-			name:      fmt.Sprintf("Case 14: %s set true to false", ExperimentalSetting),
+			name:      fmt.Sprintf("Case 18: %s set true to false", ExperimentalSetting),
 			parameter: ExperimentalSetting,
 			value:     "false",
 			existingConfig: Preference{
@@ -319,7 +405,7 @@ func TestSetConfiguration(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:      fmt.Sprintf("Case 15: %s set false to true", ExperimentalSetting),
+			name:      fmt.Sprintf("Case 19: %s set false to true", ExperimentalSetting),
 			parameter: ExperimentalSetting,
 			value:     "true",
 			existingConfig: Preference{
@@ -331,7 +417,7 @@ func TestSetConfiguration(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:           fmt.Sprintf("Case 16: %s invalid value", ExperimentalSetting),
+			name:           fmt.Sprintf("Case 20: %s invalid value", ExperimentalSetting),
 			parameter:      ExperimentalSetting,
 			value:          "invalid_value",
 			existingConfig: Preference{},
@@ -339,7 +425,7 @@ func TestSetConfiguration(t *testing.T) {
 		},
 		// pushtarget setting
 		{
-			name:           fmt.Sprintf("Case 17: %s set nil to docker", PushTargetSetting),
+			name:           fmt.Sprintf("Case 21: %s set nil to docker", PushTargetSetting),
 			parameter:      PushTargetSetting,
 			value:          dockerValue,
 			existingConfig: Preference{},
@@ -347,7 +433,7 @@ func TestSetConfiguration(t *testing.T) {
 			wantErr:        false,
 		},
 		{
-			name:      fmt.Sprintf("Case 18: %s set kube to docker", PushTargetSetting),
+			name:      fmt.Sprintf("Case 22: %s set kube to docker", PushTargetSetting),
 			parameter: PushTargetSetting,
 			value:     dockerValue,
 			existingConfig: Preference{
@@ -359,7 +445,7 @@ func TestSetConfiguration(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:      fmt.Sprintf("Case 19: %s set docker to kube", PushTargetSetting),
+			name:      fmt.Sprintf("Case 23: %s set docker to kube", PushTargetSetting),
 			parameter: PushTargetSetting,
 			value:     kubeValue,
 			existingConfig: Preference{
@@ -371,7 +457,7 @@ func TestSetConfiguration(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:           fmt.Sprintf("Case 20: %s invalid value", PushTargetSetting),
+			name:           fmt.Sprintf("Case 24: %s invalid value", PushTargetSetting),
 			parameter:      PushTargetSetting,
 			value:          "invalid_value",
 			existingConfig: Preference{},
@@ -606,8 +692,10 @@ Available Parameters:
 %s - %s
 %s - %s
 %s - %s
+%s - %s
 `
 	expected = fmt.Sprintf(expected,
+		BuildTimeoutSetting, BuildTimeoutSettingDescription,
 		ExperimentalSetting, ExperimentalDescription,
 		NamePrefixSetting, NamePrefixSettingDescription,
 		PushTargetSetting, PushTargetDescription,
@@ -621,7 +709,7 @@ Available Parameters:
 }
 
 func TestLowerCaseParameters(t *testing.T) {
-	expected := map[string]bool{"nameprefix": true, "pushtimeout": true, "timeout": true, "updatenotification": true, "experimental": true, "pushtarget": true}
+	expected := map[string]bool{"nameprefix": true, "buildtimeout": true, "pushtimeout": true, "timeout": true, "updatenotification": true, "experimental": true, "pushtarget": true}
 	actual := util.GetLowerCaseParameters(GetSupportedParameters())
 	if !reflect.DeepEqual(expected, actual) {
 		t.Errorf("expected '%v', got '%v'", expected, actual)
@@ -746,7 +834,7 @@ func TestHandleWithoutRegistryExist(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := handleWithoutRegistryExist(tt.registryList, tt.operation, tt.registryName, tt.registryURL)
+			got, err := handleWithoutRegistryExist(tt.registryList, tt.operation, tt.registryName, tt.registryURL, false)
 			if err != nil {
 				t.Logf("Error message is %v", err)
 			}
@@ -822,7 +910,7 @@ func TestHandleWithRegistryExist(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		got, err := handleWithRegistryExist(tt.index, tt.registryList, tt.operation, tt.registryName, tt.registryURL, tt.forceFlag)
+		got, err := handleWithRegistryExist(tt.index, tt.registryList, tt.operation, tt.registryName, tt.registryURL, tt.forceFlag, false)
 		if err != nil {
 			t.Logf("Error message is %v", err)
 		}

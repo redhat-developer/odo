@@ -2,10 +2,12 @@ package component
 
 import (
 	"fmt"
+	"fmt"
 	"os"
 	"strings"
-
+	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/adapters"
+	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/machineoutput"
@@ -54,8 +56,9 @@ func (po *PushOptions) DevfilePush() error {
 }
 
 func (po *PushOptions) devfilePushInner() (err error) {
+
 	// Parse devfile and validate
-	devObj, err := parser.ParseAndValidate(po.DevfilePath)
+	devObj, err := devfile.ParseAndValidate(po.DevfilePath)
 	if err != nil {
 		return err
 	}
@@ -87,7 +90,7 @@ func (po *PushOptions) devfilePushInner() (err error) {
 		platformContext = kc
 	}
 
-	devfileHandler, err := adapters.NewComponentAdapter(componentName, po.componentContext, devObj, platformContext)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, po.componentContext, po.Application, devObj, platformContext)
 
 	if err != nil {
 		return err
@@ -246,6 +249,49 @@ func (ddo *DeployDeleteOptions) DevfileDeployDelete() error {
 	return nil
 }
 
+// DevfileComponentLog fetch and display log from devfile components
+func (lo LogOptions) DevfileComponentLog() error {
+	// Parse devfile
+	devObj, err := devfile.ParseAndValidate(lo.devfilePath)
+	if err != nil {
+		return err
+	}
+
+	componentName, err := getComponentName(lo.componentContext)
+	if err != nil {
+		return errors.Wrap(err, "unable to get component name")
+	}
+
+	var platformContext interface{}
+	if pushtarget.IsPushTargetDocker() {
+		platformContext = nil
+	} else {
+		kc := kubernetes.KubernetesContext{
+			Namespace: lo.KClient.Namespace,
+		}
+		platformContext = kc
+	}
+
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, lo.componentContext, lo.Application, devObj, platformContext)
+
+	if err != nil {
+		return err
+	}
+
+	// Start or update the component
+	rd, err := devfileHandler.Log(lo.logFollow, lo.debug)
+	if err != nil {
+		log.Errorf(
+			"Failed to log component with name %s.\nError: %v",
+			componentName,
+			err,
+		)
+		os.Exit(1)
+	}
+
+	return util.DisplayLog(lo.logFollow, rd, componentName)
+}
+
 // Get component name from env.yaml file
 func getComponentName(context string) (string, error) {
 	var dir string
@@ -270,7 +316,7 @@ func getComponentName(context string) (string, error) {
 // DevfileComponentDelete deletes the devfile component
 func (do *DeleteOptions) DevfileComponentDelete() error {
 	// Parse devfile and validate
-	devObj, err := parser.ParseAndValidate(do.devfilePath)
+	devObj, err := devfile.ParseAndValidate(do.devfilePath)
 	if err != nil {
 		return err
 	}
@@ -287,21 +333,36 @@ func (do *DeleteOptions) DevfileComponentDelete() error {
 	labels := map[string]string{
 		"component": componentName,
 	}
-	devfileHandler, err := adapters.NewComponentAdapter(componentName, do.componentContext, devObj, kc)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, do.componentContext, do.Application, devObj, kc)
 	if err != nil {
 		return err
 	}
 
-	spinner := log.Spinner(fmt.Sprintf("Deleting devfile component %s", componentName))
-	defer spinner.End(false)
+	return devfileHandler.Delete(labels)
+}
 
-	err = devfileHandler.Delete(labels)
+// RunTestCommand runs the specific test command in devfile
+func (to *TestOptions) RunTestCommand() error {
+	componentName, err := getComponentName(to.componentContext)
 	if err != nil {
 		return err
 	}
-	spinner.End(true)
-	log.Successf("Successfully deleted component")
-	return nil
+
+	var platformContext interface{}
+	if pushtarget.IsPushTargetDocker() {
+		platformContext = nil
+	} else {
+		kc := kubernetes.KubernetesContext{
+			Namespace: to.KClient.Namespace,
+		}
+		platformContext = kc
+	}
+
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, to.componentContext, to.Application, to.devObj, platformContext)
+	if err != nil {
+		return err
+	}
+	return devfileHandler.Test(to.commandName, to.show)
 }
 
 func warnIfURLSInvalid(url []envinfo.EnvInfoURL) {
@@ -327,4 +388,26 @@ func warnIfURLSInvalid(url []envinfo.EnvInfoURL) {
 	} else if !pushtarget.IsPushTargetDocker() && !kubeURLExists && dockerURLExists {
 		log.Warningf("Found %v defined for Docker, but no valid URLs for Kubernetes.", urlOutput)
 	}
+}
+
+// DevfileComponentExec executes the given user command inside the component
+func (eo *ExecOptions) DevfileComponentExec(command []string) error {
+	// Parse devfile
+	devObj, err := devfile.ParseAndValidate(eo.devfilePath)
+	if err != nil {
+		return err
+	}
+
+	componentName := eo.componentOptions.EnvSpecificInfo.GetName()
+
+	kc := kubernetes.KubernetesContext{
+		Namespace: eo.namespace,
+	}
+
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, eo.componentContext, eo.componentOptions.Application, devObj, kc)
+	if err != nil {
+		return err
+	}
+
+	return devfileHandler.Exec(command)
 }

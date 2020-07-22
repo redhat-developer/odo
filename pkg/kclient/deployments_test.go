@@ -1,8 +1,10 @@
 package kclient
 
 import (
-	"github.com/openshift/odo/pkg/util"
 	"testing"
+
+	"github.com/openshift/odo/pkg/testingutil"
+	"github.com/openshift/odo/pkg/util"
 
 	"github.com/pkg/errors"
 
@@ -39,7 +41,7 @@ func createFakeDeployment(fkclient *Client, fkclientset *FakeClientset, podName 
 		return true, &deployment, nil
 	})
 
-	deploymentSpec := GenerateDeploymentSpec(*podTemplateSpec)
+	deploymentSpec := GenerateDeploymentSpec(*podTemplateSpec, podTemplateSpec.Labels)
 	createdDeployment, err := fkclient.CreateDeployment(*deploymentSpec)
 	if err != nil {
 		return nil, err
@@ -98,6 +100,62 @@ func TestCreateDeployment(t *testing.T) {
 	}
 }
 
+func TestGetDeploymentByName(t *testing.T) {
+
+	tests := []struct {
+		name               string
+		deploymentName     string
+		wantDeploymentName string
+		wantErr            bool
+	}{
+		{
+			name:               "Case 1: Valid deployment name",
+			deploymentName:     "mydeploy1",
+			wantDeploymentName: "mydeploy1",
+			wantErr:            false,
+		},
+		{
+			name:               "Case 2: Invalid deployment name",
+			deploymentName:     "mydeploy2",
+			wantDeploymentName: "",
+			wantErr:            false,
+		},
+		{
+			name:           "Case 3: Error condition",
+			deploymentName: "mydeploy1",
+			wantErr:        true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// initialising the fakeclient
+			fkclient, fkclientset := FakeNew()
+			fkclient.Namespace = "default"
+
+			fkclientset.Kubernetes.PrependReactor("get", "deployments", func(action ktesting.Action) (bool, runtime.Object, error) {
+				if tt.deploymentName == "mydeploy2" {
+					emptyDeployment := testingutil.CreateFakeDeployment("")
+					return true, emptyDeployment, nil
+				} else if tt.deploymentName == "mydeploy1" {
+					deployment := testingutil.CreateFakeDeployment(tt.deploymentName)
+					return true, deployment, nil
+				} else {
+					return true, nil, errors.Errorf("deployment get error")
+				}
+
+			})
+
+			deployment, err := fkclient.GetDeploymentByName(tt.deploymentName)
+			if !tt.wantErr && err != nil {
+				t.Errorf("TestGetDeploymentByName unexpected error: %v", err)
+			} else if !tt.wantErr && deployment.GetName() != tt.wantDeploymentName {
+				t.Errorf("TestGetDeploymentByName error: expected %v, got %v", tt.wantDeploymentName, deployment.GetName())
+			}
+
+		})
+	}
+}
+
 func TestUpdateDeployment(t *testing.T) {
 
 	container := GenerateContainer("container1", "image1", true, []string{"tail"}, []string{"-f", "/dev/null"}, []corev1.EnvVar{}, corev1.ResourceRequirements{}, []corev1.ContainerPort{})
@@ -149,7 +207,7 @@ func TestUpdateDeployment(t *testing.T) {
 				return true, &deployment, nil
 			})
 
-			deploymentSpec := GenerateDeploymentSpec(*podTemplateSpec)
+			deploymentSpec := GenerateDeploymentSpec(*podTemplateSpec, podTemplateSpec.Labels)
 			updatedDeployment, err := fkclient.UpdateDeployment(*deploymentSpec)
 
 			// Checks for unexpected error cases

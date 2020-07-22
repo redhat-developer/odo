@@ -1,6 +1,6 @@
 schemaVersion: 2.0.0
 metadata:
-  name: test-devfile
+  name: nodejs
 projects:
   - name: nodejs-starter
     git:
@@ -53,3 +53,51 @@ commands:
       workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
       group:
         kind: run
+  - exec:
+      id: singleenv
+      component: runtime
+      commandLine: mkdir $ENV1
+      env:
+       - name: ENV1
+         value: "test_env_variable"
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      group:
+        kind: run
+  - exec:
+      id: multipleenv
+      component: runtime
+      commandLine: mkdir $ENV1 $ENV2
+      env:
+       - name: ENV1
+         value: "test_env_variable1"
+       - name: ENV2
+         value: "test_env_variable2"
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      group:
+        kind: run
+  - exec:
+      id: envwithspace
+      component: runtime
+      commandLine: mkdir "$ENV1"
+      env:
+       - name: ENV1
+         value: "env with space"
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      group:
+        kind: run
+  - exec:
+      id: test1
+      component: runtime
+      commandLine: "mkdir test1"
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      group:
+        kind: test
+        isDefault: true
+  - exec:
+      id: test2
+      component: runtime
+      commandLine: "mkdir test2"
+      workingDir: ${CHE_PROJECTS_ROOT}/nodejs-starter
+      group:
+        kind: test
+        isDefault: true

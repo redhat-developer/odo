@@ -3,6 +3,7 @@ package util
 import (
 	"archive/zip"
 	"bufio"
+	"bytes"
 	"context"
 	"crypto/rand"
 	"fmt"
@@ -14,6 +15,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"os/signal"
 	"os/user"
 	"path"
 	"path/filepath"
@@ -22,8 +24,10 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/gobwas/glob"
 	"github.com/google/go-github/github"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
@@ -39,6 +43,7 @@ const (
 	HTTPRequestTimeout    = 20 * time.Second // HTTPRequestTimeout configures timeout of all HTTP requests
 	ResponseHeaderTimeout = 10 * time.Second // ResponseHeaderTimeout is the timeout to retrieve the server's response headers
 	ModeReadWriteFile     = 0600             // default Permission for a file
+	CredentialPrefix      = "odo-"           // CredentialPrefix is the prefix of the credential that uses to access secure registry
 )
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz")
@@ -51,11 +56,25 @@ const maxAllowedNamespacedStringLength = 63 - len("-s2idata") - 1
 // note for mocking purpose ONLY
 var customHomeDir = os.Getenv("CUSTOM_HOMEDIR")
 
+const defaultGithubRef = "master"
+
 // ResourceRequirementInfo holds resource quantity before transformation into its appropriate form in container spec
 type ResourceRequirementInfo struct {
 	ResourceType corev1.ResourceName
 	MinQty       resource.Quantity
 	MaxQty       resource.Quantity
+}
+
+// HTTPRequestParams holds parameters of forming http request
+type HTTPRequestParams struct {
+	URL   string
+	Token string
+}
+
+// DownloadParams holds parameters of forming file download request
+type DownloadParams struct {
+	Request  HTTPRequestParams
+	Filepath string
 }
 
 // ConvertLabelsToSelector converts the given labels to selector
@@ -105,7 +124,7 @@ func In(arr []string, value string) bool {
 	return false
 }
 
-// Hyphenate applicationName and componentName
+// NamespaceOpenShiftObject hyphenates applicationName and componentName
 func NamespaceOpenShiftObject(componentName string, applicationName string) (string, error) {
 
 	// Error if it's blank
@@ -168,6 +187,7 @@ func ParseComponentImageName(imageName string) (string, string, string, string) 
 	return componentImageName, componentType, componentName, componentVersion
 }
 
+// WIN represent the windows OS
 const WIN = "windows"
 
 // ReadFilePath Reads file path form URL file:///C:/path/to/file to C:\path\to\file
@@ -503,7 +523,7 @@ func GetSortedKeys(mapping map[string]string) []string {
 	return keys
 }
 
-//returns a slice containing the split string, using ',' as a separator
+// GetSplitValuesFromStr returns a slice containing the split string, using ',' as a separator
 func GetSplitValuesFromStr(inputStr string) []string {
 	if len(inputStr) == 0 {
 		return []string{}
@@ -645,8 +665,8 @@ func DeletePath(path string) error {
 	return nil
 }
 
-// HttpGetFreePort gets a free port from the system
-func HttpGetFreePort() (int, error) {
+// HTTPGetFreePort gets a free port from the system
+func HTTPGetFreePort() (int, error) {
 	listener, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		return -1, err
@@ -687,23 +707,37 @@ func GetRemoteFilesMarkedForDeletion(delSrcRelPaths []string, remoteFolder strin
 	return rmPaths
 }
 
-// HTTPGetRequest uses url to get file contents
-func HTTPGetRequest(url string) ([]byte, error) {
-	var httpClient = &http.Client{Transport: &http.Transport{
-		ResponseHeaderTimeout: ResponseHeaderTimeout,
-	},
-		Timeout: HTTPRequestTimeout}
-	resp, err := httpClient.Get(url)
+// HTTPGetRequest gets resource contents given URL and token (if applicable)
+func HTTPGetRequest(request HTTPRequestParams) ([]byte, error) {
+	// Build http request
+	req, err := http.NewRequest("GET", request.URL, nil)
+	if err != nil {
+		return nil, err
+	}
+	if request.Token != "" {
+		bearer := "Bearer " + request.Token
+		req.Header.Add("Authorization", bearer)
+	}
+
+	// Initialize http client and send http request
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			ResponseHeaderTimeout: ResponseHeaderTimeout,
+		},
+		Timeout: HTTPRequestTimeout,
+	}
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	// we have a non 1xx / 2xx status, return an error
+	// We have a non 1xx / 2xx status, return an error
 	if (resp.StatusCode - 300) > 0 {
-		return nil, fmt.Errorf("error retrieving %s: %s", url, http.StatusText(resp.StatusCode))
+		return nil, errors.Errorf("fail to retrive %s: %s", request.URL, http.StatusText(resp.StatusCode))
 	}
 
+	// Process http response
 	bytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -712,7 +746,7 @@ func HTTPGetRequest(url string) ([]byte, error) {
 	return bytes, err
 }
 
-// filterIgnores applies the glob rules on the filesChanged and filesDeleted and filters them
+// FilterIgnores applies the glob rules on the filesChanged and filesDeleted and filters them
 // returns the filtered results which match any of the glob rules
 func FilterIgnores(filesChanged, filesDeleted, absIgnoreRules []string) (filesChangedFiltered, filesDeletedFiltered []string) {
 	for _, file := range filesChanged {
@@ -737,7 +771,7 @@ func FilterIgnores(filesChanged, filesDeleted, absIgnoreRules []string) (filesCh
 	return filesChangedFiltered, filesDeletedFiltered
 }
 
-// Checks that the folder to download the project from devfile is
+// IsValidProjectDir checks that the folder to download the project from devfile is
 // either empty or only contains the devfile used.
 func IsValidProjectDir(path string, devfilePath string) error {
 	files, err := ioutil.ReadDir(path)
@@ -770,7 +804,7 @@ func ConvertGitSSHRemoteToHTTPS(remote string) string {
 }
 
 // GetGitHubZipURL downloads a repo from a URL to a destination
-func GetGitHubZipURL(repoURL string) (string, error) {
+func GetGitHubZipURL(repoURL string, branch string, startPoint string) (string, error) {
 	var url string
 	// Convert ssh remote to https
 	if strings.HasPrefix(repoURL, "git@") {
@@ -802,11 +836,21 @@ func GetGitHubZipURL(repoURL string) (string, error) {
 		repo = strings.TrimSuffix(repo, ".git")
 	}
 
-	// TODO: pass branch or tag from devfile
-	branch := "master"
+	var ref string
+	if branch != "" && startPoint != "" {
+		return url, errors.Errorf("Branch %s and StartPoint %s specified as project reference, please only specify one", branch, startPoint)
+	} else if branch != "" {
+		ref = branch
+	} else if startPoint != "" {
+		ref = startPoint
+	} else {
+		// Default to master if branch and startpoint are not set
+		ref = defaultGithubRef
+	}
 
 	client := github.NewClient(nil)
-	opt := &github.RepositoryContentGetOptions{Ref: branch}
+
+	opt := &github.RepositoryContentGetOptions{Ref: ref}
 
 	URL, response, err := client.Repositories.GetArchiveLink(context.Background(), owner, repo, "zipball", opt, true)
 	if err != nil {
@@ -840,7 +884,13 @@ func GetAndExtractZip(zipURL string, destination string, pathToUnzip string) err
 		time = strings.Replace(time, ":", "-", -1) // ":" is illegal char in windows
 		pathToZip = path.Join(os.TempDir(), "_"+time+".zip")
 
-		err := DownloadFile(zipURL, pathToZip)
+		params := DownloadParams{
+			Request: HTTPRequestParams{
+				URL: zipURL,
+			},
+			Filepath: pathToZip,
+		}
+		err := DownloadFile(params)
 		if err != nil {
 			return err
 		}
@@ -967,20 +1017,20 @@ func Unzip(src, dest, pathToUnzip string) ([]string, error) {
 	return filenames, nil
 }
 
-// DownloadFile uses the url to download the file to the filepath
-func DownloadFile(url string, filepath string) error {
+// DownloadFile downloads the file to the filepath given URL and token (if applicable)
+func DownloadFile(params DownloadParams) error {
+	// Get the data
+	data, err := HTTPGetRequest(params.Request)
+	if err != nil {
+		return err
+	}
+
 	// Create the file
-	out, err := os.Create(filepath)
+	out, err := os.Create(params.Filepath)
 	if err != nil {
 		return err
 	}
 	defer out.Close() // #nosec G307
-
-	// Get the data
-	data, err := DownloadFileInMemory(url)
-	if err != nil {
-		return errors.Wrapf(err, "Failed to download devfile.yaml for devfile component: %s", filepath)
-	}
 
 	// Write the data to file
 	_, err = out.Write(data)
@@ -1190,6 +1240,10 @@ func ValidateFile(filePath string) error {
 
 // CopyFile copies file from source path to destination path
 func CopyFile(srcPath string, dstPath string, info os.FileInfo) error {
+	// In order to avoid file overriding issue, do nothing if source path is equal to destination path
+	if PathEqual(srcPath, dstPath) {
+		return nil
+	}
 	// Check if the source file path exists
 	err := ValidateFile(srcPath)
 	if err != nil {
@@ -1242,6 +1296,7 @@ func sliceContainsString(str string, slice []string) bool {
 	return false
 }
 
+// AddFileToIgnoreFile adds a file to the gitignore file. It only does that if the file doesn't exist
 func AddFileToIgnoreFile(gitIgnoreFile, filename string) error {
 	return addFileToIgnoreFile(gitIgnoreFile, filename, filesystem.DefaultFs{})
 }
@@ -1264,4 +1319,48 @@ func addFileToIgnoreFile(gitIgnoreFile, filename string, fs filesystem.Filesyste
 		}
 	}
 	return nil
+}
+
+// DisplayLog displays logs to user stdout with some color formatting
+func DisplayLog(followLog bool, rd io.ReadCloser, compName string) (err error) {
+
+	defer rd.Close()
+
+	// Copy to stdout (in yellow)
+	color.Set(color.FgYellow)
+	defer color.Unset()
+
+	// If we are going to followLog, we'll be copying it to stdout
+	// else, we copy it to a buffer
+	if followLog {
+
+		c := make(chan os.Signal)
+		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+		go func() {
+			<-c
+			color.Unset()
+			os.Exit(1)
+		}()
+
+		if _, err = io.Copy(os.Stdout, rd); err != nil {
+			return errors.Wrapf(err, "error followLoging logs for %s", compName)
+		}
+
+	} else {
+
+		// Copy to buffer (we aren't going to be followLoging the logs..)
+		buf := new(bytes.Buffer)
+		_, err = io.Copy(buf, rd)
+		if err != nil {
+			return errors.Wrapf(err, "unable to copy followLog to buffer")
+		}
+
+		// Copy to stdout
+		if _, err = io.Copy(os.Stdout, buf); err != nil {
+			return errors.Wrapf(err, "error copying logs to stdout")
+		}
+
+	}
+	return
+
 }

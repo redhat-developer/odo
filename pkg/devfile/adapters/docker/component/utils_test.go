@@ -591,6 +591,107 @@ func TestExecDevfile(t *testing.T) {
 	}
 }
 
+func TestExecTestCmd(t *testing.T) {
+
+	testComponentName := "test"
+	command := "ls -la"
+	workDir := "/tmp"
+	component := "alias1"
+
+	validComponents := []versionsCommon.DevfileComponent{
+		{
+			Container: &versionsCommon.Container{
+				Name: component,
+			},
+		},
+	}
+	containers := []types.Container{
+		{
+			ID: component,
+			Labels: map[string]string{
+				"component": component,
+			},
+		},
+	}
+
+	fakeClient := lclient.FakeNew()
+	fakeErrorClient := lclient.FakeErrorNew()
+
+	tests := []struct {
+		name               string
+		client             *lclient.Client
+		testDevfileCommand versionsCommon.DevfileCommand
+		wantErr            bool
+	}{
+		{
+			name:   "Case 1: Successful execute test command",
+			client: fakeClient,
+			testDevfileCommand: versionsCommon.DevfileCommand{
+				Exec: &versionsCommon.Exec{
+					CommandLine: command,
+					WorkingDir:  workDir,
+					Component:   component,
+					Group: &versionsCommon.Group{
+						Kind: versionsCommon.TestCommandGroupType,
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name:   "Case 2: No devfile test commands should result in an err",
+			client: fakeClient,
+			testDevfileCommand: versionsCommon.DevfileCommand{
+				Exec: &versionsCommon.Exec{
+					CommandLine: command,
+					WorkingDir:  workDir,
+					Component:   component,
+					Group: &versionsCommon.Group{
+						Kind: versionsCommon.BuildCommandGroupType,
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name:   "Case 3: Unsuccessful exec test command",
+			client: fakeErrorClient,
+			testDevfileCommand: versionsCommon.DevfileCommand{
+				Exec: &versionsCommon.Exec{
+					CommandLine: command,
+					WorkingDir:  workDir,
+					Component:   component,
+					Group: &versionsCommon.Group{
+						Kind: versionsCommon.TestCommandGroupType,
+					},
+				},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			devObj := devfileParser.DevfileObj{
+				Data: testingutil.TestDevfileData{
+					Components: validComponents,
+				},
+			}
+
+			adapterCtx := adaptersCommon.AdapterContext{
+				ComponentName: testComponentName,
+				Devfile:       devObj,
+			}
+
+			componentAdapter := New(adapterCtx, *tt.client)
+			err := componentAdapter.execTestCmd(tt.testDevfileCommand, containers, false)
+			if !tt.wantErr && err != nil {
+				t.Errorf("TestExecTestCmd error: unexpected error during executing devfile commands: %v", err)
+			}
+		})
+	}
+}
+
 func TestInitRunContainerSupervisord(t *testing.T) {
 
 	testComponentName := "test"
@@ -676,14 +777,14 @@ func TestCreateProjectVolumeIfReqd(t *testing.T) {
 			name:           "Case 1: Volume does not exist",
 			componentName:  "somecomponent",
 			client:         fakeClient,
-			wantVolumeName: projectSourceVolumeName + "-somecomponent",
+			wantVolumeName: lclient.ProjectSourceVolumeName + "-somecomponent",
 			wantErr:        false,
 		},
 		{
 			name:           "Case 2: Volume exist",
 			componentName:  "test",
 			client:         fakeClient,
-			wantVolumeName: projectSourceVolumeName + "-test",
+			wantVolumeName: lclient.ProjectSourceVolumeName + "-test",
 			wantErr:        false,
 		},
 		{

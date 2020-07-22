@@ -58,8 +58,8 @@ func getCommandFromDevfile(data data.DevfileData, groupType common.DevfileComman
 	}
 
 	msg := fmt.Sprintf("the command group of kind \"%v\" is not found in the devfile", groupType)
-	// if run command is not found in devfile then it is an error
-	if groupType == common.RunCommandGroupType {
+	// if run command or test command is not found in devfile then it is an error
+	if groupType == common.RunCommandGroupType || groupType == common.TestCommandGroupType {
 		err = fmt.Errorf(msg)
 	} else {
 		klog.V(4).Info(msg)
@@ -82,8 +82,8 @@ func getCommandFromFlag(data data.DevfileData, groupType common.DevfileCommandGr
 			// e.g --build-command "mybuild"
 			// exec:
 			//   id: mybuild
-			//   group:
-			//     kind: build
+			// group:
+			//   kind: build
 			if command.Exec.Group.Kind != groupType {
 				return command, fmt.Errorf("command group mismatched, command %s is of group %v in devfile.yaml", commandName, command.Exec.Group.Kind)
 			}
@@ -164,6 +164,17 @@ func validateCommand(data data.DevfileData, command common.DevfileCommand) (err 
 	return
 }
 
+// GetCommandMap returns a mapping of all of devfile command names to their corresponding DevfileCommand struct
+// Allowing us to easily retrieve the DevfileCommand of any command listed in a composite command
+func GetCommandMap(data data.DevfileData) map[string]common.DevfileCommand {
+	commandMap := make(map[string]common.DevfileCommand)
+
+	for _, command := range data.GetCommands() {
+		commandMap[command.Exec.Id] = command
+	}
+	return commandMap
+}
+
 // GetInitCommand iterates through the components in the devfile and returns the init command
 func GetInitCommand(data data.DevfileData, devfileInitCmd string) (initCommand common.DevfileCommand, err error) {
 
@@ -185,6 +196,12 @@ func GetDebugCommand(data data.DevfileData, devfileDebugCmd string) (debugComman
 func GetRunCommand(data data.DevfileData, devfileRunCmd string) (runCommand common.DevfileCommand, err error) {
 
 	return getCommand(data, devfileRunCmd, common.RunCommandGroupType)
+}
+
+// GetTestCommand iterates through the components in the devfile and returns the test command
+func GetTestCommand(data data.DevfileData, devfileTestCmd string) (runCommand common.DevfileCommand, err error) {
+
+	return getCommand(data, devfileTestCmd, common.TestCommandGroupType)
 }
 
 // ValidateAndGetPushDevfileCommands validates the build and the run command,
@@ -278,4 +295,21 @@ func ValidateAndGetDebugDevfileCommands(data data.DevfileData, devfileDebugCmd s
 	}
 
 	return debugCommand, nil
+}
+
+// ValidateAndGetTestDevfileCommands validates the test command
+func ValidateAndGetTestDevfileCommands(data data.DevfileData, devfileTestCmd string) (testCommand common.DevfileCommand, err error) {
+	var emptyCommand common.DevfileCommand
+	isTestCommandValid := false
+	testCommand, testCmdErr := GetTestCommand(data, devfileTestCmd)
+	if testCmdErr == nil && !reflect.DeepEqual(emptyCommand, testCommand) {
+		isTestCommandValid = true
+		klog.V(4).Infof("Test command: %v", testCommand.Exec.Id)
+	}
+
+	if !isTestCommandValid && testCmdErr != nil {
+		return common.DevfileCommand{}, testCmdErr
+	}
+
+	return testCommand, nil
 }

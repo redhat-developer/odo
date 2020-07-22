@@ -30,6 +30,7 @@ var (
    %[1]s %[5]s
    %[1]s %[6]s
    %[1]s %[7]s
+   %[1]s %[8]s
 	`)
 )
 
@@ -90,10 +91,13 @@ func (o *UnsetOptions) Run() (err error) {
 func NewCmdUnset(name, fullName string) *cobra.Command {
 	o := NewUnsetOptions()
 	preferenceUnsetCmd := &cobra.Command{
-		Use:     name,
-		Short:   "Unset a value in odo preference file",
-		Long:    fmt.Sprintf(unsetLongDesc, preference.FormatSupportedParameters()),
-		Example: fmt.Sprintf(fmt.Sprint("\n", unsetExample), fullName, preference.UpdateNotificationSetting, preference.NamePrefixSetting, preference.TimeoutSetting, preference.PushTimeoutSetting, preference.ExperimentalSetting, preference.PushTargetSetting),
+		Use:   name,
+		Short: "Unset a value in odo preference file",
+		Long:  fmt.Sprintf(unsetLongDesc, preference.FormatSupportedParameters()),
+		Example: fmt.Sprintf(fmt.Sprint("\n", unsetExample), fullName,
+			preference.UpdateNotificationSetting, preference.NamePrefixSetting,
+			preference.TimeoutSetting, preference.BuildTimeoutSetting, preference.PushTimeoutSetting,
+			preference.ExperimentalSetting, preference.PushTargetSetting),
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
 				return fmt.Errorf("please provide a parameter name")

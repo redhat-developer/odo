@@ -755,7 +755,7 @@ func GetValidPortNumber(componentName string, portNumber int, portList []string)
 func GetValidExposedPortNumber(exposedPort int) (int, error) {
 	// exposed port number will be -1 if the user doesn't specify any port
 	if exposedPort == -1 {
-		freePort, err := util.HttpGetFreePort()
+		freePort, err := util.HTTPGetFreePort()
 		if err != nil {
 			return -1, err
 		}

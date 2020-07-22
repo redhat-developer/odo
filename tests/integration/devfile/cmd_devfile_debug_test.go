@@ -63,7 +63,7 @@ var _ = Describe("odo devfile debug command tests", func() {
 			helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
 			helper.CmdShouldPass("odo", "push", "--debug")
 
-			httpPort, err := util.HttpGetFreePort()
+			httpPort, err := util.HTTPGetFreePort()
 			Expect(err).NotTo(HaveOccurred())
 			freePort := strconv.Itoa(httpPort)
 
@@ -120,7 +120,7 @@ var _ = Describe("odo devfile debug command tests", func() {
 			helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
 			helper.CmdShouldPass("odo", "push", "--debug")
 
-			httpPort, err := util.HttpGetFreePort()
+			httpPort, err := util.HTTPGetFreePort()
 			Expect(err).NotTo(HaveOccurred())
 			freePort := strconv.Itoa(httpPort)
 
@@ -148,7 +148,7 @@ var _ = Describe("odo devfile debug command tests", func() {
 			helper.RenameFile("devfile-with-debugrun.yaml", "devfile.yaml")
 			helper.CmdShouldPass("odo", "push", "--debug")
 
-			httpPort, err := util.HttpGetFreePort()
+			httpPort, err := util.HTTPGetFreePort()
 			Expect(err).NotTo(HaveOccurred())
 			freePort := strconv.Itoa(httpPort)
 

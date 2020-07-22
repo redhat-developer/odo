@@ -186,6 +186,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 		component.NewCmdPush(component.PushRecommendedCommandName, util.GetFullName(fullName, component.PushRecommendedCommandName)),
 		component.NewCmdUpdate(component.UpdateRecommendedCommandName, util.GetFullName(fullName, component.UpdateRecommendedCommandName)),
 		component.NewCmdWatch(component.WatchRecommendedCommandName, util.GetFullName(fullName, component.WatchRecommendedCommandName)),
+		component.NewCmdExec(component.ExecRecommendedCommandName, util.GetFullName(fullName, component.ExecRecommendedCommandName)),
 		login.NewCmdLogin(login.RecommendedCommandName, util.GetFullName(fullName, login.RecommendedCommandName)),
 		logout.NewCmdLogout(logout.RecommendedCommandName, util.GetFullName(fullName, logout.RecommendedCommandName)),
 		project.NewCmdProject(project.RecommendedCommandName, util.GetFullName(fullName, project.RecommendedCommandName)),
@@ -203,6 +204,7 @@ func odoRootCmd(name, fullName string) *cobra.Command {
 		rootCmd.AddCommand(
 			registry.NewCmdRegistry(registry.RecommendedCommandName, util.GetFullName(fullName, registry.RecommendedCommandName)),
 			component.NewCmdDeploy(component.DeployRecommendedCommandName, util.GetFullName(fullName, component.DeployRecommendedCommandName)),
+			component.NewCmdTest(component.TestRecommendedCommandName, util.GetFullName(fullName, component.TestRecommendedCommandName)),
 		)
 	}
 

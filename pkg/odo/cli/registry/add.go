@@ -7,6 +7,7 @@ import (
 	// Third-party packages
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/zalando/go-keyring"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 
 	// odo packages
@@ -34,6 +35,8 @@ type AddOptions struct {
 	operation    string
 	registryName string
 	registryURL  string
+	user         string
+	token        string
 	forceFlag    bool
 }
 
@@ -47,6 +50,7 @@ func (o *AddOptions) Complete(name string, cmd *cobra.Command, args []string) (e
 	o.operation = "add"
 	o.registryName = args[0]
 	o.registryURL = args[1]
+	o.user = "default"
 	return
 }
 
@@ -62,15 +66,25 @@ func (o *AddOptions) Validate() (err error) {
 
 // Run contains the logic for "odo registry add" command
 func (o *AddOptions) Run() (err error) {
+	isSecure := false
+	if o.token != "" {
+		isSecure = true
+	}
 
 	cfg, err := preference.New()
 	if err != nil {
 		return errors.Wrap(err, "unable to add registry")
 	}
-
-	err = cfg.RegistryHandler(o.operation, o.registryName, o.registryURL, o.forceFlag)
+	err = cfg.RegistryHandler(o.operation, o.registryName, o.registryURL, o.forceFlag, isSecure)
 	if err != nil {
 		return err
+	}
+
+	if o.token != "" {
+		err = keyring.Set(util.CredentialPrefix+o.registryName, o.user, o.token)
+		if err != nil {
+			return errors.Wrap(err, "unable to store registry credential to keyring")
+		}
 	}
 
 	log.Info("New registry successfully added")
@@ -90,6 +104,8 @@ func NewCmdAdd(name, fullName string) *cobra.Command {
 			genericclioptions.GenericRun(o, cmd, args)
 		},
 	}
+
+	registryAddCmd.Flags().StringVar(&o.token, "token", "", "Token to be used to access secure registry")
 
 	return registryAddCmd
 }

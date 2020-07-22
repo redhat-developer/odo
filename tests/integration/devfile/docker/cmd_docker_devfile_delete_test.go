@@ -129,6 +129,17 @@ var _ = Describe("odo docker devfile delete command tests", func() {
 
 	})
 
+	Context("when no component exists", func() {
+
+		It("should not throw an error", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", cmpName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			helper.CmdShouldPass("odo", "delete", "-f")
+		})
+	})
+
 	Context("when docker devfile delete command is executed with all flag", func() {
 
 		It("should delete the component created from the devfile and also the env folder", func() {
@@ -151,7 +162,7 @@ var _ = Describe("odo docker devfile delete command tests", func() {
 
 			files := helper.ListFilesInDir(context)
 			Expect(files).To(Not(ContainElement(".odo")))
-
+			Expect(files).To(Not(ContainElement("devfile.yaml")))
 		})
 	})
 })

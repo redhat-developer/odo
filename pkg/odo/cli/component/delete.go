@@ -196,7 +196,7 @@ func (do *DeleteOptions) Run() (err error) {
 	return
 }
 
-// Run has the logic to perform the required actions as part of command for devfiles
+// DevFileRun has the logic to perform the required actions as part of command for devfiles
 func (do *DeleteOptions) DevFileRun() (err error) {
 	// devfile delete
 	if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete the devfile component: %s?", do.EnvSpecificInfo.GetName())) {
@@ -209,6 +209,7 @@ func (do *DeleteOptions) DevFileRun() (err error) {
 	}
 
 	if do.componentDeleteAllFlag {
+		// Prompt and delete env folder
 		if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete env folder?")) {
 			if !do.EnvSpecificInfo.EnvInfoFileExists() {
 				return fmt.Errorf("env folder doesn't exist for the component")
@@ -237,6 +238,22 @@ func (do *DeleteOptions) DevFileRun() (err error) {
 			log.Successf("Successfully deleted env file")
 		} else {
 			log.Error("Aborting deletion of env folder")
+		}
+
+		// Prompt and delete devfile.yaml
+		if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete devfile.yaml?")) {
+			if !util.CheckPathExists(DevfilePath) {
+				return fmt.Errorf("devfile.yaml does not exist in the current directory")
+			}
+
+			err = util.DeletePath(DevfilePath)
+			if err != nil {
+				return err
+			}
+
+			log.Successf("Successfully deleted devfile.yaml file")
+		} else {
+			log.Error("Aborting deletion of devfile.yaml file")
 		}
 	}
 

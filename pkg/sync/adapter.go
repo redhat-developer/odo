@@ -68,18 +68,27 @@ func (a Adapter) SyncFilesBuild(buildParameters common.BuildParameters, dockerfi
 // changed and devfile execution is required
 func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired bool, err error) {
 
-	deletedFiles := []string{}
-	changedFiles := []string{}
-	isForcePush := false
+	// force write the content to resolvePath
+	forceWrite := false
+	// Ret from Indexer function
+	var ret util.IndexerRet
+
+	var deletedFiles []string
+	var changedFiles []string
 	pushParameters := syncParameters.PushParams
+	isForcePush := pushParameters.ForceBuild || !syncParameters.ComponentExists || syncParameters.PodChanged
 	compInfo := syncParameters.CompInfo
 	globExps := util.GetAbsGlobExps(pushParameters.Path, pushParameters.IgnoredFiles)
+	isWatch := len(pushParameters.WatchFiles) > 0 || len(pushParameters.WatchDeletedFiles) > 0
 
-	// Sync source code to the component
-	// If syncing for the first time, sync the entire source directory
-	// If syncing to an already running component, sync the deltas
 	// If syncing from an odo watch process, skip this step, as we already have the list of changed and deleted files.
-	if !syncParameters.PodChanged && !pushParameters.ForceBuild && len(pushParameters.WatchFiles) == 0 && len(pushParameters.WatchDeletedFiles) == 0 {
+	if isWatch && !isForcePush {
+		changedFiles = pushParameters.WatchFiles
+		deletedFiles = pushParameters.WatchDeletedFiles
+	} else {
+		// Calculate the files to sync
+		// Tries to sync the deltas unless it is a forced push
+		// if it is a forced push (isForcePush) reset the index to do a full snync
 		absIgnoreRules := util.GetAbsGlobExps(pushParameters.Path, pushParameters.IgnoredFiles)
 
 		var s *log.Status
@@ -101,43 +110,45 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 			}
 		}
 
+		if isForcePush {
+			//reset the index
+			err = util.DeleteIndexFile(pushParameters.Path)
+			if err != nil {
+				return false, errors.Wrap(err, "unable to reset the index file")
+			}
+
+		}
 		// run the indexer and find the modified/added/deleted/renamed files
-		filesChanged, filesDeleted, err := util.RunIndexer(pushParameters.Path, absIgnoreRules)
+		ret, err = util.RunIndexer(pushParameters.Path, absIgnoreRules)
 		s.End(true)
 
 		if err != nil {
 			return false, errors.Wrap(err, "unable to run indexer")
 		}
 
-		// If the component already exists, sync only the files that changed
-		if syncParameters.ComponentExists {
-			// apply the glob rules from the .gitignore/.odo file
-			// and ignore the files on which the rules apply and filter them out
-			filesChangedFiltered, filesDeletedFiltered := util.FilterIgnores(filesChanged, filesDeleted, absIgnoreRules)
-
-			// Remove the relative file directory from the list of deleted files
-			// in order to make the changes correctly within the Kubernetes pod
-			deletedFiles, err = util.RemoveRelativePathFromFiles(filesDeletedFiltered, pushParameters.Path)
-			if err != nil {
-				return false, errors.Wrap(err, "unable to remove relative path from list of changed/deleted files")
-			}
-			klog.V(4).Infof("List of files to be deleted: +%v", deletedFiles)
-			changedFiles = filesChangedFiltered
-			klog.V(4).Infof("List of files changed: +%v", changedFiles)
-
-			if len(filesChangedFiltered) == 0 && len(filesDeletedFiltered) == 0 {
-				// no file was modified/added/deleted/renamed, thus return without building
-				log.Success("No file changes detected, skipping build. Use the '-f' flag to force the build.")
-				return false, nil
-			}
+		if len(ret.FilesChanged) > 0 || len(ret.FilesDeleted) > 0 {
+			forceWrite = true
 		}
-	} else if len(pushParameters.WatchFiles) > 0 || len(pushParameters.WatchDeletedFiles) > 0 {
-		changedFiles = pushParameters.WatchFiles
-		deletedFiles = pushParameters.WatchDeletedFiles
-	}
 
-	if pushParameters.ForceBuild || !syncParameters.ComponentExists || syncParameters.PodChanged {
-		isForcePush = true
+		// apply the glob rules from the .gitignore/.odoignore file
+		// and ignore the files on which the rules apply and filter them out
+		filesChangedFiltered, filesDeletedFiltered := util.FilterIgnores(ret.FilesChanged, ret.FilesDeleted, absIgnoreRules)
+
+		// Remove the relative file directory from the list of deleted files
+		// in order to make the changes correctly within the Kubernetes pod
+		deletedFiles, err = util.RemoveRelativePathFromFiles(filesDeletedFiltered, pushParameters.Path)
+		if err != nil {
+			return false, errors.Wrap(err, "unable to remove relative path from list of changed/deleted files")
+		}
+		klog.V(4).Infof("List of files to be deleted: +%v", deletedFiles)
+		changedFiles = filesChangedFiltered
+		klog.V(4).Infof("List of files changed: +%v", changedFiles)
+
+		if len(filesChangedFiltered) == 0 && len(filesDeletedFiltered) == 0 {
+			// no file was modified/added/deleted/renamed, thus return without synching files
+			log.Success("No file changes detected, skipping build. Use the '-f' flag to force the build.")
+			return false, nil
+		}
 	}
 
 	err = a.pushLocal(pushParameters.Path,
@@ -149,6 +160,12 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 	)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to sync to component with name %s", a.ComponentName)
+	}
+	if forceWrite {
+		err = util.WriteFile(ret.NewFileMap, ret.ResolvedPath)
+		if err != nil {
+			return false, errors.Wrapf(err, "Failed to write file")
+		}
 	}
 
 	return true, nil
@@ -170,10 +187,16 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	s := log.Spinner("Syncing files to the component")
 	defer s.End(false)
 
-	// If there's only one project defined in the devfile, sync to `/projects/project-name`, otherwise sync to /projects
-	syncFolder, err := getSyncFolder(a.Devfile.Data.GetProjects())
-	if err != nil {
-		return errors.Wrapf(err, "unable to sync the files to the component")
+	// Determine which folder we need to sync to
+	var syncFolder string
+	if compInfo.SourceMount != kclient.OdoSourceVolumeMount {
+		syncFolder = compInfo.SourceMount
+	} else {
+		// If there's only one project defined in the devfile, sync to `/projects/project-name`, otherwise sync to /projects
+		syncFolder, err = getSyncFolder(a.Devfile.Data.GetProjects())
+		if err != nil {
+			return errors.Wrapf(err, "unable to determine sync folder")
+		}
 	}
 
 	if syncFolder != kclient.OdoSourceVolumeMount {

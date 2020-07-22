@@ -50,7 +50,7 @@ var _ = Describe("odo devfile watch command tests", func() {
 	Context("when running help for watch command", func() {
 		It("should display the help", func() {
 			appHelp := helper.CmdShouldPass("odo", "watch", "-h")
-			Expect(appHelp).To(ContainSubstring("Watch for changes"))
+			helper.MatchAllInOutput(appHelp, []string{"Watch for changes", "git components"})
 		})
 	})
 

@@ -200,7 +200,7 @@ func newProxyLocalConfig() proxyLocalConfig {
 func (lci *LocalConfigInfo) SetConfiguration(parameter string, value interface{}) (err error) {
 	// getting the second arg makes sure that this never panics
 	strValue, _ := value.(string)
-	if parameter, ok := asLocallySupportedParameter(parameter); ok {
+	if parameter, ok := AsLocallySupportedParameter(parameter); ok {
 		switch parameter {
 		case "type":
 			lci.componentSettings.Type = &strValue
@@ -326,7 +326,7 @@ func (lci *LocalConfigInfo) ConfigFileExists() bool {
 
 // DeleteConfiguration is used to delete config from local odo config
 func (lci *LocalConfigInfo) DeleteConfiguration(parameter string) error {
-	if parameter, ok := asLocallySupportedParameter(parameter); ok {
+	if parameter, ok := AsLocallySupportedParameter(parameter); ok {
 
 		switch parameter {
 		case "cpu":
@@ -362,7 +362,7 @@ func (lci *LocalConfigInfo) DeleteURL(parameter string) error {
 // parameter is the name of the config parameter
 // value is the value to be deleted
 func (lci *LocalConfigInfo) DeleteFromConfigurationList(parameter string, value string) error {
-	if parameter, ok := asLocallySupportedParameter(parameter); ok {
+	if parameter, ok := AsLocallySupportedParameter(parameter); ok {
 		switch parameter {
 		case "storage":
 			for i, storage := range lci.GetStorage() {
@@ -411,26 +411,17 @@ func (lci *LocalConfigInfo) writeToFile() error {
 
 // GetType returns type of component (builder image name) in the config
 func (lc *LocalConfig) GetType() string {
-	if lc.componentSettings.Type == nil {
-		return ""
-	}
-	return *lc.componentSettings.Type
+	return util.GetStringOrEmpty(lc.componentSettings.Type)
 }
 
 // GetSourceLocation returns the sourcelocation, returns default if nil
 func (lc *LocalConfig) GetSourceLocation() string {
-	if lc.componentSettings.SourceLocation == nil {
-		return ""
-	}
-	return *lc.componentSettings.SourceLocation
+	return util.GetStringOrEmpty(lc.componentSettings.SourceLocation)
 }
 
 // GetRef returns the ref, returns default if nil
 func (lc *LocalConfig) GetRef() string {
-	if lc.componentSettings.Ref == nil {
-		return ""
-	}
-	return *lc.componentSettings.Ref
+	return util.GetStringOrEmpty(lc.componentSettings.Ref)
 }
 
 // GetSourceType returns the source type, returns default if nil
@@ -451,74 +442,47 @@ func (lc *LocalConfig) GetPorts() []string {
 
 // GetApplication returns the app, returns default if nil
 func (lc *LocalConfig) GetApplication() string {
-	if lc.componentSettings.Application == nil {
-		return ""
-	}
-	return *lc.componentSettings.Application
+	return util.GetStringOrEmpty(lc.componentSettings.Application)
 }
 
 // GetProject returns the project, returns default if nil
 func (lc *LocalConfig) GetProject() string {
-	if lc.componentSettings.Project == nil {
-		return ""
-	}
-	return *lc.componentSettings.Project
+	return util.GetStringOrEmpty(lc.componentSettings.Project)
 }
 
 // GetName returns the Name, returns default if nil
 func (lc *LocalConfig) GetName() string {
-	if lc.componentSettings.Name == nil {
-		return ""
-	}
-	return *lc.componentSettings.Name
+	return util.GetStringOrEmpty(lc.componentSettings.Name)
 }
 
 // GetMinMemory returns the MinMemory, returns default if nil
 func (lc *LocalConfig) GetMinMemory() string {
-	if lc.componentSettings.MinMemory == nil {
-		return ""
-	}
-	return *lc.componentSettings.MinMemory
+	return util.GetStringOrEmpty(lc.componentSettings.MinMemory)
 }
 
 // GetMaxMemory returns the MaxMemory, returns default if nil
 func (lc *LocalConfig) GetMaxMemory() string {
-	if lc.componentSettings.MaxMemory == nil {
-		return ""
-	}
-	return *lc.componentSettings.MaxMemory
+	return util.GetStringOrEmpty(lc.componentSettings.MaxMemory)
 }
 
 // GetDebugPort returns the DebugPort, returns default if nil
 func (lc *LocalConfig) GetDebugPort() int {
-	if lc.componentSettings.DebugPort == nil {
-		return DefaultDebugPort
-	}
-	return *lc.componentSettings.DebugPort
+	return util.GetIntOrDefault(lc.componentSettings.DebugPort, DefaultDebugPort)
 }
 
 // GetIgnore returns the Ignore, returns default if nil
 func (lc *LocalConfig) GetIgnore() bool {
-	if lc.componentSettings.Ignore == nil {
-		return false
-	}
-	return *lc.componentSettings.Ignore
+	return util.GetBoolOrDefault(lc.componentSettings.Ignore, false)
 }
 
 // GetMinCPU returns the MinCPU, returns default if nil
 func (lc *LocalConfig) GetMinCPU() string {
-	if lc.componentSettings.MinCPU == nil {
-		return ""
-	}
-	return *lc.componentSettings.MinCPU
+	return util.GetStringOrEmpty(lc.componentSettings.MinCPU)
 }
 
 // GetMaxCPU returns the MaxCPU, returns default if nil
 func (lc *LocalConfig) GetMaxCPU() string {
-	if lc.componentSettings.MaxCPU == nil {
-		return ""
-	}
-	return *lc.componentSettings.MaxCPU
+	return util.GetStringOrEmpty(lc.componentSettings.MaxCPU)
 }
 
 // GetURL returns the ConfigURL, returns default if nil
@@ -653,7 +617,8 @@ func FormatLocallySupportedParameters() (result string) {
 	return "\nAvailable Local Parameters:\n" + result
 }
 
-func asLocallySupportedParameter(param string) (string, bool) {
+// AsLocallySupportedParameter returns the parameter in lower case and a boolean indicating if it is a supported parameter
+func AsLocallySupportedParameter(param string) (string, bool) {
 	lower := strings.ToLower(param)
 	return lower, lowerCaseLocalParameters[lower]
 }
