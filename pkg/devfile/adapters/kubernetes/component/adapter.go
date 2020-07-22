@@ -46,6 +46,7 @@ import (
 
 const (
 	DeployComponentSuffix = "-deploy"
+	BuildTimeout          = 5 * time.Minute
 )
 
 // New instantiantes a component adapter
@@ -147,7 +148,7 @@ func (a Adapter) runBuildConfig(client *occlient.Client, parameters common.Build
 	}(controlC)
 
 	s := log.Spinner("Waiting for build to complete")
-	if err := client.WaitForBuildToFinish(bc.Name, writer); err != nil {
+	if err := client.WaitForBuildToFinish(bc.Name, writer, BuildTimeout); err != nil {
 		s.End(false)
 		return errors.Wrapf(err, "unable to build image using BuildConfig %s, error: %s", buildName, cmdOutput)
 	}

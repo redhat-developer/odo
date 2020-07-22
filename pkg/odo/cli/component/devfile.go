@@ -2,13 +2,11 @@ package component
 
 import (
 	"fmt"
-	"fmt"
 	"os"
 	"strings"
+
 	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/adapters"
-	"github.com/openshift/odo/pkg/devfile/parser"
-	"github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -149,7 +147,7 @@ func (do *DeployOptions) DevfileDeploy() (err error) {
 		Namespace: do.namespace,
 	}
 
-	devfileHandler, err := adapters.NewComponentAdapter(componentName, do.componentContext, do.devObj, kubeContext)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, do.componentContext, do.Application, do.devObj, kubeContext)
 	if err != nil {
 		return err
 	}
@@ -201,7 +199,7 @@ func (do *DeployOptions) DevfileDeploy() (err error) {
 // DevfileComponentDelete deletes the devfile component
 func (ddo *DeployDeleteOptions) DevfileDeployDelete() error {
 	// Parse devfile
-	devObj, err := parser.ParseAndValidate(ddo.DevfilePath)
+	devObj, err := devfile.ParseAndValidate(ddo.DevfilePath)
 	if err != nil {
 		return err
 	}
@@ -216,7 +214,7 @@ func (ddo *DeployDeleteOptions) DevfileDeployDelete() error {
 		Namespace: ddo.namespace,
 	}
 
-	devfileHandler, err := adapters.NewComponentAdapter(componentName, ddo.componentContext, devObj, kc)
+	devfileHandler, err := adapters.NewComponentAdapter(componentName, ddo.componentContext, ddo.Application, devObj, kc)
 	if err != nil {
 		return err
 	}

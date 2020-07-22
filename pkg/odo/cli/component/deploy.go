@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	devfile "github.com/openshift/odo/pkg/devfile"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/log"
@@ -95,7 +96,7 @@ func (do *DeployOptions) Validate() (err error) {
 	}
 	s.End(true)
 
-	do.devObj, err = devfileParser.ParseAndValidate(do.DevfilePath)
+	do.devObj, err = devfile.ParseAndValidate(do.DevfilePath)
 	if err != nil {
 		return err
 	}
