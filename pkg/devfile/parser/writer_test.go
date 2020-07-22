@@ -3,8 +3,8 @@ package parser
 import (
 	"testing"
 
-	v100 "github.com/cli-playground/devfile-parser/pkg/devfile/parser//devfile/parser/data/1.0.0"
 	devfileCtx "github.com/cli-playground/devfile-parser/pkg/devfile/parser/context"
+	v100 "github.com/cli-playground/devfile-parser/pkg/devfile/parser/data/1.0.0"
 	"github.com/openshift/odo/pkg/testingutil/filesystem"
 )
 

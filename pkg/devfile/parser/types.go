@@ -1,8 +1,8 @@
 package parser
 
 import (
-	"github.com/cli-playground/devfile-parser/pkg/devfile/parser//devfile/parser/data"
 	devfileCtx "github.com/cli-playground/devfile-parser/pkg/devfile/parser/context"
+	"github.com/cli-playground/devfile-parser/pkg/devfile/parser/data"
 )
 
 // Default filenames for create devfile
