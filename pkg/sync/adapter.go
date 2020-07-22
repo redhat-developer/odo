@@ -215,6 +215,33 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 		}
 	}
 
+	if isForcePush {
+		if syncFolder != kclient.OdoSourceVolumeMount {
+			err = exec.ExecuteCommand(a.Client, compInfo, []string{"rm", "-rf", syncFolder}, true, nil, nil)
+			if err != nil {
+				return err
+			}
+			err = exec.ExecuteCommand(a.Client, compInfo, []string{"mkdir", "-p", syncFolder}, false, nil, nil)
+			if err != nil {
+				return err
+			}
+
+		} else {
+
+			cmdRmFiles := []string{"sh", "-c", "rm -rf '" + syncFolder + "'/*"}
+			err = exec.ExecuteCommand(a.Client, compInfo, cmdRmFiles, false, nil, nil)
+			if err != nil {
+				klog.V(4).Infof("error on deleting sync folder, but this is most likely an expected error. cmd: %v  error: %v", cmdRmFiles, err)
+			}
+
+			cmdRmDotFiles := []string{"sh", "-c", "rm -rf '" + syncFolder + "'/.*"}
+			err = exec.ExecuteCommand(a.Client, compInfo, cmdRmDotFiles, false, nil, nil)
+			if err != nil {
+				klog.V(4).Infof("error on deleting sync folder, but this is most likely an expected error. cmd: %v  error: %v", cmdRmFiles, err)
+			}
+		}
+	}
+
 	if isForcePush || len(files) > 0 {
 		klog.V(4).Infof("Copying files %s to pod", strings.Join(files, " "))
 		err = CopyFile(a.Client, path, compInfo, syncFolder, files, globExps)
