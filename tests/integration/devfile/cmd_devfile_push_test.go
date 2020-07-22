@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -848,11 +847,6 @@ var _ = Describe("odo devfile push command tests", func() {
 	})
 
 })
-
-func runningCmd(cmd *exec.Cmd) string {
-	prog := filepath.Base(cmd.Path)
-	return fmt.Sprintf("Running %s with args %v", prog, cmd.Args)
-}
 
 // Wait for the session stdout output to contain a particular string
 func waitForOutputToContain(substring string, session *gexec.Session) {
