@@ -1688,7 +1688,7 @@ func TestLoadFileIntoMemory(t *testing.T) {
 			}
 
 			if tt.expectedError == "" && !bytes.Contains(data, tt.contains) {
-				t.Errorf("Got: %w, should contain: %v", data, tt.contains)
+				t.Errorf("Got: %v, should contain: %v", data, tt.contains)
 			}
 		})
 	}
