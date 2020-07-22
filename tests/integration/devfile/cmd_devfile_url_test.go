@@ -166,6 +166,12 @@ var _ = Describe("odo devfile url command tests", func() {
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 
 			stdout = helper.CmdShouldPass("odo", "url", "create", url1, "--port", "3000", "--host", host, "--now", "--ingress")
+
+			// check the env for the runMode
+			envOutput, err := helper.ReadFile(filepath.Join(context, ".odo/env/env.yaml"))
+			Expect(err).To(BeNil())
+			Expect(envOutput).To(ContainSubstring(" RunMode: run"))
+
 			helper.MatchAllInOutput(stdout, []string{"URL " + url1 + " created for component", "http:", url1 + "." + host})
 			stdout = helper.CmdShouldPass("odo", "url", "delete", url1, "--now", "-f")
 			helper.MatchAllInOutput(stdout, []string{"URL " + url1 + " successfully deleted", "Applying URL changes"})
