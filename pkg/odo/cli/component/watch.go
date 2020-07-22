@@ -326,6 +326,6 @@ func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters)
 		platformContext = nil
 	}
 
-	return adapters.NewComponentAdapter(parameters.ComponentName, parameters.Path, devObj, platformContext)
+	return adapters.NewComponentAdapter(parameters.ComponentName, parameters.Path, parameters.ApplicationName, devObj, platformContext)
 
 }

@@ -45,8 +45,10 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 	var deletedFiles []string
 	var changedFiles []string
 	pushParameters := syncParameters.PushParams
+	isForcePush := pushParameters.ForceBuild || !syncParameters.ComponentExists || syncParameters.PodChanged
+	isWatch := len(pushParameters.WatchFiles) > 0 || len(pushParameters.WatchDeletedFiles) > 0
 
-	// The logic for watch is:
+	// When this function is invoked by watch, the logic is:
 	// 1) If this is the first time that watch has called Push (in this process), then generate the file index using the file indexer, and use that to
 	//    sync files (don't use changed/deleted files list from watch at this stage; these will be found by the indexer run)
 	// 2) For every other push/sync call after the first, don't run the file indexer, instead use the watch events to determine
@@ -58,7 +60,7 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 
 	// If watch files are specified _and_ this is not the first call (by this process) to SyncFiles by the watch command, then insert the
 	// changed files into the existing file index, and delete removed files from the index
-	if (len(pushParameters.WatchFiles) > 0 || len(pushParameters.WatchDeletedFiles) > 0) && !syncParameters.PushParams.DevfileScanIndexForWatch {
+	if isWatch && !syncParameters.PushParams.DevfileScanIndexForWatch {
 
 		err := updateIndexWithWatchChanges(pushParameters)
 
@@ -72,10 +74,10 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 
 	}
 
-	// Sync source code to the component
-	// If syncing for the first time, sync the entire source directory
-	// If syncing to an already running component, sync the deltas
-	if !syncParameters.PodChanged && !pushParameters.ForceBuild && !indexRegeneratedByWatch {
+	if !indexRegeneratedByWatch {
+		// Calculate the files to sync
+		// Tries to sync the deltas unless it is a forced push
+		// if it is a forced push (isForcePush) reset the index to do a full snync
 		absIgnoreRules := util.GetAbsGlobExps(pushParameters.Path, pushParameters.IgnoredFiles)
 
 		var s *log.Status
@@ -136,10 +138,6 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 			log.Success("No file changes detected, skipping build. Use the '-f' flag to force the build.")
 			return false, nil
 		}
-	}
-
-	if pushParameters.ForceBuild || !syncParameters.ComponentExists || syncParameters.PodChanged {
-		isForcePush = true
 	}
 
 	err = a.pushLocal(pushParameters.Path,
