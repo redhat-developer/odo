@@ -1,7 +1,7 @@
 #this is a template spec and actual spec will be generated
 #debuginfo not supported with Go
 %global debug_package %{nil}
-%global package_name openshift-odo
+%global package_name odo
 %global product_name odo
 %global golang_version ${GOLANG_VERSION}
 %global golang_version_nodot ${GOLANG_VERSION_NODOT}
