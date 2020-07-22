@@ -193,8 +193,8 @@ func NewCmdDeploy(name, fullName string) *cobra.Command {
 
 	var deployCmd = &cobra.Command{
 		Use:         fmt.Sprintf("%s [command] [component name]", name),
-		Short:       "Deploy image for component",
-		Long:        `Deploy image for component`,
+		Short:       "Build and deploy image for component",
+		Long:        `Build and deploy image for component`,
 		Example:     fmt.Sprintf(deployCmdExample, fullName),
 		Args:        cobra.MaximumNArgs(1),
 		Annotations: map[string]string{"command": "component"},

@@ -1677,6 +1677,12 @@ func TestLoadFileIntoMemory(t *testing.T) {
 			contains:      []byte("Load a file into memory ("),
 			expectedError: "",
 		},
+		{
+			name:          "Case 5: Input url is empty",
+			url:           "",
+			contains:      []byte(nil),
+			expectedError: "invalid url:",
+		},
 	}
 
 	for _, tt := range tests {
@@ -1975,6 +1981,11 @@ func TestDownloadInMemory(t *testing.T) {
 		{
 			name: "Case 2: invalid URL",
 			url:  "https://this/is/not/a/valid/url",
+			want: false,
+		},
+		{
+			name: "Case 3: empty URL",
+			url:  "",
 			want: false,
 		},
 	}
