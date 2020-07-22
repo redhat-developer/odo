@@ -19,11 +19,6 @@ components:
       endpoints:
         - name: '3000/tcp'
           targetPort: 3000
-          # odo not using currently, added to validate JSON Schema
-          configuration:
-            protocol: tcp
-            scheme: http
-            type: terminal
 commands:
   - exec:
       id: download dependencies

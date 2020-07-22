@@ -2,59 +2,51 @@
 kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: COMPONENT_NAME
-  labels:
-    app.kubernetes.io/instance: COMPONENT_NAME
-    app.kubernetes.io/name: COMPONENT_NAME
-    app.kubernetes.io/part-of: COMPONENT_NAME
+  name: {{.COMPONENT_NAME}}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: COMPONENT_NAME
+      app: {{.COMPONENT_NAME}}
   template:
     metadata:
       creationTimestamp: null
       labels:
-        app: COMPONENT_NAME
+        app: {{.COMPONENT_NAME}}
     spec:
       containers:
-        - name: COMPONENT_NAME
-          image: CONTAINER_IMAGE
+        - name: {{.COMPONENT_NAME}}
+          image: {{.CONTAINER_IMAGE}}
           ports:
             - name: http
-              containerPort: PORT
+              containerPort: {{.PORT}}
               protocol: TCP
 ---
 kind: Service
 apiVersion: v1
 metadata:
-  name: COMPONENT_NAME
+  name: {{.COMPONENT_NAME}}
 spec:
   ports:
     - protocol: TCP
-      port: PORT
-      targetPort: PORT
+      port: {{.PORT}}
+      targetPort: {{.PORT}}
   selector:
-    app: COMPONENT_NAME
+    app: {{.COMPONENT_NAME}}
   type: ClusterIP
   sessionAffinity: None
 ---
 kind: Route
 apiVersion: route.openshift.io/v1
 metadata:
-  name: COMPONENT_NAME
-  labels:
-    app.kubernetes.io/instance: COMPONENT_NAME
-    app.kubernetes.io/name: COMPONENT_NAME
-    app.kubernetes.io/part-of: COMPONENT_NAME
+  name: {{.COMPONENT_NAME}}
   annotations:
     openshift.io/host.generated: 'true'
 spec:
   to:
     kind: Service
-    name: COMPONENT_NAME
+    name: {{.COMPONENT_NAME}}
     weight: 100
   port:
-    targetPort: PORT
+    targetPort: {{.PORT}}
   wildcardPolicy: None

@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"text/template"
 	"time"
 
 	"github.com/openshift/odo/pkg/exec"
@@ -189,16 +190,24 @@ func (a Adapter) Build(parameters common.BuildParameters) (err error) {
 	return errors.New("unable to build image, only Openshift BuildConfig build is supported")
 }
 
-func substitueYamlVariables(baseYaml []byte, yamlSubstitutions map[string]string) []byte {
-	// TODO: Provide a better way to do the substitution in the manifest file(s)
-	for key, value := range yamlSubstitutions {
-		if value != "" && bytes.Contains(baseYaml, []byte(key)) {
-			klog.V(3).Infof("Replacing %s with %s", key, value)
-			tempYaml := bytes.ReplaceAll(baseYaml, []byte(key), []byte(value))
-			baseYaml = tempYaml
-		}
+// Perform the substitutions in the manifest file(s)
+func substitueYamlVariables(baseYaml []byte, yamlSubstitutions map[string]string) ([]byte, error) {
+	// create new template from parsing file
+	tmpl, err := template.New("deploy").Parse(string(baseYaml))
+	if err != nil {
+		return []byte{}, errors.Wrap(err, "error creating template")
 	}
-	return baseYaml
+
+	// define a buffer to store the results
+	var buf bytes.Buffer
+
+	// apply template to yaml file
+	_ = tmpl.Execute(&buf, yamlSubstitutions)
+	if err != nil {
+		return []byte{}, errors.Wrap(err, "error executing template")
+	}
+
+	return buf.Bytes(), nil
 }
 
 // Build image for devfile project
@@ -242,7 +251,10 @@ func (a Adapter) Deploy(parameters common.DeployParameters) (err error) {
 	for _, manifest := range manifests {
 		if len(manifest) > 0 {
 			// Substitute the values in the manifest file
-			deployYaml := substitueYamlVariables(manifest, yamlSubstitutions)
+			deployYaml, err := substitueYamlVariables(manifest, yamlSubstitutions)
+			if err != nil {
+				return errors.Wrap(err, "unable to substitute variables in manifest")
+			}
 
 			_, gvk, err := yamlDecoder.Decode([]byte(deployYaml), nil, deploymentManifest)
 			if err != nil {

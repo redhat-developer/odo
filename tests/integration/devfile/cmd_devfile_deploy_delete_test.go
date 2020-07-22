@@ -83,6 +83,10 @@ var _ = Describe("odo devfile deploy delete command tests", func() {
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfilesV2", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 			helper.CmdShouldPass("odo", "url", "create", "--port", "3000")
+
+			err := helper.ReplaceDevfileField("devfile.yaml", "alpha.deployment-manifest",
+				fmt.Sprintf("file://%s/../../examples/source/manifests/deploy_deployment_clusterip.yaml", currentWorkingDirectory))
+			Expect(err).To(BeNil())
 			helper.CmdShouldPass("odo", "deploy", "--tag", imageTag)
 
 			helper.CmdShouldPass("odo", "deploy", "delete")

@@ -1,9 +1,9 @@
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
-  name: COMPONENT_NAME
+  name: {{.COMPONENT_NAME}}
 spec:
   template:
     spec:
       containers:
-        - image: image-registry.openshift-image-registry.svc:5000/default/nodejs-example
+        - image: {{.CONTAINER_IMAGE}}

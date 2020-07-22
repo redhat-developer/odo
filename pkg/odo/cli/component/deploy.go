@@ -151,10 +151,10 @@ func (do *DeployOptions) Validate() (err error) {
 	}
 	do.ManifestSource = manifestBytes
 
-	// check if manifestSource contains PORT template variable
+	// check if manifestSource contains {{.PORT}} template variable
 	// if it does, then check we have an port setup in env.yaml
 	do.DeploymentPort = 0
-	if bytes.Contains(manifestBytes, []byte("PORT")) {
+	if bytes.Contains(manifestBytes, []byte("{{.PORT}}")) {
 		deploymentPort, err := do.EnvSpecificInfo.GetPortByURLKind(envinfo.ROUTE)
 		if err != nil {
 			s.End(false)
