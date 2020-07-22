@@ -379,29 +379,28 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 // Each Devfile Command associated with the given event is retrieved, and executed in the container specified
 // in the command
 func (a Adapter) execDevfileEvent(events []string, containers []types.Container) error {
-	if len(events) > 0 {
 
-		commandMap := common.GetCommandMap(a.Devfile.Data)
+	commandMap := common.GetCommandMap(a.Devfile.Data)
 
-		for _, commandName := range events {
-			// Convert commandName to lower because GetCommands converts Command.Exec.Id's to lower
-			command, ok := commandMap[strings.ToLower(commandName)]
-			if !ok {
-				return errors.New("unable to find devfile command " + commandName)
-			}
-
-			// If composite would go here & recursive loop
-
-			// Get container for command
-			containerID := utils.GetContainerIDForAlias(containers, command.Exec.Component)
-			compInfo := common.ComponentInfo{ContainerName: containerID}
-
-			// Execute command in container
-			err := exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, false, a.machineEventLogger)
-			if err != nil {
-				return errors.Wrapf(err, "unable to execute devfile command "+commandName)
-			}
+	for _, commandName := range events {
+		// Convert commandName to lower because GetCommands converts Command.Exec.Id's to lower
+		command, ok := commandMap[strings.ToLower(commandName)]
+		if !ok {
+			return errors.New("unable to find devfile command " + commandName)
 		}
+
+		// If composite would go here & recursive loop
+
+		// Get container for command
+		containerID := utils.GetContainerIDForAlias(containers, command.Exec.Component)
+		compInfo := common.ComponentInfo{ContainerName: containerID}
+
+		// Execute command in container
+		err := exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, false, a.machineEventLogger)
+		if err != nil {
+			return errors.Wrapf(err, "unable to execute devfile command "+commandName)
+		}
+
 	}
 	return nil
 }
