@@ -159,12 +159,16 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 
 	// PostStart events from the devfile will only be executed when the component
 	// didn't previously exist
-	if !componentExists {
-		log.Infof("\nExecuting preStart lifecycle event commands for component %s", a.ComponentName)
-		err = a.execDevfileEvent(a.Devfile.Data.GetEvents().PostStart, pod.GetName())
+	postStartEvents := a.Devfile.Data.GetEvents().PostStart
+	if !componentExists && len(postStartEvents) > 0 {
+		// log only when there are post start events present in devfile
+		log.Infof("\nExecuting postStart event commands for component %s", a.ComponentName)
+		err = a.execDevfileEvent(postStartEvents, pod.GetName())
 		if err != nil {
 			return err
+
 		}
+
 	}
 
 	if execRequired {
@@ -465,38 +469,35 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 	return
 }
 
-// TODO: Support Composite
 // execDevfileEvent receives a Devfile Event (PostStart, PreStop etc.) and loops through them
 // Each Devfile Command associated with the given event is retrieved, and executed in the container specified
 // in the command
 func (a Adapter) execDevfileEvent(events []string, podName string) error {
-	if len(events) > 0 {
-		commandMap := common.GetCommandsMap(a.Devfile.Data.GetCommands())
-		for _, commandName := range events {
-			// Convert commandName to lower because GetCommands converts Command.Exec.Id's to lower
-			command := commandMap[strings.ToLower(commandName)]
 
-			compInfo := common.ComponentInfo{
-				PodName: podName,
+	commandMap := common.GetCommandsMap(a.Devfile.Data.GetCommands())
+	for _, commandName := range events {
+		// Convert commandName to lower because GetCommands converts Command.Exec.Id's to lower
+		command := commandMap[strings.ToLower(commandName)]
+
+		compInfo := common.ComponentInfo{
+			PodName: podName,
+		}
+
+		if command.Composite != nil {
+			err := exec.ExecuteCompositeDevfileAction(&a.Client, *command.Composite, commandMap, compInfo, false, a.machineEventLogger)
+			if err != nil {
+				return errors.Wrapf(err, "unable to execute devfile composite command "+commandName)
 			}
+		} else {
+			compInfo.ContainerName = command.Exec.Component
 
-			// If composite would go here & recursive loop
-
-			if command.Composite != nil {
-				err := exec.ExecuteCompositeDevfileAction(&a.Client, *command.Composite, commandMap, compInfo, false, a.machineEventLogger)
-				if err != nil {
-					return errors.Wrapf(err, "unable to execute devfile composite command "+commandName)
-				}
-			} else {
-				compInfo.ContainerName = command.Exec.Component
-
-				// Execute command in pod
-				err := exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, false, a.machineEventLogger, false)
-				if err != nil {
-					return errors.Wrapf(err, "unable to execute devfile command "+commandName)
-				}
+			// Execute command in pod
+			err := exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, false, a.machineEventLogger, false)
+			if err != nil {
+				return errors.Wrapf(err, "unable to execute devfile command "+commandName)
 			}
 		}
+
 	}
 	return nil
 }

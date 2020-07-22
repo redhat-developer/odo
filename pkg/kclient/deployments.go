@@ -189,3 +189,10 @@ func (c *Client) ListDynamicResource(group, version, resource string) (*unstruct
 
 	return list, nil
 }
+
+// DeleteDynamicResource deletes an instance, specified by name, of a Custom Resource
+func (c *Client) DeleteDynamicResource(name, group, version, resource string) error {
+	deploymentRes := schema.GroupVersionResource{Group: group, Version: version, Resource: resource}
+
+	return c.DynamicClient.Resource(deploymentRes).Namespace(c.Namespace).Delete(name, &metav1.DeleteOptions{})
+}

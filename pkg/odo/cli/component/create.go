@@ -15,7 +15,7 @@ import (
 	"github.com/openshift/odo/pkg/catalog"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
-	"github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
@@ -844,7 +844,7 @@ func (co *CreateOptions) Validate() (err error) {
 func (co *CreateOptions) downloadProject(projectPassed string) error {
 	var project common.DevfileProject
 	// Parse devfile and validate
-	devObj, err := parser.ParseAndValidate(DevfilePath)
+	devObj, err := devfile.ParseAndValidate(DevfilePath)
 	if err != nil {
 		return err
 	}

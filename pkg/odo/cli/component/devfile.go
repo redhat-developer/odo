@@ -4,7 +4,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -55,7 +55,7 @@ func (po *PushOptions) DevfilePush() error {
 func (po *PushOptions) devfilePushInner() (err error) {
 
 	// Parse devfile and validate
-	devObj, err := parser.ParseAndValidate(po.DevfilePath)
+	devObj, err := devfile.ParseAndValidate(po.DevfilePath)
 	if err != nil {
 		return err
 	}
@@ -126,7 +126,7 @@ func (po *PushOptions) devfilePushInner() (err error) {
 // DevfileComponentLog fetch and display log from devfile components
 func (lo LogOptions) DevfileComponentLog() error {
 	// Parse devfile
-	devObj, err := parser.ParseAndValidate(lo.devfilePath)
+	devObj, err := devfile.ParseAndValidate(lo.devfilePath)
 	if err != nil {
 		return err
 	}
@@ -190,7 +190,7 @@ func getComponentName(context string) (string, error) {
 // DevfileComponentDelete deletes the devfile component
 func (do *DeleteOptions) DevfileComponentDelete() error {
 	// Parse devfile and validate
-	devObj, err := parser.ParseAndValidate(do.devfilePath)
+	devObj, err := devfile.ParseAndValidate(do.devfilePath)
 	if err != nil {
 		return err
 	}
@@ -267,7 +267,7 @@ func warnIfURLSInvalid(url []envinfo.EnvInfoURL) {
 // DevfileComponentExec executes the given user command inside the component
 func (eo *ExecOptions) DevfileComponentExec(command []string) error {
 	// Parse devfile
-	devObj, err := parser.ParseAndValidate(eo.devfilePath)
+	devObj, err := devfile.ParseAndValidate(eo.devfilePath)
 	if err != nil {
 		return err
 	}

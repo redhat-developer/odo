@@ -12,8 +12,8 @@ var (
 	ErrorNoContainerComponent = fmt.Sprintf("odo requires atleast one component of type '%s' in devfile", common.ContainerComponentType)
 )
 
-// ValidateComponents validates all the devfile components
-func ValidateComponents(components []common.DevfileComponent) error {
+// validateComponents validates all the devfile components
+func validateComponents(components []common.DevfileComponent) error {
 
 	// components cannot be empty
 	if len(components) < 1 {

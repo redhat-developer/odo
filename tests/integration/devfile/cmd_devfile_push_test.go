@@ -530,4 +530,45 @@ var _ = Describe("odo devfile push command tests", func() {
 		})
 	})
 
+	Context("exec commands with environment variables", func() {
+		It("Should be able to exec command with single environment variable", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-defaults.yaml"), filepath.Join(context, "devfile.yaml"))
+			output := helper.CmdShouldPass("odo", "push", "--build-command", "firstbuild", "--run-command", "singleenv", "--namespace", namespace, "--context", context)
+			Expect(output).To(ContainSubstring("mkdir $ENV1"))
+
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+			output = cliRunner.ExecListDir(podName, namespace, sourcePath)
+			Expect(output).To(ContainSubstring("test_env_variable"))
+
+		})
+
+		It("Should be able to exec command with multiple environment variables", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-defaults.yaml"), filepath.Join(context, "devfile.yaml"))
+			output := helper.CmdShouldPass("odo", "push", "--build-command", "firstbuild", "--run-command", "multipleenv", "--namespace", namespace, "--context", context)
+			Expect(output).To(ContainSubstring("mkdir $ENV1 $ENV2"))
+
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+			output = cliRunner.ExecListDir(podName, namespace, sourcePath)
+			helper.MatchAllInOutput(output, []string{"test_env_variable1", "test_env_variable2"})
+
+		})
+
+		It("Should be able to exec command with environment variable with spaces", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-multiple-defaults.yaml"), filepath.Join(context, "devfile.yaml"))
+			output := helper.CmdShouldPass("odo", "push", "--build-command", "firstbuild", "--run-command", "envwithspace", "--namespace", namespace, "--context", context)
+			Expect(output).To(ContainSubstring("mkdir \\\"$ENV1\\\""))
+
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+			output = cliRunner.ExecListDir(podName, namespace, sourcePath)
+			helper.MatchAllInOutput(output, []string{"env with space"})
+
+		})
+	})
+
 })
