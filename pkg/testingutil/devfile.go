@@ -7,8 +7,9 @@ import (
 
 // TestDevfileData is a convenience data type used to mock up a devfile configuration
 type TestDevfileData struct {
-	Components   []versionsCommon.DevfileComponent
-	ExecCommands []versionsCommon.Exec
+	Components        []versionsCommon.DevfileComponent
+	ExecCommands      []versionsCommon.Exec
+	CompositeCommands []versionsCommon.Composite
 }
 
 // GetComponents is a mock function to get the components from a devfile
@@ -78,6 +79,10 @@ func (d TestDevfileData) GetCommands() []versionsCommon.DevfileCommand {
 
 	for i := range d.ExecCommands {
 		commands = append(commands, versionsCommon.DevfileCommand{Exec: &d.ExecCommands[i]})
+	}
+
+	for i := range d.CompositeCommands {
+		commands = append(commands, versionsCommon.DevfileCommand{Composite: &d.CompositeCommands[i]})
 	}
 
 	return commands

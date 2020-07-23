@@ -41,6 +41,9 @@ type DevfileMetadata struct {
 type DevfileCommand struct {
 	// CLI Command executed in a component container
 	Exec *Exec `json:"exec,omitempty"`
+
+	// Composite command executed in a component container
+	Composite *Composite `json:"composite,omitempty"`
 }
 
 // DevfileComponent component specified in devfile
@@ -156,6 +159,27 @@ type Exec struct {
 
 	// Working directory where the command should be executed
 	WorkingDir string `json:"workingDir,omitempty"`
+}
+
+// Composite command containing a list of commands to execute in a component container
+type Composite struct {
+	// Optional map of free-form additional command attributes
+	Attributes map[string]string `json:"attributes,omitempty"`
+
+	// The list of commands to execute in this composite command.
+	Commands []string `json:"commands,omitempty"`
+
+	// Defines the group this command is part of
+	Group *Group `json:"group,omitempty"`
+
+	// Mandatory identifier that allows referencing this command in composite commands, or from a parent, or in events.
+	Id string `json:"id"`
+
+	// Optional label that provides a label for this command to be used in Editor UI menus for example
+	Label string `json:"label,omitempty"`
+
+	// Whether or not the composite command should be executed in parallel
+	Parallel bool `json:"parallel,omitempty"`
 }
 
 // Git Project's Git source
