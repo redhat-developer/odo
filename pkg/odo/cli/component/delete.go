@@ -225,6 +225,7 @@ func (do *DeleteOptions) DevFileRun() (err error) {
 	}
 
 	if do.componentDeleteAllFlag {
+		log.Info("\nDeleting local config")
 		// Prompt and delete env folder
 		if do.componentForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete env folder?")) {
 			if !do.EnvSpecificInfo.EnvInfoFileExists() {

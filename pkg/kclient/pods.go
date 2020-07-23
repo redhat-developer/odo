@@ -162,11 +162,13 @@ func (c *Client) GetOnePodFromSelector(selector string) (*corev1.Pod, error) {
 		LabelSelector: selector,
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to get Pod for the selector: %v", selector)
+		// Dont wrap error since we want to know if its a forbidden error
+		// if we wrap, we lose the err status reason and callers of this api rely on it
+		return nil, err
 	}
 	numPods := len(pods.Items)
 	if numPods == 0 {
-		return nil, fmt.Errorf("no Pod was found for the selector: %v", selector)
+		return nil, &NoPodFoundError{selector: selector}
 	} else if numPods > 1 {
 		return nil, fmt.Errorf("multiple Pods exist for the selector: %v. Only one must be present", selector)
 	}

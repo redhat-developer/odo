@@ -164,13 +164,12 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	postStartEvents := a.Devfile.Data.GetEvents().PostStart
 	if !componentExists && len(postStartEvents) > 0 {
 		// log only when there are post start events present in devfile
-		log.Infof("\nExecuting postStart event commands for component %s", a.ComponentName)
-		err = a.execDevfileEvent(postStartEvents, pod.GetName())
+		// log.Infof("\nExecuting postStart event commands for component %s", a.ComponentName)
+		err = a.execDevfileEvent(postStartEvents, "postStart", a.ComponentName, pod.GetName())
 		if err != nil {
 			return err
 
 		}
-
 	}
 
 	if execRequired {
@@ -487,7 +486,9 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 // execDevfileEvent receives a Devfile Event (PostStart, PreStop etc.) and loops through them
 // Each Devfile Command associated with the given event is retrieved, and executed in the container specified
 // in the command
-func (a Adapter) execDevfileEvent(events []string, podName string) error {
+func (a Adapter) execDevfileEvent(events []string, eventType, componentName, podName string) error {
+
+	log.Infof("\nExecuting %s event commands for component %s", eventType, componentName)
 
 	commandMap := common.GetCommandsMap(a.Devfile.Data.GetCommands())
 	for _, commandName := range events {
@@ -570,25 +571,44 @@ func getFirstContainerWithSourceVolume(containers []corev1.Container) (string, s
 
 // Delete deletes the component
 func (a Adapter) Delete(labels map[string]string) error {
-	spinner := log.Spinnerf("Deleting devfile component %s", a.ComponentName)
-	defer spinner.End(false)
 
-	componentExists, err := utils.ComponentExists(a.Client, a.ComponentName)
+	log.Infof("\nGathering information for component %s", a.ComponentName)
+	podSpinner := log.Spinnerf("Retrieving pod for component %s", a.ComponentName)
+	defer podSpinner.End(false)
+
+	pod, err := a.Client.GetPodUsingComponentName(a.ComponentName)
 	if kerrors.IsForbidden(err) {
 		klog.V(4).Infof("Resource for %s forbidden", a.ComponentName)
 		// log the error if it failed to determine if the component exists due to insufficient RBACs
-		spinner.End(false)
+		podSpinner.End(false)
 		log.Warningf("%v", err)
+		return nil
+	} else if e, ok := err.(*kclient.NoPodFoundError); ok {
+		podSpinner.End(false)
+		log.Warningf("%v", e)
 		return nil
 	} else if err != nil {
 		return errors.Wrapf(err, "unable to determine if component %s exists", a.ComponentName)
 	}
 
-	if !componentExists {
-		spinner.End(false)
-		log.Warningf("Component %s does not exist", a.ComponentName)
-		return nil
+	podSpinner.End(true)
+
+	// if there are preStop events, execute them before deleting the deployment
+	preStopEvents := a.Devfile.Data.GetEvents().PreStop
+	if len(preStopEvents) > 0 {
+		if pod.Status.Phase != corev1.PodRunning {
+			return fmt.Errorf("unable to execute preStop events, pod for component %s is not running", a.ComponentName)
+		}
+
+		err = a.execDevfileEvent(preStopEvents, "preStop", a.ComponentName, pod.GetName())
+		if err != nil {
+			return err
+		}
 	}
+
+	log.Infof("\nDeleting devfile component %s", a.ComponentName)
+	spinner := log.Spinnerf("Deleting Kubernetes resources for component %s", a.ComponentName)
+	defer spinner.End(false)
 
 	err = a.Client.DeleteDeployment(labels)
 	if err != nil {
