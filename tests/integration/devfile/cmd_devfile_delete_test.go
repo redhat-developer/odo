@@ -11,9 +11,9 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-// deleteLocalConfig helps user to delete the local config with flags
+// deleteLocalConfig helps user to delete local config files with flags
 func deleteLocalConfig(args ...string) {
-	helper.CmdShouldFail("odo", append(args)...)
+	helper.CmdShouldFail("odo", args...)
 	output := helper.CmdShouldPass("odo", append(args, "-af")...)
 	expectedOutput := []string{
 		"Successfully deleted env file",
@@ -57,19 +57,19 @@ var _ = Describe("odo devfile delete command tests", func() {
 	})
 
 	Context("when devfile delete command is executed", func() {
-		JustBeforeEach(func() {
+		It("should not throw an error with an existing namespace when no component exists", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
-		})
-
-		It("should not throw an error with an existing namespace when no component exists", func() {
 			helper.CmdShouldPass("odo", "delete", "--project", namespace, "-f")
 		})
 
 		It("should delete the component created from the devfile and also the owned resources", func() {
 			resourceTypes := []string{"deployments", "pods", "services", "ingress"}
 
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 			helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io", "--ingress", "--context", context)
 
 			if os.Getenv("KUBERNETES") != "true" {
@@ -87,7 +87,9 @@ var _ = Describe("odo devfile delete command tests", func() {
 		})
 
 		It("should delete the component created from the devfile and also the env and odo folders and the odo-index-file.json file with all flag", func() {
-
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
 			helper.CmdShouldPass("odo", "push", "--project", namespace)
 
 			helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io", "--ingress", "--context", context)
@@ -109,14 +111,15 @@ var _ = Describe("odo devfile delete command tests", func() {
 	Context("when the project doesn't exist", func() {
 		JustBeforeEach(func() {
 			invalidNamespace = "garbage"
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", invalidNamespace, componentName)
 		})
 
 		It("should let the user delete the local config files with -a flag", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", invalidNamespace, componentName)
 			deleteLocalConfig("delete")
 		})
 
 		It("should let the user delete the local config files with -a and -project flags", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", invalidNamespace, componentName)
 			deleteLocalConfig("delete", "--project", invalidNamespace)
 		})
 	})
