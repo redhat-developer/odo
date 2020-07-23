@@ -452,6 +452,50 @@ const JsonSchema200 = `{
               "uri": {
                 "description": "Location in a file fetched from a uri.",
                 "type": "string"
+              },
+              "endpoints": {
+                "items": {
+                  "properties": {
+                    "attributes": {
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "type": "object"
+                    },
+                    "path": {
+                      "type": "string"
+                    },
+                    "protocol": {
+                      "description": "Describes the application and transport protocols of the traffic that will go through this endpoint. Default value is \"http\"",
+                      "type": "string"
+                    },
+                    "secure": {
+                      "type": "boolean"
+                    },
+                    "exposure": {
+                      "enum": [
+                        "public",
+                        "internal",
+                        "none"
+                      ],
+                      "description": "Describes how the endpoint should be exposed on the network. Default value is \"public\"",
+                      "type": "string"
+                    }
+                    "name": {
+                      "type": "string"
+                    },
+                    "targetPort": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "targetPort"
+                  ],
+                  "type": "object",
+                  "additionalProperties": false
+                },
+                "type": "array"
               }
             },
             "required": [
@@ -486,6 +530,50 @@ const JsonSchema200 = `{
               "uri": {
                 "description": "Location in a file fetched from a uri.",
                 "type": "string"
+              },
+              "endpoints": {
+                "items": {
+                  "properties": {
+                    "attributes": {
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "type": "object"
+                    },
+                    "path": {
+                      "type": "string"
+                    },
+                    "protocol": {
+                      "description": "Describes the application and transport protocols of the traffic that will go through this endpoint. Default value is \"http\"",
+                      "type": "string"
+                    },
+                    "secure": {
+                      "type": "boolean"
+                    },
+                    "exposure": {
+                      "enum": [
+                        "public",
+                        "internal",
+                        "none"
+                      ],
+                      "description": "Describes how the endpoint should be exposed on the network. Default value is \"public\"",
+                      "type": "string"
+                    }
+                    "name": {
+                      "type": "string"
+                    },
+                    "targetPort": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "targetPort"
+                  ],
+                  "type": "object",
+                  "additionalProperties": false
+                },
+                "type": "array"
               }
             },
             "required": [

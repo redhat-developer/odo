@@ -108,7 +108,12 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		parameters.ForceBuild = true
 	}
 
-	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo)
+	endpointsMap, err := utils.GetEndpoints(a.Devfile.Data)
+	if err != nil {
+		return fmt.Errorf("unable to get endpoints: %w", err)
+	}
+
+	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo, endpointsMap)
 	if err != nil {
 		return errors.Wrap(err, "unable to create or update component")
 	}
@@ -124,7 +129,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
 	}
 
-	err = component.ApplyConfig(nil, &a.Client, config.LocalConfigInfo{}, parameters.EnvSpecificInfo, color.Output, componentExists)
+	err = component.ApplyConfig(nil, &a.Client, config.LocalConfigInfo{}, parameters.EnvSpecificInfo, color.Output, componentExists, endpointsMap)
 	if err != nil {
 		odoutil.LogErrorAndExit(err, "Failed to update config to component deployed.")
 	}
@@ -212,7 +217,7 @@ func (a Adapter) DoesComponentExist(cmpName string) (bool, error) {
 	return utils.ComponentExists(a.Client, cmpName)
 }
 
-func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo) (err error) {
+func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo, endpointMap map[int32]versionsCommon.Endpoint) (err error) {
 	componentName := a.ComponentName
 
 	componentType := strings.TrimSuffix(a.AdapterContext.Devfile.Data.GetMetadata().Name, "-")
@@ -294,14 +299,23 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 	deploymentSpec := kclient.GenerateDeploymentSpec(*podTemplateSpec, map[string]string{
 		"component": componentName,
 	})
+
 	var containerPorts []corev1.ContainerPort
+
 	for _, c := range deploymentSpec.Template.Spec.Containers {
-		if len(containerPorts) == 0 {
-			containerPorts = c.Ports
-		} else {
+		// No need to check
+		if reflect.DeepEqual(a.Devfile.Ctx.GetApiVersion(), "1.0.0") {
 			containerPorts = append(containerPorts, c.Ports...)
+		} else {
+			for _, port := range c.Ports {
+				// if Exposure == none, should not create a service for that port
+				if endpointMap[port.ContainerPort].Exposure != "none" {
+					containerPorts = append(containerPorts, port)
+				}
+			}
 		}
 	}
+
 	serviceSpec := kclient.GenerateServiceSpec(objectMeta.Name, containerPorts)
 	klog.V(4).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
 	klog.V(4).Infof("The component name is %v", componentName)

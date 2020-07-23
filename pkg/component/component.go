@@ -22,6 +22,7 @@ import (
 	"github.com/openshift/odo/pkg/catalog"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
 	"github.com/openshift/odo/pkg/config"
+	parsercommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/exec"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/occlient"
@@ -542,9 +543,10 @@ func ValidateComponentCreateRequest(client *occlient.Client, componentSettings c
 //	componentConfig: Component configuration
 //	envSpecificInfo: Component environment specific information, available if uses devfile
 //  cmpExist: true if components exists in the cluster
+//  endpointMap: value is devfile endpoint entry, key is the TargetPort for each enpoint entry
 // Returns:
 //	err: Errors if any else nil
-func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo, stdout io.Writer, cmpExist bool) (err error) {
+func ApplyConfig(client *occlient.Client, kClient *kclient.Client, componentConfig config.LocalConfigInfo, envSpecificInfo envinfo.EnvSpecificInfo, stdout io.Writer, cmpExist bool, endpointMap map[int32]parsercommon.Endpoint) (err error) {
 	isExperimentalModeEnabled := experimental.IsExperimentalModeEnabled()
 
 	if client == nil {

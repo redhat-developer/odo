@@ -7,6 +7,7 @@ import (
 
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/kclient"
@@ -107,6 +108,27 @@ func GetContainers(devfileObj devfileParser.DevfileObj) ([]corev1.Container, err
 		containers = append(containers, *container)
 	}
 	return containers, nil
+}
+
+// GetEndpoints iterates through the components in the devfile and returns endpoints of all supported components
+func GetEndpoints(data data.DevfileData) (map[int32]common.Endpoint, error) {
+	endpointsMap := make(map[int32]common.Endpoint)
+
+	for _, comp := range adaptersCommon.GetSupportedComponents(data) {
+		// Currently type container is the only devfile component that odo supports
+		if comp.Container.Endpoints != nil {
+			for _, endpoint := range comp.Container.Endpoints {
+				// TargetPort is a required entry for an Endpoint
+				// Devfile should not contains multiple identical TargetPorts, since all containers are inside one pod
+				if _, keyexist := endpointsMap[endpoint.TargetPort]; keyexist {
+					return nil, fmt.Errorf("Devfile contains multiple identical TargetPorts: %v", endpoint.TargetPort)
+				} else {
+					endpointsMap[endpoint.TargetPort] = endpoint
+				}
+			}
+		}
+	}
+	return endpointsMap, nil
 }
 
 // isEnvPresent checks if the env variable is present in an array of env variables
