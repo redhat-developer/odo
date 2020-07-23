@@ -3,9 +3,9 @@ package parser
 import (
 	"encoding/json"
 
-	devfileCtx "github.com/cli-playground/devfile-parser/pkg/devfile/parser/context"
-	"github.com/cli-playground/devfile-parser/pkg/devfile/parser/data"
-	"github.com/cli-playground/devfile-parser/pkg/devfile/validate"
+	devfileCtx "github.com/openshift/odo/pkg/devfile/parser/context"
+	"github.com/openshift/odo/pkg/devfile/parser/data"
+	"github.com/openshift/odo/pkg/devfile/validate"
 	"github.com/pkg/errors"
 )
 

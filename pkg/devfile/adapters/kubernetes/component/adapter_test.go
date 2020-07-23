@@ -6,10 +6,10 @@ import (
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 
-	devfileParser "github.com/cli-playground/devfile-parser/pkg/devfile/parser"
-	"github.com/cli-playground/devfile-parser/pkg/devfile/parser/data/common"
-	versionsCommon "github.com/cli-playground/devfile-parser/pkg/devfile/parser/data/common"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
+	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/testingutil"
 

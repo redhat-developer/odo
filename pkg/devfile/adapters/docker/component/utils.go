@@ -14,10 +14,10 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
-	versionsCommon "github.com/cli-playground/devfile-parser/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
+	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/exec"
 	"github.com/openshift/odo/pkg/lclient"

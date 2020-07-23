@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/openshift/odo/pkg/devfile/adapters"
-	//	"github.com/cli-playground/devfile-parser/pkg/devfile/parser"
-	"github.com/cli-playground/devfile-parser/pkg/devfile/parser"
+	//	"github.com/openshift/odo/pkg/devfile/parser"
+	"github.com/openshift/odo/pkg/devfile/parser"
 
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/machineoutput"

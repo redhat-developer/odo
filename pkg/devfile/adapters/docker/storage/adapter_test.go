@@ -3,10 +3,10 @@ package storage
 import (
 	"testing"
 
-	devfileParser "github.com/cli-playground/devfile-parser/pkg/devfile/parser"
-	versionsCommon "github.com/cli-playground/devfile-parser/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
+	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/testingutil"
 )

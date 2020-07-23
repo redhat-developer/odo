@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	v100 "github.com/cli-playground/devfile-parser/pkg/devfile/parser/data/1.0.0"
+	v100 "github.com/openshift/odo/pkg/devfile/parser/data/1.0.0"
 )
 
 func TestNewDevfileData(t *testing.T) {

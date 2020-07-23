@@ -31,13 +31,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	"k8s.io/klog"
 
-	versionsCommon "github.com/cli-playground/devfile-parser/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/config"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	adaptersCommon "github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/storage"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes/utils"
+	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
@@ -301,12 +301,12 @@ func (a Adapter) Build(parameters common.BuildParameters) (err error) {
 		return err
 	}
 
-	useKanikoBuild := true
+	useKanikoBuild := false
 
 	isBuildConfigSupported, err := client.IsBuildConfigSupported()
-	// if err != nil {
-	// 	return err
-	// }
+	if err != nil {
+		return err
+	}
 	if useKanikoBuild {
 		// perform kaniko build
 		err := a.BuildWithKaniko(parameters)

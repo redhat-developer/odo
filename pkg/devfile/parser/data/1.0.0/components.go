@@ -3,7 +3,7 @@ package version100
 import (
 	"strings"
 
-	"github.com/cli-playground/devfile-parser/pkg/devfile/parser/data/common"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 )
 
 func (d *Devfile100) GetMetadata() common.DevfileMetadata {

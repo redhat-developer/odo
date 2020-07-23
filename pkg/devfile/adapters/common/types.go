@@ -1,10 +1,10 @@
 package common
 
 import (
-	//devfileParser "github.com/cli-playground/devfile-parser/pkg/devfile/parser"
-	devfileParser "github.com/cli-playground/devfile-parser/pkg/devfile/parser"
+	//devfileParser "github.com/openshift/odo/pkg/devfile/parser"
+	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 
-	"github.com/cli-playground/devfile-parser/pkg/devfile/parser/data/common"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/envinfo"
 )
 

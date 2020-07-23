@@ -1,4 +1,4 @@
-package version200
+package version210
 
 import "github.com/openshift/odo/pkg/devfile/parser/data/common"
 
@@ -13,8 +13,8 @@ const (
 	DebugCommandGroupType CommandGroupType = "debug"
 )
 
-// Devfile200 Devfile schema.
-type Devfile200 struct {
+// Devfile210 Devfile schema.
+type Devfile210 struct {
 
 	// Predefined, ready-to-use, workspace-related commands
 	Commands []common.DevfileCommand `json:"commands,omitempty"`

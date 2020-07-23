@@ -1,4 +1,4 @@
-package version200
+package version210
 
 import (
 	"strings"
@@ -7,12 +7,12 @@ import (
 )
 
 // GetComponents returns the slice of DevfileComponent objects parsed from the Devfile
-func (d *Devfile200) GetComponents() []common.DevfileComponent {
+func (d *Devfile210) GetComponents() []common.DevfileComponent {
 	return d.Components
 }
 
 // GetCommands returns the slice of DevfileCommand objects parsed from the Devfile
-func (d *Devfile200) GetCommands() []common.DevfileCommand {
+func (d *Devfile210) GetCommands() []common.DevfileCommand {
 	var commands []common.DevfileCommand
 
 	for _, command := range d.Commands {
@@ -27,27 +27,27 @@ func (d *Devfile200) GetCommands() []common.DevfileCommand {
 }
 
 // GetParent returns the  DevfileParent object parsed from devfile
-func (d *Devfile200) GetParent() common.DevfileParent {
+func (d *Devfile210) GetParent() common.DevfileParent {
 	return d.Parent
 }
 
 // GetProjects returns the DevfileProject Object parsed from devfile
-func (d *Devfile200) GetProjects() []common.DevfileProject {
+func (d *Devfile210) GetProjects() []common.DevfileProject {
 	return d.Projects
 }
 
 // GetMetadata returns the DevfileMetadata Object parsed from devfile
-func (d *Devfile200) GetMetadata() common.DevfileMetadata {
+func (d *Devfile210) GetMetadata() common.DevfileMetadata {
 	return d.Metadata
 }
 
 // GetEvents returns the Events Object parsed from devfile
-func (d *Devfile200) GetEvents() common.DevfileEvents {
+func (d *Devfile210) GetEvents() common.DevfileEvents {
 	return d.Events
 }
 
 // GetAliasedComponents returns the slice of DevfileComponent objects that each have an alias
-func (d *Devfile200) GetAliasedComponents() []common.DevfileComponent {
+func (d *Devfile210) GetAliasedComponents() []common.DevfileComponent {
 	// V2 has name required in jsonSchema
 	return d.Components
 }
