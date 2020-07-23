@@ -344,9 +344,9 @@ func (a Adapter) BuildWithKaniko(parameters common.BuildParameters) (err error) 
 	gvr := schema.GroupVersionResource{Group: gvk.Group, Version: gvk.Version, Resource: strings.ToLower(gvk.Kind + "s")}
 	// var dockerSecretUnstructured *unstructured.Unstructured
 	dockerSecretMap, err := runtimeUnstructured.DefaultUnstructuredConverter.ToUnstructured(dockerSecret)
-	dockerSecretJSON, err := json.Marshal(dockerSecretMap)
+	dockerSecretByteArray, err := json.Marshal(dockerSecretMap)
 	var dockerSecretUnstructured *unstructured.Unstructured
-	dockerErr := json.Unmarshal(dockerSecretJSON, &dockerSecretUnstructured)
+	dockerErr := json.Unmarshal(dockerSecretByteArray, &dockerSecretUnstructured)
 	if dockerErr != nil {
 		return dockerErr
 	}
