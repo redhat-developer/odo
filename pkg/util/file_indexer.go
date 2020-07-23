@@ -244,7 +244,8 @@ func RunIndexer(directory string, ignoreRules []string) (ret IndexerRet, err err
 	return ret, nil
 }
 
-// CalculateFileDataKeyFromPath converts an absolute path to relative, and convert to OS-specific paths, for use as a map key in IndexerRet and FileIndex
+// CalculateFileDataKeyFromPath converts an absolute path to relative (and converts to OS-specific paths) for use
+// as a map key in IndexerRet and FileIndex
 func CalculateFileDataKeyFromPath(absolutePath string, rootDirectory string) (string, error) {
 
 	rootDirectory = filepath.FromSlash(rootDirectory)

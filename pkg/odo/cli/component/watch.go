@@ -299,6 +299,9 @@ func NewCmdWatch(name, fullName string) *cobra.Command {
 	return watchCmd
 }
 
+// regenerateAdapterAndPush is used as a DevfileWatchHandler in WatchParameters; it is a wrapper around adapter.Push()
+// that first regenerates the component adapter before calling push. This ensures that it has picked up the latest
+// devfile.yaml changes
 func regenerateAdapterAndPush(pushParams common.PushParameters, watchParams watch.WatchParameters) error {
 	var adapter common.ComponentAdapter
 	adapter, err := regenerateComponentAdapterFromWatchParams(watchParams)
@@ -309,6 +312,7 @@ func regenerateAdapterAndPush(pushParams common.PushParameters, watchParams watc
 	return err
 }
 
+// regenerateComponentAdapterFromWatchParams (re)generates a component adapter from the given watch parameters.
 func regenerateComponentAdapterFromWatchParams(parameters watch.WatchParameters) (common.ComponentAdapter, error) {
 
 	// Parse devfile and validate

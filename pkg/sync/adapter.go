@@ -49,18 +49,19 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 	isWatch := len(pushParameters.WatchFiles) > 0 || len(pushParameters.WatchDeletedFiles) > 0
 
 	// When this function is invoked by watch, the logic is:
-	// 1) If this is the first time that watch has called Push (in this OS process), then generate the file index using
-	//    the file indexer, and use that to sync files (don't use changed/deleted files list from watch at
+	// 1) If this is the first time that watch has called Push (in this OS process), then generate the file index
+	//    using the file indexer, and use that to sync files (eg don't use changed/deleted files list from watch at
 	//    this stage; these will be found by the indexer run).
 	//    - In the watch scenario, we need to first run the indexer for two reasons:
-	// 	    - In case where the index doesn't exist, we need to create it (so we can ADD to it in later updates)
-	// 	    - Even if it does exist, there is no guarantee that the remote pod is consistent with it; so on our
-	//        first invocation we need to compare the index with the remote pod (by regenerating the index and).
-	//        using that to sync the results.
+	// 	    - In cases where the index doesn't initially exist, we need to create it (so we can ADD to it in
+	//        later calls to SyncFiles(...) )
+	// 	    - Even if it does initially exist, there is no guarantee that the remote pod is consistent with it; so
+	//        on our first invocation we need to compare the index with the remote pod (by regenerating the index
+	//        and using the changes files list from that to sync the results.)
 	//
-	// 2) For every other push/sync call after the first, don't run the file indexer, instead use the watch events to determine
-	//    what changed; ensure that the index is then updated based on the watch events.
-	//
+	// 2) For every other push/sync call after the first, don't run the file indexer, instead we use
+	//    the watch events to determine what changed, and ensure that the index is then updated based
+	//    on the watch events (to ensure future 'odo push' calls are correct)
 
 	// True if the index was updated based on the deleted/changed files values from the watch (and
 	// thus the indexer doesn't need to run), false otherwise
@@ -227,6 +228,8 @@ func (a Adapter) pushLocal(path string, files []string, delFiles []string, isFor
 	return nil
 }
 
+// updateIndexWithWatchChanges uses the pushParameters.WatchDeletedFiles and pushParamters.WatchFiles to update
+// the existing index file; the index file is required to exist when this function is called.
 func updateIndexWithWatchChanges(pushParameters common.PushParameters) error {
 	indexFilePath, err := util.ResolveIndexFilePath(pushParameters.Path)
 
@@ -279,6 +282,7 @@ func updateIndexWithWatchChanges(pushParameters common.PushParameters) error {
 		klog.V(4).Infof("Added/updated watched file in index: %s", relativePath)
 	}
 
+	// Write the result
 	return util.WriteFile(fileIndex.Files, indexFilePath)
 
 }
