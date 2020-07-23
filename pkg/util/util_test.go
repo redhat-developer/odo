@@ -1463,20 +1463,69 @@ func TestConvertGitSSHRemotetoHTTPS(t *testing.T) {
 	}
 }
 
-// TODO: FIX THIS
-/*
 func TestUnzip(t *testing.T) {
 	tests := []struct {
 		name          string
-		zipURL        string
-		zipDst        string
+		src           string
+		pathToUnzip   string
 		expectedFiles []string
+		expectedError string
 	}{
 		{
-			name:          "Case 1: Valid zip ",
-			zipURL:        "https://github.com/che-samples/web-nodejs-sample/archive/master.zip",
-			zipDst:        "master.zip",
-			expectedFiles: []string{"package.json", "package-lock.json", "app", ".gitignore", "LICENSE", "README.md"},
+			name:          "Case 1: Invalid source zip",
+			src:           "../../tests/examples/source/devfiles/nodejs-zip/invalid.zip",
+			pathToUnzip:   "",
+			expectedFiles: []string{},
+			expectedError: "open ../../tests/examples/source/devfiles/nodejs-zip/invalid.zip: no such file or directory",
+		},
+		{
+			name:          "Case 2: Valid source zip, no pathToUnzip",
+			src:           "../../tests/examples/source/devfiles/nodejs-zip/master.zip",
+			pathToUnzip:   "",
+			expectedFiles: []string{"package.json", "package-lock.json", "app", "app/app.js", ".gitignore", "LICENSE", "README.md"},
+			expectedError: "",
+		},
+		{
+			name:          "Case 3: Valid source zip with pathToUnzip",
+			src:           "../../tests/examples/source/devfiles/nodejs-zip/master.zip",
+			pathToUnzip:   "app",
+			expectedFiles: []string{"app.js"},
+			expectedError: "",
+		},
+		{
+			name:          "Case 4: Valid source zip with pathToUnzip - trailing /",
+			src:           "../../tests/examples/source/devfiles/nodejs-zip/master.zip",
+			pathToUnzip:   "app/",
+			expectedFiles: []string{"app.js"},
+			expectedError: "",
+		},
+		{
+			name:          "Case 5: Valid source zip with pathToUnzip - leading /",
+			src:           "../../tests/examples/source/devfiles/nodejs-zip/master.zip",
+			pathToUnzip:   "app/",
+			expectedFiles: []string{"app.js"},
+			expectedError: "",
+		},
+		{
+			name:          "Case 6: Valid source zip with pathToUnzip - leading and trailing /",
+			src:           "../../tests/examples/source/devfiles/nodejs-zip/master.zip",
+			pathToUnzip:   "/app/",
+			expectedFiles: []string{"app.js"},
+			expectedError: "",
+		},
+		{
+			name:          "Case 7: Valid source zip with pathToUnzip - pattern",
+			src:           "../../tests/examples/source/devfiles/nodejs-zip/master.zip",
+			pathToUnzip:   "p*",
+			expectedFiles: []string{"package.json", "package-lock.json"},
+			expectedError: "",
+		},
+		{
+			name:          "Case 8: Valid source zip with pathToUnzip - pattern and extension",
+			src:           "../../tests/examples/source/devfiles/nodejs-zip/master.zip",
+			pathToUnzip:   "*.json",
+			expectedFiles: []string{"package.json", "package-lock.json"},
+			expectedError: "",
 		},
 	}
 
@@ -1486,28 +1535,24 @@ func TestUnzip(t *testing.T) {
 			if err != nil {
 				t.Errorf("Error creating temp dir: %s", err)
 			}
-			//defer os.RemoveAll(dir)
+			defer os.RemoveAll(dir)
 			t.Logf(dir)
 
-			tt.zipDst = filepath.Join(dir, tt.zipDst)
-			err = DownloadFile(tt.zipURL, tt.zipDst)
+			_, err = Unzip(tt.src, dir, tt.pathToUnzip)
 			if err != nil {
-				t.Errorf("Error downloading zip: %s", err)
-			}
-			_, err = Unzip(tt.zipDst, dir)
-			if err != nil {
-				t.Errorf("Error unzipping: %s", err)
-			}
-
-			for _, file := range tt.expectedFiles {
-				if _, err := os.Stat(filepath.Join(dir, file)); os.IsNotExist(err) {
-					t.Errorf("Expected file %s does not exist in directory after unzipping", file)
+				if !reflect.DeepEqual(err.Error(), tt.expectedError) {
+					t.Errorf("Got err: '%s', expected err: '%s'", err.Error(), tt.expectedError)
+				}
+			} else {
+				for _, file := range tt.expectedFiles {
+					if _, err := os.Stat(filepath.Join(dir, file)); os.IsNotExist(err) {
+						t.Errorf("Expected file %s does not exist in directory after unzipping", file)
+					}
 				}
 			}
 		})
 	}
 }
-*/
 
 func TestIsValidProjectDir(t *testing.T) {
 	tests := []struct {
