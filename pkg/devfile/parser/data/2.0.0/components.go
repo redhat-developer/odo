@@ -1,6 +1,7 @@
 package version200
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
@@ -9,6 +10,33 @@ import (
 // GetComponents returns the slice of DevfileComponent objects parsed from the Devfile
 func (d *Devfile200) GetComponents() []common.DevfileComponent {
 	return d.Components
+}
+
+// AddComponents adds the slice of DevfileComponent objects to the devfile's components
+// if a component is already defined, error out
+func (d *Devfile200) AddComponents(components []common.DevfileComponent) error {
+	componentMap := make(map[string]bool)
+	for _, component := range d.Components {
+		componentMap[component.Container.Name] = true
+	}
+
+	for _, component := range components {
+		if _, ok := componentMap[component.Container.Name]; !ok {
+			d.Components = append(d.Components, component)
+		} else {
+			return fmt.Errorf("component %v is already present in the devfile", component.Container.Name)
+		}
+	}
+	return nil
+}
+
+// UpdateComponent updates the component with the given name
+func (d *Devfile200) UpdateComponent(component common.DevfileComponent) {
+	for i := range d.Components {
+		if d.Components[i].Container.Name == strings.ToLower(component.Container.Name) {
+			d.Components[i] = component
+		}
+	}
 }
 
 // GetCommands returns the slice of DevfileCommand objects parsed from the Devfile
@@ -31,14 +59,73 @@ func (d *Devfile200) GetCommands() []common.DevfileCommand {
 	return commands
 }
 
-// GetParent returns the  DevfileParent object parsed from devfile
+// AddCommands adds the slice of DevfileCommand objects to the Devfile's commands
+// if a command is already defined, error out
+func (d *Devfile200) AddCommands(commands []common.DevfileCommand) error {
+	commandsMap := make(map[string]bool)
+	for _, command := range d.Commands {
+		commandsMap[command.Exec.Id] = true
+	}
+
+	for _, command := range commands {
+		if _, ok := commandsMap[command.Exec.Id]; !ok {
+			d.Commands = append(d.Commands, command)
+		} else {
+			return fmt.Errorf("command %v is already present in the devfile", command.Exec.Id)
+		}
+	}
+	return nil
+}
+
+// UpdateCommand updates the command with the given id
+func (d *Devfile200) UpdateCommand(command common.DevfileCommand) {
+	for i := range d.Commands {
+		if d.Commands[i].Exec.Id == strings.ToLower(command.Exec.Id) {
+			d.Commands[i] = command
+		}
+	}
+}
+
+// GetParent returns the DevfileParent object parsed from devfile
 func (d *Devfile200) GetParent() common.DevfileParent {
 	return d.Parent
+}
+
+// SetParent sets the parent for the devfile
+func (d *Devfile200) SetParent(parent common.DevfileParent) {
+	d.Parent = parent
 }
 
 // GetProjects returns the DevfileProject Object parsed from devfile
 func (d *Devfile200) GetProjects() []common.DevfileProject {
 	return d.Projects
+}
+
+// AddProjects adss the slice of Devfile projects to the Devfile's project list
+// if a project is already defined, error out
+func (d *Devfile200) AddProjects(projects []common.DevfileProject) error {
+	projectsMap := make(map[string]bool)
+	for _, project := range d.Projects {
+		projectsMap[project.Name] = true
+	}
+
+	for _, project := range projects {
+		if _, ok := projectsMap[project.Name]; !ok {
+			d.Projects = append(d.Projects, project)
+		} else {
+			return fmt.Errorf("project %v is already present in the devfile", project.Name)
+		}
+	}
+	return nil
+}
+
+// UpdateProject updates the slice of DevfileCommand projects parsed from the Devfile
+func (d *Devfile200) UpdateProject(project common.DevfileProject) {
+	for i := range d.Projects {
+		if d.Projects[i].Name == strings.ToLower(project.Name) {
+			d.Projects[i] = project
+		}
+	}
 }
 
 // GetMetadata returns the DevfileMetadata Object parsed from devfile
@@ -49,6 +136,60 @@ func (d *Devfile200) GetMetadata() common.DevfileMetadata {
 // GetEvents returns the Events Object parsed from devfile
 func (d *Devfile200) GetEvents() common.DevfileEvents {
 	return d.Events
+}
+
+// AddEvents adds the Events Object to the devfile's events
+// if the event is already defined in the devfile, error out
+func (d *Devfile200) AddEvents(events common.DevfileEvents) error {
+	if len(events.PreStop) > 0 {
+		if len(d.Events.PreStop) > 0 {
+			return fmt.Errorf("pre stop event is already defined in the devfile")
+		} else {
+			d.Events.PreStop = events.PreStop
+		}
+	}
+
+	if len(events.PreStart) > 0 {
+		if len(d.Events.PreStart) > 0 {
+			return fmt.Errorf("pre start event is already defined in the devfile")
+		} else {
+			d.Events.PreStart = events.PreStart
+		}
+	}
+
+	if len(events.PostStop) > 0 {
+		if len(d.Events.PostStop) > 0 {
+			return fmt.Errorf("post stop event is already defined in the devfile")
+		} else {
+			d.Events.PostStop = events.PostStop
+		}
+	}
+
+	if len(events.PostStart) > 0 {
+		if len(d.Events.PostStart) > 0 {
+			return fmt.Errorf("post start event is already defined in the devfile")
+		} else {
+			d.Events.PostStart = events.PostStart
+		}
+	}
+	return nil
+}
+
+// UpdateEvents updates the devfile's events
+// it only updates the events passed to it
+func (d *Devfile200) UpdateEvents(postStart, postStop, preStart, preStop []string) {
+	if len(postStart) != 0 {
+		d.Events.PostStart = postStart
+	}
+	if len(postStop) != 0 {
+		d.Events.PostStop = postStop
+	}
+	if len(preStart) != 0 {
+		d.Events.PreStart = preStart
+	}
+	if len(preStop) != 0 {
+		d.Events.PreStop = preStop
+	}
 }
 
 // GetAliasedComponents returns the slice of DevfileComponent objects that each have an alias

@@ -1,0 +1,13 @@
+<server description="Liberty server">
+    <featureManager>
+        <feature>microProfile-3.2</feature>
+    </featureManager>
+    <quickStartSecurity userName="admin" userPassword="adminpwd"/>
+    <keyStore id="defaultKeyStore" location="key.jks" type="jks" password="mpKeystore"/>
+    <httpEndpoint host="*" httpPort="${default.http.port}" 
+        httpsPort="${default.https.port}" id="defaultHttpEndpoint"/>
+
+    <httpDispatcher enableWelcomePage="false" />
+    
+    <webApplication location="starter-app.war" contextRoot="/"/>
+</server>

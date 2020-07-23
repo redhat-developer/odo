@@ -94,6 +94,26 @@ func (d TestDevfileData) Validate() error {
 	return nil
 }
 
+func (d TestDevfileData) AddComponents(components []common.DevfileComponent) error { return nil }
+
+func (d TestDevfileData) UpdateComponent(component common.DevfileComponent) {}
+
+func (d TestDevfileData) AddCommands(commands []common.DevfileCommand) error { return nil }
+
+func (d TestDevfileData) UpdateCommand(command common.DevfileCommand) {}
+
+func (d TestDevfileData) SetEvents(events common.DevfileEvents) {}
+
+func (d TestDevfileData) AddProjects(projects []common.DevfileProject) error { return nil }
+
+func (d TestDevfileData) UpdateProject(project common.DevfileProject) {}
+
+func (d TestDevfileData) AddEvents(events common.DevfileEvents) error { return nil }
+
+func (d TestDevfileData) UpdateEvents(postStart, postStop, preStart, preStop []string) {}
+
+func (d TestDevfileData) SetParent(parent common.DevfileParent) {}
+
 // GetFakeComponent returns fake component for testing
 func GetFakeComponent(name string) versionsCommon.DevfileComponent {
 	image := "docker.io/maven:latest"
@@ -127,5 +147,21 @@ func GetFakeExecRunCommands() []versionsCommon.Exec {
 			},
 			WorkingDir: "/root",
 		},
+	}
+}
+
+// GetFakeExecRunCommands returns a fake env for testing
+func GetFakeEnv(name, value string) versionsCommon.Env {
+	return versionsCommon.Env{
+		Name:  name,
+		Value: value,
+	}
+}
+
+// GetFakeVolumeMount returns a fake volume mount for testing
+func GetFakeVolumeMount(name, path string) versionsCommon.VolumeMount {
+	return versionsCommon.VolumeMount{
+		Name: name,
+		Path: path,
 	}
 }

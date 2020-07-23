@@ -121,3 +121,19 @@ func (kubectl KubectlRunner) DeleteNamespaceProject(projectName string) {
 	fmt.Fprintf(GinkgoWriter, "Deleting project: %s\n", projectName)
 	CmdShouldPass("kubectl", "delete", "namespaces", projectName)
 }
+
+func (kubectl KubectlRunner) GetEnvsDevFileDeployment(componentName string, projectName string) map[string]string {
+	var mapOutput = make(map[string]string)
+
+	output := CmdShouldPass(kubectl.path, "get", "deployment", componentName, "--namespace", projectName,
+		"-o", "jsonpath='{range .spec.template.spec.containers[0].env[*]}{.name}:{.value}{\"\\n\"}{end}'")
+
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimPrefix(line, "'")
+		splits := strings.Split(line, ":")
+		name := splits[0]
+		value := strings.Join(splits[1:], ":")
+		mapOutput[name] = value
+	}
+	return mapOutput
+}

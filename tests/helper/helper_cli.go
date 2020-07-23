@@ -14,4 +14,5 @@ type CliRunner interface {
 	GetServices(namespace string) string
 	CreateRandNamespaceProject() string
 	DeleteNamespaceProject(projectName string)
+	GetEnvsDevFileDeployment(componentName string, projectName string) map[string]string
 }

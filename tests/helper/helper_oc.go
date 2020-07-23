@@ -468,6 +468,22 @@ func (oc OcRunner) GetEnvs(componentName string, appName string, projectName str
 	return mapOutput
 }
 
+func (oc OcRunner) GetEnvsDevFileDeployment(componentName string, projectName string) map[string]string {
+	var mapOutput = make(map[string]string)
+
+	output := CmdShouldPass(oc.path, "get", "deployment", componentName, "--namespace", projectName,
+		"-o", "jsonpath='{range .spec.template.spec.containers[0].env[*]}{.name}:{.value}{\"\\n\"}{end}'")
+
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimPrefix(line, "'")
+		splits := strings.Split(line, ":")
+		name := splits[0]
+		value := strings.Join(splits[1:], ":")
+		mapOutput[name] = value
+	}
+	return mapOutput
+}
+
 // WaitForDCRollout wait for DeploymentConfig to finish active rollout
 // timeout is a maximum wait time in seconds
 func (oc OcRunner) WaitForDCRollout(dcName string, project string, timeout time.Duration) {
