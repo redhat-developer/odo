@@ -558,3 +558,13 @@ func (oc OcRunner) DeleteNamespaceProject(projectName string) {
 	session := CmdShouldPass("odo", "project", "delete", projectName, "-f")
 	Expect(session).To(ContainSubstring("Deleted project : " + projectName))
 }
+
+func (oc OcRunner) GetAllPVCNames(namespace string) []string {
+	session := CmdRunner(oc.path, "get", "pvc", "--namespace", namespace, "-o", "jsonpath={.items[*].metadata.name}")
+	Eventually(session).Should(gexec.Exit(0))
+	output := string(session.Wait().Out.Contents())
+	if output == "" {
+		return []string{}
+	}
+	return strings.Split(output, " ")
+}

@@ -272,6 +272,11 @@ test-cmd-devfile-debug:
 	ginkgo $(GINKGO_FLAGS) -focus="odo devfile debug command tests" tests/integration/devfile/
 	ginkgo $(GINKGO_FLAGS_SERIAL) -focus="odo devfile debug command serial tests" tests/integration/devfile/debug
 
+# Run odo storage devfile command tests
+.PHONY: test-cmd-devfile-storage
+test-cmd-devfile-storage:
+	ginkgo $(GINKGO_FLAGS) -focus="odo devfile storage command tests" tests/integration/devfile/
+
 # Run odo log devfile command tests
 .PHONY: test-cmd-devfile-log
 test-cmd-devfile-log:

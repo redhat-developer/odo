@@ -2,7 +2,6 @@ package storage
 
 import (
 	"fmt"
-
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 
@@ -111,4 +110,25 @@ func GetExistingPVC(Client *kclient.Client, volumeName, componentName string) (s
 		err = errors.New("More than 1 PVC found with the label " + label)
 		return "", err
 	}
+}
+
+// DeleteOldPVCs deletes all the old PVCs which are not in the processedVolumes map
+func DeleteOldPVCs(Client *kclient.Client, componentName string, processedVolumes map[string]bool) error {
+	label := "component=" + componentName
+	PVCs, err := Client.GetPVCsFromSelector(label)
+	if err != nil {
+		return errors.Wrapf(err, "Unable to get PVC with selectors "+label)
+	}
+	for _, pvc := range PVCs {
+		storageName, ok := pvc.GetLabels()["storage-name"]
+		if ok && !processedVolumes[storageName] {
+			// the pvc is not in the processedVolumes map
+			// thus deleting those PVCs
+			err := Client.DeletePVC(pvc.GetName())
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

@@ -318,6 +318,11 @@ func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpe
 		}
 	}
 
+	err = storage.DeleteOldPVCs(&a.Client, componentName, processedVolumes)
+	if err != nil {
+		return err
+	}
+
 	// Add PVC and Volume Mounts to the podTemplateSpec
 	err = kclient.AddPVCAndVolumeMount(podTemplateSpec, volumeNameToPVCName, containerNameToVolumes)
 	if err != nil {

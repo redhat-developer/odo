@@ -32,6 +32,11 @@ func (c *Client) CreatePVC(objectMeta metav1.ObjectMeta, pvcSpec corev1.Persiste
 	return createdPvc, nil
 }
 
+// DeletePVC deletes the required PVC resource from the cluster
+func (c *Client) DeletePVC(pvcName string) error {
+	return c.KubeClient.CoreV1().PersistentVolumeClaims(c.Namespace).Delete(pvcName, &metav1.DeleteOptions{})
+}
+
 // AddPVCToPodTemplateSpec adds the given PVC to the podTemplateSpec
 func AddPVCToPodTemplateSpec(podTemplateSpec *corev1.PodTemplateSpec, volumeName, pvcName string) {
 

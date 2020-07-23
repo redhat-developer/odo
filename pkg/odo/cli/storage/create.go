@@ -2,7 +2,8 @@ package storage
 
 import (
 	"fmt"
-
+	"github.com/openshift/odo/pkg/devfile"
+	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
@@ -24,49 +25,98 @@ var (
 	`)
 )
 
+const defaultStorageSize = "1Gi"
+
 type StorageCreateOptions struct {
 	storageName      string
 	storageSize      string
 	storagePath      string
 	componentContext string
+
+	devfilePath   string
+	isDevfile     bool
+	componentName string
 	*genericclioptions.Context
 }
 
 // NewStorageCreateOptions creates a new StorageCreateOptions instance
 func NewStorageCreateOptions() *StorageCreateOptions {
-	return &StorageCreateOptions{}
+	return &StorageCreateOptions{devfilePath: "./devfile.yaml"}
 }
 
 // Complete completes StorageCreateOptions after they've been created
 func (o *StorageCreateOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
-	o.Context = genericclioptions.NewContext(cmd)
+	if o.isDevfile {
+		o.Context = genericclioptions.NewDevfileContext(cmd)
+
+		o.componentName = o.EnvSpecificInfo.GetName()
+		if o.storageSize == "" {
+			o.storageSize = defaultStorageSize
+		}
+	} else {
+		o.Context = genericclioptions.NewContext(cmd)
+		o.componentName = o.LocalConfigInfo.GetName()
+	}
+
 	if len(args) != 0 {
 		o.storageName = args[0]
 	} else {
-		o.storageName = o.Component() + "-" + util.GenerateRandomString(4)
+		o.storageName = o.componentName + "-" + util.GenerateRandomString(4)
 	}
 	return
 }
 
 // Validate validates the StorageCreateOptions based on completed values
 func (o *StorageCreateOptions) Validate() (err error) {
+	if o.isDevfile {
+		return
+	}
 	// validate storage path
 	return o.LocalConfigInfo.ValidateStorage(o.storageName, o.storagePath)
 }
 
-// Run contains the logic for the odo storage create command
-func (o *StorageCreateOptions) Run() (err error) {
-	storageResult, err := o.LocalConfigInfo.StorageCreate(o.storageName, o.storageSize, o.storagePath)
+func (o *StorageCreateOptions) devfileRun() error {
+	devFile, err := devfile.ParseAndValidate(o.devfilePath)
 	if err != nil {
 		return err
 	}
 
-	storageResultMachineReadable := storage.GetMachineReadableFormat(storageResult.Name, storageResult.Size, storageResult.Path)
+	err = devFile.Data.AddVolume(common.Volume{
+		Name: o.storageName,
+		Size: o.storageSize,
+	}, o.storagePath)
+
+	if err != nil {
+		return err
+	}
+	err = devFile.WriteYamlDevfile()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Run contains the logic for the odo storage create command
+func (o *StorageCreateOptions) Run() (err error) {
+	if o.isDevfile {
+		err := o.devfileRun()
+		if err != nil {
+			return err
+		}
+	} else {
+		_, err := o.LocalConfigInfo.StorageCreate(o.storageName, o.storageSize, o.storagePath)
+		if err != nil {
+			return err
+		}
+	}
+
+	storageResultMachineReadable := storage.GetMachineReadableFormat(o.storageName, o.storageSize, o.storagePath)
 
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(storageResultMachineReadable)
 	} else {
-		log.Successf("Added storage %v to %v", o.storageName, o.LocalConfigInfo.GetName())
+		log.Successf("Added storage %v to %v", o.storageName, o.componentName)
+
 		log.Italic("\nPlease use `odo push` command to make the storage accessible to the component")
 	}
 	return
@@ -87,10 +137,15 @@ func NewCmdStorageCreate(name, fullName string) *cobra.Command {
 		},
 	}
 
+	o.isDevfile = util.CheckPathExists(o.devfilePath)
+
 	storageCreateCmd.Flags().StringVar(&o.storageSize, "size", "", "Size of storage to add")
 	storageCreateCmd.Flags().StringVar(&o.storagePath, "path", "", "Path to mount the storage on")
+
 	_ = storageCreateCmd.MarkFlagRequired("path")
-	_ = storageCreateCmd.MarkFlagRequired("size")
+	if !o.isDevfile {
+		_ = storageCreateCmd.MarkFlagRequired("size")
+	}
 
 	genericclioptions.AddContextFlag(storageCreateCmd, &o.componentContext)
 	completion.RegisterCommandFlagHandler(storageCreateCmd, "context", completion.FileCompletionHandler)

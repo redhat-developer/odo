@@ -93,6 +93,14 @@ func (d TestDevfileData) GetCommands() []versionsCommon.DevfileCommand {
 	}
 }
 
+func (d TestDevfileData) AddVolume(volume common.Volume, path string) error { return nil }
+
+func (d TestDevfileData) DeleteVolume(name string) error { return nil }
+
+func (d TestDevfileData) GetVolumeMountPath(name string) (string, error) {
+	return "", nil
+}
+
 // Validate is a mock validation that always validates without error
 func (d TestDevfileData) Validate() error {
 	return nil
@@ -147,9 +155,7 @@ func GetFakeContainerComponent(name string) versionsCommon.DevfileComponent {
 }
 
 // GetFakeVolumeComponent returns a fake volume component for testing
-func GetFakeVolumeComponent(name string) versionsCommon.DevfileComponent {
-	size := "4Gi"
-
+func GetFakeVolumeComponent(name, size string) versionsCommon.DevfileComponent {
 	return versionsCommon.DevfileComponent{
 		Volume: &versionsCommon.Volume{
 			Name: name,
@@ -185,5 +191,13 @@ func GetFakeVolumeMount(name, path string) versionsCommon.VolumeMount {
 	return versionsCommon.VolumeMount{
 		Name: name,
 		Path: path,
+	}
+}
+
+// GetFakeVolume returns a fake volume for testing
+func GetFakeVolume(name, size string) versionsCommon.Volume {
+	return versionsCommon.Volume{
+		Name: name,
+		Size: size,
 	}
 }
