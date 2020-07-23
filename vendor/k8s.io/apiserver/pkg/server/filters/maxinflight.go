@@ -160,6 +160,12 @@ func WithMaxInFlightLimit(
 				handler.ServeHTTP(w, r)
 
 			default:
+				// We need to split this data between buckets used for throttling.
+				if isMutatingRequest {
+					metrics.DroppedRequests.WithLabelValues(metrics.MutatingKind).Inc()
+				} else {
+					metrics.DroppedRequests.WithLabelValues(metrics.ReadOnlyKind).Inc()
+				}
 				// at this point we're about to return a 429, BUT not all actors should be rate limited.  A system:master is so powerful
 				// that they should always get an answer.  It's a super-admin or a loopback connection.
 				if currUser, ok := apirequest.UserFrom(ctx); ok {
@@ -170,13 +176,7 @@ func WithMaxInFlightLimit(
 						}
 					}
 				}
-				// We need to split this data between buckets used for throttling.
-				if isMutatingRequest {
-					metrics.DroppedRequests.WithLabelValues(metrics.MutatingKind).Inc()
-				} else {
-					metrics.DroppedRequests.WithLabelValues(metrics.ReadOnlyKind).Inc()
-				}
-				metrics.RecordRequestTermination(r, requestInfo, metrics.APIServerComponent, http.StatusTooManyRequests)
+				metrics.Record(r, requestInfo, "", http.StatusTooManyRequests, 0, 0)
 				tooManyRequests(r, w)
 			}
 		}

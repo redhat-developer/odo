@@ -1,5 +1,10 @@
-rules:
-  # prevent import of k8s.io/kubernetes
-  - selectorRegexp: k8s[.]io/kubernetes
-    forbiddenPrefixes:
-      - ''
+{
+  "Rules": [
+    {
+      "SelectorRegexp": "k8s[.]io/kubernetes",
+      "ForbiddenPrefixes": [
+        ""
+      ]
+    }
+  ]
+}

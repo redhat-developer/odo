@@ -43,7 +43,7 @@ type DeprecatedInsecureServingOptions struct {
 
 	// ListenFunc can be overridden to create a custom listener, e.g. for mocking in tests.
 	// It defaults to options.CreateListener.
-	ListenFunc func(network, addr string, config net.ListenConfig) (net.Listener, int, error)
+	ListenFunc func(network, addr string) (net.Listener, int, error)
 }
 
 // Validate ensures that the insecure port values within the range of the port.
@@ -54,8 +54,8 @@ func (s *DeprecatedInsecureServingOptions) Validate() []error {
 
 	errors := []error{}
 
-	if s.BindPort < 0 || s.BindPort > 65535 {
-		errors = append(errors, fmt.Errorf("insecure port %v must be between 0 and 65535, inclusive. 0 for turning off insecure (HTTP) port", s.BindPort))
+	if s.BindPort < 0 || s.BindPort > 65335 {
+		errors = append(errors, fmt.Errorf("insecure port %v must be between 0 and 65335, inclusive. 0 for turning off insecure (HTTP) port", s.BindPort))
 	}
 
 	return errors
@@ -69,13 +69,11 @@ func (s *DeprecatedInsecureServingOptions) AddFlags(fs *pflag.FlagSet) {
 
 	fs.IPVar(&s.BindAddress, "insecure-bind-address", s.BindAddress, ""+
 		"The IP address on which to serve the --insecure-port (set to 0.0.0.0 for all IPv4 interfaces and :: for all IPv6 interfaces).")
-	// Though this flag is deprecated, we discovered security concerns over how to do health checks without it e.g. #43784
 	fs.MarkDeprecated("insecure-bind-address", "This flag will be removed in a future version.")
 	fs.Lookup("insecure-bind-address").Hidden = false
 
 	fs.IntVar(&s.BindPort, "insecure-port", s.BindPort, ""+
 		"The port on which to serve unsecured, unauthenticated access.")
-	// Though this flag is deprecated, we discovered security concerns over how to do health checks without it e.g. #43784
 	fs.MarkDeprecated("insecure-port", "This flag will be removed in a future version.")
 	fs.Lookup("insecure-port").Hidden = false
 }
@@ -96,7 +94,7 @@ func (s *DeprecatedInsecureServingOptions) AddUnqualifiedFlags(fs *pflag.FlagSet
 	fs.Lookup("port").Hidden = false
 }
 
-// ApplyTo adds DeprecatedInsecureServingOptions to the insecureserverinfo and kube-controller manager configuration.
+// ApplyTo adds DeprecatedInsecureServingOptions to the insecureserverinfo amd kube-controller manager configuration.
 // Note: the double pointer allows to set the *DeprecatedInsecureServingInfo to nil without referencing the struct hosting this pointer.
 func (s *DeprecatedInsecureServingOptions) ApplyTo(c **server.DeprecatedInsecureServingInfo) error {
 	if s == nil {
@@ -113,7 +111,7 @@ func (s *DeprecatedInsecureServingOptions) ApplyTo(c **server.DeprecatedInsecure
 			listen = s.ListenFunc
 		}
 		addr := net.JoinHostPort(s.BindAddress.String(), fmt.Sprintf("%d", s.BindPort))
-		s.Listener, s.BindPort, err = listen(s.BindNetwork, addr, net.ListenConfig{})
+		s.Listener, s.BindPort, err = listen(s.BindNetwork, addr)
 		if err != nil {
 			return fmt.Errorf("failed to create listener: %v", err)
 		}
@@ -132,8 +130,7 @@ func (o *DeprecatedInsecureServingOptions) WithLoopback() *DeprecatedInsecureSer
 }
 
 // DeprecatedInsecureServingOptionsWithLoopback adds loopback functionality to the DeprecatedInsecureServingOptions.
-// DEPRECATED: all insecure serving options will be removed in a future version, however note that
-// there are security concerns over how health checks can work here - see e.g. #43784
+// DEPRECATED: all insecure serving options are removed in a future version
 type DeprecatedInsecureServingOptionsWithLoopback struct {
 	*DeprecatedInsecureServingOptions
 }

@@ -38,6 +38,23 @@ install_etcd_operator(){
 EOF
 }
 
+install_service_binding_operator(){
+  oc create -f - <<EOF
+  apiVersion: operators.coreos.com/v1alpha1
+  kind: Subscription
+  metadata:
+    generation: 1
+    name: service-binding-operator
+    namespace: openshift-operators
+  spec:
+    channel: alpha
+    installPlanApproval: Automatic
+    name: service-binding-operator
+    source: community-operators
+    sourceNamespace: openshift-marketplace
+EOF
+}
+
 # install mongo operator
 count=0
 while [ "$count" -lt "5" ];
@@ -59,6 +76,19 @@ do
         break
     else
         install_etcd_operator
+        count=`expr $count + 1`
+        sleep 15
+    fi
+done
+
+# install service-binding-operator
+count=0
+while [ "$count" -lt "5" ];
+do
+    if oc get csv -n openshift-operators | grep service-binding-operator; then
+        break
+    else
+        install_service_binding_operator
         count=`expr $count + 1`
         sleep 15
     fi

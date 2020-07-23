@@ -1,0 +1,13 @@
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: 'REPLACE_NAME'
+  namespace: openshift-operators
+spec:
+  channel: 'REPLACE_CHANNEL' # the quotes are necessary to avoid conversions from strings like '1.0' to be converted to actual decimal numbers
+  installPlanApproval: Automatic
+  name: 'REPLACE_NAME'
+  source: 'REPLACE_OPSRC_NAME'
+  sourceNamespace: openshift-marketplace
+  startingCSV: 'REPLACE_CSV_VERSION'

@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-	cliflag "k8s.io/component-base/cli/flag"
+	utilflag "k8s.io/apiserver/pkg/util/flag"
 )
 
 type fakeGroupRegisty struct{}
@@ -42,28 +42,28 @@ func TestAPIEnablementOptionsValidate(t *testing.T) {
 		{
 			name: "test when invalid key with only api/all=false",
 			testOptions: &APIEnablementOptions{
-				RuntimeConfig: cliflag.ConfigurationMap{"api/all": "false"},
+				RuntimeConfig: utilflag.ConfigurationMap{"api/all": "false"},
 			},
 			expectErr: "invalid key with only api/all=false",
 		},
 		{
 			name: "test when ConfigurationMap key is invalid",
 			testOptions: &APIEnablementOptions{
-				RuntimeConfig: cliflag.ConfigurationMap{"apiall": "false"},
+				RuntimeConfig: utilflag.ConfigurationMap{"apiall": "false"},
 			},
 			expectErr: "runtime-config invalid key",
 		},
 		{
 			name: "test when unknown api groups",
 			testOptions: &APIEnablementOptions{
-				RuntimeConfig: cliflag.ConfigurationMap{"api/v1": "true"},
+				RuntimeConfig: utilflag.ConfigurationMap{"api/v1": "true"},
 			},
 			expectErr: "unknown api groups",
 		},
 		{
 			name: "test when valid api groups",
 			testOptions: &APIEnablementOptions{
-				RuntimeConfig: cliflag.ConfigurationMap{"apiregistration.k8s.io/v1beta1": "true"},
+				RuntimeConfig: utilflag.ConfigurationMap{"apiregistration.k8s.io/v1beta1": "true"},
 			},
 		},
 	}
