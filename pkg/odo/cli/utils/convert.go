@@ -287,8 +287,8 @@ func setDevfileCommandsForS2I(d data.DevfileData) {
 	}
 
 	// Ignoring error as we are writing new file
-	_ = d.AddCommand(buildCommand)
-	_ = d.AddCommand(runCommand)
+	_ = d.AddCommands([]common.DevfileCommand{buildCommand, runCommand})
+
 }
 
 func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig *config.LocalConfigInfo, s2iEnv config.EnvVarList) {
@@ -301,6 +301,7 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 	var endpoints []common.Endpoint
 	var envs []common.Env
 	var volumeMounts []common.VolumeMount
+	var components []common.DevfileComponent
 
 	// convert s2i storage to devfile volumes
 	for _, vol := range volumes {
@@ -308,7 +309,7 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 			Name: vol.Name,
 			Size: vol.Size,
 		}
-		_ = d.AddComponent(common.DevfileComponent{Volume: &volume})
+		components = append(components, common.DevfileComponent{Volume: &volume})
 
 		volumeMount := common.VolumeMount{
 			Name: vol.Name,
@@ -361,10 +362,10 @@ func setDevfileComponentsForS2I(d data.DevfileData, s2iImage string, localConfig
 		VolumeMounts:  volumeMounts,
 	}
 
-	component := common.DevfileComponent{Container: &container}
+	components = append(components, common.DevfileComponent{Container: &container})
 
 	// Ignoring error here as we are writing a new file
-	_ = d.AddComponent(component)
+	_ = d.AddComponents(components)
 
 }
 

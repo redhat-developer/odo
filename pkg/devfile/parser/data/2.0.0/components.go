@@ -1,30 +1,116 @@
 package version200
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
 )
+
+//SetSchemaVersion sets devfile schema version
+func (d *Devfile200) SetSchemaVersion(version string) {
+	d.SchemaVersion = version
+}
+
+// GetMetadata returns the DevfileMetadata Object parsed from devfile
+func (d *Devfile200) GetMetadata() common.DevfileMetadata {
+	return d.Metadata
+}
+
+// SetMetadata sets the metadata for devfile
+func (d *Devfile200) SetMetadata(name, version string) {
+	d.Metadata = common.DevfileMetadata{
+		Name:    name,
+		Version: version,
+	}
+}
+
+// GetParent returns the DevfileParent object parsed from devfile
+func (d *Devfile200) GetParent() common.DevfileParent {
+	return d.Parent
+}
+
+// SetParent sets the parent for the devfile
+func (d *Devfile200) SetParent(parent common.DevfileParent) {
+	d.Parent = parent
+}
+
+// GetProjects returns the DevfileProject Object parsed from devfile
+func (d *Devfile200) GetProjects() []common.DevfileProject {
+	return d.Projects
+}
+
+// AddProjects adss the slice of Devfile projects to the Devfile's project list
+// if a project is already defined, error out
+func (d *Devfile200) AddProjects(projects []common.DevfileProject) error {
+	projectsMap := make(map[string]bool)
+	for _, project := range d.Projects {
+		projectsMap[project.Name] = true
+	}
+
+	for _, project := range projects {
+		if _, ok := projectsMap[project.Name]; !ok {
+			d.Projects = append(d.Projects, project)
+		} else {
+			return &common.AlreadyExistError{Name: project.Name, Field: "project"}
+		}
+	}
+	return nil
+}
+
+// UpdateProject updates the slice of DevfileCommand projects parsed from the Devfile
+func (d *Devfile200) UpdateProject(project common.DevfileProject) {
+	for i := range d.Projects {
+		if d.Projects[i].Name == strings.ToLower(project.Name) {
+			d.Projects[i] = project
+		}
+	}
+}
 
 // GetComponents returns the slice of DevfileComponent objects parsed from the Devfile
 func (d *Devfile200) GetComponents() []common.DevfileComponent {
 	return d.Components
 }
 
+// GetAliasedComponents returns the slice of DevfileComponent objects that each have an alias
+func (d *Devfile200) GetAliasedComponents() []common.DevfileComponent {
+	// V2 has name required in jsonSchema
+	return d.Components
+}
+
 // AddComponents adds the slice of DevfileComponent objects to the devfile's components
 // if a component is already defined, error out
 func (d *Devfile200) AddComponents(components []common.DevfileComponent) error {
-	componentMap := make(map[string]bool)
+
+	// different map for volume and container component as a volume and a container with same name
+	// can exist in devfile
+	containerMap := make(map[string]bool)
+	volumeMap := make(map[string]bool)
+
 	for _, component := range d.Components {
-		componentMap[component.Container.Name] = true
+		if component.Volume != nil {
+			volumeMap[component.Volume.Name] = true
+		}
+		if component.Container != nil {
+			containerMap[component.Container.Name] = true
+		}
 	}
 
 	for _, component := range components {
-		if _, ok := componentMap[component.Container.Name]; !ok {
-			d.Components = append(d.Components, component)
-		} else {
-			return fmt.Errorf("component %v is already present in the devfile", component.Container.Name)
+
+		if component.Volume != nil {
+			if _, ok := volumeMap[component.Volume.Name]; !ok {
+				d.Components = append(d.Components, component)
+			} else {
+				return &common.AlreadyExistError{Name: component.Volume.Name, Field: "component"}
+			}
+		}
+
+		if component.Container != nil {
+			if _, ok := containerMap[component.Container.Name]; !ok {
+				d.Components = append(d.Components, component)
+			} else {
+				return &common.AlreadyExistError{Name: component.Container.Name, Field: "component"}
+			}
 		}
 	}
 	return nil
@@ -71,7 +157,7 @@ func (d *Devfile200) AddCommands(commands []common.DevfileCommand) error {
 		if _, ok := commandsMap[command.Exec.Id]; !ok {
 			d.Commands = append(d.Commands, command)
 		} else {
-			return fmt.Errorf("command %v is already present in the devfile", command.Exec.Id)
+			return &common.AlreadyExistError{Name: command.Exec.Id, Field: "command"}
 		}
 	}
 	return nil
@@ -86,53 +172,6 @@ func (d *Devfile200) UpdateCommand(command common.DevfileCommand) {
 	}
 }
 
-// GetParent returns the DevfileParent object parsed from devfile
-func (d *Devfile200) GetParent() common.DevfileParent {
-	return d.Parent
-}
-
-// SetParent sets the parent for the devfile
-func (d *Devfile200) SetParent(parent common.DevfileParent) {
-	d.Parent = parent
-}
-
-// GetProjects returns the DevfileProject Object parsed from devfile
-func (d *Devfile200) GetProjects() []common.DevfileProject {
-	return d.Projects
-}
-
-// AddProjects adss the slice of Devfile projects to the Devfile's project list
-// if a project is already defined, error out
-func (d *Devfile200) AddProjects(projects []common.DevfileProject) error {
-	projectsMap := make(map[string]bool)
-	for _, project := range d.Projects {
-		projectsMap[project.Name] = true
-	}
-
-	for _, project := range projects {
-		if _, ok := projectsMap[project.Name]; !ok {
-			d.Projects = append(d.Projects, project)
-		} else {
-			return fmt.Errorf("project %v is already present in the devfile", project.Name)
-		}
-	}
-	return nil
-}
-
-// UpdateProject updates the slice of DevfileCommand projects parsed from the Devfile
-func (d *Devfile200) UpdateProject(project common.DevfileProject) {
-	for i := range d.Projects {
-		if d.Projects[i].Name == strings.ToLower(project.Name) {
-			d.Projects[i] = project
-		}
-	}
-}
-
-// GetMetadata returns the DevfileMetadata Object parsed from devfile
-func (d *Devfile200) GetMetadata() common.DevfileMetadata {
-	return d.Metadata
-}
-
 // GetEvents returns the Events Object parsed from devfile
 func (d *Devfile200) GetEvents() common.DevfileEvents {
 	return d.Events
@@ -143,35 +182,32 @@ func (d *Devfile200) GetEvents() common.DevfileEvents {
 func (d *Devfile200) AddEvents(events common.DevfileEvents) error {
 	if len(events.PreStop) > 0 {
 		if len(d.Events.PreStop) > 0 {
-			return fmt.Errorf("pre stop event is already defined in the devfile")
-		} else {
-			d.Events.PreStop = events.PreStop
+			return &common.AlreadyExistError{Field: "pre stop"}
 		}
+		d.Events.PreStop = events.PreStop
 	}
 
 	if len(events.PreStart) > 0 {
 		if len(d.Events.PreStart) > 0 {
-			return fmt.Errorf("pre start event is already defined in the devfile")
-		} else {
-			d.Events.PreStart = events.PreStart
+			return &common.AlreadyExistError{Field: "pre start"}
 		}
+		d.Events.PreStart = events.PreStart
 	}
 
 	if len(events.PostStop) > 0 {
 		if len(d.Events.PostStop) > 0 {
-			return fmt.Errorf("post stop event is already defined in the devfile")
-		} else {
-			d.Events.PostStop = events.PostStop
+			return &common.AlreadyExistError{Field: "post stop"}
 		}
+		d.Events.PostStop = events.PostStop
 	}
 
 	if len(events.PostStart) > 0 {
 		if len(d.Events.PostStart) > 0 {
-			return fmt.Errorf("post start event is already defined in the devfile")
-		} else {
-			d.Events.PostStart = events.PostStart
+			return &common.AlreadyExistError{Field: "post start"}
 		}
+		d.Events.PostStart = events.PostStart
 	}
+
 	return nil
 }
 
@@ -190,52 +226,4 @@ func (d *Devfile200) UpdateEvents(postStart, postStop, preStart, preStop []strin
 	if len(preStop) != 0 {
 		d.Events.PreStop = preStop
 	}
-}
-
-// GetAliasedComponents returns the slice of DevfileComponent objects that each have an alias
-func (d *Devfile200) GetAliasedComponents() []common.DevfileComponent {
-	// V2 has name required in jsonSchema
-	return d.Components
-}
-
-// SetMetadata sets the metadata for devfile
-func (d *Devfile200) SetMetadata(name, version string) {
-	d.Metadata = common.DevfileMetadata{
-		Name:    name,
-		Version: version,
-	}
-}
-
-// AddComponent adds component to devfile
-func (d *Devfile200) AddComponent(component common.DevfileComponent) error {
-	var name string
-	if component.Volume != nil {
-		name = component.Volume.Name
-	}
-	if component.Container != nil {
-		name = component.Container.Name
-	}
-	for _, comp := range d.Components {
-		if comp.Container.Name == name {
-			return &common.AlreadyExistError{Name: component.Container.Name, Field: "component"}
-		}
-	}
-	d.Components = append(d.Components, component)
-	return nil
-}
-
-//AddCommand adds command to devfie
-func (d *Devfile200) AddCommand(command common.DevfileCommand) error {
-	for _, comm := range d.Commands {
-		if comm.Exec.Id == command.Exec.Id {
-			return &common.AlreadyExistError{Name: command.Exec.Id, Field: "command"}
-		}
-	}
-	d.Commands = append(d.Commands, command)
-	return nil
-}
-
-//SetSchemaVersion sets devfile schema version
-func (d *Devfile200) SetSchemaVersion(version string) {
-	d.SchemaVersion = version
 }

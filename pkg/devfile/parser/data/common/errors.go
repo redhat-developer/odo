@@ -11,5 +11,5 @@ type AlreadyExistError struct {
 }
 
 func (e *AlreadyExistError) Error() string {
-	return fmt.Sprintf("given %s with name %s already exists", e.Field, e.Name)
+	return fmt.Sprintf("%s %s already exists in devfile", e.Field, e.Name)
 }

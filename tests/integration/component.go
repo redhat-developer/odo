@@ -907,51 +907,51 @@ func componentTests(args ...string) {
 
 	/*
 		Commenting the tests till this PR gets merged https://github.com/openshift/odo-init-image/pull/70
-			Context("convert s2i to devfile", func() {
+		Context("convert s2i to devfile", func() {
 
-				JustBeforeEach(func() {
-					project = helper.CreateRandProject()
-					originalDir = helper.Getwd()
-				})
+			JustBeforeEach(func() {
+				project = helper.CreateRandProject()
+				originalDir = helper.Getwd()
+			})
 
-				JustAfterEach(func() {
-					helper.DeleteProject(project)
-					helper.Chdir(originalDir)
-				})
+			JustAfterEach(func() {
+				helper.DeleteProject(project)
+				helper.Chdir(originalDir)
+			})
 
-				It("should convert s2i component to devfile component successfully", func() {
+			It("should convert s2i component to devfile component successfully", func() {
 
-					cmpName := "mynodejs"
-					appName := "app"
-					urlName := "url1"
+				cmpName := "mynodejs"
+				appName := "app"
+				urlName := "url1"
 
-					// create a s2i component
-					helper.CopyExample(filepath.Join("source", "nodejs"), context)
-					helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
-					helper.CmdShouldPass("odo", "url", "create", urlName, "--port", "8080", "--context", context)
-					helper.CmdShouldPass("odo", "push", "--context", context)
+				// create a s2i component
+				helper.CopyExample(filepath.Join("source", "nodejs"), context)
+				helper.CmdShouldPass("odo", "component", "create", "nodejs", cmpName, "--project", project, "--context", context, "--app", appName)
+				helper.CmdShouldPass("odo", "url", "create", urlName, "--port", "8080", "--context", context)
+				helper.CmdShouldPass("odo", "push", "--context", context)
 
-					helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
-					helper.Chdir(context)
+				helper.CmdShouldPass("odo", "preference", "set", "Experimental", "true")
+				helper.Chdir(context)
 
-					// convert it to devfile
-					helper.CmdShouldPass("odo", "utils", "convert-to-devfile")
-					helper.CmdShouldPass("odo", "push")
+				// convert it to devfile
+				helper.CmdShouldPass("odo", "utils", "convert-to-devfile")
+				helper.CmdShouldPass("odo", "push")
 
-					// at this point both component should exist
-					stdout := helper.CmdShouldPass("odo", "list")
-					helper.MatchAllInOutput(stdout, []string{cmpName, "Openshift Components", "Devfile Components"})
+				// at this point both component should exist
+				stdout := helper.CmdShouldPass("odo", "list")
+				helper.MatchAllInOutput(stdout, []string{cmpName, "Openshift Components", "Devfile Components"})
 
-					// delete the s2i component
-					helper.CmdShouldPass("odo", "delete", "--s2i", "-a", "-f")
+				// delete the s2i component
+				helper.CmdShouldPass("odo", "delete", "--s2i", "-a", "-f")
 
-					// verify the url
-					stdout = helper.CmdShouldPass("odo", "url", "list")
-					helper.MatchAllInOutput(stdout, []string{urlName, "Pushed", "false", "route"})
-					helper.CmdShouldPass("odo", "preference", "set", "Experimental", "false")
-
-				})
+				// verify the url
+				stdout = helper.CmdShouldPass("odo", "url", "list")
+				helper.MatchAllInOutput(stdout, []string{urlName, "Pushed", "false", "route"})
+				helper.CmdShouldPass("odo", "preference", "set", "Experimental", "false")
 
 			})
+
+		})
 	*/
 }
