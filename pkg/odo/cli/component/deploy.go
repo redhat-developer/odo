@@ -45,6 +45,7 @@ type DeployOptions struct {
 	DockerfileBytes []byte
 	namespace       string
 	tag             string
+	credentials     string
 	ManifestSource  []byte
 	DeploymentPort  int
 
@@ -214,6 +215,7 @@ func NewCmdDeploy(name, fullName string) *cobra.Command {
 
 	// enable devfile flag if experimental mode is enabled
 	deployCmd.Flags().StringVar(&do.tag, "tag", "", "Tag used to build the image")
+	deployCmd.Flags().StringVar(&do.credentials, "credentials", "", "dockerconfig credentials used to push image to external registry")
 	deployCmd.Flags().StringSliceVar(&do.ignores, "ignore", []string{}, "Files or folders to be ignored via glob expressions.")
 
 	//Adding `--project` flag

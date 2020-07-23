@@ -34,6 +34,7 @@ type BuildParameters struct {
 	DockerfileBytes []byte                  // DockerfileBytes is the contents of the project Dockerfile in bytes
 	EnvSpecificInfo envinfo.EnvSpecificInfo // EnvSpecificInfo contains infomation of env.yaml file
 	Tag             string                  // Tag refers to the image tag of the image being built
+	Credentials     string                  // Credentials refers to the path to the dockerconfig file containing external registry credentials
 	IgnoredFiles    []string                // IgnoredFiles is the list of files to not push up to a component
 }
 

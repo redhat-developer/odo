@@ -156,6 +156,7 @@ func (do *DeployOptions) DevfileDeploy() (err error) {
 	buildParams := common.BuildParameters{
 		Path:            do.sourcePath,
 		Tag:             do.tag,
+		Credentials:     do.credentials,
 		DockerfileBytes: do.DockerfileBytes,
 		EnvSpecificInfo: *do.EnvSpecificInfo,
 	}

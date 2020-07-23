@@ -3,8 +3,10 @@ package component
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -15,15 +17,18 @@ import (
 	"time"
 
 	"github.com/openshift/odo/pkg/exec"
+	"github.com/openshift/odo/pkg/secret"
+	"github.com/openshift/odo/pkg/util"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	runtimeUnstructured "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 	"k8s.io/klog"
 
 	versionsCommon "github.com/cli-playground/devfile-parser/pkg/devfile/parser/data/common"
@@ -101,7 +106,7 @@ func (a Adapter) generateBuildContainer(containerName string, dockerfileBytes []
 		{Name: "AWS_SECRET_KEY", Value: "NOT_SET"},
 	}
 
-	isPrivileged := false
+	isPrivileged := true
 	resourceReqs := corev1.ResourceRequirements{}
 
 	container := kclient.GenerateContainer(containerName, buildImage, isPrivileged, command, commandArgs, envVars, resourceReqs, nil)
@@ -114,7 +119,21 @@ func (a Adapter) generateBuildContainer(containerName string, dockerfileBytes []
 	return *container
 }
 
-func (a Adapter) createBuildDeployment(labels map[string]string, container corev1.Container) (err error) {
+func (a Adapter) generateInitContainer(initContainerName string) corev1.Container {
+
+	initImage := "ubuntu"
+	command := []string{}
+	commandArgs := []string{}
+	isPrivileged := false
+	envVars := []corev1.EnvVar{}
+	resourceReqs := corev1.ResourceRequirements{}
+
+	container := kclient.GenerateContainer(initContainerName, initImage, isPrivileged, command, commandArgs, envVars, resourceReqs, nil)
+
+	return *container
+}
+
+func (a Adapter) createBuildDeployment(labels map[string]string, container, initContainer corev1.Container) (err error) {
 
 	objectMeta := kclient.CreateObjectMeta(a.ComponentName, a.Client.Namespace, labels, nil)
 	podTemplateSpec := kclient.GeneratePodTemplateSpec(objectMeta, []corev1.Container{container})
@@ -149,6 +168,7 @@ func (a Adapter) createBuildDeployment(labels map[string]string, container corev
 
 	podTemplateSpec.Spec.Volumes = append(podTemplateSpec.Spec.Volumes, buildContextVolume)
 	podTemplateSpec.Spec.Volumes = append(podTemplateSpec.Spec.Volumes, kanikoSecretVolume)
+	podTemplateSpec.Spec.InitContainers = []corev1.Container{initContainer}
 
 	deploymentSpec := kclient.GenerateDeploymentSpec(*podTemplateSpec)
 	klog.V(3).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
@@ -162,46 +182,22 @@ func (a Adapter) createBuildDeployment(labels map[string]string, container corev
 	return nil
 }
 
-func (a Adapter) executeBuildAndPush(syncFolder string, imageTag string, compInfo common.ComponentInfo) (err error) {
-	// Running buildah bud and buildah push
-	buildahBud := "buildah bud -f $Dockerfile -t $Tag ."
-	command := []string{adaptersCommon.ShellExecutable, "-c", "cd " + syncFolder + " && " + buildahBud}
+func (a Adapter) injectBuildContext(syncFolder io.Reader, imageTag string, compInfo common.ComponentInfo) (err error) {
 
-	// TODO: Add spinner
-	err = exec.ExecuteCommand(&a.Client, compInfo, command, false)
+	buildContextTar, err := ioutil.ReadAll(syncFolder)
 	if err != nil {
-		return errors.Wrapf(err, "failed to build image for component with name: %s", a.ComponentName)
+		return err
 	}
-
-	values := strings.Split(imageTag, "/")
-	tag := imageTag
-	buildahPush := "buildah push "
-
-	// Need to change this IF to be more robust
-	if len(values) == 3 && strings.Contains(values[0], "openshift") {
-		// This needs a valid service account: e.g builder for openshift
-		// --creds flag arg has the format username:password
-		// we want to use serviceaccount:token
-		buildahPush += "--creds "
-		saEnv := os.Getenv("BUILD_SERVICE_ACCOUNT")
-		if saEnv != "" {
-			buildahPush += saEnv
-		} else {
-			buildahBud += "dummy-username"
-		}
-		buildahPush += ":$(cat /var/run/secrets/kubernetes.io/serviceaccount/token) "
+	writeErr := ioutil.WriteFile("tmp/kaniko-build-context.tar.gz", buildContextTar, 0644)
+	if writeErr != nil {
+		return writeErr
 	}
+	command := []string{adaptersCommon.ShellExecutable, "tar -zxf tmp/kaniko-build-context.tar.gz -C /kaniko/build-context"}
 
-	//TODO: handle dockerhub case and creds!!
-	buildahPush += "--tls-verify=false " + tag + " docker://" + tag
-	command = []string{adaptersCommon.ShellExecutable, "-c", buildahPush}
-
-	//TODO: Add Spinner
-	err = exec.ExecuteCommand(&a.Client, compInfo, command, false)
+	err = exec.ExecuteCommand(&a.Client, compInfo, command, false, nil, nil)
 	if err != nil {
-		return errors.Wrapf(err, "failed to push build image to the registry for component with name: %s", a.ComponentName)
+		return errors.Wrapf(err, "failed to load tar into specified build context directory")
 	}
-
 	return nil
 }
 
@@ -305,7 +301,7 @@ func (a Adapter) Build(parameters common.BuildParameters) (err error) {
 		return err
 	}
 
-	var useKanikoBuild = true
+	useKanikoBuild := true
 
 	isBuildConfigSupported, err := client.IsBuildConfigSupported()
 	// if err != nil {
@@ -328,13 +324,41 @@ func (a Adapter) Build(parameters common.BuildParameters) (err error) {
 
 func (a Adapter) BuildWithKaniko(parameters common.BuildParameters) (err error) {
 
+	NamespacedName := types.NamespacedName{
+		Name:      "registry-credentials",
+		Namespace: parameters.EnvSpecificInfo.GetNamespace(),
+	}
+
+	dockerConfigBytes, err := util.LoadFileIntoMemory(parameters.Credentials)
+	dockerSecret, err := secret.CreateDockerConfigSecret(NamespacedName, dockerConfigBytes)
+
+	if err != nil {
+		return err
+	}
+
+	gvk := schema.GroupVersionKind{
+		Group:   "",
+		Version: "v1",
+		Kind:    "Secret",
+	}
+	gvr := schema.GroupVersionResource{Group: gvk.Group, Version: gvk.Version, Resource: strings.ToLower(gvk.Kind + "s")}
+	// var dockerSecretUnstructured *unstructured.Unstructured
+	dockerSecretMap, err := runtimeUnstructured.DefaultUnstructuredConverter.ToUnstructured(dockerSecret)
+	dockerSecretJSON, err := json.Marshal(dockerSecretMap)
+	_, dockerSecreteError := a.Client.DynamicClient.Resource(gvr).Namespace(NamespacedName.Namespace).Create(dockerSecretJSON, metav1.CreateOptions{})
+
+	if dockerSecreteError != nil {
+		return dockerSecreteError
+	}
 	containerName := a.ComponentName + "-container"
+	initContainerName := "kaniko-init"
 	buildContainer := a.generateBuildContainer(containerName, parameters.DockerfileBytes, parameters.Tag)
 	labels := map[string]string{
 		"component": a.ComponentName,
 	}
 
-	err = a.createBuildDeployment(labels, buildContainer)
+	initContainer := a.generateInitContainer(initContainerName)
+	err = a.createBuildDeployment(labels, buildContainer, initContainer)
 	if err != nil {
 		return errors.Wrap(err, "error while creating kaniko deployment")
 	}
@@ -371,7 +395,7 @@ func (a Adapter) BuildWithKaniko(parameters common.BuildParameters) (err error) 
 	// Get a sync adapter. Check if project files have changed and sync accordingly
 	syncAdapter := sync.New(a.AdapterContext, &a.Client)
 	compInfo := common.ComponentInfo{
-		ContainerName: containerName,
+		ContainerName: initContainerName,
 		PodName:       pod.GetName(),
 	}
 	var dockerfilepath = "/kaniko/build-context/Dockerfile"
@@ -381,7 +405,7 @@ func (a Adapter) BuildWithKaniko(parameters common.BuildParameters) (err error) 
 		return errors.Wrapf(err, "failed to sync to component with name %s", a.ComponentName)
 	}
 
-	err = a.executeBuildAndPush(syncFolder, parameters.Tag, compInfo)
+	err = a.injectBuildContext(syncFolder, parameters.Tag, compInfo)
 	if err != nil {
 		return err
 	}
