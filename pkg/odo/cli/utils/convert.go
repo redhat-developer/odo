@@ -45,8 +45,8 @@ const (
 	envS2iConvertedDevfile = "ODO_S2I_CONVERTED_DEVFILE"
 )
 
-var convertLongDesc = ktemplates.LongDesc(`Converts odo specifice configuration from s2i to devfile, 
-It generates devfile.yaml and env.yaml for s2i components`)
+var convertLongDesc = ktemplates.LongDesc(`Converts odo specific configuration from s2i to devfile. 
+It generates devfile.yaml and .odo/env/env.yaml for s2i components`)
 
 //var convertExample = ktemplates.Examples(`odo utils convert-to-devfile`)
 
@@ -63,16 +63,19 @@ odo push
 3. Verify if devfile component is deployed sucessfully.
 odo list
 
-4. Jump to 'rolling back migration', if devfile component deployment failed.
+4. Jump to 'rolling back conversion', if devfile component deployment failed.
 
 5. Delete the s2i component.
 odo delete --s2i -a
 
-congratualtions, you have successfully converted s2i component to devfile component.
+Congratulations, you have successfully converted s2i component to devfile component.
 
 # Rolling back the conversion
-1. If devfile component deployment failed, delete the devfile component, report this to odo dev community.
-odo delete -a
+
+1. If devfile component deployment failed, delete the devfile component with 'odo delete -a'. 
+   It would delete only devfile component, your s2i component should still be running.
+ 
+   To complete the migration seek help from odo dev community.
 
 `)
 
