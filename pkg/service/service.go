@@ -415,6 +415,7 @@ func GetAlmExample(csv olm.ClusterServiceVersion, cr, serviceType string) (almEx
 	return almExample, nil
 }
 
+// getAlmExample returns the alm-example for exact service of an Operator
 func getAlmExample(almExamples []map[string]interface{}, crd, operator string) (map[string]interface{}, error) {
 	for _, example := range almExamples {
 		if example["kind"].(string) == crd {

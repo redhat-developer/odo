@@ -57,6 +57,11 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			stdOut := helper.CmdShouldPass("odo", "catalog", "list", "services")
 			helper.MatchAllInOutput(stdOut, []string{"Operators available in the cluster", "mongodb-enterprise", "etcdoperator"})
 		})
+
+		It("should now allow interactive mode command to be executed", func() {
+			stdOut := helper.CmdShouldFail("odo", "service", "create")
+			Expect(stdOut).To(ContainSubstring("Please use a valid command to start an Operator backed service"))
+		})
 	})
 
 	Context("When creating and deleting an operator backed service", func() {
@@ -69,7 +74,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			cleanPreSetup()
 		})
 
-		It("should be able to create and then delete EtcdCluster from its alm example", func() {
+		It("should be able to create, list and then delete EtcdCluster from its alm example", func() {
 			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
 			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
 			helper.CmdShouldPass("odo", "service", "create", etcdOperator, "--crd", "EtcdCluster")
@@ -84,23 +89,16 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 				return strings.Contains(output, "Running")
 			})
 
+			// now test listing of the service using odo
+			stdOut := helper.CmdShouldPass("odo", "service", "list")
+			Expect(stdOut).To(ContainSubstring("EtcdCluster/example"))
+
 			// now test the deletion of the service using odo
 			helper.CmdShouldPass("odo", "service", "delete", "EtcdCluster/example", "-f")
 
 			// now try deleting the same service again. It should fail with error message
-			stdOut := helper.CmdShouldFail("odo", "service", "delete", "EtcdCluster/example", "-f")
+			stdOut = helper.CmdShouldFail("odo", "service", "delete", "EtcdCluster/example", "-f")
 			Expect(stdOut).To(ContainSubstring("Couldn't find service named"))
-		})
-	})
-
-	Context("When deleting an invalid operator backed service", func() {
-		It("should correctly detect invalid service names", func() {
-			names := []string{"EtcdCluster", "EtcdCluster/", "/example"}
-
-			for _, name := range names {
-				stdOut := helper.CmdShouldFail("odo", "service", "delete", name, "-f")
-				Expect(stdOut).To(ContainSubstring("Invalid service name"))
-			}
 		})
 
 		It("should be able to create service with name passed on CLI", func() {
@@ -126,6 +124,17 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			Expect(stdOut).To(ContainSubstring(fmt.Sprintf("Service %q already exists", svcFullName)))
 
 			helper.CmdShouldPass("odo", "service", "delete", svcFullName, "-f")
+		})
+	})
+
+	Context("When deleting an invalid operator backed service", func() {
+		It("should correctly detect invalid service names", func() {
+			names := []string{"EtcdCluster", "EtcdCluster/", "/example"}
+
+			for _, name := range names {
+				stdOut := helper.CmdShouldFail("odo", "service", "delete", name, "-f")
+				Expect(stdOut).To(ContainSubstring("Invalid service name"))
+			}
 		})
 	})
 
@@ -209,6 +218,29 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 			})
 
 			helper.CmdShouldPass("odo", "service", "delete", "EtcdCluster/example", "-f")
+		})
+
+		It("should be able to create a service with name passed on CLI", func() {
+			name := helper.RandString(6)
+			// First let's grab the etcd operator's name from "odo catalog list services" output
+			operators := helper.CmdShouldPass("odo", "catalog", "list", "services")
+			etcdOperator := regexp.MustCompile(`etcdoperator\.*[a-z][0-9]\.[0-9]\.[0-9]-clusterwide`).FindString(operators)
+
+			stdOut := helper.CmdShouldPass("odo", "service", "create", etcdOperator, "--crd", "EtcdCluster", "--dry-run")
+
+			// stdOut contains the yaml specification. Store it to a file
+			randomFileName := helper.RandString(6) + ".yaml"
+			fileName := filepath.Join(os.TempDir(), randomFileName)
+			if err := ioutil.WriteFile(fileName, []byte(stdOut), 0644); err != nil {
+				fmt.Printf("Could not write yaml spec to file %s because of the error %v", fileName, err.Error())
+			}
+
+			// now create operator backed service
+			helper.CmdShouldPass("odo", "service", "create", "--from-file", fileName, name)
+
+			// Attempting to create service with same name should fail
+			stdOut = helper.CmdShouldFail("odo", "service", "create", "--from-file", fileName, name)
+			Expect(stdOut).To(ContainSubstring("Please provide a different name or delete the existing service first"))
 		})
 	})
 

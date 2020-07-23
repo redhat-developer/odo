@@ -133,9 +133,22 @@ func (o *ServiceCreateOptions) Complete(name string, cmd *cobra.Command, args []
 
 	var class scv1beta1.ClusterServiceClass
 
-	if experimental.IsExperimentalModeEnabled() && o.fromFile != "" {
+	if experimental.IsExperimentalModeEnabled() {
+		// we don't support interactive mode for Operator Hub yet
 		o.interactive = false
-		return
+
+		// if user has just used "odo service create", simply return
+		if o.fromFile == "" && len(args) == 0 {
+			return
+		}
+
+		// if user wants to create service from file and use a name given on CLI
+		if o.fromFile != "" {
+			if len(args) == 1 {
+				o.ServiceName = args[0]
+			}
+			return
+		}
 	}
 
 	if o.interactive {
@@ -176,7 +189,15 @@ func (o *ServiceCreateOptions) Complete(name string, cmd *cobra.Command, args []
 	} else {
 		o.ServiceType = args[0]
 		// if only one arg is given, then it is considered as service name and service type both
-		o.ServiceName = o.ServiceType
+		// ONLY if not running in Experimental mode
+		if !experimental.IsExperimentalModeEnabled() {
+			// This is because an operator with name
+			// "etcdoperator.v0.9.4-clusterwide" would lead to creation of a
+			// serice with name like
+			// "etcdoperator.v0.9.4-clusterwide-c47rf28l56" and that would fail
+			// because it's an invalid name for k8s/OCP
+			o.ServiceName = o.ServiceType
+		}
 		// if two args are given, first is service type and second one is service name
 		if len(args) == 2 {
 			o.ServiceName = args[1]
@@ -271,14 +292,25 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 				return err
 			}
 
-			o.ServiceName, err = d.getServiceNameFromCRD()
+			err = d.validateMetadataInCRD()
 			if err != nil {
 				return err
 			}
 
-			err = d.validateMetadataInCRD()
-			if err != nil {
-				return err
+			if o.ServiceName != "" && !o.DryRun {
+				// First check if service with provided name already exists
+				svcFullName := strings.Join([]string{o.CustomResource, o.ServiceName}, "/")
+				exists, _ := svc.OperatorSvcExists(o.KClient, svcFullName)
+				if exists {
+					return fmt.Errorf("Service %q already exists. Please provide a different name or delete the existing service first.", svcFullName)
+				}
+
+				d.setServiceName(o.ServiceName)
+			} else {
+				o.ServiceName, err = d.getServiceNameFromCRD()
+				if err != nil {
+					return err
+				}
 			}
 
 			// CRD is valid. We can use it further to create a service from it.
@@ -306,7 +338,7 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 				return err
 			}
 
-			if o.ServiceName != "" {
+			if o.ServiceName != "" && !o.DryRun {
 				// First check if service with provided name already exists
 				svcFullName := strings.Join([]string{o.CustomResource, o.ServiceName}, "/")
 				exists, _ := svc.OperatorSvcExists(o.KClient, svcFullName)
@@ -314,10 +346,7 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 					return fmt.Errorf("Service %q already exists. Please provide a different name or delete the existing service first.", svcFullName)
 				}
 
-				err = d.setServiceName(o.ServiceName)
-				if err != nil {
-					return err
-				}
+				d.setServiceName(o.ServiceName)
 			}
 
 			err = d.validateMetadataInCRD()
@@ -482,7 +511,7 @@ func (d *DynamicCRD) validateMetadataInCRD() error {
 	metadata, ok := d.OriginalCRD["metadata"].(map[string]interface{})
 	if !ok {
 		// this condition is satisfied if there's no metadata at all in the provided CRD
-		return fmt.Errorf("Couldn't find \"metadata\" in the yaml. Need metadata.name to start the service")
+		return fmt.Errorf("Couldn't find \"metadata\" in the yaml. Need metadata start the service")
 	}
 
 	if _, ok := metadata["name"].(string); ok {
@@ -494,21 +523,17 @@ func (d *DynamicCRD) validateMetadataInCRD() error {
 
 // setServiceName modifies the CRD to contain user provided name on the CLI
 // instead of using the default one in almExample
-func (d *DynamicCRD) setServiceName(name string) error {
-	m := d.OriginalCRD["metadata"].(map[string]interface{})
+func (d *DynamicCRD) setServiceName(name string) {
+	metaMap := d.OriginalCRD["metadata"].(map[string]interface{})
 
-	for k := range m {
+	for k := range metaMap {
 		if k == "name" {
-			m[k] = name
-			return nil
+			metaMap[k] = name
+			return
 		}
 		// if metadata doesn't have 'name' field, we set it up
-		m["name"] = name
+		metaMap["name"] = name
 	}
-
-	// if we reach this point, it's likely becuase the CRD doesn't have
-	// metadata or doesn't have metadata.name
-	return fmt.Errorf("Couldn't set the provided service name.")
 }
 
 // getServiceNameFromCRD fetches the service name from metadata.name field of the CRD
