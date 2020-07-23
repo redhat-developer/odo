@@ -345,7 +345,12 @@ func (a Adapter) BuildWithKaniko(parameters common.BuildParameters) (err error) 
 	// var dockerSecretUnstructured *unstructured.Unstructured
 	dockerSecretMap, err := runtimeUnstructured.DefaultUnstructuredConverter.ToUnstructured(dockerSecret)
 	dockerSecretJSON, err := json.Marshal(dockerSecretMap)
-	_, dockerSecreteError := a.Client.DynamicClient.Resource(gvr).Namespace(NamespacedName.Namespace).Create(dockerSecretJSON, metav1.CreateOptions{})
+	var dockerSecretUnstructured *unstructured.Unstructured
+	dockerErr := json.Unmarshal(dockerSecretJSON, &dockerSecretUnstructured)
+	if dockerErr != nil {
+		return dockerErr
+	}
+	_, dockerSecreteError := a.Client.DynamicClient.Resource(gvr).Namespace(NamespacedName.Namespace).Create(dockerSecretUnstructured, metav1.CreateOptions{})
 
 	if dockerSecreteError != nil {
 		return dockerSecreteError
