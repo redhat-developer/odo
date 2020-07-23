@@ -166,6 +166,8 @@ func TestSyncFiles(t *testing.T) {
 					WatchDeletedFiles: []string{},
 					IgnoredFiles:      []string{},
 					ForceBuild:        false,
+					// The first invocation of watch requires this to be true, see SyncFiles(...) in 'sync/adapter.go' for details.
+					DevfileScanIndexForWatch: true,
 				},
 				CompInfo: common.ComponentInfo{
 					ContainerName: "abcd",

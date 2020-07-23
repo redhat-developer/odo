@@ -49,10 +49,18 @@ func (a Adapter) SyncFiles(syncParameters common.SyncParameters) (isPushRequired
 	isWatch := len(pushParameters.WatchFiles) > 0 || len(pushParameters.WatchDeletedFiles) > 0
 
 	// When this function is invoked by watch, the logic is:
-	// 1) If this is the first time that watch has called Push (in this process), then generate the file index using the file indexer, and use that to
-	//    sync files (don't use changed/deleted files list from watch at this stage; these will be found by the indexer run)
+	// 1) If this is the first time that watch has called Push (in this OS process), then generate the file index using
+	//    the file indexer, and use that to sync files (don't use changed/deleted files list from watch at
+	//    this stage; these will be found by the indexer run).
+	//    - In the watch scenario, we need to first run the indexer for two reasons:
+	// 	    - In case where the index doesn't exist, we need to create it (so we can ADD to it in later updates)
+	// 	    - Even if it does exist, there is no guarantee that the remote pod is consistent with it; so on our
+	//        first invocation we need to compare the index with the remote pod (by regenerating the index and).
+	//        using that to sync the results.
+	//
 	// 2) For every other push/sync call after the first, don't run the file indexer, instead use the watch events to determine
 	//    what changed; ensure that the index is then updated based on the watch events.
+	//
 
 	// True if the index was updated based on the deleted/changed files values from the watch (and
 	// thus the indexer doesn't need to run), false otherwise
@@ -229,6 +237,12 @@ func updateIndexWithWatchChanges(pushParameters common.PushParameters) error {
 	// Check that the path exists
 	_, err = os.Stat(indexFilePath)
 	if err != nil {
+		// This shouldn't happen: in the watch case, SyncFiles should first be called with 'DevfileScanIndexForWatch' set to true, which
+		// will generate the index. Then, all subsequent invocations of SyncFiles will run with 'DevfileScanIndexForWatch' set to false,
+		// which will not regenerate the index (merely updating it based on changed files.)
+		//
+		// If you see this error it means somehow watch's SyncFiles was called without the index being first generated (likely because the
+		// above mentioned pushParam wasn't set). See SyncFiles(...) for details.
 		return errors.Wrapf(err, "resolved path doesn't exist: %s", indexFilePath)
 	}
 
