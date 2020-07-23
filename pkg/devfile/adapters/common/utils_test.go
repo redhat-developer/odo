@@ -505,7 +505,7 @@ func TestGetCommandsForGroup(t *testing.T) {
 func TestGetCommandsMap(t *testing.T) {
 
 	component := []versionsCommon.DevfileComponent{
-		testingutil.GetFakeComponent("alias1"),
+		testingutil.GetFakeContainerComponent("alias1"),
 	}
 
 	tests := []struct {

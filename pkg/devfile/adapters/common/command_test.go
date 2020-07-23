@@ -801,7 +801,7 @@ func TestValidateCommandsForGroup(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
 					Components: []versionsCommon.DevfileComponent{
-						testingutil.GetFakeComponent("alias1"),
+						testingutil.GetFakeContainerComponent("alias1"),
 					},
 					ExecCommands:      tt.execCommands,
 					CompositeCommands: tt.compCommands,
@@ -1874,7 +1874,7 @@ func TestValidateCompositeCommand(t *testing.T) {
 			Data: testingutil.TestDevfileData{
 				ExecCommands:      tt.execCommands,
 				CompositeCommands: tt.compositeCommands,
-				Components:        []common.DevfileComponent{testingutil.GetFakeComponent(component)},
+				Components:        []common.DevfileComponent{testingutil.GetFakeContainerComponent(component)},
 			},
 		}
 		t.Run(tt.name, func(t *testing.T) {
