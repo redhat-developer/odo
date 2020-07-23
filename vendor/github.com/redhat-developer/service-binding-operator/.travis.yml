@@ -1,0 +1,54 @@
+go_import_path: github.com/redhat-developer/service-binding-operator
+sudo: required
+dist: xenial
+language: go
+
+go:
+  - 1.14.x
+
+git:
+  depth: false
+
+env:
+  global:
+    - SDK_VERSION="0.16.0"
+    - GO111MODULE=on
+    - USER="redhat-developer"
+    - EMAIL="openshift-dev-services@redhat.com"
+    - REPO="service-binding-operator"
+    - FILES="./tmp/manifests/*"
+    - GH_REPO="github.com/${USER}/${REPO}.git"
+    - GH_REMOTE_REPO="github.com/${USER}/service-binding-operator-manifests"
+
+before_install:
+  # Install deps
+  - sudo apt-get update -y
+  - sudo apt-get install software-properties-common -y
+  - sudo add-apt-repository ppa:deadsnakes/ppa -y
+  - sudo apt-get update -y
+  - sudo apt-get install python3.7 -y
+  - sudo apt-get install python3.7-venv -y
+
+  # Download Operator SDK
+  - curl -Lo operator-sdk https://github.com/operator-framework/operator-sdk/releases/download/v${SDK_VERSION}/operator-sdk-v${SDK_VERSION}-x86_64-linux-gnu && chmod +x operator-sdk && mv operator-sdk $GOPATH/bin/
+
+script:
+  # Run merge-to-master-release
+  - if [ "$TRAVIS_BRANCH" = "master" ]; then
+    make merge-to-master-release &&
+    make push-to-manifest-repo &&
+    make prepare-bundle-to-quay || exit 1;
+    fi
+
+after_success:
+  - MESSAGE=($TRAVIS_COMMIT)
+  - git clone git://${GH_REMOTE_REPO}
+  - cp -r ${FILES} ./service-binding-operator-manifests
+  - cd service-binding-operator-manifests
+  - git config user.email ${EMAIL}
+  - git config user.name ${USER}
+  - git add .
+  - git commit -m ${MESSAGE}
+  - git push "https://${GITHUB_TOKEN}@${GH_REMOTE_REPO}" master > /dev/null 2>&1
+  - cd ..
+  - make push-bundle-to-quay

@@ -1,0 +1,43 @@
+# On CI, use
+# FROM registry.svc.ci.openshift.org/ocp/builder:golang-1.14 AS builder
+
+FROM openshift/origin-release:golang-1.14 AS builder
+
+ENV LANG=en_US.utf8
+ENV GIT_COMMITTER_NAME devtools
+ENV GIT_COMMITTER_EMAIL devtools@redhat.com
+LABEL com.redhat.delivery.appregistry=true
+
+WORKDIR /go/src/github.com/redhat-developer/service-binding-operator
+
+# Copy only relevant things (instead of all) to speed-up the build.
+COPY assets assets
+COPY build build
+COPY cmd cmd
+COPY deploy deploy
+COPY hack hack
+COPY pkg pkg
+COPY test test
+COPY vendor vendor
+COPY go.mod .
+COPY go.sum .
+COPY LICENSE .
+COPY Makefile .
+COPY tools.go .
+
+ARG VERBOSE=2
+RUN make build
+
+
+FROM registry.access.redhat.com/ubi8/ubi-minimal
+
+LABEL com.redhat.delivery.appregistry=true
+LABEL maintainer "Devtools <devtools@redhat.com>"
+LABEL author "Shoubhik Bose <shbose@redhat.com>"
+ENV LANG=en_US.utf8
+
+COPY --from=builder /go/src/github.com/redhat-developer/service-binding-operator/out/operator /usr/local/bin/service-binding-operator
+
+USER 10001
+
+ENTRYPOINT [ "/usr/local/bin/service-binding-operator" ]

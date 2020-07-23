@@ -268,22 +268,22 @@ type Openshift struct {
 type Parent struct {
 
 	// Predefined, ready-to-use, workspace-related commands
-	Commands []*Command `json:"commands,omitempty"`
+	Commands []Command `json:"commands,omitempty"`
 
 	// List of the workspace components, such as editor and plugins, user-provided containers, or other types of components
-	Components []*Component `json:"components,omitempty"`
+	Components []Component `json:"components,omitempty"`
 
 	// Bindings of commands to events. Each command is referred-to by its name.
-	Events *Events `json:"events,omitempty"`
+	Events Events `json:"events,omitempty"`
 
 	// Id in a registry that contains a Devfile yaml file
 	Id string `json:"id,omitempty"`
 
 	// Reference to a Kubernetes CRD of type DevWorkspaceTemplate
-	Kubernetes *Kubernetes `json:"kubernetes,omitempty"`
+	Kubernetes Kubernetes `json:"kubernetes,omitempty"`
 
 	// Projects worked on in the workspace, containing names and sources locations
-	Projects []*Project `json:"projects,omitempty"`
+	Projects []Project `json:"projects,omitempty"`
 
 	RegistryUrl string `json:"registryUrl,omitempty"`
 

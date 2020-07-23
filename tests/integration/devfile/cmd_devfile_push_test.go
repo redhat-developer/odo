@@ -132,6 +132,115 @@ var _ = Describe("odo devfile push command tests", func() {
 			Expect(statErr).ToNot(HaveOccurred())
 		})
 
+		It("checks that odo push works with a devfile with composite commands", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeCommands.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			output := helper.CmdShouldPass("odo", "push", "--context", context)
+			Expect(output).To(ContainSubstring("Executing mkdir command"))
+
+			// Verify the command executed successfully
+			var statErr error
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+			cliRunner.CheckCmdOpInRemoteDevfilePod(
+				podName,
+				"runtime",
+				namespace,
+				[]string{"stat", "/projects/testfolder"},
+				func(cmdOp string, err error) bool {
+					statErr = err
+					return true
+				},
+			)
+			Expect(statErr).ToNot(HaveOccurred())
+		})
+
+		It("checks that odo push works with a devfile with parallel composite commands", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeCommandsParallel.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			output := helper.CmdShouldPass("odo", "push", "--build-command", "buildAndMkdir", "--context", context)
+			Expect(output).To(ContainSubstring("Executing mkdir command"))
+
+			// Verify the command executed successfully
+			var statErr error
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+			cliRunner.CheckCmdOpInRemoteDevfilePod(
+				podName,
+				"runtime",
+				namespace,
+				[]string{"stat", "/projects/testfolder"},
+				func(cmdOp string, err error) bool {
+					statErr = err
+					return true
+				},
+			)
+			Expect(statErr).ToNot(HaveOccurred())
+		})
+
+		It("checks that odo push works with a devfile with nested composite commands", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileNestedCompCommands.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			// Verify nested command was executed
+			output := helper.CmdShouldPass("odo", "push", "--context", context)
+			Expect(output).To(ContainSubstring("Executing mkdir command"))
+
+			// Verify the command executed successfully
+			var statErr error
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+			cliRunner.CheckCmdOpInRemoteDevfilePod(
+				podName,
+				"runtime",
+				namespace,
+				[]string{"stat", "/projects/testfolder"},
+				func(cmdOp string, err error) bool {
+					statErr = err
+					return true
+				},
+			)
+			Expect(statErr).ToNot(HaveOccurred())
+		})
+
+		It("should throw a validation error for composite run commands", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeRun.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			// Verify odo push failed
+			output := helper.CmdShouldFail("odo", "push", "--context", context)
+			Expect(output).To(ContainSubstring("composite commands of run Kind are not supported currently"))
+		})
+
+		It("should throw a validation error for composite command referencing non-existent commands", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileCompositeNonExistent.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			// Verify odo push failed
+			output := helper.CmdShouldFail("odo", "push", "--context", context)
+			Expect(output).To(ContainSubstring("does not exist in the devfile"))
+		})
+
+		It("should throw a validation error for composite command indirectly referencing itself", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, cmpName)
+
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfileIndirectNesting.yaml"), filepath.Join(context, "devfile.yaml"))
+
+			// Verify odo push failed
+			output := helper.CmdShouldFail("odo", "push", "--context", context)
+			Expect(output).To(ContainSubstring("cannot indirectly reference itself"))
+		})
+
 		It("checks that odo push works outside of the context directory", func() {
 			helper.Chdir(currentWorkingDirectory)
 
@@ -551,4 +660,56 @@ var _ = Describe("odo devfile push command tests", func() {
 
 	})
 
+	Context("Handle devfiles with parent", func() {
+		It("should handle a devfile with a parent and add a extra command", func() {
+			utils.ExecPushToTestParent(context, cmpName, namespace)
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+			listDir := cliRunner.ExecListDir(podName, namespace, "/projects/nodejs-starter")
+			Expect(listDir).To(ContainSubstring("blah.js"))
+		})
+
+		It("should handle a parent and override/append it's envs", func() {
+			utils.ExecPushWithParentOverride(context, cmpName, namespace)
+
+			envMap := cliRunner.GetEnvsDevFileDeployment(cmpName, namespace)
+
+			value, ok := envMap["MODE2"]
+			Expect(ok).To(BeTrue())
+			Expect(value).To(Equal("TEST2-override"))
+
+			value, ok = envMap["myprop-3"]
+			Expect(ok).To(BeTrue())
+			Expect(value).To(Equal("myval-3"))
+
+			value, ok = envMap["myprop2"]
+			Expect(ok).To(BeTrue())
+			Expect(value).To(Equal("myval2"))
+		})
+
+		It("should handle a multi layer parent", func() {
+			utils.ExecPushWithMultiLayerParent(context, cmpName, namespace)
+
+			podName := cliRunner.GetRunningPodNameByComponent(cmpName, namespace)
+			listDir := cliRunner.ExecListDir(podName, namespace, "/projects/user-app")
+			helper.MatchAllInOutput(listDir, []string{"blah.js", "new-blah.js"})
+
+			envMap := cliRunner.GetEnvsDevFileDeployment(cmpName, namespace)
+
+			value, ok := envMap["MODE2"]
+			Expect(ok).To(BeTrue())
+			Expect(value).To(Equal("TEST2-override"))
+
+			value, ok = envMap["myprop3"]
+			Expect(ok).To(BeTrue())
+			Expect(value).To(Equal("myval3"))
+
+			value, ok = envMap["myprop2"]
+			Expect(ok).To(BeTrue())
+			Expect(value).To(Equal("myval2"))
+
+			value, ok = envMap["myprop4"]
+			Expect(ok).To(BeTrue())
+			Expect(value).To(Equal("myval4"))
+		})
+	})
 })

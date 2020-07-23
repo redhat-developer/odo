@@ -29,7 +29,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	utilnet "k8s.io/apimachinery/pkg/util/net"
 	auditinternal "k8s.io/apiserver/pkg/apis/audit"
 	auditv1 "k8s.io/apiserver/pkg/apis/audit/v1"
 	auditv1alpha1 "k8s.io/apiserver/pkg/apis/audit/v1alpha1"
@@ -38,7 +37,6 @@ import (
 	"k8s.io/apiserver/pkg/audit/policy"
 	"k8s.io/apiserver/pkg/features"
 	"k8s.io/apiserver/pkg/server"
-	"k8s.io/apiserver/pkg/server/egressselector"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	pluginbuffered "k8s.io/apiserver/plugin/pkg/audit/buffered"
 	plugindynamic "k8s.io/apiserver/plugin/pkg/audit/dynamic"
@@ -150,14 +148,9 @@ type AuditWebhookOptions struct {
 	GroupVersionString string
 }
 
-// AuditDynamicOptions control the configuration of dynamic backends for audit events
 type AuditDynamicOptions struct {
 	// Enabled tells whether the dynamic audit capability is enabled.
 	Enabled bool
-
-	// Configuration for batching backend. This is currently only used as an override
-	// for integration tests
-	BatchConfig *pluginbuffered.BatchConfig
 }
 
 func NewAuditOptions() *AuditOptions {
@@ -181,8 +174,7 @@ func NewAuditOptions() *AuditOptions {
 			GroupVersionString: "audit.k8s.io/v1",
 		},
 		DynamicOptions: AuditDynamicOptions{
-			Enabled:     false,
-			BatchConfig: plugindynamic.NewDefaultWebhookBatchConfig(),
+			Enabled: false,
 		},
 	}
 }
@@ -325,15 +317,7 @@ func (o *AuditOptions) ApplyTo(
 		if checker == nil {
 			klog.V(2).Info("No audit policy file provided, no events will be recorded for webhook backend")
 		} else {
-			if c.EgressSelector != nil {
-				egressDialer, err := c.EgressSelector.Lookup(egressselector.Master.AsNetworkContext())
-				if err != nil {
-					return err
-				}
-				webhookBackend, err = o.WebhookOptions.newUntruncatedBackend(egressDialer)
-			} else {
-				webhookBackend, err = o.WebhookOptions.newUntruncatedBackend(nil)
-			}
+			webhookBackend, err = o.WebhookOptions.newUntruncatedBackend()
 			if err != nil {
 				return err
 			}
@@ -600,9 +584,9 @@ func (o *AuditWebhookOptions) enabled() bool {
 
 // newUntruncatedBackend returns a webhook backend without the truncate options applied
 // this is done so that the same trucate backend can wrap both the webhook and dynamic backends
-func (o *AuditWebhookOptions) newUntruncatedBackend(customDial utilnet.DialFunc) (audit.Backend, error) {
+func (o *AuditWebhookOptions) newUntruncatedBackend() (audit.Backend, error) {
 	groupVersion, _ := schema.ParseGroupVersion(o.GroupVersionString)
-	webhook, err := pluginwebhook.NewBackend(o.ConfigFile, groupVersion, o.InitialBackoff, customDial)
+	webhook, err := pluginwebhook.NewBackend(o.ConfigFile, groupVersion, o.InitialBackoff)
 	if err != nil {
 		return nil, fmt.Errorf("initializing audit webhook: %v", err)
 	}
@@ -650,7 +634,7 @@ func (o *AuditDynamicOptions) newBackend(
 
 	dc := &plugindynamic.Config{
 		Informer:       informer,
-		BufferedConfig: o.BatchConfig,
+		BufferedConfig: plugindynamic.NewDefaultWebhookBatchConfig(),
 		EventConfig: plugindynamic.EventConfig{
 			Sink: eventSink,
 			Source: corev1.EventSource{

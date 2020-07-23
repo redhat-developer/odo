@@ -3,6 +3,7 @@ package component
 import (
 	"testing"
 
+	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 
@@ -39,30 +40,35 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 	tests := []struct {
 		name          string
 		componentType versionsCommon.DevfileComponentType
+		envInfo       envinfo.EnvSpecificInfo
 		running       bool
 		wantErr       bool
 	}{
 		{
 			name:          "Case 1: Invalid devfile",
 			componentType: "",
+			envInfo:       envinfo.EnvSpecificInfo{},
 			running:       false,
 			wantErr:       true,
 		},
 		{
 			name:          "Case 2: Valid devfile",
 			componentType: versionsCommon.ContainerComponentType,
+			envInfo:       envinfo.EnvSpecificInfo{},
 			running:       false,
 			wantErr:       false,
 		},
 		{
 			name:          "Case 3: Invalid devfile, already running component",
 			componentType: "",
+			envInfo:       envinfo.EnvSpecificInfo{},
 			running:       true,
 			wantErr:       true,
 		},
 		{
 			name:          "Case 4: Valid devfile, already running component",
 			componentType: versionsCommon.ContainerComponentType,
+			envInfo:       envinfo.EnvSpecificInfo{},
 			running:       true,
 			wantErr:       false,
 		},
@@ -98,7 +104,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 			}
 
 			componentAdapter := New(adapterCtx, *fkclient)
-			err := componentAdapter.createOrUpdateComponent(tt.running)
+			err := componentAdapter.createOrUpdateComponent(tt.running, tt.envInfo)
 
 			// Checks for unexpected error cases
 			if !tt.wantErr == (err != nil) {
@@ -269,6 +275,7 @@ func TestDoesComponentExist(t *testing.T) {
 		componentType    versionsCommon.DevfileComponentType
 		componentName    string
 		getComponentName string
+		envInfo          envinfo.EnvSpecificInfo
 		want             bool
 		wantErr          bool
 	}{
@@ -276,6 +283,7 @@ func TestDoesComponentExist(t *testing.T) {
 			name:             "Case 1: Valid component name",
 			componentName:    "test-name",
 			getComponentName: "test-name",
+			envInfo:          envinfo.EnvSpecificInfo{},
 			want:             true,
 			wantErr:          false,
 		},
@@ -283,6 +291,7 @@ func TestDoesComponentExist(t *testing.T) {
 			name:             "Case 2: Non-existent component name",
 			componentName:    "test-name",
 			getComponentName: "fake-component",
+			envInfo:          envinfo.EnvSpecificInfo{},
 			want:             false,
 			wantErr:          false,
 		},
@@ -290,6 +299,7 @@ func TestDoesComponentExist(t *testing.T) {
 			name:             "Case 3: Error condition",
 			componentName:    "test-name",
 			getComponentName: "test-name",
+			envInfo:          envinfo.EnvSpecificInfo{},
 			want:             false,
 			wantErr:          true,
 		},
@@ -317,7 +327,7 @@ func TestDoesComponentExist(t *testing.T) {
 
 			// DoesComponentExist requires an already started component, so start it.
 			componentAdapter := New(adapterCtx, *fkclient)
-			err := componentAdapter.createOrUpdateComponent(false)
+			err := componentAdapter.createOrUpdateComponent(false, tt.envInfo)
 
 			// Checks for unexpected error cases
 			if err != nil {

@@ -1,6 +1,7 @@
 package errwrap
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 )
@@ -39,6 +40,16 @@ func TestGetAll(t *testing.T) {
 		{
 			Wrapf("bar", Wrapf("baz", fmt.Errorf("foo"))),
 			"foo",
+			1,
+		},
+		{
+			fmt.Errorf("foo: %w", fmt.Errorf("bar")),
+			"foo: bar",
+			1,
+		},
+		{
+			fmt.Errorf("foo: %w", fmt.Errorf("bar")),
+			"bar",
 			1,
 		},
 	}
@@ -83,6 +94,11 @@ func TestGetAllType(t *testing.T) {
 			Wrapf("", nil),
 			0,
 		},
+		{
+			fmt.Errorf("one: %w", fmt.Errorf("two: %w", fmt.Errorf("three"))),
+			fmt.Errorf("%w", errors.New("")),
+			2,
+		},
 	}
 
 	for i, tc := range cases {
@@ -90,5 +106,14 @@ func TestGetAllType(t *testing.T) {
 		if len(actual) != tc.Len {
 			t.Fatalf("%d: bad: %#v", i, actual)
 		}
+	}
+}
+
+func TestWrappedError_IsCompatibleWithErrorsUnwrap(t *testing.T) {
+	inner := errors.New("inner error")
+	err := Wrap(errors.New("outer"), inner)
+	actual := errors.Unwrap(err)
+	if actual != inner {
+		t.Fatal("wrappedError did not unwrap to inner")
 	}
 }

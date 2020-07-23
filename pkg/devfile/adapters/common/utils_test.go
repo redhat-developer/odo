@@ -312,3 +312,89 @@ func TestGetCommandsForGroup(t *testing.T) {
 	}
 
 }
+
+func TestGetCommandsMap(t *testing.T) {
+
+	component := []versionsCommon.DevfileComponent{
+		testingutil.GetFakeComponent("alias1"),
+	}
+
+	tests := []struct {
+		name             string
+		execCommands     []common.Exec
+		compCommands     []common.Composite
+		expectedCommands []versionsCommon.DevfileCommand
+	}{
+		{
+			name: "Case 1: One command",
+			execCommands: []common.Exec{
+				{
+					Id: "somecommand",
+				},
+			},
+			expectedCommands: []versionsCommon.DevfileCommand{
+				{
+					Exec: &common.Exec{
+						Id: "somecommand",
+					},
+				},
+			},
+		},
+		{
+			name: "Case 2: Multiple commands",
+			execCommands: []common.Exec{
+				{
+					Id: "somecommand",
+				},
+				{
+					Id: "somecommand2",
+				},
+			},
+			compCommands: []common.Composite{
+				{
+					Id: "mycomposite",
+				},
+			},
+			expectedCommands: []versionsCommon.DevfileCommand{
+				{
+					Exec: &common.Exec{
+						Id: "somecommand",
+					},
+				},
+				{
+					Exec: &common.Exec{
+						Id: "somecommand2",
+					},
+				},
+				{
+					Composite: &common.Composite{
+						Id: "mycomposite",
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			devObj := devfileParser.DevfileObj{
+				Data: testingutil.TestDevfileData{
+					Components:        component,
+					ExecCommands:      tt.execCommands,
+					CompositeCommands: tt.compCommands,
+				},
+			}
+
+			commandsMap := GetCommandsMap(devObj.Data.GetCommands())
+			if len(commandsMap) != len(tt.expectedCommands) {
+				t.Errorf("TestGetCommandsMap error: number of returned commands don't match: %v got: %v", len(tt.expectedCommands), len(commandsMap))
+			}
+			for _, command := range tt.expectedCommands {
+				_, ok := commandsMap[command.GetID()]
+				if !ok {
+					t.Errorf("TestGetCommandsMap error: command %v not found in map", command.GetID())
+				}
+			}
+		})
+	}
+
+}

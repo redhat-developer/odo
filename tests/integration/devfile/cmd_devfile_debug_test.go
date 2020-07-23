@@ -96,6 +96,11 @@ var _ = Describe("odo devfile debug command tests", func() {
 			helper.CmdShouldPass("odo", "push")
 			helper.CmdShouldPass("odo", "push", "--debug")
 
+			// check the env for the runMode
+			envOutput, err := helper.ReadFile(filepath.Join(projectDirPath, ".odo/env/env.yaml"))
+			Expect(err).To(BeNil())
+			Expect(envOutput).To(ContainSubstring(" RunMode: debug"))
+
 			stopChannel := make(chan bool)
 			go func() {
 				helper.CmdShouldRunAndTerminate(60*time.Second, stopChannel, "odo", "debug", "port-forward")

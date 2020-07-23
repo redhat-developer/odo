@@ -126,7 +126,8 @@ func getCommandsByGroup(data data.DevfileData, groupType common.DevfileCommandGr
 	var commands []common.DevfileCommand
 
 	for _, command := range data.GetCommands() {
-		if command.Exec != nil && command.Exec.Group != nil && command.Exec.Group.Kind == groupType {
+		commandGroup := command.GetGroup()
+		if commandGroup != nil && commandGroup.Kind == groupType {
 			commands = append(commands, command)
 		}
 	}
@@ -190,4 +191,15 @@ func IsRestartRequired(command common.DevfileCommand) bool {
 	}
 
 	return restart
+}
+
+// GetCommandsMap returns a mapping of all of devfile command names to their corresponding DevfileCommand struct
+// Allowing us to easily retrieve the DevfileCommand of any command listed in a composite command
+func GetCommandsMap(commands []common.DevfileCommand) map[string]common.DevfileCommand {
+	commandsMap := make(map[string]common.DevfileCommand)
+
+	for _, command := range commands {
+		commandsMap[command.GetID()] = command
+	}
+	return commandsMap
 }

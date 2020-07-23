@@ -1,6 +1,7 @@
 package ansi
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -48,5 +49,17 @@ func TestDisableColors(t *testing.T) {
 	index := strings.Index(fn("foo"), "foo")
 	if index <= 0 {
 		t.Fail()
+	}
+}
+
+func TestAttributeReset(t *testing.T) {
+	boldRed := ColorCode("red+b")
+	greenUnderline := ColorCode("green+u")
+	s := fmt.Sprintf("normal %s bold red %s green underline %s", boldRed, greenUnderline, Reset)
+	// See the results on the terminal for regression tests.
+	fmt.Printf("Colored string: %s\n", s)
+	fmt.Printf("Escaped string: %q\n", s)
+	if s != "normal \x1b[0;1;31m bold red \x1b[0;4;32m green underline \x1b[0m" {
+		t.Error("Attributes are not being reset")
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/exec"
 
 	corev1 "k8s.io/api/core/v1"
@@ -107,7 +108,7 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 		parameters.ForceBuild = true
 	}
 
-	err = a.createOrUpdateComponent(componentExists)
+	err = a.createOrUpdateComponent(componentExists, parameters.EnvSpecificInfo)
 	if err != nil {
 		return errors.Wrap(err, "unable to create or update component")
 	}
@@ -211,7 +212,7 @@ func (a Adapter) DoesComponentExist(cmpName string) (bool, error) {
 	return utils.ComponentExists(a.Client, cmpName)
 }
 
-func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
+func (a Adapter) createOrUpdateComponent(componentExists bool, ei envinfo.EnvSpecificInfo) (err error) {
 	componentName := a.ComponentName
 
 	componentType := strings.TrimSuffix(a.AdapterContext.Devfile.Data.GetMetadata().Name, "-")
@@ -230,6 +231,12 @@ func (a Adapter) createOrUpdateComponent(componentExists bool) (err error) {
 	}
 
 	containers, err = utils.UpdateContainersWithSupervisord(a.Devfile, containers, a.devfileRunCmd, a.devfileDebugCmd, a.devfileDebugPort)
+	if err != nil {
+		return err
+	}
+
+	// set EnvFrom to the container that's supposed to have link to the Operator backed service
+	containers, err = utils.UpdateContainerWithEnvFrom(containers, a.Devfile, a.devfileRunCmd, ei)
 	if err != nil {
 		return err
 	}
@@ -381,6 +388,9 @@ func (a Adapter) waitAndGetComponentPod(hideSpinner bool) (*corev1.Pod, error) {
 // Executes all the commands from the devfile in order: init and build - which are both optional, and a compulsary run.
 // Init only runs once when the component is created.
 func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists, show bool, podName string, containers []corev1.Container, isDebug bool) (err error) {
+	// Need to get mapping of all commands in the devfile since the composite command may reference any exec or composite command in the devfile
+	devfileCommandMap := common.GetCommandsMap(a.Devfile.Data.GetCommands())
+
 	// If nothing has been passed, then the devfile is missing the required run command
 	if len(commandsMap) == 0 {
 		return errors.New(fmt.Sprint("error executing devfile commands - there should be at least 1 command"))
@@ -396,10 +406,17 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 		// Get Init Command
 		command, ok := commandsMap[versionsCommon.InitCommandGroupType]
 		if ok {
-			compInfo.ContainerName = command.Exec.Component
-			err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
-			if err != nil {
-				return err
+			if command.Composite != nil {
+				err = exec.ExecuteCompositeDevfileAction(&a.Client, *command.Composite, devfileCommandMap, compInfo, show, a.machineEventLogger)
+				if err != nil {
+					return err
+				}
+			} else {
+				compInfo.ContainerName = command.Exec.Component
+				err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger, false)
+				if err != nil {
+					return err
+				}
 			}
 
 		}
@@ -409,10 +426,17 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 	// Get Build Command
 	command, ok := commandsMap[versionsCommon.BuildCommandGroupType]
 	if ok {
-		compInfo.ContainerName = command.Exec.Component
-		err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
-		if err != nil {
-			return err
+		if command.Composite != nil {
+			err = exec.ExecuteCompositeDevfileAction(&a.Client, *command.Composite, devfileCommandMap, compInfo, show, a.machineEventLogger)
+			if err != nil {
+				return err
+			}
+		} else {
+			compInfo.ContainerName = command.Exec.Component
+			err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger, false)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -423,12 +447,11 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 		command, ok = commandsMap[versionsCommon.RunCommandGroupType]
 	}
 	if ok {
-		klog.V(4).Infof("Executing devfile command %v", command.Exec.Id)
-		compInfo.ContainerName = command.Exec.Component
+		klog.V(4).Infof("Executing devfile command %v", command.GetID())
 
 		// Check if the devfile debug component containers have supervisord as the entrypoint.
 		// Start the supervisord if the odo component does not exist
-		if !componentExists {
+		if !componentExists && command.Exec != nil {
 			err = a.InitRunContainerSupervisord(command.Exec.Component, podName, containers)
 			if err != nil {
 				a.machineEventLogger.ReportError(err, machineoutput.TimestampNow())
@@ -436,8 +459,10 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 			}
 		}
 
+		compInfo.ContainerName = command.Exec.Component
 		if componentExists && !common.IsRestartRequired(command) {
 			klog.V(4).Infof("restart:false, Not restarting %v Command", command.Exec.Id)
+
 			if isDebug {
 				err = exec.ExecuteDevfileDebugActionWithoutRestart(&a.Client, *command.Exec, command.Exec.Id, compInfo, show, a.machineEventLogger)
 			} else {
@@ -456,28 +481,33 @@ func (a Adapter) execDevfile(commandsMap common.PushCommandsMap, componentExists
 	return
 }
 
-// TODO: Support Composite
 // execDevfileEvent receives a Devfile Event (PostStart, PreStop etc.) and loops through them
 // Each Devfile Command associated with the given event is retrieved, and executed in the container specified
 // in the command
 func (a Adapter) execDevfileEvent(events []string, podName string) error {
 
-	commandMap := common.GetCommandMap(a.Devfile.Data)
+	commandMap := common.GetCommandsMap(a.Devfile.Data.GetCommands())
 	for _, commandName := range events {
 		// Convert commandName to lower because GetCommands converts Command.Exec.Id's to lower
 		command := commandMap[strings.ToLower(commandName)]
 
 		compInfo := common.ComponentInfo{
-			ContainerName: command.Exec.Component,
-			PodName:       podName,
+			PodName: podName,
 		}
 
-		// If composite would go here & recursive loop
+		if command.Composite != nil {
+			err := exec.ExecuteCompositeDevfileAction(&a.Client, *command.Composite, commandMap, compInfo, false, a.machineEventLogger)
+			if err != nil {
+				return errors.Wrapf(err, "unable to execute devfile composite command "+commandName)
+			}
+		} else {
+			compInfo.ContainerName = command.Exec.Component
 
-		// Execute command in pod
-		err := exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, false, a.machineEventLogger)
-		if err != nil {
-			return errors.Wrapf(err, "unable to execute devfile command "+commandName)
+			// Execute command in pod
+			err := exec.ExecuteDevfileCommandSynchronously(&a.Client, *command.Exec, command.Exec.Id, compInfo, false, a.machineEventLogger, false)
+			if err != nil {
+				return errors.Wrapf(err, "unable to execute devfile command "+commandName)
+			}
 		}
 
 	}
@@ -489,8 +519,15 @@ func (a Adapter) execTestCmd(testCmd versionsCommon.DevfileCommand, podName stri
 	compInfo := common.ComponentInfo{
 		PodName: podName,
 	}
-	compInfo.ContainerName = testCmd.Exec.Component
-	err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *testCmd.Exec, testCmd.Exec.Id, compInfo, show, a.machineEventLogger)
+	if testCmd.Composite != nil {
+		// Need to get mapping of all commands in the devfile since the composite command may reference any exec or composite command in the devfile
+		devfileCommandMap := common.GetCommandsMap(a.Devfile.Data.GetCommands())
+
+		err = exec.ExecuteCompositeDevfileAction(&a.Client, *testCmd.Composite, devfileCommandMap, compInfo, show, a.machineEventLogger)
+	} else {
+		compInfo.ContainerName = testCmd.Exec.Component
+		err = exec.ExecuteDevfileCommandSynchronously(&a.Client, *testCmd.Exec, testCmd.Exec.Id, compInfo, show, a.machineEventLogger, false)
+	}
 	return
 }
 

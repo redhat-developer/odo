@@ -1,18 +1,35 @@
 package component
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/openshift/odo/pkg/component"
 	componentlabels "github.com/openshift/odo/pkg/component/labels"
+	"github.com/openshift/odo/pkg/envinfo"
+	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/occlient"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	"github.com/openshift/odo/pkg/odo/util/experimental"
 	"github.com/openshift/odo/pkg/secret"
 	svc "github.com/openshift/odo/pkg/service"
 	"github.com/openshift/odo/pkg/util"
+	sbo "github.com/redhat-developer/service-binding-operator/pkg/apis/apps/v1alpha1"
 	"github.com/spf13/cobra"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
+)
+
+var (
+	// Hardcoded variables since we can't install SBO on k8s using OLM
+	// (https://github.com/redhat-developer/service-binding-operator/issues/536)
+	sbrGroup    = "apps.openshift.io"
+	sbrVersion  = "v1alpha1"
+	sbrKind     = "ServiceBindingRequest"
+	sbrResource = "servicebindingrequests"
 )
 
 type commonLinkOptions struct {
@@ -25,6 +42,10 @@ type commonLinkOptions struct {
 	operation     func(secretName, componentName, applicationName string) error
 	operationName string
 
+	// Service Binding Operator options
+	sbr         *sbo.ServiceBindingRequest
+	serviceType string
+	serviceName string
 	*genericclioptions.Context
 }
 
@@ -38,6 +59,69 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 
 	suppliedName := args[0]
 	o.suppliedName = suppliedName
+
+	if experimental.IsExperimentalModeEnabled() {
+		o.Context = genericclioptions.NewDevfileContext(cmd)
+
+		oclient, err := occlient.New()
+		if err != nil {
+			return err
+		}
+
+		sboSupport, err := oclient.IsSBRSupported()
+		if err != nil {
+			return err
+		}
+
+		if !sboSupport {
+			return fmt.Errorf("Please install Service Binding Operator to be able to create a link")
+		}
+
+		o.serviceType, o.serviceName, err = svc.IsOperatorServiceNameValid(suppliedName)
+		if err != nil {
+			return err
+		}
+
+		componentName := o.EnvSpecificInfo.GetName()
+
+		// Assign static/hardcoded values to SBR
+		o.sbr.Kind = sbrKind
+		o.sbr.APIVersion = strings.Join([]string{sbrGroup, sbrVersion}, "/")
+
+		// service binding request name will be like <component-name>-<service-type>-<service-name>. For example: nodejs-etcdcluster-example
+		o.sbr.Name = strings.Join([]string{componentName, strings.ToLower(o.serviceType), o.serviceName}, "-")
+		o.sbr.Namespace = o.EnvSpecificInfo.GetNamespace()
+		o.sbr.Spec.DetectBindingResources = true // because we want the operator what to bind from the service
+
+		deployment, err := o.KClient.GetDeploymentByName(componentName)
+		if err != nil {
+			return err
+		}
+
+		// make this deployment the owner of the link we're creating so that link gets deleted upon doing "odo delete"
+		ownerReference := kclient.GenerateOwnerReference(deployment)
+		o.sbr.SetOwnerReferences(append(o.sbr.GetOwnerReferences(), ownerReference))
+		if err != nil {
+			return err
+		}
+
+		// This is a really hacky way to get group, version and resource info but I couldn't find better one.
+		// A sample "deploymentSelfLinkSplit" looks like: [ apis apps v1 namespaces myproject deployments nodejs ]
+		deploymentSelfLinkSplit := strings.Split(deployment.SelfLink, "/")
+
+		// Populate the application selector field in service binding request
+		o.sbr.Spec.ApplicationSelector = sbo.ApplicationSelector{
+			GroupVersionResource: metav1.GroupVersionResource{
+				Group:    deploymentSelfLinkSplit[2], // "apps" in above example output
+				Version:  deploymentSelfLinkSplit[3], // "v1" in above example output
+				Resource: deploymentSelfLinkSplit[6], // "deployments" in above example output
+			},
+			ResourceRef: componentName,
+		}
+
+		return nil
+	}
+
 	o.Context = genericclioptions.NewContextCreatingAppIfNeeded(cmd)
 
 	svcExists, err := svc.SvcExists(o.Client, suppliedName, o.Application)
@@ -76,6 +160,41 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 }
 
 func (o *commonLinkOptions) validate(wait bool) (err error) {
+
+	if experimental.IsExperimentalModeEnabled() {
+		// let's validate if the service exists
+		svcFullName := strings.Join([]string{o.serviceType, o.serviceName}, "/")
+		_, err := svc.OperatorSvcExists(o.KClient, svcFullName)
+		if err != nil {
+			return err
+		}
+
+		// since the service exists, let's get more info to populate service binding request
+		// first get the CR itself
+		cr, err := o.KClient.GetCustomResource(o.serviceType)
+		if err != nil {
+			return err
+		}
+
+		// now get the group, version, kind information from CR
+		group, version, kind, err := svc.GetGVKFromCR(cr)
+		if err != nil {
+			return err
+		}
+
+		o.sbr.Spec.BackingServiceSelector = &sbo.BackingServiceSelector{
+			GroupVersionKind: metav1.GroupVersionKind{
+				Group:   group,
+				Version: version,
+				Kind:    kind,
+			},
+			ResourceRef: o.serviceName,
+			Namespace:   &o.KClient.Namespace,
+		}
+
+		return nil
+	}
+
 	if o.isTargetAService {
 		// if there is a ServiceBinding, then that means there is already a secret (or there will be soon)
 		// which we can link to
@@ -105,6 +224,39 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 }
 
 func (o *commonLinkOptions) run() (err error) {
+	if experimental.IsExperimentalModeEnabled() {
+		// convert service binding request into a ma[string]interface{} type so
+		// as to use it with dynamic client
+		sbrMap := make(map[string]interface{})
+		inrec, _ := json.Marshal(o.sbr)
+		err = json.Unmarshal(inrec, &sbrMap)
+		if err != nil {
+			return err
+		}
+
+		// this creates a link by creating a service of type
+		// "ServiceBindingRequest" from the Operator "ServiceBindingOperator".
+		err = o.KClient.CreateDynamicResource(sbrMap, sbrGroup, sbrVersion, sbrResource)
+		if err != nil {
+			if strings.Contains(err.Error(), "already exists") {
+				return fmt.Errorf("Component %q is already linked with the service %q\n", o.Context.EnvSpecificInfo.GetName(), o.suppliedName)
+			}
+			return err
+		}
+
+		// once the link is created, we need to store the information in
+		// env.yaml so that subsequent odo push can create a new deployment
+		// based on it
+		err = o.Context.EnvSpecificInfo.SetConfiguration("link", envinfo.EnvInfoLink{Name: o.sbr.Name, ServiceKind: o.serviceType, ServiceName: o.serviceName})
+		if err != nil {
+			return err
+		}
+
+		log.Successf("Successfully created link between component %q and service %q\n", o.Context.EnvSpecificInfo.GetName(), o.suppliedName)
+		log.Italic("To apply the link, please use `odo push`")
+		return err
+	}
+
 	linkType := "Component"
 	if o.isTargetAService {
 		linkType = "Service"

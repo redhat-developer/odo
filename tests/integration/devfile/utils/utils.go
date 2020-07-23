@@ -2,9 +2,11 @@ package utils
 
 import (
 	"fmt"
+	"github.com/openshift/odo/pkg/util"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -180,6 +182,57 @@ func ExecWithInvalidCommandGroup(projectDirPath, cmpName, namespace string) {
 	args = useProjectIfAvailable(args, namespace)
 	output := helper.CmdShouldFail("odo", args...)
 	Expect(output).To(ContainSubstring("must be one of the following: \"build\", \"run\", \"test\", \"debug\""))
+}
+
+func ExecPushToTestParent(projectDirPath, cmpName, namespace string) {
+	args := []string{"create", "nodejs", cmpName}
+	args = useProjectIfAvailable(args, namespace)
+	helper.CmdShouldPass("odo", args...)
+
+	helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), projectDirPath)
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile-with-parent.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
+
+	args = []string{"push"}
+	args = useProjectIfAvailable(args, namespace)
+	helper.CmdShouldPass("odo", args...)
+
+	args = append(args, "--build-command", "devBuild", "-f")
+	output := helper.CmdShouldPass("odo", args...)
+	helper.MatchAllInOutput(output, []string{"Executing devbuild command", "touch blah.js"})
+}
+
+func ExecPushWithParentOverride(projectDirPath, cmpName, namespace string) {
+	args := []string{"create", "java-openliberty", cmpName}
+	args = useProjectIfAvailable(args, namespace)
+	helper.CmdShouldPass("odo", args...)
+
+	helper.CopyExample(filepath.Join("source", "devfiles", "openliberty", "project"), projectDirPath)
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "openliberty", "devfile-with-parent.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
+
+	args = []string{"push"}
+	args = useProjectIfAvailable(args, namespace)
+	helper.CmdShouldPass("odo", args...)
+}
+
+func ExecPushWithMultiLayerParent(projectDirPath, cmpName, namespace string) {
+	args := []string{"create", "java-openliberty", cmpName}
+	args = useProjectIfAvailable(args, namespace)
+	helper.CmdShouldPass("odo", args...)
+
+	helper.CopyExample(filepath.Join("source", "devfiles", "openliberty", "project"), projectDirPath)
+	helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "openliberty", "devfile-with-multi-layer-parent.yaml"), filepath.Join(projectDirPath, "devfile.yaml"))
+
+	args = []string{"push"}
+	args = useProjectIfAvailable(args, namespace)
+	helper.CmdShouldPass("odo", args...)
+
+	args = []string{"push", "--build-command", "devbuild", "-f"}
+	args = useProjectIfAvailable(args, namespace)
+	helper.CmdShouldPass("odo", args...)
+
+	args = []string{"push", "--build-command", "build", "-f"}
+	args = useProjectIfAvailable(args, namespace)
+	helper.CmdShouldPass("odo", args...)
 }
 
 // ExecPushToTestFileChanges executes odo push with and without a file change
@@ -367,6 +420,61 @@ func OdoWatch(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, project, context, fl
 		getMemoryRequest := runner.(helper.OcRunner).MinMemory(odoV1Watch.SrcType+"-app", odoV1Watch.AppName, project)
 		Expect(getMemoryRequest).To(ContainSubstring("400Mi"))
 	}
+}
+
+// OdoWatchWithDebug changes files in the context and watches for the changes to be pushed
+// It checks if the push is in debug mode or not
+// After a successful push with watch, it tries to start a debug session
+func OdoWatchWithDebug(odoV2Watch OdoV2Watch, context, flag string) {
+
+	startSimulationCh := make(chan bool)
+	go func() {
+		startMsg := <-startSimulationCh
+		if startMsg {
+			helper.ReplaceString(filepath.Join(context, "server.js"), "Hello", "Hello odo")
+			helper.ReplaceString(filepath.Join(context, "package.json"), "application", "app")
+		}
+	}()
+
+	success, err := helper.WatchNonRetCmdStdOut(
+		("odo watch " + flag + " --context " + context),
+		time.Duration(5)*time.Minute,
+		func(output string) bool {
+			fmt.Println(output)
+			stringsMatched := true
+
+			for _, stringToBeMatched := range odoV2Watch.StringsToBeMatched {
+				if !strings.Contains(output, stringToBeMatched) {
+					stringsMatched = false
+				}
+			}
+
+			if stringsMatched {
+				httpPort, err := util.HTTPGetFreePort()
+				Expect(err).NotTo(HaveOccurred())
+				freePort := strconv.Itoa(httpPort)
+
+				stopChannel := make(chan bool)
+				go func() {
+					helper.CmdShouldRunAndTerminate(60*time.Second, stopChannel, "odo", "debug", "port-forward", "--local-port", freePort)
+				}()
+
+				// 400 response expected because the endpoint expects a websocket request and we are doing a HTTP GET
+				// We are just using this to validate if nodejs agent is listening on the other side
+				helper.HttpWaitForWithStatus("http://localhost:"+freePort, "WebSockets request was expected", 12, 5, 400)
+
+				return true
+			}
+
+			return false
+		},
+		startSimulationCh,
+		func(output string) bool {
+			return strings.Contains(output, "Waiting for something to change")
+		})
+
+	Expect(success).To(Equal(true))
+	Expect(err).To(BeNil())
 }
 
 func validateContainerExecListDir(odoV1Watch OdoV1Watch, odoV2Watch OdoV2Watch, runner interface{}, platform, project string, isDevfileTest bool) error {

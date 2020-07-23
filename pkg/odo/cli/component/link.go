@@ -5,10 +5,12 @@ import (
 
 	"github.com/openshift/odo/pkg/component"
 	"github.com/openshift/odo/pkg/odo/genericclioptions"
+	sbo "github.com/redhat-developer/service-binding-operator/pkg/apis/apps/v1alpha1"
 
 	appCmd "github.com/openshift/odo/pkg/odo/cli/application"
 	projectCmd "github.com/openshift/odo/pkg/odo/cli/project"
 	"github.com/openshift/odo/pkg/odo/util/completion"
+	"github.com/openshift/odo/pkg/odo/util/experimental"
 
 	"github.com/openshift/odo/pkg/odo/util"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
@@ -63,6 +65,23 @@ odo link dh-postgresql-apb
 Now backend has 2 ENV variables it can use:
 DB_USER=luke
 DB_PASSWORD=secret`
+
+	linkExampleExperimental = ktemplates.Examples(`# Link the current component to the 'EtcdCluster' named 'myetcd'
+%[1]s EtcdCluster/myetcd
+	`)
+
+	linkLongDescExperimental = `Link component to an operator backed service
+
+If the source component is not provided, the current active component is assumed.
+
+For example:
+
+We have created a frontend application called 'frontend' using:
+odo create nodejs frontend
+
+If you wish to connect this nodejs based component to, for example, an EtcdCluster named 'myetcd' created from etcd Operator:
+odo link EtcdCluster/myetcd
+	`
 )
 
 // LinkOptions encapsulates the options for the odo link command
@@ -76,13 +95,16 @@ type LinkOptions struct {
 func NewLinkOptions() *LinkOptions {
 	options := LinkOptions{}
 	options.commonLinkOptions = newCommonLinkOptions()
+	options.commonLinkOptions.sbr = &sbo.ServiceBindingRequest{}
 	return &options
 }
 
 // Complete completes LinkOptions after they've been created
 func (o *LinkOptions) Complete(name string, cmd *cobra.Command, args []string) (err error) {
 	err = o.complete(name, cmd, args)
-	o.operation = o.Client.LinkSecret
+	if !experimental.IsExperimentalModeEnabled() {
+		o.operation = o.Client.LinkSecret
+	}
 	return err
 }
 
@@ -91,6 +113,10 @@ func (o *LinkOptions) Validate() (err error) {
 	err = o.validate(o.waitForTarget)
 	if err != nil {
 		return err
+	}
+
+	if experimental.IsExperimentalModeEnabled() {
+		return
 	}
 
 	alreadyLinkedSecretNames, err := component.GetComponentLinkedSecretNames(o.Client, o.Component(), o.Application)
@@ -135,10 +161,19 @@ func NewCmdLink(name, fullName string) *cobra.Command {
 	linkCmd.PersistentFlags().BoolVar(&o.waitForTarget, "wait-for-target", false, "If enabled, the link command will wait for the service to be provisioned (has no effect when linking to a component)")
 
 	linkCmd.SetUsageTemplate(util.CmdUsageTemplate)
+
+	// Modifications for the case when experimental mode is enabled
+	if experimental.IsExperimentalModeEnabled() {
+		linkCmd.Use = fmt.Sprintf("%s <service-type>/<service-name>", name)
+		linkCmd.Example = fmt.Sprintf(linkExampleExperimental, fullName)
+		linkCmd.Long = linkLongDescExperimental
+	}
 	//Adding `--project` flag
 	projectCmd.AddProjectFlag(linkCmd)
 	//Adding `--application` flag
-	appCmd.AddApplicationFlag(linkCmd)
+	if !experimental.IsExperimentalModeEnabled() {
+		appCmd.AddApplicationFlag(linkCmd)
+	}
 	//Adding `--component` flag
 	AddComponentFlag(linkCmd)
 	//Adding context flag

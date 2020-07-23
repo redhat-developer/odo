@@ -1,0 +1,19 @@
+Contributors to the Service Binding Operator Project (in alphabetic order)
+
+Ben Aissi, Akram
+Bhattacharya, Pradeepto
+Bobade, Vibhav
+Bose, Shoubhik
+Charan Kundu, Bama
+DiMaggio, Len
+Fernandes, Otávio
+Jagrut, Pratik
+Macik, Pavel
+Muthukadan, Baiju
+Sadeghianfar, Siamak
+Sharma, Avni
+Shikhar, Dhriti
+Shinde, Akash
+Singh, Jitendar
+Sutton, Igor
+Varakantam, Ranjith
