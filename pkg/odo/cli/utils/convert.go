@@ -185,7 +185,7 @@ func generateDevfileYaml(co *ConvertOptions) error {
 	setDevfileCommandsForS2I(s2iDevfile)
 
 	devObj := parser.DevfileObj{
-		Ctx:  devfileCtx.NewDevfileCtx(co.componentContext), //component context needs to be passed here
+		Ctx:  devfileCtx.NewDevfileCtx(co.componentContext),
 		Data: s2iDevfile,
 	}
 
@@ -202,10 +202,7 @@ func generateEnvYaml(co *ConvertOptions) (err error) {
 	urls := co.context.LocalConfigInfo.GetURL()
 	debugPort := co.context.LocalConfigInfo.GetDebugPort()
 
-	// TODO(adi):convert lables and annotations,
-	// Add application in env.yaml once odo list PR gets merged
-	// https://github.com/openshift/odo/pull/3505
-	// application := context.LocalConfigInfo.GetApplication()
+	application := co.context.LocalConfigInfo.GetApplication()
 
 	// Generate env.yaml
 	co.context.EnvSpecificInfo, err = envinfo.NewEnvSpecificInfo(co.componentContext)
@@ -232,6 +229,7 @@ func generateEnvYaml(co *ConvertOptions) (err error) {
 		Name:      co.componentName,
 		Namespace: co.context.Project,
 		URL:       &urlList,
+		AppName:   application,
 	}
 
 	if debugPort != 0 || debugPort == config.DefaultDebugPort {
