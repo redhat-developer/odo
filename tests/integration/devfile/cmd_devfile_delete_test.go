@@ -11,17 +11,6 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-// deleteLocalConfig helps user to delete local config files with flags
-func deleteLocalConfig(args ...string) {
-	helper.CmdShouldFail("odo", args...)
-	output := helper.CmdShouldPass("odo", append(args, "-af")...)
-	expectedOutput := []string{
-		"Successfully deleted env file",
-		"Successfully deleted devfile.yaml file",
-	}
-	helper.MatchAllInOutput(output, expectedOutput)
-}
-
 var _ = Describe("odo devfile delete command tests", func() {
 	var namespace, context, currentWorkingDirectory, componentName, originalKubeconfig, invalidNamespace string
 
@@ -115,12 +104,12 @@ var _ = Describe("odo devfile delete command tests", func() {
 
 		It("should let the user delete the local config files with -a flag", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", invalidNamespace, componentName)
-			deleteLocalConfig("delete")
+			cliRunner.DeleteLocalConfig("delete")
 		})
 
 		It("should let the user delete the local config files with -a and -project flags", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", invalidNamespace, componentName)
-			deleteLocalConfig("delete", "--project", invalidNamespace)
+			cliRunner.DeleteLocalConfig("delete", "--project", invalidNamespace)
 		})
 	})
 })
