@@ -1,6 +1,8 @@
 package kubernetes
 
 import (
+	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
+	"github.com/openshift/odo/pkg/machineoutput"
 	"io"
 
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
@@ -68,4 +70,19 @@ func (k Adapter) Log(follow, debug bool) (io.ReadCloser, error) {
 // Exec executes a command in the component
 func (k Adapter) Exec(command []string) error {
 	return k.componentAdapter.Exec(command)
+}
+
+func (k Adapter) ExecCMDInContainer(info common.ComponentInfo, cmd []string, stdOut io.Writer, stdErr io.Writer, stdIn io.Reader, show bool) error {
+	return k.componentAdapter.ExecCMDInContainer(info, cmd, stdOut, stdErr, stdIn, show)
+}
+func (k Adapter) Logger() machineoutput.MachineEventLoggingClient {
+	return k.componentAdapter.Logger()
+}
+
+func (k Adapter) ComponentInfo(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
+	return k.componentAdapter.ComponentInfo(command)
+}
+
+func (k Adapter) SupervisorComponentInfo(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
+	return k.componentAdapter.SupervisorComponentInfo(command)
 }

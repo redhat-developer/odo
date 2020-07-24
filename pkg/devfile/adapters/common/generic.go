@@ -35,6 +35,14 @@ func NewGenericAdapter(client ExecClient, logger machineoutput.MachineEventLoggi
 	}
 }
 
+func (a GenericAdapter) ExecCMDInContainer(info ComponentInfo, cmd []string, stdOut io.Writer, stdErr io.Writer, stdIn io.Reader, show bool) error {
+	return a.client.ExecCMDInContainer(info, cmd, stdOut, stdErr, stdIn, show)
+}
+
+func (a GenericAdapter) Logger() machineoutput.MachineEventLoggingClient {
+	return a.logger
+}
+
 // ExecuteCommand simply calls exec.ExecuteCommand using the GenericAdapter's client
 func (a GenericAdapter) ExecuteCommand(compInfo ComponentInfo, command []string, show bool, consoleOutputStdout *io.PipeWriter, consoleOutputStderr *io.PipeWriter) (err error) {
 	return ExecuteCommand(a.client, compInfo, command, show, consoleOutputStdout, consoleOutputStderr)

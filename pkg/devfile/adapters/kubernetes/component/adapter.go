@@ -41,35 +41,47 @@ func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
 		loggingClient = machineoutput.NewNoOpMachineEventLoggingClient()
 	}
 
-	componentInfoFactory := func(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
-		pod, err := waitAndGetPod(true, adapterContext.ComponentName, client)
+	adapter := Adapter{Client: client}
+	adapter.GenericAdapter = common.NewGenericAdapter(&client, loggingClient, adapterContext, adapter.ComponentInfo, adapter.SupervisorComponentInfo)
+	return adapter
+}
+
+func (a Adapter) getPod() (*corev1.Pod, error) {
+	if a.pod == nil {
+		pod, err := waitAndGetPod(true, a.ComponentName, a.Client)
 		if err != nil {
-			return common.ComponentInfo{}, errors.Wrapf(err, "unable to get pod for component %s", adapterContext.ComponentName)
+			return nil, errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
 		}
-		return common.ComponentInfo{
-			PodName:       pod.Name,
-			ContainerName: command.Exec.Component,
-		}, nil
+		a.pod = pod
 	}
-	supervisorFactory := func(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
-		pod, err := waitAndGetPod(true, adapterContext.ComponentName, client)
-		if err != nil {
-			return common.ComponentInfo{}, errors.Wrapf(err, "unable to get pod for component %s", adapterContext.ComponentName)
+	return a.pod, nil
+}
+
+func (a Adapter) ComponentInfo(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
+	pod, err := a.getPod()
+	if err != nil {
+		return common.ComponentInfo{}, err
+	}
+	return common.ComponentInfo{
+		PodName:       pod.Name,
+		ContainerName: command.Exec.Component,
+	}, nil
+}
+
+func (a Adapter) SupervisorComponentInfo(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
+	pod, err := a.getPod()
+	if err != nil {
+		return common.ComponentInfo{}, err
+	}
+	for _, container := range pod.Spec.Containers {
+		if container.Name == command.Exec.Component && !reflect.DeepEqual(container.Command, []string{common.SupervisordBinaryPath}) {
+			return common.ComponentInfo{
+				ContainerName: command.Exec.Component,
+				PodName:       pod.Name,
+			}, nil
 		}
-		for _, container := range pod.Spec.Containers {
-			if container.Name == command.Exec.Component && !reflect.DeepEqual(container.Command, []string{common.SupervisordBinaryPath}) {
-				return common.ComponentInfo{
-					ContainerName: command.Exec.Component,
-					PodName:       pod.Name,
-				}, nil
-			}
-		}
-		return common.ComponentInfo{}, errors.Wrapf(err, "couldn't find supervisord contain for odo component %s", adapterContext.ComponentName)
 	}
-	return Adapter{
-		Client:         client,
-		GenericAdapter: common.NewGenericAdapter(&client, loggingClient, adapterContext, componentInfoFactory, supervisorFactory),
-	}
+	return common.ComponentInfo{}, errors.Wrapf(err, "couldn't find supervisord contain for odo component %s", a.ComponentName)
 }
 
 // Adapter is a component adapter implementation for Kubernetes
@@ -82,6 +94,7 @@ type Adapter struct {
 	devfileRunCmd    string
 	devfileDebugCmd  string
 	devfileDebugPort int
+	pod              *corev1.Pod
 }
 
 // Push updates the component if a matching component exists or creates one if it doesn't exist

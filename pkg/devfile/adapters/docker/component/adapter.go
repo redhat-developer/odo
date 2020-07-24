@@ -33,33 +33,9 @@ func New(adapterContext common.AdapterContext, client lclient.Client) Adapter {
 		loggingClient = machineoutput.NewNoOpMachineEventLoggingClient()
 	}
 
-	componentInfoFactory := func(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
-		containers, err := utils.GetComponentContainers(client, adapterContext.ComponentName)
-		if err != nil {
-			return common.ComponentInfo{}, errors.Wrapf(err, "error while retrieving container for odo component %s", adapterContext.ComponentName)
-		}
-		containerID := utils.GetContainerIDForAlias(containers, command.Exec.Component)
-		compInfo := common.ComponentInfo{ContainerName: containerID}
-		return compInfo, nil
-	}
-	supervisorFactory := func(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
-		containers, err := utils.GetComponentContainers(client, adapterContext.ComponentName)
-		if err != nil {
-			return common.ComponentInfo{}, errors.Wrapf(err, "error while retrieving container for odo component %s", adapterContext.ComponentName)
-		}
-		for _, container := range containers {
-			if container.Labels["alias"] == adapterContext.ComponentName && !strings.Contains(container.Command, common.SupervisordBinaryPath) {
-				return common.ComponentInfo{
-					ContainerName: container.ID,
-				}, nil
-			}
-		}
-		return common.ComponentInfo{}, errors.Wrapf(err, "couldn't find supervisord contain for odo component %s", adapterContext.ComponentName)
-	}
-	return Adapter{
-		Client:         client,
-		GenericAdapter: common.NewGenericAdapter(&client, loggingClient, adapterContext, componentInfoFactory, supervisorFactory),
-	}
+	adapter := Adapter{Client: client}
+	adapter.GenericAdapter = common.NewGenericAdapter(&client, loggingClient, adapterContext, adapter.ComponentInfo, adapter.SupervisorComponentInfo)
+	return adapter
 }
 
 // Adapter is a component adapter implementation for Kubernetes
@@ -75,6 +51,43 @@ type Adapter struct {
 	devfileRunCmd             string
 	supervisordVolumeName     string
 	projectVolumeName         string
+	containers                []types.Container
+}
+
+func (a *Adapter) getContainers() ([]types.Container, error) {
+	if a.containers == nil {
+		containers, err := utils.GetComponentContainers(a.Client, a.ComponentName)
+		if err != nil {
+			return nil, errors.Wrapf(err, "error while retrieving container for odo component %s", a.ComponentName)
+		}
+		a.containers = containers
+	}
+	return a.containers, nil
+}
+
+func (a Adapter) ComponentInfo(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
+	containers, err := a.getContainers()
+	if err != nil {
+		return common.ComponentInfo{}, err
+	}
+	containerID := utils.GetContainerIDForAlias(containers, command.Exec.Component)
+	compInfo := common.ComponentInfo{ContainerName: containerID}
+	return compInfo, nil
+}
+
+func (a Adapter) SupervisorComponentInfo(command versionsCommon.DevfileCommand) (common.ComponentInfo, error) {
+	containers, err := a.getContainers()
+	if err != nil {
+		return common.ComponentInfo{}, err
+	}
+	for _, container := range containers {
+		if container.Labels["alias"] == a.ComponentName && !strings.Contains(container.Command, common.SupervisordBinaryPath) {
+			return common.ComponentInfo{
+				ContainerName: container.ID,
+			}, nil
+		}
+	}
+	return common.ComponentInfo{}, errors.Wrapf(err, "couldn't find supervisord contain for odo component %s", a.ComponentName)
 }
 
 // Push updates the component if a matching component exists or creates one if it doesn't exist
