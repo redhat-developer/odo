@@ -24,7 +24,6 @@ import (
 	versionsCommon "github.com/openshift/odo/pkg/devfile/parser/data/common"
 	"github.com/openshift/odo/pkg/kclient"
 	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/machineoutput"
 	odoutil "github.com/openshift/odo/pkg/odo/util"
 	"github.com/openshift/odo/pkg/sync"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -32,17 +31,8 @@ import (
 
 // New instantiantes a component adapter
 func New(adapterContext common.AdapterContext, client kclient.Client) Adapter {
-
-	var loggingClient machineoutput.MachineEventLoggingClient
-
-	if log.IsJSON() {
-		loggingClient = machineoutput.NewConsoleMachineEventLoggingClient()
-	} else {
-		loggingClient = machineoutput.NewNoOpMachineEventLoggingClient()
-	}
-
 	adapter := Adapter{Client: client}
-	adapter.GenericAdapter = common.NewGenericAdapter(&client, loggingClient, adapterContext, adapter.ComponentInfo, adapter.SupervisorComponentInfo)
+	adapter.GenericAdapter = common.NewGenericAdapter(&client, adapterContext, adapter.ComponentInfo, adapter.SupervisorComponentInfo)
 	return adapter
 }
 

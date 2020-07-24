@@ -18,23 +18,13 @@ import (
 	"github.com/openshift/odo/pkg/devfile/adapters/docker/utils"
 	"github.com/openshift/odo/pkg/lclient"
 	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/openshift/odo/pkg/sync"
 )
 
 // New instantiates a component adapter
 func New(adapterContext common.AdapterContext, client lclient.Client) Adapter {
-
-	var loggingClient machineoutput.MachineEventLoggingClient
-
-	if log.IsJSON() {
-		loggingClient = machineoutput.NewConsoleMachineEventLoggingClient()
-	} else {
-		loggingClient = machineoutput.NewNoOpMachineEventLoggingClient()
-	}
-
 	adapter := Adapter{Client: client}
-	adapter.GenericAdapter = common.NewGenericAdapter(&client, loggingClient, adapterContext, adapter.ComponentInfo, adapter.SupervisorComponentInfo)
+	adapter.GenericAdapter = common.NewGenericAdapter(&client, adapterContext, adapter.ComponentInfo, adapter.SupervisorComponentInfo)
 	return adapter
 }
 

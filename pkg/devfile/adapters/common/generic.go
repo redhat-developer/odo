@@ -25,11 +25,11 @@ type GenericAdapter struct {
 }
 
 // NewGenericAdapter creates a new GenericAdapter instance based on the provided parameters
-func NewGenericAdapter(client ExecClient, logger machineoutput.MachineEventLoggingClient, context AdapterContext, ciFactory ComponentInfoFactory, supervisorFactory ComponentInfoFactory) GenericAdapter {
+func NewGenericAdapter(client ExecClient, context AdapterContext, ciFactory ComponentInfoFactory, supervisorFactory ComponentInfoFactory) GenericAdapter {
 	return GenericAdapter{
 		AdapterContext:           context,
 		client:                   client,
-		logger:                   logger,
+		logger:                   machineoutput.NewMachineEventLoggingClient(),
 		componentInfo:            ciFactory,
 		supervisordComponentInfo: supervisorFactory,
 	}
