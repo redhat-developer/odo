@@ -156,8 +156,8 @@ func validateCommand(data data.DevfileData, command common.DevfileCommand) (err 
 		return fmt.Errorf("exec commands must have a command")
 	}
 
-	// must map to a supported component
-	components := GetSupportedComponents(data)
+	// must map to a container component
+	components := GetDevfileContainerComponents(data)
 
 	isComponentValid := false
 	for _, component := range components {

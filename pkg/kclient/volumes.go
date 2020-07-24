@@ -45,16 +45,16 @@ func AddPVCToPodTemplateSpec(podTemplateSpec *corev1.PodTemplateSpec, volumeName
 	})
 }
 
-// AddVolumeMountToPodTemplateSpec adds the Volume Mounts in componentAliasToMountPaths to the podTemplateSpec containers for a given pvc and volumeName
-// componentAliasToMountPaths is a map of a container alias to an array of its Mount Paths
-func AddVolumeMountToPodTemplateSpec(podTemplateSpec *corev1.PodTemplateSpec, volumeName string, componentAliasToMountPaths map[string][]string) error {
+// AddVolumeMountToPodTemplateSpec adds the Volume Mounts in containerNameToMountPaths to the podTemplateSpec containers for a given pvc and volumeName
+// containerNameToMountPaths is a map of a container name to an array of its Mount Paths
+func AddVolumeMountToPodTemplateSpec(podTemplateSpec *corev1.PodTemplateSpec, volumeName string, containerNameToMountPaths map[string][]string) error {
 
 	// Validating podTemplateSpec.Spec.Containers[] is present before dereferencing
 	if len(podTemplateSpec.Spec.Containers) == 0 {
 		return fmt.Errorf("podTemplateSpec %s doesn't have any Containers defined", podTemplateSpec.ObjectMeta.Name)
 	}
 
-	for containerName, mountPaths := range componentAliasToMountPaths {
+	for containerName, mountPaths := range containerNameToMountPaths {
 		for i, container := range podTemplateSpec.Spec.Containers {
 			if container.Name == containerName {
 				for _, mountPath := range mountPaths {
@@ -75,8 +75,8 @@ func AddVolumeMountToPodTemplateSpec(podTemplateSpec *corev1.PodTemplateSpec, vo
 
 // AddPVCAndVolumeMount adds PVC and volume mount to the pod template spec
 // volumeNameToPVCName is a map of volume name to the PVC created
-// componentAliasToVolumes is a map of the Devfile component alias to the Devfile Volumes
-func AddPVCAndVolumeMount(podTemplateSpec *corev1.PodTemplateSpec, volumeNameToPVCName map[string]string, componentAliasToVolumes map[string][]common.DevfileVolume) error {
+// containerNameToVolumes is a map of the Devfile container names to the Devfile Volumes
+func AddPVCAndVolumeMount(podTemplateSpec *corev1.PodTemplateSpec, volumeNameToPVCName map[string]string, containerNameToVolumes map[string][]common.DevfileVolume) error {
 	for volName, pvcName := range volumeNameToPVCName {
 		generatedVolumeName, err := generateVolumeNameFromPVC(pvcName)
 		if err != nil {
@@ -84,17 +84,17 @@ func AddPVCAndVolumeMount(podTemplateSpec *corev1.PodTemplateSpec, volumeNameToP
 		}
 		AddPVCToPodTemplateSpec(podTemplateSpec, generatedVolumeName, pvcName)
 
-		// componentAliasToMountPaths is a map of the Devfile container alias to their Devfile Volume Mount Paths for a given Volume Name
-		componentAliasToMountPaths := make(map[string][]string)
-		for containerName, volumes := range componentAliasToVolumes {
+		// containerNameToMountPaths is a map of the Devfile container name to their Devfile Volume Mount Paths for a given Volume Name
+		containerNameToMountPaths := make(map[string][]string)
+		for containerName, volumes := range containerNameToVolumes {
 			for _, volume := range volumes {
 				if volName == volume.Name {
-					componentAliasToMountPaths[containerName] = append(componentAliasToMountPaths[containerName], volume.ContainerPath)
+					containerNameToMountPaths[containerName] = append(containerNameToMountPaths[containerName], volume.ContainerPath)
 				}
 			}
 		}
 
-		err = AddVolumeMountToPodTemplateSpec(podTemplateSpec, generatedVolumeName, componentAliasToMountPaths)
+		err = AddVolumeMountToPodTemplateSpec(podTemplateSpec, generatedVolumeName, containerNameToMountPaths)
 		if err != nil {
 			return errors.Wrapf(err, "Unable to add volumes mounts to the pod")
 		}

@@ -77,7 +77,7 @@ func TestCreateOrUpdateComponent(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var comp versionsCommon.DevfileComponent
 			if tt.componentType != "" {
-				comp = testingutil.GetFakeComponent("component")
+				comp = testingutil.GetFakeContainerComponent("component")
 			}
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
@@ -308,7 +308,7 @@ func TestDoesComponentExist(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					Components:   []versionsCommon.DevfileComponent{testingutil.GetFakeComponent("component")},
+					Components:   []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("component")},
 					ExecCommands: []versionsCommon.Exec{getExecCommand("run", versionsCommon.RunCommandGroupType)},
 				},
 			}
@@ -390,7 +390,7 @@ func TestWaitAndGetComponentPod(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					Components: []versionsCommon.DevfileComponent{testingutil.GetFakeComponent("component")},
+					Components: []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("component")},
 				},
 			}
 

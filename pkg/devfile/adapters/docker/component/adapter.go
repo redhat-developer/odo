@@ -46,7 +46,7 @@ type Adapter struct {
 	Client lclient.Client
 	common.AdapterContext
 
-	componentAliasToVolumes   map[string][]common.DevfileVolume
+	containerNameToVolumes    map[string][]common.DevfileVolume
 	uniqueStorage             []common.Storage
 	volumeNameToDockerVolName map[string]string
 	devfileInitCmd            string
@@ -65,8 +65,8 @@ func (a Adapter) Push(parameters common.PushParameters) (err error) {
 	}
 
 	// Process the volumes defined in the devfile
-	a.componentAliasToVolumes = common.GetVolumes(a.Devfile)
-	a.uniqueStorage, a.volumeNameToDockerVolName, err = storage.ProcessVolumes(&a.Client, a.ComponentName, a.componentAliasToVolumes)
+	a.containerNameToVolumes = common.GetVolumes(a.Devfile)
+	a.uniqueStorage, a.volumeNameToDockerVolName, err = storage.ProcessVolumes(&a.Client, a.ComponentName, a.containerNameToVolumes)
 	if err != nil {
 		return errors.Wrapf(err, "unable to process volumes for component %s", a.ComponentName)
 	}

@@ -175,9 +175,9 @@ func TestGetCommand(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			components := []common.DevfileComponent{testingutil.GetFakeComponent(tt.execCommands[0].Component)}
+			components := []common.DevfileComponent{testingutil.GetFakeContainerComponent(tt.execCommands[0].Component)}
 			if tt.execCommands[0].Component == invalidComponent {
-				components = []common.DevfileComponent{testingutil.GetFakeComponent("randomComponent")}
+				components = []common.DevfileComponent{testingutil.GetFakeContainerComponent("randomComponent")}
 			}
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
@@ -408,9 +408,9 @@ func TestGetCommandFromDevfile(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			components := []common.DevfileComponent{testingutil.GetFakeComponent(tt.execCommands[0].Component)}
+			components := []common.DevfileComponent{testingutil.GetFakeContainerComponent(tt.execCommands[0].Component)}
 			if tt.execCommands[0].Component == invalidComponent {
-				components = []common.DevfileComponent{testingutil.GetFakeComponent("randomComponent")}
+				components = []common.DevfileComponent{testingutil.GetFakeContainerComponent("randomComponent")}
 			}
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
@@ -645,9 +645,9 @@ func TestGetCommandFromFlag(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			components := []common.DevfileComponent{testingutil.GetFakeComponent(tt.execCommands[0].Component)}
+			components := []common.DevfileComponent{testingutil.GetFakeContainerComponent(tt.execCommands[0].Component)}
 			if tt.execCommands[0].Component == invalidComponent {
-				components = []common.DevfileComponent{testingutil.GetFakeComponent("randomComponent")}
+				components = []common.DevfileComponent{testingutil.GetFakeContainerComponent("randomComponent")}
 			}
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
@@ -801,7 +801,7 @@ func TestValidateCommandsForGroup(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
 					Components: []versionsCommon.DevfileComponent{
-						testingutil.GetFakeComponent("alias1"),
+						testingutil.GetFakeContainerComponent("alias1"),
 					},
 					ExecCommands:      tt.execCommands,
 					CompositeCommands: tt.compCommands,
@@ -933,7 +933,7 @@ func TestValidateCommand(t *testing.T) {
 			Data: testingutil.TestDevfileData{
 				ExecCommands:      tt.exec,
 				CompositeCommands: tt.comp,
-				Components:        []common.DevfileComponent{testingutil.GetFakeComponent(component)},
+				Components:        []common.DevfileComponent{testingutil.GetFakeContainerComponent(component)},
 			},
 		}
 		t.Run(tt.name, func(t *testing.T) {
@@ -1022,7 +1022,7 @@ func TestGetInitCommand(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
 					ExecCommands: tt.execCommands,
-					Components:   []common.DevfileComponent{testingutil.GetFakeComponent(component)},
+					Components:   []common.DevfileComponent{testingutil.GetFakeContainerComponent(component)},
 				},
 			}
 
@@ -1109,7 +1109,7 @@ func TestGetBuildCommand(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
 					ExecCommands: tt.execCommands,
-					Components:   []common.DevfileComponent{testingutil.GetFakeComponent(component)},
+					Components:   []common.DevfileComponent{testingutil.GetFakeContainerComponent(component)},
 				},
 			}
 
@@ -1196,7 +1196,7 @@ func TestGetDebugCommand(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					Components:   []common.DevfileComponent{testingutil.GetFakeComponent(component)},
+					Components:   []common.DevfileComponent{testingutil.GetFakeContainerComponent(component)},
 					ExecCommands: tt.execCommands,
 				},
 			}
@@ -1286,7 +1286,7 @@ func TestGetTestCommand(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					Components:   []common.DevfileComponent{testingutil.GetFakeComponent(component)},
+					Components:   []common.DevfileComponent{testingutil.GetFakeContainerComponent(component)},
 					ExecCommands: tt.execCommands,
 				},
 			}
@@ -1375,7 +1375,7 @@ func TestGetRunCommand(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
 					ExecCommands: tt.execCommands,
-					Components:   []common.DevfileComponent{testingutil.GetFakeComponent(component)},
+					Components:   []common.DevfileComponent{testingutil.GetFakeContainerComponent(component)},
 				},
 			}
 
@@ -1450,7 +1450,7 @@ func TestValidateAndGetDebugDevfileCommands(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					Components:   []common.DevfileComponent{testingutil.GetFakeComponent(component)},
+					Components:   []common.DevfileComponent{testingutil.GetFakeContainerComponent(component)},
 					ExecCommands: execCommands,
 				},
 			}
@@ -1661,7 +1661,7 @@ func TestValidateAndGetPushDevfileCommands(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
 					ExecCommands: tt.execCommands,
-					Components:   []common.DevfileComponent{testingutil.GetFakeComponent(component)},
+					Components:   []common.DevfileComponent{testingutil.GetFakeContainerComponent(component)},
 				},
 			}
 
@@ -1874,7 +1874,7 @@ func TestValidateCompositeCommand(t *testing.T) {
 			Data: testingutil.TestDevfileData{
 				ExecCommands:      tt.execCommands,
 				CompositeCommands: tt.compositeCommands,
-				Components:        []common.DevfileComponent{testingutil.GetFakeComponent(component)},
+				Components:        []common.DevfileComponent{testingutil.GetFakeContainerComponent(component)},
 			},
 		}
 		t.Run(tt.name, func(t *testing.T) {
@@ -1950,7 +1950,7 @@ func TestValidateAndGetTestDevfileCommands(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
-					Components:   []common.DevfileComponent{testingutil.GetFakeComponent(component)},
+					Components:   []common.DevfileComponent{testingutil.GetFakeContainerComponent(component)},
 					ExecCommands: execCommands,
 				},
 			}

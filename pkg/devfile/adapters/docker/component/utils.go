@@ -34,8 +34,8 @@ func (a Adapter) createComponent() (err error) {
 
 	log.Infof("\nCreating Docker resources for component %s", a.ComponentName)
 
-	supportedComponents := common.GetSupportedComponents(a.Devfile.Data)
-	if len(supportedComponents) == 0 {
+	containerComponents := common.GetDevfileContainerComponents(a.Devfile.Data)
+	if len(containerComponents) == 0 {
 		return fmt.Errorf("no valid components found in the devfile")
 	}
 
@@ -46,10 +46,10 @@ func (a Adapter) createComponent() (err error) {
 		return errors.Wrapf(err, "unable to create Docker storage adapter for component %s", componentName)
 	}
 
-	// Loop over each component and start a container for it
-	for _, comp := range supportedComponents {
+	// Loop over each container component and start a container for it
+	for _, comp := range containerComponents {
 		var dockerVolumeMounts []mount.Mount
-		for _, vol := range a.componentAliasToVolumes[comp.Container.Name] {
+		for _, vol := range a.containerNameToVolumes[comp.Container.Name] {
 
 			volMount := mount.Mount{
 				Type:   mount.TypeVolume,
@@ -77,12 +77,12 @@ func (a Adapter) updateComponent() (componentExists bool, err error) {
 	stoAdapter := storage.New(a.AdapterContext, a.Client)
 	err = stoAdapter.Create(a.uniqueStorage)
 
-	supportedComponents := common.GetSupportedComponents(a.Devfile.Data)
-	if len(supportedComponents) == 0 {
+	containerComponents := common.GetDevfileContainerComponents(a.Devfile.Data)
+	if len(containerComponents) == 0 {
 		return componentExists, fmt.Errorf("no valid components found in the devfile")
 	}
 
-	for _, comp := range supportedComponents {
+	for _, comp := range containerComponents {
 		// Check to see if this component is already running and if so, update it
 		// If component isn't running, re-create it, as it either may be new, or crashed.
 		containers, err := a.Client.GetContainersByComponentAndAlias(componentName, comp.Container.Name)
@@ -91,7 +91,7 @@ func (a Adapter) updateComponent() (componentExists bool, err error) {
 		}
 
 		var dockerVolumeMounts []mount.Mount
-		for _, vol := range a.componentAliasToVolumes[comp.Container.Name] {
+		for _, vol := range a.containerNameToVolumes[comp.Container.Name] {
 			volMount := mount.Mount{
 				Type:   mount.TypeVolume,
 				Source: a.volumeNameToDockerVolName[vol.Name],

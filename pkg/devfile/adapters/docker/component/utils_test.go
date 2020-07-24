@@ -38,13 +38,13 @@ func TestCreateComponent(t *testing.T) {
 		},
 		{
 			name:       "Case 2: Valid devfile",
-			components: []versionsCommon.DevfileComponent{testingutil.GetFakeComponent("alias1")},
+			components: []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("alias1")},
 			client:     fakeClient,
 			wantErr:    false,
 		},
 		{
 			name:       "Case 3: Valid devfile, docker client error",
-			components: []versionsCommon.DevfileComponent{testingutil.GetFakeComponent("alias1")},
+			components: []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("alias1")},
 			client:     fakeErrorClient,
 			wantErr:    true,
 		},
@@ -96,14 +96,14 @@ func TestUpdateComponent(t *testing.T) {
 		},
 		{
 			name:          "Case 2: Valid devfile",
-			components:    []versionsCommon.DevfileComponent{testingutil.GetFakeComponent("alias1")},
+			components:    []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("alias1")},
 			componentName: "test",
 			client:        fakeClient,
 			wantErr:       false,
 		},
 		{
 			name:          "Case 3: Valid devfile, docker client error",
-			components:    []versionsCommon.DevfileComponent{testingutil.GetFakeComponent("alias1")},
+			components:    []versionsCommon.DevfileComponent{testingutil.GetFakeContainerComponent("alias1")},
 			componentName: "",
 			client:        fakeErrorClient,
 			wantErr:       true,
@@ -212,7 +212,7 @@ func TestPullAndStartContainer(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
 					Components: []versionsCommon.DevfileComponent{
-						testingutil.GetFakeComponent("alias1"),
+						testingutil.GetFakeContainerComponent("alias1"),
 					},
 					ExecCommands: testingutil.GetFakeExecRunCommands(),
 				},
@@ -294,7 +294,7 @@ func TestStartContainer(t *testing.T) {
 			devObj := devfileParser.DevfileObj{
 				Data: testingutil.TestDevfileData{
 					Components: []versionsCommon.DevfileComponent{
-						testingutil.GetFakeComponent("alias1"),
+						testingutil.GetFakeContainerComponent("alias1"),
 					},
 					ExecCommands: testingutil.GetFakeExecRunCommands(),
 				},
