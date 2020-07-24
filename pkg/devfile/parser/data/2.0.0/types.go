@@ -185,8 +185,8 @@ type Endpoint struct {
 	Protocol string `json:"protocol,omitempty"`
 
 	// Describes whether the endpoint should be secured and protected by some authentication process
-	Secure     bool `json:"secure,omitempty"`
-	TargetPort int  `json:"targetPort,omitempty"`
+	Secure     bool  `json:"secure,omitempty"`
+	TargetPort int32 `json:"targetPort,omitempty"`
 }
 
 // Env is the key value pair representing an Environment variable
