@@ -74,12 +74,17 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 		}
 
 		if !sboSupport {
-			return fmt.Errorf("Please install Service Binding Operator to be able to create a link")
+			return fmt.Errorf("please install Service Binding Operator to be able to create/delete a link")
 		}
 
 		o.serviceType, o.serviceName, err = svc.IsOperatorServiceNameValid(suppliedName)
 		if err != nil {
 			return err
+		}
+
+		if o.operationName == "unlink" {
+			// rest of the code is specific to link operation
+			return nil
 		}
 
 		componentName := o.EnvSpecificInfo.GetName()
@@ -89,7 +94,7 @@ func (o *commonLinkOptions) complete(name string, cmd *cobra.Command, args []str
 		o.sbr.APIVersion = strings.Join([]string{sbrGroup, sbrVersion}, "/")
 
 		// service binding request name will be like <component-name>-<service-type>-<service-name>. For example: nodejs-etcdcluster-example
-		o.sbr.Name = strings.Join([]string{componentName, strings.ToLower(o.serviceType), o.serviceName}, "-")
+		o.sbr.Name = getSBRName(componentName, o.serviceType, o.serviceName)
 		o.sbr.Namespace = o.EnvSpecificInfo.GetNamespace()
 		o.sbr.Spec.DetectBindingResources = true // because we want the operator what to bind from the service
 
@@ -172,6 +177,19 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 			return fmt.Errorf("Couldn't find service named %q. Refer %q to see list of running services", svcFullName, "odo service list")
 		}
 
+		if o.operationName == "unlink" {
+			componentName := o.EnvSpecificInfo.GetName()
+			sbrName := getSBRName(componentName, o.serviceType, o.serviceName)
+			links := o.EnvSpecificInfo.GetLink()
+
+			linked := isComponentLinked(sbrName, links)
+			if !linked {
+				// user's trying to unlink a service that's not linked with the component
+				return fmt.Errorf("failed to unlink the service %q since it's not linked with the component %q", svcFullName, componentName)
+			}
+			return nil
+		}
+
 		// since the service exists, let's get more info to populate service binding request
 		// first get the CR itself
 		cr, err := o.KClient.GetCustomResource(o.serviceType)
@@ -228,6 +246,24 @@ func (o *commonLinkOptions) validate(wait bool) (err error) {
 
 func (o *commonLinkOptions) run() (err error) {
 	if experimental.IsExperimentalModeEnabled() {
+		if o.operationName == "unlink" {
+			sbrName := getSBRName(o.EnvSpecificInfo.GetName(), o.serviceType, o.serviceName)
+			svcFullName := getSvcFullName(sbrKind, sbrName)
+			err = svc.DeleteOperatorService(o.KClient, svcFullName)
+			if err != nil {
+				return err
+			}
+
+			err = o.Context.EnvSpecificInfo.DeleteLink(sbrName)
+			if err != nil {
+				return err
+			}
+
+			log.Successf("Successfully unlinked component %q from service %q\n", o.Context.EnvSpecificInfo.GetName(), o.suppliedName)
+			log.Italic("To apply the changes, please use `odo push`")
+
+			return
+		}
 		// convert service binding request into a ma[string]interface{} type so
 		// as to use it with dynamic client
 		sbrMap := make(map[string]interface{})
@@ -242,7 +278,7 @@ func (o *commonLinkOptions) run() (err error) {
 		err = o.KClient.CreateDynamicResource(sbrMap, sbrGroup, sbrVersion, sbrResource)
 		if err != nil {
 			if strings.Contains(err.Error(), "already exists") {
-				return fmt.Errorf("Component %q is already linked with the service %q\n", o.Context.EnvSpecificInfo.GetName(), o.suppliedName)
+				return fmt.Errorf("component %q is already linked with the service %q\n", o.Context.EnvSpecificInfo.GetName(), o.suppliedName)
 			}
 			return err
 		}
@@ -342,4 +378,23 @@ func (o *commonLinkOptions) waitForLinkToComplete() (err error) {
 	// now wait for the pod to be running
 	_, err = o.Client.WaitAndGetPod(podSelector, corev1.PodRunning, "Waiting for component to start")
 	return err
+}
+
+// getSvcFullName returns service name in the format <service-type>/<service-name>
+func getSvcFullName(serviceType, serviceName string) string {
+	return strings.Join([]string{serviceType, serviceName}, "/")
+}
+
+// getSBRName creates a name to be used for creation/deletion of SBR during link/unlink operations
+func getSBRName(componentName, serviceType, serviceName string) string {
+	return strings.Join([]string{componentName, strings.ToLower(serviceType), serviceName}, "-")
+}
+
+func isComponentLinked(sbrName string, links []envinfo.EnvInfoLink) bool {
+	for _, link := range links {
+		if link.Name == sbrName {
+			return true
+		}
+	}
+	return false
 }

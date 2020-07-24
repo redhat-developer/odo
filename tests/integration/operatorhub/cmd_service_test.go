@@ -407,7 +407,7 @@ spec:
 			Expect(stdOut).To(ContainSubstring("Couldn't find service named %q", "EtcdCluster/example"))
 		})
 
-		It("should successfully connect a component with an existing service", func() {
+		It("should successfully connect and disconnect a component with an existing service", func() {
 			if os.Getenv("KUBERNETES") == "true" {
 				Skip("This is a OpenShift specific scenario, skipping")
 			}
@@ -433,6 +433,13 @@ spec:
 
 			stdOut := helper.CmdShouldPass("odo", "link", "EtcdCluster/example")
 			Expect(stdOut).To(ContainSubstring("Successfully created link between component"))
+			stdOut = helper.CmdShouldFail("odo", "link", "EtcdCluster/example")
+			Expect(stdOut).To(ContainSubstring("already linked with the service"))
+
+			stdOut = helper.CmdShouldPass("odo", "unlink", "EtcdCluster/example")
+			Expect(stdOut).To(ContainSubstring("Successfully unlinked component"))
+			stdOut = helper.CmdShouldFail("odo", "unlink", "EtcdCluster/example")
+			Expect(stdOut).To(ContainSubstring("failed to unlink the service"))
 		})
 	})
 })
