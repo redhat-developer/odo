@@ -116,8 +116,9 @@ var _ = Describe("odo supported images e2e tests", func() {
 
 	Context("odo supported private registry images deployment", func() {
 		JustBeforeEach(func() {
+			// Issue for configuring login secret for travis CI https://github.com/openshift/odo/issues/3640
 			if os.Getenv("CI") != "openshift" {
-				Skip("This is an openShift CI specific scenario, skipping")
+				Skip("Skipping it on travis CI, skipping")
 			}
 		})
 
