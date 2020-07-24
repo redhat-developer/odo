@@ -112,5 +112,15 @@ var _ = Describe("odo supported images e2e tests", func() {
 			oc.ImportImageFromRegistry("registry.access.redhat.com", filepath.Join("rhscl", "nodejs-10-rhel7:latest"), "nodejs:latest", project)
 			verifySupportedImage(filepath.Join("rhscl", "nodejs-10-rhel7:latest"), "nodejs", "nodejs:latest", project, appName, context)
 		})
+
+		It("Should be able to verify the openjdk-11-rhel8 image", func() {
+			oc.ImportImageFromRegistry("registry.redhat.io", filepath.Join("openjdk", "openjdk-11-rhel8:latest"), "java:8", project)
+			verifySupportedImage(filepath.Join("openjdk", "openjdk-11-rhel8:latest"), "openjdk", "java:8", project, appName, context)
+		})
+
+		It("Should be able to verify the nodejs-12-rhel7 image", func() {
+			oc.ImportImageFromRegistry("registry.redhat.io", filepath.Join("rhscl", "nodejs-12-rhel7:latest"), "nodejs:latest", project)
+			verifySupportedImage(filepath.Join("rhscl", "nodejs-12-rhel7:latest"), "nodejs", "nodejs:latest", project, appName, context)
+		})
 	})
 })
