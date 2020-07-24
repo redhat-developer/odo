@@ -66,6 +66,7 @@ jobs:
       name: "generic, login and component command integration tests"
       script:
         - ./scripts/oc-cluster.sh
+        - oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/community/nodejs/imagestreams/nodejs-centos7.json
         - make bin
         - sudo cp odo /usr/bin
         - odo login -u developer
@@ -96,6 +97,7 @@ jobs:
       name: "service, link and component sub-commands command integration tests"
       script:
         - ./scripts/oc-cluster.sh service-catalog
+        - oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/community/nodejs/imagestreams/nodejs-centos7.json
         - make bin
         - sudo cp odo /usr/bin
         - odo login -u developer

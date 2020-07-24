@@ -35,10 +35,8 @@ while true; do
         oc cluster add --base-dir=$HOME/oscluster service-catalog
         oc cluster add --base-dir=$HOME/oscluster template-service-broker
         oc cluster add --base-dir=$HOME/oscluster automation-service-broker
-        oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/community/nodejs/imagestreams/nodejs-centos7.json
     else
         oc cluster up
-        oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/community/nodejs/imagestreams/nodejs-centos7.json
     fi
     if [ "$?" -eq 0 ]; then
         ./scripts/travis-check-pods.sh $1
