@@ -4,7 +4,7 @@ metadata:
   version: 1.0.0
   description: Java application stack using Open Liberty runtime
 parent:
-  uri: https://gist.githubusercontent.com/mik-dass/6f88d133b73e90bc52ffcda92833b625/raw/cc46d1ba348cd085855f163b269c0f1be87226c4/devfile-middle.yaml
+  uri: https://gist.githubusercontent.com/mik-dass/62894d31a2f3e3032f2a0ee3d02539b4/raw/42a0a531c2bb4a8bb0ebc80c04703c6e412d0cfc/devfile-middle-new.yaml
   components:
     - container:
         name: appsodyrun
@@ -15,7 +15,7 @@ parent:
             value: myval4
   commands:
     - exec:
-        id: devBuild
+        id: newBuild
         commandLine: touch blah.js
 commands:
   - exec:

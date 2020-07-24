@@ -185,8 +185,8 @@ type Endpoint struct {
 	Protocol string `json:"protocol,omitempty"`
 
 	// Describes whether the endpoint should be secured and protected by some authentication process
-	Secure     bool `json:"secure,omitempty"`
-	TargetPort int  `json:"targetPort,omitempty"`
+	Secure     bool  `json:"secure,omitempty"`
+	TargetPort int32 `json:"targetPort,omitempty"`
 }
 
 // Env is the key value pair representing an Environment variable
@@ -446,7 +446,7 @@ type Volume struct {
 	Size string `json:"size,omitempty"`
 }
 
-// VolumeMountsItems Volume that should be mounted to a component container
+// VolumeMount Volume that should be mounted to a component container
 type VolumeMount struct {
 
 	// The volume mount name is the name of an existing `Volume` component. If several containers mount the same volume name then they will reuse the same volume and will be able to access to the same files.

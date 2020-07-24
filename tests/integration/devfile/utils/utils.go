@@ -227,7 +227,7 @@ func ExecPushWithMultiLayerParent(projectDirPath, cmpName, namespace string) {
 	args = useProjectIfAvailable(args, namespace)
 	helper.CmdShouldPass("odo", args...)
 
-	args = []string{"push", "--build-command", "devbuild", "-f"}
+	args = []string{"push", "--build-command", "newBuild", "-f"}
 	args = useProjectIfAvailable(args, namespace)
 	helper.CmdShouldPass("odo", args...)
 
