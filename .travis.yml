@@ -66,7 +66,9 @@ jobs:
       name: "generic, login and component command integration tests"
       script:
         - ./scripts/oc-cluster.sh
+        - echo *********************************************
         - make configure-supported-311-is
+        - echo *********************************************
         - make bin
         - sudo cp odo /usr/bin
         - odo login -u developer
