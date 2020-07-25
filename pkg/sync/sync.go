@@ -24,6 +24,7 @@ func GetTarReader(localPath string, targetPath string, copyFiles []string, globE
 	// Destination is set to "ToSlash" as all containers being ran within OpenShift / S2I are all
 	// Linux based and thus: "\opt\app-root\src" would not work correctly.
 	dest := filepath.ToSlash(filepath.Join(targetPath, filepath.Base(localPath)))
+	log.Spinner("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~INSIDE getTarReader ~~~~~~~~~~~~~~~~~")
 
 	klog.V(4).Infof("CopyFile arguments: localPath %s, dest %s, targetPath %s, copyFiles %s, globalExps %s", localPath, dest, targetPath, copyFiles, globExps)
 	reader, writer := io.Pipe()

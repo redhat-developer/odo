@@ -83,22 +83,19 @@ type Adapter struct {
 
 const dockerfilePath string = "Dockerfile"
 
+var runAsUser = new(int64)
+
 func (a Adapter) generateBuildContainer(containerName string, dockerfileBytes []byte, imageTag string) corev1.Container {
-	buildImage := "gcr.io/kaniko-project/executor:latest"
+	buildImage := "gcr.io/kaniko-project/executor:debug"
 
 	// TODO(Optional): Init container before the buildah bud to copy over the files.
-	//command := []string{"buildah"}
-	//commandArgs := []string{"bud"}
+
 	command := []string{}
-	commandArgs := []string{"--context=git://github.com/ranakan19/golang-ex.git",
+	commandArgs := []string{"--dockerfile=/kaniko/build-context/Dockerfile",
+		"--context=dir:///kaniko/build-context",
 		"--destination=" + imageTag,
 		"--skip-tls-verify"}
 
-	// if dockerfilePath == "" {
-	// 	dockerfilePath = "./Dockerfile"
-	// }
-
-	// TODO: Edit dockerfile env value if mounting it sometwhere else
 	envVars := []corev1.EnvVar{
 		{Name: "DOCKER_CONFIG", Value: "/kaniko/.docker"},
 		{Name: "AWS_ACCESS_KEY_ID", Value: "NOT_SET"},
@@ -115,12 +112,7 @@ func (a Adapter) generateBuildContainer(containerName string, dockerfileBytes []
 		{Name: "build-context", MountPath: "/kaniko/build-context"},
 		{Name: "kaniko-secret", MountPath: "/kaniko/.docker"},
 	}
-
-	// if container.SecurityContext == nil {
-	// 	container.SecurityContext = &corev1.SecurityContext{}
-	// }
-	// container.SecurityContext.RunAsUser = new(int64)
-
+	// container.SecurityContext.RunAsUser = runAsUser
 	return *container
 }
 
@@ -143,12 +135,6 @@ func (a Adapter) createBuildDeployment(labels map[string]string, container, init
 	objectMeta := kclient.CreateObjectMeta(a.ComponentName, a.Client.Namespace, labels, nil)
 	podTemplateSpec := kclient.GeneratePodTemplateSpec(objectMeta, []corev1.Container{container})
 
-	// TODO: For openshift, need to specify a service account that allows priviledged containers
-	// saEnv := os.Getenv("BUILD_SERVICE_ACCOUNT")
-	// if saEnv != "" {
-	// 	podTemplateSpec.Spec.ServiceAccountName = saEnv
-	// }
-
 	buildContextVolume := corev1.Volume{
 		Name: "build-context",
 		VolumeSource: corev1.VolumeSource{
@@ -170,39 +156,36 @@ func (a Adapter) createBuildDeployment(labels map[string]string, container, init
 			},
 		},
 	}
-
+	// runAsUser := int64(0)
+	// var runAsUser int64
 	podTemplateSpec.Spec.Volumes = append(podTemplateSpec.Spec.Volumes, buildContextVolume)
 	podTemplateSpec.Spec.Volumes = append(podTemplateSpec.Spec.Volumes, kanikoSecretVolume)
 	podTemplateSpec.Spec.InitContainers = []corev1.Container{initContainer}
 
 	deploymentSpec := kclient.GenerateDeploymentSpec(*podTemplateSpec)
 	klog.V(3).Infof("Creating deployment %v", deploymentSpec.Template.GetName())
-	log.Info("Creating deployment %v", deploymentSpec.Template.GetName())
-	log.Spinner("-------------------------------------------------CREATING DEPLOYMENT!!! ")
 	_, err = a.Client.CreateDeployment(*deploymentSpec)
 	if err != nil {
-		log.Spinner("-------------------------------------------------DEPLOYMENT ERROR!!! ")
 		return err
 	}
-	log.Spinner("-------------------------------------------------DEPLOYMENT CREATED!!! ")
 	klog.V(3).Infof("Successfully created component %v", deploymentSpec.Template.GetName())
 
 	return nil
 }
 
-func (a Adapter) injectBuildContext(syncFolder io.Reader, imageTag string, compInfo common.ComponentInfo) (err error) {
+func (a Adapter) injectBuildContext(syncFolder io.Reader, destinationDirectory string, compInfo common.ComponentInfo) (err error) {
 
+	log.Error("~~~~~~~~~~~~ REACHING inject ~~~~~~~~~~~~~~~~~")
 	buildContextTar, err := ioutil.ReadAll(syncFolder)
 	if err != nil {
 		return err
 	}
-	writeErr := ioutil.WriteFile("tmp/kaniko-build-context.tar.gz", buildContextTar, 0644)
+	writeErr := ioutil.WriteFile("kaniko-build-context.tar.gz", buildContextTar, 0644)
 	if writeErr != nil {
 		return writeErr
 	}
-	// command := []string{adaptersCommon.ShellExecutable, "tar -zxf tmp/kaniko-build-context.tar.gz -c /kaniko/build-context",
-	// 	"while true; do sleep 1; if [ -f /tmp/complete ]; then break; fi done"}
-	command := []string{adaptersCommon.ShellExecutable, "while true; do sleep 1; if [ -f /tmp/complete ]; then break; fi done"}
+	command := []string{adaptersCommon.ShellExecutable, "tar -zxf kaniko-build-context.tar.gz -c /kaniko/build-context"}
+	// command := []string{adaptersCommon.BusyboxExecutable, "while true; do sleep 1; if [ -f /tmp/complete ]; then break; fi done"}
 
 	err = exec.ExecuteCommand(&a.Client, compInfo, command, false, nil, nil)
 	if err != nil {
@@ -313,23 +296,24 @@ func (a Adapter) Build(parameters common.BuildParameters) (err error) {
 
 	useKanikoBuild := true
 
-	isBuildConfigSupported, err := client.IsBuildConfigSupported()
-	if err != nil {
-		return err
-	}
 	if useKanikoBuild {
 		// perform kaniko build
 		err := a.BuildWithKaniko(parameters)
 		if err != nil {
 			return err
 		}
-	}
+	} else {
+		isBuildConfigSupported, err := client.IsBuildConfigSupported()
+		if err != nil {
+			return err
+		}
+		if isBuildConfigSupported {
+			return a.runBuildConfig(client, parameters)
+		}
 
-	if isBuildConfigSupported {
-		return a.runBuildConfig(client, parameters)
+		return errors.New("unable to build image, only Openshift BuildConfig build is supported")
 	}
-
-	return errors.New("unable to build image, only Openshift BuildConfig build is supported")
+	return nil
 }
 
 func (a Adapter) BuildWithKaniko(parameters common.BuildParameters) (err error) {
@@ -352,7 +336,6 @@ func (a Adapter) BuildWithKaniko(parameters common.BuildParameters) (err error) 
 		Kind:    "Secret",
 	}
 	gvr := schema.GroupVersionResource{Group: gvk.Group, Version: gvk.Version, Resource: strings.ToLower(gvk.Kind + "s")}
-	// var dockerSecretUnstructured *unstructured.Unstructured
 	dockerSecretMap, err := runtimeUnstructured.DefaultUnstructuredConverter.ToUnstructured(dockerSecret)
 	dockerSecretByteArray, err := json.Marshal(dockerSecretMap)
 	var dockerSecretUnstructured *unstructured.Unstructured
@@ -365,16 +348,14 @@ func (a Adapter) BuildWithKaniko(parameters common.BuildParameters) (err error) 
 	if dockerSecreteError != nil {
 		return dockerSecreteError
 	}
-	containerName := a.ComponentName + "-container"
+	containerName := a.ComponentName + "-kaniko-build-container"
 	initContainerName := "kaniko-init"
 	buildContainer := a.generateBuildContainer(containerName, parameters.DockerfileBytes, parameters.Tag)
-	// log.Spinner("-------------------------------------------------BUILDER CONTAINER CREATED!!! ")
 	labels := map[string]string{
 		"component": a.ComponentName,
 	}
 
 	initContainer := a.generateInitContainer(initContainerName)
-	// log.Spinner("---------------------------------------------------INIT CONTAINER CREATED!!!--------------------- ")
 	err = a.createBuildDeployment(labels, buildContainer, initContainer)
 	if err != nil {
 		return errors.Wrap(err, "error while creating kaniko deployment")
@@ -399,7 +380,7 @@ func (a Adapter) BuildWithKaniko(parameters common.BuildParameters) (err error) 
 	}
 
 	// Wait for Pod to be in running state otherwise we can't sync data or exec commands to it.
-	_, err = a.waitAndGetComponentPod(false)
+	pod, err := a.waitAndGetComponentPod(true)
 	if err != nil {
 		return errors.Wrapf(err, "unable to get pod for component %s", a.ComponentName)
 	}
@@ -410,22 +391,24 @@ func (a Adapter) BuildWithKaniko(parameters common.BuildParameters) (err error) 
 	// Sync files to volume
 	log.Infof("\nSyncing to component %s", a.ComponentName)
 	// Get a sync adapter. Check if project files have changed and sync accordingly
-	// syncAdapter := sync.New(a.AdapterContext, &a.Client)
-	// compInfo := common.ComponentInfo{
-	// 	ContainerName: initContainerName,
-	// 	PodName:       pod.GetName(),
-	// }
-	// var dockerfilepath = "Dockerfile"
-	// syncFolder, err := syncAdapter.SyncFilesBuild(parameters, dockerfilepath)
+	syncAdapter := sync.New(a.AdapterContext, &a.Client)
+	compInfo := common.ComponentInfo{
+		ContainerName: initContainerName,
+		PodName:       pod.GetName(),
+	}
+
+	syncFolder, err := syncAdapter.SyncFilesBuild(parameters, dockerfilePath)
+	log.Spinner("~~~~~~~~~~~~ AFTER syncFilesBuild ~~~~~~~~~~~~~~~~~")
 
 	if err != nil {
 		return errors.Wrapf(err, "failed to sync to component with name %s", a.ComponentName)
 	}
-
-	// err = a.injectBuildContext(syncFolder, parameters.Tag, compInfo)
-	// if err != nil {
-	// 	return err
-	// }
+	log.Spinner("~~~~~~~~~~~~ BEFORE inject ~~~~~~~~~~~~~~~~~")
+	destinationDirectory := "/kaniko/build-context"
+	err = a.injectBuildContext(syncFolder, destinationDirectory, compInfo)
+	if err != nil {
+		return err
+	}
 
 	return
 

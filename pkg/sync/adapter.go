@@ -34,6 +34,7 @@ type Adapter struct {
 
 // SyncFilesBuild sync the local files to build container volume
 func (a Adapter) SyncFilesBuild(buildParameters common.BuildParameters, dockerfilePath string) (reader io.Reader, err error) {
+	log.Spinner("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~INSIDE syncFilesBuild ~~~~~~~~~~~~~~~~~")
 
 	// If we want to ignore any files
 	absIgnoreRules := []string{}
