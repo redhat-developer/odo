@@ -66,7 +66,7 @@ jobs:
       name: "generic, login and component command integration tests"
       script:
         - ./scripts/oc-cluster.sh
-        - oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/community/nodejs/imagestreams/nodejs-centos7.json
+        - make configure-supported-311-is
         - make bin
         - sudo cp odo /usr/bin
         - odo login -u developer
@@ -81,6 +81,7 @@ jobs:
       name: "preference, config, url and debug command integration tests"
       script:
         - ./scripts/oc-cluster.sh
+        - make configure-supported-311-is
         - make bin
         - sudo cp odo /usr/bin
         - odo login -u developer
@@ -97,7 +98,7 @@ jobs:
       name: "service, link and component sub-commands command integration tests"
       script:
         - ./scripts/oc-cluster.sh service-catalog
-        - oc apply -n openshift -f https://raw.githubusercontent.com/openshift/library/master/community/nodejs/imagestreams/nodejs-centos7.json
+        - make configure-supported-311-is
         - make bin
         - sudo cp odo /usr/bin
         - odo login -u developer
@@ -111,6 +112,7 @@ jobs:
       name: "watch, storage, app, project and push command integration tests"
       script:
         - ./scripts/oc-cluster.sh
+        - make configure-supported-311-is
         - make bin
         - sudo cp odo /usr/bin
         - odo login -u developer
@@ -130,6 +132,7 @@ jobs:
       name: "devfile catalog, create, push, delete, registry, test, log and docker devfile url command integration tests"
       script:
         - ./scripts/oc-cluster.sh
+        - make configure-supported-311-is
         - make bin
         - sudo cp odo /usr/bin
         - travis_wait make test-cmd-docker-devfile-url-pushtarget
@@ -151,6 +154,7 @@ jobs:
       name: "core beta, java, source e2e tests"
       script:
         - ./scripts/oc-cluster.sh
+        - make configure-supported-311-is
         - make bin
         - sudo cp odo /usr/bin
         - odo login -u developer

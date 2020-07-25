@@ -143,6 +143,9 @@ configure-installer-tests-cluster:
 configure-installer-tests-cluster-s390x:
 	. ./scripts/configure-installer-tests-cluster-s390x.sh
 
+.PHONY: configure-supported-311-is
+configure-supported-311-is:
+	. ./scripts/supported-311-is.sh
 
 .PHONY: test
 test:

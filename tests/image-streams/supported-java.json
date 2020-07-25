@@ -1,0 +1,88 @@
+{
+	"kind": "ImageStream",
+	"apiVersion": "v1",
+	"metadata": {
+		"name": "java",
+		"creationTimestamp": null,
+		"annotations": {
+			"openshift.io/display-name": "Red Hat OpenJDK",
+			"openshift.io/provider-display-name": "Red Hat, Inc."
+		}
+	},
+	"spec": {
+		"lookupPolicy": {
+			"local": false
+		},
+		"tags": [
+			{
+				"name": "8",
+				"annotations": {
+					"description": "Build and run Java applications using Maven and OpenJDK 1.8 upon UBI8.",
+					"iconClass": "icon-rh-openjdk",
+					"openshift.io/display-name": "Red Hat OpenJDK 8",
+					"sampleContextDir": "undertow-servlet",
+					"sampleRepo": "https://github.com/jboss-openshift/openshift-quickstarts",
+					"supports": "java:8,java",
+					"tags": "builder,java,openjdk",
+					"version": "8"
+				},
+				"from": {
+					"kind": "DockerImage",
+					"name": "registry.access.redhat.com/redhat-openjdk-18/openjdk18-openshift:latest"
+				},
+				"generation": null,
+				"importPolicy": {},
+				"referencePolicy": {
+					"type": "Local"
+				}
+			},
+			{
+				"name": "11",
+				"annotations": {
+					"description": "Build and run Java applications using Maven and OpenJDK 11 upon UBI8.",
+					"iconClass": "icon-rh-openjdk",
+					"openshift.io/display-name": "Red Hat OpenJDK 11",
+					"sampleContextDir": "undertow-servlet",
+					"sampleRepo": "https://github.com/jboss-openshift/openshift-quickstarts",
+					"supports": "java:11,java",
+					"tags": "builder,java,openjdk",
+					"version": "11"
+				},
+				"from": {
+					"kind": "DockerImage",
+					"name": "registry.access.redhat.com/openjdk/openjdk-11-rhel7:latest"
+				},
+				"generation": null,
+				"importPolicy": {},
+				"referencePolicy": {
+					"type": "Local"
+				}
+			},
+			{
+				"name": "latest",
+				"annotations": {
+					"description": "Build and run Java applications using Maven and OpenJDK 11 upon UBI8.",
+					"iconClass": "icon-rh-openjdk",
+					"openshift.io/display-name": "Red Hat OpenJDK 11",
+					"sampleContextDir": "undertow-servlet",
+					"sampleRepo": "https://github.com/jboss-openshift/openshift-quickstarts",
+					"supports": "java:11,java",
+					"tags": "builder,java,openjdk",
+					"version": "latest"
+				},
+				"from": {
+					"kind": "ImageStreamTag",
+					"name": "11"
+				},
+				"generation": null,
+				"importPolicy": {},
+				"referencePolicy": {
+					"type": "Local"
+				}
+			}
+		]
+	},
+	"status": {
+		"dockerImageRepository": ""
+	}
+}
