@@ -7,9 +7,92 @@ import (
 
 	"github.com/openshift/odo/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
+	"github.com/openshift/odo/pkg/log"
+	"github.com/openshift/odo/pkg/machineoutput"
+	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 )
+
+type command interface {
+	Execute(show bool) error
+}
+
+func (s simpleCommand) Execute(show bool) error {
+	exe := s.cmd
+
+	msg := fmt.Sprintf("Executing %s command %q, if not running", exe.Id, exe.CommandLine)
+	spinner := log.ExplicitSpinner(msg, show)
+	defer spinner.End(false)
+
+	// Emit DevFileCommandExecutionBegin JSON event (if machine output logging is enabled)
+	logger := s.adapter.Logger()
+	logger.DevFileCommandExecutionBegin(exe.Id, exe.Component, exe.CommandLine, convertGroupKindToString(exe), machineoutput.TimestampNow())
+
+	// Capture container text and log to the screen as JSON events (machine output only)
+	stdoutWriter, stdoutChannel, stderrWriter, stderrChannel := logger.CreateContainerOutputWriter()
+
+	err := ExecuteCommand(s.adapter, s.info, []string{exe.CommandLine}, show, stdoutWriter, stderrWriter)
+
+	// Close the writers and wait for an acknowledgement that the reader loop has exited (to ensure we get ALL container output)
+	closeWriterAndWaitForAck(stdoutWriter, stdoutChannel, stderrWriter, stderrChannel)
+
+	// Emit close event
+	logger.DevFileCommandExecutionComplete(exe.Id, exe.Component, exe.CommandLine, convertGroupKindToString(exe), machineoutput.TimestampNow(), err)
+
+	if err != nil {
+		return errors.Wrapf(err, "unable to execute the run command")
+	}
+
+	spinner.End(true)
+
+	return nil
+}
+
+type simpleCommand struct {
+	info    ComponentInfo
+	adapter ComponentAdapter
+	cmd     common.Exec
+}
+
+type compositeCommand struct {
+	cmds []command
+}
+
+func (c compositeCommand) Execute(show bool) error {
+	// Execute the commands in order
+	for _, command := range c.cmds {
+		err := command.Execute(show)
+		if err != nil {
+			return fmt.Errorf("command execution failed: %v", err)
+		}
+	}
+	return nil
+}
+
+type parallelCompositeCommand struct {
+	cmds []command
+}
+
+func (p parallelCompositeCommand) Execute(show bool) error {
+	// Loop over each command and execute it in parallel
+	commandExecs := util.NewConcurrentTasks(len(p.cmds))
+	for _, command := range p.cmds {
+		cmd := command // needed to prevent the lambda from capturing the value
+		commandExecs.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
+			err := cmd.Execute(show)
+			if err != nil {
+				errChannel <- err
+			}
+		}})
+	}
+
+	err := commandExecs.Run()
+	if err != nil {
+		return errors.Wrap(err, "parallel command execution failed")
+	}
+	return nil
+}
 
 // getCommand iterates through the devfile commands and returns the devfile command associated with the group
 // commands mentioned via the flags are passed via commandName, empty otherwise
