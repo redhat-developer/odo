@@ -113,7 +113,7 @@ OR
 +
 For a single node `kubernetes` cluster install link:https://kubernetes.io/docs/tasks/tools/install-minikube/[`Minikube`]
 
-NOTE: Make sure that `odo` and `oc` binaries are in `$PATH`. Use the cloned odo directory to launch tests on 3.11 and 4.* clusters. To communicate with `Kubernetes` cluster use `kubectl`. No cluster configuration is needed to run tests on a 3.11 cluster spun up by `Minishift` or `oc cluster up` locally. However a 4.* cluster needs to be configured before launching the tests against it. The files `kubeadmin-password` and `kubeconfig` which contain cluster login details should be present in the `auth` directory and it should reside in the same directory as `Makefile`. If it is not present in the auth directory, please create it. Then run `make configure-installer-tests-cluster` to configure the 4.* cluster.
+NOTE: Make sure that `odo` and `oc` binaries are in `$PATH`. Use the cloned odo directory to launch tests on 3.11 and 4.* clusters. To communicate with `Kubernetes` cluster use `kubectl`. Run `make configure-supported-311-is` to get odo supported images on a 3.11 cluster spun up by `Minishift` or `oc cluster up` locally. Similarly a 4.* cluster needs to be configured before launching the tests against it. The files `kubeadmin-password` and `kubeconfig` which contain cluster login details should be present in the `auth` directory and it should reside in the same directory as `Makefile`. If it is not present in the auth directory, please create it. Then run `make configure-installer-tests-cluster` to configure the 4.* cluster. 
 
 *Integration tests:*
 
