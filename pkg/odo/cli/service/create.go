@@ -24,6 +24,7 @@ import (
 
 	scv1beta1 "github.com/kubernetes-sigs/service-catalog/pkg/apis/servicecatalog/v1beta1"
 	olm "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/klog"
 	ktemplates "k8s.io/kubectl/pkg/util/templates"
 )
@@ -300,7 +301,10 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 			if o.ServiceName != "" && !o.DryRun {
 				// First check if service with provided name already exists
 				svcFullName := strings.Join([]string{o.CustomResource, o.ServiceName}, "/")
-				exists, _ := svc.OperatorSvcExists(o.KClient, svcFullName)
+				exists, err := svc.OperatorSvcExists(o.KClient, svcFullName)
+				if kerrors.IsNotFound(err) {
+					return err
+				}
 				if exists {
 					return fmt.Errorf("Service %q already exists. Please provide a different name or delete the existing service first.", svcFullName)
 				}
@@ -341,7 +345,10 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 			if o.ServiceName != "" && !o.DryRun {
 				// First check if service with provided name already exists
 				svcFullName := strings.Join([]string{o.CustomResource, o.ServiceName}, "/")
-				exists, _ := svc.OperatorSvcExists(o.KClient, svcFullName)
+				exists, err := svc.OperatorSvcExists(o.KClient, svcFullName)
+				if kerrors.IsNotFound(err) {
+					return err
+				}
 				if exists {
 					return fmt.Errorf("Service %q already exists. Please provide a different name or delete the existing service first.", svcFullName)
 				}
