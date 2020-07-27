@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/openshift/odo/tests/helper"
+	"github.com/openshift/odo/tests/integration/devfile/utils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -104,12 +105,12 @@ var _ = Describe("odo devfile delete command tests", func() {
 
 		It("should let the user delete the local config files with -a flag", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", invalidNamespace, componentName)
-			cliRunner.DeleteLocalConfig("delete")
+			utils.DeleteLocalConfig("delete")
 		})
 
 		It("should let the user delete the local config files with -a and -project flags", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", invalidNamespace, componentName)
-			cliRunner.DeleteLocalConfig("delete", "--project", invalidNamespace)
+			utils.DeleteLocalConfig("delete", "--project", invalidNamespace)
 		})
 	})
 })

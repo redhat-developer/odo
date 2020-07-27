@@ -2,13 +2,14 @@ package utils
 
 import (
 	"fmt"
-	"github.com/openshift/odo/pkg/util"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/openshift/odo/pkg/util"
 
 	"github.com/openshift/odo/tests/helper"
 
@@ -568,4 +569,15 @@ func ExecWithInvalidCommand(context, cmpName, pushTarget string) {
 	}
 
 	Expect(output).To(ContainSubstring("executable file not found in $PATH"))
+}
+
+// DeleteLocalConfig helps user to delete local config files with flags
+func DeleteLocalConfig(args ...string) {
+	helper.CmdShouldFail("odo", args...)
+	output := helper.CmdShouldPass("odo", append(args, "-af")...)
+	expectedOutput := []string{
+		"Successfully deleted env file",
+		"Successfully deleted devfile.yaml file",
+	}
+	helper.MatchAllInOutput(output, expectedOutput)
 }

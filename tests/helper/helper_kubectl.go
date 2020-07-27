@@ -145,14 +145,3 @@ func (kubectl KubectlRunner) GetEnvsDevFileDeployment(componentName string, proj
 	}
 	return mapOutput
 }
-
-// DeleteLocalConfig helps user to delete local config files with flags
-func (kubectl KubectlRunner) DeleteLocalConfig(args ...string) {
-	CmdShouldFail("odo", args...)
-	output := CmdShouldPass("odo", append(args, "-af")...)
-	expectedOutput := []string{
-		"Successfully deleted env file",
-		"Successfully deleted devfile.yaml file",
-	}
-	MatchAllInOutput(output, expectedOutput)
-}

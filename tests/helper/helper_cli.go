@@ -16,5 +16,4 @@ type CliRunner interface {
 	DeleteNamespaceProject(projectName string)
 	GetEnvsDevFileDeployment(componentName string, projectName string) map[string]string
 	GetPVCSize(compName, storageName, namespace string) string
-	DeleteLocalConfig(args ...string)
 }

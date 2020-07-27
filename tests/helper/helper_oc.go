@@ -560,14 +560,3 @@ func (oc OcRunner) DeleteNamespaceProject(projectName string) {
 	session := CmdShouldPass("odo", "project", "delete", projectName, "-f")
 	Expect(session).To(ContainSubstring("Deleted project : " + projectName))
 }
-
-// DeleteLocalConfig helps user to delete local config files with flags
-func (oc OcRunner) DeleteLocalConfig(args ...string) {
-	CmdShouldFail("odo", args...)
-	output := CmdShouldPass("odo", append(args, "-af")...)
-	expectedOutput := []string{
-		"Successfully deleted env file",
-		"Successfully deleted devfile.yaml file",
-	}
-	MatchAllInOutput(output, expectedOutput)
-}
