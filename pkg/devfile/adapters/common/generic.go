@@ -3,7 +3,6 @@ package common
 import (
 	"fmt"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
-	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
 	"github.com/pkg/errors"
 	"io"
@@ -43,6 +42,14 @@ func (a GenericAdapter) Logger() machineoutput.MachineEventLoggingClient {
 	return a.logger
 }
 
+func (a GenericAdapter) ComponentInfo(command common.DevfileCommand) (ComponentInfo, error) {
+	return a.componentInfo(command)
+}
+
+func (a GenericAdapter) SupervisorComponentInfo(command common.DevfileCommand) (ComponentInfo, error) {
+	return a.supervisordComponentInfo(command)
+}
+
 // ExecuteCommand simply calls exec.ExecuteCommand using the GenericAdapter's client
 func (a GenericAdapter) ExecuteCommand(compInfo ComponentInfo, command []string, show bool, consoleOutputStdout *io.PipeWriter, consoleOutputStderr *io.PipeWriter) (err error) {
 	return ExecuteCommand(a.client, compInfo, command, show, consoleOutputStdout, consoleOutputStderr)
@@ -50,94 +57,11 @@ func (a GenericAdapter) ExecuteCommand(compInfo ComponentInfo, command []string,
 
 // ExecuteDevfileCommandSynchronously executes the devfile init, build and test command actions synchronously
 func (a GenericAdapter) ExecuteDevfileCommandSynchronously(command common.DevfileCommand, show bool) error {
-	exe := command.Exec
-	var setEnvVariable, cmdLine string
-	for _, envVar := range exe.Env {
-		setEnvVariable = setEnvVariable + fmt.Sprintf("%v=\"%v\" ", envVar.Name, envVar.Value)
+	c, err := New(command, GetCommandsMap(a.Devfile.Data.GetCommands()), a)
+	if err != nil {
+		return err
 	}
-	if setEnvVariable == "" {
-		cmdLine = exe.CommandLine
-	} else {
-		cmdLine = setEnvVariable + "&& " + exe.CommandLine
-	}
-	// Change to the workdir and execute the command
-	var cmd executable
-	if exe.WorkingDir != "" {
-		// since we are using /bin/sh -c, the command needs to be within a single double quote instance, for example "cd /tmp && pwd"
-		cmd = executable{ShellExecutable, "-c", "cd " + exe.WorkingDir + " && " + cmdLine}
-	} else {
-		cmd = executable{ShellExecutable, "-c", cmdLine}
-	}
-	return a.Execute(command, show, []executable{cmd})
-}
-
-// DefaultCommands returns the devfile commands to execute based on the specified command options
-func DefaultCommands(debug, restart bool) []executable {
-	cmd := string(DefaultDevfileRunCommand)
-	if debug {
-		cmd = string(DefaultDevfileDebugCommand)
-	}
-	klog.V(4).Infof("restart:false, not restarting %s", cmd)
-
-	// with restart false, executing only supervisord start command, if the command is already running, supvervisord will not restart it.
-	// if the command is failed or not running supervisord would start it.
-	execs := []executable{
-		{SupervisordBinaryPath, SupervisordCtlSubCommand, "start", cmd},
-	}
-
-	if restart {
-		// first stop any running command
-		stopSupervisorExec := executable{SupervisordBinaryPath, SupervisordCtlSubCommand, "stop", "all"}
-		execs = append([]executable{stopSupervisorExec}, execs...)
-	}
-	return execs
-}
-
-// executable is a convenience type to wrap a string sequence forming a CLI command and its arguments
-type executable []string
-
-// Execute executes the specified devfile exec command appropriately wrapped into the appropriate sequence of executable, usually by calling DefaultCommands
-func (a GenericAdapter) Execute(command common.DevfileCommand, show bool, subcommands []executable) error {
-	exe := command.Exec
-	msg := fmt.Sprintf("Executing %s command %q, if not running", exe.Id, exe.CommandLine)
-	var s *log.Status
-	if show {
-		s = log.SpinnerNoSpin(msg)
-	} else {
-		s = log.Spinnerf(msg)
-	}
-	defer s.End(false)
-
-	for _, subcommand := range subcommands {
-
-		// Emit DevFileCommandExecutionBegin JSON event (if machine output logging is enabled)
-		logger := a.logger
-		logger.DevFileCommandExecutionBegin(exe.Id, exe.Component, exe.CommandLine, convertGroupKindToString(*exe), machineoutput.TimestampNow())
-
-		// Capture container text and log to the screen as JSON events (machine output only)
-		stdoutWriter, stdoutChannel, stderrWriter, stderrChannel := logger.CreateContainerOutputWriter()
-
-		info, err2 := a.componentInfo(command)
-		if err2 != nil {
-			return errors.Wrapf(err2, "unable to execute the run command")
-		}
-
-		err := ExecuteCommand(a.client, info, subcommand, show, stdoutWriter, stderrWriter)
-
-		// Close the writers and wait for an acknowledgement that the reader loop has exited (to ensure we get ALL container output)
-		closeWriterAndWaitForAck(stdoutWriter, stdoutChannel, stderrWriter, stderrChannel)
-
-		// Emit close event
-		logger.DevFileCommandExecutionComplete(exe.Id, exe.Component, exe.CommandLine, convertGroupKindToString(*exe), machineoutput.TimestampNow(), err)
-
-		if err != nil {
-			return errors.Wrapf(err, "unable to execute the run command")
-		}
-	}
-
-	s.End(true)
-
-	return nil
+	return c.Execute(show)
 }
 
 // closeWriterAndWaitForAck closes the PipeWriter and then waits for a channel response from the ContainerOutputWriter (indicating that the reader had closed).
@@ -153,7 +77,7 @@ func closeWriterAndWaitForAck(stdoutWriter *io.PipeWriter, stdoutChannel chan in
 	}
 }
 
-func convertGroupKindToString(exec common.Exec) string {
+func convertGroupKindToString(exec *common.Exec) string {
 	if exec.Group == nil {
 		return ""
 	}
@@ -163,71 +87,101 @@ func convertGroupKindToString(exec common.Exec) string {
 // ExecDevFile executes all the commands from the devfile in order: init and build - which are both optional, and a compulsory run.
 // Init only runs once when the component is created.
 func (a GenericAdapter) ExecDevfile(commandsMap PushCommandsMap, componentExists bool, params PushParameters) (err error) {
+	// Need to get mapping of all commands in the devfile since the composite command may reference any exec or composite command in the devfile
+	devfileCommandMap := GetCommandsMap(a.Devfile.Data.GetCommands())
 
 	// If nothing has been passed, then the devfile is missing the required run command
 	if len(commandsMap) == 0 {
 		return errors.New(fmt.Sprint("error executing devfile commands - there should be at least 1 command"))
 	}
 
+	commands := make([]command, 0, 7)
+
 	// Only add runinit to the expected commands if the component doesn't already exist
 	// This would be the case when first running the container
 	if !componentExists {
 		// Get Init Command
-		command, ok := commandsMap[common.InitCommandGroupType]
-		if ok {
-			err = a.ExecuteDevfileCommandSynchronously(command, params.Show)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	// Get Build Command
-	command, ok := commandsMap[common.BuildCommandGroupType]
-	if ok {
-		err = a.ExecuteDevfileCommandSynchronously(command, params.Show)
+		commands, err = a.addToComposite(commandsMap, common.InitCommandGroupType, devfileCommandMap, commands)
 		if err != nil {
 			return err
 		}
 	}
 
-	// Get Run or Debug Command
-	if params.Debug {
-		command, ok = commandsMap[common.DebugCommandGroupType]
-	} else {
-		command, ok = commandsMap[common.RunCommandGroupType]
+	// Get Build Command
+	commands, err = a.addToComposite(commandsMap, common.BuildCommandGroupType, devfileCommandMap, commands)
+	if err != nil {
+		return err
 	}
-	if ok {
-		klog.V(4).Infof("Executing devfile command %v", command.Exec.Id)
+
+	group := common.RunCommandGroupType
+	defaultCmd := string(DefaultDevfileRunCommand)
+	if params.Debug {
+		group = common.DebugCommandGroupType
+		defaultCmd = string(DefaultDevfileDebugCommand)
+	}
+
+	if command, ok := commandsMap[group]; ok {
+
+		info, err := getComponentInfo(command, a)
+		if err != nil {
+			return err
+		}
 
 		// Check if the devfile run component containers have supervisord as the entrypoint.
 		// Start the supervisord if the odo component does not exist
 		if !componentExists {
-			info, err := a.supervisordComponentInfo(command)
+			cmd, err := newSupervisorCommand([]string{"-c", SupervisordConfFile, "-d"}, info, a)
 			if err != nil {
-				a.logger.ReportError(err, machineoutput.TimestampNow())
 				return err
 			}
-			err = ExecuteCommand(a.client, info, []string{SupervisordBinaryPath, "-c", SupervisordConfFile, "-d"}, true, nil, nil)
-			if err != nil {
-				a.logger.ReportError(err, machineoutput.TimestampNow())
-				return err
-			}
+			commands = append(commands, cmd)
 		}
 
-		return a.Execute(command, params.Show, DefaultCommands(params.Debug, IsRestartRequired(command)))
+		// if we need to restart, issue supervisor command to stop all running commands first
+		if IsRestartRequired(command) {
+			klog.V(4).Infof("restart:true, restarting %s", defaultCmd)
+			cmd, err := newSupervisorCommand([]string{SupervisordCtlSubCommand, "stop", "all"}, info, a)
+			if err != nil {
+				return err
+			}
+			commands = append(commands, cmd)
+		} else {
+			klog.V(4).Infof("restart:false, not restarting %s", defaultCmd)
+		}
+
+		// with restart false, executing only supervisord start command, if the command is already running, supvervisord will not restart it.
+		// if the command is failed or not running supervisord would start it.
+		cmd, err := newSupervisorCommand([]string{SupervisordCtlSubCommand, "start", defaultCmd}, info, a)
+		if err != nil {
+			return err
+		}
+		commands = append(commands, cmd)
+
+		c := newCompositeCommand(commands...)
+		return c.Execute(params.Show)
 	}
 
 	return
 }
 
-// TODO: Support Composite
+func (a GenericAdapter) addToComposite(commandsMap PushCommandsMap, groupType common.DevfileCommandGroupType, devfileCommandMap map[string]common.DevfileCommand, commands []command) ([]command, error) {
+	command, ok := commandsMap[groupType]
+	if ok {
+		if c, err := New(command, devfileCommandMap, a); err == nil {
+			commands = append(commands, c)
+		} else {
+			return commands, err
+		}
+	}
+	return commands, nil
+}
+
 // ExecDevfileEvent receives a Devfile Event (PostStart, PreStop etc.) and loops through them
 // Each Devfile Command associated with the given event is retrieved, and executed in the container specified
 // in the command
 func (a GenericAdapter) ExecDevfileEvent(events []string) error {
 	if len(events) > 0 {
-		commandMap := GetCommandMap(a.Devfile.Data)
+		commandMap := GetCommandsMap(a.Devfile.Data.GetCommands())
 		for _, commandName := range events {
 			// Convert commandName to lower because GetCommands converts Command.Exec.Id's to lower
 			command, ok := commandMap[strings.ToLower(commandName)]
@@ -235,10 +189,12 @@ func (a GenericAdapter) ExecDevfileEvent(events []string) error {
 				return errors.New("unable to find devfile command " + commandName)
 			}
 
-			// If composite would go here & recursive loop
-
+			c, err := New(command, commandMap, a)
+			if err != nil {
+				return err
+			}
 			// Execute command in container
-			err := a.ExecuteDevfileCommandSynchronously(command, false)
+			err = c.Execute(false)
 			if err != nil {
 				return errors.Wrapf(err, "unable to execute devfile command %s", commandName)
 			}
