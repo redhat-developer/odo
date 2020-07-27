@@ -484,6 +484,20 @@ func (c *Client) GetProjectNames() ([]string, error) {
 	return projectNames, nil
 }
 
+// GetNamespaces return list of existing namespaces that user has access to.
+func (c *Client) GetNamespaces() ([]string, error) {
+	namespaces, err := c.kubeClient.CoreV1().Namespaces().List(metav1.ListOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to list namespaces")
+	}
+
+	var names []string
+	for _, p := range namespaces.Items {
+		names = append(names, p.Name)
+	}
+	return names, nil
+}
+
 // GetProject returns project based on the name of the project.Errors related to
 // project not being found or forbidden are translated to nil project for compatibility
 func (c *Client) GetProject(projectName string) (*projectv1.Project, error) {
@@ -501,6 +515,26 @@ func (c *Client) GetProject(projectName string) (*projectv1.Project, error) {
 
 	}
 	return prj, err
+
+}
+
+// GetNamespace returns Namespace based on the name of the project.
+//Errors related to project not being found or forbidden are translated to nil project for compatibility
+func (c *Client) GetNamespace(name string) (*corev1.Namespace, error) {
+	ns, err := c.kubeClient.CoreV1().Namespaces().Get(name, metav1.GetOptions{})
+	if err != nil {
+		istatus, ok := err.(kerrors.APIStatus)
+		if ok {
+			status := istatus.Status()
+			if status.Reason == metav1.StatusReasonNotFound || status.Reason == metav1.StatusReasonForbidden {
+				return nil, nil
+			}
+		} else {
+			return nil, err
+		}
+
+	}
+	return ns, err
 
 }
 
@@ -3279,6 +3313,11 @@ func isSubDir(baseDir, otherDir string) bool {
 func (c *Client) IsRouteSupported() (bool, error) {
 
 	return c.isResourceSupported("route.openshift.io", "v1", "routes")
+}
+
+// IsProjectSupported checks if Project resource type is present on the cluster
+func (c *Client) IsProjectSupported() (bool, error) {
+	return c.isResourceSupported("project.openshift.io/v1", "v1", "projects")
 }
 
 // IsImageStreamSupported checks if imagestream resource type is present on the cluster

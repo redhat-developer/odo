@@ -76,10 +76,12 @@ func (pdo *ProjectDeleteOptions) Run() (err error) {
 	}
 
 	// Prints out what will be deleted
-	err = printDeleteProjectInfo(pdo.Context.Client, pdo.projectName)
-	if err != nil {
-		return err
-	}
+	// This function doesn't support devfile components.
+	// TODO: fix this once we have proper abstraction layer on top of devfile components
+	//err = printDeleteProjectInfo(pdo.Context.Client, pdo.projectName)
+	//if err != nil {
+	//	return err
+	//}
 
 	if log.IsJSON() || (pdo.projectForceDeleteFlag || ui.Proceed(fmt.Sprintf("Are you sure you want to delete project %v", pdo.projectName))) {
 		successMessage := fmt.Sprintf("Deleted project : %v", pdo.projectName)

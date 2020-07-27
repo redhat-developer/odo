@@ -52,6 +52,7 @@ func (plo *ProjectListOptions) Run() (err error) {
 	if err != nil {
 		return err
 	}
+
 	if log.IsJSON() {
 		machineoutput.OutputSuccess(projects)
 	} else {

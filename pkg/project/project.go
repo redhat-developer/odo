@@ -30,10 +30,24 @@ func Create(client *occlient.Client, projectName string, wait bool) error {
 	if projectName == "" {
 		return errors.Errorf("no project name given")
 	}
-	err := client.CreateNewProject(projectName, wait)
+
+	projectSupport, err := client.IsProjectSupported()
 	if err != nil {
-		return errors.Wrap(err, "unable to create new project")
+		return errors.Wrap(err, "unable to detect project support")
 	}
+	if projectSupport {
+		err := client.CreateNewProject(projectName, wait)
+		if err != nil {
+			return errors.Wrap(err, "unable to create new project")
+		}
+
+	} else {
+		_, err := client.CreateNamespace(projectName)
+		if err != nil {
+			return errors.Wrap(err, "unable to create new project")
+		}
+	}
+
 	if wait {
 		err = client.WaitForServiceAccountInNamespace(projectName, "default")
 		if err != nil {
@@ -49,10 +63,22 @@ func Delete(client *occlient.Client, projectName string, wait bool) error {
 		return errors.Errorf("no project name given")
 	}
 
-	// Delete the requested project
-	err := client.DeleteProject(projectName, wait)
+	projectSupport, err := client.IsProjectSupported()
 	if err != nil {
-		return errors.Wrap(err, "unable to delete project")
+		return errors.Wrap(err, "unable to detect project support")
+	}
+
+	if projectSupport {
+		// Delete the requested project
+		err := client.DeleteProject(projectName, wait)
+		if err != nil {
+			return errors.Wrapf(err, "unable to delete project %s", projectName)
+		}
+	} else {
+		err := client.DeleteNamespace(projectName, wait)
+		if err != nil {
+			return errors.Wrapf(err, "unable to delete namespace %s", projectName)
+		}
 	}
 	return nil
 }
@@ -61,9 +87,23 @@ func Delete(client *occlient.Client, projectName string, wait bool) error {
 // returns a list of the projects or the error if any
 func List(client *occlient.Client) (ProjectList, error) {
 	currentProject := client.GetCurrentProjectName()
-	allProjects, err := client.GetProjectNames()
+
+	projectSupport, err := client.IsProjectSupported()
 	if err != nil {
-		return ProjectList{}, errors.Wrap(err, "cannot get all the projects")
+		return ProjectList{}, errors.Wrap(err, "unable to detect project support")
+	}
+
+	var allProjects []string
+	if projectSupport {
+		allProjects, err = client.GetProjectNames()
+		if err != nil {
+			return ProjectList{}, errors.Wrap(err, "cannot get all the projects")
+		}
+	} else {
+		allProjects, err = client.GetNamespaces()
+		if err != nil {
+			return ProjectList{}, errors.Wrap(err, "cannot get all the namespaces")
+		}
 	}
 	// Get apps from project
 	var projects []Project
@@ -83,9 +123,21 @@ func List(client *occlient.Client) (ProjectList, error) {
 // The first returned parameter is a bool indicating if a project with the given name already exists or not
 // The second returned parameter is the error that might occurs while execution
 func Exists(client *occlient.Client, projectName string) (bool, error) {
-	project, err := client.GetProject(projectName)
-	if err != nil || project == nil {
-		return false, err
+	projectSupport, err := client.IsProjectSupported()
+	if err != nil {
+		return false, errors.Wrap(err, "unable to detect project support")
+	}
+
+	if projectSupport {
+		project, err := client.GetProject(projectName)
+		if err != nil || project == nil {
+			return false, err
+		}
+	} else {
+		namespace, err := client.GetNamespace(projectName)
+		if err != nil || namespace == nil {
+			return false, err
+		}
 	}
 
 	return true, nil
