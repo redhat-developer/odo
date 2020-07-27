@@ -71,7 +71,7 @@ func (a Adapter) SupervisorComponentInfo(command versionsCommon.DevfileCommand) 
 			}, nil
 		}
 	}
-	return common.ComponentInfo{}, errors.Wrapf(err, "couldn't find supervisord contain for odo component %s", a.ComponentName)
+	return common.ComponentInfo{}, errors.Wrapf(err, "couldn't find supervisord container for odo component %s", a.ComponentName)
 }
 
 // Adapter is a component adapter implementation for Kubernetes
