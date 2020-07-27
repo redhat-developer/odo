@@ -79,7 +79,7 @@ func GetCSV(client *kclient.Client, crd map[string]interface{}) (string, olm.Clu
 	csv, err := doesCRExist(cr, csvs)
 	if err != nil {
 		return cr, olm.ClusterServiceVersion{},
-			fmt.Errorf("Could not find specified service/custom resource: %s\nPlease check the \"kind\" field in the yaml (it's case-sensitive)", cr)
+			fmt.Errorf("could not find specified service/custom resource: %s; please check the \"kind\" field in the yaml (it's case-sensitive)", cr)
 	}
 	return cr, csv, nil
 }
@@ -93,7 +93,7 @@ func doesCRExist(kind string, csvs *olm.ClusterServiceVersionList) (olm.ClusterS
 			}
 		}
 	}
-	return olm.ClusterServiceVersion{}, errors.New("Could not find the requested cluster resource")
+	return olm.ClusterServiceVersion{}, errors.New("could not find the requested cluster resource")
 
 }
 
@@ -101,7 +101,7 @@ func doesCRExist(kind string, csvs *olm.ClusterServiceVersionList) (olm.ClusterS
 func CreateOperatorService(client *kclient.Client, group, version, resource string, CustomResourceDefinition map[string]interface{}) error {
 	err := client.CreateDynamicResource(CustomResourceDefinition, group, version, resource)
 	if err != nil {
-		return errors.Wrap(err, "Unable to create operator backed service")
+		return errors.Wrap(err, "unable to create operator backed service")
 	}
 	return nil
 }
@@ -306,7 +306,7 @@ func ListOperatorServices(client *kclient.Client) ([]unstructured.Unstructured, 
 	// let's get the Services a.k.a Custom Resources (CR) defined by each operator, one by one
 	for _, csv := range csvs.Items {
 		clusterServiceVersion := csv
-		klog.V(4).Infof("Getting services started from operator: %s\n", clusterServiceVersion.Name)
+		klog.V(4).Infof("Getting services started from operator: %s", clusterServiceVersion.Name)
 		customResources := client.GetCustomResourcesFromCSV(&clusterServiceVersion)
 
 		// list and write active instances of each service/CR
@@ -334,7 +334,7 @@ func getGVKRFromCR(cr olm.CRDDescription) (group, version, kind, resource string
 
 	gr := strings.SplitN(cr.Name, ".", 2)
 	if len(gr) != 2 {
-		err = fmt.Errorf("Couldn't split Custom Resource's name into two: %s\n", cr.Name)
+		err = fmt.Errorf("Couldn't split Custom Resource's name into two: %s", cr.Name)
 		return
 	}
 	resource = gr[0]
@@ -350,7 +350,7 @@ func GetGVRFromOperator(csv olm.ClusterServiceVersion, cr string) (group, versio
 			return GetGVRFromCR(&custRes)
 		}
 	}
-	return "", "", "", fmt.Errorf("Couldn't parse group, version, resource from Operator %q\n", csv.Name)
+	return "", "", "", fmt.Errorf("couldn't parse group, version, resource from Operator %q", csv.Name)
 }
 
 // GetGVRFromCR parses and returns the values for group, version and resource
@@ -360,7 +360,7 @@ func GetGVRFromCR(cr *olm.CRDDescription) (group, version, resource string, err 
 
 	gr := strings.SplitN(cr.Name, ".", 2)
 	if len(gr) != 2 {
-		err = fmt.Errorf("Couldn't split Custom Resource's name into two: %s\n", cr.Name)
+		err = fmt.Errorf("couldn't split Custom Resource's name into two: %s", cr.Name)
 		return
 	}
 	resource = gr[0]
@@ -381,7 +381,7 @@ func getGVKFromCR(cr *olm.CRDDescription) (group, version, kind string, err erro
 
 	gr := strings.SplitN(cr.Name, ".", 2)
 	if len(gr) != 2 {
-		err = fmt.Errorf("Couldn't split Custom Resource's name into two: %s\n", cr.Name)
+		err = fmt.Errorf("Couldn't split Custom Resource's name into two: %s", cr.Name)
 		return
 	}
 	group = gr[1]
@@ -404,7 +404,7 @@ func GetAlmExample(csv olm.ClusterServiceVersion, cr, serviceType string) (almEx
 	} else {
 		// There's no alm examples in the CSV's definition
 		return nil,
-			fmt.Errorf("Could not find alm-examples in %q Operator's definition.", cr)
+			fmt.Errorf("could not find alm-examples in %q Operator's definition.", cr)
 	}
 
 	almExample, err = getAlmExample(almExamples, cr, serviceType)
@@ -422,7 +422,7 @@ func getAlmExample(almExamples []map[string]interface{}, crd, operator string) (
 			return example, nil
 		}
 	}
-	return nil, errors.Errorf("Could not find example yaml definition for %q service in %q Operator's definition.\n", crd, operator)
+	return nil, errors.Errorf("could not find example yaml definition for %q service in %q Operator's definition.", crd, operator)
 }
 
 // GetInstancesOfCustomResources returns active instances of given Custom Resource (service in

@@ -60,7 +60,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 		It("should now allow interactive mode command to be executed", func() {
 			stdOut := helper.CmdShouldFail("odo", "service", "create")
-			Expect(stdOut).To(ContainSubstring("Please use a valid command to start an Operator backed service"))
+			Expect(stdOut).To(ContainSubstring("please use a valid command to start an Operator backed service"))
 		})
 	})
 
@@ -121,7 +121,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 			// now try creating service with same name again. it should fail
 			stdOut := helper.CmdShouldFail("odo", "service", "create", etcdOperator, "--crd", "EtcdCluster", name)
-			Expect(stdOut).To(ContainSubstring(fmt.Sprintf("Service %q already exists", svcFullName)))
+			Expect(stdOut).To(ContainSubstring(fmt.Sprintf("service %q already exists", svcFullName)))
 
 			helper.CmdShouldPass("odo", "service", "delete", svcFullName, "-f")
 		})
@@ -240,7 +240,7 @@ var _ = Describe("odo service command tests for OperatorHub", func() {
 
 			// Attempting to create service with same name should fail
 			stdOut = helper.CmdShouldFail("odo", "service", "create", "--from-file", fileName, name)
-			Expect(stdOut).To(ContainSubstring("Please provide a different name or delete the existing service first"))
+			Expect(stdOut).To(ContainSubstring("please provide a different name or delete the existing service first"))
 		})
 	})
 
@@ -281,7 +281,7 @@ spec:
 
 			// now create operator backed service
 			stdOut := helper.CmdShouldFail("odo", "service", "create", "--from-file", fileName)
-			Expect(stdOut).To(ContainSubstring("Couldn't find \"metadata\" in the yaml"))
+			Expect(stdOut).To(ContainSubstring("couldn't find \"metadata\" in the yaml"))
 
 			invalidMetaFile := helper.RandString(6) + ".yaml"
 			fileName = filepath.Join("/tmp", invalidMetaFile)
@@ -291,7 +291,7 @@ spec:
 
 			// now create operator backed service
 			stdOut = helper.CmdShouldFail("odo", "service", "create", "--from-file", fileName)
-			Expect(stdOut).To(ContainSubstring("Couldn't find metadata.name in the yaml"))
+			Expect(stdOut).To(ContainSubstring("couldn't find metadata.name in the yaml"))
 
 		})
 	})

@@ -306,7 +306,7 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 					return err
 				}
 				if exists {
-					return fmt.Errorf("Service %q already exists. Please provide a different name or delete the existing service first.", svcFullName)
+					return fmt.Errorf("service %q already exists; please provide a different name or delete the existing service first.", svcFullName)
 				}
 
 				d.setServiceName(o.ServiceName)
@@ -350,7 +350,7 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 					return err
 				}
 				if exists {
-					return fmt.Errorf("Service %q already exists. Please provide a different name or delete the existing service first.", svcFullName)
+					return fmt.Errorf("service %q already exists; please provide a different name or delete the existing service first.", svcFullName)
 				}
 
 				d.setServiceName(o.ServiceName)
@@ -372,7 +372,7 @@ func (o *ServiceCreateOptions) Validate() (err error) {
 			// correct way is to execute:
 			// `odo service create <operator-name> --crd <crd-name>`
 
-			return fmt.Errorf("Please use a valid command to start an Operator backed service. Desired format: %q", "odo service create <operator-name> --crd <crd-name>")
+			return fmt.Errorf("please use a valid command to start an Operator backed service; desired format: %q", "odo service create <operator-name> --crd <crd-name>")
 		}
 	}
 	// make sure the service type exists
@@ -518,14 +518,14 @@ func (d *DynamicCRD) validateMetadataInCRD() error {
 	metadata, ok := d.OriginalCRD["metadata"].(map[string]interface{})
 	if !ok {
 		// this condition is satisfied if there's no metadata at all in the provided CRD
-		return fmt.Errorf("Couldn't find \"metadata\" in the yaml. Need metadata start the service")
+		return fmt.Errorf("couldn't find \"metadata\" in the yaml; need metadata start the service")
 	}
 
 	if _, ok := metadata["name"].(string); ok {
 		// found the metadata.name; no error
 		return nil
 	}
-	return fmt.Errorf("Couldn't find metadata.name in the yaml. Provide a name for the service")
+	return fmt.Errorf("couldn't find metadata.name in the yaml; provide a name for the service")
 }
 
 // setServiceName modifies the CRD to contain user provided name on the CLI
@@ -548,12 +548,12 @@ func (d *DynamicCRD) getServiceNameFromCRD() (string, error) {
 	metadata, ok := d.OriginalCRD["metadata"].(map[string]interface{})
 	if !ok {
 		// this condition is satisfied if there's no metadata at all in the provided CRD
-		return "", fmt.Errorf("Couldn't find \"metadata\" in the yaml. Need metadata.name to start the service")
+		return "", fmt.Errorf("couldn't find \"metadata\" in the yaml; need metadata.name to start the service")
 	}
 
 	if name, ok := metadata["name"].(string); ok {
 		// found the metadata.name; no error
 		return name, nil
 	}
-	return "", fmt.Errorf("Couldn't find metadata.name in the yaml. Provide a name for the service")
+	return "", fmt.Errorf("couldn't find metadata.name in the yaml; provide a name for the service")
 }
