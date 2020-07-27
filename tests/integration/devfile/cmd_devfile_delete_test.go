@@ -1,19 +1,19 @@
 package devfile
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/openshift/odo/tests/helper"
+	"github.com/openshift/odo/tests/integration/devfile/utils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("odo devfile delete command tests", func() {
-	var namespace, context, currentWorkingDirectory, componentName, originalKubeconfig string
+	var namespace, context, currentWorkingDirectory, componentName, originalKubeconfig, invalidNamespace string
 
 	// Using program commmand according to cliRunner in devfile
 	cliRunner := helper.GetCliRunner()
@@ -47,6 +47,12 @@ var _ = Describe("odo devfile delete command tests", func() {
 	})
 
 	Context("when devfile delete command is executed", func() {
+		It("should not throw an error with an existing namespace when no component exists", func() {
+			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
+			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
+			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
+			helper.CmdShouldPass("odo", "delete", "--project", namespace, "-f")
+		})
 
 		It("should delete the component created from the devfile and also the owned resources", func() {
 			resourceTypes := []string{"deployments", "pods", "services", "ingress"}
@@ -54,7 +60,6 @@ var _ = Describe("odo devfile delete command tests", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
-
 			helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io", "--ingress", "--context", context)
 
 			if os.Getenv("KUBERNETES") != "true" {
@@ -70,27 +75,11 @@ var _ = Describe("odo devfile delete command tests", func() {
 				cliRunner.WaitAndCheckForExistence(resourceType, namespace, 1)
 			}
 		})
-	})
 
-	Context("when no component exists", func() {
-
-		It("should not throw an error with an existing namespace", func() {
+		It("should delete the component created from the devfile and also the env and odo folders and the odo-index-file.json file with all flag", func() {
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
 			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
 			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
-
-			helper.CmdShouldPass("odo", "delete", "--project", namespace, "-f")
-		})
-	})
-
-	Context("when devfile delete command is executed with all flag", func() {
-
-		It("should delete the component created from the devfile and also the env and odo folders and the odo-index-file.json file", func() {
-			helper.CmdShouldPass("odo", "create", "nodejs", "--project", namespace, componentName)
-
-			helper.CopyExample(filepath.Join("source", "devfiles", "nodejs", "project"), context)
-			helper.CopyExampleDevFile(filepath.Join("source", "devfiles", "nodejs", "devfile.yaml"), filepath.Join(context, "devfile.yaml"))
-
 			helper.CmdShouldPass("odo", "push", "--project", namespace)
 
 			helper.CmdShouldPass("odo", "url", "create", "example", "--host", "1.2.3.4.nip.io", "--ingress", "--context", context)
@@ -110,36 +99,18 @@ var _ = Describe("odo devfile delete command tests", func() {
 	})
 
 	Context("when the project doesn't exist", func() {
+		JustBeforeEach(func() {
+			invalidNamespace = "garbage"
+		})
 
 		It("should let the user delete the local config files with -a flag", func() {
-			invalidNamespace := "garbage"
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", invalidNamespace, componentName)
-
-			output := helper.CmdShouldFail("odo", "delete")
-			helper.MatchAllInOutput(output, []string{
-				fmt.Sprint("the namespace doesn't exist"),
-			})
-
-			output = helper.CmdShouldPass("odo", "delete", "-af")
-			expectedOutput := []string{
-				"Successfully deleted env file",
-				"Successfully deleted devfile.yaml file",
-			}
-			helper.MatchAllInOutput(output, expectedOutput)
+			utils.DeleteLocalConfig("delete")
 		})
 
 		It("should let the user delete the local config files with -a and -project flags", func() {
-			invalidNamespace := "garbage"
 			helper.CmdShouldPass("odo", "create", "nodejs", "--project", invalidNamespace, componentName)
-
-			helper.CmdShouldFail("odo", "delete", "--project", invalidNamespace)
-
-			output := helper.CmdShouldPass("odo", "delete", "--project", invalidNamespace, "-af")
-			expectedOutput := []string{
-				"Successfully deleted env file",
-				"Successfully deleted devfile.yaml file",
-			}
-			helper.MatchAllInOutput(output, expectedOutput)
+			utils.DeleteLocalConfig("delete", "--project", invalidNamespace)
 		})
 	})
 })
