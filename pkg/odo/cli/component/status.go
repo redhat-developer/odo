@@ -8,10 +8,10 @@ import (
 
 	"fmt"
 
+	"github.com/openshift/odo/pkg/devfile"
 	"github.com/openshift/odo/pkg/devfile/adapters"
 	"github.com/openshift/odo/pkg/devfile/adapters/common"
 	"github.com/openshift/odo/pkg/devfile/adapters/kubernetes"
-	devfileParser "github.com/openshift/odo/pkg/devfile/parser"
 	"github.com/openshift/odo/pkg/envinfo"
 	"github.com/openshift/odo/pkg/log"
 	"github.com/openshift/odo/pkg/machineoutput"
@@ -82,7 +82,7 @@ func (so *StatusOptions) Complete(name string, cmd *cobra.Command, args []string
 		}
 
 		// Parse devfile
-		devObj, err := devfileParser.ParseAndValidate(so.devfilePath)
+		devObj, err := devfile.ParseAndValidate(so.devfilePath)
 		if err != nil {
 			return err
 		}
@@ -97,7 +97,7 @@ func (so *StatusOptions) Complete(name string, cmd *cobra.Command, args []string
 		} else {
 			platformContext = nil
 		}
-		so.devfileHandler, err = adapters.NewComponentAdapter(so.componentName, so.componentContext, devObj, platformContext)
+		so.devfileHandler, err = adapters.NewComponentAdapter(so.componentName, so.componentContext, so.Application, devObj, platformContext)
 
 		return err
 	}
