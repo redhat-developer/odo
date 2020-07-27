@@ -15,6 +15,7 @@ import (
 	"runtime"
 	"sort"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -1476,7 +1477,7 @@ func TestUnzip(t *testing.T) {
 			src:           "../../tests/examples/source/devfiles/nodejs-zip/invalid.zip",
 			pathToUnzip:   "",
 			expectedFiles: []string{},
-			expectedError: "open ../../tests/examples/source/devfiles/nodejs-zip/invalid.zip: no such file or directory",
+			expectedError: "open ../../tests/examples/source/devfiles/nodejs-zip/invalid.zip:",
 		},
 		{
 			name:          "Case 2: Valid source zip, no pathToUnzip",
@@ -1538,10 +1539,11 @@ func TestUnzip(t *testing.T) {
 			defer os.RemoveAll(dir)
 			t.Logf(dir)
 
-			_, err = Unzip(tt.src, dir, tt.pathToUnzip)
+			_, err = Unzip(filepath.FromSlash(tt.src), dir, tt.pathToUnzip)
 			if err != nil {
-				if !reflect.DeepEqual(err.Error(), tt.expectedError) {
-					t.Errorf("Got err: '%s', expected err: '%s'", err.Error(), tt.expectedError)
+				tt.expectedError = strings.ReplaceAll(tt.expectedError, "/", string(filepath.Separator))
+				if !strings.HasPrefix(err.Error(), tt.expectedError) {
+					t.Errorf("Got err: '%s'\n expected err: '%s'", err.Error(), tt.expectedError)
 				}
 			} else {
 				for _, file := range tt.expectedFiles {
