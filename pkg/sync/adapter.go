@@ -329,8 +329,7 @@ func isRemoteFolderEmpty(a Adapter, compInfo common.ComponentInfo, syncFolder st
 	stdoutWriter, stdoutOutputChan := exec.CreateConsoleOutputWriterAndChannel()
 	stderrWriter, stderrOutputChan := exec.CreateConsoleOutputWriterAndChannel()
 
-	err := exec.ExecuteCommand(a.Client, compInfo, []string{"ls", "-a", syncFolder}, false, stdoutWriter, stderrWriter)
-	if err != nil {
+	for err := exec.ExecuteCommand(a.Client, compInfo, []string{"ls", "-a", syncFolder}, false, stdoutWriter, stderrWriter); err != nil {
 		return false, err
 	}
 
