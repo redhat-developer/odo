@@ -122,7 +122,15 @@ func (a GenericAdapter) ExecDevfile(commandsMap PushCommandsMap, componentExists
 
 	if command, ok := commandsMap[group]; ok {
 
-		info, err := getComponentInfo(command, a)
+		if command.Exec != nil {
+			return fmt.Errorf("cannot execute composite supervisord commands")
+		}
+		info, err := a.SupervisorComponentInfo(command)
+		if err != nil {
+			a.Logger().ReportError(err, machineoutput.TimestampNow())
+			return err
+		}
+
 		if err != nil {
 			return err
 		}

@@ -7,61 +7,12 @@ import (
 
 	"github.com/openshift/odo/pkg/devfile/parser/data"
 	"github.com/openshift/odo/pkg/devfile/parser/data/common"
-	"github.com/openshift/odo/pkg/log"
-	"github.com/openshift/odo/pkg/machineoutput"
-	"github.com/openshift/odo/pkg/util"
 	"github.com/pkg/errors"
 	"k8s.io/klog"
 )
 
 type command interface {
 	Execute(show bool) error
-}
-
-type commandExecutor interface {
-	ExecClient
-	Logger() machineoutput.MachineEventLoggingClient
-	ComponentInfo(command common.DevfileCommand) (ComponentInfo, error)
-	SupervisorComponentInfo(command common.DevfileCommand) (ComponentInfo, error)
-}
-
-type supervisorCommand struct {
-	adapter commandExecutor
-	cmd     []string
-	info    ComponentInfo
-}
-
-func newSupervisorCommand(cmd []string, info ComponentInfo, adapter commandExecutor) (command, error) {
-	// prepend supervisor binary path if command doesn't already start with it
-	if cmd[0] != SupervisordBinaryPath {
-		cmd = append([]string{SupervisordBinaryPath}, cmd...)
-	}
-	return supervisorCommand{
-		adapter: adapter,
-		cmd:     cmd,
-		info:    info,
-	}, nil
-}
-
-func getComponentInfo(devfile common.DevfileCommand, adapter commandExecutor) (ComponentInfo, error) {
-	if devfile.Exec != nil {
-		return ComponentInfo{}, fmt.Errorf("cannot execute composite supervisord commands")
-	}
-	info, err := adapter.SupervisorComponentInfo(devfile)
-	if err != nil {
-		adapter.Logger().ReportError(err, machineoutput.TimestampNow())
-		return ComponentInfo{}, err
-	}
-	return info, nil
-}
-
-func (s supervisorCommand) Execute(show bool) error {
-	err := ExecuteCommand(s.adapter, s.info, s.cmd, true, nil, nil)
-	if err != nil {
-		s.adapter.Logger().ReportError(err, machineoutput.TimestampNow())
-		return err
-	}
-	return nil
 }
 
 func New(devfile common.DevfileCommand, knowCommands map[string]common.DevfileCommand, executor commandExecutor) (command, error) {
@@ -87,136 +38,6 @@ func New(devfile common.DevfileCommand, knowCommands map[string]common.DevfileCo
 	} else {
 		return newSimpleCommand(devfile, executor)
 	}
-}
-
-type simpleCommand struct {
-	info        ComponentInfo
-	adapter     commandExecutor
-	cmd         []string
-	id          string
-	component   string
-	originalCmd string
-	group       string
-}
-
-func newSimpleCommand(command common.DevfileCommand, executor commandExecutor) (command, error) {
-	exe := command.Exec
-
-	// deal with environment variables
-	var setEnvVariable, cmdLine string
-	for _, envVar := range exe.Env {
-		setEnvVariable = setEnvVariable + fmt.Sprintf("%v=\"%v\" ", envVar.Name, envVar.Value)
-	}
-	if setEnvVariable == "" {
-		cmdLine = exe.CommandLine
-	} else {
-		cmdLine = setEnvVariable + "&& " + exe.CommandLine
-	}
-
-	// Change to the workdir and execute the command
-	var cmd []string
-	if exe.WorkingDir != "" {
-		// since we are using /bin/sh -c, the command needs to be within a single double quote instance, for example "cd /tmp && pwd"
-		cmd = []string{ShellExecutable, "-c", "cd " + exe.WorkingDir + " && " + cmdLine}
-	} else {
-		cmd = []string{ShellExecutable, "-c", cmdLine}
-	}
-
-	// create the component info associated with the command
-	info, err := executor.ComponentInfo(command)
-	if err != nil {
-		return nil, err
-	}
-
-	return simpleCommand{
-		info:        info,
-		adapter:     executor,
-		cmd:         cmd,
-		id:          exe.Id,
-		component:   exe.Component,
-		originalCmd: exe.CommandLine,
-		group:       convertGroupKindToString(exe),
-	}, nil
-}
-
-func (s simpleCommand) Execute(show bool) error {
-	msg := fmt.Sprintf("Executing %s command %q, if not running", s.id, s.originalCmd)
-	spinner := log.ExplicitSpinner(msg, show)
-	defer spinner.End(false)
-
-	// Emit DevFileCommandExecutionBegin JSON event (if machine output logging is enabled)
-	logger := s.adapter.Logger()
-	logger.DevFileCommandExecutionBegin(s.id, s.component, s.originalCmd, s.group, machineoutput.TimestampNow())
-
-	// Capture container text and log to the screen as JSON events (machine output only)
-	stdoutWriter, stdoutChannel, stderrWriter, stderrChannel := logger.CreateContainerOutputWriter()
-
-	err := ExecuteCommand(s.adapter, s.info, s.cmd, show, stdoutWriter, stderrWriter)
-
-	// Close the writers and wait for an acknowledgement that the reader loop has exited (to ensure we get ALL container output)
-	closeWriterAndWaitForAck(stdoutWriter, stdoutChannel, stderrWriter, stderrChannel)
-
-	// Emit close event
-	logger.DevFileCommandExecutionComplete(s.id, s.component, s.originalCmd, s.group, machineoutput.TimestampNow(), err)
-
-	if err != nil {
-		return errors.Wrapf(err, "unable to execute the run command")
-	}
-
-	spinner.End(true)
-
-	return nil
-}
-
-func newCompositeCommand(cmds ...command) command {
-	return compositeCommand{
-		cmds: cmds,
-	}
-}
-
-type compositeCommand struct {
-	cmds []command
-}
-
-func (c compositeCommand) Execute(show bool) error {
-	// Execute the commands in order
-	for _, command := range c.cmds {
-		err := command.Execute(show)
-		if err != nil {
-			return fmt.Errorf("command execution failed: %v", err)
-		}
-	}
-	return nil
-}
-
-func newParallelCompositeCommand(cmds ...command) command {
-	return parallelCompositeCommand{
-		cmds: cmds,
-	}
-}
-
-type parallelCompositeCommand struct {
-	cmds []command
-}
-
-func (p parallelCompositeCommand) Execute(show bool) error {
-	// Loop over each command and execute it in parallel
-	commandExecs := util.NewConcurrentTasks(len(p.cmds))
-	for _, command := range p.cmds {
-		cmd := command // needed to prevent the lambda from capturing the value
-		commandExecs.Add(util.ConcurrentTask{ToRun: func(errChannel chan error) {
-			err := cmd.Execute(show)
-			if err != nil {
-				errChannel <- err
-			}
-		}})
-	}
-
-	err := commandExecs.Run()
-	if err != nil {
-		return errors.Wrap(err, "parallel command execution failed")
-	}
-	return nil
 }
 
 // getCommand iterates through the devfile commands and returns the devfile command associated with the group
